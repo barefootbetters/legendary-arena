@@ -1791,6 +1791,63 @@
   ],
   "villains": [
     {
+      "id": 1,
+      "name": "Brotherhood of Mutants",
+      "slug": "brotherhood-of-mutants",
+      "ledBy": [
+        "magneto"
+      ],
+      "cards": [
+        {
+          "name": "Juggernaut",
+          "slug": "juggernaut",
+          "vp": "5",
+          "vAttack": "7",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-brotherhood-of-mutants-juggernaut.webp",
+          "abilities": [
+            "Ambush: Each player reveals their hand and discards all cards that have the same card names as any Heroes in the HQ. Then put all Heroes from the HQ on the bottom of the Hero Deck.",
+            "Fight: KO two of your Heroes."
+          ],
+          "copies": 2
+        },
+        {
+          "name": "Mystique",
+          "slug": "mystique",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-brotherhood-of-mutants-mystique.webp",
+          "abilities": [
+            "Ambush: Each player discards an [team:x-men] Hero.",
+            "Escape: Mystique becomes a Scheme Twist that takes effect immediately."
+          ],
+          "copies": 2
+        },
+        {
+          "name": "Sabretooth",
+          "slug": "sabretooth",
+          "vp": "4",
+          "vAttack": "6",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-brotherhood-of-mutants-sabretooth.webp",
+          "abilities": [
+            "Ambush: Each player reveals an [hc:instinct] Hero or gains a Wound.",
+            "Escape: Same effect."
+          ],
+          "copies": 2
+        },
+        {
+          "name": "The Blob",
+          "slug": "the-blob",
+          "vp": "2",
+          "vAttack": "4",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-brotherhood-of-mutants-the-blob.webp",
+          "abilities": [
+            "Ambush: Put The Blob to the left of the Mastermind space. Nothing moves The Blob. While he's there, you can't fight the Mastermind. (You can still fight The Blob.)"
+          ],
+          "copies": 2
+        }
+      ]
+    },
+    {
       "id": 2,
       "name": "Enemies of Asgard",
       "slug": "enemies-of-asgard",
@@ -1802,22 +1859,36 @@
           "name": "Destroyer",
           "slug": "destroyer",
           "vp": "5",
-          "vAttack": "7",
+          "vAttack": "8",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-enemies-of-asgard-destroyer.webp",
           "abilities": [
-            "Fight: KO all your [team:shield] Heroes.",
-            "Escape: Each player KOs two of their Heroes. [effect:koHeroEachPlayerMag2]"
+            "Ambush: Each player KOs a non-grey Hero from their discard pile.",
+            "Fight: KO up to two grey Heroes from your discard pile.",
+            "Escape: Repeat the Ambush effect."
           ],
-          "copies": 1
+          "copies": 2
         },
         {
           "name": "Enchantress",
           "slug": "enchantress",
           "vp": "4",
-          "vAttack": "6",
+          "vAttack": "5+",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-enemies-of-asgard-enchantress.webp",
           "abilities": [
-            "Fight: Draw three cards."
+            "Enchantress gets +1[icon:attack] for each Bystander she has.",
+            "Ambush: Enchantress captures a Bystander from the Bystander Deck and from each player's Victory Pile (of that player's choice)."
+          ],
+          "copies": 2
+        },
+        {
+          "name": "Frost Giant Warrior",
+          "slug": "frost-giant-warrior",
+          "vp": "2",
+          "vAttack": "4",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-enemies-of-asgard-frost-giant-warrior.webp",
+          "abilities": [
+            "Ambush: Each player discards a [hc:ranged] Hero or gains a Wound.",
+            "Fight: You may KO a grey Hero from your discard pile."
           ],
           "copies": 2
         },
@@ -1828,8 +1899,8 @@
           "vAttack": "6",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-enemies-of-asgard-ymir-frost-giant-king.webp",
           "abilities": [
-            "Ambush: Each player reveals a [hc:ranged] Hero or gains a Wound.",
-            "Fight: Choose a player. That player KOs any number of Wounds from their hand and discard pile."
+            "Ambush: Choose a Frost Giant Warrior from any player's Victory Pile to enter the city.",
+            "Fight: You may KO a grey Hero from your discard pile."
           ],
           "copies": 2
         }
@@ -1844,26 +1915,39 @@
       ],
       "cards": [
         {
+          "name": "Baron Strucker, Supreme Hydra",
+          "slug": "baron-strucker-supreme-hydra",
+          "vp": "4",
+          "vAttack": "6+",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-hydra-baron-strucker-supreme-hydra.webp",
+          "abilities": [
+            "Baron Strucker gets +1[icon:attack] for each other HYDRA Villain in the city and/or Escape Pile.",
+            "Fight: Shuffle four cards from the Bystander Deck into the Villain Deck. Then play two cards from the Villain Deck."
+          ],
+          "copies": 2
+        },
+        {
           "name": "Endless Armies of HYDRA",
           "slug": "endless-armies-of-hydra",
-          "vp": "3",
+          "vp": "2",
           "vAttack": "4",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-hydra-endless-armies-of-hydra.webp",
           "abilities": [
-            "Fight: Play the top two cards of the Villain Deck."
+            "Fight: Each player KOs one of their Heroes. Then play two cards from the Villain Deck."
           ],
-          "copies": 3
+          "copies": 2
         },
         {
           "name": "HYDRA Kidnappers",
           "slug": "hydra-kidnappers",
-          "vp": "1",
-          "vAttack": "3",
+          "vp": "2",
+          "vAttack": "4",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-hydra-hydra-kidnappers.webp",
           "abilities": [
-            "Fight: You may gain a S.H.I.E.L.D. Officer."
+            "Ambush: HYDRA Kidnappers capture a card from the S.H.I.E.L.D. Officer Deck or Sidekick Deck.",
+            "Fight: Choose a player to gain that Hero."
           ],
-          "copies": 3
+          "copies": 2
         },
         {
           "name": "Viper",
@@ -1875,7 +1959,7 @@
             "Fight: Each player without another HYDRA Villain in their Victory Pile gains a Wound.",
             "Escape: Same effect."
           ],
-          "copies": 1
+          "copies": 2
         }
       ]
     },
@@ -1884,17 +1968,18 @@
       "name": "Masters of Evil",
       "slug": "masters-of-evil",
       "ledBy": [
-        "dr-doom"
+        "doctor-doom"
       ],
       "cards": [
         {
           "name": "Baron Zemo",
           "slug": "baron-zemo",
-          "vp": "4",
-          "vAttack": "6",
+          "vp": "3",
+          "vAttack": "4+",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-masters-of-evil-baron-zemo.webp",
           "abilities": [
-            "Fight: For each of your [team:avengers] Heroes, rescue a Bystander."
+            "Baron Zemo gets +1[icon:attack] for each Bystander he has.",
+            "Ambush: Baron Zemo captures a Bystander. Then he captures another Bystander for each [team:avengers] Hero in the HQ."
           ],
           "copies": 2
         },
@@ -1912,11 +1997,12 @@
         {
           "name": "Ultron",
           "slug": "ultron",
-          "vp": "2+",
-          "vAttack": "6",
+          "vp": "4",
+          "vAttack": "5+",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-masters-of-evil-ultron.webp",
           "abilities": [
-            "Ultron is worth +1[icon:piercing] for each [hc:tech] Hero you have among all your cards at the end of the game.",
+            "Ultron gets +1[icon:attack] for each [hc:tech] Hero in the HQ.",
+            "Fight: Choose a [hc:tech] Hero from the HQ. Either KO that Hero or choose a player to gain it.",
             "Escape: Each player reveals a [hc:tech] Hero or gains a Wound."
           ],
           "copies": 2
@@ -1928,7 +2014,8 @@
           "vAttack": "4",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-masters-of-evil-whirlwind.webp",
           "abilities": [
-            "Fight: If you fight Whirlwind on the Rooftops or Bridge, KO two of your Heroes."
+            "Ambush: Two Villains in the city swap spaces.",
+            "Fight: If you fight Whirlwind on the Rooftops or Bridge, KO one of your Heroes."
           ],
           "copies": 2
         }
@@ -1943,11 +2030,23 @@
         {
           "name": "Abomination",
           "slug": "abomination",
-          "vp": "3",
-          "vAttack": "5",
+          "vp": "4",
+          "vAttack": "5+",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-radiation-abomination.webp",
           "abilities": [
-            "Fight: If you fight Abomination on the Streets or Bridge, rescue three Bystanders."
+            "Abomination gets +[icon:attack] equal to the printed [icon:attack] of the Hero in the HQ space under his current city space.",
+            "Fight: You get +1[icon:recruit] for each of your [hc:strength] Heroes."
+          ],
+          "copies": 2
+        },
+        {
+          "name": "Maestro, Wasteland Hulk",
+          "slug": "maestro-wasteland-hulk",
+          "vp": "4",
+          "vAttack": "6",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-radiation-maestro-wasteland-hulk.webp",
+          "abilities": [
+            "Fight: Count your [hc:strength] Heroes. KO that many of your Heroes."
           ],
           "copies": 2
         },
@@ -1958,7 +2057,7 @@
           "vAttack": "4",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-radiation-the-leader.webp",
           "abilities": [
-            "Ambush: Play the top card of the Villain Deck."
+            "Ambush: Reveal a [hc:strength] Hero or play a card from the Villain Deck."
           ],
           "copies": 2
         },
@@ -1971,6 +2070,173 @@
           "abilities": [
             "Fight: Each player reveals a [hc:strength] Hero or gains a Wound.",
             "Escape: Same effect."
+          ],
+          "copies": 2
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "name": "Sinister Spider-Foes",
+      "slug": "sinister-spider-foes",
+      "ledBy": [
+        "doctor-octopus"
+      ],
+      "cards": [
+        {
+          "name": "Green Goblin",
+          "slug": "green-goblin",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-sinister-spider-foes-green-goblin.webp",
+          "abilities": [
+            "Ambush: Green Goblin captures a Bystander. Put him on the Bridge. If there's another Villain there, swap them."
+          ],
+          "copies": 2
+        },
+        {
+          "name": "Scorpion",
+          "slug": "scorpion",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-sinister-spider-foes-scorpion.webp",
+          "abilities": [
+            "Ambush: If there is another Spider-Foes Villain in the city, each player gains a Wound.",
+            "Fight: KO one of your Heroes."
+          ],
+          "copies": 2
+        },
+        {
+          "name": "The Lizard",
+          "slug": "the-lizard",
+          "vp": "2",
+          "vAttack": "4",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-sinister-spider-foes-the-lizard.webp",
+          "abilities": [
+            "Fight: If you fight The Lizard in the Sewers, KO one of your Heroes and each other player gains a Wound."
+          ],
+          "copies": 2
+        },
+        {
+          "name": "Venom",
+          "slug": "venom",
+          "vp": "4",
+          "vAttack": "5+",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-sinister-spider-foes-venom.webp",
+          "abilities": [
+            "Venom gets +1[icon:attack] for each Hero he has.",
+            "Ambush: Venom captures a Hero from the Sidekick Deck and each Hero that costs 2 or less from the HQ.",
+            "Fight: You may gain a Hero captured by Venom. Put the rest on the bottom of the Hero Deck and/or Sidekick Deck as appropriate."
+          ],
+          "copies": 2
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "name": "Sinister Syndicate",
+      "slug": "sinister-syndicate",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Beetle",
+          "slug": "beetle",
+          "vp": "4",
+          "vAttack": "6",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-sinister-syndicate-beetle.webp",
+          "abilities": [
+            "Fight: Count your [hc:covert] Heroes, then draw that many cards.",
+            "Escape: Each player reveals a [hc:covert] Hero or gains a Wound."
+          ],
+          "copies": 2
+        },
+        {
+          "name": "Boomerang",
+          "slug": "boomerang",
+          "vp": "2",
+          "vAttack": "4",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-sinister-syndicate-boomerang.webp",
+          "abilities": [
+            "Fight: KO one of your Heroes. Then reveal the top card of the Villain Deck. If it's a Villain, put Boomerang in its place and play that Villain."
+          ],
+          "copies": 2
+        },
+        {
+          "name": "Hydro-Man",
+          "slug": "hydro-man",
+          "vp": "3",
+          "vAttack": "4+",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-sinister-syndicate-hydro-man.webp",
+          "abilities": [
+            "Hydro-Man gets +2[icon:attack] in the Sewers and Bridge.",
+            "Fight: If you fight Hydro-Man in the Sewers or Bridge, KO one of your Heroes."
+          ],
+          "copies": 2
+        },
+        {
+          "name": "Speed Demon",
+          "slug": "speed-demon",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-sinister-syndicate-speed-demon.webp",
+          "abilities": [
+            "Ambush: Speed Demon moves two extra spaces forward. If this pushes any other Villains forward, each player discards a card."
+          ],
+          "copies": 2
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "name": "Skulls",
+      "slug": "skulls",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Paibok the Power Skrull",
+          "slug": "paibok-the-power-skrull",
+          "vp": "5",
+          "vAttack": "5+",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-skulls-paibok-the-power-skrull.webp",
+          "abilities": [
+            "Paibok gets +1[icon:attack] for each Hero Class among Heroes in the HQ.",
+            "Fight: Choose a Hero from the HQ for each player. Each player gains that Hero."
+          ],
+          "copies": 2
+        },
+        {
+          "name": "Skrull Queen Veranke",
+          "slug": "skrull-queen-veranke",
+          "vp": "5",
+          "vAttack": "2+",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-skulls-skrull-queen-veranke.webp",
+          "abilities": [
+            "Ambush: Skrull Queen Veranke captures the highest-cost Hero from the HQ. She gets +[icon:attack] equal to its cost.",
+            "Fight: Either KO that Hero or choose a player to gain it."
+          ],
+          "copies": 2
+        },
+        {
+          "name": "Skrull Shapeshifter",
+          "slug": "skrull-shapeshifter",
+          "vp": "2",
+          "vAttack": "1+",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-skulls-skrull-shapeshifter.webp",
+          "abilities": [
+            "Ambush: Skrull Shapeshifter captures the rightmost Hero from the HQ. It gets +[icon:attack] equal to that Hero's cost.",
+            "Fight: Either KO that Hero or choose a player to gain it."
+          ],
+          "copies": 2
+        },
+        {
+          "name": "Super-Skrull",
+          "slug": "super-skrull",
+          "vp": "3",
+          "vAttack": "2+",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-skulls-super-skrull.webp",
+          "abilities": [
+            "Super-Skrull gets +1[icon:attack] for each Hero Class among Heroes in the HQ.",
+            "Fight: KO one of your Heroes."
           ],
           "copies": 2
         }

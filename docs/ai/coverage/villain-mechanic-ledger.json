@@ -2,12 +2,12 @@
   "schemaVersion": 1,
   "cardType": "villain",
   "summary": {
-    "totalRows": 694,
+    "totalRows": 713,
     "byStatus": {
-      "executable": 99,
+      "executable": 98,
       "deferred": 0,
       "unsupported": 1,
-      "unmarked": 594
+      "unmarked": 614
     },
     "distinctMechanics": 8
   },
@@ -1289,8 +1289,41 @@
       "handler": ""
     },
     {
+      "extId": "co2e-villain-hydra-baron-strucker-supreme-hydra",
+      "cardName": "Baron Strucker, Supreme Hydra",
+      "set": "co2e",
+      "cardType": "villain",
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
+      "wp": "",
+      "decision": "",
+      "handler": ""
+    },
+    {
       "extId": "co2e-villain-masters-of-evil-baron-zemo",
       "cardName": "Baron Zemo",
+      "set": "co2e",
+      "cardType": "villain",
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
+      "wp": "",
+      "decision": "",
+      "handler": ""
+    },
+    {
+      "extId": "co2e-villain-sinister-syndicate-beetle",
+      "cardName": "Beetle",
+      "set": "co2e",
+      "cardType": "villain",
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
+      "wp": "",
+      "decision": "",
+      "handler": ""
+    },
+    {
+      "extId": "co2e-villain-sinister-syndicate-boomerang",
+      "cardName": "Boomerang",
       "set": "co2e",
       "cardType": "villain",
       "mechanic": "(unmarked)",
@@ -1304,11 +1337,11 @@
       "cardName": "Destroyer",
       "set": "co2e",
       "cardType": "villain",
-      "mechanic": "koHeroEachPlayerMag2",
-      "status": "executable",
-      "wp": "WP-202",
-      "decision": "D-20201",
-      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
+      "wp": "",
+      "decision": "",
+      "handler": ""
     },
     {
       "extId": "henchman-doombot-legion",
@@ -1344,6 +1377,28 @@
       "handler": ""
     },
     {
+      "extId": "co2e-villain-enemies-of-asgard-frost-giant-warrior",
+      "cardName": "Frost Giant Warrior",
+      "set": "co2e",
+      "cardType": "villain",
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
+      "wp": "",
+      "decision": "",
+      "handler": ""
+    },
+    {
+      "extId": "co2e-villain-sinister-spider-foes-green-goblin",
+      "cardName": "Green Goblin",
+      "set": "co2e",
+      "cardType": "villain",
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
+      "wp": "",
+      "decision": "",
+      "handler": ""
+    },
+    {
       "extId": "co2e-villain-hydra-hydra-kidnappers",
       "cardName": "HYDRA Kidnappers",
       "set": "co2e",
@@ -1366,8 +1421,74 @@
       "handler": ""
     },
     {
+      "extId": "co2e-villain-sinister-syndicate-hydro-man",
+      "cardName": "Hydro-Man",
+      "set": "co2e",
+      "cardType": "villain",
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
+      "wp": "",
+      "decision": "",
+      "handler": ""
+    },
+    {
+      "extId": "co2e-villain-brotherhood-of-mutants-juggernaut",
+      "cardName": "Juggernaut",
+      "set": "co2e",
+      "cardType": "villain",
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
+      "wp": "",
+      "decision": "",
+      "handler": ""
+    },
+    {
+      "extId": "co2e-villain-radiation-maestro-wasteland-hulk",
+      "cardName": "Maestro, Wasteland Hulk",
+      "set": "co2e",
+      "cardType": "villain",
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
+      "wp": "",
+      "decision": "",
+      "handler": ""
+    },
+    {
       "extId": "co2e-villain-masters-of-evil-melter",
       "cardName": "Melter",
+      "set": "co2e",
+      "cardType": "villain",
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
+      "wp": "",
+      "decision": "",
+      "handler": ""
+    },
+    {
+      "extId": "co2e-villain-brotherhood-of-mutants-mystique",
+      "cardName": "Mystique",
+      "set": "co2e",
+      "cardType": "villain",
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
+      "wp": "",
+      "decision": "",
+      "handler": ""
+    },
+    {
+      "extId": "co2e-villain-skulls-paibok-the-power-skrull",
+      "cardName": "Paibok the Power Skrull",
+      "set": "co2e",
+      "cardType": "villain",
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
+      "wp": "",
+      "decision": "",
+      "handler": ""
+    },
+    {
+      "extId": "co2e-villain-brotherhood-of-mutants-sabretooth",
+      "cardName": "Sabretooth",
       "set": "co2e",
       "cardType": "villain",
       "mechanic": "(unmarked)",
@@ -1388,6 +1509,17 @@
       "handler": ""
     },
     {
+      "extId": "co2e-villain-sinister-spider-foes-scorpion",
+      "cardName": "Scorpion",
+      "set": "co2e",
+      "cardType": "villain",
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
+      "wp": "",
+      "decision": "",
+      "handler": ""
+    },
+    {
       "extId": "henchman-sentinel",
       "cardName": "Sentinel",
       "set": "co2e",
@@ -1397,6 +1529,61 @@
       "wp": "WP-185",
       "decision": "",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
+    },
+    {
+      "extId": "co2e-villain-skulls-skrull-queen-veranke",
+      "cardName": "Skrull Queen Veranke",
+      "set": "co2e",
+      "cardType": "villain",
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
+      "wp": "",
+      "decision": "",
+      "handler": ""
+    },
+    {
+      "extId": "co2e-villain-skulls-skrull-shapeshifter",
+      "cardName": "Skrull Shapeshifter",
+      "set": "co2e",
+      "cardType": "villain",
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
+      "wp": "",
+      "decision": "",
+      "handler": ""
+    },
+    {
+      "extId": "co2e-villain-sinister-syndicate-speed-demon",
+      "cardName": "Speed Demon",
+      "set": "co2e",
+      "cardType": "villain",
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
+      "wp": "",
+      "decision": "",
+      "handler": ""
+    },
+    {
+      "extId": "co2e-villain-skulls-super-skrull",
+      "cardName": "Super-Skrull",
+      "set": "co2e",
+      "cardType": "villain",
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
+      "wp": "",
+      "decision": "",
+      "handler": ""
+    },
+    {
+      "extId": "co2e-villain-brotherhood-of-mutants-the-blob",
+      "cardName": "The Blob",
+      "set": "co2e",
+      "cardType": "villain",
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
+      "wp": "",
+      "decision": "",
+      "handler": ""
     },
     {
       "extId": "co2e-villain-radiation-the-leader",
@@ -1410,8 +1597,30 @@
       "handler": ""
     },
     {
+      "extId": "co2e-villain-sinister-spider-foes-the-lizard",
+      "cardName": "The Lizard",
+      "set": "co2e",
+      "cardType": "villain",
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
+      "wp": "",
+      "decision": "",
+      "handler": ""
+    },
+    {
       "extId": "co2e-villain-masters-of-evil-ultron",
       "cardName": "Ultron",
+      "set": "co2e",
+      "cardType": "villain",
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
+      "wp": "",
+      "decision": "",
+      "handler": ""
+    },
+    {
+      "extId": "co2e-villain-sinister-spider-foes-venom",
+      "cardName": "Venom",
       "set": "co2e",
       "cardType": "villain",
       "mechanic": "(unmarked)",
