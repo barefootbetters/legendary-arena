@@ -358,5 +358,14 @@
     "name": "Weapon X",
     "releaseDate": "2024-11-27",
     "type": "35th Expansion"
+  },
+  {
+    "id": 41,
+    "abbr": "co2e",
+    "pkgId": 41,
+    "slug": "core-set-2nd-edition",
+    "name": "Core Set (2nd Edition)",
+    "releaseDate": "2026-02-06",
+    "type": "Core Set (2nd Edition)"
   }
 ]

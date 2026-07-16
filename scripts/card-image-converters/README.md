@@ -33,13 +33,13 @@ own location):
 
 ```powershell
 cd "C:\pcloud\BB\DEV\barefootbetters-legendary-setup\card-images-staging"
-.\Convert-Core2e-JpgToWebp.ps1
+.\Convert-Co2e-JpgToWebp.ps1
 ```
 
 ## Files
 
-- `Convert-Core2e-JpgToWebp.ps1` — Core Set (2nd Edition):
-  `original-jpeg\core2e\` → `original\core2e\`.
+- `Convert-Co2e-JpgToWebp.ps1` — Core Set (2nd Edition):
+  `original-jpeg\co2e\` → `original\co2e\`.
 
 ## Note on portability
 

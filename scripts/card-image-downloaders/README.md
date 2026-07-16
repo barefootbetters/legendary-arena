@@ -21,13 +21,13 @@ resolves next to the other sets:
 
 ```powershell
 cd "C:\pcloud\BB\DEV\barefootbetters-legendary-setup\card-images-staging\original-jpeg"
-.\download-legendarycardgame-core2e.ps1
+.\download-legendarycardgame-co2e.ps1
 ```
 
 ## Files
 
-- `download-legendarycardgame-core2e.ps1` — Core Set (2nd Edition),
-  from `/core-set-at-a-glace-2ndedition`, output dir `core2e/`.
+- `download-legendarycardgame-co2e.ps1` — Core Set (2nd Edition),
+  from `/core-set-at-a-glace-2ndedition`, output dir `co2e/`.
 
 ## Note
 

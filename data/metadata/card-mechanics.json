@@ -87,8 +87,9 @@
       "label": "Attack Per Count",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 1,
+      "cardCount": 2,
       "cardIds": [
+        "co2e/black-widow",
         "core/black-widow"
       ],
       "hidden": true
@@ -384,7 +385,7 @@
       "label": "Draw",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 82,
+      "cardCount": 88,
       "cardIds": [
         "3dtc/black-widow",
         "amwp/freedom-fighters",
@@ -402,6 +403,12 @@
         "chmp/gwenpool",
         "chmp/ms-marvel",
         "chmp/totally-awesome-hulk",
+        "co2e/black-widow",
+        "co2e/emma-frost",
+        "co2e/hawkeye",
+        "co2e/iron-man",
+        "co2e/storm",
+        "co2e/wolverine",
         "core/black-widow",
         "core/emma-frost",
         "core/hawkeye",
@@ -606,9 +613,10 @@
       "label": "Gain Wound Each",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 3,
+      "cardCount": 4,
       "cardIds": [
         "3dtc/hulk",
+        "co2e/hulk",
         "core/hulk",
         "msp1/hulk"
       ],
@@ -721,9 +729,11 @@
       "label": "Ko Wound Reward",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 8,
+      "cardCount": 10,
       "cardIds": [
         "3dtc/hulk",
+        "co2e/hulk",
+        "co2e/wolverine",
         "core/hulk",
         "core/wolverine",
         "cvwr/hulkling",
@@ -811,8 +821,9 @@
       "label": "Optional Ko Reward",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 1,
+      "cardCount": 2,
       "cardIds": [
+        "co2e/black-widow",
         "core/black-widow"
       ],
       "hidden": true
@@ -944,7 +955,7 @@
       "label": "Rescue",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 12,
+      "cardCount": 14,
       "cardIds": [
         "3dtc/black-widow",
         "ca75/captain-america-1941",
@@ -952,6 +963,8 @@
         "ca75/steve-rogers-director-of-shield",
         "chmp/ms-marvel",
         "chmp/nova",
+        "co2e/black-widow",
+        "co2e/spider-man",
         "core/black-widow",
         "core/spider-man",
         "cosm/ronan-the-accuser",
@@ -977,8 +990,9 @@
       "label": "Reveal",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 6,
+      "cardCount": 7,
       "cardIds": [
+        "co2e/spider-man",
         "core/spider-man",
         "cvwr/peter-parker",
         "smhc/high-tech-spider-man",
@@ -1004,8 +1018,9 @@
       "label": "Reveal: Cost-to-Attack",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 1,
+      "cardCount": 2,
       "cardIds": [
+        "co2e/gambit",
         "core/gambit"
       ],
       "hidden": false
@@ -1015,8 +1030,9 @@
       "label": "Reveal Count",
       "scope": "hero",
       "source": "free-text",
-      "cardCount": 1,
+      "cardCount": 2,
       "cardIds": [
+        "co2e/spider-man",
         "core/spider-man"
       ],
       "hidden": true
@@ -1537,13 +1553,18 @@
       "label": "Unmarked",
       "scope": "hero",
       "source": "free-text",
-      "cardCount": 43,
+      "cardCount": 48,
       "cardIds": [
         "3dtc/deadpool",
         "3dtc/howard-the-duck",
         "3dtc/man-thing",
         "amwp/scott-lang-cat-burglar",
         "amwp/wasp",
+        "co2e/captain-america",
+        "co2e/cyclops",
+        "co2e/nick-fury",
+        "co2e/rogue",
+        "co2e/thor",
         "core/captain-america",
         "core/cyclops",
         "core/deadpool",
@@ -2152,6 +2173,83 @@
         "cheering-crowds",
         "size-changing",
         "versatile"
+      ]
+    },
+    "co2e/black-widow": {
+      "mechanics": [
+        "attack-per-count",
+        "draw",
+        "optional-ko-reward",
+        "rescue"
+      ]
+    },
+    "co2e/captain-america": {
+      "mechanics": [
+        "unmarked"
+      ]
+    },
+    "co2e/cyclops": {
+      "mechanics": [
+        "unmarked"
+      ]
+    },
+    "co2e/emma-frost": {
+      "mechanics": [
+        "draw"
+      ]
+    },
+    "co2e/gambit": {
+      "mechanics": [
+        "reveal-cost-attack"
+      ]
+    },
+    "co2e/hawkeye": {
+      "mechanics": [
+        "draw"
+      ]
+    },
+    "co2e/hulk": {
+      "mechanics": [
+        "gain-wound-each",
+        "ko-wound-reward"
+      ]
+    },
+    "co2e/iron-man": {
+      "mechanics": [
+        "draw"
+      ]
+    },
+    "co2e/nick-fury": {
+      "mechanics": [
+        "unmarked"
+      ]
+    },
+    "co2e/rogue": {
+      "mechanics": [
+        "unmarked"
+      ]
+    },
+    "co2e/spider-man": {
+      "mechanics": [
+        "rescue",
+        "reveal",
+        "reveal-count"
+      ]
+    },
+    "co2e/storm": {
+      "mechanics": [
+        "draw"
+      ]
+    },
+    "co2e/thor": {
+      "mechanics": [
+        "unmarked"
+      ]
+    },
+    "co2e/wolverine": {
+      "mechanics": [
+        "draw",
+        "ko-wound-reward"
       ]
     },
     "core/black-widow": {

@@ -1,0 +1,2090 @@
+{
+  "id": 41,
+  "abbr": "co2e",
+  "exportName": "CoreSet2ndEdition",
+  "heroes": [
+    {
+      "id": 1,
+      "name": "Black Widow",
+      "slug": "black-widow",
+      "team": "avengers",
+      "cardCounts": {
+        "Dangerous Rescue": 5,
+        "Mission Accomplished": 5,
+        "Covert Operation": 3,
+        "Silent Sniper": 1
+      },
+      "cards": [
+        {
+          "name": "Mission Accomplished",
+          "displayName": "Mission Accomplished",
+          "slug": "mission-accomplished",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "tech",
+          "cost": 2,
+          "attack": null,
+          "recruit": null,
+          "abilities": [
+            "Draw a Card. [keyword:draw:1]",
+            "[hc:tech]: Rescue a Bystander. [keyword:rescue:1]"
+          ]
+        },
+        {
+          "name": "Dangerous Rescue",
+          "displayName": "Dangerous Rescue",
+          "slug": "dangerous-rescue",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "covert",
+          "cost": 3,
+          "attack": "2",
+          "recruit": null,
+          "abilities": [
+            "[hc:covert]: You may KO a card from your hand or discard pile. If you do, rescue a Bystander. [keyword:optional-ko-reward:rescue:1]"
+          ]
+        },
+        {
+          "name": "Covert Operation",
+          "displayName": "Covert Operation",
+          "slug": "covert-operation",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 4,
+          "attack": "0+",
+          "recruit": null,
+          "abilities": [
+            "You get +1[icon:attack] for each Bystander in your Victory Pile. [keyword:attack-per-count:victory-bystanders:1]"
+          ]
+        },
+        {
+          "name": "Silent Sniper",
+          "displayName": "Silent Sniper",
+          "slug": "silent-sniper",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "covert",
+          "cost": 7,
+          "attack": "4",
+          "recruit": null,
+          "abilities": [
+            "Defeat a Villain or Mastermind that has a Bystander."
+          ]
+        }
+      ],
+      "physicalCards": [
+        {
+          "id": "p1",
+          "count": 5,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-black-widow-common-1.webp",
+          "sides": [
+            "mission-accomplished"
+          ]
+        },
+        {
+          "id": "p2",
+          "count": 5,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-black-widow-common-2.webp",
+          "sides": [
+            "dangerous-rescue"
+          ]
+        },
+        {
+          "id": "p3",
+          "count": 3,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-black-widow-uncommon.webp",
+          "sides": [
+            "covert-operation"
+          ]
+        },
+        {
+          "id": "p4",
+          "count": 1,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-black-widow-rare.webp",
+          "sides": [
+            "silent-sniper"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Captain America",
+      "slug": "captain-america",
+      "team": "avengers",
+      "cardCounts": {
+        "Avengers Assemble!": 5,
+        "Perfect Teamwork": 5,
+        "Diving Block": 3,
+        "A Day Unlike Any Other": 1
+      },
+      "cards": [
+        {
+          "name": "Avengers Assemble!",
+          "displayName": "Avengers Assemble!",
+          "slug": "avengers-assemble",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": null,
+          "recruit": "0+",
+          "abilities": [
+            "You get +1[icon:recruit] for each color of Hero you have."
+          ]
+        },
+        {
+          "name": "Perfect Teamwork",
+          "displayName": "Perfect Teamwork",
+          "slug": "perfect-teamwork",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 4,
+          "attack": "0+",
+          "recruit": null,
+          "abilities": [
+            "You get +1[icon:attack] for each color of Hero you have."
+          ]
+        },
+        {
+          "name": "Diving Block",
+          "displayName": "Diving Block",
+          "slug": "diving-block",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "tech",
+          "cost": 6,
+          "attack": "4",
+          "recruit": null,
+          "abilities": [
+            "If you would gain a Wound, you may reveal this card and draw a card instead."
+          ]
+        },
+        {
+          "name": "A Day Unlike Any Other",
+          "displayName": "A Day Unlike Any Other",
+          "slug": "a-day-unlike-any-other",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "covert",
+          "cost": 7,
+          "attack": "3+",
+          "recruit": null,
+          "abilities": [
+            "[team:avengers]: You get +3[icon:attack] for each other [team:avengers] you played this turn."
+          ]
+        }
+      ],
+      "physicalCards": [
+        {
+          "id": "p1",
+          "count": 5,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-captain-america-common-1.webp",
+          "sides": [
+            "avengers-assemble"
+          ]
+        },
+        {
+          "id": "p2",
+          "count": 5,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-captain-america-common-2.webp",
+          "sides": [
+            "perfect-teamwork"
+          ]
+        },
+        {
+          "id": "p3",
+          "count": 3,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-captain-america-uncommon.webp",
+          "sides": [
+            "diving-block"
+          ]
+        },
+        {
+          "id": "p4",
+          "count": 1,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-captain-america-rare.webp",
+          "sides": [
+            "a-day-unlike-any-other"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Cyclops",
+      "slug": "cyclops",
+      "team": "x-men",
+      "cardCounts": {
+        "Determination": 5,
+        "Optic Blast": 5,
+        "Unending Energy": 3,
+        "X-Men United": 1
+      },
+      "cards": [
+        {
+          "name": "Determination",
+          "displayName": "Determination",
+          "slug": "determination",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "strength",
+          "cost": 2,
+          "attack": null,
+          "recruit": "3",
+          "abilities": [
+            "To play this card, you must discard a card from your hand. "
+          ]
+        },
+        {
+          "name": "Optic Blast",
+          "displayName": "Optic Blast",
+          "slug": "optic-blast",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "ranged",
+          "cost": 3,
+          "attack": "3",
+          "recruit": null,
+          "abilities": [
+            "To play this card, you must discard a card from your hand."
+          ]
+        },
+        {
+          "name": "Unending Energy",
+          "displayName": "Unending Energy",
+          "slug": "unending-energy",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "ranged",
+          "cost": 6,
+          "attack": "4",
+          "recruit": null,
+          "abilities": [
+            "If a card effect makes you discard this card, you may return this card to your hand."
+          ]
+        },
+        {
+          "name": "X-Men United",
+          "displayName": "X-Men United",
+          "slug": "x-men-united",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "ranged",
+          "cost": 8,
+          "attack": "6+",
+          "recruit": null,
+          "abilities": [
+            "[team:x-men]: You get +2[icon:attack] for each other [team:x-men] Hero you played this turn."
+          ]
+        }
+      ],
+      "physicalCards": [
+        {
+          "id": "p1",
+          "count": 5,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-cyclops-common-1.webp",
+          "sides": [
+            "determination"
+          ]
+        },
+        {
+          "id": "p2",
+          "count": 5,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-cyclops-common-2.webp",
+          "sides": [
+            "optic-blast"
+          ]
+        },
+        {
+          "id": "p3",
+          "count": 3,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-cyclops-uncommon.webp",
+          "sides": [
+            "unending-energy"
+          ]
+        },
+        {
+          "id": "p4",
+          "count": 1,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-cyclops-rare.webp",
+          "sides": [
+            "x-men-united"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Emma Frost",
+      "slug": "emma-frost",
+      "team": "x-men",
+      "cardCounts": {
+        "Mental Discipline": 5,
+        "Shadowed Thoughts": 5,
+        "Psychic Link": 3,
+        "Diamond Form": 1
+      },
+      "cards": [
+        {
+          "name": "Mental Discipline",
+          "displayName": "Mental Discipline",
+          "slug": "mental-discipline",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "ranged",
+          "cost": 3,
+          "attack": null,
+          "recruit": "1",
+          "abilities": [
+            "Draw a card. [keyword:draw:1]"
+          ]
+        },
+        {
+          "name": "Shadowed Thoughts",
+          "displayName": "Shadowed Thoughts",
+          "slug": "shadowed-thoughts",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "covert",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "abilities": [
+            "[hc:covert]: You may play the top card of the Villain Deck. If you do, you get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Psychic Link",
+          "displayName": "Psychic Link",
+          "slug": "psychic-link",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "instinct",
+          "cost": 5,
+          "attack": "3",
+          "recruit": null,
+          "abilities": [
+            "Each player may reveal another [team:x-men] Hero. Each player who does draws a card."
+          ]
+        },
+        {
+          "name": "Diamond Form",
+          "displayName": "Diamond Form",
+          "slug": "diamond-form",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "strength",
+          "cost": 7,
+          "attack": "5",
+          "recruit": "0+",
+          "abilities": [
+            "Whenever you defeat a Villain or Mastermind this turn, you get +3[icon:recruit]."
+          ]
+        }
+      ],
+      "physicalCards": [
+        {
+          "id": "p1",
+          "count": 5,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-emma-frost-common-1.webp",
+          "sides": [
+            "mental-discipline"
+          ]
+        },
+        {
+          "id": "p2",
+          "count": 5,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-emma-frost-common-2.webp",
+          "sides": [
+            "shadowed-thoughts"
+          ]
+        },
+        {
+          "id": "p3",
+          "count": 3,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-emma-frost-uncommon.webp",
+          "sides": [
+            "psychic-link"
+          ]
+        },
+        {
+          "id": "p4",
+          "count": 1,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-emma-frost-rare.webp",
+          "sides": [
+            "diamond-form"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "name": "Gambit",
+      "slug": "gambit",
+      "team": "x-men",
+      "cardCounts": {
+        "Card Shark": 5,
+        "Stack the Deck": 5,
+        "Hypnotic Charm": 3,
+        "High Stakes Jackpot": 1
+      },
+      "cards": [
+        {
+          "name": "Stack the Deck",
+          "displayName": "Stack the Deck",
+          "slug": "stack-the-deck",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "covert",
+          "cost": 2,
+          "attack": null,
+          "recruit": null,
+          "abilities": [
+            "Draw two cards. Then put a card from your hand on top of your deck."
+          ]
+        },
+        {
+          "name": "Hypnotic Charm",
+          "displayName": "Hypnotic Charm",
+          "slug": "hypnotic-charm",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "abilities": [
+            "Reveal the top card of your deck. Discard it or put it back.",
+            "[hc:instinct]: Do the same thing to each other player's deck."
+          ]
+        },
+        {
+          "name": "Card Shark",
+          "displayName": "Card Shark",
+          "slug": "card-shark",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "ranged",
+          "cost": 4,
+          "attack": "2",
+          "recruit": null,
+          "abilities": [
+            "Reveal the top card of your deck. If it's an [team:x-men] Hero, draw it."
+          ]
+        },
+        {
+          "name": "High Stakes Jackpot",
+          "displayName": "High Stakes Jackpot",
+          "slug": "high-stakes-jackpot",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "instinct",
+          "cost": 7,
+          "attack": "4+",
+          "recruit": null,
+          "abilities": [
+            "Reveal the top card of your deck. You get +[icon:attack] equal to that card's cost. [keyword:reveal-cost-attack]"
+          ]
+        }
+      ],
+      "physicalCards": [
+        {
+          "id": "p1",
+          "count": 5,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-gambit-common-1.webp",
+          "sides": [
+            "stack-the-deck"
+          ]
+        },
+        {
+          "id": "p2",
+          "count": 3,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-gambit-common-2.webp",
+          "sides": [
+            "hypnotic-charm"
+          ]
+        },
+        {
+          "id": "p3",
+          "count": 5,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-gambit-uncommon.webp",
+          "sides": [
+            "card-shark"
+          ]
+        },
+        {
+          "id": "p4",
+          "count": 1,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-gambit-rare.webp",
+          "sides": [
+            "high-stakes-jackpot"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "name": "Hawkeye",
+      "slug": "hawkeye",
+      "team": "avengers",
+      "cardCounts": {
+        "Quick Draw": 5,
+        "Team Player": 5,
+        "Covering Fire": 3,
+        "Impossible Trick Shot": 1
+      },
+      "cards": [
+        {
+          "name": "Quick Draw",
+          "displayName": "Quick Draw",
+          "slug": "quick-draw",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": "1",
+          "recruit": null,
+          "abilities": [
+            "Draw a card. [keyword:draw:1]"
+          ]
+        },
+        {
+          "name": "Team Player",
+          "displayName": "Team Player",
+          "slug": "team-player",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "tech",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "abilities": [
+            "[team:avengers]: You get +1[icon:attack]."
+          ]
+        },
+        {
+          "name": "Covering Fire",
+          "displayName": "Covering Fire",
+          "slug": "covering-fire",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "tech",
+          "cost": 5,
+          "attack": "3",
+          "recruit": null,
+          "abilities": [
+            "[hc:tech]: Choose one: each other player draws a card or each other player discards a card."
+          ]
+        },
+        {
+          "name": "Impossible Trick Shot",
+          "displayName": "Impossible Trick Shot",
+          "slug": "impossible-trick-shot",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "tech",
+          "cost": 7,
+          "attack": "5",
+          "recruit": null,
+          "abilities": [
+            "Whenever you defeat a Villain or Mastermind this turn, rescue three Bystanders."
+          ]
+        }
+      ],
+      "physicalCards": [
+        {
+          "id": "p1",
+          "count": 5,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-hawkeye-common-1.webp",
+          "sides": [
+            "quick-draw"
+          ]
+        },
+        {
+          "id": "p2",
+          "count": 5,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-hawkeye-common-2.webp",
+          "sides": [
+            "team-player"
+          ]
+        },
+        {
+          "id": "p3",
+          "count": 3,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-hawkeye-uncommon.webp",
+          "sides": [
+            "covering-fire"
+          ]
+        },
+        {
+          "id": "p4",
+          "count": 1,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-hawkeye-rare.webp",
+          "sides": [
+            "impossible-trick-shot"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "name": "Hulk",
+      "slug": "hulk",
+      "team": "avengers",
+      "cardCounts": {
+        "Growing Anger": 5,
+        "Unstoppable Hulk": 5,
+        "Crazed Rampage": 3,
+        "Hulk Smash!": 1
+      },
+      "cards": [
+        {
+          "name": "Growing Anger",
+          "displayName": "Growing Anger",
+          "slug": "growing-anger",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "strength",
+          "cost": 3,
+          "attack": "2+",
+          "recruit": null,
+          "abilities": [
+            "[hc:strength]: You get +1[icon:attack]."
+          ]
+        },
+        {
+          "name": "Unstoppable Hulk",
+          "displayName": "Unstoppable Hulk",
+          "slug": "unstoppable-hulk",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 4,
+          "attack": "2+",
+          "recruit": null,
+          "abilities": [
+            "You may KO a Wound from your hand or discard pile. If you do, you get +2[icon:attack]. [keyword:ko-wound-reward:attack:2]"
+          ]
+        },
+        {
+          "name": "Crazed Rampage",
+          "displayName": "Crazed Rampage",
+          "slug": "crazed-rampage",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 5,
+          "attack": "4",
+          "recruit": null,
+          "abilities": [
+            "Each player gains a Wound. [keyword:gain-wound-each]"
+          ]
+        },
+        {
+          "name": "Hulk Smash!",
+          "displayName": "Hulk Smash!",
+          "slug": "hulk-smash",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "strength",
+          "cost": 8,
+          "attack": "5+",
+          "recruit": null,
+          "abilities": [
+            "[hc:strength]: You get +5[icon:attack]."
+          ]
+        }
+      ],
+      "physicalCards": [
+        {
+          "id": "p1",
+          "count": 5,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-hulk-common-1.webp",
+          "sides": [
+            "growing-anger"
+          ]
+        },
+        {
+          "id": "p2",
+          "count": 5,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-hulk-common-2.webp",
+          "sides": [
+            "unstoppable-hulk"
+          ]
+        },
+        {
+          "id": "p3",
+          "count": 3,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-hulk-uncommon.webp",
+          "sides": [
+            "crazed-rampage"
+          ]
+        },
+        {
+          "id": "p4",
+          "count": 1,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-hulk-rare.webp",
+          "sides": [
+            "hulk-smash"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "name": "Iron Man",
+      "slug": "iron-man",
+      "team": "avengers",
+      "cardCounts": {
+        "Endless Invention": 5,
+        "Repulsor Rays": 5,
+        "Arc Reactor": 3,
+        "Quantum Breakthrough": 1
+      },
+      "cards": [
+        {
+          "name": "Endless Invention",
+          "displayName": "Endless Invention",
+          "slug": "endless-invention",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "tech",
+          "cost": 3,
+          "attack": null,
+          "recruit": null,
+          "abilities": [
+            "Draw a card. [keyword:draw:1]",
+            "[hc:tech]: Draw another card."
+          ]
+        },
+        {
+          "name": "Repulsor Rays",
+          "displayName": "Repulsor Rays",
+          "slug": "repulsor-rays",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "ranged",
+          "cost": 3,
+          "attack": "2+",
+          "recruit": null,
+          "abilities": [
+            "[hc:ranged]: You get +1[icon:attack]."
+          ]
+        },
+        {
+          "name": "Arc Reactor",
+          "displayName": "Arc Reactor",
+          "slug": "arc-reactor",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "tech",
+          "cost": 5,
+          "attack": "3+",
+          "recruit": null,
+          "abilities": [
+            "[hc:tech]: You get +1[icon:attack] for each other[hc:tech] Hero you played this turn."
+          ]
+        },
+        {
+          "name": "Quantum Breakthrough",
+          "displayName": "Quantum Breakthrough",
+          "slug": "quantum-breakthrough",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "tech",
+          "cost": 7,
+          "attack": null,
+          "recruit": null,
+          "abilities": [
+            "Draw two cards. [keyword:draw:2]",
+            "[hc:tech]: Draw two more cards."
+          ]
+        }
+      ],
+      "physicalCards": [
+        {
+          "id": "p1",
+          "count": 5,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-iron-man-common-1.webp",
+          "sides": [
+            "endless-invention"
+          ]
+        },
+        {
+          "id": "p2",
+          "count": 5,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-iron-man-common-2.webp",
+          "sides": [
+            "repulsor-rays"
+          ]
+        },
+        {
+          "id": "p3",
+          "count": 3,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-iron-man-uncommon.webp",
+          "sides": [
+            "arc-reactor"
+          ]
+        },
+        {
+          "id": "p4",
+          "count": 1,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-iron-man-rare.webp",
+          "sides": [
+            "quantum-breakthrough"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "name": "Nick Fury",
+      "slug": "nick-fury",
+      "team": "shield",
+      "cardCounts": {
+        "Battlefield Promotion": 5,
+        "High-Tech Weaponry": 5,
+        "Legendary Commander": 3,
+        "Pure Fury": 1
+      },
+      "cards": [
+        {
+          "name": "High-Tech Weaponry",
+          "displayName": "High-Tech Weaponry",
+          "slug": "high-tech-weaponry",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "tech",
+          "cost": 3,
+          "attack": "2+",
+          "recruit": null,
+          "abilities": [
+            "[hc:tech]: You get +1[icon:attack]."
+          ]
+        },
+        {
+          "name": "Battlefield Promotion",
+          "displayName": "Battlefield Promotion",
+          "slug": "battlefield-promotion",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "covert",
+          "cost": 4,
+          "attack": null,
+          "recruit": null,
+          "abilities": [
+            "You may KO a [team:shield] Hero from your hand or discard pile. If you do, you may gain a S.H.I.E.L.D. Officer to your hand."
+          ]
+        },
+        {
+          "name": "Legendary Commander",
+          "displayName": "Legendary Commander",
+          "slug": "legendary-commander",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 6,
+          "attack": "1+",
+          "recruit": null,
+          "abilities": [
+            "You get +1[icon:attack] for each other[team:shield] Hero you played this turn."
+          ]
+        },
+        {
+          "name": "Pure Fury",
+          "displayName": "Pure Fury",
+          "slug": "pure-fury",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "tech",
+          "cost": 8,
+          "attack": null,
+          "recruit": null,
+          "abilities": [
+            "Defeat any Villain or Mastermind whose [icon:attack] is less than the number of [team:shield] Heroes in the KO pile."
+          ]
+        }
+      ],
+      "physicalCards": [
+        {
+          "id": "p1",
+          "count": 5,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-nick-fury-common-1.webp",
+          "sides": [
+            "high-tech-weaponry"
+          ]
+        },
+        {
+          "id": "p2",
+          "count": 5,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-nick-fury-common-2.webp",
+          "sides": [
+            "battlefield-promotion"
+          ]
+        },
+        {
+          "id": "p3",
+          "count": 3,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-nick-fury-uncommon.webp",
+          "sides": [
+            "legendary-commander"
+          ]
+        },
+        {
+          "id": "p4",
+          "count": 1,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-nick-fury-rare.webp",
+          "sides": [
+            "pure-fury"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "name": "Rogue",
+      "slug": "rogue",
+      "team": "x-men",
+      "cardCounts": {
+        "Borrowed Brawn": 5,
+        "Energy Drain": 5,
+        "Copy Powers": 3,
+        "Steal Abilities": 1
+      },
+      "cards": [
+        {
+          "name": "Energy Drain",
+          "displayName": "Energy Drain",
+          "slug": "energy-drain",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "covert",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2+",
+          "abilities": [
+            "[hc:covert]: You may KO a card from your hand or discard pile. If you do, you get +1[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Borrowed Brawn",
+          "displayName": "Borrowed Brawn",
+          "slug": "borrowed-brawn",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 4,
+          "attack": "1+",
+          "recruit": null,
+          "abilities": [
+            "[hc:strength]: You get +3[icon:attack]."
+          ]
+        },
+        {
+          "name": "Copy Powers",
+          "displayName": "Copy Powers",
+          "slug": "copy-powers",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 5,
+          "attack": null,
+          "recruit": null,
+          "abilities": [
+            "Play this card as a copy of another Hero you played this turn. This card is both [hc:covert] and the color you copy."
+          ]
+        },
+        {
+          "name": "Steal Abilities",
+          "displayName": "Steal Abilities",
+          "slug": "steal-abilities",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "strength",
+          "cost": 8,
+          "attack": "4",
+          "recruit": null,
+          "abilities": [
+            "Each player discards the top card of their deck. Play a copy of each of those cards."
+          ]
+        }
+      ],
+      "physicalCards": [
+        {
+          "id": "p1",
+          "count": 5,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-rogue-common-1.webp",
+          "sides": [
+            "energy-drain"
+          ]
+        },
+        {
+          "id": "p2",
+          "count": 5,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-rogue-common-2.webp",
+          "sides": [
+            "borrowed-brawn"
+          ]
+        },
+        {
+          "id": "p3",
+          "count": 3,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-rogue-uncommon.webp",
+          "sides": [
+            "copy-powers"
+          ]
+        },
+        {
+          "id": "p4",
+          "count": 1,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-rogue-rare.webp",
+          "sides": [
+            "steal-abilities"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "name": "Spider-Man",
+      "slug": "spider-man",
+      "team": "spider-friends",
+      "cardCounts": {
+        "Astonishing Strength": 5,
+        "Great Responsibility": 5,
+        "Web-Shooters": 3,
+        "The Amazing Spider-Man": 1
+      },
+      "cards": [
+        {
+          "name": "Astonishing Strength",
+          "displayName": "Astonishing Strength",
+          "slug": "astonishing-strength",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "strength",
+          "cost": 2,
+          "attack": null,
+          "recruit": "1",
+          "abilities": [
+            "Reveal the top card of your deck. If that card costs 2[icon:vp] or less, draw it. [keyword:reveal]"
+          ]
+        },
+        {
+          "name": "Great Responsibility",
+          "displayName": "Great Responsibility",
+          "slug": "great-responsibility",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 2,
+          "attack": "1",
+          "recruit": null,
+          "abilities": [
+            "Reveal the top card of your deck. If that card costs 2[icon:vp] or less, draw it. [keyword:reveal]"
+          ]
+        },
+        {
+          "name": "Web-Shooters",
+          "displayName": "Web-Shooters",
+          "slug": "web-shooters",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "tech",
+          "cost": 2,
+          "attack": null,
+          "recruit": null,
+          "abilities": [
+            "Rescue a Bystander. [keyword:rescue:1]",
+            "Reveal the top card of your deck. If that card costs 2[icon:vp] or less, draw it. [keyword:reveal]"
+          ]
+        },
+        {
+          "name": "The Amazing Spider-Man",
+          "displayName": "The Amazing Spider-Man",
+          "slug": "the-amazing-spider-man",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "covert",
+          "cost": 2,
+          "attack": null,
+          "recruit": null,
+          "abilities": [
+            "Reveal the top three cards of your deck. Put any that cost 2[icon:vp] or less into your hand. Put the rest back in any order. [keyword:reveal:cost-lte-2:draw][keyword:reveal-count:3]"
+          ]
+        }
+      ],
+      "physicalCards": [
+        {
+          "id": "p1",
+          "count": 5,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-spider-man-common-1.webp",
+          "sides": [
+            "astonishing-strength"
+          ]
+        },
+        {
+          "id": "p2",
+          "count": 5,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-spider-man-common-2.webp",
+          "sides": [
+            "great-responsibility"
+          ]
+        },
+        {
+          "id": "p3",
+          "count": 3,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-spider-man-uncommon.webp",
+          "sides": [
+            "web-shooters"
+          ]
+        },
+        {
+          "id": "p4",
+          "count": 1,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-spider-man-rare.webp",
+          "sides": [
+            "the-amazing-spider-man"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "name": "Storm",
+      "slug": "storm",
+      "team": "x-men",
+      "cardCounts": {
+        "Gathering Stormclouds": 5,
+        "Lightning Bolt": 5,
+        "Spinning Cyclone": 3,
+        "Tidal Wave": 1
+      },
+      "cards": [
+        {
+          "name": "Gathering Stormclouds",
+          "displayName": "Gathering Stormclouds",
+          "slug": "gathering-stormclouds",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "ranged",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2",
+          "abilities": [
+            "[hc:ranged]:  Draw a card. [keyword:draw:1]"
+          ]
+        },
+        {
+          "name": "Lightning Bolt",
+          "displayName": "Lightning Bolt",
+          "slug": "lightning-bolt",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "ranged",
+          "cost": 4,
+          "attack": "2",
+          "recruit": null,
+          "abilities": [
+            "Any Villain you fight on the Rooftops this turn gets -2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Spinning Cyclone",
+          "displayName": "Spinning Cyclone",
+          "slug": "spinning-cyclone",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 6,
+          "attack": "4",
+          "recruit": null,
+          "abilities": [
+            "You may move a Villain to a new city space. Rescue any Bystanders captured by that Villain.",
+            "(If you move a Villain to a city space that already has Villain, swap them.)"
+          ]
+        },
+        {
+          "name": "Tidal Wave",
+          "displayName": "Tidal Wave",
+          "slug": "tidal-wave",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "ranged",
+          "cost": 7,
+          "attack": "5",
+          "recruit": null,
+          "abilities": [
+            "Any Villain you fight on the Bridge this turn gets -2[icon:attack].",
+            "[hc:ranged]: The Mastermind gets -2[icon:attack] this turn."
+          ]
+        }
+      ],
+      "physicalCards": [
+        {
+          "id": "p1",
+          "count": 5,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-storm-common-1.webp",
+          "sides": [
+            "gathering-stormclouds"
+          ]
+        },
+        {
+          "id": "p2",
+          "count": 5,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-storm-common-2.webp",
+          "sides": [
+            "lightning-bolt"
+          ]
+        },
+        {
+          "id": "p3",
+          "count": 3,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-storm-uncommon.webp",
+          "sides": [
+            "spinning-cyclone"
+          ]
+        },
+        {
+          "id": "p4",
+          "count": 1,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-storm-rare.webp",
+          "sides": [
+            "tidal-wave"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "name": "Thor",
+      "slug": "thor",
+      "team": "avengers",
+      "cardCounts": {
+        "Odinson": 5,
+        "Surge of Power": 5,
+        "Call Lightning": 3,
+        "God of Thunder": 1
+      },
+      "cards": [
+        {
+          "name": "Odinson",
+          "displayName": "Odinson",
+          "slug": "odinson",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "strength",
+          "cost": 3,
+          "attack": null,
+          "recruit": "2+",
+          "abilities": [
+            "[hc:strength]: You get +2[icon:recruit]."
+          ]
+        },
+        {
+          "name": "Surge of Power",
+          "displayName": "Surge of Power",
+          "slug": "surge-of-power",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "ranged",
+          "cost": 4,
+          "attack": "0+",
+          "recruit": "2",
+          "abilities": [
+            "If you made 8 or more [icon:recruit] this turn, you get +3[icon:attack]."
+          ]
+        },
+        {
+          "name": "Call Lightning",
+          "displayName": "Call Lightning",
+          "slug": "call-lightning",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "ranged",
+          "cost": 6,
+          "attack": "3+",
+          "recruit": null,
+          "abilities": [
+            "[hc:ranged]: You get +3[icon:attack]."
+          ]
+        },
+        {
+          "name": "God of Thunder",
+          "displayName": "God of Thunder",
+          "slug": "god-of-thunder",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "ranged",
+          "cost": 8,
+          "attack": "0+",
+          "recruit": "5",
+          "abilities": [
+            "You can use [icon:recruit] as [icon:attack] this turn."
+          ]
+        }
+      ],
+      "physicalCards": [
+        {
+          "id": "p1",
+          "count": 5,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-thor-common-1.webp",
+          "sides": [
+            "odinson"
+          ]
+        },
+        {
+          "id": "p2",
+          "count": 5,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-thor-common-2.webp",
+          "sides": [
+            "surge-of-power"
+          ]
+        },
+        {
+          "id": "p3",
+          "count": 3,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-thor-uncommon.webp",
+          "sides": [
+            "call-lightning"
+          ]
+        },
+        {
+          "id": "p4",
+          "count": 1,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-thor-rare.webp",
+          "sides": [
+            "god-of-thunder"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "name": "Wolverine",
+      "slug": "wolverine",
+      "team": "x-men",
+      "cardCounts": {
+        "Keen Senses": 5,
+        "Healing Factor": 5,
+        "Frenzied Slashing": 3,
+        "Berserker Rage": 1
+      },
+      "cards": [
+        {
+          "name": "Keen Senses",
+          "displayName": "Keen Senses",
+          "slug": "keen-senses",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "instinct",
+          "cost": 2,
+          "attack": "1",
+          "recruit": null,
+          "abilities": [
+            "[hc:instinct]: Draw a card. [keyword:draw:1]"
+          ]
+        },
+        {
+          "name": "Healing Factor",
+          "displayName": "Healing Factor",
+          "slug": "healing-factor",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 3,
+          "attack": "2",
+          "recruit": null,
+          "abilities": [
+            "You may KO a Wound from your hand or discard pile. If you do, draw a card. [keyword:ko-wound-reward:draw:1]"
+          ]
+        },
+        {
+          "name": "Frenzied Slashing",
+          "displayName": "Frenzied Slashing",
+          "slug": "frenzied-slashing",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "instinct",
+          "cost": 5,
+          "attack": "2",
+          "recruit": null,
+          "abilities": [
+            "[hc:instinct]: Draw two cards. [keyword:draw:2]"
+          ]
+        },
+        {
+          "name": "Berserker Rage",
+          "displayName": "Berserker Rage",
+          "slug": "berserker-rage",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "instinct",
+          "cost": 8,
+          "attack": "0+",
+          "recruit": null,
+          "abilities": [
+            "Draw three cards. [keyword:draw:3]",
+            "[hc:instinct]: You get +1[icon:attack] for each extra card you've drawn this turn."
+          ]
+        }
+      ],
+      "physicalCards": [
+        {
+          "id": "p1",
+          "count": 5,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-wolverine-common-1.webp",
+          "sides": [
+            "keen-senses"
+          ]
+        },
+        {
+          "id": "p2",
+          "count": 5,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-wolverine-common-2.webp",
+          "sides": [
+            "healing-factor"
+          ]
+        },
+        {
+          "id": "p3",
+          "count": 3,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-wolverine-uncommon.webp",
+          "sides": [
+            "frenzied-slashing"
+          ]
+        },
+        {
+          "id": "p4",
+          "count": 1,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-wolverine-rare.webp",
+          "sides": [
+            "berserker-rage"
+          ]
+        }
+      ]
+    }
+  ],
+  "masterminds": [
+    {
+      "id": 1,
+      "name": "Dr. Doom",
+      "slug": "doctor-doom",
+      "alwaysLeads": [
+        "masters-of-evil"
+      ],
+      "vp": 5,
+      "cards": [
+        {
+          "name": "Dr. Doom",
+          "slug": "doctor-doom",
+          "tactic": false,
+          "vAttack": 9,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mm-doctor-doom.webp",
+          "abilities": [
+            "Always Leads: Doombot Legion",
+            "Master Strike: Each player with exactly 6 cards in hand reveals a [hc:tech] Hero or puts 2 cards from their hand on top of their deck."
+          ]
+        },
+        {
+          "name": "Dark Technology",
+          "slug": "dark-technology",
+          "tactic": true,
+          "vAttack": 9,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mt-doctor-doom-dark-technology.webp",
+          "abilities": [
+            "Fight: You may recruit a [hc:tech] or [hc:ranged] Hero from the HQ for free."
+          ]
+        },
+        {
+          "name": "Monarch's Decree",
+          "slug": "monarchs-decree",
+          "tactic": true,
+          "vAttack": 9,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mt-doctor-doom-monarchs-decree.webp",
+          "abilities": [
+            "Fight: Choose one: each other player draws a card or each other player discards a card."
+          ]
+        },
+        {
+          "name": "Secrets of Time Travel",
+          "slug": "secrets-of-time-travel",
+          "tactic": true,
+          "vAttack": 9,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mt-doctor-doom-secrets-of-time-travel.webp",
+          "abilities": [
+            "Fight: Take another turn after this one."
+          ]
+        },
+        {
+          "name": "Treasures of Latveria",
+          "slug": "treasures-of-latveria",
+          "tactic": true,
+          "vAttack": 9,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mt-doctor-doom-treasures-of-latveria.webp",
+          "abilities": [
+            "Fight: When you draw a new hand of cards at the end of this turn, draw three extra cards."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Loki",
+      "slug": "loki",
+      "alwaysLeads": [
+        "enemies-of-asgard"
+      ],
+      "vp": 5,
+      "cards": [
+        {
+          "name": "Loki",
+          "slug": "loki",
+          "tactic": false,
+          "vAttack": 10,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mm-loki.webp",
+          "abilities": [
+            "Always Leads: Enemies of Asgard",
+            "Master Strike: Each player reveals a [hc:strength] Hero or gains a Wound."
+          ]
+        },
+        {
+          "name": "Whispers and Lies",
+          "slug": "whispers-and-lies",
+          "tactic": true,
+          "vAttack": 10,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mt-loki-whispers-and-lies.webp",
+          "abilities": [
+            "Fight: Each other player KOs two Bystanders from their Victory Pile."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Magneto",
+      "slug": "magneto",
+      "alwaysLeads": [
+        "brotherhood"
+      ],
+      "vp": 5,
+      "cards": [
+        {
+          "name": "Magneto",
+          "slug": "magneto",
+          "tactic": false,
+          "vAttack": 8,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mm-magneto.webp",
+          "abilities": [
+            "Always Leads: Brotherhood",
+            "Master Strike: Each player reveals an [team:x-men] Hero or discards down to four cards."
+          ]
+        },
+        {
+          "name": "Bitter Captor",
+          "slug": "bitter-captor",
+          "tactic": true,
+          "vAttack": 8,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mt-magneto-bitter-captor.webp",
+          "abilities": [
+            "Fight: Recruit an [team:x-men] Hero from the HQ for free."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Red Skull",
+      "slug": "red-skull",
+      "alwaysLeads": [
+        "hydra"
+      ],
+      "vp": 5,
+      "cards": [
+        {
+          "name": "Red Skull",
+          "slug": "red-skull",
+          "tactic": false,
+          "vAttack": 7,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mm-red-skull.webp",
+          "abilities": [
+            "Always Leads: HYDRA",
+            "Master Strike: Each player KOs a Hero from their hand."
+          ]
+        }
+      ]
+    }
+  ],
+  "villains": [
+    {
+      "id": 2,
+      "name": "Enemies of Asgard",
+      "slug": "enemies-of-asgard",
+      "ledBy": [
+        "loki"
+      ],
+      "cards": [
+        {
+          "name": "Destroyer",
+          "slug": "destroyer",
+          "vp": "5",
+          "vAttack": "7",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-enemies-of-asgard-destroyer.webp",
+          "abilities": [
+            "Fight: KO all your [team:shield] Heroes.",
+            "Escape: Each player KOs two of their Heroes. [effect:koHeroEachPlayerMag2]"
+          ],
+          "copies": 1
+        },
+        {
+          "name": "Enchantress",
+          "slug": "enchantress",
+          "vp": "4",
+          "vAttack": "6",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-enemies-of-asgard-enchantress.webp",
+          "abilities": [
+            "Fight: Draw three cards."
+          ],
+          "copies": 2
+        },
+        {
+          "name": "Ymir, Frost Giant King",
+          "slug": "ymir-frost-giant-king",
+          "vp": "4",
+          "vAttack": "6",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-enemies-of-asgard-ymir-frost-giant-king.webp",
+          "abilities": [
+            "Ambush: Each player reveals a [hc:ranged] Hero or gains a Wound.",
+            "Fight: Choose a player. That player KOs any number of Wounds from their hand and discard pile."
+          ],
+          "copies": 2
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "HYDRA",
+      "slug": "hydra",
+      "ledBy": [
+        "red-skull"
+      ],
+      "cards": [
+        {
+          "name": "Endless Armies of HYDRA",
+          "slug": "endless-armies-of-hydra",
+          "vp": "3",
+          "vAttack": "4",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-hydra-endless-armies-of-hydra.webp",
+          "abilities": [
+            "Fight: Play the top two cards of the Villain Deck."
+          ],
+          "copies": 3
+        },
+        {
+          "name": "HYDRA Kidnappers",
+          "slug": "hydra-kidnappers",
+          "vp": "1",
+          "vAttack": "3",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-hydra-hydra-kidnappers.webp",
+          "abilities": [
+            "Fight: You may gain a S.H.I.E.L.D. Officer."
+          ],
+          "copies": 3
+        },
+        {
+          "name": "Viper",
+          "slug": "viper",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-hydra-viper.webp",
+          "abilities": [
+            "Fight: Each player without another HYDRA Villain in their Victory Pile gains a Wound.",
+            "Escape: Same effect."
+          ],
+          "copies": 1
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Masters of Evil",
+      "slug": "masters-of-evil",
+      "ledBy": [
+        "dr-doom"
+      ],
+      "cards": [
+        {
+          "name": "Baron Zemo",
+          "slug": "baron-zemo",
+          "vp": "4",
+          "vAttack": "6",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-masters-of-evil-baron-zemo.webp",
+          "abilities": [
+            "Fight: For each of your [team:avengers] Heroes, rescue a Bystander."
+          ],
+          "copies": 2
+        },
+        {
+          "name": "Melter",
+          "slug": "melter",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-masters-of-evil-melter.webp",
+          "abilities": [
+            "Fight: Each player reveals the top card of their deck. For each card, you choose to KO it or put it back."
+          ],
+          "copies": 2
+        },
+        {
+          "name": "Ultron",
+          "slug": "ultron",
+          "vp": "2+",
+          "vAttack": "6",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-masters-of-evil-ultron.webp",
+          "abilities": [
+            "Ultron is worth +1[icon:piercing] for each [hc:tech] Hero you have among all your cards at the end of the game.",
+            "Escape: Each player reveals a [hc:tech] Hero or gains a Wound."
+          ],
+          "copies": 2
+        },
+        {
+          "name": "Whirlwind",
+          "slug": "whirlwind",
+          "vp": "2",
+          "vAttack": "4",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-masters-of-evil-whirlwind.webp",
+          "abilities": [
+            "Fight: If you fight Whirlwind on the Rooftops or Bridge, KO two of your Heroes."
+          ],
+          "copies": 2
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Radiation",
+      "slug": "radiation",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Abomination",
+          "slug": "abomination",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-radiation-abomination.webp",
+          "abilities": [
+            "Fight: If you fight Abomination on the Streets or Bridge, rescue three Bystanders."
+          ],
+          "copies": 2
+        },
+        {
+          "name": "The Leader",
+          "slug": "the-leader",
+          "vp": "2",
+          "vAttack": "4",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-radiation-the-leader.webp",
+          "abilities": [
+            "Ambush: Play the top card of the Villain Deck."
+          ],
+          "copies": 2
+        },
+        {
+          "name": "Zzzax",
+          "slug": "zzzax",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-radiation-zzzax.webp",
+          "abilities": [
+            "Fight: Each player reveals a [hc:strength] Hero or gains a Wound.",
+            "Escape: Same effect."
+          ],
+          "copies": 2
+        }
+      ]
+    }
+  ],
+  "henchmen": [
+    {
+      "id": 1,
+      "name": "Doombot Legion",
+      "slug": "doombot-legion",
+      "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hm-doombot-legion.webp",
+      "abilities": [
+        "Fight: Look at the top two cards of your deck. KO one of them and put the other back."
+      ],
+      "vAttack": "3",
+      "vp": "1"
+    },
+    {
+      "id": 2,
+      "name": "Hand Ninjas",
+      "slug": "hand-ninjas",
+      "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hm-hand-ninjas.webp",
+      "abilities": [
+        "Fight: You get +1[icon:recruit]."
+      ],
+      "vAttack": "3",
+      "vp": "1"
+    },
+    {
+      "id": 3,
+      "name": "Savage Land Mutates",
+      "slug": "savage-land-mutates",
+      "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hm-savage-land-mutates.webp",
+      "abilities": [
+        "Fight: When you draw a new hand of cards at the end of this turn, draw an extra card."
+      ],
+      "vAttack": "3",
+      "vp": "1"
+    },
+    {
+      "id": 4,
+      "name": "Sentinel",
+      "slug": "sentinel",
+      "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hm-sentinel.webp",
+      "abilities": [
+        "Fight: KO one of your Heroes. [effect:koHeroCurrentPlayer]"
+      ],
+      "vAttack": "3",
+      "vp": "1"
+    }
+  ],
+  "schemes": [
+    {
+      "id": 1,
+      "name": "Midtown Bank Robbery",
+      "slug": "bank-robbery-hostage-crisis",
+      "imageUrl": "https://images.legendary-arena.com/co2e/co2e-sc-bank-robbery-hostage-crisis.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists. 12 total Bystanders in the Villain Deck.",
+            "Special Rules: Each Villain gets +1[icon:attack] for each Bystander it has.",
+            "Twist: Any Villain in the Bank captures 2 Bystanders. Then play the top card of the Villain Deck.",
+            "Evil Wins: When 8 Bystanders are carried away by escaping Villains."
+          ]
+        }
+      ],
+      "villainDeckTwistCount": 8,
+      "villainDeckBystanderCount": 12
+    },
+    {
+      "id": 2,
+      "name": "Secret Invasion of the Skrull Shapeshifters",
+      "slug": "secret-invasion-of-the-skrull-shapeshifters",
+      "imageUrl": "https://images.legendary-arena.com/co2e/co2e-sc-secret-invasion-of-the-skrull-shapeshifters.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists. 6 Heroes. Skrull Villain Group required. Shuffle 12 random Heroes from the Hero Deck into the Villain Deck.",
+            "Special Rules: Heroes in the Villain Deck count as Skrull Villains with [icon:attack] equal to the Hero's [icon:vp]+2. If you defeat that Hero, you gain it.",
+            "Twist: The highest-cost Hero from the HQ moves into the Sewers as a Skrull Villain, as above.",
+            "Evil Wins: If 6 Heroes get into the Escaped Villains pile."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Legacy Virus, The",
+      "slug": "the-legacy-virus",
+      "imageUrl": "https://images.legendary-arena.com/co2e/co2e-sc-the-legacy-virus.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists. Wound stack holds 6 Wounds per player.",
+            "Twist: Each player reveals a [hc:tech] Hero or gains a Wound.",
+            "Evil Wins: If the Wound stack runs out."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Negative Zone Prison Breakout",
+      "slug": "negative-zone-prison-outbreak",
+      "imageUrl": "https://images.legendary-arena.com/co2e/co2e-sc-negative-zone-prison-outbreak.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists. Add an extra Henchman group to the Villain Deck.",
+            "Twist: Play the top 2 cards of the Villain Deck.",
+            "Evil Wins: If 12 Villains escape."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Portals to the Dark Dimension",
+      "slug": "portals-to-the-dark-dimension",
+      "imageUrl": "https://images.legendary-arena.com/co2e/co2e-sc-portals-to-the-dark-dimension.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 7 Twists. Each Twist is a Dark Portal.",
+            "Twist 1: Put the Dark Portal above the Mastermind. The Mastermind gets +1[icon:attack].",
+            "Twists 2-6: Put the Dark Portal in the leftmost city space that doesn't yet have a Dark Portal. Villains in that city space get +1[icon:attack].",
+            "Twist 7: Evil Wins!"
+          ]
+        }
+      ],
+      "villainDeckTwistCount": 7
+    },
+    {
+      "id": 6,
+      "name": "Replace Earth's Leaders with Killbots",
+      "slug": "replace-earths-leaders-with-killbots",
+      "imageUrl": "https://images.legendary-arena.com/co2e/co2e-sc-replace-earths-leaders-with-killbots.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 5 Twists. 3 additional Twists next to this Scheme. 18 total Bystanders in the Villain Deck.",
+            "Special Rules: Bystanders in the Villain Deck count as Killbot Villains, with [icon:attack] equal to the number of Twists next to this Scheme.",
+            "Twist: Put the Twist next to this Scheme.",
+            "Evil Wins: If 5 “Killbots“ escape."
+          ]
+        }
+      ],
+      "villainDeckTwistCount": 5,
+      "villainDeckBystanderCount": 18
+    },
+    {
+      "id": 7,
+      "name": "Super Hero Civil War",
+      "slug": "super-hero-civil-war",
+      "imageUrl": "https://images.legendary-arena.com/co2e/co2e-sc-super-hero-civil-war.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: For 2-3 players, use 8 Twists. For 4-5 players, use 5 Twists. If only 2 players, use only 4 Heroes in the Hero Deck.",
+            "Twist: KO all the Heroes in the HQ.",
+            "Evil Wins: If the Hero Deck runs out."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "name": "Unleash the Power of the Cosmic Cube",
+      "slug": "unleash-the-power-of-the-cosmic-cube",
+      "imageUrl": "https://images.legendary-arena.com/co2e/co2e-sc-unleash-the-power-of-the-cosmic-cube.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 8 Twists.",
+            "Twist: Put the Twist next to this Scheme.",
+            "Twist 5-6: Each player gains a Wound.",
+            "Twist 7: Each player gains 3 Wounds.",
+            "Twist 8: Evil Wins!"
+          ]
+        }
+      ]
+    }
+  ],
+  "bystanders": [
+    {
+      "id": 1,
+      "name": "Bystander",
+      "slug": "bystander",
+      "vp": 1,
+      "imageUrl": "https://images.legendary-arena.com/co2e/co2e-by-bystander.webp",
+      "cards": [
+        {
+          "qtd": 30,
+          "abilities": []
+        }
+      ]
+    }
+  ],
+  "wounds": [
+    {
+      "id": null,
+      "name": "Wound",
+      "filterName": null,
+      "slug": "wound",
+      "imageUrl": "https://images.legendary-arena.com/co2e/co2e-wd-wound.webp",
+      "cards": [
+        {
+          "qtd": 30,
+          "abilities": []
+        }
+      ]
+    }
+  ],
+  "other": [
+    {
+      "name": "Master Strike",
+      "slug": "master-strike",
+      "cardType": "mastermind-strike",
+      "imageUrl": "https://images.legendary-arena.com/co2e/co2e-ms-master-strike.webp",
+      "abilities": []
+    },
+    {
+      "name": "Scheme Twist",
+      "slug": "scheme-twist",
+      "cardType": "scheme-twist",
+      "imageUrl": "https://images.legendary-arena.com/co2e/co2e-st-scheme-twist.webp",
+      "abilities": []
+    }
+  ]
+}
