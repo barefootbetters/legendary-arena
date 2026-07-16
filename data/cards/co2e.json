@@ -446,10 +446,10 @@
       "slug": "gambit",
       "team": "x-men",
       "cardCounts": {
-        "Card Shark": 5,
         "Stack the Deck": 5,
+        "Kinetic Card": 5,
         "Hypnotic Charm": 3,
-        "High Stakes Jackpot": 1
+        "High-Stakes Jackpot": 1
       },
       "cards": [
         {
@@ -468,39 +468,39 @@
           ]
         },
         {
-          "name": "Hypnotic Charm",
-          "displayName": "Hypnotic Charm",
-          "slug": "hypnotic-charm",
+          "name": "Kinetic Card",
+          "displayName": "Kinetic Card",
+          "slug": "kinetic-card",
           "rarity": 1,
           "rarityLabel": "Common 2",
           "slot": 2,
-          "hc": "instinct",
-          "cost": 3,
-          "attack": null,
-          "recruit": "2",
-          "abilities": [
-            "Reveal the top card of your deck. Discard it or put it back.",
-            "[hc:instinct]: Do the same thing to each other player's deck."
-          ]
-        },
-        {
-          "name": "Card Shark",
-          "displayName": "Card Shark",
-          "slug": "card-shark",
-          "rarity": 2,
-          "rarityLabel": "Uncommon",
-          "slot": 3,
           "hc": "ranged",
-          "cost": 4,
+          "cost": 3,
           "attack": "2",
           "recruit": null,
           "abilities": [
-            "Reveal the top card of your deck. If it's an [team:x-men] Hero, draw it."
+            "Reveal the top card of your deck. If it's an [team:x-men] Hero, draw it. Otherwise, discard it or put it back."
           ]
         },
         {
-          "name": "High Stakes Jackpot",
-          "displayName": "High Stakes Jackpot",
+          "name": "Hypnotic Charm",
+          "displayName": "Hypnotic Charm",
+          "slug": "hypnotic-charm",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 5,
+          "attack": null,
+          "recruit": "3",
+          "abilities": [
+            "For each player, reveal the top card of their deck and you decide if that player discards it or puts it back.",
+            "[hc:covert]: You may KO the card you revealed from your own deck."
+          ]
+        },
+        {
+          "name": "High-Stakes Jackpot",
+          "displayName": "High-Stakes Jackpot",
           "slug": "high-stakes-jackpot",
           "rarity": 3,
           "rarityLabel": "Rare",
@@ -510,7 +510,7 @@
           "attack": "4+",
           "recruit": null,
           "abilities": [
-            "Reveal the top card of your deck. You get +[icon:attack] equal to that card's cost. [keyword:reveal-cost-attack]"
+            "Reveal the top card of your deck. You get +[icon:attack] equal to that card's cost. [keyword:reveal-cost-attack] Discard it or put it back."
           ]
         }
       ],
@@ -518,31 +518,31 @@
         {
           "id": "p1",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-gambit-common-1.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-gambit-stack-the-deck.webp",
           "sides": [
             "stack-the-deck"
           ]
         },
         {
           "id": "p2",
+          "count": 5,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-gambit-kinetic-card.webp",
+          "sides": [
+            "kinetic-card"
+          ]
+        },
+        {
+          "id": "p3",
           "count": 3,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-gambit-common-2.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-gambit-hypnotic-charm.webp",
           "sides": [
             "hypnotic-charm"
           ]
         },
         {
-          "id": "p3",
-          "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-gambit-uncommon.webp",
-          "sides": [
-            "card-shark"
-          ]
-        },
-        {
           "id": "p4",
           "count": 1,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-gambit-rare.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-gambit-high-stakes-jackpot.webp",
           "sides": [
             "high-stakes-jackpot"
           ]
