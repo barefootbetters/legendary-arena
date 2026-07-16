@@ -9,71 +9,72 @@
       "slug": "black-widow",
       "team": "avengers",
       "cardCounts": {
-        "Dangerous Rescue": 5,
-        "Mission Accomplished": 5,
-        "Covert Operation": 3,
-        "Silent Sniper": 1
+        "Covert Operation": 5,
+        "Gather Intel": 5,
+        "Dangerous Rescue": 3,
+        "Intelligence Network": 1
       },
       "cards": [
         {
-          "name": "Mission Accomplished",
-          "displayName": "Mission Accomplished",
-          "slug": "mission-accomplished",
+          "name": "Covert Operation",
+          "displayName": "Covert Operation",
+          "slug": "covert-operation",
           "rarity": 1,
           "rarityLabel": "Common 1",
           "slot": 1,
-          "hc": "tech",
-          "cost": 2,
-          "attack": null,
+          "hc": "covert",
+          "cost": 3,
+          "attack": "2+",
           "recruit": null,
           "abilities": [
-            "Draw a Card. [keyword:draw:1]",
-            "[hc:tech]: Rescue a Bystander. [keyword:rescue:1]"
+            "If you have at least 4 Bystanders in your Victory Pile, you get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Gather Intel",
+          "displayName": "Gather Intel",
+          "slug": "gather-intel",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "tech",
+          "cost": 4,
+          "attack": null,
+          "recruit": "2",
+          "abilities": [
+            "[hc:tech]: Rescue a Bystander. [keyword:rescue:1] Then if you have at least 4 Bystanders in your Victory Pile, draw a card."
           ]
         },
         {
           "name": "Dangerous Rescue",
           "displayName": "Dangerous Rescue",
           "slug": "dangerous-rescue",
-          "rarity": 1,
-          "rarityLabel": "Common 2",
-          "slot": 2,
-          "hc": "covert",
-          "cost": 3,
-          "attack": "2",
-          "recruit": null,
-          "abilities": [
-            "[hc:covert]: You may KO a card from your hand or discard pile. If you do, rescue a Bystander. [keyword:optional-ko-reward:rescue:1]"
-          ]
-        },
-        {
-          "name": "Covert Operation",
-          "displayName": "Covert Operation",
-          "slug": "covert-operation",
           "rarity": 2,
           "rarityLabel": "Uncommon",
           "slot": 3,
-          "hc": "covert",
-          "cost": 4,
-          "attack": "0+",
+          "hc": "tech",
+          "cost": 5,
+          "attack": "2",
           "recruit": null,
           "abilities": [
-            "You get +1[icon:attack] for each Bystander in your Victory Pile. [keyword:attack-per-count:victory-bystanders:1]"
+            "[hc:tech]: You may KO a card from your hand or discard pile. If you do, rescue a Bystander. [keyword:optional-ko-reward:rescue:1]"
           ]
         },
         {
-          "name": "Silent Sniper",
-          "displayName": "Silent Sniper",
-          "slug": "silent-sniper",
+          "name": "Intelligence Network",
+          "displayName": "Intelligence Network",
+          "slug": "intelligence-network",
           "rarity": 3,
           "rarityLabel": "Rare",
           "slot": 4,
           "hc": "covert",
           "cost": 7,
-          "attack": "4",
+          "attack": "0+",
           "recruit": null,
           "abilities": [
-            "Defeat a Villain or Mastermind that has a Bystander."
+            "Draw a card. [keyword:draw:1]",
+            "Rescue a Bystander. [keyword:rescue:1]",
+            "Then you get +1[icon:attack] for each Bystander in your Victory Pile. [keyword:attack-per-count:victory-bystanders:1]"
           ]
         }
       ],
@@ -81,33 +82,33 @@
         {
           "id": "p1",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-black-widow-common-1.webp",
-          "sides": [
-            "mission-accomplished"
-          ]
-        },
-        {
-          "id": "p2",
-          "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-black-widow-common-2.webp",
-          "sides": [
-            "dangerous-rescue"
-          ]
-        },
-        {
-          "id": "p3",
-          "count": 3,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-black-widow-uncommon.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-black-widow-covert-operation.webp",
           "sides": [
             "covert-operation"
           ]
         },
         {
+          "id": "p2",
+          "count": 5,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-black-widow-gather-intel.webp",
+          "sides": [
+            "gather-intel"
+          ]
+        },
+        {
+          "id": "p3",
+          "count": 3,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-black-widow-dangerous-rescue.webp",
+          "sides": [
+            "dangerous-rescue"
+          ]
+        },
+        {
           "id": "p4",
           "count": 1,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-black-widow-rare.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-black-widow-intelligence-network.webp",
           "sides": [
-            "silent-sniper"
+            "intelligence-network"
           ]
         }
       ]
