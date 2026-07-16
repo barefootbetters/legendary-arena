@@ -664,16 +664,16 @@
       "slug": "hulk",
       "team": "avengers",
       "cardCounts": {
-        "Growing Anger": 5,
-        "Unstoppable Hulk": 5,
+        "Growing Rage": 5,
+        "Don't Make Me Angry": 5,
         "Crazed Rampage": 3,
         "Hulk Smash!": 1
       },
       "cards": [
         {
-          "name": "Growing Anger",
-          "displayName": "Growing Anger",
-          "slug": "growing-anger",
+          "name": "Growing Rage",
+          "displayName": "Growing Rage",
+          "slug": "growing-rage",
           "rarity": 1,
           "rarityLabel": "Common 1",
           "slot": 1,
@@ -686,9 +686,9 @@
           ]
         },
         {
-          "name": "Unstoppable Hulk",
-          "displayName": "Unstoppable Hulk",
-          "slug": "unstoppable-hulk",
+          "name": "Don't Make Me Angry",
+          "displayName": "Don't Make Me Angry",
+          "slug": "dont-make-me-angry",
           "rarity": 1,
           "rarityLabel": "Common 2",
           "slot": 2,
@@ -712,7 +712,7 @@
           "attack": "4",
           "recruit": null,
           "abilities": [
-            "Each player gains a Wound. [keyword:gain-wound-each]"
+            "Each player reveals another [hc:strength] Hero or gains a Wound."
           ]
         },
         {
@@ -727,7 +727,7 @@
           "attack": "5+",
           "recruit": null,
           "abilities": [
-            "[hc:strength]: You get +5[icon:attack]."
+            "[hc:strength]: You may gain a Wound. If you do, you get +5[icon:attack]."
           ]
         }
       ],
@@ -735,23 +735,23 @@
         {
           "id": "p1",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-hulk-common-1.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-hulk-growing-rage.webp",
           "sides": [
-            "growing-anger"
+            "growing-rage"
           ]
         },
         {
           "id": "p2",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-hulk-common-2.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-hulk-dont-make-me-angry.webp",
           "sides": [
-            "unstoppable-hulk"
+            "dont-make-me-angry"
           ]
         },
         {
           "id": "p3",
           "count": 3,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-hulk-uncommon.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-hulk-crazed-rampage.webp",
           "sides": [
             "crazed-rampage"
           ]
@@ -759,7 +759,7 @@
         {
           "id": "p4",
           "count": 1,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-hulk-rare.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-hulk-hulk-smash.webp",
           "sides": [
             "hulk-smash"
           ]
