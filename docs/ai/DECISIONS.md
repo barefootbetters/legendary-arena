@@ -29124,3 +29124,21 @@ Protect this file.
 **Packet:** WP-382 (EC-411). **Executed:** 2026-07-15.
 
 Protect this file.
+
+### D-24186 — Registry-viewer loadout preview resolves composition ids by extId, not by the flatten `key` (WP-114 regression fix)
+
+**Status:** Active (INFRA fix) 2026-07-15. Surfaced by WP-345's gauntlet challenge links; the defect itself predates it (WP-114 / EC-116, commit `c059199c`).
+
+**User-Visible Surface:** cards.legendary-arena.com — the URL-parameterized loadout preview (`?schemeId=…&mastermindId=…`), the exact surface WP-345's "Challenge this leg" links land on.
+
+**Symptom.** Every scheme and mastermind (and every villain group / hero deck) in the URL preview rendered **"Unknown ext_id: core/…"** even for valid ids — e.g. `?schemeId=core/legacy-virus-the&mastermindId=core/red-skull` showed both as unknown, and the loadout read as empty ("this loadout has 0 …"). The ids are correct: `flattenSet` emits mastermind/scheme extIds as the set-qualified `${abbr}/${slug}` (D-24018), and both `core/red-skull` and `core/legacy-virus-the` are present in the deployed registry.
+
+**Root cause.** `LoadoutPreview.vue` built its resolution Map keyed by the flatten's **internal `card.key`** (`core-mastermind-red-skull-red-skull`, `core-scheme-legacy-virus-the`) but `buildEntry(extId)` queried it by the composition **`extId`** (`core/red-skull`). `key` and `extId` differ by construction, so **every** lookup missed and `isKnown` was always `false`. Present since WP-114 shipped; latent because nothing drove real traffic to the preview until WP-345's challenge links.
+
+**Decision.** Key the lookup by `card.extId` (renamed `cardsByExtId`), keep-first on the shared extId (a mastermind's cards and a hero's sides share one extId). One-line semantic fix; no contract, schema, or data change.
+
+**Verification.** registry-viewer `vue-tsc` 0, `node:test` green; dev-server smoke against the live metadata — the reported URL now resolves to **"Legacy Virus, The" + "Red Skull"** with zero "Unknown ext_id", and a full loadout resolves Schemes 1/1, Masterminds 1/1, Villain Groups 2/2, Henchman Groups 1/1, Hero Decks 5/5.
+
+**Not fixed here (noted).** For villain groups and hero decks the resolved display name is the first flat card's name (e.g. "Blob" for `core/brotherhood`) rather than the group name — a pre-existing cosmetic nuance of keep-first, immaterial to the challenge-link case (scheme + mastermind, where the first card IS the group). The registry-viewer has no component mount harness, so this fix is covered by live smoke per the app's established pure-helpers-tested / component-via-smoke posture; a pure-helper extraction with a unit test is a reasonable follow-up.
+
+Protect this file.
