@@ -19,13 +19,13 @@ define new architectural boundaries.
 
 | Subdomain | Purpose | Host | Source | State |
 |---|---|---|---|---|
-| `legendary-arena.com` (apex) | Redirect to `www.` | Cloudflare Pages (redirect) | redirect rule | planned |
-| `www.legendary-arena.com` | Marketing site | Cloudflare Pages | `C:\www\legendary-arena-com` (Hugo) | planned |
+| `legendary-arena.com` (apex) | Redirect to `www.` | Cloudflare zone Redirect Rule | redirect rule | live (since 2026-05-09, WP-006 lock; 301 → `www.`) |
+| `www.legendary-arena.com` | Marketing site | Cloudflare Pages | `C:\www\legendary-arena-com` (Hugo) | live (since 2026-05-09, WP-006 lock) |
 | `play.legendary-arena.com` | Game client | Cloudflare Pages | [apps/arena-client](../../apps/arena-client) | live |
 | `cards.legendary-arena.com` | Registry viewer | Cloudflare Pages | [apps/registry-viewer](../../apps/registry-viewer) | live (migrated 2026-07-16; legacy `cards.barefootbetters.com` 301-redirects here) |
 | `wiki.legendary-arena.com` | Public player wiki | Cloudflare Pages | TBD (separate Hugo site) | planned |
 | `ewiki.legendary-arena.com` | Private engineering wiki | Render Static Site + Access | [apps/wiki-viewer](../../apps/wiki-viewer) (Hugo build of [wiki/](../../wiki)) | live, gated |
-| `legends.legendary-arena.com` | Public scoreboard (attract board) | Cloudflare Pages | `apps/legends-board` (planned — WP-143) | planned |
+| `legends.legendary-arena.com` | Public scoreboard (attract board) | Cloudflare Pages | [apps/legends-board](../../apps/legends-board) (WP-143) | live (domain since 2026-07-08; SPA shipped 2026-05-15, WP-143) |
 | `api.legendary-arena.com` | Game server REST + Socket.IO | Render (CNAME from Cloudflare) | [apps/server](../../apps/server) | live |
 | `legendary-arena-server.onrender.com` | API canonical hostname | Render | [apps/server](../../apps/server) | live |
 | `dashboard.legendary-arena.com` | Internal admin dashboard | Cloudflare Pages + Access | [apps/dashboard](../../apps/dashboard) | live, gated |
@@ -52,11 +52,12 @@ all planned entries (useful in CI when you only care about prod health).
 ## Per-subdomain detail
 
 ### apex
-**`legendary-arena.com`** — apex domain.
+**`legendary-arena.com`** — apex domain. Live since 2026-05-09 (WP-006 lock).
 
-Decide direction once: apex → www, or www → apex. The conventional choice for
-a Pages-hosted marketing site is apex → www, with the apex configured as a
-Cloudflare redirect rule rather than a separate Pages project.
+Direction is locked: **apex → www**, configured as a zone-level Cloudflare
+Redirect Rule on the `legendary-arena.com` zone (Rules → Redirect Rules),
+NOT via Pages `_redirects` (CF Pages does not support full-URL source
+patterns in `_redirects`).
 
 Healthy response: `301`, `302`, or `308` to `https://www.legendary-arena.com/`.
 The redirect target is enforced by the probe via `expectedLocation` in
@@ -67,8 +68,10 @@ in range.
 Depends on: nothing. No app config consumes the apex hostname.
 
 ### www
-**`www.legendary-arena.com`** — Hugo marketing site.
+**`www.legendary-arena.com`** — Hugo marketing site. Live since 2026-05-09
+(WP-006 lock).
 
+- **CF Pages project:** `legendary-arena-website`
 - **Build:** `hugo --minify` from the marketing repo root
 - **Output dir:** `public/`
 - **Source:** external repo at `C:\www\legendary-arena-com` (not part of this monorepo)
@@ -264,11 +267,12 @@ events table, cohort materialization, public-surface ping) is the
 domain of follow-up WPs.
 
 ### legends
-**`legends.legendary-arena.com`** — public, no-auth scoreboard ("Hall of Legends" attract board).
+**`legends.legendary-arena.com`** — public, no-auth scoreboard ("Hall of Legends" attract board). SPA shipped 2026-05-15 (WP-143); custom domain live since 2026-07-08.
 
-- **Source:** `apps/legends-board` (planned — WP-143)
+- **CF Pages project:** `legendary-arena-legends`
+- **Source:** [apps/legends-board](../../apps/legends-board) (WP-143, done 2026-05-15)
 - **Build:** Vite SPA, Cloudflare Pages
-- **Data source:** R2 JSON snapshots written by the publisher in `apps/server/src/legends/` (planned — WP-142). The SPA does **not** hit `api.legendary-arena.com`.
+- **Data source:** R2 JSON snapshots written by the publisher in `apps/server/src/legends/` (WP-142, done 2026-05-14). The SPA does **not** hit `api.legendary-arena.com`.
 
 Healthy response: `200` with the SPA shell.
 
@@ -345,8 +349,9 @@ Suggested sequence (for WP scoping):
    Attach `cards.legendary-arena.com` to the same project. Smoke-test. Done
    2026-07-16 — legacy hostname now 301-redirects via a zone Redirect Rule
    (path+query preserved); repo references updated the same day.
-4. **`www.` and apex.** New Pages project for the Hugo marketing repo. Apex
-   redirect rule (apex → www, or vice versa — pick one).
+4. **`www.` and apex.** Done 2026-05-09 (WP-006 lock). Pages project
+   `legendary-arena-website` for the Hugo marketing repo; apex → www via a
+   zone-level Cloudflare Redirect Rule (direction locked).
 5. **`play.` Pages project.** New project for `apps/arena-client`. WP-007a
    landed the brand-integration + Pages deploy + custom domain bind on
    2026-05-10. **Server CORS allowlist** updated under EC-147 to include
