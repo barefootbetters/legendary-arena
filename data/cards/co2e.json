@@ -121,7 +121,7 @@
       "cardCounts": {
         "Avengers Assemble!": 5,
         "Perfect Teamwork": 5,
-        "Diving Block": 3,
+        "Vibranium Shield": 3,
         "A Day Unlike Any Other": 1
       },
       "cards": [
@@ -135,9 +135,9 @@
           "hc": "instinct",
           "cost": 3,
           "attack": null,
-          "recruit": "0+",
+          "recruit": "1+",
           "abilities": [
-            "You get +1[icon:recruit] for each color of Hero you have."
+            "You get +1[icon:recruit] for each Hero Class you have."
           ]
         },
         {
@@ -149,16 +149,16 @@
           "slot": 2,
           "hc": "strength",
           "cost": 4,
-          "attack": "0+",
+          "attack": "1+",
           "recruit": null,
           "abilities": [
-            "You get +1[icon:attack] for each color of Hero you have."
+            "You get +1[icon:attack] for each Hero Class you have."
           ]
         },
         {
-          "name": "Diving Block",
-          "displayName": "Diving Block",
-          "slug": "diving-block",
+          "name": "Vibranium Shield",
+          "displayName": "Vibranium Shield",
+          "slug": "vibranium-shield",
           "rarity": 2,
           "rarityLabel": "Uncommon",
           "slot": 3,
@@ -167,7 +167,7 @@
           "attack": "4",
           "recruit": null,
           "abilities": [
-            "If you would gain a Wound, you may reveal this card and draw a card instead."
+            "Once per turn, when a player gains a Wound, you may reveal this card to return that Wound to the Wound Deck and draw a card."
           ]
         },
         {
@@ -179,10 +179,11 @@
           "slot": 4,
           "hc": "covert",
           "cost": 7,
-          "attack": "3+",
+          "attack": "2+",
           "recruit": null,
           "abilities": [
-            "[team:avengers]: You get +3[icon:attack] for each other [team:avengers] you played this turn."
+            "You get +1[icon:attack] for each Hero Class you have.",
+            "[team:avengers]: You also get +1[icon:attack] for each other [team:avengers] Hero you played this turn."
           ]
         }
       ],
@@ -190,7 +191,7 @@
         {
           "id": "p1",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-captain-america-common-1.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-captain-america-avengers-assemble.webp",
           "sides": [
             "avengers-assemble"
           ]
@@ -198,7 +199,7 @@
         {
           "id": "p2",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-captain-america-common-2.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-captain-america-perfect-teamwork.webp",
           "sides": [
             "perfect-teamwork"
           ]
@@ -206,15 +207,15 @@
         {
           "id": "p3",
           "count": 3,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-captain-america-uncommon.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-captain-america-vibranium-shield.webp",
           "sides": [
-            "diving-block"
+            "vibranium-shield"
           ]
         },
         {
           "id": "p4",
           "count": 1,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-captain-america-rare.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-captain-america-a-day-unlike-any-other.webp",
           "sides": [
             "a-day-unlike-any-other"
           ]
