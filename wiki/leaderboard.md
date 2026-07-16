@@ -51,7 +51,8 @@ source:
   - ../docs/ai/work-packets/WP-345-player-count-gauntlet-client.md
   - ../apps/server/src/legends/gauntlet.logic.ts
   - ../docs/ai/DESIGN-RANKING.md
-last-reviewed: 2026-07-09
+  - ../packages/registry/src/playerCountSetup.ts
+last-reviewed: 2026-07-16
 ---
 
 # Leaderboard
@@ -695,6 +696,111 @@ this product will ever have, and it costs one panel component.
 *Envisioned empty state — the unclaimed board as an acquisition hook
 instead of a bare table. Hand-authored mockup:
 [board-mockup-empty.svg](../ewiki/leaderboard/board-mockup-empty.svg).*
+
+### Hero requirements — the fixed-hero-pool gauntlet (2026-07-16 proposal)
+
+> **Proposal, not decided** — same rule as the sections above. This
+> records the operator's 2026-07-16 recommendation for **hero**
+> requirements on gauntlet entries, plus a feasibility review against
+> the shipped system. Ratifying it requires a
+> [DECISIONS.md](../docs/ai/DECISIONS.md) entry (it touches D-24131's
+> decided aggregation semantics) and a Work Packet.
+
+**The recommendation: a gauntlet entry must be earned with a fixed hero
+group plus 1–2 alternates.** To claim a set's mastermind championship, a
+player clears every leg (every scheme in the set, vs that mastermind)
+using one core hero group, with at most 1–2 pre-chosen alternate heroes
+available to swap in for legs that hard-counter the core. "Any heroes
+per leg" — cherry-picking a fresh counter-team for each scheme — would
+no longer earn the championship.
+
+**Why fixed-pool is the "legendary" format.** This is a classic
+community challenge shape in the physical game (fixed-roster campaign
+clears, "best team for all masterminds" formats), and it aligns with
+what the platform already claims to reward:
+
+- **It proves mastery, not lookup skill.** One versatile team that
+  survives every scheme in a set — different twist pressures, different
+  always-leads villains, different class/keyword demands — demonstrates
+  system knowledge and consistency. Per-leg counter-picking mostly
+  demonstrates access to a tier list.
+- **It fits the Hall of Legends' prestige framing.** A fixed-team set
+  clear is a notable, reproducible achievement worth a named board row;
+  open-selection wins are just normal play (which the per-scenario
+  boards already rank).
+- **Alternates absorb the hard cases without collapsing the format.**
+  Most schemes fall to a good core group; the 1–2 alternates cover the
+  rare hard counter (a scheme that punishes a missing class or demands
+  a specific keyword) without reverting to open selection.
+
+**Formalization (player-count-relative).** The hero-deck size is not
+always 5 — it is enforced per player count by the registry's setup
+table ([`playerCountSetup.ts`](../packages/registry/src/playerCountSetup.ts),
+D-24165): solo = 3 heroes, 2–4 players = 5, 5 players = 6. Since
+gauntlet boards are already per-player-count (D-24134), each board has
+a well-defined core size, and the rule generalizes as:
+
+> An entry qualifies when there exists a **hero pool** of at most
+> `heroCount + 2` heroes (the board's hero-deck size plus two
+> alternates) such that every chosen leg's winning replay drew its
+> entire hero deck from that pool. Equivalently: the union of hero
+> slugs across the entry's legs is ≤ `heroCount + 2`.
+
+No declaration step is needed — like D-24131, this stays a
+publisher-derived aggregation with no submission ceremony. The
+publisher searches the player's qualifying wins for a
+pool-satisfying assignment (see the optimization note below).
+
+**Terminology guard:** "roster" already means the *player-account* team
+on multiplayer boards (D-24134 roster-keyed entries). The hero
+constraint is a separate dimension — call it the **hero pool**, never
+the roster. On a multiplayer board an entry would need both: the same
+account roster on every leg (shipped D-24134 rule) *and* a shared hero
+pool across legs (this proposal).
+
+**Feasibility review (2026-07-16).** Cheap, but not free:
+
+- **The engine identity already exists.** `buildTeamKey`
+  ([`parScoring.keys.ts`](../packages/game-engine/src/scoring/parScoring.keys.ts))
+  produces the canonical sorted-hero-slug `TeamKey`, and the
+  engine-defined `LeaderboardEntry` contract already carries a
+  `teamKey` field. No engine change is required — consistent with the
+  championship posture that gauntlet tiers are derived aggregations.
+- **But the server never persisted it.** `legendary.competitive_scores`
+  has no team column — rows carry `scenario_key` but not the heroes
+  used. Enforcement needs an additive migration (a `team_key` column
+  written at submission time; the server already holds the replay's
+  `initialState`, whose `matchConfiguration.heroDeckIds` is the hero
+  deck, when it re-reduces the artifact) plus a one-time backfill of
+  existing rows from `bgio.replay_artifacts`.
+- **Constrained best-per-leg is a small optimization, not a lookup.**
+  Under D-24131 the best score per leg is independent; under a shared
+  pool, leg choices interact (the best win on leg A may use heroes that
+  blow the pool budget for leg B). In practice a player posts few
+  distinct `TeamKey`s per set, so the publisher can brute-force the
+  best pool-satisfying assignment over those; a guard cap on distinct
+  teams considered keeps the cycle bounded.
+
+**The open fork — replace or run parallel.** Two ways to ship this,
+and the choice is the real decision a D-entry must make:
+
+1. **Replace** — fixed-pool becomes *the* gauntlet entry rule, amending
+   D-24131's "best per leg, any heroes" semantics. Strongest identity
+   for the championship, but it raises the entry bar while every board
+   is still in the empty-board acquisition phase, and it invalidates
+   (or re-derives) any entries earned under the open rule.
+2. **Parallel divisions** — the shipped open gauntlet stays as the
+   acquisition surface, and the fixed-pool board lands beside it as
+   the prestige division (visually distinguished; arguably the only
+   division that confers the "champion" title). Preserves the shipped
+   decision, keeps the on-ramp, and open-division entries remain a
+   feeder ("you've cleared all legs — now clear them with one team").
+
+**Where open selection still lives, either way.** The per-scenario
+(`ScenarioKey`) boards remain open-selection — first clears of a new
+set, casual play, wild-synergy experiments, and pure per-scenario score
+optimization all still rank there. The hero requirement only governs
+what it takes to claim a **set championship**.
 
 ## References
 
