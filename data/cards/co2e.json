@@ -2185,6 +2185,62 @@
           "copies": 2
         }
       ]
+    },
+    {
+      "id": 8,
+      "name": "Skulls",
+      "slug": "skulls",
+      "ledBy": [],
+      "cards": [
+        {
+          "name": "Paibok the Power Skrull",
+          "slug": "paibok-the-power-skrull",
+          "vp": "5",
+          "vAttack": "5+",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-skulls-paibok-the-power-skrull.webp",
+          "abilities": [
+            "Paibok gets +1[icon:attack] for each Hero Class among Heroes in the HQ.",
+            "Fight: Choose a Hero from the HQ for each player. Each player gains that Hero."
+          ],
+          "copies": 2
+        },
+        {
+          "name": "Skrull Queen Veranke",
+          "slug": "skrull-queen-veranke",
+          "vp": "5",
+          "vAttack": "2+",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-skulls-skrull-queen-veranke.webp",
+          "abilities": [
+            "Ambush: Skrull Queen Veranke captures the highest-cost Hero from the HQ. She gets +[icon:attack] equal to its cost.",
+            "Fight: Either KO that Hero or choose a player to gain it."
+          ],
+          "copies": 2
+        },
+        {
+          "name": "Skrull Shapeshifter",
+          "slug": "skrull-shapeshifter",
+          "vp": "2",
+          "vAttack": "1+",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-skulls-skrull-shapeshifter.webp",
+          "abilities": [
+            "Ambush: Skrull Shapeshifter captures the rightmost Hero from the HQ. It gets +[icon:attack] equal to that Hero's cost.",
+            "Fight: Either KO that Hero or choose a player to gain it."
+          ],
+          "copies": 2
+        },
+        {
+          "name": "Super-Skrull",
+          "slug": "super-skrull",
+          "vp": "3",
+          "vAttack": "2+",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-skulls-super-skrull.webp",
+          "abilities": [
+            "Super-Skrull gets +1[icon:attack] for each Hero Class among Heroes in the HQ.",
+            "Fight: KO one of your Heroes."
+          ],
+          "copies": 2
+        }
+      ]
     }
   ],
   "henchmen": [
