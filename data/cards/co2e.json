@@ -2074,6 +2074,63 @@
           "copies": 2
         }
       ]
+    },
+    {
+      "id": 6,
+      "name": "Sinister Spider-Foes",
+      "slug": "sinister-spider-foes",
+      "ledBy": [
+        "doctor-octopus"
+      ],
+      "cards": [
+        {
+          "name": "Green Goblin",
+          "slug": "green-goblin",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-sinister-spider-foes-green-goblin.webp",
+          "abilities": [
+            "Ambush: Green Goblin captures a Bystander. Put him on the Bridge. If there's another Villain there, swap them."
+          ],
+          "copies": 2
+        },
+        {
+          "name": "Scorpion",
+          "slug": "scorpion",
+          "vp": "3",
+          "vAttack": "5",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-sinister-spider-foes-scorpion.webp",
+          "abilities": [
+            "Ambush: If there is another Spider-Foes Villain in the city, each player gains a Wound.",
+            "Fight: KO one of your Heroes."
+          ],
+          "copies": 2
+        },
+        {
+          "name": "The Lizard",
+          "slug": "the-lizard",
+          "vp": "2",
+          "vAttack": "4",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-sinister-spider-foes-the-lizard.webp",
+          "abilities": [
+            "Fight: If you fight The Lizard in the Sewers, KO one of your Heroes and each other player gains a Wound."
+          ],
+          "copies": 2
+        },
+        {
+          "name": "Venom",
+          "slug": "venom",
+          "vp": "4",
+          "vAttack": "5+",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-sinister-spider-foes-venom.webp",
+          "abilities": [
+            "Venom gets +1[icon:attack] for each Hero he has.",
+            "Ambush: Venom captures a Hero from the Sidekick Deck and each Hero that costs 2 or less from the HQ.",
+            "Fight: You may gain a Hero captured by Venom. Put the rest on the bottom of the Hero Deck and/or Sidekick Deck as appropriate."
+          ],
+          "copies": 2
+        }
+      ]
     }
   ],
   "henchmen": [
