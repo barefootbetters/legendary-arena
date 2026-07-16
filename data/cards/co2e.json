@@ -1858,26 +1858,39 @@
       ],
       "cards": [
         {
+          "name": "Baron Strucker, Supreme Hydra",
+          "slug": "baron-strucker-supreme-hydra",
+          "vp": "4",
+          "vAttack": "6+",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-hydra-baron-strucker-supreme-hydra.webp",
+          "abilities": [
+            "Baron Strucker gets +1[icon:attack] for each other HYDRA Villain in the city and/or Escape Pile.",
+            "Fight: Shuffle four cards from the Bystander Deck into the Villain Deck. Then play two cards from the Villain Deck."
+          ],
+          "copies": 2
+        },
+        {
           "name": "Endless Armies of HYDRA",
           "slug": "endless-armies-of-hydra",
-          "vp": "3",
+          "vp": "2",
           "vAttack": "4",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-hydra-endless-armies-of-hydra.webp",
           "abilities": [
-            "Fight: Play the top two cards of the Villain Deck."
+            "Fight: Each player KOs one of their Heroes. Then play two cards from the Villain Deck."
           ],
-          "copies": 3
+          "copies": 2
         },
         {
           "name": "HYDRA Kidnappers",
           "slug": "hydra-kidnappers",
-          "vp": "1",
-          "vAttack": "3",
+          "vp": "2",
+          "vAttack": "4",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-hydra-hydra-kidnappers.webp",
           "abilities": [
-            "Fight: You may gain a S.H.I.E.L.D. Officer."
+            "Ambush: HYDRA Kidnappers capture a card from the S.H.I.E.L.D. Officer Deck or Sidekick Deck.",
+            "Fight: Choose a player to gain that Hero."
           ],
-          "copies": 3
+          "copies": 2
         },
         {
           "name": "Viper",
@@ -1889,7 +1902,7 @@
             "Fight: Each player without another HYDRA Villain in their Victory Pile gains a Wound.",
             "Escape: Same effect."
           ],
-          "copies": 1
+          "copies": 2
         }
       ]
     },
