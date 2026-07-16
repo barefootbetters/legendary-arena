@@ -276,7 +276,7 @@
           "attack": "4",
           "recruit": null,
           "abilities": [
-            "If a card effect makes you discard this card, you may return this card to your hand."
+            "When a card effect causes you to discard this card from your hand, you may return it to your hand."
           ]
         },
         {
@@ -291,7 +291,9 @@
           "attack": "6+",
           "recruit": null,
           "abilities": [
-            "[team:x-men]: You get +2[icon:attack] for each other [team:x-men] Hero you played this turn."
+            "To play this card, you must discard a card from your hand. [keyword:discard-to-play:1]",
+            "You get +1[icon:attack] for each card you discarded from your hand this turn.",
+            "[team:x-men]: You also get +1[icon:attack] for each other [team:x-men] Hero you played this turn."
           ]
         }
       ],
@@ -299,7 +301,7 @@
         {
           "id": "p1",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-cyclops-common-1.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-cyclops-determination.webp",
           "sides": [
             "determination"
           ]
@@ -307,7 +309,7 @@
         {
           "id": "p2",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-cyclops-common-2.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-cyclops-optic-blast.webp",
           "sides": [
             "optic-blast"
           ]
@@ -315,7 +317,7 @@
         {
           "id": "p3",
           "count": 3,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-cyclops-uncommon.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-cyclops-unending-energy.webp",
           "sides": [
             "unending-energy"
           ]
@@ -323,7 +325,7 @@
         {
           "id": "p4",
           "count": 1,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-cyclops-rare.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-cyclops-x-men-united.webp",
           "sides": [
             "x-men-united"
           ]
