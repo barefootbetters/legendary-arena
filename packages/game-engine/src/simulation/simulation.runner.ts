@@ -63,6 +63,7 @@ import { resolveKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { resolveOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
 import { resolveVictoryPileCardPick } from '../moves/resolveVictoryPileCardPick.js';
 import { resolveReturnZeroCostDiscard } from '../moves/resolveReturnZeroCostDiscard.js';
+import { resolveDiscardToPlay } from '../moves/resolveDiscardToPlay.js';
 import { advanceTurnStage } from '../turn/turnLoop.js';
 
 // why: 200-turn safety cap prevents infinite loops in degenerate states
@@ -208,6 +209,7 @@ const MOVE_MAP: Record<string, MoveFn> = {
   // why: D-24139 — getLegalMoves short-circuits to this resolve move when its pending
   // choice is parked; a missing dispatch entry hangs the per-turn loop.
   resolveReturnZeroCostDiscard: (context, args) => resolveReturnZeroCostDiscard(context as never, args as never),
+  resolveDiscardToPlay: (context, args) => resolveDiscardToPlay(context as never, args as never),
 };
 
 // why: WP-289 / D-24073 — exposed for the move-dispatch drift guard (every SIMULATION_MOVE_NAMES

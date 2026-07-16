@@ -80,6 +80,7 @@ import { resolveKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { resolveOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
 import { resolveVictoryPileCardPick } from '../moves/resolveVictoryPileCardPick.js';
 import { resolveReturnZeroCostDiscard } from '../moves/resolveReturnZeroCostDiscard.js';
+import { resolveDiscardToPlay } from '../moves/resolveDiscardToPlay.js';
 
 // ---------------------------------------------------------------------------
 // Exported constants.
@@ -426,6 +427,7 @@ const MOVE_MAP: Record<string, MoveFn> = {
   resolveVictoryPileCardPick: (context, args) => resolveVictoryPileCardPick(context as never, args as never),
   // why: D-24139 — same dispatch-completeness rule as the runner MOVE_MAP (pinned by the drift guard).
   resolveReturnZeroCostDiscard: (context, args) => resolveReturnZeroCostDiscard(context as never, args as never),
+  resolveDiscardToPlay: (context, args) => resolveDiscardToPlay(context as never, args as never),
 };
 
 // why: WP-289 / D-24073 — exposed for the move-dispatch drift guard (every SIMULATION_MOVE_NAMES

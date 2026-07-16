@@ -25,6 +25,7 @@ import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
 import { hasPendingReturnZeroCostDiscard } from './resolveReturnZeroCostDiscard.js';
+import { hasPendingDiscardToPlay } from './resolveDiscardToPlay.js';
 import { pushLog } from '../log/logPush.js';
 import { composeHealNarrative } from '../events/notableEvents.compose.js';
 
@@ -73,6 +74,8 @@ export function healWounds({ G, ctx }: MoveContext): void {
   if (hasPendingDrawOrEmpowered(G)) return;
   // why: block-all — pendingReturnZeroCostDiscard must be resolved first (D-24139)
   if (hasPendingReturnZeroCostDiscard(G)) return;
+  // why: block-all — pendingDiscardToPlay must be resolved first (WP-383 / D-24184)
+  if (hasPendingDiscardToPlay(G)) return;
 
   // why: D-24179 — Healing is barred once the player has recruited or fought this
   // turn ("If you don't recruit or fight anything on your turn, you may KO all the

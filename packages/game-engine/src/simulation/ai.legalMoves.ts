@@ -28,6 +28,10 @@ import {
   hasPendingReturnZeroCostDiscard,
   getEligibleZeroCostDiscardCards,
 } from '../moves/resolveReturnZeroCostDiscard.js';
+import {
+  hasPendingDiscardToPlay,
+  getEligibleDiscardToPlayCards,
+} from '../moves/resolveDiscardToPlay.js';
 
 // why: simulation covers the play-phase only; lobby moves (setPlayerReady,
 // startMatchIfReady) are excluded because runSimulation starts the per-game
@@ -51,6 +55,7 @@ export const SIMULATION_MOVE_NAMES = [
   'resolveVictoryPileCardPick',
   'resolveDrawOrEmpowered',
   'resolveReturnZeroCostDiscard',
+  'resolveDiscardToPlay',
 ] as const;
 
 // why: type is exported implicitly via the const array above; external
@@ -129,6 +134,21 @@ export function getLegalMoves(
     const eligibleReturns = getEligibleZeroCostDiscardCards(gameState, activePlayer);
     if (eligibleReturns.length > 0) {
       return [{ name: 'resolveReturnZeroCostDiscard', args: { cardId: eligibleReturns[0]! } }];
+    }
+    // why: defensive — if no eligible card (engine-invariant violation after park), fail closed.
+    return legalMoves;
+  }
+
+  // why: pending discard-to-play short-circuit (WP-383 / D-24184) — while a mandatory
+  // discard-to-play cost is pending the block-all guard freezes every other move, so the
+  // bot must pay it first. Deterministic default target: the FIRST hand card (lowest
+  // index). Returns a list of length EXACTLY 1. eligible is non-empty because the
+  // D-24185 precondition pre-guaranteed payability and the block-all guard freezes the
+  // hand between park and resolve.
+  if (hasPendingDiscardToPlay(gameState)) {
+    const eligibleDiscards = getEligibleDiscardToPlayCards(gameState, activePlayer);
+    if (eligibleDiscards.length > 0) {
+      return [{ name: 'resolveDiscardToPlay', args: { cardId: eligibleDiscards[0]! } }];
     }
     // why: defensive — if no eligible card (engine-invariant violation after park), fail closed.
     return legalMoves;

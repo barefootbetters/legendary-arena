@@ -37,6 +37,7 @@ import VictoryPileCardPickPrompt from '../components/play/VictoryPileCardPickPro
 import OptionalPutBottomHQPrompt from '../components/play/OptionalPutBottomHQPrompt.vue';
 import PutAnyNumberBottomHQPrompt from '../components/play/PutAnyNumberBottomHQPrompt.vue';
 import ReturnZeroCostDiscardPrompt from '../components/play/ReturnZeroCostDiscardPrompt.vue';
+import DiscardToPlayPrompt from '../components/play/DiscardToPlayPrompt.vue';
 import GameLogPanel from '../components/log/GameLogPanel.vue';
 import type { SubmitMove } from '../components/play/uiMoveName.types';
 
@@ -99,6 +100,7 @@ export default defineComponent({
     OptionalPutBottomHQPrompt,
     PutAnyNumberBottomHQPrompt,
     ReturnZeroCostDiscardPrompt,
+    DiscardToPlayPrompt,
   },
   props: {
     submitMove: {
@@ -246,6 +248,12 @@ export default defineComponent({
     const hasPendingReturnZeroCostDiscard = computed<boolean>(
       () => snapshot.value?.pendingReturnZeroCostDiscard !== undefined,
     );
+    // why: WP-383 / D-24184 — derived from UIState.pendingDiscardToPlay !== undefined.
+    // Passed to TurnActionBar to gate End Turn / Pass Priority while the discard-to-play
+    // cost is pending.
+    const hasPendingDiscardToPlay = computed<boolean>(
+      () => snapshot.value?.pendingDiscardToPlay !== undefined,
+    );
 
     // why: WP-380 — Healing KOs Wounds from HAND specifically, so scan the viewer's
     // own handCards (UIPlayerState.woundCount counts every zone and cannot answer
@@ -274,6 +282,7 @@ export default defineComponent({
       hasPendingOptionalPutBottomHQ,
       hasPendingPutAnyNumberBottomHQ,
       hasPendingReturnZeroCostDiscard,
+      hasPendingDiscardToPlay,
       hasWoundInHand,
     };
   },
@@ -471,6 +480,15 @@ export default defineComponent({
             :viewer-player-id="viewer.playerId"
             :submit-move="submitMove"
           />
+          <!-- why: WP-383 / D-24184 — the discard-to-play cost prompt (Cyclops
+               Determination/Optic Blast + siblings) renders above TurnActionBar in DOM
+               order; appears only for the choosing player when pendingDiscardToPlay is
+               set. Normal document flow. -->
+          <DiscardToPlayPrompt
+            :pending-discard-to-play="snapshot.pendingDiscardToPlay"
+            :viewer-player-id="viewer.playerId"
+            :submit-move="submitMove"
+          />
           <!-- why: D-22201 + WP-222 — prompt renders above TurnActionBar; appears
                only for the choosing player when pendingHeroChoice is set. -->
           <PendingHeroChoicePrompt
@@ -489,6 +507,7 @@ export default defineComponent({
             :has-pending-optional-put-bottom-h-q="hasPendingOptionalPutBottomHQ"
             :has-pending-put-any-number-bottom-h-q="hasPendingPutAnyNumberBottomHQ"
             :has-pending-return-zero-cost-discard="hasPendingReturnZeroCostDiscard"
+            :has-pending-discard-to-play="hasPendingDiscardToPlay"
             :has-wound-in-hand="hasWoundInHand"
             :has-acted-this-turn="snapshot.game.hasActedThisTurn"
             :has-healed-this-turn="snapshot.game.hasHealedThisTurn"

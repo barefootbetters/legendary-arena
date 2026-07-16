@@ -23,6 +23,7 @@ import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
 import { hasPendingReturnZeroCostDiscard } from './resolveReturnZeroCostDiscard.js';
+import { hasPendingDiscardToPlay, getDiscardToPlayCost } from './resolveDiscardToPlay.js';
 import { formatPlayedCardLabel } from '../log/logDisplay.js';
 import { pushLog } from '../log/logPush.js';
 
@@ -83,6 +84,11 @@ export function drawCards({ G, playerID, ...context }: MoveContext, args: DrawCa
 
   // why: block-all — pendingReturnZeroCostDiscard must be resolved before any other action (D-24139)
   if (hasPendingReturnZeroCostDiscard(G)) {
+    return;
+  }
+
+  // why: block-all — pendingDiscardToPlay must be resolved before any other action (WP-383 / D-24184)
+  if (hasPendingDiscardToPlay(G)) {
     return;
   }
 
@@ -217,9 +223,31 @@ export function playCard({ G, playerID, ...context }: MoveContext, args: PlayCar
     return;
   }
 
+  // why: block-all — pendingDiscardToPlay must be resolved before any other action (WP-383 / D-24184)
+  if (hasPendingDiscardToPlay(G)) {
+    return;
+  }
+
   // Step 3: Mutate G
   const playerZones = G.playerZones[playerID];
   if (!playerZones) {
+    return;
+  }
+
+  // why: WP-383 / D-24185 — the engine's first card-specific PRE-COMMIT
+  // precondition. A card printed "To play this card, you must discard a card
+  // from your hand" (the `discard-to-play` cost) can only be played if the hand
+  // holds enough OTHER cards to pay it. The played card is still in hand here,
+  // so payable iff hand.length >= cost + 1. An unpayable play returns void with
+  // NO commit — the card stays in hand and its base attack/recruit is NOT
+  // granted (the bug this fixes: the cost was silently skipped and the power
+  // leaked). This runs as part of validation, before the hand removal, so the
+  // "validate → gate → mutate → void" move contract is preserved.
+  const discardToPlayCost = getDiscardToPlayCost(G, args.cardId);
+  if (discardToPlayCost > 0 && playerZones.hand.length < discardToPlayCost + 1) {
+    pushLog(G,
+      `Player ${playerID} could not play ${formatPlayedCardLabel(G.cardDisplayData, args.cardId)} — it requires discarding ${discardToPlayCost} card(s) but their hand holds no other card to discard.`,
+    );
     return;
   }
 
@@ -286,6 +314,11 @@ export function endTurn({ G, playerID, events }: MoveContext): void {
 
   // why: block-all — pendingReturnZeroCostDiscard must be resolved before any other action (D-24139)
   if (hasPendingReturnZeroCostDiscard(G)) {
+    return;
+  }
+
+  // why: block-all — pendingDiscardToPlay must be resolved before any other action (WP-383 / D-24184)
+  if (hasPendingDiscardToPlay(G)) {
     return;
   }
 

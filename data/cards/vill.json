@@ -606,7 +606,7 @@
           "attack": "4",
           "recruit": null,
           "abilities": [
-            "To play this card, you must discard a card from your hand."
+            "To play this card, you must discard a card from your hand. [keyword:discard-to-play:1]"
           ]
         },
         {

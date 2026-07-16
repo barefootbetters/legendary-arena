@@ -561,6 +561,33 @@ export interface PendingReturnZeroCostDiscard {
 }
 
 /**
+ * Pending mandatory discard-to-play cost choice state (D-24184).
+ *
+ * Created when a card printed "To play this card, you must discard a card from
+ * your hand" is played (Cyclops Determination/Optic Blast + siblings). The
+ * `discard-to-play` keyword's park handler appends one entry to
+ * G.pendingDiscardToPlay[] (FIFO). The player must discard `remaining` card(s)
+ * FROM THEIR HAND; resolveDiscardToPlay moves one chosen hand card to discard
+ * per call, decrementing `remaining`, and front-pops the entry when it reaches
+ * 0. Must be undefined or empty at every turn-end (enforced by the block-all
+ * guards).
+ *
+ * // why: the choice is a mandatory COST — there is no "you may", so no decline
+ * shape. Payability (hand holds ≥ `remaining` OTHER cards) is pre-guaranteed by
+ * the D-24185 pre-commit precondition in playCard, so the base power never leaks
+ * on an unpayable play. Hand contents are read fresh at resolve time; the full
+ * block-all guard set freezes the board between park and resolve.
+ */
+export interface PendingDiscardToPlay {
+  /** The player who must discard from hand to complete the play. */
+  playerID: string;
+  /** The hero card whose cost parked this choice (already in inPlay; for provenance). */
+  sourceCardId: CardExtId;
+  /** How many more cards the player must still discard (starts at the cost magnitude). */
+  remaining: number;
+}
+
+/**
  * Pending optional-put-bottom-HQ player choice state (optional zone manipulation).
  *
  * Created when an optional-put-bottom-hq hero effect fires (`onPlay`) — the printed
@@ -804,6 +831,18 @@ export interface LegendaryGameState {
   // choice" (guards test `.length`).
   /** FIFO queue of pending return-zero-cost-discard choices awaiting resolution (D-24139). */
   pendingReturnZeroCostDiscard?: PendingReturnZeroCostDiscard[] | undefined;
+
+  // why: WP-383 / D-24184 — a discard-to-play COST parks one entry when a card
+  // printed "To play this card, you must discard a card from your hand" is
+  // played (Cyclops Determination/Optic Blast + siblings). Payability is
+  // pre-guaranteed by the D-24185 precondition in playCard (an unpayable play
+  // never commits), so the park always has ≥ `remaining` eligible hand cards.
+  // Front-popped by resolveDiscardToPlay once `remaining` reaches 0. Must be
+  // undefined or empty at every turn-end. Optional so existing test state
+  // literals do not need updating; **lazily initialized at the park site, never
+  // in Game.setup**.
+  /** FIFO queue of pending discard-to-play cost choices awaiting resolution (D-24184). */
+  pendingDiscardToPlay?: PendingDiscardToPlay[] | undefined;
 
   // why: playerZones is keyed by player ID string (boardgame.io uses "0", "1",
   // etc.). Each player has exactly 5 zone arrays. Only deck is non-empty after

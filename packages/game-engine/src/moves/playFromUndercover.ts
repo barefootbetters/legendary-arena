@@ -22,6 +22,7 @@ import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
 import { hasPendingReturnZeroCostDiscard } from './resolveReturnZeroCostDiscard.js';
+import { hasPendingDiscardToPlay } from './resolveDiscardToPlay.js';
 import { formatPlayedCardLabel } from '../log/logDisplay.js';
 import { pushLog } from '../log/logPush.js';
 
@@ -85,6 +86,10 @@ export function playFromUndercover(
 
   // why: block-all — pendingReturnZeroCostDiscard must be resolved before any other action (D-24139)
   if (hasPendingReturnZeroCostDiscard(G)) {
+    return;
+  }
+  // why: block-all — pendingDiscardToPlay must be resolved before any other action (WP-383 / D-24184)
+  if (hasPendingDiscardToPlay(G)) {
     return;
   }
 

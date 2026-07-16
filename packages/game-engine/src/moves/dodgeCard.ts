@@ -24,6 +24,7 @@ import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
 import { hasPendingReturnZeroCostDiscard } from './resolveReturnZeroCostDiscard.js';
+import { hasPendingDiscardToPlay } from './resolveDiscardToPlay.js';
 import { getHooksForCard } from '../rules/heroAbility.types.js';
 import { formatCardRef } from '../log/logDisplay.js';
 import { pushLog } from '../log/logPush.js';
@@ -78,6 +79,8 @@ export function dodgeCard({ G, ctx, ...context }: MoveContext, { cardId }: Dodge
   if (hasPendingDrawOrEmpowered(G)) return;
   // why: block-all — pendingReturnZeroCostDiscard must be resolved before any other action (D-24139)
   if (hasPendingReturnZeroCostDiscard(G)) return;
+  // why: block-all — pendingDiscardToPlay must be resolved before any other action (WP-383 / D-24184)
+  if (hasPendingDiscardToPlay(G)) return;
 
   // Step 3: Eligibility — the card must be in the current player's hand AND carry
   // a dodge hook (read-only, timing-agnostic). pid = ctx.currentPlayer matches the

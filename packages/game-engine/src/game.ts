@@ -12,6 +12,7 @@ import { resolveOptionalKoReward, hasPendingOptionalKoReward } from './moves/opt
 import { resolveOptionalPutBottomHQ, hasPendingOptionalPutBottomHQ } from './moves/resolveOptionalPutBottomHQ.js';
 import { resolvePutAnyNumberBottomHQ, hasPendingPutAnyNumberBottomHQ } from './moves/resolvePutAnyNumberBottomHQ.js';
 import { resolveReturnZeroCostDiscard, hasPendingReturnZeroCostDiscard } from './moves/resolveReturnZeroCostDiscard.js';
+import { resolveDiscardToPlay, hasPendingDiscardToPlay } from './moves/resolveDiscardToPlay.js';
 import { resolveVictoryPileCardPick, hasPendingVictoryPileCardPick } from './moves/resolveVictoryPileCardPick.js';
 import { resolveDrawOrEmpowered, hasPendingDrawOrEmpowered } from './moves/drawOrEmpowered.resolve.js';
 import { executeRuleHooks } from './rules/ruleRuntime.execute.js';
@@ -108,6 +109,8 @@ function advanceStage({ G, events }: MoveContext): void {
   if (hasPendingPutAnyNumberBottomHQ(G)) { return; }
   // why: block-all — pendingReturnZeroCostDiscard must be resolved before any other action (D-24139)
   if (hasPendingReturnZeroCostDiscard(G)) { return; }
+  // why: block-all — pendingDiscardToPlay must be resolved before any other action (WP-383 / D-24184)
+  if (hasPendingDiscardToPlay(G)) { return; }
   // why: turn cannot end while a player-choice reveal is pending; at cleanup,
   // advanceTurnStage would otherwise call events.endTurn() and bypass the
   // endTurn-move guard (D-22002). The KO turn-end block is already covered by
@@ -389,6 +392,7 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     // discard-to-hand return (Black Knight's Defend the Weak). Server-only
     // (client: false) per D-10008 — it mutates playerZones fields.
     resolveReturnZeroCostDiscard: { move: resolveReturnZeroCostDiscard, client: false },
+    resolveDiscardToPlay: { move: resolveDiscardToPlay, client: false },
   },
 
   // why: phase `next` fields declare the intended linear progression

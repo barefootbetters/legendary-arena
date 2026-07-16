@@ -874,6 +874,19 @@ moveFunction(G, ctx, args):
   **never throw**; exceptions would crash the server process.
 - `G` is only mutated once both guards pass.
 
+**Card-specific pre-commit preconditions (D-24185).** A move MAY, as part of
+Step 1 (validation, before any `G` mutation), reject a play based on the
+specific card being played — the first such case is the `discard-to-play` cost
+(WP-383): `playCard` reads the card's `onPlay` hooks and, if the card carries a
+mandatory "discard a card to play this card" cost, requires the hand to hold
+enough other cards to pay it; an unpayable play returns `void` with no commit
+and no base power granted. This does NOT weaken the contract: it is still a
+validation-phase silent return (no throw), it runs before the `G` mutation, and
+it exists precisely so the base power is not granted on a play the player cannot
+afford. A pre-commit precondition is distinct from the pending-choice pattern
+(which fires AFTER the card commits); use it only when the outcome must be
+withheld unless the cost is payable.
+
 **`MoveResult` and `MoveError` are the engine-wide result contract** (defined in
 `src/moves/coreMoves.types.ts`):
 

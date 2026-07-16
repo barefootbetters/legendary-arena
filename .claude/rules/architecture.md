@@ -92,6 +92,12 @@ Every move must follow this exact order:
 Moves **never throw**.
 Only `Game.setup()` may throw.
 
+A move MAY reject a play with a **card-specific pre-commit precondition**
+(D-24185) as part of Step 1 — reading the played card and returning `void`
+before any `G` mutation when the card's cost is unpayable (the `discard-to-play`
+cost, WP-383, is the first case). This is still a validation-phase silent
+return, distinct from the pending-choice pattern (which fires after commit).
+
 Source: ARCHITECTURE.md, The Move Validation Contract
 
 ### Phase & Turn Transitions

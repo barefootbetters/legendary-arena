@@ -2,15 +2,15 @@
   "schemaVersion": 1,
   "cardType": "hero",
   "summary": {
-    "totalRows": 645,
+    "totalRows": 647,
     "byStatus": {
-      "executable": 227,
+      "executable": 232,
       "deferred": 0,
       "condition": 5,
       "unsupported": 365,
-      "unmarked": 48
+      "unmarked": 45
     },
-    "distinctMechanics": 116
+    "distinctMechanics": 117
   },
   "rows": [
     {
@@ -1497,11 +1497,11 @@
       "extId": "co2e/cyclops",
       "heroName": "Cyclops",
       "set": "co2e",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
+      "mechanic": "discard-to-play",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play"
     },
     {
       "extId": "co2e/emma-frost",
@@ -1707,11 +1707,11 @@
       "extId": "core/cyclops",
       "heroName": "Cyclops",
       "set": "core",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
+      "mechanic": "discard-to-play",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play"
     },
     {
       "extId": "core/deadpool",
@@ -4877,6 +4877,16 @@
       "extId": "ssw2/ruby-summers",
       "heroName": "Ruby Summers",
       "set": "ssw2",
+      "mechanic": "discard-to-play",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play"
+    },
+    {
+      "extId": "ssw2/ruby-summers",
+      "heroName": "Ruby Summers",
+      "set": "ssw2",
       "mechanic": "teleport",
       "status": "unsupported",
       "wp": "",
@@ -5067,11 +5077,11 @@
       "extId": "vill/juggernaut",
       "heroName": "Juggernaut",
       "set": "vill",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
+      "mechanic": "discard-to-play",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play"
     },
     {
       "extId": "vill/kingpin",
@@ -6202,6 +6212,16 @@
       "wp": "WP-256",
       "decision": "D-24031",
       "handler": "packages/game-engine/src/hero/effectPrimitive.interpret.ts"
+    },
+    {
+      "extId": "xmen/havok",
+      "heroName": "Havok",
+      "set": "xmen",
+      "mechanic": "discard-to-play",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play"
     },
     {
       "extId": "xmen/havok",

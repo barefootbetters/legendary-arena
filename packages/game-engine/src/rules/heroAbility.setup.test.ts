@@ -233,7 +233,7 @@ describe('buildHeroAbilityHooks', () => {
 describe('HERO_KEYWORDS drift-detection', () => {
   // why: prevents union/array divergence — same pattern as
   // REVEALED_CARD_TYPES drift detection
-  it('contains exactly the 31 canonical keyword values', () => {
+  it('contains exactly the 32 canonical keyword values', () => {
     const expectedKeywords = [
       'draw',
       'attack',
@@ -266,12 +266,13 @@ describe('HERO_KEYWORDS drift-detection', () => {
       'gain-wound-self', // why: D-24156 / WP-364 — "You gain a Wound." (active player)
       'gain-wound-each', // why: D-24156 / WP-364 — "Each player gains a Wound." (Crazed Rampage)
       'shuffle-discard-empty-reward', // why: D-24148 / WP-356 — mandatory empty-discard-reward-or-shuffle (Reprocess / Electromagnetic Eyebeams)
+      'discard-to-play', // why: WP-383 / D-24184 — mandatory play COST "discard a card to play this card" (Cyclops Determination/Optic Blast + siblings)
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      31,
-      'HERO_KEYWORDS must have exactly 31 entries',
+      32,
+      'HERO_KEYWORDS must have exactly 32 entries',
     );
 
     assert.deepStrictEqual(
