@@ -29230,3 +29230,109 @@ Encoded in ARCHITECTURE.md §The Move Validation Contract and mirrored in
 **Packet:** WP-383 (EC-412). **Executed:** 2026-07-15.
 
 Protect this file.
+
+### D-24187 — Fixed-hero-pool gauntlet prestige division (`team_key` persistence + pool-constrained standings)
+
+**Status:** Active 2026-07-16 (design lock; ratified at SPEC draft, the D-24131/D-24134 pattern). Packets WP-384 (server) + WP-385 (client) drafted this date, pending execution.
+
+**User-Visible Surface:** none at this entry (design lock). Eventual surface: legends.legendary-arena.com — a fixed-hero-pool championship division beside each open gauntlet board, entries displaying the hero pool that earned them.
+
+**Context.** D-24131/D-24134 shipped the set-gauntlet boards with "best per leg, any
+heroes": nothing constrains hero selection across legs, so a set championship can be
+earned by cherry-picking a fresh counter-team per scheme. Operator direction
+(2026-07-16, recorded first as the wiki proposal merged in PR #776): the "legendary"
+format is a **fixed hero group plus alternates** — one core team clears every scheme
+in the set, with a bounded alternate allowance for hard-counter legs — because it
+proves adaptable mastery across a set's whole scheme spread rather than tier-list
+lookup. Review finding: the engine already emits the canonical team identity
+(`buildTeamKey`, sorted hero slugs; the engine-defined `LeaderboardEntry` contract
+carries `teamKey`) but `legendary.competitive_scores` never persisted it — the heroes
+used are recoverable only from the stored replay artifacts. Fork resolved here:
+**parallel division, not replacement** — the open gauntlet (D-24131/D-24134
+semantics) stays byte-unchanged as the acquisition surface and feeder; the fixed-pool
+division lands beside it as the prestige board the championship title attaches to.
+Promotion to sole entry rule can be revisited once boards have population data.
+
+**Decision.**
+1. **`team_key` column (migration 034).** `legendary.competitive_scores` gains a
+   nullable `team_key text`, written once at submission (D-5302 write-once
+   preserved), derived **server-side** from the verifier's already-reduced final
+   state — `finalState.matchConfiguration.heroDeckIds`, the D-24134 §1
+   `player_count` pattern — never client-supplied. Value format (locked): the
+   match's set-qualified hero ids (D-10014 `setAbbr/slug` space, exactly as
+   configured — never re-slugified) sorted ASC and joined `+` (the engine
+   `buildTeamKey` discipline applied to the set-qualified id space). A
+   `team_key IS NULL` row never qualifies on any fixed-division board (the
+   migration-026/027 NULL pattern) — but see the backfill.
+2. **One-time backfill (carve-out extension).** An operator-run script backfills
+   `team_key` for existing rows by reading each row's stored replay artifact's
+   `initialState.G.matchConfiguration.heroDeckIds` (joined by `replay_hash`;
+   dry-run default; artifact missing → reported and left NULL). This extends the
+   D-24095 framework-store exemption with a narrow **D-24187 team-key carve-out**:
+   a server-layer read MAY read `bgio.replay_artifacts` (or the `bgio.matches`
+   blob) `initialState.G.matchConfiguration.heroDeckIds` solely to derive or
+   backfill the `team_key` column — a derived, write-once domain value; never a
+   `state`/`log` interpretation, never written back to the blob, never
+   round-tripped into gameplay state. The ARCHITECTURE.md §Persistence Boundary
+   edit + `.claude/rules/architecture.md` mirror land in the WP-384 impl commit
+   (the D-24169 pattern).
+3. **Division identity.** One fixed-pool board per existing gauntlet board:
+   additive files `gauntlet-<setAbbr>-<mastermindSlug>-fixed.json` (solo) and
+   `gauntlet-<setAbbr>-<mastermindSlug>-fixed-p<N>.json` (N = 2..5), written
+   lazily (≥1 complete entry, the D-24131 §7 rule). The `-fixed` segment
+   precedes `-p<N>`, so the client's suffix resolution strips `-p[2-5]` then
+   `-fixed` to find the parent index entry. The WP-343 route grammar
+   `^gauntlet-[a-z0-9-]+$` already admits both names. **Open-division files,
+   semantics, and entries are byte-unchanged.**
+4. **The hero-pool rule (the format).** Pool budget = **`heroCount + 2`**
+   exactly, player-count-relative per the registry setup table
+   (`PLAYER_COUNT_SETUP`, D-24165): solo 3+2 = 5, 2–4p 5+2 = 7, 5p 6+2 = 8. An
+   entry qualifies on a fixed board at count N when there **exists** an
+   assignment of one qualifying win per leg — every open-division qualification
+   rule unchanged (wins-only, current `scoringConfigVersion`, `player_count = N`,
+   both-sides-same-set, and at N ≥ 2 the D-24134 §3 roster rules: same account
+   roster on every leg, all seats authenticated, all owners link/public) — such
+   that the union of distinct hero ids across the assignment's `team_key`s has
+   size **≤ the budget**. The check is binary by construction (the operator's
+   "exactly heroCount + 2" refinement): a pool is never declared, it is inferred
+   from the wins. `totalScore` = the minimum best-per-leg sum over
+   pool-satisfying assignments; rank `totalScore ASC`; tiebreak as the open
+   division.
+5. **Bounded search (no silent caps).** Constrained best-per-leg is an
+   optimization (leg choices interact through the shared pool budget). The
+   publisher runs a deterministic bounded search over the competitor's distinct
+   `team_key`s per gauntlet — few in practice; the exact algorithm and bound are
+   the executor's choice locked at EC time, with the requirement that truncation
+   (a competitor exceeding the bound) is logged, never silent.
+6. **Entry + index shape (additive).** Fixed-board `GauntletSnapshotEntry` gains
+   `heroPool: readonly string[]` — the union of set-qualified hero ids across the
+   entry's chosen legs, sorted ASC (the team the champion is celebrated for;
+   renders on the board). `GauntletIndexEntry` gains `fixedEntryCounts`
+   (complete-entry count per player count 1..5, the `entryCounts` shape).
+7. **Presentation (the prestige framing).** The fixed division is the
+   **championship**: title/champion framing attaches to fixed boards; open
+   boards remain the on-ramp, with feeder copy ("you've cleared every leg — now
+   clear them with one team"). Terminology guard: the hero constraint is the
+   **hero pool**, never "roster" (which stays the D-24134 account dimension); a
+   multiplayer fixed entry needs both — same account roster AND a shared hero
+   pool.
+
+**Not decided here.** Promoting fixed-pool to the sole entry rule (revisit with
+population data); a declared-pool UX (pools stay inferred); hero constraints on the
+classic per-scenario boards (they stay open-selection, deliberately — first clears,
+casual play, and per-scenario score optimization live there); tiers 1/3/4 and the
+annual reset; per-count PAR (D-24134 §7).
+
+**Consequence.** Zero engine change (the engine's `TeamKey` identity is reused, not
+modified); one migration + one write-site line + one operator backfill script + a
+pool-constrained aggregation beside the existing one + additive publisher emission;
+the shipped open gauntlet is untouched. The Hall of Legends gains the achievement the
+operator asked for: a set championship that can only be earned the way the
+community's fixed-roster campaign formats earn it — one team, every scheme.
+
+**Packets:** WP-384 (server: migration 034 + team_key persistence + backfill +
+pool-constrained standings + publisher emission + carve-out doc edits) and WP-385
+(client: division toggle, hero-pool display, fixed claim chips) — drafted
+2026-07-16, pending execution.
+
+Protect this file.
