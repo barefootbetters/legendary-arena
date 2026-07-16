@@ -1457,8 +1457,8 @@
           "slot": 2,
           "hc": "instinct",
           "cost": 3,
-          "attack": "2",
-          "recruit": null,
+          "attack": null,
+          "recruit": "2",
           "abilities": [
             "You may KO a Wound from your hand or discard pile. If you do, draw a card. [keyword:ko-wound-reward:draw:1]"
           ]
@@ -1471,7 +1471,7 @@
           "rarityLabel": "Uncommon",
           "slot": 3,
           "hc": "instinct",
-          "cost": 5,
+          "cost": 6,
           "attack": "2",
           "recruit": null,
           "abilities": [
@@ -1491,7 +1491,7 @@
           "recruit": null,
           "abilities": [
             "Draw three cards. [keyword:draw:3]",
-            "[hc:instinct]: You get +1[icon:attack] for each extra card you've drawn this turn."
+            "[hc:instinct]: You get +1[icon:attack] for each card you draw this turn."
           ]
         }
       ],
@@ -1499,7 +1499,7 @@
         {
           "id": "p1",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-wolverine-common-1.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-wolverine-keen-senses.webp",
           "sides": [
             "keen-senses"
           ]
@@ -1507,7 +1507,7 @@
         {
           "id": "p2",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-wolverine-common-2.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-wolverine-healing-factor.webp",
           "sides": [
             "healing-factor"
           ]
@@ -1515,7 +1515,7 @@
         {
           "id": "p3",
           "count": 3,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-wolverine-uncommon.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-wolverine-frenzied-slashing.webp",
           "sides": [
             "frenzied-slashing"
           ]
@@ -1523,7 +1523,7 @@
         {
           "id": "p4",
           "count": 1,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-wolverine-rare.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-wolverine-berserker-rage.webp",
           "sides": [
             "berserker-rage"
           ]
