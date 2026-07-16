@@ -1,12 +1,38 @@
 # WP-384 — Fixed-Hero-Pool Gauntlet Division: `team_key` Persistence + Backfill + Pool-Constrained Standings + Publisher (Server)
 
-**Status:** Drafted 2026-07-16 (design-locked by D-24187; EC pending — execution-prep is the next step)
+**Status:** Drafted 2026-07-16; **execution-ready 2026-07-16** (EC-413 drafted at execution-prep; session prompt written)
 **Primary Layer:** Server (`apps/server/**`) + one migration + one operator script + the D-24187 carve-out doc edits
 **Dependencies:** D-24187 (design lock), WP-344 ✅ (player_count column + roster-keyed per-count standings + publisher), WP-342 ✅ (gauntlet read-layer + publisher), D-24131 / D-24134 (parent designs), D-24119 arc / WP-333..WP-340 ✅ (write path + replay artifacts), D-24165 (PLAYER_COUNT_SETUP — the heroCount source), D-10014 (set-qualified id space), D-5301/D-5302 (verifier + immutability), DESIGN-RANKING (identity on `player_id`, never handle)
-**EC:** pending (drafted at execution-prep)
-**Baseline:** `origin/main` at `9340236b` (2026-07-16)
+**EC:** [EC-413](../execution-checklists/EC-413-fixed-hero-pool-gauntlet-server.checklist.md) (drafted 2026-07-16 at execution-prep)
+**Baseline:** `origin/main` at `fc8d53f3` (2026-07-16, execution-prep; drafted @ `9340236b`)
 **User-Visible Surface:** none — infrastructure (the payoff surface is WP-385, which renders the fixed-pool division; the snapshots this packet publishes are inert until then)
 **Executes:** D-24187 §1–§6 (server half)
+
+> **Execution addendum (2026-07-16, EC-413 draft).** Five reconciliations
+> against code reality, discovered while drafting the EC:
+> (1) **The record key lock is 14 → 15, not 13 → 14** — WP-354 / D-24146
+> added `isRankedEligible` after D-24134's 13; `competition.types.ts`
+> already documents exactly 14 keys.
+> (2) **One wiring file joins the list — 13 files total** (the WP-342/
+> WP-344 wiring-addendum class): `gauntlet.logic.ts`'s module contract
+> forbids a registry import, so the `heroCount + 2` budgets arrive as
+> plain data injected by `server.mjs` from `PLAYER_COUNT_SETUP` at wiring
+> time (the catalog-injection precedent), never re-typed literals.
+> (3) **One query, both divisions** — `getGauntletStandings` keeps its
+> single roster-joined query per gauntlet (`cs.team_key` added to the
+> DISTINCT ON subquery + outer SELECT) and returns per-count
+> `{ open, fixed }`; the publisher (sole production caller) updates in
+> the same change. Open-division assertion VALUES pass unmodified;
+> accessor updates for the new shape are mechanical.
+> (4) **The backfill is a SQL jsonb extraction, not a Node reduction** —
+> `bgio.replay_artifacts.initial_state->'G'->'matchConfiguration'->
+> 'heroDeckIds'` joined on `replay_hash`; the SQL sort is byte-equivalent
+> to the JS sort (lowercase slug charset), pinned by an equivalence test.
+> (5) **The column sweep spans five read surfaces** in
+> `competition.logic.ts` (row interface, `mapRowToRecord`, idempotency
+> fast-path SELECT, by-hash SELECT, `listPlayerCompetitiveScores`, plus
+> the INSERT/RETURNING chain) — the EC-376 missed-column lesson, encoded
+> as a locked sweep list.
 
 ---
 
