@@ -46,11 +46,17 @@ const props = defineProps<Props>();
 // therefore the only path that touches a draft from this component.
 const { loadFromJson } = useLoadoutDraft(props.registry);
 
-const cardsByKey = computed<Map<string, FlatCard>>(() => {
+const cardsByExtId = computed<Map<string, FlatCard>>(() => {
   const lookup = new Map<string, FlatCard>();
   for (const card of props.registry.listCards()) {
-    if (!lookup.has(card.key)) {
-      lookup.set(card.key, card);
+    // why: compositions reference cards by set-qualified extId (D-24018,
+    // e.g. "core/red-skull"), NOT by the flatten's internal `key`
+    // ("core-mastermind-red-skull-red-skull"). A mastermind's cards (and a
+    // hero's sides) share one extId — keep the first so the preview resolves
+    // the group by the id the URL actually carries. Keying by `key` here left
+    // every scheme/mastermind unresolvable ("Unknown ext_id") since WP-114.
+    if (!lookup.has(card.extId)) {
+      lookup.set(card.extId, card);
     }
   }
   return lookup;
@@ -63,7 +69,7 @@ interface PreviewEntry {
 }
 
 function buildEntry(extId: string): PreviewEntry {
-  const card = cardsByKey.value.get(extId);
+  const card = cardsByExtId.value.get(extId);
   if (card === undefined) {
     return { id: extId, name: extId, isKnown: false };
   }
