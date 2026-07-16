@@ -1,12 +1,12 @@
 # To Run
 # Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
-# .\download-legendarycardgame-core2e.ps1
+# .\download-legendarycardgame-co2e.ps1
 
 # =========================
 # Configuration
 # =========================
 $PageUrl   = "https://www.legendarycardgame.com/core-set-at-a-glace-2ndedition"
-$OutputDir = "core2e"
+$OutputDir = "co2e"
 
 # =========================
 # Setup

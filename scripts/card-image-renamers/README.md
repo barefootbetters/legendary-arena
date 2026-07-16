@@ -3,7 +3,7 @@
 PowerShell scripts that rename the converted WebP card faces from their
 source-side names (e.g. `2eHeroSpider-Man_1Rare.webp`) to the
 deterministic R2 convention `{setAbbr}-{ribbon}-{slug}.webp` (e.g.
-`core2e-hr-...webp`) — the last staging step before R2 upload.
+`co2e-hr-...webp`) — the last staging step before R2 upload.
 
 These are **backup copies for version control only**. The canonical,
 runnable copies live in the staging repo alongside the image
@@ -29,13 +29,13 @@ codes come from the upstream `card-types.json` prefix registry
 
 ## Files
 
-- `rename-core2e-images.ps1` — Core Set (2nd Edition):
-  `original\core2e\` → `renamed\core2e\`. **151** cards mapped (the one
+- `rename-co2e-images.ps1` — Core Set (2nd Edition):
+  `original\co2e\` → `renamed\co2e\`. **151** cards mapped (the one
   stray non-card page image is deliberately omitted).
 
-## Known verification items (core2e)
+## Known verification items (co2e)
 
-Because no core2e card data exists yet, some target slugs are provisional
+Because no co2e card data exists yet, some target slugs are provisional
 and the script prints a "BEFORE UPLOADING TO R2" checklist:
 
 - **Hero slugs are placeholders.** All 60 hero targets use rarity

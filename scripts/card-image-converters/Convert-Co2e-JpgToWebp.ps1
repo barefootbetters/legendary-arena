@@ -1,9 +1,9 @@
 # How to run
 # Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-# .\Convert-Core2e-JpgToWebp.ps1
+# .\Convert-Co2e-JpgToWebp.ps1
 #
-# Convert-Core2e-JpgToWebp.ps1
-# Converts all .jpg/.jpeg in original-jpeg\core2e to .webp and saves to original\core2e
+# Convert-Co2e-JpgToWebp.ps1
+# Converts all .jpg/.jpeg in original-jpeg\co2e to .webp and saves to original\co2e
 # Requires ImageMagick (magick.exe). Assumes magick is on PATH; falls back to known install path.
 
 Set-StrictMode -Version Latest
@@ -14,8 +14,8 @@ $ErrorActionPreference = "Stop"
 # portable across machines. The older Convert-*.ps1 scripts hardcode a
 # per-machine $StagingRoot (e.g. C:\GISE\...) and break when moved.
 $StagingRoot = $PSScriptRoot
-$InputDir    = Join-Path $StagingRoot "original-jpeg\core2e"
-$OutputDir   = Join-Path $StagingRoot "original\core2e"
+$InputDir    = Join-Path $StagingRoot "original-jpeg\co2e"
+$OutputDir   = Join-Path $StagingRoot "original\co2e"
 
 # --- WebP settings ---
 $Quality     = 80              # 0-100 (higher = larger file / better quality)
