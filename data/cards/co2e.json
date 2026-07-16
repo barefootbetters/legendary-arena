@@ -1319,55 +1319,55 @@
       "slug": "thor",
       "team": "avengers",
       "cardCounts": {
+        "Glory of Asgard": 5,
         "Odinson": 5,
-        "Surge of Power": 5,
-        "Call Lightning": 3,
+        "Spark of the Divine": 3,
         "God of Thunder": 1
       },
       "cards": [
         {
-          "name": "Odinson",
-          "displayName": "Odinson",
-          "slug": "odinson",
+          "name": "Glory of Asgard",
+          "displayName": "Glory of Asgard",
+          "slug": "glory-of-asgard",
           "rarity": 1,
           "rarityLabel": "Common 1",
           "slot": 1,
           "hc": "strength",
           "cost": 3,
+          "attack": "0+",
+          "recruit": "2",
+          "abilities": [
+            "Once this turn, if you made at least 8[icon:recruit] this turn, you get +3[icon:attack]."
+          ]
+        },
+        {
+          "name": "Odinson",
+          "displayName": "Odinson",
+          "slug": "odinson",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "strength",
+          "cost": 5,
           "attack": null,
-          "recruit": "2+",
+          "recruit": "3+",
           "abilities": [
             "[hc:strength]: You get +2[icon:recruit]."
           ]
         },
         {
-          "name": "Surge of Power",
-          "displayName": "Surge of Power",
-          "slug": "surge-of-power",
-          "rarity": 1,
-          "rarityLabel": "Common 2",
-          "slot": 2,
-          "hc": "ranged",
-          "cost": 4,
-          "attack": "0+",
-          "recruit": "2",
-          "abilities": [
-            "If you made 8 or more [icon:recruit] this turn, you get +3[icon:attack]."
-          ]
-        },
-        {
-          "name": "Call Lightning",
-          "displayName": "Call Lightning",
-          "slug": "call-lightning",
+          "name": "Spark of the Divine",
+          "displayName": "Spark of the Divine",
+          "slug": "spark-of-the-divine",
           "rarity": 2,
           "rarityLabel": "Uncommon",
           "slot": 3,
           "hc": "ranged",
           "cost": 6,
-          "attack": "3+",
-          "recruit": null,
+          "attack": "0+",
+          "recruit": "3",
           "abilities": [
-            "[hc:ranged]: You get +3[icon:attack]."
+            "Once this turn, if you made at least 8[icon:recruit] this turn, you may KO a card from your hand or discard pile. If you do, you get +3[icon:attack]."
           ]
         },
         {
@@ -1377,12 +1377,12 @@
           "rarity": 3,
           "rarityLabel": "Rare",
           "slot": 4,
-          "hc": "ranged",
+          "hc": "strength",
           "cost": 8,
           "attack": "0+",
           "recruit": "5",
           "abilities": [
-            "You can use [icon:recruit] as [icon:attack] this turn."
+            "You can spend any amount of your [icon:recruit] as [icon:attack] this turn."
           ]
         }
       ],
@@ -1390,31 +1390,31 @@
         {
           "id": "p1",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-thor-common-1.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-thor-glory-of-asgard.webp",
           "sides": [
-            "odinson"
+            "glory-of-asgard"
           ]
         },
         {
           "id": "p2",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-thor-common-2.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-thor-odinson.webp",
           "sides": [
-            "surge-of-power"
+            "odinson"
           ]
         },
         {
           "id": "p3",
           "count": 3,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-thor-uncommon.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-thor-spark-of-the-divine.webp",
           "sides": [
-            "call-lightning"
+            "spark-of-the-divine"
           ]
         },
         {
           "id": "p4",
           "count": 1,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-thor-rare.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-thor-god-of-thunder.webp",
           "sides": [
             "god-of-thunder"
           ]
