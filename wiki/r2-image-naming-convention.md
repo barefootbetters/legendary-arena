@@ -14,9 +14,10 @@ status: canonical
 source:
   - ../packages/registry/src/heroImageUrl.ts
   - ../scripts/convert-cards/convert-cards-v15.mjs
+  - ../data/metadata/sets.json
   - ../data/metadata/card-types.json
   - ../docs/ai/DECISIONS.md
-last-reviewed: 2026-06-10
+last-reviewed: 2026-07-15
 ---
 
 # R2 Image Naming Convention
@@ -54,6 +55,92 @@ full shape is:
 - All images are `.webp`.
 - Slugs are **lowercase, hyphen-separated** — never underscores, never
   uppercase. `S.H.I.E.L.D.` normalizes to the slug `shield` in the pipeline.
+
+### Set abbreviation (`setAbbr`) — from `sets.json`
+
+The `{setAbbr}` that opens both the R2 directory and the filename is a set's
+**`abbr`** — the four-character code assigned to each expansion in
+[`data/metadata/sets.json`](../data/metadata/sets.json). That file is the
+canonical set index the Registry loads at startup
+([`localRegistry.ts`](../packages/registry/src/impl/localRegistry.ts),
+[`httpRegistry.ts`](../packages/registry/src/impl/httpRegistry.ts) read it as
+`metadata/sets.json`). Each entry has seven fields:
+
+```json
+{
+  "id": 26,
+  "abbr": "nmut",
+  "pkgId": 26,
+  "slug": "new-mutants",
+  "name": "New Mutants",
+  "releaseDate": "2020-04-16",
+  "type": "22nd Expansion"
+}
+```
+
+Only **`abbr`** feeds the image path — it is the `nmut` in
+`nmut/nmut-hr-wolfsbane-night-vision.webp`. The other fields (`name`, `slug`,
+`releaseDate`, `type`) describe the set for the Registry and Viewer but never
+appear in an image URL. Note the set-level `slug` (`new-mutants`) is **not** the
+image slug — image slugs come from the individual card, not the set. `sets.json`
+is therefore the **decoder ring** for any R2 path: given a four-letter
+directory, it names the set.
+
+The 40 sets and their abbreviations:
+
+| `abbr` | Set (`name`) | `type` |
+|---|---|---|
+| `core` | Core Set | 1st Core Set |
+| `dkcy` | Dark City | 1st Expansion |
+| `ff04` | Fantastic Four | 2nd Expansion |
+| `pttr` | Paint the Town Red | 3rd Expansion |
+| `vill` | Villains | 2nd Core Set |
+| `gotg` | Guardians of the Galaxy | 4th Expansion |
+| `fear` | Fear Itself | 5th Expansion |
+| `3dtc` | Playable Marvel 3D Trading Cards | Promo / Trading Card Mini-Expansion |
+| `ssw1` | Secret Wars Vol 1 | 6th Expansion |
+| `ssw2` | Secret Wars Vol 2 | 7th Expansion |
+| `ca75` | Captain America 75th | 8th Expansion |
+| `cvwr` | Civil War | 9th Expansion |
+| `dead` | Deadpool | 10th Expansion |
+| `noir` | Noir | 11th Expansion |
+| `xmen` | X-Men | 12th Expansion |
+| `smhc` | Spider-Man Homecoming | 13th Expansion |
+| `chmp` | Champions | 14th Expansion |
+| `wwhk` | World War Hulk | 15th Expansion |
+| `msp1` | Marvel Studios, Phase 1 | 3rd Core Set |
+| `antm` | Ant-Man | 16th Expansion |
+| `vnom` | Venom | 17th Expansion |
+| `dims` | Dimensions | 18th Expansion |
+| `rvlt` | Revelations | 19th Expansion |
+| `shld` | S.H.I.E.L.D. | 20th Expansion |
+| `asrd` | Heroes of Asgard | 21st Expansion |
+| `nmut` | New Mutants | 22nd Expansion |
+| `cosm` | Into the Cosmos | 23rd Expansion |
+| `rlmk` | Realm of Kings | 24th Expansion |
+| `anni` | Annihilation | 25th Expansion |
+| `msmc` | Messiah Complex | 26th Expansion |
+| `dstr` | Doctor Strange | 27th Expansion |
+| `mgtg` | MCU Guardians of the Galaxy | 28th Expansion |
+| `bkpt` | Black Panther | 29th Expansion |
+| `bkwd` | Black Widow | 30th Expansion |
+| `msis` | MCU The Infinity Saga | 31st Expansion |
+| `mdns` | Midnight Sons | 32nd Expansion |
+| `wtif` | What If | 4th Core Set |
+| `amwp` | Ant-Man and the Wasp | 33rd Expansion |
+| `2099` | 2099 | 34th Expansion |
+| `wpnx` | Weapon X | 35th Expansion |
+
+> **The convert pipeline does not read `sets.json` for the abbreviation.**
+> Stage 1 ([`convert-cards-v15.mjs`](../scripts/convert-cards/convert-cards-v15.mjs))
+> carries its own hardcoded `SET_ABBR_MAP` keyed by the **upstream** source-set
+> name (`'NewMutants' → 'nmut'`) and composes every `imageUrl` from that. The
+> `abbr` values in `sets.json` are identical to `SET_ABBR_MAP`'s values by
+> construction, so the two never disagree in practice — but `sets.json` is the
+> canonical registry the running app reads, while the pipeline map is a
+> build-time convenience. Adding a new set means adding the abbreviation in
+> **both** places, and they must match, until the naming is made data-driven
+> from `sets.json` (a Work-Packet-scoped change, not in place today).
 
 ### Ribbon codes by card type
 
@@ -249,6 +336,10 @@ are assigned in code rather than derived from `card-types.json` (see Edge Cases)
 
 ## Data Files
 
+- [`data/metadata/sets.json`](../data/metadata/sets.json) — the canonical
+  40-entry set index (`id`, `abbr`, `pkgId`, `slug`, `name`, `releaseDate`,
+  `type`). Its `abbr` field is the `{setAbbr}` directory + filename prefix; the
+  Registry loads it at startup.
 - `modern-master-strike/src/data/card-types.json` (upstream, sibling repo) — the
   authoritative 37-entry card-type **prefix** registry.
 - [`data/metadata/card-types.json`](../data/metadata/card-types.json) — the
@@ -270,8 +361,10 @@ are assigned in code rather than derived from `card-types.json` (see Edge Cases)
 
 - [`heroImageUrl.ts`](../packages/registry/src/heroImageUrl.ts) — host constant
   and hero URL builder
+- [`data/metadata/sets.json`](../data/metadata/sets.json) — canonical set index;
+  the `abbr` field is the `{setAbbr}` directory + filename prefix
 - [`convert-cards-v15.mjs`](../scripts/convert-cards/convert-cards-v15.mjs) —
-  ribbon assignment and `imageUrl` generation
+  ribbon assignment, the hardcoded `SET_ABBR_MAP`, and `imageUrl` generation
 - `modern-master-strike/src/data/card-types.json` (upstream card-data origin,
   sibling repo) — the authoritative 37-entry card-type **prefix** registry
   (`sc`, `st`, `sa`, `tr`, …)
