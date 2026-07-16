@@ -1802,22 +1802,36 @@
           "name": "Destroyer",
           "slug": "destroyer",
           "vp": "5",
-          "vAttack": "7",
+          "vAttack": "8",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-enemies-of-asgard-destroyer.webp",
           "abilities": [
-            "Fight: KO all your [team:shield] Heroes.",
-            "Escape: Each player KOs two of their Heroes. [effect:koHeroEachPlayerMag2]"
+            "Ambush: Each player KOs a non-grey Hero from their discard pile.",
+            "Fight: KO up to two grey Heroes from your discard pile.",
+            "Escape: Repeat the Ambush effect."
           ],
-          "copies": 1
+          "copies": 2
         },
         {
           "name": "Enchantress",
           "slug": "enchantress",
           "vp": "4",
-          "vAttack": "6",
+          "vAttack": "5+",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-enemies-of-asgard-enchantress.webp",
           "abilities": [
-            "Fight: Draw three cards."
+            "Enchantress gets +1[icon:attack] for each Bystander she has.",
+            "Ambush: Enchantress captures a Bystander from the Bystander Deck and from each player's Victory Pile (of that player's choice)."
+          ],
+          "copies": 2
+        },
+        {
+          "name": "Frost Giant Warrior",
+          "slug": "frost-giant-warrior",
+          "vp": "2",
+          "vAttack": "4",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-enemies-of-asgard-frost-giant-warrior.webp",
+          "abilities": [
+            "Ambush: Each player discards a [hc:ranged] Hero or gains a Wound.",
+            "Fight: You may KO a grey Hero from your discard pile."
           ],
           "copies": 2
         },
@@ -1828,8 +1842,8 @@
           "vAttack": "6",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-enemies-of-asgard-ymir-frost-giant-king.webp",
           "abilities": [
-            "Ambush: Each player reveals a [hc:ranged] Hero or gains a Wound.",
-            "Fight: Choose a player. That player KOs any number of Wounds from their hand and discard pile."
+            "Ambush: Choose a Frost Giant Warrior from any player's Victory Pile to enter the city.",
+            "Fight: You may KO a grey Hero from your discard pile."
           ],
           "copies": 2
         }
