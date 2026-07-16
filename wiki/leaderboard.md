@@ -706,6 +706,25 @@ instead of a bare table. Hand-authored mockup:
 > [DECISIONS.md](../docs/ai/DECISIONS.md) entry (it touches D-24131's
 > decided aggregation semantics) and a Work Packet.
 
+> **Update 2026-07-16 — DECIDED.** Ratified the same day by **D-24187**
+> ([DECISIONS.md](../docs/ai/DECISIONS.md)), with
+> [WP-384](../docs/ai/work-packets/WP-384-fixed-hero-pool-gauntlet-server.md)
+> (server) + [WP-385](../docs/ai/work-packets/WP-385-fixed-hero-pool-gauntlet-client.md)
+> (client) drafted, pending execution. The fork below resolved to
+> **parallel divisions** — the shipped open gauntlet stays byte-unchanged
+> as the acquisition surface; the fixed-pool board lands beside it as the
+> prestige division the championship title attaches to. One refinement
+> over the text below: the pool budget is **exactly `heroCount + 2`**
+> (not "up to"), so the qualification check is binary — the union of
+> heroes across an entry's legs fits the budget or it doesn't. Locked
+> parameters: `team_key` persisted at submission (sorted set-qualified
+> hero ids, derived server-side from the verified replay; migration 034 +
+> a one-time artifact backfill under a narrow D-24187 carve-out);
+> additive `…-fixed[-p<N>].json` boards, lazy; `heroPool` published on
+> fixed entries; `fixedEntryCounts` on the index; deterministic bounded
+> assignment search with logged (never silent) truncation. This callout
+> is the historical pointer — D-24187 is the spec.
+
 **The recommendation: a gauntlet entry must be earned with a fixed hero
 group plus 1–2 alternates.** To claim a set's mastermind championship, a
 player clears every leg (every scheme in the set, vs that mastermind)
