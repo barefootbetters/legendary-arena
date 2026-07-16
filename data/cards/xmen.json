@@ -742,7 +742,7 @@
           "attack": "2+",
           "recruit": null,
           "abilities": [
-            "To play this card, you must discard a card from your hand.",
+            "To play this card, you must discard a card from your hand. [keyword:discard-to-play:1]",
             "[keyword:Berserk], [keyword:Berserk]"
           ]
         },

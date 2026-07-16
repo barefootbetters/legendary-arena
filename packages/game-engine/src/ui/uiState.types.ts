@@ -133,6 +133,12 @@ export interface UIState {
   // on .playerID), mirroring pendingOptionalPutBottomHQ. Absent (undefined) means no
   // pending choice; the client must not render the prompt then.
   pendingReturnZeroCostDiscard?: UIPendingReturnZeroCostDiscard;
+  // why: WP-383 / D-24184 — projects the FRONT entry of G.pendingDiscardToPlay with the
+  // eligible hand cards (each carrying its instance cardId + display) so the chooser can
+  // render the mandatory "discard a card to play this card" prompt. Redacted (omitted)
+  // for every audience except the chooser (keyed on .playerID). Absent (undefined) means
+  // no pending choice; the client must not render the prompt then.
+  pendingDiscardToPlay?: UIPendingDiscardToPlay;
   // why: WP-258 — projects the WP-257 runtime hollow-effect channel
   // (G.diagnostics.hollowEffects) so the client can render a structured debug
   // panel + carry the records on the Download-diagnostics export. OPTIONAL on
@@ -691,6 +697,26 @@ export interface UIPendingReturnZeroCostDiscard {
   // why: the redaction key; the chooser-only filter compares audience.playerId
   // against this, mirroring UIPendingOptionalPutBottomHQ.playerID.
   playerID: string;
+  eligibleDiscardCards: UIEligibleKoHeroCard[];
+}
+
+/**
+ * UI contract for resolving a pending discard-to-play cost ("To play this card,
+ * you must discard a card from your hand" — Cyclops Determination/Optic Blast +
+ * siblings, WP-383 / D-24184).
+ *
+ * `eligibleDiscardCards` REUSES `UIEligibleKoHeroCard` (zone is always 'hand'
+ * here) — the chooser's whole current hand, in hand order (the same list the
+ * resolve move validates against, the round-trip rule). The choice is mandatory
+ * (no decline). `remaining` is how many cards still must be discarded (starts at
+ * the cost magnitude; the client can label progress for multi-discard cards).
+ */
+export interface UIPendingDiscardToPlay {
+  // why: the redaction key; the chooser-only filter compares audience.playerId
+  // against this, mirroring UIPendingReturnZeroCostDiscard.playerID.
+  playerID: string;
+  /** How many more cards the player must discard to complete the play. */
+  remaining: number;
   eligibleDiscardCards: UIEligibleKoHeroCard[];
 }
 

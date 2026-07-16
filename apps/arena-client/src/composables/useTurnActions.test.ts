@@ -295,10 +295,35 @@ describe('useTurnActions — hasPendingReturnZeroCostDiscard gating (D-24139)', 
     assert.equal(actions.canEndTurn().allowed, true);
     assert.equal(actions.canPassPriority().allowed, true);
   });
+});
+
+describe('useTurnActions — hasPendingDiscardToPlay gating (WP-383 / D-24184)', () => {
+  const DISCARD_TO_PLAY_REASON =
+    'Discard a card from your hand to complete the play before taking another action.';
+  // why: hasPendingDiscardToPlay is the 9th pending flag (position 11): stage,
+  // isViewerTurn, then 8 falses for the other pending flags, then true.
+  const withDiscardToPlay = (stage: string) =>
+    useTurnActions(stage, true, false, false, false, false, false, false, false, false, true);
+
+  test('canEndTurn blocked at EVERY stage when hasPendingDiscardToPlay is true', () => {
+    for (const stage of ['start', 'main', 'cleanup'] as const) {
+      const result = withDiscardToPlay(stage).canEndTurn();
+      assert.equal(result.allowed, false, `endTurn blocked at ${stage}`);
+      assert.equal(result.reason, DISCARD_TO_PLAY_REASON, 'discard-to-play gate reason matches the locked value');
+    }
+  });
+
+  test('canPassPriority blocked at EVERY stage when hasPendingDiscardToPlay is true (board frozen)', () => {
+    for (const stage of ['start', 'main', 'cleanup'] as const) {
+      const result = withDiscardToPlay(stage).canPassPriority();
+      assert.equal(result.allowed, false, `passPriority blocked at ${stage}`);
+      assert.equal(result.reason, DISCARD_TO_PLAY_REASON);
+    }
+  });
 
   // why: WP-380 — canHealWounds gates the Heal-Wounds button. Args after the 8
   // pending flags are: hasWoundInHand, hasActedThisTurn, hasHealedThisTurn.
-  const NO_PENDING = [false, false, false, false, false, false, false, false] as const;
+  const NO_PENDING = [false, false, false, false, false, false, false, false, false] as const;
 
   test('canHealWounds allowed on the viewer main turn with a Wound in hand, not acted, not healed', () => {
     const result = useTurnActions('main', true, ...NO_PENDING, true, false, false).canHealWounds();
@@ -322,7 +347,7 @@ describe('useTurnActions — hasPendingReturnZeroCostDiscard gating (D-24139)', 
 
   test('canHealWounds blocked while a block-all choice is pending', () => {
     // 4th arg (hasPendingKoChoice) = true
-    const result = useTurnActions('main', true, false, true, false, false, false, false, false, false, true, false, false).canHealWounds();
+    const result = useTurnActions('main', true, false, true, false, false, false, false, false, false, false, true, false, false).canHealWounds();
     assert.equal(result.allowed, false);
     assert.match(result.reason!, /pending choice/i);
   });

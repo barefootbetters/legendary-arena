@@ -123,6 +123,11 @@ const NOT_YOUR_TURN: GatingResult = {
  *   blocks `canEndTurn` and `canPassPriority` at ANY stage (D-24139 — the engine's full
  *   block-all guard set freezes the board, mirroring `hasPendingKoChoice`). Defaults to
  *   false. The choice is mandatory, so the reason names no decline exit.
+ * @param hasPendingDiscardToPlay Whether the viewer has an unresolved
+ *   discard-to-play cost (from `UIState.pendingDiscardToPlay !== undefined`). Blocks
+ *   End Turn / Pass Priority at any stage (the engine's block-all guard set freezes the
+ *   board). Defaults to false. The cost is mandatory, so the reason names no decline
+ *   exit. WP-383 / D-24184.
  * @param hasWoundInHand Whether the viewer holds at least one Wound in hand
  *   (derived client-side by scanning `viewer.handCards` for the Wound ext_id).
  *   Gates `canHealWounds`. Defaults to false. WP-380.
@@ -142,6 +147,7 @@ export function useTurnActions(
   hasPendingOptionalPutBottomHQ: boolean = false,
   hasPendingPutAnyNumberBottomHQ: boolean = false,
   hasPendingReturnZeroCostDiscard: boolean = false,
+  hasPendingDiscardToPlay: boolean = false,
   hasWoundInHand: boolean = false,
   hasActedThisTurn: boolean = false,
   hasHealedThisTurn: boolean = false,
@@ -265,6 +271,15 @@ export function useTurnActions(
           reason: 'Return a 0-cost card from your discard pile to your hand before taking another action.',
         };
       }
+      // why: WP-383 / D-24184 — End Turn / Pass Priority blocked at any stage while a
+      // discard-to-play cost is pending (the engine's full block-all guard set freezes
+      // the board). The cost is mandatory — no decline exit to name.
+      if (hasPendingDiscardToPlay) {
+        return {
+          allowed: false,
+          reason: 'Discard a card from your hand to complete the play before taking another action.',
+        };
+      }
       if (currentStage === 'cleanup' && hasPendingChoice) {
         return {
           allowed: false,
@@ -337,6 +352,15 @@ export function useTurnActions(
         return {
           allowed: false,
           reason: 'Return a 0-cost card from your discard pile to your hand before taking another action.',
+        };
+      }
+      if (hasPendingDiscardToPlay) {
+        // why: WP-383 / D-24184 — the engine's block-all guards block endTurn while
+        // pendingDiscardToPlay is non-empty; this client-side gate surfaces the reason
+        // so the player sees a tooltip instead of a silent rejection.
+        return {
+          allowed: false,
+          reason: 'Discard a card from your hand to complete the play before taking another action.',
         };
       }
       if (currentStage === 'cleanup' && hasPendingChoice) {

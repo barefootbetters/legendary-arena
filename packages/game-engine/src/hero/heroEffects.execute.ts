@@ -38,6 +38,7 @@ import { resolveCountSource } from './heroCountSource.resolve.js';
 import { interpretHeroPrimitiveEffect } from './effectPrimitive.interpret.js';
 import { getEligibleVictoryVillains } from '../moves/resolveVictoryPileCardPick.js';
 import { getEligibleZeroCostDiscardCards } from '../moves/resolveReturnZeroCostDiscard.js';
+import { getEligibleDiscardToPlayCards } from '../moves/resolveDiscardToPlay.js';
 import { formatCardRef } from '../log/logDisplay.js';
 import {
   describeRevealPredicate,
@@ -75,6 +76,8 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   'shuffle-discard-empty-reward',
   // why: WP-382 / D-24183 — auto-resolving Wound-restricted KO-a-Wound-then-reward (Healing Factor family); has a HERO_EFFECT_HANDLERS entry (heroEffectKoWoundReward), so it belongs here.
   'ko-wound-reward',
+  // why: WP-383 / D-24184 — mandatory discard-to-play COST; has a HERO_EFFECT_HANDLERS entry (heroEffectDiscardToPlay) that parks the PendingDiscardToPlay, so it belongs here.
+  'discard-to-play',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -1433,6 +1436,51 @@ function heroEffectReturnZeroCostDiscard(
 }
 
 /**
+ * Park handler for the `discard-to-play` hero card cost (WP-383 / D-24184).
+ *
+ * The printed "To play this card, you must discard a card from your hand"
+ * (Cyclops Determination/Optic Blast + siblings). Parks a mandatory
+ * PendingDiscardToPlay on `G.pendingDiscardToPlay[]` (lazy-init) with
+ * `remaining` set to the cost magnitude, resolved by resolveDiscardToPlay.
+ *
+ * // why: payability (hand holds ≥ magnitude cards after the played card moved
+ * to inPlay) is pre-guaranteed by the D-24185 pre-commit precondition in
+ * playCard — an unpayable play never commits, so this handler never runs
+ * without enough cards. The eligibility re-check below is defensive only (a
+ * fail-closed against a future play path that skips the precondition); it must
+ * NOT be relied on to prevent the base-power leak — that is the precondition's
+ * job, before commit. The card move itself happens at resolve time.
+ */
+function heroEffectDiscardToPlay(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  effect: HeroEffectDescriptor,
+): void {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones) { return; }
+  const remaining = effect.magnitude ?? 1;
+  if (getEligibleDiscardToPlayCards(G, playerID).length < remaining) {
+    // why: defensive fail-closed — the precondition should have blocked this,
+    // so reaching here means an unexpected play path; log and skip the park
+    // rather than create an unpayable pending choice that would freeze the turn.
+    pushLog(G,
+      `Player ${playerID} could not pay the discard-to-play cost — not enough cards in hand, so no discard was required.`,
+    );
+    return;
+  }
+  // why: lazy-init at the park site (mirrors return-zero-cost-discard) — NEVER
+  // in Game.setup. The park itself is SILENT; each discard is logged at resolve.
+  if (!G.pendingDiscardToPlay) { G.pendingDiscardToPlay = []; }
+  G.pendingDiscardToPlay.push({
+    playerID,
+    sourceCardId: cardId,
+    remaining,
+  });
+}
+
+/**
  * Park handler for the `victory-villain-attack` hero keyword (WP-285 / D-24067).
  *
  * Checks whether the player has at least one eligible villain in their victory pile
@@ -1596,6 +1644,7 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   'victory-villain-attack': heroEffectVictoryVillainAttack,
   'draw-or-empowered': heroEffectDrawOrEmpowered,
   'return-zero-cost-discard': heroEffectReturnZeroCostDiscard,
+  'discard-to-play': heroEffectDiscardToPlay,
   // why: D-24156 — one shared handler under both keys; it branches on effect.type
   // (self = active player, each = every player).
   'gain-wound-self': heroEffectGainWound,

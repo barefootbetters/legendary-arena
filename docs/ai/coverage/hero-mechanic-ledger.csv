@@ -168,7 +168,7 @@ core/black-widow,Black Widow,core,draw,executable,,,packages/game-engine/src/her
 core/black-widow,Black Widow,core,optional-ko-reward,executable,WP-248,,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward
 core/black-widow,Black Widow,core,rescue,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#rescue
 core/captain-america,Captain America,core,(unmarked),unmarked,,,
-core/cyclops,Cyclops,core,(unmarked),unmarked,,,
+core/cyclops,Cyclops,core,discard-to-play,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play
 core/deadpool,Deadpool,core,(unmarked),unmarked,,,
 core/emma-frost,Emma Frost,core,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
 core/gambit,Gambit,core,reveal-cost-attack,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-cost-attack
@@ -485,6 +485,7 @@ ssw2/elsa-bloodstone,Elsa Bloodstone,ssw2,patrol,unsupported,,,
 ssw2/elsa-bloodstone,Elsa Bloodstone,ssw2,spectrum,condition,,,
 ssw2/elsa-bloodstone,Elsa Bloodstone,ssw2,wall-crawl,executable,WP-273,D-24049,packages/game-engine/src/moves/recruitHero.ts
 ssw2/phoenix-force-cyclops,Phoenix Force Cyclops,ssw2,(unmarked),unmarked,,,
+ssw2/ruby-summers,Ruby Summers,ssw2,discard-to-play,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play
 ssw2/ruby-summers,Ruby Summers,ssw2,teleport,unsupported,,,
 ssw2/shang-chi,Shang-Chi,ssw2,patrol,unsupported,,,
 ssw2/shang-chi,Shang-Chi,ssw2,wall-crawl,executable,WP-273,D-24049,packages/game-engine/src/moves/recruitHero.ts
@@ -504,7 +505,7 @@ vill/dr-octopus,Dr. Octopus,vill,draw,executable,,,packages/game-engine/src/hero
 vill/electro,Electro,vill,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts
 vill/enchantress,Enchantress,vill,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
 vill/green-goblin,Green Goblin,vill,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts
-vill/juggernaut,Juggernaut,vill,(unmarked),unmarked,,,
+vill/juggernaut,Juggernaut,vill,discard-to-play,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play
 vill/kingpin,Kingpin,vill,(unmarked),unmarked,,,
 vill/kraven,Kraven,vill,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts
 vill/loki,Loki,vill,(unmarked),unmarked,,,
@@ -618,6 +619,7 @@ xmen/colossus-wolverine,Colossus & Wolverine,xmen,x-gene,unsupported,,,
 xmen/dazzler,Dazzler,xmen,lightshow,unsupported,,,
 xmen/dazzler,Dazzler,xmen,piercing-energy,unsupported,,,
 xmen/havok,Havok,xmen,berserk,executable,WP-256,D-24031,packages/game-engine/src/hero/effectPrimitive.interpret.ts
+xmen/havok,Havok,xmen,discard-to-play,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play
 xmen/havok,Havok,xmen,lightshow,unsupported,,,
 xmen/havok,Havok,xmen,x-gene,unsupported,,,
 xmen/jubilee,Jubilee,xmen,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
