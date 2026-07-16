@@ -2,13 +2,13 @@
   "schemaVersion": 1,
   "cardType": "hero",
   "summary": {
-    "totalRows": 624,
+    "totalRows": 645,
     "byStatus": {
-      "executable": 212,
+      "executable": 227,
       "deferred": 0,
       "condition": 5,
-      "unsupported": 364,
-      "unmarked": 43
+      "unsupported": 365,
+      "unmarked": 48
     },
     "distinctMechanics": 116
   },
@@ -1442,6 +1442,216 @@
       "wp": "",
       "decision": "",
       "handler": ""
+    },
+    {
+      "extId": "co2e/black-widow",
+      "heroName": "Black Widow",
+      "set": "co2e",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "wp": "WP-247",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count"
+    },
+    {
+      "extId": "co2e/black-widow",
+      "heroName": "Black Widow",
+      "set": "co2e",
+      "mechanic": "draw",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw"
+    },
+    {
+      "extId": "co2e/black-widow",
+      "heroName": "Black Widow",
+      "set": "co2e",
+      "mechanic": "optional-ko-reward",
+      "status": "executable",
+      "wp": "WP-248",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward"
+    },
+    {
+      "extId": "co2e/black-widow",
+      "heroName": "Black Widow",
+      "set": "co2e",
+      "mechanic": "rescue",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#rescue"
+    },
+    {
+      "extId": "co2e/captain-america",
+      "heroName": "Captain America",
+      "set": "co2e",
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
+      "wp": "",
+      "decision": "",
+      "handler": ""
+    },
+    {
+      "extId": "co2e/cyclops",
+      "heroName": "Cyclops",
+      "set": "co2e",
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
+      "wp": "",
+      "decision": "",
+      "handler": ""
+    },
+    {
+      "extId": "co2e/emma-frost",
+      "heroName": "Emma Frost",
+      "set": "co2e",
+      "mechanic": "draw",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw"
+    },
+    {
+      "extId": "co2e/gambit",
+      "heroName": "Gambit",
+      "set": "co2e",
+      "mechanic": "reveal-cost-attack",
+      "status": "executable",
+      "wp": "WP-253",
+      "decision": "D-24024",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-cost-attack"
+    },
+    {
+      "extId": "co2e/hawkeye",
+      "heroName": "Hawkeye",
+      "set": "co2e",
+      "mechanic": "draw",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw"
+    },
+    {
+      "extId": "co2e/hulk",
+      "heroName": "Hulk",
+      "set": "co2e",
+      "mechanic": "gain-wound-each",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-each"
+    },
+    {
+      "extId": "co2e/hulk",
+      "heroName": "Hulk",
+      "set": "co2e",
+      "mechanic": "ko-wound-reward",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward"
+    },
+    {
+      "extId": "co2e/iron-man",
+      "heroName": "Iron Man",
+      "set": "co2e",
+      "mechanic": "draw",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw"
+    },
+    {
+      "extId": "co2e/nick-fury",
+      "heroName": "Nick Fury",
+      "set": "co2e",
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
+      "wp": "",
+      "decision": "",
+      "handler": ""
+    },
+    {
+      "extId": "co2e/rogue",
+      "heroName": "Rogue",
+      "set": "co2e",
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
+      "wp": "",
+      "decision": "",
+      "handler": ""
+    },
+    {
+      "extId": "co2e/spider-man",
+      "heroName": "Spider-Man",
+      "set": "co2e",
+      "mechanic": "rescue",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#rescue"
+    },
+    {
+      "extId": "co2e/spider-man",
+      "heroName": "Spider-Man",
+      "set": "co2e",
+      "mechanic": "reveal",
+      "status": "executable",
+      "wp": "WP-253",
+      "decision": "D-24024",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal"
+    },
+    {
+      "extId": "co2e/spider-man",
+      "heroName": "Spider-Man",
+      "set": "co2e",
+      "mechanic": "reveal-count",
+      "status": "unsupported",
+      "wp": "",
+      "decision": "",
+      "handler": ""
+    },
+    {
+      "extId": "co2e/storm",
+      "heroName": "Storm",
+      "set": "co2e",
+      "mechanic": "draw",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw"
+    },
+    {
+      "extId": "co2e/thor",
+      "heroName": "Thor",
+      "set": "co2e",
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
+      "wp": "",
+      "decision": "",
+      "handler": ""
+    },
+    {
+      "extId": "co2e/wolverine",
+      "heroName": "Wolverine",
+      "set": "co2e",
+      "mechanic": "draw",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw"
+    },
+    {
+      "extId": "co2e/wolverine",
+      "heroName": "Wolverine",
+      "set": "co2e",
+      "mechanic": "ko-wound-reward",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward"
     },
     {
       "extId": "core/black-widow",
