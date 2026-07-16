@@ -15,7 +15,7 @@ source:
   - ../packages/lagn-spec/README.md
   - ../docs/ai/work-packets/WP-244-lagn-spec-publication.md
   - ../docs/ai/execution-checklists/EC-275-lagn-spec-publication.checklist.md
-last-reviewed: 2026-06-12
+last-reviewed: 2026-07-16
 ---
 
 # LAGN v1.0 Specification
@@ -25,7 +25,9 @@ last-reviewed: 2026-06-12
 LAGN (Legendary Arena Game Notation) is the open standard format for
 representing Legendary Arena game state: match setup, card catalog metadata,
 and deterministic replay logs. Published as an NPM package (`@legendary-arena/lagn@1.0.0`)
-with Zod validator, auto-generated JSON Schema, TypeScript types, and CLI tooling.
+with Zod validator, auto-generated JSON Schema, TypeScript types, and CLI tooling,
+and as the public GitHub repo
+[legendary-arena/lagn-spec](https://github.com/legendary-arena/lagn-spec) (MIT).
 LAGN enables third-party tools, bots, and replay systems to work with
 Legendary Arena game data in a stable, interoperable format.
 
@@ -178,6 +180,26 @@ Published as `@legendary-arena/lagn@1.0.0`:
 - **Schema export:** `"./schema"` entrypoint resolves to `schemas/lagn-v1.json`
 - **CLI binary:** `lagn` (installed to `node_modules/.bin/lagn` via `"bin"` field)
 
+### Public GitHub Repository
+
+The open-source publication surface (WP-244 Gate 1):
+[github.com/legendary-arena/lagn-spec](https://github.com/legendary-arena/lagn-spec)
+(public, MIT license).
+
+- **Contents:** a package-only snapshot of `packages/lagn-spec` — src, schemas,
+  examples, CLI, tests, README. The monorepo copy at
+  [`packages/lagn-spec`](../packages/lagn-spec/) stays canonical; changes land
+  there first and are pushed to the public repo on release.
+- **CI:** the repo runs its own GitHub Actions matrix (`npm install`, build,
+  test on Node 18/20/22) on every push and pull request.
+- **History note (2026-07-16):** the repo originally received an accidental
+  full-monorepo snapshot (including scheduled workflows, which failed nightly
+  for lack of the main repo's secrets). It was rewritten to the package-only
+  publication WP-244 specified; the same day the package's `test` script was
+  fixed to name its test file explicitly (`node --test` only expands glob
+  patterns on Node 21+, so the old `src/**/*.test.ts` pattern failed the
+  repo's Node 18/20 CI legs).
+
 ## Interactions
 
 - **Game Engine.** The engine's `MatchSetupConfig` shape (9 locked fields)
@@ -275,5 +297,7 @@ server emits it, the client relays it, the viewer ingests it.
   demonstrating all three tiers
 - [`@legendary-arena/lagn` on NPM](https://www.npmjs.com/package/@legendary-arena/lagn)
   — Published package
+- [legendary-arena/lagn-spec on GitHub](https://github.com/legendary-arena/lagn-spec)
+  — Public repo (MIT; package-only snapshot of `packages/lagn-spec`)
 - [JSON Schema Standard (2020-12)](https://json-schema.org/draft/2020-12/json-schema-core.html)
   — Schema specification version
