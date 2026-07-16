@@ -250,7 +250,7 @@ true before a release is promoted.
 **CORS policy:**
 
 - [ ] `GET` and `HEAD` are allowed from
-      `https://cards.barefootbetters.com` (production site) and
+      `https://cards.legendary-arena.com` (production site) and
       `http://localhost:5173` (local developer client). Other
       methods and origins are disallowed.
 - [ ] `Access-Control-Allow-Origin` is echoed verbatim (not `*`) so

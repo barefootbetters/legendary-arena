@@ -1,7 +1,7 @@
 # Registry Viewer
 
 Browse and inspect Legendary Arena card data and game setup themes.
-Live at: https://cards.barefootbetters.com/
+Live at: https://cards.legendary-arena.com/
 
 ## Tech Stack
 
@@ -174,4 +174,4 @@ pnpm --filter registry-viewer preview   # preview production build
 
 ## Deployment
 
-Built output in `dist/` is deployed to Cloudflare Pages at `cards.barefootbetters.com`.
+Built output in `dist/` is deployed to Cloudflare Pages at `cards.legendary-arena.com`.

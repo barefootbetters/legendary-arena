@@ -41,7 +41,7 @@ mindmap
         ["themes/\nComic-accurate gameplay themes\n(static JSON, WP-055)"]
       apps/
         ["server"]
-        ["registry-viewer\ncards.barefootbetters.com\n(CLAUDE.md for context)"]
+        ["registry-viewer\ncards.legendary-arena.com\n(CLAUDE.md for context)"]
 ```
 
 ---

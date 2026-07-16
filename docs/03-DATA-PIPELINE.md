@@ -220,7 +220,7 @@ Allow a few minutes for CDN cache propagation. Cache-bust with
 
 ### 5. Verify in the viewer
 
-Open `https://cards.barefootbetters.com` and confirm the new or updated
+Open `https://cards.legendary-arena.com` and confirm the new or updated
 set appears. The viewer fetches from R2 at runtime — no code deploy needed.
 
 ### 6. Commit local changes

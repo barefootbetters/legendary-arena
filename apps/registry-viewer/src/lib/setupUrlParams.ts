@@ -90,7 +90,7 @@ export function parseSetupUrl(search: string): Partial<SetupCompositionInput> {
  * future-extension hook, not part of this packet.
  *
  * The `baseUrl` argument MUST be origin + pathname only (e.g.,
- * `https://cards.barefootbetters.com/`). The serializer does not inspect
+ * `https://cards.legendary-arena.com/`). The serializer does not inspect
  * or strip an existing query/hash on `baseUrl`; that is the caller's
  * concern. Browser call sites pass `window.location.origin +
  * window.location.pathname`.

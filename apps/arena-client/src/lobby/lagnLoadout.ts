@@ -135,7 +135,7 @@ export function convertLagnUpload(input: string): LagnConversion {
     return {
       kind: 'error',
       message:
-        'The uploaded LAGN file is missing its "setup" object, or "setup" is not an object. Re-export the game setup from the Registry Viewer loadout builder at cards.barefootbetters.com.',
+        'The uploaded LAGN file is missing its "setup" object, or "setup" is not an object. Re-export the game setup from the Registry Viewer loadout builder at cards.legendary-arena.com.',
     };
   }
 

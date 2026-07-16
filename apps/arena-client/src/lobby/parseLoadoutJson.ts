@@ -67,7 +67,7 @@ export function renderUnsupportedModeMessage(value: unknown): string {
 // template above — never HTML entities; <field> and <value> are the only
 // permitted substitutions.
 const UNQUALIFIED_EXT_ID_TEMPLATE =
-  'The loadout field "<field>" value "<value>" is not a set-qualified ext_id of the form "<setAbbr>/<slug>" (for example, "core/black-widow"). This usually means the loadout was exported before the qualified-ext_id fix; re-export it from the Registry Viewer loadout builder at cards.barefootbetters.com.';
+  'The loadout field "<field>" value "<value>" is not a set-qualified ext_id of the form "<setAbbr>/<slug>" (for example, "core/black-widow"). This usually means the loadout was exported before the qualified-ext_id fix; re-export it from the Registry Viewer loadout builder at cards.legendary-arena.com.';
 
 /**
  * Substitutes the failing field path and the offending value into the
@@ -307,7 +307,7 @@ export function parseLoadoutJson(input: string): ParseResult {
       ok: false,
       error: {
         code: 'invalid_json',
-        message: `The loadout JSON could not be parsed. JSON.parse reported: ${cause}. Confirm the file was produced by the Registry Viewer loadout builder at cards.barefootbetters.com and was not modified by hand.`,
+        message: `The loadout JSON could not be parsed. JSON.parse reported: ${cause}. Confirm the file was produced by the Registry Viewer loadout builder at cards.legendary-arena.com and was not modified by hand.`,
       },
     };
   }

@@ -23,7 +23,7 @@
                     |  arena-client (gameplay,      |
                     |    Socket.IO + HTTP)          |
                     |  registry-viewer (R2 only,    |
-                    |    cards.barefootbetters.com) |
+                    |    cards.legendary-arena.com) |
                     |  intents only                 |
                     +---------------+---------------+
                                     |
@@ -110,7 +110,7 @@ orthogonal and test-only. No layer may reach upward or sideways.
 | Language | TypeScript | 5.4.x | workspace devDeps |
 | Game engine | boardgame.io | ^0.50.0 (LOCKED) | [packages/game-engine/package.json](../packages/game-engine/package.json) -- D-1206 for CJS bridge |
 | Gameplay client | Vue 3 + Vite + Pinia | 3.4 / 5 / 2.1 | [apps/arena-client/package.json](../apps/arena-client/package.json) -- framework lock per WP-061 |
-| Registry viewer | Vue 3 + Vite + Zod | 3.4 / 5 / 3.23 | [apps/registry-viewer/package.json](../apps/registry-viewer/package.json) -- public at `cards.barefootbetters.com` |
+| Registry viewer | Vue 3 + Vite + Zod | 3.4 / 5 / 3.23 | [apps/registry-viewer/package.json](../apps/registry-viewer/package.json) -- public at `cards.legendary-arena.com` |
 | Schema validation | Zod | 3.23 | registry + viewer |
 | Database driver | `pg` (PostgreSQL) | ^8.13 | [apps/server/package.json](../apps/server/package.json) |
 | Static asset host | Cloudflare R2 | -- | `https://images.barefootbetters.com/` |
@@ -135,7 +135,7 @@ wins.
 |---|---|---|---|---|
 | `www.legendary-arena.com` | External Hugo repo (`C:\www\legendary-arena-com`) | Cloudflare Pages | live | Apex redirects here (CF Redirect Rule) |
 | `play.legendary-arena.com` | `apps/arena-client` | Cloudflare Pages | live | Vue 3 SPA; CORS origin in server allowlist |
-| `cards.legendary-arena.com` | `apps/registry-viewer` | Cloudflare Pages | planned | Currently on `cards.barefootbetters.com`; domain migration pending |
+| `cards.legendary-arena.com` | `apps/registry-viewer` | Cloudflare Pages | live | Migrated 2026-07-16; legacy `cards.barefootbetters.com` 301-redirects here (CF zone Redirect Rule, path+query preserved) |
 | `ewiki.legendary-arena.com` | `apps/wiki-viewer` | Render Static Site | live | Gated behind Cloudflare Access (302/401/403 expected) |
 | `api.legendary-arena.com` | `apps/server` | Render | live | CNAME to `legendary-arena-server.onrender.com` (not CF-proxied — Render needs direct origin for TLS + WebSocket) |
 | `wiki.legendary-arena.com` | TBD (separate Hugo site) | Cloudflare Pages | planned | Public player wiki; not yet authored |
@@ -382,7 +382,7 @@ MVP is English-only. i18n is deferred. No `i18n` library is adopted; user-visibl
 - **Data contracts:** [`docs/ai/REFERENCE/00.2-data-requirements.md`](ai/REFERENCE/00.2-data-requirements.md)
 - **Code categories:** [`docs/ai/REFERENCE/02-CODE-CATEGORIES.md`](ai/REFERENCE/02-CODE-CATEGORIES.md)
 - **Auth governance:** [`docs/ai/work-packets/WP-099-auth-provider-selection.md`](ai/work-packets/WP-099-auth-provider-selection.md)
-- **Registry-viewer details:** [`apps/registry-viewer/CLAUDE.md`](../apps/registry-viewer/CLAUDE.md) (public at `cards.barefootbetters.com`)
+- **Registry-viewer details:** [`apps/registry-viewer/CLAUDE.md`](../apps/registry-viewer/CLAUDE.md) (public at `cards.legendary-arena.com`)
 - **Testing:** [`docs/06-TESTING.md`](06-TESTING.md) (314 engine tests, 10 drift-detection arrays)
 
 *Last updated: 2026-04-29*

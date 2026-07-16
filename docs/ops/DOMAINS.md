@@ -22,7 +22,7 @@ define new architectural boundaries.
 | `legendary-arena.com` (apex) | Redirect to `www.` | Cloudflare Pages (redirect) | redirect rule | planned |
 | `www.legendary-arena.com` | Marketing site | Cloudflare Pages | `C:\www\legendary-arena-com` (Hugo) | planned |
 | `play.legendary-arena.com` | Game client | Cloudflare Pages | [apps/arena-client](../../apps/arena-client) | live |
-| `cards.legendary-arena.com` | Registry viewer | Cloudflare Pages | [apps/registry-viewer](../../apps/registry-viewer) | planned (currently on `legendary-arena` Pages project) |
+| `cards.legendary-arena.com` | Registry viewer | Cloudflare Pages | [apps/registry-viewer](../../apps/registry-viewer) | live (migrated 2026-07-16; legacy `cards.barefootbetters.com` 301-redirects here) |
 | `wiki.legendary-arena.com` | Public player wiki | Cloudflare Pages | TBD (separate Hugo site) | planned |
 | `ewiki.legendary-arena.com` | Private engineering wiki | Render Static Site + Access | [apps/wiki-viewer](../../apps/wiki-viewer) (Hugo build of [wiki/](../../wiki)) | live, gated |
 | `legends.legendary-arena.com` | Public scoreboard (attract board) | Cloudflare Pages | `apps/legends-board` (planned — WP-143) | planned |
@@ -131,11 +131,11 @@ Depends on:
 - `images.barefootbetters.com` (card images)
 - No API. Viewer does not call the game server.
 
-**Migration note:** the existing Cloudflare Pages project named
-`legendary-arena` currently serves this app. Migrating to `cards.` means:
-remove the apex/`legendary-arena.com` custom domain from that project, attach
-`cards.legendary-arena.com` instead, and re-run a deploy so the project's
-canonical URL is correct.
+**Migration note (done 2026-07-16):** the Cloudflare Pages project named
+`legendary-arena` serves this app at `cards.legendary-arena.com`. The legacy
+`cards.barefootbetters.com` hostname 301-redirects here via a zone Redirect
+Rule on the barefootbetters.com CF zone (path+query preserved), so old links
+keep working.
 
 ### wiki
 **`wiki.legendary-arena.com`** — public player help wiki.
@@ -342,7 +342,9 @@ Suggested sequence (for WP scoping):
    not to the API hostname rename. They land with the `play.` deploy (step 5).
 3. **`cards.` migration.** Detach `cards.barefootbetters.com` from the existing
    `legendary-arena` Pages project (or keep with redirect during transition).
-   Attach `cards.legendary-arena.com` to the same project. Smoke-test.
+   Attach `cards.legendary-arena.com` to the same project. Smoke-test. Done
+   2026-07-16 — legacy hostname now 301-redirects via a zone Redirect Rule
+   (path+query preserved); repo references updated the same day.
 4. **`www.` and apex.** New Pages project for the Hugo marketing repo. Apex
    redirect rule (apex → www, or vice versa — pick one).
 5. **`play.` Pages project.** New project for `apps/arena-client`. WP-007a
