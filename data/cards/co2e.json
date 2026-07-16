@@ -1098,71 +1098,73 @@
       "slug": "spider-man",
       "team": "spider-friends",
       "cardCounts": {
-        "Astonishing Strength": 5,
-        "Great Responsibility": 5,
-        "Web-Shooters": 3,
-        "The Amazing Spider-Man": 1
+        "Witty Banter": 5,
+        "Web-Shooters": 5,
+        "Astonishing Strength": 3,
+        "With Great Power...": 1
       },
       "cards": [
         {
-          "name": "Astonishing Strength",
-          "displayName": "Astonishing Strength",
-          "slug": "astonishing-strength",
+          "name": "Witty Banter",
+          "displayName": "Witty Banter",
+          "slug": "witty-banter",
           "rarity": 1,
           "rarityLabel": "Common 1",
           "slot": 1,
-          "hc": "strength",
-          "cost": 2,
-          "attack": null,
-          "recruit": "1",
-          "abilities": [
-            "Reveal the top card of your deck. If that card costs 2[icon:vp] or less, draw it. [keyword:reveal]"
-          ]
-        },
-        {
-          "name": "Great Responsibility",
-          "displayName": "Great Responsibility",
-          "slug": "great-responsibility",
-          "rarity": 1,
-          "rarityLabel": "Common 2",
-          "slot": 2,
           "hc": "instinct",
           "cost": 2,
-          "attack": "1",
+          "attack": "2",
           "recruit": null,
           "abilities": [
-            "Reveal the top card of your deck. If that card costs 2[icon:vp] or less, draw it. [keyword:reveal]"
+            "[hc:instinct]: Gain a Sidekick."
           ]
         },
         {
           "name": "Web-Shooters",
           "displayName": "Web-Shooters",
           "slug": "web-shooters",
-          "rarity": 2,
-          "rarityLabel": "Uncommon",
-          "slot": 3,
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
           "hc": "tech",
           "cost": 2,
-          "attack": null,
+          "attack": "1+",
           "recruit": null,
           "abilities": [
-            "Rescue a Bystander. [keyword:rescue:1]",
-            "Reveal the top card of your deck. If that card costs 2[icon:vp] or less, draw it. [keyword:reveal]"
+            "Reveal the top card of your deck. If it costs 2 or less, draw it. [keyword:reveal]",
+            "[hc:tech]: You get +1[icon:attack]."
           ]
         },
         {
-          "name": "The Amazing Spider-Man",
-          "displayName": "The Amazing Spider-Man",
-          "slug": "the-amazing-spider-man",
+          "name": "Astonishing Strength",
+          "displayName": "Astonishing Strength",
+          "slug": "astonishing-strength",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "strength",
+          "cost": 2,
+          "attack": "1",
+          "recruit": null,
+          "abilities": [
+            "Reveal the top card of your deck. If it costs 2 or less, draw it. [keyword:reveal]",
+            "[hc:strength]: If that card costs 0, you may KO it instead."
+          ]
+        },
+        {
+          "name": "With Great Power...",
+          "displayName": "With Great Power...",
+          "slug": "with-great-power",
           "rarity": 3,
           "rarityLabel": "Rare",
           "slot": 4,
-          "hc": "covert",
+          "hc": "instinct",
           "cost": 2,
           "attack": null,
           "recruit": null,
           "abilities": [
-            "Reveal the top three cards of your deck. Put any that cost 2[icon:vp] or less into your hand. Put the rest back in any order. [keyword:reveal:cost-lte-2:draw][keyword:reveal-count:3]"
+            "Reveal the top two cards of your deck. Draw each of them that costs 2 or less. Put the rest back in any order. [keyword:reveal:cost-lte-2:draw][keyword:reveal-count:2]",
+            "[team:spider-friends]: Instead, rescue a Bystander then do the above effect but revealing three cards."
           ]
         }
       ],
@@ -1170,33 +1172,33 @@
         {
           "id": "p1",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-spider-man-common-1.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-spider-man-witty-banter.webp",
           "sides": [
-            "astonishing-strength"
+            "witty-banter"
           ]
         },
         {
           "id": "p2",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-spider-man-common-2.webp",
-          "sides": [
-            "great-responsibility"
-          ]
-        },
-        {
-          "id": "p3",
-          "count": 3,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-spider-man-uncommon.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-spider-man-web-shooters.webp",
           "sides": [
             "web-shooters"
           ]
         },
         {
+          "id": "p3",
+          "count": 3,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-spider-man-astonishing-strength.webp",
+          "sides": [
+            "astonishing-strength"
+          ]
+        },
+        {
           "id": "p4",
           "count": 1,
-          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-spider-man-rare.webp",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-spider-man-with-great-power.webp",
           "sides": [
-            "the-amazing-spider-man"
+            "with-great-power"
           ]
         }
       ]
@@ -1524,6 +1526,114 @@
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-wolverine-rare.webp",
           "sides": [
             "berserker-rage"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "name": "Spider-Man (Miles Morales)",
+      "slug": "spider-man-miles-morales",
+      "team": "spider-friends",
+      "cardCounts": {
+        "Venom Strike": 5,
+        "Web-Trap": 5,
+        "Spider-Camouflage": 3,
+        "Jump Dimensions": 1
+      },
+      "cards": [
+        {
+          "name": "Venom Strike",
+          "displayName": "Venom Strike",
+          "slug": "venom-strike",
+          "rarity": 1,
+          "rarityLabel": "Common 1",
+          "slot": 1,
+          "hc": "strength",
+          "cost": 2,
+          "attack": "1+",
+          "recruit": null,
+          "abilities": [
+            "[hc:strength]: You get +2[icon:attack]."
+          ]
+        },
+        {
+          "name": "Web-Trap",
+          "displayName": "Web-Trap",
+          "slug": "web-trap",
+          "rarity": 1,
+          "rarityLabel": "Common 2",
+          "slot": 2,
+          "hc": "instinct",
+          "cost": 2,
+          "attack": "1",
+          "recruit": null,
+          "abilities": [
+            "[hc:instinct]: When you draw a new hand this turn, draw an extra card."
+          ]
+        },
+        {
+          "name": "Spider-Camouflage",
+          "displayName": "Spider-Camouflage",
+          "slug": "spider-camouflage",
+          "rarity": 2,
+          "rarityLabel": "Uncommon",
+          "slot": 3,
+          "hc": "covert",
+          "cost": 2,
+          "attack": "2",
+          "recruit": null,
+          "abilities": [
+            "You may set aside a card from your hand. When you draw a new hand this turn, add that card to your hand."
+          ]
+        },
+        {
+          "name": "Jump Dimensions",
+          "displayName": "Jump Dimensions",
+          "slug": "jump-dimensions",
+          "rarity": 3,
+          "rarityLabel": "Rare",
+          "slot": 4,
+          "hc": "tech",
+          "cost": 2,
+          "attack": "2",
+          "recruit": null,
+          "abilities": [
+            "[team:spider-friends]: Rescue a Bystander. Then discard up to three cards. When you draw a new hand this turn, draw as many extra cards as you discarded this way."
+          ]
+        }
+      ],
+      "physicalCards": [
+        {
+          "id": "p1",
+          "count": 5,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-spider-man-miles-morales-venom-strike.webp",
+          "sides": [
+            "venom-strike"
+          ]
+        },
+        {
+          "id": "p2",
+          "count": 5,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-spider-man-miles-morales-web-trap.webp",
+          "sides": [
+            "web-trap"
+          ]
+        },
+        {
+          "id": "p3",
+          "count": 3,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-spider-man-miles-morales-spider-camouflage.webp",
+          "sides": [
+            "spider-camouflage"
+          ]
+        },
+        {
+          "id": "p4",
+          "count": 1,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hr-spider-man-miles-morales-jump-dimensions.webp",
+          "sides": [
+            "jump-dimensions"
           ]
         }
       ]
