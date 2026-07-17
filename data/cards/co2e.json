@@ -2705,6 +2705,51 @@
           "abilities": []
         }
       ]
+    },
+    {
+      "id": 2,
+      "name": "Police Officer",
+      "slug": "police-officer",
+      "vp": 1,
+      "imageUrl": "https://images.legendary-arena.com/co2e/co2e-by-police-officer.webp",
+      "cards": [
+        {
+          "qtd": 3,
+          "abilities": [
+            "Rescue: You may use the \"Fight\" ability of a Henchman Villain in any player's Victory Pile."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Kindly Caretaker",
+      "slug": "kindly-caretaker",
+      "vp": 1,
+      "imageUrl": "https://images.legendary-arena.com/co2e/co2e-by-kindly-caretaker.webp",
+      "cards": [
+        {
+          "qtd": 3,
+          "abilities": [
+            "Rescue: KO a Wound from your hand or discard pile. If you don't have any, draw a card instead."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Experimental Geneticist",
+      "slug": "experimental-geneticist",
+      "vp": 1,
+      "imageUrl": "https://images.legendary-arena.com/co2e/co2e-by-experimental-geneticist.webp",
+      "cards": [
+        {
+          "qtd": 3,
+          "abilities": [
+            "Rescue: Reveal the top two cards of your deck. You may KO one of them. Put the rest back in any order."
+          ]
+        }
+      ]
     }
   ],
   "wounds": [
@@ -2821,6 +2866,16 @@
       "attack": "2",
       "team": "shield",
       "imageUrl": "https://images.legendary-arena.com/co2e/co2e-so-officer.webp",
+      "abilities": []
+    },
+    {
+      "name": "S.H.I.E.L.D. Agent",
+      "slug": "agent",
+      "cardType": "shield-agent",
+      "cost": 1,
+      "recruit": "1",
+      "team": "shield",
+      "imageUrl": "https://images.legendary-arena.com/co2e/co2e-sa-agent.webp",
       "abilities": []
     }
   ]
