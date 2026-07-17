@@ -1095,7 +1095,7 @@ const loadoutTraySummary = computed(() => {
     >
       <div class="spinner" aria-hidden="true">⏳</div>
       <p class="status-text">{{ loadStatus }}</p>
-      <p class="status-hint">Connecting to images.barefootbetters.com…</p>
+      <p class="status-hint">Connecting to images.legendary-arena.com…</p>
     </div>
 
     <div v-else-if="loadError" class="status-screen error">

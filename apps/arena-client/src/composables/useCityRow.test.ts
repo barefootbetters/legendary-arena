@@ -15,7 +15,7 @@ function makeCity(spaces: (string | null)[]): UICityState {
             display: {
               extId: id,
               name: id,
-              imageUrl: `https://images.barefootbetters.com/${id}.png`,
+              imageUrl: `https://images.legendary-arena.com/${id}.png`,
               cost: 4,
             },
             attachedHeroes: [],
@@ -83,7 +83,7 @@ describe('useCityRow (WP-129)', () => {
         display: {
           extId: 'doom',
           name: 'Dr. Doom',
-          imageUrl: 'https://images.barefootbetters.com/doom.png',
+          imageUrl: 'https://images.legendary-arena.com/doom.png',
           cost: 5,
         },
       },

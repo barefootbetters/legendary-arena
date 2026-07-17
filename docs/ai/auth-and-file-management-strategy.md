@@ -104,7 +104,7 @@ building.
   multipart (`@koa/multer`, 5 MB cap), **magic-byte** MIME check
   (jpeg/png/webp, not header-trust), EXIF strip + 256×256 WebP via `sharp`,
   1-upload-per-60s rate limit, R2 key `avatars/{accountId}.webp`, CDN
-  `https://images.barefootbetters.com/avatars/...`, DB write to
+  `https://images.legendary-arena.com/avatars/...`, DB write to
   `player_profiles.avatar_url`, and a **compensating R2 delete** if the DB
   write fails. Proof: `apps/server/src/profile/avatarUpload.{logic,routes,types}.ts`.
   > This is a **server-proxied** upload, not the "signed-URL direct-to-R2"

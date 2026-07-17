@@ -76,7 +76,7 @@ mindmap
 
 ## Additional Resources
 
-- **Live R2 Data** → [https://images.barefootbetters.com](https://images.barefootbetters.com)
+- **Live R2 Data** → [https://images.legendary-arena.com](https://images.legendary-arena.com)
 - **Marvel Legendary Universal Rules** → `Marvel Legendary Universal Rules v23 (hyperlinks).pdf`
 - **Governance** → `docs/ai/ARCHITECTURE.md` + `docs/ai/DECISIONS.md`
 - **Theme Data Model** → `docs/ai/work-packets/WP-055-theme-data-model.md`

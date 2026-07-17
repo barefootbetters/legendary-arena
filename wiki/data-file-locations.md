@@ -192,8 +192,9 @@ R2 credentials are **not committed**: local `.env` carries
   `images.barefootbetters.com` host; WP-296 unified them (constant swap +
   migration 021 rewriting existing `avatar_url` rows). Any remaining
   `images.barefootbetters.com/avatars` reference is stale. (The
-  `images.barefootbetters.com/metadata` and `/docs` hosts are a separate
-  surface and were out of WP-296's scope.)
+  `/metadata` and `/docs` surfaces followed on 2026-07-16: all live repo
+  references now point at `images.legendary-arena.com`; the legacy host
+  remains a live alias on the same bucket, no redirect.)
 - **Two `card-types.json` files.** The in-repo
   `data/metadata/card-types.json` is the Registry-Viewer taxonomy with **no**
   image-ribbon prefixes; the authoritative prefix registry is the *upstream*

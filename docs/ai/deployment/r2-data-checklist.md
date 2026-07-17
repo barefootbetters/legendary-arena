@@ -68,13 +68,13 @@ pnpm registry:validate
 **R2-mode invocation:**
 
 ```pwsh
-$env:R2_BASE_URL = "https://images.barefootbetters.com"; pnpm registry:validate
+$env:R2_BASE_URL = "https://images.legendary-arena.com"; pnpm registry:validate
 ```
 
 - [ ] R2-mode run exits with code `0`.
 - [ ] `dist/registry-health.json` for the R2-mode run has
       `mode == "r2"` and `metadataSource` points at
-      `https://images.barefootbetters.com/metadata/`.
+      `https://images.legendary-arena.com/metadata/`.
 
 **Exit-code contract:**
 
@@ -95,7 +95,7 @@ $env:R2_BASE_URL = "https://images.barefootbetters.com"; pnpm registry:validate
    per-set card file is fetched (R2: flat `/metadata/{abbr}.json`;
    local: `data/cards/{abbr}.json`) and validated against
    `SetDataSchema`. The script additionally checks that every
-   `imageUrl` points at `images.barefootbetters.com` and flags ability
+   `imageUrl` points at `images.legendary-arena.com` and flags ability
    text lines containing the literal pipeline artifact
    `[object Object]`.
 3. **Phase 3 — Cross-references.** Two checks run: `alwaysLeads` slug
@@ -126,7 +126,7 @@ $env:R2_BASE_URL = "https://images.barefootbetters.com"; pnpm registry:validate
 ## §A.2 — Registry manifest
 
 The registry manifest is `data/metadata/sets.json` (local mode) or
-`https://images.barefootbetters.com/metadata/sets.json` (R2 mode). It
+`https://images.legendary-arena.com/metadata/sets.json` (R2 mode). It
 enumerates every expansion set available to the registry and must
 remain the single source of truth for set abbreviations.
 
@@ -171,7 +171,7 @@ registry-viewer at fetch time (WP-082 / EC-107).
 
 ## §A.4 — Image assets (naming convention + Phase 4 spot-checks)
 
-Card images live under `https://images.barefootbetters.com/` and are
+Card images live under `https://images.legendary-arena.com/` and are
 addressed via the `imageUrl` field on each card record. Image URLs
 use **hyphens, never underscores** — underscore-based URLs will
 400/404 and fail Phase 4.
@@ -244,17 +244,21 @@ true before a release is promoted.
 **Bucket identity:**
 
 - [ ] R2 bucket name is **`legendary-images`**.
-- [ ] Public URL is **`https://images.barefootbetters.com`** and
+- [ ] Public URL is **`https://images.legendary-arena.com`** and
       resolves to the `legendary-images` bucket.
 
 **CORS policy:**
 
-- [ ] `GET` and `HEAD` are allowed from
-      `https://cards.legendary-arena.com` (production site) and
-      `http://localhost:5173` (local developer client). Other
-      methods and origins are disallowed.
-- [ ] `Access-Control-Allow-Origin` is echoed verbatim (not `*`) so
-      cached responses remain origin-scoped.
+- [ ] `GET` and `HEAD` are allowed from any origin — the bucket
+      serves `Access-Control-Allow-Origin: *`. This is deliberate:
+      every object is public read-only card data, the consumers span
+      multiple origins (`cards.`, `play.`, `legends.`, localhost dev
+      ports), and a wildcard is cache-friendly (no `Vary: Origin`
+      fragmentation). Verify with
+      `curl -sI https://images.legendary-arena.com/metadata/sets.json -H "Origin: https://cards.legendary-arena.com" | grep -i access-control`
+      → `Access-Control-Allow-Origin: *`.
+- [ ] No non-read methods are allowed cross-origin. Writes go through
+      `rclone`/S3 credentials only, never browser CORS.
 
 **Cache-control headers:**
 
@@ -343,7 +347,7 @@ succeed before the next is attempted.
    bucket:
 
    ```pwsh
-   $env:R2_BASE_URL = "https://images.barefootbetters.com"; pnpm registry:validate
+   $env:R2_BASE_URL = "https://images.legendary-arena.com"; pnpm registry:validate
    ```
 
    - [ ] R2-mode validation exits `0` and `summary.setsLoaded`
@@ -406,7 +410,7 @@ rclone copy ./data/cards legendary-r2:legendary-images/metadata --progress
 ```
 
 Then re-verify with R2-mode validation (§A.1) or a spot HEAD check:
-`curl -s -o /dev/null -w "%{http_code}" https://images.barefootbetters.com/metadata/core.json` → `200`.
+`curl -s -o /dev/null -w "%{http_code}" https://images.legendary-arena.com/metadata/core.json` → `200`.
 
 - [ ] No release procedure or ad-hoc upload step invokes `rclone sync`
       with `legendary-r2:legendary-images/metadata/` as the destination.

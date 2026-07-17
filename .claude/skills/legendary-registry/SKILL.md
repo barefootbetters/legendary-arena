@@ -172,7 +172,7 @@ Source: ARCHITECTURE.md, Card Field Data Quality; WP-003 Defect 2
 
 - **Local cards (this repo):** `data/cards/[set-abbr].json`
 - **External card source:** `C:\Users\jjensen\bbcode\modern-master-strike\src\data\cards\` (40 set files)
-- **Card images:** `https://images.barefootbetters.com/` (R2)
+- **Card images:** `https://images.legendary-arena.com/` (R2)
 - Image URLs use **hyphens**, not underscores
 
 ### Card JSON Structure (per-set file)

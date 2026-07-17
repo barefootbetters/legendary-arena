@@ -197,7 +197,7 @@ the registry again. Per
   lookup at the database boundary; engine code never sees a numeric
   PK.
 - **Image URLs use hyphens, not underscores.** Card images live at
-  `https://images.barefootbetters.com/` and the URL slug uses
+  `https://images.legendary-arena.com/` and the URL slug uses
   hyphens (e.g., `iron-man.jpg`). Underscores are forbidden by
   registry convention; the same hyphen rule applies to `CardExtId`
   slugs.

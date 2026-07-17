@@ -130,7 +130,7 @@ function buildFixtureRegistry(): MockRegistry {
       slug: 'mission-accomplished',
       setAbbr: 'core',
       name: 'Mission Accomplished',
-      imageUrl: 'https://images.barefootbetters.com/core/core-hero-black-widow-1.webp',
+      imageUrl: 'https://images.legendary-arena.com/core/core-hero-black-widow-1.webp',
       cost: 2,
     },
     {
@@ -139,7 +139,7 @@ function buildFixtureRegistry(): MockRegistry {
       slug: 'silent-takedown',
       setAbbr: 'core',
       name: 'Silent Takedown',
-      imageUrl: 'https://images.barefootbetters.com/core/core-hero-black-widow-2.webp',
+      imageUrl: 'https://images.legendary-arena.com/core/core-hero-black-widow-2.webp',
       cost: 0,
     },
     // Hero with star-cost (e.g., amwp Wasp)
@@ -149,7 +149,7 @@ function buildFixtureRegistry(): MockRegistry {
       slug: 'star-card',
       setAbbr: 'core',
       name: 'Star Card',
-      imageUrl: 'https://images.barefootbetters.com/core/core-hero-black-widow-3.webp',
+      imageUrl: 'https://images.legendary-arena.com/core/core-hero-black-widow-3.webp',
       cost: '2*',
     },
     // Hero with plus-modifier cost
@@ -159,7 +159,7 @@ function buildFixtureRegistry(): MockRegistry {
       slug: 'plus-card',
       setAbbr: 'core',
       name: 'Plus Card',
-      imageUrl: 'https://images.barefootbetters.com/core/core-hero-black-widow-4.webp',
+      imageUrl: 'https://images.legendary-arena.com/core/core-hero-black-widow-4.webp',
       cost: '2+',
     },
     // Hero with no cost field (undefined)
@@ -169,7 +169,7 @@ function buildFixtureRegistry(): MockRegistry {
       slug: 'no-cost-card',
       setAbbr: 'core',
       name: 'No-Cost Card',
-      imageUrl: 'https://images.barefootbetters.com/core/core-hero-black-widow-5.webp',
+      imageUrl: 'https://images.legendary-arena.com/core/core-hero-black-widow-5.webp',
     },
     // Villain card (single copy — exercises the WP-172 default-1 branch)
     {
@@ -178,7 +178,7 @@ function buildFixtureRegistry(): MockRegistry {
       slug: 'magneto',
       setAbbr: 'core',
       name: 'Magneto',
-      imageUrl: 'https://images.barefootbetters.com/core/core-villain-brotherhood-magneto.webp',
+      imageUrl: 'https://images.legendary-arena.com/core/core-villain-brotherhood-magneto.webp',
     },
     // why: WP-172 fixture — a 3-copy villain card exercises the
     // per-copy fan-out (D-16802) at indexes 00 / 01 / 02 and the
@@ -189,7 +189,7 @@ function buildFixtureRegistry(): MockRegistry {
       slug: 'blob',
       setAbbr: 'core',
       name: 'Blob',
-      imageUrl: 'https://images.barefootbetters.com/core/core-villain-brotherhood-blob.webp',
+      imageUrl: 'https://images.legendary-arena.com/core/core-villain-brotherhood-blob.webp',
     },
     // Mastermind base card + tactic
     {
@@ -198,7 +198,7 @@ function buildFixtureRegistry(): MockRegistry {
       slug: 'doctor-doom',
       setAbbr: 'core',
       name: 'Dr. Doom',
-      imageUrl: 'https://images.barefootbetters.com/core/core-mastermind-dr-doom-doctor-doom.webp',
+      imageUrl: 'https://images.legendary-arena.com/core/core-mastermind-dr-doom-doctor-doom.webp',
     },
     {
       key: 'core-mastermind-dr-doom-secret-of-time-travel',
@@ -207,7 +207,7 @@ function buildFixtureRegistry(): MockRegistry {
       setAbbr: 'core',
       name: 'Secret of Time Travel',
       imageUrl:
-        'https://images.barefootbetters.com/core/core-mastermind-dr-doom-secret-of-time-travel.webp',
+        'https://images.legendary-arena.com/core/core-mastermind-dr-doom-secret-of-time-travel.webp',
     },
   ];
 
@@ -232,7 +232,7 @@ function buildFixtureRegistry(): MockRegistry {
       {
         slug: 'doombot-legion',
         name: 'Doombot Legion',
-        imageUrl: 'https://images.barefootbetters.com/core/core-hm-doombot-legion.webp',
+        imageUrl: 'https://images.legendary-arena.com/core/core-hm-doombot-legion.webp',
         vAttack: '3',
       },
     ],
@@ -530,7 +530,7 @@ describe('buildCardDisplayData', () => {
     assert.equal(blackWidow1.name, 'Mission Accomplished');
     assert.equal(
       blackWidow1.imageUrl,
-      'https://images.barefootbetters.com/core/core-hero-black-widow-1.webp',
+      'https://images.legendary-arena.com/core/core-hero-black-widow-1.webp',
     );
     assert.equal(blackWidow1.cost, 2);
   });
@@ -546,7 +546,7 @@ describe('buildCardDisplayData', () => {
     assert.equal(villain.name, 'Magneto');
     assert.equal(
       villain.imageUrl,
-      'https://images.barefootbetters.com/core/core-villain-brotherhood-magneto.webp',
+      'https://images.legendary-arena.com/core/core-villain-brotherhood-magneto.webp',
     );
   });
 
@@ -625,7 +625,7 @@ describe('buildCardDisplayData', () => {
       assert.equal(entry.name, 'Doombot Legion');
       assert.equal(
         entry.imageUrl,
-        'https://images.barefootbetters.com/core/core-hm-doombot-legion.webp',
+        'https://images.legendary-arena.com/core/core-hm-doombot-legion.webp',
       );
       assert.equal(entry.cost, 3);
     }
@@ -661,7 +661,7 @@ describe('buildCardDisplayData', () => {
     assert.equal(tacticCard.cost, 7);
     assert.equal(
       tacticCard.imageUrl,
-      'https://images.barefootbetters.com/core/core-mastermind-dr-doom-secret-of-time-travel.webp',
+      'https://images.legendary-arena.com/core/core-mastermind-dr-doom-secret-of-time-travel.webp',
     );
   });
 
@@ -750,14 +750,14 @@ describe('buildCardDisplayData — WP-135 / WP-137 hero card-instance walk (slas
               slug: 'mission-accomplished',
               rarityLabel: 'Common 1',
               name: 'Mission Accomplished',
-              imageUrl: 'https://images.barefootbetters.com/core/core-hero-black-widow-1.webp',
+              imageUrl: 'https://images.legendary-arena.com/core/core-hero-black-widow-1.webp',
               cost: 2,
             },
             {
               slug: 'taskmaster',
               rarityLabel: 'Rare',
               name: 'Taskmaster',
-              imageUrl: 'https://images.barefootbetters.com/core/core-hero-black-widow-4.webp',
+              imageUrl: 'https://images.legendary-arena.com/core/core-hero-black-widow-4.webp',
               cost: 6,
             },
           ],
@@ -793,7 +793,7 @@ describe('buildCardDisplayData — WP-135 / WP-137 hero card-instance walk (slas
       assert.equal(mission!.name, 'Mission Accomplished');
       assert.equal(
         mission!.imageUrl,
-        'https://images.barefootbetters.com/core/core-hero-black-widow-1.webp',
+        'https://images.legendary-arena.com/core/core-hero-black-widow-1.webp',
       );
       assert.equal(mission!.cost, 2);
     }
@@ -873,7 +873,7 @@ describe('buildCardDisplayData — WP-135 / WP-137 hero card-instance walk (slas
               slug: 'shared-card',
               rarityLabel: 'Common 1',
               name: 'Shared Card',
-              imageUrl: 'https://images.barefootbetters.com/parity/shared-card.webp',
+              imageUrl: 'https://images.legendary-arena.com/parity/shared-card.webp',
               cost: 4,
             },
           ],
@@ -903,7 +903,7 @@ describe('buildCardDisplayData — WP-135 / WP-137 hero card-instance walk (slas
       assert.equal(entry.name, 'Shared Card', `shared-card#${copyIndex} name parity`);
       assert.equal(
         entry.imageUrl,
-        'https://images.barefootbetters.com/parity/shared-card.webp',
+        'https://images.legendary-arena.com/parity/shared-card.webp',
         `shared-card#${copyIndex} imageUrl parity`,
       );
       assert.equal(entry.cost, 4, `shared-card#${copyIndex} cost parity`);
@@ -1141,7 +1141,7 @@ describe('buildCardDisplayData — WP-172 villain per-copy fan-out (D-16802)', (
     assert.equal(magnetoCopy0.name, 'Magneto');
     assert.equal(
       magnetoCopy0.imageUrl,
-      'https://images.barefootbetters.com/core/core-villain-brotherhood-magneto.webp',
+      'https://images.legendary-arena.com/core/core-villain-brotherhood-magneto.webp',
     );
     assert.equal(
       result['core-villain-brotherhood-magneto-01'],
@@ -1165,7 +1165,7 @@ describe('buildCardDisplayData — WP-172 villain per-copy fan-out (D-16802)', (
       assert.equal(entry.name, 'Blob');
       assert.equal(
         entry.imageUrl,
-        'https://images.barefootbetters.com/core/core-villain-brotherhood-blob.webp',
+        'https://images.legendary-arena.com/core/core-villain-brotherhood-blob.webp',
       );
       assert.equal(entry.cost, 3, 'cost mirrors villainCard.vAttack');
     }

@@ -22,7 +22,7 @@ function opponent(over: Partial<UIPlayerState> = {}): UIPlayerState {
         display: {
           extId: 'doom',
           name: 'Dr. Doom',
-          imageUrl: 'https://images.barefootbetters.com/doom.png',
+          imageUrl: 'https://images.legendary-arena.com/doom.png',
           cost: 5,
         },
       },

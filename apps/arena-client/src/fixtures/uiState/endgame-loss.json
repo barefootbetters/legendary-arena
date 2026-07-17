@@ -36,7 +36,7 @@
         "display": {
           "extId": "sinister-six-vulture",
           "name": "Vulture",
-          "imageUrl": "https://images.barefootbetters.com/sinister-six-vulture.png",
+          "imageUrl": "https://images.legendary-arena.com/sinister-six-vulture.png",
           "cost": null
         },
         "attachedHeroes": [],
@@ -49,7 +49,7 @@
         "display": {
           "extId": "sinister-six-shocker",
           "name": "Shocker",
-          "imageUrl": "https://images.barefootbetters.com/sinister-six-shocker.png",
+          "imageUrl": "https://images.legendary-arena.com/sinister-six-shocker.png",
           "cost": null
         },
         "attachedHeroes": [],
@@ -62,7 +62,7 @@
         "display": {
           "extId": "sinister-six-electro",
           "name": "Electro",
-          "imageUrl": "https://images.barefootbetters.com/sinister-six-electro.png",
+          "imageUrl": "https://images.legendary-arena.com/sinister-six-electro.png",
           "cost": null
         },
         "attachedHeroes": [],
@@ -75,7 +75,7 @@
         "display": {
           "extId": "sinister-six-mysterio",
           "name": "Mysterio",
-          "imageUrl": "https://images.barefootbetters.com/sinister-six-mysterio.png",
+          "imageUrl": "https://images.legendary-arena.com/sinister-six-mysterio.png",
           "cost": null
         },
         "attachedHeroes": [],
@@ -88,7 +88,7 @@
         "display": {
           "extId": "sinister-six-kraven",
           "name": "Kraven",
-          "imageUrl": "https://images.barefootbetters.com/sinister-six-kraven.png",
+          "imageUrl": "https://images.legendary-arena.com/sinister-six-kraven.png",
           "cost": null
         },
         "attachedHeroes": [],
@@ -113,7 +113,7 @@
     "display": {
       "extId": "mastermind-doctor-octopus",
       "name": "Doctor Octopus",
-      "imageUrl": "https://images.barefootbetters.com/mastermind-doctor-octopus.png",
+      "imageUrl": "https://images.legendary-arena.com/mastermind-doctor-octopus.png",
       "cost": null
     },
     "attachedBystanders": [],

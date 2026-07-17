@@ -43,7 +43,7 @@ describe('useHqRow (WP-129)', () => {
           display: {
             extId: 'wolverine',
             name: 'Wolverine',
-            imageUrl: 'https://images.barefootbetters.com/wolverine.png',
+            imageUrl: 'https://images.legendary-arena.com/wolverine.png',
             cost: 4,
           },
         },
@@ -53,7 +53,7 @@ describe('useHqRow (WP-129)', () => {
           display: {
             extId: 'storm',
             name: 'Storm',
-            imageUrl: 'https://images.barefootbetters.com/storm.png',
+            imageUrl: 'https://images.legendary-arena.com/storm.png',
             cost: 5,
           },
         },

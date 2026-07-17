@@ -1,6 +1,6 @@
 /**
  * impl/httpRegistry.ts
- * Loads data from https://images.barefootbetters.com/metadata/
+ * Loads data from https://images.legendary-arena.com/metadata/
  *
  * Fetches:
  *   {metadataBaseUrl}/metadata/sets.json          → set index

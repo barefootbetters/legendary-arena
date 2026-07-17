@@ -30,7 +30,7 @@ function displayEntry(
     display: {
       extId,
       name,
-      imageUrl: `https://images.barefootbetters.com/${extId}.png`,
+      imageUrl: `https://images.legendary-arena.com/${extId}.png`,
       cost,
     },
   };

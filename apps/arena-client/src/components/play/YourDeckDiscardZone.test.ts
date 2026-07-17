@@ -24,7 +24,7 @@ describe('YourDeckDiscardZone (WP-129)', () => {
           display: {
             extId: 'shield-officer',
             name: 'S.H.I.E.L.D. Officer',
-            imageUrl: 'https://images.barefootbetters.com/shield-officer.png',
+            imageUrl: 'https://images.legendary-arena.com/shield-officer.png',
             cost: 1,
           },
         },

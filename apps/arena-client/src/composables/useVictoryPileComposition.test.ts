@@ -13,7 +13,7 @@ function entry(extId: string): UIDisplayEntry {
     display: {
       extId,
       name: extId,
-      imageUrl: `https://images.barefootbetters.com/${extId}.png`,
+      imageUrl: `https://images.legendary-arena.com/${extId}.png`,
       cost: null,
     },
   };

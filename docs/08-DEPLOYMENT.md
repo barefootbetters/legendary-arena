@@ -15,7 +15,7 @@
 
 | Component | Service | URL | Status |
 |---|---|---|---|
-| Card data & images | Cloudflare R2 | `https://images.barefootbetters.com` | ✅ Live |
+| Card data & images | Cloudflare R2 | `https://images.legendary-arena.com` | ✅ Live |
 | Registry viewer | Cloudflare Pages | `https://cards.legendary-arena.com` | ✅ Live |
 | Game server | Render.com | `render.yaml` | ✅ Live (FP-01) |
 | PostgreSQL | Render.com (managed) | `legendary.*` schema | ✅ Live (FP-01) |
@@ -130,7 +130,7 @@ These variables are configured in the Render.com dashboard:
 | `NODE_ENV` | Render dashboard | `production` |
 | `GAME_SERVER_URL` | Render dashboard | Public URL of the Render service |
 | `JWT_SECRET` | Render dashboard | 32+ byte hex — rotate by updating and redeploying |
-| `R2_PUBLIC_URL` | Render dashboard | `https://images.barefootbetters.com` |
+| `R2_PUBLIC_URL` | Render dashboard | `https://images.legendary-arena.com` |
 | `CF_PAGES_URL` | Render dashboard | `https://cards.legendary-arena.com` |
 | `VITE_GAME_SERVER_URL` | Render dashboard | Same as `GAME_SERVER_URL` |
 | `PORT` | Render (auto-injected) | Do NOT set in dashboard — Render injects automatically |

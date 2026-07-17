@@ -96,7 +96,7 @@ describe('UIState type drift (WP-111 / EC-118)', () => {
     const fixture = {
       extId: 'core/black-widow/strike#0',
       name: 'Mission Accomplished',
-      imageUrl: 'https://images.barefootbetters.com/core/core-hero-black-widow-1.webp',
+      imageUrl: 'https://images.legendary-arena.com/core/core-hero-black-widow-1.webp',
       cost: 2,
       heroClass: 'covert',
       team: 'avengers',
@@ -138,7 +138,7 @@ describe('UIState type drift (WP-111 / EC-118)', () => {
       display: {
         extId: 'core/black-widow/strike#0',
         name: 'Mission Accomplished',
-        imageUrl: 'https://images.barefootbetters.com/core/core-hero-black-widow-1.webp',
+        imageUrl: 'https://images.legendary-arena.com/core/core-hero-black-widow-1.webp',
         cost: 2,
       },
     } satisfies UIHQCard;

@@ -58,7 +58,7 @@ If step 2 or 3 fails, the problem is in code.
 |---|---|---|
 | PostgreSQL connection failed | PostgreSQL not running or `DATABASE_URL` wrong | Start PostgreSQL; see [04-DEVELOPMENT-SETUP.md](04-DEVELOPMENT-SETUP.md) §3a |
 | boardgame.io server unreachable | Game server not running | `node --env-file=.env apps/server/src/server.mjs` |
-| R2 `metadata/sets.json` returned 404 | R2 bucket misconfigured or URL wrong | Verify `R2_PUBLIC_URL` in `.env` is `https://images.barefootbetters.com` |
+| R2 `metadata/sets.json` returned 404 | R2 bucket misconfigured or URL wrong | Verify `R2_PUBLIC_URL` in `.env` is `https://images.legendary-arena.com` |
 | GitHub API rate limited | Too many unauthenticated requests | Wait a few minutes; rate limit resets hourly |
 | Git remote mismatch | origin URL doesn't match expected | `git remote set-url origin https://github.com/barefootbetters/legendary-arena` |
 | rclone cannot list bucket | rclone remote misconfigured | `rclone config` — verify the `r2:` remote has correct credentials |

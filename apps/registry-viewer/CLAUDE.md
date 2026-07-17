@@ -8,7 +8,7 @@ Live at: https://cards.legendary-arena.com/
 - Vue 3 (Composition API, SFCs), TypeScript, Vite 5, Zod
 - No router — single-page with tab switching (Cards / Themes)
 - Dark theme, scoped CSS throughout
-- Data source: Cloudflare R2 at `https://images.barefootbetters.com/`
+- Data source: Cloudflare R2 at `https://images.legendary-arena.com/`
 - ES2022 build target
 
 ## Architecture & Data Flow
@@ -77,8 +77,8 @@ scripts/generate-theme-catalog.mjs  ← reads data/cards/ + data/metadata/sets.j
                                        outputs CATALOG.md with all valid slugs
 
 Theme JSONs are uploaded to R2 at:
-  https://images.barefootbetters.com/themes/index.json   (filename list)
-  https://images.barefootbetters.com/themes/{file}.json  (individual themes)
+  https://images.legendary-arena.com/themes/index.json   (filename list)
+  https://images.legendary-arena.com/themes/{file}.json  (individual themes)
 ```
 
 Each theme JSON contains: `themeId`, `name`, `description`, `setupIntent`
@@ -126,7 +126,7 @@ tooltip-absent paths.
 Entries with a confirmable rulebook page expose a "📖 Rulebook p. N"
 anchor in the panel, linking to the Marvel Legendary Universal Rulebook
 PDF on R2 at
-`https://images.barefootbetters.com/docs/legendary-universal-rules-v23.pdf`
+`https://images.legendary-arena.com/docs/legendary-universal-rules-v23.pdf`
 (configured as `rulebookPdfUrl` in `public/registry-config.json`). The
 anchor uses `target="_blank"` and `rel="noopener"` mandatory. When the
 `rulebookPdfUrl` config field is missing, the anchor is silently omitted

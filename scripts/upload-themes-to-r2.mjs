@@ -23,7 +23,7 @@ import { join, resolve } from 'node:path';
 const projectRoot = resolve(import.meta.dirname, '..');
 const themesDirectory = join(projectRoot, 'content', 'themes');
 // why: themes live in the `legendary-images` R2 bucket — the same bucket that
-// backs images.barefootbetters.com for card data and metadata (see
+// backs images.legendary-arena.com for card data and metadata (see
 // scripts/check-connections.mjs `rclone lsd r2:legendary-images` and
 // convert-cards-v15.mjs `r2:legendary-images/metadata`). The earlier
 // `legendary-arena` value was stale and 403'd (rclone fell through to

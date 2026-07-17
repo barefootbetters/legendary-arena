@@ -113,7 +113,7 @@ orthogonal and test-only. No layer may reach upward or sideways.
 | Registry viewer | Vue 3 + Vite + Zod | 3.4 / 5 / 3.23 | [apps/registry-viewer/package.json](../apps/registry-viewer/package.json) -- public at `cards.legendary-arena.com` |
 | Schema validation | Zod | 3.23 | registry + viewer |
 | Database driver | `pg` (PostgreSQL) | ^8.13 | [apps/server/package.json](../apps/server/package.json) |
-| Static asset host | Cloudflare R2 | -- | `https://images.barefootbetters.com/` |
+| Static asset host | Cloudflare R2 | -- | `https://images.legendary-arena.com/` |
 | Real-time transport | Socket.IO (via boardgame.io/client) | 4.8.x | shipped WP-090 (2026-04-24) |
 | HTTP router (server) | `@koa/router` on `koa` (via boardgame.io server) | 10.x / 2.x | transitive — `apps/server` does not declare `koa` or `@koa/router` as direct deps; framework choice is locked to whatever `boardgame.io` ships |
 | Authentication | Hanko (broker only) | -- | WP-099 / D-9901 (impl deferred WP-112) |
@@ -140,7 +140,7 @@ wins.
 | `api.legendary-arena.com` | `apps/server` | Render | live | CNAME to `legendary-arena-server.onrender.com` (not CF-proxied — Render needs direct origin for TLS + WebSocket) |
 | `wiki.legendary-arena.com` | TBD (separate Hugo site) | Cloudflare Pages | planned | Public player wiki; not yet authored |
 | `legends.legendary-arena.com` | `apps/legends-board` (WP-143) | Cloudflare Pages | planned | Public scoreboard; reads R2 snapshots, no server API calls |
-| `images.barefootbetters.com` | R2 bucket (external) | Cloudflare R2 + CDN | live | Card images; bucket index returns 403/404, individual keys return 200 |
+| `images.legendary-arena.com` | R2 bucket (external) | Cloudflare R2 + CDN | live | Card images; bucket index returns 403/404, individual keys return 200 |
 
 **Hosting model:** Cloudflare Pages for static SPAs and Hugo sites;
 Render for the Node.js game server and the Hugo engineering wiki.
@@ -186,7 +186,7 @@ Hanko-wiring WP. No Hanko code lives in the repo as of 2026-04-29.
 | Match state sync | Socket.IO 4.8.x (via boardgame.io/client) | Live moves, state diffs, multi-player sync (shipped WP-090) |
 | Match lifecycle | HTTP `POST` | `POST /games/legendary-arena/create`, `POST /games/legendary-arena/{matchID}/join` |
 | Server CLI scripts | HTTP via Node 22 built-in `fetch` | `create-match.mjs`, `list-matches.mjs`, `join-match.mjs` (no axios, no node-fetch) |
-| Static card / theme / glossary data | HTTPS to R2 | `https://images.barefootbetters.com/` (registry-viewer + arena-client) |
+| Static card / theme / glossary data | HTTPS to R2 | `https://images.legendary-arena.com/` (registry-viewer + arena-client) |
 | Hanko OIDC verification (future) | HTTPS / JWKS | Server-side only; the arena-client carries an opaque session credential and never inspects claims (D-9904) |
 
 ---
