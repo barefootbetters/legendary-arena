@@ -173,22 +173,24 @@ Packet decision.
   side convention). Note the two sub-chip families each restart their
   `order` from 10 within their parent (shield: 10–40, other: 10–50);
   ordering is scoped per parent, not global.
-- **Taxonomy slug vs. per-card `cardType`, and the un-flattened `other`
-  array.** The taxonomy is the *classification vocabulary*; individual
-  card objects carry an explicit `cardType` field only in a set's `other`
-  array (e.g. a SHIELD Officer is `{ …, cardType: "shield-officer" }`),
-  while heroes, villains, bystanders, wounds, etc. are classified by their
-  containing array. The viewer's `flattenSet` iterates heroes, masterminds,
-  villains, henchmen, schemes, bystanders, and wounds — but **not**
-  `set.other` — so `other`-array cards (SHIELD Agent / Officer / Trooper,
-  Sidekick, Master Strike, Scheme Twist) contribute a taxonomy *ribbon
-  category* but no browseable tiles today. Core Set 2nd Edition (`co2e`)
-  is the first set to populate the full SHIELD suite and a Sidekick as
-  real `other`-array cards — `shield-agent`, `shield-officer` (×6: base
-  plus five class Specialists), `shield-trooper`, and `sidekick` — so those
-  rows now have data even though the current viewer does not surface them
-  as cards. (co2e's *named bystanders* live in the `bystanders` array,
-  which **is** flattened, so those do appear.)
+- **Taxonomy slug vs. per-card `cardType`.** The taxonomy is the
+  *classification vocabulary*; individual card objects carry an explicit
+  `cardType` field only in a set's `other` array (e.g. a SHIELD Officer is
+  `{ …, cardType: "shield-officer" }`), while heroes, villains, bystanders,
+  wounds, etc. are classified by their containing array. The viewer's
+  `flattenSet` iterates **every** card array — heroes, masterminds,
+  villains, henchmen, schemes, bystanders, wounds, and `set.other` (the
+  last via the WP-123 / D-12301 generic dispatch, which reads each entry's
+  `cardType` and falls back to `"other"` when absent). So `other`-array
+  cards are browseable tiles classified by their own sub-chip slug. Core
+  Set 2nd Edition (`co2e`) is the first set to populate the full SHIELD
+  suite and a Sidekick there — `shield-agent`, `shield-officer` (×6: base
+  plus five class Specialists), `shield-trooper`, and `sidekick` — giving
+  those sub-chip and top-level rows their first concrete card instances.
+  Per D-24189 the `other` dispatch also surfaces the printed stats those
+  cards carry (SHIELD Officers' cost + recruit + class; the Sidekick's
+  cost + attack; Master Strike / Scheme Twist carry none and simply omit
+  them).
 - **Engine code MUST NOT read this file.** Per
   [`registry.md` "Prohibited Behaviors"](../.claude/skills/legendary-registry/SKILL.md),
   game logic, move logic, or persistence in the registry package is
@@ -213,7 +215,7 @@ Packet decision.
 - WP-084: File deleted on 2026-04-21 — the auxiliary metadata was unused at that point
 - WP-086: File reintroduced on 2026-04-29 with the new 13-entry shape `{ slug, label, emoji?, order, parentType }` and `.strict()` schema; D-8601 records the reintroduction; consumed by the registry-viewer ribbon generator only
 - 2026-05 → 07: taxonomy grew 13 → 19 entries. `shield-officer-special` reclassified the 8 SHIELD Officer Special cards out of the Hero ribbon (`1ab7c977`); `mastermind-strike` + `scheme-twist` nested as `other` sub-chips (`2125d835` → `a2862538`); `ambitions` + `token` + `horror` added as `other` sub-chips for the xmen / ssw2 promo + divided-card kinds (`c3f1f079`)
-- 2026-07-17: Core Set 2nd Edition (`co2e`, #794) became the first set to populate the SHIELD sub-chips + Sidekick as real `other`-array cards; surfaced that `flattenSet` does not iterate `set.other` (ribbon category without browseable tiles)
+- 2026-07-17: Core Set 2nd Edition (`co2e`, #794) became the first set to populate the SHIELD sub-chips + Sidekick as real `other`-array cards. `flattenSet`'s existing `set.other` dispatch (WP-123 / D-12301) already made them browseable; D-24189 then extended that dispatch to surface their printed cost / attack / recruit / class stats in the detail panel
 
 ## References
 

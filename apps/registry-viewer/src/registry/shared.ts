@@ -433,6 +433,15 @@ export function flattenSet(
       slug,
       imageUrl:  String(entryRecord["imageUrl"] ?? ""),
       abilities: Array.isArray(entryRecord["abilities"]) ? entryRecord["abilities"] as string[] : [],
+      // why: D-24189 — surface the printed stats some `other` cards carry so the
+      // detail panel shows them (co2e's SHIELD Officers have cost + recruit + a
+      // class, the Sidekick has cost + attack). Coerced from the z.unknown()
+      // record; absent fields stay undefined and simply don't render.
+      cost:      typeof entryRecord["cost"] === "number" ? entryRecord["cost"] : undefined,
+      attack:    entryRecord["attack"] != null ? String(entryRecord["attack"]) : undefined,
+      recruit:   entryRecord["recruit"] != null ? String(entryRecord["recruit"]) : undefined,
+      hc:        typeof entryRecord["hc"] === "string" ? entryRecord["hc"] as FlatCard["hc"] : undefined,
+      team:      typeof entryRecord["team"] === "string" ? entryRecord["team"] : undefined,
     });
   }
 
