@@ -1813,7 +1813,7 @@
       "alwaysLeads": [
         "hydra"
       ],
-      "vp": 5,
+      "vp": 6,
       "cards": [
         {
           "name": "Red Skull",
@@ -1837,6 +1837,50 @@
             "Red Skull gets +2[icon:attack] for each HYDRA Villain in the city and/or Escape Pile.",
             "Always Leads: Any \"HYDRA\" Villain Group",
             "Master Strike: Each player discards a [hc:tech] Hero or discards down to 3 cards."
+          ]
+        },
+        {
+          "name": "Dust of Death",
+          "slug": "dust-of-death",
+          "tactic": true,
+          "vAttack": 7,
+          "vp": 6,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mt-red-skull-dust-of-death.webp",
+          "abilities": [
+            "Fight: Each other player KOs a non-grey Hero from their discard pile."
+          ]
+        },
+        {
+          "name": "Ruthless Command",
+          "slug": "ruthless-command",
+          "tactic": true,
+          "vAttack": 7,
+          "vp": 6,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mt-red-skull-ruthless-command.webp",
+          "abilities": [
+            "Fight: Reveal the top three cards of your deck. KO one, discard one, and put one back on top."
+          ]
+        },
+        {
+          "name": "Two More Shall Take Its Place",
+          "slug": "two-more-shall-take-its-place",
+          "tactic": true,
+          "vAttack": 7,
+          "vp": 6,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mt-red-skull-two-more-shall-take-its-place.webp",
+          "abilities": [
+            "Fight: If this is not the final Tactic: Shuffle two cards from the Bystander Deck into the Villain Deck, then play two cards from the Villain Deck."
+          ]
+        },
+        {
+          "name": "Vast Resources",
+          "slug": "vast-resources",
+          "tactic": true,
+          "vAttack": 7,
+          "vp": 6,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mt-red-skull-vast-resources.webp",
+          "abilities": [
+            "Fight: You get +4[icon:recruit]."
           ]
         }
       ]
