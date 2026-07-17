@@ -133,10 +133,19 @@ const challengeLegs = computed((): ChallengeLeg[] => {
   if (entry === null || entry.legs === undefined) {
     return [];
   }
+  // why: WP-387 — carry the routed board's player count into each challenge
+  // link so the builder pre-sizes its required-count slots to this board
+  // (a 4P board's links open a 4-player builder). `activePlayerCount` is the
+  // routed count across both divisions (solo → 1).
   return entry.legs.map((leg) => ({
     schemeSlug: leg.schemeSlug,
     schemeName: leg.schemeName,
-    url: buildChallengeUrl(entry.setAbbr, leg.schemeSlug, entry.mastermindSlug),
+    url: buildChallengeUrl(
+      entry.setAbbr,
+      leg.schemeSlug,
+      entry.mastermindSlug,
+      activePlayerCount.value,
+    ),
   }));
 });
 </script>

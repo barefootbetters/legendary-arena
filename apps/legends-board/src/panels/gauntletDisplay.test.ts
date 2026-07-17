@@ -197,6 +197,26 @@ describe("buildChallengeUrl (WP AC-3)", () => {
       "https://cards.legendary-arena.com/?schemeId=core%2Fmidtown-bank-robbery&mastermindId=core%2Fdr-doom",
     );
   });
+
+  it("WP-387: appends &playerCount when a count is supplied", () => {
+    assert.equal(
+      buildChallengeUrl("core", "midtown-bank-robbery", "dr-doom", 4),
+      "https://cards.legendary-arena.com/?schemeId=core%2Fmidtown-bank-robbery&mastermindId=core%2Fdr-doom&playerCount=4",
+    );
+  });
+
+  it("WP-387: omitting the count is byte-identical to the pre-WP-387 two-key URL", () => {
+    // why: the drift guard — the optional param must not perturb the existing
+    // link when a caller (e.g. the index CTA) has no routed count.
+    assert.equal(
+      buildChallengeUrl("core", "midtown-bank-robbery", "dr-doom"),
+      buildChallengeUrl("core", "midtown-bank-robbery", "dr-doom", undefined),
+    );
+    assert.equal(
+      buildChallengeUrl("core", "midtown-bank-robbery", "dr-doom"),
+      "https://cards.legendary-arena.com/?schemeId=core%2Fmidtown-bank-robbery&mastermindId=core%2Fdr-doom",
+    );
+  });
 });
 
 describe("resolveBoardIndexEntry (WP AC-4)", () => {

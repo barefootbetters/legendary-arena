@@ -37,7 +37,7 @@ import {
   DEFAULT_EXPANSIONS,
 } from "./useLoadoutDraft.js";
 
-import { parseSetupUrl } from "../lib/setupUrlParams.js";
+import { parseSetupUrl, parsePlayerCountFromUrl } from "../lib/setupUrlParams.js";
 
 /** Per-field matched-count breakdown surfaced for the preview header. */
 export interface SetupMatchedCount {
@@ -69,6 +69,16 @@ export interface UseSetupFromUrlApi {
 export function useSetupFromUrl(registry: CardRegistryReader): UseSetupFromUrlApi {
   const parsedParamsRef = ref<Partial<SetupCompositionInput>>(
     parseSetupUrl(window.location.search),
+  );
+
+  // why: WP-387 — the optional `playerCount` URL param (an envelope field,
+  // parsed separately from the five composition params) drives the preview
+  // document's player count when present, so a leaderboard "Challenge this leg"
+  // link that carries the gauntlet board's count shows the matching required
+  // counts in the preview header. Absent → null → the DEFAULT_PLAYER_COUNT
+  // below (byte-identical to pre-WP-387 behavior).
+  const parsedPlayerCountRef = ref<number | null>(
+    parsePlayerCountFromUrl(window.location.search),
   );
 
   const parsedParams = computed<Partial<SetupCompositionInput>>(
@@ -110,7 +120,10 @@ export function useSetupFromUrl(registry: CardRegistryReader): UseSetupFromUrlAp
       createdAt: "1970-01-01T00:00:00.000Z",
       createdBy: "system",
       seed: "0000000000000000",
-      playerCount: DEFAULT_PLAYER_COUNT,
+      // why: WP-387 — the URL player count when present, else the shared
+      // default (the parser already clamps to 1..5 / null, so no re-validation
+      // here). Keeps preview and editor consistent for a count-carrying link.
+      playerCount: parsedPlayerCountRef.value ?? DEFAULT_PLAYER_COUNT,
       expansions: [...DEFAULT_EXPANSIONS],
       heroSelectionMode: "GROUP_STANDARD",
       composition,

@@ -16,7 +16,11 @@ import { strict as assert } from "node:assert";
 
 import type { SetupCompositionInput } from "@legendary-arena/registry/setupContract";
 
-import { parseSetupUrl, serializeSetupToUrl } from "./setupUrlParams.js";
+import {
+  parsePlayerCountFromUrl,
+  parseSetupUrl,
+  serializeSetupToUrl,
+} from "./setupUrlParams.js";
 
 describe("setupUrlParams (WP-114)", () => {
   it("type-correct round-trip: parse-after-serialize yields the five URL-bound keys", () => {
@@ -120,5 +124,50 @@ describe("setupUrlParams (WP-114)", () => {
   it("empty-singular semantics: ?schemeId= preserves the empty string", () => {
     const parsed = parseSetupUrl("?schemeId=");
     assert.deepEqual(parsed, { schemeId: "" });
+  });
+
+  // WP-387: playerCount is an envelope field the composition parser ignores.
+  it("parseSetupUrl ignores playerCount (envelope, not composition)", () => {
+    assert.deepEqual(parseSetupUrl("?schemeId=core/foo&playerCount=4"), {
+      schemeId: "core/foo",
+    });
+  });
+});
+
+describe("parsePlayerCountFromUrl (WP-387)", () => {
+  it("returns the integer for each supported count 1..5", () => {
+    for (const count of [1, 2, 3, 4, 5]) {
+      assert.equal(parsePlayerCountFromUrl(`?playerCount=${count}`), count);
+    }
+  });
+
+  it("returns null when the param is absent", () => {
+    assert.equal(parsePlayerCountFromUrl(""), null);
+    assert.equal(parsePlayerCountFromUrl("?schemeId=core/foo"), null);
+  });
+
+  it("returns null for an empty value (?playerCount=)", () => {
+    assert.equal(parsePlayerCountFromUrl("?playerCount="), null);
+  });
+
+  it("returns null for out-of-range values (0 and 6)", () => {
+    assert.equal(parsePlayerCountFromUrl("?playerCount=0"), null);
+    assert.equal(parsePlayerCountFromUrl("?playerCount=6"), null);
+  });
+
+  it("returns null for non-integer / malformed values", () => {
+    assert.equal(parsePlayerCountFromUrl("?playerCount=abc"), null);
+    assert.equal(parsePlayerCountFromUrl("?playerCount=3.5"), null);
+    assert.equal(parsePlayerCountFromUrl("?playerCount=4x"), null);
+    assert.equal(parsePlayerCountFromUrl("?playerCount=-1"), null);
+  });
+
+  it("reads playerCount alongside the composition keys", () => {
+    assert.equal(
+      parsePlayerCountFromUrl(
+        "?schemeId=core/foo&mastermindId=core/bar&playerCount=4",
+      ),
+      4,
+    );
   });
 });

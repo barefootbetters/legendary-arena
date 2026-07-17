@@ -33,6 +33,7 @@ import FilterDropdown from "./components/FilterDropdown.vue";
 import type { FilterDropdownItem } from "./components/FilterDropdown.vue";
 import AppShell from "./components/branding/AppShell.vue";
 import { useSetupFromUrl } from "./composables/useSetupFromUrl";
+import { parsePlayerCountFromUrl } from "./lib/setupUrlParams";
 import { useLagnFromUrl } from "./composables/useLagnFromUrl";
 import { useLoadoutDraft } from "./composables/useLoadoutDraft";
 import type { UseLoadoutDraftApi } from "./composables/useLoadoutDraft";
@@ -369,6 +370,20 @@ onMounted(async () => {
       setupValidationErrors.value = setupApi.validationErrors.value;
       setupMatchedCount.value = setupApi.matchedCount.value;
       setupParsedParams.value = setupApi.parsedParams.value;
+
+      // why: WP-387 — seed the EDITOR draft's player count from the URL so the
+      // WP-372 required-count readout ("For an N-player match: …") matches the
+      // count-keyed gauntlet board the "Challenge this leg" link came from. The
+      // slot-sizing guidance is driven by the editor draft (getPlayerCountSetup),
+      // NOT the read-only preview, and seeding here — right after the draft is
+      // created, in the no-`?lagn=` branch (a full LAGN sets its own count and
+      // takes precedence) — makes the editor correct independent of the later
+      // "Edit this loadout" promote path. Absent / invalid param → null → the
+      // draft keeps its DEFAULT_PLAYER_COUNT (unchanged behavior).
+      const urlPlayerCount = parsePlayerCountFromUrl(window.location.search);
+      if (urlPlayerCount !== null) {
+        loadoutDraftApi.value.setPlayerCount(urlPlayerCount);
+      }
     }
 
     // why: one-shot auto-switch — either a `?lagn=` deep-link or the WP-114 setup
