@@ -2600,9 +2600,9 @@
       "cards": [
         {
           "abilities": [
-            "Setup: 8 Twists. Add an extra Henchman group to the Villain Deck.",
-            "Twist: Play the top 2 cards of the Villain Deck.",
-            "Evil Wins: If 12 Villains escape."
+            "Setup: 6 Twists plus 1 per player. Add an extra Villain Group. Add 4 extra Bystanders.",
+            "Twist: Play two cards from the Villain Deck.",
+            "Evil Wins: When there are 3 Villains per player in the Escape Pile or the Villain Deck runs out."
           ]
         }
       ]
