@@ -7,6 +7,47 @@
 
 ## Current State
 
+### WP-384 / EC-413 Executed — Fixed-hero-pool gauntlet division: `team_key` persistence + backfill + pool-constrained standings + publisher (D-24187 server half) (2026-07-16)
+
+**No user-observable change — infrastructure only.** The payoff surface is
+**WP-385** (the legends-board division toggle + hero-pool display), which this
+packet unblocks: the D-24187 fixed-hero-pool championship now exists as
+published R2 artifacts once data accumulates.
+
+Migration 034 adds nullable `team_key` to `legendary.competitive_scores`;
+submission step 14d derives it from the verified reduction's
+`matchConfiguration.heroDeckIds` (set-qualified D-10014 ids sorted ASC,
+`+`-joined — never client-supplied, never re-slugified), written once as
+INSERT `$13` with the record key lock amended **14 → 15** and the column swept
+across **all five** read surfaces in `competition.logic.ts` (the EC-376
+missed-column lesson, applied). A new operator script
+(`scripts/backfill-team-key.mjs`, dry-run default) backfills NULLs via a pure
+SQL jsonb extraction from `bgio.replay_artifacts.initial_state` under the new
+**D-24187 team-key carve-out** (ARCHITECTURE.md §Persistence Boundary +
+`.claude/rules/architecture.md` mirror, edited this commit); the SQL sort pins
+`COLLATE "C"` and a DB-gated test proves byte-equivalence with the JS sort.
+`getGauntletStandings` keeps ONE roster-joined query per gauntlet and now
+returns per-count `{ open, fixed }` — open-division values byte-identical
+(every prior assertion value passes unmodified; accessors updated
+mechanically) — where `fixed` is the exact-optimum subset search over the
+roster's distinct team keys (budgets `{1:5, 2:7, 3:7, 4:7, 5:8}` =
+`heroCount + 2` per D-24165, **injected as plain data riding the catalog from
+`server.mjs`** — `gauntlet.logic.ts` imports no registry; cap 12 distinct
+teams with a logged, never-silent truncation). The publisher lazily emits
+additive `gauntlet-<set>-<mm>-fixed[-p<N>].json` boards (entries carry
+`heroPool`) and the index gains `fixedEntryCounts`; manifest-last (D-14204)
+unchanged.
+
+Baselines: `pnpm -r build` 0; full server suite **858 pass / 0 fail / 158
+DB-skipped**; DB-gated serialized green against local Postgres with 034
+applied (incl. the WP AC-5 fixed-division matrix, the 15-key runtime lock,
+order-independence, and SQL↔JS sort equivalence); backfill live-verified on
+seeded rows (dry-run reports without writing; `--write` fills exactly the
+artifact-backed row; second `--write` no-op; artifact-less rows stay NULL).
+**Production backfill is operator-run, not deploy-run** — an open operator
+item until `node --env-file=.env scripts/backfill-team-key.mjs --write` runs
+against production (migration 034 itself auto-applies on deploy).
+
 ### INFRA fix — registry-viewer loadout preview resolves composition ids by extId, not the flatten `key` (D-24186 Active) (2026-07-15)
 
 Fixes the surface WP-345's gauntlet "Challenge this leg" links land on. The URL-parameterized loadout preview at cards.legendary-arena.com showed **"Unknown ext_id: core/…"** for every scheme/mastermind (and villain/hero) even for valid ids — the reported `?schemeId=core/legacy-virus-the&mastermindId=core/red-skull` link read as an empty, all-unknown loadout. Root cause: `LoadoutPreview.vue` keyed its resolution Map by the flatten's internal `card.key` (`core-mastermind-red-skull-red-skull`) but looked cards up by composition `extId` (`core/red-skull`) — a construction-guaranteed miss, so `isKnown` was always false. **Present since WP-114 (commit `c059199c`); latent until WP-345 drove real traffic to the preview.** One-line fix: key by `card.extId` (keep-first on the shared id). registry-viewer `vue-tsc` 0 / `node:test` green; dev-server smoke against live metadata — the reported URL now resolves to **"Legacy Virus, The" + "Red Skull"** with zero unknowns, and a full loadout resolves Schemes 1/1 · Masterminds 1/1 · Villain Groups 2/2 · Henchman Groups 1/1 · Hero Decks 5/5. `User-Visible Surface = cards.legendary-arena.com` — D-24026 live-verify operator-pending on the CF Pages deploy. See **D-24186**. (Noted follow-up: villain/hero preview names show the first flat card's name rather than the group name — a pre-existing keep-first cosmetic, immaterial to the scheme+mastermind challenge-link case.)

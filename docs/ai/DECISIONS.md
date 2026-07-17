@@ -29233,7 +29233,29 @@ Protect this file.
 
 ### D-24187 — Fixed-hero-pool gauntlet prestige division (`team_key` persistence + pool-constrained standings)
 
-**Status:** Active 2026-07-16 (design lock; ratified at SPEC draft, the D-24131/D-24134 pattern). Packets WP-384 (server) + WP-385 (client) drafted this date, pending execution.
+**Status:** Active 2026-07-16 (design lock; ratified at SPEC draft, the D-24131/D-24134 pattern). **WP-384 (server) executed 2026-07-16** (EC-413; migration 034 auto-applies via the Render migrate step on deploy; the artifact backfill is operator-run and open until run against production). WP-385 (client) drafted, unblocked, pending execution.
+
+> **Execution note (2026-07-16, WP-384 / EC-413).** Landed as designed with
+> the five EC-draft reconciliations recorded in the WP addendum: (1) record
+> key lock amended 14 → 15 (WP-354 had already added `isRankedEligible`);
+> (2) the `heroCount + 2` budgets ride the catalog as plain data stamped by
+> `buildGauntletCatalog(setSummaries, heroPoolBudgets)` from `server.mjs` —
+> `index.mjs`/scheduler pass the catalog through unchanged, so the wiring
+> stayed one file; (3) `getGauntletStandings` keeps ONE roster-joined query
+> per gauntlet and returns per-count `{ open, fixed }` (open assertion
+> values byte-identical; the publisher — sole production caller — updated in
+> the same change); (4) the backfill is a pure SQL jsonb extraction
+> (`string_agg(... ORDER BY hero_id COLLATE "C")` — byte order pinned so
+> SQL and the step-14d JS sort agree; DB-gated equivalence test); (5) the
+> team_key column swept across all five `competition.logic.ts` read
+> surfaces. §5 executor choices locked at EC time and shipped: exact-optimum
+> subset enumeration; cap 12 distinct teams per (roster × count × gauntlet);
+> drop rule lowest-best-single-leg / team-key-ASC; `console.warn` on
+> truncation (test-asserted — a silent cap fails the suite). Fixed entries
+> publish `heroPool` = the CHOSEN teams' hero union (never the candidate
+> subset's), tie → lexicographically smallest joined pool. Full server suite
+> 858/0/158-skipped; DB-gated serialized green with 034; backfill
+> live-verified on seeded rows (dry-run/write/idempotent-rerun/NULL-stays).
 
 **User-Visible Surface:** none at this entry (design lock). Eventual surface: legends.legendary-arena.com — a fixed-hero-pool championship division beside each open gauntlet board, entries displaying the hero pool that earned them.
 
