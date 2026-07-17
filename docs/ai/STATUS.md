@@ -7,6 +7,36 @@
 
 ## Current State
 
+### WP-385 / EC-414 Executed — Fixed-hero-pool gauntlet division: division toggle + hero-pool display (D-24187 client half — the arc's payoff surface) (2026-07-16)
+
+**legends.legendary-arena.com now renders the D-24187 championship.** Each
+gauntlet board offers an **Open | Fixed-Pool Championship** division toggle
+(Open default — the acquisition surface; the active division derives from the
+ROUTE via a pure `isFixedBoardName`, no component state); fixed boards carry
+the championship subtitle and a **Hero Pool** column
+(`formatHeroPool` — set-prefix stripped, ` · `-joined; ids never
+re-slugified); the open board carries the feeder line ("clear them all with
+one hero pool"); the index shows claimed-only `★ Np` fixed chips beside the
+WP-345 count chips. `resolveBoardIndexEntry` strips `-p[2-5]` then `-fixed`
+(lookup-miss-gated); the WP-345 unclaimed guard extends to fixed boards via
+`findRoutedCountTab`, so an unclaimed `-fixed[-p<N>]` deep link renders the
+open-championship state, never a 404. Old snapshots (no `fixedEntryCounts`)
+degrade to exact WP-345 rendering; `parseHashRoute` + the kiosk cycle are
+byte-identical (D-24135).
+
+Baselines: legends-board build 0 / `vue-tsc` 0 / `node:test` **69/69**
+(54 → +15); zero-API bundle grep clean; 7-file scope exact. Fixture-driven
+dev smoke verified on the worktree `vite preview`: populated open board
+(toggle + feeder), populated fixed board (Hero Pool column:
+`black-widow · iron-man · spider-man`), an unclaimed `-fixed-p2` deep link
+rendering the championship-open state, and the index's `★ 1p` chip — zero
+console errors. **The live index already publishes `fixedEntryCounts` on all
+109 gauntlets** (the WP-384 deploy's publish cycle), so the toggle goes live
+with the CF Pages deploy — D-24026 live-verify on the deployed surface
+(launch state = every fixed count unclaimed, by design). **Completes the
+D-24187 fixed-hero-pool arc (WP-384 server + WP-385 client)**; the remaining
+operator item is the production `team_key` backfill run.
+
 ### WP-384 / EC-413 Executed — Fixed-hero-pool gauntlet division: `team_key` persistence + backfill + pool-constrained standings + publisher (D-24187 server half) (2026-07-16)
 
 **No user-observable change — infrastructure only.** The payoff surface is
