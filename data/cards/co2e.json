@@ -2566,13 +2566,15 @@
       "cards": [
         {
           "abilities": [
-            "Setup: 8 Twists. 6 Heroes. Skrull Villain Group required. Shuffle 12 random Heroes from the Hero Deck into the Villain Deck.",
-            "Special Rules: Heroes in the Villain Deck count as Skrull Villains with [icon:attack] equal to the Hero's [icon:vp]+2. If you defeat that Hero, you gain it.",
-            "Twist: The highest-cost Hero from the HQ moves into the Sewers as a Skrull Villain, as above.",
-            "Evil Wins: If 6 Heroes get into the Escaped Villains pile."
+            "Setup: 6 Twists. Always include the Skrull Villain Group. Add an extra Hero to the Hero Deck. Shuffle 4 random cards from the Hero Deck into the Villain Deck.",
+            "Special Rules: Hero cards in the Villain Deck and city are \"Skrull Infiltrator\" Villains with [icon:attack] equal to that Hero's cost +3. They have \"Fight: Either KO this card or choose a player to gain it as a Hero.\"",
+            "Twists 1-5: The leftmost Hero from the HQ enters the Sewers as a Skrull Infiltrator.",
+            "Twist 6: All Skrulls in the city escape.",
+            "Evil Wins: When there are 6 Hero cards in the Escape Pile."
           ]
         }
-      ]
+      ],
+      "villainDeckTwistCount": 6
     },
     {
       "id": 3,
