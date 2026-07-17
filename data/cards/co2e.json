@@ -1750,13 +1750,47 @@
           ]
         },
         {
+          "name": "Broken Illusions",
+          "slug": "broken-illusions",
+          "tactic": true,
+          "vAttack": 11,
+          "vp": 6,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mt-loki-broken-illusions.webp",
+          "abilities": [
+            "Fight: Either KO one of Loki's Hypno-Thralls or choose a player to gain it."
+          ]
+        },
+        {
+          "name": "Cruel Manipulations",
+          "slug": "cruel-manipulations",
+          "tactic": true,
+          "vAttack": 11,
+          "vp": 6,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mt-loki-cruel-manipulations.webp",
+          "abilities": [
+            "Fight: Each other player reveals their hand and discards all cards that have the same card names as any cards in Loki's Hypno-Thralls."
+          ]
+        },
+        {
+          "name": "Scion of the Frost Giants",
+          "slug": "scion-of-the-frost-giants",
+          "tactic": true,
+          "vAttack": 11,
+          "vp": 6,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mt-loki-scion-of-the-frost-giants.webp",
+          "abilities": [
+            "Fight: KO up to three grey Heroes from your discard pile."
+          ]
+        },
+        {
           "name": "Whispers and Lies",
           "slug": "whispers-and-lies",
           "tactic": true,
-          "vAttack": 10,
+          "vAttack": 11,
+          "vp": 6,
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mt-loki-whispers-and-lies.webp",
           "abilities": [
-            "Fight: Each other player KOs two Bystanders from their Victory Pile."
+            "Fight: Put all Heroes that cost 5 or more from the HQ into Loki's Hypno-Thralls. Then refill all those HQ spaces."
           ]
         }
       ]
