@@ -1645,7 +1645,7 @@
       "name": "Dr. Doom",
       "slug": "doctor-doom",
       "alwaysLeads": [
-        "masters-of-evil"
+        "doombot-legion"
       ],
       "vp": 5,
       "cards": [
@@ -1658,6 +1658,19 @@
           "abilities": [
             "Always Leads: Doombot Legion",
             "Master Strike: Each player with exactly 6 cards in hand reveals a [hc:tech] Hero or puts 2 cards from their hand on top of their deck."
+          ]
+        },
+        {
+          "name": "Epic Doctor Doom",
+          "slug": "epic-doctor-doom",
+          "tactic": false,
+          "vAttack": "12+",
+          "vp": 6,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-me-doctor-doom.webp",
+          "abilities": [
+            "All Doombot Legions get +2[icon:attack]. If there are at least four Omens of Doom, then instead Doctor Doom and all Doombot Legions get +4[icon:attack].",
+            "Always Leads: Doombot Legions",
+            "Master Strike: Stack this Strike next to Doctor Doom as an \"Omen of Doom.\" Then each player discards cards equal to one plus the number of Omens or gains a Wound."
           ]
         },
         {
@@ -1723,6 +1736,19 @@
           ]
         },
         {
+          "name": "Epic Loki",
+          "slug": "epic-loki",
+          "tactic": false,
+          "vAttack": "12+",
+          "vp": 6,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-me-loki.webp",
+          "abilities": [
+            "Loki gets +2[icon:attack] for each Hero Class among his \"Hypno-Thralls.\"",
+            "Always Leads: Enemies of Asgard",
+            "Master Strike: Stack the top card of the Hero Deck next to Loki as a Hypno-Thrall. Each player KOs one of their [hc:strength] Heroes or stacks a non-grey Hero from their hand next to Loki as a Hypno-Thrall."
+          ]
+        },
+        {
           "name": "Whispers and Lies",
           "slug": "whispers-and-lies",
           "tactic": true,
@@ -1739,7 +1765,7 @@
       "name": "Magneto",
       "slug": "magneto",
       "alwaysLeads": [
-        "brotherhood"
+        "brotherhood-of-mutants"
       ],
       "vp": 5,
       "cards": [
@@ -1752,6 +1778,19 @@
           "abilities": [
             "Always Leads: Brotherhood",
             "Master Strike: Each player reveals an [team:x-men] Hero or discards down to four cards."
+          ]
+        },
+        {
+          "name": "Epic Magneto",
+          "slug": "epic-magneto",
+          "tactic": false,
+          "vAttack": "11+",
+          "vp": 6,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-me-magneto.webp",
+          "abilities": [
+            "Magneto gets +1[icon:attack] for each Hero you played this turn that's [hc:tech] and/or [hc:ranged].",
+            "Always Leads: Any \"Brotherhood\" or \"X-Men\" Villain Group",
+            "Master Strike: Each player KOs one of their [team:x-men] Heroes or gains a Wound."
           ]
         },
         {
