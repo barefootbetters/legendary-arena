@@ -1723,17 +1723,18 @@
       "alwaysLeads": [
         "enemies-of-asgard"
       ],
-      "vp": 5,
+      "vp": 6,
       "cards": [
         {
           "name": "Loki",
           "slug": "loki",
           "tactic": false,
-          "vAttack": 10,
+          "vAttack": "11+",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mm-loki.webp",
           "abilities": [
+            "Loki gets +1[icon:attack] for each Hero Class among his \"Hypno-Thralls.\"",
             "Always Leads: Enemies of Asgard",
-            "Master Strike: Each player reveals a [hc:strength] Hero or gains a Wound."
+            "Master Strike: Each player discards a [hc:strength] Hero or stacks a non-grey Hero from their hand next to Loki as a Hypno-Thrall."
           ]
         },
         {
@@ -1802,17 +1803,18 @@
       "alwaysLeads": [
         "brotherhood-of-mutants"
       ],
-      "vp": 5,
+      "vp": 6,
       "cards": [
         {
           "name": "Magneto",
           "slug": "magneto",
           "tactic": false,
-          "vAttack": 8,
+          "vAttack": "9+",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mm-magneto.webp",
           "abilities": [
-            "Always Leads: Brotherhood",
-            "Master Strike: Each player reveals an [team:x-men] Hero or discards down to four cards."
+            "Magneto gets +1[icon:attack] for each [hc:tech] Hero you played this turn.",
+            "Always Leads: Any \"Brotherhood\" or \"X-Men\" Villain Group",
+            "Master Strike: Each player discards an [team:x-men] Hero or gains a Wound."
           ]
         },
         {
