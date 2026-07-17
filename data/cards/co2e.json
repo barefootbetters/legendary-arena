@@ -2877,6 +2877,16 @@
       "team": "shield",
       "imageUrl": "https://images.legendary-arena.com/co2e/co2e-sa-agent.webp",
       "abilities": []
+    },
+    {
+      "name": "S.H.I.E.L.D. Trooper",
+      "slug": "trooper",
+      "cardType": "shield-trooper",
+      "cost": 1,
+      "attack": "1",
+      "team": "shield",
+      "imageUrl": "https://images.legendary-arena.com/co2e/co2e-tr-trooper.webp",
+      "abilities": []
     }
   ]
 }
