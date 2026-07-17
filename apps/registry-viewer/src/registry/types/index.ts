@@ -52,6 +52,8 @@ export interface FlatCard {
   cost?:      number;
   attack?:    string | null;
   recruit?:   string | null;
+  /** Victory points — mastermind/villain/henchman group cards (D-24189). */
+  vp?:        string | number | null;
   abilities:  string[];
 }
 

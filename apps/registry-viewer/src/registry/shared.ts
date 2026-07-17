@@ -168,6 +168,11 @@ export function flattenSet(
         alwaysLeads: mm.alwaysLeads,
         slug:      card.slug,
         imageUrl:  card.imageUrl ?? "",
+        // why: D-24189 — surface the mastermind card's printed attack + VP in the
+        // detail panel. vAttack maps onto the shared `attack` stat (string|null);
+        // vp is per-card (epic face / tactics print their own; co2e is the first).
+        attack:    card.vAttack != null ? String(card.vAttack) : null,
+        vp:        card.vp ?? null,
         abilities: card.abilities ?? [],
         mechanicalPattern: mastermindMechanicalPattern,
       });

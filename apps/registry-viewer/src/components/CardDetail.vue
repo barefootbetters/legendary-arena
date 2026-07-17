@@ -262,6 +262,12 @@ const matchedMechanicalPattern = computed(() => {
             <span class="stat-label">Recruit</span>
             <span class="stat-value">{{ card.recruit }}</span>
           </div>
+          <!-- why: D-24189 — per-card VP (mastermind epic/tactic faces print
+               their own). Rendered whenever the flat card carries a vp. -->
+          <div v-if="card.vp !== undefined && card.vp !== null" class="stat">
+            <span class="stat-label">VP</span>
+            <span class="stat-value">{{ card.vp }}</span>
+          </div>
           <div v-if="card.rarity" class="stat">
             <span class="stat-label">Rarity</span>
             <span class="stat-value">{{ RARITY_LABEL[card.rarity] }}</span>
