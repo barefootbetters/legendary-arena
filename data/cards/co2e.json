@@ -2736,6 +2736,82 @@
       "cardType": "scheme-twist",
       "imageUrl": "https://images.legendary-arena.com/co2e/co2e-st-scheme-twist.webp",
       "abilities": []
+    },
+    {
+      "name": "Daring Sidekick",
+      "slug": "daring-sidekick",
+      "cardType": "sidekick",
+      "cost": 2,
+      "attack": "1",
+      "imageUrl": "https://images.legendary-arena.com/co2e/co2e-sk-daring-sidekick.webp",
+      "abilities": [
+        "Draw a card. Return this Sidekick to the bottom of the Sidekick Deck."
+      ]
+    },
+    {
+      "name": "Covert Specialist",
+      "slug": "covert-specialist",
+      "cardType": "shield-officer",
+      "cost": 3,
+      "recruit": "2",
+      "hc": "covert",
+      "team": "shield",
+      "imageUrl": "https://images.legendary-arena.com/co2e/co2e-so-officer-covert.webp",
+      "abilities": [
+        "[hc:covert]: Draw a card."
+      ]
+    },
+    {
+      "name": "Instinct Specialist",
+      "slug": "instinct-specialist",
+      "cardType": "shield-officer",
+      "cost": 3,
+      "recruit": "2",
+      "hc": "instinct",
+      "team": "shield",
+      "imageUrl": "https://images.legendary-arena.com/co2e/co2e-so-officer-instinct.webp",
+      "abilities": [
+        "[hc:instinct]: Draw a card."
+      ]
+    },
+    {
+      "name": "Ranged Specialist",
+      "slug": "ranged-specialist",
+      "cardType": "shield-officer",
+      "cost": 3,
+      "recruit": "2",
+      "hc": "ranged",
+      "team": "shield",
+      "imageUrl": "https://images.legendary-arena.com/co2e/co2e-so-officer-ranged.webp",
+      "abilities": [
+        "[hc:ranged]: Draw a card."
+      ]
+    },
+    {
+      "name": "Strength Specialist",
+      "slug": "strength-specialist",
+      "cardType": "shield-officer",
+      "cost": 3,
+      "recruit": "2",
+      "hc": "strength",
+      "team": "shield",
+      "imageUrl": "https://images.legendary-arena.com/co2e/co2e-so-officer-strength.webp",
+      "abilities": [
+        "[hc:strength]: Draw a card."
+      ]
+    },
+    {
+      "name": "Tech Specialist",
+      "slug": "tech-specialist",
+      "cardType": "shield-officer",
+      "cost": 3,
+      "recruit": "2",
+      "hc": "tech",
+      "team": "shield",
+      "imageUrl": "https://images.legendary-arena.com/co2e/co2e-so-officer-tech.webp",
+      "abilities": [
+        "[hc:tech]: Draw a card."
+      ]
     }
   ]
 }
