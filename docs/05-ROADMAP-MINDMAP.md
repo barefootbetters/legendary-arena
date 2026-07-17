@@ -454,8 +454,8 @@ mindmap
         ["WP-343 ✅ Legends-board gauntlet index + board panel (client) — SPA renders the gauntlet index + per-board standings; hash-route grammar locked; cleared the pre-existing legends-board vue-tsc red; EC-373; D-24131/D-24135"]
         ["WP-344 ✅ Player-count gauntlet boards (server) — migration 027 player_count column; roster-keyed standings per count from one query; publisher adds lazy per-count boards + index entryCounts/legs; EC-376; D-24134 server half"]
         ["WP-345 ✅ Player-count gauntlet boards + challenge links (legends-board client) — player-count selector, full-roster display, 'Challenge this leg' links into the WP-114 registry-viewer preview; EC-379; D-24134 client half"]
-        ["WP-384 📝 Fixed-hero-pool gauntlet division (server) — migration 034 team_key column + artifact backfill (D-24187 carve-out) + pool-constrained standings (heroCount + 2 budget) + lazy -fixed board emission; drafted 2026-07-16; D-24187 server half"]
-        ["WP-385 📝 Fixed-hero-pool gauntlet division (legends-board client) — Open | Fixed-Pool division toggle, hero-pool display on fixed entries, fixed claim chips; ⛔ BLOCKED on WP-384; drafted 2026-07-16; D-24187 client half"]
+        ["WP-384 ✅ Fixed-hero-pool gauntlet division (server) — migration 034 team_key column + SQL-jsonb artifact backfill (D-24187 carve-out) + one-query {open, fixed} standings (heroCount + 2 budgets riding the catalog; exact-optimum subset search, cap 12 logged) + lazy -fixed board emission + heroPool/fixedEntryCounts; EC-413; D-24187 server half"]
+        ["WP-385 📝 Fixed-hero-pool gauntlet division (legends-board client) — Open | Fixed-Pool division toggle, hero-pool display on fixed entries, fixed claim chips; unblocked (WP-384 done 2026-07-16); drafted 2026-07-16; D-24187 client half"]
 
       Friends & Ranked Trust (2026-07)
         ["WP-350 ✅ Friendships data model + status machine + mutual-clique helper (server) — new legendary.friendships table (migration 028; player_id FK CASCADE, closed status pending/accepted/declined, normalized-pair LEAST/GREATEST unique index, addressee_id/status lookup index); AccountId-keyed send/accept/decline/remove state machine + list helpers + getFriendshipStatus + areAllMutualFriends clique predicate (accepted-pair count == C(n,2); n≤1 vacuous; order/dup-independent); declined→pending is an UPDATE, removeFriend DELETEs; library-only (no endpoint/UI); EC-380; D-24142"]
@@ -558,14 +558,14 @@ mindmap
 | Hero/Villain Effects & Diagnostics (2026-07) | 5/5 | — |
 | Live-Play HUD & Pending-Choice UX (2026-07) | 15/15 | — |
 | Competitive Score Submission & Verification (2026-07) | 10/10 | — |
-| Gauntlet Leaderboards (Legends) (2026-07) | 4/6 | 2 open |
+| Gauntlet Leaderboards (Legends) (2026-07) | 5/6 | 1 open |
 | Friends & Ranked Trust (2026-07) | 18/18 | — |
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **373/377 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 3 open |
+| **Total** | **374/377 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 2 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 4):** WP-042.1 ⏸ blocked; WP-349 open; WP-384 open; WP-385 open.
+**Open / blocked WPs (derived from WORK_INDEX, 3):** WP-042.1 ⏸ blocked; WP-349 open; WP-385 open.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.

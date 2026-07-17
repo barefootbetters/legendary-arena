@@ -365,8 +365,14 @@ Shared Tooling (orthogonal):
 > operator dashboard's `/api/dash/matches` analytics; a derived, read-only
 > projection — never `state`/`log`, never written back, never a save-game, never a
 > source of competitive/derived gameplay features, never round-tripped into gameplay
-> state). All other application reads of the blob remain forbidden. Snapshots remain
-> counts-only.
+> state) — **and** the D-24187 team-key carve-out: a server-layer read MAY read
+> `bgio.replay_artifacts` (or the `bgio.matches` blob)
+> `initialState.G.matchConfiguration.heroDeckIds` solely to derive or backfill the
+> `legendary.competitive_scores.team_key` column (the D-24187 §1 sorted-`+`-joined
+> hero team identity; a derived, write-once domain value for the fixed-hero-pool
+> gauntlet division — never a `state`/`log` interpretation, never written back to
+> the blob, never round-tripped into gameplay state). All other application reads
+> of the blob remain forbidden. Snapshots remain counts-only.
 
 #### Enforcement Rule
 

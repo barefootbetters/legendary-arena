@@ -1,6 +1,6 @@
 /**
  * Tests for the mastermind set-gauntlet catalog + standings
- * (WP-342 / WP-344).
+ * (WP-342 / WP-344 / WP-384).
  *
  * Catalog tests are pure. Standings tests use a stub DatabaseClient
  * returning canned (replay × owner) rows — the SQL-side filters
@@ -9,15 +9,18 @@
  * competition.logic.test.ts; these tests prove the application-side
  * aggregation: version filter, roster grouping, the all-seats and
  * all-visible gates, best-per-leg, complete-gauntlets-only, per-count
- * keying, ranking, and the centesimal average.
+ * keying, ranking, the centesimal average, and (WP-384) the
+ * fixed-hero-pool division's pool-constrained assignment search.
  *
- * Authority: WP-342; WP-344; EC-376 §Locked Values; D-24131; D-24134.
+ * Authority: WP-342; WP-344; WP-384; EC-376 / EC-413 §Locked Values;
+ * D-24131; D-24134; D-24187.
  */
 
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  buildFixedGauntletBoardNameForPlayerCount,
   buildGauntletBoardName,
   buildGauntletBoardNameForPlayerCount,
   buildGauntletCatalog,
@@ -67,8 +70,17 @@ const TEST_DEFINITION: GauntletDefinition = {
   ],
 };
 
+// why: WP-384 — the same gauntlet with the D-24187 §4 wiring-injected pool
+// budgets (heroCount + 2 per D-24165: solo 5, 2-4p 7, 5p 8). Fixed-division
+// tests use this; the budget-less TEST_DEFINITION proves the degrade path.
+const BUDGETED_DEFINITION: GauntletDefinition = {
+  ...TEST_DEFINITION,
+  heroPoolBudgets: { 1: 5, 2: 7, 3: 7, 4: 7, 5: 8 },
+};
+
 /**
- * One (replay × owner) row as the WP-344 standings query returns them.
+ * One (replay × owner) row as the WP-344/WP-384 standings query returns
+ * them.
  */
 interface StubRow {
   replay_hash: string;
@@ -76,6 +88,7 @@ interface StubRow {
   final_score: number;
   scoring_config_version: number;
   player_count: number | null;
+  team_key: string | null;
   player_id: number;
   display_name: string;
   visibility: string;
@@ -126,7 +139,10 @@ function scenarioKeyFor(schemeSlug: string, mastermindSlug: string): string {
 
 /**
  * A qualifying solo (replay × owner) row: one winning replay on the
- * given leg, owned by one public account. Fields override via `extra`.
+ * given leg, owned by one public account. Fields override via `extra`
+ * (WP-384: including `team_key`, which defaults to NULL — the
+ * pre-migration shape — so pre-WP-384 tests exercise the open division
+ * exactly as before).
  */
 function soloRow(
   replayHash: string,
@@ -142,6 +158,7 @@ function soloRow(
     final_score: finalScore,
     scoring_config_version: 1,
     player_count: 1,
+    team_key: null,
     player_id: playerId,
     display_name: displayName,
     visibility: 'public',
@@ -151,13 +168,15 @@ function soloRow(
 
 /**
  * The (replay × owner) rows for one 2-player winning replay: one row
- * per owner, identical replay-level facts.
+ * per owner, identical replay-level facts. `teamKey` defaults to NULL
+ * (open-division-only) unless a fixed-division test supplies one.
  */
 function duoRows(
   replayHash: string,
   schemeSlug: string,
   finalScore: number,
   owners: readonly { playerId: number; displayName: string; visibility?: string }[],
+  teamKey: string | null = null,
 ): StubRow[] {
   const rows: StubRow[] = [];
   for (const owner of owners) {
@@ -167,6 +186,7 @@ function duoRows(
       final_score: finalScore,
       scoring_config_version: 1,
       player_count: 2,
+      team_key: teamKey,
       player_id: owner.playerId,
       display_name: owner.displayName,
       visibility: owner.visibility ?? 'public',
@@ -179,6 +199,12 @@ function duoRows(
 async function standingsFor(rows: StubRow[]) {
   const { database } = createStubDatabase(rows);
   return getGauntletStandings(TEST_DEFINITION, database, createStubDeps());
+}
+
+/** Convenience: standings for the budget-carrying definition (WP-384). */
+async function budgetedStandingsFor(rows: StubRow[]) {
+  const { database } = createStubDatabase(rows);
+  return getGauntletStandings(BUDGETED_DEFINITION, database, createStubDeps());
 }
 
 // ---------------------------------------------------------------------------
@@ -224,6 +250,27 @@ describe('gauntlet catalog (WP-342 / WP-344)', () => {
       'gauntlet-core-mm-one-p3',
     );
   });
+
+  test('fixed board names: -fixed precedes -p<N> (WP-384 / D-24187 §3)', () => {
+    assert.strictEqual(
+      buildFixedGauntletBoardNameForPlayerCount(TEST_DEFINITION, 1),
+      'gauntlet-core-mm-one-fixed',
+    );
+    assert.strictEqual(
+      buildFixedGauntletBoardNameForPlayerCount(TEST_DEFINITION, 3),
+      'gauntlet-core-mm-one-fixed-p3',
+    );
+  });
+
+  test('hero-pool budgets ride every catalog definition when supplied (WP-384)', () => {
+    const budgets = { 1: 5, 2: 7, 3: 7, 4: 7, 5: 8 };
+    const catalog = buildGauntletCatalog([CORE_SUMMARY], budgets);
+    for (const definition of catalog) {
+      assert.deepEqual(definition.heroPoolBudgets, budgets);
+    }
+    const budgetlessCatalog = buildGauntletCatalog([CORE_SUMMARY]);
+    assert.strictEqual(budgetlessCatalog[0]?.heroPoolBudgets, undefined);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -243,7 +290,7 @@ describe('gauntlet standings, solo (WP-342 semantics at count 1)', () => {
       createStubDeps(),
     );
 
-    assert.deepEqual(standings.get(1), [
+    assert.deepEqual(standings.get(1)?.open, [
       {
         handle: 'Alice',
         rank: 1,
@@ -254,7 +301,7 @@ describe('gauntlet standings, solo (WP-342 semantics at count 1)', () => {
       },
     ]);
     for (const playerCount of [2, 3, 4, 5]) {
-      assert.deepEqual(standings.get(playerCount), []);
+      assert.deepEqual(standings.get(playerCount)?.open, []);
     }
 
     // The query received the gauntlet's mastermind slug + leg slugs.
@@ -265,7 +312,7 @@ describe('gauntlet standings, solo (WP-342 semantics at count 1)', () => {
     const standings = await standingsFor([
       soloRow('r1', 'scheme-a', -5, 1, 'Alice'),
     ]);
-    assert.deepEqual(standings.get(1), []);
+    assert.deepEqual(standings.get(1)?.open, []);
   });
 
   test('best-per-leg keeps the lowest score among multiple winning replays', async () => {
@@ -274,7 +321,7 @@ describe('gauntlet standings, solo (WP-342 semantics at count 1)', () => {
       soloRow('r2', 'scheme-a', -6, 1, 'Alice'),
       soloRow('r3', 'scheme-b', 0, 1, 'Alice'),
     ]);
-    assert.strictEqual(standings.get(1)?.[0]?.totalScore, -6);
+    assert.strictEqual(standings.get(1)?.open[0]?.totalScore, -6);
   });
 
   test('replays at a stale scoringConfigVersion never qualify (VISION section 22)', async () => {
@@ -284,7 +331,7 @@ describe('gauntlet standings, solo (WP-342 semantics at count 1)', () => {
       soloRow('r1', 'scheme-a', -5, 1, 'Alice', { scoring_config_version: 2 }),
       soloRow('r2', 'scheme-b', -2, 1, 'Alice'),
     ]);
-    assert.deepEqual(standings.get(1), []);
+    assert.deepEqual(standings.get(1)?.open, []);
   });
 
   test('replays for an unpublished scenario never qualify (fail closed)', async () => {
@@ -294,7 +341,7 @@ describe('gauntlet standings, solo (WP-342 semantics at count 1)', () => {
       }),
       soloRow('r2', 'scheme-b', -2, 1, 'Alice'),
     ]);
-    assert.deepEqual(standings.get(1), []);
+    assert.deepEqual(standings.get(1)?.open, []);
   });
 
   test('a NULL player_count replay never qualifies on any count (D-24134 section 1)', async () => {
@@ -303,7 +350,7 @@ describe('gauntlet standings, solo (WP-342 semantics at count 1)', () => {
       soloRow('r2', 'scheme-b', -2, 1, 'Alice'),
     ]);
     for (const playerCount of [1, 2, 3, 4, 5]) {
-      assert.deepEqual(standings.get(playerCount), []);
+      assert.deepEqual(standings.get(playerCount)?.open, []);
     }
   });
 
@@ -324,7 +371,7 @@ describe('gauntlet standings, solo (WP-342 semantics at count 1)', () => {
       ...rowsFor(3, 'Mallory', -10, -1),
     ]);
     assert.deepEqual(
-      standings.get(1)?.map((entry) => [entry.rank, entry.handle]),
+      standings.get(1)?.open.map((entry) => [entry.rank, entry.handle]),
       [
         [1, 'Mallory'],
         [2, 'Alice'],
@@ -351,7 +398,7 @@ describe('gauntlet standings, rosters (WP-344 / D-24134)', () => {
       ]),
     ]);
 
-    assert.deepEqual(standings.get(2), [
+    assert.deepEqual(standings.get(2)?.open, [
       {
         handle: 'Alice',
         rank: 1,
@@ -361,7 +408,7 @@ describe('gauntlet standings, rosters (WP-344 / D-24134)', () => {
         players: ['Alice', 'Zed'],
       },
     ]);
-    assert.deepEqual(standings.get(1), []);
+    assert.deepEqual(standings.get(1)?.open, []);
   });
 
   test('a 2-player replay with one ownership row never qualifies (guest seat voids team eligibility)', async () => {
@@ -375,8 +422,8 @@ describe('gauntlet standings, rosters (WP-344 / D-24134)', () => {
         { playerId: 2, displayName: 'Zed' },
       ]),
     ]);
-    assert.deepEqual(standings.get(2), []);
-    assert.deepEqual(standings.get(1), []);
+    assert.deepEqual(standings.get(2)?.open, []);
+    assert.deepEqual(standings.get(1)?.open, []);
   });
 
   test('a private roster member excludes the whole replay (consent-to-publish per member)', async () => {
@@ -390,7 +437,7 @@ describe('gauntlet standings, rosters (WP-344 / D-24134)', () => {
         { playerId: 2, displayName: 'Zed' },
       ]),
     ]);
-    assert.deepEqual(standings.get(2), []);
+    assert.deepEqual(standings.get(2)?.open, []);
   });
 
   test('the SAME roster must clear every leg — different partners never combine', async () => {
@@ -404,7 +451,7 @@ describe('gauntlet standings, rosters (WP-344 / D-24134)', () => {
         { playerId: 3, displayName: 'Mallory' },
       ]),
     ]);
-    assert.deepEqual(standings.get(2), []);
+    assert.deepEqual(standings.get(2)?.open, []);
   });
 
   test('two rosters sharing a member are independent entries, tiebroken by joined roster ASC', async () => {
@@ -428,7 +475,7 @@ describe('gauntlet standings, rosters (WP-344 / D-24134)', () => {
     ]);
 
     assert.deepEqual(
-      standings.get(2)?.map((entry) => [entry.rank, entry.players.join('+')]),
+      standings.get(2)?.open.map((entry) => [entry.rank, entry.players.join('+')]),
       [
         [1, 'Alice+Mallory'],
         [2, 'Alice+Zed'],
@@ -450,9 +497,199 @@ describe('gauntlet standings, rosters (WP-344 / D-24134)', () => {
       ]),
     ]);
 
-    assert.strictEqual(standings.get(1)?.length, 1);
-    assert.strictEqual(standings.get(2)?.length, 1);
-    assert.deepEqual(standings.get(1)?.[0]?.players, ['Alice']);
-    assert.deepEqual(standings.get(2)?.[0]?.players, ['Alice', 'Zed']);
+    assert.strictEqual(standings.get(1)?.open.length, 1);
+    assert.strictEqual(standings.get(2)?.open.length, 1);
+    assert.deepEqual(standings.get(1)?.open[0]?.players, ['Alice']);
+    assert.deepEqual(standings.get(2)?.open[0]?.players, ['Alice', 'Zed']);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Standings — fixed-hero-pool division (WP-384 / D-24187)
+// ---------------------------------------------------------------------------
+
+// why: solo hero decks are 3 heroes (D-24165), so a solo team key carries
+// three set-qualified ids; the solo pool budget is 5.
+const TEAM_ABC = 'core/hero-a+core/hero-b+core/hero-c';
+const TEAM_DEF = 'core/hero-d+core/hero-e+core/hero-f';
+const TEAM_ABD = 'core/hero-a+core/hero-b+core/hero-d';
+
+describe('gauntlet standings, fixed-hero-pool division (WP-384 / D-24187)', () => {
+  test('one team clearing every leg earns a fixed entry with that team as the hero pool', async () => {
+    const standings = await budgetedStandingsFor([
+      soloRow('r1', 'scheme-a', -5, 1, 'Alice', { team_key: TEAM_ABC }),
+      soloRow('r2', 'scheme-b', -2, 1, 'Alice', { team_key: TEAM_ABC }),
+    ]);
+    assert.deepEqual(standings.get(1)?.fixed, [
+      {
+        handle: 'Alice',
+        rank: 1,
+        totalScore: -7,
+        legCount: 2,
+        averageScoreCentis: -350,
+        players: ['Alice'],
+        heroPool: ['core/hero-a', 'core/hero-b', 'core/hero-c'],
+      },
+    ]);
+    // The open division carries the same totals (both divisions computed).
+    assert.strictEqual(standings.get(1)?.open[0]?.totalScore, -7);
+  });
+
+  test('two disjoint solo teams blow the solo budget of 5 — open qualifies, fixed does not', async () => {
+    const standings = await budgetedStandingsFor([
+      soloRow('r1', 'scheme-a', -5, 1, 'Alice', { team_key: TEAM_ABC }),
+      soloRow('r2', 'scheme-b', -2, 1, 'Alice', { team_key: TEAM_DEF }),
+    ]);
+    assert.strictEqual(standings.get(1)?.open[0]?.totalScore, -7);
+    assert.deepEqual(standings.get(1)?.fixed, []);
+  });
+
+  test('two overlapping solo teams within the budget qualify with the union as the pool', async () => {
+    // why: TEAM_ABC ∪ TEAM_ABD = {a, b, c, d} — 4 heroes ≤ the solo budget
+    // of 5, so mixing the two teams across legs is a legal pool.
+    const standings = await budgetedStandingsFor([
+      soloRow('r1', 'scheme-a', -5, 1, 'Alice', { team_key: TEAM_ABC }),
+      soloRow('r2', 'scheme-b', -2, 1, 'Alice', { team_key: TEAM_ABD }),
+    ]);
+    assert.deepEqual(standings.get(1)?.fixed[0]?.heroPool, [
+      'core/hero-a',
+      'core/hero-b',
+      'core/hero-c',
+      'core/hero-d',
+    ]);
+    assert.strictEqual(standings.get(1)?.fixed[0]?.totalScore, -7);
+  });
+
+  test('the search prefers a pool-satisfying assignment over the unconstrained best (pinned totals)', async () => {
+    // why: the unconstrained best is -10 + -10 = -20 but uses disjoint
+    // teams (pool 6 > budget 5); the best POOL-SATISFYING assignment plays
+    // TEAM_ABC on both legs for -10 + -4 = -14. Open reports -20, fixed
+    // reports -14 — the divisions genuinely diverge.
+    const standings = await budgetedStandingsFor([
+      soloRow('r1', 'scheme-a', -10, 1, 'Alice', { team_key: TEAM_ABC }),
+      soloRow('r2', 'scheme-b', -10, 1, 'Alice', { team_key: TEAM_DEF }),
+      soloRow('r3', 'scheme-b', -4, 1, 'Alice', { team_key: TEAM_ABC }),
+    ]);
+    assert.strictEqual(standings.get(1)?.open[0]?.totalScore, -20);
+    assert.strictEqual(standings.get(1)?.fixed[0]?.totalScore, -14);
+    assert.deepEqual(standings.get(1)?.fixed[0]?.heroPool, [
+      'core/hero-a',
+      'core/hero-b',
+      'core/hero-c',
+    ]);
+  });
+
+  test('a NULL team_key win feeds the open division only', async () => {
+    const standings = await budgetedStandingsFor([
+      soloRow('r1', 'scheme-a', -5, 1, 'Alice'),
+      soloRow('r2', 'scheme-b', -2, 1, 'Alice', { team_key: TEAM_ABC }),
+    ]);
+    assert.strictEqual(standings.get(1)?.open[0]?.totalScore, -7);
+    assert.deepEqual(standings.get(1)?.fixed, []);
+  });
+
+  test('the 2-player budget of 7 admits a 3-hero-overlap team pair and rejects a 2-hero-overlap pair', async () => {
+    const teamFive = 'core/h1+core/h2+core/h3+core/h4+core/h5';
+    const teamShareThree = 'core/h1+core/h2+core/h3+core/h6+core/h7';
+    const teamShareTwo = 'core/h1+core/h2+core/h6+core/h7+core/h8';
+    const duo = [
+      { playerId: 1, displayName: 'Alice' },
+      { playerId: 2, displayName: 'Zed' },
+    ];
+
+    // Union of 7 (≤ budget 7) — qualifies.
+    const withinBudget = await budgetedStandingsFor([
+      ...duoRows('r1', 'scheme-a', -4, duo, teamFive),
+      ...duoRows('r2', 'scheme-b', -2, duo, teamShareThree),
+    ]);
+    assert.strictEqual(withinBudget.get(2)?.fixed.length, 1);
+    assert.strictEqual(withinBudget.get(2)?.fixed[0]?.heroPool.length, 7);
+    assert.deepEqual(withinBudget.get(2)?.fixed[0]?.players, ['Alice', 'Zed']);
+
+    // Union of 8 (> budget 7) — open qualifies, fixed does not.
+    const overBudget = await budgetedStandingsFor([
+      ...duoRows('r3', 'scheme-a', -4, duo, teamFive),
+      ...duoRows('r4', 'scheme-b', -2, duo, teamShareTwo),
+    ]);
+    assert.strictEqual(overBudget.get(2)?.open.length, 1);
+    assert.deepEqual(overBudget.get(2)?.fixed, []);
+  });
+
+  test('the D-24134 roster rules still gate fixed entries — a guest seat voids both divisions', async () => {
+    const standings = await budgetedStandingsFor([
+      // why: player_count 2 with a single ownership row — team-ineligible
+      // on every board in BOTH divisions, exactly as the open division.
+      soloRow('r1', 'scheme-a', -4, 1, 'Alice', {
+        player_count: 2,
+        team_key: TEAM_ABC,
+      }),
+      ...duoRows(
+        'r2',
+        'scheme-b',
+        -2,
+        [
+          { playerId: 1, displayName: 'Alice' },
+          { playerId: 2, displayName: 'Zed' },
+        ],
+        TEAM_ABC,
+      ),
+    ]);
+    assert.deepEqual(standings.get(2)?.open, []);
+    assert.deepEqual(standings.get(2)?.fixed, []);
+  });
+
+  test('a budget-less definition computes an empty fixed division (degrade, never crash)', async () => {
+    const standings = await standingsFor([
+      soloRow('r1', 'scheme-a', -5, 1, 'Alice', { team_key: TEAM_ABC }),
+      soloRow('r2', 'scheme-b', -2, 1, 'Alice', { team_key: TEAM_ABC }),
+    ]);
+    assert.strictEqual(standings.get(1)?.open.length, 1);
+    assert.deepEqual(standings.get(1)?.fixed, []);
+  });
+
+  test('more distinct teams than the cap are truncated with a logged warning, never silently', async () => {
+    // why: 13 distinct teams exceeds the locked cap of 12 (EC-413 /
+    // D-24187 §5). The kept 12 are the lowest-scoring; the best team
+    // (score -13, also holding leg B) must survive truncation, so the
+    // entry still computes. The warning is asserted — a silent cap is a
+    // FAIL by design.
+    const rows: StubRow[] = [];
+    for (let teamIndex = 1; teamIndex <= 13; teamIndex += 1) {
+      const teamKey =
+        `core/x${teamIndex}a+core/x${teamIndex}b+core/x${teamIndex}c`;
+      rows.push(
+        soloRow(`r-a-${teamIndex}`, 'scheme-a', -14 + teamIndex, 1, 'Alice', {
+          team_key: teamKey,
+        }),
+      );
+    }
+    rows.push(
+      soloRow('r-b-1', 'scheme-b', -5, 1, 'Alice', {
+        team_key: 'core/x1a+core/x1b+core/x1c',
+      }),
+    );
+
+    const capturedWarnings: string[] = [];
+    const originalWarn = console.warn;
+    console.warn = (...warnArgs: unknown[]) => {
+      capturedWarnings.push(String(warnArgs[0]));
+    };
+    try {
+      const standings = await budgetedStandingsFor(rows);
+      // Team x1 (leg A score -13) + leg B (-5) = -18, pool = its 3 heroes.
+      assert.strictEqual(standings.get(1)?.fixed[0]?.totalScore, -18);
+      assert.deepEqual(standings.get(1)?.fixed[0]?.heroPool, [
+        'core/x1a',
+        'core/x1b',
+        'core/x1c',
+      ]);
+    } finally {
+      console.warn = originalWarn;
+    }
+    assert.strictEqual(capturedWarnings.length, 1);
+    assert.ok(
+      capturedWarnings[0].includes('13 distinct teams'),
+      'The truncation warning must name the distinct-team count.',
+    );
   });
 });

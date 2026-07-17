@@ -218,6 +218,7 @@ interface CompetitiveScoreRow {
   outcome: CompetitiveOutcome | null;
   player_count: number | null;
   is_ranked_eligible: boolean;
+  team_key: string | null;
 }
 
 /**
@@ -256,6 +257,7 @@ function mapCompetitiveScoreRow(row: CompetitiveScoreRow): CompetitiveScoreRecor
     outcome: row.outcome,
     playerCount: row.player_count,
     isRankedEligible: row.is_ranked_eligible,
+    teamKey: row.team_key,
   };
 }
 
@@ -278,7 +280,8 @@ async function findExistingByAccountAndHash(
     'SELECT cs.submission_id, p.ext_id AS account_id, cs.replay_hash, ' +
       'cs.scenario_key, cs.raw_score, cs.final_score, cs.score_breakdown, ' +
       'cs.par_version, cs.scoring_config_version, cs.state_hash, ' +
-      'cs.created_at, cs.outcome, cs.player_count, cs.is_ranked_eligible ' +
+      'cs.created_at, cs.outcome, cs.player_count, cs.is_ranked_eligible, ' +
+      'cs.team_key ' +
       'FROM legendary.competitive_scores cs ' +
       'JOIN legendary.players p ON cs.player_id = p.player_id ' +
       'WHERE p.ext_id = $1 AND cs.replay_hash = $2 LIMIT 1',
@@ -553,8 +556,10 @@ export async function findCompetitiveScore(
       // why: cs.outcome joined this list at WP-344 time — WP-342 added the
       // column to every other SELECT but missed this read surface, so its
       // mapped records carried `outcome: undefined`; cs.player_count lands
-      // in the same sweep (EC-376).
-      'cs.created_at, cs.outcome, cs.player_count, cs.is_ranked_eligible ' +
+      // in the same sweep (EC-376), and cs.team_key at WP-384 (the EC-413
+      // five-surface sweep exists because of this exact recurrence).
+      'cs.created_at, cs.outcome, cs.player_count, cs.is_ranked_eligible, ' +
+      'cs.team_key ' +
       'FROM legendary.competitive_scores cs ' +
       'JOIN legendary.players p ON cs.player_id = p.player_id ' +
       'WHERE cs.replay_hash = $1 LIMIT 1',
@@ -581,7 +586,8 @@ export async function listPlayerCompetitiveScores(
     'SELECT cs.submission_id, p.ext_id AS account_id, cs.replay_hash, ' +
       'cs.scenario_key, cs.raw_score, cs.final_score, cs.score_breakdown, ' +
       'cs.par_version, cs.scoring_config_version, cs.state_hash, ' +
-      'cs.created_at, cs.outcome, cs.player_count, cs.is_ranked_eligible ' +
+      'cs.created_at, cs.outcome, cs.player_count, cs.is_ranked_eligible, ' +
+      'cs.team_key ' +
       'FROM legendary.competitive_scores cs ' +
       'JOIN legendary.players p ON cs.player_id = p.player_id ' +
       'WHERE p.ext_id = $1 ' +
@@ -785,6 +791,22 @@ export async function submitCompetitiveScoreImpl(
   const playerCount: number | null =
     seatCount >= 1 && seatCount <= 5 ? seatCount : null;
 
+  // why: step 14d (WP-384 / D-24187 §1) — the hero team identity derives from
+  // the reduced final G's immutable matchConfiguration: heroDeckIds carries the
+  // match's set-qualified hero ids (D-10014) exactly as configured, and the
+  // reduction is faithful (D-24124), so sorting them ASC and joining with `+`
+  // yields the canonical team key — server-authoritative, never client-supplied,
+  // never re-slugified. A missing or empty configuration (defensive; an
+  // accepted submission's match was set up through validateMatchSetup) stores
+  // SQL NULL rather than rejecting — team_key is supplementary provenance for
+  // the fixed-hero-pool gauntlet boards, never a verification gate.
+  const configuredHeroDeckIds =
+    (reduced.finalState as LegendaryGameState).matchConfiguration?.heroDeckIds;
+  let teamKey: string | null = null;
+  if (Array.isArray(configuredHeroDeckIds) && configuredHeroDeckIds.length > 0) {
+    teamKey = [...configuredHeroDeckIds].sort().join('+');
+  }
+
   // why: WP-354 / D-24146 — the ranked-eligibility flag, computed once by
   // the by-matchId caller over the match roster and threaded in via deps.
   // The by-hash path leaves it undefined → default `true` (vacuously
@@ -819,21 +841,22 @@ export async function submitCompetitiveScoreImpl(
       'INSERT INTO legendary.competitive_scores ' +
       '(player_id, replay_hash, scenario_key, raw_score, final_score, ' +
       'score_breakdown, par_version, scoring_config_version, state_hash, ' +
-      'outcome, player_count, is_ranked_eligible) ' +
-      'SELECT player_id, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12 ' +
+      'outcome, player_count, is_ranked_eligible, team_key) ' +
+      'SELECT player_id, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13 ' +
       'FROM resolved_player ' +
       'ON CONFLICT (player_id, replay_hash) ' +
       'DO UPDATE SET player_id = legendary.competitive_scores.player_id ' +
       'RETURNING submission_id, player_id, replay_hash, scenario_key, ' +
       'raw_score, final_score, score_breakdown, ' +
       'par_version, scoring_config_version, state_hash, created_at, ' +
-      'outcome, player_count, is_ranked_eligible, (xmax = 0) AS was_inserted ' +
+      'outcome, player_count, is_ranked_eligible, team_key, ' +
+      '(xmax = 0) AS was_inserted ' +
       ') ' +
       'SELECT i.submission_id, p.ext_id AS account_id, i.replay_hash, ' +
       'i.scenario_key, i.raw_score, i.final_score, i.score_breakdown, ' +
       'i.par_version, i.scoring_config_version, i.state_hash, ' +
       'i.created_at, i.outcome, i.player_count, i.is_ranked_eligible, ' +
-      'i.was_inserted, i.player_id ' +
+      'i.team_key, i.was_inserted, i.player_id ' +
       'FROM inserted i ' +
       'JOIN legendary.players p ON i.player_id = p.player_id',
     [
@@ -852,6 +875,7 @@ export async function submitCompetitiveScoreImpl(
       outcome,
       playerCount,
       isRankedEligible,
+      teamKey,
     ],
   );
 

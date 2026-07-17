@@ -489,3 +489,182 @@ describe('legends publisher gauntlet boards (WP-342)', () => {
     assert.equal(hasManifest, false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-384 — fixed-hero-pool division emission (D-24187)
+// ---------------------------------------------------------------------------
+
+// why: the WP-342/WP-344 fixtures above deliberately carry NO team_key and
+// NO heroPoolBudgets, so every prior assertion (board files, gauntletBoards,
+// index entryCounts) holds byte-identically — the fixed division only
+// engages on this budgeted catalog whose stub rows carry a team identity.
+const BUDGETED_GAUNTLET_CATALOG: readonly GauntletDefinition[] = [
+  {
+    ...GAUNTLET_WITH_ENTRIES,
+    heroPoolBudgets: { 1: 5, 2: 7, 3: 7, 4: 7, 5: 8 },
+  },
+  {
+    ...GAUNTLET_EMPTY,
+    heroPoolBudgets: { 1: 5, 2: 7, 3: 7, 4: 7, 5: 8 },
+  },
+];
+
+/**
+ * Stub database mirroring createGauntletStubDatabase but with a team_key
+ * on the qualifying row, so the fixed division computes one entry.
+ */
+function createTeamedGauntletStubDatabase(): DatabaseClient {
+  return {
+    async query(text: string, params?: unknown[]) {
+      if (
+        text === 'BEGIN' ||
+        text === 'SET TRANSACTION READ ONLY' ||
+        text === 'COMMIT' ||
+        text === 'ROLLBACK'
+      ) {
+        return { rows: [], rowCount: 0 };
+      }
+
+      if (text.includes('DISTINCT cs.scenario_key')) {
+        return { rows: [], rowCount: 0 };
+      }
+
+      if (text.includes("outcome = 'heroes-win'")) {
+        if (params !== undefined && params[0] === 'mm-full') {
+          const rows = [
+            {
+              replay_hash: 'replay-alice-a',
+              scenario_key: 'scheme-a::mm-full::villains-x',
+              final_score: -3,
+              scoring_config_version: 1,
+              player_count: 1,
+              team_key: 'core/hero-a+core/hero-b+core/hero-c',
+              player_id: 7,
+              display_name: 'Alice',
+              visibility: 'public',
+            },
+          ];
+          return { rows, rowCount: rows.length };
+        }
+        return { rows: [], rowCount: 0 };
+      }
+
+      if (text.includes('COUNT(*)')) {
+        return { rows: [{ total: '0' }], rowCount: 1 };
+      }
+
+      return { rows: [], rowCount: 0 };
+    },
+  } as DatabaseClient;
+}
+
+describe('legends publisher fixed-hero-pool boards (WP-384)', () => {
+  beforeEach(() => {
+    resetArchiveTracking();
+  });
+
+  test('a budgeted catalog with teamed wins emits the -fixed board, fixedEntryCounts, and a sorted manifest list', async () => {
+    const database = createTeamedGauntletStubDatabase();
+    const { client, putCalls } = createStubR2Client();
+
+    const result = await publishAllBoards(
+      database, client, 'test-bucket', createGauntletStubDeps(),
+      BUDGETED_GAUNTLET_CATALOG,
+    );
+
+    assert.equal(result.manifestWritten, true);
+
+    const putKeys = putCalls.map((put) => put.key);
+    assert.ok(putKeys.includes('legends/v1/gauntlet-core-mm-full.json'));
+    assert.ok(putKeys.includes('legends/v1/gauntlet-core-mm-full-fixed.json'));
+    assert.equal(
+      putKeys.includes('legends/v1/gauntlet-core-mm-empty-fixed.json'),
+      false,
+      'A zero-entry fixed board must not get a file (the D-24131 §7 lazy rule).',
+    );
+
+    // The manifest lists BOTH divisions' files, sorted ASC, manifest last.
+    const lastPut = putCalls[putCalls.length - 1];
+    assert.ok(lastPut !== undefined);
+    assert.equal(lastPut.key, 'legends/v1/manifest.json');
+    const manifest = JSON.parse(lastPut.body);
+    assert.deepEqual(manifest.gauntletBoards, [
+      'gauntlet-core-mm-full',
+      'gauntlet-core-mm-full-fixed',
+    ]);
+
+    // The index carries per-count fixed claim state for EVERY gauntlet.
+    const indexPut = putCalls.find((put) =>
+      put.key.includes('gauntlet-index.json'),
+    );
+    assert.ok(indexPut !== undefined);
+    const index = JSON.parse(indexPut.body);
+    const fullEntry = index.gauntlets.find(
+      (entry: { board: string }) => entry.board === 'gauntlet-core-mm-full',
+    );
+    const emptyEntry = index.gauntlets.find(
+      (entry: { board: string }) => entry.board === 'gauntlet-core-mm-empty',
+    );
+    assert.deepEqual(fullEntry.fixedEntryCounts, {
+      '1': 1,
+      '2': 0,
+      '3': 0,
+      '4': 0,
+      '5': 0,
+    });
+    assert.deepEqual(emptyEntry.fixedEntryCounts, {
+      '1': 0,
+      '2': 0,
+      '3': 0,
+      '4': 0,
+      '5': 0,
+    });
+    // The open-division counts are unchanged by the fixed emission.
+    assert.deepEqual(fullEntry.entryCounts, {
+      '1': 1,
+      '2': 0,
+      '3': 0,
+      '4': 0,
+      '5': 0,
+    });
+
+    // The fixed board file carries the heroPool-bearing entry shape.
+    const fixedBoardPut = putCalls.find((put) =>
+      put.key.includes('gauntlet-core-mm-full-fixed.json'),
+    );
+    assert.ok(fixedBoardPut !== undefined);
+    const fixedBoard = JSON.parse(fixedBoardPut.body);
+    assert.equal(fixedBoard.board, 'gauntlet-core-mm-full-fixed');
+    assert.equal(fixedBoard.rowCount, 1);
+    assert.deepEqual(fixedBoard.entries, [
+      {
+        handle: 'Alice',
+        rank: 1,
+        totalScore: -3,
+        legCount: 1,
+        averageScoreCentis: -300,
+        players: ['Alice'],
+        heroPool: ['core/hero-a', 'core/hero-b', 'core/hero-c'],
+      },
+    ]);
+  });
+
+  test('teamless rows on a budgeted catalog emit no fixed board (NULL team_key never qualifies)', async () => {
+    const database = createGauntletStubDatabase();
+    const { client, putCalls } = createStubR2Client();
+
+    const result = await publishAllBoards(
+      database, client, 'test-bucket', createGauntletStubDeps(),
+      BUDGETED_GAUNTLET_CATALOG,
+    );
+
+    assert.equal(result.manifestWritten, true);
+    const putKeys = putCalls.map((put) => put.key);
+    assert.ok(putKeys.includes('legends/v1/gauntlet-core-mm-full.json'));
+    assert.equal(
+      putKeys.some((key) => key.includes('-fixed')),
+      false,
+      'Without team identities no fixed file may be written.',
+    );
+  });
+});

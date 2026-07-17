@@ -149,10 +149,12 @@ export const COMPETITIVE_OUTCOMES: readonly CompetitiveOutcome[] = [
  * `Object.keys(record).sort()` MUST equal:
  *   ['accountId','createdAt','finalScore','isRankedEligible','outcome',
  *    'parVersion','playerCount','rawScore','replayHash','scenarioKey',
- *    'scoreBreakdown','scoringConfigVersion','stateHash','submissionId']
- * — exactly 14 keys. (Amended from the WP-053 11-key lock by D-24131,
+ *    'scoreBreakdown','scoringConfigVersion','stateHash','submissionId',
+ *    'teamKey']
+ * — exactly 15 keys. (Amended from the WP-053 11-key lock by D-24131,
  * which adds `outcome`; to 13 keys by D-24134, which adds `playerCount`;
- * to 14 keys by WP-354 / D-24146, which adds `isRankedEligible`.)
+ * to 14 keys by WP-354 / D-24146, which adds `isRankedEligible`; to 15
+ * keys by D-24187, which adds `teamKey`.)
  */
 // why: immutable snapshot of verified execution. The two version
 // fields (parVersion text + scoringConfigVersion integer) pin the
@@ -201,6 +203,14 @@ export interface CompetitiveScoreRecord {
   // public ranked leaderboard filters to `true`; the owner's own
   // My-Scores read is unfiltered (they see their Casual runs).
   readonly isRankedEligible: boolean;
+  // why: nullable — the hero team the scored match was played with:
+  // the set-qualified hero ids (D-10014) sorted ASC and joined `+`,
+  // derived server-side from the reduced final state's
+  // matchConfiguration (migration 034, step 14d). A NULL row predates
+  // the column (until the one-time D-24187 §2 artifact backfill fills
+  // it — rows with no surviving artifact stay NULL) and never
+  // qualifies on any fixed-hero-pool board per D-24187 §1.
+  readonly teamKey: string | null;
 }
 
 /**
