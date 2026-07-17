@@ -1987,6 +1987,50 @@
             "Always Leads: Any \"Sinister\" Villain Group",
             "Master Strike: Each player may KO one of their [team:spider-friends] Heroes. Any player who doesn't must reveal the top 8 cards of their deck. KO a non-grey Hero revealed, discard all other non-grey Heroes revealed, and put the rest back in random order."
           ]
+        },
+        {
+          "name": "Absolute Octarchy",
+          "slug": "absolute-octarchy",
+          "tactic": true,
+          "vAttack": 8,
+          "vp": 8,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mt-doctor-octopus-absolute-octarchy.webp",
+          "abilities": [
+            "Fight: Each other player reveals a card that costs 8 or gains a Wound."
+          ]
+        },
+        {
+          "name": "High Octane",
+          "slug": "high-octane",
+          "tactic": true,
+          "vAttack": 8,
+          "vp": 8,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mt-doctor-octopus-high-octane.webp",
+          "abilities": [
+            "Fight: Reveal the top 8 cards of the Hero Deck. You may gain one of them that costs 8. Shuffle the rest back into the Hero Deck."
+          ]
+        },
+        {
+          "name": "Octal Octyls",
+          "slug": "octal-octyls",
+          "tactic": true,
+          "vAttack": 8,
+          "vp": 8,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mt-doctor-octopus-octal-octyls.webp",
+          "abilities": [
+            "Fight: Look at the top 8 cards of your deck. Draw one and discard the rest."
+          ]
+        },
+        {
+          "name": "Octet of Valence Electrons",
+          "slug": "octet-of-valence-electrons",
+          "tactic": true,
+          "vAttack": 8,
+          "vp": 8,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mt-doctor-octopus-octet-of-valence-electrons.webp",
+          "abilities": [
+            "Fight: When you draw a new hand this turn, draw 9 cards instead of 6."
+          ]
         }
       ]
     }
