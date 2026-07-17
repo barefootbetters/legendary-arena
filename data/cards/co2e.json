@@ -2615,9 +2615,9 @@
       "cards": [
         {
           "abilities": [
-            "Setup: 7 Twists. Each Twist is a Dark Portal.",
-            "Twist 1: Put the Dark Portal above the Mastermind. The Mastermind gets +1[icon:attack].",
-            "Twists 2-6: Put the Dark Portal in the leftmost city space that doesn't yet have a Dark Portal. Villains in that city space get +1[icon:attack].",
+            "Setup: 7 Twists. Each Twist is a \"Dark Portal.\"",
+            "Twists 1-5: Put this Dark Portal above the rightmost city space that doesn't yet have a Dark Portal. Villains in that city space get +1[icon:attack].",
+            "Twist 6: Put this Dark Portal above the Mastermind. The Mastermind gets +1[icon:attack].",
             "Twist 7: Evil Wins!"
           ]
         }
