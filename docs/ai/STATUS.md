@@ -7,6 +7,41 @@
 
 ## Current State
 
+### WP-387 / EC-416 Executed — Scenario preview deep-link carries player count (leaderboard → loadout builder) (2026-07-17)
+
+Closes the "play this scenario from the leaderboard" gap (Shape A). A gauntlet
+board's "Challenge this leg" link now carries the board's player count into the
+cards.legendary-arena.com loadout builder, so the WP-372 required-count readout
+matches the count-keyed board the player came from — pin scheme + mastermind,
+fill villains + heroes, play. **Not** a `?lagn=` switch: a valid LAGN requires
+≥1 villain / henchman / hero, so a scenario seed can't be a LAGN — the reason
+the preview link is partial. This is the URL-bound `playerCount` that WP-114
+explicitly named as its future-extension hook (`setupUrlParams.ts`).
+
+New pure `parsePlayerCountFromUrl(search): number | null` (envelope field,
+separate from the composition `parseSetupUrl` — 1..5 per D-24165, else null,
+never throws); `useSetupFromUrl` reflects it in the preview header; **the
+functional target is the editor draft** — `App.vue` seeds it via
+`setPlayerCount(urlCount)` at mount (in the no-`?lagn=` branch, since a full
+LAGN sets its own count), because the required-count guidance is driven by the
+editor (`useLoadoutDraft` → `getPlayerCountSetup`), not the read-only preview.
+The legends board's `buildChallengeUrl` gains an OPTIONAL `playerCount` (the
+board panel passes its `activePlayerCount`; the index CTA omits it → default);
+absent = byte-identical to the pre-WP-387 two-key URL (drift-tested). No
+snapshot / publisher / server / auth change; both apps stay zero-API /
+zero-auth; no LAGN involvement; Shape B (save-to-profile from the leaderboard)
+is deliberately deferred (needs a surface design lock — cards is auth-less, the
+save endpoint WP-301 lives on play).
+
+Baselines: `pnpm -r build` 0; registry-viewer typecheck (vue-tsc) 0 + test
+**135/0**; legends-board build 0 + typecheck 0 + test **69 → 71/0**; legends
+zero-API bundle grep clean; 8-file scope exact. **D-24026 dev-verified** on the
+worktree dev server: `?schemeId&mastermindId&playerCount=4` → the builder shows
+"For a 4-player match: 3 villain groups, 2 henchmen groups, 5 heroes" and the
+player-count selector reads 4; the same URL without `playerCount` → the
+2-player default — zero console errors. `User-Visible Surface =
+cards.legendary-arena.com` — live-verify on the CF Pages deploy operator-pending.
+
 ### WP-386 / EC-415 Executed — Red Skull Master Strike: "Each player KOs a Hero from their hand" (D-24188 Active) (2026-07-17)
 
 Red Skull's printed Master Strike now fires. The per-mastermind strike
