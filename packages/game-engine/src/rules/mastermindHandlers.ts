@@ -17,6 +17,10 @@ import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import { composeMastermindStrikeNarrative } from '../events/notableEvents.compose.js';
 import { pushLog } from '../log/logPush.js';
+import { moveCardFromZone } from '../moves/zoneOps.js';
+import { koCard } from '../board/ko.logic.js';
+import { WOUND_EXT_ID } from '../setup/pilesInit.js';
+import { formatCardRef } from '../log/logDisplay.js';
 
 // why: mastermind ext_id constants — matching against
 // G.selection.mastermindId for per-mastermind dispatch. Strings come from
@@ -31,6 +35,17 @@ const MASTERMIND_MAGNETO = 'core/magneto';
 // reveal-and-choose UI mechanic yet and G.cardKeywords does not carry
 // team affiliation. A future WP can add team-aware reveal logic.
 const MAGNETO_HAND_SIZE_LIMIT = 4;
+
+// why: both Red Skull faces print the identical Master Strike text —
+// "Each player KOs a Hero from their hand." The co2e 2nd-edition base face
+// (`co2e/red-skull`) matches core's text verbatim, and mastermind setup
+// selects the first non-tactic face, so a co2e Red Skull resolves to this
+// base face. The co2e epic face (`epic-red-skull`) prints different text
+// and is never engine-selectable, so it is deliberately excluded here.
+const MASTERMINDS_RED_SKULL: readonly string[] = [
+  'core/red-skull',
+  'co2e/red-skull',
+];
 
 /**
  * Captures one bystander from the top of the bystander supply onto the
@@ -112,8 +127,84 @@ function resolveMagnetoStrike(gameState: LegendaryGameState): void {
     playerZones.hand = kept;
     playerZones.discard = [...playerZones.discard, ...discarded];
 
-    pushLog(gameState, 
+    pushLog(gameState,
       `[Magneto Master Strike] Player ${playerId} discarded ${discardCount} card(s) down to ${MAGNETO_HAND_SIZE_LIMIT}.`,
+    );
+  }
+}
+
+/**
+ * Selects the Hero a player KOs for a Red Skull Master Strike: the eligible
+ * hand card with the lowest recruit cost, ties broken by lowest hand index.
+ * A hand card is a Hero iff it is not a Wound.
+ *
+ * @param gameState - The game state (read-only here; supplies cardStats).
+ * @param hand - The player's hand, in order.
+ * @returns The ext_id to KO, or null when the hand holds no Hero.
+ */
+function selectRedSkullKoTarget(
+  gameState: LegendaryGameState,
+  hand: readonly CardExtId[],
+): CardExtId | null {
+  let selectedExtId: CardExtId | null = null;
+  let selectedCost = Number.POSITIVE_INFINITY;
+  for (const cardExtId of hand) {
+    // why: Wounds are not Heroes — the only non-Hero card the engine ever
+    // puts in a hand — so they are never a KO target.
+    if (cardExtId === WOUND_EXT_ID) {
+      continue;
+    }
+    // why: `?? 0` — S.H.I.E.L.D. starters (Agent / Trooper) carry no
+    // cardStats entry (D-21502) and are treated as cost 0, so a starter is
+    // picked over any priced Hero (the cheapest-card tabletop instinct).
+    const cardCost = gameState.cardStats[cardExtId]?.cost ?? 0;
+    // why: strict `<` keeps the FIRST (lowest hand index) card on a cost tie.
+    if (cardCost < selectedCost) {
+      selectedCost = cardCost;
+      selectedExtId = cardExtId;
+    }
+  }
+  return selectedExtId;
+}
+
+/**
+ * Resolves Red Skull's Master Strike: "Each player KOs a Hero from their
+ * hand." Each player (in sorted id order) KOs one Hero — the lowest-cost
+ * eligible card, tie broken by lowest hand index (the D-24188 deterministic
+ * auto-pick: lowest-cost ≈ the player-optimal tabletop pick, which avoids a
+ * blocking multi-player pending-choice) — from their hand to the global KO
+ * pile. A player with no Hero in hand (empty, or all Wounds) takes no KO and
+ * logs a no-op line.
+ *
+ * Mutates G directly, mirroring resolveMagnetoStrike. One durable log line
+ * per player.
+ *
+ * @param gameState - The game state to mutate.
+ */
+function resolveRedSkullStrike(gameState: LegendaryGameState): void {
+  const playerIds = Object.keys(gameState.playerZones).sort();
+
+  for (const playerId of playerIds) {
+    const playerZones = gameState.playerZones[playerId]!;
+    const targetExtId = selectRedSkullKoTarget(gameState, playerZones.hand);
+
+    if (targetExtId === null) {
+      pushLog(gameState,
+        `[Red Skull Master Strike] Player ${playerId} has no Hero in hand to KO.`,
+      );
+      continue;
+    }
+
+    // why: remove from hand then append to the global KO pile — the WP-382 /
+    // D-24183 KO idiom. Duplicate ext_ids are fungible tokens, so removing the
+    // first occurrence is observationally identical to removing the exact
+    // selected index.
+    const moveResult = moveCardFromZone(playerZones.hand, [], targetExtId);
+    playerZones.hand = moveResult.from;
+    gameState.ko = koCard(gameState.ko, targetExtId);
+
+    pushLog(gameState,
+      `[Red Skull Master Strike] Player ${playerId} KO'd ${formatCardRef(gameState.cardDisplayData, targetExtId)} from their hand.`,
     );
   }
 }
@@ -148,6 +239,8 @@ export function mastermindStrikeHandler(
   const mastermindId = gameState.selection.mastermindId;
   if (mastermindId === MASTERMIND_MAGNETO) {
     resolveMagnetoStrike(gameState);
+  } else if (MASTERMINDS_RED_SKULL.includes(mastermindId)) {
+    resolveRedSkullStrike(gameState);
   }
 
   // why: WP-200 — terminal emission AFTER both the generic bystander
