@@ -27,7 +27,7 @@ source:
   - ../docs/ai/work-packets/WP-084-delete-unused-auxiliary-metadata.md
   - ../docs/ai/work-packets/WP-086-registry-viewer-card-types-upgrade.md
   - ../docs/10-GLOSSARY.md
-last-reviewed: 2026-05-07
+last-reviewed: 2026-07-17
 ---
 
 # Card Type Taxonomy
@@ -38,8 +38,9 @@ The Card Type Taxonomy is the registry-side closed-set classification
 of card archetypes — the canonical answer to "what kind of card is
 this?" It lives in
 [`data/metadata/card-types.json`](../data/metadata/card-types.json)
-as 13 entries (10 top-level archetypes plus 3 SHIELD sub-chips),
-validated by a strict Zod schema. The taxonomy drives the Registry
+as 19 entries (10 top-level archetypes plus 9 sub-chips nested under
+two parents, `shield` and `other`), validated by a strict Zod schema.
+The taxonomy drives the Registry
 Viewer's classification ribbon and is **not** consumed by the engine
 or the registry loaders — its readers are UI-side only.
 
@@ -61,13 +62,17 @@ Each entry conforms to `CardTypeEntrySchema` in
 ```
 
 The schema uses `.strict()` so unknown fields are rejected at fetch
-time. The 13 current entries:
+time. The 19 current entries:
 
 **Top-level (10):** `hero` · `mastermind` · `villain` · `henchman` ·
 `scheme` · `bystander` · `wound` · `sidekick` · `shield` · `other`
 
-**SHIELD sub-chips (3):** `shield-agent` · `shield-officer` ·
-`shield-trooper` (each with `parentType: "shield"`)
+**`shield` sub-chips (4):** `shield-agent` · `shield-officer` ·
+`shield-trooper` · `shield-officer-special` (each with
+`parentType: "shield"`)
+
+**`other` sub-chips (5):** `mastermind-strike` · `scheme-twist` ·
+`ambitions` · `token` · `horror` (each with `parentType: "other"`)
 
 ### Two-tier hierarchy via `parentType`
 
@@ -75,7 +80,10 @@ The taxonomy is intentionally shallow:
 
 - **Top-level entries** carry `parentType: null`.
 - **Sub-chip entries** carry `parentType: "<slug>"` referencing a
-  top-level entry. Currently only `shield` is subdivided.
+  top-level entry. Two parents are subdivided: `shield` (4 sub-chips —
+  Agent, Officer, Trooper, and Officer Special, the last reclassifying the
+  8 SHIELD Officer Special cards out of the Hero ribbon) and `other`
+  (5 sub-chips — Master Strike, Scheme Twist, Ambition, Token, Horror).
 
 Non-null `parentType` references are validated *at fetch time* by
 [`apps/registry-viewer/src/lib/cardTypesClient.ts`](../apps/registry-viewer/src/lib/cardTypesClient.ts)
@@ -112,11 +120,12 @@ Packet decision.
 - **[Villain Deck](villain-deck.md).** `RevealedCardType` (the
   engine's 5-value union: `villain` · `henchman` · `bystander` ·
   `scheme-twist` · `mastermind-strike`) is a strict subset of this
-  taxonomy. Only types that can actually be drawn from the villain
-  deck appear there; the wider taxonomy includes `hero`,
-  `sidekick`, `wound`, `shield`, and the SHIELD sub-chips, which
-  never enter `G.villainDeckCardTypes`. The two are kept in sync
-  by reviewer discipline, not by code.
+  taxonomy. Since `scheme-twist` and `mastermind-strike` became explicit
+  `other` sub-chips, **all five** RevealedCardType values now map to a
+  taxonomy slug (three top-level, two `other` sub-chips). The wider
+  taxonomy still includes `hero`, `sidekick`, `wound`, `shield`, and the
+  SHIELD / promo sub-chips, which never enter `G.villainDeckCardTypes`.
+  The two are kept in sync by reviewer discipline, not by code.
 - **[Scheme](scheme.md).** The taxonomy entry
   `{ slug: 'scheme', label: 'Scheme', emoji: '📜', order: 50,
   parentType: null }` is the registry-side classification for
@@ -161,7 +170,25 @@ Packet decision.
 - **`emoji` is optional but ordering is not.** Every entry must
   declare a non-negative integer `order`. Entries with the same
   `order` are sorted by `slug` lexically as a tie-breaker (viewer-
-  side convention).
+  side convention). Note the two sub-chip families each restart their
+  `order` from 10 within their parent (shield: 10–40, other: 10–50);
+  ordering is scoped per parent, not global.
+- **Taxonomy slug vs. per-card `cardType`, and the un-flattened `other`
+  array.** The taxonomy is the *classification vocabulary*; individual
+  card objects carry an explicit `cardType` field only in a set's `other`
+  array (e.g. a SHIELD Officer is `{ …, cardType: "shield-officer" }`),
+  while heroes, villains, bystanders, wounds, etc. are classified by their
+  containing array. The viewer's `flattenSet` iterates heroes, masterminds,
+  villains, henchmen, schemes, bystanders, and wounds — but **not**
+  `set.other` — so `other`-array cards (SHIELD Agent / Officer / Trooper,
+  Sidekick, Master Strike, Scheme Twist) contribute a taxonomy *ribbon
+  category* but no browseable tiles today. Core Set 2nd Edition (`co2e`)
+  is the first set to populate the full SHIELD suite and a Sidekick as
+  real `other`-array cards — `shield-agent`, `shield-officer` (×6: base
+  plus five class Specialists), `shield-trooper`, and `sidekick` — so those
+  rows now have data even though the current viewer does not surface them
+  as cards. (co2e's *named bystanders* live in the `bystanders` array,
+  which **is** flattened, so those do appear.)
 - **Engine code MUST NOT read this file.** Per
   [`registry.md` "Prohibited Behaviors"](../.claude/skills/legendary-registry/SKILL.md),
   game logic, move logic, or persistence in the registry package is
@@ -185,6 +212,8 @@ Packet decision.
 - WP-001 / WP-003: Original `card-types.json` (37 entries; shape `{ id, slug, name, displayName, prefix }`); silent-failure precedent identified and locked as D-1203
 - WP-084: File deleted on 2026-04-21 — the auxiliary metadata was unused at that point
 - WP-086: File reintroduced on 2026-04-29 with the new 13-entry shape `{ slug, label, emoji?, order, parentType }` and `.strict()` schema; D-8601 records the reintroduction; consumed by the registry-viewer ribbon generator only
+- 2026-05 → 07: taxonomy grew 13 → 19 entries. `shield-officer-special` reclassified the 8 SHIELD Officer Special cards out of the Hero ribbon (`1ab7c977`); `mastermind-strike` + `scheme-twist` nested as `other` sub-chips (`2125d835` → `a2862538`); `ambitions` + `token` + `horror` added as `other` sub-chips for the xmen / ssw2 promo + divided-card kinds (`c3f1f079`)
+- 2026-07-17: Core Set 2nd Edition (`co2e`, #794) became the first set to populate the SHIELD sub-chips + Sidekick as real `other`-array cards; surfaced that `flattenSet` does not iterate `set.other` (ribbon category without browseable tiles)
 
 ## References
 
