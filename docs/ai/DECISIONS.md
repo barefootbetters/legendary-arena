@@ -29375,3 +29375,61 @@ pool-constrained standings + publisher emission + carve-out doc edits) and WP-38
 2026-07-16, pending execution.
 
 Protect this file.
+
+### D-24188 — Red Skull Master Strike MVP: deterministic auto-KO of the lowest-cost Hero
+
+**Status:** **Active** (executed 2026-07-17, WP-386 / EC-415).
+
+**User-Visible Surface:** `play.legendary-arena.com` — a Red Skull Master
+Strike now KOs a Hero from each player's hand (previously the printed strike
+text silently no-op'd beyond the generic bookkeeping — surfaced in the
+2026-07-16 Red Skull live-game review, match `TYB2-jQuUc_`: three strikes, six
+player-KOs that never happened).
+
+**Context.** Red Skull's printed Master Strike is *"Each player KOs a Hero from
+their hand."* The tabletop text lets each player *choose* which Hero to KO. The
+per-mastermind strike dispatcher (`mastermindStrikeHandler`, WP-024) implemented
+only Magneto, so a Red Skull strike ran the generic bystander capture (D-15401),
+strike-count increment, and WP-200 emission but applied zero card-text pressure.
+
+**Decision.** Implement the strike with a **deterministic auto-pick** rather than
+a player-facing choice prompt: each player (in sorted `Object.keys(playerZones)`
+order) KOs the eligible hand card with the **lowest recruit cost**
+(`cardStats[extId]?.cost ?? 0`), ties broken by **lowest hand index**. A hand
+card is a Hero iff it is not a Wound (`extId !== WOUND_EXT_ID`); Wounds are never
+KO'd. A player with no Hero in hand (empty, or all Wounds) takes no KO and logs
+a no-op line. The KO'd card moves hand → global `G.ko` (the WP-382 KO idiom:
+`moveCardFromZone` then `koCard`), one durable `pushLog` line per player.
+
+**Why auto-pick, not a choice prompt.** The rational tabletop pick is the
+cheapest card (starters thin the deck), so the lowest-cost auto-pick tracks
+player-optimal play; and it avoids a blocking multi-player pending-choice — the
+engine's pending-choice cluster is single-player-blocking, and a strike fires
+outside any player's main stage, so a per-player KO choice would need new
+multi-player choice infrastructure. This is the same "text effect without choice
+UX" MVP class as the Magneto strike branch (WP-024). A future WP may upgrade to
+a per-player KO-target prompt.
+
+**Scope.** Both Red Skull faces match — `core/red-skull` and `co2e/red-skull`
+(identical base-face strike text; mastermind setup selects the first non-tactic
+face, so a co2e Red Skull resolves to this base face). The co2e **epic** face
+(`epic-red-skull`, different text) is not engine-selectable and is deliberately
+excluded. Generic strike behavior (D-15401 capture, `masterStrikeCount` counter,
+the WP-200 `mastermindStrikeResolved` emission and its narrative) is
+byte-unchanged. No new `RuleEffect` type, G field, move, or phase.
+
+**Determinism.** Fully deterministic (cost-then-hand-index; no RNG) and
+replay-faithful (VISION §22). The recorded sentinel fixture + `PRE_WP080_HASH`
+oracle + the `sim:runtime-observed` matrix all use `core/dr-doom` (no Red Skull
+strike is recorded), so all committed hash/artifact surfaces are byte-identical —
+verified: engine suite 1981 → 1991 / 0, sentinel `finalStateHash` +
+`PRE_WP080_HASH` unchanged, `sim:runtime-observed:check` current (no
+regeneration).
+
+**Out of scope (each a future WP):** other masterminds' strike texts (incl.
+`epic-red-skull`); Red Skull tactic Fight: effects; hollow HYDRA villain Fight:
+markers; the per-player KO-target choice prompt.
+
+**Packet:** WP-386 (EC-415). **Executed:** 2026-07-17.
+
+Protect this file.

@@ -7,6 +7,40 @@
 
 ## Current State
 
+### WP-386 / EC-415 Executed — Red Skull Master Strike: "Each player KOs a Hero from their hand" (D-24188 Active) (2026-07-17)
+
+Red Skull's printed Master Strike now fires. The per-mastermind strike
+dispatcher (`mastermindStrikeHandler`, WP-024) implemented only Magneto, so a
+Red Skull strike ran the generic bookkeeping (D-15401 bystander capture,
+`masterStrikeCount` counter, WP-200 emission) but silently skipped the card
+text — surfaced in the 2026-07-16 Red Skull live-game review (match
+`TYB2-jQuUc_`: three strikes, six player-KOs that never happened). Adds a Red
+Skull id set (`core/red-skull` + `co2e/red-skull` — identical base-face text;
+the co2e **epic** face is not engine-selectable and is excluded) and
+`resolveRedSkullStrike` on the Magneto pattern: for each player (sorted
+`Object.keys(playerZones)`) KO the lowest-cost eligible Hero
+(`cardStats[extId]?.cost ?? 0`, tie → lowest hand index) from hand to the
+global `G.ko` via the WP-382 KO idiom (`moveCardFromZone` → `koCard`); Wounds
+are never KO'd; an empty or all-Wound hand logs a no-op line; one durable
+`pushLog` line per player.
+
+**D-24188 (Active):** the KO target is a deterministic auto-pick (lowest cost,
+tie → lowest hand index) rather than a per-player choice prompt — the cheapest
+card is the rational tabletop pick, and auto-resolving avoids a blocking
+multi-player pending-choice (a strike fires outside any player's main stage).
+Generic strike behavior is byte-unchanged. **No sentinel re-pin** — the
+recorded fixture + `PRE_WP080_HASH` oracle + `sim:runtime-observed` matrix all
+use `core/dr-doom`, so `finalStateHash` + `PRE_WP080_HASH` are byte-identical
+and `sim:runtime-observed:check` stays current (no regeneration). `pnpm -r
+build` 0; engine suite **1981 → 1991 / 0** (+10: KO-per-player, lowest-cost
+pick, tie→index, statless→cost-0, Wound-excluded, all-Wound no-op, empty-hand
+no-op, both-ids-match, non-Red-Skull skip, generic-effects preserved).
+`User-Visible Surface = play.legendary-arena.com` — **D-24026 live-verify
+operator-pending on deploy** (a Red Skull Master Strike KOs a hero from each
+hand + per-player HUD log lines). Out of scope (each a future WP): other
+masterminds' strikes (incl. `epic-red-skull`), Red Skull tactic Fight: effects,
+hollow HYDRA villain Fight: markers, the per-player KO-target choice prompt.
+
 ### WP-385 / EC-414 Executed — Fixed-hero-pool gauntlet division: division toggle + hero-pool display (D-24187 client half — the arc's payoff surface) (2026-07-16)
 
 **legends.legendary-arena.com now renders the D-24187 championship.** Each
