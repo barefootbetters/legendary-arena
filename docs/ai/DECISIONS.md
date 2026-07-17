@@ -29460,6 +29460,14 @@ in the Registry Viewer card panel is a separate change — the viewer's
 mastermind `vp` (nor `vAttack`); that render wiring is deferred and would
 sensibly cover both.
 
+**Render follow-up (2026-07-17).** The render wiring landed: PR #796 added
+`FlatCard.vp`, mapped `vAttack`→the shared `attack` stat, and rendered a VP
+row in `CardDetail` for **mastermind** cards. PR #797 extended the same
+treatment to **villain and henchman** cards (their schemas — `VillainCardSchema`
+and the `z.unknown()` henchman records — already carried `vp`/`vAttack`, so no
+schema change was needed). All three group-card types now surface Attack + VP
+in the detail panel.
+
 **Executed:** 2026-07-17.
 
 Protect this file.

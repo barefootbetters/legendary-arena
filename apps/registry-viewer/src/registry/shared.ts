@@ -21,6 +21,22 @@ export interface PatternAssignmentsByType {
   scheme?:     Map<string, string>;
 }
 
+// why: D-24189 — henchman groups are z.unknown() records, so their vAttack/vp
+// arrive untyped. Coerce a stat to the FlatCard `vp` shape (string | number |
+// null); anything else (object, boolean, undefined) becomes null.
+function henchmanVp(value: unknown): string | number | null {
+  if (typeof value === "string" || typeof value === "number") return value;
+  return null;
+}
+
+// why: D-24189 — the shared `attack` FlatCard stat is a string-or-null. Coerce
+// an untyped henchman vAttack the same way the mastermind/villain wiring
+// coerces a typed one (String(vAttack)), returning null when absent.
+function henchmanAttack(value: unknown): string | null {
+  if (value === undefined || value === null) return null;
+  return String(value);
+}
+
 export function flattenSet(
   set: SetData,
   setName: string,
@@ -212,6 +228,11 @@ export function flattenSet(
         groupName: group.name,
         slug:      card.slug,
         imageUrl:  card.imageUrl ?? "",
+        // why: D-24189 — surface villain vAttack + VP in the detail panel,
+        // mirroring the mastermind wiring. VillainCardSchema already carries
+        // both; vAttack maps onto the shared `attack` stat (string|null).
+        attack:    card.vAttack != null ? String(card.vAttack) : null,
+        vp:        card.vp ?? null,
         abilities: card.abilities ?? [],
         count:     card.copies ?? 1,
         setTotal:  villainGroupTotal,
@@ -281,6 +302,10 @@ export function flattenSet(
           groupName,
           slug:      cardSlug,
           imageUrl:  String(cardRecord["imageUrl"] ?? henchmanRecord["imageUrl"] ?? ""),
+          // why: D-24189 — vAttack/VP are a group-level stat; sub-cards rarely
+          // carry their own, so fall back to the henchman group values.
+          attack:    henchmanAttack(cardRecord["vAttack"] ?? henchmanRecord["vAttack"]),
+          vp:        henchmanVp(cardRecord["vp"] ?? henchmanRecord["vp"]),
           abilities: Array.isArray(cardRecord["abilities"]) ? cardRecord["abilities"] as string[] : [],
           mechanicalPattern: henchmanMechanicalPattern,
         });
@@ -300,6 +325,9 @@ export function flattenSet(
       groupName,
       slug:      groupSlug,
       imageUrl:  String(henchmanRecord["imageUrl"] ?? ""),
+      // why: D-24189 — surface the henchman group's vAttack + VP.
+      attack:    henchmanAttack(henchmanRecord["vAttack"]),
+      vp:        henchmanVp(henchmanRecord["vp"]),
       abilities: Array.isArray(henchmanRecord["abilities"]) ? henchmanRecord["abilities"] as string[] : [],
       mechanicalPattern: henchmanMechanicalPattern,
     });
