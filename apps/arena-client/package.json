@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "typecheck": "vue-tsc --noEmit",
     "typecheck:functions": "tsc -p functions/tsconfig.json --noEmit",
-    "test": "node --import tsx --import @legendary-arena/vue-sfc-loader/register --test src/**/*.test.ts functions/**/*.test.ts"
+    "test": "node --import tsx --import @legendary-arena/vue-sfc-loader/register --test \"src/**/*.test.ts\" \"functions/**/*.test.ts\""
   },
   "dependencies": {
     "@legendary-arena/preplan": "workspace:*",

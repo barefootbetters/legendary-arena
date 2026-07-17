@@ -13,7 +13,7 @@
     "roadmap:schedule": "node --import tsx scripts/roadmap-schedule-check.mjs",
     "preview": "vite preview",
     "typecheck": "vue-tsc --noEmit",
-    "test": "node --import tsx --test src/**/*.test.ts",
+    "test": "node --import tsx --test \"src/**/*.test.ts\"",
     "test:coverage": "node --import tsx --test --experimental-test-coverage --test-coverage-lines=90 --test-coverage-branches=80 --test-coverage-functions=88 \"src/**/*.test.ts\"",
     "lint": "eslint \"src/**/*.{ts,vue}\"",
     "lint:fix": "eslint \"src/**/*.{ts,vue}\" --fix",
