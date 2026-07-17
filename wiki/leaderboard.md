@@ -52,7 +52,7 @@ source:
   - ../apps/server/src/legends/gauntlet.logic.ts
   - ../docs/ai/DESIGN-RANKING.md
   - ../packages/registry/src/playerCountSetup.ts
-last-reviewed: 2026-07-16
+last-reviewed: 2026-07-17
 ---
 
 # Leaderboard
@@ -70,9 +70,11 @@ and merged (WP-143, 2026-05-15); as of **2026-07-08 it is live** at that URL
 — the Cloudflare Pages project, custom domain, and WP-142 snapshot publisher
 were all provisioned that day (details under [Edge Cases](#edge-cases)). Of the
 multi-tier *annual championship* structure, the **per-mastermind
-set-gauntlets are decided and shipped** (D-24131 / D-24134 — see
-[Gauntlets](#gauntlets--the-per-mastermind-set-championships-d-24131--d-24134));
-the remaining tiers (overall champion, category champions, skill tiers,
+set-gauntlets are decided and shipped** — including the player-count
+dimension (D-24131 / D-24134) and, as of 2026-07-16, a second
+**fixed-hero-pool championship division** beside the open one (D-24187);
+see [Gauntlets](#gauntlets--the-per-mastermind-set-championships-d-24131--d-24134--d-24187).
+The remaining tiers (overall champion, category champions, skill tiers,
 yearly archive) are **proposals** living in
 [Open Questions](#open-questions) until ratified.
 
@@ -157,15 +159,18 @@ championship (per-mastermind, overall, annual) is a **derived aggregation
 over existing `ScenarioKey` rows** — no new engine identity needs to be
 invented.
 
-### Gauntlets — the per-mastermind set championships (D-24131 / D-24134)
+### Gauntlets — the per-mastermind set championships (D-24131 / D-24134 / D-24187)
 
 > This section documents the **decided and shipped** gauntlet system. It
 > graduated out of [Open Questions](#open-questions) when D-24131 ratified
 > tier 2 of the championship proposal (2026-07-09) and WP-342 / WP-343
-> executed the same day. D-24134 (also 2026-07-09) extends it with the
-> player-count dimension; its packets WP-344 / WP-345 are **drafted, not
-> yet executed** — rows below marked *(D-24134, pending execution)*
-> describe contracted behavior that is not live yet.
+> executed the same day. **D-24134** (the player-count dimension) is now
+> also fully shipped — WP-344 (server) and WP-345 (client, PR #787)
+> executed 2026-07-16, so the player-count boards, roster-keyed entries,
+> and challenge links below are **live**, not pending. **D-24187** adds a
+> second *division* beside the open one — the fixed-hero-pool
+> championship — also shipped 2026-07-16 (WP-384 + WP-385); see
+> [Fixed-hero-pool division](#fixed-hero-pool-division-d-24187) below.
 
 The gauntlet collapses the mastermind × scheme board explosion into one
 findable championship per mastermind. **Identity:** one gauntlet per
@@ -180,9 +185,8 @@ schemes (3–8). A row qualifies as a leg only when:
   qualify) — wins only,
 - its `scoring_config_version` equals the currently-published version for
   its `scenario_key` (VISION §22),
-- *(D-24134, pending execution)* its `player_count` matches the board's
-  player count (migration 027; legacy `NULL` rows never qualify on any
-  count-keyed board).
+- its `player_count` matches the board's player count (migration 027;
+  legacy `NULL` rows never qualify on any count-keyed board).
 
 **Aggregation:** best (lowest) `final_score` per leg, any villain groups;
 a board entry requires a winning best on **every** leg (complete gauntlets
@@ -191,7 +195,7 @@ only); `totalScore` = sum of best-per-leg, `averageScoreCentis` =
 submission step** — standings are a publisher-derived aggregation
 recomputed each ~5-minute cycle.
 
-**Player-count boards** *(D-24134, pending execution)*: one board per
+**Player-count boards** *(D-24134, live)*: one board per
 (set × mastermind × playerCount 1..5). The existing
 `gauntlet-<setAbbr>-<mastermindSlug>.json` file becomes the solo board;
 multiplayer boards are additive `…-p<N>.json` files (N = 2..5), written
@@ -208,25 +212,82 @@ player counts (see the PAR note under [Edge Cases](#edge-cases)).
 `gauntlet-index.json` catalog listing every gauntlet with `legCount` /
 `entryCount` (zero-entry boards render as "unclaimed" CTAs on the index);
 additive manifest fields `gauntletBoards` / `gauntletIndex`. *(D-24134,
-pending execution)*: index entries gain per-count `entryCounts` and the
-per-gauntlet `legs` list, and the board panel gains a player-count
-selector plus **"Challenge this leg" links** — each leg links to the
-Registry Viewer's URL-parameterized loadout preview
-(`?schemeId=…&mastermindId=…`, WP-114) with the leg's scheme and
-mastermind pinned, so a player lands one "Edit this loadout" click away
-from picking heroes for a correctly-keyed run.
+live)*: index entries carry per-count `entryCounts` and the per-gauntlet
+`legs` list, and the board panel has a player-count selector plus
+**"Challenge this leg" links** — each leg links to the Registry Viewer's
+URL-parameterized loadout preview (`?schemeId=…&mastermindId=…`, WP-114)
+with the leg's scheme and mastermind pinned, so a player lands one "Edit
+this loadout" click away from picking heroes for a correctly-keyed run.
 
 Shipped surfaces: WP-342 (server: outcome column + gauntlet read-layer +
 publisher emission) and WP-343 (client: set-grouped index, hash routing,
-board panel, designed empty states) — both executed 2026-07-09. Drafted:
-WP-344 (server: player-count persistence + roster-keyed per-count
-standings) and WP-345 (client: count selector, rosters, challenge links).
-Migrations apply to production automatically — `render.yaml`'s server
-buildCommand runs `scripts/migrate.mjs` on every deploy (a failure blocks
-the deploy), so 026 is live (verified 2026-07-09 via the published
-gauntlet index) and 027 will follow when WP-344 merges. The remaining
-precondition for boards filling is data supply: authenticated players
+board panel, designed empty states) — both executed 2026-07-09; WP-344
+(server: player-count persistence + roster-keyed per-count standings) and
+WP-345 (client: count selector, rosters, challenge links) — both executed
+2026-07-16 (WP-345 D-24026 live-verified on `legends.legendary-arena.com`,
+PR #787). Migrations apply to production automatically — `render.yaml`'s
+server buildCommand runs `scripts/migrate.mjs` on every deploy (a failure
+blocks the deploy), so 026 and 027 are both live (verified via the
+published gauntlet index, which now carries `entryCounts` on all 109
+gauntlets). The remaining precondition for boards filling is data supply:
+authenticated players
 finishing winning matches.
+
+### Fixed-hero-pool division (D-24187)
+
+> Shipped 2026-07-16 (WP-384 server + WP-385 client). The prestige
+> **division** beside the open gauntlet — the "legendary" format the
+> operator asked for. The design reasoning trail lives under
+> [Hero requirements](#hero-requirements--the-fixed-hero-pool-gauntlet-shipped-2026-07-16-d-24187)
+> in Open Questions; this is the live behavior.
+
+Every gauntlet board now has **two divisions**, switchable by a toggle:
+
+- **Open** — the D-24131 / D-24134 standings above, unchanged. Any heroes,
+  per leg. This is the acquisition surface and the default view.
+- **Fixed-Pool Championship** — the same completeness and roster rules,
+  **plus** a shared hero-pool constraint. To claim a fixed board a
+  competitor's chosen winning replays must, across all legs, draw their
+  heroes from one pool of at most **`heroCount + 2`** distinct heroes
+  (`PLAYER_COUNT_SETUP` + 2, D-24165: solo 3+2 = 5, 2–4p 5+2 = 7, 5p
+  6+2 = 8). The championship title attaches to this division.
+
+**How it works, end to end:**
+
+- **`team_key` (migration 034).** Every verified score now records the
+  match's hero team identity — the set-qualified `heroDeckIds` sorted ASC
+  and `+`-joined, derived server-side at submission from the reduced final
+  state (never client-supplied). A one-time artifact backfill covered any
+  pre-migration rows under a narrow **D-24187** carve-out on the
+  boardgame.io replay-artifact blob (it resolved as a no-op — production
+  `competitive_scores` was empty, so every stored score carries its
+  `team_key` from birth).
+- **Standings.** The publisher's single per-gauntlet query returns both
+  divisions; the fixed side runs a deterministic, bounded, exact-optimum
+  search over the competitor's distinct team keys for the lowest-scoring
+  pool-satisfying assignment (cap 12 distinct teams per roster × count ×
+  gauntlet, with logged — never silent — truncation). No submission step;
+  no declaration; the pool is *inferred* from the wins.
+- **Snapshots.** Additive, lazy `gauntlet-<setAbbr>-<mastermindSlug>-fixed`
+  (solo) and `…-fixed-p<N>` (N = 2..5) board files, written only at ≥1
+  complete entry; fixed entries carry `heroPool` (the union of the winning
+  teams' heroes). The index gains `fixedEntryCounts` per count. Open-board
+  files, semantics, and entries are byte-unchanged.
+- **Board UI.** The board panel shows an **Open | Fixed-Pool Championship**
+  toggle; fixed boards render a **Hero Pool** column and a championship
+  subtitle; the open board carries a feeder line inviting the championship;
+  the index shows a gold `★ Np` chip for each *claimed* fixed count. An
+  unclaimed fixed board (or count) renders the open-championship "rank #1
+  unclaimed" state — never an error.
+
+**Terminology.** The hero constraint is the **hero pool**; "roster" stays
+the D-24134 *player-account* dimension. A multiplayer fixed entry needs
+both — the same account roster on every leg **and** a shared hero pool.
+
+**Launch state.** All 109 gauntlets publish `fixedEntryCounts`, every count
+currently unclaimed — the intended open-championship acquisition state. The
+first authenticated player (or roster) to clear a full set with one hero
+pool claims the first Fixed-Pool Championship, with their pool on the board.
 
 ### From a finished match to a ranked row (the write path)
 
@@ -550,7 +611,7 @@ player ID, not the public handle.
 > step** — standings are a publisher-derived aggregation; snapshots
 > `gauntlet-<setAbbr>-<mastermindSlug>.json` + a `gauntlet-index.json`
 > catalog + additive manifest fields. The full decided behavior now lives
-> under [Gauntlets](#gauntlets--the-per-mastermind-set-championships-d-24131--d-24134)
+> under [Gauntlets](#gauntlets--the-per-mastermind-set-championships-d-24131--d-24134--d-24187)
 > in Mechanics — this callout is the historical pointer, not the spec.
 > WP-343 (the legends-board index + gauntlet panel) executed 2026-07-09;
 > the profile-progress surfaces remain backlogged. **D-24134**
@@ -697,33 +758,27 @@ this product will ever have, and it costs one panel component.
 instead of a bare table. Hand-authored mockup:
 [board-mockup-empty.svg](../ewiki/leaderboard/board-mockup-empty.svg).*
 
-### Hero requirements — the fixed-hero-pool gauntlet (2026-07-16 proposal)
+### Hero requirements — the fixed-hero-pool gauntlet (SHIPPED 2026-07-16, D-24187)
 
-> **Proposal, not decided** — same rule as the sections above. This
-> records the operator's 2026-07-16 recommendation for **hero**
-> requirements on gauntlet entries, plus a feasibility review against
-> the shipped system. Ratifying it requires a
-> [DECISIONS.md](../docs/ai/DECISIONS.md) entry (it touches D-24131's
-> decided aggregation semantics) and a Work Packet.
-
-> **Update 2026-07-16 — DECIDED.** Ratified the same day by **D-24187**
-> ([DECISIONS.md](../docs/ai/DECISIONS.md)), with
+> **Shipped and live (2026-07-16).** This started as the operator's
+> 2026-07-16 hero-requirements recommendation, was ratified the same day
+> by **D-24187**, and both packets executed and deployed that day:
 > [WP-384](../docs/ai/work-packets/WP-384-fixed-hero-pool-gauntlet-server.md)
-> (server) + [WP-385](../docs/ai/work-packets/WP-385-fixed-hero-pool-gauntlet-client.md)
-> (client) drafted, pending execution. The fork below resolved to
-> **parallel divisions** — the shipped open gauntlet stays byte-unchanged
-> as the acquisition surface; the fixed-pool board lands beside it as the
-> prestige division the championship title attaches to. One refinement
-> over the text below: the pool budget is **exactly `heroCount + 2`**
-> (not "up to"), so the qualification check is binary — the union of
-> heroes across an entry's legs fits the budget or it doesn't. Locked
-> parameters: `team_key` persisted at submission (sorted set-qualified
-> hero ids, derived server-side from the verified replay; migration 034 +
-> a one-time artifact backfill under a narrow D-24187 carve-out);
-> additive `…-fixed[-p<N>].json` boards, lazy; `heroPool` published on
-> fixed entries; `fixedEntryCounts` on the index; deterministic bounded
-> assignment search with logged (never silent) truncation. This callout
-> is the historical pointer — D-24187 is the spec.
+> (server — `team_key` persistence + pool-constrained standings +
+> publisher, PR #784) and
+> [WP-385](../docs/ai/work-packets/WP-385-fixed-hero-pool-gauntlet-client.md)
+> (client — the division toggle + hero-pool display, PR #787,
+> D-24026 live-verified on `legends.legendary-arena.com`). The design
+> narrative below is preserved as the reasoning trail; the **live
+> behavior** is summarized under
+> [Fixed-hero-pool division](#fixed-hero-pool-division-d-24187) in
+> Mechanics, and D-24187 is the authoritative spec. Two things landed
+> exactly as the review predicted: the fork resolved to **parallel
+> divisions** (the open gauntlet stays byte-unchanged as the acquisition
+> surface; the fixed-pool board sits beside it as the prestige division
+> the championship title attaches to), and the pool budget is **exactly
+> `heroCount + 2`** (a binary check — the union of heroes across an
+> entry's legs fits the budget or it does not).
 
 **The recommendation: a gauntlet entry must be earned with a fixed hero
 group plus 1–2 alternates.** To claim a set's mastermind championship, a
