@@ -1827,6 +1827,43 @@
           ]
         }
       ]
+    },
+    {
+      "id": 5,
+      "name": "Doctor Octopus",
+      "slug": "doctor-octopus",
+      "alwaysLeads": [
+        "sinister-spider-foes",
+        "sinister-syndicate"
+      ],
+      "vp": 8,
+      "cards": [
+        {
+          "name": "Doctor Octopus",
+          "slug": "doctor-octopus",
+          "tactic": false,
+          "vAttack": "8+",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mm-doctor-octopus.webp",
+          "abilities": [
+            "Doctor Octopus gets +4[icon:attack] unless you played at least 8 cards or a Hero that costs 8 this turn.",
+            "Always Leads: Any \"Sinister\" Villain Group",
+            "Master Strike: Each player may discard a [team:spider-friends] Hero. Any player who doesn't must reveal the top 8 cards of their deck, discard all non-grey Heroes revealed, and put the rest back in random order."
+          ]
+        },
+        {
+          "name": "Epic Doctor Octopus",
+          "slug": "epic-doctor-octopus",
+          "tactic": false,
+          "vAttack": "8+",
+          "vp": 8,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-me-doctor-octopus.webp",
+          "abilities": [
+            "Doctor Octopus gets +4[icon:attack] unless you played at least 8 cards this turn and gets +4[icon:attack] unless you played a Hero that costs 8 this turn.",
+            "Always Leads: Any \"Sinister\" Villain Group",
+            "Master Strike: Each player may KO one of their [team:spider-friends] Heroes. Any player who doesn't must reveal the top 8 cards of their deck. KO a non-grey Hero revealed, discard all other non-grey Heroes revealed, and put the rest back in random order."
+          ]
+        }
+      ]
     }
   ],
   "villains": [
@@ -2176,7 +2213,9 @@
       "id": 7,
       "name": "Sinister Syndicate",
       "slug": "sinister-syndicate",
-      "ledBy": [],
+      "ledBy": [
+        "doctor-octopus"
+      ],
       "cards": [
         {
           "name": "Beetle",
