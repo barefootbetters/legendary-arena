@@ -1645,26 +1645,40 @@
       "name": "Dr. Doom",
       "slug": "doctor-doom",
       "alwaysLeads": [
-        "masters-of-evil"
+        "doombot-legion"
       ],
-      "vp": 5,
+      "vp": 6,
       "cards": [
         {
           "name": "Dr. Doom",
           "slug": "doctor-doom",
           "tactic": false,
-          "vAttack": 9,
+          "vAttack": "10+",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mm-doctor-doom.webp",
           "abilities": [
-            "Always Leads: Doombot Legion",
-            "Master Strike: Each player with exactly 6 cards in hand reveals a [hc:tech] Hero or puts 2 cards from their hand on top of their deck."
+            "If there is at least one Omen of Doom, all Doombot Legions get +1[icon:attack]. If there are at least four Omens, then instead Doctor Doom and all Doombot Legions get +2[icon:attack].",
+            "Always Leads: Doombot Legions",
+            "Master Strike: Stack this Strike next to Doctor Doom as \"Omen of Doom.\" Then each player discards cards equal to the number of Omens or gains a Wound."
+          ]
+        },
+        {
+          "name": "Epic Doctor Doom",
+          "slug": "epic-doctor-doom",
+          "tactic": false,
+          "vAttack": "12+",
+          "vp": 6,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-me-doctor-doom.webp",
+          "abilities": [
+            "All Doombot Legions get +2[icon:attack]. If there are at least four Omens of Doom, then instead Doctor Doom and all Doombot Legions get +4[icon:attack].",
+            "Always Leads: Doombot Legions",
+            "Master Strike: Stack this Strike next to Doctor Doom as an \"Omen of Doom.\" Then each player discards cards equal to one plus the number of Omens or gains a Wound."
           ]
         },
         {
           "name": "Dark Technology",
           "slug": "dark-technology",
           "tactic": true,
-          "vAttack": 9,
+          "vAttack": "10+",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mt-doctor-doom-dark-technology.webp",
           "abilities": [
             "Fight: You may recruit a [hc:tech] or [hc:ranged] Hero from the HQ for free."
@@ -1674,7 +1688,7 @@
           "name": "Monarch's Decree",
           "slug": "monarchs-decree",
           "tactic": true,
-          "vAttack": 9,
+          "vAttack": "10+",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mt-doctor-doom-monarchs-decree.webp",
           "abilities": [
             "Fight: Choose one: each other player draws a card or each other player discards a card."
@@ -1684,7 +1698,7 @@
           "name": "Secrets of Time Travel",
           "slug": "secrets-of-time-travel",
           "tactic": true,
-          "vAttack": 9,
+          "vAttack": "10+",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mt-doctor-doom-secrets-of-time-travel.webp",
           "abilities": [
             "Fight: Take another turn after this one."
@@ -1694,7 +1708,7 @@
           "name": "Treasures of Latveria",
           "slug": "treasures-of-latveria",
           "tactic": true,
-          "vAttack": 9,
+          "vAttack": "10+",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mt-doctor-doom-treasures-of-latveria.webp",
           "abilities": [
             "Fight: When you draw a new hand of cards at the end of this turn, draw three extra cards."
@@ -1709,27 +1723,75 @@
       "alwaysLeads": [
         "enemies-of-asgard"
       ],
-      "vp": 5,
+      "vp": 6,
       "cards": [
         {
           "name": "Loki",
           "slug": "loki",
           "tactic": false,
-          "vAttack": 10,
+          "vAttack": "11+",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mm-loki.webp",
           "abilities": [
+            "Loki gets +1[icon:attack] for each Hero Class among his \"Hypno-Thralls.\"",
             "Always Leads: Enemies of Asgard",
-            "Master Strike: Each player reveals a [hc:strength] Hero or gains a Wound."
+            "Master Strike: Each player discards a [hc:strength] Hero or stacks a non-grey Hero from their hand next to Loki as a Hypno-Thrall."
+          ]
+        },
+        {
+          "name": "Epic Loki",
+          "slug": "epic-loki",
+          "tactic": false,
+          "vAttack": "12+",
+          "vp": 6,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-me-loki.webp",
+          "abilities": [
+            "Loki gets +2[icon:attack] for each Hero Class among his \"Hypno-Thralls.\"",
+            "Always Leads: Enemies of Asgard",
+            "Master Strike: Stack the top card of the Hero Deck next to Loki as a Hypno-Thrall. Each player KOs one of their [hc:strength] Heroes or stacks a non-grey Hero from their hand next to Loki as a Hypno-Thrall."
+          ]
+        },
+        {
+          "name": "Broken Illusions",
+          "slug": "broken-illusions",
+          "tactic": true,
+          "vAttack": 11,
+          "vp": 6,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mt-loki-broken-illusions.webp",
+          "abilities": [
+            "Fight: Either KO one of Loki's Hypno-Thralls or choose a player to gain it."
+          ]
+        },
+        {
+          "name": "Cruel Manipulations",
+          "slug": "cruel-manipulations",
+          "tactic": true,
+          "vAttack": 11,
+          "vp": 6,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mt-loki-cruel-manipulations.webp",
+          "abilities": [
+            "Fight: Each other player reveals their hand and discards all cards that have the same card names as any cards in Loki's Hypno-Thralls."
+          ]
+        },
+        {
+          "name": "Scion of the Frost Giants",
+          "slug": "scion-of-the-frost-giants",
+          "tactic": true,
+          "vAttack": 11,
+          "vp": 6,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mt-loki-scion-of-the-frost-giants.webp",
+          "abilities": [
+            "Fight: KO up to three grey Heroes from your discard pile."
           ]
         },
         {
           "name": "Whispers and Lies",
           "slug": "whispers-and-lies",
           "tactic": true,
-          "vAttack": 10,
+          "vAttack": 11,
+          "vp": 6,
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mt-loki-whispers-and-lies.webp",
           "abilities": [
-            "Fight: Each other player KOs two Bystanders from their Victory Pile."
+            "Fight: Put all Heroes that cost 5 or more from the HQ into Loki's Hypno-Thralls. Then refill all those HQ spaces."
           ]
         }
       ]
@@ -1739,29 +1801,77 @@
       "name": "Magneto",
       "slug": "magneto",
       "alwaysLeads": [
-        "brotherhood"
+        "brotherhood-of-mutants"
       ],
-      "vp": 5,
+      "vp": 6,
       "cards": [
         {
           "name": "Magneto",
           "slug": "magneto",
           "tactic": false,
-          "vAttack": 8,
+          "vAttack": "9+",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mm-magneto.webp",
           "abilities": [
-            "Always Leads: Brotherhood",
-            "Master Strike: Each player reveals an [team:x-men] Hero or discards down to four cards."
+            "Magneto gets +1[icon:attack] for each [hc:tech] Hero you played this turn.",
+            "Always Leads: Any \"Brotherhood\" or \"X-Men\" Villain Group",
+            "Master Strike: Each player discards an [team:x-men] Hero or gains a Wound."
+          ]
+        },
+        {
+          "name": "Epic Magneto",
+          "slug": "epic-magneto",
+          "tactic": false,
+          "vAttack": "11+",
+          "vp": 6,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-me-magneto.webp",
+          "abilities": [
+            "Magneto gets +1[icon:attack] for each Hero you played this turn that's [hc:tech] and/or [hc:ranged].",
+            "Always Leads: Any \"Brotherhood\" or \"X-Men\" Villain Group",
+            "Master Strike: Each player KOs one of their [team:x-men] Heroes or gains a Wound."
           ]
         },
         {
           "name": "Bitter Captor",
           "slug": "bitter-captor",
           "tactic": true,
-          "vAttack": 8,
+          "vAttack": 9,
+          "vp": 6,
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mt-magneto-bitter-captor.webp",
           "abilities": [
-            "Fight: Recruit an [team:x-men] Hero from the HQ for free."
+            "Fight: Gain an [team:x-men] Hero from the HQ or gain a Sidekick."
+          ]
+        },
+        {
+          "name": "Crush in Steel",
+          "slug": "crush-in-steel",
+          "tactic": true,
+          "vAttack": 9,
+          "vp": 6,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mt-magneto-crush-in-steel.webp",
+          "abilities": [
+            "Fight: Each other player KOs one of their non-grey Heroes."
+          ]
+        },
+        {
+          "name": "Electromagnetic Shockwave",
+          "slug": "electromagnetic-shockwave",
+          "tactic": true,
+          "vAttack": 9,
+          "vp": 6,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mt-magneto-electromagnetic-shockwave.webp",
+          "abilities": [
+            "Fight: Each other player discards an [team:x-men] Hero or discards down to three cards."
+          ]
+        },
+        {
+          "name": "Imprisoning Sphere",
+          "slug": "imprisoning-sphere",
+          "tactic": true,
+          "vAttack": 9,
+          "vp": 6,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mt-magneto-imprisoning-sphere.webp",
+          "abilities": [
+            "Fight: You may set aside one of your [team:x-men] or [team:shield] Heroes. When you draw a new hand this turn, add that Hero to your hand as an extra card."
           ]
         }
       ]
@@ -1773,7 +1883,7 @@
       "alwaysLeads": [
         "hydra"
       ],
-      "vp": 5,
+      "vp": 6,
       "cards": [
         {
           "name": "Red Skull",
@@ -1784,6 +1894,144 @@
           "abilities": [
             "Always Leads: HYDRA",
             "Master Strike: Each player KOs a Hero from their hand."
+          ]
+        },
+        {
+          "name": "Epic Red Skull",
+          "slug": "epic-red-skull",
+          "tactic": false,
+          "vAttack": "10+",
+          "vp": 6,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-me-red-skull.webp",
+          "abilities": [
+            "Red Skull gets +2[icon:attack] for each HYDRA Villain in the city and/or Escape Pile.",
+            "Always Leads: Any \"HYDRA\" Villain Group",
+            "Master Strike: Each player discards a [hc:tech] Hero or discards down to 3 cards."
+          ]
+        },
+        {
+          "name": "Dust of Death",
+          "slug": "dust-of-death",
+          "tactic": true,
+          "vAttack": 7,
+          "vp": 6,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mt-red-skull-dust-of-death.webp",
+          "abilities": [
+            "Fight: Each other player KOs a non-grey Hero from their discard pile."
+          ]
+        },
+        {
+          "name": "Ruthless Command",
+          "slug": "ruthless-command",
+          "tactic": true,
+          "vAttack": 7,
+          "vp": 6,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mt-red-skull-ruthless-command.webp",
+          "abilities": [
+            "Fight: Reveal the top three cards of your deck. KO one, discard one, and put one back on top."
+          ]
+        },
+        {
+          "name": "Two More Shall Take Its Place",
+          "slug": "two-more-shall-take-its-place",
+          "tactic": true,
+          "vAttack": 7,
+          "vp": 6,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mt-red-skull-two-more-shall-take-its-place.webp",
+          "abilities": [
+            "Fight: If this is not the final Tactic: Shuffle two cards from the Bystander Deck into the Villain Deck, then play two cards from the Villain Deck."
+          ]
+        },
+        {
+          "name": "Vast Resources",
+          "slug": "vast-resources",
+          "tactic": true,
+          "vAttack": 7,
+          "vp": 6,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mt-red-skull-vast-resources.webp",
+          "abilities": [
+            "Fight: You get +4[icon:recruit]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Doctor Octopus",
+      "slug": "doctor-octopus",
+      "alwaysLeads": [
+        "sinister-spider-foes",
+        "sinister-syndicate"
+      ],
+      "vp": 8,
+      "cards": [
+        {
+          "name": "Doctor Octopus",
+          "slug": "doctor-octopus",
+          "tactic": false,
+          "vAttack": "8+",
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mm-doctor-octopus.webp",
+          "abilities": [
+            "Doctor Octopus gets +4[icon:attack] unless you played at least 8 cards or a Hero that costs 8 this turn.",
+            "Always Leads: Any \"Sinister\" Villain Group",
+            "Master Strike: Each player may discard a [team:spider-friends] Hero. Any player who doesn't must reveal the top 8 cards of their deck, discard all non-grey Heroes revealed, and put the rest back in random order."
+          ]
+        },
+        {
+          "name": "Epic Doctor Octopus",
+          "slug": "epic-doctor-octopus",
+          "tactic": false,
+          "vAttack": "8+",
+          "vp": 8,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-me-doctor-octopus.webp",
+          "abilities": [
+            "Doctor Octopus gets +4[icon:attack] unless you played at least 8 cards this turn and gets +4[icon:attack] unless you played a Hero that costs 8 this turn.",
+            "Always Leads: Any \"Sinister\" Villain Group",
+            "Master Strike: Each player may KO one of their [team:spider-friends] Heroes. Any player who doesn't must reveal the top 8 cards of their deck. KO a non-grey Hero revealed, discard all other non-grey Heroes revealed, and put the rest back in random order."
+          ]
+        },
+        {
+          "name": "Absolute Octarchy",
+          "slug": "absolute-octarchy",
+          "tactic": true,
+          "vAttack": 8,
+          "vp": 8,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mt-doctor-octopus-absolute-octarchy.webp",
+          "abilities": [
+            "Fight: Each other player reveals a card that costs 8 or gains a Wound."
+          ]
+        },
+        {
+          "name": "High Octane",
+          "slug": "high-octane",
+          "tactic": true,
+          "vAttack": 8,
+          "vp": 8,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mt-doctor-octopus-high-octane.webp",
+          "abilities": [
+            "Fight: Reveal the top 8 cards of the Hero Deck. You may gain one of them that costs 8. Shuffle the rest back into the Hero Deck."
+          ]
+        },
+        {
+          "name": "Octal Octyls",
+          "slug": "octal-octyls",
+          "tactic": true,
+          "vAttack": 8,
+          "vp": 8,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mt-doctor-octopus-octal-octyls.webp",
+          "abilities": [
+            "Fight: Look at the top 8 cards of your deck. Draw one and discard the rest."
+          ]
+        },
+        {
+          "name": "Octet of Valence Electrons",
+          "slug": "octet-of-valence-electrons",
+          "tactic": true,
+          "vAttack": 8,
+          "vp": 8,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mt-doctor-octopus-octet-of-valence-electrons.webp",
+          "abilities": [
+            "Fight: When you draw a new hand this turn, draw 9 cards instead of 6."
           ]
         }
       ]
@@ -2136,7 +2384,9 @@
       "id": 7,
       "name": "Sinister Syndicate",
       "slug": "sinister-syndicate",
-      "ledBy": [],
+      "ledBy": [
+        "doctor-octopus"
+      ],
       "cards": [
         {
           "name": "Beetle",
