@@ -13,6 +13,7 @@ import type {
 } from "../snapshots/snapshotClient";
 import {
   buildChallengeUrl,
+  buildFixedCountTabs,
   buildPlayerCountTabs,
   groupGauntletsBySet,
   type PlayerCountTab,
@@ -34,6 +35,22 @@ const setGroups = computed(() => {
 /** The per-count claim chips for one gauntlet row. */
 function countChips(gauntlet: GauntletIndexEntry): PlayerCountTab[] {
   return buildPlayerCountTabs(gauntlet);
+}
+
+/**
+ * The fixed-division claim chips for one gauntlet row — CLAIMED counts
+ * only (WP-385). Rendering five more muted chips per row across a
+ * 105-gauntlet index would be visual noise; the unclaimed fixed state
+ * lives on the board panel's division toggle instead.
+ */
+function fixedChips(gauntlet: GauntletIndexEntry): PlayerCountTab[] {
+  const claimedChips: PlayerCountTab[] = [];
+  for (const tab of buildFixedCountTabs(gauntlet)) {
+    if (tab.isClaimed) {
+      claimedChips.push(tab);
+    }
+  }
+  return claimedChips;
 }
 
 /** The chip label for one player count (e.g. `1p`, `2p`). */
@@ -114,6 +131,15 @@ function firstLegChallengeUrl(gauntlet: GauntletIndexEntry): string | null {
                   title="Unclaimed"
                 >{{ chipLabel(chip) }}</span>
               </template>
+              <!-- Fixed-division claim chips (WP-385): claimed counts only —
+                   the championship marker on the index. -->
+              <a
+                v-for="chip of fixedChips(gauntlet)"
+                :key="`fixed-${chip.playerCount}`"
+                class="chip chip-fixed"
+                :href="`#/gauntlet/${chip.boardName}`"
+                title="Fixed-Pool Championship claimed"
+              >★ {{ chipLabel(chip) }}</a>
             </div>
 
             <!-- Unclaimed gauntlet CTA: challenge the first leg on a pinned
@@ -237,6 +263,17 @@ function firstLegChallengeUrl(gauntlet: GauntletIndexEntry): string | null {
 .chip-unclaimed {
   color: #555;
   border: 1px dashed #2a2a3a;
+}
+
+.chip-fixed {
+  color: #ffd700;
+  border: 1px solid rgba(255, 215, 0, 0.7);
+  background: rgba(255, 215, 0, 0.08);
+  font-weight: 600;
+}
+
+.chip-fixed:hover {
+  background: rgba(255, 215, 0, 0.18);
 }
 
 .challenge-link {

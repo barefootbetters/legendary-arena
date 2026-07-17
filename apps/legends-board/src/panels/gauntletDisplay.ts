@@ -211,12 +211,46 @@ export function buildChallengeUrl(
 // board has no suffix and player counts never exceed 5 (D-24134 §2).
 const BOARD_COUNT_SUFFIX_PATTERN = /-p[2-5]$/;
 
+// why: the fixed-division segment precedes the count suffix in the board
+// grammar (D-24187 §3: `<board>-fixed` / `<board>-fixed-p<N>`), so a name is
+// tested for `-fixed` only AFTER the `-p<N>` suffix has been stripped.
+const FIXED_DIVISION_SUFFIX = "-fixed";
+
+/**
+ * Strips a trailing `-p<N>` player-count suffix, or returns the name
+ * unchanged when none is present.
+ */
+function stripCountSuffix(boardName: string): string {
+  const suffixMatch = BOARD_COUNT_SUFFIX_PATTERN.exec(boardName);
+  if (suffixMatch === null) {
+    return boardName;
+  }
+  return boardName.slice(0, boardName.length - suffixMatch[0].length);
+}
+
+/**
+ * Whether a routed board name addresses the fixed-hero-pool division
+ * (WP-385 / D-24187 §3). The active division derives from the ROUTE — hash
+ * routing already carries all navigation state, so no component holds a
+ * division flag.
+ *
+ * @param boardName The routed board name.
+ * @returns `true` for `<board>-fixed` and `<board>-fixed-p<N>` names.
+ */
+export function isFixedBoardName(boardName: string): boolean {
+  // why: `-p[2-5]` strips FIRST because `-fixed` precedes the count suffix
+  // in the grammar — testing the raw name would miss `<board>-fixed-p3`.
+  return stripCountSuffix(boardName).endsWith(FIXED_DIVISION_SUFFIX);
+}
+
 /**
  * Resolves the index entry for a routed board name, stripping a trailing
- * `-p<N>` player-count suffix when the bare lookup misses so a per-count
- * board view can read its parent gauntlet's `entryCounts` + `legs`.
+ * `-p<N>` player-count suffix and then a trailing `-fixed` division
+ * segment (in that order) when the bare lookup misses, so a per-count or
+ * fixed-division board view can read its parent gauntlet's index data.
  *
- * @param boardName The routed board name (bare or `<board>-p<N>`).
+ * @param boardName The routed board name (bare, `<board>-p<N>`,
+ *   `<board>-fixed`, or `<board>-fixed-p<N>`).
  * @param gauntlets The gauntlet index rows to search.
  * @returns The matching index entry, or `null` for an unknown board.
  */
@@ -233,18 +267,124 @@ export function resolveBoardIndexEntry(
   // why: suffix-stripping fires ONLY after the direct lookup misses — a real
   // board name (including any mastermind slug) matches above and returns, so
   // the `-p<N>` rule can never shadow a mastermind whose slug ends in `-p2`.
-  const suffixMatch = BOARD_COUNT_SUFFIX_PATTERN.exec(boardName);
-  if (suffixMatch === null) {
-    return null;
+  const countStrippedName = stripCountSuffix(boardName);
+  if (countStrippedName !== boardName) {
+    for (const gauntlet of gauntlets) {
+      if (gauntlet.board === countStrippedName) {
+        return gauntlet;
+      }
+    }
   }
-  const parentBoardName = boardName.slice(
-    0,
-    boardName.length - suffixMatch[0].length,
-  );
-  for (const gauntlet of gauntlets) {
-    if (gauntlet.board === parentBoardName) {
-      return gauntlet;
+
+  // why: `-fixed` strips AFTER `-p[2-5]` (the D-24187 §3 grammar order:
+  // `<board>-fixed-p<N>`), and again only because every prior lookup missed.
+  if (countStrippedName.endsWith(FIXED_DIVISION_SUFFIX)) {
+    const parentBoardName = countStrippedName.slice(
+      0,
+      countStrippedName.length - FIXED_DIVISION_SUFFIX.length,
+    );
+    for (const gauntlet of gauntlets) {
+      if (gauntlet.board === parentBoardName) {
+        return gauntlet;
+      }
     }
   }
   return null;
+}
+
+/**
+ * Builds the player-count tabs for a gauntlet's FIXED-hero-pool division
+ * (WP-385 / D-24187 §3/§6): board names follow the `<board>-fixed[-p<N>]`
+ * grammar and claim state comes from `fixedEntryCounts`.
+ *
+ * @param indexEntry The gauntlet's index row.
+ * @returns One tab per player count — or an EMPTY array when the entry has
+ *   no `fixedEntryCounts` (a pre-WP-384 snapshot), which suppresses the
+ *   division toggle entirely so old snapshots render exactly as WP-345.
+ */
+export function buildFixedCountTabs(
+  indexEntry: GauntletIndexEntry,
+): PlayerCountTab[] {
+  // why: no `fixedEntryCounts` means the artifact predates WP-384 — there is
+  // no fixed division to offer, so the empty array (not five unclaimed tabs)
+  // keeps old snapshots byte-identical to the WP-345 rendering.
+  if (indexEntry.fixedEntryCounts === undefined) {
+    return [];
+  }
+
+  const tabs: PlayerCountTab[] = [];
+  for (const playerCount of PLAYER_COUNTS) {
+    const countKey = String(
+      playerCount,
+    ) as keyof typeof indexEntry.fixedEntryCounts;
+    const entryCount = indexEntry.fixedEntryCounts[countKey];
+    const boardName =
+      playerCount === 1
+        ? `${indexEntry.board}${FIXED_DIVISION_SUFFIX}`
+        : `${indexEntry.board}${FIXED_DIVISION_SUFFIX}-p${playerCount}`;
+    tabs.push({
+      playerCount,
+      boardName,
+      entryCount,
+      isClaimed: entryCount > 0,
+    });
+  }
+  return tabs;
+}
+
+/**
+ * Finds the tab a routed board name addresses, searching the open
+ * division's tabs and then the fixed division's (WP-385). The App-level
+ * unclaimed-count guard uses this so an unclaimed `-fixed[-p<N>]` deep
+ * link renders the open-championship state instead of fetching a file
+ * that does not exist.
+ *
+ * @param indexEntry The routed gauntlet's index row.
+ * @param boardName The routed board name.
+ * @returns The matching tab from either division, or `null`.
+ */
+export function findRoutedCountTab(
+  indexEntry: GauntletIndexEntry,
+  boardName: string,
+): PlayerCountTab | null {
+  for (const tab of buildPlayerCountTabs(indexEntry)) {
+    if (tab.boardName === boardName) {
+      return tab;
+    }
+  }
+  for (const tab of buildFixedCountTabs(indexEntry)) {
+    if (tab.boardName === boardName) {
+      return tab;
+    }
+  }
+  return null;
+}
+
+/**
+ * Formats a fixed-division entry's hero pool for display (WP-385 /
+ * D-24187 §6).
+ *
+ * @param heroPool The entry's set-qualified hero ids (published order,
+ *   sorted ASC).
+ * @returns The ids' slug parts joined by `" · "` — e.g.
+ *   `'black-widow · iron-man · spider-man'`; an empty string for a
+ *   missing or empty pool (old snapshots — never a crash).
+ */
+export function formatHeroPool(
+  heroPool: readonly string[] | undefined,
+): string {
+  if (heroPool === undefined || heroPool.length === 0) {
+    return "";
+  }
+  const displayParts: string[] = [];
+  for (const heroId of heroPool) {
+    // why: display shortening ONLY — the `setAbbr/` prefix is dropped for
+    // readability, but the underlying ids are never re-slugified, reordered,
+    // or used to build links from this shortened form.
+    const slashIndex = heroId.indexOf("/");
+    displayParts.push(
+      slashIndex === -1 ? heroId : heroId.slice(slashIndex + 1),
+    );
+  }
+  return displayParts.join(" · ");
 }

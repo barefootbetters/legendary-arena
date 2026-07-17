@@ -29233,7 +29233,24 @@ Protect this file.
 
 ### D-24187 — Fixed-hero-pool gauntlet prestige division (`team_key` persistence + pool-constrained standings)
 
-**Status:** Active 2026-07-16 (design lock; ratified at SPEC draft, the D-24131/D-24134 pattern). **WP-384 (server) executed 2026-07-16** (EC-413; migration 034 auto-applies via the Render migrate step on deploy; the artifact backfill is operator-run and open until run against production). WP-385 (client) drafted, unblocked, pending execution.
+**Status:** Active 2026-07-16 (design lock; ratified at SPEC draft, the D-24131/D-24134 pattern). **WP-384 (server) executed 2026-07-16** (EC-413; migration 034 auto-applies via the Render migrate step on deploy; the artifact backfill is operator-run and open until run against production). **WP-385 (client) executed 2026-07-16** (EC-414; the arc is code-complete — D-24026 live-verify on the CF Pages deploy; launch state = every fixed count unclaimed, by design).
+
+> **Execution note (2026-07-16, WP-385 / EC-414).** Landed as designed with
+> the five EC-draft reconciliations recorded in the WP addendum: (1) 7-file
+> set (pure helpers in `gauntletDisplay.ts`); (2) the active division derives
+> from the ROUTE via `isFixedBoardName` — no component state; (3) `heroPool`
+> mirrors as an OPTIONAL field on the client's single `GauntletSnapshotEntry`
+> type; (4) index fixed chips render CLAIMED counts only (`★ Np`; noise
+> control across the 109-row index — the unclaimed fixed state lives on the
+> board panel's toggle); (5) the WP-345 unclaimed guard extends to fixed
+> boards via `findRoutedCountTab`, so an unclaimed `-fixed[-p<N>]` deep link
+> renders the open-championship state, never a 404. `parseHashRoute` + the
+> kiosk cycle byte-identical; zero-API grep clean; legends-board 69/69,
+> `vue-tsc` 0. Fixture-driven dev smoke verified all four surfaces (open
+> board + toggle + feeder, fixed board + Hero Pool column, unclaimed fixed
+> deep link, index `★ 1p` chip) with zero console errors. The live
+> gauntlet-index already publishes `fixedEntryCounts` on all 109 gauntlets,
+> so the toggle activates on deploy.
 
 > **Execution note (2026-07-16, WP-384 / EC-413).** Landed as designed with
 > the five EC-draft reconciliations recorded in the WP addendum: (1) record

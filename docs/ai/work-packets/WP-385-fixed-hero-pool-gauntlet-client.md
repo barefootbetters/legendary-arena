@@ -1,11 +1,32 @@
 # WP-385 — Fixed-Hero-Pool Gauntlet Division: Division Toggle + Hero-Pool Display (Legends-Board Client)
 
-**Status:** Drafted 2026-07-16 (design-locked by D-24187; EC pending — execution-prep is the next step; **BLOCKED on WP-384** until it executes)
+**Status:** Drafted 2026-07-16; **execution-ready + executing 2026-07-16** (EC-414 drafted at execution-prep; the WP-384 hard dep executed the same day via PR #784)
 **Primary Layer:** Client (`apps/legends-board/**` only)
-**Dependencies:** WP-384 (the D-24187 server half — must execute first), WP-345 ✅ (player-count selector + roster display + challenge links), WP-343 ✅ (gauntlet index/panel + hash routing), D-24187 (design lock), D-24134 / D-24131 (parent designs), D-24135 (routing + display-format locks)
-**EC:** pending (drafted at execution-prep)
-**Baseline:** `origin/main` at `9340236b` (2026-07-16)
+**Dependencies:** WP-384 ✅ (the D-24187 server half — executed 2026-07-16, PR #784), WP-345 ✅ (player-count selector + roster display + challenge links), WP-343 ✅ (gauntlet index/panel + hash routing), D-24187 (design lock), D-24134 / D-24131 (parent designs), D-24135 (routing + display-format locks)
+**EC:** [EC-414](../execution-checklists/EC-414-fixed-hero-pool-gauntlet-client.checklist.md) (drafted 2026-07-16 at execution-prep)
+**Baseline:** `origin/main` at `a3a43666` (2026-07-16, execution; drafted @ `9340236b`)
 **User-Visible Surface:** legends.legendary-arena.com (the fixed-hero-pool championship division beside each open gauntlet board; hero-pool display on fixed entries)
+
+> **Execution addendum (2026-07-16, EC-414 draft).** Five reconciliations
+> against the shipped WP-345 code, locked at EC time:
+> (1) **7-file set** — the §Files item-8 fork resolves to the pure helpers
+> living in `gauntletDisplay.ts` + its test (no `App.test.ts`), the EC-379
+> precedent.
+> (2) **The division is the route, not component state** — the active
+> division derives from the routed board name via a pure
+> `isFixedBoardName`; hash routing already carries all navigation state.
+> (3) **The client mirrors `heroPool` as an OPTIONAL field on the single
+> `GauntletSnapshotEntry` type** (the server's distinct
+> `GauntletFixedSnapshotEntry` collapses into the optional field —
+> additive, old snapshots degrade).
+> (4) **Index fixed chips render CLAIMED counts only** (noise control on
+> the 105-row index; the unclaimed fixed state lives on the board panel's
+> toggle) — entries without `fixedEntryCounts` render exactly the WP-345
+> chips.
+> (5) **The WP-345 unclaimed-count guard extends to fixed boards** via a
+> pure `findRoutedCountTab` (open then fixed tab sets), so an unclaimed
+> `-fixed[-p<N>]` deep link renders the open-championship state, never a
+> 404 fetch — satisfying AC-6 with the tab-link contract intact.
 
 ---
 

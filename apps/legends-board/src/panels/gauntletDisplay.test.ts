@@ -4,10 +4,14 @@ import assert from "node:assert/strict";
 import {
   buildAttractBoardList,
   buildChallengeUrl,
+  buildFixedCountTabs,
   buildPlayerCountTabs,
+  findRoutedCountTab,
   formatAverageScore,
+  formatHeroPool,
   formatRoster,
   groupGauntletsBySet,
+  isFixedBoardName,
   resolveBoardIndexEntry,
   rosterForEntry,
 } from "./gauntletDisplay.ts";
@@ -224,5 +228,107 @@ describe("resolveBoardIndexEntry (WP AC-4)", () => {
       resolveBoardIndexEntry("gauntlet-core-thanos-p3", gauntlets),
       null,
     );
+  });
+
+  it("strips `-fixed` (solo) to the parent gauntlet entry (WP-385)", () => {
+    const resolved = resolveBoardIndexEntry(
+      "gauntlet-core-dr-doom-fixed",
+      gauntlets,
+    );
+    assert.equal(resolved?.board, "gauntlet-core-dr-doom");
+  });
+
+  it("strips `-p<N>` THEN `-fixed` for a fixed per-count board (WP-385)", () => {
+    const resolved = resolveBoardIndexEntry(
+      "gauntlet-core-dr-doom-fixed-p2",
+      gauntlets,
+    );
+    assert.equal(resolved?.board, "gauntlet-core-dr-doom");
+  });
+
+  it("returns null for an unknown fixed board", () => {
+    assert.equal(
+      resolveBoardIndexEntry("gauntlet-core-thanos-fixed-p3", gauntlets),
+      null,
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-385 — fixed-hero-pool division helpers (D-24187)
+// ---------------------------------------------------------------------------
+
+describe("isFixedBoardName (WP-385)", () => {
+  it("recognizes the fixed grammar with and without a count suffix", () => {
+    assert.equal(isFixedBoardName("gauntlet-core-dr-doom-fixed"), true);
+    assert.equal(isFixedBoardName("gauntlet-core-dr-doom-fixed-p3"), true);
+  });
+
+  it("rejects open-division names", () => {
+    assert.equal(isFixedBoardName("gauntlet-core-dr-doom"), false);
+    assert.equal(isFixedBoardName("gauntlet-core-dr-doom-p2"), false);
+  });
+});
+
+describe("buildFixedCountTabs (WP-385 AC-1)", () => {
+  it("links claimed fixed counts with the `-fixed[-p<N>]` grammar", () => {
+    const tabs = buildFixedCountTabs(
+      freshIndexEntry({
+        fixedEntryCounts: { "1": 1, "2": 0, "3": 0, "4": 0, "5": 0 },
+      }),
+    );
+    assert.equal(tabs.length, 5);
+    assert.equal(tabs[0]?.boardName, "gauntlet-core-dr-doom-fixed");
+    assert.equal(tabs[0]?.isClaimed, true);
+    assert.equal(tabs[1]?.boardName, "gauntlet-core-dr-doom-fixed-p2");
+    assert.equal(tabs[1]?.isClaimed, false);
+  });
+
+  it("returns an EMPTY array when `fixedEntryCounts` is absent (old-snapshot degrade)", () => {
+    assert.deepEqual(buildFixedCountTabs(freshIndexEntry()), []);
+  });
+});
+
+describe("findRoutedCountTab (WP-385 — the unclaimed-guard extension)", () => {
+  const entry = freshIndexEntry({
+    fixedEntryCounts: { "1": 1, "2": 0, "3": 0, "4": 0, "5": 0 },
+  });
+
+  it("finds an open-division tab by board name", () => {
+    const tab = findRoutedCountTab(entry, "gauntlet-core-dr-doom-p2");
+    assert.equal(tab?.playerCount, 2);
+  });
+
+  it("finds a fixed-division tab by board name, including unclaimed counts", () => {
+    const claimedTab = findRoutedCountTab(entry, "gauntlet-core-dr-doom-fixed");
+    assert.equal(claimedTab?.isClaimed, true);
+    const unclaimedTab = findRoutedCountTab(
+      entry,
+      "gauntlet-core-dr-doom-fixed-p3",
+    );
+    assert.equal(unclaimedTab?.playerCount, 3);
+    assert.equal(unclaimedTab?.isClaimed, false);
+  });
+
+  it("returns null for a name in neither division", () => {
+    assert.equal(findRoutedCountTab(entry, "gauntlet-core-loki"), null);
+  });
+});
+
+describe("formatHeroPool (WP-385 AC-3)", () => {
+  it("strips the set prefix and joins with ' · ' (pinned string)", () => {
+    assert.equal(
+      formatHeroPool([
+        "core/black-widow",
+        "core/iron-man",
+        "msp1/spider-man",
+      ]),
+      "black-widow · iron-man · spider-man",
+    );
+  });
+
+  it("returns an empty string for a missing or empty pool (never throws)", () => {
+    assert.equal(formatHeroPool(undefined), "");
+    assert.equal(formatHeroPool([]), "");
   });
 });
