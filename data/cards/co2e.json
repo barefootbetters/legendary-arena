@@ -2670,6 +2670,22 @@
           ]
         }
       ]
+    },
+    {
+      "id": 9,
+      "name": "Enshrouded Identity",
+      "slug": "enshrouded-identity",
+      "imageUrl": "https://images.legendary-arena.com/co2e/co2e-sc-enshrouded-identity.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 3 Twists, plus 1 Twist per player. There is no Mastermind yet. Instead, put 3 S.H.I.E.L.D. Officers next to the Mastermind space as \"Bodyguards.\"",
+            "Special Rules: Bodyguards are Villains with 3[icon:attack] and \"Fight: Either KO this card or choose a player to gain it as a Hero.\" Whenever a Master Strike occurs, if there is no Mastermind yet, add a Bodyguard instead. The first time there are no Bodyguards, add a random Mastermind to the game. (Do any \"Start of Game\" effects it has.) You can't fight that Mastermind while it has any Bodyguards.",
+            "Twist: Add two Bodyguards.",
+            "Evil Wins: When there are 9 Bodyguards or the Villain Deck runs out."
+          ]
+        }
+      ]
     }
   ],
   "bystanders": [
