@@ -1832,10 +1832,44 @@
           "name": "Bitter Captor",
           "slug": "bitter-captor",
           "tactic": true,
-          "vAttack": 8,
+          "vAttack": 9,
+          "vp": 6,
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mt-magneto-bitter-captor.webp",
           "abilities": [
-            "Fight: Recruit an [team:x-men] Hero from the HQ for free."
+            "Fight: Gain an [team:x-men] Hero from the HQ or gain a Sidekick."
+          ]
+        },
+        {
+          "name": "Crush in Steel",
+          "slug": "crush-in-steel",
+          "tactic": true,
+          "vAttack": 9,
+          "vp": 6,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mt-magneto-crush-in-steel.webp",
+          "abilities": [
+            "Fight: Each other player KOs one of their non-grey Heroes."
+          ]
+        },
+        {
+          "name": "Electromagnetic Shockwave",
+          "slug": "electromagnetic-shockwave",
+          "tactic": true,
+          "vAttack": 9,
+          "vp": 6,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mt-magneto-electromagnetic-shockwave.webp",
+          "abilities": [
+            "Fight: Each other player discards an [team:x-men] Hero or discards down to three cards."
+          ]
+        },
+        {
+          "name": "Imprisoning Sphere",
+          "slug": "imprisoning-sphere",
+          "tactic": true,
+          "vAttack": 9,
+          "vp": 6,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-mt-magneto-imprisoning-sphere.webp",
+          "abilities": [
+            "Fight: You may set aside one of your [team:x-men] or [team:shield] Heroes. When you draw a new hand this turn, add that Hero to your hand as an extra card."
           ]
         }
       ]
