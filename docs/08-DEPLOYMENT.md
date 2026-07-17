@@ -122,25 +122,38 @@ if needed during verification.
 
 ## Environment Variables (Production)
 
-These variables are configured in the Render.com dashboard:
+The server reads these at runtime; they are configured in the Render.com
+dashboard. The dashboard (and `render.yaml`) is the authoritative source
+for the live set — this table lists the load-bearing ones, not every key:
 
 | Variable | Where set | Notes |
 |---|---|---|
 | `DATABASE_URL` | Render (auto-wired) | From managed PostgreSQL — do NOT set manually |
 | `NODE_ENV` | Render dashboard | `production` |
-| `GAME_SERVER_URL` | Render dashboard | Public URL of the Render service |
 | `JWT_SECRET` | Render dashboard | 32+ byte hex — rotate by updating and redeploying |
-| `R2_PUBLIC_URL` | Render dashboard | `https://images.legendary-arena.com` |
-| `CF_PAGES_URL` | Render dashboard | `https://cards.legendary-arena.com` |
-| `VITE_GAME_SERVER_URL` | Render dashboard | Same as `GAME_SERVER_URL` |
+| `PUBLIC_BASE_URL` | Render dashboard | Public URL of the arena client; Stripe redirect base ([billing.config.ts](../apps/server/src/billing/billing.config.ts)) |
 | `PORT` | Render (auto-injected) | Do NOT set in dashboard — Render injects automatically |
-| `EXPECTED_DB_NAME` | Render dashboard | Database name for connection verification |
+
+Plus the credential/config groups the server reads at runtime: Stripe
+(`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ALLOWLIST`),
+Hanko (`HANKO_*`), R2 (`R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`,
+`R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_LEGENDS_BUCKET`), Brevo
+(`BREVO_*`), the `HANDOFF_SUBMIT_TOKEN` / `INSPECTION_SUBMIT_TOKEN` /
+`SWEEP_SUBMIT_TOKEN` handoff tokens, `ANALYTICS_USER_ID_SALT`, and the
+`LEGENDS_PUBLISHER_*` toggles. Consult the Render dashboard for live values.
 
 **Critical:** `PORT` is auto-injected by Render. Setting it manually in
 the dashboard causes port conflicts and silent startup failures.
 
-See `.env.example` for the complete reference with generation commands
-and placeholder values.
+**Not Render variables — do not add them to the dashboard.**
+`CF_PAGES_URL`, `R2_PUBLIC_URL`, `GAME_SERVER_URL`, `VITE_GAME_SERVER_URL`,
+and `EXPECTED_DB_NAME` are **not read by the running server**. They are
+local-dev / build-time inputs: the connection health-check scripts
+(`scripts/check-connections.mjs`, `scripts/ec/health-check.ec.mjs`) read
+them from a local `.env` to probe reachability, and `VITE_GAME_SERVER_URL`
+is baked into the arena-client bundle at build time. Setting them on Render
+has no effect. See `.env.example` for the full local reference with
+generation commands and placeholder values.
 
 ---
 
