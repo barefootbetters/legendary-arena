@@ -1825,6 +1825,19 @@
             "Always Leads: HYDRA",
             "Master Strike: Each player KOs a Hero from their hand."
           ]
+        },
+        {
+          "name": "Epic Red Skull",
+          "slug": "epic-red-skull",
+          "tactic": false,
+          "vAttack": "10+",
+          "vp": 6,
+          "imageUrl": "https://images.legendary-arena.com/co2e/co2e-me-red-skull.webp",
+          "abilities": [
+            "Red Skull gets +2[icon:attack] for each HYDRA Villain in the city and/or Escape Pile.",
+            "Always Leads: Any \"HYDRA\" Villain Group",
+            "Master Strike: Each player discards a [hc:tech] Hero or discards down to 3 cards."
+          ]
         }
       ]
     },
