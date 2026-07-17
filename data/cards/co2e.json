@@ -2632,15 +2632,15 @@
       "cards": [
         {
           "abilities": [
-            "Setup: 5 Twists. 3 additional Twists next to this Scheme. 18 total Bystanders in the Villain Deck.",
-            "Special Rules: Bystanders in the Villain Deck count as Killbot Villains, with [icon:attack] equal to the number of Twists next to this Scheme.",
-            "Twist: Put the Twist next to this Scheme.",
-            "Evil Wins: If 5 “Killbots“ escape."
+            "Setup: 10 Twists. Stack 1 additional Twist next to this Scheme as a \"Killgorithm.\"",
+            "Special Rules: Bystanders in the Villain Deck are \"Killbot\" Villains with [icon:attack] equal to the number of Killgorithms. They have: \"Fight: Rescue this as a Bystander.\"",
+            "Twists 1-9: Add this Twist to the Killgorithms. Two Killbots enter the city from the Bystander Deck.",
+            "Twist 10: All Killbots in the city escape.",
+            "Evil Wins: When there are 6 Bystander cards in the Escape Pile."
           ]
         }
       ],
-      "villainDeckTwistCount": 5,
-      "villainDeckBystanderCount": 18
+      "villainDeckTwistCount": 10
     },
     {
       "id": 7,
@@ -2650,9 +2650,9 @@
       "cards": [
         {
           "abilities": [
-            "Setup: For 2-3 players, use 8 Twists. For 4-5 players, use 5 Twists. If only 2 players, use only 4 Heroes in the Hero Deck.",
-            "Twist: KO all the Heroes in the HQ.",
-            "Evil Wins: If the Hero Deck runs out."
+            "Setup: 1-3 players: 6 Twists. 4-5 players: 5 Twists. For exactly 2 players: Use 4 Heroes in the Hero Deck.",
+            "Twist: KO all Heroes from the HQ.",
+            "Evil Wins: When the Hero Deck runs out."
           ]
         }
       ]
@@ -2666,9 +2666,10 @@
         {
           "abilities": [
             "Setup: 8 Twists.",
-            "Twist: Put the Twist next to this Scheme.",
-            "Twist 5-6: Each player gains a Wound.",
-            "Twist 7: Each player gains 3 Wounds.",
+            "Twists 1-3: Each player discards a card.",
+            "Twist 4: Each player discards two cards.",
+            "Twists 5-6: Each player gains a Wound.",
+            "Twist 7: Each player gains two Wounds.",
             "Twist 8: Evil Wins!"
           ]
         }
