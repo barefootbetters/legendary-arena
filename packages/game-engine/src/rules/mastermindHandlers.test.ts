@@ -12,6 +12,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { mastermindStrikeHandler } from './mastermindHandlers.js';
 import type { LegendaryGameState } from '../types.js';
+import { WOUND_EXT_ID } from '../setup/pilesInit.js';
 
 // ---------------------------------------------------------------------------
 // Test helper
@@ -416,6 +417,233 @@ describe('mastermindStrikeHandler — Magneto Master Strike', () => {
       1,
       'Generic bystander capture still runs for any mastermind',
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Red Skull Master Strike dispatcher tests (WP-386 / D-24188)
+// ---------------------------------------------------------------------------
+
+describe('mastermindStrikeHandler — Red Skull Master Strike', () => {
+  /** A full CardStatEntry with the given recruit cost; other fields inert. */
+  function stat(cost: number) {
+    return {
+      attack: 0,
+      recruit: 0,
+      cost,
+      fightCost: 0,
+      fightCostMode: 'static' as const,
+      fightCostBase: 0,
+    };
+  }
+
+  /**
+   * Creates a Red Skull-shaped state with per-player hands and an optional
+   * cardStats map (heroes absent from the map are treated as cost 0).
+   * `mastermindId` defaults to `core/red-skull`.
+   */
+  function makeRedSkullState(
+    hands: Record<string, string[]>,
+    cardStats: Record<string, ReturnType<typeof stat>> = {},
+    mastermindId = 'core/red-skull',
+  ): LegendaryGameState {
+    const gameState = makeTestState();
+    gameState.selection = { ...gameState.selection, mastermindId };
+    gameState.cardStats = cardStats as LegendaryGameState['cardStats'];
+    gameState.playerZones = {};
+    for (const [playerId, hand] of Object.entries(hands)) {
+      gameState.playerZones[playerId] = {
+        deck: [],
+        hand: [...hand],
+        discard: [],
+        inPlay: [],
+        victory: [],
+      };
+    }
+    return gameState;
+  }
+
+  it('KOs exactly one Hero from each player and appends it to G.ko', () => {
+    const gameState = makeRedSkullState(
+      { '0': ['hero-a', 'hero-b'], '1': ['hero-c'] },
+      { 'hero-a': stat(2), 'hero-b': stat(5), 'hero-c': stat(3) },
+    );
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike-card' }, {});
+
+    // Player 0: lowest-cost of {hero-a:2, hero-b:5} → hero-a KO'd.
+    assert.deepStrictEqual(gameState.playerZones['0']!.hand, ['hero-b']);
+    // Player 1: its only Hero KO'd.
+    assert.deepStrictEqual(gameState.playerZones['1']!.hand, []);
+    // Players resolve in sorted order (0 then 1).
+    assert.deepStrictEqual(gameState.ko, ['hero-a', 'hero-c']);
+  });
+
+  it('picks the lowest-cost Hero, breaking a cost tie by lowest hand index', () => {
+    const gameState = makeRedSkullState(
+      { '0': ['hero-hi', 'hero-tie-1', 'hero-tie-2'] },
+      { 'hero-hi': stat(4), 'hero-tie-1': stat(1), 'hero-tie-2': stat(1) },
+    );
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike-card' }, {});
+
+    // Both cost 1; the earlier hand index (hero-tie-1) is KO'd.
+    assert.deepStrictEqual(gameState.ko, ['hero-tie-1']);
+    assert.deepStrictEqual(gameState.playerZones['0']!.hand, [
+      'hero-hi',
+      'hero-tie-2',
+    ]);
+  });
+
+  it('treats a statless starter as cost 0 and picks it over a priced Hero', () => {
+    const gameState = makeRedSkullState(
+      { '0': ['priced-hero', 'shield-agent'] },
+      { 'priced-hero': stat(3) }, // shield-agent absent → cost 0
+    );
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike-card' }, {});
+
+    assert.deepStrictEqual(gameState.ko, ['shield-agent']);
+    assert.deepStrictEqual(gameState.playerZones['0']!.hand, ['priced-hero']);
+  });
+
+  it('never KOs a Wound: an all-Wound hand takes no KO and logs the no-Hero line', () => {
+    const gameState = makeRedSkullState({ '0': [WOUND_EXT_ID, WOUND_EXT_ID] });
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike-card' }, {});
+
+    assert.deepStrictEqual(gameState.playerZones['0']!.hand, [
+      WOUND_EXT_ID,
+      WOUND_EXT_ID,
+    ]);
+    assert.deepStrictEqual(gameState.ko, []);
+    const noHeroLine = gameState.messages.find(
+      (message) =>
+        message.includes('Red Skull') &&
+        message.includes('Player 0') &&
+        message.includes('no Hero'),
+    );
+    assert.ok(noHeroLine, 'an all-Wound hand must log the no-Hero line');
+  });
+
+  it('an empty hand takes no KO and logs the no-Hero line', () => {
+    const gameState = makeRedSkullState({ '0': [] });
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike-card' }, {});
+
+    assert.deepStrictEqual(gameState.playerZones['0']!.hand, []);
+    assert.deepStrictEqual(gameState.ko, []);
+    const noHeroLine = gameState.messages.find(
+      (message) =>
+        message.includes('Red Skull') &&
+        message.includes('Player 0') &&
+        message.includes('no Hero'),
+    );
+    assert.ok(noHeroLine, 'an empty hand must log the no-Hero line');
+  });
+
+  it('a Wound-plus-Hero hand KOs only the Hero', () => {
+    const gameState = makeRedSkullState(
+      { '0': [WOUND_EXT_ID, 'hero-x'] },
+      { 'hero-x': stat(2) },
+    );
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike-card' }, {});
+
+    assert.deepStrictEqual(gameState.ko, ['hero-x']);
+    assert.deepStrictEqual(gameState.playerZones['0']!.hand, [WOUND_EXT_ID]);
+  });
+
+  it('logs one KO line per player that KOs a Hero', () => {
+    const gameState = makeRedSkullState(
+      { '0': ['hero-a'], '1': ['hero-b'] },
+      { 'hero-a': stat(1), 'hero-b': stat(1) },
+    );
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike-card' }, {});
+
+    const player0Line = gameState.messages.find(
+      (message) =>
+        message.includes('Red Skull') &&
+        message.includes('Player 0') &&
+        message.includes("KO'd"),
+    );
+    const player1Line = gameState.messages.find(
+      (message) =>
+        message.includes('Red Skull') &&
+        message.includes('Player 1') &&
+        message.includes("KO'd"),
+    );
+    assert.ok(player0Line, 'Player 0 KO line present');
+    assert.ok(player1Line, 'Player 1 KO line present');
+  });
+
+  it('takes the branch for co2e/red-skull as well', () => {
+    const gameState = makeRedSkullState(
+      { '0': ['hero-a', 'hero-b'] },
+      { 'hero-a': stat(2), 'hero-b': stat(5) },
+      'co2e/red-skull',
+    );
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike-card' }, {});
+
+    assert.deepStrictEqual(gameState.ko, ['hero-a']);
+    assert.deepStrictEqual(gameState.playerZones['0']!.hand, ['hero-b']);
+  });
+
+  it('does NOT run the Red Skull branch for a non-Red-Skull mastermind', () => {
+    const gameState = makeRedSkullState(
+      { '0': ['hero-a', 'hero-b'] },
+      { 'hero-a': stat(2), 'hero-b': stat(5) },
+      'core/other-boss',
+    );
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike-card' }, {});
+
+    assert.deepStrictEqual(
+      gameState.playerZones['0']!.hand,
+      ['hero-a', 'hero-b'],
+      'no KO for a non-Red-Skull mastermind',
+    );
+    assert.deepStrictEqual(gameState.ko, []);
+  });
+
+  it('preserves generic strike behavior: bystander capture, counter, one emission', () => {
+    const gameState = makeRedSkullState(
+      { '0': ['hero-a', 'hero-b'] },
+      { 'hero-a': stat(2), 'hero-b': stat(5) },
+    );
+    gameState.piles.bystanders = ['bystander-001', 'bystander-002'];
+
+    const effects = mastermindStrikeHandler(
+      gameState,
+      {},
+      { cardId: 'strike-card' },
+      {},
+    );
+
+    // D-15401 bystander capture still runs on the Red Skull path.
+    assert.equal(gameState.mastermind.attachedBystanders.length, 1);
+    assert.equal(gameState.piles.bystanders.length, 1);
+    // Generic counter effect still returned.
+    const counterEffect = effects.find(
+      (effect) =>
+        effect.type === 'modifyCounter' &&
+        'counter' in effect &&
+        (effect as { counter: string }).counter === 'masterStrikeCount',
+    );
+    assert.ok(
+      counterEffect,
+      'masterStrikeCount effect must still be returned on a Red Skull strike',
+    );
+    // Exactly one WP-200 emission.
+    assert.equal(gameState.notableEvents.length, 1);
+    assert.equal(
+      gameState.notableEvents[0]!.type,
+      'mastermindStrikeResolved',
+    );
+    // And the KO still happened.
+    assert.deepStrictEqual(gameState.ko, ['hero-a']);
   });
 });
 
