@@ -1410,6 +1410,22 @@
       "abilityIndex": 0,
       "abilityText": "To play this card, you must discard three cards from your hand.",
       "reason": "WP-383 / D-24184 \u2014 discard-to-play cost with n=3 (the only multi-discard card). The PendingDiscardToPlay `remaining` counter supports n>1 structurally, but the 3-sequential-prompt resolve UX and its tests are out of scope for the first ship; the 5 single-discard cards are the target. A future marker-only addition of [keyword:discard-to-play:3] enables it once the multi-discard flow is test-covered."
+    },
+    {
+      "setAbbr": "core",
+      "heroSlug": "hawkeye",
+      "cardSlug": "covering-fire",
+      "abilityIndex": 0,
+      "abilityText": "[hc:tech]: Choose one: each other player draws a card or each other player discards a card.",
+      "reason": "choose-one-each-other-player: a conditional choose-one whose BOTH branches act on every OTHER player. Requires a pendingHeroChoice two-option prompt PLUS each-other-player draw/discard executors \u2014 a compound not expressible with current executors. Surfaced by the 2026-07-16 Red Skull live-game review (match TYB2-jQuUc_, turn 18: the [hc:tech] condition was met and the effect silently no-oped; previously untracked hollow)."
+    },
+    {
+      "setAbbr": "msp1",
+      "heroSlug": "hawkeye",
+      "cardSlug": "covering-fire",
+      "abilityIndex": 0,
+      "abilityText": "[hc:tech]: Choose one: each other player draws a card or each other player discards a card.",
+      "reason": "choose-one-each-other-player: identical reprint of core/hawkeye/covering-fire (see that entry); deferred for the same reason."
     }
   ]
 }
