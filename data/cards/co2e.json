@@ -2578,18 +2578,19 @@
     },
     {
       "id": 3,
-      "name": "Legacy Virus, The",
+      "name": "The Legacy Virus",
       "slug": "the-legacy-virus",
       "imageUrl": "https://images.legendary-arena.com/co2e/co2e-sc-the-legacy-virus.webp",
       "cards": [
         {
           "abilities": [
-            "Setup: 8 Twists. Wound stack holds 6 Wounds per player.",
-            "Twist: Each player reveals a [hc:tech] Hero or gains a Wound.",
-            "Evil Wins: If the Wound stack runs out."
+            "Setup: 9 Twists. Wound Deck holds 6 Wounds per player.",
+            "Twist: Stack this Twist next to the Scheme as a \"Virus Mutation.\" Then each player reveals a Hero whose cost is greater than the number of Virus Mutations or gains a Wound.",
+            "Evil Wins: When the Wound Deck or the Villain Deck runs out."
           ]
         }
-      ]
+      ],
+      "villainDeckTwistCount": 9
     },
     {
       "id": 4,
