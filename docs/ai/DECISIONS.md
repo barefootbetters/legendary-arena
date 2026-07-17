@@ -29233,7 +29233,7 @@ Protect this file.
 
 ### D-24187 — Fixed-hero-pool gauntlet prestige division (`team_key` persistence + pool-constrained standings)
 
-**Status:** Active 2026-07-16 (design lock; ratified at SPEC draft, the D-24131/D-24134 pattern). **WP-384 (server) executed 2026-07-16** (EC-413; migration 034 auto-applies via the Render migrate step on deploy; the artifact backfill is operator-run and open until run against production). **WP-385 (client) executed 2026-07-16** (EC-414; the arc is code-complete — D-24026 live-verify on the CF Pages deploy; launch state = every fixed count unclaimed, by design).
+**Status:** Active 2026-07-16 (design lock; ratified at SPEC draft, the D-24131/D-24134 pattern). **WP-384 (server) executed 2026-07-16** (EC-413; migration 034 auto-applied via the Render migrate step on deploy). **WP-385 (client) executed 2026-07-16** (EC-414; **D-24026 live-verified on the deployed legends board the same day** — the division toggle, the fixed-board championship subtitle, and an unclaimed `-fixed` deep link all render on production; recorded on PR #787). **The production backfill resolved as a NO-OP 2026-07-16**: the dry-run against production (Render Web Shell) found `legendary.competitive_scores` EMPTY — zero rows predate migration 034, so every score ever stored carries `team_key` from birth via step 14d; the script stays in the repo for completeness but never needs a production `--write` (recorded on PR #784). **The arc is fully closed — no open operator items.**
 
 > **Execution note (2026-07-16, WP-385 / EC-414).** Landed as designed with
 > the five EC-draft reconciliations recorded in the WP addendum: (1) 7-file

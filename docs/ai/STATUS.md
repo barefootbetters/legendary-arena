@@ -31,11 +31,14 @@ dev smoke verified on the worktree `vite preview`: populated open board
 `black-widow · iron-man · spider-man`), an unclaimed `-fixed-p2` deep link
 rendering the championship-open state, and the index's `★ 1p` chip — zero
 console errors. **The live index already publishes `fixedEntryCounts` on all
-109 gauntlets** (the WP-384 deploy's publish cycle), so the toggle goes live
-with the CF Pages deploy — D-24026 live-verify on the deployed surface
-(launch state = every fixed count unclaimed, by design). **Completes the
-D-24187 fixed-hero-pool arc (WP-384 server + WP-385 client)**; the remaining
-operator item is the production `team_key` backfill run.
+109 gauntlets** (the WP-384 deploy's publish cycle). **D-24026 LIVE-VERIFIED
+2026-07-16 on the deployed board** (the division toggle, the fixed-board
+championship subtitle, and an unclaimed `-fixed` deep link all render on the
+real 8-scheme Dr. Doom gauntlet; recorded on PR #787; launch state = every
+fixed count unclaimed, by design). **Completes the D-24187 fixed-hero-pool
+arc (WP-384 server + WP-385 client) with no open operator items** — the
+production `team_key` backfill resolved as a no-op the same day (see the
+WP-384 entry below).
 
 ### WP-384 / EC-413 Executed — Fixed-hero-pool gauntlet division: `team_key` persistence + backfill + pool-constrained standings + publisher (D-24187 server half) (2026-07-16)
 
@@ -74,9 +77,13 @@ applied (incl. the WP AC-5 fixed-division matrix, the 15-key runtime lock,
 order-independence, and SQL↔JS sort equivalence); backfill live-verified on
 seeded rows (dry-run reports without writing; `--write` fills exactly the
 artifact-backed row; second `--write` no-op; artifact-less rows stay NULL).
-**Production backfill is operator-run, not deploy-run** — an open operator
-item until `node --env-file=.env scripts/backfill-team-key.mjs --write` runs
-against production (migration 034 itself auto-applies on deploy).
+**Production backfill RESOLVED AS A NO-OP (2026-07-16).** The dry-run
+executed against production via the Render Web Shell reported zero rows with
+NULL `team_key`, and a direct count confirmed why: `legendary.competitive_scores`
+is **empty in production** — no row predates migration 034 (which auto-applied
+on deploy), so every score ever stored carries its team identity from birth via
+step 14d. The script stays in the repo for completeness but never needs a
+production `--write` (recorded on PR #784).
 
 ### INFRA fix — registry-viewer loadout preview resolves composition ids by extId, not the flatten `key` (D-24186 Active) (2026-07-15)
 
