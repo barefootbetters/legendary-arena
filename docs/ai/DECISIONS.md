@@ -29433,3 +29433,33 @@ markers; the per-player KO-target choice prompt.
 **Packet:** WP-386 (EC-415). **Executed:** 2026-07-17.
 
 Protect this file.
+
+### D-24189 — MastermindCardSchema gains an optional per-card `vp`
+
+**Decision.** Add an optional, additive `vp` field
+(`z.union([z.string(), z.number()]).nullable().optional()`) to
+`MastermindCardSchema` in `packages/registry/src/schema.ts` and its mirror in
+`apps/registry-viewer/src/registry/schema.ts`.
+
+**Why.** The group-level `MastermindSchema.vp` records the base mastermind's
+victory-point value. Some sets — Core Set 2nd Edition (`co2e`) is the first —
+print a *distinct* VP on the **epic** face and on **tactic** cards. Those
+per-card values had nowhere to live: `MastermindCardSchema` is a plain
+`z.object`, so Zod `safeParse` silently stripped any `vp` key from a mastermind
+card, making the authored value invisible. The field makes the data valid and
+retained across the registry contract.
+
+**Shape.** String-or-number-or-null, matching `VillainCardSchema.vp`'s
+cross-set flexibility. Optional because most cards (base faces, and every
+mastermind across the other 40 sets) carry no per-card `vp` and inherit the
+group-level value.
+
+**Scope / not-yet.** This is the data-contract field only. Surfacing the value
+in the Registry Viewer card panel is a separate change — the viewer's
+`FlatCard` type, `flattenSet`, and `CardDetail` do not yet carry or render a
+mastermind `vp` (nor `vAttack`); that render wiring is deferred and would
+sensibly cover both.
+
+**Executed:** 2026-07-17.
+
+Protect this file.
