@@ -32,7 +32,7 @@
     "docs"
   ],
   "scripts": {
-    "test": "node --import tsx --test src/**/*.test.ts",
+    "test": "node --import tsx --test \"src/**/*.test.ts\"",
     "build": "tsc -p tsconfig.build.json",
     "validate": "tsx scripts/validate.ts",
     "upload": "tsx scripts/upload-r2.ts",

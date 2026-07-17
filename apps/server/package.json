@@ -7,7 +7,7 @@
   "main": "src/server.mjs",
   "scripts": {
     "start": "cd ../.. && node --import ./apps/server/node_modules/tsx/dist/loader.mjs apps/server/src/index.mjs",
-    "test": "node --import tsx --test scripts/**/*.test.ts src/**/*.test.ts"
+    "test": "node --import tsx --test \"scripts/**/*.test.ts\" \"src/**/*.test.ts\""
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.600.0",

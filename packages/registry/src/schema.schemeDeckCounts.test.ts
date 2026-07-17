@@ -27,6 +27,12 @@ import { SetDataSchema } from "./schema.js";
 // lives at the monorepo root under data/cards/, two directory levels up.
 const cardsDir = join(process.cwd(), "..", "..", "data", "cards");
 
+// why: the set census lives in data/metadata/sets.json — deriving the expected
+// file list from it means adding a new set (e.g. co2e, set 41 in PR #766) does
+// not re-break this suite with a hardcoded count.
+const setsMetadataPath = join(process.cwd(), "..", "..", "data", "metadata", "sets.json");
+const registeredSets = JSON.parse(readFileSync(setsMetadataPath, "utf8")) as Array<{ abbr: string }>;
+
 type Scheme = {
   slug: string;
   villainDeckTwistCount?: number;
@@ -121,11 +127,17 @@ describe("defaults and carve-outs are not over-encoded (WP-169 / D-16804)", () =
   });
 });
 
-describe("all 40 regenerated data/cards/*.json validate against SetDataSchema", () => {
+describe("all regenerated data/cards/*.json validate against SetDataSchema", () => {
   const setFiles = readdirSync(cardsDir).filter((file) => file.endsWith(".json"));
 
-  it("the cards directory holds exactly 40 set files", () => {
-    assert.equal(setFiles.length, 40, "data/cards/ must contain all 40 regenerated set files");
+  it("the cards directory holds exactly one set file per set registered in sets.json", () => {
+    const registeredAbbrs = registeredSets.map((set) => set.abbr).sort();
+    const fileAbbrs = setFiles.map((file) => file.replace(/\.json$/, "")).sort();
+    assert.deepEqual(
+      fileAbbrs,
+      registeredAbbrs,
+      "data/cards/ must contain exactly one regenerated set file per entry in data/metadata/sets.json (a mismatch means a set was registered without regenerating its cards, or an orphan file was left behind)",
+    );
   });
 
   for (const file of setFiles) {
