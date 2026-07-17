@@ -18,7 +18,7 @@ import { getKioskConfig, type KioskConfig } from "./attract/kioskMode";
 import { createHashRouteRef } from "./router/hashRoute";
 import {
   buildAttractBoardList,
-  buildPlayerCountTabs,
+  findRoutedCountTab,
   resolveBoardIndexEntry,
 } from "./panels/gauntletDisplay";
 import AttractCycler from "./attract/AttractCycler.vue";
@@ -198,10 +198,11 @@ function isRoutedCountUnclaimed(boardName: string): boolean {
   if (indexEntry === null) {
     return false;
   }
-  const routedTab = buildPlayerCountTabs(indexEntry).find(
-    (tab) => tab.boardName === boardName,
-  );
-  if (routedTab === undefined) {
+  // why: WP-385 — the guard searches BOTH divisions' tab sets, so an
+  // unclaimed `-fixed[-p<N>]` deep link renders the open-championship
+  // state instead of fetching a board file that does not exist.
+  const routedTab = findRoutedCountTab(indexEntry, boardName);
+  if (routedTab === null) {
     return false;
   }
   return !routedTab.isClaimed;

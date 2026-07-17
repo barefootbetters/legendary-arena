@@ -65,6 +65,12 @@ export interface GauntletSnapshotEntry {
   // absence and the panel falls back to `handle`. Handle-ASC roster;
   // `handle` equals `players[0]`. Never imported cross-package.
   readonly players?: readonly string[];
+  // why: additive (WP-385 / D-24187 §6) and OPTIONAL — the server publishes
+  // fixed-division boards with a distinct GauntletFixedSnapshotEntry type
+  // whose only extra field is `heroPool`; the client's single entry type
+  // serves both divisions by carrying it optionally (open-board entries and
+  // old snapshots simply lack it). Set-qualified hero ids, sorted ASC.
+  readonly heroPool?: readonly string[];
 }
 
 /** A gauntlet board snapshot at `legends/v1/<board>.json` — written only
@@ -111,6 +117,11 @@ export interface GauntletIndexEntry {
   // lacks these, so the panels degrade to WP-343 behavior (solo-only tab, no
   // challenge links) rather than crash. Never imported cross-package.
   readonly entryCounts?: GauntletEntryCounts;
+  // why: additive (WP-385 / D-24187 §6) and OPTIONAL — per-count claim
+  // state for the fixed-hero-pool division; a pre-WP-384 index artifact
+  // lacks it, which suppresses the division toggle and fixed chips
+  // entirely (exact WP-345 rendering).
+  readonly fixedEntryCounts?: GauntletEntryCounts;
   readonly legs?: readonly GauntletIndexLeg[];
 }
 

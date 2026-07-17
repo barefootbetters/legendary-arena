@@ -1,11 +1,15 @@
 <script setup lang="ts">
 /**
- * Gauntlet board panel (WP-343 / WP-345 / D-24131 §8a / D-24134) — the
- * standings for one mastermind set-gauntlet at one player count. Average is
- * the PAR-relative golf-scale score (lower is better; negative = under PAR
- * renders gold). A player-count selector (1-5) switches between the solo and
- * per-count boards; multiplayer rows show the full team roster; each leg
- * carries a challenge link to the pinned loadout preview.
+ * Gauntlet board panel (WP-343 / WP-345 / WP-385 / D-24131 §8a / D-24134 /
+ * D-24187) — the standings for one mastermind set-gauntlet at one player
+ * count, in one DIVISION. Average is the PAR-relative golf-scale score
+ * (lower is better; negative = under PAR renders gold). A player-count
+ * selector (1-5) switches between the solo and per-count boards; a division
+ * toggle switches between the Open board and the Fixed-Pool championship
+ * (D-24187 §7 — the championship framing attaches to the fixed division);
+ * multiplayer rows show the full team roster; fixed rows show the hero pool
+ * that earned them; each leg carries a challenge link to the pinned loadout
+ * preview.
  */
 import { computed } from "vue";
 import type {
@@ -14,8 +18,11 @@ import type {
 } from "../snapshots/snapshotClient";
 import {
   buildChallengeUrl,
+  buildFixedCountTabs,
   buildPlayerCountTabs,
   formatAverageScore,
+  formatHeroPool,
+  isFixedBoardName,
   rosterForEntry,
   type PlayerCountTab,
 } from "./gauntletDisplay";
@@ -27,12 +34,36 @@ const props = defineProps<{
   error: string | null;
 }>();
 
-/** The player-count tabs for this gauntlet (empty on old snapshots). */
-const tabs = computed((): PlayerCountTab[] => {
+// why: the active division derives from the ROUTE (WP-385) — hash routing
+// already carries all navigation state, so no ref holds a division flag.
+const isFixedRoute = computed((): boolean => {
+  return props.boardName !== null && isFixedBoardName(props.boardName);
+});
+
+/** The open division's player-count tabs (empty on old snapshots). */
+const openTabs = computed((): PlayerCountTab[] => {
   if (props.indexEntry === null) {
     return [];
   }
   return buildPlayerCountTabs(props.indexEntry);
+});
+
+/** The fixed division's tabs (empty when the index predates WP-384). */
+const fixedTabs = computed((): PlayerCountTab[] => {
+  if (props.indexEntry === null) {
+    return [];
+  }
+  return buildFixedCountTabs(props.indexEntry);
+});
+
+/** Whether this gauntlet offers the fixed division at all. */
+const hasFixedDivision = computed((): boolean => {
+  return fixedTabs.value.length > 0;
+});
+
+/** The ACTIVE division's tabs — what the count selector renders. */
+const tabs = computed((): PlayerCountTab[] => {
+  return isFixedRoute.value ? fixedTabs.value : openTabs.value;
 });
 
 /** The tab the current route points at, matched by board name. */
@@ -43,6 +74,45 @@ const activeTab = computed((): PlayerCountTab | null => {
 /** Whether the routed count has no champions yet (renders the open state). */
 const isActiveCountUnclaimed = computed((): boolean => {
   return activeTab.value !== null && !activeTab.value.isClaimed;
+});
+
+/** The routed player count (drives the division toggle's cross-links). */
+const activePlayerCount = computed((): number => {
+  return activeTab.value?.playerCount ?? 1;
+});
+
+/** One division-toggle chip, cross-linking at the active player count. */
+interface DivisionChip {
+  readonly label: string;
+  readonly isActive: boolean;
+  readonly targetTab: PlayerCountTab | null;
+}
+
+/** The Open | Fixed-Pool toggle chips (empty when no fixed division). */
+const divisionChips = computed((): DivisionChip[] => {
+  if (!hasFixedDivision.value) {
+    return [];
+  }
+  const openTarget =
+    openTabs.value.find(
+      (tab) => tab.playerCount === activePlayerCount.value,
+    ) ?? null;
+  const fixedTarget =
+    fixedTabs.value.find(
+      (tab) => tab.playerCount === activePlayerCount.value,
+    ) ?? null;
+  return [
+    {
+      label: "Open",
+      isActive: !isFixedRoute.value,
+      targetTab: openTarget,
+    },
+    {
+      label: "Fixed-Pool Championship",
+      isActive: isFixedRoute.value,
+      targetTab: fixedTarget,
+    },
+  ];
 });
 
 /** A short human label for one player-count tab. */
@@ -77,10 +147,45 @@ const challengeLegs = computed((): ChallengeLeg[] => {
     <h2 class="panel-title">
       {{ indexEntry ? `${indexEntry.mastermindName} — ${indexEntry.setName}` : "Gauntlet" }}
     </h2>
-    <p v-if="indexEntry" class="panel-subtitle">
+    <p v-if="indexEntry && isFixedRoute" class="panel-subtitle">
+      The fixed-pool championship — one hero pool
+      ({{ indexEntry.legCount }} schemes, best winning score per scheme,
+      averaged vs PAR; lower is better).
+    </p>
+    <p v-else-if="indexEntry" class="panel-subtitle">
       Best winning score across all {{ indexEntry.legCount }} schemes,
       averaged vs PAR (lower is better).
     </p>
+
+    <!-- Division toggle (WP-385 / D-24187 §7): only when the index carries
+         fixed-division data. Open is the default/acquisition surface; the
+         championship framing attaches to the Fixed-Pool division. -->
+    <nav
+      v-if="divisionChips.length > 0"
+      class="division-toggle"
+      aria-label="Division"
+    >
+      <template v-for="chip of divisionChips" :key="chip.label">
+        <span
+          v-if="chip.isActive"
+          class="division-chip active"
+          aria-current="page"
+        >{{ chip.label }}</span>
+        <a
+          v-else-if="chip.targetTab !== null && chip.targetTab.isClaimed"
+          class="division-chip"
+          :href="`#/gauntlet/${chip.targetTab.boardName}`"
+        >{{ chip.label }}</a>
+        <!-- why: an unclaimed division at this count has NO board file
+             (D-24131 §7 lazy emission) — a link would 404, so the chip stays
+             inline muted until someone claims the championship. -->
+        <span
+          v-else
+          class="division-chip unclaimed"
+          title="Unclaimed — no champions in this division at this player count yet"
+        >{{ chip.label }}</span>
+      </template>
+    </nav>
 
     <!-- Player-count selector: only when the index carries per-count data
          (a single solo tab on old snapshots renders no selector). -->
@@ -109,9 +214,19 @@ const challengeLegs = computed((): ChallengeLeg[] => {
 
     <!-- Unclaimed count: open-championship state (never an error). -->
     <div v-if="isActiveCountUnclaimed" class="panel-unclaimed">
-      <p class="unclaimed-heading">No champions yet at this player count.</p>
+      <p class="unclaimed-heading">
+        {{
+          isFixedRoute
+            ? "No fixed-pool champions yet at this player count."
+            : "No champions yet at this player count."
+        }}
+      </p>
       <p class="unclaimed-sub">
-        Rank #1 is unclaimed — win the gauntlet to open the board.
+        {{
+          isFixedRoute
+            ? "Clear every leg with one hero pool to claim the championship."
+            : "Rank #1 is unclaimed — win the gauntlet to open the board."
+        }}
       </p>
     </div>
 
@@ -129,6 +244,7 @@ const challengeLegs = computed((): ChallengeLeg[] => {
         <tr>
           <th class="col-rank">#</th>
           <th class="col-handle">Players</th>
+          <th v-if="isFixedRoute" class="col-pool">Hero Pool</th>
           <th class="col-legs">Schemes</th>
           <th class="col-score">Avg vs PAR</th>
         </tr>
@@ -141,6 +257,12 @@ const challengeLegs = computed((): ChallengeLeg[] => {
         >
           <td class="col-rank">{{ entry.rank }}</td>
           <td class="col-handle">{{ rosterForEntry(entry) }}</td>
+          <!-- why: the hero pool is the fixed division's prestige display
+               (D-24187 §6 — the team the champion is celebrated for); a
+               missing pool renders an empty cell, never a crash. -->
+          <td v-if="isFixedRoute" class="col-pool">
+            {{ formatHeroPool(entry.heroPool) }}
+          </td>
           <td class="col-legs">{{ entry.legCount }}</td>
           <td
             class="col-score"
@@ -151,6 +273,13 @@ const challengeLegs = computed((): ChallengeLeg[] => {
         </tr>
       </tbody>
     </table>
+
+    <!-- Feeder line (D-24187 §7): the open board invites the fixed-pool
+         championship; renders only when the fixed division exists. -->
+    <p v-if="!isFixedRoute && hasFixedDivision" class="feeder-line">
+      Cleared every leg? Clear them all with one hero pool to claim the
+      Fixed-Pool Championship.
+    </p>
 
     <!-- Per-leg challenge links: open the pinned loadout preview so a
          visitor can try the gauntlet (D-24134 §6). Absent on old snapshots. -->
@@ -195,6 +324,41 @@ const challengeLegs = computed((): ChallengeLeg[] => {
   color: #888;
   margin: 0 0 1rem;
   font-size: 0.9rem;
+}
+
+/* Division toggle (WP-385) */
+.division-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0 0 0.75rem;
+}
+
+.division-chip {
+  padding: 0.3rem 0.9rem;
+  border: 1px solid #333;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  text-decoration: none;
+  color: #aaa;
+}
+
+a.division-chip:hover {
+  border-color: #ffd700;
+  color: #ffd700;
+}
+
+.division-chip.active {
+  background: rgba(255, 215, 0, 0.15);
+  border-color: rgba(255, 215, 0, 0.5);
+  color: #ffd700;
+  font-weight: 600;
+}
+
+.division-chip.unclaimed {
+  color: #555;
+  border-style: dashed;
+  border-color: #2a2a3a;
 }
 
 /* Player-count selector */
@@ -312,6 +476,19 @@ a.count-tab:hover {
 
 .col-score.under-par {
   color: #ffd700;
+}
+
+.col-pool {
+  color: #aaa;
+  font-size: 0.85rem;
+}
+
+/* Feeder line (WP-385) */
+.feeder-line {
+  margin: 1rem 0 0;
+  color: #888;
+  font-size: 0.85rem;
+  font-style: italic;
 }
 
 /* Challenge links */

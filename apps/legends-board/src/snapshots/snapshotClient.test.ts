@@ -110,3 +110,62 @@ describe("gauntlet additive field mirror (WP-345)", () => {
     assert.equal(entry.legs, undefined);
   });
 });
+
+/**
+ * WP-385 / D-24187 §6 additive mirrors: fixed-division entries carry
+ * `heroPool`, and index entries carry `fixedEntryCounts` — both OPTIONAL
+ * on the client so pre-WP-384 snapshots degrade to WP-345 rendering.
+ */
+describe("fixed-division additive field mirror (WP-385)", () => {
+  it("a fixed-board entry carries the hero pool", () => {
+    const entry: GauntletSnapshotEntry = {
+      handle: "alice",
+      rank: 1,
+      totalScore: -5,
+      legCount: 4,
+      averageScoreCentis: -125,
+      players: ["alice"],
+      heroPool: ["core/black-widow", "core/iron-man", "msp1/spider-man"],
+    };
+    assert.equal(entry.heroPool?.length, 3);
+  });
+
+  it("an open-board entry omits `heroPool` and still type-checks", () => {
+    const entry: GauntletSnapshotEntry = {
+      handle: "alice",
+      rank: 1,
+      totalScore: -5,
+      legCount: 4,
+      averageScoreCentis: -125,
+      players: ["alice"],
+    };
+    assert.equal(entry.heroPool, undefined);
+  });
+
+  it("a fresh index entry carries fixedEntryCounts; an old one omits it", () => {
+    const freshEntry: GauntletIndexEntry = {
+      setAbbr: "core",
+      setName: "Core Set",
+      mastermindSlug: "dr-doom",
+      mastermindName: "Dr. Doom",
+      legCount: 4,
+      entryCount: 3,
+      board: "gauntlet-core-dr-doom",
+      entryCounts: { "1": 3, "2": 1, "3": 0, "4": 0, "5": 0 },
+      fixedEntryCounts: { "1": 1, "2": 0, "3": 0, "4": 0, "5": 0 },
+      legs: [],
+    };
+    assert.equal(freshEntry.fixedEntryCounts?.["1"], 1);
+
+    const oldEntry: GauntletIndexEntry = {
+      setAbbr: "core",
+      setName: "Core Set",
+      mastermindSlug: "loki",
+      mastermindName: "Loki",
+      legCount: 4,
+      entryCount: 0,
+      board: "gauntlet-core-loki",
+    };
+    assert.equal(oldEntry.fixedEntryCounts, undefined);
+  });
+});
