@@ -56,6 +56,25 @@ export interface GauntletSnapshotEntry {
 }
 
 /**
+ * A single row in a fixed-hero-pool gauntlet snapshot board
+ * (WP-384 / D-24187). The open-entry fields plus the hero pool the
+ * championship was earned with. Property order is fixed for
+ * deterministic JSON.stringify output.
+ */
+export interface GauntletFixedSnapshotEntry {
+  readonly handle: string;
+  readonly rank: number;
+  readonly totalScore: number;
+  readonly legCount: number;
+  readonly averageScoreCentis: number;
+  readonly players: readonly string[];
+  // why: D-24187 §6 — the union of set-qualified hero ids across the
+  // entry's chosen legs, sorted ASC: the team the champion is celebrated
+  // for. Its size is ≤ the board's pool budget by construction.
+  readonly heroPool: readonly string[];
+}
+
+/**
  * One leg of a gauntlet as published on the index (WP-344 / D-24134 §5) —
  * the data the client's per-leg challenge links and leg display need.
  * `schemeName` is the registry's display name; `schemeSlug` combines with
@@ -95,6 +114,11 @@ export interface GauntletIndexEntry {
   readonly entryCount: number;
   readonly board: string;
   readonly entryCounts: GauntletEntryCounts;
+  // why: additive (WP-384 / D-24187 §6) — complete-entry counts per player
+  // count for the fixed-hero-pool division; the client's fixed claim chips
+  // and division-tab gating read these. Fixed boards are lazy files
+  // (`<board>-fixed[-p<N>]`), so zero counts mean "unclaimed", not "missing".
+  readonly fixedEntryCounts: GauntletEntryCounts;
   readonly legs: readonly GauntletIndexLeg[];
 }
 

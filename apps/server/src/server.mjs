@@ -15,6 +15,7 @@ import { readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import {
   createRegistryFromLocalFiles,
+  PLAYER_COUNT_SETUP,
   validateThemeFile,
 } from '@legendary-arena/registry';
 import { buildScenarioKey } from '@legendary-arena/game-engine';
@@ -561,10 +562,23 @@ export async function startServer() {
       masterminds: mastermindSummaries,
     });
   }
-  const gauntletCatalog = buildGauntletCatalog(gauntletSetSummaries);
+  // why: WP-384 / D-24187 §4 — the fixed-division pool budgets are derived
+  // HERE, at wiring time, from the registry's canonical PLAYER_COUNT_SETUP
+  // table (budget = heroCount + 2) and ride the catalog as plain data:
+  // gauntlet.logic.ts may not import the registry (its layer lock), and
+  // re-typed literals there would drift if the setup table ever changed.
+  const heroPoolBudgets = {};
+  for (const [playerCount, setupRow] of Object.entries(PLAYER_COUNT_SETUP)) {
+    heroPoolBudgets[Number(playerCount)] = setupRow.heroCount + 2;
+  }
+  const gauntletCatalog = buildGauntletCatalog(
+    gauntletSetSummaries,
+    heroPoolBudgets,
+  );
   console.log(
     `[server] gauntlet catalog built: ${gauntletCatalog.length} gauntlets ` +
-    `across ${gauntletSetSummaries.length} sets (WP-342)`
+    `across ${gauntletSetSummaries.length} sets (WP-342; fixed-pool budgets ` +
+    `attached per WP-384)`
   );
 
   const rules = getRules();

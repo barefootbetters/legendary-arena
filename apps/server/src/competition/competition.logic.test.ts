@@ -1014,6 +1014,29 @@ describe('competition logic (WP-053)', () => {
       assert.strictEqual(result.record.outcome, 'heroes-win');
       // WP-344: the solo fixture's per-player record has one seat.
       assert.strictEqual(result.record.playerCount, 1);
+      // WP-384: the fixture's single configured hero is the whole team key.
+      assert.strictEqual(result.record.teamKey, 'core-test-hero');
+
+      // why: the D-24187-amended 15-key record lock, asserted over a REAL
+      // stored record (not a type-only reference) so key drift fails at
+      // runtime even though tsx does not type-check.
+      assert.deepEqual(Object.keys(result.record).sort(), [
+        'accountId',
+        'createdAt',
+        'finalScore',
+        'isRankedEligible',
+        'outcome',
+        'parVersion',
+        'playerCount',
+        'rawScore',
+        'replayHash',
+        'scenarioKey',
+        'scoreBreakdown',
+        'scoringConfigVersion',
+        'stateHash',
+        'submissionId',
+        'teamKey',
+      ]);
 
       // Round-trip: the listed record carries the same outcome + count.
       const listed = await listPlayerCompetitiveScores(
@@ -1023,6 +1046,7 @@ describe('competition logic (WP-053)', () => {
       assert.strictEqual(listed.length, 1);
       assert.strictEqual(listed[0].outcome, 'heroes-win');
       assert.strictEqual(listed[0].playerCount, 1);
+      assert.strictEqual(listed[0].teamKey, 'core-test-hero');
     },
   );
 
@@ -1075,6 +1099,122 @@ describe('competition logic (WP-053)', () => {
       assert.ok(result.ok === true);
       assert.strictEqual(result.record.playerCount, 2);
       assert.strictEqual(result.record.outcome, 'heroes-win');
+    },
+  );
+
+  test(
+    'team_key persists sorted ASC regardless of configured hero order (WP-384 / D-24187 §1)',
+    hasTestDatabase ? {} : { skip: 'requires test database' },
+    async () => {
+      assert.ok(testPool !== null);
+      // why: two fixtures with the SAME five heroes in different configured
+      // orders must persist the IDENTICAL team_key — the sort at step 14d,
+      // not the configuration order, defines the team identity. Distinct
+      // configurations hash to distinct replay identities, so each submits
+      // independently.
+      const unsortedHeroIds = [
+        'msp1/spider-man',
+        'core/iron-man',
+        'core/hulk',
+        'ff04/mr-fantastic',
+        'core/black-widow',
+      ];
+      const reversedHeroIds = [...unsortedHeroIds].reverse();
+      const expectedTeamKey =
+        'core/black-widow+core/hulk+core/iron-man+ff04/mr-fantastic+msp1/spider-man';
+
+      const submittedTeamKeys: (string | null)[] = [];
+      for (const [fixtureIndex, heroDeckIds] of [
+        unsortedHeroIds,
+        reversedHeroIds,
+      ].entries()) {
+        const fixtureState = {
+          ...(WIN_FINAL_STATE as unknown as Record<string, unknown>),
+          matchConfiguration: {
+            ...(WIN_FINAL_STATE as unknown as { matchConfiguration: object })
+              .matchConfiguration,
+            heroDeckIds,
+          },
+        } as unknown as LegendaryGameState;
+        const fixtureHash = computeStateHash(fixtureState);
+
+        const accountResult = await createPlayerAccount(
+          {
+            email: `wp384-order-${fixtureIndex}@example.test`,
+            displayName: `Order Owner ${fixtureIndex}`,
+            authProvider: 'email',
+            authProviderId: `wp384-order-${fixtureIndex}`,
+          },
+          testPool,
+        );
+        assert.ok(accountResult.ok === true);
+        const account = accountResult.value;
+
+        const ownershipResult = await assignReplayOwnership(
+          account.accountId,
+          fixtureHash,
+          TEST_SCENARIO_KEY,
+          testPool,
+        );
+        assert.ok(ownershipResult.ok === true);
+        await updateReplayVisibility(
+          ownershipResult.value.ownershipId,
+          'public',
+          testPool,
+        );
+
+        const fixtureDeps = {
+          reduceReplay: async () => ({
+            finalState: fixtureState,
+            stateHash: fixtureHash,
+            turnCount: TEST_TURN_COUNT,
+          }),
+          checkParPublished: stubCheckParPublished,
+        } as unknown as Parameters<typeof submitCompetitiveScoreImpl>[3];
+
+        const result = await submitCompetitiveScoreImpl(
+          account,
+          fixtureHash,
+          testPool,
+          fixtureDeps,
+        );
+        assert.ok(result.ok === true);
+        submittedTeamKeys.push(result.record.teamKey);
+      }
+
+      assert.strictEqual(submittedTeamKeys[0], expectedTeamKey);
+      assert.strictEqual(submittedTeamKeys[1], expectedTeamKey);
+    },
+  );
+
+  test(
+    'backfill SQL team_key extraction is byte-equivalent to the JS sort (WP-384 / D-24187 §2)',
+    hasTestDatabase ? {} : { skip: 'requires test database' },
+    async () => {
+      assert.ok(testPool !== null);
+      // why: the operator backfill (scripts/backfill-team-key.mjs) computes
+      // team_key inside PostgreSQL over the artifact's jsonb; this pins the
+      // SQL expression (string_agg with a byte-order collation) to the exact
+      // value the submission path's JavaScript sort produces, over ids that
+      // exercise the collation-sensitive characters (`/`, `-`, digits). If
+      // this ever diverges, the same replay would carry different team
+      // identities depending on which path wrote it.
+      const heroDeckIds = [
+        'msp1/spider-man',
+        'core/iron-man',
+        'wpnx/weapon-x',
+        'ff04/mr-fantastic',
+        'core/black-widow',
+        '3dtc/three-dev',
+      ];
+      const javascriptTeamKey = [...heroDeckIds].sort().join('+');
+
+      const sqlResult = await testPool.query(
+        "SELECT string_agg(hero_id, '+' ORDER BY hero_id COLLATE \"C\") AS team_key " +
+          'FROM jsonb_array_elements_text($1::jsonb) AS hero_id',
+        [JSON.stringify(heroDeckIds)],
+      );
+      assert.strictEqual(sqlResult.rows[0].team_key, javascriptTeamKey);
     },
   );
 

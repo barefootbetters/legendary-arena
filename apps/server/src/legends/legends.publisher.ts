@@ -25,6 +25,7 @@ import type {
 
 import type { GauntletDefinition } from './gauntlet.logic.js';
 import {
+  buildFixedGauntletBoardNameForPlayerCount,
   buildGauntletBoardNameForPlayerCount,
   GAUNTLET_PLAYER_COUNTS,
   getGauntletStandings,
@@ -240,11 +241,21 @@ export async function publishAllBoards(
         );
 
         const entryCounts = {
-          '1': standingsByPlayerCount.get(1)?.length ?? 0,
-          '2': standingsByPlayerCount.get(2)?.length ?? 0,
-          '3': standingsByPlayerCount.get(3)?.length ?? 0,
-          '4': standingsByPlayerCount.get(4)?.length ?? 0,
-          '5': standingsByPlayerCount.get(5)?.length ?? 0,
+          '1': standingsByPlayerCount.get(1)?.open.length ?? 0,
+          '2': standingsByPlayerCount.get(2)?.open.length ?? 0,
+          '3': standingsByPlayerCount.get(3)?.open.length ?? 0,
+          '4': standingsByPlayerCount.get(4)?.open.length ?? 0,
+          '5': standingsByPlayerCount.get(5)?.open.length ?? 0,
+        };
+        // why: WP-384 / D-24187 §6 — the fixed division's per-count claim
+        // state, additive beside entryCounts; the client's fixed chips and
+        // division-tab gating read these.
+        const fixedEntryCounts = {
+          '1': standingsByPlayerCount.get(1)?.fixed.length ?? 0,
+          '2': standingsByPlayerCount.get(2)?.fixed.length ?? 0,
+          '3': standingsByPlayerCount.get(3)?.fixed.length ?? 0,
+          '4': standingsByPlayerCount.get(4)?.fixed.length ?? 0,
+          '5': standingsByPlayerCount.get(5)?.fixed.length ?? 0,
         };
 
         gauntletIndexEntries.push({
@@ -259,11 +270,13 @@ export async function publishAllBoards(
           entryCount: entryCounts['1'],
           board: soloBoardName,
           entryCounts,
+          fixedEntryCounts,
           legs: gauntletDefinition.legs,
         });
 
         for (const playerCount of GAUNTLET_PLAYER_COUNTS) {
-          const standings = standingsByPlayerCount.get(playerCount) ?? [];
+          const standings =
+            standingsByPlayerCount.get(playerCount)?.open ?? [];
           // why: zero-entry boards (any count) appear via the index's
           // entryCounts but get NO board file (D-24131 §7 / D-24134 §2) —
           // the index carries "unclaimed" state without writing 500+ empty
@@ -297,6 +310,45 @@ export async function publishAllBoards(
             anyBoardFailed = true;
           } else {
             writtenGauntletBoardNames.push(boardName);
+          }
+        }
+
+        // why: WP-384 / D-24187 §3 — the fixed-hero-pool division publishes
+        // as additive `-fixed[-p<N>]` files under the same lazy rule
+        // (≥1 complete entry only); open-division files above are untouched.
+        for (const playerCount of GAUNTLET_PLAYER_COUNTS) {
+          const fixedStandings =
+            standingsByPlayerCount.get(playerCount)?.fixed ?? [];
+          if (fixedStandings.length === 0) {
+            continue;
+          }
+
+          const fixedBoardName = buildFixedGauntletBoardNameForPlayerCount(
+            gauntletDefinition,
+            playerCount,
+          );
+          const fixedJson = JSON.stringify({
+            board: fixedBoardName,
+            entries: fixedStandings,
+            rowCount: fixedStandings.length,
+            schemaVersion: 1,
+          });
+
+          boardPayloads.push({
+            boardName: fixedBoardName,
+            jsonPayload: fixedJson,
+            rowCount: fixedStandings.length,
+          });
+
+          const fixedOutcome = await writeBoardToR2(
+            r2Client, bucket, fixedBoardName, fixedJson,
+            fixedStandings.length, runId,
+          );
+          boardOutcomes.push(fixedOutcome);
+          if (!fixedOutcome.success) {
+            anyBoardFailed = true;
+          } else {
+            writtenGauntletBoardNames.push(fixedBoardName);
           }
         }
       } catch (error) {
