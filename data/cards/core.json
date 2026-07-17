@@ -1219,7 +1219,7 @@
           "attack": null,
           "recruit": "1",
           "abilities": [
-            "Reveal the top card of your deck. If that card costs 2[icon:vp] or less, draw it. [keyword:reveal]"
+            "Reveal the top card of your deck. If that card costs 2 or less, draw it. [keyword:reveal]"
           ]
         },
         {
@@ -1234,7 +1234,7 @@
           "attack": "1",
           "recruit": null,
           "abilities": [
-            "Reveal the top card of your deck. If that card costs 2[icon:vp] or less, draw it. [keyword:reveal]"
+            "Reveal the top card of your deck. If that card costs 2 or less, draw it. [keyword:reveal]"
           ]
         },
         {
@@ -1250,7 +1250,7 @@
           "recruit": null,
           "abilities": [
             "Rescue a Bystander. [keyword:rescue:1]",
-            "Reveal the top card of your deck. If that card costs 2[icon:vp] or less, draw it. [keyword:reveal]"
+            "Reveal the top card of your deck. If that card costs 2 or less, draw it. [keyword:reveal]"
           ]
         },
         {
@@ -1265,7 +1265,7 @@
           "attack": null,
           "recruit": null,
           "abilities": [
-            "Reveal the top three cards of your deck. Put any that cost 2[icon:vp] or less into your hand. Put the rest back in any order. [keyword:reveal:cost-lte-2:draw][keyword:reveal-count:3]"
+            "Reveal the top three cards of your deck. Put any that cost 2 or less into your hand. Put the rest back in any order. [keyword:reveal:cost-lte-2:draw][keyword:reveal-count:3]"
           ]
         }
       ],
