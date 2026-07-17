@@ -32,7 +32,7 @@ const validVillainCardBase = {
   slug: "blob",
   vp: 3,
   vAttack: 5,
-  imageUrl: "https://images.barefootbetters.com/core/core-vi-brotherhood-blob.webp",
+  imageUrl: "https://images.legendary-arena.com/core/core-vi-brotherhood-blob.webp",
   abilities: [],
 };
 
@@ -42,7 +42,7 @@ const validSchemeBase = {
   id: 1,
   name: "Midtown Bank Robbery",
   slug: "midtown-bank-robbery",
-  imageUrl: "https://images.barefootbetters.com/core/core-sc-midtown-bank-robbery.webp",
+  imageUrl: "https://images.legendary-arena.com/core/core-sc-midtown-bank-robbery.webp",
   cards: [{ abilities: [] }],
 };
 

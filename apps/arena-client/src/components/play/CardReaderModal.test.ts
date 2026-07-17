@@ -10,7 +10,7 @@ function display(name: string): UICardDisplay {
   return {
     extId: 'mastermind-doom',
     name,
-    imageUrl: `https://images.barefootbetters.com/${name}.png`,
+    imageUrl: `https://images.legendary-arena.com/${name}.png`,
     cost: 6,
   };
 }

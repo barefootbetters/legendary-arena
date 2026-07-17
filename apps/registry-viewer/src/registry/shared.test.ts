@@ -30,7 +30,7 @@ const fixtureCards: FlatCard[] = [
     setName:   "Core Set",
     name:      "Web of Confusion",
     slug:      "web-of-confusion",
-    imageUrl:  "https://images.barefootbetters.com/core/example.webp",
+    imageUrl:  "https://images.legendary-arena.com/core/example.webp",
     abilities: [],
   },
   {
@@ -41,7 +41,7 @@ const fixtureCards: FlatCard[] = [
     setName:   "Core Set",
     name:      "Dr. Doom",
     slug:      "dr-doom",
-    imageUrl:  "https://images.barefootbetters.com/core/example.webp",
+    imageUrl:  "https://images.legendary-arena.com/core/example.webp",
     abilities: [],
   },
 ];
@@ -99,7 +99,7 @@ describe("flattenSet henchman emission (WP-122)", () => {
         id:        1,
         name:      "Doombot Legion",
         slug:      "doombot-legion",
-        imageUrl:  "https://images.barefootbetters.com/core/core-hm-doombot-legion.webp",
+        imageUrl:  "https://images.legendary-arena.com/core/core-hm-doombot-legion.webp",
         abilities: [],
       },
     ]);
@@ -113,7 +113,7 @@ describe("flattenSet henchman emission (WP-122)", () => {
     assert.equal(result[0]!.name, "Doombot Legion");
     assert.equal(
       result[0]!.imageUrl,
-      "https://images.barefootbetters.com/core/core-hm-doombot-legion.webp"
+      "https://images.legendary-arena.com/core/core-hm-doombot-legion.webp"
     );
   });
 
@@ -129,12 +129,12 @@ describe("flattenSet henchman emission (WP-122)", () => {
       {
         id:        2,
         name:      "Sentinel",
-        imageUrl:  "https://images.barefootbetters.com/example/sentinel.webp",
+        imageUrl:  "https://images.legendary-arena.com/example/sentinel.webp",
         abilities: [],
       },
       {
         id:        3,
-        imageUrl:  "https://images.barefootbetters.com/example/anonymous.webp",
+        imageUrl:  "https://images.legendary-arena.com/example/anonymous.webp",
         abilities: [],
       },
     ]);
@@ -153,14 +153,14 @@ describe("flattenSet henchman emission (WP-122)", () => {
         id:        43,
         name:      "Tardigrade",
         slug:      "tardigrade",
-        imageUrl:  "https://images.barefootbetters.com/amwp/amwp-hm-tardigrade-covert.webp",
+        imageUrl:  "https://images.legendary-arena.com/amwp/amwp-hm-tardigrade-covert.webp",
         abilities: [],
         imageUrlByClass: {
-          covert:   "https://images.barefootbetters.com/amwp/amwp-hm-tardigrade-covert.webp",
-          instinct: "https://images.barefootbetters.com/amwp/amwp-hm-tardigrade-instinct.webp",
-          ranged:   "https://images.barefootbetters.com/amwp/amwp-hm-tardigrade-ranged.webp",
-          strength: "https://images.barefootbetters.com/amwp/amwp-hm-tardigrade-strength.webp",
-          tech:     "https://images.barefootbetters.com/amwp/amwp-hm-tardigrade-tech.webp",
+          covert:   "https://images.legendary-arena.com/amwp/amwp-hm-tardigrade-covert.webp",
+          instinct: "https://images.legendary-arena.com/amwp/amwp-hm-tardigrade-instinct.webp",
+          ranged:   "https://images.legendary-arena.com/amwp/amwp-hm-tardigrade-ranged.webp",
+          strength: "https://images.legendary-arena.com/amwp/amwp-hm-tardigrade-strength.webp",
+          tech:     "https://images.legendary-arena.com/amwp/amwp-hm-tardigrade-tech.webp",
         },
       },
     ]);
@@ -168,7 +168,7 @@ describe("flattenSet henchman emission (WP-122)", () => {
     assert.equal(result.length, 1);
     assert.equal(
       result[0]!.imageUrl,
-      "https://images.barefootbetters.com/amwp/amwp-hm-tardigrade-covert.webp"
+      "https://images.legendary-arena.com/amwp/amwp-hm-tardigrade-covert.webp"
     );
     const projection = result[0]! as unknown as Record<string, unknown>;
     assert.equal(projection["imageUrlByClass"], undefined);
@@ -184,19 +184,19 @@ describe("flattenSet henchman emission (WP-122)", () => {
         id:        34,
         name:      "Mandarin's Rings",
         slug:      "mandarins-rings",
-        imageUrl:  "https://images.barefootbetters.com/rvlt/rvlt-hm-mandarins-rings-daimonic-the-white-light.webp",
+        imageUrl:  "https://images.legendary-arena.com/rvlt/rvlt-hm-mandarins-rings-daimonic-the-white-light.webp",
         abilities: [],
         cards: [
           {
             name:      "Daimonic, The White Light",
             slug:      "daimonic-the-white-light",
-            imageUrl:  "https://images.barefootbetters.com/rvlt/rvlt-hm-mandarins-rings-daimonic-the-white-light.webp",
+            imageUrl:  "https://images.legendary-arena.com/rvlt/rvlt-hm-mandarins-rings-daimonic-the-white-light.webp",
             abilities: ["Fight: Draw a card."],
           },
           {
             name:      "Zero, The Ice Blast",
             slug:      "zero-the-ice-blast",
-            imageUrl:  "https://images.barefootbetters.com/rvlt/rvlt-hm-mandarins-rings-zero-the-ice-blast.webp",
+            imageUrl:  "https://images.legendary-arena.com/rvlt/rvlt-hm-mandarins-rings-zero-the-ice-blast.webp",
             abilities: ["Fight: Choose a card you played this turn that costs 0..."],
           },
         ],
@@ -210,14 +210,14 @@ describe("flattenSet henchman emission (WP-122)", () => {
     assert.equal(result[0]!.name, "Daimonic, The White Light");
     assert.equal(
       result[0]!.imageUrl,
-      "https://images.barefootbetters.com/rvlt/rvlt-hm-mandarins-rings-daimonic-the-white-light.webp"
+      "https://images.legendary-arena.com/rvlt/rvlt-hm-mandarins-rings-daimonic-the-white-light.webp"
     );
     assert.deepEqual(result[0]!.abilities, ["Fight: Draw a card."]);
     assert.equal(result[1]!.slug, "zero-the-ice-blast");
     assert.equal(result[1]!.key, "core-henchman-mandarins-rings-zero-the-ice-blast");
     assert.equal(
       result[1]!.imageUrl,
-      "https://images.barefootbetters.com/rvlt/rvlt-hm-mandarins-rings-zero-the-ice-blast.webp"
+      "https://images.legendary-arena.com/rvlt/rvlt-hm-mandarins-rings-zero-the-ice-blast.webp"
     );
   });
 });
@@ -245,7 +245,7 @@ describe("flattenSet other-block cardType dispatch (WP-123)", () => {
         name:      "Wasp",
         slug:      "wasp",
         cardType:  "sidekick",
-        imageUrl:  "https://images.barefootbetters.com/example/example-sk-wasp.webp",
+        imageUrl:  "https://images.legendary-arena.com/example/example-sk-wasp.webp",
         abilities: [],
       },
     ]);
@@ -258,7 +258,7 @@ describe("flattenSet other-block cardType dispatch (WP-123)", () => {
     assert.equal(sidekickCards[0]!.setAbbr, "core");
     assert.equal(
       sidekickCards[0]!.imageUrl,
-      "https://images.barefootbetters.com/example/example-sk-wasp.webp"
+      "https://images.legendary-arena.com/example/example-sk-wasp.webp"
     );
   });
 
@@ -268,7 +268,7 @@ describe("flattenSet other-block cardType dispatch (WP-123)", () => {
         id:        2,
         name:      "Mystery Card",
         slug:      "mystery-card",
-        imageUrl:  "https://images.barefootbetters.com/example/example-other-mystery.webp",
+        imageUrl:  "https://images.legendary-arena.com/example/example-other-mystery.webp",
         abilities: [],
       },
     ]);
@@ -285,20 +285,20 @@ describe("flattenSet other-block cardType dispatch (WP-123)", () => {
         cardType:  "sidekick",
         slug:      "wasp",
         name:      "Wasp",
-        imageUrl:  "https://images.barefootbetters.com/example/example-sk-wasp.webp",
+        imageUrl:  "https://images.legendary-arena.com/example/example-sk-wasp.webp",
         abilities: [],
       },
       {
         cardType:  "shield-agent",
         slug:      "phil-coulson",
         name:      "Agent Coulson",
-        imageUrl:  "https://images.barefootbetters.com/example/example-sa-phil-coulson.webp",
+        imageUrl:  "https://images.legendary-arena.com/example/example-sa-phil-coulson.webp",
         abilities: [],
       },
       {
         slug:      "untagged-card",
         name:      "Untagged",
-        imageUrl:  "https://images.barefootbetters.com/example/example-other-untagged.webp",
+        imageUrl:  "https://images.legendary-arena.com/example/example-other-untagged.webp",
         abilities: [],
       },
     ]);

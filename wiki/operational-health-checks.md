@@ -257,7 +257,7 @@ output prints the full URL):
         tls:     ENOTFOUND
 [OK     ] API (game server, friendly hostname)     https://api.legendary-arena.com/health                  HTTP 200                                 expected=200 state=live
 [OK     ] API (Render canonical hostname)          https://legendary-arena-server.onrender.com/health      HTTP 200                                 expected=200 state=live
-[OK     ] Card images CDN                          https://images.barefootbetters.com/                     HTTP 404                                 expected=200|403|404 state=live
+[OK     ] Card images CDN                          https://images.legendary-arena.com/                     HTTP 404                                 expected=200|403|404 state=live
 
 [check-subdomains] 7 ok, 2 pending, 1 ready-to-flip, 0 failed
 [check-subdomains] 1 planned entry is reachable and healthy — flip "state" to "live" in docs/ops/domains.json.

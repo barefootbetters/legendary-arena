@@ -2,12 +2,12 @@
  * schema.ts — matches the actual Legendary Arena R2 data format
  *
  * Data lives at:
- *   https://images.barefootbetters.com/registry-config.json      → set abbreviation list
- *   https://images.barefootbetters.com/metadata/sets.json        → set index
- *   https://images.barefootbetters.com/metadata/{abbr}.json      → full set card data
+ *   https://images.legendary-arena.com/registry-config.json      → set abbreviation list
+ *   https://images.legendary-arena.com/metadata/sets.json        → set index
+ *   https://images.legendary-arena.com/metadata/{abbr}.json      → full set card data
  *
  * Image URLs are embedded directly in each card object (imageUrl field).
- * All imageUrl values should point to the R2 domain (images.barefootbetters.com).
+ * All imageUrl values should point to the R2 domain (images.legendary-arena.com).
  *
  * Schema permissiveness decisions (grounded in real data observations):
  *

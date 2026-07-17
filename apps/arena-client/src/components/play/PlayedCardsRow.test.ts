@@ -10,7 +10,7 @@ function display(extId: string, name: string, cost: number | null = null): UICar
   return {
     extId,
     name,
-    imageUrl: `https://images.barefootbetters.com/${extId}.png`,
+    imageUrl: `https://images.legendary-arena.com/${extId}.png`,
     cost,
   };
 }

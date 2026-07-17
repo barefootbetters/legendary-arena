@@ -31,7 +31,7 @@ function mastermindLive(over: Partial<UIMastermindState> = {}): UIMastermindStat
     display: {
       extId: 'mastermind-doom',
       name: 'Doctor Doom',
-      imageUrl: 'https://images.barefootbetters.com/doom.png',
+      imageUrl: 'https://images.legendary-arena.com/doom.png',
       cost: 6,
     },
     attachedBystanders: [],
@@ -192,7 +192,7 @@ describe('MastermindTile (WP-129 — extends WP-100)', () => {
               display: {
                 extId: 'bystander-1',
                 name: 'Civilian Alpha',
-                imageUrl: 'https://images.barefootbetters.com/bystander-1.png',
+                imageUrl: 'https://images.legendary-arena.com/bystander-1.png',
                 cost: null,
               },
             },

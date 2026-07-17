@@ -31,7 +31,7 @@ function hero(extId: string, name: string, cost: number): UIHQCard {
     display: {
       extId,
       name,
-      imageUrl: `https://images.barefootbetters.com/${extId}.png`,
+      imageUrl: `https://images.legendary-arena.com/${extId}.png`,
       cost,
     },
   };

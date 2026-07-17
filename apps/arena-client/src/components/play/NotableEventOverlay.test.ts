@@ -13,7 +13,7 @@ function display(extId: string, name: string): UICardDisplay {
   return {
     extId,
     name,
-    imageUrl: `https://images.barefootbetters.com/${extId}.png`,
+    imageUrl: `https://images.legendary-arena.com/${extId}.png`,
     cost: null,
   };
 }

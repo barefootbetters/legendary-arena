@@ -7,7 +7,7 @@ function display(cost: number | null): UICardDisplay {
   return {
     extId: 'test-card',
     name: 'Test Card',
-    imageUrl: 'https://images.barefootbetters.com/test.png',
+    imageUrl: 'https://images.legendary-arena.com/test.png',
     cost,
   };
 }

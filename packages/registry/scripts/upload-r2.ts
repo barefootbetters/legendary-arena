@@ -6,7 +6,7 @@
  *
  * Requires:
  *   R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME
- *   R2_PUBLIC_URL  (e.g. https://assets.legendary-arena.com)
+ *   R2_PUBLIC_URL  (e.g. https://images.legendary-arena.com)
  *
  * Usage:
  *   DATA_VERSION=1.0.0 pnpm upload

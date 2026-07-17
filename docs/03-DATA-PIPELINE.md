@@ -7,7 +7,7 @@
 >
 > **Current state:** All 40 card sets are migrated to `data/cards/`,
 > metadata lookup files are in `data/metadata/`, and everything is
-> served from Cloudflare R2 at `https://images.barefootbetters.com`.
+> served from Cloudflare R2 at `https://images.legendary-arena.com`.
 
 ---
 
@@ -67,10 +67,10 @@ modifying any card data processing code.
 
 ## R2 Bucket Structure
 
-All data is served publicly from `https://images.barefootbetters.com`:
+All data is served publicly from `https://images.legendary-arena.com`:
 
 ```
-images.barefootbetters.com/
+images.legendary-arena.com/
 ├── metadata/
 │   ├── sets.json                      # Registry manifest (40 entries)
 │   ├── keywords-full.json             # Keyword glossary (WP-082)
@@ -137,7 +137,7 @@ Used by the registry viewer SPA at runtime. Fetches from R2 over HTTPS.
 import { createRegistryFromHttp } from '@legendary-arena/registry';
 
 const registry = await createRegistryFromHttp({
-  metadataBaseUrl: 'https://images.barefootbetters.com',
+  metadataBaseUrl: 'https://images.legendary-arena.com',
   eagerLoad: ['*'],
 });
 
@@ -236,7 +236,7 @@ pwsh scripts/git/ec-commit.ps1 -Message "INFRA: update {abbr} card data"
 All card images use hyphens (never underscores):
 
 ```
-https://images.barefootbetters.com/{abbr}/{abbr}-{type}-{slug}.webp
+https://images.legendary-arena.com/{abbr}/{abbr}-{type}-{slug}.webp
 ```
 
 | Type prefix | Card type | Example |

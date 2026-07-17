@@ -107,13 +107,13 @@
     },
     {
       "name": "Card images CDN",
-      "url": "https://images.barefootbetters.com/",
+      "url": "https://images.legendary-arena.com/",
       "host": "Cloudflare R2 + Cloudflare CDN",
       "source": "external (BarefootBetters image bucket)",
       "expectedStatus": [200, 403, 404],
       "state": "live",
       "anchor": "images",
-      "notes": "Bucket index commonly returns 403 or 404; specific keys return 200. Probe verifies DNS/TLS reachability, not bucket contents."
+      "notes": "Canonical host since 2026-07-16; legacy images.barefootbetters.com is a second custom domain on the same bucket and remains live (no redirect). Bucket index commonly returns 403 or 404; specific keys return 200. Probe verifies DNS/TLS reachability, not bucket contents."
     }
   ]
 }

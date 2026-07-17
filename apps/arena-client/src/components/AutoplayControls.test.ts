@@ -84,7 +84,7 @@ function sampleUiState(): UIState {
       display: {
         extId: 'mastermind-loki',
         name: 'Loki',
-        imageUrl: 'https://images.barefootbetters.com/loki.png',
+        imageUrl: 'https://images.legendary-arena.com/loki.png',
         cost: 6,
       },
       attachedBystanders: [],

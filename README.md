@@ -48,7 +48,7 @@ pnpm registry:validate
 SKIP_IMAGES=1 pnpm registry:validate
 
 # Validate against live R2 instead of local files:
-R2_BASE_URL=https://images.barefootbetters.com pnpm registry:validate
+R2_BASE_URL=https://images.legendary-arena.com pnpm registry:validate
 ```
 
 Writes a `packages/registry/dist/registry-health.json` report on every run.
@@ -82,19 +82,18 @@ Deploy `apps/registry-viewer/dist/` to Cloudflare Pages (or any static host).
 
 ---
 
-## How to Point the Viewer at a Different dataVersion
+## How to Point the Viewer at a Different Data Host
 
 Edit `apps/registry-viewer/public/registry-config.json`:
 
 ```json
 {
-  "dataVersion": "1.2.0",
-  "dataBaseUrl":  "https://assets.legendary-arena.com",
-  "imageBaseUrl": "https://assets.legendary-arena.com/images/1.2.0"
+  "metadataBaseUrl": "https://images.legendary-arena.com",
+  "rulebookPdfUrl":  "https://images.legendary-arena.com/docs/legendary-universal-rules-v23.pdf"
 }
 ```
 
-The viewer fetches `{metadataBaseUrl}/metadata/sets.json` plus per-set `{metadataBaseUrl}/metadata/{abbr}.json` files, and images from `{imageBaseUrl}/{type}/{filename}.webp` at runtime — no rebuild needed.
+The viewer fetches `{metadataBaseUrl}/metadata/sets.json` plus per-set `{metadataBaseUrl}/metadata/{abbr}.json` files at runtime — no rebuild needed. Card images load from the absolute `imageUrl` values inside that metadata.
 
 ---
 

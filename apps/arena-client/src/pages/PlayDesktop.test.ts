@@ -43,19 +43,19 @@ function snapshot(): UIState {
           {
             extId: 'shield-officer',
             name: 'S.H.I.E.L.D. Officer',
-            imageUrl: 'https://images.barefootbetters.com/shield-officer.png',
+            imageUrl: 'https://images.legendary-arena.com/shield-officer.png',
             cost: 1,
           },
           {
             extId: 'shield-officer',
             name: 'S.H.I.E.L.D. Officer',
-            imageUrl: 'https://images.barefootbetters.com/shield-officer.png',
+            imageUrl: 'https://images.legendary-arena.com/shield-officer.png',
             cost: 1,
           },
           {
             extId: 'iron-man-tech',
             name: 'Iron Man Tech',
-            imageUrl: 'https://images.barefootbetters.com/iron-man-tech.png',
+            imageUrl: 'https://images.legendary-arena.com/iron-man-tech.png',
             cost: 4,
           },
         ],
@@ -88,7 +88,7 @@ function snapshot(): UIState {
       display: {
         extId: 'mastermind-loki',
         name: 'Loki',
-        imageUrl: 'https://images.barefootbetters.com/loki.png',
+        imageUrl: 'https://images.legendary-arena.com/loki.png',
         cost: 6,
       },
       attachedBystanders: [],

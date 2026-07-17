@@ -155,12 +155,12 @@ describe("physicalCards (WP-138 Phase 1a)", () => {
       {
         slug: "card-a",
         name: "Card A",
-        imageUrl: "https://images.barefootbetters.com/test/test-hr-test-hero-card-a.webp",
+        imageUrl: "https://images.legendary-arena.com/test/test-hr-test-hero-card-a.webp",
       },
       {
         slug: "card-b",
         name: "Card B",
-        imageUrl: "https://images.barefootbetters.com/test/test-hr-test-hero-card-b.webp",
+        imageUrl: "https://images.legendary-arena.com/test/test-hr-test-hero-card-b.webp",
       },
     ],
   };
@@ -169,7 +169,7 @@ describe("physicalCards (WP-138 Phase 1a)", () => {
     const result = PhysicalCardSchema.safeParse({
       id:       "p1",
       count:    1,
-      imageUrl: "https://images.barefootbetters.com/test/test-hr-test-hero.webp",
+      imageUrl: "https://images.legendary-arena.com/test/test-hr-test-hero.webp",
       sides:    [],
     });
     assert.equal(result.success, false, "Empty sides[] must fail PhysicalCardSchema");
@@ -186,7 +186,7 @@ describe("physicalCards (WP-138 Phase 1a)", () => {
     const result = PhysicalCardSchema.safeParse({
       id:       "p1",
       count:    1,
-      imageUrl: "https://images.barefootbetters.com/test/test-hr-test-hero-a-b-c.webp",
+      imageUrl: "https://images.legendary-arena.com/test/test-hr-test-hero-a-b-c.webp",
       sides:    ["a", "b", "c"],
     });
     assert.equal(result.success, false, "Triple-side sides[] must fail PhysicalCardSchema (D-13802 ceiling lock)");
@@ -205,7 +205,7 @@ describe("physicalCards (WP-138 Phase 1a)", () => {
       const result = PhysicalCardSchema.safeParse({
         id:       badId,
         count:    1,
-        imageUrl: "https://images.barefootbetters.com/test/test-hr-test-hero-card-a.webp",
+        imageUrl: "https://images.legendary-arena.com/test/test-hr-test-hero-card-a.webp",
         sides:    ["card-a"],
       });
       assert.equal(
@@ -224,13 +224,13 @@ describe("physicalCards (WP-138 Phase 1a)", () => {
         {
           id: "p1",
           count: 4,
-          imageUrl: "https://images.barefootbetters.com/test/test-hr-test-hero-card-a.webp",
+          imageUrl: "https://images.legendary-arena.com/test/test-hr-test-hero-card-a.webp",
           sides: ["card-a"],
         },
         {
           id: "p2",
           count: 5,
-          imageUrl: "https://images.barefootbetters.com/test/test-hr-test-hero-card-b.webp",
+          imageUrl: "https://images.legendary-arena.com/test/test-hr-test-hero-card-b.webp",
           sides: ["card-b"],
         },
       ],
@@ -252,13 +252,13 @@ describe("physicalCards (WP-138 Phase 1a)", () => {
         {
           id: "p1",
           count: 1,
-          imageUrl: "https://images.barefootbetters.com/test/test-hr-test-hero-card-a.webp",
+          imageUrl: "https://images.legendary-arena.com/test/test-hr-test-hero-card-a.webp",
           sides: ["card-a"],
         },
         {
           id: "p2",
           count: 1,
-          imageUrl: "https://images.barefootbetters.com/test/test-hr-test-hero-not-a-real-side.webp",
+          imageUrl: "https://images.legendary-arena.com/test/test-hr-test-hero-not-a-real-side.webp",
           sides: ["not-a-real-side"],
         },
       ],
@@ -282,13 +282,13 @@ describe("physicalCards (WP-138 Phase 1a)", () => {
         {
           id: "p1",
           count: 1,
-          imageUrl: "https://images.barefootbetters.com/test/test-hr-test-hero-card-a.webp",
+          imageUrl: "https://images.legendary-arena.com/test/test-hr-test-hero-card-a.webp",
           sides: ["card-a"],
         },
         {
           id: "p2",
           count: 1,
-          imageUrl: "https://images.barefootbetters.com/test/test-hr-test-hero-card-a-card-b.webp",
+          imageUrl: "https://images.legendary-arena.com/test/test-hr-test-hero-card-a-card-b.webp",
           sides: ["card-a", "card-b"],
         },
       ],
@@ -315,7 +315,7 @@ describe("physicalCards (WP-138 Phase 1a)", () => {
     const result = PhysicalCardSchema.safeParse({
       id:            "p1",
       count:         3,
-      imageUrl:      "https://images.barefootbetters.com/test/test-hr-test-hero-companion-a-b.webp",
+      imageUrl:      "https://images.legendary-arena.com/test/test-hr-test-hero-companion-a-b.webp",
       sides:         ["a", "b"],
       companionSlug: "irani-rael",
     });
@@ -326,7 +326,7 @@ describe("physicalCards (WP-138 Phase 1a)", () => {
     const emptyResult = PhysicalCardSchema.safeParse({
       id:            "p1",
       count:         3,
-      imageUrl:      "https://images.barefootbetters.com/test/test-hr-test-hero.webp",
+      imageUrl:      "https://images.legendary-arena.com/test/test-hr-test-hero.webp",
       sides:         ["a"],
       companionSlug: "",
     });
@@ -342,7 +342,7 @@ describe("physicalCards (WP-138 Phase 1a)", () => {
     const whitespaceResult = PhysicalCardSchema.safeParse({
       id:            "p1",
       count:         3,
-      imageUrl:      "https://images.barefootbetters.com/test/test-hr-test-hero.webp",
+      imageUrl:      "https://images.legendary-arena.com/test/test-hr-test-hero.webp",
       sides:         ["a"],
       companionSlug: "has spaces",
     });
@@ -360,7 +360,7 @@ describe("physicalCards (WP-138 Phase 1a)", () => {
     const result = PhysicalCardSchema.safeParse({
       id:       "p1",
       count:    1,
-      imageUrl: "https://images.barefootbetters.com/test/test-hr-test-hero-card-a.webp",
+      imageUrl: "https://images.legendary-arena.com/test/test-hr-test-hero-card-a.webp",
       sides:    ["card-a"],
     });
     assert.equal(result.success, true, "PhysicalCardSchema must accept physicalCard without companionSlug (optional field)");

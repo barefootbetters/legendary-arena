@@ -28,13 +28,13 @@
         {
           "extId": "sm-web-slinger",
           "name": "Web Slinger",
-          "imageUrl": "https://images.barefootbetters.com/sm-web-slinger.png",
+          "imageUrl": "https://images.legendary-arena.com/sm-web-slinger.png",
           "cost": 2
         },
         {
           "extId": "dp-chimichangas",
           "name": "Chimichangas",
-          "imageUrl": "https://images.barefootbetters.com/dp-chimichangas.png",
+          "imageUrl": "https://images.legendary-arena.com/dp-chimichangas.png",
           "cost": 1
         }
       ]
@@ -58,7 +58,7 @@
         "display": {
           "extId": "sinister-six-shocker",
           "name": "Shocker",
-          "imageUrl": "https://images.barefootbetters.com/sinister-six-shocker.png",
+          "imageUrl": "https://images.legendary-arena.com/sinister-six-shocker.png",
           "cost": null
         },
         "attachedHeroes": [],
@@ -71,7 +71,7 @@
         "display": {
           "extId": "sinister-six-electro",
           "name": "Electro",
-          "imageUrl": "https://images.barefootbetters.com/sinister-six-electro.png",
+          "imageUrl": "https://images.legendary-arena.com/sinister-six-electro.png",
           "cost": null
         },
         "attachedHeroes": [],
@@ -85,7 +85,7 @@
         "display": {
           "extId": "sinister-six-vulture",
           "name": "Vulture",
-          "imageUrl": "https://images.barefootbetters.com/sinister-six-vulture.png",
+          "imageUrl": "https://images.legendary-arena.com/sinister-six-vulture.png",
           "cost": null
         },
         "attachedHeroes": [],
@@ -111,7 +111,7 @@
     "display": {
       "extId": "mastermind-doctor-octopus",
       "name": "Doctor Octopus",
-      "imageUrl": "https://images.barefootbetters.com/mastermind-doctor-octopus.png",
+      "imageUrl": "https://images.legendary-arena.com/mastermind-doctor-octopus.png",
       "cost": null
     },
     "attachedBystanders": [],

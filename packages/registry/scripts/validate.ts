@@ -68,7 +68,7 @@ const SKIP_IMAGES    = process.env["SKIP_IMAGES"] === "1";
 const IMAGE_DELAY_MS = parseInt(process.env["IMAGE_DELAY_MS"] ?? "50", 10);
 
 const IS_R2_MODE = R2_BASE_URL.length > 0;
-const R2_DOMAIN  = "images.barefootbetters.com";
+const R2_DOMAIN  = "images.legendary-arena.com";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 

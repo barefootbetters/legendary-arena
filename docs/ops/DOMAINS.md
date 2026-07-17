@@ -29,7 +29,7 @@ define new architectural boundaries.
 | `api.legendary-arena.com` | Game server REST + Socket.IO | Render (CNAME from Cloudflare) | [apps/server](../../apps/server) | live |
 | `legendary-arena-server.onrender.com` | API canonical hostname | Render | [apps/server](../../apps/server) | live |
 | `dashboard.legendary-arena.com` | Internal admin dashboard | Cloudflare Pages + Access | [apps/dashboard](../../apps/dashboard) | live, gated |
-| `images.barefootbetters.com` | Card image CDN | Cloudflare R2 | external | live |
+| `images.legendary-arena.com` | Card image CDN | Cloudflare R2 | external | live (canonical since 2026-07-16; legacy `images.barefootbetters.com` serves the same bucket, no redirect) |
 
 `state` legend: `live` = deployed and probed for health; `planned` = not yet
 deployed (still probed by default — see verdicts below). For Cloudflare
@@ -105,7 +105,7 @@ Healthy response: `200` with the SPA shell.
 
 Depends on:
 - `api.legendary-arena.com` (Socket.IO transport, REST endpoints under `/api/*`)
-- `images.barefootbetters.com` (card images)
+- `images.legendary-arena.com` (card images)
 - The server's CORS allowlist must include `https://play.legendary-arena.com`
   AND `https://legendary-arena-play.pages.dev` (the `*.pages.dev`
   hostname is needed for build-parity verification before the custom
@@ -131,7 +131,7 @@ Depends on:
 Healthy response: `200` with the SPA shell.
 
 Depends on:
-- `images.barefootbetters.com` (card images)
+- `images.legendary-arena.com` (card images)
 - No API. Viewer does not call the game server.
 
 **Migration note (done 2026-07-16):** the Cloudflare Pages project named
@@ -278,7 +278,7 @@ Healthy response: `200` with the SPA shell.
 
 Depends on:
 - R2 snapshot bucket (public-read prefix `legends/v1/*`) populated by WP-142
-- `images.barefootbetters.com` (hero/scheme art)
+- `images.legendary-arena.com` (hero/scheme art)
 
 **Why R2 snapshots, not direct API:** decouples public scoreboard availability from game-server uptime, prevents anonymous traffic from hitting the prod Postgres, and gives Cloudflare's CDN something it can cache aggressively. A viral moment on the scoreboard must not become a game-server incident.
 
@@ -315,7 +315,7 @@ Depends on (server-side runtime):
 - **arena-client's `VITE_API_BASE_URL`** — **shipped by WP-161 (2026-05-18).** Must be set to `https://api.legendary-arena.com` in the CF Pages `legendary-arena-play` project's Production env vars. Without it, all `/api/me/*` fetches resolve to `pages.dev/api/…` and hang. Validated post-deploy by `pnpm check` → "Arena-client bundle env" probe.
 
 ### images
-**`images.barefootbetters.com`** — card image CDN.
+**`images.legendary-arena.com`** — card image CDN.
 
 - **Host:** Cloudflare R2 with public bucket binding
 - **Source:** external (BarefootBetters)
@@ -323,7 +323,14 @@ Depends on (server-side runtime):
   keys return `200`. The probe verifies DNS/TLS, not bucket contents.
 
 Per [`.claude/CLAUDE.md`](../../.claude/CLAUDE.md): "Card images hosted at:
-`https://images.barefootbetters.com/`. Image URLs use hyphens, not underscores."
+`https://images.legendary-arena.com/`. Image URLs use hyphens, not underscores."
+
+**Canonical since 2026-07-16.** The legacy `images.barefootbetters.com`
+hostname is a second custom domain on the same `legendary-images` bucket and
+remains live — no redirect rule; old URLs (including `avatar_url` rows
+predating migration 021 and any externally cached links) keep serving.
+Unlike the `cards.` migration there is nothing to cut over: both hostnames
+serve identical bytes from one bucket.
 
 ---
 
@@ -422,7 +429,7 @@ health checks that touch the DB. See [`docs/ops/INCIDENT_RESPONSE.md`](./INCIDEN
 new client origin is not in the server's CORS allowlist. Update the server
 config and redeploy.
 
-**`images.barefootbetters.com` returns DNS error.** Card images will be
+**`images.legendary-arena.com` returns DNS error.** Card images will be
 broken in `play` and `cards` until restored. This is upstream of this repo;
 escalate to the BarefootBetters image-bucket owner.
 

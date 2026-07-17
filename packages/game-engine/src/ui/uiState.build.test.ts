@@ -264,25 +264,25 @@ function makeGameStateWithDisplayData(): LegendaryGameState {
     [heroExtId]: {
       extId: heroExtId,
       name: 'Mission Accomplished',
-      imageUrl: 'https://images.barefootbetters.com/core/hero-black-widow-1.webp',
+      imageUrl: 'https://images.legendary-arena.com/core/hero-black-widow-1.webp',
       cost: 2,
     },
     [villainExtId]: {
       extId: villainExtId,
       name: 'Magneto',
-      imageUrl: 'https://images.barefootbetters.com/core/villain-magneto.webp',
+      imageUrl: 'https://images.legendary-arena.com/core/villain-magneto.webp',
       cost: 5,
     },
     [henchmanExtId]: {
       extId: henchmanExtId,
       name: 'Doombot Legion',
-      imageUrl: 'https://images.barefootbetters.com/core/hm-doombot-legion.webp',
+      imageUrl: 'https://images.legendary-arena.com/core/hm-doombot-legion.webp',
       cost: 3,
     },
     [mastermindBaseExtId]: {
       extId: mastermindBaseExtId,
       name: 'Dr. Doom',
-      imageUrl: 'https://images.barefootbetters.com/core/mm-dr-doom.webp',
+      imageUrl: 'https://images.legendary-arena.com/core/mm-dr-doom.webp',
       cost: 9,
     },
   };

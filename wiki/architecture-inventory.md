@@ -67,7 +67,7 @@ Canonical source: `docs/ops/domains.json`. Ops runbook: `docs/ops/DOMAINS.md`.
 | `dashboard.legendary-arena.com` | apps/dashboard | Cloudflare Pages + Cloudflare Access | live |
 | `api.legendary-arena.com` | apps/server | Render (legendary-arena-server) | live |
 | `legendary-arena-server.onrender.com` | apps/server | Render | live |
-| `images.barefootbetters.com` | external (BarefootBetters image bucket) | Cloudflare R2 + Cloudflare CDN | live |
+| `images.legendary-arena.com` | external (BarefootBetters image bucket) | Cloudflare R2 + Cloudflare CDN | live |
 
 ## Infrastructure services
 
@@ -83,7 +83,7 @@ answers "what URL maps to what app."
 |---|---|---|
 | Cloudflare Access (zero-trust gate) | zero-trust gate | `dashboard.legendary-arena.com`, `ewiki.legendary-arena.com` |
 | Cloudflare Pages (static hosting) | static hosting | `cards.legendary-arena.com`, `legendary-arena.com`, `legends.legendary-arena.com`, `play.legendary-arena.com`, `wiki.legendary-arena.com`, `www.legendary-arena.com` |
-| Cloudflare R2 (object storage + CDN) | object storage + CDN | `images.barefootbetters.com` |
+| Cloudflare R2 (object storage + CDN) | object storage + CDN | `images.legendary-arena.com` |
 
 ### Render
 

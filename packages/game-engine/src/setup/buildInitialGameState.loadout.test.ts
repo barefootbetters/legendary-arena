@@ -80,7 +80,7 @@ function buildLoadoutFixtureRegistry() {
             slug: 'mission-accomplished',
             rarityLabel: 'Common 1',
             name: 'Mission Accomplished',
-            imageUrl: 'https://images.barefootbetters.com/core/core-hero-black-widow-1.webp',
+            imageUrl: 'https://images.legendary-arena.com/core/core-hero-black-widow-1.webp',
             cost: 2,
             attack: null,
             recruit: '2',
@@ -89,7 +89,7 @@ function buildLoadoutFixtureRegistry() {
             slug: 'silent-takedown',
             rarityLabel: 'Common 2',
             name: 'Silent Takedown',
-            imageUrl: 'https://images.barefootbetters.com/core/core-hero-black-widow-2.webp',
+            imageUrl: 'https://images.legendary-arena.com/core/core-hero-black-widow-2.webp',
             cost: 3,
             attack: '2',
             recruit: null,
@@ -98,7 +98,7 @@ function buildLoadoutFixtureRegistry() {
             slug: 'covert-operation',
             rarityLabel: 'Uncommon',
             name: 'Covert Operation',
-            imageUrl: 'https://images.barefootbetters.com/core/core-hero-black-widow-3.webp',
+            imageUrl: 'https://images.legendary-arena.com/core/core-hero-black-widow-3.webp',
             cost: 4,
             attack: null,
             recruit: '3',
@@ -107,7 +107,7 @@ function buildLoadoutFixtureRegistry() {
             slug: 'taskmaster',
             rarityLabel: 'Rare',
             name: 'Taskmaster',
-            imageUrl: 'https://images.barefootbetters.com/core/core-hero-black-widow-4.webp',
+            imageUrl: 'https://images.legendary-arena.com/core/core-hero-black-widow-4.webp',
             cost: 6,
             attack: '4',
             recruit: null,
@@ -302,7 +302,7 @@ describe('buildInitialGameState — loadout integration', () => {
     assert.equal(missionDisplay!.name, 'Mission Accomplished');
     assert.equal(
       missionDisplay!.imageUrl,
-      'https://images.barefootbetters.com/core/core-hero-black-widow-1.webp',
+      'https://images.legendary-arena.com/core/core-hero-black-widow-1.webp',
     );
     assert.equal(missionDisplay!.cost, 2);
 
