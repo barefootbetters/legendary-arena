@@ -185,25 +185,38 @@ export function rosterForEntry(
 
 /**
  * Builds the challenge link for one gauntlet leg — the WP-114 loadout-preview
- * URL with the leg's scheme and the gauntlet's mastermind pinned.
+ * URL with the leg's scheme and the gauntlet's mastermind pinned, and
+ * optionally the board's player count (WP-387).
  *
  * @param setAbbr The set both the scheme and mastermind belong to.
  * @param schemeSlug The leg's scheme slug.
  * @param mastermindSlug The gauntlet's mastermind slug.
- * @returns A `cards.legendary-arena.com` URL with exactly the two id keys.
+ * @param playerCount Optional 1..5 player count for the count-keyed board the
+ *   link came from; when provided, the builder pre-sizes its required-count
+ *   slots to match. Omitted for the index CTA (no routed count → builder
+ *   default). An absent value produces the byte-identical pre-WP-387 two-key
+ *   URL.
+ * @returns A `cards.legendary-arena.com` URL with the two id keys (plus
+ *   `playerCount` when supplied).
  */
 export function buildChallengeUrl(
   setAbbr: string,
   schemeSlug: string,
   mastermindSlug: string,
+  playerCount?: number,
 ): string {
-  // why: only the two id keys ride the URL (D-24134 §6) — hero/villain choice
-  // is the player's and counts are the builder's defaults, so villain groups,
-  // henchmen, heroes, and player count are deliberately NOT pinned.
+  // why: the two id keys always ride the URL (D-24134 §6) — hero/villain choice
+  // stays the player's, so villain groups, henchmen, and heroes are NOT pinned.
+  // WP-387 adds only the player count (when the caller has one), so the WP-372
+  // required-count readout matches the board the link came from; villains
+  // remain the player's strategy space (D-24131 §4).
   // URLSearchParams encodes the `/` in the set-qualified ids to `%2F`.
   const params = new URLSearchParams();
   params.set("schemeId", `${setAbbr}/${schemeSlug}`);
   params.set("mastermindId", `${setAbbr}/${mastermindSlug}`);
+  if (playerCount !== undefined) {
+    params.set("playerCount", String(playerCount));
+  }
   return `${CHALLENGE_PREVIEW_BASE_URL}?${params.toString()}`;
 }
 

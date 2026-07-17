@@ -213,4 +213,32 @@ describe("useSetupFromUrl (WP-114)", () => {
     assert.equal(document.seed, "0000000000000000");
     assert.equal(document.heroSelectionMode, "GROUP_STANDARD");
   });
+
+  it("WP-387: previewDocument.playerCount reflects the URL playerCount when present", () => {
+    setSearch("?schemeId=core/scheme-foo&playerCount=4");
+    const { previewDocument } = useSetupFromUrl(
+      makeRegistry([{ extId: "core/scheme-foo", cardType: "scheme" }]),
+    );
+    const document = previewDocument.value;
+    assert.notEqual(document, null);
+    if (document === null) {
+      return;
+    }
+    assert.equal(document.playerCount, 4);
+  });
+
+  it("WP-387: previewDocument.playerCount falls back to DEFAULT_PLAYER_COUNT for an invalid playerCount", () => {
+    // why: an out-of-range value (9) parses to null, so the preview keeps the
+    // shared default — the "absent = unchanged" contract also covers malformed.
+    setSearch("?schemeId=core/scheme-foo&playerCount=9");
+    const { previewDocument } = useSetupFromUrl(
+      makeRegistry([{ extId: "core/scheme-foo", cardType: "scheme" }]),
+    );
+    const document = previewDocument.value;
+    assert.notEqual(document, null);
+    if (document === null) {
+      return;
+    }
+    assert.equal(document.playerCount, DEFAULT_PLAYER_COUNT);
+  });
 });

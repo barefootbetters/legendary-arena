@@ -81,6 +81,44 @@ export function parseSetupUrl(search: string): Partial<SetupCompositionInput> {
 }
 
 /**
+ * Parses the optional `playerCount` URL query parameter into an integer in the
+ * supported 1..5 range, or `null` when it is absent, empty, non-integer, or
+ * out of range.
+ *
+ * why: `playerCount` is a SEPARATE parser from `parseSetupUrl` because it is a
+ * setup **envelope** field, not one of the five URL-bound composition fields —
+ * folding it into `parseSetupUrl` would break that function's
+ * `Partial<SetupCompositionInput>` return contract. WP-114 named URL-bound
+ * `playerCount` as its future-extension hook (see `serializeSetupToUrl`'s
+ * JSDoc); this is that hook (WP-387).
+ *
+ * why: the 1..5 clamp is the supported player-count range (D-24165
+ * `PLAYER_COUNT_SETUP`); an absent / malformed / out-of-range value returns
+ * `null` so the caller falls back to the editor/preview default rather than
+ * seeding a nonsensical count. Never throws.
+ *
+ * @param search - The raw query string, with or without a leading `?`.
+ * @returns The player count 1..5, or `null` when absent / invalid.
+ */
+export function parsePlayerCountFromUrl(search: string): number | null {
+  const raw = new URLSearchParams(search).get("playerCount");
+  if (raw === null || raw === "") {
+    return null;
+  }
+  // why: require a bare digit string BEFORE Number() so "3.5" (→ 3.5),
+  // "4x" (→ NaN), and a whitespace-padded " 4 " (→ 4 via coercion) are all
+  // rejected rather than silently accepted or truncated.
+  if (!/^[0-9]+$/.test(raw)) {
+    return null;
+  }
+  const parsed = Number(raw);
+  if (parsed < 1 || parsed > 5) {
+    return null;
+  }
+  return parsed;
+}
+
+/**
  * Serializes a full `SetupCompositionInput` into a URL string with the five
  * URL-bound keys emitted in canonical order: `schemeId`, `mastermindId`,
  * `villainGroupIds`, `henchmanGroupIds`, `heroDeckIds`.

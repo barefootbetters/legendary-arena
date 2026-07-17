@@ -457,6 +457,7 @@ mindmap
         ["WP-345 ✅ Player-count gauntlet boards + challenge links (legends-board client) — player-count selector, full-roster display, 'Challenge this leg' links into the WP-114 registry-viewer preview; EC-379; D-24134 client half"]
         ["WP-384 ✅ Fixed-hero-pool gauntlet division (server) — migration 034 team_key column + SQL-jsonb artifact backfill (D-24187 carve-out) + one-query {open, fixed} standings (heroCount + 2 budgets riding the catalog; exact-optimum subset search, cap 12 logged) + lazy -fixed board emission + heroPool/fixedEntryCounts; EC-413; D-24187 server half"]
         ["WP-385 ✅ Fixed-hero-pool gauntlet division (legends-board client) — Open | Fixed-Pool Championship division toggle (division = the route), Hero Pool column + championship subtitle on fixed boards, feeder line, claimed-only ★ index chips, unclaimed-guard extension for -fixed deep links; EC-414; D-24187 client half — completes the arc"]
+        ["WP-387 ✅ Scenario preview deep-link carries player count (registry-viewer + legends-board) — Shape A of 'play this scenario from the leaderboard': the gauntlet challenge link carries the board's player count into the cards builder so the WP-372 required-count readout matches; new parsePlayerCountFromUrl (envelope, 1..5 else null) + App.vue seeds the editor draft setPlayerCount at mount + buildChallengeUrl optional playerCount; NOT a ?lagn= switch (a seed can't be a valid LAGN); no D-entry (the WP-114 future-extension hook); Shape B save-to-profile deferred; D-24026 dev-verified; EC-416"]
 
       Friends & Ranked Trust (2026-07)
         ["WP-350 ✅ Friendships data model + status machine + mutual-clique helper (server) — new legendary.friendships table (migration 028; player_id FK CASCADE, closed status pending/accepted/declined, normalized-pair LEAST/GREATEST unique index, addressee_id/status lookup index); AccountId-keyed send/accept/decline/remove state machine + list helpers + getFriendshipStatus + areAllMutualFriends clique predicate (accepted-pair count == C(n,2); n≤1 vacuous; order/dup-independent); declined→pending is an UPDATE, removeFriend DELETEs; library-only (no endpoint/UI); EC-380; D-24142"]
@@ -559,12 +560,12 @@ mindmap
 | Hero/Villain Effects & Diagnostics (2026-07) | 5/5 | — |
 | Live-Play HUD & Pending-Choice UX (2026-07) | 15/15 | — |
 | Competitive Score Submission & Verification (2026-07) | 10/10 | — |
-| Gauntlet Leaderboards (Legends) (2026-07) | 6/6 | — |
+| Gauntlet Leaderboards (Legends) (2026-07) | 7/7 | — |
 | Friends & Ranked Trust (2026-07) | 18/18 | — |
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **376/378 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 1 open |
+| **Total** | **377/379 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 1 open |
 
 **Open / blocked WPs (derived from WORK_INDEX, 2):** WP-042.1 ⏸ blocked; WP-349 open.
 <!-- ROADMAP-COUNTS:END -->
