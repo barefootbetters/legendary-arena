@@ -2542,21 +2542,21 @@
   "schemes": [
     {
       "id": 1,
-      "name": "Midtown Bank Robbery",
+      "name": "Bank Robbery Hostage Crisis",
       "slug": "bank-robbery-hostage-crisis",
       "imageUrl": "https://images.legendary-arena.com/co2e/co2e-sc-bank-robbery-hostage-crisis.webp",
       "cards": [
         {
           "abilities": [
-            "Setup: 8 Twists. 12 total Bystanders in the Villain Deck.",
+            "Setup: 9 Twists. Add an extra Villain Group.",
             "Special Rules: Each Villain gets +1[icon:attack] for each Bystander it has.",
-            "Twist: Any Villain in the Bank captures 2 Bystanders. Then play the top card of the Villain Deck.",
-            "Evil Wins: When 8 Bystanders are carried away by escaping Villains."
+            "Twists 1-8: Any Villain in the Bank captures 2 Bystanders. If the Bank is empty, move a Villain from another city space to the Bank instead. Either way, play another card from the Villain Deck.",
+            "Twist 9: Put all Bystanders from the city into the Escape Pile.",
+            "Evil Wins: When 5 Bystanders are in the Escape Pile or the Villain Deck runs out."
           ]
         }
       ],
-      "villainDeckTwistCount": 8,
-      "villainDeckBystanderCount": 12
+      "villainDeckTwistCount": 9
     },
     {
       "id": 2,
@@ -2566,28 +2566,31 @@
       "cards": [
         {
           "abilities": [
-            "Setup: 8 Twists. 6 Heroes. Skrull Villain Group required. Shuffle 12 random Heroes from the Hero Deck into the Villain Deck.",
-            "Special Rules: Heroes in the Villain Deck count as Skrull Villains with [icon:attack] equal to the Hero's [icon:vp]+2. If you defeat that Hero, you gain it.",
-            "Twist: The highest-cost Hero from the HQ moves into the Sewers as a Skrull Villain, as above.",
-            "Evil Wins: If 6 Heroes get into the Escaped Villains pile."
+            "Setup: 6 Twists. Always include the Skrull Villain Group. Add an extra Hero to the Hero Deck. Shuffle 4 random cards from the Hero Deck into the Villain Deck.",
+            "Special Rules: Hero cards in the Villain Deck and city are \"Skrull Infiltrator\" Villains with [icon:attack] equal to that Hero's cost +3. They have \"Fight: Either KO this card or choose a player to gain it as a Hero.\"",
+            "Twists 1-5: The leftmost Hero from the HQ enters the Sewers as a Skrull Infiltrator.",
+            "Twist 6: All Skrulls in the city escape.",
+            "Evil Wins: When there are 6 Hero cards in the Escape Pile."
           ]
         }
-      ]
+      ],
+      "villainDeckTwistCount": 6
     },
     {
       "id": 3,
-      "name": "Legacy Virus, The",
+      "name": "The Legacy Virus",
       "slug": "the-legacy-virus",
       "imageUrl": "https://images.legendary-arena.com/co2e/co2e-sc-the-legacy-virus.webp",
       "cards": [
         {
           "abilities": [
-            "Setup: 8 Twists. Wound stack holds 6 Wounds per player.",
-            "Twist: Each player reveals a [hc:tech] Hero or gains a Wound.",
-            "Evil Wins: If the Wound stack runs out."
+            "Setup: 9 Twists. Wound Deck holds 6 Wounds per player.",
+            "Twist: Stack this Twist next to the Scheme as a \"Virus Mutation.\" Then each player reveals a Hero whose cost is greater than the number of Virus Mutations or gains a Wound.",
+            "Evil Wins: When the Wound Deck or the Villain Deck runs out."
           ]
         }
-      ]
+      ],
+      "villainDeckTwistCount": 9
     },
     {
       "id": 4,
@@ -2597,9 +2600,9 @@
       "cards": [
         {
           "abilities": [
-            "Setup: 8 Twists. Add an extra Henchman group to the Villain Deck.",
-            "Twist: Play the top 2 cards of the Villain Deck.",
-            "Evil Wins: If 12 Villains escape."
+            "Setup: 6 Twists plus 1 per player. Add an extra Villain Group. Add 4 extra Bystanders.",
+            "Twist: Play two cards from the Villain Deck.",
+            "Evil Wins: When there are 3 Villains per player in the Escape Pile or the Villain Deck runs out."
           ]
         }
       ]
@@ -2612,9 +2615,9 @@
       "cards": [
         {
           "abilities": [
-            "Setup: 7 Twists. Each Twist is a Dark Portal.",
-            "Twist 1: Put the Dark Portal above the Mastermind. The Mastermind gets +1[icon:attack].",
-            "Twists 2-6: Put the Dark Portal in the leftmost city space that doesn't yet have a Dark Portal. Villains in that city space get +1[icon:attack].",
+            "Setup: 7 Twists. Each Twist is a \"Dark Portal.\"",
+            "Twists 1-5: Put this Dark Portal above the rightmost city space that doesn't yet have a Dark Portal. Villains in that city space get +1[icon:attack].",
+            "Twist 6: Put this Dark Portal above the Mastermind. The Mastermind gets +1[icon:attack].",
             "Twist 7: Evil Wins!"
           ]
         }
@@ -2629,15 +2632,15 @@
       "cards": [
         {
           "abilities": [
-            "Setup: 5 Twists. 3 additional Twists next to this Scheme. 18 total Bystanders in the Villain Deck.",
-            "Special Rules: Bystanders in the Villain Deck count as Killbot Villains, with [icon:attack] equal to the number of Twists next to this Scheme.",
-            "Twist: Put the Twist next to this Scheme.",
-            "Evil Wins: If 5 “Killbots“ escape."
+            "Setup: 10 Twists. Stack 1 additional Twist next to this Scheme as a \"Killgorithm.\"",
+            "Special Rules: Bystanders in the Villain Deck are \"Killbot\" Villains with [icon:attack] equal to the number of Killgorithms. They have: \"Fight: Rescue this as a Bystander.\"",
+            "Twists 1-9: Add this Twist to the Killgorithms. Two Killbots enter the city from the Bystander Deck.",
+            "Twist 10: All Killbots in the city escape.",
+            "Evil Wins: When there are 6 Bystander cards in the Escape Pile."
           ]
         }
       ],
-      "villainDeckTwistCount": 5,
-      "villainDeckBystanderCount": 18
+      "villainDeckTwistCount": 10
     },
     {
       "id": 7,
@@ -2647,9 +2650,9 @@
       "cards": [
         {
           "abilities": [
-            "Setup: For 2-3 players, use 8 Twists. For 4-5 players, use 5 Twists. If only 2 players, use only 4 Heroes in the Hero Deck.",
-            "Twist: KO all the Heroes in the HQ.",
-            "Evil Wins: If the Hero Deck runs out."
+            "Setup: 1-3 players: 6 Twists. 4-5 players: 5 Twists. For exactly 2 players: Use 4 Heroes in the Hero Deck.",
+            "Twist: KO all Heroes from the HQ.",
+            "Evil Wins: When the Hero Deck runs out."
           ]
         }
       ]
@@ -2663,10 +2666,27 @@
         {
           "abilities": [
             "Setup: 8 Twists.",
-            "Twist: Put the Twist next to this Scheme.",
-            "Twist 5-6: Each player gains a Wound.",
-            "Twist 7: Each player gains 3 Wounds.",
+            "Twists 1-3: Each player discards a card.",
+            "Twist 4: Each player discards two cards.",
+            "Twists 5-6: Each player gains a Wound.",
+            "Twist 7: Each player gains two Wounds.",
             "Twist 8: Evil Wins!"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "name": "Enshrouded Identity",
+      "slug": "enshrouded-identity",
+      "imageUrl": "https://images.legendary-arena.com/co2e/co2e-sc-enshrouded-identity.webp",
+      "cards": [
+        {
+          "abilities": [
+            "Setup: 3 Twists, plus 1 Twist per player. There is no Mastermind yet. Instead, put 3 S.H.I.E.L.D. Officers next to the Mastermind space as \"Bodyguards.\"",
+            "Special Rules: Bodyguards are Villains with 3[icon:attack] and \"Fight: Either KO this card or choose a player to gain it as a Hero.\" Whenever a Master Strike occurs, if there is no Mastermind yet, add a Bodyguard instead. The first time there are no Bodyguards, add a random Mastermind to the game. (Do any \"Start of Game\" effects it has.) You can't fight that Mastermind while it has any Bodyguards.",
+            "Twist: Add two Bodyguards.",
+            "Evil Wins: When there are 9 Bodyguards or the Villain Deck runs out."
           ]
         }
       ]
