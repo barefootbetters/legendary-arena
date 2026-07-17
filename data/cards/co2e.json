@@ -2812,6 +2812,16 @@
       "abilities": [
         "[hc:tech]: Draw a card."
       ]
+    },
+    {
+      "name": "S.H.I.E.L.D. Officer",
+      "slug": "officer",
+      "cardType": "shield-officer",
+      "cost": 3,
+      "attack": "2",
+      "team": "shield",
+      "imageUrl": "https://images.legendary-arena.com/co2e/co2e-so-officer.webp",
+      "abilities": []
     }
   ]
 }
