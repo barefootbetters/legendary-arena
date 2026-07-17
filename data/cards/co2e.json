@@ -2542,21 +2542,21 @@
   "schemes": [
     {
       "id": 1,
-      "name": "Midtown Bank Robbery",
+      "name": "Bank Robbery Hostage Crisis",
       "slug": "bank-robbery-hostage-crisis",
       "imageUrl": "https://images.legendary-arena.com/co2e/co2e-sc-bank-robbery-hostage-crisis.webp",
       "cards": [
         {
           "abilities": [
-            "Setup: 8 Twists. 12 total Bystanders in the Villain Deck.",
+            "Setup: 9 Twists. Add an extra Villain Group.",
             "Special Rules: Each Villain gets +1[icon:attack] for each Bystander it has.",
-            "Twist: Any Villain in the Bank captures 2 Bystanders. Then play the top card of the Villain Deck.",
-            "Evil Wins: When 8 Bystanders are carried away by escaping Villains."
+            "Twists 1-8: Any Villain in the Bank captures 2 Bystanders. If the Bank is empty, move a Villain from another city space to the Bank instead. Either way, play another card from the Villain Deck.",
+            "Twist 9: Put all Bystanders from the city into the Escape Pile.",
+            "Evil Wins: When 5 Bystanders are in the Escape Pile or the Villain Deck runs out."
           ]
         }
       ],
-      "villainDeckTwistCount": 8,
-      "villainDeckBystanderCount": 12
+      "villainDeckTwistCount": 9
     },
     {
       "id": 2,
