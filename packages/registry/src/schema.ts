@@ -265,6 +265,12 @@ export const MastermindCardSchema = z.object({
   slug:      z.string(),
   tactic:    z.boolean().optional(),
   vAttack:   z.union([z.string(), z.number()]).nullable(),
+  // why: D-24189 — optional + additive per-card VP. The group-level
+  // MastermindSchema.vp gives the base mastermind's VP; some sets (co2e 2e)
+  // print a distinct VP on the epic face and on tactic cards, so those cards
+  // carry their own vp. Absent on most cards (base face inherits the group
+  // vp); string-or-number to match VillainCardSchema.vp across sets.
+  vp:        z.union([z.string(), z.number()]).nullable().optional(),
   imageUrl:  z.string().url(),
   abilities: z.array(z.string()),
 });

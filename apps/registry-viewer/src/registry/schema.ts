@@ -78,6 +78,10 @@ export const MastermindCardSchema = z.object({
   slug:      z.string(),
   tactic:    z.boolean().optional(),
   vAttack:   z.union([z.string(), z.number(), z.null()]).optional(),
+  // why: D-24189 — per-card VP (epic face / tactics print their own). Mirror
+  // of the package MastermindCardSchema; kept so safeParse retains it rather
+  // than stripping it from the fetched set data.
+  vp:        z.union([z.string(), z.number(), z.null()]).optional(),
   imageUrl:  z.string().url().optional().nullable(),
   abilities: z.array(z.string()).optional().default([]),
 });
