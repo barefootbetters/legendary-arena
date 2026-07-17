@@ -819,7 +819,7 @@
           "attack": "4+",
           "recruit": null,
           "abilities": [
-            "You get +1[icon:attack] for each Hero you played this turn that costs 1[icon:vp] or 2[icon:vp]."
+            "You get +1[icon:attack] for each Hero you played this turn that costs 1 or 2."
           ]
         },
         {
@@ -1661,7 +1661,7 @@
           "attack": null,
           "recruit": null,
           "abilities": [
-            "Reveal the top card of your deck. If it costs 0[icon:vp], KO it. [keyword:reveal-ko]",
+            "Reveal the top card of your deck. If it costs 0, KO it. [keyword:reveal-ko]",
             "[hc:tech]: Draw a card. [keyword:draw:1]"
           ]
         },
@@ -1677,7 +1677,7 @@
           "attack": null,
           "recruit": "2+",
           "abilities": [
-            "[hc:strength]: Each other player reveals the top card of their deck. If that card costs 4[icon:vp] or more, discard it. You get +1[icon:recruit] for each card discarded this way."
+            "[hc:strength]: Each other player reveals the top card of their deck. If that card costs 4 or more, discard it. You get +1[icon:recruit] for each card discarded this way."
           ]
         },
         {
@@ -1878,7 +1878,7 @@
             "Always Leads: Four Horsemen",
             "Four Horsemen Villains get +2[icon:attack].",
             "Apocalypse Wins: When Famine, Pestilence, War, and Death have escaped.",
-            "Master Strike: Each player reveals their hand and puts all their Heroes that cost 1[icon:vp] or more on top of their deck."
+            "Master Strike: Each player reveals their hand and puts all their Heroes that cost 1 or more on top of their deck."
           ]
         },
         {
@@ -1888,7 +1888,7 @@
           "vAttack": 12,
           "imageUrl": "https://images.legendary-arena.com/dkcy/dkcy-mt-apocalypse-apocalyptic-destruction.webp",
           "abilities": [
-            "Fight: Each other player KOs two Heroes from their discard pile that each cost 1[icon:vp] or more."
+            "Fight: Each other player KOs two Heroes from their discard pile that each cost 1 or more."
           ]
         },
         {
@@ -1898,7 +1898,7 @@
           "vAttack": 12,
           "imageUrl": "https://images.legendary-arena.com/dkcy/dkcy-mt-apocalypse-the-end-of-all-things.webp",
           "abilities": [
-            "Fight: Each other player reveals the top three cards of their deck, KOs each one of those cards that cost 1 [icon:vp] or more, and puts the rest back in any order."
+            "Fight: Each other player reveals the top three cards of their deck, KOs each one of those cards that cost 1 or more, and puts the rest back in any order."
           ]
         },
         {
@@ -2246,7 +2246,7 @@
           "vAttack": "7",
           "imageUrl": "https://images.legendary-arena.com/dkcy/dkcy-vi-four-horsemen-death.webp",
           "abilities": [
-            "Fight: Each other player reveals their hand and KOs one of their Heroes that costs 1[icon:vp] or more.",
+            "Fight: Each other player reveals their hand and KOs one of their Heroes that costs 1 or more.",
             "Escape: Each player does that same effect."
           ],
           "copies": 2
@@ -2270,7 +2270,7 @@
           "vAttack": "5",
           "imageUrl": "https://images.legendary-arena.com/dkcy/dkcy-vi-four-horsemen-pestilence.webp",
           "abilities": [
-            "Fight: Each other player reveals the top three cards of their deck, discards each of those cards that costs 1[icon:vp] or more, and puts the rest back in any order.",
+            "Fight: Each other player reveals the top three cards of their deck, discards each of those cards that costs 1 or more, and puts the rest back in any order.",
             "Escape: Each player does that same effect."
           ],
           "copies": 2
@@ -2394,7 +2394,7 @@
           "vAttack": "0",
           "imageUrl": "https://images.legendary-arena.com/dkcy/dkcy-vi-mlf-zero.webp",
           "abilities": [
-            "To fight Zero, you must also discard three cards that cost 0[icon:vp]."
+            "To fight Zero, you must also discard three cards that cost 0."
           ],
           "copies": 2
         }

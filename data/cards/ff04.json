@@ -150,7 +150,7 @@
           "attack": "2+",
           "recruit": null,
           "abilities": [
-            "If you played any other cards that cost 4 [icon:vp] this turn, you get +2[icon:attack]."
+            "If you played any other cards that cost 4 this turn, you get +2[icon:attack]."
           ]
         },
         {

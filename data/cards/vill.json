@@ -576,7 +576,7 @@
           "attack": null,
           "recruit": "2+",
           "abilities": [
-            "[hc:strength]: Each other player reveals the top card of their deck, and if it costs 1[icon:vp], 2[icon:vp], or 3[icon:vp], discards it. You get +1[icon:recruit] for each card discarded this way."
+            "[hc:strength]: Each other player reveals the top card of their deck, and if it costs 1, 2, or 3, discards it. You get +1[icon:recruit] for each card discarded this way."
           ]
         },
         {
@@ -591,7 +591,7 @@
           "attack": "2+",
           "recruit": null,
           "abilities": [
-            "You get +1[icon:attack] for each other card you played this turn that costs 4[icon:vp] or more."
+            "You get +1[icon:attack] for each other card you played this turn that costs 4 or more."
           ]
         },
         {
@@ -1497,7 +1497,7 @@
           "recruit": null,
           "abilities": [
             "Each other player reveals a [hc:tech] Ally or discards their hand. Each player who discarded their hand this way draws 5 cards.",
-            "[hc:tech]: You get +3[icon:attack] for each Ally discarded this way that costs 7[icon:vp] or more."
+            "[hc:tech]: You get +3[icon:attack] for each Ally discarded this way that costs 7 or more."
           ]
         }
       ],
@@ -1962,7 +1962,7 @@
           "vAttack": "7",
           "imageUrl": "https://images.legendary-arena.com/vill/vill-vi-avengers-thor.webp",
           "abilities": [
-            "Ambush: KO each Ally from the Lair that costs 7[icon:vp] or more.",
+            "Ambush: KO each Ally from the Lair that costs 7 or more.",
             "Fight: Same effect.",
             "Overrun: [keyword:Demolish] each player."
           ],
@@ -1997,7 +1997,7 @@
           "imageUrl": "https://images.legendary-arena.com/vill/vill-vi-defenders-daredevil.webp",
           "abilities": [
             "Fight: The next Ally you recruit this turn goes on top of your deck.",
-            "Overrun: Each player reveals the top card of their deck and if it costs 1[icon:vp] or more, discards it."
+            "Overrun: Each player reveals the top card of their deck and if it costs 1 or more, discards it."
           ],
           "copies": 2
         },
@@ -2073,8 +2073,8 @@
           "vAttack": "6",
           "imageUrl": "https://images.legendary-arena.com/vill/vill-vi-marvel-knights-punisher.webp",
           "abilities": [
-            "Fight: Reveal the top card of your deck. If it costs 0[icon:vp], KO it.",
-            "Overrun: Each player reveals the top card of their deck and if it costs 1[icon:vp] or more, KOs it."
+            "Fight: Reveal the top card of your deck. If it costs 0, KO it.",
+            "Overrun: Each player reveals the top card of their deck and if it costs 1 or more, KOs it."
           ],
           "copies": 2
         },
@@ -2539,7 +2539,7 @@
         {
           "qtd": 3,
           "abilities": [
-            "When you kidnap this Bystander, reveal the top card of your deck. If it costs 0[icon:vp], KO it."
+            "When you kidnap this Bystander, reveal the top card of your deck. If it costs 0, KO it."
           ]
         }
       ]
