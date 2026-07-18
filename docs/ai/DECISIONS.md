@@ -29760,5 +29760,68 @@ to the degenerate empty state (`baseCardId = mastermindId`, empty
 `tacticsDeck`). `hydra-high-council` is reachable content (referenced by
 `content/themes/aim-modok.json` and `hydra-uprising.json`). Recorded as a
 follow-up; WP-389 leaves the null-return guard untouched.
+### D-24194 — Support pools ride the MATCH-SETUP envelope, not the composition block
+
+**Status:** Active (data contract) 2026-07-18. Decided by the operator during
+WP-036 review, after the Phase B survey found the composition route blocked.
+Unblocks WP-036 Phases C–E.
+
+**User-Visible Surface:** `cards.legendary-arena.com` loadout builder; the
+downloaded MATCH-SETUP document.
+
+**The problem.** WP-036 needs the four supply piles — bystanders, wounds,
+S.H.I.E.L.D. officers, sidekicks — to name *which* cards compose them, so a
+"Support Preset" can be frozen across runs and hero selection becomes the only
+variable in a `legends.legendary-arena.com` comparison. Today
+`MatchSetupConfig` carries only `bystandersCount` / `woundsCount` /
+`officersCount` / `sidekicksCount`: quantities with no identity.
+
+**Why not the composition block.** Those four counts sit inside the 9-field
+composition lock (D-1244), which mandates `additionalProperties: false` and is
+stated in `.claude/rules/code-style.md` as "Do not rename, abbreviate, or add
+fields". A pool object there is actively rejected, and the drift-detection
+assertions in `setupContract.test.ts` and `uiState.types.drift.test.ts` fail by
+design. Amending D-1244 was considered and rejected as disproportionate: the
+lock exists to keep the client/server/engine setup contract identical, and this
+feature does not need to change what the engine consumes.
+
+**The decision.** Support pools are an **additive optional envelope field**,
+`supportPools`, following the path `heroSelectionMode` took under WP-093 /
+D-9301. `.claude/rules/code-style.md` already states the lock "applies
+specifically to the composition block" and that the envelope "is extensible per
+`MATCH-SETUP-SCHEMA.md §Extensibility Rules`". **D-1244 is unchanged and
+unamended by this entry.**
+
+Shape: `supportPools?: SupportPools`, where `SupportPools` carries one optional
+`SupportPool` per kind — `bystanders`, `wounds`, `officers`, `sidekicks` — and
+a `SupportPool` is `{ mode: "sets" | "explicit"; sets?: string[]; cards:
+{ extId, copies }[] }`. The per-kind object is written out longhand rather than
+as `Partial<Record<SupportPoolKind, SupportPool>>`: the package compiles under
+`exactOptionalPropertyTypes`, where `Partial` permits absence but not an
+explicit `undefined`, which is precisely what zod's inferred output produces.
+
+**Absence is the default.** No `supportPools` key means "unspecified pool,
+counts alone" — every document written before this field existed stays valid,
+unmigrated. There is deliberately no `"default"` mode; absence expresses it.
+
+**The cross-block invariant.** Splitting pool from count is the cost of not
+touching the lock, so agreement between them is enforced explicitly: for every
+pool present, `sum(cards[].copies)` must equal the paired composition count. It
+is checked in a `superRefine` on `MatchSetupDocumentSchema` — the only place
+that can see both blocks — and the pairing is tabulated once in
+`SUPPORT_POOL_COUNT_FIELD` rather than repeated as four literals. Without this,
+a preset could silently describe a different pile than the engine builds.
+
+**Resolved cards are always written**, even in `"sets"` mode, so a record stays
+reproducible against a registry snapshot that has since gained cards. `mode`
+and `sets` are retained alongside so the authoring *intent* round-trips and a
+preset can be re-resolved on request.
+
+**Scope.** This entry covers the registry-side MATCH-SETUP contract only. The
+LAGN wire format is **not** changed here: `packages/lagn-spec` pins
+`lagn_version: z.literal('1.0.0')` with no migration seam, and its Zod schema
+has no `.strict()`, so an unknown key is silently stripped rather than
+rejected. Carrying pools into LAGN therefore requires a version bump plus
+migration machinery and is deferred to WP-036 Phase B2.
 
 Protect this file.

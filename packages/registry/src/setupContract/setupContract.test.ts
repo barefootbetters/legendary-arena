@@ -559,4 +559,154 @@ describe("setupContract (WP-091)", () => {
       "Expected a villain id in the henchman slot to be rejected as unknown_extid.",
     );
   });
+
+  // ── Support pools (WP-036 / D-24194) ────────────────────────────────────
+  //
+  // why: these stay inside the single wrapping describe per the file header —
+  // a second top-level describe would change the locked suite count.
+
+  test("a document without supportPools stays valid (absence is the default)", () => {
+    const registry = buildStubRegistry();
+    const document = buildValidDocument();
+    assert.equal(document.supportPools, undefined);
+    assert.equal(validateMatchSetupDocument(document, registry).ok, true);
+  });
+
+  test("a support pool whose copies sum to the declared count is accepted", () => {
+    const registry = buildStubRegistry();
+    const document: MatchSetupDocument = {
+      ...buildValidDocument(),
+      supportPools: {
+        bystanders: {
+          mode: "explicit",
+          cards: [
+            { extId: "core/hostage", copies: 20 },
+            { extId: "core/bystander-two", copies: 10 },
+          ],
+        },
+      },
+    };
+    assert.equal(document.composition.bystandersCount, 30);
+    assert.equal(validateMatchSetupDocument(document, registry).ok, true);
+  });
+
+  test("supportPools survives the validator's field-by-field rebuild", () => {
+    const registry = buildStubRegistry();
+    const document: MatchSetupDocument = {
+      ...buildValidDocument(),
+      supportPools: {
+        bystanders: {
+          mode: "sets",
+          sets: ["core"],
+          cards: [{ extId: "core/hostage", copies: 30 }],
+        },
+      },
+    };
+    const result = validateMatchSetupDocument(document, registry);
+    assert.equal(result.ok, true);
+    // why: validateMatchSetupDocument rebuilds the document field-by-field, so
+    // a field it forgets to echo parses cleanly and then vanishes. Asserting
+    // the round-trip is the only thing that catches that regression.
+    assert.deepEqual(result.ok && result.value.supportPools, document.supportPools);
+  });
+
+  test("a support pool whose copies disagree with the count is rejected", () => {
+    const registry = buildStubRegistry();
+    const document: MatchSetupDocument = {
+      ...buildValidDocument(),
+      supportPools: {
+        bystanders: {
+          mode: "explicit",
+          cards: [{ extId: "core/hostage", copies: 29 }],
+        },
+      },
+    };
+    const errors = errorsOf(validateMatchSetupDocument(document, registry));
+    assert.ok(
+      errors.some((candidate) => /29/.test(candidate.message) && /30/.test(candidate.message)),
+      "Expected the mismatch error to name both the pool total and the declared count.",
+    );
+  });
+
+  test("sets mode requires a sets array; explicit mode forbids one", () => {
+    const registry = buildStubRegistry();
+    const base = buildValidDocument();
+
+    const setsWithoutSets: MatchSetupDocument = {
+      ...base,
+      supportPools: {
+        wounds: { mode: "sets", cards: [{ extId: "core/wound", copies: 30 }] },
+      },
+    };
+    assert.equal(validateMatchSetupDocument(setsWithoutSets, registry).ok, false);
+
+    const explicitWithSets: MatchSetupDocument = {
+      ...base,
+      supportPools: {
+        wounds: {
+          mode: "explicit",
+          sets: ["core"],
+          cards: [{ extId: "core/wound", copies: 30 }],
+        },
+      },
+    };
+    assert.equal(validateMatchSetupDocument(explicitWithSets, registry).ok, false);
+
+    const setsWithSets: MatchSetupDocument = {
+      ...base,
+      supportPools: {
+        wounds: {
+          mode: "sets",
+          sets: ["core"],
+          cards: [{ extId: "core/wound", copies: 30 }],
+        },
+      },
+    };
+    assert.equal(validateMatchSetupDocument(setsWithSets, registry).ok, true);
+  });
+
+  test("a support pool listing the same ext_id twice is rejected", () => {
+    const registry = buildStubRegistry();
+    const document: MatchSetupDocument = {
+      ...buildValidDocument(),
+      supportPools: {
+        bystanders: {
+          mode: "explicit",
+          cards: [
+            { extId: "core/hostage", copies: 15 },
+            { extId: "core/hostage", copies: 15 },
+          ],
+        },
+      },
+    };
+    const errors = errorsOf(validateMatchSetupDocument(document, registry));
+    assert.ok(
+      errors.some((candidate) => /more than once/.test(candidate.message)),
+      "Expected duplicate ext_ids in one pool to be rejected.",
+    );
+  });
+
+  test("zero-copy entries and unknown pool keys are rejected", () => {
+    const registry = buildStubRegistry();
+    const base = buildValidDocument();
+
+    const zeroCopies: MatchSetupDocument = {
+      ...base,
+      supportPools: {
+        sidekicks: { mode: "explicit", cards: [{ extId: "core/sidekick", copies: 0 }] },
+      },
+    };
+    assert.equal(validateMatchSetupDocument(zeroCopies, registry).ok, false);
+
+    // why: the pools object is .strict(), so a misspelled kind must fail loudly
+    // rather than being silently dropped — the failure mode that makes a saved
+    // preset come back empty.
+    const unknownKind = {
+      ...base,
+      supportPools: {
+        officer: { mode: "explicit", cards: [{ extId: "core/officer", copies: 30 }] },
+      },
+    } as unknown as MatchSetupDocument;
+    assert.equal(validateMatchSetupDocument(unknownKind, registry).ok, false);
+  });
 });

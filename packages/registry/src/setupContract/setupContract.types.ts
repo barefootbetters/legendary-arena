@@ -73,6 +73,69 @@ export interface SetupCompositionInput {
 // union.
 export type HeroSelectionMode = "GROUP_STANDARD";
 
+// why: WP-036 / D-24194 — support pools name WHICH bystander, wound, officer
+// and sidekick cards make up the four supply piles; the composition block
+// carries only HOW MANY. They live on the envelope, not the composition,
+// because the 9-field composition lock (D-1244) forbids added fields while
+// the envelope is extensible by design (MATCH-SETUP-SCHEMA.md §Extensibility
+// Rules) — the same additive path `heroSelectionMode` took under WP-093 /
+// D-9301.
+//
+// Absence is the default: no `supportPools` key means "unspecified pool,
+// counts alone", which is every document written before this field existed.
+// There is deliberately no "default" mode — absence already expresses it.
+export type SupportPoolKind = "bystanders" | "wounds" | "officers" | "sidekicks";
+
+/** Iteration order for the four support pools. */
+export const SUPPORT_POOL_KINDS: readonly SupportPoolKind[] = [
+  "bystanders",
+  "wounds",
+  "officers",
+  "sidekicks",
+] as const;
+
+/**
+ * How the author chose the pool. Stored alongside the resolved `cards` so a
+ * preset round-trips the *intent* ("every sidekick in LGN-2E") and not just the
+ * flattened result, which matters once the registry gains cards.
+ */
+export type SupportPoolMode = "sets" | "explicit";
+
+/** One card in a support pool, with its multiplicity in the supply pile. */
+export interface SupportPoolCard {
+  /** Set-qualified ext_id, `<setAbbr>/<slug>`, per D-10014. */
+  extId: string;
+  /** Copies of this card in the pile. Positive; the pile total is the sum. */
+  copies: number;
+}
+
+export interface SupportPool {
+  mode: SupportPoolMode;
+  /** Set abbreviations the pool was drawn from. Required when mode is "sets". */
+  sets?: string[] | undefined;
+  /**
+   * The resolved cards. Always written — even in "sets" mode — so a record
+   * stays reproducible against a registry snapshot that has since changed.
+   */
+  cards: SupportPoolCard[];
+}
+
+/**
+ * Per-kind support pools. Any subset may be present; all are optional.
+ *
+ * why: written out longhand with explicit `| undefined` rather than
+ * `Partial<Record<SupportPoolKind, SupportPool>>`. The package compiles under
+ * `exactOptionalPropertyTypes`, where `Partial` means "may be absent" but NOT
+ * "may be present and undefined" — which is exactly what zod's inferred output
+ * type produces, so the Partial form fails to accept a parsed document.
+ */
+export interface SupportPools {
+  bystanders?: SupportPool | undefined;
+  wounds?: SupportPool | undefined;
+  officers?: SupportPool | undefined;
+  sidekicks?: SupportPool | undefined;
+}
+
 /**
  * SetupEnvelope — the MATCH-SETUP envelope metadata surrounding the
  * composition block. Field names and ordering match
@@ -88,7 +151,25 @@ export interface SetupEnvelope {
   themeId?: string;
   expansions: string[];
   heroSelectionMode?: HeroSelectionMode;
+  supportPools?: SupportPools;
 }
+
+/**
+ * Maps each support pool to the composition count it must agree with.
+ *
+ * why: the pool lives on the envelope and the count on the composition, so
+ * "sum(copies) equals the count" is a cross-block invariant. This table is the
+ * one place that pairing is written down — validators read it rather than
+ * repeating four literal field names.
+ */
+export const SUPPORT_POOL_COUNT_FIELD: Readonly<
+  Record<SupportPoolKind, keyof SetupCompositionInput>
+> = {
+  bystanders: "bystandersCount",
+  wounds: "woundsCount",
+  officers: "officersCount",
+  sidekicks: "sidekicksCount",
+} as const;
 
 /**
  * MatchSetupDocument — the full authored document. Envelope fields are

@@ -8,6 +8,10 @@
  */
 
 import { z } from "zod";
+import {
+  SUPPORT_POOL_COUNT_FIELD,
+  SUPPORT_POOL_KINDS,
+} from "./setupContract.types.js";
 
 // why: setupId and themeId are local document identifiers — bare lowercase
 // slugs, no set qualifier.
@@ -56,6 +60,84 @@ export const HeroSelectionModeSchema = z
   .enum(["GROUP_STANDARD"] as const)
   .optional();
 
+// why: WP-036 / D-24194 — support pools. Card ext_ids here use the same
+// set-qualified grammar as the composition (D-10014), because they name real
+// registry cards; `sets` entries are bare set abbreviations and so use the
+// unqualified pattern.
+const SupportPoolCardSchema = z
+  .object({
+    extId: extIdString,
+    copies: z
+      .number()
+      .int("Every support pool card's copies value must be a positive integer.")
+      .positive(
+        "Every support pool card's copies value must be a positive integer — omit the card instead of listing zero copies.",
+      ),
+  })
+  .strict();
+
+export const SupportPoolSchema = z
+  .object({
+    mode: z.enum(["sets", "explicit"] as const),
+    sets: z
+      .array(
+        z
+          .string()
+          .regex(
+            EXT_ID_PATTERN,
+            "Every support pool set abbreviation must match the pattern ^[a-z0-9-]+$.",
+          ),
+      )
+      .min(1, "The sets array must contain at least one set abbreviation.")
+      .optional(),
+    cards: z
+      .array(SupportPoolCardSchema)
+      .min(1, "A support pool must list at least one card — omit the pool entirely to leave it unspecified."),
+  })
+  .strict()
+  // why: `sets` records which sets the author drew from, so it is meaningless
+  // in explicit mode and mandatory in sets mode. Enforcing both directions
+  // keeps a round-tripped pool from claiming an origin it does not have.
+  .superRefine((pool, ctx) => {
+    if (pool.mode === "sets" && pool.sets === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["sets"],
+        message:
+          'A support pool in "sets" mode must list the set abbreviations it was drawn from.',
+      });
+    }
+    if (pool.mode === "explicit" && pool.sets !== undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["sets"],
+        message:
+          'A support pool in "explicit" mode must not carry a sets array — the cards array is the whole definition.',
+      });
+    }
+    const seen = new Set<string>();
+    for (const card of pool.cards) {
+      if (seen.has(card.extId)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["cards"],
+          message: `The support pool lists ${card.extId} more than once — combine the duplicates into a single entry with the summed copies value.`,
+        });
+        break;
+      }
+      seen.add(card.extId);
+    }
+  });
+
+export const SupportPoolsSchema = z
+  .object({
+    bystanders: SupportPoolSchema.optional(),
+    wounds: SupportPoolSchema.optional(),
+    officers: SupportPoolSchema.optional(),
+    sidekicks: SupportPoolSchema.optional(),
+  })
+  .strict();
+
 // why: .strict() mirrors JSON Schema `additionalProperties: false` —
 // unknown envelope fields fail fast so the UI surfaces a structural error
 // rather than silently ignoring extra keys.
@@ -101,6 +183,7 @@ export const EnvelopeSchema = z
       )
       .min(1, "The expansions array must contain at least one entry."),
     heroSelectionMode: HeroSelectionModeSchema,
+    supportPools: SupportPoolsSchema.optional(),
   })
   .strict();
 
@@ -139,4 +222,32 @@ export const CompositionSchema = z
 // instead of being silently preserved alongside the correct fields.
 export const MatchSetupDocumentSchema = EnvelopeSchema.extend({
   composition: CompositionSchema,
-}).strict();
+})
+  .strict()
+  // why: WP-036 / D-24194 — the pool lives on the envelope and the pile size on
+  // the composition, so agreement between them is a cross-block invariant no
+  // single object schema can express. Checking it here is what stops a preset
+  // from silently describing a different pile than the one the engine builds.
+  // Pools are optional; an absent pool constrains nothing.
+  .superRefine((document, ctx) => {
+    const pools = document.supportPools;
+    if (pools === undefined) {
+      return;
+    }
+    for (const kind of SUPPORT_POOL_KINDS) {
+      const pool = pools[kind];
+      if (pool === undefined) {
+        continue;
+      }
+      const countField = SUPPORT_POOL_COUNT_FIELD[kind];
+      const declared = document.composition[countField];
+      const total = pool.cards.reduce((sum, card) => sum + card.copies, 0);
+      if (total !== declared) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["supportPools", kind, "cards"],
+          message: `The ${kind} pool lists ${total} ${total === 1 ? "copy" : "copies"} but composition.${countField} declares ${declared} — the pool's copies must sum to the declared count.`,
+        });
+      }
+    }
+  });
