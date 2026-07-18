@@ -305,12 +305,28 @@ function findMastermindCards(
     const tacticCards: MastermindCardEntry[] = [];
 
     for (const card of mastermind.cards) {
-      // why: tactic !== true identifies the base card; tactic === true
+      // why: tactic !== true identifies a non-tactic face; tactic === true
       // identifies tactic cards. This is a registry schema contract
       // (D-1413), not a heuristic.
       if (card.tactic === true) {
         tacticCards.push(card);
-      } else {
+      } else if (baseCard === null) {
+        // why: D-24193 — the base card is the FIRST non-tactic face. A
+        // mastermind may ship more than one non-tactic face; every later one
+        // is an alternate face (an Epic variant for 56 masterminds, a
+        // transformation / second-form face for 9) and is deliberately not
+        // selected. There is no opt-in for either yet.
+        //
+        // why: this guard is the WP-389 fix. The loop previously assigned on
+        // every non-tactic face with no early exit, so the LAST one won. That
+        // was invisible for as long as every mastermind had exactly one
+        // non-tactic face — first-wins and last-wins are indistinguishable in
+        // that case — and diverged silently the first time a set shipped an
+        // Epic face, selecting the harder variant unchosen.
+        //
+        // why: guard rather than `break` — tactic cards may follow the base
+        // face in registry order, so the loop must keep running to collect
+        // them all.
         baseCard = card;
       }
     }

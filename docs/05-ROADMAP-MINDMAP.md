@@ -270,7 +270,7 @@ mindmap
         ["WP-214 ✅ Villain hero capture + dynamic attack resolution (engine + data)"]
         ["WP-242 ✅ Villain Fight KO-Hero player choice (engine: park → resolve, bot auto-resolve)"]
         ["WP-386 ✅ Red Skull Master Strike — 'Each player KOs a Hero from their hand' (engine; the WP-024 per-mastermind strike dispatcher implemented only Magneto, so Red Skull's printed strike silently no-op'd — surfaced by the 2026-07-16 Red Skull live-game review, 3 strikes / 6 skipped KOs; adds a Red Skull id set core/red-skull + co2e/red-skull (identical base-face text; epic face NOT matched) + resolveRedSkullStrike on the Magneto pattern — sorted players, KO the lowest-cost Hero (cardStats cost ?? 0, tie → lowest hand index) from hand to G.ko, Wounds excluded, empty/all-Wound hand → logged no-op, one pushLog line per player; D-24188 auto-KO ≈ player-optimal pick, avoids a blocking multi-player pending-choice; generic strike behavior D-15401 capture + counter + WP-200 emission byte-unchanged; NO sentinel re-pin — recorded fixture + runtime-observed matrix are core/dr-doom; engine 1981→1991/0; EC-415)"]
-        ["WP-389 📝 Mastermind base-face selection — stop silently selecting Epic faces (engine; the setup card loop assigned baseCard on every non-tactic face with no early exit, so the LAST won — 65 masterminds across 24 sets played their Epic variant unchosen, e.g. co2e Doom at attack 12+ instead of 10+. core was unaffected (single non-tactic face), which is why no oracle caught it. Fix is one assignment guard so the FIRST non-tactic face wins, keeping tactic as the D-1413 discriminator; Epic becomes unreachable until an explicit opt-in exists. Unblocks WP-388. Reserves D-24193; drafted 2026-07-18)"]
+        ["WP-389 ✅ Mastermind base-face selection — stop silently selecting Epic faces (engine; the setup card loop assigned baseCard on every non-tactic face with no early exit, so the LAST won — 65 masterminds across 24 sets played their Epic variant unchosen, e.g. co2e Doom at attack 12+ instead of 10+. core was unaffected (single non-tactic face), which is why no oracle caught it. Fix is one assignment guard so the FIRST non-tactic face wins, keeping tactic as the D-1413 discriminator; Epic becomes unreachable until an explicit opt-in exists. Unblocks WP-388. Reserves D-24193; executed 2026-07-18)"]
         ["WP-388 📝 co2e mastermind strike texts — Doom / Loki / Magneto / Doctor Octopus (engine; four of five co2e base faces still no-op their printed Master Strike beyond the generic bookkeeping. Adds a per-mastermind resolver for each on the WP-386 pattern, resolving every printed or/may clause by deterministic auto-pick — no new G field, no RNG, no pending-choice. Doom derives its Omen count from masterStrikeCount+1 rather than storing a stack. Loki's Hypno-Thrall and Doc Ock's reveal-8 branches are deliberately deferred as a recorded fidelity gap. Reserves D-24192; drafted 2026-07-18)"]
         ["WP-243 ✅ Villain Fight KO-Hero player choice (UX: engine projection + client prompt + discard visibility)"]
 
@@ -547,7 +547,7 @@ mindmap
 | Public Leaderboard (Marketing) | 2/2 | — |
 | Legends Public Scoreboard | 2/2 | — |
 | Villain Deck Pipeline | 5/5 | — |
-| Villain & Henchman Effects | 12/14 | 2 open |
+| Villain & Henchman Effects | 13/14 | 1 open |
 | Hero Ability Coverage & Markup Pipeline | 52/52 | — |
 | Notable Events & Overlays | 4/4 | — |
 | Simulation Sweep & Analytics Pipeline | 8/8 | — |
@@ -567,9 +567,9 @@ mindmap
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **377/381 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 3 open |
+| **Total** | **378/381 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 2 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 4):** WP-042.1 ⏸ blocked; WP-349 open; WP-389 open; WP-388 open.
+**Open / blocked WPs (derived from WORK_INDEX, 3):** WP-042.1 ⏸ blocked; WP-349 open; WP-388 open.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.

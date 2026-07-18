@@ -7,6 +7,63 @@
 
 ## Current State
 
+### WP-389 / EC-419 — Mastermind base card is the FIRST non-tactic face (D-24193 Active) (2026-07-18)
+
+**65 masterminds across 24 sets were playing the wrong card.**
+`findMastermindCards` assigned `baseCard` on *every* non-tactic face with no
+early exit, so the **last** one won. Any mastermind shipping more than one
+non-tactic face therefore played its alternate face — 56 Epic variants and 9
+transformation / second-form faces (`wwhk` x6, `amwp` x3) — a harder variant
+no player chose. co2e Doctor Doom was selected as *Epic Doctor Doom* at attack
+`12+` instead of `10+`; co2e Red Skull as *Epic Red Skull* `10+` instead of
+`7`, with the Epic strike and tactic text.
+
+**Why nothing caught it.** `core` masterminds each ship exactly one non-tactic
+face, and with a single face first-wins and last-wins are indistinguishable —
+so the loop was correct when written and diverged silently the first time a
+set shipped an Epic face. It never failed loudly: `baseCard` is always
+non-null and the resulting `MastermindState` is structurally valid; only its
+*content* was the wrong face. Both determinism oracles pin `core/dr-doom`, so
+no committed hash or artifact could see it either.
+
+**The fix is one assignment guard** — assign `baseCard` only while it is still
+`null`. `tactic === true` remains the discriminator (D-1413 registry schema
+contract); no `epic` field, no slug-prefix heuristic. A guard rather than a
+`break`, so tactic cards that follow the base face are still collected.
+
+**Consequence, recorded rather than implied:** alternate faces are now
+unreachable, and restoring them is **two** distinct features, not one — an
+Epic opt-in in the match-setup *envelope* (56 masterminds; the 9-field
+composition lock stands) and in-match mastermind **transformation** (9).
+D-24193 names both; neither is scoped yet.
+
+**Verification.** Engine suite **1991 → 1995 / 0 fail** (+4 covering
+AC-1..AC-4). Guard-reverted control run: **1 fail** — the new assertion is
+non-vacuous rather than a passing decoration. `pnpm -r build` 0.
+`sim:runtime-observed:check` current with **no regeneration**; sentinel
+`finalStateHash` + `PRE_WP080_HASH` byte-identical, no re-pin. Ad-hoc face
+check recorded: `co2e/doctor-doom` → `Dr. Doom` `10+`, `co2e/red-skull` →
+`Red Skull` `7`, tactic counts 4 → 4.
+
+**Not touched, deliberately.** The WP-386 `// why:` comment in
+`rules/mastermindHandlers.ts` claims setup picks the first non-tactic face and
+that the epic face is never engine-selectable — both false before this WP and
+both **true** after it, so it is validated as written rather than edited.
+Four masterminds ship *zero* non-tactic faces (`2099/sinister-six-2099`,
+`2099/alchemax-executives`, `shld/hydra-high-council`,
+`shld/hydra-super-adaptoid`) and already resolve to the degenerate empty
+state; that is a separate pre-existing defect, left for a follow-up.
+
+**Unblocks WP-388** (co2e mastermind strike texts), which implements base-face
+text and was blocked on this.
+
+`User-Visible Surface = play.legendary-arena.com` — D-24026 live-verify
+operator-pending on deploy: a match on an affected mastermind shows the base
+face. **Matches on those 65 masterminds become materially easier; that is the
+correction, not a regression.**
+
+---
+
 ### INFRA fix — "Edit this loadout" promotes the URL preview into the SHARED draft, partial-tolerantly (D-24190 Active) (2026-07-17)
 
 **The button never worked.** Operator-reported on live cards.legendary-arena.com
