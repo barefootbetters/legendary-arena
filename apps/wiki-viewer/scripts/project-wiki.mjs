@@ -59,7 +59,63 @@ const changelogFrontmatter = [
  *   - Renames only the copied INDEX.md → _index.md (Hugo home page
  *     convention). The source docs/wiki/INDEX.md is preserved.
  *   - Case-sensitive filename handling.
+ *   - Stamps a GENERATED banner into each projected page (see
+ *     stampGeneratedBanner) so an artifact opened by mistake identifies
+ *     itself and names its source.
  */
+
+/**
+ * Inserts a "generated, do not edit" HTML comment into a projected page,
+ * immediately after the YAML front matter.
+ *
+ * why: projection was a byte-for-byte copyFileSync, so an artifact under
+ * apps/wiki-viewer/content/ was indistinguishable from its source under
+ * wiki/ — same filename, same format, nothing on the file naming which is
+ * authoritative. Edits landed in the artifact and were silently discarded
+ * on the next build. The banner makes the artifact self-identifying.
+ *
+ * The banner MUST go after the front matter: Hugo requires the opening
+ * `---` on line 1 and will not parse a page whose front matter is
+ * preceded by anything. An HTML comment is invisible in rendered output
+ * and carries no links, so check-links.mjs is unaffected.
+ *
+ * A page with no front matter gets the banner prepended — it cannot break
+ * front-matter parsing that does not exist.
+ *
+ * @param {string} contents - Raw markdown read from wiki/.
+ * @param {string} sourceName - Filename under wiki/, used in the banner text.
+ * @returns {string} The contents with the banner inserted.
+ */
+function stampGeneratedBanner(contents, sourceName) {
+  const banner = [
+    '',
+    '<!-- ============================================================',
+    '     GENERATED FILE — DO NOT EDIT.',
+    `     Source:    wiki/${sourceName}`,
+    '     Generator: apps/wiki-viewer/scripts/project-wiki.mjs',
+    '     This file is gitignored and is overwritten on every build.',
+    '     Edits made here are silently discarded. Edit the source.',
+    '     ============================================================ -->',
+    '',
+  ].join('\n');
+
+  // Front matter must open on line 1 to be front matter at all.
+  if (!contents.startsWith('---')) {
+    return `${banner.trimStart()}${contents}`;
+  }
+
+  // Find the closing delimiter of the front-matter block.
+  const closingIndex = contents.indexOf('\n---', 3);
+  if (closingIndex === -1) {
+    // Unterminated front matter — leave the file byte-identical rather than
+    // risk corrupting it. Hugo will report the real error.
+    return contents;
+  }
+
+  const frontMatterEnd = closingIndex + '\n---'.length;
+  return contents.slice(0, frontMatterEnd) + banner + contents.slice(frontMatterEnd);
+}
+
 function projectWiki() {
   if (!existsSync(wikiSource)) {
     throw new Error(
@@ -95,15 +151,16 @@ function projectWiki() {
     const sourcePath = join(wikiSource, entry.name);
     const targetName = entry.name === 'INDEX.md' ? '_index.md' : entry.name;
     const targetPath = join(projectionTarget, targetName);
-    copyFileSync(sourcePath, targetPath);
+    writeFileSync(targetPath, stampGeneratedBanner(readFileSync(sourcePath, 'utf8'), entry.name));
     copiedCount += 1;
   }
 
   // Post-step assertion: source INDEX.md must still exist. A regression that
-  // swaps copyFileSync for renameSync would delete the source and trip this.
+  // writes to the source path instead of the projection target, or that swaps
+  // the read/write pair for a move, would delete the source and trip this.
   if (!existsSync(sourceIndex)) {
     throw new Error(
-      `Projection step deleted source wiki/INDEX.md — must be a copy, not a move. Restore from git and fix scripts/project-wiki.mjs to use copyFileSync.`
+      `Projection step deleted source wiki/INDEX.md — projection must never write to wiki/. Restore from git and fix scripts/project-wiki.mjs.`
     );
   }
 
@@ -176,9 +233,12 @@ function projectChangelog() {
     /\]\((?!https?:|mailto:|#|\/)([^)]+\.md[^)]*)\)/g,
     (_whole, relativePath) => `](${githubDocsBlobBase}${relativePath})`
   );
+  // why: stamped like every other projected page, but its source is
+  // docs/09-CHANGELOG.md rather than a wiki/ file — the banner names the
+  // real source so an editor is not sent to a wiki page that does not exist.
   writeFileSync(
     join(projectionTarget, 'changelog.md'),
-    changelogFrontmatter + rewritten,
+    stampGeneratedBanner(changelogFrontmatter + rewritten, '../docs/09-CHANGELOG.md'),
     'utf8'
   );
   return 1;
