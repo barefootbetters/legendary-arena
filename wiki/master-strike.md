@@ -25,11 +25,14 @@ source:
   - ../packages/game-engine/src/villainDeck/villainDeck.reveal.ts
   - ../packages/game-engine/src/mastermind/mastermind.types.ts
   - ../packages/game-engine/src/mastermind/mastermind.logic.ts
+  - ../packages/game-engine/src/board/ko.logic.ts
+  - ../data/cards/co2e.json
   - ../docs/ai/ARCHITECTURE.md
   - ../docs/ai/work-packets/WP-014A-villain-reveal-pipeline.md
   - ../docs/ai/work-packets/WP-019-mastermind-tactics-boss-fight-minimal-mvp.md
+  - ../docs/ai/DECISIONS.md
   - ../docs/10-GLOSSARY.md
-last-reviewed: 2026-05-07
+last-reviewed: 2026-07-18
 ---
 
 # Master Strike
@@ -38,9 +41,11 @@ last-reviewed: 2026-05-07
 
 Master Strike is the mechanic fired when a `mastermind-strike` card is
 revealed from the villain deck. The trigger fires at stage `start` as
-part of the reveal pipeline; in MVP it increments a counter and queues
-a deterministic log entry, leaving full per-mastermind tactic
-resolution to a future Work Packet.
+part of the reveal pipeline. Every fire increments a counter, captures a
+bystander onto the Mastermind, and queues a deterministic log entry;
+the mastermind's *printed* strike text is then resolved by a
+per-mastermind branch, which currently exists for Magneto and Red
+Skull only.
 
 ## Mechanics
 
@@ -58,17 +63,61 @@ is `{ cardId }`. Effects are collected alongside the always-emitted
 
 `mastermindStrikeHandler` in
 [`rules/mastermindHandlers.ts`](../packages/game-engine/src/rules/mastermindHandlers.ts)
-is the registered `ImplementationMap` entry for the trigger. It
-returns two `RuleEffect` entries on every fire:
+is the registered `ImplementationMap` entry for the trigger. It still
+returns the two generic `RuleEffect` entries on every fire:
 
 ```ts
 { type: 'modifyCounter', counter: 'masterStrikeCount', delta: 1 }
 { type: 'queueMessage',  message: 'Mastermind strike revealed — strike count incremented.' }
 ```
 
-The handler does not read or mutate `G`, does not consult the
-registry, and does not branch on `cardId`. It is per-mastermind
-agnostic in MVP.
+**It is no longer effect-only or per-mastermind agnostic.** The MVP
+description ("does not read or mutate `G`… per-mastermind agnostic") has
+been superseded. A fire now does three things in order:
+
+1. **Generic bystander capture (D-15401)** — `captureBystanderOntoMastermind`
+   moves one bystander from `G.piles.bystanders` onto
+   `G.mastermind.attachedBystanders`, **mutating `G` directly**. An empty
+   supply logs a message and captures nothing.
+2. **Per-mastermind text effect** — the handler branches on
+   `G.selection.mastermindId` and, for the masterminds whose printed strike
+   text is implemented, calls a resolver that also mutates `G` directly:
+
+   | Mastermind | Resolver | Printed effect |
+   |---|---|---|
+   | `core/magneto` | `resolveMagnetoStrike` | each player discards down to `MAGNETO_HAND_SIZE_LIMIT` (4) |
+   | Red Skull (see below) | `resolveRedSkullStrike` | each player KOs a Hero from hand (D-24188) |
+
+   Every other mastermind takes no branch — the strike is generic
+   counter-plus-capture only, and its printed text is **not** applied.
+3. **Terminal emission (WP-200)** — `mastermindStrikeResolved`, after both
+   the capture and the text effect, with the payload's `cardId` narrowed
+   defensively (a malformed payload yields an empty `strikeCardId` rather
+   than throwing — moves never throw).
+
+Three details worth knowing when adding the next mastermind:
+
+- **An "or" clause resolves to its punitive branch.** Magneto's printed text
+  is *"reveals an X-Men Hero **or** discards down to four cards."* The engine
+  has no reveal-and-choose mechanic and `G.cardKeywords` carries no team
+  affiliation, so the resolver unconditionally takes the discard branch. The
+  same shape will recur — decide the branch deliberately and say so in a
+  `// why:`.
+- **The branch key is `G.selection.mastermindId`, not `cardId`.** The
+  original "does not branch on `cardId`" is still literally true and now
+  misleading — dispatch is by *selected mastermind*, not by the revealed
+  strike card.
+- **Red Skull matches a list, not a single id.** `MASTERMINDS_RED_SKULL`
+  covers every set whose base face prints the same strike text
+  (`core/red-skull` and `co2e/red-skull`), because mastermind setup selects
+  the first non-tactic face. Epic faces with *different* text — co2e's
+  `epic-red-skull` — are deliberately **excluded**: they are not
+  engine-selectable, so their strike text is data only.
+
+`resolveRedSkullStrike` is the current precedent for adding another:
+mutate `G` directly, resolve deterministically (D-24188 picks the lowest
+eligible cost, ties broken by lowest hand index — no RNG), and write one
+durable log line.
 
 ### Mastermind state context
 
@@ -94,9 +143,10 @@ share the same Mastermind entity.
   observability counter; only Scheme Twist additionally writes an
   `ENDGAME_CONDITIONS` counter (`SCHEME_LOSS`). Master Strike's
   `masterStrikeCount` does not feed `evaluateEndgame`.
-- **Mastermind state.** `G.mastermind.tacticsDeck` and
-  `G.mastermind.tacticsDefeated` are read at setup and during combat
-  resolution; the strike handler does not modify either.
+- **Mastermind state.** The strike handler writes
+  `G.mastermind.attachedBystanders` (D-15401 capture) and never touches
+  `G.mastermind.tacticsDeck` / `tacticsDefeated`, which are read at
+  setup and during combat resolution.
 - **Combat (defeat tactic).** The combat-side path —
   `defeatTopTactic` — is unrelated to the strike trigger. It runs
   when a player successfully fights the Mastermind, drawing the top
@@ -116,23 +166,34 @@ share the same Mastermind entity.
   Drift-detection tests against `REVEALED_CARD_TYPES` exist to catch
   this. See
   [`game-engine.md` "RevealedCardType Conventions"](../.claude/skills/legendary-game-engine/SKILL.md).
-- **Tabletop tactic effects do not fire in MVP.** Marvel Legendary's
-  printed rules specify that the Mastermind plays its current tactic
-  on a Strike (e.g., "Each player gains a Wound"). The MVP handler
-  does **not** interpret tactic text — the `RuleEffectType` closed
-  union (`queueMessage` / `modifyCounter` / `drawCards` /
-  `discardHand`) does not yet include a per-player `gainWound` or
-  per-mastermind tactic effect. Players see the counter increment
-  and the log entry, but no wound or discard derived from the
-  Mastermind's tactic. A future WP will add the necessary effect
-  types and wire per-mastermind tactic dispatch.
+- **Most printed strike text still does not fire.** Only Magneto and
+  Red Skull have resolvers. For every other mastermind a Strike is
+  counter-plus-bystander-capture plus a log line — no wound, discard,
+  or KO derived from its own "Master Strike:" ability. co2e is the
+  scale of the gap: its five masterminds carry **ten** authored strike
+  texts (base + Epic), of which exactly one — the base Red Skull face —
+  is engine-resolved. The rest is data.
+- **Implemented strikes bypass the `RuleEffect` union.** The closed
+  `RuleEffectType` union (`queueMessage` / `modifyCounter` /
+  `drawCards` / `discardHand`) has no per-player `gainWound`, KO, or
+  reveal-and-choose effect, so `resolveMagnetoStrike` and
+  `resolveRedSkullStrike` mutate `G` directly instead of returning
+  effects. Adding a mastermind therefore does **not** require extending
+  the union — but it does mean the strike's real work is invisible to
+  anything that only inspects the returned effect list.
+- **A strike does not touch tactics.** Despite the tabletop
+  association, the strike handler never reads or writes
+  `G.mastermind.tacticsDeck` / `tacticsDefeated`. Tactic resolution is
+  the combat path (`defeatTopTactic`), a separate mechanic.
 - **Pipeline ordering inside one reveal.** The strike trigger fires
   *after* `onCardRevealed` in the same `revealVillainCard` call.
   Effects from both are collected first, then applied together —
   there is no "strike-before-card-revealed" intermediate state.
 - **Strike card destination.** The strike card moves to
   `G.villainDeck.discard` after triggers resolve. It does not enter
-  the City and never attaches a bystander.
+  the City, and no bystander attaches *to the strike card* — the
+  D-15401 capture attaches to the **Mastermind**
+  (`G.mastermind.attachedBystanders`), not to the revealed card.
 - **Counter key is a string literal.** `'masterStrikeCount'` is
   written directly by the handler and is not exported as a constant
   in `ENDGAME_CONDITIONS`. Any code that wants to read this counter
@@ -141,7 +202,8 @@ share the same Mastermind entity.
 ## Code Touchpoints
 
 - [`packages/game-engine/src/rules/mastermindHandlers.ts`](../packages/game-engine/src/rules/mastermindHandlers.ts)
-  — `mastermindStrikeHandler` (MVP default for the trigger)
+  — `mastermindStrikeHandler` (dispatcher), `captureBystanderOntoMastermind`,
+  `resolveMagnetoStrike`, `resolveRedSkullStrike`, `selectRedSkullKoTarget`
 - [`packages/game-engine/src/rules/mastermindHandlers.test.ts`](../packages/game-engine/src/rules/mastermindHandlers.test.ts)
   — handler tests
 - [`packages/game-engine/src/villainDeck/villainDeck.reveal.ts`](../packages/game-engine/src/villainDeck/villainDeck.reveal.ts)
@@ -156,6 +218,11 @@ share the same Mastermind entity.
 
 - WP-014A: `onMastermindStrikeRevealed` trigger introduced; emitted from the villain-deck reveal pipeline on `mastermind-strike` classification
 - WP-019: `MastermindState` added to `G`; tactics deck and combat-side tactic defeat introduced (separate path from the strike trigger)
+- WP-200: terminal `mastermindStrikeResolved` emission added, with defensive `cardId` narrowing
+- D-15401: generic bystander capture onto the Mastermind on every strike — the handler begins mutating `G`
+- Magneto: first per-mastermind branch (`resolveMagnetoStrike`), taking the punitive discard-to-four branch of the printed "or" clause
+- WP-386 / D-24188: `resolveRedSkullStrike` — each player KOs a Hero from hand, auto-picked deterministically (lowest cost, tie → lowest hand index). Establishes the pattern for subsequent masterminds and the `MASTERMINDS_RED_SKULL` multi-set id list
+- co2e data pass (2026-07-17): ten authored Master Strike texts added as card data; only the base Red Skull face is engine-resolved, and Epic faces are not engine-selectable at all
 
 ## References
 
