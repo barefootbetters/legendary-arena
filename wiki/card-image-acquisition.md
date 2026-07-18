@@ -18,7 +18,7 @@ source:
   - ../scripts/card-image-converters/README.md
   - ../scripts/card-image-renamers/rename-co2e-images.ps1
   - ../scripts/card-image-renamers/README.md
-last-reviewed: 2026-07-15
+last-reviewed: 2026-07-18
 ---
 
 # Card Image Acquisition
@@ -270,20 +270,29 @@ slugs before upload. See Edge Cases.
 - **ImageMagick is a hard dependency.** The converter throws if
   `magick.exe` is neither on `PATH` nor at the fallback install path.
   WebP support is built into ImageMagick 7 (used here: 7.1.2 Q16-HDRI).
-- **Hero rename slugs are placeholders until card data exists.** The
-  `co2e` rename map fills all 60 hero targets with rarity placeholders
-  (`co2e-hr-<hero>-rare` / `-common-1` / `-common-2` / `-uncommon`)
-  because the 2e source filenames carry only rarity, not the card title
-  the R2 hero convention needs. These are correct in *format* but wrong
-  in *slug* — they must be replaced with real card-title slugs before R2
-  upload. The script prints this in its "BEFORE UPLOADING TO R2"
-  checklist. The 91 non-hero targets are derived directly from the
-  descriptive 2e source names.
-- **Some 2e group slugs differ from 1st edition.** The `co2e` villain
-  targets follow the 2e source names: `skulls` (1st-ed core used
-  `skrulls`) and `sinister-spider-foes` (1st-ed used `spider-foes`).
-  Confirm the group slugs against the eventual co2e card data before
-  upload; a wrong group slug is a broken image.
+- **Hero rename slugs were placeholders — resolved on R2, not in the
+  staging tree (2026-07-17/18).** The `co2e` rename map fills all 60 hero
+  targets with rarity placeholders (`co2e-hr-<hero>-rare` / `-common-1` /
+  `-common-2` / `-uncommon`) because the 2e source filenames carry only
+  rarity, not the card title the R2 hero convention needs. The original
+  guidance here was "replace them with real card-title slugs *before* R2
+  upload." **That is not what happened, and the actual path is the better
+  one for a set whose titles are not yet known:** the placeholder-named
+  images were uploaded as-is (the set validates green because the stored
+  `imageUrl`s match those objects), and each hero was renamed *in place on
+  R2* as its card data was authored — `rclone copyto` to the title-slug
+  key, repoint the stored `imageUrl`, verify, and only then delete the old
+  key. All 60 hero placeholders are now retired. The staging tree's rename
+  map still carries the placeholder targets; it is the historical record of
+  the upload, not the current R2 state. See
+  [R2 Image Naming Convention](r2-image-naming-convention.md) → "The
+  hand-authored variant".
+- **2e group slugs — confirmed correct.** The `co2e` villain targets follow
+  the 2e source names: `skulls` (1st-ed core used `skrulls`) and
+  `sinister-spider-foes` (1st-ed used `spider-foes`). Both are now
+  **confirmed against the authored co2e card data** — the villain groups
+  ship as `skulls` and `sinister-spider-foes`, so the scraped image names
+  and the card data agree and no re-rename is needed.
 - **The rename destination is cleared each run.** `rename-<set>-images.ps1`
   runs `Remove-Item "renamed\<set>\*"` before copying, so any manual
   fixes made directly in `renamed\<set>\` are lost on the next run. Make
@@ -330,22 +339,41 @@ slugs before upload. See Edge Cases.
 
 ## Open Questions
 
-- **The R2 upload tail is not documented in this repo.** The scrape,
-  convert, and rename steps are now backed up in-repo
-  (`scripts/card-image-downloaders/`, `-converters/`, `-renamers/`), so
-  the staging chain that produces `renamed\<set>\` upload-ready WebP is
-  captured. The final step — pushing `renamed\<set>\` to the
-  `legendary-images` R2 bucket — still lives in the operator workflow
-  (see [Data & File Locations](data-file-locations.md) and the R2 upload
-  scripting) and is not described here.
-- **co2e hero titles and provisional slugs need card data.** The
-  `co2e` rename map ships hero targets as rarity placeholders and
-  follows the 2e source names for group slugs (`skulls`,
-  `sinister-spider-foes`) and the five S.H.I.E.L.D. Officer variants
-  (filed under `so`). These are provisional until co2e card data
-  exists to confirm the card titles, group slugs, and officer prefix.
-  Until then, do not upload `renamed\co2e\` hero images to R2 under the
-  placeholder names.
+- **The R2 upload tail — the commands, for the record.** The scrape,
+  convert, and rename steps are backed up in-repo
+  (`scripts/card-image-downloaders/`, `-converters/`, `-renamers/`); the
+  final push has no committed script, but it is a short rclone sequence.
+  The `r2:` remote uses `env_auth`, so export `AWS_ACCESS_KEY_ID` /
+  `AWS_SECRET_ACCESS_KEY` from `.env` into the shell first (`rclone lsd r2:`
+  403s — the token is bucket-scoped; `r2:legendary-images/{set}/` operations
+  work). Then:
+  - **Bulk upload a staged set:**
+    `rclone copy renamed\<set> r2:legendary-images/<set>/ --s3-no-check-bucket`
+  - **Rename one object (server-side, non-destructive):**
+    `rclone copyto r2:legendary-images/<set>/<old>.webp r2:legendary-images/<set>/<new>.webp --s3-no-check-bucket`
+  - **Sweep orphans after repointing:**
+    `rclone delete r2:legendary-images/<set>/ --files-from <list>` (or
+    `deletefile` for one).
+  - **Audit before deleting anything:** diff `rclone lsf` against every
+    `imageUrl` in `data/cards/<set>.json`. On co2e this caught a stray
+    `crushin-steel` original left behind by a title correction — the set is
+    now exactly 151 objects, one per card, with zero unreferenced files and
+    zero broken references.
+
+  Note the separate, easily-missed step: card *images* live under
+  `{setAbbr}/`, but the **Registry Viewer reads card *data* from the
+  `metadata/` mirror**, which is also a manual `rclone copy` — see
+  [Data & File Locations](data-file-locations.md).
+- **~~co2e hero titles and provisional slugs need card data~~ — RESOLVED
+  (2026-07-18).** co2e card data is now fully authored, which settled every
+  provisional item: hero card titles are real (all 60 hero images renamed on
+  R2 from rarity placeholders to title slugs), the group slugs `skulls` and
+  `sinister-spider-foes` are confirmed against the shipped villain groups,
+  and the S.H.I.E.L.D. Officer variants are authored under `so` as a base
+  Officer plus five class Specialists. The old "do not upload under the
+  placeholder names" instruction is superseded — see the Edge Case above for
+  what actually happened and why upload-then-rename is the right order when
+  titles are unknown at scrape time.
 - **Set-token ↔ set-abbreviation — and a `SET_ABBR_MAP` gap for co2e.**
   A scrape/staging token (`co2e`, `bkpt`, …) must match a set's **`abbr`**
   in [`data/metadata/sets.json`](../data/metadata/sets.json) — the
@@ -358,8 +386,11 @@ slugs before upload. See Edge Cases.
   `scripts/convert-cards/convert-cards-v15.mjs`, keyed by the upstream
   source-set name), and `co2e` is **not yet in it**. A set's abbreviation
   must live in **both** places and match, or the generated `imageUrl` and
-  the scrape token diverge — so `co2e` needs a `SET_ABBR_MAP` entry before
-  its card data is converted (which itself waits on 2e card data, above).
+  the scrape token diverge. This gap is **still open but dormant**: co2e is
+  hand-maintained — it has no upstream `modern-master-strike` source and no
+  entry under `scripts/convert-cards/inputs/cards/`, so the converter is
+  never run for it and `SET_ABBR_MAP` is never consulted. The entry must be
+  added before anyone ever does run the converter for co2e.
 
 ## References
 
