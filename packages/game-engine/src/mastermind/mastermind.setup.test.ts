@@ -162,3 +162,170 @@ describe('buildMastermindState', () => {
     assert.ok(serialized.length > 0, 'State must be JSON-serializable');
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-389 / D-24193 — base card is the FIRST non-tactic face
+// ---------------------------------------------------------------------------
+
+/**
+ * Creates a mock registry whose mastermind ships TWO non-tactic faces — a
+ * base face followed by an Epic face — with tactic cards interleaved after
+ * both, mirroring how the affected sets are authored.
+ *
+ * The interleaving is deliberate: it proves the fix collects tactics that
+ * appear after the alternate face, which a `break` would have dropped.
+ */
+function createTwoNonTacticFaceRegistry() {
+  const setData = {
+    abbr: 'core',
+    masterminds: [
+      {
+        slug: 'two-face-mastermind',
+        cards: [
+          { slug: 'base-card', tactic: false, vAttack: '10+' },
+          { slug: 'epic-base-card', tactic: false, vAttack: '12+' },
+          { slug: 'tactic-alpha', tactic: true, vAttack: null },
+          { slug: 'tactic-beta', tactic: true, vAttack: null },
+        ],
+      },
+    ],
+  };
+
+  return {
+    listCards: () => [],
+    listSets: () => [{ abbr: 'core' }],
+    getSet: (abbr: string) => (abbr === 'core' ? setData : undefined),
+  };
+}
+
+/**
+ * Creates a mock registry whose mastermind ships ONLY tactic cards, so no
+ * base card can be resolved.
+ */
+function createZeroNonTacticFaceRegistry() {
+  const setData = {
+    abbr: 'core',
+    masterminds: [
+      {
+        slug: 'tactics-only-mastermind',
+        cards: [
+          { slug: 'tactic-alpha', tactic: true, vAttack: null },
+          { slug: 'tactic-beta', tactic: true, vAttack: null },
+        ],
+      },
+    ],
+  };
+
+  return {
+    listCards: () => [],
+    listSets: () => [{ abbr: 'core' }],
+    getSet: (abbr: string) => (abbr === 'core' ? setData : undefined),
+  };
+}
+
+describe('buildMastermindState — base-face selection (WP-389 / D-24193)', () => {
+  it('selects the FIRST non-tactic face, not the Epic face', () => {
+    const registry = createTwoNonTacticFaceRegistry();
+    const context = makeMockCtx({ numPlayers: 2 });
+    const cardStats: Record<CardExtId, CardStatEntry> = {};
+
+    const state = buildMastermindState(
+      'core/two-face-mastermind' as CardExtId,
+      registry,
+      context,
+      cardStats,
+    );
+
+    assert.strictEqual(
+      state.baseCardId,
+      'core-mastermind-two-face-mastermind-base-card',
+      'baseCardId must resolve to the FIRST non-tactic face',
+    );
+    // why: the negative assertion is what makes this guard non-vacuous —
+    // pre-WP-389 the loop selected the LAST non-tactic face, so without this
+    // line the test would still pass with the fix reverted.
+    assert.notStrictEqual(
+      state.baseCardId,
+      'core-mastermind-two-face-mastermind-epic-base-card',
+      'baseCardId must never resolve to the Epic face (D-24193)',
+    );
+  });
+
+  it('collects every tactic card when a second non-tactic face is present', () => {
+    const registry = createTwoNonTacticFaceRegistry();
+    const context = makeMockCtx({ numPlayers: 2 });
+    const cardStats: Record<CardExtId, CardStatEntry> = {};
+
+    const state = buildMastermindState(
+      'core/two-face-mastermind' as CardExtId,
+      registry,
+      context,
+      cardStats,
+    );
+
+    // why: guards against a `break`-style fix, which would exit the loop at
+    // the base face and drop the tactic cards that follow it.
+    assert.strictEqual(
+      state.tacticsDeck.length,
+      2,
+      'tacticsDeck must contain both tactic cards despite the second non-tactic face',
+    );
+    // why: the Epic face is not a tactic and must not leak into the deck.
+    assert.ok(
+      !state.tacticsDeck.some((cardId) => cardId.includes('epic-base-card')),
+      'the Epic face must never appear in tacticsDeck',
+    );
+  });
+
+  it('is unchanged for a mastermind with exactly one non-tactic face', () => {
+    const registry = createMockRegistry();
+    const context = makeMockCtx({ numPlayers: 2 });
+    const cardStats: Record<CardExtId, CardStatEntry> = {};
+
+    const state = buildMastermindState(
+      'core/test-mastermind' as CardExtId,
+      registry,
+      context,
+      cardStats,
+    );
+
+    assert.strictEqual(
+      state.baseCardId,
+      'core-mastermind-test-mastermind-base-card',
+      'single-non-tactic-face resolution must be byte-identical to pre-WP-389',
+    );
+    assert.strictEqual(
+      state.tacticsDeck.length,
+      3,
+      'single-face masterminds keep all three tactics',
+    );
+  });
+
+  it('returns the degenerate fallback when there is no non-tactic face', () => {
+    const registry = createZeroNonTacticFaceRegistry();
+    const context = makeMockCtx({ numPlayers: 2 });
+    const cardStats: Record<CardExtId, CardStatEntry> = {};
+
+    // why: the `if (!baseCard) return null;` guard inside findMastermindCards
+    // is untouched by WP-389; buildMastermindState still degrades to the
+    // fallback state rather than throwing. Four masterminds in the registry
+    // ship zero non-tactic faces today (a separate, pre-existing defect).
+    const state = buildMastermindState(
+      'core/tactics-only-mastermind' as CardExtId,
+      registry,
+      context,
+      cardStats,
+    );
+
+    assert.strictEqual(
+      state.baseCardId,
+      'core/tactics-only-mastermind',
+      'unresolvable mastermind falls back to baseCardId = mastermindId',
+    );
+    assert.strictEqual(
+      state.tacticsDeck.length,
+      0,
+      'unresolvable mastermind yields an empty tacticsDeck',
+    );
+  });
+});
