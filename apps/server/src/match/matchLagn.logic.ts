@@ -35,7 +35,7 @@
  * ext_ids are set-qualified `setAbbr/slug`); D-5201 (AccountId).
  */
 
-import { type LAGN } from '@legendary-arena/lagn';
+import { LAGN_VERSION, type LAGN } from '@legendary-arena/lagn';
 import type { CardRegistry } from '@legendary-arena/registry';
 
 import type { DatabaseClient } from '../identity/identity.types.js';
@@ -205,7 +205,7 @@ export function buildMatchLagn(
   resolveName: ResolveName,
 ): LAGN {
   return {
-    lagn_version: '1.0.0',
+    lagn_version: LAGN_VERSION,
     $schema: 'https://legendary-arena.com/schemas/lagn/v1/lagn-v1.json',
     game_id: matchId,
     variant: variantForSeatCount(numPlayers),

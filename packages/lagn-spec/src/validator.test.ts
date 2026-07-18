@@ -1,6 +1,35 @@
 import { test, describe } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { validate, summarize } from './validator'
+import {
+  validate,
+  summarize,
+  LAGN_VERSION,
+  LAGN_VERSION_1_0_0,
+  LAGN_VERSION_1_1_0
+} from './validator'
+import { migrateToCurrent } from './migrate'
+
+/** Tier-1 fixture at the given version; callers override `setup` as needed. */
+function buildSetupDocument(version: string, setupOverrides: Record<string, unknown> = {}) {
+  return {
+    lagn_version: version,
+    game_id: 'game-pool-001',
+    variant: 'solo',
+    player_count: 1,
+    setup: {
+      mastermind: { id: 'mm-001', name: 'Mastermind' },
+      scheme: { id: 'sch-001', name: 'Scheme A' },
+      villain_groups: [{ id: 'vg-001', name: 'Villain Group 1' }],
+      henchmen_groups: [{ id: 'hm-001', name: 'Henchmen 1' }],
+      heroes: [{ id: 'h-001', name: 'Hero 1' }],
+      bystanders_count: 30,
+      wounds_count: 0,
+      shield_officers_count: 0,
+      sidekicks_count: 0,
+      ...setupOverrides
+    }
+  }
+}
 
 describe('LAGN v1.0 Validator', () => {
   // ============================================================================
@@ -590,6 +619,142 @@ describe('LAGN v1.0 Validator', () => {
   // ============================================================================
   // Summarize Function
   // ============================================================================
+
+  // ============================================================================
+  // Versioning + Support Pools (WP-036 / D-24195)
+  // ============================================================================
+
+  describe('Version acceptance', () => {
+    test('1.0.0 documents still validate unchanged', () => {
+      assert.strictEqual(validate(buildSetupDocument(LAGN_VERSION_1_0_0)).valid, true)
+    })
+
+    test('1.1.0 documents validate', () => {
+      assert.strictEqual(validate(buildSetupDocument(LAGN_VERSION_1_1_0)).valid, true)
+    })
+
+    test('an unknown version is rejected', () => {
+      assert.strictEqual(validate(buildSetupDocument('2.0.0')).valid, false)
+    })
+
+    test('LAGN_VERSION is the version this build writes', () => {
+      assert.strictEqual(LAGN_VERSION, LAGN_VERSION_1_1_0)
+    })
+  })
+
+  describe('Support pools', () => {
+    const pool = {
+      bystanders: {
+        mode: 'explicit',
+        cards: [
+          { ext_id: 'core/hostage', copies: 20 },
+          { ext_id: 'core/witness', copies: 10 }
+        ]
+      }
+    }
+
+    test('a pool summing to its count is accepted on 1.1.0', () => {
+      const doc = buildSetupDocument(LAGN_VERSION_1_1_0, { support_pools: pool })
+      assert.strictEqual(validate(doc).valid, true)
+    })
+
+    test('a pool disagreeing with its count is rejected', () => {
+      const doc = buildSetupDocument(LAGN_VERSION_1_1_0, {
+        support_pools: {
+          bystanders: { mode: 'explicit', cards: [{ ext_id: 'core/hostage', copies: 29 }] }
+        }
+      })
+      assert.strictEqual(validate(doc).valid, false)
+    })
+
+    // why: the schema is not .strict(), so zod would otherwise STRIP this field
+    // and report the document valid — a preset that saves and comes back empty.
+    // The version gate is what turns that silent loss into a loud failure.
+    test('pools on a 1.0.0 document are rejected, not silently stripped', () => {
+      const doc = buildSetupDocument(LAGN_VERSION_1_0_0, { support_pools: pool })
+      const result = validate(doc)
+      assert.strictEqual(result.valid, false)
+      assert.ok(
+        result.errors?.some((message) => /support_pools/.test(message)),
+        'Expected the error to name support_pools'
+      )
+    })
+
+    test('sets mode requires sets; explicit mode forbids them', () => {
+      const missingSets = buildSetupDocument(LAGN_VERSION_1_1_0, {
+        support_pools: {
+          bystanders: { mode: 'sets', cards: [{ ext_id: 'core/hostage', copies: 30 }] }
+        }
+      })
+      assert.strictEqual(validate(missingSets).valid, false)
+
+      const withSets = buildSetupDocument(LAGN_VERSION_1_1_0, {
+        support_pools: {
+          bystanders: {
+            mode: 'sets',
+            sets: ['core'],
+            cards: [{ ext_id: 'core/hostage', copies: 30 }]
+          }
+        }
+      })
+      assert.strictEqual(validate(withSets).valid, true)
+    })
+
+    test('duplicate ext_ids and zero copies are rejected', () => {
+      const duplicate = buildSetupDocument(LAGN_VERSION_1_1_0, {
+        support_pools: {
+          bystanders: {
+            mode: 'explicit',
+            cards: [
+              { ext_id: 'core/hostage', copies: 15 },
+              { ext_id: 'core/hostage', copies: 15 }
+            ]
+          }
+        }
+      })
+      assert.strictEqual(validate(duplicate).valid, false)
+
+      const zeroCopies = buildSetupDocument(LAGN_VERSION_1_1_0, {
+        bystanders_count: 0,
+        support_pools: {
+          bystanders: { mode: 'explicit', cards: [{ ext_id: 'core/hostage', copies: 0 }] }
+        }
+      })
+      assert.strictEqual(validate(zeroCopies).valid, false)
+    })
+  })
+
+  describe('Migration', () => {
+    test('a 1.0.0 document migrates to the current version and then validates', () => {
+      const original = buildSetupDocument(LAGN_VERSION_1_0_0)
+      const result = migrateToCurrent(original)
+      assert.strictEqual(result.error, undefined)
+      assert.strictEqual(result.payload['lagn_version'], LAGN_VERSION)
+      assert.deepStrictEqual(result.applied, ['1.0.0->1.1.0'])
+      assert.strictEqual(validate(result.payload).valid, true)
+    })
+
+    test('migration does not invent pools from counts', () => {
+      const result = migrateToCurrent(buildSetupDocument(LAGN_VERSION_1_0_0))
+      const setup = result.payload['setup'] as Record<string, unknown>
+      assert.strictEqual(setup['support_pools'], undefined)
+      assert.strictEqual(setup['bystanders_count'], 30)
+    })
+
+    test('a document already at the current version is returned unchanged', () => {
+      const original = buildSetupDocument(LAGN_VERSION_1_1_0)
+      const result = migrateToCurrent(original)
+      assert.strictEqual(result.error, undefined)
+      assert.deepStrictEqual(result.applied, [])
+      assert.deepStrictEqual(result.payload, original)
+    })
+
+    test('unreadable input fails loud rather than half-migrating', () => {
+      assert.ok(migrateToCurrent(null).error)
+      assert.ok(migrateToCurrent({ setup: {} }).error)
+      assert.ok(migrateToCurrent({ lagn_version: '0.9.0' }).error)
+    })
+  })
 
   describe('summarize() function', () => {
     test('returns all nulls for invalid data', () => {
