@@ -43,11 +43,17 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      # why package-manager-cache: false — this job deliberately does NOT set up
+      # pnpm (see below), but setup-node defaults that input to true, detects the
+      # repo's pnpm-lock.yaml, and then fails with "Unable to locate executable
+      # file: pnpm" while trying to prime a cache this job never uses. Caught by
+      # dispatching the workflow manually on 2026-07-18 rather than discovering a
+      # dead nightly at the first cron tick.
       - uses: actions/setup-node@v5
-        with: { node-version: 22 }
+        with: { node-version: 22, package-manager-cache: false }
 
-      # why: no `pnpm install` — the probe is dependency-free (node:http via
-      # built-in fetch only), so the workflow stays fast and cannot be broken
-      # by an unrelated dependency-resolution failure.
+      # why: no `pnpm install` — the probe is dependency-free (built-in fetch
+      # only), so the workflow stays fast and cannot be broken by an unrelated
+      # dependency-resolution failure.
       - name: Probe live SPA assets
         run: node scripts/check-spa-assets.mjs --url https://legends.legendary-arena.com --url https://play.legendary-arena.com
