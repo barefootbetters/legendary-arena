@@ -126,13 +126,13 @@ newsletter_slug: ""
 #### Gauntlet Guides Fields (series-specific, added 2026-07)
 
 The Gauntlet Guides series carries three extra fields. Two are metadata
-only; `gauntlet_board` becomes load-bearing when WP-037 merges.
+only; `gauntlet_board` is load-bearing — `cta-block.html` reads it.
 
 | Field | Consumed by |
 |-------|-------------|
 | `gauntlet_set` | nothing yet — reserved for a gauntlet index |
 | `gauntlet_mastermind` | nothing yet — reserved for a gauntlet index |
-| `gauntlet_board` | `cta-block.html`, to build the `cta: "leaderboard"` href (**pending WP-037**) |
+| `gauntlet_board` | `cta-block.html`, to build the `cta: "leaderboard"` href |
 
 A wrong `gauntlet_board` id produces a syntactically valid URL to a board
 that does not exist. Hugo cannot catch this — verify the id against the
@@ -399,32 +399,26 @@ a no-op; it renders the wrong CTA.
 | `"play"` | "Play now" → `play.legendary-arena.com` | Default; strategy/gameplay posts |
 | `"newsletter"` | Inline newsletter signup (`newsletter-form.html`) | Community/engagement posts |
 | `"tournament"` | "Enter a tournament" → `play.legendary-arena.com` | Tournament announcements |
-| `"leaderboard"` ⏳ | "View the gauntlet" → the post's own board | Gauntlet guides — **pending WP-037, see below** |
+| `"leaderboard"` | "View the gauntlet" → the post's own board | Gauntlet guides |
 
-#### `"leaderboard"` — pending, not yet live
+#### `"leaderboard"` — shipped
 
-`"leaderboard"` is **not** in the deployed template. It is added by
-marketing-repo **WP-037** (PR
-`legendary-arena/legendary-arena-website#71`), open as of 2026-07-18.
-Until that merges, a post setting `cta: "leaderboard"` still renders
-"Play now".
+`"leaderboard"` is live. WP-037 merged as `df56844` (PR
+`legendary-arena/legendary-arena-website#71`) and `cta-block.html` now
+accepts it. All three Gauntlet Guides use it.
 
-Once merged, the branch builds its href from the post's `gauntlet_board`
-field:
+The href is built from the post's `gauntlet_board` field:
 
 ```
 https://legends.legendary-arena.com/#/gauntlet/<gauntlet_board>
 ```
 
 falling back to the leaderboard root (label "View the leaderboard") when
-`gauntlet_board` is absent. WP-037 also removes the hand-written
+`gauntlet_board` is absent — which is why a wrong board id is worth
+checking against the live catalog. WP-037 also removed the hand-written
 `[View the <name> gauntlet →]` link from the end of each gauntlet post,
 since the CTA block renders directly below the body and keeping both
-would stack two identical links.
-
-**When WP-037 merges, delete this subsection**, drop the ⏳ from the table
-row, and update the Gauntlet Guides field note above (`gauntlet_board`
-stops being inert metadata and becomes load-bearing).
+stacked two identical links.
 
 > **Worked example — `cta: "leaderboard"` (caught and resolved 2026-07-18).**
 >
@@ -440,9 +434,11 @@ stops being inert metadata and becomes load-bearing).
 >    `POST:`/`FIX:` prefix, no work packet. Made the posts *valid* — but
 >    not *right*: each still ended with a hand-maintained board link, and
 >    `gauntlet_board` was read by nothing.
-> 2. **Template lane (pending, WP-037).** Taught `cta-block.html` the
->    value properly. Touches `layouts/`, so it required a `WP-NNN:` work
->    packet and could not ride the content lane.
+> 2. **Template lane (shipped, WP-037 / `df56844`).** Taught
+>    `cta-block.html` the value properly. Touches `layouts/`, so it
+>    required a `WP-NNN:` work packet and could not ride the content
+>    lane. With it merged, the three guides were set back to
+>    `cta: "leaderboard"`, which is what they carry today.
 >
 > The lesson generalizes: **an invented `cta` value fails silently.** If a
 > post needs an action the closed set doesn't cover, either link it in the
@@ -450,7 +446,7 @@ stops being inert metadata and becomes load-bearing).
 > value and assume it renders.
 >
 > Worth noting what would have caught this earlier: a build-time `warnf`
-> on an unrecognized `cta`. WP-037 deliberately leaves that out of scope —
+> on an unrecognized `cta`. WP-037 deliberately left that out of scope —
 > it changes build behaviour repo-wide — so the failure mode is still
 > silent for any *future* invented value. Only the specific
 > `"leaderboard"` case is closed.

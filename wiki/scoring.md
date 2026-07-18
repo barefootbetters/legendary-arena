@@ -44,7 +44,7 @@ source:
   - ../docs/ai/work-packets/WP-051-par-publication-server-gate.md
   - ../docs/ai/work-packets/WP-053a-par-artifact-scoring-config.md
   - ../docs/10-GLOSSARY.md
-last-reviewed: 2026-07-09
+last-reviewed: 2026-07-18
 ---
 
 # Scoring
@@ -201,8 +201,9 @@ comment naming its deferred follow-up:
 This is load-bearing for anyone reasoning about live scores. The
 weights and their structural invariants are fully specified and
 validated, but a penalty with no producer contributes nothing to
-`weightedPenaltyTotal`. In particular **`bystanderLost` — the
-heaviest weight in the model — cannot currently fire**, so a match
+`weightedPenaltyTotal`. In particular **`bystanderLost` — which the
+structural invariants rank above both `villainEscaped` and the rescue
+reward — cannot currently fire**, so a match
 played today is not scored on civilian casualties at all. The
 rescue side (`bystanderReward`) *is* live, being derived from the
 victory pile.
