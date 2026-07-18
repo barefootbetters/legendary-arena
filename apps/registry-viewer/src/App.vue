@@ -1053,9 +1053,11 @@ const showLoadoutTray = computed<boolean>(
 );
 
 // why: the read-only summary the LoadoutTray renders — the two single slots as
-// booleans, the three group slots as counts, and the live validation issue
-// count (the same `errors` the builder shows). Falls back to an all-empty
-// summary before the draft is instantiated.
+// booleans, the three group slots as counts, and the live readiness issue
+// count — `readinessIssueCount`, the same three-part predicate that gates the
+// builder's export buttons, so the pill can never say "ready" while the
+// Loadout tab is reporting a blocker. Falls back to an all-empty summary
+// before the draft is instantiated.
 const loadoutTraySummary = computed(() => {
   const api = loadoutDraftApi.value;
   if (!api) {
@@ -1075,7 +1077,7 @@ const loadoutTraySummary = computed(() => {
     heroes: composition.heroDeckIds.length,
     villains: composition.villainGroupIds.length,
     henchmen: composition.henchmanGroupIds.length,
-    issues: api.errors.value.length,
+    issues: api.readinessIssueCount.value,
   };
 });
 </script>
