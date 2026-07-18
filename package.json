@@ -33,6 +33,8 @@
     "check:ec":             "node --env-file=.env scripts/ec/health-check.ec.mjs",
     "check:env":            "pwsh scripts/Check-Env.ps1",
     "check:domains":        "node scripts/check-subdomains.mjs",
+    "check:spa-assets":     "node scripts/check-spa-assets.mjs --dist apps/legends-board/dist --dist apps/arena-client/dist",
+    "check:spa-assets:live": "node scripts/check-spa-assets.mjs --url https://legends.legendary-arena.com --url https://play.legendary-arena.com",
     "check:incident":       "node --env-file=.env scripts/check-connections.mjs && node scripts/check-subdomains.mjs --live-only",
 
     "validate":             "node scripts/validate-r2.mjs",

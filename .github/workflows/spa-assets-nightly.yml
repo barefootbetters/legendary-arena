@@ -1,0 +1,53 @@
+# Nightly SPA asset-masking probe against the live public SPAs.
+#
+# Companion to the hermetic `spa-assets` job in ci.yml. That job proves a BUILD
+# references only assets it emitted; this one proves a DEPLOY actually serves
+# them. They catch different failures and neither substitutes for the other.
+#
+# The failure this exists for: apps/arena-client and apps/legends-board ship the
+# Cloudflare Pages catch-all `/*  /index.html  200`. When a hashed bundle named
+# by the deployed index.html is missing at the edge, the request does not 404 —
+# it falls through and returns index.html with HTTP 200 and text/html. The
+# browser receives HTML where it expects a module, the app never mounts, and the
+# surface sits on its no-JS fallback indefinitely. Observed live on
+# legends.legendary-arena.com on 2026-07-18, where the served index.html named a
+# bundle hash absent from the deploy.
+#
+# Why this cannot live in PR CI: it requires the deployed origin, which a PR
+# runner cannot see. Why it cannot fold into `pnpm check:domains`: that probe
+# fetches the document and reports a healthy 200, because the HTML itself is
+# fine — the masking is invisible to a reachability check by construction.
+#
+# The probe retries internally (3 attempts, 5s apart) so a deploy caught
+# mid-rollout — new HTML briefly served against not-yet-propagated assets, which
+# self-heals — does not raise a false alarm. Only a stuck bad state fails.
+#
+# `workflow_dispatch:` permits on-demand operator verification straight after a
+# deploy without waiting for the cron tick.
+
+name: SPA Assets Nightly
+
+on:
+  schedule:
+    # why: 07:20 UTC = 00:20 Pacific Standard Time, matching the existing
+    # nightly cadence (sweep runs at 07:00) while staying clear of it so the
+    # two do not contend for a runner. The operator sees results during the
+    # next-business-morning ops check.
+    - cron: '20 7 * * *'
+  workflow_dispatch:
+
+jobs:
+  probe:
+    name: Probe live SPA assets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with: { node-version: 22 }
+
+      # why: no `pnpm install` — the probe is dependency-free (node:http via
+      # built-in fetch only), so the workflow stays fast and cannot be broken
+      # by an unrelated dependency-resolution failure.
+      - name: Probe live SPA assets
+        run: node scripts/check-spa-assets.mjs --url https://legends.legendary-arena.com --url https://play.legendary-arena.com
