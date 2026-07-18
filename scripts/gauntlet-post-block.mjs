@@ -120,6 +120,62 @@ function renderIdentityBlock(setAbbr, setName, mastermind, schemes) {
 }
 
 /**
+ * Renders the mastermind's printed-card image as the post's hero image.
+ *
+ * Card art in editorial is permitted blog-wide by the 2026-07-18 amendment to
+ * D-24191. The URL is the card record's own `imageUrl` — the published R2
+ * asset the gameplay and registry surfaces already serve — so editorial
+ * hot-links the same bytes rather than re-hosting a second copy.
+ *
+ * @param mastermind The mastermind record.
+ * @returns The markdown image, or an empty string when the set carries no
+ *   non-tactic face for this mastermind (never a broken image tag).
+ */
+function renderMastermindImage(mastermind) {
+  // why: a mastermind's `cards` array normally holds the main face plus its
+  // tactics, so the hero image is the `tactic: false` entry.
+  const cards = mastermind.cards ?? [];
+  let heroCard = cards.find((card) => card.tactic !== true);
+  if (heroCard === undefined) {
+    // why: council-style masterminds (shld's Hydra High Council) are FOUR
+    // tactic cards with no main face at all, so a main-face-only lookup would
+    // leave those posts with no image. The first tactic is a fair stand-in.
+    heroCard = cards.find((card) => typeof card.imageUrl === 'string');
+  }
+  if (heroCard === undefined || typeof heroCard.imageUrl !== 'string') {
+    return '';
+  }
+  const displayName = formatCardDisplayName(mastermind.name);
+  return `![${displayName}](${heroCard.imageUrl})`;
+}
+
+/**
+ * Renders the leg list as an image gallery — each scheme's card art above its
+ * name, so a reader can see what they are signing up for.
+ *
+ * @param schemes The set's scheme records, in catalog order.
+ * @returns The markdown block; schemes lacking an `imageUrl` render as a
+ *   plain numbered line rather than a broken image.
+ */
+function renderLegGallery(schemes) {
+  const lines = [];
+  let legNumber = 1;
+  for (const scheme of schemes) {
+    const displayName = formatCardDisplayName(scheme.name);
+    if (typeof scheme.imageUrl === 'string') {
+      lines.push(`**${legNumber}. ${displayName}**`);
+      lines.push('');
+      lines.push(`![${displayName}](${scheme.imageUrl})`);
+    } else {
+      lines.push(`**${legNumber}. ${displayName}**`);
+    }
+    lines.push('');
+    legNumber += 1;
+  }
+  return lines.join('\n').trimEnd();
+}
+
+/**
  * Renders the per-player-count setup table from the registry's own values.
  *
  * @returns The markdown table.
@@ -200,9 +256,18 @@ if (mastermind === undefined) {
   process.exit(1);
 }
 
+const mastermindImage = renderMastermindImage(mastermind);
+if (mastermindImage !== '') {
+  console.log(mastermindImage);
+  console.log('');
+}
 console.log(
   renderIdentityBlock(setAbbrArgument, setName, mastermind, schemes),
 );
+console.log('');
+console.log('<!-- leg gallery -->');
+console.log('');
+console.log(renderLegGallery(schemes));
 console.log('');
 console.log(renderSetupTable());
 console.log('');

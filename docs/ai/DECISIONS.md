@@ -29565,10 +29565,30 @@ schemes, so a guide that cannot name them has no reason to exist.
 2. **The generic style remains the default for all other posts.** The weekly
    series is unaffected; nothing is rewritten. Do not read this entry as
    permission to name characters in general marketing copy.
-3. **Naming is not reproduction.** This carve-out covers *names* only. It does
+3. ~~**Naming is not reproduction.** This carve-out covers *names* only. It does
    not authorize reproducing card text, card art, or set-wide card lists in
    editorial. Card imagery stays on the licensed gameplay and registry
-   surfaces.
+   surfaces.~~ **Superseded 2026-07-18 by the amendment below.**
+
+**Amendment — card art permitted blog-wide (2026-07-18).** Clause 3 above is
+withdrawn. The operator widened the carve-out on the same day it was ratified,
+after the first three Gauntlet Guides published without imagery and read as
+visually bare beside the rest of the blog:
+
+- **Card art may be used anywhere in editorial on
+  `www.legendary-arena.com`** — not only in gauntlet posts. Images are the
+  published R2 assets under `images.legendary-arena.com/{setAbbr}/`, the same
+  bytes the gameplay and registry surfaces already serve; editorial hot-links
+  them rather than re-hosting a second copy.
+- **Card names, card art, and set-wide card lists are all in scope.** The
+  earlier names-only boundary no longer applies.
+- **Card text is still not reproduced as bulk text.** Not a licensing line —
+  a quality one: a post that pastes rules text is a card database, not
+  editorial. Art plus commentary is the format.
+
+The royalty posture is unchanged: royalties are paid to Upper Deck and Marvel
+on revenue, and this widens what editorial may show, not what is owed. The
+operator holds the licence and made this call directly.
 
 **Why scoped.** Royalties are paid to Upper Deck and Marvel on revenue, so
 the exposure profile of monetized editorial differs from in-client display of
