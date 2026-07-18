@@ -112,11 +112,18 @@ newsletter_slug: ""
 
 #### Gauntlet Guides Fields (series-specific, added 2026-07)
 
-The Gauntlet Guides series carries three extra fields. They are
-**metadata only — no layout or partial reads them yet**
-(`grep -rn 'gauntlet_' layouts/` returns nothing as of 2026-07-18).
-They exist so the posts are queryable when a gauntlet index or
-board-linked CTA is built.
+The Gauntlet Guides series carries three extra fields. Two are metadata
+only; `gauntlet_board` becomes load-bearing when WP-037 merges.
+
+| Field | Consumed by |
+|-------|-------------|
+| `gauntlet_set` | nothing yet — reserved for a gauntlet index |
+| `gauntlet_mastermind` | nothing yet — reserved for a gauntlet index |
+| `gauntlet_board` | `cta-block.html`, to build the `cta: "leaderboard"` href (**pending WP-037**) |
+
+A wrong `gauntlet_board` id produces a syntactically valid URL to a board
+that does not exist. Hugo cannot catch this — verify the id against the
+live gauntlet catalog.
 
 | Field | Rule | Observed values |
 |-------|------|-----------------|
@@ -331,16 +338,41 @@ hosting is prohibited.
 The `cta` front-matter field determines the end-of-post action block.
 
 **The set is closed and enforced in the template.** `cta-block.html`
-line 2 tests membership in `(slice "play" "newsletter" "tournament")`
-and **silently rewrites anything else to `"play"`** — no build warning,
-no error. An unrecognized value is not a no-op; it renders the wrong
-CTA.
+tests membership in a fixed slice and **silently rewrites anything else
+to `"play"`** — no build warning, no error. An unrecognized value is not
+a no-op; it renders the wrong CTA.
 
 | Value | Renders | Use When |
 |-------|---------|----------|
 | `"play"` | "Play now" → `play.legendary-arena.com` | Default; strategy/gameplay posts |
 | `"newsletter"` | Inline newsletter signup (`newsletter-form.html`) | Community/engagement posts |
 | `"tournament"` | "Enter a tournament" → `play.legendary-arena.com` | Tournament announcements |
+| `"leaderboard"` ⏳ | "View the gauntlet" → the post's own board | Gauntlet guides — **pending WP-037, see below** |
+
+#### `"leaderboard"` — pending, not yet live
+
+`"leaderboard"` is **not** in the deployed template. It is added by
+marketing-repo **WP-037** (PR
+`legendary-arena/legendary-arena-website#71`), open as of 2026-07-18.
+Until that merges, a post setting `cta: "leaderboard"` still renders
+"Play now".
+
+Once merged, the branch builds its href from the post's `gauntlet_board`
+field:
+
+```
+https://legends.legendary-arena.com/#/gauntlet/<gauntlet_board>
+```
+
+falling back to the leaderboard root (label "View the leaderboard") when
+`gauntlet_board` is absent. WP-037 also removes the hand-written
+`[View the <name> gauntlet →]` link from the end of each gauntlet post,
+since the CTA block renders directly below the body and keeping both
+would stack two identical links.
+
+**When WP-037 merges, delete this subsection**, drop the ⏳ from the table
+row, and update the Gauntlet Guides field note above (`gauntlet_board`
+stops being inert metadata and becomes load-bearing).
 
 > **Worked example — `cta: "leaderboard"` (caught and resolved 2026-07-18).**
 >
@@ -349,19 +381,27 @@ CTA.
 > in the allowed slice, so all three silently rendered the **"Play now"**
 > block. Nothing failed; the CTA was just wrong.
 >
-> Fixed in `7dbcf65` ("correct the CTA to a valid value") by changing the
-> posts to `cta: "play"` — the content-lane route, which stays inside
-> `content/**` and ships under a `POST:`/`FIX:` prefix. The alternative
-> was adding a `"leaderboard"` branch to `cta-block.html`, but that
-> touches `layouts/` and so requires a `WP-NNN:` work packet.
+> Both routes were then taken, in order:
+>
+> 1. **Content lane (shipped, `7dbcf65`).** Changed the posts to
+>    `cta: "play"`. Stays inside `content/**`, ships under a
+>    `POST:`/`FIX:` prefix, no work packet. Made the posts *valid* — but
+>    not *right*: each still ended with a hand-maintained board link, and
+>    `gauntlet_board` was read by nothing.
+> 2. **Template lane (pending, WP-037).** Taught `cta-block.html` the
+>    value properly. Touches `layouts/`, so it required a `WP-NNN:` work
+>    packet and could not ride the content lane.
 >
 > The lesson generalizes: **an invented `cta` value fails silently.** If a
 > post needs an action the closed set doesn't cover, either link it in the
-> body (all three gauntlet guides end with a
-> `[View the <name> gauntlet →]` link to
-> `legends.legendary-arena.com/#/gauntlet/<gauntlet_board>`) or open a
-> `WP-NNN:` to extend the partial. Do not invent a value and assume it
-> renders.
+> post body or open a `WP-NNN:` to extend the partial. Do not invent a
+> value and assume it renders.
+>
+> Worth noting what would have caught this earlier: a build-time `warnf`
+> on an unrecognized `cta`. WP-037 deliberately leaves that out of scope —
+> it changes build behaviour repo-wide — so the failure mode is still
+> silent for any *future* invented value. Only the specific
+> `"leaderboard"` case is closed.
 
 The CTA block partial lives at
 `C:\www\legendary-arena-com\layouts\_partials\cta-block.html` and is the
