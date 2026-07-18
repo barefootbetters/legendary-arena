@@ -32,7 +32,7 @@ source:
   - ../docs/ai/work-packets/WP-113-engine-server-registry-wiring-and-validator-alignment.md
   - ../docs/ai/REFERENCE/00.2-data-requirements.md
   - ../docs/10-GLOSSARY.md
-last-reviewed: 2026-05-07
+last-reviewed: 2026-07-18
 ---
 
 # CardExtId
@@ -206,6 +206,48 @@ the registry again. Per
   compile time. Uniqueness is enforced by the registry's loaded
   index, not by the type system. Code that constructs
   `CardExtId` values without registry input is suspect.
+- **The slug half is only unique *within* its set.** The same character
+  or group routinely carries a **different slug in a different set** —
+  which is precisely why the id is set-qualified. Real pairs in the
+  current data:
+
+  | Entity | `core` slug | `co2e` slug |
+  |---|---|---|
+  | Doctor Doom (mastermind) | `dr-doom` | `doctor-doom` |
+  | Skrulls (villain group) | `skrulls` | `skulls` |
+  | Spider-Foes (villain group) | `spider-foes` | `sinister-spider-foes` |
+  | Brotherhood (villain group) | `brotherhood` | `brotherhood-of-mutants` |
+
+  A bare slug is therefore never a portable identifier. `core/dr-doom`
+  and `co2e/doctor-doom` are the *same character* and **different
+  `CardExtId`s**; neither slug resolves in the other's set.
+- **Bare slugs are not `CardExtId`s — and a copied one dangles
+  silently.** Several fields in the per-set JSON carry **bare,
+  intra-set** slugs rather than qualified ids: a mastermind's
+  `alwaysLeads`, a villain group's `ledBy`, and `physicalCards[].sides`
+  (which references `cards[].slug` on the same hero). They resolve only
+  inside their own set file. Copying such a field between sets yields a
+  reference that is perfectly well-formed but **points at nothing** —
+  and because it is not a `CardExtId`, neither the alias nor the
+  `validateMatchSetup` format check applies, so nothing type-level or
+  format-level catches it. Detection is **relational**:
+  `pnpm registry:validate` warns when an `alwaysLeads` slug matches no
+  villain group in that set. This is not hypothetical — co2e's
+  reconcile-from-core stub inherited `dr-doom` and `brotherhood` while
+  co2e's own slugs are `doctor-doom` and `brotherhood-of-mutants`; both
+  were structurally valid and referentially dead until repaired.
+- **Not every `FlatCard.extId` is a composition id.** The Registry
+  Viewer's `flattenSet` sets the qualified `{setAbbr}/{slug}` form on
+  *every* flat card so the required field stays consistent — including
+  bystanders, wounds, and the generic `other` bucket (Master Strike,
+  Scheme Twist, S.H.I.E.L.D. Agent/Officer/Trooper, Sidekick), none of
+  which are composition entities the engine accepts in a loadout. Only
+  the five composition types (hero, mastermind, villain group, henchman
+  group, scheme) carry an ext_id the match-setup validator will take;
+  for the rest it is display plumbing. Note also that group cards share
+  their **group's** slug — every villain in a group, and every
+  mastermind face and tactic, resolves to one group-level ext_id
+  (D-24018), so the id identifies the *group*, not the individual card.
 - **Don't narrow at function signatures.** A function accepting
   `cardId: string` and one accepting `cardId: CardExtId` are
   structurally identical. Prefer the named alias for documentation
@@ -231,6 +273,13 @@ the registry again. Per
   `zones.types.ts`; zone shapes locked to `CardExtId[]`
 - WP-113: `<setAbbr>/<slug>` format locked across the engine,
   validator, registry, and builders (D-10014)
+- 2026-07-18: adding Core Set 2nd Edition (`co2e`, set #41) produced the
+  first large batch of cross-set slug divergence for the same characters
+  and groups (`dr-doom`/`doctor-doom`, `skrulls`/`skulls`,
+  `spider-foes`/`sinister-spider-foes`, `brotherhood`/`brotherhood-of-mutants`)
+  and, with it, the first real dangling **bare-slug** references — its
+  reconcile-from-core stub carried core's slugs in `alwaysLeads` / `ledBy`.
+  Repaired in #782 / #786; both Edge Cases above are drawn from that.
 
 ## References
 
