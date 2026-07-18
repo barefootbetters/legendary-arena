@@ -17,7 +17,7 @@ source:
   - ../data/metadata/sets.json
   - ../data/metadata/card-types.json
   - ../docs/ai/DECISIONS.md
-last-reviewed: 2026-07-15
+last-reviewed: 2026-07-18
 ---
 
 # R2 Image Naming Convention
@@ -146,12 +146,17 @@ appended after `wpnx`, not slotted by release date.
 > must match, until the naming is made data-driven from `sets.json` (a
 > Work-Packet-scoped change, not in place today).
 >
-> **Live gap: `co2e`.** Core Set 2nd Edition (set #41) was registered in
-> `sets.json` as `co2e` but has **no** `SET_ABBR_MAP` entry yet — the two
-> currently diverge for this one set. It is harmless today because no
-> `data/cards/co2e.json` exists to convert, but `co2e` must be added to
-> `SET_ABBR_MAP` before its card data is processed, or the generated
-> `imageUrl`s will not carry the `co2e` prefix. See
+> **Live gap: `co2e`.** Core Set 2nd Edition (set #41) is registered in
+> `sets.json` as `co2e` but has **no** `SET_ABBR_MAP` entry — the two
+> diverge for this one set. It stays harmless not because the set is empty
+> (`data/cards/co2e.json` is fully populated) but because **co2e is
+> hand-maintained and never fed through the converter**: it has no upstream
+> `modern-master-strike` source and no entry under
+> `scripts/convert-cards/inputs/cards/`, so `SET_ABBR_MAP` is never consulted
+> for it and its `imageUrl`s are authored directly. The entry must be added
+> before the converter is ever run for co2e, or generated `imageUrl`s would
+> lose the `co2e` prefix. See
+> [Data & File Locations](data-file-locations.md) → the co2e exception, and
 > [Card Image Acquisition](card-image-acquisition.md) → Open Questions.
 
 ### Ribbon codes by card type
@@ -217,16 +222,22 @@ auto-composes `imageUrl`s for the core imaged families:
 | Villain (`vi`) | `{set}-vi-{groupSlug}-{cardSlug}.webp` | `2099-vi-alchemax-enforcers-cyber-nostra.webp` |
 | Henchman (`hm`) | `{set}-hm-{groupSlug}.webp` (group) / `{set}-hm-{groupSlug}-{cardSuffix}.webp` (per-card) | `core-hm-hand-ninjas.webp` |
 | Scheme (`sc`) | `{set}-sc-{schemeSlug}.webp` | `2099-sc-pull-reality-into-cyberspace.webp` |
-| Bystander (`by`) | `{set}-by-{slug}.webp` | `{set}-by-{slug}.webp` |
+| Bystander (`by`) | `{set}-by-{slug}.webp` | `co2e-by-police-officer.webp` |
 | Wound (`wd`) | `{set}-wd-{slug}.webp` | `core-wd-wound.webp` |
 
 Base and epic mastermind filenames carry a **single** slug — the redundant
 double slug (`bkpt-mm-killmonger-killmonger.webp`) was removed; tactic and
 villain cards keep both the group/mastermind slug and the per-card slug because
 those families have multiple distinct cards under one parent. The remaining
-prefixes in the registry (e.g. `st`, `sa`, `tr`, `am`, `to`) name their card
-families' images by the same `{set}-{prefix}-{slug}.webp` rule; their URLs are
-not separately auto-composed by the current in-repo pipeline.
+prefixes in the registry (e.g. `st`, `sa`, `so`, `tr`, `sk`, `am`, `to`) name
+their card families' images by the same `{set}-{prefix}-{slug}.webp` rule; their
+URLs are **not auto-composed by the pipeline** — but that is a statement about
+the *converter*, not about whether they are used. A hand-authored set writes
+them directly: `co2e` references `sa` (S.H.I.E.L.D. Agent), `so`
+(`co2e-so-officer.webp` plus five class variants), `tr` (Trooper), `sk`
+(`co2e-sk-daring-sidekick.webp`), and `ms` / `st` (Master Strike, Scheme Twist),
+alongside five `me` epic-mastermind faces — every one of them a stored
+`imageUrl` written by hand to this same rule.
 
 ### Hero filename variants
 
@@ -272,6 +283,35 @@ the ribbons already cover those families, so it is effectively a data drop into
 `scripts/convert-cards/inputs/`. A set that introduces a brand-new card *type*
 (and therefore a new ribbon) requires a convert-pipeline change, because ribbons
 are assigned in code rather than derived from `card-types.json` (see Edge Cases).
+
+### The hand-authored variant (how `co2e` was actually built)
+
+The two-halves flow above assumes the convert pipeline generates the
+`imageUrl`s. A set with **no upstream source** — Core Set 2nd Edition is the
+first — is authored the other way round, and the ordering is the interesting
+part. Because the scraped 2e source filenames carried only *rarity*
+(`_1Rare`, `_2Common`) and not the card title the `hr` convention needs, the
+images were uploaded **before** the titles were known:
+
+1. **Upload under provisional names.** All 151 images went to R2 first, hero
+   art under rarity placeholders (`co2e-hr-black-widow-common-1.webp`). The set
+   validated green at this stage because the stored `imageUrl`s matched those
+   placeholder objects — the convention cares that the URL resolves, not that
+   the slug is final.
+2. **Author the card data.** Real titles arrive per hero, and each
+   `physicalCards[].imageUrl` is rewritten to the title-slug form the
+   convention wants (`co2e-hr-black-widow-covert-operation.webp`).
+3. **Rename the objects to match.** A server-side `rclone copyto` copies each
+   object from its placeholder key to the title-slug key — **copy, not move**,
+   so the placeholder survives as a harmless orphan and every step stays
+   reversible while the data is still being reviewed.
+4. **Sweep the orphans.** Once the set is complete and no `imageUrl` references
+   a placeholder, the leftovers are deleted in one pass (co2e: 60 hero
+   placeholders removed, leaving exactly 151 objects — one per card).
+
+The lesson that generalises: **the stored `imageUrl` is the contract, not the
+object name.** Renaming an image means copy-to-new-key → repoint the stored
+URL → verify → only then delete the old key. Never rename first.
 
 ## Interactions
 
@@ -368,6 +408,11 @@ are assigned in code rather than derived from `card-types.json` (see Edge Cases)
   narrowly overriding D-13802.
 - Card-type-taxonomy history: the `prefix` field was present pre-WP-084, dropped
   by the WP-086 reintroduction — see [Card Type Taxonomy](card-type-taxonomy.md).
+- 2026-07-17/18 — `co2e` (set #41) completed as the first **hand-authored** set:
+  151 images uploaded under provisional rarity placeholders, then renamed to
+  title slugs as each hero's card data was authored (copy-then-repoint-then-
+  sweep; 60 placeholder orphans deleted). It is also the first set to reference
+  the `me`, `sa`, `so`, `tr`, and `sk` ribbons from hand-written `imageUrl`s.
 
 ## References
 
