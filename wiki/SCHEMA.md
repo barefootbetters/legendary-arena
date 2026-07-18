@@ -107,12 +107,28 @@ wiki/
 ├── README.md                     # purpose, conventions, authority
 ├── INDEX.md                      # categorized list of all pages
 ├── architecture-inventory.md     # generated; sole writer is scripts/architecture-inventory.mjs
+├── tags.md                       # Hugo taxonomy stub; rendered by layouts/_default/tags.html
 └── <slug>.md                     # entity pages (one per entity)
 ```
 
-`SCHEMA.md`, `README.md`, `INDEX.md`, and `architecture-inventory.md`
-are reserved filenames. All other `*.md` files in `wiki/` are entity
-pages and must conform to this schema.
+`SCHEMA.md`, `README.md`, `INDEX.md`, `architecture-inventory.md`, and
+`tags.md` are reserved filenames. All other `*.md` files in `wiki/` are
+entity pages and must conform to this schema.
+
+The reserved files are exempt because they are not entity pages, and each
+is exempt for a different reason:
+
+| File | Why it is exempt |
+|---|---|
+| `SCHEMA.md` | the contract itself |
+| `README.md` | purpose / conventions / authority |
+| `INDEX.md` | categorized list of pages; Hugo home (`_index.md` after projection) |
+| `architecture-inventory.md` | generated — sole writer is `scripts/architecture-inventory.mjs`; carries `type: Generated` / `status: evergreen`, which are deliberately outside the closed sets |
+| `tags.md` | Hugo taxonomy stub — `layout: tags`, rendered by `apps/wiki-viewer/layouts/_default/tags.html`. Four lines, no prose. There is no content to cite sources for or to review against code, so the entity-page fields are meaningless here. |
+
+A file being reserved is not a licence to skip front matter generally —
+it means the entity-page contract does not describe what the file is. Any
+new reserved file needs a row above saying why.
 
 There are **no subdirectories**. Categorization is by `type` /
 front-matter and surfaced in `INDEX.md`. Flat structure prevents
