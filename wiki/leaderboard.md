@@ -17,6 +17,7 @@ related:
   - profile-login.md
 status: draft
 source:
+  - C:\pcloud\BB\DEV\legendary-arena\wiki\leaderboard.md (this page — https://ewiki.legendary-arena.com/leaderboard/)
   - ../apps/legends-board/package.json
   - ../apps/legends-board/src/App.vue
   - ../apps/legends-board/src/snapshots/snapshotClient.ts

@@ -20,6 +20,7 @@ related:
   - scoring.md
 status: canonical
 source:
+  - C:\pcloud\BB\DEV\legendary-arena\wiki\card-type-taxonomy.md (this page — https://ewiki.legendary-arena.com/card-type-taxonomy/)
   - ../.claude/skills/legendary-registry/SKILL.md
   - ../packages/registry/src/schema.ts
   - ../data/metadata/card-types.json

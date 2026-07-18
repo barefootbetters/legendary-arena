@@ -17,6 +17,7 @@ related:
   - monetization-model.md
 status: draft
 source:
+  - C:\pcloud\BB\DEV\legendary-arena\wiki\sound-effects.md (this page — https://ewiki.legendary-arena.com/sound-effects/)
   - ../packages/game-engine/src/events/notableEvents.types.ts
   - ../packages/game-engine/src/events/notableEvents.compose.ts
   - ../packages/game-engine/src/rules/ruleHooks.types.ts

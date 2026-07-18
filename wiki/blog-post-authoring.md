@@ -14,14 +14,17 @@ related:
   - brevo-email-pipeline.md
 status: draft
 source:
+  - C:\pcloud\BB\DEV\legendary-arena\wiki\blog-post-authoring.md (this page — https://ewiki.legendary-arena.com/blog-post-authoring/)
   - C:\www\legendary-arena-com\archetypes\posts.md
   - C:\www\legendary-arena-com\docs\04-CONTENT-CONVENTIONS.md
   - C:\www\legendary-arena-com\docs\05-SEO-CONVENTIONS.md
+  - C:\www\legendary-arena-com\docs\06-CONTENT-LANE-WORKFLOW.md
+  - C:\www\legendary-arena-com\layouts\_partials\cta-block.html
   - C:\www\legendary-arena-com\docs\brand\strategy.md
   - C:\www\legendary-arena-com\docs\marketing\homepage-review-template.md
   - C:\www\legendary-arena-com\docs\marketing\homepage-appendix.md
   - C:\www\legendary-arena-com\static\brand-tokens.css
-last-reviewed: 2026-05-16
+last-reviewed: 2026-07-18
 ---
 
 # Blog Post Authoring
@@ -33,8 +36,14 @@ last-reviewed: 2026-05-16
 > at `C:\www\legendary-arena-com\content\posts\`.
 >
 > - **To edit this ewiki page:** edit
->   `C:\pcloud\BB\DEV\legendary-arena\wiki\blog-post-authoring.md`,
->   commit with `SPEC:` prefix, push to `main` in the `legendary-arena` repo.
+>   `C:\pcloud\BB\DEV\legendary-arena\wiki\blog-post-authoring.md` in the
+>   `legendary-arena` repo and open a **PR** — wiki edits do not go
+>   direct to `main`. Prefix `INFRA: wiki blog-post-authoring — <what
+>   changed> (#PR)`, matching the surrounding `git log -- wiki/` history.
+>   (`SPEC:` is for design/governance locks, not page edits.)
+>   Deploy is not automatic on merge: `.github/workflows/wiki-viewer.yml`
+>   fires the Render deploy hook, and a green build alone does not prove
+>   the deploy step ran.
 > - **Authoritative sources:** Content conventions live at
 >   `C:\www\legendary-arena-com\docs\04-CONTENT-CONVENTIONS.md`;
 >   brand voice lives at
@@ -58,12 +67,29 @@ Pyramid.
 Create a new post:
 
 ```
-hugo new posts/<slug>.md
+hugo new content posts/<slug>.md
 ```
 
 This generates a file from the archetype at
 `C:\www\legendary-arena-com\archetypes\posts.md` with all required
-front-matter fields pre-populated.
+front-matter fields pre-populated. (The bare `hugo new posts/<slug>.md`
+form still works on the pinned Hugo v0.161.1 but is deprecated; prefer
+`hugo new content`.)
+
+**Gauntlet Guides use their own archetype — do not use the one above.**
+Pass `--kind gauntlet-guide` and every gauntlet field below is
+pre-populated for you:
+
+```
+hugo new content posts/<slug>.md --kind gauntlet-guide
+```
+
+(Superseded note, corrected 2026-07-18: this page previously said the
+archetype omits the gauntlet fields and that they must be added by hand.
+That stopped being true when WP-038 shipped
+`C:\www\legendary-arena-com\archetypes\gauntlet-guide.md`.) See
+[Gauntlet Guides](#gauntlet-guides-series-specific-added-2026-07) below
+for what that archetype enforces.
 
 ### Blog Post Template
 
@@ -97,17 +123,93 @@ newsletter_slug: ""
 | `newsletter_week` | no | Week number for newsletter cross-reference |
 | `newsletter_slug` | no | Must match the newsletter's "Read more" link |
 
+#### Gauntlet Guides Fields (series-specific, added 2026-07)
+
+The Gauntlet Guides series carries three extra fields. Two are metadata
+only; `gauntlet_board` becomes load-bearing when WP-037 merges.
+
+| Field | Consumed by |
+|-------|-------------|
+| `gauntlet_set` | nothing yet — reserved for a gauntlet index |
+| `gauntlet_mastermind` | nothing yet — reserved for a gauntlet index |
+| `gauntlet_board` | `cta-block.html`, to build the `cta: "leaderboard"` href (**pending WP-037**) |
+
+A wrong `gauntlet_board` id produces a syntactically valid URL to a board
+that does not exist. Hugo cannot catch this — verify the id against the
+live gauntlet catalog.
+
+| Field | Rule | Observed values |
+|-------|------|-----------------|
+| `gauntlet_set` | Set code, lowercase | `core`, `co2e`, `shld` |
+| `gauntlet_mastermind` | Mastermind slug, kebab-case | `red-skull`, `magneto`, `hydra-high-council` |
+| `gauntlet_board` | Leaderboard board id; must match the live gauntlet catalog | `gauntlet-co2e-red-skull`, `gauntlet-core-magneto`, `gauntlet-shld-hydra-high-council` |
+
+Gauntlet posts also use `categories: ["gauntlet-guides"]`,
+`series: "Gauntlet Guides"`, and `guide_version` (bump the minor on a
+strategic revision, the major when the scoring model changes what the
+guide claims), and omit the `newsletter_*` fields.
+
+#### The gauntlet archetype is the authority on content, not just fields
+
+`C:\www\legendary-arena-com\archetypes\gauntlet-guide.md` is not a
+front-matter stub — it carries the editorial rules the series is held to,
+as comments that you delete as you write. Read it before drafting; the
+short version:
+
+**Three buckets.** Every fact in a gauntlet post is one of:
+
+- **DERIVED** — generate it, never type it. Set, mastermind, scheme
+  count, leg list, twist counts, Evil-Wins thresholds, escape budgets,
+  per-count setup, Fixed-Pool budgets, card art URLs. Produced by
+  `node scripts/gauntlet-post-block.mjs <setAbbr> <mastermindSlug>` in
+  this repo. Hand-typed copies rot on the next set change — three
+  different gauntlet counts were once live in the wiki simultaneously.
+- **JUDGMENT** — hand-written reasoning, labelled as reasoning. Pool
+  construction, per-leg pressures, common mistakes.
+- **BLOCKED** — claims no data supports. PAR ranges, difficulty or
+  score-risk ratings, expected-results-by-skill-level tables, clear
+  rates, "usually"/"typically" frequency claims. `competitive_scores`
+  is empty and PAR is deliberately unpublished, so these would be
+  invented. Leave the gap visible.
+
+**Scoring claims must match [Scoring](scoring.md).** Assert only the
+three structural invariants `validateScoringConfig` enforces
+(`bystanderReward > villainEscaped`; `bystanderLost > villainEscaped`;
+`bystanderLost > bystanderReward`). Nothing ranks `victoryPointReward`
+against `bystanderReward` — that is per-scenario config — so neither
+"maximise VP first" nor its mirror may be written. And per
+[Penalty producer status](scoring.md#penalty-producer-status--four-of-five-safe-skip-to-zero),
+do not tell readers casualties cost them anything today; the counter has
+no producer.
+
+If this page and the archetype disagree, **the archetype is
+authoritative** for gauntlet post content — it ships with the template
+and is what an author actually reads at drafting time.
+
 ### File Naming
 
-**Format:** Date-prefix + kebab-case.
+**The documented rule** (`docs\04-CONTENT-CONVENTIONS.md` line 313) is
+date-prefix + kebab-case. The date prefix keeps file listings
+chronological and disambiguates posts that reuse a topic word. No
+spaces, capitals, or non-ASCII in slugs — ever.
 
 ```
 2026-05-07-launch-announcement.md  -> /posts/2026-05-07-launch-announcement/
 week-01-deck-checklist.md          -> /posts/week-01-deck-checklist/
 ```
 
-The date prefix keeps file listings chronological and disambiguates
-posts that reuse a topic word. No spaces, capitals, or non-ASCII.
+> **Practice diverges from the rule (observed 2026-07-18).** Of the 58
+> files in `content\posts\`, exactly **one** carries a date prefix
+> (`2026-05-07-launch-announcement.md`). The other 57 use bare
+> kebab-case — the 52 `week-NN-*` series files, which are already
+> self-ordering, plus `hello-arena.md` and the three `gauntlet-*`
+> guides.
+>
+> So the date prefix is the documented rule but the rare exception in
+> practice. This page does not resolve the conflict:
+> `04-CONTENT-CONVENTIONS.md` is authoritative on naming, and changing
+> it is a `SPEC:` decision. Match the surrounding series when adding to
+> one; for a standalone post, follow `04` until it says otherwise.
 
 ### Content Structure (Mode C — Authority)
 
@@ -287,14 +389,76 @@ hosting is prohibited.
 
 The `cta` front-matter field determines the end-of-post action block.
 
+**The set is closed and enforced in the template.** `cta-block.html`
+tests membership in a fixed slice and **silently rewrites anything else
+to `"play"`** — no build warning, no error. An unrecognized value is not
+a no-op; it renders the wrong CTA.
+
 | Value | Renders | Use When |
 |-------|---------|----------|
-| `"play"` | "Play now" button | Default; strategy/gameplay posts |
-| `"newsletter"` | Newsletter signup | Community/engagement posts |
-| `"tournament"` | Tournament CTA | Tournament announcements |
+| `"play"` | "Play now" → `play.legendary-arena.com` | Default; strategy/gameplay posts |
+| `"newsletter"` | Inline newsletter signup (`newsletter-form.html`) | Community/engagement posts |
+| `"tournament"` | "Enter a tournament" → `play.legendary-arena.com` | Tournament announcements |
+| `"leaderboard"` ⏳ | "View the gauntlet" → the post's own board | Gauntlet guides — **pending WP-037, see below** |
+
+#### `"leaderboard"` — pending, not yet live
+
+`"leaderboard"` is **not** in the deployed template. It is added by
+marketing-repo **WP-037** (PR
+`legendary-arena/legendary-arena-website#71`), open as of 2026-07-18.
+Until that merges, a post setting `cta: "leaderboard"` still renders
+"Play now".
+
+Once merged, the branch builds its href from the post's `gauntlet_board`
+field:
+
+```
+https://legends.legendary-arena.com/#/gauntlet/<gauntlet_board>
+```
+
+falling back to the leaderboard root (label "View the leaderboard") when
+`gauntlet_board` is absent. WP-037 also removes the hand-written
+`[View the <name> gauntlet →]` link from the end of each gauntlet post,
+since the CTA block renders directly below the body and keeping both
+would stack two identical links.
+
+**When WP-037 merges, delete this subsection**, drop the ⏳ from the table
+row, and update the Gauntlet Guides field note above (`gauntlet_board`
+stops being inert metadata and becomes load-bearing).
+
+> **Worked example — `cta: "leaderboard"` (caught and resolved 2026-07-18).**
+>
+> The three Gauntlet Guides posts originally shipped with
+> `cta: "leaderboard"` (commits `be2751e`, `fbbbb83`). That value is not
+> in the allowed slice, so all three silently rendered the **"Play now"**
+> block. Nothing failed; the CTA was just wrong.
+>
+> Both routes were then taken, in order:
+>
+> 1. **Content lane (shipped, `7dbcf65`).** Changed the posts to
+>    `cta: "play"`. Stays inside `content/**`, ships under a
+>    `POST:`/`FIX:` prefix, no work packet. Made the posts *valid* — but
+>    not *right*: each still ended with a hand-maintained board link, and
+>    `gauntlet_board` was read by nothing.
+> 2. **Template lane (pending, WP-037).** Taught `cta-block.html` the
+>    value properly. Touches `layouts/`, so it required a `WP-NNN:` work
+>    packet and could not ride the content lane.
+>
+> The lesson generalizes: **an invented `cta` value fails silently.** If a
+> post needs an action the closed set doesn't cover, either link it in the
+> post body or open a `WP-NNN:` to extend the partial. Do not invent a
+> value and assume it renders.
+>
+> Worth noting what would have caught this earlier: a build-time `warnf`
+> on an unrecognized `cta`. WP-037 deliberately leaves that out of scope —
+> it changes build behaviour repo-wide — so the failure mode is still
+> silent for any *future* invented value. Only the specific
+> `"leaderboard"` case is closed.
 
 The CTA block partial lives at
-`C:\www\legendary-arena-com\layouts\_partials\cta-block.html`.
+`C:\www\legendary-arena-com\layouts\_partials\cta-block.html` and is the
+authoritative mapping — `docs\04-CONTENT-CONVENTIONS.md` (line 416)
+explicitly defers to it.
 
 ### Internal Linking
 
@@ -321,6 +485,13 @@ and the email's "Read more" link.
 | `FIX:` | Content-lane edits (typo, copy tweak, broken link) |
 | `WP-NNN:` | Site-affecting changes (layouts, config, templates) |
 | `SPEC:` | Governance doc corrections |
+
+The content lane is enforced by commit hooks: a `POST:` or `FIX:`
+commit that touches anything outside `content/**` and
+`static/images/**` — including `layouts/`, `hugo.toml`, or
+`static/brand-tokens.css` — is **rejected**. That is why the
+`cta: "leaderboard"` fix above cannot ride along as a `FIX:`. Full
+workflow: `C:\www\legendary-arena-com\docs\06-CONTENT-LANE-WORKFLOW.md`.
 
 ### Publishing
 
@@ -442,7 +613,6 @@ deck's cost distribution matters more than its ceiling.
   truncated in search results and social previews. The SEO
   conventions doc (`05-SEO-CONVENTIONS.md`) governs the full
   discipline.
-
 ## References
 
 - `C:\www\legendary-arena-com\archetypes\posts.md` — post archetype
@@ -451,6 +621,8 @@ deck's cost distribution matters more than its ceiling.
   content authoring conventions
 - `C:\www\legendary-arena-com\docs\05-SEO-CONVENTIONS.md` — SEO
   discipline
+- `C:\www\legendary-arena-com\docs\06-CONTENT-LANE-WORKFLOW.md` —
+  `POST:` / `FIX:` content-lane rules and hook enforcement
 - `C:\www\legendary-arena-com\docs\brand\strategy.md` — brand voice,
   terminology, failure modes
 - `C:\www\legendary-arena-com\docs\marketing\homepage-review-template.md`

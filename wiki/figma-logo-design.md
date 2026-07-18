@@ -10,7 +10,8 @@ related:
   - hugo-web-system.md
   - wiki-viewer.md
 status: draft
-source: []
+source:
+  - C:\pcloud\BB\DEV\legendary-arena\wiki\figma-logo-design.md (this page — https://ewiki.legendary-arena.com/figma-logo-design/)
 last-reviewed: 2026-05-13
 ---
 

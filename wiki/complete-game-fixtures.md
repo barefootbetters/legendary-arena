@@ -16,6 +16,7 @@ related:
   - scheme-twist.md
 status: canonical
 source:
+  - C:\pcloud\BB\DEV\legendary-arena\wiki\complete-game-fixtures.md (this page — https://ewiki.legendary-arena.com/complete-game-fixtures/)
   - ../docs/ai/work-packets/WP-158-complete-game-regression-tests.md
   - ../docs/ai/execution-checklists/EC-172-complete-game-regression-tests.checklist.md
   - ../docs/ai/DECISIONS.md

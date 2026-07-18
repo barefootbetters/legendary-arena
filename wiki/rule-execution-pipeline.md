@@ -21,6 +21,7 @@ related:
   - scoring.md
 status: canonical
 source:
+  - C:\pcloud\BB\DEV\legendary-arena\wiki\rule-execution-pipeline.md (this page — https://ewiki.legendary-arena.com/rule-execution-pipeline/)
   - ../.claude/skills/legendary-game-engine/SKILL.md
   - ../packages/game-engine/src/rules/ruleHooks.types.ts
   - ../packages/game-engine/src/rules/ruleRuntime.execute.ts

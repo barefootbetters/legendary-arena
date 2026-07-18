@@ -16,6 +16,7 @@ related:
   - complete-game-fixtures.md
 status: draft
 source:
+  - C:\pcloud\BB\DEV\legendary-arena\wiki\data-file-locations.md (this page — https://ewiki.legendary-arena.com/data-file-locations/)
   - ../docs/01-REPO-FOLDER-STRUCTURE.md
   - ../docs/ai/REFERENCE/00.2-data-requirements.md
   - ../packages/registry/src/heroImageUrl.ts

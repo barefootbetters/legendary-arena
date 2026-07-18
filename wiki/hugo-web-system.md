@@ -17,6 +17,7 @@ related:
   - brevo-email-pipeline.md
 status: draft
 source:
+  - C:\pcloud\BB\DEV\legendary-arena\wiki\hugo-web-system.md (this page — https://ewiki.legendary-arena.com/hugo-web-system/)
   - C:\www\legendary-arena-com\hugo.toml
   - C:\www\legendary-arena-com\layouts\baseof.html
   - C:\www\legendary-arena-com\layouts\index.html

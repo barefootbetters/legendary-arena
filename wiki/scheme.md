@@ -21,6 +21,7 @@ related:
   - scoring.md
 status: canonical
 source:
+  - C:\pcloud\BB\DEV\legendary-arena\wiki\scheme.md (this page — https://ewiki.legendary-arena.com/scheme/)
   - ../.claude/skills/legendary-game-engine/SKILL.md
   - ../packages/game-engine/src/scheme/schemeSetup.types.ts
   - ../packages/game-engine/src/scheme/schemeSetup.execute.ts

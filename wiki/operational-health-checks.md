@@ -12,6 +12,7 @@ tags:
 related: []
 status: canonical
 source:
+  - C:\pcloud\BB\DEV\legendary-arena\wiki\operational-health-checks.md (this page — https://ewiki.legendary-arena.com/operational-health-checks/)
   - ../scripts/check-connections.mjs
   - ../scripts/check-subdomains.mjs
   - ../docs/ops/domains.json

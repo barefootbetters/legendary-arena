@@ -11,6 +11,7 @@ related:
   - complete-game-fixtures.md
 status: canonical
 source:
+  - C:\pcloud\BB\DEV\legendary-arena\wiki\lagn-v1.md (this page — https://ewiki.legendary-arena.com/lagn-v1/)
   - ../packages/lagn-spec/src/validator.ts
   - ../packages/lagn-spec/README.md
   - ../docs/ai/work-packets/WP-244-lagn-spec-publication.md

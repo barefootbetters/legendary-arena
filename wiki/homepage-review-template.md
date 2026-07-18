@@ -12,6 +12,7 @@ related:
   - scoring.md
 status: draft
 source:
+  - C:\pcloud\BB\DEV\legendary-arena\wiki\homepage-review-template.md (this page — https://ewiki.legendary-arena.com/homepage-review-template/)
   - ../docs/01-VISION.md
   - ../docs/ai/work-packets/WP-149-public-leaderboard-marketing-page.md
 last-reviewed: 2026-06-16

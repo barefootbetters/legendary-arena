@@ -12,6 +12,7 @@ related:
   - card-type-taxonomy.md
 status: draft
 source:
+  - C:\pcloud\BB\DEV\legendary-arena\wiki\card-image-acquisition.md (this page — https://ewiki.legendary-arena.com/card-image-acquisition/)
   - ../scripts/card-image-downloaders/download-legendarycardgame-co2e.ps1
   - ../scripts/card-image-downloaders/README.md
   - ../scripts/card-image-converters/Convert-Co2e-JpgToWebp.ps1

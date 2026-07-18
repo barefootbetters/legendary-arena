@@ -16,6 +16,7 @@ related:
   - brevo-email-pipeline.md
 status: draft
 source:
+  - C:\pcloud\BB\DEV\legendary-arena\wiki\homepage-marketing-scorecard.md (this page — https://ewiki.legendary-arena.com/homepage-marketing-scorecard/)
   - ../docs/01-VISION.md
   - ../docs/ai/work-packets/WP-149-public-leaderboard-marketing-page.md
 last-reviewed: 2026-05-15

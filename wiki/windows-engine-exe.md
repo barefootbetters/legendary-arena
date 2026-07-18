@@ -14,6 +14,7 @@ related:
   - wiki-viewer.md
 status: draft
 source:
+  - C:\pcloud\BB\DEV\legendary-arena\wiki\windows-engine-exe.md (this page — https://ewiki.legendary-arena.com/windows-engine-exe/)
   - ../docs/ai/WINDOWS-EXE-PACKAGING-STRATEGY.md
   - ../packages/game-engine/src/simulation/sweep.runner.ts
   - ../packages/game-engine/src/simulation/ai.competent.ts

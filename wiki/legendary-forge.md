@@ -10,6 +10,7 @@ related:
   - hugo-web-system.md
 status: draft
 source:
+  - C:\pcloud\BB\DEV\legendary-arena\wiki\legendary-forge.md (this page — https://ewiki.legendary-arena.com/legendary-forge/)
   - https://github.com/barefootbetters/legendary-forge (private — canonical)
 last-reviewed: 2026-07-11
 ---
