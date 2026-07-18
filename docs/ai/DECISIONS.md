@@ -29672,7 +29672,7 @@ that currently ignores `ctx`; a multi-WP arc, deferred rather than refused.
 
 ### D-24193 — the base card is the first non-tactic mastermind face; Epic faces are unreachable until an explicit opt-in exists
 
-**Status:** Drafted 2026-07-18; not yet landed (lands Active at WP-389 execution).
+**Status:** **Active** (WP-389 executed 2026-07-18).
 
 **The defect.** `findMastermindCards` (the internal helper behind the
 exported `buildMastermindState`) classified a mastermind's cards with
