@@ -8,6 +8,7 @@ import {
   buildPlayerCountTabs,
   findRoutedCountTab,
   formatAverageScore,
+  formatCardDisplayName,
   formatHeroPool,
   formatRoster,
   groupGauntletsBySet,
@@ -350,5 +351,45 @@ describe("formatHeroPool (WP-385 AC-3)", () => {
   it("returns an empty string for a missing or empty pool (never throws)", () => {
     assert.equal(formatHeroPool(undefined), "");
     assert.equal(formatHeroPool([]), "");
+  });
+});
+
+describe("formatCardDisplayName (sort-order article restoration)", () => {
+  it("restores ', The' to natural order", () => {
+    // why: pinned against the real corpus — these are 3 of the 25 sort-form
+    // names the 2026-07-18 sweep found across data/cards/*.json.
+    assert.equal(formatCardDisplayName("Legacy Virus, The"), "The Legacy Virus");
+    assert.equal(
+      formatCardDisplayName("Dark Phoenix Saga, The"),
+      "The Dark Phoenix Saga",
+    );
+    assert.equal(formatCardDisplayName("Hood, The"), "The Hood");
+  });
+
+  it("restores ', A' and ', An' without mis-splitting one for the other", () => {
+    assert.equal(formatCardDisplayName("Ancient Evil, An"), "An Ancient Evil");
+    assert.equal(formatCardDisplayName("New Beginning, A"), "A New Beginning");
+  });
+
+  it("leaves names without a trailing article untouched", () => {
+    assert.equal(formatCardDisplayName("The Legacy Virus"), "The Legacy Virus");
+    assert.equal(formatCardDisplayName("Midtown Bank Robbery"), "Midtown Bank Robbery");
+    assert.equal(formatCardDisplayName("Hail Hydra"), "Hail Hydra");
+  });
+
+  it("does not fire on a comma that is not a trailing article", () => {
+    assert.equal(
+      formatCardDisplayName("Daimonic, The White Light"),
+      "Daimonic, The White Light",
+    );
+    assert.equal(
+      formatCardDisplayName("Leo Fitz and Jemma Simmons"),
+      "Leo Fitz and Jemma Simmons",
+    );
+  });
+
+  it("leaves a degenerate article-only value alone rather than emitting a bare article", () => {
+    assert.equal(formatCardDisplayName(", The"), ", The");
+    assert.equal(formatCardDisplayName(""), "");
   });
 });

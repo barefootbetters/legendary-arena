@@ -228,6 +228,42 @@ R2 credentials are **not committed**: local `.env` carries
   or *behind* `main`, so a viewer/repo mismatch is a sync gap, not a bug.
   Registering a set in `sets.json` without also mirroring it means its cards
   load but it is missing from the set index.
+- **25 card names are stored in sort-order form — this is upstream, not a
+  bug, and it is fixed at display time (swept 2026-07-18).** Twenty-five
+  names across twenty sets end with a trailing article: `"Legacy Virus,
+  The"`, `"Dark Phoenix Saga, The"`, `"Hood, The"`. The count is exactly
+  1:1 with `scripts/convert-cards/inputs/cards/*.js`, so the converter is
+  passing upstream data through faithfully. The hand-authored `co2e` set is
+  the **only** set using natural order, which is what makes the corpus look
+  inconsistent — it is one convention with one exception, not 25 defects.
+  Five are masterminds, so the form also appears in published board names
+  and slugs: `gauntlet-cosm-beyonder-the`, `gauntlet-cosm-grandmaster-the`,
+  `gauntlet-rvlt-hood-the`, `gauntlet-wwhk-red-king-the`,
+  `gauntlet-wwhk-sentry-the`.
+
+  **Renaming the data was considered and rejected.** `data/cards/` is
+  generated, so the edit would land in `inputs/cards/*.js` and require a
+  full four-stage pipeline re-run plus regeneration of every card-data-derived
+  gate feed. Card names reach `G.cardDisplayData`, and `computeStateHash`
+  intentionally hashes the full `G` (see the note at
+  [`game.ts`](../packages/game-engine/src/game.ts) ~L496) — so a rename
+  re-pins both the sentinel `finalStateHash` and `PRE_WP080_HASH`. And the
+  slugs could not move regardless: they are the set-qualified competitive id
+  space (D-10014), embedded in `scenario_key`s, replay artifacts, and the
+  five board names above. Paying that cost still leaves the URLs reading
+  `-the`.
+
+  **The fix is display-only:** `formatCardDisplayName()` in
+  [`gauntletDisplay.ts`](../apps/legends-board/src/panels/gauntletDisplay.ts)
+  restores natural order at render time. Never feed its output back into an
+  id, slug, link, or lookup key. To re-run the sweep:
+
+  ```bash
+  grep -rhoE 'name: *"[^"]*, (The|A|An)"' scripts/convert-cards/inputs/cards/*.js | sort -u
+  ```
+
+  Note the inputs are `.js` with **double**-quoted values — scanning them as
+  JSON, or with a single-quote pattern, silently returns zero.
 - **Snapshots are not the migration list.** The table inventory and migration
   count are a point-in-time snapshot; both grow. `data/migrations/` is the
   source of truth.
