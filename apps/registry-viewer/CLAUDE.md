@@ -7,9 +7,42 @@ Live at: https://cards.legendary-arena.com/
 
 - Vue 3 (Composition API, SFCs), TypeScript, Vite 5, Zod
 - No router — single-page with tab switching (Cards / Themes)
-- Dark theme, scoped CSS throughout
+- Dark app UI, scoped CSS throughout — wrapped in **light** brand chrome
+  (see Theming below)
 - Data source: Cloudflare R2 at `https://images.legendary-arena.com/`
 - ES2022 build target
+
+## Theming (read before changing any color)
+
+This app is a **deliberate hybrid**, not a uniformly dark theme:
+
+- The viewer's own components (`header`, `filter-bar`, `card-tile`,
+  grid, panels) keep their original hardcoded dark values in scoped CSS.
+- `BrandHeader` / `BrandFooter`, mounted via `AppShell` under WP-007b,
+  consume `brand-tokens.css` and render **light**. The root `.app`
+  container is likewise tokenized (`--la-color-bg-primary` /
+  `--la-color-text-primary`) and so also resolves light — mostly hidden
+  behind the opaque dark interior.
+
+Sampling painted pixels on the live site (2026-07-18) shows a light
+brand band top and bottom with a dark body between them.
+
+**Why the root is light:** the brand tokens ship a dark set, but it
+applies only under `html[data-theme="dark"]`. This app does not set that
+attribute, so it inherits the brand's light defaults. Contrast with
+`apps/legends-board`, which pins `data-theme="dark"` (EC-417) because an
+unattended kiosk board cannot inherit a light default.
+
+Consequences worth knowing before you touch colors here:
+
+- Containers that set a dark background but inherit `.app`'s color get
+  the light theme's dark text. Most components dodge this by setting an
+  explicit color; new ones will not, so set color and background
+  together.
+- Going fully token-driven means either pinning `data-theme="dark"` (the
+  EC-417 approach) or retokenizing ~300 hardcoded values onto the light
+  set. Both are real work and neither is scoped to a passing edit —
+  raise it as its own packet rather than half-converting a component.
 
 ## Architecture & Data Flow
 
