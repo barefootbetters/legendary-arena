@@ -342,19 +342,26 @@ CTA.
 | `"newsletter"` | Inline newsletter signup (`newsletter-form.html`) | Community/engagement posts |
 | `"tournament"` | "Enter a tournament" → `play.legendary-arena.com` | Tournament announcements |
 
-> **Known drift (2026-07-18): `cta: "leaderboard"` is not a valid value.**
+> **Worked example — `cta: "leaderboard"` (caught and resolved 2026-07-18).**
 >
-> The three Gauntlet Guides posts
-> (`gauntlet-core-2e-red-skull.md`, `gauntlet-core-magneto-fixed-pool.md`,
-> `gauntlet-shield-hydra-high-council.md`) set `cta: "leaderboard"`.
-> That value is not in the allowed slice, so all three currently render
-> the **"Play now"** block instead of a leaderboard CTA.
+> The three Gauntlet Guides posts originally shipped with
+> `cta: "leaderboard"` (commits `be2751e`, `fbbbb83`). That value is not
+> in the allowed slice, so all three silently rendered the **"Play now"**
+> block. Nothing failed; the CTA was just wrong.
 >
-> Resolving this is a `WP-NNN:` change (it touches `layouts/`), not a
-> content-lane fix. Either add a `"leaderboard"` branch to
-> `cta-block.html` pointing at the gauntlet board, or change the three
-> posts to a supported value. Until then, do not copy `cta: "leaderboard"`
-> into new posts.
+> Fixed in `7dbcf65` ("correct the CTA to a valid value") by changing the
+> posts to `cta: "play"` — the content-lane route, which stays inside
+> `content/**` and ships under a `POST:`/`FIX:` prefix. The alternative
+> was adding a `"leaderboard"` branch to `cta-block.html`, but that
+> touches `layouts/` and so requires a `WP-NNN:` work packet.
+>
+> The lesson generalizes: **an invented `cta` value fails silently.** If a
+> post needs an action the closed set doesn't cover, either link it in the
+> body (all three gauntlet guides end with a
+> `[View the <name> gauntlet →]` link to
+> `legends.legendary-arena.com/#/gauntlet/<gauntlet_board>`) or open a
+> `WP-NNN:` to extend the partial. Do not invent a value and assume it
+> renders.
 
 The CTA block partial lives at
 `C:\www\legendary-arena-com\layouts\_partials\cta-block.html` and is the
