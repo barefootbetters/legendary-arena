@@ -298,12 +298,14 @@ currently unclaimed — the intended open-championship acquisition state. The
 first authenticated player (or roster) to clear a full set with one hero
 pool claims the first Fixed-Pool Championship, with their pool on the board.
 
-### Per-gauntlet editorial content (proposed — not yet approved)
+### Per-gauntlet editorial content (naming approved — D-24191)
 
-> **Status: proposal, blocked on one operator decision** (the IP-naming
-> fork below). Recorded here 2026-07-18 so the next session does not
-> re-derive it. Nothing in this section is shipped, and no post has been
-> written.
+> **Status: unblocked 2026-07-18.** The IP-naming fork below was decided by
+> the operator in favour of naming — see **D-24191** in
+> [DECISIONS.md](../docs/ai/DECISIONS.md). Gauntlet editorial may name
+> masterminds, schemes, and sets; the generic house style remains the
+> default for every other post. Pilot scope: 2–3 posts, measured, before
+> any commitment to the full 110.
 
 **The idea.** One article per gauntlet on
 `www.legendary-arena.com/posts/`, showing the gauntlet's composition and
@@ -345,22 +347,19 @@ structure each post so a "what actually wins" section can be appended from
 defensible content — replay-verified win rates are something only the
 operator of the verification pipeline can write.
 
-**⚠ Open decision — IP naming.** All **55** existing posts under
+**IP naming — decided (D-24191).** All **55** pre-existing posts under
 `content/posts/` name **zero** Marvel characters and never use the word
-"Marvel"; the house style is deliberately generic ("Scenario", "Villain",
-"Scheme twist"). Per-gauntlet posts are the opposite by construction —
-their entire value is naming a specific mastermind and its schemes. This
-is a genuine fork, not a detail:
+"Marvel"; that house style is deliberate. Per-gauntlet posts are the
+opposite by construction — their value is naming a specific mastermind and
+its schemes — so the operator ratified a **scoped carve-out**:
 
-- **Name them** — the posts work and rank, but it breaks a 55-post
-  convention and puts licensed names into monetized editorial, which is a
-  different exposure than displaying them inside licensed gameplay.
-- **Stay generic** — preserves the convention, but a per-gauntlet post
-  that cannot name its gauntlet has close to no reason to exist.
-
-Royalties are paid to Upper Deck and Marvel on revenue, so the licence
-terms govern and the operator holds this call. **Do not begin the content
-line until it is resolved.**
+- Gauntlet editorial **may** name masterminds, schemes, and sets. These are
+  the competitive identity of a published board, already rendered on
+  `legends.legendary-arena.com`.
+- The generic style **remains the default** for every other post. Nothing
+  is rewritten; this is not blanket permission for marketing copy.
+- **Naming is not reproduction.** Card text, card art, and set-wide card
+  lists stay on the licensed gameplay and registry surfaces.
 
 ### From a finished match to a ranked row (the write path)
 

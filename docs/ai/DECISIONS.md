@@ -29543,4 +29543,53 @@ resolution bug in this very component): a surface built and unit-tested but
 never driven end-to-end, which stayed invisible until real traffic arrived via
 the leaderboard challenge links.
 
+### D-24191 — Gauntlet editorial MAY name licensed characters; the generic house style stays the default everywhere else
+
+**Status:** Active (content governance) 2026-07-18. Decided by the operator
+after the per-gauntlet blog-post proposal surfaced the conflict. Unblocks the
+"Per-gauntlet editorial content" section of `wiki/leaderboard.md`.
+
+**User-Visible Surface:** `www.legendary-arena.com/posts/` — the Hugo blog.
+
+**The conflict.** All 55 posts under `content/posts/` name **zero** Marvel
+characters and never use the word "Marvel". The house style is deliberately
+generic — "Scenario", "Villain", "Scheme twist". Per-gauntlet guides break
+that by construction: a gauntlet *is* a named mastermind plus that set's named
+schemes, so a guide that cannot name them has no reason to exist.
+
+**Decision.** A **scoped carve-out**, not a reversal:
+
+1. **Gauntlet editorial may name masterminds, schemes, and sets.** These are
+   the competitive identity of a published board — the same names already
+   rendered on `legends.legendary-arena.com` and in the Registry Viewer.
+2. **The generic style remains the default for all other posts.** The weekly
+   series is unaffected; nothing is rewritten. Do not read this entry as
+   permission to name characters in general marketing copy.
+3. **Naming is not reproduction.** This carve-out covers *names* only. It does
+   not authorize reproducing card text, card art, or set-wide card lists in
+   editorial. Card imagery stays on the licensed gameplay and registry
+   surfaces.
+
+**Why scoped.** Royalties are paid to Upper Deck and Marvel on revenue, so
+the exposure profile of monetized editorial differs from in-client display of
+licensed content. Limiting the carve-out to competitive-identity naming keeps
+the blast radius at "the names already public on the leaderboard" rather than
+"the blog is now a Marvel wiki".
+
+**Companion constraint (carried from the proposal).** A gauntlet's composition
+block must be **generated** from `buildGauntletCatalog()`, never hand-typed —
+and it must publish only what a `GauntletDefinition` actually carries:
+`setAbbr`, `setName`, `mastermindSlug`, `mastermindName`, `legs[]`,
+`heroPoolBudgets?`. Villain groups are explicitly unconstrained (*any villain
+groups qualify*); henchmen, officers, and sidekicks are **not** gauntlet
+properties, and no officers/sidekicks counts exist in `PLAYER_COUNT_SETUP` at
+all. Publishing them as gauntlet facts would be fabrication. The stale
+105/109/110 count drift corrected in the same change is the standing evidence
+for why derived data is never typed by hand.
+
+**Scope.** Pilot first: 2–3 posts, measured, before any commitment to the full
+110. Hero recommendations are opinion until boards fill; each post reserves a
+section for replay-verified "what actually wins" data from
+`legendary.competitive_scores`.
+
 Protect this file.
