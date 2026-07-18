@@ -29879,6 +29879,90 @@ CI gate, and would fork the `$schema` URL every producer already stamps.
 hand-written duplicate of the zod schema inside the same file, and CI verifies
 only that the committed JSON matches the *generator* — not that the generator
 matches zod. Both were updated here by hand. Deriving one from the other is
-worth its own packet.
+worth its own packet. *(Resolved by D-24196 — that packet.)*
+
+---
+
+### D-24196 — the published JSON Schema is derived from the zod schema; unexpressible constraints are an enforced allowlist
+
+**Status:** Active (WP-392).
+
+**The hazard this closes.** `packages/lagn-spec/src/validator.ts` maintained
+its schema twice: `lagnSchema` (zod, labelled "Single Source of Truth") and
+`generateSchema()`, a hand-written JSON Schema literal a few hundred lines
+below it describing the same shape by coincidence rather than by construction.
+The CI gate (`lagn-schema-drift` in `.github/workflows/ci.yml`) regenerated
+`schemas/lagn-v1.json` and failed on a non-empty `git diff`. That verifies the
+committed JSON matches the **generator**. Nothing verified the generator
+matches **zod**. The two could diverge with CI fully green — and had.
+
+Measured at execution, the published schema at
+`https://legendary-arena.com/schemas/lagn/v1/lagn-v1.json` accepted documents
+`validate()` rejects. A card catalog entry with a bogus `card_type` passed the
+published schema and failed zod, because the hand-written copy described
+`card_catalog.cards.items` as bare `{ type: 'object' }` against zod's
+nine-branch `z.discriminatedUnion('card_type', …)`. `replay.turns.items` was
+untyped the same way.
+
+**The decision.** `generateSchema()` now derives from `lagnSchema` via
+`zod-to-json-schema`. The hand-written literal is deleted, not parked — a
+retained copy is a copy that drifts. Post-derivation the function re-applies
+only what zod cannot carry: the document title, the description, the
+`$schema` property's default URL, `game_id`'s description, and the root
+`$schema` draft URL.
+
+**Locked generator options, and why each is not the default.**
+
+| Option | Value | Why |
+|---|---|---|
+| `target` | `jsonSchema7` | The library has no 2020-12 target, and its `jsonSchema2019-09` target emits the **draft-04 boolean** form (`exclusiveMinimum: true` beside `minimum: 0`), which is invalid under the 2020-12 URL this document declares. `jsonSchema7` emits the numeric form 2020-12 uses; every other keyword it produces here is identical across the two drafts. |
+| `removeAdditionalStrategy` | `strict` | `lagnSchema` never calls `.strict()`, so zod **strips** unknown keys and still parses — a document carrying extras is valid. The library default emits `additionalProperties: false`, which would reject documents `validate()` accepts. The counter-intuitive option name yields `additionalProperties: true`, matching the hand-written copy, which omitted the keyword. |
+| `$refStrategy` | `none` | Inline every subschema. The hand-written copy hoisted only `support_pool`; letting the library decide what to hoist would churn the committed file whenever an unrelated shape happened to be reused. |
+| `effectStrategy` | `input` | Refinements wrap their subject in a `ZodEffects` node. `input` emits the shape being refined rather than nothing; the predicate itself is what lands in the allowlist below. |
+
+The root `$schema` stays `https://json-schema.org/draft/2020-12/schema`. The
+library injects its own `$schema` matching its target, so the override must
+sit **after** the object spread — otherwise the contract silently republishes
+under a different draft than every producer stamps. A unit test pins this.
+
+`lagn_version` stays an `enum` of `["1.0.0", "1.1.0"]` per D-24195, and is
+pinned by test rather than left to the derivation to preserve incidentally.
+
+**Unexpressible constraints are an enforced allowlist, not an accident.**
+Derivation drops every `.refine()` / `.superRefine()` silently — they are
+arbitrary predicates with no JSON Schema equivalent. Dropping them is
+unavoidable; dropping them *unrecorded* is the failure mode this packet
+exists to end. `UNEXPRESSIBLE_CONSTRAINTS` in `validator.ts` names all four,
+each with a path, the constraint, and the reason JSON Schema cannot carry it:
+
+1. Support-pool `mode`/`sets` coupling plus per-pool `ext_id` uniqueness.
+2. Each pool's `copies` summing to its matching `*_count` field.
+3. `seq` increasing by exactly 1 across a turn's actions.
+4. `support_pools` requiring `lagn_version` 1.1.0.
+
+The list is **enforced, not decorative**: `validator.test.ts` walks the zod
+`_def` tree, counts `ZodEffects` nodes, and fails if the count disagrees with
+the allowlist length. Adding a `.refine()` without recording it breaks the
+build. This was mutation-tested at execution — injecting an undocumented
+refinement turns the suite red with a message naming the fix.
+
+The array is also embedded in the published artifact as
+`x-lagn-unexpressible-constraints`, so a consumer validating against the
+schema alone can see what it does not check for them. `x-` prefixed keywords
+are ignored by conforming validators.
+
+**Verification.** 44/44 tests pass (34 pre-existing, 10 added). All four
+`examples/*.lagn.json` fixtures — including `tier1-support-pools.lagn.json` —
+are validated against the **generated JSON Schema** compiled by `ajv` (2020-12
+dialect), not against zod alone; a fixture passing one and failing the other is
+exactly the drift this packet prevents. `ajv` and `ajv-formats` are devDeps;
+`zod-to-json-schema` is a runtime dependency because `index.ts` computes
+`LAGN_SCHEMA` eagerly.
+
+**What this does not do.** The `lagn-schema-drift` CI job is unchanged and
+still worth keeping — it catches a committed artifact that was never
+regenerated, which the unit test now also catches. The generator↔zod hole it
+could not see is closed by construction rather than by a second gate, so the
+fallback comparison check contemplated in the packet brief was not needed.
 
 Protect this file.
