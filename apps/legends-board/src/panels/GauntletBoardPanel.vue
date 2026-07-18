@@ -21,6 +21,7 @@ import {
   buildFixedCountTabs,
   buildPlayerCountTabs,
   formatAverageScore,
+  formatCardDisplayName,
   formatHeroPool,
   isFixedBoardName,
   rosterForEntry,
@@ -154,7 +155,7 @@ const challengeLegs = computed((): ChallengeLeg[] => {
   <div class="panel gauntlet-board-panel">
     <a class="back-link" href="#/">← All gauntlets</a>
     <h2 class="panel-title">
-      {{ indexEntry ? `${indexEntry.mastermindName} — ${indexEntry.setName}` : "Gauntlet" }}
+      {{ indexEntry ? `${formatCardDisplayName(indexEntry.mastermindName)} — ${indexEntry.setName}` : "Gauntlet" }}
     </h2>
     <p v-if="indexEntry && isFixedRoute" class="panel-subtitle">
       The fixed-pool championship — one hero pool
@@ -301,7 +302,7 @@ const challengeLegs = computed((): ChallengeLeg[] => {
             :href="leg.url"
             target="_blank"
             rel="noopener"
-          >Challenge: {{ leg.schemeName }}</a>
+          >Challenge: {{ formatCardDisplayName(leg.schemeName) }}</a>
         </li>
       </ul>
     </section>

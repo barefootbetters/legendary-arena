@@ -401,3 +401,58 @@ export function formatHeroPool(
   }
   return displayParts.join(" · ");
 }
+
+// why: the leading articles the upstream card source moves to the end of a
+// name for alphabetisation ("Legacy Virus, The"). Ordered longest-first so
+// "An" is tested before "A" and a name ending ", An" is never mis-split.
+const SORT_ORDER_ARTICLE_SUFFIXES = [", An", ", The", ", A"] as const;
+
+/**
+ * Restores a sort-order card name to natural reading order for display.
+ *
+ * The upstream card source stores some names with the leading article moved
+ * to the end so they alphabetise under the significant word — `"Legacy
+ * Virus, The"`, `"Dark Phoenix Saga, The"`. 25 names across 20 sets carry
+ * this form. The hand-authored `co2e` set does not, so the same scheme
+ * reads two ways depending on which set published it.
+ *
+ * This is a **display-only** correction. It never touches the underlying
+ * data, and callers must never feed the result back into an id, a slug, a
+ * link, or a lookup key: slugs are the set-qualified competitive id space
+ * (D-10014) and are embedded in `scenario_key`s, replay artifacts, and
+ * published board names. `gauntlet-rvlt-hood-the` stays `gauntlet-rvlt-hood-the`
+ * no matter what this function renders.
+ *
+ * Renaming the data instead was considered and rejected: `data/cards/` is
+ * generated from `scripts/convert-cards/inputs/cards/*.js`, and card names
+ * reach `G.cardDisplayData`, which `computeStateHash` hashes as part of the
+ * full `G` — so a data rename would re-pin the sentinel fixture and
+ * `PRE_WP080_HASH` while leaving the five sort-form board slugs unchanged
+ * anyway.
+ *
+ * @param cardName The published card name, in whatever form the set stores.
+ * @returns The name in natural order — `"The Legacy Virus"` — or the input
+ *   unchanged when it carries no trailing article.
+ */
+export function formatCardDisplayName(cardName: string): string {
+  for (const articleSuffix of SORT_ORDER_ARTICLE_SUFFIXES) {
+    if (!cardName.endsWith(articleSuffix)) {
+      continue;
+    }
+    // why: `", The"` is 5 chars of which the article is the trailing 3 —
+    // slicing by the suffix length drops the comma and space together.
+    const significantPart = cardName.slice(
+      0,
+      cardName.length - articleSuffix.length,
+    );
+    // why: a name that is nothing BUT an article suffix (", The") would
+    // otherwise render as a bare article with an empty subject; leaving such
+    // a degenerate value untouched is safer than publishing "The ".
+    if (significantPart.length === 0) {
+      return cardName;
+    }
+    const article = articleSuffix.slice(2);
+    return `${article} ${significantPart}`;
+  }
+  return cardName;
+}

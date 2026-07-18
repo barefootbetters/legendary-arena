@@ -15,6 +15,7 @@ import {
   buildChallengeUrl,
   buildFixedCountTabs,
   buildPlayerCountTabs,
+  formatCardDisplayName,
   groupGauntletsBySet,
   type PlayerCountTab,
 } from "./gauntletDisplay";
@@ -108,7 +109,7 @@ function firstLegChallengeUrl(gauntlet: GauntletIndexEntry): string | null {
             :key="gauntlet.board"
             class="gauntlet-row"
           >
-            <span class="mastermind-name">{{ gauntlet.mastermindName }}</span>
+            <span class="mastermind-name">{{ formatCardDisplayName(gauntlet.mastermindName) }}</span>
             <span class="leg-count">{{ gauntlet.legCount }} schemes</span>
 
             <div class="count-chips">
