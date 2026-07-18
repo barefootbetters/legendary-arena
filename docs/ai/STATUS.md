@@ -7,6 +7,44 @@
 
 ## Current State
 
+### INFRA fix — "Edit this loadout" promotes the URL preview into the SHARED draft, partial-tolerantly (D-24190 Active) (2026-07-17)
+
+**The button never worked.** Operator-reported on live cards.legendary-arena.com
+against `?schemeId=co2e/bank-robbery-hostage-crisis&mastermindId=co2e/red-skull`:
+clicking "Edit this loadout" left the builder blank and reported the untouched
+draft's errors (including `schemeId`/`mastermindId` "must match the
+set-qualified pattern" — what an EMPTY id reports). The ids were fine; the
+preview resolved them 1/1. **Two compounding faults:** (1) promotion went
+through `loadFromJson`, which runs full-document validation and returns
+**before assigning** on failure — and a scheme+mastermind-only challenge link
+has empty villain/henchman/hero arrays, which the schema forbids (≥1 each);
+(2) `LoadoutPreview` called `useLoadoutDraft()` **itself**, creating an
+independent draft — `App.vue` owns the shared one the builder renders (WP-279 /
+D-24054), so even a complete URL would have populated a phantom.
+
+Fix: promotion is now an **emitted intent applied by the draft's owner** via a
+new pure `applyPreviewToDraft(draftApi, previewDocument)` helper that applies
+the preview field-by-field through the draft's mutators (the `prefillFromTheme`
+precedent) — a draft is a work-in-progress and is allowed to be incomplete.
+`LoadoutPreview` now touches no draft at all (restoring its EC-116 read-only
+guardrail). Locked ordering: remove-then-apply (replace, not merge);
+`setMastermind` before villain adds (Always-Leads survives); `setPlayerCount`
+last (carries the WP-387 URL count). `loadFromJson` keeps its strict semantics
+for the "Load JSON / Load LAGN" paste surfaces — only the preview-promotion
+path changed.
+
+registry-viewer `vue-tsc` 0 + test **135 → 140** (+5: partial seed, full
+composition, replace-not-merge, mastermind-before-villains ordering,
+count/player-count carry); `pnpm -r build` 0. **Live dev smoke on the reported
+URL:** the draft populates both ids, auto-includes Red Skull's Always-Leads
+`co2e/hydra` (🔒), and issues drop 5 → 2 (only the henchmen + heroes left to
+pick); zero console errors. This unblocks the whole leaderboard →
+"Challenge this leg" → builder → play flow (WP-345 / WP-387), which had been
+dead at the promotion step. Same latent class as D-24186 in this component:
+built, unit-tested, never driven end-to-end. `User-Visible Surface =
+cards.legendary-arena.com` — live-verify on the CF Pages deploy
+operator-pending.
+
 ### WP-387 / EC-416 Executed — Scenario preview deep-link carries player count (leaderboard → loadout builder) (2026-07-17)
 
 Closes the "play this scenario from the leaderboard" gap (Shape A). A gauntlet

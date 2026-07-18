@@ -23,7 +23,6 @@ import type {
 } from "@legendary-arena/registry/setupContract";
 
 import type { CardRegistry, FlatCard } from "../registry/browser";
-import { useLoadoutDraft } from "../composables/useLoadoutDraft";
 import type { SetupMatchedCount } from "../composables/useSetupFromUrl";
 
 interface Props {
@@ -37,14 +36,14 @@ interface Props {
 
 const props = defineProps<Props>();
 
-// why: LoadoutPreview imports useLoadoutDraft and destructures ONLY
-// loadFromJson per the EC-116 §Guardrails read-only constraint (16-mutator
-// forbidden list). Each call to useLoadoutDraft() creates an independent
-// draft instance; the composable is intentionally non-singleton (per the
-// WP-091 PS-1 immutable-file lock that forbids changing useLoadoutDraft's
-// signature). The user-initiated "Edit this loadout" click below is
-// therefore the only path that touches a draft from this component.
-const { loadFromJson } = useLoadoutDraft(props.registry);
+// why: D-24190 — this component is READ-ONLY and now touches no draft at all.
+// It previously called `useLoadoutDraft(props.registry)` itself, which creates
+// an INDEPENDENT draft instance (the composable is deliberately non-singleton)
+// — so "Edit this loadout" populated a draft nothing renders, while the
+// builder kept showing App.vue's shared draft. Promotion is now an emitted
+// intent that App.vue (the shared draft's owner) applies, which both fixes the
+// defect and strengthens the EC-116 §Guardrails read-only constraint.
+const emit = defineEmits<{ (event: "edit"): void }>();
 
 const cardsByExtId = computed<Map<string, FlatCard>>(() => {
   const lookup = new Map<string, FlatCard>();
@@ -130,17 +129,16 @@ function onEditLoadout(): void {
   if (props.previewDocument === null) {
     return;
   }
-  // why: The "Edit this loadout" call site is the only permitted mutator
-  // invocation in this read-only component (EC-116 §Guardrails #4 / #5).
-  // It is user-initiated, fires exactly once per click, and serializes the
-  // synthesized preview document into JSON for loadFromJson() to re-parse.
-  // Failure surfaces as a status string rather than throwing.
-  const result = loadFromJson(JSON.stringify(props.previewDocument));
-  if (result.ok) {
-    editStatus.value = "loaded";
-  } else {
-    editStatus.value = "rejected";
-  }
+  // why: D-24190 — emit the promotion intent instead of mutating a draft here.
+  // The previous implementation round-tripped the preview through
+  // `loadFromJson`, which runs the FULL document validation and returns without
+  // assigning when it fails: a scheme+mastermind-only challenge link has empty
+  // villain / henchman / hero arrays, the schema requires >= 1 of each, so the
+  // promote silently no-op'd. App.vue now applies the preview to the shared
+  // draft field-by-field (partial-tolerant), so this always succeeds for a
+  // renderable preview.
+  emit("edit");
+  editStatus.value = "loaded";
 }
 
 async function onCopyLink(): Promise<void> {
