@@ -109,10 +109,22 @@ Three details worth knowing when adding the next mastermind:
   strike card.
 - **Red Skull matches a list, not a single id.** `MASTERMINDS_RED_SKULL`
   covers every set whose base face prints the same strike text
-  (`core/red-skull` and `co2e/red-skull`), because mastermind setup selects
-  the first non-tactic face. Epic faces with *different* text — co2e's
-  `epic-red-skull` — are deliberately **excluded**: they are not
-  engine-selectable, so their strike text is data only.
+  (`core/red-skull` and `co2e/red-skull`). Epic faces with *different* text
+  — co2e's `epic-red-skull` — are excluded from the list.
+- **⚠️ Which face is actually played is currently wrong (D-24193).** An
+  earlier revision of this page claimed Epic faces "are not
+  engine-selectable." **That is false.** `findMastermindCards` (the internal
+  helper behind `buildMastermindState`) assigns `baseCard` on *every*
+  non-tactic face with no early exit, so the **last** one wins — the
+  alternate face, for **65 masterminds across 24 sets** (56 Epic variants, 9
+  transformation faces). Strike
+  *dispatch* is unaffected (it keys on `G.selection.mastermindId`, not the
+  card id), so a co2e Red Skull strike still fires
+  `resolveRedSkullStrike` — but the card on the board is *Epic Red Skull*,
+  whose printed text differs. **WP-389 / D-24193** fixes the classifier to
+  select the first non-tactic face; until it lands, treat every "the base
+  face is played" statement here as aspirational. The same wrong premise is
+  baked into the WP-386 `// why:` comment in the source.
 
 `resolveRedSkullStrike` is the current precedent for adding another:
 mutate `G` directly, resolve deterministically (D-24188 picks the lowest
@@ -222,7 +234,8 @@ share the same Mastermind entity.
 - D-15401: generic bystander capture onto the Mastermind on every strike — the handler begins mutating `G`
 - Magneto: first per-mastermind branch (`resolveMagnetoStrike`), taking the punitive discard-to-four branch of the printed "or" clause
 - WP-386 / D-24188: `resolveRedSkullStrike` — each player KOs a Hero from hand, auto-picked deterministically (lowest cost, tie → lowest hand index). Establishes the pattern for subsequent masterminds and the `MASTERMINDS_RED_SKULL` multi-set id list
-- co2e data pass (2026-07-17): ten authored Master Strike texts added as card data; only the base Red Skull face is engine-resolved, and Epic faces are not engine-selectable at all
+- co2e data pass (2026-07-17): ten authored Master Strike texts added as card data; only the base Red Skull face is engine-resolved
+- D-24193 (2026-07-18): the mastermind face classifier is found to select the LAST non-tactic face, so Epic faces are what 65 masterminds across 24 sets actually play; WP-389 corrects it to first-wins. Supersedes this page's earlier "Epic faces are not engine-selectable" claim
 
 ## References
 

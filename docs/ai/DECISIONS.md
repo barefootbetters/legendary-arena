@@ -29612,4 +29612,153 @@ for why derived data is never typed by hand.
 section for replay-verified "what actually wins" data from
 `legendary.competitive_scores`.
 
+### D-24192 — co2e mastermind strike texts resolve by deterministic auto-pick; two alternate branches deliberately unimplemented
+
+**Status:** Drafted 2026-07-18; not yet landed (lands Active at WP-388 execution).
+
+**Context.** WP-386 / D-24188 implemented the second per-mastermind Master
+Strike resolver (Red Skull) and established deterministic auto-pick as the way
+a printed player-choice clause resolves. co2e carries ten authored Master
+Strike texts — a base and an Epic face for each of five masterminds — of which
+only the five base faces are engine-selectable (mastermind setup picks the
+first non-tactic face, so an Epic face is never the selected mastermind). Red
+Skull's base face is done; WP-388 covers the remaining four.
+
+**Decision.** Each printed "or" / "may" clause is resolved by the engine
+without RNG and without a pending-choice prompt, to the branch that is
+player-optimal and implementable with existing state:
+
+- `co2e/magneto` — discard the lowest-cost X-Men Hero; if the player has none,
+  gain a Wound. **Fully faithful** — a player with no X-Men Hero must take the
+  Wound at the table too.
+- `co2e/doctor-doom` — discard cards equal to the Omen count if the hand can
+  cover it, else gain a Wound. The Omen count is **derived**, not stored:
+  every Doom strike stacks exactly one Omen, so the count for the strike being
+  resolved is `(counters.masterStrikeCount ?? 0) + 1` (the generic
+  `modifyCounter` effect applies after the handler returns). No Omen zone is
+  created.
+- `co2e/loki` — discard the lowest-cost Strength Hero.
+- `co2e/doctor-octopus` — discard the lowest-cost Spider-Friends Hero.
+
+Selection is always lowest cost, tie broken by lowest hand index, matching
+D-24188. Trait gating reads `G.cardTraits` (WP-179), which carries `heroClass`
+and `team` — the capability that makes this possible without a registry read
+at runtime.
+
+**Deliberately NOT implemented — recorded as a bounded fidelity gap.** Loki's
+"stacks a non-grey Hero next to Loki as a Hypno-Thrall" branch and Doctor
+Octopus's "reveal the top 8 cards, discard all non-grey Heroes, put the rest
+back in random order" branch. A player who cannot take the implemented branch
+(no Strength Hero; no Spider-Friends Hero) takes a **logged no-op** rather
+than the alternate branch. This means such a player escapes the strike
+entirely — a real divergence from the printed card, accepted here because both
+alternates need a new mastermind-adjacent zone and/or `ctx.random` threading
+plus a "non-grey Hero" predicate, which together exceed this WP.
+
+A future WP may implement them. It will not need to invent "non-grey": the
+tabletop rulebook ("Grey Heroes") defines it as grey-colored cards with no
+Hero Class, i.e. `G.cardTraits[extId]?.heroClass == null`.
+
+**Rationale for auto-pick over a prompt** is unchanged from D-24188: a
+blocking multi-player pending-choice shipped without a UIState projection and
+a client prompt hard-freezes the match.
+
+**Alternatives rejected.** (1) Uniform punitive branch — makes co2e
+meaningfully harsher than the printed cards and turns Doctor Octopus's "may"
+into a compulsion. (2) Full fidelity now — new `G` fields for the Omen and
+Thrall stacks force a sentinel/hash re-pin and an arena-client UIState
+backfill, and the reveal-8 reorder needs randomness threaded into a handler
+that currently ignores `ctx`; a multi-WP arc, deferred rather than refused.
+
+### D-24193 — the base card is the first non-tactic mastermind face; Epic faces are unreachable until an explicit opt-in exists
+
+**Status:** Drafted 2026-07-18; not yet landed (lands Active at WP-389 execution).
+
+**The defect.** `findMastermindCards` (the internal helper behind the
+exported `buildMastermindState`) classified a mastermind's cards with
+`if (card.tactic === true) { tacticCards.push(card); } else { baseCard = card; }`
+and no early exit, so the **last** non-tactic face won. Every mastermind that
+ships both a base and an Epic face therefore played its **Epic** variant,
+which no player chose. Blast radius measured at draft: **65 masterminds
+across 24 sets**, including all five co2e masterminds. Of those 65, **56
+carry an Epic variant** as the later face and **9 carry a transformation /
+second-form face** (`wwhk` x6 — e.g. `general-thunderbolt-ross` -> *Red
+Hulk*, `sentry-the` -> *The Void*; `amwp` x3 — e.g. `darren-cross` ->
+*Yellowjacket*). First-wins is correct for both classes: the first face is
+the **starting** face in each. `core` is unaffected (one non-tactic face per mastermind), which
+is why no oracle caught it.
+
+**How it stayed invisible.** With a single non-tactic face, first-wins and
+last-wins are indistinguishable. The loop was correct when written and
+diverged silently the first time a set shipped an Epic face. Nothing failed
+loudly: `baseCard` is always non-null and the resulting `MastermindState` is
+structurally valid — only its *content* is the wrong face. Concretely, a co2e
+Doctor Doom match faced *Epic Doctor Doom* at attack `12+` instead of
+*Dr. Doom* at attack `10+`, with the Epic strike and tactic text.
+
+**Decision.** The base card is the **first** non-tactic face in the registry's
+`cards` array. The fix is a single assignment guard — assign `baseCard` only
+while it is still null — retaining `tactic` as the discriminator per D-1413.
+Tactic collection is unchanged: every `tactic === true` card is appended in
+registry order, whether it appears before or after the base face.
+
+**Why not an `epic` field.** The registry schema's discriminator is `tactic`
+(D-1413); there is no `epic` field, and adding one is a registry-contract
+change far outside a bug fix. "First non-tactic face is the base card" is the
+minimal contract that resolves the existing data correctly, and it matches how
+all 24 affected sets are authored.
+
+**Consequence, stated plainly: alternate faces become unreachable — and
+restoring them is TWO features, not one.** On the tabletop, Epic is an opt-in
+harder variant chosen during setup; the engine has no such switch
+(`MatchSetupConfig` carries a `mastermindId`, not a variant). The 9
+transformation faces are a different mechanism entirely: they are not chosen
+at setup, they are entered mid-match when the card's condition fires. The
+honest post-fix state is therefore starting-face-always, with two distinct
+capabilities deferred:
+
+1. an **Epic opt-in** in the match-setup *envelope* (56 masterminds; the
+   9-field composition block stays locked), and
+2. **in-match mastermind transformation** (9 masterminds).
+
+Neither is scoped here, and they must not be collapsed into one — treating
+transformation as "Epic opt-in" would mis-scope it.
+
+**Downstream artifacts built on the wrong premise — and why only one needs an
+edit.** Two shipped artifacts inferred, from the defect, that setup picks the
+first non-tactic face and that alternate faces are unreachable:
+
+- `wiki/master-strike.md` — **corrected at this WP's drafting commit.** A wiki
+  page states the claim as standing fact, so it had to be rewritten.
+- the `// why:` comment introduced by WP-386 in `rules/mastermindHandlers.ts`
+  — **left exactly as written, deliberately.** It asserts that setup "selects
+  the first non-tactic face" and that the epic face "is never
+  engine-selectable." Both are false today and both become **true** the moment
+  this decision lands. Landing the fix validates the comment rather than
+  requiring an edit to it. `mastermindHandlers.ts` is therefore NOT in
+  WP-389's file allowlist, and no later WP should "correct" that comment.
+
+**WP-388** (co2e strike texts) hard-deps on this WP for the same reason: it
+targets base-face text, which is only the played text once this lands.
+
+**Determinism.** No RNG added or removed. Both the recorded sentinel fixture
+(`packages/game-engine/src/test/fixtures/games/sentinel-core-doom-2p.replay.json`)
+and the runtime-observed sim matrix
+(`docs/ai/coverage/runtime-observed-hollows.json`) pin `core/dr-doom`, which
+has a single non-tactic face, so all committed hash and artifact surfaces are
+byte-identical. Confirmed by a draft scaffold rather than argued: with the
+guard applied the engine suite ran 1991/0 and `sim:runtime-observed:check`
+reported the artifact current with no regeneration. The weekly full-axis sweep
+fixture (`data/sweep-fixtures/mastermind-ids.full.json`) DOES shift for all 65
+— it is not a committed oracle and not a PR gate, but "byte-identical" refers
+to committed surfaces, not that one.
+
+**Known adjacent defect, not fixed here.** Four masterminds ship ZERO
+non-tactic faces — `2099/sinister-six-2099`, `2099/alchemax-executives`,
+`shld/hydra-high-council`, `shld/hydra-super-adaptoid` — and already resolve
+to the degenerate empty state (`baseCardId = mastermindId`, empty
+`tacticsDeck`). `hydra-high-council` is reachable content (referenced by
+`content/themes/aim-modok.json` and `hydra-uprising.json`). Recorded as a
+follow-up; WP-389 leaves the null-return guard untouched.
+
 Protect this file.
