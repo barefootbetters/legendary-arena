@@ -171,11 +171,11 @@ function firstLegChallengeUrl(gauntlet: GauntletIndexEntry): string | null {
 .panel-title {
   font-size: 1.5rem;
   margin: 0 0 0.25rem;
-  color: #ffd700;
+  color: var(--la-color-gold-bright);
 }
 
 .panel-subtitle {
-  color: #888;
+  color: var(--la-color-text-secondary);
   margin: 0 0 1.25rem;
   font-size: 0.9rem;
 }
@@ -190,13 +190,13 @@ function firstLegChallengeUrl(gauntlet: GauntletIndexEntry): string | null {
 
 .error-detail {
   font-size: 0.85rem;
-  color: #888;
+  color: var(--la-color-text-secondary);
   margin-top: 0.5rem;
 }
 
 .panel-loading {
   text-align: center;
-  color: #888;
+  color: var(--la-color-text-secondary);
   padding: 2rem;
 }
 
@@ -206,8 +206,8 @@ function firstLegChallengeUrl(gauntlet: GauntletIndexEntry): string | null {
 
 .set-name {
   font-size: 1.05rem;
-  color: #aaa;
-  border-bottom: 1px solid #1a1a2e;
+  color: var(--la-color-text-secondary);
+  border-bottom: 1px solid var(--la-color-border-subtle);
   padding-bottom: 0.35rem;
   margin: 0 0 0.5rem;
 }
@@ -228,11 +228,11 @@ function firstLegChallengeUrl(gauntlet: GauntletIndexEntry): string | null {
 
 .mastermind-name {
   flex: 1;
-  color: #e0e0e0;
+  color: var(--la-color-text-primary);
 }
 
 .leg-count {
-  color: #666;
+  color: var(--la-color-text-muted);
   font-size: 0.85rem;
 }
 
@@ -252,7 +252,7 @@ function firstLegChallengeUrl(gauntlet: GauntletIndexEntry): string | null {
 }
 
 .chip-claimed {
-  color: #ffd700;
+  color: var(--la-color-gold-bright);
   border: 1px solid rgba(255, 215, 0, 0.4);
 }
 
@@ -261,12 +261,12 @@ function firstLegChallengeUrl(gauntlet: GauntletIndexEntry): string | null {
 }
 
 .chip-unclaimed {
-  color: #555;
-  border: 1px dashed #2a2a3a;
+  color: var(--la-color-border-strong);
+  border: 1px dashed var(--la-color-border-subtle);
 }
 
 .chip-fixed {
-  color: #ffd700;
+  color: var(--la-color-gold-bright);
   border: 1px solid rgba(255, 215, 0, 0.7);
   background: rgba(255, 215, 0, 0.08);
   font-weight: 600;
@@ -277,7 +277,7 @@ function firstLegChallengeUrl(gauntlet: GauntletIndexEntry): string | null {
 }
 
 .challenge-link {
-  color: #ffd700;
+  color: var(--la-color-gold-bright);
   text-decoration: none;
   font-size: 0.85rem;
   white-space: nowrap;

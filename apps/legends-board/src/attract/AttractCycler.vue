@@ -157,7 +157,7 @@ defineExpose({ currentIndex, currentBoardName, goToPanel });
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  border: 1px solid #555;
+  border: 1px solid var(--la-color-border-strong);
   background: transparent;
   cursor: pointer;
   padding: 0;
@@ -165,12 +165,12 @@ defineExpose({ currentIndex, currentBoardName, goToPanel });
 }
 
 .nav-dot.active {
-  background: #ffd700;
-  border-color: #ffd700;
+  background: var(--la-color-gold-bright);
+  border-color: var(--la-color-gold-bright);
 }
 
 .nav-dot:hover {
-  border-color: #ffd700;
+  border-color: var(--la-color-gold-bright);
 }
 
 .pause-indicator {
@@ -178,7 +178,7 @@ defineExpose({ currentIndex, currentBoardName, goToPanel });
   top: 0.5rem;
   right: 0.5rem;
   font-size: 0.75rem;
-  color: #888;
+  color: var(--la-color-text-secondary);
   background: rgba(0, 0, 0, 0.6);
   padding: 0.25rem 0.5rem;
   border-radius: 4px;

@@ -41,7 +41,7 @@ const props = defineProps<{
 .panel-title {
   font-size: 1.5rem;
   margin: 0 0 1rem;
-  color: #ffd700;
+  color: var(--la-color-gold-bright);
 }
 
 .panel-error {
@@ -54,13 +54,13 @@ const props = defineProps<{
 
 .error-detail {
   font-size: 0.85rem;
-  color: #888;
+  color: var(--la-color-text-secondary);
   margin-top: 0.5rem;
 }
 
 .panel-loading {
   text-align: center;
-  color: #888;
+  color: var(--la-color-text-secondary);
   padding: 2rem;
 }
 
@@ -86,6 +86,6 @@ const props = defineProps<{
 
 .achievement-score {
   font-variant-numeric: tabular-nums;
-  color: #ffd700;
+  color: var(--la-color-gold-bright);
 }
 </style>

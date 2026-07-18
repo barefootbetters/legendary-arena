@@ -35,12 +35,12 @@ const PLAY_URL = "https://play.legendary-arena.com";
 
 .empty-heading {
   font-size: 1.4rem;
-  color: #e0e0e0;
+  color: var(--la-color-text-primary);
   margin: 0 0 0.5rem;
 }
 
 .empty-sub {
-  color: #888;
+  color: var(--la-color-text-secondary);
   margin: 0 0 1.25rem;
 }
 
@@ -48,7 +48,7 @@ const PLAY_URL = "https://play.legendary-arena.com";
   display: inline-block;
   padding: 0.6rem 1.5rem;
   background: rgba(255, 215, 0, 0.15);
-  color: #ffd700;
+  color: var(--la-color-gold-bright);
   border: 1px solid rgba(255, 215, 0, 0.4);
   border-radius: 22px;
   text-decoration: none;
@@ -60,12 +60,12 @@ const PLAY_URL = "https://play.legendary-arena.com";
 }
 
 .empty-cta-compact {
-  color: #888;
+  color: var(--la-color-text-secondary);
   font-size: 0.9rem;
 }
 
 .cta-link {
-  color: #ffd700;
+  color: var(--la-color-gold-bright);
   text-decoration: none;
 }
 

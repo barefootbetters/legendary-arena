@@ -75,7 +75,7 @@ const displayText = computed((): string => {
   align-items: center;
   gap: 0.4rem;
   font-size: 0.8rem;
-  color: #8c8;
+  color: var(--la-color-success);
   padding: 0.25rem 0.75rem;
   border-radius: 12px;
   background: rgba(0, 200, 100, 0.1);
@@ -83,13 +83,18 @@ const displayText = computed((): string => {
 }
 
 .freshness-badge.stale {
-  color: #fc8;
+  color: var(--la-color-warning);
   background: rgba(255, 180, 50, 0.1);
   border-color: rgba(255, 180, 50, 0.3);
 }
 
+/* why: same AA carve-out as App.vue's .error-content h2 — --la-color-error
+   is 3.97:1 on the dark base (AA needs 4.5:1) and no v1 dark red passes, so
+   the token is blended toward the body text color to restore ~8:1 while
+   keeping hue and v1 → v2 lineage. Staleness is the board's key operational
+   signal on an unattended screen; it has to stay readable at distance. */
 .freshness-badge.error {
-  color: #f88;
+  color: color-mix(in srgb, var(--la-color-error) 55%, var(--la-color-text-primary));
   background: rgba(255, 60, 60, 0.1);
   border-color: rgba(255, 60, 60, 0.3);
 }
