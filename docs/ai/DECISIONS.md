@@ -29966,3 +29966,142 @@ could not see is closed by construction rather than by a second gate, so the
 fallback comparison check contemplated in the packet brief was not needed.
 
 Protect this file.
+
+---
+
+### D-24197 — the registry reports what it actually loaded: per-set content hashes over RFC 8785 canonical JSON, plus a load-scope digest
+
+**Status:** Drafted 2026-07-18; not yet landed (lands Active at WP-393 execution).
+
+**The gap.** `CardRegistry` can enumerate every card it loaded but cannot say
+*which snapshot* it loaded. Verified at draft against `origin/main` @
+`06dda61d`: `RegistryInfo` is `{ totalSets, totalHeroes, totalCards,
+loadedSetAbbrs, metadataBaseUrl }`; `SetIndexEntry` is `{ id, abbr, pkgId,
+slug, name, releaseDate, type }`; `git grep
+registryVersion|content_hash|sha256` over `packages/registry/src` returns
+nothing. Nothing downstream can pin, verify, or reproduce a data snapshot.
+
+**The decision.** `RegistryInfo` gains two **optional** fields —
+`registryVersion?: string` and `setContentHashes?: Record<string, string>`
+(keyed by set **abbreviation**, values `sha256:<hex>`), both populated by the
+two loaders.
+
+**Optional, because a second implementer exists.** `apps/registry-viewer`
+vendors its own structurally-independent copy of `RegistryInfo`
+(`src/registry/types/index.ts`, and a second at `types/types-index.ts`) and
+does not import the canonical one. Required fields would leave those copies
+lacking them with `pnpm -r build` still green — silent drift, not a caught
+break. Optionality makes the canonical type additive for every consumer; the
+viewer syncs only if and when it needs provenance. That drift is accepted
+here deliberately rather than discovered later.
+
+**Hash the parsed object, not the bytes.** The HTTP and local loaders receive
+different bytes for identical data (whitespace, key order, transfer
+encoding). Hashing raw responses would make the same card data produce
+different hashes depending on how it was loaded — which defeats the purpose.
+The hash is therefore taken over the **canonical serialization of the parsed
+set object**.
+
+**Canonicalization is RFC 8785 (JCS), not "stringify with sorted keys."**
+Sorted-key `JSON.stringify` leaves number formatting, Unicode escaping, and
+string normalization unspecified, so two conforming implementations can
+disagree byte-for-byte. That is precisely the failure a provenance hash must
+not have — a hash two tools compute differently is worse than no hash,
+because it fails closed on valid data. JCS pins all of it. The helper lands
+at `packages/registry/src/canonicalJson.ts` and is the contract WP-394
+hashes against, so producer and verifier agree by construction.
+
+**`registryVersion` identifies the LOAD SCOPE, not a global snapshot.** It is
+a sha256 over the hashes of the sets **actually loaded**, sorted by
+abbreviation ascending and joined `<abbr>:<hash>` by newline. Sorting makes it
+independent of load **order**; it is deliberately *dependent* on load
+**scope**, because a consumer needs to know what the producer actually saw,
+not what existed somewhere. It is therefore **not** a global "registry
+snapshot id" and must not be described as one — the authoritative per-set
+evidence is `setContentHashes`. WP-393 AC-5 pins this property so it cannot
+be quietly reinterpreted. Derivation also makes
+it impossible to forget to bump. A hand-maintained version string would drift
+the first time someone edited card data without touching it — the same class
+of defect this project has hit repeatedly with generated artifacts.
+
+**Layer posture.** This stays entirely inside the Registry layer: it loads
+and validates data and exposes read-only structures, which is what hashing
+parsed input is. The public surface exposes **hashes only** — never raw set
+JSON, buffers, or the canonical string — so no consumer can be tempted to
+re-derive gameplay data from it. WP-394 consumes the values; the registry
+does not know LAGN exists.
+
+Protect this file.
+
+---
+
+### D-24198 — LAGN 1.2.0 carries provenance as evidence, not authority; the registry stays the source of truth
+
+**Status:** Drafted 2026-07-18; not yet landed (lands Active at WP-394 execution).
+
+**What this answers.** *"Which card effect does this replay reference, and can
+I verify it without the registry?"* LAGN gains optional, hash-anchored
+provenance: `catalog_ref` (which card data the producer actually loaded — its load scope,
+not a global snapshot id; see D-24197),
+`registry_ref` (which card and face each entry names), `effect_snapshot`
+(the effect text, frozen), and `image.uri`. A document carrying all four for
+every catalog entry is a normative **Audit Bundle** — verifiable with no
+registry and no network.
+
+**Provenance is additive and optional, always.** Every block is optional;
+1.0.0 and 1.1.0 documents that validate today validate unchanged. The
+version gate is the only new restriction, and it only *rejects* provenance on
+documents that predate it.
+
+**Version is 1.2.0, not 1.1.0.** 1.1.0 is already allocated to
+`setup.support_pools` (the LAGN version-seam work in flight as PR #825,
+which also introduces `LAGN_SUPPORTED_VERSIONS` and the migration seam).
+Reusing 1.1.0 would fork the version line and silently un-ship support pools.
+
+**Duplication is not the hazard; unanchored duplication is.** The source
+proposal argued both that LAGN should strip card attributes the registry
+already owns *and* that an audit bundle must validate without registry
+access. Those cannot both hold — you cannot check a replay's arithmetic from
+a bundle that omits `cost` and `attack`. Resolved by tier: the **reference**
+tier (`registry_ref`) never duplicates; the **snapshot** tier
+(`effect_snapshot`) duplicates deliberately, under `source_hash`. The rename
+from "authoritative effect text" to `effect_snapshot` carries that meaning in
+the field name.
+
+**Stable identifiers only — no JSON pointers.** A pointer like
+`/heroes/0/cards/0` breaks the moment an array is reordered, and card data is
+regenerated by a multi-stage pipeline that offers no ordering guarantee.
+`registry_ref` names `ext_id` in the D-10014 set-qualified id space that
+`setupContract` and the engine already share. `image_json_pointer` is
+likewise dropped in favour of `image.uri` plus a hash.
+
+**`face_id` ships even though `faces[]` is deferred.** Deferring the array is
+right — the registry owns card topology and LAGN should not model it. But
+multi-face is present-tense, not speculative: D-24193 records **65
+masterminds across 24 sets** whose Epic face was being played unchosen.
+Without a face discriminator on the reference, an audit bundle cannot
+distinguish a mastermind's base face from its Epic face — which is exactly
+the question this entry exists to make answerable. The array defers; the
+discriminator does not.
+
+**Hashing matches D-24197 exactly** (RFC 8785 / JCS, `sha256:` prefix). A
+provenance hash the producer and verifier compute differently is worse than
+none.
+
+**Two new refinements, both recorded.** `effect_snapshot` requires
+`catalog_ref` (evidence without a snapshot pin is unverifiable), and
+provenance requires `lagn_version` ≥ 1.2.0 (the schema does not call
+`.strict()`, so an ungated block written into an older document would be
+silently **stripped** — the worst available failure mode, the same reasoning
+that version-gated `support_pools`). Neither is expressible in JSON Schema,
+so both join `UNEXPRESSIBLE_CONSTRAINTS`; the enforced `ZodEffects` count
+gate fails the build otherwise.
+
+**What this deliberately does not do.** No producer is wired — `apps/server`
+and `apps/registry-viewer` keep emitting 1.1.0 documents; populating
+provenance is a follow-on packet. No existing `card_catalog` field is
+removed: `name`, `image_url`, `hero_class`, and `rarity_code` ship today and
+back the registry-viewer export path, so removing them is breaking and
+belongs to a 2.0 deprecation, not here.
+
+Protect this file.
