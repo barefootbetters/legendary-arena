@@ -19,6 +19,7 @@ related:
   - leaderboard.md
 status: draft
 source:
+  - C:\pcloud\BB\DEV\legendary-arena\wiki\profile-login.md (this page — https://ewiki.legendary-arena.com/profile-login/)
   - ../docs/ai/work-packets/WP-102-public-profile-page.md
   - ../docs/ai/work-packets/WP-104-owner-profile-data-model-and-me-edit.md
   - ../docs/ai/work-packets/WP-160-hanko-client-ui.md

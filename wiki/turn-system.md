@@ -21,6 +21,7 @@ related:
   - scoring.md
 status: canonical
 source:
+  - C:\pcloud\BB\DEV\legendary-arena\wiki\turn-system.md (this page — https://ewiki.legendary-arena.com/turn-system/)
   - ../.claude/skills/legendary-game-engine/SKILL.md
   - ../.claude/rules/architecture.md
   - ../.claude/rules/code-style.md

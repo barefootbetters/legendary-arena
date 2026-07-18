@@ -19,6 +19,7 @@ related:
   - scoring.md
 status: canonical
 source:
+  - C:\pcloud\BB\DEV\legendary-arena\wiki\villain-deck.md (this page — https://ewiki.legendary-arena.com/villain-deck/)
   - ../.claude/skills/legendary-game-engine/SKILL.md
   - ../packages/game-engine/src/villainDeck/villainDeck.types.ts
   - ../packages/game-engine/src/villainDeck/villainDeck.reveal.ts

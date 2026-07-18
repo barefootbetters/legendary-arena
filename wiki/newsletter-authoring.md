@@ -15,6 +15,7 @@ related:
   - homepage-review-template.md
 status: draft
 source:
+  - C:\pcloud\BB\DEV\legendary-arena\wiki\newsletter-authoring.md (this page — https://ewiki.legendary-arena.com/newsletter-authoring/)
   - C:\www\legendary-arena-com\docs\brevo\newsletter-template.md
   - C:\www\legendary-arena-com\docs\brevo\email-automation.md
   - C:\www\legendary-arena-com\docs\04-CONTENT-CONVENTIONS.md

@@ -14,6 +14,7 @@ related:
   - brevo-email-pipeline.md
 status: draft
 source:
+  - C:\pcloud\BB\DEV\legendary-arena\wiki\blog-post-authoring.md (this page — https://ewiki.legendary-arena.com/blog-post-authoring/)
   - C:\www\legendary-arena-com\archetypes\posts.md
   - C:\www\legendary-arena-com\docs\04-CONTENT-CONVENTIONS.md
   - C:\www\legendary-arena-com\docs\05-SEO-CONVENTIONS.md

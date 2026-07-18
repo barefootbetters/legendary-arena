@@ -20,6 +20,7 @@ related:
   - wiki-viewer.md
 status: draft
 source:
+  - C:\pcloud\BB\DEV\legendary-arena\wiki\dashboard.md (this page — https://ewiki.legendary-arena.com/dashboard/)
   - ../apps/dashboard/package.json
   - ../apps/dashboard/docs/dashboard-operating-system.md
   - ../apps/dashboard/docs/code-checks-and-balances.md

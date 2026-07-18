@@ -13,6 +13,7 @@ related:
   - ewiki-authoring.md
 status: draft
 source:
+  - C:\pcloud\BB\DEV\legendary-arena\wiki\hugo-onboarding.md (this page — https://ewiki.legendary-arena.com/hugo-onboarding/)
   - C:\www\legendary-arena-com\hugo.toml
   - C:\www\legendary-arena-com\package.json
   - C:\www\legendary-arena-com\.dev.vars.example

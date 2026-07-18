@@ -22,6 +22,7 @@ related:
   - scoring.md
 status: canonical
 source:
+  - C:\pcloud\BB\DEV\legendary-arena\wiki\scheme-twist.md (this page — https://ewiki.legendary-arena.com/scheme-twist/)
   - ../.claude/skills/legendary-game-engine/SKILL.md
   - ../packages/game-engine/src/rules/schemeHandlers.ts
   - ../packages/game-engine/src/villainDeck/villainDeck.reveal.ts

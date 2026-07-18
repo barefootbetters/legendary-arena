@@ -14,6 +14,7 @@ related:
   - ewiki-authoring.md
 status: draft
 source:
+  - C:\pcloud\BB\DEV\legendary-arena\wiki\music-authoring.md (this page — https://ewiki.legendary-arena.com/music-authoring/)
   - ../content/themes/age-of-apocalypse.json
   - ../content/themes/CATALOG.md
   - ../content/themes/THEME-INDEX.md

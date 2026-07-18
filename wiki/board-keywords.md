@@ -20,6 +20,7 @@ related:
   - scoring.md
 status: canonical
 source:
+  - C:\pcloud\BB\DEV\legendary-arena\wiki\board-keywords.md (this page — https://ewiki.legendary-arena.com/board-keywords/)
   - ../.claude/skills/legendary-game-engine/SKILL.md
   - ../packages/game-engine/src/board/boardKeywords.types.ts
   - ../packages/game-engine/src/board/boardKeywords.logic.ts

@@ -12,6 +12,7 @@ related:
   - hugo-onboarding.md
 status: draft
 source:
+  - C:\pcloud\BB\DEV\legendary-arena\wiki\ewiki-authoring.md (this page — https://ewiki.legendary-arena.com/ewiki-authoring/)
   - ../apps/wiki-viewer/assets/css/style.css
   - ../apps/wiki-viewer/hugo.toml
   - ../apps/wiki-viewer/layouts/shortcodes/audio.html

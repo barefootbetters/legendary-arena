@@ -18,6 +18,7 @@ related:
   - windows-engine-exe.md
 status: canonical
 source:
+  - C:\pcloud\BB\DEV\legendary-arena\wiki\par-simulation-calibration.md (this page — https://ewiki.legendary-arena.com/par-simulation-calibration/)
   - ../docs/01-VISION.md
   - ../docs/12-SCORING-REFERENCE.md
   - ../docs/12.1-PAR-ARTIFACT-INTEGRITY.md

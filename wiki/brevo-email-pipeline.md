@@ -12,6 +12,7 @@ related:
   - hugo-web-system.md
 status: draft
 source:
+  - C:\pcloud\BB\DEV\legendary-arena\wiki\brevo-email-pipeline.md (this page — https://ewiki.legendary-arena.com/brevo-email-pipeline/)
   - C:\www\legendary-arena-com\docs\brevo\email-automation.md
   - C:\www\legendary-arena-com\docs\brevo\newsletter-template.md
   - C:\www\legendary-arena-com\docs\brand\strategy.md

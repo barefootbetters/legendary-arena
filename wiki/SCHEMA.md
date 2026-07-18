@@ -177,6 +177,7 @@ related:
   - rule-execution-pipeline.md
 status: canonical
 source:
+  - C:\pcloud\BB\DEV\legendary-arena\wiki\master-strike.md (this page — https://ewiki.legendary-arena.com/master-strike/)
   - ../docs/ai/ARCHITECTURE.md#section-2-data-flow
   - ../docs/10-GLOSSARY.md
   - ../docs/legendary-universal-rules-v23.md
@@ -193,8 +194,29 @@ last-reviewed: 2026-05-07
 | `tags` | yes | list of strings | Lowercase-hyphenated. Free vocabulary. Empty list `[]` is permitted but discouraged. |
 | `related` | yes | list of relative paths | Other wiki pages this entity touches. May be `[]` for true leaf entities. |
 | `status` | yes | enum | `canonical` \| `draft` \| `deprecated` |
-| `source` | conditional | list of relative paths | Authoritative artifacts cited by the page. **Non-empty for `canonical`.** May be `[]` for `draft`. For `deprecated`, cite the replacement (or DECISIONS entry explaining the deprecation). |
+| `source` | conditional | list | **First entry is the page's own self-reference** (see below). Remaining entries are the authoritative artifacts cited by the page, as relative paths. **Non-empty for `canonical`.** For `deprecated`, cite the replacement (or DECISIONS entry explaining the deprecation). |
 | `last-reviewed` | yes | date `YYYY-MM-DD` | When the page was last verified against current code/docs. |
+
+#### Self-reference (first `source` entry)
+
+The first entry in `source` is the page itself — its full drafting path
+and the URL it publishes to:
+
+```yaml
+source:
+  - C:\pcloud\BB\DEV\legendary-arena\wiki\<slug>.md (this page — https://ewiki.legendary-arena.com/<slug>/)
+```
+
+why: the projection step writes a copy of every page into
+`apps/wiki-viewer/content/`, which is gitignored, regenerated on every
+build, and — before the generated banner landed — byte-identical to its
+source. Someone reading a wiki page could not tell from the page itself
+which of the three copies to edit. The self-reference answers that in the
+file rather than in a convention someone has to remember.
+
+Full path, not relative: the drafting location sits in a different repo
+from most consumers of these docs, so a relative path resolves
+differently depending on where the reader is standing.
 
 `tags` and `related` are **lists**, even when they contain one entry,
 to keep the schema regular.

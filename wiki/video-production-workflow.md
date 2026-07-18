@@ -15,6 +15,7 @@ related:
   - hugo-web-system.md
 status: draft
 source:
+  - C:\pcloud\BB\DEV\legendary-arena\wiki\video-production-workflow.md (this page — https://ewiki.legendary-arena.com/video-production-workflow/)
   - ../docs/01-VISION.md
 last-reviewed: 2026-06-04
 ---

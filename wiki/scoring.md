@@ -24,6 +24,7 @@ related:
   - board-keywords.md
 status: canonical
 source:
+  - C:\pcloud\BB\DEV\legendary-arena\wiki\scoring.md (this page — https://ewiki.legendary-arena.com/scoring/)
   - ../.claude/skills/legendary-game-engine/SKILL.md
   - ../packages/game-engine/src/scoring/scoring.types.ts
   - ../packages/game-engine/src/scoring/parScoring.types.ts

@@ -20,6 +20,7 @@ related:
   - scoring.md
 status: canonical
 source:
+  - C:\pcloud\BB\DEV\legendary-arena\wiki\master-strike.md (this page — https://ewiki.legendary-arena.com/master-strike/)
   - ../.claude/skills/legendary-game-engine/SKILL.md
   - ../packages/game-engine/src/rules/mastermindHandlers.ts
   - ../packages/game-engine/src/villainDeck/villainDeck.reveal.ts
@@ -234,7 +235,7 @@ share the same Mastermind entity.
 - D-15401: generic bystander capture onto the Mastermind on every strike — the handler begins mutating `G`
 - Magneto: first per-mastermind branch (`resolveMagnetoStrike`), taking the punitive discard-to-four branch of the printed "or" clause
 - WP-386 / D-24188: `resolveRedSkullStrike` — each player KOs a Hero from hand, auto-picked deterministically (lowest cost, tie → lowest hand index). Establishes the pattern for subsequent masterminds and the `MASTERMINDS_RED_SKULL` multi-set id list
-- co2e data pass (2026-07-17): ten authored Master Strike texts added as card data; only the base Red Skull face is engine-resolved
+- co2e data pass (2026-07-17): ten authored Master Strike texts added as card data; only the base Red Skull face is engine-resolved
 - D-24193 (2026-07-18): the mastermind face classifier is found to select the LAST non-tactic face, so Epic faces are what 65 masterminds across 24 sets actually play; WP-389 corrects it to first-wins. Supersedes this page's earlier "Epic faces are not engine-selectable" claim
 
 ## References

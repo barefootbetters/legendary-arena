@@ -11,6 +11,7 @@ related:
   - hugo-onboarding.md
 status: draft
 source:
+  - C:\pcloud\BB\DEV\legendary-arena\wiki\wiki-viewer.md (this page — https://ewiki.legendary-arena.com/wiki-viewer/)
   - ../apps/wiki-viewer/hugo.toml
   - ../apps/wiki-viewer/scripts/project-wiki.mjs
   - ../apps/wiki-viewer/README.md

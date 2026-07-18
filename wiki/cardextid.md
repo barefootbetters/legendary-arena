@@ -22,6 +22,7 @@ related:
   - lagn-v1.md
 status: canonical
 source:
+  - C:\pcloud\BB\DEV\legendary-arena\wiki\cardextid.md (this page — https://ewiki.legendary-arena.com/cardextid/)
   - ../.claude/skills/legendary-game-engine/SKILL.md
   - ../.claude/rules/architecture.md
   - ../.claude/skills/legendary-registry/SKILL.md

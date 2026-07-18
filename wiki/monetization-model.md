@@ -12,6 +12,7 @@ related:
   - legendary-forge.md
   - hugo-web-system.md
 source:
+  - C:\pcloud\BB\DEV\legendary-arena\wiki\monetization-model.md (this page — https://ewiki.legendary-arena.com/monetization-model/)
   - ../docs/01-VISION.md
   - ../docs/TOURNAMENT-FUNDING.md
 status: draft
