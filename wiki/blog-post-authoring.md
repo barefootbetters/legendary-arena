@@ -75,8 +75,20 @@ front-matter fields pre-populated. (The bare `hugo new posts/<slug>.md`
 form still works on the pinned Hugo v0.161.1 but is deprecated; prefer
 `hugo new content`.)
 
-The archetype does **not** include the Gauntlet Guides fields below —
-add those by hand when writing a gauntlet post.
+**Gauntlet Guides use their own archetype — do not use the one above.**
+Pass `--kind gauntlet-guide` and every gauntlet field below is
+pre-populated for you:
+
+```
+hugo new content posts/<slug>.md --kind gauntlet-guide
+```
+
+(Superseded note, corrected 2026-07-18: this page previously said the
+archetype omits the gauntlet fields and that they must be added by hand.
+That stopped being true when WP-038 shipped
+`C:\www\legendary-arena-com\archetypes\gauntlet-guide.md`.) See
+[Gauntlet Guides](#gauntlet-guides-series-specific-added-2026-07) below
+for what that archetype enforces.
 
 ### Blog Post Template
 
@@ -131,8 +143,47 @@ live gauntlet catalog.
 | `gauntlet_mastermind` | Mastermind slug, kebab-case | `red-skull`, `magneto`, `hydra-high-council` |
 | `gauntlet_board` | Leaderboard board id; must match the live gauntlet catalog | `gauntlet-co2e-red-skull`, `gauntlet-core-magneto`, `gauntlet-shld-hydra-high-council` |
 
-Gauntlet posts also use `categories: ["gauntlet-guides"]` and
-`series: "Gauntlet Guides"`, and omit the `newsletter_*` fields.
+Gauntlet posts also use `categories: ["gauntlet-guides"]`,
+`series: "Gauntlet Guides"`, and `guide_version` (bump the minor on a
+strategic revision, the major when the scoring model changes what the
+guide claims), and omit the `newsletter_*` fields.
+
+#### The gauntlet archetype is the authority on content, not just fields
+
+`C:\www\legendary-arena-com\archetypes\gauntlet-guide.md` is not a
+front-matter stub — it carries the editorial rules the series is held to,
+as comments that you delete as you write. Read it before drafting; the
+short version:
+
+**Three buckets.** Every fact in a gauntlet post is one of:
+
+- **DERIVED** — generate it, never type it. Set, mastermind, scheme
+  count, leg list, twist counts, Evil-Wins thresholds, escape budgets,
+  per-count setup, Fixed-Pool budgets, card art URLs. Produced by
+  `node scripts/gauntlet-post-block.mjs <setAbbr> <mastermindSlug>` in
+  this repo. Hand-typed copies rot on the next set change — three
+  different gauntlet counts were once live in the wiki simultaneously.
+- **JUDGMENT** — hand-written reasoning, labelled as reasoning. Pool
+  construction, per-leg pressures, common mistakes.
+- **BLOCKED** — claims no data supports. PAR ranges, difficulty or
+  score-risk ratings, expected-results-by-skill-level tables, clear
+  rates, "usually"/"typically" frequency claims. `competitive_scores`
+  is empty and PAR is deliberately unpublished, so these would be
+  invented. Leave the gap visible.
+
+**Scoring claims must match [Scoring](scoring.md).** Assert only the
+three structural invariants `validateScoringConfig` enforces
+(`bystanderReward > villainEscaped`; `bystanderLost > villainEscaped`;
+`bystanderLost > bystanderReward`). Nothing ranks `victoryPointReward`
+against `bystanderReward` — that is per-scenario config — so neither
+"maximise VP first" nor its mirror may be written. And per
+[Penalty producer status](scoring.md#penalty-producer-status--four-of-five-safe-skip-to-zero),
+do not tell readers casualties cost them anything today; the counter has
+no producer.
+
+If this page and the archetype disagree, **the archetype is
+authoritative** for gauntlet post content — it ships with the template
+and is what an author actually reads at drafting time.
 
 ### File Naming
 
