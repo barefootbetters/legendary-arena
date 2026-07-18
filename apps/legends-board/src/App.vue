@@ -440,8 +440,8 @@ onUnmounted(() => {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #0a0a0f;
-  color: #e0e0e0;
+  background: var(--la-color-bg-primary);
+  color: var(--la-color-text-primary);
 }
 
 .legends-app.kiosk {
@@ -455,13 +455,21 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 1rem 2rem;
-  border-bottom: 1px solid #1a1a2e;
+  border-bottom: 1px solid var(--la-color-border-subtle);
 }
 
 .app-title {
   font-size: 1.8rem;
   margin: 0;
-  background: linear-gradient(135deg, #ffd700, #ff8c00);
+  /* why: 135deg preserved from the pre-token board — the diagonal gold sweep
+     is the Hall of Legends' identity. Only the color stops moved onto tokens,
+     so a v1 → v2 palette bump carries through. Mirrors index.html's
+     .static-fallback h1 so the no-JS shell and the app render alike. */
+  background: linear-gradient(
+    135deg,
+    var(--la-color-gold-bright),
+    var(--la-color-gold-muted)
+  );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -473,25 +481,25 @@ onUnmounted(() => {
   gap: 1rem;
 }
 
-/* why: mirrors the arena-client's .brand-nav-link treatment (Inter / body
-   size / no underline) so the two public headers read as one system. The
-   VALUES are inlined rather than var(--la-*) because legends-board does not
-   consume the brand-tokens stylesheet — adopting it is the WP-007a/b
-   hash-parity contract, out of scope here. Play's header renders the LIGHT
-   token set (#4a5168 on #fdfcf8); legends is a dark board, so this uses the
-   brand system's DARK secondary (--la-color-text-secondary #a7b0c5) and the
-   existing legends gold for hover — the light-mode CTA (#7a1d1f) would be
-   near-invisible on #0a0a0f. */
+/* why: mirrors the arena-client's .brand-nav-link treatment (body font / body
+   size / no underline) so the two public headers read as one system. Now that
+   this app consumes the brand-tokens stylesheet the values are real token
+   references rather than the inlined hexes the link shipped with.
+   why hover is gold rather than --la-color-cta: play renders the LIGHT token
+   set, where cta (#7a1d1f) sits on an off-white bar. legends pins
+   data-theme="dark", and that same deep red on the dark base is near-invisible
+   — so hover uses the board's gold accent, which carries the same
+   "interactive" signal at kiosk viewing distance. */
 .app-home-link {
-  font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
-  font-size: 1rem;
-  color: #a7b0c5;
+  font-family: var(--la-font-body);
+  font-size: var(--la-font-size-body);
+  color: var(--la-color-text-secondary);
   text-decoration: none;
 }
 
 .app-home-link:hover,
 .app-home-link:focus-visible {
-  color: #ffd700;
+  color: var(--la-color-gold-bright);
 }
 
 /* States */
@@ -504,13 +512,21 @@ onUnmounted(() => {
   padding: 2rem;
 }
 
+/* why: --la-color-error (#dc2626) scores only 3.97:1 on the dark base —
+   below WCAG AA 4.5:1 — and --la-color-red-bright is worse (3.85:1). The v1
+   dark palette has no AA-passing red for text on --la-color-bg-primary, so
+   the token is blended toward the body text color rather than replaced by a
+   raw hex: hue and v1 → v2 lineage both carry through, and the result
+   (~8:1) restores the contrast the pre-token board had. If color-mix is
+   unsupported the declaration is dropped and the heading inherits
+   --la-color-text-primary — still legible, never invisible. */
 .error-content h2 {
-  color: #f88;
+  color: color-mix(in srgb, var(--la-color-error) 55%, var(--la-color-text-primary));
   margin-bottom: 0.5rem;
 }
 
 .error-message {
-  color: #888;
+  color: var(--la-color-text-secondary);
   margin-bottom: 1rem;
   max-width: 500px;
 }
@@ -518,7 +534,7 @@ onUnmounted(() => {
 .retry-button {
   padding: 0.5rem 1.5rem;
   background: rgba(255, 215, 0, 0.15);
-  color: #ffd700;
+  color: var(--la-color-gold-bright);
   border: 1px solid rgba(255, 215, 0, 0.3);
   border-radius: 6px;
   cursor: pointer;
@@ -537,12 +553,12 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   text-align: center;
-  color: #888;
+  color: var(--la-color-text-secondary);
   padding: 2rem;
 }
 
 .empty-state h2 {
-  color: #aaa;
+  color: var(--la-color-text-secondary);
   margin-bottom: 0.5rem;
 }
 
@@ -560,7 +576,7 @@ onUnmounted(() => {
 .kiosk-board-title {
   text-align: center;
   font-size: 2rem;
-  color: #ffd700;
+  color: var(--la-color-gold-bright);
   margin: 1.5rem 0 0.5rem;
 }
 
@@ -572,7 +588,7 @@ onUnmounted(() => {
 
 /* Debug footer */
 .debug-footer {
-  border-top: 1px solid #333;
+  border-top: 1px solid var(--la-color-border-subtle);
   padding: 0.75rem 1rem;
   background: rgba(0, 0, 0, 0.5);
 }
@@ -582,14 +598,14 @@ onUnmounted(() => {
   flex-wrap: wrap;
   gap: 1rem;
   font-size: 0.75rem;
-  color: #888;
+  color: var(--la-color-text-secondary);
   font-family: monospace;
 }
 
 .debug-refresh {
   padding: 0.2rem 0.5rem;
   background: rgba(255, 215, 0, 0.1);
-  color: #ffd700;
+  color: var(--la-color-gold-bright);
   border: 1px solid rgba(255, 215, 0, 0.2);
   border-radius: 4px;
   cursor: pointer;

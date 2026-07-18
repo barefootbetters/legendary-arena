@@ -54,7 +54,7 @@ const props = defineProps<{
 .panel-title {
   font-size: 1.5rem;
   margin: 0 0 1rem;
-  color: #ffd700;
+  color: var(--la-color-gold-bright);
 }
 
 .panel-error {
@@ -67,13 +67,13 @@ const props = defineProps<{
 
 .error-detail {
   font-size: 0.85rem;
-  color: #888;
+  color: var(--la-color-text-secondary);
   margin-top: 0.5rem;
 }
 
 .panel-loading {
   text-align: center;
-  color: #888;
+  color: var(--la-color-text-secondary);
   padding: 2rem;
 }
 
@@ -85,8 +85,8 @@ const props = defineProps<{
 .leaderboard-table th {
   text-align: left;
   padding: 0.5rem 0.75rem;
-  border-bottom: 2px solid #333;
-  color: #aaa;
+  border-bottom: 2px solid var(--la-color-border-subtle);
+  color: var(--la-color-text-secondary);
   font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -94,7 +94,7 @@ const props = defineProps<{
 
 .leaderboard-table td {
   padding: 0.5rem 0.75rem;
-  border-bottom: 1px solid #1a1a2e;
+  border-bottom: 1px solid var(--la-color-border-subtle);
 }
 
 .leaderboard-row:hover {
@@ -104,12 +104,12 @@ const props = defineProps<{
 .col-rank {
   width: 3rem;
   text-align: center;
-  color: #888;
+  color: var(--la-color-text-secondary);
 }
 
 .col-score {
   text-align: right;
   font-variant-numeric: tabular-nums;
-  color: #ffd700;
+  color: var(--la-color-gold-bright);
 }
 </style>

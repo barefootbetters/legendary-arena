@@ -22,7 +22,7 @@ const formattedDate = new Date(__BUILD_TIMESTAMP__).toLocaleDateString('en-US', 
   font-size: 11px;
   font-family: monospace;
   opacity: 0.5;
-  color: #aaa;
+  color: var(--la-color-text-secondary);
   background: transparent;
   pointer-events: none;
   user-select: none;

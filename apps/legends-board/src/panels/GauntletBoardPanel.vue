@@ -314,23 +314,23 @@ const challengeLegs = computed((): ChallengeLeg[] => {
 }
 
 .back-link {
-  color: #888;
+  color: var(--la-color-text-secondary);
   text-decoration: none;
   font-size: 0.9rem;
 }
 
 .back-link:hover {
-  color: #ffd700;
+  color: var(--la-color-gold-bright);
 }
 
 .panel-title {
   font-size: 1.5rem;
   margin: 0.5rem 0 0.25rem;
-  color: #ffd700;
+  color: var(--la-color-gold-bright);
 }
 
 .panel-subtitle {
-  color: #888;
+  color: var(--la-color-text-secondary);
   margin: 0 0 1rem;
   font-size: 0.9rem;
 }
@@ -345,29 +345,29 @@ const challengeLegs = computed((): ChallengeLeg[] => {
 
 .division-chip {
   padding: 0.3rem 0.9rem;
-  border: 1px solid #333;
+  border: 1px solid var(--la-color-border-subtle);
   border-radius: 6px;
   font-size: 0.85rem;
   text-decoration: none;
-  color: #aaa;
+  color: var(--la-color-text-secondary);
 }
 
 a.division-chip:hover {
-  border-color: #ffd700;
-  color: #ffd700;
+  border-color: var(--la-color-gold-bright);
+  color: var(--la-color-gold-bright);
 }
 
 .division-chip.active {
   background: rgba(255, 215, 0, 0.15);
   border-color: rgba(255, 215, 0, 0.5);
-  color: #ffd700;
+  color: var(--la-color-gold-bright);
   font-weight: 600;
 }
 
 .division-chip.unclaimed {
-  color: #555;
+  color: var(--la-color-border-strong);
   border-style: dashed;
-  border-color: #2a2a3a;
+  border-color: var(--la-color-border-subtle);
 }
 
 /* Player-count selector */
@@ -380,29 +380,29 @@ a.division-chip:hover {
 
 .count-tab {
   padding: 0.3rem 0.8rem;
-  border: 1px solid #333;
+  border: 1px solid var(--la-color-border-subtle);
   border-radius: 16px;
   font-size: 0.85rem;
   text-decoration: none;
-  color: #aaa;
+  color: var(--la-color-text-secondary);
 }
 
 a.count-tab:hover {
-  border-color: #ffd700;
-  color: #ffd700;
+  border-color: var(--la-color-gold-bright);
+  color: var(--la-color-gold-bright);
 }
 
 .count-tab.active {
   background: rgba(255, 215, 0, 0.15);
   border-color: rgba(255, 215, 0, 0.5);
-  color: #ffd700;
+  color: var(--la-color-gold-bright);
   font-weight: 600;
 }
 
 .count-tab.unclaimed {
-  color: #555;
+  color: var(--la-color-border-strong);
   border-style: dashed;
-  border-color: #2a2a3a;
+  border-color: var(--la-color-border-subtle);
 }
 
 /* Unclaimed-count state */
@@ -413,12 +413,12 @@ a.count-tab:hover {
 
 .unclaimed-heading {
   font-size: 1.2rem;
-  color: #e0e0e0;
+  color: var(--la-color-text-primary);
   margin: 0 0 0.5rem;
 }
 
 .unclaimed-sub {
-  color: #888;
+  color: var(--la-color-text-secondary);
   margin: 0;
 }
 
@@ -432,13 +432,13 @@ a.count-tab:hover {
 
 .error-detail {
   font-size: 0.85rem;
-  color: #888;
+  color: var(--la-color-text-secondary);
   margin-top: 0.5rem;
 }
 
 .panel-loading {
   text-align: center;
-  color: #888;
+  color: var(--la-color-text-secondary);
   padding: 2rem;
 }
 
@@ -450,8 +450,8 @@ a.count-tab:hover {
 .leaderboard-table th {
   text-align: left;
   padding: 0.5rem 0.75rem;
-  border-bottom: 2px solid #333;
-  color: #aaa;
+  border-bottom: 2px solid var(--la-color-border-subtle);
+  color: var(--la-color-text-secondary);
   font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -459,7 +459,7 @@ a.count-tab:hover {
 
 .leaderboard-table td {
   padding: 0.5rem 0.75rem;
-  border-bottom: 1px solid #1a1a2e;
+  border-bottom: 1px solid var(--la-color-border-subtle);
 }
 
 .leaderboard-row:hover {
@@ -469,33 +469,33 @@ a.count-tab:hover {
 .col-rank {
   width: 3rem;
   text-align: center;
-  color: #888;
+  color: var(--la-color-text-secondary);
 }
 
 .col-legs {
   text-align: center;
-  color: #aaa;
+  color: var(--la-color-text-secondary);
 }
 
 .col-score {
   text-align: right;
   font-variant-numeric: tabular-nums;
-  color: #e0e0e0;
+  color: var(--la-color-text-primary);
 }
 
 .col-score.under-par {
-  color: #ffd700;
+  color: var(--la-color-gold-bright);
 }
 
 .col-pool {
-  color: #aaa;
+  color: var(--la-color-text-secondary);
   font-size: 0.85rem;
 }
 
 /* Feeder line (WP-385) */
 .feeder-line {
   margin: 1rem 0 0;
-  color: #888;
+  color: var(--la-color-text-secondary);
   font-size: 0.85rem;
   font-style: italic;
 }
@@ -503,13 +503,13 @@ a.count-tab:hover {
 /* Challenge links */
 .challenge-legs {
   margin-top: 1.5rem;
-  border-top: 1px solid #1a1a2e;
+  border-top: 1px solid var(--la-color-border-subtle);
   padding-top: 1rem;
 }
 
 .challenge-heading {
   font-size: 0.95rem;
-  color: #aaa;
+  color: var(--la-color-text-secondary);
   margin: 0 0 0.5rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -525,7 +525,7 @@ a.count-tab:hover {
 }
 
 .challenge-link {
-  color: #ffd700;
+  color: var(--la-color-gold-bright);
   text-decoration: none;
 }
 
