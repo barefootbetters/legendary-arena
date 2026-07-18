@@ -473,9 +473,19 @@ onUnmounted(() => {
   gap: 1rem;
 }
 
+/* why: mirrors the arena-client's .brand-nav-link treatment (Inter / body
+   size / no underline) so the two public headers read as one system. The
+   VALUES are inlined rather than var(--la-*) because legends-board does not
+   consume the brand-tokens stylesheet — adopting it is the WP-007a/b
+   hash-parity contract, out of scope here. Play's header renders the LIGHT
+   token set (#4a5168 on #fdfcf8); legends is a dark board, so this uses the
+   brand system's DARK secondary (--la-color-text-secondary #a7b0c5) and the
+   existing legends gold for hover — the light-mode CTA (#7a1d1f) would be
+   near-invisible on #0a0a0f. */
 .app-home-link {
-  font-size: 0.85rem;
-  color: #888;
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 1rem;
+  color: #a7b0c5;
   text-decoration: none;
 }
 
