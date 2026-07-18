@@ -34,6 +34,7 @@ import type { FilterDropdownItem } from "./components/FilterDropdown.vue";
 import AppShell from "./components/branding/AppShell.vue";
 import { useSetupFromUrl } from "./composables/useSetupFromUrl";
 import { parsePlayerCountFromUrl } from "./lib/setupUrlParams";
+import { applyPreviewToDraft } from "./lib/applyPreviewToDraft";
 import { useLagnFromUrl } from "./composables/useLagnFromUrl";
 import { useLoadoutDraft } from "./composables/useLoadoutDraft";
 import type { UseLoadoutDraftApi } from "./composables/useLoadoutDraft";
@@ -991,6 +992,29 @@ const selectedCardInLoadout = computed<boolean>(() => {
   return isCardInLoadout(api.draft.value.composition, selected);
 });
 
+/**
+ * Promotes the URL setup preview into the SHARED loadout draft (D-24190).
+ *
+ * why: App.vue owns the one draft the builder renders (WP-279 / D-24054), so
+ * the promotion has to be applied HERE. `LoadoutPreview` used to call
+ * `useLoadoutDraft()` itself — an independent instance — and load into that,
+ * so "Edit this loadout" appeared to do nothing. It also went through
+ * `loadFromJson`, which rejects a partial (scheme+mastermind-only) preview
+ * outright; `applyPreviewToDraft` instead applies the composition through the
+ * draft's own mutators, which tolerate an incomplete work-in-progress.
+ */
+function onPromotePreviewToDraft(): void {
+  const api = loadoutDraftApi.value;
+  const previewDocument = setupPreviewDocument.value;
+  // why: defensive no-op — the button is only rendered with a preview present
+  // and the draft is created before the preview is read at mount, but both are
+  // nullable refs so neither is assumed.
+  if (!api || previewDocument === null) {
+    return;
+  }
+  applyPreviewToDraft(api, previewDocument);
+}
+
 /** Toggles the selected card in/out of the shared loadout draft (WP-279). */
 function onToggleLoadout(): void {
   const api = loadoutDraftApi.value;
@@ -1333,6 +1357,7 @@ const loadoutTraySummary = computed(() => {
               :matchedCount="setupMatchedCount"
               :parsedParams="setupParsedParams"
               :registry="registry!"
+              @edit="onPromotePreviewToDraft"
             />
             <LoadoutBuilder
               :registry="registry!"

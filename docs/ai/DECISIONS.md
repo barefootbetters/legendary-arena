@@ -29471,3 +29471,76 @@ in the detail panel.
 **Executed:** 2026-07-17.
 
 Protect this file.
+
+### D-24190 — "Edit this loadout" promotes the URL preview into the SHARED draft, partial-tolerantly
+
+**Status:** Active (INFRA fix) 2026-07-17. Reported by the operator on the live
+`cards.legendary-arena.com` surface; the defect predates the report (WP-114 for
+the validation half, WP-279 / D-24054 for the shared-draft half).
+
+**User-Visible Surface:** cards.legendary-arena.com — the "Edit this loadout"
+button on the URL setup preview, i.e. the landing surface of every gauntlet
+"Challenge this leg" link (WP-345) and of WP-387's player-count deep-link.
+
+**Symptom.** Clicking "Edit this loadout" did nothing. The builder stayed
+blank and reported the untouched draft's errors — including
+`composition.schemeId` / `composition.mastermindId` "must match the
+set-qualified pattern", which is what an EMPTY id reports. Reported against
+`?schemeId=co2e/bank-robbery-hostage-crisis&mastermindId=co2e/red-skull`; the
+ids were valid and the preview resolved them (Schemes 1/1, Masterminds 1/1) —
+only the promotion failed.
+
+**Root cause (two compounding faults).**
+1. **All-or-nothing validation.** `onEditLoadout` promoted by round-tripping
+   the preview through `loadFromJson`, which runs `validateMatchSetupDocument`
+   and **returns before assigning `draft.value`** when the document is invalid.
+   A challenge link pins only scheme + mastermind, so the synthesized preview
+   carries empty `villainGroupIds` / `henchmanGroupIds` / `heroDeckIds` — and
+   the setup schema requires **at least one entry in each**. The promote bailed
+   every time. (Same completeness class as the LAGN Tier-1 `.min(1)` rule that
+   makes a scenario seed un-representable as a LAGN.)
+2. **A phantom draft.** `LoadoutPreview.vue` called `useLoadoutDraft(registry)`
+   *itself*. The composable is deliberately non-singleton, so this created an
+   INDEPENDENT draft; `App.vue` owns the one shared draft the builder renders
+   (WP-279 / D-24054, passed to `LoadoutBuilder` as `:draft-api`). Even a
+   complete, valid URL would therefore have populated a draft nothing displays.
+
+**Decision.** Promotion is an **emitted intent applied by the draft's owner**,
+using the draft's own mutators rather than whole-document replacement:
+- `LoadoutPreview` touches no draft at all — it emits `edit` and stays
+  genuinely read-only (strengthening, not weakening, the EC-116 §Guardrails
+  read-only constraint that the `useLoadoutDraft` import had eroded).
+- `App.vue` handles `@edit` via a new pure helper
+  `applyPreviewToDraft(draftApi, previewDocument)` that applies the preview
+  field-by-field through `setScheme` / `setMastermind` / `add*Group` /
+  `setCount` / `setPlayerCount` — the `prefillFromTheme` precedent. **A draft
+  is a work-in-progress and is allowed to be incomplete**; it surfaces its own
+  validation errors until the player fills the rest. There is no all-or-nothing
+  gate on promotion.
+
+**Locked ordering (in the helper).** Existing group picks are removed first so
+promotion **replaces** rather than merges ("Edit this loadout" means load *this*
+loadout); `setMastermind` runs **before** the villain adds so a mastermind's
+"Always Leads" villain groups survive and the URL's own villains layer on top;
+`setPlayerCount` runs last so the WP-387 URL player count drives the
+required-count guidance immediately after promoting.
+
+**Verification.** registry-viewer `vue-tsc` 0 + `node:test` **135 → 140** (+5
+covering the partial seed, the full composition, replace-not-merge, the
+mastermind-before-villains ordering, and count/player-count carry). Live dev
+smoke on the reported URL: the draft now populates
+`co2e/bank-robbery-hostage-crisis` + `co2e/red-skull`, auto-includes Red Skull's
+Always-Leads `co2e/hydra` (🔒), and the issue count drops 5 → 2 (only the
+henchmen + heroes the player must still pick). Zero console errors.
+
+**Not fixed here (noted).** `loadFromJson` keeps its strict whole-document
+semantics — it is the correct contract for the "Load JSON / Load LAGN" paste
+surfaces, which genuinely require a complete document. Only the *preview
+promotion* path changes.
+
+**Precedent.** Same latent class as **D-24186** (the `card.key`-vs-`extId`
+resolution bug in this very component): a surface built and unit-tested but
+never driven end-to-end, which stayed invisible until real traffic arrived via
+the leaderboard challenge links.
+
+Protect this file.
