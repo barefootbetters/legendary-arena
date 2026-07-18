@@ -1,4 +1,4 @@
-# WP-390 — Support Card Pools: name the cards behind the four supply piles
+# WP-391 — Support Card Pools: name the cards behind the four supply piles
 
 **Layer:** Cross-cutting (Registry contract + LAGN spec + Registry Viewer)
 **User-Visible Surface:** `cards.legendary-arena.com` — the loadout builder
@@ -14,8 +14,8 @@ The design document lives in the **marketing-site repo**, not here:
 > namespace**. `WP-036` in *this* repo is "AI Playtesting & Balance Simulation"
 > (Done 2026-04-21) — an unrelated, completed packet cited as a hard dependency
 > by WP-193/194/195. The two repos number work packets independently. **This
-> packet, WP-390, is the engine-side identity for that work**; any commit,
-> DECISIONS entry, or EC in this repo refers to WP-390. Cross-repo references
+> packet, WP-391, is the engine-side identity for that work**; any commit,
+> DECISIONS entry, or EC in this repo refers to WP-391. Cross-repo references
 > should name the repo explicitly.
 
 ## Problem

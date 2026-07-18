@@ -1,6 +1,6 @@
 # EC-421 — Support Pools on the MATCH-SETUP Envelope (Execution Checklist)
 
-**Source:** docs/ai/work-packets/WP-390-support-card-pools.md
+**Source:** docs/ai/work-packets/WP-391-support-card-pools.md
 **Layer:** Registry
 
 > **Retroactive registration.** Authored after the change was written, to bring

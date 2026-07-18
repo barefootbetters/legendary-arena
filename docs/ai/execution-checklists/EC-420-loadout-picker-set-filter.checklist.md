@@ -1,6 +1,6 @@
 # EC-420 — Loadout Picker Set Filter (Execution Checklist)
 
-**Source:** docs/ai/work-packets/WP-390-support-card-pools.md
+**Source:** docs/ai/work-packets/WP-391-support-card-pools.md
 **Layer:** Registry Viewer
 
 > **Retroactive registration.** This EC was authored after the change was
