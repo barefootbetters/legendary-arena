@@ -140,9 +140,9 @@ concurrent players.
 
 | Layer | What exists | Where |
 |---|---|---|
-| Card registry JSON | Per-set JSON files | R2: `https://images.barefootbetters.com/metadata/{abbr}.json` |
-| Card images | WebP files | R2: `https://images.barefootbetters.com/{abbr}/` |
-| Registry Viewer SPA | Vite + Vue 3 | Cloudflare Pages: `https://cards.barefootbetters.com` |
+| Card registry JSON | Per-set JSON files | R2: `https://images.legendary-arena.com/metadata/{abbr}.json` |
+| Card images | WebP files | R2: `https://images.legendary-arena.com/{abbr}/` |
+| Registry Viewer SPA | Vite + Vue 3 | Cloudflare Pages: `https://cards.legendary-arena.com` |
 | Full card schema | `data/legendary_library_schema.sql` | Monorepo — do not modify |
 | Rules seed data | `data/seed_rules.sql` | Monorepo — do not modify |
 | Monorepo root | pnpm workspaces | `legendary-arena/` |
@@ -165,6 +165,12 @@ This distinction is critical. The database is a **rules engine backing store**,
 not a card display mirror.
 
 ### CORS and networking
+
+> **Historical — superseded.** The two-origin list below is the *original*
+> bootstrap allowlist. The live allowlist in `apps/server/src/server.mjs` has
+> since grown (play/www/apex/dashboard/cards + `.pages.dev` aliases + localhost)
+> and is authoritative. Do not copy this list into current code; the registry
+> viewer also moved to `cards.legendary-arena.com` on 2026-07-16.
 
 Allowed origins (write these out explicitly — do not build from an array loop):
 - `https://cards.barefootbetters.com` (production SPA)
@@ -401,8 +407,10 @@ GAME_SERVER_URL=https://legendary-arena.onrender.com
 PORT=8000
 
 # ── Cloudflare ────────────────────────────────────────────────────────────────
-R2_PUBLIC_URL=https://images.barefootbetters.com
-CF_PAGES_URL=https://cards.barefootbetters.com
+# Local-dev diagnostics only — read from .env by the connection health-check
+# scripts, never by the running server. Do not set these on Render.
+R2_PUBLIC_URL=https://images.legendary-arena.com
+CF_PAGES_URL=https://cards.legendary-arena.com
 
 # ── Frontend (Vite) ───────────────────────────────────────────────────────────
 # VITE_ prefix exposes this to the browser bundle.
