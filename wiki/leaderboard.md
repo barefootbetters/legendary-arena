@@ -174,9 +174,18 @@ invented.
 
 The gauntlet collapses the mastermind × scheme board explosion into one
 findable championship per mastermind. **Identity:** one gauntlet per
-(set `abbr` × mastermind `slug`) for every set packaging ≥1 scheme — 105
-gauntlets at current data (`dims`/`3dtc` excluded); **legs** = that set's
-schemes (3–8). A row qualifies as a leg only when:
+(set `abbr` × mastermind `slug`) for every set packaging ≥1 scheme — **110
+gauntlets across 39 qualifying sets** at current data (`dims`/`3dtc`
+excluded); **legs** = that set's schemes (3–8). A row qualifies as a leg
+only when:
+
+> **The count is derived, never authored.** `buildGauntletCatalog()`
+> computes it at server startup from `registry.listSets()`; any number
+> written into prose is a snapshot that starts drifting immediately. This
+> page previously carried both "105" and "109" in four places while the
+> live catalog published 110. Recompute rather than trust a quoted figure:
+> sum `masterminds.length` over every `data/cards/*.json` with
+> `schemes.length ≥ 1`.
 
 - its `schemeSlug` **and** `mastermindSlug` both belong to the gauntlet's
   set (both-sides-same-set rule; slug-space collisions across sets are one
@@ -228,7 +237,7 @@ WP-345 (client: count selector, rosters, challenge links) — both executed
 PR #787). Migrations apply to production automatically — `render.yaml`'s
 server buildCommand runs `scripts/migrate.mjs` on every deploy (a failure
 blocks the deploy), so 026 and 027 are both live (verified via the
-published gauntlet index, which now carries `entryCounts` on all 109
+published gauntlet index, which now carries `entryCounts` on all 110
 gauntlets). The remaining precondition for boards filling is data supply:
 authenticated players
 finishing winning matches.
@@ -284,10 +293,73 @@ Every gauntlet board now has **two divisions**, switchable by a toggle:
 the D-24134 *player-account* dimension. A multiplayer fixed entry needs
 both — the same account roster on every leg **and** a shared hero pool.
 
-**Launch state.** All 109 gauntlets publish `fixedEntryCounts`, every count
+**Launch state.** All 110 gauntlets publish `fixedEntryCounts`, every count
 currently unclaimed — the intended open-championship acquisition state. The
 first authenticated player (or roster) to clear a full set with one hero
 pool claims the first Fixed-Pool Championship, with their pool on the board.
+
+### Per-gauntlet editorial content (naming approved — D-24191)
+
+> **Status: unblocked 2026-07-18.** The IP-naming fork below was decided by
+> the operator in favour of naming — see **D-24191** in
+> [DECISIONS.md](../docs/ai/DECISIONS.md). Gauntlet editorial may name
+> masterminds, schemes, and sets; the generic house style remains the
+> default for every other post. Pilot scope: 2–3 posts, measured, before
+> any commitment to the full 110.
+
+**The idea.** One article per gauntlet on
+`www.legendary-arena.com/posts/`, showing the gauntlet's composition and
+offering hero commentary. The motivating problem is real: every board is
+currently unclaimed, so each gauntlet page is a dead end with nothing to
+read and nothing for a search engine to index. Editorial gives all 110 a
+reason to exist *before* anyone has played them, and turns
+`legends.legendary-arena.com` from a scoreboard into a funnel.
+
+**What a gauntlet actually fixes** — the most common misconception, worth
+stating plainly because it invalidates the obvious version of this idea:
+
+| Publishable per gauntlet | *Not* fixed by the gauntlet |
+|---|---|
+| Mastermind (name, slug, home set) | Villain groups — **any villain groups qualify** |
+| The full scheme **leg** list (3–8) | Henchmen groups |
+| Per-player-count setup counts (`PLAYER_COUNT_SETUP`) | Bystanders / wounds / officers / sidekicks as a *gauntlet* property |
+| Fixed-division pool **budget** (`heroCount + 2`) | The fixed division's hero **roster** |
+
+A gauntlet is a **multi-leg championship**, not a match loadout. It pins a
+mastermind and a set's scheme list; everything else varies per match. The
+fixed-hero-pool division imposes a *budget*, not a roster — the published
+pool is discovered from whichever teams an entrant actually submitted
+(`findBestPoolAssignment()`), so no per-gauntlet hero list exists to
+publish. There is also no wounds / officers / sidekicks data anywhere in
+`PLAYER_COUNT_SETUP` (the "What If…?" variant setup is deferred per
+D-24165).
+
+**Generate the facts; hand-write only the opinion.** The composition block
+is 100% derived from the registry at startup. Any post that hard-codes it
+begins rotting the moment a set changes — the drift callout above is the
+proof, three different counts in one file. Render the setup block from
+`buildGauntletCatalog()` output; reserve prose for what a human adds.
+
+**Sequencing.** Publish three, not 110, and measure before scaling. Hero
+recommendations are pure opinion today because no win-rate data exists;
+structure each post so a "what actually wins" section can be appended from
+`legendary.competitive_scores` once boards fill. That later section is the
+defensible content — replay-verified win rates are something only the
+operator of the verification pipeline can write.
+
+**IP naming — decided (D-24191).** All **55** pre-existing posts under
+`content/posts/` name **zero** Marvel characters and never use the word
+"Marvel"; that house style is deliberate. Per-gauntlet posts are the
+opposite by construction — their value is naming a specific mastermind and
+its schemes — so the operator ratified a **scoped carve-out**:
+
+- Gauntlet editorial **may** name masterminds, schemes, and sets. These are
+  the competitive identity of a published board, already rendered on
+  `legends.legendary-arena.com`.
+- The generic style **remains the default** for every other post. Nothing
+  is rewritten; this is not blanket permission for marketing copy.
+- **Naming is not reproduction.** Card text, card art, and set-wide card
+  lists stay on the licensed gameplay and registry surfaces.
 
 ### From a finished match to a ranked row (the write path)
 
@@ -602,7 +674,7 @@ player ID, not the public handle.
 > [WP-342](../docs/ai/work-packets/WP-342-mastermind-gauntlet-boards-server.md)
 > **executed 2026-07-09** as the server packet (outcome column + gauntlet
 > read-layer + publisher emission; migration 026 PROD apply pending). Locked parameters: one gauntlet per
-> (set × mastermind) for every set with ≥1 scheme (105 boards at current
+> (set × mastermind) for every set with ≥1 scheme (110 boards at current
 > data; `dims`/`3dtc` excluded); legs = the set's schemes; **wins only**
 > (a new `outcome` column on `competitive_scores`, written at submission);
 > best score per leg, any villain groups; entry = complete gauntlets only,
