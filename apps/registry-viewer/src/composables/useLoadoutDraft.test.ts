@@ -314,6 +314,62 @@ describe("useLoadoutDraft — player-count setup requirements (WP-372 / D-24165)
   });
 });
 
+describe("useLoadoutDraft — composed readiness", () => {
+  it("counts player-count mismatches even when the document schema is valid", () => {
+    const api = useLoadoutDraft(FULL_REGISTRY);
+    api.setPlayerCount(2); // needs 2 villain / 1 henchman / 5 heroes
+    api.prefillFromTheme(
+      makeTheme(
+        makeSetupIntent({
+          villainGroupIds: ["brotherhood", "hydra"],
+          henchmanGroupIds: ["sentinel"],
+          heroDeckIds: ["spider-man", "wolverine"],
+        }),
+      ),
+    );
+
+    // the document itself is schema-valid — every ext_id resolves and no array
+    // is empty — so `errors` alone would report a ready loadout
+    assert.deepEqual(api.errors.value, []);
+    assert.equal(api.isValid.value, true);
+
+    // …but 2 heroes cannot seat a 2-player match, so readiness must reject it
+    assert.equal(api.playerCountCompositionMismatches.value.length, 1);
+    assert.equal(api.readinessIssueCount.value, 1);
+    assert.equal(api.isReady.value, false);
+  });
+
+  it("counts a missing Always-Leads villain group toward readiness", () => {
+    const api = useLoadoutDraft(ALWAYS_LEADS_REGISTRY);
+    api.setMastermind("core/magneto"); // auto-includes core/brotherhood
+    api.removeVillainGroup("core/brotherhood");
+
+    assert.deepEqual(api.missingRequiredVillainGroupIds.value, ["core/brotherhood"]);
+    assert.ok(
+      api.readinessIssueCount.value > api.errors.value.length,
+      "the missing Always-Leads group must raise the readiness count above the schema-error count",
+    );
+    assert.equal(api.isReady.value, false);
+  });
+
+  it("is ready only when every validity dimension is clear", () => {
+    const api = useLoadoutDraft(FULL_REGISTRY);
+    api.setPlayerCount(1); // needs 1 villain / 1 henchman / 3 heroes
+    api.prefillFromTheme(
+      makeTheme(
+        makeSetupIntent({
+          villainGroupIds: ["brotherhood"],
+          henchmanGroupIds: ["sentinel"],
+          heroDeckIds: ["spider-man", "wolverine", "storm"],
+        }),
+      ),
+    );
+
+    assert.equal(api.readinessIssueCount.value, 0);
+    assert.equal(api.isReady.value, true);
+  });
+});
+
 // A registry whose core/magneto mastermind carries an Always-Leads clause
 // (Magneto Always Leads the Brotherhood), plus a cross-set case: an
 // xmen/magneto mastermind that also leads "brotherhood", with a same-set

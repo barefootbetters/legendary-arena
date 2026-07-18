@@ -322,6 +322,19 @@ export interface UseLoadoutDraftApi {
    * (the "warn in builder" half of the D-24165 enforcement model).
    */
   playerCountCompositionMismatches: ComputedRef<PlayerCountCompositionMismatch[]>;
+  /**
+   * The total number of open blockers on the draft, across all three validity
+   * dimensions: document-schema errors, missing Always-Leads villain groups,
+   * and player-count composition mismatches.
+   */
+  readinessIssueCount: ComputedRef<number>;
+  /**
+   * Whether the draft is usable as a match loadout — true only when every
+   * validity dimension is clear. This is the single readiness predicate: the
+   * builder's export gates and the tray pill both read it, so the two surfaces
+   * can never disagree about whether a loadout is ready.
+   */
+  isReady: ComputedRef<boolean>;
   setScheme: (schemeId: string) => void;
   setMastermind: (mastermindId: string) => void;
   addVillainGroup: (groupId: string) => void;
@@ -420,6 +433,21 @@ export function useLoadoutDraft(registry: LoadoutRegistryReader): UseLoadoutDraf
       heroDeckIds: draft.value.composition.heroDeckIds,
     }),
   );
+
+  // why: readiness is a three-part conjunction, not just schema validity — a
+  // draft can pass validateMatchSetupDocument while still missing an
+  // Always-Leads villain group or carrying the wrong hero count for its player
+  // count. Composing it once here keeps the builder's export gates and the
+  // tray pill on one predicate; when the pill counted only `errors`, a
+  // 2-hero 2-player draft read "ready" while the builder blocked export.
+  const readinessIssueCount = computed<number>(
+    () =>
+      errors.value.length +
+      missingRequiredVillainGroupIds.value.length +
+      playerCountCompositionMismatches.value.length,
+  );
+
+  const isReady = computed<boolean>(() => readinessIssueCount.value === 0);
 
   function setScheme(schemeId: string): void {
     draft.value.composition.schemeId = schemeId.trim();
@@ -637,6 +665,8 @@ export function useLoadoutDraft(registry: LoadoutRegistryReader): UseLoadoutDraf
     missingRequiredVillainGroupIds,
     requiredPlayerCountSetup,
     playerCountCompositionMismatches,
+    readinessIssueCount,
+    isReady,
     setScheme,
     setMastermind,
     addVillainGroup,

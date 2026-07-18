@@ -70,6 +70,7 @@ const {
   missingRequiredVillainGroupIds,
   requiredPlayerCountSetup,
   playerCountCompositionMismatches,
+  isReady,
   setScheme,
   setMastermind,
   addVillainGroup,
@@ -267,11 +268,7 @@ function onDownload(): void {
   // document (e.g. a theme prefill with an unresolved bare slug, D-24018) or a
   // loadout missing a mastermind's Always-Leads villain group from being
   // downloaded, should the template binding ever be bypassed.
-  if (
-    !isValid.value ||
-    missingRequiredVillainGroupIds.value.length > 0 ||
-    playerCountCompositionMismatches.value.length > 0
-  ) {
+  if (!isReady.value) {
     return;
   }
   const blob = exportToJsonBlob();
@@ -286,11 +283,7 @@ function onDownload(): void {
 }
 
 function onDownloadLagn(): void {
-  if (
-    !lagnExportApi.isValid.value ||
-    missingRequiredVillainGroupIds.value.length > 0 ||
-    playerCountCompositionMismatches.value.length > 0
-  ) {
+  if (!isReady.value || !lagnExportApi.isValid.value) {
     return;
   }
   const blob = lagnExportApi.exportToJsonBlob();
@@ -696,7 +689,7 @@ function slotLabel(slot: PickerSlot): string {
             type="button"
             class="primary-btn"
             @click="onDownload"
-            :disabled="!isValid || missingRequiredVillainGroupIds.length > 0 || playerCountCompositionMismatches.length > 0"
+            :disabled="!isReady"
           >
             ⬇ Download MATCH-SETUP
           </button>
@@ -704,7 +697,7 @@ function slotLabel(slot: PickerSlot): string {
             type="button"
             class="primary-btn"
             @click="onDownloadLagn"
-            :disabled="!isValid || !lagnExportApi.isValid.value || missingRequiredVillainGroupIds.length > 0 || playerCountCompositionMismatches.length > 0"
+            :disabled="!isReady || !lagnExportApi.isValid.value"
           >
             ⬇ Download LAGN
           </button>
