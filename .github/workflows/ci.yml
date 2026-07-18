@@ -291,7 +291,7 @@ jobs:
   # DB-gated server tests self-skip when TEST_DATABASE_URL is unset, so the
   # default runner environment is sufficient.
   # ── 3h. SPA asset-masking gate ───────────────────────────────────────────────
-  # why: apps/arena-client and apps/legends-board both ship the Cloudflare Pages
+  # why: apps/arena-client and apps/legends-board ship the Cloudflare Pages
   # catch-all `/*  /index.html  200` in public/_redirects. That rule is required
   # for client-side routing, but when a hashed bundle referenced by index.html is
   # absent the request does NOT 404 — it falls through and returns index.html with
@@ -301,10 +301,18 @@ jobs:
   # legends.legendary-arena.com 2026-07-18. A reachability probe reports a healthy
   # 200 for that state (the HTML itself serves fine), so this needs its own gate.
   #
+  # All four SPAs are checked here, not just the two that can mask. registry-viewer
+  # and dashboard ship no catch-all, so a missing asset 404s loudly rather than
+  # silently — but "the build emitted every artifact its own index.html names" is
+  # worth gating on every surface, and it costs nothing extra once the workspace
+  # is built.
+  #
   # This job is the hermetic half: it verifies every asset referenced by each
   # built index.html actually exists in the build output. The deploy/edge-drift
   # half — the failure class actually observed — cannot be seen from PR CI and
-  # runs nightly against the live origins in spa-assets-nightly.yml.
+  # runs nightly against the live origins in spa-assets-nightly.yml. That nightly
+  # covers legends/play/cards but NOT dashboard, which is behind Cloudflare Access
+  # and cannot be probed unauthenticated; dashboard's coverage is build-time only.
   spa-assets:
     name: SPA Asset Masking
     runs-on: ubuntu-latest

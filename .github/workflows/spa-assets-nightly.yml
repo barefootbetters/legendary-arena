@@ -55,5 +55,13 @@ jobs:
       # why: no `pnpm install` — the probe is dependency-free (built-in fetch
       # only), so the workflow stays fast and cannot be broken by an unrelated
       # dependency-resolution failure.
+      # why dashboard.legendary-arena.com is absent: it sits behind Cloudflare
+      # Access, so an unauthenticated probe receives a 302 to the Access login
+      # page rather than the app shell. That page carries no same-origin app
+      # assets, which trips the zero-reference guard and would leave this
+      # nightly permanently red. Verified 2026-07-18. Dashboard is covered by
+      # the hermetic build-output half in ci.yml instead. Live coverage would
+      # need a CF Access service token (CF-Access-Client-Id / -Client-Secret)
+      # added as repository secrets and sent as request headers.
       - name: Probe live SPA assets
-        run: node scripts/check-spa-assets.mjs --url https://legends.legendary-arena.com --url https://play.legendary-arena.com
+        run: node scripts/check-spa-assets.mjs --url https://legends.legendary-arena.com --url https://play.legendary-arena.com --url https://cards.legendary-arena.com

@@ -133,8 +133,10 @@ async function checkDistDirectory(distDirectory) {
     } catch {
       failures.push(
         `The asset ${assetPath} referenced by ${indexPath} does not exist in the build output. ` +
-          `Deploying this build would serve the SPA catch-all (index.html, HTTP 200) in its place ` +
-          `and the app would never mount. Re-run the build for this app.`,
+          `Deploying this build would break the app: on a surface that ships the SPA catch-all ` +
+          `(arena-client, legends-board) the request returns index.html with HTTP 200 and the app ` +
+          `silently never mounts; on one that does not (registry-viewer, dashboard) it 404s. ` +
+          `Re-run the build for this app.`,
       );
     }
   }
