@@ -21,7 +21,7 @@ source:
   - ../packages/registry/src/heroImageUrl.ts
   - ../apps/server/src/profile/avatarUpload.logic.ts
   - ../render.yaml
-last-reviewed: 2026-06-30
+last-reviewed: 2026-07-18
 ---
 
 # Data & File Locations
@@ -41,9 +41,10 @@ migrations, and the pages cited here.
 ### Card data and the convert pipeline
 
 Game-ready card data is one JSON file per set under
-[`data/cards/`](../data/cards/) (40 sets). Each file is **generated**,
-not hand-edited — the multi-stage pipeline under
-[`scripts/convert-cards/`](../scripts/convert-cards/) produces it:
+[`data/cards/`](../data/cards/) (41 sets). **Most** files are
+**generated**, not hand-edited — the multi-stage pipeline under
+[`scripts/convert-cards/`](../scripts/convert-cards/) produces them
+(see the `co2e` exception below):
 
 | Stage | Script | What it does |
 |-------|--------|--------------|
@@ -55,6 +56,17 @@ not hand-edited — the multi-stage pipeline under
 Running only stage 1 regresses the data — the marker stages must run in
 order. The image-URL convention each card carries is documented in full
 on [R2 Image Naming Convention](r2-image-naming-convention.md).
+
+> **Exception — `co2e` is hand-maintained.** Core Set 2nd Edition has no
+> upstream source in the sibling `modern-master-strike` repo and no entry
+> under `scripts/convert-cards/inputs/cards/`, so
+> [`data/cards/co2e.json`](../data/cards/co2e.json) is **authored directly
+> and never regenerated** by the pipeline. Hand-editing it is the correct
+> workflow; running the converter would not reproduce it. Its `abbr` is
+> likewise absent from the hardcoded `SET_ABBR_MAP` in
+> `convert-cards-v15.mjs` — harmless while no co2e source is converted, but
+> it must be added before one ever is (see
+> [R2 Image Naming Convention](r2-image-naming-convention.md)).
 
 ### Card metadata and taxonomy
 
@@ -76,7 +88,7 @@ this metadata into PostgreSQL at startup.
 ### Database (PostgreSQL, schema `legendary`)
 
 All tables live in the `legendary` schema. Migrations are numbered SQL
-files under [`data/migrations/`](../data/migrations/) (`001`…`020` at this
+files under [`data/migrations/`](../data/migrations/) (`001`…`034` at this
 revision). Canonical field-name rules:
 [00.2-data-requirements.md](../docs/ai/REFERENCE/00.2-data-requirements.md).
 
@@ -102,7 +114,7 @@ reverse. Key prefixes:
 |--------|----------|---------------|
 | `{setAbbr}/{setAbbr}-{ribbon}-{slug}.webp` | Card images, per-set directory | `R2_BASE_URL` → `images.legendary-arena.com` ([`heroImageUrl.ts`](../packages/registry/src/heroImageUrl.ts)) |
 | `avatars/{accountId}.webp` | Player avatars, keyed by immutable AccountId | `AVATAR_CDN_BASE` → `images.legendary-arena.com` ([`avatarUpload.logic.ts`](../apps/server/src/profile/avatarUpload.logic.ts)) |
-| `metadata/` | Mirror of the converted card + metadata JSON | convert pipeline / rclone copy |
+| `metadata/{abbr}.json`, `metadata/sets.json`, `metadata/card-mechanics.json`, … | Flat mirror of the card + metadata JSON — **the Registry Viewer's live data source** | **manual `rclone copy`** — no automated sync (see below) |
 | `themes/` | Gameplay UI themes from [`content/themes/`](../content/themes/) | [`scripts/upload-themes-to-r2.mjs`](../scripts/upload-themes-to-r2.mjs) |
 | `legends/…json` | Legends Snapshot Publisher output (separate `R2_LEGENDS_BUCKET`) | render.yaml secrets |
 
@@ -203,6 +215,19 @@ R2 credentials are **not committed**: local `.env` carries
 - **`03-DATA-PIPELINE.md` is stale.** The authoritative card pipeline is the
   four-stage `scripts/convert-cards/` chain documented above, not the older
   single-converter description in `docs/03-DATA-PIPELINE.md`.
+- **The R2 `metadata/` mirror is synced by hand — a repo commit changes
+  nothing the viewer shows.** The Registry Viewer fetches
+  `{metadataBaseUrl}/metadata/sets.json` and `/metadata/{abbr}.json` from R2
+  at startup; it never reads `data/cards/` or `data/metadata/` from the repo.
+  There is **no** CI job or deploy hook that publishes them — the mirror is
+  updated only by an explicit `rclone copy`. Two practical consequences:
+  (a) after editing card data, `rclone copyto data/cards/{abbr}.json
+  r2:legendary-images/metadata/{abbr}.json` (and `card-mechanics.json` /
+  `sets.json` if they changed) or the change is invisible on
+  `cards.legendary-arena.com`; (b) the mirror can legitimately run *ahead of*
+  or *behind* `main`, so a viewer/repo mismatch is a sync gap, not a bug.
+  Registering a set in `sets.json` without also mirroring it means its cards
+  load but it is missing from the set index.
 - **Snapshots are not the migration list.** The table inventory and migration
   count are a point-in-time snapshot; both grow. `data/migrations/` is the
   source of truth.
