@@ -51,11 +51,9 @@
       "runtimeArgs": [
         "--filter",
         "@legendary-arena/legends-board",
-        "dev",
-        "--port",
-        "5175"
+        "dev"
       ],
-      "port": 5175
+      "autoPort": true
     }
   ]
 }
