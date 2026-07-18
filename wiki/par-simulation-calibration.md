@@ -111,10 +111,29 @@ rather than a publishable-PAR capability:
    via `ctx.events` (D-0205), so even effects that *are* implemented for
    live play are not all exercised inside the current per-game loop.
 
-4. **The play-to-leaderboard loop is not yet closed.** The score-submission
-   HTTP wiring is still a Next Horizon
-   ([05-ROADMAP-MINDMAP](../docs/05-ROADMAP-MINDMAP.md)), so calibrated PAR
-   has no live consumer to gate yet.
+4. ~~**The play-to-leaderboard loop is not yet closed.** The score-submission
+   HTTP wiring is still a Next Horizon, so calibrated PAR has no live
+   consumer to gate yet.~~ **Stale — corrected 2026-07-18.** The wiring
+   shipped: **WP-332** wired `POST /api/competition/scores` on 2026-07-08,
+   injecting the real bound `parGate.checkParPublished`. Every link in the
+   loop is now closed **except this one**, which inverts the urgency of this
+   list — reasons 1–3 are no longer "why calibration is not worth running
+   yet" but **the sole remaining blocker on the whole competitive surface.**
+
+   Concretely, with PAR unpublished the server logs at startup:
+
+   ```
+   [server] PAR index unavailable at both data/par/sim/v1/index.json
+     and data/par/seed/v1/index.json; competitive submissions disabled.
+   ```
+
+   and every submission fail-closes to `par_not_published`
+   (`competition.logic.ts`) before any replay reduction. Downstream,
+   `legendary.competitive_scores` stays empty, so the Legends board, all
+   **110** gauntlet boards (Open and Fixed-Pool alike), and any editorial
+   built on them cannot fill — regardless of play volume. An empty board is
+   therefore **not** evidence of low traffic; it is the expected state while
+   this gate is closed.
 
 The consequence, by design: a scenario with incomplete ability coverage
 falls back to its Phase 1 content seed, explicitly marked `uncalibrated`
