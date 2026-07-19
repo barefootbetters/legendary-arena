@@ -22,7 +22,12 @@ import { describe, test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 
 import * as boardgameInternal from 'boardgame.io/dist/cjs/internal.js';
-import { computeStateHash, LegendaryGame } from '@legendary-arena/game-engine';
+import {
+  clearRegistryForSetup,
+  computeStateHash,
+  LegendaryGame,
+  setRegistryForSetup,
+} from '@legendary-arena/game-engine';
 
 import {
   reduceMatchToFinalState,
@@ -54,10 +59,105 @@ const { InitializeGame, CreateGameReducer } = boardgameInternal as unknown as {
   };
 };
 
-// why: a valid MatchConfiguration with set-qualified `test/` ids that satisfy the
-// setup contract without a real registry (mirrors game.test.ts). Game.setup
-// builds a real initial state from these; buildInitialGameState skips registry
-// lookups when no registry is wired.
+// why: a valid MatchConfiguration with set-qualified `test/` ids. A registry IS
+// wired for this file (see FAT_TEST_REGISTRY below) — without one,
+// buildHeroDeck finds no `heroes` entry and G.heroDeck comes back EMPTY, which
+// WP-367's deck-exhaustion rule correctly reads as an immediate final turn.
+// That ended the manufactured match after one turn and broke the WP-336
+// turnCount reconciliation, so the fixture must supply a real reservoir.
+// why: WP-367 ends the match the moment the Hero Deck OR Villain Deck empties.
+// The manufactured matches below drive up to 12 play turns, so the fixture has
+// to hold a reservoir deep enough that neither deck runs dry for reasons that
+// have nothing to do with what these tests assert. buildHeroDeck resolves
+// heroDeckIds through registry.getSet(setAbbr).heroes[].cards, so a registry
+// without a `heroes` array yields heroDeck.length === 0.
+const HERO_SLUGS = [
+  'test-hero-deck-001',
+  'test-hero-deck-002',
+  'test-hero-deck-003',
+] as const;
+
+// why: 14 printed cards per hero x 3 heroes = 42 instances; 5 fill the HQ, so
+// heroDeck starts at 37 — comfortably past the 12-turn ceiling these tests use.
+const CARDS_PER_HERO = 14;
+
+function buildFatTestSet(): Record<string, unknown> {
+  return {
+    abbr: 'test',
+    schemes: [{ slug: 'test-scheme-001' }],
+    masterminds: [{ slug: 'test-mastermind-001' }],
+    henchmen: [{ slug: 'test-henchman-group-001' }],
+    villains: [
+      { slug: 'test-villain-group-001' },
+      { slug: 'test-villain-group-002' },
+    ],
+    heroes: HERO_SLUGS.map((slug) => ({
+      slug,
+      // why: buildHeroDeck resolves copies through RARITY_COPY_COUNT keyed on
+      // rarityLabel — an unrecognised or missing label yields null and the card
+      // is SKIPPED, which is how the deck stayed empty. 'Common 1' = 5 copies.
+      cards: Array.from({ length: CARDS_PER_HERO }, (_unused, index) => ({
+        slug: String(index + 1),
+        name: `Test Card ${index + 1}`,
+        rarityLabel: 'Common 1',
+        cost: 1,
+        abilities: [],
+      })),
+    })),
+  };
+}
+
+const FAT_TEST_REGISTRY = {
+  listCards() {
+    const cards: Array<{ key: string; cardType: string; slug: string; setAbbr: string }> = [];
+    for (const heroSlug of HERO_SLUGS) {
+      for (let index = 0; index < CARDS_PER_HERO; index += 1) {
+        // why: extractHeroSlug (economy.logic) parses `{setAbbr}-hero-{heroSlug}-{slot}`
+        // and takes everything before the LAST dash as the hero slug. The slot
+        // must therefore be a bare trailing segment — a `-card-01` suffix would
+        // resolve the hero as "test-hero-deck-001-card" and fail validation.
+        cards.push({
+          key: `test-hero-${heroSlug}-${index + 1}`,
+          cardType: 'hero',
+          slug: String(index + 1),
+          setAbbr: 'test',
+          // why: buildCardDisplayData copies name/imageUrl straight off the flat
+          // card. Omit either and the entry lands as undefined, which fails the
+          // setup-time G JSON round-trip invariant.
+          name: `Test Hero Card ${index + 1}`,
+          imageUrl: '',
+          // why: the setup invariant checks JSON round-trip identity on G, so
+          // every field the builders copy through must be defined — an omitted
+          // `abilities` lands as undefined and JSON.stringify drops the key.
+          abilities: [],
+        });
+      }
+    }
+    // why: the villain deck is the other exhaustion trigger. 12 turns reveal at
+    // most one villain card each, so 24 keeps it clear of the ceiling too.
+    for (const groupSlug of ['test-villain-group-001', 'test-villain-group-002']) {
+      for (let index = 0; index < 12; index += 1) {
+        cards.push({
+          key: `test-villain-${groupSlug}-card-${String(index + 1).padStart(2, '0')}`,
+          cardType: 'villain',
+          slug: `card-${String(index + 1).padStart(2, '0')}`,
+          setAbbr: 'test',
+          name: `Test Villain ${index + 1}`,
+          imageUrl: '',
+          abilities: [],
+        });
+      }
+    }
+    return cards;
+  },
+  listSets() {
+    return [{ abbr: 'test' }];
+  },
+  getSet(abbr: string) {
+    return abbr === 'test' ? buildFatTestSet() : undefined;
+  },
+};
+
 const MOCK_SETUP_DATA = {
   schemeId: 'test/test-scheme-001',
   mastermindId: 'test/test-mastermind-001',
@@ -180,6 +280,16 @@ function manufactureMatchWithTurns(completedTurns: number): {
 }
 
 describe('reduceMatchToFinalState (WP-334)', () => {
+  // why: wire the reservoir registry for every manufacture in this suite, and
+  // clear it afterwards — setRegistryForSetup is module-global, so leaving it
+  // set would silently change setup for every later test in the same process.
+  before(() => {
+    setRegistryForSetup(FAT_TEST_REGISTRY as never);
+  });
+  after(() => {
+    clearRegistryForSetup();
+  });
+
   test('faithfully reproduces the live final G from initialState + log', () => {
     const { initialState, log, liveFinal } = manufactureMatch();
 

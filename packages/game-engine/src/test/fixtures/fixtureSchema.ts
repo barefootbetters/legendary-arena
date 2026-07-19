@@ -285,11 +285,16 @@ function validateExpected(expected: unknown, fixtureName: string): FixtureExpect
     );
   }
   const winner = expected.outcome.winner;
+  // why: WP-367 / D-24159 — 'tie' joined the canonical EndgameOutcome set (the
+  // deck-exhaustion final-turn tie), so a fixture may legitimately pin it.
   const winnerIsValid =
-    winner === null || winner === 'heroes-win' || winner === 'scheme-wins';
+    winner === null ||
+    winner === 'heroes-win' ||
+    winner === 'scheme-wins' ||
+    winner === 'tie';
   if (!winnerIsValid) {
     throw new Error(
-      `Fixture "${fixtureName}" has expected.outcome.winner ${JSON.stringify(winner)}; expected null, "heroes-win", or "scheme-wins" (the engine's canonical EndgameOutcome values).`,
+      `Fixture "${fixtureName}" has expected.outcome.winner ${JSON.stringify(winner)}; expected null, "heroes-win", "scheme-wins", or "tie" (the engine's canonical EndgameOutcome values).`,
     );
   }
   if (!isPlainObject(expected.outcome.counters)) {

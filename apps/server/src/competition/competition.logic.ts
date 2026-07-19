@@ -774,8 +774,17 @@ export async function submitCompetitiveScoreImpl(
   // stores SQL NULL rather than rejecting — outcome is supplementary
   // provenance for the gauntlet boards, never a verification gate.
   const endgameResult = evaluateEndgame(reduced.finalState as LegendaryGameState);
+  // why: WP-367 / D-24161 — CompetitiveOutcome stays the two-value decisive set
+  // { heroes-win, scheme-wins }. The engine's new deck-exhaustion 'tie' outcome
+  // (D-24159) is not a decisive competitive result, so it maps to SQL NULL here
+  // — the same disposition as a null evaluation, and therefore never qualifies
+  // as a gauntlet leg (D-24131 §3). This deliberately keeps ranked/gauntlet
+  // semantics unchanged; whether ties should earn competitive credit is a
+  // separate ranked-design decision, deferred to a future WP.
   const outcome: CompetitiveOutcome | null =
-    endgameResult === null ? null : endgameResult.outcome;
+    endgameResult === null || endgameResult.outcome === 'tie'
+      ? null
+      : endgameResult.outcome;
 
   // why: step 14c (WP-344 / D-24134 §1) — the seat count derives from the
   // reduced final G's per-player zone record: playerZones carries exactly one

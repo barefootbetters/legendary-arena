@@ -312,6 +312,7 @@ export type {
   UITurnEconomyState,
   UIGameOverState,
   UIProgressCounters,
+  UIFinalTurnState,
   UIParBreakdown,
   UICardDisplay,
   UIHQCard,

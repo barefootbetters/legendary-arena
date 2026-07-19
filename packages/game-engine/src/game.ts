@@ -19,6 +19,10 @@ import { executeRuleHooks } from './rules/ruleRuntime.execute.js';
 import { applyRuleEffects } from './rules/ruleRuntime.effects.js';
 import { DEFAULT_IMPLEMENTATION_MAP } from './rules/ruleRuntime.impl.js';
 import { evaluateEndgame } from './endgame/endgame.evaluate.js';
+import {
+  latchFinalTurnIfDeckExhausted,
+  resolveFinalTurnTieIfUnresolved,
+} from './endgame/finalTurn.logic.js';
 import { setPlayerReady, startMatchIfReady } from './lobby/lobby.moves.js';
 import { revealVillainCard } from './villainDeck/villainDeck.reveal.js';
 import { fightVillain } from './moves/fightVillain.js';
@@ -481,6 +485,16 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
         stages: {
           playTurn: {},
         },
+        // why: WP-367 / D-24159 — deck-exhaustion "final turn" latch. Fires after
+        // EVERY successful play-phase move, so it observes the deck state that the
+        // move (including any card effects it ran) leaves behind. The helper
+        // latches the final turn the first time either shared deck reaches zero
+        // and is sticky — a later card effect that refills the deck does NOT
+        // cancel the final turn (the exact rulebook edge Jeff reported). See
+        // finalTurn.logic.ts.
+        onMove: ({ G }) => {
+          latchFinalTurnIfDeckExhausted(G);
+        },
         // why: Each new turn must begin at the first canonical turn stage.
         // TURN_STAGES[0] is used instead of a hardcoded string to prevent
         // drift if stage names ever change in turnPhases.types.ts.
@@ -577,6 +591,13 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
             DEFAULT_IMPLEMENTATION_MAP,
           );
           applyRuleEffects(G, ctx, turnEndEffects);
+
+          // why: WP-367 / D-24159 — resolve the deck-exhaustion tie at the end of
+          // the final turn. Runs AFTER the onTurnEnd effects above so an
+          // end-of-turn effect that itself triggers a win/loss is honored before
+          // the tie is considered. The helper only sets the tie when the final
+          // turn is latched and no win/loss fired — see finalTurn.logic.ts.
+          resolveFinalTurnTieIfUnresolved(G);
         },
       },
     },

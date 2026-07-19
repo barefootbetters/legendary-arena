@@ -81,6 +81,13 @@ export interface UIState {
   piles: UISharedPilesState;
   koPile: UIKoPileState;
   gameOver?: UIGameOverState;
+  // why: WP-367 / D-24159 — present ONLY while the deck-exhaustion final-turn
+  // latch is active (a shared deck has reached zero cards) and the game has not
+  // yet ended. Drives the client's "final turn" warning banner / countdown.
+  // Absent (undefined) means the game is not in its final turn; the client must
+  // not render the warning in that case. Omit-when-absent mirrors gameOver and
+  // pendingHeroChoice so existing fixtures are unaffected.
+  finalTurn?: UIFinalTurnState;
   // why: D-22201 + WP-222 — projects G.pendingHeroChoice so the client can
   // render the "Discard / Put it back" prompt. Absent (undefined) means no
   // pending choice; the client must not render the prompt in that case.
@@ -501,6 +508,27 @@ export interface UIProgressCounters {
   bystandersRescued: number;
   /** Cumulative count of villains that escaped the City. */
   escapedVillains: number;
+}
+
+// why: WP-367 / D-24159 — projected only while the deck-exhaustion final-turn
+// latch is active. Lets the client render a "final turn" warning without
+// re-deriving deck state or endgame rules. Present-only-when-active (the field
+// on UIState is omitted otherwise), so the mere presence of this object is the
+// signal that the game is in its final turn.
+/**
+ * Final-turn warning projection for the HUD.
+ *
+ * Emitted once a shared deck (Hero Deck or Villain Deck) has reached zero cards
+ * and the game has not yet ended. The current turn is the last chance to win or
+ * lose; otherwise the game ends in a tie (WP-367 / D-24159).
+ */
+export interface UIFinalTurnState {
+  /** Human-readable description of why the final turn triggered. */
+  reason: string;
+  /** Cards remaining in the shared Hero Deck reservoir. */
+  heroDeckRemaining: number;
+  /** Cards remaining in the Villain Deck draw pile. */
+  villainDeckRemaining: number;
 }
 
 // why: verbatim name-for-name mirror of WP-048 ScoreBreakdown so WP-062

@@ -365,8 +365,16 @@ function validateOutcomeShape(outcomeValue: unknown): string | null {
     return 'Manifest success record `outcome.escapedVillains` is not a finite number; expected an integer count of escaped villains.';
   }
   const winner = outcomeValue['winner'];
-  if (winner !== null && winner !== 'heroes-win' && winner !== 'scheme-wins') {
-    return `Manifest success record \`outcome.winner\` is ${JSON.stringify(winner)}; expected one of \`'heroes-win'\`, \`'scheme-wins'\`, or \`null\`.`;
+  // why: WP-367 / D-24159 — 'tie' joined the canonical EndgameOutcome set. With
+  // the villain-deck reshuffle removed (D-24160), long simulated games can now
+  // exhaust a deck and end in a deck-exhaustion tie, so a manifest may carry it.
+  if (
+    winner !== null &&
+    winner !== 'heroes-win' &&
+    winner !== 'scheme-wins' &&
+    winner !== 'tie'
+  ) {
+    return `Manifest success record \`outcome.winner\` is ${JSON.stringify(winner)}; expected one of \`'heroes-win'\`, \`'scheme-wins'\`, \`'tie'\`, or \`null\`.`;
   }
   return null;
 }
@@ -789,6 +797,11 @@ export function classifyManifestRecords(
     } else if (record.outcome.winner === 'scheme-wins') {
       winnerCounts['scheme-wins'] = winnerCounts['scheme-wins'] + 1;
     } else {
+      // why: the `null` bucket holds every non-decisive result — fatal records,
+      // success records with `winner === null`, AND the deck-exhaustion 'tie'
+      // (WP-367 / D-24159). Ties are counted as non-decisive here rather than
+      // getting their own bucket; a dedicated tie tally is deferred until sweep
+      // analysis needs to distinguish ties from unfinished games.
       winnerCounts.null = winnerCounts.null + 1;
     }
     moveCountValues.push(record.moveCount);

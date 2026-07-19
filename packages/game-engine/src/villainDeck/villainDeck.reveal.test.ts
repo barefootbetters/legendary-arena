@@ -400,7 +400,11 @@ describe('revealVillainCard', () => {
     }
   });
 
-  it('reshuffles discard into deck when deck is empty but discard has cards', () => {
+  it('does NOT reshuffle discard into deck when the deck is empty (WP-367 / D-24160)', () => {
+    // why: WP-367 / D-24160 — the villain deck no longer reshuffles from its
+    // discard. An empty deck is a terminal no-op reveal (the final-turn latch was
+    // already set on the reveal that drew the last card). The discard is left
+    // untouched, nothing enters the City or attaches, and a skip message logs.
     const gameState = createMockGameState({
       deck: [],
       discard: ['card-x', 'card-y', 'card-z'],
@@ -408,28 +412,31 @@ describe('revealVillainCard', () => {
     });
 
     const moveContext = createMockMoveContext(gameState);
+    const messagesBefore = moveContext.G.messages.length;
     revealVillainCard(moveContext);
 
-    // makeMockCtx reverses arrays, so deck becomes ['card-z','card-y','card-x'].
-    // Top card 'card-z' is a bystander; with the empty City, it attaches to
-    // the Mastermind. Villain/henchman would go to City. Total cards across
-    // deck + discard + city + attachedBystanders must equal 3.
+    assert.equal(
+      moveContext.G.villainDeck.deck.length,
+      0,
+      'Deck must remain empty — no reshuffle from discard',
+    );
+    assert.equal(
+      moveContext.G.villainDeck.discard.length,
+      3,
+      'Discard must be left untouched — no reshuffle from discard',
+    );
     const cityCards = moveContext.G.city.filter(
       (space: string | null) => space !== null,
     ).length;
+    assert.equal(cityCards, 0, 'No card may enter the City from an empty deck');
     let attachedCount = 0;
     for (const attached of Object.values(moveContext.G.attachedBystanders)) {
       attachedCount += attached.length;
     }
-    const totalCards =
-      moveContext.G.villainDeck.deck.length +
-      moveContext.G.villainDeck.discard.length +
-      cityCards +
-      attachedCount;
-    assert.equal(
-      totalCards,
-      3,
-      'Total cards across deck + discard + city + attachedBystanders must remain 3 after reshuffle + reveal',
+    assert.equal(attachedCount, 0, 'No bystander may attach from an empty deck');
+    assert.ok(
+      moveContext.G.messages.length > messagesBefore,
+      'A skip message must be appended when the deck is empty',
     );
   });
 

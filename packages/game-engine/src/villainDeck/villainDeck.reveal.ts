@@ -20,7 +20,6 @@ import type { ImplementationMap } from '../rules/ruleRuntime.execute.js';
 import { executeRuleHooks } from '../rules/ruleRuntime.execute.js';
 import { applyRuleEffects } from '../rules/ruleRuntime.effects.js';
 import { DEFAULT_IMPLEMENTATION_MAP } from '../rules/ruleRuntime.impl.js';
-import { shuffleDeck } from '../setup/shuffle.js';
 import { pushVillainIntoCity } from '../board/city.logic.js';
 import { validateCityShape } from '../board/city.validate.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
@@ -130,32 +129,26 @@ export function performVillainReveal(
 ): void {
   const ctx = context.ctx;
   const deck = G.villainDeck.deck;
-  const discard = G.villainDeck.discard;
 
   // Step 1: Handle empty deck
-  if (deck.length === 0 && discard.length === 0) {
-    pushLog(G, 
-      'Villain deck reveal skipped: both deck and discard are empty.',
-    );
+  // why: WP-367 / D-24160 — the Villain Deck does NOT reshuffle from its discard.
+  // Per the quoted rulebook the deck running out is terminal: it latches the
+  // final turn (see game.ts turn.onMove, D-24159) rather than being refilled.
+  // (In practice the villain discard is already dead: revealed villains/henchmen
+  // route to the City and other card types route to their own piles, so nothing
+  // accumulates in villainDeck.discard to reshuffle anyway.) An empty deck here
+  // is simply a no-op reveal — the latch was already set on the reveal that drew
+  // the last card.
+  if (deck.length === 0) {
+    pushLog(G, 'Villain deck reveal skipped: the villain deck is empty.');
     return;
-  }
-
-  if (deck.length === 0 && discard.length > 0) {
-    // why: reshuffling empty deck from discard is standard Legendary behaviour.
-    // When the villain deck runs out, the discard pile is shuffled to form a
-    // new deck. This ensures the game can continue as long as cards exist.
-    const reshuffled = shuffleDeck([...discard], { random: context.random });
-    G.villainDeck.deck = reshuffled;
-    G.villainDeck.discard = [];
   }
 
   // Step 2: Draw the top card (top-of-deck = deck[0], locked convention)
   const cardId = G.villainDeck.deck[0];
 
   if (!cardId) {
-    pushLog(G, 
-      'Villain deck reveal skipped: deck is empty after reshuffle attempt.',
-    );
+    pushLog(G, 'Villain deck reveal skipped: the villain deck is empty.');
     return;
   }
 
