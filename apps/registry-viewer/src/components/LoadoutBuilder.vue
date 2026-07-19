@@ -10,7 +10,7 @@
 // rather than inline template literals (EC-091 §Guardrails). Paraphrasing is
 // a Session Abort Condition.
 
-import { computed, nextTick, ref } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 // why: Import from the narrow `./setupContract` subpath to keep the
 // viewer's browser build free of `node:fs/promises` (pulled in by the
 // root `@legendary-arena/registry` barrel via localRegistry). Same
@@ -117,6 +117,8 @@ type PickerSlot =
 
 const activeSlot = ref<PickerSlot>("schemeId");
 const pickerSearch = ref("");
+/** Empty string = every set (the default). Otherwise a `SetIndexEntry.abbr`. */
+const pickerSet = ref("");
 
 const slotToCardType: Record<PickerSlot, FlatCardType> = {
   schemeId: "scheme",
@@ -136,7 +138,14 @@ const slotToCardType: Record<PickerSlot, FlatCardType> = {
 const pickerOptions = computed<Array<{ id: string; label: string; cardType: FlatCardType }>>(() => {
   const cardType = slotToCardType[activeSlot.value];
   const allCards: FlatCard[] = props.registry.listCards();
-  const matching = allCards.filter((card) => card.cardType === cardType);
+  // why: WP-036 Phase A — filter by set BEFORE the extId collapse below. An
+  // extId is `{setAbbr}/{slug}`, so every card in a collapsed group shares one
+  // set; filtering first is equivalent to filtering the collapsed entries but
+  // avoids building entries that would be discarded.
+  const setAbbr = pickerSet.value;
+  const matching = allCards.filter(
+    (card) => card.cardType === cardType && (setAbbr === "" || card.setAbbr === setAbbr),
+  );
   const needle = pickerSearch.value.trim().toLowerCase();
   const entriesById = new Map<string, { id: string; label: string; cardType: FlatCardType }>();
   for (const card of matching) {
@@ -169,6 +178,42 @@ const pickerOptions = computed<Array<{ id: string; label: string; cardType: Flat
       entry.id.toLowerCase().includes(needle) ||
       entry.label.toLowerCase().includes(needle),
   );
+});
+
+/**
+ * Sets offered in the picker's set filter, restricted to those that actually
+ * contain at least one card of the active slot's type.
+ *
+ * why: listing every set unconditionally would offer choices that silently
+ * empty the picker (a hero-only expansion selected while the Scheme slot is
+ * active), which reads as a broken filter rather than an empty set.
+ */
+const pickerSetOptions = computed<Array<{ abbr: string; name: string }>>(() => {
+  const cardType = slotToCardType[activeSlot.value];
+  const present = new Set<string>();
+  for (const card of props.registry.listCards()) {
+    if (card.cardType === cardType) {
+      present.add(card.setAbbr);
+    }
+  }
+  return props.registry
+    .listSets()
+    .filter((setEntry) => present.has(setEntry.abbr))
+    .map((setEntry) => ({ abbr: setEntry.abbr, name: setEntry.name }));
+});
+
+// why: the set filter persists across slot changes so "show me only 2E" stays
+// in force while the author fills scheme → mastermind → heroes. But a set that
+// carries no cards of the newly-active type would leave the picker empty with
+// no obvious cause, so drop the selection in exactly that case.
+watch(activeSlot, () => {
+  if (pickerSet.value === "") {
+    return;
+  }
+  const stillOffered = pickerSetOptions.value.some((entry) => entry.abbr === pickerSet.value);
+  if (!stillOffered) {
+    pickerSet.value = "";
+  }
 });
 
 function pickFromRegistry(entryId: string): void {
@@ -853,6 +898,16 @@ function slotLabel(slot: PickerSlot): string {
           class="picker-search"
           :placeholder="`Search ${slotLabel(activeSlot).toLowerCase()}…`"
         />
+        <select
+          v-model="pickerSet"
+          class="picker-set"
+          :aria-label="`Filter ${slotLabel(activeSlot).toLowerCase()} by set`"
+        >
+          <option value="">All sets</option>
+          <option v-for="setEntry in pickerSetOptions" :key="setEntry.abbr" :value="setEntry.abbr">
+            {{ setEntry.name }}
+          </option>
+        </select>
       </header>
       <div class="picker-grid">
         <button
@@ -866,7 +921,12 @@ function slotLabel(slot: PickerSlot): string {
           <span class="picker-entry-name">{{ entry.label }}</span>
           <span class="picker-entry-id">{{ entry.id }}</span>
         </button>
-        <p v-if="pickerOptions.length === 0" class="picker-empty">No matching entries.</p>
+        <p v-if="pickerOptions.length === 0" class="picker-empty">
+          No matching entries.
+          <button v-if="pickerSet !== ''" type="button" class="picker-clear-set" @click="pickerSet = ''">
+            Clear set filter
+          </button>
+        </p>
       </div>
     </section>
   </div>
@@ -1062,6 +1122,10 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: #6060c0
 .error-field { font-family: ui-monospace, Consolas, monospace; color: #fcd34d; }
 
 .picker-search { flex: 1; min-width: 180px; }
+/* why: the picker header carries a title + search + set filter; without wrap
+   the three squeeze the search box unusably at the 280px panel min-width. */
+.picker-panel .panel-header { flex-wrap: wrap; }
+.picker-set { flex: 0 1 auto; min-width: 120px; max-width: 100%; }
 .picker-grid { display: flex; flex-direction: column; gap: 0.35rem; overflow-y: auto; }
 .picker-entry {
   display: flex;
@@ -1081,6 +1145,16 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: #6060c0
 .picker-entry-name { font-weight: 600; font-size: 0.85rem; }
 .picker-entry-id { font-family: ui-monospace, Consolas, monospace; font-size: 0.72rem; color: #8888aa; }
 .picker-empty { color: #6666aa; font-size: 0.8rem; }
+.picker-clear-set {
+  margin-left: 0.4rem;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: #8b8bd6;
+  text-decoration: underline;
+  cursor: pointer;
+}
 
 .lagn-options { background: #12121a; border: 1px solid #22222e; border-radius: 6px; padding: 0.75rem; margin-top: 0.5rem; }
 .lagn-row { display: flex; gap: 0.75rem; margin-bottom: 0.5rem; }
