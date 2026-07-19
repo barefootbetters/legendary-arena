@@ -285,6 +285,15 @@ export function validateMatchSetupDocument(
   if (parsed.data.themeId !== undefined) {
     value.themeId = parsed.data.themeId;
   }
+  // why: WP-036 / D-24194 — `value` is rebuilt field-by-field above, so an
+  // envelope field that is not echoed here is silently dropped from the
+  // validated output even though it parsed cleanly. For support pools that is
+  // the exact failure the pool feature exists to prevent: a preset would
+  // appear to save and come back empty. Copied by reference like `expansions`
+  // — the parsed object is already a fresh structure owned by this call.
+  if (parsed.data.supportPools !== undefined) {
+    value.supportPools = parsed.data.supportPools;
+  }
 
   return { ok: true, value };
 }
