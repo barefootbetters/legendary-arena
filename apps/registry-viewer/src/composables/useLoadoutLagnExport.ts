@@ -9,7 +9,7 @@
 
 import { computed, ref, type ComputedRef, type Ref } from "vue";
 import { validate, LAGN_VERSION, type LAGN } from "@legendary-arena/lagn";
-import type { MatchSetupDocument } from "@legendary-arena/registry/setupContract";
+import type { MatchSetupDocument, SupportPool } from "@legendary-arena/registry/setupContract";
 
 /**
  * Mid-execution amendments (spec vs actual LAGN v1.0 validator):
@@ -81,8 +81,43 @@ function mapOutcomeToLagn(userOutcome: "victory" | "loss"): "victory" | "defeat"
  * Convert a MATCH-SETUP composition to LAGN GameSetup format.
  * All 9 composition fields are mapped per EC-276 locked values.
  */
-function compositionToLagnSetup(composition: MatchSetupDocument["composition"]): LAGN["setup"] {
+/**
+ * Translates the MATCH-SETUP envelope's `supportPools` into LAGN's
+ * `setup.support_pools`.
+ *
+ * why: the two shapes are deliberately NOT identical — LAGN is snake_case and
+ * names the officer pool `shield_officers` to match `shield_officers_count`
+ * (D-24195), while the MATCH-SETUP envelope uses `officers` to match
+ * `officersCount` (D-24194). Translating in one place keeps that rename from
+ * being open-coded at each call site, the way `officersCount` ->
+ * `shield_officers_count` already is below.
+ */
+function supportPoolsToLagn(
+  pools: MatchSetupDocument["supportPools"],
+): NonNullable<LAGN["setup"]["support_pools"]> | undefined {
+  if (pools === undefined) {
+    return undefined;
+  }
+  const out: NonNullable<LAGN["setup"]["support_pools"]> = {};
+  const toLagnPool = (pool: SupportPool) => ({
+    mode: pool.mode,
+    ...(pool.sets === undefined ? {} : { sets: [...pool.sets] }),
+    cards: pool.cards.map((card) => ({ ext_id: card.extId, copies: card.copies })),
+  });
+  if (pools.bystanders !== undefined) out.bystanders = toLagnPool(pools.bystanders);
+  if (pools.wounds !== undefined) out.wounds = toLagnPool(pools.wounds);
+  if (pools.officers !== undefined) out.shield_officers = toLagnPool(pools.officers);
+  if (pools.sidekicks !== undefined) out.sidekicks = toLagnPool(pools.sidekicks);
+  return Object.keys(out).length === 0 ? undefined : out;
+}
+
+function compositionToLagnSetup(
+  composition: MatchSetupDocument["composition"],
+  supportPools: MatchSetupDocument["supportPools"],
+): LAGN["setup"] {
+  const pools = supportPoolsToLagn(supportPools);
   return {
+    ...(pools === undefined ? {} : { support_pools: pools }),
     mastermind: {
       id: composition.mastermindId,
       name: "", // LAGN requires name field; registry viewer only stores ID. Validator handles optional resolution.
@@ -124,7 +159,7 @@ function buildLagnObject(
     return null;
   }
 
-  const setup = compositionToLagnSetup(composition);
+  const setup = compositionToLagnSetup(composition, draft.supportPools);
   const lagnVariant = mapVariantToLagn(variant);
   const lagnOutcome = mapOutcomeToLagn(outcome);
 

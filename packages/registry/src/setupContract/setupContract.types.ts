@@ -162,8 +162,24 @@ export interface SetupEnvelope {
  * one place that pairing is written down — validators read it rather than
  * repeating four literal field names.
  */
+/**
+ * The four composition fields a support pool can constrain.
+ *
+ * why: EC-425 — this was originally typed as `keyof SetupCompositionInput`,
+ * which is all NINE composition fields including the string-array ones. That
+ * made `composition[SUPPORT_POOL_COUNT_FIELD[kind]] = total` uncompilable for
+ * consumers, because the assignment target widened to the whole union. Naming
+ * the four numeric fields precisely is what lets a caller write through this
+ * table instead of re-listing the field names in a switch.
+ */
+export type SupportPoolCountField =
+  | "bystandersCount"
+  | "woundsCount"
+  | "officersCount"
+  | "sidekicksCount";
+
 export const SUPPORT_POOL_COUNT_FIELD: Readonly<
-  Record<SupportPoolKind, keyof SetupCompositionInput>
+  Record<SupportPoolKind, SupportPoolCountField>
 > = {
   bystanders: "bystandersCount",
   wounds: "woundsCount",
