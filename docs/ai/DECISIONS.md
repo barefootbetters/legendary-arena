@@ -29614,7 +29614,7 @@ section for replay-verified "what actually wins" data from
 
 ### D-24192 — co2e mastermind strike texts resolve by deterministic auto-pick; two alternate branches deliberately unimplemented
 
-**Status:** Drafted 2026-07-18; not yet landed (lands Active at WP-388 execution).
+**Status:** **Active** (WP-388 executed 2026-07-18).
 
 **Context.** WP-386 / D-24188 implemented the second per-mastermind Master
 Strike resolver (Red Skull) and established deterministic auto-pick as the way
