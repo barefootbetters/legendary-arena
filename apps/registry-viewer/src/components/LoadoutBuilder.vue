@@ -29,6 +29,10 @@ import type {
 import type { ThemeDefinition } from "../lib/themeClient";
 import type { UseLoadoutDraftApi } from "../composables/useLoadoutDraft";
 import { SUPPORT_POOL_CARD_TYPES } from "../composables/useLoadoutDraft";
+import {
+  SUPPORT_COUNT_MINIMUMS,
+  SUPPORT_POOL_COUNT_FIELD,
+} from "@legendary-arena/registry/setupContract";
 import type {
   SupportPool,
   SupportPoolKind,
@@ -393,11 +397,20 @@ function onPoolCopiesInput(kind: SupportPoolKind, card: FlatCard, event: Event):
 }
 
 /**
- * Fills a pool from whole sets, at one copy per card.
+ * Fills a pool from whole sets, at one copy per card, then tops the pile up to
+ * the engine's supply floor if one copy each would leave it short.
  *
- * why: "one copy each" is the only defensible default — the registry records
- * no per-set pile quantity, so any other multiplier would be invented. The
- * author adjusts copies afterwards; the count follows automatically.
+ * why: one copy each is the neutral default — the registry records no per-set
+ * pile quantity. But the engine enforces a floor per D-24032 (bystanders,
+ * wounds and officers all need 30), and there are only 22 distinct wound cards
+ * and 18 officers in the whole registry. "Select all sets" therefore produced a
+ * pile of 22 that the builder accepted and match creation rejected with HTTP
+ * 400 — the operator hit exactly this. Topping up keeps an explicit
+ * "everything from these sets" request producing a LEGAL document.
+ *
+ * The top-up is deterministic: every card gets the same base count, and the
+ * remainder goes to the first cards in ext_id order, so the same selection
+ * always yields the same pile. It aims at exactly the minimum, never above.
  */
 function fillPoolFromSets(kind: SupportPoolKind, setAbbrs: string[]): void {
   if (setAbbrs.length === 0) {
@@ -413,6 +426,17 @@ function fillPoolFromSets(kind: SupportPoolKind, setAbbrs: string[]): void {
     return;
   }
   cards.sort((left, right) => left.extId.localeCompare(right.extId));
+  const minimum = SUPPORT_COUNT_MINIMUMS[SUPPORT_POOL_COUNT_FIELD[kind]];
+  if (cards.length < minimum) {
+    const base = Math.floor(minimum / cards.length);
+    const remainder = minimum % cards.length;
+    for (let index = 0; index < cards.length; index += 1) {
+      const card = cards[index];
+      if (card !== undefined) {
+        card.copies = base + (index < remainder ? 1 : 0);
+      }
+    }
+  }
   setSupportPool(kind, { mode: "sets", sets: [...setAbbrs].sort(), cards });
 }
 

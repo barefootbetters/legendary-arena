@@ -35,6 +35,7 @@ export type {
 } from "./setupContract.types.js";
 
 export {
+  SUPPORT_COUNT_MINIMUMS,
   SUPPORT_POOL_COUNT_FIELD,
   SUPPORT_POOL_KINDS,
   UNSUPPORTED_HERO_SELECTION_MODE_TEMPLATE,

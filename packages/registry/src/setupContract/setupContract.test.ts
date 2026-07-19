@@ -11,7 +11,10 @@
 
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 
+import { SUPPORT_COUNT_MINIMUMS } from "./setupContract.types.js";
 import type {
   CardRegistryReader,
   MatchSetupDocument,
@@ -708,5 +711,48 @@ describe("setupContract (WP-091)", () => {
       },
     } as unknown as MatchSetupDocument;
     assert.equal(validateMatchSetupDocument(unknownKind, registry).ok, false);
+  });
+
+  // ── Supply floors (EC-427 / D-24032 mirror) ──────────────────────────────
+
+  test("a count under the engine supply floor is rejected", () => {
+    const registry = buildStubRegistry();
+    const document: MatchSetupDocument = {
+      ...buildValidDocument(),
+      composition: { ...buildValidDocument().composition, woundsCount: 22 },
+    };
+    const errors = errorsOf(validateMatchSetupDocument(document, registry));
+    assert.ok(
+      errors.some((candidate) => /woundsCount/.test(candidate.field + candidate.message)),
+      "Expected woundsCount 22 to be rejected against the floor of 30.",
+    );
+  });
+
+  test("sidekicksCount has no floor", () => {
+    const registry = buildStubRegistry();
+    const document: MatchSetupDocument = {
+      ...buildValidDocument(),
+      composition: { ...buildValidDocument().composition, sidekicksCount: 0 },
+    };
+    assert.equal(validateMatchSetupDocument(document, registry).ok, true);
+  });
+
+  // why: EC-427 — these values are duplicated from the engine rather than
+  // imported (the registry package must stay browser-safe). This test reads
+  // the engine source directly so the copies cannot silently drift apart.
+  test("SUPPORT_COUNT_MINIMUMS matches the engine COUNT_FIELD_MINIMUMS", () => {
+    const engineSource = readFileSync(
+      resolve(import.meta.dirname, "../../../game-engine/src/matchSetup.validate.ts"),
+      "utf8",
+    );
+    for (const [field, minimum] of Object.entries(SUPPORT_COUNT_MINIMUMS)) {
+      // why: plain substring, not a regex — the engine writes these as a
+      // literal object entry (`bystandersCount: 30,`) and a hand-built regex
+      // is one escaping mistake away from silently passing on anything.
+      assert.ok(
+        engineSource.includes(`${field}: ${minimum},`),
+        `Engine COUNT_FIELD_MINIMUMS no longer has ${field}: ${minimum} — the registry mirror has drifted.`,
+      );
+    }
   });
 });
