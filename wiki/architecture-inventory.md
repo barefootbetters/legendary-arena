@@ -10,7 +10,7 @@ tags:
 
 # Architecture & Library Adoption Inventory
 
-_Generated 2026-07-16 by `scripts/architecture-inventory.mjs`._
+_Generated 2026-07-19 by `scripts/architecture-inventory.mjs`._
 
 This is a deterministic snapshot of installed dependencies,
 their actual import usage across the workspace, and SaaS /
@@ -123,12 +123,12 @@ AI-policy-driven calibration pipeline. T0 RandomPolicy and T2 CompetentHeuristic
 | `validateTierOrdering` | present |
 | `resolveParForScenario` | present |
 
-### LAGN v1.0 Specification
+### LAGN Specification
 
 - **Location:** `packages/lagn-spec/src`
 - **Owning work packet:** [WP-244](docs/ai/work-packets/WP-244-lagn-spec-publication.md)
 
-Legendary Arena Game Notation — the open standard format for game setup, card catalog, and deterministic replay logs. Published as an NPM package with Zod validator, generated JSON Schema, TypeScript types, and CLI tooling. Three-tier format: Tier 1 (mandatory game setup), Tier 2 (optional card catalog), Tier 3 (optional replay sequence). Single source of truth is the Zod schema; TypeScript types are inferred; JSON Schema is auto-generated and versioned at @legendary-arena/lagn@1.0.0 and published via npm, schema CDN, and the public GitHub repo github.com/legendary-arena/lagn-spec (MIT; a package-only snapshot of packages/lagn-spec — the monorepo copy stays canonical, per WP-244 Gate 1).
+Legendary Arena Game Notation — the open standard format for game setup, card catalog, and deterministic replay logs. Published as an NPM package with Zod validator, generated JSON Schema, TypeScript types, and CLI tooling. Three-tier format: Tier 1 (mandatory game setup), Tier 2 (optional card catalog), Tier 3 (optional replay sequence). Single source of truth is the Zod schema; TypeScript types are inferred; the JSON Schema is DERIVED from the Zod schema (never hand-maintained) and published as @legendary-arena/lagn via npm, the schema CDN, and the public GitHub repo github.com/legendary-arena/lagn-spec (MIT; a package-only snapshot of packages/lagn-spec — the monorepo copy stays canonical, per WP-244 Gate 1).
 
 **Contract surface (verified against on-disk exports):**
 
@@ -238,14 +238,14 @@ Counts derived from on-disk file extensions under `apps/`, `packages/`, `scripts
 
 | Language | Files |
 |---|---:|
-| TypeScript | 869 |
+| TypeScript | 877 |
 | Vue SFC | 143 |
-| JavaScript | 112 |
-| JSON | 103 |
-| Markdown | 67 |
+| JavaScript | 115 |
+| Markdown | 114 |
+| JSON | 107 |
 | HTML | 14 |
 | PowerShell | 10 |
-| CSS | 7 |
+| CSS | 8 |
 | TOML | 1 |
 | YAML | 1 |
 
@@ -253,23 +253,27 @@ Counts derived from on-disk file extensions under `apps/`, `packages/`, `scripts
 
 | Extension | Files |
 |---|---:|
-| `.ts` | 864 |
+| `.ts` | 872 |
 | `.vue` | 143 |
-| `.json` | 103 |
-| `.mjs` | 70 |
-| `.md` | 67 |
+| `.md` | 114 |
+| `.json` | 107 |
+| `.mjs` | 73 |
 | `.js` | 40 |
+| `.png` | 16 |
 | `.html` | 14 |
 | `.ps1` | 10 |
-| `.css` | 7 |
-| `.png` | 7 |
+| `.css` | 8 |
+| `.svg` | 7 |
 | `.d.ts` | 5 |
 | `.txt` | 4 |
 | `.example` | 3 |
+| `.mmd` | 3 |
 | `.cjs` | 2 |
 | `.gitignore` | 2 |
 | `.gitkeep` | 1 |
 | `.hugo-version` | 1 |
+| `.ico` | 1 |
+| `.jpg` | 1 |
 | `.npmignore` | 1 |
 | `.prettierignore` | 1 |
 | `.toml` | 1 |
@@ -302,7 +306,7 @@ Whether each non-Node language's toolchain marker files and source-file extensio
 | `apps/server/package.json` | @legendary-arena/server | Legendary Arena boardgame.io game server — wiring layer only | 10 | 1 | 0 |
 | `package.json` | legendary-arena | Legendary Arena monorepo — card registry, viewer, and tooling | 0 | 3 | 0 |
 | `packages/game-engine/package.json` | @legendary-arena/game-engine | boardgame.io Game Engine for Legendary Arena | 1 | 2 | 0 |
-| `packages/lagn-spec/package.json` | @legendary-arena/lagn | LAGN v1.0 — Legendary Arena Game Notation validator and schema | 1 | 3 | 0 |
+| `packages/lagn-spec/package.json` | @legendary-arena/lagn | Legendary Arena Game Notation — validator, derived JSON Schema, and CLI | 2 | 5 | 0 |
 | `packages/preplan/package.json` | @legendary-arena/preplan | Pre-Planning State Model & Lifecycle (Non-Authoritative, Per-Client) | 0 | 2 | 1 |
 | `packages/registry/package.json` | @legendary-arena/registry | Card Data Access Layer for Legendary Arena | 1 | 7 | 0 |
 | `packages/vue-sfc-loader/package.json` | @legendary-arena/vue-sfc-loader | Node module-loader hook that compiles Vue 3 Single-File Components for node:test consumers | 1 | 7 | 2 |
@@ -366,9 +370,10 @@ Candidates considered for this category (none adopted):
 
 | Package | Version(s) | Files importing | Declared in |
 |---|---|---:|---|
+| `ajv` | ^8.20.0 | 1 _(minimal)_ | `packages/lagn-spec/package.json` (dev) |
 | `zod` | ^3.23.8, ^3.22.4 | 10 _(partial)_ | `apps/registry-viewer/package.json` (dep); `packages/lagn-spec/package.json` (dep); `packages/registry/package.json` (dep) |
 
-_Other candidates in this category not currently installed:_ `valibot`, `yup`, `joi`, `ajv`, `superstruct`
+_Other candidates in this category not currently installed:_ `valibot`, `yup`, `joi`, `superstruct`
 
 ### Forms
 
@@ -581,17 +586,19 @@ become load-bearing.
 | `@legendary-arena/game-engine` | workspace:* | 130 _(comprehensive)_ | `apps/arena-client/package.json` (dev); `apps/engine-runner/package.json` (dep); `apps/replay-producer/package.json` (dep); `apps/server/package.json` (dep); `package.json` (dev); `packages/preplan/package.json` (peer) |
 | `@legendary-arena/lagn` | workspace:* | 9 _(partial)_ | `apps/registry-viewer/package.json` (dep); `apps/server/package.json` (dep) |
 | `@legendary-arena/preplan` | workspace:* | 9 _(partial)_ | `apps/arena-client/package.json` (dep) |
-| `@legendary-arena/registry` | workspace:* | 36 _(comprehensive)_ | `apps/engine-runner/package.json` (dep); `apps/registry-viewer/package.json` (dep); `apps/server/package.json` (dep) |
+| `@legendary-arena/registry` | workspace:* | 41 _(comprehensive)_ | `apps/engine-runner/package.json` (dep); `apps/registry-viewer/package.json` (dep); `apps/server/package.json` (dep) |
 | `@legendary-arena/vue-sfc-loader` | workspace:* | 0 ⚠ | `apps/arena-client/package.json` (dev) |
 | `@types/jsdom` | ^21.1.7 | 0 _(tooling)_ | `apps/arena-client/package.json` (dev) |
 | `@types/node` | ^22.19.17, ^20.0.0, ^25.6.0 | 7 _(partial)_ | `apps/arena-client/package.json` (dev); `apps/dashboard/package.json` (dev); `apps/legends-board/package.json` (dev); `apps/registry-viewer/package.json` (dev); `apps/replay-producer/package.json` (dev); `packages/lagn-spec/package.json` (dev); `packages/registry/package.json` (dev); `packages/vue-sfc-loader/package.json` (dev) |
 | `@vue/tsconfig` | ^0.5.1 | 2 _(minimal)_ | `apps/legends-board/package.json` (dev); `apps/registry-viewer/package.json` (dev) |
+| `ajv-formats` | ^3.0.1 | 1 _(minimal)_ | `packages/lagn-spec/package.json` (dev) |
 | `dotenv` | ^16.4.5 | 2 _(minimal)_ | `packages/registry/package.json` (dev) |
 | `eslint-config-prettier` | ^9.1.0 | 1 _(minimal)_ | `apps/dashboard/package.json` (dev) |
 | `fast-glob` | ^3.3.2 | 0 ⚠ | `packages/registry/package.json` (dev) |
 | `koa-body` | ^5.0.0 | 8 _(partial)_ | `apps/server/package.json` (dep) |
 | `sharp` | ^0.33.0 | 1 _(minimal)_ | `apps/server/package.json` (dep) |
 | `stripe` | 22.1.0 | 5 _(partial)_ | `apps/server/package.json` (dep) |
+| `zod-to-json-schema` | ^3.25.2 | 1 _(minimal)_ | `packages/lagn-spec/package.json` (dep) |
 
 ## SaaS / embedded services
 
@@ -603,19 +610,19 @@ dependency-based inventory.
 | Service | Category | Detected in | Description |
 |---|---|---:|---|
 | `brevo` | marketing / email | 16 files | Transactional + marketing email, newsletter forms, SMTP relay. |
-| `snipcart` | ecommerce | 8 files | Cart overlay via CDN script + HTML data attributes. |
+| `snipcart` | ecommerce | 2 files | Cart overlay via CDN script + HTML data attributes. |
 
 ### SaaS usage detail
 
 #### brevo
 
-- `[legendary-arena-website] docs/ai/work-packets/WP-015-newsletter-brevo.md`
-- `[legendary-arena-website] docs/brevo/email-automation.md`
-- `[legendary-arena-website] functions/api/subscribe.js`
 - `apps/server/src/marketing/brevoEnqueue.logic.test.ts`
 - `apps/server/src/marketing/brevoEnqueue.logic.ts`
 - `apps/server/src/marketing/brevoTransactional.logic.test.ts`
 - `apps/server/src/marketing/brevoTransactional.logic.ts`
+- `apps/wiki-viewer/content/brevo-email-pipeline.md`
+- `apps/wiki-viewer/content/hugo-onboarding.md`
+- `apps/wiki-viewer/content/hugo-web-system.md`
 - `docs/ai/DECISIONS.md`
 - `docs/ai/STATUS.md`
 - `docs/ai/execution-checklists/EC-325-game-signup-brevo-enqueue.checklist.md`
@@ -628,13 +635,7 @@ dependency-based inventory.
 
 #### snipcart
 
-- `[legendary-arena-website] docs/01-VISION.md`
-- `[legendary-arena-website] docs/ai/work-packets/WP-019-snipcart-commerce.md`
-- `[legendary-arena-website] layouts/_partials/extend_footer.html`
-- `[legendary-arena-website] layouts/_partials/extend_head.html`
-- `[legendary-arena-website] layouts/_partials/header.html`
-- `[legendary-arena-website] layouts/shop/list.html`
-- `[legendary-arena-website] layouts/shop/single.html`
+- `apps/wiki-viewer/content/hugo-web-system.md`
 - `wiki/hugo-web-system.md`
 
 ## Importance tiering
@@ -713,12 +714,15 @@ of these become load-bearing for the architecture.
 - `@koa/multer`
 - `@primevue/themes`
 - `@teamhanko/hanko-elements`
+- `ajv`
+- `ajv-formats`
 - `eslint-config-prettier`
 - `koa-body`
 - `prettier`
 - `sharp`
 - `stripe`
 - `vue-echarts`
+- `zod-to-json-schema`
 
 ## Anomalies
 
@@ -786,7 +790,7 @@ them entirely.
 
 ## Transitive dependencies (lockfile)
 
-Lockfile resolves **612** packages: **39** are direct dependencies declared in some `package.json`, **573** are transitive.
+Lockfile resolves **616** packages: **42** are direct dependencies declared in some `package.json`, **574** are transitive.
 
 ### Transitive packages matching tracked categories
 
@@ -801,7 +805,6 @@ transitively."
 | `@koa/router` | Framework — server | 10.1.1 |
 | `@teamhanko/hanko-frontend-sdk` | Auth | 2.6.0 |
 | `@vue/runtime-core` | Framework — client | 3.5.30 |
-| `ajv` | Schema / validation | 6.14.0 |
 | `engine.io` | Realtime / networking | 4.1.2, 6.6.6 |
 | `engine.io-client` | Realtime / networking | 6.6.4 |
 | `esbuild` | Build / typecheck / transform | 0.21.5, 0.27.4 |
@@ -829,7 +832,7 @@ a reviewer's eye.
   - `@koa/router`
   - `koa`
 
-- Installed but never mentioned in doc: **20**
+- Installed but never mentioned in doc: **21**
 
   - `@aws-sdk/client-s3`
   - `@primevue/themes`
@@ -838,6 +841,7 @@ a reviewer's eye.
   - `@typescript-eslint/parser`
   - `@vitejs/plugin-vue`
   - `@vue/eslint-config-typescript`
+  - `ajv`
   - `axios`
   - `echarts`
   - `eslint`
@@ -861,7 +865,7 @@ a reviewer's eye.
   - `jsonwebtoken`
   - `koa`
 
-- Installed but never mentioned in doc: **24**
+- Installed but never mentioned in doc: **25**
 
   - `@aws-sdk/client-s3`
   - `@primevue/themes`
@@ -871,6 +875,7 @@ a reviewer's eye.
   - `@vitejs/plugin-vue`
   - `@vue/eslint-config-typescript`
   - `@vue/test-utils`
+  - `ajv`
   - `axios`
   - `echarts`
   - `eslint`

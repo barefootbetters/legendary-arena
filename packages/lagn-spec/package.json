@@ -1,7 +1,7 @@
 {
   "name": "@legendary-arena/lagn",
-  "version": "1.0.0",
-  "description": "LAGN v1.0 — Legendary Arena Game Notation validator and schema",
+  "version": "1.1.0",
+  "description": "Legendary Arena Game Notation — validator, derived JSON Schema, and CLI",
   "type": "module",
   "main": "./dist/index.js",
   "bin": {

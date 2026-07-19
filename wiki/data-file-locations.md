@@ -132,7 +132,7 @@ R2 credentials are **not committed**: local `.env` carries
   [`apps/server/src/identity/replayOwnership.logic.ts`](../apps/server/src/identity/replayOwnership.logic.ts).
 - **LAGN** (Legendary Arena Game Notation) is the published interchange
   spec in [`packages/lagn-spec/`](../packages/lagn-spec/) — full detail on
-  [LAGN v1.0 Specification](lagn-v1.md). Client-side loadout parsing lives
+  [LAGN Specification](lagn-v1.md). Client-side loadout parsing lives
   in [`apps/arena-client/src/lobby/`](../apps/arena-client/src/lobby/)
   (`lagnLoadout.ts` → `parseLoadoutJson.ts`).
 
@@ -187,7 +187,7 @@ R2 credentials are **not committed**: local `.env` carries
 - **[R2 Image Naming Convention](r2-image-naming-convention.md)** owns the
   card-image filename rules; this page only points at the `data/cards/`
   and R2 locations.
-- **[LAGN v1.0 Specification](lagn-v1.md)** owns the game-notation format;
+- **[LAGN Specification](lagn-v1.md)** owns the game-notation format;
   this page locates the package and the client parser.
 - **[Card Type Taxonomy](card-type-taxonomy.md)** owns the type list backing
   `data/metadata/card-types.json`.
@@ -286,7 +286,7 @@ R2 credentials are **not committed**: local `.env` carries
   avatar `AVATAR_CDN_BASE` host constant and upload pipeline.
 - [`render.yaml`](../render.yaml) — production services and secret bindings.
 - [R2 Image Naming Convention](r2-image-naming-convention.md),
-  [LAGN v1.0 Specification](lagn-v1.md),
+  [LAGN Specification](lagn-v1.md),
   [Card Type Taxonomy](card-type-taxonomy.md),
   [Profile Login](profile-login.md),
   [Operational Health Checks](operational-health-checks.md) — the deep pages

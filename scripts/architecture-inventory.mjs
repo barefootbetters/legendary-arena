@@ -446,7 +446,10 @@ const FIRST_PARTY_SUBSYSTEMS = [
     ],
   },
   {
-    name: 'LAGN v1.0 Specification',
+    // why: deliberately version-agnostic. The prior 'LAGN v1.0 Specification'
+    // went stale the moment 1.1.0 shipped, and this file is the SOLE writer of
+    // the generated wiki page — a version baked in here re-stales on every bump.
+    name: 'LAGN Specification',
     // why: contract symbols are declared in the package's `src/` tree
     // (index.ts / validator.ts / types.ts), not at the package root.
     // collectExportedSymbols() is non-recursive, so the location must
@@ -462,8 +465,9 @@ const FIRST_PARTY_SUBSYSTEMS = [
       'Zod validator, generated JSON Schema, TypeScript types, and CLI tooling. ' +
       'Three-tier format: Tier 1 (mandatory game setup), Tier 2 (optional card catalog), ' +
       'Tier 3 (optional replay sequence). Single source of truth is the Zod schema; ' +
-      'TypeScript types are inferred; JSON Schema is auto-generated and versioned at ' +
-      '@legendary-arena/lagn@1.0.0 and published via npm, schema CDN, and the public ' +
+      'TypeScript types are inferred; the JSON Schema is DERIVED from the Zod schema ' +
+      '(never hand-maintained) and published as @legendary-arena/lagn via npm, the ' +
+      'schema CDN, and the public ' +
       'GitHub repo github.com/legendary-arena/lagn-spec (MIT; a package-only snapshot ' +
       'of packages/lagn-spec — the monorepo copy stays canonical, per WP-244 Gate 1).',
     contractSymbols: [

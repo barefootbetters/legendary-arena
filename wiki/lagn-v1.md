@@ -246,14 +246,14 @@ Published as `@legendary-arena/lagn`:
 - **Schema export:** `"./schema"` entrypoint resolves to `schemas/lagn-v1.json`
 - **CLI binary:** `lagn` (installed to `node_modules/.bin/lagn` via `"bin"` field)
 
-> ⚠️ **Known drift (2026-07-19):** `package.json` still reads `1.0.0` while the
-> code stamps `LAGN_VERSION = 1.1.0`. `validator.ts` states the two are "bumped
-> in lockstep" — the version constants deliberately live in TS and are never
-> read from `package.json`, which is meant to be the human-readable copy. The
-> 1.1.0 work (EC-422) bumped the constants and not the manifest, so a consumer
-> reading the npm version alone is told 1.0.0 by a package that emits 1.1.0
-> documents. Runtime behaviour is unaffected — nothing reads `package.json` —
-> but the manifest should be bumped before the next publish.
+> **Manifest lockstep (fixed 2026-07-19).** The version constants deliberately
+> live in TypeScript and are never read from `package.json`; the manifest is the
+> human-readable copy, bumped in lockstep. EC-422 bumped the constants and not
+> the manifest, so npm briefly advertised `1.0.0` for a package emitting `1.1.0`
+> documents. Both the `version` and the `description` (which read "LAGN v1.0 —")
+> are corrected. Publishing is gated on a `v*` tag, so no release carried the
+> mismatch. **When bumping `LAGN_VERSION`, bump `package.json` in the same
+> change** — nothing enforces this automatically.
 
 ### Public GitHub Repository
 
