@@ -40,6 +40,12 @@ import type {
 import { useLoadoutLagnExport } from "../composables/useLoadoutLagnExport";
 import { serializeSetupToUrl } from "../lib/setupUrlParams";
 import { parseLagnLoadout } from "../lib/loadoutLagnImport";
+import {
+  buildSupportPreset,
+  parseSupportPreset,
+  serializeSupportPreset,
+  supportPresetFilename,
+} from "../lib/supportPreset";
 
 // why: Verbatim WP-093 UI strings referenced via imported constants, but also
 // recorded in these comments so the §11 Step 9 Select-String gate confirms
@@ -98,6 +104,7 @@ const {
   exportToJsonBlob,
   exportFilename,
   resetDraft,
+  applySupportPreset,
 } = draftApi;
 
 const lagnExportApi = useLoadoutLagnExport(draft);
@@ -273,6 +280,108 @@ const SUPPORT_POOL_LABELS: Record<SupportPoolKind, string> = {
   officers: "S.H.I.E.L.D. Officers",
   sidekicks: "Sidekicks",
 };
+
+// ── Support Presets (EC-428 / D-24200) ─────────────────────────────────────
+//
+// A preset is a named, lockable definition of the non-hero board, stored as a
+// downloaded JSON file (operator decision: file-only, so the never-persists
+// invariant at the top of useLoadoutDraft.ts stands unamended). Locking makes
+// the four piles read-only so a run can vary heroes and nothing else.
+
+const presetName = ref("");
+const presetLocked = ref(false);
+const presetStatus = ref("");
+const presetError = ref("");
+
+/** True while a locked preset is protecting the support surface from edits. */
+const supportLocked = computed<boolean>(() => presetLocked.value);
+
+function onToggleLock(): void {
+  presetLocked.value = !presetLocked.value;
+  presetStatus.value = presetLocked.value
+    ? "Support pools locked — only heroes will change."
+    : "Support pools unlocked.";
+  presetError.value = "";
+}
+
+function onDownloadPreset(): void {
+  const name = presetName.value.trim() === "" ? "Support preset" : presetName.value;
+  const preset = buildSupportPreset(draft.value, {
+    name,
+    locked: presetLocked.value,
+    // why: wall-clock is fine here — this is a browser authoring surface, not
+    // the engine, and the timestamp is descriptive metadata only. Nothing
+    // reads it back for behaviour.
+    createdAt: new Date().toISOString(),
+    registry: {
+      sets: props.registry.listSets().map((entry) => entry.abbr),
+      cardCount: props.registry.listCards().length,
+    },
+  });
+  const blob = new Blob([serializeSupportPreset(preset)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = supportPresetFilename(preset);
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  URL.revokeObjectURL(url);
+  presetError.value = "";
+  presetStatus.value = `Saved “${preset.name}”.`;
+}
+
+function applyPresetText(text: string): void {
+  const result = parseSupportPreset(text);
+  if (!result.ok) {
+    presetError.value = result.error;
+    presetStatus.value = "";
+    return;
+  }
+  const preset = result.preset;
+  // why: applying is TOTAL — applySupportPreset overwrites all four counts and
+  // replaces the pool block wholesale. A merge would let a leftover pool from
+  // the previous draft survive and silently change the harness.
+  applySupportPreset({ counts: preset.counts, supportPools: preset.supportPools });
+  presetName.value = preset.name;
+  // why: the lock travels IN the file, so a preset shared while locked arrives
+  // locked for the next person.
+  presetLocked.value = preset.locked;
+  presetError.value = "";
+  const drift =
+    preset.registry !== undefined && preset.registry.cardCount !== props.registry.listCards().length
+      ? ` Note: authored against a registry of ${preset.registry.cardCount} cards; this one has ${props.registry.listCards().length}.`
+      : "";
+  presetStatus.value = `Loaded “${preset.name}”${preset.locked ? " (locked)" : ""}.${drift}`;
+}
+
+function onPresetFileImport(event: Event): void {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  if (!file) {
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    applyPresetText(typeof reader.result === "string" ? reader.result : "");
+  };
+  reader.readAsText(file);
+}
+
+/**
+ * "Reset draft" — clears heroes and villains, keeping the support surface when
+ * a preset is locked.
+ *
+ * why: this is the whole point of the lock. `resetDraft` itself still defaults
+ * to a total reset because the `?lagn=` import path depends on that; only this
+ * button opts into preservation.
+ */
+function onResetDraft(): void {
+  resetDraft({ preserveSupport: supportLocked.value });
+  presetStatus.value = supportLocked.value
+    ? "Draft cleared — locked support pools kept."
+    : "";
+}
 
 /** Which pool's editor is expanded. Only one is open at a time. */
 const openPoolKind = ref<SupportPoolKind | null>(null);
@@ -921,19 +1030,19 @@ function slotLabel(slot: PickerSlot): string {
         <div class="count-grid">
           <label class="field">
             <span class="field-label">bystandersCount</span>
-            <input type="number" min="0" :disabled="poolOf('bystanders') !== undefined" :value="draft.composition.bystandersCount" @input="(event) => onCountEdit('bystandersCount', event)" />
+            <input type="number" min="0" :disabled="supportLocked || poolOf('bystanders') !== undefined" :value="draft.composition.bystandersCount" @input="(event) => onCountEdit('bystandersCount', event)" />
           </label>
           <label class="field">
             <span class="field-label">woundsCount</span>
-            <input type="number" min="0" :disabled="poolOf('wounds') !== undefined" :value="draft.composition.woundsCount" @input="(event) => onCountEdit('woundsCount', event)" />
+            <input type="number" min="0" :disabled="supportLocked || poolOf('wounds') !== undefined" :value="draft.composition.woundsCount" @input="(event) => onCountEdit('woundsCount', event)" />
           </label>
           <label class="field">
             <span class="field-label">officersCount</span>
-            <input type="number" min="0" :disabled="poolOf('officers') !== undefined" :value="draft.composition.officersCount" @input="(event) => onCountEdit('officersCount', event)" />
+            <input type="number" min="0" :disabled="supportLocked || poolOf('officers') !== undefined" :value="draft.composition.officersCount" @input="(event) => onCountEdit('officersCount', event)" />
           </label>
           <label class="field">
             <span class="field-label">sidekicksCount</span>
-            <input type="number" min="0" :disabled="poolOf('sidekicks') !== undefined" :value="draft.composition.sidekicksCount" @input="(event) => onCountEdit('sidekicksCount', event)" />
+            <input type="number" min="0" :disabled="supportLocked || poolOf('sidekicks') !== undefined" :value="draft.composition.sidekicksCount" @input="(event) => onCountEdit('sidekicksCount', event)" />
           </label>
         </div>
 
@@ -941,6 +1050,32 @@ function slotLabel(slot: PickerSlot): string {
           A support pool names <em>which</em> cards fill a pile. While one is set, its
           count is derived from the pool and the box above is read-only.
         </p>
+
+        <!-- Support Preset (EC-428): save / load / lock the non-hero board -->
+        <div class="preset-bar">
+          <input
+            v-model="presetName"
+            class="preset-name"
+            placeholder="Preset name…"
+            aria-label="Support preset name"
+          />
+          <button
+            type="button"
+            class="mini-btn"
+            :class="{ 'preset-locked': supportLocked }"
+            :title="supportLocked
+              ? 'Unlock to edit the support pools again'
+              : 'Lock the support pools so only heroes change between runs'"
+            @click="onToggleLock"
+          >{{ supportLocked ? '🔒 Locked' : '🔓 Unlocked' }}</button>
+          <button type="button" class="mini-btn" @click="onDownloadPreset">💾 Save preset</button>
+          <label class="mini-btn preset-load">
+            📂 Load preset
+            <input type="file" accept="application/json,.json" @change="onPresetFileImport" />
+          </label>
+        </div>
+        <p v-if="presetError" class="preset-error">{{ presetError }}</p>
+        <p v-else-if="presetStatus" class="preset-status">{{ presetStatus }}</p>
 
         <div v-for="kind in (['bystanders', 'wounds', 'officers', 'sidekicks'] as const)" :key="kind" class="pool-block">
           <div class="pool-head">
@@ -951,7 +1086,7 @@ function slotLabel(slot: PickerSlot): string {
               {{ poolOf(kind)!.cards.length }} card(s) · {{ poolOf(kind)!.mode }}
             </span>
             <span v-else class="pool-badge pool-badge-off">count only</span>
-            <button v-if="poolOf(kind)" type="button" class="pool-clear" @click="clearPool(kind)">Clear</button>
+            <button v-if="poolOf(kind) && !supportLocked" type="button" class="pool-clear" @click="clearPool(kind)">Clear</button>
           </div>
 
           <div v-if="openPoolKind === kind" class="pool-body">
@@ -964,9 +1099,10 @@ function slotLabel(slot: PickerSlot): string {
                 class="pool-set-chip"
                 :class="{ selected: isSetInPool(kind, entry.abbr) }"
                 :title="entry.name"
+                :disabled="supportLocked"
                 @click="togglePoolSet(kind, entry.abbr)"
               >{{ entry.abbr }}</button>
-              <button type="button" class="pool-set-all" @click="selectAllPoolSets(kind)">Select all sets</button>
+              <button type="button" class="pool-set-all" :disabled="supportLocked" @click="selectAllPoolSets(kind)">Select all sets</button>
             </div>
 
             <ul class="pool-card-list">
@@ -978,6 +1114,7 @@ function slotLabel(slot: PickerSlot): string {
                   min="0"
                   class="pool-copies"
                   :aria-label="`Copies of ${card.name}`"
+                  :disabled="supportLocked"
                   :value="copiesOf(kind, card.extId)"
                   @input="(event) => onPoolCopiesInput(kind, card, event)"
                 />
@@ -1009,7 +1146,7 @@ function slotLabel(slot: PickerSlot): string {
           >
             ⬇ Download LAGN
           </button>
-          <button type="button" class="mini-btn" @click="resetDraft">🔄 Reset draft</button>
+          <button type="button" class="mini-btn" @click="onResetDraft">🔄 Reset draft</button>
           <button type="button" class="mini-btn" @click="onCopySetupLink">🔗 Copy Setup Link</button>
           <!-- why: WP-288 — view this loadout's cards on the Cards tab. Disabled
                on an empty composition so the gallery is never entered empty. -->
@@ -1385,6 +1522,13 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: #6060c0
 .error-field { font-family: ui-monospace, Consolas, monospace; color: #fcd34d; }
 
 .pool-hint { margin: 0.5rem 0 0.4rem 0; font-size: 0.75rem; color: #7c7ca8; line-height: 1.4; }
+.preset-bar { display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; margin-bottom: 0.4rem; }
+.preset-name { flex: 1; min-width: 8rem; }
+.preset-load { position: relative; overflow: hidden; cursor: pointer; }
+.preset-load input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.mini-btn.preset-locked { border-color: #c0a060; color: #f0d090; }
+.preset-status { margin: 0 0 0.4rem 0; font-size: 0.72rem; color: #8b8bd6; }
+.preset-error { margin: 0 0 0.4rem 0; font-size: 0.72rem; color: #fca5a5; }
 .pool-block { border-top: 1px solid #22222e; padding-top: 0.4rem; margin-top: 0.4rem; }
 .pool-head { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
 .pool-toggle {
