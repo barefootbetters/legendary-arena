@@ -15,7 +15,10 @@
  * mutates the draft, the composition, or the card list.
  */
 
-import type { SetupCompositionInput } from "@legendary-arena/registry/setupContract";
+import type {
+  SetupCompositionInput,
+  SupportPools,
+} from "@legendary-arena/registry/setupContract";
 
 /**
  * The minimal card shape the gallery membership test reads: the set-qualified
@@ -60,6 +63,51 @@ export function compositionExtIdSet(composition: SetupCompositionInput): Set<str
   }
   for (const heroDeckId of composition.heroDeckIds) {
     extIdSet.add(heroDeckId);
+  }
+  return extIdSet;
+}
+
+/**
+ * Collects the ext_ids of every card named by the draft's support pools —
+ * bystanders, wounds, S.H.I.E.L.D. officers and sidekicks (D-24194).
+ *
+ * why: `compositionExtIdSet` reads the five composition fields only, because
+ * that is all a loadout had when the gallery shipped. Support pools live on the
+ * ENVELOPE (D-24194 put them there so the 9-field composition lock D-1244 could
+ * stand), so the gallery could not see them and a loadout with pools rendered
+ * with its support cards missing entirely.
+ *
+ * Kept as a SEPARATE set rather than folded into `compositionExtIdSet` so the
+ * caller can offer support cards as an opt-in: they are numerous (a
+ * select-all-sets bystander pool is ~70 cards) and wanted far less often than
+ * the heroes and villains, so merging the two would bury the interesting cards.
+ *
+ * Unlike composition ids — which are GROUP ext_ids shared by every member card —
+ * a pool ext_id names one specific card, so membership here is exact rather
+ * than expanding.
+ *
+ * @param supportPools - The draft's envelope pools, or undefined when unset.
+ */
+export function supportPoolExtIdSet(supportPools: SupportPools | undefined): Set<string> {
+  const extIdSet = new Set<string>();
+  if (supportPools === undefined) {
+    return extIdSet;
+  }
+  // why: explicit iteration over the four named pools rather than
+  // Object.values, so a future fifth pool kind is a compile error here instead
+  // of silently missing from the gallery.
+  for (const pool of [
+    supportPools.bystanders,
+    supportPools.wounds,
+    supportPools.officers,
+    supportPools.sidekicks,
+  ]) {
+    if (pool === undefined) {
+      continue;
+    }
+    for (const card of pool.cards) {
+      extIdSet.add(card.extId);
+    }
   }
   return extIdSet;
 }
