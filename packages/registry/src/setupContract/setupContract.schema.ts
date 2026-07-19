@@ -9,6 +9,7 @@
 
 import { z } from "zod";
 import {
+  SUPPORT_COUNT_MINIMUMS,
   SUPPORT_POOL_COUNT_FIELD,
   SUPPORT_POOL_KINDS,
 } from "./setupContract.types.js";
@@ -201,15 +202,27 @@ export const CompositionSchema = z
     bystandersCount: z
       .number()
       .int("The bystandersCount must be a non-negative integer.")
-      .nonnegative("The bystandersCount must be a non-negative integer."),
+      .nonnegative("The bystandersCount must be a non-negative integer.")
+      .min(
+        SUPPORT_COUNT_MINIMUMS.bystandersCount,
+        `The bystandersCount must be at least ${SUPPORT_COUNT_MINIMUMS.bystandersCount} so the supply pile does not run dry during play.`,
+      ),
     woundsCount: z
       .number()
       .int("The woundsCount must be a non-negative integer.")
-      .nonnegative("The woundsCount must be a non-negative integer."),
+      .nonnegative("The woundsCount must be a non-negative integer.")
+      .min(
+        SUPPORT_COUNT_MINIMUMS.woundsCount,
+        `The woundsCount must be at least ${SUPPORT_COUNT_MINIMUMS.woundsCount} so the supply pile does not run dry during play.`,
+      ),
     officersCount: z
       .number()
       .int("The officersCount must be a non-negative integer.")
-      .nonnegative("The officersCount must be a non-negative integer."),
+      .nonnegative("The officersCount must be a non-negative integer.")
+      .min(
+        SUPPORT_COUNT_MINIMUMS.officersCount,
+        `The officersCount must be at least ${SUPPORT_COUNT_MINIMUMS.officersCount} so the supply pile does not run dry during play.`,
+      ),
     sidekicksCount: z
       .number()
       .int("The sidekicksCount must be a non-negative integer.")

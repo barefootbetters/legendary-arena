@@ -188,6 +188,31 @@ export const SUPPORT_POOL_COUNT_FIELD: Readonly<
 } as const;
 
 /**
+ * Per-field supply floors, mirroring the engine's `COUNT_FIELD_MINIMUMS`
+ * (`packages/game-engine/src/matchSetup.validate.ts:95-100`, D-24032).
+ *
+ * why: EC-427 — the engine rejects a match whose supply piles are too small to
+ * survive play, but the registry-side validator only checked non-negativity.
+ * The builder could therefore produce a document that passed every check it
+ * knew about and then failed at match creation with HTTP 400. That became easy
+ * to hit once support pools made these counts DERIVED from the number of cards
+ * picked rather than typed: selecting every wound card in the registry yields
+ * 22, which is under the floor of 30. Validating here moves the failure from
+ * "the game won't start" to "the loadout panel shows an error", where the
+ * author can act on it.
+ *
+ * Duplicated deliberately rather than imported: the registry package is
+ * browser-safe and must not take an engine dependency. A drift test pins these
+ * values to the engine source.
+ */
+export const SUPPORT_COUNT_MINIMUMS: Readonly<Record<SupportPoolCountField, number>> = {
+  bystandersCount: 30,
+  woundsCount: 30,
+  officersCount: 30,
+  sidekicksCount: 0,
+} as const;
+
+/**
  * MatchSetupDocument — the full authored document. Envelope fields are
  * flattened onto the root alongside a nested `composition` block, matching
  * the JSON shape documented in MATCH-SETUP-SCHEMA.md §Example.
