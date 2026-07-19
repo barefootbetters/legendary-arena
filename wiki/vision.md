@@ -261,9 +261,10 @@ Work-Packet pre-flight, and contributor onboarding.
   `docs/01-VISION.md` sits above `.claude/rules/*.md` in the authority
   hierarchy. Proposed changes are presented as an audit catalog and
   wait for a go.
-- **Staleness.** The vision's own header reads *Last updated:
-  2026-04-14*; §8 cites a test count (314) that has since grown. Treat
-  counts in either document as of-that-date, not current.
+- **Staleness.** Counts in the vision are point-in-time observations,
+  not targets — §8's engine-test figure carries its own as-of date and
+  will drift between refreshes. Treat any count in either document as
+  of-that-date, and run `pnpm -r test` for the live number.
 
 ## References
 

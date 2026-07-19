@@ -1,6 +1,6 @@
 # Legendary Arena — Vision & Direction
 
-> **Last updated:** 2026-04-14
+> **Last updated:** 2026-07-19
 
 ## Purpose
 
@@ -158,9 +158,11 @@ records, keyed by stable internal account identifiers.
 - Game logic is UI‑agnostic
 - Identical inputs always produce identical outcomes
 - Suitable for replay, validation, multiplayer synchronization, and testing
-- Proven through 314 automated tests across setup, moves, rule execution,
-  hero abilities, board keywords, scheme setup, and endgame evaluation
-  (Phases 1-5 complete)
+- Proven through 2,028 automated engine tests (as of 2026-07-19) across
+  setup, moves, rule execution, hero abilities, villain abilities, board
+  keywords, scheme setup, and endgame evaluation. The count is a
+  point-in-time observation, not a target — run `pnpm -r test` for the
+  current figure.
 
 ---
 
