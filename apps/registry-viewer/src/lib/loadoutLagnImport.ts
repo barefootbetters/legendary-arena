@@ -24,6 +24,7 @@
  */
 
 import { validate, type LAGN } from "@legendary-arena/lagn";
+import type { SupportPool, SupportPools } from "@legendary-arena/registry/setupContract";
 
 /**
  * The composition a LAGN file carries, in MATCH-SETUP field names (the
@@ -41,6 +42,17 @@ export interface LagnLoadoutComposition {
   officersCount: number;
   sidekicksCount: number;
   playerCount: number;
+  /**
+   * The support pools the LAGN named, in MATCH-SETUP shape, or undefined when
+   * the record carries none.
+   *
+   * why: EC-429 — LAGN 1.1.0 has carried `setup.support_pools` since D-24195,
+   * and the viewer has exported them since EC-425, but this importer never read
+   * them back. A `?lagn=` share link therefore delivered the heroes and
+   * villains while silently dropping the harness — which is the whole point of
+   * sharing a frozen board. Reading them here closes the round trip.
+   */
+  supportPools?: SupportPools | undefined;
 }
 
 /** The result of parsing a pasted/uploaded LAGN file. */
@@ -56,9 +68,48 @@ export type ParseLagnLoadoutResult =
  *
  * @param lagn - A LAGN object already accepted by the published validator.
  */
+/**
+ * Reverses `supportPoolsToLagn` (useLoadoutLagnExport): LAGN is snake_case and
+ * names the officer pool `shield_officers` to match `shield_officers_count`
+ * (D-24195), while the MATCH-SETUP envelope uses `officers` to match
+ * `officersCount` (D-24194).
+ *
+ * why: the rename is the same non-1:1 mapping the counts already carry a few
+ * lines below. Doing it in one place keeps a future reader from having to
+ * rediscover that `officers` and `shield_officers` are the same pool.
+ *
+ * The LAGN validator has already enforced that each pool's copies sum to its
+ * paired count (D-24195), so no re-derivation is needed here — the counts
+ * mapped alongside are guaranteed consistent with these pools.
+ */
+function lagnToSupportPools(setup: LAGN["setup"]): SupportPools | undefined {
+  const pools = setup.support_pools;
+  if (pools === undefined) {
+    return undefined;
+  }
+  const toMatchSetupPool = (pool: NonNullable<typeof pools.bystanders>): SupportPool => {
+    const converted: SupportPool = {
+      mode: pool.mode,
+      cards: pool.cards.map((card) => ({ extId: card.ext_id, copies: card.copies })),
+    };
+    if (pool.sets !== undefined) {
+      converted.sets = [...pool.sets];
+    }
+    return converted;
+  };
+  const out: SupportPools = {};
+  if (pools.bystanders !== undefined) out.bystanders = toMatchSetupPool(pools.bystanders);
+  if (pools.wounds !== undefined) out.wounds = toMatchSetupPool(pools.wounds);
+  if (pools.shield_officers !== undefined) out.officers = toMatchSetupPool(pools.shield_officers);
+  if (pools.sidekicks !== undefined) out.sidekicks = toMatchSetupPool(pools.sidekicks);
+  return Object.keys(out).length === 0 ? undefined : out;
+}
+
 function lagnToComposition(lagn: LAGN): LagnLoadoutComposition {
   const setup = lagn.setup;
+  const supportPools = lagnToSupportPools(setup);
   return {
+    ...(supportPools === undefined ? {} : { supportPools }),
     schemeId: setup.scheme.id,
     mastermindId: setup.mastermind.id,
     // why: take only the `id` off each group entry — the LAGN stores `{ id, name }`

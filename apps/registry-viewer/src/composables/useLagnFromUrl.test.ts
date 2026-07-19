@@ -74,6 +74,10 @@ function makeRecordingDraft(): { api: UseLoadoutDraftApi; calls: Call[] } {
     addHenchmanGroup: record("addHenchmanGroup"),
     addHeroGroup: record("addHeroGroup"),
     setCount: record("setCount"),
+    // why: EC-429 — the apply path now calls setSupportPool for a LAGN that
+    // carries pools. Without it here the double would throw on exactly the
+    // case the round trip exists to support.
+    setSupportPool: record("setSupportPool"),
     setPlayerCount: record("setPlayerCount"),
   } as unknown as UseLoadoutDraftApi;
   return { api, calls };
@@ -154,5 +158,50 @@ describe("useLagnFromUrl", () => {
       const { api } = makeRecordingDraft();
       assert.doesNotThrow(() => useLagnFromUrl(api));
     }
+  });
+
+  // ── Support pools through the share link (EC-429) ────────────────────────
+
+  test("a ?lagn= carrying support_pools applies them to the draft", () => {
+    const pooled = {
+      ...VALID_LAGN,
+      lagn_version: "1.1.0",
+      setup: {
+        ...VALID_LAGN.setup,
+        sidekicks_count: 2,
+        support_pools: {
+          shield_officers: {
+            mode: "explicit",
+            cards: [{ ext_id: "shld/melinda-may", copies: 20 }],
+          },
+          sidekicks: {
+            mode: "explicit",
+            cards: [{ ext_id: "cvwr/zabu", copies: 2 }],
+          },
+        },
+      },
+    };
+    setSearch(`?lagn=${encodeLagn(JSON.stringify(pooled))}`);
+    const { api, calls } = makeRecordingDraft();
+    const result = useLagnFromUrl(api);
+    assert.deepEqual(result.lagnUrlErrors, []);
+    const poolCalls = calls.filter((call) => call[0] === "setSupportPool");
+    assert.equal(poolCalls.length, 2);
+    // why: LAGN says shield_officers; the draft field is officers (D-24195 vs
+    // D-24194). Asserting the rename is what proves the mapping, not just that
+    // something was applied.
+    assert.deepEqual(poolCalls.map((call) => call[1]).sort(), ["officers", "sidekicks"]);
+    const officers = poolCalls.find((call) => call[1] === "officers");
+    assert.deepEqual(officers?.[2], {
+      mode: "explicit",
+      cards: [{ extId: "shld/melinda-may", copies: 20 }],
+    });
+  });
+
+  test("a ?lagn= without support_pools makes no setSupportPool calls", () => {
+    setSearch(`?lagn=${encodeLagn(JSON.stringify(VALID_LAGN))}`);
+    const { api, calls } = makeRecordingDraft();
+    useLagnFromUrl(api);
+    assert.equal(calls.filter((call) => call[0] === "setSupportPool").length, 0);
   });
 });

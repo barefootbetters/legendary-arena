@@ -73,6 +73,20 @@ function applyComposition(
   draftApi.setCount("woundsCount", composition.woundsCount);
   draftApi.setCount("officersCount", composition.officersCount);
   draftApi.setCount("sidekicksCount", composition.sidekicksCount);
+
+  // why: EC-429 — apply pools AFTER the counts. setSupportPool derives the
+  // paired count from the pool, and the LAGN validator has already enforced
+  // that copies sum to the count (D-24195), so the derived value equals the
+  // one just set. Applying pools first would let setCount overwrite nothing
+  // meaningful, but the order keeps the dependency obvious.
+  if (composition.supportPools !== undefined) {
+    for (const kind of ["bystanders", "wounds", "officers", "sidekicks"] as const) {
+      const pool = composition.supportPools[kind];
+      if (pool !== undefined) {
+        draftApi.setSupportPool(kind, pool);
+      }
+    }
+  }
   draftApi.setPlayerCount(composition.playerCount);
 }
 

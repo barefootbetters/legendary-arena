@@ -65,6 +65,7 @@ the only variable in a `legends.legendary-arena.com` comparison.
 | EC-422 | LAGN 1.1.0 — version constants, migration seam, version-gated pools. | #825 |
 | EC-425 | Pool picker UI: set chips, Select all sets, per-card copies; both exports carry pools. | Phase C |
 | EC-428 | Support Presets: save / load / lock, file-only. | Phase D |
+| EC-429 | Pools through ?lagn= share links (Copy Setup Link stays entity-only). | Phase E |
 
 EC-420 is independent. EC-422 stacks on EC-421. EC-425 needs both landed.
 

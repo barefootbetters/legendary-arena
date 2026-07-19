@@ -104,3 +104,58 @@ describe("parseLagnLoadout — valid LAGN extraction", () => {
     }
   });
 });
+
+// ── Support pools round trip (EC-429) ───────────────────────────────────────
+
+describe("parseLagnLoadout support pools", () => {
+  it("maps support_pools back, renaming shield_officers to officers", () => {
+    const raw = JSON.parse(makeValidLagnText()) as Record<string, unknown>;
+    const setup = raw["setup"] as Record<string, unknown>;
+    setup["shield_officers_count"] = 20;
+    setup["sidekicks_count"] = 2;
+    setup["support_pools"] = {
+      shield_officers: {
+        mode: "explicit",
+        cards: [{ ext_id: "shld/melinda-may", copies: 20 }],
+      },
+      sidekicks: {
+        mode: "sets",
+        sets: ["cvwr"],
+        cards: [{ ext_id: "cvwr/zabu", copies: 2 }],
+      },
+    };
+    raw["lagn_version"] = "1.1.0";
+
+    const result = parseLagnLoadout(JSON.stringify(raw));
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    // why: LAGN names the officer pool shield_officers to match
+    // shield_officers_count (D-24195); the MATCH-SETUP envelope uses officers
+    // to match officersCount (D-24194). Asserting the rename is what proves
+    // the reverse mapping rather than a passthrough.
+    assert.deepEqual(result.composition.supportPools?.officers, {
+      mode: "explicit",
+      cards: [{ extId: "shld/melinda-may", copies: 20 }],
+    });
+    assert.deepEqual(result.composition.supportPools?.sidekicks, {
+      mode: "sets",
+      sets: ["cvwr"],
+      cards: [{ extId: "cvwr/zabu", copies: 2 }],
+    });
+    // why: ext_id -> extId is the other half of the rename; a passthrough would
+    // leave snake_case keys the draft cannot read.
+    assert.equal(
+      (result.composition.supportPools?.officers?.cards[0] as unknown as Record<string, unknown>)[
+        "ext_id"
+      ],
+      undefined,
+    );
+  });
+
+  it("leaves supportPools undefined for a 1.0.0 record with no pools", () => {
+    const result = parseLagnLoadout(makeValidLagnText());
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.equal(result.composition.supportPools, undefined);
+  });
+});
