@@ -277,34 +277,79 @@ function togglePoolEditor(kind: SupportPoolKind): void {
   openPoolKind.value = openPoolKind.value === kind ? null : kind;
 }
 
-/** Every registry card eligible for the given pool, sorted by set then name. */
-function poolCandidates(kind: SupportPoolKind): FlatCard[] {
-  const types = SUPPORT_POOL_CARD_TYPES[kind];
-  const matching = props.registry
-    .listCards()
-    .filter((card) => types.includes(card.cardType as string));
-  // why: collapse by extId — bystanders and wounds are emitted one per set and
-  // sidekick/officer entries can repeat across a set's card list. One row per
-  // distinct card is what the author is choosing between.
-  const byExtId = new Map<string, FlatCard>();
-  for (const card of matching) {
-    if (!byExtId.has(card.extId)) {
-      byExtId.set(card.extId, card);
+/**
+ * Every registry card eligible for each pool, sorted by set then name.
+ *
+ * why: this MUST be a computed, not a function the template calls. Vue
+ * re-invokes template functions on every render, and each call scanned all
+ * ~3,100 registry cards and sorted them — multiplied by four kinds and the
+ * three call sites per kind, that locked the renderer hard enough to hang the
+ * page when the Loadout tab opened. One pass, cached, keyed by kind.
+ */
+const poolCandidatesByKind = computed<Record<SupportPoolKind, FlatCard[]>>(() => {
+  const buckets: Record<SupportPoolKind, Map<string, FlatCard>> = {
+    bystanders: new Map(),
+    wounds: new Map(),
+    officers: new Map(),
+    sidekicks: new Map(),
+  };
+  const typeToKind = new Map<string, SupportPoolKind>();
+  for (const kind of ["bystanders", "wounds", "officers", "sidekicks"] as const) {
+    for (const cardType of SUPPORT_POOL_CARD_TYPES[kind]) {
+      typeToKind.set(cardType, kind);
     }
   }
-  return [...byExtId.values()].sort(
-    (left, right) =>
-      left.setAbbr.localeCompare(right.setAbbr) || left.name.localeCompare(right.name),
-  );
+  for (const card of props.registry.listCards()) {
+    const kind = typeToKind.get(card.cardType as string);
+    if (kind === undefined) {
+      continue;
+    }
+    // why: collapse by extId — bystanders and wounds are emitted one per set
+    // and sidekick/officer entries can repeat across a set's card list. One
+    // row per distinct card is what the author is choosing between.
+    const bucket = buckets[kind];
+    if (!bucket.has(card.extId)) {
+      bucket.set(card.extId, card);
+    }
+  }
+  const sortCards = (cards: FlatCard[]) =>
+    cards.sort(
+      (left, right) =>
+        left.setAbbr.localeCompare(right.setAbbr) || left.name.localeCompare(right.name),
+    );
+  return {
+    bystanders: sortCards([...buckets.bystanders.values()]),
+    wounds: sortCards([...buckets.wounds.values()]),
+    officers: sortCards([...buckets.officers.values()]),
+    sidekicks: sortCards([...buckets.sidekicks.values()]),
+  };
+});
+
+function poolCandidates(kind: SupportPoolKind): FlatCard[] {
+  return poolCandidatesByKind.value[kind];
 }
 
-/** Set abbreviations that hold at least one card for this pool. */
+/** Set abbreviations that hold at least one card for each pool. */
+const poolSetOptionsByKind = computed<
+  Record<SupportPoolKind, Array<{ abbr: string; name: string }>>
+>(() => {
+  const sets = props.registry.listSets();
+  const optionsFor = (kind: SupportPoolKind) => {
+    const present = new Set(poolCandidatesByKind.value[kind].map((card) => card.setAbbr));
+    return sets
+      .filter((entry) => present.has(entry.abbr))
+      .map((entry) => ({ abbr: entry.abbr, name: entry.name }));
+  };
+  return {
+    bystanders: optionsFor("bystanders"),
+    wounds: optionsFor("wounds"),
+    officers: optionsFor("officers"),
+    sidekicks: optionsFor("sidekicks"),
+  };
+});
+
 function poolSetOptions(kind: SupportPoolKind): Array<{ abbr: string; name: string }> {
-  const present = new Set(poolCandidates(kind).map((card) => card.setAbbr));
-  return props.registry
-    .listSets()
-    .filter((entry) => present.has(entry.abbr))
-    .map((entry) => ({ abbr: entry.abbr, name: entry.name }));
+  return poolSetOptionsByKind.value[kind];
 }
 
 function poolOf(kind: SupportPoolKind): SupportPool | undefined {
