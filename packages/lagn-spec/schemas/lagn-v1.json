@@ -1,7 +1,4 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "LAGN v1.1 — Legendary Arena Game Notation",
-  "description": "Three-tier JSON format for Legendary Arena game records: Tier 1 (setup), Tier 2 (card catalog), Tier 3 (replay log)",
   "type": "object",
   "properties": {
     "lagn_version": {
@@ -35,24 +32,9 @@
     },
     "setup": {
       "type": "object",
-      "required": [
-        "mastermind",
-        "scheme",
-        "villain_groups",
-        "henchmen_groups",
-        "heroes",
-        "bystanders_count",
-        "wounds_count",
-        "shield_officers_count",
-        "sidekicks_count"
-      ],
       "properties": {
         "mastermind": {
           "type": "object",
-          "required": [
-            "id",
-            "name"
-          ],
           "properties": {
             "id": {
               "type": "string"
@@ -60,14 +42,15 @@
             "name": {
               "type": "string"
             }
-          }
+          },
+          "required": [
+            "id",
+            "name"
+          ],
+          "additionalProperties": true
         },
         "scheme": {
           "type": "object",
-          "required": [
-            "id",
-            "name"
-          ],
           "properties": {
             "id": {
               "type": "string"
@@ -75,17 +58,17 @@
             "name": {
               "type": "string"
             }
-          }
+          },
+          "required": [
+            "id",
+            "name"
+          ],
+          "additionalProperties": true
         },
         "villain_groups": {
           "type": "array",
-          "minItems": 1,
           "items": {
             "type": "object",
-            "required": [
-              "id",
-              "name"
-            ],
             "properties": {
               "id": {
                 "type": "string"
@@ -93,18 +76,19 @@
               "name": {
                 "type": "string"
               }
-            }
-          }
+            },
+            "required": [
+              "id",
+              "name"
+            ],
+            "additionalProperties": true
+          },
+          "minItems": 1
         },
         "henchmen_groups": {
           "type": "array",
-          "minItems": 1,
           "items": {
             "type": "object",
-            "required": [
-              "id",
-              "name"
-            ],
             "properties": {
               "id": {
                 "type": "string"
@@ -112,18 +96,19 @@
               "name": {
                 "type": "string"
               }
-            }
-          }
+            },
+            "required": [
+              "id",
+              "name"
+            ],
+            "additionalProperties": true
+          },
+          "minItems": 1
         },
         "heroes": {
           "type": "array",
-          "minItems": 1,
           "items": {
             "type": "object",
-            "required": [
-              "id",
-              "name"
-            ],
             "properties": {
               "id": {
                 "type": "string"
@@ -131,8 +116,14 @@
               "name": {
                 "type": "string"
               }
-            }
-          }
+            },
+            "required": [
+              "id",
+              "name"
+            ],
+            "additionalProperties": true
+          },
+          "minItems": 1
         },
         "bystanders_count": {
           "type": "integer",
@@ -154,32 +145,520 @@
           "type": "object",
           "properties": {
             "bystanders": {
-              "$ref": "#/$defs/support_pool"
+              "type": "object",
+              "properties": {
+                "mode": {
+                  "type": "string",
+                  "enum": [
+                    "sets",
+                    "explicit"
+                  ]
+                },
+                "sets": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "minItems": 1
+                },
+                "cards": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "ext_id": {
+                        "type": "string"
+                      },
+                      "copies": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0
+                      }
+                    },
+                    "required": [
+                      "ext_id",
+                      "copies"
+                    ],
+                    "additionalProperties": true
+                  },
+                  "minItems": 1
+                }
+              },
+              "required": [
+                "mode",
+                "cards"
+              ],
+              "additionalProperties": true
             },
             "wounds": {
-              "$ref": "#/$defs/support_pool"
+              "type": "object",
+              "properties": {
+                "mode": {
+                  "type": "string",
+                  "enum": [
+                    "sets",
+                    "explicit"
+                  ]
+                },
+                "sets": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "minItems": 1
+                },
+                "cards": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "ext_id": {
+                        "type": "string"
+                      },
+                      "copies": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0
+                      }
+                    },
+                    "required": [
+                      "ext_id",
+                      "copies"
+                    ],
+                    "additionalProperties": true
+                  },
+                  "minItems": 1
+                }
+              },
+              "required": [
+                "mode",
+                "cards"
+              ],
+              "additionalProperties": true
             },
             "shield_officers": {
-              "$ref": "#/$defs/support_pool"
+              "type": "object",
+              "properties": {
+                "mode": {
+                  "type": "string",
+                  "enum": [
+                    "sets",
+                    "explicit"
+                  ]
+                },
+                "sets": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "minItems": 1
+                },
+                "cards": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "ext_id": {
+                        "type": "string"
+                      },
+                      "copies": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0
+                      }
+                    },
+                    "required": [
+                      "ext_id",
+                      "copies"
+                    ],
+                    "additionalProperties": true
+                  },
+                  "minItems": 1
+                }
+              },
+              "required": [
+                "mode",
+                "cards"
+              ],
+              "additionalProperties": true
             },
             "sidekicks": {
-              "$ref": "#/$defs/support_pool"
+              "type": "object",
+              "properties": {
+                "mode": {
+                  "type": "string",
+                  "enum": [
+                    "sets",
+                    "explicit"
+                  ]
+                },
+                "sets": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "minItems": 1
+                },
+                "cards": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "ext_id": {
+                        "type": "string"
+                      },
+                      "copies": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0
+                      }
+                    },
+                    "required": [
+                      "ext_id",
+                      "copies"
+                    ],
+                    "additionalProperties": true
+                  },
+                  "minItems": 1
+                }
+              },
+              "required": [
+                "mode",
+                "cards"
+              ],
+              "additionalProperties": true
             }
-          }
+          },
+          "additionalProperties": true
         }
-      }
+      },
+      "required": [
+        "mastermind",
+        "scheme",
+        "villain_groups",
+        "henchmen_groups",
+        "heroes",
+        "bystanders_count",
+        "wounds_count",
+        "shield_officers_count",
+        "sidekicks_count"
+      ],
+      "additionalProperties": true
     },
     "card_catalog": {
       "type": "object",
       "properties": {
         "cards": {
           "type": "array",
-          "minItems": 1,
           "items": {
-            "type": "object"
-          }
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "card_type": {
+                    "type": "string",
+                    "const": "mastermind"
+                  },
+                  "ext_id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "image_url": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "image_thumb_url": {
+                    "type": "string",
+                    "format": "uri"
+                  }
+                },
+                "required": [
+                  "card_type",
+                  "ext_id",
+                  "name"
+                ],
+                "additionalProperties": true
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "card_type": {
+                    "type": "string",
+                    "const": "scheme"
+                  },
+                  "ext_id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "image_url": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "image_thumb_url": {
+                    "type": "string",
+                    "format": "uri"
+                  }
+                },
+                "required": [
+                  "card_type",
+                  "ext_id",
+                  "name"
+                ],
+                "additionalProperties": true
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "card_type": {
+                    "type": "string",
+                    "const": "villain_group"
+                  },
+                  "ext_id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "image_url": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "image_thumb_url": {
+                    "type": "string",
+                    "format": "uri"
+                  }
+                },
+                "required": [
+                  "card_type",
+                  "ext_id",
+                  "name"
+                ],
+                "additionalProperties": true
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "card_type": {
+                    "type": "string",
+                    "const": "henchmen_group"
+                  },
+                  "ext_id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "rarity_code": {
+                    "type": "string",
+                    "enum": [
+                      "c1",
+                      "c2",
+                      "c3",
+                      "uc",
+                      "uc2",
+                      "uc3",
+                      "ra"
+                    ]
+                  },
+                  "image_url": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "image_thumb_url": {
+                    "type": "string",
+                    "format": "uri"
+                  }
+                },
+                "required": [
+                  "card_type",
+                  "ext_id",
+                  "name",
+                  "rarity_code"
+                ],
+                "additionalProperties": true
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "card_type": {
+                    "type": "string",
+                    "const": "hero"
+                  },
+                  "ext_id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "hero_class": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "strength",
+                        "instinct",
+                        "covert",
+                        "tech",
+                        "ranged"
+                      ]
+                    },
+                    "minItems": 1
+                  },
+                  "rarity_code": {
+                    "type": "string",
+                    "enum": [
+                      "c1",
+                      "c2",
+                      "c3",
+                      "uc",
+                      "uc2",
+                      "uc3",
+                      "ra"
+                    ]
+                  },
+                  "image_url": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "image_thumb_url": {
+                    "type": "string",
+                    "format": "uri"
+                  }
+                },
+                "required": [
+                  "card_type",
+                  "ext_id",
+                  "name",
+                  "hero_class",
+                  "rarity_code"
+                ],
+                "additionalProperties": true
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "card_type": {
+                    "type": "string",
+                    "const": "shield_officer"
+                  },
+                  "ext_id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "image_url": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "image_thumb_url": {
+                    "type": "string",
+                    "format": "uri"
+                  }
+                },
+                "required": [
+                  "card_type",
+                  "ext_id",
+                  "name"
+                ],
+                "additionalProperties": true
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "card_type": {
+                    "type": "string",
+                    "const": "sidekick"
+                  },
+                  "ext_id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "image_url": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "image_thumb_url": {
+                    "type": "string",
+                    "format": "uri"
+                  }
+                },
+                "required": [
+                  "card_type",
+                  "ext_id",
+                  "name"
+                ],
+                "additionalProperties": true
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "card_type": {
+                    "type": "string",
+                    "const": "wound"
+                  },
+                  "ext_id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "image_url": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "image_thumb_url": {
+                    "type": "string",
+                    "format": "uri"
+                  }
+                },
+                "required": [
+                  "card_type",
+                  "ext_id",
+                  "name"
+                ],
+                "additionalProperties": true
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "card_type": {
+                    "type": "string",
+                    "const": "bystander"
+                  },
+                  "ext_id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "image_url": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "image_thumb_url": {
+                    "type": "string",
+                    "format": "uri"
+                  }
+                },
+                "required": [
+                  "card_type",
+                  "ext_id",
+                  "name"
+                ],
+                "additionalProperties": true
+              }
+            ]
+          },
+          "minItems": 1
         }
-      }
+      },
+      "required": [
+        "cards"
+      ],
+      "additionalProperties": true
     },
     "replay": {
       "type": "object",
@@ -187,10 +666,123 @@
         "turns": {
           "type": "array",
           "items": {
-            "type": "object"
+            "type": "object",
+            "properties": {
+              "turn_number": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "active_player_id": {
+                "type": "string"
+              },
+              "villain_events": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "phase": {
+                      "type": "string",
+                      "enum": [
+                        "ambush",
+                        "patrol",
+                        "guard",
+                        "escape_attempted"
+                      ]
+                    },
+                    "card_ext_id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "phase",
+                    "card_ext_id"
+                  ],
+                  "additionalProperties": true
+                }
+              },
+              "player_actions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "seq": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "action_type": {
+                      "type": "string",
+                      "enum": [
+                        "villain_reveal",
+                        "villain_attack",
+                        "villain_escape",
+                        "hero_recruit",
+                        "hero_play",
+                        "hero_discard",
+                        "mastermind_twist",
+                        "mastermind_attack",
+                        "bystander_capture",
+                        "bystander_release",
+                        "wound_dealt",
+                        "shield_deploy"
+                      ]
+                    },
+                    "actor_player_id": {
+                      "type": "string"
+                    },
+                    "target_card_ext_id": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    }
+                  },
+                  "required": [
+                    "seq",
+                    "action_type"
+                  ],
+                  "additionalProperties": true
+                }
+              },
+              "stage_transitions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "from": {
+                      "type": "string",
+                      "enum": [
+                        "start",
+                        "main",
+                        "cleanup"
+                      ]
+                    },
+                    "to": {
+                      "type": "string",
+                      "enum": [
+                        "start",
+                        "main",
+                        "cleanup"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "from",
+                    "to"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            },
+            "required": [
+              "turn_number",
+              "active_player_id"
+            ],
+            "additionalProperties": true
           }
         }
-      }
+      },
+      "additionalProperties": true
     },
     "result": {
       "type": "object",
@@ -217,52 +809,11 @@
           "type": "string",
           "format": "date-time"
         }
-      }
-    }
-  },
-  "$defs": {
-    "support_pool": {
-      "type": "object",
+      },
       "required": [
-        "mode",
-        "cards"
+        "outcome"
       ],
-      "properties": {
-        "mode": {
-          "type": "string",
-          "enum": [
-            "sets",
-            "explicit"
-          ]
-        },
-        "sets": {
-          "type": "array",
-          "minItems": 1,
-          "items": {
-            "type": "string"
-          }
-        },
-        "cards": {
-          "type": "array",
-          "minItems": 1,
-          "items": {
-            "type": "object",
-            "required": [
-              "ext_id",
-              "copies"
-            ],
-            "properties": {
-              "ext_id": {
-                "type": "string"
-              },
-              "copies": {
-                "type": "integer",
-                "minimum": 1
-              }
-            }
-          }
-        }
-      }
+      "additionalProperties": true
     }
   },
   "required": [
@@ -271,5 +822,27 @@
     "variant",
     "player_count",
     "setup"
+  ],
+  "additionalProperties": true,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LAGN v1.1 — Legendary Arena Game Notation",
+  "description": "Three-tier JSON format for Legendary Arena game records: Tier 1 (setup), Tier 2 (card catalog), Tier 3 (replay log)",
+  "x-lagn-unexpressible-constraints": [
+    {
+      "path": "setup.support_pools.<pool>",
+      "constraint": "A pool in \"sets\" mode must carry a sets array; a pool in \"explicit\" mode must not. No card ext_id may repeat within a pool."
+    },
+    {
+      "path": "setup.support_pools",
+      "constraint": "Each pool's card copies must sum to the matching *_count field in setup."
+    },
+    {
+      "path": "replay.turns[].player_actions[].seq",
+      "constraint": "seq must increase by exactly 1 across a turn's actions — no gaps, no duplicates, no reordering."
+    },
+    {
+      "path": "lagn_version / setup.support_pools",
+      "constraint": "setup.support_pools requires lagn_version 1.1.0; a 1.0.0 document may not carry it."
+    }
   ]
 }

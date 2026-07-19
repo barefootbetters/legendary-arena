@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { zodToJsonSchema } from 'zod-to-json-schema'
 
 // ============================================================================
 // LAGN Zod Schema — Single Source of Truth
@@ -450,179 +451,128 @@ export function summarize(json: unknown): SummarizeResult {
 // JSON Schema Generation
 // ============================================================================
 
+// why: WP-392 / D-24196 — this file used to maintain the schema twice: the zod
+// schema above, and a hand-written JSON Schema literal below that happened to
+// describe the same shape. Nothing checked the two against each other. The CI
+// drift guard compared the committed schemas/lagn-v1.json against the
+// *generator*, not against zod, so the published contract could describe a
+// different format than the validator enforced — and already did (card_catalog
+// items and replay turns were untyped `{ type: 'object' }` in the hand-written
+// copy against full typed schemas in zod). generateSchema() is now derived from
+// lagnSchema, so that class of drift cannot recur.
+
+/**
+ * Constraints `lagnSchema` enforces that JSON Schema cannot express.
+ *
+ * why: derivation silently drops every zod `.refine()` / `.superRefine()` —
+ * they are arbitrary predicates with no JSON Schema equivalent. Dropping them
+ * is unavoidable; dropping them *silently* is the hazard this package already
+ * shipped once. Each entry here is a deliberate, recorded acceptance.
+ *
+ * This list is enforced: `validator.test.ts` walks the zod tree, counts the
+ * refinement nodes, and fails if the count disagrees with `refinementCount`
+ * below. Adding a `.refine()` without documenting it here breaks the build.
+ *
+ * The array is also embedded in the generated JSON Schema as
+ * `x-lagn-unexpressible-constraints`, so consumers validating against the
+ * published schema alone can see what it does *not* check for them.
+ */
+export const UNEXPRESSIBLE_CONSTRAINTS = [
+  {
+    path: 'setup.support_pools.<pool>',
+    constraint:
+      'A pool in "sets" mode must carry a sets array; a pool in "explicit" mode must not. No card ext_id may repeat within a pool.',
+    reason:
+      'Conditional presence keyed on a sibling value, plus a uniqueness check on an object field. JSON Schema if/then could express the first half but not the second.'
+  },
+  {
+    path: 'setup.support_pools',
+    constraint:
+      'Each pool\'s card copies must sum to the matching *_count field in setup.',
+    reason: 'Cross-field arithmetic. JSON Schema has no sum or comparison operators.'
+  },
+  {
+    path: 'replay.turns[].player_actions[].seq',
+    constraint:
+      'seq must increase by exactly 1 across a turn\'s actions — no gaps, no duplicates, no reordering.',
+    reason:
+      'A relation between adjacent array elements. JSON Schema can constrain items individually but cannot compare them.'
+  },
+  {
+    path: 'lagn_version / setup.support_pools',
+    constraint: `setup.support_pools requires lagn_version ${LAGN_VERSION_1_1_0}; a ${LAGN_VERSION_1_0_0} document may not carry it.`,
+    reason:
+      'Cross-field dependency between the root version and a nested optional block. Expressible as a deeply-nested if/then, but only by hand-writing exactly the duplicate structure this derivation exists to eliminate.'
+  }
+] as const
+
+/**
+ * How many zod refinement nodes `lagnSchema` is expected to contain.
+ *
+ * why: one entry in UNEXPRESSIBLE_CONSTRAINTS per refinement node. The
+ * SupportPoolSchema superRefine raises three distinct issues but is a single
+ * node, so its entry describes all three together.
+ */
+export const EXPECTED_REFINEMENT_COUNT = UNEXPRESSIBLE_CONSTRAINTS.length
+
+/**
+ * Builds the published JSON Schema by deriving it from `lagnSchema`.
+ *
+ * Everything structural comes from zod. The post-processing below re-applies
+ * only the published metadata zod has no way to carry — the document title,
+ * description, the draft URL every producer stamps, and the `$schema` property
+ * default — plus the recorded list of constraints the derivation cannot express.
+ */
 export function generateSchema(): Record<string, any> {
+  const derived = zodToJsonSchema(lagnSchema, {
+    // why: the library has no 2020-12 target, and its 'jsonSchema2019-09' one
+    // emits the draft-04 boolean form of exclusiveMinimum (`exclusiveMinimum:
+    // true` alongside `minimum: 0`), which is invalid under the 2020-12 URL
+    // this document declares. 'jsonSchema7' emits the numeric form 2020-12
+    // actually uses, and every other keyword it produces here — type,
+    // properties, required, enum, const, anyOf, minItems, minimum, maximum,
+    // format, additionalProperties — is unchanged between draft-07 and 2020-12.
+    target: 'jsonSchema7',
+    // why: inline every subschema instead of emitting $defs. The hand-written
+    // copy hoisted only support_pool; letting zod decide what to hoist would
+    // make the committed file churn whenever an unrelated shape is reused.
+    $refStrategy: 'none',
+    // why: refinements wrap their subject in a ZodEffects node. 'input' emits
+    // the shape being refined rather than nothing at all — the refinement
+    // predicate itself is what lands in UNEXPRESSIBLE_CONSTRAINTS.
+    effectStrategy: 'input',
+    // why: lagnSchema does not call .strict(), so zod STRIPS unknown keys and
+    // still parses. A document carrying extra keys is therefore valid, which
+    // is `additionalProperties: true` — matching the hand-written schema, which
+    // omitted the keyword entirely. The library's default would emit `false`
+    // and reject documents the validator accepts.
+    removeAdditionalStrategy: 'strict'
+  }) as Record<string, any>
+
   return {
+    ...derived,
+    // why: these five override the derivation and must stay after the spread —
+    // zod-to-json-schema emits its own `$schema` (the draft-07 URL matching its
+    // target), and letting that win would silently republish the contract under
+    // a different draft than every producer stamps.
     $schema: 'https://json-schema.org/draft/2020-12/schema',
     title: 'LAGN v1.1 — Legendary Arena Game Notation',
     description: 'Three-tier JSON format for Legendary Arena game records: Tier 1 (setup), Tier 2 (card catalog), Tier 3 (replay log)',
-    type: 'object',
     properties: {
-      lagn_version: {
-        type: 'string',
-        enum: [...LAGN_SUPPORTED_VERSIONS]
-      },
+      ...derived.properties,
       $schema: {
-        type: 'string',
-        format: 'uri',
+        ...derived.properties.$schema,
         default: 'https://legendary-arena.com/schemas/lagn/v1/lagn-v1.json'
       },
       game_id: {
-        type: 'string',
+        ...derived.properties.game_id,
         description: 'Unique game identifier'
-      },
-      variant: {
-        type: 'string',
-        enum: ['solo', 'cooperative', 'competitive']
-      },
-      player_count: {
-        type: 'integer',
-        minimum: 1,
-        maximum: 5
-      },
-      setup: {
-        type: 'object',
-        required: [
-          'mastermind',
-          'scheme',
-          'villain_groups',
-          'henchmen_groups',
-          'heroes',
-          'bystanders_count',
-          'wounds_count',
-          'shield_officers_count',
-          'sidekicks_count'
-        ],
-        properties: {
-          mastermind: {
-            type: 'object',
-            required: ['id', 'name'],
-            properties: {
-              id: { type: 'string' },
-              name: { type: 'string' }
-            }
-          },
-          scheme: {
-            type: 'object',
-            required: ['id', 'name'],
-            properties: {
-              id: { type: 'string' },
-              name: { type: 'string' }
-            }
-          },
-          villain_groups: {
-            type: 'array',
-            minItems: 1,
-            items: {
-              type: 'object',
-              required: ['id', 'name'],
-              properties: {
-                id: { type: 'string' },
-                name: { type: 'string' }
-              }
-            }
-          },
-          henchmen_groups: {
-            type: 'array',
-            minItems: 1,
-            items: {
-              type: 'object',
-              required: ['id', 'name'],
-              properties: {
-                id: { type: 'string' },
-                name: { type: 'string' }
-              }
-            }
-          },
-          heroes: {
-            type: 'array',
-            minItems: 1,
-            items: {
-              type: 'object',
-              required: ['id', 'name'],
-              properties: {
-                id: { type: 'string' },
-                name: { type: 'string' }
-              }
-            }
-          },
-          bystanders_count: { type: 'integer', minimum: 0 },
-          wounds_count: { type: 'integer', minimum: 0 },
-          shield_officers_count: { type: 'integer', minimum: 0 },
-          sidekicks_count: { type: 'integer', minimum: 0 },
-          // why: WP-036 — optional in 1.1.0, absent in 1.0.0. JSON Schema
-          // expresses the shape only; the sum-equals-count invariant and the
-          // version gate are zod refinements with no JSON Schema equivalent,
-          // the same way the replay `seq` constraint already is.
-          support_pools: {
-            type: 'object',
-            properties: {
-              bystanders: { $ref: '#/$defs/support_pool' },
-              wounds: { $ref: '#/$defs/support_pool' },
-              shield_officers: { $ref: '#/$defs/support_pool' },
-              sidekicks: { $ref: '#/$defs/support_pool' }
-            }
-          }
-        }
-      },
-      card_catalog: {
-        type: 'object',
-        properties: {
-          cards: {
-            type: 'array',
-            minItems: 1,
-            items: { type: 'object' }
-          }
-        }
-      },
-      replay: {
-        type: 'object',
-        properties: {
-          turns: {
-            type: 'array',
-            items: { type: 'object' }
-          }
-        }
-      },
-      result: {
-        type: 'object',
-        properties: {
-          outcome: { type: 'string', enum: ['victory', 'defeat'] },
-          loss_condition: {
-            type: 'string',
-            enum: [
-              'mastermind_defeated',
-              'city_overrun',
-              'deck_exhausted'
-            ]
-          },
-          victory_points: { type: 'integer' },
-          timestamp: { type: 'string', format: 'date-time' }
-        }
       }
     },
-    $defs: {
-      support_pool: {
-        type: 'object',
-        required: ['mode', 'cards'],
-        properties: {
-          mode: { type: 'string', enum: ['sets', 'explicit'] },
-          sets: { type: 'array', minItems: 1, items: { type: 'string' } },
-          cards: {
-            type: 'array',
-            minItems: 1,
-            items: {
-              type: 'object',
-              required: ['ext_id', 'copies'],
-              properties: {
-                ext_id: { type: 'string' },
-                copies: { type: 'integer', minimum: 1 }
-              }
-            }
-          }
-        }
-      }
-    },
-    required: ['lagn_version', 'game_id', 'variant', 'player_count', 'setup']
+    'x-lagn-unexpressible-constraints': UNEXPRESSIBLE_CONSTRAINTS.map((entry) => ({
+      path: entry.path,
+      constraint: entry.constraint
+    }))
   }
 }
 

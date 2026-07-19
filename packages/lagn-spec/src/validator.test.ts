@@ -1,8 +1,15 @@
 import { test, describe } from 'node:test'
 import { strict as assert } from 'node:assert'
+import { readFileSync } from 'node:fs'
+import Ajv2020 from 'ajv/dist/2020.js'
+import addFormats from 'ajv-formats'
 import {
   validate,
   summarize,
+  generateSchema,
+  lagnSchema,
+  UNEXPRESSIBLE_CONSTRAINTS,
+  EXPECTED_REFINEMENT_COUNT,
   LAGN_VERSION,
   LAGN_VERSION_1_0_0,
   LAGN_VERSION_1_1_0
@@ -815,4 +822,171 @@ describe('LAGN v1.0 Validator', () => {
       assert.strictEqual(summary.result, 'unknown')
     })
   })
+})
+
+// ============================================================================
+// JSON Schema Derivation (WP-392 / D-24196)
+// ============================================================================
+
+/**
+ * Counts the zod refinement nodes reachable from a schema.
+ *
+ * why: `.refine()` / `.superRefine()` wrap their subject in a ZodEffects node.
+ * Those predicates are exactly what JSON Schema derivation cannot express, so
+ * counting the nodes tells us whether the UNEXPRESSIBLE_CONSTRAINTS allowlist
+ * still describes the whole set. Walks the internal `_def` tree because zod
+ * exposes no public traversal API.
+ */
+function countRefinementNodes(schema: unknown): number {
+  const visited = new Set<unknown>()
+
+  function walk(node: any): number {
+    if (node === null || typeof node !== 'object' || visited.has(node)) {
+      return 0
+    }
+    visited.add(node)
+
+    const definition = node._def
+    if (definition === undefined) {
+      return 0
+    }
+
+    let found = definition.typeName === 'ZodEffects' ? 1 : 0
+
+    // why: each zod type parks its children under a different _def key, and
+    // there is no common accessor. Probing the known container keys covers
+    // every construct this schema uses.
+    const children: unknown[] = []
+    if (definition.schema !== undefined) children.push(definition.schema)
+    if (definition.innerType !== undefined) children.push(definition.innerType)
+    if (definition.type !== undefined) children.push(definition.type)
+    if (Array.isArray(definition.options)) children.push(...definition.options)
+    if (definition.shape !== undefined) {
+      const shape = typeof definition.shape === 'function' ? definition.shape() : definition.shape
+      children.push(...Object.values(shape))
+    }
+
+    for (const child of children) {
+      found += walk(child)
+    }
+    return found
+  }
+
+  return walk(schema)
+}
+
+describe('JSON Schema derivation', () => {
+  test('every zod refinement is recorded in UNEXPRESSIBLE_CONSTRAINTS', () => {
+    // why: this is the drift guard the package previously lacked. Derivation
+    // drops refinements silently; if someone adds a .refine() without adding a
+    // matching allowlist entry, the published schema quietly stops describing
+    // what the validator enforces. Failing here forces the decision to be made
+    // and written down rather than discovered in production.
+    assert.strictEqual(
+      countRefinementNodes(lagnSchema),
+      EXPECTED_REFINEMENT_COUNT,
+      'lagnSchema gained or lost a .refine()/.superRefine(). JSON Schema cannot ' +
+        'express these, so each one must be documented in UNEXPRESSIBLE_CONSTRAINTS ' +
+        'in validator.ts — add or remove the matching entry.'
+    )
+  })
+
+  test('every allowlist entry states a path, a constraint, and a reason', () => {
+    for (const entry of UNEXPRESSIBLE_CONSTRAINTS) {
+      assert.ok(entry.path.length > 0, 'allowlist entry is missing a path')
+      assert.ok(entry.constraint.length > 0, `${entry.path} is missing a constraint`)
+      assert.ok(entry.reason.length > 0, `${entry.path} is missing a reason`)
+    }
+  })
+
+  test('published contract fields survive derivation', () => {
+    // why: zod-to-json-schema emits its own $schema and drops title/description,
+    // so these are re-applied by hand after the spread. Producers stamp the
+    // 2020-12 URL and consumers pin it — a silent draft change would break them.
+    const schema = generateSchema()
+    assert.strictEqual(schema.$schema, 'https://json-schema.org/draft/2020-12/schema')
+    assert.strictEqual(schema.title, 'LAGN v1.1 — Legendary Arena Game Notation')
+    assert.deepStrictEqual(schema.properties.lagn_version.enum, [
+      LAGN_VERSION_1_0_0,
+      LAGN_VERSION_1_1_0
+    ])
+    assert.strictEqual(
+      schema.properties.$schema.default,
+      'https://legendary-arena.com/schemas/lagn/v1/lagn-v1.json'
+    )
+    assert.deepStrictEqual(schema.required, [
+      'lagn_version',
+      'game_id',
+      'variant',
+      'player_count',
+      'setup'
+    ])
+  })
+
+  test('derivation closes the divergences the hand-written schema carried', () => {
+    // why: the hand-written copy described card_catalog items and replay turns
+    // as bare `{ type: 'object' }` while zod enforced a 9-branch discriminated
+    // union and a fully typed turn. Those two were the largest silent gaps
+    // between the published contract and the validator.
+    const schema = generateSchema()
+    const cardItems = schema.properties.card_catalog.properties.cards.items
+    assert.strictEqual(cardItems.anyOf.length, 9, 'card_catalog items lost its union')
+
+    const turnItems = schema.properties.replay.properties.turns.items
+    assert.ok(turnItems.properties.turn_number, 'replay turns items is untyped again')
+    assert.ok(turnItems.properties.active_player_id, 'replay turns items is untyped again')
+  })
+
+  test('unknown keys stay permitted, matching zod strip semantics', () => {
+    // why: lagnSchema never calls .strict(), so zod drops unknown keys and
+    // still parses. The library's default emits additionalProperties: false,
+    // which would reject documents validate() accepts.
+    const schema = generateSchema()
+    assert.strictEqual(schema.additionalProperties, true)
+    assert.strictEqual(schema.properties.setup.additionalProperties, true)
+  })
+
+  test('the committed schemas/lagn-v1.json matches the generator', () => {
+    // why: CI regenerates and diffs, but only on the lagn-schema-drift job.
+    // Asserting it here too means a stale committed schema fails the unit
+    // suite as well, close to where the source changed.
+    const committed = JSON.parse(
+      readFileSync(new URL('../schemas/lagn-v1.json', import.meta.url), 'utf8')
+    )
+    assert.deepStrictEqual(committed, generateSchema())
+  })
+})
+
+describe('published JSON Schema accepts the shipped fixtures', () => {
+  // why: the whole point of deriving is that the published schema and the
+  // validator agree. Checking fixtures against zod alone would not prove that —
+  // this compiles the generated JSON Schema with a real JSON Schema engine and
+  // runs every example through it, the same way an external consumer would.
+  const ajv = new Ajv2020({ strict: false, allErrors: true })
+  addFormats(ajv)
+  const compiled = ajv.compile(generateSchema())
+
+  const fixtures = [
+    'tier1-setup-only.lagn.json',
+    'tier1-support-pools.lagn.json',
+    'tier2-with-catalog.lagn.json',
+    'tier3-with-replay.lagn.json'
+  ]
+
+  for (const fixture of fixtures) {
+    test(`${fixture} validates against the published schema`, () => {
+      const document = JSON.parse(
+        readFileSync(new URL(`../examples/${fixture}`, import.meta.url), 'utf8')
+      )
+      const isValid = compiled(document)
+      assert.ok(
+        isValid,
+        `${fixture} failed the published schema: ${JSON.stringify(compiled.errors)}`
+      )
+      // why: zod must agree with the published schema on every fixture. A
+      // fixture passing one and failing the other is precisely the drift this
+      // packet exists to prevent.
+      assert.strictEqual(validate(document).valid, true, `${fixture} failed zod`)
+    })
+  }
 })
