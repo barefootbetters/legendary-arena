@@ -25,6 +25,7 @@ import {
   type MatchSetupValidationError,
   type SupportPool,
   type SupportPoolKind,
+  type SupportPools,
   type ValidateMatchSetupDocumentResult,
 } from "@legendary-arena/registry/setupContract";
 // why: the per-player-count setup table has its own browser-safe subpath (zero
@@ -381,7 +382,9 @@ export interface UseLoadoutDraftApi {
   ) => { ok: true } | { ok: false; errors: MatchSetupValidationError[] };
   exportToJsonBlob: () => Blob;
   exportFilename: () => string;
-  resetDraft: () => void;
+  resetDraft: (options?: { preserveSupport?: boolean }) => void;
+  /** Applies a Support Preset over the four counts + pools. Total, never merged. */
+  applySupportPreset: (preset: { counts: Record<"bystandersCount" | "woundsCount" | "officersCount" | "sidekicksCount", number>; supportPools?: SupportPools | undefined }) => void;
 }
 
 /**
@@ -736,8 +739,64 @@ export function useLoadoutDraft(registry: LoadoutRegistryReader): UseLoadoutDraf
     return `loadout-${fallback}.json`;
   }
 
-  function resetDraft(): void {
+  /**
+   * Clears the draft back to a blank one.
+   *
+   * why: `preserveSupport` defaults to FALSE so this stays a total reset. The
+   * `?lagn=` import path (useLagnFromUrl) calls resetDraft as the first half of
+   * an atomic apply — reset, then set from the imported document — and a
+   * preserved pool would leak the previous draft's supply piles into an
+   * imported game record. Only the builder's own "Reset draft" button passes
+   * true, and only while a preset is locked.
+   */
+  function resetDraft(options?: { preserveSupport?: boolean }): void {
+    if (options?.preserveSupport !== true) {
+      draft.value = createBlankDraft();
+      return;
+    }
+    const pools = draft.value.supportPools;
+    const counts = {
+      bystandersCount: draft.value.composition.bystandersCount,
+      woundsCount: draft.value.composition.woundsCount,
+      officersCount: draft.value.composition.officersCount,
+      sidekicksCount: draft.value.composition.sidekicksCount,
+    };
     draft.value = createBlankDraft();
+    draft.value.composition.bystandersCount = counts.bystandersCount;
+    draft.value.composition.woundsCount = counts.woundsCount;
+    draft.value.composition.officersCount = counts.officersCount;
+    draft.value.composition.sidekicksCount = counts.sidekicksCount;
+    if (pools !== undefined) {
+      draft.value.supportPools = pools;
+    }
+  }
+
+  /**
+   * Applies a Support Preset over the draft's support surface.
+   *
+   * why: TOTAL, never merged. The preset overwrites all four counts and
+   * replaces the pool block wholesale, so applying the same preset twice — or
+   * applying it over a draft that already had pools — always lands on the same
+   * board. Merge semantics would let a leftover pool survive and silently
+   * change the harness, which is precisely the drift a preset exists to
+   * prevent. The composition's hero/villain picks are untouched.
+   */
+  function applySupportPreset(preset: {
+    counts: Record<
+      "bystandersCount" | "woundsCount" | "officersCount" | "sidekicksCount",
+      number
+    >;
+    supportPools?: SupportPools | undefined;
+  }): void {
+    draft.value.composition.bystandersCount = preset.counts.bystandersCount;
+    draft.value.composition.woundsCount = preset.counts.woundsCount;
+    draft.value.composition.officersCount = preset.counts.officersCount;
+    draft.value.composition.sidekicksCount = preset.counts.sidekicksCount;
+    if (preset.supportPools === undefined) {
+      delete draft.value.supportPools;
+      return;
+    }
+    draft.value.supportPools = preset.supportPools;
   }
 
   return {
@@ -770,5 +829,6 @@ export function useLoadoutDraft(registry: LoadoutRegistryReader): UseLoadoutDraf
     exportToJsonBlob,
     exportFilename,
     resetDraft,
+    applySupportPreset,
   };
 }

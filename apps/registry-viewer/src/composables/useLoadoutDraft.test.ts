@@ -506,3 +506,80 @@ describe("useLoadoutDraft setSupportPool", () => {
     assert.equal((parsed["composition"] as Record<string, number>)["officersCount"], 7);
   });
 });
+
+// ── Support Presets (EC-428 / D-24200) ──────────────────────────────────────
+
+describe("useLoadoutDraft applySupportPreset + resetDraft", () => {
+  it("applies counts and pools totally, replacing what was there", () => {
+    const api = useLoadoutDraft(FULL_REGISTRY);
+    api.setSupportPool("sidekicks", {
+      mode: "explicit",
+      cards: [{ extId: "core/old-sidekick", copies: 4 }],
+    });
+    api.applySupportPreset({
+      counts: {
+        bystandersCount: 30,
+        woundsCount: 30,
+        officersCount: 30,
+        sidekicksCount: 2,
+      },
+      supportPools: {
+        sidekicks: { mode: "explicit", cards: [{ extId: "cvwr/zabu", copies: 2 }] },
+      },
+    });
+    // why: TOTAL, never merged — the old pool must be gone, not combined.
+    assert.deepEqual(api.draft.value.supportPools?.sidekicks?.cards, [
+      { extId: "cvwr/zabu", copies: 2 },
+    ]);
+    assert.equal(api.draft.value.composition.sidekicksCount, 2);
+    assert.equal(api.draft.value.composition.bystandersCount, 30);
+  });
+
+  it("a preset with no pools clears existing ones", () => {
+    const api = useLoadoutDraft(FULL_REGISTRY);
+    api.setSupportPool("wounds", {
+      mode: "explicit",
+      cards: [{ extId: "core/wound", copies: 30 }],
+    });
+    api.applySupportPreset({
+      counts: {
+        bystandersCount: 30,
+        woundsCount: 30,
+        officersCount: 30,
+        sidekicksCount: 0,
+      },
+    });
+    // why: a leftover pool surviving a preset apply would silently change the
+    // harness — the exact drift a preset exists to prevent.
+    assert.equal(api.draft.value.supportPools, undefined);
+  });
+
+  it("resetDraft defaults to a TOTAL reset", () => {
+    const api = useLoadoutDraft(FULL_REGISTRY);
+    api.setSupportPool("wounds", {
+      mode: "explicit",
+      cards: [{ extId: "core/wound", copies: 42 }],
+    });
+    api.resetDraft();
+    // why: the ?lagn= import path calls resetDraft as the first half of an
+    // atomic apply. If it preserved pools, a previous draft's supply piles
+    // would leak into an imported game record.
+    assert.equal(api.draft.value.supportPools, undefined);
+    assert.equal(api.draft.value.composition.woundsCount, 30);
+  });
+
+  it("resetDraft({ preserveSupport: true }) keeps pools and counts but clears picks", () => {
+    const api = useLoadoutDraft(FULL_REGISTRY);
+    api.setScheme("core/midtown-bank-robbery");
+    api.setSupportPool("wounds", {
+      mode: "explicit",
+      cards: [{ extId: "core/wound", copies: 42 }],
+    });
+    api.resetDraft({ preserveSupport: true });
+    assert.equal(api.draft.value.composition.schemeId, "");
+    assert.equal(api.draft.value.composition.woundsCount, 42);
+    assert.deepEqual(api.draft.value.supportPools?.wounds?.cards, [
+      { extId: "core/wound", copies: 42 },
+    ]);
+  });
+});
