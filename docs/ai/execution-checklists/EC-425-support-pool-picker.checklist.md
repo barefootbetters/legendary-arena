@@ -25,9 +25,14 @@ the authoring surface that finally writes a pool.
   sidekicks`, `sets | explicit`, no `default` mode (absence expresses it)
 - `SUPPORT_POOL_CARD_TYPES` — officers span **two** slugs, `shield-officer`
   AND `shield-officer-special`; omitting the second hides 8 of 18 officers
-- Real card supply: sidekicks 17 / officers 18 across 5 sets; bystanders and
-  wounds are **one generic card per set**, so "individual" selection collapses
-  to "which set's" for those two. The UI is uniform; the data differs
+- Real card supply, corrected by EC-426 from an operator export: **all four
+  kinds carry distinct named cards** — bystanders 69, wounds 22, officers 18,
+  sidekicks 17 across the loaded sets (`amwp/agent-jimmy-woo`,
+  `wpnx/broken-bones`, `xmen/magik`, …). Per-card selection is meaningful for
+  every kind. An earlier draft of this line claimed bystanders and wounds were
+  "one generic card per set"; that came from probing `data/cards/*.json` for a
+  `cardType` field those entries do not carry, then generalising from `core`'s
+  single generic entry. Verify against `listCards()`, not the raw set files
 - Set-fill writes **one copy per card** — the registry records no per-set pile
   quantity, so any other multiplier would be invented
 - Hand-editing copies makes the pool `explicit` and drops `sets`; D-24194

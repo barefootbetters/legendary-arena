@@ -39,7 +39,7 @@ import { useLagnFromUrl } from "./composables/useLagnFromUrl";
 import { useLoadoutDraft } from "./composables/useLoadoutDraft";
 import type { UseLoadoutDraftApi } from "./composables/useLoadoutDraft";
 import { isCardInLoadout, toggleCardInLoadout } from "./lib/loadoutCardActions";
-import { compositionExtIdSet, isCardInLoadoutComposition } from "./lib/loadoutGalleryCards";
+import { compositionExtIdSet, isCardInLoadoutComposition, supportPoolExtIdSet } from "./lib/loadoutGalleryCards";
 import type {
   MatchSetupDocument,
   MatchSetupValidationError,
@@ -154,6 +154,17 @@ const loadoutDraftApi = shallowRef<UseLoadoutDraftApi | null>(null);
 // applyFilters() — entered from the Loadout tab / tray and cleared by the inline
 // banner's ✕. Default false: the Cards tab browses all cards as before.
 const loadoutGalleryActive = ref(false);
+// why: EC-426 — support cards (bystanders / wounds / officers / sidekicks) are
+// opt-in in the gallery. Default OFF per operator feedback: they are not needed
+// often and a select-all-sets pool adds ~120 cards that swamp the heroes and
+// villains the gallery is usually opened to look at.
+const loadoutGalleryIncludesSupport = ref(false);
+/** How many distinct cards this loadout's support pools name; 0 hides the toggle. */
+const loadoutSupportPoolCount = computed(() =>
+  loadoutDraftApi.value === null
+    ? 0
+    : supportPoolExtIdSet(loadoutDraftApi.value.draft.value.supportPools).size,
+);
 
 // ── Filter drawer (collapsible on short viewports) ───────────────────────────
 const compactMq = window.matchMedia("(max-height: 800px)");
@@ -730,7 +741,19 @@ function applyFilters() {
   // draft-presence guard mirrors selectedCardInLoadout: the draft is null before
   // the registry resolves.
   if (loadoutGalleryActive.value && loadoutDraftApi.value) {
-    const galleryExtIds = compositionExtIdSet(loadoutDraftApi.value.draft.value.composition);
+    const draftValue = loadoutDraftApi.value.draft.value;
+    const galleryExtIds = compositionExtIdSet(draftValue.composition);
+    // why: support pools are opt-in. They live on the envelope (D-24194) so the
+    // gallery never saw them before, but they are also numerous — a
+    // select-all-sets bystander pool is ~70 cards — and wanted far less often
+    // than the heroes and villains, so folding them in unconditionally would
+    // bury the cards the gallery exists to show. Default off; the banner
+    // carries the toggle.
+    if (loadoutGalleryIncludesSupport.value) {
+      for (const extId of supportPoolExtIdSet(draftValue.supportPools)) {
+        galleryExtIds.add(extId);
+      }
+    }
     filteredCards.value = filteredCards.value.filter((card) =>
       isCardInLoadoutComposition(card, galleryExtIds),
     );
@@ -1276,6 +1299,14 @@ const loadoutTraySummary = computed(() => {
            new component) to hold the WP file budget. -->
       <div v-if="loadoutGalleryActive" class="loadout-gallery-banner" role="status">
         <span class="loadout-gallery-text">🖼 Viewing loadout — {{ filteredCards.length }} cards</span>
+        <label
+          v-if="loadoutSupportPoolCount > 0"
+          class="loadout-gallery-support"
+          :title="`Show the ${loadoutSupportPoolCount} bystander / wound / officer / sidekick cards named by this loadout's support pools`"
+        >
+          <input type="checkbox" v-model="loadoutGalleryIncludesSupport" @change="applyFilters" />
+          Support cards ({{ loadoutSupportPoolCount }})
+        </label>
         <button
           type="button"
           class="loadout-gallery-clear"
@@ -1436,6 +1467,17 @@ const loadoutTraySummary = computed(() => {
 .count { color: #6666aa; font-size: 0.8rem; margin-left: auto; white-space: nowrap; }
 
 /* ── Loadout gallery banner (WP-288) ─────────────────────────────────────── */
+.loadout-gallery-support {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  color: #a8a8e8;
+  cursor: pointer;
+  user-select: none;
+}
+.loadout-gallery-support input { cursor: pointer; }
+
 .loadout-gallery-banner {
   display: flex;
   align-items: center;

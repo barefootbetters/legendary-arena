@@ -19,11 +19,12 @@
 import { describe, it } from "node:test";
 import { strict as assert } from "node:assert";
 
-import type { SetupCompositionInput } from "@legendary-arena/registry/setupContract";
+import type { SetupCompositionInput, SupportPools } from "@legendary-arena/registry/setupContract";
 
 import {
   compositionExtIdSet,
   isCardInLoadoutComposition,
+  supportPoolExtIdSet,
 } from "./loadoutGalleryCards.js";
 
 // why: a full composition object (the 5 id fields + the 4 counts the type
@@ -139,5 +140,63 @@ describe("group → member-card expansion", () => {
       isCardInLoadoutComposition({ extId: "core/not-in-this-group" }, extIdSet),
       false,
     );
+  });
+});
+
+// ── Support pools in the gallery (EC-426 / D-24194) ─────────────────────────
+
+describe("supportPoolExtIdSet", () => {
+  it("returns an empty set when the draft has no pools", () => {
+    assert.equal(supportPoolExtIdSet(undefined).size, 0);
+  });
+
+  it("collects every card across all four pools", () => {
+    const pools: SupportPools = {
+      bystanders: { mode: "explicit", cards: [{ extId: "core/bystander", copies: 30 }] },
+      wounds: { mode: "explicit", cards: [{ extId: "wpnx/broken-bones", copies: 2 }] },
+      officers: { mode: "explicit", cards: [{ extId: "shld/melinda-may", copies: 1 }] },
+      sidekicks: { mode: "explicit", cards: [{ extId: "cvwr/lockheed", copies: 1 }] },
+    };
+    const ids = supportPoolExtIdSet(pools);
+    assert.equal(ids.size, 4);
+    assert.ok(ids.has("core/bystander"));
+    assert.ok(ids.has("wpnx/broken-bones"));
+    assert.ok(ids.has("shld/melinda-may"));
+    assert.ok(ids.has("cvwr/lockheed"));
+  });
+
+  it("collects only the pools that are present", () => {
+    const pools: SupportPools = {
+      sidekicks: { mode: "explicit", cards: [{ extId: "cvwr/zabu", copies: 1 }] },
+    };
+    assert.deepEqual([...supportPoolExtIdSet(pools)], ["cvwr/zabu"]);
+  });
+
+  it("dedups a card named by more than one pool", () => {
+    // why: nothing forbids the same ext_id appearing in two pools; the gallery
+    // set must collapse it rather than double-count the card.
+    const pools: SupportPools = {
+      bystanders: { mode: "explicit", cards: [{ extId: "vill/bystander", copies: 1 }] },
+      wounds: { mode: "explicit", cards: [{ extId: "vill/bystander", copies: 1 }] },
+    };
+    assert.equal(supportPoolExtIdSet(pools).size, 1);
+  });
+
+  // why: the gap this EC closes — a pooled card is NOT in the composition set,
+  // so before the opt-in union the gallery filtered every support card away.
+  it("pool ids are absent from the composition set", () => {
+    const composition: SetupCompositionInput = {
+      schemeId: "core/midtown-bank-robbery",
+      mastermindId: "core/magneto",
+      villainGroupIds: ["core/brotherhood"],
+      henchmanGroupIds: ["core/savage-land-mutates"],
+      heroDeckIds: ["core/black-widow"],
+      bystandersCount: 30,
+      woundsCount: 30,
+      officersCount: 30,
+      sidekicksCount: 0,
+    };
+    const compositionIds = compositionExtIdSet(composition);
+    assert.equal(compositionIds.has("cvwr/lockheed"), false);
   });
 });
