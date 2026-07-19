@@ -242,6 +242,9 @@ mindmap
         ["WP-148 ✅ legendary-arena.com + www cutover prep"]
         ["WP-240 ✅ Roadmap count-table generator (WORK_INDEX × mindmap; cron auto-PR)"]
         ["WP-244 ✅ LAGN spec publication (npm package + GitHub repo + schema hosting)"]
+        ["WP-392 ✅ Derive the published LAGN JSON Schema from the zod schema (contract; src/validator.ts maintained the format TWICE — lagnSchema (zod, labelled Single Source of Truth) and a hand-written generateSchema() literal that was not derived from it. Closes the hazard D-24193 recorded as known-and-unfixed; lagn-spec suite 34 → 44/0; generate:schema then git diff --exit-code on schemas/ is clean. D-24196 Active; done 2026-07-18)"]
+        ["WP-393 📝 Registry version + per-set content hash surface (registry; CardRegistry cannot say which snapshot of the card data it loaded — RegistryInfo carries no version, SetIndexEntry no hash, and a grep for registryVersion/content_hash/sha256 over packages/registry/src returns nothing. That makes the load-bearing half of WP-394 provenance unanswerable. Reserves D-24197; EC-423; drafted 2026-07-18)"]
+        ["WP-394 📝 LAGN 1.2.0 — card metadata provenance (contract; BLOCKED on WP-393. Lets a LAGN answer which card effect a replay references and whether it verifies without the registry, via optional hash-anchored provenance: catalog_ref pins the producer load scope, registry_ref uses stable ext_id + face_id rather than JSON pointers (which break on array reorder), effect_snapshot is frozen evidence and explicitly not authoritative. Registry stays authoritative. Reserves D-24198; EC-424; drafted 2026-07-18)"]
 
       Public Leaderboard (Marketing)
         ["WP-149 ✅ Public leaderboard Hugo page"]
@@ -272,6 +275,7 @@ mindmap
         ["WP-386 ✅ Red Skull Master Strike — 'Each player KOs a Hero from their hand' (engine; the WP-024 per-mastermind strike dispatcher implemented only Magneto, so Red Skull's printed strike silently no-op'd — surfaced by the 2026-07-16 Red Skull live-game review, 3 strikes / 6 skipped KOs; adds a Red Skull id set core/red-skull + co2e/red-skull (identical base-face text; epic face NOT matched) + resolveRedSkullStrike on the Magneto pattern — sorted players, KO the lowest-cost Hero (cardStats cost ?? 0, tie → lowest hand index) from hand to G.ko, Wounds excluded, empty/all-Wound hand → logged no-op, one pushLog line per player; D-24188 auto-KO ≈ player-optimal pick, avoids a blocking multi-player pending-choice; generic strike behavior D-15401 capture + counter + WP-200 emission byte-unchanged; NO sentinel re-pin — recorded fixture + runtime-observed matrix are core/dr-doom; engine 1981→1991/0; EC-415)"]
         ["WP-389 ✅ Mastermind base-face selection — stop silently selecting Epic faces (engine; the setup card loop assigned baseCard on every non-tactic face with no early exit, so the LAST won — 65 masterminds across 24 sets played their Epic variant unchosen, e.g. co2e Doom at attack 12+ instead of 10+. core was unaffected (single non-tactic face), which is why no oracle caught it. Fix is one assignment guard so the FIRST non-tactic face wins, keeping tactic as the D-1413 discriminator; Epic becomes unreachable until an explicit opt-in exists. Unblocks WP-388. Reserves D-24193; executed 2026-07-18)"]
         ["WP-388 ✅ co2e mastermind strike texts — Doom / Loki / Magneto / Doctor Octopus (engine; four of five co2e base faces still no-op their printed Master Strike beyond the generic bookkeeping. Adds a per-mastermind resolver for each on the WP-386 pattern, resolving every printed or/may clause by deterministic auto-pick — no new G field, no RNG, no pending-choice. Doom derives its Omen count from masterStrikeCount+1 rather than storing a stack. Loki's Hypno-Thrall and Doc Ock's reveal-8 branches are deliberately deferred as a recorded fidelity gap. Reserves D-24192; executed 2026-07-18)"]
+        ["WP-390 📝 Council masterminds resolve to an empty shell (engine; four masterminds ship ZERO non-tactic faces — 2099/sinister-six-2099, 2099/alchemax-executives, shld/hydra-high-council, shld/hydra-super-adaptoid — so findMastermindCards hits its null guard and buildMastermindState falls through to the degenerate state: no Master Strike, no tactics, no game text, no abilities. Both S.H.I.E.L.D. masterminds are affected. Surfaced as an adjacent defect while drafting WP-389, which deliberately left the null-return guard untouched. No EC yet — design questions open; drafted 2026-07-18)"]
         ["WP-391 📝 Support card pools — name the cards behind the four supply piles (registry + LAGN + viewer; MatchSetupConfig carries bystanders/wounds/officers/sidekicks as bare counts, so nothing records WHICH cards fill a pile. Blocks a frozen Support Preset that would make hero selection the only variable in a legends comparison. Pools ride the MATCH-SETUP envelope, never the composition — D-1244 stands unamended, following the heroSelectionMode precedent. Three ECs: EC-420 picker set filter, EC-421 envelope pools with a cross-block sum-equals-count validator, EC-422 LAGN 1.1.0 version seam plus version-gated pools. Design source is the marketing-site repo, where it is numbered WP-036. Reserves D-24194 and D-24195; drafted 2026-07-18)"]
         ["WP-243 ✅ Villain Fight KO-Hero player choice (UX: engine projection + client prompt + discard visibility)"]
 
@@ -460,6 +464,7 @@ mindmap
         ["WP-345 ✅ Player-count gauntlet boards + challenge links (legends-board client) — player-count selector, full-roster display, 'Challenge this leg' links into the WP-114 registry-viewer preview; EC-379; D-24134 client half"]
         ["WP-384 ✅ Fixed-hero-pool gauntlet division (server) — migration 034 team_key column + SQL-jsonb artifact backfill (D-24187 carve-out) + one-query {open, fixed} standings (heroCount + 2 budgets riding the catalog; exact-optimum subset search, cap 12 logged) + lazy -fixed board emission + heroPool/fixedEntryCounts; EC-413; D-24187 server half"]
         ["WP-385 ✅ Fixed-hero-pool gauntlet division (legends-board client) — Open | Fixed-Pool Championship division toggle (division = the route), Hero Pool column + championship subtitle on fixed boards, feeder line, claimed-only ★ index chips, unclaimed-guard extension for -fixed deep links; EC-414; D-24187 client half — completes the arc"]
+        ["WP-395 📝 Canonical villain + henchmen loadouts for gauntlet qualification (registry + server; gives every mastermind a canonical villain-group + henchmen-group loadout sized per player count and requires it for a replay to qualify as a gauntlet leg. CASUAL PLAY IS UNCHANGED — free selection stays the game as printed; this is a ranked-surface constraint only. No EC yet — design forks open. Reserves D-24199; drafted 2026-07-18)"]
         ["WP-387 ✅ Scenario preview deep-link carries player count (registry-viewer + legends-board) — Shape A of 'play this scenario from the leaderboard': the gauntlet challenge link carries the board's player count into the cards builder so the WP-372 required-count readout matches; new parsePlayerCountFromUrl (envelope, 1..5 else null) + App.vue seeds the editor draft setPlayerCount at mount + buildChallengeUrl optional playerCount; NOT a ?lagn= switch (a seed can't be a valid LAGN); no D-entry (the WP-114 future-extension hook); Shape B save-to-profile deferred; D-24026 dev-verified; EC-416"]
 
       Friends & Ranked Trust (2026-07)
@@ -544,11 +549,11 @@ mindmap
 | Monetization Stack | 3/3 | — |
 | Engine & Test-Harness Cleanup | 5/5 | — |
 | Physical Card Pipeline | 5/5 | — |
-| Domain Cutover & Infrastructure | 7/7 | — |
+| Domain Cutover & Infrastructure | 8/10 | 2 open |
 | Public Leaderboard (Marketing) | 2/2 | — |
 | Legends Public Scoreboard | 2/2 | — |
 | Villain Deck Pipeline | 5/5 | — |
-| Villain & Henchman Effects | 13/15 | 2 open |
+| Villain & Henchman Effects | 14/16 | 2 open |
 | Hero Ability Coverage & Markup Pipeline | 52/52 | — |
 | Notable Events & Overlays | 4/4 | — |
 | Simulation Sweep & Analytics Pipeline | 8/8 | — |
@@ -563,14 +568,14 @@ mindmap
 | Hero/Villain Effects & Diagnostics (2026-07) | 5/5 | — |
 | Live-Play HUD & Pending-Choice UX (2026-07) | 15/15 | — |
 | Competitive Score Submission & Verification (2026-07) | 10/10 | — |
-| Gauntlet Leaderboards (Legends) (2026-07) | 7/7 | — |
+| Gauntlet Leaderboards (Legends) (2026-07) | 7/8 | 1 open |
 | Friends & Ranked Trust (2026-07) | 18/18 | — |
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **378/382 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 3 open |
+| **Total** | **380/387 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 6 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 4):** WP-042.1 ⏸ blocked; WP-349 open; WP-391 open; WP-388 open.
+**Open / blocked WPs (derived from WORK_INDEX, 7):** WP-042.1 ⏸ blocked; WP-349 open; WP-391 open; WP-390 open; WP-395 open; WP-393 open; WP-394 open.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.
