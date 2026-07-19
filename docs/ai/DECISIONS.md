@@ -30104,4 +30104,58 @@ removed: `name`, `image_url`, `hero_class`, and `rarity_code` ship today and
 back the registry-viewer export path, so removing them is breaking and
 belongs to a 2.0 deprecation, not here.
 
+### D-24199 — Gauntlet legs require a canonical villain/henchmen loadout; casual play stays free
+
+**Status:** Active (competitive-integrity contract) 2026-07-18. Decided by the
+operator the day it was raised. Implemented by **WP-395**.
+
+**User-Visible Surface:** legends.legendary-arena.com
+
+**Decision.** Every mastermind gets a **canonical villain-group and
+henchmen-group loadout**, sized per player count, and a replay qualifies as a
+gauntlet leg only when it matches. **Scoped to ranked gauntlet qualification
+only** — free selection is unchanged in casual play, and this adds no
+restriction to match setup itself.
+
+**Why — PAR calibration is otherwise unreachable, not merely expensive.**
+`ScenarioKey` is `scheme::mastermind::sorted-villain-groups`, villain groups
+are unconstrained across all 41 sets (134 groups), and PAR is calibrated per
+scenario key with a validator that rejects `sampleSize < 500`. Measured
+against current data (639 scheme × mastermind leg pairs):
+
+| Players | Combinations | PAR scenarios | Games @500 |
+|---|---|---|---|
+| 1 | 134 | 85,626 | 42.8M |
+| 2 | 8,911 | 5,694,129 | 2.85B |
+| 3–4 | 392,084 | 250,541,676 | 125B |
+| 5 | 12,840,751 | **8,205,239,889** | **4.1T** |
+
+A canonical loadout collapses that to **639 scenarios / ~319,500 games**.
+Since submission fail-closes on `par_not_published`, free villain choice does
+not make the ranked surface costly — it makes it **impossible**.
+
+**Why this is cheap now.** `legendary.competitive_scores` is **empty** — PAR
+has never been published, so no qualifying score exists. There is nothing to
+grandfather, re-key, or invalidate, and no player loses an entry. That stops
+being true the day the first score lands.
+
+**What the cards already provide.** **103 of 111** masterminds declare
+`alwaysLeads` (Magneto → Brotherhood, Red Skull → HYDRA), so one group is
+canonical by the printed rules and only the remainder needs authoring. Eight
+masterminds carry no `alwaysLeads` and need a hand-authored anchor.
+
+**Explicitly preserved.** Hero selection stays free — heroes are not part of
+`ScenarioKey`, so they cost nothing in calibration, which is precisely why the
+Open and Fixed-Pool hero divisions (D-24187) are untouched.
+
+**Deliberately left open to WP-395:** where the loadout data lives; how the
+non-`alwaysLeads` groups are chosen; and whether it is one canonical loadout
+(639 scenarios) or a small enumerated menu of three (1,917 — still trivial to
+calibrate, and preserves real choice). The last is a genuine design fork and
+should be decided, not defaulted.
+
+**Precedent.** Same class as D-24187's fixed-hero-pool constraint: a ranked
+surface may impose requirements the base game does not, provided casual play
+is untouched and the requirement is discoverable from the board.
+
 Protect this file.
