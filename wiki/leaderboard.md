@@ -205,6 +205,25 @@ only); `totalScore` = sum of best-per-leg, `averageScoreCentis` =
 submission step** — standings are a publisher-derived aggregation
 recomputed each ~5-minute cycle.
 
+> **"Any villain groups" is being retired for ranked play (D-24199 / WP-395,
+> drafted 2026-07-18 — not yet executed).** Free villain choice makes PAR
+> calibration *unreachable*, not merely costly: `ScenarioKey` is
+> `scheme::mastermind::sorted-villain-groups`, the 41 sets ship **134**
+> villain groups, and PAR is calibrated per key with a validator rejecting
+> `sampleSize < 500`. Across 639 scheme × mastermind leg pairs that is 85,626
+> scenarios at 1 player and **8,205,239,889 at 5** — roughly 4.1 trillion
+> simulated games. A canonical villain + henchmen loadout per mastermind
+> collapses it to **639 scenarios (~319,500 games)**. Since submission
+> fail-closes on `par_not_published`, this is the difference between a ranked
+> surface that can exist and one that cannot.
+>
+> Scoped to **gauntlet qualification only** — casual play keeps free
+> selection, and hero choice stays free in both divisions (heroes are not part
+> of `ScenarioKey`, so they cost nothing to calibrate). Migration cost is
+> currently **zero** because `competitive_scores` is empty; that ends the day
+> the first score lands. **103 / 111** masterminds already declare
+> `alwaysLeads`, so most of the loadout is given by the printed cards.
+
 **Player-count boards** *(D-24134, live)*: one board per
 (set × mastermind × playerCount 1..5). The existing
 `gauntlet-<setAbbr>-<mastermindSlug>.json` file becomes the solo board;
