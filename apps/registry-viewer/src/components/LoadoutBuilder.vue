@@ -738,6 +738,20 @@ function applyLagnImport(text: string): void {
   setCount("woundsCount", composition.woundsCount);
   setCount("officersCount", composition.officersCount);
   setCount("sidekicksCount", composition.sidekicksCount);
+
+  // why: EC-429 — apply pools AFTER the counts. setSupportPool derives the
+  // paired count from the pool, and the LAGN validator has already enforced
+  // that copies sum to the count (D-24195), so the derived value equals the
+  // one just set. Applying pools first would let setCount overwrite nothing
+  // meaningful, but the order keeps the dependency obvious.
+  if (composition.supportPools !== undefined) {
+    for (const kind of ["bystanders", "wounds", "officers", "sidekicks"] as const) {
+      const pool = composition.supportPools[kind];
+      if (pool !== undefined) {
+        setSupportPool(kind, pool);
+      }
+    }
+  }
   setPlayerCount(composition.playerCount);
   lagnImportSuccessAt.value = new Date().toISOString();
   lagnImportText.value = "";
