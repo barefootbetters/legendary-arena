@@ -18,10 +18,13 @@ import { computed, ref, type ComputedRef, type Ref } from "vue";
 // themeClient.ts for `./schema` and `./theme.schema`.
 import {
   validateMatchSetupDocument,
+  SUPPORT_POOL_COUNT_FIELD,
   type CardRegistryReader,
   type HeroSelectionMode,
   type MatchSetupDocument,
   type MatchSetupValidationError,
+  type SupportPool,
+  type SupportPoolKind,
   type ValidateMatchSetupDocumentResult,
 } from "@legendary-arena/registry/setupContract";
 // why: the per-player-count setup table has its own browser-safe subpath (zero
@@ -53,6 +56,24 @@ export const DEFAULT_BYSTANDERS_COUNT = 30;
 export const DEFAULT_WOUNDS_COUNT = 30;
 export const DEFAULT_OFFICERS_COUNT = 30;
 export const DEFAULT_SIDEKICKS_COUNT = 0;
+// why: EC-425 — maps each support pool to the FlatCard.cardType values that
+// can fill it. Officers span TWO slugs: `shield-officer` and
+// `shield-officer-special` are both officers for pool purposes, and omitting
+// the second would silently hide 8 of the 18 officer cards.
+//
+// Bystanders and wounds are emitted one-per-set by the viewer's flattener
+// (registry/shared.ts — `set.bystanders` / `set.wounds`), so their pools are
+// legal but "individual" selection collapses to "which set's". Sidekicks and
+// officers come through the generic `set.other` dispatch and are genuinely
+// distinct cards. The UI treats all four uniformly; the data supplies the
+// difference.
+export const SUPPORT_POOL_CARD_TYPES: Readonly<Record<SupportPoolKind, readonly string[]>> = {
+  bystanders: ["bystander"],
+  wounds: ["wound"],
+  officers: ["shield-officer", "shield-officer-special"],
+  sidekicks: ["sidekick"],
+} as const;
+
 export const DEFAULT_PLAYER_COUNT = 2;
 export const DEFAULT_EXPANSIONS = ["base"] as const;
 
@@ -347,6 +368,8 @@ export interface UseLoadoutDraftApi {
     field: "bystandersCount" | "woundsCount" | "officersCount" | "sidekicksCount",
     value: number,
   ) => void;
+  /** Sets or clears one support pool; `undefined` clears it. */
+  setSupportPool: (kind: SupportPoolKind, pool: SupportPool | undefined) => void;
   setPlayerCount: (value: number) => void;
   setSeed: (seed: string) => void;
   reRollSeed: () => void;
@@ -522,6 +545,50 @@ export function useLoadoutDraft(registry: LoadoutRegistryReader): UseLoadoutDraf
     draft.value.composition[field] = clamped;
   }
 
+  /**
+   * Sets or clears one support pool, keeping its paired count in agreement.
+   *
+   * why: D-24194 makes `sum(cards[].copies) === composition.<kind>Count` a
+   * hard validation rule, and the pool lives on the envelope while the count
+   * lives on the composition. Deriving the count here — rather than asking the
+   * author to keep two numbers in sync by hand — is what stops the builder
+   * from producing a document its own validator rejects.
+   *
+   * Passing `undefined` clears the pool and LEAVES the count where it stands:
+   * "unspecified pool, counts alone" is the pre-pool default (D-24194), and
+   * resetting the number would silently discard a deliberate pile size.
+   */
+  function setSupportPool(kind: SupportPoolKind, pool: SupportPool | undefined): void {
+    const pools = draft.value.supportPools;
+    if (pool === undefined) {
+      if (pools === undefined) {
+        return;
+      }
+      delete pools[kind];
+      // why: an empty object would serialize as `"supportPools": {}`, which
+      // reads as "pools were configured and are empty" rather than "never
+      // configured". Drop the key entirely so absence stays unambiguous.
+      if (Object.keys(pools).length === 0) {
+        delete draft.value.supportPools;
+      }
+      return;
+    }
+    if (pools === undefined) {
+      draft.value.supportPools = { [kind]: pool };
+    } else {
+      pools[kind] = pool;
+    }
+    const total = pool.cards.reduce((sum: number, card) => sum + card.copies, 0);
+    // why: indexing an object with a *union* of keys narrows the assignment
+    // target to `never`, so `composition[FIELD[kind]] = n` will not compile.
+    // Viewing the four count fields through a Record of the same key union is
+    // a safe widening (they are all `number`) and keeps the field names in
+    // SUPPORT_POOL_COUNT_FIELD alone rather than re-listing them in a switch.
+    const counts: Record<(typeof SUPPORT_POOL_COUNT_FIELD)[SupportPoolKind], number> =
+      draft.value.composition;
+    counts[SUPPORT_POOL_COUNT_FIELD[kind]] = total;
+  }
+
   function setPlayerCount(value: number): void {
     const coerced = Number.isFinite(value) ? Math.trunc(value) : DEFAULT_PLAYER_COUNT;
     draft.value.playerCount = coerced;
@@ -636,6 +703,22 @@ export function useLoadoutDraft(registry: LoadoutRegistryReader): UseLoadoutDraf
       "woundsCount",
       "officersCount",
       "sidekicksCount",
+      // why: EC-425 — a JSON.stringify replacer ARRAY is a whitelist, not an
+      // ordering hint: any key absent from it is omitted from the output
+      // entirely. Without these entries the download would silently ship a
+      // document with no pools while the UI showed them configured — the same
+      // save-and-come-back-empty failure D-24194 closed on the validator side.
+      // Every nested key needs listing, including the four pool names.
+      "supportPools",
+      "bystanders",
+      "wounds",
+      "officers",
+      "sidekicks",
+      "mode",
+      "sets",
+      "cards",
+      "extId",
+      "copies",
     ];
     return JSON.stringify(draft.value, keyOrder as string[], 2);
   }
@@ -676,6 +759,7 @@ export function useLoadoutDraft(registry: LoadoutRegistryReader): UseLoadoutDraf
     addHeroGroup,
     removeHeroGroup,
     setCount,
+    setSupportPool,
     setPlayerCount,
     setSeed,
     reRollSeed,

@@ -440,3 +440,69 @@ describe("useLoadoutDraft setMastermind — Always-Leads villain groups", () => 
     assert.deepEqual(api.missingRequiredVillainGroupIds.value, []);
   });
 });
+
+// ── Support pools (EC-425 / D-24194) ────────────────────────────────────────
+
+describe("useLoadoutDraft setSupportPool", () => {
+  it("setting a pool derives the paired composition count", () => {
+    const api = useLoadoutDraft(FULL_REGISTRY);
+    api.setSupportPool("sidekicks", {
+      mode: "explicit",
+      cards: [
+        { extId: "core/sidekick-a", copies: 4 },
+        { extId: "core/sidekick-b", copies: 6 },
+      ],
+    });
+    assert.equal(api.draft.value.composition.sidekicksCount, 10);
+    assert.equal(api.draft.value.supportPools?.sidekicks?.mode, "explicit");
+  });
+
+  it("clearing a pool drops the key and leaves the count alone", () => {
+    const api = useLoadoutDraft(FULL_REGISTRY);
+    api.setSupportPool("wounds", {
+      mode: "explicit",
+      cards: [{ extId: "core/wound", copies: 12 }],
+    });
+    assert.equal(api.draft.value.composition.woundsCount, 12);
+
+    api.setSupportPool("wounds", undefined);
+    // why: absence is the default (D-24194) — "counts alone". Resetting the
+    // number here would silently discard a deliberate pile size.
+    assert.equal(api.draft.value.composition.woundsCount, 12);
+    // why: an empty `supportPools: {}` reads as "configured and empty" rather
+    // than "never configured"; the key must disappear entirely.
+    assert.equal(api.draft.value.supportPools, undefined);
+  });
+
+  it("clearing one pool of two keeps the other", () => {
+    const api = useLoadoutDraft(FULL_REGISTRY);
+    api.setSupportPool("wounds", { mode: "explicit", cards: [{ extId: "core/wound", copies: 3 }] });
+    api.setSupportPool("bystanders", {
+      mode: "explicit",
+      cards: [{ extId: "core/bystander", copies: 5 }],
+    });
+    api.setSupportPool("wounds", undefined);
+    assert.equal(api.draft.value.supportPools?.wounds, undefined);
+    assert.equal(api.draft.value.supportPools?.bystanders?.cards[0]?.copies, 5);
+  });
+
+  it("supportPools survives JSON export", async () => {
+    const api = useLoadoutDraft(FULL_REGISTRY);
+    api.setSupportPool("officers", {
+      mode: "sets",
+      sets: ["core"],
+      cards: [{ extId: "core/officer", copies: 7 }],
+    });
+    const text = await api.exportToJsonBlob().text();
+    const parsed = JSON.parse(text) as Record<string, unknown>;
+    // why: buildSerializedDocument passes a replacer ARRAY to JSON.stringify,
+    // which is a WHITELIST — any key missing from it is dropped from the file
+    // entirely. Without this assertion a future field lands in the draft, shows
+    // in the UI, and silently vanishes from the download.
+    const pools = parsed["supportPools"] as Record<string, { mode: string; sets: string[]; cards: Array<{ extId: string; copies: number }> }>;
+    assert.equal(pools?.officers?.mode, "sets");
+    assert.deepEqual(pools?.officers?.sets, ["core"]);
+    assert.deepEqual(pools?.officers?.cards, [{ extId: "core/officer", copies: 7 }]);
+    assert.equal((parsed["composition"] as Record<string, number>)["officersCount"], 7);
+  });
+});

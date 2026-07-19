@@ -28,6 +28,11 @@ import type {
 } from "../registry/browser";
 import type { ThemeDefinition } from "../lib/themeClient";
 import type { UseLoadoutDraftApi } from "../composables/useLoadoutDraft";
+import { SUPPORT_POOL_CARD_TYPES } from "../composables/useLoadoutDraft";
+import type {
+  SupportPool,
+  SupportPoolKind,
+} from "@legendary-arena/registry/setupContract";
 import { useLoadoutLagnExport } from "../composables/useLoadoutLagnExport";
 import { serializeSetupToUrl } from "../lib/setupUrlParams";
 import { parseLagnLoadout } from "../lib/loadoutLagnImport";
@@ -80,6 +85,7 @@ const {
   addHeroGroup,
   removeHeroGroup,
   setCount,
+  setSupportPool,
   setPlayerCount,
   setSeed,
   reRollSeed,
@@ -249,6 +255,185 @@ function isEntrySelected(entryId: string): boolean {
     case "heroDeckIds":
       return draft.value.composition.heroDeckIds.includes(entryId);
   }
+}
+
+// ── Support pools (EC-425 / D-24194) ───────────────────────────────────────
+//
+// why: the composition carries HOW MANY cards fill each supply pile; a pool
+// names WHICH. Setting a pool derives its count (useLoadoutDraft.setSupportPool),
+// so the two can never disagree — D-24194 rejects a document where they do.
+
+const SUPPORT_POOL_LABELS: Record<SupportPoolKind, string> = {
+  bystanders: "Bystanders",
+  wounds: "Wounds",
+  officers: "S.H.I.E.L.D. Officers",
+  sidekicks: "Sidekicks",
+};
+
+/** Which pool's editor is expanded. Only one is open at a time. */
+const openPoolKind = ref<SupportPoolKind | null>(null);
+
+function togglePoolEditor(kind: SupportPoolKind): void {
+  openPoolKind.value = openPoolKind.value === kind ? null : kind;
+}
+
+/**
+ * Every registry card eligible for each pool, sorted by set then name.
+ *
+ * why: this MUST be a computed, not a function the template calls. Vue
+ * re-invokes template functions on every render, and each call scanned all
+ * ~3,100 registry cards and sorted them — multiplied by four kinds and the
+ * three call sites per kind, that locked the renderer hard enough to hang the
+ * page when the Loadout tab opened. One pass, cached, keyed by kind.
+ */
+const poolCandidatesByKind = computed<Record<SupportPoolKind, FlatCard[]>>(() => {
+  const buckets: Record<SupportPoolKind, Map<string, FlatCard>> = {
+    bystanders: new Map(),
+    wounds: new Map(),
+    officers: new Map(),
+    sidekicks: new Map(),
+  };
+  const typeToKind = new Map<string, SupportPoolKind>();
+  for (const kind of ["bystanders", "wounds", "officers", "sidekicks"] as const) {
+    for (const cardType of SUPPORT_POOL_CARD_TYPES[kind]) {
+      typeToKind.set(cardType, kind);
+    }
+  }
+  for (const card of props.registry.listCards()) {
+    const kind = typeToKind.get(card.cardType as string);
+    if (kind === undefined) {
+      continue;
+    }
+    // why: collapse by extId — bystanders and wounds are emitted one per set
+    // and sidekick/officer entries can repeat across a set's card list. One
+    // row per distinct card is what the author is choosing between.
+    const bucket = buckets[kind];
+    if (!bucket.has(card.extId)) {
+      bucket.set(card.extId, card);
+    }
+  }
+  const sortCards = (cards: FlatCard[]) =>
+    cards.sort(
+      (left, right) =>
+        left.setAbbr.localeCompare(right.setAbbr) || left.name.localeCompare(right.name),
+    );
+  return {
+    bystanders: sortCards([...buckets.bystanders.values()]),
+    wounds: sortCards([...buckets.wounds.values()]),
+    officers: sortCards([...buckets.officers.values()]),
+    sidekicks: sortCards([...buckets.sidekicks.values()]),
+  };
+});
+
+function poolCandidates(kind: SupportPoolKind): FlatCard[] {
+  return poolCandidatesByKind.value[kind];
+}
+
+/** Set abbreviations that hold at least one card for each pool. */
+const poolSetOptionsByKind = computed<
+  Record<SupportPoolKind, Array<{ abbr: string; name: string }>>
+>(() => {
+  const sets = props.registry.listSets();
+  const optionsFor = (kind: SupportPoolKind) => {
+    const present = new Set(poolCandidatesByKind.value[kind].map((card) => card.setAbbr));
+    return sets
+      .filter((entry) => present.has(entry.abbr))
+      .map((entry) => ({ abbr: entry.abbr, name: entry.name }));
+  };
+  return {
+    bystanders: optionsFor("bystanders"),
+    wounds: optionsFor("wounds"),
+    officers: optionsFor("officers"),
+    sidekicks: optionsFor("sidekicks"),
+  };
+});
+
+function poolSetOptions(kind: SupportPoolKind): Array<{ abbr: string; name: string }> {
+  return poolSetOptionsByKind.value[kind];
+}
+
+function poolOf(kind: SupportPoolKind): SupportPool | undefined {
+  return draft.value.supportPools?.[kind];
+}
+
+function copiesOf(kind: SupportPoolKind, extId: string): number {
+  return poolOf(kind)?.cards.find((card) => card.extId === extId)?.copies ?? 0;
+}
+
+/**
+ * Writes one card's copy count into a pool, creating or clearing the pool as
+ * the edit requires.
+ *
+ * why: zero copies means "not in the pool" (D-24194 requires a positive
+ * `copies`), and a pool with no cards at all is not representable — so the
+ * last card's removal must clear the whole pool rather than leave an empty
+ * `cards: []` the validator would reject.
+ */
+function setPoolCopies(kind: SupportPoolKind, card: FlatCard, copies: number): void {
+  const rounded = Number.isFinite(copies) ? Math.max(0, Math.trunc(copies)) : 0;
+  const existing = poolOf(kind);
+  const cards = (existing?.cards ?? []).filter((entry) => entry.extId !== card.extId);
+  if (rounded > 0) {
+    cards.push({ extId: card.extId, copies: rounded });
+  }
+  if (cards.length === 0) {
+    setSupportPool(kind, undefined);
+    return;
+  }
+  cards.sort((left, right) => left.extId.localeCompare(right.extId));
+  // why: hand-picking a card makes the pool explicit — the recorded `sets`
+  // origin no longer describes it, and D-24194 rejects an explicit pool that
+  // still carries one.
+  setSupportPool(kind, { mode: "explicit", cards });
+}
+
+function onPoolCopiesInput(kind: SupportPoolKind, card: FlatCard, event: Event): void {
+  const raw = (event.target as HTMLInputElement).value;
+  setPoolCopies(kind, card, Number.parseInt(raw, 10));
+}
+
+/**
+ * Fills a pool from whole sets, at one copy per card.
+ *
+ * why: "one copy each" is the only defensible default — the registry records
+ * no per-set pile quantity, so any other multiplier would be invented. The
+ * author adjusts copies afterwards; the count follows automatically.
+ */
+function fillPoolFromSets(kind: SupportPoolKind, setAbbrs: string[]): void {
+  if (setAbbrs.length === 0) {
+    setSupportPool(kind, undefined);
+    return;
+  }
+  const chosen = new Set(setAbbrs);
+  const cards = poolCandidates(kind)
+    .filter((card) => chosen.has(card.setAbbr))
+    .map((card) => ({ extId: card.extId, copies: 1 }));
+  if (cards.length === 0) {
+    setSupportPool(kind, undefined);
+    return;
+  }
+  cards.sort((left, right) => left.extId.localeCompare(right.extId));
+  setSupportPool(kind, { mode: "sets", sets: [...setAbbrs].sort(), cards });
+}
+
+function isSetInPool(kind: SupportPoolKind, abbr: string): boolean {
+  return poolOf(kind)?.sets?.includes(abbr) ?? false;
+}
+
+function togglePoolSet(kind: SupportPoolKind, abbr: string): void {
+  const current = poolOf(kind)?.sets ?? [];
+  const next = current.includes(abbr)
+    ? current.filter((entry) => entry !== abbr)
+    : [...current, abbr];
+  fillPoolFromSets(kind, next);
+}
+
+function selectAllPoolSets(kind: SupportPoolKind): void {
+  fillPoolFromSets(kind, poolSetOptions(kind).map((entry) => entry.abbr));
+}
+
+function clearPool(kind: SupportPoolKind): void {
+  setSupportPool(kind, undefined);
 }
 
 // ── Theme prefill ──────────────────────────────────────────────────────────
@@ -707,24 +892,78 @@ function slotLabel(slot: PickerSlot): string {
         </div>
       </div>
 
-      <!-- Composition: counts -->
-      <div class="field-group count-grid">
-        <label class="field">
-          <span class="field-label">bystandersCount</span>
-          <input type="number" min="0" :value="draft.composition.bystandersCount" @input="(event) => onCountEdit('bystandersCount', event)" />
-        </label>
-        <label class="field">
-          <span class="field-label">woundsCount</span>
-          <input type="number" min="0" :value="draft.composition.woundsCount" @input="(event) => onCountEdit('woundsCount', event)" />
-        </label>
-        <label class="field">
-          <span class="field-label">officersCount</span>
-          <input type="number" min="0" :value="draft.composition.officersCount" @input="(event) => onCountEdit('officersCount', event)" />
-        </label>
-        <label class="field">
-          <span class="field-label">sidekicksCount</span>
-          <input type="number" min="0" :value="draft.composition.sidekicksCount" @input="(event) => onCountEdit('sidekicksCount', event)" />
-        </label>
+      <!-- Composition: counts + support pools (EC-425) -->
+      <div class="field-group">
+        <div class="count-grid">
+          <label class="field">
+            <span class="field-label">bystandersCount</span>
+            <input type="number" min="0" :disabled="poolOf('bystanders') !== undefined" :value="draft.composition.bystandersCount" @input="(event) => onCountEdit('bystandersCount', event)" />
+          </label>
+          <label class="field">
+            <span class="field-label">woundsCount</span>
+            <input type="number" min="0" :disabled="poolOf('wounds') !== undefined" :value="draft.composition.woundsCount" @input="(event) => onCountEdit('woundsCount', event)" />
+          </label>
+          <label class="field">
+            <span class="field-label">officersCount</span>
+            <input type="number" min="0" :disabled="poolOf('officers') !== undefined" :value="draft.composition.officersCount" @input="(event) => onCountEdit('officersCount', event)" />
+          </label>
+          <label class="field">
+            <span class="field-label">sidekicksCount</span>
+            <input type="number" min="0" :disabled="poolOf('sidekicks') !== undefined" :value="draft.composition.sidekicksCount" @input="(event) => onCountEdit('sidekicksCount', event)" />
+          </label>
+        </div>
+
+        <p class="pool-hint">
+          A support pool names <em>which</em> cards fill a pile. While one is set, its
+          count is derived from the pool and the box above is read-only.
+        </p>
+
+        <div v-for="kind in (['bystanders', 'wounds', 'officers', 'sidekicks'] as const)" :key="kind" class="pool-block">
+          <div class="pool-head">
+            <button type="button" class="pool-toggle" @click="togglePoolEditor(kind)">
+              {{ openPoolKind === kind ? '▾' : '▸' }} {{ SUPPORT_POOL_LABELS[kind] }}
+            </button>
+            <span v-if="poolOf(kind)" class="pool-badge">
+              {{ poolOf(kind)!.cards.length }} card(s) · {{ poolOf(kind)!.mode }}
+            </span>
+            <span v-else class="pool-badge pool-badge-off">count only</span>
+            <button v-if="poolOf(kind)" type="button" class="pool-clear" @click="clearPool(kind)">Clear</button>
+          </div>
+
+          <div v-if="openPoolKind === kind" class="pool-body">
+            <div class="pool-sets">
+              <span class="pool-sets-label">By set:</span>
+              <button
+                v-for="entry in poolSetOptions(kind)"
+                :key="entry.abbr"
+                type="button"
+                class="pool-set-chip"
+                :class="{ selected: isSetInPool(kind, entry.abbr) }"
+                :title="entry.name"
+                @click="togglePoolSet(kind, entry.abbr)"
+              >{{ entry.abbr }}</button>
+              <button type="button" class="pool-set-all" @click="selectAllPoolSets(kind)">Select all sets</button>
+            </div>
+
+            <ul class="pool-card-list">
+              <li v-for="card in poolCandidates(kind)" :key="card.extId" class="pool-card-row">
+                <span class="pool-card-name">{{ card.name }}</span>
+                <span class="pool-card-id">{{ card.extId }}</span>
+                <input
+                  type="number"
+                  min="0"
+                  class="pool-copies"
+                  :aria-label="`Copies of ${card.name}`"
+                  :value="copiesOf(kind, card.extId)"
+                  @input="(event) => onPoolCopiesInput(kind, card, event)"
+                />
+              </li>
+              <li v-if="poolCandidates(kind).length === 0" class="pool-empty">
+                No {{ SUPPORT_POOL_LABELS[kind].toLowerCase() }} cards in the loaded registry.
+              </li>
+            </ul>
+          </div>
+        </div>
       </div>
 
       <!-- Download / Upload -->
@@ -1120,6 +1359,35 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: #6060c0
 .error-subtitle { margin: 0.4rem 0 0.2rem 0; font-size: 0.72rem; color: #8888aa; text-transform: uppercase; letter-spacing: 0.05em; }
 .error-list { margin: 0; padding-left: 1.1rem; color: #fda4af; font-size: 0.78rem; }
 .error-field { font-family: ui-monospace, Consolas, monospace; color: #fcd34d; }
+
+.pool-hint { margin: 0.5rem 0 0.4rem 0; font-size: 0.75rem; color: #7c7ca8; line-height: 1.4; }
+.pool-block { border-top: 1px solid #22222e; padding-top: 0.4rem; margin-top: 0.4rem; }
+.pool-head { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.pool-toggle {
+  background: none; border: none; padding: 0; font: inherit;
+  color: #c8c8e0; font-size: 0.85rem; font-weight: 600; cursor: pointer;
+}
+.pool-badge { font-size: 0.72rem; color: #8b8bd6; }
+.pool-badge-off { color: #6666aa; }
+.pool-clear {
+  margin-left: auto; background: none; border: none; padding: 0; font: inherit;
+  font-size: 0.72rem; color: #8b8bd6; text-decoration: underline; cursor: pointer;
+}
+.pool-body { margin: 0.4rem 0 0.2rem 0.9rem; }
+.pool-sets { display: flex; align-items: center; gap: 0.3rem; flex-wrap: wrap; margin-bottom: 0.4rem; }
+.pool-sets-label { font-size: 0.72rem; color: #8888aa; }
+.pool-set-chip, .pool-set-all {
+  font-size: 0.72rem; padding: 0.15rem 0.4rem; border-radius: 4px;
+  border: 1px solid #33334a; background: #15151e; color: #c8c8e0; cursor: pointer;
+}
+.pool-set-chip.selected { border-color: #6060c0; background: #23233a; }
+.pool-set-all { border-style: dashed; }
+.pool-card-list { list-style: none; margin: 0; padding: 0; max-height: 11rem; overflow-y: auto; }
+.pool-card-row { display: flex; align-items: center; gap: 0.4rem; padding: 0.15rem 0; }
+.pool-card-name { flex: 1; font-size: 0.78rem; }
+.pool-card-id { font-family: ui-monospace, Consolas, monospace; font-size: 0.68rem; color: #8888aa; }
+.pool-copies { width: 4rem; }
+.pool-empty { font-size: 0.75rem; color: #6666aa; }
 
 .picker-search { flex: 1; min-width: 180px; }
 /* why: the picker header carries a title + search + set filter; without wrap

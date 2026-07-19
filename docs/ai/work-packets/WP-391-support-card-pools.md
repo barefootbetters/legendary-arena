@@ -63,8 +63,9 @@ the only variable in a `legends.legendary-arena.com` comparison.
 | EC-420 | Loadout picker set filter (Registry Viewer). Ships alone. | #819 |
 | EC-421 | `supportPools` on the MATCH-SETUP envelope + validator + tests. | #824 |
 | EC-422 | LAGN 1.1.0 — version constants, migration seam, version-gated pools. | #825 |
+| EC-425 | Pool picker UI: set chips, Select all sets, per-card copies; both exports carry pools. | Phase C |
 
-EC-420 is independent. EC-422 stacks on EC-421.
+EC-420 is independent. EC-422 stacks on EC-421. EC-425 needs both landed.
 
 ## Files Expected to Change
 

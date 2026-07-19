@@ -20,9 +20,23 @@ export type {
   MatchSetupErrorCode,
   MatchSetupValidationError,
   ValidateMatchSetupDocumentResult,
+  // why: EC-425 — EC-421 added the support-pool contract to
+  // setupContract.types.ts but never re-exported it here, so the types were
+  // unreachable through the subpath the viewer must import from (the root
+  // barrel pulls in node-only modules and breaks the Vite build). The feature
+  // shipped structurally complete and practically unusable; these lines are
+  // what make it consumable.
+  SupportPool,
+  SupportPoolCard,
+  SupportPoolCountField,
+  SupportPoolKind,
+  SupportPoolMode,
+  SupportPools,
 } from "./setupContract.types.js";
 
 export {
+  SUPPORT_POOL_COUNT_FIELD,
+  SUPPORT_POOL_KINDS,
   UNSUPPORTED_HERO_SELECTION_MODE_TEMPLATE,
   HERO_SELECTION_MODE_READONLY_LABEL,
   HERO_SELECTION_MODE_SHORT_LABEL,
