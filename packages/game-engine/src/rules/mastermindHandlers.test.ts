@@ -687,3 +687,293 @@ describe('mastermindStrikeHandler — WP-200 mastermindStrikeResolved emission',
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-388 / D-24192 — co2e mastermind strike texts
+// ---------------------------------------------------------------------------
+
+/** A full CardStatEntry with the given recruit cost; other fields inert. */
+function co2eStat(cost: number) {
+  return {
+    attack: 0,
+    recruit: 0,
+    cost,
+    fightCost: 0,
+    fightCostMode: 'static' as const,
+    fightCostBase: 0,
+  };
+}
+
+/**
+ * Creates a co2e-shaped state with per-player hands, a cardStats map, and a
+ * cardTraits map. Heroes absent from cardStats are treated as cost 0; heroes
+ * absent from cardTraits match no trait gate.
+ */
+function makeCo2eState(
+  mastermindId: string,
+  hands: Record<string, string[]>,
+  cardStats: Record<string, ReturnType<typeof co2eStat>> = {},
+  cardTraits: Record<string, { heroClass: string | null; team: string | null }> = {},
+): LegendaryGameState {
+  const gameState = makeTestState();
+  gameState.selection = { ...gameState.selection, mastermindId };
+  gameState.cardStats = cardStats as LegendaryGameState['cardStats'];
+  gameState.cardTraits = cardTraits as LegendaryGameState['cardTraits'];
+  gameState.playerZones = {};
+  for (const [playerId, hand] of Object.entries(hands)) {
+    gameState.playerZones[playerId] = {
+      deck: [],
+      hand: [...hand],
+      discard: [],
+      inPlay: [],
+      victory: [],
+    };
+  }
+  return gameState;
+}
+
+/** Convenience trait entries. */
+const XMEN = { heroClass: null, team: 'x-men' };
+const SPIDER = { heroClass: null, team: 'spider-friends' };
+const AVENGER = { heroClass: null, team: 'avengers' };
+const STRENGTH = { heroClass: 'strength', team: null };
+const TECH = { heroClass: 'tech', team: null };
+
+describe('mastermindStrikeHandler — co2e Magneto Master Strike (WP-388)', () => {
+  it('discards the lowest-cost X-Men Hero from each player (AC-3)', () => {
+    const gameState = makeCo2eState(
+      'co2e/magneto',
+      { '0': ['xm-a', 'xm-b', 'av-a'], '1': ['xm-c'] },
+      { 'xm-a': co2eStat(5), 'xm-b': co2eStat(2), 'xm-c': co2eStat(4), 'av-a': co2eStat(1) },
+      { 'xm-a': XMEN, 'xm-b': XMEN, 'xm-c': XMEN, 'av-a': AVENGER },
+    );
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
+
+    // why: xm-b (cost 2) beats xm-a (cost 5); av-a is cheaper still but is
+    // not X-Men, so the trait gate must exclude it.
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['xm-a', 'av-a']);
+    assert.deepEqual(gameState.playerZones['0']!.discard, ['xm-b']);
+    assert.deepEqual(gameState.playerZones['1']!.hand, []);
+    assert.deepEqual(gameState.playerZones['1']!.discard, ['xm-c']);
+  });
+
+  it('gains a Wound when the player holds no X-Men Hero (AC-3)', () => {
+    const gameState = makeCo2eState(
+      'co2e/magneto',
+      { '0': ['av-a'] },
+      { 'av-a': co2eStat(1) },
+      { 'av-a': AVENGER },
+    );
+    gameState.piles.wounds = ['wound-1', 'wound-2'];
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
+
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['av-a'], 'hand unchanged');
+    assert.deepEqual(gameState.playerZones['0']!.discard, ['wound-1']);
+    assert.equal(gameState.piles.wounds.length, 1, 'wounds pile shrinks by exactly one');
+  });
+
+  it('degrades to a no-op when the wounds pile is empty (AC-3, AC-9)', () => {
+    const gameState = makeCo2eState(
+      'co2e/magneto',
+      { '0': ['av-a'] },
+      {},
+      { 'av-a': AVENGER },
+    );
+    gameState.piles.wounds = [];
+
+    assert.doesNotThrow(() =>
+      mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {}),
+    );
+    assert.deepEqual(gameState.playerZones['0']!.discard, []);
+  });
+
+  it('never selects a Wound held in hand (AC-5)', () => {
+    const gameState = makeCo2eState(
+      'co2e/magneto',
+      { '0': [WOUND_EXT_ID, 'xm-a'] },
+      { 'xm-a': co2eStat(9) },
+      { [WOUND_EXT_ID]: XMEN, 'xm-a': XMEN },
+    );
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
+
+    // why: the Wound is cost-0 and mis-tagged X-Men here on purpose — the
+    // WOUND_EXT_ID filter must win over both cost and trait.
+    assert.deepEqual(gameState.playerZones['0']!.hand, [WOUND_EXT_ID]);
+    assert.deepEqual(gameState.playerZones['0']!.discard, ['xm-a']);
+  });
+});
+
+describe('mastermindStrikeHandler — co2e Loki Master Strike (WP-388)', () => {
+  it('discards the lowest-cost Strength Hero from each player (AC-2)', () => {
+    const gameState = makeCo2eState(
+      'co2e/loki',
+      { '0': ['st-a', 'st-b', 'te-a'] },
+      { 'st-a': co2eStat(6), 'st-b': co2eStat(3), 'te-a': co2eStat(1) },
+      { 'st-a': STRENGTH, 'st-b': STRENGTH, 'te-a': TECH },
+    );
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
+
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['st-a', 'te-a']);
+    assert.deepEqual(gameState.playerZones['0']!.discard, ['st-b']);
+  });
+
+  it('is a logged no-op — never a Wound — with no Strength Hero (AC-2)', () => {
+    const gameState = makeCo2eState(
+      'co2e/loki',
+      { '0': ['te-a'] },
+      { 'te-a': co2eStat(1) },
+      { 'te-a': TECH },
+    );
+    gameState.piles.wounds = ['wound-1'];
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
+
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['te-a'], 'hand unchanged');
+    // why: D-24192 — the Hypno-Thrall branch is out of scope, so the player
+    // escapes. Substituting a Wound here would be the wrong card text.
+    assert.deepEqual(gameState.playerZones['0']!.discard, []);
+    assert.equal(gameState.piles.wounds.length, 1, 'Loki never gains a Wound');
+  });
+});
+
+describe('mastermindStrikeHandler — co2e Doctor Octopus Master Strike (WP-388)', () => {
+  it('discards the lowest-cost Spider-Friends Hero from each player (AC-4)', () => {
+    const gameState = makeCo2eState(
+      'co2e/doctor-octopus',
+      { '0': ['sp-a', 'sp-b'], '1': ['av-a'] },
+      { 'sp-a': co2eStat(4), 'sp-b': co2eStat(2), 'av-a': co2eStat(1) },
+      { 'sp-a': SPIDER, 'sp-b': SPIDER, 'av-a': AVENGER },
+    );
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
+
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['sp-a']);
+    assert.deepEqual(gameState.playerZones['0']!.discard, ['sp-b']);
+    // player 1 holds no Spider-Friends Hero — logged no-op, no Wound
+    assert.deepEqual(gameState.playerZones['1']!.hand, ['av-a']);
+    assert.deepEqual(gameState.playerZones['1']!.discard, []);
+  });
+});
+
+describe('mastermindStrikeHandler — co2e Doctor Doom Master Strike (WP-388)', () => {
+  it('discards one card at the first strike and three at the third (AC-1)', () => {
+    const firstStrike = makeCo2eState(
+      'co2e/doctor-doom',
+      { '0': ['a', 'b', 'c', 'd'] },
+      { a: co2eStat(4), b: co2eStat(1), c: co2eStat(3), d: co2eStat(2) },
+    );
+    mastermindStrikeHandler(firstStrike, {}, { cardId: 'strike' }, {});
+    // why: counters.masterStrikeCount is 0 pre-increment, so this strike is
+    // Omen #1 — exactly one discard, the cheapest card.
+    assert.deepEqual(firstStrike.playerZones['0']!.hand, ['a', 'c', 'd']);
+    assert.deepEqual(firstStrike.playerZones['0']!.discard, ['b']);
+
+    const thirdStrike = makeCo2eState(
+      'co2e/doctor-doom',
+      { '0': ['a', 'b', 'c', 'd'] },
+      { a: co2eStat(4), b: co2eStat(1), c: co2eStat(3), d: co2eStat(2) },
+    );
+    thirdStrike.counters.masterStrikeCount = 2;
+    mastermindStrikeHandler(thirdStrike, {}, { cardId: 'strike' }, {});
+    // why: 2 prior Omens + this one = 3 discards, cheapest-first (b,d,c).
+    assert.deepEqual(thirdStrike.playerZones['0']!.hand, ['a']);
+    assert.deepEqual(thirdStrike.playerZones['0']!.discard, ['b', 'd', 'c']);
+  });
+
+  it('gains a Wound instead when the hand cannot cover the Omen count (AC-1)', () => {
+    const gameState = makeCo2eState('co2e/doctor-doom', { '0': ['a', 'b'] });
+    gameState.counters.masterStrikeCount = 4;
+    gameState.piles.wounds = ['wound-1'];
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
+
+    // why: 5 Omens against a 2-card hand — the player takes the Wound and
+    // discards nothing.
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['a', 'b']);
+    assert.deepEqual(gameState.playerZones['0']!.discard, ['wound-1']);
+    assert.equal(gameState.piles.wounds.length, 0);
+  });
+
+  it('does not throw when the hand is all Wounds (AC-9)', () => {
+    const gameState = makeCo2eState('co2e/doctor-doom', {
+      '0': [WOUND_EXT_ID, WOUND_EXT_ID],
+    });
+
+    // why: hand.length covers the Omen count but no card is an eligible Hero;
+    // the resolver must stop rather than loop forever or throw.
+    assert.doesNotThrow(() =>
+      mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {}),
+    );
+    assert.deepEqual(gameState.playerZones['0']!.hand, [WOUND_EXT_ID, WOUND_EXT_ID]);
+  });
+});
+
+describe('mastermindStrikeHandler — co2e dispatch isolation (WP-388)', () => {
+  it('leaves core/magneto on its own branch, not the co2e one (AC-6)', () => {
+    const gameState = makeCo2eState(
+      'core/magneto',
+      { '0': ['xm-a', 'b', 'c', 'd', 'e'] },
+      { 'xm-a': co2eStat(1) },
+      { 'xm-a': XMEN },
+    );
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
+
+    // why: core Magneto discards DOWN TO FOUR from the front of hand — it
+    // must not discard the single X-Men Hero the co2e resolver would pick.
+    assert.equal(gameState.playerZones['0']!.hand.length, 4);
+    assert.deepEqual(gameState.playerZones['0']!.discard, ['xm-a']);
+  });
+
+  it('takes no branch for an unimplemented mastermind (AC-6)', () => {
+    const gameState = makeCo2eState(
+      'co2e/some-other-mastermind',
+      { '0': ['xm-a', 'xm-b'] },
+      { 'xm-a': co2eStat(1), 'xm-b': co2eStat(2) },
+      { 'xm-a': XMEN, 'xm-b': XMEN },
+    );
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
+
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['xm-a', 'xm-b']);
+    assert.deepEqual(gameState.playerZones['0']!.discard, []);
+  });
+
+  it('preserves generic strike behaviour on every co2e branch (AC-7, AC-8)', () => {
+    const gameState = makeCo2eState(
+      'co2e/magneto',
+      { '0': ['xm-a'] },
+      { 'xm-a': co2eStat(1) },
+      { 'xm-a': XMEN },
+    );
+
+    const effects = mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
+
+    assert.deepEqual(effects, [
+      { type: 'modifyCounter', counter: 'masterStrikeCount', delta: 1 },
+      { type: 'queueMessage', message: 'Mastermind strike revealed — strike count incremented.' },
+    ]);
+    // D-15401 capture still runs on the co2e branch
+    assert.equal(gameState.mastermind.attachedBystanders.length, 1);
+    assert.equal(gameState.piles.bystanders.length, 2);
+    // WP-200 emission still terminal
+    assert.equal(gameState.notableEvents.length, 1);
+    // exactly one hand mutation per player per strike
+    assert.deepEqual(gameState.playerZones['0']!.discard, ['xm-a']);
+  });
+
+  it('does not throw when G.cardTraits is absent entirely (AC-9)', () => {
+    const gameState = makeCo2eState('co2e/loki', { '0': ['st-a'] }, { 'st-a': co2eStat(1) });
+    // why: legacy states predate WP-179; the map itself may be undefined.
+    (gameState as { cardTraits?: unknown }).cardTraits = undefined;
+
+    assert.doesNotThrow(() =>
+      mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {}),
+    );
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['st-a']);
+  });
+});
