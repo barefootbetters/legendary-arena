@@ -7,6 +7,75 @@
 
 ## Current State
 
+### WP-388 / EC-418 — co2e mastermind strike texts: Doom, Loki, Magneto, Doctor Octopus (D-24192 Active) (2026-07-18)
+
+**Four printed Master Strikes now fire.** A strike from co2e Doctor Doom,
+Loki, Magneto, or Doctor Octopus previously performed only the generic
+bookkeeping (D-15401 bystander capture, `masterStrikeCount`, WP-200 emission)
+and the printed text silently no-op'd — the player saw a strike resolve with
+no consequence. Completes the co2e set alongside Red Skull (WP-386).
+
+**Every "or" / "may" clause resolves by deterministic auto-pick** (D-24192,
+extending D-24188) — no new `G` field, no RNG, no pending-choice prompt:
+
+| Mastermind | Behaviour |
+|---|---|
+| `co2e/magneto` | discards the lowest-cost X-Men Hero, else gains a Wound — **fully faithful**, a player holding none must take the Wound at the table too |
+| `co2e/doctor-doom` | discards cards equal to the Omen count when the hand covers it, else gains a Wound |
+| `co2e/loki` | discards the lowest-cost Strength Hero |
+| `co2e/doctor-octopus` | discards the lowest-cost Spider-Friends Hero |
+
+**Doom's Omen count is derived, not stored.** Every Doom strike stacks
+exactly one Omen, so the Omen total *is* the strike count. The generic
+`modifyCounter` effect is applied by the pipeline **after** the handler
+returns, so the count for the strike being resolved is
+`(counters.masterStrikeCount ?? 0) + 1`. No Omen zone was created — the
+persistent stack the card names needed no new state.
+
+**Recorded fidelity gap, stated plainly.** Loki's Hypno-Thrall branch and
+Doctor Octopus's reveal-top-8-in-random-order branch are **not** implemented:
+they need a new mastermind-adjacent zone and `ctx.random` threaded into a
+handler that ignores `ctx`, plus a non-grey-Hero predicate. A player with no
+qualifying Hero therefore takes a **logged no-op and escapes the strike**.
+That is a real divergence from the printed card, accepted deliberately and
+recorded rather than papered over. Never a substituted Wound — only Doom and
+co2e Magneto gain Wounds.
+
+**Shared selector, no callback.** `selectRedSkullKoTarget` now delegates to a
+shared `selectLowestCostHero` taking a **plain discriminator argument**
+(`'any' | 'team' | 'heroClass'` plus a slug) rather than a predicate
+callback, per `.claude/rules/code-style.md` §Functions (closures-as-config are
+banned). Red Skull behaviour is byte-identical. Trait gating reads
+`G.cardTraits` (WP-179) — the capability that makes team/class gating possible
+without a runtime registry read — with a defensive `?.` on the map itself so
+legacy test states predating WP-179 cannot throw.
+
+**The both-outputs trap.** `moveCardFromZone` and `gainWound` are
+**non-mutating**: both return new arrays and both outputs must be assigned
+back. The Red Skull KO path assigns only `.from` because its destination is a
+throwaway `[]` and the append goes through `koCard` — copying that call shape
+here would have silently dropped every discarded card. EC-418 flagged this at
+draft time and the implementation avoids it.
+
+**Verification.** Engine suite **1995 → 2009 / 0 fail** (+14 covering
+AC-1..AC-9). **Control run with the four co2e dispatch branches removed: 8
+fail** — the new assertions are non-vacuous. `pnpm -r build` 0.
+`sim:runtime-observed:check` current with **no regeneration**; sentinel
+`finalStateHash` + `PRE_WP080_HASH` byte-identical, no re-pin. The WP-389
+hard-dep gate was checked before any edit: `co2e/doctor-doom` resolves
+`Dr. Doom` `10+`, not the Epic face.
+
+**Comment-only correction.** The stale `MAGNETO_HAND_SIZE_LIMIT` `// why:`
+claimed no team affiliation data exists; `G.cardTraits` has carried it since
+WP-179. The real blocker for core Magneto remains the reveal-and-choose
+interaction model, not the data. Core Magneto behaviour is unchanged.
+
+`User-Visible Surface = play.legendary-arena.com` — D-24026 live-verify
+operator-pending on deploy: a co2e match where one of the four strikes
+produces the specified hand change plus HUD log lines.
+
+---
+
 ### WP-389 / EC-419 — Mastermind base card is the FIRST non-tactic face (D-24193 Active) (2026-07-18)
 
 **65 masterminds across 24 sets were playing the wrong card.**

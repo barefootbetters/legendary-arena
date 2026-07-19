@@ -20,6 +20,7 @@ import { pushLog } from '../log/logPush.js';
 import { moveCardFromZone } from '../moves/zoneOps.js';
 import { koCard } from '../board/ko.logic.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
+import { gainWound } from '../board/wounds.logic.js';
 import { formatCardRef } from '../log/logDisplay.js';
 
 // why: mastermind ext_id constants — matching against
@@ -29,11 +30,14 @@ import { formatCardRef } from '../log/logDisplay.js';
 // `core/<slug>`.
 const MASTERMIND_MAGNETO = 'core/magneto';
 
-// why: Magneto Master Strike text: "Each player reveals an [team:x-men]
-// Hero or discards down to four cards." MVP takes the punitive branch —
-// each player discards down to four — because the engine has no
-// reveal-and-choose UI mechanic yet and G.cardKeywords does not carry
-// team affiliation. A future WP can add team-aware reveal logic.
+// why: core Magneto's Master Strike text: "Each player reveals an
+// [team:x-men] Hero or discards down to four cards." This takes the punitive
+// branch — each player discards down to four — because the engine has no
+// reveal-and-choose interaction model. Team affiliation IS available (WP-179
+// put it on G.cardTraits, which the co2e resolvers below read); the blocker
+// is the reveal-and-choose mechanic, not the data. A future WP can add it.
+// Note this is core/magneto only — co2e/magneto prints DIFFERENT text and
+// has its own resolver.
 const MAGNETO_HAND_SIZE_LIMIT = 4;
 
 // why: both Red Skull faces print the identical Master Strike text —
@@ -46,6 +50,30 @@ const MASTERMINDS_RED_SKULL: readonly string[] = [
   'core/red-skull',
   'co2e/red-skull',
 ];
+
+// why: WP-388 / D-24192 — the four remaining co2e masterminds whose printed
+// Master Strike is implemented. Each is its own constant because each prints
+// different text; there is no shared-text list like Red Skull's.
+//
+// why: co2e/magneto is deliberately SEPARATE from MASTERMIND_MAGNETO above.
+// The two Magnetos print different strikes (core: reveal-or-discard-to-four;
+// co2e: discard an X-Men Hero or gain a Wound), so folding co2e into the core
+// branch would play the wrong card text.
+//
+// why: base faces only. Each co2e mastermind also ships an epic face printing
+// different text, which is not engine-selectable — mastermind setup takes the
+// FIRST non-tactic face (D-24193 / WP-389), and no epic opt-in exists yet.
+const MASTERMIND_CO2E_DOCTOR_DOOM = 'co2e/doctor-doom';
+const MASTERMIND_CO2E_LOKI = 'co2e/loki';
+const MASTERMIND_CO2E_MAGNETO = 'co2e/magneto';
+const MASTERMIND_CO2E_DOCTOR_OCTOPUS = 'co2e/doctor-octopus';
+
+// why: co2e Loki and Doctor Octopus gate on these normalized lowercase trait
+// slugs, matching G.cardTraits values verbatim (traits.normalize.ts lowercases
+// and trims only — it does not rewrite separators).
+const TEAM_X_MEN = 'x-men';
+const TEAM_SPIDER_FRIENDS = 'spider-friends';
+const HERO_CLASS_STRENGTH = 'strength';
 
 /**
  * Captures one bystander from the top of the bystander supply onto the
@@ -146,13 +174,62 @@ function selectRedSkullKoTarget(
   gameState: LegendaryGameState,
   hand: readonly CardExtId[],
 ): CardExtId | null {
+  // why: WP-388 — Red Skull's rule is the ungated case of the shared
+  // selector. Delegating keeps its behavior byte-identical while giving the
+  // co2e resolvers one selection rule to share.
+  return selectLowestCostHero(gameState, hand, 'any', null);
+}
+
+/**
+ * The trait dimension a strike gates its Hero selection on.
+ *
+ * `'any'` matches every Hero. `'team'` and `'heroClass'` match the
+ * corresponding `G.cardTraits` field against a slug.
+ */
+type HeroTraitKind = 'any' | 'team' | 'heroClass';
+
+/**
+ * Selects the lowest-cost Hero in a hand, optionally gated on one trait.
+ *
+ * Shared by every per-mastermind strike resolver. Ties are broken by lowest
+ * hand index. Returns null when the hand holds no matching Hero.
+ *
+ * @param gameState - The game state (read-only here; supplies cardStats and cardTraits).
+ * @param hand - The player's hand, in order.
+ * @param traitKind - Which trait to gate on, or `'any'` for no gate.
+ * @param traitSlug - The normalized lowercase slug to match; ignored when traitKind is `'any'`.
+ * @returns The selected ext_id, or null when nothing matches.
+ */
+function selectLowestCostHero(
+  gameState: LegendaryGameState,
+  hand: readonly CardExtId[],
+  traitKind: HeroTraitKind,
+  traitSlug: string | null,
+): CardExtId | null {
   let selectedExtId: CardExtId | null = null;
   let selectedCost = Number.POSITIVE_INFINITY;
   for (const cardExtId of hand) {
     // why: Wounds are not Heroes — the only non-Hero card the engine ever
-    // puts in a hand — so they are never a KO target.
+    // puts in a hand — so they are never a selection target.
     if (cardExtId === WOUND_EXT_ID) {
       continue;
+    }
+    // why: a plain discriminator argument rather than a predicate callback —
+    // `.claude/rules/code-style.md` §Functions bans closures-as-config. Trait
+    // values come from G.cardTraits (WP-179), resolved at setup so no registry
+    // read is needed at runtime; a card with no entry yields undefined and
+    // simply never matches.
+    if (traitKind !== 'any') {
+      // why: defensive `?.` on the map itself, matching the cardDisplayData
+      // precedent in this file — legacy test states predate G.cardTraits
+      // (WP-179) and leave it undefined. Production setup always builds it.
+      // A missing map means nothing matches rather than a throw (AC-9).
+      const traitEntry = gameState.cardTraits?.[cardExtId];
+      const traitValue =
+        traitKind === 'team' ? traitEntry?.team : traitEntry?.heroClass;
+      if (traitValue !== traitSlug) {
+        continue;
+      }
     }
     // why: `?? 0` — S.H.I.E.L.D. starters (Agent / Trooper) carry no
     // cardStats entry (D-21502) and are treated as cost 0, so a starter is
@@ -165,6 +242,52 @@ function selectRedSkullKoTarget(
     }
   }
   return selectedExtId;
+}
+
+/**
+ * Moves one card from a player's hand to their discard pile.
+ *
+ * @param playerZones - The player's zones, mutated in place.
+ * @param cardExtId - The card to discard.
+ */
+function discardCardFromHand(
+  playerZones: { hand: CardExtId[]; discard: CardExtId[] },
+  cardExtId: CardExtId,
+): void {
+  // why: moveCardFromZone is NON-mutating — it returns { from, to, found } —
+  // so BOTH arrays must be assigned back. The Red Skull KO path above assigns
+  // only `.from` because its destination is a throwaway `[]` and the append
+  // goes through koCard; copying that shape here would drop the discarded
+  // card silently. Duplicate ext_ids are fungible tokens (WP-382 / D-24183),
+  // so first-match removal is observationally identical to index removal.
+  const moveResult = moveCardFromZone(
+    playerZones.hand,
+    playerZones.discard,
+    cardExtId,
+  );
+  playerZones.hand = moveResult.from;
+  playerZones.discard = moveResult.to;
+}
+
+/**
+ * Gives one Wound from the supply to a player's discard pile.
+ *
+ * @param gameState - The game state to mutate.
+ * @param playerZones - The player's zones, mutated in place.
+ * @returns True when a Wound was actually taken; false when the supply is empty.
+ */
+function gainWoundToDiscard(
+  gameState: LegendaryGameState,
+  playerZones: { discard: CardExtId[] },
+): boolean {
+  // why: gainWound is NON-mutating like moveCardFromZone — assign both
+  // returned arrays back. An empty wounds pile returns copies unchanged, so
+  // the length comparison is how we detect the no-op (never a throw, AC-9).
+  const woundResult = gainWound(gameState.piles.wounds, playerZones.discard);
+  const tookWound = woundResult.woundsPile.length < gameState.piles.wounds.length;
+  gameState.piles.wounds = woundResult.woundsPile;
+  playerZones.discard = woundResult.playerDiscard;
+  return tookWound;
 }
 
 /**
@@ -210,6 +333,195 @@ function resolveRedSkullStrike(gameState: LegendaryGameState): void {
 }
 
 /**
+ * Resolves co2e Doctor Doom's Master Strike: "Stack this Strike next to
+ * Doctor Doom as 'Omen of Doom.' Then each player discards cards equal to
+ * the number of Omens or gains a Wound."
+ *
+ * Each player (in sorted id order) whose hand can cover the Omen count
+ * discards that many cards, lowest-cost first; everyone else gains a Wound.
+ *
+ * @param gameState - The game state to mutate.
+ */
+function resolveDoctorDoomStrike(gameState: LegendaryGameState): void {
+  // why: D-24192 — the Omen count is DERIVED, not stored. Every Doom strike
+  // stacks exactly one Omen, so the Omen total is the strike count. The
+  // generic `modifyCounter` effect is applied by the pipeline AFTER this
+  // handler returns, so the counter still holds the pre-strike value here and
+  // the strike being resolved is `+ 1`. `?? 0` because G.counters is not
+  // seeded at setup. No Omen zone is created.
+  const omenCount = (gameState.counters.masterStrikeCount ?? 0) + 1;
+  const playerIds = Object.keys(gameState.playerZones).sort();
+
+  for (const playerId of playerIds) {
+    const playerZones = gameState.playerZones[playerId]!;
+
+    // why: the printed choice is "discard N or gain a Wound". A hand that
+    // cannot cover N takes the Wound — the same branch a tabletop player is
+    // forced into. Deterministic auto-pick per D-24192; no prompt.
+    if (playerZones.hand.length < omenCount) {
+      const tookWound = gainWoundToDiscard(gameState, playerZones);
+      pushLog(gameState,
+        tookWound
+          ? `[Doctor Doom Master Strike] Player ${playerId} could not discard ${omenCount} card(s) (${omenCount} Omen(s)) and gained a Wound.`
+          : `[Doctor Doom Master Strike] Player ${playerId} could not discard ${omenCount} card(s) and the Wound supply is empty — no effect.`,
+      );
+      continue;
+    }
+
+    let discardedCount = 0;
+    while (discardedCount < omenCount) {
+      const targetExtId = selectLowestCostHero(
+        gameState,
+        playerZones.hand,
+        'any',
+        null,
+      );
+      // why: the hand is large enough by count but may hold fewer Heroes than
+      // Omens (Wounds are never selectable). Stop rather than loop forever or
+      // throw — moves never throw, and the shortfall is logged below.
+      if (targetExtId === null) {
+        break;
+      }
+      discardCardFromHand(playerZones, targetExtId);
+      discardedCount += 1;
+    }
+
+    pushLog(gameState,
+      discardedCount === omenCount
+        ? `[Doctor Doom Master Strike] Player ${playerId} discarded ${discardedCount} card(s) for ${omenCount} Omen(s).`
+        : `[Doctor Doom Master Strike] Player ${playerId} discarded only ${discardedCount} of ${omenCount} card(s) — no eligible Heroes remained.`,
+    );
+  }
+}
+
+/**
+ * Resolves co2e Loki's Master Strike: "Each player discards a
+ * [hc:strength] Hero or stacks a non-grey Hero from their hand next to Loki
+ * as a Hypno-Thrall."
+ *
+ * Each player (in sorted id order) discards their lowest-cost Strength Hero.
+ *
+ * @param gameState - The game state to mutate.
+ */
+function resolveLokiStrike(gameState: LegendaryGameState): void {
+  const playerIds = Object.keys(gameState.playerZones).sort();
+
+  for (const playerId of playerIds) {
+    const playerZones = gameState.playerZones[playerId]!;
+    const targetExtId = selectLowestCostHero(
+      gameState,
+      playerZones.hand,
+      'heroClass',
+      HERO_CLASS_STRENGTH,
+    );
+
+    // why: D-24192 — the Hypno-Thrall branch is deliberately NOT implemented
+    // (it needs a new mastermind-adjacent zone), so a player with no Strength
+    // Hero takes a logged no-op and escapes the strike. This is a recorded
+    // fidelity gap, not an oversight: do NOT substitute a Wound or improvise
+    // the Thrall stack.
+    if (targetExtId === null) {
+      pushLog(gameState,
+        `[Loki Master Strike] Player ${playerId} has no [hc:strength] Hero in hand — no effect.`,
+      );
+      continue;
+    }
+
+    discardCardFromHand(playerZones, targetExtId);
+    pushLog(gameState,
+      `[Loki Master Strike] Player ${playerId} discarded ${formatCardRef(gameState.cardDisplayData, targetExtId)}.`,
+    );
+  }
+}
+
+/**
+ * Resolves co2e Magneto's Master Strike: "Each player discards an
+ * [team:x-men] Hero or gains a Wound."
+ *
+ * Each player (in sorted id order) discards their lowest-cost X-Men Hero, or
+ * gains a Wound when they hold none.
+ *
+ * @param gameState - The game state to mutate.
+ */
+function resolveCo2eMagnetoStrike(gameState: LegendaryGameState): void {
+  const playerIds = Object.keys(gameState.playerZones).sort();
+
+  for (const playerId of playerIds) {
+    const playerZones = gameState.playerZones[playerId]!;
+    const targetExtId = selectLowestCostHero(
+      gameState,
+      playerZones.hand,
+      'team',
+      TEAM_X_MEN,
+    );
+
+    // why: this branch is fully faithful — a player holding no X-Men Hero
+    // must take the Wound at the table too, so no fidelity is lost.
+    if (targetExtId === null) {
+      const tookWound = gainWoundToDiscard(gameState, playerZones);
+      pushLog(gameState,
+        tookWound
+          ? `[Magneto Master Strike] Player ${playerId} has no [team:x-men] Hero in hand and gained a Wound.`
+          : `[Magneto Master Strike] Player ${playerId} has no [team:x-men] Hero in hand and the Wound supply is empty — no effect.`,
+      );
+      continue;
+    }
+
+    discardCardFromHand(playerZones, targetExtId);
+    pushLog(gameState,
+      `[Magneto Master Strike] Player ${playerId} discarded ${formatCardRef(gameState.cardDisplayData, targetExtId)}.`,
+    );
+  }
+}
+
+/**
+ * Resolves co2e Doctor Octopus's Master Strike: "Each player may discard a
+ * [team:spider-friends] Hero. Any player who doesn't must reveal the top 8
+ * cards of their deck, discard all non-grey Heroes revealed, and put the rest
+ * back in random order."
+ *
+ * Each player (in sorted id order) discards their lowest-cost Spider-Friends
+ * Hero.
+ *
+ * @param gameState - The game state to mutate.
+ */
+function resolveDoctorOctopusStrike(gameState: LegendaryGameState): void {
+  const playerIds = Object.keys(gameState.playerZones).sort();
+
+  for (const playerId of playerIds) {
+    const playerZones = gameState.playerZones[playerId]!;
+    const targetExtId = selectLowestCostHero(
+      gameState,
+      playerZones.hand,
+      'team',
+      TEAM_SPIDER_FRIENDS,
+    );
+
+    // why: D-24192 — the printed alternative (reveal the top 8, discard the
+    // non-grey Heroes, return the rest in RANDOM order) is deliberately NOT
+    // implemented: it needs ctx.random threaded into a handler that ignores
+    // ctx, plus a non-grey predicate. A player with no Spider-Friends Hero
+    // therefore takes a logged no-op and escapes the strike. Recorded gap —
+    // do NOT improvise the reveal or substitute a Wound.
+    //
+    // why: taking the discard branch is also the player-optimal read of the
+    // printed "may" — surrendering one Hero beats discarding every non-grey
+    // Hero in the top eight.
+    if (targetExtId === null) {
+      pushLog(gameState,
+        `[Doctor Octopus Master Strike] Player ${playerId} has no [team:spider-friends] Hero in hand — no effect.`,
+      );
+      continue;
+    }
+
+    discardCardFromHand(playerZones, targetExtId);
+    pushLog(gameState,
+      `[Doctor Octopus Master Strike] Player ${playerId} discarded ${formatCardRef(gameState.cardDisplayData, targetExtId)}.`,
+    );
+  }
+}
+
+/**
  * Mastermind strike handler dispatcher.
  *
  * Branches on `G.selection.mastermindId`. The generic bystander capture
@@ -236,11 +548,22 @@ export function mastermindStrikeHandler(
 ): RuleEffect[] {
   captureBystanderOntoMastermind(gameState);
 
+  // why: branches are mutually exclusive per mastermind id — a mastermind
+  // matching none of them takes no branch and the strike is generic
+  // bookkeeping only (its printed text is not yet implemented).
   const mastermindId = gameState.selection.mastermindId;
   if (mastermindId === MASTERMIND_MAGNETO) {
     resolveMagnetoStrike(gameState);
   } else if (MASTERMINDS_RED_SKULL.includes(mastermindId)) {
     resolveRedSkullStrike(gameState);
+  } else if (mastermindId === MASTERMIND_CO2E_DOCTOR_DOOM) {
+    resolveDoctorDoomStrike(gameState);
+  } else if (mastermindId === MASTERMIND_CO2E_LOKI) {
+    resolveLokiStrike(gameState);
+  } else if (mastermindId === MASTERMIND_CO2E_MAGNETO) {
+    resolveCo2eMagnetoStrike(gameState);
+  } else if (mastermindId === MASTERMIND_CO2E_DOCTOR_OCTOPUS) {
+    resolveDoctorOctopusStrike(gameState);
   }
 
   // why: WP-200 — terminal emission AFTER both the generic bystander
