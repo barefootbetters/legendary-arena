@@ -1,7 +1,7 @@
 # Wiki Index
 
-> **42 / 50** entity pages.
-> Last regenerated: 2026-07-14.
+> **43 / 50** entity pages.
+> Last regenerated: 2026-07-19.
 > See [SCHEMA.md](SCHEMA.md) for the entity-page contract and
 > [README.md](README.md) for purpose, conventions, and authority —
 > including [§ Tradeoffs](README.md#tradeoffs) on what the LLM-wiki
@@ -95,6 +95,12 @@ Cross-cutting governance, methodology, and readiness assessments.
   re-encode to WebP, and a hand-authored renamer maps each to the
   deterministic R2 name, ahead of R2 upload. Backup copies live in
   `scripts/card-image-{downloaders,converters,renamers}/`.
+- [Vision](vision.md) — Reader's map of `docs/01-VISION.md`: the five
+  non-negotiable primary goals, the secondary goals and their identity
+  / profile boundaries (§7a, §19a/b), the PAR skill-measurement
+  framework (§20–26), the NG-1…NG-8 monetization bright lines and the
+  open commercial space beside them, and the "no margin, no mission"
+  funding model. Cites VISION; defines nothing.
 - [Changelog](changelog.md) — Milestone history of significant changes,
   newest first (projected from `docs/09-CHANGELOG.md`; the exhaustive
   per-packet record lives in WORK_INDEX + git log).
