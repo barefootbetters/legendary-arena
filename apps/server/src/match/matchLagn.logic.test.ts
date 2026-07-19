@@ -12,7 +12,7 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { validate } from '@legendary-arena/lagn';
+import { validate, LAGN_VERSION } from '@legendary-arena/lagn';
 import type { CardRegistry } from '@legendary-arena/registry';
 
 import {
@@ -57,7 +57,9 @@ describe('buildMatchLagn — mapping', () => {
   test('maps all nine composition fields + player_count + game_id, and validates', () => {
     const lagn = buildMatchLagn('match-1', VALID_COMPOSITION, 3, identityResolver);
 
-    assert.equal(lagn.lagn_version, '1.0.0');
+    // why: assert the constant, not a literal — a hardcoded version here is
+    // the duplication D-24195 removed, and it re-breaks on every bump.
+    assert.equal(lagn.lagn_version, LAGN_VERSION);
     assert.equal(lagn.game_id, 'match-1');
     assert.equal(lagn.player_count, 3);
     assert.equal(lagn.variant, 'cooperative');

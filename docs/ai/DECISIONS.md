@@ -29824,4 +29824,61 @@ has no `.strict()`, so an unknown key is silently stripped rather than
 rejected. Carrying pools into LAGN therefore requires a version bump plus
 migration machinery and is deferred to WP-036 Phase B2.
 
+### D-24195 — LAGN 1.1.0: version constants, a migration seam, and version-gated support pools
+
+**Status:** Active (wire format) 2026-07-18. WP-036 Phase B2. Extends D-24194,
+which put support pools on the MATCH-SETUP envelope and explicitly deferred the
+wire format to this entry.
+
+**User-Visible Surface:** downloaded `.lagn.json` game records; the published
+schema at `https://legendary-arena.com/schemas/lagn/v1/lagn-v1.json`.
+
+**Three problems, one entry.**
+
+**1. No single source for the version.** `'1.0.0'` was duplicated across 5
+production sites and ~30 fixtures. `LAGN_VERSION`, `LAGN_VERSION_1_0_0`,
+`LAGN_VERSION_1_1_0` and `LAGN_SUPPORTED_VERSIONS` are now exported from
+`packages/lagn-spec`. Following `versioning.check.ts:22-30`, these live in TS
+and are deliberately **not** read from `package.json` — no build-pipeline
+coupling; `package.json` is the human-readable copy bumped in lockstep.
+
+**2. No migration path.** `lagn_version` was `z.literal('1.0.0')`: a hard gate
+that would have orphaned every stored record on any bump. `src/migrate.ts`
+introduces the seam, mirroring `versioning.migrate.ts` — a frozen forward-only
+registry keyed `"1.0.0->1.1.0"` with pure `LagnMigrationFn`s (no I/O, RNG, or
+wall clock). `migrateToCurrent()` fails loud on an unknown version or a
+registry gap rather than returning a half-migrated payload, per D-0802.
+
+The `1.0.0 -> 1.1.0` migration is a **pure restamp**. 1.1.0 adds exactly one
+optional field, so every 1.0.0 document is already structurally valid 1.1.0. It
+deliberately does **not** synthesize pools from the counts: counts say how
+many, and no card identity is recoverable from them. A fabricated pool is worse
+than an absent one.
+
+**3. Silent stripping.** The LAGN schema has no `.strict()`, so zod strips
+unknown keys. A `support_pools` block written into a 1.0.0 document would have
+vanished with the document still reporting valid — a preset that saves and
+comes back empty. **Resolved by version-gating**: `support_pools` is rejected
+outright on a 1.0.0 document. This was chosen over making the whole schema
+`.strict()`, which would newly reject documents that pass today.
+
+**Readers accept both versions; writers emit only `LAGN_VERSION`.** That
+asymmetry is what keeps stored records readable without a migration pass over
+existing data. `apps/server/src/match/matchLagn.logic.ts` and
+`apps/registry-viewer/src/composables/useLoadoutLagnExport.ts` now stamp the
+constant.
+
+**One schema file per MAJOR version.** `schemas/lagn-v1.json` continues to be
+the single generated, CI-diff-gated artifact; its `lagn_version` moved from
+`const: "1.0.0"` to `enum: ["1.0.0", "1.1.0"]`. The WP-036 proposal had
+suggested publishing a separate 1.1 file; that was rejected once the generator
+wiring was understood — a second file would need a second generator, a second
+CI gate, and would fork the `$schema` URL every producer already stamps.
+
+**Known hazard, unchanged by this entry.** `generateSchema()` remains a
+hand-written duplicate of the zod schema inside the same file, and CI verifies
+only that the committed JSON matches the *generator* — not that the generator
+matches zod. Both were updated here by hand. Deriving one from the other is
+worth its own packet.
+
 Protect this file.

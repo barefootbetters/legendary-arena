@@ -8,7 +8,7 @@
  */
 
 import { computed, ref, type ComputedRef, type Ref } from "vue";
-import { validate, type LAGN } from "@legendary-arena/lagn";
+import { validate, LAGN_VERSION, type LAGN } from "@legendary-arena/lagn";
 import type { MatchSetupDocument } from "@legendary-arena/registry/setupContract";
 
 /**
@@ -129,7 +129,7 @@ function buildLagnObject(
   const lagnOutcome = mapOutcomeToLagn(outcome);
 
   return {
-    lagn_version: "1.0.0",
+    lagn_version: LAGN_VERSION,
     $schema: "https://legendary-arena.com/schemas/lagn/v1/lagn-v1.json",
     game_id: gameId,
     variant: lagnVariant,

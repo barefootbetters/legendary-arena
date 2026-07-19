@@ -1,12 +1,15 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "LAGN v1.0 — Legendary Arena Game Notation",
+  "title": "LAGN v1.1 — Legendary Arena Game Notation",
   "description": "Three-tier JSON format for Legendary Arena game records: Tier 1 (setup), Tier 2 (card catalog), Tier 3 (replay log)",
   "type": "object",
   "properties": {
     "lagn_version": {
       "type": "string",
-      "const": "1.0.0"
+      "enum": [
+        "1.0.0",
+        "1.1.0"
+      ]
     },
     "$schema": {
       "type": "string",
@@ -146,6 +149,23 @@
         "sidekicks_count": {
           "type": "integer",
           "minimum": 0
+        },
+        "support_pools": {
+          "type": "object",
+          "properties": {
+            "bystanders": {
+              "$ref": "#/$defs/support_pool"
+            },
+            "wounds": {
+              "$ref": "#/$defs/support_pool"
+            },
+            "shield_officers": {
+              "$ref": "#/$defs/support_pool"
+            },
+            "sidekicks": {
+              "$ref": "#/$defs/support_pool"
+            }
+          }
         }
       }
     },
@@ -196,6 +216,51 @@
         "timestamp": {
           "type": "string",
           "format": "date-time"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "support_pool": {
+      "type": "object",
+      "required": [
+        "mode",
+        "cards"
+      ],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "sets",
+            "explicit"
+          ]
+        },
+        "sets": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "cards": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "ext_id",
+              "copies"
+            ],
+            "properties": {
+              "ext_id": {
+                "type": "string"
+              },
+              "copies": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          }
         }
       }
     }
