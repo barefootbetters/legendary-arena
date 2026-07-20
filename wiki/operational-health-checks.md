@@ -15,23 +15,27 @@ source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\operational-health-checks.md (this page — https://ewiki.legendary-arena.com/operational-health-checks/)
   - ../scripts/check-connections.mjs
   - ../scripts/check-subdomains.mjs
+  - ../scripts/check-wiki-freshness.mjs
   - ../docs/ops/domains.json
   - ../docs/ops/DOMAINS.md
   - ../package.json
-last-reviewed: 2026-05-19
+last-reviewed: 2026-07-19
 ---
 
 ## Summary
 
-Two operator-facing scripts probe the runtime perimeter of the
+Three operator-facing scripts probe the runtime perimeter of the
 Legendary Arena platform: [`scripts/check-connections.mjs`](../scripts/check-connections.mjs)
 verifies environment, toolchain, and connectivity to every external
 service the engine and apps depend on; [`scripts/check-subdomains.mjs`](../scripts/check-subdomains.mjs)
 walks the canonical domain manifest at
 [`docs/ops/domains.json`](../docs/ops/domains.json) and classifies
 each entry against its declared `live` / `planned` state, with
-DNS + TLS diagnostics on every failed or pending row. Both are
-invoked via pnpm aliases (`pnpm check`, `pnpm check:domains`,
+DNS + TLS diagnostics on every failed or pending row; and
+[`scripts/check-wiki-freshness.mjs`](../scripts/check-wiki-freshness.mjs)
+reports whether the live ewiki was actually rebuilt from the newest
+commit that should have triggered a build. All three are invoked via
+pnpm aliases (`pnpm check`, `pnpm check:domains`, `pnpm check:wiki`,
 `pnpm check:incident`) and are the first diagnostic step when
 something looks broken in production.
 
@@ -162,6 +166,46 @@ error (manifest unreadable, JSON parse failure).
 
 The diagnostics are slow-path only — successful `OK` rows do not
 pay the DNS + TLS cost.
+
+### `pnpm check:wiki` — ewiki deploy freshness
+
+[`scripts/check-wiki-freshness.mjs`](../scripts/check-wiki-freshness.mjs)
+answers a question the two reachability probes structurally cannot:
+*is the live ewiki built from the newest commit that should have
+triggered a build?*
+
+The ewiki's Render static site (`legendary-arena-wiki`) has
+`autoDeploy` disabled; the `wiki-viewer` workflow's `deploy` job is
+the sole trigger, firing Render's deploy hook only after the
+link-integrity, Hugo build, determinism, and JS-free gates pass. That
+keeps broken content off the live site, but it also means the live
+wiki freezes silently whenever the workflow does not complete — no
+red build, no failed request, just a page that is not there.
+
+The check compares the newest commit on `origin/main` touching any
+`wiki-viewer` trigger path against the newest successful run, treating
+a run as covering the commit when the commit is reachable from the
+run's head. On a mismatch it names the run that should have deployed
+and what its state means: `queued` points at a GitHub Actions incident
+rather than a repository problem, `failure` points at a content gate,
+and no-run-at-all points at a trigger-path mismatch.
+
+Two deliberate constraints:
+
+- **It never fetches the live site.** The ewiki sits behind Cloudflare
+  Access, so an unauthenticated request returns a `302` login redirect
+  for every path — a deployed page and a missing one are
+  indistinguishable from outside. Workflow-run history is the only
+  observable that reflects deploy state.
+- **It is operator-run, not scheduled.** The failure class it detects
+  is "Actions is not running our workflows"; a nightly job would queue
+  behind the same outage it is meant to report.
+
+`TRIGGER_PATHS` in the script mirrors the `paths:` filter in
+[`.github/workflows/wiki-viewer.yml`](../.github/workflows/wiki-viewer.yml).
+The workflow file is authoritative — a path added there and not here
+makes the check report a false "fresh", which is the exact
+reassurance it exists to prevent.
 
 ### `pnpm check:incident` — combined run
 
