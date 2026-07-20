@@ -93,11 +93,20 @@ images/standard/
 * text=auto
 ```
 
-### `.npmrc` (root level — allows esbuild build scripts in CI)
+### `pnpm-workspace.yaml` (root level — allows esbuild build scripts in CI)
 
+```yaml
+allowBuilds:
+  esbuild: true
 ```
-ignore-scripts=false
-```
+
+pnpm 10 blocks dependency postinstall scripts by default and gates them
+through this key, **not** through `ignore-scripts` in an `.npmrc`. An earlier
+revision of this doc described a root `.npmrc` carrying `ignore-scripts=false`;
+that file existed as `npmrc` (no leading dot), was never read by pnpm, and has
+been deleted. Build logs still report `Ignored build scripts: sharp,
+vue-demi` — expected, since only `esbuild` is allowed. Add a package here
+if it ever needs its postinstall to run.
 
 ---
 
@@ -116,11 +125,22 @@ ignore-scripts=false
 | Project name | `legendary-arena` |
 | Production branch | `main` |
 | Framework preset | None |
-| Build command | `pnpm install && pnpm viewer:build` |
+| Build command | `pnpm viewer:build` |
 | Build output directory | `apps/registry-viewer/dist` |
 | Root directory | *(leave empty)* |
 
 Click Save and Deploy.
+
+**Do not prefix the build command with `pnpm install &&`.** Pages already runs
+`pnpm install` itself before executing the build command — the log shows
+`Installing project dependencies: pnpm install` on its own line. A second
+install re-resolves the whole workspace for no effect (`Already up to date`)
+and emits a duplicate set of warnings, which makes a real install failure
+harder to spot. This field carried the redundant prefix until 2026-07-20.
+
+Pages sets `CI=true`, so that install is already `--frozen-lockfile`; the log
+line `Lockfile is up to date, resolution step is skipped` is the confirmation.
+No flag or `.npmrc` is needed to get frozen behaviour here.
 
 ### Approving esbuild (first build only)
 

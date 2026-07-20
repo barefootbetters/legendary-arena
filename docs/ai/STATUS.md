@@ -32,9 +32,13 @@ the edit.
 D-24209. Verified by an explicit `git diff`, because `check:node-pin` rejects
 only an exact pin and would not have caught a floor being raised.
 
-**Outstanding:** confirm from a Cloudflare Pages build log that the reported
-Node version is `24.18.0` (it read `22.23.1` before this). Tracked as a
-post-merge operator step, not a DoD gate.
+**AC-9 CONFIRMED (2026-07-20 22:09 UTC).** The `legendary-arena` Pages project
+(the registry viewer, `cards.legendary-arena.com`) built `209d9a10` and
+reported `Detected the following tools from environment: nodejs@24.18.0`,
+then installed `node-v24.18.0-linux-x64`. "From environment" is asdf reading
+`.node-version` — no dashboard variable involved, which is the property the
+pin was for. It read `22.23.1` before this packet. CI could show the pin was
+consistent; only a build log could show it binds in production.
 
 
 ### WP-395 / EC-435 — Canonical villain & henchmen loadouts for gauntlet qualification (D-24199 Active) (2026-07-20)
