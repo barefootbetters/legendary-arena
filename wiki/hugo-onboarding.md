@@ -11,6 +11,7 @@ related:
   - brevo-email-pipeline.md
   - wiki-viewer.md
   - ewiki-authoring.md
+  - workspace-map.md
 status: draft
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\hugo-onboarding.md (this page — https://ewiki.legendary-arena.com/hugo-onboarding/)
@@ -71,27 +72,28 @@ page you are reading is `wiki/hugo-onboarding.md`.
 2. Click the **✏️ pencil** ("Edit this file"). Shortcut: swap `/blob/`
    for `/edit/` in the URL.
 3. Make the change. Use the **Preview** tab to sanity-check the Markdown.
-4. **Commit changes.** Start the message with `EC-142:` (the ewiki content
-   lane) — for example,
-   `EC-142: hugo-onboarding — fix the Brevo dashboard link`.
-5. Choose **Commit directly to the `main` branch**. `main` is unprotected
-   and direct-to-`main` is the normal path for wiki content — the opposite
-   of the marketing repo's branch → PR rule under *Git workflow &
-   deployment* below (different repo, different rule). For a large or risky
-   change, pick **Create a new branch and start a pull request** instead;
-   the same CI runs on the PR.
-6. Done — the push to `main` deploys it (see below).
+4. **Commit changes.** Start the message with `INFRA:` (the canonical
+   prefix for wiki page edits) — for example,
+   `INFRA: wiki hugo-onboarding — fix the Brevo dashboard link`.
+5. Choose **Create a new branch and start a pull request** — the same
+   branch → PR rule as the marketing repo under *Git workflow &
+   deployment* below. (`main` is unprotected here, so **Commit directly to
+   the `main` branch** *works* and nothing will stop you. It is still not
+   the convention.)
+6. Merge the PR once CI is green — the merge to `main` deploys it (see
+   below).
 
 > ℹ️ **Bigger edit, still no clone?** Press `.` (the period key) on any
 > page of the repo on GitHub to open **github.dev** — full VS Code in the
 > browser over the same repo, handy for touching several files at once.
 > Commit the same way.
 
-**What happens after you commit to `main`:**
+**What happens after the PR merges:**
 
 ```
-commit wiki/<slug>.md on main
+PR merged -> wiki/<slug>.md lands on main
   -> GitHub Actions (.github/workflows/wiki-viewer.yml), ~30 seconds:
+       (the same gates already ran on the PR)
        project wiki/ -> content/, case-sensitive internal-link check,
        Hugo build, JS-free + determinism gates
   -> the deploy job fires the Render deploy hook
@@ -116,9 +118,9 @@ much longer lag is a Render deploy stall, not your edit — details in
 rendered page before publishing — a brand-new page, a big restructure, or
 a table-heavy edit. Then use the [Wiki Viewer](wiki-viewer.md) flow:
 `git pull` → edit `wiki/<slug>.md` → `pnpm wiki-viewer:dev` (serves
-`http://localhost:1313` with live-reload) → commit `EC-142:` →
-`git push origin main`. For a one-word fix, the browser path above is the
-whole job.
+`http://localhost:1313` with live-reload) → commit `INFRA:` on a branch →
+push → open and merge the PR. For a one-word fix, the browser path above
+is the whole job.
 
 ### If you're coming from WordPress / WooCommerce
 
@@ -224,6 +226,70 @@ C:\www\legendary-arena-com\
 ├── docs\                  # governance: VISION, ROADMAP, REFERENCE\, work-packets\
 └── public\                # BUILD OUTPUT — gitignored, never edit or commit
 ```
+
+### Where files are saved (and what never gets committed)
+
+The tree above is what *is* in the repo. Three categories are
+deliberately outside it, and mixing them up is the most common day-one
+mistake. The general rule is on [Workspace Map](workspace-map.md); this
+is how it lands here.
+
+**Gitignored — regenerated or machine-local:**
+
+| Path | Why |
+|---|---|
+| `public\` | Hugo build output. Regenerated on every build; inspect it, never edit it. |
+| `resources\` | Hugo's asset-pipeline cache. |
+| `node_modules\` | Restored by `npm install`. |
+| `.dev.vars` | **Your local secrets.** `BREVO_API_KEY`, `BREVO_LIST_ID`. Production values live as Cloudflare Pages dashboard environment variables — never in the repo. `.dev.vars.example` is the committed template; it carries the *shape*, never a real value. |
+
+The pre-commit hook scans for leaked credentials, but treat that as a
+backstop, not permission to be careless — a key that reaches a commit
+has to be rotated whether or not the push succeeded.
+
+**`themes\PaperMod\` is a git submodule, not your code.** You override
+it in `layouts\`; you never edit inside it. An edit there survives
+locally and is lost on the next submodule update, with no diff in the
+main repo to explain where the change went.
+
+**In pCloud —** the working files a marketing change is made *from*:
+
+| Contents | Why not git |
+|---|---|
+| Product photography originals before crop and WebP conversion | Multi-megabyte raws; only the optimized image ships to `static\images\shop\` |
+| Design comps and Figma exports at full resolution | Source material, not deliverables |
+| Brevo list exports and campaign analytics pulls | Personal data — see [Newsletter Authoring](newsletter-authoring.md) |
+| Vendor and supplier documents — invoices, licensing, print quotes | Not content, and often counterparty detail |
+
+Same rule as everywhere else: **the optimized derivative is committed;
+the source it was exported from is not.** `static\` is served verbatim,
+so anything parked there ships to production and counts against page
+weight even if nothing links to it.
+
+**The two repos do not live in the same place, and the marketing repo
+has the safer of the two locations.**
+
+| Repo | Path | On the pCloud sync drive? |
+|---|---|---|
+| Marketing (`legendary-arena-website`) | `C:\www\legendary-arena-com\` | **No — this is the correct state** |
+| Engine (`legendary-arena`) | `C:\pcloud\BB\DEV\legendary-arena\` | Yes — a known hazard |
+
+**A git checkout does not belong on a synced drive.** pCloud syncs the
+`.git` directory itself, so refs can shift underneath a running session:
+observed symptoms include phantom uncommitted changes that resolve
+themselves, `HEAD` moving between branches mid-session, untracked draft
+files disappearing outright, and — worst — a commit landing on another
+session's branch and reaching an unrelated PR. The engine repo is
+scheduled to move off pCloud for exactly this reason; the marketing repo
+already sits where that move is headed.
+
+So do **not** relocate the marketing checkout into `C:\pcloud\` to
+"match" the engine repo. Its durability comes from pushing to GitHub,
+not from file sync — push early rather than leaving work in the working
+directory.
+
+The general storage rule and the full hazard list are on
+[Workspace Map](workspace-map.md).
 
 ### How Hugo builds a page
 
@@ -478,6 +544,9 @@ button) are mapped in
 - **Commit hygiene** —
   `C:\www\legendary-arena-com\docs\ai\REFERENCE\01.3-commit-hygiene.md`
   governs every commit you make in the marketing repo.
+- **[Workspace Map](workspace-map.md)** — Owns the three-surface rule
+  (git / pCloud / hosted) and locates both repos. Read it if you are
+  unsure whether a file belongs in the repo at all.
 
 ## Edge Cases
 
@@ -505,6 +574,20 @@ button) are mapped in
 - **Editing *this* wiki page is not like the marketing site.** The ewiki
   forbids raw HTML and shortcodes — an unescaped `{{</* … */>}}` in a
   wiki page **breaks the build**. See [Ewiki Authoring](ewiki-authoring.md).
+- **`.dev.vars` is per-machine and never shared.** It is gitignored, so
+  a fresh clone has no newsletter function until you copy
+  `.dev.vars.example` and fill it from the Brevo dashboard. Nobody can
+  send it to you from the repo — that is the point.
+- **Uncommitted work has no backup in either repo — and sync is not the
+  answer.** Pushing to GitHub is what makes work durable. Do not move the
+  marketing checkout onto the pCloud drive to gain "backup": syncing a
+  `.git` directory causes refs to shift under a live session, which is a
+  worse problem than the one it appears to solve. See
+  [Workspace Map](workspace-map.md).
+- **Anything under `static\` ships.** It is served verbatim, so a
+  full-resolution source image left beside its optimized export is
+  published and counted against page weight — silently, since nothing
+  links to it.
 
 ## References
 

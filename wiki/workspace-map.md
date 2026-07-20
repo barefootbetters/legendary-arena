@@ -113,6 +113,10 @@ restated here.
 | `C:\pcloud\BB\DEV\legendary-arena` | `barefootbetters/legendary-arena` | Engine, server, clients, card data, the `wiki/` source, all AI governance | Render (server, wiki), Cloudflare Pages (viewer, client, legends board) |
 | `C:\www\legendary-arena-com` | the marketing-site repo | Hugo marketing site: blog posts, brand tokens, layouts, marketing docs | Cloudflare Pages → `www.legendary-arena.com` |
 
+The engine repo's path is where it *is*, not where it *should* be — see
+the sync-drive hazard under Edge Cases. The marketing repo's location
+off pCloud is the correct pattern for a git checkout.
+
 Other trees under `C:\www\` (`barefootbetters-www`, `legendary-forge`,
 `jefferyjjensen-wiki`, `stem-diorama-kit`, …) are separate projects with
 the same three-surface split.
@@ -224,16 +228,52 @@ asked. Two pointers keep it reachable:
   bucket exists and is where that work goes." If no work is destined for
   them, they are noise; if work is destined for them, it is currently
   landing somewhere else.
-- **pCloud conflict files.** A pCloud-synced path can spawn
-  `… [conflicted N]` siblings when two devices write the same file. The
-  un-suffixed file is canonical. This bites the engine repo directly,
-  because the working tree is on a synced path.
+- **The engine repo is on the sync drive, and that is a known hazard —
+  not a feature.** `C:\pcloud\BB\DEV\legendary-arena` sits on pCloud,
+  which syncs the `.git` directory itself. Observed consequences, in
+  increasing severity: `… [conflicted N]` sibling files (the un-suffixed
+  file is canonical, and has been the *truncated* one); uncommitted edits
+  silently reverting to their committed state with no conflict file at
+  all; phantom uncommitted changes that later resolve themselves; `HEAD`
+  and the current branch flipping between states mid-session; untracked
+  draft files vanishing outright; and a commit landing on a concurrent
+  session's branch and being pushed into an unrelated PR.
+
+  Three mitigations, in order of effect:
+
+  1. **Do sustained git work in an off-pCloud worktree**, not in the
+     canonical tree — `git worktree add C:\claude-worktrees\<name> -b
+     <branch> origin/main`.
+  2. **Commit early and often.** A commit is sync-proof; an uncommitted
+     working tree is not. Untracked work is what gets lost.
+  3. **Run `git log origin/main..HEAD` before every push** and confirm
+     only your own commits are listed.
+
+  Moving the engine repo off pCloud is planned and currently deferred by
+  operator decision — the target is `C:\www\legendary-arena`, alongside
+  the marketing repo, which is already correctly off the sync drive. Do
+  not start that migration without an explicit instruction.
+- **Sync is not backup, and for a git repo it is worse than neither.**
+  The durability of work in either repo comes from pushing to GitHub. A
+  checkout is not made safer by living on a synced drive; it is made
+  less safe. Content directories — `C:\pcloud\LA\` video assets, design
+  drafts, vendor documents — are the opposite case: no `.git`, nothing
+  to corrupt, and sync is exactly the right tool.
 - **The R2 metadata mirror is hand-synced.** A commit to `data/` changes
   nothing the Registry Viewer serves until an explicit `rclone copy`
   runs. Detail in [Data & File Locations](data-file-locations.md).
 
 ## Open Questions
 
+- **D-24207's `DEV\<repo-name>\` half needs revisiting against the
+  deferred off-pCloud move.** The decision records
+  `C:\pcloud\BB\DEV\<repo-name>\` as the checkout location alongside
+  `C:\pcloud\BB\WIP\<repo-name>\` for working files. The working-files
+  half is sound — content on a sync drive is the right use of one. The
+  checkout half describes current state but points the wrong direction,
+  because the planned migration moves checkouts *off* pCloud entirely.
+  Narrowing D-24207 to working-files folders, and leaving checkout
+  location to the migration, is the likely correction.
 - **A pCloud naming convention mirroring repo names is proposed but not
   adopted.** The idea is that a project's pCloud folder carries the same
   name as its repository — `legendary-arena` on both surfaces — so the
