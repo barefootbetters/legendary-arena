@@ -12,6 +12,7 @@ related:
   - hugo-web-system.md
   - homepage-appendix.md
   - brevo-email-pipeline.md
+  - workspace-map.md
 status: draft
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\blog-post-authoring.md (this page — https://ewiki.legendary-arena.com/blog-post-authoring/)
@@ -511,6 +512,80 @@ hugo server --port 1313 --bind 127.0.0.1
 
 Search is not available locally (Pagefind is build-time only).
 
+### Where blog post files are saved
+
+Blog work spans the three storage surfaces described on
+[Workspace Map](workspace-map.md). The surface is chosen by what the
+file *is*, not by which post it belongs to.
+
+**In the marketing repo (git) —** the content lane and everything it
+touches:
+
+```
+C:\www\legendary-arena-com\
+├── content\posts\<slug>.md              # the post itself
+├── static\images\posts\<slug>\          # its images — directory name
+│   ├── hero.webp                        #   MUST match the slug exactly
+│   ├── curve-example.webp
+│   └── deck-flow-diagram.webp
+├── archetypes\
+│   ├── posts.md                         # default post archetype
+│   └── gauntlet-guide.md                # Gauntlet Guides archetype
+├── layouts\
+│   ├── single.html                      # single post layout
+│   └── _partials\cta-block.html         # the authoritative CTA mapping
+├── static\brand-tokens.css              # brand tokens (v1, locked)
+└── docs\
+    ├── 04-CONTENT-CONVENTIONS.md        # authoritative on naming
+    ├── 05-SEO-CONVENTIONS.md
+    ├── 06-CONTENT-LANE-WORKFLOW.md
+    └── brand\strategy.md                # brand voice
+```
+
+The first two paths are the **content lane**; everything below them is
+site-affecting and needs a `WP-NNN:` prefix. That boundary is enforced by
+commit hooks, not convention — see
+[Commit Prefixes](#commit-prefixes-marketing-repo) above.
+
+**Post images live in git, and this is deliberate.** The Determinism rule
+under [Images](#images) prohibits external hosting for post imagery, so
+these are the one image class that does *not* follow the general
+"binaries go to pCloud" rule. They are small by budget (max 200KB, hero
+80-120KB), versioned with the post that references them, and deployed by
+the same push. **Card art is the opposite case** — it is served from
+Cloudflare R2 and never committed; see
+[Data & File Locations](data-file-locations.md).
+
+**In pCloud —** working files that never reach the repo:
+
+| Contents | Why not git |
+|---|---|
+| Source images before export — PSD/AI/Figma exports, screenshots at full resolution | Multi-megabyte originals; only the optimized `.webp` ships |
+| Screen recordings and captures taken for a post | Binary, large, usually superseded by a still |
+| Draft prose written outside the repo before it becomes a `content\posts\` file | Scratch; the repo copy is the artifact once it exists |
+| Research material — reference PDFs, competitor screenshots, licensing correspondence | Not content, and some carries counterparty detail |
+
+The rule that resolves the image case: **the optimized derivative is
+committed; the source it was exported from is not.** A 40MB layered
+original and a 90KB `hero.webp` are different files with different
+homes.
+
+**Hosted —** what the post links out to rather than contains:
+
+| Surface | What the post references |
+|---|---|
+| `play.legendary-arena.com` | The `cta: "play"` / `"tournament"` targets |
+| `legends.legendary-arena.com` | The `cta: "leaderboard"` href, built from `gauntlet_board` |
+| Cloudflare R2 (`images.legendary-arena.com`) | Card art, never copied into `static\images\` |
+| YouTube | Video embeds — the video file never enters the repo; see [Video Production Workflow](video-production-workflow.md) |
+
+**Generated blocks are not saved anywhere.** The DERIVED facts in a
+Gauntlet Guide come from `node scripts/gauntlet-post-block.mjs
+<setAbbr> <mastermindSlug>`, run at drafting time and pasted in. There
+is no cached copy to keep in sync — regenerate rather than copying from
+a previous post, which is how three different gauntlet counts once went
+live simultaneously.
+
 ### Annotated Blog Post Example
 
 ```markdown
@@ -590,6 +665,10 @@ deck's cost distribution matters more than its ceiling.
 - **[Hugo Web System](hugo-web-system.md)** — The marketing site's
   Hugo architecture. Blog posts render through the PaperMod template
   hierarchy with project-level overrides.
+- **[Workspace Map](workspace-map.md)** — Owns the three-surface rule
+  (git / pCloud / hosted) that the file locations above apply. Post
+  images are the documented exception to "binaries go to pCloud", for
+  the determinism reason stated under Images.
 
 ## Edge Cases
 
@@ -609,6 +688,16 @@ deck's cost distribution matters more than its ceiling.
   truncated in search results and social previews. The SEO
   conventions doc (`05-SEO-CONVENTIONS.md`) governs the full
   discipline.
+- **Everything under `static\` ships.** Hugo copies the whole directory
+  into the build, so a layered source file parked next to its export is
+  published and counted against page weight — silently, since nothing
+  links to it. Keep sources in pCloud; commit only the optimized
+  derivative.
+- **`content\posts\` and `static\images\posts\` are the only paths a
+  `POST:` or `FIX:` commit may touch.** The hook rejects the whole
+  commit otherwise, including a one-character typo fix that happens to
+  also touch `layouts\`. Split it rather than escalating the prefix.
+
 ## References
 
 - `C:\www\legendary-arena-com\archetypes\posts.md` — post archetype
