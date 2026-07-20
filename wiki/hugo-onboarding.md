@@ -75,24 +75,25 @@ page you are reading is `wiki/hugo-onboarding.md`.
 4. **Commit changes.** Start the message with `INFRA:` (the canonical
    prefix for wiki page edits) — for example,
    `INFRA: wiki hugo-onboarding — fix the Brevo dashboard link`.
-5. Choose **Commit directly to the `main` branch**. `main` is unprotected
-   and direct-to-`main` is the normal path for wiki content — the opposite
-   of the marketing repo's branch → PR rule under *Git workflow &
-   deployment* below (different repo, different rule). For a large or risky
-   change, pick **Create a new branch and start a pull request** instead;
-   the same CI runs on the PR.
-6. Done — the push to `main` deploys it (see below).
+5. Choose **Create a new branch and start a pull request** — the same
+   branch → PR rule as the marketing repo under *Git workflow &
+   deployment* below. (`main` is unprotected here, so **Commit directly to
+   the `main` branch** *works* and nothing will stop you. It is still not
+   the convention.)
+6. Merge the PR once CI is green — the merge to `main` deploys it (see
+   below).
 
 > ℹ️ **Bigger edit, still no clone?** Press `.` (the period key) on any
 > page of the repo on GitHub to open **github.dev** — full VS Code in the
 > browser over the same repo, handy for touching several files at once.
 > Commit the same way.
 
-**What happens after you commit to `main`:**
+**What happens after the PR merges:**
 
 ```
-commit wiki/<slug>.md on main
+PR merged -> wiki/<slug>.md lands on main
   -> GitHub Actions (.github/workflows/wiki-viewer.yml), ~30 seconds:
+       (the same gates already ran on the PR)
        project wiki/ -> content/, case-sensitive internal-link check,
        Hugo build, JS-free + determinism gates
   -> the deploy job fires the Render deploy hook
@@ -117,9 +118,9 @@ much longer lag is a Render deploy stall, not your edit — details in
 rendered page before publishing — a brand-new page, a big restructure, or
 a table-heavy edit. Then use the [Wiki Viewer](wiki-viewer.md) flow:
 `git pull` → edit `wiki/<slug>.md` → `pnpm wiki-viewer:dev` (serves
-`http://localhost:1313` with live-reload) → commit `INFRA:` →
-`git push origin main`. For a one-word fix, the browser path above is the
-whole job.
+`http://localhost:1313` with live-reload) → commit `INFRA:` on a branch →
+push → open and merge the PR. For a one-word fix, the browser path above
+is the whole job.
 
 ### If you're coming from WordPress / WooCommerce
 

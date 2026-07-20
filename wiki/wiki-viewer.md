@@ -53,12 +53,12 @@ from `wiki/<slug>.md`.
    to `/edit/` in the URL.
 3. Make the change; use the **Preview** tab to sanity-check the Markdown.
 4. **Commit changes** with an `INFRA:` message (for example
-   `INFRA: wiki scoring — fix the par-baseline typo`), and **Commit directly
-   to the `main` branch** — `main` is unprotected and direct-to-`main` is
-   the normal path for wiki content. For a larger change, choose **Create
-   a new branch and start a pull request** instead; the same CI runs on it.
-5. The push to `main` triggers the deploy described under *How to publish*
-   below.
+   `INFRA: wiki scoring — fix the par-baseline typo`), and choose **Create
+   a new branch and start a pull request** — wiki edits go through a PR,
+   not straight to `main`. (`main` is unprotected, so committing directly
+   *works*; it is simply not the convention, and nothing will stop you.)
+5. Merge the PR once CI is green. The merge to `main` triggers the deploy
+   described under *How to publish* below.
 
 > ℹ️ Press `.` (the period key) on any page of the repo on GitHub to open
 > **github.dev** — full VS Code in the browser over the same repo — when a
@@ -313,12 +313,15 @@ Full details: `docs/ai/REFERENCE/01.3-commit-hygiene.md` in each repo.
 ### How to publish
 
 ```
+git switch -c claude/wiki-<slug>
 git add wiki/<slug>.md
 git commit -m "INFRA: wiki <slug> — <one-line summary>"
-git push origin main
+git push -u origin HEAD
+gh pr create --fill
 ```
 
-On push to `main`, CI (`.github/workflows/wiki-viewer.yml`) runs the
+The same CI runs on the PR, so a broken build is caught before merge.
+On merge to `main`, CI (`.github/workflows/wiki-viewer.yml`) runs the
 link-check + Hugo build gates (~30 seconds), then fires the Render deploy
 hook; Render rebuilds and publishes the static site, and the page appears
 at `https://ewiki.legendary-arena.com/<slug>/` a few minutes later.
@@ -359,17 +362,21 @@ Pull the latest from git first (see above), then open the page at
 and commit:
 
 ```
+git switch -c claude/wiki-<slug>
 git add wiki/<slug>.md
 git commit -m "INFRA: wiki <slug> — <one-line summary of change>"
-git push origin main
+git push -u origin HEAD
+gh pr create --fill
 ```
 
 If you edited multiple pages in one pass:
 
 ```
+git switch -c claude/wiki-interactions-wp048
 git add wiki/scoring.md wiki/turn-system.md
 git commit -m "INFRA: wiki scoring, turn-system — update interactions after WP-048"
-git push origin main
+git push -u origin HEAD
+gh pr create --fill
 ```
 
 Update `last-reviewed` in the front-matter whenever you verify the

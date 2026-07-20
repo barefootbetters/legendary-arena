@@ -203,16 +203,20 @@ on every build (D-13810).
    under `EC-142:` remain valid in the log; new edits use `INFRA:`.
 
    ```
+   git switch -c claude/wiki-<slug>
    git add wiki/<slug>.md
    git commit -m "INFRA: wiki <slug> — <one-line summary>"
    ```
 
-3. Push to `main` (directly, or via PR — review is recommended for
-   non-trivial content changes):
+3. Push the branch and open a PR — wiki edits go through review, not
+   straight to `main`:
 
    ```
-   git push origin main
+   git push -u origin HEAD
+   gh pr create --fill
    ```
+
+   Merge once CI is green.
 
 Render auto-rebuilds the `legendary-arena-wiki` static-site service
 on every push to `main` that touches `wiki/` or `apps/wiki-viewer/`,
