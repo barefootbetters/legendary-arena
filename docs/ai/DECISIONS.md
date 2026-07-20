@@ -30654,3 +30654,94 @@ from the lockfile. Build commands are project settings, so that one is an
 operator step.
 
 Protect this file.
+
+---
+
+### D-24207 — a project's pCloud working-files folder carries its repository's name; one project root, not two
+
+**Status:** Active (governance) 2026-07-20. **Migration pending** — the
+convention is locked, the paths on disk still reflect the pre-decision layout.
+Every path cited by this entry as "current" remains accurate until the move
+runs.
+
+**User-Visible Surface:** none — operator workspace convention.
+
+**Decision.** For every project that has a git repository, its pCloud
+working-files folder is named **identically to the repository** and sits at one
+fixed depth. Concretely:
+
+```
+C:\pcloud\BB\DEV\<repo-name>\      # the git checkout
+C:\pcloud\BB\WIP\<repo-name>\      # working files for the same project
+```
+
+`legendary-arena` therefore appears at both, spelled the same way, and the
+translation step between "which repo" and "which folder" disappears.
+
+**The drift this closes.** The engine repo lives under `C:\pcloud\BB\DEV\`
+while its video, design, and social assets live under a sibling top-level root,
+`C:\pcloud\LA\`. Both roots are defensible in isolation — `BB` is the business,
+`LA` is the product — but nothing on disk records which asset class belongs to
+which, so the split is *learned* rather than *looked up*. One product, two
+roots, no index. The same ambiguity is why match diagnostics, exported
+loadouts, and game logs are currently landing loose at `C:\pcloud\` rather than
+in a project folder: there was no obviously-correct destination, so they went
+to the top.
+
+**Why mirroring repo names rather than inventing a taxonomy.** The repository
+name is already the project's canonical identifier — it names the GitHub
+remote, the deploy targets, and the working directory every Claude Code session
+starts in. Any second naming scheme would need its own mapping document, which
+is one more artifact to keep honest. Reusing a name that is already load-bearing
+costs nothing and cannot drift out of sync with itself.
+
+**Migration is one rename, deliberately.** The target layout is reachable by
+moving `C:\pcloud\LA\` wholesale to `C:\pcloud\BB\WIP\legendary-arena\`, keeping
+its existing children (`videos\`, `video-assets\`, `logo-drafts\`, `products\`,
+`social\`, `ewiki\`) unchanged. A single move was chosen over a tidier
+per-asset-class reorganization precisely because it keeps the re-pointing
+surface small — see below. Loose scratch at the pCloud root lands in a new
+`scratch\` sibling.
+
+**The re-pointing surface, and the ordering that matters.** The
+`C:\pcloud\LA\videos\` root is cited in documentation, and one of those copies
+is authoritative over the other:
+
+1. `C:\www\legendary-arena-com\docs\marketing\video-production-workflow.md` —
+   **the authoritative copy.** Edit this first.
+2. [`wiki/video-production-workflow.md`](../../wiki/video-production-workflow.md) —
+   states in its own header that it mirrors the marketing repo copy and that the
+   marketing repo wins on disagreement. It follows; it does not lead.
+3. [`wiki/workspace-map.md`](../../wiki/workspace-map.md) — the cross-surface
+   locator map, which names the roots directly.
+
+Updating the mirror first would produce a wiki that disagrees with its own
+declared authority, which is worse than not updating it at all.
+
+**Deliberately not decided here.**
+
+- **Whether the checkout itself moves under `WIP\`.** It does not. The `DEV\` /
+  `WIP\` split is the point: one holds git-tracked trees, the other holds
+  everything that is not diffable text. Collapsing them would reintroduce the
+  ambiguity this entry removes.
+- **The internal shape of `WIP\<repo-name>\`.** Beyond the existing children
+  carried over from `LA\`, no per-project subfolder taxonomy is mandated.
+  [Video Production Workflow](../../wiki/video-production-workflow.md) owns the
+  `videos\` shape and keeps it.
+- **The non-Legendary-Arena projects.** `barefootbetters-www`,
+  `legendary-forge`, `jefferyjjensen-wiki`, `stem-diorama-kit`, and the other
+  trees under `C:\www\` are in scope for the convention but are not inventoried
+  or migrated by this entry. They adopt it when each is next touched.
+- **The empty `BRAND\` and `OPS\` roots.** Whether they are deleted as noise or
+  populated as intended destinations is a separate call.
+
+**What this entry does not authorize.** It records a convention; it does not
+move anything. Credentials currently sitting in cleartext at the pCloud root are
+a separate and more urgent problem — they belong in the password manager, not
+in a renamed folder, and no reorganization should be read as having addressed
+them.
+
+**Packet:** none — operator workspace convention, no repo-executable work.
+**Drafted:** 2026-07-20.
+
+Protect this file.
