@@ -30174,6 +30174,45 @@ decision:**
   common Core henchmen recur across many gauntlets. Bought: no invented data,
   and the result is reviewable by inspection.
 
+**Amended again 2026-07-20 — henchmen enforcement: extend the blob-read
+carve-out (operator decision).**
+
+Execution surfaced that **henchmen groups are not recoverable from
+`ScenarioKey`**. The key is
+`{schemeSlug}::{mastermindSlug}::{sorted-villainGroupSlugs}` — villain groups
+only — and no migration adds a henchmen column to
+`legendary.competitive_scores`. So the qualification predicate cannot enforce
+the henchmen half of a canonical loadout from the key alone.
+
+They are, however, reachable: `matchConfiguration` carries
+`henchmanGroupIds`, and reading it from the bgio blob is precedented twice —
+**D-24153** (loadout projection) and **D-24187** (team-key derivation), the
+latter reading `heroDeckIds` off that same object for the Fixed-Pool division.
+This is the same shape of problem.
+
+Three options were considered: (1) villain-groups-only, dropping henchmen from
+qualification; (2) extend the carve-out to read `henchmanGroupIds`; (3) add a
+dedicated column, mirroring how `team_key` landed in migration 034.
+
+**Operator chose (2) — extend the carve-out.** It is precedented rather than
+novel, and it keeps the canonical loadout meaningful. Had (1) been chosen, this
+entry's "villain-group and henchmen-group loadout" wording would have needed
+narrowing to villain-groups-only rather than leaving the WP promising something
+the code does not do.
+
+**Binding on the executing session:**
+
+- Reserve a **new D-number for the carve-out itself** — do not fold it into
+  D-24199. D-24153 and D-24187 each carry their own entry, and this is a new
+  architectural permission, not a refinement of a scoring decision.
+- The impl commit MUST also carry the `docs/ai/ARCHITECTURE.md` §Persistence
+  Boundary edit and the `.claude/rules/architecture.md` mirror **in the same
+  commit**. A D-entry authorising a cross-layer blob read without its
+  ARCHITECTURE edit is a known recurring miss.
+- Keep the read narrow to match precedent: read-only, server-layer, never
+  written back, never round-tripped into gameplay state, and not a licence to
+  interpret `state`/`log`.
+
 Still open for the executing session: where the loadout data lives, and how the
 requirement stays discoverable on the board and challenge link.
 
