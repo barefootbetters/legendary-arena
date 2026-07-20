@@ -76,6 +76,8 @@ For each WP, extract:
 - [ ] `docs/ai/STATUS.md` updated
 - [ ] `docs/ai/DECISIONS.md` updated (list specific decisions)
 - [ ] `docs/ai/work-packets/WORK_INDEX.md` checked off with date
+- [ ] `docs/05-ROADMAP-MINDMAP.md` — node present with the right status glyph,
+      then `pnpm roadmap:counts:write`; `pnpm roadmap:counts:check` exits 0 (see Rules)
 
 ## Common Failure Smells (Optional)
 - [symptom] usually indicates [specific guardrail violation]
@@ -126,6 +128,24 @@ For each WP, extract:
   state "No user-observable change — infrastructure only" so the run is not read
   as visible progress. Engine refactors a player cannot perceive ARE
   `none — infrastructure`; classify honestly.
+- **Every EC that touches a WORK_INDEX row MUST gate the roadmap mindmap.**
+  `Files to Produce` includes `docs/05-ROADMAP-MINDMAP.md`, and `After
+  Completing` includes the node check plus `pnpm roadmap:counts:write` /
+  `roadmap:counts:check` exits 0. This is **CI-enforced, not hygiene**:
+  `ci.yml` runs `pnpm roadmap:counts:test`, and the generator exits **1** when a
+  WORK_INDEX WP has no mindmap node (an orphan) and **2** when the derived count
+  table is stale. Both drafting and execution trip it — drafting adds a `[ ]`
+  row (needs a `📝` node), execution flips it to `[x]` (needs the glyph moved to
+  `✅` **and** the counts regenerated, because open/blocked totals change).
+  Never hand-edit the count table; it is generated. The drift this prevents: the
+  obligation is invisible from the EC itself, so it is discovered only when CI
+  goes red on a docs-only PR. Recurred four times in one line of work — #831's
+  own commit message records Workspace Unit Tests failing on count parity and
+  having to add the node in a follow-up; WP-390 (#827) landed orphaned; WP-392 /
+  WP-393 / WP-394 (#828, #832) landed rows with no nodes and needed the separate
+  cleanup PR #833; and WP-393's execution (#849) still needed an inline
+  file-allowlist amendment because EC-423 omitted the file. ECs for WPs with no
+  WORK_INDEX row (operator-directed EC-only work, e.g. EC-417) are exempt.
 - Short Title in the EC header should match the filename slug semantically
 - The "Common Failure Smells" section is optional — include it when the WP
   has known failure modes that are non-obvious from the guardrails alone
