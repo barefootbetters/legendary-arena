@@ -30367,6 +30367,8 @@ Three problems with that shape. **First, it is already false.** Cloudflare Acces
 
 Protect this file.
 
+
+
 ### D-24204 — VISION gains a North Star, a player promise, and a community posture; growth strategy and financial-ambition caps stay out
 
 **Status:** Active 2026-07-19.
@@ -30446,5 +30448,76 @@ already meaningless, and now they say so.
 
 **Supersedes** WP-389's AC-4, which pinned the old degenerate behaviour and
 was the reason WP-390 had to land second.
+
+Protect this file.
+
+---
+
+### D-24205 — the Node toolchain is pinned to one exact version in `.node-version`; `engines` stays a floor
+
+**Status:** Drafted 2026-07-20; not yet landed (lands Active at WP-400 execution).
+
+**The drift.** Nothing in the repo pins a Node minor. All 21 `node-version:`
+entries across 9 workflow files say `22`; `render.yaml`'s two `NODE_VERSION`
+envVars say `"22"`; root `engines` says `>=22`; there is no `.nvmrc` or
+`.node-version`. Every environment therefore resolves "22" independently to
+whatever its image ships that day, and they already disagree — two Cloudflare
+Pages build logs three days apart report **22.22.0** (dashboard, 2026-07-17)
+and **22.16.0** (registry-viewer, 2026-07-20) from the same repository with no
+intervening change. `corepack@0.35.0` additionally throws `EBADENGINE` on the
+22.22.0 image, wanting `^22.22.2`.
+
+**Why it matters more than the EOL clock.** Node 22 being in LTS Maintenance is
+a scheduling concern with a known remedy. The unpinned toolchain is worse in
+kind: a version-sensitive failure would reproduce in one environment and not
+another, and no artifact in the repo would say why. We could not currently
+answer "what Node built this deploy?" from the commit alone.
+
+**The decision.** `.node-version` at the repo root holds one exact version and
+is the single source of truth. Workflows read it via `setup-node`'s
+`node-version-file` rather than restating it — restating a value in 23 places
+guarantees a partial bump, and a partial bump is invisible until it bites.
+
+**Render restates it, unavoidably.** Render's blueprint schema has no include
+mechanism, and `render.yaml:36` already carries a comment recording that
+`NODE_VERSION` is the documented pin mechanism. Its two literals are held in
+lockstep by `pnpm check:node-pin`, which reads both files independently and
+fails with a full-sentence message naming the mismatch.
+
+**Pin the patch, not `22.x`.** The patch is the axis that actually drifted. A
+minor-only pin would leave the observed failure mode intact.
+
+**`engines` stays a floor.** `>=22` describes what the code requires;
+`.node-version` describes what we build with. Collapsing them would either
+over-constrain consumers or under-constrain builds. They answer different
+questions and both are wanted.
+
+**The 22 → 24 upgrade is deliberately deferred**, not overlooked. Pinning is
+mechanical and reversible; a major-version move needs testing across the
+engine, the server's `tsx` loader, and four deploy targets, and belongs in its
+own packet. Pinning to current 22.x clears the `corepack` warning as a side
+effect. Recorded here so the deferral is a decision with a running clock rather
+than an omission: Node 22 receives critical fixes only.
+
+**The file reaches every environment — verified, not assumed.** An earlier
+draft asserted that Cloudflare Pages selects Node only in project settings and
+was therefore beyond a PR's reach. That was **wrong**, and the pre-flight caught
+it before it landed here permanently. Cloudflare Pages reads `.nvmrc` /
+`.node-version` from the repository root, and Render does too — publishing an
+explicit precedence: **`NODE_VERSION` env var > `.node-version` > `.nvmrc` >
+`engines`**.
+
+That precedence changes the design, not merely a sentence. `render.yaml`'s two
+`NODE_VERSION` envVars **outrank** the file, so leaving them at `"22"` would
+have silently defeated the pin on the one environment that runs the game
+server. They are set to the exact version and held in lockstep by
+`check:node-pin`, and the precedence is recorded here so a future editor
+changing the envVar knows it **wins** over the file rather than losing to it.
+
+**What genuinely remains outside the repo** is the second finding from the same
+build logs: the dashboard Pages project runs `pnpm install --frozen-lockfile`
+while registry-viewer runs a bare `pnpm install`, which can resolve differently
+from the lockfile. Build commands are project settings, so that one is an
+operator step.
 
 Protect this file.
