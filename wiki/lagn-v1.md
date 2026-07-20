@@ -1,5 +1,5 @@
 ---
-title: LAGN Specification (v1.1)
+title: LAGN Specification
 type: Tool
 tags:
   - lagn
@@ -18,10 +18,10 @@ source:
   - ../docs/ai/execution-checklists/EC-275-lagn-spec-publication.checklist.md
   - ../docs/ai/execution-checklists/EC-422-lagn-1-1-support-pools.checklist.md
   - ../packages/lagn-spec/src/migrate.ts
-last-reviewed: 2026-07-19
+last-reviewed: 2026-07-20
 ---
 
-# LAGN Specification (v1.1)
+# LAGN Specification
 
 ## Summary
 
@@ -145,12 +145,18 @@ as a single authoritative Zod schema. The schema:
 - Exports the version constants `LAGN_VERSION`, `LAGN_VERSION_1_0_0`,
   `LAGN_VERSION_1_1_0`, `LAGN_SUPPORTED_VERSIONS`, and `migrateToCurrent()`
 
-### Versioning (1.0.0 → 1.1.0)
+### Versioning (1.0.0 → 1.1.0 → 1.2.0)
 
-| | 1.0.0 | 1.1.0 |
-|---|---|---|
-| Status | still accepted, still valid | current — what writers stamp |
-| Adds | — | optional `setup.support_pools` |
+| | 1.0.0 | 1.1.0 | 1.2.0 |
+|---|---|---|---|
+| Read | accepted | accepted | accepted |
+| Written | no | **yes — `LAGN_VERSION`** | not yet |
+| Adds | — | optional `setup.support_pools` | optional card-metadata provenance |
+
+**Readers accept all three; writers emit only `LAGN_VERSION`.** That asymmetry
+is deliberate and is what keeps stored records readable without a migration
+pass. `LAGN_SUPPORTED_VERSIONS` is the read set; `LAGN_VERSION` is the single
+version this build stamps.
 
 **1.1.0 (WP-391 / D-24195)** adds optional `setup.support_pools`, naming *which*
 cards fill the four supply piles where the `*_count` fields carry only *how
@@ -169,10 +175,37 @@ the worst available failure mode.
 It never invents pools from counts — a migrated 1.0.0 document has no
 `support_pools`, because the information was never there to recover.
 
-**Not yet shipped:** LAGN **1.2.0** card-metadata provenance — optional
-hash-anchored `catalog_ref` / `registry_ref` / `effect_snapshot` so a replay is
-auditable without registry access — is **drafted, not implemented**
-(WP-393 + WP-394, D-24197 / D-24198). Nothing emits or accepts 1.2.0 today.
+**1.2.0 (WP-394 / D-24198) — shipped; readers accept it, writers do not emit
+it yet.** Adds optional, hash-anchored card-metadata provenance so a replay is
+auditable without registry or network access:
+
+| Block | Location | Carries |
+|---|---|---|
+| `catalog_ref` | document root | which card data the producer read — `source`, `registry_version`, `set_content_hashes` |
+| `registry_ref` | `card_catalog.cards[]` | `ext_id` (D-10014 set-qualified) + optional `face_id` |
+| `effect_snapshot` | `card_catalog.cards[]` | frozen effect `text[]`, optional `tokens[]`, and a `source_hash` |
+| `image` | `card_catalog.cards[]` | `uri`, optional `mime_type` / `role` |
+
+A document carrying `catalog_ref` plus all three per-card blocks is a normative
+**audit bundle** — verifiable with no registry and no network.
+
+**Provenance is evidence, not authority.** The registry stays the source of
+truth for what a card *is*; these blocks record what a producer *read*. Digests
+match `^sha256:[0-9a-f]{64}$` and are validated for **shape only** here —
+`packages/lagn-spec` computes no hashes and has no dependency on
+`packages/registry`; RFC 8785 canonicalization is the producer's contract
+(D-24197).
+
+**Two more constraints JSON Schema cannot express** (both in the allowlist
+above): any provenance block requires `lagn_version` 1.2.0 — a pre-1.2.0
+document carrying one is **rejected**, not silently stripped — and an
+`effect_snapshot` additionally requires a document-level `catalog_ref`, since
+evidence without the snapshot it came from is unverifiable.
+
+**Nothing emits 1.2.0 yet.** `LAGN_VERSION` deliberately stays 1.1.0, so no
+endpoint payload has changed shape; `migrateToCurrent` still targets 1.1.0 and
+the 1.1.0 → 1.2.0 migration step is registered but unreachable. A follow-on
+packet flips the writer together with the producers.
 
 ### TypeScript Types
 
@@ -325,9 +358,10 @@ The open-source publication surface (WP-244 Gate 1):
 - [`packages/lagn-spec/src/cli.ts`](../packages/lagn-spec/src/cli.ts)
   — CLI entrypoint (shebang `#!/usr/bin/env node`)
 - [`packages/lagn-spec/src/validator.test.ts`](../packages/lagn-spec/src/validator.test.ts)
-  — 44 tests covering all three tiers, seq constraints, `summarize()`,
-  versioning + support pools, migration, the derived-schema contract, and
-  `ajv` validation of every shipped fixture against the generated JSON Schema
+  — 54 tests covering all three tiers, seq constraints, `summarize()`,
+  versioning + support pools, migration, provenance and its two version gates,
+  the derived-schema contract, and `ajv` validation of all **five** shipped
+  fixtures against the generated JSON Schema
 - [`packages/lagn-spec/src/migrate.ts`](../packages/lagn-spec/src/migrate.ts)
   — forward-only version migration (`migrateToCurrent`)
 - [`packages/lagn-spec/scripts/generate-schema.mjs`](../packages/lagn-spec/scripts/generate-schema.mjs)
