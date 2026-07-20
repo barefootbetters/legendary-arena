@@ -1,7 +1,7 @@
 # Wiki Index
 
-> **43 / 50** entity pages.
-> Last regenerated: 2026-07-19.
+> **44 / 50** entity pages.
+> Last regenerated: 2026-07-20.
 > See [SCHEMA.md](SCHEMA.md) for the entity-page contract and
 > [README.md](README.md) for purpose, conventions, and authority —
 > including [§ Tradeoffs](README.md#tradeoffs) on what the LLM-wiki
@@ -109,6 +109,12 @@ Cross-cutting governance, methodology, and readiness assessments.
   metadata, the Postgres `legendary.*` tables, R2 key prefixes,
   replays / LAGN, env / config, and the docs / coverage dirs. Links
   out to the deep pages rather than restating them.
+- [Workspace Map](workspace-map.md) — *(draft)* The locator map one
+  level above the repo: which of the three storage surfaces (git,
+  pCloud, hosted) owns which kind of work, the top-level buckets on
+  each, and where video, vendor attachments, and work-in-progress
+  stage. Defers to [Data & File Locations](data-file-locations.md) at
+  the repo boundary.
 - [Development Workflow](development-workflow.md) — The
   develop-from-anywhere loop: laptop / workstation / phone drive
   Claude Code sessions on WP/EC contracts → GitHub → auto-deploy via
