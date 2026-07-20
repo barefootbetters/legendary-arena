@@ -30822,7 +30822,16 @@ Protect this file.
 
 ### D-24209 — the toolchain moves to Node 24 (Krypton) now; 22 is already past Active LTS
 
-**Status:** Active 2026-07-20. Decision only — execution is its own packet.
+**Status:** Active 2026-07-20. **Executed 2026-07-20 by WP-401 / EC-436 —
+pinned `24.18.0` (Krypton).** The reversal condition did NOT trigger: both
+determinism surfaces came back byte-identical (`sim:runtime-observed:check`
+current with no regeneration; sentinel `finalStateHash`
+`3da2c374…651f0037` unchanged), and every package's test totals matched the
+Node-22 baseline exactly — game-engine 2039, arena-client 974, server 1024,
+dashboard 411, registry 178, registry-viewer 174, legends-board 82, lagn-spec
+54, preplan 52, engine-runner 19, vue-sfc-loader 11, replay-producer 4, all
+0 fail. `engines` remains a floor in all four manifests, and zero workflow
+files changed — WP-400's pin held its promise.
 **Packet:** none — direct governance edit at operator request. Closes the
 deferral D-24205 recorded.
 
