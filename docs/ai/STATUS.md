@@ -7,6 +7,60 @@
 
 ## Current State
 
+### WP-397 / EC-430 — Doctor Octopus reveal-eight branch (D-24200 Active) (2026-07-19)
+
+**Players holding no Spider-Friends Hero stop escaping the strike.** WP-388
+implemented only the first branch of *"Each player may discard a
+[team:spider-friends] Hero. Any player who doesn't must reveal the top 8 cards
+of their deck, discard all non-grey Heroes revealed, and put the rest back in
+random order."* The second branch now fires: reveal up to 8 from the top of the
+deck, discard every non-grey Hero, return the rest shuffled.
+
+**D-24192's stated reason for deferring this was wrong, and D-24200 records
+that.** It claimed the branch "needs `ctx.random` threading into a handler that
+currently ignores `ctx`." In fact `performVillainReveal` already passed the
+full `RevealContext` — carrying `random.Shuffle` — into `executeRuleHooks`,
+with a Step-5 `// why:` saying so explicitly. The handler simply declared
+`_ctx: unknown`. Reading a signature and inferring a missing capability is what
+produced the wrong deferral; no plumbing was ever required.
+
+**"Non-grey" is rulebook-defined, not invented.** The v23 rules define grey
+Heroes as grey-coloured cards with **no Hero Class**, so the predicate is
+exactly `cardTraits?.[extId]?.heroClass != null`. Wounds carry no Hero Class,
+are therefore grey, and return to the deck — correct, since a Wound is not a
+Hero.
+
+**The handler signature did not change, and the drafted contract was wrong
+about that.** Pre-flight reproduced `TS2322` with the repo's own `tsc`:
+`ImplementationMap` types the second parameter `ctx: unknown`, and
+`strictFunctionTypes` makes narrowing it in the implementation a compile error.
+The shipped form keeps `unknown` and narrows through a runtime guard,
+`resolveShuffleFunction`. The WP and EC were corrected before the commit so no
+future executor follows a contract that cannot build.
+
+**Short decks are revealed as-is.** No reshuffle-from-discard — that follows
+the engine's *reveal* family, which never reshuffles; only the *draw* path does.
+This effect reveals, it does not draw.
+
+**Verification.** Engine suite **2028 → 2038 / 0 fail** (+10 covering
+AC-1..AC-8, including a multiset card-conservation assertion). **Control run
+with the reveal branch reverted to the WP-388 no-op: 6 fail** — the new
+assertions are non-vacuous. `pnpm -r build` 0. `sim:runtime-observed:check`
+current with **no regeneration**; sentinel `finalStateHash` + `PRE_WP080_HASH`
+byte-identical (both oracles pin `core/dr-doom`).
+
+**Half the D-24192 gap remains open.** Loki's Hypno-Thrall branch is WP-398 —
+still deferred, and for a reason that *does* hold: it needs a new
+`MastermindState` field, measured at three engine-suite failures including
+`PRE_WP080_HASH`. D-24192 is amended inline to mark the Doctor Octopus half
+closed; it closes fully when WP-398 lands.
+
+`User-Visible Surface = play.legendary-arena.com` — D-24026 live-verify
+operator-pending on deploy: a deployed Doctor Octopus strike against a player
+holding no Spider-Friends Hero reveals and discards.
+
+---
+
 ### WP-388 / EC-418 — co2e mastermind strike texts: Doom, Loki, Magneto, Doctor Octopus (D-24192 Active) (2026-07-18)
 
 **Four printed Master Strikes now fire.** A strike from co2e Doctor Doom,

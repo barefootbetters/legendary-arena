@@ -29645,6 +29645,14 @@ D-24188. Trait gating reads `G.cardTraits` (WP-179), which carries `heroClass`
 and `team` — the capability that makes this possible without a registry read
 at runtime.
 
+> **Amendment (2026-07-19).** The **Doctor Octopus half is CLOSED** by WP-397 /
+> D-24200. The reason recorded below for deferring it — that the reveal-8
+> reorder "needs `ctx.random` threading" — was **wrong**: `performVillainReveal`
+> already passed the full `RevealContext` (carrying `random.Shuffle`) into
+> `executeRuleHooks`, and the handler merely declared `_ctx: unknown`. No
+> plumbing was ever required, only a narrowing. The **Loki Hypno-Thrall half
+> remains open** as WP-398 / D-24201; this gap closes fully when that lands.
+
 **Deliberately NOT implemented — recorded as a bounded fidelity gap.** Loki's
 "stacks a non-grey Hero next to Loki as a Hypno-Thrall" branch and Doctor
 Octopus's "reveal the top 8 cards, discard all non-grey Heroes, put the rest
@@ -30229,7 +30237,7 @@ Protect this file.
 
 ### D-24200 — Doctor Octopus's reveal-eight branch resolves with the framework PRNG; "non-grey" is `cardTraits.heroClass != null`
 
-**Status:** Drafted 2026-07-19; not yet landed (lands Active at WP-397 execution).
+**Status:** **Active** (WP-397 executed 2026-07-19).
 
 **Context.** D-24192 implemented only the first branch of Doctor Octopus's
 printed strike, so a player holding no Spider-Friends Hero escaped it. It
