@@ -10,6 +10,7 @@ related:
   - wiki-viewer.md
   - hugo-web-system.md
   - hugo-onboarding.md
+  - workspace-map.md
 status: draft
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\ewiki-authoring.md (this page — https://ewiki.legendary-arena.com/ewiki-authoring/)
@@ -338,6 +339,76 @@ front-matter.
   `#eef2ff`)
 - Status renders as a colored badge (green/amber/red)
 
+### Where ewiki files are saved
+
+The wiki is the one surface where the [Workspace Map](workspace-map.md)
+three-surface rule needs a fourth category: **projected copies**. Every
+page exists three times, and only one of them may be edited.
+
+| Copy | Path | Editable? |
+|---|---|---|
+| Source | `wiki/<slug>.md` | **Yes — this is the only one** |
+| Projection | `apps/wiki-viewer/content/<slug>.md` | No — gitignored, regenerated every build, carries a generated banner |
+| Rendered | `https://ewiki.legendary-arena.com/<slug>/` | No — the published output |
+
+This is exactly why [SCHEMA.md](SCHEMA.md) requires the first
+`source` entry to be the page's own full drafting path: without it, a
+reader looking at one of three near-identical copies cannot tell which
+one to edit.
+
+**Committed, in this repo:**
+
+```
+wiki/<slug>.md                              # the page source
+ewiki/<slug>/                               # that page's assets
+  ├── diagram.mmd                           #   Mermaid source (editable)
+  ├── diagram.svg                           #   rendered artifact (published)
+  └── screenshot.png
+apps/wiki-viewer/
+  ├── assets/css/style.css                  # theme — authoritative for style values
+  ├── hugo.toml                             # unsafe = false, highlighting off
+  ├── layouts/                              # templates, partials, shortcodes/audio.html
+  └── scripts/project-wiki.mjs              # the projection step itself
+```
+
+**Generated, never committed** — `apps/wiki-viewer/.gitignore` excludes
+`content/`, `public/`, `resources/`, and `static/*/`:
+
+```
+apps/wiki-viewer/content/          # ← wiki/*.md projected here
+apps/wiki-viewer/static/<slug>/    # ← ewiki/<slug>/ projected here
+apps/wiki-viewer/public/           # Hugo build output
+```
+
+> **A file committed into a projection target is deleted, not
+> published.** `project-wiki.mjs` calls `rmSync` on
+> `apps/wiki-viewer/content/` and on each `static/<slug>/` before
+> repopulating them, so anything authored there is destroyed on the next
+> build. Page content goes in `wiki/`; assets go in `ewiki/<slug>/`.
+
+**Both halves of a diagram are committed.** The `.mmd` is the editable
+source and the `.svg` is the deployed artifact — the SVG must be
+ID-stable, because mermaid-cli's randomized element ids would churn the
+byte-identical determinism check on every build. This is the same
+derivative-plus-source pattern as blog images
+([Blog Post Authoring](blog-post-authoring.md)), except here *both* are
+small text files, so both belong in git.
+
+**Audio is the exception — hosted, not committed.** Clips live in R2
+under `audio/` on the `legendary-images` bucket and are referenced by
+absolute URL from the `audio` shortcode. Media bytes are not committed;
+see [Data & File Locations](data-file-locations.md) for the bucket's key
+prefixes.
+
+**In pCloud —** the material an ewiki asset was made *from*:
+
+| Contents | Why not git |
+|---|---|
+| Full-resolution screenshots before crop and optimization | Only the trimmed `.png` ships |
+| Audio masters before MP3 encode | Large; only the encoded clip reaches R2 |
+| Screen recordings used to pull a single still | Binary, superseded by the still |
+| Reference PDFs and vendor documentation cited by a page | Not content; cite the source, don't vendor the file |
+
 ## Interactions
 
 - **[Wiki Viewer](wiki-viewer.md)** — covers page creation, commit
@@ -349,6 +420,10 @@ front-matter.
 - **SCHEMA.md** — defines the required sections, front-matter
   fields, and entity types. This page documents how to *format*
   content within those sections.
+- **[Workspace Map](workspace-map.md)** — Owns the three-surface rule
+  (git / pCloud / hosted). The wiki adds a fourth category to it,
+  projected copies, which is what makes "which file do I edit?" a real
+  question here and not on the other authoring surfaces.
 
 ## Edge Cases
 
@@ -363,6 +438,20 @@ front-matter.
   (Windows, macOS, Linux) but is functionally equivalent.
 - **No dark mode.** The theme has no dark mode variant. All colors
   are hardcoded light-mode values.
+- **Editing a projected copy loses the work silently.** The three
+  copies of a page are near-identical, and `apps/wiki-viewer/content/`
+  is the one a file search is most likely to surface. Edits there
+  survive a local `hugo server` run — which makes them look correct —
+  and are erased by the next projection. The generated banner stamped
+  into each projected file is the tell.
+- **`static/*/` is gitignored, so a misplaced asset fails differently.**
+  An image committed to `ewiki/<slug>/` publishes; one dropped into
+  `apps/wiki-viewer/static/<slug>/` is never committed at all, works
+  locally, and 404s in production.
+- **Stale path in `apps/wiki-viewer/.gitignore`.** Its comment cites
+  `docs/wiki/` as the projection source; the actual source is `wiki/` at
+  the repo root. The ignore rules themselves are correct — only the
+  comment is wrong.
 
 ## References
 
