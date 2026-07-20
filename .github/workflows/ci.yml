@@ -24,7 +24,7 @@ jobs:
 
       - uses: actions/setup-node@v5
         with:
-          node-version: 22
+          node-version-file: .node-version
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
@@ -48,7 +48,7 @@ jobs:
       - uses: pnpm/action-setup@v4
 
       - uses: actions/setup-node@v5
-        with: { node-version: 22, cache: pnpm }
+        with: { node-version-file: .node-version, cache: pnpm }
 
       - run: pnpm install --frozen-lockfile
 
@@ -71,7 +71,7 @@ jobs:
       - uses: pnpm/action-setup@v4
 
       - uses: actions/setup-node@v5
-        with: { node-version: 22, cache: pnpm }
+        with: { node-version-file: .node-version, cache: pnpm }
 
       - run: pnpm install --frozen-lockfile
 
@@ -119,7 +119,7 @@ jobs:
       - uses: pnpm/action-setup@v4
 
       - uses: actions/setup-node@v5
-        with: { node-version: 22, cache: pnpm }
+        with: { node-version-file: .node-version, cache: pnpm }
 
       - run: pnpm install --frozen-lockfile
 
@@ -147,7 +147,7 @@ jobs:
       - uses: pnpm/action-setup@v4
 
       - uses: actions/setup-node@v5
-        with: { node-version: 22, cache: pnpm }
+        with: { node-version-file: .node-version, cache: pnpm }
 
       - run: pnpm install --frozen-lockfile
 
@@ -156,6 +156,16 @@ jobs:
 
       - name: Hero-effect coverage gate
         run: pnpm sim:coverage --check
+
+      # why (WP-400 / D-24205): the Node version is restated across 21 workflow
+      # entries and two render.yaml envVars. A partial bump is invisible until a
+      # version-sensitive failure reproduces in one environment and not another
+      # — two Pages builds three days apart reported 22.22.0 and 22.16.0 from
+      # this repo. This gate asserts .node-version is exact, that render.yaml
+      # (whose NODE_VERSION OUTRANKS the file) agrees, that no workflow restates
+      # a literal, and that engines stays a floor.
+      - name: Node toolchain pin
+        run: pnpm check:node-pin
 
       # why: the committed hero mechanic ledger (docs/ai/coverage/) is generated
       # from the same registry + engine dist; this freshness gate fails if a
@@ -212,7 +222,7 @@ jobs:
       - uses: pnpm/action-setup@v4
 
       - uses: actions/setup-node@v5
-        with: { node-version: 22, cache: pnpm }
+        with: { node-version-file: .node-version, cache: pnpm }
 
       - run: pnpm install --frozen-lockfile
 
@@ -261,7 +271,7 @@ jobs:
       - uses: pnpm/action-setup@v4
 
       - uses: actions/setup-node@v5
-        with: { node-version: 22, cache: pnpm }
+        with: { node-version-file: .node-version, cache: pnpm }
 
       - run: pnpm install --frozen-lockfile
 
@@ -314,7 +324,7 @@ jobs:
       - uses: pnpm/action-setup@v4
 
       - uses: actions/setup-node@v5
-        with: { node-version: 22, cache: pnpm }
+        with: { node-version-file: .node-version, cache: pnpm }
 
       - run: pnpm install --frozen-lockfile
 
@@ -336,7 +346,7 @@ jobs:
       - uses: pnpm/action-setup@v4
 
       - uses: actions/setup-node@v5
-        with: { node-version: 22, cache: pnpm }
+        with: { node-version-file: .node-version, cache: pnpm }
 
       - run: pnpm install --frozen-lockfile
 
@@ -369,7 +379,7 @@ jobs:
       - uses: pnpm/action-setup@v4
 
       - uses: actions/setup-node@v5
-        with: { node-version: 22, cache: pnpm }
+        with: { node-version-file: .node-version, cache: pnpm }
 
       - run: pnpm install --frozen-lockfile
 
@@ -400,7 +410,7 @@ jobs:
 
       - uses: actions/setup-node@v5
         with:
-          node-version: 22
+          node-version-file: .node-version
           cache: pnpm
           registry-url: https://registry.npmjs.org
 

@@ -50,7 +50,7 @@ jobs:
       # dispatching the workflow manually on 2026-07-18 rather than discovering a
       # dead nightly at the first cron tick.
       - uses: actions/setup-node@v5
-        with: { node-version: 22, package-manager-cache: false }
+        with: { node-version-file: .node-version, package-manager-cache: false }
 
       # why: no `pnpm install` — the probe is dependency-free (built-in fetch
       # only), so the workflow stays fast and cannot be broken by an unrelated
