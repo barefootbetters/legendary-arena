@@ -27,8 +27,13 @@
  * startup registry, mirroring the WP-150 `getScenarioKeysForTheme`
  * injection precedent.
  *
- * Authority: WP-342; WP-344; WP-384; EC-376 / EC-413 §Locked Values;
- * D-24131; D-24134; D-24187.
+ * WP-395 / D-24199 adds the canonical loadout requirement: a leg qualifies
+ * only when its villain and henchmen groups match one of three approved
+ * configurations for its player count, which is what makes PAR calibration
+ * arithmetically possible. Casual play is unaffected.
+ *
+ * Authority: WP-342; WP-344; WP-384; WP-395; EC-376 / EC-413 / EC-435
+ * §Locked Values; D-24131; D-24134; D-24187; D-24199.
  */
 
 import type {
@@ -88,6 +93,36 @@ export interface GauntletLeg {
 export type GauntletHeroPoolBudgets = Readonly<Record<number, number>>;
 
 /**
+ * One approved loadout as the qualification predicate consumes it (WP-395 /
+ * D-24199): the two comparison keys a qualifying replay must match at one
+ * player count.
+ *
+ * `villainSegment` is the ScenarioKey's third segment — bare group slugs,
+ * sorted ASC, joined `+`. `henchmanKey` is the row's `henchman_key` column —
+ * set-qualified henchman ids, sorted ASC, joined `+`.
+ */
+export interface GauntletApprovedLoadout {
+  readonly villainSegment: string;
+  readonly henchmanKey: string;
+  // why: WP-395 — the predicate matches on the two derived keys above, but the
+  // publisher needs the ids themselves to put the requirement on the board and
+  // in the challenge link. An enforced-but-invisible rule reads as a broken
+  // feature (the D-24186 / D-24190 failure class), so both travel together.
+  readonly villainGroupIds: readonly string[];
+  readonly henchmanGroupIds: readonly string[];
+}
+
+/**
+ * The approved loadouts for one gauntlet, keyed by player count (WP-395 /
+ * D-24199). Each count maps to the three configurations D-24199 settled on.
+ * Built by the wiring layer (`server.mjs`) from the registry's generated
+ * menu and stamped onto every definition, so this module stays registry-free.
+ */
+export type GauntletApprovedLoadouts = Readonly<
+  Record<number, readonly GauntletApprovedLoadout[]>
+>;
+
+/**
  * One gauntlet: a mastermind and the scheme legs of its home set.
  * `heroPoolBudgets` rides the definition (WP-384) so the standings
  * computation needs no registry access; when absent (pre-WP-384 callers,
@@ -100,6 +135,11 @@ export interface GauntletDefinition {
   readonly mastermindName: string;
   readonly legs: readonly GauntletLeg[];
   readonly heroPoolBudgets?: GauntletHeroPoolBudgets;
+  // why: WP-395 / D-24199 — the approved villain + henchmen configurations
+  // this gauntlet's legs must be played with. Optional so pre-WP-395 callers
+  // and loadout-less tests keep their semantics; when absent the requirement
+  // is not enforced and every villain/henchmen combination qualifies as before.
+  readonly approvedLoadouts?: GauntletApprovedLoadouts;
 }
 
 /**
@@ -134,11 +174,16 @@ const FIXED_POOL_TEAM_CAP = 12;
  *   (WP-384 / D-24187 §4), stamped onto every definition. The wiring layer
  *   derives them from PLAYER_COUNT_SETUP; absent budgets disable the fixed
  *   division (it computes empty).
+ * @param approvedLoadoutsByGauntlet Optional approved-loadout lookup keyed
+ *   `setAbbr/mastermindSlug` (WP-395 / D-24199), built by the wiring layer
+ *   from the registry's generated menu. A gauntlet with no entry carries no
+ *   requirement and qualifies exactly as it did before this WP.
  * @returns The ordered gauntlet definitions.
  */
 export function buildGauntletCatalog(
   setSummaries: readonly GauntletSetSummary[],
   heroPoolBudgets?: GauntletHeroPoolBudgets,
+  approvedLoadoutsByGauntlet?: ReadonlyMap<string, GauntletApprovedLoadouts>,
 ): GauntletDefinition[] {
   const catalog: GauntletDefinition[] = [];
 
@@ -173,6 +218,11 @@ export function buildGauntletCatalog(
         // computation stays registry-free; `undefined` flows through as an
         // absent optional field for pre-WP-384 callers.
         heroPoolBudgets,
+        // why: WP-395 — same injection shape as the budgets; the requirement
+        // is plain data so the predicate never imports the registry.
+        approvedLoadouts: approvedLoadoutsByGauntlet?.get(
+          `${setSummary.setAbbr}/${mastermind.slug}`,
+        ),
       });
     }
   }
@@ -237,6 +287,7 @@ interface GauntletRow {
   scoring_config_version: number;
   player_count: number | string | null;
   team_key: string | null;
+  henchman_key: string | null;
   player_id: number | string;
   display_name: string;
   visibility: string;
@@ -251,6 +302,7 @@ interface ReplayAccumulator {
   scoringConfigVersion: number;
   playerCount: number;
   teamKey: string | null;
+  henchmanKey: string | null;
   owners: { playerId: string; displayName: string; visibility: string }[];
 }
 
@@ -419,6 +471,63 @@ function pickBestTeamForLeg(
  * search universe. Ties on total score break to the lexicographically
  * smallest joined hero pool. Returns `null` when no assignment qualifies.
  */
+/**
+ * Whether a replay was played with one of the approved loadouts for its
+ * gauntlet and player count (WP-395 / D-24199).
+ *
+ * why: PAR is calibrated per ScenarioKey and rejects a sample size under 500.
+ * With villain groups unconstrained the ranked surface spans billions of
+ * scenarios, which is not calibratable by any amount of compute — so a leg
+ * qualifies only when its villain and henchmen groups match an approved
+ * configuration. Casual match setup is untouched by this check.
+ *
+ * The comparison is asymmetric by necessity: villain groups are read from the
+ * ScenarioKey's third segment, which carries bare slugs (the key format is
+ * pinned — changing it would re-key every future PAR table), while henchmen
+ * are read from the `henchman_key` column, which is ours and carries
+ * set-qualified ids.
+ *
+ * @param approvedLoadouts the gauntlet's approved configurations, or undefined
+ *   when the requirement is not configured (then everything qualifies).
+ * @param playerCount the replay's player count.
+ * @param scenarioKey the replay's scenario key.
+ * @param henchmanKey the replay's henchmen key, or null on a pre-column row.
+ * @returns true when the replay may count as a leg.
+ */
+function matchesApprovedLoadout(
+  approvedLoadouts: GauntletApprovedLoadouts | undefined,
+  playerCount: number,
+  scenarioKey: string,
+  henchmanKey: string | null,
+): boolean {
+  if (approvedLoadouts === undefined) {
+    return true;
+  }
+  const approvedForCount = approvedLoadouts[playerCount];
+  if (approvedForCount === undefined || approvedForCount.length === 0) {
+    // why: a gauntlet with no approved configuration at this count cannot be
+    // qualified for. Fail closed, matching the PAR gate's posture — publishing
+    // an unconstrained board is the failure this WP exists to prevent.
+    return false;
+  }
+  // why: a NULL henchman_key predates migration 035. No backfill exists (the
+  // table was empty when the column landed), so such a row can never prove
+  // which henchmen it used and never satisfies the requirement.
+  if (henchmanKey === null) {
+    return false;
+  }
+  const villainSegment = scenarioKey.split('::')[2] ?? '';
+  for (const approvedLoadout of approvedForCount) {
+    if (
+      approvedLoadout.villainSegment === villainSegment &&
+      approvedLoadout.henchmanKey === henchmanKey
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function findBestPoolAssignment(
   rosterAccumulator: RosterLegAccumulator,
   legSchemeSlugs: readonly string[],
@@ -502,7 +611,10 @@ function findBestPoolAssignment(
  * whose size EQUALS its `player_count` — every seat authenticated; a guest
  * at the table voids team eligibility (D-24134 §3) — and (f) have every
  * owner's visibility `link`/`public`, so no display name is ever published
- * without that member's consent. Any villain groups qualify.
+ * without that member's consent, and (g) match one of the gauntlet's approved
+ * villain + henchmen loadouts for its player count (WP-395 / D-24199) — the
+ * requirement that makes PAR calibration tractable. Clause (g) is skipped
+ * entirely when a definition carries no `approvedLoadouts`.
  *
  * The competitor is the exact roster (sorted owner ids). A roster enters a
  * count's standings only with a qualifying best on EVERY leg (complete
@@ -543,10 +655,11 @@ export async function getGauntletStandings(
   const result = await database.query(
     'SELECT cs.replay_hash, cs.scenario_key, cs.final_score, ' +
       'cs.scoring_config_version, cs.player_count, cs.team_key, ' +
-      'ro.player_id, p.display_name, ro.visibility ' +
+      'cs.henchman_key, ro.player_id, p.display_name, ro.visibility ' +
       'FROM ( ' +
       'SELECT DISTINCT ON (replay_hash) replay_hash, scenario_key, ' +
-      'final_score, scoring_config_version, player_count, team_key ' +
+      'final_score, scoring_config_version, player_count, team_key, ' +
+      'henchman_key ' +
       'FROM legendary.competitive_scores ' +
       "WHERE outcome = 'heroes-win' " +
       '  AND player_count IS NOT NULL ' +
@@ -575,6 +688,9 @@ export async function getGauntletStandings(
         // entirely; coalescing undefined to null keeps such replays
         // open-division-only rather than crashing the fixed fold.
         teamKey: row.team_key ?? null,
+        // why: WP-395 — same defensive coalesce as teamKey; a row predating
+        // migration 035 carries no column and must not crash the fold.
+        henchmanKey: row.henchman_key ?? null,
         owners: [],
       };
       replaysByHash.set(row.replay_hash, replayAccumulator);
@@ -623,6 +739,21 @@ export async function getGauntletStandings(
       continue;
     }
     if (replay.owners.length !== replay.playerCount) {
+      continue;
+    }
+
+    // why: WP-395 / D-24199 clause (g) — a replay played with villain or
+    // henchmen groups outside the approved menu simply does not qualify,
+    // silently, like every other clause here. The board and the challenge
+    // link publish the requirement so this is never a mystery to a player.
+    if (
+      !matchesApprovedLoadout(
+        definition.approvedLoadouts,
+        replay.playerCount,
+        replay.scenarioKey,
+        replay.henchmanKey,
+      )
+    ) {
       continue;
     }
 

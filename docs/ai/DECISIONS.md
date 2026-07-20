@@ -30213,8 +30213,87 @@ the code does not do.
   written back, never round-tripped into gameplay state, and not a licence to
   interpret `state`/`log`.
 
-Still open for the executing session: where the loadout data lives, and how the
-requirement stays discoverable on the board and challenge link.
+**SUPERSEDED 2026-07-20 by the amendment below — option (3), the dedicated
+column, was taken instead. The carve-out is NOT extended, and no new D-number,
+ARCHITECTURE edit, or `.claude/rules` mirror is required.**
+
+The option-(2) choice above was made while the executing branch was unpushed,
+on the understanding that a dedicated column and a carve-out extension were
+comparable in cost. They are not, and the deciding fact was not visible at the
+time: **the henchmen derivation performs no new blob read at all.**
+`submitCompetitiveScoreImpl` already holds the reduced final state from the
+WP-336 reducer path, and derives `henchman_key` from
+`reduced.finalState.matchConfiguration.henchmanGroupIds` — the SAME object, at
+the SAME call site, fifteen lines below where D-24187's `team_key` reads
+`heroDeckIds` off it. It is not a read analogous to D-24187's; it is that read,
+one field over, already inside the D-24119 verification envelope.
+
+Option (2), by contrast, would have put a `bgio.replay_artifacts` read and a
+JSON parse **per candidate replay inside `getGauntletStandings`** — a function
+that is today a single SQL aggregation with an explicit no-blob posture. That
+is a genuinely new architectural permission, which is exactly why the amendment
+above rightly demanded a new D-number and the ARCHITECTURE edit to go with it.
+Option (3) needs neither because the value is computed once at submission and
+stored, so nothing on the standings path changes shape.
+
+The "precedented rather than novel" test that selected option (2) in fact
+favours option (3): **migration 034 (`team_key`, D-24187) is the precedent,
+line for line** — nullable column, `ADD COLUMN IF NOT EXISTS`, derived
+server-side at submission, never client-supplied, a NULL never qualifying.
+Migration 035 is that same shape for henchmen. Accepted cost: a column rather
+than a derivation. Bought: no widening of the blob-read boundary, no per-replay
+I/O in the publisher loop, and no new cross-layer permission to maintain.
+
+**Amended 2026-07-20 — executed as WP-395 / EC-435. The three items left open
+above are settled, and execution corrected one number and added one column:**
+
+- **Where the loadout data lives:** a GENERATED registry source module,
+  `packages/registry/src/gauntletLoadouts.generated.ts`, emitted by
+  `scripts/generate-gauntlet-loadouts.mjs` and gated in CI by
+  `pnpm gauntlet:loadouts:check`. Chosen over `data/metadata/` (which is
+  mirrored to R2 by a manual sync and would need a loader) and over per-set
+  card data (which would scatter one reviewable table across 39 files). The
+  server wiring layer reads it at startup and threads the requirement into the
+  gauntlet catalog as PLAIN DATA, so `gauntlet.logic.ts` keeps its no-registry
+  import lock — the same injection shape D-24187 used for the pool budgets.
+- **Discoverability:** the publisher emits `approvedLoadouts` on each
+  `gauntlet-index.json` entry; the board renders an "Approved loadouts" section
+  naming every configuration for the routed player count; and
+  `buildChallengeUrl` now pins `villainGroupIds` + `henchmanGroupIds` into the
+  challenge deep link, which the registry-viewer's `parseSetupUrl` already
+  understood. Omitting the loadout reproduces the pre-WP-395 URL byte-for-byte.
+- **CORRECTION — the scenario count is 6,354, not ~1,917.** The 1,917 figure
+  (639 leg pairs x 3 variants) silently assumed one villain set per (mastermind,
+  variant) across every player count. `PLAYER_COUNT_SETUP` forbids that: a leg
+  takes 1 villain group at solo and 4 at five players, so one set cannot serve
+  all five counts. Measured from the generated menu: p1 697, p2 1,853, p3 1,897,
+  p4 1,897, p5 1,907 distinct keys, union **6,354**. The argument is unaffected —
+  6,354 x 500 = 3.18M simulated games against the 8,205,239,889 scenarios free
+  villain choice implies — but PAR calibration must be budgeted off 6,354.
+- **PERSISTENCE — henchmen required a new column (migration 035), not a
+  wider boundary.**
+  Henchmen groups are NOT part of `ScenarioKey` (`buildScenarioKey` takes
+  scheme, mastermind, and villain groups only), so before this WP there was no
+  queryable record of which henchmen a scored replay used and the loadout
+  requirement could only ever have been half-enforced. A nullable
+  `legendary.competitive_scores.henchman_key` column now records them,
+  derived at submission time from the reduced final state's
+  `matchConfiguration.henchmanGroupIds` exactly as `team_key` is (D-24187 §1) —
+  set-qualified, sorted ASC, joined `+`. No backfill script accompanies it
+  because the table was EMPTY: PAR has never been published, so no qualifying
+  score existed to reconstruct. That is precisely the "migration cost is
+  currently zero" window this WP was sequenced to land inside; after the first
+  score lands, the same column would strand every prior row on a NULL that can
+  never qualify. `CompetitiveScoreRecord`'s key lock moves 15 -> 16 keys.
+  `ScenarioKey`'s format is untouched, so PAR machinery,
+  `scoringConfigVersion` pinning, and replay verification are unaffected.
+
+The villain comparison is deliberately asymmetric: villain groups are matched
+against the ScenarioKey's third segment, which carries BARE slugs and therefore
+cannot distinguish `core/hydra` from `co2e/hydra`, while henchmen are matched as
+exact set-qualified ids. Tightening the villain side would require changing the
+key's shape and re-keying every future PAR table — a cost with no calibration
+benefit.
 
 **Precedent.** Same class as D-24187's fixed-hero-pool constraint: a ranked
 surface may impose requirements the base game does not, provided casual play

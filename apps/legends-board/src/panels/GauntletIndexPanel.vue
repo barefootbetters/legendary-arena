@@ -17,6 +17,7 @@ import {
   buildPlayerCountTabs,
   formatCardDisplayName,
   groupGauntletsBySet,
+  selectApprovedLoadout,
   type PlayerCountTab,
 } from "./gauntletDisplay";
 import EmptyBoardCta from "../components/EmptyBoardCta.vue";
@@ -72,10 +73,15 @@ function firstLegChallengeUrl(gauntlet: GauntletIndexEntry): string | null {
   if (firstLeg === undefined) {
     return null;
   }
+  // why: WP-395 — the index CTA has no routed count, so the solo approved
+  // configuration is pinned (see selectApprovedLoadout). An unpinned link
+  // would open a builder whose run cannot qualify.
   return buildChallengeUrl(
     gauntlet.setAbbr,
     firstLeg.schemeSlug,
     gauntlet.mastermindSlug,
+    undefined,
+    selectApprovedLoadout(gauntlet),
   );
 }
 </script>

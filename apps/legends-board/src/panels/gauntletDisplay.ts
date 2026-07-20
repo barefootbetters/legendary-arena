@@ -5,6 +5,8 @@
  */
 
 import type {
+  GauntletIndexApprovedLoadout,
+  GauntletIndexApprovedLoadouts,
   GauntletIndexEntry,
   GauntletSnapshotEntry,
 } from "../snapshots/snapshotClient";
@@ -196,20 +198,27 @@ export function rosterForEntry(
  *   slots to match. Omitted for the index CTA (no routed count → builder
  *   default). An absent value produces the byte-identical pre-WP-387 two-key
  *   URL.
+ * @param approvedLoadout Optional approved villain + henchmen configuration
+ *   for the routed player count (WP-395 / D-24199). When supplied, its groups
+ *   are pinned into the URL so the builder opens on a QUALIFYING setup.
  * @returns A `cards.legendary-arena.com` URL with the two id keys (plus
- *   `playerCount` when supplied).
+ *   `playerCount` and the pinned groups when supplied).
  */
 export function buildChallengeUrl(
   setAbbr: string,
   schemeSlug: string,
   mastermindSlug: string,
   playerCount?: number,
+  approvedLoadout?: GauntletIndexApprovedLoadout,
 ): string {
-  // why: the two id keys always ride the URL (D-24134 §6) — hero/villain choice
-  // stays the player's, so villain groups, henchmen, and heroes are NOT pinned.
-  // WP-387 adds only the player count (when the caller has one), so the WP-372
-  // required-count readout matches the board the link came from; villains
-  // remain the player's strategy space (D-24131 §4).
+  // why: the two id keys always ride the URL (D-24134 §6); WP-387 adds the
+  // player count so the WP-372 required-count readout matches the board.
+  // WP-395 / D-24199 additionally pins the villain and henchmen groups when
+  // the caller has an approved configuration: a ranked leg now qualifies only
+  // when those groups match, so a link that left them free would send the
+  // player to build a run that cannot score. Heroes stay the player's choice
+  // (they are not part of ScenarioKey). Omitting the loadout reproduces the
+  // pre-WP-395 URL byte-for-byte, which is what casual links still want.
   // URLSearchParams encodes the `/` in the set-qualified ids to `%2F`.
   const params = new URLSearchParams();
   params.set("schemeId", `${setAbbr}/${schemeSlug}`);
@@ -217,7 +226,40 @@ export function buildChallengeUrl(
   if (playerCount !== undefined) {
     params.set("playerCount", String(playerCount));
   }
+  if (approvedLoadout !== undefined) {
+    params.set("villainGroupIds", approvedLoadout.villainGroupIds.join(","));
+    params.set("henchmanGroupIds", approvedLoadout.henchmanGroupIds.join(","));
+  }
   return `${CHALLENGE_PREVIEW_BASE_URL}?${params.toString()}`;
+}
+
+/**
+ * Picks the approved configuration a challenge link should pin (WP-395).
+ *
+ * why: the menu offers three configurations and the link can only carry one.
+ * The first is chosen deterministically so the same board always produces the
+ * same link; the board itself lists all three, so the player keeps the choice
+ * the menu preserves.
+ *
+ * @param entry The gauntlet's index entry.
+ * @param playerCount The routed player count, or undefined on the index CTA.
+ * @returns The configuration to pin, or undefined when none is published.
+ */
+export function selectApprovedLoadout(
+  entry: { approvedLoadouts?: GauntletIndexApprovedLoadouts },
+  playerCount?: number,
+): GauntletIndexApprovedLoadout | undefined {
+  if (entry.approvedLoadouts === undefined) {
+    return undefined;
+  }
+  // why: the index CTA has no routed count; solo is the board a first-time
+  // challenger lands on, so it is the sensible default to pin.
+  const countKey = String(playerCount ?? 1);
+  const approvedForCount = entry.approvedLoadouts[countKey];
+  if (approvedForCount === undefined || approvedForCount.length === 0) {
+    return undefined;
+  }
+  return approvedForCount[0];
 }
 
 // why: a single end-anchored `-p<N>` suffix, N constrained to 2-5 — the solo
@@ -455,4 +497,56 @@ export function formatCardDisplayName(cardName: string): string {
     return `${article} ${significantPart}`;
   }
   return cardName;
+}
+
+/**
+ * Renders one approved configuration as the label the board shows.
+ *
+ * why: the ids are set-qualified (`core/brotherhood`), which is precise but
+ * unreadable in a list. The set prefix is dropped and hyphens become spaces so
+ * the requirement reads as the card names a player recognises; the pinned
+ * challenge link still carries the exact ids.
+ *
+ * @param approvedLoadout The configuration to label.
+ * @returns A display string, villains first then henchmen.
+ */
+export function formatApprovedLoadout(
+  approvedLoadout: GauntletIndexApprovedLoadout,
+): string {
+  const villains = approvedLoadout.villainGroupIds
+    .map(formatGroupId)
+    .join(", ");
+  const henchmen = approvedLoadout.henchmanGroupIds
+    .map(formatGroupId)
+    .join(", ");
+  return `${villains} + ${henchmen}`;
+}
+
+/**
+ * Turns a set-qualified group id into a readable label.
+ *
+ * @param groupId A `setAbbr/slug` id.
+ * @returns The slug with hyphens replaced by spaces.
+ */
+function formatGroupId(groupId: string): string {
+  const slug = groupId.slice(groupId.indexOf("/") + 1);
+  return slug.split("-").join(" ");
+}
+
+/**
+ * Every approved configuration for a gauntlet at one player count, for the
+ * board's requirement list (WP-395 / D-24199).
+ *
+ * @param entry The gauntlet's index entry.
+ * @param playerCount The routed player count.
+ * @returns The configurations, or an empty array when none is published.
+ */
+export function listApprovedLoadouts(
+  entry: { approvedLoadouts?: GauntletIndexApprovedLoadouts },
+  playerCount: number,
+): readonly GauntletIndexApprovedLoadout[] {
+  if (entry.approvedLoadouts === undefined) {
+    return [];
+  }
+  return entry.approvedLoadouts[String(playerCount)] ?? [];
 }

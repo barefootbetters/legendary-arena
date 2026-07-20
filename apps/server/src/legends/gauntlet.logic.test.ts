@@ -89,6 +89,10 @@ interface StubRow {
   scoring_config_version: number;
   player_count: number | null;
   team_key: string | null;
+  // why: WP-395 — optional so every pre-existing row builder still compiles
+  // and keeps its semantics; an absent column coalesces to NULL exactly as a
+  // pre-migration-035 row does.
+  henchman_key?: string | null;
   player_id: number;
   display_name: string;
   visibility: string;
@@ -691,5 +695,141 @@ describe('gauntlet standings, fixed-hero-pool division (WP-384 / D-24187)', () =
       capturedWarnings[0].includes('13 distinct teams'),
       'The truncation warning must name the distinct-team count.',
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Canonical loadout requirement (WP-395 / D-24199)
+// ---------------------------------------------------------------------------
+
+const APPROVED_HENCHMEN = 'core/doombot-legion';
+const OTHER_HENCHMEN = 'core/hand-ninjas';
+
+// why: the same gauntlet carrying the D-24199 approved menu. Solo boards
+// approve two configurations here so the tests can prove that membership —
+// not merely non-emptiness — is what qualifies a replay.
+const LOADOUT_DEFINITION: GauntletDefinition = {
+  ...TEST_DEFINITION,
+  approvedLoadouts: {
+    1: [
+      { villainSegment: 'villains-x', henchmanKey: APPROVED_HENCHMEN },
+      { villainSegment: 'villains-y', henchmanKey: OTHER_HENCHMEN },
+    ],
+  },
+};
+
+/** Convenience: standings for the loadout-carrying definition (WP-395). */
+async function loadoutStandingsFor(rows: StubRow[]) {
+  const { database } = createStubDatabase(rows);
+  return getGauntletStandings(LOADOUT_DEFINITION, database, createStubDeps());
+}
+
+/** A complete solo gauntlet (both legs) with the given henchmen key. */
+function completeSoloRuns(henchmanKey: string | null): StubRow[] {
+  return [
+    soloRow('hash-a', 'scheme-a', -10, 1, 'Alice', {
+      henchman_key: henchmanKey,
+    }),
+    soloRow('hash-b', 'scheme-b', -6, 1, 'Alice', {
+      henchman_key: henchmanKey,
+    }),
+  ];
+}
+
+describe('canonical loadout requirement (WP-395 / D-24199)', () => {
+  test('a replay matching an approved configuration qualifies', async () => {
+    const standings = await loadoutStandingsFor(
+      completeSoloRuns(APPROVED_HENCHMEN),
+    );
+    assert.strictEqual(standings.get(1)?.open.length, 1);
+    assert.strictEqual(standings.get(1)?.open[0]?.totalScore, -16);
+  });
+
+  test('a replay with unapproved henchmen does not qualify', async () => {
+    // why: the NEGATIVE case that keeps the test above from passing
+    // vacuously — the villain segment still matches an approved row, so only
+    // the henchmen half can be doing the rejecting.
+    const standings = await loadoutStandingsFor(
+      completeSoloRuns('core/savage-land-mutates'),
+    );
+    assert.strictEqual(standings.get(1)?.open.length, 0);
+  });
+
+  test('a replay with unapproved villain groups does not qualify', async () => {
+    const rows = [
+      soloRow('hash-a', 'scheme-a', -10, 1, 'Alice', {
+        scenario_key: 'scheme-a::mm-one::villains-unapproved',
+        henchman_key: APPROVED_HENCHMEN,
+      }),
+      soloRow('hash-b', 'scheme-b', -6, 1, 'Alice', {
+        henchman_key: APPROVED_HENCHMEN,
+      }),
+    ];
+    const standings = await loadoutStandingsFor(rows);
+    assert.strictEqual(standings.get(1)?.open.length, 0);
+  });
+
+  test('an approved pairing must match on BOTH halves, not either', async () => {
+    // why: villains-x is approved only WITH doombot-legion, and villains-y
+    // only WITH hand-ninjas. Crossing the pairs must fail, or the predicate
+    // is checking two independent allowlists rather than a configuration.
+    const rows = [
+      soloRow('hash-a', 'scheme-a', -10, 1, 'Alice', {
+        henchman_key: OTHER_HENCHMEN,
+      }),
+      soloRow('hash-b', 'scheme-b', -6, 1, 'Alice', {
+        henchman_key: OTHER_HENCHMEN,
+      }),
+    ];
+    const standings = await loadoutStandingsFor(rows);
+    assert.strictEqual(standings.get(1)?.open.length, 0);
+  });
+
+  test('a NULL henchman_key never qualifies once a menu is configured', async () => {
+    const standings = await loadoutStandingsFor(completeSoloRuns(null));
+    assert.strictEqual(standings.get(1)?.open.length, 0);
+  });
+
+  test('a player count with no approved configuration qualifies nobody', async () => {
+    // why: fail closed. LOADOUT_DEFINITION approves solo only, so the
+    // two-player board must publish empty rather than unconstrained.
+    const rows = duoRows('hash-duo-a', 'scheme-a', -10, [
+      { playerId: 1, displayName: 'Alice' },
+      { playerId: 2, displayName: 'Bob' },
+    ]).concat(
+      duoRows('hash-duo-b', 'scheme-b', -6, [
+        { playerId: 1, displayName: 'Alice' },
+        { playerId: 2, displayName: 'Bob' },
+      ]),
+    );
+    const standings = await loadoutStandingsFor(rows);
+    assert.strictEqual(standings.get(2)?.open.length, 0);
+  });
+
+  test('a definition carrying no menu is unconstrained (pre-WP-395 semantics)', async () => {
+    // why: proves the requirement is opt-in and that the fixtures above are
+    // rejected BY the menu, not by some unrelated guard in the chain.
+    const standings = await standingsFor(completeSoloRuns(null));
+    assert.strictEqual(standings.get(1)?.open.length, 1);
+  });
+
+  test('buildGauntletCatalog stamps approved loadouts onto the matching gauntlet only', () => {
+    const approvedByGauntlet = new Map([
+      [
+        'core/mm-one',
+        { 1: [{ villainSegment: 'villains-x', henchmanKey: APPROVED_HENCHMEN }] },
+      ],
+    ]);
+    const catalog = buildGauntletCatalog(
+      [CORE_SUMMARY],
+      undefined,
+      approvedByGauntlet,
+    );
+    const first = catalog.find((entry) => entry.mastermindSlug === 'mm-one');
+    const second = catalog.find((entry) => entry.mastermindSlug === 'mm-two');
+    assert.deepEqual(first?.approvedLoadouts, {
+      1: [{ villainSegment: 'villains-x', henchmanKey: APPROVED_HENCHMEN }],
+    });
+    assert.strictEqual(second?.approvedLoadouts, undefined);
   });
 });

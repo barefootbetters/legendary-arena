@@ -1,0 +1,34 @@
+-- WP-395 — Canonical gauntlet loadouts: henchman_key column on competitive scores
+-- Created 2026-07-20 per WP-395 / EC-435 / D-24199.
+--
+-- Adds a nullable `henchman_key` column to legendary.competitive_scores
+-- recording the henchmen groups the scored match was played with: the match's
+-- set-qualified henchman group ids (the D-10014 `setAbbr/slug` space, exactly
+-- as configured — never re-slugified) sorted ASC and joined with `+`. Derived
+-- at submission time from the verifier's reduced final game state
+-- (`selection.henchmanGroupIds`) — never client-supplied. Mirrors the
+-- `team_key` derivation added by migration 034 (WP-384 / D-24187).
+--
+-- why: henchmen groups are NOT part of ScenarioKey — `buildScenarioKey` takes
+-- scheme, mastermind, and villain groups only — so before this column there was
+-- no queryable record of which henchmen a scored replay used. The D-24199
+-- canonical loadout menu constrains villain AND henchmen groups, and the villain
+-- half is already recoverable from the key's third segment; this column is what
+-- makes the henchmen half checkable without changing the key's shape.
+--
+-- why: nullable — rows inserted before this migration carry NULL, and a NULL
+-- henchman_key never satisfies the D-24199 loadout requirement on any gauntlet
+-- board. No backfill script accompanies this migration because
+-- legendary.competitive_scores is empty at authoring time: PAR has never been
+-- published, so no qualifying score has ever been recorded and there is nothing
+-- to reconstruct. That is precisely why this lands before PAR calibration.
+--
+-- why: no CHECK constraint — the value is free-form text derived and written
+-- exclusively by the server at the single submission-time derivation site; its
+-- format is enforced there, not by the schema (mirrors the 034 precedent).
+--
+-- Idempotent: ADD COLUMN IF NOT EXISTS. Re-running the migration runner against
+-- an already-migrated database succeeds without error (mirrors 026/027/034).
+
+ALTER TABLE legendary.competitive_scores
+    ADD COLUMN IF NOT EXISTS henchman_key text;

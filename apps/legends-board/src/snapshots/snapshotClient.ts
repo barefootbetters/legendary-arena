@@ -123,7 +123,27 @@ export interface GauntletIndexEntry {
   // entirely (exact WP-345 rendering).
   readonly fixedEntryCounts?: GauntletEntryCounts;
   readonly legs?: readonly GauntletIndexLeg[];
+  // why: additive (WP-395 / D-24199) and OPTIONAL — the approved villain +
+  // henchmen configurations a ranked leg must be played with, keyed by player
+  // count as a string. A pre-WP-395 index artifact lacks it, which suppresses
+  // the requirement panel and leaves challenge links unpinned (exact WP-387
+  // rendering). Never imported cross-package.
+  readonly approvedLoadouts?: GauntletIndexApprovedLoadouts;
 }
+
+/**
+ * One approved configuration as the board renders it (WP-395 / D-24199):
+ * the set-qualified group ids a player must configure for a run to count.
+ */
+export interface GauntletIndexApprovedLoadout {
+  readonly villainGroupIds: readonly string[];
+  readonly henchmanGroupIds: readonly string[];
+}
+
+/** Approved configurations keyed by player count (JSON keys are strings). */
+export type GauntletIndexApprovedLoadouts = Readonly<
+  Record<string, readonly GauntletIndexApprovedLoadout[]>
+>;
 
 /** The gauntlet index artifact at `legends/v1/gauntlet-index.json`. */
 export interface GauntletIndexSnapshot {

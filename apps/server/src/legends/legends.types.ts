@@ -101,6 +101,23 @@ export type GauntletEntryCounts = Readonly<
  * file per D-24131 §7). `board` is the snapshot stem, e.g.
  * `gauntlet-core-dr-doom`.
  */
+/**
+ * One approved configuration as the board publishes it (WP-395 / D-24199):
+ * the set-qualified group ids a player must configure to have their run count.
+ */
+export interface GauntletIndexApprovedLoadout {
+  readonly villainGroupIds: readonly string[];
+  readonly henchmanGroupIds: readonly string[];
+}
+
+/**
+ * The approved configurations for one gauntlet, keyed by player count as a
+ * string (JSON object keys are always strings on the wire).
+ */
+export type GauntletIndexApprovedLoadouts = Readonly<
+  Record<string, readonly GauntletIndexApprovedLoadout[]>
+>;
+
 export interface GauntletIndexEntry {
   readonly setAbbr: string;
   readonly setName: string;
@@ -120,6 +137,12 @@ export interface GauntletIndexEntry {
   // (`<board>-fixed[-p<N>]`), so zero counts mean "unclaimed", not "missing".
   readonly fixedEntryCounts: GauntletEntryCounts;
   readonly legs: readonly GauntletIndexLeg[];
+  // why: WP-395 / D-24199 — the approved villain + henchmen configurations a
+  // leg must be played with, keyed by player count. Published so the board and
+  // the challenge link can SHOW the requirement; a qualification rule the
+  // player cannot see reads as a broken feature (D-24186 / D-24190). Optional
+  // so a pre-WP-395 snapshot still parses.
+  readonly approvedLoadouts?: GauntletIndexApprovedLoadouts;
 }
 
 /**

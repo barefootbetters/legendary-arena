@@ -147,14 +147,15 @@ export const COMPETITIVE_OUTCOMES: readonly CompetitiveOutcome[] = [
  * per D-5302 — no UPDATE function exists in the application layer.
  *
  * `Object.keys(record).sort()` MUST equal:
- *   ['accountId','createdAt','finalScore','isRankedEligible','outcome',
- *    'parVersion','playerCount','rawScore','replayHash','scenarioKey',
- *    'scoreBreakdown','scoringConfigVersion','stateHash','submissionId',
- *    'teamKey']
- * — exactly 15 keys. (Amended from the WP-053 11-key lock by D-24131,
+ *   ['accountId','createdAt','finalScore','henchmanKey','isRankedEligible',
+ *    'outcome','parVersion','playerCount','rawScore','replayHash',
+ *    'scenarioKey','scoreBreakdown','scoringConfigVersion','stateHash',
+ *    'submissionId','teamKey']
+ * — exactly 16 keys. (Amended from the WP-053 11-key lock by D-24131,
  * which adds `outcome`; to 13 keys by D-24134, which adds `playerCount`;
  * to 14 keys by WP-354 / D-24146, which adds `isRankedEligible`; to 15
- * keys by D-24187, which adds `teamKey`.)
+ * keys by D-24187, which adds `teamKey`; to 16 keys by WP-395 / D-24199,
+ * which adds `henchmanKey`.)
  */
 // why: immutable snapshot of verified execution. The two version
 // fields (parVersion text + scoringConfigVersion integer) pin the
@@ -211,6 +212,15 @@ export interface CompetitiveScoreRecord {
   // it — rows with no surviving artifact stay NULL) and never
   // qualifies on any fixed-hero-pool board per D-24187 §1.
   readonly teamKey: string | null;
+  // why: nullable — the henchmen groups the scored match was played
+  // with: the set-qualified henchman group ids (D-10014) sorted ASC
+  // and joined `+`, derived server-side from the reduced final
+  // state's matchConfiguration (migration 035, step 14e). Henchmen
+  // are not part of ScenarioKey, so this column is the ONLY queryable
+  // record of them; a NULL row predates it (no backfill exists — the
+  // table was empty when the column landed) and never satisfies the
+  // D-24199 canonical loadout requirement on any gauntlet board.
+  readonly henchmanKey: string | null;
 }
 
 /**
