@@ -14,12 +14,17 @@ related:
   - blog-post-authoring.md
   - development-workflow.md
   - ewiki-authoring.md
+  - newsletter-authoring.md
+  - monetization-model.md
 status: draft
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\workspace-map.md (this page — https://ewiki.legendary-arena.com/workspace-map/)
   - ../docs/01-REPO-FOLDER-STRUCTURE.md
   - ../render.yaml
   - ../.env.example
+  - ../data/migrations/011_create_entitlements.sql
+  - ../data/migrations/012_create_stripe_events_and_checkout_sessions.sql
+  - ../apps/server/src/profile/avatarUpload.logic.ts
 last-reviewed: 2026-07-20
 ---
 
@@ -34,8 +39,13 @@ services. [Data & File Locations](data-file-locations.md) answers
 above it, *"which of my three storage surfaces does X belong to at
 all?"*, and names every top-level bucket on each.
 
+It also records **who owns which data** — which system is authoritative
+for payments, player accounts, subscribers, and business documents — since
+that question outlives any particular file.
+
 It is a **navigation hub**, not an authority. The repos, the deploy
-config, and the workflow pages cited here remain the source of truth.
+config, the database migrations, and the workflow pages cited here remain
+the source of truth.
 
 ## Mechanics
 
@@ -72,7 +82,13 @@ up not knowing which one is current.
 | Finished video (published) | Hosted | YouTube. The blog embeds it; the file itself never enters git. |
 | Reusable video assets (intros, music, overlays) | pCloud | `C:\pcloud\LA\video-assets\` |
 | Logo drafts, design exploration | pCloud | `C:\pcloud\LA\logo-drafts\` |
-| Vendor attachment, invoice, contract, licence | pCloud | The relevant project folder's business subfolder — **not** left in Outlook |
+| Vendor attachment, invoice, quote | pCloud | `C:\pcloud\BB\OPS\Vendors\` — **not** left in Outlook |
+| Signed contract, licence, trademark or entity filing | pCloud | `C:\pcloud\BB\OPS\Legal\` |
+| Accounting, tax, or bank document | pCloud | `C:\pcloud\BB\OPS\Accounting\` or `…\Taxes\` — never git, never a server disk |
+| Approved logo, brand guideline, press kit | pCloud | `C:\pcloud\BB\BRAND\` — drafts stay in `C:\pcloud\LA\logo-drafts\` |
+| A payment, refund, or chargeback record | Hosted | **Stripe** is the ledger. Postgres keeps references only — see System of record |
+| A player profile, entitlement, or team | Hosted | PostgreSQL `legendary.*` — see System of record |
+| A user-uploaded avatar | Hosted | R2 `avatars/{accountId}.webp`; Postgres stores the URL, never the bytes |
 | A secret or credential | Neither git nor a synced plain-text file | `.env` locally (gitignored), Render dashboard in production. See Edge Cases. |
 | A diagnostics JSON or loadout pulled off a live match | pCloud, scoped to a project | Currently accumulating loose at the pCloud root — see Edge Cases |
 
@@ -83,12 +99,12 @@ pCloud has two top-level project roots plus several personal ones:
 ```
 C:\pcloud\
 ├── BB\                     # BarefootBetters — the business
-│   ├── BRAND\              # (empty)
+│   ├── BRAND\              # approved brand assets — empty today
 │   ├── DEV\                # code checkouts
 │   │   └── legendary-arena\    # ← the engine monorepo (a git working tree)
 │   ├── DOCS\
 │   ├── MEDIA\
-│   └── OPS\                # (empty)
+│   └── OPS\                # business operations — empty today
 │
 ├── LA\                     # Legendary Arena — the product
 │   ├── ewiki\
@@ -134,7 +150,8 @@ data locations in [Data & File Locations](data-file-locations.md).
 | YouTube | Published video | `C:\pcloud\LA\videos\…\05-edit\` |
 | `www.legendary-arena.com` | Marketing site + blog | `legendary-arena-com` repo |
 | `ewiki.legendary-arena.com` | This wiki | `legendary-arena/wiki/` |
-| Brevo | Newsletters | See [Newsletter Authoring](newsletter-authoring.md) |
+| Brevo | Newsletter subscribers, campaigns, send metrics | See [Newsletter Authoring](newsletter-authoring.md) |
+| Stripe | Payment transactions, refunds, chargebacks — the ledger | Stripe dashboard; this project stores references only |
 
 ### Video: the surface split in miniature
 
@@ -161,6 +178,105 @@ project they belong to rather than left to be re-found in Outlook.
 They do **not** go in git. Beyond the size and review argument, most
 carry counterparty details that should not be in a repo that mirrors to
 GitHub.
+
+### System of record — who owns which data
+
+The three-surface rule answers *where a file goes*. This table answers a
+different question: **for a given kind of business or customer data,
+which system is authoritative?** Getting this wrong is more expensive
+than misfiling a document, because two systems holding the same fact
+disagree eventually.
+
+| Data | System of record | This project stores |
+|---|---|---|
+| Payment transactions, refunds, chargebacks | **Stripe** | References only — see below |
+| Game entitlements (what an account owns) | **PostgreSQL** `legendary.entitlements` | The authoritative grant |
+| Player accounts and profiles | **PostgreSQL** `legendary.players`, `player_profiles`, `player_links` | The authoritative record |
+| Teams, friendships, blocks, invites | **PostgreSQL** `legendary.teams`, `friendships`, `player_blocks`, `match_invites` | The authoritative record |
+| Competitive scores and replays | **PostgreSQL** `legendary.competitive_scores`, `replay_blobs`, `replay_ownership` | The authoritative record |
+| Newsletter subscribers, campaign history, send metrics | **Brevo** | Nothing — see [Newsletter Authoring](newsletter-authoring.md) |
+| Uploaded and published binaries | **Cloudflare R2** | A URL, never the bytes |
+| Source history | **GitHub** | — |
+| Published video and its analytics | **YouTube** | A blog embed |
+| Accounting, tax, legal, and vendor documents | **pCloud** | — |
+
+**Stripe is the payment ledger; this project is not.** PostgreSQL keeps
+`legendary.stripe_events` and `legendary.stripe_checkout_sessions` —
+Stripe's own identifiers and event records, kept so a purchase can be
+traced and an entitlement reconciled. It does not attempt to reconstruct
+a transaction history. When Stripe and a local row disagree about what
+was paid, **Stripe is right**. What this project owns authoritatively is
+the *consequence* of a payment — the entitlement — not the payment.
+
+**Profile data and profile binaries are split, deliberately.**
+`legendary.player_profiles` holds the profile record and an `avatar_url`;
+the avatar image itself lives at `avatars/{accountId}.webp` on the
+`legendary-images` R2 bucket. **Binaries never go in Postgres — a row
+holds the URL.** Card art follows the same pattern; see
+[Data & File Locations](data-file-locations.md) for the full key-prefix
+list.
+
+### Business operations — the pCloud side
+
+Accounting, legal, and brand work produce documents that are not code,
+not content, and not customer data. They are the clearest possible case
+for pCloud: private, binary or near-binary, and needed for years.
+
+`C:\pcloud\BB\` is the business root. Two of its buckets are the
+destination for this work:
+
+```
+C:\pcloud\BB\
+├── OPS\                    # business operations
+│   ├── Accounting\
+│   │   ├── Stripe\         # payout reports, merchant statements
+│   │   ├── Bank\           # statements, reconciliations
+│   │   ├── Revenue\        # sales and revenue reports
+│   │   ├── Expenses\       # receipts, expense reports
+│   │   └── Year-End\       # closing packages
+│   ├── Taxes\              # returns, 1099s, filings
+│   ├── Legal\
+│   │   ├── Entity\         # LLC formation, registered agent, annual filings
+│   │   ├── Trademarks\     # applications, registrations, correspondence
+│   │   ├── Copyright\      # registrations
+│   │   ├── Contracts\      # signed agreements, counterparty correspondence
+│   │   └── Licenses\       # inbound and outbound licensing
+│   ├── Insurance\
+│   ├── Vendors\            # per-vendor invoices, quotes, agreements
+│   └── Reports\            # operating reports not tied to a filing
+│
+└── BRAND\                  # approved, shipped brand assets
+    ├── Logos\              # final marks (SVG + PNG + favicon)
+    ├── Guidelines\         # brand book, usage rules
+    ├── Fonts\              # licensed font files + their licences
+    ├── Social\             # profile art, banners, templates
+    ├── Press\              # press kit, approved screenshots
+    └── Product-Shots\      # photography for the shop
+```
+
+**`BRAND\` is approved work; `C:\pcloud\LA\logo-drafts\` is
+exploration.** That split is the point of having both: a designer
+reaching for a mark should never have to guess whether they have the
+current one. Drafts stay in `LA\`; when something ships, its final files
+move to `BB\BRAND\`.
+
+> **These directories are the designated destination, not a description
+> of what is there now.** `BB\OPS\` and `BB\BRAND\` both exist and are
+> both **empty** as of 2026-07-20; the subdirectories above do not exist
+> yet. This section says where such work belongs when it lands, which is
+> what the rest of this page does for every other surface. It is not a
+> claim that the filing has been done.
+
+Two things that follow from the ownership table above:
+
+- **Accounting exports are pCloud, never git and never a server disk.**
+  A Stripe payout CSV or a bank statement in a repo is a permanent,
+  mirrored copy of financial data. On a Render disk it is ephemeral and
+  unbacked. Neither is a filing cabinet.
+- **Business documents are not the system of record for the facts inside
+  them.** A downloaded Stripe report is a *snapshot*; Stripe remains
+  authoritative. Keep the document for the year-end package and the
+  audit trail, not as the number you reconcile against.
 
 ### Using this page as a manifest
 
@@ -225,10 +341,12 @@ asked. Two pointers keep it reachable:
   diagnostics JSON, exported loadouts, and game logs are being saved to
   `C:\pcloud\` directly rather than into a project folder. They are
   useful artifacts — they are just unfindable where they are.
-- **`BRAND\` and `OPS\` are empty.** Empty directories read as "this
-  bucket exists and is where that work goes." If no work is destined for
-  them, they are noise; if work is destined for them, it is currently
-  landing somewhere else.
+- **`BRAND\` and `OPS\` exist but are empty.** They are no longer
+  undefined — Business operations above names what belongs in each. The
+  gap now is that the work is not filed there yet, which is a different
+  problem from not knowing where it goes. Until it is, accounting and
+  legal documents are wherever they landed: a mail client, a downloads
+  folder, or the pCloud root.
 - **The engine repo is on the sync drive, and that is a known hazard —
   not a feature.** `C:\pcloud\BB\DEV\legendary-arena` sits on pCloud,
   which syncs the `.git` directory itself. Observed consequences, in
@@ -278,6 +396,13 @@ asked. Two pointers keep it reachable:
   the off-pCloud move, not to a naming convention. What survives is the
   principle — name a *newly created* pCloud working-files folder for its
   repository; rename nothing that already exists.
+- **The `BB\OPS\` and `BB\BRAND\` taxonomy is documented but not
+  locked.** The subdirectory shapes above are this page's proposal for
+  where business work belongs; no DECISIONS entry governs them and no
+  directory has been created. If the shape should be binding — so a
+  future session cannot quietly re-file things — it needs a D-entry, the
+  way the pCloud naming question got D-24207 and D-24208. Until then it
+  is guidance, and the folders stay empty until real documents are filed.
 - **Per-repo README pointers are proposed but not written.** Each repo
   gaining a short section naming this page — rather than restating it —
   would make the map findable from inside any checkout. Scope, and whether
@@ -302,5 +427,10 @@ asked. Two pointers keep it reachable:
   [YouTube Channel Plan](youtube-channel-plan.md) — the video surfaces.
 - [Blog Post Authoring](blog-post-authoring.md) — the marketing repo's
   content lane and image conventions.
-</content>
-</invoke>
+- [Newsletter Authoring](newsletter-authoring.md) — Brevo's ownership of
+  subscriber and campaign data.
+- [011_create_entitlements.sql](../data/migrations/011_create_entitlements.sql),
+  [012_create_stripe_events_and_checkout_sessions.sql](../data/migrations/012_create_stripe_events_and_checkout_sessions.sql)
+  — the entitlement grant and the Stripe reference tables.
+- [avatarUpload.logic.ts](../apps/server/src/profile/avatarUpload.logic.ts)
+  — the `avatars/{accountId}.webp` R2 key and the URL-not-bytes split.
