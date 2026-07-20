@@ -112,7 +112,7 @@ C:\pcloud\
 │   ├── video-assets\       # shared intros, outros, music, overlays
 │   ├── videos\             # per-video production folders (see below)
 │   ├── ops\                # business operations (README.txt; subfolders on first use)
-│   └── brand\              # approved brand assets — not created yet
+│   └── brand\              # approved brand assets (README.txt; subfolders on first use)
 │
 ├── GISE\  JJJ\  SCOOBY\    # unrelated personal roots
 └── (loose files)           # see Edge Cases
@@ -261,11 +261,13 @@ side by side deliberately: a designer reaching for a mark should never
 have to guess whether they have the current one. Drafts stay in
 `logo-drafts\`; when something ships, its final files move to `brand\`.
 
-> **These directories are the designated destination, not a description
-> of what is there now.** Neither `LA\ops\` nor `LA\brand\` exists as
-> of 2026-07-20. This section says where such work belongs when it lands,
-> which is what the rest of this page does for every other surface. It is
-> not a claim that the filing has been done.
+> **`LA\ops\` and `LA\brand\` exist; their subfolders do not.** Both
+> root directories were created on 2026-07-20 and each carries a
+> `README.txt` restating the rules below for whoever opens the folder
+> rather than this page. The subfolders above are created on first use —
+> an empty folder reads as "this is where that goes" when nothing has
+> been filed yet, which is the same two-destinations problem that
+> retired `BB\OPS\`.
 
 #### Why not `C:\pcloud\BB\`
 
