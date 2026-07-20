@@ -5,7 +5,8 @@
       "type": "string",
       "enum": [
         "1.0.0",
-        "1.1.0"
+        "1.1.0",
+        "1.2.0"
       ]
     },
     "$schema": {
@@ -341,6 +342,34 @@
       ],
       "additionalProperties": true
     },
+    "catalog_ref": {
+      "type": "object",
+      "properties": {
+        "source": {
+          "type": "string",
+          "enum": [
+            "legendary-arena-registry"
+          ]
+        },
+        "registry_version": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "set_content_hashes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          }
+        }
+      },
+      "required": [
+        "source",
+        "registry_version",
+        "set_content_hashes"
+      ],
+      "additionalProperties": true
+    },
     "card_catalog": {
       "type": "object",
       "properties": {
@@ -368,6 +397,96 @@
                   "image_thumb_url": {
                     "type": "string",
                     "format": "uri"
+                  },
+                  "registry_ref": {
+                    "type": "object",
+                    "properties": {
+                      "ext_id": {
+                        "type": "string"
+                      },
+                      "face_id": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "ext_id"
+                    ],
+                    "additionalProperties": true
+                  },
+                  "effect_snapshot": {
+                    "type": "object",
+                    "properties": {
+                      "text": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "minItems": 1
+                      },
+                      "tokens": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "keyword",
+                                "icon",
+                                "hero_class",
+                                "team",
+                                "custom"
+                              ]
+                            },
+                            "value": {
+                              "type": "string"
+                            },
+                            "amount": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "value"
+                          ],
+                          "additionalProperties": true
+                        }
+                      },
+                      "source_hash": {
+                        "type": "string",
+                        "pattern": "^sha256:[0-9a-f]{64}$"
+                      }
+                    },
+                    "required": [
+                      "text",
+                      "source_hash"
+                    ],
+                    "additionalProperties": true
+                  },
+                  "image": {
+                    "type": "object",
+                    "properties": {
+                      "uri": {
+                        "type": "string",
+                        "format": "uri"
+                      },
+                      "mime_type": {
+                        "type": "string"
+                      },
+                      "role": {
+                        "type": "string",
+                        "enum": [
+                          "card-front",
+                          "card-back",
+                          "tactic",
+                          "transformed"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "uri"
+                    ],
+                    "additionalProperties": true
                   }
                 },
                 "required": [
@@ -397,6 +516,96 @@
                   "image_thumb_url": {
                     "type": "string",
                     "format": "uri"
+                  },
+                  "registry_ref": {
+                    "type": "object",
+                    "properties": {
+                      "ext_id": {
+                        "type": "string"
+                      },
+                      "face_id": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "ext_id"
+                    ],
+                    "additionalProperties": true
+                  },
+                  "effect_snapshot": {
+                    "type": "object",
+                    "properties": {
+                      "text": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "minItems": 1
+                      },
+                      "tokens": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "keyword",
+                                "icon",
+                                "hero_class",
+                                "team",
+                                "custom"
+                              ]
+                            },
+                            "value": {
+                              "type": "string"
+                            },
+                            "amount": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "value"
+                          ],
+                          "additionalProperties": true
+                        }
+                      },
+                      "source_hash": {
+                        "type": "string",
+                        "pattern": "^sha256:[0-9a-f]{64}$"
+                      }
+                    },
+                    "required": [
+                      "text",
+                      "source_hash"
+                    ],
+                    "additionalProperties": true
+                  },
+                  "image": {
+                    "type": "object",
+                    "properties": {
+                      "uri": {
+                        "type": "string",
+                        "format": "uri"
+                      },
+                      "mime_type": {
+                        "type": "string"
+                      },
+                      "role": {
+                        "type": "string",
+                        "enum": [
+                          "card-front",
+                          "card-back",
+                          "tactic",
+                          "transformed"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "uri"
+                    ],
+                    "additionalProperties": true
                   }
                 },
                 "required": [
@@ -426,6 +635,96 @@
                   "image_thumb_url": {
                     "type": "string",
                     "format": "uri"
+                  },
+                  "registry_ref": {
+                    "type": "object",
+                    "properties": {
+                      "ext_id": {
+                        "type": "string"
+                      },
+                      "face_id": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "ext_id"
+                    ],
+                    "additionalProperties": true
+                  },
+                  "effect_snapshot": {
+                    "type": "object",
+                    "properties": {
+                      "text": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "minItems": 1
+                      },
+                      "tokens": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "keyword",
+                                "icon",
+                                "hero_class",
+                                "team",
+                                "custom"
+                              ]
+                            },
+                            "value": {
+                              "type": "string"
+                            },
+                            "amount": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "value"
+                          ],
+                          "additionalProperties": true
+                        }
+                      },
+                      "source_hash": {
+                        "type": "string",
+                        "pattern": "^sha256:[0-9a-f]{64}$"
+                      }
+                    },
+                    "required": [
+                      "text",
+                      "source_hash"
+                    ],
+                    "additionalProperties": true
+                  },
+                  "image": {
+                    "type": "object",
+                    "properties": {
+                      "uri": {
+                        "type": "string",
+                        "format": "uri"
+                      },
+                      "mime_type": {
+                        "type": "string"
+                      },
+                      "role": {
+                        "type": "string",
+                        "enum": [
+                          "card-front",
+                          "card-back",
+                          "tactic",
+                          "transformed"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "uri"
+                    ],
+                    "additionalProperties": true
                   }
                 },
                 "required": [
@@ -467,6 +766,96 @@
                   "image_thumb_url": {
                     "type": "string",
                     "format": "uri"
+                  },
+                  "registry_ref": {
+                    "type": "object",
+                    "properties": {
+                      "ext_id": {
+                        "type": "string"
+                      },
+                      "face_id": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "ext_id"
+                    ],
+                    "additionalProperties": true
+                  },
+                  "effect_snapshot": {
+                    "type": "object",
+                    "properties": {
+                      "text": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "minItems": 1
+                      },
+                      "tokens": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "keyword",
+                                "icon",
+                                "hero_class",
+                                "team",
+                                "custom"
+                              ]
+                            },
+                            "value": {
+                              "type": "string"
+                            },
+                            "amount": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "value"
+                          ],
+                          "additionalProperties": true
+                        }
+                      },
+                      "source_hash": {
+                        "type": "string",
+                        "pattern": "^sha256:[0-9a-f]{64}$"
+                      }
+                    },
+                    "required": [
+                      "text",
+                      "source_hash"
+                    ],
+                    "additionalProperties": true
+                  },
+                  "image": {
+                    "type": "object",
+                    "properties": {
+                      "uri": {
+                        "type": "string",
+                        "format": "uri"
+                      },
+                      "mime_type": {
+                        "type": "string"
+                      },
+                      "role": {
+                        "type": "string",
+                        "enum": [
+                          "card-front",
+                          "card-back",
+                          "tactic",
+                          "transformed"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "uri"
+                    ],
+                    "additionalProperties": true
                   }
                 },
                 "required": [
@@ -523,6 +912,96 @@
                   "image_thumb_url": {
                     "type": "string",
                     "format": "uri"
+                  },
+                  "registry_ref": {
+                    "type": "object",
+                    "properties": {
+                      "ext_id": {
+                        "type": "string"
+                      },
+                      "face_id": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "ext_id"
+                    ],
+                    "additionalProperties": true
+                  },
+                  "effect_snapshot": {
+                    "type": "object",
+                    "properties": {
+                      "text": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "minItems": 1
+                      },
+                      "tokens": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "keyword",
+                                "icon",
+                                "hero_class",
+                                "team",
+                                "custom"
+                              ]
+                            },
+                            "value": {
+                              "type": "string"
+                            },
+                            "amount": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "value"
+                          ],
+                          "additionalProperties": true
+                        }
+                      },
+                      "source_hash": {
+                        "type": "string",
+                        "pattern": "^sha256:[0-9a-f]{64}$"
+                      }
+                    },
+                    "required": [
+                      "text",
+                      "source_hash"
+                    ],
+                    "additionalProperties": true
+                  },
+                  "image": {
+                    "type": "object",
+                    "properties": {
+                      "uri": {
+                        "type": "string",
+                        "format": "uri"
+                      },
+                      "mime_type": {
+                        "type": "string"
+                      },
+                      "role": {
+                        "type": "string",
+                        "enum": [
+                          "card-front",
+                          "card-back",
+                          "tactic",
+                          "transformed"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "uri"
+                    ],
+                    "additionalProperties": true
                   }
                 },
                 "required": [
@@ -554,6 +1033,96 @@
                   "image_thumb_url": {
                     "type": "string",
                     "format": "uri"
+                  },
+                  "registry_ref": {
+                    "type": "object",
+                    "properties": {
+                      "ext_id": {
+                        "type": "string"
+                      },
+                      "face_id": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "ext_id"
+                    ],
+                    "additionalProperties": true
+                  },
+                  "effect_snapshot": {
+                    "type": "object",
+                    "properties": {
+                      "text": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "minItems": 1
+                      },
+                      "tokens": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "keyword",
+                                "icon",
+                                "hero_class",
+                                "team",
+                                "custom"
+                              ]
+                            },
+                            "value": {
+                              "type": "string"
+                            },
+                            "amount": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "value"
+                          ],
+                          "additionalProperties": true
+                        }
+                      },
+                      "source_hash": {
+                        "type": "string",
+                        "pattern": "^sha256:[0-9a-f]{64}$"
+                      }
+                    },
+                    "required": [
+                      "text",
+                      "source_hash"
+                    ],
+                    "additionalProperties": true
+                  },
+                  "image": {
+                    "type": "object",
+                    "properties": {
+                      "uri": {
+                        "type": "string",
+                        "format": "uri"
+                      },
+                      "mime_type": {
+                        "type": "string"
+                      },
+                      "role": {
+                        "type": "string",
+                        "enum": [
+                          "card-front",
+                          "card-back",
+                          "tactic",
+                          "transformed"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "uri"
+                    ],
+                    "additionalProperties": true
                   }
                 },
                 "required": [
@@ -583,6 +1152,96 @@
                   "image_thumb_url": {
                     "type": "string",
                     "format": "uri"
+                  },
+                  "registry_ref": {
+                    "type": "object",
+                    "properties": {
+                      "ext_id": {
+                        "type": "string"
+                      },
+                      "face_id": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "ext_id"
+                    ],
+                    "additionalProperties": true
+                  },
+                  "effect_snapshot": {
+                    "type": "object",
+                    "properties": {
+                      "text": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "minItems": 1
+                      },
+                      "tokens": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "keyword",
+                                "icon",
+                                "hero_class",
+                                "team",
+                                "custom"
+                              ]
+                            },
+                            "value": {
+                              "type": "string"
+                            },
+                            "amount": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "value"
+                          ],
+                          "additionalProperties": true
+                        }
+                      },
+                      "source_hash": {
+                        "type": "string",
+                        "pattern": "^sha256:[0-9a-f]{64}$"
+                      }
+                    },
+                    "required": [
+                      "text",
+                      "source_hash"
+                    ],
+                    "additionalProperties": true
+                  },
+                  "image": {
+                    "type": "object",
+                    "properties": {
+                      "uri": {
+                        "type": "string",
+                        "format": "uri"
+                      },
+                      "mime_type": {
+                        "type": "string"
+                      },
+                      "role": {
+                        "type": "string",
+                        "enum": [
+                          "card-front",
+                          "card-back",
+                          "tactic",
+                          "transformed"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "uri"
+                    ],
+                    "additionalProperties": true
                   }
                 },
                 "required": [
@@ -612,6 +1271,96 @@
                   "image_thumb_url": {
                     "type": "string",
                     "format": "uri"
+                  },
+                  "registry_ref": {
+                    "type": "object",
+                    "properties": {
+                      "ext_id": {
+                        "type": "string"
+                      },
+                      "face_id": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "ext_id"
+                    ],
+                    "additionalProperties": true
+                  },
+                  "effect_snapshot": {
+                    "type": "object",
+                    "properties": {
+                      "text": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "minItems": 1
+                      },
+                      "tokens": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "keyword",
+                                "icon",
+                                "hero_class",
+                                "team",
+                                "custom"
+                              ]
+                            },
+                            "value": {
+                              "type": "string"
+                            },
+                            "amount": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "value"
+                          ],
+                          "additionalProperties": true
+                        }
+                      },
+                      "source_hash": {
+                        "type": "string",
+                        "pattern": "^sha256:[0-9a-f]{64}$"
+                      }
+                    },
+                    "required": [
+                      "text",
+                      "source_hash"
+                    ],
+                    "additionalProperties": true
+                  },
+                  "image": {
+                    "type": "object",
+                    "properties": {
+                      "uri": {
+                        "type": "string",
+                        "format": "uri"
+                      },
+                      "mime_type": {
+                        "type": "string"
+                      },
+                      "role": {
+                        "type": "string",
+                        "enum": [
+                          "card-front",
+                          "card-back",
+                          "tactic",
+                          "transformed"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "uri"
+                    ],
+                    "additionalProperties": true
                   }
                 },
                 "required": [
@@ -641,6 +1390,96 @@
                   "image_thumb_url": {
                     "type": "string",
                     "format": "uri"
+                  },
+                  "registry_ref": {
+                    "type": "object",
+                    "properties": {
+                      "ext_id": {
+                        "type": "string"
+                      },
+                      "face_id": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "ext_id"
+                    ],
+                    "additionalProperties": true
+                  },
+                  "effect_snapshot": {
+                    "type": "object",
+                    "properties": {
+                      "text": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "minItems": 1
+                      },
+                      "tokens": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "keyword",
+                                "icon",
+                                "hero_class",
+                                "team",
+                                "custom"
+                              ]
+                            },
+                            "value": {
+                              "type": "string"
+                            },
+                            "amount": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "value"
+                          ],
+                          "additionalProperties": true
+                        }
+                      },
+                      "source_hash": {
+                        "type": "string",
+                        "pattern": "^sha256:[0-9a-f]{64}$"
+                      }
+                    },
+                    "required": [
+                      "text",
+                      "source_hash"
+                    ],
+                    "additionalProperties": true
+                  },
+                  "image": {
+                    "type": "object",
+                    "properties": {
+                      "uri": {
+                        "type": "string",
+                        "format": "uri"
+                      },
+                      "mime_type": {
+                        "type": "string"
+                      },
+                      "role": {
+                        "type": "string",
+                        "enum": [
+                          "card-front",
+                          "card-back",
+                          "tactic",
+                          "transformed"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "uri"
+                    ],
+                    "additionalProperties": true
                   }
                 },
                 "required": [
@@ -839,6 +1678,14 @@
     {
       "path": "replay.turns[].player_actions[].seq",
       "constraint": "seq must increase by exactly 1 across a turn's actions — no gaps, no duplicates, no reordering."
+    },
+    {
+      "path": "lagn_version / catalog_ref / card_catalog.cards[].{registry_ref,effect_snapshot}",
+      "constraint": "Any provenance block requires lagn_version 1.2.0; an earlier document may not carry one."
+    },
+    {
+      "path": "card_catalog.cards[].effect_snapshot / catalog_ref",
+      "constraint": "An effect_snapshot anywhere in the catalog requires a document-level catalog_ref."
     },
     {
       "path": "lagn_version / setup.support_pools",

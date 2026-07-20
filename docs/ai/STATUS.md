@@ -7,6 +7,37 @@
 
 ## Current State
 
+### WP-394 / EC-424 — LAGN 1.2.0 card metadata provenance (D-24198 Active) (2026-07-20)
+
+**No user-observable change — infrastructure only.**
+
+A LAGN document can now carry optional, hash-anchored provenance: `catalog_ref`
+(which card data the producer read), `registry_ref` (`ext_id` + `face_id`),
+`effect_snapshot` (frozen effect text as **evidence**, not authority), and
+`image`. A document carrying all four for every catalog entry is a normative
+**audit bundle** — verifiable without registry or network access.
+
+**Readers accept 1.2.0; writers still stamp 1.1.0.** `LAGN_VERSION` is
+deliberately unchanged, so no producer emits provenance yet and no endpoint
+payload moves. `migrateToCurrent` still targets 1.1.0; the 1.1.0 → 1.2.0 step
+is registered but unreachable until the producer-wiring packet flips the
+constant.
+
+**§21 was TRIGGERED, not N/A.** The *acceptance* envelope narrowed: a pre-1.2.0
+body carrying a provenance block previously returned `201` (the key was
+silently stripped, since the schema has no `.strict()`) and now returns `400`.
+`POST /api/me/loadouts` is the only `validate`-gated request row and its
+catalogue entry was replaced whole per D-11804. `PATCH /api/me/loadouts/:id`
+takes `{ name?, visibility? }`, carries no `lagn`, and is unaffected.
+
+Two new refinements — the version gate and the `effect_snapshot` → `catalog_ref`
+pin — are recorded in `UNEXPRESSIBLE_CONSTRAINTS`; the `ZodEffects` count gate
+was mutation-tested red then green.
+
+lagn suite **44 → 54 / 0**. All **five** fixtures validate against the generated
+JSON Schema via `ajv` and against zod. `pnpm -r build` 0.
+
+
 ### WP-393 / EC-423 — Registry version + per-set content hash (D-24197 Active) (2026-07-20)
 
 **No user-observable change — infrastructure only.**

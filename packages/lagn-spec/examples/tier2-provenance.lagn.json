@@ -1,0 +1,92 @@
+{
+  "lagn_version": "1.2.0",
+  "$schema": "https://legendary-arena.com/schemas/lagn/v1/lagn-v1.json",
+  "game_id": "example-provenance-001",
+  "variant": "cooperative",
+  "player_count": 2,
+  "catalog_ref": {
+    "source": "legendary-arena-registry",
+    "registry_version": "sha256:3b8c2f1d9a4e5760b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f708192a3b4c5d6e",
+    "set_content_hashes": {
+      "core": "sha256:1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809",
+      "co2e": "sha256:9f8e7d6c5b4a39281706f5e4d3c2b1a09f8e7d6c5b4a39281706f5e4d3c2b1a0"
+    }
+  },
+  "setup": {
+    "mastermind": {
+      "id": "core/thanos",
+      "name": "Thanos"
+    },
+    "scheme": {
+      "id": "core/the-infinity-gems",
+      "name": "The Infinity Gems"
+    },
+    "villain_groups": [
+      {
+        "id": "core/the-black-order",
+        "name": "The Black Order"
+      }
+    ],
+    "henchmen_groups": [
+      {
+        "id": "core/doombot-legion",
+        "name": "Doombot Legion"
+      }
+    ],
+    "heroes": [
+      {
+        "id": "core/cyclops",
+        "name": "Cyclops"
+      },
+      {
+        "id": "co2e/storm",
+        "name": "Storm"
+      }
+    ],
+    "bystanders_count": 12,
+    "wounds_count": 24,
+    "shield_officers_count": 30,
+    "sidekicks_count": 0
+  },
+  "card_catalog": {
+    "cards": [
+      {
+        "card_type": "mastermind",
+        "ext_id": "core/thanos",
+        "name": "Thanos",
+        "registry_ref": {
+          "ext_id": "core/thanos",
+          "face_id": "base"
+        },
+        "effect_snapshot": {
+          "text": [
+            "Master Strike: Each player reveals a Hero or gains a Wound."
+          ],
+          "tokens": [
+            { "kind": "keyword", "value": "master_strike" }
+          ],
+          "source_hash": "sha256:c1d2e3f405162738495a6b7c8d9e0f1a2b3c4d5e6f708192a3b4c5d6e7f80912"
+        },
+        "image": {
+          "uri": "https://images.legendary-arena.com/core/thanos.jpg",
+          "mime_type": "image/jpeg",
+          "role": "card-front"
+        }
+      },
+      {
+        "card_type": "hero",
+        "ext_id": "co2e/storm",
+        "name": "Storm",
+        "hero_class": ["ranged"],
+        "rarity_code": "c1",
+        "registry_ref": {
+          "ext_id": "co2e/storm"
+        },
+        "effect_snapshot": {
+          "text": ["Draw a card."],
+          "source_hash": "sha256:aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899"
+        }
+      }
+    ]
+  }
+}
