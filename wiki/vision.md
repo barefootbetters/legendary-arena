@@ -48,7 +48,50 @@ and every Work Packet.
 >   the same cycle. Where the two disagree, the vision wins and this
 >   page is wrong.
 
+**Audience:** contributors, reviewers, operators, and designers who
+need the vision's shape without reading all 918 lines of it. Players
+are served by the public game documentation, not this page.
+
 ## Mechanics
+
+### Vision at a glance
+
+- **Purpose** — become the definitive digital home for *Marvel
+  Legendary*: exact rules, real card content, verifiable fairness.
+- **Primary goals (never change)** — Rules Authenticity · Content
+  Authenticity · Player Trust & Fairness · Faithful Multiplayer ·
+  Longevity & Expandability.
+- **Business rule** — no sales, no business. Revenue funds payroll,
+  Upper Deck and Marvel royalties, infrastructure, and the next round
+  of content. *No margin, no mission.*
+- **Permanent monetization boundaries** — no pay-to-win, no gacha or
+  loot boxes, no paid balance advantage, no friction monetization, no
+  ads inside the gameplay frame, no dark patterns, no social-influence
+  mechanics. Everything outside those lines is open commercial space.
+- **Competitive philosophy** — measure how *well* a game was played,
+  not how long or how often. Every ranking input is replay-verified
+  and quality-normalized.
+- **Authority chain** — [`.claude/CLAUDE.md`](../.claude/CLAUDE.md) →
+  [`ARCHITECTURE.md`](../docs/ai/ARCHITECTURE.md) →
+  [`01-VISION.md`](../docs/01-VISION.md) → `.claude/rules/*.md` →
+  `WORK_INDEX.md` → individual Work Packets. Note that architecture
+  outranks the vision: the vision says what the game *is*, not how the
+  layers are drawn.
+
+### What changes, and what does not
+
+Change rate is not authority — `ARCHITECTURE.md` outranks the vision
+and still changes far more often than it does. This table is about
+churn, and about where a contributor is free to innovate.
+
+| Layer | Expected change rate | Gate on changing it |
+|---|---|---|
+| Primary goals (1–5) | Effectively never | Violating one is a hard failure of vision, not a tradeoff |
+| Non-goals (NG-1…NG-8) | Rare | Stated as permanent; "the answer is no" |
+| Financial sustainability | Occasional | Open commercial space by design — packaging and pricing may evolve |
+| Secondary goals (6–19b) | Moderate | Deviation allowed when intentional and recorded in [DECISIONS.md](../docs/ai/DECISIONS.md) |
+| Architecture | Frequent | Tier-2 authority; changes via ARCHITECTURE.md + a D-entry |
+| Work packets | Constant | The execution spine; churns by design |
 
 ### The frame: business survival first
 
@@ -120,23 +163,21 @@ primary goal.
 
 ### Skill measurement & competitive benchmarking (20–26)
 
-Legendary Arena aims to be the definitive environment for *measuring*
-skill, using a golf-style PAR framework. The two-layer model:
+Skill is measured through replay-verified execution, on a golf-style
+two-layer model: **PAR** measures scenario difficulty (Scheme +
+Mastermind + Villain Groups + player count — static, not
+hero-dependent, not luck-normalized), and **Raw Score** measures how
+the players actually did. `Final Score = Raw Score − PAR`; lower is
+better, negative is under par.
 
-- **Layer A — PAR** is scenario difficulty (Scheme + Mastermind +
-  Villain Groups + player count). Static, not player-adaptive, not
-  hero-dependent, not luck-normalized.
-- **Layer B — Raw Score** is execution quality from the authoritative
-  replay: VP earned and bystanders rescued reward; rounds played and
-  escapes/penalties penalize. `Final Score = Raw Score − PAR`; lower is
-  better, negative is under par.
+Three properties carry the weight: scores derive *exclusively* from the
+authoritative replay and final state (§22); every leaderboard entry is
+re-scorable and tamper-immune, enforced structurally rather than by
+moderation (§24); and PAR is simulation-calibrated before heroes are
+chosen, then immutable — refinements create new versions, never
+retroactive adjustments (§26).
 
-Supporting clauses: scoring is deterministic and computed only from the
-game log and final state (§22); every leaderboard entry is backed by a
-complete, re-scorable, tamper-immune replay, enforced *structurally*
-rather than by moderation (§24); PAR is simulation-calibrated before
-players choose heroes and is immutable once declared — refinements
-create new versions, never retroactive adjustments (§26). See
+Formulas, weights, and the calibration pipeline live in
 [Scoring](scoring.md), [PAR Simulation Calibration](par-simulation-calibration.md),
 [Leaderboard](leaderboard.md), and
 [12-SCORING-REFERENCE.md](../docs/12-SCORING-REFERENCE.md).
@@ -241,30 +282,27 @@ Work-Packet pre-flight, and contributor onboarding.
 
 ## Edge Cases
 
-- **This page is not the vision.** It compresses a 900-line governance
-  document into a map. Any decision, review, or Work-Packet gate must
-  read [`docs/01-VISION.md`](../docs/01-VISION.md) itself — summaries
-  drop the qualifying clauses that usually decide the question.
-- **Scope confusion on non-goals is the common misread.** NG-5 bans ads
-  *in the gameplay frame*, not sponsorship generally. NG-8 bans social
-  amplification mechanics, not outbound links. NG-1 bans mechanical
-  advantage, not paid content. Reading a non-goal wider than written
-  forecloses revenue the vision explicitly leaves open.
-- **The commercial space is open-ended by design.** The revenue list in
-  Financial Sustainability is illustrative, not a closed enumeration —
-  the Monetization Boundary Summary says so in terms. Treating it as a
-  closed set is anti-commercial drift.
-- **§25 is anti-bot, not anti-veteran.** The "how long or how often"
-  language targets farming; sustained high-quality play across distinct
-  scenarios is precisely what recognition rewards.
-- **Vision-tier edits need explicit approval.** Unlike wiki pages,
-  `docs/01-VISION.md` sits above `.claude/rules/*.md` in the authority
-  hierarchy. Proposed changes are presented as an audit catalog and
-  wait for a go.
-- **Staleness.** Counts in the vision are point-in-time observations,
-  not targets — §8's engine-test figure carries its own as-of date and
-  will drift between refreshes. Treat any count in either document as
-  of-that-date, and run `pnpm -r test` for the live number.
+The common misreadings, in the order they cause damage:
+
+- **This page is not the vision.** It compresses 918 lines into a map.
+  Any decision, review, or Work-Packet gate reads
+  [`docs/01-VISION.md`](../docs/01-VISION.md) itself — summaries drop
+  the qualifying clauses that usually decide the question.
+- **Non-goals are narrower than they look.** NG-5 bans ads *in the
+  gameplay frame*, not sponsorship generally; NG-8 bans amplification
+  mechanics, not outbound links; NG-1 bans mechanical advantage, not
+  paid content. Reading one wider than written forecloses revenue the
+  vision deliberately leaves open.
+- **The commercial space is open-ended.** The revenue list is
+  illustrative — the Monetization Boundary Summary says "any other
+  model not yet imagined" in terms. Treating it as a closed set is
+  anti-commercial drift.
+- **§25 targets farming, not mastery.** The "how long or how often"
+  language is anti-bot; sustained high-quality play across distinct
+  scenarios is exactly what recognition rewards.
+- **Vision-tier edits need explicit approval**, and counts in either
+  document are point-in-time observations rather than targets — §8's
+  test figure carries its own as-of date.
 
 ## References
 
