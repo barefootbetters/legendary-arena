@@ -448,10 +448,6 @@ prefixes.
   An image committed to `ewiki/<slug>/` publishes; one dropped into
   `apps/wiki-viewer/static/<slug>/` is never committed at all, works
   locally, and 404s in production.
-- **Stale path in `apps/wiki-viewer/.gitignore`.** Its comment cites
-  `docs/wiki/` as the projection source; the actual source is `wiki/` at
-  the repo root. The ignore rules themselves are correct — only the
-  comment is wrong.
 
 ## References
 
