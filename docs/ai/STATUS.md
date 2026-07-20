@@ -7,6 +7,36 @@
 
 ## Current State
 
+### WP-401 / EC-436 — Node 24 upgrade executed (D-24209) (2026-07-20)
+
+**No user-observable change — infrastructure only.**
+
+`.node-version` moves `22.23.1` → **`24.18.0`** (Krypton). Node 22 had been in
+LTS Maintenance since 2025-10-21 (security/critical fixes only, EOL 2027-04-30);
+24 is in Active LTS to 2026-10-20 and supported to 2028-04-30.
+
+**Zero workflow files changed.** All 21 `node-version-file` sites read the pin,
+so the diff was `.node-version` plus the two `render.yaml` `NODE_VERSION`
+envVars — which outrank the file on Render and would have silently overridden
+it if left stale. WP-400's pin is what made a major runtime change a three-line
+edit.
+
+**The determinism gate held, which was the whole question.** A V8 change across
+a Node major could have moved iteration order, float formatting, or sort
+stability. It did not: `sim:runtime-observed:check` current with no
+regeneration, and the sentinel `finalStateHash` byte-identical. Every package's
+test totals matched the Node-22 baseline captured on the same machine before
+the edit.
+
+`engines.node` stays `">=22"` in all four manifests — a floor, not a pin, per
+D-24209. Verified by an explicit `git diff`, because `check:node-pin` rejects
+only an exact pin and would not have caught a floor being raised.
+
+**Outstanding:** confirm from a Cloudflare Pages build log that the reported
+Node version is `24.18.0` (it read `22.23.1` before this). Tracked as a
+post-merge operator step, not a DoD gate.
+
+
 ### WP-395 / EC-435 — Canonical villain & henchmen loadouts for gauntlet qualification (D-24199 Active) (2026-07-20)
 
 **User-visible on legends.legendary-arena.com:** every gauntlet board now states

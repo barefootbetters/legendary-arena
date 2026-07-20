@@ -205,7 +205,7 @@ The peer-to-peer social graph and the trust boundary it puts on ranked play — 
 
 | Runtime | Required | Source |
 |---|---|---|
-| Node.js (pinned build version) | `22.23.1` | `.node-version` — single source of truth (D-24205) |
+| Node.js (pinned build version) | `24.18.0` | `.node-version` — single source of truth (D-24205) |
 | Node.js | `>=22` | `package.json` `engines.node` |
 | pnpm | `>=10` | `package.json` `engines.pnpm` |
 | packageManager (Corepack pin) | `pnpm@10.32.1` | `package.json` `packageManager` |
@@ -242,7 +242,7 @@ Counts derived from on-disk file extensions under `apps/`, `packages/`, `scripts
 | TypeScript | 880 |
 | Vue SFC | 143 |
 | JavaScript | 119 |
-| JSON | 105 |
+| JSON | 108 |
 | Markdown | 69 |
 | HTML | 14 |
 | PowerShell | 10 |
@@ -256,7 +256,7 @@ Counts derived from on-disk file extensions under `apps/`, `packages/`, `scripts
 |---|---:|
 | `.ts` | 875 |
 | `.vue` | 143 |
-| `.json` | 105 |
+| `.json` | 108 |
 | `.mjs` | 77 |
 | `.md` | 69 |
 | `.js` | 40 |
