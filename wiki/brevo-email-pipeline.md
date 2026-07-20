@@ -10,6 +10,8 @@ tags:
 related:
   - wiki-viewer.md
   - hugo-web-system.md
+  - workspace-map.md
+  - newsletter-authoring.md
 status: draft
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\brevo-email-pipeline.md (this page — https://ewiki.legendary-arena.com/brevo-email-pipeline/)
@@ -72,10 +74,14 @@ The two sites have separate image directories:
 
 **How it works:** Each wiki page gets its own asset subdirectory
 under `C:\pcloud\BB\DEV\legendary-arena\ewiki\`, named by the page's
-slug. The projection script copies the entire `ewiki/` tree into
-`C:\pcloud\BB\DEV\legendary-arena\apps\wiki-viewer\static\ewiki\`
-at build time. Hugo then copies `static/` into the build output
-directory (`public/`) as-is.
+slug. At build time the projection script copies each slug directory
+`ewiki/<slug>/` to
+`C:\pcloud\BB\DEV\legendary-arena\apps\wiki-viewer\static\<slug>\` —
+**not** into a nested `static\ewiki\`. Hugo then copies `static/` into
+the build output directory (`public/`) as-is, which is why the served
+path is `/<slug>/<file>` and not `/ewiki/<slug>/<file>`. Slug
+directories are removed and re-copied on each run; other contents of
+`static/` are left alone.
 
 Example: a file saved at
 `C:\pcloud\BB\DEV\legendary-arena\ewiki\brevo-email-pipeline\brevo-welcome-workflow.png`
@@ -112,6 +118,29 @@ lowercase kebab-case filenames (e.g., `brevo-welcome-workflow.png`,
 
 **For research files and working drafts** that should not be published:
 save to `C:\pcloud\LA\ewiki\`.
+
+**Everything else this pipeline touches follows the general storage
+rule** on [Workspace Map](workspace-map.md) — git for reviewable text,
+pCloud for working files and binaries, hosted for what is delivered. Two
+consequences specific to Brevo:
+
+- **Brevo is the delivery surface, never the authoring surface.**
+  Content edited only inside a Brevo campaign exists nowhere that can be
+  diffed or recovered; the draft under
+  `docs\brevo\newsletter-drafts\` is the artifact.
+- **Subscriber and campaign exports never enter either repo.** A Brevo
+  contact export is a list of real people's email addresses — record the
+  derived number in `qa-log.md` and delete the export rather than
+  parking it in synced storage. See
+  [Newsletter Authoring](newsletter-authoring.md).
+
+> **A note on the drafting paths above.** The engine repo currently sits
+> on the pCloud sync drive, which is a known hazard for a git checkout
+> and is scheduled to move — see the sync-drive edge case on
+> [Workspace Map](workspace-map.md). The `C:\pcloud\BB\DEV\…` paths on
+> this page describe where the checkout is today, not where it belongs.
+> `C:\pcloud\LA\ewiki\` is unaffected: it holds research files, not a
+> repository, and sync is the right tool for that.
 
 ## Summary
 
@@ -709,6 +738,17 @@ real list ID / template ID / workflow ID."
   list level, not in the API call. If a new list is created without
   enabling double opt-in, contacts will be added without confirmation,
   violating compliance requirements.
+- **Assets project to `static/<slug>/`, not `static/ewiki/<slug>/`.**
+  Earlier revisions of this page described the projection as copying the
+  whole `ewiki/` tree into a nested `static\ewiki\`. It does not, and the
+  served URLs on this page were always right — `/<slug>/<file>`. Corrected
+  2026-07-20 against `apps/wiki-viewer/scripts/project-wiki.mjs`.
+- **Two commit prefixes are in live use for `wiki/` edits.** `EC-142:`
+  (47 commits, most recent 2026-07-15) and `INFRA:` (87 commits, in use
+  since 2026-06-30) both appear in `git log -- wiki/`, and the ewiki
+  authoring pages do not agree on which to tell you. Neither is
+  rejected by the hooks. Match the surrounding history for the page you
+  are editing until one is settled as canonical.
 
 ## References
 
