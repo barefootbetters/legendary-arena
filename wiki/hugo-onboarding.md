@@ -11,6 +11,7 @@ related:
   - brevo-email-pipeline.md
   - wiki-viewer.md
   - ewiki-authoring.md
+  - workspace-map.md
 status: draft
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\hugo-onboarding.md (this page — https://ewiki.legendary-arena.com/hugo-onboarding/)
@@ -224,6 +225,61 @@ C:\www\legendary-arena-com\
 ├── docs\                  # governance: VISION, ROADMAP, REFERENCE\, work-packets\
 └── public\                # BUILD OUTPUT — gitignored, never edit or commit
 ```
+
+### Where files are saved (and what never gets committed)
+
+The tree above is what *is* in the repo. Three categories are
+deliberately outside it, and mixing them up is the most common day-one
+mistake. The general rule is on [Workspace Map](workspace-map.md); this
+is how it lands here.
+
+**Gitignored — regenerated or machine-local:**
+
+| Path | Why |
+|---|---|
+| `public\` | Hugo build output. Regenerated on every build; inspect it, never edit it. |
+| `resources\` | Hugo's asset-pipeline cache. |
+| `node_modules\` | Restored by `npm install`. |
+| `.dev.vars` | **Your local secrets.** `BREVO_API_KEY`, `BREVO_LIST_ID`. Production values live as Cloudflare Pages dashboard environment variables — never in the repo. `.dev.vars.example` is the committed template; it carries the *shape*, never a real value. |
+
+The pre-commit hook scans for leaked credentials, but treat that as a
+backstop, not permission to be careless — a key that reaches a commit
+has to be rotated whether or not the push succeeded.
+
+**`themes\PaperMod\` is a git submodule, not your code.** You override
+it in `layouts\`; you never edit inside it. An edit there survives
+locally and is lost on the next submodule update, with no diff in the
+main repo to explain where the change went.
+
+**In pCloud —** the working files a marketing change is made *from*:
+
+| Contents | Why not git |
+|---|---|
+| Product photography originals before crop and WebP conversion | Multi-megabyte raws; only the optimized image ships to `static\images\shop\` |
+| Design comps and Figma exports at full resolution | Source material, not deliverables |
+| Brevo list exports and campaign analytics pulls | Personal data — see [Newsletter Authoring](newsletter-authoring.md) |
+| Vendor and supplier documents — invoices, licensing, print quotes | Not content, and often counterparty detail |
+
+Same rule as everywhere else: **the optimized derivative is committed;
+the source it was exported from is not.** `static\` is served verbatim,
+so anything parked there ships to production and counts against page
+weight even if nothing links to it.
+
+**The two repos do not live in the same place.**
+
+| Repo | Path | pCloud-synced? |
+|---|---|---|
+| Engine (`legendary-arena`) | `C:\pcloud\BB\DEV\legendary-arena\` | Yes |
+| Marketing (`legendary-arena-website`) | `C:\www\legendary-arena-com\` | **No** |
+
+That asymmetry has a practical consequence worth knowing before you
+rely on it: work in the marketing checkout that has not been pushed to
+GitHub exists on one disk only. Anything uncommitted there — a
+half-finished post, a `.dev.vars` you spent twenty minutes assembling —
+is not backed up by anything.
+[D-24207](../docs/ai/DECISIONS.md) brings the marketing repo into the
+naming convention when it is next touched; until then, its layout is
+what the table above says.
 
 ### How Hugo builds a page
 
@@ -478,6 +534,9 @@ button) are mapped in
 - **Commit hygiene** —
   `C:\www\legendary-arena-com\docs\ai\REFERENCE\01.3-commit-hygiene.md`
   governs every commit you make in the marketing repo.
+- **[Workspace Map](workspace-map.md)** — Owns the three-surface rule
+  (git / pCloud / hosted) and locates both repos. Read it if you are
+  unsure whether a file belongs in the repo at all.
 
 ## Edge Cases
 
@@ -505,6 +564,17 @@ button) are mapped in
 - **Editing *this* wiki page is not like the marketing site.** The ewiki
   forbids raw HTML and shortcodes — an unescaped `{{</* … */>}}` in a
   wiki page **breaks the build**. See [Ewiki Authoring](ewiki-authoring.md).
+- **`.dev.vars` is per-machine and never shared.** It is gitignored, so
+  a fresh clone has no newsletter function until you copy
+  `.dev.vars.example` and fill it from the Brevo dashboard. Nobody can
+  send it to you from the repo — that is the point.
+- **Uncommitted marketing work has no backup.** The marketing checkout
+  sits at `C:\www\`, outside the pCloud-synced tree the engine repo
+  lives in. Push early rather than trusting the working directory.
+- **Anything under `static\` ships.** It is served verbatim, so a
+  full-resolution source image left beside its optimized export is
+  published and counted against page weight — silently, since nothing
+  links to it.
 
 ## References
 
