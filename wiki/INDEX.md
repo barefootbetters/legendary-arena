@@ -206,9 +206,9 @@ Software tools and services used in development or operations.
   Cloudflare Access gate. Self-contained (no `@legendary-arena/*` runtime
   imports); its **Dashboard Gates** CI job runs lint / typecheck /
   coverage-tested / format-check / build as blocking gates.
-- [LAGN v1.0 Specification](lagn-v1.md) — Legendary Arena Game
+- [LAGN Specification](lagn-v1.md) — Legendary Arena Game
   Notation: the published npm spec (`@legendary-arena/lagn`) with Zod
-  validator, generated JSON Schema, TypeScript types, and a `lagn`
+  validator, a JSON Schema derived from it, TypeScript types, and a `lagn`
   CLI; three optional tiers (setup / card catalog / replay log).
 - [Operational Health Checks](operational-health-checks.md) — Two
   operator probes: `pnpm check` walks the environment, toolchain,
@@ -295,7 +295,7 @@ following are useful entry points:
 - **`data-pipeline` / storage** — Where data and files live:
   [Data & File Locations](data-file-locations.md),
   [R2 Image Naming Convention](r2-image-naming-convention.md),
-  [LAGN v1.0 Specification](lagn-v1.md),
+  [LAGN Specification](lagn-v1.md),
   [Card Type Taxonomy](card-type-taxonomy.md).
 
 ---

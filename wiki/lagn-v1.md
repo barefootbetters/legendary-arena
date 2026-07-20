@@ -1,5 +1,5 @@
 ---
-title: LAGN v1.0 Specification
+title: LAGN Specification (v1.1)
 type: Tool
 tags:
   - lagn
@@ -16,17 +16,19 @@ source:
   - ../packages/lagn-spec/README.md
   - ../docs/ai/work-packets/WP-244-lagn-spec-publication.md
   - ../docs/ai/execution-checklists/EC-275-lagn-spec-publication.checklist.md
-last-reviewed: 2026-07-16
+  - ../docs/ai/execution-checklists/EC-422-lagn-1-1-support-pools.checklist.md
+  - ../packages/lagn-spec/src/migrate.ts
+last-reviewed: 2026-07-19
 ---
 
-# LAGN v1.0 Specification
+# LAGN Specification (v1.1)
 
 ## Summary
 
 LAGN (Legendary Arena Game Notation) is the open standard format for
 representing Legendary Arena game state: match setup, card catalog metadata,
-and deterministic replay logs. Published as an NPM package (`@legendary-arena/lagn@1.0.0`)
-with Zod validator, auto-generated JSON Schema, TypeScript types, and CLI tooling,
+and deterministic replay logs. Published as an NPM package (`@legendary-arena/lagn`)
+with Zod validator, JSON Schema **derived from** that validator, TypeScript types, and CLI tooling,
 and as the public GitHub repo
 [legendary-arena/lagn-spec](https://github.com/legendary-arena/lagn-spec) (MIT).
 LAGN enables third-party tools, bots, and replay systems to work with
@@ -138,7 +140,39 @@ as a single authoritative Zod schema. The schema:
 - Validates `seq` constraint (strictly increasing sequences, no gaps/duplicates)
 - Exports the `validate(data)` function returning `{ valid: boolean, errors?: string[] }`
 - Exports `summarize(data)` returning metadata: `{ valid, game_id, variant, player_count, outcome }`
-- Exports `generateSchema()` returning a plain JSON Schema object (never hand-edited)
+- Exports `generateSchema()`, which **derives** the JSON Schema from the Zod
+  schema (see below) — it is not a second hand-maintained description
+- Exports the version constants `LAGN_VERSION`, `LAGN_VERSION_1_0_0`,
+  `LAGN_VERSION_1_1_0`, `LAGN_SUPPORTED_VERSIONS`, and `migrateToCurrent()`
+
+### Versioning (1.0.0 → 1.1.0)
+
+| | 1.0.0 | 1.1.0 |
+|---|---|---|
+| Status | still accepted, still valid | current — what writers stamp |
+| Adds | — | optional `setup.support_pools` |
+
+**1.1.0 (WP-391 / D-24195)** adds optional `setup.support_pools`, naming *which*
+cards fill the four supply piles where the `*_count` fields carry only *how
+many*. It is a strict superset: every valid 1.0.0 document is a valid 1.1.0
+document, and 1.0.0 documents keep validating unchanged.
+
+Two constraints are enforced in Zod and are **not** expressible in JSON Schema
+(see the allowlist above): each pool's `copies` must sum to its matching
+`*_count`, and `support_pools` is **version-gated** — a `1.0.0` document
+carrying it is rejected rather than silently stripped. The gate matters because
+`lagnSchema` does not call `.strict()`: without it, pools written into a 1.0.0
+document would vanish on parse and the preset would come back empty, which is
+the worst available failure mode.
+
+`migrateToCurrent()` (`src/migrate.ts`) is a forward-only migration seam.
+It never invents pools from counts — a migrated 1.0.0 document has no
+`support_pools`, because the information was never there to recover.
+
+**Not yet shipped:** LAGN **1.2.0** card-metadata provenance — optional
+hash-anchored `catalog_ref` / `registry_ref` / `effect_snapshot` so a replay is
+auditable without registry access — is **drafted, not implemented**
+(WP-393 + WP-394, D-24197 / D-24198). Nothing emits or accepts 1.2.0 today.
 
 ### TypeScript Types
 
@@ -151,8 +185,38 @@ Inferred from the Zod schema via `z.infer<typeof lagnSchema>`, exported as:
 
 ### JSON Schema Generation & Hosting
 
-The `generateSchema()` function produces a valid JSON Schema (draft 2020-12).
-The schema is auto-generated on every build and never hand-edited.
+`generateSchema()` produces a JSON Schema declaring draft 2020-12, and is
+**derived from `lagnSchema` via `zod-to-json-schema`** (WP-392 / D-24196). The
+committed artifact is regenerated on every build and never hand-edited, and a
+CI gate (`LAGN Schema Drift Guard`) fails if it drifts from the generator.
+
+Until 2026-07-18 the generator was itself a **hand-written JSON Schema literal**
+living beside the Zod schema in the same file. The CI gate proved the committed
+JSON matched the *generator*, never that the generator matched *Zod* — so the
+published contract could describe a different format than the validator
+enforced, with CI green. It already did: `card_catalog.cards.items` and
+`replay.turns.items` were bare `{ type: 'object' }` against a nine-branch
+discriminated union and a fully typed turn, so a card with a bogus `card_type`
+passed the published schema and failed `validate()`. Deriving one from the other
+removes that class of drift by construction.
+
+**Constraints JSON Schema cannot express.** Derivation silently drops every Zod
+`.refine()` / `.superRefine()` — they are arbitrary predicates with no JSON
+Schema equivalent. Dropping them is unavoidable; dropping them *unrecorded* is
+not. `UNEXPRESSIBLE_CONSTRAINTS` in `validator.ts` names all four with a path,
+the constraint, and the reason it cannot be carried:
+
+1. Support-pool `mode`/`sets` coupling plus per-pool `ext_id` uniqueness
+2. Each pool's `copies` summing to its matching `*_count` field
+3. `seq` increasing by exactly 1 across a turn's actions
+4. `support_pools` requiring `lagn_version` 1.1.0
+
+The list is **enforced, not decorative**: the test suite walks the Zod tree,
+counts refinement nodes, and fails the build if the count disagrees with the
+allowlist — so a new `.refine()` cannot land undocumented. The array is also
+embedded in the published artifact as `x-lagn-unexpressible-constraints`, so a
+consumer validating against the schema alone can see what it does **not** check
+for them.
 
 **Public schema URLs:**
 
@@ -175,11 +239,21 @@ lagn validate <file.lagn.json>
 
 ### NPM Package Metadata
 
-Published as `@legendary-arena/lagn@1.0.0`:
+Published as `@legendary-arena/lagn`:
 
-- **Main entry:** `dist/index.js` (exports `validate`, `summarize`, `generateSchema`, types)
+- **Main entry:** `dist/index.js` (exports `validate`, `summarize`, `generateSchema`,
+  the version constants, `migrateToCurrent`, types)
 - **Schema export:** `"./schema"` entrypoint resolves to `schemas/lagn-v1.json`
 - **CLI binary:** `lagn` (installed to `node_modules/.bin/lagn` via `"bin"` field)
+
+> **Manifest lockstep (fixed 2026-07-19).** The version constants deliberately
+> live in TypeScript and are never read from `package.json`; the manifest is the
+> human-readable copy, bumped in lockstep. EC-422 bumped the constants and not
+> the manifest, so npm briefly advertised `1.0.0` for a package emitting `1.1.0`
+> documents. Both the `version` and the `description` (which read "LAGN v1.0 —")
+> are corrected. Publishing is gated on a `v*` tag, so no release carried the
+> mismatch. **When bumping `LAGN_VERSION`, bump `package.json` in the same
+> change** — nothing enforces this automatically.
 
 ### Public GitHub Repository
 
@@ -227,10 +301,14 @@ The open-source publication surface (WP-244 Gate 1):
 - **seq constraint.** Replay actions and villain events within a turn are
   validated as **strictly increasing sequences starting at 0**, with no
   gaps and no duplicates. Out-of-order or duplicate `seq` values fail.
-- **JSON Schema versioning.** The schema URI includes the version
-  (`lagn-v1.json`). Future major versions (v2, v3) will publish to
-  separate schema files; consumers must pin their expected version
-  explicitly.
+- **JSON Schema versioning.** The schema URI includes the MAJOR version
+  (`lagn-v1.json`). Minor versions share that file — `lagn_version` is an
+  `enum`, not a `const`. Future **major** versions (v2, v3) publish to separate
+  schema files; consumers must pin their expected major version explicitly.
+- **Readers accept; writers emit one.** `LAGN_SUPPORTED_VERSIONS` is every
+  version this build can read; `LAGN_VERSION` is the single version it stamps
+  on documents it writes. That asymmetry is what keeps stored records readable
+  without forcing a migration pass over them.
 - **CLI exit behavior.** The CLI exits with code 1 on validation failure
   and code 2 on I/O errors. Non-zero exit codes allow shell scripts to
   detect and react to both cases.
@@ -247,7 +325,11 @@ The open-source publication surface (WP-244 Gate 1):
 - [`packages/lagn-spec/src/cli.ts`](../packages/lagn-spec/src/cli.ts)
   — CLI entrypoint (shebang `#!/usr/bin/env node`)
 - [`packages/lagn-spec/src/validator.test.ts`](../packages/lagn-spec/src/validator.test.ts)
-  — 21 tests covering all three tiers, seq constraints, and summarize()
+  — 44 tests covering all three tiers, seq constraints, `summarize()`,
+  versioning + support pools, migration, the derived-schema contract, and
+  `ajv` validation of every shipped fixture against the generated JSON Schema
+- [`packages/lagn-spec/src/migrate.ts`](../packages/lagn-spec/src/migrate.ts)
+  — forward-only version migration (`migrateToCurrent`)
 - [`packages/lagn-spec/scripts/generate-schema.mjs`](../packages/lagn-spec/scripts/generate-schema.mjs)
   — Generates `schemas/lagn-v1.json` at build time
 

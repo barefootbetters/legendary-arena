@@ -57,6 +57,17 @@ const SKIP_DIRECTORIES = new Set([
   '.vite',
   '.output',
   '.nuxt',
+  // why: apps/wiki-viewer/content/ is a GITIGNORED projection of wiki/ written
+  // by scripts/project-wiki.mjs, and apps/wiki-viewer/static/ mirrors the ewiki
+  // assets. Both sit under a LANGUAGE_SCAN_ROOT ('apps'), so once anyone runs
+  // `pnpm wiki-viewer:project` locally the projected copies persist on disk and
+  // every wiki page is counted twice. Measured 2026-07-20: Markdown 67 -> 115,
+  // brevo 13 -> 16 files, snipcart 1 -> 2. The cron regenerates from a clean
+  // checkout and so never saw it; a local regeneration silently shipped the
+  // inflated numbers into this governance artifact. Skipping the projection
+  // targets makes the output independent of whether the wiki was built first.
+  'content',
+  'static',
 ]);
 
 // ---------------------------------------------------------------------------
@@ -446,7 +457,10 @@ const FIRST_PARTY_SUBSYSTEMS = [
     ],
   },
   {
-    name: 'LAGN v1.0 Specification',
+    // why: deliberately version-agnostic. The prior 'LAGN v1.0 Specification'
+    // went stale the moment 1.1.0 shipped, and this file is the SOLE writer of
+    // the generated wiki page — a version baked in here re-stales on every bump.
+    name: 'LAGN Specification',
     // why: contract symbols are declared in the package's `src/` tree
     // (index.ts / validator.ts / types.ts), not at the package root.
     // collectExportedSymbols() is non-recursive, so the location must
@@ -462,8 +476,9 @@ const FIRST_PARTY_SUBSYSTEMS = [
       'Zod validator, generated JSON Schema, TypeScript types, and CLI tooling. ' +
       'Three-tier format: Tier 1 (mandatory game setup), Tier 2 (optional card catalog), ' +
       'Tier 3 (optional replay sequence). Single source of truth is the Zod schema; ' +
-      'TypeScript types are inferred; JSON Schema is auto-generated and versioned at ' +
-      '@legendary-arena/lagn@1.0.0 and published via npm, schema CDN, and the public ' +
+      'TypeScript types are inferred; the JSON Schema is DERIVED from the Zod schema ' +
+      '(never hand-maintained) and published as @legendary-arena/lagn via npm, the ' +
+      'schema CDN, and the public ' +
       'GitHub repo github.com/legendary-arena/lagn-spec (MIT; a package-only snapshot ' +
       'of packages/lagn-spec — the monorepo copy stays canonical, per WP-244 Gate 1).',
     contractSymbols: [
