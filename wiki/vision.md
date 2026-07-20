@@ -195,7 +195,7 @@ primary goal.
   rewrite history.
 - **§19b Loadout library** — saved LAGN loadouts are decorative,
   shareable, user-authored content; never a competitive-submission
-  path. See [LAGN Specification (v1.1)](lagn-v1.md).
+  path. See [LAGN Specification](lagn-v1.md).
 
 ### Skill measurement & competitive benchmarking (20–26)
 
@@ -363,4 +363,4 @@ The common misreadings, in the order they cause damage:
   [PAR Simulation Calibration](par-simulation-calibration.md),
   [Leaderboard](leaderboard.md),
   [Profile Login](profile-login.md),
-  [LAGN Specification (v1.1)](lagn-v1.md)
+  [LAGN Specification](lagn-v1.md)
