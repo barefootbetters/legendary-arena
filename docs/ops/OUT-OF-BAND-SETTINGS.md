@@ -59,6 +59,27 @@ filter, this protection must be revisited in the same change.** Otherwise the
 first docs-only PR after that change will hang forever with no diagnostic
 beyond "Expected — Waiting for status to be reported."
 
+### Repository setting: `allow_auto_merge`
+
+Enabled 2026-07-20, immediately after the protection above. It was **off**,
+and that mattered more than it looks.
+
+With auto-merge disabled, `gh pr merge --auto` does not queue — it falls back
+to merging immediately whenever the PR is currently mergeable. On an
+unprotected branch every PR is always mergeable, so `--auto` was silently a
+plain merge. That is the actual mechanism behind the "merged while tests were
+still running" incidents, and it is invisible from the command line: the
+merge succeeds and prints normal output.
+
+With protection on but auto-merge still off, the same command fails loudly
+instead (`GraphQL: Auto merge is not allowed for this repository`) — safe, but
+it means no unattended merges at all. Both settings are needed for `--auto` to
+mean "wait for the required check, then merge."
+
+```sh
+gh api repos/barefootbetters/legendary-arena --jq '.allow_auto_merge'
+```
+
 ### Consequence to expect
 
 If the job breaks or hangs, PRs stack up until it is fixed or an admin
