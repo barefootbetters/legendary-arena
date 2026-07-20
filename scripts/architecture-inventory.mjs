@@ -57,6 +57,17 @@ const SKIP_DIRECTORIES = new Set([
   '.vite',
   '.output',
   '.nuxt',
+  // why: apps/wiki-viewer/content/ is a GITIGNORED projection of wiki/ written
+  // by scripts/project-wiki.mjs, and apps/wiki-viewer/static/ mirrors the ewiki
+  // assets. Both sit under a LANGUAGE_SCAN_ROOT ('apps'), so once anyone runs
+  // `pnpm wiki-viewer:project` locally the projected copies persist on disk and
+  // every wiki page is counted twice. Measured 2026-07-20: Markdown 67 -> 115,
+  // brevo 13 -> 16 files, snipcart 1 -> 2. The cron regenerates from a clean
+  // checkout and so never saw it; a local regeneration silently shipped the
+  // inflated numbers into this governance artifact. Skipping the projection
+  // targets makes the output independent of whether the wiki was built first.
+  'content',
+  'static',
 ]);
 
 // ---------------------------------------------------------------------------

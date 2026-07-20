@@ -10,7 +10,7 @@ tags:
 
 # Architecture & Library Adoption Inventory
 
-_Generated 2026-07-19 by `scripts/architecture-inventory.mjs`._
+_Generated 2026-07-20 by `scripts/architecture-inventory.mjs`._
 
 This is a deterministic snapshot of installed dependencies,
 their actual import usage across the workspace, and SaaS /
@@ -49,7 +49,7 @@ synthesised from the app's own manifests:
 - **`apps/server`** — Legendary Arena boardgame.io game server — wiring layer only
   - Stack: boardgame.io (`boardgame.io@^0.50.0`) over Socket.IO (transitive via `boardgame.io`) + HTTP routes via Koa router (`@koa/router@10.1.1` + `koa@2.16.4`, both transitive via `boardgame.io`) + PostgreSQL via `pg@^8.13.0`.
 - **`apps/wiki-viewer`** — Engineering wiki build pipeline. Build-time, read-only Hugo projection of `wiki/` (no `package.json` — Hugo is a Go binary, not a Node dep). Layer-boundary clean: zero runtime imports of `@legendary-arena/game-engine`, `@legendary-arena/registry`, or `apps/server`. Build pipeline is `pnpm wiki-viewer:project` (copy `wiki/*.md` → `apps/wiki-viewer/content/`) → `pnpm wiki-viewer:check-links` (case-sensitive internal-link gate) → `hugo --minify`.
-  - Stack: Hugo Extended (`hugo@0.135.0`, pinned in `apps/wiki-viewer/.hugo-version`) + 46 source pages projected from `wiki/` + deployed as Render Static Site `legendary-arena-wiki`.
+  - Stack: Hugo Extended (`hugo@0.135.0`, pinned in `apps/wiki-viewer/.hugo-version`) + 47 source pages projected from `wiki/` + deployed as Render Static Site `legendary-arena-wiki`.
 
 ## Deployment topology
 
@@ -238,11 +238,11 @@ Counts derived from on-disk file extensions under `apps/`, `packages/`, `scripts
 
 | Language | Files |
 |---|---:|
-| TypeScript | 877 |
+| TypeScript | 874 |
 | Vue SFC | 143 |
-| JavaScript | 115 |
-| Markdown | 114 |
+| JavaScript | 116 |
 | JSON | 107 |
+| Markdown | 68 |
 | HTML | 14 |
 | PowerShell | 10 |
 | CSS | 8 |
@@ -253,27 +253,23 @@ Counts derived from on-disk file extensions under `apps/`, `packages/`, `scripts
 
 | Extension | Files |
 |---|---:|
-| `.ts` | 872 |
+| `.ts` | 869 |
 | `.vue` | 143 |
-| `.md` | 114 |
 | `.json` | 107 |
-| `.mjs` | 73 |
+| `.mjs` | 74 |
+| `.md` | 68 |
 | `.js` | 40 |
-| `.png` | 16 |
 | `.html` | 14 |
 | `.ps1` | 10 |
 | `.css` | 8 |
-| `.svg` | 7 |
+| `.png` | 7 |
 | `.d.ts` | 5 |
 | `.txt` | 4 |
 | `.example` | 3 |
-| `.mmd` | 3 |
 | `.cjs` | 2 |
 | `.gitignore` | 2 |
 | `.gitkeep` | 1 |
 | `.hugo-version` | 1 |
-| `.ico` | 1 |
-| `.jpg` | 1 |
 | `.npmignore` | 1 |
 | `.prettierignore` | 1 |
 | `.toml` | 1 |
@@ -609,8 +605,8 @@ dependency-based inventory.
 
 | Service | Category | Detected in | Description |
 |---|---|---:|---|
-| `brevo` | marketing / email | 16 files | Transactional + marketing email, newsletter forms, SMTP relay. |
-| `snipcart` | ecommerce | 2 files | Cart overlay via CDN script + HTML data attributes. |
+| `brevo` | marketing / email | 13 files | Transactional + marketing email, newsletter forms, SMTP relay. |
+| `snipcart` | ecommerce | 1 file | Cart overlay via CDN script + HTML data attributes. |
 
 ### SaaS usage detail
 
@@ -620,9 +616,6 @@ dependency-based inventory.
 - `apps/server/src/marketing/brevoEnqueue.logic.ts`
 - `apps/server/src/marketing/brevoTransactional.logic.test.ts`
 - `apps/server/src/marketing/brevoTransactional.logic.ts`
-- `apps/wiki-viewer/content/brevo-email-pipeline.md`
-- `apps/wiki-viewer/content/hugo-onboarding.md`
-- `apps/wiki-viewer/content/hugo-web-system.md`
 - `docs/ai/DECISIONS.md`
 - `docs/ai/STATUS.md`
 - `docs/ai/execution-checklists/EC-325-game-signup-brevo-enqueue.checklist.md`
@@ -635,7 +628,6 @@ dependency-based inventory.
 
 #### snipcart
 
-- `apps/wiki-viewer/content/hugo-web-system.md`
 - `wiki/hugo-web-system.md`
 
 ## Importance tiering
