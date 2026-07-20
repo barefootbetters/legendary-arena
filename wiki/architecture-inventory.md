@@ -49,7 +49,7 @@ synthesised from the app's own manifests:
 - **`apps/server`** — Legendary Arena boardgame.io game server — wiring layer only
   - Stack: boardgame.io (`boardgame.io@^0.50.0`) over Socket.IO (transitive via `boardgame.io`) + HTTP routes via Koa router (`@koa/router@10.1.1` + `koa@2.16.4`, both transitive via `boardgame.io`) + PostgreSQL via `pg@^8.13.0`.
 - **`apps/wiki-viewer`** — Engineering wiki build pipeline. Build-time, read-only Hugo projection of `wiki/` (no `package.json` — Hugo is a Go binary, not a Node dep). Layer-boundary clean: zero runtime imports of `@legendary-arena/game-engine`, `@legendary-arena/registry`, or `apps/server`. Build pipeline is `pnpm wiki-viewer:project` (copy `wiki/*.md` → `apps/wiki-viewer/content/`) → `pnpm wiki-viewer:check-links` (case-sensitive internal-link gate) → `hugo --minify`.
-  - Stack: Hugo Extended (`hugo@0.135.0`, pinned in `apps/wiki-viewer/.hugo-version`) + 47 source pages projected from `wiki/` + deployed as Render Static Site `legendary-arena-wiki`.
+  - Stack: Hugo Extended (`hugo@0.135.0`, pinned in `apps/wiki-viewer/.hugo-version`) + 48 source pages projected from `wiki/` + deployed as Render Static Site `legendary-arena-wiki`.
 
 ## Deployment topology
 
@@ -205,6 +205,7 @@ The peer-to-peer social graph and the trust boundary it puts on ranked play — 
 
 | Runtime | Required | Source |
 |---|---|---|
+| Node.js (pinned build version) | `22.23.1` | `.node-version` — single source of truth (D-24205) |
 | Node.js | `>=22` | `package.json` `engines.node` |
 | pnpm | `>=10` | `package.json` `engines.pnpm` |
 | packageManager (Corepack pin) | `pnpm@10.32.1` | `package.json` `packageManager` |
@@ -238,11 +239,11 @@ Counts derived from on-disk file extensions under `apps/`, `packages/`, `scripts
 
 | Language | Files |
 |---|---:|
-| TypeScript | 874 |
+| TypeScript | 880 |
 | Vue SFC | 143 |
-| JavaScript | 116 |
-| JSON | 107 |
-| Markdown | 68 |
+| JavaScript | 119 |
+| JSON | 105 |
+| Markdown | 69 |
 | HTML | 14 |
 | PowerShell | 10 |
 | CSS | 8 |
@@ -253,11 +254,11 @@ Counts derived from on-disk file extensions under `apps/`, `packages/`, `scripts
 
 | Extension | Files |
 |---|---:|
-| `.ts` | 869 |
+| `.ts` | 875 |
 | `.vue` | 143 |
-| `.json` | 107 |
-| `.mjs` | 74 |
-| `.md` | 68 |
+| `.json` | 105 |
+| `.mjs` | 77 |
+| `.md` | 69 |
 | `.js` | 40 |
 | `.html` | 14 |
 | `.ps1` | 10 |
