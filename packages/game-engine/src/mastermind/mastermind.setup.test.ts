@@ -301,17 +301,48 @@ describe('buildMastermindState — base-face selection (WP-389 / D-24193)', () =
     );
   });
 
-  it('returns the degenerate fallback when there is no non-tactic face', () => {
+  // why: WP-389 AC-4 pinned the OLD behaviour here — zero non-tactic faces
+  // degraded to the fallback state. WP-390 / D-24206 inverts that: setup now
+  // throws instead of shipping an inert mastermind. The packet flagged this
+  // AC as the reason WP-390 had to land second.
+  it('THROWS when the mastermind has no base face (WP-390 / D-24206)', () => {
     const registry = createZeroNonTacticFaceRegistry();
     const context = makeMockCtx({ numPlayers: 2 });
     const cardStats: Record<CardExtId, CardStatEntry> = {};
 
-    // why: the `if (!baseCard) return null;` guard inside findMastermindCards
-    // is untouched by WP-389; buildMastermindState still degrades to the
-    // fallback state rather than throwing. Four masterminds in the registry
-    // ship zero non-tactic faces today (a separate, pre-existing defect).
+    assert.throws(
+      () =>
+        buildMastermindState(
+          'core/tactics-only-mastermind' as CardExtId,
+          registry,
+          context,
+          cardStats,
+        ),
+      (error: unknown) => {
+        assert.ok(error instanceof Error, 'must throw an Error');
+        // why: assert on the diagnostic content, not just that something threw
+        // — the whole point is that an operator can tell WHY the match was
+        // rejected without reading engine source.
+        assert.match(error.message, /has no base face/);
+        assert.match(error.message, /council-style mastermind/);
+        assert.match(error.message, /WP-390/);
+        return true;
+      },
+      'a mastermind whose cards are ALL tactics must fail setup loudly',
+    );
+  });
+
+  it('still degrades (does NOT throw) when the mastermind is simply absent', () => {
+    const registry = createZeroNonTacticFaceRegistry();
+    const context = makeMockCtx({ numPlayers: 2 });
+    const cardStats: Record<CardExtId, CardStatEntry> = {};
+
+    // why: the guard distinguishes "found, but every card is a tactic" from
+    // "no such mastermind". Only the first is the council defect. Without
+    // this test, tightening the guard to throw on any null resolve would look
+    // correct and would break every narrow test mock in the repo.
     const state = buildMastermindState(
-      'core/tactics-only-mastermind' as CardExtId,
+      'core/no-such-mastermind' as CardExtId,
       registry,
       context,
       cardStats,
@@ -319,13 +350,9 @@ describe('buildMastermindState — base-face selection (WP-389 / D-24193)', () =
 
     assert.strictEqual(
       state.baseCardId,
-      'core/tactics-only-mastermind',
-      'unresolvable mastermind falls back to baseCardId = mastermindId',
+      'core/no-such-mastermind',
+      'an absent mastermind still falls back to baseCardId = mastermindId',
     );
-    assert.strictEqual(
-      state.tacticsDeck.length,
-      0,
-      'unresolvable mastermind yields an empty tacticsDeck',
-    );
+    assert.strictEqual(state.tacticsDeck.length, 0);
   });
 });

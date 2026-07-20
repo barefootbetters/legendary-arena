@@ -332,7 +332,31 @@ function findMastermindCards(
     }
 
     if (!baseCard) {
-      return null;
+      // why: WP-390 / D-24206 — reaching here is NOT "mastermind not found".
+      // The slug matched and `cards` parsed; every card is a tactic, so the
+      // mastermind ships zero non-tactic faces and there is no base face to
+      // fight. Four masterminds are in this state — `shld/hydra-high-council`,
+      // `shld/hydra-super-adaptoid`, `2099/sinister-six-2099`,
+      // `2099/alchemax-executives` — because they are COUNCIL masterminds
+      // whose members each carry their own Master Strike, a shape the
+      // one-base-face + N-tactics model cannot express.
+      //
+      // why: returning null (the pre-WP-390 behaviour) fell through to
+      // buildMastermindState's degenerate branch and produced a mastermind
+      // with no Master Strike, no tactics, and no game text — the match ran
+      // against an inert obstacle and looked fine. Every `shld` gauntlet was
+      // played that way. Game.setup() is the one place permitted to throw,
+      // so fail loudly here: a visibly rejected match beats a silently
+      // broken one. Modelling councils properly is deferred; this only makes
+      // the gap impossible to ship unnoticed.
+      throw new Error(
+        `The mastermind "${setAbbr}/${mastermind.slug}" has no base face — all ` +
+          `${tacticCards.length} of its cards are tactics, so there is no card to ` +
+          `fight. This is a council-style mastermind, which the engine cannot yet ` +
+          `represent (WP-390 / D-24206). Choose a different mastermind for this ` +
+          `match, or add a non-tactic face to that mastermind's cards[] in the ` +
+          `set's card data.`,
+      );
     }
 
     return {
