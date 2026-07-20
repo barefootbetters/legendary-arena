@@ -30156,11 +30156,26 @@ masterminds carry no `alwaysLeads` and need a hand-authored anchor.
 `ScenarioKey`, so they cost nothing in calibration, which is precisely why the
 Open and Fixed-Pool hero divisions (D-24187) are untouched.
 
-**Deliberately left open to WP-395:** where the loadout data lives; how the
-non-`alwaysLeads` groups are chosen; and whether it is one canonical loadout
-(639 scenarios) or a small enumerated menu of three (1,917 — still trivial to
-calibrate, and preserves real choice). The last is a genuine design fork and
-should be decided, not defaulted.
+**Amended 2026-07-19 — two of the three open items are settled by operator
+decision:**
+
+- **Menu size: an enumerated menu of THREE** approved configurations per
+  mastermind (not one canonical loadout). 110 x 3 = 330 loadouts sized across
+  player counts 1-5, ~1,917 PAR scenarios — still trivially calibratable
+  against 8,205,239,889, while preserving real player choice.
+- **Fill rule: core-fallback.** Slots a mastermind's own set cannot supply are
+  filled from the Core Set / Core 2E pool. The draft's "thematic = same set"
+  recommendation is **withdrawn as impossible for roughly half the catalog**:
+  24 of 39 qualifying sets ship ZERO henchmen groups (solo needs 1, 4-5p needs
+  2) and 24 ship only 1-2 villain groups (5p needs 4), leaving **48 of 110
+  masterminds unfillable in-set**. Chosen over nearest-thematic (needs a
+  set-adjacency map that does not exist) and difficulty-balanced (circular —
+  it needs the calibration this decision exists to unblock). Accepted cost:
+  common Core henchmen recur across many gauntlets. Bought: no invented data,
+  and the result is reviewable by inspection.
+
+Still open for the executing session: where the loadout data lives, and how the
+requirement stays discoverable on the board and challenge link.
 
 **Precedent.** Same class as D-24187's fixed-hero-pool constraint: a ranked
 surface may impose requirements the base game does not, provided casual play
