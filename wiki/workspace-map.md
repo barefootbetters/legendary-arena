@@ -82,10 +82,10 @@ up not knowing which one is current.
 | Finished video (published) | Hosted | YouTube. The blog embeds it; the file itself never enters git. |
 | Reusable video assets (intros, music, overlays) | pCloud | `C:\pcloud\LA\video-assets\` |
 | Logo drafts, design exploration | pCloud | `C:\pcloud\LA\logo-drafts\` |
-| Vendor attachment, invoice, quote | pCloud | `C:\pcloud\BB\OPS\Vendors\` — **not** left in Outlook |
-| Signed contract, licence, trademark or entity filing | pCloud | `C:\pcloud\BB\OPS\Legal\` |
-| Accounting, tax, or bank document | pCloud | `C:\pcloud\BB\OPS\Accounting\` or `…\Taxes\` — never git, never a server disk |
-| Approved logo, brand guideline, press kit | pCloud | `C:\pcloud\BB\BRAND\` — drafts stay in `C:\pcloud\LA\logo-drafts\` |
+| Vendor attachment, invoice, quote | pCloud | `C:\pcloud\LA\ops\vendors\` — **not** left in Outlook |
+| Signed contract, licence, trademark or entity filing | pCloud | `C:\pcloud\LA\ops\legal\` |
+| Accounting, tax, or bank document | pCloud | `C:\pcloud\LA\ops\accounting\` or `…\taxes\` — never git, never a server disk |
+| Approved logo, brand guideline, press kit | pCloud | `C:\pcloud\LA\brand\` — drafts stay in `C:\pcloud\LA\logo-drafts\` |
 | A payment, refund, or chargeback record | Hosted | **Stripe** is the ledger. Postgres keeps references only — see System of record |
 | A player profile, entitlement, or team | Hosted | PostgreSQL `legendary.*` — see System of record |
 | A user-uploaded avatar | Hosted | R2 `avatars/{accountId}.webp`; Postgres stores the URL, never the bytes |
@@ -98,21 +98,23 @@ pCloud has two top-level project roots plus several personal ones:
 
 ```
 C:\pcloud\
-├── BB\                     # BarefootBetters — the business
-│   ├── BRAND\              # approved brand assets — empty today
+├── BB\                     # BarefootBetters — emptying out, see Edge Cases
+│   ├── BRAND\              # empty — superseded by LA\brand\
 │   ├── DEV\                # code checkouts
-│   │   └── legendary-arena\    # ← the engine monorepo (a git working tree)
+│   │   └── legendary-arena\    # ← engine monorepo; scheduled to move off pCloud
 │   ├── DOCS\
 │   ├── MEDIA\
-│   └── OPS\                # business operations — empty today
+│   └── OPS\                # empty — superseded by LA\ops\
 │
-├── LA\                     # Legendary Arena — the product
+├── LA\                     # Legendary Arena — the working root
 │   ├── ewiki\
 │   ├── logo-drafts\
 │   ├── products\
 │   ├── social\
 │   ├── video-assets\       # shared intros, outros, music, overlays
-│   └── videos\             # per-video production folders (see below)
+│   ├── videos\             # per-video production folders (see below)
+│   ├── ops\                # business operations — not created yet
+│   └── brand\              # approved brand assets — not created yet
 │
 ├── GISE\  JJJ\  SCOOBY\    # unrelated personal roots
 └── (loose files)           # see Edge Cases
@@ -222,50 +224,68 @@ Accounting, legal, and brand work produce documents that are not code,
 not content, and not customer data. They are the clearest possible case
 for pCloud: private, binary or near-binary, and needed for years.
 
-`C:\pcloud\BB\` is the business root. Two of its buckets are the
-destination for this work:
+**They belong under `C:\pcloud\LA\`, alongside the rest of Legendary
+Arena's working files** — not under `C:\pcloud\BB\`. See the note on
+`BB\` below for why.
 
 ```
-C:\pcloud\BB\
-├── OPS\                    # business operations
-│   ├── Accounting\
-│   │   ├── Stripe\         # payout reports, merchant statements
-│   │   ├── Bank\           # statements, reconciliations
-│   │   ├── Revenue\        # sales and revenue reports
-│   │   ├── Expenses\       # receipts, expense reports
-│   │   └── Year-End\       # closing packages
-│   ├── Taxes\              # returns, 1099s, filings
-│   ├── Legal\
-│   │   ├── Entity\         # LLC formation, registered agent, annual filings
-│   │   ├── Trademarks\     # applications, registrations, correspondence
-│   │   ├── Copyright\      # registrations
-│   │   ├── Contracts\      # signed agreements, counterparty correspondence
-│   │   └── Licenses\       # inbound and outbound licensing
-│   ├── Insurance\
-│   ├── Vendors\            # per-vendor invoices, quotes, agreements
-│   └── Reports\            # operating reports not tied to a filing
+C:\pcloud\LA├── ops\                    # business operations
+│   ├── accounting│   │   ├── stripe\         # payout reports, merchant statements
+│   │   ├── bank\           # statements, reconciliations
+│   │   ├── revenue\        # sales and revenue reports
+│   │   ├── expenses\       # receipts, expense reports
+│   │   └── year-end\       # closing packages
+│   ├── taxes\              # returns, 1099s, filings
+│   ├── legal│   │   ├── entity\         # LLC formation, registered agent, annual filings
+│   │   ├── trademarks\     # applications, registrations, correspondence
+│   │   ├── copyright\      # registrations
+│   │   ├── contracts\      # signed agreements, counterparty correspondence
+│   │   └── licenses\       # inbound and outbound licensing
+│   ├── insurance│   ├── vendors\            # per-vendor invoices, quotes, agreements
+│   └── reports\            # operating reports not tied to a filing
 │
-└── BRAND\                  # approved, shipped brand assets
-    ├── Logos\              # final marks (SVG + PNG + favicon)
-    ├── Guidelines\         # brand book, usage rules
-    ├── Fonts\              # licensed font files + their licences
-    ├── Social\             # profile art, banners, templates
-    ├── Press\              # press kit, approved screenshots
-    └── Product-Shots\      # photography for the shop
-```
+├── brand\                  # approved, shipped brand assets
+│   ├── logos\              # final marks (SVG + PNG + favicon)
+│   ├── guidelines\         # brand book, usage rules
+│   ├── fonts\              # licensed font files + their licences
+│   ├── social\             # profile art, banners, templates
+│   ├── press\              # press kit, approved screenshots
+│   └── product-shots\      # photography for the shop
+│
+├── ewiki\                  # research notes and drafts (not published)
+├── logo-drafts\            # brand exploration — see below
+├── products├── social├── video-assets└── videos```
 
-**`BRAND\` is approved work; `C:\pcloud\LA\logo-drafts\` is
-exploration.** That split is the point of having both: a designer
-reaching for a mark should never have to guess whether they have the
-current one. Drafts stay in `LA\`; when something ships, its final files
-move to `BB\BRAND\`.
+Lowercase names match the existing children of `C:\pcloud\LA\`.
+
+**`brand\` is approved work; `logo-drafts\` is exploration.** They sit
+side by side deliberately: a designer reaching for a mark should never
+have to guess whether they have the current one. Drafts stay in
+`logo-drafts\`; when something ships, its final files move to `brand\`.
 
 > **These directories are the designated destination, not a description
-> of what is there now.** `BB\OPS\` and `BB\BRAND\` both exist and are
-> both **empty** as of 2026-07-20; the subdirectories above do not exist
-> yet. This section says where such work belongs when it lands, which is
-> what the rest of this page does for every other surface. It is not a
-> claim that the filing has been done.
+> of what is there now.** Neither `LA\ops\` nor `LArand\` exists as
+> of 2026-07-20. This section says where such work belongs when it lands,
+> which is what the rest of this page does for every other surface. It is
+> not a claim that the filing has been done.
+
+#### Why not `C:\pcloud\BB\`
+
+`BB\` was the business root, and its `BRAND\` and `OPS\` directories
+were created for exactly this work — but both are **empty**, and `BB\`
+is on a path to holding nothing:
+
+- `BB\DEV\` exists to hold the engine checkout, which is scheduled to
+  move off pCloud entirely (see the sync-drive hazard under Edge Cases).
+  When it goes, `DEV\` is empty too.
+- `BB\DOCS\` and `BB\MEDIA\` hold very little.
+- Everything with real content already lives under `LA\`.
+
+Filing new business documents into `BB\` would rebuild the *"one product,
+two roots"* split this page's Edge Cases already flag, at the moment that
+split is resolving on its own. **The direction of travel is consolidation
+onto `LA\`** — which is also why the D-24207 rename (`LA\` → `BB\WIP\`)
+was declined under D-24208: it pointed the wrong way.
 
 Two things that follow from the ownership table above:
 
@@ -313,14 +333,19 @@ asked. Two pointers keep it reachable:
 
 ## Edge Cases
 
-- **`BB` and `LA` are two roots for one product.** The engine repo lives
-  under `C:\pcloud\BB\DEV\`, but its video and design assets live under
-  `C:\pcloud\LA\`. Both are legitimate — `BB` is the business,
-  `LA` is the product — but nothing on disk records which root a given
-  asset class belongs to, so the split cannot be read off the filesystem.
-  **The decision table above is the lookup, permanently.** Renaming the
-  folders so they mirror the repository name was considered and declined
-  under D-24208 — the split stays, and this page is how you resolve it.
+- **`BB` and `LA` are two roots for one product — and the split is
+  resolving toward `LA`.** The engine repo still lives under
+  `C:\pcloud\BB\DEV\`, while everything else — video, design, research
+  notes, and now business operations and brand — belongs under
+  `C:\pcloud\LA\`. Nothing on disk records the division, so **the
+  decision table above is the lookup.**
+
+  Two earlier answers were both wrong about direction. D-24207 proposed
+  consolidating onto `BB\WIP\`; D-24208 declined that. Neither
+  anticipated the actual resolution: `LA\` becomes the working root and
+  `BB\` empties out as the checkout leaves `DEV\`. No migration is
+  required for that — it happens by putting new work in the right place
+  and letting `BB\` drain.
 - **A stale second clone of the engine repo exists at
   `C:\www\legendary-arena`.** It shares the `barefootbetters/legendary-arena`
   remote but is hundreds of commits behind `main`. It is not a worktree
@@ -341,12 +366,17 @@ asked. Two pointers keep it reachable:
   diagnostics JSON, exported loadouts, and game logs are being saved to
   `C:\pcloud\` directly rather than into a project folder. They are
   useful artifacts — they are just unfindable where they are.
-- **`BRAND\` and `OPS\` exist but are empty.** They are no longer
-  undefined — Business operations above names what belongs in each. The
-  gap now is that the work is not filed there yet, which is a different
-  problem from not knowing where it goes. Until it is, accounting and
-  legal documents are wherever they landed: a mail client, a downloads
-  folder, or the pCloud root.
+- **`BB\BRAND\` and `BB\OPS\` are empty and superseded.** They were
+  created for business documents, but that work is designated for
+  `LA\ops\` and `LArand\` instead — see Business operations. Leaving
+  two plausible destinations is worse than having none, because a
+  document filed into the wrong one is not missing, just unfindable.
+  These two should be removed once nothing points at them.
+- **`BB\` is on a path to holding nothing.** Its only substantial
+  content is the engine checkout under `DEV\`, which is scheduled to move
+  off pCloud. When that lands, `BB\` holds two empty directories plus a
+  thin `DOCS\` and `MEDIA\`. The *"one product, two roots"* split above
+  resolves by `BB\` emptying, not by a migration.
 - **The engine repo is on the sync drive, and that is a known hazard —
   not a feature.** `C:\pcloud\BB\DEV\legendary-arena` sits on pCloud,
   which syncs the `.git` directory itself. Observed consequences, in
@@ -396,13 +426,13 @@ asked. Two pointers keep it reachable:
   the off-pCloud move, not to a naming convention. What survives is the
   principle — name a *newly created* pCloud working-files folder for its
   repository; rename nothing that already exists.
-- **The `BB\OPS\` and `BB\BRAND\` taxonomy is documented but not
+- **The `LA\ops\` and `LArand\` taxonomy is documented but not
   locked.** The subdirectory shapes above are this page's proposal for
   where business work belongs; no DECISIONS entry governs them and no
   directory has been created. If the shape should be binding — so a
   future session cannot quietly re-file things — it needs a D-entry, the
   way the pCloud naming question got D-24207 and D-24208. Until then it
-  is guidance, and the folders stay empty until real documents are filed.
+  is guidance.
 - **Per-repo README pointers are proposed but not written.** Each repo
   gaining a short section naming this page — rather than restating it —
   would make the map findable from inside any checkout. Scope, and whether
