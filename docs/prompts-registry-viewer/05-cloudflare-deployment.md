@@ -112,6 +112,11 @@ if it ever needs its postinstall to run.
 
 ## Cloudflare Pages Setup
 
+> The **live** dashboard values for this project, and the reasons behind the
+> non-obvious ones, are recorded in
+> [`docs/ops/OUT-OF-BAND-SETTINGS.md`](../ops/OUT-OF-BAND-SETTINGS.md). This
+> section describes first-time setup; that file is the standing record.
+
 ### Connecting the Repository
 
 1. Cloudflare Dashboard → Workers & Pages → Create → Pages

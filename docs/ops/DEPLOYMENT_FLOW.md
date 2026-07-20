@@ -11,6 +11,11 @@ player traffic. CI/CD tooling, cloud-provider specifics, and the actual
 deployment scripts are out of scope — this document defines the
 **process**; WP-042 provides the per-environment **procedures**.
 
+Settings that affect deployment but live in a platform dashboard rather
+than this repository — Cloudflare Pages build fields, GitHub branch
+protection — are recorded in
+[`OUT-OF-BAND-SETTINGS.md`](./OUT-OF-BAND-SETTINGS.md).
+
 ---
 
 ## The Four Environments
