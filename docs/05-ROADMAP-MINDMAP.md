@@ -245,7 +245,7 @@ mindmap
         ["WP-240 ✅ Roadmap count-table generator (WORK_INDEX × mindmap; cron auto-PR)"]
         ["WP-244 ✅ LAGN spec publication (npm package + GitHub repo + schema hosting)"]
         ["WP-392 ✅ Derive the published LAGN JSON Schema from the zod schema (contract; src/validator.ts maintained the format TWICE — lagnSchema (zod, labelled Single Source of Truth) and a hand-written generateSchema() literal that was not derived from it. Closes the hazard D-24193 recorded as known-and-unfixed; lagn-spec suite 34 → 44/0; generate:schema then git diff --exit-code on schemas/ is clean. D-24196 Active; done 2026-07-18)"]
-        ["WP-393 📝 Registry version + per-set content hash surface (registry; CardRegistry cannot say which snapshot of the card data it loaded — RegistryInfo carries no version, SetIndexEntry no hash, and a grep for registryVersion/content_hash/sha256 over packages/registry/src returns nothing. That makes the load-bearing half of WP-394 provenance unanswerable. Reserves D-24197; EC-423; drafted 2026-07-18)"]
+        ["WP-393 ✅ Registry version + per-set content hash surface (registry; CardRegistry cannot say which snapshot of the card data it loaded — RegistryInfo carries no version, SetIndexEntry no hash, and a grep for registryVersion/content_hash/sha256 over packages/registry/src returns nothing. That makes the load-bearing half of WP-394 provenance unanswerable. Reserves D-24197; EC-423; drafted 2026-07-18)"]
         ["WP-394 📝 LAGN 1.2.0 — card metadata provenance (contract; BLOCKED on WP-393. Lets a LAGN answer which card effect a replay references and whether it verifies without the registry, via optional hash-anchored provenance: catalog_ref pins the producer load scope, registry_ref uses stable ext_id + face_id rather than JSON pointers (which break on array reorder), effect_snapshot is frozen evidence and explicitly not authoritative. Registry stays authoritative. Reserves D-24198; EC-424; drafted 2026-07-18)"]
 
       Public Leaderboard (Marketing)
@@ -555,7 +555,7 @@ mindmap
 | Monetization Stack | 3/3 | — |
 | Engine & Test-Harness Cleanup | 5/5 | — |
 | Physical Card Pipeline | 5/5 | — |
-| Domain Cutover & Infrastructure | 8/10 | 2 open |
+| Domain Cutover & Infrastructure | 9/10 | 1 open |
 | Public Leaderboard (Marketing) | 2/2 | — |
 | Legends Public Scoreboard | 2/2 | — |
 | Villain Deck Pipeline | 5/5 | — |
@@ -579,9 +579,9 @@ mindmap
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **382/393 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 10 open |
+| **Total** | **383/393 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 9 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 11):** WP-042.1 ⏸ blocked; WP-349 open; WP-391 open; WP-390 open; WP-395 open; WP-393 open; WP-394 open; WP-396 open; WP-398 open; WP-399 open; WP-368 open.
+**Open / blocked WPs (derived from WORK_INDEX, 10):** WP-042.1 ⏸ blocked; WP-349 open; WP-391 open; WP-390 open; WP-395 open; WP-394 open; WP-396 open; WP-398 open; WP-399 open; WP-368 open.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.

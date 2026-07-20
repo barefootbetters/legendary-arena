@@ -7,6 +7,39 @@
 
 ## Current State
 
+### WP-393 / EC-423 — Registry version + per-set content hash (D-24197 Active) (2026-07-20)
+
+**No user-observable change — infrastructure only.**
+
+`CardRegistry` can now report which card data it actually loaded. `RegistryInfo`
+gains two **optional** fields — `setContentHashes` (set abbreviation →
+`sha256:<hex>` over that set's RFC 8785 canonical JSON) and `registryVersion`
+(a digest over the loaded per-set hashes, sorted by abbreviation). Both loaders
+populate them; both omit them entirely on a zero-set load scope rather than
+emitting a digest over no data.
+
+New `packages/registry/src/canonicalJson.ts` implements RFC 8785 (JCS) and is
+the shared canonicalization contract the producer-wiring packet will hash
+against. RFC 8785 rather than sorted-key `JSON.stringify` because stringify
+leaves number form and escaping unspecified, so two conforming implementations
+can disagree byte-for-byte — a hash two tools compute differently is worse than
+no hash.
+
+Fields are optional by design: `apps/registry-viewer` vendors two
+structurally-independent copies of `RegistryInfo`, and required fields would
+leave them silently lacking the members with `pnpm -r build` still green.
+That drift is accepted and recorded in D-24197.
+
+`registryVersion` identifies the load **scope**, not a global snapshot — a
+process eager-loading two sets and one loading forty report different values,
+which is the correct provenance property. Pinned by test so it cannot be
+quietly reinterpreted.
+
+Registry suite **148 → 171 / 0**. `pnpm -r build` 0; `registry-viewer`
+`vue-tsc` clean with both vendored copies untouched. Unblocks WP-394 (LAGN
+1.2.0 provenance).
+
+
 ### WP-397 / EC-430 — Doctor Octopus reveal-eight branch (D-24200 Active) (2026-07-19)
 
 **Players holding no Spider-Friends Hero stop escaping the strike.** WP-388

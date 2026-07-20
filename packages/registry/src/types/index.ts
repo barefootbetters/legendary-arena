@@ -121,6 +121,29 @@ export interface RegistryInfo {
   totalCards:      number;
   loadedSetAbbrs:  string[];
   metadataBaseUrl: string;
+  /**
+   * Set abbreviation → `sha256:<hex>` over that set's RFC 8785 canonical JSON.
+   *
+   * why (WP-393 / D-24197): optional rather than required because
+   * `apps/registry-viewer` vendors its own structurally-independent copies of
+   * this interface. A required field would leave those copies lacking it with
+   * `pnpm -r build` still green — silent drift, not a caught break. Absent
+   * when no sets are loaded. Key order is unspecified: the HTTP loader
+   * populates its set map in network-completion order, so never rely on
+   * `Object.keys()` ordering here.
+   */
+  setContentHashes?: Record<string, string>;
+  /**
+   * `sha256:<hex>` identifying the exact set of card data that was loaded.
+   *
+   * why (WP-393 / D-24197): derived from the hashes of the sets ACTUALLY
+   * loaded, so it identifies the load SCOPE — not a global registry snapshot.
+   * A process that eager-loads two sets and one that loads forty report
+   * different values, which is the correct provenance property: a consumer
+   * needs to know what the producer saw. The authoritative per-set evidence is
+   * `setContentHashes`. Absent when no sets are loaded.
+   */
+  registryVersion?: string;
 }
 
 // ── Health report (read-only snapshot) ───────────────────────────────────────
