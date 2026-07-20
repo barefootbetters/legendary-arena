@@ -4,6 +4,27 @@ Card Data Access Layer, Registry Viewer, and publishing tooling for the Legendar
 
 ---
 
+## Where things live
+
+Three documents answer "where does *X* live?", at three different
+altitudes. Start with whichever matches your question:
+
+| Question | Read |
+|---|---|
+| Which storage surface does this file belong to at all — git, pCloud, or a hosted service? | **[Workspace Map](https://ewiki.legendary-arena.com/workspace-map/)** (source: [`wiki/workspace-map.md`](wiki/workspace-map.md)) |
+| Where in *this repo* does it live? | [`docs/01-REPO-FOLDER-STRUCTURE.md`](docs/01-REPO-FOLDER-STRUCTURE.md) — authoritative for the directory layout |
+| Where does the *data* live — card JSON, metadata, migrations, R2 keys? | [Data & File Locations](https://ewiki.legendary-arena.com/data-file-locations/) |
+
+The short version of the first one: **git holds text worth diffing;
+pCloud holds work-in-progress and binaries; hosted services hold what
+gets delivered.** A file lives on exactly one surface.
+
+> The `Repo Structure` tree below is **stale** — `data/raw/`,
+> `images/raw/`, and `images/standard/` no longer exist. Trust
+> `docs/01-REPO-FOLDER-STRUCTURE.md` for the current layout.
+
+---
+
 ## Repo Structure
 
 ```
