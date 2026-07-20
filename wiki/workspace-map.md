@@ -201,9 +201,10 @@ asked. Two pointers keep it reachable:
   under `C:\pcloud\BB\DEV\`, but its video and design assets live under
   `C:\pcloud\LA\`. Both are legitimate — `BB` is the business,
   `LA` is the product — but nothing on disk records which root a given
-  asset class belongs to, so the split is learned rather than looked up.
-  This page's decision table is that lookup until a naming convention is
-  adopted (see Open Questions).
+  asset class belongs to, so the split cannot be read off the filesystem.
+  **The decision table above is the lookup, permanently.** Renaming the
+  folders so they mirror the repository name was considered and declined
+  under D-24208 — the split stays, and this page is how you resolve it.
 - **A stale second clone of the engine repo exists at
   `C:\www\legendary-arena`.** It shares the `barefootbetters/legendary-arena`
   remote but is hundreds of commits behind `main`. It is not a worktree
