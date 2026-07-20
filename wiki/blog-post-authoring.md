@@ -492,17 +492,29 @@ workflow: `C:\www\legendary-arena-com\docs\06-CONTENT-LANE-WORKFLOW.md`.
 
 ### Publishing
 
+Posts go through a branch and a PR, not straight to `main` — the same
+rule as the rest of the marketing repo (see
+[Hugo Onboarding](hugo-onboarding.md) § Git workflow & deployment) and
+the same rule the ewiki follows.
+
 ```
+git switch -c post/<slug>
 git add content/posts/<slug>.md static/images/posts/<slug>/
 git commit -m "POST: <post title>"
-git push origin main
+git push -u origin HEAD
+gh pr create --fill
 ```
 
-Cloudflare Pages auto-deploys within ~30 seconds. The post appears
-at `https://www.legendary-arena.com/posts/<slug>/`.
+The Cloudflare GitHub app comments a **preview URL** on the PR — read
+the post as it will actually render before merging. Squash-merge when
+it looks right; Cloudflare Pages auto-deploys `main` within ~30 seconds
+and the post appears at
+`https://www.legendary-arena.com/posts/<slug>/`.
 
-For preview before merge: push to a branch and open a PR. The
-Cloudflare GitHub app comments a preview URL on the PR.
+The preview deploy is the reason the PR step earns its keep on content
+work: a post is prose and images, so the build almost never fails —
+what goes wrong is a layout or CTA that renders differently than the
+local `hugo server` suggested. Only the preview shows that.
 
 ### Local Preview
 
@@ -693,6 +705,11 @@ deck's cost distribution matters more than its ceiling.
   published and counted against page weight — silently, since nothing
   links to it. Keep sources in pCloud; commit only the optimized
   derivative.
+- **`main` is unprotected in the marketing repo too.** The commit hooks
+  enforce the *prefix* and the content-lane paths; nothing enforces the
+  branch. A `git push origin main` succeeds and deploys — it just skips
+  the preview that would have shown you the rendered post. The rule is a
+  convention, not a gate.
 - **`content\posts\` and `static\images\posts\` are the only paths a
   `POST:` or `FIX:` commit may touch.** The hook rejects the whole
   commit otherwise, including a one-character typo fix that happens to
