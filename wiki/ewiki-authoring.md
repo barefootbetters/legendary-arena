@@ -35,7 +35,7 @@ formatting tools are available once you're writing content.
 > ℹ️ **Just fixing a typo?** You don't need a local checkout. Edit the
 > page's `wiki/<slug>.md` file directly on GitHub — the ✏️ pencil on
 > `github.com/barefootbetters/legendary-arena/blob/main/wiki/<slug>.md` —
-> commit with an `EC-142:` message straight to `main`, and CI rebuilds and
+> commit with an `INFRA:` message straight to `main`, and CI rebuilds and
 > deploys it. Full steps: the *Fast path* section of
 > [Wiki Viewer](wiki-viewer.md), or [Hugo Onboarding](hugo-onboarding.md).
 

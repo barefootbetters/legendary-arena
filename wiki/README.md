@@ -197,14 +197,14 @@ on every build (D-13810).
 
 1. Edit a page in `wiki/<slug>.md` (or `wiki/INDEX.md` /
    `wiki/SCHEMA.md` for reserved files).
-2. Commit using the `EC-142:` prefix that introduced the wiki-viewer
-   surface — the prefix is enforced by the project's commit-msg hook
-   for code paths and is the canonical lineage for this surface (see
-   [`.githooks/commit-msg`](../.githooks/commit-msg)):
+2. Commit using the `INFRA:` prefix — the canonical prefix for wiki
+   page edits (see
+   [`.githooks/commit-msg`](../.githooks/commit-msg)). Historic commits
+   under `EC-142:` remain valid in the log; new edits use `INFRA:`.
 
    ```
    git add wiki/<slug>.md
-   git commit -m "EC-142: wiki <slug> — <one-line summary>"
+   git commit -m "INFRA: wiki <slug> — <one-line summary>"
    ```
 
 3. Push to `main` (directly, or via PR — review is recommended for

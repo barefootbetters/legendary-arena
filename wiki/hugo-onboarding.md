@@ -72,9 +72,9 @@ page you are reading is `wiki/hugo-onboarding.md`.
 2. Click the **✏️ pencil** ("Edit this file"). Shortcut: swap `/blob/`
    for `/edit/` in the URL.
 3. Make the change. Use the **Preview** tab to sanity-check the Markdown.
-4. **Commit changes.** Start the message with `EC-142:` (the ewiki content
-   lane) — for example,
-   `EC-142: hugo-onboarding — fix the Brevo dashboard link`.
+4. **Commit changes.** Start the message with `INFRA:` (the canonical
+   prefix for wiki page edits) — for example,
+   `INFRA: wiki hugo-onboarding — fix the Brevo dashboard link`.
 5. Choose **Commit directly to the `main` branch**. `main` is unprotected
    and direct-to-`main` is the normal path for wiki content — the opposite
    of the marketing repo's branch → PR rule under *Git workflow &
@@ -117,7 +117,7 @@ much longer lag is a Render deploy stall, not your edit — details in
 rendered page before publishing — a brand-new page, a big restructure, or
 a table-heavy edit. Then use the [Wiki Viewer](wiki-viewer.md) flow:
 `git pull` → edit `wiki/<slug>.md` → `pnpm wiki-viewer:dev` (serves
-`http://localhost:1313` with live-reload) → commit `EC-142:` →
+`http://localhost:1313` with live-reload) → commit `INFRA:` →
 `git push origin main`. For a one-word fix, the browser path above is the
 whole job.
 

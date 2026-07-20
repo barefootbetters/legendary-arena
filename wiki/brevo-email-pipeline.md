@@ -647,7 +647,7 @@ Engine repo (ewiki companion page):
 - Wiki page: C:\pcloud\BB\DEV\legendary-arena\wiki\brevo-email-pipeline.md
 - Screenshots: C:\pcloud\BB\DEV\legendary-arena\ewiki\brevo-email-pipeline\
 - Published at: https://ewiki.legendary-arena.com/brevo-email-pipeline/
-- Commit prefix for wiki edits: EC-142:
+- Commit prefix for wiki edits: INFRA:
 
 ## Brevo account
 
@@ -743,12 +743,13 @@ real list ID / template ID / workflow ID."
   whole `ewiki/` tree into a nested `static\ewiki\`. It does not, and the
   served URLs on this page were always right — `/<slug>/<file>`. Corrected
   2026-07-20 against `apps/wiki-viewer/scripts/project-wiki.mjs`.
-- **Two commit prefixes are in live use for `wiki/` edits.** `EC-142:`
-  (47 commits, most recent 2026-07-15) and `INFRA:` (87 commits, in use
-  since 2026-06-30) both appear in `git log -- wiki/`, and the ewiki
-  authoring pages do not agree on which to tell you. Neither is
-  rejected by the hooks. Match the surrounding history for the page you
-  are editing until one is settled as canonical.
+- **`INFRA:` is the commit prefix for `wiki/` edits; `EC-142:` is
+  legacy.** Both appear in `git log -- wiki/` — `EC-142:` on 47 commits
+  through 2026-07-15, `INFRA:` on 87 since 2026-06-30 — and the authoring
+  pages disagreed about which to use until this was settled on
+  2026-07-20. Neither is hook-rejected, so an old `EC-142:` example
+  copied from history still commits cleanly; it is simply no longer the
+  convention. Historic commits stay as they are.
 
 ## References
 
