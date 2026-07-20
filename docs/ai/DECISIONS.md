@@ -30391,4 +30391,60 @@ Protect this file.
 
 **Packet:** none — direct governance edit at operator request. **Drafted:** 2026-07-19. **Executed:** 2026-07-19.
 
+### D-24206 — Council masterminds fail setup loudly instead of resolving to an inert shell
+
+**Status:** Active (engine) 2026-07-19. Implemented by **WP-390**.
+
+**User-Visible Surface:** play.legendary-arena.com
+
+**Decision.** When a mastermind is found in the registry but every one of its
+cards is a tactic — zero non-tactic faces — `Game.setup()` now **throws**
+instead of returning the degenerate empty `MastermindState`.
+
+**What was happening.** `findMastermindCards` returned `null` for that case,
+and `buildMastermindState` fell through to its fallback branch:
+
+```js
+{ id, baseCardId: mastermindId, tacticsDeck: [], tacticsDefeated: [],
+  strikePile: [], attachedBystanders: [], gameText: [] }
+```
+
+The match then ran against a mastermind with **no Master Strike, no tactics,
+and no game text** — an inert obstacle. Nothing failed; the game simply had no
+opponent. Four masterminds are in this state, including **both** S.H.I.E.L.D.
+masterminds, so every `shld` gauntlet in both divisions at every player count
+was played against nothing.
+
+**Why throw rather than model councils.** These are council masterminds —
+`shld/hydra-high-council` is Red Skull / Viper / Arnim Zola / Baron Helmut
+Zemo, four members each carrying their own `Master Strike:` and
+`[rule:Adapt]` line. The card data plausibly matches the printed product; the
+engine's one-base-face + N-tactics model is what cannot express it. Modelling
+that properly is a design question (which face leads, whether `[rule:Adapt]`
+must be implemented, whether `MastermindState` changes shape and forces the
+sentinel `finalStateHash` + `PRE_WP080_HASH` dual re-pin). This decision does
+not answer it — it only makes the gap impossible to ship unnoticed. **A
+visibly rejected match beats one that looks fine and isn't.**
+
+**Why setup is the right place.** `Game.setup()` is the one place the
+architecture permits throwing (moves never throw). `buildMastermindState` is
+called only from `buildInitialGameState`, i.e. the setup path, so the throw
+cannot reach a move.
+
+**Scoped narrowly.** The guard fires **only** when the mastermind was found
+and its `cards` array parsed but yielded no base face. `mastermind not found`,
+`unparseable id`, and `narrow test-mock registry` all keep the pre-existing
+degenerate fallback — every narrow mock in the repo still works. A test pins
+that distinction, because tightening the guard to throw on any null resolve
+would look correct and break the whole suite.
+
+**Consequence to accept.** The four affected masterminds are now
+**unselectable**: a match naming one fails at creation with a diagnostic
+naming the mastermind and pointing at WP-390. Their gauntlet boards remain
+published in the catalog. That is the intended trade — those matches were
+already meaningless, and now they say so.
+
+**Supersedes** WP-389's AC-4, which pinned the old degenerate behaviour and
+was the reason WP-390 had to land second.
+
 Protect this file.

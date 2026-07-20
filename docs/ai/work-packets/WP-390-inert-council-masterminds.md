@@ -2,7 +2,7 @@
 
 **User-Visible Surface:** play.legendary-arena.com
 
-**Status:** Draft — pending execution
+**Status:** Done — executed 2026-07-19 (D-24206). Resolved open question 4: setup throws; council modelling remains deferred.
 **Layer:** Game Engine
 
 ## Goal
