@@ -7,6 +7,38 @@
 
 ## Current State
 
+### WP-400 / EC-433 — Node toolchain pinned to one committed version (D-24205 Active) (2026-07-20)
+
+**No user-observable change — infrastructure only.**
+
+`.node-version` now holds `22.23.1` (latest 22.x LTS "Jod") and is the single
+source of truth for the Node toolchain. All **21** `node-version` entries across
+**9** workflow files read it via `setup-node`'s `node-version-file` — 11 in
+block form, 10 in flow mappings (`with: { … }`), a split that would have broken
+a naive mechanical pass.
+
+`render.yaml`'s two `NODE_VERSION` envVars are set to the same string with a
+`why:` comment recording that **Render's precedence puts `NODE_VERSION` ABOVE
+`.node-version`** — leaving them at `"22"` would have silently overridden the
+pin on the host that runs the game server. New `pnpm check:node-pin` enforces
+agreement and is wired into the existing CI gates job; it was mutation-proved
+to exit non-zero on a deliberate desync, not merely asserted.
+
+Why this mattered: two Cloudflare Pages builds three days apart reported
+**22.22.0** and **22.16.0** from the same repository with no intervening change.
+The repo could not answer "what Node built this deploy?" from a commit.
+
+Scoped to pinning. `engines` stays a floor (`>=22`) in all four manifests, and
+the 22 → 24 upgrade is deferred to its own packet with the maintenance-mode
+clock recorded in D-24205.
+
+Baselines byte-unchanged: `pnpm -r build` 0; every package's test totals
+identical (engine 2039, arena-client 974, server 1016, dashboard 411,
+registry-viewer 174, registry 171, legends-board 76, lagn 54, preplan 52,
+engine-runner 19, vue-sfc-loader 11, replay-producer 4 — all 0 fail);
+`sim:runtime-observed:check` current with no regeneration.
+
+
 ### WP-394 / EC-424 — LAGN 1.2.0 card metadata provenance (D-24198 Active) (2026-07-20)
 
 **No user-observable change — infrastructure only.**
