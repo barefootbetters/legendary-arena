@@ -33,6 +33,20 @@
  * nightly job would be queued behind exactly the same outage it is meant to
  * report. Run it from a workstation when a wiki edit does not appear.
  *
+ * KNOWN LIMITATION — a manual deploy produces a false STALE. This probe
+ * answers "did CI deploy this commit?", NOT "is the live site current?".
+ * Those diverge whenever someone publishes from the Render dashboard's
+ * Manual Deploy button, which is the documented workaround when Actions is
+ * down: the site becomes current while CI run history still shows nothing
+ * successful, so this check keeps reporting STALE against a site that is in
+ * fact up to date. Observed twice on 2026-07-19 during a multi-hour Actions
+ * incident. The error is in the safe direction — it over-reports staleness
+ * rather than hiding a frozen site — and it is not cheaply fixable: Render's
+ * deploy state needs a RENDER_API_KEY this script deliberately does not take,
+ * and the live site cannot be read directly because Cloudflare Access returns
+ * a 302 for every path. Treat a STALE verdict as "CI has not published this"
+ * and check Render's deploy log before concluding the page is missing.
+ *
  * Usage:
  *   node scripts/check-wiki-freshness.mjs
  *   node scripts/check-wiki-freshness.mjs --no-fetch
@@ -293,6 +307,16 @@ function main() {
     '\n  To publish without waiting for CI: Render dashboard → legendary-arena-wiki → ' +
       'Manual Deploy. That bypasses the content gates, so run ' +
       '`pnpm wiki-viewer:project && pnpm wiki-viewer:check-links` locally first.',
+  );
+
+  // why: this probe reads CI run history, not Render's deploy state, so a
+  // manual deploy leaves it reporting STALE against a site that is actually
+  // current. Saying so here means the operator does not re-deploy a page that
+  // is already live, or go hunting for a problem that no longer exists.
+  console.error(
+    '\n  NOTE: this check reads CI history, not Render. If the site was already ' +
+      'published by a Manual Deploy, this STALE verdict is expected and the live ' +
+      'page may be current — confirm in the Render deploy log.',
   );
 
   return 1;

@@ -201,6 +201,21 @@ Two deliberate constraints:
   is "Actions is not running our workflows"; a nightly job would queue
   behind the same outage it is meant to report.
 
+**Known limitation — a manual deploy produces a false `STALE`.** The
+probe answers *"did CI deploy this commit?"*, not *"is the live site
+current?"*. Those diverge whenever the site is published from Render's
+Manual Deploy button — which is the documented workaround when Actions
+is down. The site becomes current while CI run history still shows
+nothing successful, so the check keeps reporting `STALE` against a page
+that is in fact up to date (observed twice on 2026-07-19 during a
+multi-hour Actions incident). The error runs in the safe direction: it
+over-reports staleness rather than hiding a frozen site. Closing the
+gap would need a `RENDER_API_KEY` to read Render's deploy state, which
+this script deliberately does not take, since the live site itself
+cannot be read — Cloudflare Access returns a `302` for every path.
+Read a `STALE` verdict as *"CI has not published this"* and check the
+Render deploy log before concluding a page is missing.
+
 `TRIGGER_PATHS` in the script mirrors the `paths:` filter in
 [`.github/workflows/wiki-viewer.yml`](../.github/workflows/wiki-viewer.yml).
 The workflow file is authoritative — a path added there and not here
