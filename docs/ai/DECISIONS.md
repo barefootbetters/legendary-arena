@@ -30455,7 +30455,7 @@ Protect this file.
 
 ### D-24205 — the Node toolchain is pinned to one exact version in `.node-version`; `engines` stays a floor
 
-**Status:** Drafted 2026-07-20; not yet landed (lands Active at WP-400 execution).
+**Status:** Active 2026-07-20. Landed by WP-400 / EC-433. Pinned version: **22.23.1** (LTS Jod).
 
 **The drift.** Nothing in the repo pins a Node minor. All 21 `node-version:`
 entries across 9 workflow files say `22`; `render.yaml`'s two `NODE_VERSION`

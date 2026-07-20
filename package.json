@@ -51,6 +51,7 @@
 
     "roadmap:counts":       "node scripts/roadmap-counts.mjs",
     "roadmap:counts:write": "node scripts/roadmap-counts.mjs --write",
+    "check:node-pin":       "node scripts/check-node-pin.mjs",
     "roadmap:counts:check": "node scripts/roadmap-counts.mjs --check",
     "roadmap:counts:test":  "node --import tsx --test scripts/roadmap-counts.test.ts",
 

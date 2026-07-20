@@ -35,8 +35,11 @@ services:
       # The project requires Node >=22 (apps/server/package.json engines).
       # Render's blueprint schema does not accept a `nodeVersion` service
       # field; NODE_VERSION envVar is the documented pin mechanism.
+      # why: WP-400 / D-24205 — must equal .node-version. Render precedence is
+      # NODE_VERSION > .node-version > .nvmrc > engines, so THIS VALUE WINS;
+      # leaving it stale silently overrides the pin. pnpm check:node-pin enforces it.
       - key: NODE_VERSION
-        value: "22"
+        value: "22.23.1"
       - key: DATABASE_URL
         fromDatabase:
           name: legendary-arena-db
@@ -225,8 +228,11 @@ services:
     staticPublishPath: apps/wiki-viewer/public
     pullRequestPreviewsEnabled: false
     envVars:
+      # why: WP-400 / D-24205 — must equal .node-version. Render precedence is
+      # NODE_VERSION > .node-version > .nvmrc > engines, so THIS VALUE WINS;
+      # leaving it stale silently overrides the pin. pnpm check:node-pin enforces it.
       - key: NODE_VERSION
-        value: "22"
+        value: "22.23.1"
 
 databases:
   # Managed PostgreSQL — rules engine backing store
