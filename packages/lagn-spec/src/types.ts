@@ -4,6 +4,23 @@ import { lagnSchema } from './validator.js'
 export type LAGN = z.infer<typeof lagnSchema>
 
 export type GameSetup = z.infer<typeof lagnSchema>['setup']
+
+// ── Card metadata provenance (1.2.0+, WP-394 / D-24198) ──────────────────────
+// why: inferred from lagnSchema like every other type here rather than
+// hand-authored, so a schema change cannot leave the exported type behind.
+
+/** Which registry snapshot the producer read. Optional; absent pre-1.2.0. */
+export type CatalogRef = z.infer<typeof lagnSchema>['catalog_ref']
+
+/** Which card and printed face a catalog entry names. */
+export type RegistryRef = NonNullable<
+  NonNullable<z.infer<typeof lagnSchema>['card_catalog']>['cards'][number]['registry_ref']
+>
+
+/** A frozen copy of effect text — evidence, not authority. */
+export type EffectSnapshot = NonNullable<
+  NonNullable<z.infer<typeof lagnSchema>['card_catalog']>['cards'][number]['effect_snapshot']
+>
 export type CardCatalog = z.infer<typeof lagnSchema>['card_catalog']
 export type Replay = z.infer<typeof lagnSchema>['replay']
 

@@ -12,7 +12,8 @@ import {
   EXPECTED_REFINEMENT_COUNT,
   LAGN_VERSION,
   LAGN_VERSION_1_0_0,
-  LAGN_VERSION_1_1_0
+  LAGN_VERSION_1_1_0,
+  LAGN_VERSION_1_2_0
 } from './validator'
 import { migrateToCurrent } from './migrate'
 
@@ -908,8 +909,13 @@ describe('JSON Schema derivation', () => {
     assert.strictEqual(schema.title, 'LAGN v1.1 — Legendary Arena Game Notation')
     assert.deepStrictEqual(schema.properties.lagn_version.enum, [
       LAGN_VERSION_1_0_0,
-      LAGN_VERSION_1_1_0
+      LAGN_VERSION_1_1_0,
+      LAGN_VERSION_1_2_0
     ])
+    // why: readers accept 1.2.0 but writers must NOT stamp it yet — bumping
+    // LAGN_VERSION would move the wire format of a catalogued endpoint while
+    // nothing populates provenance. The producer packet flips it.
+    assert.strictEqual(LAGN_VERSION, LAGN_VERSION_1_1_0)
     assert.strictEqual(
       schema.properties.$schema.default,
       'https://legendary-arena.com/schemas/lagn/v1/lagn-v1.json'
@@ -970,7 +976,8 @@ describe('published JSON Schema accepts the shipped fixtures', () => {
     'tier1-setup-only.lagn.json',
     'tier1-support-pools.lagn.json',
     'tier2-with-catalog.lagn.json',
-    'tier3-with-replay.lagn.json'
+    'tier3-with-replay.lagn.json',
+    'tier2-provenance.lagn.json'
   ]
 
   for (const fixture of fixtures) {
@@ -989,4 +996,137 @@ describe('published JSON Schema accepts the shipped fixtures', () => {
       assert.strictEqual(validate(document).valid, true, `${fixture} failed zod`)
     })
   }
+})
+
+// ============================================================================
+// Card Metadata Provenance (WP-394 / D-24198)
+// ============================================================================
+
+describe('LAGN 1.2.0 provenance', () => {
+  /** A 1.2.0 Tier-1 document; callers layer provenance on top. */
+  function buildProvenanceDocument(version: string, extras: Record<string, unknown> = {}) {
+    return { ...buildSetupDocument(version), ...extras }
+  }
+
+  const VALID_CATALOG_REF = {
+    source: 'legendary-arena-registry',
+    registry_version: 'sha256:' + 'a'.repeat(64),
+    set_content_hashes: { core: 'sha256:' + 'b'.repeat(64) }
+  }
+
+  test('AC-2: a 1.1.0 document carrying catalog_ref is REJECTED', () => {
+    // why: this is the behaviour change. Today the unknown key is silently
+    // stripped and the document validates; after the gate it fails loudly.
+    const result = validate(
+      buildProvenanceDocument(LAGN_VERSION_1_1_0, { catalog_ref: VALID_CATALOG_REF })
+    )
+    assert.strictEqual(result.valid, false)
+    assert.ok(
+      result.errors?.some((error) => error.includes('provenance requires lagn_version')),
+      `expected the version-gate message, got: ${JSON.stringify(result.errors)}`
+    )
+  })
+
+  test('AC-2: a 1.2.0 document WITHOUT provenance is accepted', () => {
+    assert.strictEqual(validate(buildProvenanceDocument(LAGN_VERSION_1_2_0)).valid, true)
+  })
+
+  test('a 1.2.0 document WITH catalog_ref is accepted', () => {
+    const result = validate(
+      buildProvenanceDocument(LAGN_VERSION_1_2_0, { catalog_ref: VALID_CATALOG_REF })
+    )
+    assert.strictEqual(result.valid, true, JSON.stringify(result.errors))
+  })
+
+  test('AC-3: effect_snapshot without catalog_ref is rejected', () => {
+    const result = validate(
+      buildProvenanceDocument(LAGN_VERSION_1_2_0, {
+        card_catalog: {
+          cards: [
+            {
+              card_type: 'mastermind',
+              ext_id: 'core/thanos',
+              name: 'Thanos',
+              effect_snapshot: {
+                text: ['Master Strike.'],
+                source_hash: 'sha256:' + 'c'.repeat(64)
+              }
+            }
+          ]
+        }
+      })
+    )
+    assert.strictEqual(result.valid, false)
+    assert.ok(
+      result.errors?.some((error) => error.includes('effect_snapshot requires')),
+      `expected the catalog_ref-pin message, got: ${JSON.stringify(result.errors)}`
+    )
+  })
+
+  test('a hash that is not a real sha256 digest is rejected', () => {
+    // why: the prefix alone would accept "sha256:not-a-digest". The pattern is
+    // also what keeps the derived JSON Schema compilable — zod's startsWith
+    // emits `^sha256\:`, an invalid Unicode-mode escape that made ajv throw.
+    const result = validate(
+      buildProvenanceDocument(LAGN_VERSION_1_2_0, {
+        catalog_ref: { ...VALID_CATALOG_REF, registry_version: 'sha256:not-a-digest' }
+      })
+    )
+    assert.strictEqual(result.valid, false)
+  })
+
+  test('AC-5: migrateToCurrent still targets 1.1.0 and leaves 1.2.0 untouched', () => {
+    const migratedFrom100 = migrateToCurrent(buildSetupDocument(LAGN_VERSION_1_0_0))
+    assert.strictEqual(migratedFrom100.error, undefined)
+    assert.strictEqual(migratedFrom100.payload.lagn_version, LAGN_VERSION_1_1_0)
+
+    // why: a 1.2.0 input is returned UNCHANGED — never downgraded, never
+    // re-stamped. The 1.1.0 -> 1.2.0 step is registered but unreachable until
+    // the producer packet flips LAGN_VERSION.
+    const alreadyNewer = migrateToCurrent(buildProvenanceDocument(LAGN_VERSION_1_2_0))
+    assert.strictEqual(alreadyNewer.payload.lagn_version, LAGN_VERSION_1_2_0)
+    assert.deepStrictEqual(
+      alreadyNewer.applied,
+      [],
+      'the 1.1.0 -> 1.2.0 step must be registered but UNREACHABLE'
+    )
+  })
+
+  test('AC-5: support_pools survives migration untouched', () => {
+    const withPools = buildSetupDocument(LAGN_VERSION_1_1_0, {
+      bystanders_count: 2,
+      support_pools: {
+        bystanders: {
+          mode: 'explicit',
+          cards: [{ ext_id: 'core/bystander', copies: 2 }]
+        }
+      }
+    })
+    const migrated = migrateToCurrent(withPools)
+    assert.strictEqual(migrated.error, undefined)
+    const setup = migrated.payload.setup as Record<string, unknown>
+    assert.ok(setup.support_pools, 'support_pools was dropped by migration')
+  })
+
+  test('AC-8: no JSON-pointer field anywhere in the generated schema', () => {
+    const serialized = JSON.stringify(generateSchema())
+    assert.ok(!/json_?pointer/i.test(serialized), 'a JSON-pointer field leaked in')
+  })
+
+  test('AC-9: lagn-spec still has no dependency on the registry package', () => {
+    // why: hash COMPUTATION belongs to the producer packet. Importing WP-393's
+    // canonicalJson.ts would invent a lagn-spec -> registry edge that
+    // ARCHITECTURE.md does not have, to save a few lines.
+    const packageManifest = JSON.parse(
+      readFileSync(new URL('../package.json', import.meta.url), 'utf8')
+    )
+    const allDependencies = {
+      ...(packageManifest.dependencies ?? {}),
+      ...(packageManifest.devDependencies ?? {})
+    }
+    assert.ok(
+      !Object.keys(allDependencies).includes('@legendary-arena/registry'),
+      'lagn-spec gained a registry dependency'
+    )
+  })
 })

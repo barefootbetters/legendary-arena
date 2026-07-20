@@ -30045,7 +30045,7 @@ Protect this file.
 
 ### D-24198 — LAGN 1.2.0 carries provenance as evidence, not authority; the registry stays the source of truth
 
-**Status:** Drafted 2026-07-18; not yet landed (lands Active at WP-394 execution).
+**Status:** Active 2026-07-20. Landed by WP-394 / EC-424.
 
 **What this answers.** *"Which card effect does this replay reference, and can
 I verify it without the registry?"* LAGN gains optional, hash-anchored

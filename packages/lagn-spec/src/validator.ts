@@ -19,7 +19,23 @@ export const LAGN_VERSION_1_0_0 = '1.0.0'
 /** Adds optional `setup.support_pools` (WP-036). Strict superset of 1.0.0. */
 export const LAGN_VERSION_1_1_0 = '1.1.0'
 
-/** The version this build stamps on documents it writes. */
+/**
+ * Adds optional card-metadata provenance (WP-394). Strict superset of 1.1.0.
+ *
+ * why: 1.2.0 and not 1.1.0 — 1.1.0 is already allocated to
+ * `setup.support_pools` (D-24195), which must survive untouched.
+ */
+export const LAGN_VERSION_1_2_0 = '1.2.0'
+
+/**
+ * The version this build stamps on documents it writes.
+ *
+ * why: deliberately still 1.1.0 even though readers now accept 1.2.0. Nothing
+ * populates provenance yet, so bumping the writer would move the wire format
+ * of a catalogued endpoint for zero benefit. The producer-wiring packet flips
+ * this together with the producers, and updates api-endpoints.md in the same
+ * commit.
+ */
 export const LAGN_VERSION = LAGN_VERSION_1_1_0
 
 /**
@@ -31,7 +47,8 @@ export const LAGN_VERSION = LAGN_VERSION_1_1_0
  */
 export const LAGN_SUPPORTED_VERSIONS = [
   LAGN_VERSION_1_0_0,
-  LAGN_VERSION_1_1_0
+  LAGN_VERSION_1_1_0,
+  LAGN_VERSION_1_2_0
 ] as const
 
 export type LagnVersion = (typeof LAGN_SUPPORTED_VERSIONS)[number]
@@ -212,8 +229,101 @@ const GameSetupSchema = z.object({
 })
 
 // ============================================================================
+// Card Metadata Provenance (Optional, 1.2.0+)
+// ============================================================================
+
+// why: WP-394 / D-24198 — provenance is EVIDENCE, not authority. The registry
+// remains the source of truth for what a card is; these blocks record what the
+// producer read so a replay can be audited without registry or network access.
+// Every field is optional, so 1.0.0 and 1.1.0 documents validate unchanged.
+
+/**
+ * Matches a `sha256:<64 lowercase hex>` digest.
+ *
+ * why: an explicit regex rather than zod's `.startsWith('sha256:')`. startsWith
+ * derives the JSON Schema pattern `^sha256\:`, and `\:` is an INVALID escape
+ * under Unicode-mode regex — ajv throws `SyntaxError: Invalid regular
+ * expression` compiling the published schema, making the contract unusable by
+ * a strict validator. Caught by the fixture suite, not by inspection.
+ *
+ * why: it is also the stricter constraint. A prefix check accepts
+ * `sha256:not-a-digest`; this does not.
+ */
+const SHA256_DIGEST_PATTERN = /^sha256:[0-9a-f]{64}$/
+
+const CatalogRefSchema = z.object({
+  // why: a closed set, not a free string. `source` is the discriminator that
+  // says WHICH registry produced these hashes; in a format whose purpose is
+  // machine-verifiable audit, an open string defeats the check.
+  source: z.enum(['legendary-arena-registry']),
+  /**
+   * `sha256:<hex>` identifying the card data the producer actually loaded.
+   *
+   * why: validated for SHAPE only here. This packet computes no hashes —
+   * RFC 8785 canonicalization is the producer's contract (WP-393's
+   * `canonicalJson.ts`), and importing it would invent a `lagn-spec` ->
+   * `registry` package edge that ARCHITECTURE.md does not have.
+   *
+   * why: per D-24197 this identifies the producer's LOAD SCOPE, not a global
+   * registry snapshot. The authoritative per-set evidence is
+   * `set_content_hashes`.
+   */
+  registry_version: z.string().regex(SHA256_DIGEST_PATTERN),
+  /** Set abbreviation -> `sha256:<hex>`. Shape-validated only; see above. */
+  set_content_hashes: z.record(z.string().regex(SHA256_DIGEST_PATTERN))
+})
+
+const RegistryRefSchema = z.object({
+  /** Set-qualified `setAbbr/slug` in the D-10014 id space. */
+  ext_id: z.string(),
+  /**
+   * Which printed face this entry names.
+   *
+   * why: ships even though `faces[]` is deferred to a later version. Multi-face
+   * is present-tense, not speculative — D-24193 records 65 masterminds across
+   * 24 sets whose Epic face was played unchosen. Without a discriminator an
+   * audit bundle cannot tell a base face from an Epic one, which is exactly
+   * the question provenance exists to answer.
+   */
+  face_id: z.string().optional()
+})
+
+const EffectSnapshotSchema = z.object({
+  text: z.array(z.string()).min(1),
+  tokens: z.array(
+    z.object({
+      kind: z.enum(['keyword', 'icon', 'hero_class', 'team', 'custom']),
+      value: z.string(),
+      amount: z.number().int().optional()
+    })
+  ).optional(),
+  /** `sha256:<hex>` over the source the text was frozen from. Shape only. */
+  source_hash: z.string().regex(SHA256_DIGEST_PATTERN)
+})
+
+const ProvenanceImageSchema = z.object({
+  uri: z.string().url(),
+  mime_type: z.string().optional(),
+  role: z.enum(['card-front', 'card-back', 'tactic', 'transformed']).optional()
+})
+
+// ============================================================================
 // TIER 2: Full Card Catalog (Optional)
 // ============================================================================
+
+/**
+ * Optional provenance members shared by every card-catalog entry.
+ *
+ * why: spread into all NINE discriminated-union variants rather than repeated.
+ * The style rule is duplicate-first-abstract-on-the-third-copy; nine copies of
+ * three fields is well past that, and a hand-maintained ninth copy is exactly
+ * where a variant silently diverges.
+ */
+const PROVENANCE_CARD_FIELDS = {
+  registry_ref: RegistryRefSchema.optional(),
+  effect_snapshot: EffectSnapshotSchema.optional(),
+  image: ProvenanceImageSchema.optional()
+} as const
 
 const CardSchema = z.discriminatedUnion('card_type', [
   z.object({
@@ -221,21 +331,24 @@ const CardSchema = z.discriminatedUnion('card_type', [
     ext_id: z.string(),
     name: z.string(),
     image_url: z.string().url().optional(),
-    image_thumb_url: z.string().url().optional()
+    image_thumb_url: z.string().url().optional(),
+    ...PROVENANCE_CARD_FIELDS
   }),
   z.object({
     card_type: z.literal('scheme'),
     ext_id: z.string(),
     name: z.string(),
     image_url: z.string().url().optional(),
-    image_thumb_url: z.string().url().optional()
+    image_thumb_url: z.string().url().optional(),
+    ...PROVENANCE_CARD_FIELDS
   }),
   z.object({
     card_type: z.literal('villain_group'),
     ext_id: z.string(),
     name: z.string(),
     image_url: z.string().url().optional(),
-    image_thumb_url: z.string().url().optional()
+    image_thumb_url: z.string().url().optional(),
+    ...PROVENANCE_CARD_FIELDS
   }),
   z.object({
     card_type: z.literal('henchmen_group'),
@@ -243,7 +356,8 @@ const CardSchema = z.discriminatedUnion('card_type', [
     name: z.string(),
     rarity_code: RarityCodeEnum,
     image_url: z.string().url().optional(),
-    image_thumb_url: z.string().url().optional()
+    image_thumb_url: z.string().url().optional(),
+    ...PROVENANCE_CARD_FIELDS
   }),
   z.object({
     card_type: z.literal('hero'),
@@ -252,35 +366,40 @@ const CardSchema = z.discriminatedUnion('card_type', [
     hero_class: HeroClassEnum.array().min(1),
     rarity_code: RarityCodeEnum,
     image_url: z.string().url().optional(),
-    image_thumb_url: z.string().url().optional()
+    image_thumb_url: z.string().url().optional(),
+    ...PROVENANCE_CARD_FIELDS
   }),
   z.object({
     card_type: z.literal('shield_officer'),
     ext_id: z.string(),
     name: z.string(),
     image_url: z.string().url().optional(),
-    image_thumb_url: z.string().url().optional()
+    image_thumb_url: z.string().url().optional(),
+    ...PROVENANCE_CARD_FIELDS
   }),
   z.object({
     card_type: z.literal('sidekick'),
     ext_id: z.string(),
     name: z.string(),
     image_url: z.string().url().optional(),
-    image_thumb_url: z.string().url().optional()
+    image_thumb_url: z.string().url().optional(),
+    ...PROVENANCE_CARD_FIELDS
   }),
   z.object({
     card_type: z.literal('wound'),
     ext_id: z.string(),
     name: z.string(),
     image_url: z.string().url().optional(),
-    image_thumb_url: z.string().url().optional()
+    image_thumb_url: z.string().url().optional(),
+    ...PROVENANCE_CARD_FIELDS
   }),
   z.object({
     card_type: z.literal('bystander'),
     ext_id: z.string(),
     name: z.string(),
     image_url: z.string().url().optional(),
-    image_thumb_url: z.string().url().optional()
+    image_thumb_url: z.string().url().optional(),
+    ...PROVENANCE_CARD_FIELDS
   })
 ])
 
@@ -350,6 +469,7 @@ export const lagnSchema = z.object({
   variant: z.enum(['solo', 'cooperative', 'competitive']),
   player_count: z.number().int().min(1).max(5),
   setup: GameSetupSchema,
+  catalog_ref: CatalogRefSchema.optional(),
   card_catalog: CardCatalogSchema.optional(),
   replay: ReplaySchema.optional(),
   result: z.object({
@@ -386,6 +506,56 @@ export const lagnSchema = z.object({
   {
     message: `setup.support_pools requires lagn_version ${LAGN_VERSION_1_1_0} or later — a ${LAGN_VERSION_1_0_0} document cannot carry support pools`,
     path: ['setup', 'support_pools']
+  }
+).refine(
+  // why: JSON Schema cannot express a dependency between one member's presence
+  // and a sibling's value. Without this gate a provenance block written into a
+  // pre-1.2.0 document would be silently STRIPPED (lagnSchema has no
+  // .strict(), so zod drops unknown keys and still parses) — the audit trail
+  // would vanish on parse and the document would look clean. Rejecting loudly
+  // is the only honest option.
+  (data) => {
+    if (data.lagn_version === LAGN_VERSION_1_2_0) {
+      return true
+    }
+    if (data.catalog_ref !== undefined) {
+      return false
+    }
+    for (const card of data.card_catalog?.cards ?? []) {
+      if (card.registry_ref !== undefined || card.effect_snapshot !== undefined) {
+        return false
+      }
+    }
+    return true
+  },
+  {
+    message:
+      `provenance requires lagn_version ${LAGN_VERSION_1_2_0} or later — ` +
+      `an earlier document cannot carry catalog_ref, registry_ref, or effect_snapshot`,
+    path: ['catalog_ref']
+  }
+).refine(
+  // why: also inexpressible in JSON Schema — a cross-block presence rule. An
+  // effect_snapshot is evidence, and evidence without the catalog_ref that
+  // pins WHICH registry snapshot it came from cannot be verified against
+  // anything. Requiring the pin keeps a snapshot from looking authoritative
+  // when it is unanchored.
+  (data) => {
+    if (data.catalog_ref !== undefined) {
+      return true
+    }
+    for (const card of data.card_catalog?.cards ?? []) {
+      if (card.effect_snapshot !== undefined) {
+        return false
+      }
+    }
+    return true
+  },
+  {
+    message:
+      'effect_snapshot requires a document-level catalog_ref — a frozen effect ' +
+      'is unverifiable without the registry snapshot it was taken from',
+    path: ['card_catalog', 'cards', 'effect_snapshot']
   }
 )
 
@@ -497,6 +667,19 @@ export const UNEXPRESSIBLE_CONSTRAINTS = [
       'seq must increase by exactly 1 across a turn\'s actions — no gaps, no duplicates, no reordering.',
     reason:
       'A relation between adjacent array elements. JSON Schema can constrain items individually but cannot compare them.'
+  },
+  {
+    path: 'lagn_version / catalog_ref / card_catalog.cards[].{registry_ref,effect_snapshot}',
+    constraint: `Any provenance block requires lagn_version ${LAGN_VERSION_1_2_0}; an earlier document may not carry one.`,
+    reason:
+      'Cross-field dependency between the root version and optional blocks at two nesting levels. Expressible only as a deeply-nested if/then duplicating the whole structure.'
+  },
+  {
+    path: 'card_catalog.cards[].effect_snapshot / catalog_ref',
+    constraint:
+      'An effect_snapshot anywhere in the catalog requires a document-level catalog_ref.',
+    reason:
+      'Presence of a nested member conditioned on a member of the root object. JSON Schema dependentRequired works within one object, not across nesting levels.'
   },
   {
     path: 'lagn_version / setup.support_pools',
