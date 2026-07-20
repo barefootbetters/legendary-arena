@@ -30818,3 +30818,72 @@ holds and nothing moves.
 **Drafted:** 2026-07-20.
 
 Protect this file.
+---
+
+### D-24209 — the toolchain moves to Node 24 (Krypton) now; 22 is already past Active LTS
+
+**Status:** Active 2026-07-20. Decision only — execution is its own packet.
+**Packet:** none — direct governance edit at operator request. Closes the
+deferral D-24205 recorded.
+
+**The dates, computed from the Node release schedule rather than assumed.**
+
+| Line | Phase on 2026-07-20 | Maintenance began / begins | End of life | Support left |
+|---|---|---|---|---|
+| **22 "Jod"** | **Maintenance** | 2025-10-21 (passed) | 2027-04-30 | ~9 months |
+| **24 "Krypton"** | **Active LTS** | 2026-10-20 | 2028-04-30 | ~21 months |
+| 26 | Current — not yet LTS | 2027-10-20 | 2029-04-30 | ~33 months |
+
+**The decision: move to 24, now.**
+
+Node 22 has been in Maintenance since 2025-10-21 — critical security and bug
+fixes only. That is not a future risk to schedule around; it is the runtime
+every environment is on today, and the Cloudflare build logs say so out loud
+("in LTS Maintenance mode and nearing its end of life") on every deploy.
+Node 24 is in **Active LTS right now**, which is the phase a project wants to
+be *entering*, and it more than doubles the remaining support window.
+
+**Why not wait ~3 months for 26 to reach LTS.** It is a real option: 26 goes LTS
+around 2026-10, giving ~33 months and skipping a hop. It is rejected because it
+spends three more months on a security-only runtime *and* then adopts an LTS
+line in its opening weeks. That combines two risks to avoid one well-trodden
+major upgrade. The hop we would skip is cheap; the exposure we would extend is
+not.
+
+**Stated plainly so nobody is surprised in October:** 24 enters Maintenance on
+2026-10-20, roughly three months from this decision. This buys ~21 months of
+*support*, not ~21 months of *Active LTS*. Anyone reading "move to Active LTS"
+as a long active window would be wrong, and the next toolchain decision is due
+well before 2028.
+
+**Why this is safe to do now specifically.** WP-400 / D-24205 pinned the
+toolchain to one committed file: `.node-version` governs CI, Render, and all
+four Cloudflare Pages projects, and `pnpm check:node-pin` fails when they
+disagree. Before that pin, changing Node meant editing 23 restatement sites and
+hoping; the version could also drift underneath us without a commit, which is
+exactly what happened when two Pages projects resolved 22.22.0 and 22.16.0 from
+the same repository. The upgrade is now a one-line, reviewable, revertible
+change with a gate behind it. Pinning first and upgrading second was the right
+order.
+
+**`engines` stays a floor.** `>=22` describes what the code requires and is not
+raised by this decision. Raising it would break consumers for no benefit; the
+build version is `.node-version`'s job. The architecture inventory now reports
+both rows separately so the two are never conflated.
+
+**Execution is a separate packet, per D-24205.** A major-version move needs
+observed results across the engine's determinism surfaces, the server's `tsx`
+loader, and four deploy targets — not a version-string edit. That packet owns:
+bumping `.node-version` and both `render.yaml` `NODE_VERSION` envVars (which
+outrank the file on Render), the full suite against a recorded baseline,
+`sim:runtime-observed:check` and the sentinel `finalStateHash` byte-identical,
+and a post-merge read of a Cloudflare build log to confirm the pin binds — the
+same evidence WP-400 used, which is how we know the mechanism works.
+
+**What would reverse this.** A determinism surface that shifts under 24, or a
+dependency that cannot run on it. Either turns this into "stay on 22 until its
+2027-04-30 EOL and go straight to 26", and the execution packet is where that
+evidence would surface. Recording the reversal condition now so the next
+session does not have to reconstruct the reasoning.
+
+Protect this file.

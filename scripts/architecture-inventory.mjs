@@ -24,7 +24,7 @@
  */
 
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { argv, cwd, exit, stdout } from 'node:process';
@@ -2446,6 +2446,25 @@ async function renderReport({
  * @param {Map<string, { versions: Set<string>, locations: any[] }>} aggregate
  * @returns {string}
  */
+/**
+ * Reads the exact Node version the repo pins for builds.
+ *
+ * why: separate from `engines.node`. The pin governs CI, Render, and Cloudflare
+ * Pages; the engines range only states a minimum. Reported as a distinct row so
+ * the two are never conflated.
+ *
+ * @returns {string} The pinned version, or a marker when the file is absent.
+ */
+function readPinnedNodeVersion() {
+  try {
+    const raw = readFileSync(join(REPO_ROOT, '.node-version'), 'utf8');
+    const firstLine = raw.split(String.fromCharCode(10)).find((line) => line.trim() !== '');
+    return firstLine ? firstLine.trim() : '_(empty)_';
+  } catch {
+    return '_(no `.node-version` — toolchain is unpinned)_';
+  }
+}
+
 function renderRuntimeSection(manifests, aggregate) {
   const lines = [];
   const rootManifest = manifests.find((manifest) => manifest.relativePath === 'package.json');
@@ -2456,8 +2475,18 @@ function renderRuntimeSection(manifests, aggregate) {
   // truth for "what version of Node do I need to clone and run this."
   lines.push(`### Required runtimes`);
   lines.push('');
+  // why (WP-400 / D-24205): `engines.node` is a FLOOR describing what the code
+  // requires; `.node-version` is the exact version every environment BUILDS
+  // with — CI, Render, and all four Cloudflare Pages projects read it. An
+  // inventory that reports only the floor answers "what will run this" but not
+  // "what built this deploy", which is the question that mattered when two
+  // Pages projects silently resolved 22.22.0 and 22.16.0 from the same commit.
+  const pinnedToolchainVersion = readPinnedNodeVersion();
   lines.push(`| Runtime | Required | Source |`);
   lines.push(`|---|---|---|`);
+  lines.push(
+    `| Node.js (pinned build version) | \`${pinnedToolchainVersion}\` | \`.node-version\` — single source of truth (D-24205) |`
+  );
   if (rootManifest) {
     const nodeRequirement = rootManifest.engines.node ?? '_(unspecified)_';
     const pnpmRequirement = rootManifest.engines.pnpm ?? '_(unspecified)_';
