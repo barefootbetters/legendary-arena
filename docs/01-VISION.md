@@ -158,11 +158,14 @@ records, keyed by stable internal account identifiers.
 - Game logic is UI‑agnostic
 - Identical inputs always produce identical outcomes
 - Suitable for replay, validation, multiplayer synchronization, and testing
-- Proven through 2,028 automated engine tests (as of 2026-07-19) across
-  setup, moves, rule execution, hero abilities, villain abilities, board
-  keywords, scheme setup, and endgame evaluation. The count is a
-  point-in-time observation, not a target — run `pnpm -r test` for the
-  current figure.
+- Proven through 4,957 automated tests across the monorepo's 12
+  packages (as of 2026-07-19) — setup, moves, rule execution, hero and
+  villain abilities, board keywords, scheme setup, endgame evaluation,
+  registry validation, server routes, and client projections. 2,028 of
+  those are engine tests. The count is a point-in-time observation, not
+  a target — run `pnpm -r build && pnpm -r test` for the current figure
+  (158 server tests are database-gated and skip without a local test
+  database).
 
 ---
 
