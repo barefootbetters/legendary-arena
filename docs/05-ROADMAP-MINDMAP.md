@@ -472,6 +472,7 @@ mindmap
         ["WP-387 ✅ Scenario preview deep-link carries player count (registry-viewer + legends-board) — Shape A of 'play this scenario from the leaderboard': the gauntlet challenge link carries the board's player count into the cards builder so the WP-372 required-count readout matches; new parsePlayerCountFromUrl (envelope, 1..5 else null) + App.vue seeds the editor draft setPlayerCount at mount + buildChallengeUrl optional playerCount; NOT a ?lagn= switch (a seed can't be a valid LAGN); no D-entry (the WP-114 future-extension hook); Shape B save-to-profile deferred; D-24026 dev-verified; EC-416"]
         ["WP-395 📝 Canonical villain/henchmen loadouts for gauntlet legs (registry + server; ScenarioKey is scheme::mastermind::sorted-villain-groups and villain groups are unconstrained across all 41 sets (134 of them, D-24131 'any villain groups qualify'), while PAR is calibrated per scenario key with a validator rejecting sampleSize < 500 — so across 639 scheme×mastermind leg pairs the space is 85,626 scenarios at 1p and 8,205,239,889 at 5p, about 4.1 trillion simulated games. A canonical loadout collapses it to 639 scenarios / ~319,500 games. Since submission fail-closes on par_not_published, free villain choice does not make the ranked surface expensive — it makes PAR unreachable. Ranked gauntlet qualification ONLY; casual play keeps free selection, and hero choice stays free since heroes are not in ScenarioKey. Migration cost is currently zero — competitive_scores is empty — and 103/111 masterminds already declare alwaysLeads. Sequence ahead of any PAR calibration work. Reserves D-24199; drafted 2026-07-18)"]
         ["WP-396 📝 bystanderLost has no producer (engine scoring; the penalty the scoring model ranks highest is hardcoded to 0 in deriveScoringInputs, so it can never fire. validateScoringConfig hard-fails any config where bystanderLost does not outweigh both villainEscaped and bystanderReward — the VISION §21 moral hierarchy is encoded in the config contract and then multiplied by a constant zero. Two defects: nothing counts bystander loss (no BYSTANDERS_LOST counter, though villainDeck.reveal.ts already measures the pile delta across the escape branch), and nothing consumes it. Design question open; no EC yet. Renumbered from WP-391 by EC-429 follow-up — that slot is Support Card Pools, merged, referenced by six ECs and two DECISIONS entries; drafted 2026-07-19)"]
+        ["WP-400 📝 Pin the Node toolchain to one committed version (infrastructure; nothing pins a Node minor, so every environment resolves \"22\" independently — two Pages logs three days apart report 22.22.0 and 22.16.0 from the same repo. Adds .node-version as the single source; 21 workflow entries read it instead of restating it)"]
 
       Friends & Ranked Trust (2026-07)
         ["WP-350 ✅ Friendships data model + status machine + mutual-clique helper (server) — new legendary.friendships table (migration 028; player_id FK CASCADE, closed status pending/accepted/declined, normalized-pair LEAST/GREATEST unique index, addressee_id/status lookup index); AccountId-keyed send/accept/decline/remove state machine + list helpers + getFriendshipStatus + areAllMutualFriends clique predicate (accepted-pair count == C(n,2); n≤1 vacuous; order/dup-independent); declined→pending is an UPDATE, removeFriend DELETEs; library-only (no endpoint/UI); EC-380; D-24142"]
@@ -574,14 +575,14 @@ mindmap
 | Hero/Villain Effects & Diagnostics (2026-07) | 5/5 | — |
 | Live-Play HUD & Pending-Choice UX (2026-07) | 15/15 | — |
 | Competitive Score Submission & Verification (2026-07) | 10/10 | — |
-| Gauntlet Leaderboards (Legends) (2026-07) | 7/9 | 2 open |
+| Gauntlet Leaderboards (Legends) (2026-07) | 7/10 | 3 open |
 | Friends & Ranked Trust (2026-07) | 18/18 | — |
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **385/393 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 7 open |
+| **Total** | **385/394 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 8 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 8):** WP-042.1 ⏸ blocked; WP-349 open; WP-391 open; WP-395 open; WP-396 open; WP-398 open; WP-399 open; WP-368 open.
+**Open / blocked WPs (derived from WORK_INDEX, 9):** WP-042.1 ⏸ blocked; WP-349 open; WP-391 open; WP-395 open; WP-396 open; WP-398 open; WP-399 open; WP-368 open; WP-400 open.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.
