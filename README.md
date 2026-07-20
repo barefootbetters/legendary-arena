@@ -1,6 +1,7 @@
 # Legendary Arena — Monorepo
 
-Card Data Access Layer, Registry Viewer, and publishing tooling for the Legendary Arena card game.
+Game engine, multiplayer server, web clients, card data, and publishing
+tooling for the Legendary Arena card game.
 
 ---
 
@@ -19,30 +20,62 @@ The short version of the first one: **git holds text worth diffing;
 pCloud holds work-in-progress and binaries; hosted services hold what
 gets delivered.** A file lives on exactly one surface.
 
-> The `Repo Structure` tree below is **stale** — `data/raw/`,
-> `images/raw/`, and `images/standard/` no longer exist. Trust
-> `docs/01-REPO-FOLDER-STRUCTURE.md` for the current layout.
-
 ---
 
 ## Repo Structure
 
+A pnpm monorepo. Every tracked top-level directory, one line each:
+
 ```
 legendary-arena/
-├── data/
-│   └── raw/                  ← Source card JSON files (commit these)
-├── images/
-│   ├── raw/                  ← Original images (pre-rename)
-│   └── standard/             ← Canonical WebP images (auto-generated)
-├── packages/
-│   └── registry/             ← @legendary-arena/registry npm package
-│       ├── src/              ← TypeScript source
-│       ├── scripts/          ← Build / validate / upload scripts
-│       └── dist/             ← Build output (gitignored, generated in CI)
-├── apps/
-│   └── registry-viewer/      ← Vite + Vue 3 static viewer app
-└── .github/workflows/ci.yml  ← CI pipeline
+├── packages/                 ← shared libraries (built to dist/, gitignored)
+│   ├── game-engine/          ← gameplay rules, moves, phases, determinism
+│   ├── registry/             ← card-data access layer (@legendary-arena/registry)
+│   ├── lagn-spec/            ← LAGN notation validator + schema (published npm)
+│   ├── preplan/              ← non-authoritative per-client turn planning
+│   └── vue-sfc-loader/       ← test-time Vue SFC loader (dev/test only)
+│
+├── apps/                     ← deployable applications
+│   ├── server/               ← boardgame.io server + REST API + persistence
+│   ├── arena-client/         ← gameplay client SPA (play.legendary-arena.com)
+│   ├── registry-viewer/      ← card browser (cards.legendary-arena.com)
+│   ├── legends-board/        ← public leaderboards (legends.legendary-arena.com)
+│   ├── wiki-viewer/          ← Hugo build of wiki/ (ewiki.legendary-arena.com)
+│   ├── dashboard/            ← internal operator dashboard
+│   ├── engine-runner/        ← headless simulation harness
+│   └── replay-producer/      ← CLI emitting deterministic replay sequences
+│
+├── data/                     ← generated + authored game data (never runtime state)
+│   ├── cards/                ← per-set card JSON (41 sets) — mostly generated
+│   ├── metadata/             ← sets.json, keywords, rules, taxonomies
+│   ├── migrations/           ← PostgreSQL DDL (legendary.* schema)
+│   ├── scoring-configs/      ← per-scenario scoring config
+│   └── sweep-fixtures/       ← fixtures for the audit sweeps
+│
+├── scripts/                  ← CLI tooling
+│   ├── convert-cards/        ← the multi-stage card pipeline + its inputs
+│   ├── card-image-*/         ← image download / convert / rename chain
+│   ├── coverage/             ← effect + mechanic ledger generators
+│   ├── audit/                ← repo audit sweeps
+│   ├── ec/                   ← Execution Checklist tooling
+│   └── git/                  ← hook installation and commit helpers
+│
+├── wiki/                     ← engineering wiki source (published to ewiki)
+├── ewiki/                    ← per-page wiki assets, projected at build time
+├── content/                  ← gameplay themes + media consumed by the apps
+├── docs/                     ← product docs + docs/ai/ governance (WP/EC/DECISIONS)
+├── .claude/                  ← Claude Code rules, skills, coordination
+├── .githooks/                ← commit-message and pre-commit hygiene
+└── .github/workflows/        ← CI pipelines
 ```
+
+Per-directory detail, ownership, and the governing import rules:
+[`docs/01-REPO-FOLDER-STRUCTURE.md`](docs/01-REPO-FOLDER-STRUCTURE.md).
+
+**Card images are not in this repo.** They are served from Cloudflare R2
+at `images.legendary-arena.com`; the staging and conversion chain lives
+under `scripts/card-image-*/`. See
+[Data & File Locations](https://ewiki.legendary-arena.com/data-file-locations/).
 
 ---
 
