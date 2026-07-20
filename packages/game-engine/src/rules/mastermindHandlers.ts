@@ -75,6 +75,60 @@ const TEAM_X_MEN = 'x-men';
 const TEAM_SPIDER_FRIENDS = 'spider-friends';
 const HERO_CLASS_STRENGTH = 'strength';
 
+// why: WP-397 — Doctor Octopus's printed strike reveals the top 8 cards of the
+// deck for any player who does not discard a Spider-Friends Hero.
+const DOCTOR_OCTOPUS_REVEAL_COUNT = 8;
+
+/**
+ * Whether a card is a "non-grey Hero" in the tabletop sense.
+ *
+ * @param gameState - The game state (read-only; supplies cardTraits).
+ * @param cardExtId - The card to classify.
+ * @returns True when the card carries a Hero Class.
+ */
+function isNonGreyHero(
+  gameState: LegendaryGameState,
+  cardExtId: CardExtId,
+): boolean {
+  // why: the rulebook defines "grey Heroes" as grey-coloured cards with NO
+  // Hero Class (S.H.I.E.L.D. Agents, Troopers, Officers, Sidekicks), so
+  // non-grey is exactly "has a Hero Class". Loose `!=` so both null and
+  // undefined read as grey. Wounds carry no Hero Class and are therefore grey
+  // — they are never discarded by this branch, which is correct: a Wound is
+  // not a Hero. Defensive `?.` on the map itself for legacy states predating
+  // WP-179.
+  return gameState.cardTraits?.[cardExtId]?.heroClass != null;
+}
+
+/**
+ * Narrows the rule-pipeline context to its deterministic shuffle function.
+ *
+ * @param context - The context the rule pipeline passed to the handler.
+ * @returns The Shuffle function, or null when the context does not carry one.
+ */
+function resolveShuffleFunction(
+  context: unknown,
+): (<T>(items: T[]) => T[]) | null {
+  // why: `performVillainReveal` passes the full RevealContext into
+  // executeRuleHooks precisely so handlers can reach `context.random.Shuffle`
+  // (see the Step-5 `// why:` there) — the strike handler previously ignored
+  // it. Narrowed structurally rather than by importing RevealContext, which
+  // would couple the rules module to the villain-deck module, and without any
+  // boardgame.io type.
+  if (typeof context !== 'object' || context === null) {
+    return null;
+  }
+  const random = (context as { random?: unknown }).random;
+  if (typeof random !== 'object' || random === null) {
+    return null;
+  }
+  const shuffle = (random as { Shuffle?: unknown }).Shuffle;
+  if (typeof shuffle !== 'function') {
+    return null;
+  }
+  return shuffle as <T>(items: T[]) => T[];
+}
+
 /**
  * Captures one bystander from the top of the bystander supply onto the
  * mastermind per D-15401. If the supply is empty, logs a message and
@@ -485,7 +539,10 @@ function resolveCo2eMagnetoStrike(gameState: LegendaryGameState): void {
  *
  * @param gameState - The game state to mutate.
  */
-function resolveDoctorOctopusStrike(gameState: LegendaryGameState): void {
+function resolveDoctorOctopusStrike(
+  gameState: LegendaryGameState,
+  shuffleFunction: (<T>(items: T[]) => T[]) | null,
+): void {
   const playerIds = Object.keys(gameState.playerZones).sort();
 
   for (const playerId of playerIds) {
@@ -497,28 +554,86 @@ function resolveDoctorOctopusStrike(gameState: LegendaryGameState): void {
       TEAM_SPIDER_FRIENDS,
     );
 
-    // why: D-24192 — the printed alternative (reveal the top 8, discard the
-    // non-grey Heroes, return the rest in RANDOM order) is deliberately NOT
-    // implemented: it needs ctx.random threaded into a handler that ignores
-    // ctx, plus a non-grey predicate. A player with no Spider-Friends Hero
-    // therefore takes a logged no-op and escapes the strike. Recorded gap —
-    // do NOT improvise the reveal or substitute a Wound.
-    //
-    // why: taking the discard branch is also the player-optimal read of the
-    // printed "may" — surrendering one Hero beats discarding every non-grey
-    // Hero in the top eight.
-    if (targetExtId === null) {
+    // why: taking the discard branch is the player-optimal read of the printed
+    // "may" — surrendering one chosen Hero beats revealing eight cards and
+    // losing every non-grey Hero among them. D-24192 auto-pick.
+    if (targetExtId !== null) {
+      discardCardFromHand(playerZones, targetExtId);
       pushLog(gameState,
-        `[Doctor Octopus Master Strike] Player ${playerId} has no [team:spider-friends] Hero in hand — no effect.`,
+        `[Doctor Octopus Master Strike] Player ${playerId} discarded ${formatCardRef(gameState.cardDisplayData, targetExtId)}.`,
       );
       continue;
     }
 
-    discardCardFromHand(playerZones, targetExtId);
-    pushLog(gameState,
-      `[Doctor Octopus Master Strike] Player ${playerId} discarded ${formatCardRef(gameState.cardDisplayData, targetExtId)}.`,
-    );
+    // why: WP-397 / D-24200 — the printed alternative for a player who does
+    // not discard: "reveal the top 8 cards of their deck, discard all non-grey
+    // Heroes revealed, and put the rest back in random order."
+    resolveDoctorOctopusReveal(gameState, playerId, playerZones, shuffleFunction);
   }
+}
+
+/**
+ * Resolves one player's reveal-eight branch of Doctor Octopus's Master Strike.
+ *
+ * @param gameState - The game state to mutate (log lines).
+ * @param playerId - The player being resolved, for log lines.
+ * @param playerZones - The player's zones, mutated in place.
+ * @param shuffleFunction - Deterministic shuffle, or null when unavailable.
+ */
+function resolveDoctorOctopusReveal(
+  gameState: LegendaryGameState,
+  playerId: string,
+  playerZones: { deck: CardExtId[]; discard: CardExtId[] },
+  shuffleFunction: (<T>(items: T[]) => T[]) | null,
+): void {
+  // why: reveal what is there and no more. The engine's reveal family never
+  // reshuffles the discard to top up a short deck (see the D-21502 no-op in
+  // effectPrimitive.interpret.ts); only the DRAW path reshuffles, which is the
+  // correct rule split — this effect reveals, it does not draw.
+  const revealCount = Math.min(
+    DOCTOR_OCTOPUS_REVEAL_COUNT,
+    playerZones.deck.length,
+  );
+
+  if (revealCount === 0) {
+    pushLog(gameState,
+      `[Doctor Octopus Master Strike] Player ${playerId} has an empty deck — nothing revealed.`,
+    );
+    return;
+  }
+
+  // why: index 0 is the top of the deck — the engine's draw convention
+  // (`drawCardsIntoHand` reads `deck[0]`).
+  const revealed = playerZones.deck.slice(0, revealCount);
+  const untouchedTail = playerZones.deck.slice(revealCount);
+
+  const discardedCards: CardExtId[] = [];
+  const returnedCards: CardExtId[] = [];
+  for (const cardExtId of revealed) {
+    if (isNonGreyHero(gameState, cardExtId)) {
+      discardedCards.push(cardExtId);
+    } else {
+      returnedCards.push(cardExtId);
+    }
+  }
+
+  // why: the remainder goes back in RANDOM order because the printed effect
+  // exists to deny the player free deck information — returning eight cards in
+  // a known order would turn the strike into a benefit. ctx.random.Shuffle is
+  // the framework PRNG and the only permitted randomness, so replay stays
+  // faithful. A context without Shuffle (unit-test stubs pass `{}`) degrades
+  // to revealed order, which is deterministic and logged rather than silent.
+  const returnedInOrder = shuffleFunction
+    ? shuffleFunction(returnedCards)
+    : returnedCards;
+
+  playerZones.deck = [...returnedInOrder, ...untouchedTail];
+  playerZones.discard = [...playerZones.discard, ...discardedCards];
+
+  const orderNote = shuffleFunction ? '' : ' (revealed order — no shuffle available)';
+  pushLog(gameState,
+    `[Doctor Octopus Master Strike] Player ${playerId} revealed ${revealCount} card(s), discarded ${discardedCards.length} non-grey Hero(es), and returned ${returnedInOrder.length} to the top of their deck${orderNote}.`,
+  );
 }
 
 /**
@@ -542,7 +657,7 @@ function resolveDoctorOctopusStrike(gameState: LegendaryGameState): void {
  */
 export function mastermindStrikeHandler(
   gameState: LegendaryGameState,
-  _ctx: unknown,
+  strikeContext: unknown,
   payload: unknown,
   _implementationMap: ImplementationMap,
 ): RuleEffect[] {
@@ -563,7 +678,7 @@ export function mastermindStrikeHandler(
   } else if (mastermindId === MASTERMIND_CO2E_MAGNETO) {
     resolveCo2eMagnetoStrike(gameState);
   } else if (mastermindId === MASTERMIND_CO2E_DOCTOR_OCTOPUS) {
-    resolveDoctorOctopusStrike(gameState);
+    resolveDoctorOctopusStrike(gameState, resolveShuffleFunction(strikeContext));
   }
 
   // why: WP-200 — terminal emission AFTER both the generic bystander

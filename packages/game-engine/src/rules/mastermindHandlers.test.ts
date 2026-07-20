@@ -977,3 +977,208 @@ describe('mastermindStrikeHandler — co2e dispatch isolation (WP-388)', () => {
     assert.deepEqual(gameState.playerZones['0']!.hand, ['st-a']);
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-397 / D-24200 — Doctor Octopus reveal-eight branch
+// ---------------------------------------------------------------------------
+
+/** A deterministic stand-in for ctx.random.Shuffle: reverses the array. */
+function reversingShuffleContext() {
+  return { random: { Shuffle: <T>(items: T[]): T[] => [...items].reverse() } };
+}
+
+/**
+ * Builds a Doctor Octopus state with one player's hand, deck, and traits.
+ * The hand is empty by default so the reveal branch is the one exercised.
+ */
+function makeOctopusRevealState(
+  deck: string[],
+  cardTraits: Record<string, { heroClass: string | null; team: string | null }> = {},
+  hand: string[] = [],
+): LegendaryGameState {
+  const gameState = makeCo2eState('co2e/doctor-octopus', { '0': hand }, {}, cardTraits);
+  gameState.playerZones['0']!.deck = [...deck];
+  return gameState;
+}
+
+/** Multiset comparison helper — order-insensitive card conservation. */
+function sortedCopy(cards: readonly string[]): string[] {
+  return [...cards].sort();
+}
+
+describe('mastermindStrikeHandler — Doctor Octopus reveal-eight (WP-397)', () => {
+  it('does NOT reveal when the player discards a Spider-Friends Hero (AC-1)', () => {
+    const gameState = makeOctopusRevealState(
+      ['d1', 'd2', 'd3'],
+      { 'sp-a': SPIDER, d1: STRENGTH, d2: STRENGTH, d3: STRENGTH },
+      ['sp-a'],
+    );
+
+    mastermindStrikeHandler(gameState, reversingShuffleContext(), { cardId: 's' }, {});
+
+    assert.deepEqual(gameState.playerZones['0']!.hand, [], 'the Hero was discarded');
+    assert.deepEqual(
+      gameState.playerZones['0']!.deck,
+      ['d1', 'd2', 'd3'],
+      'deck untouched — the reveal branch must not run',
+    );
+    assert.deepEqual(gameState.playerZones['0']!.discard, ['sp-a']);
+  });
+
+  it('reveals exactly 8 and leaves the rest of the deck alone (AC-2, AC-4)', () => {
+    const deck = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'tail1', 'tail2'];
+    // why: every revealed card is grey, so all 8 return — this isolates the
+    // count and the tail-preservation assertions from the partition logic.
+    const gameState = makeOctopusRevealState(deck, {});
+
+    mastermindStrikeHandler(gameState, reversingShuffleContext(), { cardId: 's' }, {});
+
+    const after = gameState.playerZones['0']!.deck;
+    assert.equal(after.length, 10, 'no card left the deck — all revealed were grey');
+    assert.deepEqual(
+      after.slice(8),
+      ['tail1', 'tail2'],
+      'the untouched tail keeps its content and order, below the returned cards',
+    );
+    assert.deepEqual(
+      after.slice(0, 8),
+      ['c8', 'c7', 'c6', 'c5', 'c4', 'c3', 'c2', 'c1'],
+      'the returned remainder sits at the FRONT, in Shuffle order',
+    );
+  });
+
+  it('reveals the whole deck when it holds fewer than 8, without topping up (AC-2)', () => {
+    const gameState = makeOctopusRevealState(['a', 'b'], { a: TECH });
+    gameState.playerZones['0']!.discard = ['already-discarded'];
+
+    mastermindStrikeHandler(gameState, reversingShuffleContext(), { cardId: 's' }, {});
+
+    // why: 'a' is non-grey (tech) and is discarded; 'b' is grey and returns.
+    // The pre-existing discard card must NOT be reshuffled into the deck —
+    // this effect reveals, it does not draw.
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['b']);
+    assert.deepEqual(gameState.playerZones['0']!.discard, ['already-discarded', 'a']);
+  });
+
+  it('discards non-grey Heroes and returns grey cards, Wounds included (AC-3)', () => {
+    const gameState = makeOctopusRevealState(
+      ['hero-tech', WOUND_EXT_ID, 'hero-str', 'starter-no-entry'],
+      { 'hero-tech': TECH, 'hero-str': STRENGTH, [WOUND_EXT_ID]: { heroClass: null, team: null } },
+    );
+
+    mastermindStrikeHandler(gameState, reversingShuffleContext(), { cardId: 's' }, {});
+
+    assert.deepEqual(
+      sortedCopy(gameState.playerZones['0']!.discard),
+      sortedCopy(['hero-tech', 'hero-str']),
+      'only cards carrying a Hero Class are discarded',
+    );
+    assert.deepEqual(
+      sortedCopy(gameState.playerZones['0']!.deck),
+      sortedCopy([WOUND_EXT_ID, 'starter-no-entry']),
+      'Wounds and cards with no cardTraits entry are grey and return to the deck',
+    );
+  });
+
+  it('orders the remainder with the supplied Shuffle (AC-5)', () => {
+    const gameState = makeOctopusRevealState(['x', 'y', 'z'], {});
+
+    mastermindStrikeHandler(gameState, reversingShuffleContext(), { cardId: 's' }, {});
+
+    assert.deepEqual(
+      gameState.playerZones['0']!.deck,
+      ['z', 'y', 'x'],
+      'the reversing stand-in proves the Shuffle function was actually applied',
+    );
+  });
+
+  it('falls back to revealed order when the context carries no Shuffle (AC-5, AC-7)', () => {
+    const gameState = makeOctopusRevealState(['x', 'y', 'z'], {});
+
+    // why: unit-test stubs pass `{}`; the fallback must be deterministic and
+    // logged, never a throw and never a hand-rolled shuffle.
+    assert.doesNotThrow(() =>
+      mastermindStrikeHandler(gameState, {}, { cardId: 's' }, {}),
+    );
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['x', 'y', 'z']);
+    assert.ok(
+      gameState.messages.some((line) => line.includes('no shuffle available')),
+      'the fallback is logged rather than silent',
+    );
+  });
+
+  it('conserves cards across the reveal (AC-6)', () => {
+    const deck = ['h1', 'g1', 'h2', 'g2', 'h3', 'g3', 'h4', 'g4', 'g5'];
+    const traits: Record<string, { heroClass: string | null; team: string | null }> = {
+      h1: TECH, h2: STRENGTH, h3: TECH, h4: STRENGTH,
+    };
+    const gameState = makeOctopusRevealState(deck, traits);
+    gameState.playerZones['0']!.discard = ['pre'];
+    const before = sortedCopy([...deck, 'pre']);
+
+    mastermindStrikeHandler(gameState, reversingShuffleContext(), { cardId: 's' }, {});
+
+    const after = sortedCopy([
+      ...gameState.playerZones['0']!.deck,
+      ...gameState.playerZones['0']!.discard,
+    ]);
+    assert.deepEqual(after, before, 'deck + discard is unchanged as a multiset');
+  });
+
+  it('does not throw on an empty deck, an all-non-grey reveal, or absent cardTraits (AC-7)', () => {
+    const emptyDeck = makeOctopusRevealState([], {});
+    assert.doesNotThrow(() =>
+      mastermindStrikeHandler(emptyDeck, reversingShuffleContext(), { cardId: 's' }, {}),
+    );
+    assert.deepEqual(emptyDeck.playerZones['0']!.deck, []);
+
+    const allNonGrey = makeOctopusRevealState(['a', 'b'], { a: TECH, b: STRENGTH });
+    assert.doesNotThrow(() =>
+      mastermindStrikeHandler(allNonGrey, reversingShuffleContext(), { cardId: 's' }, {}),
+    );
+    assert.deepEqual(allNonGrey.playerZones['0']!.deck, [], 'every revealed card was discarded');
+    assert.deepEqual(sortedCopy(allNonGrey.playerZones['0']!.discard), sortedCopy(['a', 'b']));
+
+    const noTraits = makeOctopusRevealState(['a', 'b'], {});
+    (noTraits as { cardTraits?: unknown }).cardTraits = undefined;
+    assert.doesNotThrow(() =>
+      mastermindStrikeHandler(noTraits, reversingShuffleContext(), { cardId: 's' }, {}),
+    );
+    assert.equal(noTraits.playerZones['0']!.deck.length, 2, 'no traits map — everything reads grey');
+  });
+
+  it('preserves the generic strike behaviour on the reveal branch (AC-8)', () => {
+    const gameState = makeOctopusRevealState(['a'], {});
+
+    const effects = mastermindStrikeHandler(
+      gameState,
+      reversingShuffleContext(),
+      { cardId: 's' },
+      {},
+    );
+
+    assert.deepEqual(effects, [
+      { type: 'modifyCounter', counter: 'masterStrikeCount', delta: 1 },
+      { type: 'queueMessage', message: 'Mastermind strike revealed — strike count incremented.' },
+    ]);
+    assert.equal(gameState.mastermind.attachedBystanders.length, 1, 'D-15401 capture still runs');
+    assert.equal(gameState.notableEvents.length, 1, 'WP-200 emission still terminal');
+  });
+
+  it('leaves the other co2e resolvers untouched by the context change (AC-8)', () => {
+    const loki = makeCo2eState(
+      'co2e/loki',
+      { '0': ['st-a'] },
+      { 'st-a': co2eStat(1) },
+      { 'st-a': STRENGTH },
+    );
+    loki.playerZones['0']!.deck = ['d1', 'd2'];
+
+    mastermindStrikeHandler(loki, reversingShuffleContext(), { cardId: 's' }, {});
+
+    // why: only Doctor Octopus reveals. Loki discards and must never touch the
+    // deck, even now that a shuffle function is available to the handler.
+    assert.deepEqual(loki.playerZones['0']!.deck, ['d1', 'd2']);
+    assert.deepEqual(loki.playerZones['0']!.discard, ['st-a']);
+  });
+});
