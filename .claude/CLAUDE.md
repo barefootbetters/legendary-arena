@@ -50,6 +50,34 @@ pnpm -r build         # build all packages
 pnpm -r test          # run all tests (root has no `test` script; bare `pnpm test` exits 1 silently)
 ```
 
+### Build before you test (stale `dist` fakes failures)
+
+Apps import the **built `dist`** of the packages they depend on, not
+their `src`. So a package edit is invisible to a dependent app's tests
+until that package is rebuilt — which cuts both ways:
+
+- **False green** — a `src` fix that never rebuilt; the app's tests
+  still exercise the old `dist` and pass.
+- **False red** — a stale or missing `dist` crashes a test file at
+  *import*, which `node:test` reports as a failing test. The tests in
+  that file never register, so the totals shrink at the same time.
+  Observed 2026-07-19: `apps/registry-viewer` reported 99 tests / 7
+  fail against a stale `dist` and 174 tests / 0 fail after a rebuild —
+  same commit, no source change.
+
+So the order is always **`pnpm -r build && pnpm -r test`**, and before
+diagnosing any cross-package test failure, rebuild first and re-run.
+Chasing an import-crash "failure" through the source costs a session
+and finds nothing. Two related traps:
+
+- `pnpm -r test` **bails on the first failing package**; one broken
+  package masks every package after it. Use `pnpm -r --no-bail test`
+  when you need whole-repo totals.
+- A build may rewrite CI-gated generated artifacts (e.g.
+  `packages/lagn-spec/schemas/lagn-v1.json`). Check `git status` after
+  building, and confirm a real diff exists before committing one —
+  line-ending-only churn is noise, not a change.
+
 ## Session Start: Catch Up On `main`
 
 When the user asks for substantive work in this repo, start with a
