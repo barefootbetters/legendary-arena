@@ -265,21 +265,30 @@ the source it was exported from is not.** `static\` is served verbatim,
 so anything parked there ships to production and counts against page
 weight even if nothing links to it.
 
-**The two repos do not live in the same place.**
+**The two repos do not live in the same place, and the marketing repo
+has the safer of the two locations.**
 
-| Repo | Path | pCloud-synced? |
+| Repo | Path | On the pCloud sync drive? |
 |---|---|---|
-| Engine (`legendary-arena`) | `C:\pcloud\BB\DEV\legendary-arena\` | Yes |
-| Marketing (`legendary-arena-website`) | `C:\www\legendary-arena-com\` | **No** |
+| Marketing (`legendary-arena-website`) | `C:\www\legendary-arena-com\` | **No — this is the correct state** |
+| Engine (`legendary-arena`) | `C:\pcloud\BB\DEV\legendary-arena\` | Yes — a known hazard |
 
-That asymmetry has a practical consequence worth knowing before you
-rely on it: work in the marketing checkout that has not been pushed to
-GitHub exists on one disk only. Anything uncommitted there — a
-half-finished post, a `.dev.vars` you spent twenty minutes assembling —
-is not backed up by anything.
-[D-24207](../docs/ai/DECISIONS.md) brings the marketing repo into the
-naming convention when it is next touched; until then, its layout is
-what the table above says.
+**A git checkout does not belong on a synced drive.** pCloud syncs the
+`.git` directory itself, so refs can shift underneath a running session:
+observed symptoms include phantom uncommitted changes that resolve
+themselves, `HEAD` moving between branches mid-session, untracked draft
+files disappearing outright, and — worst — a commit landing on another
+session's branch and reaching an unrelated PR. The engine repo is
+scheduled to move off pCloud for exactly this reason; the marketing repo
+already sits where that move is headed.
+
+So do **not** relocate the marketing checkout into `C:\pcloud\` to
+"match" the engine repo. Its durability comes from pushing to GitHub,
+not from file sync — push early rather than leaving work in the working
+directory.
+
+The general storage rule and the full hazard list are on
+[Workspace Map](workspace-map.md).
 
 ### How Hugo builds a page
 
@@ -568,9 +577,12 @@ button) are mapped in
   a fresh clone has no newsletter function until you copy
   `.dev.vars.example` and fill it from the Brevo dashboard. Nobody can
   send it to you from the repo — that is the point.
-- **Uncommitted marketing work has no backup.** The marketing checkout
-  sits at `C:\www\`, outside the pCloud-synced tree the engine repo
-  lives in. Push early rather than trusting the working directory.
+- **Uncommitted work has no backup in either repo — and sync is not the
+  answer.** Pushing to GitHub is what makes work durable. Do not move the
+  marketing checkout onto the pCloud drive to gain "backup": syncing a
+  `.git` directory causes refs to shift under a live session, which is a
+  worse problem than the one it appears to solve. See
+  [Workspace Map](workspace-map.md).
 - **Anything under `static\` ships.** It is served verbatim, so a
   full-resolution source image left beside its optimized export is
   published and counted against page weight — silently, since nothing
