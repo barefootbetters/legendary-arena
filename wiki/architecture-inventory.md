@@ -238,10 +238,10 @@ Counts derived from on-disk file extensions under `apps/`, `packages/`, `scripts
 
 | Language | Files |
 |---|---:|
-| TypeScript | 874 |
+| TypeScript | 877 |
 | Vue SFC | 143 |
-| JavaScript | 116 |
-| JSON | 107 |
+| JavaScript | 117 |
+| JSON | 105 |
 | Markdown | 68 |
 | HTML | 14 |
 | PowerShell | 10 |
@@ -253,10 +253,10 @@ Counts derived from on-disk file extensions under `apps/`, `packages/`, `scripts
 
 | Extension | Files |
 |---|---:|
-| `.ts` | 869 |
+| `.ts` | 872 |
 | `.vue` | 143 |
-| `.json` | 107 |
-| `.mjs` | 74 |
+| `.json` | 105 |
+| `.mjs` | 75 |
 | `.md` | 68 |
 | `.js` | 40 |
 | `.html` | 14 |
@@ -605,13 +605,16 @@ dependency-based inventory.
 
 | Service | Category | Detected in | Description |
 |---|---|---:|---|
-| `brevo` | marketing / email | 13 files | Transactional + marketing email, newsletter forms, SMTP relay. |
-| `snipcart` | ecommerce | 1 file | Cart overlay via CDN script + HTML data attributes. |
+| `brevo` | marketing / email | 19 files | Transactional + marketing email, newsletter forms, SMTP relay. |
+| `snipcart` | ecommerce | 15 files | Cart overlay via CDN script + HTML data attributes. |
 
 ### SaaS usage detail
 
 #### brevo
 
+- `[legendary-arena-website] docs/ai/work-packets/WP-015-newsletter-brevo.md`
+- `[legendary-arena-website] docs/brevo/email-automation.md`
+- `[legendary-arena-website] functions/api/subscribe.js`
 - `apps/server/src/marketing/brevoEnqueue.logic.test.ts`
 - `apps/server/src/marketing/brevoEnqueue.logic.ts`
 - `apps/server/src/marketing/brevoTransactional.logic.test.ts`
@@ -622,12 +625,29 @@ dependency-based inventory.
 - `docs/ai/execution-checklists/EC-383-friend-request-email-notifications.checklist.md`
 - `docs/ai/work-packets/WP-293-game-signup-brevo-enqueue.md`
 - `docs/ai/work-packets/WP-353-friend-request-email-notifications.md`
+- `legendary-arena-website/docs/ai/work-packets/WP-015-newsletter-brevo.md`
+- `legendary-arena-website/docs/brevo/email-automation.md`
+- `legendary-arena-website/functions/api/subscribe.js`
 - `wiki/brevo-email-pipeline.md`
 - `wiki/hugo-onboarding.md`
 - `wiki/hugo-web-system.md`
 
 #### snipcart
 
+- `[legendary-arena-website] docs/01-VISION.md`
+- `[legendary-arena-website] docs/ai/work-packets/WP-019-snipcart-commerce.md`
+- `[legendary-arena-website] layouts/_partials/extend_footer.html`
+- `[legendary-arena-website] layouts/_partials/extend_head.html`
+- `[legendary-arena-website] layouts/_partials/header.html`
+- `[legendary-arena-website] layouts/shop/list.html`
+- `[legendary-arena-website] layouts/shop/single.html`
+- `legendary-arena-website/docs/01-VISION.md`
+- `legendary-arena-website/docs/ai/work-packets/WP-019-snipcart-commerce.md`
+- `legendary-arena-website/layouts/_partials/extend_footer.html`
+- `legendary-arena-website/layouts/_partials/extend_head.html`
+- `legendary-arena-website/layouts/_partials/header.html`
+- `legendary-arena-website/layouts/shop/list.html`
+- `legendary-arena-website/layouts/shop/single.html`
 - `wiki/hugo-web-system.md`
 
 ## Importance tiering
