@@ -121,9 +121,28 @@ every few hours.
 - No `.reduce()` in zone operations or effect application
 - Every `ctx.events.setPhase()` and `ctx.events.endTurn()` call needs a `// why:` comment
 
+## Card Data (In-Repo Since 2026-05-06)
+
+- **Upstream sources:** `scripts/convert-cards/inputs/cards/*.js` (36
+  npm-derived set sources), with per-set overlays in
+  `scripts/convert-cards/inputs/patches/`
+- **Generated output:** `data/cards/{abbr}.json` — the registry-consumed
+  location. 41 sets: 36 converted by `convert-cards-v15.mjs`, 4 outlier
+  sets (`2099`, `amwp`, `wpnx`, `wtif`) produced only by
+  `apply-card-counts.mjs`, and `co2e.json` hand-authored (no upstream 2e
+  source exists)
+- Regenerating is **multi-stage**, not a single script: `convert-cards-v15.mjs`
+  then the `apply-*.mjs` passes in `scripts/convert-cards/` (card-counts,
+  hero-ability-markers, effect-markers, defeat-requirement-markers).
+  `docs/03-DATA-PIPELINE.md` describes this but is stale on stage order —
+  trust the scripts
+- **Legacy:** `C:\Users\jjensen\bbcode\modern-master-strike\src\data\cards\`
+  still exists on disk but is a frozen pre-co2e mirror of *generated
+  output*, not a source. Nothing reads it. Do not edit it or treat it as
+  card data.
+
 ## External Data
 
-- Card JSON data: `C:\Users\jjensen\bbcode\modern-master-strike\src\data\cards\` (40 sets)
 - Card images hosted at: `https://images.legendary-arena.com/`
 - Image URLs use hyphens, not underscores
 

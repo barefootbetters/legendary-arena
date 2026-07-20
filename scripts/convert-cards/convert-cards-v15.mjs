@@ -382,6 +382,24 @@ function applySchemeDeckCounts(result, setAbbr) {
 
 // ── Set abbreviation map ───────────────────────────────────────────────────────
 
+// why: this map is NOT just a naming lookup — it is the gate that selects which
+// upstream sources get converted. The driver loop below reads every
+// inputs/cards/*.js, matches its export name here, and on a hit does an
+// unconditional writeFileSync to data/cards/{abbr}.json. On a miss it logs
+// "Skipping ..." and moves on. So adding a key ARMS AN OVERWRITE of that set's
+// committed card data the moment a matching upstream source exists.
+//
+// why: the absence of a key can therefore be deliberate. 'Core2E' → 'co2e' is
+// omitted on purpose: data/cards/co2e.json is hand-authored real 2nd-edition
+// data (no upstream 2e source exists), and adding the key would turn a safe
+// skip-with-warning into a silent clobber of that curated file if anyone drops
+// a core2e.js into inputs/cards/. Add the entry only in the same change that
+// introduces a real Core2E source, and decide there whether generated output
+// should replace the curated file — the pipeline's normal answer is to layer
+// curation back via inputs/patches/.
+//
+// The four outlier sets (2099, amwp, wpnx, wtif) keep entries here but have no
+// inputs/cards/*.js source; they are produced by apply-card-counts.mjs instead.
 const SET_ABBR_MAP = {
   'CoreSet':                   'core',
   'DarkCity':                  'dkcy',
