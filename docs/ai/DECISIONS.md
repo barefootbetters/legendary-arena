@@ -30895,4 +30895,118 @@ dependency that cannot run on it. Either turns this into "stay on 22 until its
 evidence would surface. Recording the reversal condition now so the next
 session does not have to reconstruct the reasoning.
 
+---
+
+### D-24210 — Hero alternates are loadout metadata, never gameplay state
+
+**Status:** Drafted 2026-07-20 (WP-402); not yet landed — flips to Active
+(post-execution) when WP-402 merges.
+
+**Decision.** The "hero alternates" bench (`setup.hero_alternates` in LAGN,
+`heroAlternateIds` in the MATCH-SETUP envelope) is metadata about a saved
+loadout — a shortlist the player assembled — and is **never** authoritative
+gameplay state. Nothing derives a match composition from it. `setup.heroes`
+remains the sole authority on which heroes are on the board. No engine path
+reads the bench; `validateMatchSetup` and every projection behave identically
+whether it is present or absent.
+
+**Why.** The operator's ask was explicitly *loadout convenience only*. Two
+richer interpretations were considered and declined for this arc: a draft/ban
+pool (a pre-match selection step) and in-match substitution (swapping a hero
+deck mid-game). In-match substitution in particular would put the bench into
+gameplay state, break the `MatchSetupConfig` 9-field composition lock
+(`code-style.md §Data Contracts`), and invalidate the D-24119
+replay/verification carve-out's premise that `initialState` fully describes the
+match. Recording the boundary now stops a future packet from quietly promoting
+loadout metadata into gameplay state without re-opening that analysis.
+
+**Not decided here.** Whether a later mode ever adds hero drafting or
+substitution — that is a new arc with its own determinism and replay analysis,
+not an extension of this metadata field.
+
+**Packet:** WP-402 (LAGN contract); enforced by WP-403 (envelope, AC-8 pins
+zero engine change) and WP-404 (viewer, AC-9 pins the bench absent from every
+replay/`matchConfiguration` path).
+
+---
+
+### D-24211 — LAGN version gates compare ordinally, never by equality
+
+**Status:** Drafted 2026-07-20 (WP-402); not yet landed — flips to Active
+(post-execution) when WP-402 merges.
+
+**Decision.** Every LAGN refinement that gates an optional block on a minimum
+version MUST compare **ordinally** ("this version or later"), never with `===`
+against a single version constant. A block introduced at version *N* is legal
+on *N* and every later version.
+
+**Why.** The provenance gate shipped as
+`if (data.lagn_version === LAGN_VERSION_1_2_0)` (`validator.ts`), which reads
+correctly only while 1.2.0 is the newest version. The draft-time scaffold for
+WP-402 measured the consequence: with 1.3.0 added to `LAGN_SUPPORTED_VERSIONS`,
+a 1.3.0 document carrying `catalog_ref` was **rejected** — by an error message
+that itself reads "requires lagn_version 1.2.0 **or later**." Equality gate →
+`INVALID`; ordinal gate → `VALID`. The message already promised ordinal
+semantics the code did not implement. This is a latent defect any minor bump
+would trip, so the rule is locked rather than left to be rediscovered.
+
+**Implementation note.** Ordinality is by position in `LAGN_SUPPORTED_VERSIONS`
+(oldest-first), which is already the array every reader trusts. A helper that
+compares indices is the mechanical form; the WP-402 executor writes it.
+
+**Packet:** WP-402. AC-5 pins a `1.3.0 + provenance` document as VALID and is
+required to fail against the pre-fix equality gate.
+
+---
+
+### D-24212 — The MATCH-SETUP hero-alternates field is non-authoritative
+
+**Status:** Drafted 2026-07-20 (WP-403); not yet landed — flips to Active
+(post-execution) when WP-403 merges.
+
+**Decision.** The envelope field `heroAlternateIds` (WP-403) is validated for
+**shape and identity only** — well-formed, unique, set-qualified ext_ids that
+resolve to known heroes and do not overlap `composition.heroDeckIds`. It carries
+**no count rule**: no minimum beyond the array's own, no maximum, no coupling to
+`PLAYER_COUNT_SETUP`. It lives in the envelope, never in `CompositionSchema`; the
+nine-field composition lock is untouched. Nothing derives a match composition
+from it (the D-24210 boundary, enforced one layer down).
+
+**Why.** `PLAYER_COUNT_SETUP` governs *played* hero count (3/5/6 by seat count)
+and says nothing about reserves — there is no correct bench size, so any min/max
+here would be invented, and inventing rules is a prohibited AI failure pattern
+(`architecture.md §Prohibited AI Failure Patterns`). Placing the field in the
+envelope beside `heroSelectionMode` (D-9301) and `supportPools` (D-24194) — the
+established extensibility path — keeps the composition lock intact and signals to
+every future reader that the engine does not consume it.
+
+**Packet:** WP-403. AC-8 pins zero `packages/game-engine` files changed and
+`finalStateHash` unmoved.
+
+---
+
+### D-24213 — The LAGN writer flips together with its producer, not ahead of it
+
+**Status:** Drafted 2026-07-20 (WP-404); not yet landed — flips to Active
+(post-execution) when WP-404 merges.
+
+**Decision.** `LAGN_VERSION` (the single version this build stamps on documents
+it writes) is bumped **in the same packet that wires a producer to emit the new
+version**, never in the contract packet that merely adds read support. Adding a
+version to `LAGN_SUPPORTED_VERSIONS` (readers) is decoupled from and precedes
+moving `LAGN_VERSION` (the writer).
+
+**Why.** `validator.ts`'s own frozen-writer comment already prescribes this:
+the writer flips "together with the producers." WP-394 (provenance, 1.2.0)
+deliberately declined to bump because nothing produced provenance — a bump with
+no producer would move the wire format of a catalogued endpoint
+(`GET /api/match/:matchId/lagn`, `POST /api/me/loadouts`) for zero benefit and
+force a §21 `api-endpoints.md` change with nothing behind it. WP-404 is where the
+producer (the viewer's LAGN export) and the flip land together, so the wire-format
+movement carries observable value. The read-set / write-value asymmetry is what
+keeps every stored 1.0.0–1.2.0 record readable without a migration pass.
+
+**Packet:** WP-404 (flips 1.1.0 → 1.3.0, skipping 1.2.0 since provenance stays
+optional and unpopulated). §21 TRIGGERED; two rows replaced WHOLE per D-11804.
+
 Protect this file.
