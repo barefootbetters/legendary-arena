@@ -23,6 +23,28 @@ For ordering and "what's next", see [Next Unblocked](#next-unblocked) at the bot
 
 ---
 
+## Where This Is Going (3–5 Year Horizon)
+
+> **Illustrative, non-binding, and dated.** These are pictures of success
+> used to sense-check direction — not commitments, targets, or acceptance
+> criteria, and nothing gates on them. The durable statement of success
+> lives in [`docs/01-VISION.md` §North Star](01-VISION.md); this section
+> is the same idea rendered concretely, and is expected to age.
+>
+> *Written 2026-07-19.*
+
+- Most online *Marvel Legendary* play happens on Legendary Arena.
+- Every major physical expansion has a high-fidelity digital counterpart
+  within a reasonable window of release.
+- A healthy competitive scene exists: recognized high-skill players,
+  meaningful scenario benchmarks, organized events.
+- The platform is financially independent and routinely reinvests in
+  content, reliability, and polish.
+- Players *and* licensors regard it as the canonical digital expression
+  of the game.
+
+---
+
 ## Foundation Layer
 
 | #       | Name                                  | Layer          | Status |

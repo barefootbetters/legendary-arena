@@ -16,6 +16,31 @@ If this document is violated, Legendary Arena is no longer being built as intend
 
 ---
 
+## North Star
+
+Become the definitive, most-trusted digital home for **Marvel Legendary** —
+where the community plays, competes, analyzes, and expands the game for
+decades.
+
+Success means:
+
+- Sustained, high-quality play from the core player base
+- Authentic content that keeps pace with the physical game
+- A self-sustaining competitive ecosystem
+- Revenue that fully funds operations, royalties, and the next wave of
+  content — without compromising a primary goal
+
+### The Player Promise
+
+> Exact rules. Real cards. Verifiable fairness. Skill over grind.
+> No pay-to-win. Your results are yours, and your data is portable.
+
+Every clause below is downstream of that promise. When a decision is
+genuinely close, the tiebreaker is which option a player who believed
+this promise would expect us to choose.
+
+---
+
 ## Business Survival (Sales & Product)
 
 **Legendary Arena is a business.** It exists to make money so that the people
@@ -96,6 +121,9 @@ Legendary Arena is built to support **years of expansions, heroes, villains, and
 
 - Core systems must scale without rewrites
 - Adding content must not require structural changes
+- New expansions and Second Edition content arrive as registry data, with
+  no engine rewrites — demonstrated by the Core 2E set (`co2e`), which
+  shipped as data alongside the 40 existing sets
 - Short-term shortcuts that compromise long-term support are not acceptable
 - Gameplay themes (WP-055) demonstrate this goal directly: new themes are added
   as static JSON data files without touching engine code, and the schema supports
@@ -219,6 +247,37 @@ consumes registry data from R2 at runtime and never touches the game engine.
 
 Architecture and history are documented in `apps/registry-viewer/CLAUDE.md`
 and `apps/registry-viewer/HISTORY-modern-master-strike.md`.
+
+#### 10b. Community & Ecosystem
+
+Several clauses in this document already point the same direction; this
+one names that direction so it is pursued deliberately rather than
+arrived at by accident. **Legendary Arena is built to be built upon.**
+
+- **Player-authored content is welcome and never merit-bearing.** Saved
+  and shared loadouts (§19b), guides, and scenario analysis enrich the
+  game without touching rankings. The line is fixed by §19a: authored
+  content describes a player, verified play measures one.
+- **Exports are a product surface, not a debug feature.** Machine-readable
+  replays, logs, and deck compositions in the portable LAGN format (§19,
+  §12a) exist so external tools, content creators, and player-initiated
+  LLM analysis can thrive on top of the platform.
+- **Public data surfaces are proof of authenticity.** The Registry Viewer
+  (§10a) and the published card and keyword data let anyone verify that
+  the digital game matches the printed one, without an account.
+- **Organized play is a first-class channel.** Tournament and enterprise
+  licensing (§Financial Sustainability) serves the community and the
+  business at once.
+
+This is compatible with NG‑8 by construction: none of it is an
+amplification mechanic. The ecosystem grows by making the game more
+*playable, analyzable, and verifiable* — never by ranking people on
+attention.
+
+The specific growth, marketing, and acquisition strategies that act on
+this posture are **not** vision material — they change far faster than
+this document should. They live in the marketing and roadmap artifacts,
+recorded in `DECISIONS.md` when a particular choice is locked.
 
 ---
 

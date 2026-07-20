@@ -30366,3 +30366,29 @@ Three problems with that shape. **First, it is already false.** Cloudflare Acces
 **Packet:** none — direct governance edit at operator request. **Drafted:** 2026-07-19. **Executed:** 2026-07-19.
 
 Protect this file.
+
+### D-24204 — VISION gains a North Star, a player promise, and a community posture; growth strategy and financial-ambition caps stay out
+
+**Status:** Active 2026-07-19.
+
+**User-Visible Surface:** none — governance (vision framing and one new secondary goal).
+
+**Context.** An external review argued the vision was strong defensively (what the product is, what it will never do) and weak offensively (why the world needs it, what winning looks like, how the ecosystem compounds). Seven changes were proposed. Four were adopted, three declined, and the reasons for declining are the durable part of this entry.
+
+**Adopted.**
+
+1. **§North Star + The Player Promise**, placed immediately before Business Survival. Names four success conditions (sustained high-quality play, content keeping pace with the physical game, a self-sustaining competitive ecosystem, revenue that funds operations and royalties without compromising a primary goal) and compresses the product's covenant to six clauses. The reviewer's proposed promise included "still be here and still be honest in ten years"; the survival half was dropped — a governance document should not promise an outcome it cannot unilaterally deliver, and §12a(a) already carries the durable portion (portable data outlives the platform).
+2. **Goal 5 gains an explicit Second Edition line.** Expansions and Second Edition content arrive as registry data with no engine rewrites, evidenced by the shipped `co2e` set. This was already true and already the intent; it was not written down.
+3. **§10b Community & Ecosystem**, a directional secondary goal. It creates no new policy — it names a direction already implied by §19 (exports), §19b (shared loadouts), §19a (authored vs. verified), §10a (public registry surfaces), and organized-play licensing, so the ecosystem is pursued deliberately instead of assembled by accident. Compatible with NG‑8 by construction: none of it is an amplification mechanic.
+4. **A 3–5 year success picture**, placed in `docs/05-ROADMAP.md` rather than the vision, explicitly labeled illustrative, non-binding, and dated. Dated aspirational content rots; the vision is the wrong altitude for it. (Goal 8's stale test count, corrected the same day, is the cautionary precedent.)
+
+**Declined.**
+
+- **A "how we grow" clause** ("word-of-mouth is the primary growth channel; paid acquisition is secondary"). Growth strategy changes quarterly; the vision changes almost never. Encoding a channel preference at tier 3 means every future paid-acquisition decision must argue against the vision — the same foreclosure pattern removed from the §12a infrastructure draft one commit earlier (D-24203). Growth strategy belongs in marketing artifacts, or in a DECISIONS entry when a specific choice is locked.
+- **"We do not optimize for extractive margin or investor exit."** Declined as anti-commercial drift in its purest form: a permanent, unnecessary cap on raising capital, an acquisition, or margin improvement, written into the highest-authority business section. The remainder of that proposed rewrite (revenue covers royalties, payroll, infrastructure, buffer, then accelerates content) already exists near-verbatim in §Operational Guardrails.
+- **Competitive positioning that names other digital products.** The review characterized a competing product in terms this project cannot verify, and competitor claims rot quickly and are audience-specific. There is also a relationship consideration: disparaging a product that may be licensed by, or belong to, the same rights-holders this project pays royalties to does not belong in a contributor-facing governance document. Positioning lives in the marketing repo's homepage artifacts.
+- **Relocating secondary goals 6–8 into ARCHITECTURE.md** (proposed as "push pure architecture out of the vision"). Declined: ARCHITECTURE.md is tier 2 and outranks the vision, so moving a clause there raises its authority rather than merely relocating it. The architectural secondary goals are deliberately stated at vision level as directional commitments.
+
+**Packet:** none — direct governance edit at operator request. **Drafted:** 2026-07-19. **Executed:** 2026-07-19.
+
+Protect this file.

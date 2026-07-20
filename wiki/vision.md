@@ -56,8 +56,16 @@ are served by the public game documentation, not this page.
 
 ### Vision at a glance
 
-- **Purpose** — become the definitive digital home for *Marvel
-  Legendary*: exact rules, real card content, verifiable fairness.
+- **North star** — become the definitive, most-trusted digital home for
+  *Marvel Legendary*, where the community plays, competes, analyzes,
+  and expands the game for decades. Success is sustained high-quality
+  play, content that keeps pace with the physical game, a
+  self-sustaining competitive ecosystem, and revenue that funds
+  operations and royalties without compromising a primary goal.
+- **The player promise** — exact rules, real cards, verifiable
+  fairness, skill over grind, no pay-to-win; your results are yours and
+  your data is portable. Close decisions break toward what a player who
+  believed that promise would expect.
 - **Primary goals (never change)** — Rules Authenticity · Content
   Authenticity · Player Trust & Fairness · Faithful Multiplayer ·
   Longevity & Expandability.
@@ -122,7 +130,7 @@ Violating any of these is a **hard failure of vision**, not a tradeoff.
 | 2 | **Content Authenticity** | Same card images, names, text, and semantics as the physical cards; presentation never alters rules meaning |
 | 3 | **Player Trust & Fairness** | No hidden modifiers or manipulated randomness; seeded, reproducible RNG; inspectable state transitions; the engine never makes strategic decisions for players |
 | 4 | **Faithful Multiplayer** | Tabletop cooperative experience preserved; correctness prioritized over convenience; reliable sync, reconnect, late-join |
-| 5 | **Longevity & Expandability** | Years of expansions without rewrites; new content is data, not structural change |
+| 5 | **Longevity & Expandability** | Years of expansions without rewrites; new content is data, not structural change — including Second Edition, shipped as the `co2e` registry set |
 
 Goal 5 is the reason [Content as Data](#secondary-goals-directional-6-19b)
 and the registry layer exist: gameplay themes are added as validated
@@ -147,6 +155,14 @@ primary goal.
   stable URL, never bundled; cards, sets, and keywords as data;
   the Registry Viewer (`cards.legendary-arena.com`) as public browser
   and living smoke test of the data pipeline.
+- **§10b Community & ecosystem** — names a direction the other clauses
+  already imply: player-authored content is welcome and never
+  merit-bearing (§19a/§19b), exports are a product surface rather than
+  a debug feature (§19, §12a), public data surfaces are proof of
+  authenticity (§10a), and organized play is a first-class channel.
+  Compatible with NG-8 by construction — none of it ranks people on
+  attention. Growth and marketing *strategy* is deliberately excluded:
+  it moves faster than the vision should (D-24204).
 - **Operations (11–12)** — stateless client reflecting authoritative
   state; local state disposable and recoverable; no single-machine or
   session-bound assumptions.
@@ -299,7 +315,12 @@ Work-Packet pre-flight, and contributor onboarding.
 - **[DECISIONS.md](../docs/ai/DECISIONS.md)** — where every sanctioned
   deviation from a secondary goal is recorded; D-0005 (§23b), D-0006
   (§25b), D-1004 (badge tiers), D-24092 (access model), D-24203
-  (§12a data portability / infrastructure posture).
+  (§12a data portability / infrastructure posture), D-24204 (North
+  Star, §10b, and what was kept out of the vision).
+- **[05-ROADMAP.md](../docs/05-ROADMAP.md)** — carries the dated,
+  explicitly non-binding 3–5 year success picture. The vision holds the
+  durable statement of success; the roadmap holds the version that is
+  expected to age.
 
 ## Edge Cases
 
