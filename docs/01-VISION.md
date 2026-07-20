@@ -236,6 +236,58 @@ and `apps/registry-viewer/HISTORY-modern-master-strike.md`.
 - No single-machine or session-bound assumptions
 - Multiplayer architecture anticipates growth
 
+#### 12a. Data Portability & Operator Control
+
+Two commitments, deliberately different in strength: what happens to
+the **data** is firm, and what happens to the **infrastructure** is
+directional.
+
+**(a) Data portability — firm.**
+
+The following must remain exportable in an open, documented format
+readable without any specific vendor:
+
+- Player identity and account records
+- Game content (cards, sets, keywords, themes)
+- Replay data, in the portable LAGN format
+- Rankings and competitive history
+- Legendary Arena's own financial records
+
+Where a third party is the system of record for a class of data — a
+payment processor's internal ledger, an authentication provider's
+credential store — the obligation covers Legendary Arena's records of
+it, not the provider's. This generalizes what §7a already guarantees
+for identity: **the data is ours regardless of who is currently
+hosting it.**
+
+**(b) Infrastructure choice — directional.**
+
+Managed services are the default while product velocity is the binding
+constraint. Owning infrastructure is a real cost — backups, failover,
+patching, on-call — and it must earn its place rather than be assumed
+virtuous.
+
+Depending on a vendor-specific capability for a critical path is
+**permitted**, and requires a `DECISIONS.md` entry naming three things:
+
+1. What the capability buys
+2. What migrating away from it would cost
+3. What would trigger revisiting the choice
+
+The purpose is not to avoid lock-in. It is to never acquire it
+*accidentally*, and to know its price when it is acquired deliberately.
+
+**Evaluation criteria.** Technology choices are weighed against
+time-to-ship, total cost of ownership, operational burden, and
+migration cost. Early, time-to-ship dominates — an unshipped product
+has no operational burden to optimize. As revenue and scale grow, the
+balance shifts toward cost and migration risk.
+
+**What this clause is not.** It is not an anti-managed-service policy,
+it imposes no self-hosting-readiness requirement, and it does not
+foreclose any specific vendor or platform capability. A clause that
+forbade the correct future decision would be worse than no clause.
+
 ---
 
 ### Development & Governance

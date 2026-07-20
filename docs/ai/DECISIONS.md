@@ -30228,3 +30228,27 @@ Protect this file.
 **Packet:** WP-367 (+ EC-397). **Drafted:** 2026-07-12. **Executed:** 2026-07-12 (EC-397).
 
 Protect this file.
+
+### D-24203 — Data portability is firm; infrastructure choice is directional (VISION §12a)
+
+**Status:** Active 2026-07-19.
+
+**User-Visible Surface:** none — governance (vision secondary goal).
+
+**Context.** The vision had no stated infrastructure posture. A proposed clause would have written a hard bar — *"no critical system shall depend on a vendor-specific capability that prevents future migration"* — plus a standing requirement to preserve self-hostability without fundamental redesign, evaluated against operator control, portability, sustainability, and total cost of ownership.
+
+Three problems with that shape. **First, it is already false.** Cloudflare Access gates the ewiki; Hanko holds passkey enrollment (§7a protects identity *records*, but credentials are tenant-bound, so migration means re-enrolling every user); a payment processor carrying revenue is not practically portable. A "shall never" the platform does not satisfy on the day it is written is not a constraint — it is a clause people learn to ignore, which corrodes the enforceability of the clauses around it. **Second, it would forbid correct future decisions.** Cloudflare Durable Objects are the identified path if Render costs or non-US latency ever bite (the boardgame.io server holds long-lived authoritative match state, which stateless Workers cannot host); a blanket vendor-capability bar vetoes that in advance. Preserving self-hostability across CDN, edge auth, object storage, and payments is a permanent tax on an option that may never be exercised. **Third, the evaluation criteria omitted time-to-ship and revenue.** Every listed criterion cuts toward *do not adopt*; none cuts toward *ship it now*. Under the Operating Posture ("working code that ships beats elegant code that doesn't"), a criteria list that silently outranks velocity is the anti-commercial drift pattern in infrastructure clothing — it reads neutral, but every argument it settles, it settles one direction.
+
+**Decision.** Add **§12a — Data Portability & Operator Control** as a **secondary goal** under Operations & Scalability, split into two halves of deliberately different strength.
+
+**(a) Data portability is firm.** Player identity and account records, game content, replay data (LAGN), rankings and competitive history, and Legendary Arena's own financial records must remain exportable in an open, documented format readable without any specific vendor. Where a third party is the system of record for a data class (a processor's internal ledger, a provider's credential store), the obligation covers Legendary Arena's records of it, not the provider's. This generalizes §7a from identity to every data class the platform owns, and is cheap to honor because it is already substantially true: LAGN is a published spec, migrations are plain SQL, card content is JSON, and identity is keyed by internal account identifiers.
+
+**(b) Infrastructure choice is directional.** Managed services are the default while product velocity is the binding constraint. Adopting a vendor-specific capability on a critical path is *permitted* and requires a DECISIONS.md entry naming what it buys, what migrating away would cost, and what would trigger revisiting. The purpose is not to avoid lock-in but to never acquire it accidentally, and to price it when it is acquired deliberately. Criteria are time-to-ship, total cost of ownership, operational burden, and migration cost — time-to-ship dominating early and the balance shifting toward cost and migration risk as revenue and scale grow.
+
+**Placement rationale.** Secondary, not primary and not a non-goal. Secondary goals permit documented deviation via a DECISIONS.md entry, which is the correct strength for an economic decision that changes with scale. Non-goals (NG-1…NG-8) are permanent fairness bright lines; hosting economics do not belong in that register, and putting them there would dilute what a non-goal means. The firm half sitting *inside* a directional secondary goal is intentional: the data guarantee protects customers and the business regardless of where anything runs, while the infrastructure guidance stays revisable.
+
+**Explicit non-effects.** §12a is not an anti-managed-service policy, imposes no self-hosting-readiness requirement, and forecloses no specific vendor or capability — including Durable Objects, managed Postgres of any provider, or any future platform primitive.
+
+**Packet:** none — direct governance edit at operator request. **Drafted:** 2026-07-19. **Executed:** 2026-07-19.
+
+Protect this file.

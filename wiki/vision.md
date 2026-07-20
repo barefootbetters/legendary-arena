@@ -93,6 +93,12 @@ churn, and about where a contributor is free to innovate.
 | Architecture | Frequent | Tier-2 authority; changes via ARCHITECTURE.md + a D-entry |
 | Work packets | Constant | The execution spine; churns by design |
 
+Strength does not always follow tier. §12a(a)'s data-portability
+guarantee is *firm* while sitting inside a secondary goal, because the
+data commitment protects customers and the business regardless of where
+anything runs, while the infrastructure guidance beside it stays
+revisable as costs and scale change (D-24203).
+
 ### The frame: business survival first
 
 The vision opens with **Business Survival (Sales & Product)**. Every
@@ -144,6 +150,20 @@ primary goal.
 - **Operations (11–12)** — stateless client reflecting authoritative
   state; local state disposable and recoverable; no single-machine or
   session-bound assumptions.
+- **§12a Data portability & operator control** — two halves of
+  different strength. *Firm:* identity and account records, game
+  content, replay data (LAGN), rankings and competitive history, and
+  Legendary Arena's own financial records must stay exportable in an
+  open format readable without any specific vendor — §7a's identity
+  guarantee generalized to every data class the platform owns.
+  *Directional:* managed services are the default while velocity is
+  the binding constraint; a vendor-specific capability on a critical
+  path is permitted but needs a `DECISIONS.md` entry pricing it (what
+  it buys, what migrating away costs, what would trigger revisiting).
+  Criteria are time-to-ship, TCO, operational burden, and migration
+  cost, with time-to-ship dominating early. Explicitly not an
+  anti-managed-service policy and no self-hosting requirement
+  (D-24203).
 - **Development & governance (13–15)** — Execution-Checklist-driven
   work; bugs treated as execution-contract violations; explicit
   decisions with no silent drift; a codebase approachable without
@@ -278,7 +298,8 @@ Work-Packet pre-flight, and contributor onboarding.
   outranks `.claude/rules/*.md` and all Work Packets.
 - **[DECISIONS.md](../docs/ai/DECISIONS.md)** — where every sanctioned
   deviation from a secondary goal is recorded; D-0005 (§23b), D-0006
-  (§25b), D-1004 (badge tiers), D-24092 (access model).
+  (§25b), D-1004 (badge tiers), D-24092 (access model), D-24203
+  (§12a data portability / infrastructure posture).
 
 ## Edge Cases
 
