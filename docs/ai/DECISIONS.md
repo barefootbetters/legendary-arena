@@ -30745,3 +30745,76 @@ them.
 **Drafted:** 2026-07-20.
 
 Protect this file.
+
+---
+
+### D-24208 — the pCloud folder rename is declined; D-24207 narrows to naming, and checkout location belongs to the off-pCloud move
+
+**Status:** Active (governance) 2026-07-20. **Supersedes D-24207 in part** —
+see Scope below for exactly which part.
+
+**User-Visible Surface:** none — operator workspace convention.
+
+**Decision.** Three changes to D-24207, taken the same day it landed:
+
+1. **The `C:\pcloud\LA\` → `C:\pcloud\BB\WIP\legendary-arena\` rename is
+   declined.** The folders stay where they are. `C:\pcloud\LA\` remains
+   the working-files root for Legendary Arena.
+2. **D-24207's `C:\pcloud\BB\DEV\<repo-name>\` clause is withdrawn.**
+   Checkout location is not a naming question and is out of scope for
+   that entry; it belongs to the deferred off-pCloud migration.
+3. **What survives from D-24207 is the principle, not the migration:**
+   when a project's pCloud working-files folder is *newly created*, name
+   it for its repository. Nothing existing is renamed to comply.
+
+**Why the rename is declined.** D-24207 described the migration as "one
+rename … deliberately, to keep the re-pointing surface small." That
+estimate was wrong. `C:\pcloud\LA` is referenced **38 times across 7 wiki
+pages** — `after-effects-stop-motion-hero-loop.md` alone carries 21 — plus
+three documents in the marketing repo (`video-production-workflow.md`,
+`youtube-channel-plan.md`, `go-to-market-plan.md`). It is a two-repo sweep
+where every missed reference becomes a documented path that does not
+exist.
+
+Set against that: the problem D-24207 set out to solve was *"nothing on
+disk records which root a given asset class belongs to."* That problem is
+already solved — [`wiki/workspace-map.md`](../../wiki/workspace-map.md)
+is the lookup, and it cost one page instead of a 38-site migration.
+Renaming the folders buys only *not having to consult the map*. That is a
+marginal gain for real churn and a real risk of stale paths.
+
+**Why the `DEV\` clause is withdrawn.** Recording
+`C:\pcloud\BB\DEV\<repo-name>\` as the checkout convention entrenches the
+thing that is scheduled to go away. A git checkout does not belong on a
+sync drive: pCloud syncs the `.git` directory, and the observed
+consequences run from conflict-suffixed files through uncommitted edits
+silently reverting, `HEAD` moving mid-session, untracked drafts vanishing,
+and a commit landing on a concurrent session's branch and reaching an
+unrelated PR. The planned move is to `C:\www\legendary-arena`, alongside
+the marketing repo, which is already correctly off the sync drive. Once
+that lands, `C:\pcloud\BB\DEV\` holds nothing and the withdrawn clause
+would describe an empty directory.
+
+**Content directories are the opposite case and are unaffected.**
+`C:\pcloud\LA\` holds video assets, design drafts, and research notes —
+no `.git`, nothing for sync to corrupt. Sync is the right tool there.
+The hazard is specific to checkouts, not to pCloud.
+
+**Operator rationale, recorded because it governs sequencing.** The
+instruction was to organize what exists before moving anything. A
+migration competes with that: it consumes the same attention and leaves
+the documentation surface mid-flight while it runs.
+
+**Revisit condition.** If the off-pCloud migration proceeds, the pCloud
+tree may be tidied in the same pass — paths are being touched anyway, so
+the marginal cost of the rename drops sharply. Until then this decision
+holds and nothing moves.
+
+**Not decided here.** Whether the off-pCloud migration itself proceeds
+(still deferred, still requires an explicit instruction); the empty
+`BRAND\` and `OPS\` roots; and the marketing repo's own location.
+
+**Packet:** none — operator workspace convention, no repo-executable work.
+**Drafted:** 2026-07-20.
+
+Protect this file.

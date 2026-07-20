@@ -265,26 +265,18 @@ asked. Two pointers keep it reachable:
 
 ## Open Questions
 
-- **D-24207's `DEV\<repo-name>\` half needs revisiting against the
-  deferred off-pCloud move.** The decision records
-  `C:\pcloud\BB\DEV\<repo-name>\` as the checkout location alongside
-  `C:\pcloud\BB\WIP\<repo-name>\` for working files. The working-files
-  half is sound — content on a sync drive is the right use of one. The
-  checkout half describes current state but points the wrong direction,
-  because the planned migration moves checkouts *off* pCloud entirely.
-  Narrowing D-24207 to working-files folders, and leaving checkout
-  location to the migration, is the likely correction.
-- **A pCloud naming convention mirroring repo names is proposed but not
-  adopted.** The idea is that a project's pCloud folder carries the same
-  name as its repository — `legendary-arena` on both surfaces — so the
-  two line up without translation, and the `BB` / `LA` split stops being
-  something you have to remember. Adopting it means moving existing
-  folders and re-pointing every path documented on this wiki, including
-  the `C:\pcloud\LA\videos\` root that
-  [Video Production Workflow](video-production-workflow.md) cites. That is
-  a governance decision with a real migration cost, not a wiki edit —
-  record it in [DECISIONS.md](../docs/ai/DECISIONS.md) before moving
-  anything.
+- **The folder rename was considered and declined (D-24208).** D-24207
+  proposed renaming `C:\pcloud\LA\` to `C:\pcloud\BB\WIP\legendary-arena\`
+  so the pCloud folder would mirror the repository name. It is **not
+  happening.** `C:\pcloud\LA` is referenced 38 times across 7 pages of
+  this wiki plus three marketing-repo documents, so the migration is a
+  two-repo sweep rather than the single rename D-24207 estimated — and
+  the problem it addressed (not knowing which root an asset class belongs
+  to) is already solved by this page. D-24208 also withdrew D-24207's
+  `C:\pcloud\BB\DEV\<repo-name>\` clause: checkout location belongs to
+  the off-pCloud move, not to a naming convention. What survives is the
+  principle — name a *newly created* pCloud working-files folder for its
+  repository; rename nothing that already exists.
 - **Per-repo README pointers are proposed but not written.** Each repo
   gaining a short section naming this page — rather than restating it —
   would make the map findable from inside any checkout. Scope, and whether
