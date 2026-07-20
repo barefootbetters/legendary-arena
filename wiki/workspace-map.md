@@ -99,12 +99,10 @@ pCloud has two top-level project roots plus several personal ones:
 ```
 C:\pcloud\
 ├── BB\                     # BarefootBetters — emptying out, see Edge Cases
-│   ├── BRAND\              # empty — superseded by LA\brand\
 │   ├── DEV\                # code checkouts
 │   │   └── legendary-arena\    # ← engine monorepo; scheduled to move off pCloud
 │   ├── DOCS\
-│   ├── MEDIA\
-│   └── OPS\                # empty — superseded by LA\ops\
+│   └── MEDIA\
 │
 ├── LA\                     # Legendary Arena — the working root
 │   ├── ewiki\
@@ -113,8 +111,8 @@ C:\pcloud\
 │   ├── social\
 │   ├── video-assets\       # shared intros, outros, music, overlays
 │   ├── videos\             # per-video production folders (see below)
-│   ├── ops\                # business operations — not created yet
-│   └── brand\              # approved brand assets — not created yet
+│   ├── ops\                # business operations (README.txt; subfolders on first use)
+│   └── brand\              # approved brand assets (README.txt; subfolders on first use)
 │
 ├── GISE\  JJJ\  SCOOBY\    # unrelated personal roots
 └── (loose files)           # see Edge Cases
@@ -263,11 +261,13 @@ side by side deliberately: a designer reaching for a mark should never
 have to guess whether they have the current one. Drafts stay in
 `logo-drafts\`; when something ships, its final files move to `brand\`.
 
-> **These directories are the designated destination, not a description
-> of what is there now.** Neither `LA\ops\` nor `LArand\` exists as
-> of 2026-07-20. This section says where such work belongs when it lands,
-> which is what the rest of this page does for every other surface. It is
-> not a claim that the filing has been done.
+> **`LA\ops\` and `LA\brand\` exist; their subfolders do not.** Both
+> root directories were created on 2026-07-20 and each carries a
+> `README.txt` restating the rules below for whoever opens the folder
+> rather than this page. The subfolders above are created on first use —
+> an empty folder reads as "this is where that goes" when nothing has
+> been filed yet, which is the same two-destinations problem that
+> retired `BB\OPS\`.
 
 #### Why not `C:\pcloud\BB\`
 
@@ -366,17 +366,17 @@ asked. Two pointers keep it reachable:
   diagnostics JSON, exported loadouts, and game logs are being saved to
   `C:\pcloud\` directly rather than into a project folder. They are
   useful artifacts — they are just unfindable where they are.
-- **`BB\BRAND\` and `BB\OPS\` are empty and superseded.** They were
-  created for business documents, but that work is designated for
-  `LA\ops\` and `LArand\` instead — see Business operations. Leaving
-  two plausible destinations is worse than having none, because a
-  document filed into the wrong one is not missing, just unfindable.
-  These two should be removed once nothing points at them.
+- **`BB\BRAND\` and `BB\OPS\` were deleted (2026-07-20).** They had
+  been created for business documents; that work is filed under
+  `LA\ops\` and `LA\brand\` instead. Removing them was the right call
+  rather than leaving them empty — two plausible destinations is worse
+  than one, because a document filed into the wrong one is not missing,
+  just unfindable.
 - **`BB\` is on a path to holding nothing.** Its only substantial
   content is the engine checkout under `DEV\`, which is scheduled to move
-  off pCloud. When that lands, `BB\` holds two empty directories plus a
-  thin `DOCS\` and `MEDIA\`. The *"one product, two roots"* split above
-  resolves by `BB\` emptying, not by a migration.
+  off pCloud. When that lands, `BB\` holds a thin `DOCS\` and `MEDIA\`
+  and little else. The *"one product, two roots"* split above resolves by
+  `BB\` emptying, not by a migration.
 - **The engine repo is on the sync drive, and that is a known hazard —
   not a feature.** `C:\pcloud\BB\DEV\legendary-arena` sits on pCloud,
   which syncs the `.git` directory itself. Observed consequences, in
@@ -426,7 +426,7 @@ asked. Two pointers keep it reachable:
   the off-pCloud move, not to a naming convention. What survives is the
   principle — name a *newly created* pCloud working-files folder for its
   repository; rename nothing that already exists.
-- **The `LA\ops\` and `LArand\` taxonomy is documented but not
+- **The `LA\ops\` and `LA\brand\` taxonomy is documented but not
   locked.** The subdirectory shapes above are this page's proposal for
   where business work belongs; no DECISIONS entry governs them and no
   directory has been created. If the shape should be binding — so a
