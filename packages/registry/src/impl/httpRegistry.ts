@@ -17,6 +17,7 @@ import {
   buildHealthReport,
 } from "../shared.js";
 import { PLAYER_COUNT_SETUP } from "../playerCountSetup.js";
+import { hashCanonicalJson, deriveRegistryVersion } from "../canonicalJson.js";
 import type {
   CardRegistry,
   SetIndexEntry,
@@ -116,6 +117,22 @@ export async function createRegistryFromHttp(
     })
   );
 
+  // why: the PARSED set object is hashed, never the raw response bytes. The
+  // HTTP and local loaders receive different bytes for identical data
+  // (whitespace, key order, transfer encoding), so hashing responses would
+  // make the same cards hash differently depending on how they were loaded --
+  // which defeats the entire purpose of a content hash.
+  //
+  // why: computed once here, after every load has settled, rather than inside
+  // info(). info() may be called repeatedly and re-hashing up to forty sets
+  // per call is pure waste. If lazy set loading is ever added, this cache must
+  // be invalidated in the same change.
+  const setContentHashes: Record<string, string> = {};
+  for (const [loadedSetAbbr, loadedSet] of loadedSets) {
+    setContentHashes[loadedSetAbbr] = hashCanonicalJson(loadedSet);
+  }
+  const registryVersion = deriveRegistryVersion(setContentHashes);
+
   // ── 3. Build flat card list from loaded sets ───────────────────────────────
   // why: flat cards are rebuilt on every call rather than cached because the
   // loaded set map can grow (via future lazy-load support). Rebuilding avoids
@@ -170,6 +187,13 @@ export async function createRegistryFromHttp(
         totalCards:      flatCards.length,
         loadedSetAbbrs:  [...loadedSets.keys()],
         metadataBaseUrl: base,
+        // why: a FRESH copy each call -- never the cached reference. The
+        // registry is immutable, and handing out the live map would let a
+        // caller mutate it. Both fields stay absent on an empty load scope
+        // rather than reporting a digest over no data.
+        ...(registryVersion === undefined
+          ? {}
+          : { setContentHashes: { ...setContentHashes }, registryVersion }),
       };
     },
 

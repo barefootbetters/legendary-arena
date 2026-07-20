@@ -29979,7 +29979,7 @@ Protect this file.
 
 ### D-24197 — the registry reports what it actually loaded: per-set content hashes over RFC 8785 canonical JSON, plus a load-scope digest
 
-**Status:** Drafted 2026-07-18; not yet landed (lands Active at WP-393 execution).
+**Status:** Active 2026-07-20. Landed by WP-393 / EC-423.
 
 **The gap.** `CardRegistry` can enumerate every card it loaded but cannot say
 *which snapshot* it loaded. Verified at draft against `origin/main` @
