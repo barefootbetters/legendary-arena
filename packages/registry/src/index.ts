@@ -43,6 +43,22 @@ export type {
   PlayerCountCompositionInput,
 } from "./playerCountSetup.js";
 
+// why: WP-395 / D-24199 — the approved villain + henchmen configurations a
+// ranked gauntlet leg must be played with. The server wiring layer reads these
+// at startup and threads them into the gauntlet catalog as plain data, so the
+// qualification predicate never imports the registry (its layer lock).
+export {
+  GAUNTLET_LOADOUT_MENUS,
+  getGauntletLoadoutMenu,
+  buildVillainSegment,
+  buildHenchmanKey,
+} from "./gauntletLoadouts.js";
+export type {
+  GauntletLoadoutComposition,
+  GauntletLoadoutVariant,
+  GauntletLoadoutMenu,
+} from "./gauntletLoadouts.js";
+
 // Schema (for external validation use)
 export {
   SetDataSchema,

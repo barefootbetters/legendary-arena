@@ -7,6 +7,55 @@
 
 ## Current State
 
+### WP-395 / EC-435 — Canonical villain & henchmen loadouts for gauntlet qualification (D-24199 Active) (2026-07-20)
+
+**User-visible on legends.legendary-arena.com:** every gauntlet board now states
+the loadout a run must use, and every "Challenge" link opens the builder
+pre-pinned to one. Casual play is untouched — free selection is unchanged
+everywhere outside ranked gauntlet qualification.
+
+PAR is calibrated per `ScenarioKey` with a validator that rejects
+`sampleSize < 500`. Villain groups were unconstrained across 134 groups, which
+put the ranked surface at **8,205,239,889** scenarios at five players — not
+expensive, unreachable. Since submission fail-closes on `par_not_published`,
+free villain choice did not make the leaderboard costly; it made it impossible.
+
+`scripts/generate-gauntlet-loadouts.mjs` now emits **330 loadouts** (110
+masterminds x 3 configurations) into
+`packages/registry/src/gauntletLoadouts.generated.ts`, CI-gated by
+`pnpm gauntlet:loadouts:check`. Printed `alwaysLeads` groups anchor each menu;
+unfilled slots take the mastermind's own set first, then the `core`/`co2e` pool
+(D-24199 core-fallback). Zero slots were unfillable and all three configurations
+are distinct at every player count above solo.
+
+`getGauntletStandings` gains clause (g): a leg qualifies only when its villain
+and henchmen groups match an approved configuration for its player count.
+Rejection is silent, like every other clause. Approved loadouts reach the
+predicate as PLAIN DATA on `GauntletDefinition`, so `gauntlet.logic.ts` keeps
+its no-registry import lock (the D-24187 pool-budget precedent).
+
+Two things changed during execution, both recorded in D-24199:
+
+- **The scenario count is 6,354, not the drafted ~1,917.** That figure assumed
+  one villain set per (mastermind, variant) across all player counts, which
+  `PLAYER_COUNT_SETUP` forbids — a leg takes 1 villain group at solo and 4 at
+  five players. Measured per count: 697 / 1,853 / 1,897 / 1,897 / 1,907. The
+  argument holds with room (3.18M simulated games), but PAR calibration must be
+  budgeted off 6,354.
+- **Enforcing henchmen required migration 035.** Henchmen are absent from
+  `ScenarioKey`, so a nullable `legendary.competitive_scores.henchman_key`
+  column now records them, derived at submission exactly as `team_key` is. No
+  backfill: the table was empty, which is the zero-cost window this WP was
+  sequenced to land inside. `CompetitiveScoreRecord` moves 15 -> 16 keys.
+  `ScenarioKey`'s format is untouched, so PAR machinery, `scoringConfigVersion`
+  pinning, and replay verification are unaffected.
+
+Suites: registry 178/0 (+7), server 1024 (866 pass / 158 DB-skipped) /0 (+8),
+legends-board 82/0 (+6); `legends-board typecheck` 0;
+`gauntlet:loadouts:check` 0; `roadmap:counts:check` 0.
+
+---
+
 ### WP-400 / EC-433 — Node toolchain pinned to one committed version (D-24205 Active) (2026-07-20)
 
 **No user-observable change — infrastructure only.**

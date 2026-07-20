@@ -219,6 +219,7 @@ interface CompetitiveScoreRow {
   player_count: number | null;
   is_ranked_eligible: boolean;
   team_key: string | null;
+  henchman_key: string | null;
 }
 
 /**
@@ -258,6 +259,7 @@ function mapCompetitiveScoreRow(row: CompetitiveScoreRow): CompetitiveScoreRecor
     playerCount: row.player_count,
     isRankedEligible: row.is_ranked_eligible,
     teamKey: row.team_key,
+    henchmanKey: row.henchman_key,
   };
 }
 
@@ -281,7 +283,7 @@ async function findExistingByAccountAndHash(
       'cs.scenario_key, cs.raw_score, cs.final_score, cs.score_breakdown, ' +
       'cs.par_version, cs.scoring_config_version, cs.state_hash, ' +
       'cs.created_at, cs.outcome, cs.player_count, cs.is_ranked_eligible, ' +
-      'cs.team_key ' +
+      'cs.team_key, cs.henchman_key ' +
       'FROM legendary.competitive_scores cs ' +
       'JOIN legendary.players p ON cs.player_id = p.player_id ' +
       'WHERE p.ext_id = $1 AND cs.replay_hash = $2 LIMIT 1',
@@ -559,7 +561,7 @@ export async function findCompetitiveScore(
       // in the same sweep (EC-376), and cs.team_key at WP-384 (the EC-413
       // five-surface sweep exists because of this exact recurrence).
       'cs.created_at, cs.outcome, cs.player_count, cs.is_ranked_eligible, ' +
-      'cs.team_key ' +
+      'cs.team_key, cs.henchman_key ' +
       'FROM legendary.competitive_scores cs ' +
       'JOIN legendary.players p ON cs.player_id = p.player_id ' +
       'WHERE cs.replay_hash = $1 LIMIT 1',
@@ -587,7 +589,7 @@ export async function listPlayerCompetitiveScores(
       'cs.scenario_key, cs.raw_score, cs.final_score, cs.score_breakdown, ' +
       'cs.par_version, cs.scoring_config_version, cs.state_hash, ' +
       'cs.created_at, cs.outcome, cs.player_count, cs.is_ranked_eligible, ' +
-      'cs.team_key ' +
+      'cs.team_key, cs.henchman_key ' +
       'FROM legendary.competitive_scores cs ' +
       'JOIN legendary.players p ON cs.player_id = p.player_id ' +
       'WHERE p.ext_id = $1 ' +
@@ -816,6 +818,25 @@ export async function submitCompetitiveScoreImpl(
     teamKey = [...configuredHeroDeckIds].sort().join('+');
   }
 
+  // why: step 14e (WP-395 / D-24199) — the henchmen identity, derived exactly
+  // as team_key is, from the reduced final G's matchConfiguration. Henchmen
+  // groups are NOT part of ScenarioKey (buildScenarioKey takes scheme,
+  // mastermind, and villain groups only), so without this column there is no
+  // queryable record of which henchmen a scored replay used and the canonical
+  // loadout requirement could only ever be half-enforced. Set-qualified and
+  // never re-slugified, mirroring team_key. A missing or empty configuration
+  // stores SQL NULL rather than rejecting — supplementary provenance for the
+  // gauntlet boards, never a verification gate.
+  const configuredHenchmanGroupIds = (reduced.finalState as LegendaryGameState)
+    .matchConfiguration?.henchmanGroupIds;
+  let henchmanKey: string | null = null;
+  if (
+    Array.isArray(configuredHenchmanGroupIds) &&
+    configuredHenchmanGroupIds.length > 0
+  ) {
+    henchmanKey = [...configuredHenchmanGroupIds].sort().join('+');
+  }
+
   // why: WP-354 / D-24146 — the ranked-eligibility flag, computed once by
   // the by-matchId caller over the match roster and threaded in via deps.
   // The by-hash path leaves it undefined → default `true` (vacuously
@@ -850,22 +871,22 @@ export async function submitCompetitiveScoreImpl(
       'INSERT INTO legendary.competitive_scores ' +
       '(player_id, replay_hash, scenario_key, raw_score, final_score, ' +
       'score_breakdown, par_version, scoring_config_version, state_hash, ' +
-      'outcome, player_count, is_ranked_eligible, team_key) ' +
-      'SELECT player_id, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13 ' +
+      'outcome, player_count, is_ranked_eligible, team_key, henchman_key) ' +
+      'SELECT player_id, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14 ' +
       'FROM resolved_player ' +
       'ON CONFLICT (player_id, replay_hash) ' +
       'DO UPDATE SET player_id = legendary.competitive_scores.player_id ' +
       'RETURNING submission_id, player_id, replay_hash, scenario_key, ' +
       'raw_score, final_score, score_breakdown, ' +
       'par_version, scoring_config_version, state_hash, created_at, ' +
-      'outcome, player_count, is_ranked_eligible, team_key, ' +
+      'outcome, player_count, is_ranked_eligible, team_key, henchman_key, ' +
       '(xmax = 0) AS was_inserted ' +
       ') ' +
       'SELECT i.submission_id, p.ext_id AS account_id, i.replay_hash, ' +
       'i.scenario_key, i.raw_score, i.final_score, i.score_breakdown, ' +
       'i.par_version, i.scoring_config_version, i.state_hash, ' +
       'i.created_at, i.outcome, i.player_count, i.is_ranked_eligible, ' +
-      'i.team_key, i.was_inserted, i.player_id ' +
+      'i.team_key, i.henchman_key, i.was_inserted, i.player_id ' +
       'FROM inserted i ' +
       'JOIN legendary.players p ON i.player_id = p.player_id',
     [
@@ -885,6 +906,7 @@ export async function submitCompetitiveScoreImpl(
       playerCount,
       isRankedEligible,
       teamKey,
+      henchmanKey,
     ],
   );
 

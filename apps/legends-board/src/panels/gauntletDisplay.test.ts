@@ -8,13 +8,16 @@ import {
   buildPlayerCountTabs,
   findRoutedCountTab,
   formatAverageScore,
+  formatApprovedLoadout,
   formatCardDisplayName,
   formatHeroPool,
   formatRoster,
   groupGauntletsBySet,
   isFixedBoardName,
+  listApprovedLoadouts,
   resolveBoardIndexEntry,
   rosterForEntry,
+  selectApprovedLoadout,
 } from "./gauntletDisplay.ts";
 import type {
   GauntletEntryCounts,
@@ -391,5 +394,94 @@ describe("formatCardDisplayName (sort-order article restoration)", () => {
   it("leaves a degenerate article-only value alone rather than emitting a bare article", () => {
     assert.equal(formatCardDisplayName(", The"), ", The");
     assert.equal(formatCardDisplayName(""), "");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Canonical loadout discoverability (WP-395 / D-24199)
+// ---------------------------------------------------------------------------
+
+const APPROVED_ENTRY = {
+  approvedLoadouts: {
+    "1": [
+      {
+        villainGroupIds: ["core/brotherhood"],
+        henchmanGroupIds: ["core/doombot-legion"],
+      },
+      {
+        villainGroupIds: ["core/hydra"],
+        henchmanGroupIds: ["core/hand-ninjas"],
+      },
+    ],
+    "5": [
+      {
+        villainGroupIds: ["core/brotherhood", "core/skrulls"],
+        henchmanGroupIds: ["core/sentinel"],
+      },
+    ],
+  },
+};
+
+describe("canonical loadout discoverability (WP-395)", () => {
+  it("buildChallengeUrl pins the approved villain and henchmen groups", () => {
+    const url = buildChallengeUrl("core", "scheme-a", "mm-one", 1, {
+      villainGroupIds: ["core/brotherhood"],
+      henchmanGroupIds: ["core/doombot-legion"],
+    });
+    const params = new URL(url).searchParams;
+    assert.strictEqual(params.get("villainGroupIds"), "core/brotherhood");
+    assert.strictEqual(params.get("henchmanGroupIds"), "core/doombot-legion");
+    assert.strictEqual(params.get("playerCount"), "1");
+  });
+
+  it("buildChallengeUrl without a loadout omits both group keys", () => {
+    // why: the pre-WP-395 URL must be reproducible byte-for-byte, so a casual
+    // or pre-WP-395 snapshot link is unchanged.
+    const url = buildChallengeUrl("core", "scheme-a", "mm-one", 1);
+    const params = new URL(url).searchParams;
+    assert.strictEqual(params.get("villainGroupIds"), null);
+    assert.strictEqual(params.get("henchmanGroupIds"), null);
+  });
+
+  it("buildChallengeUrl joins multiple groups with commas", () => {
+    const url = buildChallengeUrl("core", "scheme-a", "mm-one", 5, {
+      villainGroupIds: ["core/brotherhood", "core/skrulls"],
+      henchmanGroupIds: ["core/sentinel"],
+    });
+    assert.strictEqual(
+      new URL(url).searchParams.get("villainGroupIds"),
+      "core/brotherhood,core/skrulls",
+    );
+  });
+
+  it("selectApprovedLoadout picks the routed count, defaults to solo, and misses cleanly", () => {
+    assert.deepEqual(selectApprovedLoadout(APPROVED_ENTRY, 5), {
+      villainGroupIds: ["core/brotherhood", "core/skrulls"],
+      henchmanGroupIds: ["core/sentinel"],
+    });
+    // No routed count → the solo configuration (the index CTA case).
+    assert.deepEqual(selectApprovedLoadout(APPROVED_ENTRY), {
+      villainGroupIds: ["core/brotherhood"],
+      henchmanGroupIds: ["core/doombot-legion"],
+    });
+    // A count with no published configuration, and a pre-WP-395 entry.
+    assert.strictEqual(selectApprovedLoadout(APPROVED_ENTRY, 3), undefined);
+    assert.strictEqual(selectApprovedLoadout({}, 1), undefined);
+  });
+
+  it("listApprovedLoadouts returns every configuration for the count", () => {
+    assert.strictEqual(listApprovedLoadouts(APPROVED_ENTRY, 1).length, 2);
+    assert.strictEqual(listApprovedLoadouts(APPROVED_ENTRY, 3).length, 0);
+    assert.strictEqual(listApprovedLoadouts({}, 1).length, 0);
+  });
+
+  it("formatApprovedLoadout drops set prefixes and reads as card names", () => {
+    assert.strictEqual(
+      formatApprovedLoadout({
+        villainGroupIds: ["core/brotherhood", "core/enemies-of-asgard"],
+        henchmanGroupIds: ["co2e/doombot-legion"],
+      }),
+      "brotherhood, enemies of asgard + doombot legion",
+    );
   });
 });

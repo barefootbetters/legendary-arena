@@ -25,6 +25,10 @@
     "./playerCountSetup": {
       "import": "./dist/playerCountSetup.js",
       "types": "./dist/playerCountSetup.d.ts"
+    },
+    "./gauntletLoadouts": {
+      "import": "./dist/gauntletLoadouts.js",
+      "types": "./dist/gauntletLoadouts.d.ts"
     }
   },
   "files": [

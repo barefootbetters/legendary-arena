@@ -1017,13 +1017,20 @@ describe('competition logic (WP-053)', () => {
       // WP-384: the fixture's single configured hero is the whole team key.
       assert.strictEqual(result.record.teamKey, 'core-test-hero');
 
-      // why: the D-24187-amended 15-key record lock, asserted over a REAL
+      // WP-395: this fixture configures no henchmen groups, so the derivation
+      // takes its empty-configuration branch and stores SQL NULL. A NULL key
+      // never satisfies the D-24199 loadout requirement on a gauntlet board —
+      // which is the intended posture, not an oversight.
+      assert.strictEqual(result.record.henchmanKey, null);
+
+      // why: the D-24199-amended 16-key record lock, asserted over a REAL
       // stored record (not a type-only reference) so key drift fails at
       // runtime even though tsx does not type-check.
       assert.deepEqual(Object.keys(result.record).sort(), [
         'accountId',
         'createdAt',
         'finalScore',
+        'henchmanKey',
         'isRankedEligible',
         'outcome',
         'parVersion',

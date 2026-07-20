@@ -2,8 +2,8 @@
 
 **User-Visible Surface:** legends.legendary-arena.com
 
-**Status:** Draft — pending execution
-**Layer:** Registry (data) + Server (qualification predicate)
+**Status:** Done 2026-07-20 (EC-435)
+**Layer:** Registry (data) + Server (qualification predicate + persistence) + legends-board (discoverability)
 
 ## Goal
 
@@ -107,10 +107,14 @@ player count.
 
 ## Open questions (2 of 4 settled 2026-07-19)
 
-1. **Where does the canonical loadout live?** A new registry table beside
-   `PLAYER_COUNT_SETUP` is the obvious home (server already consumes that
-   table for the gauntlet catalog), versus per-set card data. Registry keeps
-   it in one reviewable place; card data keeps it near the mastermind.
+1. ~~**Where does the canonical loadout live?**~~ **SETTLED at execution —
+   a generated registry source module.**
+   `packages/registry/src/gauntletLoadouts.generated.ts`, emitted by
+   `scripts/generate-gauntlet-loadouts.mjs`, CI-gated by
+   `pnpm gauntlet:loadouts:check`. Chosen over `data/metadata/` (manual R2
+   mirror + a loader) and per-set card data (scatters one reviewable table
+   across 39 files). The server threads it into the catalog as plain data, so
+   the predicate keeps its no-registry lock.
 2. ~~**Who authors the non-`alwaysLeads` groups?**~~ **SETTLED 2026-07-19 —
    core-fallback.** The drafted recommendation ("start thematic, same set as
    the mastermind") is **withdrawn: it is impossible for roughly half the
@@ -139,14 +143,30 @@ player count.
    110 × 3 = **330 loadouts**, each sized across player counts 1–5, for ~1,917
    PAR scenarios — still trivially calibratable against the 8,205,239,889 that
    free villain choice implies, while preserving real player choice.
-4. **What happens to a non-conforming replay?** It should simply not qualify
-   as a leg (silently, like every other predicate clause), but the board and
-   challenge link must make the requirement discoverable or players will
-   assume the feature is broken — the D-24186 / D-24190 class of failure.
-5. **Does `ScenarioKey` change shape?** Preferably not: the canonical loadout
-   makes the villain-group segment *deterministic per mastermind* without
-   altering the key format, so existing PAR machinery, `scoringConfigVersion`
-   pinning, and replay verification are untouched. Confirm before executing.
+4. ~~**What happens to a non-conforming replay?**~~ **SETTLED — silent
+   non-qualification, plus published discoverability.** Clause (g) of
+   `getGauntletStandings` skips the replay like every other clause. The board
+   renders an "Approved loadouts" section for the routed player count and
+   `buildChallengeUrl` pins `villainGroupIds` + `henchmanGroupIds` into the
+   deep link, which `parseSetupUrl` already understood.
+5. ~~**Does `ScenarioKey` change shape?**~~ **CONFIRMED — no.** The format is
+   untouched, so PAR machinery, `scoringConfigVersion` pinning, and replay
+   verification are unaffected. Henchmen, which were never in the key, needed a
+   new `competitive_scores.henchman_key` column instead (migration 035).
+
+## Execution notes (2026-07-20)
+
+Two findings changed the packet and are recorded in D-24199:
+
+- **The scenario count is 6,354, not ~1,917.** The drafted figure assumed one
+  villain set per (mastermind, variant) across all player counts, which
+  `PLAYER_COUNT_SETUP` forbids (1 group at solo, 4 at five players). The
+  argument is unaffected — 3.18M simulated games against 8.2 billion scenarios —
+  but PAR calibration must be budgeted off 6,354.
+- **Enforcing henchmen required a persistence change.** They are absent from
+  `ScenarioKey`, so migration 035 adds a nullable `henchman_key` column derived
+  exactly as `team_key` is. No backfill: the table was empty, which is the
+  zero-cost window this WP was sequenced to land inside.
 
 ## Dependencies
 

@@ -21,10 +21,13 @@ import {
   buildFixedCountTabs,
   buildPlayerCountTabs,
   formatAverageScore,
+  formatApprovedLoadout,
   formatCardDisplayName,
   formatHeroPool,
   isFixedBoardName,
+  listApprovedLoadouts,
   rosterForEntry,
+  selectApprovedLoadout,
   type PlayerCountTab,
 } from "./gauntletDisplay";
 
@@ -122,6 +125,17 @@ function tabLabel(tab: PlayerCountTab): string {
 }
 
 /** One leg's challenge link, ready for the template. */
+/** The approved configurations for the routed count, as display labels. */
+const approvedLoadoutLabels = computed((): string[] => {
+  const entry = props.indexEntry;
+  if (entry === null) {
+    return [];
+  }
+  return listApprovedLoadouts(entry, activePlayerCount.value).map(
+    formatApprovedLoadout,
+  );
+});
+
 interface ChallengeLeg {
   readonly schemeSlug: string;
   readonly schemeName: string;
@@ -138,6 +152,10 @@ const challengeLegs = computed((): ChallengeLeg[] => {
   // link so the builder pre-sizes its required-count slots to this board
   // (a 4P board's links open a 4-player builder). `activePlayerCount` is the
   // routed count across both divisions (solo → 1).
+  // why: WP-395 — pin the approved villain + henchmen groups too, so the
+  // builder opens on a setup that can actually qualify. Without this the link
+  // sends the player to build a run the board will silently reject.
+  const approvedLoadout = selectApprovedLoadout(entry, activePlayerCount.value);
   return entry.legs.map((leg) => ({
     schemeSlug: leg.schemeSlug,
     schemeName: leg.schemeName,
@@ -146,6 +164,7 @@ const challengeLegs = computed((): ChallengeLeg[] => {
       leg.schemeSlug,
       entry.mastermindSlug,
       activePlayerCount.value,
+      approvedLoadout,
     ),
   }));
 });
@@ -290,6 +309,20 @@ const challengeLegs = computed((): ChallengeLeg[] => {
       Cleared every leg? Clear them all with one hero pool to claim the
       Fixed-Pool Championship.
     </p>
+
+    <!-- The qualification requirement (WP-395 / D-24199). A ranked leg counts
+         only when its villain + henchmen groups match one of these, so the
+         board states it plainly rather than letting runs fail silently. -->
+    <section v-if="approvedLoadoutLabels.length > 0" class="approved-loadouts">
+      <h3 class="challenge-heading">Approved loadouts</h3>
+      <p class="approved-note">
+        A run counts toward this board only when its villain and henchmen
+        groups match one of these. Hero choice is yours.
+      </p>
+      <ul class="approved-list">
+        <li v-for="label of approvedLoadoutLabels" :key="label">{{ label }}</li>
+      </ul>
+    </section>
 
     <!-- Per-leg challenge links: open the pinned loadout preview so a
          visitor can try the gauntlet (D-24134 §6). Absent on old snapshots. -->
@@ -502,6 +535,29 @@ a.count-tab:hover {
 }
 
 /* Challenge links */
+.approved-loadouts {
+  margin-top: 1.5rem;
+  border-top: 1px solid var(--la-color-border-subtle);
+  padding-top: 1rem;
+}
+
+.approved-note {
+  font-size: 0.85rem;
+  color: var(--la-color-text-secondary);
+  margin: 0 0 0.5rem;
+}
+
+.approved-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  color: var(--la-color-text-primary);
+}
+
 .challenge-legs {
   margin-top: 1.5rem;
   border-top: 1px solid var(--la-color-border-subtle);

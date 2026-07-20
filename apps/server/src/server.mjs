@@ -16,6 +16,9 @@ import { join } from 'node:path';
 import {
   createRegistryFromLocalFiles,
   PLAYER_COUNT_SETUP,
+  GAUNTLET_LOADOUT_MENUS,
+  buildVillainSegment,
+  buildHenchmanKey,
   validateThemeFile,
 } from '@legendary-arena/registry';
 import { buildScenarioKey } from '@legendary-arena/game-engine';
@@ -571,9 +574,40 @@ export async function startServer() {
   for (const [playerCount, setupRow] of Object.entries(PLAYER_COUNT_SETUP)) {
     heroPoolBudgets[Number(playerCount)] = setupRow.heroCount + 2;
   }
+  // why: WP-395 / D-24199 — the canonical loadout requirement is projected
+  // HERE, at wiring time, from the registry's generated menu into the two
+  // comparison keys the predicate matches on: the ScenarioKey villain segment
+  // (bare slugs, because the key format is pinned) and the henchman_key column
+  // (set-qualified, because that column is ours). gauntlet.logic.ts may not
+  // import the registry, so it receives this as plain data.
+  const approvedLoadoutsByGauntlet = new Map();
+  for (const loadoutMenu of GAUNTLET_LOADOUT_MENUS) {
+    const approvedByPlayerCount = {};
+    for (const variant of loadoutMenu.variants) {
+      for (const [playerCount, composition] of Object.entries(
+        variant.compositionsByPlayerCount,
+      )) {
+        const count = Number(playerCount);
+        if (approvedByPlayerCount[count] === undefined) {
+          approvedByPlayerCount[count] = [];
+        }
+        approvedByPlayerCount[count].push({
+          villainSegment: buildVillainSegment(composition),
+          henchmanKey: buildHenchmanKey(composition),
+          villainGroupIds: composition.villainGroupIds,
+          henchmanGroupIds: composition.henchmanGroupIds,
+        });
+      }
+    }
+    approvedLoadoutsByGauntlet.set(
+      `${loadoutMenu.setAbbr}/${loadoutMenu.mastermindSlug}`,
+      approvedByPlayerCount,
+    );
+  }
   const gauntletCatalog = buildGauntletCatalog(
     gauntletSetSummaries,
     heroPoolBudgets,
+    approvedLoadoutsByGauntlet,
   );
   console.log(
     `[server] gauntlet catalog built: ${gauntletCatalog.length} gauntlets ` +

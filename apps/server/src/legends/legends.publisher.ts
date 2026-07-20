@@ -272,6 +272,10 @@ export async function publishAllBoards(
           entryCounts,
           fixedEntryCounts,
           legs: gauntletDefinition.legs,
+          // why: WP-395 / D-24199 — publish the requirement alongside the legs
+          // so the client can render it and pin it into the challenge link.
+          // Only the ids travel; the derived comparison keys are server-side.
+          approvedLoadouts: buildPublishedApprovedLoadouts(gauntletDefinition),
         });
 
         for (const playerCount of GAUNTLET_PLAYER_COUNTS) {
@@ -477,6 +481,41 @@ export async function publishAllBoards(
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
+
+/**
+ * Projects a gauntlet's approved loadouts into the published index shape
+ * (WP-395 / D-24199): only the set-qualified group ids a player must
+ * configure, dropping the server-side comparison keys.
+ *
+ * @param gauntletDefinition the gauntlet being published.
+ * @returns the per-count approved configurations, or undefined when the
+ *   gauntlet carries no requirement.
+ */
+function buildPublishedApprovedLoadouts(
+  gauntletDefinition: GauntletDefinition,
+): GauntletIndexApprovedLoadouts | undefined {
+  const approvedLoadouts = gauntletDefinition.approvedLoadouts;
+  if (approvedLoadouts === undefined) {
+    return undefined;
+  }
+  const publishedByPlayerCount: Record<
+    string,
+    { villainGroupIds: readonly string[]; henchmanGroupIds: readonly string[] }[]
+  > = {};
+  for (const [playerCount, approvedForCount] of Object.entries(
+    approvedLoadouts,
+  )) {
+    const published = [];
+    for (const approvedLoadout of approvedForCount) {
+      published.push({
+        villainGroupIds: approvedLoadout.villainGroupIds,
+        henchmanGroupIds: approvedLoadout.henchmanGroupIds,
+      });
+    }
+    publishedByPlayerCount[playerCount] = published;
+  }
+  return publishedByPlayerCount;
+}
 
 /**
  * Writes a single board JSON to R2 with a 10-second per-PUT timeout.
