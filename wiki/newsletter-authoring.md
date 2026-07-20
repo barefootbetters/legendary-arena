@@ -13,6 +13,7 @@ related:
   - ewiki-authoring.md
   - homepage-appendix.md
   - homepage-review-template.md
+  - workspace-map.md
 status: draft
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\newsletter-authoring.md (this page — https://ewiki.legendary-arena.com/newsletter-authoring/)
@@ -35,8 +36,14 @@ last-reviewed: 2026-05-16
 > `C:\www\legendary-arena-com\docs\brevo\newsletter-drafts\`.
 >
 > - **To edit this ewiki page:** edit
->   `C:\pcloud\BB\DEV\legendary-arena\wiki\newsletter-authoring.md`,
->   commit with `SPEC:` prefix, push to `main` in the `legendary-arena` repo.
+>   `C:\pcloud\BB\DEV\legendary-arena\wiki\newsletter-authoring.md` in the
+>   `legendary-arena` repo and open a **PR** — wiki edits do not go direct
+>   to `main`. Prefix `INFRA: wiki newsletter-authoring — <what changed>
+>   (#PR)`, matching the surrounding `git log -- wiki/` history. (`SPEC:`
+>   is for design/governance locks, not page edits.) Deploy is not
+>   automatic on merge: `.github/workflows/wiki-viewer.yml` fires the
+>   Render deploy hook, and a green build alone does not prove the deploy
+>   step ran.
 > - **Authoritative sources:** Template spec lives at
 >   `C:\www\legendary-arena-com\docs\brevo\newsletter-template.md`;
 >   brand voice lives at
@@ -288,6 +295,61 @@ Any deviation is a layout violation.
    - Schedule: Tuesday or Wednesday, 10:00 AM ET
 ```
 
+### Where newsletter files are saved
+
+Newsletter work spans all three storage surfaces described on
+[Workspace Map](workspace-map.md). The surface is chosen by what the
+file *is*, not by which newsletter it belongs to.
+
+**In the marketing repo (git) —** everything that is reviewable text:
+
+| Path | Contents |
+|---|---|
+| `C:\www\legendary-arena-com\docs\brevo\newsletter-drafts\week-NN.md` | One draft per issue. The authored artifact. |
+| `C:\www\legendary-arena-com\docs\brevo\newsletter-drafts\qa-log.md` | QA results and post-send metrics. Append-only. |
+| `C:\www\legendary-arena-com\docs\brevo\newsletter-template.md` | The 10-section template spec. |
+| `C:\www\legendary-arena-com\docs\brevo\email-automation.md` | Brevo pipeline architecture. |
+| `C:\www\legendary-arena-com\content\posts\<slug>.md` | The companion blog post. |
+| `C:\www\legendary-arena-com\static\images\posts\<slug>\` | Images the newsletter hot-links. Directory name matches the post slug exactly. |
+
+Drafts are committed with the marketing repo's content-lane prefixes —
+see [Blog Post Authoring](blog-post-authoring.md).
+
+**Newsletter images are not a separate asset class.** The newsletter
+references the *blog post's* production image URLs
+(`https://www.legendary-arena.com/images/posts/<slug>/hero.webp`), so
+there is no newsletter image directory to maintain. This is also why the
+blog post must deploy before the send — see Edge Cases.
+
+**In pCloud —** working files that are not reviewable text, filed under
+the project rather than left in a mail client or a downloads folder:
+
+| Contents | Why not git |
+|---|---|
+| Test-send screenshots from Gmail / Outlook / Apple Mail | Binary, per-issue, never diffed |
+| Exported Brevo campaign HTML kept for reference | Generated output, not the authoring surface |
+| Raw analytics exports pulled from Brevo | Superseded by the summary recorded in `qa-log.md` |
+| Vendor correspondence — Brevo invoices, deliverability reports | Not code, and often counterparty detail |
+
+**Subscriber exports never leave the vendor.** A Brevo contact export is
+a list of real people's email addresses. It does not belong in git under
+any circumstance, and it should not be parked in synced cloud storage
+either — pull it, use it, delete it. If a number from it needs to
+survive, record the *number* in `qa-log.md`, not the list.
+
+**At Brevo (hosted) —** the campaign itself, the subscriber list, and
+the send history. Brevo is the delivery surface, never the authoring
+surface: the draft in the repo is the source, and a change made only
+inside the Brevo composer is a change that no longer exists anywhere you
+can diff.
+
+**Secrets stay out of both.** The Brevo API key lives in `.env` locally
+and in the deploy environment for
+`C:\www\legendary-arena-com\functions\api\subscribe.js` — never in a
+draft, a template, or a committed file. The page's own Compliance
+Requirements already forbid API keys in newsletter content; this is the
+same rule one layer up.
+
 ### Brand Voice for Email
 
 **Voice:** Direct, confident, heroic. No irony, no hype.
@@ -490,6 +552,10 @@ You are receiving this because you signed up at legendary-arena.com.
   content. Newsletters use a different rendering surface (email
   clients) with different constraints (no CSS variables, system
   fonts, 600px max width).
+- **[Workspace Map](workspace-map.md)** — Owns the three-surface rule
+  (git / pCloud / hosted) that the file locations above apply. This
+  page names the newsletter-specific paths; the map states the
+  principle they follow.
 
 ## Edge Cases
 
@@ -519,6 +585,18 @@ You are receiving this because you signed up at legendary-arena.com.
   the surface structure (story, insight, question) while keeping
   the underlying logic consistent. This is the core Mode B
   discipline.
+- **The Brevo composer is not a save location.** Content edited only
+  inside a Brevo campaign exists nowhere that can be diffed, reviewed,
+  or recovered. Whatever ships must match the draft in
+  `newsletter-drafts\`; if a change is made at send time, it belongs
+  back in the draft before the campaign goes out.
+- **`qa-log.md` is append-only, which makes it the record of what was
+  actually sent.** Post-send metrics are recorded there at least 48
+  hours after the send, without retroactive edits. That constraint only
+  holds if the file stays in git — a copy kept anywhere else defeats it.
+- **Subscriber lists are personal data.** A Brevo contact export must
+  not be committed, and should not be parked in synced cloud storage.
+  Record derived numbers in `qa-log.md` and delete the export.
 
 ## References
 
