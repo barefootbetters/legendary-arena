@@ -105,22 +105,40 @@ player count.
   *tractable*; it does not perform it.
 - Re-keying historical rows: none exist.
 
-## Open questions (resolve before execution)
+## Open questions (2 of 4 settled 2026-07-19)
 
 1. **Where does the canonical loadout live?** A new registry table beside
    `PLAYER_COUNT_SETUP` is the obvious home (server already consumes that
    table for the gauntlet catalog), versus per-set card data. Registry keeps
    it in one reviewable place; card data keeps it near the mastermind.
-2. **Who authors the non-`alwaysLeads` groups?** 134 groups is a large design
-   space and the choice affects difficulty. Options: thematic (same set as the
-   mastermind), difficulty-balanced (simulate and pick a median), or explicit
-   operator authoring. Recommend starting thematic — it is defensible,
-   reviewable, and does not require the simulation this change is meant to
-   unblock.
-3. **One canonical set, or a small enumerated menu?** A single loadout gives
-   639 scenarios. Three approved configurations per mastermind gives 1,917 —
-   still trivially calibratable, and preserves some genuine choice. Worth
-   deciding deliberately rather than defaulting to one.
+2. ~~**Who authors the non-`alwaysLeads` groups?**~~ **SETTLED 2026-07-19 —
+   core-fallback.** The drafted recommendation ("start thematic, same set as
+   the mastermind") is **withdrawn: it is impossible for roughly half the
+   catalog.** Measured against `data/cards/`:
+
+   | Fact | Value |
+   |---|---|
+   | Qualifying sets | 39 |
+   | Sets with **zero** henchmen groups | **24** (solo needs 1; 4–5p needs 2) |
+   | Sets with only 1–2 villain groups | 24 (5p needs 4) |
+   | Sets able to fill a 5p loadout in-set | 15 |
+   | Masterminds that CANNOT be filled in-set | **48 of 110** |
+
+   Worked example: `anni/annihilus` at 5p needs 4 villain groups + 2 henchmen;
+   his set ships 2 villain groups (`annihilation-wave` — his Always Leads — and
+   `timelines-of-kang`) and **no henchmen at all**.
+
+   **Rule:** fill unmet slots from the **Core Set / Core 2E** pool. Chosen over
+   nearest-thematic (needs a set-adjacency map that does not exist for 41 sets)
+   and difficulty-balanced (circular — it needs the PAR calibration this WP
+   exists to unblock). Accepted cost: common Core henchmen (`doombot-legion`,
+   `hand-ninjas`, `savage-land-mutates`, `sentinel`) will recur across many
+   gauntlets. Bought: no invented data, and any reviewer can check the result.
+3. ~~**One canonical set, or a small enumerated menu?**~~ **SETTLED 2026-07-19 —
+   enumerated menu of THREE** approved configurations per mastermind.
+   110 × 3 = **330 loadouts**, each sized across player counts 1–5, for ~1,917
+   PAR scenarios — still trivially calibratable against the 8,205,239,889 that
+   free villain choice implies, while preserving real player choice.
 4. **What happens to a non-conforming replay?** It should simply not qualify
    as a leg (silently, like every other predicate clause), but the board and
    challenge link must make the requirement discoverable or players will
