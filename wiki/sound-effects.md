@@ -6,6 +6,8 @@ tags:
   - trigger
   - phase-play
   - audio
+  - music
+  - motif
   - arena-client
   - research
 related:
@@ -27,7 +29,7 @@ source:
   - ../packages/game-engine/src/ui/uiState.types.ts
   - ../packages/game-engine/src/turn/turnPhases.types.ts
   - ../docs/ai/ARCHITECTURE.md
-last-reviewed: 2026-07-07
+last-reviewed: 2026-07-21
 ---
 
 # Sound Effects
@@ -41,11 +43,17 @@ bystander, recruiting a hero, and so on) and an **adaptive background
 score** that intensifies as the villains close in on winning. It
 catalogs the engine signals the client can actually observe, maps each
 to a suggested sound, records where royalty-free source audio lives,
-and lays out the danger-meter formula that would drive the music. No
-audio ships today — this page is `draft` research, not an
+and lays out the danger-meter formula that would drive the music. It
+also specs three richer layers on top: **motif-driven event cues**
+(class/team leitmotifs, whose composition grammar lives on
+[Music Authoring](music-authoring.md#motif-matrix)), a **tiered combo
+cue** that escalates with the size of a synergy chain, and **endgame
+stingers** for all three real match outcomes (heroes win, scheme wins,
+tie). No audio ships today — this page is `draft` research, not an
 implementation contract. The sound mappings and library picks are
-proposals; only the event vocabulary, the projected `UIState` signals,
-and the architectural boundaries are sourced to code.
+proposals; only the event vocabulary, the endgame outcomes, the
+projected `UIState` signals, and the architectural boundaries are
+sourced to code.
 
 ## Mechanics
 
@@ -131,13 +139,93 @@ avoid fatigue.
 
 #### Surface 4 — Outcome / endgame
 
-The three `ENDGAME_CONDITIONS` counters decide the match
-([`endgame.evaluate.ts`](../packages/game-engine/src/endgame/endgame.evaluate.ts)).
-The win side (`mastermindDefeated`) is covered by Surface 1's notable
-event. The two loss conditions — `escapedVillains` reaching
-`ESCAPE_LIMIT` (8) and `schemeLoss` reaching 1 — are candidates for a
-single somber "heroes lose" sting, and they also drive the adaptive
-score below.
+[`evaluateEndgame`](../packages/game-engine/src/endgame/endgame.evaluate.ts)
+resolves every match to exactly one of **three** outcomes —
+[`EndgameOutcome`](../packages/game-engine/src/endgame/endgame.types.ts) is
+`'heroes-win' | 'scheme-wins' | 'tie'`. Each deserves its own endgame
+stinger:
+
+| Outcome | Triggers (counter) | Stinger character |
+|---|---|---|
+| **`heroes-win`** | `mastermindDefeated` ≥ 1 (also Surface 1's notable event) | Triumphant **victory fanfare** + a **crowd cheer** — the biggest positive cue in the game |
+| **`scheme-wins`** | `escapedVillains` ≥ `ESCAPE_LIMIT` (8) — *the city is overrun*; **or** `schemeLoss` ≥ 1 — *the scheme completes* | Dark, **deflating** loss sting + a **crowd boo**; the two reasons can take distinct stings (an escape stampede vs. the scheme snapping shut) |
+| **`tie`** | `finalTurnTie` ≥ 1 — a deck emptied and the final turn ended with no win or loss (WP-367 / D-24159) | Something **wry and unresolved** — neither fanfare nor dirge; good and evil both walk away |
+
+Loss conditions checked before victory, so a simultaneous trigger resolves
+as a loss (rulebook precedence). The two `scheme-wins` reasons and the
+tie also feed the adaptive score below — escapes and twists escalate
+`menace`, and the deck-exhaustion **final turn** is its own tense late-game
+state.
+
+> **The tie is real, and deck-exhaustion is *not* a loss.** A common
+> mistake is to treat "a deck ran out" as a heroes-lose. In this engine an
+> emptied Hero or Villain deck latches `finalTurnTriggered`, the current
+> turn is played out, and if nobody has won or lost by its end the match is
+> a **`tie`** (`finalTurnTie`). It is a first-class, tracked outcome — give
+> it its own sting, don't fold it into the loss cue.
+
+### Motif-driven event cues (class/team leitmotifs) {#motif-cues}
+
+The generic clips above are the fast path — one fixed stinger per event. A
+richer option layers a **composed leitmotif** on top of (or in place of)
+the generic clip, so the Master Strike you hear is coloured by *who* struck
+and *who* is at the table. The motif grammar — **major = heroes, minor =
+villains, hero class → instrument, hero team → key, interval size →
+power** — is specified on
+[Music Authoring](music-authoring.md#motif-matrix); this section is the
+*playback* side: which projected signal names the entity whose motif plays.
+
+- **Master Strike** (`mastermindStrikeResolved`) → the acting
+  **Mastermind's** minor motif. The client already knows the match's
+  Mastermind (match configuration / `UIState`), so it can select the motif
+  with no new event field.
+- **Scheme Twist** (`schemeTwistResolved`) → the **Scheme's** minor motif.
+- **A hero acting** (`playCard`, `fightResolved`, `recruitHero`) → that
+  **hero's** major motif — its team's key, its class's instrument. The
+  client knows the hero from the local move and HQ / in-play state.
+
+Because teammates share a key, two heroes comboing produces **consonant,
+harmonizing** motifs — a musical reward for on-team synergy that pairs with
+the [tiered combo cue](#tiered-combo) below. Motifs are tiny authored
+phrases, so they live in the **SFX sprite** alongside the discrete clips
+(the long adaptive loops stay separate — see below).
+
+> **Signal note.** Motif *selection* needs only the acting entity's
+> identity (class / team / alignment), which the client already has: the
+> hero roster and the Mastermind / Scheme come from the match
+> configuration and `UIState`. No new engine event is required to *pick* a
+> motif — the only truly unsoundable moments are those with no event at all
+> (villain escape; see Edge Cases).
+
+### Tiered combo / synergy cue {#tiered-combo}
+
+Reward clever play with **escalating** sound: when one card's effect
+triggers another — and that triggers a third — the cue climbs with the size
+of the chain, so bigger combos literally sound bigger. This is the audio
+counterpart to the engine's hero-class synergy (the `requiresKeyword` /
+`[hc:X]` gates that fire when the right classes are in play).
+
+| Chain size | Cue | Feel |
+|---|---|---|
+| 2 effects | Rising **two-note sparkle** | "Nice — that linked." |
+| 3 effects | The same shape, **higher and brighter** | The chain is building. |
+| 4+ effects | A full ascending **flourish** | A satisfying pay-off — the game cheering you on |
+
+Pitch the tiers so they **ascend** (each step higher than the last) and, if
+motifs are in play, write them in the acting hero's team key so a combo cue
+harmonizes with the [motif](#motif-cues) that spawned it.
+
+> **Signal gap — this needs a count the client cannot see today.** The five
+> `NotableGameEvent` variants and `playCard` carry **no chain-depth or
+> effects-triggered tally**: a hero play emits no result event at all, and
+> nothing projects "this play fired N downstream effects." A combo cue
+> therefore needs either (a) a new projected count — e.g. a `chainDepth` /
+> `effectsTriggered` field on a hero-play result event — or (b) fragile
+> client-side inference from a burst of `UIState` deltas within one move.
+> Option (a) is the honest, deterministic path. Until such a signal exists,
+> the tiered cue is a **proposal, not buildable.** (Contrast the villain
+> side: `FightResolvedEvent.appliedEffects` already lists the keywords that
+> fired, so a villain-effect chain is countable today.)
 
 ### Adaptive background music — the danger meter
 
@@ -193,7 +281,7 @@ A workable three-tier mapping:
 | `0.00 – 0.33` | Calm exploration loop | Early game; villains not yet a threat |
 | `0.33 – 0.66` | Rising-tension loop | The scheme is progressing; pressure building |
 | `0.66 – 1.00` | Critical / boss loop | Evil is one or two steps from winning |
-| endgame | Win fanfare / loss sting (one-shot), stop loop | `mastermindDefeated` vs `schemeLoss`/escape cap |
+| endgame | Win fanfare / loss sting / **wry tie sting** (one-shot), stop loop | `heroes-win` vs `scheme-wins` vs deck-exhaustion `tie` (Surface 4) |
 
 One-shot stingers (Master Strike, Scheme Twist) briefly **duck** the
 music, then it returns — a standard "sidechain" polish move.
@@ -258,9 +346,10 @@ starting points to audition, not final picks.
 - OpenGameArt 80 CC0 RPG SFX — coins / gems (the bystander flourish)
 - [Freesound CC0: "sword impact"](https://freesound.org/search/?q=sword+impact&f=license:%22Creative+Commons+0%22)
 
-**Mastermind defeated / win (`mastermindDefeated`)** — the biggest positive cue:
+**Mastermind defeated / heroes win (`heroes-win`)** — the biggest positive cue, fanfare + a crowd cheer layered on top:
 - OpenGameArt CC0 Cinematic — "Victory Theme for RPG"
 - OpenGameArt CC0 Cinematic — "A Legend Will Rise (Orchestral)"
+- [Freesound CC0: "crowd cheer"](https://freesound.org/search/?q=crowd+cheer&f=license:%22Creative+Commons+0%22) (the cheer layer)
 - [Freesound CC0: "victory fanfare"](https://freesound.org/search/?q=victory+fanfare&f=license:%22Creative+Commons+0%22)
 
 **Wound gained** — a dull, painful thud:
@@ -318,10 +407,16 @@ starting points to audition, not final picks.
 - OpenGameArt Card Game Sounds — "Notification"
 - [Freesound CC0: "notification bell"](https://freesound.org/search/?q=notification+bell&f=license:%22Creative+Commons+0%22)
 
-**Heroes lose (endgame — escape cap or `schemeLoss`)** — a somber sting:
+**Scheme wins / heroes lose (`scheme-wins`)** — a somber, deflating sting + a crowd boo; the two reasons (city overrun via escape cap, or the scheme completing) can take distinct stings:
 - OpenGameArt CC0 Cinematic — "Laments of the War" (closing bars)
 - OpenGameArt CC0 Cinematic — "Epic Endgame Cinematic"
+- [Freesound CC0: "crowd boo"](https://freesound.org/search/?q=crowd+boo&f=license:%22Creative+Commons+0%22) (the boo layer)
 - [Freesound CC0: "game over"](https://freesound.org/search/?q=game+over&f=license:%22Creative+Commons+0%22)
+
+**Match tied (deck exhaustion — `finalTurnTie`)** — wry and unresolved, neither win nor loss:
+- OpenGameArt CC0 Cinematic — a neutral, suspended cadence (an unresolved chord, not a fanfare or dirge)
+- [Freesound CC0: "suspense sting"](https://freesound.org/search/?q=suspense+sting&f=license:%22Creative+Commons+0%22)
+- [Freesound CC0: "anticlimax"](https://freesound.org/search/?q=anticlimax&f=license:%22Creative+Commons+0%22)
 
 ### Audio previews
 
@@ -544,10 +639,20 @@ unusable on a revenue-generating site.
   arena-client bundle, or host them on R2 (the
   `images.legendary-arena.com` precedent suggests a `sounds.` / R2 path
   could work)? Music loops especially argue for CDN + lazy load.
-- **Two gaps worth an event add.** (1) `escapeResolved` (WP-186) so
+- **Three gaps worth an event add.** (1) `escapeResolved` (WP-186) so
   villain escapes — including a bystander carried off — can be sounded;
   (2) a `heroRecruited` signal so recruit doesn't rely on client-side
-  delta-watching. Both are optional; v1 can proceed without them.
+  delta-watching; (3) a **`chainDepth` / `effectsTriggered` count on a
+  hero-play result** so the [tiered combo cue](#tiered-combo) can escalate
+  with synergy-chain size (nothing projects this today). All three are
+  optional; v1 SFX can proceed without them, but the combo cue is blocked
+  until (3) exists.
+- **Motif matrix — playback wiring.** The motif *grammar* is settled on
+  [Music Authoring](music-authoring.md#motif-matrix); open here is where
+  the class→instrument / team→key lookup tables and per-entity note phrases
+  live (a registry data file is the likely fit), and which WP wires motif
+  *selection* into the [audio layer](#motif-cues). No new engine event is
+  needed to pick a motif — only the data and the playback code.
 - **Music: re-sequencing now, stems later?** Ship horizontal
   re-sequencing with CC0 loops for v1; revisit vertical layering only
   if a custom stemmed score is commissioned.
@@ -574,7 +679,9 @@ unusable on a revenue-generating site.
   consumes read-only projections; determinism invariant
 - [DECISIONS.md](../docs/ai/DECISIONS.md) — D-20001 (minimal notable-event
   payload; deferred `escapeResolved`), D-20008 (`mastermindDefeated`
-  added because `G.messages` is not projected)
+  added because `G.messages` is not projected), D-24159 / WP-367 (the
+  deck-exhaustion final-turn **tie** — the third `EndgameOutcome`, driving
+  the tie stinger)
 - Sound-effect libraries (verify each asset's license on its page):
   - [Kenney.nl — Interface Sounds](https://kenney.nl/assets/interface-sounds) (CC0)
   - [Kenney.nl — Impact Sounds](https://kenney.nl/assets/impact-sounds) (CC0)
