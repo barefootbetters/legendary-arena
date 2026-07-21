@@ -115,6 +115,34 @@ const LANGUAGE_MARKER_PROBES = [
   { language: 'Hugo (Go binary)', toolchainMarkers: ['hugo.toml', 'hugo.yaml', 'hugo.yml'], sourceExtensions: [] },
 ];
 
+// why: operator-machine tooling used for out-of-band ops that touch external
+// infrastructure but declare NO repo manifest — so the dependency scanner and
+// the language-marker probes above never see it. Recorded here (curated) so a
+// future operator running those procedures knows the toolchain. First case
+// (2026-07-21): setting immutable Cache-Control on R2 card-image objects per
+// docs/ops/RUNBOOK-r2-image-cache-control.md, done with boto3's S3 CopyObject
+// (MetadataDirective=REPLACE) against the Cloudflare R2 S3 endpoint. Trap worth
+// recording: the `python` on the operator PATH is Inkscape's bundled interpreter
+// (no boto3); the pip-installed boto3 lives under the Python 3.12 install, which
+// must be invoked by its full path.
+const OPERATOR_OPS_TOOLCHAIN = [
+  {
+    tool: 'Python',
+    version: '3.12 (Programs\\Python\\Python312)',
+    role: 'Interpreter for out-of-band ops scripts (R2 object-metadata via boto3). Invoke by full path — the `python` on PATH is Inkscape\'s and lacks boto3.',
+  },
+  {
+    tool: 'pip',
+    version: 'bundled with Python 3.12',
+    role: 'Installs boto3 into the Python 3.12 site-packages.',
+  },
+  {
+    tool: 'boto3',
+    version: '1.43.x',
+    role: 'AWS S3 client used against the Cloudflare R2 S3 endpoint to set Cache-Control on card-image objects (CopyObject + MetadataDirective=REPLACE). Not a repo dependency.',
+  },
+];
+
 // why: the language inventory walks a slightly broader set of trees
 // than the import scanner. `wiki/` is project-authored markdown for the
 // Hugo site and belongs in the language footprint, even though it has
@@ -2002,6 +2030,8 @@ async function renderReport({
   lines.push('');
   lines.push(renderRuntimeSection(manifests, aggregate));
   lines.push('');
+  lines.push(renderOperatorOpsToolchainSection());
+  lines.push('');
 
   // why: language footprint pairs naturally with runtime / toolchain
   // — both answer "what does this repo run on" — but cuts a different
@@ -2463,6 +2493,28 @@ function readPinnedNodeVersion() {
   } catch {
     return '_(no `.node-version` — toolchain is unpinned)_';
   }
+}
+
+/**
+ * Renders the curated operator ops-toolchain subsection — machine-local tools
+ * used for out-of-band infrastructure ops that declare no repo manifest, so the
+ * dependency scanner never sees them.
+ * @returns {string} markdown table under a `###` heading.
+ */
+function renderOperatorOpsToolchainSection() {
+  const lines = [];
+  lines.push(`### Operator ops toolchain (out-of-band)`);
+  lines.push('');
+  lines.push(`Machine-local tools used for out-of-band infrastructure ops that declare`);
+  lines.push(`no repo manifest (so the dependency scanner above does not see them).`);
+  lines.push(`Curated in \`OPERATOR_OPS_TOOLCHAIN\` in \`scripts/architecture-inventory.mjs\`.`);
+  lines.push('');
+  lines.push(`| Tool | Version | Role |`);
+  lines.push(`|---|---|---|`);
+  for (const entry of OPERATOR_OPS_TOOLCHAIN) {
+    lines.push(`| ${entry.tool} | \`${entry.version}\` | ${entry.role} |`);
+  }
+  return lines.join('\n');
 }
 
 function renderRuntimeSection(manifests, aggregate) {

@@ -54,8 +54,17 @@ on `main` before this WP's baseline, unrelated.
 **AC-10 / D-24026 live-verify is OPEN (operator-gated):** on the deployed
 `play.legendary-arena.com` bundle, open a real match and confirm (browser network
 panel) that the working-set images are fetched during setup and a card revealed later
-paints from cache with no image request. Its payoff compounds once the R2
-immutable-`Cache-Control` ops change lands.
+paints from cache with no image request.
+
+**R2 `Cache-Control` companion — PARTIALLY APPLIED 2026-07-21.** The immutable
+`Cache-Control` header is now set on all R2 card-image objects (boto3 `CopyObject` +
+`MetadataDirective=REPLACE` — **4451 objects across the 41 set prefixes, 0 failed**;
+`avatars/`/`metadata/` untouched), so **browser caching works** — a warmed image is kept a year and reused
+across matches, which is the direct WP-410 payoff. **The Cloudflare edge Cache Rule is
+still pending** (`cf-cache-status` stays `DYNAMIC`; needs the CF dashboard/API — no
+`CLOUDFLARE_API_TOKEN` available). See
+[`docs/ops/RUNBOOK-r2-image-cache-control.md`](../ops/RUNBOOK-r2-image-cache-control.md) §3
+and the [OUT-OF-BAND-SETTINGS](../ops/OUT-OF-BAND-SETTINGS.md) record.
 
 ### WP-409 / EC-444 — Hero-play synergy-effect count → UIState (D-24221) (2026-07-21)
 
