@@ -212,34 +212,34 @@ Two rules make the keys mean something beyond "pick a note":
   of the Multiverse). Family members harmonize by construction — they're
   already in the same key before any two combo.
 
-| ID | Team | Side | Key (root + mode) | Family |
-|---|---|---|---|---|
-| 0 | Unaffiliated | Neutral | — (quartal, no home key) | — |
-| 1 | Avengers | Hero | C major | Avengers |
-| 2 | S.H.I.E.L.D. | Hero | G major | — |
-| 3 | Spider Friends | Hero | E major | Spider |
-| 4 | X-Men | Hero | D major | X |
-| 5 | Fantastic Four | Hero | A major | — |
-| 6 | Marvel Knights | Hero | E♭ major | Street |
-| 7 | X-Force | Hero | D major | X |
-| 8 | Crime Syndicate | Villain | E♭ minor | Street |
-| 9 | Sinister Six | Villain | E minor | Spider |
-| 10 | Foes of Asgard | Villain | A♭ minor | Asgard |
-| 11 | Brotherhood | Villain | D minor | X |
-| 12 | Guardians of the Galaxy | Hero | F major | Guardians |
-| 13 | HYDRA | Villain | G minor | — |
-| 14 | Cabal | Villain | F♯ minor | Council |
-| 15 | Illuminati | Hero | F♯ major | Council |
-| 16 | New Warriors | Hero | C major | Avengers |
-| 17 | Mercs for Money | Antihero (grey) | B♭ minor (→ B♭ major to soften) | — |
-| 18 | Champions | Hero | C major (Lydian ♯4) | Avengers |
-| 19 | Warbound | Hero | B♭ major | — |
-| 20 | Venomverse | Antihero (grey) | E minor (Phrygian; → E major to soften) | Spider |
-| 21 | Heroes of Asgard | Hero | A♭ major | Asgard |
-| 22 | Inhumans | Hero | B major | — |
-| 23 | X-Factor Investigations | Hero | D major | X |
-| 24 | Heroes of Wakanda | Hero | D♭ major | — |
-| 25 | Guardians of the Multiverse | Hero | F major | Guardians |
+| Icon | ID | Team | Side | Key (root + mode) | Family |
+|---|---|---|---|---|---|
+| — | 0 | Unaffiliated | Neutral | — (quartal, no home key) | — |
+| ![Avengers](https://www.barefootbetters.com/wp-content/uploads/2026/03/team-avengers.svg "width=28px") | 1 | Avengers | Hero | C major | Avengers |
+| ![S.H.I.E.L.D.](https://www.barefootbetters.com/wp-content/uploads/2026/03/team-shield.svg "width=28px") | 2 | S.H.I.E.L.D. | Hero | G major | — |
+| ![Spider Friends](https://www.barefootbetters.com/wp-content/uploads/2026/03/team-spider-friends.svg "width=28px") | 3 | Spider Friends | Hero | E major | Spider |
+| ![X-Men](https://www.barefootbetters.com/wp-content/uploads/2026/03/team-x-men.svg "width=28px") | 4 | X-Men | Hero | D major | X |
+| ![Fantastic Four](https://www.barefootbetters.com/wp-content/uploads/2026/03/team-fantastic-four.svg "width=28px") | 5 | Fantastic Four | Hero | A major | — |
+| ![Marvel Knights](https://www.barefootbetters.com/wp-content/uploads/2026/03/team-marvel-knights.svg "width=28px") | 6 | Marvel Knights | Hero | E♭ major | Street |
+| ![X-Force](https://www.barefootbetters.com/wp-content/uploads/2026/03/team-x-force.svg "width=28px") | 7 | X-Force | Hero | D major | X |
+| ![Crime Syndicate](https://www.barefootbetters.com/wp-content/uploads/2026/03/team-crime-syndicate.svg "width=28px") | 8 | Crime Syndicate | Villain | E♭ minor | Street |
+| ![Sinister Six](https://www.barefootbetters.com/wp-content/uploads/2026/03/team-sinister-six.svg "width=28px") | 9 | Sinister Six | Villain | E minor | Spider |
+| ![Foes of Asgard](https://www.barefootbetters.com/wp-content/uploads/2026/03/team-foes-of-asgard.svg "width=28px") | 10 | Foes of Asgard | Villain | A♭ minor | Asgard |
+| ![Brotherhood](https://www.barefootbetters.com/wp-content/uploads/2026/03/team-brotherhood.svg "width=28px") | 11 | Brotherhood | Villain | D minor | X |
+| ![Guardians of the Galaxy](https://www.barefootbetters.com/wp-content/uploads/2026/03/team-guardians-of-the-galaxy.svg "width=28px") | 12 | Guardians of the Galaxy | Hero | F major | Guardians |
+| ![HYDRA](https://www.barefootbetters.com/wp-content/uploads/2026/03/team-hydra.svg "width=28px") | 13 | HYDRA | Villain | G minor | — |
+| ![Cabal](https://www.barefootbetters.com/wp-content/uploads/2026/03/team-cabal.svg "width=28px") | 14 | Cabal | Villain | F♯ minor | Council |
+| ![Illuminati](https://www.barefootbetters.com/wp-content/uploads/2026/03/team-illuminati.svg "width=28px") | 15 | Illuminati | Hero | F♯ major | Council |
+| ![New Warriors](https://www.barefootbetters.com/wp-content/uploads/2026/03/team-new-warriors.svg "width=28px") | 16 | New Warriors | Hero | C major | Avengers |
+| ![Mercs for Money](https://www.barefootbetters.com/wp-content/uploads/2026/03/team-mercs-for-money.svg "width=28px") | 17 | Mercs for Money | Antihero (grey) | B♭ minor (→ B♭ major to soften) | — |
+| ![Champions](https://www.barefootbetters.com/wp-content/uploads/2026/03/team-champions.svg "width=28px") | 18 | Champions | Hero | C major (Lydian ♯4) | Avengers |
+| ![Warbound](https://www.barefootbetters.com/wp-content/uploads/2026/03/team-warbound.svg "width=28px") | 19 | Warbound | Hero | B♭ major | — |
+| ![Venomverse](https://www.barefootbetters.com/wp-content/uploads/2026/03/team-venomverse.svg "width=28px") | 20 | Venomverse | Antihero (grey) | E minor (Phrygian; → E major to soften) | Spider |
+| ![Heroes of Asgard](https://www.barefootbetters.com/wp-content/uploads/2026/03/team-heroes-of-asgard.svg "width=28px") | 21 | Heroes of Asgard | Hero | A♭ major | Asgard |
+| ![Inhumans](https://www.barefootbetters.com/wp-content/uploads/2026/03/team-inhumans.svg "width=28px") | 22 | Inhumans | Hero | B major | — |
+| ![X-Factor Investigations](https://www.barefootbetters.com/wp-content/uploads/2026/03/team-x-factor-investigations.svg "width=28px") | 23 | X-Factor Investigations | Hero | D major | X |
+| ![Heroes of Wakanda](https://www.barefootbetters.com/wp-content/uploads/2026/03/team-heroes-of-wakanda.svg "width=28px") | 24 | Heroes of Wakanda | Hero | D♭ major | — |
+| ![Guardians of the Multiverse](https://www.barefootbetters.com/wp-content/uploads/2026/03/team-guardians-of-the-multiverse.svg "width=28px") | 25 | Guardians of the Multiverse | Hero | F major | Guardians |
 
 #### Class → instrument
 
@@ -248,13 +248,13 @@ that carries the phrase — so a Strength card and a Covert card on the same
 team share a key but sound nothing alike. One sampled instrument per class
 keeps every motif on the same tuning and timbre.
 
-| Class | Instrument family | Instrument | Character |
-|---|---|---|---|
-| Covert | Strings | Muted / pizzicato violins | Light, plucked, tiptoeing — sneaky and agile |
-| Instinct | Strings | Low cellos & double basses | Prowling low-string ostinato — a rising minor 2nd, John Williams "Jaws" style: slow, tense, accelerating as it closes in |
-| Ranged | Woodwinds | Flute / piccolo | Airy and distant — something in flight, fired from afar |
-| Strength | Brass | Trumpets & trombones | Powerful, loud, commanding |
-| Tech | Percussion + synth | Tuned percussion / synth | Mechanical, precise, digital |
+| Icon | Class | Instrument family | Instrument | Character |
+|---|---|---|---|---|
+| ![Covert](https://www.barefootbetters.com/wp-content/uploads/2026/03/class-covert.svg "width=28px") | Covert | Strings | Muted / pizzicato violins | Light, plucked, tiptoeing — sneaky and agile |
+| ![Instinct](https://www.barefootbetters.com/wp-content/uploads/2026/03/class-instinct.svg "width=28px") | Instinct | Strings | Low cellos & double basses | Prowling low-string ostinato — a rising minor 2nd, John Williams "Jaws" style: slow, tense, accelerating as it closes in |
+| ![Ranged](https://www.barefootbetters.com/wp-content/uploads/2026/03/class-ranged.svg "width=28px") | Ranged | Woodwinds | Flute / piccolo | Airy and distant — something in flight, fired from afar |
+| ![Strength](https://www.barefootbetters.com/wp-content/uploads/2026/03/class-strength.svg "width=28px") | Strength | Brass | Trumpets & trombones | Powerful, loud, commanding |
+| ![Tech](https://www.barefootbetters.com/wp-content/uploads/2026/03/class-tech.svg "width=28px") | Tech | Percussion + synth | Tuned percussion / synth | Mechanical, precise, digital |
 
 #### Direction and interval (the power knob)
 
