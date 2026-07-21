@@ -61,7 +61,7 @@ internal `AccountId`. The grounding surfaced that **no guaranteed public id exis
 per account**: the claimed handle (`display_handle`) is nullable-until-claimed,
 and the public surfaces use the mutable `display_name`.
 
-**Recommended (locked in D-24216 pending operator veto):** emit
+**Locked (D-24216, operator-approved 2026-07-21):** emit
 `player_id = display_handle` (the stable public alias) and
 `display_name = players.display_name` (the mutable label, into the optional LAGN
 `display_name` field). A seat whose account has **not claimed a handle** is
