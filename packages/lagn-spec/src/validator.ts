@@ -28,6 +28,16 @@ export const LAGN_VERSION_1_1_0 = '1.1.0'
 export const LAGN_VERSION_1_2_0 = '1.2.0'
 
 /**
+ * Adds optional `setup.hero_alternates` — a bench of reserve heroes named in a
+ * saved loadout, alongside the heroes actually played (WP-402). Strict superset
+ * of 1.2.0.
+ *
+ * why: 1.3.0 and not 1.2.0 — 1.2.0 is already allocated to provenance (D-24198),
+ * which must survive untouched.
+ */
+export const LAGN_VERSION_1_3_0 = '1.3.0'
+
+/**
  * The version this build stamps on documents it writes.
  *
  * why: deliberately still 1.1.0 even though readers now accept 1.2.0. Nothing
@@ -48,10 +58,28 @@ export const LAGN_VERSION = LAGN_VERSION_1_1_0
 export const LAGN_SUPPORTED_VERSIONS = [
   LAGN_VERSION_1_0_0,
   LAGN_VERSION_1_1_0,
-  LAGN_VERSION_1_2_0
+  LAGN_VERSION_1_2_0,
+  LAGN_VERSION_1_3_0
 ] as const
 
 export type LagnVersion = (typeof LAGN_SUPPORTED_VERSIONS)[number]
+
+/**
+ * True when `version` is `minimum` or any later supported version.
+ *
+ * why: D-24211 — version gates compare ORDINALLY, never with `===` against a
+ * single constant. The provenance gate shipped as `=== LAGN_VERSION_1_2_0`,
+ * which read correctly only while 1.2.0 was the newest version; the WP-402 draft
+ * scaffold measured the consequence — a 1.3.0 document carrying `catalog_ref`
+ * was REJECTED by a message that itself promises "1.2.0 or later". Ordinality is
+ * by position in LAGN_SUPPORTED_VERSIONS (oldest-first), the same array every
+ * reader already trusts. Both arguments are supported versions by the time any
+ * refinement runs — the root `lagn_version` enum has already accepted the
+ * value — so both indices are non-negative.
+ */
+function isLagnVersionAtLeast(version: LagnVersion, minimum: LagnVersion): boolean {
+  return LAGN_SUPPORTED_VERSIONS.indexOf(version) >= LAGN_SUPPORTED_VERSIONS.indexOf(minimum)
+}
 
 // Enums
 const ActionTypeEnum = z.enum([
@@ -199,6 +227,24 @@ const GameSetupSchema = z.object({
       name: z.string()
     })
   ).min(1),
+  // why: a SIBLING block, never more entries in `setup.heroes`. Hero count is
+  // exact-enforced downstream against PLAYER_COUNT_SETUP (3/5/6 heroes by seat
+  // count); seven entries in `heroes` would validate here and then throw on
+  // match create. The bench is additive to whatever the seat count requires.
+  //
+  // why: loadout metadata only — the reserves of a saved shortlist — and NEVER
+  // gameplay state. Nothing derives a match composition from it; `setup.heroes`
+  // stays the sole authority on what is on the board (D-24210).
+  //
+  // why: NO `.max()`. A cap in a published open standard cannot be relaxed
+  // without a major version bump and buys nothing the producing UI (WP-404,
+  // which offers two slots) cannot enforce itself.
+  hero_alternates: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string()
+    })
+  ).min(1).optional(),
   bystanders_count: z.number().int().min(0),
   wounds_count: z.number().int().min(0),
   shield_officers_count: z.number().int().min(0),
@@ -225,6 +271,33 @@ const GameSetupSchema = z.object({
         message: `The ${kind} pool sums to ${total} copies but ${countField} declares ${declared}`
       })
     }
+  }
+}).superRefine((setup, ctx) => {
+  // why: JSON Schema cannot express a disjointness rule between two arrays or a
+  // uniqueness rule within one. A hero is either played or benched, never both,
+  // and no ext_id may appear twice among the alternates. Checked here rather
+  // than at the root because both `heroes` and `hero_alternates` live in `setup`.
+  if (setup.hero_alternates === undefined) {
+    return
+  }
+  const playedHeroIds = new Set(setup.heroes.map((hero) => hero.id))
+  const seenAlternateIds = new Set<string>()
+  for (const alternate of setup.hero_alternates) {
+    if (playedHeroIds.has(alternate.id)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['hero_alternates'],
+        message: `${alternate.id} is listed as both a played hero and an alternate — a hero is one or the other, never both`
+      })
+    }
+    if (seenAlternateIds.has(alternate.id)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['hero_alternates'],
+        message: `${alternate.id} is listed more than once among the hero alternates`
+      })
+    }
+    seenAlternateIds.add(alternate.id)
   }
 })
 
@@ -515,7 +588,11 @@ export const lagnSchema = z.object({
   // would vanish on parse and the document would look clean. Rejecting loudly
   // is the only honest option.
   (data) => {
-    if (data.lagn_version === LAGN_VERSION_1_2_0) {
+    // why: ORDINAL, not equality (D-24211). `=== LAGN_VERSION_1_2_0` rejected a
+    // 1.3.0 document carrying provenance — measured red in the WP-402 scaffold —
+    // even though provenance is legal on 1.2.0 and every later version. The
+    // message already promised "or later"; the code now matches it.
+    if (isLagnVersionAtLeast(data.lagn_version, LAGN_VERSION_1_2_0)) {
       return true
     }
     if (data.catalog_ref !== undefined) {
@@ -556,6 +633,18 @@ export const lagnSchema = z.object({
       'effect_snapshot requires a document-level catalog_ref — a frozen effect ' +
       'is unverifiable without the registry snapshot it was taken from',
     path: ['card_catalog', 'cards', 'effect_snapshot']
+  }
+).refine(
+  // why: same silent-strip hazard the support_pools and provenance gates guard
+  // against. `lagnSchema` is not `.strict()`, so a bench written into a pre-1.3.0
+  // document would be STRIPPED on parse — the saved shortlist's reserves would
+  // vanish and the preset would come back short, with no error. Rejecting loudly
+  // is the only honest option. Ordinal (D-24211) so every version from 1.3.0
+  // onward carries it.
+  (data) => isLagnVersionAtLeast(data.lagn_version, LAGN_VERSION_1_3_0) || data.setup.hero_alternates === undefined,
+  {
+    message: `setup.hero_alternates requires lagn_version ${LAGN_VERSION_1_3_0} or later — an earlier document cannot carry hero alternates`,
+    path: ['setup', 'hero_alternates']
   }
 )
 
@@ -684,6 +773,19 @@ export const UNEXPRESSIBLE_CONSTRAINTS = [
   {
     path: 'lagn_version / setup.support_pools',
     constraint: `setup.support_pools requires lagn_version ${LAGN_VERSION_1_1_0}; a ${LAGN_VERSION_1_0_0} document may not carry it.`,
+    reason:
+      'Cross-field dependency between the root version and a nested optional block. Expressible as a deeply-nested if/then, but only by hand-writing exactly the duplicate structure this derivation exists to eliminate.'
+  },
+  {
+    path: 'setup.heroes / setup.hero_alternates',
+    constraint:
+      'No hero_alternates ext_id may also appear in setup.heroes, and none may repeat within hero_alternates.',
+    reason:
+      'Disjointness between two arrays plus uniqueness within one. JSON Schema uniqueItems compares whole items, not a single field, and cannot relate one array to another.'
+  },
+  {
+    path: `lagn_version / setup.hero_alternates`,
+    constraint: `setup.hero_alternates requires lagn_version ${LAGN_VERSION_1_3_0}; an earlier document may not carry it.`,
     reason:
       'Cross-field dependency between the root version and a nested optional block. Expressible as a deeply-nested if/then, but only by hand-writing exactly the duplicate structure this derivation exists to eliminate.'
   }

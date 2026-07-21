@@ -13,7 +13,8 @@ import {
   LAGN_VERSION,
   LAGN_VERSION_1_0_0,
   LAGN_VERSION_1_1_0,
-  LAGN_VERSION_1_2_0
+  LAGN_VERSION_1_2_0,
+  LAGN_VERSION_1_3_0
 } from './validator'
 import { migrateToCurrent } from './migrate'
 
@@ -910,7 +911,8 @@ describe('JSON Schema derivation', () => {
     assert.deepStrictEqual(schema.properties.lagn_version.enum, [
       LAGN_VERSION_1_0_0,
       LAGN_VERSION_1_1_0,
-      LAGN_VERSION_1_2_0
+      LAGN_VERSION_1_2_0,
+      LAGN_VERSION_1_3_0
     ])
     // why: readers accept 1.2.0 but writers must NOT stamp it yet — bumping
     // LAGN_VERSION would move the wire format of a catalogued endpoint while
@@ -977,7 +979,8 @@ describe('published JSON Schema accepts the shipped fixtures', () => {
     'tier1-support-pools.lagn.json',
     'tier2-with-catalog.lagn.json',
     'tier3-with-replay.lagn.json',
-    'tier2-provenance.lagn.json'
+    'tier2-provenance.lagn.json',
+    'tier1-hero-alternates.lagn.json'
   ]
 
   for (const fixture of fixtures) {
@@ -1128,5 +1131,121 @@ describe('LAGN 1.2.0 provenance', () => {
       !Object.keys(allDependencies).includes('@legendary-arena/registry'),
       'lagn-spec gained a registry dependency'
     )
+  })
+})
+
+// ============================================================================
+// LAGN 1.3.0 Hero Alternates (WP-402 / D-24210 / D-24211)
+// ============================================================================
+
+describe('LAGN 1.3.0 hero alternates', () => {
+  const BENCH = [
+    { id: 'core/gambit', name: 'Gambit' },
+    { id: 'core/storm', name: 'Storm' }
+  ]
+
+  test('AC-1: a 1.3.0 document carrying hero_alternates validates', () => {
+    const result = validate(
+      buildSetupDocument(LAGN_VERSION_1_3_0, { hero_alternates: BENCH })
+    )
+    assert.strictEqual(result.valid, true, JSON.stringify(result.errors))
+  })
+
+  test('AC-6: LAGN_VERSION stays 1.1.0 — no producer emits 1.3.0', () => {
+    // why: the writer flip is WP-404's job and moves a catalogued endpoint's
+    // wire format. Adding 1.3.0 to the READ set must not move the WRITE value.
+    assert.strictEqual(LAGN_VERSION, LAGN_VERSION_1_1_0)
+  })
+
+  for (const version of [LAGN_VERSION_1_0_0, LAGN_VERSION_1_1_0, LAGN_VERSION_1_2_0]) {
+    test(`AC-2: hero_alternates on a ${version} document is REJECTED, never stripped`, () => {
+      // why: lagnSchema is not .strict(), so an ungated bench would vanish on
+      // parse and the document would look clean — the worst available failure.
+      const result = validate(buildSetupDocument(version, { hero_alternates: BENCH }))
+      assert.strictEqual(result.valid, false)
+      assert.ok(
+        result.errors?.some((error) =>
+          error.includes('setup.hero_alternates requires lagn_version 1.3.0 or later')
+        ),
+        `expected the version-gate message, got: ${JSON.stringify(result.errors)}`
+      )
+    })
+  }
+
+  test('AC-3: an alternate id also present in setup.heroes is rejected', () => {
+    const result = validate(
+      buildSetupDocument(LAGN_VERSION_1_3_0, {
+        heroes: [{ id: 'core/gambit', name: 'Gambit' }],
+        hero_alternates: [{ id: 'core/gambit', name: 'Gambit' }]
+      })
+    )
+    assert.strictEqual(result.valid, false)
+    assert.ok(
+      result.errors?.some((error) =>
+        error.includes('is listed as both a played hero and an alternate')
+      ),
+      `expected the overlap message, got: ${JSON.stringify(result.errors)}`
+    )
+  })
+
+  test('AC-3: a repeated alternate id is rejected', () => {
+    const result = validate(
+      buildSetupDocument(LAGN_VERSION_1_3_0, {
+        hero_alternates: [
+          { id: 'core/gambit', name: 'Gambit' },
+          { id: 'core/gambit', name: 'Gambit' }
+        ]
+      })
+    )
+    assert.strictEqual(result.valid, false)
+    assert.ok(
+      result.errors?.some((error) =>
+        error.includes('is listed more than once among the hero alternates')
+      ),
+      `expected the duplicate message, got: ${JSON.stringify(result.errors)}`
+    )
+  })
+
+  test('AC-5: a 1.3.0 document carrying catalog_ref validates (the ordinal-gate fix)', () => {
+    // why: the pre-fix `=== LAGN_VERSION_1_2_0` gate REJECTS this — provenance is
+    // legal on 1.2.0 and every later version, but equality only recognized 1.2.0.
+    // This case is red against the equality gate and green against the ordinal one
+    // (D-24211). Demonstrated by mutation in the session log.
+    // why: catalog_ref sits at the DOCUMENT ROOT, not under setup — spreading it
+    // after buildSetupDocument() rather than into its setupOverrides. A nested
+    // catalog_ref would be stripped and the doc would pass for the wrong reason,
+    // never exercising the version gate at all.
+    const result = validate({
+      ...buildSetupDocument(LAGN_VERSION_1_3_0),
+      catalog_ref: {
+        source: 'legendary-arena-registry',
+        registry_version: 'sha256:' + 'a'.repeat(64),
+        set_content_hashes: { core: 'sha256:' + 'b'.repeat(64) }
+      }
+    })
+    assert.strictEqual(result.valid, true, JSON.stringify(result.errors))
+  })
+
+  test('AC-7: migrateToCurrent leaves a 1.3.0 input unchanged with applied: []', () => {
+    // why: LAGN_VERSION is still 1.1.0, so a 1.3.0 input is already NEWER than
+    // the writer target. It is left untouched — never downgraded, never
+    // re-stamped — and the 1.2.0 -> 1.3.0 step is registered but UNREACHABLE.
+    // This mirrors the established 1.2.0 precedent exactly (readers run ahead of
+    // the writer, so the migrator, which targets the writer, no-ops a newer doc
+    // rather than stamping it backward).
+    const original = buildSetupDocument(LAGN_VERSION_1_3_0, { hero_alternates: BENCH })
+    const result = migrateToCurrent(original)
+    assert.strictEqual(result.error, undefined)
+    assert.strictEqual(result.payload.lagn_version, LAGN_VERSION_1_3_0)
+    assert.deepStrictEqual(result.applied, [])
+    assert.deepStrictEqual(result.payload, original)
+  })
+
+  test('AC-7: migration never invents a bench from setup.heroes', () => {
+    // why: migration is forward-only and may not fabricate information that was
+    // never in the source. A 1.0.0 document migrated forward has no bench.
+    const migrated = migrateToCurrent(buildSetupDocument(LAGN_VERSION_1_0_0))
+    const setup = migrated.payload.setup as Record<string, unknown>
+    assert.strictEqual(setup.hero_alternates, undefined)
   })
 })

@@ -1,0 +1,65 @@
+{
+  "lagn_version": "1.3.0",
+  "$schema": "https://legendary-arena.com/schemas/lagn/v1/lagn-v1.json",
+  "game_id": "example-hero-alternates-001",
+  "variant": "cooperative",
+  "player_count": 2,
+  "setup": {
+    "mastermind": {
+      "id": "core/red-skull",
+      "name": "Red Skull"
+    },
+    "scheme": {
+      "id": "core/midtown-bank-robbery",
+      "name": "Midtown Bank Robbery"
+    },
+    "villain_groups": [
+      {
+        "id": "core/hydra",
+        "name": "HYDRA"
+      }
+    ],
+    "henchmen_groups": [
+      {
+        "id": "core/hand-ninjas",
+        "name": "Hand Ninjas"
+      }
+    ],
+    "heroes": [
+      {
+        "id": "core/spider-man",
+        "name": "Spider-Man"
+      },
+      {
+        "id": "core/black-widow",
+        "name": "Black Widow"
+      },
+      {
+        "id": "core/cyclops",
+        "name": "Cyclops"
+      },
+      {
+        "id": "core/wolverine",
+        "name": "Wolverine"
+      },
+      {
+        "id": "core/rogue",
+        "name": "Rogue"
+      }
+    ],
+    "hero_alternates": [
+      {
+        "id": "core/gambit",
+        "name": "Gambit"
+      },
+      {
+        "id": "core/storm",
+        "name": "Storm"
+      }
+    ],
+    "bystanders_count": 12,
+    "wounds_count": 30,
+    "shield_officers_count": 0,
+    "sidekicks_count": 0
+  }
+}

@@ -4,6 +4,7 @@ export {
   LAGN_VERSION_1_0_0,
   LAGN_VERSION_1_1_0,
   LAGN_VERSION_1_2_0,
+  LAGN_VERSION_1_3_0,
   LAGN_SUPPORTED_VERSIONS
 } from './validator.js'
 export type { LagnVersion } from './validator.js'
@@ -19,6 +20,7 @@ export type {
 export type {
   LAGN,
   GameSetup,
+  HeroAlternate,
   CatalogRef,
   RegistryRef,
   EffectSnapshot,
