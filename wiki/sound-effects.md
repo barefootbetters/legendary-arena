@@ -70,7 +70,7 @@ how ready they are to drive audio:
 #### Surface 1 — Notable events (the primary, ready-made hook)
 
 `NotableGameEvent` is the engine's append-only record of high-level
-player-visible outcomes. Five variants are locked, and — unlike the
+player-visible outcomes. Six variants are locked, and — unlike the
 game log — they **are** projected as `UIState.notableEvents`. The arena
 client already streams them through
 [`useNotableEventStream.ts`](../apps/arena-client/src/composables/useNotableEventStream.ts)
@@ -86,6 +86,7 @@ zero new engine work.
 | `ambushResolved` | A villain with an `Ambush:` marker enters the City | Menacing whoosh / short threat sting | Kenney Impact Sounds; OpenGameArt CC0 Cinematic |
 | `fightResolved` | A player defeats a villain or henchman in the City | Triumphant impact/hit, with a coin/bystander flourish when `bystandersRescued > 0` | Kenney Impact Sounds; OpenGameArt 80 CC0 RPG SFX (coins/gems) |
 | `mastermindDefeated` | All tactics defeated — the Mastermind is vanquished (win) | Victory fanfare — the biggest positive cue in the game | OpenGameArt CC0 Cinematic; Kenney RPG Audio |
+| `healResolved` | A player uses the Wound Healing ability (KOs Wounds from hand) | Soft restorative chime / positive heal shimmer | Kenney Interface Sounds (positive); OpenGameArt 80 CC0 RPG SFX (heal) |
 
 #### Surface 1b — Sub-effects inside a fight or ambush (`appliedEffects`)
 
@@ -215,7 +216,7 @@ Pitch the tiers so they **ascend** (each step higher than the last) and, if
 motifs are in play, write them in the acting hero's team key so a combo cue
 harmonizes with the [motif](#motif-cues) that spawned it.
 
-> **Signal gap — this needs a count the client cannot see today.** The five
+> **Signal gap — this needs a count the client cannot see today.** The six
 > `NotableGameEvent` variants and `playCard` carry **no chain-depth or
 > effects-triggered tally**: a hero play emits no result event at all, and
 > nothing projects "this play fired N downstream effects." A combo cue
@@ -606,7 +607,7 @@ unusable on a revenue-generating site.
 ## Code Touchpoints
 
 - [`packages/game-engine/src/events/notableEvents.types.ts`](../packages/game-engine/src/events/notableEvents.types.ts)
-  — the five `NotableGameEventType` variants and their payloads
+  — the six `NotableGameEventType` variants and their payloads
   (`appliedEffects`, `bystandersRescued`, `narrative`, `resolverKey`)
 - [`packages/game-engine/src/events/notableEvents.compose.ts`](../packages/game-engine/src/events/notableEvents.compose.ts)
   — where `appliedEffects` keyword labels (wound / KO / capture) are
@@ -662,7 +663,7 @@ unusable on a revenue-generating site.
 ## References
 
 - [`packages/game-engine/src/events/notableEvents.types.ts`](../packages/game-engine/src/events/notableEvents.types.ts)
-  — `NotableGameEventType` (5 locked variants) + payloads; header notes
+  — `NotableGameEventType` (6 locked variants) + payloads; header notes
   `G.messages` is not projected and `escapeResolved` is deferred
 - [`packages/game-engine/src/events/notableEvents.compose.ts`](../packages/game-engine/src/events/notableEvents.compose.ts)
   — `appliedEffects` keyword labels

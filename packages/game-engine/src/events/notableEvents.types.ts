@@ -3,10 +3,10 @@
  *
  * `NotableGameEvent` is the engine-emitted, JSON-serialisable, append-only
  * record of high-level player-visible outcomes. The discriminated union
- * carries five locked variants — `fightResolved`, `ambushResolved`,
- * `schemeTwistResolved`, `mastermindStrikeResolved`, `mastermindDefeated`
- * — each composed at its fire site via a pure narrative helper from
- * `notableEvents.compose.ts`.
+ * carries six locked variants — `fightResolved`, `ambushResolved`,
+ * `schemeTwistResolved`, `mastermindStrikeResolved`, `mastermindDefeated`,
+ * `healResolved` — each composed at its fire site via a pure narrative
+ * helper from `notableEvents.compose.ts`.
  *
  * Consumed by `UIState.notableEvents` for descriptive "what happened"
  * overlays in the arena client. WP-200 ships the engine half; WP-201
@@ -26,13 +26,14 @@ import type { VillainEffectKeyword } from '../rules/villainAbility.types.js';
 /**
  * Closed canonical union of notable game event types.
  *
- * Five variants in fixed canonical order: a Fight resolution, an Ambush
+ * Six variants in fixed canonical order: a Fight resolution, an Ambush
  * resolution at city entry, a Scheme Twist resolution, a Mastermind
- * Strike resolution, and a Mastermind defeat. `'mastermindDefeated'` was
- * added per D-20008 (citing D-20001) so the arena-client overlay can
- * report the win + bystander rescue — G.messages is not projected to
- * clients. Adding a sixth variant requires a new `DECISIONS.md` entry
- * (e.g., WP-186's eventual `'escapeResolved'` per D-20001).
+ * Strike resolution, a Mastermind defeat, and a Wound heal.
+ * `'mastermindDefeated'` was added per D-20008 (citing D-20001) and
+ * `'healResolved'` per WP-381 / D-24182 so the arena-client overlay can
+ * report those outcomes — G.messages is not projected to clients. Adding
+ * a seventh variant requires a new `DECISIONS.md` entry (e.g., WP-186's
+ * eventual `'escapeResolved'` per D-20001).
  */
 export type NotableGameEventType =
   | 'fightResolved'
