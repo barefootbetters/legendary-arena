@@ -31080,4 +31080,97 @@ routes on the label — both belong to the leaderboard, not to the LAGN contract
 
 **Packet:** WP-405 (LAGN contract, reader-only).
 
+---
+
+### D-24216 — The result-LAGN producer emits the claimed handle as player_id, and omits handleless seats
+
+**Status:** Drafted 2026-07-21 (WP-406); not yet landed — flips to Active
+(post-execution) when WP-406 merges.
+
+**Decision.** The result-LAGN producer (`GET /api/match/:matchId/result-lagn`,
+WP-406) populates `players[].player_id` with the account's **claimed public handle**
+(`legendary.players.display_handle`), and `display_name` with the mutable
+`players.display_name`. A seat whose account has **not** claimed a handle is
+**omitted** from `players[]` — never emitted with the internal `AccountId` (forbidden
+by D-24214) and never with a synthesized id. When no seat qualifies, `players[]` is
+omitted entirely (not `[]`). The producer reads the roster from the
+`legendary.match_seat_accounts` domain table and the outcome from the blob via the
+existing D-24119 / D-24169 carve-outs; it needs **no new blob-read carve-out**. It
+flips `LAGN_VERSION` to `1.4.0` (the write value the emitted document requires).
+
+**Why.** D-24214 mandates a public, shareable `player_id` and forbids `AccountId`,
+but no guaranteed public id exists per account: the WP-101 handle is
+nullable-until-claimed, and public surfaces use the *mutable* `display_name`.
+Emitting the handle keeps the id stable and URL-safe; falling back to `display_name`
+as an id was rejected (mutable ids collide and break on rename); synthesizing a new
+public id was rejected (inventing an id space is a prohibited AI failure pattern and
+duplicates the handle). Omission is the honest option — a result LAGN credits only
+participants who have a public identity and says nothing about those who do not. The
+producer is a new endpoint rather than an extension of the participant-gated setup
+emitter (D-24153) because a finished match's result has different (public)
+visibility and shape.
+
+**Boundary (inherited).** The result LAGN is descriptive (D-24214 / D-24215).
+Nothing scores, credits, ranks, or verifies from it; competitive scoring stays
+`matchId → blob → re-execute → AccountId` (D-5301 / D-24126).
+
+**Not decided here.** The claimed-handle rate among competitive participants — if
+omission proves common, a later packet may revisit whether ranked participation
+should require a handle. The `scoring_profile` vocabulary remains the leaderboard's
+(D-24215).
+
+**Packet:** WP-406. §21 TRIGGERED (new row + the setup emitter's stamped version
+moves); replaced WHOLE per D-11804.
+
+---
+
+### D-24217 — The Hall of Legends match-result view is a pure result-LAGN consumer
+
+**Status:** Drafted 2026-07-21 (WP-407); not yet landed — flips to Active
+(post-execution) when WP-407 merges.
+
+**Decision.** The per-match result view (`apps/legends-board`, WP-407) renders a
+completed match's outcome and roster **solely** from the WP-406 result LAGN. It does
+not join `legendary.match_seat_accounts`, `legendary.players`, or any identity table
+directly, and it exposes **no identity beyond what the result LAGN already made
+public** (the claimed handle + optional display name). A seat WP-406 omitted renders
+anonymous, never back-filled.
+
+**Why.** Keeping the view a pure consumer means the public-identity boundary is
+decided in exactly one place — the producer (D-24216) — and cannot drift or leak at
+the display layer. It also keeps the view a read-only projection with no new server
+authority. This is the first per-match surface in the Hall of Legends (which is
+otherwise aggregate), so establishing the consumer discipline now prevents a future
+panel from reaching into private identity for convenience.
+
+**Packet:** WP-407. `User-Visible Surface = legends.legendary-arena.com`; D-24026
+live verification required.
+
+---
+
+### D-24218 — The portable match-LAGN export is one-way; nothing re-ingests it
+
+**Status:** Drafted 2026-07-21 (WP-408); not yet landed — flips to Active
+(post-execution) when WP-408 merges.
+
+**Decision.** The "download this match as LAGN" control (WP-408) is a **one-way
+export**: it saves the WP-406 result LAGN (built server-side from the authoritative
+blob) as a file. The downloaded artifact is **never re-ingested** to score, credit,
+rank, or reconstruct a match. Offering the export introduces no upload/import-to-score
+path and no new trust surface.
+
+**Why.** A user can edit a downloaded file, but competitive outcomes stay
+`matchId → blob → re-execute → AccountId` server-side (D-5301) — nothing reads a
+supplied artifact as authority, exactly as `players[]` / `scoring_profile` are
+descriptive (D-24214 / D-24215). Recording the one-way boundary now stops a future
+packet from adding a "re-import a match record" path that would quietly turn a
+portable copy into a scoring input.
+
+**Not decided here.** Re-opening a downloaded *loadout* via the pre-existing
+Registry-Viewer `?lagn=` flow is unrelated and unaffected — that path already carries
+setup only and never touched scoring.
+
+**Packet:** WP-408. `User-Visible Surface = legends.legendary-arena.com`; D-24026
+live verification required.
+
 Protect this file.
