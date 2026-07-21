@@ -31351,9 +31351,9 @@ Protect this file.
 
 ---
 
-### D-24221 — hero-play synergy-effect count (`lastPlayEffectsFired`) is an observability-only, hash-excluded `UIState` signal (reserved)
+### D-24221 — hero-play synergy-effect count (`lastPlayEffectsFired`) is an observability-only, hash-excluded `UIState` signal
 
-**Status:** Reserved (Drafted 2026-07-21; not yet landed — flips to Active at WP-409 execution).
+**Status:** Active (post-execution) 2026-07-21. Landed with WP-409 / EC-444.
 
 **Decision.** Every hero card play records a deterministic count of the
 hero-ability effects that **fired** for that play, exposed to clients as a
@@ -31392,9 +31392,11 @@ for rules** it is **observability-only**, and is **excluded from the
 `finalStateHash` oracle** (`hashGameState.ts`, the same rest-destructure
 that excludes `messages` / `logMeta` per D-24081 / D-24114). Every recorded
 sentinel/golden `finalStateHash` therefore stays byte-unchanged — **no
-re-pin**. The whole-`G` `computeStateHash` / `PRE_WP080_HASH` determinism
-gate is handled with a matching exclusion or a deliberate, reasoned re-pin
-(the dual-oracle hazard), never a silent shift.
+re-pin**. The field is deliberately NOT seeded in `buildInitialGameState` (unlike
+`hasActedThisTurn` etc.), so the empty `PRE_WP080` replay never sets it and
+the whole-`G` `computeStateHash` / `PRE_WP080_HASH` oracle is byte-unchanged
+too (`ec64506a`) — **no oracle re-pin was required** (verified: engine suite
+2047 / 0). The dual-oracle hazard was thus a non-issue in practice.
 
 **Boundary.** No new `NotableGameEvent` variant is added — the UIState
 scalar is the deliberate lighter path than a 7th event (which would churn
@@ -31404,7 +31406,7 @@ combo-cue playback and the whole client audio layer are a separate, future
 WP.
 
 **Packet:** WP-409 (EC-444).
-**Drafted:** 2026-07-21; not yet landed.
+**Drafted:** 2026-07-21; landed with WP-409 execution 2026-07-21.
 
 ### D-24222 — card-image working-set prefetch: the engine projects the manifest (`UIState.matchCardImageUrls`), the client warms it at match start; LAGN carries no bytes (reserved)
 
