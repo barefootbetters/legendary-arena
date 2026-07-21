@@ -833,3 +833,34 @@ describe('filterUIStateForAudience — pendingReturnZeroCostDiscard redaction (D
     assert.ok(uiState.pendingReturnZeroCostDiscard !== undefined, 'source UIState unchanged');
   });
 });
+
+describe('filterUIStateForAudience — matchCardImageUrls (WP-410 / D-24222)', () => {
+  const SAMPLE_MANIFEST = [
+    'https://images.legendary-arena.com/set/a.webp',
+    'https://images.legendary-arena.com/set/b.webp',
+  ];
+
+  it('passes the manifest through value-equal for a player AND a spectator', () => {
+    const uiState = createTestUIState();
+    // why: set a known manifest so the survival check is non-vacuous. The field is
+    // PUBLIC (no redaction), so it must arrive value-equal for every audience —
+    // without this pass-through it is dropped at the whitelist boundary.
+    uiState.matchCardImageUrls = [...SAMPLE_MANIFEST];
+    for (const audience of [PLAYER_0, SPECTATOR]) {
+      const result = filterUIStateForAudience(uiState, audience);
+      assert.deepStrictEqual(result.matchCardImageUrls, SAMPLE_MANIFEST);
+    }
+  });
+
+  it('produces a fresh array copy (no aliasing with the input)', () => {
+    const uiState = createTestUIState();
+    uiState.matchCardImageUrls = [...SAMPLE_MANIFEST];
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+    assert.notStrictEqual(
+      result.matchCardImageUrls,
+      uiState.matchCardImageUrls,
+      'must be a fresh array, not a reference into the input UIState',
+    );
+    assert.deepStrictEqual(result.matchCardImageUrls, SAMPLE_MANIFEST);
+  });
+});

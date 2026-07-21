@@ -7,6 +7,56 @@
 
 ## Current State
 
+### WP-410 / EC-445 — Card-image working-set prefetch at match start (D-24222) (2026-07-21)
+
+**User-visible surface — `play.legendary-arena.com`. Code merged; the perceived
+change (no mid-turn image pop-in) is subtle, so AC-10 / D-24026 live verification
+is OPEN and operator-gated.**
+
+Implements the ewiki LAGN discussion's **Option C** (prefetch, not embed/zip): at
+match start the arena client warms every card image the match can show into the
+browser image cache, so a card paints from cache on reveal instead of blocking the
+turn on a mid-turn round-trip to the R2 image host.
+
+**Cross-layer (Engine→App), because the client cannot derive the set** — it may not
+import the registry at runtime, and the live UIState projects only currently-visible
+cards. The engine, which already resolves every card's `imageUrl` into
+`G.cardDisplayData` at setup, now projects the deduped, non-empty set as an optional
+top-level `UIState.matchCardImageUrls` (`uiState.build.ts` always populates it, `[]`
+for an empty match; optional in the type so no hand-written UIState fixture needs a
+backfill — the WP-179 pattern). The field is passed through `filterUIStateForAudience`
+**public and value-identical for every audience** — the copilot gate caught that a
+field omitted from that whitelist boundary would be silently dropped, shipping a
+green-but-dead feature. A new `useCardImagePrefetch` composable warms the list with
+bounded concurrency (`PREFETCH_CONCURRENCY = 6`), fail-soft (`new Image()`; a rejected
+warm is skipped, covered by `CardTile.vue`'s lazy `<img>` fallback), and idempotent (a
+`Set`, so the per-frame re-send and reconnect never refetch); mounted once at the
+D-16501 `PlayViewport` root, a no-op until a non-empty manifest arrives.
+
+**Projection-only, information-safe.** Never written to `G`, so no state-hash surface
+is touched — every sentinel `finalStateHash` / `PRE_WP080_HASH` byte-unchanged (no
+re-pin). The manifest is a flat deduped URL set: the card *designs* are public from
+the composition, so it carries no face-down order and no per-player hidden state.
+**LAGN unchanged** (embed/zip rejected, D-24222). No service worker / Cache Storage
+(v1 warms the HTTP cache; the durable SW is a named future WP); no first-visible
+priority ordering; no R2 `Cache-Control` change (the companion **ops** change — R2 card
+objects currently serve with no `Cache-Control` and `cf-cache-status: DYNAMIC`, so
+warmed bytes are not yet reused across matches; out of this WP's tree).
+
+**Gates green:** `packages/game-engine` **2045 / 0**, `arena-client` typecheck 0 +
+**978 / 0** (incl. the unedited `PlayViewport.test.ts` — the null-snapshot no-op held),
+`pnpm -r build` 0. AC-8 grep gates: zero `@legendary-arena/registry` import and zero
+image-host literal in the composable. §21 N/A (rides the UIState transport). D-24222
+landed Active. `pnpm -r --no-bail test`'s only failure is the pre-existing
+`apps/dashboard` WORK_INDEX drift-guard (named offender: the WP-409 row's title) — red
+on `main` before this WP's baseline, unrelated.
+
+**AC-10 / D-24026 live-verify is OPEN (operator-gated):** on the deployed
+`play.legendary-arena.com` bundle, open a real match and confirm (browser network
+panel) that the working-set images are fetched during setup and a card revealed later
+paints from cache with no image request. Its payoff compounds once the R2
+immutable-`Cache-Control` ops change lands.
+
 ### WP-409 / EC-444 — Hero-play synergy-effect count → UIState (D-24221) (2026-07-21)
 
 **No user-observable change — infrastructure only.** This WP projects a new

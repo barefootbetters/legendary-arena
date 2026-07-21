@@ -447,6 +447,19 @@ export function filterUIStateForAudience(
     koPile: deepCopyKoPile(uiState.koPile),
   };
 
+  // why: WP-410 / D-24222 — the match card-image manifest passes through PUBLIC
+  // and value-identical for every audience (player and spectator). It is
+  // information-safe: which card *designs* a match contains is public from the
+  // composition; the flat deduped URL set carries no face-down deck order and no
+  // per-player hidden state, so no redaction applies. A fresh array copy prevents
+  // aliasing with the input UIState; conditional assignment (never a `matchCardImageUrls:
+  // undefined` literal) satisfies exactOptionalPropertyTypes. buildUIState always
+  // populates the field, so in practice this always fires. Without this pass-through
+  // the field is dropped at this whitelist boundary and the client never warms.
+  if (uiState.matchCardImageUrls !== undefined) {
+    result.matchCardImageUrls = [...uiState.matchCardImageUrls];
+  }
+
   if (uiState.gameOver !== undefined) {
     result.gameOver = { ...uiState.gameOver };
   }

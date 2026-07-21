@@ -85,6 +85,16 @@ export interface UIState {
   decks: UIDecksState;
   piles: UISharedPilesState;
   koPile: UIKoPileState;
+  // why: WP-410 / D-24222 — the deduped set of every non-empty card-face image
+  // URL this match can show (from G.cardDisplayData). The arena client warms these
+  // into the browser image cache at match start so a card paints from cache on
+  // reveal instead of round-tripping to R2 mid-turn. OPTIONAL in the type only so
+  // pre-existing hand-written UIState fixtures need no backfill (the WP-179
+  // pattern); `uiState.build.ts` ALWAYS populates it (`[]` for an empty match), and
+  // `uiState.filter.ts` passes it through public (the design set is public from the
+  // composition — information-safe; no face-down order). Projection-only: never a G
+  // field, so no state-hash surface.
+  matchCardImageUrls?: string[];
   gameOver?: UIGameOverState;
   // why: WP-367 / D-24159 — present ONLY while the deck-exhaustion final-turn
   // latch is active (a shared deck has reached zero cards) and the game has not
