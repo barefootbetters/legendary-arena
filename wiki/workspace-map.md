@@ -436,16 +436,15 @@ asked. Two pointers keep it reachable:
   future session cannot quietly re-file things — it needs a D-entry, the
   way the pCloud naming question got D-24207 and D-24208. Until then it
   is guidance.
-- **`LA\audio\` is documented but not yet created, and the existing
-  audio has not moved.** The decision is settled — R2 is the sole audio
-  surface, WAV masters and local MP3 derivatives are pCloud working
-  binaries, nothing audio goes in git. But the ~141 MB of audio produced
-  so far still sits *gitignored inside the engine repo* under
-  `content/media/`, and `C:\pcloud\LA\audio\` does not exist yet.
-  Relocating those files and repointing the crop scripts' working
-  directory is an **operational follow-up**, not a doc change. Like the
-  `LA\ops\` / `LA\brand\` taxonomy above, the shape is guidance until a
-  D-entry locks it.
+- **`LA\audio\` now holds the audio; the folder shape is not yet
+  locked.** The decision is settled — R2 is the sole audio surface, WAV
+  masters and local MP3 derivatives are pCloud working binaries, nothing
+  audio goes in git. The ~141 MB produced so far has been moved out of
+  the engine repo's `content/media/` to `C:\pcloud\LA\audio\` and the
+  crop scripts repointed to run against it. What remains open, as with
+  the `LA\ops\` / `LA\brand\` taxonomy above, is whether the `LA\audio\`
+  shape should be locked by a D-entry so a future session cannot quietly
+  re-file it.
 - **Per-repo README pointers are proposed but not written.** Each repo
   gaining a short section naming this page — rather than restating it —
   would make the map findable from inside any checkout. Scope, and whether

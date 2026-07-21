@@ -180,14 +180,14 @@ the `audio` shortcode (see [Ewiki Authoring](ewiki-authoring.md)):
 ## Edge Cases
 
 - **No audio in git — masters live on pCloud.** The WAV masters, their
-  local MP3 derivatives, and cover images belong on pCloud
+  local MP3 derivatives, and cover images live on pCloud
   (`C:\pcloud\LA\audio\`), not in the repo tree; only the authoring
   guide, hero research, template, index, and crop scripts under
   `content/media/` are tracked and version-controlled, and the runtime
-  theme JSON in `content/themes/` is tracked as before. **Migration
-  pending:** the ~141 MB produced so far still sits gitignored under
-  `content/media/` and has not yet moved to pCloud — see the Open
-  Question below and [Workspace Map](workspace-map.md).
+  theme JSON in `content/themes/` is tracked as before. The ~141 MB
+  produced so far has been moved out of `content/media/` to
+  `C:\pcloud\LA\audio\` and the crop scripts repointed to run against it
+  — see [Workspace Map](workspace-map.md).
 - **Masters are never uploaded.** Only the MP3 derivatives ship to R2;
   the `_MASTER.wav` seed stays local. Batch-encode recipes guard against
   encoding the master as a distribution asset.
@@ -224,13 +224,11 @@ the `audio` shortcode (see [Ewiki Authoring](ewiki-authoring.md)):
   cues off the R2 round-trip — and how it maps to the adaptive
   danger-meter tiers on [Sound Effects](sound-effects.md) is not yet
   documented here.
-- **Audio relocation to pCloud.** The ~141 MB of masters and derivatives
-  currently gitignored under `content/media/` needs to move to
-  `C:\pcloud\LA\audio\`, with the crop scripts' working directory
-  repointed. It is an operational task, not yet done; whether the
-  `C:\pcloud\LA\audio\` shape should be locked by a D-entry (as with the
-  `LA\ops\` / `LA\brand\` taxonomy) is open — see
-  [Workspace Map](workspace-map.md).
+- **Lock the `LA\audio\` shape?** The masters and derivatives have been
+  moved to `C:\pcloud\LA\audio\` and the crop scripts repointed to run
+  against it. Whether that folder shape should be locked by a D-entry (as
+  with the `LA\ops\` / `LA\brand\` taxonomy) so a future session cannot
+  quietly re-file it is open — see [Workspace Map](workspace-map.md).
 - **Production R2 domain.** When `music.barefootbetters.com` goes live,
   the demo above should be re-pointed at the canonical theme URL.
 - **Sting vs SFX reconciliation.** The `ES01`–`ES04` stings and the

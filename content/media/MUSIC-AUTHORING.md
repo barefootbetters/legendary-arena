@@ -214,13 +214,22 @@ base names; only the extension differs.
 
 ## Repository Layout & Tooling
 
-Scenario themes and hero themes follow parallel structures under
-`content/media/`. One folder per theme holds the master, derivatives,
-research `.md`, and (once run) a committed crop script documenting how
-the derivatives were produced from the master.
+Audio spans **two surfaces** (see the wiki [Workspace Map] and
+[Data & File Locations] for the surface rules):
+
+- **Tooling + research — git (`content/media/`).** The crop-script
+  templates, this guide, per-hero research `.md`, `HERO-INDEX.json`, and
+  each hero's committed `crop.ps1` provenance copy are version-controlled
+  text. **No audio lives here.**
+- **Working audio — pCloud (`C:\pcloud\LA\audio\`).** The WAV masters,
+  their local MP3 derivatives, and cover images live here, in per-theme /
+  per-hero subfolders that mirror the tooling layout by name. These are
+  working binaries: never committed, never in the repo tree. Only the
+  published 320 kbps MP3s go to R2 (the sole audio delivery surface);
+  masters are never uploaded.
 
 ```
-content/media/
+content/media/  (git — tooling + research, no audio)
 ├── MUSIC-AUTHORING.md
 ├── crop-theme.sh / crop-theme.ps1           ← scenario template (8 crops)
 └── heroes/
@@ -230,27 +239,39 @@ content/media/
     ├── crop-one.sh  / crop-one.ps1          ← single-crop interactive (MT03 loop experiments)
     └── black-widow/
         ├── black-widow.md
-        └── hero-black-widow_MASTER.wav
+        └── crop.ps1                          ← committed provenance (the actual crop points)
+
+C:\pcloud\LA\audio\  (pCloud — working binaries, gitignored/never in repo)
+├── age-of-apocalypse/
+│   ├── age-of-apocalypse_MASTER.wav          ← Suno master (never uploaded)
+│   ├── age-of-apocalypse_MT01_preview-intro.{wav,mp3}   … (8 derivatives)
+│   └── suno-...jpg                           ← cover image
+└── heroes/
+    └── black-widow/
+        └── hero-black-widow_MASTER.wav       ← + 4 MT derivatives
 ```
 
-All three crop scripts ship as matched **bash (`.sh`) and PowerShell (`.ps1`) pairs** with identical behavior — pick whichever fits your shell. Both variants require `ffmpeg` + `ffprobe` on PATH.
+All three crop scripts ship as matched **bash (`.sh`) and PowerShell (`.ps1`) pairs** with identical behavior — pick whichever fits your shell. Both variants require `ffmpeg` + `ffprobe` on PATH. They are **CWD-relative**: run them from the theme's / hero's pCloud audio folder and they read `<name>_MASTER.wav` from there and write derivatives beside it. `$Repo` below is your `legendary-arena` checkout.
 
 **Crop scripts:**
 
-- `crop-theme` — scenario 8-asset batch template. Copy into `content/media/<scenario>/`, edit the crops array with listened timestamps, run, commit alongside the audio.
-- `crop-hero` — hero 4-asset batch template (MT01–MT04 only; event stings `ES01`–`ES04` are match-level, not character-level). Copy into `content/media/heroes/<hero-slug>/` as `crop.sh` / `crop.ps1`, edit timestamps, run, commit.
+- `crop-theme` — scenario 8-asset batch template. Run against a theme's pCloud folder `C:\pcloud\LA\audio\<scenario>\` (or copy the script in as `crop.ps1` first to record provenance), edit the crops array with listened timestamps, run.
+- `crop-hero` — hero 4-asset batch template (MT01–MT04 only; event stings `ES01`–`ES04` are match-level, not character-level). Copy into `C:\pcloud\LA\audio\heroes\<hero-slug>\` as `crop.sh` / `crop.ps1`, edit timestamps, run; commit the filled-in copy back to `content/media/heroes/<hero-slug>/` as provenance.
 - `crop-one` — hero single-crop interactive sibling. Useful for timestamp discovery and MT03 ambient-loop experiments via the loop flag. Invoked from a hero folder with `<asset> <start> <end>` and an optional loop count.
 
-**Invocation (from a scenario or hero subfolder):**
+**Invocation (`cd` into the pCloud audio folder first, then):**
 
 | Task | bash | PowerShell |
 |---|---|---|
-| Scenario batch | `bash ../crop-theme.sh` | `pwsh ..\crop-theme.ps1` |
+| Scenario batch | `bash "$Repo/content/media/crop-theme.sh"` | `pwsh $Repo\content\media\crop-theme.ps1` |
 | Hero batch (after copy to `crop.sh` / `crop.ps1`) | `bash ./crop.sh` | `pwsh .\crop.ps1` |
-| Hero single crop | `bash ../crop-one.sh MT01 0:02 0:07` | `pwsh ..\crop-one.ps1 MT01 0:02 0:07` |
-| Hero single + loop (MT03) | `bash ../crop-one.sh MT03 30 60 --loop 4` | `pwsh ..\crop-one.ps1 MT03 30 60 -Loop 4` |
+| Hero single crop | `bash "$Repo/content/media/heroes/crop-one.sh" MT01 0:02 0:07` | `pwsh $Repo\content\media\heroes\crop-one.ps1 MT01 0:02 0:07` |
+| Hero single + loop (MT03) | `bash "$Repo/content/media/heroes/crop-one.sh" MT03 30 60 --loop 4` | `pwsh $Repo\content\media\heroes\crop-one.ps1 MT03 30 60 -Loop 4` |
 
 All crops use `-c copy` — sample-accurate lossless PCM, no re-encoding. MP3 encoding + loudness normalization happens in a separate batch pass (see Pro Tips below).
+
+[Workspace Map]: https://ewiki.legendary-arena.com/workspace-map/
+[Data & File Locations]: https://ewiki.legendary-arena.com/data-file-locations/
 
 Install ffmpeg on Windows with `winget install -e --id Gyan.FFmpeg`, then restart the terminal so PATH picks it up. If PowerShell execution policy blocks a `.ps1`, invoke with `pwsh -ExecutionPolicy Bypass -File <script>.ps1`.
 
