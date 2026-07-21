@@ -7,6 +7,36 @@
 
 ## Current State
 
+### WP-409 / EC-444 — Hero-play synergy-effect count → UIState (D-24221) (2026-07-21)
+
+**No user-observable change — infrastructure only.** This WP projects a new
+engine signal (`UIState.game.lastPlayEffectsFired`) that nothing consumes yet, so
+a player sees no difference. It exists to unblock the future client **tiered
+combo / synergy cue** (the ewiki Sound Effects design), where the user-visible
+payoff will land — so the D-24026 live-surface gate inverts to this statement.
+
+Every hero card play now records a deterministic count of the hero effects that
+**fired** for that play — each `executeSingleEffect` that reached its handler plus
+each top-level `interpretHeroPrimitiveEffect` that ran; condition-gated and
+safe-skipped effects are not counted, so a synergy-unlocked hook raises the count
+(the honest "how much did this play do" signal, since a hero play does not
+cascade). `executeHeroEffects` widened `void → number`; `applyCardPlay` stashes the
+return on the per-turn transient `G.lastPlayEffectsFired` (covers `playCard` +
+`playFromUndercover`); the play-phase `onBegin` resets it to 0; it projects publicly
+on `UIState.game` (no redaction).
+
+**Determinism (D-24221).** Observability-only ⇒ excluded from the `finalStateHash`
+oracle (the D-24081 `messages` mechanism); deliberately NOT seeded at setup, so the
+empty `PRE_WP080` replay leaves the whole-`G` `computeStateHash` oracle unchanged
+too. **No hash re-pin on either oracle** (`PRE_WP080_HASH` still `ec64506a`).
+
+**No client audio** (deferred to a future audio-layer WP) and **no new
+`NotableGameEvent` variant** (the UIState scalar is the deliberate lighter path).
+
+Verification: engine **2047 / 0** (7 count-semantics tests + drift pin + build
+projection), arena-client **974 / 0** + `typecheck` 0 (UIState fixtures backfilled:
+3 JSON + 8 inline), `pnpm -r build` 0. D-24221 Active.
+
 ### WP-408 / EC-443 — Portable match-LAGN download on the result view (D-24218) (2026-07-21)
 
 **User-visible surface — `legends.legendary-arena.com`. Code merged + deployed;

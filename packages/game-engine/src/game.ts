@@ -549,6 +549,15 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
           G.hasActedThisTurn = false;
           G.hasHealedThisTurn = false;
 
+          // why: WP-409 / D-24221 — the per-turn hero-effect-fired count is a
+          // transient observability signal; a fresh turn starts at 0 before any
+          // play (overwritten each play by applyCardPlay). Deliberately NOT seeded
+          // in buildInitialGameState (unlike hasActedThisTurn etc.), so the empty
+          // PRE_WP080 replay never sets it and that whole-G oracle is byte-unchanged;
+          // it is excluded from the finalStateHash oracle, so sentinels hold too —
+          // no hash re-pin (verified: full engine suite green).
+          G.lastPlayEffectsFired = 0;
+
           // why: the engine owns the start-of-turn draw — the former
           // TurnActionBar "Draw to 6" UI scaffold is retired. Fill the active
           // player's hand to HAND_SIZE from their deck (reshuffling the

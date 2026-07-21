@@ -80,7 +80,19 @@ export function hashGameState(state: LegendaryGameState): string {
   // counter). Like messages, it is hash-safe: deterministic but not part of the state the
   // placement-hash oracle guards, and including it would force a sentinel re-pin on every
   // action. The messages oracle already covers the prefixed lines.
-  const { messages: _excludedMessageLog, logMeta: _excludedLogMeta, ...stateWithoutMessageLog } = state;
+  // why: WP-409 / D-24221 — also exclude G.lastPlayEffectsFired (the per-turn count of
+  // hero effects that fired for the most recent play). Observability-only like messages:
+  // nothing reads it for rules, it feeds the future client combo/synergy cue, and
+  // including it would force a sentinel re-pin on every play. It STAYS in computeStateHash
+  // (replay.hash.ts, the whole-G determinism oracle); because the field is not seeded at
+  // setup, the empty PRE_WP080 replay leaves that oracle byte-unchanged too — verified,
+  // no re-pin. Same observability split as messages.
+  const {
+    messages: _excludedMessageLog,
+    logMeta: _excludedLogMeta,
+    lastPlayEffectsFired: _excludedLastPlayEffectsFired,
+    ...stateWithoutMessageLog
+  } = state;
   const canonicalJson = JSON.stringify(stateWithoutMessageLog, sortKeysReplacer);
   const hasher = createHash('sha256');
   hasher.update(canonicalJson);

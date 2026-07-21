@@ -456,6 +456,9 @@ export function buildUIState(
     // drive the client Heal-Wounds affordance gating (D-24181).
     hasActedThisTurn: gameState.hasActedThisTurn ?? false,
     hasHealedThisTurn: gameState.hasHealedThisTurn ?? false,
+    // why: WP-409 — coerce the optional per-turn hero-effect-fired count to a
+    // definite projection (undefined = no play yet this turn = 0).
+    lastPlayEffectsFired: gameState.lastPlayEffectsFired ?? 0,
   };
 
   // --- 2. Project player states ---

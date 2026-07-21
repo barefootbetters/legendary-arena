@@ -58,6 +58,11 @@ export interface UIState {
     // projects as false).
     hasActedThisTurn: boolean;
     hasHealedThisTurn: boolean;
+    // why: WP-409 / D-24221 — the per-turn count of hero effects that fired for the
+    // most recent play, projected publicly (like currentStage: a played card is
+    // face-up, the count is not secret; no per-player redaction). Always-present
+    // (an undefined G field projects as 0). Feeds the future client tiered combo cue.
+    lastPlayEffectsFired: number;
   };
   players: UIPlayerState[];
   city: UICityState;

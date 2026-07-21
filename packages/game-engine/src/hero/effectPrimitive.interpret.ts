@@ -579,7 +579,7 @@ function dispatchEffectNode(
   node: EffectNode,
   context: EffectExecutionContext,
   sourceCardId: CardExtId | undefined,
-): void {
+): boolean {
   const handler = EFFECT_NODE_HANDLERS[node.type];
   // why: runtime dispatch guard — confirm the key resolves BEFORE indexing the
   // ImplementationMap (mirror executeSingleEffect's `if (handler === undefined) return;`).
@@ -589,9 +589,14 @@ function dispatchEffectNode(
       G,
       `A hero primitive effect used an unknown node type "${String((node as { type?: unknown }).type)}" and was skipped. Check the effect composition.`,
     );
-    return;
+    // why: WP-409 / D-24221 — an unknown-node skip did NOT fire; report false so
+    // executeHeroEffects does not count it toward lastPlayEffectsFired.
+    return false;
   }
   handler(G, ctx, playerID, node, context, sourceCardId);
+  // why: WP-409 / D-24221 — a top-level primitive effect ran its handler; report
+  // true so it counts as one fired effect.
+  return true;
 }
 
 /**
@@ -616,11 +621,15 @@ export function interpretHeroPrimitiveEffect(
   playerID: string,
   node: EffectNode,
   sourceCardId?: CardExtId,
-): void {
+): boolean {
   // why: D-24029 §9 / D-24030 — a FRESH EffectExecutionContext per top-level effect
   // evaluation, lexically scoped to this call and NEVER written to G/ctx. Transient
   // interpreter state, re-derived identically on replay, not game state — a persisted
   // binding would break the persistence boundary and risk replay double-application.
   const context: EffectExecutionContext = new Map<string, CardExtId>();
-  dispatchEffectNode(G, ctx, playerID, node, context, sourceCardId);
+  // why: WP-409 / D-24221 — forward whether the top-level node dispatched to a real
+  // handler so executeHeroEffects can count it toward lastPlayEffectsFired (an
+  // unknown-node skip returns false and is not counted). Callers that ignore the
+  // return (drawOrEmpowered.resolve, resolvePutAnyNumberBottomHQ) are unaffected.
+  return dispatchEffectNode(G, ctx, playerID, node, context, sourceCardId);
 }

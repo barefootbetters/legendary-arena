@@ -106,6 +106,20 @@ describe('buildUIState', () => {
     assert.equal(actedResult.game.hasHealedThisTurn, true);
   });
 
+  it('game.lastPlayEffectsFired mirrors G, undefined projecting as 0 (WP-409)', () => {
+    // why: WP-409 / D-24221 — the per-turn count of hero effects that fired for the
+    // most recent play projects publicly. An absent G field (optional, undefined)
+    // projects as 0; a set count projects verbatim. Feeds the future combo cue.
+    const unsetState = createTestGameState();
+    const unsetResult = buildUIState(unsetState, mockCtx);
+    assert.equal(unsetResult.game.lastPlayEffectsFired, 0);
+
+    const playedState = createTestGameState();
+    playedState.lastPlayEffectsFired = 3;
+    const playedResult = buildUIState(playedState, mockCtx);
+    assert.equal(playedResult.game.lastPlayEffectsFired, 3);
+  });
+
   it('game.turn reads G.logMeta.turn when set, not the bumped ctx.turn (WP-331)', () => {
     // why: WP-331 — at game-over boardgame.io transitions play -> end, and a
     // phase change starts a fresh framework turn, bumping ctx.turn one past the

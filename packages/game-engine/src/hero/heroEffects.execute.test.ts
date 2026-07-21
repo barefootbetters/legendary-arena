@@ -196,6 +196,122 @@ function makeTestState(overrides?: {
   };
 }
 
+describe('executeHeroEffects fired-effect count (WP-409 / D-24221)', () => {
+  // why: WP-409 — executeHeroEffects returns the number of hero effects that FIRED
+  // for the play (each executeSingleEffect / interpretHeroPrimitiveEffect that reached
+  // a handler). applyCardPlay stashes it on the observability-only G.lastPlayEffectsFired
+  // for the future client combo/synergy cue. These tests pin the count semantics:
+  // condition-gated and safe-skipped effects are NOT counted.
+  const countCtx = makeMockCtx();
+
+  it('returns 1 for a single firing effect', () => {
+    const gameState = makeTestState({
+      deck: ['c1', 'c2', 'c3'],
+      hand: [],
+      inPlay: ['hero-x'],
+      heroAbilityHooks: [
+        { cardId: 'hero-x' as string, timing: 'onPlay', keywords: ['draw'], effects: [{ type: 'draw', magnitude: 2 }] },
+      ],
+    });
+    assert.equal(executeHeroEffects(gameState, countCtx, '0', 'hero-x' as string), 1,
+      'One firing effect should count as 1.');
+  });
+
+  it('returns N for N firing effects on one hook', () => {
+    const gameState = makeTestState({
+      deck: ['c1', 'c2', 'c3'],
+      hand: [],
+      inPlay: ['hero-x'],
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-x' as string,
+          timing: 'onPlay',
+          keywords: ['draw', 'attack'],
+          effects: [{ type: 'draw', magnitude: 1 }, { type: 'attack', magnitude: 3 }],
+        },
+      ],
+    });
+    assert.equal(executeHeroEffects(gameState, countCtx, '0', 'hero-x' as string), 2,
+      'Two firing effects should count as 2.');
+  });
+
+  it('does NOT count a safe-skipped effect (invalid magnitude)', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-x'],
+      heroAbilityHooks: [
+        // why: negative magnitude fails isValidMagnitude → executeSingleEffect returns false.
+        { cardId: 'hero-x' as string, timing: 'onPlay', keywords: ['attack'], effects: [{ type: 'attack', magnitude: -1 }] },
+      ],
+    });
+    assert.equal(executeHeroEffects(gameState, countCtx, '0', 'hero-x' as string), 0,
+      'A safe-skipped effect must not be counted.');
+  });
+
+  it('counts only the firing effect in a mixed hook (fires + safe-skip)', () => {
+    const gameState = makeTestState({
+      deck: ['c1', 'c2'],
+      hand: [],
+      inPlay: ['hero-x'],
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-x' as string,
+          timing: 'onPlay',
+          keywords: ['draw', 'attack'],
+          effects: [{ type: 'draw', magnitude: 1 }, { type: 'attack', magnitude: -1 }],
+        },
+      ],
+    });
+    assert.equal(executeHeroEffects(gameState, countCtx, '0', 'hero-x' as string), 1,
+      'Only the effect that fired should be counted.');
+  });
+
+  it('returns 0 for a hook whose synergy condition failed', () => {
+    const gameState = makeTestState({
+      deck: ['c1', 'c2'],
+      hand: [],
+      inPlay: ['hero-x'],
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-x' as string,
+          timing: 'onPlay',
+          keywords: ['draw'],
+          effects: [{ type: 'draw', magnitude: 1 }],
+          // why: heroClassMatch with no other strength card in play (self-excluded) fails,
+          // so the hook is gated out and nothing fires — a synergy that did NOT land.
+          conditions: [{ type: 'heroClassMatch', value: 'strength' }],
+        },
+      ],
+    });
+    assert.equal(executeHeroEffects(gameState, countCtx, '0', 'hero-x' as string), 0,
+      'A condition-gated hook contributes 0 to the count.');
+  });
+
+  it('returns 0 for a card with no matching hooks', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-x'],
+      heroAbilityHooks: [
+        { cardId: 'hero-other' as string, timing: 'onPlay', keywords: ['attack'], effects: [{ type: 'attack', magnitude: 2 }] },
+      ],
+    });
+    assert.equal(executeHeroEffects(gameState, countCtx, '0', 'hero-x' as string), 0,
+      'A play whose card has no hooks yields 0.');
+  });
+
+  it('sums fired effects across multiple hooks for the same card', () => {
+    const gameState = makeTestState({
+      deck: ['c1', 'c2', 'c3'],
+      hand: [],
+      inPlay: ['hero-x'],
+      heroAbilityHooks: [
+        { cardId: 'hero-x' as string, timing: 'onPlay', keywords: ['draw'], effects: [{ type: 'draw', magnitude: 1 }] },
+        { cardId: 'hero-x' as string, timing: 'onPlay', keywords: ['attack'], effects: [{ type: 'attack', magnitude: 2 }] },
+      ],
+    });
+    assert.equal(executeHeroEffects(gameState, countCtx, '0', 'hero-x' as string), 2,
+      'Fired effects across all matching hooks sum into the count.');
+  });
+});
+
 describe('executeHeroEffects', () => {
   // why: makeMockCtx provides ShuffleProvider-compatible context
   // (random.Shuffle reverses arrays for determinism)
