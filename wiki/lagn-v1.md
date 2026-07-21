@@ -667,17 +667,18 @@ lazily mid-turn, and **nothing about the file format, git, or the CDN topology
 changes.** It is strictly less network traffic than today *and* strictly less than
 either embed or zip, which both re-ship cached bytes.
 
-**Prerequisite / highest-leverage fix — set immutable cache headers on the images.**
-A live `HEAD` on two card objects (2026-07-21) returned **no `Cache-Control` header and
-`cf-cache-status: DYNAMIC`** — i.e. Cloudflare is *not* edge-caching card images, and
-browser reuse falls back to heuristic `ETag`/`Last-Modified` revalidation. The images
-are immutable (filename encodes set/ribbon/slug/sides), so they should be served
-`Cache-Control: public, max-age=31536000, immutable`. That single R2/CDN config change
-is the biggest traffic reduction available: it makes the edge absorb the load and makes
-a previously-seen card free on every subsequent match — turning the setup prefetch from
-a per-match cost into a one-time-per-client cost. It is an operations change (bucket
-metadata / CDN cache rule), not a repo change, and it should land **before or with** the
-prefetch WP or the prefetch re-downloads more than it needs to.
+**Companion — immutable cache headers on the images (applied 2026-07-21).** The images
+are immutable (the filename encodes set/ribbon/slug/sides), so they are served
+`Cache-Control: public, max-age=31536000, immutable`. This is the highest-leverage
+traffic reduction available and is now **live in both layers** — the object header
+(browser cache; 4451 objects) and a Cloudflare edge Cache Rule (`cf-cache-status: HIT`
+on a GET) — so a previously-seen card is free on every subsequent match, turning the
+setup prefetch from a per-match cost into a one-time-per-client cost. It was an
+operations change (R2 object metadata + a CDN cache rule), not a repo change; the
+procedure and applied-state record live in
+[`docs/ops/RUNBOOK-r2-image-cache-control.md`](../docs/ops/RUNBOOK-r2-image-cache-control.md).
+Verify with a **GET**, not a `HEAD` — `curl -sI` misreads `cf-cache-status: DYNAMIC`
+even when GETs are `HIT`, because Cloudflare caches GET responses.
 
 **Optional, format-level follow-on (not required):** a small optional LAGN *manifest* —
 URLs + content hashes of the working set, still **no bytes** — would hand a third-party

@@ -347,24 +347,32 @@ The **LAGN document is unchanged** by this — image bytes are not embedded and 
 no zip side-cart. The embed-vs-zip-vs-prefetch analysis that chose this path lives on
 [LAGN Specification](lagn-v1.md) §"Card Images: Embed, Side-Cart, or Prefetch?".
 
-### Immutable `Cache-Control` (pending operator action)
+### Immutable `Cache-Control` (applied 2026-07-21)
 
-Because card images are immutable, they **should** serve
-`Cache-Control: public, max-age=31536000, immutable` so the Cloudflare edge caches
-them and a previously-seen card is free on every later request — the companion to the
-prefetch, making a warmed image free *across* matches, not just within one. As of
-2026-07-21 they serve **no `Cache-Control`** and `cf-cache-status: DYNAMIC` (nothing is
-edge-cached).
+Because card images are immutable, they serve
+`Cache-Control: public, max-age=31536000, immutable` so the Cloudflare edge caches them
+and a previously-seen card is free on every later request — the companion to the
+prefetch, making a warmed image free *across* matches, not just within one. This is
+**live in both layers** as of 2026-07-21:
 
-Applying it is an out-of-band operator action, documented in
-[`docs/ops/RUNBOOK-r2-image-cache-control.md`](../docs/ops/RUNBOOK-r2-image-cache-control.md)
-and recorded (as not-yet-applied) in
+- **Object header** — the immutable `Cache-Control` was set on all card-image objects
+  (4451 objects, 0 failed; boto3 `CopyObject` + `MetadataDirective=REPLACE`), so
+  browsers cache each image for a year.
+- **Edge Cache Rule** — a Cache Rule (`Edge-cache immutable R2 card images`) on the
+  `legendary-arena.com` zone marks `images.legendary-arena.com` `.webp` (excluding
+  `/avatars/`) eligible for cache, so the CDN edge caches the bytes too. Verified via a
+  **GET**: `cf-cache-status: HIT` (a `HEAD`/`curl -sI` misleadingly reads `DYNAMIC` —
+  Cloudflare caches GETs, not HEADs).
+
+The procedure, guardrail, and rollback are in
+[`docs/ops/RUNBOOK-r2-image-cache-control.md`](../docs/ops/RUNBOOK-r2-image-cache-control.md);
+the applied state is recorded in
 [`docs/ops/OUT-OF-BAND-SETTINGS.md`](../docs/ops/OUT-OF-BAND-SETTINGS.md). The one
-guardrail: the immutable header applies to the **card-image prefixes only** — never
-`avatars/` (mutable bytes at a stable key) or `metadata/` (re-synced JSON), which it
+guardrail: the immutable header + rule apply to the **card-image prefixes only** — never
+`avatars/` (mutable bytes at a stable key) or `metadata/` (re-synced JSON), which they
 would pin stale. The `--header-upload` flag on the [Card Image
-Acquisition](card-image-acquisition.md) upload command already stamps the header on
-future set uploads.
+Acquisition](card-image-acquisition.md) upload command stamps the header on future set
+uploads.
 
 ## Interactions
 
