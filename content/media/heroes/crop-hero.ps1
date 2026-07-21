@@ -19,12 +19,12 @@
 .EXAMPLE
     Workflow for a hero theme (e.g. black-widow):
 
-      1. cd content/media/heroes/black-widow/
+      1. cd C:\pcloud\LA\audio\heroes\black-widow\   (working audio on pCloud; see Workspace Map)
       2. Listen to hero-black-widow_MASTER.wav and note the 4 crop
          ranges (MT01 preview-intro, MT02 match-start, MT03 ambient-loop,
          MT04 main-theme).
-      3. Copy this template into the hero folder as crop.ps1:
-           Copy-Item ..\crop-hero.ps1 .\crop.ps1
+      3. Copy this template into the hero's pCloud folder as crop.ps1:
+           Copy-Item $Repo\content\media\heroes\crop-hero.ps1 .\crop.ps1   ($Repo = your legendary-arena checkout)
          Then edit the $crops array in your per-hero copy. Committing
          that copy alongside the WAVs documents provenance (how the
          derivatives were produced from the master) and makes future
@@ -66,7 +66,7 @@ $crops = @(
 )
 
 if (-not (Test-Path -LiteralPath $master)) {
-    Write-Error "master WAV not found at $PWD\$master. Run this script from a hero's subfolder (e.g. content/media/heroes/black-widow/)."
+    Write-Error "master WAV not found at $PWD\$master. Run this script from a hero's pCloud audio folder (e.g. C:\pcloud\LA\audio\heroes\black-widow\)."
     exit 1
 }
 

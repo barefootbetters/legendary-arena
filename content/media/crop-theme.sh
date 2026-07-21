@@ -4,8 +4,11 @@
 #
 # why: golden rule — one prompt, eight derivatives; no per-asset regenerations.
 #
-# Usage (run from a scenario folder, e.g. content/media/age-of-apocalypse/):
-#   bash ../crop-theme.sh
+# Usage — working audio lives on pCloud (C:/pcloud/LA/audio/<theme>/, see
+# Workspace Map); this script stays tracked in the repo. Run it from the
+# theme's pCloud folder, pointing back at your checkout:
+#   cd /c/pcloud/LA/audio/age-of-apocalypse/
+#   bash "$REPO/content/media/crop-theme.sh"   # $REPO = your legendary-arena checkout
 #
 # Before running: edit the `crops` array below with timestamps from
 # listening to <theme>_MASTER.wav. Values below are PLACEHOLDERS.
@@ -44,7 +47,7 @@ crops=(
 
 if [[ ! -f "$master" ]]; then
   echo "Error: master WAV not found at $PWD/$master" >&2
-  echo "Run this script from a scenario folder (e.g. content/media/age-of-apocalypse/)." >&2
+  echo "Run this script from a theme's pCloud audio folder (e.g. C:/pcloud/LA/audio/age-of-apocalypse/)." >&2
   exit 1
 fi
 

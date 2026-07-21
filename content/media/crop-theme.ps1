@@ -14,7 +14,7 @@
 .EXAMPLE
     Workflow for a scenario theme (e.g. age-of-apocalypse):
 
-      1. cd content/media/age-of-apocalypse/
+      1. cd C:\pcloud\LA\audio\age-of-apocalypse\   (working audio on pCloud; see Workspace Map)
       2. Listen to age-of-apocalypse_MASTER.wav and note the 8 crop
          ranges (one per asset).
       3. Edit the $crops array in this script with those timestamps
@@ -22,7 +22,8 @@
          crop.ps1) if you don't want to dirty the shared version on
          every pass. A committed per-scenario copy also documents
          provenance (how the derivatives were produced).
-      4. Run:  pwsh ..\crop-theme.ps1
+      4. Run the repo-tracked script against that folder:
+             pwsh $Repo\content\media\crop-theme.ps1   ($Repo = your legendary-arena checkout)
       5. Review the OK / WARNING lines before committing.
 
 .NOTES
@@ -31,7 +32,7 @@
     (Restart the terminal after install so PATH picks it up.)
 
     If PowerShell execution policy blocks the script, invoke with:
-      pwsh -ExecutionPolicy Bypass -File ..\crop-theme.ps1
+      pwsh -ExecutionPolicy Bypass -File $Repo\content\media\crop-theme.ps1
 #>
 
 [CmdletBinding()]
@@ -63,7 +64,7 @@ $crops = @(
 )
 
 if (-not (Test-Path -LiteralPath $master)) {
-    Write-Error "master WAV not found at $PWD\$master. Run this script from a scenario folder (e.g. content/media/age-of-apocalypse/)."
+    Write-Error "master WAV not found at $PWD\$master. Run this script from a theme's pCloud audio folder (e.g. C:\pcloud\LA\audio\age-of-apocalypse\)."
     exit 1
 }
 

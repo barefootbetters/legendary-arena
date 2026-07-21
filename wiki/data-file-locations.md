@@ -14,6 +14,7 @@ related:
   - profile-login.md
   - operational-health-checks.md
   - complete-game-fixtures.md
+  - music-authoring.md
 status: draft
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\data-file-locations.md (this page — https://ewiki.legendary-arena.com/data-file-locations/)
@@ -22,7 +23,7 @@ source:
   - ../packages/registry/src/heroImageUrl.ts
   - ../apps/server/src/profile/avatarUpload.logic.ts
   - ../render.yaml
-last-reviewed: 2026-07-18
+last-reviewed: 2026-07-20
 ---
 
 # Data & File Locations
@@ -117,12 +118,29 @@ reverse. Key prefixes:
 | `avatars/{accountId}.webp` | Player avatars, keyed by immutable AccountId | `AVATAR_CDN_BASE` → `images.legendary-arena.com` ([`avatarUpload.logic.ts`](../apps/server/src/profile/avatarUpload.logic.ts)) |
 | `metadata/{abbr}.json`, `metadata/sets.json`, `metadata/card-mechanics.json`, … | Flat mirror of the card + metadata JSON — **the Registry Viewer's live data source** | **manual `rclone copy`** — no automated sync (see below) |
 | `themes/` | Gameplay UI themes from [`content/themes/`](../content/themes/) | [`scripts/upload-themes-to-r2.mjs`](../scripts/upload-themes-to-r2.mjs) |
+| `audio/themes/…mp3`, `audio/heroes/…mp3` | Per-theme (`MT01`–`MT04` music + `ES01`–`ES04` event stings) and per-hero (`MT01`–`MT04`) music, 320 kbps MP3 — the **sole** audio surface | interim on `legendary-images` → `images.legendary-arena.com/audio/…`; production target `music.barefootbetters.com` (not live) — see [Music Authoring](music-authoring.md) |
 | `legends/…json` | Legends Snapshot Publisher output (separate `R2_LEGENDS_BUCKET`) | render.yaml secrets |
 
 R2 credentials are **not committed**: local `.env` carries
 `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`; production injects
 `R2_*` secrets via the Render dashboard. Reachability is probed by
 `pnpm check` (see [Operational Health Checks](operational-health-checks.md)).
+
+### Music and audio
+
+Audio has a **single delivery surface: R2.** The published 320 kbps MP3
+derivatives — per-theme (`MT01`–`MT04` music plus `ES01`–`ES04` event
+stings) and per-hero (`MT01`–`MT04`) — live under the `audio/` prefix
+above and are the only audio the app fetches. **Nothing audio is
+committed to git.** Only the crop scripts, the authoring guide, and the
+`content/themes/*.json` `musicAssets.*Url` references are tracked; the
+WAV masters and their local MP3 derivatives are working binaries that
+live on pCloud (`C:\pcloud\LA\audio\`), never in the repo tree and never
+uploaded as masters — see [Workspace Map](workspace-map.md). To avoid a
+per-cue R2 round-trip on time-critical stings (e.g. master-strike), the
+arena client **prefetches a theme's stings into decoded audio buffers at
+match start** rather than bundling audio into the build. Full pipeline:
+[Music Authoring](music-authoring.md).
 
 ### Replays and LAGN
 

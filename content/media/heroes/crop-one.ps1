@@ -47,15 +47,15 @@
     Positional args. Crops a 60s main-theme.
 
 .EXAMPLE
-    pwsh ..\crop-one.ps1 MT03 30 60 -Loop 4
+    pwsh $Repo\content\media\heroes\crop-one.ps1 MT03 30 60 -Loop 4   ($Repo = your checkout)
     Crops a 30s section, then loops it 4x -> 120s ambient-loop.
 
 .NOTES
     Requires ffmpeg + ffprobe on PATH.
     Windows install:  winget install -e --id Gyan.FFmpeg
 
-    Run from a hero's subfolder so the script can infer the slug
-    from the folder name (e.g. content/media/heroes/black-widow/).
+    Run from a hero's pCloud audio folder so the script can infer the
+    slug from the folder name (e.g. C:\pcloud\LA\audio\heroes\black-widow\).
 #>
 
 [CmdletBinding()]
@@ -94,7 +94,7 @@ $master = "hero-${slug}_MASTER.wav"
 $output = "hero-${slug}_${Asset}_$($spec.Name).wav"
 
 if (-not (Test-Path -LiteralPath $master)) {
-    Write-Error "master WAV not found at $PWD\$master. Run this script from a hero's subfolder (e.g. content/media/heroes/black-widow/)."
+    Write-Error "master WAV not found at $PWD\$master. Run this script from a hero's pCloud audio folder (e.g. C:\pcloud\LA\audio\heroes\black-widow\)."
     exit 1
 }
 
