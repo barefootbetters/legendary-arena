@@ -9,8 +9,9 @@
 
 ### WP-408 / EC-443 — Portable match-LAGN download on the result view (D-24218) (2026-07-21)
 
-**User-visible surface — `legends.legendary-arena.com`. Code merged; AC-6
-(D-24026) live-verify rides the WP-407 deploy + Pages env var.**
+**User-visible surface — `legends.legendary-arena.com`. Code merged + deployed;
+env var set and plumbing live-verified; the populated-download AC-6 awaits a
+qualifying match (see below).**
 
 The WP-407 per-match result view gains a **"Download this match as LAGN"**
 control: one click fetches the WP-406 result LAGN and saves it as
@@ -35,16 +36,21 @@ error rather than no-op (AC-3).
 
 `legends-board` typecheck 0; test **95 → 97 / 0** (+2); `pnpm -r build` 0.
 
-**AC-6 / D-24026 live-verification** (click the control on a real completed match,
-confirm a valid `.lagn.json` downloads and re-opens) rides the same operator step
-as WP-407 — it needs `VITE_LEGENDS_API_BASE_URL` on the legends-board Pages
-project + a completed match with a claimed handle, verified on the deployed
-bundle. This STATUS line flips to done once verified.
+**AC-6 / D-24026 live-verification (partial — 2026-07-21).** The env-var + deploy
+half is done: `VITE_LEGENDS_API_BASE_URL = https://api.legendary-arena.com` is set
+on the `legendary-arena-legends` Pages Production env and redeployed, and the
+plumbing is live-verified (see the WP-407 entry). The **populated download** —
+click the control on a real completed match, confirm a valid `.lagn.json`
+downloads and re-opens — is the only open item, and it awaits a completed match
+with a claimed handle (the prod funnel query returned **0 rows** on 2026-07-21). A
+data/traffic state, not a code/config gap. This line flips to done once such a
+match exists and the download is verified live.
 
 ### WP-407 / EC-442 — Hall of Legends per-match result view (D-24217) (2026-07-20)
 
-**User-visible surface — `legends.legendary-arena.com`. Code merged; AC-6
-(D-24026) live-verify PENDING the deploy + a Pages env var (see below).**
+**User-visible surface — `legends.legendary-arena.com`. Code merged + deployed;
+env var set and plumbing live-verified; the populated-roster AC-6 awaits a
+qualifying match (see below).**
 
 `apps/legends-board` gains its first **per-match** view: a `MatchResultPanel`
 reached by a `#/match/<matchId>` deep link, showing a completed match's outcome
@@ -74,18 +80,28 @@ exposes only already-public labels, so the allowance grants the browser nothing 
 (+13); `pnpm -r build` 0. `@legendary-arena/lagn` added as a **devDependency**
 (type-only — erased at build; no runtime edge).
 
-**AC-6 / D-24026 live-verification remains open and is operator-gated.** To close it:
-1. Set **`VITE_LEGENDS_API_BASE_URL`** on the `legendary-arena-legends` Cloudflare
-   Pages project to the server API origin (the same host the arena-client's
-   `VITE_API_BASE_URL` points at, e.g. `https://api.legendary-arena.com`), then
-   redeploy legends-board. Deploy the server too (the CORS origin).
-2. Open `legends.legendary-arena.com/#/match/<a real completed matchId>` where a
-   seat has a **claimed handle**, and confirm the roster populates (drive the
-   terminal action — a rendered shell is not proof). If no such match exists yet,
-   the populated-roster path cannot be verified until one does; the empty/error
-   states verify regardless.
+**AC-6 / D-24026 live-verification (2026-07-21) — plumbing done, populated roster
+awaits data.** The deploy + config half is complete and **verified live on
+production**:
+- `VITE_LEGENDS_API_BASE_URL = https://api.legendary-arena.com` set on the
+  `legendary-arena-legends` Cloudflare Pages Production env + redeployed.
+- The server CORS origin was already deployed (`api.legendary-arena.com` returns
+  `access-control-allow-origin: https://legends.legendary-arena.com`).
+- `legends.legendary-arena.com/#/match/<probe>` now renders **"No result to show"** —
+  a clean 404 through env var → API → CORS → 404 handling, no longer the "env not
+  set" error. This **live-verifies AC-3** (the empty/error state) and proves the
+  whole fetch pipeline end to end.
 
-This STATUS line flips to done once the deployed bundle shows a populated roster.
+The **only open item** is the **populated-roster** terminal action: open a real
+completed match's `#/match/<matchId>` (a seat with a **claimed handle**) and confirm
+the roster + download. It awaits such a match — the prod funnel query
+(`bgio.matches` finished ∩ `match_seat_accounts` ∩ `players.display_handle`)
+returned **0 rows** on 2026-07-21. A data/traffic state, not a code/config gap: to
+create one, claim a handle and play a competitive match to gameover. Runbook:
+`docs/ops/RUNBOOK-legends-match-result-live-verify.md`.
+
+This line (and WP-408's) flips to done once the deployed bundle shows a populated
+roster + a verified download.
 
 ### WP-406 / EC-441 — Result-LAGN producer + writer flip to 1.4.0 (D-24216) (2026-07-20)
 
