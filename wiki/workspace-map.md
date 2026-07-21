@@ -230,19 +230,23 @@ Arena's working files** — not under `C:\pcloud\BB\`. See the note on
 `BB\` below for why.
 
 ```
-C:\pcloud\LA├── ops\                    # business operations
-│   ├── accounting│   │   ├── stripe\         # payout reports, merchant statements
+C:\pcloud\LA\
+├── ops\                    # business operations
+│   ├── accounting\
+│   │   ├── stripe\         # payout reports, merchant statements
 │   │   ├── bank\           # statements, reconciliations
 │   │   ├── revenue\        # sales and revenue reports
 │   │   ├── expenses\       # receipts, expense reports
 │   │   └── year-end\       # closing packages
 │   ├── taxes\              # returns, 1099s, filings
-│   ├── legal│   │   ├── entity\         # LLC formation, registered agent, annual filings
+│   ├── legal\
+│   │   ├── entity\         # LLC formation, registered agent, annual filings
 │   │   ├── trademarks\     # applications, registrations, correspondence
 │   │   ├── copyright\      # registrations
 │   │   ├── contracts\      # signed agreements, counterparty correspondence
 │   │   └── licenses\       # inbound and outbound licensing
-│   ├── insurance│   ├── vendors\            # per-vendor invoices, quotes, agreements
+│   ├── insurance\
+│   ├── vendors\            # per-vendor invoices, quotes, agreements
 │   └── reports\            # operating reports not tied to a filing
 │
 ├── brand\                  # approved, shipped brand assets
@@ -253,9 +257,14 @@ C:\pcloud\LA├── ops\                    # business operations
 │   ├── press\              # press kit, approved screenshots
 │   └── product-shots\      # photography for the shop
 │
+├── audio\                  # game music masters + derivatives (locked by D-24219)
 ├── ewiki\                  # research notes and drafts (not published)
 ├── logo-drafts\            # brand exploration — see below
-├── products├── social├── video-assets└── videos```
+├── products\
+├── social\
+├── video-assets\
+└── videos\
+```
 
 Lowercase names match the existing children of `C:\pcloud\LA\`.
 
@@ -264,13 +273,15 @@ side by side deliberately: a designer reaching for a mark should never
 have to guess whether they have the current one. Drafts stay in
 `logo-drafts\`; when something ships, its final files move to `brand\`.
 
-> **`LA\ops\` and `LA\brand\` exist; their subfolders do not.** Both
-> root directories were created on 2026-07-20 and each carries a
-> `README.txt` restating the rules below for whoever opens the folder
-> rather than this page. The subfolders above are created on first use —
-> an empty folder reads as "this is where that goes" when nothing has
-> been filed yet, which is the same two-destinations problem that
-> retired `BB\OPS\`.
+> **`LA\ops\` and `LA\brand\` exist; their subfolders do not — and the
+> taxonomy is locked by D-24220.** Both root directories were created on
+> 2026-07-20 and each carries a `README.txt` restating the rules below
+> for whoever opens the folder rather than this page. The subfolders
+> above are created on first use — an empty folder reads as "this is
+> where that goes" when nothing has been filed yet, which is the same
+> two-destinations problem that retired `BB\OPS\`. Their *names and
+> placement* are binding under D-24220: a future session adds a sibling
+> for a genuinely new category, it does not re-file or rename these.
 
 #### Why not `C:\pcloud\BB\`
 
@@ -429,13 +440,6 @@ asked. Two pointers keep it reachable:
   the off-pCloud move, not to a naming convention. What survives is the
   principle — name a *newly created* pCloud working-files folder for its
   repository; rename nothing that already exists.
-- **The `LA\ops\` and `LA\brand\` taxonomy is documented but not
-  locked.** The subdirectory shapes above are this page's proposal for
-  where business work belongs; no DECISIONS entry governs them and no
-  directory has been created. If the shape should be binding — so a
-  future session cannot quietly re-file things — it needs a D-entry, the
-  way the pCloud naming question got D-24207 / D-24208 and the audio
-  asset class got D-24219. Until then it is guidance.
 - **Per-repo README pointers are proposed but not written.** Each repo
   gaining a short section naming this page — rather than restating it —
   would make the map findable from inside any checkout. Scope, and whether

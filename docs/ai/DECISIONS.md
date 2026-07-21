@@ -31260,3 +31260,91 @@ out as an INFRA change (#884); this entry records and locks the resulting shape.
 **Drafted:** 2026-07-21.
 
 Protect this file.
+
+---
+
+### D-24220 — business-operations and brand assets live under `C:\pcloud\LA\ops\` and `C:\pcloud\LA\brand\`; the subdirectory taxonomy is locked
+
+**Status:** Active (governance) 2026-07-21. The `ops\` and `brand\` roots exist
+(created 2026-07-20, each with a `README.txt`); their subfolders are created **on
+first use**, not pre-created — an empty folder reads as a committed destination
+before anything is filed, the two-destinations problem that retired `BB\OPS\`.
+Locking the taxonomy makes the *shape* binding without materializing empty
+directories.
+
+**User-Visible Surface:** none — operator workspace convention.
+
+**Decision.** Legendary Arena's business-operations and brand documents live on
+pCloud under two fixed roots with a fixed subdirectory taxonomy. A future session
+may **add a sibling** when a genuinely new category appears, but may **not**
+re-file, rename, or re-invent the folders below:
+
+```
+C:\pcloud\LA\ops\
+├── accounting\   → stripe\, bank\, revenue\, expenses\, year-end\
+├── taxes\
+├── legal\        → entity\, trademarks\, copyright\, contracts\, licenses\
+├── insurance\
+├── vendors\
+└── reports\
+
+C:\pcloud\LA\brand\
+├── logos\
+├── guidelines\
+├── fonts\
+├── social\
+├── press\
+└── product-shots\
+```
+
+Per-folder contents are documented in
+[Workspace Map](../../wiki/workspace-map.md) §Business operations, which this
+entry makes binding.
+
+**What goes here, and what does not.**
+
+- **pCloud, never git, never a server disk.** Accounting, tax, legal, insurance,
+  and vendor documents are private, near-binary, and needed for years. A Stripe
+  payout CSV or a bank statement in a git repo is a permanent, mirrored copy of
+  financial data; on a Render disk it is ephemeral and unbacked. Neither is a
+  filing cabinet.
+- **`brand\` is approved work; `logo-drafts\` is exploration.** They are
+  siblings deliberately — a final mark moves from `logo-drafts\` to `brand\`
+  when it ships, so a designer never has to guess which is current.
+  `logo-drafts\` is the staging area beside this lock, not part of the `brand\`
+  taxonomy it governs.
+- **Not the system of record.** These are *snapshots*, not authorities. Stripe
+  remains authoritative for payments (see the System of record table in Workspace
+  Map); a downloaded report is kept for the year-end package and the audit trail,
+  not as the number you reconcile against.
+
+**Why `LA\` and not `BB\`.** `C:\pcloud\BB\` was the business root and its
+`BRAND\` / `OPS\` directories were created for exactly this work, but both were
+deleted (2026-07-20, empty): everything with real content already lives under
+`LA\`, and `BB\` is on a path to holding nothing once the engine checkout leaves
+`DEV\`. Filing business documents into `BB\` would rebuild the "one product, two
+roots" split that D-24208 resolved by consolidating onto `LA\`. The direction of
+travel is `LA\`; this entry commits to it.
+
+**Relationship to the pCloud governance line.** This is the same instrument
+D-24219 used for the audio asset class, applied to business-ops and brand:
+D-24208 left the *internal shape* of the `LA\` working root to the pages that own
+each asset class, and this entry is that ownership call for `ops\` and `brand\`.
+It renames nothing and does not reopen D-24207 / D-24208 — `C:\pcloud\LA\`
+remains the unrenamed working root; this entry only fixes what goes in two of its
+children.
+
+**Not decided here.**
+
+- **Credentials in cleartext at the pCloud root** are a separate and more urgent
+  problem — they belong in a password manager, not a newly-taxonomized folder,
+  and this entry does not address them.
+- **The off-pCloud engine-checkout move** is unaffected; this governs content
+  directories, which correctly stay on the sync drive.
+- **The non-Legendary-Arena projects** under `C:\www\` adopt the convention when
+  each is next touched; they are not inventoried here.
+
+**Packet:** none — operator workspace convention, no repo-executable work.
+**Drafted:** 2026-07-21.
+
+Protect this file.
