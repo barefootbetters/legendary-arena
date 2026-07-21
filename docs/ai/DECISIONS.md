@@ -31406,4 +31406,59 @@ WP.
 **Packet:** WP-409 (EC-444).
 **Drafted:** 2026-07-21; not yet landed.
 
+### D-24222 — card-image working-set prefetch: the engine projects the manifest (`UIState.matchCardImageUrls`), the client warms it at match start; LAGN carries no bytes (reserved)
+
+**Status:** reserved (Drafted 2026-07-21; not yet landed).
+
+**Context.** The ewiki [LAGN discussion](https://ewiki.legendary-arena.com/lagn-v1/)
+§"Card Images: Embed, Side-Cart, or Prefetch?" weighed three ways to stop the client
+waiting on a card image mid-turn and recommended **Option C — prefetch the match
+working-set from R2 at setup**, rejecting embedding image bytes in the LAGN document
+(breaks the `?lagn=` URL transport, puts binaries in git, +33% base64) and a zip
+side-cart (fine only for offline archival; blocks first paint, defeats CDN reuse).
+WP-410 implements Option C in the live client.
+
+**Decision.**
+1. **The engine is the manifest's only possible source.** `apps/arena-client` is
+   forbidden a runtime `@legendary-arena/registry` import (layer boundary), so it
+   cannot resolve a `CardExtId` to an R2 URL; and the live `UIState` projects only
+   *currently-visible* cards, not the full match working-set. The engine already
+   computes every match card's `imageUrl` in `G.cardDisplayData` at setup, so it
+   projects the **deduped, non-empty set** of those URLs as a new optional top-level
+   `UIState.matchCardImageUrls`. Direction is Engine→App, the correct dependency
+   order. The field must be passed through `filterUIStateForAudience`
+   (`uiState.filter.ts`, the sole engine→client boundary, which rebuilds `UIState`
+   from a whitelist) as **public, value-identical for every audience** — it is
+   information-safe (point 4), so no redaction — or it is silently dropped before it
+   reaches the client.
+2. **Projection-only, no `G` field, no hash surface.** The manifest is derived at
+   projection time from `G.cardDisplayData`; it is never written to `G`. Since
+   `computeStateHash` hashes `G` (not `UIState`), every recorded sentinel
+   `finalStateHash` / `PRE_WP080_HASH` stays byte-unchanged — no re-pin.
+3. **Optional field, always populated.** `matchCardImageUrls?` is optional in
+   `uiState.types.ts` so pre-existing hand-written `UIState` fixtures need no backfill
+   (the WP-179 optional-field pattern), while `uiState.build.ts` always populates it
+   (`[]` for an empty match). It is drift-pinned with an additive
+   `Pick<UIState, 'matchCardImageUrls'> satisfies` check (the `pendingKoHeroChoice`
+   precedent) — there is no exhaustive top-level `UIState` keyset assertion to extend.
+4. **Information-safe.** The manifest is a flat, deduped set of card-face image URLs.
+   Which card *designs* a match contains is public from the composition; the manifest
+   reveals no face-down deck order and no per-player hidden state.
+5. **The client warm is fire-and-forget.** A `useCardImagePrefetch` composable,
+   mounted once at the D-16501 `PlayViewport` root, warms the list into the browser
+   cache with bounded concurrency (`PREFETCH_CONCURRENCY = 6`), fail-soft (a rejected
+   warm is skipped and covered by the existing `CardTile.vue` lazy `<img>` fallback),
+   and idempotent (a `Set` of warmed URLs, so reconnect/re-render never refetches).
+6. **LAGN is unchanged.** No image bytes and no manifest block enter the LAGN
+   document — prefetch is a live-client delivery concern, not a notation concern.
+
+**Out of scope (named, not this decision).** A durable service-worker / Cache Storage
+layer (v1 warms the volatile HTTP cache; the SW is a future WP); first-visible priority
+ordering; and the R2 immutable `Cache-Control` header change — an ops/CDN config
+change, not a repo change, but the recommended companion that makes warmed bytes free
+across matches.
+
+**Packet:** WP-410 (EC-445).
+**Drafted:** 2026-07-21; not yet landed.
+
 Protect this file.
