@@ -31127,8 +31127,11 @@ moves); replaced WHOLE per D-11804.
 
 ### D-24217 — The Hall of Legends match-result view is a pure result-LAGN consumer
 
-**Status:** Drafted 2026-07-21 (WP-407); not yet landed — flips to Active
-(post-execution) when WP-407 merges.
+**Status:** Active (2026-07-20, WP-407 executed). `MatchResultPanel` + the
+`#/match/<matchId>` deep-link route shipped in `apps/legends-board`; it consumes
+only the WP-406 result LAGN. Server CORS allows the `legends.legendary-arena.com`
+origin (WP-407 amendment). **AC-6 (D-24026) live-verify is pending the deploy +
+the legends-board Pages `VITE_LEGENDS_API_BASE_URL` env var.**
 
 **Decision.** The per-match result view (`apps/legends-board`, WP-407) renders a
 completed match's outcome and roster **solely** from the WP-406 result LAGN. It does
