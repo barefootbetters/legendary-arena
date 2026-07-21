@@ -7,6 +7,51 @@
 
 ## Current State
 
+### WP-406 / EC-441 — Result-LAGN producer + writer flip to 1.4.0 (D-24216) (2026-07-20)
+
+**No user-observable change — infrastructure only** (its UI is WP-407/WP-408).
+
+A new server endpoint `GET /api/match/:matchId/result-lagn` emits a **completed**
+match's result as a **LAGN 1.4.0** document — the Tier-1 `setup` (reused from
+WP-361's `buildMatchLagn`, no fork) plus `scoring_profile` (a descriptive label,
+default `"classic"`), the optional `players[]` roster, and the optional `result`
+(`{ outcome }`). It is **guest-readable** (a finished match's result is public,
+Hall-of-Legends material) with a completed-match gate (`404 match_not_finished`
+until `metadata.gameover`). This is the producer that gives WP-405's reader
+contract a concrete consumer, and it **flips `LAGN_VERSION` 1.1.0 → 1.4.0** so the
+emitted `players[]` clears the WP-405 version gate.
+
+**The `player_id` privacy rule (D-24216).** Each `players[]` entry's `player_id`
+is the account's **claimed public handle** (`legendary.players.display_handle`),
+never the internal `AccountId` (D-24214 — LAGN is shareable); `display_name`
+carries the mutable label. A seat whose account has **not** claimed a handle is
+**omitted** (never synthesized); when no seat qualifies, `players[]` is omitted
+**entirely** (not `[]`). Bots/guests have no `match_seat_accounts` row, so
+`players.length ≤ player_count` holds by construction.
+
+**Descriptive-only, no scoring wiring (D-24214 / D-24215).** Nothing scores,
+credits, ranks, or verifies from the document — competitive credit stays
+`matchId → blob → re-execute → AccountId` (D-5301 / D-24126), byte-identical; the
+submission flow and `competitive_scores` are untouched (AC-7). All reads fit
+**existing** carve-outs — composition via D-24153 (reused helper), outcome via
+`metadata.gameover` (D-24169), roster via the `legendary.match_seat_accounts`
+domain table — **no new blob-read carve-out** (D-24216). `packages/game-engine`
+unchanged; `finalStateHash` unmoved (AC-8).
+
+**The writer flip's blast radius was scaffold-measured:** 8 tests in
+`packages/lagn-spec/src/validator.test.ts` — the 4 `LAGN_VERSION` assertions and
+the 4 migration tests that assert the pre-flip "already at current / unreachable
+step" behavior (the flip makes the `migrateToCurrent` 1.0.0 → 1.4.0 chain fully
+reachable). Zero server, registry-viewer, or arena-client test failures — those
+consumers read the `LAGN_VERSION` constant or carry 1.1.0 as an accepted READ
+version. `package.json` bumped `1.1.0 → 1.4.0` in the same change (EC-422 lockstep).
+
+`packages/lagn-spec` **83 / 0**; `apps/server` **866 → 889 / 0** (+23);
+`pnpm -r build` 0 and `pnpm -r --no-bail test` no new failures. **§21 TRIGGERED** —
+a new `result-lagn` row plus the setup emitter's stamped `lagn_version` moving to
+1.4.0; both replaced WHOLE per D-11804. No stored record migrates (readers accept
+all five versions).
+
 ### WP-405 / EC-440 — LAGN 1.4.0 match participants + scoring profile (D-24214 / D-24215) (2026-07-20)
 
 **No user-observable change — infrastructure only.**
