@@ -10,6 +10,9 @@ tags:
 related:
   - card-type-taxonomy.md
   - cardextid.md
+  - lagn-v1.md
+  - card-image-acquisition.md
+  - data-file-locations.md
 status: canonical
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\r2-image-naming-convention.md (this page — https://ewiki.legendary-arena.com/r2-image-naming-convention/)
@@ -18,7 +21,9 @@ source:
   - ../data/metadata/sets.json
   - ../data/metadata/card-types.json
   - ../docs/ai/DECISIONS.md
-last-reviewed: 2026-07-18
+  - ../apps/arena-client/src/composables/useCardImagePrefetch.ts
+  - ../docs/ops/RUNBOOK-r2-image-cache-control.md
+last-reviewed: 2026-07-21
 ---
 
 # R2 Image Naming Convention
@@ -313,6 +318,53 @@ images were uploaded **before** the titles were known:
 The lesson that generalises: **the stored `imageUrl` is the contract, not the
 object name.** Renaming an image means copy-to-new-key → repoint the stored
 URL → verify → only then delete the old key. Never rename first.
+
+## Delivery & Caching
+
+The naming convention above makes every card image **content-addressed**: a given
+`{setAbbr}-{ribbon}-{slug}.webp` never changes bytes — new art is a new slug or set,
+i.e. a new URL. That immutability is what makes the two delivery decisions below
+safe. Both landed 2026-07-21.
+
+### Prefetch at match start (WP-410 / D-24222)
+
+The arena client warms the match's card images into the browser image cache **during
+the setup / pre-match screen**, so a card paints from cache the moment it is revealed
+instead of blocking the turn on a round-trip to `images.legendary-arena.com`.
+
+The client cannot derive the image set itself — it may not import the registry at
+runtime (layer boundary), and the live UIState projects only *currently-visible*
+cards. So the **engine** projects the deduped, non-empty set of every `imageUrl` in
+`G.cardDisplayData` as an optional top-level `UIState.matchCardImageUrls`, passed
+through `filterUIStateForAudience` public for every audience (the design set is public
+from the composition — information-safe; no face-down order). The client composable
+[`useCardImagePrefetch`](../apps/arena-client/src/composables/useCardImagePrefetch.ts)
+warms the list with bounded concurrency, fail-soft (a rejected warm falls back to
+`CardTile.vue`'s lazy `<img>`), and idempotent (a `Set`, so the per-frame re-send and
+reconnect never refetch). Projection-only — never a `G` field, no state-hash surface.
+
+The **LAGN document is unchanged** by this — image bytes are not embedded and there is
+no zip side-cart. The embed-vs-zip-vs-prefetch analysis that chose this path lives on
+[LAGN Specification](lagn-v1.md) §"Card Images: Embed, Side-Cart, or Prefetch?".
+
+### Immutable `Cache-Control` (pending operator action)
+
+Because card images are immutable, they **should** serve
+`Cache-Control: public, max-age=31536000, immutable` so the Cloudflare edge caches
+them and a previously-seen card is free on every later request — the companion to the
+prefetch, making a warmed image free *across* matches, not just within one. As of
+2026-07-21 they serve **no `Cache-Control`** and `cf-cache-status: DYNAMIC` (nothing is
+edge-cached).
+
+Applying it is an out-of-band operator action, documented in
+[`docs/ops/RUNBOOK-r2-image-cache-control.md`](../docs/ops/RUNBOOK-r2-image-cache-control.md)
+and recorded (as not-yet-applied) in
+[`docs/ops/OUT-OF-BAND-SETTINGS.md`](../docs/ops/OUT-OF-BAND-SETTINGS.md). The one
+guardrail: the immutable header applies to the **card-image prefixes only** — never
+`avatars/` (mutable bytes at a stable key) or `metadata/` (re-synced JSON), which it
+would pin stale. The `--header-upload` flag on the [Card Image
+Acquisition](card-image-acquisition.md) upload command already stamps the header on
+future set uploads.
 
 ## Interactions
 
