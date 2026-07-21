@@ -31021,8 +31021,8 @@ optional and unpopulated). §21 TRIGGERED; two rows replaced WHOLE per D-11804.
 
 ### D-24214 — LAGN match participants are descriptive, never a credit or scoring input
 
-**Status:** Drafted 2026-07-21 (WP-405); not yet landed — flips to Active
-(post-execution) when WP-405 merges.
+**Status:** Active (2026-07-20, WP-405 executed). Reader-only contract shipped;
+`LAGN_VERSION` unchanged (no producer emits `players[]` yet).
 
 **Decision.** The LAGN `players[]` block (`{ seat, player_id, display_name? }`,
 1.4.0+) is **descriptive participant metadata** on an exported match record — a
@@ -31058,8 +31058,8 @@ extension of this metadata field.
 
 ### D-24215 — LAGN scoring_profile is a descriptive label, not scoring authority
 
-**Status:** Drafted 2026-07-21 (WP-405); not yet landed — flips to Active
-(post-execution) when WP-405 merges.
+**Status:** Active (2026-07-20, WP-405 executed). Reader-only contract shipped
+as a plain string (no enum); `LAGN_VERSION` unchanged.
 
 **Decision.** The LAGN `scoring_profile` field (an optional root string, 1.4.0+)
 is a **descriptive label** naming which scoring ruleset a completed match belongs

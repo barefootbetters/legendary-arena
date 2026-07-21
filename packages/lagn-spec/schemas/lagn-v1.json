@@ -7,7 +7,8 @@
         "1.0.0",
         "1.1.0",
         "1.2.0",
-        "1.3.0"
+        "1.3.0",
+        "1.4.0"
       ]
     },
     "$schema": {
@@ -362,6 +363,34 @@
         "sidekicks_count"
       ],
       "additionalProperties": true
+    },
+    "players": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "seat": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4
+          },
+          "player_id": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "seat",
+          "player_id"
+        ],
+        "additionalProperties": true
+      },
+      "minItems": 1
+    },
+    "scoring_profile": {
+      "type": "string"
     },
     "catalog_ref": {
       "type": "object",
@@ -1719,6 +1748,14 @@
     {
       "path": "lagn_version / setup.hero_alternates",
       "constraint": "setup.hero_alternates requires lagn_version 1.3.0; an earlier document may not carry it."
+    },
+    {
+      "path": "lagn_version / players / scoring_profile",
+      "constraint": "players and scoring_profile require lagn_version 1.4.0; an earlier document may not carry either."
+    },
+    {
+      "path": "players / player_count",
+      "constraint": "players holds at most player_count entries (bot seats carry none), each seat is in 0..player_count-1, and both seat and player_id are unique across the roster."
     }
   ]
 }

@@ -48,11 +48,13 @@ the Zod schema in `validator.ts` and the fixtures under
 
 ```json
 {
-  "lagn_version": "1.0.0 | 1.1.0 | 1.2.0 | 1.3.0",
+  "lagn_version": "1.0.0 | 1.1.0 | 1.2.0 | 1.3.0 | 1.4.0",
   "$schema": "https://legendary-arena.com/schemas/lagn/v1/lagn-v1.json (optional)",
   "game_id": "string",
   "variant": "solo | cooperative | competitive",
   "player_count": "integer 1-5",
+  "players": "array (optional, 1.4.0+ — see below)",
+  "scoring_profile": "string (optional, 1.4.0+ — a descriptive label)",
   "setup": {
     "mastermind": { "id": "CardExtId", "name": "string" },
     "scheme": { "id": "CardExtId", "name": "string" },
@@ -76,7 +78,8 @@ the Zod schema in `validator.ts` and the fixtures under
 ```
 
 Only `lagn_version`, `game_id`, `variant`, `player_count`, and `setup` are
-required at the document root; `result` is optional. Within `setup`,
+required at the document root; `result`, `players` (1.4.0+), and
+`scoring_profile` (1.4.0+) are optional. Within `setup`,
 `hero_alternates` (1.3.0+) and `support_pools` (1.1.0+) are optional. Heroes are
 `{ id, name }` entries — `id` is the D-10014 set-qualified `CardExtId`.
 `player_count` accepts **1** (solo) through **5**.
@@ -159,15 +162,15 @@ as a single authoritative Zod schema. The schema:
   schema (see below) — it is not a second hand-maintained description
 - Exports the version constants `LAGN_VERSION`, `LAGN_VERSION_1_0_0`,
   `LAGN_VERSION_1_1_0`, `LAGN_VERSION_1_2_0`, `LAGN_VERSION_1_3_0`,
-  `LAGN_SUPPORTED_VERSIONS`, and `migrateToCurrent()`
+  `LAGN_VERSION_1_4_0`, `LAGN_SUPPORTED_VERSIONS`, and `migrateToCurrent()`
 
-### Versioning (1.0.0 → 1.1.0 → 1.2.0 → 1.3.0)
+### Versioning (1.0.0 → 1.1.0 → 1.2.0 → 1.3.0 → 1.4.0)
 
-| | 1.0.0 | 1.1.0 | 1.2.0 | 1.3.0 |
-|---|---|---|---|---|
-| Read | accepted | accepted | accepted | accepted |
-| Written | no | **yes — `LAGN_VERSION`** | not yet | not yet |
-| Adds | — | optional `setup.support_pools` | optional card-metadata provenance | optional `setup.hero_alternates` |
+| | 1.0.0 | 1.1.0 | 1.2.0 | 1.3.0 | 1.4.0 |
+|---|---|---|---|---|---|
+| Read | accepted | accepted | accepted | accepted | accepted |
+| Written | no | **yes — `LAGN_VERSION`** | not yet | not yet | not yet |
+| Adds | — | optional `setup.support_pools` | optional card-metadata provenance | optional `setup.hero_alternates` | optional `players` + `scoring_profile` |
 
 **Readers accept all four; writers emit only `LAGN_VERSION`.** That asymmetry
 is deliberate and is what keeps stored records readable without a migration
@@ -265,6 +268,43 @@ untouched rather than stamped forward.
 > the moment 1.3.0 was added — the message already promised "1.2.0 or later". WP-402
 > converts it (and routes the new bench gate) through `isLagnVersionAtLeast`.
 
+**1.4.0 (WP-405 / D-24214 / D-24215) — shipped; readers accept it, writers do not
+emit it yet.** Adds two optional, top-level, **reader-only** blocks so a
+server-emitted result LAGN can describe *who played* and *under what profile* — a
+self-describing scoresheet rather than an anonymous setup dump:
+
+| Block | Location | Carries |
+|---|---|---|
+| `players` | document root | array (min 1, **no max**) of `{ seat, player_id, display_name? }` — the match participants; `seat` is `0..player_count-1`, `player_id` is a string, `display_name` is optional |
+| `scoring_profile` | document root | a plain string label naming which scoring ruleset a completed match belongs to (e.g. `"legends-gauntlet-v1"`) |
+
+**Both blocks are descriptive and NON-authoritative (D-24214 / D-24215).** Nothing
+scores, credits, ranks, or verifies from them. Competitive credit is
+`matchId → bgio blob → re-reduce → re-verify hash → AccountId`, server-side
+(D-5301 / D-24126); the server never trusts a client-supplied identity or score, so
+a reader that scored from either block would reopen that trust hole. They let a
+portable record *say* who played and under which profile — nothing *scores* from
+them. `player_id` MUST be a **public, shareable** id (a handle or public player id),
+**never** the internal `AccountId` (D-5201) — LAGN travels in `?lagn=` links and
+decorative saved loadouts, so an internal id would leak identity; the contract
+validates a **string only** (no id-format regex), and the future server-producer
+packet owns choosing the public id. `scoring_profile` is a **plain string, not an
+enum** — the concrete profile set is owned by the leaderboard / Hall of Legends, not
+this package.
+
+**Three more constraints JSON Schema cannot express** (all in the allowlist):
+`players` / `scoring_profile` are **version-gated** — a pre-1.4.0 document carrying
+either is rejected, not silently stripped — and `players[]` is internally
+consistent (count **≤** `player_count`, since a bot seat carries no entry; each
+`seat` in `0..player_count-1`; unique seats; unique `player_id`s). There is
+deliberately **no `.max()`** on the roster.
+
+**The 1.3.0 → 1.4.0 migration step is registered but unreachable** — like its
+predecessors it restamps only the version marker and **never invents participants**
+(migration is forward-only, and the roster is a server producer's concern).
+`LAGN_VERSION` stays 1.1.0; the writer flip belongs to the future server-producer
+packet that emits `players[]` (WP-406).
+
 ### TypeScript Types
 
 Inferred from the Zod schema via `z.infer<typeof lagnSchema>`, exported as:
@@ -272,6 +312,7 @@ Inferred from the Zod schema via `z.infer<typeof lagnSchema>`, exported as:
 - `LAGN` — the full data structure
 - `GameSetup`, `CardCatalog`, `Replay` — tier structures
 - `Card`, `Action`, `VillainEvent`, `Turn`, `GameResult` — component types
+- `HeroAlternate` (1.3.0+), `LagnPlayer` (1.4.0+) — optional-block element types
 - `ActionType`, `VillainPhaseEvent`, `Outcome`, `LossCondition`, `RarityCode`, `HeroClass`, `CardType` — enumerations
 
 ### JSON Schema Generation & Hosting
@@ -416,11 +457,12 @@ The open-source publication surface (WP-244 Gate 1):
 - [`packages/lagn-spec/src/cli.ts`](../packages/lagn-spec/src/cli.ts)
   — CLI entrypoint (shebang `#!/usr/bin/env node`)
 - [`packages/lagn-spec/src/validator.test.ts`](../packages/lagn-spec/src/validator.test.ts)
-  — 65 tests covering all three tiers, seq constraints, `summarize()`,
+  — 83 tests covering all three tiers, seq constraints, `summarize()`,
   versioning + support pools, migration, provenance and its two version gates,
-  hero alternates and their version + disjointness gates, the ordinal-gate fix,
-  the derived-schema contract, and `ajv` validation of all **six** shipped
-  fixtures against the generated JSON Schema
+  hero alternates and their version + disjointness gates, match participants +
+  scoring profile and their version + internal-consistency gates, the
+  ordinal-gate fix, the derived-schema contract, and `ajv` validation of all
+  **seven** shipped fixtures against the generated JSON Schema
 - [`packages/lagn-spec/src/migrate.ts`](../packages/lagn-spec/src/migrate.ts)
   — forward-only version migration (`migrateToCurrent`)
 - [`packages/lagn-spec/scripts/generate-schema.mjs`](../packages/lagn-spec/scripts/generate-schema.mjs)

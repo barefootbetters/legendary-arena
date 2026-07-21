@@ -14,7 +14,8 @@ import {
   LAGN_VERSION_1_0_0,
   LAGN_VERSION_1_1_0,
   LAGN_VERSION_1_2_0,
-  LAGN_VERSION_1_3_0
+  LAGN_VERSION_1_3_0,
+  LAGN_VERSION_1_4_0
 } from './validator'
 import { migrateToCurrent } from './migrate'
 
@@ -912,7 +913,8 @@ describe('JSON Schema derivation', () => {
       LAGN_VERSION_1_0_0,
       LAGN_VERSION_1_1_0,
       LAGN_VERSION_1_2_0,
-      LAGN_VERSION_1_3_0
+      LAGN_VERSION_1_3_0,
+      LAGN_VERSION_1_4_0
     ])
     // why: readers accept 1.2.0 but writers must NOT stamp it yet — bumping
     // LAGN_VERSION would move the wire format of a catalogued endpoint while
@@ -980,7 +982,8 @@ describe('published JSON Schema accepts the shipped fixtures', () => {
     'tier2-with-catalog.lagn.json',
     'tier3-with-replay.lagn.json',
     'tier2-provenance.lagn.json',
-    'tier1-hero-alternates.lagn.json'
+    'tier1-hero-alternates.lagn.json',
+    'tier1-players.lagn.json'
   ]
 
   for (const fixture of fixtures) {
@@ -1247,5 +1250,194 @@ describe('LAGN 1.3.0 hero alternates', () => {
     const migrated = migrateToCurrent(buildSetupDocument(LAGN_VERSION_1_0_0))
     const setup = migrated.payload.setup as Record<string, unknown>
     assert.strictEqual(setup.hero_alternates, undefined)
+  })
+})
+
+// ============================================================================
+// LAGN 1.4.0 Match Participants + Scoring Profile (WP-405 / D-24214 / D-24215)
+// ============================================================================
+
+describe('LAGN 1.4.0 match participants + scoring profile', () => {
+  /**
+   * A Tier-1 document at `version` with a chosen player_count, plus any root
+   * blocks (players / scoring_profile) layered on. `players` / `scoring_profile`
+   * sit at the DOCUMENT ROOT, so they are spread after buildSetupDocument()
+   * rather than into setupOverrides — a nested copy would be stripped and the
+   * document would pass for the wrong reason, never exercising the gate.
+   */
+  function buildPlayersDocument(
+    version: string,
+    playerCount: number,
+    rootBlocks: Record<string, unknown> = {}
+  ) {
+    return { ...buildSetupDocument(version), player_count: playerCount, ...rootBlocks }
+  }
+
+  const ROSTER = [
+    { seat: 0, player_id: 'player-ana', display_name: 'Ana' },
+    { seat: 1, player_id: 'player-devon' }
+  ]
+
+  test('AC-1: a 1.4.0 document carrying players[] and scoring_profile validates', () => {
+    const result = validate(
+      buildPlayersDocument(LAGN_VERSION_1_4_0, 3, {
+        players: ROSTER,
+        scoring_profile: 'legends-gauntlet-v1'
+      })
+    )
+    assert.strictEqual(result.valid, true, JSON.stringify(result.errors))
+  })
+
+  for (const version of [
+    LAGN_VERSION_1_0_0,
+    LAGN_VERSION_1_1_0,
+    LAGN_VERSION_1_2_0,
+    LAGN_VERSION_1_3_0
+  ]) {
+    test(`AC-2: players[] on a ${version} document is REJECTED, never stripped`, () => {
+      // why: lagnSchema is not .strict(), so an ungated roster would vanish on
+      // parse and the document would look clean — the worst available failure.
+      const result = validate(buildPlayersDocument(version, 3, { players: ROSTER }))
+      assert.strictEqual(result.valid, false)
+      assert.ok(
+        result.errors?.some((error) =>
+          error.includes(
+            'players and scoring_profile require lagn_version 1.4.0 or later'
+          )
+        ),
+        `expected the version-gate message, got: ${JSON.stringify(result.errors)}`
+      )
+    })
+
+    test(`AC-2: scoring_profile on a ${version} document is REJECTED, never stripped`, () => {
+      const result = validate(
+        buildPlayersDocument(version, 3, { scoring_profile: 'legends-gauntlet-v1' })
+      )
+      assert.strictEqual(result.valid, false)
+      assert.ok(
+        result.errors?.some((error) =>
+          error.includes(
+            'players and scoring_profile require lagn_version 1.4.0 or later'
+          )
+        ),
+        `expected the version-gate message, got: ${JSON.stringify(result.errors)}`
+      )
+    })
+  }
+
+  test('AC-3: a duplicate seat is rejected', () => {
+    const result = validate(
+      buildPlayersDocument(LAGN_VERSION_1_4_0, 3, {
+        players: [
+          { seat: 0, player_id: 'player-ana' },
+          { seat: 0, player_id: 'player-devon' }
+        ]
+      })
+    )
+    assert.strictEqual(result.valid, false)
+    assert.ok(
+      result.errors?.some((error) =>
+        error.includes('seat 0 is listed more than once — one participant per seat')
+      ),
+      `expected the duplicate-seat message, got: ${JSON.stringify(result.errors)}`
+    )
+  })
+
+  test('AC-3: a duplicate player_id is rejected', () => {
+    const result = validate(
+      buildPlayersDocument(LAGN_VERSION_1_4_0, 3, {
+        players: [
+          { seat: 0, player_id: 'player-ana' },
+          { seat: 1, player_id: 'player-ana' }
+        ]
+      })
+    )
+    assert.strictEqual(result.valid, false)
+    assert.ok(
+      result.errors?.some((error) =>
+        error.includes(
+          'player_id player-ana is listed more than once — a player cannot occupy two seats'
+        )
+      ),
+      `expected the duplicate-player message, got: ${JSON.stringify(result.errors)}`
+    )
+  })
+
+  test('AC-3: a seat >= player_count is rejected', () => {
+    const result = validate(
+      buildPlayersDocument(LAGN_VERSION_1_4_0, 2, {
+        players: [{ seat: 2, player_id: 'player-ana' }]
+      })
+    )
+    assert.strictEqual(result.valid, false)
+    assert.ok(
+      result.errors?.some((error) =>
+        error.includes('seat 2 is out of range — seats run 0 to player_count-1 (1)')
+      ),
+      `expected the seat-range message, got: ${JSON.stringify(result.errors)}`
+    )
+  })
+
+  test('AC-3: more participants than player_count is rejected', () => {
+    const result = validate(
+      buildPlayersDocument(LAGN_VERSION_1_4_0, 1, {
+        players: [
+          { seat: 0, player_id: 'player-ana' },
+          { seat: 1, player_id: 'player-devon' }
+        ]
+      })
+    )
+    assert.strictEqual(result.valid, false)
+    assert.ok(
+      result.errors?.some((error) =>
+        error.includes(
+          'players lists 2 participants but player_count is 1 — a match cannot credit more players than seats'
+        )
+      ),
+      `expected the over-count message, got: ${JSON.stringify(result.errors)}`
+    )
+  })
+
+  test('a roster shorter than player_count is accepted (bot seats carry no entry)', () => {
+    // why: the count check is `<=`, not `==`. A 3-seat match with two human
+    // participants and one bot is valid — the bot seat carries no entry.
+    const result = validate(
+      buildPlayersDocument(LAGN_VERSION_1_4_0, 3, { players: ROSTER })
+    )
+    assert.strictEqual(result.valid, true, JSON.stringify(result.errors))
+  })
+
+  test('AC-5: scoring_profile accepts any string and is not enum-constrained', () => {
+    // why: the concrete profile set is the leaderboard's, not this package's. A
+    // never-before-seen profile name must validate — an enum here would be
+    // fabrication (D-24215).
+    const result = validate(
+      buildPlayersDocument(LAGN_VERSION_1_4_0, 3, {
+        scoring_profile: 'a-brand-new-division-nobody-has-seen'
+      })
+    )
+    assert.strictEqual(result.valid, true, JSON.stringify(result.errors))
+  })
+
+  test('AC-6: LAGN_VERSION is unchanged — no producer emits 1.4.0', () => {
+    // why: WP-405 is reader-only. Adding 1.4.0 to the READ set must not move the
+    // WRITE value; the writer flip belongs to the future server-producer packet.
+    assert.strictEqual(LAGN_VERSION, LAGN_VERSION_1_1_0)
+  })
+
+  test('AC-7: migrateToCurrent leaves a 1.4.0 input unchanged with applied: []', () => {
+    // why: LAGN_VERSION is still 1.1.0, so a 1.4.0 input is already NEWER than the
+    // writer target. It is left untouched — never downgraded, never re-stamped,
+    // never invents participants — and the 1.3.0 -> 1.4.0 step is registered but
+    // UNREACHABLE. Mirrors the 1.2.0 / 1.3.0 precedents exactly.
+    const original = buildPlayersDocument(LAGN_VERSION_1_4_0, 3, {
+      players: ROSTER,
+      scoring_profile: 'legends-gauntlet-v1'
+    })
+    const result = migrateToCurrent(original)
+    assert.strictEqual(result.error, undefined)
+    assert.strictEqual(result.payload.lagn_version, LAGN_VERSION_1_4_0)
+    assert.deepStrictEqual(result.applied, [])
+    assert.deepStrictEqual(result.payload, original)
   })
 })

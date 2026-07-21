@@ -18,6 +18,7 @@ import {
   LAGN_VERSION_1_1_0,
   LAGN_VERSION_1_2_0,
   LAGN_VERSION_1_3_0,
+  LAGN_VERSION_1_4_0,
   type LagnVersion
 } from './validator.js'
 
@@ -83,10 +84,31 @@ const migrate_1_2_0_to_1_3_0: LagnMigrationFn = (payload) => ({
   lagn_version: LAGN_VERSION_1_3_0
 })
 
+/**
+ * 1.3.0 -> 1.4.0 is a pure restamp.
+ *
+ * why: 1.4.0 adds only the optional, descriptive `players` and `scoring_profile`
+ * root blocks, so every 1.3.0 document is already a structurally valid 1.4.0
+ * document. It synthesizes nothing — and in particular it NEVER invents
+ * participants: migration is forward-only and may not fabricate information that
+ * was never in the source. A document with no roster has no roster after
+ * migration (and the roster is a SERVER producer's concern, not a migration's).
+ *
+ * why: REGISTERED BUT NOT REACHABLE in this packet. migrateToCurrent() targets
+ * LAGN_VERSION, which stays 1.1.0 here, so no caller can reach this step. The
+ * future server-producer packet flips LAGN_VERSION and thereby activates it — the
+ * step lands now so that flip is a one-line change, not a new migration.
+ */
+const migrate_1_3_0_to_1_4_0: LagnMigrationFn = (payload) => ({
+  ...payload,
+  lagn_version: LAGN_VERSION_1_4_0
+})
+
 const migrationRegistry: Readonly<Record<LagnMigrationKey, LagnMigrationFn>> = Object.freeze({
   [buildLagnMigrationKey(LAGN_VERSION_1_0_0, LAGN_VERSION_1_1_0)]: migrate_1_0_0_to_1_1_0,
   [buildLagnMigrationKey(LAGN_VERSION_1_1_0, LAGN_VERSION_1_2_0)]: migrate_1_1_0_to_1_2_0,
-  [buildLagnMigrationKey(LAGN_VERSION_1_2_0, LAGN_VERSION_1_3_0)]: migrate_1_2_0_to_1_3_0
+  [buildLagnMigrationKey(LAGN_VERSION_1_2_0, LAGN_VERSION_1_3_0)]: migrate_1_2_0_to_1_3_0,
+  [buildLagnMigrationKey(LAGN_VERSION_1_3_0, LAGN_VERSION_1_4_0)]: migrate_1_3_0_to_1_4_0
 })
 
 export interface LagnMigrationResult {

@@ -14,6 +14,17 @@ export type GameSetup = z.infer<typeof lagnSchema>['setup']
  */
 export type HeroAlternate = NonNullable<GameSetup['hero_alternates']>[number]
 
+/**
+ * One match participant named in an exported result LAGN (1.4.0+, WP-405 /
+ * D-24214): `{ seat, player_id, display_name? }`.
+ *
+ * why: DESCRIPTIVE metadata, never a scoring/credit input — the server owns
+ * credit by re-executing the blob (D-5301 / D-24126). `player_id` is a PUBLIC id,
+ * never the internal `AccountId`. Inferred from `lagnSchema` like every other
+ * type here, so a schema change cannot leave the exported type behind.
+ */
+export type LagnPlayer = NonNullable<z.infer<typeof lagnSchema>['players']>[number]
+
 // ── Card metadata provenance (1.2.0+, WP-394 / D-24198) ──────────────────────
 // why: inferred from lagnSchema like every other type here rather than
 // hand-authored, so a schema change cannot leave the exported type behind.
