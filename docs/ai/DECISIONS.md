@@ -31464,3 +31464,48 @@ across matches.
 **Drafted:** 2026-07-21; not yet landed.
 
 Protect this file.
+
+---
+
+### D-24224 — the arena-client audio layer is client-only, howler-backed, CC0/R2-hosted; v1 is notable-event SFX + unlock + mute/volume (reserved)
+
+**Status:** Reserved (Drafted 2026-07-21; not yet landed — flips to Active at WP-412 execution).
+
+**Decision.** `play.legendary-arena.com` gains a **foundational audio layer**,
+locked as follows.
+
+1. **Architecture.** Audio is **pure client presentation** — it lives entirely
+   in `apps/arena-client`, reads only `UIState`, **never** writes `G`/`ctx`,
+   never affects an outcome, and adds **zero** engine / determinism / replay
+   footprint (per ARCHITECTURE.md engine-owns-truth; sims and replays render no
+   audio).
+2. **Wrapper.** **howler.js** is the audio engine (Web Audio + HTML5 fallback,
+   cross-browser, built-in autoplay unlock) — an `apps/arena-client`-only
+   dependency (`howler` runtime + `@types/howler` dev); it never enters the
+   engine/registry/server bundles.
+3. **Assets.** **CC0-first** licensing (Kenney / OpenGameArt CC0, no
+   attribution); clips are **hosted on R2** under `audio/sound-effects/` (served
+   via `images.legendary-arena.com`) and referenced by URL — **no audio in
+   git** (the ewiki hosting rule). Tests use a mocked `Howl` (asset-independent).
+4. **v1 coverage — Surface 1.** The six `NotableGameEventType` variants
+   (`fightResolved`, `ambushResolved`, `schemeTwistResolved`,
+   `mastermindStrikeResolved`, `mastermindDefeated`, `healResolved`) → one clip
+   each, via a `useSoundEffects` consumer that keeps its **own append-only
+   cursor** over `UIState.notableEvents` (catch up on the first frame, no history
+   replay, one clip per newly-appended event, **no** overlay-style 2.5 s
+   throttle) — distinct from WP-201's one-at-a-time visual queue.
+5. **UX.** An autoplay-unlock gesture (no audio before the first user
+   interaction) and a **persistent mute + master volume** (localStorage) are
+   required; v1 is a single SFX channel.
+6. **Follow-ons.** The adaptive danger-meter **music** (separate channel), the
+   **tiered combo cue** (consuming WP-409's `UIState.game.lastPlayEffectsFired`;
+   hard-deps WP-412 + WP-409), and Surface-2 (action) / Surface-3 (turn) cues are
+   explicit later WPs on this foundation.
+
+Closes the ewiki [Sound Effects](https://ewiki.legendary-arena.com/sound-effects/)
+"no Work Packet is scoped yet" Open Question for the SFX foundation.
+
+**Packet:** WP-412 (EC-447).
+**Drafted:** 2026-07-21; not yet landed.
+
+Protect this file.
