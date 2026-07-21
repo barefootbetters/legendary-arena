@@ -19,7 +19,7 @@ source:
   - ../content/themes/CATALOG.md
   - ../content/themes/THEME-INDEX.md
   - ../docs/ai/DECISIONS.md
-last-reviewed: 2026-07-07
+last-reviewed: 2026-07-20
 ---
 
 # Music Authoring
@@ -31,11 +31,12 @@ per-hero background music and event stings for Legendary Arena. One Suno
 seed per theme yields **eight derivatives** — four music tracks
 (`MT01`–`MT04`) and four event stings (`ES01`–`ES04`) — cropped from a
 single master so every asset shares one musical identity. WAV masters
-stay local; 320 kbps MP3s are the distribution format, uploaded to R2
-and referenced from `themeSchemaVersion: 2` theme JSON. This page is
-`draft`: the runtime contract (theme JSON music fields) is settled and
-tracked, but production is in progress and the working audio pipeline
-lives in a gitignored area (see Edge Cases).
+stay local on pCloud; 320 kbps MP3s are the distribution format, and
+**R2 is their sole delivery surface**, referenced from
+`themeSchemaVersion: 2` theme JSON. No audio is committed to git. This
+page is `draft`: the runtime contract (theme JSON music fields) is
+settled and tracked, but production is in progress and the working audio
+lives on pCloud, not in the repo (see Edge Cases).
 
 ## Mechanics
 
@@ -123,18 +124,34 @@ schema convention: **`Url`** (lowercase `rl`), never `URL`. The tracked
 worked example — it carries the `musicAIPrompt` seed and the eight
 `musicAssets.*Url` fields pointing at `music.barefootbetters.com`.
 
-### Working layout vs tracked runtime
+### Working layout, delivery, and tracked runtime
 
-- **Working area (`content/media/`):** holds the authoring guide, the
-  per-theme/hero research `.md`, the WAV masters and derivative MP3s,
-  and the committed crop scripts. The **docs and crop scripts are
-  tracked**; only the audio (`*.wav`, `*.mp3`) and cover images
-  (`*.jpg`) are gitignored (~141 MB, hosted on R2).
-- **Tracked runtime:** `content/themes/*.json` (and
-  [CATALOG.md](../content/themes/CATALOG.md) /
-  [THEME-INDEX.md](../content/themes/THEME-INDEX.md)) hold the
-  `musicAssets` URLs the app consumes. The working `.md` and the runtime
-  JSON must be kept in sync.
+Audio spans three storage surfaces, one job each (see
+[Workspace Map](workspace-map.md) for the surface rules):
+
+- **Working binaries (pCloud, `C:\pcloud\LA\audio\`):** the WAV masters,
+  their local MP3 derivatives, and cover images (`*.jpg`) are working
+  files kept on pCloud — **never committed to git and never in the repo
+  tree.** An MP3 is not diffable, so it fails the git test regardless of
+  size (there is no short-sting-in-git exception); large binaries are
+  pCloud's job.
+- **Delivery (R2):** the published 320 kbps MP3 derivatives are the
+  **sole audio surface** the app fetches — the `audio/themes/` and
+  `audio/heroes/` prefixes on the `legendary-images` bucket. Masters are
+  never uploaded. See
+  [Data & File Locations](data-file-locations.md).
+- **Tracked in git (`content/media/`):** only the authoring guide, the
+  per-theme/hero research `.md`, and the committed crop scripts — all
+  version-controlled text, no audio.
+- **Tracked runtime (`content/themes/*.json`):** the `musicAssets.*Url`
+  references the app consumes, kept in sync with the research `.md`
+  (alongside [CATALOG.md](../content/themes/CATALOG.md) /
+  [THEME-INDEX.md](../content/themes/THEME-INDEX.md)).
+
+To avoid a per-cue R2 round-trip on time-critical stings (e.g.
+`ES02` master-strike), the arena client **prefetches a theme's stings
+into decoded audio buffers at match start** rather than bundling audio
+into the build.
 
 ### Listen: a produced theme
 
@@ -162,12 +179,15 @@ the `audio` shortcode (see [Ewiki Authoring](ewiki-authoring.md)):
 
 ## Edge Cases
 
-- **Only the audio is gitignored, not the docs.** `.gitignore` keeps the
-  WAV masters, derivative MP3s, and cover images out of git (~141 MB,
-  hosted on R2), while the authoring guide, hero research, template,
-  index, and crop scripts under `content/media/` are tracked and
-  version-controlled. The runtime theme JSON in `content/themes/` is
-  tracked as before.
+- **No audio in git — masters live on pCloud.** The WAV masters, their
+  local MP3 derivatives, and cover images belong on pCloud
+  (`C:\pcloud\LA\audio\`), not in the repo tree; only the authoring
+  guide, hero research, template, index, and crop scripts under
+  `content/media/` are tracked and version-controlled, and the runtime
+  theme JSON in `content/themes/` is tracked as before. **Migration
+  pending:** the ~141 MB produced so far still sits gitignored under
+  `content/media/` and has not yet moved to pCloud — see the Open
+  Question below and [Workspace Map](workspace-map.md).
 - **Masters are never uploaded.** Only the MP3 derivatives ship to R2;
   the `_MASTER.wav` seed stays local. Batch-encode recipes guard against
   encoding the master as a distribution asset.
@@ -192,16 +212,25 @@ the `audio` shortcode (see [Ewiki Authoring](ewiki-authoring.md)):
   [`content/themes/THEME-INDEX.md`](../content/themes/THEME-INDEX.md)
   — the tracked theme catalog and index.
 - `content/media/MUSIC-AUTHORING.md` — the authoritative authoring guide
-  (gitignored working area; this wiki page summarizes it).
+  (tracked in git; this wiki page summarizes it).
 - `content/media/heroes/HERO-INDEX.json` — generated hero index (279
   heroes across 40 sets) driving hero-theme research (gitignored).
 
 ## Open Questions
 
 - **Client consumption.** Which WP wires `musicAssets.*Url` into the
-  arena-client playback layer (and how it maps to the adaptive
-  danger-meter tiers on [Sound Effects](sound-effects.md)) is not yet
+  arena-client playback layer — including the match-start **prefetch of a
+  theme's stings into decoded audio buffers** that keeps time-critical
+  cues off the R2 round-trip — and how it maps to the adaptive
+  danger-meter tiers on [Sound Effects](sound-effects.md) is not yet
   documented here.
+- **Audio relocation to pCloud.** The ~141 MB of masters and derivatives
+  currently gitignored under `content/media/` needs to move to
+  `C:\pcloud\LA\audio\`, with the crop scripts' working directory
+  repointed. It is an operational task, not yet done; whether the
+  `C:\pcloud\LA\audio\` shape should be locked by a D-entry (as with the
+  `LA\ops\` / `LA\brand\` taxonomy) is open — see
+  [Workspace Map](workspace-map.md).
 - **Production R2 domain.** When `music.barefootbetters.com` goes live,
   the demo above should be re-pointed at the canonical theme URL.
 - **Sting vs SFX reconciliation.** The `ES01`–`ES04` stings and the

@@ -80,7 +80,7 @@ up not knowing which one is current.
 | Card face art (published) | Hosted | Cloudflare R2 `legendary-images` — see [Data & File Locations](data-file-locations.md) |
 | Raw video footage, Premiere project | pCloud | `C:\pcloud\LA\videos\{prefix}-{NNN}-{slug}\` — see [Video Production Workflow](video-production-workflow.md) |
 | Finished video (published) | Hosted | YouTube. The blog embeds it; the file itself never enters git. |
-| Reusable video assets (intros, music, overlays) | pCloud | `C:\pcloud\LA\video-assets\` |
+| Reusable video assets (intros, outros, video BGM, overlays) | pCloud | `C:\pcloud\LA\video-assets\` |
 | Logo drafts, design exploration | pCloud | `C:\pcloud\LA\logo-drafts\` |
 | Vendor attachment, invoice, quote | pCloud | `C:\pcloud\LA\ops\vendors\` — **not** left in Outlook |
 | Signed contract, licence, trademark or entity filing | pCloud | `C:\pcloud\LA\ops\legal\` |
@@ -89,6 +89,8 @@ up not knowing which one is current.
 | A payment, refund, or chargeback record | Hosted | **Stripe** is the ledger. Postgres keeps references only — see System of record |
 | A player profile, entitlement, or team | Hosted | PostgreSQL `legendary.*` — see System of record |
 | A user-uploaded avatar | Hosted | R2 `avatars/{accountId}.webp`; Postgres stores the URL, never the bytes |
+| Per-theme / per-hero game music — WAV masters + local MP3 derivatives | pCloud | `C:\pcloud\LA\audio\` — working binaries, never git, masters never uploaded — see [Music Authoring](music-authoring.md) |
+| Published game audio (320 kbps MP3 — music + event stings) | Hosted | R2 `legendary-images` `audio/` prefix — the **sole** audio surface; see [Data & File Locations](data-file-locations.md) |
 | A secret or credential | Neither git nor a synced plain-text file | `.env` locally (gitignored), Render dashboard in production. See Edge Cases. |
 | A diagnostics JSON or loadout pulled off a live match | pCloud, scoped to a project | Currently accumulating loose at the pCloud root — see Edge Cases |
 
@@ -105,11 +107,12 @@ C:\pcloud\
 │   └── MEDIA\
 │
 ├── LA\                     # Legendary Arena — the working root
+│   ├── audio\              # game music masters + local MP3 derivatives (published MP3s → R2)
 │   ├── ewiki\
 │   ├── logo-drafts\
 │   ├── products\
 │   ├── social\
-│   ├── video-assets\       # shared intros, outros, music, overlays
+│   ├── video-assets\       # shared intros, outros, video BGM, overlays
 │   ├── videos\             # per-video production folders (see below)
 │   ├── ops\                # business operations (README.txt; subfolders on first use)
 │   └── brand\              # approved brand assets (README.txt; subfolders on first use)
@@ -145,7 +148,7 @@ data locations in [Data & File Locations](data-file-locations.md).
 
 | Surface | Contents | Authoring source |
 |---|---|---|
-| Cloudflare R2 `legendary-images` | Card images, avatars, the metadata JSON mirror, themes | `data/` in the engine repo — mirrored **by hand**, see [Data & File Locations](data-file-locations.md) |
+| Cloudflare R2 `legendary-images` | Card images, avatars, the metadata JSON mirror, themes, published audio (music + event stings) | `data/` + `content/` in the engine repo (audio masters on pCloud) — mirrored **by hand**, see [Data & File Locations](data-file-locations.md) |
 | PostgreSQL (`legendary` schema) | Identity, replays, teams, commerce, telemetry | `data/migrations/` |
 | YouTube | Published video | `C:\pcloud\LA\videos\…\05-edit\` |
 | `www.legendary-arena.com` | Marketing site + blog | `legendary-arena-com` repo |
@@ -433,6 +436,16 @@ asked. Two pointers keep it reachable:
   future session cannot quietly re-file things — it needs a D-entry, the
   way the pCloud naming question got D-24207 and D-24208. Until then it
   is guidance.
+- **`LA\audio\` is documented but not yet created, and the existing
+  audio has not moved.** The decision is settled — R2 is the sole audio
+  surface, WAV masters and local MP3 derivatives are pCloud working
+  binaries, nothing audio goes in git. But the ~141 MB of audio produced
+  so far still sits *gitignored inside the engine repo* under
+  `content/media/`, and `C:\pcloud\LA\audio\` does not exist yet.
+  Relocating those files and repointing the crop scripts' working
+  directory is an **operational follow-up**, not a doc change. Like the
+  `LA\ops\` / `LA\brand\` taxonomy above, the shape is guidance until a
+  D-entry locks it.
 - **Per-repo README pointers are proposed but not written.** Each repo
   gaining a short section naming this page — rather than restating it —
   would make the map findable from inside any checkout. Scope, and whether
