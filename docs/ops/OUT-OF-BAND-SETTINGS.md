@@ -163,6 +163,45 @@ named `npmrc` (no leading dot, therefore never read) carried that intent from
 
 ---
 
+## Cloudflare R2 — `legendary-images` card-image `Cache-Control`
+
+**Status: NOT YET APPLIED as of 2026-07-21 — pending operator action per
+[`RUNBOOK-r2-image-cache-control.md`](./RUNBOOK-r2-image-cache-control.md).**
+
+Card images on `images.legendary-arena.com` (the R2 `legendary-images` bucket)
+should carry an immutable `Cache-Control` so the Cloudflare edge caches them and a
+previously-seen card is free on every later request — the companion ops change to
+**WP-410 / D-24222** (the match-start card-image prefetch: it warms each image once
+per client; this makes that warm stick across matches instead of re-downloading every
+match). The full procedure, the mutable-prefix guardrail, and rollback live in the
+runbook.
+
+| Setting | Target value | Why |
+|---|---|---|
+| `Cache-Control` on `{setAbbr}/*.webp` objects | `public, max-age=31536000, immutable` | Card filenames are content-addressed — the bytes never change (new art = new slug/set = new URL), so a one-year immutable cache is safe and cuts R2 egress + first-paint latency. |
+| Scope | Card-image prefixes **only** | **Never `avatars/` or `metadata/`** — those are mutable at a stable key, so `immutable` would pin stale content. |
+| (optional) Cloudflare Cache Rule | edge TTL, excluding `/avatars/` | Only if the object header alone leaves `cf-cache-status: DYNAMIC`. |
+
+The setting is invisible to the repo (R2 object metadata + an optional dashboard Cache
+Rule) — hence this record. The **durable half** is committed, though: the
+`--header-upload` flag on the documented upload command in
+[`wiki/card-image-acquisition.md`](../../wiki/card-image-acquisition.md) stamps the
+header on every future set upload. When the backfill is applied, change the Status line
+above to `Applied YYYY-MM-DD` and flip the WP-410 AC-10 line in `docs/ai/STATUS.md`.
+
+### Read the live value
+
+```sh
+curl -sI https://images.legendary-arena.com/core/core-hr-spider-man-astonishing-strength.webp \
+  | grep -iE 'cache-control|cf-cache-status'
+```
+
+As of 2026-07-21 this returns **no `Cache-Control`** header and `cf-cache-status:
+DYNAMIC` (not yet applied). After applying, a warm fetch reads
+`cache-control: public, max-age=31536000, immutable` and `cf-cache-status: HIT`.
+
+---
+
 ## Adding to this file
 
 An entry belongs here when **all** of the following hold:
