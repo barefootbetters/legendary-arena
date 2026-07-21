@@ -349,7 +349,13 @@ slugs before upload. See Edge Cases.
   403s — the token is bucket-scoped; `r2:legendary-images/{set}/` operations
   work). Then:
   - **Bulk upload a staged set:**
-    `rclone copy renamed\<set> r2:legendary-images/<set>/ --s3-no-check-bucket`
+    `rclone copy renamed\<set> r2:legendary-images/<set>/ --s3-no-check-bucket --header-upload "Cache-Control: public, max-age=31536000, immutable"`
+    — the `--header-upload` flag stamps the immutable cache header so the CDN
+    edge-caches each card image (card filenames are content-addressed, so the
+    bytes never change). See
+    [`docs/ops/RUNBOOK-r2-image-cache-control.md`](../docs/ops/RUNBOOK-r2-image-cache-control.md);
+    apply it **only** to the card-image prefixes, never `avatars/` or `metadata/`
+    (those are mutable at a stable key).
   - **Rename one object (server-side, non-destructive):**
     `rclone copyto r2:legendary-images/<set>/<old>.webp r2:legendary-images/<set>/<new>.webp --s3-no-check-bucket`
   - **Sweep orphans after repointing:**
