@@ -31180,3 +31180,83 @@ setup only and never touched scoring.
 live verification required.
 
 Protect this file.
+
+---
+
+### D-24219 — game-music working binaries live at `C:\pcloud\LA\audio\`; R2 is the sole audio delivery surface, and no audio lives in git
+
+**Status:** Active (governance) 2026-07-21. **Executed** — the relocation and
+crop-script repoint landed as an INFRA change (#884); this entry records and
+locks the shape those changes moved to.
+
+**User-Visible Surface:** none for this entry — an operator workspace and
+asset-storage convention. The *delivered* audio is fetched from R2 by the arena
+client, but no runtime code ships here; the client playback WP is separate and
+unwritten.
+
+**Decision.** Game music — the per-theme (`MT01`–`MT04` music plus `ES01`–`ES04`
+event stings) and per-hero (`MT01`–`MT04`) assets defined by
+[Music Authoring](../../wiki/music-authoring.md) — has exactly one working home
+and one delivery surface, and neither is git:
+
+1. **Working binaries → pCloud.** The WAV masters, their local MP3 derivatives,
+   and cover images live under **`C:\pcloud\LA\audio\`**, in per-theme /
+   per-hero subfolders whose names mirror the git-tracked tooling layout
+   (`age-of-apocalypse\`, `heroes\<slug>\`). These are working files: never
+   committed, never in the repo tree.
+2. **Delivery → R2, and only R2.** The published 320 kbps MP3 derivatives are
+   the **sole** audio surface the app fetches — the `audio/themes/` and
+   `audio/heroes/` prefixes on the `legendary-images` bucket. Masters are
+   **never** uploaded.
+3. **Git holds no audio.** Only the crop-script templates, the authoring `.md`,
+   each hero's committed `crop.ps1` provenance, and the `content/themes/*.json`
+   `musicAssets.*Url` references are tracked. There is **no size exception** —
+   an MP3 is non-diffable at any duration, so a "short stings in git" carve-out
+   is rejected.
+
+**Why `LA\audio\` and not `content/media\`.**
+[Workspace Map](../../wiki/workspace-map.md)'s surface rule is *"if you would
+not want to read a diff of it, it does not go in git."* ~141 MB of masters and
+derivatives had been sitting gitignored *inside* the engine checkout —
+physically on the sync drive, invisible to review, and contradicting that rule.
+`C:\pcloud\LA\audio\` puts them on the working-files surface that already owns
+every other large binary (video, design drafts), **alongside — not inside —**
+the repo. The crop scripts stay in git because they are diffable text and are
+the reproducibility record; they are CWD-relative, so they run unchanged against
+the pCloud folder.
+
+**Why this locks an internal `LA\` subfolder shape when D-24208 left that open.**
+D-24208 declined to mandate the *internal shape* of a project's pCloud
+working-files root, leaving per-asset-class subfolders to the pages that own
+them. This entry is that ownership call for one asset class — audio. It does not
+reopen D-24208: `C:\pcloud\LA\` remains the Legendary Arena working root,
+unrenamed; this entry only names one child of it and fixes what goes there. The
+still-unlocked `LA\ops\` / `LA\brand\` taxonomy is unaffected and remains
+guidance until a future entry locks it the same way.
+
+**Relationship to the schema and delivery decisions.** The runtime contract for
+the URLs this produces is D-5509 (Theme Schema v2's optional `musicTheme` /
+`musicAIPrompt` / `musicAssets` fields); this entry governs where the *bytes
+behind those URLs* are authored and served, not the schema. The production music
+host (`music.barefootbetters.com`) is not yet live; the interim delivery path is
+the `audio/` prefix on `images.legendary-arena.com`, the same `legendary-images`
+bucket.
+
+**Not decided here.**
+
+- **The production music domain.** When `music.barefootbetters.com` serves,
+  re-pointing the theme JSON at the canonical host is a separate change; the
+  sole-surface-is-R2 rule is unaffected (that host is R2-backed).
+- **Client playback / prefetch wiring.** Which WP loads `musicAssets.*Url` into
+  the arena client — including the match-start sting prefetch that keeps
+  time-critical cues off the R2 round-trip — is unwritten and out of scope.
+- **The per-theme subfolder internals** beyond mirroring the tooling layout by
+  name; [Music Authoring](../../wiki/music-authoring.md) owns that shape.
+- **`LA\ops\` / `LA\brand\`.** Still documented-but-not-locked.
+
+**Packet:** none — operator workspace and asset-storage convention, no
+repo-executable engine work. The relocation and crop-script repoint were carried
+out as an INFRA change (#884); this entry records and locks the resulting shape.
+**Drafted:** 2026-07-21.
+
+Protect this file.
