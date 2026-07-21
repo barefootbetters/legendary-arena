@@ -445,11 +445,13 @@ describe('UIState type drift (WP-128 / EC-131) — type pinning', () => {
     ]);
   });
 
-  it('UIState.game retains phase/turn/activePlayerId/currentStage AND adds hasActedThisTurn + hasHealedThisTurn (WP-380)', () => {
-    // why: WP-380 — additive extension of the inline game shape; the two new
-    // fields are the WP-379 per-turn flags projected as public booleans so the
-    // client can gate the Heal-Wounds affordance (D-24181). This pin fails if
-    // a field is added to the type but not the builder (or vice versa).
+  it('UIState.game retains phase/turn/activePlayerId/currentStage + hasActedThisTurn/hasHealedThisTurn AND adds lastPlayEffectsFired (WP-409)', () => {
+    // why: WP-380 — additive extension of the inline game shape; hasActedThisTurn /
+    // hasHealedThisTurn are the WP-379 per-turn flags projected as public booleans so
+    // the client can gate the Heal-Wounds affordance (D-24181).
+    // why: WP-409 / D-24221 — lastPlayEffectsFired is the public per-turn count of
+    // hero effects that fired for the most recent play (the future combo-cue signal).
+    // This pin fails if a field is added to the type but not the builder (or vice versa).
     const fixture: UIState['game'] = {
       phase: 'play',
       turn: 1,
@@ -457,6 +459,7 @@ describe('UIState type drift (WP-128 / EC-131) — type pinning', () => {
       currentStage: 'main',
       hasActedThisTurn: false,
       hasHealedThisTurn: false,
+      lastPlayEffectsFired: 0,
     };
 
     assert.deepStrictEqual(Object.keys(fixture).sort(), [
@@ -464,6 +467,7 @@ describe('UIState type drift (WP-128 / EC-131) — type pinning', () => {
       'currentStage',
       'hasActedThisTurn',
       'hasHealedThisTurn',
+      'lastPlayEffectsFired',
       'phase',
       'turn',
     ]);

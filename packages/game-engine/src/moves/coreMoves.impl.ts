@@ -173,7 +173,12 @@ export function applyCardPlay(
   // why: hero ability effects fire immediately after play, before any
   // fight/recruit actions. This preserves "play -> generate resources -> act."
   // Hero hook economy is additive to base card stats above (WP-022).
-  executeHeroEffects(G, context, playerID, cardId);
+  // why: WP-409 / D-24221 — capture how many hero effects fired for this play onto
+  // a per-turn observability transient. Covers playFromUndercover too (shared core).
+  // Feeds UIState.game.lastPlayEffectsFired for the future client tiered combo/synergy
+  // cue; excluded from the finalStateHash oracle (observability-only), and not seeded at
+  // setup, so no sentinel or PRE_WP080 hash re-pin is required.
+  G.lastPlayEffectsFired = executeHeroEffects(G, context, playerID, cardId);
 }
 
 /**

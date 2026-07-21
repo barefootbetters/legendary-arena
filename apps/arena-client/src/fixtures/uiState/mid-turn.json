@@ -5,7 +5,8 @@
     "activePlayerId": "0",
     "currentStage": "main",
     "hasActedThisTurn": false,
-    "hasHealedThisTurn": false
+    "hasHealedThisTurn": false,
+    "lastPlayEffectsFired": 0
   },
   "players": [
     {

@@ -755,6 +755,18 @@ export interface LegendaryGameState {
   /** Whether the current player has used the Wound Healing ability this turn. */
   hasHealedThisTurn?: boolean;
 
+  // why: WP-409 / D-24221 — observability-only per-turn transient. Counts the hero
+  // effects that FIRED for the most recent play this turn (each executeSingleEffect
+  // that reached its handler + each top-level primitiveEffect that ran; condition-
+  // gated and safe-skipped effects excluded). Set by applyCardPlay from the
+  // executeHeroEffects return; reset to 0 each turn by the play phase onBegin hook.
+  // Excluded from the finalStateHash oracle (hashGameState.ts, the same mechanism as
+  // messages) so recorded sentinel hashes stay byte-unchanged. Optional so existing
+  // full-LegendaryGameState literals need no edit (absent = no play yet this turn).
+  // Nothing reads it for rules — it feeds the future client tiered combo/synergy cue.
+  /** Count of hero effects that fired for the most recent play this turn (observability only). */
+  lastPlayEffectsFired?: number;
+
   // why: pending player-choice state set by reveal-attack-choose executor (D-22001).
   // Must be undefined at every turn-end. Optional so existing test state literals
   // do not need updating. Absent (undefined) = no pending choice.

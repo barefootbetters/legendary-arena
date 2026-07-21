@@ -23,6 +23,7 @@ function makeUIState(overrides?: Partial<UIState>): UIState {
       currentStage: 'main',
       hasActedThisTurn: false,
       hasHealedThisTurn: false,
+      lastPlayEffectsFired: 0,
     },
     players: [
       {
@@ -235,10 +236,10 @@ describe('detectPlayerAffectingMutations', () => {
 
   test('turn change to viewer returns empty array (not a disruption)', () => {
     const previous = makeUIState({
-      game: { phase: 'play', turn: 1, activePlayerId: '1', currentStage: 'main', hasActedThisTurn: false, hasHealedThisTurn: false },
+      game: { phase: 'play', turn: 1, activePlayerId: '1', currentStage: 'main', hasActedThisTurn: false, hasHealedThisTurn: false, lastPlayEffectsFired: 0 },
     });
     const current = makeUIState({
-      game: { phase: 'play', turn: 2, activePlayerId: '0', currentStage: 'start', hasActedThisTurn: false, hasHealedThisTurn: false },
+      game: { phase: 'play', turn: 2, activePlayerId: '0', currentStage: 'start', hasActedThisTurn: false, hasHealedThisTurn: false, lastPlayEffectsFired: 0 },
     });
 
     const mutations = detectPlayerAffectingMutations(previous, current, VIEWER);

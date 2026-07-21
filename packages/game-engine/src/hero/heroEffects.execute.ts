@@ -307,20 +307,30 @@ function drawFromPlayerDeck(
  *   boardgame.io. Narrowed to ShuffleProvider at the draw call site.
  * @param playerID - Active player ID (plain string, no framework import).
  * @param cardId - The CardExtId of the hero card that was just played.
+ * @returns The count of hero effects that fired for this play (WP-409 / D-24221) —
+ *   observability only, stashed on G.lastPlayEffectsFired by applyCardPlay.
  */
 export function executeHeroEffects(
   G: LegendaryGameState,
   ctx: unknown,
   playerID: string,
   cardId: CardExtId,
-): void {
+): number {
   // why: guard against G states that predate WP-021 (e.g., older test
   // mocks that don't include heroAbilityHooks). No hooks means no effects.
   if (!G.heroAbilityHooks || G.heroAbilityHooks.length === 0) {
-    return;
+    return 0;
   }
 
   const hooks = getHooksForCard(G.heroAbilityHooks, cardId);
+
+  // why: WP-409 / D-24221 — tally the hero effects that FIRED for this play (each
+  // executeSingleEffect / interpretHeroPrimitiveEffect that reached a handler).
+  // Condition-gated hooks `continue` below and contribute nothing, so a
+  // synergy-unlocked hook raises the count — the honest "how much did this play do"
+  // signal for the future combo cue. Explicit counter, not .reduce() (effect
+  // application). Returned to applyCardPlay; NOT read by any rule.
+  let firedEffectCount = 0;
 
   for (const hook of hooks) {
     // why: cardId is threaded through to condition evaluation so heroClassMatch
@@ -348,7 +358,9 @@ export function executeHeroEffects(
     // which carries only primitiveEffects.)
     if (hook.effects !== undefined) {
       for (const effect of hook.effects) {
-        executeSingleEffect(G, ctx, playerID, cardId, effect);
+        if (executeSingleEffect(G, ctx, playerID, cardId, effect)) {
+          firedEffectCount++;
+        }
       }
     }
 
@@ -362,7 +374,9 @@ export function executeHeroEffects(
         // why: WP-317 — pass the hook's source card so a composable gain-resource grant
         // (Empowered / Berserk) logs which card granted, mirroring the card-named
         // `did not activate` line above.
-        interpretHeroPrimitiveEffect(G, ctx, playerID, primitiveEffect, cardId);
+        if (interpretHeroPrimitiveEffect(G, ctx, playerID, primitiveEffect, cardId)) {
+          firedEffectCount++;
+        }
       }
     }
 
@@ -373,6 +387,8 @@ export function executeHeroEffects(
     // hollow reason (mixed-hook lines with ≥1 reachable effect never flag).
     detectHollowHeroHook(G, ctx, cardId, hook);
   }
+
+  return firedEffectCount;
 }
 
 // ---------------------------------------------------------------------------
@@ -1663,11 +1679,19 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
  * registered handler in HERO_EFFECT_HANDLERS. Returns without mutation for
  * unsupported keywords or invalid magnitudes.
  *
+ * // why: WP-409 / D-24221 — returns whether the effect FIRED (reached its
+ * // HERO_EFFECT_HANDLERS dispatch). `false` on any safe skip (unsupported
+ * // keyword, invalid magnitude, or the unreachable undefined-handler guard);
+ * // `true` after the handler runs. executeHeroEffects tallies these into the
+ * // observability-only lastPlayEffectsFired count. Existing callers that ignore
+ * // the return are unaffected (void -> boolean is backward-compatible).
+ *
  * @param G - Game state (mutated under Immer draft).
  * @param ctx - Context (narrowed to ShuffleProvider for draw).
  * @param playerID - Active player ID.
  * @param cardId - The played hero card's CardExtId.
  * @param effect - The effect descriptor to execute.
+ * @returns `true` if the effect reached its handler and fired; `false` if safe-skipped.
  */
 // why: D-24019 — exported so resolveOptionalKoReward can dispatch the reward to
 // the existing executor (rescue / draw / attack / recruit) instead of
@@ -1679,13 +1703,13 @@ export function executeSingleEffect(
   playerID: string,
   cardId: CardExtId,
   effect: HeroEffectDescriptor,
-): void {
+): boolean {
   const keyword = effect.type;
 
   // why: unsupported keywords are safely ignored in MVP. Only the keywords in
   // MVP_KEYWORDS execute; 'wound' and 'conditional' are deferred.
   if (!MVP_KEYWORDS.has(keyword)) {
-    return;
+    return false;
   }
 
   // why: 'ko' and NO_MAGNITUDE_KEYWORDS members ('rescue', 'reveal') bypass the
@@ -1696,7 +1720,7 @@ export function executeSingleEffect(
   // other MVP keyword requires a valid magnitude here.
   if (keyword !== 'ko' && !NO_MAGNITUDE_KEYWORDS.has(keyword)) {
     if (!isValidMagnitude(effect.magnitude)) {
-      return;
+      return false;
     }
   }
 
@@ -1706,9 +1730,10 @@ export function executeSingleEffect(
   // registry keys == MVP_KEYWORDS, this branch is unreachable in practice.
   const handler = HERO_EFFECT_HANDLERS[keyword];
   if (handler === undefined) {
-    return;
+    return false;
   }
   handler(G, ctx, playerID, cardId, effect);
+  return true;
 }
 
 // ---------------------------------------------------------------------------
