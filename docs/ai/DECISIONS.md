@@ -31017,4 +31017,67 @@ keeps every stored 1.0.0–1.2.0 record readable without a migration pass.
 **Packet:** WP-404 (flips 1.1.0 → 1.3.0, skipping 1.2.0 since provenance stays
 optional and unpopulated). §21 TRIGGERED; two rows replaced WHOLE per D-11804.
 
+---
+
+### D-24214 — LAGN match participants are descriptive, never a credit or scoring input
+
+**Status:** Drafted 2026-07-21 (WP-405); not yet landed — flips to Active
+(post-execution) when WP-405 merges.
+
+**Decision.** The LAGN `players[]` block (`{ seat, player_id, display_name? }`,
+1.4.0+) is **descriptive participant metadata** on an exported match record — a
+self-describing scoresheet naming who occupied which seat. It is **never**
+authoritative and is **never an input** to competitive credit, scoring, ranking,
+`team_key`, `competitive_scores`, or replay verification. Nothing reads it as a
+source of truth; a document with it and one without it are scored identically,
+because scoring does not read it at all.
+
+**Why.** Competitive credit is `matchId → bgio.replay_artifacts blob → re-reduce →
+re-verify hash → AccountId`, server-side (WP-338 / D-24126 / D-5301). The client
+submits only `{ matchId }`; the server never trusts a client-supplied identity or
+score, because *"trusting a client-provided score would break the trust surface the
+whole submission flow exists to enforce."* `players[]` therefore cannot be the
+acknowledgement mechanism — it would either be ignored (dead weight) or read
+(a D-5301 hole). Recording the boundary now stops a future packet from wiring
+`players[]` into the scoring path and quietly reopening that hole.
+
+**Privacy.** `player_id` MUST be a **public, shareable** player identifier (a
+handle or public player id), never the internal server `AccountId` (D-5201). LAGN
+travels in `?lagn=` links and decorative saved loadouts; an internal id would leak
+identity. The contract packet (WP-405) validates shape only; the future
+server-producer packet owns choosing the public id and is the only writer of
+`players[]` (the loadout writer never emits it).
+
+**Not decided here.** Whether any surface ever *displays* participants from an
+exported LAGN — that is a consumer packet with its own privacy review, not an
+extension of this metadata field.
+
+**Packet:** WP-405 (LAGN contract, reader-only).
+
+---
+
+### D-24215 — LAGN scoring_profile is a descriptive label, not scoring authority
+
+**Status:** Drafted 2026-07-21 (WP-405); not yet landed — flips to Active
+(post-execution) when WP-405 merges.
+
+**Decision.** The LAGN `scoring_profile` field (an optional root string, 1.4.0+)
+is a **descriptive label** naming which scoring ruleset a completed match belongs
+to (e.g. `"legends-gauntlet-v1"`). It is validated as a **plain string, never an
+enum**, and is **never** an input to scoring or ranking. The server derives the
+applicable ruleset from the match itself; it does not read a client-supplied tag.
+
+**Why.** For the same D-5301 reason as D-24214: the server re-executes the blob and
+owns scoring; a reader that scored from a client-supplied profile tag would reopen
+the trust hole. The field exists so a portable record can *state* its profile, not
+so anything *scores* from it. It is a plain string rather than an enum because the
+concrete profile set is owned by the leaderboard / Hall of Legends, not by
+`packages/lagn-spec`; encoding an enum here would fabricate a set this package has
+no authority over and would force a LAGN major bump every time a division is added.
+
+**Not decided here.** The concrete profile vocabulary, and whether any ingest ever
+routes on the label — both belong to the leaderboard, not to the LAGN contract.
+
+**Packet:** WP-405 (LAGN contract, reader-only).
+
 Protect this file.
