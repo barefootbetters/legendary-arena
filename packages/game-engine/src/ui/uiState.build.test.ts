@@ -1766,3 +1766,34 @@ describe('buildUIState — pendingReturnZeroCostDiscard projection (D-24139)', (
       'projection entries are fresh copies, never references into G');
   });
 });
+
+describe('buildUIState — matchCardImageUrls (WP-410 / D-24222)', () => {
+  it('projects the deduped, non-empty imageUrl set of cardDisplayData', () => {
+    const gameState = createTestGameState();
+    // why: the mock registry lists no cards, so inject a known cardDisplayData to
+    // prove the projection dedupes (same design appears twice), drops empties, and
+    // preserves first-seen order — a non-vacuous, cheat-proof check against a
+    // hardcoded expected literal, not a re-filtered view of the input.
+    const displayData: Record<CardExtId, UICardDisplay> = {
+      'set/hero-a#0': { extId: 'set/hero-a#0', name: 'A', imageUrl: 'https://images.legendary-arena.com/set/a.webp', cost: 0 },
+      'set/hero-a#1': { extId: 'set/hero-a#1', name: 'A', imageUrl: 'https://images.legendary-arena.com/set/a.webp', cost: 0 },
+      'set/hero-b#0': { extId: 'set/hero-b#0', name: 'B', imageUrl: 'https://images.legendary-arena.com/set/b.webp', cost: 1 },
+      'set/no-art#0': { extId: 'set/no-art#0', name: 'No Art', imageUrl: '', cost: null },
+    };
+    (gameState as { cardDisplayData: Record<CardExtId, UICardDisplay> }).cardDisplayData = displayData;
+
+    const result = buildUIState(gameState, mockCtx);
+
+    assert.deepStrictEqual(result.matchCardImageUrls, [
+      'https://images.legendary-arena.com/set/a.webp',
+      'https://images.legendary-arena.com/set/b.webp',
+    ]);
+  });
+
+  it('is always present — an empty cardDisplayData yields []', () => {
+    const gameState = createTestGameState();
+    (gameState as { cardDisplayData: Record<CardExtId, UICardDisplay> }).cardDisplayData = {};
+    const result = buildUIState(gameState, mockCtx);
+    assert.deepStrictEqual(result.matchCardImageUrls, []);
+  });
+});

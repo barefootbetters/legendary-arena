@@ -10,6 +10,7 @@ import HollowEffectsPanel from '../components/play/HollowEffectsPanel.vue';
 import { useViewport } from '../composables/useViewport';
 import { useSkinApplier } from '../composables/useSkinApplier';
 import { useCompetitiveSubmitOnGameover } from '../composables/useCompetitiveSubmitOnGameover';
+import { useCardImagePrefetch } from '../composables/useCardImagePrefetch';
 import type { SubmitMove } from '../components/play/uiMoveName.types';
 
 // why: WP-339 — the user-facing message for each post-match submission status.
@@ -80,6 +81,12 @@ export default defineComponent({
     const { isMobile } = useViewport();
     const viewportRoot = ref<HTMLElement | null>(null);
     useSkinApplier(viewportRoot);
+
+    // why: WP-410 — warm the match's card images into the browser cache at match
+    // start (from the engine-projected UIState.matchCardImageUrls) so a card paints
+    // from cache on reveal instead of round-tripping to R2 mid-turn. Fire-and-forget
+    // and a no-op until the manifest arrives, so it is safe at this shared root.
+    useCardImagePrefetch();
 
     // why: WP-339 — on gameover, submit this match's competitive score once (for
     // an authenticated player). toRef keeps matchId reactive so the composable

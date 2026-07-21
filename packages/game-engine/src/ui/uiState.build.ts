@@ -429,6 +429,39 @@ function buildParBreakdown(
  * @param ctx - Minimal context with phase, turn, currentPlayer.
  * @returns The derived UIState projection.
  */
+/**
+ * Collects the deduped, insertion-ordered set of non-empty card-face image URLs
+ * across every entry in G.cardDisplayData — the complete set of images this match
+ * can show.
+ *
+ * why: WP-410 / D-24222 — the arena client warms these into the browser image
+ * cache at match start so a card paints from cache on reveal instead of
+ * round-tripping to R2 mid-turn. The client cannot derive the set itself (it may
+ * not import the registry at runtime, and the per-zone projection only carries
+ * currently-visible cards), so the engine — which already resolved every card's
+ * imageUrl into cardDisplayData at setup — projects the deduped list. Empty
+ * imageUrls (a card without art) are skipped; duplicates (heroes share card
+ * designs) collapse to a single warm. Deterministic: object-value order follows
+ * cardDisplayData's own deterministic insertion order.
+ *
+ * @param cardDisplayData - G.cardDisplayData: every match card's display payload.
+ * @returns Deduped, non-empty image URL strings in first-seen order.
+ */
+function buildMatchCardImageManifest(
+  cardDisplayData: LegendaryGameState['cardDisplayData'],
+): string[] {
+  const seenImageUrls = new Set<string>();
+  const manifest: string[] = [];
+  for (const display of Object.values(cardDisplayData)) {
+    const imageUrl = display.imageUrl;
+    if (imageUrl !== '' && !seenImageUrls.has(imageUrl)) {
+      seenImageUrls.add(imageUrl);
+      manifest.push(imageUrl);
+    }
+  }
+  return manifest;
+}
+
 export function buildUIState(
   gameState: LegendaryGameState,
   ctx: UIBuildContext,
@@ -1152,6 +1185,10 @@ export function buildUIState(
     decks,
     piles,
     koPile,
+    // why: WP-410 / D-24222 — always-present deduped card-image manifest the
+    // arena client warms at match start. Always populated ([] for an empty
+    // match); optional in the type only for fixture back-compat (see the type).
+    matchCardImageUrls: buildMatchCardImageManifest(gameState.cardDisplayData),
     ...(gameOver !== undefined ? { gameOver } : {}),
     // why: WP-367 / D-24159 — conditional spread; the final-turn banner data is
     // omitted unless a deck has been exhausted (no `finalTurn: undefined` literal

@@ -829,6 +829,42 @@ describe('UIState type drift (WP-243 / EC-274) — KO-a-Hero choice projection',
   });
 });
 
+// ---------------------------------------------------------------------------
+// WP-410 / D-24222 — matchCardImageUrls projection drift pin
+// ---------------------------------------------------------------------------
+
+describe('UIState type drift (WP-410 / D-24222) — matchCardImageUrls', () => {
+  it('matchCardImageUrls is pinned as an optional string[] via Pick<UIState>', () => {
+    // why: pins the field name + type at compile time (a rename trips this
+    // satisfies check). There is NO exhaustive top-level UIState keyset assertion
+    // in this file — top-level fields are pinned individually with Pick, the
+    // notableEvents / pendingKoHeroChoice precedent.
+    const sample: string[] = [
+      'https://images.legendary-arena.com/set/a.webp',
+      'https://images.legendary-arena.com/set/b.webp',
+    ];
+    const fixture = { matchCardImageUrls: sample } satisfies Pick<
+      UIState,
+      'matchCardImageUrls'
+    >;
+    assert.equal(fixture.matchCardImageUrls.length, 2);
+  });
+
+  it('buildUIState always populates it as a deduped, non-empty-URL array', () => {
+    // why: buildUIState always sets the field (never absent); the entries are
+    // deduped and carry no empty strings. Invariant assertions hold whether or
+    // not the empty-registry match contributes any generic card images.
+    const ui = buildEmptyMatchUIState();
+    assert.ok(Array.isArray(ui.matchCardImageUrls), 'always present as an array');
+    const urls = ui.matchCardImageUrls!;
+    assert.equal(new Set(urls).size, urls.length, 'no duplicate URLs');
+    assert.ok(
+      urls.every((imageUrl) => imageUrl !== ''),
+      'no empty-string URLs',
+    );
+  });
+});
+
 /** Shared test-config helper for safe-skip + path-correction pinning. */
 function buildEmptyMatchUIState() {
   const config: MatchSetupConfig = {
