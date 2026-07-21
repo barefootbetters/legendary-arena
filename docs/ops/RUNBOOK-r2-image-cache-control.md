@@ -219,12 +219,17 @@ curl -X PUT \
 #### Confirm it took
 
 ```sh
-# card image: DYNAMIC -> MISS (first) -> HIT (second)
-curl -sI https://images.legendary-arena.com/core/core-hr-spider-man-astonishing-strength.webp | grep -i cf-cache-status
-curl -sI https://images.legendary-arena.com/core/core-hr-spider-man-astonishing-strength.webp | grep -i cf-cache-status
-# an avatar must stay uncached at the edge (mutable) — expect DYNAMIC, NOT HIT
-curl -sI https://images.legendary-arena.com/avatars/<someAccountId>.webp | grep -i cf-cache-status
+# why: use GET, not HEAD (-I). Cloudflare caches GET responses; a HEAD request shows
+# cf-cache-status: DYNAMIC even when GETs are HIT. -o /dev/null discards the body,
+# -D - dumps the response headers. Run twice: MISS (populates) then HIT.
+curl -s -o /dev/null -D - https://images.legendary-arena.com/core/core-hr-spider-man-astonishing-strength.webp | grep -i cf-cache-status
+curl -s -o /dev/null -D - https://images.legendary-arena.com/core/core-hr-spider-man-astonishing-strength.webp | grep -i cf-cache-status
+# an avatar must stay uncached at the edge (mutable) — the rule excludes /avatars/
+curl -s -o /dev/null -D - https://images.legendary-arena.com/avatars/<someAccountId>.webp | grep -i cf-cache-status
 ```
+
+> **Verified applied 2026-07-21:** the rule `Edge-cache immutable R2 card images` is
+> Active on the `legendary-arena.com` zone; a GET returns `cf-cache-status: HIT`.
 
 Then flip the `Status` lines in this runbook's companion records to fully applied:
 [`OUT-OF-BAND-SETTINGS.md`](./OUT-OF-BAND-SETTINGS.md) and the WP-410 AC-10 line in
@@ -232,12 +237,13 @@ Then flip the `Status` lines in this runbook's companion records to fully applie
 
 ## Verify
 
-1. **Header + edge cache** — two `HEAD`s on a card image:
+1. **Header + edge cache** — two **GET**s on a card image (NOT `HEAD`/`-I`: Cloudflare
+   caches GETs, and a HEAD shows `cf-cache-status: DYNAMIC` even when GETs are `HIT`):
 
    ```bash
-   curl -sI https://images.legendary-arena.com/core/core-hr-spider-man-astonishing-strength.webp | grep -iE 'cache-control|cf-cache-status'
+   curl -s -o /dev/null -D - https://images.legendary-arena.com/core/core-hr-spider-man-astonishing-strength.webp | grep -iE 'cache-control|cf-cache-status'
    # first : cache-control: public, max-age=31536000, immutable
-   #         cf-cache-status: MISS   (or DYNAMIC on the very first, then...)
+   #         cf-cache-status: MISS   (populates the edge)
    # second: cf-cache-status: HIT
    ```
 

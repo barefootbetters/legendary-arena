@@ -165,16 +165,25 @@ named `npmrc` (no leading dot, therefore never read) carried that intent from
 
 ## Cloudflare R2 — `legendary-images` card-image `Cache-Control`
 
-**Status: PARTIALLY APPLIED 2026-07-21.** The immutable `Cache-Control` header is now
-set on the **R2 card-image objects** (via boto3 `CopyObject` + `MetadataDirective=REPLACE` —
-**4451 objects across the 41 card-image set prefixes, 0 failed**; `avatars/` and
-`metadata/` untouched, verified `metadata/sets.json` still `CacheControl=None`), so
-**browser caching now works** — a warmed image is kept for a year and reused across
-matches. **The Cloudflare edge Cache Rule is still pending:** `cf-cache-status` stays
-`DYNAMIC`, so the CDN edge does not yet cache the R2 objects; enabling it needs a Cache
-Rule via the Cloudflare dashboard/API (there is no `CLOUDFLARE_API_TOKEN` in `.env`,
-only the R2 S3 keys). See
-[`RUNBOOK-r2-image-cache-control.md`](./RUNBOOK-r2-image-cache-control.md) §3.
+**Status: APPLIED 2026-07-21.** Both halves are live and verified:
+
+1. **Object header** — the immutable `Cache-Control` is set on the **R2 card-image
+   objects** (via boto3 `CopyObject` + `MetadataDirective=REPLACE` — **4451 objects
+   across the 41 card-image set prefixes, 0 failed**; `avatars/` and `metadata/`
+   untouched, verified `metadata/sets.json` still `CacheControl=None`). Browser caching
+   works.
+2. **Edge Cache Rule** — a Cache Rule named `Edge-cache immutable R2 card images` is
+   **Active** on the `legendary-arena.com` zone (match: host `images.legendary-arena.com`
+   + path ends `.webp` + not `/avatars/`; action: Eligible for cache + respect-origin
+   Edge/Browser TTL). Deployed via the dashboard (no `CLOUDFLARE_API_TOKEN` was available
+   for the API route).
+
+**Verified via GET** (not HEAD — see the gotcha below): `cf-cache-status: HIT` with
+`cache-control: public, max-age=31536000, immutable`.
+
+> **Gotcha — verify with GET, not HEAD.** Cloudflare caches `GET` responses; a
+> `curl -sI` (HEAD) shows `cf-cache-status: DYNAMIC` even when GETs are `HIT`. Use
+> `curl -s -o /dev/null -D - <url>` to check the real (browser-equivalent) behavior.
 
 Card images on `images.legendary-arena.com` (the R2 `legendary-images` bucket)
 should carry an immutable `Cache-Control` so the Cloudflare edge caches them and a
