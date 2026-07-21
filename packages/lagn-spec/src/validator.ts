@@ -38,6 +38,17 @@ export const LAGN_VERSION_1_2_0 = '1.2.0'
 export const LAGN_VERSION_1_3_0 = '1.3.0'
 
 /**
+ * Adds two optional, top-level, DESCRIPTIVE blocks — `players` (match
+ * participants) and `scoring_profile` (a plain string label) — so a
+ * server-emitted result LAGN describes who played and under what profile
+ * (WP-405). Strict superset of 1.3.0.
+ *
+ * why: 1.4.0 and not 1.3.0 — 1.3.0 is already allocated to hero_alternates
+ * (D-24210), which must survive untouched.
+ */
+export const LAGN_VERSION_1_4_0 = '1.4.0'
+
+/**
  * The version this build stamps on documents it writes.
  *
  * why: deliberately still 1.1.0 even though readers now accept 1.2.0. Nothing
@@ -59,7 +70,8 @@ export const LAGN_SUPPORTED_VERSIONS = [
   LAGN_VERSION_1_0_0,
   LAGN_VERSION_1_1_0,
   LAGN_VERSION_1_2_0,
-  LAGN_VERSION_1_3_0
+  LAGN_VERSION_1_3_0,
+  LAGN_VERSION_1_4_0
 ] as const
 
 export type LagnVersion = (typeof LAGN_SUPPORTED_VERSIONS)[number]
@@ -532,6 +544,41 @@ const validateSeqConstraint = (actions: Array<{ seq: number }>): boolean => {
 }
 
 // ============================================================================
+// Match Participants + Scoring Profile (Optional, 1.4.0+)
+// ============================================================================
+
+// why: WP-405 / D-24214 / D-24215 — `players` and `scoring_profile` are
+// DESCRIPTIVE metadata on an exported match record, never a scoring/credit
+// input. Competitive credit is `matchId -> bgio blob -> re-reduce -> re-verify
+// hash -> AccountId`, server-side (D-5301 / D-24126); the server never trusts a
+// client-supplied identity or score. A reader that scored from either block
+// would reopen the D-5301 trust hole. They let a portable record SAY who played
+// and under which profile — nothing SCORES from them. This packet is reader-only
+// (`LAGN_VERSION` is not flipped); a future server-producer packet emits them.
+
+/**
+ * One match participant: which seat, the participant's public id, and an
+ * optional display name.
+ *
+ * why: `player_id` is validated as a plain string only — no id-format regex.
+ * The producer packet decides the value, bound by the privacy rule that it MUST
+ * be a PUBLIC, shareable id (a handle or public player id) and NEVER the
+ * internal server `AccountId` (D-24214 / D-5201): LAGN travels in `?lagn=`
+ * base64url links and decorative saved loadouts, so an internal id would leak
+ * identity into every share. Inventing an id grammar here would fabricate a
+ * shape this contract has no authority over.
+ *
+ * why: `seat` caps at 4 because `player_count` caps at 5 (seats run
+ * 0..player_count-1). The tighter per-document `seat < player_count` bound is a
+ * root refinement, since it depends on a sibling field JSON Schema cannot reach.
+ */
+const PlayerSchema = z.object({
+  seat: z.number().int().min(0).max(4),
+  player_id: z.string(),
+  display_name: z.string().optional()
+})
+
+// ============================================================================
 // Root LAGN Schema
 // ============================================================================
 
@@ -542,6 +589,18 @@ export const lagnSchema = z.object({
   variant: z.enum(['solo', 'cooperative', 'competitive']),
   player_count: z.number().int().min(1).max(5),
   setup: GameSetupSchema,
+  // why: DESCRIPTIVE participant metadata, 1.4.0+ (D-24214). NEVER a scoring,
+  // credit, ranking, or verification input — the server re-executes the blob
+  // and owns credit (D-5301 / D-24126). `.min(1)` because an empty roster is a
+  // missing key, not an empty array; `.optional()` because most documents carry
+  // no roster (the loadout writer never emits it).
+  players: z.array(PlayerSchema).min(1).optional(),
+  // why: a plain string LABEL naming which scoring ruleset a completed match
+  // belongs to, 1.4.0+ (D-24215) — never scoring authority. Deliberately NOT an
+  // enum: the concrete profile set is owned by the leaderboard / Hall of Legends,
+  // not this package; an invented enum would fabricate a vocabulary this contract
+  // has no authority over and force a LAGN major bump per new division.
+  scoring_profile: z.string().optional(),
   catalog_ref: CatalogRefSchema.optional(),
   card_catalog: CardCatalogSchema.optional(),
   replay: ReplaySchema.optional(),
@@ -646,7 +705,67 @@ export const lagnSchema = z.object({
     message: `setup.hero_alternates requires lagn_version ${LAGN_VERSION_1_3_0} or later — an earlier document cannot carry hero alternates`,
     path: ['setup', 'hero_alternates']
   }
-)
+).refine(
+  // why: same silent-strip hazard the support_pools, provenance, and
+  // hero_alternates gates guard against. `lagnSchema` is not `.strict()`, so
+  // `players` / `scoring_profile` written into a pre-1.4.0 document would be
+  // STRIPPED on parse — the participant roster and profile label would vanish
+  // with no error, the worst available failure. Rejecting loudly is the only
+  // honest option. One combined gate for both fields. Ordinal (D-24211) so every
+  // version from 1.4.0 onward carries them.
+  (data) =>
+    isLagnVersionAtLeast(data.lagn_version, LAGN_VERSION_1_4_0) ||
+    (data.players === undefined && data.scoring_profile === undefined),
+  {
+    message: `players and scoring_profile require lagn_version ${LAGN_VERSION_1_4_0} or later — an earlier document cannot carry match participants or a scoring profile`,
+    path: ['players']
+  }
+).superRefine((data, ctx) => {
+  // why: JSON Schema cannot express any of these — a count comparison against a
+  // sibling field, a per-seat range keyed on that sibling, or uniqueness within
+  // an array on a single object field. Checked at the root because `players` and
+  // `player_count` are both root members.
+  if (data.players === undefined) {
+    return
+  }
+  // why: `<=`, never `==`. A bot seat carries no participant entry, so a roster
+  // shorter than player_count is valid; only MORE participants than seats is
+  // wrong — a match cannot credit more players than it has seats.
+  if (data.players.length > data.player_count) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['players'],
+      message: `players lists ${data.players.length} participants but player_count is ${data.player_count} — a match cannot credit more players than seats`
+    })
+  }
+  const seenSeats = new Set<number>()
+  const seenPlayerIds = new Set<string>()
+  for (const participant of data.players) {
+    if (participant.seat > data.player_count - 1) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['players'],
+        message: `seat ${participant.seat} is out of range — seats run 0 to player_count-1 (${data.player_count - 1})`
+      })
+    }
+    if (seenSeats.has(participant.seat)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['players'],
+        message: `seat ${participant.seat} is listed more than once — one participant per seat`
+      })
+    }
+    seenSeats.add(participant.seat)
+    if (seenPlayerIds.has(participant.player_id)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['players'],
+        message: `player_id ${participant.player_id} is listed more than once — a player cannot occupy two seats`
+      })
+    }
+    seenPlayerIds.add(participant.player_id)
+  }
+})
 
 export type LAGN = z.infer<typeof lagnSchema>
 
@@ -788,6 +907,19 @@ export const UNEXPRESSIBLE_CONSTRAINTS = [
     constraint: `setup.hero_alternates requires lagn_version ${LAGN_VERSION_1_3_0}; an earlier document may not carry it.`,
     reason:
       'Cross-field dependency between the root version and a nested optional block. Expressible as a deeply-nested if/then, but only by hand-writing exactly the duplicate structure this derivation exists to eliminate.'
+  },
+  {
+    path: `lagn_version / players / scoring_profile`,
+    constraint: `players and scoring_profile require lagn_version ${LAGN_VERSION_1_4_0}; an earlier document may not carry either.`,
+    reason:
+      'Cross-field dependency between the root version and two optional root blocks. Expressible as a deeply-nested if/then, but only by hand-writing exactly the duplicate structure this derivation exists to eliminate.'
+  },
+  {
+    path: 'players / player_count',
+    constraint:
+      'players holds at most player_count entries (bot seats carry none), each seat is in 0..player_count-1, and both seat and player_id are unique across the roster.',
+    reason:
+      'A count comparison against a sibling field, a per-item range keyed on that sibling, and uniqueness within an array on a single object field. JSON Schema has no cross-field arithmetic, and uniqueItems compares whole items, not one field.'
   }
 ] as const
 
