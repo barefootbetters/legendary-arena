@@ -1,9 +1,38 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+// why: WP-411 / D-24223 — the AC-3 wiring test drives a REAL boardgame.io match
+// through the framework's own reducer to prove the top-level `endIf` sets
+// `ctx.gameover`. The deep dist entry is the same one the server-layer replay /
+// competition tests use (matchReplay.logic.test.ts, competition.logic.test.ts);
+// it exposes InitializeGame + CreateGameReducer and carries no types (cast
+// below). This is the ONLY vehicle that exercises the boardgame.io wiring —
+// the engine-runner simulation harness re-implements the turn loop and calls
+// evaluateEndgame directly, so it never sets `ctx.gameover` (see EC-446
+// Execution Amendment).
+import * as boardgameInternal from 'boardgame.io/dist/cjs/internal.js';
 import { LegendaryGame } from './game.js';
 import type { LegendaryGameState, MatchConfiguration } from './types.js';
 import { HAND_SIZE } from './moves/drawCards.logic.js';
 import { makeMockCtx } from './test/mockCtx.js';
+import { evaluateEndgame } from './endgame/endgame.evaluate.js';
+import { ENDGAME_CONDITIONS } from './endgame/endgame.types.js';
+
+// why: the deep dist entry carries no types; cast to the minimal shape these
+// tests use — mirrors the server-layer precedent (matchReplay.logic.test.ts).
+const { InitializeGame, CreateGameReducer } = boardgameInternal as unknown as {
+  InitializeGame(config: {
+    game: unknown;
+    numPlayers: number;
+    setupData: unknown;
+  }): { G: unknown; ctx: { currentPlayer: unknown; gameover?: unknown } };
+  CreateGameReducer(config: {
+    game: unknown;
+    isClient: boolean;
+  }): (
+    state: unknown,
+    action: { type: string; payload: unknown },
+  ) => { G: unknown; ctx: { currentPlayer: unknown; gameover?: unknown } };
+};
 
 /**
  * Creates a valid mock MatchConfiguration for testing.
@@ -251,5 +280,133 @@ describe('LegendaryGame', () => {
       'second play turn must be play-relative 2 (firstPlayTurn offset carried forward)',
     );
     assert.equal(gameState.logMeta!.firstPlayTurn, 2, 'firstPlayTurn is stable across turns');
+  });
+
+  it('defines a TOP-LEVEL endIf that returns the evaluateEndgame result for a terminal G and undefined for a mid-game G (WP-411 / D-24223 — AC-1)', () => {
+    // why: AC-1 — the fix is a TOP-LEVEL LegendaryGame.endIf (sibling of
+    // moves/phases), NOT a phase endIf. Only a top-level endIf sets
+    // ctx.gameover. This unit-asserts the endIf's pure return contract; the
+    // AC-3 test below proves the framework wiring turns that return into
+    // ctx.gameover.
+    const endIf = LegendaryGame.endIf;
+    assert.notEqual(
+      endIf,
+      undefined,
+      'LegendaryGame must define a top-level endIf (the only endIf that sets ctx.gameover)',
+    );
+
+    // why: the endIf must NOT be duplicated on the play phase — a phase endIf
+    // only ends the phase and re-introduces the bug (D-24223). Guard the removal.
+    const playPhase = (
+      LegendaryGame.phases as Record<string, { endIf?: unknown }>
+    ).play;
+    assert.equal(
+      playPhase?.endIf,
+      undefined,
+      'the play-phase endIf must be removed — a phase endIf never sets ctx.gameover (D-24223)',
+    );
+
+    // Terminal G: mastermind defeated → evaluateEndgame returns a heroes-win
+    // result, and the endIf must return exactly that.
+    const terminalState = LegendaryGame.setup!(
+      makeMockCtx({ numPlayers: 2 }) as Parameters<NonNullable<typeof LegendaryGame.setup>>[0],
+      createMockMatchConfiguration(),
+    );
+    terminalState.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED] = 1;
+    const expected = evaluateEndgame(terminalState);
+    assert.notEqual(expected, null, 'a terminal counter must make evaluateEndgame non-null');
+    assert.deepStrictEqual(
+      endIf!({ G: terminalState } as Parameters<NonNullable<typeof LegendaryGame.endIf>>[0]),
+      expected,
+      'endIf must return the evaluateEndgame result verbatim for a terminal G',
+    );
+
+    // Mid-game G: no terminal counter → evaluateEndgame is null → endIf returns
+    // undefined (the game continues; the framework leaves ctx.gameover unset).
+    const midGameState = LegendaryGame.setup!(
+      makeMockCtx({ numPlayers: 2 }) as Parameters<NonNullable<typeof LegendaryGame.setup>>[0],
+      createMockMatchConfiguration(),
+    );
+    assert.equal(
+      evaluateEndgame(midGameState),
+      null,
+      'a fresh setup G must be mid-game (evaluateEndgame null)',
+    );
+    assert.equal(
+      endIf!({ G: midGameState } as Parameters<NonNullable<typeof LegendaryGame.endIf>>[0]),
+      undefined,
+      'endIf must return undefined for a mid-game G',
+    );
+  });
+
+  it('the top-level endIf sets ctx.gameover through boardgame.io when a match reaches a terminal condition (WP-411 / D-24223 — AC-3 wiring)', () => {
+    // why: AC-3 — the bug hid because tests asserted evaluateEndgame(G) directly
+    // but NEVER that the boardgame.io wiring turns that into ctx.gameover. This
+    // drives a REAL match through boardgame.io's own reducer (InitializeGame →
+    // lobby ready-up → startMatchIfReady → play), confirms ctx.gameover is unset
+    // mid-game, then reaches a terminal condition (mastermind defeated) and
+    // asserts the framework sets ctx.gameover to the evaluateEndgame result.
+    // Reaching a natural mastermind defeat would require hundreds of card-data-
+    // dependent moves; instead the terminal counter is injected into G and one
+    // more move is dispatched so the framework runs the top-level endIf against
+    // the terminal G — the exact code path the missing endIf left dead. On the
+    // pre-fix code this move left ctx.gameover undefined (verified this session).
+    const setupData: MatchConfiguration = createMockMatchConfiguration();
+    const initialState = InitializeGame({
+      game: LegendaryGame,
+      numPlayers: 2,
+      setupData,
+    });
+    const reducer = CreateGameReducer({ game: LegendaryGame, isClient: false });
+
+    const makeMove = (
+      state: unknown,
+      moveName: string,
+      args: unknown[],
+      playerID: string,
+    ): { G: unknown; ctx: { currentPlayer: unknown; gameover?: unknown } } =>
+      reducer(state, {
+        // why: boardgame.io dispatches a move as
+        // { type: 'MAKE_MOVE', payload: { type: <moveName>, args, playerID } }
+        // in the locked 0.50.x — the internal.js entry does not re-export the
+        // constant, so the stable literal is used directly.
+        type: 'MAKE_MOVE',
+        payload: { type: moveName, args, playerID },
+      });
+
+    // Drive lobby → play: both seats ready, then start.
+    let state = makeMove(initialState, 'setPlayerReady', [{ ready: true }], '0');
+    state = makeMove(state, 'setPlayerReady', [{ ready: true }], '1');
+    state = makeMove(state, 'startMatchIfReady', [], '0');
+
+    assert.equal(
+      state.ctx.gameover,
+      undefined,
+      'a mid-game match must not have ctx.gameover set',
+    );
+
+    // why: inject a terminal condition (mastermind defeated) into G — the state
+    // fed to the reducer for the next move. The move itself does not touch
+    // counters, so the framework's top-level endIf observes the terminal G after
+    // the move and must set ctx.gameover.
+    const terminalG = {
+      ...(state.G as Record<string, unknown>),
+      counters: {
+        ...((state.G as { counters: Record<string, number> }).counters),
+        [ENDGAME_CONDITIONS.MASTERMIND_DEFEATED]: 1,
+      },
+    };
+    const terminalState = { ...state, G: terminalG };
+    const expectedGameover = evaluateEndgame(terminalG as unknown as LegendaryGameState);
+    assert.notEqual(expectedGameover, null, 'the injected counter must make evaluateEndgame non-null');
+
+    const activePlayer = String(terminalState.ctx.currentPlayer);
+    const finalState = makeMove(terminalState, 'advanceStage', [], activePlayer);
+
+    assert.deepStrictEqual(
+      finalState.ctx.gameover,
+      expectedGameover,
+      'the framework must set ctx.gameover to the evaluateEndgame result once the top-level endIf fires — the wiring whose absence was the bug',
+    );
   });
 });
