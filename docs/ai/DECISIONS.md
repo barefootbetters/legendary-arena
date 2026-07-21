@@ -31084,7 +31084,8 @@ routes on the label — both belong to the leaderboard, not to the LAGN contract
 
 ### D-24216 — The result-LAGN producer emits the claimed handle as player_id, and omits handleless seats
 
-**Status:** Drafted 2026-07-21 (WP-406); not yet landed — flips to Active
+**Status:** Drafted 2026-07-21 (WP-406); the `player_id` decision is
+**operator-approved 2026-07-21**. Not yet landed — flips to Active
 (post-execution) when WP-406 merges.
 
 **Decision.** The result-LAGN producer (`GET /api/match/:matchId/result-lagn`,
