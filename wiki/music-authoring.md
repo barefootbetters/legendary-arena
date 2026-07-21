@@ -186,8 +186,8 @@ the `audio` shortcode (see [Ewiki Authoring](ewiki-authoring.md)):
   `content/media/` are tracked and version-controlled, and the runtime
   theme JSON in `content/themes/` is tracked as before. The ~141 MB
   produced so far has been moved out of `content/media/` to
-  `C:\pcloud\LA\audio\` and the crop scripts repointed to run against it
-  — see [Workspace Map](workspace-map.md).
+  `C:\pcloud\LA\audio\` and the crop scripts repointed to run against it.
+  This split is locked by D-24219 — see [Workspace Map](workspace-map.md).
 - **Masters are never uploaded.** Only the MP3 derivatives ship to R2;
   the `_MASTER.wav` seed stays local. Batch-encode recipes guard against
   encoding the master as a distribution asset.
@@ -224,11 +224,6 @@ the `audio` shortcode (see [Ewiki Authoring](ewiki-authoring.md)):
   cues off the R2 round-trip — and how it maps to the adaptive
   danger-meter tiers on [Sound Effects](sound-effects.md) is not yet
   documented here.
-- **Lock the `LA\audio\` shape?** The masters and derivatives have been
-  moved to `C:\pcloud\LA\audio\` and the crop scripts repointed to run
-  against it. Whether that folder shape should be locked by a D-entry (as
-  with the `LA\ops\` / `LA\brand\` taxonomy) so a future session cannot
-  quietly re-file it is open — see [Workspace Map](workspace-map.md).
 - **Production R2 domain.** When `music.barefootbetters.com` goes live,
   the demo above should be re-pointed at the canonical theme URL.
 - **Sting vs SFX reconciliation.** The `ES01`–`ES04` stings and the
@@ -242,7 +237,9 @@ the `audio` shortcode (see [Ewiki Authoring](ewiki-authoring.md)):
   — music fields on a real theme (`themeSchemaVersion: 2`).
 - [DECISIONS.md](../docs/ai/DECISIONS.md) — D-5509 (Theme Schema v2 adds
   the optional `musicTheme` / `musicAIPrompt` / `musicAssets` fields);
-  D-22101 (later additive fields kept v2 without a bump).
+  D-22101 (later additive fields kept v2 without a bump); D-24219 (audio
+  storage lock: R2 is the sole delivery surface, masters live on
+  `C:\pcloud\LA\audio\`, nothing audio in git).
 - [Sound Effects](sound-effects.md) — the SFX + adaptive-music-design
   companion page.
 - `content/media/MUSIC-AUTHORING.md` — the full authoring guide (Suno
