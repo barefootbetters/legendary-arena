@@ -16,6 +16,7 @@ related:
 status: draft
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\music-authoring.md (this page — https://ewiki.legendary-arena.com/music-authoring/)
+  - C:\pcloud\LA\audio\audio-motif-map.json (the motif system — team keys, class instruments, rules)
   - ../content/themes/age-of-apocalypse.json
   - ../content/themes/CATALOG.md
   - ../content/themes/THEME-INDEX.md
@@ -161,8 +162,8 @@ into the build.
 
 Separate from the eight scenario assets above is a second, finer authoring
 track: a **leitmotif grammar** that gives every *entity* — each hero,
-mastermind, scheme, and villain group — a short signature phrase (a handful
-of notes) that plays the instant that entity acts. Where `MT01`–`ES04` are
+mastermind, scheme, and villain group — a short signature phrase (a locked
+**three-note** motif) that plays the instant that entity acts. Where `MT01`–`ES04` are
 **scenario-level** (one identity per theme), motifs are **entity-level**:
 the cue you hear on a Master Strike, a Scheme Twist, or a hero's play is
 assembled from *who* is on the board, not just *which* scenario is loaded.
@@ -183,15 +184,102 @@ class picks the instrument, team picks the key, interval size signals
 power** — then you go cell by cell and fill in the notes for each hero,
 scheme, and mastermind.
 
+#### Team → key: the twelve root notes {#team-keys}
+
+Every team is pinned to one of the **twelve chromatic root notes**, and all
+twelve are in use — the 26 teams pack the full circle (C, D♭, D, E♭, E, F,
+F♯, G, A♭, A, B♭, B). A team's *side* sets its mode: **major for heroes,
+minor for villains**, with the two grey antihero teams (Mercs for Money,
+Venomverse) written minor and flippable to major to soften. The neutral
+**Unaffiliated** pool has no home key at all — its motif floats on a quartal
+cell with no fixed mode.
+
+Two rules make the keys mean something beyond "pick a note":
+
+- **Mirroring.** Each villain group is pinned to the **same root as the hero
+  team it opposes, flipped major → minor.** Same home note, opposite mood —
+  every hero/villain clash sounds like two sides of one coin: Marvel Knights
+  (E♭ major) ↔ Crime Syndicate (E♭ minor); Spider Friends (E major) ↔
+  Sinister Six (E minor); S.H.I.E.L.D. (G major) ↔ HYDRA (G minor, the
+  corrupted institution); X-Men (D major) ↔ Brotherhood (D minor);
+  Illuminati (F♯ major) ↔ Cabal (F♯ minor); Heroes of Asgard (A♭ major) ↔
+  Foes of Asgard (A♭ minor).
+- **Families.** Related teams share a root and form a musical family, kept
+  distinct by instrument (class) and register. The **X-family** orbits **D**
+  (X-Men, X-Force, X-Factor Investigations — and their Brotherhood mirror);
+  the **Avengers family** orbits **C** (Avengers, New Warriors, Champions);
+  the **Guardians family** orbits **F** (Guardians of the Galaxy, Guardians
+  of the Multiverse). Family members harmonize by construction — they're
+  already in the same key before any two combo.
+
+| ID | Team | Side | Key (root + mode) | Family |
+|---|---|---|---|---|
+| 0 | Unaffiliated | Neutral | — (quartal, no home key) | — |
+| 1 | Avengers | Hero | C major | Avengers |
+| 2 | S.H.I.E.L.D. | Hero | G major | — |
+| 3 | Spider Friends | Hero | E major | Spider |
+| 4 | X-Men | Hero | D major | X |
+| 5 | Fantastic Four | Hero | A major | — |
+| 6 | Marvel Knights | Hero | E♭ major | Street |
+| 7 | X-Force | Hero | D major | X |
+| 8 | Crime Syndicate | Villain | E♭ minor | Street |
+| 9 | Sinister Six | Villain | E minor | Spider |
+| 10 | Foes of Asgard | Villain | A♭ minor | Asgard |
+| 11 | Brotherhood | Villain | D minor | X |
+| 12 | Guardians of the Galaxy | Hero | F major | Guardians |
+| 13 | HYDRA | Villain | G minor | — |
+| 14 | Cabal | Villain | F♯ minor | Council |
+| 15 | Illuminati | Hero | F♯ major | Council |
+| 16 | New Warriors | Hero | C major | Avengers |
+| 17 | Mercs for Money | Antihero (grey) | B♭ minor (→ B♭ major to soften) | — |
+| 18 | Champions | Hero | C major (Lydian ♯4) | Avengers |
+| 19 | Warbound | Hero | B♭ major | — |
+| 20 | Venomverse | Antihero (grey) | E minor (Phrygian; → E major to soften) | Spider |
+| 21 | Heroes of Asgard | Hero | A♭ major | Asgard |
+| 22 | Inhumans | Hero | B major | — |
+| 23 | X-Factor Investigations | Hero | D major | X |
+| 24 | Heroes of Wakanda | Hero | D♭ major | — |
+| 25 | Guardians of the Multiverse | Hero | F major | Guardians |
+
+#### Class → instrument
+
+The team fixes the *key*; the acting card's **class** fixes the *instrument*
+that carries the phrase — so a Strength card and a Covert card on the same
+team share a key but sound nothing alike. One sampled instrument per class
+keeps every motif on the same tuning and timbre.
+
+| Class | Instrument family | Instrument | Character |
+|---|---|---|---|
+| Covert | Strings | Muted / pizzicato violins | Light, plucked, tiptoeing — sneaky and agile |
+| Instinct | Strings | Low cellos & double basses | Prowling low-string ostinato — a rising minor 2nd, John Williams "Jaws" style: slow, tense, accelerating as it closes in |
+| Ranged | Woodwinds | Flute / piccolo | Airy and distant — something in flight, fired from afar |
+| Strength | Brass | Trumpets & trombones | Powerful, loud, commanding |
+| Tech | Percussion + synth | Tuned percussion / synth | Mechanical, precise, digital |
+
+#### Direction and interval (the power knob)
+
+Two more axes the one-line summary compresses. Both ride on top of the
+key/instrument choice:
+
+- **Resolution direction** — hero motifs **rise** (the final note lifts to a
+  bright resolution); villain motifs **fall** (the final note drops to an
+  ominous one). Same shape, opposite sign, so a hero and its mirror villain
+  in the same root read as inversions of each other.
+- **Interval size** = the drama/volume knob for how powerful the card is. A
+  gentle **2nd or 3rd** = a minor henchman or small buff; a **4th or 5th** =
+  a standard hero or villain card; an **octave or more** = a game-swinging
+  power (a big villain plunge or a big hero soar — the Master Strike register).
+
 Because two heroes on the same team share a key, their motifs
 **harmonize** when they combo — the score itself tells you a synergy
 landed. That musical harmony is the bespoke-music counterpart to the
 client-side [tiered combo cue](sound-effects.md#tiered-combo).
 
 **Production note — motifs are authored, not cropped.** Unlike the Suno
-derivatives above, a motif is a two-to-five-note phrase best sequenced from
+derivatives above, a motif is a locked three-note phrase best sequenced from
 a small, consistent sampled instrument set (one instrument per class, one
-key per team) so every motif shares tuning and timbre. They are tiny, so
+key per team — see the [team→key](#team-keys) and class→instrument tables
+above) so every motif shares tuning and timbre. They are tiny, so
 they can live in the client SFX sprite rather than as separate R2 tracks —
 see [Sound Effects](sound-effects.md#motif-cues). The per-theme **`ES02`
 master-strike sting** and a Mastermind's **minor motif** cover the same
@@ -260,6 +348,11 @@ the `audio` shortcode (see [Ewiki Authoring](ewiki-authoring.md)):
   (tracked in git; this wiki page summarizes it).
 - `content/media/heroes/HERO-INDEX.json` — generated hero index (279
   heroes across 40 sets) driving hero-theme research (gitignored).
+- `C:\pcloud\LA\audio\audio-motif-map.json` — the authoritative motif
+  system: the 26 team→key rows (twelve chromatic roots), the 5
+  class→instrument rows, and the locked rules (mode, resolution direction,
+  interval weight, mirroring, families). Lives on pCloud alongside the WAV
+  masters (D-24219), not in the repo tree.
 
 ## Open Questions
 
@@ -298,8 +391,11 @@ the `audio` shortcode (see [Ewiki Authoring](ewiki-authoring.md)):
   D-22101 (later additive fields kept v2 without a bump); D-24219 (audio
   storage lock: R2 is the sole delivery surface, masters live on
   `C:\pcloud\LA\audio\`, nothing audio in git).
+- `C:\pcloud\LA\audio\audio-motif-map.json` — the motif system data
+  (team keys, class instruments, rules) this page's [motif matrix](#motif-matrix)
+  documents.
 - [Sound Effects](sound-effects.md) — the SFX + adaptive-music-design
-  companion page.
+  companion page (the *playback* side of the motif grammar).
 - `content/media/MUSIC-AUTHORING.md` — the full authoring guide (Suno
   workflow, per-asset methods, quality checklist, crop scripts); lives
   in the gitignored working area.
