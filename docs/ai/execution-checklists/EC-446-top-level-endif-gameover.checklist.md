@@ -79,3 +79,40 @@
 - A `finalStateHash`/`PRE_WP080_HASH` shift hand-edited or ignored → re-record via the canonical recorder with the reason
 - A server file touched → out of scope; the server already reads `metadata.gameover`
 - Historically-stuck matches backfilled → out of scope (a separate operational call)
+
+## Execution Amendment (2026-07-21) — AC-3 wiring test relocated engine-runner → game.test.ts
+
+**Discovery.** The WP/EC framed the AC-3 "assert `ctx.gameover` is set" test as an
+**engine-runner integration test** (`apps/engine-runner/src/runMatch.test.ts`,
+driving `runSimulation`). During execution the engine-runner path was found to be
+**structurally incapable** of observing `ctx.gameover`: `runSimulation`
+(`packages/game-engine/src/simulation/simulation.runner.ts`) is a **pure
+re-implementation** of the turn loop that calls `evaluateEndgame(G)` directly and
+**never instantiates boardgame.io** — it has no real `ctx`, so `ctx.gameover` does
+not exist on that path. A test there would be exactly the "asserts only
+`evaluateEndgame(G)` again" anti-pattern this EC's Guardrails forbid; it also could
+never have caught the original bug (the bug is in the boardgame.io wiring the
+simulation harness bypasses).
+
+**Resolution (faithful to WP intent, honors "no server edit").** The load-bearing
+AC-3 wiring test — proving the framework's **top-level** `endIf` sets `ctx.gameover`
+— was realized in **`packages/game-engine/src/game.test.ts`** using
+`InitializeGame` + `CreateGameReducer` (boardgame.io's own reducer; the same
+precedent as `apps/server/src/replay/matchReplay.logic.test.ts` and
+`competition.logic.test.ts`). This is the ONLY vehicle that exercises the wiring,
+and it stays **engine-only** (the engine package owns `LegendaryGame` and depends on
+boardgame.io), so the "No server edit" guardrail is preserved. The test drives a
+real match to `play`, confirms `ctx.gameover` is unset mid-game, injects a terminal
+counter (a natural mastermind defeat is hundreds of card-data-dependent moves), and
+asserts the framework sets `ctx.gameover` to the `evaluateEndgame` result after one
+more move. Confirmed against the pre-fix code (`ctx.gameover` stayed `undefined`).
+
+**Engine-runner test kept, honestly scoped.** `runMatch.test.ts` still gains an
+end-to-end **termination smoke** — a headless run reaches a terminal endgame
+condition within the safety cap (`averageTurns < 200`), guarding against the harness
+regressing to never-terminating — with a comment pointing to `game.test.ts` for the
+actual `ctx.gameover` wiring coverage.
+
+**Net effect on Files to Produce.** `game.test.ts` carries AC-1 (endIf unit) **and**
+AC-3 (reducer wiring); `runMatch.test.ts` carries the end-to-end termination smoke.
+No new layer touched; no server production or test-behavior change.
