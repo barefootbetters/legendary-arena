@@ -335,13 +335,20 @@ removes that class of drift by construction.
 **Constraints JSON Schema cannot express.** Derivation silently drops every Zod
 `.refine()` / `.superRefine()` — they are arbitrary predicates with no JSON
 Schema equivalent. Dropping them is unavoidable; dropping them *unrecorded* is
-not. `UNEXPRESSIBLE_CONSTRAINTS` in `validator.ts` names all four with a path,
-the constraint, and the reason it cannot be carried:
+not. `UNEXPRESSIBLE_CONSTRAINTS` in `validator.ts` names all ten with a path,
+the constraint, and the reason it cannot be carried (in array order, matching
+`x-lagn-unexpressible-constraints` in the published schema):
 
 1. Support-pool `mode`/`sets` coupling plus per-pool `ext_id` uniqueness
 2. Each pool's `copies` summing to its matching `*_count` field
 3. `seq` increasing by exactly 1 across a turn's actions
-4. `support_pools` requiring `lagn_version` 1.1.0
+4. Any provenance block (`catalog_ref` / `registry_ref` / `effect_snapshot`) requiring `lagn_version` 1.2.0
+5. `effect_snapshot` requiring a document-level `catalog_ref`
+6. `support_pools` requiring `lagn_version` 1.1.0
+7. `hero_alternates` being disjoint from `setup.heroes` and unique within itself
+8. `hero_alternates` requiring `lagn_version` 1.3.0
+9. `players` / `scoring_profile` requiring `lagn_version` 1.4.0
+10. `players[]` internal consistency — count ≤ `player_count`, each `seat` in `0..player_count-1`, unique seats, unique `player_id`s
 
 The list is **enforced, not decorative**: the test suite walks the Zod tree,
 counts refinement nodes, and fails the build if the count disagrees with the
