@@ -31408,9 +31408,9 @@ WP.
 **Packet:** WP-409 (EC-444).
 **Drafted:** 2026-07-21; landed with WP-409 execution 2026-07-21.
 
-### D-24222 — card-image working-set prefetch: the engine projects the manifest (`UIState.matchCardImageUrls`), the client warms it at match start; LAGN carries no bytes (reserved)
+### D-24222 — card-image working-set prefetch: the engine projects the manifest (`UIState.matchCardImageUrls`), the client warms it at match start; LAGN carries no bytes (Active)
 
-**Status:** reserved (Drafted 2026-07-21; not yet landed).
+**Status:** Active (post-execution) 2026-07-21; Executed (WP-410 / EC-445).
 
 **Context.** The ewiki [LAGN discussion](https://ewiki.legendary-arena.com/lagn-v1/)
 §"Card Images: Embed, Side-Cart, or Prefetch?" weighed three ways to stop the client
@@ -31461,7 +31461,7 @@ change, not a repo change, but the recommended companion that makes warmed bytes
 across matches.
 
 **Packet:** WP-410 (EC-445).
-**Drafted:** 2026-07-21; not yet landed.
+**Landed:** 2026-07-21 (WP-410 executed; engine projection + client prefetch shipped).
 
 Protect this file.
 
