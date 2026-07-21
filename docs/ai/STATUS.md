@@ -7,6 +7,40 @@
 
 ## Current State
 
+### WP-408 / EC-443 — Portable match-LAGN download on the result view (D-24218) (2026-07-21)
+
+**User-visible surface — `legends.legendary-arena.com`. Code merged; AC-6
+(D-24026) live-verify rides the WP-407 deploy + Pages env var.**
+
+The WP-407 per-match result view gains a **"Download this match as LAGN"**
+control: one click fetches the WP-406 result LAGN and saves it as
+`match-<id>.lagn.json` (a client Blob + object URL, MIME `application/json`) — a
+portable, standards-conformant record the Registry Viewer `?lagn=` flow, the
+`lagn` CLI, or any third-party tool can consume. No new server surface (it reuses
+WP-406's read). A failed fetch shows a **visible full-sentence error**, never a
+silent no-op.
+
+**Export-only (D-24218).** The download is a one-way COPY — **nothing re-ingests
+it** to score, credit, or rank; competitive outcomes stay
+`matchId → blob → re-execute → AccountId` server-side (D-5301). Editing the file
+changes nothing on the platform; there is no upload/import-to-score path.
+
+The pure `buildLagnFilename` / `serializeLagnDocument` helpers live in
+`panels/matchResultDownload.ts` (node:test-unit-tested); the fetch + Blob/anchor
+trigger is DOM-bound and verified in the dev preview. **Dev-preview proof:**
+clicking the control captured a `match-mock-1.lagn.json` download whose bytes were
+the exact `lagn` payload (version 1.4.0, `victory`, the roster), pretty-printed
+(AC-1/AC-2); with the fetch forced to 500 the control showed the full-sentence
+error rather than no-op (AC-3).
+
+`legends-board` typecheck 0; test **95 → 97 / 0** (+2); `pnpm -r build` 0.
+
+**AC-6 / D-24026 live-verification** (click the control on a real completed match,
+confirm a valid `.lagn.json` downloads and re-opens) rides the same operator step
+as WP-407 — it needs `VITE_LEGENDS_API_BASE_URL` on the legends-board Pages
+project + a completed match with a claimed handle, verified on the deployed
+bundle. This STATUS line flips to done once verified.
+
 ### WP-407 / EC-442 — Hall of Legends per-match result view (D-24217) (2026-07-20)
 
 **User-visible surface — `legends.legendary-arena.com`. Code merged; AC-6

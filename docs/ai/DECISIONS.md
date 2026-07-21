@@ -31154,8 +31154,10 @@ live verification required.
 
 ### D-24218 — The portable match-LAGN export is one-way; nothing re-ingests it
 
-**Status:** Drafted 2026-07-21 (WP-408); not yet landed — flips to Active
-(post-execution) when WP-408 merges.
+**Status:** Active (2026-07-21, WP-408 executed). The "Download this match as LAGN"
+control shipped on the WP-407 result view — a client Blob export of WP-406's
+already-validated result LAGN, no new server surface, no ingest path. **AC-6
+(D-24026) live-verify rides the WP-407 deploy + Pages env var.**
 
 **Decision.** The "download this match as LAGN" control (WP-408) is a **one-way
 export**: it saves the WP-406 result LAGN (built server-side from the authoritative
