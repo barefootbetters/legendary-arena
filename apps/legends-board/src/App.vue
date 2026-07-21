@@ -30,6 +30,9 @@ import RecentAchievementsPanel from "./panels/RecentAchievementsPanel.vue";
 import NowPlayingPanel from "./panels/NowPlayingPanel.vue";
 import GauntletIndexPanel from "./panels/GauntletIndexPanel.vue";
 import GauntletBoardPanel from "./panels/GauntletBoardPanel.vue";
+import MatchResultPanel from "./panels/MatchResultPanel.vue";
+import { fetchMatchResult } from "./panels/matchResultClient";
+import type { MatchResultView } from "./panels/matchResultDisplay";
 import VersionBadge from "./components/VersionBadge.vue";
 
 // ---------------------------------------------------------------------------
@@ -51,6 +54,12 @@ const gauntletIndex = ref<GauntletIndexSnapshot | null>(null);
 const gauntletIndexError = ref<string | null>(null);
 const routedGauntletBoard = ref<GauntletSnapshotBoard | null>(null);
 const routedGauntletError = ref<string | null>(null);
+
+// why: the match-result view (#/match/<matchId>) is a live fetch of the WP-406
+// producer, not a snapshot board — its own state, loaded by loadRoutedMatchResult.
+const routedMatchResult = ref<MatchResultView | null>(null);
+const routedMatchError = ref<string | null>(null);
+const routedMatchLoading = ref(false);
 
 const loadError = ref<string | null>(null);
 const isLoading = ref(true);
@@ -183,6 +192,37 @@ async function loadRoutedGauntletBoard(): Promise<void> {
 }
 
 /**
+ * Loads the match result the current route points at (if any).
+ *
+ * why: a live fetch of the WP-406 result-LAGN producer, not a snapshot-publisher
+ * entry — a single completed match's result is fetched on demand by its deep
+ * link, keeping the publisher's aggregate scope unchanged (EC-442). A 404
+ * (unknown or in-progress match) yields a null result the panel renders as a
+ * non-error empty state; only a real fetch failure sets the error.
+ */
+async function loadRoutedMatchResult(): Promise<void> {
+  if (currentRoute.value.view !== "match") {
+    routedMatchResult.value = null;
+    routedMatchError.value = null;
+    routedMatchLoading.value = false;
+    return;
+  }
+  const matchId = currentRoute.value.matchId;
+  routedMatchResult.value = null;
+  routedMatchError.value = null;
+  routedMatchLoading.value = true;
+  try {
+    routedMatchResult.value = await fetchMatchResult(matchId);
+  } catch (error) {
+    routedMatchError.value =
+      error instanceof Error ? error.message : "Failed to load match result";
+    console.error(`[legends] Match result "${matchId}" load failed:`, error);
+  } finally {
+    routedMatchLoading.value = false;
+  }
+}
+
+/**
  * Whether the routed board is a known-unclaimed player count (which has no
  * board file). Returns false when the index has not loaded or the board is
  * unknown, so the caller falls through to a normal fetch.
@@ -306,6 +346,7 @@ async function handleForceRefresh(): Promise<void> {
 // why: immediate — a deep link must start loading its board on first
 // paint, not wait for the first hashchange event.
 watch(currentRoute, loadRoutedGauntletBoard, { immediate: true });
+watch(currentRoute, loadRoutedMatchResult, { immediate: true });
 
 onMounted(async () => {
   await loadData();
@@ -344,8 +385,19 @@ onUnmounted(() => {
       />
     </header>
 
+    <!-- Match result view (#/match/<matchId>) -->
+    <main v-if="currentRoute.view === 'match'" class="board-content">
+      <div class="active-panel">
+        <MatchResultPanel
+          :view="routedMatchResult"
+          :error="routedMatchError"
+          :loading="routedMatchLoading"
+        />
+      </div>
+    </main>
+
     <!-- Gauntlet board view (#/gauntlet/<board>) -->
-    <main v-if="currentRoute.view === 'gauntlet'" class="board-content">
+    <main v-else-if="currentRoute.view === 'gauntlet'" class="board-content">
       <div class="active-panel">
         <GauntletBoardPanel
           :board="routedGauntletBoard"

@@ -165,6 +165,9 @@ importers:
         specifier: ^3.4.27
         version: 3.5.30(typescript@5.9.3)
     devDependencies:
+      '@legendary-arena/lagn':
+        specifier: workspace:*
+        version: link:../../packages/lagn-spec
       '@types/node':
         specifier: ^22.19.17
         version: 22.19.17
