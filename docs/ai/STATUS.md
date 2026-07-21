@@ -7,6 +7,43 @@
 
 ## Current State
 
+### WP-405 / EC-440 — LAGN 1.4.0 match participants + scoring profile (D-24214 / D-24215) (2026-07-20)
+
+**No user-observable change — infrastructure only.**
+
+LAGN gains two optional, top-level, **reader-only** blocks at version **1.4.0**:
+`players[]` (`{ seat, player_id, display_name? }`) naming a match's participants,
+and `scoring_profile` (a plain string label) naming which scoring ruleset a
+completed match belongs to. Together they let a **server-emitted result LAGN**
+describe *who played* and *under what profile* — a self-describing scoresheet.
+`packages/lagn-spec` is **reader-only** here: readers now accept 1.4.0 but
+`LAGN_VERSION` stays `1.1.0`, so no producer emits either block and no endpoint
+payload changes shape. The writer flip is a future server-producer packet (WP-406).
+
+**Both blocks are descriptive and NON-authoritative (D-24214 / D-24215).** Nothing
+scores, credits, ranks, or verifies from them — competitive credit stays
+`matchId → bgio blob → re-reduce → re-verify hash → AccountId`, server-side
+(D-5301 / D-24126); reading either block as authority would reopen that trust hole.
+`player_id` is validated as a **string only** (no id-format regex) and must be a
+**public** id, never the internal `AccountId` — the producer packet owns choosing
+it. `scoring_profile` is a **plain string, not an enum** — the profile set is the
+leaderboard's to own.
+
+Two new Zod refinements gate the blocks (a combined version gate, and a `players[]`
+internal-consistency `superRefine`: count `≤ player_count` — not `==`, since bot
+seats carry no entry — plus per-seat range, unique seats, unique `player_id`s),
+each with its 1:1 `UNEXPRESSIBLE_CONSTRAINTS` entry; the refinement-count gate was
+mutation-tested red→green. A seventh fixture (`examples/tier1-players.lagn.json`)
+validates against the generated JSON Schema via `ajv` and via zod.
+
+`packages/lagn-spec` suite **65 → 83 / 0**; `generate:schema` + `git diff
+--exit-code -- schemas/` clean; `pnpm -r build` 0 and `pnpm -r --no-bail test` no
+new failures (every package 0 fail). **§21 TRIGGERED** — the `POST
+/api/me/loadouts` acceptance envelope narrows (a pre-1.4.0 body carrying
+`players[]` or `scoring_profile` is now rejected, not silently stripped); its row
+was replaced WHOLE per D-11804. `package.json` untouched (AC-10); no
+`@legendary-arena/registry` dependency (AC-11).
+
 ### WP-402 / EC-437 — LAGN 1.3.0 hero alternates (D-24210 / D-24211) (2026-07-20)
 
 **No user-observable change — infrastructure only.**
