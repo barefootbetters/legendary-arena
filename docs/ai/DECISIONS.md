@@ -31467,6 +31467,47 @@ Protect this file.
 
 ---
 
+### D-24223 — the end-of-game condition is a top-level Game `endIf` that sets `ctx.gameover` (the prior phase-level `endIf` never did) (reserved)
+
+**Status:** Reserved (Drafted 2026-07-21; not yet landed — flips to Active at WP-411 execution).
+
+**Decision.** `LegendaryGame` gains a **top-level `endIf`**,
+`({ G }) => evaluateEndgame(G) ?? undefined`, so boardgame.io sets `ctx.gameover`
+to the endgame result and ends the game — which the framework store then persists
+as `metadata.gameover`. The prior implementation placed the endgame check as a
+**phase-level `endIf`** on the `play` phase; in boardgame.io a phase `endIf` only
+**ends the phase** (here → the empty `end` phase) and does **not** set
+`ctx.gameover`. `LegendaryGame` had no top-level `endIf` and no `events.endGame()`
+call, so **no match ever registered gameover**. The redundant phase `endIf` is
+removed; the four-phase structure (lobby/setup/play/end) is retained (pinned by
+`game.test.ts`).
+
+**Why this is critical, not cosmetic.** Every completed-match consumer gates on
+`metadata.gameover` / `isMatchFinished`: competitive submission (WP-338 / D-24126) —
+which is why production `competitive_scores` was **empty**; the result-LAGN producer
+(WP-406); the Hall of Legends view + download (WP-407/408); and match-summary
+analytics (D-24169). None could ever fire, because matches never finished. The
+defect hid because the test suite asserted the pure `evaluateEndgame(G)` function
+but never the boardgame.io wiring that turns it into `ctx.gameover`; WP-411 adds
+both a `LegendaryGame.endIf` unit assertion and an engine-runner integration test
+that plays a match to a real gameover.
+
+**Determinism.** Setting `ctx.gameover` mutates no `G`, so `finalStateHash` (a hash
+of `G`) is unchanged for an identical `G`. The only exposure is that a game now
+**terminates** at the win/loss point instead of accepting further moves; any
+sentinel/golden fixture recorded *past* that point is re-recorded via the canonical
+recorder (never hand-edited) with the reason recorded — a deliberate re-pin, never a
+silent shift (the dual-oracle hazard).
+
+**Not decided here.** Whether the historically-stuck production matches (recorded
+before this fix, with no gameover) are reaped, backfilled, or left as-is — a
+separate operational decision, out of WP-411's scope.
+
+**Packet:** WP-411 (EC-446).
+**Drafted:** 2026-07-21; not yet landed.
+
+---
+
 ### D-24224 — the arena-client audio layer is client-only, howler-backed, CC0/R2-hosted; v1 is notable-event SFX + unlock + mute/volume (reserved)
 
 **Status:** Reserved (Drafted 2026-07-21; not yet landed — flips to Active at WP-412 execution).
