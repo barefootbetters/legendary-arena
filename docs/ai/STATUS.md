@@ -7,6 +7,44 @@
 
 ## Current State
 
+### WP-402 / EC-437 — LAGN 1.3.0 hero alternates (D-24210 / D-24211) (2026-07-20)
+
+**No user-observable change — infrastructure only.**
+
+LAGN gains optional `setup.hero_alternates` at version **1.3.0** — a bench of
+reserve heroes named in a saved loadout alongside the heroes actually played, so
+a seven-hero shortlist (five played, two in reserve) survives a save/share/re-open
+round trip instead of losing the reserves. `packages/lagn-spec` is **reader-only**
+here: readers now accept 1.3.0 but `LAGN_VERSION` stays `1.1.0`, so no producer
+emits a bench and no endpoint payload changes shape. The writer flip is WP-404.
+
+The bench is a **sibling** block, never entries in `setup.heroes` (hero count is
+exact-enforced downstream against `PLAYER_COUNT_SETUP`), and is **loadout
+metadata, never gameplay state** — nothing derives a match composition from it
+(D-24210). Two new Zod refinements gate it (version-gated, and disjoint-from /
+non-repeating-within the played heroes), each with its 1:1
+`UNEXPRESSIBLE_CONSTRAINTS` entry; the refinement-count gate was mutation-tested
+red→green.
+
+**Fixed a latent equality-vs-ordinal defect (D-24211).** The provenance gate read
+`data.lagn_version === LAGN_VERSION_1_2_0`, which rejected a 1.3.0 document
+carrying `catalog_ref` the moment 1.3.0 was added — the message already promised
+"1.2.0 or later". Converted to an ordinal `isLagnVersionAtLeast` comparison; AC-5
+pins it and was demonstrated red against the pre-fix equality gate. **Found a
+second site in execution:** registering the 1.2.0 → 1.3.0 migration step exposed
+the same equality gate in `migrateToCurrent`'s forward-walk (it would have stamped
+a 1.2.0 document forward to 1.3.0 and then errored, breaking the "leaves 1.2.0
+untouched" test). Fixed to compare version positions, keeping the registered step
+genuinely unreachable until the writer advances.
+
+`packages/lagn-spec` suite **54 → 65 / 0**; `generate:schema` + `git diff
+--exit-code -- schemas/` clean; `pnpm -r build` 0 and `pnpm -r --no-bail test` no
+new failures (every package 0 fail). **§21 TRIGGERED** — the `POST
+/api/me/loadouts` acceptance envelope narrows (a pre-1.3.0 body carrying
+`hero_alternates` is now rejected, not silently stripped); its row was replaced
+WHOLE per D-11804. `package.json` untouched (AC-10); no `@legendary-arena/registry`
+dependency (AC-11).
+
 ### WP-401 / EC-436 — Node 24 upgrade executed (D-24209) (2026-07-20)
 
 **No user-observable change — infrastructure only.**
