@@ -152,19 +152,83 @@ rclone copy renamed\<set> r2:legendary-images/<set>/ --s3-no-check-bucket \
   --header-upload "Cache-Control: public, max-age=31536000, immutable"
 ```
 
-### 3. (Optional) Edge Cache Rule — only if `HEAD` still shows `DYNAMIC`
+### 3. Edge Cache Rule — REQUIRED (the object header alone is not enough)
 
-Object metadata alone should flip the edge to caching. If a re-fetch still shows
-`cf-cache-status: DYNAMIC`, add a **Cache Rule** on the `legendary-arena.com` zone
-for the image host, scoped to exclude avatars:
+**Confirmed 2026-07-21:** after the object backfill (step 1), a live `HEAD` still returns
+`cf-cache-status: DYNAMIC` — the object `Cache-Control` fixes *browser* caching but the
+Cloudflare **edge** does not cache the R2 custom-domain responses without an explicit
+Cache Rule. So this step is required to get edge caching (lower R2 egress + faster first
+paint for new clients); until it lands, only browser caching is active.
 
-- **When:** `hostname eq "images.legendary-arena.com"` **and**
-  `not http.request.uri.path starts_with "/avatars/"` **and**
-  `not http.request.uri.path starts_with "/metadata/"`
-- **Then:** Eligible for cache = on; Edge TTL = 1 year (or "Use origin `Cache-Control`").
+Create the rule on the **`legendary-arena.com`** zone (account
+`a1e9255402b3d778a06b56fda38eee85`; `images.legendary-arena.com` is an R2 custom domain
+on that zone).
 
-Do **not** write a bare `*.webp` rule — avatars are `.webp` on the same host and must
-not be edge-pinned.
+**Matcher — scopes to card images, excludes avatars (also `.webp` on the same host):**
+
+```
+(http.host eq "images.legendary-arena.com" and ends_with(http.request.uri.path, ".webp") and not starts_with(http.request.uri.path, "/avatars/"))
+```
+
+> `.webp` already excludes `metadata/` (`.json`), `audio/` (`.mp3`), and the JSON under
+> `themes/` / `legends/`; the only other `.webp` on this host is `avatars/`, which the
+> `not starts_with(…"/avatars/")` clause excludes. Do **not** write a bare `.webp` rule.
+
+#### Option A — Dashboard (copy-paste)
+
+Cloudflare dashboard → select the **`legendary-arena.com`** zone → **Caching → Cache
+Rules → Create rule**:
+
+- **Rule name:** `Edge-cache immutable R2 card images`
+- **When incoming requests match:** choose **Custom filter expression**, then **Edit
+  expression** and paste the matcher above.
+- **Then → Cache eligibility:** **Eligible for cache**
+- **Edge TTL:** **Respect origin TTL** (honors the objects' `max-age=31536000, immutable`)
+- **Browser TTL:** **Respect origin TTL**
+- Deploy.
+
+#### Option B — API (Rulesets, cache-settings phase)
+
+Needs a token with **Zone → Cache Rules → Edit** on this zone, and the zone id
+(Dashboard → the zone → **Overview → API → Zone ID**).
+
+```sh
+# why: PUT to the phase ENTRYPOINT replaces ALL rules in the cache-settings phase.
+# If this zone already has cache rules, GET the entrypoint first, append this rule to
+# its "rules" array, and PUT the merged set — do not blind-PUT a single rule.
+curl -X PUT \
+  "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/rulesets/phases/http_request_cache_settings/entrypoint" \
+  -H "Authorization: Bearer ${CF_API_TOKEN}" \
+  -H "Content-Type: application/json" \
+  --data '{
+    "rules": [
+      {
+        "description": "Edge-cache immutable R2 card images (exclude avatars)",
+        "expression": "(http.host eq \"images.legendary-arena.com\" and ends_with(http.request.uri.path, \".webp\") and not starts_with(http.request.uri.path, \"/avatars/\"))",
+        "action": "set_cache_settings",
+        "action_parameters": {
+          "cache": true,
+          "edge_ttl": { "mode": "respect_origin" },
+          "browser_ttl": { "mode": "respect_origin" }
+        }
+      }
+    ]
+  }'
+```
+
+#### Confirm it took
+
+```sh
+# card image: DYNAMIC -> MISS (first) -> HIT (second)
+curl -sI https://images.legendary-arena.com/core/core-hr-spider-man-astonishing-strength.webp | grep -i cf-cache-status
+curl -sI https://images.legendary-arena.com/core/core-hr-spider-man-astonishing-strength.webp | grep -i cf-cache-status
+# an avatar must stay uncached at the edge (mutable) — expect DYNAMIC, NOT HIT
+curl -sI https://images.legendary-arena.com/avatars/<someAccountId>.webp | grep -i cf-cache-status
+```
+
+Then flip the `Status` lines in this runbook's companion records to fully applied:
+[`OUT-OF-BAND-SETTINGS.md`](./OUT-OF-BAND-SETTINGS.md) and the WP-410 AC-10 line in
+`docs/ai/STATUS.md`.
 
 ## Verify
 
