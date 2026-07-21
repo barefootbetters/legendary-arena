@@ -42,60 +42,72 @@ LAGN defines three optional tiers that can be combined or used independently:
 
 **Tier 1: Game Setup (Required)**
 
-Mandatory fields defining the match configuration:
+Mandatory fields defining the match configuration. The authoritative shapes are
+the Zod schema in `validator.ts` and the fixtures under
+`packages/lagn-spec/examples/` — the snippets below track them:
 
 ```json
 {
-  "game_id": "string (UUID v4)",
-  "variant": "classic|custom",
-  "player_count": "integer 2-5",
-  "outcome": "victory|loss",
-  "loss_reason": "mastermind_defeated|villain_escape|player_elimination|unavailable (Tier 2+)",
+  "lagn_version": "1.0.0 | 1.1.0 | 1.2.0 | 1.3.0",
+  "$schema": "https://legendary-arena.com/schemas/lagn/v1/lagn-v1.json (optional)",
+  "game_id": "string",
+  "variant": "solo | cooperative | competitive",
+  "player_count": "integer 1-5",
   "setup": {
-    "mastermind_id": "CardExtId",
-    "scheme_id": "CardExtId",
-    "villain_group_ids": ["CardExtId", ...],
-    "henchman_group_ids": ["CardExtId", ...],
-    "hero_deck_ids": ["CardExtId", ...],
+    "mastermind": { "id": "CardExtId", "name": "string" },
+    "scheme": { "id": "CardExtId", "name": "string" },
+    "villain_groups": [ { "id": "CardExtId", "name": "string" } ],
+    "henchmen_groups": [ { "id": "CardExtId", "name": "string" } ],
+    "heroes": [ { "id": "CardExtId", "name": "string" } ],
+    "hero_alternates": [ { "id": "CardExtId", "name": "string" } ],
     "bystanders_count": "integer >= 0",
     "wounds_count": "integer >= 0",
-    "officers_count": "integer >= 0",
-    "sidekicks_count": "integer >= 0"
+    "shield_officers_count": "integer >= 0",
+    "sidekicks_count": "integer >= 0",
+    "support_pools": "object (optional, 1.1.0+ — see below)"
+  },
+  "result": {
+    "outcome": "victory | defeat",
+    "loss_condition": "mastermind_defeated | city_overrun | deck_exhausted (optional)",
+    "victory_points": "integer (optional)",
+    "timestamp": "ISO 8601 datetime (optional)"
   }
 }
 ```
 
+Only `lagn_version`, `game_id`, `variant`, `player_count`, and `setup` are
+required at the document root; `result` is optional. Within `setup`,
+`hero_alternates` (1.3.0+) and `support_pools` (1.1.0+) are optional. Heroes are
+`{ id, name }` entries — `id` is the D-10014 set-qualified `CardExtId`.
+`player_count` accepts **1** (solo) through **5**.
+
 **Tier 2: Card Catalog (Optional)**
 
-Extended card metadata for offline analysis:
+Extended card metadata for offline analysis. A single `cards[]` array of a
+discriminated union on `card_type` (nine variants):
 
 ```json
 {
   "card_catalog": {
-    "mastermind": {
-      "id": "CardExtId",
-      "name": "string",
-      "rarity": "common|uncommon|rare|super_rare|ultra_rare"
-    },
-    "schemes": [...],
-    "villain_groups": [...],
-    "henchmen": [...],
-    "heroes": [...],
     "cards": [
       {
+        "card_type": "mastermind | scheme | villain_group | henchmen_group | hero | shield_officer | sidekick | wound | bystander",
         "ext_id": "CardExtId",
-        "set_abbr": "string",
-        "slug": "string",
         "name": "string",
-        "type": "mastermind|scheme|villain|henchman|hero|bystander|officer|sidekick",
-        "cost": "integer",
-        "attack": "integer",
-        "health": "integer"
+        "image_url": "url (optional)",
+        "image_thumb_url": "url (optional)"
       }
     ]
   }
 }
 ```
+
+The `hero` variant additionally carries `hero_class` (array of
+`strength|instinct|covert|tech|ranged`) and `rarity_code`
+(`c1|c2|c3|uc|uc2|uc3|ra`); `henchmen_group` additionally carries `rarity_code`.
+Every variant may also carry the optional 1.2.0+ provenance members
+(`registry_ref`, `effect_snapshot`, `image`) documented under
+[LAGN Card Metadata Provenance](#tier-2-full-card-catalog-optional) below.
 
 **Tier 3: Replay Log (Optional)**
 
@@ -106,22 +118,25 @@ Deterministic turn-by-turn log for perfect replay and audit:
   "replay": {
     "turns": [
       {
-        "turn_number": "integer >= 0",
-        "turn_player_index": "integer 0-(player_count-1)",
+        "turn_number": "integer >= 1",
+        "active_player_id": "string",
         "villain_events": [
           {
-            "seq": "integer",
-            "event_type": "patrol|strike|escape|scheme_twist|master_strike|extra_turn",
-            "card_id": "CardExtId (when event_type has a card)"
+            "phase": "ambush | patrol | guard | escape_attempted",
+            "card_ext_id": "CardExtId"
           }
         ],
         "player_actions": [
           {
-            "seq": "integer (strictly increasing from 0)",
-            "action_type": "play|recruit|attack|defend|draw|discard",
-            "source_card_id": "CardExtId (when applicable)",
-            "target": "object (varies by action_type)"
+            "seq": "integer (strictly increasing from 0, no gaps)",
+            "action_type": "villain_reveal | villain_attack | villain_escape | hero_recruit | hero_play | hero_discard | mastermind_twist | mastermind_attack | bystander_capture | bystander_release | wound_dealt | shield_deploy",
+            "actor_player_id": "string (optional)",
+            "target_card_ext_id": "CardExtId (optional)",
+            "details": "object (optional)"
           }
+        ],
+        "stage_transitions": [
+          { "from": "start | main | cleanup", "to": "start | main | cleanup" }
         ]
       }
     ]
@@ -139,7 +154,7 @@ as a single authoritative Zod schema. The schema:
 - Enforces strict data types and closed enumerations
 - Validates `seq` constraint (strictly increasing sequences, no gaps/duplicates)
 - Exports the `validate(data)` function returning `{ valid: boolean, errors?: string[] }`
-- Exports `summarize(data)` returning metadata: `{ valid, game_id, variant, player_count, outcome }`
+- Exports `summarize(data)` returning metadata: `{ valid, game_id, variant, player_count, result }`
 - Exports `generateSchema()`, which **derives** the JSON Schema from the Zod
   schema (see below) — it is not a second hand-maintained description
 - Exports the version constants `LAGN_VERSION`, `LAGN_VERSION_1_0_0`,
