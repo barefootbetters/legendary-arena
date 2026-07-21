@@ -169,10 +169,10 @@ as a single authoritative Zod schema. The schema:
 | | 1.0.0 | 1.1.0 | 1.2.0 | 1.3.0 | 1.4.0 |
 |---|---|---|---|---|---|
 | Read | accepted | accepted | accepted | accepted | accepted |
-| Written | no | **yes — `LAGN_VERSION`** | not yet | not yet | not yet |
+| Written | no | no | no | no | **yes — `LAGN_VERSION`** |
 | Adds | — | optional `setup.support_pools` | optional card-metadata provenance | optional `setup.hero_alternates` | optional `players` + `scoring_profile` |
 
-**Readers accept all four; writers emit only `LAGN_VERSION`.** That asymmetry
+**Readers accept all five; writers emit only `LAGN_VERSION` (now `1.4.0`).** That asymmetry
 is deliberate and is what keeps stored records readable without a migration
 pass. `LAGN_SUPPORTED_VERSIONS` is the read set; `LAGN_VERSION` is the single
 version this build stamps.
@@ -268,10 +268,10 @@ untouched rather than stamped forward.
 > the moment 1.3.0 was added — the message already promised "1.2.0 or later". WP-402
 > converts it (and routes the new bench gate) through `isLagnVersionAtLeast`.
 
-**1.4.0 (WP-405 / D-24214 / D-24215) — shipped; readers accept it, writers do not
-emit it yet.** Adds two optional, top-level, **reader-only** blocks so a
-server-emitted result LAGN can describe *who played* and *under what profile* — a
-self-describing scoresheet rather than an anonymous setup dump:
+**1.4.0 (WP-405 contract + WP-406 producer / D-24214 / D-24215 / D-24216) —
+shipped and emitted.** Adds two optional, top-level blocks so a server-emitted
+result LAGN can describe *who played* and *under what profile* — a self-describing
+scoresheet rather than an anonymous setup dump:
 
 | Block | Location | Carries |
 |---|---|---|
@@ -299,11 +299,20 @@ consistent (count **≤** `player_count`, since a bot seat carries no entry; eac
 `seat` in `0..player_count-1`; unique seats; unique `player_id`s). There is
 deliberately **no `.max()`** on the roster.
 
-**The 1.3.0 → 1.4.0 migration step is registered but unreachable** — like its
-predecessors it restamps only the version marker and **never invents participants**
-(migration is forward-only, and the roster is a server producer's concern).
-`LAGN_VERSION` stays 1.1.0; the writer flip belongs to the future server-producer
-packet that emits `players[]` (WP-406).
+**The producer (WP-406 / D-24216).** `GET /api/match/:matchId/result-lagn` emits a
+completed match's result LAGN — setup + `players[]` + `result` + `scoring_profile` —
+projected read-only from the `bgio` blob (composition via D-24153, outcome via
+`metadata.gameover` per D-24169) and the `legendary.match_seat_accounts` roster (a
+domain table). `player_id` is the account's **claimed public handle**
+(`display_handle`), never the internal `AccountId`; a seat whose account has not
+claimed a handle is **omitted** (when none qualify, `players[]` is omitted entirely).
+The endpoint is **guest-readable** — a finished match's result is public. WP-406
+flipped `LAGN_VERSION` to **1.4.0**, so the emitted `players[]` clears the version
+gate; readers still accept every version back to 1.0.0, so **no stored record
+migrates**. With the writer now at 1.4.0, the `migrateToCurrent` chain
+1.0.0 → 1.4.0 is fully reachable — each step is a pure restamp that **never invents
+participants** (migration is forward-only; the roster is the server producer's
+concern).
 
 ### TypeScript Types
 

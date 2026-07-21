@@ -648,7 +648,7 @@ describe('LAGN v1.0 Validator', () => {
     })
 
     test('LAGN_VERSION is the version this build writes', () => {
-      assert.strictEqual(LAGN_VERSION, LAGN_VERSION_1_1_0)
+      assert.strictEqual(LAGN_VERSION, LAGN_VERSION_1_4_0)
     })
   })
 
@@ -736,11 +736,19 @@ describe('LAGN v1.0 Validator', () => {
 
   describe('Migration', () => {
     test('a 1.0.0 document migrates to the current version and then validates', () => {
+      // why: WP-406 flipped the writer to 1.4.0, so migrateToCurrent now walks the
+      // full registered chain 1.0.0 -> 1.4.0 (every step became reachable at the
+      // flip). Each hop is a pure restamp; the migrated document validates at 1.4.0.
       const original = buildSetupDocument(LAGN_VERSION_1_0_0)
       const result = migrateToCurrent(original)
       assert.strictEqual(result.error, undefined)
       assert.strictEqual(result.payload['lagn_version'], LAGN_VERSION)
-      assert.deepStrictEqual(result.applied, ['1.0.0->1.1.0'])
+      assert.deepStrictEqual(result.applied, [
+        '1.0.0->1.1.0',
+        '1.1.0->1.2.0',
+        '1.2.0->1.3.0',
+        '1.3.0->1.4.0'
+      ])
       assert.strictEqual(validate(result.payload).valid, true)
     })
 
@@ -752,7 +760,10 @@ describe('LAGN v1.0 Validator', () => {
     })
 
     test('a document already at the current version is returned unchanged', () => {
-      const original = buildSetupDocument(LAGN_VERSION_1_1_0)
+      // why: "current" is the writer version, now 1.4.0 (WP-406). A document
+      // already at it needs no migration — applied is empty and the payload is
+      // returned byte-identical.
+      const original = buildSetupDocument(LAGN_VERSION_1_4_0)
       const result = migrateToCurrent(original)
       assert.strictEqual(result.error, undefined)
       assert.deepStrictEqual(result.applied, [])
@@ -916,10 +927,10 @@ describe('JSON Schema derivation', () => {
       LAGN_VERSION_1_3_0,
       LAGN_VERSION_1_4_0
     ])
-    // why: readers accept 1.2.0 but writers must NOT stamp it yet — bumping
-    // LAGN_VERSION would move the wire format of a catalogued endpoint while
-    // nothing populates provenance. The producer packet flips it.
-    assert.strictEqual(LAGN_VERSION, LAGN_VERSION_1_1_0)
+    // why: the writer stamps 1.4.0 as of WP-406 — the result-LAGN producer emits
+    // players[], which the version gate requires. Readers still accept every
+    // version back to 1.0.0, so no stored record migrates.
+    assert.strictEqual(LAGN_VERSION, LAGN_VERSION_1_4_0)
     assert.strictEqual(
       schema.properties.$schema.default,
       'https://legendary-arena.com/schemas/lagn/v1/lagn-v1.json'
@@ -1081,21 +1092,18 @@ describe('LAGN 1.2.0 provenance', () => {
     assert.strictEqual(result.valid, false)
   })
 
-  test('AC-5: migrateToCurrent still targets 1.1.0 and leaves 1.2.0 untouched', () => {
+  test('AC-5: migrateToCurrent targets the writer version (1.4.0 as of WP-406)', () => {
     const migratedFrom100 = migrateToCurrent(buildSetupDocument(LAGN_VERSION_1_0_0))
     assert.strictEqual(migratedFrom100.error, undefined)
-    assert.strictEqual(migratedFrom100.payload.lagn_version, LAGN_VERSION_1_1_0)
+    assert.strictEqual(migratedFrom100.payload.lagn_version, LAGN_VERSION)
 
-    // why: a 1.2.0 input is returned UNCHANGED — never downgraded, never
-    // re-stamped. The 1.1.0 -> 1.2.0 step is registered but unreachable until
-    // the producer packet flips LAGN_VERSION.
-    const alreadyNewer = migrateToCurrent(buildProvenanceDocument(LAGN_VERSION_1_2_0))
-    assert.strictEqual(alreadyNewer.payload.lagn_version, LAGN_VERSION_1_2_0)
-    assert.deepStrictEqual(
-      alreadyNewer.applied,
-      [],
-      'the 1.1.0 -> 1.2.0 step must be registered but UNREACHABLE'
-    )
+    // why: WP-406 flipped the writer to 1.4.0, so the previously-unreachable
+    // 1.1.0 -> 1.2.0 -> 1.3.0 -> 1.4.0 steps are now REACHABLE — a 1.2.0 document
+    // migrates FORWARD to 1.4.0. It was returned untouched only while the writer
+    // sat at 1.1.0.
+    const from120 = migrateToCurrent(buildProvenanceDocument(LAGN_VERSION_1_2_0))
+    assert.strictEqual(from120.payload.lagn_version, LAGN_VERSION_1_4_0)
+    assert.deepStrictEqual(from120.applied, ['1.2.0->1.3.0', '1.3.0->1.4.0'])
   })
 
   test('AC-5: support_pools survives migration untouched', () => {
@@ -1154,10 +1162,12 @@ describe('LAGN 1.3.0 hero alternates', () => {
     assert.strictEqual(result.valid, true, JSON.stringify(result.errors))
   })
 
-  test('AC-6: LAGN_VERSION stays 1.1.0 — no producer emits 1.3.0', () => {
-    // why: the writer flip is WP-404's job and moves a catalogued endpoint's
-    // wire format. Adding 1.3.0 to the READ set must not move the WRITE value.
-    assert.strictEqual(LAGN_VERSION, LAGN_VERSION_1_1_0)
+  test('AC-6: no producer emits 1.3.0 — the writer skipped it (now 1.4.0)', () => {
+    // why: WP-402 added 1.3.0 to the READ set only; it never flipped the writer.
+    // WP-406 later flipped the writer to 1.4.0, skipping 1.3.0 — so 1.3.0 stays a
+    // read-only version no producer emits, and the stamped version is 1.4.0.
+    assert.strictEqual(LAGN_VERSION, LAGN_VERSION_1_4_0)
+    assert.notStrictEqual(LAGN_VERSION, LAGN_VERSION_1_3_0)
   })
 
   for (const version of [LAGN_VERSION_1_0_0, LAGN_VERSION_1_1_0, LAGN_VERSION_1_2_0]) {
@@ -1229,19 +1239,17 @@ describe('LAGN 1.3.0 hero alternates', () => {
     assert.strictEqual(result.valid, true, JSON.stringify(result.errors))
   })
 
-  test('AC-7: migrateToCurrent leaves a 1.3.0 input unchanged with applied: []', () => {
-    // why: LAGN_VERSION is still 1.1.0, so a 1.3.0 input is already NEWER than
-    // the writer target. It is left untouched — never downgraded, never
-    // re-stamped — and the 1.2.0 -> 1.3.0 step is registered but UNREACHABLE.
-    // This mirrors the established 1.2.0 precedent exactly (readers run ahead of
-    // the writer, so the migrator, which targets the writer, no-ops a newer doc
-    // rather than stamping it backward).
+  test('AC-7: migrateToCurrent steps a 1.3.0 input forward to 1.4.0', () => {
+    // why: WP-406 flipped the writer to 1.4.0, so the 1.3.0 -> 1.4.0 step is now
+    // REACHABLE — a 1.3.0 document migrates forward one hop (it was returned
+    // untouched only while the writer sat at 1.1.0). The restamp carries the bench
+    // through untouched: migration only advances the version marker, never the setup.
     const original = buildSetupDocument(LAGN_VERSION_1_3_0, { hero_alternates: BENCH })
     const result = migrateToCurrent(original)
     assert.strictEqual(result.error, undefined)
-    assert.strictEqual(result.payload.lagn_version, LAGN_VERSION_1_3_0)
-    assert.deepStrictEqual(result.applied, [])
-    assert.deepStrictEqual(result.payload, original)
+    assert.strictEqual(result.payload.lagn_version, LAGN_VERSION_1_4_0)
+    assert.deepStrictEqual(result.applied, ['1.3.0->1.4.0'])
+    assert.deepStrictEqual(result.payload.setup, original.setup)
   })
 
   test('AC-7: migration never invents a bench from setup.heroes', () => {
@@ -1419,10 +1427,11 @@ describe('LAGN 1.4.0 match participants + scoring profile', () => {
     assert.strictEqual(result.valid, true, JSON.stringify(result.errors))
   })
 
-  test('AC-6: LAGN_VERSION is unchanged — no producer emits 1.4.0', () => {
-    // why: WP-405 is reader-only. Adding 1.4.0 to the READ set must not move the
-    // WRITE value; the writer flip belongs to the future server-producer packet.
-    assert.strictEqual(LAGN_VERSION, LAGN_VERSION_1_1_0)
+  test('AC-6: the writer stamps 1.4.0 as of WP-406 (the result-LAGN producer)', () => {
+    // why: WP-405 added 1.4.0 to the READ set only (reader-only). WP-406 flips the
+    // WRITE value to 1.4.0 because the result-LAGN producer emits players[], which
+    // the version gate requires. Readers still accept every version back to 1.0.0.
+    assert.strictEqual(LAGN_VERSION, LAGN_VERSION_1_4_0)
   })
 
   test('AC-7: migrateToCurrent leaves a 1.4.0 input unchanged with applied: []', () => {

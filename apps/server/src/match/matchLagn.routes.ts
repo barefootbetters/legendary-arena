@@ -45,8 +45,14 @@ import type { CardRegistry } from '@legendary-arena/registry';
 
 import {
   readMatchConfigurationForLagn,
+  readMatchGameover,
+  readAccountPublicIdentities,
   buildMatchLagn,
+  buildResultMatchLagn,
+  buildResultPlayers,
   buildNameResolver,
+  toLagnResult,
+  DEFAULT_SCORING_PROFILE,
 } from './matchLagn.logic.js';
 import { readSeatAccounts } from './seatAccount.logic.js';
 
@@ -105,11 +111,15 @@ export interface MatchLagnRouteDependencies {
 export interface MatchLagnLogic {
   readonly readMatchConfigurationForLagn: typeof readMatchConfigurationForLagn;
   readonly readSeatAccounts: typeof readSeatAccounts;
+  readonly readMatchGameover: typeof readMatchGameover;
+  readonly readAccountPublicIdentities: typeof readAccountPublicIdentities;
 }
 
 const PRODUCTION_MATCH_LAGN_LOGIC: MatchLagnLogic = {
   readMatchConfigurationForLagn,
   readSeatAccounts,
+  readMatchGameover,
+  readAccountPublicIdentities,
 };
 
 /**
@@ -250,6 +260,88 @@ export function registerMatchLagnRoutes(
       // why: never re-throw — the server has no error middleware beyond
       // the framework defaults, so an uncaught throw surfaces as a bodyless 500.
       // The caught value is discarded; the 500 envelope leaks no internals.
+      void caughtError;
+      koaContext.status = 500;
+      koaContext.body = { error: 'internal_error' };
+    }
+  });
+
+  // why: the RESULT-LAGN producer (WP-406 / D-24216). A completed match's result
+  // is public (Hall-of-Legends material), so this endpoint is GUEST-READABLE — no
+  // session gate and no participant gate, unlike the private setup emitter above.
+  // The privacy surface is which handles appear, decided in `buildResultPlayers`
+  // (claimed handle only, never AccountId — D-24214), not by an auth gate.
+  router.get('/api/match/:matchId/result-lagn', async (koaContext) => {
+    // why: Cache-Control MUST be the first statement (WP-115 D-11504) so it is set
+    // on every response path, including the 500 below.
+    koaContext.set('Cache-Control', 'no-store');
+
+    const matchId = koaContext.params.matchId;
+    if (typeof matchId !== 'string' || matchId === '') {
+      // why: `@koa/router` always supplies a non-empty `:matchId`; this is
+      // defensive — an absent id is an unknown match (fail closed).
+      koaContext.status = 404;
+      koaContext.body = { error: 'not_found' };
+      return;
+    }
+
+    try {
+      // Gate 1 — the match is projectable (row present + non-null initial_state).
+      const configuration = await matchLagnLogic.readMatchConfigurationForLagn(
+        matchId,
+        database,
+      );
+      if (configuration === null) {
+        koaContext.status = 404;
+        koaContext.body = { error: 'not_found' };
+        return;
+      }
+
+      // Gate 2 — the completed-match gate (D-24169). A projectable match with no
+      // `metadata.gameover` is still in progress; a result LAGN describes a
+      // FINISHED match, so reject until gameover.
+      const gameover = await matchLagnLogic.readMatchGameover(matchId, database);
+      if (gameover === null) {
+        koaContext.status = 404;
+        koaContext.body = { error: 'match_not_finished' };
+        return;
+      }
+
+      // Roster projection — a domain-table read of the recorded seats, then a
+      // batched public-identity resolve. Bots/guests have no seat row, so they
+      // never appear (players.length <= player_count by construction).
+      const seats = await matchLagnLogic.readSeatAccounts(matchId, database);
+      const identities = await matchLagnLogic.readAccountPublicIdentities(
+        seats.map((seat) => seat.accountId),
+        database,
+      );
+      const players = buildResultPlayers(seats, identities);
+      const result = toLagnResult(gameover);
+
+      // Build (construction-only) then validate EXACTLY once before the 200.
+      const lagn = buildResultMatchLagn(
+        matchId,
+        configuration.matchConfiguration,
+        configuration.numPlayers,
+        resolveName,
+        players,
+        result,
+        DEFAULT_SCORING_PROFILE,
+      );
+      const validation = validate(lagn);
+      if (validation.valid !== true) {
+        // why: a completed match's stored composition + roster should always
+        // project to a valid result LAGN; a failure here is a blob/roster-shape
+        // regression, never a client error.
+        koaContext.status = 500;
+        koaContext.body = { error: 'lagn_projection_failed' };
+        return;
+      }
+
+      koaContext.status = 200;
+      koaContext.body = { lagn };
+    } catch (caughtError) {
+      // why: never re-throw — mirror the setup route's fail-closed 500.
       void caughtError;
       koaContext.status = 500;
       koaContext.body = { error: 'internal_error' };

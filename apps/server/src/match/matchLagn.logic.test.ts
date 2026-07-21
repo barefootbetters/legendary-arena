@@ -19,9 +19,16 @@ import {
   buildMatchLagn,
   buildNameResolver,
   readMatchConfigurationForLagn,
+  readMatchGameover,
+  readAccountPublicIdentities,
+  buildResultPlayers,
+  buildResultMatchLagn,
+  toLagnResult,
+  DEFAULT_SCORING_PROFILE,
   type MatchLagnComposition,
+  type ResultPlayerIdentity,
 } from './matchLagn.logic.js';
-import type { DatabaseClient } from '../identity/identity.types.js';
+import type { AccountId, DatabaseClient } from '../identity/identity.types.js';
 
 /** A complete, valid 9-field composition fixture. */
 const VALID_COMPOSITION: MatchLagnComposition = {
@@ -200,5 +207,183 @@ describe('readMatchConfigurationForLagn — fail-closed reads', () => {
       fakeDatabase([{ initial_state: null }]),
     );
     assert.equal(result, null);
+  });
+});
+
+// ============================================================================
+// Result-LAGN producer (WP-406 / D-24216)
+// ============================================================================
+
+describe('toLagnResult — outcome mapping', () => {
+  test('heroes-win maps to victory and scheme-wins to defeat', () => {
+    assert.deepEqual(toLagnResult({ outcome: 'heroes-win' }), { outcome: 'victory' });
+    assert.deepEqual(toLagnResult({ outcome: 'scheme-wins' }), { outcome: 'defeat' });
+  });
+
+  test('a tie, a null verdict, or an unknown outcome yields no result block', () => {
+    // why: LAGN has no tie outcome, so a non-decisive verdict omits result rather
+    // than guessing (result is optional). loss_condition is never fabricated.
+    assert.equal(toLagnResult({ outcome: 'tie' }), undefined);
+    assert.equal(toLagnResult(null), undefined);
+    assert.equal(toLagnResult({ outcome: 'something-else' }), undefined);
+    assert.equal(toLagnResult({}), undefined);
+  });
+});
+
+describe('buildResultPlayers — roster projection (D-24214)', () => {
+  const identities = new Map<AccountId, ResultPlayerIdentity>([
+    ['account-ana' as AccountId, { displayHandle: 'ana-handle', displayName: 'Ana' }],
+    ['account-devon' as AccountId, { displayHandle: 'devon-handle', displayName: null }],
+    ['account-noh' as AccountId, { displayHandle: null, displayName: 'Unclaimed' }],
+  ]);
+
+  test('emits the claimed handle as player_id, never the AccountId', () => {
+    const players = buildResultPlayers(
+      [{ playerId: '0', accountId: 'account-ana' as AccountId }],
+      identities,
+    );
+    assert.deepEqual(players, [{ seat: 0, player_id: 'ana-handle', display_name: 'Ana' }]);
+    // the AccountId appears nowhere
+    assert.equal(JSON.stringify(players).includes('account-ana'), false);
+  });
+
+  test('omits display_name when the account has none', () => {
+    const players = buildResultPlayers(
+      [{ playerId: '1', accountId: 'account-devon' as AccountId }],
+      identities,
+    );
+    assert.deepEqual(players, [{ seat: 1, player_id: 'devon-handle' }]);
+  });
+
+  test('omits a seat whose account has no claimed handle', () => {
+    const players = buildResultPlayers(
+      [
+        { playerId: '0', accountId: 'account-ana' as AccountId },
+        { playerId: '1', accountId: 'account-noh' as AccountId },
+      ],
+      identities,
+    );
+    assert.equal(players?.length, 1);
+    assert.equal(players?.[0].player_id, 'ana-handle');
+  });
+
+  test('returns undefined (not []) when no seat qualifies', () => {
+    const players = buildResultPlayers(
+      [{ playerId: '0', accountId: 'account-noh' as AccountId }],
+      identities,
+    );
+    assert.equal(players, undefined);
+  });
+
+  test('sorts by seat for a deterministic document', () => {
+    const players = buildResultPlayers(
+      [
+        { playerId: '1', accountId: 'account-devon' as AccountId },
+        { playerId: '0', accountId: 'account-ana' as AccountId },
+      ],
+      identities,
+    );
+    assert.deepEqual(
+      players?.map((entry) => entry.seat),
+      [0, 1],
+    );
+  });
+});
+
+describe('buildResultMatchLagn — composed document', () => {
+  test('setup + scoring_profile + players + result, and validates as 1.4.0', () => {
+    const players = buildResultPlayers(
+      [{ playerId: '0', accountId: 'account-ana' as AccountId }],
+      new Map([['account-ana' as AccountId, { displayHandle: 'ana', displayName: 'Ana' }]]),
+    );
+    const lagn = buildResultMatchLagn(
+      'match-1',
+      VALID_COMPOSITION,
+      1,
+      identityResolver,
+      players,
+      { outcome: 'victory' },
+      DEFAULT_SCORING_PROFILE,
+    );
+    assert.equal(lagn.lagn_version, LAGN_VERSION);
+    assert.equal(lagn.scoring_profile, 'classic');
+    assert.deepEqual(lagn.result, { outcome: 'victory' });
+    assert.equal(lagn.players?.length, 1);
+    assert.equal(validate(lagn).valid, true);
+  });
+
+  test('omits players and result when both are undefined; scoring_profile stays', () => {
+    const lagn = buildResultMatchLagn(
+      'match-1',
+      VALID_COMPOSITION,
+      1,
+      identityResolver,
+      undefined,
+      undefined,
+      DEFAULT_SCORING_PROFILE,
+    );
+    assert.equal('players' in lagn, false);
+    assert.equal('result' in lagn, false);
+    assert.equal(lagn.scoring_profile, 'classic');
+    assert.equal(validate(lagn).valid, true);
+  });
+});
+
+describe('readMatchGameover — metadata.gameover read (D-24169)', () => {
+  test('returns the stored verdict when gameover is present', async () => {
+    const gameover = await readMatchGameover(
+      'match-1',
+      fakeDatabase([{ gameover: { outcome: 'heroes-win', reason: 'Mastermind defeated' } }]),
+    );
+    assert.deepEqual(gameover, { outcome: 'heroes-win', reason: 'Mastermind defeated' });
+  });
+
+  test('returns null when the match row is absent', async () => {
+    assert.equal(await readMatchGameover('missing', fakeDatabase([])), null);
+  });
+
+  test('returns null when the match has no gameover (still in progress)', async () => {
+    assert.equal(await readMatchGameover('live', fakeDatabase([{ gameover: null }])), null);
+  });
+});
+
+describe('readAccountPublicIdentities — domain-table read', () => {
+  test('maps ext_id to its claimed handle + mutable display name', async () => {
+    const identities = await readAccountPublicIdentities(
+      ['account-ana' as AccountId],
+      fakeDatabase([
+        { ext_id: 'account-ana', display_handle: 'ana-handle', display_name: 'Ana' },
+      ]),
+    );
+    assert.deepEqual(identities.get('account-ana' as AccountId), {
+      displayHandle: 'ana-handle',
+      displayName: 'Ana',
+    });
+  });
+
+  test('returns an empty map for no account ids (no query needed)', async () => {
+    let queried = false;
+    const database = {
+      query: async () => {
+        queried = true;
+        return { rows: [] };
+      },
+    } as unknown as DatabaseClient;
+    const identities = await readAccountPublicIdentities([], database);
+    assert.equal(identities.size, 0);
+    assert.equal(queried, false);
+  });
+
+  test('coerces a null handle / name to null in the map', async () => {
+    const identities = await readAccountPublicIdentities(
+      ['account-noh' as AccountId],
+      fakeDatabase([
+        { ext_id: 'account-noh', display_handle: null, display_name: null },
+      ]),
+    );
+    assert.deepEqual(identities.get('account-noh' as AccountId), {
+      displayHandle: null,
+      displayName: null,
+    });
   });
 });
