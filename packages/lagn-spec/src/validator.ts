@@ -51,13 +51,16 @@ export const LAGN_VERSION_1_4_0 = '1.4.0'
 /**
  * The version this build stamps on documents it writes.
  *
- * why: deliberately still 1.1.0 even though readers now accept 1.2.0. Nothing
- * populates provenance yet, so bumping the writer would move the wire format
- * of a catalogued endpoint for zero benefit. The producer-wiring packet flips
- * this together with the producers, and updates api-endpoints.md in the same
- * commit.
+ * why: 1.4.0 as of WP-406 — the result-LAGN producer
+ * (`GET /api/match/:matchId/result-lagn`) emits `players[]`, which the WP-405
+ * version gate rejects on any pre-1.4.0 document, so the writer must stamp 1.4.0
+ * for the emitted result to be a legal write. Readers still accept every version
+ * back to 1.0.0 (`LAGN_SUPPORTED_VERSIONS`), so no stored record migrates. This
+ * moves the stamped version of the existing setup emitter too (§21 / D-11804);
+ * api-endpoints.md is updated in the same change. `package.json` is bumped in
+ * lockstep (the EC-422 manifest lock).
  */
-export const LAGN_VERSION = LAGN_VERSION_1_1_0
+export const LAGN_VERSION = LAGN_VERSION_1_4_0
 
 /**
  * Every version this build can read, oldest first.
