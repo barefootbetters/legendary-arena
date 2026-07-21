@@ -17,6 +17,7 @@ import {
   LAGN_VERSION_1_0_0,
   LAGN_VERSION_1_1_0,
   LAGN_VERSION_1_2_0,
+  LAGN_VERSION_1_3_0,
   type LagnVersion
 } from './validator.js'
 
@@ -63,9 +64,29 @@ const migrate_1_1_0_to_1_2_0: LagnMigrationFn = (payload) => ({
   lagn_version: LAGN_VERSION_1_2_0
 })
 
+/**
+ * 1.2.0 -> 1.3.0 is a pure restamp.
+ *
+ * why: 1.3.0 adds only the optional `setup.hero_alternates` bench, so every
+ * 1.2.0 document is already a structurally valid 1.3.0 document. It synthesizes
+ * nothing — and in particular it NEVER invents a bench from `setup.heroes`.
+ * Migration is forward-only and may not fabricate information that was never in
+ * the source; a saved loadout with no reserves has no reserves after migration.
+ *
+ * why: REGISTERED BUT NOT REACHABLE in this packet. migrateToCurrent() targets
+ * LAGN_VERSION, which stays 1.1.0 here, so no caller can reach this step. The
+ * producer-wiring packet (WP-404) flips LAGN_VERSION and thereby activates it —
+ * the step lands now so that flip is a one-line change, not a new migration.
+ */
+const migrate_1_2_0_to_1_3_0: LagnMigrationFn = (payload) => ({
+  ...payload,
+  lagn_version: LAGN_VERSION_1_3_0
+})
+
 const migrationRegistry: Readonly<Record<LagnMigrationKey, LagnMigrationFn>> = Object.freeze({
   [buildLagnMigrationKey(LAGN_VERSION_1_0_0, LAGN_VERSION_1_1_0)]: migrate_1_0_0_to_1_1_0,
-  [buildLagnMigrationKey(LAGN_VERSION_1_1_0, LAGN_VERSION_1_2_0)]: migrate_1_1_0_to_1_2_0
+  [buildLagnMigrationKey(LAGN_VERSION_1_1_0, LAGN_VERSION_1_2_0)]: migrate_1_1_0_to_1_2_0,
+  [buildLagnMigrationKey(LAGN_VERSION_1_2_0, LAGN_VERSION_1_3_0)]: migrate_1_2_0_to_1_3_0
 })
 
 export interface LagnMigrationResult {
@@ -104,9 +125,19 @@ export function migrateToCurrent(input: unknown): LagnMigrationResult {
   }
 
   let current = declared as LagnVersion
-  // why: bounded by the supported-version count so a malformed registry can
-  // never spin here. Each hop must advance `current` or the loop exits.
-  while (current !== LAGN_VERSION) {
+  const targetIndex = LAGN_SUPPORTED_VERSIONS.indexOf(LAGN_VERSION)
+  // why: migrate FORWARD only while the document sits BEHIND the writer version,
+  // compared ORDINALLY by position — never `current !== LAGN_VERSION`, which was
+  // an equality gate that read correctly only while LAGN_VERSION was the newest
+  // supported version. Once a step is registered PAST the writer (the 1.2.0 ->
+  // 1.3.0 hop, WP-402), an equality loop would walk a newer document forward and
+  // stamp it — the same equality-vs-ordinal defect D-24211 fixes on the validator
+  // side. Readers run ahead of the writer, so a document already at or newer than
+  // LAGN_VERSION is valid and must be left untouched, never stamped backward. This
+  // is what keeps the 1.2.0 -> 1.3.0 step registered but UNREACHABLE until WP-404
+  // advances the writer. Bounded by the supported-version count, so a malformed
+  // registry can never spin here.
+  while (LAGN_SUPPORTED_VERSIONS.indexOf(current) < targetIndex) {
     const nextIndex = LAGN_SUPPORTED_VERSIONS.indexOf(current) + 1
     const next = LAGN_SUPPORTED_VERSIONS[nextIndex]
     if (next === undefined) {

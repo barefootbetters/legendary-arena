@@ -143,17 +143,18 @@ as a single authoritative Zod schema. The schema:
 - Exports `generateSchema()`, which **derives** the JSON Schema from the Zod
   schema (see below) — it is not a second hand-maintained description
 - Exports the version constants `LAGN_VERSION`, `LAGN_VERSION_1_0_0`,
-  `LAGN_VERSION_1_1_0`, `LAGN_SUPPORTED_VERSIONS`, and `migrateToCurrent()`
+  `LAGN_VERSION_1_1_0`, `LAGN_VERSION_1_2_0`, `LAGN_VERSION_1_3_0`,
+  `LAGN_SUPPORTED_VERSIONS`, and `migrateToCurrent()`
 
-### Versioning (1.0.0 → 1.1.0 → 1.2.0)
+### Versioning (1.0.0 → 1.1.0 → 1.2.0 → 1.3.0)
 
-| | 1.0.0 | 1.1.0 | 1.2.0 |
-|---|---|---|---|
-| Read | accepted | accepted | accepted |
-| Written | no | **yes — `LAGN_VERSION`** | not yet |
-| Adds | — | optional `setup.support_pools` | optional card-metadata provenance |
+| | 1.0.0 | 1.1.0 | 1.2.0 | 1.3.0 |
+|---|---|---|---|---|
+| Read | accepted | accepted | accepted | accepted |
+| Written | no | **yes — `LAGN_VERSION`** | not yet | not yet |
+| Adds | — | optional `setup.support_pools` | optional card-metadata provenance | optional `setup.hero_alternates` |
 
-**Readers accept all three; writers emit only `LAGN_VERSION`.** That asymmetry
+**Readers accept all four; writers emit only `LAGN_VERSION`.** That asymmetry
 is deliberate and is what keeps stored records readable without a migration
 pass. `LAGN_SUPPORTED_VERSIONS` is the read set; `LAGN_VERSION` is the single
 version this build stamps.
@@ -206,6 +207,48 @@ evidence without the snapshot it came from is unverifiable.
 endpoint payload has changed shape; `migrateToCurrent` still targets 1.1.0 and
 the 1.1.0 → 1.2.0 migration step is registered but unreachable. A follow-on
 packet flips the writer together with the producers.
+
+**1.3.0 (WP-402 / D-24210) — shipped; readers accept it, writers do not emit it
+yet.** Adds optional `setup.hero_alternates`: a bench of reserve heroes named in
+a saved loadout alongside the heroes actually played, so a seven-hero shortlist —
+five played, two held in reserve — survives a save/share/re-open round trip
+instead of losing the reserves.
+
+| Block | Location | Carries |
+|---|---|---|
+| `hero_alternates` | `setup` | array (min 1, **no max**) of `{ id, name }` — the reserve heroes; mirrors the `setup.heroes` entry shape exactly |
+
+**The bench is loadout metadata, never gameplay state (D-24210).** Nothing
+derives a match composition from it; `setup.heroes` stays the sole authority on
+what is on the board, and no engine path reads the bench. It is a **sibling**
+block, not more entries in `setup.heroes`, because played-hero count is
+exact-enforced downstream against `PLAYER_COUNT_SETUP` (3/5/6 heroes by seat
+count) — extra entries in `heroes` would validate here and then throw on match
+create. Bench ids share the D-10014 set-qualified `setAbbr/slug` id space with
+`setup.heroes[].id`; no translation.
+
+**Two more constraints JSON Schema cannot express** (both in the allowlist):
+`hero_alternates` is **version-gated** — a pre-1.3.0 document carrying it is
+rejected, not silently stripped — and the bench must be **disjoint from and
+non-repeating within** the played heroes (a hero is played or benched, never
+both). There is deliberately **no `.max()`**: a cap in a published open standard
+cannot be relaxed without a major version, and the producing UI enforces its own
+limit (WP-404 offers two slots).
+
+**The 1.2.0 → 1.3.0 migration step is registered but unreachable** — like its
+predecessors it restamps only the version marker and **never invents a bench from
+`setup.heroes`** (migration is forward-only and fabricates nothing that was not in
+the source). Adding it exposed and fixed a latent equality-vs-ordinal defect in
+`migrateToCurrent`'s forward-walk (D-24211): the loop now compares version
+*positions*, so a document already at or newer than `LAGN_VERSION` is left
+untouched rather than stamped forward.
+
+> **Ordinal version gates (D-24211).** Every LAGN gate that keys an optional block
+> on a minimum version compares **ordinally** ("this version or later"), never with
+> `===` against a single constant. The provenance gate shipped as
+> `=== LAGN_VERSION_1_2_0`, which rejected a 1.3.0 document carrying `catalog_ref`
+> the moment 1.3.0 was added — the message already promised "1.2.0 or later". WP-402
+> converts it (and routes the new bench gate) through `isLagnVersionAtLeast`.
 
 ### TypeScript Types
 
@@ -358,9 +401,10 @@ The open-source publication surface (WP-244 Gate 1):
 - [`packages/lagn-spec/src/cli.ts`](../packages/lagn-spec/src/cli.ts)
   — CLI entrypoint (shebang `#!/usr/bin/env node`)
 - [`packages/lagn-spec/src/validator.test.ts`](../packages/lagn-spec/src/validator.test.ts)
-  — 54 tests covering all three tiers, seq constraints, `summarize()`,
+  — 65 tests covering all three tiers, seq constraints, `summarize()`,
   versioning + support pools, migration, provenance and its two version gates,
-  the derived-schema contract, and `ajv` validation of all **five** shipped
+  hero alternates and their version + disjointness gates, the ordinal-gate fix,
+  the derived-schema contract, and `ajv` validation of all **six** shipped
   fixtures against the generated JSON Schema
 - [`packages/lagn-spec/src/migrate.ts`](../packages/lagn-spec/src/migrate.ts)
   — forward-only version migration (`migrateToCurrent`)

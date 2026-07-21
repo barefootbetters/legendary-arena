@@ -30899,8 +30899,7 @@ session does not have to reconstruct the reasoning.
 
 ### D-24210 — Hero alternates are loadout metadata, never gameplay state
 
-**Status:** Drafted 2026-07-20 (WP-402); not yet landed — flips to Active
-(post-execution) when WP-402 merges.
+**Status:** Active (2026-07-20, WP-402 / EC-437).
 
 **Decision.** The "hero alternates" bench (`setup.hero_alternates` in LAGN,
 `heroAlternateIds` in the MATCH-SETUP envelope) is metadata about a saved
@@ -30932,8 +30931,7 @@ replay/`matchConfiguration` path).
 
 ### D-24211 — LAGN version gates compare ordinally, never by equality
 
-**Status:** Drafted 2026-07-20 (WP-402); not yet landed — flips to Active
-(post-execution) when WP-402 merges.
+**Status:** Active (2026-07-20, WP-402 / EC-437).
 
 **Decision.** Every LAGN refinement that gates an optional block on a minimum
 version MUST compare **ordinally** ("this version or later"), never with `===`
@@ -30951,8 +30949,18 @@ semantics the code did not implement. This is a latent defect any minor bump
 would trip, so the rule is locked rather than left to be rediscovered.
 
 **Implementation note.** Ordinality is by position in `LAGN_SUPPORTED_VERSIONS`
-(oldest-first), which is already the array every reader trusts. A helper that
-compares indices is the mechanical form; the WP-402 executor writes it.
+(oldest-first), which is already the array every reader trusts. WP-402 adds the
+helper `isLagnVersionAtLeast(version, minimum)` and routes both the provenance
+gate and the new `setup.hero_alternates` gate through it.
+
+**Second site, found in execution.** The same equality-vs-ordinal defect lived in
+`migrate.ts`: `migrateToCurrent`'s forward-walk looped on `current !== LAGN_VERSION`.
+That was harmless only while `LAGN_VERSION` was the newest supported version —
+registering the 1.2.0 → 1.3.0 step (WP-402 Scope #7) made it walk a 1.2.0 document
+*forward* to 1.3.0 and then error, breaking the existing "leaves 1.2.0 untouched"
+test. Fixed to loop `while indexOf(current) < indexOf(LAGN_VERSION)`, so a document
+already at or newer than the writer is left untouched and the registered step stays
+genuinely unreachable until WP-404 advances the writer. Same principle, second site.
 
 **Packet:** WP-402. AC-5 pins a `1.3.0 + provenance` document as VALID and is
 required to fail against the pre-fix equality gate.

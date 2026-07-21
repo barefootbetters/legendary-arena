@@ -5,6 +5,15 @@ export type LAGN = z.infer<typeof lagnSchema>
 
 export type GameSetup = z.infer<typeof lagnSchema>['setup']
 
+/**
+ * A benched hero named in a saved loadout (1.3.0+, WP-402 / D-24210).
+ *
+ * why: reserve only — never played and never gameplay state. Mirrors the
+ * `{ id, name }` shape of a played hero exactly. Inferred from `lagnSchema` like
+ * every other type here, so a schema change cannot leave the exported type behind.
+ */
+export type HeroAlternate = NonNullable<GameSetup['hero_alternates']>[number]
+
 // ── Card metadata provenance (1.2.0+, WP-394 / D-24198) ──────────────────────
 // why: inferred from lagnSchema like every other type here rather than
 // hand-authored, so a schema change cannot leave the exported type behind.
