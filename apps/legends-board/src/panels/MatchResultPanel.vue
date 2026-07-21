@@ -1,15 +1,49 @@
 <script setup lang="ts">
+import { ref } from "vue";
 import type { MatchResultView } from "./matchResultDisplay";
+import { downloadMatchLagn } from "./matchResultDownload";
 
 // why: prop-driven like every other panel — App.vue owns the fetch and passes
 // the parsed view model down. The panel renders ONLY the public labels the
 // result LAGN carried (handle + optional display name); it never joins an
 // identity table (D-24217). An omitted seat renders anonymous.
-defineProps<{
+const props = defineProps<{
   view: MatchResultView | null;
   error: string | null;
   loading: boolean;
 }>();
+
+// why: WP-408 — the portable-download state lives on the panel. The download is
+// EXPORT-ONLY (D-24218): it hands the user a copy of the server-produced record
+// and nothing re-ingests it to score, credit, or rank.
+const isDownloading = ref(false);
+const downloadError = ref<string | null>(null);
+
+/**
+ * Fetch this match's result LAGN and trigger a `match-<id>.lagn.json` download.
+ *
+ * why: a failed fetch shows a visible full-sentence error rather than a silent
+ * no-op (the twice-bitten dead-button pattern).
+ */
+async function handleDownload(): Promise<void> {
+  if (props.view === null) {
+    return;
+  }
+  downloadError.value = null;
+  isDownloading.value = true;
+  try {
+    await downloadMatchLagn(props.view.matchId);
+  } catch (caughtError) {
+    downloadError.value =
+      "This match record could not be downloaded. Please try again in a moment.";
+    console.error(
+      `[legends] Match LAGN download "${props.view.matchId}" failed:`,
+      caughtError,
+    );
+  } finally {
+    isDownloading.value = false;
+  }
+}
 </script>
 
 <template>
@@ -62,6 +96,21 @@ defineProps<{
           </tr>
         </tbody>
       </table>
+
+      <!-- why: EXPORT-ONLY (D-24218) — downloads a portable COPY of this public
+           record; nothing re-ingests it to score/credit/rank. A client Blob, no
+           new server endpoint (reuses WP-406's read). -->
+      <div class="match-download">
+        <button
+          class="download-button"
+          type="button"
+          :disabled="isDownloading"
+          @click="handleDownload"
+        >
+          {{ isDownloading ? "Preparing download..." : "Download this match as LAGN" }}
+        </button>
+        <p v-if="downloadError" class="download-error">{{ downloadError }}</p>
+      </div>
     </template>
   </div>
 </template>
@@ -153,5 +202,35 @@ defineProps<{
 .seat-anonymous {
   color: var(--la-color-text-secondary);
   font-style: italic;
+}
+
+.match-download {
+  margin-top: 1.5rem;
+}
+
+.download-button {
+  padding: 0.6rem 1.1rem;
+  font: inherit;
+  color: var(--la-color-bg-primary);
+  background: var(--la-color-gold-bright);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+}
+
+.download-button:hover:not(:disabled) {
+  background: var(--la-color-gold-muted);
+}
+
+.download-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.download-error {
+  margin-top: 0.75rem;
+  color: var(--la-color-error);
+  font-size: 0.9rem;
 }
 </style>
