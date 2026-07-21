@@ -688,6 +688,18 @@ export async function startServer() {
       'http://localhost:4173',
       'https://cards.barefootbetters.com',
       'https://cards.legendary-arena.com',
+      // why: WP-407 / D-24217 — the Hall of Legends per-match result view
+      // (`legends.legendary-arena.com`) fetches the guest-readable
+      // `GET /api/match/:matchId/result-lagn` producer (WP-406) cross-origin. The
+      // endpoint carries no credentials and exposes only the public labels the
+      // result LAGN already made public, so this allowance grants the browser
+      // nothing the operator dashboard's admin gate would; it only lets the
+      // static legends-board bundle make the request.
+      'https://legends.legendary-arena.com',
+      // why: the CF Pages production alias for the `legendary-arena-legends`
+      // project, allowlisted for parity with the `.pages.dev` hosts above so a
+      // preview/parity deploy can also reach the API before the custom domain binds.
+      'https://legendary-arena-legends.pages.dev',
       'http://localhost:5173',
     ],
     // why: WP-309 / D-24095 — back boardgame.io's match store with Postgres via

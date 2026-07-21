@@ -7,6 +7,52 @@
 
 ## Current State
 
+### WP-407 / EC-442 — Hall of Legends per-match result view (D-24217) (2026-07-20)
+
+**User-visible surface — `legends.legendary-arena.com`. Code merged; AC-6
+(D-24026) live-verify PENDING the deploy + a Pages env var (see below).**
+
+`apps/legends-board` gains its first **per-match** view: a `MatchResultPanel`
+reached by a `#/match/<matchId>` deep link, showing a completed match's outcome
+and its participant roster. It is a **pure consumer** of the WP-406 result-LAGN
+producer (D-24217) — a live fetch of `GET /api/match/:matchId/result-lagn`,
+parsed via `@legendary-arena/lagn` types (no parser fork). It reads only the
+public labels WP-406 emitted (`player_id` = claimed handle + optional
+`display_name`) and **never joins an identity table**; a seat WP-406 omitted (no
+handle, bot, guest) renders **anonymous**, never back-filled. A 404 (unknown or
+in-progress match) renders a non-error empty state.
+
+The parsing / rostering / outcome logic lives in `panels/matchResultDisplay.ts`
+(node:test-unit-tested — the app does not mount SFCs in tests); the `.vue` is a
+thin renderer. Locally verified in the dev preview: the route mounts the panel,
+the error state renders when the API base is unset, and (against a mocked 200) the
+roster renders Victory + a named seat (`Ana` / `@ana-handle`), a handle-only seat,
+and an `Anonymous` omitted seat with no id leak.
+
+**Server-side amendment (beyond the drafted EC allowlist):** the guest-readable
+result endpoint is fetched cross-origin from `legends.legendary-arena.com`, so
+`apps/server/src/server.mjs` adds that origin (and the `legendary-arena-legends.pages.dev`
+alias) to the boardgame.io CORS `origins` list. Without it the browser fetch is
+CORS-blocked and the roster cannot render. The endpoint carries no credentials and
+exposes only already-public labels, so the allowance grants the browser nothing new.
+
+`legends-board` typecheck 0 (the load-bearing SFC gate); test **82 → 95 / 0**
+(+13); `pnpm -r build` 0. `@legendary-arena/lagn` added as a **devDependency**
+(type-only — erased at build; no runtime edge).
+
+**AC-6 / D-24026 live-verification remains open and is operator-gated.** To close it:
+1. Set **`VITE_LEGENDS_API_BASE_URL`** on the `legendary-arena-legends` Cloudflare
+   Pages project to the server API origin (the same host the arena-client's
+   `VITE_API_BASE_URL` points at, e.g. `https://api.legendary-arena.com`), then
+   redeploy legends-board. Deploy the server too (the CORS origin).
+2. Open `legends.legendary-arena.com/#/match/<a real completed matchId>` where a
+   seat has a **claimed handle**, and confirm the roster populates (drive the
+   terminal action — a rendered shell is not proof). If no such match exists yet,
+   the populated-roster path cannot be verified until one does; the empty/error
+   states verify regardless.
+
+This STATUS line flips to done once the deployed bundle shows a populated roster.
+
 ### WP-406 / EC-441 — Result-LAGN producer + writer flip to 1.4.0 (D-24216) (2026-07-20)
 
 **No user-observable change — infrastructure only** (its UI is WP-407/WP-408).

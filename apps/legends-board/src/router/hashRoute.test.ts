@@ -46,4 +46,21 @@ describe("parseHashRoute", () => {
       view: "attract",
     });
   });
+
+  it("a well-formed match hash resolves to the match view", () => {
+    assert.deepEqual(parseHashRoute("#/match/abc123-XYZ_9"), {
+      view: "match",
+      matchId: "abc123-XYZ_9",
+    });
+  });
+
+  it("a match hash missing the id falls back to attract", () => {
+    assert.deepEqual(parseHashRoute("#/match/"), { view: "attract" });
+  });
+
+  it("a match id with illegal characters or a path segment falls back to attract", () => {
+    assert.deepEqual(parseHashRoute("#/match/has space"), { view: "attract" });
+    assert.deepEqual(parseHashRoute("#/match/a/b"), { view: "attract" });
+    assert.deepEqual(parseHashRoute("#/match/bad!id"), { view: "attract" });
+  });
 });

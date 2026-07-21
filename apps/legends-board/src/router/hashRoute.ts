@@ -1,9 +1,10 @@
 /**
  * Hash router — the SPA's first (and only) navigation surface (WP-343).
  *
- * Two routes exist, locked by EC-373 §Locked Values:
+ * Routes:
  *   ''  or '#/'                  → the attract view
- *   '#/gauntlet/<boardName>'     → one gauntlet board view
+ *   '#/gauntlet/<boardName>'     → one gauntlet board view (EC-373)
+ *   '#/match/<matchId>'          → one match-result view (WP-407)
  *
  * Navigation is plain `<a href="#/...">` — no History API, no server
  * rewrite rules, so deep links work on the static Cloudflare Pages host
@@ -23,12 +24,23 @@ export interface GauntletRoute {
   readonly boardName: string;
 }
 
-export type HashRoute = AttractRoute | GauntletRoute;
+/** One match-result view, keyed by the completed match's id (WP-407). */
+export interface MatchRoute {
+  readonly view: "match";
+  readonly matchId: string;
+}
+
+export type HashRoute = AttractRoute | GauntletRoute | MatchRoute;
 
 // why: gauntlet board names come from the WP-342 publisher grammar
 // `gauntlet-<setAbbr>-<mastermindSlug>` — lowercase slugs and hyphens
 // only. Anything outside this shape is not a board we could fetch.
 const GAUNTLET_BOARD_PATTERN = /^gauntlet-[a-z0-9-]+$/;
+
+// why: a boardgame.io match id is a URL-safe token; accept only that shape so a
+// malformed `#/match/...` deep link degrades to attract instead of firing a
+// fetch for a nonsense id. Bounded length keeps a pathological hash out.
+const MATCH_ID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
 
 /**
  * Parses a `location.hash` value into a route.
@@ -48,6 +60,14 @@ export function parseHashRoute(hash: string): HashRoute {
     const boardName = hash.slice(gauntletPrefix.length);
     if (GAUNTLET_BOARD_PATTERN.test(boardName)) {
       return { view: "gauntlet", boardName };
+    }
+  }
+
+  const matchPrefix = "#/match/";
+  if (hash.startsWith(matchPrefix)) {
+    const matchId = hash.slice(matchPrefix.length);
+    if (MATCH_ID_PATTERN.test(matchId)) {
+      return { view: "match", matchId };
     }
   }
 
