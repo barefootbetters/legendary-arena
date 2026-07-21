@@ -9,6 +9,9 @@ tags:
   - open-standard
 related:
   - complete-game-fixtures.md
+  - data-file-locations.md
+  - r2-image-naming-convention.md
+  - music-authoring.md
 status: canonical
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\lagn-v1.md (this page — https://ewiki.legendary-arena.com/lagn-v1/)
@@ -18,7 +21,9 @@ source:
   - ../docs/ai/execution-checklists/EC-275-lagn-spec-publication.checklist.md
   - ../docs/ai/execution-checklists/EC-422-lagn-1-1-support-pools.checklist.md
   - ../packages/lagn-spec/src/migrate.ts
-last-reviewed: 2026-07-20
+  - ../packages/registry/src/heroImageUrl.ts
+  - ../apps/arena-client/src/components/play/CardTile.vue
+last-reviewed: 2026-07-21
 ---
 
 # LAGN Specification
@@ -521,6 +526,180 @@ re-export. The three-packet arc (D-24153 / D-24154 / D-24155) — **WP-361
 This reuses the same LAGN Tier-1 setup block documented above end-to-end: the
 server emits it, the client relays it, the viewer ingests it.
 
+## Card Images: Embed, Side-Cart, or Prefetch? (Design Discussion)
+
+> **Status: analysis + recommendation, not a locked decision.** This section
+> weighs whether card *image bytes* should ride inside a LAGN document (or a
+> companion bundle) so a live game never waits on an image mid-turn. It records
+> no `D-` entry and changes no schema. The recommended path (prefetch, below)
+> is the one to turn into a Work Packet if pursued; the two rejected paths are
+> documented so the question stays answered.
+
+### The question
+
+A LAGN file today references images by **URL**, never by bytes: Tier-2 card
+entries carry optional `image_url` / `image_thumb_url`, and the 1.2.0 provenance
+`image` block carries a `uri` (plus optional `mime_type` / `role`) — all strings,
+never embedded pixels. The proposal on the table is to change that: carry the
+actual image data with the notation so a match is fully self-contained, and — the
+real goal — **download every image a match needs during setup, so gameplay never
+stalls waiting on `images.legendary-arena.com`.**
+
+The instinct to keep bytes *out* of the LAGN is correct, and the "download it all
+at setup" goal is achievable **without** touching the file format at all. The rest
+of this section shows why, grounded in the real numbers.
+
+### Ground truth (measured)
+
+| Fact | Value | Source |
+|---|---|---|
+| Distinct card-face images (whole corpus) | **3,104** `.webp` across 41 sets | `grep` over `data/cards/*.json` (3,107 `imageUrl` refs) |
+| Typical image weight | ~**90–110 KB** (live: `2099` Doctor Doom **108 KB**, `core` Spider-Man **86 KB**) | `HEAD` on R2, 2026-07-21 |
+| Heavy-set outlier | `co2e` averages **~2.7 MB/image** (~408 MB / 151 images — unusually large scans) | [Card Image Acquisition](card-image-acquisition.md) |
+| Whole-corpus footprint | order of **~1–8 GB** depending on set mix — never embeddable | derived from the two rows above |
+| **Working set per match** | **known and bounded at setup** — every needed URL is already materialized in `G.cardDisplayData` → UIState; roughly **70–100 distinct images ≈ ~10–25 MB** for a 2–3-player game (set-dependent) | [`buildCardDisplayData.ts`](../packages/game-engine/src/setup/buildCardDisplayData.ts), estimate |
+| Format / host / CORS | `.webp`, `images.legendary-arena.com` (R2 bucket `legendary-images` + Cloudflare CDN), `Access-Control-Allow-Origin: *` | [`heroImageUrl.ts`](../packages/registry/src/heroImageUrl.ts), [Data & File Locations](data-file-locations.md) |
+| Client behavior today | **no prefetch, no service worker** — `CardTile.vue` renders `<img loading="lazy">`, which *defers* each load until the card nears the viewport | [`CardTile.vue`](../apps/arena-client/src/components/play/CardTile.vue) |
+
+Two facts drive everything below. First, **the working set is a small, bounded,
+fully-known subset** — not the 3,104-image corpus. The composition is fixed when
+the match is created (the same `matchConfiguration` the Tier-1 LAGN already
+projects, D-24153), and the client already holds every image URL it will ever need
+in `G.cardDisplayData` the moment setup completes. Second, **the current default is
+the opposite of prefetch**: `loading="lazy"` is exactly the mid-turn wait the
+proposal wants to kill — the first time a card scrolls into view, its bytes cross
+the wire.
+
+### Option A — Embed image bytes inside the LAGN (rejected)
+
+Base64-encode each image into the JSON (`data:` URIs in the `image` block, or a new
+bytes member).
+
+**Pros:** one fully self-contained artifact; a replay/audit bundle that works with
+no registry, no CDN, no network — a natural extension of the 1.2.0 audit-bundle idea
+to pixels.
+
+**Cons (decisive):**
+
+- **+33% on already-large bytes.** Base64 inflates binary by a third, and JSON can't
+  hold raw bytes. A ~15 MB working set becomes a ~20 MB JSON document.
+- **It breaks LAGN's transport.** LAGN travels in `?lagn=<base64url>` **URL params**
+  (WP-362) and in decorative saved loadouts. A multi-megabyte base64 blob is
+  categorically incompatible with a URL — the cross-surface loadout link would simply
+  stop working.
+- **It re-ships immutable bytes the CDN already caches.** Every card image is
+  immutable and content-addressable by filename. Embedding copies those bytes into
+  every shared record, defeating the browser HTTP cache and Cloudflare edge that would
+  otherwise serve a repeat card for free.
+- **It fights the project's asset invariant.** *Binaries live in R2; their metadata
+  lives in Postgres — never the reverse* ([Data & File Locations](data-file-locations.md)).
+  LAGN fixtures are committed to git; embedding bytes would put images in git, the exact
+  thing [D-24219](../docs/ai/DECISIONS.md) rejects for audio ("no size exception — a
+  non-diffable blob does not go in git").
+- **It taxes every consumer.** The Zod validator and derived JSON Schema stay cheap
+  precisely because a LAGN is small text. A validator that must ingest tens of MB per
+  document is a different, slower contract for every third-party tool.
+
+**Verdict: no.** Bytes-in-the-file trades a solved caching problem for a bloated,
+un-shareable, un-committable document. Jeff's instinct here is right.
+
+### Option B — A zip "side-cart" alongside the LAGN (rejected for live play; fine for offline archival)
+
+Ship the LAGN text lean (references only) plus a companion `images.zip` of the
+match's working-set `.webp` files — one downloadable bundle.
+
+**Pros:** keeps the notation itself lean and URL-safe; gives a genuinely **offline,
+R2-independent** archive — a "sealed replay" you can open years later even if the CDN
+is gone; a single download; zip dedupes repeats within the set.
+
+**Cons (for the live-play goal):**
+
+- **Zipping WebP buys almost nothing.** `.webp` is already compressed; DEFLATE over it
+  recovers ~0–3%. The "bundle" is essentially the raw bytes with a directory.
+- **It's all-or-nothing before first paint.** A zip must be fully downloaded and
+  unpacked before any image is usable — no progressive decode, no HTTP range, no
+  "show the starting hand first." That's *worse* first-card latency than streaming
+  individual images.
+- **It defeats cross-match cache reuse.** Bytes pulled from a zip don't populate the
+  HTTP cache under their canonical R2 URLs, so a hero you played last match is
+  re-downloaded inside every new match's zip instead of being a free cache hit.
+- **It re-solves a solved problem and adds a pipeline.** The images are already
+  immutable, CDN-fronted, and content-addressable. A zip adds a packaging step, a
+  hosting/MIME story, and a second artifact that can version-drift from its LAGN.
+
+**Verdict: the right tool for an *offline export* feature ("Download this match as a
+sealed bundle"), the wrong tool for the in-match prefetch.** If offline archival is
+wanted, produce the zip **on demand, server-side**, and never make it the default LAGN.
+
+### Option C — Prefetch the match working-set from R2 at setup (recommended)
+
+Leave the LAGN format unchanged (references only) and solve the actual goal —
+no mid-turn image wait — where it belongs: in the client, at setup. **This is the
+audio model applied to images.** Audio already does exactly this: R2 is the sole
+surface, nothing is bundled or committed, and *"the arena client prefetches a theme's
+stings into decoded audio buffers at match start rather than bundling audio into the
+build"* ([D-24219](../docs/ai/DECISIONS.md); [Music Authoring](music-authoring.md)).
+Card images are the same shape of problem with an even easier answer, because the
+working set is already enumerated on the client.
+
+**Mechanics:**
+
+1. **Enumerate.** At setup completion, iterate the `display.imageUrl` values already
+   present in `G.cardDisplayData` / UIState and dedupe. No registry access, no URL
+   reconstruction, no CORS concern (R2 serves ACAO `*`; `<img>`/`fetch` both work).
+   This yields the exact, complete working set — every image the match can show.
+2. **Warm the cache during dead time.** Fetch the set concurrently (a small cap,
+   ~6–8 in flight, to ride HTTP/2 multiplexing without head-of-line stalls) while the
+   player is on the setup/confirm screen — time they're already spending. Warm into
+   **Cache Storage via a service worker** (durable across reloads/reconnects) or, as a
+   first cut, the HTTP cache plus `createImageBitmap()` to pre-decode so first paint is
+   instant.
+3. **Prioritize first-visible cards.** Fetch the opening hand, the HQ/city, and the
+   mastermind first; background the rest. Even a slow connection then has the
+   first-needed pixels before first paint.
+4. **Fail soft and idempotent.** A failed prefetch is non-fatal — the card falls back
+   to today's lazy `<img>` load. A reconnect re-runs the pass and hits a warm cache, so
+   it's cheap to repeat.
+
+**Why it wins:** each unique image crosses the wire **at most once per client, ever**
+(immutable + cached), the whole set is warmed in one burst during setup instead of
+lazily mid-turn, and **nothing about the file format, git, or the CDN topology
+changes.** It is strictly less network traffic than today *and* strictly less than
+either embed or zip, which both re-ship cached bytes.
+
+**Prerequisite / highest-leverage fix — set immutable cache headers on the images.**
+A live `HEAD` on two card objects (2026-07-21) returned **no `Cache-Control` header and
+`cf-cache-status: DYNAMIC`** — i.e. Cloudflare is *not* edge-caching card images, and
+browser reuse falls back to heuristic `ETag`/`Last-Modified` revalidation. The images
+are immutable (filename encodes set/ribbon/slug/sides), so they should be served
+`Cache-Control: public, max-age=31536000, immutable`. That single R2/CDN config change
+is the biggest traffic reduction available: it makes the edge absorb the load and makes
+a previously-seen card free on every subsequent match — turning the setup prefetch from
+a per-match cost into a one-time-per-client cost. It is an operations change (bucket
+metadata / CDN cache rule), not a repo change, and it should land **before or with** the
+prefetch WP or the prefetch re-downloads more than it needs to.
+
+**Optional, format-level follow-on (not required):** a small optional LAGN *manifest* —
+URLs + content hashes of the working set, still **no bytes** — would hand a third-party
+prefetcher or verifier a ready-made, integrity-checkable list instead of making it
+re-derive the set. That aligns with the 1.2.0 provenance direction (`image.uri` +
+`source_hash`) and would be a future minor version, gated like every other optional
+block. It's a convenience, not a dependency — the client already computes the set
+locally — so it's noted here as a possibility, not a recommendation.
+
+### How this maps to the three asks
+
+- *"Add the images into the LAGN — which I discourage"* → **Option A, rejected.** The
+  discouragement is correct: it bloats the file, breaks the `?lagn=` URL transport, and
+  puts binaries in git.
+- *"A system to minimize network traffic play ↔ R2, all images downloaded during setup"*
+  → **Option C, recommended.** Enumerate the already-known working set at setup, warm it
+  concurrently into a durable cache during the setup screen, immutable-cache the objects
+  so repeats are free.
+- *"A zip side-cart to the LAGN — pros/cons"* → **Option B.** Useful only as an on-demand,
+  server-produced **offline archival** export; counter-productive for live play, where it
+  re-downloads CDN-cached bytes and blocks first paint on a full unpack.
+
 ## References
 
 - [WP-244 — LAGN Spec Publication](../docs/ai/work-packets/WP-244-lagn-spec-publication.md)
@@ -535,3 +714,11 @@ server emits it, the client relays it, the viewer ingests it.
   — Public repo (MIT; package-only snapshot of `packages/lagn-spec`)
 - [JSON Schema Standard (2020-12)](https://json-schema.org/draft/2020-12/json-schema-core.html)
   — Schema specification version
+- [Data & File Locations](data-file-locations.md) — the cross-asset locator map
+  ("binaries live in R2, metadata in Postgres, never the reverse")
+- [R2 Image Naming Convention](r2-image-naming-convention.md) — card-image
+  filename rules and the `images.legendary-arena.com` host
+- [Card Image Acquisition](card-image-acquisition.md) — the `.webp` pipeline and
+  the per-set size figures cited in the image discussion above
+- [Music Authoring](music-authoring.md) — the audio delivery model (R2 sole
+  surface; prefetch-at-match-start) that the card-image prefetch mirrors

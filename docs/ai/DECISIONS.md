@@ -31348,3 +31348,62 @@ children.
 **Drafted:** 2026-07-21.
 
 Protect this file.
+
+---
+
+### D-24221 — hero-play synergy-effect count (`lastPlayEffectsFired`) is an observability-only, hash-excluded `UIState` signal (reserved)
+
+**Status:** Reserved (Drafted 2026-07-21; not yet landed — flips to Active at WP-409 execution).
+
+**Decision.** Every hero card play records a deterministic count of the
+hero-ability effects that **fired** for that play, exposed to clients as a
+public `UIState.game.lastPlayEffectsFired` scalar, so the future client
+**tiered combo / synergy cue** (the ewiki
+[Sound Effects](https://ewiki.legendary-arena.com/sound-effects/) design
+reference, PR #891) has a real signal to escalate on.
+
+**What the count means.** `lastPlayEffectsFired` = the number of hero
+effects that reached execution for the just-played card — each
+`executeSingleEffect` that reached its `HERO_EFFECT_HANDLERS` dispatch plus
+each top-level `interpretHeroPrimitiveEffect` that ran. Effects skipped by
+an unmet synergy condition (`evaluateAllConditions` false) or by a safe
+`MVP_KEYWORDS` / magnitude gate are **not** counted; a play whose card has
+no hooks, or whose only hooks fail their conditions, yields `0`.
+
+**Why "effects fired," not "chain depth."** A hero play does **not**
+re-fire other cards' hooks — there is no re-entrant cascade.
+`executeHeroEffects` iterates the just-played card's hooks only, and
+"synergy" is realized as **conditional gating** (`heroClassMatch`/`[hc:X]`,
+`requiresTeam`, `requiresKeyword`, `distinctHeroClassesAtLeast`): a gated
+hook *unlocks* because other cards are already in play. So the honest,
+countable "how much did this play do" signal is the count of effects that
+fired — a synergy-unlocked hook adds to it. The field is named for that
+reality.
+
+**Shape.** A per-turn transient `G.lastPlayEffectsFired?: number` (reset to
+`0` in the play-phase `onBegin`, alongside `hasActedThisTurn` etc.), set by
+`applyCardPlay` from a widened `executeHeroEffects` return (`void → number`,
+mirroring the villain `VillainEffectResult[]` accumulator), projected
+**publicly** (played cards are face-up; no `uiState.filter.ts` redaction).
+
+**Determinism / hash.** The count is a pure tally over hook/effect
+iteration — deterministic and replay-faithful. Because **nothing reads it
+for rules** it is **observability-only**, and is **excluded from the
+`finalStateHash` oracle** (`hashGameState.ts`, the same rest-destructure
+that excludes `messages` / `logMeta` per D-24081 / D-24114). Every recorded
+sentinel/golden `finalStateHash` therefore stays byte-unchanged — **no
+re-pin**. The whole-`G` `computeStateHash` / `PRE_WP080_HASH` determinism
+gate is handled with a matching exclusion or a deliberate, reasoned re-pin
+(the dual-oracle hazard), never a silent shift.
+
+**Boundary.** No new `NotableGameEvent` variant is added — the UIState
+scalar is the deliberate lighter path than a 7th event (which would churn
+the drift arrays, put a growing stream in the hash, and force an
+arena-client overlay backfill). No client audio in the reserving WP; the
+combo-cue playback and the whole client audio layer are a separate, future
+WP.
+
+**Packet:** WP-409 (EC-444).
+**Drafted:** 2026-07-21; not yet landed.
+
+Protect this file.
