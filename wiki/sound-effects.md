@@ -185,11 +185,22 @@ power** — is specified on
   **hero's** major motif — its team's key, its class's instrument. The
   client knows the hero from the local move and HQ / in-play state.
 
+Each of the 26 teams is pinned to one of the **twelve chromatic root notes**
+(all twelve are in use), with the *side* setting the mode — **major for the
+heroes, minor for the villains/masterminds**, and each villain group mirrored
+onto the **same root as the hero team it opposes** (S.H.I.E.L.D. G major ↔
+HYDRA G minor, X-Men D major ↔ Brotherhood D minor, and so on). The client
+picks the playback key straight from the acting entity's team; it never has
+to know music theory, just the team id. The full team→key table (and the
+class→instrument map that picks the *timbre*) is the authoritative
+composition data on
+[Music Authoring → Team → key](music-authoring.md#team-keys).
+
 Because teammates share a key, two heroes comboing produces **consonant,
 harmonizing** motifs — a musical reward for on-team synergy that pairs with
 the [tiered combo cue](#tiered-combo) below. Motifs are tiny authored
-phrases, so they live in the **SFX sprite** alongside the discrete clips
-(the long adaptive loops stay separate — see below).
+three-note phrases, so they live in the **SFX sprite** alongside the discrete
+clips (the long adaptive loops stay separate — see below).
 
 > **Signal note.** Motif *selection* needs only the acting entity's
 > identity (class / team / alignment), which the client already has: the
@@ -649,11 +660,14 @@ unusable on a revenue-generating site.
   optional; v1 SFX can proceed without them, but the combo cue is blocked
   until (3) exists.
 - **Motif matrix — playback wiring.** The motif *grammar* is settled on
-  [Music Authoring](music-authoring.md#motif-matrix); open here is where
-  the class→instrument / team→key lookup tables and per-entity note phrases
-  live (a registry data file is the likely fit), and which WP wires motif
-  *selection* into the [audio layer](#motif-cues). No new engine event is
-  needed to pick a motif — only the data and the playback code.
+  [Music Authoring](music-authoring.md#motif-matrix), and the team→key and
+  class→instrument lookup tables now exist as authoring data
+  (`C:\pcloud\LA\audio\audio-motif-map.json`). Open here is where that data
+  should live *at runtime* for the client to consume (a registry data file
+  is the likely fit) and the still-unwritten **per-entity note phrases**,
+  plus which WP wires motif *selection* into the [audio layer](#motif-cues).
+  No new engine event is needed to pick a motif — only the data and the
+  playback code.
 - **Music: re-sequencing now, stems later?** Ship horizontal
   re-sequencing with CC0 loops for v1; revisit vertical layering only
   if a custom stemmed score is commissioned.
