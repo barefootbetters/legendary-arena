@@ -4,6 +4,7 @@ type: Guide
 tags:
   - audio
   - music
+  - motif
   - themes
   - suno
   - r2
@@ -19,7 +20,7 @@ source:
   - ../content/themes/CATALOG.md
   - ../content/themes/THEME-INDEX.md
   - ../docs/ai/DECISIONS.md
-last-reviewed: 2026-07-20
+last-reviewed: 2026-07-21
 ---
 
 # Music Authoring
@@ -36,7 +37,10 @@ stay local on pCloud; 320 kbps MP3s are the distribution format, and
 `themeSchemaVersion: 2` theme JSON. No audio is committed to git. This
 page is `draft`: the runtime contract (theme JSON music fields) is
 settled and tracked, but production is in progress and the working audio
-lives on pCloud, not in the repo (see Edge Cases).
+lives on pCloud, not in the repo (see Edge Cases). Beyond those
+scenario-level assets, this page also specs the **motif matrix** (below) —
+a per-entity leitmotif grammar that gives every hero, mastermind, and
+scheme its own short signature phrase, keyed to class, team, and alignment.
 
 ## Mechanics
 
@@ -153,6 +157,47 @@ To avoid a per-cue R2 round-trip on time-critical stings (e.g.
 into decoded audio buffers at match start** rather than bundling audio
 into the build.
 
+### The motif matrix (per-entity leitmotifs) {#motif-matrix}
+
+Separate from the eight scenario assets above is a second, finer authoring
+track: a **leitmotif grammar** that gives every *entity* — each hero,
+mastermind, scheme, and villain group — a short signature phrase (a handful
+of notes) that plays the instant that entity acts. Where `MT01`–`ES04` are
+**scenario-level** (one identity per theme), motifs are **entity-level**:
+the cue you hear on a Master Strike, a Scheme Twist, or a hero's play is
+assembled from *who* is on the board, not just *which* scenario is loaded.
+
+The grammar is a matrix — pick a value on each axis and the motif nearly
+writes itself:
+
+| Axis | Drives | Example |
+|---|---|---|
+| **Alignment** (hero vs. villain) | **major** key = heroes; **minor** key = villains / masterminds / schemes | A hero's phrase resolves bright; a Mastermind's lands dark |
+| **Hero class** (Strength, Instinct, Covert, Tech, Ranged, …) | **which instrument** carries the phrase | Strength → low brass; Covert → muted / pizzicato strings; Tech → synth |
+| **Hero team** (X-Men, X-Factor, Avengers, …) | **which key** the phrase is written in | X-Men in one key, Avengers in another — so teammates harmonize |
+| **Power / magnitude** | the **interval size** of the phrase | A small step for a minor effect; a wide leap for a big one |
+| **Per-entity fill** | the **actual notes** | Each hero, scheme, and mastermind gets its specific phrase written into the cell |
+
+The locked rules, in one line: **major for heroes, minor for villains,
+class picks the instrument, team picks the key, interval size signals
+power** — then you go cell by cell and fill in the notes for each hero,
+scheme, and mastermind.
+
+Because two heroes on the same team share a key, their motifs
+**harmonize** when they combo — the score itself tells you a synergy
+landed. That musical harmony is the bespoke-music counterpart to the
+client-side [tiered combo cue](sound-effects.md#tiered-combo).
+
+**Production note — motifs are authored, not cropped.** Unlike the Suno
+derivatives above, a motif is a two-to-five-note phrase best sequenced from
+a small, consistent sampled instrument set (one instrument per class, one
+key per team) so every motif shares tuning and timbre. They are tiny, so
+they can live in the client SFX sprite rather than as separate R2 tracks —
+see [Sound Effects](sound-effects.md#motif-cues). The per-theme **`ES02`
+master-strike sting** and a Mastermind's **minor motif** cover the same
+instant; whether they layer (theme sting + entity motif) or the motif
+supersedes the generic sting is an open reconciliation (below).
+
 ### Listen: a produced theme
 
 The one derivative produced so far — the *Age of Apocalypse*
@@ -230,6 +275,19 @@ the `audio` shortcode (see [Ewiki Authoring](ewiki-authoring.md)):
   notable-event SFX cover the same in-game moments; whether both play,
   or the theme sting supersedes the generic clip, is an open design
   question.
+- **Motif matrix — data home and layering.** The grammar is settled
+  (class → instrument, team → key, alignment → major/minor, interval →
+  power), but two things are open: (1) *where the lookup tables live* — a
+  class→instrument map, a team→key map, and the per-entity note phrases
+  are new data that needs a home (theme JSON is scenario-level and the
+  wrong scope; a dedicated registry data file is the likelier fit); and
+  (2) *how a motif and the per-theme `ES02` master-strike sting combine* —
+  layer both, or let the entity motif supersede the generic sting. Both
+  are unresolved and want a D-entry before production.
+- **Motif matrix — playback WP.** Which WP produces the motif sampler and
+  wires motif *selection* (from the acting entity's class / team /
+  alignment) into the arena-client audio layer is unscoped — see the
+  playback side on [Sound Effects](sound-effects.md#motif-cues).
 
 ## References
 
