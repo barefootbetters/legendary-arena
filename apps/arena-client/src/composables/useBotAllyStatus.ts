@@ -86,6 +86,17 @@ export function useBotAllyStatus(matchId: string): BotAllyStatusState {
       timer = null;
       void pollOnce();
     }, BOT_ALLY_STATUS_POLL_MS);
+    // why: unref the poll timer so it never holds a Node process open on its
+    // own — a component mounted in node:test (e.g. the live-branch App tests)
+    // that is not explicitly unmounted must not keep the test runner alive on
+    // this background poll. In the browser `setTimeout` returns a number with no
+    // `unref`, so the guard skips it and behavior there is unchanged; the poll
+    // still fires normally in both environments and is cleared on terminal +
+    // unmount.
+    const scheduledTimer = timer as unknown as { unref?: () => void };
+    if (typeof scheduledTimer.unref === 'function') {
+      scheduledTimer.unref();
+    }
   }
 
   /**
