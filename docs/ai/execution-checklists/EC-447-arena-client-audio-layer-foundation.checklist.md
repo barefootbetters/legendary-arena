@@ -17,6 +17,7 @@
 - R2 prefix: `audio/sound-effects/` on `images.legendary-arena.com`.
 - Settings: localStorage-persisted `isMuted` (boolean) + `volume` (0..1); default unmuted, moderate volume.
 - Consumer rule: OWN cursor; catch up to length on first valid frame (NO history replay); one clip per newly-appended event, index order; NO auto-dismiss throttle.
+- Wiring host = `src/pages/PlayViewport.vue` (the shared composable root); snapshot source = `useUiStateStore` pinia store (`storeToRefs(store).snapshot`) — the SAME store `PlayDesktop.vue`'s overlay reads. Do NOT prop-pass; do NOT add a second wiring host.
 - Reserved decision: **D-24224** (land Active at close).
 
 ## Guardrails
@@ -45,7 +46,7 @@
 - `apps/arena-client/src/composables/useSoundEffects.test.ts` — **new**
 - `apps/arena-client/src/composables/useAudioSettings.test.ts` — **new**
 - `apps/arena-client/src/components/play/AudioControls.test.ts` — **new**
-- Play root host (`PlayViewport.vue` OR `PlayDesktop.vue`/`PlayMobile.vue`) — **modified (`01.5` wiring; record which)** — mount engine + `useSoundEffects` + `AudioControls`
+- `apps/arena-client/src/pages/PlayViewport.vue` — **modified (`01.5` wiring — the single host)** — in `setup` (beside `useSkinApplier`/`useCardImagePrefetch`/`useCompetitiveSubmitOnGameover`): read the `useUiStateStore` snapshot (`storeToRefs`), mount the engine + `useSoundEffects(snapshot)`, render `AudioControls` fixed-position
 
 ## After Completing
 - [ ] `pnpm -r build` exits 0.

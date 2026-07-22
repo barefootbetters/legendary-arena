@@ -6,6 +6,14 @@
 **User-Visible Surface:** `play.legendary-arena.com`
 
 > Baseline: `origin/main` at commit `2ba385d1` (WP-409 exec).
+>
+> **Refinement 2026-07-21 (post-WP-410 exec, SPEC):** the `01.5` wiring host is
+> pinned to `src/pages/PlayViewport.vue` and the snapshot source to the
+> `useUiStateStore` pinia store (RS-1 resolved — WP-410's execution confirmed
+> `PlayViewport` as the shared composable root). The `NotableGameEventType`
+> union is verified **unchanged** (still the six variants; the `escapeResolved`
+> in the engine file is a deferred-WP-186 comment reference, not a member).
+> Re-baseline to current `origin/main` at execution.
 
 ---
 
@@ -74,9 +82,12 @@ game.
 - `apps/arena-client/src/composables/useNotableEventStream.ts` exists and
   exports the `NotableGameEvent = UIState['notableEvents'][number]` alias +
   the cursor/catch-up pattern this WP parallels for audio.
-- The arena-client mounts a UIState snapshot ref at the play root
-  (`PlayViewport` / `PlayDesktop` / `PlayMobile`) that the overlay already
-  consumes; the audio layer mounts against the **same** snapshot.
+- The arena-client exposes the live UIState via the `useUiStateStore` pinia
+  store — `storeToRefs(store).snapshot` — the same snapshot `PlayDesktop.vue`
+  feeds to `useNotableEventStream`. `src/pages/PlayViewport.vue` is the shared
+  composable root: WP-130's `useSkinApplier`, WP-410's `useCardImagePrefetch`,
+  and `useCompetitiveSubmitOnGameover` all mount in its `setup`. The audio layer
+  mounts at that same root and reads the same store snapshot (no prop chain).
 - A localStorage settings precedent exists in the client
   (`useSkinApplier` / `SkinSelector`) for the mute/volume persistence pattern.
 - `apps/arena-client` uses Vue 3 + `node:test`; `howler` is **not** currently a
@@ -100,9 +111,14 @@ If any of the above is false, this packet is **BLOCKED** and must not proceed.
   keys on the same discriminator.
 - The `useSkinApplier` / `SkinSelector` composable + component — the localStorage
   read/write + settings-UI precedent to mirror for mute/volume.
-- The play root (`PlayViewport` / `PlayDesktop` / `PlayMobile`) — where the
-  overlay stream is mounted; the audio engine + `useSoundEffects` mount once at
-  the same root against the same snapshot.
+- `src/pages/PlayViewport.vue` — the shared composable root (mounts
+  `useSkinApplier`, `useCardImagePrefetch`, `useCompetitiveSubmitOnGameover` in
+  `setup`); the audio engine + `useSoundEffects` mount here and read the
+  `useUiStateStore` snapshot (`storeToRefs`). `src/pages/PlayDesktop.vue`
+  already invokes `useNotableEventStream(snapshot)` from that same store — the
+  audio consumer is the **sibling reader** of the store, not a prop consumer.
+- `src/stores/uiState.ts` (`useUiStateStore`) — the pinia store exposing the
+  `snapshot` ref both the overlay and the audio layer read.
 - `docs/ai/ARCHITECTURE.md` — engine owns truth / UI consumes read-only
   projections; the audio layer never writes `G`, never affects an outcome, adds
   zero determinism footprint.
@@ -215,10 +231,13 @@ If any of the above is false, this packet is **BLOCKED** and must not proceed.
 - A small mute toggle + volume slider bound to `useAudioSettings`, plus the
   first-interaction arm. Mounted unobtrusively in the play HUD.
 
-### G) Wiring (play root — `PlayViewport.vue` **or** `PlayDesktop.vue`/`PlayMobile.vue`, **modified**; `01.5` runtime-wiring)
-- Mount the audio engine init + `useSoundEffects(snapshot)` once at the play
-  root against the same UIState snapshot the overlay consumes, and place
-  `AudioControls`. (`01.5` wiring — the exact host file is recorded in the EC.)
+### G) Wiring (`src/pages/PlayViewport.vue`, **modified**; `01.5` runtime-wiring — ONE host)
+- In `PlayViewport.vue`'s `setup` (alongside `useSkinApplier` /
+  `useCardImagePrefetch` / `useCompetitiveSubmitOnGameover`), read the
+  `useUiStateStore` snapshot (`storeToRefs`) and mount the audio engine init +
+  `useSoundEffects(snapshot)`; render `AudioControls` **fixed-position at the
+  viewport root**. Keeping both the logic and the control in this ONE file holds
+  the `01.5` wiring to a single host — no separate HUD-component edit.
 
 ### H) Tests
 - `audioEngine.test.ts` — mocked `Howl`: play dispatch, mute-skips, volume gate,
@@ -265,9 +284,9 @@ If any of the above is false, this packet is **BLOCKED** and must not proceed.
 - `apps/arena-client/src/composables/useSoundEffects.test.ts` — **new**
 - `apps/arena-client/src/composables/useAudioSettings.test.ts` — **new**
 - `apps/arena-client/src/components/play/AudioControls.test.ts` — **new**
-- Play root host (`PlayViewport.vue` **or** `PlayDesktop.vue`/`PlayMobile.vue`) — **modified (`01.5` wiring)** — mount the engine + `useSoundEffects` + `AudioControls`
+- `apps/arena-client/src/pages/PlayViewport.vue` — **modified (`01.5` wiring — the single host)** — mount the engine + `useSoundEffects(useUiStateStore snapshot)` + render `AudioControls` fixed-position
 
-No other files may be modified. The `01.5` wiring host is recorded in the EC.
+No other files may be modified. The `01.5` wiring host is `PlayViewport.vue` (recorded in the EC).
 
 ---
 
@@ -410,9 +429,12 @@ All 21 sections resolved against `docs/ai/REFERENCE/00.3-prompt-lint-checklist.m
 - **Contract fidelity:** the audio consumer mirrors `useNotableEventStream`'s
   cursor/catch-up (no history replay) but fires per-event with no throttle; the
   manifest keys on the six-variant discriminator the overlay already uses.
-- **RS-1 (clarification, non-blocking):** the exact play-root host for the
-  `01.5` wiring (`PlayViewport` vs `PlayDesktop`/`PlayMobile`) is the executor's
-  call from the current mount structure; recorded in the EC once chosen.
+- **RS-1 (RESOLVED 2026-07-21, post-WP-410 exec):** the `01.5` wiring host is
+  `src/pages/PlayViewport.vue` — the shared composable root where WP-410's
+  `useCardImagePrefetch` and WP-130's `useSkinApplier` already mount; the audio
+  layer reads the `useUiStateStore` snapshot there (the same store
+  `PlayDesktop.vue`'s overlay reads via `useNotableEventStream`), and renders
+  `AudioControls` fixed-position — one wiring file.
 - **PS items (blocking):** none. (Live D-24026 verification depends on the CC0
   clips being uploaded to R2 — an operator prerequisite, not a code blocker.)
 
