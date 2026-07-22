@@ -31792,9 +31792,9 @@ increment is `markBotAllyMatchRevived`.
 
 Protect this file.
 
-### D-24231 — the play surface polls the bot-ally status surface and renders a co-op stall banner only on an abnormal stop, with a client-only escape (reserved)
+### D-24231 — the play surface polls the bot-ally status surface and renders a co-op stall banner only on an abnormal stop, with a client-only escape
 
-**Status:** Reserved (drafted 2026-07-22 for WP-415 / EC-450; lands at execution).
+**Status:** Active (landed 2026-07-22, WP-415 / EC-450).
 
 **Context.** D-24229 adds a read-only bot-ally status surface; the human-facing
 half — telling the player their bot ally has stopped — is a client concern on
@@ -31823,6 +31823,10 @@ invisible: a stopped bot still reads as a silent freeze.
    import.
 
 **Packet:** WP-415 (EC-450).
-**Drafted:** 2026-07-22; not yet landed.
+**Landed:** 2026-07-22 (WP-415 / EC-450). Files: `lib/api/botAllyApi.ts`
+(`fetchBotAllyStatus`, throws on non-2xx), `composables/useBotAllyStatus.ts`
+(`BOT_ALLY_STATUS_POLL_MS`, self-scheduling `setTimeout`, stop-on-terminal/unmount),
+`components/BotAllyStallBanner.vue` (`BOT_ALLY_STALL_FALLBACK_MESSAGE`, injected
+`returnToLobby`), wired at `pages/PlayViewport.vue` (`returnToLobby` navigates to `/`).
 
 Protect this file.

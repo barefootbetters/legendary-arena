@@ -7,6 +7,38 @@
 
 ## Current State
 
+### WP-415 / EC-450 — Bot-Ally Stall Banner (Client) (D-24231) (2026-07-22)
+
+**Client half of the bot-ally freeze fix. `User-Visible Surface = play.legendary-arena.com`.
+Consumes WP-414's status surface (landed first, PR #926) to tell the human when their
+bot ally has stopped. Code merged; the D-24026 live-verify (AC-6, banner-on-stall vs
+healthy-silent) is OPEN and operator-gated on the deploy.**
+
+**What it adds.** A `useBotAllyStatus` composable probes `GET /api/match/:matchId/
+bot-ally-status` once on mount; a non-bot-ally match reports `absent` and it stops
+entirely (never polls again), while a real bot-ally match is polled at
+`BOT_ALLY_STATUS_POLL_MS` until a terminal status (cleared on terminal **and** on
+unmount — no leaked timer). When the bot ally stopped abnormally (`driving === false`
+AND status not `completed`/`absent`), a `BotAllyStallBanner` renders the server's
+public-safe `message` **verbatim** (or a fixed co-op fallback when null) with a
+**client-only Return-to-lobby** navigation (to `/`) — no new server endpoint, no
+auto-invoked destructive action. A healthy match, a normally-`completed` match, and every
+non-bot-ally match render nothing. A fetch error is **fail-soft** (a network blip never
+sets `hasStopped`; retried next tick). Mounted once at the D-16501 `PlayViewport`
+play-root (the WP-410/412 `01.5` wiring precedent). Pure client presentation — HTTP-only,
+no runtime `@legendary-arena/registry`/`server` import, no `G`/`ctx` read; §23(b) co-op
+framing on every string.
+
+**Tests.** arena-client typecheck 0; `pnpm -r build` 0; +17 tests — the API wrapper
+(typed parse, throws full-sentence on non-2xx/network/unparseable), the composable
+(`absent` stops after one probe, `active` keeps polling, `faulted` sets `hasStopped`+
+message then stops, `completed` never sets it, fail-soft retry, empty-matchId no-op,
+timer cleared on unmount), and the banner (hidden unless `hasStopped`, server message vs
+fallback, Return-to-lobby invokes the injected navigation, §23(b) copy).
+
+**Closes the bot-ally freeze arc** (WP-414 server + WP-415 client). Separate from the
+all-bot "Watch Bot Play" autoplay loop (`autoplay.mjs`), which remains its own follow-on.
+
 ### WP-414 / EC-449 — Bot-Ally Stall Surfacing + Restart Revival (Server) (D-24229, D-24230) (2026-07-22)
 
 **Server resilience for the solo bot-ally co-op path. `User-Visible Surface =
