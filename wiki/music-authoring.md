@@ -275,16 +275,36 @@ Because two heroes on the same team share a key, their motifs
 landed. That musical harmony is the bespoke-music counterpart to the
 client-side [tiered combo cue](sound-effects.md#tiered-combo).
 
-**Production note — motifs are authored, not cropped.** Unlike the Suno
-derivatives above, a motif is a locked three-note phrase best sequenced from
-a small, consistent sampled instrument set (one instrument per class, one
-key per team — see the [team→key](#team-keys) and class→instrument tables
-above) so every motif shares tuning and timbre. They are tiny, so
-they can live in the client SFX sprite rather than as separate R2 tracks —
-see [Sound Effects](sound-effects.md#motif-cues). The per-theme **`ES02`
-master-strike sting** and a Mastermind's **minor motif** cover the same
-instant; whether they layer (theme sting + entity motif) or the motif
-supersedes the generic sting is an open reconciliation (below).
+**Production note — motifs are generated, not cropped.** Unlike the Suno
+derivatives above, a motif is a locked three-note phrase produced
+deterministically from the motif map by
+[`generate-motifs.mjs`](../content/media/motifs/generate-motifs.mjs)
+(D-24225): the `.mid` is the master, rendered to a WAV + a 320 kbps MP3 by
+**MuseScore** (the default renderer — its bundled sampled instruments) or a
+dependency-free Node **synth** fallback, one instrument per class and one key
+per team (see the [team→key](#team-keys) and class→instrument tables above) so
+every motif shares tuning and timbre. They are tiny, so they live in the client
+SFX sprite rather than as separate R2 tracks — see
+[Sound Effects](sound-effects.md#motif-cues). When the per-theme **`ES02`
+master-strike sting** and a Mastermind's **minor motif** cover the same instant,
+the two **layer** — the theme sting at full level, the entity motif on top at
+**−6 to −9 dB** (motif = identity, sting = scenario weight; D-24226).
+
+### Production priority (what improves play first)
+
+The highest-leverage order front-loads emotional payoff and on-team synergy
+visibility over breadth:
+
+1. **Age of Apocalypse full set** + wire the match-start sting prefetch.
+2. **Master Strike + Scheme Twist stings** for the next 3–4 most-played themes.
+3. **Motif matrix** — the five class instruments × team keys. ✅ *Done:* the
+   generator (D-24225) has produced the full 25-team × 5-class grid (125 motifs)
+   on pCloud; remaining is R2 / SFX-sprite delivery and the playback wiring.
+4. **Ambient-loop + danger-meter crossfade** (see [Sound Effects](sound-effects.md)).
+5. **Hero themes** — only after the match-level system is solid.
+
+Motifs render fast and deterministically, so breadth there is cheap; the
+theme-level assets (1, 2, 4) are the scarce, high-payoff work.
 
 ### Listen: a produced theme
 
@@ -364,23 +384,21 @@ the `audio` shortcode (see [Ewiki Authoring](ewiki-authoring.md)):
   documented here.
 - **Production R2 domain.** When `music.barefootbetters.com` goes live,
   the demo above should be re-pointed at the canonical theme URL.
-- **Sting vs SFX reconciliation.** The `ES01`–`ES04` stings and the
-  notable-event SFX cover the same in-game moments; whether both play,
-  or the theme sting supersedes the generic clip, is an open design
-  question.
-- **Motif matrix — data home and layering.** The grammar is settled
-  (class → instrument, team → key, alignment → major/minor, interval →
-  power), but two things are open: (1) *where the lookup tables live* — a
-  class→instrument map, a team→key map, and the per-entity note phrases
-  are new data that needs a home (theme JSON is scenario-level and the
-  wrong scope; a dedicated registry data file is the likelier fit); and
-  (2) *how a motif and the per-theme `ES02` master-strike sting combine* —
-  layer both, or let the entity motif supersede the generic sting. Both
-  are unresolved and want a D-entry before production.
-- **Motif matrix — playback WP.** Which WP produces the motif sampler and
-  wires motif *selection* (from the acting entity's class / team /
-  alignment) into the arena-client audio layer is unscoped — see the
-  playback side on [Sound Effects](sound-effects.md#motif-cues).
+- **Sting vs generic-clip reconciliation.** For a moment covered by both a
+  per-theme `ES01`–`ES04` sting *and* a generic CC0 notable-event clip,
+  whether both play or the theme sting supersedes the generic one is still
+  open. (The narrower motif × theme-sting case is settled — they layer at
+  −6/−9 dB, D-24226 — but this theme-vs-generic axis is separate.)
+- **Motif matrix — data home & layering (resolved).** The lookup data ships
+  as a **slim runtime registry generated into the arena-client build** from
+  `audio-motif-map.json`, which stays authoritative on pCloud (D-24227); and a
+  motif **layers on top of** the theme `ES02` sting at −6 to −9 dB (D-24226).
+  The generator that produces the motifs is D-24225.
+- **Motif matrix — playback WP.** Which WP produces the sampler-backed SFX
+  sprite and wires motif *selection* (from the acting entity's class / team /
+  alignment) into the arena-client audio layer is still unscoped — see the
+  playback side on [Sound Effects](sound-effects.md#motif-cues). (The lookup
+  *data* home is now settled, D-24227.)
 
 ## References
 
@@ -390,7 +408,11 @@ the `audio` shortcode (see [Ewiki Authoring](ewiki-authoring.md)):
   the optional `musicTheme` / `musicAIPrompt` / `musicAssets` fields);
   D-22101 (later additive fields kept v2 without a bump); D-24219 (audio
   storage lock: R2 is the sole delivery surface, masters live on
-  `C:\pcloud\LA\audio\`, nothing audio in git).
+  `C:\pcloud\LA\audio\`, nothing audio in git); D-24225 (the motif generator
+  — deterministic MIDI-master + MuseScore-default / synth-fallback render,
+  outputs on pCloud); D-24226 (motif layers on the theme sting at −6/−9 dB);
+  D-24227 (motif lookup ships as a slim runtime registry generated into the
+  client build).
 - `C:\pcloud\LA\audio\audio-motif-map.json` — the motif system data
   (team keys, class instruments, rules) this page's [motif matrix](#motif-matrix)
   documents.
