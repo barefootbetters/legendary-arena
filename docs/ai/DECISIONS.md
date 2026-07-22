@@ -31549,4 +31549,85 @@ Closes the ewiki [Sound Effects](https://ewiki.legendary-arena.com/sound-effects
 **Packet:** WP-412 (EC-447).
 **Drafted:** 2026-07-21. **Landed:** 2026-07-21 (WP-412 / EC-447 execution — PlayViewport `01.5` wiring host; `pnpm -r build` 0, arena-client typecheck 0, 1015 tests pass). Live-on-surface (D-24026) rides the CC0 clips being uploaded to R2.
 
+### D-24225 — motifs are generated deterministically from `audio-motif-map.json` (MIDI master, MuseScore-default render, synth fallback); outputs live on pCloud, only the generator is tracked (Active)
+
+**Status:** Active (2026-07-22; landed via PR #910).
+
+**Decision.** The per-entity **motif matrix** (three-note leitmotifs; see the
+ewiki [Music Authoring](https://ewiki.legendary-arena.com/music-authoring/#motif-matrix)) is produced by a deterministic
+generator, `content/media/motifs/generate-motifs.mjs`, locked as follows.
+
+1. **Source of truth.** `C:\pcloud\LA\audio\audio-motif-map.json` is the
+   authoritative map (team → root / mode / family, class → instrument, and the
+   mode / resolution-direction / interval / mirroring rules). The generator
+   reads it; the tables are never hand-transcribed into code.
+2. **Grammar → notes.** Per `(team × class)`: team → key, class → instrument +
+   register, side → mode + resolution direction (hero major / rising; villain &
+   grey minor / falling — exact inversions), power → the **standard-card**
+   interval default (root–3rd–5th). Wider power intervals are a play-time
+   modifier, not baked into the stored file. Neutral Unaffiliated has no key so
+   it gets no motif.
+3. **MIDI is the master.** Each motif is written as a Standard MIDI File (a GM
+   program per class) — the invariant, re-renderable at any fidelity without
+   changing a note — then rendered to a trimmed WAV + a 320 kbps MP3
+   (`loudnorm=I=-13`, matching theme-sting loudness).
+4. **Two renderers.** **MuseScore 4** headless CLI + its bundled MS Basic
+   sampled instruments is the **default** (whole batch in one boot via a `-j`
+   job file); a dependency-free Node **synth** (`--synth`) is the fallback when
+   MuseScore is absent or for a tool-free build.
+5. **Storage (per D-24219).** Only the generator + README are tracked (the
+   `.mjs` is force-added, since `content/media/**` is otherwise gitignored);
+   every `.mid` / `.wav` / `.mp3` output lives on pCloud
+   (`C:\pcloud\LA\audio\motifs\`), never in git. Naming: `<team-slug>_<class>`.
+6. **Delivery.** Published motif MP3s (or a packed **SFX sprite** assembled from
+   them) go to R2 under `audio/motifs/` on the `legendary-images` bucket — the
+   sole audio delivery surface. Motifs are tiny, so the client keeps them in the
+   sprite alongside the discrete SFX rather than fetching each one.
+
+Extends the audio system of D-24224 (the SFX foundation) into the motif matrix.
+
+**Packet:** PR #910 (motif generator). **Landed:** 2026-07-22.
+
+### D-24226 — a played entity’s motif layers ON TOP OF the theme’s event sting at −6 to −9 dB (motif = identity, sting = scenario weight) (Reserved)
+
+**Status:** Reserved (design decision, 2026-07-22; flips to Active when the future audio-playback WP implements it).
+
+**Decision.** When a single moment fires both a per-theme **event sting** (an
+`ES01`–`ES04` crop, scenario-level) and a per-entity **motif** (the acting
+Mastermind / Scheme / hero, entity-level) — e.g. a Master Strike is both the
+`ES02` theme sting and the Mastermind’s minor motif — the two **layer**: the
+theme sting plays at full level and the entity motif plays **on top at −6 to
+−9 dB**. The sting carries scenario weight; the motif carries identity. This
+is chosen over "the motif supersedes the generic sting" for maximum clarity and
+to avoid a which-one-wins branch. (The brief music-bed duck on one-shot stings
+per D-24224 / the SFX design still applies.)
+
+Closes the "sting vs SFX / motif layering" Open Question on the ewiki
+[Music Authoring](https://ewiki.legendary-arena.com/music-authoring/#motif-matrix) and [Sound Effects](https://ewiki.legendary-arena.com/sound-effects/#motif-cues) pages.
+
+**Landed:** 2026-07-22 (doc).
+
+### D-24227 — motif lookup data ships as a slim runtime registry generated into the client build from `audio-motif-map.json`; the pCloud JSON stays authoritative (Reserved)
+
+**Status:** Reserved (design decision, 2026-07-22; flips to Active when the future audio-playback WP implements it).
+
+**Decision.** The client selects a motif from the acting entity’s identity
+(team → key, class → instrument, side → mode) plus its per-entity note phrase.
+That lookup data does **not** live in engine `G` / `ctx` (motif selection is
+pure client presentation, per D-24224) and does **not** ship as the full
+authoring map. Instead:
+
+1. `C:\pcloud\LA\audio\audio-motif-map.json` remains the **authoritative
+   source** (pCloud, per D-24219 / D-24225).
+2. A **slim runtime registry** — only the fields the client needs for selection
+   — is **generated into the `apps/arena-client` build** from that map (a
+   build-time projection, not a hand-maintained copy).
+3. No new engine event is needed to *pick* a motif — the acting entity’s class /
+   team / alignment already reach the client via match configuration + `UIState`.
+
+Closes the "motif data home / runtime registry" Open Question on the ewiki
+[Music Authoring](https://ewiki.legendary-arena.com/music-authoring/#motif-matrix) and [Sound Effects](https://ewiki.legendary-arena.com/sound-effects/#motif-cues) pages.
+
+**Landed:** 2026-07-22 (doc).
+
 Protect this file.

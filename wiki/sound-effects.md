@@ -198,9 +198,14 @@ composition data on
 
 Because teammates share a key, two heroes comboing produces **consonant,
 harmonizing** motifs — a musical reward for on-team synergy that pairs with
-the [tiered combo cue](#tiered-combo) below. Motifs are tiny authored
-three-note phrases, so they live in the **SFX sprite** alongside the discrete
-clips (the long adaptive loops stay separate — see below).
+the [tiered combo cue](#tiered-combo) below. Motifs are tiny generated
+three-note phrases (MuseScore-rendered from the motif map by the
+[generator](music-authoring.md#motif-matrix), D-24225), so they live in the
+**SFX sprite** alongside the discrete clips (the long adaptive loops stay
+separate — see below). When a single moment carries both a per-theme sting and
+an entity motif — a Master Strike is both the `ES02` sting and the Mastermind's
+minor motif — the two **layer**: the theme sting at full level, the entity
+motif on top at **−6 to −9 dB** (identity over scenario weight; D-24226).
 
 > **Signal note.** Motif *selection* needs only the acting entity's
 > identity (class / team / alignment), which the client already has: the
@@ -659,15 +664,16 @@ unusable on a revenue-generating site.
   with synergy-chain size (nothing projects this today). All three are
   optional; v1 SFX can proceed without them, but the combo cue is blocked
   until (3) exists.
-- **Motif matrix — playback wiring.** The motif *grammar* is settled on
-  [Music Authoring](music-authoring.md#motif-matrix), and the team→key and
-  class→instrument lookup tables now exist as authoring data
-  (`C:\pcloud\LA\audio\audio-motif-map.json`). Open here is where that data
-  should live *at runtime* for the client to consume (a registry data file
-  is the likely fit) and the still-unwritten **per-entity note phrases**,
-  plus which WP wires motif *selection* into the [audio layer](#motif-cues).
-  No new engine event is needed to pick a motif — only the data and the
-  playback code.
+- **Motif matrix — playback wiring.** The motif *grammar* and *production*
+  are settled: the grammar on
+  [Music Authoring](music-authoring.md#motif-matrix), the generator that
+  renders the motifs from `audio-motif-map.json` under D-24225, the runtime
+  **data home** under D-24227 (a slim registry generated into the arena-client
+  build), and the sting **layering** under D-24226 (−6/−9 dB). Still open: the
+  **per-entity note phrases** (the generator ships a systematic default today),
+  and which WP wires motif *selection* into the [audio layer](#motif-cues) and
+  packs the SFX sprite. No new engine event is needed to pick a motif — only
+  the data and the playback code.
 - **Music: re-sequencing now, stems later?** Ship horizontal
   re-sequencing with CC0 loops for v1; revisit vertical layering only
   if a custom stemmed score is commissioned.
@@ -696,7 +702,9 @@ unusable on a revenue-generating site.
   payload; deferred `escapeResolved`), D-20008 (`mastermindDefeated`
   added because `G.messages` is not projected), D-24159 / WP-367 (the
   deck-exhaustion final-turn **tie** — the third `EndgameOutcome`, driving
-  the tie stinger)
+  the tie stinger), D-24224 (the client-only, howler-backed audio foundation),
+  D-24225 (the motif generator), D-24226 (motif × theme-sting layering at
+  −6/−9 dB), D-24227 (motif lookup as a slim runtime registry)
 - Sound-effect libraries (verify each asset's license on its page):
   - [Kenney.nl — Interface Sounds](https://kenney.nl/assets/interface-sounds) (CC0)
   - [Kenney.nl — Impact Sounds](https://kenney.nl/assets/impact-sounds) (CC0)
