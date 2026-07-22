@@ -11,10 +11,33 @@ interface Props {
    * from every entry (supported absent-config path; no warning or banner).
    */
   rulebookPdfUrl?: string | null;
+  /**
+   * Absolute URL to the /rules page on www (the full rulebook reproduced as
+   * HTML — WP-039). When `null`, the per-entry "Rules page" link is omitted
+   * silently (supported absent-config path). Shown ALONGSIDE the PDF deep-link,
+   * not as a replacement.
+   */
+  rulesPageUrl?: string | null;
 }
 const props = withDefaults(defineProps<Props>(), {
   rulebookPdfUrl: null,
+  rulesPageUrl: null,
 });
+
+// why: The /rules page (WP-039) anchors each keyword/rule heading by a slug of
+// its rulebook LABEL: `#keyword-<slug(label)>` / `#rule-<slug(label)>`. This
+// slug MUST stay identical to the one in scripts/rules/build.mjs on the www
+// repo, or the deep-link lands on the page top instead of the entry. Hero-class
+// entries have no rulebook heading, so they get no link.
+function rulesPageAnchor(entry: GlossaryEntry): string | null {
+  if (entry.type !== "keyword" && entry.type !== "rule") return null;
+  const slug = entry.label
+    .toLowerCase()
+    .replace(/[’'“”"]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return slug ? `${entry.type}-${slug}` : null;
+}
 
 const {
   isOpen,
@@ -159,6 +182,16 @@ function handleEntryClick(entry: GlossaryEntry) {
               @click.stop
             >
               📖 Rulebook p. {{ entry.pdfPage }}
+            </a>
+            <a
+              v-if="props.rulesPageUrl && rulesPageAnchor(entry)"
+              :href="`${props.rulesPageUrl}#${rulesPageAnchor(entry)}`"
+              target="_blank"
+              rel="noopener"
+              class="entry-rulebook-link entry-rules-link"
+              @click.stop
+            >
+              📘 Rules page
             </a>
           </li>
         </ul>
@@ -402,6 +435,10 @@ function handleEntryClick(entry: GlossaryEntry) {
 .entry-rulebook-link:hover {
   color: #c0c0ff;
   border-bottom-color: #7070e0;
+}
+/* why: the PDF and Rules-page links sit on the same row; separate the second. */
+.entry-rules-link {
+  margin-left: 0.75rem;
 }
 
 /* ── Footer ────────────────────────────────────────────────────────────── */

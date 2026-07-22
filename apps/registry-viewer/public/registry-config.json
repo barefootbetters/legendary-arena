@@ -1,6 +1,7 @@
 {
   "metadataBaseUrl": "https://images.legendary-arena.com",
   "rulebookPdfUrl":  "https://images.legendary-arena.com/docs/legendary-universal-rules-v23.pdf",
+  "rulesPageUrl":    "https://www.legendary-arena.com/rules/",
   "eagerLoad": [
     "core", "dkcy", "ff04", "pttr", "vill", "gotg", "fear",
     "3dtc", "ssw1", "ssw2", "ca75", "cvwr", "dead", "noir",
