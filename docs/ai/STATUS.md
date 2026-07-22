@@ -7,6 +7,47 @@
 
 ## Current State
 
+### WP-414 / EC-449 — Bot-Ally Stall Surfacing + Restart Revival (Server) (D-24229, D-24230) (2026-07-22)
+
+**Server resilience for the solo bot-ally co-op path. `User-Visible Surface =
+play.legendary-arena.com`. Code merged; the D-24026 live-verify (AC-6, a bot-ally match
+surviving a server restart + a wedged match settling to a surfaced fault) is OPEN and
+operator-gated on the engine deploy.**
+
+**The freeze.** A mixed human + bot `cooperative` match (WP-375) drives its bot seats
+from an **in-process** `BotAllyDriver`. When the operator ran concurrent sessions that
+merge to `main` (→ Render redeploy), the in-process driver was destroyed mid-match. A
+live driver can never freeze forever (it faults within `BOT_MAX_MOVE_STEPS_PER_TURN`),
+so a lasting freeze meant the driver was **gone** (restart) or was persisted `faulted`
+and never revived — and `rehydrateBotAllyDrivers` revived only `status='active'` rows,
+while the public-safe `fault_message` was written to `legendary.match_bot_ally` but
+exposed by **no endpoint**. The human on seat 0 waited forever with no signal.
+
+**The fix (three parts).** (1) A read-only **`GET /api/match/:matchId/bot-ally-status`**
+(`guest` by capability, side-table-only per D-24095) → `{ driving, status, message }`,
+returning `absent` (200) for a non-bot-ally match. (2) The driver now retries a wedged
+turn **exactly once** from fresh authoritative state before it faults (`driveBotTurn` →
+`attemptBotTurn`, a `retriedOnce`-guarded whole-turn re-attempt covering all four fault
+exits) — absorbing a transient `getLegalMoves`/stateID race without masking a real
+wedge. (3) Restart revival widened to re-attach a **still-live** `faulted`/`exhausted`
+match, bounded by a new `revive_count` column (`MAX_REVIVALS=3`): a gone/gameover match
+is marked `completed`, a live one is revived (flip `active` + `revive_count += 1`), and a
+match at the cap stays `faulted` so a permanently-wedged match never re-registers a
+doomed driver on every deploy. Migration `036` adds `revive_count` (additive/idempotent).
+**No `server.mjs` edit** (the route registers inside `registerBotAllyRoutes`; revival is
+already wired through `rehydrateBotAllyDrivers`). Determinism untouched (no
+`Math.random`/`Date.now`; the retry re-runs the same seeded policy).
+
+**Tests.** Server bot-ally suites 41/0 (+7): the status endpoint (active/faulted/absent/
+500, side-table-only), `readRevivableBotAllyMatches` (widened set, cap-bounded), revival
+(marks `completed` on gameover, flips `active`+increments on a live faulted row, no
+increment for a merely-lost active row, skips missing credentials), and the within-turn
+retry (recovers a single wedge, faults on a second consecutive wedge, fires at most once).
+`pnpm -r build` 0.
+
+**Pairs with WP-415 (client stall banner), now unblocked** — it consumes this status
+surface to render a co-op "the bot ally has stopped" banner with a Return-to-lobby escape.
+
 ### WP-411 / EC-446 — Set `ctx.gameover` at end of game (top-level `endIf`) (D-24223) (2026-07-21)
 
 **Engine-pipeline fix. `User-Visible Surface = none directly — engine wiring`, but it

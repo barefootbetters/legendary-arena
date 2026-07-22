@@ -447,10 +447,18 @@ function trackIdle(driver, state) {
 }
 
 /**
- * Drives a single bot seat's turn to completion: repeatedly decides + submits a
- * move until the turn passes to another seat, the match ends, or the turn
- * wedges (fault). Every stalled/erroring step falls through the fault fallback
- * so the human is never permanently blocked on the bot.
+ * Drives a single bot seat's turn, retrying the whole turn exactly once from
+ * fresh authoritative state before it is treated as faulted.
+ *
+ * // why: WP-414 / D-24230 — {@link attemptBotTurn} already exhausts the
+ * per-step fault fallback (endTurn → advanceStage) at every wedge, but a
+ * transient `getLegalMoves` / stateID race can still surface a spurious fault.
+ * `retriedOnce` grants exactly ONE fresh re-attempt of the ENTIRE turn — its
+ * `while` condition bounds the retry to a single extra pass — so every fault
+ * exit of `attemptBotTurn` (the three `runFaultFallback` sites AND the step-cap
+ * exhaustion, which does not call it) is covered by one, and only one, retry. A
+ * real wedge faults again on the second pass; the retry re-fetches state, so it
+ * is a fresh continuation from current state, not a re-submit of applied steps.
  *
  * @param {object} driver - The driver object.
  * @param {object} deps - The injected capabilities.
@@ -459,6 +467,29 @@ function trackIdle(driver, state) {
  * @returns {Promise<{ kind: 'passed' | 'game-over' | 'vanished' | 'faulted', message?: string }>}
  */
 async function driveBotTurn(driver, deps, botSeat, maxMoveStepsPerTurn) {
+  let retriedOnce = false;
+  let result = await attemptBotTurn(driver, deps, botSeat, maxMoveStepsPerTurn);
+  while (result.kind === 'faulted' && !retriedOnce) {
+    retriedOnce = true;
+    result = await attemptBotTurn(driver, deps, botSeat, maxMoveStepsPerTurn);
+  }
+  return result;
+}
+
+/**
+ * Attempts a single bot seat's turn to completion: repeatedly decides + submits
+ * a move until the turn passes to another seat, the match ends, or the turn
+ * wedges (fault). Every stalled/erroring step falls through the fault fallback
+ * so the human is never permanently blocked on the bot. Wrapped by
+ * {@link driveBotTurn}, which grants one whole-turn retry before faulting.
+ *
+ * @param {object} driver - The driver object.
+ * @param {object} deps - The injected capabilities.
+ * @param {string} botSeat - The bot seat currently to move.
+ * @param {number} maxMoveStepsPerTurn - The per-turn step cap.
+ * @returns {Promise<{ kind: 'passed' | 'game-over' | 'vanished' | 'faulted', message?: string }>}
+ */
+async function attemptBotTurn(driver, deps, botSeat, maxMoveStepsPerTurn) {
   let step = 0;
   while (step < maxMoveStepsPerTurn) {
     step += 1;

@@ -31697,9 +31697,9 @@ WP-412 audio foundation.
 
 Protect this file.
 
-### D-24229 — the bot-ally match exposes a read-only, capability-scoped status surface (`GET /api/match/:matchId/bot-ally-status`) so the human is never silently frozen on a stopped bot (reserved)
+### D-24229 — the bot-ally match exposes a read-only, capability-scoped status surface (`GET /api/match/:matchId/bot-ally-status`) so the human is never silently frozen on a stopped bot
 
-**Status:** Reserved (drafted 2026-07-22 for WP-414 / EC-449; lands at execution).
+**Status:** Active (landed 2026-07-22, WP-414 / EC-449).
 
 **Context.** A bot-ally match (WP-375) drives the bot seat(s) from an
 **in-process** `BotAllyDriver` (`botAllyDrivers` Map, `botAllyDriver.mjs:47`). On
@@ -31735,13 +31735,13 @@ The client half (the play-surface banner that consumes this surface) is **D-2423
 / WP-415**.
 
 **Packet:** WP-414 (EC-449).
-**Drafted:** 2026-07-22; not yet landed.
+**Landed:** 2026-07-22 (WP-414 / EC-449).
 
 Protect this file.
 
-### D-24230 — bot-ally survivability: one within-turn retry before a fault, and bounded restart revival of still-live faulted/exhausted matches (reserved)
+### D-24230 — bot-ally survivability: one within-turn retry before a fault, and bounded restart revival of still-live faulted/exhausted matches
 
-**Status:** Reserved (drafted 2026-07-22 for WP-414 / EC-449; lands at execution).
+**Status:** Active (landed 2026-07-22, WP-414 / EC-449).
 
 **Context.** A **live** `BotAllyDriver` can never freeze a match forever — it
 faults within `BOT_MAX_MOVE_STEPS_PER_TURN` on any wedge. So a **lasting** freeze
@@ -31785,7 +31785,10 @@ follows.
    retry re-fetches authoritative state and re-runs the same seeded policy.
 
 **Packet:** WP-414 (EC-449).
-**Drafted:** 2026-07-22; not yet landed.
+**Landed:** 2026-07-22 (WP-414 / EC-449). The within-turn retry wraps the whole
+turn as `driveBotTurn` → `attemptBotTurn` (a `retriedOnce`-guarded single
+re-attempt); the revival read is `readRevivableBotAllyMatches` and the flip +
+increment is `markBotAllyMatchRevived`.
 
 Protect this file.
 
