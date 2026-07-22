@@ -57,6 +57,53 @@ real match to gameover and confirm `SELECT metadata ? 'gameover' …` is `t` and
 terminal action that has been impossible until this fix, and it simultaneously closes the
 **WP-407 / WP-408 populated-roster live-verifies** (blocked on this bug).
 
+### WP-413 / EC-448 — Arena-Client Tiered Combo Cue: hero-play synergy escalation SFX (D-24228) (2026-07-22)
+
+**User-visible surface — `play.legendary-arena.com`. Code merged; the audible
+change requires the three `combo-*.mp3` clips uploaded to R2, so the D-24026
+live-audible verification (a real synergy play sounds its combo tier in a
+deployed match) is OPEN and rides the asset upload — parallel to WP-412's open
+in-match leg. The code + wiring are verified asset-independently (see below).**
+
+The **second user-visible feature on the WP-412 audio foundation** — the tiered
+combo / synergy cue the ewiki [Sound Effects](https://ewiki.legendary-arena.com/sound-effects/)
+design calls for. A hero play that fires synergy effects plays an **escalating
+sting** scaled by how much the play did: a one-effect play a light tick, a
+two-effect play a bigger cue, a three-or-more-effect play the full sting.
+
+**Client-only, zero engine footprint.** The layer consumes WP-409's
+`UIState.game.lastPlayEffectsFired` scalar (D-24221) and plays through the
+**WP-412 engine** (`getAudioEngine()`, D-24224) — **no new dependency, engine,
+control, or channel**. A pure `comboTierForCount` maps the count to a tier
+(`<= 0 → none` silent, `1 → small`, `2 → medium`, `>= 3 → big`); the three
+audible tiers map to CC0 clips on R2 under `audio/sound-effects/`
+(`combo-small/medium/big.mp3`), never in git. A `useComboCue` consumer keeps its
+**own last-seen scalar** and fires once per **audible value-change** — it catches
+up on the first frame (no pre-mount cue) and is **not** an append-only cursor
+(the signal is a scalar, unlike WP-412's `notableEvents` stream). A change into
+the silent `none` tier (e.g. the per-turn reset to 0) fires nothing.
+**Accepted v1 limitation:** two consecutive same-turn plays with the same
+non-zero count coalesce to one cue (the scalar does not change); the per-turn
+reset re-arms equal values **across** turns. Wired once at the WP-412 `01.5`
+host (`PlayViewport.vue`), beside `useSoundEffects`.
+
+**EC-448 execution amendment (engine lazy-load).** Reusing the engine surfaced a
+real defect the recording-mock tests hid: `audioEngine.play(clipUrl)` only
+played clips **preloaded from `sfxManifest`**, so a combo-cue URL silently
+no-op'd — the cue would never sound. `play()` now **lazily constructs + caches**
+a `Howl` for any un-preloaded URL (no `AudioEngine` interface change; preloading
+stays an optimization). Two WP-412 files were added to the allowlist
+(`audioEngine.{ts,test.ts}`); recorded in EC-448 §Execution Amendment + D-24228.
+
+**Verified:** `pnpm -r build` 0; arena-client `typecheck` (vue-tsc) 0; arena-client
+suite 1015 → 1035 (+20) pass, including a **real-`createAudioEngine` integration
+test** (not a recording mock) that drives `useComboCue` end-to-end. Live
+in-browser on the play-fixture route: driving the live snapshot's
+`lastPlayEffectsFired` to a big-tier value made the real engine **lazily
+construct + play `combo-big.mp3`** (`Howler._howls` 6 → 7) — the full
+store → `useComboCue` → engine chain fires. Impl `2ca9894c` (EC-448); baseline
+`b6794292`.
+
 ### WP-412 / EC-447 — Arena-Client Audio Layer Foundation: the first sound in the game (D-24224) (2026-07-21)
 
 **User-visible surface — `play.legendary-arena.com`. Code merged; the audible

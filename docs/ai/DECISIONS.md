@@ -31645,9 +31645,17 @@ Closes the "motif data home / runtime registry" Open Question on the ewiki
 
 Protect this file.
 
-### D-24228 — the arena-client tiered combo cue is a client-only, WP-412-engine-reusing, WP-409-signal-consuming escalation SFX; tiers 0→none/1→small/2→medium/≥3→big; scalar-change consumer (reserved)
+### D-24228 — the arena-client tiered combo cue is a client-only, WP-412-engine-reusing, WP-409-signal-consuming escalation SFX; tiers 0→none/1→small/2→medium/≥3→big; scalar-change consumer (Active)
 
-**Status:** Reserved (Drafted 2026-07-21; not yet landed — flips to Active at WP-413 execution).
+**Status:** Active (landed 2026-07-22 at WP-413 / EC-448 execution).
+
+**Execution amendment (2026-07-22).** Reusing the WP-412 engine required a small
+engine change not anticipated at draft: `audioEngine.play(clipUrl)` only played
+clips **preloaded from `sfxManifest`**, so a combo-cue URL (not in `sfxManifest`)
+silently no-op'd. `play()` now **lazily constructs + caches** a `Howl` for any
+un-preloaded URL (no `AudioEngine` interface change; preloading stays an
+optimization). Recorded in EC-448 §Execution Amendment; verified live (the real
+engine lazily built + played `combo-big.mp3` on an audible value-change).
 
 **Decision.** `play.legendary-arena.com` gains a **tiered combo cue** — an
 escalating audio sting whose size scales with how much a hero play did — locked
@@ -31685,7 +31693,7 @@ Consumes the ewiki [Sound Effects](https://ewiki.legendary-arena.com/sound-effec
 WP-412 audio foundation.
 
 **Packet:** WP-413 (EC-448).
-**Drafted:** 2026-07-21; not yet landed.
+**Drafted:** 2026-07-21. **Landed:** 2026-07-22 (WP-413 / EC-448 execution — `pnpm -r build` 0, arena-client typecheck 0, 1035 tests pass; App-only diff + the amendment's two engine files, no `packages/game-engine` file). Live-on-surface (D-24026) rides the three `combo-*.mp3` clips being uploaded to R2.
 
 Protect this file.
 
