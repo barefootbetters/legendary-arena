@@ -237,7 +237,12 @@ services:
 databases:
   # Managed PostgreSQL — rules engine backing store
   - name: legendary-arena-db
-    # why: basic_256mb is sufficient for <100 concurrent games at launch.
-    # The rules cache is loaded at startup; ongoing DB queries are minimal.
-    # (Replaces the deprecated 'starter' plan key — see Render's plan rename.)
-    plan: basic-256mb
+    # why: basic-1gb (1 GB RAM / 0.5 CPU). The original basic-256mb (256 MB /
+    # 0.1 CPU) assumption ("<100 concurrent games, minimal DB queries") proved
+    # wrong once the store held bgio match blobs plus leaderboard / dashboard /
+    # competitive queries: Postgres repeatedly OOM-crashed into recovery mode
+    # (observed 2026-07-22 as "the database system is in recovery mode" /
+    # "not yet accepting connections" restart cycles that killed in-flight bot
+    # matches). This DB is Blueprint-managed, so the plan MUST live here — a
+    # dashboard-only change is reverted on the next blueprint sync.
+    plan: basic-1gb
