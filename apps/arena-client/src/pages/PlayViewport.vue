@@ -9,12 +9,14 @@ import ViewLoadoutButton from '../components/ViewLoadoutButton.vue';
 import WaitingForPlayersPanel from '../components/WaitingForPlayersPanel.vue';
 import HollowEffectsPanel from '../components/play/HollowEffectsPanel.vue';
 import AudioControls from '../components/play/AudioControls.vue';
+import BotAllyStallBanner from '../components/BotAllyStallBanner.vue';
 import { useViewport } from '../composables/useViewport';
 import { useSkinApplier } from '../composables/useSkinApplier';
 import { useCompetitiveSubmitOnGameover } from '../composables/useCompetitiveSubmitOnGameover';
 import { useCardImagePrefetch } from '../composables/useCardImagePrefetch';
 import { useSoundEffects } from '../composables/useSoundEffects';
 import { useComboCue } from '../composables/useComboCue';
+import { useBotAllyStatus } from '../composables/useBotAllyStatus';
 import { useUiStateStore } from '../stores/uiState';
 import type { SubmitMove } from '../components/play/uiMoveName.types';
 
@@ -55,7 +57,7 @@ const SUBMISSION_MESSAGES: Record<string, string> = {
  */
 export default defineComponent({
   name: 'PlayViewport',
-  components: { PlayDesktop, PlayMobile, DiagnosticExportButton, ViewLoadoutButton, WaitingForPlayersPanel, HollowEffectsPanel, AudioControls },
+  components: { PlayDesktop, PlayMobile, DiagnosticExportButton, ViewLoadoutButton, WaitingForPlayersPanel, HollowEffectsPanel, AudioControls, BotAllyStallBanner },
   props: {
     submitMove: {
       type: Function as PropType<SubmitMove>,
@@ -121,6 +123,23 @@ export default defineComponent({
       () => SUBMISSION_MESSAGES[submissionStatus.value] ?? '',
     );
 
+    // why: WP-415 — mounted ONCE at this 01.5 play-root host (the WP-410/412
+    // precedent), so the bot-ally stall banner covers BOTH the <PlayMobile> and
+    // <PlayDesktop> surfaces. Probes WP-414's status surface once; a non-bot-ally
+    // match reports `absent` and the poll stops immediately, so this adds nothing
+    // outside a real bot-ally match. Pure client presentation — HTTP-only, no
+    // engine/registry import, no G/ctx read.
+    const { hasStopped: isBotAllyStopped, message: botAllyMessage } =
+      useBotAllyStatus(props.matchId);
+
+    // why: the stall escape is a NON-DESTRUCTIVE, client-only navigation — it
+    // returns to the lobby (the default route, reached by clearing the live
+    // `?match=` params) and calls NO server endpoint; the server-side match is
+    // never abandoned from here.
+    function returnToLobby(): void {
+      window.location.assign('/');
+    }
+
     return {
       isMobile,
       viewportRoot,
@@ -130,6 +149,9 @@ export default defineComponent({
       heroDeckIds: props.heroDeckIds,
       submissionStatus,
       submissionMessage,
+      isBotAllyStopped,
+      botAllyMessage,
+      returnToLobby,
     };
   },
 });
@@ -188,6 +210,18 @@ export default defineComponent({
       // layout prop chain and no second wiring host.
     -->
     <AudioControls />
+    <!--
+      // why: WP-415 — mounted ONCE here at the shared viewport root (the 01.5
+      // wiring host), so the co-op stall banner covers BOTH the <PlayMobile> and
+      // <PlayDesktop> surfaces. Self-hides unless the bot ally stopped abnormally
+      // (v-if hasStopped inside the component), so it adds no DOM during a healthy
+      // match or a normal end. Escape is a client-only Return-to-lobby navigation.
+    -->
+    <BotAllyStallBanner
+      :has-stopped="isBotAllyStopped"
+      :message="botAllyMessage"
+      :return-to-lobby="returnToLobby"
+    />
     <!--
       // why: WP-339 — a small, non-blocking post-match submission status. Shown
       // only once a submission is in flight or resolved (submissionStatus !== 'idle'),
