@@ -31631,3 +31631,47 @@ Closes the "motif data home / runtime registry" Open Question on the ewiki
 **Landed:** 2026-07-22 (doc).
 
 Protect this file.
+
+### D-24228 — the arena-client tiered combo cue is a client-only, WP-412-engine-reusing, WP-409-signal-consuming escalation SFX; tiers 0→none/1→small/2→medium/≥3→big; scalar-change consumer (reserved)
+
+**Status:** Reserved (Drafted 2026-07-21; not yet landed — flips to Active at WP-413 execution).
+
+**Decision.** `play.legendary-arena.com` gains a **tiered combo cue** — an
+escalating audio sting whose size scales with how much a hero play did — locked
+as follows.
+
+1. **Architecture.** Pure client presentation — it lives entirely in
+   `apps/arena-client`, reads only `UIState.game.lastPlayEffectsFired` (WP-409 /
+   D-24221), **never** writes `G`/`ctx`, never affects an outcome, and adds
+   **zero** engine / determinism / replay footprint (sims and replays render no
+   audio).
+2. **Reuse, not rebuild.** It plays through the **WP-412** audio engine
+   (`getAudioEngine()`, D-24224), inheriting that engine's autoplay-unlock arm,
+   master mute, and master volume — **no** new dependency, **no** new `Howl`
+   wrapper, **no** new audio control, **no** second SFX channel. Wired once at
+   the WP-412 `01.5` host (`PlayViewport.vue`), beside `useSoundEffects`.
+3. **Tiers.** `comboTierForCount(count)` maps `<= 0 → 'none'` (silent, no cue),
+   `1 → 'small'`, `2 → 'medium'`, `>= 3 → 'big'` — a pure function; three audible
+   tiers plus a silent floor. The audible tiers map to CC0 clips hosted on R2
+   under `audio/sound-effects/` (served via `images.legendary-arena.com`),
+   referenced by URL — **no audio in git**.
+4. **Scalar-change consumer.** Because `lastPlayEffectsFired` is a **scalar**
+   (overwritten per play, reset to `0` in the play-phase `onBegin`, per WP-409),
+   `useComboCue` keeps its **own** last-seen value and fires once per **audible
+   value-change** (catch up on the first valid frame — no cue for the pre-mount
+   value) — distinct from WP-412's append-only `notableEvents` cursor. A change
+   to `0`/`none` never fires.
+5. **Accepted v1 limitation.** Two consecutive plays in the **same turn** with
+   the **same non-zero count** coalesce to one cue (the scalar does not change).
+   The per-turn reset to `0` re-arms equal-value plays **across** turns
+   (`3 → 0 → 3` fires the second `3`). A per-play edge signal that would
+   de-coalesce same-turn equal counts is a deferred follow-on.
+
+Consumes the ewiki [Sound Effects](https://ewiki.legendary-arena.com/sound-effects/)
+"tiered combo / synergy cue" design; the second user-visible feature on the
+WP-412 audio foundation.
+
+**Packet:** WP-413 (EC-448).
+**Drafted:** 2026-07-21; not yet landed.
+
+Protect this file.
