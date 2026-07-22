@@ -153,6 +153,21 @@ Cross-cutting governance, methodology, and readiness assessments.
   plan for the "Legendary Arena" channel: four series across the SB7
   content modes and Player Needs Pyramid; the transitional CTA the
   homepage needs.
+- [Design System Overview](design-system-overview.md) — *(draft,
+  research)* the north-star hub for the sensory-and-feel layer of
+  `play.legendary-arena.com`. Defines the **shared trigger spine** — the
+  one canonical table of engine events (`notableEvents`,
+  `lastPlayEffectsFired`, endgame outcomes) that the visual, audio,
+  dopamine, and narrative frameworks all react to — so the framework pages
+  cross-link through the engine's own event names instead of siloing.
+- [Visual Effects Framework](visual-effects.md) — *(draft, research)* the
+  in-game "juice" layer: escalating chain-reaction combo flashes off
+  `UIState.game.lastPlayEffectsFired` (buildable today, mirroring the
+  shipped audio combo cue), particle bursts, screen-shake, card motion,
+  and full-screen finales. The visual twin of Sound Effects; wired to the
+  Design System Overview's shared trigger spine. Includes the MIT-first
+  library posture, GPU-cheap performance budget, and the mandatory
+  `prefers-reduced-motion` accessibility gate.
 - [Sound Effects](sound-effects.md) — *(draft, research)* design
   reference for adding audio to `play.legendary-arena.com`: maps the
   client-visible signals (notable events, `appliedEffects` for
@@ -167,6 +182,18 @@ Cross-cutting governance, methodology, and readiness assessments.
   wired through `themeSchemaVersion: 2` theme JSON (`musicAssets`).
   Covers the crop scripts, file-naming lock, and working-vs-tracked
   layout; companion to Sound Effects.
+- [Dopamine Trigger Framework](dopamine-triggers.md) — *(draft, research)*
+  the reward-psychology layer under the sensory frameworks: classifies each
+  shared-trigger-spine event as reward / threat / relief, and specs the
+  pacing discipline (variable reward, escalating combo reward, loss
+  aversion, peak-end) that times the visual + audio cues. Engagement craft
+  inside the Vision bright lines, never spend-pressure.
+- [Narrative Psychology Framework](narrative-psychology.md) — *(draft,
+  research)* the meaning-and-resonance layer: maps each spine event to a
+  good-versus-evil story beat via Marvel archetype, nostalgia, and agency
+  hooks. Houses the **Playstyle Modes** builder-versus-destroyer lens — a
+  preference toggle that re-frames the same engine events as heroic rescue
+  or villain conquest without building two games.
 
 ## Tutorial
 
