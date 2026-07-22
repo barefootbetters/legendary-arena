@@ -259,7 +259,15 @@ If any of the above is false, this packet is **BLOCKED** and must not proceed.
 - `apps/arena-client/src/composables/useComboCue.test.ts` — **new**
 - `apps/arena-client/src/pages/PlayViewport.vue` — **modified (`01.5` wiring — the same single host)** — mount `useComboCue(audioSnapshot)` beside `useSoundEffects`
 
-No other files may be modified. The `01.5` wiring host is `PlayViewport.vue` (recorded in the EC), the same host WP-412 established.
+**Execution amendment (2026-07-22):** two WP-412 engine files were added to the
+allowlist — `apps/arena-client/src/audio/audioEngine.ts` (+ its `.test.ts`) — to
+make `play(clipUrl)` **lazily load** an un-preloaded URL. The engine only played
+clips preloaded from `sfxManifest`, so a combo-cue URL silently no-op'd; the
+lazy-load (no `AudioEngine` interface change) is the minimal way to honor the
+"reuse the WP-412 engine" thesis. Recorded in EC-448 §Execution Amendment.
+
+Otherwise no files may be modified. The `01.5` wiring host is `PlayViewport.vue`
+(recorded in the EC), the same host WP-412 established.
 
 ---
 

@@ -39,6 +39,12 @@
 - `apps/arena-client/src/composables/useComboCue.test.ts` — **new** — audible value-change plays once; no pre-mount cue; no cue on change-to-none; coalesces equal consecutive; re-arms across `3 → 0 → 3`; safe-skip null; respects mute
 - `apps/arena-client/src/pages/PlayViewport.vue` — **modified (`01.5` wiring — the SAME single host)** — in `setup`, mount `useComboCue(audioSnapshot)` beside `useSoundEffects(audioSnapshot)`; no template change
 
+### Execution Amendment (2026-07-22) — engine lazy-load
+The WP-412 engine's `play(clipUrl)` only played clips **preloaded from `sfxManifest`** at construction; a combo-cue URL (not in `sfxManifest`) hit `clip === undefined` and silently no-op'd — the combo cue would never sound through the real engine (the recording-mock unit tests hid it). To honor the "reuse the WP-412 engine" thesis, `play()` now **lazily constructs + caches** a `Howl` for any un-preloaded URL (preloading stays an optimization; no `AudioEngine` interface change, so no other mock engine needs editing). This adds two WP-412 files to the allowlist:
+- `apps/arena-client/src/audio/audioEngine.ts` — **modified** — `play()` lazy-loads an un-preloaded URL
+- `apps/arena-client/src/audio/audioEngine.test.ts` — **modified** — the former "unknown URL no-op" test becomes a lazy-load test (+ pre-arm gate still holds)
+`useComboCue.test.ts` gains an integration test driving the **real** `createAudioEngine` to prove the full chain plays the combo clip.
+
 ## After Completing
 - [ ] `pnpm -r build` exits 0.
 - [ ] `pnpm --filter arena-client typecheck` exits 0 (vue-tsc — the load-bearing SFC gate).
