@@ -355,10 +355,22 @@ HYDRA|hydra|Villain|G minor
 Cabal|cabal|Villain|F♯ minor
 {{< /motif-table >}}
 
-The two grey **antihero** groups render minor too — Mercs for Money (B♭ minor)
-and Venomverse (E minor) — one `motif-table` block away from their own table on
-the same shortcode. (The hero roster is the major, rising counterpart
-[above](#hero-motifs).)
+### Listen: grey antihero motifs {#antihero-motifs}
+
+The two **grey** antihero groups render **minor** like the villains (the map
+stores them minor, flippable to major to soften — see the
+[grammar](#motif-matrix)), so their motifs resolve **downward** with a wry
+menace rather than a hero's bright lift. Venomverse (E minor) shares Sinister
+Six's root — Spider-dark either way.
+
+{{< motif-table >}}
+Mercs for Money|mercs-for-money|Antihero (grey)|B♭ minor
+Venomverse|venomverse|Antihero (grey)|E minor
+{{< /motif-table >}}
+
+That completes the roster: [heroes](#hero-motifs) in major/rising,
+[villains](#villain-motifs) and these greys in minor/falling — every keyed team
+now audible.
 
 ### Listen: a produced theme
 
