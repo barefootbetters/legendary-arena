@@ -2,7 +2,7 @@
   {
     "key": "adaptingmasterminds",
     "label": "Adapting Masterminds",
-    "summary": "Adapting Masterminds have only Tactic cards — no main card. The top Tactic counts as the Mastermind. After each Strike, Adapt: shuffle Tactics and reveal a new one on top.",
+    "summary": "Adapting Masterminds have only Tactic cards — no main card. Whichever Tactic is on top counts as the current Mastermind. “Adapt” — shuffle the Tactics and put one on top face up — happens on setup, on each Master Strike, and again after you fight the top Tactic.",
     "pdfPage": 47
   },
   {
@@ -109,7 +109,7 @@
   {
     "key": "villainousweapons",
     "label": "Villainous Weapons",
-    "summary": "Weapons captured by Villains boost their Attack. When you defeat that Villain, you claim the Weapon as an Artifact for your own hand.",
+    "summary": "Weapons captured by Villains boost their Attack. When you defeat the Villain holding one, the Weapon goes into your discard pile as an Artifact you can play later like any other Artifact.",
     "pdfPage": 37
   },
   {

@@ -2,19 +2,19 @@
   {
     "key": "abomination",
     "label": "Abomination",
-    "description": "This keyword is used by Villains that are twisted genetic experiments. “Abomination” means “This gets +1 Attack for each Abomination card in the KO pile.”",
+    "description": "This keyword is used by Villains that are twisted genetic experiments. “Abomination” means “This Villain/Adversary gets +Attack equal to the printed Attack of the Hero/Ally in the HQ space directly under this Villain’s city space.” Recruiting the Hero underneath it can lower — or raise — its Attack.",
     "pdfPage": 17
   },
   {
     "key": "ambush",
     "label": "Ambush",
-    "description": "Some Heroes say “Instinct Ambush: Draw a card.” When another player recruits this Hero from the HQ, you may use its Ambush ability.",
+    "description": "Some Heroes say “Instinct Ambush: Draw a card.” When a Hero with an Ambush ability enters the HQ during your turn, you may use that Ambush ability if you have a Hero of the listed class (played this turn or still in your hand). New Heroes enter the HQ when you recruit or when a Villain’s escape empties an HQ space you refill.",
     "pdfPage": 17
   },
   {
     "key": "antics",
     "label": "Antics",
-    "description": "“Antics: You get +2 Attack” represents Ant-Man using his power to control ants, shrink to ant size, or grow ants to giant size.",
+    "description": "“Antics: You get +2 Attack” represents Ant-Man controlling ants and changing size. You can use an Antics ability only if you have at least three cards that cost 1 or 2 and/or have Size-Changing (the Antics card can count itself). Use it the moment you play the card.",
     "pdfPage": 17
   },
   {
@@ -26,7 +26,7 @@
   {
     "key": "astralplane",
     "label": "Astral Plane",
-    "description": "The Fear Lords move enemies beyond the physical world to a realm of pure psychic energy, where they prey on the human psyche.",
+    "description": "The Astral Plane is a single space just to the right of the Villain Deck. A Villain there has no physical form and can be fought only with Recruit, not Attack. When a Villain enters the Astral Plane, any Villain already there escapes.",
     "pdfPage": 19
   },
   {
@@ -38,7 +38,7 @@
   {
     "key": "bloodfrenzy",
     "label": "Blood Frenzy",
-    "description": "Blood Frenzy represents vampires and werewolves gaining strength from every kind of blood they drain. You get bonuses for each Instinct or Strength card you played this turn.",
+    "description": "Blood Frenzy represents vampires and werewolves growing stronger from every kind of blood they drain. “Blood Frenzy” means “+1 Attack for each different Victory Point value among the cards in your Victory Pile.” Only the number of different VP values matters, not how many cards you have of each.",
     "pdfPage": 19
   },
   {
@@ -97,7 +97,7 @@
   {
     "key": "clone",
     "label": "Clone",
-    "description": "Clone represents characters that are literal clones or can create copies. Clone cards can be played multiple times or duplicated.",
+    "description": "“Clone” means “You may gain another copy of this card from the HQ — or, if there are none, from the Hero Deck, then shuffle.” To “gain” a copy is to put it in your discard pile. On a Villain, “Ambush: Clone” searches the Villain Deck for a copy that enters the city.",
     "pdfPage": 21
   },
   {
@@ -115,7 +115,7 @@
   {
     "key": "contestofchampions",
     "label": "Contest of Champions",
-    "description": "Some Villains say “Contest of Champions Strength.” This means “Each player reveals a Strength Hero or gains a Wound.” Represents the Grandmaster’s games.",
+    "description": "“Contest of Champions” is a scoring contest representing the Grandmaster’s games. Each player reveals a card (from hand, played this turn, or the top of their deck) and scores its printed cost, doubled if it matches the contest’s Hero Class. Evil reveals from the Hero Deck and uses its best card. The highest score (or a tie for highest) wins the contest; everyone else loses.",
     "pdfPage": 21
   },
   {
@@ -139,13 +139,13 @@
   {
     "key": "cybermod",
     "label": "Cyber-Mod",
-    "description": "In 2099, Heroes augment their bodies with cybernetic enhancements. “Cyber-Mod Wound” means “You may gain a Wound to use this ability.”",
+    "description": "In 2099, Heroes augment their bodies with cybernetic enhancements. A “Cyber-Mod” ability can be used only if you have a card of the listed Hero Class in your Victory Pile (or, on enemies, in the Escape Pile). Because Hulk 2099 can send Wounds Undercover, his “Cyber-Mod Wound” abilities work when he has a Wound in his Victory Pile.",
     "pdfPage": 23
   },
   {
     "key": "dangersense",
     "label": "Danger Sense",
-    "description": "“Danger Sense 2” means “Reveal the top 2 cards of the Villain Deck. You get +1 Attack for each Villain you revealed. Put them all back in the same order.”",
+    "description": "“Danger Sense 2” means “Reveal the top 2 cards of the Villain Deck. You get +1 Attack for each Villain you revealed. Put all the cards back on top in any order.” Being able to rearrange them lets you set up or delay upcoming cards.",
     "pdfPage": 23
   },
   {
@@ -163,13 +163,13 @@
   {
     "key": "demolish",
     "label": "Demolish",
-    "description": "“Demolish each player” means “Reveal the top card of the Ally/Hero Deck, note its cost, and put it on the bottom of the Ally/Hero Deck. Each player reveals their hand and discards each card with that cost.”",
+    "description": "“Demolish each player” means “Reveal the top card of the Hero/Ally Deck, note its cost, and put it on the bottom of the Hero/Ally Deck. Each player reveals their hand and discards a card with that cost.” Reveal only one card total — not a different card for each player.",
     "pdfPage": 24
   },
   {
     "key": "demonicbargain",
     "label": "Demonic Bargain",
-    "description": "Demons offer gifts of power with a dark price. Demonic Bargain lets you gain powerful effects at the cost of giving the Mastermind benefits.",
+    "description": "Demons offer power at a dark price. When you make a Demonic Bargain, discard the top card of your deck: if it costs 1 or more you gain a Wound, but either way you then gain the Bargain’s listed benefit. A chosen player can’t decline the Bargain.",
     "pdfPage": 24
   },
   {
@@ -193,7 +193,7 @@
   {
     "key": "doubleabomination",
     "label": "Double Abomination",
-    "description": "“Double Abomination” means “This gets +2 Attack for each Abomination card in the KO pile.”",
+    "description": "“Double Abomination” doubles the Abomination bonus: this gets +Attack equal to twice the printed Attack of the Hero/Ally in the HQ space under this Villain’s city space.",
     "pdfPage": 17
   },
   {
@@ -247,7 +247,7 @@
   {
     "key": "endgame",
     "label": "Endgame",
-    "description": "“Endgame: +3 Attack” means this enemy gets +3 Attack for each Master Strike that has occurred so far this game.",
+    "description": "It is the “Endgame” whenever the Villain Deck holds 8 or fewer cards per player. “Endgame: +3 Attack” means this enemy gets +3 Attack while it is the Endgame — not once per Master Strike. Some Heroes and cards can also turn on Endgame abilities.",
     "pdfPage": 25
   },
   {
@@ -259,13 +259,13 @@
   {
     "key": "excessiveviolence",
     "label": "Excessive Violence",
-    "description": "Some Heroes say “Excessive Violence: Draw a card.” You can use this ability by spending 1 Attack more than you need when you fight a Villain.",
+    "description": "Some Heroes say “Excessive Violence: Draw a card.” Once per turn, you may spend 1 Attack more than you need to fight a Villain or Mastermind “using Excessive Violence”; if you do, you get to use all the Excessive Violence abilities on cards you played this turn.",
     "pdfPage": 25
   },
   {
     "key": "explore",
     "label": "Explore",
-    "description": "“Explore” means “Reveal the top two cards of your deck. Put any one card on top of your deck and the other on the bottom.”",
+    "description": "“Explore” means “Put a Hero from the HQ on the bottom of the Hero Deck, then reveal the top two cards of the Hero Deck and choose one to refill that empty HQ space. Put the other on the bottom of the Hero Deck.” The Hero added to the HQ this way is the “Found Hero.”",
     "pdfPage": 25
   },
   {
@@ -276,7 +276,7 @@
   {
     "key": "fatedfuture",
     "label": "Fated Future",
-    "description": "“Fated Future” means “Reveal the top card of the Villain Deck. If that card does something bad to players, use this Fated Future ability.”",
+    "description": "“Fated Future” means “When you play this card, you may put it on the bottom of your deck instead of discarding it.” This lets you draw it again sooner and predict when it will return to your hand.",
     "pdfPage": 26
   },
   {
@@ -329,13 +329,13 @@
   {
     "key": "haunt",
     "label": "Haunt",
-    "description": "“Ambush: Haunt the rightmost unhaunted Hero in the HQ” means tuck this Villain beneath that Hero. While haunted, that Hero costs +2 Recruit more.",
+    "description": "“Ambush: Haunt the rightmost unhaunted Hero in the HQ” means tuck this Villain beneath that Hero. You can’t recruit a Haunted Hero, and you can’t fight the Haunting Villain directly. Instead, spend Recruit equal to the Hero’s cost to “exorcise” it — KO the Hero or give it to a player — which drives the Villain into the city to be fought.",
     "pdfPage": 27
   },
   {
     "key": "heist",
     "label": "Heist",
-    "description": "Once per turn, if you played any Heroes with Heist abilities, you may attempt a Heist: reveal the top card of the Villain Deck. If it’s not a Scheme Twist or Master Strike, use all your Heist abilities.",
+    "description": "Once per turn, if you played any Heroes with Heist abilities, you may attempt a Heist: count the number of different non-zero costs among your Heroes this turn (your Heist Count), then reveal the top card of the Villain Deck. If your Heist Count is higher than that card’s printed Victory Points, use all your Heist abilities; if tied, nothing happens; if lower, you gain a Wound.",
     "pdfPage": 27
   },
   {
@@ -347,7 +347,7 @@
   {
     "key": "highestabomination",
     "label": "Highest Abomination",
-    "description": "“Highest Abomination” means “This gets +Attack equal to the highest printed Attack among Abomination cards in the KO pile.”",
+    "description": "“Highest Abomination” means “This gets +Attack equal to the highest printed Attack among the Heroes currently in the HQ.”",
     "pdfPage": 17
   },
   {
@@ -365,19 +365,19 @@
   {
     "key": "hydralevel",
     "label": "HYDRA Level",
-    "description": "Hydra Level represents villains rising through the ranks of the Hydra organization, achieving greater power by helping operatives escape.",
+    "description": "The HYDRA Level is the number of S.H.I.E.L.D. and/or HYDRA cards in the Escape Pile. Cards say things like “this gets +Attack equal to the HYDRA Level.” It counts any card with a S.H.I.E.L.D. or HYDRA team icon, or with “S.H.I.E.L.D.” or “HYDRA” in its name.",
     "pdfPage": 28
   },
   {
     "key": "hyperspeed",
     "label": "Hyperspeed",
-    "description": "“Hyperspeed 5” means “Reveal the top 5 cards of your deck. Choose one to add to your hand. Discard the rest.” Represents blindingly fast strikes.",
+    "description": "“Hyperspeed 5” means “Reveal the top 5 cards of your deck. You get +1 Attack for each revealed card that has an Attack icon, then discard all of them.” The numbers inside the Attack icons don’t matter — only whether the card has one.",
     "pdfPage": 28
   },
   {
     "key": "indigestion",
     "label": "Indigestion",
-    "description": "Indigestion abilities trigger when Carnage or Venom is eating somebody and gets indigestion — reversing Digest effects in chaotic ways.",
+    "description": "An Indigestion ability is the fallback used when you don’t have enough cards in your Victory Pile to meet a card’s Digest requirement. For “Digest 4: Draw two cards. Indigestion: You get +2 Attack,” you draw two cards if your Victory Pile has at least 4 cards, or take the +2 Attack instead if it has fewer.",
     "pdfPage": 28
   },
   {
@@ -395,7 +395,7 @@
   {
     "key": "liberate",
     "label": "Liberate",
-    "description": "“Liberate” means “KO a card from your hand or discard pile that costs 0.” Represents destroying oppressive enemy technology.",
+    "description": "“Liberate 3” means “You get +3 Attack, usable only against Villains holding Bystanders or against the Mastermind.” You can use the bonus against the Mastermind whether or not it is holding Bystanders. It represents striking at those who prey on the innocent.",
     "pdfPage": 29
   },
   {
@@ -413,31 +413,31 @@
   {
     "key": "manoutoftime",
     "label": "Man (and Woman) Out of Time",
-    "description": "This keyword means “After you use this card’s abilities, set it aside. At the end of this turn, put it on the bottom of your deck.” Represents heroes fighting in both past and present.",
+    "description": "This keyword means “After you use this card’s abilities, set it aside. At the start of your next turn, play this card a second time, then discard it.” You count as having “played” it on both turns, so it can trigger your Superpower abilities each time.",
     "pdfPage": 29
   },
   {
     "key": "microscopicsizechanging",
     "label": "Microscopic Size-Changing",
-    "description": "Far beyond other Size-Changing heroes, Ant-Man and Wasp can shrink down smaller than an atom, to the quantum Microverse.",
+    "description": "“Microscopic Size-Changing” means “You can recruit this card for 2 Recruit less for each matching-class card you played this turn, up to three.” It can reduce the cost to zero or below — a negative cost gives you that many Recruit points. It is a type of Size-Changing.",
     "pdfPage": 30
   },
   {
     "key": "momentum",
     "label": "Momentum",
-    "description": "“Momentum 3” means “This Villain gets +3 Attack if it entered the city on a previous turn (not the current turn).”",
+    "description": "“Momentum 3” means “This Villain gets +3 Attack if it entered another city space this turn” — for example, after being pushed forward as new Villains arrive.",
     "pdfPage": 30
   },
   {
     "key": "moonlightsunlight",
     "label": "Moonlight and Sunlight",
-    "description": "Vampires and Werewolves are vicious at night (Moonlight), while Sunspot gains strength from sunlight. Moonlight/Sunlight effects depend on the top card of the Wound Stack.",
+    "description": "Moonlight and Sunlight abilities depend on the printed costs of the Heroes in the HQ. Moonlight abilities work only when most HQ Heroes have odd-numbered costs; Sunlight abilities work only when most have even-numbered costs. If odd and even are tied, neither is in effect. Only printed costs count.",
     "pdfPage": 30
   },
   {
     "key": "outwit",
     "label": "Outwit",
-    "description": "“Outwit” means “You may reveal a Tech Hero from your hand. If you do, use this Outwit ability.” Represents genius-level intellect characters.",
+    "description": "“Outwit: Draw a card” means you may use the ability only if you reveal Heroes with 3 different costs (of any Hero Classes). You can count the Outwit card itself, and you can always choose not to Outwit.",
     "pdfPage": 31
   },
   {
@@ -455,7 +455,7 @@
   {
     "key": "piercingenergy",
     "label": "Piercing Energy",
-    "description": "Some Heroes give you “Piercing Energy” points. Piercing Energy can be used to fight enemies and ignores effects that would increase the enemy’s Attack.",
+    "description": "Some Heroes give you “Piercing Energy” points. You can fight a Villain or Mastermind by spending Piercing Energy equal to that enemy’s printed Victory Points, ignoring its Attack and any Attack modifiers (and any special conditions for fighting it). It can’t be used on enemies with no printed VP value.",
     "pdfPage": 31
   },
   {
@@ -497,13 +497,13 @@
   {
     "key": "ritualartifact",
     "label": "Ritual Artifact",
-    "description": "Ritual Artifacts use the Artifact rules with a twist — they can be “charged up” with mystic energy and unleashed for powerful effects.",
+    "description": "Ritual Artifacts use the Artifact rules with a twist: once you have fulfilled the listed Ritual condition this turn (for example, “If you drew a card”), you may discard the Ritual Artifact to get its effect. You don’t have to use it — you can save it for a later turn.",
     "pdfPage": 17
   },
   {
     "key": "sacrifice",
     "label": "Sacrifice",
-    "description": "Several Heroes say things like “Ranged Sacrifice: Take another turn after this one.” Sacrifice means KO this card to use the powerful Sacrifice ability.",
+    "description": "Several Heroes say things like “Ranged Sacrifice: Take another turn after this one.” “Sacrifice” means you may KO this card to use its powerful Sacrifice ability — but only if you played another Hero of the listed class earlier this turn. Sacrificing is always optional.",
     "pdfPage": 32
   },
   {
@@ -533,13 +533,13 @@
   {
     "key": "shieldlevel",
     "label": "S.H.I.E.L.D. Level",
-    "description": "S.H.I.E.L.D. Level represents agents unlocking special abilities as they rise through the ranks. Higher levels unlock more powerful effects.",
+    "description": "Your S.H.I.E.L.D. Level is the number of S.H.I.E.L.D. and/or HYDRA cards in your Victory Pile. “S.H.I.E.L.D. Level 2: Draw a card” means you can use the ability only if your S.H.I.E.L.D. Level is 2 or higher. This checks your Victory Pile without consuming the cards.",
     "pdfPage": 33
   },
   {
     "key": "sizechanging",
     "label": "Size-Changing",
-    "description": "Some Hero cards say “Size-Changing: Covert.” This means “This card’s printed Attack is also its Victory Points. When you play this card, it has the Covert class.”",
+    "description": "“Size-Changing” means “You can recruit this Hero for 2 Recruit less if you played any cards this turn” (or, on a Villain, fight it for 2 Attack less). The reduced cost applies only at the moment you recruit or fight the card.",
     "pdfPage": 33
   },
   {
@@ -557,7 +557,7 @@
   {
     "key": "soulbind",
     "label": "Soulbind",
-    "description": "“Soulbind a Villain” means put a Villain from the city into your Victory Pile without fighting it. Represents binding dark souls to devour their power.",
+    "description": "“Soulbind: You get +Attack equal to that Villain’s printed Victory Points” means: if you played a Hero earlier this turn, you may choose a face-up Villain already in your Victory Pile, turn it face down on the bottom of your Victory Pile, and do the Soulbind effect. Those face-down cards count for Victory Points again at the end of the game.",
     "pdfPage": 33
   },
   {
@@ -575,7 +575,7 @@
   {
     "key": "switcheroo",
     "label": "Switcheroo",
-    "description": "“Switcheroo 4” means “You may swap a card from your hand with a card from the HQ that costs 4 or less.”",
+    "description": "“Switcheroo 4” means “Reveal this card from your hand and put it on the bottom of the Hero Deck; if you do, take a Hero of exactly the specified printed cost (4) from the HQ into your hand.” You use Switcheroo instead of playing the card, so you get none of its normal Attack, Recruit, or other effects.",
     "pdfPage": 35
   },
   {
@@ -587,7 +587,7 @@
   {
     "key": "tacticalformation",
     "label": "Tactical Formation",
-    "description": "“Tactical Formation 445: You get +3 Attack” means “You get this bonus if you played Heroes costing exactly 4, 4, and 5 this turn.”",
+    "description": "“Tactical Formation 445: You get +3 Attack” means you get this bonus if you have two Heroes that cost 4 and one Hero that costs 5 — counting both Heroes in your hand and Heroes you played this turn. You can count the Tactical Formation card itself.",
     "pdfPage": 35
   },
   {
@@ -605,7 +605,7 @@
   {
     "key": "thrownartifact",
     "label": "Thrown Artifacts",
-    "description": "Thrown Artifacts can be “thrown” at the perfect moment. After playing it, instead of keeping it in play, put it into your discard pile at end of turn (or use it once and discard).",
+    "description": "Thrown Artifacts can be “thrown” at the perfect moment. To throw one, put it on the bottom of your deck and use its ability — the same turn you play it or on a later turn. Like Thor’s hammer, a Thrown Artifact can return to your hand quickly.",
     "pdfPage": 35
   },
   {
@@ -635,7 +635,7 @@
   {
     "key": "ultimateabomination",
     "label": "Ultimate Abomination",
-    "description": "This Mastermind gets +Attack equal to the printed Attack of all Heroes in the HQ.",
+    "description": "“Ultimate Abomination” means “This Mastermind gets +Attack equal to the total printed Attack of all the Heroes/Allies in the HQ/Lair.”",
     "pdfPage": 36
   },
   {
@@ -652,7 +652,7 @@
   {
     "key": "uruenchantedweapons",
     "label": "Uru-Enchanted Weapons",
-    "description": "Uru-Enchanted Weapons combine nanotech and nuclear fusion to mimic the power of the fabled Mjolnir.",
+    "description": "When you try to fight an enemy that has Uru-Enchanted Weapons, reveal that many cards from the top of the Villain Deck; the enemy immediately gains +Attack equal to the total Victory Points of the revealed cards. Then put those cards on the bottom of the Villain Deck.",
     "pdfPage": 37
   },
   {
@@ -664,13 +664,13 @@
   {
     "key": "villainousweapons",
     "label": "Villainous Weapons",
-    "description": "Villains and Masterminds can capture Villainous Weapons to become even more powerful. If you defeat them, you can seize those weapons as Artifacts.",
+    "description": "Villains and Masterminds can capture Villainous Weapons to become even more powerful, adding the Weapon’s printed Attack bonus. When you defeat the enemy holding them, the Weapons go into your discard pile as Artifacts you can play later.",
     "pdfPage": 37
   },
   {
     "key": "wakingnightmare",
     "label": "Waking Nightmare",
-    "description": "“Waking Nightmare” means “Reveal the top card of your deck. If that card costs 0, KO it.” Represents psychological horror attacks.",
+    "description": "To “have a Waking Nightmare,” discard a non-grey Hero from your hand; if you discard one this way, draw a card. Repeated Waking Nightmares can strip your hand of powerful Heroes, leaving only grey S.H.I.E.L.D. Agents.",
     "pdfPage": 37
   },
   {
@@ -682,7 +682,7 @@
   {
     "key": "weaponxsequence",
     "label": "Weapon X Sequence",
-    "description": "The Weapon X Sequence means each successive copy of this card you play gets stronger. The first gives a base effect, the second gives more, and so on.",
+    "description": "On a Hero, “Weapon X Sequence” means “You get +Attack equal to the longest run of consecutive different printed costs among your cards (in hand and played this turn).” For costs 0, 4, 2, 7, 3, 3 the longest run is 2-3-4, giving +3 Attack. On an enemy, it counts the printed costs of cards in the HQ instead.",
     "pdfPage": 38
   },
   {
@@ -705,7 +705,7 @@
   {
     "key": "worthy",
     "label": "Worthy",
-    "description": "Some Hero cards say “If you are Worthy, draw a card.” You become Worthy this turn if you recruited a card that costs 0 or fought a Villain that costs 0.",
+    "description": "Some Hero cards say “If you are Worthy, draw a card.” You are Worthy this turn if you have a Hero that costs 5 or more — counting Heroes in your hand, Heroes you played this turn, and Hero Artifacts you control.",
     "pdfPage": 39
   },
   {
