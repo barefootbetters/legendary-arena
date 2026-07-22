@@ -86,6 +86,14 @@ const HC_OPTIONS    = ["covert","instinct","ranged","strength","tech"];
 // is silent (no warning banner, no fallback UI).
 const rulebookPdfUrl = ref<string | null>(null);
 
+// why: Absolute URL to the /rules page on www (the full rulebook reproduced as
+// HTML). Populated from registry-config.json like rulebookPdfUrl; the same
+// null-absence path applies (GlossaryPanel omits the per-entry HTML link when
+// null, no warning). The HTML link is shown ALONGSIDE the PDF deep-link, not
+// as a replacement (WP-039). Anchor contract: `#keyword-<slug(label)>` /
+// `#rule-<slug(label)>` — see GlossaryPanel.
+const rulesPageUrl = ref<string | null>(null);
+
 // ── View toggle ──────────────────────────────────────────────────────────────
 // why: "loadout" is an additive third tab (WP-091); Cards/Themes tabs are
 // unaffected. No router library is added (EC-091 L7) — the existing tab
@@ -345,6 +353,7 @@ onMounted(async () => {
     const config = await configResponse.json();
     const metadataBaseUrl = config.metadataBaseUrl as string;
     rulebookPdfUrl.value = (config.rulebookPdfUrl as string | undefined) ?? null;
+    rulesPageUrl.value = (config.rulesPageUrl as string | undefined) ?? null;
 
     const reg = await getRegistry();
     loadStatus.value = "Parsing card data…";
@@ -1323,7 +1332,7 @@ const loadoutTraySummary = computed(() => {
            view's body div. This eliminates DOM duplication and makes the resizable
            splitter work seamlessly across view switches. -->
       <div class="body">
-        <GlossaryPanel :rulebook-pdf-url="rulebookPdfUrl" />
+        <GlossaryPanel :rulebook-pdf-url="rulebookPdfUrl" :rules-page-url="rulesPageUrl" />
 
         <!-- Themes content -->
         <template v-if="activeView === 'themes'">
