@@ -159,6 +159,33 @@ describe("runMatch (WP-304 / EC-334)", () => {
     assert.equal(canonicalizeResult(result), JSON.stringify(result));
   });
 
+  test("a headless run reaches a terminal endgame condition within the safety cap (WP-411 — end-to-end termination)", async () => {
+    // why: WP-411 — the end-to-end half of the "matches actually finish" claim.
+    // A run whose averageTurns is below the harness safety cap (MAX_TURNS_PER_GAME
+    // = 200 in simulation.runner.ts) reached a real evaluateEndgame terminal
+    // condition rather than spinning to the cap or getting stuck (both of which
+    // report exactly 200 turns). This guards against the harness regressing to a
+    // never-terminating state.
+    //
+    // why (scope): this does NOT and CANNOT assert `ctx.gameover` — the
+    // engine-runner drives `runSimulation`, a pure re-implementation of the turn
+    // loop that calls `evaluateEndgame` directly and never instantiates
+    // boardgame.io, so there is no `ctx.gameover` on this path. The load-bearing
+    // wiring test (the top-level `endIf` actually setting `ctx.gameover` via
+    // boardgame.io's reducer) lives in `packages/game-engine/src/game.test.ts`.
+    // See EC-446 Execution Amendment for why the WP-411 wiring coverage was
+    // realized there rather than here.
+    const SIMULATION_SAFETY_CAP = 200;
+    const result = await runScenario(
+      makeConfig("run", VALID_SCENARIO_PATH, { games: 5 }),
+    );
+    assert.equal(result.gamesPlayed, 5);
+    assert.ok(
+      result.averageTurns < SIMULATION_SAFETY_CAP,
+      `averageTurns (${result.averageTurns}) must be below the ${SIMULATION_SAFETY_CAP}-turn safety cap — a capped/stuck run never reaches a terminal endgame condition`,
+    );
+  });
+
   test("an invalid scenario document is rejected with exit code 2", async () => {
     await assert.rejects(
       () => runScenario(makeConfig("run", INVALID_SCENARIO_PATH)),

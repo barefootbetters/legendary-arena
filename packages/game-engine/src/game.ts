@@ -319,6 +319,27 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     return initialState;
   },
 
+  // why: WP-411 / D-24223 — the end-of-game condition is a TOP-LEVEL Game
+  // `endIf`, not a phase `endIf`. In boardgame.io a phase `endIf` only ends the
+  // PHASE; only a top-level Game `endIf` sets `ctx.gameover` (to the truthy
+  // return) and ends the game, which is what boardgame.io's store then persists
+  // into the match `metadata.gameover`. The prior implementation placed the
+  // endgame check as a `play`-phase `endIf`, which ended the phase (→ the empty
+  // `end` phase) but NEVER set `ctx.gameover` — so no match ever registered
+  // gameover and every completed-match consumer (competitive submission WP-338,
+  // result-LAGN WP-406, Hall of Legends WP-407/408, match summaries D-24169) was
+  // unreachable in production. This is a pure read of `G.counters` via
+  // `evaluateEndgame` (the sole endgame authority; no inline counter logic, no
+  // I/O, no events, consumes no randomness) — it returns the EndgameResult
+  // ({ outcome, reason }) for a terminal state so the framework sets
+  // `ctx.gameover` to it, or `undefined` to let the game continue. The
+  // top-level `Game['endIf']` return type is `any`, so — unlike the removed
+  // phase-level check whose narrower `boolean | void` type forced a cast — no
+  // cast is needed. Determinism: this mutates no `G`, so an identical `G` hashes
+  // identically; the only behavioral change is that a game now TERMINATES at the
+  // win/loss point instead of accepting further moves.
+  endIf: ({ G }) => evaluateEndgame(G) ?? undefined,
+
   // why: playerView is the sole engine→client projection boundary.
   // Clients never observe raw LegendaryGameState — this hook reshapes
   // every state frame into audience-filtered UIState via buildUIState
@@ -451,16 +472,14 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     },
     play: {
       next: 'end',
-      // why: endIf must be pure -- all endgame state is read from G.counters
-      // which the rule pipeline maintains via applyRuleEffects. Delegates
-      // entirely to evaluateEndgame; no inline counter logic here.
-      // boardgame.io stores any truthy endIf return as ctx.gameover at runtime;
-      // the phase-level type definition is narrower than what it accepts, so
-      // we assert the return to satisfy the compiler.
-      endIf: ({ G }) => {
-        const result = evaluateEndgame(G);
-        return (result ?? undefined) as unknown as boolean | void;
-      },
+      // why: WP-411 / D-24223 — the endgame check that used to live here as a
+      // `play`-phase `endIf` was REMOVED. A phase `endIf` only ends the phase
+      // (→ the empty `end` phase); it never set `ctx.gameover`, which was the
+      // bug. Termination now lives on the TOP-LEVEL `LegendaryGame.endIf`
+      // (above), the only `endIf` that sets `ctx.gameover`. `play.next: 'end'`
+      // and the `end` phase are retained (the four-phase structure is pinned by
+      // game.test.ts) even though the game now ends via `gameover` before the
+      // `end` phase is reached.
       turn: {
         // why: explicit `activePlayers: { currentPlayer: 'playTurn' }` plus
         // empty `stages.playTurn: {}` per D-10009. Without it,

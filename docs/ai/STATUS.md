@@ -7,6 +7,56 @@
 
 ## Current State
 
+### WP-411 / EC-446 — Set `ctx.gameover` at end of game (top-level `endIf`) (D-24223) (2026-07-21)
+
+**Engine-pipeline fix. `User-Visible Surface = none directly — engine wiring`, but it
+is the keystone that unblocks the whole completed-match pipeline. Code merged; the
+D-24026 live-verify (AC-6) is OPEN and operator-gated on the engine deploy.**
+
+**The bug (critical, latent since the engine's inception).** No match ever set
+`ctx.gameover`. The endgame check was a **phase-level `endIf`** on the `play` phase —
+which in boardgame.io only **ends the phase** (→ the empty `end` phase) and does
+**not** set `ctx.gameover`. `LegendaryGame` had **no top-level `endIf`** and no
+`events.endGame()` anywhere. So a decisive win ended the `play` phase, transitioned to
+the empty `end` phase, and never registered gameover — `metadata.gameover` stayed
+null. Every completed-match consumer gates on `metadata.gameover` / `isMatchFinished`,
+so all were **dead in production**: competitive submission (WP-338 → `competitive_scores`
+**empty**), result-LAGN (WP-406), Hall of Legends (WP-407/408), match-summary analytics
+(D-24169). Found while live-verifying WP-407/408: a clean prod win (`J8rw6ziU4Xg`,
+Magneto's four tactics defeated) returned `404 match_not_finished` from `result-lagn`.
+
+**The fix.** A **top-level** `LegendaryGame.endIf: ({ G }) => evaluateEndgame(G) ?? undefined`
+(sibling of `moves`/`phases`) — the only `endIf` boardgame.io reads to set
+`ctx.gameover` (and persist `metadata.gameover`). The redundant/incorrect `play`-phase
+`endIf` (and its misleading comment) was removed; the four phases (lobby/setup/play/end)
+are retained (pinned by `game.test.ts`). Win/loss conditions unchanged (same
+`evaluateEndgame`). No server edit — the server already reads `metadata.gameover`
+correctly; it was simply never reached.
+
+**Test gap closed — and a spec correction.** The bug hid because the suite asserted the
+pure `evaluateEndgame(G)` but never the boardgame.io wiring. The load-bearing wiring
+test (`InitializeGame` + `CreateGameReducer` drive a real match, confirm `ctx.gameover`
+unset mid-game, reach a terminal condition, assert the framework sets `ctx.gameover` to
+the `evaluateEndgame` result) was realized in **`game.test.ts`**, not the engine-runner
+as the WP first framed: the engine-runner's `runSimulation` harness re-implements the
+turn loop and calls `evaluateEndgame` directly — it never instantiates boardgame.io, so
+it has no `ctx.gameover` to assert (EC-446 §Execution Amendment). The engine-runner's
+`runMatch.test.ts` still gained an honest end-to-end termination smoke. All engine-only;
+"no server edit" preserved.
+
+**Gates green:** build 0; `packages/game-engine` **2053 → 2055 / 0** (+AC-1 `endIf` unit,
++AC-3 reducer wiring); `apps/engine-runner` **19 → 20 / 0**; `pnpm -r --no-bail test`
+clean across all 12 packages. **Determinism (AC-4):** `finalStateHash` sentinels +
+`PRE_WP080_HASH` **byte-unchanged** — the fix mutates no `G`, and no recorded fixture
+was captured past a win/loss point, so the re-record was a verified no-op (no re-pin).
+§21 N/A. D-24223 landed **Active**.
+
+**AC-6 / D-24026 live-verify is OPEN (operator-gated):** after the engine deploys, play a
+real match to gameover and confirm `SELECT metadata ? 'gameover' …` is `t` and
+`GET /api/match/:matchId/result-lagn` returns a valid LAGN 1.4.0 document. This is the
+terminal action that has been impossible until this fix, and it simultaneously closes the
+**WP-407 / WP-408 populated-roster live-verifies** (blocked on this bug).
+
 ### WP-412 / EC-447 — Arena-Client Audio Layer Foundation: the first sound in the game (D-24224) (2026-07-21)
 
 **User-visible surface — `play.legendary-arena.com`. Code merged; the audible

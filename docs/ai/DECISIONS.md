@@ -31467,9 +31467,9 @@ Protect this file.
 
 ---
 
-### D-24223 — the end-of-game condition is a top-level Game `endIf` that sets `ctx.gameover` (the prior phase-level `endIf` never did) (reserved)
+### D-24223 — the end-of-game condition is a top-level Game `endIf` that sets `ctx.gameover` (the prior phase-level `endIf` never did) (Active)
 
-**Status:** Reserved (Drafted 2026-07-21; not yet landed — flips to Active at WP-411 execution).
+**Status:** Active (landed 2026-07-21 — WP-411 / EC-446).
 
 **Decision.** `LegendaryGame` gains a **top-level `endIf`**,
 `({ G }) => evaluateEndgame(G) ?? undefined`, so boardgame.io sets `ctx.gameover`
@@ -31488,9 +31488,18 @@ which is why production `competitive_scores` was **empty**; the result-LAGN prod
 (WP-406); the Hall of Legends view + download (WP-407/408); and match-summary
 analytics (D-24169). None could ever fire, because matches never finished. The
 defect hid because the test suite asserted the pure `evaluateEndgame(G)` function
-but never the boardgame.io wiring that turns it into `ctx.gameover`; WP-411 adds
-both a `LegendaryGame.endIf` unit assertion and an engine-runner integration test
-that plays a match to a real gameover.
+but never the boardgame.io wiring that turns it into `ctx.gameover`. WP-411 closes
+the gap with (a) a `LegendaryGame.endIf` unit assertion and (b) a **boardgame.io
+reducer wiring test** — `InitializeGame` + `CreateGameReducer` drive a real match
+to a terminal condition and assert the framework sets `ctx.gameover` to the
+`evaluateEndgame` result. **Execution note:** that reducer wiring test lives in
+`packages/game-engine/src/game.test.ts`, not the engine-runner, because the
+engine-runner's `runSimulation` harness re-implements the turn loop and calls
+`evaluateEndgame` directly — it never instantiates boardgame.io, so it has no
+`ctx.gameover` to assert on (see EC-446 §Execution Amendment). The engine-runner's
+`runMatch.test.ts` still gains an honest end-to-end termination smoke (a headless
+run reaches a terminal endgame condition within the safety cap). "No server edit"
+is preserved — the wiring test is engine-only.
 
 **Determinism.** Setting `ctx.gameover` mutates no `G`, so `finalStateHash` (a hash
 of `G`) is unchanged for an identical `G`. The only exposure is that a game now
@@ -31504,7 +31513,11 @@ before this fix, with no gameover) are reaped, backfilled, or left as-is — a
 separate operational decision, out of WP-411's scope.
 
 **Packet:** WP-411 (EC-446).
-**Drafted:** 2026-07-21; not yet landed.
+**Landed:** 2026-07-21 (WP-411 / EC-446). Code-only fix verified: build 0; game-engine
+2055/0 (+ AC-1 endIf unit + AC-3 reducer wiring); engine-runner 20/0; whole-repo
+`--no-bail` clean; `finalStateHash` + `PRE_WP080_HASH` UNCHANGED (no `G` mutation,
+no fixture recorded past the win/loss point) — the AC-4 determinism re-pin was a
+verified no-op. AC-6 (D-24026 live-verify) pending the engine deploy.
 
 ---
 
