@@ -59,12 +59,33 @@ export function createPool(): pg.Pool {
   // a checkout slot. Production tuning (e.g., reading max from
   // an env var) is a future hardening WP per WP-115 §Out of
   // Scope.
-  return new Pool({
+  const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     max: 10,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 5000,
   });
+
+  // why: node-postgres emits an 'error' event on the POOL (not on any query)
+  // when an idle, already-connected client is terminated by the backend —
+  // Render Postgres idle-connection recycling, a database restart/failover, or
+  // a network partition. pg automatically removes the dead client from the
+  // pool, so the next checkout transparently opens a fresh connection; the
+  // listener exists only to observe the event. Critically, if NO listener is
+  // attached, that emit propagates as an uncaughtException and crashes the
+  // process. Observed 2026-07-22 as a `writeAfterFIN` pg.Connection dump
+  // followed by process exit, which put api.legendary-arena.com into a 502
+  // crash loop (the crashed client had served 118 checkouts). Logging and
+  // swallowing here keeps the server alive across a dropped idle connection.
+  pool.on('error', (idleClientError) => {
+    console.error(
+      '[server] idle pg client terminated by the backend; client removed from ' +
+        'pool, server staying up. Underlying error:',
+      idleClientError,
+    );
+  });
+
+  return pool;
 }
 
 /**
