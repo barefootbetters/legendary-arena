@@ -239,6 +239,73 @@ test('the fault fallback recovers a stalled turn by advancing the stage', async 
   assert.equal(botAllyDrivers.has('m-recover'), true, 'the driver remains registered after a passed turn');
 });
 
+test('a wedge recovered by the one fresh-fetch whole-turn retry does not fault the match', async () => {
+  // Attempt 1 wedges: the decision throws and the fault fallback (a no-op submit)
+  // cannot advance, so the whole turn faults. WP-414's single retry re-attempts
+  // the whole turn from fresh state; attempt 2's decision passes the turn, so the
+  // match is NOT faulted.
+  let decideCalls = 0;
+  const { deps, persistCalls } = makeDeps({
+    initial: fakeState('1', 1),
+    decide: () => {
+      decideCalls += 1;
+      if (decideCalls === 1) {
+        throw new Error('transient legal-move race (raw detail must never reach the match).');
+      }
+      return { name: 'endTurn', args: {} };
+    },
+    onSubmit: (move, match) => {
+      // why: only the retry's real endTurn (decideCalls >= 2) advances; attempt
+      // 1's fault-fallback endTurn/advanceStage (decideCalls === 1) stay no-ops,
+      // so attempt 1 genuinely faults before the retry runs.
+      if (move.moveName === 'endTurn' && decideCalls >= 2) {
+        match.value = fakeState('0', 2);
+      }
+    },
+  });
+  const driver = createBotAllyDriver({ matchId: 'm-retry-ok', botSeats: ['1'], deps });
+
+  await driver.tick();
+
+  assert.equal(decideCalls, 2, 'exactly two whole-turn attempts ran — the retry fired exactly once');
+  assert.notEqual(driver.getStatus(), BOT_ALLY_STATUS.faulted, 'the retried turn recovered and did not fault');
+  assert.equal(driver.getStatus(), BOT_ALLY_STATUS.active, 'the driver stays active after the recovered, passed turn');
+  assert.equal(driver.getTurnCount(), 1, 'the recovered turn counted as one completed bot turn');
+  assert.equal(persistCalls.length, 0, 'a recovered turn persisted no terminal status');
+  assert.equal(botAllyDrivers.has('m-retry-ok'), true, 'the driver remains registered after the recovered turn');
+});
+
+test('a second consecutive wedge faults; the whole-turn retry fires at most once', async () => {
+  // Every decision throws and no submit advances, so BOTH the original attempt
+  // and the single retry wedge — the match faults. decideCalls === 2 proves the
+  // retry ran exactly once (not zero, not a loop).
+  let decideCalls = 0;
+  const { deps, persistCalls } = makeDeps({
+    initial: fakeState('1', 7),
+    decide: () => {
+      decideCalls += 1;
+      throw new Error('policy blew up again (raw detail never reaches the match).');
+    },
+    onSubmit: () => {
+      // no-op: neither attempt's fault fallback can advance, so both attempts fault.
+    },
+  });
+  const driver = createBotAllyDriver({ matchId: 'm-double-wedge', botSeats: ['1'], deps });
+
+  await driver.tick();
+
+  assert.equal(decideCalls, 2, 'exactly two whole-turn attempts ran — the retry fired once, never more');
+  assert.equal(driver.getStatus(), BOT_ALLY_STATUS.faulted, 'a twice-wedged turn faults the match');
+  assert.equal(persistCalls.length, 1, 'the faulted teardown persisted exactly once');
+  assert.equal(persistCalls[0]!.status, BOT_ALLY_STATUS.faulted);
+  assert.equal(
+    persistCalls[0]!.faultMessage,
+    BOT_FAULTED_MESSAGE,
+    'the persisted fault message is the public-safe co-op sentence, never a raw error',
+  );
+  assert.equal(botAllyDrivers.has('m-double-wedge'), false, 'the twice-wedged driver was de-registered');
+});
+
 test('the driver tears down as abandoned after the idle-poll grace elapses', async () => {
   // The human never moves (seat 0 turn, unchanging state id). After maxIdlePolls
   // no-progress ticks the driver tears down as abandoned.

@@ -56,6 +56,20 @@ const MAKE_MOVE = 'MAKE_MOVE';
 const VALID_POLICY_NAMES = ['competent', 'random'];
 
 /**
+ * Per-match lifetime cap on how many times restart revival will re-register a
+ * driver for a still-live faulted/exhausted match.
+ *
+ * // why: WP-414 / D-24230 — restart revival re-attaches a faulted/exhausted
+ * driver that a server restart lost, but a genuinely-wedged match must not
+ * re-register a doomed driver on every deploy. After MAX_REVIVALS revivals the
+ * row is excluded from the revival set and stays `faulted`, so it settles to a
+ * surfaced fault (the bot-ally-status endpoint + WP-415 banner) instead of
+ * looping forever. 3 is generous headroom for transient losses without masking a
+ * permanent wedge.
+ */
+export const MAX_REVIVALS = 3;
+
+/**
  * Validates the create-with-bot request body. Pure — no I/O — so it is unit
  * testable and the handler stays thin.
  *
@@ -235,23 +249,81 @@ async function updateBotAllyMatchStatus(database, matchId, status, faultMessage)
 }
 
 /**
- * Reads the still-active bot-ally match records (for boot re-registration).
+ * Reads the bot-ally match records eligible for restart re-registration: every
+ * still-`active` row PLUS every still-under-cap `faulted`/`exhausted` row.
+ *
+ * // why: WP-414 / D-24230 — the revival set widened beyond `status = 'active'`
+ * because a faulted/exhausted driver LOST to a server restart (its in-memory
+ * driver gone) must be revived, not left frozen. The `revive_count < MAX_REVIVALS`
+ * bound keeps a permanently-wedged match from re-registering a doomed driver on
+ * every deploy — a capped row is excluded here and stays `faulted`. `status` is
+ * returned so the caller only increments `revive_count` for a row that was NOT
+ * already active (a merely-lost active driver did not consume a revival).
  *
  * @param {object} database - The pg pool.
- * @returns {Promise<Array<{ matchId: string, botSeats: string[], decisionSeed: string, policy: string }>>}
+ * @returns {Promise<Array<{ matchId: string, botSeats: string[], decisionSeed: string, policy: string, status: string, reviveCount: number }>>}
  */
-async function readActiveBotAllyMatches(database) {
+export async function readRevivableBotAllyMatches(database) {
   const result = await database.query(
-    'SELECT match_id, bot_seats, decision_seed, policy ' +
-      "FROM legendary.match_bot_ally WHERE status = 'active'",
-    [],
+    'SELECT match_id, bot_seats, decision_seed, policy, status, revive_count ' +
+      'FROM legendary.match_bot_ally ' +
+      "WHERE status = 'active' " +
+      "OR (status IN ('faulted', 'exhausted') AND revive_count < $1)",
+    [MAX_REVIVALS],
   );
   return result.rows.map((row) => ({
     matchId: row.match_id,
     botSeats: row.bot_seats,
     decisionSeed: row.decision_seed,
     policy: row.policy,
+    status: row.status,
+    reviveCount: row.revive_count,
   }));
+}
+
+/**
+ * Flips a revived match back to `active` and increments its lifetime
+ * `revive_count` in a single update.
+ *
+ * // why: WP-414 / D-24230 — called only when a NOT-already-active revivable row
+ * is re-registered, so the bounded revival cap advances by exactly one; an
+ * already-active row (a driver merely lost to the restart, never faulted) is
+ * re-registered without this write and never consumes a revival.
+ *
+ * @param {object} database - The pg pool.
+ * @param {string} matchId - The match id.
+ * @returns {Promise<void>}
+ */
+async function markBotAllyMatchRevived(database, matchId) {
+  await database.query(
+    'UPDATE legendary.match_bot_ally ' +
+      "SET status = 'active', revive_count = revive_count + 1, updated_at = now() " +
+      'WHERE match_id = $1',
+    [matchId],
+  );
+}
+
+/**
+ * Reads a single match's bot-ally status row for the read-only status surface.
+ * Reads ONLY the side-table — never the bgio blob, never `G`/`ctx`.
+ *
+ * @param {object} database - The pg pool.
+ * @param {string} matchId - The match id.
+ * @returns {Promise<{ status: string, faultMessage: string | null } | null>} the
+ *   row's status + fault message, or null when there is no row (not a bot-ally match).
+ */
+async function readBotAllyStatusRow(database, matchId) {
+  const result = await database.query(
+    'SELECT status, fault_message FROM legendary.match_bot_ally WHERE match_id = $1',
+    [matchId],
+  );
+  if (result.rows.length === 0) {
+    return null;
+  }
+  return {
+    status: result.rows[0].status,
+    faultMessage: result.rows[0].fault_message,
+  };
 }
 
 /**
@@ -508,6 +580,44 @@ export function registerBotAllyRoutes(router, context) {
       console.error(`[bot-ally] create-with-bot failed unexpectedly: ${faultError.message}`);
     }
   });
+
+  // why: guest — the unguessable matchId is the capability, so the play surface
+  // (WP-415) can poll a match's bot-ally status without a session; the response
+  // carries only { driving, status, message } — never identity, G, ctx, or seat
+  // credentials. why side-table-only: the human-facing status is derived
+  // entirely from legendary.match_bot_ally; this route NEVER reads the bgio blob
+  // and never inspects G/ctx (D-24095 store-only discipline).
+  router.get('/api/match/:matchId/bot-ally-status', async (koaContext) => {
+    koaContext.set('Cache-Control', 'no-store');
+    const matchId = koaContext.params.matchId;
+    try {
+      const row = await readBotAllyStatusRow(database, matchId);
+      if (row === null) {
+        // why: absent (200, not 404) — there is no bot-ally row, so this is not
+        // a bot-ally match; WP-415 shows nothing. A rowless match is a normal
+        // read, not an error, so it must not be a 4xx.
+        koaContext.status = 200;
+        koaContext.body = { driving: false, status: 'absent', message: null };
+        return;
+      }
+      // why: fault_message is surfaced VERBATIM — it is already the public-safe,
+      // co-op-framed sentence the driver persisted (WP-261 / D-24037); the route
+      // never re-decorates it with an exception, id, or path. It is carried only
+      // when the status is `faulted`; every other status has no message.
+      koaContext.status = 200;
+      koaContext.body = {
+        driving: row.status === 'active',
+        status: row.status,
+        message: row.status === 'faulted' ? row.faultMessage : null,
+      };
+    } catch (statusError) {
+      koaContext.status = 500;
+      koaContext.body = { error: 'internal_error' };
+      console.error(
+        `[bot-ally] bot-ally-status read failed for match ${matchId}: ${statusError.message}`,
+      );
+    }
+  });
 }
 
 /**
@@ -525,12 +635,12 @@ export function registerBotAllyRoutes(router, context) {
  */
 export async function rehydrateBotAllyDrivers(context) {
   const { db, database } = context;
-  let activeMatches;
+  let revivableMatches;
   try {
-    activeMatches = await readActiveBotAllyMatches(database);
+    revivableMatches = await readRevivableBotAllyMatches(database);
   } catch (readError) {
     console.error(
-      `[bot-ally] could not read active bot-ally matches for re-registration: ${readError.message}`,
+      `[bot-ally] could not read revivable bot-ally matches for re-registration: ${readError.message}`,
     );
     return;
   }
@@ -538,12 +648,13 @@ export async function rehydrateBotAllyDrivers(context) {
   const processedGame = ProcessGameConfig(LegendaryGame);
   const createSubmit = resolveCreateSubmit(context, processedGame);
   let reregistered = 0;
-  for (const record of activeMatches) {
+  for (const record of revivableMatches) {
     try {
       const { state } = await db.fetch(record.matchId, { state: true });
       if (!state || state.ctx.gameover !== undefined) {
         // why: the match is gone from the store or already finished — mark it
-        // completed so it is not scanned again, and skip re-registration.
+        // completed so it is not scanned again, and skip re-registration. A
+        // faulted match whose game already ended is NEVER revived (D-24230).
         await updateBotAllyMatchStatus(database, record.matchId, 'completed', undefined);
         continue;
       }
@@ -563,6 +674,14 @@ export async function rehydrateBotAllyDrivers(context) {
         submit: createSubmit(record.matchId, credentials),
         context,
       });
+      // why: WP-414 / D-24230 — a row that was NOT already `active` is a
+      // faulted/exhausted driver being revived, so flip it back to `active` and
+      // consume one revival (increment revive_count). An already-active row (its
+      // driver merely lost to the restart) is re-registered without consuming a
+      // revival, so a healthy long match is never pushed toward the cap.
+      if (record.status !== 'active') {
+        await markBotAllyMatchRevived(database, record.matchId);
+      }
       reregistered += 1;
     } catch (rehydrateError) {
       console.error(

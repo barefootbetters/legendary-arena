@@ -26,6 +26,9 @@ import {
   registerBotAllyRoutes,
   validateCreateWithBotBody,
   readBotSeatCredentials,
+  readRevivableBotAllyMatches,
+  rehydrateBotAllyDrivers,
+  MAX_REVIVALS,
 } from './botAllyRoutes.mjs';
 import { botAllyDrivers } from './botAllyDriver.mjs';
 
@@ -212,6 +215,10 @@ function collectHandler(context: Record<string, unknown>): Handler {
         captured = handler;
       }
     },
+    // why: registerBotAllyRoutes also registers the WP-414 GET status route; this
+    // POST-focused collector ignores it but must expose `.get` so registration
+    // does not throw.
+    get(): void {},
   };
   registerBotAllyRoutes(router as never, context as never);
   if (captured === undefined) {
@@ -355,5 +362,246 @@ describe('POST /api/match/create-with-bot', () => {
 
     assert.equal(koaContext.status, 400, 'the native create status is propagated');
     assert.equal(botAllyDrivers.has('match-xyz'), false, 'no driver is registered when creation fails');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-414 — status surface + bounded restart revival (server)
+// ---------------------------------------------------------------------------
+
+/** A fake pg pool whose `query` returns rows from a responder + records calls. */
+function makeProgrammableDatabase(
+  responder: (sql: string, params: unknown[]) => unknown[] | undefined,
+): { database: never; queries: RecordedQuery[] } {
+  const queries: RecordedQuery[] = [];
+  const database = {
+    query: async (sql: string, params: unknown[]) => {
+      queries.push({ sql, params });
+      const rows = responder(sql, params) ?? [];
+      return { rows, rowCount: rows.length };
+    },
+  } as unknown as never;
+  return { database, queries };
+}
+
+/** A minimal status-route koa context carrying only `params.matchId`. */
+function makeStatusContext(matchId: string): FakeContext & { params: { matchId: string } } {
+  return {
+    params: { matchId },
+    req: { headers: {} },
+    request: {},
+    status: 0,
+    body: undefined,
+    headers: {},
+    set(field: string, value: string): void {
+      this.headers[field] = value;
+    },
+  };
+}
+
+/** Registers the bot-ally routes and returns the captured GET/POST handlers. */
+function collectRouteHandlers(context: Record<string, unknown>): {
+  get: Record<string, Handler>;
+  post: Record<string, Handler>;
+} {
+  const handlers: { get: Record<string, Handler>; post: Record<string, Handler> } = { get: {}, post: {} };
+  const router = {
+    post(path: string, handler: Handler): void {
+      handlers.post[path] = handler;
+    },
+    get(path: string, handler: Handler): void {
+      handlers.get[path] = handler;
+    },
+  };
+  registerBotAllyRoutes(router as never, context as never);
+  return handlers;
+}
+
+/** A bgio db whose fetch returns a fixed state for `{state:true}` and metadata for `{metadata:true}`. */
+function makeRevivalBgioDb(state: unknown, metadata: unknown): unknown {
+  return {
+    async fetch(_matchId: string, options: unknown) {
+      if (options !== null && typeof options === 'object' && (options as { metadata?: boolean }).metadata) {
+        return { metadata };
+      }
+      return { state };
+    },
+  };
+}
+
+describe('GET /api/match/:matchId/bot-ally-status', () => {
+  function statusHandlerWith(
+    responder: (sql: string, params: unknown[]) => unknown[] | undefined,
+  ): { handler: Handler; queries: RecordedQuery[] } {
+    const { database, queries } = makeProgrammableDatabase(responder);
+    const handlers = collectRouteHandlers({ database, createSubmit: () => async () => {} });
+    const handler = handlers.get['/api/match/:matchId/bot-ally-status'];
+    if (handler === undefined) {
+      throw new Error('The bot-ally-status route was not registered.');
+    }
+    return { handler, queries };
+  }
+
+  test('reports an active match as driving:true with no message', async () => {
+    const { handler } = statusHandlerWith(() => [{ status: 'active', fault_message: null }]);
+    const koaContext = makeStatusContext('m-active');
+
+    await handler(koaContext);
+
+    assert.equal(koaContext.status, 200);
+    assert.deepEqual(koaContext.body, { driving: true, status: 'active', message: null });
+    assert.equal(koaContext.headers['Cache-Control'], 'no-store');
+  });
+
+  test('reports a faulted match with the verbatim public-safe message', async () => {
+    const faultMessage =
+      'The bot ally could not finish its turn, so the match was stopped. ' +
+      'You can start a new match with a bot ally.';
+    const { handler } = statusHandlerWith(() => [{ status: 'faulted', fault_message: faultMessage }]);
+    const koaContext = makeStatusContext('m-faulted');
+
+    await handler(koaContext);
+
+    assert.deepEqual(koaContext.body, { driving: false, status: 'faulted', message: faultMessage });
+  });
+
+  test('reports absent (200) and reads ONLY the side-table for a rowless match', async () => {
+    const { handler, queries } = statusHandlerWith(() => []);
+    const koaContext = makeStatusContext('m-none');
+
+    await handler(koaContext);
+
+    assert.equal(koaContext.status, 200, 'a rowless match is a 200 absent, never a 404');
+    assert.deepEqual(koaContext.body, { driving: false, status: 'absent', message: null });
+    assert.equal(queries.length, 1, 'exactly one read — no bgio blob fetch');
+    assert.match(queries[0]!.sql, /match_bot_ally/, 'the only read is against the side-table');
+  });
+
+  test('never carries a message for a non-faulted terminal status', async () => {
+    const { handler } = statusHandlerWith(() => [{ status: 'exhausted', fault_message: 'should not surface' }]);
+    const koaContext = makeStatusContext('m-exhausted');
+
+    await handler(koaContext);
+
+    assert.deepEqual(
+      koaContext.body,
+      { driving: false, status: 'exhausted', message: null },
+      'message is null unless the status is faulted',
+    );
+  });
+
+  test('returns the project-owned 500 envelope (no-store) on a DB fault', async () => {
+    const { handler } = statusHandlerWith(() => {
+      throw new Error('database unavailable');
+    });
+    const koaContext = makeStatusContext('m-err');
+
+    await handler(koaContext);
+
+    assert.equal(koaContext.status, 500);
+    assert.deepEqual(koaContext.body, { error: 'internal_error' });
+    assert.equal(koaContext.headers['Cache-Control'], 'no-store', 'no-store is set on the error path too');
+  });
+});
+
+describe('readRevivableBotAllyMatches', () => {
+  test('selects active + under-cap faulted/exhausted bounded by MAX_REVIVALS, and maps status + reviveCount', async () => {
+    const rows = [
+      { match_id: 'a', bot_seats: ['1'], decision_seed: 'a', policy: 'competent', status: 'active', revive_count: 0 },
+      { match_id: 'f', bot_seats: ['1'], decision_seed: 'f', policy: 'random', status: 'faulted', revive_count: 2 },
+    ];
+    const { database, queries } = makeProgrammableDatabase(() => rows);
+
+    const result = await readRevivableBotAllyMatches(database);
+
+    assert.equal(queries.length, 1);
+    assert.match(queries[0]!.sql, /revive_count < \$1/, 'the query is bounded by the revival cap');
+    assert.match(queries[0]!.sql, /status IN \('faulted', 'exhausted'\)/, 'the set widened past active');
+    assert.deepEqual(queries[0]!.params, [MAX_REVIVALS], 'the cap value is passed as the bound');
+    assert.deepEqual(result, [
+      { matchId: 'a', botSeats: ['1'], decisionSeed: 'a', policy: 'competent', status: 'active', reviveCount: 0 },
+      { matchId: 'f', botSeats: ['1'], decisionSeed: 'f', policy: 'random', status: 'faulted', reviveCount: 2 },
+    ]);
+  });
+});
+
+describe('rehydrateBotAllyDrivers — bounded restart revival', () => {
+  const revivableSelect = (rows: unknown[]) => (sql: string) =>
+    sql.includes('SELECT match_id') ? rows : [];
+
+  test('revives a still-live faulted match, flipping active and incrementing revive_count', async () => {
+    const { database, queries } = makeProgrammableDatabase(
+      revivableSelect([
+        { match_id: 'live-faulted', bot_seats: ['1'], decision_seed: 's', policy: 'competent', status: 'faulted', revive_count: 1 },
+      ]),
+    );
+    const liveState = { _stateID: 3, ctx: { currentPlayer: '1', phase: 'play', turn: 2, numPlayers: 2 } };
+    const metadata = { players: { '0': {}, '1': { credentials: 'cred-1' } } };
+    const context = { db: makeRevivalBgioDb(liveState, metadata), database, createSubmit: () => async () => {} };
+
+    await rehydrateBotAllyDrivers(context as never);
+
+    assert.equal(botAllyDrivers.has('live-faulted'), true, 'a driver was revived for the still-live faulted match');
+    const incrementWrite = queries.find((query) => query.sql.includes('revive_count = revive_count + 1'));
+    assert.ok(incrementWrite, 'the revival incremented revive_count and flipped status active');
+    assert.deepEqual(incrementWrite!.params, ['live-faulted']);
+    const completedWrite = queries.find(
+      (query) => query.sql.includes('SET status = $2') && (query.params as unknown[])[1] === 'completed',
+    );
+    assert.equal(completedWrite, undefined, 'a live faulted match is revived, not marked completed');
+  });
+
+  test('marks a faulted match whose game already ended completed, never reviving it', async () => {
+    const { database, queries } = makeProgrammableDatabase(
+      revivableSelect([
+        { match_id: 'done-faulted', bot_seats: ['1'], decision_seed: 's', policy: 'competent', status: 'faulted', revive_count: 0 },
+      ]),
+    );
+    const endedState = { _stateID: 9, ctx: { currentPlayer: '1', phase: 'play', turn: 5, numPlayers: 2, gameover: { winner: 'heroes' } } };
+    const context = { db: makeRevivalBgioDb(endedState, {}), database, createSubmit: () => async () => {} };
+
+    await rehydrateBotAllyDrivers(context as never);
+
+    assert.equal(botAllyDrivers.has('done-faulted'), false, 'a finished match is never revived');
+    const completedWrite = queries.find(
+      (query) => query.sql.includes('SET status = $2') && (query.params as unknown[])[1] === 'completed',
+    );
+    assert.ok(completedWrite, 'the finished match was marked completed');
+    const incrementWrite = queries.find((query) => query.sql.includes('revive_count = revive_count + 1'));
+    assert.equal(incrementWrite, undefined, 'a completed match never increments revive_count');
+  });
+
+  test('re-registers an already-active lost driver WITHOUT consuming a revival', async () => {
+    const { database, queries } = makeProgrammableDatabase(
+      revivableSelect([
+        { match_id: 'active-lost', bot_seats: ['1'], decision_seed: 's', policy: 'competent', status: 'active', revive_count: 0 },
+      ]),
+    );
+    const liveState = { _stateID: 2, ctx: { currentPlayer: '1', phase: 'play', turn: 1, numPlayers: 2 } };
+    const metadata = { players: { '0': {}, '1': { credentials: 'cred-1' } } };
+    const context = { db: makeRevivalBgioDb(liveState, metadata), database, createSubmit: () => async () => {} };
+
+    await rehydrateBotAllyDrivers(context as never);
+
+    assert.equal(botAllyDrivers.has('active-lost'), true, 'the lost active driver was re-registered');
+    const incrementWrite = queries.find((query) => query.sql.includes('revive_count = revive_count + 1'));
+    assert.equal(incrementWrite, undefined, 'a merely-lost active driver does not consume a revival');
+  });
+
+  test('skips a still-live match whose bot-seat credentials are missing', async () => {
+    const { database, queries } = makeProgrammableDatabase(
+      revivableSelect([
+        { match_id: 'no-creds', bot_seats: ['1'], decision_seed: 's', policy: 'competent', status: 'faulted', revive_count: 0 },
+      ]),
+    );
+    const liveState = { _stateID: 4, ctx: { currentPlayer: '1', phase: 'play', turn: 2, numPlayers: 2 } };
+    const metadataMissingCred = { players: { '0': {}, '1': {} } };
+    const context = { db: makeRevivalBgioDb(liveState, metadataMissingCred), database, createSubmit: () => async () => {} };
+
+    await rehydrateBotAllyDrivers(context as never);
+
+    assert.equal(botAllyDrivers.has('no-creds'), false, 'no driver is registered when credentials are missing');
+    const incrementWrite = queries.find((query) => query.sql.includes('revive_count = revive_count + 1'));
+    assert.equal(incrementWrite, undefined, 'a skipped match does not consume a revival');
   });
 });
