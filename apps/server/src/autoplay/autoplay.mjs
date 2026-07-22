@@ -503,7 +503,9 @@ export function registerAutoplayRoutes(router, context) {
  * @returns {Promise<void>}
  */
 async function submitMove({ processedGame, db, transport, auth, matchId, playerId, credentials, moveName, moveArgs }) {
-  const { state } = await db.fetch(matchId, { state: true });
+  // why: the pre-submit state read is idempotent, so it rides the transient-DB
+  // retry; the master.onUpdate WRITE below is NOT retried (non-idempotent).
+  const { state } = await resilientFetch(db, matchId, { state: true });
   if (!state) {
     return { error: 'match not found' };
   }
@@ -579,7 +581,7 @@ export async function withRegisteredController(matchId, baseDelay, body) {
  * @returns {Promise<void>}
  */
 async function recordAndPace(controller, db, matchId) {
-  const { state: pacedState } = await db.fetch(matchId, { state: true });
+  const { state: pacedState } = await resilientFetch(db, matchId, { state: true });
   if (pacedState) {
     controller.pushState({
       G: pacedState.G,
@@ -627,15 +629,76 @@ function lifecycleContextFor(state) {
 }
 
 /**
+ * Bounded retry budget for a TRANSIENT database read failure inside the bot
+ * loop, and the base back-off between attempts (multiplied by the attempt
+ * index, so 5 attempts span ~0.5+1.0+1.5+2.0 ≈ 5s before giving up).
+ *
+ * // why: Render's managed Postgres briefly returns "the database system is in
+ * recovery mode" during a restart/failover. A live bot-ALLY match survives such
+ * a blip because its driver polls and retries on the next tick; the autoplay
+ * loop is a linear sequence with no such retry, so a single transient db.fetch
+ * throw was aborting the whole spectator match with the generic
+ * "unexpected server error" reason. ~5s of bounded retries bridges a short
+ * recovery window; a longer outage still aborts (the DB is genuinely down).
+ */
+const BOT_LOOP_FETCH_ATTEMPTS = 5;
+const BOT_LOOP_FETCH_RETRY_BASE_DELAY_MS = 500;
+
+/**
+ * Reads from the match store via db.fetch, retrying a TRANSIENT read failure
+ * (a thrown fetch — e.g. the Postgres recovery-mode window) with bounded
+ * back-off before giving up. A store READ is idempotent, so retrying is safe;
+ * the non-idempotent write path (master.onUpdate) is NEVER routed through this.
+ * A match that is simply absent returns `{ state: undefined }` WITHOUT throwing,
+ * so a genuine deploy-wipe is not retried — it falls through to the vanished
+ * path unchanged; only an actual thrown fetch is retried.
+ *
+ * @param {object} db - boardgame.io storage backend.
+ * @param {string} matchId - The match id.
+ * @param {object} fetchOptions - The db.fetch options (e.g. `{ state: true }`).
+ * @param {{ attempts?: number, baseDelayMs?: number }} [retryOverrides] - Test
+ *   overrides for the attempt count and back-off (production uses the defaults).
+ * @returns {Promise<object>} The db.fetch result (e.g. `{ state }`).
+ */
+export async function resilientFetch(db, matchId, fetchOptions, retryOverrides = {}) {
+  const attempts = retryOverrides.attempts ?? BOT_LOOP_FETCH_ATTEMPTS;
+  const baseDelayMs = retryOverrides.baseDelayMs ?? BOT_LOOP_FETCH_RETRY_BASE_DELAY_MS;
+  let lastError;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      return await db.fetch(matchId, fetchOptions);
+    } catch (fetchError) {
+      lastError = fetchError;
+      if (attempt < attempts) {
+        // why: a transient DB read (e.g. a recovery-mode window) may clear
+        // within seconds — log the raw detail (never surfaced to the guest
+        // envelope) and back off, then retry rather than abort the match.
+        console.error(
+          `[autoplay] match ${matchId} state fetch failed transiently ` +
+            `(attempt ${attempt}/${attempts}); retrying: ${fetchError.message}`,
+        );
+        await delay(baseDelayMs * attempt);
+      }
+    }
+  }
+  // why: the retry budget is exhausted — the DB is unavailable beyond a brief
+  // blip. Rethrow so the loop aborts through its existing public-safe
+  // unexpected-error path; the raw detail stayed in the logs above.
+  throw lastError;
+}
+
+/**
  * Fetches the current match state, returning null when the match has vanished
  * from storage (e.g., the in-memory match store was wiped by a redeploy).
+ * Routes through {@link resilientFetch} so a transient DB read failure retries
+ * instead of aborting the whole match.
  *
  * @param {object} db - boardgame.io storage backend.
  * @param {string} matchId - The match id.
  * @returns {Promise<object | null>}
  */
 async function fetchMatchState(db, matchId) {
-  const { state } = await db.fetch(matchId, { state: true });
+  const { state } = await resilientFetch(db, matchId, { state: true });
   return state ?? null;
 }
 
