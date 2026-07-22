@@ -10,9 +10,6 @@
  */
 
 import { createRequire } from 'node:module';
-import { readFile } from 'node:fs/promises';
-import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import {
   LegendaryGame,
   getLegalMoves,
@@ -21,6 +18,7 @@ import {
   buildUIState,
   filterUIStateForAudience,
 } from '@legendary-arena/game-engine';
+import { getPlayerCountSetup } from '@legendary-arena/registry';
 import { createPlaybackController } from './playbackController.mjs';
 import {
   findPendingChoiceMove,
@@ -60,16 +58,69 @@ const MAKE_MOVE = 'MAKE_MOVE';
 const REVIEW_WINDOW_MS = 5 * 60 * 1000;
 
 /**
- * Loads the default loadout JSON used when no custom loadout is provided.
+ * Known-valid Core-set ids used to build the default "Watch Bot Play"
+ * composition when the caller sends no custom loadout. Sized for the
+ * largest supported player count (5 players → 6 heroes, 4 villain groups,
+ * 2 henchmen groups); smaller counts take the front slice of each list.
  *
- * @returns {Promise<object>} The composition block from the sample loadout.
+ * // why: the pool is Core-set only so every id is guaranteed present in the
+ * shipped registry and on the live image host. It is defined here rather than
+ * read from arena-client's public sample file, so the server no longer reaches
+ * across the app boundary for its default, and the default is built to satisfy
+ * the WP-370 player-count setup table for whatever count is requested.
  */
-async function loadDefaultLoadout() {
-  const thisDir = dirname(fileURLToPath(import.meta.url));
-  const loadoutPath = join(thisDir, '..', '..', '..', 'arena-client', 'public', 'loadout-test.json');
-  const raw = await readFile(loadoutPath, 'utf-8');
-  const envelope = JSON.parse(raw);
-  return envelope.composition;
+const DEFAULT_LOADOUT_POOL = {
+  schemeId: 'core/midtown-bank-robbery',
+  mastermindId: 'core/magneto',
+  villainGroupIds: ['core/skrulls', 'core/brotherhood', 'core/hydra', 'core/masters-of-evil'],
+  henchmanGroupIds: ['core/sentinel', 'core/doombot-legion'],
+  heroDeckIds: [
+    'core/spider-man',
+    'core/hulk',
+    'core/wolverine',
+    'core/black-widow',
+    'core/cyclops',
+    'core/iron-man',
+  ],
+  bystandersCount: 30,
+  woundsCount: 30,
+  officersCount: 30,
+  sidekicksCount: 12,
+};
+
+/**
+ * Builds the default match composition for an autoplay request, scaled to the
+ * requested player count so it always satisfies the WP-370 player-count setup
+ * table (PLAYER_COUNT_SETUP). Used when the caller sends no custom `setupData`.
+ *
+ * The engine BLOCKS a composition whose villain-group / henchmen-group / hero
+ * counts do not match the player count (Game.setup throws, so the create call
+ * returns 400). The prior fixed default (4 heroes / 1 villain group) matched NO
+ * player-count row, so every "Watch Bot Play" click failed. Taking the front
+ * slice of each pool list to the required counts guarantees a valid
+ * composition for every supported count (1–5).
+ *
+ * @param {number} playerCount - The requested player count. The route handler
+ *   clamps this to 1–5 before calling; out-of-range values fall back to the
+ *   1-player row so a caller can never get an engine-rejected composition.
+ * @returns {object} A 9-field MatchSetupConfig composition valid for the count.
+ */
+export function buildDefaultComposition(playerCount) {
+  // why: the route clamps playerCount to 1–5, but this helper is exported and
+  // independently tested; fall back to the 1-player row for any out-of-range
+  // count so it never returns a composition the engine would reject.
+  const setupRow = getPlayerCountSetup(playerCount) ?? getPlayerCountSetup(1);
+  return {
+    schemeId: DEFAULT_LOADOUT_POOL.schemeId,
+    mastermindId: DEFAULT_LOADOUT_POOL.mastermindId,
+    villainGroupIds: DEFAULT_LOADOUT_POOL.villainGroupIds.slice(0, setupRow.villainGroupCount),
+    henchmanGroupIds: DEFAULT_LOADOUT_POOL.henchmanGroupIds.slice(0, setupRow.henchmenGroupCount),
+    heroDeckIds: DEFAULT_LOADOUT_POOL.heroDeckIds.slice(0, setupRow.heroCount),
+    bystandersCount: DEFAULT_LOADOUT_POOL.bystandersCount,
+    woundsCount: DEFAULT_LOADOUT_POOL.woundsCount,
+    officersCount: DEFAULT_LOADOUT_POOL.officersCount,
+    sidekicksCount: DEFAULT_LOADOUT_POOL.sidekicksCount,
+  };
 }
 
 /**
@@ -276,14 +327,12 @@ export function registerAutoplayRoutes(router, context) {
     const delayMs = Math.max(100, Math.min(5000, Number(body.delayMs) || 800));
     const seed = typeof body.seed === 'string' ? body.seed : String(Date.now());
 
-    let setupData;
-    try {
-      setupData = body.setupData ?? await loadDefaultLoadout();
-    } catch (loadError) {
-      koaContext.status = 500;
-      koaContext.body = { error: 'Failed to load default game configuration.' };
-      return;
-    }
+    // why: when the caller sends no custom loadout, build a default composition
+    // scaled to the requested player count. The prior fixed default matched NO
+    // player-count row, so every "Watch Bot Play" click failed the WP-370
+    // engine setup gate with a 400. buildDefaultComposition is pure and cannot
+    // throw, so no load-failure branch is needed here.
+    const setupData = body.setupData ?? buildDefaultComposition(playerCount);
 
     // Step 1: Create match via lobby API
     let matchId;
