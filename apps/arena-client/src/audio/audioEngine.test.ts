@@ -125,12 +125,45 @@ describe('audioEngine (WP-412 §B) — mute / volume gate', () => {
   });
 });
 
-describe('audioEngine (WP-412 §B) — unknown URL', () => {
-  test('play with an unmapped URL is a silent no-op (never throws)', () => {
+describe('audioEngine — un-preloaded URL (EC-448 amendment, WP-413)', () => {
+  const LAZY_URL = 'https://images.legendary-arena.com/audio/sound-effects/combo-medium.mp3';
+
+  test('lazily constructs + plays a URL the manifest preload did not cover', () => {
+    const { factory, created } = makeMockFactory();
+    const engine = createAudioEngine(factory);
+    engine.arm();
+    // The combo-cue URL is NOT in sfxManifest, so it was not preloaded.
+    assert.equal(created.has(LAZY_URL), false);
+    engine.play(LAZY_URL);
+    // First play lazily constructs the clip and plays it.
+    assert.equal(created.get(LAZY_URL)?.playCount, 1);
+    assert.deepEqual(created.get(LAZY_URL)?.volumes, [DEFAULT_SFX_VOLUME]);
+  });
+
+  test('reuses the lazily-created clip on subsequent plays (constructs once)', () => {
+    const { factory, created } = makeMockFactory();
+    const engine = createAudioEngine(factory);
+    engine.arm();
+    engine.play(LAZY_URL);
+    engine.play(LAZY_URL);
+    // Same cached clip played twice — not reconstructed.
+    assert.equal(created.size, new Set(Object.values(sfxManifest)).size + 1);
+    assert.equal(created.get(LAZY_URL)?.playCount, 2);
+  });
+
+  test('a pre-arm un-preloaded URL never constructs a clip (unlock gate holds)', () => {
+    const { factory, created } = makeMockFactory();
+    const engine = createAudioEngine(factory);
+    // Not armed — the unlock gate returns before any lazy construction.
+    engine.play(LAZY_URL);
+    assert.equal(created.has(LAZY_URL), false);
+  });
+
+  test('play never throws for an un-preloaded URL', () => {
     const { factory } = makeMockFactory();
     const engine = createAudioEngine(factory);
     engine.arm();
-    assert.doesNotThrow(() => engine.play('https://images.legendary-arena.com/audio/sound-effects/missing.mp3'));
+    assert.doesNotThrow(() => engine.play('https://images.legendary-arena.com/audio/sound-effects/anything.mp3'));
   });
 });
 

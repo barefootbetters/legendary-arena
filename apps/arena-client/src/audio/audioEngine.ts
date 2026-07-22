@@ -120,10 +120,19 @@ export function createAudioEngine(howlFactory: HowlFactory = defaultHowlFactory)
     if (!isArmedState) return;
     // why: mute / volume gate — muted is a silent no-op; otherwise the master
     // volume is applied to the clip immediately before each play. Neither gate
-    // ever throws (an unknown URL is also a silent no-op below).
+    // ever throws.
     if (isMutedState) return;
-    const clip = clipsByUrl.get(clipUrl);
-    if (clip === undefined) return;
+    // why: EC-448 amendment (WP-413) — lazily construct + cache a Howl for any
+    // URL the manifest preload did not cover (e.g. a combo-cue clip whose URL
+    // is not in sfxManifest), so the engine can play ANY known-good URL, not
+    // only the sfxManifest set preloaded at construction. Preloading stays an
+    // optimization for the common notable-event clips; the first play of a
+    // lazily-added clip loads on demand (howler queues play-until-loaded).
+    let clip = clipsByUrl.get(clipUrl);
+    if (clip === undefined) {
+      clip = howlFactory({ src: [clipUrl], preload: true });
+      clipsByUrl.set(clipUrl, clip);
+    }
     clip.volume(masterVolume);
     clip.play();
   }

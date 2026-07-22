@@ -14,6 +14,7 @@ import { useSkinApplier } from '../composables/useSkinApplier';
 import { useCompetitiveSubmitOnGameover } from '../composables/useCompetitiveSubmitOnGameover';
 import { useCardImagePrefetch } from '../composables/useCardImagePrefetch';
 import { useSoundEffects } from '../composables/useSoundEffects';
+import { useComboCue } from '../composables/useComboCue';
 import { useUiStateStore } from '../stores/uiState';
 import type { SubmitMove } from '../components/play/uiMoveName.types';
 
@@ -101,6 +102,14 @@ export default defineComponent({
     const audioStore = useUiStateStore();
     const { snapshot: audioSnapshot } = storeToRefs(audioStore);
     useSoundEffects(audioSnapshot);
+
+    // why: WP-413 — the tiered combo cue, mounted at the SAME shared composable
+    // root beside useSoundEffects, reading the SAME useUiStateStore snapshot. It
+    // watches WP-409's UIState.game.lastPlayEffectsFired scalar and plays an
+    // escalating sting through the same WP-412 engine (getAudioEngine()), so it
+    // inherits that engine's unlock/mute/volume gate. Pure presentation — reads
+    // UIState only, never writes G/ctx; no new control (reuses AudioControls).
+    useComboCue(audioSnapshot);
 
     // why: WP-339 — on gameover, submit this match's competitive score once (for
     // an authenticated player). toRef keeps matchId reactive so the composable
