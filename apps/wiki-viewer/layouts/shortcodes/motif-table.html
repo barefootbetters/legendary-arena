@@ -1,0 +1,54 @@
+{{- /*
+  Motif-table shortcode for the engineering wiki.
+
+  why: the wiki is JS-free (hugo.toml `unsafe = false` + the CI zero-<script>
+  gate). Native <audio controls> uses the browser's own controls — no
+  JavaScript — and shortcode output is exempt from the `unsafe = false` raw-HTML
+  strip, so this is the sanctioned way to emit a table of playable motifs. The
+  `audio` shortcode emits one <figure>; that cannot nest inside a markdown table
+  cell, so this shortcode emits the whole <table> itself.
+
+  why: output is fully static (no timestamps, no randomness), so it does not
+  break the two-build byte-identical determinism lock.
+
+  Inner content: one team per line, pipe-delimited —
+    Team Name|team-slug|Side|Key
+  Each team expands to one row per class (five class instruments), with the
+  team icon and key spanning the five rows. Motif MP3s are the D-24225 outputs
+  hosted on R2 at audio/motifs/<slug>_<class>.mp3.
+*/ -}}
+{{- $audioBase := "https://images.legendary-arena.com/audio/motifs" -}}
+{{- $iconBase := "https://www.barefootbetters.com/wp-content/uploads/2026/03" -}}
+{{- $classes := slice
+  (dict "slug" "covert"   "label" "Covert — muted / pizzicato strings")
+  (dict "slug" "instinct" "label" "Instinct — low cellos &amp; basses")
+  (dict "slug" "ranged"   "label" "Ranged — flute / piccolo")
+  (dict "slug" "strength" "label" "Strength — trumpets &amp; trombones")
+  (dict "slug" "tech"     "label" "Tech — tuned percussion / synth") -}}
+<table class="motif-table">
+  <thead>
+    <tr><th>Team</th><th>Key</th><th>Class · instrument</th><th>Motif</th></tr>
+  </thead>
+  <tbody>
+  {{- range $rawLine := split (trim .Inner "\n\r ") "\n" -}}
+    {{- $line := trim $rawLine "\r " -}}
+    {{- if $line -}}
+      {{- $fields := split $line "|" -}}
+      {{- $team := trim (index $fields 0) " " -}}
+      {{- $slug := trim (index $fields 1) " " -}}
+      {{- $side := trim (index $fields 2) " " -}}
+      {{- $key := trim (index $fields 3) " " -}}
+      {{- range $classIndex, $class := $classes -}}
+    <tr>
+      {{- if eq $classIndex 0 }}
+      <td rowspan="5"><img src="{{ $iconBase }}/team-{{ $slug }}.svg" alt="{{ $team }} icon" width="28" height="28"> <strong>{{ $team }}</strong><br><small>{{ $side }}</small></td>
+      <td rowspan="5"><code>{{ $key }}</code></td>
+      {{- end }}
+      <td>{{ $class.label | safeHTML }}</td>
+      <td><audio controls preload="none"><source src="{{ $audioBase }}/{{ $slug }}_{{ $class.slug }}.mp3" type="audio/mpeg">Your browser does not support the audio element. <a href="{{ $audioBase }}/{{ $slug }}_{{ $class.slug }}.mp3">Download the motif</a>.</audio></td>
+    </tr>
+      {{- end -}}
+    {{- end -}}
+  {{- end }}
+  </tbody>
+</table>

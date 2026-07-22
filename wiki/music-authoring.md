@@ -306,6 +306,29 @@ visibility over breadth:
 Motifs render fast and deterministically, so breadth there is cheap; the
 theme-level assets (1, 2, 4) are the scarce, high-payoff work.
 
+### Listen: villain motifs {#villain-motifs}
+
+Every villain group's motif, one row per class instrument — all in the group's
+**minor** key, resolving **downward** (the [grammar](#motif-matrix) above),
+MuseScore-rendered by the generator (D-24225). Play any row. Two pairs to listen
+for: **HYDRA (G minor)** is the exact dark inversion of **S.H.I.E.L.D. (G
+major)**, and **Brotherhood (D minor)** of the **X-Men (D major)** — same root,
+opposite mood. The hero teams follow the identical shape in **major**, rising.
+
+{{< motif-table >}}
+Crime Syndicate|crime-syndicate|Villain|E♭ minor
+Sinister Six|sinister-six|Villain|E minor
+Foes of Asgard|foes-of-asgard|Villain|A♭ minor
+Brotherhood|brotherhood|Villain|D minor
+HYDRA|hydra|Villain|G minor
+Cabal|cabal|Villain|F♯ minor
+{{< /motif-table >}}
+
+The two grey **antihero** groups render minor too — Mercs for Money (B♭ minor)
+and Venomverse (E minor) — and the full hero roster is the major, rising
+counterpart; both are one edit away from their own tables once the presentation
+here is settled.
+
 ### Listen: a produced theme
 
 The one derivative produced so far — the *Age of Apocalypse*
