@@ -78,10 +78,18 @@ export function createPool(): pg.Pool {
   // crash loop (the crashed client had served 118 checkouts). Logging and
   // swallowing here keeps the server alive across a dropped idle connection.
   pool.on('error', (idleClientError) => {
+    // why: log ONLY the error message, never the error object. A pg error
+    // carries a reference to its `.connection` (the whole pg Connection/Socket),
+    // so `console.error('...', idleClientError)` dumps a ~40-line Connection
+    // object on every idle-client termination — during a DB restart/failover
+    // that floods the logs and buries the useful signal. The message alone
+    // (e.g. "read ECONNRESET", "the database system is in recovery mode") is
+    // what an operator needs.
+    const detail =
+      idleClientError instanceof Error ? idleClientError.message : String(idleClientError);
     console.error(
-      '[server] idle pg client terminated by the backend; client removed from ' +
-        'pool, server staying up. Underlying error:',
-      idleClientError,
+      `[server] idle pg client terminated by the backend (removed from pool; ` +
+        `server staying up): ${detail}`,
     );
   });
 
