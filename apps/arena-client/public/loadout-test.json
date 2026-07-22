@@ -7,7 +7,7 @@
     "mastermindId": "core/magneto",
     "villainGroupIds": ["core/skrulls"],
     "henchmanGroupIds": ["core/sentinel"],
-    "heroDeckIds": ["core/spider-man", "core/hulk", "core/wolverine", "core/black-widow"],
+    "heroDeckIds": ["core/spider-man", "core/hulk", "core/wolverine"],
     "bystandersCount": 30,
     "woundsCount": 30,
     "officersCount": 30,
