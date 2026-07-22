@@ -16,6 +16,7 @@
     "@legendary-arena/preplan": "workspace:*",
     "@teamhanko/hanko-elements": "^2.4.0",
     "boardgame.io": "^0.50.0",
+    "howler": "^2.2.4",
     "pinia": "^2.1.7",
     "vue": "^3.4.27"
   },
@@ -23,6 +24,7 @@
     "@cloudflare/workers-types": "^4.20260701.1",
     "@legendary-arena/game-engine": "workspace:*",
     "@legendary-arena/vue-sfc-loader": "workspace:*",
+    "@types/howler": "^2.2.13",
     "@types/jsdom": "^21.1.7",
     "@types/node": "^22.19.17",
     "@vitejs/plugin-vue": "^5.0.5",
