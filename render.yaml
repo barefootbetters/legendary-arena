@@ -246,3 +246,11 @@ databases:
     # matches). This DB is Blueprint-managed, so the plan MUST live here — a
     # dashboard-only change is reverted on the next blueprint sync.
     plan: basic-1gb
+    # why: internal-only. An empty ipAllowList blocks all PUBLIC (external)
+    # inbound connections — only services inside the Render private network may
+    # connect. The server reaches the DB via the INTERNAL hostname, so nothing
+    # app-side breaks; this closes the previous 0.0.0.0/0 ("everywhere") public
+    # exposure. Trade-off: the External Database URL (e.g. a local psql for ops)
+    # no longer connects — use the Render dashboard PSQL shell or an internal
+    # one-off job instead. Blueprint-managed, so it must live here.
+    ipAllowList: []
