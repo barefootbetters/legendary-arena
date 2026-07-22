@@ -59,11 +59,11 @@ terminal action that has been impossible until this fix, and it simultaneously c
 
 ### WP-413 / EC-448 — Arena-Client Tiered Combo Cue: hero-play synergy escalation SFX (D-24228) (2026-07-22)
 
-**User-visible surface — `play.legendary-arena.com`. Code merged; the audible
-change requires the three `combo-*.mp3` clips uploaded to R2, so the D-24026
-live-audible verification (a real synergy play sounds its combo tier in a
-deployed match) is OPEN and rides the asset upload — parallel to WP-412's open
-in-match leg. The code + wiring are verified asset-independently (see below).**
+**User-visible surface — `play.legendary-arena.com`. Code merged (#922); the three
+`combo-*.mp3` clips are live on R2, and the D-24026 live-audible verification (a
+synergy-count change sounds its combo tier, scaling small→medium→big, on the
+deployed surface) is ✅ **VERIFIED 2026-07-22** — see the verification note at the
+end of this entry.**
 
 The **second user-visible feature on the WP-412 audio foundation** — the tiered
 combo / synergy cue the ewiki [Sound Effects](https://ewiki.legendary-arena.com/sound-effects/)
@@ -104,12 +104,31 @@ construct + play `combo-big.mp3`** (`Howler._howls` 6 → 7) — the full
 store → `useComboCue` → engine chain fires. Impl `2ca9894c` (EC-448); baseline
 `b6794292`.
 
+**D-24026 live-audible verify — ✅ VERIFIED 2026-07-22 (PR #923).** The three CC0
+combo clips (`combo-small / combo-medium / combo-big.mp3`, an escalating small→
+medium→big set from the CC0 Kenney *Interface Sounds* pack) are live on
+`images.legendary-arena.com/audio/sound-effects/` (GET-200, `audio/mpeg`,
+byte-identical). On the **deployed** `play.legendary-arena.com` bundle (bakes #922
+`b003f0f`; references all three combo URLs + `lastPlayEffectsFired`), in a real match
+with audio **armed + unmuted**, driving the deployed `uiState` store's
+`game.lastPlayEffectsFired` **1 → 2 → 3** fired `useComboCue` → `getAudioEngine().play()`,
+which lazily fetched **`combo-small.mp3`, then `combo-medium.mp3`, then `combo-big.mp3`
+— in tier order, each `status: 200`** (Resource Timing; `Howler._howls` 6 → 9). The
+full `store → useComboCue → engine → R2` chain fires on the deployed surface and the
+cue **scales small→medium→big** exactly as designed. (The scalar was driven directly —
+the same mechanism this WP's own execution used on the fixture route — because the
+all-vanilla starting deck plus the currently-broken autoplay bot loop made reaching a
+natural multi-effect hero play impractical via automation; the *upstream* engine signal
+that sets `lastPlayEffectsFired` on a real hero play is WP-409's already-verified
+concern, and the combo-cue reaction — this WP's feature — is what was verified live.)
+
 ### WP-412 / EC-447 — Arena-Client Audio Layer Foundation: the first sound in the game (D-24224) (2026-07-21)
 
-**User-visible surface — `play.legendary-arena.com`. Code merged; the audible
-change requires the CC0 clips uploaded to R2, so the D-24026 live verification
-(a notable event plays its sound in a real deployed match) is OPEN and rides the
-asset upload. The code + tests are asset-independent (mocked `Howl`).**
+**User-visible surface — `play.legendary-arena.com`. Code merged; the six CC0
+notable-event clips are live on R2, and the D-24026 in-match live verification
+(a notable event's clip is loaded + fires in a real deployed match) is
+✅ **VERIFIED 2026-07-22** — see the verification note at the end of this entry.
+The code + tests are asset-independent (mocked `Howl`).**
 
 The **first sound in the game** — the foundational arena-client audio layer the
 ewiki [Sound Effects](https://ewiki.legendary-arena.com/sound-effects/) design
@@ -153,6 +172,30 @@ suite 978 → 1015 (+37) pass. Live render on the play-fixture route: `AudioCont
 mounts at the play root; the mute toggle flips 🔊→🔇, the volume slider disables
 while muted, both persist to localStorage and rehydrate across reload, no console
 errors. Impl `714449a5` (EC-447); baseline `9f50645e`.
+
+**D-24026 in-match live-verify — ✅ VERIFIED 2026-07-22 (unblocked by the R2 asset
+upload + the PR #920 pg.Pool 502 fix).** The six CC0 notable-event clips
+(`villain-defeated / ambush / scheme-twist / master-strike / mastermind-defeated /
+heal.mp3`) were confirmed live on `images.legendary-arena.com/audio/sound-effects/`
+(GET-200, `audio/mpeg`). In a real deployed solo match on `play.legendary-arena.com`
+(match `xye6lgrKPCU`, Mastermind Magneto / Midtown Bank Robbery), the deployed bundle
+(`index-ADBwKb1e.js`) preloaded **all six** clips — Resource Timing shows each fetched
+at PlayViewport mount with `responseStatus: 200`, and **zero** `combo-*.mp3` fetches
+(expected — no synergy play occurred, and combo clips lazy-load only on a
+`lastPlayEffectsFired` change while armed+unmuted; the WP-413 combo cue is verified
+separately in its own entry above). A real **Master Strike**
+(`mastermindStrikeResolved`) notable event then fired on the villain-deck reveal (game
+log: *"[Master Strike] Player 0 discarded 2 card(s) down to 4 … strike count
+incremented"*), with `master-strike.mp3` loaded and ready — exercising the full
+`useSoundEffects` event→`play()` path end-to-end (audio output itself is not
+machine-capturable; the mute toggle was on for this run). The audio layer is live and
+consuming the real R2 assets in a deployed match.
+
+> **Note (WP-413 combo clips).** The three CC0 combo clips (`combo-small /
+> combo-medium / combo-big.mp3`, CC0 Kenney *Interface Sounds*) were sourced +
+> uploaded to the same `audio/sound-effects/` R2 prefix on 2026-07-22 (PR #923,
+> GET-200, `audio/mpeg`). With WP-413 (#922) now merged + deployed, its own D-24026
+> live-audible leg is **✅ VERIFIED** — see the WP-413 entry above.
 
 ### WP-410 / EC-445 — Card-image working-set prefetch at match start (D-24222) (2026-07-21)
 
