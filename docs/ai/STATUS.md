@@ -9,10 +9,14 @@
 
 ### WP-412 / EC-447 — Arena-Client Audio Layer Foundation: the first sound in the game (D-24224) (2026-07-21)
 
-**User-visible surface — `play.legendary-arena.com`. Code merged; the audible
-change requires the CC0 clips uploaded to R2, so the D-24026 live verification
-(a notable event plays its sound in a real deployed match) is OPEN and rides the
-asset upload. The code + tests are asset-independent (mocked `Howl`).**
+**User-visible surface — `play.legendary-arena.com`. Code merged and live on the
+deployed bundle. The **six CC0 clips are now uploaded to R2 and URL-verified**
+(2026-07-21) — the asset prerequisite the audible change rode on is cleared, and
+the deployed AudioControls (mute toggle + volume + localStorage persistence across
+reload) is verified on prod. The final D-24026 leg — a notable event playing its
+sound in a *real deployed match* — remains **OPEN**, blocked on the game backend
+(`api.legendary-arena.com` returning 502 at upload time; no match can start), not
+on assets. The code + tests are asset-independent (mocked `Howl`).**
 
 The **first sound in the game** — the foundational arena-client audio layer the
 ewiki [Sound Effects](https://ewiki.legendary-arena.com/sound-effects/) design
@@ -56,6 +60,30 @@ suite 978 → 1015 (+37) pass. Live render on the play-fixture route: `AudioCont
 mounts at the play root; the mute toggle flips 🔊→🔇, the volume slider disables
 while muted, both persist to localStorage and rehydrate across reload, no console
 errors. Impl `714449a5` (EC-447); baseline `9f50645e`.
+
+**Asset upload + live-verify (ops, 2026-07-21).** The six CC0 clips are sourced
+from **Kenney** CC0 packs (`kenney.nl/assets` — Interface Sounds, Impact Sounds,
+Digital Audio; no attribution required, source noted for the record), trimmed to
+spec (~0.3–1.55 s) and encoded to mp3 (128 kbps, 44.1 kHz, tail-faded to avoid
+clicks) via ffmpeg, then uploaded to `r2:legendary-images/audio/sound-effects/`
+(the `images.legendary-arena.com` host) with the manifest's hyphenated filenames.
+Clip→event map: `villain-defeated` = heavy punch (fightResolved) · `ambush` =
+low three-tone warning (ambushResolved) · `scheme-twist` = ominous down-sweep
+(schemeTwistResolved) · `master-strike` = heavy bell/gong stinger
+(mastermindStrikeResolved) · `mastermind-defeated` = triumphant power-up rise
+(mastermindDefeated) · `heal` = light positive blip (healResolved). **All six
+GET-verified 200** (not HEAD) on `images.legendary-arena.com`, `content-type:
+audio/mpeg`, valid mp3 (`ID3`) magic. On the **deployed** prod bundle (commit
+`ced4bcf`): `AudioControls` renders at the PlayViewport root, the mute toggle
+flips 🔊→🔇 (`Mute`↔`Unmute sound effects`), `arenaClientAudioMuted` persists to
+localStorage and rehydrates 🔇 across a reload, and the volume slider disables
+while muted. **Still OPEN (not asset-blocked):** the in-match audible trigger — a
+live `notableEvents` append firing its clip — could not be exercised because
+`api.legendary-arena.com` was returning **502 Bad Gateway** (Render
+`dynamic-paid-error`) at upload time, so no deployed match could start. Re-run the
+in-match leg once the backend is healthy: start a Watch-Bot-Play match, arm audio
+with a first click, and confirm (network panel) a `…/audio/sound-effects/*.mp3`
+fetch coincides with a villain-defeated / Master-Strike event.
 
 ### WP-410 / EC-445 — Card-image working-set prefetch at match start (D-24222) (2026-07-21)
 
