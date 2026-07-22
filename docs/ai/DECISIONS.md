@@ -31675,3 +31675,130 @@ WP-412 audio foundation.
 **Drafted:** 2026-07-21; not yet landed.
 
 Protect this file.
+
+### D-24229 — the bot-ally match exposes a read-only, capability-scoped status surface (`GET /api/match/:matchId/bot-ally-status`) so the human is never silently frozen on a stopped bot (reserved)
+
+**Status:** Reserved (drafted 2026-07-22 for WP-414 / EC-449; lands at execution).
+
+**Context.** A bot-ally match (WP-375) drives the bot seat(s) from an
+**in-process** `BotAllyDriver` (`botAllyDrivers` Map, `botAllyDriver.mjs:47`). On
+any teardown — fault, exhaustion, abandonment, or a lost driver after a server
+restart — a public-safe `fault_message` is written to `legendary.match_bot_ally`,
+but **no endpoint exposes it**. The human on seat 0 (who cannot act on the bot's
+turn) is stranded with no feedback — the reported `play.legendary-arena.com`
+freeze.
+
+**Decision.** The server exposes **`GET /api/match/:matchId/bot-ally-status`**,
+locked as follows.
+
+1. **Read-only + side-table-only.** The handler reads **only**
+   `legendary.match_bot_ally`. It **never** reads the boardgame.io blob and never
+   inspects `G`/`ctx` — the D-24095 store-only discipline. The human-facing status
+   is derived entirely from the row's `status` + `fault_message`.
+2. **Auth = `guest`, keyed by `matchId`.** The `matchId` is the unguessable
+   capability (the same posture as spectating / `GET /api/version`). The response
+   carries **no** identity, **no** `G`, **no** seat credentials — only
+   `{ driving: boolean, status, message }`.
+3. **Response shape.** `status ∈ { 'active','faulted','abandoned','exhausted',
+   'completed','absent' }`; `driving === (status === 'active')`; `message` is the
+   row's `fault_message` (surfaced **verbatim** — already public-safe per WP-261 /
+   D-24037) when `status==='faulted'`, else `null`. `absent` (+ `driving:false`,
+   `message:null`) is returned as a **`200`** when there is no row — i.e. this is
+   not a bot-ally match — so the client can probe any match cheaply and stop.
+   `500` project-owned envelope `{ error: 'internal_error' }` on a DB fault;
+   status-code domain `{200, 500}`; `Cache-Control: no-store`.
+4. **No new wiring.** The route registers inside the existing
+   `registerBotAllyRoutes(router, context)`; `server.mjs` is not edited.
+
+The client half (the play-surface banner that consumes this surface) is **D-24231
+/ WP-415**.
+
+**Packet:** WP-414 (EC-449).
+**Drafted:** 2026-07-22; not yet landed.
+
+Protect this file.
+
+### D-24230 — bot-ally survivability: one within-turn retry before a fault, and bounded restart revival of still-live faulted/exhausted matches (reserved)
+
+**Status:** Reserved (drafted 2026-07-22 for WP-414 / EC-449; lands at execution).
+
+**Context.** A **live** `BotAllyDriver` can never freeze a match forever — it
+faults within `BOT_MAX_MOVE_STEPS_PER_TURN` on any wedge. So a **lasting** freeze
+means the driver is **gone** (the in-memory Map is lost on a redeploy/restart) or
+was persisted `faulted` and never revived. `rehydrateBotAllyDrivers`
+(`botAllyRoutes.mjs:526`) revives **only** `status='active'` rows — so a driver
+that faulted (often on a transient `getLegalMoves`/stateID race, e.g. right after
+a forced KO-a-Hero choice) before a restart is never re-attached, and the match
+stays frozen. WP-375 explicitly parked restart re-hydration as a fast-follow and
+D-24170 recommended "re-register"; this completes the faulted-but-live case it
+left open.
+
+**Decision.** The bot-ally driver + restart revival are hardened, locked as
+follows.
+
+1. **One within-turn retry before fault.** In `driveBotTurn`, a wedge that would
+   fault (decide throw / null move / no-op `stateID` / step-cap) first triggers
+   **exactly one** fresh-`fetchState` re-attempt of the turn before the existing
+   `runFaultFallback` (`endTurn` → `advanceStage` → `faulted`) escalates. A
+   per-turn `retriedOnce` guard bounds it to one; the never-block-the-human
+   fallback order is otherwise unchanged. A transient race resolves on the retry;
+   a real wedge still faults.
+2. **Bounded restart revival.** The revival query widens from `status='active'`
+   to `status='active'` **OR** (`status IN ('faulted','exhausted')` AND
+   `revive_count < MAX_REVIVALS`). For each revivable row: a match that is gone or
+   `ctx.gameover !== undefined` is marked `completed` and skipped (unchanged); a
+   **still-live** one is re-registered, and when the row was not already `active`
+   the same UPDATE sets `status='active'` and increments `revive_count`.
+3. **`MAX_REVIVALS = 3`.** A match at the cap is excluded from the revival set and
+   stays `faulted` — a permanently-wedged match must not re-register a doomed
+   driver on every deploy; it settles to a `faulted` the human sees (via D-24231).
+   The cap governs the `faulted`/`exhausted` revival set; it does **not** bound a
+   row still at `active` because a driver's best-effort `persistStatus` write kept
+   failing (`botAllyDriver.mjs:353-362`, swallowed) — that pre-existing WP-375
+   edge (an `active` row is always re-registered) requires a persistent DB-write
+   failure to manifest and is out of scope here.
+4. **Migration `036`** adds `revive_count integer NOT NULL DEFAULT 0` to
+   `legendary.match_bot_ally` (additive, idempotent; existing rows carry forward
+   at `0`).
+5. **Determinism unchanged.** No `Math.random()`/`Date.now()` is introduced; the
+   retry re-fetches authoritative state and re-runs the same seeded policy.
+
+**Packet:** WP-414 (EC-449).
+**Drafted:** 2026-07-22; not yet landed.
+
+Protect this file.
+
+### D-24231 — the play surface polls the bot-ally status surface and renders a co-op stall banner only on an abnormal stop, with a client-only escape (reserved)
+
+**Status:** Reserved (drafted 2026-07-22 for WP-415 / EC-450; lands at execution).
+
+**Context.** D-24229 adds a read-only bot-ally status surface; the human-facing
+half — telling the player their bot ally has stopped — is a client concern on
+`play.legendary-arena.com`. Without it the D-24229/D-24230 server work is
+invisible: a stopped bot still reads as a silent freeze.
+
+**Decision.** The arena-client consumes the status surface, locked as follows.
+
+1. **Probe-once, poll-only-if-present.** A `useBotAllyStatus` composable fetches
+   the status once on mount; `status === 'absent'` (not a bot-ally match) stops it
+   entirely — it never polls again. Otherwise it polls at
+   `BOT_ALLY_STATUS_POLL_MS` until a terminal status, clearing the interval on
+   the terminal status **and** on unmount (no leaked timer).
+2. **Banner only on an abnormal stop.** `hasStopped === (driving === false &&
+   status !== 'completed' && status !== 'absent')`. A `BotAllyStallBanner` renders
+   **only** when `hasStopped`; a healthy `active` match and a normally-`completed`
+   match (gameover, owned by the end-of-match UI) render nothing. The server
+   `message` is shown **verbatim** (already public-safe); a null message uses a
+   fixed co-op fallback sentence. §23(b) co-op framing — no PvP/versus language.
+3. **Client-only escape.** The banner offers **Return to lobby**, a client-side
+   navigation only. This packet introduces **no** new server endpoint and
+   auto-invokes **no** destructive action.
+4. **Fail-soft.** A fetch rejection is swallowed and retried on the next tick; a
+   network blip never sets `hasStopped`. Mounted once at the D-16501 `PlayViewport`
+   play-root (the WP-410/412 `01.5` wiring precedent); no runtime registry/server
+   import.
+
+**Packet:** WP-415 (EC-450).
+**Drafted:** 2026-07-22; not yet landed.
+
+Protect this file.
