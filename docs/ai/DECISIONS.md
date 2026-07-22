@@ -31508,9 +31508,9 @@ separate operational decision, out of WP-411's scope.
 
 ---
 
-### D-24224 — the arena-client audio layer is client-only, howler-backed, CC0/R2-hosted; v1 is notable-event SFX + unlock + mute/volume (reserved)
+### D-24224 — the arena-client audio layer is client-only, howler-backed, CC0/R2-hosted; v1 is notable-event SFX + unlock + mute/volume (Active)
 
-**Status:** Reserved (Drafted 2026-07-21; not yet landed — flips to Active at WP-412 execution).
+**Status:** Active (landed 2026-07-21 at WP-412 / EC-447 execution).
 
 **Decision.** `play.legendary-arena.com` gains a **foundational audio layer**,
 locked as follows.
@@ -31547,6 +31547,6 @@ Closes the ewiki [Sound Effects](https://ewiki.legendary-arena.com/sound-effects
 "no Work Packet is scoped yet" Open Question for the SFX foundation.
 
 **Packet:** WP-412 (EC-447).
-**Drafted:** 2026-07-21; not yet landed.
+**Drafted:** 2026-07-21. **Landed:** 2026-07-21 (WP-412 / EC-447 execution — PlayViewport `01.5` wiring host; `pnpm -r build` 0, arena-client typecheck 0, 1015 tests pass). Live-on-surface (D-24026) rides the CC0 clips being uploaded to R2.
 
 Protect this file.
