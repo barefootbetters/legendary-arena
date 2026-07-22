@@ -306,6 +306,37 @@ visibility over breadth:
 Motifs render fast and deterministically, so breadth there is cheap; the
 theme-level assets (1, 2, 4) are the scarce, high-payoff work.
 
+### Listen: hero motifs {#hero-motifs}
+
+Every hero team's motif, one row per class instrument — all in the team's
+**major** key, resolving **upward** (the [grammar](#motif-matrix) above),
+MuseScore-rendered by the generator (D-24225). Play any row. Because teammates
+share a key, two heroes on the same team **harmonize** when they combo — hear
+the families: the X-teams all orbit **D**, the Avengers-family teams **C**, the
+Guardians teams **F**. Each hero team is the bright, rising inverse of its
+[villain mirror](#villain-motifs) below (X-Men D major ↔ Brotherhood D minor;
+S.H.I.E.L.D. G major ↔ HYDRA G minor).
+
+{{< motif-table >}}
+Avengers|avengers|Hero|C major
+S.H.I.E.L.D.|shield|Hero|G major
+Spider Friends|spider-friends|Hero|E major
+X-Men|x-men|Hero|D major
+Fantastic Four|fantastic-four|Hero|A major
+Marvel Knights|marvel-knights|Hero|E♭ major
+X-Force|x-force|Hero|D major
+Guardians of the Galaxy|guardians-of-the-galaxy|Hero|F major
+Illuminati|illuminati|Hero|F♯ major
+New Warriors|new-warriors|Hero|C major
+Champions|champions|Hero|C major (Lydian)
+Warbound|warbound|Hero|B♭ major
+Heroes of Asgard|heroes-of-asgard|Hero|A♭ major
+Inhumans|inhumans|Hero|B major
+X-Factor Investigations|x-factor-investigations|Hero|D major
+Heroes of Wakanda|heroes-of-wakanda|Hero|D♭ major
+Guardians of the Multiverse|guardians-of-the-multiverse|Hero|F major
+{{< /motif-table >}}
+
 ### Listen: villain motifs {#villain-motifs}
 
 Every villain group's motif, one row per class instrument — all in the group's
@@ -325,9 +356,9 @@ Cabal|cabal|Villain|F♯ minor
 {{< /motif-table >}}
 
 The two grey **antihero** groups render minor too — Mercs for Money (B♭ minor)
-and Venomverse (E minor) — and the full hero roster is the major, rising
-counterpart; both are one edit away from their own tables once the presentation
-here is settled.
+and Venomverse (E minor) — one `motif-table` block away from their own table on
+the same shortcode. (The hero roster is the major, rising counterpart
+[above](#hero-motifs).)
 
 ### Listen: a produced theme
 
