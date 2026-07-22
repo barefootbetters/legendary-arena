@@ -340,6 +340,13 @@ jobs:
   unit-tests:
     name: Workspace Unit Tests
     runs-on: ubuntu-latest
+    # why: the whole-repo suite runs in ~7 min; without a cap this job inherits
+    # GitHub's 6-hour default, so a single leaked timer/handle in any test file
+    # (e.g. a component mounted but never unmounted whose poll keeps the node:test
+    # event loop open) hangs the job for hours before failing instead of failing
+    # fast. 20 min is ~3x the normal runtime — comfortable headroom for a slow
+    # runner, while turning a hang into a quick red X.
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
 
