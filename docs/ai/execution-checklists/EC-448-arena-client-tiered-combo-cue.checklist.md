@@ -50,7 +50,7 @@ The WP-412 engine's `play(clipUrl)` only played clips **preloaded from `sfxManif
 - [ ] `pnpm --filter arena-client typecheck` exits 0 (vue-tsc — the load-bearing SFC gate).
 - [ ] `pnpm --filter arena-client test` passes (engine injected / `Howl` mocked).
 - [ ] `git diff --name-only` = the allowlist only (+ the ONE recorded `01.5` wiring host); NO `packages/game-engine/**` file.
-- [ ] Live-on-surface (D-24026): on the deployed bundle, a synergy hero play plays its combo tier + the mute toggle silences it (REQUIRES the three CC0 combo clips uploaded to R2 — note the asset prerequisite in STATUS if pending).
+- [x] Live-on-surface (D-24026): **✅ VERIFIED 2026-07-22 (PR #923).** Clips uploaded to R2 (GET-200, `audio/mpeg`); on the deployed bundle (bakes #922 `b003f0f`), with audio armed + unmuted, driving `lastPlayEffectsFired` 1→2→3 lazily fetched `combo-small/medium/big.mp3` in tier order, each status 200 (`Howler._howls` 6→9) — scaling small→medium→big; the mute toggle flips 🔇↔🔊 (a muted `play()` short-circuits before the lazy-load). Scalar driven directly (as this EC's own execution did on the fixture route) since an all-vanilla starting deck + the broken autoplay bot made a natural synergy play impractical to reach via automation; the upstream `lastPlayEffectsFired` signal is WP-409's verified concern. See STATUS.md WP-413 entry.
 - [ ] `docs/ai/STATUS.md` — the tiered combo cue (hero-play synergy escalation) riding the WP-412 engine + WP-409 signal.
 - [ ] `docs/ai/DECISIONS.md` — land D-24228 Active.
 - [ ] `docs/ai/work-packets/WORK_INDEX.md` — WP-413 checked off with the date.
