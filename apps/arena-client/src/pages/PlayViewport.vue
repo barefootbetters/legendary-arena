@@ -1,5 +1,6 @@
 <script lang="ts">
 import { computed, defineComponent, ref, toRef, type PropType } from 'vue';
+import { storeToRefs } from 'pinia';
 
 import PlayDesktop from './PlayDesktop.vue';
 import PlayMobile from './PlayMobile.vue';
@@ -7,10 +8,13 @@ import DiagnosticExportButton from '../components/DiagnosticExportButton.vue';
 import ViewLoadoutButton from '../components/ViewLoadoutButton.vue';
 import WaitingForPlayersPanel from '../components/WaitingForPlayersPanel.vue';
 import HollowEffectsPanel from '../components/play/HollowEffectsPanel.vue';
+import AudioControls from '../components/play/AudioControls.vue';
 import { useViewport } from '../composables/useViewport';
 import { useSkinApplier } from '../composables/useSkinApplier';
 import { useCompetitiveSubmitOnGameover } from '../composables/useCompetitiveSubmitOnGameover';
 import { useCardImagePrefetch } from '../composables/useCardImagePrefetch';
+import { useSoundEffects } from '../composables/useSoundEffects';
+import { useUiStateStore } from '../stores/uiState';
 import type { SubmitMove } from '../components/play/uiMoveName.types';
 
 // why: WP-339 — the user-facing message for each post-match submission status.
@@ -50,7 +54,7 @@ const SUBMISSION_MESSAGES: Record<string, string> = {
  */
 export default defineComponent({
   name: 'PlayViewport',
-  components: { PlayDesktop, PlayMobile, DiagnosticExportButton, ViewLoadoutButton, WaitingForPlayersPanel, HollowEffectsPanel },
+  components: { PlayDesktop, PlayMobile, DiagnosticExportButton, ViewLoadoutButton, WaitingForPlayersPanel, HollowEffectsPanel, AudioControls },
   props: {
     submitMove: {
       type: Function as PropType<SubmitMove>,
@@ -87,6 +91,16 @@ export default defineComponent({
     // from cache on reveal instead of round-tripping to R2 mid-turn. Fire-and-forget
     // and a no-op until the manifest arrives, so it is safe at this shared root.
     useCardImagePrefetch();
+
+    // why: WP-412 — mount the notable-event SFX consumer at this shared composable
+    // root, reading the SAME useUiStateStore snapshot PlayDesktop's overlay reads
+    // (a sibling reader of the store, not a prop consumer). Audio is pure client
+    // presentation — it reads UIState only, never writes G/ctx, and adds zero
+    // determinism/replay footprint. AudioControls (rendered below) owns the
+    // autoplay-unlock arm and the persistent mute/volume UI.
+    const audioStore = useUiStateStore();
+    const { snapshot: audioSnapshot } = storeToRefs(audioStore);
+    useSoundEffects(audioSnapshot);
 
     // why: WP-339 — on gameover, submit this match's competitive score once (for
     // an authenticated player). toRef keeps matchId reactive so the composable
@@ -157,6 +171,14 @@ export default defineComponent({
       // match.
     -->
     <HollowEffectsPanel />
+    <!--
+      // why: WP-412 — mounted ONCE here at the shared viewport root (the single
+      // 01.5 wiring host), so the fixed-position mute/volume control + the
+      // autoplay-unlock arm cover BOTH the <PlayMobile> and <PlayDesktop>
+      // surfaces. Self-contained (position: fixed via its own scoped CSS), so no
+      // layout prop chain and no second wiring host.
+    -->
+    <AudioControls />
     <!--
       // why: WP-339 — a small, non-blocking post-match submission status. Shown
       // only once a submission is in flight or resolved (submissionStatus !== 'idle'),

@@ -7,6 +7,56 @@
 
 ## Current State
 
+### WP-412 / EC-447 — Arena-Client Audio Layer Foundation: the first sound in the game (D-24224) (2026-07-21)
+
+**User-visible surface — `play.legendary-arena.com`. Code merged; the audible
+change requires the CC0 clips uploaded to R2, so the D-24026 live verification
+(a notable event plays its sound in a real deployed match) is OPEN and rides the
+asset upload. The code + tests are asset-independent (mocked `Howl`).**
+
+The **first sound in the game** — the foundational arena-client audio layer the
+ewiki [Sound Effects](https://ewiki.legendary-arena.com/sound-effects/) design
+calls for. It ships **Surface 1**: one CC0 clip per notable game event (the six
+`NotableGameEventType` variants), a **howler.js** SFX engine, an autoplay-unlock
+gesture, and a **persistent mute + master volume** (localStorage).
+
+**Pure client presentation, zero engine footprint.** The layer lives entirely in
+`apps/arena-client`, reads only `UIState`, never writes `G`/`ctx`, and adds no
+determinism / replay footprint (sims and replays render no audio) — App-only diff,
+engine suites + sentinel hashes untouched. A `useSoundEffects` consumer keeps its
+**own append-only cursor** over `UIState.notableEvents` (catches up on the first
+frame — no history replay of pre-mount events — then fires one clip per
+newly-appended event in index order, with **no** overlay-style 2.5 s throttle;
+distinct from WP-201's one-at-a-time visual queue, which is the wrong shape for
+audio). The `audioEngine` is a thin howler wrapper: preload-by-URL, `play(clipUrl)`
+gated by an autoplay-unlock arm (no audio before the first user gesture; a pre-arm
+event is silently skipped, never queued to blast on unlock), a master mute, and a
+master volume. `useAudioSettings` persists `isMuted` + `volume` (0..1) to
+localStorage (the WP-130 `prefs/persistence.ts` precedent) and drives the engine
+gate. `AudioControls.vue` renders a fixed-position mute toggle + volume slider and
+owns the first-gesture unlock arm.
+
+**Wiring (`01.5` — single host).** `PlayViewport.vue`'s `setup` reads the
+`useUiStateStore` snapshot (`storeToRefs`) beside `useSkinApplier` /
+`useCardImagePrefetch` / `useCompetitiveSubmitOnGameover`, mounts
+`useSoundEffects(snapshot)`, and renders `<AudioControls />` fixed-position — a
+sibling reader of the store (the same snapshot `PlayDesktop.vue`'s overlay reads),
+no prop chain, no second wiring host.
+
+**Dependency:** `howler` (runtime) + `@types/howler` (dev), arena-client only —
+never in the engine/registry/server bundles. **Assets:** CC0-first, hosted on R2
+under `audio/sound-effects/` (served via `images.legendary-arena.com`), referenced
+by URL — no audio bytes in git. **Follow-ons** (deferred to later WPs on this
+foundation): the adaptive danger-meter **music** (separate channel), the **tiered
+combo cue** (consumes WP-409's `lastPlayEffectsFired`; hard-deps WP-412 + WP-409),
+and Surface-2 (action) / Surface-3 (turn) cues.
+
+**Verified:** `pnpm -r build` 0; arena-client `typecheck` (vue-tsc) 0; arena-client
+suite 978 → 1015 (+37) pass. Live render on the play-fixture route: `AudioControls`
+mounts at the play root; the mute toggle flips 🔊→🔇, the volume slider disables
+while muted, both persist to localStorage and rehydrate across reload, no console
+errors. Impl `714449a5` (EC-447); baseline `9f50645e`.
+
 ### WP-410 / EC-445 — Card-image working-set prefetch at match start (D-24222) (2026-07-21)
 
 **User-visible surface — `play.legendary-arena.com`. Code merged; the perceived
