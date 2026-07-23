@@ -101,6 +101,18 @@ Cross-cutting governance, methodology, and readiness assessments.
   framework (§20–26), the NG-1…NG-8 monetization bright lines and the
   open commercial space beside them, and the "no margin, no mission"
   funding model. Cites VISION; defines nothing.
+- [Legendary Arena — Tribe and Trust](legendary-arena-tribe-and-trust.md) —
+  *(draft, research)* the "filtering is the product" growth thesis: the
+  four-layer trust fence (gate → quarantine → community flag →
+  behavioural backstop), the tribe-fit filters, and the player survey —
+  plus a first-pass **threat model** (named threat-actor categories,
+  STRIDE/LINDDUN, a prioritized threat→mitigation table mapped to the four
+  layers, the missing account-security controls, and the business-lens
+  residual risk that an over-strict gate churns real players). Also covers
+  the proposed vetting process, the operator-side controls (segregation of
+  duties, least privilege, Zero Trust, regulated-finance KYC/sanctions
+  parallels), and a proposed staff/moderator training outline. Descriptive
+  of a draft strategy; defines no controls.
 - [Changelog](changelog.md) — Milestone history of significant changes,
   newest first (projected from `docs/09-CHANGELOG.md`; the exhaustive
   per-packet record lives in WORK_INDEX + git log).
