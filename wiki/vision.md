@@ -13,6 +13,7 @@ related:
   - par-simulation-calibration.md
   - leaderboard.md
   - profile-login.md
+  - design-system-overview.md
 status: canonical
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\vision.md (this page — https://ewiki.legendary-arena.com/vision/)
@@ -309,6 +310,12 @@ Work-Packet pre-flight, and contributor onboarding.
   quality-normalized, replay-verified, `ScenarioKey`-keyed.
 - **[Profile Login](profile-login.md)** — the §7a identity boundary in
   practice: Hanko verifies access, Legendary Arena owns identity.
+- **[Design System Overview](design-system-overview.md)** — the feel
+  layer's north star and the home of the game's *emotional identity /
+  authorial voice* (the "soul" principle above visual, audio, dopamine,
+  and narrative). The [player promise](#vision-at-a-glance) and the
+  good-versus-evil fantasy are the bright lines that layer leans into; the
+  Overview *expresses* the vision's identity and never redefines it.
 - **[ARCHITECTURE.md](../docs/ai/ARCHITECTURE.md)** — outranks this
   vision on architectural questions (tier 2 vs tier 3); the vision
   outranks `.claude/rules/*.md` and all Work Packets.

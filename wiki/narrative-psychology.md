@@ -188,6 +188,31 @@ the story. The local action moves (`playCard`, `recruitHero`, `fightVillain`)
 are the player *authoring* the narrative — the framing should make each feel
 like a deliberate story move, not a menu selection.
 
+### Personality and care — the authorial-voice tests {#authorial-voice}
+
+The four hooks above are *what* the narrative layer carries; the
+[Design System Overview → Soul / Authorial Voice](design-system-overview.md#soul-authorial-voice)
+principle is *how well* it must carry them. Narrative is the primary carrier
+of that authorial voice, so it inherits the **personality + care** tests most
+directly:
+
+- **Personality over neutrality** — a beat framed for *Wolverine* must not
+  read like the same beat framed for *Cyclops*; each actor's archetype gives
+  the copy its own character, never a generic "villain defeated."
+- **Care in details that move neither balance nor retention** — a distinct
+  copy line per spine event, per acting entity, is exactly the kind of
+  "unnecessary" flourish that signals an authored game rather than a merely
+  competent one. It is worth the effort precisely because nothing forces it.
+- **One strong fantasy, leaned into** — the good-versus-evil Marvel arc, and
+  the builder/destroyer lens over it, is a bright-line fantasy to commit to,
+  not an edge to sand down for the broadest possible appeal.
+
+The bar is *both* contracts at once: a narrated beat that is **accurate**
+(rides true `UIState`, per the [Narrative Contract](#narrative-contract)) but
+**generic** (interchangeable with any other arena game's copy) passes the
+governance layer yet fails the authorial-voice filter. Accuracy is the floor;
+voice is the ceiling.
+
 ### Playstyle Modes — the builder / destroyer lens {#playstyle-modes}
 
 The sharpest narrative idea in scope: capitalize on **both** player

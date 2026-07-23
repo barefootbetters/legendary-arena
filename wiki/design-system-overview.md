@@ -14,6 +14,8 @@ related:
   - visual-effects.md
   - sound-effects.md
   - music-authoring.md
+  - narrative-psychology.md
+  - dopamine-triggers.md
   - turn-system.md
   - villain-deck.md
   - vision.md
@@ -59,13 +61,65 @@ vocabulary, the projected `UIState` signals, and the architectural
 boundaries are sourced to code; the framework treatments are proposals on
 their own pages.
 
-**How to read this page.** The [Feel-Layer Contract](#feel-layer-contract)
+**How to read this page.** The
+[Soul / Authorial Voice](#soul-authorial-voice) principle is the *lens*
+above all four frameworks — the point of view that keeps them authored
+rather than competent-but-generic. The
+[Feel-Layer Contract](#feel-layer-contract)
 below is the **invariant every framework inherits** — the input-surface
 boundary and the MUST-NOTs that make the four pages composable. The
 [shared trigger spine](#shared-trigger-spine) is the **canonical event
 vocabulary**; the per-framework treatments live on their own pages, and
 [Decisions Pending](#decisions-pending) / [Deferred](#deferred) are the
 roadmap.
+
+## Soul / Authorial Voice (Feel-Layer Principle) {#soul-authorial-voice}
+
+The feel layer must communicate a clear creative point of view. Competent
+juice, audio, dopamine timing, and narrative beats are **not enough** — the
+layer should feel *authored*, not merely competent. This principle sits
+*above* the four frameworks: they answer "what do we show, play, reward, and
+mean at each event?"; this answers the question one level up — **what makes
+the whole feel layer feel alive and authored rather than a polished but
+interchangeable pile of reactions?**
+
+It is a **principle, not a hard invariant** — the [Feel-Layer
+Contract](#feel-layer-contract) below owns the immovable MUST-NOTs. This is
+the taste filter the frameworks are read against. A treatment passes when it
+can answer "yes" to these tests, not merely "is this competent?":
+
+- **Distinctive identity** — the visual + audio signature is not
+  interchangeable with any other arena game; a player should be able to
+  recognize a Master Strike by its sound alone.
+- **Personality** — heroes, factions, and arenas carry character (animation
+  quirks, motif, environmental storytelling), not neutral stat-block polish.
+- **Visible care in "unnecessary" details** — small flourishes, reactive
+  atmosphere, and satisfying idiosyncratic feedback that move neither balance
+  nor retention, and are there because someone cared.
+- **A single strong fantasy** — one bright-line good-versus-evil Marvel
+  fantasy the team is willing to lean into, rather than sanding every edge
+  for maximum broad appeal.
+- **Friction and character in the moment-to-moment feel** — not pure
+  frictionless smoothness; the texture is part of the identity.
+
+This is the filter that keeps the [shared trigger
+spine](#shared-trigger-spine) from producing a generic "screen-shake +
+sting + reward spike" reaction at every row. Every framework page should be
+readable as an expression of this voice:
+
+- **[Narrative Psychology Framework](narrative-psychology.md)** — the
+  primary carrier of meaning and archetype, and where personality and the
+  good-versus-evil fantasy are named. It carries the same
+  [personality + care tests](narrative-psychology.md#authorial-voice) applied
+  to story framing.
+- **[Visual Effects Framework](visual-effects.md)** and
+  **[Sound Effects](sound-effects.md)** /
+  **[Music Authoring](music-authoring.md)** — where distinctive identity and
+  visible care are made seen and heard (a Master Strike recognizable by its
+  sting; a team leitmotif that says *who* is acting).
+- **[Vision](vision.md)** — the source of the bright-line fantasy the whole
+  layer leans into. The feel layer must *express* what the game is; it never
+  redefines it.
 
 ## Feel-Layer Contract
 
