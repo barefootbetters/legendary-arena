@@ -8,6 +8,8 @@ tags:
   - threat-model
   - zero-trust
   - least-privilege
+  - kyc
+  - training
   - community-fit
   - retention
   - survey
@@ -415,6 +417,65 @@ proven, and the proof is continuous. It is worth stating explicitly because
 it is the "why" behind the layered fence: the layers are not four disconnected
 features, they are one continuously-verifying trust boundary.
 
+### Regulated-finance parallels (KYC, sanctions screening, monitoring)
+
+Banks fight the same problem — untrusted parties trying to move through a
+trust boundary — under strict rules (Bank Secrecy Act, USA PATRIOT Act,
+FinCEN, OFAC). Their playbook is the same shape as the fence above, and the
+mature parts are worth borrowing. A game is **not** a bank, so the lesson is
+the *pattern*, applied proportionally — not the full regulatory apparatus.
+
+**What banks layer:**
+
+- **KYC / Customer Identification Program** — verify legal identity at
+  account opening (name, DOB, address, government ID). The gate's
+  hard-verification step is the LA equivalent.
+- **Customer Due Diligence / Enhanced Due Diligence** — understand the
+  relationship; apply *extra* scrutiny to higher-risk customers. The LA
+  parallel is longer quarantine or additional review for accounts that trip
+  risk signals — friction matched to risk, not applied flat.
+- **Ongoing transaction monitoring** — watch for patterns inconsistent with
+  the customer's profile *after* onboarding. The LA parallel is the
+  behavioural backstop watching post-quarantine conduct (T10).
+- **Sanctions / watchlist screening (OFAC)** — screen customers and activity
+  against restricted lists. The LA parallel is enhanced scrutiny or
+  temporary restriction on high-risk geo / network signals (T1).
+- **Fraud tooling** — device fingerprinting, IP/geolocation, behavioural
+  analytics, anomaly detection. The LA parallel is the still-*net-new*
+  multi-accounting and signup-anomaly defences (T4).
+- **Segregation of duties + dual control, SAR-style escalation, MFA** —
+  already covered under *Operational controls* above.
+
+**On geography and non-residents.** US banks do not blanket-ban
+non-residents; they apply *higher friction and more verification* (physical
+address, extra documents, in-person steps), and some online-only
+institutions restrict further. Separately, **OFAC** sanctions do
+comprehensively restrict certain jurisdictions (e.g. Cuba, Iran, North
+Korea, Syria, and specific Russia/Ukraine-related regions) plus targeted
+individual/entity lists — for stated national-security, foreign-policy,
+counter-terrorism, and illicit-finance reasons. The transferable idea for
+LA is **risk-tiered geography, not a wall**: treat a high-risk or
+sanctioned-region signal as a reason for *enhanced scrutiny* (T1, T7), while
+weighing that against the business cost of turning away legitimate
+international players — the same conversion-vs-friction tension in Residual
+risk below. Any hard geo-restriction is a legal/compliance decision for the
+business, not a control this page defines.
+
+| Bank / government practice | Simple LA parallel | Purpose |
+|---|---|---|
+| Strong KYC identity verification at onboarding | Hard verification of photo, location/payment region, phone before full access | Stop low-effort fakes at the door |
+| Sanctions / high-risk-jurisdiction screening | Enhanced scrutiny or temporary restriction on high-risk geo/network signals | Reduce exposure to known higher-risk sources |
+| Ongoing transaction monitoring | Watch for anomalies after quarantine (play-pattern, reporting-volume shifts) | Catch what initial checks missed |
+| Enhanced due diligence for higher risk | Longer quarantine / extra review for accounts that trip risk signals | Match friction to risk level |
+| Segregation of duties / dual control | Separate who verifies identity from who promotes or handles serious flags | Prevent single-point abuse of privilege |
+| Logging + independent review (SAR discipline) | Record verification and moderation decisions; sample them | Accountability; detect internal issues |
+| Layered / least-privilege access | New accounts stay restricted until a clean record is earned | Limit damage if a bad actor gets through |
+
+The common thread — with the accounting and Zero Trust models above — is
+one rule: **never grant full trust or full power on a single check or from a
+single person.** Verify hard, tier by risk, monitor continuously, keep
+independent eyes on high-impact decisions.
+
 ### Residual risk (state it, don't hide it)
 
 Perfect security is impossible; the model's job is to make what remains
@@ -446,6 +507,76 @@ promotion). The practical next artifacts are a concrete verification-stack
 spec, measurable quarantine exit criteria, a reporting-system abuse policy,
 and a behavioural-scoring design with explicit false-positive/negative
 handling — the same four areas the strategy already lists as open.
+
+## Staff & Moderator Training (proposed)
+
+Controls only work if the people running them apply them under pressure — a
+threat actor's easiest path is often a helpful operator who makes "just this
+once" exceptions. This is a **proposed** training outline that turns the
+abstract principles above (hard verification, segregation of duties,
+continuous monitoring, least privilege) into behaviours staff can rehearse.
+It is scenario-heavy on purpose: people retain a practised refusal far
+better than a slide. Each module below carries a goal, a memorable rule, and
+the specific drills that make it stick.
+
+**Module 1 — Identity & verification discipline.** Stops trust being granted
+on easy-to-fake signals. Core idea: *a real photo and a real location are
+valuable, which is exactly why people fake them — a self-reported claim is
+never final, and if verification feels inconvenient, the inconvenience is
+the control working.* Drills: judge three profiles (one genuine, two
+fabricated) and mark which signals to accept vs independently verify;
+role-play the "I already verified on another platform, just let me in"
+request and rehearse the standard reply; quiz — which is the strongest
+location evidence, typed city vs payment-region match vs phone country code,
+and why. **Rule:** *verify hard at the door; behaviour is the safety net,
+not the front gate.*
+
+**Module 2 — Segregation of duties in daily work.** Makes single-person
+abuse or error hard. Teach the accounts-payable/receivable split adapted to
+the platform: Person A runs initial identity checks, Person B reviews
+quarantine-exit requests, Person C handles serious flags and suspensions;
+any promotion or permanent ban needs a second reviewer to confirm. Drill: a
+mock "clean record after 12 games — promote now?" ticket, where the correct
+process is *check the defined criteria → a second person reviews the log →
+then promote*, and the wrong process is one person doing both in one
+session. **Rule:** *no single person moves someone from outsider to fully
+trusted.*
+
+**Module 3 — Recognising social engineering.** Trains staff to spot the
+pressure tactics that try to bypass controls, each rehearsed as a role-play
+with the exact control-preserving reply said out loud:
+
+- **Urgency + authority** — "I'm a friend of the founder / from the payment
+  processor, approve this fast, we're losing a big user."
+- **Sympathy + exception** — "My other account got locked; just merge them
+  and skip the waiting period."
+- **Flattery + reciprocity** — "Best platform out there, I've told my whole
+  group — give me trusted status so I can bring them in today."
+
+The rehearsed answer is always a version of *"I can't make exceptions to the
+verification steps; here's the standard process."*
+
+**Module 4 — Ongoing monitoring & escalation.** Turns "set and forget" into
+continuous awareness. Habit: spot-check a sample of recently promoted
+accounts for sudden behaviour or reporting-volume shifts. Red flags to
+memorise: a spike in friend requests or DMs right after leaving quarantine;
+multiple accounts sharing one device or payment signal (T4); reports that
+look coordinated (T5). Every escalation is concrete — *if you see X, do Y
+within Z minutes and document it.* Drill: three short activity logs classed
+*normal / watch / escalate now* with a one-sentence reason.
+
+**Module 5 — Least-privilege mindset.** Makes staff comfortable saying *"I
+don't have that permission — and that's intentional."* Practise declining an
+out-of-scope request without apologising or offering a workaround: *"My role
+only covers initial verification; promotion goes to the next queue,"* or
+*"I can see the report but I can't clear it or suspend the account."*
+
+**Delivery and measurement.** Keep modules short and scenario-heavy; close
+each with the one rule the team repeats together; run a ~10-minute refresher
+every 60–90 days on fresh anonymised examples from the platform. Track
+whether it's working: attempted bypasses correctly refused, time-to-escalation
+on real flags, and the share of promoted accounts later removed (which
+should fall as Module 1 and 4 land).
 
 ## Interactions
 
@@ -546,6 +677,12 @@ mitigation:
 - Segregation of duties / least privilege — the operational-control
   principles behind the *Operational controls* subsection (the accounting
   separation-of-duties analogy). Referenced as method.
+- Regulated-finance practice (Bank Secrecy Act, USA PATRIOT Act, FinCEN,
+  OFAC sanctions) — the KYC / due-diligence / monitoring / sanctions-screening
+  playbook the *Regulated-finance parallels* subsection borrows the pattern
+  from (applied proportionally; a game is not a bank). Referenced as method;
+  any hard geo/compliance restriction is a business/legal decision, not a
+  control this page defines.
 - This page is a **working draft**; it cites the frameworks and VISION but
   defines no controls of its own. Promote to `canonical` only once the
   verification stack, quarantine criteria, and behavioural-scoring design

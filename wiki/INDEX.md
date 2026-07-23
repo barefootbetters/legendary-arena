@@ -109,9 +109,10 @@ Cross-cutting governance, methodology, and readiness assessments.
   STRIDE/LINDDUN, a prioritized threat→mitigation table mapped to the four
   layers, the missing account-security controls, and the business-lens
   residual risk that an over-strict gate churns real players). Also covers
-  the proposed vetting process and the operator-side controls — segregation
-  of duties, least privilege, and Zero Trust posture. Descriptive of a
-  draft strategy; defines no controls.
+  the proposed vetting process, the operator-side controls (segregation of
+  duties, least privilege, Zero Trust, regulated-finance KYC/sanctions
+  parallels), and a proposed staff/moderator training outline. Descriptive
+  of a draft strategy; defines no controls.
 - [Changelog](changelog.md) — Milestone history of significant changes,
   newest first (projected from `docs/09-CHANGELOG.md`; the exhaustive
   per-packet record lives in WORK_INDEX + git log).
