@@ -164,6 +164,26 @@ const MANAGED_DATABASE_OPS_NOTES = {
   ],
 };
 
+// why: the Infrastructure-services table lists Render services but cannot express
+// the ACCOUNT/BILLING model or WHY each line item is sized the way it is — the
+// knowledge a future operator needs to reason about cost and scaling. This
+// curated block records it, mirroring MANAGED_DATABASE_OPS_NOTES' role. Update it
+// when a Render plan/instance-type or the workspace tier materially changes.
+// Sourced from the 2026-07-23 server-sizing arc (#948) + the pricing model Render
+// exposes on its dashboard (verified against the live billing page).
+const RENDER_ACCOUNT_AND_SIZING_NOTES = {
+  summary:
+    'Render bills on TWO INDEPENDENT axes: (1) a flat, team-level **Workspace plan**, and (2) per-service **instance types** (compute), billed per service on ANY workspace. They are separate — running a larger instance type does NOT require a paid workspace. The project pays for three Render line items: the Workspace, the game server (a web service), and the managed database.',
+  webServiceInstanceTypes:
+    'Web-service instance types (the render.yaml `plan:` value → CPU / RAM / ~monthly compute): `starter` 0.5 / 512 MB / $7 · `standard` 1 / 2 GB / ~$25 · `pro` 2 / 4 GB / ~$85 · `pro plus` 4 / 8 GB / ~$175. (Postgres uses a SEPARATE instance-type scale: `basic-1gb` = 0.5 CPU / 1 GB / $19.)',
+  notes: [
+    'WORKSPACE — **Hobby ($0/mo flat)**. The free personal tier; kept deliberately. Instance-type compute is billed per-service regardless of workspace, and the Hobby→Pro ($25/mo flat) difference is features we do not need yet (horizontal autoscaling, preview environments, audit logs, SOC2) — NOT access to larger instances. Caveat: Hobby includes 500 pipeline (build) minutes/mo; a burst of PR merges (each runs `pnpm install && pnpm -r build && migrate`) can exceed it and bill the overage.',
+    'SERVER — web service `legendary-arena-server`, **`standard` (1 CPU / 2 GB, ~$25/mo compute)**. Upgraded 2026-07-23 (#948) from the implicit default `starter` (0.5 CPU / 512 MB, $7): the service had NO `plan:` field, so Render silently ran it on `starter`. That half-CPU could not carry a real-time authoritative WebSocket server that ALSO runs the bot-ally drivers (250 ms polling per live match), the "Watch Bot Play" autoplay loops, and four cron loops (legends publisher / match reaper / capture harvester) — the instance pegged at load ~7, causing health-check restarts (a live match hit the D-24230 revival cap of 3 in <1 h with NO deploys), a crawling bot (~1 turn / 10 min), and the recurring client-desync freezes. `plan:` is BLUEPRINT-MANAGED: it MUST live in render.yaml (a dashboard change reverts on sync), and merging the render.yaml change IS the upgrade. Next lever if `standard` saturates under real concurrency: `pro` (2 CPU / 4 GB, ~$85).',
+    'DATABASE — managed Postgres `legendary-arena-db`, **`basic-1gb` (0.5 CPU / 1 GB, $19/mo)**. Its own 2026-07-22 upgrade from `basic-256mb` (the OOM-recovery fix, #932) is detailed in the "Managed database" block below. NOTE it is also only 0.5 CPU: the July-22 fix addressed RAM (OOM), so if DB *CPU* (not RAM) later becomes the bottleneck, `pro-4gb` (1 CPU / 4 GB, $55) is the equivalent move on the Postgres scale.',
+    'ROOT-CAUSE vs SYMPTOM: the client-side resync fixes (reconnect-resync D-24232/#944, spectator-staleness + tab-focus D-24234/#947) and the server revival-cap reset (D-24233/#945) RECOVER from the desync freezes; the server sizing (#948) removes the CPU starvation that GENERATED them. Verify the fix in the Render **Events tab** (restart frequency → ~0 between real deploys) and the **CPU metric** (load well under 1×/core).',
+  ],
+};
+
 // why: the language inventory walks a slightly broader set of trees
 // than the import scanner. `wiki/` is project-authored markdown for the
 // Hugo site and belongs in the language footprint, even though it has
@@ -3000,6 +3020,26 @@ async function renderInfrastructureServicesSection() {
     }
     lines.push('');
   }
+
+  // why: append the curated Render account/billing model + per-service sizing
+  // rationale — the derived table lists services but cannot express the two-axis
+  // billing model, the plans/prices, or WHY each line item is sized the way it is.
+  // Sourced from RENDER_ACCOUNT_AND_SIZING_NOTES.
+  lines.push(`### Render account model & sizing (what we pay for, and why)`);
+  lines.push('');
+  lines.push(RENDER_ACCOUNT_AND_SIZING_NOTES.summary);
+  lines.push('');
+  lines.push(RENDER_ACCOUNT_AND_SIZING_NOTES.webServiceInstanceTypes);
+  lines.push('');
+  lines.push(
+    `Curated in \`RENDER_ACCOUNT_AND_SIZING_NOTES\` in ` +
+      `\`scripts/architecture-inventory.mjs\`.`,
+  );
+  lines.push('');
+  for (const note of RENDER_ACCOUNT_AND_SIZING_NOTES.notes) {
+    lines.push(`- ${note}`);
+  }
+  lines.push('');
 
   // why: append the curated managed-database operational notes — the sizing
   // history and network / storage posture the derived Render table (which shows
