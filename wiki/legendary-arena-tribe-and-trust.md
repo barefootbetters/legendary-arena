@@ -10,6 +10,9 @@ tags:
   - least-privilege
   - kyc
   - training
+  - attack-trees
+  - bot-detection
+  - captcha
   - community-fit
   - retention
   - survey
@@ -150,29 +153,60 @@ heaviest verification, never the benefit of the doubt.
 
 ### Tribe-fit filters (what we actually sort on)
 
-Sort on signals that genuinely predict an enjoyable table — and verify the
-ones people have reason to fake.
+**Core principle — birds of a feather, *verified*.** We still sort people
+into tables with others who share language, age-band, playstyle, region,
+schedule, and temperament, because that is what makes the experience
+enjoyable. We simply refuse to trust the *self-reported* version of any
+high-value signal: it receives independent corroboration, or it stays
+provisional until behaviour confirms it. Risk-tiered friction — exactly the
+Enhanced Due Diligence banks apply — kicks in when signals are weak,
+conflicting, or come from higher-risk sources. The binding agent is the
+shared way of life; we target that directly. Race remains, at most, a minor
+correlative signal, never load-bearing.
 
-| Signal | Why it predicts a good match | Faking / verification posture |
-|---|---|---|
-| **Language** | Can't enjoy a game together if you can't understand each other | Low incentive to fake; light verification |
-| **Age bracket** | A 50-year-old and a 13-year-old want different pace, humour, stakes; proxies for playstyle and maturity | Platforms filter on this comfortably every day |
-| **Playstyle** (competitive ↔ casual) | The single strongest bond — shared love of tight play unites strangers instantly | Best revealed *through play*, not a dropdown |
-| **Location / timezone** | Strong signal (people want their own region/community) — so strong that people lie about it | Verify via payment region, phone, connection data — don't take their word |
-| **Schedule** | Overlapping play windows = games that actually happen | Self-reported, low stakes |
-| **Temperament** (handling winning/losing) | Toxicity around a loss sours a whole group | Surfaces over repeated sessions |
+| Signal | Why it predicts a good match | Assurance & verification posture | Bank / gov parallel | Risk-tiered handling |
+|---|---|---|---|---|
+| **Language** | Can't enjoy a game you can't communicate in | High — low fake incentive; light technical check | CIP-style consistency check | Standard |
+| **Age bracket** | Different pace, humour, stakes, maturity | Medium — easy to misrepresent | KYC age/DOB verification where feasible; self-report provisional | Enhanced scrutiny / longer quarantine if the claim conflicts with other signals or device data |
+| **Playstyle** (competitive ↔ casual) | The single strongest bond | Low until observed — revealed through play, not a dropdown | Ongoing behavioural CDD | Provisional matching only inside quarantine; final placement after observed conduct |
+| **Location / timezone** | People want their own region/community — strong signal | High value → high fake incentive | Multi-signal corroboration (payment region + connection + phone), as banks cross-check address | Conflicting or high-risk geo → Enhanced Due Diligence (longer quarantine / extra review) |
+| **Schedule** | Overlapping windows = games that actually happen | Low (self-reported) | Profile-consistency monitoring | Low stakes; convenience matching only |
+| **Temperament** (win/loss handling) | Toxicity around a loss poisons a table | Low until observed | Behavioural backstop / continuous monitoring | Surfaces only after repeated sessions; never used for early promotion |
 
-**On race:** it can travel *with* culture, language, and shared experience,
-but it is a weak proxy for what actually matters, and behaviour beats it
-every time. Treat it as, at most, a minor signal — never a load-bearing
-filter. The binding agent in any tribe is the shared way of life, and we
-target *that* directly.
+**Operational rules that protect the filters:**
 
-> **Assurance split.** Three of these six filters (playstyle, schedule,
-> temperament, and part of age) are self-reported or only revealed through
-> play. Self-reported data is inherently lower assurance, and the strategy
-> does not yet say how early matching decisions are made *before* the
-> play-revealed signals exist. See Edge Cases.
+1. **Never grant full tribe placement on self-report alone.** Early matching
+   uses only the high-assurance signals (language + verified location/age
+   band). Playstyle, schedule, and temperament stay provisional until the
+   behavioural layer confirms them.
+2. **Risk-tier the filter application (bank-style EDD).** Standard path:
+   clean multi-signal verification → normal quarantine. Elevated path: weak,
+   conflicting, or high-risk geo/network signals → longer quarantine,
+   restricted matching pool, or mandatory extra review before trusted-table
+   access. Enhanced Due Diligence, not a flat ban.
+3. **Sanctions / high-risk-jurisdiction posture (OFAC pattern, applied
+   proportionally).** A high-risk or restricted geo signal doesn't
+   auto-block; it auto-raises the risk tier (extra friction + extended
+   observation). Any hard geo-restriction stays a separate legal/compliance
+   decision; this page only defines the risk-tier response.
+4. **Birds-of-a-feather matching stays inside the trust tiers.** Unverified /
+   early quarantine: matched only with other unproven accounts, on the
+   high-assurance signals. Post-quarantine trusted tables: matched on the
+   full confirmed set (including observed playstyle and temperament). The
+   flock stays intact for verified members; the unproven stay away from
+   them.
+5. **Continuous re-verification of the filters.** A sudden change in apparent
+   location, device, or play pattern after promotion triggers a risk
+   re-evaluation (as banks re-monitor after onboarding). The behavioural
+   backstop isn't only hunting toxicity — it's confirming the tribe-fit
+   signals stay consistent.
+
+> **Early-matching policy (closes the self-report gap).** Until playstyle and
+> temperament have been observed for the defined minimum games, an account is
+> matched only on language + verified age-band + verified location/timezone.
+> This stops a sleeper from choosing the "right" self-reported playstyle to
+> reach a desired tribe on day one — the exact early-matching gap the threat
+> model flagged.
 
 ### The survey — cut through the sales lens
 
@@ -323,6 +357,110 @@ qualitative Likelihood × Impact given *current* (undefined) controls.
 | T8 | Information Disclosure | The verification PII itself (phone, location, payment region, face photo) is breached or over-retained — a high-value target created *by* the control. | Low | High | Cross-cutting — *no control described* |
 | T9 | Tampering / Collusion | Actors collude *inside the quarantine pool* to farm mutual clean records or coordinate before promotion. | Med | Med | Behavioural backstop (L4) |
 | T10 | Elevation / Evasion | A sophisticated actor stays just under the behavioural threshold indefinitely, adapting as scoring changes. | Med | Med | Behavioural backstop (L4) |
+
+### Attack trees (critical-path maps)
+
+The table above says *what* can go wrong; attack trees say *how*, by
+decomposing an attacker's goal into the paths they'd actually consider so
+mitigations can be placed on the load-bearing branches. Notation: **AND** =
+all children required; **OR** = any one child suffices; a leaf is a concrete
+action. Each tree maps to the T-numbers above. Use them as a coverage
+check — mark each branch *open* (no control) or *closed*, prioritize the
+highest likelihood × impact paths (Trees 1 and 2), and add leaves as real
+incidents appear.
+
+**Tree 1 — Bypass gate & reach the trusted tribe** (Spoofing + Elevation; T1,
+T2, T3) — the primary business risk:
+
+```
+Reach Trusted Tribe Tables
+├── OR — Defeat L1 Gate (Spoofing)
+│   ├── AND — Fake location + phone (T1)
+│   │   ├── Obtain disposable / VoIP number
+│   │   ├── Route traffic through proxy/VPN matching the claimed region
+│   │   └── Payment method matching the claimed region (or none required)
+│   └── OR — Defeat photo verification (T2)
+│       ├── Stolen real photo
+│       ├── AI-generated face that passes a basic check
+│       └── Borrowed / coached live person (if liveness is weak)
+└── AND — Defeat L2 Quarantine (Elevation)
+    ├── Meet minimal "clean record" criteria (if volume-only)
+    ├── Stay under behavioural thresholds while in quarantine
+    └── Avoid community flags long enough to be promoted
+```
+Cuts: multi-signal location corroboration breaks the first AND; liveness +
+ID-match breaks the photo OR; time + games + clean-conduct exit criteria
+raise the cost of the second AND.
+
+**Tree 2 — Multi-account / ban evasion** (Tampering + Spoofing; T4):
+
+```
+Rebuild / Maintain Presence After Ban
+├── OR — New account creation (fresh device, new phone+payment, new identity)
+├── OR — Account sharing / takeover (compromised or handed-over credentials)
+└── AND — Avoid detection after re-entry
+    ├── Behaviour that doesn't immediately match prior banned patterns
+    └── No shared device / payment / network fingerprint with the banned account
+```
+Cuts: persistent device/browser/payment fingerprinting + signup-anomaly
+detection; cross-account linkage on shared signals; account-recovery
+protection.
+
+**Tree 3 — Premature / fraudulent promotion** (Elevation + Tampering; T3,
+T9):
+
+```
+Enter Trusted Tables Early
+├── OR — Solo farming (min games, low-stakes, wait out any time gate)
+└── OR — Collusive farming (T9)
+    ├── Coordinate multiple accounts inside quarantine
+    ├── Mutual positive ratings / flag avoidance
+    └── Share which behaviours are scored
+```
+Cuts: exit criteria requiring volume *and* time *and* clean conduct;
+intra-quarantine collusion detection (shared devices, co-play patterns,
+rating rings); delayed full tribe-fit matching.
+
+**Tree 4 — Weaponise the reporting system** (DoS + Tampering + Repudiation;
+T5, T6):
+
+```
+Abuse Reporting / Flagging
+├── OR — Single-actor harassment (repeated flags, timed for disruption)
+└── OR — Coordinated ring
+    ├── Many accounts flag one target in a short window
+    └── Fabricated / exaggerated reasons
+        └── AND — No durable audit trail (Repudiation) → flags unattributable
+```
+Cuts: rate limits + reporter-reputation weighting; immutable flag audit
+trail; human review for high-impact actions; burst-coordination detection.
+
+**Tree 5 — Persist just under the behavioural threshold** (Evasion; T10):
+
+```
+Stay in Trusted Tables While Causing Harm
+├── Adapt behaviour to stay below detection thresholds
+├── Rotate targets so no single victim generates repeated reports
+├── Low-and-slow toxicity spread over many games
+└── Adjust when scoring rules appear to change
+```
+Cuts: multi-signal scoring (not one brittle threshold); community flagging
+as an independent sensor; periodic human sampling of borderline accounts;
+toxic-with-toxic pooling once a sustained pattern appears.
+
+**Tree 6 — Compromise the verification PII** (Information Disclosure; T8 +
+LINDDUN):
+
+```
+Obtain / Misuse Verification Data
+├── OR — External breach (DB compromise; insecure storage/transmission)
+└── OR — Insider / privileged misuse
+    ├── Moderator/admin with broad access
+    └── Insufficient logging / segregation of duties
+```
+Cuts: encryption at rest and in transit; minimal retention; least-privilege
+access to verification data; audit logging of every PII access; segregation
+of duties so no single operator can both verify and freely export.
 
 ### Privacy threats (LINDDUN lens)
 
@@ -494,6 +632,13 @@ visible and intentional.
 - **Sophisticated, patient adversaries** (T3, T9, T10) will get through any
   automated layer; the community and human-review layers are the backstop
   of last resort, and they carry their own abuse surface (T5, T6).
+- **Tribe-fit risk is now narrowed, not eliminated.** With the
+  birds-of-a-feather-*verified* rules, a sufficiently patient actor can still
+  mimic observed playstyle and temperament across many games — that residual
+  risk is *accepted*, owned by the behavioural backstop + community flagging.
+  What is no longer accepted is granting tribe placement on easily-faked
+  self-reports or on unverified high-value signals; the early-matching policy
+  closes that day-one path.
 
 ### Extending this model
 
@@ -507,6 +652,132 @@ promotion). The practical next artifacts are a concrete verification-stack
 spec, measurable quarantine exit criteria, a reporting-system abuse policy,
 and a behavioural-scoring design with explicit false-positive/negative
 handling — the same four areas the strategy already lists as open.
+
+## Control Implementation Playbook (proposed)
+
+Dating apps and large social platforms solve the same core problem —
+untrusted strangers must be filtered before they reach a valued community —
+and have converged on a mature toolkit after years of real abuse. These
+techniques drop into the existing four-layer fence without changing the
+"birds of a feather" goal. This is a **proposed** playbook (what the controls
+would look like), not an implemented system.
+
+### Vetting techniques from mature platforms
+
+- **Liveness photo verification** (Tinder/Bumble/Hinge pattern) — a
+  real-time selfie/video matched to the profile, with a liveness gesture
+  (blink, head-turn) so a static stolen photo fails; optional government-ID
+  match for higher assurance. For LA: make liveness + face-match mandatory
+  at the L1 gate, and store only the *result* plus a minimal hash — not the
+  raw biometric long-term (hardens the faked-photo signal T2 while limiting
+  T8 exposure).
+- **Phone + multi-signal identity binding** — cross-check the phone against
+  device, IP/geolocation, and payment; score or block disposable/VoIP
+  numbers. For LA: this is the multi-signal location corroboration already
+  proposed (Tree 1's first AND); conflicting signals force longer quarantine.
+- **Optional external-account linking** (Instagram/Spotify/Facebook pattern)
+  — a long-lived, active external account raises confidence a person is
+  real. For LA: offer optional linking of an aged gaming/social account as
+  *corroboration that can shorten* quarantine — never as sufficient alone.
+- **Progressive trust / restricted mode** — new accounts start with limited
+  reach; features unlock on time + clean activity. For LA: this *is* the
+  quarantine tier, strengthened by the high-assurance early-matching rule.
+- **Reporting + reputation weighting** — one-tap reports, reporter-reputation
+  scoring, serial-false-reporter down-weighting, burst-coordination
+  detection. For LA: this is L3, with explicit reporter reputation + a
+  required reason category (covers T5, T6).
+- **Age assurance** — self-declared age is increasingly insufficient;
+  credit-card / ID / third-party estimation corroborate it. For LA: move the
+  age-bracket filter to at least one corroborating signal where feasible;
+  when weak, take the elevated-risk path (longer quarantine) rather than a
+  block.
+
+Recommended implementation order (highest leverage first):
+
+| Priority | Practice | Layer | Effort | Impact |
+|---|---|---|---|---|
+| 1 | Liveness photo verification | L1 Gate | Medium | High — stops most photo fakes (T2) |
+| 2 | Multi-signal phone + location + payment consistency | L1 Gate | Medium | High — hardens the location filter (T1) |
+| 3 | Strict early-matching (high-assurance signals only) | L2 Quarantine | Low | High — protects tribe placement (T3) |
+| 4 | Device fingerprint + anomaly detection | L1 + L4 | Higher | High — multi-accounting defence (T4) |
+| 5 | Reporter reputation + burst detection | L3 Community | Medium | Med–High (T5, T6) |
+| 6 | Optional external-account linking | L1 / L2 | Low | Medium — positive signal |
+| 7 | Continuous post-promotion monitoring | L4 Backstop | Medium | High — catches adaptation (T10) |
+
+### Bot detection
+
+Bots appear as account farmers, collusion/multi-accounting helpers, spam or
+harassment amplifiers, quarantine reconnaissance probes, and matchmaking /
+leaderboard distorters. No single signal is reliable — the strongest systems
+combine several weak signals into a risk score and act *proportionally*
+(longer quarantine, restricted matching, forced re-verification, removal)
+rather than a binary ban.
+
+- **Behavioural analysis** (highest value for games) — timing regularity,
+  inhumanly fast or invariant decisions, always-optimal scripted paths,
+  session shape, never using chat, low input entropy. Baseline legitimate
+  players per skill/playstyle band and score deviation; treat high deviation
+  as elevated risk, not an instant ban (protects skilled/unusual humans).
+  Runs on L4 and inside quarantine.
+- **Device / browser / network fingerprinting** — canvas/WebGL/audio/font
+  fingerprints, setting consistency, IP reputation, data-center/VPN
+  detection, TLS (JA3/JA4) fingerprints, and *sudden fingerprint change on a
+  trusted account*. Cross-account fingerprint sharing is a strong bot-farm /
+  multi-accounting signal (T4).
+- **Velocity & rate limits** — account-creation velocity per IP/subnet/device
+  cluster; friend-request/message/join rates; rapid cycling through short
+  games (classic farming). Respond graduated, not hard-block-on-first.
+- **Graph / social signals** — dense mutual connections among new accounts,
+  rating/report rings, accounts that only ever play the same small set.
+  Especially visible inside quarantine (collusive farming, Tree 3).
+- **Challenge-response / progressive friction, honeypots, and ML anomaly
+  detection** — escalate friction only when risk is already elevated; hidden
+  UI elements or decoy tables that scripts trip; and, once labelled data and
+  volume exist, unsupervised clustering + supervised models. Start with rules
+  + statistical baselines; add ML later.
+
+| Detection | Best placement | Threats |
+|---|---|---|
+| Signup velocity + device/IP | L1 Gate | Bot farms, multi-accounting (T4) |
+| Early behavioural anomalies | L2 Quarantine | Farming, reconnaissance (T7) |
+| Graph / collusion patterns | L2 + L3 | Coordinated rings (T5, T9) |
+| Long-term behavioural drift | L4 Backstop | Adaptive / low-and-slow bots (T10) |
+| Continuous device changes | All layers | Takeover + bot reuse (T4) |
+
+### CAPTCHA — risk-triggered, never blanket
+
+CAPTCHA is one signal among many, most effective when triggered *by risk*
+and paired with the harder identity and behavioural controls. The governing
+rules:
+
+- **Risk-based triggering (most important).** Never show a CAPTCHA to every
+  user on every action — only when other signals already indicate elevated
+  risk (new account, device/IP change, high velocity, conflicting identity
+  signals, quarantine anomalies).
+- **Progressive friction.** Low risk → invisible score only; medium →
+  lightweight checkbox/invisible challenge; high → stronger challenge or
+  forced liveness re-check; very high → temporary restriction + manual review.
+- **Fail closed for sensitive actions, open for casual ones.** Account
+  creation, quarantine promotion, and bulk messaging require a good score;
+  ordinary game actions for trusted accounts prefer invisible monitoring.
+- **Accessibility.** Always offer an audio/alternative challenge and a human
+  support path; don't rely on visual perception alone; mind mobile UX.
+
+For LA, prefer an invisible score-based system (Cloudflare Turnstile, hCaptcha,
+or reCAPTCHA v3 — weighing the Google dependency/privacy trade-off), combine
+its score with the platform's own device/identity/behavioural signals, and
+escalate to a visible challenge — or better, **liveness re-verification** —
+only when combined risk is elevated. Pitfalls to avoid: CAPTCHA on every
+login (kills conversion/retention), relying on CAPTCHA alone, identical
+difficulty for veterans and new accounts, and not logging outcomes to tune
+false-positive rates.
+
+> **One thread across bot detection, CAPTCHA, and the filters:** prefer a
+> *risk score + graduated response* over a binary decision, measure the
+> false-positive rate on known-good players, and always give legitimate users
+> a recovery path (re-verify / appeal / temporary restriction, not a straight
+> permanent ban at medium confidence). This is the same conversion-vs-friction
+> discipline in Residual risk — friction rises with risk, not for everyone.
 
 ## Staff & Moderator Training (proposed)
 
@@ -529,7 +800,13 @@ role-play the "I already verified on another platform, just let me in"
 request and rehearse the standard reply; quiz — which is the strongest
 location evidence, typed city vs payment-region match vs phone country code,
 and why. **Rule:** *verify hard at the door; behaviour is the safety net,
-not the front gate.*
+not the front gate.* Tribe-fit addition: staff must be able to say which of
+the six tribe-fit signals may be trusted for *early* matching (language +
+verified age-band + verified location) versus which must wait for
+behavioural confirmation (playstyle, temperament). Drill: given a new account
+with a perfect self-reported competitive playstyle but only a single weak
+location signal, which matching pool is it allowed into today? (Answer:
+early-quarantine, high-assurance signals only.)
 
 **Module 2 — Segregation of duties in daily work.** Makes single-person
 abuse or error hard. Teach the accounts-payable/receivable split adapted to
@@ -683,6 +960,15 @@ mitigation:
   from (applied proportionally; a game is not a bank). Referenced as method;
   any hard geo/compliance restriction is a business/legal decision, not a
   control this page defines.
+- Attack trees (Schneier) — the AND/OR goal-decomposition method used in the
+  *Attack trees* subsection to map T1–T10 to concrete attacker paths.
+  Referenced as method.
+- Consumer-platform trust practice (dating-app liveness verification,
+  progressive-trust / restricted-mode, reporter-reputation weighting, age
+  assurance; bot-detection via behavioural + device fingerprinting; CAPTCHA
+  services — Cloudflare Turnstile, hCaptcha, reCAPTCHA v3) — the mature
+  patterns the *Control Implementation Playbook* borrows. Referenced as
+  method; naming a service is not an endorsement or a selection decision.
 - This page is a **working draft**; it cites the frameworks and VISION but
   defines no controls of its own. Promote to `canonical` only once the
   verification stack, quarantine criteria, and behavioural-scoring design
