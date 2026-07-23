@@ -12,7 +12,17 @@
 **Client half of the bot-ally freeze fix. `User-Visible Surface = play.legendary-arena.com`.
 Consumes WP-414's status surface (landed first, PR #926) to tell the human when their
 bot ally has stopped. Code merged; the D-24026 live-verify (AC-6, banner-on-stall vs
-healthy-silent) is OPEN and operator-gated on the deploy.**
+healthy-silent) is **data-level VERIFIED 2026-07-23** — only the on-screen render
+eyeball remains.**
+
+**AC-6 live-verify — data-level VERIFIED 2026-07-23.** Live-probed `GET /api/match/:matchId/
+bot-ally-status` on prod across two real matches, exercising **both** banner branches:
+`SbknquXtOwY` → `{driving:true,status:active}` (healthy → `hasStopped=false` → banner
+**silent**) and `TYB2-jQuUc_` → `{driving:false,status:abandoned}` (stopped → `hasStopped=true`
+→ banner **shows** with the fixed co-op fallback message, since `message` is null for a
+non-`faulted` stop). The status contract that drives `BotAllyStallBanner` is confirmed live
+in both directions; the sole residual is the literal on-screen render eyeball, which needs
+a seated stopped match (client credentials).
 
 **What it adds.** A `useBotAllyStatus` composable probes `GET /api/match/:matchId/
 bot-ally-status` once on mount; a non-bot-ally match reports `absent` and it stops
@@ -43,8 +53,20 @@ all-bot "Watch Bot Play" autoplay loop (`autoplay.mjs`), which remains its own f
 
 **Server resilience for the solo bot-ally co-op path. `User-Visible Surface =
 play.legendary-arena.com`. Code merged; the D-24026 live-verify (AC-6, a bot-ally match
-surviving a server restart + a wedged match settling to a surfaced fault) is OPEN and
-operator-gated on the engine deploy.**
+surviving a server restart + a wedged match settling to a surfaced fault) is **data-level
+VERIFIED 2026-07-23** — only the on-screen render eyeball remains.**
+
+**AC-6 live-verify — data-level VERIFIED 2026-07-23.** (1) **Restart survival** is
+evidenced by match `SbknquXtOwY`: its `legendary.match_bot_ally` row reached
+`revive_count=3` while the bgio match state advanced (turn 23→24) across restarts — i.e.
+`rehydrateBotAllyDrivers` re-attached a live driver each restart and the match kept
+playing. (2) **Surfaced fault / stopped signal** is confirmed via the live status endpoint:
+`SbknquXtOwY` → `{driving:true,status:active}` and `TYB2-jQuUc_` → `{driving:false,status:
+abandoned}` (the exact `driving`/`status` payload WP-415's banner gates on). The only
+residual is the literal on-screen banner render (client-side, seated stopped match). Note:
+the recurring **client**-side freeze was separately root-caused as a socket-reconnect
+desync (client stayed on a stale pre-restart frame while the server advanced) and fixed by
+#944 (D-24232) + #945 (D-24233 revive_count reset) — see those entries; not part of WP-414.
 
 **The freeze.** A mixed human + bot `cooperative` match (WP-375) drives its bot seats
 from an **in-process** `BotAllyDriver`. When the operator ran concurrent sessions that
