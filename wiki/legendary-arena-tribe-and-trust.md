@@ -15,6 +15,7 @@ tags:
   - captcha
   - community-fit
   - retention
+  - monetization
   - survey
   - designer-reference
   - research
@@ -24,6 +25,7 @@ related:
   - monetization-model.md
   - newsletter-authoring.md
   - leaderboard.md
+  - homepage-spec.md
 status: draft
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\legendary-arena-tribe-and-trust.md (this page — https://ewiki.legendary-arena.com/legendary-arena-tribe-and-trust/)
@@ -215,10 +217,23 @@ can't change what we build, price, or promote — cut it. That's why "why do
 you play?" is out and "which missing feature would make you upgrade today?"
 is in.
 
-The survey feeds six growth buckets: **Acquisition, Activation, Retention,
-Revenue, Referral, and Community fit / tribe** (the moat). Lead with
-multiple choice to warm players up and give language for the feeling, then
-follow with one open box to catch the gold you'd never have guessed.
+The survey feeds six growth buckets — **Acquisition, Activation, Retention,
+Revenue, Referral, and Community fit / tribe**. Tribe is not a sixth parallel
+bucket; it is the **load-bearing moat that powers the other five**. Evaluate
+every feature, campaign, and survey answer by one test: *does this deliver or
+protect good tables?* If it only lifts raw installs or games played,
+deprioritize it. Lead with multiple choice to warm players up and give
+language for the feeling, then follow with one open box to catch the gold
+you'd never have guessed.
+
+| Bucket | Refined definition | Leading indicators it feeds |
+|---|---|---|
+| **Acquisition** | Attract players who already value good tables and skill over grind or chaos | Source quality (organic vs paid), % completing verification intent, cost per *verified* signup |
+| **Activation** | First session that feels like "this is my kind of table" | Time-to-first-good-match, % finishing a full game with a positive post-game signal, quarantine-vs-trusted drop-off |
+| **Retention** | Return because the people and standards stay consistent | D7/D30 return of *promoted* accounts, games-per-active-week, % of sessions with previously-matched players (track intermittent users separately — the low-activity residual risk) |
+| **Revenue** | Willingness to pay for reliable tribe access and reduced friction | Conversion after quarantine exit, churn reason (friction vs value), LTV of high-fit vs low-fit cohorts |
+| **Referral** | Existing good tables pull in more of the same | Invite-acceptance rate, % of new verified users arriving via trusted invite, in-tribe viral coefficient |
+| **Community fit / tribe (moat)** | Verified + *observed* match on language, age-band, location, playstyle, schedule, temperament | Match-quality score (post-game ratings + table return rate), % of promotions later flagged, early-matching compliance |
 
 The twenty questions (tagged by bucket):
 
@@ -243,6 +258,19 @@ The twenty questions (tagged by bucket):
 19. If you could wave a wand and change one thing, what would it be? *(Revenue / Retention)*
 20. What's the one reason you keep coming back? *(Retention — the keystone)*
 
+**Refinements (keep ~15–18 total):** every question must map to a concrete
+decision (feature, price, matching rule, copy, or channel); *separate the
+tribe-signal questions from pure product feedback* so neither contaminates
+the other; and add a short **post-quarantine / post-promotion pulse** rather
+than only asking at onboarding. Sharpen the vague expectation items — replace
+"expected vs actual" with *"After your first full game, how close was the
+table to what you wanted? (scale + one word)."* Add explicit tribe and
+revenue probes: *"What would make a table feel like 'your people' vs just
+another game?"*, *"Would you invite your regular group into a
+verified/trusted table — what would they need to see first?"*, and *"What
+would make the monthly fee feel like an obvious yes rather than a maybe?"*
+Cut any residual "why do you play?"-style item that changes no decision.
+
 ### Delivery: newsletter + feedback channel
 
 Do **both** — they feed each other. The **newsletter** is where you talk
@@ -253,6 +281,36 @@ toughest Mastermind"*), before building anything heavier. See
 [Newsletter Authoring](newsletter-authoring.md) and the
 [Brevo Email Pipeline](brevo-email-pipeline.md) for the delivery
 mechanics.
+
+### The subscription pitch (proposed)
+
+The pitch follows directly from contract claim #1 — *the filtering is the
+product.* Membership **is** the vetting: you pay for the quality of the
+matchmaking pool itself, not for content or advantage. Board Game Arena's
+Premium unlocks table *control*; Raya's exclusivity makes curation *the*
+value — Legendary Arena can combine both by charging for the assurance of the
+pool. The canonical short line: *"The games come free with the people. We
+filter so every table feels like your tribe."* Variants worth testing:
+
+- **Benefit-led** — "Stop rolling the dice on who sits down. Play with people
+  who match your pace, standards, and schedule — because we already checked."
+- **Subscription framing** — "Membership is the vetting: unlimited trusted
+  tables, priority matching, and the confidence that predators and low-effort
+  actors stayed outside."
+- **Retention** — "You stay because the table still feels right next month.
+  That's what you're paying for."
+- **Contrast (vs free/open platforms)** — "Other sites give you volume. We
+  give you the table you'd actually want to play at again."
+
+**Positioning guardrails** (from [VISION](../docs/01-VISION.md) and Residual
+risk): never *pay for advantage* — no better cards or standing (a VISION
+bright line); pair the pitch with the **progressive unlock** the fence
+already implies — free/low-stakes entry → verified quarantine → trusted
+subscription tables; and own the conversion tension honestly rather than
+overclaiming zero toxicity — friction that turns away good players is a
+business risk, not a pure security win. See
+[Monetization Model](monetization-model.md) for the fairness-safe
+revenue-stream boundary this pitch sits inside.
 
 ## Threat Model
 
@@ -704,6 +762,46 @@ Recommended implementation order (highest leverage first):
 | 6 | Optional external-account linking | L1 / L2 | Low | Medium — positive signal |
 | 7 | Continuous post-promotion monitoring | L4 Backstop | Medium | High — catches adaptation (T10) |
 
+**How the mature dating apps actually stack it** (the toolkit the bullets
+above compress). It is a *tiered* stack, weakest-first, with each tier
+treated as untrusted on its own:
+
+1. **Account binding** — email + SMS one-time code, optional social login.
+   Weakest tier: disposable/VoIP numbers and temp emails defeat it, so apps
+   now score/block VoIP ranges and high-velocity same-device signups (T1, T4).
+2. **Photo / liveness** — an in-app *video* selfie with an active
+   challenge-response (head-turn, blink, random pose) matched to the profile
+   photos; active liveness beats passive "is this a face?" and resists
+   pre-recorded video / weaker deepfakes (T2).
+3. **Government ID + face match** — scan an ID (authenticity, MRZ, expiry),
+   match a live selfie to the ID photo, extract DOB. The closest analog to
+   bank KYC; used for age compliance or an optional higher-assurance path.
+4. **Age estimation** — AI age-estimation from the selfie as a lighter first
+   filter, with document DOB when inconclusive — driven by regulation (UK
+   Online Safety Act and similar in AU/EU/Brazil/California).
+5. **Social proof / referral** — Instagram linking as a soft
+   identity/lifestyle signal; Raya's member-referral + committee review is
+   the extreme (high friction, high perceived quality). Closer to
+   *community fit* than identity — it parallels the tribe-fit + quarantine
+   idea, not the gate.
+
+| App | Liveness method | Badge | Mandatory? | Data discipline |
+|---|---|---|---|---|
+| **Tinder** | Video selfie + liveness + FaceMap/FaceVector match to profile (Face Check) | Photo Verified | Mandatory for new users in some regions, expanding | FaceVector kept for account life (cross-account likeness); raw video deleted quickly; encrypted, non-reversible |
+| **Hinge** | Video selfie → liveness + 3D face auth; also facial age estimation | Selfie Verified | Becoming mandatory in more regions for age rules | Templates often deleted within 24h (or kept for account life in Face-Check regions) |
+| **Bumble** | Mimic a random on-screen pose → automated **+ human** review vs profile | Photo / ID Verified | Optional; sometimes forced after flags | Human review catches edge cases AI misses but doesn't scale perfectly |
+
+The transferable discipline for LA — beyond "add liveness" — is the **PII
+posture**: leading apps keep raw biometric video only briefly, store a
+hashed/encrypted, non-reversible template, and delete on account closure.
+That is exactly the T8 mitigation this page calls net-new — store the
+verification *result* and a minimal likeness hash, never the raw face
+long-term, and expose an assurance **badge** so the community can see each
+account's verification level. The persistent gaps the apps still live with —
+patient deepfakes, coached live proxies, fresh-device multi-accounting, and
+low-activity accounts that never generate behavioural signal — are the same
+residual risks this model already accepts.
+
 ### Bot detection
 
 Bots appear as account farmers, collusion/multi-accounting helpers, spam or
@@ -878,6 +976,12 @@ should fall as Module 1 and 4 land).
   scoring are adjacent to competitive scoring; both derive per-account
   records over many games and share the same "signal accrues with volume"
   property called out in residual risk.
+- **[Homepage Spec](homepage-spec.md)** — The live site is pure skill/mastery
+  ("Skill decides. Mastery is earned."). The tribe value layers on top
+  without diluting it — "skill decides the game; good tables decide whether
+  you come back" — but the vetting should be teased only as a *coming*
+  differentiator, never claimed as a live control while these remain open
+  items. Keep homepage copy and this page's Residual-risk honesty aligned.
 
 ## Edge Cases
 
@@ -930,13 +1034,20 @@ mitigation:
 - **Define the quarantine tier mechanics** — what counts as a "clean
   record," how long, what stakes — as measurable exit criteria (mitigates
   T3).
-- **Draft the subscription pitch** built explicitly around "we do the
-  vetting so you don't have to," tuned so verification friction doesn't
-  churn genuine players (the residual-risk tension).
+- **Draft the subscription pitch** built explicitly around "membership is the
+  vetting," tuned so verification friction doesn't churn genuine players — and
+  run **pricing experiments that measure the conversion drop from added
+  friction** directly (the residual-risk tension made a metric).
 - **Add the missing security workstream:** account recovery/takeover
   protection, multi-accounting defence, reporting-abuse policy, and a
   PII/compliance review for the verification signals and minor data
   (mitigates T4, T5, T6, T8, and the privacy lens).
+- **Instrument the four-layer fence before launch.** Each layer needs an
+  owner and a dashboard metric: gate pass rate, quarantine exit rate *and*
+  later-flag rate of promoted accounts, report quality, and behavioural
+  promotion accuracy. The three residual risks (low-activity users,
+  over-filtering churn, patient adversaries) need explicit owners, not just a
+  mention.
 
 ## References
 
@@ -963,12 +1074,15 @@ mitigation:
 - Attack trees (Schneier) — the AND/OR goal-decomposition method used in the
   *Attack trees* subsection to map T1–T10 to concrete attacker paths.
   Referenced as method.
-- Consumer-platform trust practice (dating-app liveness verification,
-  progressive-trust / restricted-mode, reporter-reputation weighting, age
-  assurance; bot-detection via behavioural + device fingerprinting; CAPTCHA
-  services — Cloudflare Turnstile, hCaptcha, reCAPTCHA v3) — the mature
-  patterns the *Control Implementation Playbook* borrows. Referenced as
-  method; naming a service is not an endorsement or a selection decision.
+- Consumer-platform trust practice (dating-app liveness verification —
+  Tinder Face Check, Hinge 3D face auth, Bumble pose+human review;
+  progressive-trust / restricted-mode; reporter-reputation weighting; age
+  assurance; Board Game Arena Premium unlocking table *control*; Raya's
+  referral + committee curation; bot-detection via behavioural + device
+  fingerprinting; CAPTCHA services — Cloudflare Turnstile, hCaptcha,
+  reCAPTCHA v3) — the mature patterns the *Control Implementation Playbook*
+  and *subscription pitch* borrow. Referenced as method; naming a service is
+  not an endorsement or a selection decision.
 - This page is a **working draft**; it cites the frameworks and VISION but
   defines no controls of its own. Promote to `canonical` only once the
   verification stack, quarantine criteria, and behavioural-scoring design
