@@ -115,8 +115,10 @@ Cross-cutting governance, methodology, and readiness assessments.
   (dating-app/social-platform vetting incl. the Tinder/Hinge/Bumble liveness
   stack, bot detection, risk-triggered CAPTCHA), the operator-side controls
   (segregation of duties, least privilege, Zero Trust, regulated-finance
-  KYC/sanctions parallels), and a proposed staff/moderator training outline.
-  Descriptive of a draft strategy; defines no controls.
+  KYC/sanctions parallels), an external-account-linking reliability ranking
+  (corroboration only; BoardGameGeek/Steam lead), and a proposed
+  staff/moderator training outline. Descriptive of a draft strategy; defines
+  no controls.
 - [Changelog](changelog.md) — Milestone history of significant changes,
   newest first (projected from `docs/09-CHANGELOG.md`; the exhaustive
   per-packet record lives in WORK_INDEX + git log).

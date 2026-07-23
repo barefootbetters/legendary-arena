@@ -737,6 +737,8 @@ would look like), not an implemented system.
   — a long-lived, active external account raises confidence a person is
   real. For LA: offer optional linking of an aged gaming/social account as
   *corroboration that can shorten* quarantine — never as sufficient alone.
+  See *External-account linking* below for the per-platform reliability
+  ranking and the LA priority order (BoardGameGeek and Steam lead).
 - **Progressive trust / restricted mode** — new accounts start with limited
   reach; features unlock on time + clean activity. For LA: this *is* the
   quarantine tier, strengthened by the high-assurance early-matching rule.
@@ -801,6 +803,49 @@ account's verification level. The persistent gaps the apps still live with —
 patient deepfakes, coached live proxies, fresh-device multi-accounting, and
 low-activity accounts that never generate behavioural signal — are the same
 residual risks this model already accepts.
+
+### External-account linking (corroboration only, never a gate)
+
+Linking a LinkedIn, Facebook, Discord, Instagram, YouTube, TikTok, Steam, or
+BoardGameGeek account proves only that the person controls *an* account — not
+that the account is genuine, unique, or has a clean history. Meta actions
+over a billion fake accounts in some quarters; Discord accounts are free and
+bulk-created; even the strongest (LinkedIn) has cultivated fakes. Dating apps
+learned this and *demoted* social linking from a core gate to an optional
+boost (early Tinder required Facebook login for years, then dropped the hard
+requirement after the post-Cambridge-Analytica API crackdown). Over-relying
+on a link would recreate the exact spoofing and early-matching gaps the
+threat model already flags (T1, T3). So linking stays a **positive signal
+that can shorten quarantine** — subordinate to the hard verification and
+behavioural layers, never sufficient alone, never a quarantine skip.
+
+| Platform | Strength as corroborator | Best use for LA | Risk if over-relied on |
+|---|---|---|---|
+| **BoardGameGeek** | High (audience-specific) | Multi-year account with logged plays, ratings, collection = hard-to-fake community footprint | Rare, but a cultivated aged account is possible |
+| **Steam** | Medium–High | Library + playtime + account age; very common among digital card/board players | Purchased/aged accounts exist |
+| **LinkedIn** | Medium | Real-name culture, coherent history + organic connections raise confidence | Shared or carefully faked professional accounts |
+| **Instagram** | Medium | Visual + activity history; the common dating-app link | Bought/aged accounts |
+| **YouTube** | Medium | Aged channel with real engagement, thematically relevant | Channels bought/transferred; low coverage |
+| **Facebook** | Low | Mild positive if aged + visible activity | Fakes and bought accounts are endemic |
+| **TikTok / X / Reddit** | Low–Medium | Only if long-standing with organic activity | Trivial multi-accounting; farmed engagement |
+| **Discord** | Very Low | Continuity / community-presence signal only | Bulk throwaways; multi-accounting trivial |
+
+**LA priority order** (highest signal density for this community first):
+BoardGameGeek → Steam → LinkedIn / Instagram → YouTube → TikTok / X / Reddit /
+Discord. BoardGameGeek and Steam lead precisely because they are
+audience-specific and expensive to fabricate convincingly — a generic social
+link is weaker than a multi-year play history.
+
+**Guardrails:** linking is strictly optional; no trusted-table access or
+quarantine skip on a link alone; prefer accounts that are *aged and show
+organic activity* over brand-new ones (a freshly-created linked account
+should not reduce friction and is itself a mild risk signal); a sudden
+disconnection or change of a linked account triggers re-evaluation (as with
+the tribe-fit continuous re-verification rule); be resilient to third-party
+API/permission changes (platforms restrict access periodically); and, on
+privacy — many players keep gaming separate from professional or personal
+social accounts, so declining to link must carry no penalty beyond the
+standard quarantine path.
 
 ### Bot detection
 
@@ -1083,6 +1128,11 @@ mitigation:
   reCAPTCHA v3) — the mature patterns the *Control Implementation Playbook*
   and *subscription pitch* borrow. Referenced as method; naming a service is
   not an endorsement or a selection decision.
+- External-account-linking reliability assessment (LinkedIn, Facebook,
+  Discord, Instagram, YouTube, TikTok, Steam, BoardGameGeek) — the
+  corroboration-only ranking behind *External-account linking*; these prove
+  account *control*, not unique real identity, and are ranked for the LA
+  audience (BoardGameGeek and Steam lead). Referenced as method.
 - This page is a **working draft**; it cites the frameworks and VISION but
   defines no controls of its own. Promote to `canonical` only once the
   verification stack, quarantine criteria, and behavioural-scoring design
