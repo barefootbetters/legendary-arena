@@ -3,7 +3,7 @@
 > **The contract for every page under `wiki/`.**
 > If a page violates this schema, the page is wrong — not the schema.
 >
-> **Last updated:** 2026-05-10
+> **Last updated:** 2026-07-23
 
 ---
 
@@ -136,7 +136,7 @@ churn when entities cross categories.
 
 ### Flat-structure cap
 
-The flat layout is valid up to **50 entity pages**. Beyond 50, a
+The flat layout is valid up to **75 entity pages**. Beyond 75, a
 formal SCHEMA amendment must introduce partitioning before any
 further pages are added. This prevents silent drift into an
 unmanageable directory.
@@ -571,7 +571,7 @@ The schema is structured so that a future lint script could verify:
   (case-sensitive).
 - All paths in `related` and `source` resolve to existing files.
 - All in-body markdown links resolve to existing files / anchors.
-- Total entity pages ≤ 50 (per
+- Total entity pages ≤ 75 (per
   [Flat-structure cap](#flat-structure-cap)).
 
 No such tool exists at v1. The schema is human-enforced.
