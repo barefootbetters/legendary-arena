@@ -246,14 +246,19 @@ databases:
     # matches). This DB is Blueprint-managed, so the plan MUST live here — a
     # dashboard-only change is reverted on the next blueprint sync.
     plan: basic-1gb
-    # why: internal-only. An empty ipAllowList blocks all PUBLIC (external)
-    # inbound connections — only services inside the Render private network may
-    # connect. The server reaches the DB via the INTERNAL hostname, so nothing
-    # app-side breaks; this closes the previous 0.0.0.0/0 ("everywhere") public
-    # exposure. Trade-off: the External Database URL (e.g. a local psql for ops)
-    # no longer connects — use the Render dashboard PSQL shell or an internal
-    # one-off job instead. Blueprint-managed, so it must live here.
-    ipAllowList: []
+    # why: public inbound is re-allowed (credential-gated) so the solo operator
+    # can reach the prod DB over the External Database URL for ad-hoc ops (a
+    # local psql). The earlier internal-only `ipAllowList: []` (WP #933) was too
+    # aggressive — it locked the operator out entirely during the 2026-07-23
+    # incident, exactly when DB access was needed most. `0.0.0.0/0` permits a
+    # connection ATTEMPT from anywhere but still requires the DB password, which
+    # is the months-long default posture. TO NARROW: replace `0.0.0.0/0` with the
+    # operator's own address as a /32 (e.g. `203.0.113.7/32`) — but note a
+    # residential IP is dynamic and would need updating when it changes; the
+    # trade-off is why a credential-gated `0.0.0.0/0` is the pragmatic choice for
+    # a single operator. Blueprint-managed, so it must live here.
+    ipAllowList:
+      - '0.0.0.0/0'
     # why: storage grows unbounded — the bgio match store never prunes finished
     # matches (~56% of 1 GB used at 3 months). Autoscaling grows the disk by 50%
     # when it hits 90% full (max one increase / 12h), so a slow blob creep never
