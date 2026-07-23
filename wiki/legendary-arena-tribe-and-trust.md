@@ -6,6 +6,8 @@ tags:
   - trust
   - safety
   - threat-model
+  - zero-trust
+  - least-privilege
   - community-fit
   - retention
   - survey
@@ -356,6 +358,63 @@ much as the security one:
   the verification signals themselves (T8), plus a data-protection /
   compliance review for the minor-data and biometric-adjacent handling.
 
+### Operational controls (segregation of duties & least privilege)
+
+The mitigations above defend against *players*. These defend against the
+**operators** — the moderators, admins, and automated jobs that run the
+fence — and they are where the *malicious insider* actor (T6, T8) is
+answered. They are cheap to state, need no exotic infrastructure, and raise
+the cost and visibility of abuse from any single account.
+
+The organizing principle is the accountant's **segregation of duties**: the
+same reason one person handles accounts payable and a *different* person
+handles accounts receivable — no one both approves a payment and reconciles
+the bank. On a trust platform, no single role should be able to move a user
+from outsider to fully trusted without an independent check at each stage.
+
+- **Split the high-risk process across roles.** Identity/photo/location
+  verification, promotion out of quarantine, review of reports and flags,
+  and final suspension/reinstatement should be separate permissions with
+  separate owners. No single moderator account both verifies a newcomer and
+  promotes them into trusted tables.
+- **Dual control on high-impact actions.** Quarantine promotions, permanent
+  bans, and bulk trust changes need a second independent review, or an
+  automated threshold *plus* human confirmation — the platform equivalent of
+  "one person doesn't both cut the cheque and reconcile the account."
+- **Keep the report queue independent of the reported user.** Flags feed a
+  separate review queue the subject cannot influence; rate-limit and weight
+  flags so no single actor or small ring can weaponize them (T5).
+- **Log and reconcile privileged actions.** Every verification decision,
+  quarantine exit, and moderation action is logged with actor and timestamp
+  (T6); a *different* person periodically reviews a sample — reconciling the
+  books.
+- **Least privilege everywhere.** Players get only what they need to play;
+  a moderator gets only their queue's permissions; avoid broad "super-admin"
+  accounts that can touch every control at once. This directly bounds the
+  blast radius of a compromised or malicious privileged account.
+
+### Zero Trust as the organizing posture
+
+The whole model is an instance of **Zero Trust** — *never trust, always
+verify* — applied to accounts rather than network packets. It assumes no
+account, session, or privilege escalation is trustworthy by default, inside
+the "flock" or out, and keeps re-proving trust rather than granting it once
+at the door. Its principles map onto the fence already described:
+
+| Zero Trust principle | How it already appears here |
+|---|---|
+| **Never trust, always verify** | Hard verification at the gate; self-reported signals treated as untrusted until corroborated |
+| **Least privilege** | Quarantine tier = minimum reach until a clean record is earned; operator least-privilege above |
+| **Assume breach** | Segregation of duties + audit logs bound the blast radius of a compromised trusted or admin account |
+| **Continuous verification** | Behavioural backstop + community flagging re-evaluate conduct across many games, not once at login |
+| **Micro-segmentation** | Unverified → quarantined → trusted tiers isolate the unproven from vulnerable members |
+
+Zero Trust is a posture, not a product — the point is that every new
+account, every session, and every promotion is treated as untrusted until
+proven, and the proof is continuous. It is worth stating explicitly because
+it is the "why" behind the layered fence: the layers are not four disconnected
+features, they are one continuously-verifying trust boundary.
+
 ### Residual risk (state it, don't hide it)
 
 Perfect security is impossible; the model's job is to make what remains
@@ -481,6 +540,12 @@ mitigation:
 - STRIDE (Microsoft) and LINDDUN (privacy) — the two threat-classification
   frameworks used in the Threat Model section. Referenced as method, not
   vendored.
+- Zero Trust Architecture (NIST SP 800-207) — the "never trust, always
+  verify" posture the *Zero Trust* subsection maps onto the layered fence.
+  Referenced as method.
+- Segregation of duties / least privilege — the operational-control
+  principles behind the *Operational controls* subsection (the accounting
+  separation-of-duties analogy). Referenced as method.
 - This page is a **working draft**; it cites the frameworks and VISION but
   defines no controls of its own. Promote to `canonical` only once the
   verification stack, quarantine criteria, and behavioural-scoring design
