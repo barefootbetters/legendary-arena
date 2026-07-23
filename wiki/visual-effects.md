@@ -70,23 +70,141 @@ flash mirrors that shipped audio composable exactly — same scalar, same
 tier map, different output. That note on the Sound Effects page is
 superseded for the visual layer.
 
-No VFX ships today — this page is `draft` research, not an implementation
-contract. The effect mappings and library picks are proposals; only the
-event vocabulary, the projected `UIState` signals, the shipped audio
-precedent, and the architectural boundaries are sourced to code.
+**How to read this page.** It separates three document types on purpose:
+the [VFX Trigger Contract](#vfx-trigger-contract) below is the **fixed
+governance layer** (a future Work Packet implements against it, and it is
+not free to drift); the [Mechanics](#mechanics) are **design detail** (the
+per-event *character* — which flash, which colour — is proposal-level and
+free to evolve); and [Decisions Pending](#decisions-pending) /
+[Deferred](#deferred) are the **roadmap**. No VFX ships today — this page
+is `draft` research. Only the event vocabulary, the projected `UIState`
+signals, the shipped audio precedent, and the architectural boundaries are
+sourced to code; the effect character and library picks are proposals.
+
+## VFX Trigger Contract
+
+This section is the **immovable governance layer** of the page. Everything
+below it may evolve; this may not without a `DECISIONS.md` entry. A future
+Work Packet is judged against this contract, not against the flavor text.
+
+### Allowed input surfaces
+
+The only signals VFX may read — all already projected onto `UIState`:
+
+- `UIState.notableEvents` — the six locked event variants ([Surface 1](#surface-1)).
+- `UIState.game.lastPlayEffectsFired` — the combo chain count ([Surface 2](#combo-signal)).
+- **Local move dispatch** — the client's own `playCard` / `recruitHero` /
+  `fightVillain` / `drawCards` / `dodgeCard` / `endTurn` ([Surface 3](#surface-3)).
+- `UIState` outcome / progress fields — `EndgameOutcome`,
+  `progress.escapedVillains`, `scheme.twistCount`, `players[].woundCount`
+  ([Surface 4](#endgame)).
+
+### Forbidden input surfaces
+
+- `G` / `ctx` — engine-internal state is never read by VFX.
+- `G.messages` — the game log is **not** projected to clients (D-20008);
+  any effect built on it works in the engine and silently does nothing in
+  the browser.
+- **Any server round-trip** — VFX derives entirely from the
+  already-projected `UIState`.
+
+### Non-Goals — the VFX layer MUST NOT
+
+- modify game state or write to `G` / `ctx`;
+- participate in move validation;
+- create new authoritative timing or sequencing logic the engine does not
+  already own;
+- affect replay or determinism (it is excluded from the state hash);
+- require server-side processing.
+
+The VFX layer is a **pure consumer of projected `UIState`.** That is the
+hard boundary for every future implementer.
+
+### Tier-1 triggers (the required set)
+
+A minimal implementation MUST cover these four — they generate the
+majority of player excitement:
+
+- **Combo chains** (`lastPlayEffectsFired`)
+- **`mastermindStrikeResolved`**
+- **`mastermindDefeated`**
+- **`fightResolved`**
+
+The full three-tier prioritization is in [Priority tiers](#priority-tiers).
+
+### Combo Tier Contract {#combo-tier-contract}
+
+The count → tier mapping is **shared with the audio layer and may not
+diverge.** It is the shipped `comboTierForCount` (D-24228):
+
+| `lastPlayEffectsFired` | Tier |
+|---|---|
+| `<= 0` | none (silent) |
+| `1` | T1 |
+| `2` | T2 |
+| `>= 3` | T3 |
+
+- Visual *implementations* of each tier **may** vary (spark / burst /
+  flourish are proposals).
+- Tier *boundaries* **may not** vary.
+- Audio and visual consumers **must** use the identical tier mapping —
+  one `comboTierForCount`, two renderers. This is what prevents future
+  divergence between the flash and the sting.
+
+### Accessibility requirements (mandatory)
+
+- Honour the OS `prefers-reduced-motion` setting.
+- Expose an in-app intensity / off control, persisted (localStorage).
+- Screen-shake and full-screen flashes are gated behind both.
+- The layer degrades cleanly to **no effects** when disabled — never a
+  loss of game functionality.
+
+### Determinism requirements (mandatory)
+
+- VFX reads only projected `UIState`; it never reads into or writes out of
+  `G` / `ctx`.
+- It never affects move validation or branches engine logic.
+- It is absent from the determinism hash — bot-vs-bot sims, replays, and
+  determinism proofs render no VFX and are unaffected.
 
 ## Mechanics
+
+### Priority tiers {#priority-tiers}
+
+Not every trigger earns the same investment, and a Work Packet should
+build in this order rather than attempting twenty effects at once:
+
+**Tier 1 — Required** (the majority of player excitement):
+
+- Combo chains (`lastPlayEffectsFired`)
+- `mastermindStrikeResolved`
+- `mastermindDefeated`
+- `fightResolved`
+
+**Tier 2 — Recommended**:
+
+- `ambushResolved`
+- `schemeTwistResolved`
+- `healResolved`
+- `recruitHero`
+- `drawCards`
+
+**Tier 3 — Future**:
+
+- Escape effects (blocked on `escapeResolved`; see [Edge Cases](#edge-cases))
+- Narrative-lens variants (see [Future direction](#playstyle-lens))
+- Ambient menace layer (`escapedVillains` / `scheme.twistCount` rising)
+- Per-target sub-effect visuals (blocked on richer `appliedEffects`)
 
 ### The trigger surface
 
 Visual effects are a **client-side presentation concern**, exactly like
 audio. They can only react to what the client actually receives — fields
 on the projected `UIState` — **not** engine-internal `G` and **not** the
-game log. `G.messages` is *not* projected to clients, so any effect built
-on the log would work in the engine and silently do nothing in the
-browser. The candidate signals, in decreasing order of readiness:
+game log (per the [contract](#forbidden-input-surfaces) above). The
+candidate signals, in decreasing order of readiness:
 
-#### Surface 1 — Notable events (the primary, ready-made hook)
+#### Surface 1 — Notable events (the primary, ready-made hook) {#surface-1}
 
 `NotableGameEvent` is the engine's append-only record of high-level
 player-visible outcomes. Six variants are locked, and — unlike the game
@@ -99,14 +217,14 @@ and renders them in
 single opacity-scale fade transition). A juice layer rides this exact
 stream — one effect per event type — with zero new engine work.
 
-| Event (`NotableGameEventType`) | Fires when | Suggested visual character |
-|---|---|---|
-| `mastermindStrikeResolved` | A Mastermind Strike card is revealed and resolved | **Screen-shake** + red edge-vignette pulse + dark shard particles — the signature "uh-oh" jolt |
-| `schemeTwistResolved` | A Scheme Twist is revealed and resolved | A darker, subtler **desaturation ripple** radiating from the scheme tile; less violent than a Strike |
-| `ambushResolved` | A villain with an `Ambush:` marker enters the City | Menacing **edge-glow** + a hard card-slam settle as the villain drops into its City space |
-| `fightResolved` | A player defeats a villain or henchman in the City | **Impact burst** at the card's City space; a coin/star flourish layered on when `bystandersRescued > 0` |
-| `mastermindDefeated` | All tactics defeated — the Mastermind is vanquished (win) | The biggest positive payoff: a full-screen **victory bloom** + confetti storm |
-| `healResolved` | A player uses the Wound Healing ability | Soft green **restorative shimmer** rising off the hand |
+| Event (`NotableGameEventType`) | Priority | Fires when | Suggested visual character (proposal) |
+|---|---|---|---|
+| `mastermindStrikeResolved` | T1 | A Mastermind Strike card is revealed and resolved | **Screen-shake** + red edge-vignette pulse + dark shard particles — the signature "uh-oh" jolt |
+| `mastermindDefeated` | T1 | All tactics defeated — the Mastermind is vanquished (win) | The biggest positive payoff: a full-screen **victory bloom** + confetti storm |
+| `fightResolved` | T1 | A player defeats a villain or henchman in the City | **Impact burst** at the card's City space; a coin/star flourish layered on when `bystandersRescued > 0` |
+| `ambushResolved` | T2 | A villain with an `Ambush:` marker enters the City | Menacing **edge-glow** + a hard card-slam settle as the villain drops into its City space |
+| `schemeTwistResolved` | T2 | A Scheme Twist is revealed and resolved | A darker, subtler **desaturation ripple** radiating from the scheme tile; less violent than a Strike |
+| `healResolved` | T2 | A player uses the Wound Healing ability | Soft green **restorative shimmer** rising off the hand |
 
 #### Surface 1b — Sub-effects inside a fight or ambush (`appliedEffects`)
 
@@ -115,9 +233,10 @@ stream — one effect per event type — with zero new engine work.
 that actually fired, in dispatch order) and a human-readable `narrative`.
 That lets the juice layer play **finer, themed flashes nested inside** a
 fight/ambush without any new engine event — the burst can take the colour
-of the mechanic that fired.
+of the mechanic that fired. This is **Tier 3** fidelity (see the precision
+limit below).
 
-| Game moment | Client signal | Suggested visual |
+| Game moment | Client signal | Suggested visual (proposal) |
 |---|---|---|
 | **Wound gained** | `appliedEffects` contains `gainWoundEachPlayer` / `gainWoundCurrentPlayer`; also a delta on `UIState.players[id].woundCount`; scheme wounds show as `schemeTwistResolved` with `resolverKey === 'woundAll'` | A dull red **damage flash** on the afflicted player panel |
 | **Hero KO'd** | `appliedEffects` contains `koHeroCurrentPlayer` / `koHeroEachPlayer` / `koHeroEachPlayerMag2`; the KO'd heroes are named in `narrative` | A sharp **shatter / dissolve** on the KO'd card as it slides to the KO pile |
@@ -127,14 +246,14 @@ of the mechanic that fired.
 > **Precision limit.** `appliedEffects` carries the **keyword only** — not
 > which bystander was captured or how many wounds each player took. A
 > keyword is enough to trigger an effect; per-target detail is not
-> available without new event fields (see Edge Cases). This is the same
-> precision limit the audio layer lives with.
+> available without new event fields (see [Edge Cases](#edge-cases)). This
+> is the same precision limit the audio layer lives with.
 
 #### Surface 2 — The combo / chain-reaction signal (the flagship, now live) {#combo-signal}
 
-This is the effect Jeff asked for — the Candy-Crush-style cascade where
-one play visibly detonates a chain. The engine already computes the chain
-size and projects it:
+This is the flagship — the Candy-Crush-style cascade where one play
+visibly detonates a chain. The engine already computes the chain size and
+projects it:
 
 - The `playCard` / `playFromUndercover` move counts how many hero-ability
   effects fired for the just-played card and writes it to
@@ -145,21 +264,22 @@ size and projects it:
   ([`uiState.build.ts`](../packages/game-engine/src/ui/uiState.build.ts))
   and is **observability-only, excluded from the determinism hash**
   (D-24221) — pure presentation, zero engine footprint.
-- The audio combo cue already tiers it and the visual layer mirrors that
-  tier map one-for-one:
 
-| `lastPlayEffectsFired` | Tier | Suggested visual (ascending intensity) |
+The count → tier boundaries are **fixed by the
+[Combo Tier Contract](#combo-tier-contract)** and shared with the audio
+layer; only the per-tier visual below is a proposal:
+
+| `lastPlayEffectsFired` | Tier | Suggested visual (proposal) |
 |---|---|---|
 | `<= 0` | none | No effect (silent play) |
-| `1` | small | A brief **spark** at the played card |
-| `2` | medium | A larger **burst** — brighter, wider, a satisfying pop |
-| `>= 3` | big | A full-screen ascending **flourish** — the game cheering you on |
+| `1` | T1 | A brief **spark** at the played card |
+| `2` | T2 | A larger **burst** |
+| `>= 3` | T3 | A full-screen ascending **flourish** |
 
-The tier boundaries are locked to the shipped audio cue
-(`comboTierForCount`: `<=0 → none`, `1 → small`, `2 → medium`,
-`>=3 → big`; D-24228). Pitch the *visual* intensity to ascend in lockstep
-with the audio so a 3-chain's flash and its flourish sting peak together —
-that synchrony is most of the "juice."
+The count→tier function (`comboTierForCount`, D-24228) is the single
+source both renderers consume. Pitch the visual tiers to ascend in
+lockstep with the audio so a T3 chain's flash and its flourish sting peak
+together — that synchrony is most of the "juice."
 
 > **Mirror the shipped composable, don't reinvent it.** The audio side is
 > [`useComboCue.ts`](../apps/arena-client/src/composables/useComboCue.ts):
@@ -170,25 +290,26 @@ that synchrony is most of the "juice."
 > the same [`PlayViewport.vue`](../apps/arena-client/src/pages/PlayViewport.vue)
 > root beside `useComboCue`.
 
-#### Surface 3 — Player action moves (tactile local feedback)
+#### Surface 3 — Player action moves (tactile local feedback) {#surface-3}
 
 The client dispatches these moves, so it can fire a small effect on the
 local action for immediate tactile feedback, independent of the
 authoritative result.
 
-| Action (move) | Fires when | Suggested visual |
-|---|---|---|
-| `playCard` | A card is played from hand | A card **trail** + a soft place-ripple where it lands |
-| `recruitHero` | A hero is recruited from HQ | An HQ-slot **glow** that pulls toward the hand/discard |
-| `fightVillain` | A player attacks a City villain | A directional **slash / impact streak** toward the target |
-| `drawCards` | Start-of-turn draw / any draw | A quick **deal / fan** motion into the hand |
-| `dodgeCard` | Dodge — discard to draw a replacement | A fast card **flick** out and a replacement slide in |
-| `endTurn` | The player ends their turn | A soft **sweep** clearing the played row |
+| Action (move) | Priority | Fires when | Suggested visual (proposal) |
+|---|---|---|---|
+| `recruitHero` | T2 | A hero is recruited from HQ | An HQ-slot **glow** that pulls toward the hand/discard |
+| `drawCards` | T2 | Start-of-turn draw / any draw | A quick **deal / fan** motion into the hand |
+| `playCard` | T2 | A card is played from hand | A card **trail** + a soft place-ripple where it lands |
+| `fightVillain` | T2 | A player attacks a City villain | A directional **slash / impact streak** toward the target |
+| `dodgeCard` | T3 | Dodge — discard to draw a replacement | A fast card **flick** out and a replacement slide in |
+| `endTurn` | T3 | The player ends their turn | A soft **sweep** clearing the played row |
 
 > **Recruit has no result event.** `recruitHero` emits no notable event;
 > the only signals are the local move dispatch and the resulting
 > `UIState.hq` slot / `discardCount` deltas. The move-dispatch hook is the
-> simplest place to fire a recruit effect.
+> simplest place to fire a recruit effect (see
+> [Decisions Pending](#decisions-pending) for the optional result event).
 
 #### Surface 4 — Outcome / endgame {#endgame}
 
@@ -197,9 +318,9 @@ resolves every match to exactly one of **three** outcomes —
 `EndgameOutcome` is `'heroes-win' | 'scheme-wins' | 'tie'`. Each deserves
 its own full-screen finale:
 
-| Outcome | Triggers (counter) | Finale character |
+| Outcome | Triggers (counter) | Finale character (proposal) |
 |---|---|---|
-| **`heroes-win`** | `mastermindDefeated` ≥ 1 (also Surface 1's notable event) | The biggest positive moment in the game — **victory bloom + confetti storm + slow-motion hero beat** |
+| **`heroes-win`** | `mastermindDefeated` ≥ 1 (also Surface 1's T1 notable event) | The biggest positive moment in the game — **victory bloom + confetti storm + slow-motion hero beat** |
 | **`scheme-wins`** | `escapedVillains` ≥ `ESCAPE_LIMIT` (8) — *the city is overrun*; **or** `schemeLoss` ≥ 1 — *the scheme completes* | A dark, **deflating collapse** — desaturate to ash; the two reasons can take distinct treatments (an escape stampede vs. the scheme snapping shut) |
 | **`tie`** | `finalTurnTie` ≥ 1 — a deck emptied and the final turn ended with no win or loss (WP-367 / D-24159) | Something **wry and suspended** — a held, unresolved shimmer; neither bloom nor collapse |
 
@@ -209,20 +330,19 @@ its own full-screen finale:
 > its own suspended finale — don't fold it into the loss collapse. (Same
 > note as the audio layer's tie sting.)
 
-### The builder / destroyer narrative lens {#playstyle-lens}
+### Future direction — alternate thematic presentations {#playstyle-lens}
 
-Some players want to *build* — a hero, a team, a rescued city. Others
-want the villain power-fantasy — to *overrun* it. The same engine events
-can be framed either way without building two games: a preference toggle
-picks a **narrative lens** over the identical trigger spine. A
-`fightResolved` reads as a heroic rescue in builder mode and a conquest
-in destroyer mode — same burst geometry, re-themed palette and copy. This
-is where the visual layer, the
-[Narrative Psychology Framework](narrative-psychology.md),
-and the [Playstyle Modes](narrative-psychology.md#playstyle-modes)
-preference converge; the toggle lives in player preferences beside the
-reduced-motion control (below). The lens changes *theming*, never the
-signal — so it adds zero engine footprint and cannot affect an outcome.
+The VFX trigger spine is **compatible with alternate thematic
+presentations**: a future player-preference system could re-theme effects
+(palette, copy, which side's beats are celebrated) **without changing
+trigger semantics** — same events, same tier boundaries, same determinism
+posture. The builder-versus-destroyer "narrative lens" (some players want
+to *build* a rescued city; others want the villain power-fantasy of
+overrunning it) is the worked example, and its design rationale lives on
+the [Narrative Psychology Framework](narrative-psychology.md#playstyle-modes),
+not here. It is explicitly **Tier 3 / out of scope for v1** (see
+[Priority tiers](#priority-tiers)); the v1 layer ships a single default
+theme.
 
 ### Where a visual-effects layer would live
 
@@ -230,13 +350,8 @@ VFX belongs entirely in `arena-client` (the Vue app at
 `play.legendary-arena.com`). Per
 [ARCHITECTURE.md](../docs/ai/ARCHITECTURE.md), the engine owns truth and
 the UI consumes read-only projections — so the juice layer reads
-`UIState` (notable events, `lastPlayEffectsFired`, progress counters) and
-renders effects. It never writes `G`, never influences an outcome, and
-adds **zero** engine or determinism footprint. Bot-vs-bot simulations,
-replays, and determinism proofs are unaffected because none of them
-render.
-
-Concretely, mirroring the shipped audio wiring:
+`UIState` and renders effects, within the [contract](#vfx-trigger-contract)
+above. Concretely, mirroring the shipped audio wiring:
 
 - A `useComboVfx` composable (mirror of
   [`useComboCue.ts`](../apps/arena-client/src/composables/useComboCue.ts))
@@ -248,16 +363,17 @@ Concretely, mirroring the shipped audio wiring:
   [`PlayDesktop.vue`](../apps/arena-client/src/pages/PlayDesktop.vue) /
   `PlayMobile.vue`, sitting over the mat the way
   [`NotableEventOverlay.vue`](../apps/arena-client/src/components/play/NotableEventOverlay.vue)
-  already does, that hosts the bursts and full-screen finales.
+  already does, that hosts the bursts and full-screen finales (the single
+  overlay canvas of the [performance budget](#performance-budget)).
 
-### Library & performance posture (commercial-safe, GPU-cheap first)
+### Library posture (commercial-safe, GPU-cheap first) {#library-posture}
 
 There is **no animation library installed today** — the only motion in
 the client is one CSS fade on `NotableEventOverlay.vue` and a few hover
-`transform` transitions. So the library choice is greenfield. Mirroring
-the audio layer's CC0-first licensing posture, the default is
-**permissively-licensed (MIT), code-first** VFX rather than heavyweight
-dependencies:
+`transform` transitions. So the library choice is greenfield (and open —
+see [Decisions Pending](#decisions-pending)). Mirroring the audio layer's
+CC0-first licensing posture, the default lean is **permissively-licensed
+(MIT), code-first** VFX rather than heavyweight dependencies:
 
 - **[`canvas-confetti`](https://github.com/catdad/canvas-confetti)** (MIT)
   — tiny, one-file, purpose-built for celebratory bursts and confetti.
@@ -275,18 +391,31 @@ dependencies:
   license page at adoption time and prefer the MIT options above unless a
   timeline genuinely needs it.
 
-**Performance is the VFX analog of the audio layer's "asset weight."** A
-web card game runs on phones; unbounded particles will drop frames and
-drain batteries. The disciplines:
+### Performance budget (hard constraints) {#performance-budget}
 
-- Animate **`transform` and `opacity` only** (GPU-composited); avoid
-  animating layout properties.
-- **Cap concurrent effects** — a burst pool with a hard ceiling, dropping
-  the oldest, so a rapid combo storm can't spawn thousands of particles.
-- Prefer a **single shared canvas** overlay to many DOM nodes for particle
-  work; tear down finished effects.
-- **Lazy-load** the particle library so it isn't in the critical
-  first-paint path.
+Performance is the VFX analog of the audio layer's "asset weight." Without
+numbers, "performant" is subjective — so the budget is fixed here and a
+Work Packet must hold to it. The exact figures may be retuned via a
+`DECISIONS.md` entry against real hardware, but a budget must exist:
+
+| Constraint | Budget |
+|---|---|
+| Frame rate — desktop | 60 FPS sustained |
+| Frame rate — modern mobile | 60 FPS sustained |
+| Maximum concurrent particles | 200 |
+| Maximum simultaneous bursts | 5 |
+| Maximum screen-shake duration | 500 ms |
+| Overlay canvas count | 1 |
+
+Holding the budget (the disciplines):
+
+- Animate **`transform` and `opacity` only** (GPU-composited); never
+  layout properties.
+- **Pool effects with a hard ceiling** — drop the oldest when the particle
+  or burst cap is hit, so a rapid combo storm can't blow the budget.
+- Use the **single shared overlay canvas** (budget: 1) for particle work;
+  tear down finished effects.
+- **Lazy-load** the particle library off the first-paint path.
 
 ## Interactions
 
@@ -298,14 +427,15 @@ drain batteries. The disciplines:
 - **[Sound Effects](sound-effects.md).** The audio twin. Every effect
   here should be paired with its sibling cue there — a combo *flash* and a
   combo *sting* fire off the one `lastPlayEffectsFired` change and must
-  peak together. This page supersedes that page's "tiered combo cue is not
-  buildable" note (the signal now exists, D-24221 / D-24228).
+  peak together, using the shared [Combo Tier Contract](#combo-tier-contract).
+  This page supersedes that page's "tiered combo cue is not buildable"
+  note (the signal now exists, D-24221 / D-24228).
 - **[Master Strike](master-strike.md).** `mastermindStrikeResolved` is the
-  highest-drama visual candidate — the screen-shake moment — and the
+  highest-drama visual candidate — the Tier-1 screen-shake moment — and the
   overlay it drives already exists.
 - **[Scheme Twist](scheme-twist.md).** `schemeTwistResolved` is the
   sibling darker flash; each twist also advances `scheme.twistCount`, a
-  candidate for a rising ambient-menace visual treatment.
+  candidate for the Tier-3 ambient-menace layer.
 - **[Villain Deck](villain-deck.md).** The reveal pipeline produces the
   Ambush, Scheme Twist, and Master Strike events and the escape count — the
   source of most visual triggers.
@@ -322,7 +452,8 @@ drain batteries. The disciplines:
   **log-only** — it emits *no* notable event (deferred `escapeResolved`,
   WP-186 / D-20001). So "a villain broke through" and "a bystander was
   carried off" cannot be shown today without adding that event. This is the
-  one dramatic moment with no ready hook — identical to the audio gap.
+  one dramatic moment with no ready hook — identical to the audio gap, and
+  the reason escape effects are Tier 3.
 - **`appliedEffects` is keyword-only.** For wound / KO / bystander-capture
   flashes, the event tells you the *kind* of effect but not the target or
   count. A keyword is enough to fire an effect; anything richer needs new
@@ -331,25 +462,24 @@ drain batteries. The disciplines:
 - **Do not drive effects off the game log.** `G.messages` is **not**
   projected to clients (D-20008). Only `notableEvents` and typed `UIState`
   surfaces reach the browser. Effects built on the log would work in the
-  engine and do nothing in production.
+  engine and do nothing in production. (Restated as a hard rule in the
+  [contract](#forbidden-input-surfaces).)
 - **`lastPlayEffectsFired` is a scalar, not a stream.** It is overwritten
   each play and reset to `0` each turn — so the combo consumer must track
   its own last-seen value and fire on *change* (as `useComboCue` does), not
-  treat it as a monotonic counter or an append-only event list.
+  treat it as a monotonic counter or an append-only event list. This is why
+  the [Acceptance Criteria](#acceptance-criteria) require correct behaviour
+  across a reconnect / full `UIState` refresh.
 - **Accessibility is not optional — and does not exist yet.** There is
   **no `prefers-reduced-motion` handling anywhere in the client today.**
-  Bake it in from day one: honour the OS reduced-motion setting, expose an
-  in-app intensity/off control (localStorage, so it persists), and gate
-  screen-shake and full-screen flashes behind it. Juice that can't be
-  turned down is an accessibility bug and a nausea/photosensitivity
-  complaint waiting to happen — retrofitting it later is the wrong order.
-- **Determinism is untouched, and must stay that way.** VFX is pure
-  presentation: it must never read into or write out of `G`/`ctx`, never
-  affect move validation, and never branch engine logic. The determinism
-  invariant is a non-issue precisely because effects stay client-side.
-- **Effect weight on mobile.** Particle counts and concurrent animations
-  are the perf budget — cap them, pool them, and compose on the GPU (see
-  Performance posture).
+  The [contract](#accessibility-requirements-mandatory) makes it a day-one
+  requirement, not a retrofit. Juice that can't be turned down is an
+  accessibility bug and a nausea/photosensitivity complaint waiting to
+  happen.
+- **Determinism is untouched, and must stay that way.** Restated from the
+  [contract](#determinism-requirements-mandatory): VFX is pure
+  presentation; it never reads into or writes out of `G`/`ctx`, never
+  affects move validation, and never branches engine logic.
 
 ## Code Touchpoints
 
@@ -379,33 +509,59 @@ drain batteries. The disciplines:
   — the shared composable-mount host where the audio composables live and
   the VFX ones would join
 
-## Open Questions
+## Acceptance Criteria
 
-- **No Work Packet is scoped yet.** This page is pre-design research.
-  Implementation would need a WP chain mirroring the audio arc
-  (WP-412 foundation → WP-413 combo cue): a VFX foundation + overlay layer,
-  a `useComboVfx` combo flash, the notable-event effect set, and the
-  reduced-motion / intensity preference UX.
-- **Library pick.** `canvas-confetti` (MIT) for bursts + hand-rolled
-  CSS/WAAPI for motion is the recommended v1; revisit `tsparticles` only if
-  ambient particle work grows. Confirm any GSAP license terms before
-  reaching for it.
-- **Same three engine gaps the audio layer wants.** (1) `escapeResolved`
-  (WP-186) so villain escapes — including a bystander carried off — can be
-  shown; (2) a `heroRecruited` signal so recruit doesn't rely on
-  delta-watching; (3) richer `appliedEffects` payload (target / count) for
-  per-target flashes. All optional; v1 juice proceeds without them.
-- **Combo-flash ceiling.** `lastPlayEffectsFired` is unbounded above; the
-  tier map caps the *cue* at `>=3 → big`, but decide whether the *visual*
-  keeps scaling density past 3 (a 6-chain vs a 3-chain) or hard-caps for
-  perf.
-- **Builder/destroyer lens scope.** Ship the effects with a single default
-  theme first; the [narrative-lens toggle](#playstyle-lens) is a follow-on
-  that re-palettes, not a v1 blocker.
-- **Playstyle / dopamine / narrative pages.** The sibling frameworks are
-  drafted: [Dopamine Trigger Framework](dopamine-triggers.md) and
-  [Narrative Psychology Framework](narrative-psychology.md) (which houses
-  the [Playstyle Modes](narrative-psychology.md#playstyle-modes) lens).
+No Work Packet is scoped yet; when one is, a VFX **foundation** is complete
+when all of the following hold (each objectively checkable):
+
+- Combo VFX triggers from `UIState.game.lastPlayEffectsFired`, using the
+  locked [Combo Tier Contract](#combo-tier-contract) mapping.
+- Event VFX triggers from `UIState.notableEvents` for the Tier-1 set
+  (`mastermindStrikeResolved`, `mastermindDefeated`, `fightResolved`).
+- Effects continue functioning after a reconnect and a full `UIState`
+  refresh (no dependence on client history beyond the documented
+  scalar-change tracking).
+- Effects do not alter game outcomes — verified by bot-vs-bot determinism
+  proofs passing unchanged with the layer mounted.
+- Effects do not participate in determinism hashing.
+- Effects respect `prefers-reduced-motion` and the in-app intensity / off
+  control.
+- Effects degrade cleanly to none when disabled — no loss of game
+  functionality.
+- Mobile and desktop clients render within the
+  [performance budget](#performance-budget) with no functionality loss.
+
+## Decisions Pending
+
+Open choices a Work Packet must resolve (these are questions, not
+recommendations):
+
+- **Library selection** — `canvas-confetti` vs `tsparticles` vs hand-rolled
+  CSS/WAAPI per effect class (the [posture](#library-posture)
+  leans MIT-first; the pick is not yet locked). Confirm GSAP's current
+  license if it is considered.
+- **Combo scaling beyond T3** — `lastPlayEffectsFired` is unbounded above;
+  decide whether the visual keeps scaling density past a 3-chain or
+  hard-caps at T3 for the performance budget. (Tier *boundaries* stay
+  locked either way.)
+- **Performance-budget figures** — ratify or retune the numbers above
+  against real mobile hardware.
+- **`escapeResolved` event** (WP-186) — required before escape effects
+  (Tier 3) are possible.
+- **`heroRecruited` result event** — would replace client-side
+  delta-watching for the recruit effect.
+
+## Deferred
+
+Explicitly out of scope for v1:
+
+- **Narrative-lens variants** (builder/destroyer re-theme) — Tier 3; design
+  rationale on the [Narrative Psychology Framework](narrative-psychology.md#playstyle-modes).
+- **Ambient menace layer** — a rising visual dread driven by
+  `escapedVillains` / `scheme.twistCount` (the visual analog of the audio
+  danger meter).
+- **Per-target sub-effect fidelity** — blocked on a richer `appliedEffects`
+  payload (target / count).
 
 ## References
 
