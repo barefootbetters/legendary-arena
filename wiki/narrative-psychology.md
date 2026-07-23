@@ -61,7 +61,77 @@ signals, and the architectural boundaries are sourced to code; the narrative
 mappings are proposals. (Marvel characters and lore are licensed IP; this
 page treats theme and framing, not reproduction of copyrighted text.)
 
+**How to read this page.** The [Narrative Contract](#narrative-contract)
+below is the **fixed governance layer** — the framing invariants, the beat
+mapping's fidelity to real outcomes, and the IP boundary a future Work
+Packet is judged against. The [Mechanics](#mechanics) are **design detail**
+(evolvable), and [Decisions Pending](#decisions-pending) /
+[Deferred](#deferred) are the **roadmap**.
+
+## Narrative Contract
+
+This section is the **immovable governance layer** of the page. The story
+*framing* below it may evolve; the invariants, the beat mapping's fidelity
+to real outcomes, and the IP boundary here may not without a `DECISIONS.md`
+entry.
+
+### What this layer is — and is not
+
+The Narrative framework is **not its own code layer**. It is a **framing
+contract** — copy, palette accent, and motif identity — expressed *through*
+the [Visual Effects](visual-effects.md) and [Sound Effects](sound-effects.md)
+layers. It reads the acting-entity identity and the outcome the client
+already holds; it renders nothing of its own and adds zero engine footprint.
+
+### Framing invariants (MUST)
+
+- **Framing rides on true `UIState`.** Every narrated beat maps to the real
+  engine outcome — never narrate a rescue that didn't happen, never soften a
+  loss into a win. The engine's truth is the ground the story sits on.
+- **The beat mapping is fixed to the outcome, not the theme.** The
+  [story-beat table](#beat-mapping) binds each spine event to its canonical
+  beat; the builder/destroyer lens re-colours the *telling*, never
+  *which event happened*.
+
+### Non-Goals — this framework MUST NOT
+
+- change the engine, the events, the outcomes, or the rules;
+- add any engine or determinism footprint (it is pure client-side framing);
+- let the Playstyle lens alter the real `EndgameOutcome` — a "destroyer
+  victory" narrative still maps to the engine's actual result;
+- reproduce copyrighted Marvel text or art — this layer themes and
+  archetypes only (see the IP boundary below).
+
+### IP boundary (mandatory)
+
+Marvel characters and lore are **licensed IP.** Narrative copy is original
+and evocative; it never lifts published bios, dialogue, or lore verbatim.
+Copy leaning on specific characters gets an IP / licensing pass before
+shipping.
+
 ## Mechanics
+
+### Priority tiers {#priority-tiers}
+
+Narrative framing is layered in this order rather than all at once:
+
+**Tier 1 — The good-versus-evil arc** (the core beats):
+
+- The antagonist beats (`mastermindStrikeResolved`, `schemeTwistResolved`,
+  `ambushResolved`) and the heroic beats (`fightResolved`,
+  `mastermindDefeated`), each framed to its canonical story moment
+- The three endgame resolutions (triumph / tragedy / stand-off)
+
+**Tier 2 — Identity colouring**:
+
+- Per-actor archetype framing (who is acting, from identity the client
+  already holds)
+- Team leitmotif / nostalgia identity (via [Music Authoring](music-authoring.md))
+
+**Tier 3 — The Playstyle lens & depth**:
+
+- The builder/destroyer re-theme ([Playstyle Modes](#playstyle-modes))
+- Per-entity narrative copy depth
 
 ### The four meaning hooks
 
@@ -80,7 +150,7 @@ identity the client already has.
   differently from the generic "villain defeated," using the event's
   `narrative` field and the acting entity's identity.
 
-#### 2. Good versus evil — the match as a moral arc
+#### 2. Good versus evil — the match as a moral arc {#beat-mapping}
 
 Every match is a compressed good-versus-evil story: the villains scheme and
 strike, the heroes build strength and push back, and it resolves in triumph,
@@ -224,24 +294,48 @@ Playstyle Modes lens toggle.
   boundary that keeps narrative a client-side framing contract, not engine
   logic
 
-## Open Questions
+## Acceptance Criteria
 
-- **No Work Packet is scoped yet.** Pre-design research. In implementation
-  this becomes narrative copy + framing consumed by the visual/audio WPs,
-  plus the Playstyle lens toggle — not a WP of its own unless the lens grows
-  its own mechanics.
+This framework has no runtime of its own; it is satisfied when the copy and
+framing the sensory layers carry exhibit all of the following. No Work
+Packet is scoped yet; when one lands, "the framing contract holds" means:
+
+- Every narrated beat maps to the real engine outcome — no beat narrates a
+  state that did not occur.
+- The builder/destroyer lens (when built) changes only presentation:
+  bot-vs-bot determinism proofs pass unchanged with it toggled either way,
+  and the real `EndgameOutcome` is never altered.
+- Narrative copy is original — no verbatim Marvel text/art — and has passed
+  an IP / licensing review before shipping.
+- Framing reads only identity / outcome already on the client; it adds no
+  engine-event dependency beyond the documented signals, and degrades
+  cleanly where a beat has no hook (villain escape).
+- The v1 layer ships a single default theme; the lens is a follow-on.
+
+## Decisions Pending
+
+Open choices a Work Packet must resolve (not recommendations):
+
 - **Playstyle Modes: section or standalone page?** Documented here as a
-  narrative lens. If it grows distinct progression / cosmetics / a villain
-  campaign, graduate it to a standalone **Playstyle Modes Framework** page.
-- **Per-event narrative copy.** The concrete artifact this framework should
-  produce: a heroic-lens and a destroyer-lens copy line per spine event,
-  keyed by acting entity where identity is known.
+  narrative lens. If it grows distinct progression / cosmetics / a full
+  villain campaign, graduate it to a standalone **Playstyle Modes
+  Framework** page.
+- **Per-event narrative copy** — the concrete artifact this framework owes:
+  a heroic-lens and a destroyer-lens copy line per spine event, keyed by
+  acting entity where identity is known.
 - **How deep does the villain power-fantasy go?** A pure re-theme (v1) vs a
   genuine "play as the villains" mode is a design fork — the re-theme is in
   scope now; the full mode is a larger, separate question.
-- **IP-safe framing review.** Narrative copy leaning on Marvel characters
-  should get a licensing/IP pass before shipping, to keep theme on the right
-  side of the license.
+
+## Deferred
+
+Out of scope for v1:
+
+- **The builder/destroyer lens variants themselves** — Tier 3; v1 ships a
+  single default theme.
+- **Villain-escape narration** — the "the villain got away" beat is blocked
+  on the engine emitting `escapeResolved` (WP-186 / D-20001); it has no
+  client hook today.
 
 ## References
 

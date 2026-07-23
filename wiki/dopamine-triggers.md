@@ -65,7 +65,88 @@ No feel-layer code beyond the shipped audio foundation ships today — this is
 signals, and the architectural boundaries are sourced to code; the pacing
 and reward mappings are proposals.
 
+**How to read this page.** The [Dopamine Contract](#dopamine-contract) below
+is the **fixed governance layer** — the reward classification, pacing
+invariants, and bright lines a future Work Packet is judged against. The
+[Mechanics](#mechanics) are **design detail** (evolvable), and
+[Decisions Pending](#decisions-pending) / [Deferred](#deferred) are the
+**roadmap**.
+
+## Dopamine Contract
+
+This section is the **immovable governance layer** of the page. The reward
+*psychology* below it may evolve; the classification, the pacing
+invariants, and the bright lines here may not without a `DECISIONS.md`
+entry.
+
+### What this layer is — and is not
+
+The Dopamine framework is **not its own code layer** and emits nothing at
+runtime. It is a **pacing + priority contract** the
+[Visual Effects](visual-effects.md) and [Sound Effects](sound-effects.md)
+layers implement. Its deliverables are a reward classification, a priority
+ranking, and timing/sequencing rules those two layers honour — never a
+runtime of its own.
+
+### Reward classification (locked vocabulary)
+
+Every spine event resolves to one of four classes; both sensory layers must
+treat them consistently:
+
+| Class | Spine events | Cue posture |
+|---|---|---|
+| **Reward** | `fightResolved`, `mastermindDefeated`, `healResolved`, a combo (`lastPlayEffectsFired >= 1`) | Celebrate — the positive payoff |
+| **Threat** | `mastermindStrikeResolved`, `schemeTwistResolved`, `ambushResolved`, rising `escapedVillains` / `scheme.twistCount` | Menace — **never** a positive cue |
+| **Relief** | a Master Strike survived without disaster, a City threat cleared (`fightResolved`), `healResolved` | The exhale after tension |
+| **Resolution** | `heroes-win` / `scheme-wins` / `tie` | The peak-end finale — weighted heaviest |
+
+### Pacing invariants (MUST)
+
+- **Contrast through restraint** — the big treatments are reserved for
+  peaks; routine actions stay subtle.
+- **Anticipation before payoff** — a micro-beat of build-up precedes the
+  resolution cue.
+- **One crescendo per resolved move** — simultaneous events merge or
+  sequence into a single crescendo, never a collision.
+- **Reward the skill, not the luck** — the escalating-combo payoff is
+  attributed to the player's deck-building, not to randomness.
+
+### Non-Goals — this framework MUST NOT
+
+- add any engine or determinism footprint (it is pure client-side pacing);
+- fire a positive cue when the menace rises (threat is tension, not reward);
+- introduce any reward that gates play, pressures spend, manufactures
+  scarcity, or builds a compulsion loop — the [Vision](vision.md) bright
+  lines ([Monetization Model](monetization-model.md)) are hard boundaries,
+  not guidance.
+
+The reward loop lives entirely inside the **free game.**
+
 ## Mechanics
+
+### Priority tiers {#priority-tiers}
+
+Reward weight ranks which moments earn the biggest sensory budget; a Work
+Packet times the cues in this order rather than treating every reward
+equally:
+
+**Tier 1 — Peaks** (the biggest budget):
+
+- The endgame finale (`heroes-win` / `scheme-wins` / `tie`) — peak-end
+- A Mastermind vanquished (`mastermindDefeated`)
+- A 3+ synergy chain (`lastPlayEffectsFired >= 3`)
+
+**Tier 2 — Standard rewards & reliefs**:
+
+- `fightResolved` (with the bystander flourish when one is freed)
+- 1–2 combo chains
+- `healResolved`
+
+**Tier 3 — Ambient & tension pacing**:
+
+- Rising-menace ambient treatment (`escapedVillains` / `scheme.twistCount`)
+- Difficulty ↔ reward coupling (a clutch win near the escape cap feels
+  bigger)
 
 ### The five reward mechanisms
 
@@ -243,23 +324,47 @@ both layers.
 - [ARCHITECTURE.md](../docs/ai/ARCHITECTURE.md) — the read-only-projection
   boundary that keeps this a client-side timing contract, not engine logic
 
-## Open Questions
+## Acceptance Criteria
 
-- **No Work Packet is scoped yet.** This is pre-design research. In
-  implementation this framework becomes a *shared pacing/priority contract*
-  consumed by the visual and audio WPs, not a WP of its own.
-- **Effect-priority table.** Rank every spine event by reward weight so the
-  visual + audio layers agree on which moments get the big treatment and
-  which stay subtle — the concrete artifact this framework should produce.
-- **Build-up timing per tier.** How long is the anticipation micro-beat
-  before a combo/reveal payoff? Needs playtesting; too long feels laggy, too
-  short kills the crescendo.
-- **Simultaneous-event sequencing.** When one move resolves several spine
-  events, define the merge/sequence rule so they read as one crescendo. This
-  is shared logic the visual and audio layers both need.
-- **Difficulty ↔ reward coupling.** Should the menace counters modulate
-  reward intensity (a clutch win when near the escape cap feels bigger)?
-  Buildable from `escapedVillains` / `twistCount`, but a tuning decision.
+This framework has no runtime of its own, so it is satisfied when the
+sensory implementation it governs exhibits all of the following (each
+observable in play). No Work Packet is scoped yet; when the visual/audio
+WPs land, "the pacing contract holds" means:
+
+- Routine actions (draw, single-effect play) stay visibly and audibly
+  subtle; the Tier-1 peaks get the largest treatment.
+- A synergy chain's visual and audio tiers **peak together** after a
+  build-up beat (the shared `comboTierForCount` mapping).
+- When one move resolves several spine events, the cues read as **one
+  crescendo**, not a collision.
+- **No** positive cue fires on a threat-class event or on rising menace.
+- The endgame finale (peak-end) carries the heaviest treatment of the
+  match.
+- Nothing in the pacing layer reads or writes `G`/`ctx`, affects
+  validation, or appears in the determinism hash.
+- No mechanic gates play, pressures spend, or builds a compulsion loop.
+
+## Decisions Pending
+
+Open choices the visual/audio WPs must resolve (not recommendations):
+
+- **Effect-priority table** — the concrete artifact this framework owes: an
+  exact per-event reward weight both sensory layers consume, refining the
+  [priority tiers](#priority-tiers) into a full ranking.
+- **Build-up timing per tier** — how long the anticipation micro-beat is
+  before a combo / reveal payoff. Needs playtesting: too long feels laggy,
+  too short kills the crescendo.
+- **Simultaneous-event sequencing rule** — the merge/sequence algorithm for
+  the "one crescendo per resolved move" invariant, shared by both layers.
+
+## Deferred
+
+Out of scope for v1:
+
+- **Difficulty ↔ reward coupling** — modulating reward intensity by how
+  close the menace counters are to the loss cap (a clutch win near the
+  escape cap feels bigger). Buildable from `escapedVillains` /
+  `scheme.twistCount`, but a Tier-3 tuning pass, not a v1 concern.
 
 ## References
 

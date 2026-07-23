@@ -59,6 +59,68 @@ vocabulary, the projected `UIState` signals, and the architectural
 boundaries are sourced to code; the framework treatments are proposals on
 their own pages.
 
+**How to read this page.** The [Feel-Layer Contract](#feel-layer-contract)
+below is the **invariant every framework inherits** — the input-surface
+boundary and the MUST-NOTs that make the four pages composable. The
+[shared trigger spine](#shared-trigger-spine) is the **canonical event
+vocabulary**; the per-framework treatments live on their own pages, and
+[Decisions Pending](#decisions-pending) / [Deferred](#deferred) are the
+roadmap.
+
+## Feel-Layer Contract
+
+This section is the **immovable governance layer** shared by all four
+frameworks (visual, audio, dopamine, narrative). Each page also carries its
+own page-specific contract; this is the one they all inherit. It does not
+change without a `DECISIONS.md` entry.
+
+### The Feel-Layer Invariant
+
+Every feel-layer framework is a **pure client-side reaction to projected
+`UIState`.** This single rule is what makes the four composable — they all
+speak the same input language, so they react to the same moment
+independently and in sync, and none can ever disagree with the engine about
+what happened.
+
+### Allowed input surfaces
+
+The only signals any feel-layer framework may read — all already projected:
+
+- `UIState.notableEvents` — the six locked event variants.
+- `UIState.game.lastPlayEffectsFired` — the combo chain count (D-24221).
+- **Local move dispatch** — the client's own moves (`playCard`,
+  `recruitHero`, `fightVillain`, `drawCards`, `dodgeCard`, `endTurn`).
+- `UIState` outcome / progress fields — `EndgameOutcome`,
+  `progress.escapedVillains`, `scheme.twistCount`, `players[].woundCount`.
+
+### Forbidden input surfaces
+
+- `G` / `ctx` — engine-internal state is never read.
+- `G.messages` — the game log is **not** projected (D-20008); anything
+  built on it works in the engine and silently does nothing in the browser.
+- **Any server round-trip** — the feel layer derives entirely from
+  already-projected `UIState`.
+
+### Non-Goals — no feel-layer framework may
+
+- write `G` / `ctx` or modify game state;
+- participate in move validation, or add authoritative timing / sequencing
+  the engine doesn't already own;
+- affect replay or determinism (the whole layer is absent from the state
+  hash);
+- require server-side processing;
+- gate play, pressure spend, or build a compulsion loop — the
+  [Vision](vision.md) bright lines ([Monetization Model](monetization-model.md))
+  bound the whole layer, which is a retention / perceived-quality lever,
+  free to all players.
+
+### The shared trigger spine is canonical
+
+The [trigger spine](#shared-trigger-spine) below is the **single source** of
+the event vocabulary. Framework pages reference a row by its engine name
+(`fightResolved`); they never re-define the vocabulary. This is the
+anti-silo mechanism itself — the cross-links *are* the shared event names.
+
 ## Mechanics
 
 ### The design principle: react to the engine, not to each other
@@ -218,21 +280,45 @@ The anti-silo mechanism, stated plainly:
   consumes read-only projections; the constraint that makes the frameworks
   composable
 
-## Open Questions
+## Acceptance Criteria
 
-- **No Work Packet is scoped yet.** This overview and its framework pages
-  are pre-design research. Implementation of the visual layer would follow
-  the audio arc's WP pattern (foundation → combo cue → event coverage).
-- **Write the two planned pages.** The Dopamine Trigger Framework and
-  Narrative Psychology Framework (with its Playstyle Modes sibling) are
-  referenced but unwritten; drafting them completes the four-framework set.
-- **Sensory expansion appendix.** Capture the deferred smell/taste/haptic
-  ideas as an explicit appendix pointing at [Legendary Forge](legendary-forge.md)
-  so the idea isn't lost, without polluting the browser-scoped frameworks.
-- **Preference surface.** The reduced-motion / effect-intensity control and
+The feel layer is coherent as a system — across all four frameworks — when:
+
+- Every framework references the [shared trigger spine](#shared-trigger-spine)
+  by engine event name and defines no competing vocabulary of its own.
+- No framework reads a [forbidden input surface](#forbidden-input-surfaces).
+- Twin moments share one mapping — a combo *flash* and combo *cue* both
+  consume the same `comboTierForCount` and peak together.
+- With the whole feel layer mounted, bot-vs-bot determinism proofs and
+  replays pass unchanged (the layer is absent from the state hash).
+- The whole layer respects the reduced-motion / intensity preference and
+  degrades cleanly to nothing when disabled.
+- Nothing in the layer gates play or pressures spend.
+
+All four framework pages are now drafted (visual, audio, dopamine,
+narrative); each carries its own page-specific contract inheriting the
+[Feel-Layer Contract](#feel-layer-contract) above.
+
+## Decisions Pending
+
+Open choices a Work Packet must resolve:
+
+- **No implementation Work Packet is scoped yet.** The build would follow
+  the audio arc's WP pattern (foundation → combo cue → event coverage),
+  mirrored for the visual layer.
+- **Preference surface** — the reduced-motion / effect-intensity control and
   the builder/destroyer narrative-lens toggle both live in player
-  preferences — decide whether that's one settings panel or split across the
+  preferences; decide whether that's one settings panel or split across the
   sensory and narrative frameworks.
+
+## Deferred
+
+Out of scope for the browser feel layer:
+
+- **Sensory-expansion appendix** — the deferred smell / taste / haptic ideas
+  belong to the physical STEM-kit / diorama product
+  ([Legendary Forge](legendary-forge.md)), captured there so the idea isn't
+  lost without polluting the browser-scoped frameworks.
 
 ## References
 
