@@ -31829,4 +31829,43 @@ invisible: a stopped bot still reads as a silent freeze.
 `components/BotAllyStallBanner.vue` (`BOT_ALLY_STALL_FALLBACK_MESSAGE`, injected
 `returnToLobby`), wired at `pages/PlayViewport.vue` (`returnToLobby` navigates to `/`).
 
+### D-24232 — the live client force-resyncs on a transport reconnect, so a match never stays frozen on a stale pre-restart frame while waiting on another seat
+
+**Status:** Active (landed 2026-07-22, fix/client-resync-on-reconnect).
+
+**Context.** D-24230's bounded restart revival keeps the SERVER-side bot-ally
+match progressing across a server restart, but the human's client can reconnect
+to the restarted server yet stay pinned to a stale `_stateID` — boardgame.io does
+not reliably re-anchor a match on reconnect. Neither existing safety net covers
+this: the WP-311 banner (D-24096) shows only while `isConnected` is **false**, and
+the WP-312 move-ack watchdog (D-24097) arms only **after the viewer submits a
+move**. A client that reconnected "connected" while WAITING on another seat (a bot
+ally's turn — no move pending) therefore freezes on the pre-restart frame with no
+banner and no watchdog. Observed 2026-07-22 on a Magneto bot-ally match
+(`SbknquXtOwY`): the client was stuck at turn 23 while the server had advanced to
+turn 24 and kept writing (bgio store healthy; `match_bot_ally` at the D-24230
+revival cap, confirming repeated Postgres-instability restarts).
+
+**Decision.** On a **genuine transport reconnect** — a subscribe frame whose
+`isConnected` transitions `false → true` AND the client had connected at least once
+before (the first connect, including a pre-connect disconnected frame, is never
+treated as a reconnect) — the live client forces exactly one resync
+(`stop()` + `start()`, the same re-anchor boardgame.io runs for the WP-311 manual
+path). The tear-down is deferred out of the subscribe frame (a `setTimeout(0)`) and
+gated by the shared WP-312 `RESYNC_COOLDOWN_MS`, so the reconnect frame produced by
+the resync's own `stop()`/`start()` cannot loop it. The pending reconnect-resync
+timer is cleared on `stop()` (mirrors the watchdog/cooldown cleanup). No new server
+endpoint, no `G` read, no engine import beyond the existing single site
+(`bgioClient.ts`).
+
+**Scope.** This is the minimal client-side reconnect nudge, NOT the full WP-116
+disconnect/reconnect protocol — D-11606 remains deferred. When WP-116 lands, this
+behavior folds into it.
+
+**Landed:** 2026-07-22. Files: `apps/arena-client/src/client/bgioClient.ts`
+(reconnect detection in the subscribe callback, `onTransportReconnect`, and a
+`beginResyncCooldown` refactor shared with the WP-312 watchdog fire), tests in
+`apps/arena-client/src/client/bgioClient.test.ts` (`createLiveClient
+reconnect-resync` suite).
+
 Protect this file.

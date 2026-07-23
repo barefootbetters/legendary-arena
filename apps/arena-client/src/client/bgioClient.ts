@@ -229,15 +229,50 @@ export function createLiveClient(
   let resyncCoolingDown = false;
   let cooldownTimer: ReturnType<typeof setTimeout> | null = null;
 
+  // why: reconnect-resync state — a transport drop-and-restore (the socket goes
+  // down on a server restart, then reconnects) must force a fresh sync, because
+  // boardgame.io does not reliably re-anchor the match on reconnect: the client
+  // can come back "connected" yet stay pinned to a stale `_stateID` while the
+  // server has advanced. That is invisible to both existing safety nets — the
+  // WP-311 banner shows only while `isConnected` is false, and the WP-312
+  // watchdog arms only after the viewer submits a move — so a client waiting on
+  // ANOTHER seat (e.g. a bot ally's turn) after a restart freezes silently.
+  // `previousIsConnected` holds the prior frame's status; `hasBeenConnected`
+  // latches the first successful connect so the very first connect is never
+  // mistaken for a reconnect; `reconnectResyncTimer` defers the tear-down out of
+  // the subscribe frame.
+  let previousIsConnected: boolean | null = null;
+  let hasBeenConnected = false;
+  let reconnectResyncTimer: ReturnType<typeof setTimeout> | null = null;
+
   /**
    * Re-anchors the client to the server's authoritative state by tearing down
    * and re-establishing the boardgame.io client (`stop()` then `start()`),
    * which re-runs the SocketIO connect → server `onSync` handshake. Shared by
-   * the handle's manual `resync()` (WP-311 banner) and the watchdog fire.
+   * the handle's manual `resync()` (WP-311 banner), the watchdog fire, and the
+   * reconnect-resync.
    */
   function performResync(): void {
     client.stop();
     client.start();
+  }
+
+  /**
+   * Opens the auto-resync cooldown window so a flapping connection or a
+   * button-mash during a real outage cannot trigger a resync storm (each resync
+   * tears down and re-establishes the socket). Shared by the watchdog fire and
+   * the reconnect-resync; a manual `resync()` from the WP-311 banner is NOT
+   * gated by this cooldown.
+   */
+  function beginResyncCooldown(): void {
+    resyncCoolingDown = true;
+    if (cooldownTimer !== null) {
+      clearTimeout(cooldownTimer);
+    }
+    cooldownTimer = setTimeout(() => {
+      resyncCoolingDown = false;
+      cooldownTimer = null;
+    }, RESYNC_COOLDOWN_MS);
   }
 
   /** Clears the pending move watchdog (timer + baseline). */
@@ -259,14 +294,32 @@ export function createLiveClient(
     watchdogTimer = null;
     pendingBaselineStateId = null;
     performResync();
-    resyncCoolingDown = true;
-    if (cooldownTimer !== null) {
-      clearTimeout(cooldownTimer);
+    beginResyncCooldown();
+  }
+
+  /**
+   * Fired when the transport transitions from disconnected back to connected
+   * after a genuine prior connection (a reconnect, not the first connect):
+   * force a fresh sync so a client that reconnected to a restarted server but
+   * stayed pinned to a stale `_stateID` catches up to the server's authoritative
+   * state. Gated by the shared cooldown so the reconnect frame produced by the
+   * resync's own `stop()`/`start()` does not re-trigger it into a loop. The
+   * tear-down is deferred to a timer so the client is not stopped inside its own
+   * subscribe frame.
+   */
+  function onTransportReconnect(): void {
+    if (resyncCoolingDown) {
+      return;
     }
-    cooldownTimer = setTimeout(() => {
-      resyncCoolingDown = false;
-      cooldownTimer = null;
-    }, RESYNC_COOLDOWN_MS);
+    beginResyncCooldown();
+    reconnectResyncTimer = setTimeout(() => {
+      reconnectResyncTimer = null;
+      // why: clear any armed move-watchdog before tearing down — the resync
+      // re-anchors state now, so a watchdog fire against the stopped client
+      // would be a redundant second resync.
+      clearWatchdog();
+      performResync();
+    }, 0);
   }
 
   /**
@@ -299,6 +352,24 @@ export function createLiveClient(
     const rawStateId = state?._stateID;
     const stateId = typeof rawStateId === 'number' ? rawStateId : null;
     useConnectionStore().setConnected(isConnected, stateId);
+
+    // why: reconnect-resync — fire a fresh sync only on a genuine reconnect
+    // (previous frame disconnected, this frame connected, AND the client had
+    // connected at least once before). Capturing `hasBeenConnected` BEFORE it is
+    // latched below ensures the FIRST connect (previousIsConnected null→true, or
+    // a pre-connect false frame → true) is never treated as a reconnect.
+    const wasConnectedBefore = hasBeenConnected;
+    if (isConnected === true) {
+      hasBeenConnected = true;
+    }
+    if (
+      isConnected === true &&
+      previousIsConnected === false &&
+      wasConnectedBefore === true
+    ) {
+      onTransportReconnect();
+    }
+    previousIsConnected = isConnected;
 
     // why: WP-312 / D-24097 — track the newest server-authoritative `_stateID`
     // and, if it has advanced past a pending move's baseline, acknowledge that
@@ -386,6 +457,12 @@ export function createLiveClient(
       if (cooldownTimer !== null) {
         clearTimeout(cooldownTimer);
         cooldownTimer = null;
+      }
+      // why: clear a pending reconnect-resync timer so it never fires against a
+      // client the caller has torn down (mirrors the watchdog/cooldown cleanup).
+      if (reconnectResyncTimer !== null) {
+        clearTimeout(reconnectResyncTimer);
+        reconnectResyncTimer = null;
       }
       client.stop();
     },
