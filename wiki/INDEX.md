@@ -104,21 +104,25 @@ Cross-cutting governance, methodology, and readiness assessments.
 - [Legendary Arena — Tribe and Trust](legendary-arena-tribe-and-trust.md) —
   *(draft, research)* the "filtering is the product" growth thesis: the
   four-layer trust fence (gate → quarantine → community flag →
-  behavioural backstop), the tribe-fit filters, and the player survey —
-  plus a first-pass **threat model** (named threat-actor categories,
-  STRIDE/LINDDUN, a prioritized threat→mitigation table mapped to the four
-  layers, the missing account-security controls, and the business-lens
-  residual risk that an over-strict gate churns real players). Also covers
-  the "birds of a feather, verified" risk-tiered tribe-fit filters, the
-  refined AARRR+tribe growth buckets and subscription pitch, the proposed
-  vetting process, six STRIDE attack trees, a control-implementation playbook
-  (dating-app/social-platform vetting incl. the Tinder/Hinge/Bumble liveness
-  stack, bot detection, risk-triggered CAPTCHA), the operator-side controls
-  (segregation of duties, least privilege, Zero Trust, regulated-finance
-  KYC/sanctions parallels), an external-account-linking reliability ranking
-  (corroboration only; BoardGameGeek/Steam lead), and a proposed
-  staff/moderator training outline. Descriptive of a draft strategy; defines
-  no controls.
+  behavioural backstop), the "birds of a feather, verified" risk-tiered
+  tribe-fit filters, the refined AARRR+tribe growth buckets and subscription
+  pitch, the proposed vetting process, and the player survey — plus a
+  **threat model** (named threat-actor categories, STRIDE/LINDDUN, six attack
+  trees, a threat→mitigation table mapped to the four layers, operator-side
+  controls (segregation of duties, least privilege, Zero Trust,
+  regulated-finance KYC/sanctions parallels), the business-lens residual
+  risk, and a proposed staff/moderator training outline). The concrete
+  control-implementation techniques live in its companion
+  [Trust Controls Playbook](trust-controls-playbook.md). Descriptive of a
+  draft strategy; defines no controls.
+- [Trust Controls Playbook](trust-controls-playbook.md) — *(draft, research)*
+  the implementation companion to Tribe and Trust: the concrete techniques
+  that would build each layer's controls — mature-platform vetting (liveness
+  photo verification, multi-signal identity binding, progressive trust,
+  reporter-reputation weighting, age assurance), the external-account-linking
+  reliability ranking (corroboration only; BoardGameGeek/Steam lead), bot
+  detection, and risk-triggered CAPTCHA — each mapped back onto the parent's
+  four layers and threat numbers (T1–T10). Descriptive; defines no controls.
 - [Changelog](changelog.md) — Milestone history of significant changes,
   newest first (projected from `docs/09-CHANGELOG.md`; the exhaustive
   per-packet record lives in WORK_INDEX + git log).
