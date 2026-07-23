@@ -320,6 +320,98 @@ describe('createLiveClient move-ack watchdog (WP-312)', () => {
   });
 });
 
+describe('createLiveClient reconnect-resync', () => {
+  // why: onTransportReconnect defers the resync via setTimeout(0); mock timers
+  // let us fire that deferred tear-down deterministically. Scoped to this
+  // describe so the other real-timer suites are unaffected.
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    resetLiveClientCallLog();
+    mock.timers.enable({ apis: ['setTimeout'] });
+  });
+
+  afterEach(() => {
+    mock.timers.reset();
+    setClientFactoryForTesting(null);
+    resetLiveClientCallLog();
+  });
+
+  function startClient(): {
+    handle: ReturnType<typeof createLiveClient>;
+    stub: StubClient;
+  } {
+    const { factory, lastClient } = makeStubFactory();
+    setClientFactoryForTesting(factory);
+    const handle = createLiveClient({
+      matchID: 'match-reconnect',
+      playerID: '0',
+      credentials: 'secret',
+      serverUrl: 'http://localhost:8000',
+    });
+    const stub = lastClient();
+    assert.ok(stub !== null);
+    return { handle, stub: stub! };
+  }
+
+  test('a genuine reconnect (connected → dropped → connected) forces exactly one resync', () => {
+    const { stub } = startClient();
+    // first connect: never treated as a reconnect
+    stub._subscribers[0]!.callback({ G: {}, isConnected: true, _stateID: 5 });
+    // server restart drops the socket
+    stub._subscribers[0]!.callback({ G: null, isConnected: false, _stateID: 5 });
+    // socket reconnects — but boardgame.io left us on the stale _stateID
+    stub._subscribers[0]!.callback({ G: {}, isConnected: true, _stateID: 5 });
+    // the resync is deferred out of the subscribe frame; nothing yet
+    assert.deepEqual(stub._ops, []);
+    mock.timers.tick(1);
+    assert.deepEqual(stub._ops, ['stop', 'start']);
+  });
+
+  test('the FIRST connect (incl. a pre-connect disconnected frame) never resyncs', () => {
+    const { stub } = startClient();
+    // a pre-connect frame reports disconnected before the socket is up
+    stub._subscribers[0]!.callback({ G: null, isConnected: false, _stateID: 0 });
+    // the first real connect must NOT be mistaken for a reconnect
+    stub._subscribers[0]!.callback({ G: {}, isConnected: true, _stateID: 1 });
+    mock.timers.tick(1);
+    assert.deepEqual(stub._ops, []);
+  });
+
+  test('the reconnect frames produced by the resync itself do not loop (cooldown-gated)', () => {
+    const { stub } = startClient();
+    stub._subscribers[0]!.callback({ G: {}, isConnected: true, _stateID: 5 });
+    stub._subscribers[0]!.callback({ G: null, isConnected: false, _stateID: 5 });
+    stub._subscribers[0]!.callback({ G: {}, isConnected: true, _stateID: 5 });
+    mock.timers.tick(1);
+    assert.deepEqual(stub._ops, ['stop', 'start']);
+
+    // the resync's own stop()/start() drives another drop→restore; within the
+    // cooldown these must NOT trigger a second resync.
+    stub._subscribers[0]!.callback({ G: null, isConnected: false, _stateID: 5 });
+    stub._subscribers[0]!.callback({ G: {}, isConnected: true, _stateID: 5 });
+    mock.timers.tick(1);
+    assert.deepEqual(stub._ops, ['stop', 'start']);
+
+    // once the cooldown elapses, a fresh reconnect resyncs again
+    mock.timers.tick(RESYNC_COOLDOWN_MS + 1);
+    stub._subscribers[0]!.callback({ G: null, isConnected: false, _stateID: 5 });
+    stub._subscribers[0]!.callback({ G: {}, isConnected: true, _stateID: 5 });
+    mock.timers.tick(1);
+    assert.deepEqual(stub._ops, ['stop', 'start', 'stop', 'start']);
+  });
+
+  test('stop() clears a pending reconnect-resync so it never fires against a torn-down client', () => {
+    const { handle, stub } = startClient();
+    stub._subscribers[0]!.callback({ G: {}, isConnected: true, _stateID: 5 });
+    stub._subscribers[0]!.callback({ G: null, isConnected: false, _stateID: 5 });
+    stub._subscribers[0]!.callback({ G: {}, isConnected: true, _stateID: 5 });
+    // reconnect scheduled but not yet fired; tearing down must cancel it
+    handle.stop();
+    mock.timers.tick(1);
+    assert.deepEqual(stub._ops, ['stop']);
+  });
+});
+
 // why: jsdom's default document URL is `about:blank` and its `location`
 // object is non-configurable, so manipulating the URL via
 // `history.replaceState` or `Object.defineProperty(window, 'location', …)`
