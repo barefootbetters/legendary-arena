@@ -569,12 +569,16 @@ export type CardType = string;
 // why: distinct from RegistryConfigSchema (R2 set-abbreviation artifact).
 // Object shape consumed by the viewer at boot to locate metadata and optional
 // rulebook PDF. rulebookPdfUrl is optional so WP-082 can add it before, after,
-// or alongside EC-108 without schema churn.
+// or alongside EC-108 without schema churn. rulesPageUrl (WP-039) is the
+// optional www /rules HTML deep-link target; the GlossaryPanel shows it
+// alongside the PDF link. It must be listed here because the schema is
+// .strict() — an unrecognized key hard-fails the viewer boot.
 export const ViewerConfigSchema = z
   .object({
     metadataBaseUrl: z.string().url(),
     eagerLoad: z.array(z.string().min(2).max(10)).optional(),
     rulebookPdfUrl: z.string().url().optional(),
+    rulesPageUrl: z.string().url().optional(),
   })
   .strict();
 
