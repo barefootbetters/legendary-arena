@@ -12,6 +12,7 @@ import {
   resetLiveClientCallLog,
   MOVE_ACK_TIMEOUT_MS,
   RESYNC_COOLDOWN_MS,
+  SPECTATOR_STALE_TIMEOUT_MS,
   type BgioClientLike,
   type BgioClientFactory,
 } from './bgioClient';
@@ -408,6 +409,96 @@ describe('createLiveClient reconnect-resync', () => {
     // reconnect scheduled but not yet fired; tearing down must cancel it
     handle.stop();
     mock.timers.tick(1);
+    assert.deepEqual(stub._ops, ['stop']);
+  });
+});
+
+describe('createLiveClient spectator-staleness watchdog', () => {
+  // why: the spectator watchdog arms a setTimeout per frame while another seat is
+  // acting; mock timers let us cross SPECTATOR_STALE_TIMEOUT_MS deterministically.
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    resetLiveClientCallLog();
+    mock.timers.enable({ apis: ['setTimeout'] });
+  });
+
+  afterEach(() => {
+    mock.timers.reset();
+    setClientFactoryForTesting(null);
+    resetLiveClientCallLog();
+  });
+
+  /** Builds a subscribe frame whose UIState is on `activePlayerId`'s turn. */
+  function frameOnTurn(
+    activePlayerId: string,
+    stateId: number,
+    opts: { gameOver?: unknown } = {},
+  ) {
+    const game: Record<string, unknown> = {
+      phase: 'play',
+      turn: 1,
+      stage: 'main',
+      activePlayerId,
+    };
+    const G: Record<string, unknown> = { game, players: [], progress: {} };
+    if (opts.gameOver !== undefined) {
+      G.gameOver = opts.gameOver;
+    }
+    return { G, isConnected: true, _stateID: stateId };
+  }
+
+  function startAsPlayer0(): { handle: ReturnType<typeof createLiveClient>; stub: StubClient } {
+    const { factory, lastClient } = makeStubFactory();
+    setClientFactoryForTesting(factory);
+    const handle = createLiveClient({
+      matchID: 'm-spectator',
+      playerID: '0',
+      credentials: 'secret',
+      serverUrl: 'http://localhost:8000',
+    });
+    const stub = lastClient();
+    assert.ok(stub !== null);
+    return { handle, stub: stub! };
+  }
+
+  test("no frame within the window on ANOTHER seat's turn fires exactly one resync", () => {
+    const { stub } = startAsPlayer0();
+    // it is seat 1's turn (the bot); the viewer is seat 0 → watchdog arms
+    stub._subscribers[0]!.callback(frameOnTurn('1', 5));
+    mock.timers.tick(SPECTATOR_STALE_TIMEOUT_MS + 1);
+    assert.deepEqual(stub._ops, ['stop', 'start']);
+  });
+
+  test('a frame arriving before the deadline resets the watchdog (no resync)', () => {
+    const { stub } = startAsPlayer0();
+    stub._subscribers[0]!.callback(frameOnTurn('1', 5));
+    mock.timers.tick(SPECTATOR_STALE_TIMEOUT_MS - 1000);
+    // a fresh server frame (the bot moved) re-arms the watchdog
+    stub._subscribers[0]!.callback(frameOnTurn('1', 6));
+    mock.timers.tick(SPECTATOR_STALE_TIMEOUT_MS - 1000);
+    assert.deepEqual(stub._ops, [], 'each inter-frame gap stayed under the window');
+  });
+
+  test("the viewer's OWN turn does not arm the spectator watchdog", () => {
+    const { stub } = startAsPlayer0();
+    // activePlayerId === the viewer's seat "0" → covered by the move-ack watchdog
+    stub._subscribers[0]!.callback(frameOnTurn('0', 5));
+    mock.timers.tick(SPECTATOR_STALE_TIMEOUT_MS + 1);
+    assert.deepEqual(stub._ops, []);
+  });
+
+  test('a game-over frame does not arm the spectator watchdog', () => {
+    const { stub } = startAsPlayer0();
+    stub._subscribers[0]!.callback(frameOnTurn('1', 5, { gameOver: { winner: 'heroes' } }));
+    mock.timers.tick(SPECTATOR_STALE_TIMEOUT_MS + 1);
+    assert.deepEqual(stub._ops, []);
+  });
+
+  test('stop() clears the spectator watchdog (no resync fires afterward)', () => {
+    const { handle, stub } = startAsPlayer0();
+    stub._subscribers[0]!.callback(frameOnTurn('1', 5));
+    handle.stop();
+    mock.timers.tick(SPECTATOR_STALE_TIMEOUT_MS + 1);
     assert.deepEqual(stub._ops, ['stop']);
   });
 });
