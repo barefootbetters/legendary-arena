@@ -1,0 +1,487 @@
+---
+title: Legendary Arena — Tribe and Trust
+type: Guide
+tags:
+  - governance
+  - trust
+  - safety
+  - threat-model
+  - community-fit
+  - retention
+  - survey
+  - designer-reference
+  - research
+related:
+  - vision.md
+  - profile-login.md
+  - monetization-model.md
+  - newsletter-authoring.md
+  - leaderboard.md
+status: draft
+source:
+  - C:\pcloud\BB\DEV\legendary-arena\wiki\legendary-arena-tribe-and-trust.md (this page — https://ewiki.legendary-arena.com/legendary-arena-tribe-and-trust/)
+  - ../docs/01-VISION.md
+last-reviewed: 2026-07-23
+---
+
+# Legendary Arena — Tribe and Trust
+
+> **Working draft — not a shipped system.** This page records a
+> product/growth strategy and a *first-pass threat model against it*. The
+> "security" content is intended principles plus a review of where those
+> principles are still underspecified — it is **not** a description of
+> implemented controls. Nothing here is a governance decision; design and
+> policy locks live in [DECISIONS.md](../docs/ai/DECISIONS.md) and
+> [VISION](../docs/01-VISION.md), which this page defers to. Treat the
+> Threat Model and Edge Cases sections as a checklist of gaps to close
+> before any of this is built, not as a claim that they are handled.
+
+## Summary
+
+Legendary Arena's growth thesis is that **the filtering is the product**:
+players stay for a table of people who feel like their tribe and for the
+confidence that predators and toxic actors have been kept out. This page
+captures that strategy — the layered trust model, the tribe-fit filters,
+and the player survey that feeds it — and then subjects it to a structured
+threat model. The strategy's core insight (front-load verification and
+quarantine; use behaviour only as a safety net) is sound in principle; its
+real weaknesses are **underspecification and missing operational detail**,
+which the Threat Model and Edge Cases sections enumerate so the product
+owners can close them before launch.
+
+## Trust Model Contract
+
+The strategy rests on four load-bearing claims. Everything else on the page
+either implements or pressure-tests these.
+
+1. **The filtering is the product.** People do not stay for the cards; they
+   stay for the people who feel like them. The games come free with the
+   vetting. This is the subscription pitch: *"we do the vetting so you
+   don't have to."*
+
+2. **Verify the signals worth faking.** A scammer only counterfeits
+   something valuable — nobody forges a worthless currency. So *the group
+   predators try to infiltrate is proof of which tribe is worth
+   protecting*, and the effort they spend faking their way in
+   reverse-engineers what a good member looks like. We screen on **verified**
+   signals (photo, location, payment region, phone) rather than
+   self-reported profiles anyone can fake.
+
+3. **Defence is front-loaded, in layers.** Waiting for a wolf to hunt
+   before you act is counting carcasses, not shepherding. The sequence is
+   **gate → quarantine → community flag → behavioural backstop**, in that
+   order — not the reverse.
+
+4. **Behaviour is the net, not the gate.** The subtle actor who games
+   clean signals still cannot fake conduct across dozens of games. Over
+   time, pool the toxic with the toxic and let the good tables stay good.
+
+> **This contract is aspirational until the Threat Model open items close.**
+> Claims 2 and 3 both depend on a concrete verification stack and concrete
+> quarantine exit criteria that do not yet exist. Until those are defined
+> and hardened, "expensive to fake" and "clean record" cannot be evaluated.
+
+## Mechanics
+
+### The layered trust model (the shepherd's fence)
+
+The behavioural loop alone is *not* a front gate. Defence is four layers,
+in order:
+
+| # | Layer | What it does | Where it runs |
+|---|---|---|---|
+| 1 | **Verify hard at the door** | Verified photo, verified location, payment region, phone. Expensive to fake *because we actually check* — turns away most opportunists on its own. | Signup / onboarding, before any table access |
+| 2 | **Quarantine newcomers** | New accounts play among themselves or in lower-stakes tables until they've built a clean record. The unproven never reach the prized tribe on day one. | A separate population; the behavioural loop runs here *before* anyone vulnerable is exposed |
+| 3 | **Reputation & fast flagging** | Ratings, reports, one-tap flags. The community catches what the door missed. | Live, across all tables |
+| 4 | **Behavioural backstop** | Detects the subtle actor who games clean signals — rage-quitting, bullying newer players, collusion — across many games. | Continuous, over the account's history |
+
+> Sequence matters: **gate and quarantine first, behaviour as the safety
+> net** — not the other way around.
+
+### The vetting process (proposed)
+
+This is a **proposed starting point** for how L1 (gate) and L2 (quarantine)
+would actually operate — a first attempt at the "verification stack is
+undefined" open item, not an implemented flow. The governing rule:
+**questions surface inconsistencies; independent verification and
+observation catch what questions miss.** Self-reported answers are weak on
+their own, so the process weights independently verifiable evidence far
+above self-description, and asks the questions *in combination with*
+technical and documentary checks rather than as a pure questionnaire.
+
+**What to probe, and why.** Four areas, each pairing a question with the
+check that corroborates it:
+
+| Probe area | Representative questions | Corroborating check | Actor it targets |
+|---|---|---|---|
+| **Identity & basic legitimacy** | Confirm the name, age bracket, and location you're using. Is the contact method (phone, email, payment region) consistent with that identity and location? | Cross-check location against payment region, connection data, and device; liveness/document link on photo | Opportunist, Infiltrator |
+| **History & consistency** | Have you held accounts here or on similar platforms under other identities? Been suspended, banned, or restricted — and for what? | Device / browser fingerprint and signup-anomaly checks; external corroboration where verifiable | Ban evader / multi-accounter |
+| **Intent & fit** | Your primary reason for joining? How do you interact in group or competitive settings? What conduct do you consider unacceptable in shared spaces? | Treat as provisional; validate through observed behaviour in quarantine | Griefer, Infiltrator |
+| **Risk indicators** | Are you willing to complete additional verification (photo liveness, payment-method confirmation, a waiting period)? Do you accept the community rules and the consequences for breaking them? | Willingness itself is a signal; refusal of low-cost verification is a red flag | Opportunist, Colluding group |
+
+**Signals threat actors commonly fake — treat as untrusted until
+independently verified.** The principle is the strategy's own contract
+claim #2: *the more valuable a signal is for matching or trust, the more
+incentive there is to fake it.* So the highest-value signals get the
+heaviest verification, never the benefit of the doubt.
+
+| Faked signal | Why it's targeted | Defensive implication |
+|---|---|---|
+| **Name / personal identity** | Easy to invent or borrow | Require corroboration beyond self-report |
+| **Age / age bracket** | Misrepresented for access or matching | Verify where feasible; never rely on the claim alone |
+| **Location / timezone / region** | Strong matching signal, so worth faking (T1) | Cross-check payment, network, and device data |
+| **Profile photo** | Stolen, AI-generated, or stale (T2) | Prefer liveness or document-linked verification |
+| **Contact details (phone, email)** | Disposable / VoIP options exist (T1) | Prefer methods harder to obtain anonymously |
+| **Prior experience / reputation** | "Clean history" is cheap to claim (T3, T4) | Seek external corroboration or behavioural evidence over time |
+| **Intent / playstyle / temperament** | Easy to give the "right" answers | Provisional only; validate through observed behaviour |
+| **References / social proof** | Fabricated or coordinated (T9) | Verify independently; a self-supplied reference proves nothing |
+
+> **Layering is what makes vetting work.** Hard checks at the door catch the
+> forgeable signals; time- and behaviour-based observation in quarantine
+> catches what the door missed; continuous monitoring catches the actor who
+> adapts. No single stage is sufficient — which is why the four-layer fence
+> above exists rather than a one-time questionnaire. The concrete
+> thresholds (what verification is mandatory, how long quarantine runs,
+> what counts as corroboration) remain open items in the Threat Model.
+
+### Tribe-fit filters (what we actually sort on)
+
+Sort on signals that genuinely predict an enjoyable table — and verify the
+ones people have reason to fake.
+
+| Signal | Why it predicts a good match | Faking / verification posture |
+|---|---|---|
+| **Language** | Can't enjoy a game together if you can't understand each other | Low incentive to fake; light verification |
+| **Age bracket** | A 50-year-old and a 13-year-old want different pace, humour, stakes; proxies for playstyle and maturity | Platforms filter on this comfortably every day |
+| **Playstyle** (competitive ↔ casual) | The single strongest bond — shared love of tight play unites strangers instantly | Best revealed *through play*, not a dropdown |
+| **Location / timezone** | Strong signal (people want their own region/community) — so strong that people lie about it | Verify via payment region, phone, connection data — don't take their word |
+| **Schedule** | Overlapping play windows = games that actually happen | Self-reported, low stakes |
+| **Temperament** (handling winning/losing) | Toxicity around a loss sours a whole group | Surfaces over repeated sessions |
+
+**On race:** it can travel *with* culture, language, and shared experience,
+but it is a weak proxy for what actually matters, and behaviour beats it
+every time. Treat it as, at most, a minor signal — never a load-bearing
+filter. The binding agent in any tribe is the shared way of life, and we
+target *that* directly.
+
+> **Assurance split.** Three of these six filters (playstyle, schedule,
+> temperament, and part of age) are self-reported or only revealed through
+> play. Self-reported data is inherently lower assurance, and the strategy
+> does not yet say how early matching decisions are made *before* the
+> play-revealed signals exist. See Edge Cases.
+
+### The survey — cut through the sales lens
+
+**Rule:** every question must feed a decision we'll make. If an answer
+can't change what we build, price, or promote — cut it. That's why "why do
+you play?" is out and "which missing feature would make you upgrade today?"
+is in.
+
+The survey feeds six growth buckets: **Acquisition, Activation, Retention,
+Revenue, Referral, and Community fit / tribe** (the moat). Lead with
+multiple choice to warm players up and give language for the feeling, then
+follow with one open box to catch the gold you'd never have guessed.
+
+The twenty questions (tagged by bucket):
+
+1. What made you look for an online way to play Legendary in the first place? *(Acquisition)*
+2. What's the most frustrating part of your current setup — physical cards, another app, or playing solo? *(Activation / Revenue)*
+3. Who do you usually play with, and how often can you actually get a game going? *(Retention / Tribe)*
+4. What almost stopped you from signing up? *(Acquisition / Revenue)*
+5. If Legendary Arena vanished tomorrow, what would you miss most? *(Retention — your true core value, in their words)*
+6. When you first tried the site, what did you expect versus what actually happened? *(Activation)*
+7. Was there a moment it just clicked and felt right? *(Activation)*
+8. What words would you use to describe it to a friend who's never played? *(Referral — copy fuel)*
+9. What nearly made you give up during your first game? *(Activation)*
+10. Which single feature do you use the most? *(Retention / Revenue)*
+11. Is there something you wish it did that it doesn't yet? *(Revenue — upgrade signal)*
+12. How does it compare to playing with the physical cards on your table? *(Activation / Retention)*
+13. What would make you comfortable recommending it to your gaming group? *(Referral)*
+14. Have you ever paid for something similar, and what made it worth it? *(Revenue)*
+15. What almost made you close the tab and never come back? *(Acquisition / Activation)*
+16. How did you first hear about Legendary Arena? *(Acquisition)*
+17. What kind of player are you — competitive, casual, or in between? *(Tribe)*
+18. When do you usually reach for it — a quiet evening, a lunch break, with the kids? *(Retention / Tribe)*
+19. If you could wave a wand and change one thing, what would it be? *(Revenue / Retention)*
+20. What's the one reason you keep coming back? *(Retention — the keystone)*
+
+### Delivery: newsletter + feedback channel
+
+Do **both** — they feed each other. The **newsletter** is where you talk
+to players (most words on *their* problem, a little on the product; quote
+their own words back). The **feedback channel** is where you listen — start
+lightweight, a one-question reply prompt (*"Hit reply and tell me your
+toughest Mastermind"*), before building anything heavier. See
+[Newsletter Authoring](newsletter-authoring.md) and the
+[Brevo Email Pipeline](brevo-email-pipeline.md) for the delivery
+mechanics.
+
+## Threat Model
+
+A threat model asks four questions: **what are we protecting, who attacks
+it, how might they succeed, and what will we do about it.** This is a
+defensive first pass over the strategy above — it surfaces risk early so
+controls can be designed before incidents, and it is explicitly *not* an
+attack guide. It should be revisited after any major design change and on a
+regular cadence; treat it as a living document.
+
+Structured this way, a threat model turns the vague question *"is this
+secure enough?"* into a concrete, reviewable set of statements about what
+could fail and what we're doing about it. Without one, security decisions
+tend to be reactive, incomplete, or based on gut feel; with one, risks
+become visible, prioritizable, and discussable across engineering, product,
+and leadership. That discipline matters most for a layered-trust system
+like this one — verification + quarantine + behavioural + community
+flagging — because it forces the team to define the concrete mechanisms
+still listed as open items. Its six core elements are exactly the
+subsections below: **assets** (what we protect), **threats** (how they're
+compromised), **attack surface / entry points** (where an adversary
+interacts), **trust boundaries** (where trust level changes),
+**mitigations** (controls that reduce risk), and **residual risk** (what
+remains, and whether it's acceptable).
+
+### Threat actors
+
+Threats do not float free — each has an actor behind it with a motivation,
+a level of sophistication, and a level of patience. Naming the actor
+categories keeps the model honest: a control that stops the casual
+opportunist may do nothing against the patient infiltrator, and vice versa.
+Each category maps to the STRIDE threats (T1–T10) in the *Threats* table
+below.
+
+| Actor category | Motivation | Sophistication / patience | Primary threats | Layer expected to stop them |
+|---|---|---|---|---|
+| **Opportunist** | Casual mischief or easy gain; moves on if it's hard | Low / low | T1, T2 at low effort | Gate (L1) — the strategy's claim that verification "turns away most opportunists on its own" is *this* actor |
+| **Infiltrator / sleeper** | Reach trusted, higher-stakes tables to prey on vulnerable members | High / high | T3, T9 | Quarantine (L2) exit criteria + behavioural backstop (L4) |
+| **Ban evader / multi-accounter** | Re-enter after removal; rebuild reputation from scratch | Med / med | T4 | Gate (L1) fingerprinting + anti-multi-accounting (*net-new*) |
+| **Griefer / harasser** | Dominate, bully, or drive off other players — especially newcomers | Low–med / low | T5, T10 | Community flag (L3) + behavioural backstop (L4) |
+| **Colluding group** | Coordinate multiple accounts — false-flag rings, quarantine farming, in-table collusion | Med–high / med | T5, T7, T9 | Community-flag calibration (L3) + backstop (L4) |
+| **Data thief / external attacker** | The verification PII itself, not the game | High / med | T8 + LINDDUN privacy lens | Cross-cutting PII protection (*net-new*) |
+| **Malicious insider** | Privileged access (moderator/admin) misused to leak PII or manipulate reputation/reports | High / n/a | T6, T8 | Access control, audit trails, least privilege (*net-new*) |
+
+> **The actor list is a coverage check.** Every mitigation below should
+> answer *which of these actors it stops* — and where a row's "layer
+> expected to stop them" is marked *net-new*, no control exists yet. Three
+> of the seven actors (multi-accounter, data thief, insider) fall almost
+> entirely into that gap.
+
+### Scope and assets
+
+**In scope:** the signup / verification flow, the quarantine tier, the
+matching engine's tribe-fit inputs, the reporting system, and the
+behavioural scoring pipeline.
+
+**Assets, in priority order:**
+
+1. **The trust of the flock** — the core asset and the thing customers pay
+   for. If verified members stop believing the vetting works, the product
+   is gone regardless of technical state.
+2. **Verified identity signals** — verified photo, location, payment
+   region, phone. Both a *control* (they gate access) and a *liability*
+   (they are sensitive PII you now store and must protect).
+3. **Reputation / behavioural scores** — the data that drives promotion out
+   of quarantine and pooling of toxic actors.
+4. **Vulnerable members** — newer or younger players the quarantine tier is
+   meant to shield until an account is proven.
+5. **Revenue** — subscription income, which depends directly on asset 1.
+
+**Out of scope for this first model:** payment-processor internals, game
+engine determinism, and infrastructure hardening — each deserves its own
+model.
+
+### Trust boundaries
+
+- **Unverified → Quarantined → Trusted.** The two promotions across this
+  boundary are the highest-value targets: an attacker who crosses them
+  cheaply defeats the whole fence.
+- **Client ↔ Server.** Per [ARCHITECTURE.md](../docs/ai/ARCHITECTURE.md),
+  the engine owns truth and clients submit intent, not outcomes — any
+  trust signal the client *asserts* (self-reported location, claimed age)
+  is untrusted until server-verified.
+- **User ↔ User.** Matching, messaging, and flagging all put one player's
+  input in front of another; this is where harassment and coordinated
+  abuse live.
+
+### Threats (STRIDE-mapped, written as concrete misuse cases)
+
+Each threat is a concrete statement, not a category, and carries a
+qualitative Likelihood × Impact given *current* (undefined) controls.
+
+| # | STRIDE class | Concrete misuse case | Likelihood | Impact | Primary layer to defend |
+|---|---|---|---|---|---|
+| T1 | Spoofing | Attacker uses a VoIP / temporary phone number and a VPN or proxy to defeat the "verified location + phone" gate at signup. | High | High | Gate (L1) |
+| T2 | Spoofing | Photo verification without liveness / ID-match is passed with a stolen, borrowed, or AI-generated face. | High | High | Gate (L1) |
+| T3 | Elevation of Privilege | A "sleeper" farms a minimal, low-stakes clean record through vague quarantine exit criteria, then moves into trusted tables (the exact pattern the fence exists to stop). | Med | High | Quarantine (L2) |
+| T4 | Tampering | Multi-accounting / device sharing / browser-fingerprint evasion lets a banned actor rebuild reputation from scratch. | High | High | Gate (L1) + Backstop (L4) — *no control described* |
+| T5 | Denial of Service | Coordinated false-flagging is used to silence a rival or grief newcomers; the report system itself becomes the weapon. | Med | Med | Community flag (L3) |
+| T6 | Repudiation | Flags and reports carry no audit trail, so coordinated abuse can't be attributed and honest disputes can't be adjudicated. | Med | Med | Community flag (L3) |
+| T7 | Information Disclosure | Quarantine tables are used for reconnaissance — a probe account learns detection thresholds by observing what does and doesn't get flagged. | Low | Med | Quarantine (L2) |
+| T8 | Information Disclosure | The verification PII itself (phone, location, payment region, face photo) is breached or over-retained — a high-value target created *by* the control. | Low | High | Cross-cutting — *no control described* |
+| T9 | Tampering / Collusion | Actors collude *inside the quarantine pool* to farm mutual clean records or coordinate before promotion. | Med | Med | Behavioural backstop (L4) |
+| T10 | Elevation / Evasion | A sophisticated actor stays just under the behavioural threshold indefinitely, adapting as scoring changes. | Med | Med | Behavioural backstop (L4) |
+
+### Privacy threats (LINDDUN lens)
+
+The verification signals are personal data, so a privacy pass matters as
+much as the security one:
+
+- **Linkability / Identifiability** — payment region, phone, and face photo
+  together are strongly identifying; correlating them across accounts or
+  leaking the correlation is a privacy harm in its own right.
+- **Minors** — age-bracket filtering means the system knowingly processes
+  data about children; that carries handling and consent obligations
+  (COPPA/GDPR-K class) the strategy has not addressed.
+- **Non-compliance** — collecting biometric-adjacent (face) and location
+  data invokes data-protection regimes; storage, retention, and
+  data-subject-access handling need explicit design.
+
+### Mitigations, mapped to the four layers
+
+| Layer | Prevent | Detect | Respond |
+|---|---|---|---|
+| **L1 Gate** | Liveness + ID-match on photo (T2); corroborate location across payment region + connection data + phone rather than any single signal (T1); block known VoIP ranges. | Signup-velocity and device/fingerprint anomaly scoring (T1, T4). | Fail closed to quarantine, not to trusted, on weak-signal signups. |
+| **L2 Quarantine** | Concrete, non-trivial exit criteria — minimum game count *and* elapsed time *and* clean-conduct thresholds (T3). | Watch for reconnaissance patterns and intra-pool collusion (T7, T9). | Extend or reset quarantine on flagged conduct; never auto-promote on volume alone. |
+| **L3 Community flag** | Rate-limit reports; weight by reporter reputation; require a reason (T5). | Detect coordinated flagging bursts against a single target (T5); keep an immutable flag audit trail (T6). | Human review for high-impact actions; reversible sanctions with appeal. |
+| **L4 Behavioural backstop** | Define the actual signals, scoring, and false-positive/negative handling (currently unspecified). | Score conduct across many games; watch for threshold-hugging adaptation (T10). | Pool toxic-with-toxic; escalate on sustained pattern, not a single game. |
+
+**Controls with no home in the current strategy (net-new required):**
+
+- **Account security** — MFA, account-recovery and takeover protection.
+  The entire model is social/behavioural; a hijacked *trusted* account
+  bypasses every layer.
+- **Multi-accounting defence** — device / browser fingerprinting and
+  signup anomaly detection (T4) — the model's biggest structural gap, since
+  cheap re-entry defeats every downstream layer.
+- **PII protection** — encryption, minimal retention, and access control on
+  the verification signals themselves (T8), plus a data-protection /
+  compliance review for the minor-data and biometric-adjacent handling.
+
+### Residual risk (state it, don't hide it)
+
+Perfect security is impossible; the model's job is to make what remains
+visible and intentional.
+
+- **Low-activity users never generate enough behavioural signal** for the
+  L4 net to engage — the backstop is a function of volume and time, so
+  intermittent accounts sit permanently under-observed.
+- **Over-strict filtering is itself a business risk.** A gate that turns
+  away real players, or a quarantine that frustrates genuine members, churns
+  the exact customers the product needs. The filtering *is* the product —
+  but a false-positive at the door is lost payroll, not just a security
+  metric. Verification friction must be tuned against conversion, not
+  maximised blindly. This is the tension the model must hold, not resolve
+  in one direction.
+- **Sophisticated, patient adversaries** (T3, T9, T10) will get through any
+  automated layer; the community and human-review layers are the backstop
+  of last resort, and they carry their own abuse surface (T5, T6).
+
+### Extending this model
+
+To go from this first pass to a maintained model: keep threats written as
+concrete misuse cases (as above); re-score Likelihood × Impact as controls
+land; track each residual-risk item with an owner; and revisit after design
+changes, after incidents, and on a cadence. STRIDE covers the technical
+surface here; LINDDUN covers the privacy surface; attack trees are worth
+drawing for the two highest-value paths (gate bypass and premature
+promotion). The practical next artifacts are a concrete verification-stack
+spec, measurable quarantine exit criteria, a reporting-system abuse policy,
+and a behavioural-scoring design with explicit false-positive/negative
+handling — the same four areas the strategy already lists as open.
+
+## Interactions
+
+- **[Vision](vision.md)** — Community fit / tribe is a VISION-level
+  secondary goal; this strategy operationalises it. The trust model must
+  stay inside the VISION bright lines (no pay-to-win, identity/profile
+  boundaries) — the subscription pitch here is *pay for vetting*, never
+  *pay for advantage*.
+- **[Profile & Login](profile-login.md)** — The identity and verification
+  surface this strategy depends on. Any concrete verification stack (photo,
+  phone, location) and the quarantine account-state live at this boundary,
+  and the client ↔ server trust boundary is where self-reported vs verified
+  signals are adjudicated.
+- **[Monetization Model](monetization-model.md)** — The subscription pitch
+  ("we do the vetting so you don't have to") is the revenue hook; the
+  residual-risk note that over-strict filtering churns real players is a
+  direct monetization concern.
+- **[Newsletter Authoring](newsletter-authoring.md)** and the
+  [Brevo Email Pipeline](brevo-email-pipeline.md) — The delivery and
+  listening channels the survey feeds.
+- **[Leaderboard](leaderboard.md)** — Reputation and behavioural-conduct
+  scoring are adjacent to competitive scoring; both derive per-account
+  records over many games and share the same "signal accrues with volume"
+  property called out in residual risk.
+
+## Edge Cases
+
+These are the specification gaps a security or red-team review flags for
+the product owners to close. They are design/strategy gaps, not an
+invitation to attack — and each maps to a Threat Model item above.
+
+- **The verification stack is only proposed, not specified.** *The vetting
+  process (proposed)* above sketches the questions and corroborating checks,
+  but the concrete thresholds — which checks are mandatory, what counts as
+  corroboration, how liveness/ID-match is enforced — remain open. Until the
+  mechanisms exist and are hardened, "expensive to fake" (T1, T2) cannot be
+  evaluated.
+- **Quarantine has no exit criteria.** "Clean record," duration, and stakes
+  are all undefined. A quarantine whose exit is vague or cheaply satisfied
+  loses its protective value (T3) and says nothing about residual risk
+  after promotion.
+- **The behavioural backstop's signals are unspecified.** No scoring, no
+  false-positive/negative handling is described, and the model assumes the
+  detector is accurate and resistant to gradual adaptation and in-pool
+  collusion (T9, T10).
+- **Community flagging is treated as a reliable sensor.** No calibration,
+  rate limits, reporter-reputation weighting, or defence against
+  false-reporting is described (T5, T6). Under-reporting, retaliation fear,
+  and coordinated abuse are the known failure modes of any social defence.
+- **No account-security or anti-multi-accounting controls exist.** The
+  model is entirely social/behavioural; multi-accounting (T4), takeover
+  (account security), signup anomaly detection, and PII handling (T8) are
+  all absent — outside the draft's current scope, but required for any real
+  deployment.
+- **Circular / unvalidated assumptions.** "The group predators infiltrate
+  is proof of which tribe is worth protecting" is a sharp observation, not
+  a control; "verification turns away most opportunists on its own" is
+  asserted without metrics. The same evidence discipline the strategy
+  applies to the six growth buckets (validate against real numbers) is
+  owed to the security claims.
+
+## Open Questions
+
+The strategy's own open items — closing them *is* the first round of threat
+mitigation:
+
+- **Validate the six growth buckets** against actual Legendary Arena
+  numbers before betting on any one — which is the weakest link now?
+- **Turn the proposed vetting process into a specified verification stack** —
+  fix the thresholds behind *The vetting process (proposed)*: which checks
+  on photo and location (payment region, phone, connection data) are
+  mandatory, how liveness/ID-match is enforced, and what counts as
+  multi-signal corroboration (mitigates T1, T2).
+- **Define the quarantine tier mechanics** — what counts as a "clean
+  record," how long, what stakes — as measurable exit criteria (mitigates
+  T3).
+- **Draft the subscription pitch** built explicitly around "we do the
+  vetting so you don't have to," tuned so verification friction doesn't
+  churn genuine players (the residual-risk tension).
+- **Add the missing security workstream:** account recovery/takeover
+  protection, multi-accounting defence, reporting-abuse policy, and a
+  PII/compliance review for the verification signals and minor data
+  (mitigates T4, T5, T6, T8, and the privacy lens).
+
+## References
+
+- [VISION](../docs/01-VISION.md) — community-fit / tribe as a secondary
+  goal; the monetization bright lines the subscription pitch must respect.
+- [ARCHITECTURE.md](../docs/ai/ARCHITECTURE.md) — the engine-owns-truth /
+  clients-submit-intent boundary that makes self-reported trust signals
+  untrusted until verified.
+- STRIDE (Microsoft) and LINDDUN (privacy) — the two threat-classification
+  frameworks used in the Threat Model section. Referenced as method, not
+  vendored.
+- This page is a **working draft**; it cites the frameworks and VISION but
+  defines no controls of its own. Promote to `canonical` only once the
+  verification stack, quarantine criteria, and behavioural-scoring design
+  exist and are cited.
