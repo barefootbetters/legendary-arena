@@ -256,9 +256,19 @@ async function updateBotAllyMatchStatus(database, matchId, status, faultMessage)
  * because a faulted/exhausted driver LOST to a server restart (its in-memory
  * driver gone) must be revived, not left frozen. The `revive_count < MAX_REVIVALS`
  * bound keeps a permanently-wedged match from re-registering a doomed driver on
- * every deploy — a capped row is excluded here and stays `faulted`. `status` is
- * returned so the caller only increments `revive_count` for a row that was NOT
- * already active (a merely-lost active driver did not consume a revival).
+ * every deploy — a capped row is excluded here and stays as-is.
+ *
+ * // why (2026-07-23 hotfix): the cap now covers `active` rows too, not just
+ * faulted/exhausted. An `active` row that never reaches a terminal status —
+ * because its driver's teardown write kept failing (tonight's read-only DB
+ * chaos left match `atcewRhk_cA` stuck `active`) — was re-registered on EVERY
+ * boot with NO cap. On a memory-tight instance that resurrected driver's polling
+ * OOM-killed the process ~2 min in, BEFORE the driver's 20-min idle timeout
+ * could tear it down, so it resurrected next boot → a restart loop. Capping
+ * every status at `revive_count < MAX_REVIVALS` guarantees a stuck match stops
+ * being re-registered after a bounded number of restarts. A healthy match only
+ * hits the cap if it spans MAX_REVIVALS server restarts — rare, and preferable
+ * to an unbounded resurrection loop.
  *
  * @param {object} database - The pg pool.
  * @returns {Promise<Array<{ matchId: string, botSeats: string[], decisionSeed: string, policy: string, status: string, reviveCount: number }>>}
@@ -267,8 +277,7 @@ export async function readRevivableBotAllyMatches(database) {
   const result = await database.query(
     'SELECT match_id, bot_seats, decision_seed, policy, status, revive_count ' +
       'FROM legendary.match_bot_ally ' +
-      "WHERE status = 'active' " +
-      "OR (status IN ('faulted', 'exhausted') AND revive_count < $1)",
+      "WHERE status IN ('active', 'faulted', 'exhausted') AND revive_count < $1",
     [MAX_REVIVALS],
   );
   return result.rows.map((row) => ({
@@ -674,14 +683,15 @@ export async function rehydrateBotAllyDrivers(context) {
         submit: createSubmit(record.matchId, credentials),
         context,
       });
-      // why: WP-414 / D-24230 — a row that was NOT already `active` is a
-      // faulted/exhausted driver being revived, so flip it back to `active` and
-      // consume one revival (increment revive_count). An already-active row (its
-      // driver merely lost to the restart) is re-registered without consuming a
-      // revival, so a healthy long match is never pushed toward the cap.
-      if (record.status !== 'active') {
-        await markBotAllyMatchRevived(database, record.matchId);
-      }
+      // why: WP-414 / D-24230 + 2026-07-23 hotfix — EVERY re-registration now
+      // consumes one revival (flip to `active` + increment revive_count),
+      // including a row that was already `active`. Previously an active row was
+      // re-registered without incrementing, so a stuck `active` match (whose
+      // teardown write never landed) resurrected UNCAPPED every boot and drove a
+      // restart loop on a memory-tight instance. Counting active re-registrations
+      // means the `readRevivableBotAllyMatches` cap eventually excludes a match
+      // that never makes it to a terminal status.
+      await markBotAllyMatchRevived(database, record.matchId);
       reregistered += 1;
     } catch (rehydrateError) {
       console.error(

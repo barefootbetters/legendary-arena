@@ -505,7 +505,7 @@ describe('GET /api/match/:matchId/bot-ally-status', () => {
 });
 
 describe('readRevivableBotAllyMatches', () => {
-  test('selects active + under-cap faulted/exhausted bounded by MAX_REVIVALS, and maps status + reviveCount', async () => {
+  test('selects under-cap active/faulted/exhausted bounded by MAX_REVIVALS, and maps status + reviveCount', async () => {
     const rows = [
       { match_id: 'a', bot_seats: ['1'], decision_seed: 'a', policy: 'competent', status: 'active', revive_count: 0 },
       { match_id: 'f', bot_seats: ['1'], decision_seed: 'f', policy: 'random', status: 'faulted', revive_count: 2 },
@@ -516,7 +516,11 @@ describe('readRevivableBotAllyMatches', () => {
 
     assert.equal(queries.length, 1);
     assert.match(queries[0]!.sql, /revive_count < \$1/, 'the query is bounded by the revival cap');
-    assert.match(queries[0]!.sql, /status IN \('faulted', 'exhausted'\)/, 'the set widened past active');
+    assert.match(
+      queries[0]!.sql,
+      /status IN \('active', 'faulted', 'exhausted'\)/,
+      'the cap covers active too (2026-07-23 hotfix) so a stuck active match cannot resurrect forever',
+    );
     assert.deepEqual(queries[0]!.params, [MAX_REVIVALS], 'the cap value is passed as the bound');
     assert.deepEqual(result, [
       { matchId: 'a', botSeats: ['1'], decisionSeed: 'a', policy: 'competent', status: 'active', reviveCount: 0 },
@@ -571,7 +575,10 @@ describe('rehydrateBotAllyDrivers — bounded restart revival', () => {
     assert.equal(incrementWrite, undefined, 'a completed match never increments revive_count');
   });
 
-  test('re-registers an already-active lost driver WITHOUT consuming a revival', async () => {
+  test('re-registers an already-active row AND consumes a revival (2026-07-23 hotfix — active is now capped)', async () => {
+    // why: an active row that never reaches a terminal status must be capped too,
+    // or a stuck `active` match resurrects forever and drives a restart loop. So
+    // every re-registration — active included — now increments revive_count.
     const { database, queries } = makeProgrammableDatabase(
       revivableSelect([
         { match_id: 'active-lost', bot_seats: ['1'], decision_seed: 's', policy: 'competent', status: 'active', revive_count: 0 },
@@ -585,7 +592,8 @@ describe('rehydrateBotAllyDrivers — bounded restart revival', () => {
 
     assert.equal(botAllyDrivers.has('active-lost'), true, 'the lost active driver was re-registered');
     const incrementWrite = queries.find((query) => query.sql.includes('revive_count = revive_count + 1'));
-    assert.equal(incrementWrite, undefined, 'a merely-lost active driver does not consume a revival');
+    assert.ok(incrementWrite, 'an active re-registration now consumes a revival so a stuck match is eventually excluded');
+    assert.deepEqual(incrementWrite!.params, ['active-lost']);
   });
 
   test('skips a still-live match whose bot-seat credentials are missing', async () => {
