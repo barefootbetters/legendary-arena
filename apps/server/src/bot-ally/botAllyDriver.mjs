@@ -234,15 +234,25 @@ export function isBotSeatTurn(state, botSeats) {
  * @param {(state: object, botSeat: string) => ({ name: string, args: unknown } | null)} params.deps.decide -
  *   Decides the move for a bot seat's current state (production: decideBotMove
  *   closed over the match policy).
+ * @param {(matchId: string) => Promise<void>} [params.deps.resetRevivalCount] -
+ *   Resets the side-table `revive_count` to 0. Called once, after this driver
+ *   completes its first bot turn, ONLY when the match was revived with a nonzero
+ *   count (see `initialReviveCount`). Optional — omitted by tests that do not
+ *   exercise the reset.
  * @param {number} [params.deps.maxTurns] - Override for BOT_MAX_TURNS (tests).
  * @param {number} [params.deps.maxIdlePolls] - Override for BOT_MAX_IDLE_POLLS.
  * @param {number} [params.deps.maxMoveStepsPerTurn] - Override for the per-turn step cap.
  * @param {number} [params.deps.pollIntervalMs] - Override for BOT_POLL_INTERVAL_MS.
  * @param {boolean} [params.deps.autoStart=true] - Start the poll immediately
  *   (tests pass false and call `tick()` directly).
+ * @param {number} [params.initialReviveCount=0] - The side-table `revive_count`
+ *   this driver was (re-)registered with. When > 0 (a revived match), the driver
+ *   resets it to 0 after its first successful bot turn — proving the match is
+ *   still drivable so past revivals do not count toward the D-24230 lifetime cap
+ *   (WP-414 / D-24233). A fresh create passes 0 and never writes the reset.
  * @returns {object} The driver ({ tick, start, stop, matchId, botSeats, getTurnCount, getStatus }).
  */
-export function createBotAllyDriver({ matchId, botSeats, deps }) {
+export function createBotAllyDriver({ matchId, botSeats, deps, initialReviveCount }) {
   const maxTurns = deps.maxTurns ?? BOT_MAX_TURNS;
   const maxIdlePolls = deps.maxIdlePolls ?? BOT_MAX_IDLE_POLLS;
   const maxMoveStepsPerTurn = deps.maxMoveStepsPerTurn ?? BOT_MAX_MOVE_STEPS_PER_TURN;
@@ -258,6 +268,11 @@ export function createBotAllyDriver({ matchId, botSeats, deps }) {
     stopped: false,
     tickInProgress: false,
     timer: null,
+    // why: WP-414 / D-24233 — the revival count this driver started with, and a
+    // one-shot latch so the reset-on-first-successful-turn fires at most once per
+    // driver lifetime (no per-turn write).
+    initialReviveCount: initialReviveCount ?? 0,
+    revivalReset: false,
     getTurnCount() {
       return driver.turnCount;
     },
@@ -425,8 +440,49 @@ async function runTick(driver, deps, limits) {
   }
 
   driver.turnCount += 1;
+  await maybeResetRevivalCount(driver, deps);
   if (driver.turnCount >= limits.maxTurns) {
     await teardown(driver, deps, BOT_ALLY_STATUS.exhausted);
+  }
+}
+
+/**
+ * Resets the side-table `revive_count` to 0 the first time a REVIVED driver
+ * completes a bot turn.
+ *
+ * // why: WP-414 / D-24233 — D-24230's `revive_count` is a LIFETIME counter, so a
+ * match that is genuinely drivable but keeps losing its in-memory driver to
+ * repeated Postgres-instability restarts burns all MAX_REVIVALS revivals and is
+ * then stranded as permanently `faulted` — even though every restart it drives
+ * turns fine. Completing a full bot turn is proof the match is NOT permanently
+ * wedged, so the lifetime count is cleared; the cap then only strands a match
+ * that cannot drive even one turn after revival (the real doomed case). No-ops
+ * for a fresh match (initialReviveCount 0) and after the one-shot latch, so this
+ * adds at most one extra write per revived driver's lifetime. Best-effort: a
+ * failed reset is logged and swallowed (it must not fault an otherwise-healthy
+ * turn); the count simply stays until the next revived turn clears it.
+ *
+ * @param {object} driver - The driver object.
+ * @param {object} deps - The injected capabilities.
+ * @returns {Promise<void>}
+ */
+async function maybeResetRevivalCount(driver, deps) {
+  if (
+    driver.revivalReset ||
+    driver.initialReviveCount <= 0 ||
+    typeof deps.resetRevivalCount !== 'function'
+  ) {
+    return;
+  }
+  // why: latch BEFORE the await so a slow reset write cannot be re-entered by a
+  // later successful turn into a second write.
+  driver.revivalReset = true;
+  try {
+    await deps.resetRevivalCount(driver.matchId);
+  } catch (resetError) {
+    console.error(
+      `[bot-ally] match ${driver.matchId} failed to reset revive_count after a successful turn: ${resetError.message}`,
+    );
   }
 }
 

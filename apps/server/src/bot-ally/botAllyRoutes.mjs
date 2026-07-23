@@ -313,6 +313,28 @@ async function markBotAllyMatchRevived(database, matchId) {
 }
 
 /**
+ * Clears a match's lifetime `revive_count` back to 0.
+ *
+ * // why: WP-414 / D-24233 — called by the driver after a REVIVED match completes
+ * its first bot turn (proof it is still drivable), so repeated
+ * Postgres-instability restarts of a healthy match do not accumulate toward the
+ * D-24230 revival cap and strand it as permanently `faulted`. The `revive_count
+ * <> 0` guard makes it a true no-op when nothing needs clearing.
+ *
+ * @param {object} database - The pg pool.
+ * @param {string} matchId - The match id.
+ * @returns {Promise<void>}
+ */
+async function resetBotAllyRevivalCount(database, matchId) {
+  await database.query(
+    'UPDATE legendary.match_bot_ally ' +
+      'SET revive_count = 0, updated_at = now() ' +
+      'WHERE match_id = $1 AND revive_count <> 0',
+    [matchId],
+  );
+}
+
+/**
  * Reads a single match's bot-ally status row for the read-only status surface.
  * Reads ONLY the side-table — never the bgio blob, never `G`/`ctx`.
  *
@@ -405,9 +427,12 @@ function resolveCreateSubmit(context, processedGame) {
  * @param {(move: object) => Promise<unknown>} params.submit - The bound
  *   move-submission closure for this match's bot seats.
  * @param {object} params.context - Server context (db, database).
+ * @param {number} [params.initialReviveCount=0] - The match's current side-table
+ *   `revive_count` (WP-414 / D-24233). A revived match (> 0) has its count reset
+ *   to 0 after the driver's first successful bot turn; a fresh create passes 0.
  * @returns {object} The started driver.
  */
-function startDriverForMatch({ matchId, botSeats, decisionSeed, policyName, submit, context }) {
+function startDriverForMatch({ matchId, botSeats, decisionSeed, policyName, submit, context, initialReviveCount }) {
   const { db, database } = context;
   const policy = buildBotPolicy(decisionSeed, policyName);
   const deps = {
@@ -418,9 +443,12 @@ function startDriverForMatch({ matchId, botSeats, decisionSeed, policyName, subm
     submitMove: submit,
     persistStatus: (id, status, faultMessage) =>
       updateBotAllyMatchStatus(database, id, status, faultMessage),
+    // why: WP-414 / D-24233 — the driver calls this after a revived match's first
+    // successful turn to clear the lifetime revival count (see maybeResetRevivalCount).
+    resetRevivalCount: (id) => resetBotAllyRevivalCount(database, id),
     decide: (state, seat) => decideBotMove(state, seat, policy),
   };
-  return createBotAllyDriver({ matchId, botSeats, deps });
+  return createBotAllyDriver({ matchId, botSeats, deps, initialReviveCount });
 }
 
 /**
@@ -682,6 +710,12 @@ export async function rehydrateBotAllyDrivers(context) {
         policyName: record.policy,
         submit: createSubmit(record.matchId, credentials),
         context,
+        // why: WP-414 / D-24233 — every re-registration increments revive_count
+        // (see markBotAllyMatchRevived below), so this driver's effective count is
+        // record.reviveCount + 1. Pass it so the driver resets the count to 0 after
+        // its first successful turn: a match that keeps driving fine across restarts
+        // never accumulates toward the D-24230 cap and cannot be stranded.
+        initialReviveCount: record.reviveCount + 1,
       });
       // why: WP-414 / D-24230 + 2026-07-23 hotfix — EVERY re-registration now
       // consumes one revival (flip to `active` + increment revive_count),

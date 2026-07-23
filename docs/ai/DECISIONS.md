@@ -31868,4 +31868,42 @@ behavior folds into it.
 `apps/arena-client/src/client/bgioClient.test.ts` (`createLiveClient
 reconnect-resync` suite).
 
+### D-24233 — a revived bot-ally match resets its lifetime `revive_count` after its first successful turn, so restart churn on a still-drivable match cannot strand it at the cap
+
+**Status:** Active (landed 2026-07-22, fix/bot-ally-revival-cap).
+
+**Context.** D-24230 added a lifetime `revive_count` and a `MAX_REVIVALS` (3) cap
+so a permanently-wedged match cannot re-register a doomed driver on every deploy.
+A later hardening (2026-07-23 hotfix in `rehydrateBotAllyDrivers`) made **every**
+re-registration consume a revival — including a row that was already `active` —
+to stop a stuck `active` match from resurrecting uncapped and looping a
+memory-tight instance. Combined, these turned `revive_count` into a **per-restart**
+counter: a perfectly healthy long match that merely loses its in-memory driver to
+repeated Postgres-instability restarts burns one revival per restart and reaches
+the cap in ~3 restarts. Once there, the next fault/exhaust strands it as
+permanently `faulted` even though it drove turns fine every restart. Observed
+2026-07-22 on match `SbknquXtOwY` (revive_count 3/3, still `active` and
+advancing).
+
+**Decision.** Completing a full bot turn is proof a match is NOT permanently
+wedged, so a **revived** driver (registered with `initialReviveCount > 0`) resets
+the side-table `revive_count` to 0 after its **first** successful turn. The reset
+is one-shot per driver lifetime (a `revivalReset` latch set before the await), so
+it adds at most one extra write per revived driver and never fires for a fresh
+create (`initialReviveCount` 0). The write is best-effort — a failure is logged and
+swallowed, never faulting an otherwise-healthy turn. The D-24230 cap is unchanged;
+it now strands only a match that cannot drive even one turn after revival (the
+genuinely-doomed case), not a drivable match caught in restart churn.
+
+**Scope.** Server-only; no schema change (`revive_count` from migration 036
+reused), no endpoint change, no `bgio` blob read. Determinism unaffected (no
+`Math.random()` / `Date.now()`).
+
+**Landed:** 2026-07-22. Files: `apps/server/src/bot-ally/botAllyDriver.mjs`
+(`maybeResetRevivalCount`, `initialReviveCount` + `revivalReset` on the driver),
+`apps/server/src/bot-ally/botAllyRoutes.mjs` (`resetBotAllyRevivalCount`,
+`resetRevivalCount` dep + `initialReviveCount` threaded through
+`startDriverForMatch` and the rehydrate call), tests in
+`apps/server/src/bot-ally/botAllyDriver.test.ts`.
+
 Protect this file.
