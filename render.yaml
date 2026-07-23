@@ -254,3 +254,11 @@ databases:
     # no longer connects — use the Render dashboard PSQL shell or an internal
     # one-off job instead. Blueprint-managed, so it must live here.
     ipAllowList: []
+    # why: storage grows unbounded — the bgio match store never prunes finished
+    # matches (~56% of 1 GB used at 3 months). Autoscaling grows the disk by 50%
+    # when it hits 90% full (max one increase / 12h), so a slow blob creep never
+    # becomes a disk-full crash. Cheap: billed per GB only as it grows. This is a
+    # Blueprint-managed field, so a dashboard toggle would revert on sync — it
+    # must live here. (A retention job for old finished matches is still worth
+    # doing later to bound the growth rather than only absorb it.)
+    storageAutoscalingEnabled: true
