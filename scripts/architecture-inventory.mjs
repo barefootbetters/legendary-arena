@@ -143,6 +143,27 @@ const OPERATOR_OPS_TOOLCHAIN = [
   },
 ];
 
+// why: the Infrastructure-services table derives the managed-Postgres row from
+// render.yaml (it shows the `plan` string), but it can't capture WHY the DB is
+// sized/configured the way it is, or the operational history a future operator
+// needs. This curated block records that knowledge — the same "facts a future
+// operator needs that no manifest declares" role OPERATOR_OPS_TOOLCHAIN plays
+// for machine-local tools. Update it when the managed DB's sizing, network
+// posture, or storage policy materially changes. Sourced from the 2026-07-22
+// DB-stability arc (PRs #920/#930/#931/#932/#933/#935).
+const MANAGED_DATABASE_OPS_NOTES = {
+  instance: 'Basic-1gb (1 GB RAM / 0.5 CPU) — Render managed PostgreSQL 18, Oregon (US West).',
+  notes: [
+    'Upgraded 2026-07-22 from Basic-256mb (256 MB / 0.1 CPU): the smaller instance repeatedly OOM-crashed into recovery mode ("the database system is in recovery mode" / "not yet accepting connections") under the real workload (bgio match blobs plus leaderboard / dashboard / competitive queries), killing in-flight autoplay + bot-ally matches. Storage stayed ~56% of 1 GB throughout, so the constraint was RAM/CPU, NOT disk.',
+    'BLUEPRINT-MANAGED: `plan`, `ipAllowList`, and `storageAutoscalingEnabled` all live in render.yaml `databases:`. A dashboard-only change to any of them is REVERTED on the next blueprint sync — every managed-DB setting must be set in render.yaml to be durable.',
+    '`ipAllowList: []` = internal-only inbound (was public `0.0.0.0/0`). The server connects via the internal hostname, so nothing app-side breaks; the External Database URL / a local `psql` no longer connects — use the Render dashboard PSQL shell for ops. Caveat: the dashboard also showed the `0.0.0.0/0` rules "Affected by: Workspace / Environment" — a workspace/environment-level network rule may layer on top and is only removable in the dashboard, not render.yaml.',
+    '`storageAutoscalingEnabled: true` grows the disk +50% at 90% full. bgio never prunes finished matches, so storage creeps upward; autoscaling ABSORBS that but does not BOUND it — a match-retention/cleanup job is the queued follow-up that bounds growth (must respect the D-24119 replay/verification carve-out, which reads completed match blobs).',
+    "Render's Connection Pool (PgBouncer) is ENABLED on the instance, but the app stays on the DIRECT Internal Database URL — with 1 GB RAM there is no connection-memory pressure to justify PgBouncer transaction-pooling (which can break prepared statements / session state). Route the app through the pool URL only if real connection pressure ever appears.",
+    'Fix arc (all 2026-07-22): #920 added `pool.on("error")` (a band-aid that stopped the process crash but the DB kept killing idle clients); #930 gave the autoplay loop a bounded transient-read retry (`resilientFetch`, reads-only); #931 de-noised the pool error log (it was dumping a ~40-line pg Connection object per idle-client kill); #932 bumped the plan to basic-1gb (root cause); #933 restricted inbound to internal-only; #935 enabled storage autoscaling.',
+    'DIAGNOSTIC LESSON: the autoplay guest-safe `abortReason` ("The bot loop stopped after an unexpected server error", D-24037) HIDES the raw exception — it is logged only server-side as `[autoplay] match <id> bot loop failed: <msg>`. To diagnose an autoplay/bot abort, pull that Render log line; the engine-runner harness cannot reproduce it (it bypasses boardgame.io).',
+  ],
+};
+
 // why: the language inventory walks a slightly broader set of trees
 // than the import scanner. `wiki/` is project-authored markdown for the
 // Hugo site and belongs in the language footprint, even though it has
@@ -2979,6 +3000,23 @@ async function renderInfrastructureServicesSection() {
     }
     lines.push('');
   }
+
+  // why: append the curated managed-database operational notes — the sizing
+  // history and network / storage posture the derived Render table (which shows
+  // only the `plan` string) cannot express. Sourced from MANAGED_DATABASE_OPS_NOTES.
+  lines.push(`### Managed database — sizing history & operational notes`);
+  lines.push('');
+  lines.push(`Instance: ${MANAGED_DATABASE_OPS_NOTES.instance}`);
+  lines.push('');
+  lines.push(
+    `Curated in \`MANAGED_DATABASE_OPS_NOTES\` in \`scripts/architecture-inventory.mjs\` ` +
+      `(the derived Render table above shows only the plan string).`,
+  );
+  lines.push('');
+  for (const note of MANAGED_DATABASE_OPS_NOTES.notes) {
+    lines.push(`- ${note}`);
+  }
+  lines.push('');
 
   return lines.join('\n').trimEnd();
 }
