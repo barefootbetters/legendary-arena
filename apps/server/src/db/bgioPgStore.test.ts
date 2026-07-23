@@ -90,6 +90,79 @@ describe('bgioPgStore — pure (no database)', () => {
   });
 });
 
+describe('bgioPgStore — transient write tolerance (no database)', () => {
+  /** Builds an Error carrying a pg SQLSTATE (or Node socket) code. */
+  function codedError(message: string, code: string): Error {
+    const error = new Error(message) as Error & { code: string };
+    error.code = code;
+    return error;
+  }
+
+  test('setMetadata swallows a persistent transient (read-only) error instead of throwing', async () => {
+    // why: bgio calls setMetadata from an UNGUARDED async socket handler
+    // (Master.onConnectionChange), so a thrown error crashes the whole server.
+    // A transient read-only window (observed 2026-07-23, SQLSTATE 25006) must be
+    // logged + swallowed after retries — never rethrown into the crash path.
+    let calls = 0;
+    const readOnlyPool = {
+      async query() {
+        calls += 1;
+        throw codedError('cannot execute UPDATE in a read-only transaction', '25006');
+      },
+    };
+    const store = createBgioPgStore(readOnlyPool as never);
+
+    await assert.doesNotReject(() => store.setMetadata('m1', sampleMetadata));
+    assert.ok(calls > 1, 'it retried the transient error before swallowing');
+  });
+
+  test('setState swallows a persistent transient (recovery-mode) error instead of throwing', async () => {
+    const recoveryPool = {
+      async query() {
+        throw codedError('the database system is in recovery mode', '57P03');
+      },
+    };
+    const store = createBgioPgStore(recoveryPool as never);
+
+    await assert.doesNotReject(() => store.setState('m1', sampleState, []));
+  });
+
+  test('a transient write that clears mid-retry resolves without throwing (no data dropped)', async () => {
+    let calls = 0;
+    const flakyPool = {
+      async query() {
+        calls += 1;
+        if (calls === 1) {
+          throw codedError('cannot execute UPDATE in a read-only transaction', '25006');
+        }
+        return { rows: [], rowCount: 1 };
+      },
+    };
+    const store = createBgioPgStore(flakyPool as never);
+
+    await assert.doesNotReject(() => store.setMetadata('m1', sampleMetadata));
+    assert.equal(calls, 2, 'it recovered on the first retry — the write was not dropped');
+  });
+
+  test('a NON-transient coded error still throws the wrapped message (real bugs surface, not swallowed)', async () => {
+    const missingTablePool = {
+      async query() {
+        throw codedError('relation "bgio.matches" does not exist', '42P01');
+      },
+    };
+    const store = createBgioPgStore(missingTablePool as never);
+
+    await assert.rejects(
+      () => store.setMetadata('m1', sampleMetadata),
+      /bgioPgStore\.setMetadata failed to persist metadata for match "m1".*does not exist/s,
+    );
+    await assert.rejects(
+      () => store.setState('m1', sampleState, []),
+      /bgioPgStore\.setState failed to persist state for match "m1".*does not exist/s,
+    );
+  });
+});
+
 describe('bgioPgStore — database-backed (WP-309 / EC-339)', () => {
   let testPool: pg.Pool | null = null;
   let store: ReturnType<typeof createBgioPgStore> | null = null;

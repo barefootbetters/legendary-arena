@@ -44,6 +44,111 @@
 const STORAGE_TYPE_ASYNC = 1;
 
 /**
+ * PostgreSQL SQLSTATE codes (and Node socket codes) that mean "the write could
+ * not be applied right now, but the condition is TRANSIENT" — the database is
+ * briefly read-only, restarting, or the connection dropped. These clear within
+ * seconds during a Render plan-resize / failover.
+ *
+ * // why: `25006` read_only_sql_transaction is the one observed 2026-07-23 —
+ * during the Basic-256mb→Basic-1gb resize the DB went read-only and a metadata
+ * write threw "cannot execute UPDATE in a read-only transaction". The recovery /
+ * connection codes are the same family as the [[reference_pg_pool_idle_error_crash]]
+ * outage. A pg error carries the SQLSTATE on `error.code`; a dropped socket
+ * carries a Node code (ECONNRESET / ETIMEDOUT) there instead.
+ */
+const TRANSIENT_DB_ERROR_CODES = new Set([
+  '25006', // read_only_sql_transaction — DB in read-only mode (resize / failover)
+  '57P03', // cannot_connect_now — recovery mode / not yet accepting connections
+  '57P01', // admin_shutdown
+  '57P02', // crash_shutdown
+  '08006', // connection_failure
+  '08003', // connection_does_not_exist
+  '08000', // connection_exception
+  'ECONNRESET', // socket reset by the backend
+  'ETIMEDOUT', // socket timeout
+]);
+
+/** Bounded retry budget + base back-off for a transient write failure. */
+const BGIO_WRITE_ATTEMPTS = 4;
+const BGIO_WRITE_RETRY_BASE_MS = 300;
+
+/**
+ * Reports whether a caught error is a TRANSIENT database condition (read-only
+ * window, recovery, dropped connection) worth retrying — vs a real fault
+ * (schema missing, syntax error, constraint violation) that must surface.
+ *
+ * @param {unknown} error - The caught error.
+ * @returns {boolean} true when the error's code is in the transient set.
+ */
+function isTransientDbError(error) {
+  return (
+    error !== null &&
+    typeof error === 'object' &&
+    'code' in error &&
+    TRANSIENT_DB_ERROR_CODES.has(error.code)
+  );
+}
+
+/**
+ * Waits for the given milliseconds. setTimeout is a global, so this keeps the
+ * module's "imports nothing" invariant.
+ *
+ * @param {number} ms - Milliseconds to wait.
+ * @returns {Promise<void>}
+ */
+function delayMs(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Runs a store WRITE with transient-fault tolerance. On a TRANSIENT error it
+ * retries with bounded back-off; if the write still fails after the retry
+ * budget, it LOGS and RETURNS (swallows) instead of throwing. On a NON-transient
+ * error it throws the wrapped message immediately (unchanged behavior).
+ *
+ * // why: boardgame.io invokes setMetadata / setState from UNGUARDED async
+ * socket handlers (Master.onConnectionChange / onUpdate). A thrown write
+ * propagated into an uncaughtException and crashed the WHOLE server during a
+ * brief read-only window (observed 2026-07-23) — one transient blip taking down
+ * every match + all HTTP, then a restart loop. Swallowing a persistent-transient
+ * write keeps the service up and drops a single write; the full-snapshot `state`
+ * self-heals on the next successful write, and metadata is overwritten on the
+ * next update. A REAL (non-transient) fault still throws so genuine bugs surface.
+ *
+ * @param {() => Promise<unknown>} operation - The pool.query write.
+ * @param {(error: unknown) => string} buildErrorMessage - Wrapped-error text for
+ *   the non-transient throw path (preserves the existing full-sentence message).
+ * @param {string} description - Short label for the transient-retry log lines.
+ * @returns {Promise<void>}
+ */
+async function runResilientWrite(operation, buildErrorMessage, description) {
+  for (let attempt = 1; attempt <= BGIO_WRITE_ATTEMPTS; attempt++) {
+    try {
+      await operation();
+      return;
+    } catch (error) {
+      if (!isTransientDbError(error)) {
+        throw new Error(buildErrorMessage(error));
+      }
+      const detail = error instanceof Error ? error.message : String(error);
+      if (attempt < BGIO_WRITE_ATTEMPTS) {
+        console.error(
+          `[bgio-store] ${description} transient failure ` +
+            `(attempt ${attempt}/${BGIO_WRITE_ATTEMPTS}); retrying: ${detail}`,
+        );
+        await delayMs(BGIO_WRITE_RETRY_BASE_MS * attempt);
+      } else {
+        console.error(
+          `[bgio-store] ${description} still failing after ${BGIO_WRITE_ATTEMPTS} ` +
+            `transient retries; keeping the server up, write dropped: ${detail}`,
+        );
+        return;
+      }
+    }
+  }
+}
+
+/**
  * Builds the boardgame.io `StorageAPI.Async` adapter over an injected
  * `pg.Pool`. The returned object implements the boardgame.io ^0.50 async
  * storage contract: `type`, `connect`, `createMatch`, `setState`,
@@ -131,25 +236,30 @@ export function createBgioPgStore(pool) {
       // mirrors boardgame.io's InMemory/FlatFile "append when deltalog present"
       // semantics without a branch.
       const deltalogArray = deltalog !== undefined ? deltalog : [];
-      try {
-        await pool.query(
-          `INSERT INTO bgio.matches AS existing
-             (match_id, state, log, updated_at)
-           VALUES ($1, $2::jsonb, $3::jsonb, now())
-           ON CONFLICT (match_id) DO UPDATE
-             SET state = EXCLUDED.state,
-                 log = existing.log || $3::jsonb,
-                 updated_at = now()`,
-          [matchID, state, JSON.stringify(deltalogArray)],
-        );
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        throw new Error(
+      // why: a transient retry of this INSERT is safe because a read-only /
+      // recovery rejection never commits (the log-append `existing.log || $3`
+      // does not run), so a retry cannot double-append. The only residual edge
+      // is a connection dropped AFTER a commit but before the ack, which could
+      // duplicate a deltalog entry on retry — a rare replay-fidelity blemish,
+      // strictly better than crashing the whole server.
+      await runResilientWrite(
+        () =>
+          pool.query(
+            `INSERT INTO bgio.matches AS existing
+               (match_id, state, log, updated_at)
+             VALUES ($1, $2::jsonb, $3::jsonb, now())
+             ON CONFLICT (match_id) DO UPDATE
+               SET state = EXCLUDED.state,
+                   log = existing.log || $3::jsonb,
+                   updated_at = now()`,
+            [matchID, state, JSON.stringify(deltalogArray)],
+          ),
+        (error) =>
           `bgioPgStore.setState failed to persist state for match "${matchID}". ` +
-            `Check that the bgio schema migration has been applied and the database is reachable. ` +
-            `Error: ${errorMessage}`,
-        );
-      }
+          `Check that the bgio schema migration has been applied and the database is reachable. ` +
+          `Error: ${error instanceof Error ? error.message : String(error)}`,
+        `setState for match "${matchID}"`,
+      );
     },
 
     /**
@@ -164,21 +274,25 @@ export function createBgioPgStore(pool) {
      * @returns {Promise<void>}
      */
     async setMetadata(matchID, metadata) {
-      try {
-        await pool.query(
-          `UPDATE bgio.matches
-             SET metadata = $2::jsonb, updated_at = now()
-           WHERE match_id = $1`,
-          [matchID, metadata],
-        );
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        throw new Error(
+      // why: this UPDATE is idempotent (same metadata written again), so a
+      // transient retry is unconditionally safe. Routed through runResilientWrite
+      // because bgio calls setMetadata from Master.onConnectionChange — an
+      // UNGUARDED async socket handler — so a thrown transient error here
+      // crashed the whole server (observed 2026-07-23, read-only window).
+      await runResilientWrite(
+        () =>
+          pool.query(
+            `UPDATE bgio.matches
+               SET metadata = $2::jsonb, updated_at = now()
+             WHERE match_id = $1`,
+            [matchID, metadata],
+          ),
+        (error) =>
           `bgioPgStore.setMetadata failed to persist metadata for match "${matchID}". ` +
-            `Check that the bgio schema migration has been applied and the database is reachable. ` +
-            `Error: ${errorMessage}`,
-        );
-      }
+          `Check that the bgio schema migration has been applied and the database is reachable. ` +
+          `Error: ${error instanceof Error ? error.message : String(error)}`,
+        `setMetadata for match "${matchID}"`,
+      );
     },
 
     /**
