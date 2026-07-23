@@ -6,6 +6,24 @@ services:
   - type: web
     name: legendary-arena-server
     runtime: node
+    # why: 2026-07-23 — pin the web service plan. This service had NO `plan` field,
+    # so Render ran it on the implicit default `starter` (0.5 CPU / 512 MB). That is
+    # far too little for a real-time authoritative WebSocket server that also runs
+    # the bot-ally drivers (250ms polling per live match), the "Watch Bot Play"
+    # autoplay loops, and four background cron loops (legends publisher + match
+    # reaper + capture harvester, each on 5–15 min cadences). The starvation was
+    # observed directly: a live bot-ally match crawled ~1 turn / 10 min, the
+    # instance hit the D-24230 revival cap (3 restarts in <1h with NO deploys in the
+    # window — i.e. health-check restarts, not rollouts), a one-off DB read spiked
+    # to 3.3s, and `uptime` reported load average ~7 while the startup log set
+    # `WEB_CONCURRENCY=1 by default, based on available CPUs` (≤1 CPU). That churn is
+    # what generated the recurring client-desync freezes the D-24232/D-24234 client
+    # fixes only paper over. `standard` = 1 CPU / 2 GB — a 2× CPU / 4× RAM step that
+    # is the natural next tier and the cost-conscious first move. If load stays
+    # saturated under real concurrency, `pro` (2 CPU / 4 GB) is the next step —
+    # change this one line. Blueprint-managed: the plan MUST live here or a
+    # dashboard change reverts on the next sync (same discipline as the DB `plan`).
+    plan: standard
     # why: Running migrate in buildCommand (not startCommand) means migrations
     # complete once per deploy, not once per server restart. On Render, a server
     # can restart multiple times during a deploy. If migrate ran in startCommand,
