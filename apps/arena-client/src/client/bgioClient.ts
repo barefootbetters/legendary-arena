@@ -100,6 +100,19 @@ export const MOVE_ACK_TIMEOUT_MS = 4000;
 // not gated by this cooldown.
 export const RESYNC_COOLDOWN_MS = 8000;
 
+// why: the spectator-staleness watchdog deadline. While it is NOT the viewer's
+// turn (another seat — e.g. a bot ally — is acting), the client only advances on
+// server-pushed frames; if none arrives within this window the client has
+// silently fallen behind (a frame dropped, or a fast/transparent socket.io
+// reconnect that never surfaced `isConnected:false`, so the WP-312 move-ack
+// watchdog and the D-24232 reconnect-resync both miss it — the observed
+// bot-ally freeze where the server advanced a turn but the client stayed put).
+// A resync then re-anchors to authoritative state. Sized well above a healthy
+// bot's per-move cadence (~1s) so a normally-progressing turn — which pushes a
+// frame per move, resetting this timer — never trips it; only a genuine
+// no-frames-for-15s gap while spectating does.
+export const SPECTATOR_STALE_TIMEOUT_MS = 15000;
+
 /**
  * The minimal subset of boardgame.io's Client object that this module uses.
  * Declared structurally so tests can inject a lightweight stand-in without
@@ -245,6 +258,15 @@ export function createLiveClient(
   let hasBeenConnected = false;
   let reconnectResyncTimer: ReturnType<typeof setTimeout> | null = null;
 
+  // why: spectator-staleness watchdog + tab-focus resync state. The watchdog is
+  // (re-)armed on every frame while it is another seat's turn and fires a resync
+  // if no further frame arrives within SPECTATOR_STALE_TIMEOUT_MS.
+  // `visibilityHandler` is retained so the document listener can be removed on
+  // stop(). Both are additional recovery paths that do NOT depend on observing a
+  // socket disconnect (the D-24232 gap).
+  let spectatorWatchdogTimer: ReturnType<typeof setTimeout> | null = null;
+  let visibilityHandler: (() => void) | null = null;
+
   /**
    * Re-anchors the client to the server's authoritative state by tearing down
    * and re-establishing the boardgame.io client (`stop()` then `start()`),
@@ -339,6 +361,74 @@ export function createLiveClient(
     watchdogTimer = setTimeout(onWatchdogFire, MOVE_ACK_TIMEOUT_MS);
   }
 
+  /** Clears the spectator-staleness watchdog timer. */
+  function clearSpectatorWatchdog(): void {
+    if (spectatorWatchdogTimer !== null) {
+      clearTimeout(spectatorWatchdogTimer);
+      spectatorWatchdogTimer = null;
+    }
+  }
+
+  /**
+   * Forces a resync, gated by the shared cooldown and clearing the move-ack
+   * watchdog (we are re-anchoring now). Shared by the spectator-staleness
+   * watchdog fire and the tab-focus handler.
+   */
+  function forceCooldownGatedResync(): void {
+    if (resyncCoolingDown) {
+      return;
+    }
+    clearWatchdog();
+    performResync();
+    beginResyncCooldown();
+  }
+
+  /**
+   * (Re-)arms the spectator-staleness watchdog from the latest frame. Armed only
+   * while the client is connected, the game is not over, and it is ANOTHER seat's
+   * turn (the viewer's own seat is `options.playerID`; its turn is covered by the
+   * WP-312 move-ack watchdog instead). Every frame resets the deadline, so a
+   * normally-progressing turn never fires it; a 15s gap with no frame does.
+   *
+   * @param currentUIState - The frame's audience-filtered UIState (or null).
+   * @param isConnected - The frame's transport status.
+   */
+  function updateSpectatorWatchdog(
+    currentUIState: UIState | null,
+    isConnected: boolean,
+  ): void {
+    const activePlayerId = currentUIState?.game?.activePlayerId;
+    const isSpectatingOtherSeat =
+      isConnected === true &&
+      currentUIState !== null &&
+      !currentUIState.gameOver &&
+      typeof activePlayerId === 'string' &&
+      activePlayerId !== options.playerID;
+    if (!isSpectatingOtherSeat) {
+      clearSpectatorWatchdog();
+      return;
+    }
+    clearSpectatorWatchdog();
+    spectatorWatchdogTimer = setTimeout(
+      forceCooldownGatedResync,
+      SPECTATOR_STALE_TIMEOUT_MS,
+    );
+  }
+
+  /**
+   * Resyncs when the tab returns to the foreground. A backgrounded tab both
+   * starves the socket (missed frames) AND throttles the spectator watchdog's own
+   * timer, so foregrounding is the reliable moment to re-anchor. Cooldown-gated.
+   */
+  function onVisibilityChange(): void {
+    if (
+      typeof document !== 'undefined' &&
+      document.visibilityState === 'visible'
+    ) {
+      forceCooldownGatedResync();
+    }
+  }
+
   client.subscribe((state) => {
     // why: WP-311 — record the transport connection status on EVERY frame,
     // before any G handling, so the reconnect banner reflects a drop even on
@@ -403,6 +493,12 @@ export function createLiveClient(
     const currentUIState = (projection ?? null) as UIState | null;
     useUiStateStore().setSnapshot(currentUIState);
 
+    // why: (re-)arm the spectator-staleness watchdog from this frame — while it
+    // is another seat's turn, a resync fires if no further frame arrives within
+    // the window, recovering a silent client desync that never surfaced a socket
+    // disconnect (the D-24232 reconnect trigger cannot catch that case).
+    updateSpectatorWatchdog(currentUIState, isConnected);
+
     // why: middleware runs after the UIState store write so that components
     // see the causal state change before the disruption notification. The
     // store must reflect the new state before disruption processing.
@@ -447,6 +543,17 @@ export function createLiveClient(
     previousUIState = currentUIState;
   });
 
+  // why: register the tab-focus resync (see onVisibilityChange). Guarded for
+  // non-DOM (SSR/test) environments; the handler ref is retained so stop() can
+  // remove it (no leaked listener across a match teardown).
+  if (
+    typeof document !== 'undefined' &&
+    typeof document.addEventListener === 'function'
+  ) {
+    visibilityHandler = onVisibilityChange;
+    document.addEventListener('visibilitychange', visibilityHandler);
+  }
+
   return {
     start: () => client.start(),
     // why: WP-312 — clear the watchdog + cooldown timers before stopping so no
@@ -463,6 +570,17 @@ export function createLiveClient(
       if (reconnectResyncTimer !== null) {
         clearTimeout(reconnectResyncTimer);
         reconnectResyncTimer = null;
+      }
+      // why: clear the spectator-staleness watchdog + remove the tab-focus
+      // listener so neither fires a resync against a torn-down client.
+      clearSpectatorWatchdog();
+      if (
+        visibilityHandler !== null &&
+        typeof document !== 'undefined' &&
+        typeof document.removeEventListener === 'function'
+      ) {
+        document.removeEventListener('visibilitychange', visibilityHandler);
+        visibilityHandler = null;
       }
       client.stop();
     },

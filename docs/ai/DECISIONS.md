@@ -31906,4 +31906,48 @@ reused), no endpoint change, no `bgio` blob read. Determinism unaffected (no
 `startDriverForMatch` and the rehydrate call), tests in
 `apps/server/src/bot-ally/botAllyDriver.test.ts`.
 
+### D-24234 — the live client recovers a silent desync that never surfaced a disconnect: a spectator-staleness watchdog (fires while it is another seat's turn) plus a tab-focus resync
+
+**Status:** Active (landed 2026-07-23, fix/client-resync-spectator-watchdog).
+
+**Context.** D-24232 resyncs on a transport reconnect (`isConnected` false→true), and
+D-24097's move-ack watchdog resyncs after the VIEWER submits a move. Both miss a
+real case observed 2026-07-23 (match `y0NXQQeIz0s`): the server advanced turn 7→8
+while the human's client stayed pinned to turn 7 — a **silent desync with no observed
+socket disconnect** (a dropped frame, or a fast/transparent socket.io reconnect that
+never emitted `isConnected:false`). Because it was the **bot ally's** turn, no move
+was pending, so the move-ack watchdog never armed; and with no `isConnected:false`
+frame, the D-24232 reconnect trigger never fired. A hard reload fixed it (proving the
+server was ahead) — the client just had no automatic recovery. (Confirmed via prod:
+`bgio.matches.turn=8` vs the client's frozen turn 7.)
+
+**Decision.** Two recovery paths that do NOT depend on observing a disconnect,
+both reusing the existing `performResync` + `RESYNC_COOLDOWN_MS` plumbing:
+
+1. **Spectator-staleness watchdog.** On every frame, if the client is connected,
+   the game is not over, and it is ANOTHER seat's turn (`game.activePlayerId !==
+   options.playerID` — the viewer's own turn stays covered by the move-ack watchdog),
+   (re-)arm a `SPECTATOR_STALE_TIMEOUT_MS` (15s) timer. Each frame resets it, so a
+   normally-progressing turn (a frame per bot move, ~1s cadence) never trips it; a
+   15s gap with no frame fires a cooldown-gated resync. Cleared when it becomes the
+   viewer's turn, on game-over, on disconnect, and on `stop()`.
+2. **Tab-focus resync.** A `visibilitychange` → `visible` handler fires a
+   cooldown-gated resync, because a backgrounded tab both starves the socket AND
+   throttles the watchdog's own `setTimeout`; foregrounding is the reliable moment
+   to re-anchor. Registered guarded for non-DOM envs; removed on `stop()`.
+
+Both are gated by the shared cooldown (no storm) and clear the move-ack watchdog when
+they fire (re-anchoring supersedes a pending ack). Minimal client-side hardening, NOT
+the full WP-116 disconnect/reconnect protocol (D-11606 remains deferred). The
+underlying trigger — frequent server restarts / CPU-starved instance (the match hit
+the D-24230 revival cap of 3 in <1h with no deploys; `uptime` load average ~7) — is a
+separate infra concern, not addressed here.
+
+**Landed:** 2026-07-23. Files: `apps/arena-client/src/client/bgioClient.ts`
+(`SPECTATOR_STALE_TIMEOUT_MS`, `updateSpectatorWatchdog`/`clearSpectatorWatchdog`,
+`onVisibilityChange`, `forceCooldownGatedResync` shared with the reconnect/ack paths;
+listener registered in the factory + torn down in `stop()`), tests in
+`apps/arena-client/src/client/bgioClient.test.ts` (`createLiveClient
+spectator-staleness watchdog` suite).
+
 Protect this file.
