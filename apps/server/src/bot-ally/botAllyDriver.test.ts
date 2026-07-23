@@ -408,3 +408,77 @@ test('decideBotMove chooses only from the legal moves the seat may see', () => {
     `chose a start-stage-legal move (got ${move.name})`,
   );
 });
+
+// WP-414 / D-24233 — reset the lifetime revive_count once a REVIVED match proves
+// it is still drivable (completes a bot turn), so restart churn on a healthy
+// match never strands it at the D-24230 cap.
+
+/**
+ * Builds deps whose bot turn passes control back to seat 0 (a successful turn),
+ * plus a `resetRevivalCount` spy recording the match ids it was called with.
+ */
+function makeReviveDeps() {
+  const resetCalls: string[] = [];
+  const built = makeDeps({
+    initial: fakeState('1', 1),
+    decide: () => ({ name: 'endTurn', args: {} }),
+    onSubmit: (_move, match) => {
+      // endTurn passes control to the human seat 0 → the bot turn "passed".
+      match.value = fakeState('0', 2);
+    },
+    overrides: {
+      resetRevivalCount: async (id: string) => {
+        resetCalls.push(id);
+      },
+    },
+  });
+  return { ...built, resetCalls };
+}
+
+test('a revived driver resets revive_count after its first successful bot turn', async () => {
+  const { deps, resetCalls } = makeReviveDeps();
+  const driver = createBotAllyDriver({
+    matchId: 'm-revived',
+    botSeats: ['1'],
+    deps,
+    initialReviveCount: 3,
+  });
+
+  await driver.tick();
+
+  assert.equal(driver.getTurnCount(), 1, 'the bot turn completed');
+  assert.deepEqual(resetCalls, ['m-revived'], 'revive_count was reset exactly once for this match');
+});
+
+test('a fresh driver (initialReviveCount 0) never resets revive_count', async () => {
+  const { deps, resetCalls } = makeReviveDeps();
+  const driver = createBotAllyDriver({
+    matchId: 'm-fresh',
+    botSeats: ['1'],
+    deps,
+    // initialReviveCount omitted → defaults to 0 → no reset write
+  });
+
+  await driver.tick();
+
+  assert.equal(driver.getTurnCount(), 1, 'the bot turn completed');
+  assert.deepEqual(resetCalls, [], 'a never-revived match writes no reset');
+});
+
+test('the revive_count reset fires at most once per driver lifetime (latched)', async () => {
+  const { deps, match, resetCalls } = makeReviveDeps();
+  const driver = createBotAllyDriver({
+    matchId: 'm-latch',
+    botSeats: ['1'],
+    deps,
+    initialReviveCount: 2,
+  });
+
+  await driver.tick(); // first bot turn → reset fires
+  // hand the bot a second turn; the latch must suppress a second reset write.
+  match.value = fakeState('1', 3);
+  await driver.tick(); // second bot turn → no further reset
+
+  assert.equal(driver.getTurnCount(), 2, 'two bot turns completed');
+  assert.deepEqual(resetCalls, ['m-latch'], 'the reset wrote only once across two successful turns');
+});
