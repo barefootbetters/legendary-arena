@@ -449,6 +449,93 @@ volume/complexity move together; and in reduced-motion mode suppress big
 screen-shakes, heavy particles, and long blooms while keeping the essential
 audio stingers (or a minimal visual pulse).
 
+#### Audio treatment previews {#audio-treatment-previews}
+
+Audition the **audio treatment** column of the pairing table above. These are
+the same CC0 clips catalogued on
+[Sound Effects → Audio previews](sound-effects.md#audio-previews) — the
+authoritative sound library — re-embedded here in *dopamine order* so the
+reward/threat/relief intent of each cue is audible next to its classification.
+Each uses the JS-free [`audio` shortcode](ewiki-authoring.md) (native
+`<audio>` controls). Representative picks, not final selections; where a clip
+is shared with the Sound Effects catalogue the caption matches so the
+cross-reference stays honest.
+
+**`playCard` (ordinary)** — soft tactile click (Micro-agency · Low):
+
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/play-card.mp3" caption="Kenney Casino Audio (CC0) — card place" >}}
+
+**`lastPlayEffectsFired` tier 1** — short rising cue (First synergy hit ·
+Medium). The shipped combo cue rides the live `lastPlayEffectsFired` count
+(D-24221 / D-24228):
+
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/combo-small.mp3" caption="WP-413 combo cue (CC0) — tier 1 rising sparkle" >}}
+
+**`lastPlayEffectsFired` tier 2–3+** — escalating combo cue, rising
+pitch/intensity (Variable-ratio peak · High). Tier 2 and the 3+ flourish are
+the same shape, higher and brighter, so the chain reads as one continuous
+escalation:
+
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/combo-medium.mp3" caption="WP-413 combo cue (CC0) — tier 2, higher" >}}
+
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/combo-big.mp3" caption="WP-413 combo cue (CC0) — tier 3+ ascending flourish" >}}
+
+**`recruitHero` (desired card)** — warm positive chime (Progress reward ·
+Medium):
+
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/recruit-hero.mp3" caption="Kenney Interface Sounds (CC0) — confirmation" >}}
+
+**`fightResolved` (City Villain)** — triumphant short hit (Standard reward ·
+Medium):
+
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/villain-defeated.mp3" caption="OpenGameArt 80 CC0 RPG SFX — metal impact" >}}
+
+**`fightResolved` (Mastermind Tactic)** — a stronger triumphant hit with a
+**motif accent** layered on top (High-stakes reward · High). The base impact
+below is the same clip as a City fight; the Tactic version layers the acting
+Mastermind's motif over it at −6/−9 dB (see
+[Music Authoring → motif matrix](music-authoring.md#motif-matrix), D-24226):
+
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/villain-defeated.mp3" caption="OpenGameArt 80 CC0 RPG SFX — metal impact (base; motif layers on top)" >}}
+
+**`mastermindDefeated`** — full victory fanfare (Peak reward + closure · Very
+High):
+
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/mastermind-defeated-win.mp3" caption="OpenGameArt CC0 — Victory Theme for RPG" >}}
+
+**`mastermindStrikeResolved`** — dramatic low stinger (Threat spike · High):
+
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/master-strike.mp3" caption="OpenGameArt CC0 — Sinister Boss Appears" >}}
+
+**`schemeTwistResolved`** — ominous low sting (Rising stakes / dread · High):
+
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/scheme-twist.mp3" caption="OpenGameArt CC0 — Evil Approach" >}}
+
+**`ambushResolved`** — menacing whoosh (Surprise threat · Medium–High):
+
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/villain-ambush.mp3" caption="OpenGameArt 80 CC0 RPG SFX — creature roar" >}}
+
+**`healResolved`** — restorative chime (Relief / recovery · Medium):
+
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/heal.mp3" caption="Restorative heal chime (CC0)" >}}
+
+**Endgame `heroes-win`** — victory fanfare (Peak + meaning · Very High). Same
+fanfare as the Mastermind-defeated peak, since `heroes-win` is driven by
+`mastermindDefeated`:
+
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/mastermind-defeated-win.mp3" caption="OpenGameArt CC0 — Victory Theme for RPG" >}}
+
+**Endgame `scheme-wins`** — dirge or unresolved sting (Punishment / tragedy ·
+High):
+
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/heroes-lose.mp3" caption="OpenGameArt CC0 — Epic Endgame Cinematic" >}}
+
+**Endgame `tie`** — wry or unresolved sting (Ambiguous closure · Medium). *No
+CC0 tie clip is hosted yet* — the candidate picks (a neutral, suspended
+cadence — neither fanfare nor dirge) are listed under
+[Sound Effects → Match tied](sound-effects.md#example-sound-picks-per-eventaction);
+this row gets a player once one is sourced.
+
 ### Pacing — the discipline that separates juice from noise
 
 More cues is not more dopamine. The mechanisms above only pay off if they
