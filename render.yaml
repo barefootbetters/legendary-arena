@@ -275,15 +275,25 @@ services:
 databases:
   # Managed PostgreSQL — rules engine backing store
   - name: legendary-arena-db
-    # why: basic-1gb (1 GB RAM / 0.5 CPU). The original basic-256mb (256 MB /
-    # 0.1 CPU) assumption ("<100 concurrent games, minimal DB queries") proved
-    # wrong once the store held bgio match blobs plus leaderboard / dashboard /
-    # competitive queries: Postgres repeatedly OOM-crashed into recovery mode
-    # (observed 2026-07-22 as "the database system is in recovery mode" /
-    # "not yet accepting connections" restart cycles that killed in-flight bot
-    # matches). This DB is Blueprint-managed, so the plan MUST live here — a
-    # dashboard-only change is reverted on the next blueprint sync.
-    plan: basic-1gb
+    # why: pro-4gb (4 GB RAM / 1 CPU). History: basic-256mb (256 MB / 0.1 CPU)
+    # OOM-crashed into recovery mode → bumped to basic-1gb (1 GB / 0.5 CPU, #932).
+    # basic-1gb was STILL under-provisioned: on 2026-07-24 the DB crashed HARD
+    # under load — `connect ECONNREFUSED :5432` (instance down, refusing
+    # connections) and transient `read-only transaction` (recovery-mode) windows,
+    # which crashed the game server too (an uncaught DB error in boardgame.io's
+    # Master.onSync client-sync path → unhandled rejection → process crash →
+    # restart → "Failed to load rules from PostgreSQL" crash-loop while the DB was
+    # down). Root cause is the same CPU/RAM starvation the WEB SERVICE had (fixed
+    # #948 starter→standard): the DB at 0.5 CPU / 1 GB cannot carry the bgio match
+    # blobs (~408 MB working set) + leaderboard/dashboard/competitive queries + the
+    # bot-ally 250ms polling + the reaper/harvester sweeps. pro-4gb = 2× CPU / 4×
+    # RAM (~$55/mo). If it still destabilises under real concurrency, basic-4gb
+    # (2 CPU / 4 GB, ~$75) is the next step. Blueprint-managed, BUT — like the web
+    # service plan (#948) — a Render plan change does NOT auto-apply from a
+    # blueprint push: it MUST also be set in the dashboard (Database → the instance
+    # → change plan). Keep render.yaml and the dashboard in agreement so neither
+    # reverts the other.
+    plan: pro-4gb
     # why: public inbound is re-allowed (credential-gated) so the solo operator
     # can reach the prod DB over the External Database URL for ad-hoc ops (a
     # local psql). The earlier internal-only `ipAllowList: []` (WP #933) was too
