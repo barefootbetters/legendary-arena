@@ -46,6 +46,26 @@ services:
     buildCommand: pnpm install && pnpm -r build && node scripts/migrate.mjs
     startCommand: node --import ./apps/server/node_modules/tsx/dist/loader.mjs apps/server/src/index.mjs
     healthCheckPath: /health
+    # why: 2026-07-23 — scope auto-deploy so the authoritative game server does NOT
+    # redeploy for commits that cannot affect it. Without this, ANY push to main
+    # (wiki edits, docs, the Cloudflare-Pages frontends) restarted this server — and
+    # each restart SIGTERMs it and interrupts every in-flight bot-ally match mid-turn
+    # (driver rehydrates on the new instance, but the turn stalls during the handoff).
+    # Observed 2026-07-23: THREE redeploys in 32 min from a run of wiki-only PRs made
+    # a live bot match crawl. `ignoredPaths`: a push whose changed files ALL match
+    # these trees skips the server deploy; any push that also touches apps/server,
+    # packages/, data/, scripts/, or this file still deploys normally. The frontend
+    # apps deploy to Cloudflare Pages (not here), and wiki/docs are pure content, so
+    # none of them are server runtime inputs. Render Blueprint field — must live here.
+    buildFilter:
+      ignoredPaths:
+        - wiki/**
+        - apps/wiki-viewer/**
+        - apps/arena-client/**
+        - apps/dashboard/**
+        - apps/legends-board/**
+        - apps/registry-viewer/**
+        - docs/**
     envVars:
       - key: NODE_ENV
         value: production
