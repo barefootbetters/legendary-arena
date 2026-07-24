@@ -551,6 +551,12 @@ unusable on a revenue-generating site.
 
 ## Interactions
 
+- **[Dopamine Trigger Framework](dopamine-triggers.md).** The *why and when*
+  behind these cues; its
+  [visual–audio pairing table](dopamine-triggers.md#visual-audio-pairing) is
+  the shared per-event signature this page and Visual Effects both implement,
+  and its [flow-channel map](dopamine-triggers.md#flow-channel) shows where
+  each moment sits across a match.
 - **[Master Strike](master-strike.md).** `mastermindStrikeResolved` is
   the highest-drama SFX candidate and a natural "spike the music"
   moment; the overlay it drives already exists.

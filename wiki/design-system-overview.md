@@ -247,7 +247,10 @@ overview is the hub that keeps them discoverable and consistent.
    the loop is satisfying: which moments are *reward* hits (defeat, rescue,
    combo) versus *threat* spikes (Strike, Twist, Ambush), variable-reward
    pacing, and how the visual + audio cues are timed to land the dopamine
-   beat. Maps the spine's "Dopamine" column to reward psychology.
+   beat. Maps the spine's "Dopamine" column to reward psychology, and now
+   carries the [flow-channel map](dopamine-triggers.md#flow-channel)
+   (challenge/skill tracking across a match) and the concrete
+   [visual–audio pairing table](dopamine-triggers.md#visual-audio-pairing).
    **Guardrail:** this is engagement-quality craft, not manipulation — it
    stays inside the [Vision](vision.md) bright lines (never pay-to-win,
    never dark-pattern compulsion loops); see
