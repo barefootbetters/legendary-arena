@@ -24,7 +24,7 @@ import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
 import { hasPendingReturnZeroCostDiscard } from './resolveReturnZeroCostDiscard.js';
 import { hasPendingDiscardToPlay, getDiscardToPlayCost } from './resolveDiscardToPlay.js';
-import { formatPlayedCardLabel } from '../log/logDisplay.js';
+import { formatBaseEconomyClause, formatPlayedCardLabel } from '../log/logDisplay.js';
 import { pushLog } from '../log/logPush.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
@@ -166,8 +166,13 @@ export function applyCardPlay(
   // (already in scope). Emitted in the shared core so playFromUndercover is
   // covered identically. Cheap: WP-294 excluded G.messages from the
   // finalStateHash oracle (D-24081).
-  pushLog(G, 
-    `Player ${playerID} played ${formatPlayedCardLabel(G.cardDisplayData, cardId)}.`,
+  // why: WP-417 / D-24237 — the printed icons are the WHOLE effect of a starter
+  // (S.H.I.E.L.D. Agent / Trooper have no ability text), so the base attack /
+  // recruit this play just added is folded into the same line rather than emitted
+  // as a second one — one line per play keeps the log readable when six starters
+  // are played in a row.
+  pushLog(G,
+    `Player ${playerID} played ${formatPlayedCardLabel(G.cardDisplayData, cardId, formatBaseEconomyClause(heroAttack, heroRecruit))}.`,
   );
 
   // why: hero ability effects fire immediately after play, before any
@@ -251,7 +256,9 @@ export function playCard({ G, playerID, ...context }: MoveContext, args: PlayCar
   const discardToPlayCost = getDiscardToPlayCost(G, args.cardId);
   if (discardToPlayCost > 0 && playerZones.hand.length < discardToPlayCost + 1) {
     pushLog(G,
-      `Player ${playerID} could not play ${formatPlayedCardLabel(G.cardDisplayData, args.cardId)} — it requires discarding ${discardToPlayCost} card(s) but their hand holds no other card to discard.`,
+      // why: WP-417 — an empty economy clause here: the play was REJECTED, so no
+      // base attack/recruit was granted and the line must not imply otherwise.
+      `Player ${playerID} could not play ${formatPlayedCardLabel(G.cardDisplayData, args.cardId, '')} — it requires discarding ${discardToPlayCost} card(s) but their hand holds no other card to discard.`,
     );
     return;
   }

@@ -448,7 +448,8 @@ mindmap
         ["WP-346 ✅ Header username is the profile link — Header.vue merges the auth-nav-display name + the separate 'My profile' link into one <a href=?route=me> so the header reads Home · Cards · name · Sign out (name is the link); useAuthNav/displayLabel untouched; EC-375; D-24136"]
         ["WP-347 ✅ Cross-subdomain Hanko session cookie — both hankoClient.ts wrappers pass cookieDomain=.legendary-arena.com to register() on production hosts (resolveSessionCookieDomain: localhost/*.pages.dev → undefined) so play/dashboard/www share one sign-in (SSO); enabler for marketing WP-033; EC-377; D-24137 (amends D-16002)"]
         ["WP-348 ✅ Sign-out clears the Domain-scoped session cookie — fixes a WP-347 regression: hanko-frontend-sdk 2.6.0 removeAuthCookie() deletes by name with no Domain, so logout() couldn't remove the .legendary-arena.com cookie and Sign out did nothing; signOutCurrentSession now clearHankoSessionCookie() in a finally (both apps); EC-378; D-24140"]
-        ["📦 Effect-outcome fill-in (WP-B.2) — reveal-action realized results + move-card/sequence no-ops; deferred per D-24111"]
+        ["WP-417 ✅ Every played card prints its effect + the action taken — strips the pipeline's apply-effect-markers from player prose by a corpus-verified shape test (keeps printed keywords), folds a starter's base +recruit/+attack onto the play line (formatBaseEconomyClause), logs the 4 silent onPlay handlers (draw w/ realized count + shortfall, attack, recruit, self-KO), and names a matched-but-guard-blocked reveal action (the WP-B.2 reveal realized-results slice); message-text only, finalStateHash unchanged; EC-452; D-24237"]
+        ["📦 Effect-outcome fill-in (WP-B.2) — reveal-action realized results LANDED (WP-417); remaining move-card/sequence empty-source no-ops still deferred per D-24111"]
         ["📝 Structured log-outcome contract + colour-coding (WP-B.3) — G.messages string array → records with a machine-readable outcome field (green/red/yellow); own design review before packets; deferred per D-24111"]
 
       Competitive Score Submission & Verification (2026-07)
@@ -589,14 +590,14 @@ mindmap
 | Cross-App Infrastructure | 2/2 | — |
 | Multiplayer Play & Match Durability (2026-07) | 8/8 | — |
 | Hero/Villain Effects & Diagnostics (2026-07) | 5/5 | — |
-| Live-Play HUD & Pending-Choice UX (2026-07) | 15/15 | — |
+| Live-Play HUD & Pending-Choice UX (2026-07) | 16/16 | — |
 | Competitive Score Submission & Verification (2026-07) | 10/10 | — |
 | Gauntlet Leaderboards (Legends) (2026-07) | 22/25 | 2 ⏸, 1 open |
 | Friends & Ranked Trust (2026-07) | 18/18 | — |
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **401/410 WP ✅** (+ 4/4 Foundation Prompts) | 3 ⏸, 6 open |
+| **Total** | **402/411 WP ✅** (+ 4/4 Foundation Prompts) | 3 ⏸, 6 open |
 
 **Open / blocked WPs (derived from WORK_INDEX, 9):** WP-042.1 ⏸ blocked; WP-349 open; WP-391 open; WP-396 open; WP-398 open; WP-399 open; WP-368 open; WP-403 ⏸ blocked; WP-404 ⏸ blocked.
 <!-- ROADMAP-COUNTS:END -->

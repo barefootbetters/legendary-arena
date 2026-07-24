@@ -135,6 +135,9 @@ export function playFromUndercover(
   // (formatPlayedCardLabel, names from G.cardDisplayData). This is the "from
   // face-down" annotation line; applyCardPlay already logged the play above.
   pushLog(G, 
-    `Player ${playerID} played ${formatPlayedCardLabel(G.cardDisplayData, faceDownCard.cardId)} from face-down`,
+    // why: WP-417 — empty economy clause: this is the "from face-down" ANNOTATION
+    // line; applyCardPlay's own line above already reported the base attack/recruit,
+    // and repeating it here would double-count the grant to a reader.
+    `Player ${playerID} played ${formatPlayedCardLabel(G.cardDisplayData, faceDownCard.cardId, '')} from face-down`,
   );
 }

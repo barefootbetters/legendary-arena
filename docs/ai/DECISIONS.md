@@ -32026,4 +32026,61 @@ success.
 `scripts/db-backup-retention.{mjs,test.ts}` [new],
 `docs/ops/DISASTER_RECOVERY.md`. WP-416 / EC-451.
 
+### D-24237 — Every played card prints its effect (markers stripped) and the action taken
+
+**Status:** Active (post-execution) 2026-07-24. `D-24026` live-verify operator-pending on deploy.
+
+**User-Visible Surface:** play.legendary-arena.com (the Game Log panel + WP-322 export).
+
+**Context.** WP-323/324/325 named every log line and closed the reveal test-result gap,
+but a live match log (the Magneto trace, 2026-07-24) surfaced three remaining defects on a
+card play: (1) the card pipeline's `apply-effect-markers` machine markers leaked into the
+player-facing prose — "played Keen Senses — Instinct: Draw a card. **draw:1**."; (2) a
+starter (S.H.I.E.L.D. Agent / Trooper — no ability text) printed nothing about the `+1
+recruit` / `+1 attack` it just added; and (3) the four onPlay handlers (draw / attack /
+recruit / self-KO) were silent, so "Draw a card." on the play line was the ONLY evidence
+the ability existed and a short draw (deck + discard empty) was indistinguishable from a
+full one. This is also the natural home for the deferred **WP-B.2** slice of D-24111 (the
+reveal *realized* result).
+
+**Decision.** On every play, the log now prints the printed effect as clean prose plus the
+action taken:
+- **Marker stripping (by shape, not allowlist).** `abilityTextToPlainText` drops a
+  `[keyword:…]` token whose value matches the engine-marker shape
+  `^[a-z0-9]+(?:-[a-z0-9]+)*(?::[a-z0-9]+(?:-[a-z0-9]+)*)*$`; a printed keyword ("Undercover",
+  "What If...?", "Danger Sense 2") does not match and is kept. Shape beats an allowlist
+  because markers for mechanics that are not yet `HeroKeyword` members (`demolish`,
+  `reveal-multi-take`) must drop too — an allowlist would silently keep leaking them.
+- **Base-icon clause on the play line.** `formatPlayedCardLabel` takes a third
+  `economyClause` argument (`formatBaseEconomyClause(attack, recruit)` → `+N attack, +N
+  recruit`); the play line folds a starter's printed icons into one line rather than a
+  second. The clause is `''` on the discard-to-play reject line (no economy granted) and on
+  the `playFromUndercover` annotation line (`applyCardPlay` already reported it). The
+  printed-effect clause has its single trailing `.` trimmed (the caller supplies terminal
+  punctuation; before this the appended marker hid the doubling).
+- **Silent handlers logged.** `heroEffectDraw` (naming the realized count via
+  `drawFromPlayerDeck`'s new `number` return, and naming a deck+discard-empty shortfall),
+  `heroEffectAttack`, `heroEffectRecruit`, and the self-`heroEffectKo` each emit a line.
+- **Reveal realized result (WP-B.2).** `applyRevealRuleActions` returns the matched action
+  kinds that did not apply; a guard-blocked matched action ("drew it" with nothing drawn)
+  now reads "… matched: {actions}, but {unapplied} could not be applied." instead of
+  reporting the claimed success.
+
+**Invariants preserved.** Message text only — no change to `G` economy/zone state,
+draw/KO/reveal behavior (predicate/action/offset byte-identical), RNG, or turn flow. The
+only non-text deltas are two return-type widenings that FEED the lines (`drawFromPlayerDeck`
+→ `number`, `applyRevealRuleActions` → `RevealActionKind[]`); neither changes what mutates.
+`G.messages` is hash-excluded (D-24081), so the `sentinel-core-doom-2p` fixture was re-pinned
+by **regeneration** with an **unchanged `finalStateHash`** (the message oracle moved only to
+carry the new base-icon clause on starter plays). `logDisplay.ts` / `revealLog.ts` stay pure.
+
+**Deferred (unchanged from D-24111).** The structured `outcome`-field contract + colour-coding
+(**WP-B.3**, `G.messages` `string[]` → records; needs its own design review) and the remaining
+`move-card` / `sequence` empty-source no-op slivers stay deferred. The client `effectProvenance`
+heuristic is untouched.
+
+**Packet:** WP-417 + EC-452. **Drafted + Executed:** 2026-07-24. Engine suite green
+(new `logDisplay` / `revealLog` / handler-log tests); `pnpm -r --no-bail test` green
+repo-wide (0 fail); `pnpm -r build` 0. `D-24026` live-verify operator-pending on deploy.
+
 Protect this file.

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   describeRevealPredicate,
   describeRevealActions,
+  describeUnappliedRevealActions,
   formatRevealOutcomeLine,
 } from './revealLog';
 import type { UICardDisplay } from '../ui/uiState.types';
@@ -43,6 +44,44 @@ test('describeRevealActions maps each action kind and comma-joins them', () => {
   assert.equal(
     describeRevealActions([{ kind: 'attack-by-cost' }, { kind: 'choose-discard-or-return' }]),
     'gained attack, queued a choice',
+  );
+});
+
+// why: WP-417 / D-24237 — WP-B.2 realized-result item; names the matched actions
+// whose helper guard fired and mutated nothing.
+test('describeUnappliedRevealActions names each unapplied action kind', () => {
+  assert.equal(describeUnappliedRevealActions([{ kind: 'draw' }].map((a) => a.kind)), 'the draw');
+  assert.equal(describeUnappliedRevealActions(['ko']), 'the KO');
+  assert.equal(describeUnappliedRevealActions(['attack-by-cost']), 'the attack grant');
+  assert.equal(describeUnappliedRevealActions(['choose-discard-or-return']), 'the choice');
+  assert.equal(describeUnappliedRevealActions([]), '');
+});
+
+test('formatRevealOutcomeLine reports a matched-but-unapplied action', () => {
+  const extId = 'core/hawkeye/quick-draw#3';
+  const data = { [extId]: display(extId, 'Quick Draw') };
+  assert.equal(
+    formatRevealOutcomeLine(data, '0', extId, 2, {
+      matched: true,
+      predicateText: 'cost ≤ 2',
+      actionsText: 'drew it',
+      unappliedActionsText: 'the draw',
+    }),
+    'Player 0 revealed Quick Draw (core/hawkeye/quick-draw#3) (cost 2) — cost ≤ 2 matched: drew it, but the draw could not be applied.',
+  );
+});
+
+test('formatRevealOutcomeLine omits the unapplied clause when everything applied', () => {
+  const extId = 'core/hawkeye/quick-draw#3';
+  const data = { [extId]: display(extId, 'Quick Draw') };
+  assert.equal(
+    formatRevealOutcomeLine(data, '0', extId, 2, {
+      matched: true,
+      predicateText: 'cost ≤ 2',
+      actionsText: 'drew it',
+      unappliedActionsText: '',
+    }),
+    'Player 0 revealed Quick Draw (core/hawkeye/quick-draw#3) (cost 2) — cost ≤ 2 matched: drew it.',
   );
 });
 
