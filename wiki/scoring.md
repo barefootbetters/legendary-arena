@@ -12,6 +12,7 @@ tags:
   - vision
 related:
   - par-simulation-calibration.md
+  - gameplay-strategy.md
   - leaderboard.md
   - villain-deck.md
   - master-strike.md
@@ -256,6 +257,13 @@ future WPs per the source `// why:` comment.
 
 ## Interactions
 
+- **[Gameplay Strategy](gameplay-strategy.md).** Scoring is the
+  *measurement* of the skill that page models. PAR (Layer A) is the outcome
+  a *competent* team should reach, and a good Final Score means the ranked
+  player decisions — Hero Deck construction, play order, Mastermind timing —
+  were made well. The `mastermindTacticUntaken` penalty is the scoring hook
+  for that page's Rank-2 Mastermind-timing decision (specified but not yet
+  produced — see [Penalty producer status](#penalty-producer-status--four-of-five-safe-skip-to-zero)).
 - **[Scheme](scheme.md), Mastermind, and Villain Groups.** Together
   they form the scenario identity — the `ScenarioKey` is derived
   exclusively from these slugs. PAR is keyed on the scenario, never

@@ -1,7 +1,7 @@
 # Wiki Index
 
-> **44 / 50** entity pages.
-> Last regenerated: 2026-07-20.
+> **50 / 75** entity pages.
+> Last regenerated: 2026-07-23.
 > See [SCHEMA.md](SCHEMA.md) for the entity-page contract and
 > [README.md](README.md) for purpose, conventions, and authority —
 > including [§ Tradeoffs](README.md#tradeoffs) on what the LLM-wiki
@@ -216,6 +216,15 @@ Cross-cutting governance, methodology, and readiness assessments.
   hooks. Houses the **Playstyle Modes** builder-versus-destroyer lens — a
   preference toggle that re-frames the same engine events as heroic rescue
   or villain conquest without building two games.
+- [Gameplay Strategy](gameplay-strategy.md) — *(draft, research)* the
+  **skill model**: where skill actually lives in a Legendary Arena match,
+  ranked by leverage — Rank 0 Hero Deck construction, Rank 1 play order and
+  class synergy, Rank 2 Mastermind timing, then recruiting / City combat /
+  KO, plus deck thinning as the second-highest lever. The companion the
+  rest of the wiki assumes: [Scoring](scoring.md) measures this skill, the
+  [PAR simulation](par-simulation-calibration.md) performs it, and the
+  dopamine / narrative frameworks promise to reward it. Verified against the
+  v23 rules; the synergy math is illustrative, not calibrated.
 
 ## Tutorial
 

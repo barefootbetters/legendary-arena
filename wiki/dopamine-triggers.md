@@ -18,6 +18,7 @@ related:
   - villain-deck.md
   - vision.md
   - monetization-model.md
+  - gameplay-strategy.md
 status: draft
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\dopamine-triggers.md (this page — https://ewiki.legendary-arena.com/dopamine-triggers/)
@@ -278,6 +279,10 @@ both layers.
   frameworks reinforce the same moment from different angles.
 - **[Villain Deck](villain-deck.md).** The source of variable reward (the
   reveal) and the menace counters (escape / twist).
+- **[Gameplay Strategy](gameplay-strategy.md).** What "reward the skill, not
+  the luck" *means*: the escalating-combo payoff is earned by that page's
+  Rank-0 Hero Deck construction and Rank-1 play order, so the reward is
+  attributed to a real decision rather than to the random draw.
 - **[Vision](vision.md)** and **[Monetization Model](monetization-model.md).**
   The bright lines: the reward loop is free-game engagement craft, never a
   spend-pressure or pay-to-win surface.
