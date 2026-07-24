@@ -239,6 +239,38 @@ test('the fault fallback recovers a stalled turn by advancing the stage', async 
   assert.equal(botAllyDrivers.has('m-recover'), true, 'the driver remains registered after a passed turn');
 });
 
+test('a transient DB blip (move does not advance, then a re-submit lands) does NOT fault the match', async () => {
+  // why: 2026-07-24 — a move whose write is transiently swallowed (state does not
+  // advance) must be RE-SUBMITTED with back-off, not treated as a wedge. The first
+  // submit is a no-op (the blip); the second lands and passes the turn, so the
+  // match keeps playing instead of faulting (BOT_MOVE_SUBMIT_ATTEMPTS).
+  let submits = 0;
+  const { deps, persistCalls } = makeDeps({
+    initial: fakeState('1', 1),
+    decide: () => ({ name: 'endTurn', args: {} }),
+    onSubmit: (_move, match) => {
+      submits += 1;
+      // first submit is swallowed (state does not advance); the second lands and
+      // passes control to the human seat 0.
+      if (submits >= 2) {
+        match.value = fakeState('0', 2);
+      }
+    },
+  });
+  const driver = createBotAllyDriver({ matchId: 'm-blip', botSeats: ['1'], deps });
+
+  await driver.tick();
+
+  assert.ok(submits >= 2, 'the non-advancing move was re-submitted (DB-blip tolerance)');
+  assert.equal(driver.getStatus(), BOT_ALLY_STATUS.active, 'the transient blip did NOT fault the match');
+  assert.equal(botAllyDrivers.has('m-blip'), true, 'the driver stays registered after riding out the blip');
+  assert.equal(
+    persistCalls.filter((call) => call.status === BOT_ALLY_STATUS.faulted).length,
+    0,
+    'no fault was persisted for a transient blip',
+  );
+});
+
 test('a wedge recovered by the one fresh-fetch whole-turn retry does not fault the match', async () => {
   // Attempt 1 wedges: the decision throws and the fault fallback (a no-op submit)
   // cannot advance, so the whole turn faults. WP-414's single retry re-attempts
