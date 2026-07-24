@@ -79,6 +79,37 @@ export const BOT_MAX_TURNS = 400;
 export const BOT_MAX_MOVE_STEPS_PER_TURN = 100;
 
 /**
+ * How many times the driver re-submits the SAME move when it does not advance the
+ * state, and the base back-off between attempts, before treating the move as a
+ * genuine wedge and falling through to the fault fallback.
+ *
+ * // why: 2026-07-24 — a move that does not advance is EITHER a transient DB blip
+ * (the bgio store's `runResilientWrite` swallowed the write to keep the server up,
+ * so the move genuinely did not apply — a swallowed write is safe to re-submit,
+ * it cannot double-apply) OR a real wedge (the engine silently rejected the move).
+ * Re-submitting with back-off lets a blip clear (the re-submit lands once the DB
+ * recovers) so a brief DB hiccup during the bot's turn no longer FAULTS the whole
+ * match — observed when a DB plan resize restarted Postgres mid-turn. A genuine
+ * reject never advances across the budget and still falls through to the fault
+ * fallback. 3 attempts × (500ms, 1000ms) back-off, each submit itself riding the
+ * store's ~1.8s write-retry, spans several seconds — enough for a normal blip
+ * without masking a real wedge.
+ */
+export const BOT_MOVE_SUBMIT_ATTEMPTS = 3;
+export const BOT_MOVE_RETRY_BASE_MS = 500;
+
+/**
+ * Waits the given milliseconds. Server-layer scheduling only (the determinism
+ * rules govern the engine, not the driver) — mirrors autoplay's `delay`.
+ *
+ * @param {number} ms - Milliseconds to wait.
+ * @returns {Promise<void>}
+ */
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
  * Consecutive no-progress poll ticks (the match state id is unchanged while it
  * is NOT a bot seat's turn) after which the driver treats the match as
  * abandoned by the human and tears down.
@@ -586,18 +617,37 @@ async function attemptBotTurn(driver, deps, botSeat, maxMoveStepsPerTurn) {
       return { kind: 'faulted', message: BOT_FAULTED_MESSAGE };
     }
 
+    // why: 2026-07-24 — re-submit the move up to BOT_MOVE_SUBMIT_ATTEMPTS times
+    // with back-off when it does not advance the state, so a transient DB blip
+    // (a write swallowed by the store to keep the server up — safe to re-submit)
+    // rides out and the match keeps playing instead of faulting. A genuine wedge
+    // (the engine silently rejects the move) never advances across the budget and
+    // still falls through to the fault fallback below.
     const previousStateId = state._stateID;
-    await deps.submitMove({ seat: botSeat, moveName: move.name, moveArgs: move.args });
-    const after = await deps.fetchState(driver.matchId);
-    if (after === null || after === undefined) {
-      return { kind: 'vanished' };
+    let moveAdvanced = false;
+    for (let submitAttempt = 1; submitAttempt <= BOT_MOVE_SUBMIT_ATTEMPTS; submitAttempt++) {
+      await deps.submitMove({ seat: botSeat, moveName: move.name, moveArgs: move.args });
+      const after = await deps.fetchState(driver.matchId);
+      if (after === null || after === undefined) {
+        return { kind: 'vanished' };
+      }
+      if (after.ctx.gameover !== undefined) {
+        return { kind: 'game-over' };
+      }
+      if (after._stateID !== previousStateId) {
+        moveAdvanced = true;
+        break;
+      }
+      // why: not advanced yet — back off before re-submitting so a transient DB
+      // blip has time to clear (no back-off after the final attempt).
+      if (submitAttempt < BOT_MOVE_SUBMIT_ATTEMPTS) {
+        await delay(BOT_MOVE_RETRY_BASE_MS * submitAttempt);
+      }
     }
-    if (after.ctx.gameover !== undefined) {
-      return { kind: 'game-over' };
-    }
-    if (after._stateID === previousStateId) {
-      // why: the move did not advance the state (the live engine rejected a move
-      // getLegalMoves offered) — fall through the fault fallback rather than
+    if (!moveAdvanced) {
+      // why: the move never advanced across the retry budget — a genuine wedge
+      // (the live engine rejected a move getLegalMoves offered) or an outage
+      // longer than the budget. Fall through the fault fallback rather than
       // re-dispatching the same no-op to the step cap.
       const recovered = await runFaultFallback(driver, deps, botSeat);
       if (recovered) {
