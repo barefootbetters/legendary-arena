@@ -61,6 +61,36 @@ signals, and the architectural boundaries are sourced to code; the narrative
 mappings are proposals. (Marvel characters and lore are licensed IP; this
 page treats theme and framing, not reproduction of copyrighted text.)
 
+### Soul / Authorial Voice (inherited principle) {#authorial-voice}
+
+This framework inherits the
+[Soul / Authorial Voice](design-system-overview.md#soul-authorial-voice)
+principle from the Design System Overview.
+
+Competent story beats are not enough. The narrative layer must feel
+*authored* — it should communicate a clear creative point of view rather than
+generic good-versus-evil framing. The four meaning hooks below exist to give
+the game personality and emotional texture, not merely to label engine
+events.
+
+Practical tests this page owns:
+
+- Characters and factions carry distinctive personality (quirks, voice,
+  recognizable identity) rather than functioning as interchangeable stat
+  blocks.
+- Framing and copy show visible care in details that do not affect balance or
+  retention (small flourishes of character, atmosphere, and environmental
+  storytelling).
+- The good-versus-evil fantasy is leaned into with conviction instead of
+  being sanded down for maximum broad appeal.
+- Every beat should feel like it belongs to *this* game's specific mythology,
+  not a template arena narrative.
+
+Accuracy and voice are *both* required: a beat that is accurate (rides true
+`UIState`, per the [Narrative Contract](#narrative-contract)) but generic
+(interchangeable with any other arena game's copy) satisfies the governance
+layer yet fails this filter. Accuracy is the floor; voice is the ceiling.
+
 **How to read this page.** The [Narrative Contract](#narrative-contract)
 below is the **fixed governance layer** — the framing invariants, the beat
 mapping's fidelity to real outcomes, and the IP boundary a future Work
@@ -150,6 +180,13 @@ identity the client already has.
   differently from the generic "villain defeated," using the event's
   `narrative` field and the acting entity's identity.
 
+Personality is the difference between an archetype and a living character.
+Framing should surface the distinctive traits players already associate with
+each hero or villain (Wolverine's ferocity, Spider-Man's quips and
+responsibility, a Mastermind's particular brand of menace) so the beat feels
+specific rather than generic. Generic "villain defeated" copy is the failure
+mode this hook exists to prevent.
+
 #### 2. Good versus evil — the match as a moral arc {#beat-mapping}
 
 Every match is a compressed good-versus-evil story: the villains scheme and
@@ -180,6 +217,11 @@ it plays.
   motif, and palette so the player feels "these are *my* heroes," not
   interchangeable stat blocks.
 
+Nostalgia only creates soul when it is treated with care. Re-using team
+identity and leitmotifs is not enough; the framing must feel like it respects
+the emotional weight players already bring. Cheap or interchangeable nostalgia
+reads as soulless.
+
 #### 4. Agency — "I act on the world"
 
 Self-determination research puts **autonomy** at the center of intrinsic
@@ -188,30 +230,10 @@ the story. The local action moves (`playCard`, `recruitHero`, `fightVillain`)
 are the player *authoring* the narrative — the framing should make each feel
 like a deliberate story move, not a menu selection.
 
-### Personality and care — the authorial-voice tests {#authorial-voice}
-
-The four hooks above are *what* the narrative layer carries; the
-[Design System Overview → Soul / Authorial Voice](design-system-overview.md#soul-authorial-voice)
-principle is *how well* it must carry them. Narrative is the primary carrier
-of that authorial voice, so it inherits the **personality + care** tests most
-directly:
-
-- **Personality over neutrality** — a beat framed for *Wolverine* must not
-  read like the same beat framed for *Cyclops*; each actor's archetype gives
-  the copy its own character, never a generic "villain defeated."
-- **Care in details that move neither balance nor retention** — a distinct
-  copy line per spine event, per acting entity, is exactly the kind of
-  "unnecessary" flourish that signals an authored game rather than a merely
-  competent one. It is worth the effort precisely because nothing forces it.
-- **One strong fantasy, leaned into** — the good-versus-evil Marvel arc, and
-  the builder/destroyer lens over it, is a bright-line fantasy to commit to,
-  not an edge to sand down for the broadest possible appeal.
-
-The bar is *both* contracts at once: a narrated beat that is **accurate**
-(rides true `UIState`, per the [Narrative Contract](#narrative-contract)) but
-**generic** (interchangeable with any other arena game's copy) passes the
-governance layer yet fails the authorial-voice filter. Accuracy is the floor;
-voice is the ceiling.
+Agency becomes meaningful when the player's actions feel like deliberate story
+moves with personality and consequence, not menu selections. Framing should
+make the player feel they are authoring a specific tale, not merely optimizing
+a board.
 
 ### Playstyle Modes — the builder / destroyer lens {#playstyle-modes}
 
@@ -261,8 +283,11 @@ Playstyle Modes lens toggle.
 ## Interactions
 
 - **[Design System Overview](design-system-overview.md).** The parent hub;
-  its [shared trigger spine](design-system-overview.md#shared-trigger-spine)
-  has a "Narrative" column this page expands into full story beats.
+  this page expands the "Narrative" column of the
+  [shared trigger spine](design-system-overview.md#shared-trigger-spine) into
+  full story beats and inherits the
+  [Soul / Authorial Voice](design-system-overview.md#soul-authorial-voice)
+  principle defined there.
 - **[Dopamine Trigger Framework](dopamine-triggers.md).** The complementary
   driver — dopamine is the *reward* hook, narrative is the *meaning* hook.
   The same Mastermind defeat is a peak reward *and* the story's climax; the
