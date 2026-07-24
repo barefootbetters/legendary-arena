@@ -49,7 +49,7 @@
 - [ ] `pnpm -r build` 0; `pnpm --filter arena-client typecheck` 0; `pnpm --filter arena-client test` passes.
 - [ ] `git diff --name-only` shows only the five `## Files to Produce` paths.
 - [ ] `moveSfxManifest.test.ts` pins the five keys, the locked filenames, the R2 host, the hyphen rule, and `dodgeCard`'s absence.
-- [ ] D-24026 live-on-surface: on a deployed match, each of the five moves plays its clip; WP-412 mute silences it (requires the five CC0 clips on R2 — operator-pending; noted honestly).
+- [ ] D-24026 live-on-surface: on a deployed match, each of the five moves plays its clip; WP-412 mute silences it. The five CC0 clips are already live on R2 (GET-200, `audio/mpeg`, valid `ID3`) — so this is pending only the deploy + eyeball, not the asset upload.
 - [ ] `docs/ai/STATUS.md` prepended — Surface-2 move SFX.
 - [ ] `docs/ai/DECISIONS.md` — **D-24239** landed Active.
 - [ ] `docs/ai/work-packets/WORK_INDEX.md` — WP-419 checked off with the date.

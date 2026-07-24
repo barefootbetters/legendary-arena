@@ -32153,7 +32153,7 @@ Protect this file.
 
 ### D-24239 — Surface-2 player-action move SFX fire on the local dispatch (not on a projected result)
 
-**Status:** Active (post-execution) 2026-07-24. `D-24026` live-verify operator-pending (requires the five CC0 move clips on R2).
+**Status:** Active (post-execution) 2026-07-24. The five CC0 move clips are already live on R2 (GET-200, `audio/mpeg`, valid `ID3`); `D-24026` live-verify operator-pending only on the deploy (eyeball the cue in a real match).
 
 **Context.** WP-412 shipped the arena-client audio foundation (Surface 1 — one
 clip per resolved `NotableGameEvent`) and WP-413 the tiered combo cue, both
@@ -32201,7 +32201,9 @@ never gates a move the engine would accept; sims and replays render no audio.
 
 **Packet:** WP-419 + EC-454. **Drafted + Executed:** 2026-07-24 (Lightweight
 Lane). arena-client typecheck 0; arena-client suite green (+11 manifest / consumer
-tests, 1093/0); `pnpm -r build` 0. `D-24026` live-verify operator-pending (the
-five CC0 move clips must be uploaded to R2 — the WP-412 assets-leg pattern).
+tests, 1093/0); `pnpm -r build` 0. Assets already on R2: the five move clips
+GET-verified `200` / `audio/mpeg` / valid `ID3` (`play-card` 11.8 KB, `recruit-hero`
+3.6 KB, `attack-villain` 4.7 KB, `draw-cards` 10.0 KB, `end-turn` 4.4 KB). `D-24026`
+live-verify operator-pending only on the deploy (eyeball the cue in a real match).
 
 Protect this file.

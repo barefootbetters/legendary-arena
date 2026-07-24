@@ -230,7 +230,8 @@ If any of the above is false, this packet is **BLOCKED** and must not proceed.
 - **Audio asset production** — sourcing / encoding / uploading the five CC0 move
   clips to R2 is an operator/ops step (the code + tests are asset-independent via
   a mocked `Howl`); live-on-surface verification depends on the assets being
-  present (mirrors WP-412's assets leg, PR #916).
+  present — **already met**: the five clips are live on R2 (GET-200, `audio/mpeg`,
+  valid `ID3`), verified this session (mirrors WP-412's assets leg, PR #916).
 - Refactors not listed in Scope (In).
 
 ---
@@ -325,8 +326,10 @@ This packet is complete when ALL of the following are true:
 - [ ] **User-visible verification (surface = `play.legendary-arena.com`,
       D-24026):** in a **real deployed match**, dispatching a card play / recruit
       / fight / draw / end-turn plays its move sound immediately; the WP-412 mute
-      toggle silences it — observed on the deployed bundle (requires the five CC0
-      move clips uploaded to R2; green tests + merge alone do NOT satisfy it).
+      toggle silences it — observed on the deployed bundle. The five CC0 move
+      clips are already live on R2 (GET-200, `audio/mpeg`, valid `ID3`), so this
+      is pending only the deploy + eyeball; green tests + merge alone do NOT
+      satisfy it.
 - [ ] All acceptance criteria pass.
 - [ ] `pnpm -r build` exits 0; `pnpm --filter arena-client typecheck` exits 0;
       arena-client suite passes.
@@ -389,9 +392,10 @@ All 21 sections resolved against `docs/ai/REFERENCE/00.3-prompt-lint-checklist.m
   host than Surface 1 / the combo cue's `PlayViewport` snapshot-watch, because
   Surface 2 is dispatch-driven. Recorded as the single runtime-wiring host in the
   EC.
-- **PS items (blocking):** none. (Live D-24026 verification depends on the five
-  CC0 move clips being uploaded to R2 — an operator prerequisite, not a code
-  blocker; mirrors WP-412's assets leg.)
+- **PS items (blocking):** none. (The five CC0 move clips are already live on R2 —
+  GET-verified 200 / `audio/mpeg` / valid `ID3` — so the D-24026 asset
+  prerequisite is already met; live verification is pending only the deploy +
+  eyeball.)
 
 ---
 

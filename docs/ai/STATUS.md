@@ -58,10 +58,13 @@ left for a later UI-affordance WP.
 §17 Vision N/A (retention polish, never pay-to-win).
 
 **Verification.** arena-client typecheck 0; arena-client suite green (+11 manifest
-/ consumer tests, 1093/0); `pnpm -r build` 0. **D-24239 Active.** `D-24026`
-live-verify **operator-pending** — the five CC0 move clips must be uploaded to R2
-under `audio/sound-effects/` (the WP-412 assets-leg pattern, PR #916); green tests
-+ merge alone do not satisfy it.
+/ consumer tests, 1093/0); `pnpm -r build` 0. **D-24239 Active.** The five CC0 move
+clips are **already live on R2** — GET-verified `200` / `audio/mpeg` / valid mp3
+(`ID3`): `play-card.mp3` (11.8 KB), `recruit-hero.mp3` (3.6 KB), `attack-villain.mp3`
+(4.7 KB), `draw-cards.mp3` (10.0 KB), `end-turn.mp3` (4.4 KB) — so the asset
+prerequisite is met. `D-24026` live-verify is **operator-pending only on the
+deploy**: merge + deploy, then eyeball that a real match's card play / recruit /
+fight / draw / end-turn fires its sound (green tests + merge alone do not satisfy it).
 
 ---
 
