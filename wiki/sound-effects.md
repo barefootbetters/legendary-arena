@@ -29,7 +29,7 @@ source:
   - ../packages/game-engine/src/ui/uiState.types.ts
   - ../packages/game-engine/src/turn/turnPhases.types.ts
   - ../docs/ai/ARCHITECTURE.md
-last-reviewed: 2026-07-21
+last-reviewed: 2026-07-24
 ---
 
 # Sound Effects
@@ -50,9 +50,11 @@ also specs three richer layers on top: **motif-driven event cues**
 cue** that escalates with the size of a synergy chain, and **endgame
 stingers** for all three real match outcomes (heroes win, scheme wins,
 tie). Most of this page is still `draft` research rather than an
-implementation contract, but two pieces have **shipped**: the client-only
-audio foundation (WP-412) and the [tiered combo cue](#tiered-combo)
-(WP-413 / D-24228) that rides the `lastPlayEffectsFired` signal (D-24221).
+implementation contract, but three pieces have **shipped**: the client-only
+audio foundation (WP-412), the [Surface-2 player-action move cue](#surface-2)
+(WP-419 / D-24239) fired on the local move dispatch, and the
+[tiered combo cue](#tiered-combo) (WP-413 / D-24228) that rides the
+`lastPlayEffectsFired` signal (D-24221).
 The remaining sound mappings and library picks are proposals; the event
 vocabulary, the endgame outcomes, the projected `UIState` signals, and the
 architectural boundaries are sourced to code.
@@ -112,42 +114,67 @@ keyword labels are defined in
 > A keyword is enough to trigger a sound; per-target detail is not
 > available without new event fields (see Edge Cases).
 
-#### Surface 2 — Player action moves (tactile local feedback)
+#### Surface 2 — Player action moves (tactile local feedback) {#surface-2}
 
-The client dispatches these moves, so it can play a sound on the local
-action for immediate tactile feedback (independent of the authoritative
-result). The three core moves are `drawCards`, `playCard`, and
-`endTurn`; the card-specific moves add fight/recruit/dodge.
+The client dispatches these moves, so it plays a sound on the local
+action for immediate tactile feedback — **independent of** (and ahead of)
+the authoritative result. This is the one surface that fires on a *dispatch*
+rather than a projected `UIState` frame, which is exactly why it can sound
+`recruitHero` (which emits **no** notable event) and why the felt cues don't
+wait on a server round-trip. **Five of these six moves shipped in WP-419**
+(`playCard`, `recruitHero`, `fightVillain`, `drawCards`, `endTurn`); the sixth,
+`dodgeCard`, is an engine-only move with no client dispatch path and is **not**
+wired (see the callout below).
 
-| Action (move) | Fires when | Suggested sound character | Candidate CC0 source | R2 clip path | Preview |
-|---|---|---|---|---|---|
-| `playCard` | A card is played from hand | Card whoosh / place | OpenGameArt Card Game Sounds ("Play card") | `audio/sound-effects/play-card.mp3` | {{< audio-inline src="https://images.legendary-arena.com/audio/sound-effects/play-card.mp3" >}} |
-| `recruitHero` | A hero is recruited from HQ | Positive "purchase" chime | Kenney Interface Sounds; OpenGameArt Card Game Sounds | `audio/sound-effects/recruit-hero.mp3` | {{< audio-inline src="https://images.legendary-arena.com/audio/sound-effects/recruit-hero.mp3" >}} |
-| `fightVillain` | A player attacks a City villain | Sword/impact swing | Kenney Impact Sounds; OpenGameArt 80 CC0 RPG SFX (blade) | `audio/sound-effects/attack-villain.mp3` | {{< audio-inline src="https://images.legendary-arena.com/audio/sound-effects/attack-villain.mp3" >}} |
-| `drawCards` | Start-of-turn draw / any draw | Card draw / short shuffle | OpenGameArt Card Game Sounds ("Draw card" / "Shuffle") | `audio/sound-effects/draw-cards.mp3` | {{< audio-inline src="https://images.legendary-arena.com/audio/sound-effects/draw-cards.mp3" >}} |
-| `dodgeCard` | Dodge — discard a card to draw a replacement | Quick card flick | OpenGameArt Card Game Sounds ("Tap" / "Untap") | `audio/sound-effects/dodge.mp3` | {{< audio-inline src="https://images.legendary-arena.com/audio/sound-effects/dodge.mp3" >}} |
-| `endTurn` | The player ends their turn | Soft confirm / pass-turn notification | OpenGameArt Card Game Sounds ("Notification"); Kenney UI Audio | `audio/sound-effects/end-turn.mp3` | {{< audio-inline src="https://images.legendary-arena.com/audio/sound-effects/end-turn.mp3" >}} |
+| Action (move) | Wired? | Fires when | Suggested sound character | Candidate CC0 source | R2 clip path | Preview |
+|---|---|---|---|---|---|---|
+| `playCard` | ✅ WP-419 | A card is played from hand | Card whoosh / place | OpenGameArt Card Game Sounds ("Play card") | `audio/sound-effects/play-card.mp3` | {{< audio-inline src="https://images.legendary-arena.com/audio/sound-effects/play-card.mp3" >}} |
+| `recruitHero` | ✅ WP-419 | A hero is recruited from HQ | Positive "purchase" chime | Kenney Interface Sounds; OpenGameArt Card Game Sounds | `audio/sound-effects/recruit-hero.mp3` | {{< audio-inline src="https://images.legendary-arena.com/audio/sound-effects/recruit-hero.mp3" >}} |
+| `fightVillain` | ✅ WP-419 | A player attacks a City villain | Sword/impact swing | Kenney Impact Sounds; OpenGameArt 80 CC0 RPG SFX (blade) | `audio/sound-effects/attack-villain.mp3` | {{< audio-inline src="https://images.legendary-arena.com/audio/sound-effects/attack-villain.mp3" >}} |
+| `drawCards` | ✅ WP-419 | Start-of-turn draw / any draw | Card draw / short shuffle | OpenGameArt Card Game Sounds ("Draw card" / "Shuffle") | `audio/sound-effects/draw-cards.mp3` | {{< audio-inline src="https://images.legendary-arena.com/audio/sound-effects/draw-cards.mp3" >}} |
+| `dodgeCard` | ❌ engine-only | Dodge — discard a card to draw a replacement | Quick card flick | OpenGameArt Card Game Sounds ("Tap" / "Untap") | `audio/sound-effects/dodge.mp3` | {{< audio-inline src="https://images.legendary-arena.com/audio/sound-effects/dodge.mp3" >}} |
+| `endTurn` | ✅ WP-419 | The player ends their turn | Soft confirm / pass-turn notification | OpenGameArt Card Game Sounds ("Notification"); Kenney UI Audio | `audio/sound-effects/end-turn.mp3` | {{< audio-inline src="https://images.legendary-arena.com/audio/sound-effects/end-turn.mp3" >}} |
 
-> **Clip path & config.** The `R2 clip path` column is relative to the
+> **Shipped (WP-419 / EC-454, D-24239).** The five ✅ moves are **live**. The
+> Surface-2 layer mirrors the Surface-1 pattern — a `move → clip` manifest
+> ([`moveSfxManifest.ts`](../apps/arena-client/src/audio/moveSfxManifest.ts), a
+> **partial** `Partial<Record<UiMoveName, string>>`) played by a consumer
+> ([`useMoveSounds.ts`](../apps/arena-client/src/composables/useMoveSounds.ts))
+> through the same [`audioEngine`](../apps/arena-client/src/audio/audioEngine.ts)
+> as Surface 1 and the [combo cue](#tiered-combo), so it inherits the WP-412
+> autoplay-unlock / master mute / master volume gates — **no** new dependency,
+> engine, control, or channel. But it does **not** watch `UIState` like those two:
+> the cue fires from the single `submitMove` dispatch chokepoint in
+> [`App.vue`](../apps/arena-client/src/App.vue) **before** relaying intent to the
+> live client, because a move cue must track the *local action* (a snapshot watch
+> would miss `recruitHero`, which emits no event, and would delay the
+> felt-immediately cues). The `R2 clip path` column is relative to the
 > `images.legendary-arena.com/audio/sound-effects/` prefix (the repo image-URL
-> rule — hyphens, never underscores); the `Preview` player points at the full
-> URL. **These six clips are preview picks, and Surface-2 move sounds are not
-> wired yet.** Unlike the shipped Surface-1 event SFX
-> ([`sfxManifest.ts`](../apps/arena-client/src/audio/sfxManifest.ts) →
-> [`useSoundEffects.ts`](../apps/arena-client/src/composables/useSoundEffects.ts))
-> and the [tiered combo cue](#tiered-combo)
-> ([`comboCueManifest.ts`](../apps/arena-client/src/audio/comboCueManifest.ts) →
-> [`useComboCue.ts`](../apps/arena-client/src/composables/useComboCue.ts)), **no
-> runtime config in `play.legendary-arena.com` references these move clips.**
-> When built, a Surface-2 layer would add a `move → clip` manifest mirroring
-> `sfxManifest.ts`, played on the local move dispatch through the same
-> [`audioEngine`](../apps/arena-client/src/audio/audioEngine.ts) the other two
-> layers already use.
+> rule — hyphens, never underscores) and matches `moveSfxManifest.ts`
+> filename-for-filename.
+>
+> **`dodgeCard` is the one unwired row.** It is an **engine-only** move
+> ([`packages/game-engine/src/moves/dodgeCard.ts`](../packages/game-engine/src/moves/dodgeCard.ts))
+> — it is **not** in the `UiMoveName` union and the click-to-play surface has no
+> dispatch path that emits it, so its clip **cannot** fire today. WP-419 leaves it
+> unmapped (mapping it would not typecheck; a `moveSfxManifest.test.ts` case pins
+> its absence) as a documented gap for a later UI-affordance WP that adds a dodge
+> control.
+>
+> **Assets are live on R2.** The five CC0 move clips are already uploaded under
+> `audio/sound-effects/` — GET-verified `200` / `content-type: audio/mpeg` / valid
+> mp3 (`ID3`): `play-card.mp3` (11.8 KB), `recruit-hero.mp3` (3.6 KB),
+> `attack-villain.mp3` (4.7 KB), `draw-cards.mp3` (10.0 KB), `end-turn.mp3`
+> (4.4 KB). So the previews above play and the runtime cue is audible; the only
+> WP-419 D-24026 step still open is the live eyeball on the deployed bundle once
+> the code merges. (Code ships asset-independent anyway — tests mock the `Howl` —
+> and a missing clip would be a fail-soft `play()` no-op.)
 
-> **Recruit has no result event.** `recruitHero` emits no notable
-> event; the only signals are the local move dispatch and the
-> resulting `UIState.hq` slot / `discardCount` deltas. The move-dispatch
-> hook is the simplest place to play a recruit sound.
+> **Recruit has no result event — and that is why Surface 2 is dispatch-keyed.**
+> `recruitHero` emits no notable event; the only signals are the local move
+> dispatch and the resulting `UIState.hq` slot / `discardCount` deltas. WP-419
+> plays the recruit cue on the dispatch itself (the `submitMove` chokepoint),
+> which is the only hook that fires for it at all.
 
 #### Surface 3 — Turn lifecycle (rule triggers)
 
@@ -479,14 +506,18 @@ selections; the shortcode is documented in
 [Ewiki Authoring](ewiki-authoring.md). Grouped by the four signal
 surfaces above.
 
-> **Surface-1 previews are the shipped cues.** The six Surface-1 event clips
-> (Master Strike, Scheme Twist, Villain Ambush, Villain defeated, Mastermind
-> defeated, Heal) match
-> [`sfxManifest.ts`](../apps/arena-client/src/audio/sfxManifest.ts) filename-for-
-> filename, so this section auditions exactly what `play.legendary-arena.com`
-> plays today. Keep them in sync: change the filename here only when the
-> manifest changes. The other previews are candidate picks for surfaces not yet
-> wired.
+> **The shipped-cue previews.** Two groups here audition exactly what
+> `play.legendary-arena.com` plays today, filename-for-filename with the runtime
+> manifests — keep them in sync, changing a filename here only when the manifest
+> changes: (1) the six Surface-1 event clips (Master Strike, Scheme Twist, Villain
+> Ambush, Villain defeated, Mastermind defeated, Heal) match
+> [`sfxManifest.ts`](../apps/arena-client/src/audio/sfxManifest.ts); (2) the five
+> Surface-2 move clips (Play a card, Recruit a hero, Attack a villain, Draw cards,
+> End turn) match
+> [`moveSfxManifest.ts`](../apps/arena-client/src/audio/moveSfxManifest.ts) (WP-419).
+> The remaining previews — Dodge, Your turn begins, Wound / KO / bystander, and
+> the endgame stings — are candidate picks for surfaces not yet wired (`dodgeCard`
+> is engine-only; see [Surface 2](#surface-2)).
 
 **Master Strike** — dramatic boss stinger:
 
@@ -705,14 +736,25 @@ unusable on a revenue-generating site.
   `lastPlayEffectsFired` and plays the tier clip on each increase
 - [`apps/arena-client/src/audio/comboCueManifest.ts`](../apps/arena-client/src/audio/comboCueManifest.ts)
   — the combo-tier → clip map (`combo-small` / `combo-medium` / `combo-big`)
+- [`apps/arena-client/src/audio/moveSfxManifest.ts`](../apps/arena-client/src/audio/moveSfxManifest.ts)
+  — the **shipped** Surface-2 `move → clip` map (WP-419 / EC-454); a **partial**
+  `Partial<Record<UiMoveName, string>>` over the five dispatchable action moves
+- [`apps/arena-client/src/composables/useMoveSounds.ts`](../apps/arena-client/src/composables/useMoveSounds.ts)
+  — the Surface-2 consumer; returns `playMoveSound(name)`, plays through the WP-412
+  engine (no watch — imperative on dispatch)
+- [`apps/arena-client/src/App.vue`](../apps/arena-client/src/App.vue)
+  — the single Surface-2 wiring host: `playMoveSound(name)` in the `submitMove`
+  dispatch closure, before relaying intent to the live client
 
 ## Open Questions
 
 - **Partially shipped; the rest is unscoped.** The client-only audio
-  foundation (WP-412) and the [tiered combo cue](#tiered-combo) (WP-413 /
-  EC-448) have landed. The remaining layers — the full SFX event coverage,
-  the adaptive music score, and the SFX/music mute-volume UX — still need a
-  WP defining their contract.
+  foundation (WP-412), the [Surface-2 player-action move cue](#surface-2)
+  (WP-419 / EC-454, five of six moves — `dodgeCard` is engine-only), and the
+  [tiered combo cue](#tiered-combo) (WP-413 / EC-448) have landed. The remaining
+  layers — Surface-3 turn-lifecycle cues, the Surface-4 endgame stings, the
+  adaptive music score, and a dodge UI affordance so `dodgeCard` can be
+  dispatched (and sounded) — still need a WP defining their contract.
 - **Asset delivery — bundle vs CDN.** Ship clips/loops inside the
   arena-client bundle, or host them on R2 (the
   `images.legendary-arena.com` precedent suggests a `sounds.` / R2 path
@@ -767,7 +809,9 @@ unusable on a revenue-generating site.
   client-only, howler-backed audio foundation), D-24225 (the motif
   generator), D-24226 (motif × theme-sting layering at −6/−9 dB), D-24227
   (motif lookup as a slim runtime registry), D-24228 (the **shipped** tiered
-  combo cue — WP-413 / EC-448)
+  combo cue — WP-413 / EC-448), D-24239 (the **shipped** Surface-2 player-action
+  move cue — WP-419 / EC-454; dispatch-keyed, five of six moves, `dodgeCard`
+  engine-only)
 - Sound-effect libraries (verify each asset's license on its page):
   - [Kenney.nl — Interface Sounds](https://kenney.nl/assets/interface-sounds) (CC0)
   - [Kenney.nl — Impact Sounds](https://kenney.nl/assets/impact-sounds) (CC0)
