@@ -479,6 +479,15 @@ selections; the shortcode is documented in
 [Ewiki Authoring](ewiki-authoring.md). Grouped by the four signal
 surfaces above.
 
+> **Surface-1 previews are the shipped cues.** The six Surface-1 event clips
+> (Master Strike, Scheme Twist, Villain Ambush, Villain defeated, Mastermind
+> defeated, Heal) match
+> [`sfxManifest.ts`](../apps/arena-client/src/audio/sfxManifest.ts) filename-for-
+> filename, so this section auditions exactly what `play.legendary-arena.com`
+> plays today. Keep them in sync: change the filename here only when the
+> manifest changes. The other previews are candidate picks for surfaces not yet
+> wired.
+
 **Master Strike** — dramatic boss stinger:
 
 {{< audio src="https://images.legendary-arena.com/audio/sound-effects/master-strike.mp3" caption="OpenGameArt CC0 — Sinister Boss Appears" >}}
@@ -487,17 +496,17 @@ surfaces above.
 
 {{< audio src="https://images.legendary-arena.com/audio/sound-effects/scheme-twist.mp3" caption="OpenGameArt CC0 — Evil Approach" >}}
 
-**Villain Ambush** — a menacing entrance:
+**Villain Ambush (`ambushResolved`)** — a menacing entrance:
 
-{{< audio src="https://images.legendary-arena.com/audio/sound-effects/villain-ambush.mp3" caption="OpenGameArt 80 CC0 RPG SFX — creature roar" >}}
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/ambush.mp3" caption="Shipped ambush.mp3 — WP-412 (CC0); the clip play.legendary-arena.com actually plays (sfxManifest.ts)" >}}
 
 **Villain defeated** — a solid hit:
 
 {{< audio src="https://images.legendary-arena.com/audio/sound-effects/villain-defeated.mp3" caption="OpenGameArt 80 CC0 RPG SFX — metal impact" >}}
 
-**Mastermind defeated (win)** — victory fanfare:
+**Mastermind defeated (`mastermindDefeated`)** — a triumphant defeat cue:
 
-{{< audio src="https://images.legendary-arena.com/audio/sound-effects/mastermind-defeated-win.mp3" caption="OpenGameArt CC0 — Victory Theme for RPG" >}}
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/mastermind-defeated.mp3" caption="Shipped mastermind-defeated.mp3 — WP-412 (CC0); the clip play.legendary-arena.com actually plays (sfxManifest.ts)" >}}
 
 **Heal (`healResolved`)** — a soft restorative chime:
 
