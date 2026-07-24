@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import { execSync } from 'node:child_process';
 import { createRequire } from 'node:module';
@@ -54,8 +54,36 @@ function failOnNodeExternalization(warning: { code?: string; message?: string; s
   }
 }
 
+// why: WP-418 — emit a tiny build-stamped `version.json` ({ gitSha }) into the
+// build output so an already-open tab can poll it (cache-busted) and learn a
+// newer client build has been deployed — the signal that drives the
+// UpdateAvailableBanner. It reuses the SAME `gitSha` captured above (no second
+// git call, no new dependency). `configureServer` serves the same file in dev so
+// the poll path is exercisable against `pnpm --filter … dev` without a build.
+function emitVersionJsonPlugin(shortGitSha: string): Plugin {
+  const versionBody = JSON.stringify({ gitSha: shortGitSha });
+  return {
+    name: 'legendary-emit-version-json',
+    apply: () => true,
+    generateBundle() {
+      this.emitFile({ type: 'asset', fileName: 'version.json', source: versionBody });
+    },
+    configureServer(server) {
+      server.middlewares.use((request, response, next) => {
+        if (request.url === undefined || request.url.split('?')[0] !== '/version.json') {
+          next();
+          return;
+        }
+        response.setHeader('Content-Type', 'application/json');
+        response.setHeader('Cache-Control', 'no-store');
+        response.end(versionBody);
+      });
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [vue(), emitVersionJsonPlugin(gitSha)],
   // why: these are build-time constants replaced by Vite, not runtime globals
   define: {
     __APP_VERSION__: JSON.stringify(version),

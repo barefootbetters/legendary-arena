@@ -10,6 +10,7 @@ import WaitingForPlayersPanel from '../components/WaitingForPlayersPanel.vue';
 import HollowEffectsPanel from '../components/play/HollowEffectsPanel.vue';
 import AudioControls from '../components/play/AudioControls.vue';
 import BotAllyStallBanner from '../components/BotAllyStallBanner.vue';
+import UpdateAvailableBanner from '../components/UpdateAvailableBanner.vue';
 import { useViewport } from '../composables/useViewport';
 import { useSkinApplier } from '../composables/useSkinApplier';
 import { useCompetitiveSubmitOnGameover } from '../composables/useCompetitiveSubmitOnGameover';
@@ -17,6 +18,7 @@ import { useCardImagePrefetch } from '../composables/useCardImagePrefetch';
 import { useSoundEffects } from '../composables/useSoundEffects';
 import { useComboCue } from '../composables/useComboCue';
 import { useBotAllyStatus } from '../composables/useBotAllyStatus';
+import { useDeployVersionCheck } from '../composables/useDeployVersionCheck';
 import { useUiStateStore } from '../stores/uiState';
 import type { SubmitMove } from '../components/play/uiMoveName.types';
 
@@ -57,7 +59,7 @@ const SUBMISSION_MESSAGES: Record<string, string> = {
  */
 export default defineComponent({
   name: 'PlayViewport',
-  components: { PlayDesktop, PlayMobile, DiagnosticExportButton, ViewLoadoutButton, WaitingForPlayersPanel, HollowEffectsPanel, AudioControls, BotAllyStallBanner },
+  components: { PlayDesktop, PlayMobile, DiagnosticExportButton, ViewLoadoutButton, WaitingForPlayersPanel, HollowEffectsPanel, AudioControls, BotAllyStallBanner, UpdateAvailableBanner },
   props: {
     submitMove: {
       type: Function as PropType<SubmitMove>,
@@ -132,6 +134,23 @@ export default defineComponent({
     const { hasStopped: isBotAllyStopped, message: botAllyMessage } =
       useBotAllyStatus(props.matchId);
 
+    // why: WP-418 — mounted ONCE at this 01.5 play-root host (the WP-410/412/415
+    // wiring precedent), so the deploy-refresh banner covers BOTH the <PlayMobile>
+    // and <PlayDesktop> surfaces. Detects a newer client build (a mid-match deploy
+    // swaps hashed chunks and freezes the stale tab) and offers a reload — the one
+    // recovery the reconnect/resync stack cannot do, since it re-anchors match
+    // state but never the JS bundle (D-24238). Pure client presentation — no
+    // engine/registry import, no G/ctx read; fail-soft, non-move-gating.
+    const { updateAvailable: isUpdateAvailable } = useDeployVersionCheck();
+
+    // why: the reload is USER-INITIATED (a button), never automatic — a forced
+    // reload mid-turn would discard an in-progress action and read as hostile
+    // (WP-418 §Out of scope). The reload site is owned here at the host and
+    // prop-drilled into the pure banner (the ConnectionStatusBanner/resync pattern).
+    function reloadForUpdate(): void {
+      window.location.reload();
+    }
+
     // why: the stall escape is a NON-DESTRUCTIVE, client-only navigation — it
     // returns to the lobby (the default route, reached by clearing the live
     // `?match=` params) and calls NO server endpoint; the server-side match is
@@ -152,6 +171,8 @@ export default defineComponent({
       isBotAllyStopped,
       botAllyMessage,
       returnToLobby,
+      isUpdateAvailable,
+      reloadForUpdate,
     };
   },
 });
@@ -221,6 +242,18 @@ export default defineComponent({
       :has-stopped="isBotAllyStopped"
       :message="botAllyMessage"
       :return-to-lobby="returnToLobby"
+    />
+    <!--
+      // why: WP-418 — mounted ONCE here at the shared viewport root (the 01.5
+      // wiring host, beside the other banners), so the deploy-refresh notice
+      // covers BOTH the <PlayMobile> and <PlayDesktop> surfaces. Self-hides until
+      // a newer build is detected (v-if inside the component), so it adds no DOM
+      // during a normal session. The reload is user-initiated (never mid-turn
+      // auto-reload); a failed version fetch shows nothing (fail-soft).
+    -->
+    <UpdateAvailableBanner
+      :update-available="isUpdateAvailable"
+      :refresh="reloadForUpdate"
     />
     <!--
       // why: WP-339 — a small, non-blocking post-match submission status. Shown
