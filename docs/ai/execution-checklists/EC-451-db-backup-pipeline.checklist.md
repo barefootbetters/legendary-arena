@@ -34,6 +34,8 @@
 - No file under `apps/server/**`, `packages/**`, or `data/migrations/**` is touched
 - No real secret value in any file — only `${{ secrets.NAME }}` references; assert `R2_BACKUP_BUCKET != 'legendary-images'` before upload
 - Do NOT change the DB `ipAllowList`; the workflow depends on the external URL being reachable
+- `pg_dump` version floor is ENFORCED at runtime: the workflow asserts the installed `pg_dump` major version and FAILS the run if `< 18` (defends the locked floor against a silent runner-image change — not merely an install step)
+- No hidden deliverables: produce ONLY the `## Files to Produce` set — do NOT create any extra file, script, workflow variant, test suite, doc, work packet, or decision record. An extra artifact is a FAIL; escalate through WP/EC governance rather than adding it
 
 ## Required `// why:` Comments
 - Cron time (`17 9`): why an off-the-hour minute (runner-contention avoidance)
