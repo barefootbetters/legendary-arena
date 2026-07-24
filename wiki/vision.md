@@ -21,7 +21,7 @@ source:
   - ../docs/12-SCORING-REFERENCE.md
   - ../docs/ai/ARCHITECTURE.md
   - ../docs/ai/DECISIONS.md
-last-reviewed: 2026-07-19
+last-reviewed: 2026-07-23
 ---
 
 # Vision
@@ -50,7 +50,7 @@ and every Work Packet.
 >   page is wrong.
 
 **Audience:** contributors, reviewers, operators, and designers who
-need the vision's shape without reading all 918 lines of it. Players
+need the vision's shape without reading all 1,053 lines of it. Players
 are served by the public game documentation, not this page.
 
 ## Mechanics
@@ -67,6 +67,14 @@ are served by the public game documentation, not this page.
   fairness, skill over grind, no pay-to-win; your results are yours and
   your data is portable. Close decisions break toward what a player who
   believed that promise would expect.
+- **The fantasy (emotional identity)** — beneath the rules and the
+  scoreboard, a *good-versus-evil Marvel power fantasy* with **heroic
+  momentum** as its felt core: team synergy building, the jolt of a
+  Master Strike, the swing of a last-turn rescue, the catharsis of a
+  Mastermind defeated. The experience should feel *authored*, not
+  generic. This is what the primary goals exist to protect, and what the
+  feel layer ([Design System Overview](design-system-overview.md))
+  operationalizes (VISION §North Star → The Fantasy, D-24235).
 - **Primary goals (never change)** — Rules Authenticity · Content
   Authenticity · Player Trust & Fairness · Faithful Multiplayer ·
   Longevity & Expandability.
@@ -323,7 +331,8 @@ Work-Packet pre-flight, and contributor onboarding.
   deviation from a secondary goal is recorded; D-0005 (§23b), D-0006
   (§25b), D-1004 (badge tiers), D-24092 (access model), D-24203
   (§12a data portability / infrastructure posture), D-24204 (North
-  Star, §10b, and what was kept out of the vision).
+  Star, §10b, and what was kept out of the vision), D-24235 (The
+  Fantasy — the game's articulated emotional identity).
 - **[05-ROADMAP.md](../docs/05-ROADMAP.md)** — carries the dated,
   explicitly non-binding 3–5 year success picture. The vision holds the
   durable statement of success; the roadmap holds the version that is
@@ -333,7 +342,7 @@ Work-Packet pre-flight, and contributor onboarding.
 
 The common misreadings, in the order they cause damage:
 
-- **This page is not the vision.** It compresses 918 lines into a map.
+- **This page is not the vision.** It compresses 1,053 lines into a map.
   Any decision, review, or Work-Packet gate reads
   [`docs/01-VISION.md`](../docs/01-VISION.md) itself — summaries drop
   the qualifying clauses that usually decide the question.

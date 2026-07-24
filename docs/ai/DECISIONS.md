@@ -31950,4 +31950,37 @@ listener registered in the factory + torn down in `stop()`), tests in
 `apps/arena-client/src/client/bgioClient.test.ts` (`createLiveClient
 spectator-staleness watchdog` suite).
 
+### D-24235 — VISION articulates the game's emotional identity ("The Fantasy"), operationalized by the feel layer
+
+**Context.** `docs/01-VISION.md` defined what the game *is* functionally (rules
+authenticity, fairness, faithful multiplayer, business survival) and the
+Player Promise (the trust contract), but never stated the *emotional* identity
+— what playing it should feel like. The feel-layer wiki arc (the Design System
+Overview's Soul / Authorial Voice principle, and the Visual / Audio / Dopamine /
+Narrative frameworks) is built to deliver an emotional identity the vision had
+not named. That left the highest-authority "what the game is" document silent
+on the thing the whole feel layer exists to protect.
+
+**Decision.** Add a short `### The Fantasy` subsection under North Star (after
+the Player Promise) naming the intended emotional identity: a good-versus-evil
+Marvel power fantasy with *heroic momentum* as its felt core (team synergy
+building, the jolt of a Master Strike, the swing of a last-turn rescue, the
+catharsis of a Mastermind defeated), and the requirement that the experience
+feel **authored** rather than generic. It ties the primary goals to the
+fantasy (authenticity / fairness / reliability make the fantasy trustworthy to
+invest in) and points to the feel layer's north star, the ewiki
+**Design System Overview**, as where the identity is operationalized.
+
+**Scope / guardrails.** This is an *articulation* of identity already implicit
+in the North Star and the Player Promise — it changes **no** primary goal, no
+non-goal, and no monetization boundary. It is IP-safe: it themes and archetypes,
+it does not reproduce Marvel text or art. Recorded here per the vision's
+"explicit decisions, no silent drift" norm and following the D-24204 precedent
+(vision-content decisions carry a D-entry). The parallel wiki edit keeps the
+ewiki `wiki/vision.md` summary in sync per that page's editing contract.
+
+**Landed:** 2026-07-23. Files: `docs/01-VISION.md` (North Star → The Fantasy),
+`wiki/vision.md` (summary + Interactions cross-link to the Design System
+Overview).
+
 Protect this file.
