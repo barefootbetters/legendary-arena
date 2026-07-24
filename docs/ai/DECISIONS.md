@@ -32149,4 +32149,61 @@ typecheck 0; arena-client suite green (+20 deployVersion / composable / banner t
 (`dist/version.json` emitted). `D-24026` live-verify operator-pending on deploy (a
 mid-match deploy surfaces the refresh banner; clicking it recovers the tab).
 
+### D-24239 — Bot-ally `driving` is liveness-aware; a cap-stranded active match settles to a surfaced fault
+
+**Status:** Active (post-execution).
+
+**Context.** A live diagnostic (match `vMxtCoOZDFj`, 2026-07-24) showed a bot-ally match
+frozen on the bot's turn 1 while `GET /api/match/:matchId/bot-ally-status` reported
+`{ driving: true, status: 'active' }`. The driver's fault machinery is bounded (a genuine
+wedge faults within seconds via the step cap / submit-retry budget), so a match stuck
+`active` for 30+ minutes means **no driver is actually running** — the in-process
+`BotAllyDriver` was destroyed (a redeploy — plausibly the WP-418 merge's own Render
+redeploy) and `active` is merely the driver's *creation* status, never overwritten. Two
+defects turned that driver-loss into a silent permanent freeze:
+
+1. **The status endpoint trusted the flag over liveness.** `driving` was `row.status ===
+   'active'` with no check that a live driver actually exists, so a dead-but-active match
+   reported healthy. Because the WP-415 stall banner renders only on `driving:false`, the
+   human sat frozen on the bot's turn with **no signal and no escape** — the reported "froze
+   again."
+2. **A cap-stranded active row was left un-surfaced.** A match that keeps losing its driver
+   before completing a single bot turn burns all `MAX_REVIVALS` revivals (the driver's
+   reset-on-first-turn never fires), then `readRevivableBotAllyMatches` excludes it
+   (`revive_count < MAX_REVIVALS`). It is then never revived AGAIN yet stays `active` — the
+   worst state: un-revived and (before fix 1) un-surfaced.
+
+**Decision.**
+- **Liveness-aware `driving`.** The `bot-ally-status` route now reports
+  `driving: row.status === 'active' && botAllyDrivers.has(matchId)`. `botAllyDrivers` is the
+  process's live-driver registry (set on create/revive, deleted on EVERY teardown), so `.has`
+  is the liveness signal. A driverless `active` match reports `driving:false` → the WP-415
+  banner surfaces (its `hasStopped = driving===false && status not completed/absent` is then
+  true) → the human is told and can Return to lobby. The response shape and `guest` auth are
+  unchanged (so no `api-endpoints.md` row change). **Single-instance deployment assumed** —
+  the status route and the driver run in the same process; a DB liveness heartbeat is the
+  multi-instance answer, deferred.
+- **Strand→faulted at boot.** `rehydrateBotAllyDrivers` now calls `settleStrandedActiveMatches`
+  after the revival pass: `readStrandedActiveBotAllyMatches` reads `status='active' AND
+  revive_count >= MAX_REVIVALS`, and each such row with **no live driver** (a row this boot's
+  revival just re-registered has one, so it is skipped) is settled — `completed` when its game
+  already ended, else `faulted` with the public-safe `BOT_FAULTED_MESSAGE` (WP-261 / D-24037).
+  So a genuinely-doomed match settles to a *surfaced* fault instead of a silent `active`, and
+  the DB bookkeeping becomes honest.
+
+**Explicitly NOT changed.** The revival-cap read/increment logic
+(`readRevivableBotAllyMatches`, `markBotAllyMatchRevived`) — tuned by the 2026-07-23 hotfix
+against an OOM restart loop — is untouched. Recovering a genuinely-drivable capped match (re-
+driving instead of faulting) is a named follow-up; it fights the OOM-loop constraint the cap
+exists for. `exhausted` (a legitimate 400-turn game) is NOT in the strand set.
+
+**Invariants preserved.** Server orchestration only — no `G`/`ctx`/RNG/determinism/persistence
+change; `driving` is a read-derivation; the fault copy is verbatim public-safe; the response
+shape + auth are unchanged.
+
+**Packet:** WP-419 + EC-454. **Drafted + Executed:** 2026-07-24. Bot-ally route suite 31/0 (5
+new/updated); full server suite green (927/0 + DB-gated skips); `pnpm -r --no-bail test` green
+repo-wide (0 fail); `pnpm -r build` 0. `D-24026` live-verify operator-pending on deploy (a
+driverless bot-ally match reports `driving:false` and surfaces the banner; a healthy one does not).
+
 Protect this file.
