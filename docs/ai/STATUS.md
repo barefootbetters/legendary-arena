@@ -7,6 +7,46 @@
 
 ## Current State
 
+### WP-418 / EC-453 — "New Version — Refresh" Prompt + Reconnect-Gap Audit (D-24238) (2026-07-24)
+
+**`User-Visible Surface = play.legendary-arena.com`.** Kills the **deploy-mid-match
+freeze**. When a deploy lands mid-match, Cloudflare Pages swaps the hashed asset
+chunks the open tab references, so a lazy-loaded chunk 404s and the board freezes /
+paints blank tiles ("froze again"). This is the classic **stale-SPA-after-deploy** —
+NOT engine logic. The reconnect stack (D-24232 reconnect-resync, WP-311 `resync()`,
+WP-312 move-ack watchdog, D-24234 spectator-staleness watchdog) re-anchors **match
+state** but **cannot** fix a stale JS **bundle** — only a page reload does, and no
+layer offered one. This packet adds that missing layer (client only):
+
+1. **Detect (A + B; C rejected).** The build emits a tiny `version.json`
+   (`{ gitSha }`) via a Vite plugin (`emitVersionJsonPlugin`) that **reuses the
+   `gitSha` already captured** in `vite.config.ts` (no second git call, no npm dep;
+   `configureServer` serves it in dev). The play surface polls it (`cache: 'no-store'`)
+   and compares against the baked `__GIT_SHA__` via the pure `isNewerBuildAvailable`.
+   A `window` `vite:preloadError` (a chunk 404) also flips the flag immediately and
+   `preventDefault`s the white-screen. Server-reports-its-build (C) is rejected —
+   Pages and Render deploy independently, so the server SHA ≠ the client bundle SHA.
+2. **Triggers.** `useDeployVersionCheck` re-checks on mount, tab-focus
+   (`visibilitychange`), **socket reconnect** (a WP-311 `connection` store
+   `isConnected` false→true edge — **reused**, not a second socket listener), and a
+   ~60s backstop. Fail-soft; latches once; timer `unref`'d + listeners cleared on unmount.
+3. **Prompt.** `UpdateAvailableBanner.vue` (read-only, `role="status"`, glyph + text,
+   keyboard-reachable) renders a **user-initiated "Refresh now"** (`location.reload()`,
+   prop-drilled from the `PlayViewport` 01.5 host) + a dismiss. **Never** an auto /
+   forced reload (that would discard an in-progress action; an auto-reload-when-safe
+   path is a deferred sub-fork).
+
+**Reconnect-gap audit:** D-24232's resync still covers the pure transport-drop case;
+a stale **bundle** is out of resync's reach **by design** (it re-anchors `_stateID`,
+not JS chunks) — this reload prompt is that missing layer. The resync / watchdog
+stack is **not** refactored or duplicated. Pure arena-client presentation + one
+build-config emit; no engine / server / registry change; no runtime `registry` /
+`server` import; §21 N/A (`version.json` is a static client-origin asset). arena-client
+typecheck 0; suite green (+20 `deployVersion` / composable / banner tests, 1082/0);
+`pnpm -r --no-bail test` green repo-wide (0 fail; server DB-gated tests skip);
+`pnpm -r build` 0 (`dist/version.json` emitted). **D-24026 live-verify operator-pending
+on deploy** (a mid-match deploy surfaces the refresh banner; clicking it recovers the tab).
+
 ### WP-417 / EC-452 — Every Played Card Prints Its Effect and the Action Taken (D-24237) (2026-07-24)
 
 **`User-Visible Surface = play.legendary-arena.com` (the Game Log panel + WP-322

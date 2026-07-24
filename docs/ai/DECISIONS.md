@@ -32083,4 +32083,70 @@ heuristic is untouched.
 (new `logDisplay` / `revealLog` / handler-log tests); `pnpm -r --no-bail test` green
 repo-wide (0 fail); `pnpm -r build` 0. `D-24026` live-verify operator-pending on deploy.
 
+### D-24238 — A deployed-build check offers a user-initiated refresh (resync can't fix a stale bundle)
+
+**Status:** Active (post-execution).
+
+**Context.** A deploy that lands mid-match freezes an already-open play tab, which
+can render blank tiles ("froze again"). The root cause is NOT engine logic — it is
+the classic **stale-SPA-after-deploy**: Cloudflare Pages swaps the hashed asset
+chunks, so the open tab's `index.html` references chunk URLs that now 404 and any
+lazy-loaded component fails. A full match on a **fresh** tab plays end-to-end clean,
+confirming the class. The existing reconnect stack (D-24232 reconnect-resync, WP-311
+`resync()`, WP-312 / D-24097 move-ack watchdog, D-24234 spectator-staleness watchdog)
+re-anchors **match state** but **cannot** fix a stale JS **bundle** — only a page
+reload does. That reload layer did not exist; the running tab had no way to learn a
+newer build was live.
+
+**Decision.**
+- **Detect a newer build two ways (A + B; C skipped).**
+  - **A (proactive poll).** The arena-client build emits a tiny `version.json`
+    (`{ "gitSha": "…" }`) into its output via a Vite plugin (`emitVersionJsonPlugin`,
+    `generateBundle`) that **reuses the `gitSha` already captured** in
+    `vite.config.ts` (no second git call, no new dependency); `configureServer`
+    serves the same file in dev. The play surface fetches it (`cache: 'no-store'` —
+    the cache-bust) and compares against the baked `__GIT_SHA__` via the pure
+    `isNewerBuildAvailable(baked, fetched)` (true iff both non-empty and differ).
+  - **B (reactive catch).** A `window` `vite:preloadError` (an old hashed chunk 404
+    after a deploy) flips the flag immediately AND `preventDefault`s the default
+    white-screen — the belt-and-suspenders that catches the ACTUAL failure mode.
+  - **C (server reports its build) is rejected:** the client (Pages) and server
+    (Render) deploy independently, so the server SHA ≠ the client bundle SHA — it
+    cannot tell the client its bundle is stale.
+- **Triggers (event-driven + a backstop).** The check runs on mount, on tab-focus
+  (`visibilitychange`→visible), on **socket reconnect** — a `connection` store
+  `isConnected` false→true edge, **reusing the WP-311 store rather than adding a
+  second socket listener** (the resync stack is not duplicated) — and a low ~60s
+  `setInterval` backstop.
+- **User-initiated reload only.** `UpdateAvailableBanner.vue` (read-only, `role="status"`,
+  glyph + text, keyboard-reachable) renders on the play surface with a **Refresh now**
+  button (`window.location.reload()`, prop-drilled from the `PlayViewport` host per
+  the `ConnectionStatusBanner`/`resync` pattern) + a dismiss control. The reload is
+  **never automatic** — a forced reload mid-turn would discard an in-progress action
+  and read as hostile. An auto-reload-when-safe path (only when it is NOT the viewer's
+  turn and no move is pending) is a named **sub-fork**, deferred.
+- **Fail-soft.** A failed / missing / unparseable `version.json` fetch resolves to
+  `null` and shows nothing — a network blip is never a false "update available."
+
+**Reconnect-gap audit.** D-24232's reconnect-resync still covers the pure
+transport-drop case (the socket goes down on a server restart, then reconnects); a
+stale **bundle** is out of resync's reach **by design** (resync re-anchors `_stateID`,
+it does not re-fetch JS chunks). This packet's reload prompt is precisely that missing
+layer. The resync / watchdog stack is **not** refactored or duplicated.
+
+**Layer / boundary.** Pure arena-client presentation + one build-config emit. No
+engine / server / registry change; no runtime `registry`/`server` import; no new npm
+dependency; `version.json` is a static client-origin asset, not an `apps/server` HTTP
+endpoint (§21 N/A — no `api-endpoints.md` row).
+
+**Invariants preserved.** No `G` / `ctx` / RNG / determinism / persistence surface
+touched; no `lagn-v1.json` schema drift. The banner never mutates match state and
+never gates a move the engine would accept.
+
+**Packet:** WP-418 + EC-453. **Drafted + Executed:** 2026-07-24. arena-client
+typecheck 0; arena-client suite green (+20 deployVersion / composable / banner tests,
+1082/0); `pnpm -r --no-bail test` green repo-wide (0 fail); `pnpm -r build` 0
+(`dist/version.json` emitted). `D-24026` live-verify operator-pending on deploy (a
+mid-match deploy surfaces the refresh banner; clicking it recovers the tab).
+
 Protect this file.
