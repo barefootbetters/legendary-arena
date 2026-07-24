@@ -35,6 +35,10 @@ last-reviewed: 2026-07-23
 > [DECISIONS.md](../docs/ai/DECISIONS.md); if this box ever becomes production
 > topology, that needs its own Work Packet and `DECISIONS` entry. This page
 > defines nothing and governs nothing — it is a walkthrough.
+>
+> **This lab exists to build operator capability and generate objective
+> measurements. It does not constitute a recommendation to leave Render, nor
+> does it establish future production architecture.**
 
 ## Summary
 
@@ -43,8 +47,10 @@ purely as an operator lab: a place to build **portable Ubuntu/Linux operations
 skill**, run a **staging copy** of `apps/server` the project does not otherwise
 have, and **rehearse the risky parts of a possible future migration** (self-hosted
 Postgres backup/restore, cross-provider database latency) without ever putting
-production at risk. The value is capability and a de-risked decision — the modest
-monthly delta versus Render is not the point.
+production at risk. Its purpose is to develop portable Linux-operations
+expertise, validate future architectural options through measurement, and reduce
+migration risk through rehearsal. Cost savings are a secondary benefit, not a
+justification for any production infrastructure change.
 
 ## Mechanics
 
@@ -59,6 +65,13 @@ monthly delta versus Render is not the point.
   (`ipAllowList: ['0.0.0.0/0']` in `render.yaml`), which makes it *reachable* from
   a droplet — treat that as a footgun, not an invitation. The lab always runs
   against a **copy** of the data (see Restore drill below).
+
+The Postgres installed on the lab (Base stack §2) exists **solely to support
+backup, restore, and operational-training exercises**. Its presence does not
+imply that self-hosted Postgres is the preferred future production architecture —
+that question is open (see Open Questions), and the [Architecture
+Inventory](architecture-inventory.md) records that production Postgres is Render-
+managed today.
 
 ### Why "the server is relocatable at all"
 
@@ -161,6 +174,62 @@ pg_restore -d la_restore_test /tmp/la-lab.dump     # restore
 # clean against the restored copy. A restore you have not tested is not a backup.
 ```
 
+### 6 — Disaster-recovery exercise (full rebuild from docs)
+
+The restore drill proves the data; this proves the *whole procedure*. At least
+once, destroy the entire lab host and rebuild it using only what is written down —
+no memory, no undocumented step. It surfaces the hidden assumptions a partial
+drill leaves buried. A rebuild has demonstrated recovery when a fresh host is
+provisioned, the app redeployed, Postgres restored from a backup, TLS
+re-established, and `/health` returns green — all from the documented steps alone.
+Backups are only proven after a full recovery has actually been demonstrated.
+
+### Ownership boundary (what a self-managed move would transfer)
+
+Render currently owns, and a move to a self-managed droplet would transfer to the
+operator, each of the following:
+
+- Host maintenance and OS/kernel security patching
+- Service lifecycle (restarts, health recovery, deploy pipeline)
+- Managed Postgres operations (tuning, connection management, version upgrades)
+- Backup infrastructure and point-in-time recovery
+- Service monitoring and alerting
+- Platform-level security updates
+
+This list is the operational cost side of any migration. Per the Summary, cost
+reduction alone is not treated as a sufficient reason to accept that transfer.
+
+### What a successful lab looks like
+
+Descriptive, not a pass/fail gate: the lab has served its purpose once the
+operator can, unaided —
+
+- provision a fresh Ubuntu host from scratch,
+- deploy `apps/server` against a lab database,
+- perform a complete Postgres backup **and** restore,
+- recover the host after a simulated failure (the §6 rebuild),
+- rotate TLS certificates and application secrets,
+- measure and document app↔database latency (Mechanics §4), and
+- patch and maintain the host across at least one release cycle.
+
+An open-ended lab with no sense of "done learning" tends to linger; this is the
+capability set that says the learning goal has been met.
+
+### Future architecture candidates (evaluation out of scope)
+
+The lab is the instrument for *evaluating* — not selecting — where the workloads
+could run. The candidates it exists to measure against each other:
+
+- **A — Render server + Render Postgres.** Current production.
+- **B — Ubuntu server + Render Postgres.** Stateless-server move only; managed DB
+  retained. Introduces the cross-provider app↔DB hop the §4 probe measures.
+- **C — Ubuntu server + managed Postgres (co-located).** Self-hosted app tier,
+  DB still managed, app and DB back on one fast private network.
+- **D — Ubuntu app server + Ubuntu database server.** Fully self-managed.
+
+Choosing among these is explicitly outside this page's scope; it would be the
+subject of a future migration Work Packet and `DECISIONS` entry.
+
 ## Interactions
 
 - **[Architecture & Library Adoption Inventory](architecture-inventory.md)** —
@@ -213,9 +282,14 @@ pg_restore -d la_restore_test /tmp/la-lab.dump     # restore
 
 - **Production disposition is undecided.** Whether any workload should leave Render
   is not recorded in [DECISIONS.md](../docs/ai/DECISIONS.md). This lab is
-  exploratory. Promoting it to production topology would require a Work Packet, a
-  `DECISIONS` entry, and a check against the server-layer boundary in
-  [`.claude/rules/architecture.md`](../.claude/rules/architecture.md).
+  exploratory. Promoting it to production topology would require, at minimum: an
+  approved migration Work Packet; a corresponding `DECISIONS` entry; validated
+  backup and restore procedures (Mechanics §5–6); documented production monitoring;
+  documented **and tested** rollback procedures; the operational-burden transfer
+  (see Ownership boundary) explicitly accepted by the operator; and a check against
+  the server-layer boundary in
+  [`.claude/rules/architecture.md`](../.claude/rules/architecture.md). These are the
+  conditions a move would have to clear — not a commitment that it will happen.
 - **Managed vs self-hosted Postgres for any eventual co-located phase** — open. The
   lab exists partly to answer it with a rehearsed restore rather than a guess.
 - **The latency threshold that would make a stateless-server move acceptable** —
