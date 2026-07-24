@@ -28,7 +28,7 @@ source:
   - ../packages/game-engine/src/endgame/endgame.types.ts
   - ../docs/ai/ARCHITECTURE.md
   - ../docs/01-VISION.md
-last-reviewed: 2026-07-22
+last-reviewed: 2026-07-24
 ---
 
 # Narrative Psychology Framework
@@ -158,6 +158,9 @@ Narrative framing is layered in this order rather than all at once:
 - Per-actor archetype framing (who is acting, from identity the client
   already holds)
 - Team leitmotif / nostalgia identity (via [Music Authoring](music-authoring.md))
+- The [synergy call-out ladder](#synergy-callouts) + Arena Announcer —
+  naming the player's chain reactions (**Combo! → Team-Up! →
+  Unstoppable! → LEGENDARY!**)
 
 **Tier 3 — The Playstyle lens & depth**:
 
@@ -240,6 +243,86 @@ a board. The moment-to-moment tracking of that agency against rising challenge
 is the [flow-channel map](dopamine-triggers.md#flow-channel) on the Dopamine
 page.
 
+### Synergy call-outs — naming the chain {#synergy-callouts}
+
+When a play detonates a chain of hero abilities, the engine already
+counts the chain, and the [visual](visual-effects.md#combo-signal) and
+[audio](sound-effects.md#tiered-combo) layers already escalate a flash and
+a sting with it. This section adds the **meaning** layer to that same
+moment: a **named call-out** that shouts *what the player just did* — the
+Legendary-Arena answer to *Candy Crush*'s **"Sweet! → Tasty! → Delicious!
+→ Divine!"**, the escalating labels Mr. Toffee announces as a cascade
+grows.
+
+Why a *word* matters where a particle burst does not:
+
+- **It makes mastery legible.** A burst says "big"; a word says "you
+  pulled off a **Team-Up**." The escalating combo is the deck-builder's
+  deepest reward — the [dopamine page's](dopamine-triggers.md) tier-3
+  "I *built* this" feel — and a **name** is what the player repeats,
+  screenshots, and chases.
+- **It is comic-book-native.** The escalating splash-panel exclamation is
+  the genre's own grammar. A rising **"Combo! → Unstoppable! →
+  LEGENDARY!"** reads as a comic hero-moment, not a match-3 sweet — the
+  same beat, re-voiced into *this* mythology (the
+  [authorial-voice](#authorial-voice) test: every beat should feel like it
+  belongs to this game).
+- **The apex *is the brand.*** The rarest rung lands on the game's own
+  word — **LEGENDARY!** — so the biggest synergy a player ever pulls says
+  the title of the game back to them. That is the tightest single line of
+  narrative-mechanical alignment in the whole feel layer.
+
+**The default heroic ladder** (a naming proposal; the tier boundaries are
+the locked [Combo Tier Contract](visual-effects.md#combo-tier-contract),
+not this page's to move):
+
+| Chain (`lastPlayEffectsFired`) | Call-out | The beat it names |
+|---|---|---|
+| `1` | **Combo!** | your play connected |
+| `2` | **Team-Up!** | two heroes clicked — the core Marvel fantasy |
+| `>= 3` | **Unstoppable!** | you built a real engine |
+| (reserved apex) | **LEGENDARY!** | the rare, celebrated crescendo — the brand word |
+
+The words are a first proposal — the concrete copy artifact this hook owes,
+exactly like the [per-event narrative copy](#decisions-pending). Alternates
+in the same register: *Synergy!, Rally!, Blitz!, Rampage!, Crescendo!*
+Whatever the final set, it takes the same [IP pass](#ip-boundary-mandatory)
+as all narrative copy — generic superlatives are fine; a trademarked team
+or character name as a label word is not. The apex **LEGENDARY!** rung is
+**reserved**: it needs a fourth shared combo tier, decided on the
+[Visual Effects side](visual-effects.md#synergy-callout) so the label and a
+matching sting arrive together — never a label-only threshold.
+
+#### The announcer — an original "Arena" voice, not a borrowed one {#arena-announcer}
+
+*Candy Crush*'s call-outs are inseparable from **Mr. Toffee's** voice: the
+label and the vocal are one recognizable brand asset. The equivalent here
+is a house **Arena Announcer** — an original esports-caster / comic-splash
+narrator persona that voices the ladder (**"Combo!" … "Team-Up!" …
+"LEGENDARY!"**). Two hard constraints:
+
+- **Original, not an impression.** The announcer is *not* a Marvel
+  character and never imitates one — no character voice, catchphrase, or
+  name. It is the arena's own host, which keeps it clear of the
+  [IP boundary](#ip-boundary-mandatory) and lets it become *our*
+  recognizable asset (the [Soul / Authorial Voice](#authorial-voice) test:
+  a signature a player learns to recognize as *this* game).
+- **v1 is the on-screen word; the voice is an enhancement.** The text
+  call-out is buildable today on the live combo scalar (it rides the
+  shipped [`useComboCue`](visual-effects.md#combo-signal) pattern). A
+  *voiced* announcer is an added audio layer on
+  [Sound Effects](sound-effects.md#tiered-combo) — recorded VO or a
+  synthesized voice, layered over (or in place of) the existing
+  `combo-small/medium/big` stings — and can follow later without blocking
+  the label.
+
+Under the [Playstyle lens](#playstyle-modes) the ladder and the announcer
+re-theme with everything else: the **destroyer** skin swaps the heroic
+ladder for a conquest one (e.g. *Strike! → Havoc! → Domination! →
+CATACLYSM!*) in a harsher announcer register — same locked tiers, same
+scalar, pure re-skin. That variant is **Tier 3 / out of v1 scope**, like
+the rest of the lens.
+
 ### Playstyle Modes — the builder / destroyer lens {#playstyle-modes}
 
 The sharpest narrative idea in scope: capitalize on **both** player
@@ -303,7 +386,15 @@ Playstyle Modes lens toggle.
   narrative device as much as an audio one — team-keyed motifs are the
   nostalgia and identity hook made audible.
 - **[Visual Effects](visual-effects.md).** Owns the mechanics of the
-  builder/destroyer re-theme; this page owns its narrative rationale.
+  builder/destroyer re-theme and of the
+  [synergy call-out](visual-effects.md#synergy-callout) render (the label
+  keyed to the locked combo tier); this page owns their narrative rationale
+  and the [naming ladder](#synergy-callouts).
+- **[Sound Effects](sound-effects.md).** The audio twin of the call-out:
+  the escalating [combo cue](sound-effects.md#tiered-combo) is the sting
+  the label rides, and the voiced [Arena Announcer](#arena-announcer) — the
+  *Candy Crush* Mr.-Toffee analog — would layer on that page's audio
+  engine.
 - **[Master Strike](master-strike.md)** and **[Villain Deck](villain-deck.md).**
   The engine subsystems that produce the antagonist beats (Strike, Twist,
   Ambush) the good-versus-evil arc is built from.
@@ -385,6 +476,18 @@ Open choices a Work Packet must resolve (not recommendations):
 - **Per-event narrative copy** — the concrete artifact this framework owes:
   a heroic-lens and a destroyer-lens copy line per spine event, keyed by
   acting entity where identity is known.
+- **Synergy call-out wording** ([synergy call-outs](#synergy-callouts)) —
+  lock the heroic ladder (the **Combo! / Team-Up! / Unstoppable!**
+  proposal, or an alternate), and decide whether the label starts at the
+  `small` tier or holds until `medium` for restraint (the *flash* fires at
+  `small` either way — a [Visual Effects](visual-effects.md#synergy-callout)
+  cross-decision). The apex **LEGENDARY!** rung is gated on the shared
+  fourth-tier decision on that same page.
+- **Arena Announcer — voiced in v1, or text-first?**
+  ([the announcer](#arena-announcer)) The on-screen word ships without it;
+  a voiced call-out is an [audio-layer](sound-effects.md#tiered-combo)
+  enhancement. Decide recorded VO vs a synthesized voice — either way an
+  **original** persona, never a Marvel-character impression (IP pass).
 - **How deep does the villain power-fantasy go?** A pure re-theme (v1) vs a
   genuine "play as the villains" mode is a design fork — the re-theme is in
   scope now; the full mode is a larger, separate question.
@@ -398,6 +501,13 @@ Out of scope for v1:
 - **Villain-escape narration** — the "the villain got away" beat is blocked
   on the engine emitting `escapeResolved` (WP-186 / D-20001); it has no
   client hook today.
+- **Destroyer-lens call-out variant** — the villain-themed synergy ladder
+  and announcer register (e.g. *Strike! → Havoc! → CATACLYSM!*) is part of
+  the [Playstyle lens](#playstyle-modes) re-skin; Tier 3, v1 ships the
+  single heroic ladder.
+- **Voiced Arena Announcer** — the recorded/synthesized
+  [announcer VO](#arena-announcer) is a follow-on audio layer; v1 is the
+  on-screen word riding the shipped combo scalar.
 
 ## References
 
