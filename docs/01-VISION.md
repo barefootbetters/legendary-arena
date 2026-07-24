@@ -1,6 +1,6 @@
 # Legendary Arena — Vision & Direction
 
-> **Last updated:** 2026-07-19
+> **Last updated:** 2026-07-23
 
 ## Purpose
 
@@ -38,6 +38,25 @@ Success means:
 Every clause below is downstream of that promise. When a decision is
 genuinely close, the tiebreaker is which option a player who believed
 this promise would expect us to choose.
+
+### The Fantasy
+
+Beneath the rules and the scoreboard, Legendary Arena is a **good-versus-evil
+Marvel power fantasy**: you assemble a team of iconic heroes and, turn by
+turn, push back a Mastermind's scheme before the city falls. The intended
+emotional identity is *heroic momentum* — a team finding its synergy, the
+jolt of a villain's Master Strike, the swing of a last-turn rescue, and the
+earned catharsis of a Mastermind brought down. The experience should feel
+**authored**, not generic: distinctive in look and sound, specific to *this*
+mythology, and carried with visible care in the small details that make a
+moment land. This is the felt experience the primary goals exist to protect —
+authenticity, fairness, and reliability are what make the fantasy trustworthy
+enough to invest in. The fantasy is operationalized by the **feel layer**;
+[Design System Overview](../wiki/design-system-overview.md) is its north star,
+tying together what the game shows (juice), plays (audio), rewards (dopamine),
+and means (narrative). This articulates identity already implicit in the
+North Star and the Player Promise; it changes no primary goal, non-goal, or
+monetization boundary (D-24235).
 
 ---
 
