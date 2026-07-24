@@ -163,6 +163,84 @@ describe('bgioPgStore — transient write tolerance (no database)', () => {
   });
 });
 
+describe('bgioPgStore — transient read tolerance (no database)', () => {
+  // why: the READ-path mirror of the write-tolerance suite. bgio calls `fetch`
+  // from an UNGUARDED `Master.onSync` socket handler; a thrown transient read
+  // crashed the WHOLE server when the DB was briefly unreachable (ECONNREFUSED,
+  // observed 2026-07-24). fetch must retry a transient error and then return the
+  // missing-row shape (`{}`) instead of throwing.
+  function codedError(message: string, code: string): Error {
+    const error = new Error(message) as Error & { code: string };
+    error.code = code;
+    return error;
+  }
+
+  test('fetch swallows a persistent transient (ECONNREFUSED) error and returns the missing-row shape', async () => {
+    let calls = 0;
+    const downPool = {
+      async query() {
+        calls += 1;
+        throw codedError('connect ECONNREFUSED 10.0.0.1:5432', 'ECONNREFUSED');
+      },
+    };
+    const store = createBgioPgStore(downPool as never);
+    let result: unknown;
+    await assert.doesNotReject(async () => {
+      result = await store.fetch('m1', { state: true });
+    });
+    assert.deepEqual(result, {}, 'returns the empty not-found shape, never throws into onSync');
+    assert.ok(calls > 1, 'it retried the transient error before giving up');
+  });
+
+  test('listMatches swallows a persistent transient (recovery-mode) error and returns an empty list', async () => {
+    const downPool = {
+      async query() {
+        throw codedError('the database system is in recovery mode', '57P03');
+      },
+    };
+    const store = createBgioPgStore(downPool as never);
+    let ids: unknown;
+    await assert.doesNotReject(async () => {
+      ids = await store.listMatches();
+    });
+    assert.deepEqual(ids, []);
+  });
+
+  test('a transient read that clears mid-retry returns the real row (no data lost)', async () => {
+    let calls = 0;
+    const flakyPool = {
+      async query() {
+        calls += 1;
+        if (calls === 1) {
+          throw codedError('connect ECONNREFUSED 10.0.0.1:5432', 'ECONNREFUSED');
+        }
+        return {
+          rows: [
+            { state: sampleState, initial_state: sampleState, metadata: sampleMetadata, log: [] },
+          ],
+        };
+      },
+    };
+    const store = createBgioPgStore(flakyPool as never);
+    const result = await store.fetch('m1', { state: true });
+    assert.deepEqual(result, { state: sampleState });
+    assert.ok(calls > 1, 'it retried past the first transient failure');
+  });
+
+  test('a NON-transient coded read error still throws the wrapped message (real bugs surface)', async () => {
+    const missingTablePool = {
+      async query() {
+        throw codedError('relation "bgio.matches" does not exist', '42P01');
+      },
+    };
+    const store = createBgioPgStore(missingTablePool as never);
+    await assert.rejects(
+      () => store.fetch('m1', { state: true }),
+      /bgioPgStore\.fetch failed to read match "m1".*does not exist/s,
+    );
+  });
+});
+
 describe('bgioPgStore — database-backed (WP-309 / EC-339)', () => {
   let testPool: pg.Pool | null = null;
   let store: ReturnType<typeof createBgioPgStore> | null = null;

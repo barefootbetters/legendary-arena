@@ -66,6 +66,9 @@ const TRANSIENT_DB_ERROR_CODES = new Set([
   '08000', // connection_exception
   'ECONNRESET', // socket reset by the backend
   'ETIMEDOUT', // socket timeout
+  'ECONNREFUSED', // nothing listening at host:port — DB down / crashed / restarting (observed 2026-07-24)
+  'EPIPE', // broken pipe — connection torn down mid-query
+  'ENOTFOUND', // DB hostname transiently unresolvable during a DB restart/failover
 ]);
 
 /** Bounded retry budget + base back-off for a transient write failure. */
@@ -143,6 +146,63 @@ async function runResilientWrite(operation, buildErrorMessage, description) {
             `transient retries; keeping the server up, write dropped: ${detail}`,
         );
         return;
+      }
+    }
+  }
+}
+
+/** Bounded retry budget + base back-off for a transient read failure. */
+const BGIO_READ_ATTEMPTS = 4;
+const BGIO_READ_RETRY_BASE_MS = 300;
+
+/**
+ * Runs a store READ with transient-fault tolerance — the read-side mirror of
+ * {@link runResilientWrite}. On a TRANSIENT error it retries with bounded
+ * back-off; if it still fails after the budget it LOGS and RETURNS `emptyResult`
+ * (swallows) instead of throwing. On a NON-transient error it throws the wrapped
+ * message immediately (unchanged behavior — real bugs still surface).
+ *
+ * // why: boardgame.io invokes `fetch` from an UNGUARDED async socket handler
+ * (`Master.onSync`, when a client connects/re-syncs). A thrown read propagated
+ * into an unhandled rejection and crashed the WHOLE server when the DB was
+ * briefly unreachable — `connect ECONNREFUSED :5432` (observed 2026-07-24, the DB
+ * instance down/restarting) → process crash → "Failed to load rules" restart
+ * loop, one transient blip taking down every match. Returning fetch's documented
+ * missing-row shape (`{}`) / listMatches' empty list keeps the server up; the
+ * client's next sync re-reads the real row once the DB recovers, and the #947
+ * spectator/reconnect resync drives that re-read. This closes the read half of
+ * the crash the WRITE half (runResilientWrite) already closed.
+ *
+ * @param {() => Promise<T>} operation - The pool.query read + row mapping.
+ * @param {(error: unknown) => string} buildErrorMessage - Wrapped-error text for
+ *   the non-transient throw path (preserves the existing full-sentence message).
+ * @param {string} description - Short label for the transient-retry log lines.
+ * @param {T} emptyResult - The safe value returned after the retry budget is
+ *   exhausted (fetch: `{}` = not-found; listMatches: `[]`).
+ * @returns {Promise<T>}
+ * @template T
+ */
+async function runResilientRead(operation, buildErrorMessage, description, emptyResult) {
+  for (let attempt = 1; attempt <= BGIO_READ_ATTEMPTS; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      if (!isTransientDbError(error)) {
+        throw new Error(buildErrorMessage(error));
+      }
+      const detail = error instanceof Error ? error.message : String(error);
+      if (attempt < BGIO_READ_ATTEMPTS) {
+        console.error(
+          `[bgio-store] ${description} transient failure ` +
+            `(attempt ${attempt}/${BGIO_READ_ATTEMPTS}); retrying: ${detail}`,
+        );
+        await delayMs(BGIO_READ_RETRY_BASE_MS * attempt);
+      } else {
+        console.error(
+          `[bgio-store] ${description} still failing after ${BGIO_READ_ATTEMPTS} ` +
+            `transient retries; keeping the server up, returning empty: ${detail}`,
+        );
+        return emptyResult;
       }
     }
   }
@@ -307,44 +367,54 @@ export function createBgioPgStore(pool) {
      * @returns {Promise<object>} The requested fields.
      */
     async fetch(matchID, opts) {
-      let queryResult;
-      try {
-        queryResult = await pool.query(
-          `SELECT state, initial_state, metadata, log
-             FROM bgio.matches
-            WHERE match_id = $1`,
-          [matchID],
-        );
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        throw new Error(
-          `bgioPgStore.fetch failed to read match "${matchID}" from bgio.matches. ` +
+      // why: routed through runResilientRead so a TRANSIENT DB blip (ECONNREFUSED
+      // / recovery / read-only) retries and then returns the missing-row shape
+      // instead of throwing into boardgame.io's UNGUARDED Master.onSync handler
+      // and crashing the whole server (observed 2026-07-24). A NON-transient
+      // error (e.g. missing schema) still throws the wrapped message below.
+      return runResilientRead(
+        async () => {
+          const queryResult = await pool.query(
+            `SELECT state, initial_state, metadata, log
+               FROM bgio.matches
+              WHERE match_id = $1`,
+            [matchID],
+          );
+          const result = {};
+          if (queryResult.rows.length === 0) {
+            return result;
+          }
+          const row = queryResult.rows[0];
+          // why: jsonb columns come back already parsed by node-pg, so no
+          // JSON.parse is needed. Each key is set only when the caller requested
+          // it, matching boardgame.io's fetch contract (unrequested fields absent).
+          if (opts.state === true) {
+            result.state = row.state;
+          }
+          if (opts.metadata === true) {
+            result.metadata = row.metadata;
+          }
+          if (opts.log === true) {
+            result.log = row.log !== null ? row.log : [];
+          }
+          if (opts.initialState === true) {
+            result.initialState = row.initial_state;
+          }
+          return result;
+        },
+        (error) => {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          return (
+            `bgioPgStore.fetch failed to read match "${matchID}" from bgio.matches. ` +
             `Check that the bgio schema migration has been applied and the database is reachable. ` +
-            `Error: ${errorMessage}`,
-        );
-      }
-
-      const result = {};
-      if (queryResult.rows.length === 0) {
-        return result;
-      }
-      const row = queryResult.rows[0];
-      // why: jsonb columns come back already parsed by node-pg, so no
-      // JSON.parse is needed. Each key is set only when the caller requested
-      // it, matching boardgame.io's fetch contract (unrequested fields absent).
-      if (opts.state === true) {
-        result.state = row.state;
-      }
-      if (opts.metadata === true) {
-        result.metadata = row.metadata;
-      }
-      if (opts.log === true) {
-        result.log = row.log !== null ? row.log : [];
-      }
-      if (opts.initialState === true) {
-        result.initialState = row.initial_state;
-      }
-      return result;
+            `Error: ${errorMessage}`
+          );
+        },
+        `fetch for match "${matchID}"`,
+        // why: fetch's documented missing-row return — safe for onSync, which
+        // treats it as "match not found" (the client re-syncs when the DB recovers).
+        {},
+      );
     },
 
     /**
@@ -376,19 +446,27 @@ export function createBgioPgStore(pool) {
      * @returns {Promise<string[]>} The matching match ids.
      */
     async listMatches(opts) {
-      let queryResult;
-      try {
-        queryResult = await pool.query(
-          `SELECT match_id, metadata FROM bgio.matches`,
-        );
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        throw new Error(
-          `bgioPgStore.listMatches failed to read match ids from bgio.matches. ` +
+      // why: the DB read is routed through runResilientRead — a transient blip
+      // retries and then returns an empty list rather than throwing (mirrors
+      // fetch). The JS filtering below is unchanged and runs over the rows.
+      const rows = await runResilientRead(
+        async () => {
+          const queryResult = await pool.query(
+            `SELECT match_id, metadata FROM bgio.matches`,
+          );
+          return queryResult.rows;
+        },
+        (error) => {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          return (
+            `bgioPgStore.listMatches failed to read match ids from bgio.matches. ` +
             `Check that the bgio schema migration has been applied and the database is reachable. ` +
-            `Error: ${errorMessage}`,
-        );
-      }
+            `Error: ${errorMessage}`
+          );
+        },
+        'listMatches',
+        [],
+      );
 
       // why: filtering runs in JS against each row's parsed metadata so the
       // predicate logic matches boardgame.io's InMemory store byte-for-byte
@@ -396,7 +474,7 @@ export function createBgioPgStore(pool) {
       // so a full scan + JS filter is clearer than pushing jsonb predicates
       // into SQL. No `.reduce()` — an explicit loop per code style.
       const matchIds = [];
-      for (const row of queryResult.rows) {
+      for (const row of rows) {
         const metadata = row.metadata !== null ? row.metadata : {};
         if (opts === undefined) {
           matchIds.push(row.match_id);
