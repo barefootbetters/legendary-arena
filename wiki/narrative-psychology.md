@@ -18,6 +18,7 @@ related:
   - dopamine-triggers.md
   - master-strike.md
   - villain-deck.md
+  - gameplay-strategy.md
   - vision.md
 status: draft
 source:
@@ -250,6 +251,11 @@ Playstyle Modes lens toggle.
 - **[Master Strike](master-strike.md)** and **[Villain Deck](villain-deck.md).**
   The engine subsystems that produce the antagonist beats (Strike, Twist,
   Ambush) the good-versus-evil arc is built from.
+- **[Gameplay Strategy](gameplay-strategy.md).** The skill model behind two
+  of the meaning hooks: **Agency** ("I act on the world") and **Archetype**
+  are the meaning-side of the highest-leverage player decisions — Hero Deck
+  construction and deck thinning — the player authoring their team and their
+  deck's quality.
 - **[Vision](vision.md).** The narrative must stay true to what the game
   *is* — a good-versus-evil Marvel deck-builder; framing never contradicts
   the vision's identity.
