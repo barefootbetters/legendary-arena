@@ -103,6 +103,31 @@ describe('buildEffectProvenance — recentlyPlayedCards', () => {
     );
   });
 
+  test('WP-417 regression: pulls the ext-id, not the "(+N recruit)" economy clause', () => {
+    // why: WP-417 (D-24237) appends a printed-icon clause "(+1 recruit)" and a second
+    // "(+2 attack)" plus an effect clause to the played label. The prior end-anchored regex
+    // captured the LAST parenthesized group, so it reported extId "+1 recruit" / "+1 attack"
+    // (observed live in a freeze diagnostic). The ext-id-shaped match must skip the economy
+    // clause and any effect-text parens and return the real ext-id.
+    const provenance = buildEffectProvenance(
+      snapshotWith({
+        log: [
+          '1.2.1 Player 1 played S.H.I.E.L.D. Agent (starting-shield-agent) (+1 recruit).',
+          '11.2.3 Player 1 played Quick Draw (core/hawkeye/quick-draw#2) (+1 attack) — Draw a card.',
+          '5.2.1 Player 1 played Growing Anger (core/hulk/growing-anger#0) (+2 attack) — Strength: You get +1 attack.',
+        ],
+      }),
+    );
+    assert.deepEqual(
+      provenance.recentlyPlayedCards.map((card) => card.extId),
+      [
+        'starting-shield-agent',
+        'core/hawkeye/quick-draw#2',
+        'core/hulk/growing-anger#0',
+      ],
+    );
+  });
+
   test('caps the list at RECENTLY_PLAYED_CARDS_CAP, keeping the last N', () => {
     const log: string[] = [];
     for (let index = 0; index < RECENTLY_PLAYED_CARDS_CAP + 2; index += 1) {
