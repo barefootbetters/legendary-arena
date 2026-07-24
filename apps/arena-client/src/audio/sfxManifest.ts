@@ -40,6 +40,12 @@ export const sfxManifest: Record<SfxEventKey, string> = {
   ambushResolved: `${SFX_BASE_URL}ambush.mp3`,
   schemeTwistResolved: `${SFX_BASE_URL}scheme-twist.mp3`,
   mastermindStrikeResolved: `${SFX_BASE_URL}master-strike.mp3`,
-  mastermindDefeated: `${SFX_BASE_URL}mastermind-defeated.mp3`,
+  // why: the Mastermind defeat is the match's peak reward, so it fires the full
+  // victory-theme fanfare (`mastermind-defeated-win.mp3`) rather than the short
+  // `mastermind-defeated.mp3` sting. This clip is larger (~1.3 MB vs ~20 KB), so
+  // it adds weight to the up-front preload (audioEngine preloads every manifest
+  // clip) — accepted so the fanfare plays instantly on the defeat, with no
+  // load-latency at the victory moment.
+  mastermindDefeated: `${SFX_BASE_URL}mastermind-defeated-win.mp3`,
   healResolved: `${SFX_BASE_URL}heal.mp3`,
 };

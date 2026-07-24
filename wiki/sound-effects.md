@@ -504,9 +504,9 @@ surfaces above.
 
 {{< audio src="https://images.legendary-arena.com/audio/sound-effects/villain-defeated.mp3" caption="OpenGameArt 80 CC0 RPG SFX — metal impact" >}}
 
-**Mastermind defeated (`mastermindDefeated`)** — a triumphant defeat cue:
+**Mastermind defeated (`mastermindDefeated`)** — the full victory fanfare (the match's peak reward):
 
-{{< audio src="https://images.legendary-arena.com/audio/sound-effects/mastermind-defeated.mp3" caption="Shipped mastermind-defeated.mp3 — WP-412 (CC0); the clip play.legendary-arena.com actually plays (sfxManifest.ts)" >}}
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/mastermind-defeated-win.mp3" caption="Shipped mastermind-defeated-win.mp3 — WP-412 (CC0); the clip play.legendary-arena.com actually plays (sfxManifest.ts)" >}}
 
 **Heal (`healResolved`)** — a soft restorative chime:
 

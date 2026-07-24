@@ -499,10 +499,10 @@ Mastermind's motif over it at −6/−9 dB (see
 {{< audio src="https://images.legendary-arena.com/audio/sound-effects/villain-defeated.mp3" caption="OpenGameArt 80 CC0 RPG SFX — metal impact (base; motif layers on top)" >}}
 
 **`mastermindDefeated`** — full victory fanfare (Peak reward + closure · Very
-High). The wired event plays the shipped triumphant cue below; the fuller
-victory theme is auditioned on the Endgame `heroes-win` finale further down:
+High). The wired event now plays the full victory theme — the match's peak
+reward — preloaded so it fires instantly on the defeat:
 
-{{< audio src="https://images.legendary-arena.com/audio/sound-effects/mastermind-defeated.mp3" caption="Shipped mastermind-defeated.mp3 — WP-412 (CC0); the clip play.legendary-arena.com actually plays" >}}
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/mastermind-defeated-win.mp3" caption="Shipped mastermind-defeated-win.mp3 — WP-412 (CC0); the clip play.legendary-arena.com actually plays" >}}
 
 **`mastermindStrikeResolved`** — dramatic low stinger (Threat spike · High):
 
@@ -520,12 +520,12 @@ victory theme is auditioned on the Endgame `heroes-win` finale further down:
 
 {{< audio src="https://images.legendary-arena.com/audio/sound-effects/heal.mp3" caption="Restorative heal chime (CC0)" >}}
 
-**Endgame `heroes-win`** — victory fanfare (Peak + meaning · Very High). The
-endgame finale is an unwired Surface-4 stinger; `heroes-win` is driven by
-`mastermindDefeated`, but the finale auditions a fuller victory theme than the
-wired event cue above — the peak-end finale earns the biggest treatment:
+**Endgame `heroes-win`** — victory fanfare (Peak + meaning · Very High).
+`heroes-win` is driven by `mastermindDefeated`, whose wired cue is now the full
+victory fanfare above — so the win already sounds it. A dedicated endgame
+Surface-4 stinger (distinct from the event cue) remains unwired:
 
-{{< audio src="https://images.legendary-arena.com/audio/sound-effects/mastermind-defeated-win.mp3" caption="OpenGameArt CC0 — full victory theme (endgame-finale candidate; not yet wired)" >}}
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/mastermind-defeated-win.mp3" caption="Shipped mastermind-defeated-win.mp3 — WP-412 (CC0); the same fanfare the mastermindDefeated event fires" >}}
 
 **Endgame `scheme-wins`** — dirge or unresolved sting (Punishment / tragedy ·
 High):
