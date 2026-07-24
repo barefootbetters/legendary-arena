@@ -49,11 +49,13 @@ also specs three richer layers on top: **motif-driven event cues**
 [Music Authoring](music-authoring.md#motif-matrix)), a **tiered combo
 cue** that escalates with the size of a synergy chain, and **endgame
 stingers** for all three real match outcomes (heroes win, scheme wins,
-tie). No audio ships today — this page is `draft` research, not an
-implementation contract. The sound mappings and library picks are
-proposals; only the event vocabulary, the endgame outcomes, the
-projected `UIState` signals, and the architectural boundaries are
-sourced to code.
+tie). Most of this page is still `draft` research rather than an
+implementation contract, but two pieces have **shipped**: the client-only
+audio foundation (WP-412) and the [tiered combo cue](#tiered-combo)
+(WP-413 / D-24228) that rides the `lastPlayEffectsFired` signal (D-24221).
+The remaining sound mappings and library picks are proposals; the event
+vocabulary, the endgame outcomes, the projected `UIState` signals, and the
+architectural boundaries are sourced to code.
 
 ## Mechanics
 
@@ -222,27 +224,44 @@ of the chain, so bigger combos literally sound bigger. This is the audio
 counterpart to the engine's hero-class synergy (the `requiresKeyword` /
 `[hc:X]` gates that fire when the right classes are in play).
 
-| Chain size | Cue | Feel |
+> **Shipped (WP-413 / EC-448, D-24228).** Unlike the rest of this page, the
+> tiered combo cue is **live**, not a proposal — it was the missing signal
+> that unblocked it. `UIState.game.lastPlayEffectsFired` (a hero-play
+> synergy-effect count, D-24221) projects exactly the tally the earlier draft
+> said the client "cannot see today." The arena-client
+> [`useComboCue.ts`](../apps/arena-client/src/composables/useComboCue.ts)
+> composable watches that scalar and, on each increase, plays the matching
+> clip from
+> [`comboCueManifest.ts`](../apps/arena-client/src/audio/comboCueManifest.ts).
+> It is client-only, reads the projected count, never touches `G`/`ctx`, and
+> is hash-excluded — so determinism is untouched.
+
+The shipped tiers key on `lastPlayEffectsFired` (per D-24228:
+`0 → none, 1 → small, 2 → medium, ≥3 → big`):
+
+| `lastPlayEffectsFired` | Clip | Feel |
 |---|---|---|
-| 2 effects | Rising **two-note sparkle** | "Nice — that linked." |
-| 3 effects | The same shape, **higher and brighter** | The chain is building. |
-| 4+ effects | A full ascending **flourish** | A satisfying pay-off — the game cheering you on |
+| `1` | `combo-small` — rising **two-note sparkle** | "Nice — that linked." |
+| `2` | `combo-medium` — the same shape, **higher and brighter** | The chain is building. |
+| `>= 3` | `combo-big` — a full ascending **flourish** | A satisfying pay-off — the game cheering you on |
 
-Pitch the tiers so they **ascend** (each step higher than the last) and, if
-motifs are in play, write them in the acting hero's team key so a combo cue
-harmonizes with the [motif](#motif-cues) that spawned it.
+The tiers **ascend** (each step higher than the last); when motifs are in
+play a combo cue can be written in the acting hero's team key so it
+harmonizes with the [motif](#motif-cues) that spawned it (a future layering
+pass, not part of the shipped cue).
 
-> **Signal gap — this needs a count the client cannot see today.** The six
-> `NotableGameEvent` variants and `playCard` carry **no chain-depth or
-> effects-triggered tally**: a hero play emits no result event at all, and
-> nothing projects "this play fired N downstream effects." A combo cue
-> therefore needs either (a) a new projected count — e.g. a `chainDepth` /
-> `effectsTriggered` field on a hero-play result event — or (b) fragile
-> client-side inference from a burst of `UIState` deltas within one move.
-> Option (a) is the honest, deterministic path. Until such a signal exists,
-> the tiered cue is a **proposal, not buildable.** (Contrast the villain
-> side: `FightResolvedEvent.appliedEffects` already lists the keywords that
-> fired, so a villain-effect chain is countable today.)
+Audition the three shipped tiers:
+
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/combo-small.mp3" caption="WP-413 combo cue (CC0) — tier 1 (lastPlayEffectsFired = 1), rising sparkle" >}}
+
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/combo-medium.mp3" caption="WP-413 combo cue (CC0) — tier 2 (lastPlayEffectsFired = 2), higher and brighter" >}}
+
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/combo-big.mp3" caption="WP-413 combo cue (CC0) — tier 3+ (lastPlayEffectsFired >= 3), ascending flourish" >}}
+
+> **Contrast the villain side.** `FightResolvedEvent.appliedEffects` already
+> lists the keywords that fired, so a villain-effect chain has always been
+> countable — the hero-play `lastPlayEffectsFired` count (D-24221) is what
+> brought the *hero* side to parity and made this cue buildable.
 
 ### Adaptive background music — the danger meter
 
@@ -464,6 +483,10 @@ surfaces above.
 
 {{< audio src="https://images.legendary-arena.com/audio/sound-effects/mastermind-defeated-win.mp3" caption="OpenGameArt CC0 — Victory Theme for RPG" >}}
 
+**Heal (`healResolved`)** — a soft restorative chime:
+
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/heal.mp3" caption="Restorative heal chime (CC0)" >}}
+
 **Wound gained** — a dull, painful thud:
 
 {{< audio src="https://images.legendary-arena.com/audio/sound-effects/wound-gained.mp3" caption="OpenGameArt 80 CC0 RPG SFX — creature hurt" >}}
@@ -652,24 +675,30 @@ unusable on a revenue-generating site.
   for a sound layer
 - [`apps/arena-client/src/components/play/NotableEventOverlay.vue`](../apps/arena-client/src/components/play/NotableEventOverlay.vue)
   — existing overlay driven by the same stream
+- [`apps/arena-client/src/composables/useComboCue.ts`](../apps/arena-client/src/composables/useComboCue.ts)
+  — the **shipped** tiered combo cue (WP-413 / EC-448); watches
+  `lastPlayEffectsFired` and plays the tier clip on each increase
+- [`apps/arena-client/src/audio/comboCueManifest.ts`](../apps/arena-client/src/audio/comboCueManifest.ts)
+  — the combo-tier → clip map (`combo-small` / `combo-medium` / `combo-big`)
 
 ## Open Questions
 
-- **No Work Packet is scoped yet.** This page is pre-design research.
-  Implementation would need a WP defining the audio layer's contract,
-  the SFX/music mute-volume UX, and initial event coverage.
+- **Partially shipped; the rest is unscoped.** The client-only audio
+  foundation (WP-412) and the [tiered combo cue](#tiered-combo) (WP-413 /
+  EC-448) have landed. The remaining layers — the full SFX event coverage,
+  the adaptive music score, and the SFX/music mute-volume UX — still need a
+  WP defining their contract.
 - **Asset delivery — bundle vs CDN.** Ship clips/loops inside the
   arena-client bundle, or host them on R2 (the
   `images.legendary-arena.com` precedent suggests a `sounds.` / R2 path
   could work)? Music loops especially argue for CDN + lazy load.
-- **Three gaps worth an event add.** (1) `escapeResolved` (WP-186) so
+- **Two gaps worth an event add.** (1) `escapeResolved` (WP-186) so
   villain escapes — including a bystander carried off — can be sounded;
   (2) a `heroRecruited` signal so recruit doesn't rely on client-side
-  delta-watching; (3) a **`chainDepth` / `effectsTriggered` count on a
-  hero-play result** so the [tiered combo cue](#tiered-combo) can escalate
-  with synergy-chain size (nothing projects this today). All three are
-  optional; v1 SFX can proceed without them, but the combo cue is blocked
-  until (3) exists.
+  delta-watching. Both are optional; v1 SFX can proceed without them. *(A
+  third former gap — a hero-play chain count — is now closed: the
+  [tiered combo cue](#tiered-combo) escalates on `lastPlayEffectsFired`,
+  D-24221 / D-24228.)*
 - **Motif matrix — playback wiring.** The motif *grammar* and *production*
   are settled: the grammar on
   [Music Authoring](music-authoring.md#motif-matrix), the generator that
@@ -708,9 +737,12 @@ unusable on a revenue-generating site.
   payload; deferred `escapeResolved`), D-20008 (`mastermindDefeated`
   added because `G.messages` is not projected), D-24159 / WP-367 (the
   deck-exhaustion final-turn **tie** — the third `EndgameOutcome`, driving
-  the tie stinger), D-24224 (the client-only, howler-backed audio foundation),
-  D-24225 (the motif generator), D-24226 (motif × theme-sting layering at
-  −6/−9 dB), D-24227 (motif lookup as a slim runtime registry)
+  the tie stinger), D-24221 (`lastPlayEffectsFired` — the hero-play
+  synergy-effect count that unblocked the combo cue), D-24224 (the
+  client-only, howler-backed audio foundation), D-24225 (the motif
+  generator), D-24226 (motif × theme-sting layering at −6/−9 dB), D-24227
+  (motif lookup as a slim runtime registry), D-24228 (the **shipped** tiered
+  combo cue — WP-413 / EC-448)
 - Sound-effect libraries (verify each asset's license on its page):
   - [Kenney.nl — Interface Sounds](https://kenney.nl/assets/interface-sounds) (CC0)
   - [Kenney.nl — Impact Sounds](https://kenney.nl/assets/impact-sounds) (CC0)
