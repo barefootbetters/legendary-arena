@@ -33,7 +33,7 @@ source:
   - ../apps/arena-client/src/components/play/NotableEventOverlay.vue
   - ../apps/arena-client/src/pages/PlayViewport.vue
   - ../docs/ai/ARCHITECTURE.md
-last-reviewed: 2026-07-22
+last-reviewed: 2026-07-24
 ---
 
 # Visual Effects Framework
@@ -69,6 +69,17 @@ audio combo cue already consumes it (D-24228, WP-413). The visual combo
 flash mirrors that shipped audio composable exactly — same scalar, same
 tier map, different output. That note on the Sound Effects page is
 superseded for the visual layer.
+
+**And the chain gets a name.** On top of the flash, this page specs a
+*Candy-Crush*-style **synergy call-out** — an escalating word that pops
+on-screen as the chain grows (**Combo! → Team-Up! → Unstoppable!**), the
+way *Candy Crush* shouts "Sweet! → Tasty! → Delicious! → Divine!" at a
+cascade. It is a **second renderer on the one locked combo scalar**, not
+a new signal — the word, the burst, and the sting all fire off the same
+`lastPlayEffectsFired` change and peak together. This page owns *that a
+label renders, keyed to the locked tier*; the wording, the apex rung, and
+the announcer voice live on the
+[Narrative Psychology Framework → synergy call-outs](narrative-psychology.md#synergy-callouts).
 
 **How to read this page.** It separates three document types on purpose:
 the [VFX Trigger Contract](#vfx-trigger-contract) below is the **fixed
@@ -290,6 +301,69 @@ together — that synchrony is most of the "juice."
 > the same [`PlayViewport.vue`](../apps/arena-client/src/pages/PlayViewport.vue)
 > root beside `useComboCue`.
 
+##### The synergy call-out — a named label per tier {#synergy-callout}
+
+The combo flash above says *"something big happened."* A **named
+call-out** — a word that pops on-screen and escalates with the chain, the
+way *Candy Crush* announces **"Sweet! → Tasty! → Delicious! → Divine!"**
+as a cascade grows — says *"and here is how big."* It is the cheapest way
+to turn an anonymous particle burst into a **legible** reward the player
+can name, brag about, and chase.
+
+It is a **second renderer on the one locked signal**, not a new one: the
+label reads the same `UIState.game.lastPlayEffectsFired` through the same
+`comboTierForCount` (D-24228) the flash and the sting already share, so
+the word, the burst, and the combo cue all fire off the one scalar change
+and **peak together**. The naming, the announcer persona, and the meaning
+rationale live on the
+[Narrative Psychology Framework → synergy call-outs](narrative-psychology.md#synergy-callouts);
+this page owns only *that a label renders, keyed to the locked tier.*
+
+The proposed default ladder — the tier column is the locked contract; the
+words are a naming proposal owned by the narrative page:
+
+| `lastPlayEffectsFired` | Tier (`comboTierForCount`) | Call-out (proposal) | Feel |
+|---|---|---|---|
+| `<= 0` | `none` | — (no label) | silent play |
+| `1` | `small` | **Combo!** | "that worked" |
+| `2` | `medium` | **Team-Up!** | "oh — it *linked*" |
+| `>= 3` | `big` | **Unstoppable!** | "I *built* this" |
+| (reserved apex) | — | **LEGENDARY!** | the rare, brag-worthy crescendo |
+
+> **The apex rung is not free — it needs a new shared tier.** *Candy
+> Crush*'s "Divine" is a fourth, rarer rung above the top cascade; the
+> equivalent here — a **LEGENDARY!** call-out gated on a bigger chain (say
+> `>= 5`) — would add a **fourth boundary** to `comboTierForCount`.
+> Because the [Combo Tier Contract](#combo-tier-contract) locks that
+> mapping *and* requires the audio and visual renderers to consume the
+> **identical** tiers, a 4th rung is a `DECISIONS.md` change that adds the
+> tier for **both** layers at once (the call-out *and* a matching combo
+> sting) — never a visual-only threshold that silently diverges from the
+> audio. This is exactly the open
+> [combo-scaling-beyond-T3 question](#decisions-pending); the apex label
+> is where that decision cashes out. Until then, the shipped ladder is the
+> three locked tiers above.
+
+**Rendering & accessibility.** The call-out is text, so it degrades
+better than any particle effect: under `prefers-reduced-motion` (or the
+in-app intensity control at its minimum) the **word still shows** — it
+just drops its entrance animation (scale-punch / rise) for a plain fade
+and never rides the screen-shake. The reward stays legible for a player
+who has turned motion off, satisfying the
+[accessibility contract](#accessibility-requirements-mandatory) without
+losing the information. It renders in the same single overlay layer as
+the bursts (no extra canvas — the [performance budget](#performance-budget)
+is unchanged) and, like every effect here, is absent from the determinism
+hash.
+
+Whether the label should announce at `small` (a single effect is arguably
+*not* a synergy — the [dopamine page](dopamine-triggers.md) reads `1` as
+mere "that worked") or start at `medium` is a copy/restraint
+call flagged in [Decisions Pending](#decisions-pending); the
+[contrast-through-restraint pacing invariant](dopamine-triggers.md#dopamine-contract)
+argues for starting the *word* at `medium` even though the *flash* starts
+at `small`.
+
 #### Surface 3 — Player action moves (tactile local feedback) {#surface-3}
 
 The client dispatches these moves, so it can fire a small effect on the
@@ -429,7 +503,10 @@ Holding the budget (the disciplines):
   combo *sting* fire off the one `lastPlayEffectsFired` change and must
   peak together, using the shared [Combo Tier Contract](#combo-tier-contract).
   This page supersedes that page's "tiered combo cue is not buildable"
-  note (the signal now exists, D-24221 / D-24228).
+  note (the signal now exists, D-24221 / D-24228). The
+  [synergy call-out](#synergy-callout) label pairs with an optional
+  **voiced Arena Announcer** (the *Candy Crush* Mr.-Toffee analog) on the
+  audio side — see the [announcer persona](narrative-psychology.md#arena-announcer).
 - **[Dopamine Trigger Framework](dopamine-triggers.md).** The *why and when*
   behind these effects; its
   [visual–audio pairing table](dopamine-triggers.md#visual-audio-pairing) is
@@ -549,7 +626,19 @@ recommendations):
 - **Combo scaling beyond T3** — `lastPlayEffectsFired` is unbounded above;
   decide whether the visual keeps scaling density past a 3-chain or
   hard-caps at T3 for the performance budget. (Tier *boundaries* stay
-  locked either way.)
+  locked either way.) This is also where the **apex `LEGENDARY!`
+  call-out** rung is decided: a fourth, rarer label above `big` requires
+  adding a fourth tier to the shared `comboTierForCount` via a
+  `DECISIONS.md` entry, so the audio and visual layers gain it together
+  (see [synergy call-out](#synergy-callout)).
+- **The synergy call-out label** — the named popup per tier
+  ([synergy call-out](#synergy-callout)). Two open calls beyond the apex
+  rung above: (a) does the word announce at `small` or start at `medium`
+  (the [contrast-through-restraint](dopamine-triggers.md#dopamine-contract)
+  question — the *flash* starts at `small` regardless); and (b) the
+  label *wording* itself, which is owned by the
+  [narrative page](narrative-psychology.md#synergy-callouts) and gets an
+  IP pass with the rest of the narrative copy.
 - **Performance-budget figures** — ratify or retune the numbers above
   against real mobile hardware.
 - **`escapeResolved` event** (WP-186) — required before escape effects
