@@ -7,6 +7,64 @@
 
 ## Current State
 
+### WP-419 / EC-454 — Arena-Client Surface-2 Player-Action Move SFX (D-24239) (2026-07-24)
+
+**`User-Visible Surface = play.legendary-arena.com`.** The **first tactile move
+sound**. WP-412 shipped Surface 1 (a clip per resolved `NotableGameEvent`) and
+WP-413 the combo cue; WP-412's Out of Scope named **Surface 2** — action-move
+tactile SFX — a follow-on. This packet is that follow-on: the game now plays a
+short sound the instant the player dispatches an action move (a card whoosh on
+`playCard`, a purchase chime on `recruitHero`, a sword impact on `fightVillain`,
+a draw/shuffle on `drawCards`, a soft pass-confirm on `endTurn`).
+
+**Dispatch-keyed, not projection-keyed.** The ewiki Sound Effects Surface-2
+design is explicit: the client **dispatches** these moves, so it plays the sound
+on the **local action** for immediate feedback, **independent of** the
+authoritative result. The cue fires from the single `App.vue` `submitMove`
+closure (prop-drilled everywhere as `SubmitMove`) **before** relaying intent to
+the live client — the correct signal, because `recruitHero` emits **no** notable
+event at all and the felt-immediately cues must not wait on a projected frame
+that may arrive turns later or be rejected. This is deliberately **distinct** from
+Surface 1 (`useSoundEffects`) and the combo cue (`useComboCue`), both
+`PlayViewport` snapshot-watch hosts — Surface 2's host is the dispatch chokepoint.
+
+1. **Manifest (`src/audio/moveSfxManifest.ts`).** A **partial**
+   `Partial<Record<UiMoveName, string>>` mapping the five dispatchable action
+   moves to their locked CC0 filenames (`play-card` / `recruit-hero` /
+   `attack-villain` / `draw-cards` / `end-turn`.mp3, hyphenated R2 paths under
+   `audio/sound-effects/`). Partial by design — lobby / stage / `resolve*` moves
+   carry no cue. The `UiMoveName`-keyed type is the compile-time drift pin.
+2. **Consumer (`src/composables/useMoveSounds.ts`).** `useMoveSounds(engine =
+   getAudioEngine())` returns `playMoveSound(name)` — plays `moveSfxManifest[name]`
+   through the **WP-412 engine wholesale** (no new dependency, engine, control, or
+   channel; the autoplay-unlock / master mute / master volume gates + the EC-448
+   lazy-load-any-URL amendment apply unchanged); an unmapped name is a silent
+   no-op. Imperative — no `watch`, no `UIState` snapshot.
+3. **Wiring (`src/App.vue`).** `useMoveSounds()` at the app root (beside the
+   `useAnalyticsCapture()` precedent) + `playMoveSound(name)` in the `submitMove`
+   closure ahead of the live-client relay. The single runtime-wiring host.
+
+**`dodgeCard` gap (documented, not fixed here).** The ewiki Surface-2 table lists
+a sixth row, `dodgeCard → dodge.mp3`, but `dodgeCard` is an **engine-only** move
+(`packages/game-engine/src/moves/dodgeCard.ts`) with **no** `UiMoveName` dispatch
+path — the click-to-play surface cannot emit it, so its clip cannot fire today. It
+stays unmapped (mapping it would not typecheck; its absence is test-pinned) and is
+left for a later UI-affordance WP.
+
+**Boundary.** Pure client presentation — reads **no** `UIState`, never writes
+`G`/`ctx`, zero engine/determinism/replay footprint; no runtime `registry`/
+`server`/engine import (the only engine-adjacent surface is the type-only UI
+`UiMoveName`); no new npm dependency. §21 N/A (local dispatch + static R2 clips);
+§17 Vision N/A (retention polish, never pay-to-win).
+
+**Verification.** arena-client typecheck 0; arena-client suite green (+11 manifest
+/ consumer tests, 1093/0); `pnpm -r build` 0. **D-24239 Active.** `D-24026`
+live-verify **operator-pending** — the five CC0 move clips must be uploaded to R2
+under `audio/sound-effects/` (the WP-412 assets-leg pattern, PR #916); green tests
++ merge alone do not satisfy it.
+
+---
+
 ### WP-418 / EC-453 — "New Version — Refresh" Prompt + Reconnect-Gap Audit (D-24238) (2026-07-24)
 
 **`User-Visible Surface = play.legendary-arena.com`.** Kills the **deploy-mid-match

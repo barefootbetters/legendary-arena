@@ -30,6 +30,7 @@ import {
 import { isGuardedRoute, shouldHydrateSession } from './auth/routeAuthPolicy';
 import { useAuthStore } from './stores/auth';
 import { useAnalyticsCapture } from './composables/useAnalyticsCapture';
+import { useMoveSounds } from './composables/useMoveSounds';
 
 // why: PlayerProfilePage is lazy-loaded via defineAsyncComponent so the
 // public-profile branch (?profile=<handle>) does not increase the
@@ -255,6 +256,13 @@ export default defineComponent({
     // signup-start on the LoginPage auth surface).
     useAnalyticsCapture();
 
+    // why: WP-419 Surface-2 — build the local move-cue player once at the app
+    // root and invoke it from the submitMove dispatch chokepoint below. It
+    // reuses the WP-412 audio engine singleton, so it inherits that engine's
+    // autoplay-unlock arm + master mute/volume; it reads no UIState and adds no
+    // determinism/replay footprint (pure client tactile feedback).
+    const playMoveSound = useMoveSounds();
+
     const rawSearch =
       props.searchOverride ??
       (typeof window !== 'undefined' ? window.location.search : '');
@@ -400,6 +408,14 @@ export default defineComponent({
     // WP-090 grep invariant. The closure reads liveClient.value at call
     // time so clicks before mount silently no-op rather than crashing.
     const submitMove: SubmitMove = (name: UiMoveName, args: unknown): void => {
+      // why: WP-419 Surface-2 — fire the local tactile move cue at the single
+      // dispatch chokepoint, BEFORE relaying intent to the live client, so the
+      // sound tracks the player's action immediately and independently of the
+      // authoritative result (which may arrive later, be rejected, or — for
+      // recruitHero — emit no notable event at all). Unmapped move names are a
+      // silent no-op, and the engine's own unlock/mute/volume gates still apply,
+      // so a pre-gesture or muted dispatch stays silent.
+      playMoveSound(name);
       liveClient.value?.submitMove(name, args);
     };
 
