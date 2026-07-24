@@ -32206,4 +32206,49 @@ new/updated); full server suite green (927/0 + DB-gated skips); `pnpm -r --no-ba
 repo-wide (0 fail); `pnpm -r build` 0. `D-24026` live-verify operator-pending on deploy (a
 driverless bot-ally match reports `driving:false` and surfaces the banner; a healthy one does not).
 
+### D-24240 — Bot-ally revival is deploy-aware: a graceful-shutdown-marked match is revived past the cap
+
+**Status:** Drafted 2026-07-24; not yet landed (WP-420 / EC-455 execution).
+
+**Context.** WP-419 (D-24239) made a driverless bot-ally match *surface* (the WP-415 banner
+shows) and settled a cap-stranded `active` row to `faulted`. But the observed failure (match
+`vMxtCoOZDFj`) was a match that was **healthy and being driven** when a redeploy destroyed its
+in-process driver — a match that would play fine if the driver returned. It burns all
+`MAX_REVIVALS` revivals across restarts without completing a turn (each restart kills it mid-turn
+before the D-24233 reset-on-first-turn fires) and then faults. Surfacing it is correct but it is
+recoverable, and losing a mid-match co-op game to a routine deploy is avoidable.
+
+**Decision (to be executed by WP-420).** Bot-ally revival becomes **deploy-aware** — it
+distinguishes "lost to a clean deploy" (safe to recover) from "crashed / wedged" (do not loop):
+- A **graceful SIGTERM shutdown** (`index.mjs`, what Render sends on a redeploy) marks each match
+  currently in `botAllyDrivers` — exactly the matches this process was actively driving — with a
+  new additive column `legendary.match_bot_ally.shutdown_interrupted` (migration `037`), before
+  the pool closes; best-effort, non-blocking.
+- **Boot revival** includes a `shutdown_interrupted` row **regardless of the `MAX_REVIVALS` cap**
+  (`revive_count < MAX_REVIVALS OR shutdown_interrupted = true`) and **clears the flag** on
+  re-registration — a clean shutdown earns exactly one past-cap revival. A recovered-and-drivable
+  match then completes a turn and D-24233 resets `revive_count`; a match that still cannot complete
+  a turn and is not cleanly interrupted again strands → faulted (WP-419).
+- An **ungraceful loss** (OOM / crash — no SIGTERM, so no flag) is NEVER free-revived: it keeps
+  WP-414's `MAX_REVIVALS` cap and WP-419's strand→faulted. This is precisely what prevents the
+  2026-07-23 OOM restart loop from returning — the loop's terminator is a crash with no clean
+  shutdown, which is exactly the case that stays capped.
+
+**Rejected alternative.** A partial-progress / per-move `revive_count` reset (reset when the match
+advances state, not only on a completed turn) would recover the drivable case — but it would also
+reset a match that makes progress then OOM-spins, reopening the restart loop. Recovery is therefore
+gated on the clean-shutdown *signal*, not on progress.
+
+**Residual (documented).** A match that OOM-spins yet is cleanly deployed between every spin could
+be re-flagged repeatedly; bounded because an OOM crash gets no SIGTERM (the common terminator caps
+it) and OOM is rare on the current basic-1gb instance. If it ever bites, add an absolute lifetime
+ceiling (`MAX_ABSOLUTE_REVIVALS`) that even flag-driven revivals count toward.
+
+**Boundary.** Server orchestration + an additive side-table column (D-24095 store-only — never the
+bgio blob); no engine/registry change; no HTTP endpoint change (§21 N/A); no determinism change.
+Single-instance assumed. Human-initiated "Resume with the bot" and multi-instance liveness are
+separate follow-ups.
+
+**Packet:** WP-420 + EC-455. **Drafted:** 2026-07-24; lands at execution.
+
 Protect this file.
