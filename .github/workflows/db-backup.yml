@@ -1,0 +1,109 @@
+name: DB Backup
+
+# why (WP-416 / D-24236): provider-independent PostgreSQL backup. Runs pg_dump
+# against the Render-managed database and uploads the dump to a PRIVATE Cloudflare
+# R2 bucket, so a loss of the Render account/region (DISASTER_RECOVERY.md DR-05) is
+# recoverable from a copy that does not depend on Render. Runs in CI, independent of
+# the app server, because pg_dump is not in the Render Node image but is trivial on
+# a runner, and CI keeps backing up even when the server is down.
+
+on:
+  schedule:
+    # why: 09:17 UTC — off the top of the hour to avoid the runner contention that
+    # peaks at :00. Daily cadence gives the v1 ~24h Recovery Point Objective.
+    - cron: '17 9 * * *'
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Guard on secret presence
+        id: guard
+        # why: GitHub Actions forbids the `secrets` context in a job-level `if:`, so
+        # map secret-presence to a step output. When BACKUP_DATABASE_URL is absent
+        # the later steps skip and the job concludes green — a skip, not a pass, and
+        # never a reported backup success.
+        run: echo "has_secrets=${{ secrets.BACKUP_DATABASE_URL != '' }}" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout
+        if: steps.guard.outputs.has_secrets == 'true'
+        uses: actions/checkout@v5
+
+      - name: Set up Node
+        if: steps.guard.outputs.has_secrets == 'true'
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: .node-version
+
+      - name: Install and verify PostgreSQL 18 client
+        if: steps.guard.outputs.has_secrets == 'true'
+        run: |
+          set -euo pipefail
+          sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-18
+          # why: enforce the >=18 floor at runtime. A silent runner-image change that
+          # ships an older client must fail the run, not dump with a version mismatch.
+          major="$(pg_dump --version | grep -oE '[0-9]+' | head -1)"
+          if [ "$major" -lt 18 ]; then
+            echo "pg_dump major version $major is below the required 18; refusing to run." >&2
+            exit 1
+          fi
+
+      - name: Dump the database
+        if: steps.guard.outputs.has_secrets == 'true'
+        env:
+          BACKUP_DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          # why: never `set -x` and never echo the URL here — it carries the DB
+          # password; it is passed via env (not argv, which the process list exposes)
+          # and relies on Actions secret masking.
+          stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+          echo "BACKUP_STAMP=$stamp" >> "$GITHUB_ENV"
+          echo "BACKUP_KEYDATE=$(date -u +%Y/%m/%d)" >> "$GITHUB_ENV"
+          pg_dump -Fc "$BACKUP_DATABASE_URL" -f "/tmp/legendary-arena-$stamp.dump"
+          size="$(stat -c%s "/tmp/legendary-arena-$stamp.dump")"
+          # why: a wrong or empty BACKUP_DATABASE_URL can exit 0 with a near-empty
+          # dump; require a real dump (> 1024 bytes) before it counts as success.
+          if [ "$size" -le 1024 ]; then
+            echo "Dump is only $size bytes; treating it as a failed backup." >&2
+            exit 1
+          fi
+
+      - name: Upload to R2 and prune old backups
+        if: steps.guard.outputs.has_secrets == 'true'
+        env:
+          # why: the aws CLI reads AWS_* names, not R2_*; map them, target the R2
+          # S3 endpoint, and disable the aws-cli v2 default integrity checksums that
+          # break Cloudflare R2 PutObject.
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+          AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_BACKUP_BUCKET: ${{ secrets.R2_BACKUP_BUCKET }}
+        run: |
+          set -euo pipefail
+          # why: a DB dump must never land in the public images bucket.
+          if [ "$R2_BACKUP_BUCKET" = "legendary-images" ]; then
+            echo "R2_BACKUP_BUCKET must not be the public images bucket." >&2
+            exit 1
+          fi
+          endpoint="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+          key="db-backups/${BACKUP_KEYDATE}/legendary-arena-${BACKUP_STAMP}.dump"
+          aws s3 cp "/tmp/legendary-arena-${BACKUP_STAMP}.dump" "s3://${R2_BACKUP_BUCKET}/${key}" --endpoint-url "$endpoint"
+          # Prune: list existing backup keys, let the pure selector choose which fall
+          # outside the 35-day window, delete only those. This runs only after the
+          # upload above succeeded (set -euo pipefail aborts the step on any failure).
+          aws s3 ls "s3://${R2_BACKUP_BUCKET}/db-backups/" --recursive --endpoint-url "$endpoint" \
+            | awk '{ print $4 }' \
+            | node scripts/db-backup-retention.mjs \
+            | while read -r staleKey; do
+                if [ -n "$staleKey" ]; then
+                  aws s3 rm "s3://${R2_BACKUP_BUCKET}/${staleKey}" --endpoint-url "$endpoint"
+                fi
+              done
