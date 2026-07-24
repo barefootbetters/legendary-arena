@@ -1,6 +1,6 @@
 # Wiki Index
 
-> **50 / 75** entity pages.
+> **51 / 75** entity pages.
 > Last regenerated: 2026-07-23.
 > See [SCHEMA.md](SCHEMA.md) for the entity-page contract and
 > [README.md](README.md) for purpose, conventions, and authority —
@@ -258,6 +258,16 @@ Step-by-step walkthroughs for completing specific tasks.
   for per-frame control, Posterize Time fast fallback, loop-boundary
   technique, Media Encoder handoff, and the UI-overlay layer that
   makes a generic clip read as a digital card game.
+- [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md) — *(draft,
+  non-production)* walkthrough for a personal DigitalOcean Ubuntu 24.04
+  droplet used as an operator **learning lab, staging host, and future
+  migration target** — never a production cutover. Droplet hardening
+  (UFW / Fail2Ban / unattended-upgrades), the Node/PM2/Nginx/Certbot
+  stack, deploying `apps/server` against a **copy** of the DB, the
+  app↔DB latency probe that would gate any stateless-server move, and a
+  Postgres restore drill. Shadows the live Render topology in the
+  [Architecture Inventory](architecture-inventory.md); records no
+  decision to leave Render.
 
 ## Tool
 
