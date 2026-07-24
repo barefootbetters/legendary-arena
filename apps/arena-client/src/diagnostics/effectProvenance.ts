@@ -173,15 +173,22 @@ function buildSnapshotAbilityTextResolver(
 const PLAYED_LINE = /^(?:\d+\.\d+\.\d+ )?Player \d+ played (.+?)\.$/;
 const DID_NOT_ACTIVATE_LINE = / ability did not activate/;
 
-// why: WP-323/324 render the played label as "{Name} ({ext-id})" (optionally " — {effect}").
-// Pull the real ext-id from the FIRST parenthesized group (card ext-ids contain no ')', and
-// any effect clause follows the " — " after it); fall back to the whole label for a legacy
-// raw-id line with no parens, so pre-enrichment logs still classify.
-const PLAYED_LABEL_EXTID = /^.+? \(([^)]+)\)(?: — .*)?$/;
+// why: WP-323/324 render the played label as "{Name} ({ext-id})", and WP-417 (D-24237)
+// appends an optional printed-icon clause "(+N recruit)" / "(+N attack, +N recruit)" and/or
+// an effect clause " — {effect}" — so a played label can now carry MORE than one
+// parenthesized group. The ext-id is the first group whose content is ext-id-SHAPED
+// (lowercase-alnum start, no spaces): that skips the "(+1 recruit)" economy clause (it
+// starts with '+' and contains a space) and any parens inside the effect text. The prior
+// regex anchored on the end and captured the LAST group, which after WP-417 grabbed
+// "+1 recruit" instead of the ext-id (observed in a live freeze diagnostic:
+// recentlyPlayedCards[].extId === "+1 recruit"). Fall back to the whole label for a legacy
+// raw-id line with no such group. (The durable fix is the WP-B.3 structured log-outcome
+// contract, which removes prose-parsing entirely.)
+const PLAYED_LABEL_EXTID = /\(([a-z0-9][^)\s]*)\)/;
 
 /**
  * Extracts the card ext-id from an enriched `played` label, or returns the label unchanged
- * when it carries no `({ext-id})` group (a legacy raw-id line).
+ * when it carries no ext-id-shaped `({ext-id})` group (a legacy raw-id line).
  */
 function extractPlayedExtId(label: string): string {
   const match = PLAYED_LABEL_EXTID.exec(label);
