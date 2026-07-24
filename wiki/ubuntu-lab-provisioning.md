@@ -8,6 +8,7 @@ tags:
   - postgres
   - deployment
   - operator-reference
+  - migration
   - draft
 related:
   - architecture-inventory.md
@@ -21,57 +22,72 @@ source:
   - ../render.yaml
   - ../docs/ops/DOMAINS.md
   - ../docs/ops/domains.json
-last-reviewed: 2026-07-23
+last-reviewed: 2026-07-24
 ---
 
 # Ubuntu Lab Provisioning
 
-> **Draft, non-production.** A proposed personal DigitalOcean Ubuntu box used as a
-> **learning lab, staging host, and future migration-rehearsal target** — not a
-> production cutover. Production runs on Render + Cloudflare (see the
-> [Architecture & Library Adoption Inventory](architecture-inventory.md)). No
-> decision to leave Render is recorded in
-> [DECISIONS.md](../docs/ai/DECISIONS.md); making this box production topology
-> would need its own Work Packet and `DECISIONS` entry. This page defines nothing
-> and governs nothing — it is a walkthrough.
+> **Migration in progress.** `api.legendary-arena.com` and its PostgreSQL are
+> moving off Render onto a self-hosted DigitalOcean Ubuntu droplet fronted by
+> Cloudflare, and the ewiki moves to Cloudflare Pages. The move is decided at the
+> migration-program level: the `legendary-arena-lab` repo holds the runbook and the
+> infrastructure-as-code (`docs/PLAN.md`, `infra/`, and its operator wiki). Until
+> the final decommission phase, Render stays warm as the rollback target (see the
+> [Architecture & Library Adoption Inventory](architecture-inventory.md) for the
+> live-until-cutover topology). This page defines nothing and governs nothing — it
+> is the engine-repo record that the migration is happening; the program repo owns
+> the executable steps.
 >
-> **The lab exists to build operator capability and generate objective
-> measurements. It does not constitute a recommendation to leave Render, nor does
-> it establish future production architecture.**
+> **Governance status — pending transcription.** This page is being flipped ahead
+> of the engine-repo governance it will ultimately cite. The `DECISIONS.md` lock
+> ("api + Postgres leave Render for DigitalOcean + Cloudflare; ewiki → Cloudflare
+> Pages") and the migration Work Packet are **not yet written** — the latest
+> decision at this revision is D-24236. Until they land, the migration PLAN in the
+> `legendary-arena-lab` repo is the governing source; this page stays
+> `status: draft` and deliberately cites no `D-`/`WP-` IDs it cannot yet resolve.
+> The former "records no decision to leave Render" disclaimer is superseded: that
+> decision is made — only its transcription into `DECISIONS.md` is outstanding.
 
 ## Summary
 
-A single ~$24/mo DigitalOcean droplet (Ubuntu 24.04 LTS, 2 vCPU / 4 GB / 80 GB
-SSD) bought purely as an operator lab, to:
+The single DigitalOcean droplet (Ubuntu 24.04 LTS) that `api.legendary-arena.com`
+and its PostgreSQL are migrating onto, with Postgres self-hosted on the same box
+and Cloudflare in front. The migration program sizes the target at **4 vCPU / 8 GB
+to start** (stepping down to 4 GB if it runs idle), not the original 2 vCPU / 4 GB
+lab spec.
 
-- **Build portable Linux-operations skill** — Nginx, PM2, systemd, Certbot, UFW,
-  unattended-upgrades.
-- **Provide the staging target the project lacks** — `render.yaml` sets
-  `pullRequestPreviewsEnabled: false` and runs no staging service.
-- **Rehearse the risky parts of a possible future migration** — self-hosted
-  Postgres backup/restore, cross-provider database latency — without ever putting
-  production at risk.
+This page is the engine-repo **record** of that migration. The executable
+runbooks and infrastructure-as-code — cloud-init, the numbered provisioners,
+Nginx + Cloudflare TLS, self-hosted Postgres, the systemd unit, and the SSH
+deploy pipeline — live in the **`legendary-arena-lab`** repo (`infra/`,
+`content/`, and its operator wiki). The hand-run steps below are retained as the
+original rehearsal procedure and as background; where they differ from the program
+(PM2 → systemd, Certbot → Cloudflare Origin Certificate, cross-provider probe →
+co-located localhost DB), the program's `infra/` artifacts are authoritative.
 
-Cost savings are a secondary benefit, not a justification for any production
-infrastructure change.
+The operator-capability and disaster-recovery-rehearsal value that first justified
+the box still holds — but the box is no longer exploratory. The move is decided
+(see the callout) and in progress; cost is roughly a wash, so control and
+capability are the drivers, not the bill.
 
 ## Mechanics
 
-### What the lab is — and is not
+### What this host is — and the migration phase it is in
 
-- **Is:** a personal Linux box for learning Nginx / PM2 / systemd / Certbot /
-  UFW; a staging target for `apps/server`; a sandbox to measure and rehearse
-  before any production move.
-- **Is not:** production, and not pointed at the production database. The Render
-  managed Postgres currently allows credential-gated public inbound
-  (`ipAllowList: ['0.0.0.0/0']` in `render.yaml`) — treat that as a footgun, not
-  an invitation. The lab always runs against a **copy** of the data (see the
-  Restore drill).
+- **Is becoming:** the production host for `apps/server` and a self-hosted
+  PostgreSQL 18, behind Nginx + Cloudflare, under systemd — the target
+  architecture locked in the migration PLAN (`legendary-arena-lab` repo).
+- **Is not yet carrying production traffic.** Until the cutover phase, the box is
+  provisioned and rehearsed against a **copy** of the data, never the live prod
+  DB. The Render managed Postgres allows credential-gated public inbound
+  (`ipAllowList: ['0.0.0.0/0']` in `render.yaml`) — that is a footgun, not an
+  invitation; rehearsal always runs against a restored copy (see the Restore
+  drill). Render stays warm as the rollback target through the decommission phase.
 
-The Postgres installed on the lab exists **solely** to support backup, restore,
-and operational-training exercises. Its presence does **not** imply self-hosted
-Postgres is the preferred future production architecture — that question is open
-(see Open Questions).
+Self-hosting Postgres on this box is now the **chosen** path, not an open
+question: the migration PLAN co-locates the server and database on one host
+(no cross-provider hop). What remains is the disciplined execution and the
+governance transcription noted in the callout — not the architecture decision.
 
 ### Prerequisites & effort
 
@@ -90,8 +106,8 @@ procedure is muscle memory (that speed is itself the §6 goal).
 
 `apps/server` is **persistence-stateless**: live match state is written to Postgres
 (the boardgame.io adapter's `bgio` schema), so a server restart does not drop live
-matches. That single property makes an app-tier lab (and any eventual
-Option-E-style move of the stateless server) possible. "Stateless" here means
+matches. That single property is what makes relocating the server — which this
+migration does — safe in the first place. "Stateless" here means
 *persistence-stateless*, **not** *connection-stateless* — live WebSocket
 connections and the server's cron singletons (legends publisher, match reaper,
 capture harvester) still live in-process. One box is fine; see Edge Cases for what
@@ -194,7 +210,13 @@ bucket, a lab JWT secret) — never copy production secrets onto a learning box.
 `DATABASE_URL` points at the local lab Postgres, never at prod. Confirm health via
 the `/health` endpoint (and `/health/legends-publisher` if that loop is enabled).
 
-### 4 — Latency probe (do this before trusting any Option-E move)
+### 4 — Latency probe (superseded by the co-located target — historical)
+
+> **Moot for the chosen architecture.** The migration co-locates the server and
+> PostgreSQL on the same host (app ↔ DB over `localhost`), so the cross-provider
+> app↔DB hop this probe measured no longer exists. This section is retained as
+> background for why a "keep Postgres on Render" option was rejected; it is not a
+> step in the migration.
 
 A production "move only the stateless server, keep managed Postgres" step would put
 the app↔DB link across the public internet instead of Render's internal network. A
@@ -247,8 +269,12 @@ operator, each of the following:
 - Service monitoring and alerting
 - Platform-level security updates
 
-This list is the operational cost side of any migration. Per the Summary, cost
-reduction alone is not treated as a sufficient reason to accept that transfer.
+This list is the operational cost side of the migration, and the program has
+**accepted** the transfer: patching, service lifecycle, Postgres operations,
+backups/point-in-time recovery, monitoring, and platform security updates become
+operator responsibilities. The single-box SPOF that comes with it is mitigated by
+tested `pg_dump` → R2 backups and a rehearsed restore (Mechanics §5–6), which the
+PLAN makes a hard gate before cutover.
 
 ### What a successful lab looks like
 
@@ -263,10 +289,13 @@ operator can, unaided —
 - measure and document app↔database latency (§4), and
 - patch and maintain the host across at least one release cycle.
 
-### Future architecture candidates (evaluation out of scope)
+### Architecture candidates (decided — retained as evaluation history)
 
-The lab is the instrument for *evaluating* — not selecting — where the workloads
-could run:
+The evaluation is now resolved. The migration PLAN selects a **single
+self-hosted host with the server and PostgreSQL co-located** on it (Ubuntu server
++ self-hosted Ubuntu Postgres on one box, no cross-provider hop) — the family of
+Options C/D below, minus a second database server. The table is retained as the
+record of what was weighed and why the highest-risk option was avoided:
 
 | Option | Configuration | Notes |
 |---|---|---|
@@ -276,8 +305,9 @@ could run:
 | **D** | Ubuntu app server + Ubuntu database server | Fully self-managed. |
 | **E** | Render server + self-hosted Ubuntu Postgres | **Highest-risk of the set — avoid.** Self-hosts the crown-jewel DB *and* forces the app↔DB link over the public internet, inverting the safer "self-host the stateless tier first, keep the stateful tier managed" ordering. |
 
-Choosing among these is explicitly outside this page's scope; it would be the
-subject of a future migration Work Packet and `DECISIONS` entry.
+The choice is made at the migration-program level (`legendary-arena-lab` repo,
+`docs/PLAN.md`). Its transcription into an engine-repo `DECISIONS` entry and a
+migration Work Packet is the pending governance noted in the callout.
 
 ## Interactions
 
@@ -289,7 +319,10 @@ subject of a future migration Work Packet and `DECISIONS` entry.
   managed-database notes, and the full deployment topology. Read it first.
 - **[Development Workflow](development-workflow.md)** — the production
   develop-from-anywhere loop (Claude Code → GitHub → auto-deploy on merge to
-  `main`). The lab is a manual, off-`main` sibling of that loop, not a replacement.
+  `main`). The migration replaces Render's push-to-main auto-deploy with a GitHub
+  Actions → SSH → `git pull` + build + `systemctl reload` pipeline (owned by the
+  `legendary-arena-lab` program); the hand-run steps on this page are its manual,
+  rehearsal-time equivalent.
 - **[Operational Health Checks](operational-health-checks.md)** — `pnpm check`
   walks toolchain and external-service connectivity (PostgreSQL, R2, Hanko, CORS);
   validate a lab deploy the same way production is validated.
@@ -326,20 +359,21 @@ subject of a future migration Work Packet and `DECISIONS` entry.
 
 ## Open Questions
 
-- **Production disposition is undecided.** Whether any workload should leave Render
-  is not recorded in [DECISIONS.md](../docs/ai/DECISIONS.md). This lab is
-  exploratory. Promoting it to production topology would require, at minimum: an
-  approved migration Work Packet; a corresponding `DECISIONS` entry; validated
-  backup and restore procedures (Mechanics §5–6); documented production monitoring;
-  documented **and tested** rollback procedures; the operational-burden transfer
-  (see Ownership boundary) explicitly accepted by the operator; and a check against
-  the server-layer boundary in
-  [`.claude/rules/architecture.md`](../.claude/rules/architecture.md). These are the
-  conditions a move would have to clear — not a commitment that it will happen.
-- **Managed vs self-hosted Postgres for any eventual co-located phase** — open. The
-  lab exists partly to answer it with a rehearsed restore rather than a guess.
-- **The latency threshold that would make a stateless-server move acceptable** —
-  to be established empirically from the probe in Mechanics §4.
+- **Governance transcription is pending (the one real open item).** The decision
+  to move `api.` + Postgres off Render is made at the migration-program level, but
+  it is **not yet recorded** in [DECISIONS.md](../docs/ai/DECISIONS.md) (latest
+  entry D-24236) and has no migration Work Packet. Until both land, this page
+  cites the migration PLAN rather than a `D-`/`WP-` ID and stays `status: draft`.
+  The still-required execution gates are unchanged and now owned by the program:
+  validated backup **and tested** restore (Mechanics §5–6), documented monitoring,
+  a tested rollback (repoint Cloudflare DNS `api.` → Render), the
+  operational-burden transfer (accepted — see Ownership boundary), and a check
+  against the server-layer boundary in
+  [`.claude/rules/architecture.md`](../.claude/rules/architecture.md).
+- **Managed vs self-hosted Postgres** — decided: self-hosted on the same host
+  (co-located, `localhost`), per the PLAN. No longer open.
+- **The cross-provider latency threshold** — moot: the co-located target removes
+  the app↔DB hop the Mechanics §4 probe measured.
 
 ## References
 
