@@ -7,6 +7,27 @@
 
 ## Current State
 
+### WP-416 / EC-451 — Provider-Independent PostgreSQL Backup Pipeline (D-24236) (2026-07-24)
+
+**No user-observable change — infrastructure only.** Closes the DR-05
+external-backup gap named in `docs/ops/DISASTER_RECOVERY.md` §0: a daily GitHub
+Actions workflow (`.github/workflows/db-backup.yml`) runs `pg_dump -Fc` against
+the Render database and uploads the dump to a **private** Cloudflare R2 bucket
+under `db-backups/…`, pruned to a 35-day window by a pure, unit-tested
+`selectBackupsToPrune` (6/6 `node:test` green). Runs in CI, independent of the
+app server (`pg_dump` isn't in the Render Node image, and CI keeps backing up
+when the server is down). No `apps/server`/engine/schema change; no new npm
+dependency (R2 I/O via the runner `aws` CLI). D-24236 records the CI-vs-server
+choice and the accepted tradeoff (the external DB URL becomes a GH Actions
+secret).
+
+**Operator action required before it is live** (the workflow skips green until
+then): provision the five GitHub Actions secrets — `BACKUP_DATABASE_URL`,
+`R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, and a **private**
+`R2_BACKUP_BUCKET` — then run once via `workflow_dispatch` and confirm an object
+lands in R2. A restore has **not** yet been drilled (`DISASTER_RECOVERY.md`
+§5–6) — a backup nobody has restored is still an assumption.
+
 ### WP-415 / EC-450 — Bot-Ally Stall Banner (Client) (D-24231) (2026-07-22)
 
 **Client half of the bot-ally freeze fix. `User-Visible Surface = play.legendary-arena.com`.

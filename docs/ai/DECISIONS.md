@@ -31984,4 +31984,46 @@ ewiki `wiki/vision.md` summary in sync per that page's editing contract.
 `wiki/vision.md` (summary + Interactions cross-link to the Design System
 Overview).
 
+### D-24236 — Provider-independent PostgreSQL backup runs in CI (`pg_dump` → R2), not on the app server
+
+**Context.** `docs/ops/DISASTER_RECOVERY.md` §0 named the top disaster-recovery
+gap: the only database backups were Render's internal ones, so a loss of the
+Render account or region (scenario DR-05) was unrecoverable — no copy of the
+database existed outside Render. WP-416 closes that gap. Two implementation
+shapes were possible: a server-side cron loop (like the legends publisher /
+match reaper), or a scheduled CI job.
+
+**Decision.** Implement the backup as a daily GitHub Actions workflow
+(`.github/workflows/db-backup.yml`) that runs `pg_dump -Fc` against the Render
+database's External Database URL and uploads the dump to a **private** Cloudflare
+R2 bucket under `db-backups/<YYYY>/<MM>/<DD>/legendary-arena-<stamp>.dump`, pruned
+to a 35-day age-based window by a pure `selectBackupsToPrune` helper. CI over a
+server cron because: (1) `pg_dump` is not in the Render Node runtime image but is
+trivial to install on a runner; (2) a CI job keeps producing backups even when
+the app server is down or crash-looping — the exact condition DR most needs to
+survive. Retention v1 is a single 35-day daily window; weekly/monthly
+grandfather-father-son tiers are a deferred follow-up.
+
+**Persistence framing.** A full-database `pg_dump` is an **out-of-band
+operational copy**: it interprets nothing, derives no feature, and is never read
+back into gameplay state. It is therefore **not** a D-24095 `bgio`-blob
+application read and needs no new persistence-boundary carve-out.
+
+**Tradeoff (accepted).** The workflow connects over the Render External Database
+URL, so its connection string becomes a GitHub Actions secret
+(`BACKUP_DATABASE_URL`) — a broader credential exposure than a server-only cron.
+Accepted for backup independence + `pg_dump` availability; the dump is read-only
+and the DB `ipAllowList` (`0.0.0.0/0`, credential-gated) is unchanged.
+
+**Scope / guardrails.** No `apps/server`/engine/schema change; no new npm
+dependency (R2 I/O via the runner `aws` CLI, retention via `node:` built-ins).
+The R2 backup bucket must be private and distinct from the public
+`legendary-images` bucket; `pg_dump` client major ≥ 18 is enforced at runtime;
+the secret-absence guard makes an unconfigured run skip green, never a false
+success.
+
+**Landed:** 2026-07-24. Files: `.github/workflows/db-backup.yml` [new],
+`scripts/db-backup-retention.{mjs,test.ts}` [new],
+`docs/ops/DISASTER_RECOVERY.md`. WP-416 / EC-451.
+
 Protect this file.

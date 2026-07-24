@@ -413,7 +413,7 @@ mindmap
 
       Cross-App Infrastructure
         ["WP-180 ✅ Build-time version stamping"]
-        ["WP-416 📝 Drafted — Provider-independent PostgreSQL backup (pg_dump → R2 daily, CI-driven; D-24236)"]
+        ["WP-416 ✅ Provider-independent PostgreSQL backup (pg_dump → R2 daily, CI-driven; D-24236)"]
 
       Multiplayer Play & Match Durability (2026-07)
         ["WP-306 ✅ Setup-contract per-field ext_id validation (henchman id-space fix) — per-field FlatCard.extId checks in parseLoadoutJson/setupContract; henchmen aren't flat cards; EC-336; D-24091"]
@@ -586,7 +586,7 @@ mindmap
 | Phase 9 — Profile Surface Follow-ups | 11/11 | — |
 | Architecture & API Governance | 4/4 | — |
 | Complete-Game Testing | 1/1 | — |
-| Cross-App Infrastructure | 1/2 | 1 open |
+| Cross-App Infrastructure | 2/2 | — |
 | Multiplayer Play & Match Durability (2026-07) | 8/8 | — |
 | Hero/Villain Effects & Diagnostics (2026-07) | 5/5 | — |
 | Live-Play HUD & Pending-Choice UX (2026-07) | 15/15 | — |
@@ -596,9 +596,9 @@ mindmap
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **400/410 WP ✅** (+ 4/4 Foundation Prompts) | 3 ⏸, 7 open |
+| **Total** | **401/410 WP ✅** (+ 4/4 Foundation Prompts) | 3 ⏸, 6 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 10):** WP-042.1 ⏸ blocked; WP-349 open; WP-391 open; WP-396 open; WP-398 open; WP-399 open; WP-368 open; WP-403 ⏸ blocked; WP-404 ⏸ blocked; WP-416 open.
+**Open / blocked WPs (derived from WORK_INDEX, 9):** WP-042.1 ⏸ blocked; WP-349 open; WP-391 open; WP-396 open; WP-398 open; WP-399 open; WP-368 open; WP-403 ⏸ blocked; WP-404 ⏸ blocked.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.
