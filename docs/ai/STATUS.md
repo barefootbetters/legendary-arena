@@ -7,6 +7,39 @@
 
 ## Current State
 
+### WP-419 / EC-454 — Bot-Ally Status Liveness + Strand→Faulted (D-24239) (2026-07-24)
+
+**`User-Visible Surface = play.legendary-arena.com`.** Fixes a **silent bot-ally freeze**
+found in a live diagnostic (match `vMxtCoOZDFj`): the match was frozen on the bot's turn 1
+while `GET /api/match/:matchId/bot-ally-status` reported `{ driving: true, status: 'active' }`.
+The bot driver's fault machinery is bounded (a genuine wedge faults within seconds), so a match
+stuck `active` for 30+ minutes means **no driver is actually running** — the in-process
+`BotAllyDriver` was destroyed by a redeploy (plausibly WP-418's own Render redeploy) and
+`active` is merely its *creation* status, never overwritten. Two defects turned that driver-loss
+into a silent permanent freeze:
+
+1. **The status endpoint trusted the flag over liveness.** `driving` was `row.status ===
+   'active'` with no check that a live driver exists, so a dead-but-active match reported
+   healthy. Because the WP-415 banner renders only on `driving:false`, the human sat frozen with
+   no signal. **Fix:** `driving = row.status === 'active' && botAllyDrivers.has(matchId)` —
+   `botAllyDrivers` is the process's live-driver registry, so `.has` is the liveness signal. A
+   driverless `active` match now reports `driving:false` → the banner surfaces → the human can
+   Return to lobby.
+2. **A cap-stranded active row stayed un-surfaced.** A match that burns all `MAX_REVIVALS`
+   revivals without completing a turn is excluded from revival yet left `active`. **Fix:**
+   `rehydrateBotAllyDrivers` now calls `settleStrandedActiveMatches` (reads `status='active' AND
+   revive_count >= MAX_REVIVALS`, settles each driverless row to `completed`/`faulted` with the
+   public-safe `BOT_FAULTED_MESSAGE`; a row revived this boot has a live driver → skipped).
+
+**Untouched:** the revival-cap read/increment logic (the 2026-07-23 OOM-loop hotfix owns it);
+`exhausted` (a legitimate long game) is not stranded; recovering a genuinely-drivable capped
+match (re-driving instead of faulting) and a multi-instance DB heartbeat are named follow-ups
+(single-instance assumed). Server orchestration only — no `G`/`ctx`/RNG/determinism/persistence
+change; the response shape + `guest` auth are unchanged (§21 N/A). Bot-ally route suite 31/0 (5
+new/updated); full server suite green (927/0 + DB-gated skips); `pnpm -r --no-bail test` green
+repo-wide; `pnpm -r build` 0. **D-24026 live-verify operator-pending on deploy** (a driverless
+bot-ally match reports `driving:false` and surfaces the banner; a healthy one stays silent).
+
 ### WP-418 / EC-453 — "New Version — Refresh" Prompt + Reconnect-Gap Audit (D-24238) (2026-07-24)
 
 **`User-Visible Surface = play.legendary-arena.com`.** Kills the **deploy-mid-match
