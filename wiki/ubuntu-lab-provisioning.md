@@ -191,6 +191,14 @@ provisioned, the app redeployed, Postgres restored from a backup, TLS
 re-established, and `/health` returns green — all from the documented steps alone.
 Backups are only proven after a full recovery has actually been demonstrated.
 
+The authoritative, executable version of this exercise — recovery objectives
+(RPO/RTO), the DR-01…DR-05 scenario procedures, and the binary
+business-capability validation checklist — lives in the operator runbook at
+[`docs/ops/DISASTER_RECOVERY.md`](../docs/ops/DISASTER_RECOVERY.md) (a
+prescriptive runbook, deliberately kept out of the descriptive ewiki). This lab
+is where that runbook is *rehearsed*; the runbook is what you follow when it is
+not a drill.
+
 ### Ownership boundary (what a self-managed move would transfer)
 
 Render currently owns, and a move to a self-managed droplet would transfer to the
