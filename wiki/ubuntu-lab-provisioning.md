@@ -118,6 +118,13 @@ sudo apt install -y git nginx postgresql           # postgresql = LAB DB only
 sudo npm install -g pm2                             # process manager
 ```
 
+`apt` installs only the **OS-level** pieces — Nginx, PM2, and the lab **Postgres
+server**. The application's own runtime dependencies are **not** system packages:
+`boardgame.io`, `pg`, and the `@legendary-arena/*` workspace packages are pulled by
+`pnpm install` (§3) from each workspace's `package.json` and run **inside** the Node
+process, not as Ubuntu services. There is nothing to `apt install` for boardgame.io —
+Ubuntu provides the OS; Node runs the app; `pnpm` provides the app's libraries.
+
 Nginx as a TLS-terminating reverse proxy in front of the Node process, with
 Certbot for the certificate:
 
@@ -226,6 +233,14 @@ could run. The candidates it exists to measure against each other:
 - **C — Ubuntu server + managed Postgres (co-located).** Self-hosted app tier,
   DB still managed, app and DB back on one fast private network.
 - **D — Ubuntu app server + Ubuntu database server.** Fully self-managed.
+- **E — Render server + self-hosted Ubuntu Postgres.** Move *only* the database
+  off Render. Note it is the **highest-risk** configuration of the set on two
+  counts at once: it self-hosts the crown-jewel database (accounts, friendships,
+  leaderboards, ranked, match data — see the Ownership boundary for what that
+  transfers), **and** it leaves the app on Render reaching that database over the
+  public internet rather than an internal network. It inverts the safer ordering —
+  self-host the *stateless* tier first (B/C), keep the *stateful* tier managed —
+  and is recorded here mainly to name it as the path to avoid.
 
 Choosing among these is explicitly outside this page's scope; it would be the
 subject of a future migration Work Packet and `DECISIONS` entry.
