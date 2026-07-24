@@ -10,7 +10,7 @@ tags:
 
 # Architecture & Library Adoption Inventory
 
-_Generated 2026-07-23 by `scripts/architecture-inventory.mjs`._
+_Generated 2026-07-24 by `scripts/architecture-inventory.mjs`._
 
 This is a deterministic snapshot of installed dependencies,
 their actual import usage across the workspace, and SaaS /
@@ -49,7 +49,7 @@ synthesised from the app's own manifests:
 - **`apps/server`** — Legendary Arena boardgame.io game server — wiring layer only
   - Stack: boardgame.io (`boardgame.io@^0.50.0`) over Socket.IO (transitive via `boardgame.io`) + HTTP routes via Koa router (`@koa/router@10.1.1` + `koa@2.16.4`, both transitive via `boardgame.io`) + PostgreSQL via `pg@^8.13.0`.
 - **`apps/wiki-viewer`** — Engineering wiki build pipeline. Build-time, read-only Hugo projection of `wiki/` (no `package.json` — Hugo is a Go binary, not a Node dep). Layer-boundary clean: zero runtime imports of `@legendary-arena/game-engine`, `@legendary-arena/registry`, or `apps/server`. Build pipeline is `pnpm wiki-viewer:project` (copy `wiki/*.md` → `apps/wiki-viewer/content/`) → `pnpm wiki-viewer:check-links` (case-sensitive internal-link gate) → `hugo --minify`.
-  - Stack: Hugo Extended (`hugo@0.135.0`, pinned in `apps/wiki-viewer/.hugo-version`) + 53 source pages projected from `wiki/` + deployed as Render Static Site `legendary-arena-wiki`.
+  - Stack: Hugo Extended (`hugo@0.135.0`, pinned in `apps/wiki-viewer/.hugo-version`) + 56 source pages projected from `wiki/` + deployed as Render Static Site `legendary-arena-wiki`.
 
 ## Deployment topology
 
@@ -89,7 +89,7 @@ answers "what URL maps to what app."
 
 | Service | Kind | URL / Scope |
 |---|---|---|
-| `legendary-arena-db` | Managed PostgreSQL (basic-1gb) | _internal (connection string via env)_ |
+| `legendary-arena-db` | Managed PostgreSQL (pro-4gb) | _internal (connection string via env)_ |
 | `legendary-arena-server` | Render Web Service | https://legendary-arena-server.onrender.com |
 | `legendary-arena-wiki` | Render Web Service | https://legendary-arena-wiki.onrender.com |
 
@@ -115,7 +115,7 @@ Curated in `MANAGED_DATABASE_OPS_NOTES` in `scripts/architecture-inventory.mjs` 
 - Upgraded 2026-07-22 from Basic-256mb (256 MB / 0.1 CPU): the smaller instance repeatedly OOM-crashed into recovery mode ("the database system is in recovery mode" / "not yet accepting connections") under the real workload (bgio match blobs plus leaderboard / dashboard / competitive queries), killing in-flight autoplay + bot-ally matches. Storage stayed ~56% of 1 GB throughout, so the constraint was RAM/CPU, NOT disk.
 - BLUEPRINT-MANAGED: `plan`, `ipAllowList`, and `storageAutoscalingEnabled` all live in render.yaml `databases:`. A dashboard-only change to any of them is REVERTED on the next blueprint sync — every managed-DB setting must be set in render.yaml to be durable.
 - `ipAllowList: []` = internal-only inbound (was public `0.0.0.0/0`). The server connects via the internal hostname, so nothing app-side breaks; the External Database URL / a local `psql` no longer connects — use the Render dashboard PSQL shell for ops. Caveat: the dashboard also showed the `0.0.0.0/0` rules "Affected by: Workspace / Environment" — a workspace/environment-level network rule may layer on top and is only removable in the dashboard, not render.yaml.
-- `storageAutoscalingEnabled: true` grows the disk +50% at 90% full. bgio never prunes finished matches, so storage creeps upward; autoscaling ABSORBS that but does not BOUND it — a match-retention/cleanup job is the queued follow-up that bounds growth (must respect the D-24119 replay/verification carve-out, which reads completed match blobs).
+- `storageAutoscalingEnabled: true` grows the disk +50% at 90% full. ROW retention IS handled (this note was stale): the match-reaper (WP-327, `apps/server/src/db/matchReaper.js`) deletes finished matches 1h after gameover — once the WP-335 capture-harvester has preserved the durable replay/competitive artifact per the D-24119 carve-out — and abandoned matches after 24h. What NEITHER the reaper NOR autoscaling does is shrink the table FILE: Postgres keeps deleted-row space as reusable dead tuples (mostly in TOAST, where the jsonb match blobs live), so `pg_total_relation_size('bgio.matches')` can be hundreds of MB with only a few live rows. Reclaim that bloat to disk with a one-shot `VACUUM FULL` — see the operator runbook `docs/ops/RUNBOOK-db-storage-reclaim.md` (worked example 2026-07-24: 346MB → 41MB, ~305MB of TOAST bloat reclaimed). NOT a scheduled chore on `pro-4gb` + autoscaling; reclaim only when you want the space back.
 - Render's Connection Pool (PgBouncer) is ENABLED on the instance, but the app stays on the DIRECT Internal Database URL — with 1 GB RAM there is no connection-memory pressure to justify PgBouncer transaction-pooling (which can break prepared statements / session state). Route the app through the pool URL only if real connection pressure ever appears.
 - Fix arc (all 2026-07-22): #920 added `pool.on("error")` (a band-aid that stopped the process crash but the DB kept killing idle clients); #930 gave the autoplay loop a bounded transient-read retry (`resilientFetch`, reads-only); #931 de-noised the pool error log (it was dumping a ~40-line pg Connection object per idle-client kill); #932 bumped the plan to basic-1gb (root cause); #933 restricted inbound to internal-only; #935 enabled storage autoscaling.
 - DIAGNOSTIC LESSON: the autoplay guest-safe `abortReason` ("The bot loop stopped after an unexpected server error", D-24037) HIDES the raw exception — it is logged only server-side as `[autoplay] match <id> bot loop failed: <msg>`. To diagnose an autoplay/bot abort, pull that Render log line; the engine-runner harness cannot reproduce it (it bypasses boardgame.io).
@@ -281,11 +281,11 @@ Counts derived from on-disk file extensions under `apps/`, `packages/`, `scripts
 | TypeScript | 909 |
 | Vue SFC | 146 |
 | JavaScript | 119 |
-| JSON | 110 |
-| Markdown | 74 |
-| HTML | 64 |
+| JSON | 107 |
+| Markdown | 77 |
+| HTML | 15 |
 | PowerShell | 10 |
-| CSS | 9 |
+| CSS | 8 |
 | TOML | 1 |
 | YAML | 1 |
 
@@ -295,25 +295,21 @@ Counts derived from on-disk file extensions under `apps/`, `packages/`, `scripts
 |---|---:|
 | `.ts` | 904 |
 | `.vue` | 146 |
-| `.json` | 110 |
+| `.json` | 107 |
+| `.md` | 77 |
 | `.mjs` | 77 |
-| `.md` | 74 |
-| `.html` | 64 |
 | `.js` | 40 |
-| `.png` | 16 |
+| `.html` | 15 |
 | `.ps1` | 10 |
-| `.css` | 9 |
-| `.svg` | 7 |
+| `.css` | 8 |
+| `.png` | 7 |
 | `.d.ts` | 5 |
 | `.txt` | 4 |
 | `.example` | 3 |
-| `.mmd` | 3 |
 | `.cjs` | 2 |
 | `.gitignore` | 2 |
 | `.gitkeep` | 1 |
 | `.hugo-version` | 1 |
-| `.ico` | 1 |
-| `.jpg` | 1 |
 | `.npmignore` | 1 |
 | `.prettierignore` | 1 |
 | `.toml` | 1 |
@@ -651,8 +647,8 @@ dependency-based inventory.
 
 | Service | Category | Detected in | Description |
 |---|---|---:|---|
-| `brevo` | marketing / email | 16 files | Transactional + marketing email, newsletter forms, SMTP relay. |
-| `snipcart` | ecommerce | 2 files | Cart overlay via CDN script + HTML data attributes. |
+| `brevo` | marketing / email | 13 files | Transactional + marketing email, newsletter forms, SMTP relay. |
+| `snipcart` | ecommerce | 1 file | Cart overlay via CDN script + HTML data attributes. |
 
 ### SaaS usage detail
 
@@ -662,9 +658,6 @@ dependency-based inventory.
 - `apps/server/src/marketing/brevoEnqueue.logic.ts`
 - `apps/server/src/marketing/brevoTransactional.logic.test.ts`
 - `apps/server/src/marketing/brevoTransactional.logic.ts`
-- `apps/wiki-viewer/public/brevo-email-pipeline/index.html`
-- `apps/wiki-viewer/public/hugo-onboarding/index.html`
-- `apps/wiki-viewer/public/hugo-web-system/index.html`
 - `docs/ai/DECISIONS.md`
 - `docs/ai/STATUS.md`
 - `docs/ai/execution-checklists/EC-325-game-signup-brevo-enqueue.checklist.md`
@@ -677,7 +670,6 @@ dependency-based inventory.
 
 #### snipcart
 
-- `apps/wiki-viewer/public/hugo-web-system/index.html`
 - `wiki/hugo-web-system.md`
 
 ## Importance tiering
