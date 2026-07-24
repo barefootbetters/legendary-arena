@@ -7,6 +7,45 @@
 
 ## Current State
 
+### WP-417 / EC-452 — Every Played Card Prints Its Effect and the Action Taken (D-24237) (2026-07-24)
+
+**`User-Visible Surface = play.legendary-arena.com` (the Game Log panel + WP-322
+export).** Completes the WP-323/324/325 log-enrichment arc and the deferred
+**WP-B.2** reveal realized-results slice (D-24111), driven by a live Magneto
+match log. Three defects fixed on a card play, **message-text only**:
+
+1. **Marker leak** — the card pipeline's `apply-effect-markers` machine markers
+   were being humanized into the player-facing log ("played Keen Senses —
+   Instinct: Draw a card. **draw:1**."). `abilityTextToPlainText` now drops a
+   `[keyword:…]` token whose value matches the engine-marker **shape**
+   (`isEngineEffectMarker`, all-lowercase kebab/`:`), keeping printed keywords
+   ("Undercover", "What If...?", "Danger Sense 2"). Shape, not an allowlist —
+   markers for mechanics not yet `HeroKeyword` members (`demolish`,
+   `reveal-multi-take`) must drop too.
+2. **Silent starters** — a S.H.I.E.L.D. Agent / Trooper (no ability text) now
+   prints the base `+1 recruit` / `+1 attack` it added, via a new
+   `formatBaseEconomyClause` folded onto the play line (`formatPlayedCardLabel`
+   third param; `''` on the discard-to-play reject + `playFromUndercover`
+   annotation lines; a trailing `.` trimmed so the caller's period doesn't
+   double).
+3. **Silent handlers** — the four onPlay handlers now each log: draw (naming the
+   realized count, and a distinct deck+discard-empty shortfall line), attack,
+   recruit, and self-KO. The reveal-outcome line names a matched-but-guard-blocked
+   action ("… could not be applied.") — the WP-B.2 realized-result item.
+
+No change to `G` economy/zone state, draw/KO/reveal behavior, RNG, or turn flow —
+only log text and two return-type widenings that feed it (`drawFromPlayerDeck` →
+`number`, `applyRevealRuleActions` → `RevealActionKind[]`). `G.messages` is
+hash-excluded (D-24081); the `sentinel-core-doom-2p` fixture was re-recorded with
+an **unchanged `finalStateHash`** (starter plays now carry the base-icon clause).
+Engine suite green (new `logDisplay` / `revealLog` / handler-log tests);
+`pnpm -r --no-bail test` green repo-wide (0 fail; server DB-gated tests skip);
+`pnpm -r build` 0.
+
+**Live-verify pending (D-24026):** after merge + deploy, confirm a match's log
+shows the printed effect (markers stripped), the base-icon clause on a starter
+play, and the draw/attack/recruit/KO action lines.
+
 ### WP-416 / EC-451 — Provider-Independent PostgreSQL Backup Pipeline (D-24236) (2026-07-24)
 
 **No user-observable change — infrastructure only.** Closes the DR-05

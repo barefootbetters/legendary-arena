@@ -43,6 +43,7 @@ import { formatCardRef } from '../log/logDisplay.js';
 import {
   describeRevealPredicate,
   describeRevealActions,
+  describeUnappliedRevealActions,
   formatRevealOutcomeLine,
 } from './revealLog.js';
 import { pushLog } from '../log/logPush.js';
@@ -250,24 +251,27 @@ function isValidMagnitude(magnitude: number | undefined): magnitude is number {
  * @param playerID - Active player whose zones to modify.
  * @param count - Number of cards to draw.
  * @param shuffleContext - ShuffleProvider for deterministic reshuffle.
+ * @returns How many cards were actually drawn (WP-417 — fewer than `count` when
+ *   the deck and discard pile both ran dry; the caller logs the realized amount).
  */
 function drawFromPlayerDeck(
   G: LegendaryGameState,
   playerID: string,
   count: number,
   shuffleContext: ShuffleProvider,
-): void {
+): number {
   const playerZones = G.playerZones[playerID];
   if (!playerZones) {
-    return;
+    return 0;
   }
 
+  let drawnCount = 0;
   for (let cardsDrawn = 0; cardsDrawn < count; cardsDrawn++) {
     // If deck is empty, attempt reshuffle from discard
     if (playerZones.deck.length === 0) {
       if (playerZones.discard.length === 0) {
         // No cards available anywhere — stop drawing
-        return;
+        return drawnCount;
       }
 
       // why: Reshuffling discard into deck is the standard Legendary rule
@@ -280,13 +284,15 @@ function drawFromPlayerDeck(
 
     const topCard = playerZones.deck[0];
     if (!topCard) {
-      return;
+      return drawnCount;
     }
 
     const result = moveCardFromZone(playerZones.deck, playerZones.hand, topCard);
     playerZones.deck = result.from;
     playerZones.hand = result.to;
+    drawnCount++;
   }
+  return drawnCount;
 }
 
 // ---------------------------------------------------------------------------
@@ -591,33 +597,59 @@ function heroEffectDraw(
   G: LegendaryGameState,
   ctx: unknown,
   playerID: string,
-  _cardId: CardExtId,
+  cardId: CardExtId,
   effect: HeroEffectDescriptor,
 ): void {
   // why: ctx is narrowed to ShuffleProvider here because deck reshuffle
   // needs ctx.random.Shuffle. boardgame.io ctx satisfies ShuffleProvider
   // structurally — this is the established pattern from WP-005B/008B.
-  drawFromPlayerDeck(G, playerID, effect.magnitude as number, ctx as ShuffleProvider);
+  const requestedCount = effect.magnitude as number;
+  const drawnCount = drawFromPlayerDeck(G, playerID, requestedCount, ctx as ShuffleProvider);
+  // why: WP-417 / D-24237 — the draw handler was silent, so "Draw a card." on the
+  // play line was the ONLY evidence the ability existed and a short draw (deck and
+  // discard both empty) was indistinguishable from a full one. Name the realized
+  // amount, and say so explicitly when it fell short of the printed amount.
+  if (drawnCount < requestedCount) {
+    pushLog(G,
+      `Player ${playerID} drew ${drawnCount} of ${requestedCount} card(s) from ${formatCardRef(G.cardDisplayData, cardId)} — their deck and discard pile were empty.`,
+    );
+    return;
+  }
+  pushLog(G,
+    `Player ${playerID} drew ${drawnCount} card(s) from ${formatCardRef(G.cardDisplayData, cardId)}.`,
+  );
 }
 
 function heroEffectAttack(
   G: LegendaryGameState,
   _ctx: unknown,
-  _playerID: string,
-  _cardId: CardExtId,
+  playerID: string,
+  cardId: CardExtId,
   effect: HeroEffectDescriptor,
 ): void {
-  G.turnEconomy = addResources(G.turnEconomy, effect.magnitude as number, 0);
+  const attackGrant = effect.magnitude as number;
+  G.turnEconomy = addResources(G.turnEconomy, attackGrant, 0);
+  // why: WP-417 / D-24237 — an ability-granted attack was silent; only the
+  // count-scaled variant (attack-per-count) logged. Both now report the grant.
+  pushLog(G,
+    `Player ${playerID} gained +${attackGrant} attack from ${formatCardRef(G.cardDisplayData, cardId)}.`,
+  );
 }
 
 function heroEffectRecruit(
   G: LegendaryGameState,
   _ctx: unknown,
-  _playerID: string,
-  _cardId: CardExtId,
+  playerID: string,
+  cardId: CardExtId,
   effect: HeroEffectDescriptor,
 ): void {
-  G.turnEconomy = addResources(G.turnEconomy, 0, effect.magnitude as number);
+  const recruitGrant = effect.magnitude as number;
+  G.turnEconomy = addResources(G.turnEconomy, 0, recruitGrant);
+  // why: WP-417 / D-24237 — mirrors the attack grant above; an ability-granted
+  // recruit was previously invisible in the game log.
+  pushLog(G,
+    `Player ${playerID} gained +${recruitGrant} recruit from ${formatCardRef(G.cardDisplayData, cardId)}.`,
+  );
 }
 
 function heroEffectKo(
@@ -637,6 +669,11 @@ function heroEffectKo(
     if (moveResult.found) {
       playerZones.inPlay = moveResult.from;
       G.ko = koCard(G.ko, cardId);
+      // why: WP-417 / D-24237 — a self-KO removes the card the player just played
+      // from the board; a silent removal reads as the card vanishing. Name it.
+      pushLog(G,
+        `Player ${playerID} KO'd ${formatCardRef(G.cardDisplayData, cardId)} via its own ability.`,
+      );
     }
   }
 }
@@ -853,6 +890,10 @@ function applyRevealRules(
   // predicate + every matched rule's actions compose the line after the loop.
   let matchedPredicateText: string | undefined;
   const matchedActionPhrases: string[] = [];
+  // why: WP-417 / D-24237 — WP-B.2's realized-result item. `describeRevealActions`
+  // states what the branch CLAIMED; these are the action kinds whose helper guard
+  // fired and mutated nothing, so the line can say what did not actually happen.
+  const unappliedActionKinds: RevealActionKind[] = [];
   for (const rule of rules) {
     if (!revealPredicateMatches(G, rule.predicate, cost)) {
       continue;
@@ -861,7 +902,9 @@ function applyRevealRules(
       matchedPredicateText = describeRevealPredicate(rule.predicate);
     }
     matchedActionPhrases.push(describeRevealActions(rule.actions));
-    applyRevealRuleActions(G, playerID, playerZones, topCardId, cost, rule.actions);
+    for (const unappliedKind of applyRevealRuleActions(G, playerID, playerZones, topCardId, cost, rule.actions)) {
+      unappliedActionKinds.push(unappliedKind);
+    }
     // why: first-match-wins unless the rule opts into `continue` — the
     // reveal-attack-choose attack rule sets continue so the always→choose rule still
     // parks the choice after the attack. (D-24024) `break` (not `return`) so the
@@ -884,6 +927,7 @@ function applyRevealRules(
             matched: true,
             predicateText: matchedPredicateText,
             actionsText: matchedActionPhrases.join(', '),
+            unappliedActionsText: describeUnappliedRevealActions(unappliedActionKinds),
           };
     pushLog(G, 
       formatRevealOutcomeLine(G.cardDisplayData, playerID, topCardId, cost, outcome),
@@ -946,6 +990,9 @@ function revealPredicateMatches(
  * @param topCardId - The peeked deck-top card's CardExtId.
  * @param cost - The peeked card's cost (for attack-by-cost).
  * @param actions - The matched rule's actions, applied in order.
+ * @returns The action kinds that did NOT realize their mutation (WP-417 /
+ *   D-24237) — read only to compose the reveal-outcome log line. Behavior
+ *   (which actions run, and the deck-mutating abort) is unchanged.
  */
 function applyRevealRuleActions(
   G: LegendaryGameState,
@@ -954,17 +1001,22 @@ function applyRevealRuleActions(
   topCardId: CardExtId,
   cost: number,
   actions: RevealAction[],
-): void {
+): RevealActionKind[] {
+  const unappliedActionKinds: RevealActionKind[] = [];
   for (const action of actions) {
     const applied = applyRevealAction(G, playerID, playerZones, topCardId, cost, action);
+    if (!applied) {
+      unappliedActionKinds.push(action.kind);
+    }
     // why: only a deck-mutating action (ko / draw) gates the rest of the rule —
     // reveal-ko-attack's [ko, attack-fixed] grants the fixed attack ONLY after the
     // KO move returned found (no partial mutation). A non-mutating action that
     // no-ops (e.g. attack with no turnEconomy) does NOT abort the rule. (D-24024 / D-22301)
     if (!applied && isDeckMutatingRevealAction(action.kind)) {
-      return;
+      return unappliedActionKinds;
     }
   }
+  return unappliedActionKinds;
 }
 
 /**

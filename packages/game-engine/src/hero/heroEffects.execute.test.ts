@@ -341,6 +341,41 @@ describe('executeHeroEffects', () => {
       'Player should have drawn 2 cards into hand.');
     assert.equal(gameState.playerZones['0'].deck.length, 1,
       'Deck should have 1 card remaining after drawing 2.');
+    // why: WP-417 / D-24237 — the draw handler now names the realized amount.
+    assert.ok(
+      gameState.messages.some((line) => line.includes('drew 2 card(s) from')),
+      'The draw handler logs the realized draw count.',
+    );
+  });
+
+  // why: WP-417 / D-24237 — a short draw (deck and discard both dry) is named as
+  // such so it is distinguishable from a full draw in the game log.
+  it('draw effect logs the shortfall when the deck and discard run dry', () => {
+    const gameState = makeTestState({
+      deck: ['card-a'],
+      hand: [],
+      discard: [],
+      inPlay: ['hero-x'],
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-x' as string,
+          timing: 'onPlay',
+          keywords: ['draw'],
+          effects: [{ type: 'draw', magnitude: 2 }],
+        },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+
+    assert.equal(gameState.playerZones['0'].hand.length, 1,
+      'Only one card was available to draw.');
+    assert.ok(
+      gameState.messages.some((line) =>
+        line.includes('drew 1 of 2 card(s)') && line.includes('deck and discard pile were empty'),
+      ),
+      'The draw handler names the shortfall against the printed amount.',
+    );
   });
 
   // -------------------------------------------------------------------------
@@ -365,6 +400,11 @@ describe('executeHeroEffects', () => {
       'turnEconomy.attack should increase by 3.');
     assert.equal(gameState.turnEconomy.recruit, 0,
       'turnEconomy.recruit should remain unchanged.');
+    // why: WP-417 / D-24237 — an ability-granted attack now surfaces in the log.
+    assert.ok(
+      gameState.messages.some((line) => line.includes('gained +3 attack from')),
+      'The attack handler logs the grant.',
+    );
   });
 
   // -------------------------------------------------------------------------
@@ -389,6 +429,11 @@ describe('executeHeroEffects', () => {
       'turnEconomy.recruit should increase by 2.');
     assert.equal(gameState.turnEconomy.attack, 0,
       'turnEconomy.attack should remain unchanged.');
+    // why: WP-417 / D-24237 — an ability-granted recruit now surfaces in the log.
+    assert.ok(
+      gameState.messages.some((line) => line.includes('gained +2 recruit from')),
+      'The recruit handler logs the grant.',
+    );
   });
 
   // -------------------------------------------------------------------------
@@ -413,6 +458,11 @@ describe('executeHeroEffects', () => {
       'hero-x should be removed from inPlay.');
     assert.deepEqual(gameState.ko, ['hero-x'],
       'hero-x should be added to the KO pile.');
+    // why: WP-417 / D-24237 — a self-KO now names the card it removed.
+    assert.ok(
+      gameState.messages.some((line) => line.includes("KO'd") && line.includes('via its own ability')),
+      'The self-KO handler logs the removal.',
+    );
   });
 
   // -------------------------------------------------------------------------

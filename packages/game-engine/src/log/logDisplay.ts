@@ -36,6 +36,30 @@ export function resolveCardName(
   return cardDisplayData?.[extId]?.name ?? extId;
 }
 
+// why: WP-417 / D-24237 — the registry `abilities` lines carry BOTH printed card
+// text and the machine-readable effect markers the pipeline's apply-effect-markers
+// pass appends (`[keyword:draw:1]`, `[keyword:ko-wound-reward:attack:2]`). The
+// markers are engine plumbing, not printed text; humanizing them leaked
+// "Draw a card. draw:1." into the player-facing game log. The two are told apart
+// by SHAPE, not by a keyword allowlist: every printed keyword in the corpus is
+// Title Case with spaces / punctuation ("Undercover", "What If...?", "Danger
+// Sense 2"), and every machine marker is all-lowercase kebab-case with optional
+// `:`-delimited payload segments. A shape test also covers markers for mechanics
+// that are not yet HeroKeyword members (`demolish`, `reveal-multi-take`), which an
+// allowlist would silently keep leaking.
+const ENGINE_EFFECT_MARKER_SHAPE = /^[a-z0-9]+(?:-[a-z0-9]+)*(?::[a-z0-9]+(?:-[a-z0-9]+)*)*$/;
+
+/**
+ * Returns whether a `[keyword:...]` token value is an engine effect marker
+ * (machine plumbing) rather than a printed card keyword.
+ *
+ * @param tokenValue The token value (`draw:1`, `Undercover`, `What If...?`, ...).
+ * @returns Whether the value has the all-lowercase kebab/colon marker shape.
+ */
+export function isEngineEffectMarker(tokenValue: string): boolean {
+  return ENGINE_EFFECT_MARKER_SHAPE.test(tokenValue);
+}
+
 /**
  * Humanizes a single `[type:value]` ability-markup token into readable text.
  * Hero-class tokens are title-cased; every other token keeps its text with
@@ -68,11 +92,16 @@ export function abilityTextToPlainText(abilityText: string | undefined): string 
     return '';
   }
   // why: replace each [type:value] token with a SPACE-PADDED word so an adjacent
-  // number or token ("+3[icon:recruit]") does not fuse into "+3recruit".
+  // number or token ("+3[icon:recruit]") does not fuse into "+3recruit". WP-417 —
+  // an engine effect marker becomes a bare space instead (dropped, not humanized).
   const withWords = abilityText.replace(
     /\[(\w+):([^\]]+)\]/g,
-    (_match: string, tokenType: string, tokenValue: string): string =>
-      ` ${humanizeAbilityToken(tokenType, tokenValue)} `,
+    (_match: string, tokenType: string, tokenValue: string): string => {
+      if (tokenType === 'keyword' && isEngineEffectMarker(tokenValue)) {
+        return ' ';
+      }
+      return ` ${humanizeAbilityToken(tokenType, tokenValue)} `;
+    },
   );
   // why: a log line is a single entry — collapse every run of whitespace
   // (including the ability's own newlines) to one space, then trim.
@@ -102,16 +131,60 @@ export function formatCardRef(
   return `${resolveCardName(cardDisplayData, extId)} (${extId})`;
 }
 
+/**
+ * Builds the printed-icon economy clause for a played card: `+2 attack, +1 recruit`.
+ *
+ * WP-417 — a starter (S.H.I.E.L.D. Agent / Trooper) has no printed ability, so
+ * before this its log line said only that it was played and never what it did.
+ * The printed icons ARE its whole effect, so they belong on the play line.
+ *
+ * @param attack The card's printed attack (base card stats).
+ * @param recruit The card's printed recruit (base card stats).
+ * @returns The clause, or an empty string when the card grants neither.
+ */
+export function formatBaseEconomyClause(attack: number, recruit: number): string {
+  const parts: string[] = [];
+  if (attack > 0) {
+    parts.push(`+${attack} attack`);
+  }
+  if (recruit > 0) {
+    parts.push(`+${recruit} recruit`);
+  }
+  return parts.join(', ');
+}
+
+/**
+ * Builds the played-card label for a game-log line: `{Name} ({extId})`, plus
+ * ` ({printed icons})` when the card grants base attack / recruit, plus
+ * ` — {plain effect}` when the card has printed ability text.
+ *
+ * @param cardDisplayData The `G.cardDisplayData` snapshot, or undefined.
+ * @param extId The played card's ext-id.
+ * @param economyClause The printed-icon clause from `formatBaseEconomyClause`
+ *   (empty string when the card grants no base attack or recruit).
+ * @returns The formatted label.
+ */
 export function formatPlayedCardLabel(
   cardDisplayData: CardDisplayData | undefined,
   extId: CardExtId,
+  economyClause: string,
 ): string {
-  const cardRef = formatCardRef(cardDisplayData, extId);
+  let label = formatCardRef(cardDisplayData, extId);
+  if (economyClause.length > 0) {
+    label = `${label} (${economyClause})`;
+  }
   const plainEffect = abilityTextToPlainText(cardDisplayData?.[extId]?.abilityText);
   // why: only append the effect clause when the card has printed ability text —
-  // starters (S.H.I.E.L.D. Agent / Trooper) have none and stay "{Name} ({extId})".
+  // starters (S.H.I.E.L.D. Agent / Trooper) have none and stay at the ref + icons.
   if (plainEffect.length === 0) {
-    return cardRef;
+    return label;
   }
-  return `${cardRef} — ${plainEffect}`;
+  // why: WP-417 — the effect clause is embedded in a sentence the caller finishes
+  // (the play line ends `... .`; the reject line continues `... — it requires …`),
+  // so a trailing period on the printed text either doubles (`Draw a card..`) or
+  // sits mid-sentence. Drop exactly one trailing period. Before WP-417 the appended
+  // effect marker sat after the period, hiding the doubling; dropping the marker
+  // exposed it.
+  const trimmedEffect = plainEffect.endsWith('.') ? plainEffect.slice(0, -1) : plainEffect;
+  return `${label} — ${trimmedEffect}`;
 }

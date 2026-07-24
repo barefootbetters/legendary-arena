@@ -3,10 +3,10 @@
     "finalStateHash": "3da2c374248697af1a23bcf0673fa98fc83435d4e9ec32c9828cd3bd651f0037",
     "messages": [
       "Mastermind strike revealed — strike count incremented.",
-      "Player 0 played S.H.I.E.L.D. Trooper (starting-shield-trooper).",
-      "Player 0 played S.H.I.E.L.D. Agent (starting-shield-agent).",
+      "Player 0 played S.H.I.E.L.D. Trooper (starting-shield-trooper) (+1 attack).",
+      "Player 0 played S.H.I.E.L.D. Agent (starting-shield-agent) (+1 recruit).",
       "Mastermind strike revealed — strike count incremented.",
-      "Player 1 played S.H.I.E.L.D. Trooper (starting-shield-trooper)."
+      "Player 1 played S.H.I.E.L.D. Trooper (starting-shield-trooper) (+1 attack)."
     ],
     "outcome": {
       "counters": {
@@ -23,8 +23,8 @@
         "matchId": "sentinel-core-doom-2p",
         "messages": [
           "Mastermind strike revealed — strike count incremented.",
-          "Player 0 played S.H.I.E.L.D. Trooper (starting-shield-trooper).",
-          "Player 0 played S.H.I.E.L.D. Agent (starting-shield-agent)."
+          "Player 0 played S.H.I.E.L.D. Trooper (starting-shield-trooper) (+1 attack).",
+          "Player 0 played S.H.I.E.L.D. Agent (starting-shield-agent) (+1 recruit)."
         ],
         "phase": "play",
         "players": [
@@ -56,10 +56,10 @@
         "matchId": "sentinel-core-doom-2p",
         "messages": [
           "Mastermind strike revealed — strike count incremented.",
-          "Player 0 played S.H.I.E.L.D. Trooper (starting-shield-trooper).",
-          "Player 0 played S.H.I.E.L.D. Agent (starting-shield-agent).",
+          "Player 0 played S.H.I.E.L.D. Trooper (starting-shield-trooper) (+1 attack).",
+          "Player 0 played S.H.I.E.L.D. Agent (starting-shield-agent) (+1 recruit).",
           "Mastermind strike revealed — strike count incremented.",
-          "Player 1 played S.H.I.E.L.D. Trooper (starting-shield-trooper)."
+          "Player 1 played S.H.I.E.L.D. Trooper (starting-shield-trooper) (+1 attack)."
         ],
         "phase": "play",
         "players": [
@@ -187,7 +187,7 @@
       "0",
       "1"
     ],
-    "seed": "sentinel-core-doom-2p-v1",
+    "seed": "FROM-INPUT",
     "setupConfig": {
       "bystandersCount": 12,
       "henchmanGroupIds": [

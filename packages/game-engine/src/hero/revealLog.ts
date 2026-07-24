@@ -32,6 +32,12 @@ export interface RevealOutcome {
   predicateText?: string;
   /** The matched rules' action phrases, comma-joined (present only when `matched`). */
   actionsText?: string;
+  /**
+   * The matched actions that did NOT realize their mutation, comma-joined
+   * (WP-417 / D-24237). Absent when everything the branch claimed actually
+   * happened — which is the common case.
+   */
+  unappliedActionsText?: string;
 }
 
 /**
@@ -102,6 +108,50 @@ export function describeRevealActions(actions: readonly RevealAction[]): string 
 }
 
 /**
+ * Renders one reveal action kind as the THING it was supposed to do, for the
+ * WP-417 "matched but did not apply" clause.
+ *
+ * @param kind The reveal action kind.
+ * @returns A short noun phrase, e.g. `"the draw"`.
+ */
+function describeUnappliedRevealActionKind(kind: RevealActionKind): string {
+  if (kind === 'draw') {
+    return 'the draw';
+  }
+  if (kind === 'ko') {
+    return 'the KO';
+  }
+  if (kind === 'attack-by-cost' || kind === 'attack-fixed') {
+    return 'the attack grant';
+  }
+  if (kind === 'choose-discard-or-return') {
+    return 'the choice';
+  }
+  return 'an unrecognized action';
+}
+
+/**
+ * Renders the matched actions that failed to realize their mutation.
+ *
+ * WP-417 / D-24237 — `describeRevealActions` states what the matched branch
+ * CLAIMED ("drew it"); this states what of it did not actually happen, so a
+ * guard-blocked action (an empty deck, a missing turnEconomy) is no longer
+ * reported to the player as a success.
+ *
+ * @param kinds The matched action kinds that returned "did not apply", in order.
+ * @returns The joined phrase, e.g. `"the KO"`, or an empty string when none failed.
+ */
+export function describeUnappliedRevealActions(
+  kinds: readonly RevealActionKind[],
+): string {
+  const phrases: string[] = [];
+  for (const kind of kinds) {
+    phrases.push(describeUnappliedRevealActionKind(kind));
+  }
+  return phrases.join(', ');
+}
+
+/**
  * Builds the reveal-outcome game-log line for one peeked card.
  *
  * @param cardDisplayData The `G.cardDisplayData` snapshot, or undefined.
@@ -121,6 +171,11 @@ export function formatRevealOutcomeLine(
   const cardRef = formatCardRef(cardDisplayData, revealedCardId);
   if (!outcome.matched) {
     return `Player ${playerID} revealed ${cardRef} (cost ${cost}) — no branch matched (left on top).`;
+  }
+  // why: WP-417 / D-24237 — a matched branch whose action was guard-blocked used to
+  // print the success phrase anyway ("drew it" with nothing drawn). Name the gap.
+  if (outcome.unappliedActionsText !== undefined && outcome.unappliedActionsText.length > 0) {
+    return `Player ${playerID} revealed ${cardRef} (cost ${cost}) — ${outcome.predicateText} matched: ${outcome.actionsText}, but ${outcome.unappliedActionsText} could not be applied.`;
   }
   return `Player ${playerID} revealed ${cardRef} (cost ${cost}) — ${outcome.predicateText} matched: ${outcome.actionsText}.`;
 }
