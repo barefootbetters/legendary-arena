@@ -71,9 +71,8 @@ are served by the public game documentation, not this page.
   scoreboard, a *good-versus-evil Marvel power fantasy* with **heroic
   momentum** as its felt core: team synergy building, the jolt of a
   Master Strike, the swing of a last-turn rescue, the catharsis of a
-  Mastermind defeated. The experience should feel *authored*, not
-  generic. This is what the primary goals exist to protect, and what the
-  feel layer ([Design System Overview](design-system-overview.md))
+  Mastermind defeated. This is what the primary goals exist to protect,
+  and what the feel layer ([Design System Overview](design-system-overview.md))
   operationalizes (VISION §North Star → The Fantasy, D-24235).
 - **Primary goals (never change)** — Rules Authenticity · Content
   Authenticity · Player Trust & Fairness · Faithful Multiplayer ·
