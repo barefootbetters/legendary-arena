@@ -119,14 +119,30 @@ action for immediate tactile feedback (independent of the authoritative
 result). The three core moves are `drawCards`, `playCard`, and
 `endTurn`; the card-specific moves add fight/recruit/dodge.
 
-| Action (move) | Fires when | Suggested sound character | Candidate CC0 source |
-|---|---|---|---|
-| `playCard` | A card is played from hand | Card whoosh / place | OpenGameArt Card Game Sounds ("Play card") |
-| `recruitHero` | A hero is recruited from HQ | Positive "purchase" chime | Kenney Interface Sounds; OpenGameArt Card Game Sounds |
-| `fightVillain` | A player attacks a City villain | Sword/impact swing | Kenney Impact Sounds; OpenGameArt 80 CC0 RPG SFX (blade) |
-| `drawCards` | Start-of-turn draw / any draw | Card draw / short shuffle | OpenGameArt Card Game Sounds ("Draw card" / "Shuffle") |
-| `dodgeCard` | Dodge — discard a card to draw a replacement | Quick card flick | OpenGameArt Card Game Sounds ("Tap" / "Untap") |
-| `endTurn` | The player ends their turn | Soft confirm / pass-turn notification | OpenGameArt Card Game Sounds ("Notification"); Kenney UI Audio |
+| Action (move) | Fires when | Suggested sound character | Candidate CC0 source | R2 clip path | Preview |
+|---|---|---|---|---|---|
+| `playCard` | A card is played from hand | Card whoosh / place | OpenGameArt Card Game Sounds ("Play card") | `audio/sound-effects/play-card.mp3` | {{< audio-inline src="https://images.legendary-arena.com/audio/sound-effects/play-card.mp3" >}} |
+| `recruitHero` | A hero is recruited from HQ | Positive "purchase" chime | Kenney Interface Sounds; OpenGameArt Card Game Sounds | `audio/sound-effects/recruit-hero.mp3` | {{< audio-inline src="https://images.legendary-arena.com/audio/sound-effects/recruit-hero.mp3" >}} |
+| `fightVillain` | A player attacks a City villain | Sword/impact swing | Kenney Impact Sounds; OpenGameArt 80 CC0 RPG SFX (blade) | `audio/sound-effects/attack-villain.mp3` | {{< audio-inline src="https://images.legendary-arena.com/audio/sound-effects/attack-villain.mp3" >}} |
+| `drawCards` | Start-of-turn draw / any draw | Card draw / short shuffle | OpenGameArt Card Game Sounds ("Draw card" / "Shuffle") | `audio/sound-effects/draw-cards.mp3` | {{< audio-inline src="https://images.legendary-arena.com/audio/sound-effects/draw-cards.mp3" >}} |
+| `dodgeCard` | Dodge — discard a card to draw a replacement | Quick card flick | OpenGameArt Card Game Sounds ("Tap" / "Untap") | `audio/sound-effects/dodge.mp3` | {{< audio-inline src="https://images.legendary-arena.com/audio/sound-effects/dodge.mp3" >}} |
+| `endTurn` | The player ends their turn | Soft confirm / pass-turn notification | OpenGameArt Card Game Sounds ("Notification"); Kenney UI Audio | `audio/sound-effects/end-turn.mp3` | {{< audio-inline src="https://images.legendary-arena.com/audio/sound-effects/end-turn.mp3" >}} |
+
+> **Clip path & config.** The `R2 clip path` column is relative to the
+> `images.legendary-arena.com/audio/sound-effects/` prefix (the repo image-URL
+> rule — hyphens, never underscores); the `Preview` player points at the full
+> URL. **These six clips are preview picks, and Surface-2 move sounds are not
+> wired yet.** Unlike the shipped Surface-1 event SFX
+> ([`sfxManifest.ts`](../apps/arena-client/src/audio/sfxManifest.ts) →
+> [`useSoundEffects.ts`](../apps/arena-client/src/composables/useSoundEffects.ts))
+> and the [tiered combo cue](#tiered-combo)
+> ([`comboCueManifest.ts`](../apps/arena-client/src/audio/comboCueManifest.ts) →
+> [`useComboCue.ts`](../apps/arena-client/src/composables/useComboCue.ts)), **no
+> runtime config in `play.legendary-arena.com` references these move clips.**
+> When built, a Surface-2 layer would add a `move → clip` manifest mirroring
+> `sfxManifest.ts`, played on the local move dispatch through the same
+> [`audioEngine`](../apps/arena-client/src/audio/audioEngine.ts) the other two
+> layers already use.
 
 > **Recruit has no result event.** `recruitHero` emits no notable
 > event; the only signals are the local move dispatch and the

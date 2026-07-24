@@ -226,6 +226,15 @@ blockquote > p:last-child { margin-bottom: 0; }
   margin-top: 0.25rem;
 }
 
+/* why: the inline `audio-inline` shortcode drops the <figure> wrapper so a
+   native <audio controls> play button fits in a table cell; cap its height and
+   width so the row stays compact. */
+.wiki-audio-inline {
+  height: 32px;
+  max-width: 220px;
+  vertical-align: middle;
+}
+
 @media (max-width: 760px) {
   .layout { grid-template-columns: 1fr; }
   .sidebar { border-right: none; border-bottom: 1px solid var(--color-border); padding-right: 0; padding-bottom: 1rem; }
