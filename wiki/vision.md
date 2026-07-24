@@ -14,6 +14,7 @@ related:
   - leaderboard.md
   - profile-login.md
   - design-system-overview.md
+  - legendary-arena-tribe-and-trust.md
   - trust-controls-playbook.md
 status: canonical
 source:
