@@ -30,7 +30,7 @@ import {
   rehydrateBotAllyDrivers,
   MAX_REVIVALS,
 } from './botAllyRoutes.mjs';
-import { botAllyDrivers } from './botAllyDriver.mjs';
+import { botAllyDrivers, BOT_FAULTED_MESSAGE } from './botAllyDriver.mjs';
 
 // why: the create handler registers a real BotAllyDriver (which starts a poll);
 // stop + clear every registered driver after each test so no timer leaks into
@@ -442,7 +442,10 @@ describe('GET /api/match/:matchId/bot-ally-status', () => {
     return { handler, queries };
   }
 
-  test('reports an active match as driving:true with no message', async () => {
+  test('reports an active match WITH a live driver as driving:true (WP-419)', async () => {
+    // why: WP-419 — `driving:true` now requires a live in-process driver, not just
+    // the `active` flag. Register one so the healthy case reports driving:true.
+    botAllyDrivers.set('m-active', { stop() {} } as never);
     const { handler } = statusHandlerWith(() => [{ status: 'active', fault_message: null }]);
     const koaContext = makeStatusContext('m-active');
 
@@ -451,6 +454,23 @@ describe('GET /api/match/:matchId/bot-ally-status', () => {
     assert.equal(koaContext.status, 200);
     assert.deepEqual(koaContext.body, { driving: true, status: 'active', message: null });
     assert.equal(koaContext.headers['Cache-Control'], 'no-store');
+  });
+
+  test('reports an active match with NO live driver as driving:false (WP-419 — a dead driver is not healthy)', async () => {
+    // why: WP-419 / D-24239 — botAllyDrivers is empty (the in-process driver was
+    // destroyed by a redeploy) while the row is still at its CREATION status
+    // `active`. Deriving `driving` from the flag alone reported this frozen match
+    // as healthy so the WP-415 banner never surfaced. Liveness makes it honest.
+    const { handler } = statusHandlerWith(() => [{ status: 'active', fault_message: null }]);
+    const koaContext = makeStatusContext('m-dead');
+
+    await handler(koaContext);
+
+    assert.deepEqual(
+      koaContext.body,
+      { driving: false, status: 'active', message: null },
+      'a driverless active match reports driving:false so the stall banner surfaces',
+    );
   });
 
   test('reports a faulted match with the verbatim public-safe message', async () => {
@@ -611,5 +631,99 @@ describe('rehydrateBotAllyDrivers — bounded restart revival', () => {
     assert.equal(botAllyDrivers.has('no-creds'), false, 'no driver is registered when credentials are missing');
     const incrementWrite = queries.find((query) => query.sql.includes('revive_count = revive_count + 1'));
     assert.equal(incrementWrite, undefined, 'a skipped match does not consume a revival');
+  });
+});
+
+describe('rehydrateBotAllyDrivers — strand→faulted (WP-419 / D-24239)', () => {
+  /**
+   * A responder that returns `strandedRows` for the stranded read
+   * (`revive_count >= $1`), `revivableRows` for the revivable read (the other
+   * `SELECT match_id`), and nothing else.
+   */
+  function strandResponder(strandedRows: unknown[], revivableRows: unknown[]) {
+    return (sql: string) => {
+      if (sql.includes('revive_count >= $1')) {
+        return strandedRows;
+      }
+      if (sql.includes('SELECT match_id')) {
+        return revivableRows;
+      }
+      return [];
+    };
+  }
+
+  test('settles a cap-stranded active match (still in play) to faulted so the banner surfaces', async () => {
+    const { database, queries } = makeProgrammableDatabase(
+      strandResponder([{ match_id: 'stranded', bot_seats: ['1'] }], []),
+    );
+    const liveState = { _stateID: 6, ctx: { currentPlayer: '1', phase: 'play', turn: 1, numPlayers: 2 } };
+    const context = { db: makeRevivalBgioDb(liveState, {}), database, createSubmit: () => async () => {} };
+
+    await rehydrateBotAllyDrivers(context as never);
+
+    assert.equal(botAllyDrivers.has('stranded'), false, 'a stranded match is NOT revived');
+    const faultWrite = queries.find(
+      (query) => query.sql.includes('SET status = $2') && (query.params as unknown[])[1] === 'faulted',
+    );
+    assert.ok(faultWrite, 'the stranded active row was flipped to faulted');
+    assert.equal((faultWrite!.params as unknown[])[0], 'stranded', 'the correct match was faulted');
+    assert.equal(
+      (faultWrite!.params as unknown[])[2],
+      BOT_FAULTED_MESSAGE,
+      'the surfaced fault carries the public-safe co-op message',
+    );
+  });
+
+  test('settles a cap-stranded active match whose game already ended to completed, not faulted', async () => {
+    const { database, queries } = makeProgrammableDatabase(
+      strandResponder([{ match_id: 'stranded-done', bot_seats: ['1'] }], []),
+    );
+    const endedState = {
+      _stateID: 9,
+      ctx: { currentPlayer: '1', phase: 'play', turn: 3, numPlayers: 2, gameover: { winner: 'heroes' } },
+    };
+    const context = { db: makeRevivalBgioDb(endedState, {}), database, createSubmit: () => async () => {} };
+
+    await rehydrateBotAllyDrivers(context as never);
+
+    const completedWrite = queries.find(
+      (query) =>
+        query.sql.includes('SET status = $2') &&
+        (query.params as unknown[])[0] === 'stranded-done' &&
+        (query.params as unknown[])[1] === 'completed',
+    );
+    assert.ok(completedWrite, 'a stranded match whose game ended is completed, not faulted');
+    const faultWrite = queries.find(
+      (query) =>
+        query.sql.includes('SET status = $2') &&
+        (query.params as unknown[])[0] === 'stranded-done' &&
+        (query.params as unknown[])[1] === 'faulted',
+    );
+    assert.equal(faultWrite, undefined, 'an ended match is never faulted');
+  });
+
+  test('does NOT fault a match this boot just revived, even if it also appears in the stranded read', async () => {
+    // why: a row revived this boot has a live driver (botAllyDrivers.has === true),
+    // so the strand pass must skip it — it is not actually stranded.
+    const { database, queries } = makeProgrammableDatabase(
+      strandResponder(
+        [{ match_id: 'revived-at-cap', bot_seats: ['1'] }],
+        [{ match_id: 'revived-at-cap', bot_seats: ['1'], decision_seed: 's', policy: 'competent', status: 'active', revive_count: 2 }],
+      ),
+    );
+    const liveState = { _stateID: 2, ctx: { currentPlayer: '1', phase: 'play', turn: 1, numPlayers: 2 } };
+    const metadata = { players: { '0': {}, '1': { credentials: 'cred-1' } } };
+    const context = { db: makeRevivalBgioDb(liveState, metadata), database, createSubmit: () => async () => {} };
+
+    await rehydrateBotAllyDrivers(context as never);
+
+    assert.equal(botAllyDrivers.has('revived-at-cap'), true, 'the match was revived (it had a live driver)');
+    const faultWrite = queries.find(
+      (query) =>
+        query.sql.includes('SET status = $2') &&
+        (query.params as unknown[])[0] === 'revived-at-cap' &&
+        (query.params as unknown[])[1] === 'faulted',
+    );
+    assert.equal(faultWrite, undefined, 'a revived match with a live driver is never faulted by the strand pass');
   });
 });

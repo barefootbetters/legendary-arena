@@ -35,6 +35,8 @@ import {
   createBotAllyDriver,
   decideBotMove,
   buildBotPolicy,
+  botAllyDrivers,
+  BOT_FAULTED_MESSAGE,
 } from './botAllyDriver.mjs';
 import koaBody from 'koa-body';
 
@@ -287,6 +289,34 @@ export async function readRevivableBotAllyMatches(database) {
     policy: row.policy,
     status: row.status,
     reviveCount: row.revive_count,
+  }));
+}
+
+/**
+ * Reads still-`active` rows that are PAST the revival cap — the stranded set.
+ *
+ * // why: WP-419 / D-24239 — a match that keeps losing its in-process driver
+ * before completing a single bot turn burns all MAX_REVIVALS revivals (the
+ * driver's reset-on-first-turn never fires), then {@link readRevivableBotAllyMatches}
+ * excludes it (`revive_count < MAX_REVIVALS`). It is then never revived AGAIN yet
+ * stays `active` — the worst state: un-revived and, before the liveness fix,
+ * un-surfaced (it reported driving:true forever). This reads exactly that
+ * stranded set so `rehydrateBotAllyDrivers` can settle each to a surfaced
+ * terminal status. `exhausted` rows are NOT included — they hit the 400-turn cap
+ * (a long game, not a fault) and already report driving:false.
+ *
+ * @param {object} database - The pg pool.
+ * @returns {Promise<Array<{ matchId: string, botSeats: string[] }>>}
+ */
+export async function readStrandedActiveBotAllyMatches(database) {
+  const result = await database.query(
+    'SELECT match_id, bot_seats FROM legendary.match_bot_ally ' +
+      "WHERE status = 'active' AND revive_count >= $1",
+    [MAX_REVIVALS],
+  );
+  return result.rows.map((row) => ({
+    matchId: row.match_id,
+    botSeats: row.bot_seats,
   }));
 }
 
@@ -641,9 +671,23 @@ export function registerBotAllyRoutes(router, context) {
       // co-op-framed sentence the driver persisted (WP-261 / D-24037); the route
       // never re-decorates it with an exception, id, or path. It is carried only
       // when the status is `faulted`; every other status has no message.
+      //
+      // why: WP-419 / D-24239 — `driving` is LIVENESS-aware: it is true only when
+      // the row is `active` AND a live in-process driver actually exists for this
+      // match. The side-table `active` flag alone is NOT proof the bot is driving:
+      // `active` is the CREATION status, and a redeploy that destroys the
+      // in-process driver leaves the row `active` with nobody driving it. Deriving
+      // `driving` from the flag alone reported that dead-but-active match as
+      // healthy, so the WP-415 stall banner (which needs driving:false) never
+      // showed and the human sat frozen on the bot's turn with no signal — the
+      // reported "froze again". `botAllyDrivers` is this process's live-driver
+      // registry (set on create/revive, deleted on EVERY teardown), so `.has` is
+      // the liveness signal. Single-instance deployment assumed — the status route
+      // and the driver run in the same process; a DB heartbeat would be the
+      // multi-instance answer.
       koaContext.status = 200;
       koaContext.body = {
-        driving: row.status === 'active',
+        driving: row.status === 'active' && botAllyDrivers.has(matchId),
         status: row.status,
         message: row.status === 'faulted' ? row.faultMessage : null,
       };
@@ -735,5 +779,63 @@ export async function rehydrateBotAllyDrivers(context) {
   }
   if (reregistered > 0) {
     console.log(`[bot-ally] re-registered ${reregistered} in-flight bot-ally match driver(s) after restart.`);
+  }
+
+  await settleStrandedActiveMatches(context);
+}
+
+/**
+ * Settles every still-`active` match that is past the revival cap to a surfaced
+ * terminal status (WP-419 / D-24239). Runs after the revival pass in
+ * {@link rehydrateBotAllyDrivers}.
+ *
+ * // why: a stranded `active` row (cap-exhausted, never revived again) reports
+ * driving:true forever — a silent freeze. Flip it to `faulted` (surfaced with the
+ * public-safe co-op message) so the WP-415 banner shows, or to `completed` when
+ * its game already ended. A row that this boot's revival just re-registered is
+ * skipped via the live-driver guard: it genuinely has a driver, so it is not
+ * stranded even if its incremented count now reads at the cap. Best-effort and
+ * fully guarded — one bad row never blocks startup.
+ *
+ * @param {object} context - Server context (db, database).
+ * @returns {Promise<void>}
+ */
+async function settleStrandedActiveMatches(context) {
+  const { db, database } = context;
+  let strandedMatches;
+  try {
+    strandedMatches = await readStrandedActiveBotAllyMatches(database);
+  } catch (readError) {
+    console.error(
+      `[bot-ally] could not read stranded active bot-ally matches to settle: ${readError.message}`,
+    );
+    return;
+  }
+
+  let settled = 0;
+  for (const record of strandedMatches) {
+    // why: skip a match that THIS boot's revival just re-registered — it has a
+    // live driver (so it is not actually stranded), even though its incremented
+    // revive_count now reads at the cap.
+    if (botAllyDrivers.has(record.matchId)) {
+      continue;
+    }
+    try {
+      const { state } = await db.fetch(record.matchId, { state: true });
+      // why: a stranded match whose game already ended is `completed`, not
+      // `faulted` — the fault framing is only for a match stopped mid-play.
+      const isEnded = !state || state.ctx.gameover !== undefined;
+      const terminalStatus = isEnded ? 'completed' : 'faulted';
+      const faultMessage = isEnded ? undefined : BOT_FAULTED_MESSAGE;
+      await updateBotAllyMatchStatus(database, record.matchId, terminalStatus, faultMessage);
+      settled += 1;
+    } catch (settleError) {
+      console.error(
+        `[bot-ally] match ${record.matchId} failed to settle a stranded active row: ${settleError.message}`,
+      );
+    }
+  }
+  if (settled > 0) {
+    console.log(`[bot-ally] settled ${settled} stranded active bot-ally match(es) to a surfaced terminal status.`);
   }
 }
