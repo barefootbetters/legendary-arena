@@ -17,26 +17,35 @@
 
 ## 0. Current state — read this first
 
-**Legendary Arena does not have a provider-independent database backup
-today.** A repo audit (2026-07-23) found no `pg_dump`/`pg_restore`, no backup
-cron, and nothing writing a database copy to R2 or any off-Render store. The
-only backups that exist are whatever **Render's managed Postgres** produces
-internally (daily snapshots and, on the current `pro-4gb` plan, point-in-time
-recovery — operator to confirm retention in the Render dashboard).
+Prerequisite #1 — a provider-independent database backup — **now exists in
+code** (WP-416 / D-24236): the `.github/workflows/db-backup.yml` GitHub Actions
+workflow runs `pg_dump -Fc` daily against the Render database and uploads the
+dump to a **private** Cloudflare R2 bucket under `db-backups/`, pruned to a
+35-day window. It runs in CI, independent of the app server. **It is not live
+until the operator provisions its secrets** — the five GitHub Actions secrets
+(`BACKUP_DATABASE_URL`, `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`,
+`R2_SECRET_ACCESS_KEY`, `R2_BACKUP_BUCKET`, the last a private bucket) — and runs
+it once via `workflow_dispatch` to confirm an object lands in R2. Until then the
+workflow skips green and no external backup is produced.
+
+Alongside it, Render's managed Postgres still produces internal backups (daily
+snapshots and, on the current `pro-4gb` plan, point-in-time recovery — confirm
+retention in the Render dashboard).
 
 Consequence, stated plainly so it is not discovered during a crisis:
 
-- **DR-01 / DR-03** (database loss, accidental deletion) are recoverable
-  **only** through Render's own dashboard restore / PITR. If that works and
-  its retention window covers the event, good — but it has never been drilled.
-- **DR-05** (Render itself loses the data, or the account is lost) is
-  **currently unrecoverable.** There is no copy of the database outside Render.
+- **DR-01 / DR-03** (database loss, accidental deletion) are recoverable through
+  Render's own dashboard restore / PITR **and**, once the workflow is
+  provisioned, from the R2 dump — but neither path has been drilled yet.
+- **DR-05** (Render itself loses the data, or the account is lost) becomes
+  recoverable **once the R2 backup is live**: the dump on Cloudflare R2 is the
+  only copy that survives losing Render. Until the secrets are provisioned, this
+  scenario remains unrecoverable.
 
-**Prerequisite #1 for real DR is building an external backup pipeline**
-(`pg_dump` → Cloudflare R2, retained daily/weekly/monthly, independent of
-Render). Until that exists, this document describes a *target* capability and
-an *honest* current-state; the validation drills below can still be run
-against Render-managed backups, but the off-provider gap is the top risk.
+**The remaining gap is operational, not code:** provision the secrets, run the
+first backup, and **drill the restore** (§5–6) — a backup nobody has restored is
+still an assumption. Long-term retention beyond the 35-day daily window
+(weekly/monthly GFS tiers) is a named follow-up.
 
 ---
 
@@ -68,7 +77,7 @@ depends on every one of these being independently available.
 | Asset | Where it lives | Recovery source |
 |---|---|---|
 | **Source code** | GitHub `barefootbetters/legendary-arena` | `git clone` |
-| **Database** | Render managed Postgres (`legendary-arena-db`) | Render restore / PITR (today); external backup (once built) |
+| **Database** | Render managed Postgres (`legendary-arena-db`) | Render restore / PITR; **plus** the WP-416 R2 dump once its secrets are provisioned |
 | **Secrets / config** | Render dashboard env vars (`sync: false` in [`render.yaml`](../../render.yaml)) — see §4 | Operator's own secret store (password manager / vault) |
 | **Infrastructure definition** | [`render.yaml`](../../render.yaml) (blueprint) | GitHub |
 | **DNS + CDN + Access** | Cloudflare (Pages, R2, Access, DNS) | Cloudflare dashboard |
@@ -85,14 +94,16 @@ The server is replaceable; those three are not.
 | What | Source | Method | Storage | Retention | Verified by |
 |---|---|---|---|---|---|
 | Database (managed) | Render Postgres | Render automated snapshots + PITR | Render (internal) | Per Render plan — **confirm in dashboard** | **Never drilled** |
-| Database (external) | — | **none** | **none** | **none** | — |
+| Database (external) | Render Postgres | `pg_dump -Fc` — daily GitHub Actions (`.github/workflows/db-backup.yml`, WP-416) | Cloudflare R2 (private `R2_BACKUP_BUCKET`, `db-backups/` prefix) | 35 days (v1; weekly/monthly GFS deferred) | **Restore drill (§5–6) — pending** |
 | Card images | R2 upload pipeline | manual/scripted | Cloudflare R2 | indefinite | image loads |
 | Source code | GitHub | git | GitHub + local clones | full history | every clone |
 | Secrets | operator | manual | operator secret store | operator-managed | §4 completeness |
 
-**Gap:** the "Database (external)" row is empty. Closing it — a `pg_dump` → R2
-job with daily/weekly/monthly retention — is the single highest-value DR
-investment and prerequisite #1 (§0).
+**Remaining gap is operational, not code:** the external row now has a pipeline
+(WP-416), but it is inert until the operator provisions the five GitHub Actions
+secrets and runs it once via `workflow_dispatch` — **and** until a restore has
+actually been drilled (§5–6). Long-term retention beyond 35 daily days
+(weekly/monthly GFS tiers) is the named follow-up.
 
 ---
 
@@ -158,11 +169,13 @@ Each scenario: trigger, **honest current recoverability**, and procedure.
 ### DR-05 — Cloud-provider / account failure
 
 - **Trigger:** Render outage that loses data, or loss of the Render account.
-- **Recoverable today?** **No.** There is no database copy outside Render.
-  This scenario is why prerequisite #1 (external backup) exists.
-- **Procedure (once an external backup exists):** provision Postgres elsewhere
-  → restore the latest R2 backup → stand up the server (DR-02) pointed at it →
-  repoint DNS → §6 validation.
+- **Recoverable?** **Once the WP-416 backup is live — yes**, from the R2 dump
+  (the only database copy that survives losing Render). Until the operator
+  provisions the workflow's secrets and it produces its first dump, this scenario
+  remains unrecoverable.
+- **Procedure:** provision Postgres elsewhere → restore the latest `db-backups/…`
+  R2 dump (`pg_restore`) → stand up the server (DR-02) pointed at it → repoint DNS
+  → §6 validation.
 
 ---
 
