@@ -430,6 +430,12 @@ Holding the budget (the disciplines):
   peak together, using the shared [Combo Tier Contract](#combo-tier-contract).
   This page supersedes that page's "tiered combo cue is not buildable"
   note (the signal now exists, D-24221 / D-24228).
+- **[Dopamine Trigger Framework](dopamine-triggers.md).** The *why and when*
+  behind these effects; its
+  [visual–audio pairing table](dopamine-triggers.md#visual-audio-pairing) is
+  the shared per-event signature this page and Sound Effects both implement,
+  and its [flow-channel map](dopamine-triggers.md#flow-channel) shows where
+  each moment sits across a match.
 - **[Master Strike](master-strike.md).** `mastermindStrikeResolved` is the
   highest-drama visual candidate — the Tier-1 screen-shake moment — and the
   overlay it drives already exists.

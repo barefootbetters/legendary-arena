@@ -193,7 +193,9 @@ mode this hook exists to prevent.
 Every match is a compressed good-versus-evil story: the villains scheme and
 strike, the heroes build strength and push back, and it resolves in triumph,
 tragedy, or an uneasy draw. The [dopamine](dopamine-triggers.md) threat/reward
-rhythm *is* the narrative rising-and-falling action; this layer names it.
+rhythm *is* the narrative rising-and-falling action; this layer names it. The
+[flow-channel map](dopamine-triggers.md#flow-channel) plots that arc beat by
+beat.
 
 | Spine event | Story beat |
 |---|---|
@@ -234,7 +236,9 @@ like a deliberate story move, not a menu selection.
 Agency becomes meaningful when the player's actions feel like deliberate story
 moves with personality and consequence, not menu selections. Framing should
 make the player feel they are authoring a specific tale, not merely optimizing
-a board.
+a board. The moment-to-moment tracking of that agency against rising challenge
+is the [flow-channel map](dopamine-triggers.md#flow-channel) on the Dopamine
+page.
 
 ### Playstyle Modes — the builder / destroyer lens {#playstyle-modes}
 
@@ -292,7 +296,9 @@ Playstyle Modes lens toggle.
 - **[Dopamine Trigger Framework](dopamine-triggers.md).** The complementary
   driver — dopamine is the *reward* hook, narrative is the *meaning* hook.
   The same Mastermind defeat is a peak reward *and* the story's climax; the
-  two frameworks reinforce the one moment.
+  two frameworks reinforce the one moment. Its
+  [flow-channel map](dopamine-triggers.md#flow-channel) ties each story beat
+  to a challenge/skill state.
 - **[Music Authoring](music-authoring.md).** The leitmotif grammar is a
   narrative device as much as an audio one — team-keyed motifs are the
   nostalgia and identity hook made audible.
