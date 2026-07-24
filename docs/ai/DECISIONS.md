@@ -31965,11 +31965,12 @@ on the thing the whole feel layer exists to protect.
 the Player Promise) naming the intended emotional identity: a good-versus-evil
 Marvel power fantasy with *heroic momentum* as its felt core (team synergy
 building, the jolt of a Master Strike, the swing of a last-turn rescue, the
-catharsis of a Mastermind defeated), and the requirement that the experience
-feel **authored** rather than generic. It ties the primary goals to the
+catharsis of a Mastermind defeated). It ties the primary goals to the
 fantasy (authenticity / fairness / reliability make the fantasy trustworthy to
 invest in) and points to the feel layer's north star, the ewiki
-**Design System Overview**, as where the identity is operationalized.
+**Design System Overview**, as where the identity is operationalized. (The
+"authored, not generic" framing lives in the feel-layer wiki — the Design
+System Overview's Soul / Authorial Voice principle — not the vision paragraph.)
 
 **Scope / guardrails.** This is an *articulation* of identity already implicit
 in the North Star and the Player Promise — it changes **no** primary goal, no

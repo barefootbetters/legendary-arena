@@ -43,20 +43,16 @@ this promise would expect us to choose.
 
 Beneath the rules and the scoreboard, Legendary Arena is a **good-versus-evil
 Marvel power fantasy**: you assemble a team of iconic heroes and, turn by
-turn, push back a Mastermind's scheme before the city falls. The intended
-emotional identity is *heroic momentum* — a team finding its synergy, the
-jolt of a villain's Master Strike, the swing of a last-turn rescue, and the
-earned catharsis of a Mastermind brought down. The experience should feel
-**authored**, not generic: distinctive in look and sound, specific to *this*
-mythology, and carried with visible care in the small details that make a
-moment land. This is the felt experience the primary goals exist to protect —
+turn, push back a Mastermind's scheme before the city falls. Its emotional
+core is *heroic momentum* — a team finding its synergy, the jolt of a Master
+Strike, the swing of a last-turn rescue, the catharsis of a Mastermind brought
+down. This is the felt experience the primary goals exist to protect:
 authenticity, fairness, and reliability are what make the fantasy trustworthy
-enough to invest in. The fantasy is operationalized by the **feel layer**;
+enough to invest in. The **feel layer** operationalizes it —
 [Design System Overview](../wiki/design-system-overview.md) is its north star,
-tying together what the game shows (juice), plays (audio), rewards (dopamine),
-and means (narrative). This articulates identity already implicit in the
-North Star and the Player Promise; it changes no primary goal, non-goal, or
-monetization boundary (D-24235).
+tying together what the game shows, plays, rewards, and means. This articulates
+identity already implicit in the North Star and the Player Promise; it changes
+no primary goal, non-goal, or monetization boundary (D-24235).
 
 ---
 
