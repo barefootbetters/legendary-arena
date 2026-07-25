@@ -1,7 +1,7 @@
 # Wiki Index
 
-> **51 / 75** entity pages.
-> Last regenerated: 2026-07-23.
+> **52 / 75** entity pages.
+> Last regenerated: 2026-07-25.
 > See [SCHEMA.md](SCHEMA.md) for the entity-page contract and
 > [README.md](README.md) for purpose, conventions, and authority —
 > including [§ Tradeoffs](README.md#tradeoffs) on what the LLM-wiki
@@ -291,6 +291,14 @@ Software tools and services used in development or operations.
   GitHub, rclone); `pnpm check:domains` walks the canonical
   subdomain manifest and classifies each entry against its declared
   `live` / `planned` state.
+- [Play Diagnostics](play-diagnostics.md) — The client-side
+  capture-and-export tool on `play.legendary-arena.com`: an always-on
+  bounded buffer records `console.*` + uncaught errors, and the
+  "Download diagnostics" button bundles that buffer with the live
+  UIState snapshot, the input match setup, and derived effect
+  provenance into one credential-redacted JSON report for diagnosing a
+  frozen match. Sibling to Operational Health Checks (client-side vs
+  perimeter). Notes the current transport/perf-data gap.
 - [Windows Engine Exe](windows-engine-exe.md) — *(draft, planning)*
   proposed standalone Windows `.exe` that packages the engine's
   headless `simulation/` harness (bot-vs-bot play, fixture replay,
