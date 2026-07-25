@@ -52,7 +52,7 @@ stingers** for all three real match outcomes (heroes win, scheme wins,
 tie). Most of this page is still `draft` research rather than an
 implementation contract, but three pieces have **shipped**: the client-only
 audio foundation (WP-412), the [Surface-2 player-action move cue](#surface-2)
-(WP-419 / D-24239) fired on the local move dispatch, and the
+(WP-421 / D-24241) fired on the local move dispatch, and the
 [tiered combo cue](#tiered-combo) (WP-413 / D-24228) that rides the
 `lastPlayEffectsFired` signal (D-24221).
 The remaining sound mappings and library picks are proposals; the event
@@ -121,21 +121,21 @@ action for immediate tactile feedback — **independent of** (and ahead of)
 the authoritative result. This is the one surface that fires on a *dispatch*
 rather than a projected `UIState` frame, which is exactly why it can sound
 `recruitHero` (which emits **no** notable event) and why the felt cues don't
-wait on a server round-trip. **Five of these six moves shipped in WP-419**
+wait on a server round-trip. **Five of these six moves shipped in WP-421**
 (`playCard`, `recruitHero`, `fightVillain`, `drawCards`, `endTurn`); the sixth,
 `dodgeCard`, is an engine-only move with no client dispatch path and is **not**
 wired (see the callout below).
 
 | Action (move) | Wired? | Fires when | Suggested sound character | Candidate CC0 source | R2 clip path | Preview |
 |---|---|---|---|---|---|---|
-| `playCard` | ✅ WP-419 | A card is played from hand | Card whoosh / place | OpenGameArt Card Game Sounds ("Play card") | `audio/sound-effects/play-card.mp3` | {{< audio-inline src="https://images.legendary-arena.com/audio/sound-effects/play-card.mp3" >}} |
-| `recruitHero` | ✅ WP-419 | A hero is recruited from HQ | Positive "purchase" chime | Kenney Interface Sounds; OpenGameArt Card Game Sounds | `audio/sound-effects/recruit-hero.mp3` | {{< audio-inline src="https://images.legendary-arena.com/audio/sound-effects/recruit-hero.mp3" >}} |
-| `fightVillain` | ✅ WP-419 | A player attacks a City villain | Sword/impact swing | Kenney Impact Sounds; OpenGameArt 80 CC0 RPG SFX (blade) | `audio/sound-effects/attack-villain.mp3` | {{< audio-inline src="https://images.legendary-arena.com/audio/sound-effects/attack-villain.mp3" >}} |
-| `drawCards` | ✅ WP-419 | Start-of-turn draw / any draw | Card draw / short shuffle | OpenGameArt Card Game Sounds ("Draw card" / "Shuffle") | `audio/sound-effects/draw-cards.mp3` | {{< audio-inline src="https://images.legendary-arena.com/audio/sound-effects/draw-cards.mp3" >}} |
+| `playCard` | ✅ WP-421 | A card is played from hand | Card whoosh / place | OpenGameArt Card Game Sounds ("Play card") | `audio/sound-effects/play-card.mp3` | {{< audio-inline src="https://images.legendary-arena.com/audio/sound-effects/play-card.mp3" >}} |
+| `recruitHero` | ✅ WP-421 | A hero is recruited from HQ | Positive "purchase" chime | Kenney Interface Sounds; OpenGameArt Card Game Sounds | `audio/sound-effects/recruit-hero.mp3` | {{< audio-inline src="https://images.legendary-arena.com/audio/sound-effects/recruit-hero.mp3" >}} |
+| `fightVillain` | ✅ WP-421 | A player attacks a City villain | Sword/impact swing | Kenney Impact Sounds; OpenGameArt 80 CC0 RPG SFX (blade) | `audio/sound-effects/attack-villain.mp3` | {{< audio-inline src="https://images.legendary-arena.com/audio/sound-effects/attack-villain.mp3" >}} |
+| `drawCards` | ✅ WP-421 | Start-of-turn draw / any draw | Card draw / short shuffle | OpenGameArt Card Game Sounds ("Draw card" / "Shuffle") | `audio/sound-effects/draw-cards.mp3` | {{< audio-inline src="https://images.legendary-arena.com/audio/sound-effects/draw-cards.mp3" >}} |
 | `dodgeCard` | ❌ engine-only | Dodge — discard a card to draw a replacement | Quick card flick | OpenGameArt Card Game Sounds ("Tap" / "Untap") | `audio/sound-effects/dodge.mp3` | {{< audio-inline src="https://images.legendary-arena.com/audio/sound-effects/dodge.mp3" >}} |
-| `endTurn` | ✅ WP-419 | The player ends their turn | Soft confirm / pass-turn notification | OpenGameArt Card Game Sounds ("Notification"); Kenney UI Audio | `audio/sound-effects/end-turn.mp3` | {{< audio-inline src="https://images.legendary-arena.com/audio/sound-effects/end-turn.mp3" >}} |
+| `endTurn` | ✅ WP-421 | The player ends their turn | Soft confirm / pass-turn notification | OpenGameArt Card Game Sounds ("Notification"); Kenney UI Audio | `audio/sound-effects/end-turn.mp3` | {{< audio-inline src="https://images.legendary-arena.com/audio/sound-effects/end-turn.mp3" >}} |
 
-> **Shipped (WP-419 / EC-454, D-24239).** The five ✅ moves are **live**. The
+> **Shipped (WP-421 / EC-456, D-24241).** The five ✅ moves are **live**. The
 > Surface-2 layer mirrors the Surface-1 pattern — a `move → clip` manifest
 > ([`moveSfxManifest.ts`](../apps/arena-client/src/audio/moveSfxManifest.ts), a
 > **partial** `Partial<Record<UiMoveName, string>>`) played by a consumer
@@ -156,7 +156,7 @@ wired (see the callout below).
 > **`dodgeCard` is the one unwired row.** It is an **engine-only** move
 > ([`packages/game-engine/src/moves/dodgeCard.ts`](../packages/game-engine/src/moves/dodgeCard.ts))
 > — it is **not** in the `UiMoveName` union and the click-to-play surface has no
-> dispatch path that emits it, so its clip **cannot** fire today. WP-419 leaves it
+> dispatch path that emits it, so its clip **cannot** fire today. WP-421 leaves it
 > unmapped (mapping it would not typecheck; a `moveSfxManifest.test.ts` case pins
 > its absence) as a documented gap for a later UI-affordance WP that adds a dodge
 > control.
@@ -166,13 +166,13 @@ wired (see the callout below).
 > mp3 (`ID3`): `play-card.mp3` (11.8 KB), `recruit-hero.mp3` (3.6 KB),
 > `attack-villain.mp3` (4.7 KB), `draw-cards.mp3` (10.0 KB), `end-turn.mp3`
 > (4.4 KB). So the previews above play and the runtime cue is audible; the only
-> WP-419 D-24026 step still open is the live eyeball on the deployed bundle once
+> WP-421 D-24026 step still open is the live eyeball on the deployed bundle once
 > the code merges. (Code ships asset-independent anyway — tests mock the `Howl` —
 > and a missing clip would be a fail-soft `play()` no-op.)
 
 > **Recruit has no result event — and that is why Surface 2 is dispatch-keyed.**
 > `recruitHero` emits no notable event; the only signals are the local move
-> dispatch and the resulting `UIState.hq` slot / `discardCount` deltas. WP-419
+> dispatch and the resulting `UIState.hq` slot / `discardCount` deltas. WP-421
 > plays the recruit cue on the dispatch itself (the `submitMove` chokepoint),
 > which is the only hook that fires for it at all.
 
@@ -514,7 +514,7 @@ surfaces above.
 > [`sfxManifest.ts`](../apps/arena-client/src/audio/sfxManifest.ts); (2) the five
 > Surface-2 move clips (Play a card, Recruit a hero, Attack a villain, Draw cards,
 > End turn) match
-> [`moveSfxManifest.ts`](../apps/arena-client/src/audio/moveSfxManifest.ts) (WP-419).
+> [`moveSfxManifest.ts`](../apps/arena-client/src/audio/moveSfxManifest.ts) (WP-421).
 > The remaining previews — Dodge, Your turn begins, Wound / KO / bystander, and
 > the endgame stings — are candidate picks for surfaces not yet wired (`dodgeCard`
 > is engine-only; see [Surface 2](#surface-2)).
@@ -737,7 +737,7 @@ unusable on a revenue-generating site.
 - [`apps/arena-client/src/audio/comboCueManifest.ts`](../apps/arena-client/src/audio/comboCueManifest.ts)
   — the combo-tier → clip map (`combo-small` / `combo-medium` / `combo-big`)
 - [`apps/arena-client/src/audio/moveSfxManifest.ts`](../apps/arena-client/src/audio/moveSfxManifest.ts)
-  — the **shipped** Surface-2 `move → clip` map (WP-419 / EC-454); a **partial**
+  — the **shipped** Surface-2 `move → clip` map (WP-421 / EC-456); a **partial**
   `Partial<Record<UiMoveName, string>>` over the five dispatchable action moves
 - [`apps/arena-client/src/composables/useMoveSounds.ts`](../apps/arena-client/src/composables/useMoveSounds.ts)
   — the Surface-2 consumer; returns `playMoveSound(name)`, plays through the WP-412
@@ -750,7 +750,7 @@ unusable on a revenue-generating site.
 
 - **Partially shipped; the rest is unscoped.** The client-only audio
   foundation (WP-412), the [Surface-2 player-action move cue](#surface-2)
-  (WP-419 / EC-454, five of six moves — `dodgeCard` is engine-only), and the
+  (WP-421 / EC-456, five of six moves — `dodgeCard` is engine-only), and the
   [tiered combo cue](#tiered-combo) (WP-413 / EC-448) have landed. The remaining
   layers — Surface-3 turn-lifecycle cues, the Surface-4 endgame stings, the
   adaptive music score, and a dodge UI affordance so `dodgeCard` can be
@@ -809,8 +809,8 @@ unusable on a revenue-generating site.
   client-only, howler-backed audio foundation), D-24225 (the motif
   generator), D-24226 (motif × theme-sting layering at −6/−9 dB), D-24227
   (motif lookup as a slim runtime registry), D-24228 (the **shipped** tiered
-  combo cue — WP-413 / EC-448), D-24239 (the **shipped** Surface-2 player-action
-  move cue — WP-419 / EC-454; dispatch-keyed, five of six moves, `dodgeCard`
+  combo cue — WP-413 / EC-448), D-24241 (the **shipped** Surface-2 player-action
+  move cue — WP-421 / EC-456; dispatch-keyed, five of six moves, `dodgeCard`
   engine-only)
 - Sound-effect libraries (verify each asset's license on its page):
   - [Kenney.nl — Interface Sounds](https://kenney.nl/assets/interface-sounds) (CC0)
