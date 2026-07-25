@@ -356,7 +356,8 @@ label reads the same `UIState.game.lastPlayEffectsFired` through the same
 the word, the burst, and the combo cue all fire off the one scalar change
 and **peak together**. The naming, the announcer persona, and the meaning
 rationale live on the
-[Narrative Psychology Framework → synergy call-outs](narrative-psychology.md#synergy-callouts);
+[Narrative Psychology Framework → synergy call-outs](narrative-psychology.md#synergy-callouts)
+(which carries an [animated mock of the escalating ladder](narrative-psychology.md#synergy-callouts));
 this page owns only *that a label renders, keyed to the locked tier.*
 
 The proposed default ladder — the tier column is the locked contract; the
@@ -498,7 +499,11 @@ CC0-first licensing posture, the default lean is **permissively-licensed
 - **CSS transitions / [Web Animations API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Animations_API)**
   (no dependency) — the right tool for card motion, ripples, screen-shake,
   and vignette pulses. Keep these hand-rolled; they're cheap and
-  dependency-free.
+  dependency-free. The [Surface-1 mocks above](#surface-1) are built exactly
+  this way — hand-rolled CSS keyframes, no library — and are proof the
+  approach covers shakes, vignettes, bursts, drops, ripples, and full-screen
+  blooms without a dependency (they animate as plain `<img>` SVGs, which is
+  also why they render on this JS-free wiki).
 - **GSAP** — powerful for complex timelines, **but confirm its current
   license before adopting.** GSAP's licensing terms have changed over time;
   do not assume it is free for commercial use — verify against its live

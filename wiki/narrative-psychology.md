@@ -283,6 +283,18 @@ not this page's to move):
 | `>= 3` | **Unstoppable!** | you built a real engine |
 | (reserved apex) | **LEGENDARY!** | the rare, celebrated crescendo — the brand word |
 
+![Animated mock of the synergy call-out ladder: the words Combo!, then Team-Up!, then Unstoppable!, then a gold glowing LEGENDARY! each pop on-screen in turn as a hero-ability chain grows, then the sequence loops.](/narrative-psychology/synergy-callout-ladder.svg "width=62%")
+
+*Illustrative proposal mock of the heroic ladder escalating with the chain — a
+CSS-only animated SVG (no JavaScript, so it animates on the JS-free wiki) that
+loops and holds the apex **LEGENDARY!** as a static frame under
+`prefers-reduced-motion`. The word is the proposal; the tier boundaries are the
+locked [Combo Tier Contract](visual-effects.md#combo-tier-contract). In the game
+the word rides the same `lastPlayEffectsFired` scalar as the
+[combo flash](visual-effects.md#synergy-callout) and peaks with it. Animation
+source: [synergy-callout.py](../ewiki/narrative-psychology/synergy-callout.py) —
+regenerate with `python synergy-callout.py`.*
+
 The words are a first proposal — the concrete copy artifact this hook owes,
 exactly like the [per-event narrative copy](#decisions-pending). Alternates
 in the same register: *Synergy!, Rally!, Blitz!, Rampage!, Crescendo!*
