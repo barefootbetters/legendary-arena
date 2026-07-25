@@ -26,6 +26,12 @@ interface ConnectionStoreState {
    * from "was connected, then dropped" (show the reconnecting banner).
    */
   hasEverConnected: boolean;
+  /**
+   * Client wall-clock (ms) of the most recent subscribe frame, or null before
+   * the first frame. Feeds the diagnostic report's transport-staleness signal
+   * (`timeSinceLastFrameMs`) — the WP-428 transport block reads it.
+   */
+  lastFrameAtMs: number | null;
 }
 
 // why: Options API (state + one action) mirrors the sibling `uiState` store —
@@ -36,6 +42,7 @@ export const useConnectionStore = defineStore('connection', {
     isConnected: false,
     lastStateId: null,
     hasEverConnected: false,
+    lastFrameAtMs: null,
   }),
   actions: {
     /**
@@ -44,10 +51,20 @@ export const useConnectionStore = defineStore('connection', {
      *
      * @param isConnected boardgame.io `state.isConnected` for this frame.
      * @param stateId The frame's `_stateID`, or null when absent.
+     * @param atMs Client wall-clock (ms) of this frame; defaults to now.
      */
-    setConnected(isConnected: boolean, stateId: number | null): void {
+    setConnected(
+      isConnected: boolean,
+      stateId: number | null,
+      // why: Date.now() here is a client-layer diagnostic timestamp marking the
+      // frame's arrival, outside the engine determinism boundary (which governs
+      // packages/game-engine only); a defaulted parameter keeps the existing
+      // two-argument call site in bgioClient.ts source-compatible.
+      atMs: number = Date.now(),
+    ): void {
       this.isConnected = isConnected;
       this.lastStateId = stateId;
+      this.lastFrameAtMs = atMs;
       if (isConnected === true) {
         this.hasEverConnected = true;
       }
