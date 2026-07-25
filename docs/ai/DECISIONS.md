@@ -32320,4 +32320,62 @@ GET-verified `200` / `audio/mpeg` / valid `ID3` (`play-card` 11.8 KB, `recruit-h
 3.6 KB, `attack-villain` 4.7 KB, `draw-cards` 10.0 KB, `end-turn` 4.4 KB). `D-24026`
 live-verify operator-pending only on the deploy (eyeball the cue in a real match).
 
+### D-24242 — Turn on competitive PAR via content-driven Seed PAR (Phase 1), committed to the repo
+
+**Status:** Drafted 2026-07-24; not yet landed (WP-422 / EC-457 execution).
+
+**Context.** Investigation (2026-07-25) found the entire competitive surface dark for one
+reason: the PAR index was **never generated or delivered.** The server gate
+(`apps/server/src/par/parGate.mjs`) reads `data/par/{sim,seed}/v1/index.json` from local fs, but
+those files were never committed (empty `git log --all`), no build/CI step produces them, and no
+runnable generator exists. So every submission fail-closes `par_not_published`
+(`competition.logic.ts`), `legendary.competitive_scores` stays empty, and the Legends board + all
+110 gauntlet boards cannot fill regardless of play volume — the documented "sole remaining blocker
+on the whole competitive surface." Difficulty ratings (the Seed PAR inputs) were themselves
+deliberately deferred: `parDifficultyRating` was excluded from theme schema v2 under D-5508 ("PAR
+does not exist yet").
+
+**Decision (to be executed by WP-422).** Publish the **content-driven Seed PAR** (VISION §26 Phase 1
+/ `docs/12-SCORING-REFERENCE.md §Phase 1`) — the deliberate ~60–70%-accurate day-one tier — and
+turn on competitive submissions. Simulation calibration (Phase 2) supersedes seed in a later WP.
+- **Difficulty ratings (rubric-based).** Add an additive `difficultyRating` (integer 1–10) plus its
+  auditable `subscores` basis to the mastermind/scheme/villain-group schema (reversing D-5508). Ratings
+  are **content-authored priors, not truth** — assigned per the rubric locked in
+  `wiki/par-simulation-calibration.md §Phase 1`: each entity scored from **five type-specific 0–4
+  dimensions** → `clamp(1,10,ceil(rawTotal/2))`, `5` = baseline (Mastermind: attack-threshold /
+  master-strike / tactic / protection / scaling-or-alt-loss; Scheme: clock / loss-severity /
+  irreversible / resource-denial / setup-scaling; Villain Group: attack-VP / ambush / fight-punishment /
+  escape / synergy-complexity). Every rating carries its `subscores` basis (no undocumented drift);
+  integers only; community research + v23 rules are **anchor validation only**. The values are a
+  product-judgment artifact Jeff reviews before the index is committed.
+- **Scenario composition (entity ≠ scenario).** An entity's base rating is never inflated by a pairing;
+  scenario difficulty = `0.40·mastermind + 0.40·scheme + 0.20·avg(villainGroups)` + an explicit,
+  enumerable `synergyAdjustment` (`-2.0…+2.0`, each with a `reasonCode`), `clamp(1,10,round(...))`. Seed
+  artifacts stamp `source:'seed'`/`calibrationStatus:'uncalibrated'`/`difficultyRatingVersion`; a later
+  simulation pass supersedes them (records `seedParDelta`) and a wrong seed is corrected via a new
+  `ratingVersion`, never a silent in-place rewrite; published PAR prefers simulation over seed.
+- **Config + PAR.** One documented **global default** `ScenarioScoringConfig` (weights / caps /
+  penaltyEventWeights) satisfying every `validateScoringConfig` structural invariant, plus a
+  documented **difficulty→`ParBaseline` mapping**; `parValue = computeParScore(config)` (the same
+  Raw Score formula applied to the baseline). The Phase-1 formula constants
+  (`BasePAR 12000`, `M 1200`, `S 1000`, `V 600`, `P 500`) are locked to `docs/12` — a change edits
+  `docs/12` first. **The difficulty→baseline mapping + the default weight values are locked here at
+  execution.**
+- **Delivery = commit to the repo.** A deterministic authoring-time generator
+  (`scripts/generate-seed-par.mjs`) writes write-once `data/scoring-configs/**` +
+  `data/par/seed/v1/**`; these are committed, and Render's checkout delivers them to the server —
+  the same local-fs model as `loadRegistry('data/cards')`/`'data/metadata'`. No new infra, no
+  runtime engine/server change (the gate + leaderboards already consume the index).
+
+**Rejected / deferred.** Phase-2 Monte-Carlo simulation (heavier, later WP); R2/startup-fetch
+delivery (unnecessary — the committed-data model already works); hero-dependent PAR (VISION §26 —
+PAR is scenario-only). **Split-vs-single** (registry + tooling + data + a rating pass) is resolved
+at pre-flight; the Assumes chain makes a 422a/422b split mechanical.
+
+**Boundary.** Registry schema (one additive field) + content data + a Shared-Tooling script +
+committed data artifacts; no runtime engine/server code; §21 N/A (no HTTP change); PAR artifacts
+immutable/write-once (new `parVersion` to re-publish).
+
+**Packet:** WP-422 + EC-457. **Drafted:** 2026-07-24; lands at execution.
+
 Protect this file.

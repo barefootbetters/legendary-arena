@@ -38,7 +38,7 @@ source:
   - ../docs/ai/work-packets/WP-048-par-scenario-scoring-leaderboards.md
   - ../docs/ai/work-packets/WP-250-hero-effect-coverage-gate.md
   - ../docs/ai/work-packets/WP-257-hollow-effect-detector.md
-last-reviewed: 2026-07-01
+last-reviewed: 2026-07-25
 ---
 
 # PAR Simulation Calibration
@@ -64,6 +64,134 @@ printed rules dictate is a baseline for a *different, easier game*. Until
 core-set ability coverage is complete, calibration is a dry-run / smoke
 capability, not a source of published competitive baselines (see
 [Prerequisite: a rules-faithful engine](#prerequisite-a-rules-faithful-engine)).
+
+## Phase 1 — Seed Difficulty Ratings (Pre-Simulation Priors)
+
+Simulation is Phase 2. Before it can run — and to cover new content the moment it
+ships — every scenario needs a **seed PAR**: a content-authored *prior*, not a
+truth. Seed difficulty ratings are the input to that prior. Their whole job is to
+produce a reasonable **uncalibrated** baseline that simulation later **supersedes**
+with the 55th-percentile T2 result. This section defines how those 1–10 ratings are
+assigned. (Implementation: **WP-422 / D-24242**; the scalar formula + weights live in
+[12-SCORING-REFERENCE §Phase 1](../docs/12-SCORING-REFERENCE.md).)
+
+### The question a rating answers
+
+> "If a competent-but-imperfect player faces this content under normal setup
+> assumptions, how much does this component **lower expected Raw Score / raise loss
+> pressure** compared with baseline content?"
+
+It explicitly does **not** answer: how famous the villain is, how fun the card is,
+how hard your last game felt, or what PAR you *want* the scenario to have. Ratings
+are Phase-1 priors — nothing more.
+
+Difficulty in Legendary is famously **interaction-dependent**: the community's own
+difficulty rankings (mastermind/scheme/villain threads on BoardGameGeek, the various
+"hardest masterminds/schemes" write-ups) converge on the same conclusion — an
+entity rated "in a vacuum" is a weak signal because the *other* components in a setup
+define much of its impact. The v23 Universal Rules make the same point and note that
+**villain VP is the clearest single signal** for how hard a Villain Group is. So the
+model separates three concerns and never conflates them:
+
+1. **Entity baseline difficulty** — a stable 1–10 rating on the Mastermind, Scheme,
+   or Villain Group *itself*.
+2. **Scenario synergy difficulty** — a deterministic, enumerable adjustment applied
+   only when specific components combine.
+3. **Simulation correction** — the later empirical replacement (T2 55th percentile).
+
+### The 1–10 scale (5 is the center)
+
+`5` = a normal competent-game expectation. Below 5 makes the seed *easier*, above 5
+*harder*. `1–2` tutorial/trivial; `3–4` easy/low-normal; `6–7` above-normal/hard;
+`8–9` very-hard/extreme (strong clock, denial, protection, wounds, escapes, KO,
+scaling, or alternate-loss pressure); `10` apex — severe pressure even before synergy.
+
+### Entity rubrics (integer, from sub-scores)
+
+Each entity is rated from **five dimensions scored 0–4**, then
+`difficultyRating = clamp(1, 10, ceil(rawTotal / 2))`. Scoring different dimensions
+per type keeps ratings mechanical, not thematic. Every published rating **must carry
+its sub-score basis** (auditable — no undocumented "vibes").
+
+**Mastermind** — `attackThresholdPressure + masterStrikeSeverity + tacticSeverity +
+protectionOrAccessRestriction + scalingOrAlternateLossPressure`. High-end profiles:
+severe protection, hand/deck suppression, city destruction, alternate-loss conditions,
+or very high attack thresholds. Base-set masterminds generally sit low-to-mid unless a
+Master Strike or tactic becomes dangerous in a specific scenario.
+
+**Scheme** — `clockTightness + lossConditionSeverity + irreversibleDamage +
+resourceDenial + setupConstraintOrScaling`. The Scheme usually defines the *clock* and
+*loss condition*, so it is rated separately from the Mastermind. High-end: tight clock
+plus irreversible board/deck damage, or a setup-warping loss path.
+
+**Villain Group** — `attackAndVpPressure + ambushPressure + fightPunishmentOrDenial +
+escapePressure + synergyOrKeywordComplexity`. Start from VP + attack (the v23 signal),
+then adjust for text (Ambush/Fight/Escape and keyword combinatorics).
+
+### Scenario difficulty and synergy
+
+An entity's base rating is **never** permanently inflated by its worst pairing.
+Scenario difficulty is composed at scenario time:
+
+```
+baseScenarioDifficulty = 0.40·mastermindDifficulty
+                       + 0.40·schemeDifficulty
+                       + 0.20·avg(villainGroupDifficulties)
+
+scenarioDifficulty = clamp(1, 10, round(baseScenarioDifficulty + synergyAdjustment))
+```
+
+`synergyAdjustment` is an **explicit, enumerable** `-2.0 … +2.0`, each with a
+`reasonCode` and a human description — never a hidden fudge. Representative bands:
+same-resource pressure `+0.5…+1.0`; a component accelerating the Scheme's loss
+condition `+0.5…+1.5`; a runaway multi-component loop `+1.5…+2.0`; components that
+partially counteract `-0.5…-1.0`. `scenarioDifficulty` then feeds the
+[§Phase 1](../docs/12-SCORING-REFERENCE.md) formula that `computeParScore` owns; the
+entity ratings themselves stay content **metadata**, never scoring logic.
+
+### Seed vs simulation, and never a silent rewrite
+
+Seed artifacts are stamped `source: "seed"`, `calibrationStatus: "uncalibrated"`, with
+their `difficultyRatingVersion`. When simulation lands it writes a **new** artifact
+(`source: "simulation"`, `calibrationStatus: "calibrated"`, `percentileUsed: 55`) and
+records the `seedParDelta`. A large delta is a **Phase-3 tuning signal**, not licence
+to secretly edit the original seed — a wrong seed is superseded by a *new versioned*
+rating (`seed-difficulty-v2`, `supersedes: v1`), never an in-place overwrite (PAR
+artifacts are immutable; published competitive PAR always **prefers simulation over
+seed**).
+
+### Governance rules
+
+1. **Integer ratings only** (`1…10`); precision lives in the 0–4 sub-scores.
+2. **Every rating carries a `basis`/`subscores` object** — no undocumented drift.
+3. **Entity rating ≠ scenario rating** — a Mastermind is never rated "because of a
+   Scheme"; combination pressure is a scenario `synergyAdjustment`.
+4. **Manual seed ratings are never silently rewritten after publication** — refine via
+   a new `ratingVersion`.
+5. **Published competitive PAR prefers simulation over seed** (seed exists only until
+   simulation does).
+
+### Rating record shape
+
+```json
+{
+  "entityDifficultyVersion": "seed-difficulty-v1",
+  "masterminds": {
+    "<mastermind extId>": {
+      "difficultyRating": 8,
+      "subscores": {
+        "attackThresholdPressure": 3, "masterStrikeSeverity": 4,
+        "tacticSeverity": 3, "protectionOrAccessRestriction": 3,
+        "scalingOrAlternateLossPressure": 4
+      }
+    }
+  }
+}
+```
+
+Community difficulty research (BGG threads, "hardest masterminds/schemes" articles)
+and the v23 rules are used only as **anchor validation** for a first pass — sanity
+checks that a rating lands in the right band — never as canonical scores.
 
 ## Mechanics
 
