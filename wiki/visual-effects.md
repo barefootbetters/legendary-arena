@@ -237,6 +237,23 @@ stream — one effect per event type — with zero new engine work.
 | `schemeTwistResolved` | T2 | A Scheme Twist is revealed and resolved | A darker, subtler **desaturation ripple** radiating from the scheme tile; less violent than a Strike |
 | `healResolved` | T2 | A player uses the Wound Healing ability | Soft green **restorative shimmer** rising off the hand |
 
+**A worked example of one row.** Below is an *illustrative proposal mock* of
+the `mastermindStrikeResolved` character from the table above — screen-shake +
+red edge-vignette pulse + dark shard burst, layered over a sample Hero card. It
+is a hand-built, CSS-only animated SVG (no JavaScript, so it animates on the
+JS-free wiki), and it honours `prefers-reduced-motion` by holding a single
+static "struck" frame instead of animating. Nothing here ships — the effect
+*character* is proposal-level, exactly as the note above this section says.
+
+![Animated mock of the Surface-1 mastermindStrikeResolved effect: a sample Legendary hero card jolts with a screen-shake while a red vignette pulses in from the card's edges and dark shard particles burst outward from the centre, then settles — the signature "uh-oh" strike jolt. The animation loops.](/visual-effects/surface1-mastermind-strike.svg "width=40%")
+
+*Illustrative proposal mock of `mastermindStrikeResolved` (Tier-1) — a CSS-only
+animated SVG that loops and drops to a static frame under
+`prefers-reduced-motion`. Sample card art is Medusa — Splitting Hairs
+(illustrative only). Animation source:
+[surface1-mastermind-strike.py](../ewiki/visual-effects/surface1-mastermind-strike.py)
+— regenerate with `python surface1-mastermind-strike.py`.*
+
 #### Surface 1b — Sub-effects inside a fight or ambush (`appliedEffects`)
 
 `FightResolvedEvent` and `AmbushResolvedEvent` each carry
