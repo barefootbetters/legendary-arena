@@ -515,6 +515,26 @@ its own full-screen finale:
 | **`scheme-wins`** | `escapedVillains` ≥ `ESCAPE_LIMIT` (8) — *the city is overrun*; **or** `schemeLoss` ≥ 1 — *the scheme completes* | A dark, **deflating collapse** — desaturate to ash; the two reasons can take distinct treatments (an escape stampede vs. the scheme snapping shut) |
 | **`tie`** | `finalTurnTie` ≥ 1 — a deck emptied and the final turn ended with no win or loss (WP-367 / D-24159) | Something **wry and suspended** — a held, unresolved shimmer; neither bloom nor collapse |
 
+**Animated mocks of the three finales.** Full-screen, card-less endgame moments
+— same CSS-only, looping, `prefers-reduced-motion`-aware treatment as the other
+galleries. Proposal-level (the `heroes-win` bloom is the finale-scale sibling of
+the Surface-1 [`mastermindDefeated`](#surface-1) mock).
+
+![Animated mock of the heroes-win finale: a full-screen golden victory bloom with rotating rays, a slow light sweep, and a storm of colourful confetti. Loops.](/visual-effects/surface4-heroes-win.svg "width=66%")
+
+*`heroes-win` — a triumphant **victory bloom**: rotating rays, a slow light sweep, and a confetti storm (the game's biggest positive beat).*
+
+![Animated mock of the scheme-wins finale: a grey glow deflates and a ring collapses inward while ash drifts down and a dark vignette closes in. Loops.](/visual-effects/surface4-scheme-wins.svg "width=66%")
+
+*`scheme-wins` — a dark **deflating collapse**: a grey glow deflates and a ring caves inward while ash drifts down and the vignette closes in (desaturating to ash).*
+
+![Animated mock of the tie finale: a warm orb and a cool orb hover in balance, gently see-sawing while a neutral shimmer holds between them, never resolving. Loops.](/visual-effects/surface4-tie.svg "width=66%")
+
+*`tie` — **wry and suspended**: a warm orb and a cool orb hover in balance, gently see-sawing under a neutral shimmer that never resolves — neither bloom nor collapse.*
+
+*Card-less CSS-only animated SVGs; source:
+[surface4-finales.py](../ewiki/visual-effects/surface4-finales.py).*
+
 > **The tie is real, and deck-exhaustion is *not* a loss.** An emptied
 > Hero or Villain deck latches the final turn; if nobody has won or lost
 > by its end the match is a first-class **`tie`** (`finalTurnTie`). Give it

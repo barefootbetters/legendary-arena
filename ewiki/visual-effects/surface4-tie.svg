@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" width="640" height="360" role="img" aria-label="Animated mock of the tie finale: a warm orb and a cool orb hover in balance, gently see-sawing while a neutral shimmer holds between them — never resolving. Loops.">
+  <title>Surface-4 tie — suspended, unresolved shimmer</title>
+  <style>
+.orbL { animation: tleft 3.4s ease-in-out infinite; }
+.orbR { animation: tright 3.4s ease-in-out infinite; }
+.shim { opacity: 0.16; animation: tshim 3.4s ease-in-out infinite; }
+.tmote { opacity: 0; fill: #cfd6ea; transform: translateY(0) scale(0.6); animation: tmote 3.4s ease-in-out infinite; }
+@keyframes tleft {
+  0.00% { transform: translate(232px,180px); }
+  25.00% { transform: translate(232px,166px); }
+  50.00% { transform: translate(232px,180px); }
+  75.00% { transform: translate(232px,194px); }
+  100.00% { transform: translate(232px,180px); }
+}
+@keyframes tright {
+  0.00% { transform: translate(408px,180px); }
+  25.00% { transform: translate(408px,194px); }
+  50.00% { transform: translate(408px,180px); }
+  75.00% { transform: translate(408px,166px); }
+  100.00% { transform: translate(408px,180px); }
+}
+@keyframes tshim {
+  0.00% { opacity: 0.16; }
+  50.00% { opacity: 0.42; }
+  100.00% { opacity: 0.16; }
+}
+@keyframes tmote {
+  0.00% { opacity: 0; transform: translateY(0) scale(0.6); }
+  22.00% { opacity: 0.7; }
+  50.00% { opacity: 0.5; transform: translateY(-26px) scale(1); }
+  80.00% { opacity: 0.5; }
+  100.00% { opacity: 0; transform: translateY(0) scale(0.6); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .orbL { animation: none; transform: translate(232px,180px); }
+  .orbR { animation: none; transform: translate(408px,180px); }
+  .shim { animation: none; opacity: 0.3; }
+  .tmote { animation: none; opacity: 0; }
+}
+  </style>
+  <defs><radialGradient id="og" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#ffe6a0" stop-opacity="0.95"/><stop offset="55%" stop-color="#ffcf47" stop-opacity="0.5"/><stop offset="100%" stop-color="#ffcf47" stop-opacity="0"/></radialGradient><radialGradient id="ob" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#bfe0ff" stop-opacity="0.95"/><stop offset="55%" stop-color="#5ab0ff" stop-opacity="0.5"/><stop offset="100%" stop-color="#5ab0ff" stop-opacity="0"/></radialGradient><radialGradient id="ts" cx="50%" cy="50%" r="60%"><stop offset="0%" stop-color="#cfd6ea" stop-opacity="0.6"/><stop offset="100%" stop-color="#cfd6ea" stop-opacity="0"/></radialGradient><radialGradient id="tbg" cx="50%" cy="46%" r="80%"><stop offset="0%" stop-color="#161822" stop-opacity="1"/><stop offset="100%" stop-color="#0b0c12" stop-opacity="1"/></radialGradient></defs>
+  <rect width="640" height="360" fill="url(#tbg)"/>
+  <ellipse class="shim" cx="320" cy="180" rx="150" ry="46" fill="url(#ts)"/><g transform="translate(215 143)"><circle class="tmote" r="2.7" style="animation-delay:-0.93s;"/></g><g transform="translate(349 188)"><circle class="tmote" r="3.4" style="animation-delay:-1.92s;"/></g><g transform="translate(390 183)"><circle class="tmote" r="2.9" style="animation-delay:-2.22s;"/></g><g transform="translate(428 244)"><circle class="tmote" r="2.3" style="animation-delay:-2.50s;"/></g><g transform="translate(262 253)"><circle class="tmote" r="3.9" style="animation-delay:-1.27s;"/></g><g transform="translate(197 179)"><circle class="tmote" r="2.2" style="animation-delay:-0.79s;"/></g><g transform="translate(460 267)"><circle class="tmote" r="2.1" style="animation-delay:-2.73s;"/></g><g transform="translate(117 237)"><circle class="tmote" r="3.7" style="animation-delay:-0.20s;"/></g><g transform="translate(291 172)"><circle class="tmote" r="2.4" style="animation-delay:-1.48s;"/></g><g transform="translate(540 164)"><circle class="tmote" r="2.5" style="animation-delay:-3.32s;"/></g><g class="orbL"><circle r="52" fill="url(#og)"/></g><g class="orbR"><circle r="52" fill="url(#ob)"/></g>
+</svg>
