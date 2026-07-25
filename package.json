@@ -62,6 +62,8 @@
     "ledger:heroes:check":  "node scripts/hero-mechanic-ledger.mjs --check",
     "ledger:villains":      "node scripts/villain-mechanic-ledger.mjs",
     "ledger:villains:check": "node scripts/villain-mechanic-ledger.mjs --check",
+    "ledger:numbers:check": "node scripts/check-number-ledger.mjs --check",
+    "ledger:numbers:next":  "node scripts/check-number-ledger.mjs --next",
     "mechanics:metadata":       "node scripts/build-card-mechanics-metadata.mjs",
     "mechanics:metadata:check": "node scripts/build-card-mechanics-metadata.mjs --check",
     "gauntlet:loadouts":        "node scripts/generate-gauntlet-loadouts.mjs",

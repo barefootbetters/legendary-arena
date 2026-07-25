@@ -32321,3 +32321,55 @@ GET-verified `200` / `audio/mpeg` / valid `ID3` (`play-card` 11.8 KB, `recruit-h
 live-verify operator-pending only on the deploy (eyeball the cue in a real match).
 
 Protect this file.
+
+### D-24242 — WP/EC/D numbers are allocated through an append-only ledger lock, not by reading the index frontier
+
+**Status:** Active (landed 2026-07-25, infra/number-allocation-ledger).
+
+**Context.** WP / EC / D numbers were allocated by reading the current frontier of
+`WORK_INDEX.md` / `EC_INDEX.md` / `DECISIONS.md` and taking the next free value.
+That read is **not atomic** against a concurrent session that merges first: two
+sessions can both see WP-419 free, both use it, and the collision is discovered
+late — at merge time. This happened live (a bot-ally WP-419, PR #984, took the
+same WP-419 / EC-454 / D-24239 triple an in-flight arena-client WP had allocated,
+forcing a renumber to WP-421 / EC-456 / D-24241). The prose indices are also
+append-heavy, so concurrent edits conflict on the big paragraphs, not just the
+number.
+
+**Decision.** Numbers are allocated through **`docs/ai/NUMBER-LEDGER.md`**, an
+append-only reservation ledger with a `high-water` per space (WP / EC / D) and one
+reservation line per allocation **above** the high-water. Grandfathered numbers at
+or below the adoption-time high-water (WP 421, EC 456, D 24241) stay in the
+indices only.
+
+- **Reserve first.** Allocation = `node scripts/check-number-ledger.mjs --next
+  wp|ec|d`, then append the reservation line under the matching `## ` section **in
+  the SPEC commit**, merged first — claiming the number before the bulky WP/EC
+  work (protocol in `01.0a-wp-drafting-phase.md`).
+- **Union-merge.** `.gitattributes` marks the ledger `merge=union`, so two
+  sessions reserving *different* numbers auto-merge with no conflict on a local
+  rebase/merge (the minimal ledger, not the prose indices). This is a *local* git
+  driver — it does not run on GitHub's server-side squash, and that is fine: it
+  only reduces friction, it is not the safety net.
+- **Loud check.** `pnpm ledger:numbers:check` (CI, in the `hero-effect-coverage`
+  governance-gates job) fails on a **DUPLICATE** reservation (two sessions, same
+  number — union-merge keeps both lines) and on **drift** (a frontier number used
+  in an index above the high-water with no reservation). A silent late collision
+  becomes an early, loud CI red; one session renumbers to the next free value.
+
+**Layer / boundary.** Governance tooling only — docs + one `scripts/*.mjs`
+validator + one CI step + a `.gitattributes` line + a package.json script. No
+engine / registry / server / arena-client change; no runtime behavior; no
+determinism/persistence surface.
+
+**Not solved (honest scope).** This does not make allocation atomic — nothing
+git-native can, without a lock server. It converts a *silent, late* collision
+into a *loud, early* one and shrinks the race window via reserve-first. A residual
+same-number race still ends in one renumber, but it is caught in CI, not in prod.
+
+**Packet:** INFRA (no WP — governance tooling, per the code-vs-INFRA line in the
+commit-msg hook Rule 5). **Landed:** 2026-07-25. `node scripts/check-number-ledger.mjs
+--check` green; negative-tested (duplicate + drift both fail exit 1); wired into
+`ci.yml`. First ledger reservation is this decision's own D-24242 (dogfood).
+
+Protect this file.

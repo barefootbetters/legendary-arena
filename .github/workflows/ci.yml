@@ -203,6 +203,15 @@ jobs:
       - name: Runtime-observed hollows freshness
         run: pnpm sim:runtime-observed:check
 
+      # why (D-24242): the WP/EC/D number-allocation lock. Fails loudly if two
+      # sessions reserved the same number in docs/ai/NUMBER-LEDGER.md (a
+      # DUPLICATE), or if a frontier number was used in WORK_INDEX / EC_INDEX /
+      # DECISIONS above the high-water without a matching ledger reservation
+      # (drift). Turns a silent late-at-merge collision (WP-419 → WP-421) into an
+      # early, loud CI failure. Reads markdown only — no build dependency.
+      - name: Number allocation ledger
+        run: pnpm ledger:numbers:check
+
   # ── 3c. Dashboard gates ──────────────────────────────────────────────────────
   # why: wires the apps/dashboard checks from
   # apps/dashboard/docs/code-checks-and-balances.md §11 into CI. The dashboard is
