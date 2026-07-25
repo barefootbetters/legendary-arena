@@ -32397,7 +32397,8 @@ number.
 **Decision.** Numbers are allocated through **`docs/ai/NUMBER-LEDGER.md`**, an
 append-only reservation ledger with a `high-water` per space (WP / EC / D) and one
 reservation line per allocation **above** the high-water. Grandfathered numbers at
-or below the adoption-time high-water (WP 421, EC 456, D 24241) stay in the
+or below the adoption-time high-water (WP 422, EC 457, D 24241 — WP-422/EC-457
+landed from PR #993 in the same window the ledger was adopted) stay in the
 indices only.
 
 - **Reserve first.** Allocation = `node scripts/check-number-ledger.mjs --next

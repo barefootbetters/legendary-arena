@@ -44,15 +44,15 @@ same-number race however the merge happened.
 
 ## WP
 
-high-water: 421
+high-water: 422
 
-<!-- reservations (WP-422 and up), newest last -->
+<!-- reservations (WP-423 and up), newest last -->
 
 ## EC
 
-high-water: 456
+high-water: 457
 
-<!-- reservations (EC-457 and up), newest last -->
+<!-- reservations (EC-458 and up), newest last -->
 
 ## D
 
