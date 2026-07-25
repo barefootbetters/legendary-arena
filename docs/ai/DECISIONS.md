@@ -32583,3 +32583,53 @@ and a regression gate that turns a silent sub-page drop into a failed CI build.
 **Packet:** WP-423 / EC-458. **Landed:** 2026-07-25.
 
 Protect this file.
+
+### D-24246 — the apex `legendary` combo tier is the 4th shared `comboTierForCount` boundary (`>= 5`), consumed identically by the audio sting and the future visual `LEGENDARY!` call-out (Active)
+
+**Status:** Active (landed 2026-07-25 at WP-425 / EC-460 execution).
+
+**Decision.** `comboTierForCount` gains a **fourth tier** — an apex `legendary` at
+`count >= 5` (narrowing `big` to `3–4`), above the WP-413 / D-24228 mapping
+(`<= 0 → none`, `1 → small`, `2 → medium`, `>= 3 → big`). A hero play that fires
+five or more ability effects earns a distinct, rarer `LEGENDARY!` combo sting on
+`play.legendary-arena.com`, above the `big` cue.
+
+1. **Shared, not renderer-specific.** The `>= 5` boundary is locked for **both**
+consumers of `comboTierForCount` — the audio combo sting (shipped by this WP) and
+the future visual combo-flash / synergy call-out (`LEGENDARY!`, not yet built in
+code). Per the Combo Tier Contract "may not diverge" rule, a tier boundary is
+never added to one renderer alone; adding it here adds it for **both** at once, so
+when the VFX layer ships it inherits the same `>= 5` boundary. This resolves the
+former ewiki "combo-scaling-beyond-T3" open question — the apex `LEGENDARY!` rung
+is where that decision cashed out.
+
+2. **Audio now, visual later.** WP-425 ships the audible tier only — a CC0
+`combo-legendary.mp3` hosted on R2 under `audio/sound-effects/` (served via
+`images.legendary-arena.com`), referenced by URL; **no audio in git**. The visual
+call-out is a separate future WP that consumes this same locked tier.
+
+3. **Architecture unchanged.** Pure client presentation — it lives in
+`apps/arena-client`, reads only `UIState.game.lastPlayEffectsFired` (WP-409 /
+D-24221), never writes `G`/`ctx`, and adds **zero** engine / determinism / replay
+footprint (sims and replays render no audio; no `finalStateHash` sentinel is
+touched — no re-pin).
+
+4. **Minimal extension.** One new `ComboTier` union member (`'legendary'`), one
+new `comboTierForCount` branch (`big` narrows to `<= 4`), one new
+`comboCueManifest` entry; the `Record<Exclude<ComboTier, 'none'>, string>` type +
+the `AUDIBLE_TIERS` drift test enforce the union↔map lockstep. The tier-agnostic
+`useComboCue` and the lazy-load `audioEngine` (EC-448) are unchanged. The ewiki
+Combo Tier Contract (`wiki/visual-effects.md`) + the narrative synergy call-out
+ladder (`wiki/narrative-psychology.md`) were updated in the same commit so the
+documented contract matches the code. A **fifth** tier would be a further
+`DECISIONS.md` change adding it for both layers at once.
+
+Extends D-24228 (the shipped 3-tier combo cue); consumes WP-409's
+`lastPlayEffectsFired` scalar.
+
+**Packet:** WP-425 (EC-460). **Drafted:** 2026-07-25. **Landed:** 2026-07-25
+(WP-425 / EC-460 execution — `pnpm -r build` 0, arena-client typecheck 0,
+1095 / 0; the 5-file allowlist, no `packages/game-engine` file). Live-on-surface
+(D-24026) rides the `combo-legendary.mp3` clip being uploaded to R2.
+
+Protect this file.

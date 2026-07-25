@@ -146,14 +146,16 @@ The full three-tier prioritization is in [Priority tiers](#priority-tiers).
 ### Combo Tier Contract {#combo-tier-contract}
 
 The count → tier mapping is **shared with the audio layer and may not
-diverge.** It is the shipped `comboTierForCount` (D-24228):
+diverge.** It is the shipped `comboTierForCount` (D-24228, extended with the
+apex tier by WP-425 / D-24246):
 
 | `lastPlayEffectsFired` | Tier |
 |---|---|
 | `<= 0` | none (silent) |
 | `1` | T1 |
 | `2` | T2 |
-| `>= 3` | T3 |
+| `3–4` | T3 |
+| `>= 5` | T4 — apex (`legendary` / **LEGENDARY!**) |
 
 - Visual *implementations* of each tier **may** vary (spark / burst /
   flourish are proposals).
@@ -161,6 +163,9 @@ diverge.** It is the shipped `comboTierForCount` (D-24228):
 - Audio and visual consumers **must** use the identical tier mapping —
   one `comboTierForCount`, two renderers. This is what prevents future
   divergence between the flash and the sting.
+- The **apex T4** tier (`>= 5 → legendary`) is locked by **D-24246**: the
+  audio sting (`combo-legendary.mp3`) ships with WP-425; the visual
+  `LEGENDARY!` call-out consumes the same boundary when the VFX layer is built.
 
 ### Accessibility requirements (mandatory)
 
@@ -351,7 +356,8 @@ layer; only the per-tier visual below is a proposal:
 | `<= 0` | none | No effect (silent play) |
 | `1` | T1 | A brief **spark** at the played card |
 | `2` | T2 | A larger **burst** |
-| `>= 3` | T3 | A full-screen ascending **flourish** |
+| `3–4` | T3 | A full-screen ascending **flourish** |
+| `>= 5` | T4 | The apex **`LEGENDARY!`** finale — the rarest, biggest flourish (D-24246) |
 
 The count→tier function (`comboTierForCount`, D-24228) is the single
 source both renderers consume. Pitch the visual tiers to ascend in
@@ -376,7 +382,7 @@ drawn bigger than the last, so a bigger chain literally *looks* bigger.
 
 ![Animated mock of the tier-3 combo cue: a full-screen golden bloom with rotating rays and ascending streaks of light as the word Unstoppable! pops, then loops.](/visual-effects/surface2-combo-flourish.svg "width=72%")
 
-*T3 (`>= 3`) — a full-screen ascending **flourish** + **Unstoppable!** — "I *built* this." The apex **LEGENDARY!** rung stays reserved (it needs a 4th shared tier — see the [call-out note](#synergy-callout)).*
+*T3 (`3–4`) — a full-screen ascending **flourish** + **Unstoppable!** — "I *built* this." The apex **`LEGENDARY!`** rung above it (`>= 5`) is the locked 4th tier (D-24246): WP-425 ships its audio sting; the visual finale follows — see the [call-out note](#synergy-callout).*
 
 *Card-less CSS-only animated SVGs; source:
 [surface2-combo.py](../ewiki/visual-effects/surface2-combo.py). The words are the
@@ -419,22 +425,23 @@ words are a naming proposal owned by the narrative page:
 | `<= 0` | `none` | — (no label) | silent play |
 | `1` | `small` | **Combo!** | "that worked" |
 | `2` | `medium` | **Team-Up!** | "oh — it *linked*" |
-| `>= 3` | `big` | **Unstoppable!** | "I *built* this" |
-| (reserved apex) | — | **LEGENDARY!** | the rare, brag-worthy crescendo |
+| `3–4` | `big` | **Unstoppable!** | "I *built* this" |
+| `>= 5` | `legendary` | **LEGENDARY!** | the rare, brag-worthy crescendo |
 
-> **The apex rung is not free — it needs a new shared tier.** *Candy
+> **The apex rung is now a locked shared tier (WP-425 / D-24246).** *Candy
 > Crush*'s "Divine" is a fourth, rarer rung above the top cascade; the
-> equivalent here — a **LEGENDARY!** call-out gated on a bigger chain (say
-> `>= 5`) — would add a **fourth boundary** to `comboTierForCount`.
-> Because the [Combo Tier Contract](#combo-tier-contract) locks that
-> mapping *and* requires the audio and visual renderers to consume the
-> **identical** tiers, a 4th rung is a `DECISIONS.md` change that adds the
-> tier for **both** layers at once (the call-out *and* a matching combo
-> sting) — never a visual-only threshold that silently diverges from the
-> audio. This is exactly the open
-> [combo-scaling-beyond-T3 question](#decisions-pending); the apex label
-> is where that decision cashes out. Until then, the shipped ladder is the
-> three locked tiers above.
+> equivalent here — a **LEGENDARY!** call-out gated on a bigger chain
+> (`>= 5`) — added a **fourth boundary** to `comboTierForCount`. Because the
+> [Combo Tier Contract](#combo-tier-contract) locks that mapping *and*
+> requires the audio and visual renderers to consume the **identical**
+> tiers, the 4th rung landed as a `DECISIONS.md` change (D-24246) that adds
+> the tier for **both** layers at once — never a visual-only threshold that
+> silently diverges from the audio. **What shipped:** WP-425 ships the
+> **audio** side now — a `combo-legendary.mp3` sting on the `>= 5` tier. The
+> **visual** `LEGENDARY!` call-out is the future consumer of the same locked
+> boundary (it renders when the VFX layer is built). This resolved the
+> former "combo-scaling-beyond-T3" open question; the apex label is where
+> that decision cashed out.
 
 **Rendering & accessibility.** The call-out is text, so it degrades
 better than any particle effect: under `prefers-reduced-motion` (or the
@@ -764,14 +771,15 @@ recommendations):
   CSS/WAAPI per effect class (the [posture](#library-posture)
   leans MIT-first; the pick is not yet locked). Confirm GSAP's current
   license if it is considered.
-- **Combo scaling beyond T3** — `lastPlayEffectsFired` is unbounded above;
-  decide whether the visual keeps scaling density past a 3-chain or
-  hard-caps at T3 for the performance budget. (Tier *boundaries* stay
-  locked either way.) This is also where the **apex `LEGENDARY!`
-  call-out** rung is decided: a fourth, rarer label above `big` requires
-  adding a fourth tier to the shared `comboTierForCount` via a
-  `DECISIONS.md` entry, so the audio and visual layers gain it together
-  (see [synergy call-out](#synergy-callout)).
+- **Combo density scaling past T4** — `lastPlayEffectsFired` is unbounded
+  above; decide whether the visual keeps scaling particle *density* past the
+  apex `>= 5` tier or hard-caps at T4 for the performance budget. (Tier
+  *boundaries* stay locked either way.) The **apex `LEGENDARY!` rung itself is
+  now resolved:** WP-425 / D-24246 added the fourth shared `comboTierForCount`
+  tier (`>= 5 → legendary`) and shipped its audio sting; the visual call-out
+  consumes the same locked boundary when the VFX layer is built (see
+  [synergy call-out](#synergy-callout)). A *fifth* tier would be a further
+  `DECISIONS.md` change adding it for both layers at once.
 - **The synergy call-out label** — the named popup per tier
   ([synergy call-out](#synergy-callout)). Two open calls beyond the apex
   rung above: (a) does the word announce at `small` or start at `medium`

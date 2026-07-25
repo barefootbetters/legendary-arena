@@ -7,6 +7,39 @@
 
 ## Current State
 
+### WP-425 / EC-460 — Apex `LEGENDARY!` Combo Tier (D-24246) (2026-07-25)
+
+**`User-Visible Surface = play.legendary-arena.com`.** Adds a **fourth boundary**
+to the shipped WP-413 `comboTierForCount` — an apex `legendary` tier at
+`count >= 5` (narrowing `big` to `3–4`) — so a hero play that fires five or more
+ability effects earns a distinct, rarer **`LEGENDARY!` combo sting**, above the
+`big` cue. The minimal extension of the D-24228 surface: `ComboTier` gains
+`'legendary'`, `comboTierForCount` maps `>= 5 → legendary`, and `comboCueManifest`
+maps it to a CC0 `combo-legendary.mp3` on R2 (`audio/sound-effects/`, never in
+git). The tier-agnostic `useComboCue` and the lazy-load `audioEngine` (EC-448)
+are **unchanged**; the `Record<Exclude<ComboTier,'none'>,string>` type + the
+`AUDIBLE_TIERS` drift test enforce the union↔map lockstep.
+
+**Shared tier, not audio-only (D-24246).** The `>= 5` boundary is the **fourth
+Combo Tier Contract tier**, locked for **both** the audio sting (shipped here) and
+the future visual combo-flash / synergy call-out (`LEGENDARY!`) — the VFX layer is
+not built in code yet, so this WP ships **audio only** and the contract locks the
+boundary so the future visual consumer inherits it. Resolves the ewiki
+"combo-scaling-beyond-T3" open question. The ewiki **Combo Tier Contract**
+(`wiki/visual-effects.md`) + narrative synergy call-out ladder
+(`wiki/narrative-psychology.md`) were updated in lockstep (the "may not diverge"
+rule) so the documented contract matches the code.
+
+**Pure client presentation** — reads `UIState` only, never writes `G`/`ctx`, zero
+engine/determinism/replay footprint; no `finalStateHash` re-pin; no new
+dependency/engine/control/channel. `pnpm --filter arena-client typecheck` 0 +
+suite **1095/0** (+2); wiki link-check + hugo build clean; `pnpm -r build` 0;
+5-file allowlist (no `useComboCue.ts`, no `audioEngine.ts`, no
+`packages/game-engine/**`). **D-24026 live-on-surface** is operator-pending on the
+`combo-legendary.mp3` R2 upload (the code + tests are asset-independent): once
+uploaded, a deployed 5+-effect play sounds the apex clip (distinct from `big`) and
+mute silences it. Hard-deps: WP-413 ✅, WP-409 ✅, WP-412 ✅.
+
 ### WP-424 / EC-459 — Stop Bot-Ally Drivers on SIGTERM (Deploy-Overlap Freeze) (D-24244) (2026-07-25)
 
 **`User-Visible Surface = play.legendary-arena.com`.** Fixes a **silent bot-ally
