@@ -4,7 +4,9 @@
   Referrer-Policy: strict-origin-when-cross-origin
 
 # why: no explicit Cache-Control rule for the HTML entry document (index.html,
-# which Cloudflare Pages also serves for every SPA route via _redirects).
+# which Cloudflare Pages also serves for every SPA route via its built-in
+# single-page-application fallback — no top-level 404.html, so an unmatched path
+# gets /index.html with a 200; see the note in public/_redirects).
 # Cloudflare Pages' platform default for HTML is already
 # `public, max-age=0, must-revalidate`, so the browser revalidates the entry
 # document on every navigation and always sees the current content-hashed chunk

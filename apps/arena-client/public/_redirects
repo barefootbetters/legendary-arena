@@ -1,1 +1,14 @@
-/*  /index.html  200
+# SPA routing is handled by Cloudflare Pages' BUILT-IN single-page-application
+# fallback, not by an explicit rule here: with no top-level 404.html in the build
+# output, Pages serves /index.html with a 200 for any request that does not match
+# a static asset. Verified 2026-07-25 — a deep path
+# (GET /nonexistent-deep-path-test-12345) returned 200 from the live site.
+#
+# An explicit `/*  /index.html  200` rule was REMOVED: it is redundant with that
+# built-in fallback AND is rejected by Pages' infinite-loop detection — the build
+# log warned "Found invalid redirect lines: /*  /index.html  200 — Infinite loop
+# detected in this rule and has been ignored" (the destination /index.html is
+# itself matched by /*). It was already being ignored, so removing it changes no
+# behavior; it only clears the deploy-log warning.
+#
+# Add real (non-SPA) redirect rules below if ever needed.
