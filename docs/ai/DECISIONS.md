@@ -32744,4 +32744,53 @@ execution. `User-Visible Surface = play.legendary-arena.com` — **D-24026 REQUI
 bot ally playing a put-bottom-HQ hero completes its turn instead of faulting). Engine
 suite 2069/0 (+4); bot-loop 17/0 (+1); `pnpm -r build` 0.
 
+### D-24249 — the play-surface diagnostic report carries a `transport` block sourced from the WP-311 connection store (Active)
+
+**Status:** Active (landed 2026-07-25 at WP-428 / EC-463 execution).
+
+**Context.** A live freeze report (`match=660LwoUY-Yq`, captured by the waiting
+seat) showed `entries: []` and a healthy-looking snapshot with **no** way to tell
+whether the socket was connected, which `_stateID` the client was pinned at, or how
+long since the last server frame — the three facts that separate "my browser is
+wedged" from "the server advanced past my view." The WP-228 report had no transport
+section.
+
+**Decision.** The diagnostic report (WP-228 / D-22801) gains a typed `transport`
+block: `{ isConnected, lastStateId, hasEverConnected, lastFrameAtMs,
+timeSinceLastFrameMs }`.
+
+(1) **Sourced from the connection store, not `G`.** The first four fields come from
+the WP-311 / D-24096 `connection` store — boardgame.io framework/transport state
+that carries no `G`/card/zone data and is never persisted (WP-116 disconnect
+policy). Reading it into a downloaded report introduces no persistence/determinism
+surface; the diagnostics-module boundary (EC-260) is preserved (a Pinia store read,
+no engine/registry/`boardgame.io` import).
+
+(2) **`timeSinceLastFrameMs` is the derived staleness signal.** The click-time
+capture clock minus the store's per-frame `lastFrameAtMs` stamp is the decisive
+number for the "waiting-forever-for-a-server-frame" freeze class. The derivation
+lives in a pure `buildTransportDiagnostics(state, capturedAtMs)` helper (the clock
+is passed in) so `buildDiagnosticReport` stays clock-free.
+
+(3) **Frame stamp via a defaulted parameter.** `connection.setConnected` gains a
+defaulted `atMs = Date.now()` third parameter so the stamp rides the
+already-every-frame subscribe call without editing the transport wrapper
+(`bgioClient.ts` is untouched; its two-argument call stays source-compatible).
+
+(4) **Counters deferred.** The `bgioClient` reconnect/resync/watchdog counters are
+real signal but require instrumenting the wrapper; a separate follow-up (WP-A2).
+
+**Layer / boundary.** Pure client presentation — App layer (`apps/arena-client`)
+only, reads the connection store, writes no `G`/`ctx`, zero engine/determinism/
+replay footprint, no `finalStateHash` re-pin. §21 N/A (report assembled
+client-side, zero network egress). §17 internal diagnostics (reads sync
+observability, changes no sync logic; no revenue vector). §20 N/A.
+
+**Packet:** WP-428 / EC-463 (standard two-session lane).
+`User-Visible Surface = none — internal operator tooling` (no D-24026
+rendered-surface gate; verified by downloading a report and confirming the
+`transport` fields reflect live connection state). arena-client typecheck 0 +
+suite 1099/1099 (+4); `pnpm -r build` 0; 5-file allowlist, no `bgioClient.ts` /
+`packages/**`.
+
 Protect this file.
