@@ -986,7 +986,7 @@ run to confirm.
 | Node.js | v22+ | `pnpm check` validates major version | `winget upgrade OpenJS.NodeJS`; run `pnpm -r test` after |
 | pnpm | v8+ | `pnpm check` validates major version | `npm install -g pnpm@latest`; run `pnpm install --frozen-lockfile` to verify lockfile compatibility |
 | boardgame.io | `0.50.x` (locked) | `package.json` + `pnpm check` verifies exact range | Do NOT upgrade without a DECISIONS.md entry — API surface changes are breaking |
-| Hugo | `0.135.0 Extended` | `apps/wiki-viewer/.hugo-version` | Update `.hugo-version` + test with `pnpm wiki-viewer:build`; needs DECISIONS entry |
+| Hugo | `0.161.1 Extended` | `apps/wiki-viewer/.hugo-version` | Update `.hugo-version` + test with `pnpm wiki-viewer:build`; needs DECISIONS entry |
 | rclone | v1.60+ | Not pinned; `pnpm check` verifies binary exists | `winget upgrade Rclone.Rclone`; verify with `rclone lsd r2:legendary-images` |
 | Tailscale | Latest | Auto-updates by default | No action needed |
 

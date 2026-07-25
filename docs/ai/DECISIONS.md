@@ -32492,3 +32492,94 @@ REQUIRED** (deploy mid bot-ally match; the bot keeps playing after the deploy se
 Bot-ally driver suite 20/0 (+2); `pnpm -r build` 0.
 
 Protect this file.
+
+### D-24243 — ewiki Hugo pin bumped 0.135.0 → 0.161.1 Extended; lockstep via `.hugo-version`; CI page-presence guard
+
+**Status:** Active (landed 2026-07-25, WP-423 / EC-458).
+
+**Context.** The engine monorepo's only Hugo build surface — the engineering wiki
+(`apps/wiki-viewer`, the ewiki) — was pinned to Hugo Extended `0.135.0` (WP-139 /
+D-13808), 26 minor versions behind current, while a developer's local Hugo binary
+is installed out-of-band and can drift from the pin. The sibling
+`legendary-arena/legendary-arena-lab` Hugo site (Cloudflare Pages) had a production
+outage from exactly this class of drift: CI + the Pages dashboard `HUGO_VERSION`
+were pinned to `0.149.0` while local dev ran `0.161.1`; a config change adopting the
+newer module-mount `files` glob + top-level `locale` made the `files` key unknown on
+`0.149.0`, silently dropping the `wiki → content` mount so every sub-page 404'd in
+production while `hugo --minify` still exited 0 and CI stayed green. (Lab fix PRs:
+#13 compat-revert + CI page-assertion guard, #14 CI pin → 0.161.1, #15 modernize
+config after all targets cleared the floor, #12 Pages `_headers`.)
+
+**How this repo differs (discovered, not assumed — the spine of WP-423).**
+1. **One Hugo site only** — `apps/wiki-viewer`; a grep of `.github/workflows/**`,
+   `render.yaml`, `hugo.toml`, `package.json`, `.tool-versions`, `netlify.toml`, and
+   `wrangler*` found no second Hugo build.
+2. **CI and deploy are already in lockstep** — both
+   `.github/workflows/wiki-viewer.yml` and `render.yaml`'s `buildCommand` read the
+   SAME `apps/wiki-viewer/.hugo-version` file (D-13811 / D-13813). The lab's
+   CI-vs-dashboard drift cannot occur here — there is no dashboard-set `HUGO_VERSION`
+   for the ewiki. The only drift surface is local dev.
+3. **No Cloudflare Pages Hugo build in this repo.** The dashboard-`HUGO_VERSION` /
+   `floor 0.146.0` material in `wiki/hugo-onboarding.md` documents the MARKETING site
+   (`www.legendary-arena.com`), which lives in the separate repo
+   `C:\www\legendary-arena-com` (dual-repo governance); its upgrade is a different
+   repo → different WP, out of scope here.
+4. **The silent-mount-drop is structurally absent** — `hugo.toml` uses a
+   single-directory `content/` projection with no Hugo Modules and no
+   `files`/`module.mounts` keys, so the unknown-`files`-key failure mode cannot occur.
+
+**Decision.**
+- **Target pin: `0.161.1` Hugo Extended**, written once to
+  `apps/wiki-viewer/.hugo-version` (the single source of truth CI and Render both
+  read). `0.161.1` matches the lab's production pin for cross-repo consistency and
+  clears every known threshold (the `0.146.0` `baseof.html` floor, the `0.153` /
+  `0.158` deprecation thresholds). Confirmed a real released Extended build before
+  editing (release assets return 302; the local binary reports `v0.161.1+extended`).
+  Extended stays Extended.
+- **Lockstep is the invariant.** No Hugo version literal may appear anywhere but
+  `.hugo-version`; CI (`peaceiris/actions-hugo@v3`, `extended: true`, `hugo-version`
+  from the file) and the Render `buildCommand`
+  (`hugo_extended_$(cat …/.hugo-version)_linux-amd64.tar.gz`) both derive from it.
+- **No Render dashboard step for the ewiki.** Unlike Cloudflare Pages (dashboard
+  `HUGO_VERSION`), the Render static site `legendary-arena-wiki` reads the repo pin in
+  its `buildCommand`; the version is fully repo-driven, so there is no manual
+  dashboard action for this service.
+- **A CI page-presence guard** ("Assert wiki pages rendered", placed after Build
+  site) asserts **build-time equality** between the projected `content/*.md` page
+  count and the rendered `public/**/index.html` count, turning a silent sub-page drop
+  into a red build (the lab failure mode) as defense-in-depth. Equality — not a
+  `≥ floor` — is deliberate: a floor goes vacuous when a drop is masked by an addition
+  and drifts stale-low as the wiki grows. Proven non-vacuous locally (deleting one
+  rendered page makes the step exit 1 and name the drop).
+- **"Rendered content unchanged" is proven by a pre-bump baseline diff, NOT the
+  determinism gate.** A `public/` baseline (path + sha256 per `*.html`/`*.css`) was
+  captured on `0.135.0` before the bump and diffed against the `0.161.1` rebuild:
+  identical page set (58 files), identical visible text across all 57 pages, identical
+  CSS. The only drift is cosmetic goldmark defaults —
+  `<th|td style="text-align: left">` → `<th|td>` (left is the render default) and
+  removal of `<!-- raw HTML omitted -->` placeholder comments (the raw HTML is
+  unrendered under `unsafe = false` in both versions). The same-version determinism
+  gate (two consecutive byte-identical builds) still passes but only proves
+  intra-version reproducibility — it never compares the two versions, so it cannot
+  prove "output unchanged" on its own.
+- **Config modernization stays deferred.** No `files` / `locale` / `module.mounts`
+  syntax is adopted — this repo has a single build target with no multi-target floor
+  to clear, and the current `hugo.toml` needs none. Any modernization is a separate
+  future WP with its own compat check.
+
+This decision **extends and does not supersede** D-13808 (framework = Hugo Extended),
+D-13811 (hosting = Render Static Site), and D-13813 (CI-driven deterministic deploy).
+
+**Layer / boundary.** Shared Tooling / Infrastructure only — CI config, deploy config
+(read-only confirmation; `render.yaml` unchanged, carries no version literal), the
+version pin, and generated/reference docs. No engine / registry / server /
+arena-client change; no `G` / `ctx` / DB; no gameplay determinism or persistence
+surface.
+
+**User-visible surface.** none — infrastructure. The ewiki renders the same pages,
+same content, same styling; the payoff is version currency, local↔CI↔deploy lockstep,
+and a regression gate that turns a silent sub-page drop into a failed CI build.
+
+**Packet:** WP-423 / EC-458. **Landed:** 2026-07-25.
+
+Protect this file.

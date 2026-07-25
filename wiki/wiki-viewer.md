@@ -280,7 +280,7 @@ server at `http://localhost:1313` with live-reload. Changes to wiki
 source files reload automatically.
 
 If the command errors, check that your local Hugo Extended version
-matches `apps/wiki-viewer/.hugo-version` (currently 0.135.0).
+matches `apps/wiki-viewer/.hugo-version` (currently 0.161.1).
 
 ### Commit prefix conventions
 

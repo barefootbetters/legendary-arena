@@ -71,7 +71,7 @@ triggered on push to `main` touching `wiki/` or `apps/wiki-viewer/`.
 
 ## Hugo version
 
-Pinned to **0.135.0 Extended** in
+Pinned to **0.161.1 Extended** in
 [`.hugo-version`](.hugo-version) (Open Decision C, locked). The CI workflow
 reads this file and installs the matching binary; do not let it drift without
 a DECISIONS entry.
@@ -115,4 +115,4 @@ the GitHub UI but does not block the wiki deploy.
 - `scripts/project-wiki.mjs` — build-time content projection (read-only on
   `wiki/`; copy + rename-only-on-the-copy per D-13810).
 - `scripts/check-links.mjs` — case-sensitive link-integrity check.
-- `.hugo-version` — Hugo version pin (`0.135.0`).
+- `.hugo-version` — Hugo version pin (`0.161.1`).
