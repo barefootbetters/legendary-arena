@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 240" width="480" height="240" role="img" aria-label="Animated mock of the tier-2 combo cue: a larger gold burst with an expanding shockwave ring as the word Team-Up! pops on-screen, then fades. Loops.">
+  <title>Surface-2 combo T2 — burst + Team-Up!</title>
+  <style>
+text { font-family: 'Arial Black','Helvetica Neue',Arial,sans-serif; font-weight: 900; font-style: italic; letter-spacing: 1px; }
+.flash { opacity: 0; animation: flash 2.0s ease-out infinite; }
+.ring { opacity: 0; fill: none; stroke: #ffdd6a; animation: ring 2.0s ease-out infinite; }
+.bs { opacity: 0; transform: translate(0,0); animation: bs 2.0s ease-out infinite; }
+.lbl { opacity: 0; animation: lbl 2.0s ease-out infinite; }
+@keyframes flash {
+  0.00% { opacity: 0; transform: scale(0); }
+  13.00% { opacity: 0; transform: scale(0.2); }
+  15.00% { opacity: 0.9; transform: scale(0.6); }
+  28.00% { opacity: 0; transform: scale(1.6); }
+  100.00% { opacity: 0; transform: scale(1.6); }
+}
+@keyframes ring {
+  0.00% { opacity: 0; transform: scale(0.1); stroke-width: 6; }
+  13.00% { opacity: 0; transform: scale(0.1); stroke-width: 6; }
+  14.00% { opacity: 0.85; }
+  35.00% { opacity: 0; transform: scale(1.7); stroke-width: 1; }
+  100.00% { opacity: 0; transform: scale(1.7); stroke-width: 1; }
+}
+@keyframes bs {
+  0.00% { opacity: 0; transform: translate(0,0); }
+  13.00% { opacity: 0; transform: translate(0,0); }
+  15.00% { opacity: 1; }
+  37.00% { opacity: 0; transform: translate(var(--tx), var(--ty)); }
+  100.00% { opacity: 0; transform: translate(var(--tx), var(--ty)); }
+}
+@keyframes lbl {
+  0.00% { opacity: 0; transform: translate(240px,120px) scale(0.4); }
+  13.00% { opacity: 0; transform: translate(240px,120px) scale(0.4); }
+  15.00% { opacity: 1; transform: translate(240px,120px) scale(1.16); }
+  17.00% { transform: translate(240px,120px) scale(1.0); }
+  76.00% { opacity: 1; transform: translate(240px,120px) scale(1.0); }
+  86.00% { opacity: 0; transform: translate(240px,120px) scale(1.2); }
+  100.00% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .flash, .bs { animation: none; opacity: 0; }
+  .ring { animation: none; opacity: 0.4; transform: scale(1.2); }
+  .lbl { animation: none; opacity: 1; transform: translate(240px,120px) scale(1); }
+}
+  </style>
+  <defs><radialGradient id="bg" cx="50%" cy="48%" r="80%"><stop offset="0%" stop-color="#171320" stop-opacity="1"/><stop offset="100%" stop-color="#0b0910" stop-opacity="1"/></radialGradient><radialGradient id="fl" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#ffffff" stop-opacity="1"/><stop offset="55%" stop-color="#ffe27a" stop-opacity="0.85"/><stop offset="100%" stop-color="#ffb020" stop-opacity="0"/></radialGradient></defs>
+  <rect width="480" height="240" fill="url(#bg)"/>
+  <g transform="translate(240 120)"><circle class="flash" r="48" fill="url(#fl)"/><circle class="ring" r="34"/><g class="bs" style="--tx:100px; --ty:-9px;"><polygon points="9,0 -4,3 -4,-3" fill="#ffe27a" transform="rotate(-5)"/></g><g class="bs" style="--tx:92px; --ty:59px;"><polygon points="15,0 -6,5 -6,-5" fill="#ffe27a" transform="rotate(33)"/></g><g class="bs" style="--tx:87px; --ty:61px;"><polygon points="15,0 -6,5 -6,-5" fill="#ffe27a" transform="rotate(35)"/></g><g class="bs" style="--tx:35px; --ty:67px;"><polygon points="11,0 -4,4 -4,-4" fill="#ffe27a" transform="rotate(63)"/></g><g class="bs" style="--tx:3px; --ty:85px;"><polygon points="12,0 -5,4 -5,-4" fill="#ffe27a" transform="rotate(88)"/></g><g class="bs" style="--tx:-53px; --ty:93px;"><polygon points="8,0 -3,3 -3,-3" fill="#ffe27a" transform="rotate(119)"/></g><g class="bs" style="--tx:-74px; --ty:49px;"><polygon points="9,0 -4,3 -4,-3" fill="#ffe27a" transform="rotate(146)"/></g><g class="bs" style="--tx:-89px; --ty:54px;"><polygon points="15,0 -6,5 -6,-5" fill="#ffe27a" transform="rotate(149)"/></g><g class="bs" style="--tx:-64px; --ty:-9px;"><polygon points="13,0 -5,4 -5,-4" fill="#ffe27a" transform="rotate(188)"/></g><g class="bs" style="--tx:-80px; --ty:-16px;"><polygon points="14,0 -6,5 -6,-5" fill="#ffe27a" transform="rotate(191)"/></g><g class="bs" style="--tx:-59px; --ty:-47px;"><polygon points="9,0 -4,3 -4,-3" fill="#ffe27a" transform="rotate(219)"/></g><g class="bs" style="--tx:-37px; --ty:-68px;"><polygon points="14,0 -5,4 -5,-4" fill="#ffe27a" transform="rotate(241)"/></g><g class="bs" style="--tx:7px; --ty:-74px;"><polygon points="14,0 -5,4 -5,-4" fill="#ffe27a" transform="rotate(275)"/></g><g class="bs" style="--tx:30px; --ty:-63px;"><polygon points="15,0 -6,5 -6,-5" fill="#ffe27a" transform="rotate(296)"/></g><g class="bs" style="--tx:52px; --ty:-42px;"><polygon points="10,0 -4,3 -4,-3" fill="#ffe27a" transform="rotate(321)"/></g><g class="bs" style="--tx:88px; --ty:-38px;"><polygon points="10,0 -4,3 -4,-3" fill="#ffe27a" transform="rotate(337)"/></g></g><text class="lbl" x="0" y="0" text-anchor="middle" dominant-baseline="central" font-size="52" fill="#74eca2">TEAM-UP!</text>
+</svg>

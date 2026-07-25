@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 200" width="420" height="200" role="img" aria-label="Animated mock of the tier-1 combo cue: a brief blue spark bursts as the word Combo! pops on-screen, then fades. Loops.">
+  <title>Surface-2 combo T1 — spark + Combo!</title>
+  <style>
+text { font-family: 'Arial Black','Helvetica Neue',Arial,sans-serif; font-weight: 900; font-style: italic; letter-spacing: 1px; }
+.flash { opacity: 0; animation: flash 1.8s ease-out infinite; }
+.sp { opacity: 0; transform: translate(0,0); animation: sp 1.8s ease-out infinite; }
+.lbl { opacity: 0; animation: lbl 1.8s ease-out infinite; }
+@keyframes flash {
+  0.00% { opacity: 0; transform: scale(0); }
+  13.00% { opacity: 0; transform: scale(0.2); }
+  15.00% { opacity: 0.8; transform: scale(0.55); }
+  25.00% { opacity: 0; transform: scale(1.3); }
+  100.00% { opacity: 0; transform: scale(1.3); }
+}
+@keyframes sp {
+  0.00% { opacity: 0; transform: translate(0,0); }
+  13.00% { opacity: 0; transform: translate(0,0); }
+  15.00% { opacity: 1; }
+  33.00% { opacity: 0; transform: translate(var(--tx), var(--ty)); }
+  100.00% { opacity: 0; transform: translate(var(--tx), var(--ty)); }
+}
+@keyframes lbl {
+  0.00% { opacity: 0; transform: translate(210px,100px) scale(0.4); }
+  13.00% { opacity: 0; transform: translate(210px,100px) scale(0.4); }
+  15.00% { opacity: 1; transform: translate(210px,100px) scale(1.16); }
+  17.00% { transform: translate(210px,100px) scale(1.0); }
+  74.00% { opacity: 1; transform: translate(210px,100px) scale(1.0); }
+  84.00% { opacity: 0; transform: translate(210px,100px) scale(1.2); }
+  100.00% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .flash, .sp { animation: none; opacity: 0; }
+  .lbl { animation: none; opacity: 1; transform: translate(210px,100px) scale(1); }
+}
+  </style>
+  <defs><radialGradient id="bg" cx="50%" cy="48%" r="80%"><stop offset="0%" stop-color="#171320" stop-opacity="1"/><stop offset="100%" stop-color="#0b0910" stop-opacity="1"/></radialGradient><radialGradient id="fl" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#ffffff" stop-opacity="1"/><stop offset="60%" stop-color="#bcdcff" stop-opacity="0.7"/><stop offset="100%" stop-color="#5ab0ff" stop-opacity="0"/></radialGradient></defs>
+  <rect width="420" height="200" fill="url(#bg)"/>
+  <g transform="translate(210 100)"><circle class="flash" r="34" fill="url(#fl)"/><g class="sp" style="--tx:49px; --ty:3px;"><rect x="-1.5" y="-8" width="3" height="8" rx="1.5" fill="#dff0ff" transform="rotate(94)"/></g><g class="sp" style="--tx:28px; --ty:32px;"><rect x="-1.5" y="-11" width="3" height="11" rx="1.5" fill="#dff0ff" transform="rotate(139)"/></g><g class="sp" style="--tx:2px; --ty:68px;"><rect x="-1.5" y="-10" width="3" height="10" rx="1.5" fill="#dff0ff" transform="rotate(178)"/></g><g class="sp" style="--tx:-32px; --ty:42px;"><rect x="-1.5" y="-10" width="3" height="10" rx="1.5" fill="#dff0ff" transform="rotate(218)"/></g><g class="sp" style="--tx:-65px; --ty:32px;"><rect x="-1.5" y="-7" width="3" height="7" rx="1.5" fill="#dff0ff" transform="rotate(244)"/></g><g class="sp" style="--tx:-66px; --ty:-36px;"><rect x="-1.5" y="-9" width="3" height="9" rx="1.5" fill="#dff0ff" transform="rotate(298)"/></g><g class="sp" style="--tx:-17px; --ty:-40px;"><rect x="-1.5" y="-12" width="3" height="12" rx="1.5" fill="#dff0ff" transform="rotate(337)"/></g><g class="sp" style="--tx:1px; --ty:-69px;"><rect x="-1.5" y="-9" width="3" height="9" rx="1.5" fill="#dff0ff" transform="rotate(361)"/></g><g class="sp" style="--tx:42px; --ty:-23px;"><rect x="-1.5" y="-10" width="3" height="10" rx="1.5" fill="#dff0ff" transform="rotate(422)"/></g></g><text class="lbl" x="0" y="0" text-anchor="middle" dominant-baseline="central" font-size="40" fill="#bcdcff">COMBO!</text>
+</svg>
