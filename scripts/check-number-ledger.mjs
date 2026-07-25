@@ -161,7 +161,7 @@ function runCheck() {
   if (problems.length > 0) {
     console.error('Number-ledger check FAILED:\n');
     for (const p of problems) console.error(`  - ${p}`);
-    console.error('\nSee docs/ai/REFERENCE/01.0a-wp-drafting-phase.md (allocation protocol) and D-24242.');
+    console.error('\nSee docs/ai/REFERENCE/01.0a-wp-drafting-phase.md (allocation protocol) and D-24245.');
     process.exit(1);
   }
   console.log('Number-ledger check passed. Next free:',
