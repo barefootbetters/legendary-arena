@@ -17,17 +17,21 @@ describe('comboTierForCount (WP-413) — locked tier boundaries', () => {
     assert.equal(comboTierForCount(2), 'medium');
   });
 
-  test('3 or more maps to big', () => {
+  test('3 and 4 map to big', () => {
     assert.equal(comboTierForCount(3), 'big');
     assert.equal(comboTierForCount(4), 'big');
-    assert.equal(comboTierForCount(12), 'big');
+  });
+
+  test('5 or more maps to legendary (the apex tier — WP-425 / D-24246)', () => {
+    assert.equal(comboTierForCount(5), 'legendary');
+    assert.equal(comboTierForCount(12), 'legendary');
   });
 });
 
-describe('comboCueManifest (WP-413) — exhaustive over the audible tiers', () => {
-  const AUDIBLE_TIERS: readonly Exclude<ComboTier, 'none'>[] = ['small', 'medium', 'big'];
+describe('comboCueManifest (WP-413 + WP-425) — exhaustive over the audible tiers', () => {
+  const AUDIBLE_TIERS: readonly Exclude<ComboTier, 'none'>[] = ['small', 'medium', 'big', 'legendary'];
 
-  test('maps exactly the three audible tiers', () => {
+  test('maps exactly the four audible tiers', () => {
     assert.deepEqual(Object.keys(comboCueManifest).sort(), [...AUDIBLE_TIERS].sort());
   });
 

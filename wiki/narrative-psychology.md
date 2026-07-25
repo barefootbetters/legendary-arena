@@ -280,8 +280,8 @@ not this page's to move):
 |---|---|---|
 | `1` | **Combo!** | your play connected |
 | `2` | **Team-Up!** | two heroes clicked — the core Marvel fantasy |
-| `>= 3` | **Unstoppable!** | you built a real engine |
-| (reserved apex) | **LEGENDARY!** | the rare, celebrated crescendo — the brand word |
+| `3–4` | **Unstoppable!** | you built a real engine |
+| `>= 5` | **LEGENDARY!** | the rare, celebrated crescendo — the brand word (the locked apex tier, D-24246) |
 
 ![Animated mock of the synergy call-out ladder: the words Combo!, then Team-Up!, then Unstoppable!, then a gold glowing LEGENDARY! each pop on-screen in turn as a hero-ability chain grows, then the sequence loops.](/narrative-psychology/synergy-callout-ladder.svg "width=62%")
 
@@ -301,9 +301,11 @@ in the same register: *Synergy!, Rally!, Blitz!, Rampage!, Crescendo!*
 Whatever the final set, it takes the same [IP pass](#ip-boundary-mandatory)
 as all narrative copy — generic superlatives are fine; a trademarked team
 or character name as a label word is not. The apex **LEGENDARY!** rung is
-**reserved**: it needs a fourth shared combo tier, decided on the
-[Visual Effects side](visual-effects.md#synergy-callout) so the label and a
-matching sting arrive together — never a label-only threshold.
+**now locked** as the fourth shared combo tier (`>= 5`), decided on the
+[Visual Effects side](visual-effects.md#synergy-callout) via **WP-425 / D-24246**
+so the label and a matching sting share the one boundary — never a label-only
+threshold. WP-425 shipped the **audio** sting; this on-screen `LEGENDARY!`
+label is the future visual consumer of the same locked tier.
 
 #### The announcer — an original "Arena" voice, not a borrowed one {#arena-announcer}
 

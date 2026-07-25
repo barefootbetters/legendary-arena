@@ -86,8 +86,24 @@ describe('useComboCue (WP-413) — audible value-change', () => {
     assert.deepEqual(played, [
       comboCueManifest.small,
       comboCueManifest.medium,
-      comboCueManifest.big,
+      comboCueManifest.legendary,
     ]);
+  });
+
+  test('plays the apex legendary clip on a value-change to a 5+ count (WP-425)', async () => {
+    // why: the consumer is tier-agnostic (it plays comboCueManifest[tier] for
+    // any audible tier), so the WP-425 apex tier must flow through it unchanged —
+    // this pins that a 5+ chain sounds the legendary clip, distinct from big (3–4).
+    const snapshot = ref<UIState | null>(uiStateWith(0));
+    const { engine, played } = makeRecordingEngine();
+    useComboCue(snapshot, engine);
+    await nextTick();
+
+    snapshot.value = uiStateWith(4);
+    await nextTick();
+    snapshot.value = uiStateWith(6);
+    await nextTick();
+    assert.deepEqual(played, [comboCueManifest.big, comboCueManifest.legendary]);
   });
 
   test('no cue on a change into the silent none tier (e.g. the per-turn reset to 0)', async () => {
