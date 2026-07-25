@@ -30,7 +30,7 @@ source:
   - C:\www\legendary-arena-com\static\_headers
   - C:\www\legendary-arena-com\static\apple-touch-icon.png
   - C:\www\legendary-arena-com\themes\PaperMod\layouts\_partials\head.html
-last-reviewed: 2026-06-20
+last-reviewed: 2026-07-24
 ---
 
 > 👋 **New to this codebase?** Start with
@@ -562,12 +562,45 @@ converted to `.webp` (e.g. `static/images/posts/week-01-deck-checklist/
 hero.webp`) or authored as `.svg`. Files in `static/` are served
 **byte-for-byte with no processing**.
 
+**Animated GIFs and SVGs both display natively — no special config.**
+Because `static/` is copied verbatim into `public/`, both formats work on
+the live Cloudflare Pages site exactly as they do under `hugo server`:
+
+- **Animated GIFs** — drop the `.gif` in
+  `C:\www\legendary-arena-com\static\images\` and reference it with a
+  normal Markdown image, `![alt](/images/your-loop.gif)`. Cloudflare Pages
+  serves it as `image/gif` and the animation is preserved frame-for-frame,
+  because nothing touches the bytes. None ship today — this is the
+  documented path, not an existing asset.
+- **SVGs** — already in use across the site: the `safari-pinned-tab.svg`
+  mask icon (see [Favicon configuration](#favicon-configuration)), the
+  header/footer outbound-link icon, and authored art such as
+  `static/images/brand/palette.svg`, `static/images/hero-placeholder.svg`,
+  and the `static/images/shop/*.svg` product placeholders. Cloudflare Pages
+  serves them as `image/svg+xml`, byte-for-byte. Reference them the same
+  way — `![alt](/images/diagram.svg)`.
+
+The Markdown image form (`![]()`) needs **no** special setting — Goldmark
+always emits an `<img>` for it, regardless of the `unsafe` flag. A **raw**
+inline `<img>` or inline `<svg>` block in Markdown renders here only
+because this site sets `markup.goldmark.renderer.unsafe = true` (WP-014);
+prefer the Markdown form unless you need an attribute it can't express.
+(The engineering wiki itself is JS-free and Render-hosted, not Cloudflare
+Pages — it too serves SVGs statically, which is how the committed SVG in
+[Diagrams](#diagrams-mermaid) renders, but it is a different property.)
+
 **Important constraint:** Hugo's built-in image processing
 (`.Resize`, `.Fit`, `.Fill`, WebP conversion) only works on **page-bundle
 resources or files under `assets/`** — it **cannot touch `static/`**. The
 only place the site currently uses Hugo image processing is the header
 logo path in `header.html` (`resources.Get` + `.Resize "x30"`), which
-reads from the resources/assets pipeline.
+reads from the resources/assets pipeline. That distinction matters for
+**animated GIFs specifically**: never route one through the
+`assets/`/page-bundle pipeline (`.Resize` / `.Process` / `.Fit`) — Hugo
+processes only the first frame, so the output is a flattened still.
+Keeping GIFs in `static/` sidesteps this entirely (they are never
+processed). Large or long-running GIFs still count against page weight and
+LCP, so size them deliberately.
 
 **If an automated optimization workflow is wanted** (a `{{</* image */>}}`
 shortcode that emits resized/WebP variants and `srcset`): it would
