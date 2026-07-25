@@ -23,7 +23,15 @@ services:
     # saturated under real concurrency, `pro` (2 CPU / 4 GB) is the next step —
     # change this one line. Blueprint-managed: the plan MUST live here or a
     # dashboard change reverts on the next sync (same discipline as the DB `plan`).
-    plan: standard
+    #
+    # why: 2026-07-25 — bumped `standard` → `pro` (2 CPU / 4 GB). The dashboard had
+    # already been set to Pro, but render.yaml still said `standard`, so the two
+    # DISAGREED. That drift is a live downgrade risk: on a blueprint sync render.yaml
+    # is the source of truth, so a stale `standard` here could revert the running
+    # service back to 1 CPU / 2 GB — re-introducing the exact CPU starvation that
+    # caused the earlier bot-ally / client-desync freezes. This line now MATCHES the
+    # dashboard so neither reverts the other (keep them in agreement).
+    plan: pro
     # why: Running migrate in buildCommand (not startCommand) means migrations
     # complete once per deploy, not once per server restart. On Render, a server
     # can restart multiple times during a deploy. If migrate ran in startCommand,
