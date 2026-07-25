@@ -47,6 +47,35 @@ import { findPendingChoiceMove } from '../autoplay/botLoopProgress.mjs';
 export const botAllyDrivers = new Map();
 
 /**
+ * Stops every registered bot-ally driver: clears each poll timer and
+ * de-registers it from {@link botAllyDrivers}. Called from the server's SIGTERM
+ * handler (index.mjs) so a graceful shutdown stops THIS process from driving any
+ * bot seat.
+ *
+ * // why: WP-424 / D-24244 — a Render rolling deploy boots the NEW instance
+ * (which revives these matches via `rehydrateBotAllyDrivers` and immediately
+ * starts driving them) BEFORE it SIGTERMs the OLD one; the old SIGTERM handler
+ * then blocks in `httpServer.close` draining the human's long-lived Socket.IO
+ * connection, so WITHOUT this call the old instance's drivers keep polling and
+ * submitting the bot's moves for the entire termination-grace window. Two
+ * instances driving the same bot seat race on boardgame.io's `_stateID`
+ * (observed `invalid stateID, was=[N], expected=[N+1]` on `fightVillain`), the
+ * bot's fight never lands, and the co-op match freezes with `driving:true` — so
+ * the WP-419 stall banner (which needs `driving:false`) never fires and the human
+ * sees a silent freeze. Stopping the drivers here ends the old instance's
+ * participation the moment SIGTERM arrives; WP-420's `shutdown_interrupted` mark
+ * (written just before this call) still lets the new instance revive them.
+ * Snapshots the values first because `driver.stop()` deletes from the map as it
+ * runs.
+ */
+export function stopAllBotAllyDrivers() {
+  const drivers = [...botAllyDrivers.values()];
+  for (const driver of drivers) {
+    driver.stop();
+  }
+}
+
+/**
  * Poll interval (milliseconds) at which the driver re-fetches the match state
  * to detect whose turn it is.
  *
@@ -461,6 +490,13 @@ async function runTick(driver, deps, limits) {
   driver.lastStateId = state._stateID;
 
   const result = await driveBotTurn(driver, deps, state.ctx.currentPlayer, limits.maxMoveStepsPerTurn);
+  // why: WP-424 — the driver may have been stopped mid-turn by a SIGTERM
+  // graceful shutdown while driveBotTurn was awaiting. If so, do not advance the
+  // turn counter or write to the side-table on the way out: the process is
+  // tearing down and the new instance now owns this match's revival/status.
+  if (driver.stopped) {
+    return;
+  }
   if (result.kind === 'game-over' || result.kind === 'vanished') {
     await teardown(driver, deps, BOT_ALLY_STATUS.completed);
     return;
@@ -580,6 +616,14 @@ async function attemptBotTurn(driver, deps, botSeat, maxMoveStepsPerTurn) {
   let step = 0;
   while (step < maxMoveStepsPerTurn) {
     step += 1;
+    // why: WP-424 — the driver may have been stopped mid-turn by a SIGTERM
+    // graceful shutdown while this loop was awaiting a fetch/submit. Bail the
+    // instant that happens so a tick in flight at shutdown submits NO further
+    // moves — an old draining instance that kept submitting would race the new
+    // instance's revived driver on `_stateID` (the freeze this WP fixes).
+    if (driver.stopped) {
+      return { kind: 'passed' };
+    }
     const state = await deps.fetchState(driver.matchId);
     if (state === null || state === undefined) {
       return { kind: 'vanished' };

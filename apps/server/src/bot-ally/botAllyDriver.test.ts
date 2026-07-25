@@ -19,6 +19,7 @@ import { buildInitialGameState } from '@legendary-arena/game-engine';
 import {
   botAllyDrivers,
   createBotAllyDriver,
+  stopAllBotAllyDrivers,
   decideBotMove,
   buildBotPolicy,
   isBotSeatTurn,
@@ -188,6 +189,55 @@ test('a wedged bot turn marks the match bot-faulted and never hangs', async () =
     BOT_FAULTED_MESSAGE,
     'the persisted fault message is the public-safe co-op sentence, never a raw error',
   );
+});
+
+test('stopAllBotAllyDrivers stops and de-registers every registered driver (WP-424)', () => {
+  // why: the SIGTERM handler calls this so the draining old instance stops
+  // driving any bot seat; every driver must be stopped and removed from the map.
+  const first = createBotAllyDriver({
+    matchId: 'stop-a',
+    botSeats: ['1'],
+    deps: makeDeps({ initial: fakeState('0', 1) }).deps,
+  });
+  const second = createBotAllyDriver({
+    matchId: 'stop-b',
+    botSeats: ['1'],
+    deps: makeDeps({ initial: fakeState('0', 1) }).deps,
+  });
+  assert.equal(botAllyDrivers.size, 2, 'both drivers are registered before the stop');
+
+  stopAllBotAllyDrivers();
+
+  assert.equal(botAllyDrivers.size, 0, 'every driver was de-registered');
+  assert.equal(first.stopped, true, 'the first driver was stopped');
+  assert.equal(second.stopped, true, 'the second driver was stopped');
+});
+
+test('a driver stopped mid-turn submits no further moves (WP-424 shutdown bail)', async () => {
+  // why: simulates SIGTERM stopping the driver between move steps. The bot keeps
+  // advancing the state on its own seat (the turn has NOT passed), but stop() is
+  // called on the first submit — the loop must bail on `driver.stopped` and
+  // submit nothing more, so an old draining instance stops racing the new one.
+  let driverRef: { stop: () => void } | null = null;
+  const { deps, submitCalls } = makeDeps({
+    initial: fakeState('1', 1),
+    decide: () => ({ name: 'playCard', args: { cardId: 'c' } }),
+    onSubmit: (_move, match) => {
+      const current = match.value as { _stateID: number };
+      // advance the state but stay on the bot's seat, so the loop would take
+      // another step were it not stopped.
+      match.value = fakeState('1', current._stateID + 1);
+      driverRef?.stop();
+    },
+  });
+  const driver = createBotAllyDriver({ matchId: 'm-stop-midturn', botSeats: ['1'], deps });
+  driverRef = driver;
+
+  await driver.tick();
+
+  assert.equal(submitCalls.length, 1, 'only the in-flight submit landed; the next step bailed on driver.stopped');
+  assert.equal(driver.getTurnCount(), 0, 'a mid-turn stop does not advance the turn counter or write status');
+  assert.equal(botAllyDrivers.has('m-stop-midturn'), false, 'stop() de-registered the driver');
 });
 
 test('the fault fallback recovers a stalled turn by advancing the stage', async () => {

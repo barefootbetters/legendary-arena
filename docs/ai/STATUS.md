@@ -7,6 +7,68 @@
 
 ## Current State
 
+### WP-424 / EC-459 — Stop Bot-Ally Drivers on SIGTERM (Deploy-Overlap Freeze) (D-24244) (2026-07-25)
+
+**`User-Visible Surface = play.legendary-arena.com`.** Fixes a **silent bot-ally
+freeze that recurs on essentially every deploy** catching a bot mid-turn. Live
+diagnostic (co-op match `DBlXvBs_WXA`): the board froze on the bot's turn 15
+right after the bot fought a villain — the turn never ended — while the server
+reported `{ driving:true, status:'active' }`. The deploy log named the mechanism:
+after the new instance re-registered the driver, boardgame.io's Master repeatedly
+rejected the bot's move — `invalid stateID, was=[273], expected=[274] -
+playerID=[1] - action[fightVillain]` (again `288/289`, 58s later) — an
+**off-by-one `_stateID` race: two writers driving the same bot seat**.
+
+> **Numbering:** renumbered from WP-423 / EC-458 / D-24243 after a concurrent
+> session landed those same numbers first (#1000, `hugo-version-upgrade`), per the
+> number-ledger "first-landed keeps" rule.
+
+**Root cause.** The SIGTERM handler (`index.mjs`) marks the driven bot-ally
+matches `shutdown_interrupted` (WP-420) but **never stops their drivers**.
+Render's rolling deploy boots the NEW instance (which revives + drives those
+matches) BEFORE it SIGTERMs the OLD one, whose handler then blocks in
+`httpServer.close(...)` draining the human's long-lived Socket.IO connection — so
+the old instance's drivers keep polling (250 ms) and submitting the bot's moves
+for the whole termination-grace window (until SIGKILL). Two instances drive the
+same seat; the slow, chain-triggering `fightVillain` loses the `_stateID` race
+repeatedly, never lands, and the turn wedges. A driver *is* registered, so
+`driving:true` — and WP-419's stall banner (needs `driving:false`) never fires:
+the human sees a frozen board.
+
+**Fix (server only).**
+1. **`stopAllBotAllyDrivers()`** (`botAllyDriver.mjs`) — snapshots
+   `botAllyDrivers.values()`, calls each `driver.stop()` (clears the poll timer,
+   sets `stopped`, de-registers). Snapshot-first because `stop()` mutates the map.
+2. **SIGTERM wiring** (`index.mjs`) — call it **AFTER**
+   `markInProgressBotAllyMatchesInterrupted([...botAllyDrivers.keys()])` reads the
+   driven-match keys (stopping first would empty the map and the mark would see
+   nothing), before the periodic-handle stops / `httpServer.close`.
+3. **In-flight tick bail** (`botAllyDriver.mjs`) — `attemptBotTurn` returns at the
+   top of its step loop on `driver.stopped`, and `runTick` skips the post-turn
+   side-table write, so a tick already awaiting a fetch/submit at SIGTERM submits
+   no further moves.
+
+The old instance ends its participation the moment SIGTERM arrives; WP-420's mark
+still lets the NEW instance revive the match, which becomes the sole writer, so
+the bot's `fightVillain` lands and the turn completes.
+
+**Deferred.** A cross-instance ownership guard (a DB advisory lock or
+`driver_owner` + heartbeat) is the durable multi-instance fix that also closes the
+residual boot-to-SIGTERM window; single-instance steady state is assumed and this
+closes the dominant lingering-driver part. WP-420's mark-and-revive, the status
+route / `driving`, and the client banner are untouched; no determinism /
+persistence / response-shape / auth change; §21 N/A (no HTTP change). §17 Vision
+(§11 lifecycle / §14 reliability; no conflict).
+
+**Verification.** Bot-ally driver suite **20/0** (+2: `stopAllBotAllyDrivers`
+stop+de-register; a mid-turn stop submits no further moves); full server suite
+green (+ DB-gated skips); `pnpm -r --no-bail test` green repo-wide; `pnpm -r
+build` 0. **D-24244 Active.** `D-24026` live-verify is **operator-pending on the
+deploy**: deploy mid bot-ally match, then eyeball that the bot keeps playing after
+the deploy settles (no `invalid stateID … fightVillain` wedge).
+
+---
+
 ### WP-421 / EC-456 — Arena-Client Surface-2 Player-Action Move SFX (D-24241) (2026-07-24)
 
 **`User-Visible Surface = play.legendary-arena.com`.** The **first tactile move

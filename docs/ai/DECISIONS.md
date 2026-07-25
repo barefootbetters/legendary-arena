@@ -32431,4 +32431,56 @@ commit-msg hook Rule 5). **Landed:** 2026-07-25. `node scripts/check-number-ledg
 --check` green; negative-tested (duplicate + drift both fail exit 1); wired into
 `ci.yml`. First ledger reservation is this decision's own D-24242 (dogfood).
 
+---
+
+### D-24244 — Bot-ally drivers are stopped on SIGTERM so a rolling deploy's old instance stops driving the bot seat
+
+**Context.** A live diagnostic (co-op match `DBlXvBs_WXA`, 2026-07-25) showed a bot-ally
+match frozen on the bot's turn 15 right after the bot fought a villain — the turn never
+ended — while the server reported `{ driving:true, status:'active' }`. The deploy log named
+the mechanism: after the new instance re-registered the driver, boardgame.io's Master
+repeatedly rejected the bot's move — `invalid stateID, was=[273], expected=[274] -
+playerID=[1] - action[fightVillain]` (again `288/289`, 58s later) — an off-by-one `_stateID`
+race, i.e. **two writers driving the same bot seat**.
+
+**Root cause.** The SIGTERM handler (`index.mjs`) marks the driven bot-ally matches
+`shutdown_interrupted` (D-24240) but **never stops their drivers**. Render's rolling deploy
+boots the NEW instance (which revives those matches and starts driving them) BEFORE it
+SIGTERMs the OLD one; the old handler then blocks in `httpServer.close(...)` draining the
+human's long-lived Socket.IO connection, so the old instance's drivers keep polling (250 ms)
+and submitting the bot's moves for the entire termination-grace window (until SIGKILL). Two
+instances drive the same seat; the slow, chain-triggering `fightVillain` loses the `_stateID`
+race repeatedly, never lands, and the turn wedges. A driver *is* registered, so `driving:true`
+— and D-24239's stall banner (needs `driving:false`) never fires: a silent freeze the human
+sees as a frozen board.
+
+**Decision.** The server SIGTERM handler stops every registered bot-ally driver via a new
+`stopAllBotAllyDrivers()` (snapshots `botAllyDrivers.values()`, calls each `driver.stop()` —
+clears the poll timer, sets `stopped`, de-registers), called **AFTER**
+`markInProgressBotAllyMatchesInterrupted([...botAllyDrivers.keys()])` reads the driven-match
+keys (stopping first would empty the map and the mark would see nothing). An in-flight tick
+bails on `driver.stopped`: `attemptBotTurn` returns at the top of its step loop, and `runTick`
+skips the post-turn side-table write. The old instance thereby ends its participation the
+moment SIGTERM arrives; D-24240's mark still lets the NEW instance revive the match, which
+becomes the sole writer, so the bot's `fightVillain` lands and the turn completes.
+
+**Rejected / deferred.** A cross-instance ownership guard (a DB advisory lock or
+`driver_owner` + heartbeat so overlapping instances can never both drive a match) is the
+durable multi-instance fix but a larger change with its own lock-liveness failure mode — a
+named follow-up. Single-instance steady state is assumed; the deploy overlap (old draining +
+new booted) is the only two-writer window, and this closes its dominant lingering-driver part
+(the old driver polling through the full grace window). The residual boot-to-SIGTERM overlap
+is left to the ownership follow-up.
+
+**Layer / boundary.** Server orchestration only (`index.mjs` shutdown wiring +
+`botAllyDriver.mjs` stop helper / tick bail). No engine / registry change; the driver never
+mutates `G`. No determinism / persistence / response-shape / auth surface. §21 N/A (no HTTP
+endpoint change). D-24240's mark-and-revive is unchanged.
+
+**Packet:** WP-424 / EC-459 (Lightweight lane; renumbered from WP-423/EC-458/D-24243 after a
+concurrent session landed those numbers first — `hugo-version-upgrade`, #1000). **Drafted:**
+2026-07-25; lands at execution. `User-Visible Surface = play.legendary-arena.com` — **D-24026
+REQUIRED** (deploy mid bot-ally match; the bot keeps playing after the deploy settles).
+Bot-ally driver suite 20/0 (+2); `pnpm -r build` 0.
+
 Protect this file.
