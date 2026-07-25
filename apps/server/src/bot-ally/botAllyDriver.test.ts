@@ -240,6 +240,66 @@ test('a driver stopped mid-turn submits no further moves (WP-424 shutdown bail)'
   assert.equal(botAllyDrivers.has('m-stop-midturn'), false, 'stop() de-registered the driver');
 });
 
+test('a single empty fetch does NOT tear the driver down (WP-426 transient DB blip)', async () => {
+  // why: the bgio store returns empty on a transient Postgres outage (ECONNREFUSED),
+  // not just on a reaped match; the driver must ride it out, not self-destruct.
+  const { deps, persistCalls } = makeDeps({
+    initial: fakeState('1', 1),
+    overrides: { fetchState: async () => null, maxEmptyFetchPolls: 3 },
+  });
+  const driver = createBotAllyDriver({ matchId: 'm-empty', botSeats: ['1'], deps });
+
+  await driver.tick();
+
+  assert.equal(botAllyDrivers.has('m-empty'), true, 'the driver stays registered after one empty fetch');
+  assert.equal(driver.getStatus(), BOT_ALLY_STATUS.active, 'no teardown on a transient empty');
+  assert.equal(persistCalls.length, 0, 'no terminal status persisted');
+});
+
+test('sustained empty fetches past the tolerance tear down as completed (WP-426)', async () => {
+  const { deps, persistCalls } = makeDeps({
+    initial: fakeState('1', 1),
+    overrides: { fetchState: async () => null, maxEmptyFetchPolls: 3 },
+  });
+  const driver = createBotAllyDriver({ matchId: 'm-gone', botSeats: ['1'], deps });
+
+  await driver.tick(); // empty 1
+  await driver.tick(); // empty 2
+  assert.equal(botAllyDrivers.has('m-gone'), true, 'still registered before the threshold');
+
+  await driver.tick(); // empty 3 -> teardown
+
+  assert.equal(botAllyDrivers.has('m-gone'), false, 'torn down only after the tolerance window elapsed');
+  assert.equal(driver.getStatus(), BOT_ALLY_STATUS.completed);
+  assert.deepEqual(persistCalls, [{ status: BOT_ALLY_STATUS.completed, faultMessage: undefined }]);
+});
+
+test('a non-empty fetch resets the empty-fetch tolerance (WP-426)', async () => {
+  // empty, empty, real (resets), empty, empty — never 3 CONSECUTIVE, so no teardown.
+  let calls = 0;
+  const { deps } = makeDeps({
+    initial: fakeState('0', 1),
+    overrides: {
+      maxEmptyFetchPolls: 3,
+      fetchState: async () => {
+        calls += 1;
+        // why: the 3rd fetch returns a real (human-turn) state so the counter resets.
+        return calls === 3 ? fakeState('0', 2) : null;
+      },
+    },
+  });
+  const driver = createBotAllyDriver({ matchId: 'm-reset', botSeats: ['1'], deps });
+
+  await driver.tick(); // empty 1
+  await driver.tick(); // empty 2
+  await driver.tick(); // real -> reset to 0
+  await driver.tick(); // empty 1
+  await driver.tick(); // empty 2
+
+  assert.equal(botAllyDrivers.has('m-reset'), true, 'the reset kept it under the consecutive threshold');
+  assert.equal(driver.getStatus(), BOT_ALLY_STATUS.active);
+});
+
 test('the fault fallback recovers a stalled turn by advancing the stage', async () => {
   // decide returns a move that does not advance (stall). endTurn is a no-op
   // (not cleanup) but advanceStage progresses, so the fallback recovers and the

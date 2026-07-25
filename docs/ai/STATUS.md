@@ -39,6 +39,54 @@ suite **1095/0** (+2); wiki link-check + hugo build clean; `pnpm -r build` 0;
 `combo-legendary.mp3` R2 upload (the code + tests are asset-independent): once
 uploaded, a deployed 5+-effect play sounds the apex clip (distinct from `big`) and
 mute silences it. Hard-deps: WP-413 ✅, WP-409 ✅, WP-412 ✅.
+### WP-426 / EC-461 — Bot-Ally Driver Survives a Transient Postgres Blip (D-24247) (2026-07-25)
+
+**`User-Visible Surface = play.legendary-arena.com`.** Fixes **another silent
+bot-ally freeze** — this one on a build that already carries WP-424 (live diag
+`nZn_U4QO-hr`: frozen on the bot's turn while `bot-ally-status` reported
+`{ driving:true, status:'active' }`).
+
+**Root cause (from the server deploy log).** Postgres briefly went unreachable
+after a deploy — `[bgio-store] fetch for match "nZn_U4QO-hr" … ECONNREFUSED
+…:5432` on all 4 retries → `still failing after 4 transient retries; keeping the
+server up, returning empty` → `[bot-ally] match nZn_U4QO-hr failed to persist
+teardown status "completed"`. The bgio store's `resilientFetch` **returns empty
+(not a throw)** when it exhausts retries against an unreachable DB (the #930
+keep-the-server-up behavior), but the driver's `runTick` treated an empty
+`fetchState` as **"match vanished → teardown `completed`"** — so a transient DB
+blip (a Render DB restart / instability around a deploy) **killed the driver
+mid-match**; the teardown's own status write then also failed against the same
+dead DB, leaving the side-table row `active` with no live driver (a silent
+freeze, self-healing only on a later restart's revival, re-looping if the DB
+stays flaky). An empty fetch is **ambiguous** (reaped match *vs* unreachable DB)
+and the driver assumed the former on the FIRST empty.
+
+**Fix (server only).** A new `emptyFetchPolls` counter + `tolerateEmptyFetch`
+helper: increment on each empty, **reset to 0 on any non-empty fetch**, and only
+teardown `completed` once it reaches `BOT_MAX_EMPTY_FETCH_POLLS` (90 ≈ several
+minutes, since each empty tick already carries the store's ~1.8s retry). BOTH
+empty-fetch sites funnel through it — the top-of-tick `state === null` and the
+mid-turn `driveBotTurn` `'vanished'` result (split out from `'game-over'`). A DB
+outage now recovers with the driver still registered and resumes driving; only a
+match that stays empty past the whole window (genuinely reaped — rare for a live
+driver, whose gameover / idle-abandon teardown fires first) tears down.
+
+**Untouched.** WP-419 liveness `driving`, WP-420 mark-and-revive, WP-424 SIGTERM
+stop; the store's empty-to-stay-up contract (making it throw was **rejected** —
+wider blast radius). No determinism / persistence / response-shape / auth change;
+§21 N/A (no HTTP change). **Flagged separately (not fixed here):** the infra
+trigger — why Postgres goes `ECONNREFUSED` around deploys (a deploy-coupled DB
+restart or residual instability despite the basic-1gb move, #932) — is an
+operational investigation.
+
+**Verification.** Bot-ally driver suite **23/0** (+3: a single empty is
+tolerated; sustained empties past the window tear down; a non-empty resets the
+counter); full server suite green (+ DB-gated skips); `pnpm -r --no-bail test`
+green repo-wide; `pnpm -r build` 0. **D-24247 Active.** `D-24026` live-verify
+operator-pending on deploy: a bot-ally match survives a DB blip / restart and
+keeps playing instead of freezing.
+
+---
 
 ### WP-424 / EC-459 — Stop Bot-Ally Drivers on SIGTERM (Deploy-Overlap Freeze) (D-24244) (2026-07-25)
 

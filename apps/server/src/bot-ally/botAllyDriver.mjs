@@ -154,6 +154,31 @@ function delay(ms) {
 export const BOT_MAX_IDLE_POLLS = 4800;
 
 /**
+ * How many CONSECUTIVE empty `fetchState` results the driver tolerates before it
+ * treats the match as genuinely gone and tears down. Reset to 0 on any non-empty
+ * fetch.
+ *
+ * // why: WP-426 / D-24247 — an empty fetch is AMBIGUOUS. The bgio store's
+ * `resilientFetch` returns EMPTY (not a throw) once it exhausts its ~1.8s retry
+ * budget against an unreachable Postgres — a Render DB restart / instability
+ * (observed `ECONNREFUSED …:5432` right after a deploy) — which is
+ * INDISTINGUISHABLE here from a genuinely reaped match. Treating the FIRST empty
+ * as "vanished → teardown completed" killed the driver on a transient DB blip
+ * (and the teardown's own status write then also failed against the same dead DB,
+ * leaving the row `active` with no driver — a silent freeze the human sees as a
+ * frozen board; observed match `nZn_U4QO-hr`). Tolerating a bounded run of
+ * empties lets a DB restart recover with the driver still registered; only a
+ * match that STAYS empty past this window is treated as truly gone. Each empty
+ * tick already carries the store's own ~1.8s retry, so ~90 consecutive empties
+ * spans several minutes — comfortably longer than a deploy-coupled DB restart,
+ * while still bounding a genuinely-vanished match (rare for a live driver: a
+ * gameover / idle-abandon teardown fires first, and the reaper never deletes a
+ * live match). Counting poll ticks (not a wall clock) keeps the driver
+ * clock-free.
+ */
+export const BOT_MAX_EMPTY_FETCH_POLLS = 90;
+
+/**
  * The public-safe, co-op-framed sentence surfaced when the bot ally cannot
  * continue its turn. Persisted as the match's `fault_message`.
  *
@@ -302,6 +327,7 @@ export function isBotSeatTurn(state, botSeats) {
  * @param {number} [params.deps.maxTurns] - Override for BOT_MAX_TURNS (tests).
  * @param {number} [params.deps.maxIdlePolls] - Override for BOT_MAX_IDLE_POLLS.
  * @param {number} [params.deps.maxMoveStepsPerTurn] - Override for the per-turn step cap.
+ * @param {number} [params.deps.maxEmptyFetchPolls] - Override for BOT_MAX_EMPTY_FETCH_POLLS.
  * @param {number} [params.deps.pollIntervalMs] - Override for BOT_POLL_INTERVAL_MS.
  * @param {boolean} [params.deps.autoStart=true] - Start the poll immediately
  *   (tests pass false and call `tick()` directly).
@@ -316,6 +342,7 @@ export function createBotAllyDriver({ matchId, botSeats, deps, initialReviveCoun
   const maxTurns = deps.maxTurns ?? BOT_MAX_TURNS;
   const maxIdlePolls = deps.maxIdlePolls ?? BOT_MAX_IDLE_POLLS;
   const maxMoveStepsPerTurn = deps.maxMoveStepsPerTurn ?? BOT_MAX_MOVE_STEPS_PER_TURN;
+  const maxEmptyFetchPolls = deps.maxEmptyFetchPolls ?? BOT_MAX_EMPTY_FETCH_POLLS;
   const pollIntervalMs = deps.pollIntervalMs ?? BOT_POLL_INTERVAL_MS;
 
   const driver = {
@@ -324,6 +351,9 @@ export function createBotAllyDriver({ matchId, botSeats, deps, initialReviveCoun
     status: BOT_ALLY_STATUS.active,
     turnCount: 0,
     idlePolls: 0,
+    // why: WP-426 — consecutive empty-`fetchState` count; a bounded run is
+    // tolerated as a transient DB outage before the match is treated as gone.
+    emptyFetchPolls: 0,
     lastStateId: null,
     stopped: false,
     tickInProgress: false,
@@ -354,7 +384,7 @@ export function createBotAllyDriver({ matchId, botSeats, deps, initialReviveCoun
       botAllyDrivers.delete(matchId);
     },
     async tick() {
-      await runTick(driver, deps, { maxTurns, maxIdlePolls, maxMoveStepsPerTurn });
+      await runTick(driver, deps, { maxTurns, maxIdlePolls, maxMoveStepsPerTurn, maxEmptyFetchPolls });
     },
   };
 
@@ -464,11 +494,18 @@ async function runTick(driver, deps, limits) {
   }
 
   if (state === null || state === undefined) {
-    // why: the match vanished from the store (removed / never re-hydrated);
-    // treat as terminal and stop polling.
-    await teardown(driver, deps, BOT_ALLY_STATUS.completed);
+    // why: WP-426 — an empty fetch is AMBIGUOUS: the bgio store returns empty on
+    // BOTH a genuinely reaped match AND a transient Postgres outage (its
+    // `resilientFetch` exhausts retries and returns empty to keep the server up).
+    // Do NOT teardown on the first empty — tolerate a bounded run so a DB restart
+    // recovers with the driver still registered; only a match that stays empty
+    // past the window is treated as truly gone. (See BOT_MAX_EMPTY_FETCH_POLLS.)
+    await tolerateEmptyFetch(driver, deps, limits.maxEmptyFetchPolls);
     return;
   }
+  // why: WP-426 — a real state came back, so the store is reachable; reset the
+  // empty-fetch tolerance so the count reflects only CONSECUTIVE empties.
+  driver.emptyFetchPolls = 0;
   if (state.ctx.gameover !== undefined) {
     await teardown(driver, deps, BOT_ALLY_STATUS.completed);
     return;
@@ -497,7 +534,15 @@ async function runTick(driver, deps, limits) {
   if (driver.stopped) {
     return;
   }
-  if (result.kind === 'game-over' || result.kind === 'vanished') {
+  if (result.kind === 'vanished') {
+    // why: WP-426 — `vanished` means an empty fetch DURING the turn (the same
+    // ambiguous transient-DB-vs-reaped signal as the top-of-tick empty above), so
+    // it gets the SAME tolerance rather than an immediate teardown — a Postgres
+    // blip mid-turn no longer kills the driver.
+    await tolerateEmptyFetch(driver, deps, limits.maxEmptyFetchPolls);
+    return;
+  }
+  if (result.kind === 'game-over') {
     await teardown(driver, deps, BOT_ALLY_STATUS.completed);
     return;
   }
@@ -510,6 +555,34 @@ async function runTick(driver, deps, limits) {
   await maybeResetRevivalCount(driver, deps);
   if (driver.turnCount >= limits.maxTurns) {
     await teardown(driver, deps, BOT_ALLY_STATUS.exhausted);
+  }
+}
+
+/**
+ * Handles an ambiguous empty `fetchState` result: counts it, and tears the
+ * driver down as `completed` ONLY once the empties have run consecutively past
+ * `maxEmptyFetchPolls` (a genuinely-gone match). A shorter run is a transient DB
+ * outage, so the driver stays registered and retries on the next poll.
+ *
+ * // why: WP-426 / D-24247 — the bgio store returns EMPTY for both a reaped match
+ * and an unreachable Postgres (its `resilientFetch` swallows the connection error
+ * to keep the server up), so the driver cannot distinguish them from a single
+ * empty. The consecutive-count is the distinguisher: a DB restart empties for a
+ * bounded stretch then recovers; a truly-vanished match empties forever. The
+ * counter resets on any non-empty fetch (in `runTick`), so only a sustained empty
+ * run trips the teardown.
+ *
+ * @param {object} driver - The driver object.
+ * @param {object} deps - The injected capabilities.
+ * @param {number} maxEmptyFetchPolls - The consecutive-empty tolerance.
+ * @returns {Promise<void>}
+ */
+async function tolerateEmptyFetch(driver, deps, maxEmptyFetchPolls) {
+  driver.emptyFetchPolls += 1;
+  if (driver.emptyFetchPolls >= maxEmptyFetchPolls) {
+    // why: the store has returned empty for the whole tolerance window — treat the
+    // match as genuinely gone (reaped / never re-hydrated) and stop polling.
+    await teardown(driver, deps, BOT_ALLY_STATUS.completed);
   }
 }
 
