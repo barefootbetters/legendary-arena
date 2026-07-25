@@ -32582,6 +32582,67 @@ and a regression gate that turns a silent sub-page drop into a failed CI build.
 
 **Packet:** WP-423 / EC-458. **Landed:** 2026-07-25.
 
+---
+
+### D-24247 — The bot-ally driver tolerates a transient empty fetch (Postgres blip) instead of tearing down as "match vanished"
+
+**Context.** A live diagnostic (co-op match `nZn_U4QO-hr`, 2026-07-25) showed a
+bot-ally match frozen on the bot's turn while `bot-ally-status` reported
+`{ driving:true, status:'active' }`. The server deploy log named the mechanism:
+Postgres briefly went unreachable right after a deploy — `[server] idle pg client
+terminated by the backend … Connection terminated unexpectedly`, then
+`[bgio-store] fetch for match "nZn_U4QO-hr" … ECONNREFUSED …:5432` on all 4
+retries, `… still failing after 4 transient retries; keeping the server up,
+returning empty`, immediately followed by `[bot-ally] match nZn_U4QO-hr failed to
+persist teardown status "completed" … ECONNREFUSED`.
+
+**Root cause.** The bgio store's `resilientFetch` **returns empty** (not a throw)
+when it exhausts its retry budget against an unreachable Postgres — the #930
+keep-the-server-up behavior. But `botAllyDriver.mjs`'s `runTick` treated an empty
+`fetchState` as **"the match vanished from the store → teardown as `completed`"**,
+so a transient DB blip (a Render DB restart / instability around a deploy)
+**killed the driver mid-match**. The teardown's own status write then also failed
+against the same dead DB, leaving the side-table row `active` with no live driver
+— a silent freeze the human sees as a frozen board, self-healing only on a later
+restart's revival (and re-looping if the DB is still flaky). An empty fetch is
+ambiguous — it means *either* a reaped match *or* an unreachable DB — and the
+driver assumed the former on the FIRST empty. (The mid-turn `submitMove` *throw*
+path was already caught + re-armed by `scheduleNextTick`; it is the empty-*fetch*
+→ teardown that was fatal, in BOTH the top-of-tick fetch and the mid-turn
+`'vanished'` result from `attemptBotTurn`.)
+
+**Decision.** The driver tolerates a bounded run of **consecutive** empty fetches
+before treating the match as gone. A new `emptyFetchPolls` counter increments on
+each empty (via `tolerateEmptyFetch`) and resets to 0 on any non-empty fetch;
+only once it reaches `BOT_MAX_EMPTY_FETCH_POLLS` (90 — several minutes, since each
+empty tick already carries the store's own ~1.8s retry) does the driver teardown
+`completed`. Both empty-fetch sites funnel through the same helper: the
+top-of-tick `state === null` and the mid-turn `driveBotTurn` `'vanished'` result
+(split out from `'game-over'`). A transient DB outage now recovers with the driver
+still registered and resumes driving; only a match that stays empty past the whole
+window (genuinely reaped — rare for a live driver, whose gameover / idle-abandon
+teardown fires first) tears down.
+
+**Rejected / deferred.** Making `resilientFetch` **throw** on connection-refused
+(so the driver's existing `catch` treats it transient) was rejected — it changes a
+shared store contract other callers depend on (empty-to-stay-up), a wider blast
+radius than a consumer-side fix. A richer fetch return type distinguishing
+absent-vs-error was likewise deferred. The **infra trigger** — why Postgres goes
+`ECONNREFUSED` around deploys (a deploy-coupled DB restart or residual instability
+despite the basic-1gb move, #932) — is a separate operational investigation; this
+decision only makes the driver survive it.
+
+**Layer / boundary.** Server orchestration only (`botAllyDriver.mjs` — a counter +
+one helper + the two teardown-site edits). No engine / registry change; the driver
+never mutates `G`. No determinism / persistence / response-shape / auth surface.
+§21 N/A (no HTTP endpoint change). WP-419's liveness `driving`, WP-420's
+mark-and-revive, and WP-424's SIGTERM stop are all unchanged and compose with this.
+
+**Packet:** WP-426 / EC-461 (Lightweight lane). **Drafted:** 2026-07-25; lands at
+execution. `User-Visible Surface = play.legendary-arena.com` — **D-24026 REQUIRED**
+(a bot-ally match survives a Postgres blip / DB restart and keeps playing instead
+of freezing). Bot-ally driver suite 23/0 (+3); `pnpm -r build` 0.
+
 Protect this file.
 
 ### D-24246 — the apex `legendary` combo tier is the 4th shared `comboTierForCount` boundary (`>= 5`), consumed identically by the audio sting and the future visual `LEGENDARY!` call-out (Active)
