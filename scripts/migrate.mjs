@@ -188,6 +188,67 @@ async function applyMigration(client, migrationFileName, sqlContent) {
 }
 
 /**
+ * Number of times {@link connectWithRetry} attempts the initial connection, and
+ * the fixed delay between attempts (milliseconds).
+ *
+ * // why: 2026-07-25 — this migrate step runs in the server's Render buildCommand,
+ * so a failed connect exits 1 and FAILS THE WHOLE DEPLOY. The managed Postgres
+ * intermittently restarts / recovers around deploys (observed `ECONNREFUSED
+ * :5432`, "the database system is starting up", "not yet accepting connections"),
+ * and a single-shot connect turned that transient window into a dead deploy
+ * (observed: a 38.9s "Failed" deploy). Retrying for ~90s (18 × 5s) rides out a
+ * normal Postgres restart/recovery so a DB blip no longer blocks shipping; a
+ * genuinely-down DB or a wrong DATABASE_URL still fails after the budget (exit 1),
+ * so a real misconfiguration is not masked. This does NOT fix the DB restarting —
+ * it stops that restart from also breaking deploys.
+ */
+const MIGRATE_CONNECT_MAX_ATTEMPTS = 18;
+const MIGRATE_CONNECT_RETRY_DELAY_MS = 5000;
+
+/**
+ * Pauses for the given milliseconds. Deploy-time build script only.
+ *
+ * @param {number} ms - Milliseconds to wait.
+ * @returns {Promise<void>}
+ */
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Acquires a pooled client, retrying a failed connection up to
+ * {@link MIGRATE_CONNECT_MAX_ATTEMPTS} times with a fixed delay so a transient
+ * Render Postgres restart/recovery during a deploy does not immediately fail it.
+ *
+ * @param {object} pool - The pg Pool.
+ * @returns {Promise<object>} A connected pooled client.
+ * @throws the last connection error when every attempt fails.
+ */
+async function connectWithRetry(pool) {
+  let lastError;
+  for (let attempt = 1; attempt <= MIGRATE_CONNECT_MAX_ATTEMPTS; attempt += 1) {
+    try {
+      return await pool.connect();
+    } catch (error) {
+      lastError = error;
+      const isFinalAttempt = attempt === MIGRATE_CONNECT_MAX_ATTEMPTS;
+      console.warn(
+        `[migrate] database connect attempt ${attempt}/${MIGRATE_CONNECT_MAX_ATTEMPTS} ` +
+        `failed: ${error.message}.` +
+        (isFinalAttempt
+          ? ''
+          : ` Retrying in ${MIGRATE_CONNECT_RETRY_DELAY_MS / 1000}s ` +
+            '(usually a Postgres restart/recovery during deploy).')
+      );
+      if (!isFinalAttempt) {
+        await delay(MIGRATE_CONNECT_RETRY_DELAY_MS);
+      }
+    }
+  }
+  throw lastError;
+}
+
+/**
  * Main entrypoint: connects to the database, applies pending migrations in
  * filename order, logs a summary, and exits with the appropriate code.
  */
@@ -196,11 +257,12 @@ async function main() {
   let client;
 
   try {
-    client = await pool.connect();
+    client = await connectWithRetry(pool);
   } catch (error) {
     console.error(
-      `[migrate] Failed to connect to the database. ` +
-      `Connection error: ${error.message}. ` +
+      `[migrate] Failed to connect to the database after ` +
+      `${MIGRATE_CONNECT_MAX_ATTEMPTS} attempts. ` +
+      `Last connection error: ${error.message}. ` +
       'Check that DATABASE_URL is correct and PostgreSQL is running.'
     );
     // why: exit code 1 signals to Render's build system that the migration
