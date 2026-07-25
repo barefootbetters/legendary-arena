@@ -358,6 +358,31 @@ source both renderers consume. Pitch the visual tiers to ascend in
 lockstep with the audio so a T3 chain's flash and its flourish sting peak
 together — that synchrony is most of the "juice."
 
+**Animated mocks — the flash *and* the word, per tier.** These pair each
+Surface-2 visual tier with the [synergy call-out](#synergy-callout) that peaks
+with it: the burst and the word fire off the one `lastPlayEffectsFired` change
+and crest together (the naming ladder lives on the
+[Narrative Psychology Framework](narrative-psychology.md#synergy-callouts)).
+Card-less, CSS-only, looping, `prefers-reduced-motion`-aware — and each tier is
+drawn bigger than the last, so a bigger chain literally *looks* bigger.
+
+![Animated mock of the tier-1 combo cue: a brief blue spark bursts as the word Combo! pops on-screen, then fades. Loops.](/visual-effects/surface2-combo-spark.svg "width=33%")
+
+*T1 (`1`) — a brief blue **spark** + **Combo!** — "that worked."*
+
+![Animated mock of the tier-2 combo cue: a larger gold burst with an expanding shockwave ring as the word Team-Up! pops, then fades. Loops.](/visual-effects/surface2-combo-burst.svg "width=46%")
+
+*T2 (`2`) — a larger gold **burst** with a shockwave ring + **Team-Up!** — "oh, it *linked*."*
+
+![Animated mock of the tier-3 combo cue: a full-screen golden bloom with rotating rays and ascending streaks of light as the word Unstoppable! pops, then loops.](/visual-effects/surface2-combo-flourish.svg "width=72%")
+
+*T3 (`>= 3`) — a full-screen ascending **flourish** + **Unstoppable!** — "I *built* this." The apex **LEGENDARY!** rung stays reserved (it needs a 4th shared tier — see the [call-out note](#synergy-callout)).*
+
+*Card-less CSS-only animated SVGs; source:
+[surface2-combo.py](../ewiki/visual-effects/surface2-combo.py). The words are the
+narrative page's proposal; the tier boundaries are the locked
+[Combo Tier Contract](#combo-tier-contract).*
+
 > **Mirror the shipped composable, don't reinvent it.** The audio side is
 > [`useComboCue.ts`](../apps/arena-client/src/composables/useComboCue.ts):
 > a scalar-change consumer that keeps its own `lastSeen` value, seeds it
