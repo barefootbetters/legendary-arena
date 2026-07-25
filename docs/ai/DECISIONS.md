@@ -32380,9 +32380,15 @@ immutable/write-once (new `parVersion` to re-publish).
 
 Protect this file.
 
-### D-24242 — WP/EC/D numbers are allocated through an append-only ledger lock, not by reading the index frontier
+### D-24245 — WP/EC/D numbers are allocated through an append-only ledger lock, not by reading the index frontier
 
-**Status:** Active (landed 2026-07-25, infra/number-allocation-ledger).
+> **Renumbered 2026-07-25 (was D-24242).** This decision originally dogfooded
+> D-24242, but WP-422 (Seed PAR, #993) had already claimed D-24242 in an earlier
+> merge — a collision this very ledger exists to catch, itself created before the
+> ledger landed. Per the "first-merged keeps" rule the earlier claimant (Seed PAR)
+> keeps D-24242 and this decision moved to the next free number, D-24245.
+
+**Status:** Active (landed 2026-07-25, infra/number-allocation-ledger; renumbered 2026-07-25, infra/dedup-d24242).
 
 **Context.** WP / EC / D numbers were allocated by reading the current frontier of
 `WORK_INDEX.md` / `EC_INDEX.md` / `DECISIONS.md` and taking the next free value.
@@ -32429,7 +32435,9 @@ same-number race still ends in one renumber, but it is caught in CI, not in prod
 **Packet:** INFRA (no WP — governance tooling, per the code-vs-INFRA line in the
 commit-msg hook Rule 5). **Landed:** 2026-07-25. `node scripts/check-number-ledger.mjs
 --check` green; negative-tested (duplicate + drift both fail exit 1); wired into
-`ci.yml`. First ledger reservation is this decision's own D-24242 (dogfood).
+`ci.yml`. This decision's own reservation (now **D-24245**, renumbered from the
+originally-dogfooded D-24242) plus the reconciled pre-ledger **D-24242** (Seed PAR,
+WP-422) both sit in the ledger.
 
 ---
 

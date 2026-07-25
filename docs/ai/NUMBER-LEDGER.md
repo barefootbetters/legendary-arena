@@ -2,7 +2,8 @@
 
 The append-only reservation ledger that stops two concurrent sessions from
 allocating the **same** WP / EC / D number (the failure that renumbered WP-419 →
-WP-421). See **D-24242** and the allocation protocol in
+WP-421). See **D-24245** (this mechanism; renumbered from D-24242 — see the D
+section below) and the allocation protocol in
 [`01.0a-wp-drafting-phase.md`](REFERENCE/01.0a-wp-drafting-phase.md).
 
 ## How it works
@@ -64,6 +65,7 @@ high-water: 457
 
 high-water: 24241
 
-- D-24242 — number-allocation-ledger mechanism (2026-07-25, infra/number-allocation-ledger)
+- D-24242 — seed-par-publication (WP-422; claimed in #993 before this ledger existed — reconciled 2026-07-25, infra/dedup-d24242)
 - D-24243 — hugo-version-upgrade (2026-07-24, spec/wp-423-hugo-version-upgrade)
 - D-24244 — bot-ally stop-drivers-on-sigterm (2026-07-25, fix/bot-ally-stop-drivers-on-sigterm)
+- D-24245 — number-allocation-ledger mechanism (renumbered from D-24242 for the seed-PAR collision; 2026-07-25, infra/dedup-d24242)

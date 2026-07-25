@@ -6,7 +6,7 @@
 ## Before Starting
 - [ ] WP-139 landed: `apps/wiki-viewer/.hugo-version` (currently `0.135.0`), `hugo.toml`, `wiki-viewer.yml`, and the `legendary-arena-wiki` Render service all exist on `main`.
 - [ ] `public/` baseline captured on `0.135.0` (path+sha256 for every `*.html`/`*.css`) BEFORE editing the pin — the cross-version content-equivalence check depends on it.
-- [ ] `D-24243` confirmed unclaimed on any in-flight branch before landing it; anchor the `DECISIONS.md` append on the ledger-lock `### D-24242` tail (a pre-existing duplicate `D-24242` heading exists — not this WP's defect).
+- [ ] `D-24243` confirmed unclaimed on any in-flight branch before landing it; anchor the `DECISIONS.md` append on the current frontier tail (the earlier duplicate `D-24242` heading was resolved 2026-07-25 by `infra/dedup-d24242` — the ledger-lock decision is now `### D-24245`).
 - [ ] `hugo.toml` confirmed to use a single-directory projection — no Hugo Modules, no `module.mounts`, no `files` glob, no top-level `locale` (the lab silent-mount-drop is structurally absent here).
 - [ ] Target version confirmed a **real released Hugo Extended** build on `github.com/gohugoio/hugo/releases` BEFORE any edit (recommended `0.161.1`).
 - [ ] `pnpm install --frozen-lockfile` succeeds; a local Hugo Extended binary at the target version is installed for local build/determinism verification.
