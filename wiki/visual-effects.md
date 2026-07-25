@@ -237,22 +237,40 @@ stream — one effect per event type — with zero new engine work.
 | `schemeTwistResolved` | T2 | A Scheme Twist is revealed and resolved | A darker, subtler **desaturation ripple** radiating from the scheme tile; less violent than a Strike |
 | `healResolved` | T2 | A player uses the Wound Healing ability | Soft green **restorative shimmer** rising off the hand |
 
-**A worked example of one row.** Below is an *illustrative proposal mock* of
-the `mastermindStrikeResolved` character from the table above — screen-shake +
-red edge-vignette pulse + dark shard burst, layered over a sample Hero card. It
-is a hand-built, CSS-only animated SVG (no JavaScript, so it animates on the
-JS-free wiki), and it honours `prefers-reduced-motion` by holding a single
-static "struck" frame instead of animating. Nothing here ships — the effect
-*character* is proposal-level, exactly as the note above this section says.
+**Animated mocks of each row.** The clips below are *illustrative proposal
+mocks* of the "suggested visual character" for each Surface-1 event, each
+layered over a themed sample card. Every one is a hand-built, CSS-only animated
+SVG (no JavaScript, so they animate on the JS-free wiki) that loops and honours
+`prefers-reduced-motion` by holding a single static frame instead of animating.
+Nothing here ships — the effect *character* is proposal-level, exactly as this
+section's intro says. (`mastermindDefeated`'s character is a *full-screen*
+victory bloom + confetti storm — a card-less finale — so it has no per-card mock
+here; its full-screen treatment lives with [Surface 4](#endgame).)
 
-![Animated mock of the Surface-1 mastermindStrikeResolved effect: a sample Legendary hero card jolts with a screen-shake while a red vignette pulses in from the card's edges and dark shard particles burst outward from the centre, then settles — the signature "uh-oh" strike jolt. The animation loops.](/visual-effects/surface1-mastermind-strike.svg "width=40%")
+![Animated mock of mastermindStrikeResolved: a Mastermind card jolts with a screen-shake while a red vignette pulses in from the edges and dark shard particles burst outward, then settles. Loops.](/visual-effects/surface1-mastermind-strike.svg "width=33%")
 
-*Illustrative proposal mock of `mastermindStrikeResolved` (Tier-1) — a CSS-only
-animated SVG that loops and drops to a static frame under
-`prefers-reduced-motion`. Sample card art is Medusa — Splitting Hairs
-(illustrative only). Animation source:
-[surface1-mastermind-strike.py](../ewiki/visual-effects/surface1-mastermind-strike.py)
-— regenerate with `python surface1-mastermind-strike.py`.*
+*`mastermindStrikeResolved` (T1) — **screen-shake + red edge-vignette pulse + dark shard burst**, the signature "uh-oh" jolt. Sample card: Galactus (Mastermind).*
+
+![Animated mock of fightResolved: a villain card takes a white-gold impact flash and an expanding shockwave ring at the City space while gold coins arc upward, then settles. Loops.](/visual-effects/surface1-fight-resolved.svg "width=33%")
+
+*`fightResolved` (T1) — **impact burst + shockwave ring** at the City space, with a **gold-coin flourish** for a rescued bystander (`bystandersRescued > 0`). Sample card: Sakaar Imperial Guard Lieutenant Caiera (Villain).*
+
+![Animated mock of ambushResolved: a villain card drops hard into its City space with an impact shake and a dust puff, then a sickly green-and-purple edge-glow pulses menacingly. Loops.](/visual-effects/surface1-ambush-resolved.svg "width=33%")
+
+*`ambushResolved` (T2) — a **hard card-slam** drop-in with an impact shake and dust puff, then a **menacing green edge-glow** as the villain settles. Sample card: Spider-Foes — Green Goblin (Villain).*
+
+![Animated mock of schemeTwistResolved: a Scheme Twist card dims under a slow grey desaturation wash while faint ash-grey rings ripple outward from the centre. Loops.](/visual-effects/surface1-scheme-twist-resolved.svg "width=33%")
+
+*`schemeTwistResolved` (T2) — a slow **desaturation ripple**: a grey wash dims the card while ash-grey rings radiate from the tile — darker and subtler than a Strike. Sample card: Scheme Twist.*
+
+![Animated mock of healResolved: a Wound card glows with a soft green light while green motes rise and fade upward off the card. Loops.](/visual-effects/surface1-heal-resolved.svg "width=33%")
+
+*`healResolved` (T2) — a soft green **restorative shimmer**: a gentle green glow with motes rising off the card. Sample card: Wound.*
+
+*All five are CSS-only animated SVGs; each loops and drops to a static frame
+under `prefers-reduced-motion`. Sample card art is illustrative only. Animation
+source: [surface1-effects.py](../ewiki/visual-effects/surface1-effects.py) —
+regenerate with `python surface1-effects.py`.*
 
 #### Surface 1b — Sub-effects inside a fight or ambush (`appliedEffects`)
 
