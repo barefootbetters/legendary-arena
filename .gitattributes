@@ -1,1 +1,8 @@
 * text=auto
+
+# why (D-24242): the number-allocation ledger is append-only. `merge=union` makes
+# git keep BOTH sides' distinct reservation lines on a local rebase/merge, so two
+# sessions reserving different WP/EC/D numbers never conflict here (unlike the
+# prose-heavy WORK_INDEX / EC_INDEX / DECISIONS). A same-number race is caught
+# loudly by `pnpm ledger:numbers:check` (scripts/check-number-ledger.mjs).
+docs/ai/NUMBER-LEDGER.md merge=union
