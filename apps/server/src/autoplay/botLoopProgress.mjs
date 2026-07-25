@@ -25,7 +25,24 @@
  * the parked-choice contract, so this is the consumer's view of it, not a
  * second source of truth.
  */
-const PENDING_CHOICE_MOVE_NAMES = ['resolveKoHeroChoice', 'resolveOptionalKoReward'];
+// why: WP-427 — the FULL set of block-all resolve short-circuits getLegalMoves can
+// return, kept in lockstep with `ai.legalMoves.ts`. This list had drifted to only
+// the first two while the engine grew six more block-all choice types; the policy
+// fallback happened to dispatch the missing ones (they arrive as the sole legal
+// move with default args), but a choice type with NO getLegalMoves short-circuit at
+// all (the put-bottom-HQ pair, fixed in WP-427) still faulted the bot. Listing all
+// eight here makes the "drain the parked choice before the stage fallback" contract
+// explicit and drift-resistant.
+const PENDING_CHOICE_MOVE_NAMES = [
+  'resolveKoHeroChoice',
+  'resolveOptionalKoReward',
+  'resolveVictoryPileCardPick',
+  'resolveDrawOrEmpowered',
+  'resolveReturnZeroCostDiscard',
+  'resolveDiscardToPlay',
+  'resolveOptionalPutBottomHQ',
+  'resolvePutAnyNumberBottomHQ',
+];
 
 /**
  * The public-safe abort reasons surfaced on the guest-accessible playback

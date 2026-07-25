@@ -305,3 +305,61 @@ describe('getLegalMoves — once-per-turn reveal gate (WP-266)', () => {
     assert.equal(names.includes('advanceStage'), true, 'advanceStage remains available');
   });
 });
+
+describe('getLegalMoves — pending put-bottom-HQ short-circuits (WP-427 / D-24248)', () => {
+  test('mandatory optional-put-bottom returns EXACTLY one resolveOptionalPutBottomHQ moving the first HQ card', () => {
+    const gameState = makeG({ hand: ['h' as CardExtId], currentStage: 'main' });
+    // why: mandatory form (Absorb Ambient Power) cannot decline — the bot must move a
+    // card, so getLegalMoves picks the first present HQ card (lowest slot index).
+    gameState.hq = [null, 'hq-card-1' as CardExtId, 'hq-card-2' as CardExtId, null, null];
+    gameState.pendingOptionalPutBottomHQ = [
+      { playerID: '0', sourceCardId: 'src' as CardExtId, mandatory: true },
+    ];
+
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+
+    assert.equal(legalMoves.length, 1, 'exactly one move while a mandatory put-bottom is pending');
+    assert.equal(legalMoves[0]!.name, 'resolveOptionalPutBottomHQ');
+    assert.deepEqual(
+      legalMoves[0]!.args,
+      { cardId: 'hq-card-1' },
+      'moves the first present HQ card (lowest slot index)',
+    );
+  });
+
+  test('optional (non-mandatory) put-bottom returns EXACTLY one resolveOptionalPutBottomHQ that declines', () => {
+    const gameState = makeG({ hand: ['h' as CardExtId], currentStage: 'main' });
+    gameState.hq = ['hq-card-0' as CardExtId, null, null, null, null];
+    // why: optional form (Ionic Energy) — declining is the neutral bot default (no reward forgone).
+    gameState.pendingOptionalPutBottomHQ = [{ playerID: '0', sourceCardId: 'src' as CardExtId }];
+
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+
+    assert.equal(legalMoves.length, 1);
+    assert.equal(legalMoves[0]!.name, 'resolveOptionalPutBottomHQ');
+    assert.deepEqual(legalMoves[0]!.args, { decline: true });
+  });
+
+  test('put-any-number-bottom returns EXACTLY one resolvePutAnyNumberBottomHQ with an empty selection', () => {
+    const gameState = makeG({ hand: ['h' as CardExtId], currentStage: 'main' });
+    gameState.pendingPutAnyNumberBottomHQ = [{ playerID: '0', sourceCardId: 'src' as CardExtId }];
+
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+
+    assert.equal(legalMoves.length, 1);
+    assert.equal(legalMoves[0]!.name, 'resolvePutAnyNumberBottomHQ');
+    assert.deepEqual(legalMoves[0]!.args, { cardIds: [] }, 'the deterministic bot default is "put none"');
+  });
+
+  test('mandatory put-bottom over an empty HQ fails closed (no unresolvable move)', () => {
+    const gameState = makeG({ hand: ['h' as CardExtId], currentStage: 'main' });
+    // hq stays all-null (makeG default) — an engine-invariant violation for a mandatory choice.
+    gameState.pendingOptionalPutBottomHQ = [
+      { playerID: '0', sourceCardId: 'src' as CardExtId, mandatory: true },
+    ];
+
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+
+    assert.equal(legalMoves.length, 0, 'fail closed rather than emit an unresolvable move');
+  });
+});

@@ -7,6 +7,48 @@
 
 ## Current State
 
+### WP-427 / EC-462 — Bot Resolves the Put-Bottom-HQ Pending Choices (D-24248) (2026-07-25)
+
+**`User-Visible Surface = play.legendary-arena.com`.** Fixes a **genuine bot-ally
+fault** (live diag `660LwoUY-Yq`: the WP-415 "The bot ally could not finish its
+turn" banner) on a **stable server + healthy DB with no deploy churn** — i.e. NOT
+an infra cause (the earlier session freezes were the DB / deploy issues, now fixed).
+
+**Root cause.** The engine has **8** block-all pending-choice types (each a
+`hasPending*` guard that freezes every other move until resolved), but
+`getLegalMoves` (`simulation/ai.legalMoves.ts`) short-circuited to a resolve move
+for only **6** — no case for `hasPendingOptionalPutBottomHQ` (Ionic Energy
+optional / Absorb Ambient Power mandatory single-card put-bottom) or
+`hasPendingPutAnyNumberBottomHQ` (Wonder Man / Sunspot / Star-Lord multi-select).
+When one fired, `getLegalMoves` fell through to normal-move enumeration; the
+block-all guard rejected whatever the bot dispatched, the fault fallback
+(`endTurn` → `advanceStage`) was equally blocked, and the turn **faulted** — the
+pending-choice-with-no-resolution-path hard-freeze class (a human on such a hero
+would freeze too). The triggers are **non-core** heroes, so core-only matches never
+hit it.
+
+**Fix.**
+1. **Two new `getLegalMoves` short-circuits** mirroring the existing 6 (each a
+   length-1 list). Optional-put-bottom **declines** (`{ decline: true }`) unless
+   `front.mandatory`, in which case it moves the **first present HQ card**
+   (`selectFirstHqCard`, lowest slot index). Put-any-number-bottom submits the empty
+   **"put none"** (`{ cardIds: [] }`) — any trailing Empowered grant still applies.
+2. **`findPendingChoiceMove`** (`autoplay/botLoopProgress.mjs`) synced from its
+   drifted 2-name list to **all 8** resolve-move names (defense-in-depth; the policy
+   fallback already dispatched the six that had a short-circuit).
+
+**Boundary.** `getLegalMoves` is a **pure AI/simulation helper**, not the engine
+reducer — no `G` mutation, no move-validation-contract change, no replay /
+`finalStateHash` determinism surface (full engine suite **2069/0** unchanged, no
+re-pin). §21 N/A; no PAR baseline impact (unpublished; these choices absent from
+core-hero sim fixtures).
+
+**Verification.** Engine suite **2069/0** (+4); bot-loop **17/0** (+1); `pnpm -r
+build` 0. **D-24248 Active.** `D-24026` live-verify operator-pending on deploy: a
+bot ally playing a put-bottom-HQ hero completes its turn instead of faulting.
+
+---
+
 ### WP-425 / EC-460 — Apex `LEGENDARY!` Combo Tier (D-24246) (2026-07-25)
 
 **`User-Visible Surface = play.legendary-arena.com`.** Adds a **fourth boundary**
