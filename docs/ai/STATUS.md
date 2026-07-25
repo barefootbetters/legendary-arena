@@ -194,6 +194,23 @@ prerequisite is met. `D-24026` live-verify is **operator-pending only on the
 deploy**: merge + deploy, then eyeball that a real match's card play / recruit /
 fight / draw / end-turn fires its sound (green tests + merge alone do not satisfy it).
 
+**`D-24026` deploy-level VERIFIED 2026-07-25 (in-match human eyeball still pending).**
+Cloudflare Pages auto-deployed `main`; `play.legendary-arena.com/version.json` reports
+the current `main` build (`d75c495`), and the live JS bundle (`/assets/index-B1sPzOnI.js`)
+contains all five Surface-2 move → clip URLs — so the WP-421 wiring is deployed. Driving
+the real deployed page in a browser: the WP-412 `AudioControls` (mute + volume) render on
+the play surface with **no console errors**; all five move clips **fetch 200 / `audio/mpeg`**
+from the page origin (CORS OK) **and decode as valid, playable audio** via the browser's Web
+Audio `decodeAudioData` (the same decode path howler uses) — `play-card` 0.69 s, `recruit-hero`
+0.32 s, `attack-villain` 0.29 s, `draw-cards` 0.60 s, `end-turn` 0.49 s. Combined with the
+merged `useMoveSounds` unit tests (`playMoveSound(name)` → `engine.play(mappedUrl)`) and the
+deployed `App.vue` `submitMove` wiring, the whole pipeline is confirmed live **except the final
+in-match click**. That last step could **not** be automated: prod has no unauthenticated
+playable board (the `?fixture=…&play=1` route is a dev shell that waits for a server frame), and
+reaching a real match needs a Hanko sign-in (out of scope for automated verification). **Remaining:**
+a logged-in human takes a turn and confirms each of the five cues fires + the mute toggle silences
+them — mirrors the WP-414 / WP-415 "data-level verified; on-screen eyeball remains" close.
+
 ---
 
 ### WP-420 / EC-455 — Deploy-Aware Bot-Ally Revival (D-24240) (2026-07-24)
