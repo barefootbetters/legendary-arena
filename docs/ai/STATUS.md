@@ -69,6 +69,39 @@ the deploy settles (no `invalid stateID … fightVillain` wedge).
 
 ---
 
+### WP-423 / EC-458 — Coordinated Hugo Version Upgrade, ewiki build surface (D-24243) (2026-07-25)
+
+**No user-observable change — infrastructure only.** The engineering wiki
+(`apps/wiki-viewer`, the ewiki) now builds on **Hugo Extended `0.161.1`** (up from
+`0.135.0` — 26 minor versions) across all three surfaces that consume it: CI
+(`.github/workflows/wiki-viewer.yml`), the Render static-site `buildCommand`
+(`render.yaml`), and local dev — held in lockstep by the single pin file
+`apps/wiki-viewer/.hugo-version` (no Hugo version literal exists anywhere else).
+`0.161.1` matches the sibling `legendary-arena-lab` production pin and clears the
+`0.146.0` `baseof.html` floor and the `0.153`/`0.158` deprecation thresholds; it was
+confirmed a real released Extended build before the bump.
+
+**Payoff.** (1) Version currency — the toolchain is no longer 26 versions stale.
+(2) Lockstep — CI, Render, and local dev can never disagree on the Hugo version.
+(3) A new CI **page-presence guard** ("Assert wiki pages rendered", after Build
+site) asserts build-time **equality** between the projected `content/*.md` page
+count and the rendered `public/**/index.html` count, turning a silent sub-page drop
+— the class of failure that 404'd every sub-page on the sibling `legendary-arena-lab`
+site while CI stayed green — into a red build. Proven non-vacuous (deleting one
+rendered page fails the step). There is **no Render dashboard action** for this
+service: unlike Cloudflare Pages, the Render static site reads the repo pin.
+
+**Content-equivalence proven, not assumed.** A `public/` baseline captured on
+`0.135.0` before the bump was diffed against the `0.161.1` rebuild: identical page
+set (58 files), identical visible text across all 57 pages, identical CSS. The only
+drift is cosmetic goldmark defaults (`<th|td style="text-align: left">` → `<th|td>`;
+removal of `<!-- raw HTML omitted -->` placeholder comments — the raw HTML is
+unrendered under `unsafe = false` in both versions). The same-version determinism +
+JS-free CI gates still pass (intra-version reproducibility). Config modernization
+(`files`/`locale`) stays deferred — one build target, no floor to clear. See D-24243.
+
+---
+
 ### WP-421 / EC-456 — Arena-Client Surface-2 Player-Action Move SFX (D-24241) (2026-07-24)
 
 **`User-Visible Surface = play.legendary-arena.com`.** The **first tactile move
