@@ -32264,3 +32264,60 @@ on deploy (a bot-ally match survives a mid-match deploy and keeps playing; a cra
 surfaces the WP-419 banner).
 
 Protect this file.
+
+### D-24241 — Surface-2 player-action move SFX fire on the local dispatch (not on a projected result)
+
+**Status:** Active (post-execution) 2026-07-24. The five CC0 move clips are already live on R2 (GET-200, `audio/mpeg`, valid `ID3`); `D-24026` live-verify operator-pending only on the deploy (eyeball the cue in a real match).
+
+**Context.** WP-412 shipped the arena-client audio foundation (Surface 1 — one
+clip per resolved `NotableGameEvent`) and WP-413 the tiered combo cue, both
+snapshot-watch consumers playing through the shared `getAudioEngine()`. WP-412's
+Out of Scope named **Surface 2** — action-move tactile SFX — a follow-on. The
+ewiki Sound Effects Surface-2 design is explicit: the client **dispatches** these
+moves, so it plays a sound on the **local action** for immediate tactile feedback,
+**independent of** the authoritative result.
+
+**Decision.** The arena-client gains a **Surface-2** move-cue layer (WP-421),
+locked as follows.
+- **Dispatch-keyed, not projection-keyed.** The cue fires from the single
+  `App.vue` `submitMove` closure on the LOCAL dispatch, **before** relaying intent
+  to the live client. This is the correct signal — `recruitHero` emits **no**
+  notable event at all (only the local dispatch + a `hq`/`discardCount` delta
+  signal it), and the felt-immediately cues must not wait on a projected frame
+  that may arrive turns later or be rejected. Deliberately distinct from Surface 1
+  (`useSoundEffects`, resolved-event stream) and the combo cue (`useComboCue`,
+  played-effect scalar) — both `PlayViewport` snapshot-watch hosts; Surface 2's
+  host is the dispatch chokepoint.
+- **Coverage.** The five dispatchable action moves — `playCard`, `recruitHero`,
+  `fightVillain`, `drawCards`, `endTurn` — via a **partial** `moveSfxManifest`
+  over `UiMoveName` (lobby / stage / `resolve*` moves are silent; an unmapped name
+  is a no-op). Locked filenames: `play-card` / `recruit-hero` / `attack-villain` /
+  `draw-cards` / `end-turn`.mp3 (hyphens, the repo image-URL rule).
+- **`dodgeCard` stays unmapped.** The ewiki table's sixth row cannot fire —
+  `dodgeCard` is an engine-only move (`packages/game-engine/src/moves/dodgeCard.ts`)
+  with **no** `UiMoveName` dispatch path; mapping it would not typecheck and would
+  add an unfired clip. Its absence is test-pinned as a documented gap for a later
+  UI-affordance WP.
+- **Engine reuse.** Plays through the WP-412 `getAudioEngine()` wholesale — **no**
+  new engine, dependency, control, or channel. The existing autoplay-unlock /
+  master mute / master volume gates apply unchanged (the EC-448 lazy-load-any-URL
+  amendment covers the move clips, which are not in the preloaded `sfxManifest`
+  set).
+
+**Layer / boundary.** Pure arena-client presentation. Reads **no** `UIState`,
+never writes `G`/`ctx`; no runtime `registry`/`server`/engine import (the only
+engine-adjacent surface is the type-only UI `UiMoveName`); no new npm dependency.
+CC0 clips hosted on R2 under `audio/sound-effects/`, never in git.
+
+**Invariants preserved.** No `G` / `ctx` / RNG / determinism / persistence surface
+touched; no `lagn-v1.json` schema drift. The cue never mutates match state and
+never gates a move the engine would accept; sims and replays render no audio.
+
+**Packet:** WP-421 + EC-456. **Drafted + Executed:** 2026-07-24 (Lightweight
+Lane). arena-client typecheck 0; arena-client suite green (+11 manifest / consumer
+tests, 1093/0); `pnpm -r build` 0. Assets already on R2: the five move clips
+GET-verified `200` / `audio/mpeg` / valid `ID3` (`play-card` 11.8 KB, `recruit-hero`
+3.6 KB, `attack-villain` 4.7 KB, `draw-cards` 10.0 KB, `end-turn` 4.4 KB). `D-24026`
+live-verify operator-pending only on the deploy (eyeball the cue in a real match).
+
+Protect this file.
