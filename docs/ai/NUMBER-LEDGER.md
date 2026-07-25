@@ -49,6 +49,7 @@ high-water: 422
 <!-- reservations (WP-423 and up), newest last -->
 
 - WP-423 — hugo-version-upgrade (2026-07-24, spec/wp-423-hugo-version-upgrade)
+- WP-424 — bot-ally stop-drivers-on-sigterm (2026-07-25, fix/bot-ally-stop-drivers-on-sigterm)
 
 ## EC
 
@@ -57,6 +58,7 @@ high-water: 457
 <!-- reservations (EC-458 and up), newest last -->
 
 - EC-458 — hugo-version-upgrade (2026-07-24, spec/wp-423-hugo-version-upgrade)
+- EC-459 — bot-ally stop-drivers-on-sigterm (2026-07-25, fix/bot-ally-stop-drivers-on-sigterm)
 
 ## D
 
@@ -64,3 +66,4 @@ high-water: 24241
 
 - D-24242 — number-allocation-ledger mechanism (2026-07-25, infra/number-allocation-ledger)
 - D-24243 — hugo-version-upgrade (2026-07-24, spec/wp-423-hugo-version-upgrade)
+- D-24244 — bot-ally stop-drivers-on-sigterm (2026-07-25, fix/bot-ally-stop-drivers-on-sigterm)

@@ -33,7 +33,7 @@ import {
 // the bot-ally matches this process was actively driving so boot revival can
 // re-attach them past the MAX_REVIVALS cap. `botAllyDrivers` is the in-process
 // live-driver registry; its keys ARE exactly those matches.
-import { botAllyDrivers } from './bot-ally/botAllyDriver.mjs';
+import { botAllyDrivers, stopAllBotAllyDrivers } from './bot-ally/botAllyDriver.mjs';
 import { markInProgressBotAllyMatchesInterrupted } from './bot-ally/botAllyRoutes.mjs';
 
 /**
@@ -167,6 +167,15 @@ async function main() {
         `Error: ${markMessage}. Continuing shutdown; those matches fall back to the capped revival path.`
       );
     }
+    // why: WP-424 / D-24244 — stop this process from driving any bot seat NOW,
+    // AFTER the interrupt-mark above has read the driven-match keys. On a Render
+    // rolling deploy the new instance has already booted and revived these
+    // matches; if the old instance's drivers keep polling through the long
+    // `httpServer.close` Socket.IO drain below, the two instances race on
+    // boardgame.io's `_stateID` and freeze the co-op match (see
+    // stopAllBotAllyDrivers). Synchronous (clears timers + de-registers); an
+    // in-flight tick bails on its own `driver.stopped` check.
+    stopAllBotAllyDrivers();
     if (legendsPublisherHandle !== undefined) {
       legendsPublisherHandle.stop();
     }
