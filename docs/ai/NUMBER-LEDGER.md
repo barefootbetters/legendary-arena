@@ -53,6 +53,7 @@ high-water: 422
 - WP-424 — bot-ally stop-drivers-on-sigterm (2026-07-25, fix/bot-ally-stop-drivers-on-sigterm)
 - WP-425 — apex-legendary-combo-tier (2026-07-25, spec/wp-425-apex-combo-tier)
 - WP-426 — bot-ally survive-db-blip (2026-07-25, fix/bot-ally-survive-db-blip)
+- WP-428 — diagnostic-transport-block (2026-07-25, spec/wp-428-transport-diagnostics)
 
 ## EC
 
@@ -64,6 +65,7 @@ high-water: 457
 - EC-459 — bot-ally stop-drivers-on-sigterm (2026-07-25, fix/bot-ally-stop-drivers-on-sigterm)
 - EC-460 — apex-legendary-combo-tier (2026-07-25, spec/wp-425-apex-combo-tier)
 - EC-461 — bot-ally survive-db-blip (2026-07-25, fix/bot-ally-survive-db-blip)
+- EC-463 — diagnostic-transport-block (2026-07-25, spec/wp-428-transport-diagnostics)
 
 ## D
 
@@ -75,3 +77,4 @@ high-water: 24241
 - D-24245 — number-allocation-ledger mechanism (renumbered from D-24242 for the seed-PAR collision; 2026-07-25, infra/dedup-d24242)
 - D-24246 — apex-legendary-combo-tier (4th shared comboTierForCount boundary; 2026-07-25, spec/wp-425-apex-combo-tier)
 - D-24247 — bot-ally survive-db-blip (tolerate transient empty fetch; 2026-07-25, fix/bot-ally-survive-db-blip)
+- D-24249 — diagnostic-transport-block (transport block in the play-surface diagnostic report; 2026-07-25, spec/wp-428-transport-diagnostics)
