@@ -30,6 +30,9 @@ formula/weight re-tuning beyond v1 defaults, hero-dependent PAR.
 - `parVersion` = `v1`; artifacts are WRITE-ONCE (re-publish ⇒ new version dir, never overwrite)
 - Default `ScenarioScoringConfig` weights/caps/penalties: ONE global set, satisfying `validateScoringConfig` invariants (documented in D-24242)
 - Difficulty→`ParBaseline` mapping: documented in D-24242 (the primary design task)
+- Rubric (LOCKED, `wiki/par-simulation-calibration.md §Phase 1` + D-24242): each entity 1–10 from five type-specific 0–4 dimensions → `clamp(1,10,ceil(rawTotal/2))`, `5`=baseline; every rating carries its `subscores` basis (integers only; auditable)
+- Scenario composition: `0.40·mastermind + 0.40·scheme + 0.20·avg(villainGroups)` + explicit `synergyAdjustment` `-2.0…+2.0` (each with a `reasonCode`) → `clamp(1,10,round(...))`; entity rating ≠ scenario rating
+- Seed provenance: stamp `source:'seed'` / `calibrationStatus:'uncalibrated'` / `difficultyRatingVersion`; sim supersedes (records `seedParDelta`); never a silent seed rewrite (new `ratingVersion`); published PAR prefers simulation
 
 ## Guardrails
 - **Seed only** — no simulation/Monte-Carlo; PAR is content-derived

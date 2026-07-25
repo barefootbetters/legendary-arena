@@ -96,21 +96,31 @@ gameplay changes — only that scores are now scored against a published PAR ins
 
 ## Scope (In)
 
-### A) `difficultyRating` schema + first-pass ratings (registry)
+### A) `difficultyRating` schema + rubric-authored ratings (registry)
 - Add an integer `difficultyRating` (1–10) to the mastermind / scheme / villain-group / henchman-group
   content schema (the theme schema v2 surface that deferred it, D-5508), additive + optional (so
-  existing data validates), with a validator bound (1 ≤ n ≤ 10).
-- Author a **documented first-pass rating** for every competitive mastermind/scheme/group across the
-  41 sets — a transparent banded scheme (role-based defaults + per-item adjustment), in a table the
-  operator reviews. (The rating VALUES are the product-judgment deliverable Jeff reviews.)
+  existing data validates), with a validator bound (1 ≤ n ≤ 10) **plus the auditable `subscores`
+  basis object** (the five 0–4 rubric dimensions per type).
+- Author the rating for every competitive mastermind/scheme/group across the 41 sets **per the
+  rubric methodology** in [`wiki/par-simulation-calibration.md` §Phase 1](../../../wiki/par-simulation-calibration.md)
+  (locked in D-24242): each entity scored from its five type-specific 0–4 dimensions →
+  `clamp(1,10,ceil(rawTotal/2))`, `5` = baseline; every rating carries its `subscores` basis. The
+  rating VALUES + sub-scores are the product-judgment deliverable Jeff reviews. Community difficulty
+  research + the v23 rules are **anchor validation only**, never canonical scores.
 
-### B) Scoring-config defaults + difficulty→baseline mapping (design, documented)
+### B) Scenario composition + scoring-config defaults + difficulty→baseline mapping (design, documented)
+- **Scenario difficulty** is composed at scenario time (entity ratings are never scenario ratings):
+  `0.40·mastermindDifficulty + 0.40·schemeDifficulty + 0.20·avg(villainGroupDifficulties)` plus an
+  **explicit, enumerable** `synergyAdjustment` (`-2.0…+2.0`, each with a `reasonCode`), then
+  `clamp(1,10,round(...))`.
 - Define the **global default** `weights` / `caps` / `penaltyEventWeights` (v1, one set) satisfying
   `validateScoringConfig`.
-- Define the documented mapping from a scenario's difficulty inputs → its `ParBaseline`
-  (`roundsPar`/`victoryPointsPar`/`bystandersPar`/`escapesPar`) such that `computeParScore` yields a
-  PAR consistent with the `docs/12 §Phase 1` scalar formula. **This mapping is the primary
+- Define the documented mapping from `scenarioDifficulty` (+ the `docs/12 §Phase 1` formula) → the
+  scenario `ParBaseline` (`roundsPar`/`victoryPointsPar`/`bystandersPar`/`escapesPar`) such that
+  `computeParScore` yields a PAR consistent with that formula. **This mapping is the primary
   execution design task** — resolve it against `parScoring.logic.ts` and record it in D-24242.
+- Stamp seed artifacts `source:'seed'` / `calibrationStatus:'uncalibrated'` + `difficultyRatingVersion`
+  so a later simulation pass supersedes them (records `seedParDelta`; never silently rewrites a seed).
 
 ### C) Generation + delivery script (`scripts/generate-seed-par.mjs`, new — Shared Tooling)
 - Enumerate the competitive scenarios (`buildScenarioKey` over the scheme × mastermind × villain-group

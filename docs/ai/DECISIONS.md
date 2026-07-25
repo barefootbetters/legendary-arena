@@ -32338,10 +32338,22 @@ does not exist yet").
 **Decision (to be executed by WP-422).** Publish the **content-driven Seed PAR** (VISION §26 Phase 1
 / `docs/12-SCORING-REFERENCE.md §Phase 1`) — the deliberate ~60–70%-accurate day-one tier — and
 turn on competitive submissions. Simulation calibration (Phase 2) supersedes seed in a later WP.
-- **Difficulty ratings.** Add an additive `difficultyRating` (integer 1–10) to the
-  mastermind/scheme/villain-group schema (reversing D-5508), and author a documented, reviewed
-  first-pass rating for every competitive item (a banded scheme; the values are a product-judgment
-  artifact Jeff reviews before the index is committed).
+- **Difficulty ratings (rubric-based).** Add an additive `difficultyRating` (integer 1–10) plus its
+  auditable `subscores` basis to the mastermind/scheme/villain-group schema (reversing D-5508). Ratings
+  are **content-authored priors, not truth** — assigned per the rubric locked in
+  `wiki/par-simulation-calibration.md §Phase 1`: each entity scored from **five type-specific 0–4
+  dimensions** → `clamp(1,10,ceil(rawTotal/2))`, `5` = baseline (Mastermind: attack-threshold /
+  master-strike / tactic / protection / scaling-or-alt-loss; Scheme: clock / loss-severity /
+  irreversible / resource-denial / setup-scaling; Villain Group: attack-VP / ambush / fight-punishment /
+  escape / synergy-complexity). Every rating carries its `subscores` basis (no undocumented drift);
+  integers only; community research + v23 rules are **anchor validation only**. The values are a
+  product-judgment artifact Jeff reviews before the index is committed.
+- **Scenario composition (entity ≠ scenario).** An entity's base rating is never inflated by a pairing;
+  scenario difficulty = `0.40·mastermind + 0.40·scheme + 0.20·avg(villainGroups)` + an explicit,
+  enumerable `synergyAdjustment` (`-2.0…+2.0`, each with a `reasonCode`), `clamp(1,10,round(...))`. Seed
+  artifacts stamp `source:'seed'`/`calibrationStatus:'uncalibrated'`/`difficultyRatingVersion`; a later
+  simulation pass supersedes them (records `seedParDelta`) and a wrong seed is corrected via a new
+  `ratingVersion`, never a silent in-place rewrite; published PAR prefers simulation over seed.
 - **Config + PAR.** One documented **global default** `ScenarioScoringConfig` (weights / caps /
   penaltyEventWeights) satisfying every `validateScoringConfig` structural invariant, plus a
   documented **difficulty→`ParBaseline` mapping**; `parValue = computeParScore(config)` (the same
