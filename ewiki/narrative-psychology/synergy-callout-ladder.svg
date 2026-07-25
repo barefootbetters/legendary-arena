@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 200" width="560" height="200" role="img" aria-label="Animated mock of the synergy call-out ladder: the words Combo!, then Team-Up!, then Unstoppable!, then a gold glowing LEGENDARY! each pop on-screen in turn as a hero-ability chain grows, then the sequence loops.">
+  <title>Synergy call-out ladder — Combo! to Team-Up! to Unstoppable! to LEGENDARY!</title>
+  <style>
+.w0 { opacity: 0; animation: w0 5.2s linear infinite; }
+.w1 { opacity: 0; animation: w1 5.2s linear infinite; }
+.w2 { opacity: 0; animation: w2 5.2s linear infinite; }
+.w3 { opacity: 0; animation: w3 5.2s linear infinite; }
+.lglow { opacity: 0; animation: lg 5.2s linear infinite; }
+text { font-family: 'Arial Black','Helvetica Neue',Arial,sans-serif; font-weight: 900; font-style: italic; letter-spacing: 1px; }
+@keyframes w0 {
+  0.00% { opacity: 0; transform: translate(280px,100px) scale(0.4); }
+  1.50% { opacity: 1; transform: translate(280px,100px) scale(1.15); }
+  3.00% { transform: translate(280px,100px) scale(1.0); }
+  19.00% { opacity: 1; transform: translate(280px,100px) scale(1.0); }
+  23.00% { opacity: 0; transform: translate(280px,100px) scale(1.28); }
+  100.00% { opacity: 0; }
+}
+@keyframes w1 {
+  0.00% { opacity: 0; }
+  25.00% { opacity: 0; transform: translate(280px,100px) scale(0.4); }
+  26.50% { opacity: 1; transform: translate(280px,100px) scale(1.15); }
+  28.00% { transform: translate(280px,100px) scale(1.0); }
+  44.00% { opacity: 1; transform: translate(280px,100px) scale(1.0); }
+  48.00% { opacity: 0; transform: translate(280px,100px) scale(1.28); }
+  100.00% { opacity: 0; }
+}
+@keyframes w2 {
+  0.00% { opacity: 0; }
+  50.00% { opacity: 0; transform: translate(280px,100px) scale(0.4); }
+  51.50% { opacity: 1; transform: translate(280px,100px) scale(1.15); }
+  53.00% { transform: translate(280px,100px) scale(1.0); }
+  69.00% { opacity: 1; transform: translate(280px,100px) scale(1.0); }
+  73.00% { opacity: 0; transform: translate(280px,100px) scale(1.28); }
+  100.00% { opacity: 0; }
+}
+@keyframes w3 {
+  0.00% { opacity: 0; }
+  75.00% { opacity: 0; transform: translate(280px,100px) scale(0.4); }
+  76.50% { opacity: 1; transform: translate(280px,100px) scale(1.15); }
+  78.00% { transform: translate(280px,100px) scale(1.0); }
+  94.00% { opacity: 1; transform: translate(280px,100px) scale(1.0); }
+  98.00% { opacity: 0; transform: translate(280px,100px) scale(1.28); }
+  100.00% { opacity: 0; }
+}
+@keyframes lg {
+  0.00% { opacity: 0; }
+  75.00% { opacity: 0; }
+  77.00% { opacity: 0.55; }
+  94.00% { opacity: 0.55; }
+  98.00% { opacity: 0; }
+  100.00% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .w0, .w1, .w2 { animation: none; opacity: 0; }
+  .w3 { animation: none; opacity: 1; transform: translate(280px,100px) scale(1); }
+  .lglow { animation: none; opacity: 0.5; }
+}
+  </style>
+  <defs><radialGradient id="lg" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#ffe6a0" stop-opacity="0.9"/><stop offset="100%" stop-color="#ffb020" stop-opacity="0"/></radialGradient><radialGradient id="bg" cx="50%" cy="45%" r="80%"><stop offset="0%" stop-color="#171320" stop-opacity="1"/><stop offset="100%" stop-color="#0b0910" stop-opacity="1"/></radialGradient></defs>
+  <rect width="560" height="200" fill="url(#bg)"/>
+  <ellipse class="lglow" cx="280" cy="100" rx="240" ry="72" fill="url(#lg)"/>
+  <text class="w0" x="0" y="0" text-anchor="middle" dominant-baseline="central" font-size="42" fill="#bcdcff">COMBO!</text><text class="w1" x="0" y="0" text-anchor="middle" dominant-baseline="central" font-size="54" fill="#74eca2">TEAM-UP!</text><text class="w2" x="0" y="0" text-anchor="middle" dominant-baseline="central" font-size="60" fill="#ff8f3a">UNSTOPPABLE!</text><text class="w3" x="0" y="0" text-anchor="middle" dominant-baseline="central" font-size="68" fill="#ffd24a">LEGENDARY!</text>
+</svg>
