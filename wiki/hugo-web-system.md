@@ -9,6 +9,8 @@ tags:
   - pagefind
   - snipcart
   - brevo
+  - shortcodes
+  - recipes
   - designer-reference
 related:
   - hugo-onboarding.md
@@ -30,7 +32,11 @@ source:
   - C:\www\legendary-arena-com\static\_headers
   - C:\www\legendary-arena-com\static\apple-touch-icon.png
   - C:\www\legendary-arena-com\themes\PaperMod\layouts\_partials\head.html
-last-reviewed: 2026-07-24
+  - C:\www\barefootbetters-www\layouts\_shortcodes\recipe-card.html (recipe-card shortcode — sibling BB Hugo site)
+  - C:\www\barefootbetters-www\assets\css\extended\recipe-card.css
+  - C:\www\barefootbetters-www\archetypes\recipe.md
+  - C:\www\barefootbetters-www\docs\recipe-card.md
+last-reviewed: 2026-07-25
 ---
 
 > 👋 **New to this codebase?** Start with
@@ -671,6 +677,118 @@ It's site-wide config, so commit it `WP-NNN:`:
   development](#local-development)) — the `youtube` shortcode renders
   under `hugo server` too. What you see in preview is what ships.
 
+### Recipe cards (custom shortcode) {#recipe-cards}
+
+> **Cross-repo note.** This is the one section documenting a **sibling
+> Hugo site**, not the marketing repo. The recipe card ships in
+> **`C:\www\barefootbetters-www\`** (BarefootBetters.com — same Hugo +
+> PaperMod stack). It is recorded here because it is the canonical
+> example of a *custom* shortcode (the `youtube` section above covers a
+> *built-in* one), and the pattern ports cleanly to any BB Hugo property.
+> All paths below are in the barefootbetters-www repo unless stated.
+
+A recipe card is the Hugo analog of **WP Recipe Maker** — the same
+branded card (image, times, servings, ingredients, method, notes,
+nutrition) plus a `schema.org/Recipe` JSON-LD block for Google rich
+results. It is a faithful port of WPRM's "meadow" modern template, keyed
+to CSS variables so the palette is retintable.
+
+**It is a custom shortcode, driven by front matter.** The recipe *data*
+lives in a structured `recipe:` block in the page front matter; a
+shortcode renders it wherever you place it in the body:
+
+```
+{{</* recipe-card */>}}
+```
+
+**Why front matter and not shortcode params?** A recipe is nested
+structured data — grouped ingredients with amount/unit/name/notes,
+grouped steps with tips and images. Hugo shortcode params are flat
+(`{{</* x a="1" */>}}`) and cannot express that cleanly, so the idiomatic
+pattern is *structured front matter + a rendering shortcode* (see
+[Hugo — Shortcodes](https://gohugo.io/content-management/shortcodes/)).
+The same front matter also feeds the JSON-LD, so the card and the SEO
+schema can never drift apart.
+
+**Files:**
+
+| File | Purpose |
+|---|---|
+| `layouts\_shortcodes\recipe-card.html` | Card renderer + JSON-LD |
+| `layouts\_partials\func\iso-duration.html` | minutes → `PT1H30M` (schema) |
+| `layouts\_partials\func\human-duration.html` | minutes → `1 hr 30 min` (display) |
+| `assets\css\extended\recipe-card.css` | Meadow styling; auto-bundled by PaperMod |
+| `archetypes\recipe.md` | `hugo new --kind recipe` scaffold |
+| `docs\recipe-card.md` | Full author guide |
+
+**Scaffold a new recipe:**
+
+```
+hugo new --kind recipe content/blog/my-recipe/index.md
+```
+
+That stamps the full `recipe:` block and a `{{</* recipe-card */>}}` call.
+Drop the photo in the same page-bundle folder and point `recipe.image` at
+its filename. Condensed schema (all optional except `name`,
+`ingredients`, `instructions` — empty sections are skipped):
+
+```yaml
+recipe:
+  name: "Slow-Roasted Chicken Thighs with Forty Cloves of Garlic"
+  image: "feature.jpg"        # bundle filename OR full URL
+  course: "Main Course"
+  cuisine: "French"
+  keywords: "garlic chicken, dutch oven"
+  prep_time: 30               # minutes
+  cook_time: 135              # minutes  (total_time defaults to prep+cook)
+  servings: 6
+  servings_unit: "servings"
+  # rating: 5 / rating_count: 8   # optional — omit rather than fake it
+  equipment: ["Dutch oven"]
+  ingredients:
+    - group: "For the chicken"  # "" for an ungrouped list
+      items:
+        - amount: "40"
+          unit: "cloves"
+          name: "garlic, peeled"
+          notes: "mash to loosen skins"   # optional, italic
+  instructions:
+    - group: ""
+      steps:
+        - text: "Sear the thighs…"        # markdown allowed
+          # tip: "…"   # optional callout   # image: "step.jpg"
+  notes: ["Leftovers make exceptional risotto."]
+  # nutrition: { calories: "520 kcal", protein: "38 g" }   # optional
+```
+
+**What it renders:** a two-column meadow card — Ingredients/Equipment on
+the left, Method/Nutrition/Notes on the right — collapsing to one column
+below 700px. White header block over a sage main block, olive accent,
+times as bordered cells, servings/course/cuisine as pills, a
+jump-to-section bar, and the instructions header labelled "Method". The
+palette and fonts are CSS variables at the top of `recipe-card.css`;
+retint to BB brand tokens in one block.
+
+**Three PaperMod-specific gotchas** (each already handled, but know them
+before editing):
+
+- **PaperMod's TOC scans rendered `<h1-6>`.** `_partials/toc.html` builds
+  the table of contents with `findRE "<h[1-6]…>" .Content`, so the card's
+  own section headings appear in the page TOC. They carry `id`s
+  (`bb-r-ingredients`, `bb-r-instructions`, …) so those TOC links
+  resolve; without ids they'd be dead `#` links. Set `ShowToc: false` in
+  the page front matter to keep card sections out of the TOC entirely.
+- **Times use `<div>`s, not a `<table>`.** PaperMod's
+  `.md-content table td` rule (specificity 0,0,3,2) would override the
+  card's cell borders, so the times strip is flex `<div>`s instead.
+- **List selectors are prefixed `.bb-recipe`.** `.md-content ul/ol` beats
+  a bare `.bb-recipe__list`, so list rules are written
+  `.bb-recipe .bb-recipe__list` to win the cascade.
+
+**Where it goes:** any recipe page bundle under `content\`. On
+barefootbetters-www that is a content-lane edit; follow that repo's
+commit conventions, not the marketing-repo prefixes below.
+
 ### Code blocks & syntax highlighting
 
 Hugo renders code blocks natively — there is **no WordPress-style "code
@@ -919,6 +1037,12 @@ Full details: `C:\www\legendary-arena-com\docs\ai\REFERENCE\01.3-commit-hygiene.
 - `C:\www\legendary-arena-com\docs\03-ROADMAP.md` — analytics platform deferral, WP-021
 - [Hugo — `youtube` shortcode](https://gohugo.io/shortcodes/youtube/) — built-in shortcode reference (params: `id`, `title`, `start`, `autoplay`, `loading`, `class`)
 - [Hugo — Configure privacy](https://gohugo.io/configuration/privacy/) — `[privacy.youtube] privacyEnhanced` (no-cookie embeds)
+- [Hugo — Shortcodes](https://gohugo.io/content-management/shortcodes/) — custom shortcode authoring (used by the `recipe-card` shortcode)
+- `C:\www\barefootbetters-www\layouts\_shortcodes\recipe-card.html` — recipe-card shortcode (renders `recipe:` front matter + JSON-LD); sibling BB Hugo site
+- `C:\www\barefootbetters-www\assets\css\extended\recipe-card.css` — WPRM "meadow" card styling (retintable CSS variables)
+- `C:\www\barefootbetters-www\archetypes\recipe.md` — `hugo new --kind recipe` scaffold with the full `recipe:` schema
+- `C:\www\barefootbetters-www\docs\recipe-card.md` — recipe-card author guide
+- [WP Recipe Maker](https://bootstrapped.ventures/wp-recipe-maker/) — the WordPress plugin whose "meadow" template the card ports
 - WP-004 — home page override
 - WP-005 — Pagefind search integration, `#la-search` id lock
 - WP-008 — Schema.org / SEO baseline
