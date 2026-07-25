@@ -64,6 +64,8 @@ import { resolveOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
 import { resolveVictoryPileCardPick } from '../moves/resolveVictoryPileCardPick.js';
 import { resolveReturnZeroCostDiscard } from '../moves/resolveReturnZeroCostDiscard.js';
 import { resolveDiscardToPlay } from '../moves/resolveDiscardToPlay.js';
+import { resolveOptionalPutBottomHQ } from '../moves/resolveOptionalPutBottomHQ.js';
+import { resolvePutAnyNumberBottomHQ } from '../moves/resolvePutAnyNumberBottomHQ.js';
 import { advanceTurnStage } from '../turn/turnLoop.js';
 
 // why: 200-turn safety cap prevents infinite loops in degenerate states
@@ -210,6 +212,12 @@ const MOVE_MAP: Record<string, MoveFn> = {
   // choice is parked; a missing dispatch entry hangs the per-turn loop.
   resolveReturnZeroCostDiscard: (context, args) => resolveReturnZeroCostDiscard(context as never, args as never),
   resolveDiscardToPlay: (context, args) => resolveDiscardToPlay(context as never, args as never),
+  // why: WP-427 / D-24248 — getLegalMoves short-circuits to these two put-bottom-HQ resolve
+  // moves when their block-all choice is parked; a missing dispatch entry hangs the per-turn
+  // loop (observed: sim:runtime-observed:check hung when the getLegalMoves short-circuit landed
+  // without this). Reuse the existing move fns, no re-implementation.
+  resolveOptionalPutBottomHQ: (context, args) => resolveOptionalPutBottomHQ(context as never, args as never),
+  resolvePutAnyNumberBottomHQ: (context, args) => resolvePutAnyNumberBottomHQ(context as never, args as never),
 };
 
 // why: WP-289 / D-24073 — exposed for the move-dispatch drift guard (every SIMULATION_MOVE_NAMES

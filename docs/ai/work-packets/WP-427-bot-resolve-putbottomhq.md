@@ -92,6 +92,15 @@ card on the mandatory form, or "put none" on the multi-select) and finishes its 
 - Import `hasPendingOptionalPutBottomHQ` + `hasPendingPutAnyNumberBottomHQ`.
 - Add a `selectFirstHqCard` helper (first non-null HQ slot, deterministic).
 - Two short-circuits after the KO-hero check, before normal enumeration.
+- Add both resolve names to `SIMULATION_MOVE_NAMES` (the sim allowlist).
+
+### A2) Sim move-dispatch completeness (`simulation.runner.ts` + `par.aggregator.ts`, modified) — REQUIRED
+- **why:** the sim harness has a curated `MOVE_MAP` dispatch. `getLegalMoves` is shared
+  by the real bot-ally driver (dispatches via boardgame.io — all moves present) AND the
+  sim (this MOVE_MAP). Returning a resolve the sim can't dispatch **hangs the per-turn
+  loop** (WP-289 / D-24073: `maxTurns` bounds turns, not within-turn move-steps) — observed
+  as `sim:runtime-observed:check` hanging. Add both put-bottom resolve fns to BOTH MOVE_MAPs
+  (import + entry), keeping `SIMULATION_MOVE_NAMES` ↔ dispatch in sync (the drift guard).
 
 ### B) findPendingChoiceMove sync (`apps/server/src/autoplay/botLoopProgress.mjs`, modified)
 - `PENDING_CHOICE_MOVE_NAMES` → all 8 resolve-move names.
@@ -115,8 +124,10 @@ card on the mandatory form, or "put none" on the multi-select) and finishes its 
 
 ## Files Expected to Change
 
-- `packages/game-engine/src/simulation/ai.legalMoves.ts` — **modified** (2 imports + helper + 2 short-circuits)
+- `packages/game-engine/src/simulation/ai.legalMoves.ts` — **modified** (2 imports + helper + 2 short-circuits + 2 `SIMULATION_MOVE_NAMES` entries)
 - `packages/game-engine/src/simulation/ai.legalMoves.test.ts` — **modified** (+4 tests)
+- `packages/game-engine/src/simulation/simulation.runner.ts` — **modified** (2 imports + 2 MOVE_MAP dispatch entries)
+- `packages/game-engine/src/simulation/par.aggregator.ts` — **modified** (2 imports + 2 MOVE_MAP dispatch entries)
 - `apps/server/src/autoplay/botLoopProgress.mjs` — **modified** (name list → 8)
 - `apps/server/src/autoplay/botLoopProgress.test.ts` — **modified** (+1 test)
 - `docs/ai/STATUS.md` — **modified**

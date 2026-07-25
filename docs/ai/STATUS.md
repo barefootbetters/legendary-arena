@@ -36,6 +36,12 @@ hit it.
 2. **`findPendingChoiceMove`** (`autoplay/botLoopProgress.mjs`) synced from its
    drifted 2-name list to **all 8** resolve-move names (defense-in-depth; the policy
    fallback already dispatched the six that had a short-circuit).
+3. **Sim-dispatch completeness (required)** — `getLegalMoves` is shared by the real
+   driver (boardgame.io, all moves) AND the PAR/coverage sim (a curated `MOVE_MAP`);
+   returning a resolve the sim can't dispatch **hangs its per-turn loop** (WP-289 /
+   D-24073 — observed as `sim:runtime-observed:check` hanging). Both put-bottom resolves
+   added to `SIMULATION_MOVE_NAMES` + BOTH `MOVE_MAP`s (`simulation.runner.ts`,
+   `par.aggregator.ts`), keeping allowlist ↔ dispatch in sync (the drift guard).
 
 **Boundary.** `getLegalMoves` is a **pure AI/simulation helper**, not the engine
 reducer — no `G` mutation, no move-validation-contract change, no replay /

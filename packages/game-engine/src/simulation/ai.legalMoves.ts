@@ -58,6 +58,12 @@ export const SIMULATION_MOVE_NAMES = [
   'resolveDrawOrEmpowered',
   'resolveReturnZeroCostDiscard',
   'resolveDiscardToPlay',
+  // why: WP-427 / D-24248 — getLegalMoves now short-circuits to these two put-bottom-HQ
+  // resolve moves when their block-all choice is parked; they MUST be dispatchable in the
+  // sim (both MOVE_MAPs) or the per-turn loop hangs (maxTurns bounds turns, not
+  // within-turn move-steps — the exact hang WP-289 / D-24073 documents).
+  'resolveOptionalPutBottomHQ',
+  'resolvePutAnyNumberBottomHQ',
 ] as const;
 
 // why: type is exported implicitly via the const array above; external

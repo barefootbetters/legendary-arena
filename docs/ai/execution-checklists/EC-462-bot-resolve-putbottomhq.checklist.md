@@ -40,7 +40,9 @@ moves themselves, the client prompts, icon-optimal mandatory selection, PAR/sim 
 - `PENDING_CHOICE_MOVE_NAMES` — why the full 8 (the list had drifted; the put-bottom pair had no short-circuit at all)
 
 ## Files to Produce
-- `packages/game-engine/src/simulation/ai.legalMoves.ts` — **modified** — 2 imports + `selectFirstHqCard` + 2 short-circuits
+- `packages/game-engine/src/simulation/ai.legalMoves.ts` — **modified** — 2 imports + `selectFirstHqCard` + 2 short-circuits + 2 `SIMULATION_MOVE_NAMES` entries
+- `packages/game-engine/src/simulation/simulation.runner.ts` — **modified** — 2 imports + 2 MOVE_MAP dispatch entries (REQUIRED or the sim per-turn loop hangs — D-24073)
+- `packages/game-engine/src/simulation/par.aggregator.ts` — **modified** — 2 imports + 2 MOVE_MAP dispatch entries (same)
 - `packages/game-engine/src/simulation/ai.legalMoves.test.ts` — **modified** — 4 tests
 - `apps/server/src/autoplay/botLoopProgress.mjs` — **modified** — name list → 8
 - `apps/server/src/autoplay/botLoopProgress.test.ts` — **modified** — all-8-names test
@@ -54,6 +56,8 @@ moves themselves, the client prompts, icon-optimal mandatory selection, PAR/sim 
 ## After Completing
 - [ ] `pnpm --filter @legendary-arena/game-engine build` exits 0
 - [ ] Engine suite green (2069/0, +4 new); NO `finalStateHash` re-pin in the diff
+- [ ] `pnpm sim:coverage --check` AND `pnpm sim:runtime-observed:check` complete (do NOT hang) — the sim-dispatch completeness gate; both were the CI failure mode
+- [ ] Move-dispatch drift guard passes (`SIMULATION_MOVE_NAMES` ↔ both MOVE_MAPs in sync with the 2 added)
 - [ ] `pnpm --filter @legendary-arena/server test` — bot-loop 17/0 (+1)
 - [ ] `pnpm -r build` 0; `pnpm -r --no-bail test` green repo-wide
 - [ ] `rg "hasPendingOptionalPutBottomHQ|hasPendingPutAnyNumberBottomHQ|selectFirstHqCard" packages/game-engine/src/simulation/ai.legalMoves.ts` → present

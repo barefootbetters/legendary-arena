@@ -32724,6 +32724,15 @@ submits the empty **"put none"** selection (`{ cardIds: [] }`). The bot driver's
 drifted 2-name list to **all eight** resolve names (defense-in-depth; the policy
 fallback already dispatched the six that had a short-circuit).
 
+**Sim-dispatch completeness (required).** `getLegalMoves` is shared by the real
+bot-ally driver (dispatches via boardgame.io — every move present) AND the PAR/coverage
+sim, which dispatches through a curated `MOVE_MAP`. Returning a resolve the sim cannot
+dispatch **hangs the sim's per-turn loop** (WP-289 / D-24073: `maxTurns` bounds turns,
+not within-turn move-steps) — observed as `sim:runtime-observed:check` hanging when only
+the `getLegalMoves` short-circuit landed. So both put-bottom resolve moves are added to
+`SIMULATION_MOVE_NAMES` and to BOTH sim `MOVE_MAP`s (`simulation.runner.ts`,
+`par.aggregator.ts`), keeping the allowlist ↔ dispatch in sync (the drift guard).
+
 **Layer / boundary.** `getLegalMoves` is a **pure AI/simulation helper**, not the
 engine reducer — no `G` mutation, no move-validation-contract change, no replay /
 `finalStateHash` determinism surface (full engine suite 2069/0, no re-pin). §21 N/A.

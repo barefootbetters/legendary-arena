@@ -81,6 +81,8 @@ import { resolveOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
 import { resolveVictoryPileCardPick } from '../moves/resolveVictoryPileCardPick.js';
 import { resolveReturnZeroCostDiscard } from '../moves/resolveReturnZeroCostDiscard.js';
 import { resolveDiscardToPlay } from '../moves/resolveDiscardToPlay.js';
+import { resolveOptionalPutBottomHQ } from '../moves/resolveOptionalPutBottomHQ.js';
+import { resolvePutAnyNumberBottomHQ } from '../moves/resolvePutAnyNumberBottomHQ.js';
 
 // ---------------------------------------------------------------------------
 // Exported constants.
@@ -428,6 +430,11 @@ const MOVE_MAP: Record<string, MoveFn> = {
   // why: D-24139 — same dispatch-completeness rule as the runner MOVE_MAP (pinned by the drift guard).
   resolveReturnZeroCostDiscard: (context, args) => resolveReturnZeroCostDiscard(context as never, args as never),
   resolveDiscardToPlay: (context, args) => resolveDiscardToPlay(context as never, args as never),
+  // why: WP-427 / D-24248 — same dispatch-completeness rule as the runner MOVE_MAP; the two
+  // put-bottom-HQ resolve moves getLegalMoves now short-circuits to must be dispatchable here
+  // too, or the per-turn loop hangs (pinned by the drift guard).
+  resolveOptionalPutBottomHQ: (context, args) => resolveOptionalPutBottomHQ(context as never, args as never),
+  resolvePutAnyNumberBottomHQ: (context, args) => resolvePutAnyNumberBottomHQ(context as never, args as never),
 };
 
 // why: WP-289 / D-24073 — exposed for the move-dispatch drift guard (every SIMULATION_MOVE_NAMES
