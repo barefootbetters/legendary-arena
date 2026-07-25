@@ -70,6 +70,33 @@ jobs:
       - name: Build site
         run: hugo --source apps/wiki-viewer --minify
 
+      # why: turn a silent sub-page drop into a red build. The sibling
+      # legendary-arena/legendary-arena-lab site 404'd every wiki sub-page in
+      # production when a Hugo version/config mismatch silently dropped a content
+      # mount, yet `hugo --minify` still exited 0 and CI stayed green. This ewiki
+      # has a clean 1:1 mapping — every projected apps/wiki-viewer/content/*.md
+      # renders to exactly one apps/wiki-viewer/public/**/index.html — so this
+      # step asserts build-time EQUALITY between the projected page count and the
+      # rendered page count. Equality (not a static `>= floor`) is deliberate: a
+      # floor goes vacuous when a silent drop is masked by an addition and drifts
+      # stale-low as the wiki grows, whereas equality fails the instant rendered
+      # < projected and needs no maintenance as pages are added.
+      - name: Assert wiki pages rendered
+        run: |
+          set -e
+          projected_page_count=$(find apps/wiki-viewer/content -name '*.md' | wc -l | tr -d ' ')
+          rendered_page_count=$(find apps/wiki-viewer/public -name 'index.html' | wc -l | tr -d ' ')
+          echo "Projected content pages: $projected_page_count; rendered HTML pages: $rendered_page_count."
+          if [ "$projected_page_count" -eq 0 ]; then
+            echo "Assert wiki pages rendered failed: found zero projected content pages under apps/wiki-viewer/content, so the projection step produced nothing to render — check the 'Project wiki content' step." >&2
+            exit 1
+          fi
+          if [ "$rendered_page_count" -ne "$projected_page_count" ]; then
+            echo "Assert wiki pages rendered failed: Hugo rendered $rendered_page_count pages but the projection produced $projected_page_count content pages, so a page silently failed to render (the failure that 404'd every sub-page on the sibling legendary-arena-lab site). Compare apps/wiki-viewer/content/*.md against apps/wiki-viewer/public/**/index.html to find the dropped page." >&2
+            exit 1
+          fi
+          echo "Assert wiki pages rendered passed: all $projected_page_count projected wiki pages rendered to HTML."
+
       - name: Determinism check (two consecutive builds byte-identical)
         run: |
           set -e
