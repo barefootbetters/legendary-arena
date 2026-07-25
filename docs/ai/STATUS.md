@@ -7,6 +7,37 @@
 
 ## Current State
 
+### WP-420 / EC-455 — Deploy-Aware Bot-Ally Revival (D-24240) (2026-07-24)
+
+**`User-Visible Surface = play.legendary-arena.com`.** The **recovery** follow-up WP-419 named.
+WP-419 *surfaces* a driverless bot-ally match (banner) and *faults* a cap-stranded one; this
+**recovers** a match that was healthy and being driven when a **clean deploy** destroyed its
+in-process driver (the observed `vMxtCoOZDFj` case — the match would play fine if the driver
+returned, but it burns all `MAX_REVIVALS` across restarts without completing a turn and then
+faults). The fix distinguishes "lost to a clean deploy" (recover) from "crashed/wedged" (don't
+loop):
+
+1. **Migration `037`** adds `legendary.match_bot_ally.shutdown_interrupted boolean NOT NULL DEFAULT
+   false` (additive/idempotent).
+2. **SIGTERM mark** (`index.mjs`): before the pool closes, `markInProgressBotAllyMatchesInterrupted(pool,
+   [...botAllyDrivers.keys()])` flags exactly the matches this process was actively driving.
+   Best-effort + guarded (a mark failure is logged and shutdown proceeds; it is a single small batch
+   write).
+3. **Deploy-aware revival** (`botAllyRoutes.mjs`): `readRevivableBotAllyMatches` gains `OR
+   shutdown_interrupted = true`, so a marked row is revived **regardless of the cap**;
+   `markBotAllyMatchRevived` **clears the flag** on revival (a one-boot exemption). D-24233 then
+   resets `revive_count` on the first completed turn (fully recovered); a deploy-recovery past the
+   cap is logged distinctly.
+
+An **ungraceful loss** (OOM / crash — no SIGTERM ⇒ the flag stays false) is never free-revived: it
+keeps WP-414's `MAX_REVIVALS` cap and WP-419's strand→faulted, so the 2026-07-23 OOM restart loop
+**cannot** return (its terminator is a crash with no clean shutdown — exactly the capped case). A
+partial-progress reset was **rejected** (it would reopen the loop). Server orchestration + an
+additive side-table column (D-24095 store-only); no engine/registry change; §21 N/A (no HTTP
+change). Bot-ally route suite 35/0 (+4); full server suite green (931/0 + DB-gated skips); `pnpm -r
+--no-bail test` green repo-wide; `pnpm -r build` 0. **D-24026 live-verify operator-pending on
+deploy** (a bot-ally match survives a mid-match deploy and keeps playing).
+
 ### WP-419 / EC-454 — Bot-Ally Status Liveness + Strand→Faulted (D-24239) (2026-07-24)
 
 **`User-Visible Surface = play.legendary-arena.com`.** Fixes a **silent bot-ally freeze**
