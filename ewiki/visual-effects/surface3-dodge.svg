@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 260" width="460" height="260" role="img" aria-label="Animated mock: the hand card flicks out to the right with a spin while a replacement card slides in from the deck into the slot, then repeats. Loops.">
+  <title>Surface-3 dodgeCard — flick out, replacement slides in</title>
+  <style>
+.swap { animation: swap 2.2s ease-in-out infinite; }
+@keyframes swap {
+  0.00% { opacity: 1; transform: translate(230px,150px) rotate(0deg); }
+  14.00% { opacity: 1; transform: translate(230px,150px) rotate(0deg); }
+  30.00% { opacity: 0; transform: translate(470px,110px) rotate(80deg); }
+  46.00% { opacity: 0; transform: translate(66px,150px) rotate(-8deg); }
+  50.00% { opacity: 1; transform: translate(66px,150px) rotate(-8deg); }
+  70.00% { opacity: 1; transform: translate(230px,150px) rotate(0deg); }
+  100.00% { opacity: 1; transform: translate(230px,150px) rotate(0deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .swap { animation: none; opacity: 1; transform: translate(230px,150px); }
+}
+  </style>
+  <defs><radialGradient id="bg" cx="50%" cy="46%" r="80%"><stop offset="0%" stop-color="#171320" stop-opacity="1"/><stop offset="100%" stop-color="#0b0910" stop-opacity="1"/></radialGradient><linearGradient id="hero" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a7fc9"/><stop offset="1" stop-color="#2b4d80"/></linearGradient><linearGradient id="vill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b34a4a"/><stop offset="1" stop-color="#7a2828"/></linearGradient><linearGradient id="gen" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#565b70"/><stop offset="1" stop-color="#343850"/></linearGradient></defs>
+  <rect width="460" height="260" fill="url(#bg)"/>
+  <rect x="201" y="109" width="58" height="82" rx="6" fill="#ffffff" fill-opacity="0.04" stroke="#3a3d4c" stroke-opacity="0.5" stroke-width="1.5" stroke-dasharray="4 4"/><rect x="37" y="109" width="58" height="82" rx="6" fill="url(#gen)" stroke="#1c1e28" stroke-width="1.5" opacity="0.5"/><rect x="40" y="106" width="58" height="82" rx="6" fill="url(#gen)" stroke="#1c1e28" stroke-width="1.5" opacity="0.5"/><g class="swap"><rect x="-29" y="-41" width="58" height="82" rx="6" fill="url(#gen)" stroke="#1c1e28" stroke-width="1.5"/><rect x="-22" y="-34" width="44" height="9" rx="3" fill="#ffffff" opacity="0.16"/><circle cx="0" cy="6" r="12" fill="#ffffff" opacity="0.10"/></g>
+</svg>
