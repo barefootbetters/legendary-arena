@@ -70,6 +70,55 @@ const SKIP_DIRECTORIES = new Set([
   'static',
 ]);
 
+// why: apps/wiki-viewer/public/ (the Hugo RENDER output) and apps/wiki-viewer/
+// resources/ (Hugo's asset cache) are GITIGNORED ewiki build artifacts — the
+// render-side twins of the content/ + static/ projection skipped above. A local
+// `pnpm wiki-viewer:build` leaves them on disk and their files would be counted
+// as source (measured 2026-07-25 while executing WP-423: HTML 15 -> 73, plus
+// stray .css/.png/.ico from the built site leaking into the counts and the SaaS
+// file lists). Unlike content/static they CANNOT be skipped by bare name,
+// because `public` also names real TRACKED source directories elsewhere — the
+// Vite apps' apps/*/public/ hold _headers, robots.txt, brand tokens, og images.
+// So they are skipped by exact repo-relative path suffix: only the ewiki build
+// output is excluded, and every tracked apps/*/public/ asset still counts.
+const SKIP_DIRECTORY_PATH_SUFFIXES = [
+  'apps/wiki-viewer/public',
+  'apps/wiki-viewer/resources',
+];
+
+/**
+ * Decide whether a directory must be excluded from the inventory scan. Skips
+ * vendored/generated trees by name (SKIP_DIRECTORIES) plus the ewiki's
+ * gitignored Hugo build output by exact path (SKIP_DIRECTORY_PATH_SUFFIXES), so
+ * a local wiki build can never inflate the counts in this governance artifact.
+ * @param {string} entryName — the directory's own name (e.g. 'node_modules')
+ * @param {string} directoryPath — the directory's full path as walked
+ * @returns {boolean} true when the directory must be skipped
+ */
+function isSkippedDirectory(entryName, directoryPath) {
+  if (SKIP_DIRECTORIES.has(entryName)) {
+    return true;
+  }
+  // why: normalize Windows backslashes so the POSIX-style suffix match works on
+  // both the local dev machine and the Linux CI/cron runner.
+  const normalizedPath = directoryPath.split('\\').join('/');
+  for (const skippedPathSuffix of SKIP_DIRECTORY_PATH_SUFFIXES) {
+    if (normalizedPath.endsWith(skippedPathSuffix)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// why: .hugo_build.lock is Hugo's transient build-state lock, created under
+// apps/wiki-viewer/ by `hugo`/`hugo server` and normally removed on a clean exit
+// but left behind on an interrupted build. It is gitignored build state, not
+// source — excluded from the extension counts so a local wiki build cannot add a
+// stray `.lock` row (observed 2026-07-25 while executing WP-423). It is the only
+// build artifact that sits as a FILE at the app root rather than inside the
+// public/ or resources/ directories skipped by isSkippedDirectory.
+const SKIP_FILE_NAMES = new Set(['.hugo_build.lock']);
+
 // ---------------------------------------------------------------------------
 // Language footprint — extension and marker-file inventory configuration.
 // Distinct from SOURCE_EXTENSIONS (which scopes the import scanner to
@@ -878,7 +927,7 @@ async function findPackageManifests(startDirectory) {
     }
     for (const entry of entries) {
       if (entry.isDirectory()) {
-        if (SKIP_DIRECTORIES.has(entry.name)) {
+        if (isSkippedDirectory(entry.name, join(current, entry.name))) {
           continue;
         }
         stack.push(join(current, entry.name));
@@ -1087,7 +1136,7 @@ async function collectSourceFiles(directory, accumulator) {
     }
     for (const entry of entries) {
       if (entry.isDirectory()) {
-        if (SKIP_DIRECTORIES.has(entry.name)) {
+        if (isSkippedDirectory(entry.name, join(current, entry.name))) {
           continue;
         }
         stack.push(join(current, entry.name));
@@ -1229,13 +1278,16 @@ async function collectAllFiles(directory, accumulator) {
     }
     for (const entry of entries) {
       if (entry.isDirectory()) {
-        if (SKIP_DIRECTORIES.has(entry.name)) {
+        if (isSkippedDirectory(entry.name, join(current, entry.name))) {
           continue;
         }
         stack.push(join(current, entry.name));
         continue;
       }
       if (entry.isFile()) {
+        if (SKIP_FILE_NAMES.has(entry.name)) {
+          continue;
+        }
         accumulator.push(join(current, entry.name));
       }
     }
@@ -1555,7 +1607,7 @@ async function collectTsconfigPaths(directory, accumulator) {
     }
     for (const entry of entries) {
       if (entry.isDirectory()) {
-        if (SKIP_DIRECTORIES.has(entry.name)) {
+        if (isSkippedDirectory(entry.name, join(current, entry.name))) {
           continue;
         }
         stack.push(join(current, entry.name));
@@ -1828,7 +1880,7 @@ async function collectEslintConfigPaths(directory, accumulator) {
     }
     for (const entry of entries) {
       if (entry.isDirectory()) {
-        if (SKIP_DIRECTORIES.has(entry.name)) {
+        if (isSkippedDirectory(entry.name, join(current, entry.name))) {
           continue;
         }
         stack.push(join(current, entry.name));
