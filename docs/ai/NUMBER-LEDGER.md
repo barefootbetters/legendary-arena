@@ -54,6 +54,7 @@ high-water: 422
 - WP-425 — apex-legendary-combo-tier (2026-07-25, spec/wp-425-apex-combo-tier)
 - WP-426 — bot-ally survive-db-blip (2026-07-25, fix/bot-ally-survive-db-blip)
 - WP-428 — diagnostic-transport-block (2026-07-25, spec/wp-428-transport-diagnostics)
+- WP-427 — bot-resolve-putbottomhq (2026-07-25, fix/bot-resolve-putbottomhq)
 
 ## EC
 
@@ -66,6 +67,7 @@ high-water: 457
 - EC-460 — apex-legendary-combo-tier (2026-07-25, spec/wp-425-apex-combo-tier)
 - EC-461 — bot-ally survive-db-blip (2026-07-25, fix/bot-ally-survive-db-blip)
 - EC-463 — diagnostic-transport-block (2026-07-25, spec/wp-428-transport-diagnostics)
+- EC-462 — bot-resolve-putbottomhq (2026-07-25, fix/bot-resolve-putbottomhq)
 
 ## D
 
@@ -78,3 +80,4 @@ high-water: 24241
 - D-24246 — apex-legendary-combo-tier (4th shared comboTierForCount boundary; 2026-07-25, spec/wp-425-apex-combo-tier)
 - D-24247 — bot-ally survive-db-blip (tolerate transient empty fetch; 2026-07-25, fix/bot-ally-survive-db-blip)
 - D-24249 — diagnostic-transport-block (transport block in the play-surface diagnostic report; 2026-07-25, spec/wp-428-transport-diagnostics)
+- D-24248 — bot-resolve-putbottomhq (getLegalMoves short-circuit for the 2 put-bottom-HQ choices; 2026-07-25, fix/bot-resolve-putbottomhq)

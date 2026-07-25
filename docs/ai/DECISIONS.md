@@ -32693,4 +32693,55 @@ Extends D-24228 (the shipped 3-tier combo cue); consumes WP-409's
 1095 / 0; the 5-file allowlist, no `packages/game-engine` file). Live-on-surface
 (D-24026) rides the `combo-legendary.mp3` clip being uploaded to R2.
 
+---
+
+### D-24248 — getLegalMoves short-circuits the two put-bottom-HQ pending choices so the bot can resolve them
+
+**Context.** A live diagnostic (co-op match `660LwoUY-Yq`, 2026-07-25) surfaced the
+WP-415 stall banner ("The bot ally could not finish its turn…") on a **stable server
++ healthy DB with no deploy churn** — ruling out every infra cause fixed earlier this
+session (DB provisioning, deploy-overlap D-24244, DB-blip D-24247). The bot genuinely
+could not complete its turn.
+
+**Root cause.** The engine has **eight** block-all pending-choice types (each with a
+`hasPending*` guard that freezes every other move until resolved). `getLegalMoves`
+(`simulation/ai.legalMoves.ts`) short-circuited to the resolve move for only **six** —
+it had **no case** for `hasPendingOptionalPutBottomHQ` (Ionic Energy optional / Absorb
+Ambient Power mandatory single-card put-bottom) or `hasPendingPutAnyNumberBottomHQ`
+(Wonder Man / Sunspot / Star-Lord multi-select). When one fired, `getLegalMoves` fell
+through to normal-move enumeration; the block-all guard rejected whatever the bot
+dispatched, the driver's fault fallback (`endTurn` → `advanceStage`) was equally
+blocked, and the turn **faulted**. This is the pending-choice-with-no-resolution-path
+hard-freeze class. The triggers are **non-core** heroes, so core-only matches never hit
+it (the recurring core-hero faults this session were the infra causes, now fixed).
+
+**Decision.** Add the two missing short-circuits, mirroring the existing six, each a
+length-1 list with a deterministic default: optional-put-bottom **declines**
+(`{ decline: true }`) unless `front.mandatory`, in which case it moves the **first
+present HQ card** (`selectFirstHqCard`, lowest slot index); put-any-number-bottom
+submits the empty **"put none"** selection (`{ cardIds: [] }`). The bot driver's
+`findPendingChoiceMove` (`autoplay/botLoopProgress.mjs`) is also synced from its
+drifted 2-name list to **all eight** resolve names (defense-in-depth; the policy
+fallback already dispatched the six that had a short-circuit).
+
+**Sim-dispatch completeness (required).** `getLegalMoves` is shared by the real
+bot-ally driver (dispatches via boardgame.io — every move present) AND the PAR/coverage
+sim, which dispatches through a curated `MOVE_MAP`. Returning a resolve the sim cannot
+dispatch **hangs the sim's per-turn loop** (WP-289 / D-24073: `maxTurns` bounds turns,
+not within-turn move-steps) — observed as `sim:runtime-observed:check` hanging when only
+the `getLegalMoves` short-circuit landed. So both put-bottom resolve moves are added to
+`SIMULATION_MOVE_NAMES` and to BOTH sim `MOVE_MAP`s (`simulation.runner.ts`,
+`par.aggregator.ts`), keeping the allowlist ↔ dispatch in sync (the drift guard).
+
+**Layer / boundary.** `getLegalMoves` is a **pure AI/simulation helper**, not the
+engine reducer — no `G` mutation, no move-validation-contract change, no replay /
+`finalStateHash` determinism surface (full engine suite 2069/0, no re-pin). §21 N/A.
+No PAR baseline impact (PAR unpublished; these choices absent from core-hero sim
+fixtures).
+
+**Packet:** WP-427 / EC-462 (Lightweight lane). **Drafted:** 2026-07-25; lands at
+execution. `User-Visible Surface = play.legendary-arena.com` — **D-24026 REQUIRED** (a
+bot ally playing a put-bottom-HQ hero completes its turn instead of faulting). Engine
+suite 2069/0 (+4); bot-loop 17/0 (+1); `pnpm -r build` 0.
+
 Protect this file.

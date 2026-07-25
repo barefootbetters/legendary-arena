@@ -32,6 +32,8 @@ import {
   hasPendingDiscardToPlay,
   getEligibleDiscardToPlayCards,
 } from '../moves/resolveDiscardToPlay.js';
+import { hasPendingOptionalPutBottomHQ } from '../moves/resolveOptionalPutBottomHQ.js';
+import { hasPendingPutAnyNumberBottomHQ } from '../moves/resolvePutAnyNumberBottomHQ.js';
 
 // why: simulation covers the play-phase only; lobby moves (setPlayerReady,
 // startMatchIfReady) are excluded because runSimulation starts the per-game
@@ -56,6 +58,12 @@ export const SIMULATION_MOVE_NAMES = [
   'resolveDrawOrEmpowered',
   'resolveReturnZeroCostDiscard',
   'resolveDiscardToPlay',
+  // why: WP-427 / D-24248 — getLegalMoves now short-circuits to these two put-bottom-HQ
+  // resolve moves when their block-all choice is parked; they MUST be dispatchable in the
+  // sim (both MOVE_MAPs) or the per-turn loop hangs (maxTurns bounds turns, not
+  // within-turn move-steps — the exact hang WP-289 / D-24073 documents).
+  'resolveOptionalPutBottomHQ',
+  'resolvePutAnyNumberBottomHQ',
 ] as const;
 
 // why: type is exported implicitly via the const array above; external
@@ -78,6 +86,23 @@ export interface SimulationLifecycleContext {
   readonly turn: number;
   readonly currentPlayer: string;
   readonly numPlayers: number;
+}
+
+/**
+ * Returns the first present (non-null) HQ card id, or null when every HQ slot is
+ * empty. Deterministic (lowest slot index) so the bot's mandatory put-bottom-HQ
+ * pick (WP-427) is stable across replays.
+ *
+ * @param hq - The HQ slots; a null slot is an empty HQ position.
+ * @returns The first non-null card id, or null when the HQ holds no card.
+ */
+function selectFirstHqCard(hq: ReadonlyArray<CardExtId | null>): CardExtId | null {
+  for (const slot of hq) {
+    if (slot !== null && slot !== undefined) {
+      return slot;
+    }
+  }
+  return null;
 }
 
 /**
@@ -222,6 +247,41 @@ export function getLegalMoves(
     // why: defensive — if no target exists (engine-invariant violation), fail
     // closed with an empty list rather than emit an unresolvable move.
     return legalMoves;
+  }
+
+  // why: WP-427 / D-24248 — pending optional-put-bottom-HQ short-circuit. While a
+  // single-card put-bottom-HQ choice (Ionic Energy's optional "You may put a card…"
+  // or Absorb Ambient Power's mandatory "Put a card…") is pending, the engine
+  // block-all guard freezes every OTHER move — but this file previously had NO
+  // short-circuit for it, so getLegalMoves fell through to normal moves that the
+  // guard then rejects. The bot could never resolve the choice: it dispatched a
+  // rejected move, the fault fallback (endTurn / advanceStage) was equally blocked,
+  // and its turn FAULTED ("The bot ally could not finish its turn"). Deterministic
+  // default: the OPTIONAL form declines (neutral — no reward forgone); the MANDATORY
+  // form (front.mandatory) cannot decline, so it moves the FIRST present HQ card
+  // (lowest slot index — always valid, always unblocking). Returns EXACTLY 1 move.
+  if (hasPendingOptionalPutBottomHQ(gameState)) {
+    const front = gameState.pendingOptionalPutBottomHQ![0]!;
+    if (front.mandatory === true) {
+      const firstHqCardId = selectFirstHqCard(gameState.hq);
+      if (firstHqCardId !== null) {
+        return [{ name: 'resolveOptionalPutBottomHQ', args: { cardId: firstHqCardId } }];
+      }
+      // why: defensive — a mandatory choice over an empty HQ is an engine-invariant
+      // violation; fail closed rather than emit an unresolvable move.
+      return legalMoves;
+    }
+    return [{ name: 'resolveOptionalPutBottomHQ', args: { decline: true } }];
+  }
+
+  // why: WP-427 / D-24248 — pending put-any-number-bottom-HQ short-circuit (the
+  // multi-select sibling: Wonder Man / Sunspot / Star-Lord). Same block-all freeze
+  // and same missing-short-circuit fault as above. Deterministic bot default: the
+  // empty "put none" selection — always valid, unblocking, and any trailing
+  // Empowered grant on the pending entry still applies on resolve. Returns EXACTLY 1
+  // move.
+  if (hasPendingPutAnyNumberBottomHQ(gameState)) {
+    return [{ name: 'resolvePutAnyNumberBottomHQ', args: { cardIds: [] } }];
   }
 
   const stage = gameState.currentStage;

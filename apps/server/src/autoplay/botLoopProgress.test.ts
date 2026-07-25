@@ -33,6 +33,31 @@ test('findPendingChoiceMove returns the resolveOptionalKoReward short-circuit', 
   assert.deepEqual(found, { name: 'resolveOptionalKoReward', args: { zone: 'hand', index: 2 } });
 });
 
+test('findPendingChoiceMove drains every block-all resolve short-circuit (WP-427)', () => {
+  // why: the list had drifted to 2 of the engine's 8 block-all resolve moves; each
+  // must be recognized so the bot drains the parked choice via the fast-path (the
+  // put-bottom-HQ pair, which had NO getLegalMoves short-circuit at all, faulted the
+  // bot before WP-427).
+  const allResolveMoves = [
+    'resolveKoHeroChoice',
+    'resolveOptionalKoReward',
+    'resolveVictoryPileCardPick',
+    'resolveDrawOrEmpowered',
+    'resolveReturnZeroCostDiscard',
+    'resolveDiscardToPlay',
+    'resolveOptionalPutBottomHQ',
+    'resolvePutAnyNumberBottomHQ',
+  ];
+  for (const name of allResolveMoves) {
+    const parked = [{ name, args: { any: 'default' } }];
+    assert.deepEqual(
+      findPendingChoiceMove(parked),
+      { name, args: { any: 'default' } },
+      `${name} is recognized as a parked-choice short-circuit`,
+    );
+  }
+});
+
 test('findPendingChoiceMove returns null when no parked choice is present', () => {
   const normalMain = [
     { name: 'playCard', args: { cardId: 'core-shield-agent' } },
