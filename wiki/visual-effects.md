@@ -471,6 +471,31 @@ authoritative result.
 | `dodgeCard` | T3 | Dodge — discard to draw a replacement | A fast card **flick** out and a replacement slide in |
 | `endTurn` | T3 | The player ends their turn | A soft **sweep** clearing the played row |
 
+**Animated mocks of the action moves.** Local tactile cues for four moves —
+same CSS-only, looping, `prefers-reduced-motion`-aware treatment as the other
+galleries, but drawn with **abstract card shapes** since the cue is the *motion*
+(pull, deal, slash, flick), not the art. Proposal-level. (`playCard` and
+`endTurn` aren't mocked here.)
+
+![Animated mock of recruitHero: a hero card in an HQ slot glows gold, then is pulled down into the hand, and the cycle repeats. Loops.](/visual-effects/surface3-recruit.svg "width=44%")
+
+*`recruitHero` (T2) — an HQ-slot **glow** that pulls the card down into the hand.*
+
+![Animated mock of drawCards: cards deal one after another off a deck and fan out into a hand at the bottom, then reset. Loops.](/visual-effects/surface3-draw.svg "width=44%")
+
+*`drawCards` (T2) — a quick **deal / fan** off the deck into the hand.*
+
+![Animated mock of fightVillain: a bright slash streak sweeps in from the upper-left and lands on a villain card with an impact burst and recoil, then resets. Loops.](/visual-effects/surface3-fight.svg "width=44%")
+
+*`fightVillain` (T2) — a directional **slash / impact streak** into the target, with a recoil.*
+
+![Animated mock of dodgeCard: the hand card flicks out to the right with a spin while a replacement card slides in from the deck into the slot, then repeats. Loops.](/visual-effects/surface3-dodge.svg "width=44%")
+
+*`dodgeCard` (T3) — a fast card **flick** out and a replacement **slide** in.*
+
+*Card-less CSS-only animated SVGs (abstract card shapes); source:
+[surface3-moves.py](../ewiki/visual-effects/surface3-moves.py).*
+
 > **Recruit has no result event.** `recruitHero` emits no notable event;
 > the only signals are the local move dispatch and the resulting
 > `UIState.hq` slot / `discardCount` deltas. The move-dispatch hook is the
