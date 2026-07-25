@@ -29,6 +29,12 @@ import {
   getLegendsPublisherIntervalMs,
   startLegendsPublisher,
 } from './legends/legends.scheduler.js';
+// why: WP-420 / D-24240 — on a graceful shutdown (Render's redeploy SIGTERM) mark
+// the bot-ally matches this process was actively driving so boot revival can
+// re-attach them past the MAX_REVIVALS cap. `botAllyDrivers` is the in-process
+// live-driver registry; its keys ARE exactly those matches.
+import { botAllyDrivers } from './bot-ally/botAllyDriver.mjs';
+import { markInProgressBotAllyMatchesInterrupted } from './bot-ally/botAllyRoutes.mjs';
 
 /**
  * Initialises the server and registers the shutdown handler.
@@ -143,8 +149,24 @@ async function main() {
   // already past the Cache-Control set() but not yet returned would
   // surface a `pg` "Cannot use a pool after calling end" error to the
   // client, defeating the graceful-shutdown contract).
-  process.on('SIGTERM', () => {
+  process.on('SIGTERM', async () => {
     console.log('[server] SIGTERM received -- shutting down gracefully.');
+    // why: WP-420 / D-24240 — BEFORE the pool closes, flag the bot-ally matches
+    // this process is actively driving as cleanly interrupted, so boot revival
+    // re-attaches them past the cap (a healthy match must not be lost to a routine
+    // deploy). Best-effort: awaited (the pool is still open) but fully guarded — a
+    // mark failure is logged and shutdown proceeds; it is a single small batch
+    // write, so it cannot materially delay the grace window. An OOM / crash sends
+    // no SIGTERM, so this never runs for the ungraceful case (the OOM-loop guard).
+    try {
+      await markInProgressBotAllyMatchesInterrupted(pool, [...botAllyDrivers.keys()]);
+    } catch (markError) {
+      const markMessage = markError instanceof Error ? markError.message : String(markError);
+      console.error(
+        `[server] Could not mark in-progress bot-ally matches interrupted during SIGTERM. ` +
+        `Error: ${markMessage}. Continuing shutdown; those matches fall back to the capped revival path.`
+      );
+    }
     if (legendsPublisherHandle !== undefined) {
       legendsPublisherHandle.stop();
     }

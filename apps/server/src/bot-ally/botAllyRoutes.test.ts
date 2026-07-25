@@ -28,6 +28,7 @@ import {
   readBotSeatCredentials,
   readRevivableBotAllyMatches,
   rehydrateBotAllyDrivers,
+  markInProgressBotAllyMatchesInterrupted,
   MAX_REVIVALS,
 } from './botAllyRoutes.mjs';
 import { botAllyDrivers, BOT_FAULTED_MESSAGE } from './botAllyDriver.mjs';
@@ -525,27 +526,65 @@ describe('GET /api/match/:matchId/bot-ally-status', () => {
 });
 
 describe('readRevivableBotAllyMatches', () => {
-  test('selects under-cap active/faulted/exhausted bounded by MAX_REVIVALS, and maps status + reviveCount', async () => {
+  test('selects under-cap active/faulted/exhausted OR a deploy-interrupted row, mapping the flag', async () => {
     const rows = [
-      { match_id: 'a', bot_seats: ['1'], decision_seed: 'a', policy: 'competent', status: 'active', revive_count: 0 },
-      { match_id: 'f', bot_seats: ['1'], decision_seed: 'f', policy: 'random', status: 'faulted', revive_count: 2 },
+      { match_id: 'a', bot_seats: ['1'], decision_seed: 'a', policy: 'competent', status: 'active', revive_count: 0, shutdown_interrupted: false },
+      { match_id: 'f', bot_seats: ['1'], decision_seed: 'f', policy: 'random', status: 'faulted', revive_count: 2, shutdown_interrupted: false },
     ];
     const { database, queries } = makeProgrammableDatabase(() => rows);
 
     const result = await readRevivableBotAllyMatches(database);
 
     assert.equal(queries.length, 1);
-    assert.match(queries[0]!.sql, /revive_count < \$1/, 'the query is bounded by the revival cap');
+    assert.match(queries[0]!.sql, /revive_count < \$1/, 'the query is still bounded by the revival cap');
     assert.match(
       queries[0]!.sql,
       /status IN \('active', 'faulted', 'exhausted'\)/,
       'the cap covers active too (2026-07-23 hotfix) so a stuck active match cannot resurrect forever',
     );
+    assert.match(
+      queries[0]!.sql,
+      /OR shutdown_interrupted = true/,
+      'WP-420: a deploy-interrupted row is revivable regardless of the cap',
+    );
     assert.deepEqual(queries[0]!.params, [MAX_REVIVALS], 'the cap value is passed as the bound');
     assert.deepEqual(result, [
-      { matchId: 'a', botSeats: ['1'], decisionSeed: 'a', policy: 'competent', status: 'active', reviveCount: 0 },
-      { matchId: 'f', botSeats: ['1'], decisionSeed: 'f', policy: 'random', status: 'faulted', reviveCount: 2 },
+      { matchId: 'a', botSeats: ['1'], decisionSeed: 'a', policy: 'competent', status: 'active', reviveCount: 0, shutdownInterrupted: false },
+      { matchId: 'f', botSeats: ['1'], decisionSeed: 'f', policy: 'random', status: 'faulted', reviveCount: 2, shutdownInterrupted: false },
     ]);
+  });
+
+  test('maps shutdownInterrupted true for a deploy-marked row (recoverable past the cap)', async () => {
+    const rows = [
+      { match_id: 'd', bot_seats: ['1'], decision_seed: 'd', policy: 'competent', status: 'active', revive_count: 3, shutdown_interrupted: true },
+    ];
+    const { database } = makeProgrammableDatabase(() => rows);
+
+    const result = await readRevivableBotAllyMatches(database);
+
+    assert.equal(result[0]!.shutdownInterrupted, true, 'a deploy-marked row surfaces the flag so rehydrate can recover it');
+    assert.equal(result[0]!.reviveCount, 3, 'it is at the cap yet still returned (the OR clause)');
+  });
+});
+
+describe('markInProgressBotAllyMatchesInterrupted (WP-420 / D-24240)', () => {
+  test('flags every given match id as shutdown_interrupted in one batch update', async () => {
+    const { database, queries } = makeProgrammableDatabase(() => []);
+
+    await markInProgressBotAllyMatchesInterrupted(database, ['m1', 'm2']);
+
+    assert.equal(queries.length, 1, 'a single batch write');
+    assert.match(queries[0]!.sql, /SET shutdown_interrupted = true/, 'sets the flag');
+    assert.match(queries[0]!.sql, /match_id = ANY\(\$1\)/, 'matches the given ids by array');
+    assert.deepEqual(queries[0]!.params, [['m1', 'm2']], 'the ids are passed as an array');
+  });
+
+  test('an empty id list is a no-op (no query)', async () => {
+    const { database, queries } = makeProgrammableDatabase(() => []);
+
+    await markInProgressBotAllyMatchesInterrupted(database, []);
+
+    assert.equal(queries.length, 0, 'no matches driven ⇒ nothing written');
   });
 });
 
@@ -631,6 +670,38 @@ describe('rehydrateBotAllyDrivers — bounded restart revival', () => {
     assert.equal(botAllyDrivers.has('no-creds'), false, 'no driver is registered when credentials are missing');
     const incrementWrite = queries.find((query) => query.sql.includes('revive_count = revive_count + 1'));
     assert.equal(incrementWrite, undefined, 'a skipped match does not consume a revival');
+  });
+
+  test('WP-420: revives a deploy-interrupted match PAST the cap and clears the flag', async () => {
+    // why: a healthy match a clean deploy interrupted is at/over the cap yet
+    // deploy-marked, so readRevivableBotAllyMatches returns it (the OR clause) and
+    // rehydrate re-attaches it instead of stranding it.
+    const { database, queries } = makeProgrammableDatabase(
+      revivableSelect([
+        { match_id: 'deploy-lost', bot_seats: ['1'], decision_seed: 's', policy: 'competent', status: 'active', revive_count: 3, shutdown_interrupted: true },
+      ]),
+    );
+    const liveState = { _stateID: 7, ctx: { currentPlayer: '1', phase: 'play', turn: 1, numPlayers: 2 } };
+    const metadata = { players: { '0': {}, '1': { credentials: 'cred-1' } } };
+    const context = { db: makeRevivalBgioDb(liveState, metadata), database, createSubmit: () => async () => {} };
+
+    await rehydrateBotAllyDrivers(context as never);
+
+    assert.equal(botAllyDrivers.has('deploy-lost'), true, 'a deploy-interrupted match is revived past the cap');
+    const reviveWrite = queries.find((query) => query.sql.includes('revive_count = revive_count + 1'));
+    assert.ok(reviveWrite, 'the revival wrote the increment');
+    assert.match(
+      reviveWrite!.sql,
+      /shutdown_interrupted = false/,
+      'the deploy flag is cleared on revival (one-boot exemption)',
+    );
+    const faultWrite = queries.find(
+      (query) =>
+        query.sql.includes('SET status = $2') &&
+        (query.params as unknown[])[0] === 'deploy-lost' &&
+        (query.params as unknown[])[1] === 'faulted',
+    );
+    assert.equal(faultWrite, undefined, 'a revived deploy-interrupted match is never faulted by the strand pass');
   });
 });
 
