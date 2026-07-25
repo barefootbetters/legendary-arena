@@ -42,6 +42,21 @@ export interface DiagnosticEntry {
 }
 
 /**
+ * The client's live transport state at export click — read from the WP-311
+ * `connection` store (boardgame.io framework/transport state, never `G`, never
+ * persisted). The four store fields plus a derived `timeSinceLastFrameMs` (the
+ * capture clock minus `lastFrameAtMs`) — the decisive signal for the
+ * "waiting-forever-for-a-server-frame" freeze class.
+ */
+export interface TransportDiagnostics {
+  isConnected: boolean;
+  lastStateId: number | null;
+  hasEverConnected: boolean;
+  lastFrameAtMs: number | null;
+  timeSinceLastFrameMs: number | null;
+}
+
+/**
  * The impure context an exporter collects from live browser globals and passes
  * into {@link buildDiagnosticReport}. `locationHref` MUST already be redacted
  * by the caller before it reaches the builder.
@@ -78,6 +93,10 @@ export interface DiagnosticContext {
   // (the Web-Shooters rescue bug class) is one read instead of a code hunt.
   // Opaque here for the same reason as uiStateSnapshot: serialized, never inspected.
   matchSetup: unknown;
+  // why: the client's live transport state at click, assembled by the caller via
+  // buildTransportDiagnostics from the connection store + the capture clock. A
+  // typed block (unlike the opaque payloads above) so the builder/tests read it.
+  transport: TransportDiagnostics;
 }
 
 /**
@@ -110,6 +129,13 @@ export interface DiagnosticReport {
    * persisted. Carried through opaque — see {@link DiagnosticContext.matchSetup}.
    */
   matchSetup: unknown;
+  /**
+   * The client's live transport state at export click (WP-428 / D-24249):
+   * connection status, last `_stateID`, and frame-staleness. Carried through
+   * from {@link DiagnosticContext.transport} unmodified — see
+   * {@link buildTransportDiagnostics} for how the caller assembles it.
+   */
+  transport: TransportDiagnostics;
   /**
    * Derived card-effect provenance (WP-314 / D-24100): what the turn is blocked on
    * (`awaitingPlayerInput`) and the recently-played cards with an inferred `outcome`,
@@ -469,6 +495,36 @@ export function redactCredentialsFromUrl(href: string): string {
  * @param context The browser context collected by the caller.
  * @returns The assembled report.
  */
+/**
+ * Assembles the typed transport-diagnostics block from the `connection` store's
+ * fields and the single click-time capture clock. Pure and clock-free: the
+ * caller passes `capturedAtMs` (the impure exporter already read it), so this
+ * — like {@link buildDiagnosticReport} — reads no ambient `Date`/`window`.
+ *
+ * @param state       The connection-store fields (structural, no store import).
+ * @param capturedAtMs The single click-time `Date.now()` read.
+ * @returns The transport block, with `timeSinceLastFrameMs` derived (or `null`).
+ */
+export function buildTransportDiagnostics(
+  state: {
+    isConnected: boolean;
+    lastStateId: number | null;
+    hasEverConnected: boolean;
+    lastFrameAtMs: number | null;
+  },
+  capturedAtMs: number,
+): TransportDiagnostics {
+  const timeSinceLastFrameMs =
+    state.lastFrameAtMs === null ? null : capturedAtMs - state.lastFrameAtMs;
+  return {
+    isConnected: state.isConnected,
+    lastStateId: state.lastStateId,
+    hasEverConnected: state.hasEverConnected,
+    lastFrameAtMs: state.lastFrameAtMs,
+    timeSinceLastFrameMs,
+  };
+}
+
 export function buildDiagnosticReport(
   entries: DiagnosticEntry[],
   context: DiagnosticContext,
@@ -489,6 +545,10 @@ export function buildDiagnosticReport(
     truncated: context.entryDroppedCount > 0,
     uiStateSnapshot: context.uiStateSnapshot,
     matchSetup: context.matchSetup,
+    // why: pass the caller-assembled transport block straight through (like
+    // uiStateSnapshot / matchSetup) so the builder stays pure — the one clock
+    // subtraction already happened in buildTransportDiagnostics at collect time.
+    transport: context.transport,
     // why: derive provenance from the snapshot the caller already collected — no new
     // context field, so the impure exporter (DiagnosticExportButton) is unchanged. No
     // resolver is passed: the arena-client has no client-side card-text source, so

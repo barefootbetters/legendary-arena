@@ -13,12 +13,14 @@ import {
   resetDiagnosticCaptureForTesting,
   redactCredentialsFromUrl,
   buildDiagnosticReport,
+  buildTransportDiagnostics,
   serializeDiagnosticReport,
   buildDiagnosticFileName,
   type DiagnosticContext,
   type DiagnosticEntry,
 } from './diagnostics';
 import DiagnosticExportButton from '../components/DiagnosticExportButton.vue';
+import { useConnectionStore } from '../stores/connection';
 
 /**
  * Builds a fully-populated context with overridable fields for the pure-builder
@@ -47,6 +49,16 @@ function sampleContext(
     // persisted) so existing builder cases stay unchanged, and the matchSetup
     // case overrides it explicitly.
     matchSetup: null,
+    // why: DiagnosticContext now requires a transport block; defaults to the
+    // disconnected/no-frame shape so existing builder cases stay unchanged, and
+    // transport-specific cases override it explicitly.
+    transport: {
+      isConnected: false,
+      lastStateId: null,
+      hasEverConnected: false,
+      lastFrameAtMs: null,
+      timeSinceLastFrameMs: null,
+    },
     ...overrides,
   };
 }
@@ -292,6 +304,45 @@ describe('diagnostics — pure redaction + report builders', () => {
   });
 });
 
+describe('diagnostics — transport block (WP-428)', () => {
+  test('should_derive_timeSinceLastFrameMs_from_capture_clock_minus_lastFrameAtMs', () => {
+    const transport = buildTransportDiagnostics(
+      { isConnected: true, lastStateId: 42, hasEverConnected: true, lastFrameAtMs: 1000 },
+      1350,
+    );
+    assert.equal(transport.isConnected, true);
+    assert.equal(transport.lastStateId, 42);
+    assert.equal(transport.hasEverConnected, true);
+    assert.equal(transport.lastFrameAtMs, 1000);
+    assert.equal(transport.timeSinceLastFrameMs, 350);
+  });
+
+  test('should_derive_null_timeSinceLastFrameMs_when_no_frame_stamp_yet', () => {
+    const transport = buildTransportDiagnostics(
+      { isConnected: false, lastStateId: null, hasEverConnected: false, lastFrameAtMs: null },
+      9999,
+    );
+    assert.equal(transport.lastFrameAtMs, null);
+    assert.equal(transport.timeSinceLastFrameMs, null);
+  });
+
+  test('should_carry_transport_block_through_builder_and_round_trip', () => {
+    const transport = {
+      isConnected: true,
+      lastStateId: 7,
+      hasEverConnected: true,
+      lastFrameAtMs: 2000,
+      timeSinceLastFrameMs: 120,
+    };
+    const report = buildDiagnosticReport([], sampleContext({ transport }));
+    // Straight pass-through — the builder derives nothing here (the one
+    // subtraction already happened in buildTransportDiagnostics at collect time).
+    assert.deepEqual(report.transport, transport);
+    const roundTripped = JSON.parse(serializeDiagnosticReport(report));
+    assert.deepEqual(roundTripped.transport, transport);
+  });
+});
+
 describe('diagnostics — console + window capture', () => {
   afterEach(() => {
     resetDiagnosticCaptureForTesting();
@@ -480,6 +531,9 @@ describe('DiagnosticExportButton — render + export', () => {
       '',
       `/play?match=room-42&player=1&credentials=${secret}`,
     );
+    // why: seed the connection store so the exported transport block reflects a
+    // real live state (the beforeEach Pinia starts it at the defaults).
+    useConnectionStore().setConnected(true, 99, 1_700_000_000_000);
 
     try {
       const wrapper = mount(DiagnosticExportButton);
@@ -497,6 +551,12 @@ describe('DiagnosticExportButton — render + export', () => {
       const parsed = JSON.parse(copiedPayload);
       assert.equal(parsed.matchId, 'room-42');
       assert.equal(parsed.playerId, '1');
+      // the exported report carries the live transport block from the store
+      assert.equal(parsed.transport.isConnected, true);
+      assert.equal(parsed.transport.lastStateId, 99);
+      assert.equal(parsed.transport.hasEverConnected, true);
+      assert.equal(parsed.transport.lastFrameAtMs, 1_700_000_000_000);
+      assert.equal(typeof parsed.transport.timeSinceLastFrameMs, 'number');
     } finally {
       URL.createObjectURL = originalCreateObjectUrl;
       URL.revokeObjectURL = originalRevokeObjectUrl;

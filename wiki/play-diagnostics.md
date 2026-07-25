@@ -76,16 +76,20 @@ state; the impure caller passes everything in. The report carries build
 identity (`appVersion`, `gitSha`, `buildTimestamp`, `capturedAtIso`),
 the redacted `locationHref`, `matchId` / `playerId`, viewport size and
 `userAgent`, the derived `entryCount` / `entryDroppedCount` /
-`truncated`, three opaque payloads (`uiStateSnapshot`, `matchSetup`,
-`effectProvenance`), and finally the captured `entries` array.
+`truncated`, two opaque payloads (`uiStateSnapshot`, `matchSetup`), the
+typed `transport` block and the derived `effectProvenance`, and finally
+the captured `entries` array.
 
-The three payloads are carried **opaque** — typed `unknown` — so the
-diagnostics module inspects none of them and imports nothing from the
-engine, registry, pre-planning, server, or multiplayer surfaces (the
-EC-260 boundary grep enforces this). `uiStateSnapshot` is the player's
-own audience-filtered view read from the client store; `matchSetup` is
-the input composition read back from session storage; both are
-serialized, never interpreted.
+`uiStateSnapshot` and `matchSetup` are carried **opaque** — typed
+`unknown` — so the diagnostics module inspects neither and imports
+nothing from the engine, registry, pre-planning, server, or multiplayer
+surfaces (the EC-260 boundary grep enforces this). `uiStateSnapshot` is
+the player's own audience-filtered view read from the client store;
+`matchSetup` is the input composition read back from session storage;
+both are serialized, never interpreted. The `transport` block (WP-428)
+is **typed** — assembled by the caller from the WP-311 `connection`
+store, a Pinia read that keeps the boundary — and `effectProvenance` is
+derived structurally from the snapshot (see below).
 
 ### Effect provenance
 
@@ -168,13 +172,17 @@ or the stored entry is corrupt.
   provenance block reads the projected turn/stage/pending fields to
   classify what the stage is blocked on. The diagnostic is client
   tooling *about* a turn, not part of the turn state machine itself.
-- **Transport layer (`bgioClient` / connection store).** The live
-  client already tracks transport health — `isConnected`, the last
-  `_stateID`, reconnect/resync activity — in
+- **Transport layer (`connection` store / `bgioClient`).** The report
+  carries a typed **`transport` block** (WP-428): `isConnected`,
+  `lastStateId`, `hasEverConnected` (read from the WP-311 `connection`
+  store), a per-frame `lastFrameAtMs` stamp, and a derived
+  `timeSinceLastFrameMs` (the capture clock minus `lastFrameAtMs`) — the
+  staleness signal that separates "my browser is wedged" from "the server
+  advanced past my view." The store records `lastFrameAtMs` on every
+  subscribe frame via a defaulted parameter, so
   [`client/bgioClient.ts`](../apps/arena-client/src/client/bgioClient.ts)
-  and the connection store. These are **not** carried in the report
-  today (see Edge Cases); the report is a game-state + console artifact,
-  not yet a transport artifact.
+  is untouched. The `bgioClient` reconnect/resync/watchdog **counters**
+  are not yet surfaced — a deferred follow-up (see Edge Cases).
 - **[Operational Health Checks](operational-health-checks.md).** The
   sibling operator tool. Those probes answer "is the production
   perimeter reachable" from the server side; Play Diagnostics answers
@@ -184,8 +192,10 @@ or the stored entry is corrupt.
 - **Engine boundary.** Every file in this tool is pure browser code —
   zero import from `packages/game-engine`, `packages/registry`,
   `packages/preplan`, `apps/server`, or `boardgame.io`. The opaque
-  `unknown` typing of the three payloads is what keeps that boundary
-  clean while still carrying engine-shaped data through.
+  `unknown` typing of `uiStateSnapshot` / `matchSetup` keeps that
+  boundary clean while still carrying engine-shaped data through; the
+  typed `transport` block stays clean a different way — it reads the
+  arena-client `connection` Pinia store, not any engine surface.
 
 ## Edge Cases
 
@@ -204,13 +214,16 @@ or the stored entry is corrupt.
   client's console or transport. Read `playerId` against
   `uiStateSnapshot.game.activePlayerId` to know which seat's view you
   are holding.
-- **No transport / performance data is captured today.** The report has
-  no connection status, no last-`_stateID`, no time-since-last-frame,
-  and no main-thread / memory signals. For a "waiting forever for a
-  server reply" freeze — the most common live class — those are the
-  decisive signals and they are currently absent. The raw data exists
-  in the client (connection store, `bgioClient` locals); wiring it into
-  the report is scoped follow-up work.
+- **Transport data is captured; reconnect counters and performance data
+  are not.** As of WP-428 the report carries the `transport` block —
+  connection status, last `_stateID`, and `timeSinceLastFrameMs` (the
+  "waiting forever for a server reply" staleness signal). Still absent:
+  the `bgioClient` reconnect/resync/watchdog **counters** (they live as
+  locals in the transport wrapper — a separate follow-up), and any
+  **performance / memory** signals (long tasks, heap, frame drops — a
+  separate perf-recorder follow-up). A blocked main thread also can't be
+  captured by a click handler that never runs; a continuous recorder is
+  the future shape.
 - **`matchSetup` is `null` for joiners.** Only the client that *created*
   the match persisted the input composition, so a report from a joined
   player carries `matchSetup: null`. Pull the setup from the creator's
@@ -245,8 +258,9 @@ or the stored entry is corrupt.
 - [`apps/arena-client/src/components/DiagnosticExportButton.vue`](../apps/arena-client/src/components/DiagnosticExportButton.vue) —
   the impure exporter: context collection, download, clipboard copy.
 - [`apps/arena-client/src/client/bgioClient.ts`](../apps/arena-client/src/client/bgioClient.ts) —
-  the transport wrapper that holds the (not-yet-exported) connection and
-  `_stateID` signals.
+  the transport wrapper whose every-frame `setConnected` call feeds the
+  `connection` store the `transport` block reads; it also holds the
+  reconnect/resync/watchdog counters that are not yet exported.
 
 ## History
 
@@ -262,6 +276,11 @@ or the stored entry is corrupt.
 - **WP-417 / D-24237** — enriched the projected play log with a
   printed-icon clause; the same change required hardening the
   provenance `extId` extractor against the new parenthesized groups.
+- **WP-428 / D-24249** — added the typed `transport` block (connection
+  status, last `_stateID`, and `timeSinceLastFrameMs` staleness), sourced
+  from the WP-311 `connection` store; the store's new per-frame
+  `lastFrameAtMs` stamp rides a defaulted `setConnected` parameter, so the
+  transport wrapper stayed untouched.
 
 ## References
 

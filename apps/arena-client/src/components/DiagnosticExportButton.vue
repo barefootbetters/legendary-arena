@@ -6,12 +6,14 @@ import {
   getDroppedEntryCount,
   redactCredentialsFromUrl,
   buildDiagnosticReport,
+  buildTransportDiagnostics,
   serializeDiagnosticReport,
   buildDiagnosticFileName,
   type DiagnosticContext,
 } from '../diagnostics/diagnostics';
 import { readMatchSetup } from '../diagnostics/matchSetupSession';
 import { useUiStateStore } from '../stores/uiState';
+import { useConnectionStore } from '../stores/connection';
 
 /**
  * Small, unobtrusive fixed-position "Download diagnostics" button mounted on
@@ -66,6 +68,10 @@ export default defineComponent({
         // the same matchId; pairs the input pile counts with the snapshot's live
         // counts. null when this client did not create the match.
         matchSetup: readMatchSetup(matchId),
+        // why: the client's live transport state, read from the WP-311 connection
+        // store; timeSinceLastFrameMs derives from the same click-time clock so
+        // the pure builder stays clock-free.
+        transport: buildTransportDiagnostics(useConnectionStore(), capturedAtMs),
       };
     }
 

@@ -7,6 +7,33 @@
 
 ## Current State
 
+### WP-428 / EC-463 — Transport Diagnostics Block in the Play-Surface Diagnostic Export (D-24249) (2026-07-25)
+
+**`User-Visible Surface = none — internal operator tooling`.** The WP-228
+play-surface diagnostic report now carries a typed **`transport` block** so a
+downloaded freeze report names the client's live connection state instead of
+leaving the transport layer opaque: `isConnected` / `lastStateId` /
+`hasEverConnected` (read verbatim from the WP-311 `connection` store), a new
+per-frame `lastFrameAtMs` stamp, and a derived `timeSinceLastFrameMs` (the
+capture clock minus `lastFrameAtMs`) — the decisive signal for the
+"waiting-forever-for-a-server-frame" freeze the motivating live report
+(`match=660LwoUY-Yq`, captured by the waiting seat with `entries: []` and no
+transport visibility) could not diagnose. The block mirrors the shipped
+`uiStateSnapshot` / `matchSetup` pass-through but is **typed** (not opaque
+`unknown`); the one clock subtraction lives in a pure `buildTransportDiagnostics`
+so `buildDiagnosticReport` stays clock-free. The `lastFrameAtMs` stamp rides the
+already-every-frame `setConnected` call via a **defaulted `atMs` parameter**, so
+`client/bgioClient.ts` is untouched. Pure client presentation — reads the
+framework/transport `connection` store (never `G`, never persisted per WP-116);
+EC-260 diagnostics-module boundary held; zero engine/determinism/replay footprint,
+no `finalStateHash` re-pin. Reconnect/resync counters, perf/memory capture, a
+transition log, buffer-durability-across-refresh, and server-side correlation are
+deferred follow-ups. Executed in an isolated worktree off `origin/main` @
+`aace8627` (the shared checkout was owned by a concurrent session). 5-file
+App-layer allowlist; **D-24249 Active**; arena-client typecheck 0 + suite
+**1099/1099** (+4 transport tests); `pnpm -r build` 0; ewiki Play Diagnostics page
+updated to the shipped state (link-check clean).
+
 ### WP-427 / EC-462 — Bot Resolves the Put-Bottom-HQ Pending Choices (D-24248) (2026-07-25)
 
 **`User-Visible Surface = play.legendary-arena.com`.** Fixes a **genuine bot-ally

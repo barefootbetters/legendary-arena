@@ -8,12 +8,26 @@ import { useConnectionStore } from './connection';
 // store reactive refs are owned by the active Pinia instance). Matches the
 // apps/arena-client/src/stores/uiState.test.ts / auth.test.ts precedent.
 
-test('initial state — disconnected, no stateId, never connected', () => {
+test('initial state — disconnected, no stateId, never connected, no frame stamp', () => {
   setActivePinia(createPinia());
   const store = useConnectionStore();
   assert.equal(store.isConnected, false);
   assert.equal(store.lastStateId, null);
   assert.equal(store.hasEverConnected, false);
+  assert.equal(store.lastFrameAtMs, null);
+});
+
+test('setConnected records lastFrameAtMs from an explicit atMs, and defaults to a number', () => {
+  setActivePinia(createPinia());
+  const store = useConnectionStore();
+  assert.equal(store.lastFrameAtMs, null);
+  // explicit atMs (deterministic — the WP-428 transport block reads this stamp)
+  store.setConnected(true, 5, 1717848000000);
+  assert.equal(store.lastFrameAtMs, 1717848000000);
+  // why: the two-argument call bgioClient.ts uses stamps Date.now() via the
+  // defaulted parameter — assert only that a number lands, not its value.
+  store.setConnected(false, 5);
+  assert.equal(typeof store.lastFrameAtMs, 'number');
 });
 
 test('setConnected(true, id) latches hasEverConnected and records the stateId', () => {
