@@ -9,7 +9,8 @@ tags:
   - hanko
   - render
   - domains
-related: []
+related:
+  - play-diagnostics.md
 status: canonical
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\operational-health-checks.md (this page — https://ewiki.legendary-arena.com/operational-health-checks/)
