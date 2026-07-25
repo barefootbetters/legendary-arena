@@ -294,6 +294,32 @@ limit below).
 | **Bystander captured** | `appliedEffects` contains `captureBystander` | An ominous **pull-away** — the bystander token yanked toward the villain |
 | **Bystander rescued** | `FightResolvedEvent.bystandersRescued > 0` (and `MastermindDefeatedEvent.bystandersRescued`) | A bright **rescue sparkle** / coin arc into the victory pile |
 
+**Animated mocks of each sub-effect.** The same *illustrative proposal mock*
+treatment as the [Surface 1](#surface-1) gallery — CSS-only animated SVGs that
+loop and hold a static frame under `prefers-reduced-motion` — for the four
+`appliedEffects` sub-effects. These are **Tier-3 fidelity** (see the precision
+limit below); the mocks show the *character*, not shipped behaviour.
+
+![Animated mock of the wound-gained sub-effect: a Wound card takes a dull red damage flash with a small recoil, pulsing twice then settling. Loops.](/visual-effects/surface1b-wound-gained.svg "width=33%")
+
+*Wound gained (`gainWound*`) — a dull red **damage flash** with a small recoil. Sample card: Bindings (Wound).*
+
+![Animated mock of the hero-KO'd sub-effect: a KO'd hero card cracks with a white flash, breaks into dark shards, and slides down toward the KO pile while dissolving. Loops.](/visual-effects/surface1b-hero-ko.svg "width=33%")
+
+*Hero KO'd (`koHero*`) — a sharp **shatter / dissolve** as the card cracks, breaks into shards, and slides to the KO pile. Sample card: Kree Starforce Demon Druid (Villain).*
+
+![Animated mock of the bystander-captured sub-effect: a captured bystander card is yanked toward the villain, sliding off to the right, shrinking and fading under an ominous dark pull, then resets. Loops.](/visual-effects/surface1b-bystander-captured.svg "width=33%")
+
+*Bystander captured (`captureBystander`) — an ominous **pull-away** as the card is yanked toward the villain under a dark grab. Sample card: Photographer (Bystander).*
+
+![Animated mock of the bystander-rescued sub-effect: a rescued bystander card lifts with a bright golden sparkle burst while twinkles shimmer and gold coins arc up toward the victory pile. Loops.](/visual-effects/surface1b-bystander-rescued.svg "width=33%")
+
+*Bystander rescued (`bystandersRescued > 0`) — a bright **rescue sparkle** with coins arcing to the victory pile. Sample card: Stan Lee (Bystander).*
+
+*All four are CSS-only animated SVGs (same generator as the Surface-1 gallery:
+[surface1-effects.py](../ewiki/visual-effects/surface1-effects.py)); sample card
+art is illustrative only.*
+
 > **Precision limit.** `appliedEffects` carries the **keyword only** — not
 > which bystander was captured or how many wounds each player took. A
 > keyword is enough to trigger an effect; per-target detail is not

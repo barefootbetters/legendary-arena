@@ -33,6 +33,10 @@ CARDS = {
     "ambush":      "https://images.legendary-arena.com/core/core-vi-spider-foes-green-goblin.webp",
     "schemetwist": "https://images.legendary-arena.com/core/core-st-scheme-twist.webp",
     "heal":        "https://images.legendary-arena.com/core/core-wd-wound.webp",
+    "woundgained": "https://images.legendary-arena.com/vill/vill-wd-bindings.webp",
+    "heroko":      "https://images.legendary-arena.com/gotg/gotg-vi-kree-starforce-demon-druid.webp",
+    "capture":     "https://images.legendary-arena.com/3dtc/3dtc-by-photographer.webp",
+    "rescue":      "https://images.legendary-arena.com/3dtc/3dtc-by-stan-lee.webp",
 }
 
 
@@ -422,6 +426,235 @@ def build_heal(b64, card_h):
 
 
 # ---------------------------------------------------------------------------
+# Surface 1b — Wound gained: a dull red damage flash on the card
+# ---------------------------------------------------------------------------
+def build_wound_gained(b64, card_h):
+    dur = 2.0
+    flash = [
+        (0, "opacity: 0;"),
+        (12, "opacity: 0;"),
+        (16, "opacity: 0.55;"),
+        (30, "opacity: 0.12;"),
+        (38, "opacity: 0.34;"),
+        (56, "opacity: 0;"),
+        (100, "opacity: 0;"),
+    ]
+    recoil = [
+        (0, "transform: translate(0,0);"),
+        (14, "transform: translate(0,0);"),
+        (17, "transform: translate(0, 4px);"),
+        (24, "transform: translate(0, -1px);"),
+        (32, "transform: translate(0,0);"),
+        (100, "transform: translate(0,0);"),
+    ]
+    style = "\n".join([
+        ".wshake { animation: wshake %ss ease-out infinite; }" % dur,
+        ".wflash { opacity: 0; fill: #7a1414; animation: wflash %ss ease-out infinite; }" % dur,
+        keyframes("wshake", recoil),
+        keyframes("wflash", flash),
+        reduced([".wshake { animation: none; }",
+                 ".wflash { animation: none; opacity: 0.3; }"]),
+    ])
+    defs = clip_def(card_h)
+    body = ('<g class="wshake">%s'
+            '<rect class="wflash" width="%d" height="%d" rx="7"/></g>'
+            % (card_image(b64, card_h), CARD_W, card_h))
+    return ("Surface-1b wound gained — dull red damage flash",
+            "Animated mock: a Wound card takes a dull red damage flash with a small recoil, "
+            "pulsing twice then settling. Loops.",
+            defs, style, body)
+
+
+# ---------------------------------------------------------------------------
+# Surface 1b — Hero KO'd: sharp shatter/dissolve, sliding to the KO pile
+# ---------------------------------------------------------------------------
+def build_hero_ko(b64, card_h):
+    dur = 2.4
+    ecx, ecy = CARD_W / 2, card_h / 2
+    crack = 19.0
+    slide = [
+        (0, "opacity: 1; transform: translate(0,0) rotate(0deg);"),
+        (crack, "opacity: 1; transform: translate(0,0) rotate(0deg);"),
+        (46, "opacity: 0; transform: translate(-42px, 96px) rotate(-13deg);"),
+        (90, "opacity: 0; transform: translate(-42px, 96px) rotate(-13deg);"),
+        (94, "opacity: 0; transform: translate(0,0) rotate(0deg);"),
+        (100, "opacity: 1; transform: translate(0,0) rotate(0deg);"),
+    ]
+    flash = [
+        (0, "opacity: 0;"),
+        (crack, "opacity: 0;"),
+        (crack + 1.5, "opacity: 0.8;"),
+        (crack + 8, "opacity: 0;"),
+        (100, "opacity: 0;"),
+    ]
+    shard = [
+        (0, "opacity: 0; transform: translate(0,0);"),
+        (crack, "opacity: 0; transform: translate(0,0);"),
+        (crack + 1.5, "opacity: 0.9;"),
+        (48, "opacity: 0; transform: translate(var(--tx), var(--ty));"),
+        (100, "opacity: 0; transform: translate(var(--tx), var(--ty));"),
+    ]
+    rnd = seeded(7788, 60)
+    nodes = []
+    for i in range(14):
+        angle = (i / 14) * 2 * math.pi + (rnd[i * 3] - 0.5) * 0.6
+        speed = 8.0 + rnd[i * 3 + 1] * 7.0
+        size = 9 + rnd[i * 3 + 2] * 11
+        tx = math.cos(angle) * speed * 14
+        ty = math.sin(angle) * speed * 14
+        pts = "%.0f,0 %.0f,%.0f %.0f,%.0f" % (size, -size * 0.4, size * 0.34, -size * 0.4, -size * 0.34)
+        nodes.append('<g class="kshard" style="--tx:%.0fpx; --ty:%.0fpx;">'
+                     '<polygon points="%s" fill="#161320" transform="rotate(%.0f)"/></g>'
+                     % (tx, ty, pts, math.degrees(angle)))
+    style = "\n".join([
+        ".koslide { animation: koslide %ss ease-in infinite; }" % dur,
+        ".koflash { opacity: 0; fill: #ffffff; animation: koflash %ss ease-out infinite; }" % dur,
+        ".kshard { opacity: 0; transform: translate(0,0); animation: kshard %ss ease-out infinite; }" % dur,
+        keyframes("koslide", slide),
+        keyframes("koflash", flash),
+        keyframes("kshard", shard),
+        reduced([".koslide { animation: none; opacity: 1; transform: translate(0,0); }",
+                 ".koflash { animation: none; opacity: 0; }",
+                 ".kshard { animation: none; opacity: 0; }"]),
+    ])
+    defs = clip_def(card_h)
+    body = ('<g class="koslide">%s'
+            '<rect class="koflash" width="%d" height="%d" rx="7"/></g>'
+            '<g transform="translate(%.0f %.0f)">%s</g>'
+            % (card_image(b64, card_h), CARD_W, card_h, ecx, ecy, "".join(nodes)))
+    return ("Surface-1b hero KO'd — shatter / dissolve to the KO pile",
+            "Animated mock: a KO'd hero card cracks with a white flash, breaks into dark shards, "
+            "and slides down toward the KO pile while dissolving. Loops.",
+            defs, style, body)
+
+
+# ---------------------------------------------------------------------------
+# Surface 1b — Bystander captured: ominous pull-away toward the villain
+# ---------------------------------------------------------------------------
+def build_capture(b64, card_h):
+    dur = 2.3
+    yank = [
+        (0, "opacity: 1; transform: translate(0,0) scale(1) rotate(0deg);"),
+        (22, "opacity: 1; transform: translate(0,0) scale(1) rotate(0deg);"),
+        (25, "transform: translate(-6px,0) scale(1.02) rotate(-1deg);"),
+        (54, "opacity: 0; transform: translate(190px,-12px) scale(0.5) rotate(12deg);"),
+        (90, "opacity: 0; transform: translate(190px,-12px) scale(0.5) rotate(12deg);"),
+        (94, "opacity: 0; transform: translate(0,0) scale(1) rotate(0deg);"),
+        (100, "opacity: 1; transform: translate(0,0) scale(1) rotate(0deg);"),
+    ]
+    grab = [
+        (0, "opacity: 0;"),
+        (22, "opacity: 0;"),
+        (30, "opacity: 0.55;"),
+        (50, "opacity: 0.75;"),
+        (66, "opacity: 0;"),
+        (100, "opacity: 0;"),
+    ]
+    style = "\n".join([
+        ".yank { animation: yank %ss ease-in infinite; }" % dur,
+        ".grab { opacity: 0; fill: url(#cg); animation: grab %ss ease-in-out infinite; }" % dur,
+        keyframes("yank", yank),
+        keyframes("grab", grab),
+        reduced([".yank { animation: none; opacity: 1; transform: translate(0,0) scale(1); }",
+                 ".grab { animation: none; opacity: 0.4; }"]),
+    ])
+    defs = (clip_def(card_h) +
+            '<linearGradient id="cg" x1="0%" y1="0%" x2="100%" y2="0%">'
+            '<stop offset="35%" stop-color="#1a0f2a" stop-opacity="0"/>'
+            '<stop offset="100%" stop-color="#2a0d3a" stop-opacity="0.9"/></linearGradient>')
+    body = ('<g class="yank">%s'
+            '<rect class="grab" width="%d" height="%d" rx="7"/></g>'
+            % (card_image(b64, card_h), CARD_W, card_h))
+    return ("Surface-1b bystander captured — ominous pull-away",
+            "Animated mock: a captured bystander card is yanked toward the villain — sliding off to "
+            "the right, shrinking and fading under an ominous dark pull, then resets. Loops.",
+            defs, style, body)
+
+
+# ---------------------------------------------------------------------------
+# Surface 1b — Bystander rescued: bright sparkle + coin arc to the victory pile
+# ---------------------------------------------------------------------------
+def build_rescue(b64, card_h):
+    dur = 2.4
+    ecx, ecy = CARD_W / 2, card_h / 2
+    rescue = 12.0
+    lift = [
+        (0, "transform: translate(0,0);"),
+        (rescue, "transform: translate(0,0);"),
+        (rescue + 6, "transform: translate(0,-7px);"),
+        (40, "transform: translate(0,0);"),
+        (100, "transform: translate(0,0);"),
+    ]
+    flash = [
+        (0, "opacity: 0; transform: scale(0);"),
+        (rescue, "opacity: 0; transform: scale(0.3);"),
+        (rescue + 2, "opacity: 0.7; transform: scale(0.6);"),
+        (rescue + 16, "opacity: 0; transform: scale(1.5);"),
+        (100, "opacity: 0; transform: scale(1.5);"),
+    ]
+    coin = [
+        (0, "opacity: 0; transform: translate(0,0);"),
+        (rescue, "opacity: 0; transform: translate(0,0);"),
+        (rescue + 2, "opacity: 1;"),
+        (82, "opacity: 0; transform: translate(var(--tx), var(--ty));"),
+        (100, "opacity: 0; transform: translate(var(--tx), var(--ty));"),
+    ]
+    twinkle = [
+        (0, "opacity: 0; transform: scale(0.3);"),
+        (25, "opacity: 0.95; transform: scale(1);"),
+        (55, "opacity: 0; transform: scale(0.4);"),
+        (100, "opacity: 0; transform: scale(0.3);"),
+    ]
+    rnd = seeded(5150, 80)
+    coins = []
+    for i in range(7):
+        tx = 40 + rnd[i * 3] * 150            # arc toward upper-right (victory pile)
+        ty = -(110 + rnd[i * 3 + 1] * 80)
+        radius = 5 + rnd[i * 3 + 2] * 3
+        coins.append('<g class="rcoin" style="--tx:%.0fpx; --ty:%.0fpx; animation-delay:%.2fs;">'
+                     '<circle r="%.1f" fill="#ffcf47"/><circle r="%.1f" cx="-%.1f" cy="-%.1f" fill="#fff4c2"/></g>'
+                     % (tx, ty, -(i * 0.03), radius, radius * 0.35, radius * 0.3, radius * 0.3))
+    stars = []
+    for i in range(9):
+        sx = 30 + rnd[(i * 3 + 20) % 80] * (CARD_W - 60)
+        sy = 30 + rnd[(i * 3 + 21) % 80] * (card_h - 60)
+        s = 4 + rnd[(i * 3 + 22) % 80] * 4
+        q = s * 0.34
+        pts = "0,%.0f %.0f,%.0f %.0f,0 %.0f,%.0f 0,%.0f %.0f,%.0f %.0f,0 %.0f,%.0f" % (
+            -s, q, -q, s, q, q, s, -q, q, -s, -q, -q)
+        stars.append('<g transform="translate(%.0f %.0f)"><polygon class="rstar" points="%s" fill="#fff6cf" '
+                     'style="animation-delay:%.2fs;"/></g>' % (sx, sy, pts, -(rnd[(i * 3 + 23) % 80] * dur)))
+    style = "\n".join([
+        ".rlift { animation: rlift %ss ease-out infinite; }" % dur,
+        ".rflash { opacity: 0; animation: rflash %ss ease-out infinite; }" % dur,
+        ".rcoin { opacity: 0; transform: translate(0,0); animation: rcoin %ss ease-out infinite; }" % dur,
+        ".rstar { opacity: 0; transform: scale(0.3); animation: rstar %ss ease-in-out infinite; }" % dur,
+        keyframes("rlift", lift),
+        keyframes("rflash", flash),
+        keyframes("rcoin", coin),
+        keyframes("rstar", twinkle),
+        reduced([".rlift { animation: none; }",
+                 ".rflash { animation: none; opacity: 0.25; transform: scale(1); }",
+                 ".rcoin { animation: none; opacity: 0; }",
+                 ".rstar { animation: none; opacity: 0; }"]),
+    ])
+    defs = (clip_def(card_h) +
+            '<radialGradient id="rf" cx="50%" cy="50%" r="50%">'
+            '<stop offset="0%" stop-color="#ffffff" stop-opacity="1"/>'
+            '<stop offset="55%" stop-color="#ffe27a" stop-opacity="0.85"/>'
+            '<stop offset="100%" stop-color="#ffb020" stop-opacity="0"/></radialGradient>')
+    body = ('<g class="rlift">%s</g>'
+            '<g transform="translate(%.0f %.0f)"><circle class="rflash" r="60" fill="url(#rf)"/></g>'
+            '%s'
+            '<g transform="translate(%.0f %.0f)">%s</g>'
+            % (card_image(b64, card_h), ecx, ecy, "".join(stars), ecx, ecy, "".join(coins)))
+    return ("Surface-1b bystander rescued — sparkle + coin arc to the victory pile",
+            "Animated mock: a rescued bystander card lifts with a bright golden sparkle burst while "
+            "twinkles shimmer and gold coins arc up toward the victory pile. Loops.",
+            defs, style, body)
+
+
+# ---------------------------------------------------------------------------
 # mastermindDefeated — card-less full-screen victory bloom + confetti storm
 # ---------------------------------------------------------------------------
 def build_defeated():
@@ -531,6 +764,10 @@ BUILDERS = [
     ("surface1-ambush-resolved",       "ambush",      build_ambush),
     ("surface1-scheme-twist-resolved", "schemetwist", build_schemetwist),
     ("surface1-heal-resolved",         "heal",        build_heal),
+    ("surface1b-wound-gained",         "woundgained", build_wound_gained),
+    ("surface1b-hero-ko",              "heroko",      build_hero_ko),
+    ("surface1b-bystander-captured",   "capture",     build_capture),
+    ("surface1b-bystander-rescued",    "rescue",      build_rescue),
 ]
 
 if __name__ == "__main__":
