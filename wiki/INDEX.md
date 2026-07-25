@@ -182,6 +182,13 @@ Cross-cutting governance, methodology, and readiness assessments.
   `lastPlayEffectsFired`, endgame outcomes) that the visual, audio,
   dopamine, and narrative frameworks all react to — so the framework pages
   cross-link through the engine's own event names instead of siloing.
+- [Responsive Viewport Targets](responsive-viewport-targets.md) — *(draft)*
+  the desktop-first responsive posture of `play.legendary-arena.com`: the
+  one locked breakpoint (D-12909, `max-width: 767px`) splitting
+  `<PlayDesktop>` from `<PlayMobile>`, the two layouts' design ranges
+  (1280×800–1920×1080 / 375×667–414×896), the reference desktop
+  resolutions to test against, and the still-open question of fluid
+  desktop scaling and an ultra-wide max-width cap.
 - [Visual Effects Framework](visual-effects.md) — *(draft, research)* the
   in-game "juice" layer: escalating chain-reaction combo flashes off
   `UIState.game.lastPlayEffectsFired` (buildable today, mirroring the
