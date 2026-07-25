@@ -421,6 +421,110 @@ def build_heal(b64, card_h):
             defs, style, body)
 
 
+# ---------------------------------------------------------------------------
+# mastermindDefeated — card-less full-screen victory bloom + confetti storm
+# ---------------------------------------------------------------------------
+def build_defeated():
+    """Landscape, card-less: a full-screen win finale (its own assembler)."""
+    canvas_w, canvas_h = 640, 360
+    cx, cy = canvas_w / 2, canvas_h / 2
+    dur = 2.6
+
+    bloom = [
+        (0, "opacity: 0; transform: translate(%dpx,%dpx) scale(0);" % (cx, cy)),
+        (8, "opacity: 1; transform: translate(%dpx,%dpx) scale(1.12);" % (cx, cy)),
+        (16, "opacity: 0.95; transform: translate(%dpx,%dpx) scale(1.0);" % (cx, cy)),
+        (58, "opacity: 0.82; transform: translate(%dpx,%dpx) scale(1.06);" % (cx, cy)),
+        (88, "opacity: 0.72; transform: translate(%dpx,%dpx) scale(1.0);" % (cx, cy)),
+        (96, "opacity: 0; transform: translate(%dpx,%dpx) scale(1.12);" % (cx, cy)),
+        (100, "opacity: 0; transform: translate(%dpx,%dpx) scale(1.12);" % (cx, cy)),
+    ]
+    ring = [
+        (0, "opacity: 0; transform: translate(%dpx,%dpx) scale(0.2); stroke-width: 6;" % (cx, cy)),
+        (5, "opacity: 0.9;"),
+        (30, "opacity: 0; transform: translate(%dpx,%dpx) scale(7); stroke-width: 1;" % (cx, cy)),
+        (100, "opacity: 0; transform: translate(%dpx,%dpx) scale(7); stroke-width: 1;" % (cx, cy)),
+    ]
+    rays_spin = [
+        (0, "transform: translate(%dpx,%dpx) rotate(0deg);" % (cx, cy)),
+        (100, "transform: translate(%dpx,%dpx) rotate(360deg);" % (cx, cy)),
+    ]
+    confetti = [
+        (0, "opacity: 0; transform: translate(var(--x0), -30px) rotate(0deg);"),
+        (6, "opacity: 1;"),
+        (90, "opacity: 1;"),
+        (100, "opacity: 0; transform: translate(calc(var(--x0) + var(--dx)), 392px) rotate(var(--spin));"),
+    ]
+
+    colors = ["#ffd24a", "#ff5a5a", "#5ab0ff", "#5ef08a", "#b57bff", "#ffffff", "#ff9a3c"]
+    rnd = seeded(24123, 240)
+    pieces = []
+    for i in range(44):
+        x0 = rnd[i * 5] * canvas_w
+        dx = (rnd[i * 5 + 1] - 0.5) * 150
+        spin = (1 + rnd[i * 5 + 2] * 3) * 360 * (1 if i % 2 else -1)
+        width = 6 + rnd[i * 5 + 3] * 4
+        height = 10 + rnd[i * 5 + 4] * 7
+        delay = -(rnd[(i * 5 + 2) % 240] * dur)
+        color = colors[i % len(colors)]
+        pieces.append(
+            '<g class="cf" style="--x0:%.0fpx; --dx:%.0fpx; --spin:%.0fdeg; animation-delay:%.2fs;">'
+            '<rect x="%.1f" y="%.1f" width="%.1f" height="%.1f" rx="1" fill="%s"/></g>'
+            % (x0, dx, spin, delay, -width / 2, -height / 2, width, height, color))
+
+    # light rays: thin gold triangles fanning from the centre
+    ray_nodes = []
+    for i in range(18):
+        ray_nodes.append('<polygon points="0,0 470,-9 470,9" fill="#ffdf7a" transform="rotate(%d)"/>'
+                         % (i * 20))
+
+    style = "\n".join([
+        ".bloom { opacity: 0; animation: dbloom %ss ease-out infinite; }" % dur,
+        ".dring { opacity: 0; fill: none; stroke: #fff6cf; animation: dring %ss ease-out infinite; }" % dur,
+        ".rays { opacity: 0.42; animation: drays 15s linear infinite; }",
+        ".cf { opacity: 0; animation: dconfetti %ss linear infinite; }" % dur,
+        keyframes("dbloom", bloom),
+        keyframes("dring", ring),
+        keyframes("drays", rays_spin),
+        keyframes("dconfetti", confetti),
+        reduced([".bloom { animation: none; opacity: 0.9; transform: translate(%dpx,%dpx) scale(1); }" % (cx, cy),
+                 ".dring { animation: none; opacity: 0; }",
+                 ".rays { animation: none; opacity: 0.42; transform: translate(%dpx,%dpx); }" % (cx, cy),
+                 ".cf { animation: none; opacity: 0; }"]),
+    ])
+    defs = ('<radialGradient id="db" cx="50%" cy="50%" r="50%">'
+            '<stop offset="0%" stop-color="#ffffff" stop-opacity="1"/>'
+            '<stop offset="35%" stop-color="#ffe9a8" stop-opacity="0.95"/>'
+            '<stop offset="70%" stop-color="#ffb24a" stop-opacity="0.55"/>'
+            '<stop offset="100%" stop-color="#ff8a1e" stop-opacity="0"/></radialGradient>'
+            '<radialGradient id="dbg" cx="50%" cy="45%" r="75%">'
+            '<stop offset="0%" stop-color="#1b1622" stop-opacity="1"/>'
+            '<stop offset="100%" stop-color="#0a0810" stop-opacity="1"/></radialGradient>')
+    body = ('<g class="rays">%s</g>'
+            '<circle class="bloom" r="190" fill="url(#db)"/>'
+            '<circle class="dring" r="30"/>'
+            '%s' % ("".join(ray_nodes), "".join(pieces)))
+
+    svg = (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %d %d" width="%d" height="%d" '
+        'role="img" aria-label="%s">\n'
+        '  <title>%s</title>\n'
+        '  <style>\n%s\n  </style>\n'
+        '  <defs>%s</defs>\n'
+        '  <rect width="%d" height="%d" fill="url(#dbg)"/>\n'
+        '  %s\n'
+        '</svg>\n'
+    ) % (canvas_w, canvas_h, canvas_w, canvas_h,
+         "Animated mock of mastermindDefeated: a full-screen golden victory bloom bursts from the "
+         "centre with radiating light rays and an expanding shockwave ring, while a storm of colourful "
+         "confetti falls across the screen. Loops.",
+         "Surface-1 mastermindDefeated — full-screen victory bloom + confetti storm",
+         style, defs, canvas_w, canvas_h, body)
+    with open("surface1-mastermind-defeated.svg", "w", encoding="utf-8") as handle:
+        handle.write(svg)
+    return len(svg)
+
+
 BUILDERS = [
     ("surface1-mastermind-strike",     "strike",      build_strike),
     ("surface1-fight-resolved",        "fight",       build_fight),
@@ -435,3 +539,6 @@ if __name__ == "__main__":
         title, aria, defs, style, body = builder(b64, card_h)
         size = assemble(slug, title, aria, defs, style, body, card_h)
         print("%-34s %6d bytes  (card %dx%d)" % (slug + ".svg", size, CARD_W, card_h))
+    defeated_size = build_defeated()
+    print("%-34s %6d bytes  (full-screen 640x360, card-less)"
+          % ("surface1-mastermind-defeated.svg", defeated_size))

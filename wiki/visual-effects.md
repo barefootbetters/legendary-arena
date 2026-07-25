@@ -243,13 +243,18 @@ layered over a themed sample card. Every one is a hand-built, CSS-only animated
 SVG (no JavaScript, so they animate on the JS-free wiki) that loops and honours
 `prefers-reduced-motion` by holding a single static frame instead of animating.
 Nothing here ships — the effect *character* is proposal-level, exactly as this
-section's intro says. (`mastermindDefeated`'s character is a *full-screen*
-victory bloom + confetti storm — a card-less finale — so it has no per-card mock
-here; its full-screen treatment lives with [Surface 4](#endgame).)
+section's intro says. (`mastermindDefeated`'s character is a *full-screen*,
+card-less finale — a victory bloom + confetti storm — so its mock below is a
+viewport-scale scene rather than a card overlay; the same full-screen treatment
+recurs at [Surface 4](#endgame).)
 
 ![Animated mock of mastermindStrikeResolved: a Mastermind card jolts with a screen-shake while a red vignette pulses in from the edges and dark shard particles burst outward, then settles. Loops.](/visual-effects/surface1-mastermind-strike.svg "width=33%")
 
 *`mastermindStrikeResolved` (T1) — **screen-shake + red edge-vignette pulse + dark shard burst**, the signature "uh-oh" jolt. Sample card: Galactus (Mastermind).*
+
+![Animated mock of mastermindDefeated: a full-screen golden victory bloom bursts from the centre with radiating light rays and an expanding shockwave ring, while a storm of colourful confetti falls across the screen. Loops.](/visual-effects/surface1-mastermind-defeated.svg "width=66%")
+
+*`mastermindDefeated` (T1) — a **full-screen victory bloom + confetti storm**, the biggest positive payoff in the game. Card-less: a viewport-scale finale, not a card overlay (mirrors the [Surface 4](#endgame) `heroes-win` treatment).*
 
 ![Animated mock of fightResolved: a villain card takes a white-gold impact flash and an expanding shockwave ring at the City space while gold coins arc upward, then settles. Loops.](/visual-effects/surface1-fight-resolved.svg "width=33%")
 
@@ -267,7 +272,7 @@ here; its full-screen treatment lives with [Surface 4](#endgame).)
 
 *`healResolved` (T2) — a soft green **restorative shimmer**: a gentle green glow with motes rising off the card. Sample card: Wound.*
 
-*All five are CSS-only animated SVGs; each loops and drops to a static frame
+*All six are CSS-only animated SVGs; each loops and drops to a static frame
 under `prefers-reduced-motion`. Sample card art is illustrative only. Animation
 source: [surface1-effects.py](../ewiki/visual-effects/surface1-effects.py) —
 regenerate with `python surface1-effects.py`.*
