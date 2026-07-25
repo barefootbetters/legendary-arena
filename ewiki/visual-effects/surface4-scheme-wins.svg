@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" width="640" height="360" role="img" aria-label="Animated mock of the scheme-wins finale: a grey glow deflates and a ring collapses inward while ash drifts down and a dark vignette closes in. Loops.">
+  <title>Surface-4 scheme-wins — deflating collapse to ash</title>
+  <style>
+.deflate { opacity: 0; animation: sdeflate 3.2s ease-in infinite; }
+.sring { opacity: 0; fill: none; stroke: #8b8b95; animation: sring 3.2s ease-in infinite; }
+.svig { opacity: 0; animation: svig 3.2s ease-in-out infinite; }
+.ash { opacity: 0; animation: sash 3.2s linear infinite; }
+@keyframes sdeflate {
+  0.00% { opacity: 0; transform: translate(320px,180px) scale(1.1); }
+  10.00% { opacity: 0.5; transform: translate(320px,180px) scale(1.0); }
+  60.00% { opacity: 0.2; transform: translate(320px,180px) scale(0.4); }
+  88.00% { opacity: 0; transform: translate(320px,180px) scale(0.1); }
+  100.00% { opacity: 0; transform: translate(320px,180px) scale(0.1); }
+}
+@keyframes sring {
+  0.00% { opacity: 0; transform: translate(320px,180px) scale(3.0); stroke-width: 1; }
+  10.00% { opacity: 0; transform: translate(320px,180px) scale(2.8); }
+  14.00% { opacity: 0.55; }
+  64.00% { opacity: 0.15; transform: translate(320px,180px) scale(0.4); stroke-width: 5; }
+  78.00% { opacity: 0; transform: translate(320px,180px) scale(0.1); stroke-width: 6; }
+  100.00% { opacity: 0; transform: translate(320px,180px) scale(0.1); }
+}
+@keyframes svig {
+  0.00% { opacity: 0.12; }
+  44.00% { opacity: 0.5; }
+  72.00% { opacity: 0.72; }
+  90.00% { opacity: 0.4; }
+  100.00% { opacity: 0.12; }
+}
+@keyframes sash {
+  0.00% { opacity: 0; transform: translate(var(--x0), -20px); }
+  10.00% { opacity: 0.7; }
+  86.00% { opacity: 0.4; }
+  100.00% { opacity: 0; transform: translate(calc(var(--x0) + var(--dx)), 380px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .deflate { animation: none; opacity: 0.15; transform: translate(320px,180px) scale(0.4); }
+  .sring, .ash { animation: none; opacity: 0; }
+  .svig { animation: none; opacity: 0.5; }
+}
+  </style>
+  <defs><radialGradient id="sd" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#9a9aa2" stop-opacity="0.7"/><stop offset="100%" stop-color="#3a3a42" stop-opacity="0"/></radialGradient><radialGradient id="sv" cx="50%" cy="50%" r="72%"><stop offset="45%" stop-color="#000000" stop-opacity="0"/><stop offset="100%" stop-color="#000000" stop-opacity="0.95"/></radialGradient></defs>
+  <rect width="640" height="360" fill="#0c0b10"/>
+  <circle class="deflate" r="150" fill="url(#sd)"/><g transform="translate(320 180)"><circle class="sring" r="60"/></g><g class="ash" style="--x0:68px; --dx:6px; animation-delay:-0.63s;"><circle r="4.5" fill="#6b6b73"/></g><g class="ash" style="--x0:458px; --dx:11px; animation-delay:-3.13s;"><circle r="3.7" fill="#8a8a92"/></g><g class="ash" style="--x0:574px; --dx:-18px; animation-delay:-0.83s;"><circle r="3.5" fill="#565660"/></g><g class="ash" style="--x0:460px; --dx:-15px; animation-delay:-2.79s;"><circle r="5.3" fill="#9a9aa2"/></g><g class="ash" style="--x0:462px; --dx:-17px; animation-delay:-1.52s;"><circle r="4.6" fill="#6b6b73"/></g><g class="ash" style="--x0:351px; --dx:-17px; animation-delay:-0.15s;"><circle r="3.2" fill="#8a8a92"/></g><g class="ash" style="--x0:633px; --dx:-18px; animation-delay:-0.32s;"><circle r="2.6" fill="#565660"/></g><g class="ash" style="--x0:161px; --dx:12px; animation-delay:-1.26s;"><circle r="3.9" fill="#9a9aa2"/></g><g class="ash" style="--x0:529px; --dx:1px; animation-delay:-1.15s;"><circle r="2.9" fill="#6b6b73"/></g><g class="ash" style="--x0:497px; --dx:-14px; animation-delay:-2.97s;"><circle r="5.5" fill="#8a8a92"/></g><g class="ash" style="--x0:503px; --dx:5px; animation-delay:-3.19s;"><circle r="4.7" fill="#565660"/></g><g class="ash" style="--x0:546px; --dx:-7px; animation-delay:-0.91s;"><circle r="3.9" fill="#9a9aa2"/></g><g class="ash" style="--x0:582px; --dx:-19px; animation-delay:-2.28s;"><circle r="3.5" fill="#6b6b73"/></g><g class="ash" style="--x0:167px; --dx:-6px; animation-delay:-0.37s;"><circle r="3.5" fill="#8a8a92"/></g><g class="ash" style="--x0:115px; --dx:-18px; animation-delay:-1.48s;"><circle r="3.7" fill="#565660"/></g><g class="ash" style="--x0:295px; --dx:0px; animation-delay:-0.96s;"><circle r="4.7" fill="#9a9aa2"/></g><g class="ash" style="--x0:223px; --dx:-6px; animation-delay:-2.09s;"><circle r="5.0" fill="#6b6b73"/></g><g class="ash" style="--x0:389px; --dx:6px; animation-delay:-0.30s;"><circle r="4.4" fill="#8a8a92"/></g><g class="ash" style="--x0:87px; --dx:11px; animation-delay:-0.63s;"><circle r="5.3" fill="#565660"/></g><g class="ash" style="--x0:600px; --dx:-8px; animation-delay:-0.36s;"><circle r="4.1" fill="#9a9aa2"/></g><g class="ash" style="--x0:513px; --dx:14px; animation-delay:-1.42s;"><circle r="4.5" fill="#6b6b73"/></g><g class="ash" style="--x0:341px; --dx:6px; animation-delay:-0.65s;"><circle r="3.7" fill="#8a8a92"/></g><g class="ash" style="--x0:57px; --dx:-8px; animation-delay:-3.17s;"><circle r="3.5" fill="#565660"/></g><g class="ash" style="--x0:288px; --dx:4px; animation-delay:-0.63s;"><circle r="5.4" fill="#9a9aa2"/></g><g class="ash" style="--x0:362px; --dx:-6px; animation-delay:-1.17s;"><circle r="4.6" fill="#6b6b73"/></g><g class="ash" style="--x0:156px; --dx:-5px; animation-delay:-1.65s;"><circle r="4.2" fill="#8a8a92"/></g><g class="ash" style="--x0:194px; --dx:20px; animation-delay:-1.86s;"><circle r="3.2" fill="#565660"/></g><g class="ash" style="--x0:539px; --dx:-10px; animation-delay:-2.22s;"><circle r="3.1" fill="#9a9aa2"/></g><g class="ash" style="--x0:617px; --dx:-19px; animation-delay:-1.85s;"><circle r="2.8" fill="#6b6b73"/></g><g class="ash" style="--x0:521px; --dx:-15px; animation-delay:-2.28s;"><circle r="5.4" fill="#8a8a92"/></g><g class="ash" style="--x0:159px; --dx:-20px; animation-delay:-1.68s;"><circle r="3.1" fill="#565660"/></g><g class="ash" style="--x0:5px; --dx:12px; animation-delay:-0.92s;"><circle r="2.5" fill="#9a9aa2"/></g><g class="ash" style="--x0:458px; --dx:-12px; animation-delay:-0.03s;"><circle r="4.5" fill="#6b6b73"/></g><g class="ash" style="--x0:358px; --dx:-4px; animation-delay:-3.06s;"><circle r="4.4" fill="#8a8a92"/></g><g class="ash" style="--x0:631px; --dx:-13px; animation-delay:-0.28s;"><circle r="2.6" fill="#565660"/></g><g class="ash" style="--x0:176px; --dx:-3px; animation-delay:-0.29s;"><circle r="2.6" fill="#9a9aa2"/></g><g class="ash" style="--x0:199px; --dx:-4px; animation-delay:-0.73s;"><circle r="3.1" fill="#6b6b73"/></g><g class="ash" style="--x0:259px; --dx:12px; animation-delay:-2.44s;"><circle r="3.1" fill="#8a8a92"/></g><rect class="svig" width="640" height="360" fill="url(#sv)"/>
+</svg>
