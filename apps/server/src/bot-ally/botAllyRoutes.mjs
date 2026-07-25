@@ -272,14 +272,24 @@ async function updateBotAllyMatchStatus(database, matchId, status, faultMessage)
  * hits the cap if it spans MAX_REVIVALS server restarts — rare, and preferable
  * to an unbounded resurrection loop.
  *
+ * // why (WP-420 / D-24240): the revival set ALSO includes any row a graceful
+ * shutdown marked `shutdown_interrupted = true`, REGARDLESS of the cap. A match
+ * that was healthy and being driven when a clean deploy (SIGTERM) destroyed its
+ * in-process driver is recoverable — it burns the cap across restarts without ever
+ * completing a turn, so without this it would strand→faulted (WP-419). The flag is
+ * cleared on revival (see {@link markBotAllyMatchRevived}), so it is a one-boot
+ * exemption. An UNgraceful loss (OOM / crash — no SIGTERM, so the flag stays false)
+ * is never included past the cap, so the OOM restart loop above cannot return.
+ *
  * @param {object} database - The pg pool.
- * @returns {Promise<Array<{ matchId: string, botSeats: string[], decisionSeed: string, policy: string, status: string, reviveCount: number }>>}
+ * @returns {Promise<Array<{ matchId: string, botSeats: string[], decisionSeed: string, policy: string, status: string, reviveCount: number, shutdownInterrupted: boolean }>>}
  */
 export async function readRevivableBotAllyMatches(database) {
   const result = await database.query(
-    'SELECT match_id, bot_seats, decision_seed, policy, status, revive_count ' +
+    'SELECT match_id, bot_seats, decision_seed, policy, status, revive_count, shutdown_interrupted ' +
       'FROM legendary.match_bot_ally ' +
-      "WHERE status IN ('active', 'faulted', 'exhausted') AND revive_count < $1",
+      "WHERE status IN ('active', 'faulted', 'exhausted') " +
+      'AND (revive_count < $1 OR shutdown_interrupted = true)',
     [MAX_REVIVALS],
   );
   return result.rows.map((row) => ({
@@ -289,6 +299,7 @@ export async function readRevivableBotAllyMatches(database) {
     policy: row.policy,
     status: row.status,
     reviveCount: row.revive_count,
+    shutdownInterrupted: row.shutdown_interrupted === true,
   }));
 }
 
@@ -324,10 +335,15 @@ export async function readStrandedActiveBotAllyMatches(database) {
  * Flips a revived match back to `active` and increments its lifetime
  * `revive_count` in a single update.
  *
- * // why: WP-414 / D-24230 — called only when a NOT-already-active revivable row
- * is re-registered, so the bounded revival cap advances by exactly one; an
- * already-active row (a driver merely lost to the restart, never faulted) is
- * re-registered without this write and never consumes a revival.
+ * // why: WP-414 / D-24230 + the 2026-07-23 hotfix — called on EVERY
+ * re-registration (see `rehydrateBotAllyDrivers`), so the bounded revival cap
+ * advances by exactly one per restart, including an already-`active` row (a stuck
+ * active match must not resurrect uncapped forever).
+ *
+ * // why: WP-420 / D-24240 — this ALSO clears `shutdown_interrupted`, so a
+ * deploy-marked row earns exactly ONE past-cap revival (a one-boot exemption); the
+ * next loss must be cleanly marked again to be free-revived. Clearing it for a
+ * not-flagged row is a harmless no-op (it was already false).
  *
  * @param {object} database - The pg pool.
  * @param {string} matchId - The match id.
@@ -336,9 +352,38 @@ export async function readStrandedActiveBotAllyMatches(database) {
 async function markBotAllyMatchRevived(database, matchId) {
   await database.query(
     'UPDATE legendary.match_bot_ally ' +
-      "SET status = 'active', revive_count = revive_count + 1, updated_at = now() " +
+      "SET status = 'active', revive_count = revive_count + 1, " +
+      'shutdown_interrupted = false, updated_at = now() ' +
       'WHERE match_id = $1',
     [matchId],
+  );
+}
+
+/**
+ * Marks the given matches as cleanly interrupted by a graceful shutdown, so boot
+ * revival re-attaches them past the `MAX_REVIVALS` cap (WP-420 / D-24240).
+ *
+ * // why: called from the `index.mjs` SIGTERM handler with the ids currently in
+ * `botAllyDrivers` — exactly the matches this process was ACTIVELY driving when a
+ * clean deploy arrived. A wedged match has already faulted and left the registry,
+ * so it is never marked; an OOM / crash sends no SIGTERM, so it is never marked
+ * either. Only a healthy, actively-driven match earns the past-cap revival — this
+ * is what keeps the OOM restart loop from returning. A single batch UPDATE; an
+ * empty id list is a no-op (no query).
+ *
+ * @param {object} database - The pg pool.
+ * @param {ReadonlyArray<string>} matchIds - The match ids being driven at shutdown.
+ * @returns {Promise<void>}
+ */
+export async function markInProgressBotAllyMatchesInterrupted(database, matchIds) {
+  if (matchIds.length === 0) {
+    return;
+  }
+  await database.query(
+    'UPDATE legendary.match_bot_ally ' +
+      'SET shutdown_interrupted = true, updated_at = now() ' +
+      'WHERE match_id = ANY($1)',
+    [Array.from(matchIds)],
   );
 }
 
@@ -771,6 +816,15 @@ export async function rehydrateBotAllyDrivers(context) {
       // that never makes it to a terminal status.
       await markBotAllyMatchRevived(database, record.matchId);
       reregistered += 1;
+      // why: WP-420 / D-24240 — a shutdown_interrupted row was revived PAST the
+      // cap (a clean deploy interrupted a healthy match); log it distinctly so a
+      // deploy-recovery is visible in the operational log and its flag-clear
+      // (in markBotAllyMatchRevived) is traceable.
+      if (record.shutdownInterrupted === true) {
+        console.log(
+          `[bot-ally] match ${record.matchId} recovered past the revival cap after a clean shutdown (deploy-interrupted).`,
+        );
+      }
     } catch (rehydrateError) {
       console.error(
         `[bot-ally] match ${record.matchId} failed to re-register after restart: ${rehydrateError.message}`,

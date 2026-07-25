@@ -32208,7 +32208,7 @@ driverless bot-ally match reports `driving:false` and surfaces the banner; a hea
 
 ### D-24240 — Bot-ally revival is deploy-aware: a graceful-shutdown-marked match is revived past the cap
 
-**Status:** Drafted 2026-07-24; not yet landed (WP-420 / EC-455 execution).
+**Status:** Active (post-execution).
 
 **Context.** WP-419 (D-24239) made a driverless bot-ally match *surface* (the WP-415 banner
 shows) and settled a cap-stranded `active` row to `faulted`. But the observed failure (match
@@ -32249,6 +32249,18 @@ bgio blob); no engine/registry change; no HTTP endpoint change (§21 N/A); no de
 Single-instance assumed. Human-initiated "Resume with the bot" and multi-instance liveness are
 separate follow-ups.
 
-**Packet:** WP-420 + EC-455. **Drafted:** 2026-07-24; lands at execution.
+**Implementation (as executed).** Migration `037` adds `shutdown_interrupted boolean NOT NULL
+DEFAULT false` (additive/idempotent). The `index.mjs` SIGTERM handler, before the pool closes,
+calls `markInProgressBotAllyMatchesInterrupted(pool, [...botAllyDrivers.keys()])` (best-effort,
+guarded — a mark failure is logged and shutdown proceeds). `readRevivableBotAllyMatches` gains the
+`OR shutdown_interrupted = true` clause (and returns the flag); `markBotAllyMatchRevived` clears the
+flag on every revival (the one-boot exemption); a deploy-recovery past the cap is logged distinctly.
+An OOM / crash sends no SIGTERM ⇒ no flag ⇒ never free-revived (the OOM-loop guard holds).
+
+**Packet:** WP-420 + EC-455. **Drafted + Executed:** 2026-07-24. Bot-ally route suite 35/0 (4 new
++ the readRevivable test updated); full server suite green (931/0 + DB-gated skips); `pnpm -r
+--no-bail test` green repo-wide (0 fail); `pnpm -r build` 0. `D-24026` live-verify operator-pending
+on deploy (a bot-ally match survives a mid-match deploy and keeps playing; a crash-lost one still
+surfaces the WP-419 banner).
 
 Protect this file.
