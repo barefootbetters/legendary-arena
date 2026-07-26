@@ -39,6 +39,7 @@ function createMockGameState(options?: {
   villainDefeatRequirements?: LegendaryGameState['villainDefeatRequirements'];
   villainAbilityHooks?: VillainAbilityHook[];
   cardDisplayData?: LegendaryGameState['cardDisplayData'];
+  villainAttachedHeroes?: LegendaryGameState['villainAttachedHeroes'];
 }): LegendaryGameState {
   const config = {
     schemeId: 'test-scheme',
@@ -93,6 +94,7 @@ function createMockGameState(options?: {
     villainDeckCardTypes: {},
     ko: [],
     attachedBystanders: {},
+    villainAttachedHeroes: options?.villainAttachedHeroes ?? {},
     turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0 },
     cardStats: {},
     mastermind: {
@@ -486,6 +488,46 @@ describe('fightVillain — defeat-requirement gate (WP-292 / D-24076)', () => {
         'core-villain-skrulls-super-skrull-00',
       ),
       'unmarked villain moved to the victory pile',
+    );
+  });
+});
+
+describe('fightVillain — captured-hero return log (WP-431)', () => {
+  it('logs each captured hero returning to the defeating player discard pile', () => {
+    const gameState = createMockGameState({
+      city: ['skrull-shapeshifters-00', null, null, null, null],
+      villainAttachedHeroes: { 'skrull-shapeshifters-00': ['core/hulk/unstoppable-hulk#4'] },
+    });
+    const moveContext = createMockMoveContext(gameState);
+    fightVillain(moveContext, { cityIndex: 0 });
+
+    assert.ok(
+      moveContext.G.playerZones['0']!.discard.includes('core/hulk/unstoppable-hulk#4'),
+      'captured hero moved into the defeating player discard pile',
+    );
+    assert.ok(
+      moveContext.G.messages.some(
+        (message) =>
+          message.includes('Player 0 gained') &&
+          message.includes('core/hulk/unstoppable-hulk#4') &&
+          message.includes('skrull-shapeshifters-00') &&
+          message.includes('into their discard pile.'),
+      ),
+      'a return-to-discard log line names the hero and the defeated villain',
+    );
+  });
+
+  it('emits no hero-return line when the villain captured no hero', () => {
+    const gameState = createMockGameState({
+      city: ['plain-villain-00', null, null, null, null],
+    });
+    const moveContext = createMockMoveContext(gameState);
+    fightVillain(moveContext, { cityIndex: 0 });
+
+    assert.equal(
+      moveContext.G.messages.filter((message) => message.includes('into their discard pile.')).length,
+      0,
+      'no hero-return line for a villain with no attached hero',
     );
   });
 });
