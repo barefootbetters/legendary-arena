@@ -7,6 +7,40 @@
 
 ## Current State
 
+### WP-431 / EC-466 — Narrate the City-Entry Bystander Attach + the Captured-Hero Return-on-Defeat (D-24252) (2026-07-25)
+
+**`User-Visible Surface = play.legendary-arena.com game log`.** Closes two
+**logging gaps** found while reviewing a full co-op Magneto game log — both
+underlying mechanics are **correct engine behavior**, but each performed a card
+movement with **no `G.messages` line**, so the log read as if two bugs had
+occurred:
+
+1. Every villain/henchman defeat rescued `captured + 1` bystanders — the **MVP
+   city-entry rule (D-18504)** silently attaches 1 bystander to every
+   villain/henchman on entering the City (`attachBystanderToVillain`,
+   `villainDeck.reveal.ts`). Only the villain-deck bystander *reveal* and the
+   Midtown-Bank twist were logged, so the later "rescued N bystander(s)" (a
+   faithful victory-pile delta) counted the silent entry bystander and read
+   off-by-one.
+2. A player "played" a hero they never recruited — the Skrull-Shapeshifters
+   ambush puts the rightmost HQ hero under the villain (`captureHeroFromHq`) and
+   on defeat `awardAttachedHeroes` moves it to the **defeating player's discard**
+   ("Fight: Gain that Hero", WP-214). The capture was logged; the return was
+   silent.
+
+**Fix (engine, log-only):** one guarded `pushLog` on the city-entry attach
+(snapshot the pile top BEFORE the attach; no line when the supply pile is empty)
+and one guarded `pushLog` per captured hero returned (snapshot
+`G.villainAttachedHeroes` BEFORE `awardAttachedHeroes` deletes the entry; none
+when no hero attached). `G.messages` is **hash-excluded (D-24081)** → **no
+`finalStateHash` re-pin** (engine suite **2073/0**, +4, unchanged hashes); no
+state/contract/schema/persistence/response-shape/auth change; both edits stay in
+the Game Engine layer. The MVP-vs-canonical faithfulness of the D-18504 count is
+**unchanged and out of scope** (narrate only). `pnpm -r build` 0; `pnpm -r
+--no-bail test` green repo-wide. D-24026 N/A (log-text; verified by the +4 tests
+and re-reading the motivating log). Lightweight lane; drafted+executed off
+`origin/main` @ `529687d6`.
+
 ### WP-428 / EC-463 — Transport Diagnostics Block in the Play-Surface Diagnostic Export (D-24249) (2026-07-25)
 
 **`User-Visible Surface = none — internal operator tooling`.** The WP-228

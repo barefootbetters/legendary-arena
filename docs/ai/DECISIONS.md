@@ -32794,3 +32794,51 @@ suite 1099/1099 (+4); `pnpm -r build` 0; 5-file allowlist, no `bgioClient.ts` /
 `packages/**`.
 
 Protect this file.
+
+### D-24252 — the city-entry bystander attach and the captured-hero return-on-defeat are narrated into the durable game log (Active)
+
+**Context.** A full co-op game log (Magneto match, reviewed 2026-07-25) read as
+if two things happened by magic: (1) every Villain/Henchman defeat "rescued" one
+MORE bystander than the log had shown that card capturing, and (2) a player
+"played" a Hero (Unstoppable Hulk) they never recruited. Both are **correct
+engine behavior** — but two state transitions were happening with **no
+`G.messages` line**, so the log could not account for the cards.
+
+- (1) The **MVP city-entry rule (D-18504)** attaches exactly 1 bystander to every
+  villain/henchman as it enters the City (`bystanders.logic.attachBystanderToVillain`,
+  fired in `villainDeck.reveal.ts`). Only the villain-deck bystander *reveal* and
+  the Midtown-Bank twist were logged; the entry attach was silent → the later
+  "rescued N bystander(s)" (a faithful victory-pile delta) looked off-by-one.
+- (2) The **Skrull-Shapeshifters ambush** puts the rightmost HQ Hero under the
+  villain (`heroCapture.captureHeroFromHq`); on defeat `awardAttachedHeroes`
+  moves it to the **defeating player's discard** ("Fight: Gain that Hero",
+  WP-214). The capture was logged; the return was silent → a hero appeared in a
+  player's deck with no trail.
+
+**Decision.** Append a human-readable `G.messages` line at each of these two
+transitions:
+1. On city entry, when a bystander is actually attached (supply pile non-empty):
+   `"{bystander} captured by {villain} on entering the City."`
+2. On villain defeat, one line per captured hero returned:
+   `"Player {id} gained {hero} from {villain} into their discard pile."`
+
+**Why.** The engine's own Debuggability rule (`legendary-game-engine` SKILL:
+"when execution performs non-obvious behavior, a human-readable entry SHOULD be
+appended to `G.messages`") already prescribes this. These were the two remaining
+silent transitions that made a real game log unreadable.
+
+**Scope / boundary.** Log-only. `G.messages` is **hash-excluded (D-24081)**, so
+there is **no `finalStateHash` re-pin** and no determinism/replay footprint (full
+engine suite 2073/2073, +4, unchanged hashes). No state, contract, schema,
+persistence, response-shape, or auth change; both edits stay inside the Game
+Engine layer (no new cross-layer import). The MVP-vs-canonical faithfulness of
+the D-18504 entry-attach rule itself is **unchanged and out of scope** — this
+only narrates it. §21 N/A (no HTTP change). §17 Vision N/A (internal log
+readability; no rule/economy/revenue change). §20 N/A.
+
+**Packet:** WP-431 / EC-466 (lightweight lane, additive).
+`User-Visible Surface = play.legendary-arena.com game log` — the two lines are
+visible in the in-HUD log and the downloaded game-log export; verified by the +4
+engine tests and by re-reading the motivating Magneto log against the new lines.
+
+Protect this file.

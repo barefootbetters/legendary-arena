@@ -156,6 +156,11 @@ export function fightVillain(
   G.playerZones[ctx.currentPlayer]!.victory = awardResult.playerVictory;
 
   // Step 3c: Award attached heroes to player's discard pile (WP-214)
+  // why: WP-431 — capture the attached-hero list BEFORE awardAttachedHeroes
+  // deletes the mapping entry, so the log below can name each hero returned to
+  // the defeating player's discard ("Fight: Gain that Hero"). Deterministic
+  // append order; empty when the villain captured no HQ hero.
+  const heroesReturnedToDiscard = [...(G.villainAttachedHeroes?.[cardId] ?? [])];
   awardAttachedHeroes(G, cardId, ctx.currentPlayer);
 
   G.turnEconomy = spendAttack(G.turnEconomy, requiredFightCost);
@@ -182,8 +187,18 @@ export function fightVillain(
   );
   const bystandersRescued = awardResult.playerVictory.length - victoryBefore;
   if (awardResult.playerVictory.length > victoryBefore) {
-    pushLog(G, 
+    pushLog(G,
       `Player ${ctx.currentPlayer} rescued ${bystandersRescued} bystander(s) from ${formatCardRef(G.cardDisplayData, cardId)}.`,
+    );
+  }
+  // why: WP-431 — narrate the captured HQ hero(es) returning to the defeating
+  // player's discard on villain defeat (awardAttachedHeroes above; the villain's
+  // "Fight: Gain that Hero" text). Without this line a hero the player never
+  // recruited appears in their deck with no log trail. Durable log (G.messages,
+  // hash-excluded per D-24081). One line per hero; none when no hero was captured.
+  for (const heroId of heroesReturnedToDiscard) {
+    pushLog(G,
+      `Player ${ctx.currentPlayer} gained ${formatCardRef(G.cardDisplayData, heroId)} from ${formatCardRef(G.cardDisplayData, cardId)} into their discard pile.`,
     );
   }
 

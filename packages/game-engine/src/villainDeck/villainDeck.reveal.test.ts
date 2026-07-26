@@ -263,6 +263,55 @@ describe('revealVillainCard', () => {
     );
   });
 
+  it('logs the city-entry bystander capture when the supply pile is non-empty (WP-431)', () => {
+    // why: WP-431 — the MVP city-entry rule (D-18504) attaches 1 bystander to
+    // every villain/henchman entering the City; without a log line the later
+    // "rescued N bystander(s)" reads as off-by-one. The line names the bystander.
+    const gameState = createMockGameState({
+      deck: ['card-a', 'card-b'],
+      discard: [],
+      cardTypes: { 'card-a': 'villain', 'card-b': 'villain' },
+    });
+    gameState.piles.bystanders = ['bystander-x', 'bystander-y'];
+
+    const moveContext = createMockMoveContext(gameState);
+    revealVillainCard(moveContext);
+
+    assert.ok(
+      moveContext.G.messages.some(
+        (message) =>
+          message.includes('bystander-x') &&
+          message.includes('captured by') &&
+          message.includes('card-a') &&
+          message.includes('on entering the City.'),
+      ),
+      'an entry-capture line names the attached bystander and the entering villain',
+    );
+    assert.equal(
+      moveContext.G.piles.bystanders.length,
+      1,
+      'exactly one bystander left the supply pile on entry',
+    );
+  });
+
+  it('emits no city-entry bystander line when the supply pile is empty (WP-431)', () => {
+    const gameState = createMockGameState({
+      deck: ['card-a', 'card-b'],
+      discard: [],
+      cardTypes: { 'card-a': 'villain', 'card-b': 'villain' },
+    });
+    // piles.bystanders is [] by default — the attach is a deterministic no-op.
+
+    const moveContext = createMockMoveContext(gameState);
+    revealVillainCard(moveContext);
+
+    assert.equal(
+      moveContext.G.messages.filter((message) => message.includes('on entering the City.')).length,
+      0,
+      'no entry-capture line when there is no bystander to attach',
+    );
+  });
+
   it('onCardRevealed trigger fires with correct cardId and cardTypeSlug', () => {
     const testHook = createTestHookDefinition(['onCardRevealed']);
     const gameState = createMockGameState({

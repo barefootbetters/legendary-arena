@@ -345,6 +345,11 @@ export function performVillainReveal(
 
     // why: bystander appears with villain on City entry; rule hooks must
     // observe post-attachment state (tabletop Legendary semantics)
+    // why: WP-431 — read the bystander that WILL be attached BEFORE the attach
+    // mutates the pile, so the entry-capture log line below can name it. null
+    // when the supply pile is empty (attachBystanderToVillain is then a no-op).
+    const bystanderAttachedOnEntry =
+      G.piles.bystanders.length > 0 ? G.piles.bystanders[0]! : null;
     const attachResult = attachBystanderToVillain(
       G.piles.bystanders,
       cardId,
@@ -352,6 +357,18 @@ export function performVillainReveal(
     );
     G.piles.bystanders = attachResult.bystandersPile;
     G.attachedBystanders = attachResult.attachedBystanders;
+    // why: WP-431 — narrate the MVP city-entry bystander attach (D-18504: every
+    // villain/henchman captures 1 bystander on entering the City) into the
+    // durable log (G.messages, hash-excluded per D-24081). Without this line the
+    // later "rescued N bystander(s)" on defeat reads as off-by-one against the
+    // log, because the entry bystander was never announced. Guarded: no line
+    // when the supply pile was empty (the attach was a deterministic no-op).
+    if (bystanderAttachedOnEntry !== null) {
+      pushLog(
+        G,
+        `${formatCardRef(G.cardDisplayData, bystanderAttachedOnEntry)} captured by ${formatCardRef(G.cardDisplayData, cardId)} on entering the City.`,
+      );
+    }
   } else {
     // Non-city card types: remove from deck before trigger/discard routing
     G.villainDeck.deck = G.villainDeck.deck.slice(1);
