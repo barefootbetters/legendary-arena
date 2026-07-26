@@ -90,3 +90,4 @@ high-water: 24241
 - D-24250 — transport-reconnect-resync-counters (reconnect/resync/watchdog counters in the transport diagnostics block; 2026-07-25, spec/wp-429-transport-counters)
 - D-24251 — fluid-desktop responsive scaling (max-width play-area cap + fluid clamp card/gutter sizing, additive to D-12909; 2026-07-25, spec/wp-429-fluid-desktop-scaling)
 - D-24252 — log-entry-bystander-and-hero-return (narrate the D-18504 city-entry bystander attach + the WP-214 captured-hero return-on-defeat into G.messages; log-only, hash-excluded per D-24081; 2026-07-25, fix/log-entry-bystander-and-hero-return)
+- D-24253 — log-outcome-contract-design (WP-B.3 DESIGN: G.messages string[]→LogEntry[] records carrying a coarse LogOutcome for green/red/yellow colour-coding; retires the D-24100 effectProvenance heuristic; design ruling only, no code; 2026-07-25, spec/wpb3-log-outcome-design)

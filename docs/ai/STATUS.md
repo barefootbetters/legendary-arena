@@ -7,6 +7,31 @@
 
 ## Current State
 
+### WP-B.3 DESIGN — Structured Log-Outcome Contract + Colour-Coding (D-24253, design-only) (2026-07-25)
+
+**`User-Visible Surface = none (design ruling; play.legendary-arena.com game log on implementation)`.**
+Resolves the seven design forks for the last deferred slice of the log-enrichment
+arc (D-24111) and decomposes it into three WPs, **authoring no code**. Deliverable:
+`docs/ai/DESIGN-LOG-OUTCOME-CONTRACT.md` (its own doc, not a section of
+`DESIGN-HOLLOW-EFFECT-DETECTION.md` — shared taxonomy root, disjoint surfaces).
+
+Ruling: `G.messages: string[]` → `LogEntry[]` (`{ text, outcome }`), records in
+place (not a sidecar, not UIState-derived); a coarse drift-detected
+`LOG_OUTCOMES = ['neutral','applied','partial','blocked']` (green/yellow/red) that
+*projects* WP-257's finer `EffectExecutionReason`; `pushLog(G, message,
+outcome = 'neutral')` so ~22 of 29 caller files stay byte-unchanged; fixtures
+regenerated with `finalStateHash` **unchanged** (D-24081); client renders colour
+**plus** a non-colour glyph/aria signal; the D-24100 `effectProvenance` outcome
+heuristic retires last (its `awaitingPlayerInput` freeze-read is kept). Business
+case: kills the prose-parsing regression class that cost two hotfixes (WP-328,
+WP-417/PR #980).
+
+Decomposition (concrete WP numbers reserved at draft time): **B.3a** engine
+contract end-to-end but visually invisible (two-session), **B.3b** client colour +
+a11y + export (standard), **B.3c** `effectProvenance` retirement (standard, gated
+on a live-match proof). Reserves **D-24253**. **Awaiting Jeff's review before the
+WPs are drafted** — no implementation authorized by this session.
+
 ### WP-431 / EC-466 — Narrate the City-Entry Bystander Attach + the Captured-Hero Return-on-Defeat (D-24252) (2026-07-25)
 
 **`User-Visible Surface = play.legendary-arena.com game log`.** Closes two
