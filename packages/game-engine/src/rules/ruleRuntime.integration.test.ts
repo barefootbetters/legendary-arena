@@ -88,7 +88,7 @@ describe('rule execution pipeline — integration', () => {
     applyRuleEffects(gameState, {}, effects);
 
     assert.ok(
-      gameState.messages.includes('Scheme twist revealed — twist count incremented.'),
+      gameState.messages.some((entry) => entry.text === 'Scheme twist revealed — twist count incremented.'),
       'G.messages must contain scheme twist message after onSchemeTwistRevealed',
     );
   });
@@ -111,7 +111,7 @@ describe('rule execution pipeline — integration', () => {
     applyRuleEffects(gameState, {}, effects);
 
     assert.ok(
-      gameState.messages.includes('Mastermind strike revealed — strike count incremented.'),
+      gameState.messages.some((entry) => entry.text === 'Mastermind strike revealed — strike count incremented.'),
       'G.messages must contain mastermind strike message after onMastermindStrikeRevealed',
     );
   });
@@ -225,7 +225,7 @@ describe('rule execution pipeline — integration', () => {
     applyRuleEffects(gameState, {}, unknownEffects);
 
     assert.ok(
-      gameState.messages.some((message) => message.includes('Unknown rule effect type')),
+      gameState.messages.some((message) => message.text.includes('Unknown rule effect type')),
       'G.messages must contain a warning about the unknown effect type',
     );
   });

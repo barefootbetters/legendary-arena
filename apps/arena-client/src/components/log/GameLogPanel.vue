@@ -8,6 +8,7 @@ import {
   watch,
   type PropType,
 } from 'vue';
+import type { LogEntry } from '@legendary-arena/game-engine';
 import { isPinnedToBottom } from './gameLogScroll';
 import { buildGameLogText, GAME_LOG_EXPORT_FILE_NAME } from './gameLogExport';
 
@@ -41,7 +42,7 @@ export default defineComponent({
   name: 'GameLogPanel',
   props: {
     log: {
-      type: Array as PropType<readonly string[]>,
+      type: Array as PropType<readonly LogEntry[]>,
       required: true,
     },
   },
@@ -244,7 +245,7 @@ export default defineComponent({
             :data-index="index"
             data-testid="game-log-line"
           >
-            {{ entry }}
+            {{ entry.text }}
           </li>
         </ol>
       </template>
@@ -311,7 +312,7 @@ export default defineComponent({
                   :key="index"
                   :data-index="index"
                 >
-                  {{ entry }}
+                  {{ entry.text }}
                 </li>
               </ol>
             </template>

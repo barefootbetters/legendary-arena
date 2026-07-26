@@ -248,7 +248,7 @@ describe('applyReplayStep', () => {
       'Unknown move must append exactly one message to gameState.messages',
     );
     assert.strictEqual(
-      gameState.messages[gameState.messages.length - 1],
+      gameState.messages[gameState.messages.length - 1]!.text,
       'Replay warning: unknown move name "nonexistentMove" — skipped.',
       'Unknown-move message text must match the canonical warning-and-skip string',
     );

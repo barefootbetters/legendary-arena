@@ -19,6 +19,7 @@ import type {
   ScenarioScoringConfig,
 } from '../types.js';
 import { TURN_STAGES } from '../turn/turnPhases.types.js';
+import type { LogEntry } from '../log/logOutcome.types.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
 import type { CardRegistryReader } from '../matchSetup.validate.js';
 import { buildPlayerState } from './playerInit.js';
@@ -474,7 +475,11 @@ export function buildInitialGameState(
     hasHealedThisTurn: false,
     playerZones,
     piles,
-    messages: setupMessages,
+    // why: WP-434 — setup-time diagnostics are plain narration; wrap each as a
+    // neutral LogEntry so G.messages is LogEntry[] from initialization. logMeta is
+    // not yet stamped at setup, so these carry no numbering prefix (matches prior
+    // behaviour where setup messages were bare strings).
+    messages: setupMessages.map((text): LogEntry => ({ text, outcome: 'neutral' })),
     counters: {},
     hookRegistry: buildDefaultHookDefinitions(config),
     // why: villain deck built from registry data at setup time; see D-1410

@@ -158,8 +158,8 @@ describe('recordHollowEffect', () => {
     const G = makeG();
     recordHollowEffect(G, makeRecord({ mechanic: 'phantom', timing: 'onPlay' }));
     assert.equal(G.messages.length, 1);
-    assert.match(G.messages[0]!, /Unhandled effect observed/);
-    assert.match(G.messages[0]!, /phantom/);
+    assert.match(G.messages[0]!.text, /Unhandled effect observed/);
+    assert.match(G.messages[0]!.text, /phantom/);
   });
 
   it('stores the record fields verbatim (the machine-readable contract)', () => {

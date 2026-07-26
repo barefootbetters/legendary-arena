@@ -7,6 +7,43 @@
 
 ## Current State
 
+### WP-434 / EC-469 — Structured Log-Outcome Engine Contract (`G.messages` → `LogEntry[]`) (WP-B.3a, D-24253) (2026-07-26)
+
+**`User-Visible Surface = play.legendary-arena.com` — D-24026 N/A for behavior**
+(the log renders identically; the visible change is B.3b's colour). WP-B.3a of the
+ratified log-outcome design lands the engine contract **end-to-end but visually
+invisible**: `G.messages` and `UIState.log` are now `LogEntry[]` (`{ text, outcome }`),
+`LOG_OUTCOMES = ['neutral','applied','partial','blocked']` is a drift-detected
+canonical array (a projection of WP-257's `EffectExecutionReason`), and
+`pushLog(G, message, outcome = 'neutral')` keeps non-opt-in callers unchanged while the
+bounded outcome-bearing emissions opt in (draw full=`applied`/short=`partial`;
+attack/recruit/self-KO=`applied`; condition-failed=`blocked`; reveal
+matched=`applied`/matched-unapplied=`partial`/no-branch=`blocked`; hollow=`blocked`;
+Master-Strike supply-empty=`blocked`). The arena-client re-types `UIState.log`, renders
+`entry.text` (no colour yet), and its export/replay-inspector/effectProvenance
+log-**read** all migrate to `.text` (the effectProvenance outcome *heuristic* is
+untouched — it retires in B.3c as the D-24253 §9 fallback).
+
+**Determinism / persistence held:** `G.messages` hash-excluded (D-24081) — the single
+`sentinel-core-doom-2p.replay.json` fixture was **regenerated** (`record-game-fixture.mjs`)
+with a **byte-unchanged `finalStateHash`** (only the added `outcome` fields differ);
+`MatchSnapshot.messages` stays `string[]` via a create-time `.text` flatten (PS-4
+Option B — persistence shape untouched); `computeStateHash`/`PRE_WP080_HASH` unchanged
+(empty final messages).
+
+**Scaffold-first surface** (the type migration broke wider than pre-flight named —
+folded in under the locked transform per the EC's scaffold mandate): +2 non-test
+writers the scaffold surfaced (`scheme/schemeSetup.execute.ts` immutable record
+literals, `setup/buildInitialGameState.ts` map-to-records) beyond the pre-flight's
+`mastermindHandlers` / `simulation` writers; ~34 engine test files + the arena-client
+log/replay/page tests + 4 JSON/UIState fixtures migrated (`string` reads → `.text`;
+string literals → records; snapshot messages stay strings). `LogEntry`/`LogOutcome`
+re-exported from the engine barrel for the client.
+
+Engine suite **2073/0**; `pnpm -r build` 0; arena-client typecheck 0. Reserves nothing
+new (implements D-24253). **B.3b (client colour + a11y) and B.3c (effectProvenance
+retirement) remain the next slices.**
+
 ### WP-433 / EC-468 — Bot-Ally Turn-Fault Observability (D-24255) (2026-07-26)
 
 **`User-Visible Surface = none — internal operator tooling`.** Closes the

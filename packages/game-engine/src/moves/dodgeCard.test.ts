@@ -196,7 +196,7 @@ describe('dodgeCard — honest fix (discard one Dodge card from hand, draw one r
 
     assert.equal(gameState.messages.length - messagesBefore, 1, 'exactly one G.messages line is pushed');
     assert.equal(
-      gameState.messages[gameState.messages.length - 1],
+      gameState.messages[gameState.messages.length - 1]!.text,
       'Player 0 dodged DODGE (DODGE) (discarded from hand, drew 1 replacement)',
       'the dodge log line matches the byte-locked format exactly',
     );
@@ -210,7 +210,7 @@ describe('dodgeCard — honest fix (discard one Dodge card from hand, draw one r
     });
 
     dodgeCard(createMoveContext(gameState), { cardId: 'DODGE' });
-    const lastMessage = gameState.messages[gameState.messages.length - 1]!;
+    const lastMessage = gameState.messages[gameState.messages.length - 1]!.text;
 
     assert.equal(/\d{4}-\d{2}-\d{2}/.test(lastMessage), false, 'no date pattern (YYYY-MM-DD)');
     assert.equal(/T\d{2}:\d{2}:\d{2}/.test(lastMessage), false, 'no ISO timestamp pattern');

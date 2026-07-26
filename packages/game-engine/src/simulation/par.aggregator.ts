@@ -30,6 +30,7 @@
  */
 
 import type { LegendaryGameState } from '../types.js';
+import { pushLog } from '../log/logPush.js';
 import type { CardRegistryReader } from '../matchSetup.validate.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
 import type {
@@ -545,7 +546,8 @@ function simulateOneGame(
       // keeps choosing a no-op move would otherwise loop forever without
       // advancing turnsElapsed. Hitting this cap is recorded as a
       // structural warning in G.messages; the game counts as stuck.
-      gameState.messages.push(
+      pushLog(
+        gameState,
         `PAR aggregator warning: game exceeded MAX_MOVES_PER_GAME (${MAX_MOVES_PER_GAME}) without terminating — flagging as stuck.`,
       );
       turnsElapsed = MAX_TURNS_PER_GAME;
@@ -574,7 +576,8 @@ function simulateOneGame(
     const endTurnFlag = { triggered: false };
 
     if (moveFn === undefined) {
-      gameState.messages.push(
+      pushLog(
+        gameState,
         `PAR aggregator warning: unknown move name "${intent.move.name}" — skipped.`,
       );
     } else {
@@ -599,7 +602,8 @@ function simulateOneGame(
       !endTurnFlag.triggered &&
       gameState.currentStage !== 'cleanup'
     ) {
-      gameState.messages.push(
+      pushLog(
+        gameState,
         `PAR aggregator warning: policy "${policy.name}" returned endTurn outside cleanup — flagging game as stuck.`,
       );
       turnsElapsed = MAX_TURNS_PER_GAME;

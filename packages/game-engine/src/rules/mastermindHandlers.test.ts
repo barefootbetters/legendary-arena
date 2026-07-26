@@ -180,7 +180,7 @@ describe('mastermindStrikeHandler', () => {
       'exactly one message appended on empty supply',
     );
     assert.ok(
-      gameState.messages[gameState.messages.length - 1]!.startsWith('[Master Strike]'),
+      gameState.messages[gameState.messages.length - 1]!.text.startsWith('[Master Strike]'),
       'empty-supply message must begin with [Master Strike] prefix',
     );
   });
@@ -388,10 +388,10 @@ describe('mastermindStrikeHandler — Magneto Master Strike', () => {
     mastermindStrikeHandler(gameState, {}, { cardId: 'strike-card' }, {});
 
     const player0Message = gameState.messages.find(
-      (message) => message.includes('Magneto') && message.includes('Player 0'),
+      (message) => message.text.includes('Magneto') && message.text.includes('Player 0'),
     );
     const player1Message = gameState.messages.find(
-      (message) => message.includes('Magneto') && message.includes('Player 1'),
+      (message) => message.text.includes('Magneto') && message.text.includes('Player 1'),
     );
 
     assert.ok(player0Message, 'Player 0 (discarded) must have a Magneto log line');
@@ -519,9 +519,9 @@ describe('mastermindStrikeHandler — Red Skull Master Strike', () => {
     assert.deepStrictEqual(gameState.ko, []);
     const noHeroLine = gameState.messages.find(
       (message) =>
-        message.includes('Red Skull') &&
-        message.includes('Player 0') &&
-        message.includes('no Hero'),
+        message.text.includes('Red Skull') &&
+        message.text.includes('Player 0') &&
+        message.text.includes('no Hero'),
     );
     assert.ok(noHeroLine, 'an all-Wound hand must log the no-Hero line');
   });
@@ -535,9 +535,9 @@ describe('mastermindStrikeHandler — Red Skull Master Strike', () => {
     assert.deepStrictEqual(gameState.ko, []);
     const noHeroLine = gameState.messages.find(
       (message) =>
-        message.includes('Red Skull') &&
-        message.includes('Player 0') &&
-        message.includes('no Hero'),
+        message.text.includes('Red Skull') &&
+        message.text.includes('Player 0') &&
+        message.text.includes('no Hero'),
     );
     assert.ok(noHeroLine, 'an empty hand must log the no-Hero line');
   });
@@ -564,15 +564,15 @@ describe('mastermindStrikeHandler — Red Skull Master Strike', () => {
 
     const player0Line = gameState.messages.find(
       (message) =>
-        message.includes('Red Skull') &&
-        message.includes('Player 0') &&
-        message.includes("KO'd"),
+        message.text.includes('Red Skull') &&
+        message.text.includes('Player 0') &&
+        message.text.includes("KO'd"),
     );
     const player1Line = gameState.messages.find(
       (message) =>
-        message.includes('Red Skull') &&
-        message.includes('Player 1') &&
-        message.includes("KO'd"),
+        message.text.includes('Red Skull') &&
+        message.text.includes('Player 1') &&
+        message.text.includes("KO'd"),
     );
     assert.ok(player0Line, 'Player 0 KO line present');
     assert.ok(player1Line, 'Player 1 KO line present');
@@ -1102,7 +1102,7 @@ describe('mastermindStrikeHandler — Doctor Octopus reveal-eight (WP-397)', () 
     );
     assert.deepEqual(gameState.playerZones['0']!.deck, ['x', 'y', 'z']);
     assert.ok(
-      gameState.messages.some((line) => line.includes('no shuffle available')),
+      gameState.messages.some((line) => line.text.includes('no shuffle available')),
       'the fallback is logged rather than silent',
     );
   });

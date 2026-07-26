@@ -224,7 +224,7 @@ describe('playCard precondition (D-24185) — the base-power leak fix', () => {
     assert.deepStrictEqual(state.playerZones['0']!.inPlay, [], 'nothing committed to inPlay');
     assert.equal(state.turnEconomy.attack, 0, 'NO base attack is granted — the cost was unpayable');
     assert.equal(hasPendingDiscardToPlay(state), false, 'no choice is parked');
-    assert.match(state.messages[state.messages.length - 1]!, /could not play .* discarding/,
+    assert.match(state.messages[state.messages.length - 1]!.text, /could not play .* discarding/,
       'the blocked play is logged for replay inspection');
   });
 
@@ -252,7 +252,7 @@ describe('resolveDiscardToPlay — pay the cost', () => {
     assert.deepStrictEqual(state.playerZones['0']!.hand, ['spare-b'], 'the chosen card leaves the hand');
     assert.deepStrictEqual(state.playerZones['0']!.discard, ['spare-a'], 'the chosen card enters discard');
     assert.equal(state.pendingDiscardToPlay!.length, 0, 'the entry is popped once remaining hits 0');
-    assert.match(state.messages[state.messages.length - 1]!, /discarded .* to pay the cost/,
+    assert.match(state.messages[state.messages.length - 1]!.text, /discarded .* to pay the cost/,
       'the discard is observable in the game log');
   });
 

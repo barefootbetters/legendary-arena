@@ -7,18 +7,25 @@ test('buildGameLogText: an empty log yields an empty string (no stray newline)',
 });
 
 test('buildGameLogText: a single entry gets a trailing newline', () => {
-  assert.equal(buildGameLogText(['only entry']), 'only entry\n');
+  assert.equal(buildGameLogText([{ text: 'only entry', outcome: 'neutral' }]), 'only entry\n');
 });
 
 test('buildGameLogText: multiple entries, one per line, chronological, trailing newline', () => {
   assert.equal(
-    buildGameLogText(['first', 'second', 'third']),
+    buildGameLogText([
+      { text: 'first', outcome: 'neutral' },
+      { text: 'second', outcome: 'neutral' },
+      { text: 'third', outcome: 'neutral' },
+    ]),
     'first\nsecond\nthird\n',
   );
 });
 
 test('buildGameLogText: preserves entry text verbatim (no reordering or trimming)', () => {
-  const log = ['  Player 0 fought "Sentinel".', 'Player 0 rescued 2 bystander(s).'];
+  const log = [
+    { text: '  Player 0 fought "Sentinel".', outcome: 'neutral' as const },
+    { text: 'Player 0 rescued 2 bystander(s).', outcome: 'neutral' as const },
+  ];
   assert.equal(
     buildGameLogText(log),
     '  Player 0 fought "Sentinel".\nPlayer 0 rescued 2 bystander(s).\n',

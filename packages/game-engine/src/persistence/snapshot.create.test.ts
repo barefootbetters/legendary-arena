@@ -63,7 +63,10 @@ function buildMockGameState(): LegendaryGameState {
       officers: ['officer-1', 'officer-2', 'officer-3'],
       sidekicks: ['sidekick-1'],
     },
-    messages: ['Turn 1 started.', 'Player 0 drew 6 cards.'],
+    messages: [
+      { text: 'Turn 1 started.', outcome: 'neutral' },
+      { text: 'Player 0 drew 6 cards.', outcome: 'neutral' },
+    ],
     counters: { escapedVillains: 2, schemeLoss: 0, mastermindDefeated: 0 },
     hookRegistry: [],
     villainDeck: { deck: [], discard: [] },

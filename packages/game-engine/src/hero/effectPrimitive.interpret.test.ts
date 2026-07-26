@@ -134,7 +134,7 @@ describe('interpretHeroPrimitiveEffect — max-class-count-in-zone (classes: all
     assert.doesNotThrow(() => interpretHeroPrimitiveEffect(G, CTX, '0', buildEmpoweredFreeChoiceComposition()));
     assert.equal(G.turnEconomy!.attack, 0, 'absent G.hq → +0');
     assert.ok(
-      (G.messages as string[]).some((message) => message.includes('no HQ zone or no card traits')),
+      G.messages.some((message) => message.text.includes('no HQ zone or no card traits')),
       'a missing G.hq warns',
     );
   });
@@ -363,7 +363,7 @@ describe('interpretHeroPrimitiveEffect — WP-317 grant log', () => {
     });
     interpretHeroPrimitiveEffect(G, CTX, '0', buildEmpoweredFreeChoiceComposition(), SOURCE);
     assert.ok(
-      (G.messages as string[]).includes(`Player 0's ${SOURCE} (${SOURCE}) gained +3 attack.`),
+      G.messages.some((entry) => entry.text === `Player 0's ${SOURCE} (${SOURCE}) gained +3 attack.`),
       'the grant line names the card + amount + attack resource',
     );
   });
@@ -385,7 +385,7 @@ describe('interpretHeroPrimitiveEffect — WP-317 grant log', () => {
     } as EffectNode;
     interpretHeroPrimitiveEffect(G, CTX, '0', recruitNode, SOURCE);
     assert.ok(
-      (G.messages as string[]).includes(`Player 0's ${SOURCE} (${SOURCE}) gained +2 recruit.`),
+      G.messages.some((entry) => entry.text === `Player 0's ${SOURCE} (${SOURCE}) gained +2 recruit.`),
       'the grant line uses the recruit resource word',
     );
     assert.equal(G.turnEconomy!.recruit, 2, 'recruit economy increased by the granted amount');
@@ -398,7 +398,7 @@ describe('interpretHeroPrimitiveEffect — WP-317 grant log', () => {
     });
     interpretHeroPrimitiveEffect(G, CTX, '0', buildEmpoweredFreeChoiceComposition());
     assert.ok(
-      (G.messages as string[]).includes('Player 0 gained +1 attack.'),
+      G.messages.some((entry) => entry.text === 'Player 0 gained +1 attack.'),
       'the no-card form is used when the source card is unknown',
     );
   });
@@ -407,7 +407,7 @@ describe('interpretHeroPrimitiveEffect — WP-317 grant log', () => {
     const G = makeState({ hq: [null, null, null, null, null], cardTraits: {} });
     interpretHeroPrimitiveEffect(G, CTX, '0', buildEmpoweredFreeChoiceComposition(), SOURCE);
     assert.ok(
-      (G.messages as string[]).includes(`Player 0's ${SOURCE} (${SOURCE}) gained +0 attack.`),
+      G.messages.some((entry) => entry.text === `Player 0's ${SOURCE} (${SOURCE}) gained +0 attack.`),
       'a zero-count composition still logs a +0 line (distinct from a condition-skip)',
     );
   });
@@ -419,7 +419,7 @@ describe('interpretHeroPrimitiveEffect — WP-317 grant log', () => {
     (G.cardStats as Record<string, { attack: number }>)['berserk-fodder'] = { attack: 4 };
     interpretHeroPrimitiveEffect(G, CTX, '0', HERO_COMPOSITION_MARKERS.berserk, BERSERK);
     assert.ok(
-      (G.messages as string[]).includes(`Player 0's ${BERSERK} (${BERSERK}) gained +4 attack.`),
+      G.messages.some((entry) => entry.text === `Player 0's ${BERSERK} (${BERSERK}) gained +4 attack.`),
       'the nested gain-resource in the sequence names the sequence source card',
     );
     assert.deepStrictEqual(

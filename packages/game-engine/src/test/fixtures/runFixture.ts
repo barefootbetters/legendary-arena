@@ -19,6 +19,7 @@
  */
 
 import type { LegendaryGameState } from '../../types.js';
+import type { LogEntry } from '../../log/logOutcome.types.js';
 import type { CardRegistryReader } from '../../matchSetup.validate.js';
 import type { ReplayMove } from '../../replay/replay.types.js';
 import type { MatchSnapshot } from '../../persistence/persistence.types.js';
@@ -414,7 +415,9 @@ function executeOnce(
   // `result.messages` (e.g., to filter for display) would otherwise
   // mutate the unreachable G's array. Copying at the projection
   // boundary makes the projection a true value, not an alias.
-  const messages: string[] = [...gameState.messages];
+  // why: WP-434 — the full-log projection carries LogEntry records ({ text, outcome })
+  // to feed the top-level messages oracle (which deep-compares text AND outcome).
+  const messages: LogEntry[] = [...gameState.messages];
 
   const finalStateHash = hashGameState(gameState);
 

@@ -253,7 +253,7 @@ describe('revealVillainCard — City integration', () => {
       'Escape counter must be incremented to 1',
     );
     assert.ok(
-      moveContext.G.messages.some((message) => message.includes('escaped')),
+      moveContext.G.messages.some((message) => message.text.includes('escaped')),
       'An escape message must be in G.messages',
     );
   });
@@ -334,7 +334,7 @@ describe('revealVillainCard — City integration', () => {
       'Counter must not increment when city is malformed',
     );
     assert.ok(
-      moveContext.G.messages.some((message) => message.includes('malformed')),
+      moveContext.G.messages.some((message) => message.text.includes('malformed')),
       'A malformed-city message must be in G.messages',
     );
   });

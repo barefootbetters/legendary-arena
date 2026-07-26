@@ -640,7 +640,7 @@ describe('buildInitialGameState — setup-time completeness diagnostic (PS-8)', 
     const gameState = buildInitialGameState(config, registry, setupContext);
 
     const cardDisplayDataMessages = gameState.messages.filter((m) =>
-      m.includes('buildCardDisplayData'),
+      m.text.includes('buildCardDisplayData'),
     );
     assert.equal(
       cardDisplayDataMessages.length,
@@ -662,7 +662,7 @@ describe('buildInitialGameState — setup-time completeness diagnostic (PS-8)', 
     const gameState = buildInitialGameState(config, registry, setupContext);
 
     const underEmittedMessages = gameState.messages.filter((m) =>
-      m.includes('under-emitted'),
+      m.text.includes('under-emitted'),
     );
     assert.equal(
       underEmittedMessages.length,

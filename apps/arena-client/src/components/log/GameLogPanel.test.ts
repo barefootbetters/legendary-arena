@@ -17,7 +17,11 @@ test('GameLogPanel renders the role="status" empty-state region when log is []',
 });
 
 test('GameLogPanel renders one <li> per entry in source order with stable data-index', () => {
-  const log = ['first entry', 'second entry', 'third entry'];
+  const log = [
+    { text: 'first entry', outcome: 'neutral' as const },
+    { text: 'second entry', outcome: 'neutral' as const },
+    { text: 'third entry', outcome: 'neutral' as const },
+  ];
 
   const wrapper = mount(GameLogPanel, { props: { log } });
 
@@ -34,7 +38,7 @@ test('GameLogPanel renders one <li> per entry in source order with stable data-i
 
 test('GameLogPanel list element carries aria-live="polite"', () => {
   const wrapper = mount(GameLogPanel, {
-    props: { log: ['only entry'] },
+    props: { log: [{ text: 'only entry', outcome: 'neutral' }] },
   });
 
   const list = wrapper.find('ol');
@@ -44,7 +48,11 @@ test('GameLogPanel list element carries aria-live="polite"', () => {
 });
 
 test('GameLogPanel does not mutate the supplied log array through render', () => {
-  const log = ['alpha', 'bravo', 'charlie'];
+  const log = [
+    { text: 'alpha', outcome: 'neutral' as const },
+    { text: 'bravo', outcome: 'neutral' as const },
+    { text: 'charlie', outcome: 'neutral' as const },
+  ];
   const before = JSON.stringify(log);
 
   mount(GameLogPanel, { props: { log } });
@@ -54,7 +62,7 @@ test('GameLogPanel does not mutate the supplied log array through render', () =>
 });
 
 test('GameLogPanel renders a Copy / Save / Expand toolbar with typed, labelled buttons', () => {
-  const wrapper = mount(GameLogPanel, { props: { log: ['a'] } });
+  const wrapper = mount(GameLogPanel, { props: { log: [{ text: 'a', outcome: 'neutral' }] } });
 
   const copy = wrapper.find('[data-testid="game-log-copy"]');
   const save = wrapper.find('[data-testid="game-log-save"]');
@@ -72,7 +80,7 @@ test('GameLogPanel renders a Copy / Save / Expand toolbar with typed, labelled b
 });
 
 test('GameLogPanel does not render the expand overlay until Expand is clicked', () => {
-  const wrapper = mount(GameLogPanel, { props: { log: ['a'] } });
+  const wrapper = mount(GameLogPanel, { props: { log: [{ text: 'a', outcome: 'neutral' }] } });
 
   // why: the <Teleport> node itself is v-if-gated — closed means no dialog
   // anywhere under document.body.
@@ -84,7 +92,11 @@ test('GameLogPanel does not render the expand overlay until Expand is clicked', 
 });
 
 test('clicking Expand mounts a role="dialog" overlay under document.body with the same entries', async () => {
-  const log = ['first', 'second', 'third'];
+  const log = [
+    { text: 'first', outcome: 'neutral' as const },
+    { text: 'second', outcome: 'neutral' as const },
+    { text: 'third', outcome: 'neutral' as const },
+  ];
   const wrapper = mount(GameLogPanel, { props: { log } });
 
   await wrapper.find('[data-testid="game-log-expand"]').trigger('click');
@@ -109,7 +121,7 @@ test('clicking Expand mounts a role="dialog" overlay under document.body with th
 });
 
 test('clicking Collapse closes the expand overlay', async () => {
-  const wrapper = mount(GameLogPanel, { props: { log: ['a'] } });
+  const wrapper = mount(GameLogPanel, { props: { log: [{ text: 'a', outcome: 'neutral' }] } });
   await wrapper.find('[data-testid="game-log-expand"]').trigger('click');
   assert.notEqual(
     document.body.querySelector('[data-testid="game-log-modal"]'),
@@ -128,7 +140,7 @@ test('clicking Collapse closes the expand overlay', async () => {
 });
 
 test('Escape keydown closes the expand overlay; backdrop click closes it too', async () => {
-  const wrapper = mount(GameLogPanel, { props: { log: ['a'] } });
+  const wrapper = mount(GameLogPanel, { props: { log: [{ text: 'a', outcome: 'neutral' }] } });
 
   await wrapper.find('[data-testid="game-log-expand"]').trigger('click');
   document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape' }));
@@ -152,7 +164,10 @@ test('Escape keydown closes the expand overlay; backdrop click closes it too', a
 });
 
 test('clicking Copy writes the built log transcript to the clipboard', async () => {
-  const log = ['first', 'second'];
+  const log = [
+    { text: 'first', outcome: 'neutral' as const },
+    { text: 'second', outcome: 'neutral' as const },
+  ];
   let capturedText: string | null = null;
   // why: jsdom's navigator has no Clipboard API — install a configurable stub
   // that captures the written text, then remove it so it does not leak to other

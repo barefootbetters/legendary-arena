@@ -162,9 +162,9 @@ describe('PlayDesktop (WP-129)', () => {
     setActivePinia(createPinia());
     const frame = snapshot();
     frame.log = [
-      'Player 0 fought "henchman-sentinel-00" at city space 1.',
-      'Fight effect: the active player KO’d Spider-Man from their discard.',
-      "Player 0's antm/black-knight/amulet-of-avalon#1 gained +2 attack.",
+      { text: 'Player 0 fought "henchman-sentinel-00" at city space 1.', outcome: 'neutral' },
+      { text: 'Fight effect: the active player KO’d Spider-Man from their discard.', outcome: 'neutral' },
+      { text: "Player 0's antm/black-knight/amulet-of-avalon#1 gained +2 attack.", outcome: 'neutral' },
     ];
     const store = useUiStateStore();
     store.setSnapshot(frame);

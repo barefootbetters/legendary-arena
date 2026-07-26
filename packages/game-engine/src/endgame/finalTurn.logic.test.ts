@@ -40,14 +40,14 @@ describe('latchFinalTurnIfDeckExhausted (WP-367 / D-24159)', () => {
     latchFinalTurnIfDeckExhausted(state);
     assert.equal(state.counters[ENDGAME_CONDITIONS.FINAL_TURN_TRIGGERED], 1);
     assert.equal(state.messages.length, 1);
-    assert.match(state.messages[0]!, /villain deck is empty/);
+    assert.match(state.messages[0]!.text, /villain deck is empty/);
   });
 
   it('latches when the hero deck is empty', () => {
     const state = makeState({ villainDeck: ['v-1'], heroDeck: [] });
     latchFinalTurnIfDeckExhausted(state);
     assert.equal(state.counters[ENDGAME_CONDITIONS.FINAL_TURN_TRIGGERED], 1);
-    assert.match(state.messages[0]!, /hero deck is empty/);
+    assert.match(state.messages[0]!.text, /hero deck is empty/);
   });
 
   // why: the core of Jeff's bug report — once a deck reaches zero the final turn
@@ -86,7 +86,7 @@ describe('resolveFinalTurnTieIfUnresolved (WP-367 / D-24159)', () => {
     });
     resolveFinalTurnTieIfUnresolved(state);
     assert.equal(state.counters[ENDGAME_CONDITIONS.FINAL_TURN_TIE], 1);
-    assert.match(state.messages[0]!, /tie between good and evil/);
+    assert.match(state.messages[0]!.text, /tie between good and evil/);
   });
 
   // why: "you can finish the current turn as a final chance to win" — a win that

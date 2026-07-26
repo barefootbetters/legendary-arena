@@ -15,8 +15,8 @@ test('pushLog prefixes {turn}.{step}.{action} and increments the per-step counte
   pushLog(G, 'Player 0 played X.');
   pushLog(G, 'Player 0 recruited Y.');
   assert.deepEqual(G.messages, [
-    '10.2.1 Player 0 played X.',
-    '10.2.2 Player 0 recruited Y.',
+    { text: '10.2.1 Player 0 played X.', outcome: 'neutral' },
+    { text: '10.2.2 Player 0 recruited Y.', outcome: 'neutral' },
   ]);
   assert.equal(G.logMeta!.actionInStep, 2);
 });
@@ -30,14 +30,14 @@ test('pushLog maps start/main/cleanup to steps 1/2/3', () => {
   for (const [stage, step] of cases) {
     const G = stateWith({ currentStage: stage, logMeta: { turn: 7, actionInStep: 0 } });
     pushLog(G, 'm');
-    assert.equal(G.messages[0], `7.${step}.1 m`);
+    assert.equal(G.messages[0]!.text, `7.${step}.1 m`);
   }
 });
 
 test('pushLog pushes the bare message when logMeta is absent (fallback)', () => {
   const G = stateWith({ currentStage: 'main' });
   pushLog(G, 'bare line');
-  assert.deepEqual(G.messages, ['bare line']);
+  assert.deepEqual(G.messages, [{ text: 'bare line', outcome: 'neutral' }]);
 });
 
 test('pushLog does not throw when messages is not an array', () => {

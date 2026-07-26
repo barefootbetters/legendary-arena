@@ -191,7 +191,7 @@ describe('resolveKoHeroChoice — success paths', () => {
 
     assert.ok(
       gameState.messages.some(
-        (message) => message.includes('Player 0') && message.includes("KO'd Optic Blast (hero-d)"),
+        (message) => message.text.includes('Player 0') && message.text.includes("KO'd Optic Blast (hero-d)"),
       ),
       'a resolve-time log line names the KO\'d hero',
     );
@@ -207,7 +207,7 @@ describe('resolveKoHeroChoice — success paths', () => {
     resolveKoHeroChoice(context, { zone: 'hand', cardId: 'hero-x' as CardExtId });
 
     assert.ok(
-      gameState.messages.some((message) => message.includes("KO'd hero-x (hero-x)")),
+      gameState.messages.some((message) => message.text.includes("KO'd hero-x (hero-x)")),
       'falls back to the ext_id when cardDisplayData has no entry',
     );
   });
@@ -223,7 +223,7 @@ describe('resolveKoHeroChoice — success paths', () => {
     resolveKoHeroChoice(context, { zone: 'hand', cardId: 'hero-d' as CardExtId });
 
     assert.equal(
-      gameState.messages.filter((message) => message.includes("KO'd")).length,
+      gameState.messages.filter((message) => message.text.includes("KO'd")).length,
       0,
       'a no-op resolve narrates nothing',
     );

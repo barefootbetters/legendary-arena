@@ -388,7 +388,7 @@ describe('buildInitialGameState — loadout integration', () => {
     const gameState = buildInitialGameState(config, registry, context);
 
     for (const prefix of SKIPPED_DIAGNOSTIC_PREFIXES) {
-      const matched = gameState.messages.some((message) => message.startsWith(prefix));
+      const matched = gameState.messages.some((message) => message.text.startsWith(prefix));
       assert.equal(
         matched,
         false,
@@ -426,7 +426,7 @@ describe('buildInitialGameState — orchestration-side diagnostic emission (PS-4
 
     const gameState = buildInitialGameState(config, registry, context);
 
-    const matched = gameState.messages.some((message) => message.startsWith('buildVillainDeck skipped'));
+    const matched = gameState.messages.some((message) => message.text.startsWith('buildVillainDeck skipped'));
     assert.ok(
       matched,
       'G.messages must contain a "buildVillainDeck skipped" diagnostic when listSets / getSet are missing',
@@ -440,7 +440,7 @@ describe('buildInitialGameState — orchestration-side diagnostic emission (PS-4
 
     const gameState = buildInitialGameState(config, registry, context);
 
-    const matched = gameState.messages.some((message) => message.startsWith('buildMastermindState skipped'));
+    const matched = gameState.messages.some((message) => message.text.startsWith('buildMastermindState skipped'));
     assert.ok(
       matched,
       'G.messages must contain a "buildMastermindState skipped" diagnostic when listSets / getSet are missing',
@@ -454,7 +454,7 @@ describe('buildInitialGameState — orchestration-side diagnostic emission (PS-4
 
     const gameState = buildInitialGameState(config, registry, context);
 
-    const matched = gameState.messages.some((message) => message.startsWith('buildSchemeSetupInstructions skipped'));
+    const matched = gameState.messages.some((message) => message.text.startsWith('buildSchemeSetupInstructions skipped'));
     assert.ok(
       matched,
       'G.messages must contain a "buildSchemeSetupInstructions skipped" diagnostic when listSets / getSet are missing',
@@ -468,7 +468,7 @@ describe('buildInitialGameState — orchestration-side diagnostic emission (PS-4
 
     const gameState = buildInitialGameState(config, registry, context);
 
-    const matched = gameState.messages.some((message) => message.startsWith('buildHeroAbilityHooks skipped'));
+    const matched = gameState.messages.some((message) => message.text.startsWith('buildHeroAbilityHooks skipped'));
     assert.equal(
       matched,
       false,

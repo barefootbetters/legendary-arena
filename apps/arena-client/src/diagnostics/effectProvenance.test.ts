@@ -64,9 +64,9 @@ describe('buildEffectProvenance — recentlyPlayedCards', () => {
     const provenance = buildEffectProvenance(
       snapshotWith({
         log: [
-          'Player 0 played antm/captain-america/perfect-teamwork#0.',
-          "Player 0 recruited a card.",
-          'Player 0 played antm/black-knight/the-ebony-blade#1.',
+          { text: 'Player 0 played antm/captain-america/perfect-teamwork#0.', outcome: 'neutral' },
+          { text: "Player 0 recruited a card.", outcome: 'neutral' },
+          { text: 'Player 0 played antm/black-knight/the-ebony-blade#1.', outcome: 'neutral' },
         ],
       }),
     );
@@ -86,9 +86,9 @@ describe('buildEffectProvenance — recentlyPlayedCards', () => {
     const provenance = buildEffectProvenance(
       snapshotWith({
         log: [
-          '10.2.1 Player 0 played Interstellar Adventures (wtif/star-lord-tchalla/interstellar-adventures#2) — What If...?: You get +3 recruit.',
-          '10.2.2 Player 0 played S.H.I.E.L.D. Agent (starting-shield-agent).',
-          'Player 0 played antm/black-knight/the-ebony-blade#0.',
+          { text: '10.2.1 Player 0 played Interstellar Adventures (wtif/star-lord-tchalla/interstellar-adventures#2) — What If...?: You get +3 recruit.', outcome: 'neutral' },
+          { text: '10.2.2 Player 0 played S.H.I.E.L.D. Agent (starting-shield-agent).', outcome: 'neutral' },
+          { text: 'Player 0 played antm/black-knight/the-ebony-blade#0.', outcome: 'neutral' },
         ],
       }),
     );
@@ -112,9 +112,9 @@ describe('buildEffectProvenance — recentlyPlayedCards', () => {
     const provenance = buildEffectProvenance(
       snapshotWith({
         log: [
-          '1.2.1 Player 1 played S.H.I.E.L.D. Agent (starting-shield-agent) (+1 recruit).',
-          '11.2.3 Player 1 played Quick Draw (core/hawkeye/quick-draw#2) (+1 attack) — Draw a card.',
-          '5.2.1 Player 1 played Growing Anger (core/hulk/growing-anger#0) (+2 attack) — Strength: You get +1 attack.',
+          { text: '1.2.1 Player 1 played S.H.I.E.L.D. Agent (starting-shield-agent) (+1 recruit).', outcome: 'neutral' },
+          { text: '11.2.3 Player 1 played Quick Draw (core/hawkeye/quick-draw#2) (+1 attack) — Draw a card.', outcome: 'neutral' },
+          { text: '5.2.1 Player 1 played Growing Anger (core/hulk/growing-anger#0) (+2 attack) — Strength: You get +1 attack.', outcome: 'neutral' },
         ],
       }),
     );
@@ -129,9 +129,9 @@ describe('buildEffectProvenance — recentlyPlayedCards', () => {
   });
 
   test('caps the list at RECENTLY_PLAYED_CARDS_CAP, keeping the last N', () => {
-    const log: string[] = [];
+    const log: Array<{ text: string; outcome: 'neutral' }> = [];
     for (let index = 0; index < RECENTLY_PLAYED_CARDS_CAP + 2; index += 1) {
-      log.push(`Player 0 played set/hero/card#${index}.`);
+      log.push({ text: `Player 0 played set/hero/card#${index}.`, outcome: 'neutral' });
     }
     const provenance = buildEffectProvenance(snapshotWith({ log }));
     assert.equal(provenance.recentlyPlayedCards.length, RECENTLY_PLAYED_CARDS_CAP);
@@ -145,7 +145,7 @@ describe('buildEffectProvenance — recentlyPlayedCards', () => {
 
   test('outcome defaults to resolved with no negative signal', () => {
     const provenance = buildEffectProvenance(
-      snapshotWith({ log: ['Player 0 played set/hero/basic#0.'] }),
+      snapshotWith({ log: [{ text: 'Player 0 played set/hero/basic#0.', outcome: 'neutral' }] }),
     );
     assert.equal(provenance.recentlyPlayedCards[0]!.outcome, 'resolved');
   });
@@ -153,7 +153,7 @@ describe('buildEffectProvenance — recentlyPlayedCards', () => {
   test('outcome is hollow when the ext_id has a hollowEffects record', () => {
     const provenance = buildEffectProvenance(
       snapshotWith({
-        log: ['Player 0 played set/hero/hollow#0.'],
+        log: [{ text: 'Player 0 played set/hero/hollow#0.', outcome: 'neutral' }],
         hollowEffects: [{ cardId: 'set/hero/hollow#0', mechanic: 'phase' }],
       }),
     );
@@ -164,8 +164,8 @@ describe('buildEffectProvenance — recentlyPlayedCards', () => {
     const provenance = buildEffectProvenance(
       snapshotWith({
         log: [
-          'Player 0 played antm/gambit/card#0.',
-          "Player 0's antm/gambit/card#0 ability did not activate — no X-Men in play.",
+          { text: 'Player 0 played antm/gambit/card#0.', outcome: 'neutral' },
+          { text: "Player 0's antm/gambit/card#0 ability did not activate — no X-Men in play.", outcome: 'neutral' },
         ],
       }),
     );
@@ -175,7 +175,7 @@ describe('buildEffectProvenance — recentlyPlayedCards', () => {
   test('outcome is awaitingChoice for the most-recent play when a choice is pending', () => {
     const provenance = buildEffectProvenance(
       snapshotWith({
-        log: ['Player 0 played antm/black-knight/the-ebony-blade#0.'],
+        log: [{ text: 'Player 0 played antm/black-knight/the-ebony-blade#0.', outcome: 'neutral' }],
         pendingVictoryPileCardPick: { playerID: '0' },
       }),
     );
@@ -186,8 +186,8 @@ describe('buildEffectProvenance — recentlyPlayedCards', () => {
     const provenance = buildEffectProvenance(
       snapshotWith({
         log: [
-          'Player 0 played set/hero/earlier#0.',
-          'Player 0 played antm/black-knight/the-ebony-blade#0.',
+          { text: 'Player 0 played set/hero/earlier#0.', outcome: 'neutral' },
+          { text: 'Player 0 played antm/black-knight/the-ebony-blade#0.', outcome: 'neutral' },
         ],
         pendingVictoryPileCardPick: { playerID: '0' },
       }),
@@ -200,8 +200,8 @@ describe('buildEffectProvenance — recentlyPlayedCards', () => {
     const provenance = buildEffectProvenance(
       snapshotWith({
         log: [
-          'Player 0 played antm/gambit/card#0.',
-          "Player 0's antm/gambit/card#0 ability did not activate — no X-Men in play.",
+          { text: 'Player 0 played antm/gambit/card#0.', outcome: 'neutral' },
+          { text: "Player 0's antm/gambit/card#0 ability did not activate — no X-Men in play.", outcome: 'neutral' },
         ],
         pendingOptionalKoReward: { playerID: '0' },
       }),
@@ -213,14 +213,14 @@ describe('buildEffectProvenance — recentlyPlayedCards', () => {
 describe('buildEffectProvenance — abilityText (injected resolver)', () => {
   test('is null when the snapshot carries no display text for the card', () => {
     const provenance = buildEffectProvenance(
-      snapshotWith({ log: ['Player 0 played set/hero/card#0.'] }),
+      snapshotWith({ log: [{ text: 'Player 0 played set/hero/card#0.', outcome: 'neutral' }] }),
     );
     assert.equal(provenance.recentlyPlayedCards[0]!.abilityText, null);
   });
 
   test('uses an injected resolver when supplied', () => {
     const provenance = buildEffectProvenance(
-      snapshotWith({ log: ['Player 0 played set/hero/card#0.'] }),
+      snapshotWith({ log: [{ text: 'Player 0 played set/hero/card#0.', outcome: 'neutral' }] }),
       (extId) => `TEXT:${extId}`,
     );
     assert.equal(
@@ -231,7 +231,7 @@ describe('buildEffectProvenance — abilityText (injected resolver)', () => {
 
   test('fail-soft: a throwing resolver degrades to null, never throws', () => {
     const provenance = buildEffectProvenance(
-      snapshotWith({ log: ['Player 0 played set/hero/card#0.'] }),
+      snapshotWith({ log: [{ text: 'Player 0 played set/hero/card#0.', outcome: 'neutral' }] }),
       () => {
         throw new Error('registry unavailable');
       },
@@ -244,7 +244,7 @@ describe('buildEffectProvenance — abilityText from the snapshot display (WP-31
   test('reads the printed text from a projected display entry for the played card', () => {
     const provenance = buildEffectProvenance(
       snapshotWith({
-        log: ['Player 0 played antm/black-knight/the-ebony-blade#0.'],
+        log: [{ text: 'Player 0 played antm/black-knight/the-ebony-blade#0.', outcome: 'neutral' }],
         // the engine projects abilityText onto the played card's inPlay display entry
         players: {
           '0': {
@@ -268,7 +268,7 @@ describe('buildEffectProvenance — abilityText from the snapshot display (WP-31
   test('finds display entries nested inside { extId, display } shapes', () => {
     const provenance = buildEffectProvenance(
       snapshotWith({
-        log: ['Player 0 played set/hero/card#0.'],
+        log: [{ text: 'Player 0 played set/hero/card#0.', outcome: 'neutral' }],
         victoryCards: [
           {
             extId: 'set/hero/card#0',
@@ -284,8 +284,8 @@ describe('buildEffectProvenance — abilityText from the snapshot display (WP-31
     const provenance = buildEffectProvenance(
       snapshotWith({
         log: [
-          'Player 0 played set/hero/mine#0.',
-          'Player 1 played set/hero/theirs#0.',
+          { text: 'Player 0 played set/hero/mine#0.', outcome: 'neutral' },
+          { text: 'Player 1 played set/hero/theirs#0.', outcome: 'neutral' },
         ],
         players: {
           '0': {
@@ -309,7 +309,7 @@ describe('buildEffectProvenance — abilityText from the snapshot display (WP-31
   test('an explicit resolver override wins over the snapshot display', () => {
     const provenance = buildEffectProvenance(
       snapshotWith({
-        log: ['Player 0 played set/hero/card#0.'],
+        log: [{ text: 'Player 0 played set/hero/card#0.', outcome: 'neutral' }],
         players: {
           '0': {
             inPlayDisplay: [
@@ -349,7 +349,7 @@ describe('buildEffectProvenance — fail-soft on malformed input', () => {
 
   test('non-string log entries are skipped without throwing', () => {
     const provenance = buildEffectProvenance(
-      snapshotWith({ log: [42, null, 'Player 0 played set/hero/card#0.', {}] }),
+      snapshotWith({ log: [42, null, { text: 'Player 0 played set/hero/card#0.', outcome: 'neutral' }, {}] }),
     );
     assert.equal(provenance.recentlyPlayedCards.length, 1);
     assert.equal(provenance.recentlyPlayedCards[0]!.extId, 'set/hero/card#0');
@@ -358,7 +358,7 @@ describe('buildEffectProvenance — fail-soft on malformed input', () => {
   test('a malformed hollowEffects entry is ignored', () => {
     const provenance = buildEffectProvenance(
       snapshotWith({
-        log: ['Player 0 played set/hero/card#0.'],
+        log: [{ text: 'Player 0 played set/hero/card#0.', outcome: 'neutral' }],
         hollowEffects: [null, { notCardId: 'x' }, 7],
       }),
     );

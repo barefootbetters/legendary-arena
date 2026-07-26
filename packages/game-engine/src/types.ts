@@ -9,6 +9,7 @@
  */
 
 import type { MatchSetupConfig } from './matchSetup.types.js';
+import type { LogEntry } from './log/logOutcome.types.js';
 import type { BoardKeyword } from './board/boardKeywords.types.js';
 import type { SchemeSetupInstruction } from './scheme/schemeSetup.types.js';
 
@@ -870,9 +871,11 @@ export interface LegendaryGameState {
 
   // why: messages is a deterministic event log that records rule effects,
   // warnings, and diagnostic entries. It is append-only during gameplay and
-  // supports replay inspection and debugging.
+  // supports replay inspection and debugging. WP-434 — each entry is a LogEntry
+  // ({ text, outcome }) so the client can colour a line by its authored outcome
+  // instead of re-parsing prose; the array stays hash-excluded (D-24081).
   /** Deterministic event log populated by rule effects. */
-  messages: string[];
+  messages: LogEntry[];
 
   // why: WP-328 — the numbering data for the `{turn}.{step}.{action}` game-log prefix.
   // `turn` is the PLAYER-FACING, play-relative turn number (first play turn = 1), not the

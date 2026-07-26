@@ -22,6 +22,7 @@
 
 import type { FinalScoreSummary } from "../scoring/scoring.types.js";
 import type { NotableGameEvent } from "../events/notableEvents.types.js";
+import type { LogEntry } from "../log/logOutcome.types.js";
 // why: WP-258 — reuse the engine's canonical HollowEffectRecord rather than
 // declaring a parallel UI type. The projection surfaces the WP-257 runtime
 // channel (G.diagnostics.hollowEffects) to the client unchanged.
@@ -70,7 +71,10 @@ export interface UIState {
   mastermind: UIMastermindState;
   scheme: UISchemeState;
   economy: UITurnEconomyState;
-  log: string[];
+  // why: WP-434 — the projected log carries LogEntry records ({ text, outcome }),
+  // read-only from G.messages, so the client renders each line's colour from its
+  // engine-authored outcome instead of re-parsing prose.
+  log: LogEntry[];
   // why: WP-200 — typed event projection mirroring `log: string[]`. UI
   // consumers (WP-201) render descriptive "what happened" overlays from
   // these structured events without parsing free-text log strings. Cloned

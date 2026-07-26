@@ -2,11 +2,26 @@
   "expected": {
     "finalStateHash": "3da2c374248697af1a23bcf0673fa98fc83435d4e9ec32c9828cd3bd651f0037",
     "messages": [
-      "Mastermind strike revealed — strike count incremented.",
-      "Player 0 played S.H.I.E.L.D. Trooper (starting-shield-trooper) (+1 attack).",
-      "Player 0 played S.H.I.E.L.D. Agent (starting-shield-agent) (+1 recruit).",
-      "Mastermind strike revealed — strike count incremented.",
-      "Player 1 played S.H.I.E.L.D. Trooper (starting-shield-trooper) (+1 attack)."
+      {
+        "outcome": "neutral",
+        "text": "Mastermind strike revealed — strike count incremented."
+      },
+      {
+        "outcome": "neutral",
+        "text": "Player 0 played S.H.I.E.L.D. Trooper (starting-shield-trooper) (+1 attack)."
+      },
+      {
+        "outcome": "neutral",
+        "text": "Player 0 played S.H.I.E.L.D. Agent (starting-shield-agent) (+1 recruit)."
+      },
+      {
+        "outcome": "neutral",
+        "text": "Mastermind strike revealed — strike count incremented."
+      },
+      {
+        "outcome": "neutral",
+        "text": "Player 1 played S.H.I.E.L.D. Trooper (starting-shield-trooper) (+1 attack)."
+      }
     ],
     "outcome": {
       "counters": {

@@ -349,7 +349,7 @@ describe('recruitHero — WP-135 G.messages locked log format', () => {
     const moveContext = createMockMoveContext(gameState);
     recruitHero(moveContext, { hqIndex: 0 });
 
-    const lastMessage = moveContext.G.messages[moveContext.G.messages.length - 1];
+    const lastMessage = moveContext.G.messages[moveContext.G.messages.length - 1]!.text;
     assert.equal(
       lastMessage,
       'Player 0 recruited core/spider-man/astonishing-strength (core/spider-man/astonishing-strength); HQ slot 0 refilled from heroDeck (heroDeck.length: 1)',
@@ -366,7 +366,7 @@ describe('recruitHero — WP-135 G.messages locked log format', () => {
     const moveContext = createMockMoveContext(gameState);
     recruitHero(moveContext, { hqIndex: 0 });
 
-    const lastMessage = moveContext.G.messages[moveContext.G.messages.length - 1];
+    const lastMessage = moveContext.G.messages[moveContext.G.messages.length - 1]!.text;
     assert.equal(
       lastMessage,
       'Player 0 recruited core/spider-man/astonishing-strength (core/spider-man/astonishing-strength); HQ slot 0 refilled from heroDeck (heroDeck empty; slot left null)',
@@ -383,7 +383,7 @@ describe('recruitHero — WP-135 G.messages locked log format', () => {
     const moveContext = createMockMoveContext(gameState);
     recruitHero(moveContext, { hqIndex: 0 });
 
-    const lastMessage = moveContext.G.messages[moveContext.G.messages.length - 1]!;
+    const lastMessage = moveContext.G.messages[moveContext.G.messages.length - 1]!.text;
     assert.equal(/\d{4}-\d{2}-\d{2}/.test(lastMessage), false, 'No date pattern (YYYY-MM-DD) in log line');
     assert.equal(/T\d{2}:\d{2}:\d{2}/.test(lastMessage), false, 'No ISO timestamp pattern in log line');
     assert.equal(/\d{13}/.test(lastMessage), false, 'No millisecond unix timestamp in log line');
@@ -439,7 +439,7 @@ describe('recruitHero — WP-273 Wall-Crawl deck-top placement', () => {
     const moveContext = createMockMoveContext(gameState);
     recruitHero(moveContext, { hqIndex: 0, toTopOfDeck: true });
 
-    const lastMessage = moveContext.G.messages[moveContext.G.messages.length - 1];
+    const lastMessage = moveContext.G.messages[moveContext.G.messages.length - 1]!.text;
     assert.equal(
       lastMessage,
       `Player 0 recruited ${WALL_CRAWL_CARD} (${WALL_CRAWL_CARD}); HQ slot 0 refilled from heroDeck (heroDeck.length: 0) (Wall-Crawl: placed on top of deck)`,
@@ -460,7 +460,7 @@ describe('recruitHero — WP-273 Wall-Crawl deck-top placement', () => {
     const playerZones = moveContext.G.playerZones['0']!;
     assert.ok(playerZones.discard.includes(WALL_CRAWL_CARD), 'omitted toTopOfDeck routes to discard');
     assert.equal(playerZones.deck.includes(WALL_CRAWL_CARD), false, 'card is not placed on the deck');
-    const lastMessage = moveContext.G.messages[moveContext.G.messages.length - 1];
+    const lastMessage = moveContext.G.messages[moveContext.G.messages.length - 1]!.text;
     assert.equal(
       lastMessage,
       `Player 0 recruited ${WALL_CRAWL_CARD} (${WALL_CRAWL_CARD}); HQ slot 0 refilled from heroDeck (heroDeck.length: 0)`,
