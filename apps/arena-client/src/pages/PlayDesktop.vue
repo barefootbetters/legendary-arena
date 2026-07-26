@@ -732,6 +732,13 @@ export default defineComponent({
   flex-direction: column;
   gap: 0.25rem;
   position: relative;
+  /* why: WP-430 / D-24251 — cap the desktop play area at --play-max-width and
+     center it so ultra-wide / 4K monitors gain margin, not oversized cards. The
+     fluid --play-gutter sits INSIDE the cap (global box-sizing:border-box), so
+     no horizontal page scrollbar appears down to the 1366px desktop floor. */
+  max-width: var(--play-max-width);
+  margin-inline: auto;
+  padding-inline: var(--play-gutter);
   /* why: minimal padding — the sticky TurnActionBar overlaps the bottom
      of the page; this just prevents the last content line from being
      fully hidden behind it */
@@ -800,5 +807,31 @@ export default defineComponent({
 .play-empty-match {
   padding: 0.75rem 1rem;
   border: 1px dashed var(--color-foreground, #666);
+}
+
+/* why: WP-430 / D-24251 — 1440px checkpoint: a touch more inter-zone breathing
+   room. Spacing tuning only, NOT a layout change (zones keep their
+   D-12901/D-12902 placement). */
+@media (min-width: 1440px) {
+  .play-desktop {
+    gap: 0.35rem;
+  }
+}
+
+/* why: WP-430 / D-24251 — 1920px checkpoint (the primary desktop target):
+   more gap as the capped surface has room. Spacing only, not a layout change. */
+@media (min-width: 1920px) {
+  .play-desktop {
+    gap: 0.5rem;
+  }
+}
+
+/* why: WP-430 / D-24251 — 2560px checkpoint: at/above the cap the surface is
+   centered with wide margins; a slightly larger gap keeps zones from looking
+   cramped inside the 1600px cap. Spacing only, not a layout change. */
+@media (min-width: 2560px) {
+  .play-desktop {
+    gap: 0.6rem;
+  }
 }
 </style>

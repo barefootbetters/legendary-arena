@@ -127,15 +127,15 @@ export default defineComponent({
 }
 
 .card-tile--sm {
-  width: 60px;
+  width: var(--card-width-sm);
 }
 
 .card-tile--md {
-  width: 90px;
+  width: var(--card-width-md);
 }
 
 .card-tile--lg {
-  width: 120px;
+  width: var(--card-width-lg);
 }
 
 .card-tile--interactive {

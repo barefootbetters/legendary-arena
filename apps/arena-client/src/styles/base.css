@@ -40,6 +40,24 @@
   --color-penalty: var(--la-color-error);
   --color-par-negative: var(--la-color-error);
   --color-active-player: var(--la-color-blue-bright);
+
+  /* Play-surface fluid-desktop sizing (WP-430 / D-24251). Size tokens only —
+     no color, so the "no raw hex" color rule above does not apply. Consumed by
+     the desktop play surface (<PlayDesktop>) and the card tiles; additive to
+     the D-12909 767px mobile/desktop split, which is unchanged. */
+  /* why: cap the desktop play area at 1600px and center it (margin-inline:auto
+     in PlayDesktop.vue) so ultra-wide / 4K monitors gain margin, not oversized
+     cards — resolving the "surface stretches edge-to-edge" gap. */
+  --play-max-width: 1600px;
+  /* why: fluid side gutter — scales with the viewport (2vw) but bounded so it
+     never collapses below 16px on a laptop nor exceeds 40px on a wide monitor. */
+  --play-gutter: clamp(16px, 2vw, 40px);
+  /* why: fluid card widths whose clamp() FLOOR equals the current fixed sizes
+     (60/90/120px) — cards only ever grow toward the cap, never shrink; the
+     card aspect-ratio (5/7, set in CardTile.vue) makes height follow width. */
+  --card-width-sm: clamp(60px, 4.4vw, 76px);
+  --card-width-md: clamp(90px, 6.6vw, 112px);
+  --card-width-lg: clamp(120px, 8.8vw, 150px);
 }
 
 /* why: no @media (prefers-color-scheme: dark) override here. Brand
