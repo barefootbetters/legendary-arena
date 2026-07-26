@@ -21,7 +21,7 @@ source:
   - ../apps/arena-client/src/pages/PlayDesktop.vue
   - ../docs/ai/DESIGN-BOARD-LAYOUT.md
   - ../docs/ai/DECISIONS.md
-last-reviewed: 2026-07-25
+last-reviewed: 2026-07-26
 ---
 
 # Responsive Viewport Targets
@@ -36,11 +36,12 @@ degrades to phone as a secondary case.
 
 This page catalogs three things: the **one breakpoint that is actually
 locked in code**, the **reference screen sizes** the layout is designed
-and tested against, and the **open question** of fluid desktop scaling
-that has *not* been decided. It is descriptive — it records the current
-posture and cites where each value lives. It does not set new layout
-policy; per [SCHEMA.md](SCHEMA.md) that belongs in
-[`DECISIONS.md`](../docs/ai/DECISIONS.md) and a board-layout Work Packet.
+and tested against, and the **fluid desktop scaling model** now shipped
+(WP-430 / D-24251 — a 1600px centered cap + fluid `clamp()` card/gutter
+sizing above the 767px split). It is descriptive — it records the current
+posture and cites where each value lives, including the governing
+[`DECISIONS.md`](../docs/ai/DECISIONS.md) entry; per [SCHEMA.md](SCHEMA.md)
+the wiki cites design decisions, it does not make them.
 
 ## Mechanics
 
@@ -84,8 +85,10 @@ target ranges come from
 | Desktop landscape | `PlayDesktop.vue` | 1280×800 – 1920×1080 | Shared board in the visual center; opponents as top-edge mini-panels (D-12902); Mastermind top-left (D-12901); your hand bottom-prominent |
 | Mobile portrait | `PlayMobile.vue` | 375×667 – 414×896 | Vertical stack; sticky top HUD; sticky bottom turn-actions bar; wide rows (City, HQ, hand) scroll horizontally within their zone |
 
-The desktop layout is authored to *fill* that range — it does not yet
-fluidly rescale beyond 1920 or below 1280 (see *Open question* below).
+The desktop layout **scales fluidly** across that range and beyond —
+centered and capped at 1600px on wider monitors, holding without
+horizontal scroll down to the 1366px floor (see *Fluid desktop scaling —
+shipped* below).
 
 ### Reference screen targets (external data — no first-party signal yet)
 
@@ -111,24 +114,32 @@ not measured audience data:
 Treat these as anchors to resize-test against, and revisit the whole
 section once live analytics exist.
 
-### Open question — fluid desktop scaling (NOT decided)
+### Fluid desktop scaling — shipped (WP-430 / D-24251)
 
-The current model is a **binary split with a fixed desktop design
-range**. It does **not** yet: (a) fluidly rescale the play surface across
-the full desktop resolution ladder, or (b) cap the play area on
-ultra-wide / 4K monitors so cards stop stretching.
+The desktop surface now **scales fluidly across the desktop resolution
+ladder and caps on ultra-wide / 4K monitors** — resolving what this
+section previously flagged as an open question. Shipped by **WP-430**,
+locked in [`DECISIONS.md` D-24251](../docs/ai/DECISIONS.md), and
+**additive to the D-12909 767px split** (the mobile side is unchanged):
 
-A candidate direction has been floated but **not adopted**: a comfortable
-desktop floor around **1366px**, checkpoints near **1440 / 1920 /
-2560px**, and a centered **max-width cap (~1600px)** on the play area so
-huge monitors gain margin rather than oversized cards. These are exactly
-the kind of "open layout questions"
-[`DESIGN-BOARD-LAYOUT.md §1`](../docs/ai/DESIGN-BOARD-LAYOUT.md) says a
-future board-layout WP is meant to lock.
+- **Centered max-width cap.** `.play-desktop` caps at **1600px** with
+  `margin-inline: auto`, so beyond the cap the board gains margin, not
+  oversized cards.
+- **Fluid sizing between a 1366px floor and the cap.** A `--play-gutter`
+  and three `--card-width-*` tokens use `clamp()`; the card `clamp()`
+  **floor equals the former fixed sizes (60/90/120px)**, so tiles only
+  grow (never shrink) and `aspect-ratio: 5 / 7` is preserved.
+- **Checkpoint media queries at 1440 / 1920 / 2560px** tune inter-zone
+  spacing for those tiers — not new layouts (the D-12901/D-12902 zone
+  placement is preserved).
 
-Adopting any of these values is a **design decision** and must land in
-[`DECISIONS.md`](../docs/ai/DECISIONS.md) plus a Work Packet before it is
-real. This page records the question; it does not answer it.
+The six size tokens live in `apps/arena-client/src/styles/base.css`; the
+cap + centering + checkpoints in `PlayDesktop.vue`; the fluid card widths
+in `CardTile.vue`. Verified live (D-24026) at 2560 (capped + centered, no
+horizontal scroll), the 1366 floor (no horizontal scroll, cards at their
+floor), and ≤767 (mobile unchanged). The exact `clamp()` curves remain
+tunable within the locked anchors (cap 1600, floor 1366, the three
+checkpoints, floor-preserving card widths).
 
 ## Interactions
 
@@ -155,9 +166,10 @@ real. This page records the question; it does not answer it.
   portrait (768px) and in landscape (~1024–1366px) both exceed 767px and
   therefore both get the **desktop** layout. Only genuinely narrow
   widths (phones in portrait) fall to mobile.
-- **Ultra-wide and 4K have no cap today.** With no max-width on the play
-  area, the desktop layout can stretch past its 1920-wide design point on
-  very large monitors — the unresolved item in *Open question* above.
+- **Ultra-wide and 4K are capped and centered.** `.play-desktop` caps at
+  1600px with `margin-inline: auto` (WP-430 / D-24251), so very large
+  monitors gain margin rather than oversized cards — see *Fluid desktop
+  scaling — shipped* above.
 - **The mobile range is draft and secondary.** 375×667–414×896 is design
   intent from a draft wireframe; mobile is a nice-to-have for launch, not
   the primary target, and its numbers may move when a board-layout WP

@@ -32801,6 +32801,61 @@ rendered-surface gate; verified by downloading a report and confirming the
 suite 1099/1099 (+4); `pnpm -r build` 0; 5-file allowlist, no `bgioClient.ts` /
 `packages/**`.
 
+---
+
+### D-24251 — the desktop play surface adopts a fluid scaling model (1600px max-width cap + fluid clamp card/gutter tokens), additive to the D-12909 767px split (Active)
+
+**Status:** Active (landed 2026-07-26, EC-465 / WP-430).
+
+**Decision.** `<PlayDesktop>` adopts a **fluid desktop scaling model, additive to
+the D-12909 `max-width: 767px` mobile/desktop split** (which is unchanged —
+`useViewport.ts`, the 767 constant, and the `<PlayMobile>` layout are untouched).
+Three pure-CSS changes:
+
+(1) **Centered max-width cap.** `.play-desktop` gains `max-width:
+var(--play-max-width)` (`1600px`) + `margin-inline: auto`, so beyond 1600px the
+board gains margin, not oversized cards — resolving the prior behavior where the
+surface (a plain flex column with no cap) stretched edge-to-edge on ultra-wide /
+4K monitors.
+
+(2) **Fluid sizing between a 1366px floor and the cap.** A `--play-gutter`
+(`clamp(16px, 2vw, 40px)`) and three `--card-width-*` tokens (`clamp(60/90/120px,
+…, 76/112/150px)`) scale the gutter and card tiles continuously. The card `clamp()`
+**floor equals the former fixed sizes** (60/90/120px), so tiles only grow, never
+shrink, and `aspect-ratio: 5 / 7` is preserved (height follows width). The gutter
+sits inside the cap (`box-sizing: border-box` is global), so no horizontal page
+scrollbar appears down to the 1366px floor.
+
+(3) **Checkpoint media queries at 1440 / 1920 / 2560px** tune inter-zone spacing
+for those tiers only — **not new layouts** (the D-12901 Mastermind-top-left /
+D-12902 opponents-top-edge placement is preserved).
+
+The six size tokens live under `:root` in `apps/arena-client/src/styles/base.css`
+(size values only — the file's "no raw hex" rule is color-only).
+
+**Rejected alternatives.** (a) *No cap / full-bleed* (the prior behavior) — dead
+gaps and ballooned art on wide monitors. (b) *Changing the 767 breakpoint or
+reworking `<PlayMobile>`* — out of scope; the mobile surface is a separate
+concern. (c) *CSS container queries* — heavier and unnecessary (the play surface
+is the viewport-level container), so plain viewport media queries + `clamp()` are
+used.
+
+**Layer / boundary.** App layer (`apps/arena-client`) only — pure CSS
+presentation; no `G`/`ctx`, no `UIState` field, no persistence, zero
+engine/determinism/replay footprint, no `finalStateHash` re-pin. §21 N/A (client
+CSS, no HTTP surface). §17 Vision §17 accessibility (readability across desktop
+sizes; no conflict; NG-1..7 uncrossed). §20 N/A.
+
+**Packet:** WP-430 / EC-465 (standard two-session lane; renumbered from
+WP-429/EC-464/D-24250 after a concurrent session landed those numbers first for
+the transport-reconnect-counters WP, #1023 — first-landed keeps). `User-Visible
+Surface = play.legendary-arena.com` — **D-24026 verified live** (browser resize:
+2560 → capped at 1600 + centered, no h-scroll; 1366 → no h-scroll, cards at floor
+60/90; ≤767 → `<PlayMobile>` unchanged). arena-client typecheck 0 + suite
+1099/1099 (unchanged count — CSS-only); `pnpm -r build` 0; 3-file allowlist
+(`styles/base.css`, `pages/PlayDesktop.vue`, `components/play/CardTile.vue`), no
+`useViewport.ts` / `<PlayMobile>` / `packages/**`.
+
 Protect this file.
 
 ### D-24252 — the city-entry bystander attach and the captured-hero return-on-defeat are narrated into the durable game log (Active)

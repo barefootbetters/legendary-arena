@@ -97,6 +97,29 @@ the Game Engine layer. The MVP-vs-canonical faithfulness of the D-1701 count is
 --no-bail test` green repo-wide. D-24026 N/A (log-text; verified by the +4 tests
 and re-reading the motivating log). Lightweight lane; drafted+executed off
 `origin/main` @ `529687d6`.
+---
+
+### WP-430 / EC-465 — Fluid Desktop Responsive Scaling for the Play Surface (D-24251) (2026-07-26)
+
+**`User-Visible Surface = play.legendary-arena.com`.** The desktop play surface
+(`<PlayDesktop>`) now **scales fluidly across the desktop resolution ladder and
+caps on ultra-wide / 4K monitors** instead of stretching edge-to-edge. Pure CSS,
+additive to the D-12909 767px mobile/desktop split (`useViewport.ts` +
+`<PlayMobile>` untouched): `.play-desktop` gains a centered `max-width: 1600px`
+cap (`margin-inline: auto`) + a fluid `--play-gutter`; card tiles use fluid
+`--card-width-*` tokens whose `clamp()` floor equals the former fixed sizes
+(60/90/120px), so cards only grow toward the cap and `aspect-ratio: 5 / 7` is
+preserved; checkpoint media queries at 1440/1920/2560px tune spacing only. Six
+`:root` size tokens live in `styles/base.css`. **D-24026 verified live** (browser
+resize: 2560 → capped 1600 + centered, no h-scroll; 1366 floor → no h-scroll,
+cards at 60/90; ≤767 → `<PlayMobile>` unchanged). `pnpm -r build` 0; arena-client
+typecheck 0; suite **1099/1099** (unchanged count — CSS-only); 3-file allowlist.
+Renumbered from WP-429/EC-464/D-24250 after a concurrent session landed those
+first (#1023). **Follow-up:** the ewiki *Responsive Viewport Targets* page's *Open
+question* section is updated to the shipped model once its PR (#1019) merges — it
+is not yet on `main`, so that one EC item is deferred (not skipped).
+
+---
 
 ### WP-428 / EC-463 — Transport Diagnostics Block in the Play-Surface Diagnostic Export (D-24249) (2026-07-25)
 
