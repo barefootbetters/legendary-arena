@@ -7,6 +7,34 @@
 
 ## Current State
 
+### WP-435 / EC-470 — Colour-Code the Game Log by Outcome (Client Render + a11y + Export) (WP-B.3b, D-24253) (2026-07-26)
+
+**`User-Visible Surface = play.legendary-arena.com` — the log is now COLOUR-CODED**
+(D-24026 REQUIRED; live-verify post-deploy). WP-B.3b makes B.3a's authored
+`LogEntry.outcome` visible: `GameLogPanel` colours each line — `applied`→green
+(`--color-par-positive`), `partial`→amber (`--color-par-partial` = new alias to
+`--la-color-warning`), `blocked`→red (`--color-par-negative`), `neutral` unstyled —
+via the design system's **theme-aware** `--color-par-*` tokens (light + dark, no
+hard-coded hex). Colour is **never the only signal** (D-24253 §Fork E): each
+non-`neutral` line also renders a decorative `aria-hidden` glyph (`✓`/`⚠`/`✕`) and a
+screen-reader-only outcome word under the existing `aria-live="polite"` list; render
+is **static** (no motion). A new pure `logOutcomeDisplay` helper maps outcome →
+`{ className, glyph, label }` backed by a keyed `Record<LogOutcome,…>` (a new value is
+a compile error — a real drift guard, not a tautology); `buildGameLogText` prepends a
+`[outcome]` tag to non-`neutral` export lines (plain-text preserved; all-`neutral`
+exports stay byte-identical). Both the compact and modal `<li>` sites are covered
+(modal gained a `data-testid`).
+
+**Arena-client only, additive** — no engine / `G` / `UIState` / `effectProvenance`
+change (reads `entry.outcome` as authored by B.3a). **Verified in-browser** from the
+worktree dev server: all four outcomes render the correct colour + glyph (`aria-hidden`)
++ sr-only word, `neutral` is plain, and `data-theme="dark"` flips the tokens to their
+dark values. arena-client **1105/0** (+6) + typecheck 0; `pnpm -r build` 0.
+
+**Log-outcome arc:** B.3a (engine authors outcome) ✅ + B.3b (client colours it) ✅
+live; **B.3c (retire the `effectProvenance` outcome heuristic in favour of the
+authoritative `LogEntry.outcome`) is the last remaining slice.**
+
 ### WP-434 / EC-469 — Structured Log-Outcome Engine Contract (`G.messages` → `LogEntry[]`) (WP-B.3a, D-24253) (2026-07-26)
 
 **`User-Visible Surface = play.legendary-arena.com` — D-24026 N/A for behavior**
