@@ -29,8 +29,16 @@ export function buildGameLogText(log: readonly LogEntry[]): string {
   if (log.length === 0) {
     return '';
   }
-  // why: WP-434 — the export stays a plain-text transcript; render each record's
-  // `.text` only (the outcome colour is an on-screen concern, not part of the
-  // copyable / downloadable log).
-  return log.map((entry) => entry.text).join('\n') + '\n';
+  // why: WP-435 — the export stays a plain-text transcript, so the on-screen colour
+  // becomes a leading `[outcome]` text tag on non-`neutral` lines (greppable, mirrors
+  // the HUD glyph). `neutral` — the dominant narration case — stays untagged so the
+  // transcript reads cleanly; this also keeps every pre-B.3b (all-`neutral`) export
+  // byte-identical.
+  return (
+    log
+      .map((entry) =>
+        entry.outcome === 'neutral' ? entry.text : `[${entry.outcome}] ${entry.text}`,
+      )
+      .join('\n') + '\n'
+  );
 }

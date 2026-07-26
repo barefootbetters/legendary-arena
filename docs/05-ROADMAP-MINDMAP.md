@@ -452,7 +452,7 @@ mindmap
         ["📦 Effect-outcome fill-in (WP-B.2) — reveal-action realized results LANDED (WP-417); remaining move-card/sequence empty-source no-ops still deferred per D-24111"]
         ["📝 Structured log-outcome contract + colour-coding (WP-B.3) — DESIGN LANDED 2026-07-25 (DESIGN-LOG-OUTCOME-CONTRACT.md + D-24253): G.messages string array → LogEntry[] records carrying a coarse LogOutcome (neutral/applied/partial/blocked → green/red/yellow); decomposed into B.3a engine-contract (two-session) + B.3b client-colour + B.3c effectProvenance-retirement; retires the D-24100 heuristic"]
         ["WP-434 ✅ Structured Log-Outcome Engine Contract (WP-B.3a) — G.messages/UIState.log string[]→LogEntry[] + drift-detected LOG_OUTCOMES enum + pushLog(…, outcome='neutral'); bounded outcome-bearing emissions opt in, 'played X' stays neutral; single fixture regenerated, finalStateHash unchanged (D-24081); arena-client renders entry.text visually-unchanged (colour=B.3b); implements D-24253; EC-469"]
-        ["WP-435 📝 Colour-Code the Game Log by Outcome (WP-B.3b) — GameLogPanel colours each line by LogEntry.outcome (applied→green/partial→amber/blocked→red/neutral unstyled) via theme-aware --color-par-* tokens; colour is never the only signal (aria-hidden glyph + sr-only word, design §Fork E); static/reduced-motion; new pure logOutcomeDisplay helper; buildGameLogText [outcome] tag; arena-client only, D-24026 REQUIRED; implements D-24253; EC-470"]
+        ["WP-435 ✅ Colour-Code the Game Log by Outcome (WP-B.3b) — GameLogPanel colours each line by LogEntry.outcome (applied→green/partial→amber/blocked→red/neutral unstyled) via theme-aware --color-par-* tokens; colour is never the only signal (aria-hidden glyph + sr-only word, design §Fork E); static/reduced-motion; new pure logOutcomeDisplay helper; buildGameLogText [outcome] tag; arena-client only, D-24026 REQUIRED; implements D-24253; EC-470"]
 
       Competitive Score Submission & Verification (2026-07)
         ["WP-332 ✅ Competitive score submission HTTP endpoint — the score-submission route lands in apps/server (12 route tests + wrapper delegation; competition.logic.ts additive-only); opens the play-to-leaderboard loop; EC-362; D-24118"]
@@ -609,16 +609,16 @@ mindmap
 | Cross-App Infrastructure | 2/2 | — |
 | Multiplayer Play & Match Durability (2026-07) | 8/8 | — |
 | Hero/Villain Effects & Diagnostics (2026-07) | 5/5 | — |
-| Live-Play HUD & Pending-Choice UX (2026-07) | 17/18 | 1 open |
+| Live-Play HUD & Pending-Choice UX (2026-07) | 18/18 | — |
 | Competitive Score Submission & Verification (2026-07) | 10/10 | — |
 | Gauntlet Leaderboards (Legends) (2026-07) | 37/42 | 2 ⏸, 3 open |
 | Friends & Ranked Trust (2026-07) | 18/18 | — |
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **418/430 WP ✅** (+ 4/4 Foundation Prompts) | 3 ⏸, 9 open |
+| **Total** | **419/430 WP ✅** (+ 4/4 Foundation Prompts) | 3 ⏸, 8 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 12):** WP-042.1 ⏸ blocked; WP-349 open; WP-391 open; WP-396 open; WP-398 open; WP-399 open; WP-368 open; WP-403 ⏸ blocked; WP-404 ⏸ blocked; WP-422 open; WP-429 open; WP-435 open.
+**Open / blocked WPs (derived from WORK_INDEX, 11):** WP-042.1 ⏸ blocked; WP-349 open; WP-391 open; WP-396 open; WP-398 open; WP-399 open; WP-368 open; WP-403 ⏸ blocked; WP-404 ⏸ blocked; WP-422 open; WP-429 open.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.

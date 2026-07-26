@@ -32,6 +32,21 @@ test('buildGameLogText: preserves entry text verbatim (no reordering or trimming
   );
 });
 
+test('buildGameLogText: non-neutral lines get a leading [outcome] tag; neutral stays untagged (WP-435)', () => {
+  assert.equal(
+    buildGameLogText([
+      { text: 'Player 0 played Nightcrawler.', outcome: 'neutral' as const },
+      { text: 'Player 0 drew 1 card(s) from Quick Draw.', outcome: 'applied' as const },
+      { text: 'Player 1 drew 1 of 2 card(s) — deck and discard empty.', outcome: 'partial' as const },
+      { text: "Player 1's Team Player ability did not activate.", outcome: 'blocked' as const },
+    ]),
+    'Player 0 played Nightcrawler.\n' +
+      '[applied] Player 0 drew 1 card(s) from Quick Draw.\n' +
+      '[partial] Player 1 drew 1 of 2 card(s) — deck and discard empty.\n' +
+      "[blocked] Player 1's Team Player ability did not activate.\n",
+  );
+});
+
 test('GAME_LOG_EXPORT_FILE_NAME is the plain-text log file name', () => {
   assert.equal(GAME_LOG_EXPORT_FILE_NAME, 'game-log.txt');
 });
