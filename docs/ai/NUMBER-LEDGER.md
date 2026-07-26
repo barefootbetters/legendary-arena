@@ -60,6 +60,7 @@ high-water: 422
 - WP-431 — log-entry-bystander-and-hero-return (2026-07-25, fix/log-entry-bystander-and-hero-return)
 - WP-432 — remove-noncanonical-entry-bystander (2026-07-25, fix/remove-noncanonical-entry-bystander)
 - WP-433 — bot-ally-fault-observability (2026-07-26, fix/bot-ally-fault-observability)
+- WP-434 — log-outcome-engine-contract (WP-B.3a: G.messages/UIState.log string[]→LogEntry[] + LOG_OUTCOMES enum + pushLog outcome arg; implements D-24253; renumbered from WP-432 after a landed collision; 2026-07-26, spec/wp432-log-outcome-engine-contract)
 
 ## EC
 
@@ -78,6 +79,7 @@ high-water: 457
 - EC-466 — log-entry-bystander-and-hero-return (2026-07-25, fix/log-entry-bystander-and-hero-return)
 - EC-467 — remove-noncanonical-entry-bystander (2026-07-25, fix/remove-noncanonical-entry-bystander)
 - EC-468 — bot-ally-fault-observability (2026-07-26, fix/bot-ally-fault-observability)
+- EC-469 — log-outcome-engine-contract (WP-434/WP-B.3a; renumbered from EC-467 after a landed collision; 2026-07-26, spec/wp432-log-outcome-engine-contract)
 
 ## D
 
