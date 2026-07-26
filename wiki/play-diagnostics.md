@@ -115,6 +115,23 @@ The builder is fail-soft: a null or malformed snapshot yields an empty
 provenance, a throwing resolver yields `abilityText: null`, and it
 never throws — the export stays robust.
 
+**The log is now structured (WP-434 / D-24253).** `UIState.log` is no
+longer a `string[]` — each entry is a `LogEntry` record
+(`{ text, outcome }`), where `outcome` is a coarse, engine-authored
+colour class (`neutral` / `applied` / `partial` / `blocked`, the
+`LOG_OUTCOMES` canonical array). Provenance reads each record's `.text`
+for its own string-matching. The `recentlyPlayedCards.outcome` field
+above is still the **client-side heuristic** (it string-matches the log
+prose plus the `hollowEffects` / pending signals). Because the engine
+now records the outcome authoritatively at push time, that heuristic is
+scheduled to retire in **WP-B.3c** — provenance will read the
+authoritative `LogEntry.outcome` instead of guessing — while the
+`awaitingPlayerInput` half (which reads the `pending*` fields, not the
+log) stays. This is exactly the fragility that motivated the contract:
+the provenance `extId` extractor has twice broken on pure log-wording
+changes (WP-328's numbering prefix, WP-417's printed-icon clause), and
+reading structure instead of prose removes that class of regression.
+
 ### Transport block
 
 [`buildTransportDiagnostics`](../apps/arena-client/src/diagnostics/diagnostics.ts)
@@ -309,6 +326,14 @@ or the stored entry is corrupt.
   from the WP-311 `connection` store; the store's new per-frame
   `lastFrameAtMs` stamp rides a defaulted `setConnected` parameter, so the
   transport wrapper stayed untouched.
+- **WP-434 / D-24253** (WP-B.3a) — made the game log **structured**:
+  `G.messages` and `UIState.log` became `LogEntry[]` (`{ text, outcome }`)
+  carrying an engine-authored `LOG_OUTCOMES` colour class. Provenance's log
+  read migrated to `entry.text`; its own `recentlyPlayedCards.outcome`
+  heuristic is unchanged for now (it retires in **WP-B.3c**, reading the
+  authoritative `LogEntry.outcome` once the engine channel is proven). The
+  render stays visually identical in B.3a — colour lands in **WP-B.3b**.
+  `finalStateHash` is byte-unchanged (the log is hash-excluded, D-24081).
 
 ## References
 
