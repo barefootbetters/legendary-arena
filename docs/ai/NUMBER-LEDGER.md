@@ -61,6 +61,7 @@ high-water: 422
 - WP-432 — remove-noncanonical-entry-bystander (2026-07-25, fix/remove-noncanonical-entry-bystander)
 - WP-433 — bot-ally-fault-observability (2026-07-26, fix/bot-ally-fault-observability)
 - WP-434 — log-outcome-engine-contract (WP-B.3a: G.messages/UIState.log string[]→LogEntry[] + LOG_OUTCOMES enum + pushLog outcome arg; implements D-24253; renumbered from WP-432 after a landed collision; 2026-07-26, spec/wp432-log-outcome-engine-contract)
+- WP-435 — log-outcome-client-colour (WP-B.3b: GameLogPanel colours each log line by LogEntry.outcome + non-colour glyph/aria signal + export tag policy; arena-client only; implements D-24253; 2026-07-26, spec/wpb3b-log-colour)
 
 ## EC
 
@@ -80,6 +81,7 @@ high-water: 457
 - EC-467 — remove-noncanonical-entry-bystander (2026-07-25, fix/remove-noncanonical-entry-bystander)
 - EC-468 — bot-ally-fault-observability (2026-07-26, fix/bot-ally-fault-observability)
 - EC-469 — log-outcome-engine-contract (WP-434/WP-B.3a; renumbered from EC-467 after a landed collision; 2026-07-26, spec/wp432-log-outcome-engine-contract)
+- EC-470 — log-outcome-client-colour (WP-435/WP-B.3b; 2026-07-26, spec/wpb3b-log-colour)
 
 ## D
 
