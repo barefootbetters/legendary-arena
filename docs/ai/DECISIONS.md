@@ -32842,3 +32842,77 @@ visible in the in-HUD log and the downloaded game-log export; verified by the +4
 engine tests and by re-reading the motivating Magneto log against the new lines.
 
 Protect this file.
+
+---
+
+### D-24253 — Structured log-outcome contract + colour-coding (WP-B.3): `G.messages` becomes `LogEntry[]` records carrying a coarse player-facing `LogOutcome` (DESIGN — ratification pending)
+
+**Status:** **DESIGN — ratification pending** 2026-07-25. No engine / client / test
+code changed by this decision; it records the design ruling and defers
+implementation to the WPs decomposed in `DESIGN-LOG-OUTCOME-CONTRACT.md §10`.
+Reserves D-24253. Design doc: `docs/ai/DESIGN-LOG-OUTCOME-CONTRACT.md`.
+
+**Context.** WP-B.3 is the last deferred slice of the log-enrichment arc (D-24111:
+WP-B.1 shipped as WP-325, WP-B.2 folded into WP-417/D-24237). D-24111 held it back
+for its own design review because it is a real contract change: every `pushLog`
+caller, the `UIState.log` projection, the client render, and the replay message
+oracle all move. The motivation is durability, not cosmetics — the effect outcome
+(applied / no-op / partial) is known at the `pushLog` call site but destroyed when
+flattened to a `string`, forcing the client `effectProvenance` heuristic (D-24100)
+to reconstruct it by string-matching log prose. That heuristic has broken **twice**
+on pure wording changes (WP-328's prefix; WP-417's `(+1 recruit)` clause, hotfixed
+in PR #980). B.3 emits the outcome as data so colour is authoritative and
+prose-parsing dies.
+
+**Decision (design ruling; forks resolved in the design doc).**
+- **Shape (Fork A).** `G.messages: string[]` → `LogEntry[]`, where
+  `LogEntry = { text: string; outcome: LogOutcome }` and `text` is the
+  already-prefixed sentence. Records in place — **not** a parallel `logOutcomes`
+  sidecar (dual-array drift) and **not** UIState-only derivation (structurally a
+  heuristic — the truth is at push time). The `notableEvents` sibling channel
+  (WP-200) stays separate; outcome rides the log line it colours.
+- **Taxonomy (Fork B).** A coarse, colour-shaped, drift-detected canonical array
+  `LOG_OUTCOMES = ['neutral','applied','partial','blocked']` — a *projection* of
+  WP-257's finer `EffectExecutionReason`, not a parallel invention. `neutral`
+  (unstyled) is the default and majority; `applied`=green, `partial`=yellow,
+  `blocked`=red. Registered as a canonical readonly array with an array↔union drift
+  test (§code-style, like `RULE_EFFECT_TYPES`).
+- **Signature (Fork C).** `pushLog(G, message, outcome: LogOutcome = 'neutral')`
+  builds the record internally; the `neutral` default keeps ~22 of the 29 caller
+  files byte-unchanged — only the ~7 outcome-bearing handlers opt in.
+- **Determinism (Fork D).** `G.messages` / `G.logMeta` stay hash-excluded
+  (D-24081); `finalStateHash` is **byte-unchanged**. `expected.messages` fixtures
+  become `{text, outcome}` records re-pinned by **regeneration**
+  (`record-game-fixture.mjs`), never hand-edited; `assertMessagesOracle`
+  deep-compares `text` **and** `outcome`. `computeStateHash` (D-0205, untouched by
+  D-24081) still serializes the deterministic records — desync detection unaffected.
+- **Client (Fork E).** `GameLogPanel` maps `outcome` → a themed colour (light +
+  dark) **plus a non-colour signal** (glyph + aria — colour is never the only
+  signal); static, no motion (reduced-motion posture). `buildGameLogText` export
+  stays plain text (tag policy ratified at draft).
+- **Retirement (Fork F).** `effectProvenance.recentlyPlayedCards[].outcome` (the
+  string-match heuristic) retires **last** (WP-B.3c), after the channel is proven;
+  `effectProvenance.awaitingPlayerInput` (pending-input freeze read) is **kept** —
+  it is independent of the log.
+- **Decomposition (Fork G).** Three WPs: **B.3a** (engine contract end-to-end but
+  visually invisible — records flow to the client, which still renders only `.text`;
+  two-session lane), **B.3b** (client colour + a11y + export; standard), **B.3c**
+  (heuristic retirement; standard, gated on a live-match proof). Concrete WP numbers
+  reserved at draft time, not now.
+
+**Invariants preserved.** `finalStateHash` unchanged (§2 of the design doc is
+binding); engine owns log authorship, client renders read-only (the outcome is
+authored in the engine, not re-derived on the client); the new enum is a canonical
+drift-detected array; no log line is added, removed, or reworded (shape change only
+— wording was WP-417's job).
+
+**Non-goals.** No fourth channel; no per-line colour for narration (`neutral` is
+unstyled and dominant); `awaitingPlayerInput` not retired; no prose changes.
+
+**Packets:** WP-B.3a / B.3b / B.3c (decomposed, not yet drafted). **Design drafted:**
+2026-07-25 (`spec/wpb3-log-outcome-design`). **Predecessors:** WP-325/D-24111 (B.1),
+WP-417/D-24237 (B.2). **Retires on completion:** the D-24100 outcome heuristic (not
+its freeze-read). This decision authorizes **no** code; implementation is gated on
+Jeff's review of `DESIGN-LOG-OUTCOME-CONTRACT.md` and the drafting of B.3a–c.
+
+Protect this file.
