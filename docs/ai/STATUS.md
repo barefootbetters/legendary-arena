@@ -7,6 +7,32 @@
 
 ## Current State
 
+### WP-433 / EC-468 — Bot-Ally Turn-Fault Observability (D-24255) (2026-07-26)
+
+**`User-Visible Surface = none — internal operator tooling`.** Closes the
+**silent-fault observability gap** in the bot-ally driver. `attemptBotTurn`
+(`botAllyDriver.mjs`) has **four** fault-return sites and **only the
+`decision-threw` one logged** — the other three (policy returned no move; the
+offered move never advanced `_stateID`; the per-turn step cap) faulted silently.
+So a recurring bot-ally freeze (`status: faulted`, `driving: false`, "could not
+finish its turn") could **not** be root-caused from server logs across three
+rounds of log-trading. The two candidate causes are indistinguishable from the
+client diagnostic and the deciding data is server-side: a `getLegalMoves`
+resolution gap (a block-all pending choice with no bot-resolvable move — the
+WP-427 class) vs a store/`_stateID` wedge (no pending set — the WP-424/426 class).
+
+**Fix (server, log-only):** a defensive `summarizeBotTurnState(state, botSeat)`
+(one line — `turn / stage / stateId / available attack+recruit / hand / the set
+of the 9 block-all pending flags`) + a `console.error('[bot-ally] … FAULTED
+(<reason>): <summary>')` at each of the 4 fault returns (the move-did-not-advance
+one names the offered move; the step-cap one uses a retained `lastStateSnapshot`).
+`pending=[…]` non-empty ⇒ a getLegalMoves gap; `pending=[none]` on an end-able
+turn ⇒ a store wedge — one log line settles it. **Behavior-neutral**: only
+diagnostic lines added; fault kind/message, teardown, persisted status, revival,
+and status route are byte-unchanged; the summarizer never throws. Bot-ally driver
+suite **25/0** (+2); `pnpm -r build` 0. Lightweight lane; drafted+executed off
+`origin/main` @ `080399a9`.
+
 ### WP-432 / EC-467 — Remove the Non-Canonical City-Entry Bystander Attach (Supersedes D-1701) (D-24254) (2026-07-25)
 
 **`User-Visible Surface = play.legendary-arena.com`.** Makes the bystander flow
