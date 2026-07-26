@@ -59,6 +59,7 @@ high-water: 422
 - WP-430 — fluid-desktop responsive scaling (2026-07-25, spec/wp-429-fluid-desktop-scaling)
 - WP-431 — log-entry-bystander-and-hero-return (2026-07-25, fix/log-entry-bystander-and-hero-return)
 - WP-432 — remove-noncanonical-entry-bystander (2026-07-25, fix/remove-noncanonical-entry-bystander)
+- WP-433 — bot-ally-fault-observability (2026-07-26, fix/bot-ally-fault-observability)
 
 ## EC
 
@@ -76,6 +77,7 @@ high-water: 457
 - EC-465 — fluid-desktop responsive scaling (2026-07-25, spec/wp-429-fluid-desktop-scaling)
 - EC-466 — log-entry-bystander-and-hero-return (2026-07-25, fix/log-entry-bystander-and-hero-return)
 - EC-467 — remove-noncanonical-entry-bystander (2026-07-25, fix/remove-noncanonical-entry-bystander)
+- EC-468 — bot-ally-fault-observability (2026-07-26, fix/bot-ally-fault-observability)
 
 ## D
 
@@ -94,3 +96,4 @@ high-water: 24241
 - D-24252 — log-entry-bystander-and-hero-return (narrate the D-1701 city-entry bystander attach + the WP-214 captured-hero return-on-defeat into G.messages; log-only, hash-excluded per D-24081; 2026-07-25, fix/log-entry-bystander-and-hero-return)
 - D-24253 — log-outcome-contract-design (WP-B.3 DESIGN: G.messages string[]→LogEntry[] records carrying a coarse LogOutcome for green/red/yellow colour-coding; retires the D-24100 effectProvenance heuristic; design ruling only, no code; 2026-07-25, spec/wpb3-log-outcome-design)
 - D-24254 — remove-noncanonical-entry-bystander (supersedes D-1701; a villain/henchman no longer captures a bystander merely on City entry — non-canonical; corrects the D-18504→D-1701 mis-citation; 2026-07-25, fix/remove-noncanonical-entry-bystander)
+- D-24255 — bot-ally-fault-observability (every bot-turn fault return logs its reason + turn/stage + the set block-all pending-choice flags; closes the silent-fault observability gap; server log-only; 2026-07-26, fix/bot-ally-fault-observability)

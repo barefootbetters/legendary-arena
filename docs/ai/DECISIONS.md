@@ -33031,3 +33031,46 @@ removed-behavior tests, +1 canonical guard; unchanged hashes); `pnpm -r build` 0
 — bystander VP totals drop toward tabletop; D-24026 observational only.
 
 Protect this file.
+
+### D-24255 — every bot-ally turn fault logs its reason + pending-choice state (server observability) (Active)
+
+**Context.** A recurring bot-ally freeze ("could not finish its turn", status
+`faulted`, `driving: false`) could not be root-caused from server logs across
+three rounds of log-trading. The reason: `attemptBotTurn`
+(`apps/server/src/bot-ally/botAllyDriver.mjs`) has **four** fault-return sites and
+**three of them logged nothing** — only the `decision-threw` path logged. So the
+common fault modes (policy returned no move, the offered move never advanced the
+`_stateID`, the per-turn step cap was hit) produced a silent `faulted` teardown.
+From the client diagnostic alone the two candidate causes are indistinguishable:
+a `getLegalMoves` resolution gap (a block-all pending choice is set that has no
+bot-resolvable move — the WP-427 class) versus a transient store/`_stateID` wedge
+(no pending set). The deciding fields (`G.pending*` flags, the dispatched move,
+whether `_stateID` advanced) live only server-side and were never logged.
+
+**Decision.** Every fault return in `attemptBotTurn` now emits a
+`console.error('[bot-ally] match … seat … FAULTED (<reason>): <summary>')` line,
+where `<reason>` names the exact fault mode and `<summary>` (from a new
+`summarizeBotTurnState`) reports `turn`, `stage`, `stateId`, available
+`attack`/`recruit`, `hand` size, and the set of the **nine** block-all pending
+flags (`pending=[…]` / `none`). The move-did-not-advance fault also names the
+offered move. `summarizeBotTurnState` is defensive (never throws — a fault log
+must not crash the tick).
+
+**Why this is the discriminator.** `pending=[…]` non-empty ⇒ a getLegalMoves
+resolution gap for that named choice (fix belongs in `ai.legalMoves.ts`, the
+WP-427 pattern). `pending=[none]` on a turn that was already end-able ⇒ a
+store/`_stateID` wedge (the WP-424/426 infra class). One log line now settles it,
+turning a multi-round remote-diagnosis dead-end into a one-shot read.
+
+**Scope.** Server log-only. No behavior change — the fault decision, teardown,
+persisted status/message, revival, and status route are all unchanged; only
+diagnostic `console.error` lines are added. No determinism/persistence/response-
+shape/auth change; §21 N/A (no HTTP change). §17 N/A (internal operator
+observability; no rule/economy/revenue change).
+
+**Packet:** WP-433 / EC-468 (lightweight lane). Bot-ally driver suite 25/0 (+2:
+a fault-log-capture test + a `summarizeBotTurnState` unit test); `pnpm -r build`
+0. `User-Visible Surface = none — internal operator tooling` (verified by the
+tests; the payoff is the *next* live freeze being diagnosable from one log line).
+
+Protect this file.

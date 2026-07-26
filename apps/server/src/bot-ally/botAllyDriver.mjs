@@ -672,6 +672,62 @@ async function driveBotTurn(driver, deps, botSeat, maxMoveStepsPerTurn) {
   return result;
 }
 
+// why: WP-433 — the nine block-all pending-choice flags on `G`. When a bot turn
+// faults, logging which of these is set is the single most useful signal for
+// telling a getLegalMoves resolution gap (a pending is set) from a transient
+// store/_stateID wedge (none set) — the exact discriminator that three rounds of
+// server logs could not provide because the fault path logged nothing.
+const PENDING_CHOICE_FLAGS = [
+  'pendingHeroChoice',
+  'pendingKoHeroChoices',
+  'pendingOptionalKoRewards',
+  'pendingVictoryPileCardPick',
+  'pendingDrawOrEmpowered',
+  'pendingReturnZeroCostDiscard',
+  'pendingDiscardToPlay',
+  'pendingOptionalPutBottomHQ',
+  'pendingPutAnyNumberBottomHQ',
+];
+
+/**
+ * Builds a one-line diagnostic of a bot turn's state for a fault log: turn,
+ * stage, stateID, remaining economy, hand size, and which block-all pending
+ * choices are set. Defensive — never throws (a fault log must never itself
+ * crash the tick).
+ *
+ * @param {object|null|undefined} state - The boardgame.io match state ({ G, ctx, _stateID }).
+ * @param {string} botSeat - The bot seat id, for the hand-size read.
+ * @returns {string} A compact `key=value` summary, or `state=unavailable`.
+ */
+export function summarizeBotTurnState(state, botSeat) {
+  try {
+    if (!state || !state.G || !state.ctx) return 'state=unavailable';
+    const gameState = state.G;
+    const pendingSet = [];
+    for (const flag of PENDING_CHOICE_FLAGS) {
+      const value = gameState[flag];
+      const isSet = Array.isArray(value) ? value.length > 0 : Boolean(value);
+      if (isSet) pendingSet.push(flag);
+    }
+    const economy = gameState.turnEconomy ?? {};
+    const availableAttack = (economy.attack ?? 0) - (economy.spentAttack ?? 0);
+    const availableRecruit = (economy.recruit ?? 0) - (economy.spentRecruit ?? 0);
+    const handSize = gameState.playerZones?.[botSeat]?.hand?.length ?? '?';
+    return [
+      `turn=${state.ctx.turn}`,
+      `stage=${gameState.currentStage}`,
+      `stateId=${state._stateID}`,
+      `attack=${availableAttack}`,
+      `recruit=${availableRecruit}`,
+      `hand=${handSize}`,
+      `pending=[${pendingSet.join(',') || 'none'}]`,
+    ].join(' ');
+  } catch (summaryError) {
+    // why: a diagnostic summary must never throw — degrade to a marker instead.
+    return `state=unsummarizable (${summaryError.message})`;
+  }
+}
+
 /**
  * Attempts a single bot seat's turn to completion: repeatedly decides + submits
  * a move until the turn passes to another seat, the match ends, or the turn
@@ -687,6 +743,10 @@ async function driveBotTurn(driver, deps, botSeat, maxMoveStepsPerTurn) {
  */
 async function attemptBotTurn(driver, deps, botSeat, maxMoveStepsPerTurn) {
   let step = 0;
+  // why: WP-433 — retain the most recent fetched state so the step-cap fault
+  // (which returns after the loop, out of `state`'s scope) can still log the
+  // wedged turn's diagnostic summary.
+  let lastStateSnapshot = null;
   while (step < maxMoveStepsPerTurn) {
     step += 1;
     // why: WP-424 — the driver may have been stopped mid-turn by a SIGTERM
@@ -701,6 +761,7 @@ async function attemptBotTurn(driver, deps, botSeat, maxMoveStepsPerTurn) {
     if (state === null || state === undefined) {
       return { kind: 'vanished' };
     }
+    lastStateSnapshot = state;
     if (state.ctx.gameover !== undefined) {
       return { kind: 'game-over' };
     }
@@ -723,6 +784,10 @@ async function attemptBotTurn(driver, deps, botSeat, maxMoveStepsPerTurn) {
       if (recovered) {
         continue;
       }
+      // why: WP-433 — log the fault reason + state so the freeze is diagnosable.
+      console.error(
+        `[bot-ally] match ${driver.matchId} seat ${botSeat} FAULTED (decision-threw; fallback could not advance): ${summarizeBotTurnState(state, botSeat)}`,
+      );
       return { kind: 'faulted', message: BOT_FAULTED_MESSAGE };
     }
 
@@ -731,6 +796,13 @@ async function attemptBotTurn(driver, deps, botSeat, maxMoveStepsPerTurn) {
       if (recovered) {
         continue;
       }
+      // why: WP-433 — the policy produced no move AND the fallback could not
+      // advance. If `pending` names a set choice, this is a getLegalMoves
+      // resolution gap (the pending has no bot-resolvable move); if `pending` is
+      // none, the turn was already end-able and this is a store/_stateID wedge.
+      console.error(
+        `[bot-ally] match ${driver.matchId} seat ${botSeat} FAULTED (policy-returned-no-move; fallback could not advance): ${summarizeBotTurnState(state, botSeat)}`,
+      );
       return { kind: 'faulted', message: BOT_FAULTED_MESSAGE };
     }
 
@@ -770,12 +842,23 @@ async function attemptBotTurn(driver, deps, botSeat, maxMoveStepsPerTurn) {
       if (recovered) {
         continue;
       }
+      // why: WP-433 — the engine rejected the offered move across the whole
+      // retry budget (a getLegalMoves-offered move the reducer no-ops) or the
+      // store never advanced. The offered move name is the key extra signal here.
+      console.error(
+        `[bot-ally] match ${driver.matchId} seat ${botSeat} FAULTED (move "${move.name}" did not advance across ${BOT_MOVE_SUBMIT_ATTEMPTS} attempts; fallback could not advance): ${summarizeBotTurnState(state, botSeat)}`,
+      );
       return { kind: 'faulted', message: BOT_FAULTED_MESSAGE };
     }
   }
 
   // why: the turn hit the within-turn step cap without passing — treat as a
   // wedged turn and fault rather than spin toward the match turn cap.
+  // why: WP-433 — log the wedged turn's diagnostic (via the retained snapshot,
+  // since `state` is out of scope here) so a step-cap fault is diagnosable.
+  console.error(
+    `[bot-ally] match ${driver.matchId} seat ${botSeat} FAULTED (hit the ${maxMoveStepsPerTurn}-step per-turn cap without ending the turn): ${summarizeBotTurnState(lastStateSnapshot, botSeat)}`,
+  );
   return { kind: 'faulted', message: BOT_FAULTED_MESSAGE };
 }
 

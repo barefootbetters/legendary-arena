@@ -25,6 +25,7 @@ import {
   isBotSeatTurn,
   BOT_ALLY_STATUS,
   BOT_FAULTED_MESSAGE,
+  summarizeBotTurnState,
 } from './botAllyDriver.mjs';
 
 // why: every test registers drivers in the shared module-scope map; clear it
@@ -189,6 +190,83 @@ test('a wedged bot turn marks the match bot-faulted and never hangs', async () =
     BOT_FAULTED_MESSAGE,
     'the persisted fault message is the public-safe co-op sentence, never a raw error',
   );
+});
+
+test('a bot fault logs a diagnostic [bot-ally] FAULTED line with the pending-choice state (WP-433)', async () => {
+  // why: the fault path was silent for 3 of 4 fault modes, so a bot freeze could
+  // not be diagnosed from the server log. Every fault now logs its reason + the
+  // block-all pending flags, the discriminator between a getLegalMoves gap and a
+  // store wedge.
+  const errorLines: string[] = [];
+  const originalError = console.error;
+  console.error = (message?: unknown) => {
+    errorLines.push(String(message));
+  };
+  try {
+    const { deps } = makeDeps({
+      // a pending choice is set but the fallback (endTurn/advanceStage) no-ops,
+      // so the turn wedges and faults — mirroring the live freeze signature.
+      initial: {
+        ctx: { currentPlayer: '1', phase: 'play', turn: 9, numPlayers: 2 },
+        _stateID: 42,
+        G: {
+          currentStage: 'main',
+          turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0 },
+          playerZones: { '1': { hand: [] } },
+          pendingReturnZeroCostDiscard: { playerID: '1' },
+        },
+      },
+      decide: () => null, // policy has no move; fallback cannot advance → fault
+      onSubmit: () => {
+        // no-op: state id never advances.
+      },
+    });
+    const driver = createBotAllyDriver({ matchId: 'm-fault-log', botSeats: ['1'], deps });
+    await driver.tick();
+
+    const faultLine = errorLines.find(
+      (line) => line.includes('[bot-ally]') && line.includes('FAULTED'),
+    );
+    assert.ok(faultLine, 'a [bot-ally] FAULTED diagnostic line was logged');
+    assert.ok(faultLine!.includes('m-fault-log'), 'the fault line names the match');
+    assert.ok(
+      faultLine!.includes('pendingReturnZeroCostDiscard'),
+      'the fault line names the set pending-choice flag (the getLegalMoves-gap tell)',
+    );
+    assert.ok(faultLine!.includes('turn=9') && faultLine!.includes('stage=main'), 'the fault line carries turn + stage');
+  } finally {
+    console.error = originalError;
+  }
+});
+
+test('summarizeBotTurnState reports pending flags, economy, and degrades safely (WP-433)', () => {
+  const withPending = summarizeBotTurnState(
+    {
+      ctx: { turn: 17 },
+      _stateID: 344,
+      G: {
+        currentStage: 'main',
+        turnEconomy: { attack: 5, recruit: 2, spentAttack: 5, spentRecruit: 2 },
+        playerZones: { '1': { hand: [] } },
+        pendingPutAnyNumberBottomHQ: { playerID: '1' },
+        pendingHeroChoice: null,
+      },
+    },
+    '1',
+  );
+  assert.ok(withPending.includes('turn=17'));
+  assert.ok(withPending.includes('stage=main'));
+  assert.ok(withPending.includes('attack=0') && withPending.includes('recruit=0'), 'reports available (not gross) economy');
+  assert.ok(withPending.includes('hand=0'));
+  assert.ok(withPending.includes('pending=[pendingPutAnyNumberBottomHQ]'), 'only truthy pending flags are listed');
+
+  const noPending = summarizeBotTurnState(
+    { ctx: { turn: 3 }, _stateID: 5, G: { currentStage: 'cleanup', turnEconomy: {}, playerZones: {} } },
+    '1',
+  );
+  assert.ok(noPending.includes('pending=[none]'), 'no set pending flags → pending=[none]');
+
+  assert.equal(summarizeBotTurnState(null, '1'), 'state=unavailable', 'a null state degrades to a marker, never throws');
 });
 
 test('stopAllBotAllyDrivers stops and de-registers every registered driver (WP-424)', () => {
