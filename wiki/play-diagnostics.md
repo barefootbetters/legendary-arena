@@ -115,6 +115,34 @@ The builder is fail-soft: a null or malformed snapshot yields an empty
 provenance, a throwing resolver yields `abilityText: null`, and it
 never throws — the export stays robust.
 
+### Transport block
+
+[`buildTransportDiagnostics`](../apps/arena-client/src/diagnostics/diagnostics.ts)
+assembles the typed `transport` block (WP-428 / D-24249) from the WP-311
+[`connection` store](../apps/arena-client/src/stores/connection.ts) and the
+single click-time capture clock — so a freeze report names the client's live
+connection state instead of leaving the transport layer opaque. Five fields:
+
+- `isConnected` / `lastStateId` / `hasEverConnected` — read verbatim from the
+  `connection` store: boardgame.io's `transport.isConnected`, the last observed
+  `_stateID`, and the one-way "connected at least once" latch.
+- `lastFrameAtMs` — a client wall-clock stamp the store records on **every**
+  subscribe frame. It rides the existing `setConnected` call via a defaulted
+  `atMs = Date.now()` parameter, so `client/bgioClient.ts` is untouched.
+- `timeSinceLastFrameMs` — derived: the capture clock minus `lastFrameAtMs`
+  (or `null` before the first frame). This is the decisive number for the
+  "waiting-forever-for-a-server-frame" freeze — a large value means the client
+  stopped receiving server frames while the tab still looks alive.
+
+The derivation lives in the pure `buildTransportDiagnostics(state, capturedAtMs)`
+helper (the clock is passed in), so `buildDiagnosticReport` stays clock-free and
+the block rides straight through — the same pass-through posture as
+`uiStateSnapshot` / `matchSetup`, except the block is **typed**, not opaque. It
+reads only the `connection` Pinia store (framework/transport state, never `G`,
+never persisted per the WP-116 disconnect policy), so the EC-260 module boundary
+holds. The `bgioClient` reconnect/resync/watchdog **counters** are a separate,
+not-yet-surfaced follow-up (see Edge Cases).
+
 ### The export flow
 
 [`DiagnosticExportButton.vue`](../apps/arena-client/src/components/DiagnosticExportButton.vue)
