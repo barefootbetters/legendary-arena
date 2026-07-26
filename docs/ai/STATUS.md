@@ -7,6 +7,38 @@
 
 ## Current State
 
+### WP-432 / EC-467 — Remove the Non-Canonical City-Entry Bystander Attach (Supersedes D-1701) (D-24254) (2026-07-25)
+
+**`User-Visible Surface = play.legendary-arena.com`.** Makes the bystander flow
+**faithful to tabletop Legendary** by deleting the non-canonical **D-1701 /
+WP-017** rule that attached 1 bystander from `G.piles.bystanders` to every
+villain/henchman on City entry (`attachBystanderToVillain` in
+`villainDeck.reveal.ts`). Canonical rule (confirmed vs tabletop sources): a
+villain does **not** capture a bystander merely by entering the City — bystanders
+enter only via a bystander **CARD** revealed from the villain deck (captured by
+the frontmost city villain, or the Mastermind if empty) or a specific
+Ambush/Strike/Twist/Fight `capture-bystander` effect. The engine ran **both** the
+canonical card-reveal source AND the D-1701 entry-attach — two independent
+bystander populations, both scored as flat bystander VP — so it put **~2× the
+canonical bystanders** into play, inflated bystander VP, and drained the supply
+pile that hero "Rescue a Bystander" abilities share (the pressure behind the
+D-24032 ≥30 floor). Found while reviewing a full co-op Magneto game log where
+every defeat rescued `captured + 1` bystanders.
+
+**Fix (engine):** delete the entry-attach block + the WP-431 city-entry log line
++ the now-unused `attachBystanderToVillain` import (the helper stays — the Midtown
+Bank twist + Fight `capture-bystander` still call it); rewrite ~3 tests that
+asserted the entry-attach into canonical no-attach guards + fix the Midtown
+supply-count expectations; correct the long-standing **D-18504 → D-1701**
+mis-citation (D-18504 is the unrelated ambush-wound-loop deletion) and mark
+**D-1701 Superseded**. **Impact:** roughly halves bystanders-in-play + bystander
+VP — a scoring/balance change in the faithful direction (**operator-approved**);
+relieves supply-pile pressure. **Determinism:** the one committed golden fixture
+reveals only mastermind-strike cards, so its `finalStateHash` is **byte-unchanged**
+(**no re-pin**); `PRE_WP080_HASH` (empty replay) untouched. Engine suite
+**2071/0**; `pnpm -r build` 0; `pnpm -r --no-bail test` green. Lightweight lane;
+drafted+executed off `origin/main` @ `b2674057`.
+
 ### WP-B.3 DESIGN — Structured Log-Outcome Contract + Colour-Coding (D-24253, design-only) (2026-07-25)
 
 **`User-Visible Surface = none (design ruling; play.legendary-arena.com game log on implementation)`.**
@@ -41,7 +73,7 @@ movement with **no `G.messages` line**, so the log read as if two bugs had
 occurred:
 
 1. Every villain/henchman defeat rescued `captured + 1` bystanders — the **MVP
-   city-entry rule (D-18504)** silently attaches 1 bystander to every
+   city-entry rule (D-1701)** silently attaches 1 bystander to every
    villain/henchman on entering the City (`attachBystanderToVillain`,
    `villainDeck.reveal.ts`). Only the villain-deck bystander *reveal* and the
    Midtown-Bank twist were logged, so the later "rescued N bystander(s)" (a
@@ -60,7 +92,7 @@ and one guarded `pushLog` per captured hero returned (snapshot
 when no hero attached). `G.messages` is **hash-excluded (D-24081)** → **no
 `finalStateHash` re-pin** (engine suite **2073/0**, +4, unchanged hashes); no
 state/contract/schema/persistence/response-shape/auth change; both edits stay in
-the Game Engine layer. The MVP-vs-canonical faithfulness of the D-18504 count is
+the Game Engine layer. The MVP-vs-canonical faithfulness of the D-1701 count is
 **unchanged and out of scope** (narrate only). `pnpm -r build` 0; `pnpm -r
 --no-bail test` green repo-wide. D-24026 N/A (log-text; verified by the +4 tests
 and re-reading the motivating log). Lightweight lane; drafted+executed off

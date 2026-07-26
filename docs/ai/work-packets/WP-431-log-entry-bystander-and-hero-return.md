@@ -16,7 +16,7 @@ the defect is that each performed a card movement with **no `G.messages` line**,
 so the log could not account for the cards and read as if two bugs had occurred:
 
 1. **Every fight rescued `captured + 1` bystanders.** The MVP city-entry rule
-   (**D-18504**) attaches exactly 1 bystander to every villain/henchman entering
+   (**D-1701**) attaches exactly 1 bystander to every villain/henchman entering
    the City (`attachBystanderToVillain`, called in `villainDeck.reveal.ts`). Only
    the villain-deck bystander *reveal* and the Midtown-Bank twist were logged —
    the entry attach was silent. The later "rescued N bystander(s)" is a faithful
@@ -54,7 +54,7 @@ player's discard. No gameplay, economy, or rules change — only log readability
   are already imported in both files; no new cross-layer import (verified).
 - **The entry attach and the hero return are the only two silent transitions**
   causing the confusion (verified against the reviewed log + the code paths).
-- **The MVP city-entry rule's faithfulness (D-18504) is out of scope** — this WP
+- **The MVP city-entry rule's faithfulness (D-1701) is out of scope** — this WP
   narrates the existing behavior, it does not change how many bystanders attach.
 
 ---
@@ -84,11 +84,11 @@ player's discard. No gameplay, economy, or rules change — only log readability
   when the supply pile is empty and the attach is a no-op).
 - Append a `G.messages` line per captured hero returned to the defeating player's
   discard on villain defeat (guarded: no line when no hero was attached).
-- `// why:` comments on both new blocks (D-18504 / D-24081 / WP-214 references).
+- `// why:` comments on both new blocks (D-1701 / D-24081 / WP-214 references).
 - Tests for both (+4): present-and-named / absent-when-empty for each.
 
 **OUT of scope**
-- The MVP-vs-canonical faithfulness of the D-18504 entry-attach rule (narrate
+- The MVP-vs-canonical faithfulness of the D-1701 entry-attach rule (narrate
   only, do not change the count).
 - Any state, contract, schema, persistence, response-shape, or auth change.
 - The notableEvents / overlay surface (these are durable-log lines only).
@@ -129,7 +129,7 @@ player's discard. No gameplay, economy, or rules change — only log readability
 
 ## Definition of Done
 
-- Both `pushLog` lines land, each guarded; `// why:` comments reference D-18504 /
+- Both `pushLog` lines land, each guarded; `// why:` comments reference D-1701 /
   D-24081 / WP-214.
 - `pnpm --filter @legendary-arena/game-engine build` 0; engine suite **2073/2073**
   (+4); **no `finalStateHash` re-pin** in the diff.

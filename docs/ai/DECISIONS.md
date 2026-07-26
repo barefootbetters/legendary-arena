@@ -2542,7 +2542,15 @@ without requiring card text parsing or effect resolution. Future WPs can
 extend this to support variable counts.
 
 **Introduced:** WP-017
-**Status:** Accepted
+**Status:** SUPERSEDED by D-24254 (WP-432, 2026-07-25). The rule was
+non-canonical — in tabletop Legendary a villain does NOT capture a bystander
+merely by entering the City (bystanders enter only via a bystander CARD reveal
+from the villain deck or a specific Ambush/Strike/Twist/Fight effect). The
+entry-attach was a second, independent bystander source that doubled
+bystanders-in-play and drained the supply pile shared with hero "Rescue a
+Bystander" abilities. Removed by WP-432. (Note: several later docs mis-cited
+this rule as "D-18504" — that is the unrelated ambush-wound-loop deletion; the
+correct citation was always D-1701.)
 
 ---
 
@@ -20938,12 +20946,12 @@ Specific orderings:
   `G.messages.push` calls. `bystandersRescued` reflects the post-award
   delta; `appliedEffects` is the executor's post-dispatch return.
 - `villainDeck.reveal.ts` ambush branch: emission AFTER
-  `executeVillainAbilities(...,'onAmbush')` and BEFORE the
-  unconditional bystander-attach block (the attach is the MVP
-  city-entry rule per D-18504, NOT an Ambush effect — see D-20005
-  payload split). The unconditional attach must not appear in
-  `appliedEffects` and must not be described as an Ambush effect in
-  the narrative.
+  `executeVillainAbilities(...,'onAmbush')`. (Historically this was BEFORE an
+  unconditional bystander-attach block — the MVP city-entry rule per **D-1701**,
+  NOT the D-18504 ambush-wound deletion, and NOT an Ambush effect. That
+  entry-attach was removed as non-canonical by D-24254 / WP-432, so the
+  exclusion it required no longer applies.) Only genuine Ambush `[effect:]`
+  results feed `appliedEffects` / the narrative.
 - `schemeTwistResolvers.ts`: each resolver's emission is the last
   statement in the function, after every per-player loop, every
   `messages.push`, every state mutation.
@@ -32804,7 +32812,9 @@ MORE bystander than the log had shown that card capturing, and (2) a player
 engine behavior** — but two state transitions were happening with **no
 `G.messages` line**, so the log could not account for the cards.
 
-- (1) The **MVP city-entry rule (D-18504)** attaches exactly 1 bystander to every
+- (1) The **MVP city-entry rule (D-1701** — this entry originally mis-cited it as
+  D-18504, the unrelated ambush-wound deletion; the rule was later removed as
+  non-canonical by D-24254) attaches exactly 1 bystander to every
   villain/henchman as it enters the City (`bystanders.logic.attachBystanderToVillain`,
   fired in `villainDeck.reveal.ts`). Only the villain-deck bystander *reveal* and
   the Midtown-Bank twist were logged; the entry attach was silent → the later
@@ -32832,7 +32842,7 @@ there is **no `finalStateHash` re-pin** and no determinism/replay footprint (ful
 engine suite 2073/2073, +4, unchanged hashes). No state, contract, schema,
 persistence, response-shape, or auth change; both edits stay inside the Game
 Engine layer (no new cross-layer import). The MVP-vs-canonical faithfulness of
-the D-18504 entry-attach rule itself is **unchanged and out of scope** — this
+the D-1701 entry-attach rule itself is **unchanged and out of scope** — this
 only narrates it. §21 N/A (no HTTP change). §17 Vision N/A (internal log
 readability; no rule/economy/revenue change). §20 N/A.
 
@@ -32914,5 +32924,55 @@ unstyled and dominant); `awaitingPlayerInput` not retired; no prose changes.
 WP-417/D-24237 (B.2). **Retires on completion:** the D-24100 outcome heuristic (not
 its freeze-read). This decision authorizes **no** code; implementation is gated on
 Jeff's review of `DESIGN-LOG-OUTCOME-CONTRACT.md` and the drafting of B.3a–c.
+
+Protect this file.
+
+### D-24254 — a villain/henchman no longer captures a bystander merely by entering the City (supersedes D-1701) (Active)
+
+**Context.** Reviewing a full co-op Magneto game log (2026-07-25) surfaced that
+every villain/henchman defeat "rescued" exactly one MORE bystander than the log
+showed it capturing. The root cause was **D-1701 / WP-017**: an MVP rule that
+attached 1 bystander from `G.piles.bystanders` to every villain/henchman on City
+entry (`attachBystanderToVillain` in `villainDeck.reveal.ts`). D-1701 itself
+flagged this as "a simplified MVP rule … Future WPs can extend this."
+
+**Canonical rule (confirmed against tabletop sources).** A villain does **not**
+capture a bystander merely by entering the City. Bystanders enter play only via
+(a) a bystander **CARD** revealed from the villain deck — captured by the
+frontmost city villain, or the Mastermind if the city is empty (the
+`cardType === 'bystander'` branch in `villainDeck.reveal.ts`, which attaches the
+card itself, unchanged) — or (b) a specific Ambush / Master-Strike / Scheme-Twist
+/ Fight `capture-bystander` effect (all unchanged). Rescue-on-defeat awards all
+bystanders that bad guy captured.
+
+**The defect.** The engine ran BOTH the canonical card-reveal source AND the
+non-canonical D-1701 entry-attach — two independent bystander populations
+(`bystander-villain-deck-NN` cards vs `pile-bystander` supply tokens), both
+scored as flat bystander VP. So the engine put ~2× the canonical bystanders into
+play, inflated bystander VP, and drained the supply pile that hero "Rescue a
+Bystander" abilities share (the pressure behind the D-24032 ≥30 supply floor).
+
+**Decision.** Remove the D-1701 entry-attach block from `villainDeck.reveal.ts`
+(and its unused `attachBystanderToVillain` import; the helper stays — the Midtown
+Bank twist and Fight `capture-bystander` still call it). Also removes the WP-431
+city-entry log line (the narrated behavior is gone) and corrects the long-standing
+**D-18504 → D-1701** mis-citation (D-18504 is the unrelated ambush-wound-loop
+deletion) in the code comment, this decision log, and the WP-431 artifacts.
+
+**Impact.** Faithful bystander flow; roughly halves bystanders-in-play and
+bystander VP (a scoring/balance change, in the faithful direction — operator
+approved 2026-07-25). Relieves supply-pile pressure, so hero rescues are more
+reliable and the D-24032 ≥30 floor is now over-provisioned (unchanged). No other
+bystander path changes. Determinism: removing the entry-attach changes `G` only
+for a game that reveals a villain/henchman with a non-empty supply; the one
+committed golden fixture (`sentinel-core-doom-2p.replay.json`) reveals only
+mastermind-strike cards, so its `finalStateHash` is **byte-unchanged** and needs
+no re-pin; `PRE_WP080_HASH` (empty replay) is likewise untouched. §21 N/A (no HTTP
+change). §17 Vision — faithfulness to the licensed game (no revenue/NG conflict).
+
+**Packet:** WP-432 / EC-467 (lightweight lane). Engine suite 2071/0 (net −2 vs the
+removed-behavior tests, +1 canonical guard; unchanged hashes); `pnpm -r build` 0;
+`pnpm -r --no-bail test` green. `User-Visible Surface = play.legendary-arena.com`
+— bystander VP totals drop toward tabletop; D-24026 observational only.
 
 Protect this file.

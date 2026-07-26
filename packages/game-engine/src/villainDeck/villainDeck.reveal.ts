@@ -24,10 +24,7 @@ import { pushVillainIntoCity } from '../board/city.logic.js';
 import { validateCityShape } from '../board/city.validate.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { gainWound } from '../board/wounds.logic.js';
-import {
-  attachBystanderToVillain,
-  resolveEscapedBystanders,
-} from '../board/bystanders.logic.js';
+import { resolveEscapedBystanders } from '../board/bystanders.logic.js';
 import { hasAmbush } from '../board/boardKeywords.logic.js';
 import { koAttachedHeroesOnEscape } from '../board/heroCapture.logic.js';
 import {
@@ -289,12 +286,12 @@ export function performVillainReveal(
     // existing hasAmbush fast pre-check (the keyword-detection invariant from
     // buildCardKeywords.ts). The keyword map is re-derived inline so this call
     // carries no dependency on a deleted binding.
-    // why: WP-200 — capture the executor's return and emit `ambushResolved`
-    // BEFORE the unconditional bystander-attach block below. The
-    // unconditional attach is NOT an Ambush effect (it's the MVP
-    // city-entry rule per D-18504); it must not appear in
-    // `appliedEffects` and must not be described in the narrative as an
-    // Ambush effect. Resolving the citySpace via `G.city.indexOf(cardId)`
+    // why: WP-200 — capture the executor's return and emit `ambushResolved`.
+    // Only genuine Ambush `[effect:]` results feed `appliedEffects` / the
+    // narrative. (The MVP unconditional city-entry bystander attach — D-1701,
+    // NOT the D-18504 ambush-wound deletion above — was removed by WP-432 as
+    // non-canonical, so there is no longer a non-Ambush attach to exclude here.)
+    // Resolving the citySpace via `G.city.indexOf(cardId)`
     // after `pushVillainIntoCity` reflects the final placement index
     // (0..4); -1 falls back to 0 if the push collapsed the card off the
     // edge (a contract violation the move never hits in production but
@@ -343,32 +340,16 @@ export function performVillainReveal(
       });
     }
 
-    // why: bystander appears with villain on City entry; rule hooks must
-    // observe post-attachment state (tabletop Legendary semantics)
-    // why: WP-431 — read the bystander that WILL be attached BEFORE the attach
-    // mutates the pile, so the entry-capture log line below can name it. null
-    // when the supply pile is empty (attachBystanderToVillain is then a no-op).
-    const bystanderAttachedOnEntry =
-      G.piles.bystanders.length > 0 ? G.piles.bystanders[0]! : null;
-    const attachResult = attachBystanderToVillain(
-      G.piles.bystanders,
-      cardId,
-      G.attachedBystanders,
-    );
-    G.piles.bystanders = attachResult.bystandersPile;
-    G.attachedBystanders = attachResult.attachedBystanders;
-    // why: WP-431 — narrate the MVP city-entry bystander attach (D-18504: every
-    // villain/henchman captures 1 bystander on entering the City) into the
-    // durable log (G.messages, hash-excluded per D-24081). Without this line the
-    // later "rescued N bystander(s)" on defeat reads as off-by-one against the
-    // log, because the entry bystander was never announced. Guarded: no line
-    // when the supply pile was empty (the attach was a deterministic no-op).
-    if (bystanderAttachedOnEntry !== null) {
-      pushLog(
-        G,
-        `${formatCardRef(G.cardDisplayData, bystanderAttachedOnEntry)} captured by ${formatCardRef(G.cardDisplayData, cardId)} on entering the City.`,
-      );
-    }
+    // why: WP-432 (supersedes D-1701 / removes the WP-431 entry-capture log) —
+    // a villain/henchman does NOT capture a bystander merely by entering the
+    // City. Canonical Legendary: bystanders enter play ONLY via a bystander CARD
+    // revealed from the villain deck (captured by the frontmost city villain, or
+    // the Mastermind if the city is empty — the `cardType === 'bystander'` branch
+    // below) or via a specific Ambush / Master-Strike / Scheme-Twist / Fight
+    // `capture-bystander` effect. The former MVP unconditional attach from
+    // `G.piles.bystanders` (D-1701 / WP-017) was a second, non-canonical source
+    // that doubled bystanders-in-play and drained the supply pile that hero
+    // "Rescue a Bystander" abilities share (D-24032 floor). It is deleted here.
   } else {
     // Non-city card types: remove from deck before trigger/discard routing
     G.villainDeck.deck = G.villainDeck.deck.slice(1);

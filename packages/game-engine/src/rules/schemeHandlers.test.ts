@@ -317,13 +317,12 @@ describe('schemeTwistHandler — Midtown Bank Robbery', () => {
       2,
       'Bank villain must have exactly 2 bystanders attached',
     );
-    // why: Midtown takes 2 from the supply; the chained villain reveal
-    // attaches 1 more to the newly-entered villain via the standard
-    // per-reveal pipeline. 5 - 2 - 1 = 2 remaining.
+    // why: Midtown takes 2 from the supply; the chained villain reveal attaches
+    // NOTHING on City entry (WP-432 removed the D-1701 entry-attach). 5 - 2 = 3.
     assert.equal(
       gameState.piles.bystanders.length,
-      2,
-      'Bystander supply: -2 from Midtown, -1 from chained reveal attach',
+      3,
+      'Bystander supply: -2 from Midtown only (no City-entry attach post-WP-432)',
     );
   });
 
@@ -347,14 +346,12 @@ describe('schemeTwistHandler — Midtown Bank Robbery', () => {
       1,
       'Bank villain captures all remaining bystanders when supply < 2',
     );
-    // why: 0 from Midtown's two-capture loop (supply already drained) PLUS
-    // the existing pipeline's per-reveal attach on the chained villain
-    // would normally consume one — but supply is empty by then, so total
-    // remaining is 0.
+    // why: Midtown captures the 1 remaining bystander onto the Bank villain;
+    // the chained reveal attaches nothing on City entry (WP-432). 1 - 1 = 0.
     assert.equal(
       gameState.piles.bystanders.length,
       0,
-      'Bystander supply is empty after partial capture',
+      'Bystander supply is empty after Midtown captures the last one',
     );
   });
 
@@ -379,13 +376,13 @@ describe('schemeTwistHandler — Midtown Bank Robbery', () => {
       emptyBankMessage,
       'must log a "Bank is empty" message when no villain occupies the Bank',
     );
-    // why: when the Bank is empty, no capture occurs from the Midtown
-    // effect — but the chained reveal still attaches 1 bystander to the
-    // newly-entered villain via the standard pipeline (5 - 1 = 4 left).
+    // why: when the Bank is empty, no capture occurs from the Midtown effect,
+    // and the chained reveal attaches nothing on City entry (WP-432). Supply is
+    // untouched (5 remain).
     assert.equal(
       gameState.piles.bystanders.length,
-      4,
-      'Only the chained-reveal attach consumed a bystander; Midtown took none',
+      5,
+      'Neither Midtown (empty Bank) nor the chained City entry consumed a bystander',
     );
   });
 
