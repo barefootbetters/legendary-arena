@@ -211,8 +211,13 @@ describe('escape-wound integration', () => {
   });
 });
 
-describe('bystander attachment on City entry', () => {
-  it('on villain City entry: one bystander attached from G.piles.bystanders', () => {
+describe('no bystander attachment on City entry (WP-432 — canonical)', () => {
+  // why: WP-432 removed the non-canonical D-1701 entry-attach. A villain/henchman
+  // does NOT capture a bystander merely by entering the City; bystanders enter
+  // only via a bystander CARD revealed from the villain deck (or a specific
+  // Ambush/Strike/Twist/Fight effect). Entering the City must leave the supply
+  // pile untouched and attach nothing.
+  it('villain City entry with a full supply pile: nothing attached, supply unchanged', () => {
     const gameState = createMockGameState({
       deck: ['villain-a'],
       cardTypes: { 'villain-a': 'villain' },
@@ -222,32 +227,15 @@ describe('bystander attachment on City entry', () => {
     const moveContext = createMockMoveContext(gameState);
     revealVillainCard(moveContext);
 
-    assert.deepStrictEqual(
-      gameState.attachedBystanders['villain-a'],
-      ['bystander-1'],
-      'One bystander must be attached to the entering villain',
+    assert.ok(
+      !('villain-a' in gameState.attachedBystanders) ||
+        gameState.attachedBystanders['villain-a']!.length === 0,
+      'No bystander is attached to a villain merely by entering the City',
     );
     assert.equal(
       gameState.piles.bystanders.length,
-      1,
-      'Bystanders pile must have one fewer bystander',
-    );
-  });
-
-  it('empty bystander pile on City entry: no attachment, no error', () => {
-    const gameState = createMockGameState({
-      deck: ['villain-a'],
-      cardTypes: { 'villain-a': 'villain' },
-      bystandersPile: [],
-    });
-
-    const moveContext = createMockMoveContext(gameState);
-    revealVillainCard(moveContext);
-
-    assert.ok(
-      !('villain-a' in gameState.attachedBystanders) ||
-      gameState.attachedBystanders['villain-a']!.length === 0,
-      'No bystander should be attached when pile is empty',
+      2,
+      'The supply pile is untouched by City entry',
     );
   });
 });

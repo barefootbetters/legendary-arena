@@ -7,7 +7,7 @@
 **Layer:** Game Engine (`packages/game-engine/src/villainDeck/` + `packages/game-engine/src/moves/`)
 
 ## Scope (read first)
-IN scope: append one `G.messages` line on the MVP city-entry bystander attach (D-18504),
+IN scope: append one `G.messages` line on the MVP city-entry bystander attach (D-1701),
 and one line per captured hero returned to the defeating player's discard on villain
 defeat (WP-214). OUT of scope: the faithfulness of the entry-attach count itself, the
 notableEvents/overlay surface, escaped-villain release logging, any non-log change.
@@ -34,7 +34,7 @@ notableEvents/overlay surface, escaped-villain release logging, any non-log chan
 
 ## Required `// why:` Comments
 - entry snapshot — why read the pile top before the attach (attach mutates the pile)
-- entry `pushLog` — the D-18504 rule + D-24081 hash-exclusion + the off-by-one it fixes
+- entry `pushLog` — the D-1701 rule + D-24081 hash-exclusion + the off-by-one it fixes
 - hero-list snapshot — why capture before `awardAttachedHeroes` (it deletes the entry)
 - hero `pushLog` — WP-214 "Gain that Hero" + D-24081
 

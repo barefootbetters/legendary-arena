@@ -58,6 +58,7 @@ high-water: 422
 - WP-429 — transport-reconnect-resync-counters (2026-07-25, spec/wp-429-transport-counters)
 - WP-430 — fluid-desktop responsive scaling (2026-07-25, spec/wp-429-fluid-desktop-scaling)
 - WP-431 — log-entry-bystander-and-hero-return (2026-07-25, fix/log-entry-bystander-and-hero-return)
+- WP-432 — remove-noncanonical-entry-bystander (2026-07-25, fix/remove-noncanonical-entry-bystander)
 
 ## EC
 
@@ -74,6 +75,7 @@ high-water: 457
 - EC-464 — transport-reconnect-resync-counters (2026-07-25, spec/wp-429-transport-counters)
 - EC-465 — fluid-desktop responsive scaling (2026-07-25, spec/wp-429-fluid-desktop-scaling)
 - EC-466 — log-entry-bystander-and-hero-return (2026-07-25, fix/log-entry-bystander-and-hero-return)
+- EC-467 — remove-noncanonical-entry-bystander (2026-07-25, fix/remove-noncanonical-entry-bystander)
 
 ## D
 
@@ -89,5 +91,6 @@ high-water: 24241
 - D-24248 — bot-resolve-putbottomhq (getLegalMoves short-circuit for the 2 put-bottom-HQ choices; 2026-07-25, fix/bot-resolve-putbottomhq)
 - D-24250 — transport-reconnect-resync-counters (reconnect/resync/watchdog counters in the transport diagnostics block; 2026-07-25, spec/wp-429-transport-counters)
 - D-24251 — fluid-desktop responsive scaling (max-width play-area cap + fluid clamp card/gutter sizing, additive to D-12909; 2026-07-25, spec/wp-429-fluid-desktop-scaling)
-- D-24252 — log-entry-bystander-and-hero-return (narrate the D-18504 city-entry bystander attach + the WP-214 captured-hero return-on-defeat into G.messages; log-only, hash-excluded per D-24081; 2026-07-25, fix/log-entry-bystander-and-hero-return)
+- D-24252 — log-entry-bystander-and-hero-return (narrate the D-1701 city-entry bystander attach + the WP-214 captured-hero return-on-defeat into G.messages; log-only, hash-excluded per D-24081; 2026-07-25, fix/log-entry-bystander-and-hero-return)
 - D-24253 — log-outcome-contract-design (WP-B.3 DESIGN: G.messages string[]→LogEntry[] records carrying a coarse LogOutcome for green/red/yellow colour-coding; retires the D-24100 effectProvenance heuristic; design ruling only, no code; 2026-07-25, spec/wpb3-log-outcome-design)
+- D-24254 — remove-noncanonical-entry-bystander (supersedes D-1701; a villain/henchman no longer captures a bystander merely on City entry — non-canonical; corrects the D-18504→D-1701 mis-citation; 2026-07-25, fix/remove-noncanonical-entry-bystander)
