@@ -62,6 +62,7 @@ high-water: 422
 - WP-433 — bot-ally-fault-observability (2026-07-26, fix/bot-ally-fault-observability)
 - WP-434 — log-outcome-engine-contract (WP-B.3a: G.messages/UIState.log string[]→LogEntry[] + LOG_OUTCOMES enum + pushLog outcome arg; implements D-24253; renumbered from WP-432 after a landed collision; 2026-07-26, spec/wp432-log-outcome-engine-contract)
 - WP-435 — log-outcome-client-colour (WP-B.3b: GameLogPanel colours each log line by LogEntry.outcome + non-colour glyph/aria signal + export tag policy; arena-client only; implements D-24253; 2026-07-26, spec/wpb3b-log-colour)
+- WP-436 — effectprovenance-outcome-retire (WP-B.3c: effectProvenance recentlyPlayedCards[].outcome reads the authoritative LogEntry.outcome instead of string-matching; awaitingPlayerInput + hollowEffects reads kept; arena-client only; implements D-24253 §Fork F; 2026-07-26, spec/wpb3c-effectprovenance-retire)
 
 ## EC
 
@@ -82,6 +83,7 @@ high-water: 457
 - EC-468 — bot-ally-fault-observability (2026-07-26, fix/bot-ally-fault-observability)
 - EC-469 — log-outcome-engine-contract (WP-434/WP-B.3a; renumbered from EC-467 after a landed collision; 2026-07-26, spec/wp432-log-outcome-engine-contract)
 - EC-470 — log-outcome-client-colour (WP-435/WP-B.3b; 2026-07-26, spec/wpb3b-log-colour)
+- EC-471 — effectprovenance-outcome-retire (WP-436/WP-B.3c; 2026-07-26, spec/wpb3c-effectprovenance-retire)
 
 ## D
 
