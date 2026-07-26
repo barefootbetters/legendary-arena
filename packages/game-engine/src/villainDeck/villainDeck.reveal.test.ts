@@ -257,7 +257,7 @@ describe('revealVillainCard', () => {
 
     assert.ok(
       moveContext.G.messages.some(
-        (message) => message.includes('card-a') && message.includes('entered the city'),
+        (message) => message.text.includes('card-a') && message.text.includes('entered the city'),
       ),
       'a villain reveal that fills the city must log an "entered the city" line',
     );
@@ -289,7 +289,7 @@ describe('revealVillainCard', () => {
       'the supply pile is untouched by City entry',
     );
     assert.equal(
-      moveContext.G.messages.filter((message) => message.includes('on entering the City.')).length,
+      moveContext.G.messages.filter((message) => message.text.includes('on entering the City.')).length,
       0,
       'no entry-capture log line is emitted',
     );
@@ -316,18 +316,18 @@ describe('revealVillainCard', () => {
       revealVillainCard(moveContext);
 
       const triggerMessage = moveContext.G.messages.find(
-        (message) => message.startsWith('test-trigger:'),
+        (message) => message.text.startsWith('test-trigger:'),
       );
       assert.ok(
         triggerMessage,
         'G.messages must contain a test-trigger message after reveal',
       );
       assert.ok(
-        triggerMessage.includes('cardId:villain-card-001'),
+        triggerMessage.text.includes('cardId:villain-card-001'),
         'Trigger message must contain the correct cardId',
       );
       assert.ok(
-        triggerMessage.includes('type:villain'),
+        triggerMessage.text.includes('type:villain'),
         'Trigger message must contain the correct cardTypeSlug',
       );
     } finally {
@@ -358,7 +358,7 @@ describe('revealVillainCard', () => {
       revealVillainCard(moveContext);
 
       const triggerMessages = moveContext.G.messages.filter(
-        (message) => message.startsWith('test-trigger:'),
+        (message) => message.text.startsWith('test-trigger:'),
       );
       assert.equal(
         triggerMessages.length,
@@ -389,7 +389,7 @@ describe('revealVillainCard', () => {
       revealVillainCard(moveContext);
 
       const triggerMessages = moveContext.G.messages.filter(
-        (message) => message.startsWith('test-trigger:'),
+        (message) => message.text.startsWith('test-trigger:'),
       );
       assert.equal(
         triggerMessages.length,
@@ -420,7 +420,7 @@ describe('revealVillainCard', () => {
       revealVillainCard(moveContext);
 
       const triggerMessages = moveContext.G.messages.filter(
-        (message) => message.startsWith('test-trigger:'),
+        (message) => message.text.startsWith('test-trigger:'),
       );
       assert.equal(
         triggerMessages.length,
@@ -539,7 +539,7 @@ describe('revealVillainCard', () => {
     );
     assert.ok(
       moveContext.G.messages.some((message) =>
-        message.includes('unknown-card-001'),
+        message.text.includes('unknown-card-001'),
       ),
       'A message mentioning the missing card must be appended',
     );
@@ -834,8 +834,8 @@ describe('revealVillainCard — bystander capture routing', () => {
 
     const captureMessage = moveContext.G.messages.find(
       (message) =>
-        message.includes('bystander-001') &&
-        message.includes('villain-frontmost'),
+        message.text.includes('bystander-001') &&
+        message.text.includes('villain-frontmost'),
     );
     assert.ok(
       captureMessage,
@@ -944,13 +944,13 @@ describe('revealVillainCard — onEscape fire site (WP-186 §Files #7a)', () => 
     // (e) Order proof — the escape message precedes the wound message which
     // precedes the bystander release message (existing emission order).
     const escapeMessageIndex = moveContext.G.messages.findIndex((m) =>
-      m.includes(`(${escapedCardId}) escaped`),
+      m.text.includes(`(${escapedCardId}) escaped`),
     );
     const woundMessageIndex = moveContext.G.messages.findIndex((m) =>
-      m.includes('gained a wound from villain escape'),
+      m.text.includes('gained a wound from villain escape'),
     );
     const releaseMessageIndex = moveContext.G.messages.findIndex((m) =>
-      m.includes('Bystanders from escaped villain'),
+      m.text.includes('Bystanders from escaped villain'),
     );
     assert.ok(escapeMessageIndex >= 0, 'escape message present');
     assert.ok(woundMessageIndex > escapeMessageIndex, 'wound message follows escape message');
@@ -1342,8 +1342,8 @@ describe('revealVillainCard — WP-316 Ambush effect log narration', () => {
     revealVillainCard(moveContext);
 
     assert.ok(
-      gameState.messages.includes(
-        'Ambush effect: the rightmost HQ hero was captured (Iron Man).',
+      gameState.messages.some(
+        (entry) => entry.text === 'Ambush effect: the rightmost HQ hero was captured (Iron Man).',
       ),
       'the durable log names the captured HQ hero',
     );
@@ -1377,7 +1377,7 @@ describe('revealVillainCard — WP-316 Ambush effect log narration', () => {
     revealVillainCard(moveContext);
 
     assert.equal(
-      gameState.messages.filter((message) => message.startsWith('Ambush effect:')).length,
+      gameState.messages.filter((message) => message.text.startsWith('Ambush effect:')).length,
       0,
       'no effect line when the ambush applied no effect',
     );
@@ -1420,8 +1420,8 @@ describe('revealVillainCard — WP-316 Escape effect log narration (log-only)', 
     revealVillainCard(moveContext);
 
     assert.ok(
-      gameState.messages.includes(
-        'Escape effect: the top of the hero deck escaped (Thor).',
+      gameState.messages.some(
+        (entry) => entry.text === 'Escape effect: the top of the hero deck escaped (Thor).',
       ),
       'the durable log names the escaped hero-deck card',
     );
@@ -1463,7 +1463,7 @@ describe('revealVillainCard — WP-316 Escape effect log narration (log-only)', 
     revealVillainCard(moveContext);
 
     assert.equal(
-      gameState.messages.filter((message) => message.startsWith('Escape effect:')).length,
+      gameState.messages.filter((message) => message.text.startsWith('Escape effect:')).length,
       0,
       'no effect line when the escaped card applied no Escape effect',
     );

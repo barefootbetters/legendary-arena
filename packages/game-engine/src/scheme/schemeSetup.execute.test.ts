@@ -116,7 +116,7 @@ describe('executeSchemeSetup', () => {
     assert.deepStrictEqual([...result.city], originalCity);
     // Warning logged
     const hasWarning = result.messages.some(
-      (message) => message.includes('modifyCitySize') && message.includes('not yet supported'),
+      (message) => message.text.includes('modifyCitySize') && message.text.includes('not yet supported'),
     );
     assert.equal(hasWarning, true, 'Expected warning about modifyCitySize');
   });
@@ -134,7 +134,7 @@ describe('executeSchemeSetup', () => {
     const result = executeSchemeSetup(gameState, instructions);
 
     const hasWarning = result.messages.some(
-      (message) => message.includes('Unknown scheme setup instruction type') && message.includes('unknownType'),
+      (message) => message.text.includes('Unknown scheme setup instruction type') && message.text.includes('unknownType'),
     );
     assert.equal(hasWarning, true, 'Expected warning about unknown type');
   });

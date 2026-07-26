@@ -295,7 +295,7 @@ describe('playCard', () => {
     // WP-323 enriches it to "{Name} ({ext-id}) — {effect}"; this synthetic
     // `card-x` has no cardDisplayData entry, so it exercises the name fallback
     // ("card-x") with no effect suffix -> "card-x (card-x)".
-    assert.ok(gameState.messages.includes('Player 0 played card-x (card-x).'),
+    assert.ok(gameState.messages.some((entry) => entry.text === 'Player 0 played card-x (card-x).'),
       'playCard must append an enriched "played" line to the game log.');
   });
 
@@ -314,7 +314,7 @@ describe('playCard', () => {
     playCard(context, { cardId: 'card-x' });
 
     assert.ok(
-      gameState.messages.includes('10.2.1 Player 0 played card-x (card-x).'),
+      gameState.messages.some((entry) => entry.text === '10.2.1 Player 0 played card-x (card-x).'),
       'the played line is prefixed 10.2.1 (turn 10, step 2 = main, 1st action).',
     );
   });

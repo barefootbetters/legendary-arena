@@ -288,7 +288,7 @@ describe('interpretHeroPrimitiveEffect — the bind/ref context is never in G', 
 
     assert.equal(G.turnEconomy!.attack, 6, 'call 2 added +0 — the earlier binding is not visible');
     assert.ok(
-      G.messages.some((message) => message.includes('unbound binding "discardedCard"')),
+      G.messages.some((message) => message.text.includes('unbound binding "discardedCard"')),
       'an unbound ref in a separate top-level call warns',
     );
   });
@@ -307,7 +307,7 @@ describe('interpretHeroPrimitiveEffect — runtime dispatch guard', () => {
     assert.deepStrictEqual(G.playerZones['0']!.deck, ['top'], 'no mutation on an unknown node');
     assert.equal(G.turnEconomy!.attack, 0, 'no mutation on an unknown node');
     assert.ok(
-      G.messages.some((message) => message.includes('unknown node type "bogus-node"')),
+      G.messages.some((message) => message.text.includes('unknown node type "bogus-node"')),
       'an unknown node type warns',
     );
   });
@@ -323,7 +323,7 @@ describe('interpretHeroPrimitiveEffect — runtime dispatch guard', () => {
     assert.doesNotThrow(() => interpretHeroPrimitiveEffect(G, CTX, '0', gainWithBadAmount));
     assert.equal(G.turnEconomy!.attack, 0, 'an unknown value expression resolves to +0');
     assert.ok(
-      G.messages.some((message) => message.includes('unknown value-expression type "bogus-value"')),
+      G.messages.some((message) => message.text.includes('unknown value-expression type "bogus-value"')),
       'an unknown value-expression type warns',
     );
   });
@@ -399,7 +399,7 @@ describe('interpretHeroPrimitiveEffect — Empowered (count-cards-by-class-in-zo
     assert.doesNotThrow(() => interpretHeroPrimitiveEffect(G, CTX, '0', buildEmpoweredComposition('strength')));
     assert.equal(G.turnEconomy!.attack, 0, 'no HQ zone → +0');
     assert.ok(
-      G.messages.some((message) => message.includes('no HQ zone or no card traits')),
+      G.messages.some((message) => message.text.includes('no HQ zone or no card traits')),
       'a missing HQ warns',
     );
   });

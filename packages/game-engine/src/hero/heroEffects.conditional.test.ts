@@ -225,7 +225,7 @@ describe('executeHeroEffects — conditional execution (WP-023)', () => {
       'condition failure must not mutate any game state except G.messages.');
     assert.equal(gameState.messages.length, messagesBefore + 1,
       'condition failure must append exactly one observability log line.');
-    assert.match(gameState.messages[gameState.messages.length - 1]!, /did not activate/,
+    assert.match(gameState.messages[gameState.messages.length - 1]!.text, /did not activate/,
       'the appended log line must explain the ability did not activate.');
   });
 

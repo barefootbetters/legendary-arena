@@ -47,6 +47,7 @@ import {
   formatRevealOutcomeLine,
 } from './revealLog.js';
 import { pushLog } from '../log/logPush.js';
+import type { LogOutcome } from '../log/logOutcome.types.js';
 
 // ---------------------------------------------------------------------------
 // MVP keyword set
@@ -352,8 +353,11 @@ export function executeHeroEffects(
       // class/team-synergy gate that suppressed the ability is observable in the
       // game log (G.messages -> UIState.log) instead of a silent skip — the
       // exact "the effect did nothing" confusion from the live diagnostic.
-      pushLog(G, 
+      // why: WP-434 — a class/synergy-gated ability that did not fire is `blocked`
+      // (the effect was suppressed and nothing happened) per the LOG_OUTCOMES taxonomy.
+      pushLog(G,
         `Player ${playerID}'s ${formatCardRef(G.cardDisplayData, cardId)} ability did not activate — a play condition (such as Hero class or team synergy) was not met.`,
+        'blocked',
       );
       continue;
     }
@@ -610,13 +614,18 @@ function heroEffectDraw(
   // discard both empty) was indistinguishable from a full one. Name the realized
   // amount, and say so explicitly when it fell short of the printed amount.
   if (drawnCount < requestedCount) {
+    // why: WP-434 — a short draw (fewer than requested; deck + discard empty) is
+    // `partial` — the ability fired but the source ran dry mid-way.
     pushLog(G,
       `Player ${playerID} drew ${drawnCount} of ${requestedCount} card(s) from ${formatCardRef(G.cardDisplayData, cardId)} — their deck and discard pile were empty.`,
+      'partial',
     );
     return;
   }
+  // why: WP-434 — a full realized draw is `applied` (green).
   pushLog(G,
     `Player ${playerID} drew ${drawnCount} card(s) from ${formatCardRef(G.cardDisplayData, cardId)}.`,
+    'applied',
   );
 }
 
@@ -631,8 +640,10 @@ function heroEffectAttack(
   G.turnEconomy = addResources(G.turnEconomy, attackGrant, 0);
   // why: WP-417 / D-24237 — an ability-granted attack was silent; only the
   // count-scaled variant (attack-per-count) logged. Both now report the grant.
+  // why: WP-434 — an ability-granted attack economy is `applied` (green).
   pushLog(G,
     `Player ${playerID} gained +${attackGrant} attack from ${formatCardRef(G.cardDisplayData, cardId)}.`,
+    'applied',
   );
 }
 
@@ -647,8 +658,10 @@ function heroEffectRecruit(
   G.turnEconomy = addResources(G.turnEconomy, 0, recruitGrant);
   // why: WP-417 / D-24237 — mirrors the attack grant above; an ability-granted
   // recruit was previously invisible in the game log.
+  // why: WP-434 — an ability-granted recruit economy is `applied` (green).
   pushLog(G,
     `Player ${playerID} gained +${recruitGrant} recruit from ${formatCardRef(G.cardDisplayData, cardId)}.`,
+    'applied',
   );
 }
 
@@ -671,8 +684,10 @@ function heroEffectKo(
       G.ko = koCard(G.ko, cardId);
       // why: WP-417 / D-24237 — a self-KO removes the card the player just played
       // from the board; a silent removal reads as the card vanishing. Name it.
+      // why: WP-434 — a self-KO ability that removed the played card is `applied`.
       pushLog(G,
         `Player ${playerID} KO'd ${formatCardRef(G.cardDisplayData, cardId)} via its own ability.`,
+        'applied',
       );
     }
   }
@@ -929,8 +944,21 @@ function applyRevealRules(
             actionsText: matchedActionPhrases.join(', '),
             unappliedActionsText: describeUnappliedRevealActions(unappliedActionKinds),
           };
-    pushLog(G, 
+    // why: WP-434 — project the reveal result onto a LOG_OUTCOMES colour: no branch
+    // matched → `blocked` (the What-If test failed); matched but some action was
+    // guard-blocked → `partial`; matched and fully applied → `applied`.
+    let revealLogOutcome: LogOutcome;
+    if (matchedPredicateText === undefined) {
+      revealLogOutcome = 'blocked';
+    } else if (unappliedActionKinds.length > 0) {
+      revealLogOutcome = 'partial';
+    } else {
+      revealLogOutcome = 'applied';
+    }
+    pushLog(
+      G,
       formatRevealOutcomeLine(G.cardDisplayData, playerID, topCardId, cost, outcome),
+      revealLogOutcome,
     );
   }
 }

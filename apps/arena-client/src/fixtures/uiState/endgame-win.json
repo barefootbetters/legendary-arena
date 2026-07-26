@@ -37,7 +37,13 @@
     }
   ],
   "city": {
-    "spaces": [null, null, null, null, null],
+    "spaces": [
+      null,
+      null,
+      null,
+      null,
+      null
+    ],
     "escapedPile": []
   },
   "hq": {
@@ -76,11 +82,23 @@
     "woundsDrawn": 0
   },
   "log": [
-    "Turn 13: Player 0 defeated the last tactic of Doctor Octopus",
-    "Turn 14: Heroes win — mastermind defeated."
+    {
+      "text": "Turn 13: Player 0 defeated the last tactic of Doctor Octopus",
+      "outcome": "neutral"
+    },
+    {
+      "text": "Turn 14: Heroes win — mastermind defeated.",
+      "outcome": "neutral"
+    }
   ],
-  "progress": { "bystandersRescued": 9, "escapedVillains": 2 },
-  "decks": { "villainDeckCount": 2, "heroDeckCount": 42 },
+  "progress": {
+    "bystandersRescued": 9,
+    "escapedVillains": 2
+  },
+  "decks": {
+    "villainDeckCount": 2,
+    "heroDeckCount": 42
+  },
   "piles": {
     "bystandersCount": 0,
     "woundsCount": 10,
@@ -88,7 +106,11 @@
     "officersCount": 14,
     "sidekicksCount": 7
   },
-  "koPile": { "count": 0, "topCard": null, "cards": [] },
+  "koPile": {
+    "count": 0,
+    "topCard": null,
+    "cards": []
+  },
   "gameOver": {
     "outcome": "win",
     "reason": "Mastermind Doctor Octopus has been defeated.",

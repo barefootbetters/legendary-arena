@@ -253,9 +253,22 @@ export function buildEffectProvenance(
   // so the client needs no card-text source of its own — boundary purity (EC-260) preserved.
   const resolveText = resolveCardText ?? buildSnapshotAbilityTextResolver(snapshotRecord);
 
+  // why: WP-434 — UIState.log is now LogEntry[] ({ text, outcome }). Read each
+  // record's `.text` (defensively, since the snapshot is typed `unknown` here) so
+  // the downstream "played …" / "did not activate" string-matching keeps working.
+  // Only the log READ migrates; the outcome-classification heuristic below is
+  // untouched (it retires in WP-B.3c, and stays the fallback per D-24253 §9).
   const log = snapshotRecord['log'];
   const logLines: string[] = Array.isArray(log)
-    ? log.filter((line): line is string => typeof line === 'string')
+    ? log
+        .map((entry): string | null => {
+          if (entry !== null && typeof entry === 'object') {
+            const text = (entry as { text?: unknown }).text;
+            return typeof text === 'string' ? text : null;
+          }
+          return null;
+        })
+        .filter((text): text is string => text !== null)
     : [];
 
   // why: collect the ext_id + log index of every "played …" line, then keep the last N.

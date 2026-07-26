@@ -343,7 +343,7 @@ describe('executeHeroEffects', () => {
       'Deck should have 1 card remaining after drawing 2.');
     // why: WP-417 / D-24237 — the draw handler now names the realized amount.
     assert.ok(
-      gameState.messages.some((line) => line.includes('drew 2 card(s) from')),
+      gameState.messages.some((line) => line.text.includes('drew 2 card(s) from')),
       'The draw handler logs the realized draw count.',
     );
   });
@@ -372,7 +372,7 @@ describe('executeHeroEffects', () => {
       'Only one card was available to draw.');
     assert.ok(
       gameState.messages.some((line) =>
-        line.includes('drew 1 of 2 card(s)') && line.includes('deck and discard pile were empty'),
+        line.text.includes('drew 1 of 2 card(s)') && line.text.includes('deck and discard pile were empty'),
       ),
       'The draw handler names the shortfall against the printed amount.',
     );
@@ -402,7 +402,7 @@ describe('executeHeroEffects', () => {
       'turnEconomy.recruit should remain unchanged.');
     // why: WP-417 / D-24237 — an ability-granted attack now surfaces in the log.
     assert.ok(
-      gameState.messages.some((line) => line.includes('gained +3 attack from')),
+      gameState.messages.some((line) => line.text.includes('gained +3 attack from')),
       'The attack handler logs the grant.',
     );
   });
@@ -431,7 +431,7 @@ describe('executeHeroEffects', () => {
       'turnEconomy.attack should remain unchanged.');
     // why: WP-417 / D-24237 — an ability-granted recruit now surfaces in the log.
     assert.ok(
-      gameState.messages.some((line) => line.includes('gained +2 recruit from')),
+      gameState.messages.some((line) => line.text.includes('gained +2 recruit from')),
       'The recruit handler logs the grant.',
     );
   });
@@ -460,7 +460,7 @@ describe('executeHeroEffects', () => {
       'hero-x should be added to the KO pile.');
     // why: WP-417 / D-24237 — a self-KO now names the card it removed.
     assert.ok(
-      gameState.messages.some((line) => line.includes("KO'd") && line.includes('via its own ability')),
+      gameState.messages.some((line) => line.text.includes("KO'd") && line.text.includes('via its own ability')),
       'The self-KO handler logs the removal.',
     );
   });
@@ -2222,8 +2222,8 @@ describe('executeHeroEffects reveal collapse (WP-253 / D-24024)', () => {
       'deck should be empty after the cost-0 card is drawn.');
     // why: WP-325 — the reveal now logs its outcome (revealed card + cost + matched predicate + action).
     assert.ok(
-      gameState.messages.includes(
-        'Player 0 revealed cost-zero-card (cost-zero-card) (cost 0) — cost ≤ 0 matched: drew it.',
+      gameState.messages.some(
+        (entry) => entry.text === 'Player 0 revealed cost-zero-card (cost-zero-card) (cost 0) — cost ≤ 0 matched: drew it.',
       ),
       'the reveal-outcome line names the revealed card, cost, matched predicate, and action.',
     );
@@ -2255,8 +2255,8 @@ describe('executeHeroEffects reveal collapse (WP-253 / D-24024)', () => {
       'hand should remain empty when the top card cost exceeds 0.');
     // why: WP-325 — a reveal whose predicate does not match logs the no-branch-matched outcome.
     assert.ok(
-      gameState.messages.includes(
-        'Player 0 revealed cost-one-card (cost-one-card) (cost 1) — no branch matched (left on top).',
+      gameState.messages.some(
+        (entry) => entry.text === 'Player 0 revealed cost-one-card (cost-one-card) (cost 1) — no branch matched (left on top).',
       ),
       'the reveal-outcome line reports no branch matched when the predicate fails.',
     );
@@ -2601,7 +2601,7 @@ describe('executeHeroEffects rescue logging (D-24017)', () => {
       'b-1 should be rescued to the victory zone.');
     // ... and is now observable in the game log.
     assert.ok(
-      gameState.messages.some((line) => line.includes('rescued 1 bystander(s) via a hero ability')),
+      gameState.messages.some((line) => line.text.includes('rescued 1 bystander(s) via a hero ability')),
       'a successful hero rescue must append a game-log line naming the count.',
     );
   });
@@ -2628,7 +2628,7 @@ describe('executeHeroEffects rescue logging (D-24017)', () => {
       'victory zone stays empty when the supply is empty.');
     // ... but the player now sees WHY nothing was rescued.
     assert.ok(
-      gameState.messages.some((line) => line.includes('Bystander supply is empty')),
+      gameState.messages.some((line) => line.text.includes('Bystander supply is empty')),
       'an empty-supply hero rescue must append a game-log line explaining the no-op.',
     );
   });
@@ -2693,7 +2693,7 @@ describe('executeHeroEffects optional-ko-reward park (WP-248)', () => {
 
     assert.equal(gameState.pendingOptionalKoRewards?.length ?? 0, 0, 'no choice parked when nothing is eligible');
     assert.ok(
-      gameState.messages.some((line) => line.includes('both hand and discard pile are empty')),
+      gameState.messages.some((line) => line.text.includes('both hand and discard pile are empty')),
       'a 0-eligible optional-KO-reward must append a game-log line explaining the no-op',
     );
   });
@@ -3448,7 +3448,7 @@ describe('executeHeroEffects victory-villain-attack park (WP-285 / D-24067)', ()
 
     assert.equal(gameState.pendingVictoryPileCardPick?.length ?? 0, 0, 'no pick parked when no eligible villain');
     assert.ok(
-      gameState.messages.some((line) => line.includes('no eligible villains in their victory pile')),
+      gameState.messages.some((line) => line.text.includes('no eligible villains in their victory pile')),
       'a 0-eligible victory-villain-attack must append a game-log line explaining the no-op',
     );
   });
@@ -3505,7 +3505,7 @@ describe('executeHeroEffects draw-or-empowered park (WP-286 / D-24069)', () => {
 
     assert.equal(gameState.pendingDrawOrEmpowered?.length ?? 0, 0, 'no entry parked when empoweredClass is absent');
     assert.ok(
-      gameState.messages.some((line) => line.includes('no empowered class')),
+      gameState.messages.some((line) => line.text.includes('no empowered class')),
       'a missing empoweredClass appends a skip log line (should never happen post-parse)',
     );
   });
@@ -3588,7 +3588,7 @@ describe('executeHeroEffects put-any-number-bottom-hq park (D-24132)', () => {
 
     assert.equal(gameState.pendingPutAnyNumberBottomHQ?.length ?? 0, 0, 'nothing parked when the HQ is empty');
     assert.ok(
-      gameState.messages.some((line) => line.includes('the HQ is empty')),
+      gameState.messages.some((line) => line.text.includes('the HQ is empty')),
       'an empty-HQ put-any-number effect appends a game-log line explaining the no-op',
     );
   });
@@ -3646,7 +3646,7 @@ describe('executeHeroEffects put-bottom-hq-icon-reward park (D-24133)', () => {
 
     assert.equal(gameState.pendingOptionalPutBottomHQ?.length ?? 0, 0, 'nothing parked when the HQ is empty');
     assert.ok(
-      gameState.messages.some((line) => line.includes('the HQ is empty')),
+      gameState.messages.some((line) => line.text.includes('the HQ is empty')),
       'an empty-HQ effect appends a game-log line explaining the no-op',
     );
   });
@@ -3712,7 +3712,7 @@ describe('executeHeroEffects return-zero-cost-discard park (D-24139)', () => {
 
     assert.equal(gameState.pendingReturnZeroCostDiscard?.length ?? 0, 0, 'nothing parked without an eligible card');
     assert.ok(
-      gameState.messages.some((line) => line.includes('holds no 0-cost card')),
+      gameState.messages.some((line) => line.text.includes('holds no 0-cost card')),
       'a no-eligible-card effect appends a game-log line explaining the no-op',
     );
   });
@@ -3790,7 +3790,7 @@ describe('executeHeroEffects — gain-wound-self / gain-wound-each (WP-364 / D-2
     assert.doesNotThrow(() => executeHeroEffects(gameState, mockCtx, '0', 'hero-x'));
     assert.equal(gameState.playerZones['0'].discard.length, 0, 'no Wound gained from an empty supply');
     assert.ok(
-      gameState.messages.some((line) => line.includes('Wound supply is empty')),
+      gameState.messages.some((line) => line.text.includes('Wound supply is empty')),
       'an empty-supply line is logged so the no-op is observable',
     );
   });
@@ -3806,7 +3806,7 @@ describe('executeHeroEffects — gain-wound-self / gain-wound-each (WP-364 / D-2
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x');
 
-    assert.ok(gameState.messages.some((line) => line.includes('gained a Wound')), 'a summary log line is emitted');
+    assert.ok(gameState.messages.some((line) => line.text.includes('gained a Wound')), 'a summary log line is emitted');
     assert.doesNotThrow(() => JSON.stringify(gameState), 'G stays JSON-serializable');
   });
 
@@ -3896,14 +3896,14 @@ describe('heroEffectShuffleDiscardEmptyReward (WP-356)', () => {
     const emptyBranchState = makeShuffleRewardState({ discard: [], rewardType: 'recruit' });
     executeHeroEffects(emptyBranchState, mockCtx, '0', 'hero-reprocess' as string);
     const emptyBranchLine = emptyBranchState.messages.find(
-      (message) => message.includes('empty discard pile'),
+      (message) => message.text.includes('empty discard pile'),
     );
     assert.ok(emptyBranchLine !== undefined, 'the empty-discard branch must log a grant line');
 
     const shuffleBranchState = makeShuffleRewardState({ deck: [], discard: ['disc-1'], rewardType: 'recruit' });
     executeHeroEffects(shuffleBranchState, mockCtx, '0', 'hero-reprocess' as string);
     const shuffleBranchLine = shuffleBranchState.messages.find(
-      (message) => message.includes('shuffled their'),
+      (message) => message.text.includes('shuffled their'),
     );
     assert.ok(shuffleBranchLine !== undefined, 'the shuffle branch must log a shuffle line');
   });
@@ -4021,7 +4021,7 @@ describe('heroEffectKoWoundReward (WP-382 / D-24183)', () => {
 
     assert.deepStrictEqual(gameState.ko, [], 'nothing is KO\'d');
     assert.equal(gameState.turnEconomy.attack, 0, 'no reward is granted without a KO');
-    const noOpLine = gameState.messages.find((message) => message.includes('no Wound in hand or discard'));
+    const noOpLine = gameState.messages.find((message) => message.text.includes('no Wound in hand or discard'));
     assert.ok(noOpLine !== undefined, 'the no-op must be logged for replay inspection');
   });
 
@@ -4049,7 +4049,7 @@ describe('heroEffectKoWoundReward (WP-382 / D-24183)', () => {
 
     assert.deepStrictEqual(gameState.ko, [], 'no KO happens for an unsupported reward');
     assert.deepStrictEqual(gameState.playerZones['0'].hand, [WOUND_EXT_ID], 'the Wound stays in hand');
-    const skipLine = gameState.messages.find((message) => message.includes('not yet supported'));
+    const skipLine = gameState.messages.find((message) => message.text.includes('not yet supported'));
     assert.ok(skipLine !== undefined, 'the skip must be logged');
   });
 

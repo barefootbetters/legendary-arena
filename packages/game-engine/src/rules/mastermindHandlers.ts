@@ -145,11 +145,14 @@ function captureBystanderOntoMastermind(gameState: LegendaryGameState): void {
       captured!,
     ];
   } else {
-    // why: bystander supply exhausted, no capture per D-15401
-    gameState.messages = [
-      ...gameState.messages,
+    // why: bystander supply exhausted, no capture per D-15401. WP-434 — a
+    // supply-empty no-op is `blocked` (the effect tried and nothing happened) per
+    // the LOG_OUTCOMES taxonomy; routed through pushLog like every other line.
+    pushLog(
+      gameState,
       '[Master Strike] Bystander supply is empty — no bystander captured.',
-    ];
+      'blocked',
+    );
   }
 }
 

@@ -1,6 +1,6 @@
 <script lang="ts">
 import { defineComponent, ref, computed, onMounted, watch, type PropType } from 'vue';
-import type { ReplaySnapshotSequence } from '@legendary-arena/game-engine';
+import type { LogEntry, ReplaySnapshotSequence } from '@legendary-arena/game-engine';
 import { useUiStateStore } from '../../stores/uiState';
 import GameLogPanel from '../log/GameLogPanel.vue';
 
@@ -146,7 +146,7 @@ export default defineComponent({
       () => `${currentIndex.value + 1} / ${total.value}`,
     );
 
-    const currentLog = computed<readonly string[]>(() => {
+    const currentLog = computed<readonly LogEntry[]>(() => {
       const snapshot = props.sequence.snapshots[currentIndex.value];
       if (snapshot === undefined) {
         return [];

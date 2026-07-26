@@ -17,6 +17,8 @@ import type { MatchSetupConfig } from '../../matchSetup.types.js';
 import type { ReplayMove } from '../../replay/replay.types.js';
 import type { MatchSnapshot } from '../../persistence/persistence.types.js';
 import type { EndgameOutcome } from '../../endgame/endgame.types.js';
+import type { LogEntry } from '../../log/logOutcome.types.js';
+import { LOG_OUTCOMES } from '../../log/logOutcome.types.js';
 
 /**
  * Fixture metadata block. `version` is locked to `1` for the current schema;
@@ -68,7 +70,7 @@ export interface FixtureOutcome {
  */
 export interface FixtureExpected {
   readonly finalStateHash: string;
-  readonly messages: readonly string[];
+  readonly messages: readonly LogEntry[];
   readonly snapshotPerTurn: readonly MatchSnapshot[];
   readonly outcome: FixtureOutcome;
 }
@@ -92,7 +94,7 @@ export interface FixtureFile {
  */
 export interface FixtureRunResult {
   readonly finalStateHash: string;
-  readonly messages: readonly string[];
+  readonly messages: readonly LogEntry[];
   readonly snapshotPerTurn: readonly MatchSnapshot[];
   readonly outcome: FixtureOutcome;
 }
@@ -264,13 +266,22 @@ function validateExpected(expected: unknown, fixtureName: string): FixtureExpect
   }
   if (!Array.isArray(expected.messages)) {
     throw new Error(
-      `Fixture "${fixtureName}" has a non-array expected.messages field; G.messages is read byte-identically into an array of strings.`,
+      `Fixture "${fixtureName}" has a non-array expected.messages field; G.messages is read byte-identically into an array of LogEntry records.`,
     );
   }
   for (let messageIndex = 0; messageIndex < expected.messages.length; messageIndex++) {
-    if (typeof expected.messages[messageIndex] !== 'string') {
+    // why: WP-434 — each message is a LogEntry ({ text: string, outcome: LogOutcome }),
+    // not a bare string; validate both fields so a shape or outcome-enum drift in a
+    // regenerated fixture is rejected here rather than surfacing as a silent oracle pass.
+    const entry = expected.messages[messageIndex] as { text?: unknown; outcome?: unknown };
+    if (typeof entry !== 'object' || entry === null || typeof entry.text !== 'string') {
       throw new Error(
-        `Fixture "${fixtureName}" expected.messages[${messageIndex}] is not a string; G.messages is a string[] event log.`,
+        `Fixture "${fixtureName}" expected.messages[${messageIndex}] is not a LogEntry record with a string "text" field; G.messages is a LogEntry[] event log.`,
+      );
+    }
+    if (typeof entry.outcome !== 'string' || !LOG_OUTCOMES.includes(entry.outcome as LogEntry['outcome'])) {
+      throw new Error(
+        `Fixture "${fixtureName}" expected.messages[${messageIndex}] has an invalid "outcome" (${JSON.stringify(entry.outcome)}); it must be one of ${LOG_OUTCOMES.join(', ')}.`,
       );
     }
   }
@@ -304,7 +315,7 @@ function validateExpected(expected: unknown, fixtureName: string): FixtureExpect
   }
   return {
     finalStateHash: expected.finalStateHash,
-    messages: expected.messages as readonly string[],
+    messages: expected.messages as readonly LogEntry[],
     snapshotPerTurn: expected.snapshotPerTurn as readonly MatchSnapshot[],
     outcome: {
       winner,

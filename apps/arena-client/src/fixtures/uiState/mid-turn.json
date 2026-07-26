@@ -24,7 +24,10 @@
         "dp-belt-pouches",
         "sm-amazing-friend"
       ],
-      "inPlayCards": ["sm-web-slinger", "dp-chimichangas"],
+      "inPlayCards": [
+        "sm-web-slinger",
+        "dp-chimichangas"
+      ],
       "inPlayDisplay": [
         {
           "extId": "sm-web-slinger",
@@ -55,7 +58,9 @@
       {
         "extId": "sinister-six-shocker",
         "type": "villain",
-        "keywords": ["ranged"],
+        "keywords": [
+          "ranged"
+        ],
         "display": {
           "extId": "sinister-six-shocker",
           "name": "Shocker",
@@ -68,7 +73,9 @@
       {
         "extId": "sinister-six-electro",
         "type": "villain",
-        "keywords": ["ranged"],
+        "keywords": [
+          "ranged"
+        ],
         "display": {
           "extId": "sinister-six-electro",
           "name": "Electro",
@@ -82,7 +89,9 @@
       {
         "extId": "sinister-six-vulture",
         "type": "villain",
-        "keywords": ["ranged"],
+        "keywords": [
+          "ranged"
+        ],
         "display": {
           "extId": "sinister-six-vulture",
           "name": "Vulture",
@@ -132,12 +141,27 @@
     "woundsDrawn": 0
   },
   "log": [
-    "Turn 1: Player 0 recruited sm-shield-agent",
-    "Turn 2: Villain Electro entered the city",
-    "Turn 3: Player 1 defeated Shocker"
+    {
+      "text": "Turn 1: Player 0 recruited sm-shield-agent",
+      "outcome": "neutral"
+    },
+    {
+      "text": "Turn 2: Villain Electro entered the city",
+      "outcome": "neutral"
+    },
+    {
+      "text": "Turn 3: Player 1 defeated Shocker",
+      "outcome": "neutral"
+    }
   ],
-  "progress": { "bystandersRescued": 4, "escapedVillains": 1 },
-  "decks": { "villainDeckCount": 28, "heroDeckCount": 42 },
+  "progress": {
+    "bystandersRescued": 4,
+    "escapedVillains": 1
+  },
+  "decks": {
+    "villainDeckCount": 28,
+    "heroDeckCount": 42
+  },
   "piles": {
     "bystandersCount": 8,
     "woundsCount": 24,
@@ -145,7 +169,11 @@
     "officersCount": 22,
     "sidekicksCount": 13
   },
-  "koPile": { "count": 0, "topCard": null, "cards": [] },
+  "koPile": {
+    "count": 0,
+    "topCard": null,
+    "cards": []
+  },
   "notableEvents": [],
   "villainAttachedHeroes": {}
 }

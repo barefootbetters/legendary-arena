@@ -19,6 +19,7 @@
  */
 
 import type { LegendaryGameState } from '../types.js';
+import { pushLog } from '../log/logPush.js';
 import type { CardRegistryReader } from '../matchSetup.validate.js';
 import type { FinalScoreSummary } from '../scoring/scoring.types.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
@@ -413,7 +414,8 @@ function runPerTurnLoop(
     const policyIndex = Number(currentPlayer);
     const activePolicy = policies[policyIndex];
     if (activePolicy === undefined) {
-      gameState.messages.push(
+      pushLog(
+        gameState,
         `Simulation warning: no AI policy for playerId "${currentPlayer}" (game ${gameIndex}). Ending this game as stuck.`,
       );
       break;
@@ -425,7 +427,7 @@ function runPerTurnLoop(
     // rationale appears in G.messages before the move's own messages.
     if (intent.decisionLog !== undefined) {
       for (const logLine of intent.decisionLog) {
-        gameState.messages.push(logLine);
+        pushLog(gameState, logLine);
       }
     }
 
@@ -433,7 +435,8 @@ function runPerTurnLoop(
     const endTurnFlag = { triggered: false };
 
     if (moveFn === undefined) {
-      gameState.messages.push(
+      pushLog(
+        gameState,
         `Simulation warning: unknown move name "${intent.move.name}" — skipped (game ${gameIndex}).`,
       );
     } else {
@@ -459,7 +462,8 @@ function runPerTurnLoop(
       !endTurnFlag.triggered &&
       gameState.currentStage !== 'cleanup'
     ) {
-      gameState.messages.push(
+      pushLog(
+        gameState,
         `Simulation warning: policy "${activePolicy.name}" returned endTurn outside cleanup — flagging game ${gameIndex} as stuck.`,
       );
       turnsElapsed = maxTurns;

@@ -242,7 +242,7 @@ describe('resolveReturnZeroCostDiscard — return a card', () => {
     assert.deepStrictEqual(state.playerZones['0']!.hand, ['already-in-hand', 'zero-a'],
       'the chosen card is appended to the hand');
     assert.equal(state.pendingReturnZeroCostDiscard!.length, 0, 'the front entry is popped');
-    assert.match(state.messages[state.messages.length - 1]!, /returned .*zero-a.* from their discard pile to their hand/,
+    assert.match(state.messages[state.messages.length - 1]!.text, /returned .*zero-a.* from their discard pile to their hand/,
       'the return must be observable in the game log');
   });
 

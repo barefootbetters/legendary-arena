@@ -134,7 +134,7 @@ describe('reveal-or-punish resolver', () => {
     });
 
     assert.equal(gameState.piles.wounds.length, 2, 'wound supply unchanged');
-    const matchMessage = gameState.messages.find((message) => message.includes('condition met'));
+    const matchMessage = gameState.messages.find((message) => message.text.includes('condition met'));
     assert.ok(matchMessage, 'must log condition-met message');
   });
 
@@ -204,7 +204,7 @@ describe('reveal-or-punish resolver', () => {
     resolver(gameState, makeRevealContext(), emptyImplementationMap, {});
 
     assert.ok(
-      gameState.messages.some((message) => message.includes('invalid params')),
+      gameState.messages.some((message) => message.text.includes('invalid params')),
       'must push invalid-params message',
     );
   });
@@ -221,7 +221,7 @@ describe('reveal-or-punish resolver', () => {
 
     assert.equal(gameState.playerZones['0']!.discard.length, 0, 'no wound gained');
     assert.ok(
-      gameState.messages.some((message) => message.includes('wound supply empty')),
+      gameState.messages.some((message) => message.text.includes('wound supply empty')),
       'must log wound supply empty message',
     );
   });
@@ -266,7 +266,7 @@ describe('chained-reveals resolver', () => {
     );
 
     assert.ok(
-      gameState.messages.some((message) => message.includes('exhausted')),
+      gameState.messages.some((message) => message.text.includes('exhausted')),
       'must log exhaustion message',
     );
   });
@@ -277,7 +277,7 @@ describe('chained-reveals resolver', () => {
     resolver(gameState, makeRevealContext(), emptyImplementationMap, {});
 
     assert.ok(
-      gameState.messages.some((message) => message.includes('invalid params')),
+      gameState.messages.some((message) => message.text.includes('invalid params')),
       'must push invalid-params message',
     );
   });
@@ -326,7 +326,7 @@ describe('wound-all resolver', () => {
     resolver(gameState, makeRevealContext(), emptyImplementationMap, {});
 
     assert.ok(
-      gameState.messages.some((message) => message.includes('invalid params')),
+      gameState.messages.some((message) => message.text.includes('invalid params')),
       'must push invalid-params message',
     );
   });
@@ -411,7 +411,7 @@ describe('ko-from-hq resolver', () => {
 
     assert.equal(gameState.ko.length, 1, 'only the 1 available hero KO\'d');
     assert.ok(
-      gameState.messages.some((message) => message.includes('Only 1')),
+      gameState.messages.some((message) => message.text.includes('Only 1')),
       'must log partial-KO message',
     );
   });
@@ -425,7 +425,7 @@ describe('ko-from-hq resolver', () => {
 
     assert.equal(gameState.ko.length, 0, 'no KOs on empty HQ');
     assert.ok(
-      gameState.messages.some((message) => message.includes('No eligible heroes')),
+      gameState.messages.some((message) => message.text.includes('No eligible heroes')),
       'must log no-eligible message',
     );
   });
@@ -436,7 +436,7 @@ describe('ko-from-hq resolver', () => {
     resolver(gameState, makeRevealContext(), emptyImplementationMap, {});
 
     assert.ok(
-      gameState.messages.some((message) => message.includes('invalid params')),
+      gameState.messages.some((message) => message.text.includes('invalid params')),
       'must push invalid-params message',
     );
   });
@@ -473,7 +473,7 @@ describe('midtown-bank-robbery resolver', () => {
     resolver(gameState, makeRevealContext(), emptyImplementationMap, {});
 
     assert.ok(
-      gameState.messages.some((message) => message.includes('Bank is empty')),
+      gameState.messages.some((message) => message.text.includes('Bank is empty')),
       'must log Bank-empty message',
     );
   });
@@ -503,7 +503,7 @@ describe('midtown-bank-robbery resolver', () => {
     });
 
     assert.ok(
-      gameState.messages.some((message) => message.includes('no bystanders to capture')),
+      gameState.messages.some((message) => message.text.includes('no bystanders to capture')),
       'must log supply-empty message',
     );
   });

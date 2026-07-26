@@ -370,7 +370,7 @@ describe('schemeTwistHandler — Midtown Bank Robbery', () => {
     );
 
     const emptyBankMessage = gameState.messages.find((message) =>
-      message.includes('Bank is empty'),
+      message.text.includes('Bank is empty'),
     );
     assert.ok(
       emptyBankMessage,

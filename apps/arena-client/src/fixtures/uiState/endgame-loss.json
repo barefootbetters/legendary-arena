@@ -33,7 +33,9 @@
       {
         "extId": "sinister-six-vulture",
         "type": "villain",
-        "keywords": ["ranged"],
+        "keywords": [
+          "ranged"
+        ],
         "display": {
           "extId": "sinister-six-vulture",
           "name": "Vulture",
@@ -46,7 +48,9 @@
       {
         "extId": "sinister-six-shocker",
         "type": "villain",
-        "keywords": ["ranged"],
+        "keywords": [
+          "ranged"
+        ],
         "display": {
           "extId": "sinister-six-shocker",
           "name": "Shocker",
@@ -59,7 +63,9 @@
       {
         "extId": "sinister-six-electro",
         "type": "villain",
-        "keywords": ["ranged"],
+        "keywords": [
+          "ranged"
+        ],
         "display": {
           "extId": "sinister-six-electro",
           "name": "Electro",
@@ -72,7 +78,9 @@
       {
         "extId": "sinister-six-mysterio",
         "type": "villain",
-        "keywords": ["ranged"],
+        "keywords": [
+          "ranged"
+        ],
         "display": {
           "extId": "sinister-six-mysterio",
           "name": "Mysterio",
@@ -85,7 +93,9 @@
       {
         "extId": "sinister-six-kraven",
         "type": "villain",
-        "keywords": ["ranged"],
+        "keywords": [
+          "ranged"
+        ],
         "display": {
           "extId": "sinister-six-kraven",
           "name": "Kraven",
@@ -134,11 +144,23 @@
     "woundsDrawn": 0
   },
   "log": [
-    "Turn 10: Scheme twist 8 drawn",
-    "Turn 11: Scheme advances — heroes lose."
+    {
+      "text": "Turn 10: Scheme twist 8 drawn",
+      "outcome": "neutral"
+    },
+    {
+      "text": "Turn 11: Scheme advances — heroes lose.",
+      "outcome": "neutral"
+    }
   ],
-  "progress": { "bystandersRescued": 1, "escapedVillains": 8 },
-  "decks": { "villainDeckCount": 0, "heroDeckCount": 42 },
+  "progress": {
+    "bystandersRescued": 1,
+    "escapedVillains": 8
+  },
+  "decks": {
+    "villainDeckCount": 0,
+    "heroDeckCount": 42
+  },
   "piles": {
     "bystandersCount": 0,
     "woundsCount": 4,
@@ -146,7 +168,11 @@
     "officersCount": 14,
     "sidekicksCount": 7
   },
-  "koPile": { "count": 0, "topCard": null, "cards": [] },
+  "koPile": {
+    "count": 0,
+    "topCard": null,
+    "cards": []
+  },
   "gameOver": {
     "outcome": "loss",
     "reason": "Scheme Midtown Bank Robbery reached its final twist.",

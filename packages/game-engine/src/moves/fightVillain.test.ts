@@ -353,8 +353,8 @@ describe('fightVillain — WP-316 Fight: effect log narration', () => {
     fightVillain(moveContext, { cityIndex: 0 });
 
     assert.ok(
-      moveContext.G.messages.includes(
-        'Fight effect: the active player KO’d a hero (Spider-Man).',
+      moveContext.G.messages.some(
+        (entry) => entry.text === 'Fight effect: the active player KO’d a hero (Spider-Man).',
       ),
       'the durable log names the specific KO\'d hero',
     );
@@ -382,7 +382,7 @@ describe('fightVillain — WP-316 Fight: effect log narration', () => {
     fightVillain(moveContext, { cityIndex: 0 });
 
     assert.ok(
-      moveContext.G.messages.includes('Fight effect: the active player must KO a hero.'),
+      moveContext.G.messages.some((entry) => entry.text === 'Fight effect: the active player must KO a hero.'),
       'a parked interactive KO logs the pending phrase, not a hero name',
     );
     assert.equal(
@@ -401,7 +401,7 @@ describe('fightVillain — WP-316 Fight: effect log narration', () => {
     fightVillain(moveContext, { cityIndex: 0 });
 
     assert.equal(
-      moveContext.G.messages.filter((message) => message.startsWith('Fight effect:')).length,
+      moveContext.G.messages.filter((message) => message.text.startsWith('Fight effect:')).length,
       0,
       'no effect line when the villain applied no Fight: effect',
     );
@@ -508,10 +508,10 @@ describe('fightVillain — captured-hero return log (WP-431)', () => {
     assert.ok(
       moveContext.G.messages.some(
         (message) =>
-          message.includes('Player 0 gained') &&
-          message.includes('core/hulk/unstoppable-hulk#4') &&
-          message.includes('skrull-shapeshifters-00') &&
-          message.includes('into their discard pile.'),
+          message.text.includes('Player 0 gained') &&
+          message.text.includes('core/hulk/unstoppable-hulk#4') &&
+          message.text.includes('skrull-shapeshifters-00') &&
+          message.text.includes('into their discard pile.'),
       ),
       'a return-to-discard log line names the hero and the defeated villain',
     );
@@ -525,7 +525,7 @@ describe('fightVillain — captured-hero return log (WP-431)', () => {
     fightVillain(moveContext, { cityIndex: 0 });
 
     assert.equal(
-      moveContext.G.messages.filter((message) => message.includes('into their discard pile.')).length,
+      moveContext.G.messages.filter((message) => message.text.includes('into their discard pile.')).length,
       0,
       'no hero-return line for a villain with no attached hero',
     );

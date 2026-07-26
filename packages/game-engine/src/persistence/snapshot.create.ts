@@ -93,7 +93,12 @@ export function createSnapshot(
     activePlayer: context.currentPlayer,
     players,
     counters: { ...gameState.counters },
-    messages: [...gameState.messages],
+    // why: WP-434 (PS-4 Option B) — G.messages is LogEntry[] now, but the durable
+    // MatchSnapshot carries the log text only (observability by-value; a persisted
+    // snapshot has no need for the live-HUD colour outcome). Flatten to `.text` so the
+    // snapshot shape stays byte-identical string[] and the persistence boundary is
+    // untouched.
+    messages: gameState.messages.map((entry) => entry.text),
     ...(outcome !== undefined ? { outcome } : {}),
   };
 

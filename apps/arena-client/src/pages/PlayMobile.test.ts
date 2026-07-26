@@ -126,7 +126,7 @@ describe('PlayMobile (WP-129)', () => {
     setActivePinia(createPinia());
     const frame = snapshot();
     frame.log = [
-      'Ambush effect: the highest-cost HQ hero was captured (Amulet of Avalon).',
+      { text: 'Ambush effect: the highest-cost HQ hero was captured (Amulet of Avalon).', outcome: 'neutral' },
     ];
     const store = useUiStateStore();
     store.setSnapshot(frame);

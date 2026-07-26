@@ -247,7 +247,7 @@ test('ReplayInspector renders the embedded GameLogPanel populated with the curre
   const lines = wrapper.findAll('[data-testid="game-log-line"]');
   assert.equal(lines.length, expectedEntries.length);
   for (let i = 0; i < expectedEntries.length; i++) {
-    assert.equal(lines[i]?.text(), expectedEntries[i]);
+    assert.equal(lines[i]?.text(), expectedEntries[i]?.text);
   }
 });
 

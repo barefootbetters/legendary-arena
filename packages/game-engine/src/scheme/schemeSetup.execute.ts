@@ -71,7 +71,12 @@ export function executeSchemeSetup(
           ...result,
           messages: [
             ...result.messages,
-            `Scheme setup instruction "modifyCitySize" is not yet supported (CityZone is a fixed tuple) — skipped`,
+            // why: WP-434 — executeSchemeSetup is a pure immutable update (no pushLog
+            // mutation), so setup narration is appended as a neutral LogEntry literal.
+            {
+              text: `Scheme setup instruction "modifyCitySize" is not yet supported (CityZone is a fixed tuple) — skipped`,
+              outcome: 'neutral',
+            },
           ],
         };
         break;
@@ -130,7 +135,11 @@ export function executeSchemeSetup(
           ...result,
           messages: [
             ...result.messages,
-            `Unknown scheme setup instruction type: "${unknownType}" — skipped`,
+            // why: WP-434 — neutral LogEntry literal (pure immutable update, no pushLog).
+            {
+              text: `Unknown scheme setup instruction type: "${unknownType}" — skipped`,
+              outcome: 'neutral',
+            },
           ],
         };
         break;

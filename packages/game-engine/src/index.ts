@@ -342,6 +342,12 @@ export type {
   HollowEffectRecord,
   EffectExecutionReason,
 } from "./diagnostics/hollowEffect.types.js";
+// why: WP-434 — UIState.log is now LogEntry[]; the arena-client GameLogPanel /
+// ReplayInspector / export type their log surfaces against LogEntry (and its
+// LogOutcome colour), so both MUST be re-exported by name from this barrel or
+// vue-tsc goes red (the same barrel-publish gap as the UI sub-types above).
+export type { LogEntry, LogOutcome } from "./log/logOutcome.types.js";
+export { LOG_OUTCOMES } from "./log/logOutcome.types.js";
 export { buildUIState } from "./ui/uiState.build.js";
 
 // Audience & filter (WP-029)
