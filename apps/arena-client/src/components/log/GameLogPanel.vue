@@ -1,5 +1,6 @@
 <script lang="ts">
 import {
+  computed,
   defineComponent,
   nextTick,
   onBeforeUnmount,
@@ -11,6 +12,7 @@ import {
 import type { LogEntry } from '@legendary-arena/game-engine';
 import { isPinnedToBottom } from './gameLogScroll';
 import { buildGameLogText, GAME_LOG_EXPORT_FILE_NAME } from './gameLogExport';
+import { logOutcomeDisplay } from './logOutcomeDisplay';
 
 // why: GameLogPanel renders the engine log verbatim in chronological (append)
 // order — log authorship belongs to the engine (G.messages -> UIState.log via
@@ -178,6 +180,13 @@ export default defineComponent({
       document.removeEventListener('keydown', onDocumentKeyDown);
     });
 
+    // why: WP-435 — augment each log entry with its render triple ONCE (class, glyph,
+    // sr-only label) so both the compact and modal <li> lists render the same
+    // outcome-colouring without calling the mapping helper per-field in the template.
+    const displayedLog = computed(() =>
+      props.log.map((entry) => ({ ...entry, display: logOutcomeDisplay(entry.outcome) })),
+    );
+
     return {
       viewport,
       expandedViewport,
@@ -186,6 +195,7 @@ export default defineComponent({
       saveLog,
       expand,
       collapse,
+      displayedLog,
     };
   },
 });
@@ -240,12 +250,20 @@ export default defineComponent({
             // index as a key cannot trigger spurious DOM thrash.
           -->
           <li
-            v-for="(entry, index) in log"
+            v-for="(entry, index) in displayedLog"
             :key="index"
             :data-index="index"
+            :class="entry.display.className"
             data-testid="game-log-line"
           >
-            {{ entry.text }}
+            <span
+              v-if="entry.display.glyph"
+              class="game-log__glyph"
+              aria-hidden="true"
+              >{{ entry.display.glyph }}</span
+            ><span v-if="entry.display.label" class="sr-only"
+              >{{ entry.display.label }}: </span
+            >{{ entry.text }}
           </li>
         </ol>
       </template>
@@ -308,11 +326,20 @@ export default defineComponent({
             <template v-else>
               <ol class="entries" aria-live="polite">
                 <li
-                  v-for="(entry, index) in log"
+                  v-for="(entry, index) in displayedLog"
                   :key="index"
                   :data-index="index"
+                  :class="entry.display.className"
+                  data-testid="game-log-modal-line"
                 >
-                  {{ entry.text }}
+                  <span
+                    v-if="entry.display.glyph"
+                    class="game-log__glyph"
+                    aria-hidden="true"
+                    >{{ entry.display.glyph }}</span
+                  ><span v-if="entry.display.label" class="sr-only"
+                    >{{ entry.display.label }}: </span
+                  >{{ entry.text }}
                 </li>
               </ol>
             </template>
@@ -376,6 +403,29 @@ export default defineComponent({
 
 .entries li {
   padding: 0.125rem 0;
+}
+
+/* why: WP-435 / D-24253 §Fork E — colour each log line by its engine-authored
+   outcome via the semantic --color-par-* tokens (theme-aware; NO hard-coded hex).
+   `neutral` gets no class and inherits --color-foreground. NO transition/animation:
+   the log is an information surface (reduced-motion posture), so colour is a static
+   property, never an animated one. */
+.game-log__line--applied {
+  color: var(--color-par-positive);
+}
+.game-log__line--partial {
+  color: var(--color-par-partial);
+}
+.game-log__line--blocked {
+  color: var(--color-par-negative);
+}
+
+/* why: the outcome glyph is decorative (aria-hidden) — it reinforces the colour for
+   colour-blind readers; the sr-only word (below) carries the outcome for screen
+   readers. Colour is never the only signal. */
+.game-log__glyph {
+  margin-right: 0.35ch;
+  font-weight: 600;
 }
 
 /* why: WP-322 — the full-screen expand overlay mirrors PileBrowseModal's

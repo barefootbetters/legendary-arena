@@ -39,6 +39,11 @@
      per palette.md §5.3 (CTA red ≠ error red). */
   --color-penalty: var(--la-color-error);
   --color-par-negative: var(--la-color-error);
+  /* why: WP-435 — --color-par-partial surfaces a "partial / conditional" gameplay
+     outcome (the amber game-log line). Maps to semantic-warning, mirroring the
+     positive/negative aliases above so components reference the --color-par-* layer,
+     never the raw --la-color-* brand token. */
+  --color-par-partial: var(--la-color-warning);
   --color-active-player: var(--la-color-blue-bright);
 
   /* Play-surface fluid-desktop sizing (WP-430 / D-24251). Size tokens only —
@@ -80,4 +85,20 @@ body {
 :focus-visible {
   outline: 2px solid var(--color-focus-ring);
   outline-offset: 2px;
+}
+
+/* why: WP-435 — visually-hidden utility for screen-reader-only text (the game-log
+   outcome word that accompanies the decorative colour + glyph, so colour is never the
+   only signal — D-24253 §Fork E). The standard clip-rect pattern: removed from the
+   visual layout but still read by assistive tech. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }

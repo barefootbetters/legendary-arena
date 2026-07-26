@@ -193,3 +193,72 @@ test('clicking Copy writes the built log transcript to the clipboard', async () 
     Reflect.deleteProperty(navigator as unknown as Record<string, unknown>, 'clipboard');
   }
 });
+
+// why: WP-435 — each non-neutral line carries its outcome colour CLASS + a decorative
+// aria-hidden glyph + an sr-only outcome word (colour is never the only signal);
+// neutral lines stay unstyled with no glyph/label.
+const OUTCOME_LOG = [
+  { text: 'played Nightcrawler.', outcome: 'neutral' as const },
+  { text: 'drew 1 card(s) from Quick Draw.', outcome: 'applied' as const },
+  { text: 'drew 1 of 2 card(s).', outcome: 'partial' as const },
+  { text: 'ability did not activate.', outcome: 'blocked' as const },
+];
+const OUTCOME_EXPECT = {
+  neutral: { cls: null, glyph: null, label: null },
+  applied: { cls: 'game-log__line--applied', glyph: '✓', label: 'applied:' },
+  partial: { cls: 'game-log__line--partial', glyph: '⚠', label: 'partial:' },
+  blocked: { cls: 'game-log__line--blocked', glyph: '✕', label: 'blocked:' },
+} as const;
+
+test('GameLogPanel colours each compact line by outcome (class + aria-hidden glyph + sr-only word); neutral is unstyled', () => {
+  const wrapper = mount(GameLogPanel, { props: { log: OUTCOME_LOG } });
+  const lines = wrapper.findAll('[data-testid="game-log-line"]');
+  assert.equal(lines.length, 4);
+  OUTCOME_LOG.forEach((entry, i) => {
+    const expect = OUTCOME_EXPECT[entry.outcome];
+    const line = lines[i]!;
+    const glyph = line.find('.game-log__glyph');
+    const srOnly = line.find('.sr-only');
+    if (expect.cls === null) {
+      // neutral: no outcome class, no glyph, no sr-only label
+      assert.equal(line.classes().some((c) => c.startsWith('game-log__line--')), false);
+      assert.equal(glyph.exists(), false);
+      assert.equal(srOnly.exists(), false);
+    } else {
+      assert.ok(line.classes().includes(expect.cls), `line ${i} missing class ${expect.cls}`);
+      assert.equal(glyph.exists(), true);
+      assert.equal(glyph.text(), expect.glyph);
+      assert.equal(glyph.attributes('aria-hidden'), 'true');
+      assert.equal(srOnly.exists(), true);
+      assert.equal(srOnly.text(), expect.label);
+    }
+    // the printed text is always present regardless of outcome
+    assert.ok(line.text().includes(entry.text));
+  });
+  wrapper.unmount();
+});
+
+test('GameLogPanel colours the modal (expanded) lines identically to the compact lines', async () => {
+  const wrapper = mount(GameLogPanel, { props: { log: OUTCOME_LOG } });
+  await wrapper.find('[data-testid="game-log-expand"]').trigger('click');
+  await flushPromises();
+  const modalLines = document.body.querySelectorAll('[data-testid="game-log-modal-line"]');
+  assert.equal(modalLines.length, 4);
+  OUTCOME_LOG.forEach((entry, i) => {
+    const expect = OUTCOME_EXPECT[entry.outcome];
+    const line = modalLines[i] as HTMLElement;
+    const glyph = line.querySelector('.game-log__glyph');
+    const srOnly = line.querySelector('.sr-only');
+    if (expect.cls === null) {
+      assert.equal(line.className.includes('game-log__line--'), false);
+      assert.equal(glyph, null);
+      assert.equal(srOnly, null);
+    } else {
+      assert.ok(line.className.includes(expect.cls));
+      assert.equal(glyph?.textContent, expect.glyph);
+      assert.equal(glyph?.getAttribute('aria-hidden'), 'true');
+      assert.equal(srOnly?.textContent?.trim(), expect.label);
+    }
+  });
+  wrapper.unmount();
+});
