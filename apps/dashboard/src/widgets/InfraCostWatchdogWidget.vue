@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { computed, type Ref } from 'vue';
-import { useDateRange } from '../composables/useDateRange.js';
 import { useInfraCostWatchdog } from '../composables/useInfraCostWatchdog.js';
 import { useDataFreshness, type DataFreshnessSource } from '../composables/useDataFreshness.js';
-import { fetchInfraCostEntries } from '../services/mocks.js';
+import { fetchInfraCostActuals } from '../config/infraCostActuals.js';
 import { INFRA_COST_VENDORS, type InfraCostVendor, type KpiStatus } from '../types/index.js';
 import type { InfraCostBudget } from '../config/infraCostBudgets.js';
 
@@ -18,12 +17,10 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const { range } = useDateRange();
-
-// why: WP-204 §Determinism scope — capture nowMs ONCE at mount.
-const nowMs = Date.now();
-
-const response = computed(() => fetchInfraCostEntries(range.value, nowMs));
+// why: the cost actuals are a date-fixed monthly snapshot (INFRA_COST_ACTUALS),
+// not range-derived — the operator's date-range picker does not reshape a
+// monthly vendor bill, so this widget does not read useDateRange/nowMs.
+const response = computed(() => fetchInfraCostActuals());
 
 const watchdog = useInfraCostWatchdog(() => response.value, props.budgets);
 
