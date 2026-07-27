@@ -7,6 +7,35 @@
 
 ## Current State
 
+### WP-438 / EC-473 — Structured `LogEntry.card`: Retire the Last Prose-Parse in `effectProvenance` (D-24257) (2026-07-27)
+
+**`User-Visible Surface = none`** (diagnostic metadata, not rendered — **D-24026 N/A**).
+Follow-up to the log-outcome arc (D-24253), reducing the B.3c §14 residual. `LogEntry`
+gains an **optional** `card?: CardExtId`; the engine populates it on card-attributed
+lines (the "played X" line, the hero draw/attack/recruit/self-KO/condition-failed
+handlers, the hollow record); the reveal-outcome line carries the **revealed** deck-top
+card's ext-id. `pushLog` takes a 4th optional `card?` (key omitted when absent — narration
+lines stay `{ text, outcome }`). `effectProvenance` reads `entry.card` for the played-card
+ext-id and associates a condition-fail via `entry.card === extId && outcome === 'blocked'`,
+**retiring** `PLAYED_LABEL_EXTID` (the extractor that grabbed `"+1 recruit"` in a live
+report — demoted to a minimal `card`-less legacy fallback) and the B.3c `(ext-id)`
+substring (killing its RS-2 caveat).
+
+**Honest scope:** this **reduces** the §14 residual (the fragile ext-id extraction + the
+association go structural) but does NOT fully close it — the "played" line-*kind*
+detection (`PLAYED_LINE`) stays prose (a future `LogEntry.kind` increment). A `card`-less
+**legacy saved** snapshot downgrades a condition-fail to `resolved` (accepted; live
+snapshots always carry `card`; the `(ext-id)` substring is not reintroduced).
+
+**Additive/optional, cross-layer atomic.** `text`/`outcome` unchanged, log renders
+identically (B.3b colours untouched); `finalStateHash` **byte-unchanged**
+(`3da2c374…`; `G.messages` hash-excluded, D-24081; sentinel regenerated);
+`MatchSnapshot.messages` stays `string[]` (the `.text` flatten drops `card`).
+Engine **2073/0**; arena-client **1111/0** (+3 provenance: card-primary identification,
+reveal-line non-attribution, card-less legacy fallback+downgrade; +1 `pushLog` card case)
++ typecheck 0; `pnpm -r build` 0; live cross-check on a real snapshot classifies
+correctly. Reserves **D-24257** (extends D-24253).
+
 ### WP-437 / EC-472 — Bot-Ally Cross-Instance Ownership Guard (Deploy-Overlap Two-Writer Freeze, D-24256) (2026-07-26)
 
 **`User-Visible Surface = play.legendary-arena.com`** — **D-24026 live-verify
