@@ -175,6 +175,34 @@ apex tier by WP-425 / D-24246):
 - The layer degrades cleanly to **no effects** when disabled — never a
   loss of game functionality.
 
+### Shipped: game-log outcome colours (static, NOT part of the VFX layer) {#game-log-outcome-colours}
+
+The HUD game log colours each line by its engine-authored
+`LogEntry.outcome` (WP-B.3, D-24253): **green** = the effect applied,
+**amber** = partial, **red** = blocked / did nothing, **unstyled** =
+neutral narration. This is deliberately **not** VFX/juice — it is a
+**static, information-carrying** colour (no motion, no trigger, no
+intensity toggle), so it lives outside this layer's contract and is
+always on. It is included here only because it is the poster-child for
+this doc's own accessibility rule:
+
+- **Colour is never the only signal.** Each non-`neutral` line also
+  carries a decorative glyph (`✓` / `⚠` / `✕`, `aria-hidden`) and a
+  screen-reader-only outcome word, so colour-blind and screen-reader
+  users get the outcome without seeing colour.
+- **Theme-aware, no hard-coded hex** — it maps to the `--color-par-*`
+  tokens (which carry light + dark values), reusing the same
+  positive / negative semantic tokens as PAR scoring plus a new
+  `--color-par-partial` (→ `--la-color-warning`).
+- **Static, reduced-motion-safe by construction** — no transition or
+  animation; the log is information, not juice.
+
+The outcome is authored by the engine at push time (B.3a), rendered
+here (B.3b), and read back by the freeze diagnostic instead of guessing
+(B.3c) — see [Play Diagnostics → Effect provenance](play-diagnostics.md).
+The plain-text export tags non-`neutral` lines `[applied]` / `[partial]`
+/ `[blocked]`.
+
 ### Determinism requirements (mandatory)
 
 - VFX reads only projected `UIState`; it never reads into or writes out of
