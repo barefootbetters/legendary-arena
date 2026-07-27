@@ -8,6 +8,7 @@ import {
   mockRevenueHistory,
   mockAlerts,
   mockServerNodes,
+  mockRuntimeHealth,
   mockBillingHealth,
   mockBillingHealthSparklines,
 } from './mocks.js';
@@ -22,6 +23,7 @@ import type {
   DailyMetric,
   AlertItem,
   ServerNode,
+  RuntimeHealthSnapshot,
   DateRange,
   BillingHealth,
 } from '../types/index.js';
@@ -120,6 +122,17 @@ export async function fetchServerNodes(): Promise<ServiceResponse<ServerNode[]>>
     return mockServerNodes();
   }
   const response = await apiClient.get<ServiceResponse<ServerNode[]>>('/api/dash/system/nodes');
+  return response.data;
+}
+
+export async function fetchRuntimeHealth(): Promise<ServiceResponse<RuntimeHealthSnapshot>> {
+  if (isMockMode()) {
+    await simulateLatency();
+    return mockRuntimeHealth();
+  }
+  const response = await apiClient.get<ServiceResponse<RuntimeHealthSnapshot>>(
+    '/api/dash/system/runtime',
+  );
   return response.data;
 }
 

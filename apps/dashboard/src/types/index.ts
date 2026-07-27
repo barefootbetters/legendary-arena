@@ -97,6 +97,35 @@ export interface ServerNode {
   uptime: number;
 }
 
+/**
+ * Event-loop delay percentiles (ms) over the window since the previous read.
+ * Hand-mirrors the server `EventLoopDelayMs` (`apps/server/src/dashboard/
+ * dashboardRuntime.types.ts`, WP-439) — the layer boundary forbids importing the
+ * server package; the `runtimeHealth.drift.test.ts` guards field-set parity.
+ */
+export interface EventLoopDelayMs {
+  mean: number;
+  p50: number;
+  p99: number;
+  max: number;
+}
+
+/**
+ * A live snapshot of the game server process's runtime health, from
+ * `GET /api/dash/system/runtime` (WP-439). Answers "is one Node process
+ * CPU-saturated — is clustering worth its cost yet?". Hand-mirrors the server
+ * `RuntimeHealthSnapshot`; parity is guarded by `runtimeHealth.drift.test.ts`.
+ */
+export interface RuntimeHealthSnapshot {
+  capturedAt: string;
+  uptimeSeconds: number;
+  cpuCount: number;
+  cpuPercent: number | null;
+  eventLoopDelayMs: EventLoopDelayMs;
+  memoryRssMb: number;
+  webConcurrency: number | null;
+}
+
 export type WebSocketState = 'connected' | 'disconnected' | 'disabled';
 
 export interface BillingHealth {

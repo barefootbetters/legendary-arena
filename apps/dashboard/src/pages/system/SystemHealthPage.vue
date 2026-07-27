@@ -16,6 +16,10 @@ import InfraCostWatchdogWidget from '../../widgets/InfraCostWatchdogWidget.vue';
 // why: WP-210 §Scope (In) — the new sweep-health widget lands BELOW the
 // existing three WP-204 ops widgets; those widgets are preserved byte-identical.
 import SweepHealthWidget from '../../widgets/SweepHealthWidget.vue';
+// why: WP-439 — the per-process runtime-health tile lands at the TOP of the page
+// (it answers the clustering question for THIS server process); the existing
+// widgets + DataTable below are preserved byte-identical.
+import RuntimeHealthWidget from '../../widgets/RuntimeHealthWidget.vue';
 import { INFRA_COST_BUDGETS } from '../../config/infraCostBudgets.js';
 
 const { data, loading, error, updatedAt, source } = useFetch(fetchServerNodes);
@@ -31,6 +35,11 @@ const { relativeTime, sourceLabel } = useDataFreshness(updatedAt, source);
         <span class="timestamp">Updated {{ relativeTime }}</span>
       </span>
     </div>
+
+    <!-- why: WP-439 — the per-process runtime-health tile (CPU % / event-loop lag
+         / memory / uptime / cores / WEB_CONCURRENCY) leads the page: it is the
+         signal that decides whether clustering is warranted. -->
+    <RuntimeHealthWidget />
 
     <!-- why: WP-204 §Scope (In) — the 3 new ops widgets land ABOVE the
          existing per-node DataTable in vertical layout. Order locked:

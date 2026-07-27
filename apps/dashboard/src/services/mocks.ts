@@ -6,6 +6,7 @@ import type {
   DailyMetric,
   AlertItem,
   ServerNode,
+  RuntimeHealthSnapshot,
   ServiceResponse,
 } from '../types/index.js';
 
@@ -334,4 +335,28 @@ export function mockServerNodes(): ServiceResponse<ServerNode[]> {
       uptime: randomBetween(3600, 86400),
     },
   ]);
+}
+
+/**
+ * Mock the game server's runtime-health snapshot (WP-439). A healthy 2-CPU box:
+ * modest CPU, low event-loop lag, `WEB_CONCURRENCY=2` (set-but-inert today).
+ *
+ * @returns a mocked runtime-health `ServiceResponse`.
+ */
+export function mockRuntimeHealth(): ServiceResponse<RuntimeHealthSnapshot> {
+  const p50 = randomBetween(1, 6);
+  return wrapMock<RuntimeHealthSnapshot>({
+    capturedAt: new Date().toISOString(),
+    uptimeSeconds: randomBetween(3600, 2592000),
+    cpuCount: 2,
+    cpuPercent: randomBetween(8, 40),
+    eventLoopDelayMs: {
+      mean: p50,
+      p50,
+      p99: p50 + randomBetween(4, 30),
+      max: p50 + randomBetween(30, 120),
+    },
+    memoryRssMb: randomBetween(180, 420),
+    webConcurrency: 2,
+  });
 }
