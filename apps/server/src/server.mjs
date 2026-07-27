@@ -49,6 +49,7 @@ import { registerAdminProfileRoutes } from './profile/admin/adminProfile.routes.
 import { registerAnalyticsRoutes } from './analytics/analytics.routes.js';
 import { registerDashboardBillingRoutes } from './dashboard/dashboardBilling.routes.js';
 import { registerDashboardGameplayRoutes } from './dashboard/dashboardGameplay.routes.js';
+import { registerDashboardRuntimeRoutes } from './dashboard/dashboardRuntime.routes.js';
 import { getAnalyticsUserIdSalt } from './analytics/userIdHash.js';
 import { registerSweepRoutes } from './sweep/sweep.routes.js';
 import { registerInspectionRoutes } from './inspection/inspection.routes.js';
@@ -1147,6 +1148,18 @@ export async function startServer() {
   registerDashboardGameplayRoutes(server.router, pool, {
     requireAdminSession,
     registry,
+    verifier,
+    accountResolver: verifier === undefined ? undefined : accountResolver,
+  });
+
+  // why: WP-439 / D-24258 — the dashboard runtime-health slice: GET
+  // /api/dash/system/runtime returns a live snapshot of THIS process's CPU %,
+  // event-loop lag, memory, uptime, CPU count, and WEB_CONCURRENCY. Same admin gate
+  // as gameplay/billing; the pool is threaded only for the session lookup (the
+  // metric reads `process`/`perf_hooks`/`os`, never the DB or registry). Decision
+  // support for "is one Node process CPU-saturated — is clustering worth it yet?".
+  registerDashboardRuntimeRoutes(server.router, pool, {
+    requireAdminSession,
     verifier,
     accountResolver: verifier === undefined ? undefined : accountResolver,
   });
