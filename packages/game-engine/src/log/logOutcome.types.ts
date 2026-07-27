@@ -37,12 +37,26 @@ export const LOG_OUTCOMES: readonly LogOutcome[] = [
   'blocked',
 ] as const;
 
+// why: type-only — CardExtId is a string alias; this keeps the
+// logOutcome.types → zones.types → types.ts → logOutcome.types cycle erased at emit
+// (every edge is `import type`). Never convert to a value import (WP-438 / RS-1).
+import type { CardExtId } from '../state/zones.types.js';
+
 /**
- * One game-log line: the fully-prefixed sentence plus its outcome. `text` already
- * carries the `{turn}.{step}.{action}` numbering prefix (stamped inside `pushLog`);
- * nothing downstream re-parses it.
+ * One game-log line: the fully-prefixed sentence, its outcome, and (when the line is
+ * about a specific card) the card's ext-id. `text` already carries the
+ * `{turn}.{step}.{action}` numbering prefix (stamped inside `pushLog`); nothing
+ * downstream re-parses it.
+ *
+ * // why: WP-438 — `card` is an OPTIONAL structured ext-id, present on card-attributed
+ * lines (a play, a hero effect, a hollow record) and absent on pure narration
+ * (turn/phase, scheme/master-strike). The freeze diagnostic reads it to identify a
+ * played card and associate its effect lines WITHOUT parsing the "played X ({ext-id})"
+ * prose (retires the fragile extractor). Optional + additive: every existing caller and
+ * line stays valid; `card` is omitted (not `undefined`) when not supplied.
  */
 export interface LogEntry {
   text: string;
   outcome: LogOutcome;
+  card?: CardExtId;
 }

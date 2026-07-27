@@ -175,25 +175,14 @@ function buildSnapshotAbilityTextResolver(
 // optional numeric prefix and capture the whole label, then extract the real ext-id below.
 const PLAYED_LINE = /^(?:\d+\.\d+\.\d+ )?Player \d+ played (.+?)\.$/;
 
-// why: WP-323/324 render the played label as "{Name} ({ext-id})", and WP-417 (D-24237)
-// appends an optional printed-icon clause "(+N recruit)" / "(+N attack, +N recruit)" and/or
-// an effect clause " — {effect}" — so a played label can now carry MORE than one
-// parenthesized group. The ext-id is the first group whose content is ext-id-SHAPED
-// (lowercase-alnum start, no spaces): that skips the "(+1 recruit)" economy clause (it
-// starts with '+' and contains a space) and any parens inside the effect text. The prior
-// regex anchored on the end and captured the LAST group, which after WP-417 grabbed
-// "+1 recruit" instead of the ext-id (observed in a live freeze diagnostic:
-// recentlyPlayedCards[].extId === "+1 recruit"). Fall back to the whole label for a legacy
-// raw-id line with no such group. (The durable fix is the WP-B.3 structured log-outcome
-// contract, which removes prose-parsing entirely.)
-const PLAYED_LABEL_EXTID = /\(([a-z0-9][^)\s]*)\)/;
-
-/**
- * Extracts the card ext-id from an enriched `played` label, or returns the label unchanged
- * when it carries no ext-id-shaped `({ext-id})` group (a legacy raw-id line).
- */
-function extractPlayedExtId(label: string): string {
-  const match = PLAYED_LABEL_EXTID.exec(label);
+// why: WP-438 — the ext-id now comes from the structured `LogEntry.card`; the primary
+// path never parses prose. This is the MINIMAL fallback used ONLY for a `card`-less
+// LEGACY saved snapshot (recorded before WP-438): pull the first ext-id-shaped
+// `({ext-id})` group from the played label. It replaces the fragile WP-417-era
+// `PLAYED_LABEL_EXTID` extractor (which grabbed "+1 recruit" from the economy clause) —
+// live snapshots never reach it. Falls back to the whole label if no such group exists.
+function legacyLabelExtId(label: string): string {
+  const match = /\(([a-z0-9][^)\s]*)\)/.exec(label);
   return match !== null ? match[1]! : label;
 }
 
@@ -208,7 +197,7 @@ function extractPlayedExtId(label: string): string {
  */
 function classifyOutcome(
   extId: string,
-  windowRecords: ReadonlyArray<{ text: string; outcome: string }>,
+  windowRecords: ReadonlyArray<{ text: string; outcome: string; card?: string }>,
   hollowCardIds: Set<string>,
   isMostRecentPlay: boolean,
   awaitingPlayerInput: AwaitingPlayerInput | null,
@@ -221,17 +210,15 @@ function classifyOutcome(
   if (hollowCardIds.has(extId)) {
     return 'hollow';
   }
-  // why: WP-B.3c — read the authoritative `.outcome` (not the retired "did not activate"
-  // string) to decide whether the card's effect did nothing. Match the card by its ref
-  // form `(extId)` WITH the closing paren — this (a) guards a substring collision
-  // (`(slug#1)` is not a substring of `(slug#10)`), and (b) excludes the reveal
-  // "… no branch matched" line, which is also `blocked` but names the *revealed* deck-top
-  // card by a DIFFERENT ext-id. `windowRecords` is already bounded to this card's own
-  // play-window ([play, next-play)) by the caller, so a later card's blocked line cannot
-  // leak in either.
-  const cardRef = `(${extId})`;
+  // why: WP-438 — match the card's own `blocked` line STRUCTURALLY via `record.card`
+  // (retires the B.3c `(extId)` substring scan and its collision caveat). The reveal
+  // "… no branch matched" line carries the REVEALED card's ext-id (≠ this played card),
+  // so it never matches. `windowRecords` is already bounded to this card's play-window.
+  // On a `card`-less LEGACY snapshot no record matches, so a condition-fail downgrades to
+  // `resolved` (WP-438 AC-2 — accepted; live snapshots always carry `card`); the `(extId)`
+  // substring is deliberately NOT reintroduced (that is the retired RS-2 fragility).
   for (const record of windowRecords) {
-    if (record.outcome === 'blocked' && record.text.includes(cardRef)) {
+    if (record.outcome === 'blocked' && record.card === extId) {
       return 'conditionNotMet';
     }
   }
@@ -275,30 +262,36 @@ export function buildEffectProvenance(
   // the snapshot is typed `unknown`), not a flattened `string[]`. The engine authors an
   // authoritative `outcome` on every line (WP-434), so `classifyOutcome` reads it instead
   // of string-guessing. A missing/non-string outcome defaults to `neutral` (fail-soft).
+  // why: WP-438 — read UIState.log as `{ text, outcome, card? }` records. The engine
+  // authors `card` (the CardExtId) on card-attributed lines, so identification and the
+  // condition-fail association read it structurally instead of parsing prose.
   const log = snapshotRecord['log'];
-  const logEntries: Array<{ text: string; outcome: string }> = Array.isArray(log)
+  const logEntries: Array<{ text: string; outcome: string; card?: string }> = Array.isArray(log)
     ? log
-        .map((entry): { text: string; outcome: string } | null => {
+        .map((entry): { text: string; outcome: string; card?: string } | null => {
           if (entry !== null && typeof entry === 'object') {
             const text = (entry as { text?: unknown }).text;
             const outcome = (entry as { outcome?: unknown }).outcome;
-            return typeof text === 'string'
-              ? { text, outcome: typeof outcome === 'string' ? outcome : 'neutral' }
-              : null;
+            const card = (entry as { card?: unknown }).card;
+            if (typeof text !== 'string') return null;
+            const base = { text, outcome: typeof outcome === 'string' ? outcome : 'neutral' };
+            return typeof card === 'string' ? { ...base, card } : base;
           }
           return null;
         })
-        .filter((record): record is { text: string; outcome: string } => record !== null)
+        .filter((record): record is { text: string; outcome: string; card?: string } => record !== null)
     : [];
 
-  // why: collect the ext_id + log index of every "played …" line (identification still
-  // parses the prose — B.3a's LogEntry carries no structured card field; a `LogEntry.card`
-  // is the future step that would remove this last parse).
+  // why: WP-438 — enumerate "played …" lines via PLAYED_LINE (line-KIND detection stays
+  // prose; a `LogEntry.kind` field is the next increment), but take the ext-id from the
+  // structured `entry.card`. `legacyLabelExtId` is the fallback for a `card`-less LEGACY
+  // saved snapshot only — live snapshots always carry `card`.
   const playedEntries: Array<{ extId: string; lineIndex: number }> = [];
   for (let index = 0; index < logEntries.length; index += 1) {
-    const match = PLAYED_LINE.exec(logEntries[index]!.text);
+    const record = logEntries[index]!;
+    const match = PLAYED_LINE.exec(record.text);
     if (match !== null) {
-      playedEntries.push({ extId: extractPlayedExtId(match[1]!), lineIndex: index });
+      playedEntries.push({ extId: record.card ?? legacyLabelExtId(match[1]!), lineIndex: index });
     }
   }
 

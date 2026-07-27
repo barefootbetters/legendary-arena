@@ -76,9 +76,11 @@ export function recordHollowEffect(
   if (Array.isArray(G.messages)) {
     // why: WP-434 — a hollow effect (declared mechanic reached no handler) is
     // `blocked` (red): the effect was requested and nothing happened.
-    pushLog(G,
+    pushLog(
+      G,
       `Unhandled effect observed: card "${record.cardId}" declared a "${record.mechanic}" mechanic at ${record.timing}, but no executable handler was reached (${record.reason}).`,
       'blocked',
+      record.cardId, // why: WP-438 — the hollow line's card (not load-bearing for classification; hollow-first uses the structured hollowEffects read).
     );
   }
 }

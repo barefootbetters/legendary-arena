@@ -454,7 +454,7 @@ mindmap
         ["WP-434 ✅ Structured Log-Outcome Engine Contract (WP-B.3a) — G.messages/UIState.log string[]→LogEntry[] + drift-detected LOG_OUTCOMES enum + pushLog(…, outcome='neutral'); bounded outcome-bearing emissions opt in, 'played X' stays neutral; single fixture regenerated, finalStateHash unchanged (D-24081); arena-client renders entry.text visually-unchanged (colour=B.3b); implements D-24253; EC-469"]
         ["WP-435 ✅ Colour-Code the Game Log by Outcome (WP-B.3b) — GameLogPanel colours each line by LogEntry.outcome (applied→green/partial→amber/blocked→red/neutral unstyled) via theme-aware --color-par-* tokens; colour is never the only signal (aria-hidden glyph + sr-only word, design §Fork E); static/reduced-motion; new pure logOutcomeDisplay helper; buildGameLogText [outcome] tag; arena-client only, D-24026 REQUIRED; implements D-24253; EC-470"]
         ["WP-436 ✅ Retire the effectProvenance Outcome Heuristic (WP-B.3c) — the freeze-diagnostic's recentlyPlayedCards[].outcome reads the authoritative LogEntry.outcome (blocked→conditionNotMet, applied/partial→resolved) instead of string-matching 'did not activate'; deletes DID_NOT_ACTIVATE_LINE; keeps awaitingPlayerInput + structured hollowEffects read + played-card identification parse; 4-value output contract preserved; arena-client only, D-24026 N/A; implements D-24253 §Fork F; EC-471; FINAL log-outcome slice"]
-        ["WP-438 📝 Structured LogEntry.card — resolves the B.3c §14 residual: adds optional card?:CardExtId to LogEntry (engine populates on played/hero-effect/hollow lines; reveal-outcome carries the revealed card), so effectProvenance reads entry.card for the ext-id + condition-fail association and RETIRES the fragile PLAYED_LABEL_EXTID extractor (broke WP-328/417) + the B.3c (ext-id) substring; PLAYED_LINE line-kind kept (LogEntry.kind = next increment); additive/optional, log renders identically, finalStateHash unchanged; cross-layer atomic; reserves D-24257; EC-473"]
+        ["WP-438 ✅ Structured LogEntry.card — resolves the B.3c §14 residual: adds optional card?:CardExtId to LogEntry (engine populates on played/hero-effect/hollow lines; reveal-outcome carries the revealed card), so effectProvenance reads entry.card for the ext-id + condition-fail association and RETIRES the fragile PLAYED_LABEL_EXTID extractor (broke WP-328/417) + the B.3c (ext-id) substring; PLAYED_LINE line-kind kept (LogEntry.kind = next increment); additive/optional, log renders identically, finalStateHash unchanged; cross-layer atomic; reserves D-24257; EC-473"]
 
       Competitive Score Submission & Verification (2026-07)
         ["WP-332 ✅ Competitive score submission HTTP endpoint — the score-submission route lands in apps/server (12 route tests + wrapper delegation; competition.logic.ts additive-only); opens the play-to-leaderboard loop; EC-362; D-24118"]
@@ -612,16 +612,16 @@ mindmap
 | Cross-App Infrastructure | 2/2 | — |
 | Multiplayer Play & Match Durability (2026-07) | 8/8 | — |
 | Hero/Villain Effects & Diagnostics (2026-07) | 5/5 | — |
-| Live-Play HUD & Pending-Choice UX (2026-07) | 19/20 | 1 open |
+| Live-Play HUD & Pending-Choice UX (2026-07) | 20/20 | — |
 | Competitive Score Submission & Verification (2026-07) | 10/10 | — |
 | Gauntlet Leaderboards (Legends) (2026-07) | 38/43 | 2 ⏸, 3 open |
 | Friends & Ranked Trust (2026-07) | 18/18 | — |
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **421/433 WP ✅** (+ 4/4 Foundation Prompts) | 3 ⏸, 9 open |
+| **Total** | **422/433 WP ✅** (+ 4/4 Foundation Prompts) | 3 ⏸, 8 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 12):** WP-042.1 ⏸ blocked; WP-349 open; WP-391 open; WP-396 open; WP-398 open; WP-399 open; WP-368 open; WP-403 ⏸ blocked; WP-404 ⏸ blocked; WP-422 open; WP-429 open; WP-438 open.
+**Open / blocked WPs (derived from WORK_INDEX, 11):** WP-042.1 ⏸ blocked; WP-349 open; WP-391 open; WP-396 open; WP-398 open; WP-399 open; WP-368 open; WP-403 ⏸ blocked; WP-404 ⏸ blocked; WP-422 open; WP-429 open.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.

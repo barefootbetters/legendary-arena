@@ -7,10 +7,12 @@
         "text": "Mastermind strike revealed — strike count incremented."
       },
       {
+        "card": "starting-shield-trooper",
         "outcome": "neutral",
         "text": "Player 0 played S.H.I.E.L.D. Trooper (starting-shield-trooper) (+1 attack)."
       },
       {
+        "card": "starting-shield-agent",
         "outcome": "neutral",
         "text": "Player 0 played S.H.I.E.L.D. Agent (starting-shield-agent) (+1 recruit)."
       },
@@ -19,6 +21,7 @@
         "text": "Mastermind strike revealed — strike count incremented."
       },
       {
+        "card": "starting-shield-trooper",
         "outcome": "neutral",
         "text": "Player 1 played S.H.I.E.L.D. Trooper (starting-shield-trooper) (+1 attack)."
       }

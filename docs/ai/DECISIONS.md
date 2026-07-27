@@ -33173,3 +33173,52 @@ in quick succession mid bot-ally match; the class only reproduces under real
 overlapping deploys, so it is not unit-reproducible end-to-end).
 
 Protect this file.
+
+---
+
+### D-24257 — `LogEntry` gains an optional structured `card`; `effectProvenance` reads it for identification + association (extends D-24253) (Active)
+
+**Status:** Active (post-execution) 2026-07-27 (WP-438 / EC-473). Cross-layer
+(game-engine `LogEntry` + arena-client `effectProvenance`), additive. Extends the
+log-outcome contract (D-24253).
+
+**Context.** B.3c (WP-436) made the freeze diagnostic's *outcome* determination
+authoritative but left a §14 residual: card **identification** still parsed the
+"played X ({ext-id})" prose (via `PLAYED_LABEL_EXTID`, the extractor that grabbed
+`"+1 recruit"` in a live report — WP-328/417, hardened by PR #980), and the
+condition-fail **association** used a `(ext-id)` substring scan (RS-2 collision caveat).
+
+**Decision.** `LogEntry` gains an **optional** `card?: CardExtId`. The engine populates
+it on card-attributed lines — the "played X" line (`applyCardPlay` / `playFromUndercover`),
+the hero-effect handlers (draw / attack / recruit / self-KO / condition-failed), and the
+hollow record; the **reveal-outcome** line carries the **revealed** deck-top card's
+ext-id (NOT the played card). `pushLog` takes a 4th optional `card?` and **omits the key**
+when absent (narration lines stay `{ text, outcome }`). `effectProvenance` reads
+`entry.card` for the played-card ext-id (line-KIND detection via `PLAYED_LINE` is kept —
+a `LogEntry.kind` field is the next increment) and associates a condition-fail via
+`entry.card === extId && outcome === 'blocked'`, **retiring** `PLAYED_LABEL_EXTID` (demoted
+to a minimal `card`-less legacy fallback) and the `(ext-id)` substring.
+
+**Scope of the win (honest).** This **reduces** D-24253 §14's residual — the fragile
+ext-id extraction and the association go structural — but does **not** fully eliminate
+it: the "played" line-kind detection stays prose. Fully realizing §14 needs the future
+`LogEntry.kind` field. A `card`-less **legacy saved** snapshot degrades a condition-fail
+to `resolved` (association needs `card`); accepted because live snapshots always carry
+`card`, and the `(ext-id)` substring is NOT reintroduced.
+
+**Invariants.** Additive/optional — `text`/`outcome` unchanged, the log renders
+identically (B.3b colours untouched). `G.messages` hash-excluded (D-24081) so
+`finalStateHash` is byte-unchanged (sentinel regenerated: `3da2c374…` before and after);
+`MatchSnapshot.messages` stays `string[]` via the `.text` flatten (`card` never persisted).
+`effectProvenance` stays pure + boundary-clean (reads `entry.card` structurally; no engine
+runtime import). Reveal-line attribution preserves B.3c's non-attribution structurally.
+
+**Verification.** Engine 2073/0; arena-client 1111/0 (+3 provenance: card-primary
+identification, reveal-line non-attribution, the card-less legacy fallback+downgrade;
++1 `pushLog` card case) + typecheck 0; `pnpm -r build` 0. Fixture `finalStateHash`
+byte-unchanged. `User-Visible Surface = none` (diagnostic metadata, not rendered) —
+D-24026 N/A.
+
+**Packet:** WP-438 + EC-473. Extends **D-24253**.
+
+Protect this file.
