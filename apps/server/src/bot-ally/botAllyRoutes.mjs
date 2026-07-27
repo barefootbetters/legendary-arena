@@ -38,6 +38,11 @@ import {
   botAllyDrivers,
   BOT_FAULTED_MESSAGE,
 } from './botAllyDriver.mjs';
+import {
+  SERVER_INSTANCE_ID,
+  BOT_ALLY_LEASE_TTL_MS,
+  acquireOrRenewBotAllyLease,
+} from './botAllyOwnership.mjs';
 import koaBody from 'koa-body';
 
 // why: boardgame.io v0.50 ships CJS-only bundles for /master and /internal;
@@ -521,6 +526,12 @@ function startDriverForMatch({ matchId, botSeats, decisionSeed, policyName, subm
     // why: WP-414 / D-24233 — the driver calls this after a revived match's first
     // successful turn to clear the lifetime revival count (see maybeResetRevivalCount).
     resetRevivalCount: (id) => resetBotAllyRevivalCount(database, id),
+    // why: WP-437 / D-24256 — the driver's per-tick cross-instance ownership gate.
+    // Bound to THIS instance's SERVER_INSTANCE_ID + this match id, so the driver
+    // drives only while it holds the lease and defers to a live peer otherwise
+    // (the deploy-overlap two-writer guard). Pooled query — no pinned connection.
+    renewOrAcquireLease: () =>
+      acquireOrRenewBotAllyLease(database, matchId, SERVER_INSTANCE_ID, BOT_ALLY_LEASE_TTL_MS),
     decide: (state, seat) => decideBotMove(state, seat, policy),
   };
   return createBotAllyDriver({ matchId, botSeats, deps, initialReviveCount });

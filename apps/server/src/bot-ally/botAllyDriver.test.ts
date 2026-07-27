@@ -702,3 +702,120 @@ test('the revive_count reset fires at most once per driver lifetime (latched)', 
   assert.equal(driver.getTurnCount(), 2, 'two bot turns completed');
   assert.deepEqual(resetCalls, ['m-latch'], 'the reset wrote only once across two successful turns');
 });
+
+// ---------------------------------------------------------------------------
+// WP-437 / D-24256 — cross-instance ownership lease gate. The driver drives only
+// when it holds the lease; a live peer's lease makes it yield the tick. The lease
+// dep is injected as a fake owner (a boolean, or a scripted sequence) so no real
+// wall-clock timing is involved.
+// ---------------------------------------------------------------------------
+
+test('the driver drives normally when it holds the ownership lease', async () => {
+  const { deps, submitCalls } = makeDeps({
+    initial: fakeState('1', 1),
+    decide: () => ({ name: 'endTurn', args: {} }),
+    onSubmit: (_move, match) => {
+      match.value = fakeState('0', 2);
+    },
+    overrides: { renewOrAcquireLease: async () => true },
+  });
+  const driver = createBotAllyDriver({ matchId: 'm-owner', botSeats: ['1'], deps });
+
+  await driver.tick();
+
+  assert.equal(submitCalls.length, 1, 'the lease-holder drove the bot turn');
+  assert.equal(driver.getTurnCount(), 1, 'the completed bot turn counted');
+});
+
+test('the driver YIELDS the tick when a live peer owns the lease (no submit, no teardown)', async () => {
+  // why: the deploy-overlap guard — a newly-revived driver whose peer still owns a
+  // fresh lease must submit NOTHING (so it cannot race the peer on `_stateID`) and
+  // must not abandon/teardown the match (the peer is driving it).
+  const { deps, submitCalls, persistCalls } = makeDeps({
+    initial: fakeState('1', 1),
+    decide: () => ({ name: 'endTurn', args: {} }),
+    onSubmit: (_move, match) => {
+      match.value = fakeState('0', 2);
+    },
+    overrides: { renewOrAcquireLease: async () => false, maxIdlePolls: 1 },
+  });
+  const driver = createBotAllyDriver({ matchId: 'm-peer', botSeats: ['1'], deps });
+
+  await driver.tick();
+  await driver.tick();
+
+  assert.equal(submitCalls.length, 0, 'a non-owner submits nothing — no two-writer race');
+  assert.equal(driver.getTurnCount(), 0, 'no bot turn was taken while deferring to the peer');
+  assert.equal(persistCalls.length, 0, 'yielding never abandons/tears down (the peer owns it)');
+  assert.equal(botAllyDrivers.has('m-peer'), true, 'the deferring driver stays registered, ready to take over');
+});
+
+test('the driver takes over the instant the peer releases the lease (cooperative handoff)', async () => {
+  // Ticks 1-2 the peer owns the lease (false); tick 3 it releases (true) and this
+  // driver claims + drives — modelling the clean-SIGTERM handoff without any timing.
+  let leaseCall = 0;
+  const { deps, submitCalls } = makeDeps({
+    initial: fakeState('1', 1),
+    decide: () => ({ name: 'endTurn', args: {} }),
+    onSubmit: (_move, match) => {
+      match.value = fakeState('0', 2);
+    },
+    overrides: {
+      renewOrAcquireLease: async () => {
+        leaseCall += 1;
+        return leaseCall >= 3;
+      },
+    },
+  });
+  const driver = createBotAllyDriver({ matchId: 'm-handoff', botSeats: ['1'], deps });
+
+  await driver.tick(); // peer owns — yield
+  await driver.tick(); // peer owns — yield
+  assert.equal(submitCalls.length, 0, 'nothing driven while the peer held the lease');
+
+  await driver.tick(); // peer released — claim + drive
+
+  assert.equal(submitCalls.length, 1, 'took over and drove the bot turn once the lease freed');
+  assert.equal(driver.getTurnCount(), 1);
+});
+
+test('a lease-check throw skips the tick without tearing the driver down', async () => {
+  // why: a transient DB blip on the lease UPDATE must not fault/teardown — skip the
+  // tick and retry next poll, exactly like the fetch-error path.
+  const { deps, submitCalls, persistCalls } = makeDeps({
+    initial: fakeState('1', 1),
+    decide: () => ({ name: 'endTurn', args: {} }),
+    overrides: {
+      renewOrAcquireLease: async () => {
+        throw new Error('lease UPDATE hit a transient DB blip.');
+      },
+    },
+  });
+  const driver = createBotAllyDriver({ matchId: 'm-lease-blip', botSeats: ['1'], deps });
+
+  await driver.tick();
+
+  assert.equal(submitCalls.length, 0, 'no move submitted when ownership could not be determined');
+  assert.equal(driver.getStatus(), BOT_ALLY_STATUS.active, 'a lease-check blip did NOT fault the match');
+  assert.equal(persistCalls.length, 0, 'no terminal status persisted');
+  assert.equal(botAllyDrivers.has('m-lease-blip'), true, 'the driver stays registered and retries next poll');
+});
+
+test('a driver with NO lease dep drives normally (single-instance back-compat)', async () => {
+  // why: `renewOrAcquireLease` is OPTIONAL — a single-instance deployment (and every
+  // pre-WP-437 test) omits it, and the driver must behave exactly as before.
+  const { deps, submitCalls } = makeDeps({
+    initial: fakeState('1', 1),
+    decide: () => ({ name: 'endTurn', args: {} }),
+    onSubmit: (_move, match) => {
+      match.value = fakeState('0', 2);
+    },
+    // no renewOrAcquireLease override → the gate is skipped → always drives
+  });
+  const driver = createBotAllyDriver({ matchId: 'm-no-lease', botSeats: ['1'], deps });
+
+  await driver.tick();
+
+  assert.equal(submitCalls.length, 1, 'the driver drove without any lease dep present');
+  assert.equal(driver.getTurnCount(), 1);
+});
