@@ -273,7 +273,11 @@ function validateExpected(expected: unknown, fixtureName: string): FixtureExpect
     // why: WP-434 — each message is a LogEntry ({ text: string, outcome: LogOutcome }),
     // not a bare string; validate both fields so a shape or outcome-enum drift in a
     // regenerated fixture is rejected here rather than surfacing as a silent oracle pass.
-    const entry = expected.messages[messageIndex] as { text?: unknown; outcome?: unknown };
+    const entry = expected.messages[messageIndex] as {
+      text?: unknown;
+      outcome?: unknown;
+      card?: unknown;
+    };
     if (typeof entry !== 'object' || entry === null || typeof entry.text !== 'string') {
       throw new Error(
         `Fixture "${fixtureName}" expected.messages[${messageIndex}] is not a LogEntry record with a string "text" field; G.messages is a LogEntry[] event log.`,
@@ -282,6 +286,13 @@ function validateExpected(expected: unknown, fixtureName: string): FixtureExpect
     if (typeof entry.outcome !== 'string' || !LOG_OUTCOMES.includes(entry.outcome as LogEntry['outcome'])) {
       throw new Error(
         `Fixture "${fixtureName}" expected.messages[${messageIndex}] has an invalid "outcome" (${JSON.stringify(entry.outcome)}); it must be one of ${LOG_OUTCOMES.join(', ')}.`,
+      );
+    }
+    // why: WP-438 — `card` is OPTIONAL (present only on card-attributed lines); when
+    // present it must be a CardExtId string.
+    if (entry.card !== undefined && typeof entry.card !== 'string') {
+      throw new Error(
+        `Fixture "${fixtureName}" expected.messages[${messageIndex}] has a non-string "card" (${JSON.stringify(entry.card)}); when present it must be a CardExtId string.`,
       );
     }
   }

@@ -171,8 +171,11 @@ export function applyCardPlay(
   // recruit this play just added is folded into the same line rather than emitted
   // as a second one — one line per play keeps the log readable when six starters
   // are played in a row.
-  pushLog(G,
+  pushLog(
+    G,
     `Player ${playerID} played ${formatPlayedCardLabel(G.cardDisplayData, cardId, formatBaseEconomyClause(heroAttack, heroRecruit))}.`,
+    'neutral',
+    cardId, // why: WP-438 — the structured play identity the freeze diagnostic reads.
   );
 
   // why: hero ability effects fire immediately after play, before any
@@ -255,10 +258,13 @@ export function playCard({ G, playerID, ...context }: MoveContext, args: PlayCar
   // "validate → gate → mutate → void" move contract is preserved.
   const discardToPlayCost = getDiscardToPlayCost(G, args.cardId);
   if (discardToPlayCost > 0 && playerZones.hand.length < discardToPlayCost + 1) {
-    pushLog(G,
+    pushLog(
+      G,
       // why: WP-417 — an empty economy clause here: the play was REJECTED, so no
       // base attack/recruit was granted and the line must not imply otherwise.
       `Player ${playerID} could not play ${formatPlayedCardLabel(G.cardDisplayData, args.cardId, '')} — it requires discarding ${discardToPlayCost} card(s) but their hand holds no other card to discard.`,
+      'neutral',
+      args.cardId, // why: WP-438 — card-attributed line (not a "played" entry — PLAYED_LINE won't match "could not play").
     );
     return;
   }

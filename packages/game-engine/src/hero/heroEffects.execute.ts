@@ -358,6 +358,7 @@ export function executeHeroEffects(
       pushLog(G,
         `Player ${playerID}'s ${formatCardRef(G.cardDisplayData, cardId)} ability did not activate — a play condition (such as Hero class or team synergy) was not met.`,
         'blocked',
+        cardId, // why: WP-438 — the played card whose ability was gated (drives the diagnostic's conditionNotMet association).
       );
       continue;
     }
@@ -619,6 +620,7 @@ function heroEffectDraw(
     pushLog(G,
       `Player ${playerID} drew ${drawnCount} of ${requestedCount} card(s) from ${formatCardRef(G.cardDisplayData, cardId)} — their deck and discard pile were empty.`,
       'partial',
+      cardId, // why: WP-438.
     );
     return;
   }
@@ -626,6 +628,7 @@ function heroEffectDraw(
   pushLog(G,
     `Player ${playerID} drew ${drawnCount} card(s) from ${formatCardRef(G.cardDisplayData, cardId)}.`,
     'applied',
+    cardId, // why: WP-438.
   );
 }
 
@@ -644,6 +647,7 @@ function heroEffectAttack(
   pushLog(G,
     `Player ${playerID} gained +${attackGrant} attack from ${formatCardRef(G.cardDisplayData, cardId)}.`,
     'applied',
+    cardId, // why: WP-438.
   );
 }
 
@@ -662,6 +666,7 @@ function heroEffectRecruit(
   pushLog(G,
     `Player ${playerID} gained +${recruitGrant} recruit from ${formatCardRef(G.cardDisplayData, cardId)}.`,
     'applied',
+    cardId, // why: WP-438.
   );
 }
 
@@ -688,6 +693,7 @@ function heroEffectKo(
       pushLog(G,
         `Player ${playerID} KO'd ${formatCardRef(G.cardDisplayData, cardId)} via its own ability.`,
         'applied',
+        cardId, // why: WP-438.
       );
     }
   }
@@ -959,6 +965,7 @@ function applyRevealRules(
       G,
       formatRevealOutcomeLine(G.cardDisplayData, playerID, topCardId, cost, outcome),
       revealLogOutcome,
+      topCardId, // why: WP-438 — the REVEALED deck-top card (NOT the played What-If card), so the diagnostic does not attribute a reveal to the played card (preserves B.3c non-attribution structurally).
     );
   }
 }

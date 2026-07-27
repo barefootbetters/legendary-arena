@@ -40,6 +40,16 @@ test('pushLog pushes the bare message when logMeta is absent (fallback)', () => 
   assert.deepEqual(G.messages, [{ text: 'bare line', outcome: 'neutral' }]);
 });
 
+test('pushLog attaches an optional card ext-id, and omits the key when not supplied (WP-438)', () => {
+  const G = { messages: [], currentStage: 'main' } as unknown as LegendaryGameState;
+  pushLog(G, 'Player 0 played X.', 'neutral', 'core/hawkeye/quick-draw#2');
+  pushLog(G, 'Turn 1 started.'); // no card → key omitted, not `card: undefined`
+  assert.deepEqual(G.messages, [
+    { text: 'Player 0 played X.', outcome: 'neutral', card: 'core/hawkeye/quick-draw#2' },
+    { text: 'Turn 1 started.', outcome: 'neutral' },
+  ]);
+});
+
 test('pushLog does not throw when messages is not an array', () => {
   const G = { currentStage: 'main', logMeta: { turn: 1, actionInStep: 0 } } as unknown as LegendaryGameState;
   assert.doesNotThrow(() => pushLog(G, 'x'));

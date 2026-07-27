@@ -1,6 +1,7 @@
 import type { LegendaryGameState } from '../types.js';
 import { TURN_STAGES } from '../turn/turnPhases.types.js';
 import type { LogEntry, LogOutcome } from './logOutcome.types.js';
+import type { CardExtId } from '../state/zones.types.js';
 
 /**
  * Central game-log push helper (WP-328; WP-434 outcome arg). Appends a `LogEntry`
@@ -26,17 +27,22 @@ export function pushLog(
   G: LegendaryGameState,
   message: string,
   outcome: LogOutcome = 'neutral',
+  card?: CardExtId,
 ): void {
   // why: a narrow test/mock `G` may omit the messages array — skip rather than throw,
   // matching the Array.isArray guard used across the effect/reveal push sites.
   if (!Array.isArray(G.messages)) {
     return;
   }
+  // why: WP-438 — build the LogEntry with `card` ONLY when supplied. Omitting the key
+  // (rather than writing `card: undefined`) keeps narration lines byte-identical and is
+  // the strict-optional (`exactOptionalPropertyTypes`) construction pattern.
+  const cardPart = card !== undefined ? { card } : {};
   const logMeta = G.logMeta;
   if (logMeta === undefined) {
     // why: narrow unit fixtures omit `G.logMeta` — push the bare message unprefixed.
     // Production always initializes it at onBegin (game.ts), so live logs are numbered.
-    G.messages.push({ text: message, outcome });
+    G.messages.push({ text: message, outcome, ...cardPart });
     return;
   }
   logMeta.actionInStep += 1;
@@ -44,5 +50,5 @@ export function pushLog(
   // main=2, cleanup=3) — read from the canonical array rather than hardcoding the map.
   const step = TURN_STAGES.indexOf(G.currentStage) + 1;
   const text = `${logMeta.turn}.${step}.${logMeta.actionInStep} ${message}`;
-  G.messages.push({ text, outcome } satisfies LogEntry);
+  G.messages.push({ text, outcome, ...cardPart } satisfies LogEntry);
 }

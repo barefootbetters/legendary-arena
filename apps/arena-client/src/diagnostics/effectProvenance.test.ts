@@ -176,8 +176,8 @@ describe('buildEffectProvenance — recentlyPlayedCards', () => {
     const provenance = buildEffectProvenance(
       snapshotWith({
         log: [
-          { text: 'Player 0 played Gambit Card (antm/gambit/card#0).', outcome: 'neutral' },
-          { text: "Player 0's Gambit Card (antm/gambit/card#0) ability did not activate — no X-Men in play.", outcome: 'blocked' },
+          { text: 'Player 0 played Gambit Card (antm/gambit/card#0).', outcome: 'neutral', card: 'antm/gambit/card#0' },
+          { text: "Player 0's Gambit Card (antm/gambit/card#0) ability did not activate — no X-Men in play.", outcome: 'blocked', card: 'antm/gambit/card#0' },
         ],
       }),
     );
@@ -212,8 +212,8 @@ describe('buildEffectProvenance — recentlyPlayedCards', () => {
     const provenance = buildEffectProvenance(
       snapshotWith({
         log: [
-          { text: 'Player 0 played Gambit Card (antm/gambit/card#0).', outcome: 'neutral' },
-          { text: "Player 0's Gambit Card (antm/gambit/card#0) ability did not activate — no X-Men in play.", outcome: 'blocked' },
+          { text: 'Player 0 played Gambit Card (antm/gambit/card#0).', outcome: 'neutral', card: 'antm/gambit/card#0' },
+          { text: "Player 0's Gambit Card (antm/gambit/card#0) ability did not activate — no X-Men in play.", outcome: 'blocked', card: 'antm/gambit/card#0' },
         ],
         pendingOptionalKoReward: { playerID: '0' },
       }),
@@ -255,9 +255,9 @@ describe('buildEffectProvenance — recentlyPlayedCards', () => {
     const provenance = buildEffectProvenance(
       snapshotWith({
         log: [
-          { text: 'Player 0 played Early Card (set/hero/early#0).', outcome: 'neutral' },
-          { text: 'Player 0 played Late Card (set/hero/late#1).', outcome: 'neutral' },
-          { text: "Player 0's Late Card (set/hero/late#1) ability did not activate — no synergy.", outcome: 'blocked' },
+          { text: 'Player 0 played Early Card (set/hero/early#0).', outcome: 'neutral', card: 'set/hero/early#0' },
+          { text: 'Player 0 played Late Card (set/hero/late#1).', outcome: 'neutral', card: 'set/hero/late#1' },
+          { text: "Player 0's Late Card (set/hero/late#1) ability did not activate — no synergy.", outcome: 'blocked', card: 'set/hero/late#1' },
         ],
       }),
     );
@@ -265,6 +265,51 @@ describe('buildEffectProvenance — recentlyPlayedCards', () => {
     assert.equal(provenance.recentlyPlayedCards[0]!.outcome, 'resolved');
     assert.equal(provenance.recentlyPlayedCards[1]!.extId, 'set/hero/late#1');
     assert.equal(provenance.recentlyPlayedCards[1]!.outcome, 'conditionNotMet');
+  });
+
+  test('WP-438: identification comes from the structured card, not the label prose', () => {
+    // why: the played line's LABEL carries an economy clause that the old
+    // PLAYED_LABEL_EXTID could mis-grab; `card` is the authoritative id and is used.
+    const provenance = buildEffectProvenance(
+      snapshotWith({
+        log: [
+          {
+            text: 'Player 1 played Quick Draw (core/hawkeye/quick-draw#2) (+1 attack) — Draw a card.',
+            outcome: 'neutral',
+            card: 'core/hawkeye/quick-draw#2',
+          },
+        ],
+      }),
+    );
+    assert.equal(provenance.recentlyPlayedCards[0]!.extId, 'core/hawkeye/quick-draw#2');
+  });
+
+  test('WP-438: a reveal "no branch matched" line (card = the REVEALED card) is not attributed to the played card', () => {
+    const provenance = buildEffectProvenance(
+      snapshotWith({
+        log: [
+          { text: 'Player 0 played What If Card (wtif/star-lord/what-if#3).', outcome: 'neutral', card: 'wtif/star-lord/what-if#3' },
+          { text: 'Player 0 revealed S.H.I.E.L.D. Agent (starting-shield-agent) (cost 0) — no branch matched (left on top).', outcome: 'blocked', card: 'starting-shield-agent' },
+        ],
+      }),
+    );
+    assert.equal(provenance.recentlyPlayedCards[0]!.outcome, 'resolved');
+  });
+
+  test('WP-438 (AC-2): a card-less LEGACY snapshot still identifies via the label; condition-fail downgrades to resolved', () => {
+    // why: a pre-WP-438 saved diagnostic blob has no `card`. Identification falls back
+    // to the label; the condition-fail association (which needs `card`) does not match,
+    // so it downgrades to `resolved` — the accepted, documented legacy behavior.
+    const provenance = buildEffectProvenance(
+      snapshotWith({
+        log: [
+          { text: 'Player 0 played Gambit Card (antm/gambit/card#0).', outcome: 'neutral' },
+          { text: "Player 0's Gambit Card (antm/gambit/card#0) ability did not activate — no X-Men in play.", outcome: 'blocked' },
+        ],
+      }),
+    );
+    assert.equal(provenance.recentlyPlayedCards[0]!.extId, 'antm/gambit/card#0'); // label fallback
+    assert.equal(provenance.recentlyPlayedCards[0]!.outcome, 'resolved'); // association downgrades without card
   });
 });
 
