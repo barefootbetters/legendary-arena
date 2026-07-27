@@ -7,6 +7,36 @@
 
 ## Current State
 
+### WP-436 / EC-471 — Retire the `effectProvenance` Outcome Heuristic (WP-B.3c, D-24253) — LOG-OUTCOME ARC COMPLETE (2026-07-26)
+
+**`User-Visible Surface = none`** (a freeze-diagnostic-export internal; the export
+shape is unchanged, only the outcome's provenance — **D-24026 N/A**). The final slice
+of the log-outcome arc: `effectProvenance.recentlyPlayedCards[].outcome` now **reads**
+the engine-authored `LogEntry.outcome` (B.3a) instead of string-guessing "… ability did
+not activate". `classifyOutcome` is **hollow-first** (the structured `hollowEffects`
+read wins — a hollow effect also logs a `blocked` line, so a blocked-first order would
+have mislabeled every hollow as `conditionNotMet`; PS-1), then a `blocked` line in the
+card's **own play-window** `[play+1, next-play)` matching its `(ext-id)` ref →
+`conditionNotMet` (the closing paren + window guard the reveal "no branch matched" line,
+which is also `blocked` but names the *revealed* card, and an ext-id substring collision;
+RS-2), then pending → `awaitingChoice`, else `resolved`. `DID_NOT_ACTIVATE_LINE` deleted;
+`awaitingPlayerInput`, the `hollowEffects` read, and the played-card identification parse
+kept; the 4-value `PlayedCardOutcome` output contract preserved.
+
+**Arena-client only, additive, pure + boundary-clean** (zero engine import, even type).
+arena-client **1108/0** (+3; incl. hollow-first-with-real-blocked-line, RS-2 reveal +
+window guards, positive-`resolved`) + typecheck 0; `pnpm -r build` 0. Live cross-check:
+fed a real completed-game diagnostic through `buildEffectProvenance` — outcomes match
+the authoritative `LogEntry.outcome` (an all-neutral starter game → all `resolved`,
+correct). **Honest residual:** the played-card *identification* still parses "played X"
+prose; §14's "cannot break the diagnostic" is fully realized only with a future
+`LogEntry.card` field.
+
+**Log-outcome arc (D-24253) COMPLETE:** **B.3a** (engine authors `LogEntry.outcome`) →
+**B.3b** (HUD paints green/amber/red + a11y) → **B.3c** (the diagnostic reads it instead
+of guessing). The prose-parsing regression class that motivated the arc (the two
+hotfixes, WP-328 + WP-417/PR #980) is closed for the outcome determination.
+
 ### WP-435 / EC-470 — Colour-Code the Game Log by Outcome (Client Render + a11y + Export) (WP-B.3b, D-24253) (2026-07-26)
 
 **`User-Visible Surface = play.legendary-arena.com` — the log is now COLOUR-CODED**
