@@ -33292,3 +33292,75 @@ server, so visual confirmation is on the deployed dashboard — the norm for eve
 prior dashboard-widget WP).
 
 Protect this file.
+
+---
+
+### D-24259 — Faction battle-cry call-outs: split the narrative IP boundary so a licensed character's own signature cry is permitted (within license), not treated as fabricated lore (licensing-gated) (Active)
+
+**Context.** The [synergy call-out](../../wiki/narrative-psychology.md#synergy-callouts)
+ladder (**Combo! → Team-Up! → Unstoppable! → LEGENDARY!**, the apex locked by
+D-24246) names the *magnitude* of a hero-play chain. A **faction battle cry**
+overlay names the *identity*: when the chain fires while the player is acting a
+recognizable hero/team, the generic word is replaced by that faction's signature
+shout — **AVENGERS ASSEMBLE!**, **HULK SMASH!**, **Flame On!**, etc. The overlay is
+a client-side string swap keyed on the acting card's team/hero (the same identity
+the team leitmotif already reads) — **no new engine field, no engine/contract/
+runtime change.** It is documented across the two feel-layer research pages plus
+the Sound Effects page's voiced-announcer note; all three are `status: draft`.
+
+**The tension.** The narrative page's locked **IP boundary (mandatory)** forbids
+lifting "dialogue verbatim" — a rule written to stop *fabricated* lore and lifted
+card text from leaking into original narrative copy. The battle cries are the exact
+opposite case: they are the licensed characters' **own** famous, verbatim,
+trademark-heavy catchphrases ("Avengers Assemble," "It's Clobberin' Time," "Flame
+On," "Hulk Smash" among them). Applying the anti-fabrication rule literally would
+forbid the single sharpest piece of Archetype/Nostalgia copy in the whole feel
+layer; ignoring it would silently contradict a locked boundary.
+
+**Decision.** Reconcile the boundary by splitting the one rule into two:
+
+1. **Fabricated / lifted lore stays forbidden.** Original narrative copy may not
+   invent Marvel lore or lift card text/dialogue to pad its own voice. (The
+   existing rule, unchanged in intent.)
+2. **A licensed character's or team's own signature cry is permitted _within the
+   confirmed license scope_.** Surfacing a catchphrase the character is famous for,
+   as a call-out at the moment the player acts that character, is *use of the
+   licensed property*, not fabrication — but it is **licensing-gated**: the seed
+   set ships **only after** the Marvel / Upper Deck license scope is confirmed to
+   cover on-screen catchphrase / VO use, which can be scoped separately from
+   card-likeness rights. This confirmation is the [IP / licensing pass](../../wiki/narrative-psychology.md#ip-boundary-mandatory)
+   the page already mandates for character-leaning copy.
+
+The locked boundary **text** is amended to carry this split **only on ratification
+of this entry**; the wiki pages document the gate and the proposed wording, and no
+cry ships until the licensing confirmation clears. Announcer VO follows the same
+gate: original team cries may be voiced by the house Arena Announcer; first-person
+character cries stay text-first (an announcer impersonating a Marvel character is
+an IP / casting matter).
+
+**Scope / what this is not.** Governance/design ruling only — **no code, no engine,
+no contract, no persistence, no determinism change.** The render is an existing-
+signal string swap (magnitude = the locked `comboTierForCount` tier; identity = the
+acting card, already held client-side). Cries are independent of tier count and ride
+whatever tier fires, from `small` to the locked apex. This entry does **not** confirm
+the license scope — it records the reconciliation framework and the gate; the
+scope confirmation is an external legal step.
+
+**Renumber note.** This decision was drafted as **D-24238** in PR #979 while that
+branch sat open. D-24238 landed independently on `main` as the deploy stale-bundle-
+freeze decision (WP-418 / #983), so the faction-cry decision was renumbered to
+**D-24259** (next free via the number ledger, D-24245 mechanism) on reconciliation.
+
+**Files.** `docs/ai/DECISIONS.md` (this entry), `docs/ai/NUMBER-LEDGER.md` (D-24259
+reservation), `wiki/narrative-psychology.md` (`#faction-cries` section + Decisions
+Pending), `wiki/visual-effects.md` (identity-overlay note + Decisions Pending),
+`wiki/sound-effects.md` (`#combo-voice` announcer/faction-cry VO note). No
+`.claude/rules/*` or `ARCHITECTURE.md` edit — no layer boundary, import rule, or
+blob-read is added.
+
+**Verification.** Design/governance ruling; no build or test surface. Wiki pages
+remain `status: draft`; all cross-anchors (`#synergy-callouts`, `#faction-cries`,
+`#arena-announcer`, `#ip-boundary-mandatory`, `#combo-tier-contract`, `#synergy-callout`,
+`sound-effects.md#combo-voice`, `music-authoring.md#team-keys`) verified to resolve.
+
+Protect this file.

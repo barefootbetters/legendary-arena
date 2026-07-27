@@ -28,7 +28,7 @@ source:
   - ../packages/game-engine/src/endgame/endgame.types.ts
   - ../docs/ai/ARCHITECTURE.md
   - ../docs/01-VISION.md
-last-reviewed: 2026-07-24
+last-reviewed: 2026-07-27
 ---
 
 # Narrative Psychology Framework
@@ -307,6 +307,86 @@ so the label and a matching sting share the one boundary — never a label-only
 threshold. WP-425 shipped the **audio** sting; this on-screen `LEGENDARY!`
 label is the future visual consumer of the same locked tier.
 
+#### Faction battle cries — the team's own call-out {#faction-cries}
+
+The generic ladder names the *size* of a chain. A **faction battle cry**
+names *who did it*: when the synergy fires while the player is acting a
+recognizable hero or team, the call-out becomes that faction's signature
+shout instead of the generic word. A three-effect Avengers chain doesn't
+read **Unstoppable!** — it reads **AVENGERS ASSEMBLE!** This is the
+Archetype and Nostalgia [meaning hooks](#the-four-meaning-hooks) compressed
+into a single word: the deepest inherited investment a Marvel fan carries,
+fired at the exact moment they earned it. It is also the sharpest possible
+answer to the [authorial-voice](#authorial-voice) test — nobody mistakes
+"Flame On!" for a generic arena game.
+
+**Two axes, one label.** The call-out carries *magnitude* and *identity*
+independently:
+
+- **Magnitude** — the combo tier (`comboTierForCount`) — drives the
+  *presentation*: how big the flash, how loud the sting, whether it earns
+  the apex full-screen treatment.
+- **Identity** — the **acting card's team / hero** — drives the *words*.
+  The client already holds this: it is the same acting-entity identity the
+  [team leitmotif](music-authoring.md#team-keys) reads to pick a motif, so
+  a battle cry is the **spoken-word twin of the team motif** — no new
+  engine signal.
+
+So a big Avengers chain splashes **AVENGERS ASSEMBLE!** at apex intensity;
+a small one pops **Avengers Assemble!** modestly — same words, tier-scaled.
+Identity and magnitude are orthogonal, so a cry rides **whatever tier
+fires**, from `small` up to the locked apex — the cries are gated on IP
+below, **not** on the combo-tier count.
+
+**Precedence** (most specific wins; the ladder guarantees it is never
+silent):
+
+1. **Character cry** — the acting hero has a signature line of their own.
+2. **Team cry** — the acting card's team has one.
+3. **Generic ladder** — the [Combo! / Team-Up! / Unstoppable! / LEGENDARY!](#synergy-callouts)
+   fallback for any card whose team/hero has no signature cry yet.
+
+The seed set — the most universally recognizable Marvel cries:
+
+| Faction / hero | Battle cry | Granularity |
+|---|---|---|
+| Avengers | **Avengers Assemble!** | team |
+| X-Men | **To me, my X-Men!** | team |
+| Thing (Fantastic Four) | **It's Clobberin' Time!** | character |
+| Human Torch | **Flame On!** | character |
+| Hulk | **Hulk Smash!** | character |
+| Spider-Man | **With great power comes great responsibility** | character |
+| Thor | **For Asgard!** | character |
+| Namor | **Imperius Rex!** | character |
+| Luke Cage | **Sweet Christmas!** | character |
+
+The map is **extensible and sparse**: teams and heroes without a cry fall
+through to the generic ladder, so coverage grows one entry at a time
+without gaps. (Spider-Man's line is a full sentence, not a two-word shout —
+at the `small`/`medium` tiers it likely needs a shortened on-screen form; a
+display-fit call flagged in [Decisions Pending](#decisions-pending).)
+
+> **These cries are licensing-gated — this *is* the IP pass, not a
+> footnote.** Unlike the generic ladder (original superlatives), the battle
+> cries are **verbatim, famous, and several are registered Marvel
+> trademarks** ("Avengers Assemble," "It's Clobberin' Time," "Flame On,"
+> and "Hulk Smash" among them). They are the single highest-scrutiny copy
+> in the entire feel layer. Legendary Arena is a **licensed** Marvel
+> product (royalties to Marvel and Upper Deck), so the cries live inside
+> the same license as the characters themselves — but *catchphrase* usage
+> in on-screen text/VO can be scoped separately from card-likeness rights,
+> so the seed set ships **only after the Marvel / Upper Deck license scope
+> is confirmed to cover it.** That confirmation is exactly the
+> [IP / licensing pass](#ip-boundary-mandatory) this page already mandates
+> for character-leaning copy. It also *tensions the current wording* of
+> that boundary (which forbids lifting "dialogue verbatim"): reconciling
+> "don't fabricate or lift lore into original copy" with "use the licensed
+> characters' own signature cries, within license" is recorded as **D-24259**
+> — the reconciliation framework plus the licensing gate. The locked boundary
+> *text* is amended on ratification of that entry (its exact proposed wording
+> lives in D-24259), **not** here — and no cry ships until the licensing
+> confirmation clears.
+
 #### The announcer — an original "Arena" voice, not a borrowed one {#arena-announcer}
 
 *Candy Crush*'s call-outs are inseparable from **Mr. Toffee's** voice: the
@@ -495,8 +575,16 @@ Open choices a Work Packet must resolve (not recommendations):
   proposal, or an alternate), and decide whether the label starts at the
   `small` tier or holds until `medium` for restraint (the *flash* fires at
   `small` either way — a [Visual Effects](visual-effects.md#synergy-callout)
-  cross-decision). The apex **LEGENDARY!** rung is gated on the shared
-  fourth-tier decision on that same page.
+  cross-decision). The apex **LEGENDARY!** rung is **no longer open** — it
+  landed as the locked fourth shared combo tier (WP-425 / D-24246); only the
+  three-lower-tier *wording* remains a copy call.
+- **Faction battle cries — licensing gate** ([faction cries](#faction-cries)) —
+  the seed set (**Avengers Assemble!**, **Hulk Smash!**, …) is verbatim,
+  trademark-heavy Marvel copy. It ships **only after** the Marvel / Upper
+  Deck license scope is confirmed to cover on-screen catchphrase use, and it
+  tensions the current [IP boundary](#ip-boundary-mandatory) wording (which
+  forbids lifting dialogue verbatim). The reconciliation framework + gate is
+  recorded as **D-24259**; the boundary text is amended only on ratification.
 - **Arena Announcer — voiced in v1, or text-first?**
   ([the announcer](#arena-announcer)) The on-screen word ships without it;
   a voiced call-out is an [audio-layer](sound-effects.md#tiered-combo)
