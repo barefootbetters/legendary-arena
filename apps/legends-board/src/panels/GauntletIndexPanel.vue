@@ -6,7 +6,7 @@
  * unclaimed state), and unclaimed gauntlets carry a challenge link that lands
  * on the leg's pinned loadout preview.
  */
-import { computed } from "vue";
+import { computed, reactive } from "vue";
 import type {
   GauntletIndexEntry,
   GauntletIndexSnapshot,
@@ -17,9 +17,15 @@ import {
   buildPlayerCountTabs,
   formatCardDisplayName,
   groupGauntletsBySet,
+  pinShowcaseGauntlet,
   selectApprovedLoadout,
   type PlayerCountTab,
 } from "./gauntletDisplay";
+import {
+  downloadGauntletPack,
+  type GauntletDivision,
+  type GauntletPackPlayerCount,
+} from "./gauntletPackDownload";
 import EmptyBoardCta from "../components/EmptyBoardCta.vue";
 
 const props = defineProps<{
@@ -31,8 +37,77 @@ const setGroups = computed(() => {
   if (props.index === null) {
     return [];
   }
-  return groupGauntletsBySet(props.index.gauntlets);
+  // why: WP-441 — pin the Core Set / Magneto showcase gauntlet to the front of
+  // the grouped index. The pin is applied AFTER groupGauntletsBySet, so that
+  // function's publisher-order-preserving contract is untouched.
+  return pinShowcaseGauntlet(groupGauntletsBySet(props.index.gauntlets));
 });
+
+/** One gauntlet row's download-selector state (WP-441). */
+interface GauntletDownloadSelection {
+  playerCount: GauntletPackPlayerCount;
+  division: GauntletDivision;
+}
+
+// why: per-row selector state keyed by the gauntlet's board name — the index
+// renders up to 105 rows and each row carries its own count/division choice, so
+// a single shared ref would apply one row's pick to every other row.
+const rowSelections = reactive<Record<string, GauntletDownloadSelection>>({});
+
+/** The player counts a gauntlet pack may target (D-24134 §2 / WP-370). */
+const PLAYER_COUNT_OPTIONS: readonly GauntletPackPlayerCount[] = [1, 2, 3, 4, 5];
+
+/** The two competitive divisions a gauntlet can be entered in (D-24260). */
+const DIVISION_OPTIONS: readonly GauntletDivision[] = ["fixed", "open"];
+
+/**
+ * The current selection for a row, defaulting to solo (1) + fixed. A plain read
+ * returns the default WITHOUT writing to the reactive store, so rendering never
+ * mutates state (which would risk a render loop).
+ */
+function selectionFor(board: string): GauntletDownloadSelection {
+  return rowSelections[board] ?? { playerCount: 1, division: "fixed" };
+}
+
+/** Records a row's player-count choice. */
+function setPlayerCount(
+  board: string,
+  playerCount: GauntletPackPlayerCount,
+): void {
+  rowSelections[board] = { ...selectionFor(board), playerCount };
+}
+
+/** Records a row's division choice. */
+function setDivision(board: string, division: GauntletDivision): void {
+  rowSelections[board] = { ...selectionFor(board), division };
+}
+
+/** Reads the chosen player count off a count `<select>`'s change event. */
+function onPlayerCountChange(board: string, event: Event): void {
+  const target = event.target as HTMLSelectElement;
+  setPlayerCount(board, Number(target.value) as GauntletPackPlayerCount);
+}
+
+/** Reads the chosen division off a division `<select>`'s change event. */
+function onDivisionChange(board: string, event: Event): void {
+  const target = event.target as HTMLSelectElement;
+  setDivision(board, target.value as GauntletDivision);
+}
+
+/**
+ * Builds and downloads the identity pack for a gauntlet row from its
+ * `{ setAbbr, mastermindSlug }` and the selected count + division. No network
+ * call — the pack is assembled client-side (WP-441).
+ */
+function downloadRowPack(gauntlet: GauntletIndexEntry): void {
+  const selection = selectionFor(gauntlet.board);
+  downloadGauntletPack({
+    setAbbr: gauntlet.setAbbr,
+    mastermindSlug: gauntlet.mastermindSlug,
+    division: selection.division,
+    playerCount: selection.playerCount,
+  });
+}
 
 /** The per-count claim chips for one gauntlet row. */
 function countChips(gauntlet: GauntletIndexEntry): PlayerCountTab[] {
@@ -163,6 +238,42 @@ function firstLegChallengeUrl(gauntlet: GauntletIndexEntry): string | null {
               v-else-if="gauntlet.entryCount === 0"
               compact
             />
+
+            <!-- Client-side gauntlet-pack download (WP-441): a compact
+                 player-count + division selector defaulting to solo (1) +
+                 fixed, and a button that builds and saves the identity pack.
+                 No server call — the pack is assembled from this row's data. -->
+            <div class="download-control">
+              <select
+                class="download-select"
+                :value="selectionFor(gauntlet.board).playerCount"
+                aria-label="Player count"
+                @change="onPlayerCountChange(gauntlet.board, $event)"
+              >
+                <option
+                  v-for="playerCount of PLAYER_COUNT_OPTIONS"
+                  :key="playerCount"
+                  :value="playerCount"
+                >{{ playerCount }}p</option>
+              </select>
+              <select
+                class="download-select"
+                :value="selectionFor(gauntlet.board).division"
+                aria-label="Division"
+                @change="onDivisionChange(gauntlet.board, $event)"
+              >
+                <option
+                  v-for="division of DIVISION_OPTIONS"
+                  :key="division"
+                  :value="division"
+                >{{ division }}</option>
+              </select>
+              <button
+                type="button"
+                class="download-button"
+                @click="downloadRowPack(gauntlet)"
+              >Download Mastermind Gauntlet</button>
+            </div>
           </li>
         </ul>
       </section>
@@ -292,5 +403,37 @@ function firstLegChallengeUrl(gauntlet: GauntletIndexEntry): string | null {
 
 .challenge-link:hover {
   text-decoration: underline;
+}
+
+/* Gauntlet-pack download control (WP-441) */
+.download-control {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.download-select {
+  padding: 0.15rem 0.35rem;
+  border-radius: 6px;
+  border: 1px solid var(--la-color-border-subtle);
+  background: transparent;
+  color: var(--la-color-text-primary);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.download-button {
+  padding: 0.2rem 0.7rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  background: transparent;
+  color: var(--la-color-gold-bright);
+  font-size: 0.8rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.download-button:hover {
+  background: rgba(255, 215, 0, 0.12);
 }
 </style>

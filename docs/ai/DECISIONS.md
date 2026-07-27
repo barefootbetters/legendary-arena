@@ -33446,7 +33446,7 @@ Node built-ins) and adds no cross-layer import or blob-read.
 legs/heroes/compositions; version/field/count/division reject paths); `pnpm -r build`
 green (strictly additive, no dependent breakage).
 
-### D-24261 — legends-board builds the gauntlet pack inline via a type-only contract import (preserving its zero-API / vue-sole-runtime invariant); showcase-pin + download-filename policy (Drafted 2026-07-27; not yet landed — WP-441)
+### D-24261 — legends-board builds the gauntlet pack inline via a type-only contract import (preserving its zero-API / vue-sole-runtime invariant); showcase-pin + download-filename policy (Active (post-execution) 2026-07-27 — WP-441)
 
 **Context.** WP-441 is the second slice of the **Mastermind Gauntlets: download →
 import → build → track** epic: the legends site (`legends.legendary-arena.com`,

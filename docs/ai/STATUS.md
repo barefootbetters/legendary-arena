@@ -7,6 +7,48 @@
 
 ## Current State
 
+### WP-441 / EC-476 — Legends Gauntlet Pin + Download (legends-board client) (D-24261) (2026-07-27)
+
+**User-Visible Surface = `legends.legendary-arena.com`** (the public Legends
+attract board / Mastermind Gauntlets index). Second WP of the **Mastermind
+Gauntlets: download → import → build → track** epic — the smallest shippable,
+user-visible, zero-API slice. Two additions a visitor can see and use:
+
+1. **Showcase pin.** The **Core Set / Magneto** gauntlet is pinned to the top of
+   the Mastermind Gauntlets index as the showcase example — a **display-only**
+   reorder via a new pure `pinShowcaseGauntlet` helper applied AFTER
+   `groupGauntletsBySet` (whose publisher-order-preserving contract is
+   untouched). The helper returns a fresh array, never mutates its input, and
+   returns an unchanged copy when an old snapshot lacks `core/magneto`.
+2. **Download control.** Each gauntlet row gains a compact **player-count (1–5)
+   + division (fixed|open)** selector defaulting to **solo (1) + fixed** and a
+   **"Download Mastermind Gauntlet"** button that builds the WP-440 identity
+   pack **client-side** from the cached `gauntlet-index.json` entry (`setAbbr` +
+   `mastermindSlug`) plus the selector, and Blob/anchor-downloads
+   `gauntlet-<setAbbr>-<mastermindSlug>-<division>-p<N>.gauntlet.json` (mirrors
+   `matchResultDownload.ts` MINUS the fetch — **no server call**).
+
+**Zero-API / `vue`-sole-runtime invariant preserved** (WP-343/345). The pack is
+built INLINE as a plain literal `{ pack_version: 1, gauntlet: {…} }`
+`satisfies GauntletPack`, with the WP-440 contract imported **type-only**;
+`@legendary-arena/registry` is added to `apps/legends-board` **`devDependencies`
+only** (mirroring `@legendary-arena/lagn`), so nothing enters the runtime bundle
+— enforced by `grep -r "legendary-arena/registry" apps/legends-board/dist` = **no
+match** (EC-164 precedent). No server call/endpoint, no snapshot/publisher
+change, no migration, no `packages/registry` edit.
+
+New `gauntletPackDownload.{ts,test.ts}` + modified `gauntletDisplay.{ts,test.ts}`
++ `GauntletIndexPanel.vue` + `package.json`. legends-board **105/0** tests
+(+4 new pin cases + 3 new download suites); `vue-tsc --noEmit` 0; legends-board
+build 0; `pnpm -r build` 0; the zero-API `dist` grep returns no match.
+
+**D-24026 live-verification: operator-pending on the Cloudflare Pages deploy.**
+On deployed `legends.legendary-arena.com`, confirm Core Set / Magneto renders
+first, and that clicking "Download Mastermind Gauntlet" yields a valid
+`gauntlet-<set>-<mm>-<div>-p<N>.gauntlet.json` parsing against the WP-440
+`GauntletPackSchema` with `read_network_requests` showing zero API calls. This
+does **not** block the merge. **D-24261 Active (post-execution) 2026-07-27.**
+
 ### WP-440 / EC-475 — Gauntlet Pack Contract (Registry Layer) (D-24260) (2026-07-27)
 
 **No user-observable change — infrastructure only.** `User-Visible Surface =

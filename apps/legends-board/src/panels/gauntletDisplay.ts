@@ -93,6 +93,97 @@ export function groupGauntletsBySet(
   return groups;
 }
 
+// why: the epic's showcase gauntlet (WP-441 / D-24261) — Core Set / Magneto is
+// the canonical, widely-recognized example, so it is pinned to the front of the
+// gauntlet index for a first-time visitor. `"core"` and `"magneto"` are the
+// published `setAbbr` / `mastermindSlug` identity of that gauntlet.
+export const SHOWCASE_SET_ABBR = "core";
+export const SHOWCASE_MASTERMIND_SLUG = "magneto";
+
+/**
+ * Finds the set group that hosts the showcase gauntlet (`core/magneto`).
+ *
+ * @param groups The grouped set groups.
+ * @returns The hosting group, or `null` when no group contains it.
+ */
+function findShowcaseGroup(
+  groups: readonly GauntletSetGroup[],
+): GauntletSetGroup | null {
+  for (const group of groups) {
+    if (group.setAbbr !== SHOWCASE_SET_ABBR) {
+      continue;
+    }
+    for (const gauntlet of group.gauntlets) {
+      if (gauntlet.mastermindSlug === SHOWCASE_MASTERMIND_SLUG) {
+        return group;
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Returns a new gauntlet array with the showcase mastermind (`magneto`) first,
+ * leaving every other gauntlet in its prior relative order.
+ *
+ * @param gauntlets The showcase group's gauntlets.
+ * @returns A fresh array, showcase-first.
+ */
+function pinShowcaseMastermind(
+  gauntlets: readonly GauntletIndexEntry[],
+): GauntletIndexEntry[] {
+  const showcaseGauntlets: GauntletIndexEntry[] = [];
+  const otherGauntlets: GauntletIndexEntry[] = [];
+  for (const gauntlet of gauntlets) {
+    if (gauntlet.mastermindSlug === SHOWCASE_MASTERMIND_SLUG) {
+      showcaseGauntlets.push(gauntlet);
+    } else {
+      otherGauntlets.push(gauntlet);
+    }
+  }
+  return [...showcaseGauntlets, ...otherGauntlets];
+}
+
+/**
+ * Pins the showcase gauntlet (`core/magneto`) to the front of the grouped
+ * index: its set group is moved first, and within that group the `magneto`
+ * gauntlet is moved first. All other groups and gauntlets keep their prior
+ * relative order. Applied AFTER `groupGauntletsBySet`, so that function's
+ * order-preserving contract is untouched.
+ *
+ * The input array and its group objects are never mutated: the reordered result
+ * is a fresh array, and the showcase group is rebuilt as a new object with a
+ * fresh gauntlet array.
+ *
+ * @param groups The grouped set groups (in publisher order).
+ * @returns A fresh array with the showcase group and gauntlet pinned first, or
+ *   a fresh shallow copy of the input when `core/magneto` is absent (an old
+ *   snapshot) — never a mutation and never a crash.
+ */
+export function pinShowcaseGauntlet(
+  groups: readonly GauntletSetGroup[],
+): GauntletSetGroup[] {
+  const showcaseGroup = findShowcaseGroup(groups);
+  if (showcaseGroup === null) {
+    // why: an old snapshot without `core/magneto` renders unchanged — a fresh
+    // shallow copy keeps the "returns a new array" contract without mutating.
+    return [...groups];
+  }
+
+  const pinnedGroup: GauntletSetGroup = {
+    ...showcaseGroup,
+    gauntlets: pinShowcaseMastermind(showcaseGroup.gauntlets),
+  };
+
+  const reorderedGroups: GauntletSetGroup[] = [pinnedGroup];
+  for (const group of groups) {
+    if (group !== showcaseGroup) {
+      reorderedGroups.push(group);
+    }
+  }
+  return reorderedGroups;
+}
+
 /**
  * Composes the attract-cycle board list. When the manifest advertises a
  * gauntlet index, the cycle gains exactly ONE extra slide for it.
