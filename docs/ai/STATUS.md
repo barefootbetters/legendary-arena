@@ -35,6 +35,40 @@ Engine **2073/0**; arena-client **1111/0** (+3 provenance: card-primary identifi
 reveal-line non-attribution, card-less legacy fallback+downgrade; +1 `pushLog` card case)
 + typecheck 0; `pnpm -r build` 0; live cross-check on a real snapshot classifies
 correctly. Reserves **D-24257** (extends D-24253).
+### WP-439 / EC-474 — Server Runtime-Health Signal on the Operator Dashboard (D-24258) (2026-07-27)
+
+**`User-Visible Surface = dashboard (operator)`** — **D-24026 live-verify
+operator-pending** (the tile sits behind the dashboard's admin auth gate and is
+only meaningful against the deployed server, so visual confirmation is on the
+deployed dashboard — the norm for every prior dashboard-widget WP). Gives the
+operator a data-backed answer to "is one Node process CPU-saturated — is
+clustering worth its cost yet?" (raised by a deploy log's inert
+`WEB_CONCURRENCY=2`; the server runs one process).
+
+**New admin-gated `GET /api/dash/system/runtime`** returns a live
+`RuntimeHealthSnapshot` (`capturedAt`, `uptimeSeconds`, `cpuCount`, `cpuPercent`,
+`eventLoopDelayMs{mean,p50,p99,max}`, `memoryRssMb`, `webConcurrency`) sampled **on
+request** from `process`/`perf_hooks`/`os` — reads NO DB/registry/engine (the pool
+is threaded only for the `requireAdminSession` gate). Node's saturation signal is
+event-loop delay (a rising p99 while one core maxes and the others idle = the
+clustering tell); `cpuPercent` is normalised ÷ `cpuCount` so a pure-JS process caps
+near `100/cpuCount`. A **Server Runtime Health** tile leads the dashboard's System
+Health page (mirrors `ServerStatusWidget`; p99 headline + status chip + metric grid
++ a plain-English clustering hint from a pure `utils/runtimeHealth.ts`).
+
+Server: `dashboardRuntime.{types,logic,logic.test,routes,routes.test}.ts` +
+`server.mjs` (a module-load `monitorEventLoopDelay` histogram read+reset per
+request, a module-state CPU baseline, and PURE `buildRuntimeHealthSnapshot`/
+`computeCpuPercent`/`parseWebConcurrency` unit-tested with fixed inputs). Dashboard
+(Pattern A): mirrored types + `runtimeHealth.drift.test.ts` field-set guard,
+`mockRuntimeHealth`, `fetchRuntimeHealth`, the pure util + test, the widget, the
+page mount. **§21 / D-11804 APPLIES** — `api-endpoints.md` row (`Wired`,
+`admin-session-required`). **Out:** actually clustering (needs a shared Socket.IO
+adapter + singleton leader-election — a separate deliberate call), the Overview
+strip, time-series retention. Server runtime **9/0** + server suite **957/0** (+158
+DB-skip); dashboard **418/0** + typecheck 0 + coverage ≥90/80/88 + lint + format +
+build; `pnpm -r build` 0; `pnpm -r --no-bail test` repo-wide green. **D-24258
+Active.** §17 Vision (§14 observability). Hard-deps: WP-373/374 ✅.
 
 ### WP-437 / EC-472 — Bot-Ally Cross-Instance Ownership Guard (Deploy-Overlap Two-Writer Freeze, D-24256) (2026-07-26)
 

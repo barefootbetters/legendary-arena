@@ -33220,5 +33220,74 @@ byte-unchanged. `User-Visible Surface = none` (diagnostic metadata, not rendered
 D-24026 N/A.
 
 **Packet:** WP-438 + EC-473. Extends **D-24253**.
+## D-24258 — Dashboard Runtime-Health Signal: On-Request Sampled Process Metrics on `GET /api/dash/system/runtime`
+
+**Status:** Active (post-execution). **Packet:** WP-439 / EC-474.
+
+**Context.** Whether to cluster the game server to use its second CPU (Render sets
+`WEB_CONCURRENCY=2`, inert today — the server runs one process) should be decided
+by evidence of single-process CPU saturation, not a hunch. Node's standard
+saturation signal is **event-loop delay**: a rising p99 while one core maxes and
+the others idle is the "clustering would help" tell. Nothing on the operator
+dashboard surfaced it (`ServerNode.cpuPercent` is per-node infra table data, not a
+process-level event-loop metric).
+
+**Decision.** Add an admin-gated `GET /api/dash/system/runtime` returning a live
+`RuntimeHealthSnapshot` (`capturedAt`, `uptimeSeconds`, `cpuCount`, `cpuPercent`,
+`eventLoopDelayMs{mean,p50,p99,max}`, `memoryRssMb`, `webConcurrency`), sampled
+**on request** from `process`/`perf_hooks`/`os`, and a **Server Runtime Health**
+tile on the dashboard's System Health page that renders it with a plain-English
+clustering hint. The signal is the whole deliverable; **clustering itself is
+explicitly out of scope** (it needs a shared Socket.IO adapter + singleton
+leader-election for the reaper/harvester/publisher — a separate, deliberate call
+this tile exists to inform).
+
+**Why on-request sampling (not a background sampler).** A module-load
+`monitorEventLoopDelay` histogram accumulates for the process lifetime; each
+request reads its percentiles (ns → ms) then **resets** it, so a reading reports
+the delay distribution over the window since the previous read — exactly what a
+~30s-polling dashboard wants. CPU % is a `process.cpuUsage()` delta over an
+`hrtime` span held in module state (seeded at load so the first request has a
+baseline), normalised **÷ cpuCount** to a machine-capacity percent — so a pure-JS
+process caps near `100/cpuCount` (one core), and approaching that ceiling while
+other cores idle is the clustering tell. This avoids adding a new background
+interval (the reaper/harvester pattern) and its SIGTERM wiring for a signal an
+operator reads interactively. Metric-math is pure (`buildRuntimeHealthSnapshot` /
+`computeCpuPercent`) so it is unit-tested with fixed inputs; only the gatherer is
+impure.
+
+**Boundaries.** The metric reads NO database, NO registry, NO engine, and persists
+nothing — the shared pool is passed to the route solely for the `requireAdminSession`
+gate (server layer may read clocks/CPU; the no-clock rule is an engine rule). The
+route follows the WP-373/374 `/api/dash/*` idiom exactly (`no-store` first, admin
+gate, bare `{ data: T }` envelope, D-20503). The dashboard hand-mirrors the types
+(no `apps/server` import — layer boundary) with a `runtimeHealth.drift.test.ts`
+field-set guard, follows Pattern A (`endpoints.ts` `isMockMode()` → `useFetch` →
+widget) + the `wrapMock` mock idiom, and adds a pure `utils/runtimeHealth.ts`
+(status thresholds: event-loop p99 ≥50ms watch / ≥200ms saturated; the
+`RUNTIME_HEALTH_STATUSES` canonical array + clustering-hint helper). **§21 /
+D-11804 APPLIES** — `api-endpoints.md` gains the endpoint row (Status `Wired`, Auth
+`admin-session-required`). No engine/registry/determinism/persistence change; §17
+Vision (§14 observability; no conflict).
+
+**Residual.** The event-loop histogram resets per read, so two concurrent admin
+pollers would share/reset each other's window — a non-issue for a single-operator
+dashboard, and both would still see representative recent lag. Documented rather
+than solved (a per-caller histogram would over-engineer a diagnostic tile).
+
+**Rejected.** (a) A background sampler with its own interval + SIGTERM stop —
+needless machinery for an interactively-read signal. (b) Adding the tile to the
+Overview "Ops at a Glance" strip — kept to the System Health page to bound scope.
+(c) Time-series retention of the metric — the tile shows a live snapshot; history
+is a future concern if the clustering question ever needs a trend.
+
+**Verification.** `pnpm -r build` 0; server runtime tests (9: pure-math + route
+gate 200/401/403 + no-store + `{ data }`); server suite green; dashboard gates all
+green (typecheck 0, tests +util/+drift, coverage ≥90/80/88, lint, format, build);
+`pnpm -r --no-bail test` repo-wide green. `User-Visible Surface =
+dashboard (operator)` — **D-24026 live-verify operator-pending** (the tile sits
+behind the dashboard's admin auth gate and is only meaningful against the deployed
+server, so visual confirmation is on the deployed dashboard — the norm for every
+prior dashboard-widget WP).
 
 Protect this file.

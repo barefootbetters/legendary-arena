@@ -65,6 +65,7 @@ high-water: 422
 - WP-436 — effectprovenance-outcome-retire (WP-B.3c: effectProvenance recentlyPlayedCards[].outcome reads the authoritative LogEntry.outcome instead of string-matching; awaitingPlayerInput + hollowEffects reads kept; arena-client only; implements D-24253 §Fork F; 2026-07-26, spec/wpb3c-effectprovenance-retire)
 - WP-437 — bot-ally-ownership-guard (cross-instance driver ownership lease — driver_owner + heartbeat_at side-table columns + tick-level lease arbitration so only ONE instance drives a bot seat; closes the WP-424/D-24244-deferred deploy-overlap two-writer window; server only; 2026-07-26, worktree-wp-bot-ally-ownership-guard)
 - WP-438 — logentry-card-field (structured LogEntry.card{?} so effectProvenance stops parsing 'played X' ext-id prose; retires PLAYED_LABEL_EXTID + the B.3c (extId) substring; realizes D-24253 §14; 2026-07-27, spec/wp-logentry-card)
+- WP-439 — dashboard-runtime-health (server process CPU%/event-loop-lag/mem/uptime signal on a new admin-gated GET /api/dash/runtime + a dashboard runtime-health tile; answers do-we-need-to-cluster with data; server + dashboard; 2026-07-27, worktree-wp-dashboard-runtime-health)
 
 ## EC
 
@@ -88,6 +89,7 @@ high-water: 457
 - EC-471 — effectprovenance-outcome-retire (WP-436/WP-B.3c; 2026-07-26, spec/wpb3c-effectprovenance-retire)
 - EC-472 — bot-ally-ownership-guard (WP-437; 2026-07-26, worktree-wp-bot-ally-ownership-guard)
 - EC-473 — logentry-card-field (WP-438; 2026-07-27, spec/wp-logentry-card)
+- EC-474 — dashboard-runtime-health (WP-439; 2026-07-27, worktree-wp-dashboard-runtime-health)
 
 ## D
 
@@ -109,3 +111,4 @@ high-water: 24241
 - D-24255 — bot-ally-fault-observability (every bot-turn fault return logs its reason + turn/stage + the set block-all pending-choice flags; closes the silent-fault observability gap; server log-only; 2026-07-26, fix/bot-ally-fault-observability)
 - D-24256 — bot-ally-ownership-guard (cross-instance driver-ownership lease: driver_owner + heartbeat_at on legendary.match_bot_ally, a per-tick atomic claim-or-renew gates which instance drives a bot seat, SIGTERM releases; picked Option B over a pg advisory lock — the shared max=10 pool cannot pin a client per driver; server only; 2026-07-26, worktree-wp-bot-ally-ownership-guard)
 - D-24257 — logentry-card-field (LogEntry gains optional structured card ext-id; effectProvenance reads it for identification + association instead of prose; extends D-24253; 2026-07-27, spec/wp-logentry-card)
+- D-24258 — dashboard-runtime-health-signal (on-request sampled server runtime health — process CPU% via cpuUsage delta, event-loop lag via perf_hooks.monitorEventLoopDelay p50/p99/max, RSS, uptime, cpuCount, WEB_CONCURRENCY — on admin-gated GET /api/dash/runtime; no DB/engine read; decision-support for the clustering question; 2026-07-27, worktree-wp-dashboard-runtime-health)
