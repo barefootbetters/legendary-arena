@@ -63,6 +63,7 @@ high-water: 422
 - WP-434 — log-outcome-engine-contract (WP-B.3a: G.messages/UIState.log string[]→LogEntry[] + LOG_OUTCOMES enum + pushLog outcome arg; implements D-24253; renumbered from WP-432 after a landed collision; 2026-07-26, spec/wp432-log-outcome-engine-contract)
 - WP-435 — log-outcome-client-colour (WP-B.3b: GameLogPanel colours each log line by LogEntry.outcome + non-colour glyph/aria signal + export tag policy; arena-client only; implements D-24253; 2026-07-26, spec/wpb3b-log-colour)
 - WP-436 — effectprovenance-outcome-retire (WP-B.3c: effectProvenance recentlyPlayedCards[].outcome reads the authoritative LogEntry.outcome instead of string-matching; awaitingPlayerInput + hollowEffects reads kept; arena-client only; implements D-24253 §Fork F; 2026-07-26, spec/wpb3c-effectprovenance-retire)
+- WP-437 — bot-ally-ownership-guard (cross-instance driver ownership lease — driver_owner + heartbeat_at side-table columns + tick-level lease arbitration so only ONE instance drives a bot seat; closes the WP-424/D-24244-deferred deploy-overlap two-writer window; server only; 2026-07-26, worktree-wp-bot-ally-ownership-guard)
 
 ## EC
 
@@ -84,6 +85,7 @@ high-water: 457
 - EC-469 — log-outcome-engine-contract (WP-434/WP-B.3a; renumbered from EC-467 after a landed collision; 2026-07-26, spec/wp432-log-outcome-engine-contract)
 - EC-470 — log-outcome-client-colour (WP-435/WP-B.3b; 2026-07-26, spec/wpb3b-log-colour)
 - EC-471 — effectprovenance-outcome-retire (WP-436/WP-B.3c; 2026-07-26, spec/wpb3c-effectprovenance-retire)
+- EC-472 — bot-ally-ownership-guard (WP-437; 2026-07-26, worktree-wp-bot-ally-ownership-guard)
 
 ## D
 
@@ -103,3 +105,4 @@ high-water: 24241
 - D-24253 — log-outcome-contract-design (WP-B.3 DESIGN: G.messages string[]→LogEntry[] records carrying a coarse LogOutcome for green/red/yellow colour-coding; retires the D-24100 effectProvenance heuristic; design ruling only, no code; 2026-07-25, spec/wpb3-log-outcome-design)
 - D-24254 — remove-noncanonical-entry-bystander (supersedes D-1701; a villain/henchman no longer captures a bystander merely on City entry — non-canonical; corrects the D-18504→D-1701 mis-citation; 2026-07-25, fix/remove-noncanonical-entry-bystander)
 - D-24255 — bot-ally-fault-observability (every bot-turn fault return logs its reason + turn/stage + the set block-all pending-choice flags; closes the silent-fault observability gap; server log-only; 2026-07-26, fix/bot-ally-fault-observability)
+- D-24256 — bot-ally-ownership-guard (cross-instance driver-ownership lease: driver_owner + heartbeat_at on legendary.match_bot_ally, a per-tick atomic claim-or-renew gates which instance drives a bot seat, SIGTERM releases; picked Option B over a pg advisory lock — the shared max=10 pool cannot pin a client per driver; server only; 2026-07-26, worktree-wp-bot-ally-ownership-guard)

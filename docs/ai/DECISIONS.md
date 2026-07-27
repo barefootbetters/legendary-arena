@@ -33074,3 +33074,102 @@ a fault-log-capture test + a `summarizeBotTurnState` unit test); `pnpm -r build`
 tests; the payoff is the *next* live freeze being diagnosable from one log line).
 
 Protect this file.
+
+## D-24256 — Bot-Ally Cross-Instance Ownership Guard: `driver_owner` + Heartbeat Lease (Option B over a pg Advisory Lock)
+
+**Status:** Active (post-execution). **Packet:** WP-437 / EC-472.
+**Supersedes nothing; closes the residual WP-424 / D-24244 deferred.**
+
+**Context.** WP-424 (D-24244) stopped the OLD instance's bot-ally drivers *at
+SIGTERM*, but on a rolling Render deploy the NEW instance boots, revives a match's
+`BotAllyDriver`, and starts submitting the bot's moves BEFORE Render SIGTERMs the
+OLD one — so for the termination-grace window **two instances drive the same bot
+seat** and race on boardgame.io's `_stateID` (`invalid stateID, was=[N],
+expected=[N+1]`). The bot's move never lands, the turn livelocks, and because a
+driver *is* registered the status route reports `{ driving:true, status:'active' }`
+— so neither WP-419's stall banner (needs `driving:false`) nor WP-433's fault log
+fires, and the human sees a **silent frozen board**. D-24244 explicitly deferred
+"a cross-instance ownership guard (DB advisory lock / `driver_owner` + heartbeat)
+… single-instance steady state assumed." Recurs live: match `Sk1ASNTkGSz`
+(2026-07-26, build `6018ac1`), same `driving:true`-while-stuck signature as the
+WP-424 case `DBlXvBs_WXA`.
+
+**Decision.** A per-match ownership **lease** in the `legendary.match_bot_ally`
+side-table: two additive columns `driver_owner text` + `heartbeat_at timestamptz`
+(migration `038`). Each `BotAllyDriver` runs an **atomic claim-or-renew** at the
+top of every poll tick — `UPDATE … SET driver_owner = <me>, heartbeat_at = now()
+WHERE match_id = $1 AND (driver_owner IS NULL OR driver_owner = <me> OR heartbeat_at
+IS NULL OR heartbeat_at < now() - <TTL>) RETURNING …` — and **drives only when it
+holds the lease** (a returned row); a driver whose peer owns a fresh lease
+**yields** the tick (submits nothing). The per-process owner id is
+`SERVER_INSTANCE_ID = crypto.randomUUID()` (module load; server layer may read a
+clock/RNG). The TTL is locked at **`BOT_ALLY_LEASE_TTL_MS = 15000`**. A graceful
+SIGTERM **releases** this instance's leases (`driver_owner = NULL WHERE driver_owner
+= <me>`) so the survivor claims on its very next tick.
+
+**Why Option B (heartbeat lease) over Option A (pg advisory lock).** A
+session-scoped `pg_try_advisory_lock(hash(matchId))` is crash-safe (auto-releases
+when the holding connection closes), but it must be held on a **pinned client for
+the driver's lifetime**, and the server's single `pg.Pool` is `max: 10` shared
+across every surface (leaderboards, match create, dashboard, reaper, harvester).
+Pinning one client per active bot-ally driver would **starve the pool** with only a
+handful of concurrent matches, and a dedicated side-pool adds connection pressure
+on an already-OOM-prone Render Postgres (#932). Option B uses ordinary **pooled**
+queries, composes with the existing side-table + WP-420 SIGTERM machinery, and is
+**observable** (`driver_owner`/`heartbeat_at` are directly queryable; handoffs
+log) — the debuggability WP-419/420/424 leaned on, which an opaque advisory lock
+lacks. Option A's only edge — instant release on connection close — is matched for
+the common clean deploy by the explicit SIGTERM release; the ungraceful-crash case
+frees on the TTL instead (a bounded ~15s vs never-stuck).
+
+**Why cooperative tick-arbitration, not gate-at-revival.** The alternative — the
+new instance refuses to *attach* a driver while a peer owns the lease — would need
+a new periodic sweep to eventually pick the match up after the old owner releases.
+Instead the new instance attaches its driver as it does today (`rehydrateBotAlly
+Drivers` structurally unchanged) and the driver arbitrates each tick, so the
+existing 250ms poll IS the retry loop: it takes over the instant the old owner
+releases (SIGTERM) or its heartbeat expires (TTL). No new interval; the guard is a
+**behavioural no-op for a single instance** (it always wins its own lease). The
+lease dep is **optional** in the driver — absent ⇒ owned — so single-instance prod
+and every pre-WP-437 unit test are byte-unchanged.
+
+**Why TTL = 15s.** It must never false-expire a LIVE owner (which renews at the top
+of every tick, so its heartbeat is at most one tick+turn old — sub-second on a
+healthy DB, far inside 15s) yet free a CRASHED owner within a bounded window; ~15s
+is that bound. The common clean deploy never waits it (SIGTERM releases
+explicitly). **Residual:** a single turn that itself exceeds 15s under a sustained
+DB outage (multiple submit retries riding the store's ~1.8s retry) could let a peer
+steal mid-turn and momentarily re-expose the race — a pathological corner far
+outside the deploy-overlap target, still bounded by the driver's fault/retry
+machinery and boardgame.io's stale-`_stateID` reject (a stolen write cannot
+double-apply). Renewing inside the turn loop was rejected as touching the hot path
++ retry budgets (WP-437 §Out).
+
+**Scope / boundaries.** Server layer only. Ownership state is **side-table only**
+(D-24095 store-only discipline; the same data class as `revive_count` /
+`shutdown_interrupted`) — NEVER `G`/`ctx`, NEVER the bgio blob. The **human is
+never gated** — the lease governs which instance drives the *bot seat*, never
+seat-0 moves. `driver_owner` is **not** surfaced on the public `bot-ally-status`
+route (the guest surface stays `{ driving, status, message }`), so **§21 / D-11804
+N/A** (no HTTP response-shape change; ownership is observed via the DB + logs). No
+engine/registry/determinism/persistence-boundary change. §17 Vision (§11 lifecycle
+/ §14 reliability; no conflict).
+
+**Rejected.** (a) Option A pg advisory lock — pool-starvation on the shared
+`max: 10` pool. (b) Gate-at-revival + a periodic ownership sweep — a new interval
+where the existing poll loop already suffices. (c) Surfacing `driver_owner` on the
+guest status route — needless internal-id exposure on a public surface for no
+user-facing gain.
+
+**Verification.** `pnpm -r build` 0; bot-ally suite green (`botAllyOwnership.test.ts`
+4 new: instance-id/TTL shape, claim⇒true, peer-fresh⇒false, release-by-owner;
+`botAllyDriver.test.ts` +5: owner-drives, peer-yields, cooperative-handoff,
+lease-throw-skips, no-dep-back-compat). Migration `038` applied + re-applied
+(idempotent) against a local Postgres; the atomic claim-or-renew exercised live
+(A claims unowned ⇒ 1; B yields while A fresh ⇒ 0; B claims after A's heartbeat
+ages past TTL ⇒ 1; release ⇒ A re-claims ⇒ 1). `User-Visible Surface =
+play.legendary-arena.com` — **D-24026 live-verify operator-pending** (deploy twice
+in quick succession mid bot-ally match; the class only reproduces under real
+overlapping deploys, so it is not unit-reproducible end-to-end).
+
+Protect this file.
