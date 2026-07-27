@@ -33364,3 +33364,86 @@ remain `status: draft`; all cross-anchors (`#synergy-callouts`, `#faction-cries`
 `sound-effects.md#combo-voice`, `music-authoring.md#team-keys`) verified to resolve.
 
 Protect this file.
+
+### D-24260 — The downloadable Mastermind Gauntlet pack is an identity-only import token; the server re-resolves legs + approved compositions from the live registry (Drafted 2026-07-27; not yet landed — WP-440)
+
+**Context.** The **Mastermind Gauntlets: download → import → build → track** epic
+lets a player download a gauntlet on the legends site (`legends.legendary-arena.com`),
+import it into their play profile (`play.legendary-arena.com/?route=me`), assemble
+per-leg hero picks, and track progress as they iterate. Jeff's core intent is a
+literal **file round-trip** — download on legends, import on play — because legends
+is a static, zero-API, different-origin surface that cannot write a play-authenticated
+account; the file is the correct cross-origin primitive. WP-440 (this decision's
+locking WP) delivers the first slice: the **pack contract** in `packages/registry`.
+
+**The design tension.** A "gauntlet" is not a file today — it is a server-side
+*aggregation*: one mastermind cleared by posting replay-verified wins under every
+scheme in its home set (the "legs"), each leg qualifying only against an **approved
+adversary composition** (D-24199 / WP-395) for that player count. A pack could carry
+all of that (legs, approved villain/henchmen compositions, hero templates) to be
+"self-contained," but then the downloaded pack and the live registry can **drift**:
+a set re-generation or a rules change would leave stale legs/compositions baked into
+every previously-downloaded file, and the pack would become a second source of truth
+for adjudication data the server already owns.
+
+**Decision.** The pack is **identity-only**. It carries exactly:
+
+```jsonc
+{ "pack_version": 1,
+  "gauntlet": { "setAbbr": "core", "mastermindSlug": "magneto",
+                "division": "fixed", "playerCount": 1 } }
+```
+
+and **nothing else** — no `legs`, no `heroDeckIds`/heroes, no
+`villainGroupIds`/`henchmanGroupIds`/compositions. It names *which* gauntlet the
+player wants to start; on import the **server re-resolves** the legs + approved
+compositions from the **current registry**, so there is exactly one source of truth
+and pack/approved-loadout drift is impossible. The pack is an **import token, not a
+rules container**; the server remains the sole authority on adjudication.
+
+1. **Contract ownership: `packages/registry`.** Both `apps/legends-board` (builds
+   the pack client-side from the index it already holds — no server endpoint, no
+   snapshot change on the legends side) and `apps/server` (validates on import)
+   depend on `registry`, so the schema + `buildGauntletPack` + `validateGauntletPack`
+   live in one narrow registry subpath (`./gauntletPack`).
+
+2. **Forward-compat via the version field, not lax parsing.** v1 fields are validated
+   **strictly** (Zod `.strict()` at both object levels — unknown keys rejected). A
+   reader **rejects an unknown major `pack_version` with a clear full-sentence error**
+   rather than silently ignoring unknown fields (which would hide producer/reader
+   mismatches). New fields are a version bump, never a silent addition.
+
+3. **Not extending LAGN.** A multi-leg/campaign container breaks LAGN's one-match
+   invariant and would force a version bump + validator surgery + schema regen + a
+   migrate path + CI churn. The gauntlet pack is a separate, deliberately tiny format.
+
+4. **Shape-only validation.** `validateGauntletPack` validates the pack's *shape*;
+   it does **not** confirm the `(setAbbr, mastermindSlug)` pair hosts a gauntlet or
+   that the `division`/`playerCount` are offered — that resolution is the server's
+   job at import, against the live registry (a later epic WP).
+
+**Scope / what this is not.** WP-440 is registry-layer only: it adds the contract +
+unit tests, no download UI (WP-2), no server endpoint or persistence (WP-4/WP-5), no
+migration, no `lagn-spec` change. It stores and derives **no** scoring, progress, or
+completion — consistent with the epic's derived-progression posture (a later WP locks
+that progression is read-only derived state).
+
+**Alternatives rejected.** (a) *Self-contained pack carrying legs + compositions* —
+rejected for the drift it guarantees between a downloaded file and the live registry.
+(b) *Extend LAGN to a multi-leg document* — rejected (breaks the one-match invariant;
+heavy CI/validator/migrate blast radius). (c) *Lax parsing that ignores unknown fields*
+— rejected in favor of the loud major-version reject gate, which surfaces
+producer/reader mismatches instead of hiding them.
+
+**Files (at execution).** `packages/registry/src/gauntletPack.ts` (+ `.test.ts`),
+`packages/registry/src/index.ts` (re-export), `packages/registry/package.json`
+(`./gauntletPack` subpath), and this entry flips Drafted → Active. No `.claude/rules/*`
+or `ARCHITECTURE.md` edit — the pack lives inside the existing Registry layer (zod +
+Node built-ins) and adds no cross-layer import or blob-read.
+
+**Verification (at execution).** `pnpm --filter @legendary-arena/registry build`
++ `test` green (round-trip a `core/magneto` pack; assert identity-only — no
+legs/heroes/compositions; version/field/count/division reject paths); `pnpm -r build`
+green (strictly additive, no dependent breakage).
+
+Protect this file.
