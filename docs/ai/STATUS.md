@@ -7,6 +7,43 @@
 
 ## Current State
 
+### WP-437 / EC-472 — Bot-Ally Cross-Instance Ownership Guard (Deploy-Overlap Two-Writer Freeze, D-24256) (2026-07-26)
+
+**`User-Visible Surface = play.legendary-arena.com`** — **D-24026 live-verify
+operator-pending** (deploy twice in quick succession mid bot-ally match → the bot keeps
+playing; the class only reproduces under real overlapping deploys, so it is not
+unit-reproducible end-to-end). Closes the deploy-overlap **two-writer** freeze WP-424 /
+**D-24244** explicitly deferred. On a rolling Render deploy the NEW instance revives a
+match's `BotAllyDriver` and submits the bot's moves BEFORE it SIGTERMs the OLD one — so
+for the grace window two instances drive the same bot seat and race on boardgame.io's
+`_stateID`; the move never lands, the turn livelocks, and the status route still reports
+`{ driving:true, status:'active' }` so neither WP-419's banner nor WP-433's fault log
+fires — a **silent frozen board** (live `Sk1ASNTkGSz`, same signature as `DBlXvBs_WXA`).
+
+**Fix (server only, D-24256 — Option B over a pg advisory lock):** a per-match ownership
+**lease** in `legendary.match_bot_ally` (migration `038`, additive `driver_owner` +
+`heartbeat_at`, NULL-default/idempotent). New `botAllyOwnership.mjs`:
+`SERVER_INSTANCE_ID` (per-process `crypto.randomUUID()`), `BOT_ALLY_LEASE_TTL_MS=15000`,
+an **atomic claim-or-renew** (claimable when unowned / mine / never-heartbeated /
+stale-past-TTL; a fresh peer lease is not), and a release-by-owner. The driver arbitrates
+**cooperatively at each 250ms poll tick** (top of `runTick`, via an **optional**
+`deps.renewOrAcquireLease`): drives only when it holds the lease, **yields** to a live
+peer (submits nothing → no race), skips on a lease-check throw; the existing poll IS the
+retry, so the newly-revived driver takes over the instant the old owner releases (SIGTERM
+in `index.mjs` → near-instant handoff) or its heartbeat expires (~15s crash TTL).
+**Option B chosen** because the shared `max:10` pool can't pin a client per driver
+without starving every surface; Option B is pooled, composable, and observable.
+
+**Behavioural no-op for a single instance** (always wins its own lease; the optional dep
+keeps every pre-WP-437 test byte-unchanged); **the human is never gated**. `driver_owner`
+NOT surfaced on the guest status route — **§21 / D-11804 N/A**. §17 Vision (§11 lifecycle
+/ §14 reliability; no conflict). Ownership is side-table-only (D-24095), never `G`/`ctx`
+or the bgio blob. Bot-ally suite **+9** (4 `botAllyOwnership.test.ts` + 5 driver lease
+cases); **server 948/0** + 158 DB-skipped; `pnpm -r build` 0. Migration `038` applied +
+re-applied (idempotent) against local Postgres; the claim-or-renew exercised live
+(claim⇒1 / peer-fresh⇒0 / stale-past-TTL⇒1 / release⇒re-claim⇒1). **D-24256 Active.**
+Hard-deps: WP-375/419/420/424/426/433 ✅.
+
 ### WP-436 / EC-471 — Retire the `effectProvenance` Outcome Heuristic (WP-B.3c, D-24253) — LOG-OUTCOME ARC COMPLETE (2026-07-26)
 
 **`User-Visible Surface = none`** (a freeze-diagnostic-export internal; the export

@@ -481,6 +481,33 @@ async function runTick(driver, deps, limits) {
     return;
   }
 
+  // why: WP-437 / D-24256 — cross-instance ownership gate. `renewOrAcquireLease`
+  // atomically claims-or-renews this match's side-table lease and reports whether
+  // THIS instance holds it. It is OPTIONAL: absent (single-instance prod, and every
+  // pre-WP-437 unit test) ⇒ owned, so behaviour is byte-unchanged. When present and
+  // FALSE, another live instance owns a fresh lease — during a rolling-deploy
+  // overlap the newly-revived driver defers rather than submitting the bot's move
+  // and racing the old instance on `_stateID` (the freeze this WP fixes); the 250ms
+  // poll loop is the retry, so it takes over the instant the owner releases (clean
+  // SIGTERM) or its heartbeat expires (crash TTL). Yield without tracking idle or
+  // tearing down — the match is not abandoned, another instance is driving it.
+  if (typeof deps.renewOrAcquireLease === 'function') {
+    let ownsLease;
+    try {
+      ownsLease = await deps.renewOrAcquireLease();
+    } catch (leaseError) {
+      // why: a lease-check fault (DB blip) must not tear down or crash the tick —
+      // skip this tick (submit nothing, so no race) and retry on the next poll.
+      console.error(
+        `[bot-ally] match ${driver.matchId} ownership lease check failed transiently: ${leaseError.message}`,
+      );
+      return;
+    }
+    if (ownsLease !== true) {
+      return;
+    }
+  }
+
   let state;
   try {
     state = await deps.fetchState(driver.matchId);

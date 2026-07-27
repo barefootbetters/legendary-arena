@@ -35,6 +35,10 @@ import {
 // live-driver registry; its keys ARE exactly those matches.
 import { botAllyDrivers, stopAllBotAllyDrivers } from './bot-ally/botAllyDriver.mjs';
 import { markInProgressBotAllyMatchesInterrupted } from './bot-ally/botAllyRoutes.mjs';
+// why: WP-437 / D-24256 — on a graceful shutdown, release this instance's bot-ally
+// ownership leases so the surviving instance claims those matches on its next poll
+// tick (a near-instant handoff) instead of waiting out the crash-recovery TTL.
+import { SERVER_INSTANCE_ID, releaseBotAllyLeasesForOwner } from './bot-ally/botAllyOwnership.mjs';
 
 /**
  * Initialises the server and registers the shutdown handler.
@@ -165,6 +169,23 @@ async function main() {
       console.error(
         `[server] Could not mark in-progress bot-ally matches interrupted during SIGTERM. ` +
         `Error: ${markMessage}. Continuing shutdown; those matches fall back to the capped revival path.`
+      );
+    }
+    // why: WP-437 / D-24256 — release this instance's bot-ally ownership leases so
+    // the surviving instance claims those matches on its very next poll tick (a
+    // near-instant handoff) rather than waiting out the ~15s crash-recovery TTL. Runs
+    // BEFORE the pool closes; best-effort and fully guarded — a failed release only
+    // means the survivor recovers via the TTL instead of instantly, so it must never
+    // block shutdown. Complements the WP-424 stop below (which ends THIS instance's
+    // driving); together they make the new instance the sole writer as soon as it can
+    // claim the lease.
+    try {
+      await releaseBotAllyLeasesForOwner(pool, SERVER_INSTANCE_ID);
+    } catch (releaseError) {
+      const releaseMessage = releaseError instanceof Error ? releaseError.message : String(releaseError);
+      console.error(
+        `[server] Could not release bot-ally ownership leases during SIGTERM. ` +
+        `Error: ${releaseMessage}. Continuing shutdown; the survivor recovers each lease via the TTL.`
       );
     }
     // why: WP-424 / D-24244 — stop this process from driving any bot seat NOW,
