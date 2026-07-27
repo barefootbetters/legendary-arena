@@ -7,6 +7,40 @@
 
 ## Current State
 
+### WP-440 / EC-475 — Gauntlet Pack Contract (Registry Layer) (D-24260) (2026-07-27)
+
+**No user-observable change — infrastructure only.** `User-Visible Surface =
+none — infrastructure` (a registry contract with no rendered surface — **D-24026
+inverted gate**, no live-verify). First WP of the **Mastermind Gauntlets:
+download → import → build → track** epic. `packages/registry` now exports an
+identity-only **Gauntlet Pack** contract: the tiny download token a player uses
+to declare *which* Mastermind Gauntlet to start — `{ pack_version, gauntlet: {
+setAbbr, mastermindSlug, division: 'fixed'|'open', playerCount: 1..5 } }` and
+nothing else. It carries **no** legs, **no** hero picks, and **no** approved
+compositions; the server re-resolves all of those from the live registry at
+import (WP-5), so a downloaded pack and an imported pack can never disagree on
+shape.
+
+**New `src/gauntletPack.ts`:** `GAUNTLET_PACK_VERSION` (`1`), `GauntletDivision`
+(`'fixed'|'open'`), `GauntletPackIdentity` / `GauntletPack` types, a **strict**
+`GauntletPackSchema` (Zod `.strict()` at BOTH object levels), a pure
+`buildGauntletPack` (stamps `pack_version`, validates before return), and
+`validateGauntletPack` (rejects an unknown **major** `pack_version` with a
+full-sentence error FIRST, then strict-parses — never lax-parses or
+field-ignores an unknown version). Validation is **shape-only** — no gauntlet
+existence check (D-24260: identity-only import token; the server owns
+leg/composition resolution). Registry-layer only (`zod` + Node built-ins; no
+engine/server/pg/apps/boardgame.io import). Strictly additive — reuses
+`SupportedPlayerCount`; new `./gauntletPack` subpath export + `index.ts`
+re-export mirroring `./gauntletLoadouts`.
+
+Registry **187/0** (+10 new: round-trip, identity-only key assertion asserting
+`legs`/`heroDeckIds`/`villainGroupIds` **ABSENT**, unknown-major-version,
+extra-key-at-both-levels, `playerCount` 0/6, bad `division`); registry build 0
+(`dist/gauntletPack.{js,d.ts}` emitted); `pnpm -r build` 0. **D-24260 Active
+(post-execution).** §17 Vision (§20–26 leaderboard-adjacent; No conflict). §21
+N/A (registry only; no `apps/server` endpoint). No hard-dep WP (epic #1).
+
 ### WP-438 / EC-473 — Structured `LogEntry.card`: Retire the Last Prose-Parse in `effectProvenance` (D-24257) (2026-07-27)
 
 **`User-Visible Surface = none`** (diagnostic metadata, not rendered — **D-24026 N/A**).

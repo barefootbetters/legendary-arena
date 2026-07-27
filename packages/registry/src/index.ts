@@ -59,6 +59,22 @@ export type {
   GauntletLoadoutMenu,
 } from "./gauntletLoadouts.js";
 
+// why: WP-440 / D-24260 — the identity-only Gauntlet Pack contract. The legends
+// download control (WP-2) builds this shape client-side and the server import
+// endpoint (WP-5) validates against the same strict schema, so a downloaded
+// pack and an imported pack can never disagree on shape.
+export {
+  GAUNTLET_PACK_VERSION,
+  GauntletPackSchema,
+  buildGauntletPack,
+  validateGauntletPack,
+} from "./gauntletPack.js";
+export type {
+  GauntletDivision,
+  GauntletPackIdentity,
+  GauntletPack,
+} from "./gauntletPack.js";
+
 // Schema (for external validation use)
 export {
   SetDataSchema,

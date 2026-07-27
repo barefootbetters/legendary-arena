@@ -33365,7 +33365,7 @@ remain `status: draft`; all cross-anchors (`#synergy-callouts`, `#faction-cries`
 
 Protect this file.
 
-### D-24260 — The downloadable Mastermind Gauntlet pack is an identity-only import token; the server re-resolves legs + approved compositions from the live registry (Drafted 2026-07-27; not yet landed — WP-440)
+### D-24260 — The downloadable Mastermind Gauntlet pack is an identity-only import token; the server re-resolves legs + approved compositions from the live registry (Active (post-execution) 2026-07-27 — WP-440)
 
 **Context.** The **Mastermind Gauntlets: download → import → build → track** epic
 lets a player download a gauntlet on the legends site (`legends.legendary-arena.com`),
