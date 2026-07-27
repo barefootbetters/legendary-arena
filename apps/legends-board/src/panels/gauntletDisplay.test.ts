@@ -15,6 +15,7 @@ import {
   groupGauntletsBySet,
   isFixedBoardName,
   listApprovedLoadouts,
+  pinShowcaseGauntlet,
   resolveBoardIndexEntry,
   rosterForEntry,
   selectApprovedLoadout,
@@ -81,6 +82,63 @@ describe("groupGauntletsBySet", () => {
 
   it("an empty index yields no groups", () => {
     assert.deepEqual(groupGauntletsBySet([]), []);
+  });
+});
+
+describe("pinShowcaseGauntlet (WP-441)", () => {
+  it("moves magneto first within an already-leading core group", () => {
+    const groups = groupGauntletsBySet([
+      indexEntry("core", "dr-doom", 1),
+      indexEntry("core", "magneto", 0),
+      indexEntry("dkpr", "high-evolutionary", 0),
+    ]);
+    const pinned = pinShowcaseGauntlet(groups);
+    assert.equal(pinned[0]?.setAbbr, "core");
+    assert.equal(pinned[0]?.gauntlets[0]?.mastermindSlug, "magneto");
+    assert.equal(pinned[0]?.gauntlets[1]?.mastermindSlug, "dr-doom");
+    assert.equal(pinned[1]?.setAbbr, "dkpr");
+  });
+
+  it("moves a non-leading core/magneto group to the front", () => {
+    const groups = groupGauntletsBySet([
+      indexEntry("dkpr", "high-evolutionary", 0),
+      indexEntry("core", "dr-doom", 1),
+      indexEntry("core", "magneto", 0),
+    ]);
+    const pinned = pinShowcaseGauntlet(groups);
+    assert.equal(pinned[0]?.setAbbr, "core");
+    assert.equal(pinned[0]?.gauntlets[0]?.mastermindSlug, "magneto");
+    assert.equal(pinned[1]?.setAbbr, "dkpr");
+  });
+
+  it("returns a fresh copy unchanged when core/magneto is absent", () => {
+    const groups = groupGauntletsBySet([
+      indexEntry("core", "dr-doom", 1),
+      indexEntry("dkpr", "high-evolutionary", 0),
+    ]);
+    const pinned = pinShowcaseGauntlet(groups);
+    assert.deepEqual(pinned, groups);
+    // why: unchanged in content, but a NEW array (the caller always gets a
+    // fresh value, never the input reference).
+    assert.notEqual(pinned, groups);
+  });
+
+  it("does not mutate the input groups or their gauntlet arrays", () => {
+    const groups = groupGauntletsBySet([
+      indexEntry("dkpr", "high-evolutionary", 0),
+      indexEntry("core", "dr-doom", 1),
+      indexEntry("core", "magneto", 0),
+    ]);
+    const snapshotBefore = groups.map((group) => ({
+      setAbbr: group.setAbbr,
+      slugs: group.gauntlets.map((gauntlet) => gauntlet.mastermindSlug),
+    }));
+    pinShowcaseGauntlet(groups);
+    const snapshotAfter = groups.map((group) => ({
+      setAbbr: group.setAbbr,
+      slugs: group.gauntlets.map((gauntlet) => gauntlet.mastermindSlug),
+    }));
+    assert.deepEqual(snapshotAfter, snapshotBefore);
   });
 });
 
