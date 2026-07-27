@@ -33446,4 +33446,81 @@ Node built-ins) and adds no cross-layer import or blob-read.
 legs/heroes/compositions; version/field/count/division reject paths); `pnpm -r build`
 green (strictly additive, no dependent breakage).
 
+### D-24261 — legends-board builds the gauntlet pack inline via a type-only contract import (preserving its zero-API / vue-sole-runtime invariant); showcase-pin + download-filename policy (Drafted 2026-07-27; not yet landed — WP-441)
+
+**Context.** WP-441 is the second slice of the **Mastermind Gauntlets: download →
+import → build → track** epic: the legends site (`legends.legendary-arena.com`,
+`apps/legends-board`) gains a **"Download Mastermind Gauntlet"** control that emits
+the D-24260 identity pack, plus a display **pin** of the Core Set / Magneto gauntlet
+to the top of the index as the showcase example. legends-board is a **static,
+zero-API, read-only** SPA whose **sole runtime dependency is `vue`** (locked by
+WP-343/WP-345) — it holds the gauntlet catalog in a cached `gauntlet-index.json`
+and makes no authenticated writes.
+
+**The design tension.** The pack shape is owned by `packages/registry` (D-24260:
+`buildGauntletPack` / `validateGauntletPack` / `GauntletPack`). The obvious way for
+legends-board to produce a conformant pack is to depend on `@legendary-arena/registry`
+at runtime and call `buildGauntletPack`. That would give the zero-API board a **runtime
+edge into the registry package** — pulling `zod` and the registry surface into the
+legends bundle and breaking the `vue`-sole-runtime-dep invariant that keeps the board
+tiny and dependency-free.
+
+**Decision.**
+
+1. **Inline build via a type-only contract import.** legends-board builds the pack as
+   a plain object literal `{ pack_version: 1, gauntlet: { setAbbr, mastermindSlug,
+   division, playerCount } }` and binds it to the D-24260 contract at **compile time**
+   with `satisfies GauntletPack`, importing the contract **type-only**
+   (`import type { GauntletPack, GauntletDivision } from
+   "@legendary-arena/registry/gauntletPack"`). `@legendary-arena/registry` is added to
+   legends-board **`devDependencies` only** — mirroring how `@legendary-arena/lagn` is
+   already a type-only devDep — so the import is **erased** from the runtime bundle and
+   `vue` stays the sole runtime dependency. `buildGauntletPack` / `validateGauntletPack`
+   are **not** runtime-imported. The invariant is enforced by a build-time assertion:
+   `grep -r "legendary-arena/registry" apps/legends-board/dist` returns **no match**
+   (the WP-343 / EC-164 zero-API-bundle precedent). `pack_version` is the inline literal
+   `1`; the server re-validates every imported pack against the registry schema at import
+   (WP-5), so a future major bump is caught there, not silently mis-emitted.
+
+2. **Showcase-pin policy.** The Core Set / Magneto gauntlet (`setAbbr = "core"`,
+   `mastermindSlug = "magneto"`) is pinned **first** on the gauntlet index — a
+   **display-only** reorder via a new pure `pinShowcaseGauntlet` helper applied **after**
+   `groupGauntletsBySet` (whose order-preserving contract is untouched). The pin never
+   mutates the index data or the publisher's `setAbbr` ASC / mastermind ASC order; an
+   old snapshot without `core/magneto` renders unchanged.
+
+3. **Download-filename convention.** A downloaded pack is named
+   `gauntlet-<setAbbr>-<mastermindSlug>-<division>-p<N>.gauntlet.json`
+   (e.g. `gauntlet-core-magneto-fixed-p1.gauntlet.json`) — set, mastermind, division,
+   and player count in the name so a saved file is self-describing before import.
+
+**Scope / what this is not.** WP-441 is App-layer only (`apps/legends-board`): no
+server endpoint, no persistence, no migration, no snapshot/publisher change, no
+`packages/registry` edit, no LAGN change. legends-board does **not** validate that the
+named gauntlet exists or that the division/count is offered — the server re-resolves and
+validates at import (WP-5, D-24260 §4).
+
+**Alternatives rejected.** (a) *Runtime `@legendary-arena/registry` dependency +
+`buildGauntletPack` call* — rejected: breaks the `vue`-sole-runtime invariant and pulls
+`zod`/registry into the zero-API bundle. (b) *Copy the pack type into legends-board* —
+rejected: a second declaration drifts from the registry contract; the type-only import
+keeps one source of truth at zero runtime cost. (c) *A URL-carried deep link instead of a
+file* — rejected upstream (the plan's §Risks): a cross-origin, play-authenticated write
+from a static board is a dead end; the file round-trip is the correct primitive.
+
+**Files (at execution).** `apps/legends-board/src/panels/gauntletPackDownload.ts`
+(+ `.test.ts`), `apps/legends-board/src/panels/gauntletDisplay.ts` (+ `.test.ts`),
+`apps/legends-board/src/panels/GauntletIndexPanel.vue`,
+`apps/legends-board/package.json` (registry → `devDependencies`), and this entry flips
+Drafted → Active. No `.claude/rules/*` or `ARCHITECTURE.md` edit — the type-only devDep
+adds **no** runtime cross-layer import (the existing App-layer import rules already permit
+a type-only workspace devDep, per the `@legendary-arena/lagn` precedent).
+
+**Verification (at execution).** `pnpm -r build`, `pnpm --filter
+@legendary-arena/legends-board test` / `typecheck` / `build` green; `grep -r
+"legendary-arena/registry" apps/legends-board/dist` returns no match; D-24026
+live-verify on the deploy (Magneto renders first; the download yields a valid
+`.gauntlet.json` parsing against the WP-440 `GauntletPackSchema`; `read_network_requests`
+shows zero API calls).
+
 Protect this file.
