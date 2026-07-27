@@ -106,31 +106,45 @@ engine trace. Two fields:
   deliverable — a block-all pending choice was previously invisible in
   the export.
 - `recentlyPlayedCards` — the last `RECENTLY_PLAYED_CARDS_CAP` (5)
-  played cards, each with its `extId`, an inferred `outcome`
-  (`resolved` / `hollow` / `awaitingChoice` / `conditionNotMet`), and
-  an `abilityText` resolved from the snapshot's own projected card
-  display (no card-text import).
+  played cards, each with its `extId`, an `outcome`
+  (`resolved` / `hollow` / `awaitingChoice` / `conditionNotMet`) **read
+  from the engine-authored `LogEntry.outcome`** (WP-B.3c — no longer a
+  string-guess; see below), and an `abilityText` resolved from the
+  snapshot's own projected card display (no card-text import).
 
 The builder is fail-soft: a null or malformed snapshot yields an empty
 provenance, a throwing resolver yields `abilityText: null`, and it
 never throws — the export stays robust.
 
-**The log is now structured (WP-434 / D-24253).** `UIState.log` is no
-longer a `string[]` — each entry is a `LogEntry` record
-(`{ text, outcome }`), where `outcome` is a coarse, engine-authored
-colour class (`neutral` / `applied` / `partial` / `blocked`, the
-`LOG_OUTCOMES` canonical array). Provenance reads each record's `.text`
-for its own string-matching. The `recentlyPlayedCards.outcome` field
-above is still the **client-side heuristic** (it string-matches the log
-prose plus the `hollowEffects` / pending signals). Because the engine
-now records the outcome authoritatively at push time, that heuristic is
-scheduled to retire in **WP-B.3c** — provenance will read the
-authoritative `LogEntry.outcome` instead of guessing — while the
-`awaitingPlayerInput` half (which reads the `pending*` fields, not the
-log) stays. This is exactly the fragility that motivated the contract:
-the provenance `extId` extractor has twice broken on pure log-wording
-changes (WP-328's numbering prefix, WP-417's printed-icon clause), and
-reading structure instead of prose removes that class of regression.
+**The log is structured, and provenance now reads it (WP-B.3, D-24253 —
+arc complete).** `UIState.log` is no longer a `string[]` — each entry is
+a `LogEntry` record (`{ text, outcome }`), where `outcome` is a coarse,
+engine-authored colour class (`neutral` / `applied` / `partial` /
+`blocked`, the `LOG_OUTCOMES` canonical array) authored at push time
+(**B.3a**). The live HUD colours each log line by that outcome — green /
+amber / red, with a decorative glyph and a screen-reader-only word so
+colour is never the only signal (**B.3b**; see
+[Visual Effects → Game-log outcome colours](visual-effects.md)).
+
+**`recentlyPlayedCards.outcome` reads the authoritative outcome now
+(WP-B.3c).** The old client-side string-matching heuristic is **retired**:
+`classifyOutcome` is hollow-first (the structured `hollowEffects` read →
+`hollow`), else a `blocked` line **in the card's own play-window** whose
+text carries the card's `(ext-id)` ref → `conditionNotMet`, else a
+pending choice → `awaitingChoice`, else `resolved`. The `(ext-id)`
+closing-paren match plus the play-window bound keep the reveal "no branch
+matched" line (also `blocked`, but names the *revealed* card) and an
+ext-id substring collision from producing a false `conditionNotMet`. The
+`awaitingPlayerInput` half (reads `pending*`, not the log) is unchanged.
+
+**Honest residual.** This closes the *outcome-determination* fragility —
+the `extId` extractor twice broke on pure log-wording changes (WP-328's
+numbering prefix, WP-417's printed-icon clause), and reading the
+structured `outcome` instead of guessing from prose removes that class.
+But the played-card *identification* still parses the "played X ({ext-id})"
+line, so a re-wording there can still break it; fully realizing "a log
+re-wording cannot break the diagnostic" needs a future structured
+`LogEntry.card` field (deferred, not scoped).
 
 ### Transport block
 
@@ -334,6 +348,19 @@ or the stored entry is corrupt.
   authoritative `LogEntry.outcome` once the engine channel is proven). The
   render stays visually identical in B.3a — colour lands in **WP-B.3b**.
   `finalStateHash` is byte-unchanged (the log is hash-excluded, D-24081).
+- **WP-435 / D-24253** (WP-B.3b) — the live HUD now **colours** each log
+  line by its `LogEntry.outcome` (green / amber / red; `neutral` unstyled)
+  via the theme-aware `--color-par-*` tokens, with a decorative
+  `aria-hidden` glyph + a screen-reader-only outcome word (colour is never
+  the only signal); the `game-log.txt` export gains a `[outcome]` tag on
+  non-`neutral` lines. Arena-client render only.
+- **WP-436 / D-24253** (WP-B.3c) — **retired** the `recentlyPlayedCards`
+  outcome heuristic: `classifyOutcome` reads the authoritative
+  `LogEntry.outcome` (hollow-first; a `blocked` line in the card's own
+  play-window → `conditionNotMet`) instead of string-matching "did not
+  activate". `DID_NOT_ACTIVATE_LINE` deleted; `awaitingPlayerInput` kept.
+  Completes the log-outcome arc (B.3a → B.3b → B.3c); the outcome-guess
+  regression class (WP-328, WP-417/PR #980) is closed.
 
 ## References
 
