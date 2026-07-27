@@ -12,9 +12,12 @@
  *   Ebony Blade's victory-pile pick, WP-313) is exactly the freeze class this was motivated
  *   by, and it was previously invisible in the export.
  * - `recentlyPlayedCards` — for the last {@link RECENTLY_PLAYED_CARDS_CAP} "played …" log
- *   lines, each card's ext_id, an `outcome` classification inferred from the signals
- *   already in the snapshot (`hollowEffects` + the pending kind + the "did not activate"
- *   log lines), and an `abilityText` populated via an injected resolver.
+ *   lines, each card's ext_id, an `outcome` READ from the engine-authored
+ *   `LogEntry.outcome` (WP-434 / WP-B.3c): a hollow record → `hollow`, a `blocked` line
+ *   in the card's own play-window → `conditionNotMet`, a pending choice → `awaitingChoice`,
+ *   else `resolved`. No longer a "did not activate" string-guess (the D-24100 heuristic is
+ *   retired). Card *identification* still parses the "played …" line — only the *outcome*
+ *   determination became authoritative. `abilityText` is populated via an injected resolver.
  *
  * // why: PURE + boundary-clean. This module imports NOTHING from the engine / registry
  * (mirrors diagnostics.ts, EC-260 boundary). The snapshot is read structurally from
@@ -171,7 +174,6 @@ function buildSnapshotAbilityTextResolver(
 // enriched the played label to "{Name} ({ext-id}) — {effect}", so the parse must tolerate an
 // optional numeric prefix and capture the whole label, then extract the real ext-id below.
 const PLAYED_LINE = /^(?:\d+\.\d+\.\d+ )?Player \d+ played (.+?)\.$/;
-const DID_NOT_ACTIVATE_LINE = / ability did not activate/;
 
 // why: WP-323/324 render the played label as "{Name} ({ext-id})", and WP-417 (D-24237)
 // appends an optional printed-icon clause "(+N recruit)" / "(+N attack, +N recruit)" and/or
@@ -196,26 +198,42 @@ function extractPlayedExtId(label: string): string {
 }
 
 /**
- * Classifies a played card's outcome from the signals already in the snapshot.
- * Priority: a paired "did not activate" line → conditionNotMet; else a hollow record for
- * the ext_id → hollow; else if it is the most-recent play and a choice is pending →
- * awaitingChoice; else resolved (the default — the absence of a negative signal, NOT a
- * positive engine confirmation).
+ * Classifies a played card's outcome by READING the engine-authored `LogEntry.outcome`
+ * (WP-434 / D-24253) — no longer a string-matching guess (WP-B.3c retires the D-24100
+ * heuristic). Priority, HOLLOW-FIRST: a hollow record for the ext_id → hollow; else a
+ * `blocked` line naming this card within its own play-window → conditionNotMet; else the
+ * most-recent play with a pending choice → awaitingChoice; else resolved (the default —
+ * the 4-value taxonomy has no "unknown", but `resolved` is now reached only after the
+ * authoritative blocked/hollow/pending checks, not by absence-of-a-string).
  */
 function classifyOutcome(
   extId: string,
-  followingLines: string[],
+  windowRecords: ReadonlyArray<{ text: string; outcome: string }>,
   hollowCardIds: Set<string>,
   isMostRecentPlay: boolean,
   awaitingPlayerInput: AwaitingPlayerInput | null,
 ): PlayedCardOutcome {
-  for (const line of followingLines) {
-    if (line.includes(extId) && DID_NOT_ACTIVATE_LINE.test(line)) {
-      return 'conditionNotMet';
-    }
-  }
+  // why: WP-B.3c — hollow-first. A hollow effect ALSO logs a `blocked` "Unhandled effect
+  // observed: card …" line naming this card, so a blocked-first order would flip every
+  // hollow to conditionNotMet. `hollowEffects` (a structured WP-257 record read, kept)
+  // is the authoritative hollow signal; the condition-fail branch never records a hollow
+  // (it `continue`s), so a card is hollow XOR condition-failed — hollow-first loses nothing.
   if (hollowCardIds.has(extId)) {
     return 'hollow';
+  }
+  // why: WP-B.3c — read the authoritative `.outcome` (not the retired "did not activate"
+  // string) to decide whether the card's effect did nothing. Match the card by its ref
+  // form `(extId)` WITH the closing paren — this (a) guards a substring collision
+  // (`(slug#1)` is not a substring of `(slug#10)`), and (b) excludes the reveal
+  // "… no branch matched" line, which is also `blocked` but names the *revealed* deck-top
+  // card by a DIFFERENT ext-id. `windowRecords` is already bounded to this card's own
+  // play-window ([play, next-play)) by the caller, so a later card's blocked line cannot
+  // leak in either.
+  const cardRef = `(${extId})`;
+  for (const record of windowRecords) {
+    if (record.outcome === 'blocked' && record.text.includes(cardRef)) {
+      return 'conditionNotMet';
+    }
   }
   if (isMostRecentPlay && awaitingPlayerInput !== null) {
     return 'awaitingChoice';
@@ -253,39 +271,51 @@ export function buildEffectProvenance(
   // so the client needs no card-text source of its own — boundary purity (EC-260) preserved.
   const resolveText = resolveCardText ?? buildSnapshotAbilityTextResolver(snapshotRecord);
 
-  // why: WP-434 — UIState.log is now LogEntry[] ({ text, outcome }). Read each
-  // record's `.text` (defensively, since the snapshot is typed `unknown` here) so
-  // the downstream "played …" / "did not activate" string-matching keeps working.
-  // Only the log READ migrates; the outcome-classification heuristic below is
-  // untouched (it retires in WP-B.3c, and stays the fallback per D-24253 §9).
+  // why: WP-B.3c — read UIState.log as `{ text, outcome }` RECORDS (defensively, since
+  // the snapshot is typed `unknown`), not a flattened `string[]`. The engine authors an
+  // authoritative `outcome` on every line (WP-434), so `classifyOutcome` reads it instead
+  // of string-guessing. A missing/non-string outcome defaults to `neutral` (fail-soft).
   const log = snapshotRecord['log'];
-  const logLines: string[] = Array.isArray(log)
+  const logEntries: Array<{ text: string; outcome: string }> = Array.isArray(log)
     ? log
-        .map((entry): string | null => {
+        .map((entry): { text: string; outcome: string } | null => {
           if (entry !== null && typeof entry === 'object') {
             const text = (entry as { text?: unknown }).text;
-            return typeof text === 'string' ? text : null;
+            const outcome = (entry as { outcome?: unknown }).outcome;
+            return typeof text === 'string'
+              ? { text, outcome: typeof outcome === 'string' ? outcome : 'neutral' }
+              : null;
           }
           return null;
         })
-        .filter((text): text is string => text !== null)
+        .filter((record): record is { text: string; outcome: string } => record !== null)
     : [];
 
-  // why: collect the ext_id + log index of every "played …" line, then keep the last N.
+  // why: collect the ext_id + log index of every "played …" line (identification still
+  // parses the prose — B.3a's LogEntry carries no structured card field; a `LogEntry.card`
+  // is the future step that would remove this last parse).
   const playedEntries: Array<{ extId: string; lineIndex: number }> = [];
-  for (let index = 0; index < logLines.length; index += 1) {
-    const match = PLAYED_LINE.exec(logLines[index]!);
+  for (let index = 0; index < logEntries.length; index += 1) {
+    const match = PLAYED_LINE.exec(logEntries[index]!.text);
     if (match !== null) {
       playedEntries.push({ extId: extractPlayedExtId(match[1]!), lineIndex: index });
     }
   }
-  const recentEntries = playedEntries.slice(-RECENTLY_PLAYED_CARDS_CAP);
 
+  // why: keep the last N plays; iterate over the full `playedEntries` (not a slice) so
+  // each card's play-window end is the NEXT play's line index across the whole log.
+  const recentStart = Math.max(0, playedEntries.length - RECENTLY_PLAYED_CARDS_CAP);
   const recentlyPlayedCards: RecentlyPlayedCard[] = [];
-  for (let entryIndex = 0; entryIndex < recentEntries.length; entryIndex += 1) {
-    const entry = recentEntries[entryIndex]!;
-    const isMostRecentPlay = entryIndex === recentEntries.length - 1;
-    const followingLines = logLines.slice(entry.lineIndex + 1);
+  for (let entryIndex = recentStart; entryIndex < playedEntries.length; entryIndex += 1) {
+    const entry = playedEntries[entryIndex]!;
+    const isMostRecentPlay = entryIndex === playedEntries.length - 1;
+    // why: WP-B.3c (RS-2) — bound the outcome scan to THIS card's own play-window
+    // [play+1, next-play), so a later card's `blocked` line cannot be attributed here.
+    const windowEnd =
+      entryIndex + 1 < playedEntries.length
+        ? playedEntries[entryIndex + 1]!.lineIndex
+        : logEntries.length;
+    const windowRecords = logEntries.slice(entry.lineIndex + 1, windowEnd);
     // why: fail-soft — a resolver that throws must not break the export.
     let abilityText: string | null = null;
     try {
@@ -298,7 +328,7 @@ export function buildEffectProvenance(
       abilityText,
       outcome: classifyOutcome(
         entry.extId,
-        followingLines,
+        windowRecords,
         hollowCardIds,
         isMostRecentPlay,
         awaitingPlayerInput,

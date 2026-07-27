@@ -150,22 +150,34 @@ describe('buildEffectProvenance — recentlyPlayedCards', () => {
     assert.equal(provenance.recentlyPlayedCards[0]!.outcome, 'resolved');
   });
 
-  test('outcome is hollow when the ext_id has a hollowEffects record', () => {
+  test('outcome is hollow when the ext_id has a hollowEffects record (hollow-first: its own blocked line does not flip it)', () => {
+    // why: WP-B.3c / RS-3 — a hollow effect ALSO logs a `blocked` "Unhandled effect
+    // observed" line naming the card; the structured hollowEffects read must win, so
+    // this case seeds that real line and still expects `hollow` (guards the PS-1 order).
     const provenance = buildEffectProvenance(
       snapshotWith({
-        log: [{ text: 'Player 0 played set/hero/hollow#0.', outcome: 'neutral' }],
+        log: [
+          { text: 'Player 0 played Hollow Card (set/hero/hollow#0).', outcome: 'neutral' },
+          {
+            text: 'Unhandled effect observed: card "set/hero/hollow#0" declared a "phase" mechanic at onPlay, but no executable handler was reached (no-handler).',
+            outcome: 'blocked',
+          },
+        ],
         hollowEffects: [{ cardId: 'set/hero/hollow#0', mechanic: 'phase' }],
       }),
     );
     assert.equal(provenance.recentlyPlayedCards[0]!.outcome, 'hollow');
   });
 
-  test('outcome is conditionNotMet when a "did not activate" line follows', () => {
+  test('outcome is conditionNotMet from an authoritative blocked line naming the card', () => {
+    // why: WP-B.3c — the engine authors the condition-fail line as `blocked` in the
+    // real card-ref form `{Name} ({ext-id})`; the classifier reads `.outcome === 'blocked'`
+    // + the `(ext-id)` ref (NOT a "did not activate" string).
     const provenance = buildEffectProvenance(
       snapshotWith({
         log: [
-          { text: 'Player 0 played antm/gambit/card#0.', outcome: 'neutral' },
-          { text: "Player 0's antm/gambit/card#0 ability did not activate — no X-Men in play.", outcome: 'neutral' },
+          { text: 'Player 0 played Gambit Card (antm/gambit/card#0).', outcome: 'neutral' },
+          { text: "Player 0's Gambit Card (antm/gambit/card#0) ability did not activate — no X-Men in play.", outcome: 'blocked' },
         ],
       }),
     );
@@ -200,13 +212,59 @@ describe('buildEffectProvenance — recentlyPlayedCards', () => {
     const provenance = buildEffectProvenance(
       snapshotWith({
         log: [
-          { text: 'Player 0 played antm/gambit/card#0.', outcome: 'neutral' },
-          { text: "Player 0's antm/gambit/card#0 ability did not activate — no X-Men in play.", outcome: 'neutral' },
+          { text: 'Player 0 played Gambit Card (antm/gambit/card#0).', outcome: 'neutral' },
+          { text: "Player 0's Gambit Card (antm/gambit/card#0) ability did not activate — no X-Men in play.", outcome: 'blocked' },
         ],
         pendingOptionalKoReward: { playerID: '0' },
       }),
     );
     assert.equal(provenance.recentlyPlayedCards[0]!.outcome, 'conditionNotMet');
+  });
+
+  test('outcome is resolved when a following line confirms the effect applied (positive, not absence-of-string)', () => {
+    // why: WP-B.3c — `resolved` now follows an authoritative `applied` line, not merely
+    // the absence of a "did not activate" string.
+    const provenance = buildEffectProvenance(
+      snapshotWith({
+        log: [
+          { text: 'Player 0 played Quick Draw (core/hawkeye/quick-draw#2).', outcome: 'neutral' },
+          { text: 'Player 0 drew 1 card(s) from Quick Draw (core/hawkeye/quick-draw#2).', outcome: 'applied' },
+        ],
+      }),
+    );
+    assert.equal(provenance.recentlyPlayedCards[0]!.outcome, 'resolved');
+  });
+
+  test('RS-2: a reveal "no branch matched" line (blocked, names the REVEALED card) does not flip the played card to conditionNotMet', () => {
+    // why: WP-B.3c / RS-2 — the reveal line is `blocked` but names the deck-top card by a
+    // DIFFERENT ext-id; the `(ext-id)` ref match on the PLAYED card must not match it.
+    const provenance = buildEffectProvenance(
+      snapshotWith({
+        log: [
+          { text: 'Player 0 played What If Card (wtif/star-lord/what-if#3).', outcome: 'neutral' },
+          { text: 'Player 0 revealed S.H.I.E.L.D. Agent (starting-shield-agent) (cost 0) — no branch matched (left on top).', outcome: 'blocked' },
+        ],
+      }),
+    );
+    assert.equal(provenance.recentlyPlayedCards[0]!.outcome, 'resolved');
+  });
+
+  test('RS-2: a later card\'s blocked line is not attributed to an earlier card (play-window bound)', () => {
+    // why: WP-B.3c / RS-2 — the earlier card's window ends at the next "played" line, so
+    // the second card's blocked condition-fail line cannot leak back onto the first.
+    const provenance = buildEffectProvenance(
+      snapshotWith({
+        log: [
+          { text: 'Player 0 played Early Card (set/hero/early#0).', outcome: 'neutral' },
+          { text: 'Player 0 played Late Card (set/hero/late#1).', outcome: 'neutral' },
+          { text: "Player 0's Late Card (set/hero/late#1) ability did not activate — no synergy.", outcome: 'blocked' },
+        ],
+      }),
+    );
+    assert.equal(provenance.recentlyPlayedCards[0]!.extId, 'set/hero/early#0');
+    assert.equal(provenance.recentlyPlayedCards[0]!.outcome, 'resolved');
+    assert.equal(provenance.recentlyPlayedCards[1]!.extId, 'set/hero/late#1');
+    assert.equal(provenance.recentlyPlayedCards[1]!.outcome, 'conditionNotMet');
   });
 });
 
