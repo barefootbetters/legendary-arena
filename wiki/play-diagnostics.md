@@ -124,7 +124,7 @@ engine-authored colour class (`neutral` / `applied` / `partial` /
 (**B.3a**). The live HUD colours each log line by that outcome — green /
 amber / red, with a decorative glyph and a screen-reader-only word so
 colour is never the only signal (**B.3b**; see
-[Visual Effects → Game-log outcome colours](visual-effects.md)).
+[Visual Effects → game-log outcome colours](visual-effects.md#game-log-outcome-colours)).
 
 **`recentlyPlayedCards.outcome` reads the authoritative outcome now
 (WP-B.3c).** The old client-side string-matching heuristic is **retired**:
