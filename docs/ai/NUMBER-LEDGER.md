@@ -67,6 +67,7 @@ high-water: 422
 - WP-438 — logentry-card-field (structured LogEntry.card{?} so effectProvenance stops parsing 'played X' ext-id prose; retires PLAYED_LABEL_EXTID + the B.3c (extId) substring; realizes D-24253 §14; 2026-07-27, spec/wp-logentry-card)
 - WP-439 — dashboard-runtime-health (server process CPU%/event-loop-lag/mem/uptime signal on a new admin-gated GET /api/dash/runtime + a dashboard runtime-health tile; answers do-we-need-to-cluster with data; server + dashboard; 2026-07-27, worktree-wp-dashboard-runtime-health)
 - WP-440 — gauntlet-pack-contract (identity-only GauntletPack Zod schema + buildGauntletPack/validateGauntletPack in packages/registry, strict per-pack_version validation with a major-version reject gate; first WP of the Mastermind Gauntlets download→import→build→track epic; registry only; 2026-07-27, claude/wp440-gauntlet-pack)
+- WP-441 — legends-gauntlet-download (legends-board pin core/magneto to the top of the gauntlet index + a "Download Mastermind Gauntlet" control with a player-count 1..5 / division fixed|open selector defaulting to solo+fixed that Blob/anchor-downloads gauntlet-<set>-<mm>-<div>-p<N>.gauntlet.json; builds the WP-440 pack INLINE via a type-only contract import to preserve the vue-sole-runtime-dep / zero-API invariant; second WP of the Mastermind Gauntlets epic; apps/legends-board only; 2026-07-27, claude/wp441-legends-download)
 
 ## EC
 
@@ -92,6 +93,7 @@ high-water: 457
 - EC-473 — logentry-card-field (WP-438; 2026-07-27, spec/wp-logentry-card)
 - EC-474 — dashboard-runtime-health (WP-439; 2026-07-27, worktree-wp-dashboard-runtime-health)
 - EC-475 — gauntlet-pack-contract (WP-440; 2026-07-27, claude/wp440-gauntlet-pack)
+- EC-476 — legends-gauntlet-download (WP-441; 2026-07-27, claude/wp441-legends-download)
 
 ## D
 
@@ -116,3 +118,4 @@ high-water: 24241
 - D-24258 — dashboard-runtime-health-signal (on-request sampled server runtime health — process CPU% via cpuUsage delta, event-loop lag via perf_hooks.monitorEventLoopDelay p50/p99/max, RSS, uptime, cpuCount, WEB_CONCURRENCY — on admin-gated GET /api/dash/runtime; no DB/engine read; decision-support for the clustering question; 2026-07-27, worktree-wp-dashboard-runtime-health)
 - D-24259 — faction-battle-cry-ip-reconciliation (narrative/wiki governance ruling: the IP boundary is split so fabricating/lifting lore into original copy stays forbidden, while surfacing a licensed character's/team's OWN signature catchphrase as a synergy call-out is permitted within confirmed Marvel/Upper Deck license scope; the faction-cry seed set is licensing-gated; render is an identity-string swap, no new engine field; renumbered from the colliding D-24238 draft in PR #979 — D-24238 landed as the deploy stale-bundle fix, #983; 2026-07-27, infra/synergy-callout-wiki)
 - D-24260 — gauntlet-pack-identity-only (the downloadable Mastermind Gauntlet pack is an identity-only import token — pack_version + gauntlet{setAbbr,mastermindSlug,division,playerCount}; the server re-resolves legs + approved compositions from the live registry, the pack never carries them; strict per-pack_version validation rejects an unknown MAJOR version and unknown fields; DRAFTED here, landed at WP-440 execution; 2026-07-27, claude/wp440-gauntlet-pack)
+- D-24261 — legends-inline-pack-build-and-showcase-pin (legends-board builds the gauntlet pack INLINE via a type-only contract import — NOT a runtime registry dependency — to preserve its vue-sole-runtime-dep / zero-API invariant, WP-343/345; plus the showcase-pin policy (core/magneto pinned first on the gauntlet index, display-only) and the gauntlet-<set>-<mm>-<div>-p<N>.gauntlet.json download-filename convention; DRAFTED here, landed at WP-441 execution; 2026-07-27, claude/wp441-legends-download)
