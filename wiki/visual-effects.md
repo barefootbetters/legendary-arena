@@ -33,7 +33,7 @@ source:
   - ../apps/arena-client/src/components/play/NotableEventOverlay.vue
   - ../apps/arena-client/src/pages/PlayViewport.vue
   - ../docs/ai/ARCHITECTURE.md
-last-reviewed: 2026-07-24
+last-reviewed: 2026-07-27
 ---
 
 # Visual Effects Framework
@@ -471,6 +471,22 @@ words are a naming proposal owned by the narrative page:
 > former "combo-scaling-beyond-T3" open question; the apex label is where
 > that decision cashed out.
 
+**Faction battle cries (identity overlay).** The render is unchanged — a
+text label scaled by the combo tier — but the *words* can come from the
+**acting card's team / hero identity** instead of the generic ladder:
+**AVENGERS ASSEMBLE!** for an Avengers chain, **HULK SMASH!** when Hulk is
+the acting hero. The client already holds that identity (the same signal
+the [team motif](sound-effects.md#motif-cues) reads), so the overlay needs
+**no new engine field** — magnitude (the tier) drives presentation,
+identity drives the text, and the generic ladder is the fallback for any
+card without a cry. The phrase table, the character/team precedence, and
+the **IP / licensing gate** (these are verbatim, trademark-heavy Marvel
+catchphrases) all live on the
+[narrative page](narrative-psychology.md#faction-cries); the render just
+swaps the string. Faction cries work on the shipped tiers today — including
+the apex — and are independent of tier count; the gate on them is
+**licensing** (D-24259), not the engine.
+
 **Rendering & accessibility.** The call-out is text, so it degrades
 better than any particle effect: under `prefers-reduced-motion` (or the
 in-app intensity control at its minimum) the **word still shows** — it
@@ -816,6 +832,15 @@ recommendations):
   label *wording* itself, which is owned by the
   [narrative page](narrative-psychology.md#synergy-callouts) and gets an
   IP pass with the rest of the narrative copy.
+- **Faction battle cries (identity overlay)** — swapping the generic word
+  for the acting team/hero's signature shout
+  ([faction cries](narrative-psychology.md#faction-cries)). The render is a
+  no-op (same label, different string, no new engine field); the open gate
+  is **IP / licensing** — the cries are verbatim Marvel catchphrases, so
+  the seed set ships only after the Marvel / Upper Deck license scope is
+  confirmed to cover on-screen catchphrase use (**D-24259**). Secondary:
+  a display-fit call for long cries (e.g. Spider-Man's full-sentence line
+  at the smaller tiers).
 - **Performance-budget figures** — ratify or retune the numbers above
   against real mobile hardware.
 - **`escapeResolved` event** (WP-186) — required before escape effects

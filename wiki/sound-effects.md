@@ -29,7 +29,7 @@ source:
   - ../packages/game-engine/src/ui/uiState.types.ts
   - ../packages/game-engine/src/turn/turnPhases.types.ts
   - ../docs/ai/ARCHITECTURE.md
-last-reviewed: 2026-07-24
+last-reviewed: 2026-07-27
 ---
 
 # Sound Effects
@@ -279,32 +279,66 @@ counterpart to the engine's hero-class synergy (the `requiresKeyword` /
 > It is client-only, reads the projected count, never touches `G`/`ctx`, and
 > is hash-excluded — so determinism is untouched.
 
-The shipped tiers key on `lastPlayEffectsFired` (per D-24228:
-`0 → none, 1 → small, 2 → medium, ≥3 → big`):
+The shipped tiers key on `lastPlayEffectsFired`. The original three-tier
+mapping (D-24228) was **extended with an apex fourth tier by WP-425 /
+D-24246**, so the live boundaries are now
+`0 → none, 1 → small, 2 → medium, 3–4 → big, ≥5 → legendary`:
 
 | `lastPlayEffectsFired` | Clip | Feel |
 |---|---|---|
 | `1` | `combo-small` — rising **two-note sparkle** | "Nice — that linked." |
 | `2` | `combo-medium` — the same shape, **higher and brighter** | The chain is building. |
-| `>= 3` | `combo-big` — a full ascending **flourish** | A satisfying pay-off — the game cheering you on |
+| `3–4` | `combo-big` — a full ascending **flourish** | A satisfying pay-off — the game cheering you on |
+| `>= 5` | `combo-legendary` — the apex **crescendo sting** | The rare, brag-worthy peak — the brand word lands (WP-425 / D-24246) |
 
 The tiers **ascend** (each step higher than the last); when motifs are in
 play a combo cue can be written in the acting hero's team key so it
 harmonizes with the [motif](#motif-cues) that spawned it (a future layering
-pass, not part of the shipped cue).
+pass, not part of the shipped cue). The apex `combo-legendary` sting is the
+audio half of the shared **`>= 5` LEGENDARY! tier** — the [visual call-out](visual-effects.md#synergy-callout)
+consumes the *identical* boundary, one `comboTierForCount`, two renderers
+(D-24246). The audio sting shipped with WP-425; the on-screen `LEGENDARY!`
+label is the future visual consumer of the same tier.
 
-Audition the three shipped tiers:
+Audition the four shipped tiers:
 
 {{< audio src="https://images.legendary-arena.com/audio/sound-effects/combo-small.mp3" caption="WP-413 combo cue (CC0) — tier 1 (lastPlayEffectsFired = 1), rising sparkle" >}}
 
 {{< audio src="https://images.legendary-arena.com/audio/sound-effects/combo-medium.mp3" caption="WP-413 combo cue (CC0) — tier 2 (lastPlayEffectsFired = 2), higher and brighter" >}}
 
-{{< audio src="https://images.legendary-arena.com/audio/sound-effects/combo-big.mp3" caption="WP-413 combo cue (CC0) — tier 3+ (lastPlayEffectsFired >= 3), ascending flourish" >}}
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/combo-big.mp3" caption="WP-413 combo cue (CC0) — tier 3 (lastPlayEffectsFired = 3–4), ascending flourish" >}}
+
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/combo-legendary.mp3" caption="WP-425 combo cue — apex tier 4 (lastPlayEffectsFired >= 5), the LEGENDARY! crescendo" >}}
 
 > **Contrast the villain side.** `FightResolvedEvent.appliedEffects` already
 > lists the keywords that fired, so a villain-effect chain has always been
 > countable — the hero-play `lastPlayEffectsFired` count (D-24221) is what
 > brought the *hero* side to parity and made this cue buildable.
+
+#### The voiced layer — announcer & faction cries (enhancement) {#combo-voice}
+
+The four stings above are the *shipped* audio. The naming layer that rides
+the same scalar — the on-screen
+[synergy call-out ladder](narrative-psychology.md#synergy-callouts)
+(**Combo! → Team-Up! → Unstoppable! → LEGENDARY!**) and the
+[faction battle cries](narrative-psychology.md#faction-cries)
+(**AVENGERS ASSEMBLE!**, **HULK SMASH!** …) — has an **optional voiced
+enhancement** whose home is this page: a house **Arena Announcer** that
+speaks the ladder, layered over (or in place of) these stings. Two
+constraints carry straight through from the
+[narrative page's announcer spec](narrative-psychology.md#arena-announcer):
+
+- **The text label is v1; the voice is a later layer.** The on-screen word
+  is buildable today on the live combo scalar; a recorded or synthesized
+  announcer VO is an added audio pass on top of `combo-small … combo-legendary`
+  and never blocks the label.
+- **Original team cries voice naturally; verbatim character cries stay
+  text-first.** A team shout like "Avengers Assemble!" can be voiced by the
+  original announcer, but first-person character lines ("Hulk Smash!") stay
+  **text-first** — an announcer impersonating a Marvel character is an
+  IP / casting matter, gated by the same
+  [licensing pass](narrative-psychology.md#faction-cries) as the cries
+  themselves (D-24259).
 
 ### Adaptive background music — the danger meter
 
