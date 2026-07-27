@@ -68,6 +68,7 @@ high-water: 422
 - WP-439 — dashboard-runtime-health (server process CPU%/event-loop-lag/mem/uptime signal on a new admin-gated GET /api/dash/runtime + a dashboard runtime-health tile; answers do-we-need-to-cluster with data; server + dashboard; 2026-07-27, worktree-wp-dashboard-runtime-health)
 - WP-440 — gauntlet-pack-contract (identity-only GauntletPack Zod schema + buildGauntletPack/validateGauntletPack in packages/registry, strict per-pack_version validation with a major-version reject gate; first WP of the Mastermind Gauntlets download→import→build→track epic; registry only; 2026-07-27, claude/wp440-gauntlet-pack)
 - WP-441 — legends-gauntlet-download (legends-board pin core/magneto to the top of the gauntlet index + a "Download Mastermind Gauntlet" control with a player-count 1..5 / division fixed|open selector defaulting to solo+fixed that Blob/anchor-downloads gauntlet-<set>-<mm>-<div>-p<N>.gauntlet.json; builds the WP-440 pack INLINE via a type-only contract import to preserve the vue-sole-runtime-dep / zero-API invariant; second WP of the Mastermind Gauntlets epic; apps/legends-board only; 2026-07-27, claude/wp441-legends-download)
+- WP-442 — gauntlet-truth-helper (behavior-preserving server refactor: extract the leg-clear qualification predicate + findBestPoolAssignment out of apps/server/src/legends/gauntlet.logic.ts into a new pure, data-injected, layer-locked gauntletTruth.logic.ts; getGauntletStandings rewired to consume it with ZERO behavior change so gauntlet.logic.test.ts passes unchanged; the shared truth helper WP-5's per-run read reuses so tracker + leaderboard cannot drift; third WP of the Mastermind Gauntlets epic; apps/server only; NO new D-entry — inherits the existing layer lock; 2026-07-27, claude/wp442-truth)
 
 ## EC
 
@@ -94,6 +95,7 @@ high-water: 457
 - EC-474 — dashboard-runtime-health (WP-439; 2026-07-27, worktree-wp-dashboard-runtime-health)
 - EC-475 — gauntlet-pack-contract (WP-440; 2026-07-27, claude/wp440-gauntlet-pack)
 - EC-476 — legends-gauntlet-download (WP-441; 2026-07-27, claude/wp441-legends-download)
+- EC-477 — gauntlet-truth-helper (WP-442; 2026-07-27, claude/wp442-truth)
 
 ## D
 
