@@ -33075,7 +33075,7 @@ tests; the payoff is the *next* live freeze being diagnosable from one log line)
 
 Protect this file.
 
-## D-24256 — Bot-Ally Cross-Instance Ownership Guard: `driver_owner` + Heartbeat Lease (Option B over a pg Advisory Lock)
+### D-24256 — Bot-Ally Cross-Instance Ownership Guard: `driver_owner` + Heartbeat Lease (Option B over a pg Advisory Lock)
 
 **Status:** Active (post-execution). **Packet:** WP-437 / EC-472.
 **Supersedes nothing; closes the residual WP-424 / D-24244 deferred.**
@@ -33220,7 +33220,8 @@ byte-unchanged. `User-Visible Surface = none` (diagnostic metadata, not rendered
 D-24026 N/A.
 
 **Packet:** WP-438 + EC-473. Extends **D-24253**.
-## D-24258 — Dashboard Runtime-Health Signal: On-Request Sampled Process Metrics on `GET /api/dash/system/runtime`
+
+### D-24258 — Dashboard Runtime-Health Signal: On-Request Sampled Process Metrics on `GET /api/dash/system/runtime`
 
 **Status:** Active (post-execution). **Packet:** WP-439 / EC-474.
 
