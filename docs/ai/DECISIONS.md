@@ -33523,4 +33523,109 @@ live-verify on the deploy (Magneto renders first; the download yields a valid
 `.gauntlet.json` parsing against the WP-440 `GauntletPackSchema`; `read_network_requests`
 shows zero API calls).
 
+### D-24262 — Gauntlet progression is read-only derived state (the derived-progression lock); active-run uniqueness key; `first_completed_at` is audit, not championship truth; run legs live in `leg_picks`, not `player_loadouts` (Drafted 2026-07-27; not yet landed — WP-443)
+
+**Context.** WP-443 is the fourth slice of the **Mastermind Gauntlets: download →
+import → build → track** epic: it adds the account-local **run workspace** storage —
+one new table `legendary.player_gauntlet_runs` (migration `039`) holding a gauntlet
+run's identity (`player_id`, `set_abbr`, `mastermind_slug`, `division`,
+`player_count`), the player's per-leg hero picks (`leg_picks jsonb`, map `schemeSlug →
+heroDeckIds[]`), and audit timestamps (`created_at`, `updated_at`, write-once
+`first_completed_at`). The whole epic's design premise (approved plan §2 "Run
+workspace = minimal, maximally derived") is that **progress is derivable, not stored**:
+a leg is "cleared" when a `legendary.competitive_scores` row exists with
+`outcome='heroes-win'` matching the leg's scheme + mastermind and passing the
+qualification clauses now owned by WP-442's `gauntletTruth.logic.ts`; the tracker is a
+**derived read**.
+
+**The design tension.** The obvious performance-and-simplicity shortcut is to cache
+derived progression as columns/rows — a `status` column, a `hero_pool` column, a
+per-leg `cleared` flag, a `champion` flag, a `pool_validity` flag, a
+`completed_gauntlets` table, a "last-played leg" column. Every one of those introduces
+a **second source of truth** that can drift from `competitive_scores` (the authoritative
+scoring surface) and from `leg_picks` (the authoritative hero state), and must then be
+kept consistent by write-side logic that does not exist and should not. That drift is
+the single most likely way this design decays, and it decays silently.
+
+**Decision.**
+
+1. **Derived-progression lock.** Gauntlet progression is **read-only derived state**.
+   **No future work may store leg-cleared flags, champion flags, pool-validity flags,
+   a stored `status`, a stored `hero_pool`, a "last-played leg" column, a
+   `completed_gauntlets` / cleared-flag / champion-flag / pool-validity table, or any
+   other cached derivation of progress — without an explicit architecture decision that
+   supersedes this one.** Status (the 5-state model), pool (the union of the player's
+   per-leg hero picks), budget headroom, fixed-pool validity, champion, and "where you
+   left off" are **all computed at read time** (WP-5) from `leg_picks` +
+   `competitive_scores`. `player_gauntlet_runs` stores **only** identity + per-leg hero
+   picks + audit timestamps. This protects the entire epic — and any later gauntlet
+   work — from the consistency-introducing shortcut.
+
+2. **Active-run uniqueness key.** At-most-one **active** run per identity is enforced by
+   a **partial-unique** index:
+   `UNIQUE (player_id, set_abbr, mastermind_slug, division, player_count) WHERE
+   first_completed_at IS NULL`. A player **may** run Magneto-2p and Magneto-3p, or the
+   `open` and `fixed` divisions of the same gauntlet, concurrently — different
+   player-counts/divisions are different runs — but **not** two active identical runs.
+   A completed run (non-null `first_completed_at`) **frees the slot**, so a fresh active
+   run of the same identity is then allowed while the completed run remains as history.
+   A full `UNIQUE` (no `WHERE`) is **wrong** here — it would forbid that
+   completed-plus-fresh-active pairing. WP-5's re-import idempotency is backed by this
+   index: re-importing the same identity while active attaches to the existing run
+   rather than duplicating.
+
+3. **`first_completed_at` semantics — audit, not truth.** `first_completed_at` is a
+   nullable, **write-once** audit + archive-boundary stamp, set by the server the first
+   time a read **derives** champion (WP-5). It is **never** read as championship truth:
+   every read **re-derives** champion from `competitive_scores` (honoring the D-24187 /
+   D-24199 fixed-division + approved-loadout rules via WP-442's helper). The stamp
+   exists only for history ordering (completed-gauntlet history =
+   `WHERE first_completed_at IS NOT NULL`, ordered by that stamp, champion re-derived)
+   and for the active-run boundary in the uniqueness key. It records *when a completion
+   was first observed*, not *that the run is a championship*.
+
+4. **Run legs live in `leg_picks`, not `player_loadouts`.** The run's per-leg hero picks
+   are held in the run's own `leg_picks jsonb` column — the **single authoritative hero
+   state** for the run — **never** in `legendary.player_loadouts`. The
+   50-loadout-per-account cap (D-24086) is therefore **never touched** by a run; only an
+   explicit, future "save this leg to my library" action consumes that cap. The run's
+   hero **pool** is derived as the **union of the per-leg picks** (no stored `hero_pool`
+   column, per clause 1).
+
+**Scope / what this is not.** WP-443 is server/persistence-layer only: it adds the
+migration + an optional minimal row-shape types module + a DB-gated migration test. It
+adds **no** API/endpoint (WP-5), **no** derived-read logic (WP-5 consumes WP-442's
+helper), **no** client (WP-7), and **no** import flow. `G` / `ctx` are untouched: this
+is ordinary `legendary.*` **domain** storage (the `player_loadouts` precedent), **not**
+a snapshot, **not** a save-game, and **not** the boardgame.io framework store (`bgio`
+schema) — so **no persistence-boundary carve-out** is added (`.claude/rules/architecture.md
+§Persistence Boundary` and `ARCHITECTURE.md` need no edit).
+
+**Alternatives rejected.** (a) *Store `status` / `hero_pool` / cleared / champion /
+pool-validity as columns or a completion table* — rejected: it is the drift this
+decision exists to forbid; progression is cheap to derive over a handful of legs and a
+per-player scores read. (b) *A normalized `player_gauntlet_run_heroes` child table for
+per-leg picks* — rejected for v1: legs are few, fixed, and never queried by leg, so a
+`jsonb` map is simpler and sufficient; a child table is future-only. (c) *A full
+`UNIQUE` on the identity tuple* — rejected: it forbids a completed run coexisting with a
+fresh active run of the same identity; the partial predicate is required. (d) *Put run
+picks in `player_loadouts`* — rejected: it conflates the run workspace with the saved
+library and would consume the 50-cap.
+
+**Files (at execution).** `data/migrations/039_create_player_gauntlet_runs.sql` (new),
+`apps/server/src/gauntlet/gauntletRun.types.ts` (new, optional minimal row-shape),
+`apps/server/src/gauntlet/gauntletRun.migration.test.ts` (new, DB-gated), and this entry
+flips Drafted → Active. No `.claude/rules/*` or `ARCHITECTURE.md` edit — the table lives
+inside the existing Server layer's `legendary.*` domain storage and adds no cross-layer
+import or blob-read carve-out.
+
+**Verification (at execution).** `pnpm -r build` green; `pnpm --filter
+@legendary-arena/server test` green (the DB-gated migration test asserts the table +
+columns + both indexes exist, that a second active run of the same identity is blocked
+while active and allowed once the first is completed, the `division` / `player_count`
+CHECKs, and the player CASCADE — run against a migrated `TEST_DATABASE_URL`; it skips
+loudly without one). `grep` confirms the migration adds no `status` / `hero_pool` /
+`champion` / `cleared` column and carries the exact `WHERE first_completed_at IS NULL`
+partial-unique predicate.
+
 Protect this file.
