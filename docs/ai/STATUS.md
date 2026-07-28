@@ -7,6 +7,50 @@
 
 ## Current State
 
+### WP-445 / EC-480 — Gauntlet Run Import + Run-CRUD API (Server) (D-24264) (2026-07-28)
+
+**User-Visible Surface = `none — infrastructure`.** **No user-observable change —
+infrastructure only** (D-24026 inverted; no live-surface verification required).
+Sixth WP of the **Mastermind Gauntlets: download → import → build → track** epic —
+the play-side (`play.legendary-arena.com` / `apps/server`) consumer of the WP-440
+identity pack. The four endpoints are wired and reachable but no UI consumes them
+until the WP-446 derived read + the WP-7 profile tracker land.
+
+Four authenticated `/api/me/gauntlet-runs` endpoints mirror
+`loadoutLibrary.{routes,logic,types}.ts` (auth chain, `player_id` scoping,
+`Cache-Control: no-store`, closed `GauntletRunErrorCode` union):
+
+- **`POST /api/me/gauntlet-runs`** — `requireAuthenticatedSession` →
+  `requireUnsuspendedAccount`; validates a WP-440 identity pack via the registry's
+  `validateGauntletPack` (→ `400 invalid_pack`); confirms the gauntlet + approved
+  loadout menu exist for `(setAbbr, mastermindSlug, division, playerCount)` via an
+  **injected** resolver built in `server.mjs` from the startup `gauntletCatalog`
+  (→ `422 unknown_gauntlet`); INSERTs an active run with empty `leg_picks`.
+  **Idempotent (D-24264):** the migration-039 partial-unique active-run conflict
+  is caught and resolved to the existing run (`200`), never a `409`/`500`; a new
+  insert returns `201`. Never writes `first_completed_at`.
+- **`GET /api/me/gauntlet-runs`** — the caller's **raw stored** runs (identity +
+  `legPicks` + timestamps + `firstCompletedAt`); **no derived projection** (the
+  5-state status / pool / headroom / cleared / last-played read is WP-446).
+- **`PATCH /api/me/gauntlet-runs/:id`** — edits `leg_picks` (structural shape only
+  — an object of `schemeSlug → heroDeckIds[]`; no gameplay validity check) +
+  advances `updated_at`.
+- **`DELETE /api/me/gauntlet-runs/:id`** — removes; `204`.
+- All `player_id`-scoped; a malformed / cross-account / missing `:id` returns
+  `404 not_found` (UUID-guarded before any `::uuid` cast, no existence leak).
+
+- **New** `apps/server/src/gauntlet/gauntletRun.{routes,logic,logic.test}.ts`;
+  **additive** API types in `gauntletRun.types.ts` (row-shape types unchanged);
+  **`server.mjs`** wiring; four `Wired` rows in `api-endpoints.md` (D-11804 §21).
+- **Verification:** `pnpm -r build` green; `pnpm --filter @legendary-arena/server
+  test` green (0 failures); the new `gauntletRun.logic.test.ts` passes **12/12**
+  with `TEST_DATABASE_URL` set (migration 039 applied) and **loud-skips** its DB
+  cases without it. Layer grep over `gauntletRun.logic.ts` = 0 engine/preplan/
+  client imports.
+- **Persistence boundary:** ordinary `legendary.*` domain storage (the
+  `player_loadouts` precedent) — no `G`/`ctx`/`bgio`-blob read, no snapshot, no
+  carve-out; stores **nothing derived** (D-24262). No migration (039 exists).
+
 ### WP-444 / EC-479 — Registry-Viewer Gauntlet-Pack Import (cards builder) (D-24263) (2026-07-28)
 
 **User-Visible Surface = `cards.legendary-arena.com`** (the Registry-Viewer
