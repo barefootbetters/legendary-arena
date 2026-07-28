@@ -34,10 +34,10 @@ test('findPendingChoiceMove returns the resolveOptionalKoReward short-circuit', 
 });
 
 test('findPendingChoiceMove drains every block-all resolve short-circuit (WP-427)', () => {
-  // why: the list had drifted to 2 of the engine's 8 block-all resolve moves; each
-  // must be recognized so the bot drains the parked choice via the fast-path (the
-  // put-bottom-HQ pair, which had NO getLegalMoves short-circuit at all, faulted the
-  // bot before WP-427).
+  // why: the list had drifted to 2 of the engine's block-all resolve moves; each must be
+  // recognized so the bot drains the parked choice via the fast-path (the put-bottom-HQ
+  // pair, which had NO getLegalMoves short-circuit at all, faulted the bot before WP-427;
+  // resolveHeroChoice was the last such gap, added alongside its engine short-circuit).
   const allResolveMoves = [
     'resolveKoHeroChoice',
     'resolveOptionalKoReward',
@@ -47,6 +47,7 @@ test('findPendingChoiceMove drains every block-all resolve short-circuit (WP-427
     'resolveDiscardToPlay',
     'resolveOptionalPutBottomHQ',
     'resolvePutAnyNumberBottomHQ',
+    'resolveHeroChoice',
   ];
   for (const name of allResolveMoves) {
     const parked = [{ name, args: { any: 'default' } }];

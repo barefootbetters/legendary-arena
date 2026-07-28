@@ -439,3 +439,56 @@ describe('getLegalMoves — dynamic villain fight cost uses resolveFightCost (bo
     assert.deepEqual(fightMoves[0]!.args, { cityIndex: 0 });
   });
 });
+
+describe('getLegalMoves — pending hero-reveal discard-or-return short-circuit (D-22001, bot-freeze gap)', () => {
+  // why: pendingHeroChoice was the ONE block-all choice getLegalMoves did not short-circuit
+  // (the WP-427 sibling). It blocks endTurn + the cleanup stage-advance, so without a resolve
+  // move the bot dispatched a guard-rejected endTurn/advanceStage and its turn faulted. These
+  // tests pin the short-circuit + the deterministic 'return' default.
+
+  test('returns EXACTLY one resolveHeroChoice with the deterministic return default while pending', () => {
+    const gameState = makeG({ hand: ['h' as CardExtId], currentStage: 'main' });
+    gameState.pendingHeroChoice = {
+      choiceType: 'discard-or-return',
+      cardId: 'revealed-card' as CardExtId,
+      playerID: '0',
+    };
+
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+
+    assert.equal(legalMoves.length, 1, 'exactly one move while a hero-reveal choice is pending');
+    assert.equal(legalMoves[0]!.name, 'resolveHeroChoice');
+    assert.deepEqual(
+      legalMoves[0]!.args,
+      { resolution: 'return' },
+      'deterministic default returns (keeps) the revealed card — never discards blindly',
+    );
+  });
+
+  test('the short-circuit fires in cleanup too (where pendingHeroChoice blocks the turn-end)', () => {
+    const gameState = makeG({ hand: [], currentStage: 'cleanup' });
+    gameState.pendingHeroChoice = {
+      choiceType: 'discard-or-return',
+      cardId: 'revealed-card' as CardExtId,
+      playerID: '0',
+    };
+
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+
+    assert.equal(legalMoves.length, 1);
+    assert.equal(legalMoves[0]!.name, 'resolveHeroChoice');
+  });
+
+  test('no short-circuit when pendingHeroChoice is undefined (normal enumeration)', () => {
+    const gameState = makeG({ hand: [], currentStage: 'main' });
+    assert.equal(gameState.pendingHeroChoice, undefined);
+
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+
+    assert.ok(
+      !legalMoves.some((move) => move.name === 'resolveHeroChoice'),
+      'resolveHeroChoice is not offered when nothing is pending',
+    );
+    assert.ok(legalMoves.some((move) => move.name === 'advanceStage'));
+  });
+});

@@ -31,8 +31,12 @@
 // fallback happened to dispatch the missing ones (they arrive as the sole legal
 // move with default args), but a choice type with NO getLegalMoves short-circuit at
 // all (the put-bottom-HQ pair, fixed in WP-427) still faulted the bot. Listing all
-// eight here makes the "drain the parked choice before the stage fallback" contract
-// explicit and drift-resistant.
+// nine here makes the "drain the parked choice before the stage fallback" contract
+// explicit and drift-resistant. `resolveHeroChoice` (pendingHeroChoice, D-22001) is
+// the ninth — the last block-all choice that lacked a getLegalMoves short-circuit,
+// added alongside the engine short-circuit so a bot turn that reveals a discard-or-
+// return hero card resolves it instead of faulting. Keep in lockstep with
+// PENDING_CHOICE_FLAGS in botAllyDriver.mjs (both enumerate the nine block-all choices).
 const PENDING_CHOICE_MOVE_NAMES = [
   'resolveKoHeroChoice',
   'resolveOptionalKoReward',
@@ -42,6 +46,7 @@ const PENDING_CHOICE_MOVE_NAMES = [
   'resolveDiscardToPlay',
   'resolveOptionalPutBottomHQ',
   'resolvePutAnyNumberBottomHQ',
+  'resolveHeroChoice',
 ];
 
 /**
