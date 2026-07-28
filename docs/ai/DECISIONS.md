@@ -33523,7 +33523,7 @@ live-verify on the deploy (Magneto renders first; the download yields a valid
 `.gauntlet.json` parsing against the WP-440 `GauntletPackSchema`; `read_network_requests`
 shows zero API calls).
 
-### D-24262 — Gauntlet progression is read-only derived state (the derived-progression lock); active-run uniqueness key; `first_completed_at` is audit, not championship truth; run legs live in `leg_picks`, not `player_loadouts` (Drafted 2026-07-27; not yet landed — WP-443)
+### D-24262 — Gauntlet progression is read-only derived state (the derived-progression lock); active-run uniqueness key; `first_completed_at` is audit, not championship truth; run legs live in `leg_picks`, not `player_loadouts` (Active (post-execution) 2026-07-27 — WP-443)
 
 **Context.** WP-443 is the fourth slice of the **Mastermind Gauntlets: download →
 import → build → track** epic: it adds the account-local **run workspace** storage —

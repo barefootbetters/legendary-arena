@@ -7,6 +7,45 @@
 
 ## Current State
 
+### WP-443 / EC-478 — Gauntlet Run Persistence (`player_gauntlet_runs`) (Server / migration) (D-24262) (2026-07-27)
+
+**User-Visible Surface = `none — infrastructure`.** **No user-observable change —
+infrastructure only** (D-24026 inverted; no live-surface verification required).
+Fourth WP of the **Mastermind Gauntlets: download → import → build → track** epic —
+the account-local **run-workspace** storage. A player observes nothing until WP-5
+consumes it.
+
+A single new PostgreSQL migration adds one `legendary.*` domain table storing a
+player's in-progress gauntlet runs: identity + per-leg hero picks + audit
+timestamps, and **nothing derived**.
+
+- **New migration `039_create_player_gauntlet_runs.sql`** (039 because 038 is
+  `driver_owner`) creating **one** table `legendary.player_gauntlet_runs` (10
+  columns): `id uuid PK gen_random_uuid()`, `player_id bigint FK
+  legendary.players(player_id) ON DELETE CASCADE`, `set_abbr`, `mastermind_slug`,
+  `division text CHECK IN ('fixed','open')`, `player_count smallint CHECK BETWEEN 1
+  AND 5`, `leg_picks jsonb DEFAULT '{}'` (map schemeSlug → heroDeckIds[], the single
+  authoritative hero state), `created_at`, `updated_at`, write-once nullable
+  `first_completed_at`. **Partial-unique active-run index** (predicate: index rows
+  only while `first_completed_at` is null) enforces at-most-one active run per
+  identity while a completed run frees the slot; a `(player_id)` listing index
+  serves the list read. Idempotent (`IF NOT EXISTS`).
+- **Maximally derived (D-24262 lock):** NO status / hero_pool / child / history /
+  flag / pool-validity / champion column or table — run state, pool, budget
+  headroom, standing, and last-played are ALL derived at read time (WP-5) from
+  `leg_picks` + `competitive_scores`, never stored.
+- **Minimal types module `apps/server/src/gauntlet/gauntletRun.types.ts`** — plain
+  row-shape types (`GauntletRunDivision`, `GauntletRunLegPicks`, `GauntletRunRow`)
+  for WP-5; no function, no `pg`, no repository.
+- **DB-gated `gauntletRun.migration.test.ts`** (options-based loud skip without
+  `TEST_DATABASE_URL`): table + 10 columns + both indexes exist; a 2nd active run
+  of the same identity is blocked, allowed once `first_completed_at` is stamped;
+  the `division` and `player_count` CHECKs reject bad values; deleting the player
+  CASCADEs. **7/7 pass** against a migrated local DB; `pnpm -r build` green.
+- **Persistence boundary:** `G`/`ctx` untouched; ordinary server-layer
+  `legendary.*` domain storage (the `player_loadouts` precedent), not a snapshot,
+  save-game, or `bgio` framework store. **No persistence carve-out added.**
+
 ### WP-442 / EC-477 — Extract Shared Gauntlet-Truth Helper (Server) (2026-07-27)
 
 **User-Visible Surface = `none — infrastructure`.** **No user-observable change —
