@@ -33906,4 +33906,61 @@ grep over `gauntletRunProgress.logic.ts` finds no
 engine/preplan/boardgame.io/registry/`apps/*` import; a re-implementation grep
 finds no local `qualifiesAsLegClear`/`findBestPoolAssignment` definition.
 
+### D-24266 — A printed villain/henchman Fight/Ambush/Escape line with no `[effect:]` marker is `no-handler` hollow (observability breadcrumb), superseding WP-188's silent marker-free skip (Active)
+
+**Context.** Jeff reported that Doombot Legion's printed "Fight: Look at the top
+two cards of your deck. KO one of them and put the other back." did nothing and
+left **no trace** in the game log — the operator could not tell an un-implemented
+printed effect from a card that simply has no Fight effect. Root cause: the
+villain/henchman effect vocabulary is the closed 5-primitive set
+(`VILLAIN_EFFECT_PRIMITIVES`), which cannot express a deck-scry-then-KO, so the
+card carries no `[effect:]` marker at all. The parser (`villainAbility.setup.ts`)
+still emits a hook for the line (its `Fight:` timing prefix matched) but with
+`effects: []` and no `unresolvedMarkers`. The WP-257 hollow-effect detector
+(`no-handler` / `unsupported-keyword` / `parse-unrecognized`) only classified
+lines that produced a descriptor or an unresolved marker, so this
+**printed-but-entirely-unmarked** class fell through silently. Hero abilities
+already get a `[blocked]` breadcrumb; villain/henchman effects had no equivalent.
+
+**Decision.** `executeVillainAbilities` now records a `no-handler` hollow effect
+(mechanic `'unmarked-ability'`) for any fired hook whose `effects` is empty AND
+whose `unresolvedMarkers` is empty. Because a hook exists only for a line that
+began with a recognized `Fight:`/`Ambush:`/`Escape:` timing prefix — and those
+prefixes always denote a mechanical effect in Legendary; flavor text never
+carries them — a hook with no descriptor and no unresolved marker unambiguously
+means the data pipeline never annotated a real printed mechanic. The existing
+`recordHollowEffect` seam appends the operator-visible `Unhandled effect
+observed: …` line (WP-434 `blocked` colour, hash-excluded per D-24081) and the
+structured `G.diagnostics.hollowEffects` record. No taxonomy change — the closed
+`EFFECT_EXECUTION_REASONS` array is untouched; the case reuses `no-handler`
+("declared ability, no executable handler reached").
+
+**Why this supersedes WP-188.** WP-188 deliberately left out-of-vocabulary
+Escape/Fight lines marker-free and treated the resulting empty-effects hook as a
+silent safe-skip (D-18802). That was correct when there was no detector; it is
+now the exact behaviour we want to make visible. This ruling reclassifies the
+marker-free villain/henchman timing line from "silent" to "observed hollow." It
+does NOT put such lines on the `DEFERRED_BY_DESIGN_MECHANICS` allowlist (that
+allowlist stays scoped to the hero `wound` / `conditional` mechanics) — a printed
+villain/henchman mechanic with no engine primitive is genuinely un-implemented,
+not deferred-by-design, and should surface. The diagnostics channel stays
+runtime-only observation (never gameplay input); the bounded `HOLLOW_EFFECTS_CAP`
+already caps a long match.
+
+**Scope.** Observability only — no gameplay behaviour changes (the effect still
+does not fire; that is the WP-447 mechanic). The un-marked mechanic itself
+(Doombot Legion + Hand Ninjas + Savage Land Mutates and the villain corpus) is
+NOT implemented here. `apps/*` compile surfaces are unaffected (no type or export
+change).
+
+**Files.** `packages/game-engine/src/villain/villainEffects.execute.{ts,test.ts}`.
+No `.claude/rules/*` or `ARCHITECTURE.md` edit — within-layer diagnostics
+behaviour, no new cross-layer edge, no persistence carve-out, no drift array
+changed.
+
+**Verification.** `pnpm --filter @legendary-arena/game-engine build` + `test`
+green (2086/2086); a new test drives the Doombot Legion henchman case and asserts
+the `no-handler` record + the `blocked`-coloured operator log line; a negative
+test confirms an applied `captureBystander` hook records no breadcrumb.
+
 Protect this file.

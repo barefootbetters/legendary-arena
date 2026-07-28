@@ -162,6 +162,21 @@ export function executeVillainAbilities(
     // but could not turn into a descriptor is `parse-unrecognized` hollow. These
     // never produced a descriptor, so they are not in hook.effects above.
     detectVillainUnresolvedMarkers(G, cardId, cardType, hook, turn);
+    // why: D-24266 — the printed-but-unmarked gap. This hook exists ONLY because
+    // its source ability line began with a recognized timing prefix
+    // (Fight:/Ambush:/Escape:), which in Legendary always denotes a mechanical
+    // effect — flavor text never carries those prefixes. A hook with zero
+    // descriptors AND zero unresolved markers therefore means the data pipeline
+    // never annotated the line with any `[effect:]` marker at all, so the printed
+    // mechanic is entirely un-implemented (e.g. Doombot Legion's "Fight: Look at
+    // the top two cards of your deck. KO one of them and put the other back.").
+    // The WP-257 detector only classified markered/descriptored lines, so this
+    // whole class fell through silently. Recording it as `no-handler` hollow gives
+    // the operator log a breadcrumb instead of nothing. This supersedes WP-188's
+    // implicit "marker-free line = silent safe-skip" for villain/henchman timing
+    // lines (the parser still emits the hook; the difference is that we now
+    // observe it rather than dropping it on the floor).
+    detectVillainUnmarkedTimingLine(G, cardId, cardType, hook, turn);
   }
 
   return results;
@@ -353,6 +368,48 @@ function detectVillainUnresolvedMarkers(
       turn,
     });
   }
+}
+
+/**
+ * Records a `no-handler` hollow event for a hook whose ability line carried a
+ * recognized timing prefix but no machine-readable effect at all (D-24266).
+ *
+ * A villain/henchman hook is built only for an ability line that begins with
+ * `Fight:` / `Ambush:` / `Escape:`, and those prefixes always denote a
+ * mechanical effect. When the parser produced neither a descriptor nor an
+ * unresolved `[effect:X]` marker, the line was never annotated — the printed
+ * mechanic is un-implemented (e.g. Doombot Legion's deck-scry-and-KO Fight). The
+ * `mechanic` label is `'unmarked-ability'` because there is no marker token to
+ * name. A hook that DID carry an unresolved marker is handled by
+ * detectVillainUnresolvedMarkers (`parse-unrecognized`) and is excluded here so a
+ * single line never double-records.
+ *
+ * @param G - Game state (mutated under Immer draft only via recordHollowEffect).
+ * @param cardId - The triggering card-instance ext_id.
+ * @param cardType - The resolved record cardType.
+ * @param hook - The villain ability hook that fired.
+ * @param turn - The turn number for the record.
+ */
+function detectVillainUnmarkedTimingLine(
+  G: LegendaryGameState,
+  cardId: CardExtId,
+  cardType: 'villain' | 'henchman',
+  hook: VillainAbilityHook,
+  turn: number,
+): void {
+  const hasDescriptor = hook.effects.length > 0;
+  const hasUnresolvedMarker = (hook.unresolvedMarkers?.length ?? 0) > 0;
+  if (hasDescriptor || hasUnresolvedMarker) {
+    return;
+  }
+  recordHollowEffect(G, {
+    cardId,
+    cardType,
+    timing: hook.timing,
+    mechanic: 'unmarked-ability',
+    reason: 'no-handler',
+    turn,
+  });
 }
 
 /**
