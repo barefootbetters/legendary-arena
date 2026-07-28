@@ -33628,4 +33628,48 @@ loudly without one). `grep` confirms the migration adds no `status` / `hero_pool
 `champion` / `cleared` column and carries the exact `WHERE first_completed_at IS NULL`
 partial-unique predicate.
 
+### D-24263 — Bot-ally co-op strength is measured by a deterministic win-rate + loss-cause-taxonomy harness; no committed win-rate artifact, no CI freshness gate (Drafted 2026-07-28; not yet landed — WP-444)
+
+**Context.** WP-444 is the first slice of the **Bot Ally Strengthening** epic
+(operator-chosen direction 2026-07-28: a dedicated T3 ally policy, measured by win
+rate). Three co-op games on `play.legendary-arena.com` showed the bot ally losing
+winnable games to Wound-clog and blind play; "make it stronger" needs a yardstick or
+every tuning is a guess.
+
+**The design tension.** The obvious way to track "is the bot stronger" is a committed
+golden win-rate artifact gated in CI. But a win-rate number shifts on **every** policy
+tweak, so a gate would fail on every intended change and — worse — pull the same
+derived-feed cascade the 2026-07-28 bot-tuning already hit (the
+runtime-observed-hollows sweep → dashboard in-play coverage repins). A gated golden
+number for a value that is *supposed* to move each WP is a maintenance tax with
+negative signal.
+
+**Decision.**
+
+1. **Metric.** Co-op strength is measured by a deterministic harness (WP-444) that
+   plays full co-op matches over a fixed `(config, seed)` matrix through the existing
+   `runSimulation` / `evaluateEndgame` path and reports the **win rate** (`win =
+   evaluateEndgame` `heroes-win`) plus a **loss-cause taxonomy**:
+   `loss-scheme-completed` / `loss-villains-escaped` (`escapedVillains ≥ ESCAPE_LIMIT`)
+   / `loss-tie` / `inconclusive-turn-cap`. The taxonomy strings are a locked 5-member
+   canonical array with a drift test.
+
+2. **No committed win-rate artifact, no CI freshness gate.** The harness **prints**;
+   each consuming epic WP records its own before/after number in its STATUS / PR. This
+   is deliberate — a win-rate is expected to move per WP, so pinning it would invert
+   the gate's meaning and re-trigger the derived-feed cascade class. (Contrast the
+   runtime-observed-hollows artifact, which IS gated precisely because it is meant to
+   stay byte-stable.)
+
+3. **Additive seam.** The harness surfaces a narrow `simulateOneCoopGame` projection
+   from `simulation.runner.ts`; `runSimulation`'s existing aggregate contract is
+   byte-unchanged (smallest-seam, the `CapturedOutcomeSummary` precedent).
+
+**Scope boundary.** This decision locks the *metric*, not the policy. The separate
+decision to build a **dedicated T3 `BotAlly` policy** (leaving the WP-049
+`CompetentHeuristic` frozen as the balance-sim baseline) is locked by **WP-445**'s own
+D-entry when it drafts.
+
+**Status:** Drafted 2026-07-28; lands at WP-444 execution.
+
 Protect this file.
