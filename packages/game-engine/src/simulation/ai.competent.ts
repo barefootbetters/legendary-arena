@@ -24,6 +24,7 @@
 import type { AIPolicy, LegalMove } from './ai.types.js';
 import type { UIState, UICityCard, UICityState } from '../ui/uiState.types.js';
 import type { ClientTurnIntent } from '../network/intent.types.js';
+import { WOUND_EXT_ID } from '../setup/pilesInit.js';
 
 // ---------------------------------------------------------------------------
 // Seeded PRNG helpers — duplicated from ai.random.ts per WP-036 Scope Lock.
@@ -100,7 +101,17 @@ const SCORE_BYSTANDER_RESCUE_BONUS = 500;
  */
 const SCORE_IMMINENT_ESCAPE_BONUS = 800;
 
-/** Base score for fighting the mastermind (path to victory — highest combat priority). */
+/**
+ * Base score for fighting the mastermind (path to victory — the win clock).
+ *
+ * // why: defeating mastermind tactics is the ONLY way to win, and each match is a
+ * race against the scheme's loss clock (twist threshold). This is deliberately set
+ * ABOVE the strongest possible villain fight — a slot-4 (imminent-escape, +800)
+ * bystander-carrier (+500) tops out at SCORE_FIGHT_VILLAIN_BASE + 500 + 800 = 1400 —
+ * so whenever the mastermind is affordable the bot fights it FIRST, before spending
+ * attack on any villain, recruiting, or rescuing. Prioritizing the clock = never
+ * letting a lesser action pre-empt an available mastermind fight.
+ */
 const SCORE_FIGHT_MASTERMIND_BASE = 1500;
 
 /** Base score for recruiting a hero from HQ. */
@@ -108,6 +119,18 @@ const SCORE_RECRUIT_BASE = 50;
 
 /** Base score for playing a card from hand (economy building). */
 const SCORE_PLAY_CARD_BASE = 200;
+
+/**
+ * Score for playing a Wound — below EVERY lifecycle move so the bot never plays one.
+ *
+ * // why: a Wound contributes no attack/recruit; "playing" it only moves it
+ * hand→inPlay→discard, the exact discard it reaches at cleanup if left unplayed — so
+ * playing it is a pure waste of the turn (and clutters the board). Scored below
+ * SCORE_END_TURN_BASE (5) and SCORE_ADVANCE_STAGE_BASE (10) so the bot always advances
+ * / ends the turn over playing a Wound; the Wound is discarded at cleanup regardless.
+ * This keeps the bot's actions pointed at the win clock instead of dead cards. (2026-07-28)
+ */
+const SCORE_PLAY_WOUND = -1;
 
 /** Base score for drawing a card at start or main stage. */
 const SCORE_DRAW_CARDS_BASE = 150;
@@ -220,9 +243,16 @@ function scoreRecruitHero(_move: LegalMove): number {
  * // why: heuristic 3 (economy awareness) — playing cards converts hand
  * into attack/recruit points, which is always the correct next action
  * when in the main stage and holding cards. Outranks plain fighting so
- * the policy front-loads hand expenditure.
+ * the policy front-loads hand expenditure. EXCEPTION: a Wound converts to
+ * nothing, so it is scored below every lifecycle move (SCORE_PLAY_WOUND) and
+ * never played — the bot advances / ends instead, and the Wound is discarded
+ * at cleanup either way. See SCORE_PLAY_WOUND.
  */
-function scorePlayCard(_move: LegalMove): number {
+function scorePlayCard(move: LegalMove): number {
+  const args = move.args as { cardId?: string } | null | undefined;
+  if (args?.cardId === WOUND_EXT_ID) {
+    return SCORE_PLAY_WOUND;
+  }
   return SCORE_PLAY_CARD_BASE;
 }
 

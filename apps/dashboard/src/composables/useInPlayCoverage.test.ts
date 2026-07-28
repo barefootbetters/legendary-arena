@@ -195,8 +195,13 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // This test pins the composable's output against the current committed seed:
   // totalObs (the summed hit counts) and percentResolved are the deterministic
   // snapshot, and the worklist stays non-empty (unsupported mechanics remain).
+  // 2026-07-28: the bot-heuristic tuning (never play Wounds) shifted the fixed-seed
+  // sweep — the bot now visits slightly different card instances — dropping one
+  // observation (totalObs 179 -> 178, percentResolved 33.0 -> 33.1). resolvedObs is
+  // unchanged (59). The committed in-play-hollow-baseline.json peak is NOT rebuilt
+  // (it is a deliberate high-water reference, held at 140).
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 179);
-  assert.equal(view.percentResolved.value, 33);
+  assert.equal(view.totalObs.value, 178);
+  assert.equal(view.percentResolved.value, 33.1);
   assert.ok(view.remaining.value.length > 0);
 });

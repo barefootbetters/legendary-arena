@@ -446,3 +446,71 @@ describe('Bot decision logging (WP-181)', () => {
     );
   });
 });
+
+describe('Bot tuning: skip Wounds + prioritize the clock (2026-07-28)', () => {
+  const WOUND = 'pile-wound';
+
+  test('the bot plays a real card over a Wound', () => {
+    const view = buildSyntheticUIState(emptyCitySpaces());
+    const legalMoves: LegalMove[] = [
+      { name: 'playCard', args: { cardId: WOUND } },
+      { name: 'playCard', args: { cardId: 'core/spider-man/web-shooters#1' } },
+    ];
+    const policy = createCompetentHeuristicPolicy('wound-vs-real-seed');
+    const intent = policy.decideTurn(view, legalMoves);
+    assert.deepStrictEqual(
+      intent.move,
+      { name: 'playCard', args: { cardId: 'core/spider-man/web-shooters#1' } },
+      'a value-generating card must be preferred over a Wound',
+    );
+  });
+
+  test('the bot advances the stage rather than play a lone Wound', () => {
+    const view = buildSyntheticUIState(emptyCitySpaces());
+    // main-stage turn with nothing left but a Wound in hand + the stage-advance.
+    const legalMoves: LegalMove[] = [
+      { name: 'playCard', args: { cardId: WOUND } },
+      { name: 'advanceStage', args: {} },
+    ];
+    const policy = createCompetentHeuristicPolicy('wound-vs-advance-seed');
+    const intent = policy.decideTurn(view, legalMoves);
+    assert.equal(
+      intent.move.name,
+      'advanceStage',
+      'the bot advances (leaving the Wound to be discarded at cleanup) rather than waste a play on it',
+    );
+  });
+
+  test('a non-Wound card with a null / absent cardId is still played normally', () => {
+    // defensive: a malformed playCard (no cardId) must not be mistaken for a Wound.
+    const view = buildSyntheticUIState(emptyCitySpaces());
+    const policy = createCompetentHeuristicPolicy('null-cardid-seed');
+    const intent = policy.decideTurn(view, [
+      { name: 'playCard', args: {} },
+      { name: 'advanceStage', args: {} },
+    ]);
+    assert.equal(intent.move.name, 'playCard', 'a non-Wound play still outranks advanceStage');
+  });
+
+  test('the bot fights the mastermind over the strongest possible villain (win-clock priority)', () => {
+    // slot-4 (imminent escape, +800) villain carrying a bystander (+500) is the highest
+    // villain score possible (1400). The mastermind (1500) must still win — the clock.
+    const strongestVillain: UICityCard = {
+      extId: 'villain-escape-bystander',
+      type: 'villain',
+      keywords: ['bystander'],
+    };
+    const view = buildSyntheticUIState([null, null, null, null, strongestVillain]);
+    const legalMoves: LegalMove[] = [
+      { name: 'fightVillain', args: { cityIndex: 4 } },
+      { name: 'fightMastermind', args: {} },
+    ];
+    const policy = createCompetentHeuristicPolicy('clock-priority-seed');
+    const intent = policy.decideTurn(view, legalMoves);
+    assert.equal(
+      intent.move.name,
+      'fightMastermind',
+      'defeating a tactic (the win clock) outranks even a slot-4 bystander-carrier rescue',
+    );
+  });
+});
