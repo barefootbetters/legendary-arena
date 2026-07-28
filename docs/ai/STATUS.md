@@ -7,6 +7,39 @@
 
 ## Current State
 
+### WP-442 / EC-477 — Extract Shared Gauntlet-Truth Helper (Server) (2026-07-27)
+
+**User-Visible Surface = `none — infrastructure`.** **No user-observable change —
+infrastructure only** (D-24026 inverted; no live-surface verification required).
+Third WP of the **Mastermind Gauntlets: download → import → build → track** epic.
+
+A behavior-preserving server-layer refactor. The leg-clear qualification predicate
+and the fixed-division pool-assignment search were extracted out of
+`apps/server/src/legends/gauntlet.logic.ts` into a new pure, data-injected,
+layer-locked module `apps/server/src/legends/gauntletTruth.logic.ts`, and
+`getGauntletStandings` was rewired to consume them with **zero behavior change**.
+The payoff is structural: WP-5's future per-run tracker read will consume the
+**same** helper, so the leaderboard and the tracker cannot drift on what "cleared
+a leg" or "champion" means.
+
+- **New module `gauntletTruth.logic.ts`** exports `qualifiesAsLegClear` +
+  `LegClearReplayFacts`, `matchesApprovedLoadout`, `findBestPoolAssignment` (plus
+  its four private helpers and `FIXED_POOL_TEAM_CAP = 12`, all moved verbatim),
+  and the moved-and-exported `RosterLegAccumulator`. `selectBoundedTeams` /
+  `findBestPoolAssignment` take a precomputed `boardName: string` instead of a
+  `GauntletDefinition`, so the pure helper never imports the board-name builder;
+  the cap-warning string is byte-identical.
+- **Layer lock (inherited, not newly decided):** the new module imports nothing
+  from `registry` / `game-engine` / `preplan` / `pg` / `boardgame.io` — only Node
+  built-ins and a **type-only** `GauntletApprovedLoadouts` from the sibling.
+  Runtime edge is one-directional `gauntlet.logic → gauntletTruth`; the reverse is
+  type-only, so there is no import cycle. No `.reduce()` in the extracted or
+  rewired logic. **No DECISIONS.md entry** — this WP locks no new invariant.
+- **Correctness gate:** `gauntlet.logic.test.ts` passes **unchanged** (the
+  behavior-preservation proof); a new `gauntletTruth.logic.test.ts` unit-tests the
+  extracted functions in isolation. Full `apps/server` suite: 978 pass / 0 fail /
+  158 DB-skipped; `pnpm -r build` green.
+
 ### WP-441 / EC-476 — Legends Gauntlet Pin + Download (legends-board client) (D-24261) (2026-07-27)
 
 **User-Visible Surface = `legends.legendary-arena.com`** (the public Legends
