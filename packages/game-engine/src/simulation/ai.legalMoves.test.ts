@@ -363,3 +363,79 @@ describe('getLegalMoves — pending put-bottom-HQ short-circuits (WP-427 / D-242
     assert.equal(legalMoves.length, 0, 'fail closed rather than emit an unresolvable move');
   });
 });
+
+describe('getLegalMoves — dynamic villain fight cost uses resolveFightCost (bot-freeze fix)', () => {
+  // why: 2026-07-27 prod freeze (matches aifbXW04bA1 / eAVZNdWE5C1). getLegalMoves read
+  // the STATIC cardStats.fightCost for city villains, but the fightVillain move gates on
+  // resolveFightCost (the WP-214 single authority), which adds the captured-hero cost for
+  // dynamic (vAttack "*"/"N+") villains. A dynamic villain whose static fightCost is 0 but
+  // whose RESOLVED cost exceeds available attack was offered as a legal fight; the move
+  // silently rejected it, yet boardgame.io still bumped _stateID on the void return, so the
+  // bot-ally driver could not see the no-op and re-picked it every step until the 100-step
+  // per-turn cap FAULTED the co-op match. These tests pin getLegalMoves to resolveFightCost.
+
+  /**
+   * Builds a state with one dynamic ("*") villain in city slot 0 that has captured one
+   * hero, plus available attack. Mirrors the Skrull Queen Veranke + Covering Fire repro.
+   */
+  function makeDynamicVillainG(availableAttack: number): LegendaryGameState {
+    const gameState = makeG({ hand: [], currentStage: 'main' });
+    gameState.turnEconomy = {
+      attack: availableAttack,
+      recruit: 0,
+      spentAttack: 0,
+      spentRecruit: 0,
+      piercing: 0,
+      woundsDrawn: 0,
+    } as LegendaryGameState['turnEconomy'];
+    gameState.city = ['dyn-villain' as CardExtId, null, null, null, null];
+    // why: dynamic villain — static fightCost 0, fightCostBase 0; resolved cost is
+    // fightCostBase + captured hero cost = 0 + 5 = 5 (the captured hero costs 5).
+    gameState.cardStats = {
+      'dyn-villain': { attack: 0, recruit: 0, cost: 0, fightCost: 0, fightCostMode: 'dynamic', fightCostBase: 0 },
+      'captured-hero': { attack: 0, recruit: 0, cost: 5, fightCost: 0 },
+    } as unknown as LegendaryGameState['cardStats'];
+    gameState.villainAttachedHeroes = { 'dyn-villain': ['captured-hero' as CardExtId] };
+    return gameState;
+  }
+
+  test('does NOT offer fightVillain when the RESOLVED dynamic cost exceeds available attack', () => {
+    // Resolved cost = 5; available attack = 4 → unaffordable. The static fightCost (0)
+    // would have wrongly offered it (this is the exact freeze).
+    const gameState = makeDynamicVillainG(4);
+
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+
+    const fightMoves = legalMoves.filter((move) => move.name === 'fightVillain');
+    assert.equal(fightMoves.length, 0, 'unaffordable dynamic villain must not be offered');
+  });
+
+  test('does NOT offer fightVillain at zero attack against a captured-hero dynamic villain', () => {
+    // The prod repro: attack 0, resolved cost 5. Static-fightCost logic offered it at 0>=0.
+    const gameState = makeDynamicVillainG(0);
+
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+
+    assert.equal(
+      legalMoves.filter((move) => move.name === 'fightVillain').length,
+      0,
+      'a dynamic villain with static fightCost 0 must not be offered at zero attack',
+    );
+    // The bot is left only advanceStage, so it can end the turn instead of spinning.
+    assert.ok(
+      legalMoves.some((move) => move.name === 'advanceStage'),
+      'advanceStage remains available so the turn can end',
+    );
+  });
+
+  test('DOES offer fightVillain once available attack meets the resolved dynamic cost', () => {
+    // Resolved cost = 5; available attack = 5 → affordable.
+    const gameState = makeDynamicVillainG(5);
+
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+
+    const fightMoves = legalMoves.filter((move) => move.name === 'fightVillain');
+    assert.equal(fightMoves.length, 1, 'affordable dynamic villain is offered');
+    assert.deepEqual(fightMoves[0]!.args, { cityIndex: 0 });
+  });
+});
