@@ -26,6 +26,9 @@ import {
   BOT_ALLY_STATUS,
   BOT_FAULTED_MESSAGE,
   summarizeBotTurnState,
+  progressFingerprint,
+  dispatchMadeRealProgress,
+  FINGERPRINT_UNAVAILABLE,
 } from './botAllyDriver.mjs';
 
 // why: every test registers drivers in the shared module-scope map; clear it
@@ -818,4 +821,128 @@ test('a driver with NO lease dep drives normally (single-instance back-compat)',
 
   assert.equal(submitCalls.length, 1, 'the driver drove without any lease dep present');
   assert.equal(driver.getTurnCount(), 1);
+});
+
+// ── FU1: real-progress detection (no-op moves must not be read as advances) ─────────
+
+/** A minimal move-observable G for fingerprint tests. */
+function fingerprintG(overrides: Record<string, unknown> = {}) {
+  return {
+    currentStage: 'main',
+    turnEconomy: { attack: 4, recruit: 0, spentAttack: 0, spentRecruit: 0 },
+    villainRevealedThisTurn: true,
+    hasHealedThisTurn: false,
+    hasActedThisTurn: true,
+    hq: ['h-0', null, 'h-2', null, null],
+    city: ['v-0', null, null, null, null],
+    ko: [],
+    villainDeck: ['x', 'y'],
+    heroDeck: ['a', 'b', 'c'],
+    mastermind: { tacticsDeck: ['t'], tacticsDefeated: 0 },
+    playerZones: { '1': { hand: ['c1'], discard: [], inPlay: [], victory: [], deck: ['d1', 'd2'] } },
+    ...overrides,
+  };
+}
+
+test('progressFingerprint is identical for two states that differ only in _stateID', () => {
+  const g = fingerprintG();
+  const before = { ctx: { currentPlayer: '1', turn: 5 }, _stateID: 10, G: g };
+  const after = { ctx: { currentPlayer: '1', turn: 5 }, _stateID: 11, G: g };
+  assert.equal(
+    progressFingerprint(before),
+    progressFingerprint(after),
+    'a bumped _stateID with an unchanged G yields the same fingerprint (a no-op)',
+  );
+});
+
+test('progressFingerprint changes when any move-observable field changes', () => {
+  const base = { ctx: { currentPlayer: '1', turn: 5 }, _stateID: 10, G: fingerprintG() };
+  const spentAttack = {
+    ctx: { currentPlayer: '1', turn: 5 },
+    _stateID: 11,
+    G: fingerprintG({ turnEconomy: { attack: 4, recruit: 0, spentAttack: 4, spentRecruit: 0 } }),
+  };
+  const stageMoved = { ctx: { currentPlayer: '1', turn: 5 }, _stateID: 11, G: fingerprintG({ currentStage: 'cleanup' }) };
+  const cityCleared = { ctx: { currentPlayer: '1', turn: 5 }, _stateID: 11, G: fingerprintG({ city: [null, null, null, null, null] }) };
+  const base0 = progressFingerprint(base);
+  assert.notEqual(progressFingerprint(spentAttack), base0, 'spending attack changes the fingerprint');
+  assert.notEqual(progressFingerprint(stageMoved), base0, 'a stage advance changes the fingerprint');
+  assert.notEqual(progressFingerprint(cityCleared), base0, 'defeating a city villain changes the fingerprint');
+});
+
+test('progressFingerprint returns the sentinel for a null / G-less state, never throwing', () => {
+  assert.equal(progressFingerprint(null), FINGERPRINT_UNAVAILABLE);
+  assert.equal(progressFingerprint({ ctx: { currentPlayer: '1' }, _stateID: 1 }), FINGERPRINT_UNAVAILABLE);
+});
+
+test('dispatchMadeRealProgress: bumped _stateID with unchanged fingerprint is NOT progress', () => {
+  const g = fingerprintG();
+  const before = { ctx: { currentPlayer: '1', turn: 5 }, _stateID: 10, G: g };
+  const after = { ctx: { currentPlayer: '1', turn: 5 }, _stateID: 11, G: g };
+  assert.equal(dispatchMadeRealProgress(before, after, '1'), false, 'a no-op move is not real progress');
+});
+
+test('dispatchMadeRealProgress: turn passing, game over, or a changed fingerprint IS progress', () => {
+  const before = { ctx: { currentPlayer: '1', turn: 5 }, _stateID: 10, G: fingerprintG() };
+  const turnPassed = { ctx: { currentPlayer: '0', turn: 6 }, _stateID: 11, G: fingerprintG() };
+  const gameOver = { ctx: { currentPlayer: '1', turn: 5, gameover: { outcome: 'win' } }, _stateID: 11, G: fingerprintG() };
+  const changed = { ctx: { currentPlayer: '1', turn: 5 }, _stateID: 11, G: fingerprintG({ currentStage: 'cleanup' }) };
+  assert.equal(dispatchMadeRealProgress(before, turnPassed, '1'), true, 'the turn passing off the bot seat is progress');
+  assert.equal(dispatchMadeRealProgress(before, gameOver, '1'), true, 'reaching game over is progress');
+  assert.equal(dispatchMadeRealProgress(before, changed, '1'), true, 'a changed fingerprint is progress');
+});
+
+test('dispatchMadeRealProgress falls back to the _stateID bump when a fingerprint is unavailable', () => {
+  // why: a defensive read failure must never make the driver STRICTER than the pre-fingerprint
+  // behavior (which trusted the bump), so a G-less state trusts the caller-observed bump.
+  const before = { ctx: { currentPlayer: '1', turn: 5 }, _stateID: 10 };
+  const after = { ctx: { currentPlayer: '1', turn: 5 }, _stateID: 11 };
+  assert.equal(dispatchMadeRealProgress(before, after, '1'), true, 'no G → trust the _stateID bump');
+});
+
+test('a no-op move that only bumps _stateID recovers via the fault fallback instead of spinning to the step cap', async () => {
+  // why: the 2026-07-27 freeze class — getLegalMoves offered a move the reducer silently
+  // rejects; each submit bumped _stateID (so the old advance-check passed) while G never
+  // changed, so the bot re-picked it every step until the 100-step cap FAULTED. With
+  // real-progress detection the no-op is caught immediately, the fault fallback advances the
+  // stage, and the turn ends normally — no fault, a bounded number of submits.
+  const { deps, submitCalls, persistCalls } = makeDeps({
+    initial: {
+      ctx: { currentPlayer: '1', phase: 'play', turn: 5, numPlayers: 2 },
+      _stateID: 100,
+      G: fingerprintG(),
+    },
+    // the policy keeps offering the guard-rejected fight (the divergence under test).
+    decide: () => ({ name: 'fightVillain', args: { cityIndex: 0 } }),
+    onSubmit: (move, match) => {
+      const current = match.value as { _stateID: number; ctx: Record<string, unknown>; G: Record<string, unknown> };
+      const next = { ctx: { ...current.ctx }, _stateID: current._stateID + 1, G: { ...current.G } };
+      // why: fightVillain is a no-op (bump _stateID, DO NOT change G) — the freeze trigger.
+      // endTurn only advances at cleanup; advanceStage moves main→cleanup (real change).
+      if (move.moveName === 'advanceStage' && current.G.currentStage === 'main') {
+        next.G = { ...current.G, currentStage: 'cleanup' };
+      } else if (move.moveName === 'endTurn' && current.G.currentStage === 'cleanup') {
+        next.ctx = { ...current.ctx, currentPlayer: '0' }; // turn passes to the human
+      }
+      match.value = next;
+    },
+    overrides: { maxMoveStepsPerTurn: 12 },
+  });
+  const driver = createBotAllyDriver({ matchId: 'm-noop-recover', botSeats: ['1'], deps });
+
+  await driver.tick();
+
+  assert.equal(driver.getTurnCount(), 1, 'the turn completed (passed to the human), it did not fault');
+  assert.ok(
+    !persistCalls.some((call) => call.status === BOT_ALLY_STATUS.faulted),
+    'the driver did NOT fault the match',
+  );
+  assert.ok(
+    submitCalls.length < 12,
+    `recovered in a bounded number of submits (${submitCalls.length}), not a spin to the step cap`,
+  );
+  assert.ok(
+    submitCalls.some((call) => call.moveName === 'advanceStage'),
+    'recovery went through the advanceStage fault fallback',
+  );
 });
