@@ -14,6 +14,7 @@ import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { LegalMove } from './ai.types.js';
 import { getAvailableAttack, getAvailableRecruit } from '../economy/economy.logic.js';
+import { resolveFightCost } from '../economy/economy.resolve.js';
 import { isGuardBlocking, getPatrolModifier } from '../board/boardKeywords.logic.js';
 import { hasPendingKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { selectDefaultKoTarget } from '../villain/villainEffects.execute.js';
@@ -319,7 +320,16 @@ export function getLegalMoves(
       const cityCard: CardExtId | null = gameState.city[cityIndex] ?? null;
       if (cityCard === null) continue;
       if (isGuardBlocking(gameState.city, cityIndex, cardKeywords)) continue;
-      const baseFightCost = gameState.cardStats[cityCard]?.fightCost ?? 0;
+      // why: use resolveFightCost — the WP-214 single authority for villain fight
+      // cost — NOT the static cardStats.fightCost. Dynamic villains (vAttack "*"/"N+",
+      // e.g. Skrull Queen Veranke after an Ambush capture) carry a static fightCost of
+      // 0 but resolve to fightCostBase + captured-hero cost. Reading the static field
+      // here offered the bot an unaffordable fight the fightVillain move then silently
+      // rejected (it uses resolveFightCost, fightVillain.ts:95); because boardgame.io
+      // still bumps _stateID on a void-return move, the bot-ally driver could not detect
+      // the no-op and re-picked the same fight every step until the 100-step per-turn cap
+      // FAULTED the co-op match (prod freeze, matches aifbXW04bA1 / eAVZNdWE5C1, 2026-07-27).
+      const baseFightCost = resolveFightCost(gameState, cityCard);
       const patrolModifier = getPatrolModifier(cityCard, cardKeywords);
       const requiredFightCost = baseFightCost + patrolModifier;
       if (availableAttack >= requiredFightCost) {
