@@ -7,18 +7,18 @@
   },
   "summary": {
     "distinctMechanics": 10,
-    "totalObservations": 116,
+    "totalObservations": 115,
     "hollowEffectsDropped": 0,
     "byReason": {
       "no-handler": 0,
       "unsupported-keyword": 0,
-      "parse-unrecognized": 116
+      "parse-unrecognized": 115
     }
   },
   "byMechanic": {
     "ambush": {
       "hitCount": 2,
-      "lastSeenTurn": 7,
+      "lastSeenTurn": 5,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
@@ -26,7 +26,7 @@
       },
       "examples": [
         {
-          "cardId": "bkpt/white-wolf/command-the-hatut-zeraze#0",
+          "cardId": "bkpt/white-wolf/command-the-hatut-zeraze#2",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -55,7 +55,7 @@
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "mgtg/star-lord/expandable-helmet#2",
+          "cardId": "mgtg/star-lord/expandable-helmet#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -184,7 +184,7 @@
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "smhc/tony-stark/stay-out-of-trouble#4",
+          "cardId": "smhc/tony-stark/stay-out-of-trouble#3",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -192,16 +192,16 @@
       ]
     },
     "cyber-mod": {
-      "hitCount": 5,
+      "hitCount": 4,
       "lastSeenTurn": 7,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 5
+        "parse-unrecognized": 4
       },
       "examples": [
         {
-          "cardId": "2099/spider-man-2099/venomous-fangs#2",
+          "cardId": "2099/spider-man-2099/venomous-fangs#3",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -213,13 +213,7 @@
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "2099/spider-man-2099/venomous-fangs#4",
-          "cardType": "hero",
-          "timing": "onPlay",
-          "reason": "parse-unrecognized"
-        },
-        {
-          "cardId": "2099/spider-man-2099/venomous-fangs#4",
+          "cardId": "2099/spider-man-2099/venomous-fangs#3",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -242,18 +236,6 @@
       },
       "examples": [
         {
-          "cardId": "noir/spider-man-noir/gumshoes-revolver#3",
-          "cardType": "hero",
-          "timing": "onPlay",
-          "reason": "parse-unrecognized"
-        },
-        {
-          "cardId": "noir/spider-man-noir/gumshoes-revolver#3",
-          "cardType": "hero",
-          "timing": "onPlay",
-          "reason": "parse-unrecognized"
-        },
-        {
           "cardId": "noir/spider-man-noir/gumshoes-revolver#4",
           "cardType": "hero",
           "timing": "onPlay",
@@ -261,12 +243,24 @@
         },
         {
           "cardId": "noir/spider-man-noir/gumshoes-revolver#4",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "noir/spider-man-noir/solve-the-crime#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
         },
         {
           "cardId": "noir/spider-man-noir/solve-the-crime#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "noir/spider-man-noir/solve-the-crime#2",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -389,7 +383,7 @@
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "nmut/wolfsbane/wolf-out#3",
+          "cardId": "nmut/wolfsbane/wolf-out#2",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
