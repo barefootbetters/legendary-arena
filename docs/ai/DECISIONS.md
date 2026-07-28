@@ -33906,4 +33906,137 @@ grep over `gauntletRunProgress.logic.ts` finds no
 engine/preplan/boardgame.io/registry/`apps/*` import; a re-implementation grep
 finds no local `qualifiesAsLegClear`/`findBestPoolAssignment` definition.
 
+### D-24266 — A printed villain/henchman Fight/Ambush/Escape line with no `[effect:]` marker is `no-handler` hollow (observability breadcrumb), superseding WP-188's silent marker-free skip (Active)
+
+**Context.** Jeff reported that Doombot Legion's printed "Fight: Look at the top
+two cards of your deck. KO one of them and put the other back." did nothing and
+left **no trace** in the game log — the operator could not tell an un-implemented
+printed effect from a card that simply has no Fight effect. Root cause: the
+villain/henchman effect vocabulary is the closed 5-primitive set
+(`VILLAIN_EFFECT_PRIMITIVES`), which cannot express a deck-scry-then-KO, so the
+card carries no `[effect:]` marker at all. The parser (`villainAbility.setup.ts`)
+still emits a hook for the line (its `Fight:` timing prefix matched) but with
+`effects: []` and no `unresolvedMarkers`. The WP-257 hollow-effect detector
+(`no-handler` / `unsupported-keyword` / `parse-unrecognized`) only classified
+lines that produced a descriptor or an unresolved marker, so this
+**printed-but-entirely-unmarked** class fell through silently. Hero abilities
+already get a `[blocked]` breadcrumb; villain/henchman effects had no equivalent.
+
+**Decision.** `executeVillainAbilities` now records a `no-handler` hollow effect
+(mechanic `'unmarked-ability'`) for any fired hook whose `effects` is empty AND
+whose `unresolvedMarkers` is empty. Because a hook exists only for a line that
+began with a recognized `Fight:`/`Ambush:`/`Escape:` timing prefix — and those
+prefixes always denote a mechanical effect in Legendary; flavor text never
+carries them — a hook with no descriptor and no unresolved marker unambiguously
+means the data pipeline never annotated a real printed mechanic. The existing
+`recordHollowEffect` seam appends the operator-visible `Unhandled effect
+observed: …` line (WP-434 `blocked` colour, hash-excluded per D-24081) and the
+structured `G.diagnostics.hollowEffects` record. No taxonomy change — the closed
+`EFFECT_EXECUTION_REASONS` array is untouched; the case reuses `no-handler`
+("declared ability, no executable handler reached").
+
+**Why this supersedes WP-188.** WP-188 deliberately left out-of-vocabulary
+Escape/Fight lines marker-free and treated the resulting empty-effects hook as a
+silent safe-skip (D-18802). That was correct when there was no detector; it is
+now the exact behaviour we want to make visible. This ruling reclassifies the
+marker-free villain/henchman timing line from "silent" to "observed hollow." It
+does NOT put such lines on the `DEFERRED_BY_DESIGN_MECHANICS` allowlist (that
+allowlist stays scoped to the hero `wound` / `conditional` mechanics) — a printed
+villain/henchman mechanic with no engine primitive is genuinely un-implemented,
+not deferred-by-design, and should surface. The diagnostics channel stays
+runtime-only observation (never gameplay input); the bounded `HOLLOW_EFFECTS_CAP`
+already caps a long match.
+
+**Scope.** Observability only — no gameplay behaviour changes (the effect still
+does not fire; that is the WP-447 mechanic). The un-marked mechanic itself
+(Doombot Legion + Hand Ninjas + Savage Land Mutates and the villain corpus) is
+NOT implemented here. `apps/*` compile surfaces are unaffected (no type or export
+change).
+
+**Files.** `packages/game-engine/src/villain/villainEffects.execute.{ts,test.ts}`.
+No `.claude/rules/*` or `ARCHITECTURE.md` edit — within-layer diagnostics
+behaviour, no new cross-layer edge, no persistence carve-out, no drift array
+changed.
+
+**Verification.** `pnpm --filter @legendary-arena/game-engine build` + `test`
+green (2086/2086); a new test drives the Doombot Legion henchman case and asserts
+the `no-handler` record + the `blocked`-coloured operator log line; a negative
+test confirms an applied `captureBystander` hook records no breadcrumb.
+
+### D-24267 — `scry-ko-own-deck` is the sixth villain effect primitive: auto-resolved look-2/KO-1 over the current player's own deck (Drafted 2026-07-28 — WP-447; not yet landed)
+
+> **Status: Drafted at SPEC time; flips to Active (post-execution) when WP-447
+> executes.** Reserved in `NUMBER-LEDGER.md` under the same branch.
+
+**Context.** Doombot Legion's printed *"Fight: Look at the top two cards of your
+deck. KO one of them and put the other back."* was unimplemented — the
+villain/henchman effect vocabulary (the closed 5-primitive
+`VILLAIN_EFFECT_PRIMITIVES`, D-24023) had no way to express a self-deck scry.
+D-24266 shipped the observability breadcrumb (the Fight now logs
+`unmarked-ability`); this decision adds the mechanic.
+
+**Decision.** Append one primitive `scry-ko-own-deck` to the closed
+`VillainEffectPrimitive` union + `VILLAIN_EFFECT_PRIMITIVES` array (position 6,
+append-only; the bidirectional drift test moves with it). It is **no-param**
+(marker `[effect:scry-ko-own-deck]`, descriptor `{ primitive: 'scry-ko-own-deck' }`);
+`parseParameterizedEffect` accepts it on the no-param branch and rejects a trailing
+colon token. The executor handler looks at `min(2, deck.length)` of the **current
+(defeating) player's** deck, KOs exactly one via a new deterministic
+`selectScryKoTarget`, and leaves the other on top of the deck in original order.
+
+**`selectScryKoTarget` priority (deterministic, no RNG):** (1) a Wound
+(`pile-wound`), then (2) a starting S.H.I.E.L.D. card (`starting-shield-trooper` /
+`starting-shield-agent`, starter-first then lex-asc), then (3) the lexically-lowest
+ext_id. Wounds are KO-**preferred** here — the opposite of `selectKoHeroTarget`
+(the KO-a-Hero pool, which excludes Wounds) — because this effect thins the deck,
+where removing a Wound is strictly good.
+
+**Auto-resolved (scope lock).** This WP applies the KO immediately with no player
+choice, no pending state, no UIState projection, no prompt, no End-Turn gate, and
+no bot `getLegalMoves` change. The full tabletop effect is a player decision
+("look … KO one of them"); the interactive upgrade is a deferred follow-on that
+reuses `selectScryKoTarget` as its bot default. This mirrors koHeroCurrentPlayer
+(WP-185 auto-resolved → WP-242 interactive) and deliberately avoids shipping a
+block-all pending state without its UX, which hard-freezes the client (the
+`project_pending_choice_no_ux_freeze` failure mode). Empty deck → reachable no-op
+(never hollow).
+
+**Determinism.** No `ctx.random.*` / `Math.random` / I/O; no new `G` field; deck +
+KO mutation via `zoneOps` helpers; no `.reduce()`. The change is behaviour-visible
+(a Doombot Fight now KOs a card), so if a record-game / replay fixture defeats a
+Doombot its `finalStateHash` is regenerated-with-note as the intended consequence.
+
+**Narration via direct in-handler `pushLog` (not the keyword path).** A keyword-less
+descriptor does not reverse-map to a legacy keyword (`descriptorToLegacyKeyword`
+returns `undefined`), so the executor records no `VillainEffectResult` for scry-ko
+and the generic `fightVillain.ts` `Fight effect:` line — gated on a non-empty results
+array — would not fire, leaving the KO silent in the log. The scry-ko handler
+therefore pushes its own `G.messages` line naming the KO'd card, via `pushLog` from
+inside the executor (the `heroEffectRescue` / WP-256 in-executor narration
+precedent). `G.messages` is hash-excluded (D-24081), so this adds NO replay-hash
+surface and requires NO `PRE_WP080_HASH` / sentinel re-pin. The keyword-typed
+`notableEvents` / `EFFECT_KEYWORD_LABELS` / `VillainEffectResult.keyword` overlay
+surface stays frozen at the 10 legacy keywords (D-24023) and is NOT touched — a
+descriptor-keyed narration path that would give scry-ko a center-screen overlay
+badge is the already-deferred WP-253 work, out of scope here. This keeps the WP's
+allowlist within the executor file and avoids widening a frozen contract.
+
+**Scope.** Exactly `scry-ko-own-deck` (look-2 / KO-1), marked on Doombot Legion in
+**core + co2e** (the only two sets that carry it). The `msp1` look-2/KO-1 card is a
+different henchman ("Hammer Drone Army") whose `[keyword:Fight]:` bracket prefix is
+not a recognized timing line — deferred to a follow-on, not silently dropped. Other
+scry variants (reveal-top-N, draw-one-put-other-back, discard-any-number, top-N
+reorder), N ≠ 2, KO-any-number, and hero-side scry cards are each out of scope.
+
+**Files (at execution).** `packages/game-engine/src/rules/villainAbility.types.{ts,test.ts}`
++ `setup/villainAbility.setup.ts` + `villain/villainEffects.execute.{ts,test.ts}`
++ `scripts/convert-cards/apply-effect-markers.mjs` (its hand-synced local primitives
+array — the script does not import the engine union) +
+`scripts/convert-cards/inputs/villain-effect-markers.json` + generated
+`data/cards/{core,co2e}.json` (via `apply-effect-markers.mjs`). No
+`.claude/rules/*` or `ARCHITECTURE.md` edit — within-layer effect vocabulary
+growth, no new cross-layer edge or persistence carve-out; the drift discipline
+(union + array + test together) is the existing `code-style.md §Drift Detection`
+rule, not a new one.
+
 Protect this file.
