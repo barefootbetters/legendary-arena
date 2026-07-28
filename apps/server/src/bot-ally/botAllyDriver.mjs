@@ -756,6 +756,108 @@ export function summarizeBotTurnState(state, botSeat) {
 }
 
 /**
+ * The sentinel {@link progressFingerprint} returns when it cannot read the state.
+ * Callers treat this as "cannot compare" and fall back to the _stateID-only check.
+ */
+export const FINGERPRINT_UNAVAILABLE = 'unavailable';
+
+/**
+ * Compact fingerprint of the MOVE-OBSERVABLE game state — every field any legal bot
+ * move can change, EXCLUDING `G.messages` (the durable log; determinism-excluded per
+ * D-24081 and appended by some paths without real gameplay progress). Two states with
+ * an identical fingerprint are indistinguishable to gameplay.
+ *
+ * // why: WP defense-in-depth — a submitted Legendary move that the reducer silently
+ * rejects still returns `void`, and boardgame.io increments `_stateID` on ANY accepted
+ * (non-INVALID_MOVE) dispatch, so `_stateID` moving is NECESSARY but NOT SUFFICIENT to
+ * prove the move did anything. Comparing this fingerprint before/after a dispatch is the
+ * sufficiency check: `_stateID` bumped + fingerprint UNCHANGED == a guard-rejected no-op
+ * (a getLegalMoves↔move-guard divergence, e.g. the 2026-07-27 dynamic-fightCost freeze).
+ * Detecting it lets the driver fall to the fault fallback instead of re-picking the same
+ * no-op every step until the 100-step per-turn cap FAULTS the co-op match. Every real
+ * bot move changes at least one captured field (a zone length, economy, stage, hq/city
+ * occupancy, ko/deck counts, mastermind tactics, a per-turn flag, or a block-all pending
+ * count), so no legitimate move is ever misread as a no-op. Defensive: never throws.
+ *
+ * @param {object|null|undefined} state - The boardgame.io match state ({ G, ctx, _stateID }).
+ * @returns {string} A deterministic fingerprint string, or FINGERPRINT_UNAVAILABLE.
+ */
+export function progressFingerprint(state) {
+  try {
+    if (!state || !state.G || !state.ctx) return FINGERPRINT_UNAVAILABLE;
+    const gameState = state.G;
+    const parts = [
+      `stage=${gameState.currentStage}`,
+      `player=${state.ctx.currentPlayer}`,
+      `turn=${state.ctx.turn}`,
+      `econ=${JSON.stringify(gameState.turnEconomy ?? {})}`,
+      `revealed=${gameState.villainRevealedThisTurn ? 1 : 0}`,
+      `healed=${gameState.hasHealedThisTurn ? 1 : 0}`,
+      `acted=${gameState.hasActedThisTurn ? 1 : 0}`,
+      `hq=${(gameState.hq ?? []).map((cardId) => cardId ?? '_').join(',')}`,
+      `city=${(gameState.city ?? []).map((cardId) => cardId ?? '_').join(',')}`,
+      `ko=${(gameState.ko ?? []).length}`,
+      `villainDeck=${(gameState.villainDeck ?? []).length}`,
+      `heroDeck=${(gameState.heroDeck ?? []).length}`,
+      `tactics=${(gameState.mastermind?.tacticsDeck ?? []).length}/${gameState.mastermind?.tacticsDefeated ?? 0}`,
+    ];
+    // why: per-seat zone lengths in a deterministic seat order — any play / recruit /
+    // fight / KO / draw / discard changes at least one of these five counts.
+    const playerZones = gameState.playerZones ?? {};
+    for (const seat of Object.keys(playerZones).sort()) {
+      const zones = playerZones[seat] ?? {};
+      parts.push(
+        `zone${seat}=${(zones.hand ?? []).length}/${(zones.discard ?? []).length}/` +
+          `${(zones.inPlay ?? []).length}/${(zones.victory ?? []).length}/${(zones.deck ?? []).length}`,
+      );
+    }
+    // why: the nine block-all pending choices — resolving one changes its count here even
+    // when it moves no card (e.g. a declined optional choice), so a resolve is never a no-op.
+    for (const flag of PENDING_CHOICE_FLAGS) {
+      const value = gameState[flag];
+      parts.push(`${flag}=${Array.isArray(value) ? value.length : value ? 1 : 0}`);
+    }
+    return parts.join('|');
+  } catch (fingerprintError) {
+    // why: the fingerprint must never throw (it runs on the hot per-move path). Degrade
+    // to the sentinel; the caller then trusts the _stateID-only check for that step
+    // (byte-identical to the pre-fingerprint behavior) rather than risk a false no-op.
+    return `${FINGERPRINT_UNAVAILABLE}:${fingerprintError.message}`;
+  }
+}
+
+/**
+ * Reports whether a dispatch that bumped `_stateID` made REAL gameplay progress from
+ * `beforeState` to `afterState` — the sufficiency check on top of the `_stateID` bump.
+ *
+ * // why: centralizes the "_stateID moved but is it real?" decision used by both the
+ * main submit loop and the fault-fallback dispatch. Real progress == the turn passed to
+ * another seat, OR the game ended, OR the move-observable fingerprint changed. When either
+ * fingerprint is unavailable (defensive read failure) it falls back to trusting the bump
+ * (pre-fingerprint behavior), so a fingerprint gap can never make the driver stricter than
+ * before.
+ *
+ * @param {object} beforeState - The state fetched before the dispatch.
+ * @param {object} afterState - The state fetched after the dispatch.
+ * @param {string} botSeat - The bot seat; the turn passing off it is real progress.
+ * @returns {boolean} true when the dispatch made real progress.
+ */
+export function dispatchMadeRealProgress(beforeState, afterState, botSeat) {
+  if (afterState.ctx.gameover !== undefined) return true;
+  if (afterState.ctx.currentPlayer !== botSeat) return true;
+  const beforeFingerprint = progressFingerprint(beforeState);
+  const afterFingerprint = progressFingerprint(afterState);
+  if (
+    beforeFingerprint.startsWith(FINGERPRINT_UNAVAILABLE) ||
+    afterFingerprint.startsWith(FINGERPRINT_UNAVAILABLE)
+  ) {
+    // why: cannot compare — trust the _stateID bump the caller already observed.
+    return true;
+  }
+  return afterFingerprint !== beforeFingerprint;
+}
+
+/**
  * Attempts a single bot seat's turn to completion: repeatedly decides + submits
  * a move until the turn passes to another seat, the match ends, or the turn
  * wedges (fault). Every stalled/erroring step falls through the fault fallback
@@ -851,7 +953,16 @@ async function attemptBotTurn(driver, deps, botSeat, maxMoveStepsPerTurn) {
         return { kind: 'game-over' };
       }
       if (after._stateID !== previousStateId) {
-        moveAdvanced = true;
+        // why: _stateID moving is NECESSARY but not SUFFICIENT — bgio bumps it on a
+        // guard-rejected void-return move too. Only count the dispatch as advanced when it
+        // made REAL progress (turn passed / game over / move-observable fingerprint changed);
+        // a bumped _stateID with an unchanged fingerprint is a no-op that must fall through to
+        // the fault fallback below (resubmitting would only no-op again). Without this the bot
+        // re-picks the same guard-rejected move every step until the 100-step per-turn cap
+        // FAULTS the co-op match — the 2026-07-27 dynamic-fightCost freeze class.
+        if (dispatchMadeRealProgress(state, after, botSeat)) {
+          moveAdvanced = true;
+        }
         break;
       }
       // why: not advanced yet — back off before re-submitting so a transient DB
@@ -942,5 +1053,13 @@ async function tryDispatchAdvances(driver, deps, botSeat, moveName) {
   if (after.ctx.gameover !== undefined || after.ctx.currentPlayer !== botSeat) {
     return true;
   }
-  return after._stateID !== previousStateId;
+  if (after._stateID === previousStateId) {
+    return false;
+  }
+  // why: same sufficiency check as the main submit loop — a recovery dispatch that bumped
+  // _stateID but left the fingerprint unchanged is a guard-rejected no-op (e.g. endTurn
+  // rejected outside cleanup), NOT real recovery. Return false so runFaultFallback tries the
+  // next recovery move (advanceStage) instead of reporting a phantom advance that would let
+  // the wedged turn spin on.
+  return dispatchMadeRealProgress(before, after, botSeat);
 }

@@ -150,6 +150,20 @@ export function getLegalMoves(
     return legalMoves;
   }
 
+  // why: pending hero-reveal discard-or-return short-circuit (D-22001). This is the
+  // ONE block-all pending choice that previously had NO getLegalMoves short-circuit
+  // (the WP-427 sibling left behind): pendingHeroChoice blocks endTurn and the cleanup
+  // stage-advance, so without a resolve move here the bot dispatched a guard-rejected
+  // endTurn/advanceStage and its turn faulted. The bot resolves it first, in any stage,
+  // exactly like the eight queue-based choices below. Deterministic default: 'return'
+  // (leave the revealed card on top) — the conservative choice that never discards a
+  // possibly-valuable card; an expected-value default is a deferred refinement (mirrors
+  // the D-24069 draw-or-empowered deterministic default). Returns a list of length
+  // EXACTLY 1. Placed first to match endTurn's guard order (pendingHeroChoice first).
+  if (gameState.pendingHeroChoice !== undefined) {
+    return [{ name: 'resolveHeroChoice', args: { resolution: 'return' } }];
+  }
+
   // why: pending return-zero-cost-discard short-circuit (D-24139) — while a mandatory
   // 0-cost discard-to-hand return is pending the engine block-all guard freezes every
   // other move, so the bot must resolve it first. Deterministic default target: the
