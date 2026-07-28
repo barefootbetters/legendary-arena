@@ -33628,4 +33628,113 @@ loudly without one). `grep` confirms the migration adds no `status` / `hero_pool
 `champion` / `cleared` column and carries the exact `WHERE first_completed_at IS NULL`
 partial-unique predicate.
 
+### D-24263 — The Registry-Viewer resolves a WP-440 identity pack client-side (zero-API) into a prefilled builder leg-loadout: a leg picker + default-variant-0 approved composition, heroes left empty; unknown/unoffered → a friendly message (Drafted 2026-07-28 — WP-444)
+
+**Context.** The **Mastermind Gauntlets: download → import → build → track** epic
+downloads an identity-only pack on the legends site (WP-441) that names *which*
+gauntlet a player wants — `{ pack_version, gauntlet: { setAbbr, mastermindSlug,
+division, playerCount } }` and nothing else (D-24260). A **live product test**
+surfaced the gap this decision closes: Jeff downloaded the live
+`core/magneto` pack and loaded it into the cards.legendary-arena.com
+Registry-Viewer builder, and it **errored with 5 schema issues** — the builder's
+existing importers expect a full LAGN document or a MATCH-SETUP composition, and
+the identity-only pack carries neither. The pack had no consumer on the cards
+surface. WP-444 (this decision's locking WP) gives the builder that consumer.
+
+**The design tension.** The identity pack deliberately omits the legs, the
+approved adversary compositions, and the hero picks — the server re-resolves all
+of that from the live registry at play-side import (D-24260). But the cards
+builder is a **static, zero-API** surface (`apps/registry-viewer`) with no server
+round-trip. The question: does the cards consumer call the play server to
+resolve the pack, or resolve it locally? Resolving via the server would give the
+cards builder a runtime dependency on `play.legendary-arena.com` (a new
+cross-origin edge, a new failure mode, and a betrayal of the viewer's zero-API
+posture); it would also duplicate WP-5's server import path for a surface that
+only needs to *prefill an editor draft*, not adjudicate.
+
+**Decision.** The Registry-Viewer resolves the pack **entirely client-side from
+the bundled registry** — **zero-API**. This is the cards-side consumer of the
+identity token; the play-server import (WP-5) is the other. **Both consumers
+resolve the same tiny token from the registry** — the payoff of the
+identity-only design (D-24260): a producer (legends, `vue`-only, inline build,
+WP-441) and two consumers (registry-viewer client-side here; play-server WP-5)
+all share one four-field token, each re-resolving legs + compositions from the
+registry it holds so nothing can drift.
+
+1. **Detection + validation via the registry contract.** A new dedicated **"Load
+   Gauntlet Pack (paste or file)"** importer (a third one beside the existing
+   MATCH-SETUP "Load JSON" and "Load LAGN" importers — matching the
+   each-document-type-owns-its-validator pattern) delegates detection and
+   validation **entirely** to the registry's `validateGauntletPack` (strict,
+   unknown-major-version reject). The viewer adds no second schema and no lax
+   pre-check.
+
+2. **Leg (scheme) picker.** On a valid pack, the builder presents a leg picker
+   listing the schemes of the pack mastermind's home set (the gauntlet's legs,
+   per D-24131 both-sides-same-set), listed via the registry the viewer already
+   holds (`registry.query({ setAbbr, cardType: 'scheme' })`, ext_ids
+   `"{setAbbr}/{schemeSlug}"`).
+
+3. **Approved-composition resolution + draft prefill.** Picking a leg resolves
+   the approved villain/henchmen composition for `(setAbbr, mastermindSlug,
+   playerCount)` from `GAUNTLET_LOADOUT_MENUS` — **default variant 0**
+   (`variantIndex`, not array position), optionally selectable — and prefills
+   the builder draft: `schemeId`, `mastermindId`
+   (`"{setAbbr}/{mastermindSlug}"`), `villainGroupIds`, `henchmanGroupIds`,
+   `playerCount`. **`heroDeckIds` is left empty** — bring your own heroes. The
+   approved variant's villains/henchmen are the **authoritative** leg
+   composition (they override `setMastermind`'s auto-added Always-Leads set).
+
+4. **Supply-pile counts are builder defaults, not `PLAYER_COUNT_SETUP`.** The
+   four supply counts (`bystandersCount`/`woundsCount`/`officersCount`/
+   `sidekicksCount`) stay at the builder's `createBlankDraft` defaults
+   (`30/30/30/0`). `PLAYER_COUNT_SETUP` carries only `heroCount` (which, since
+   heroes are empty, only informs the existing required-count readout) — it does
+   **not** carry the four supply counts. This corrects the plan's
+   "counts from `PLAYER_COUNT_SETUP`" framing.
+
+5. **Graceful, not a schema wall.** A pack naming an unknown gauntlet (no loadout
+   menu) or an unoffered player count resolves to a **clear friendly message**
+   (a discriminated `{ ok: false, reason }` result:
+   `unknown-gauntlet` | `unoffered-count` | `unknown-variant`), never a crash and
+   never the raw Zod schema-error wall that motivated this WP.
+
+**Scope / what this is not.** WP-444 is `apps/registry-viewer`-layer only: a new
+pure, data-injected parser/resolver module + its unit tests + the builder wiring.
+It adds **no** server endpoint, **no** persistence/migration, **no**
+`packages/registry` change, and **no** change to WP-440's pack contract. It does
+**not** launch a match or submit a score (the builder prefills an editor draft;
+launching is play-side, WP-6/7), and it does **not** add a `?pack=` URL deep link
+(paste/file affordance only). Registry is value-imported through **narrow
+subpaths** (`/gauntletPack`, `/gauntletLoadouts`, `/playerCountSetup`) — never the
+root barrel, which pulls Node built-ins and breaks the browser build.
+
+**Alternatives rejected.** (a) *Resolve the pack via a play-server call* —
+rejected: it breaks the viewer's zero-API posture, adds a cross-origin runtime
+edge + failure mode, and duplicates WP-5 for a surface that only prefills a
+draft. (b) *Reuse the existing "Load JSON" importer to also accept a pack* —
+rejected: it conflates three distinct document types in one box; a dedicated
+importer matches the existing per-type-validator pattern and keeps each box's
+error messaging clear. (c) *Prefill heroes too (from a default or the last
+loadout)* — rejected: the epic's premise is bring-your-own-heroes (D-24262 run
+workspace); seeding heroes would fight the iterate-on-heroes loop. (d) *Bake
+legs/compositions into the pack so the viewer needs no registry resolution* —
+already rejected by D-24260 (guarantees pack/registry drift); this WP is the
+proof that identity-only resolves cleanly on a second, zero-API surface.
+
+**Files (at execution).** `apps/registry-viewer/src/lib/
+loadoutGauntletPackImport.ts` (new) + `.test.ts` (new),
+`apps/registry-viewer/src/components/LoadoutBuilder.vue` (modified), and this
+entry flips Drafted → Active. No `.claude/rules/*` or `ARCHITECTURE.md` edit —
+the change lives inside the existing App layer's already-permitted registry
+runtime import (browser-safe subpaths) and adds no cross-layer edge.
+
+**Verification (at execution).** `pnpm --filter registry-viewer test` +
+`typecheck` + `build` green (parse + identity-only, reject non-pack, variant-0
+resolve, unknown-gauntlet, unoffered-count, leg-scheme-id shape); `pnpm -r build`
+green. D-24026 live-verify on `cards.legendary-arena.com`: loading the live
+`core/magneto` `.gauntlet.json` shows the leg picker; picking a leg prefills the
+draft (scheme/mastermind/villains/henchmen/playerCount, heroes empty) with zero
+API calls; an unknown-gauntlet pack shows the friendly message.
+
 Protect this file.
