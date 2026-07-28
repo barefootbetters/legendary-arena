@@ -33628,7 +33628,7 @@ loudly without one). `grep` confirms the migration adds no `status` / `hero_pool
 `champion` / `cleared` column and carries the exact `WHERE first_completed_at IS NULL`
 partial-unique predicate.
 
-### D-24263 — The Registry-Viewer resolves a WP-440 identity pack client-side (zero-API) into a prefilled builder leg-loadout: a leg picker + default-variant-0 approved composition, heroes left empty; unknown/unoffered → a friendly message (Drafted 2026-07-28 — WP-444)
+### D-24263 — The Registry-Viewer resolves a WP-440 identity pack client-side (zero-API) into a prefilled builder leg-loadout: a leg picker + default-variant-0 approved composition, heroes left empty; unknown/unoffered → a friendly message (Active (post-execution) 2026-07-28 — WP-444)
 
 **Context.** The **Mastermind Gauntlets: download → import → build → track** epic
 downloads an identity-only pack on the legends site (WP-441) that names *which*
