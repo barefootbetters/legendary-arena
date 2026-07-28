@@ -7,6 +7,51 @@
 
 ## Current State
 
+### WP-444 / EC-479 — Registry-Viewer Gauntlet-Pack Import (cards builder) (D-24263) (2026-07-28)
+
+**User-Visible Surface = `cards.legendary-arena.com`** (the Registry-Viewer
+Loadout Builder). Fifth WP of the **Mastermind Gauntlets: download → import →
+build → track** epic — the cards-side consumer of the WP-440 identity pack.
+**D-24026 live-verify is operator-pending on the Cloudflare Pages deploy** (load
+the live `core/magneto` `.gauntlet.json` → leg picker renders → picking a leg
+prefills scheme/mastermind/villains/henchmen/playerCount with heroes empty and
+zero API calls; an unknown-gauntlet pack shows the friendly message). Does not
+block merge.
+
+A visitor can now paste or load a downloaded `*.gauntlet.json` identity pack into
+a new dedicated **"Load Gauntlet Pack (paste or file)"** importer (a third beside
+"Load JSON" MATCH-SETUP and "Load LAGN"). On a valid pack the builder shows a
+**leg (scheme) picker** (plus an optional variant selector) for the pack
+mastermind's home set; picking a leg **prefills the draft** with the approved
+villain/henchmen composition + scheme + mastermind + player count, leaving heroes
+empty.
+
+- **New pure lib `apps/registry-viewer/src/lib/loadoutGauntletPackImport.ts`** —
+  `parseGauntletPack` (validate via the registry's strict `validateGauntletPack`;
+  catches its throw and surfaces the full-sentence message; rejects
+  MATCH-SETUP/LAGN/bad-version), `resolveGauntletLegLoadout` (data-injected menu →
+  approved **variant-0** composition; closed-set reasons `unknown-gauntlet` /
+  `unoffered-count` / `unknown-variant` with friendly messages; `heroDeckIds`
+  never in the prefill), and `listGauntletLegSchemeIds`. **Never throws** —
+  discriminated `{ ok }` results. Registry value-imports via **narrow subpaths
+  only** (`/gauntletPack`, `/gauntletLoadouts`, `/playerCountSetup`) — never the
+  root barrel; no engine/server/pg/boardgame.io import.
+- **New `node:test` suite** — parse + identity-only, reject non-pack, variant-0
+  resolve (no heroDeckIds), unknown-gauntlet, unoffered-count, unknown-variant,
+  leg-scheme-id shape. Data-injected (no live registry). **188/188 registry-viewer
+  tests pass.**
+- **`LoadoutBuilder.vue`** — the third importer + leg picker + optional variant
+  selector + friendly-message handling; on pick, prefills via the public setters
+  (`resetDraft` → `setScheme` → `setMastermind` → **variant-authoritative**
+  villains/henchmen that override the auto-added Always-Leads set → `setPlayerCount`),
+  leaving heroes empty and the four supply piles at the blank-draft defaults
+  (30/30/30/0 — **not** from `PLAYER_COUNT_SETUP`). **Zero-API**, no `?pack=` URL
+  wiring.
+- **Verification:** `pnpm -r build`, `pnpm --filter registry-viewer test`
+  (188/188), `typecheck` (`vue-tsc`), and `build` all green; root-barrel grep = 0.
+- **Persistence boundary:** untouched — no `G`/`ctx`, no snapshot, no server call,
+  no migration, no `packages/registry` edit, no WP-440 contract change.
+
 ### WP-443 / EC-478 — Gauntlet Run Persistence (`player_gauntlet_runs`) (Server / migration) (D-24262) (2026-07-27)
 
 **User-Visible Surface = `none — infrastructure`.** **No user-observable change —

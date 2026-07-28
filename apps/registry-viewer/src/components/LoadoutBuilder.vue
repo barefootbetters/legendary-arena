@@ -41,6 +41,13 @@ import { useLoadoutLagnExport } from "../composables/useLoadoutLagnExport";
 import { serializeSetupToUrl } from "../lib/setupUrlParams";
 import { parseLagnLoadout } from "../lib/loadoutLagnImport";
 import {
+  parseGauntletPack,
+  resolveGauntletLegLoadout,
+  listGauntletLegSchemeIds,
+} from "../lib/loadoutGauntletPackImport";
+import { getGauntletLoadoutMenu } from "@legendary-arena/registry/gauntletLoadouts";
+import type { GauntletPack } from "@legendary-arena/registry/gauntletPack";
+import {
   buildSupportPreset,
   parseSupportPreset,
   serializeSupportPreset,
@@ -775,6 +782,151 @@ function onLagnFileImport(event: Event): void {
   reader.readAsText(file);
 }
 
+// ── Gauntlet Pack import (WP-444) — a third importer beside JSON / LAGN ───────
+// A WP-440 Gauntlet Pack is an identity-only token ({ pack_version, gauntlet })
+// — neither a MATCH-SETUP nor a LAGN document — so the two importers above reject
+// it. This control detects and validates a pack, then lets the visitor pick a leg
+// (scheme) whose approved adversary composition prefills the draft. All
+// resolution is client-side from the bundled registry: zero API, no server call.
+
+const gauntletImportText = ref("");
+const gauntletPackError = ref<string | null>(null);
+const gauntletPack = ref<GauntletPack | null>(null);
+const gauntletLegMessage = ref<string | null>(null);
+const gauntletImportSuccessAt = ref<string | null>(null);
+const gauntletSelectedVariantIndex = ref(0);
+
+/** The approved loadout menu for the loaded pack's gauntlet, or undefined. */
+const gauntletMenu = computed(() => {
+  const pack = gauntletPack.value;
+  if (pack === null) {
+    return undefined;
+  }
+  return getGauntletLoadoutMenu(pack.gauntlet.setAbbr, pack.gauntlet.mastermindSlug);
+});
+
+/** The variant indices the loaded gauntlet offers (for the optional selector). */
+const gauntletVariantIndices = computed<number[]>(() => {
+  const menu = gauntletMenu.value;
+  if (menu === undefined) {
+    return [];
+  }
+  const indices: number[] = [];
+  for (const variant of menu.variants) {
+    indices.push(variant.variantIndex);
+  }
+  return indices;
+});
+
+/** The leg (scheme) options for the loaded pack's home set. */
+const gauntletLegOptions = computed<Array<{ id: string; label: string }>>(() => {
+  const pack = gauntletPack.value;
+  if (pack === null) {
+    return [];
+  }
+  const setAbbr = pack.gauntlet.setAbbr;
+  const schemeCards = props.registry.query({ setAbbr, cardType: "scheme" });
+  const legSchemeIds = listGauntletLegSchemeIds(setAbbr, schemeCards);
+  const labelByExtId = new Map<string, string>();
+  for (const card of schemeCards) {
+    if (!labelByExtId.has(card.extId)) {
+      labelByExtId.set(card.extId, card.groupName ?? card.name ?? card.extId);
+    }
+  }
+  const options: Array<{ id: string; label: string }> = [];
+  for (const legSchemeId of legSchemeIds) {
+    options.push({ id: legSchemeId, label: labelByExtId.get(legSchemeId) ?? legSchemeId });
+  }
+  return options;
+});
+
+/**
+ * Parses pasted/loaded text as a Gauntlet Pack. On success, holds the pack so
+ * the leg picker renders; on failure, surfaces the friendly message and clears
+ * any previously loaded pack.
+ */
+function applyGauntletPackImport(text: string): void {
+  gauntletPackError.value = null;
+  gauntletLegMessage.value = null;
+  gauntletImportSuccessAt.value = null;
+  const result = parseGauntletPack(text);
+  if (!result.ok) {
+    gauntletPack.value = null;
+    gauntletPackError.value = result.error;
+    return;
+  }
+  gauntletPack.value = result.pack;
+  gauntletSelectedVariantIndex.value = 0;
+  gauntletImportText.value = "";
+}
+
+function onGauntletPackPaste(): void {
+  applyGauntletPackImport(gauntletImportText.value);
+}
+
+function onGauntletPackFile(event: Event): void {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  if (!file) {
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    const text = typeof reader.result === "string" ? reader.result : "";
+    applyGauntletPackImport(text);
+  };
+  reader.readAsText(file);
+}
+
+/**
+ * Resolves the picked leg against the approved menu and prefills the draft.
+ * On a friendly-failure result (unknown gauntlet / unoffered count / unknown
+ * variant) it surfaces the message inline and leaves the draft untouched.
+ */
+function onPickGauntletLeg(schemeId: string): void {
+  const pack = gauntletPack.value;
+  if (pack === null) {
+    return;
+  }
+  gauntletLegMessage.value = null;
+  gauntletImportSuccessAt.value = null;
+  const result = resolveGauntletLegLoadout({
+    pack,
+    schemeId,
+    menu: gauntletMenu.value,
+    variantIndex: gauntletSelectedVariantIndex.value,
+  });
+  if (!result.ok) {
+    gauntletLegMessage.value = result.message;
+    return;
+  }
+  const prefill = result.prefill;
+  // why: a leg prefill REPLACES the draft (mirrors the LAGN importer) — reset to
+  // a fresh blank, then overlay the approved leg composition through the public
+  // setters only (never by writing draft.composition.*).
+  resetDraft();
+  setScheme(prefill.schemeId);
+  setMastermind(prefill.mastermindId);
+  // why: setMastermind auto-adds the mastermind's Always-Leads villain groups,
+  // but the approved variant is the AUTHORITATIVE leg composition — clear the
+  // auto-added villains and set exactly the resolved variant ids so the leg
+  // matches the approved menu, not the mastermind default.
+  for (const autoAddedVillainGroupId of [...draft.value.composition.villainGroupIds]) {
+    removeVillainGroup(autoAddedVillainGroupId);
+  }
+  for (const villainGroupId of prefill.villainGroupIds) {
+    addVillainGroup(villainGroupId);
+  }
+  for (const henchmanGroupId of prefill.henchmanGroupIds) {
+    addHenchmanGroup(henchmanGroupId);
+  }
+  // why: heroes stay empty (bring your own) and the four supply-pile counts stay
+  // at the blank-draft defaults (30/30/30/0) from resetDraft — they are NOT read
+  // from PLAYER_COUNT_SETUP, which carries only heroCount, not the supply counts.
+  setPlayerCount(prefill.playerCount);
+  gauntletImportSuccessAt.value = new Date().toISOString();
+}
+
 // ── URL share button (WP-114) ───────────────────────────────────────────────
 
 const copyLinkUrl = ref("");
@@ -1279,6 +1431,69 @@ function slotLabel(slot: PickerSlot): string {
             </ul>
           </div>
         </details>
+
+        <!-- why: WP-444 — a THIRD importer for the WP-440 identity pack, which is
+             neither a MATCH-SETUP nor a LAGN document. It detects/validates the
+             pack, then offers a leg (scheme) picker whose approved composition
+             prefills the draft — all client-side from the bundled registry. -->
+        <details class="import-details">
+          <summary>📥 Load Gauntlet Pack (paste or file)</summary>
+          <div class="import-body">
+            <label class="field">
+              <span class="field-label">Choose gauntlet pack file</span>
+              <input type="file" accept="application/json,.json" @change="onGauntletPackFile" />
+            </label>
+            <label class="field">
+              <span class="field-label">Or paste gauntlet pack</span>
+              <textarea
+                v-model="gauntletImportText"
+                rows="6"
+                placeholder="Paste a .gauntlet.json identity pack (the legends-site download) here…"
+              ></textarea>
+            </label>
+            <button type="button" class="mini-btn" @click="onGauntletPackPaste">Load pasted pack</button>
+            <p v-if="gauntletPackError" class="import-error">{{ gauntletPackError }}</p>
+
+            <div v-if="gauntletPack !== null" class="gauntlet-leg-picker">
+              <p class="gauntlet-pack-identity">
+                Gauntlet: <code>{{ gauntletPack.gauntlet.setAbbr }}/{{ gauntletPack.gauntlet.mastermindSlug }}</code>
+                · {{ gauntletPack.gauntlet.division }} · {{ gauntletPack.gauntlet.playerCount }}-player
+              </p>
+              <label v-if="gauntletVariantIndices.length > 1" class="field">
+                <span class="field-label">Variant</span>
+                <select v-model.number="gauntletSelectedVariantIndex">
+                  <option
+                    v-for="variantIndex in gauntletVariantIndices"
+                    :key="variantIndex"
+                    :value="variantIndex"
+                  >
+                    Variant {{ variantIndex }}
+                  </option>
+                </select>
+              </label>
+              <p class="field-label">Pick a leg (scheme) to prefill the draft:</p>
+              <div class="gauntlet-leg-grid">
+                <button
+                  v-for="leg in gauntletLegOptions"
+                  :key="leg.id"
+                  type="button"
+                  class="mini-btn gauntlet-leg-btn"
+                  @click="onPickGauntletLeg(leg.id)"
+                >
+                  <span class="gauntlet-leg-name">{{ leg.label }}</span>
+                  <span class="gauntlet-leg-id">{{ leg.id }}</span>
+                </button>
+                <p v-if="gauntletLegOptions.length === 0" class="picker-empty">
+                  No schemes found for this gauntlet's set.
+                </p>
+              </div>
+              <p v-if="gauntletLegMessage" class="import-error">{{ gauntletLegMessage }}</p>
+              <p v-if="gauntletImportSuccessAt" class="import-success">
+                Leg loaded at {{ gauntletImportSuccessAt }} — add your own heroes to complete the loadout.
+              </p>
+            </div>
+          </div>
+        </details>
       </div>
 
       <!-- Errors -->
@@ -1528,6 +1743,15 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: #6060c0
 .import-details summary { cursor: pointer; color: #c0c0ff; font-size: 0.85rem; }
 .import-body { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem; }
 .import-success { color: #6ee7b7; font-size: 0.8rem; margin: 0; }
+.import-error { color: #fda4af; font-size: 0.8rem; margin: 0; line-height: 1.4; }
+
+.gauntlet-leg-picker { display: flex; flex-direction: column; gap: 0.5rem; border-top: 1px solid #2a2a3a; padding-top: 0.5rem; }
+.gauntlet-pack-identity { margin: 0; font-size: 0.8rem; color: #c8c8e8; }
+.gauntlet-pack-identity code { font-family: ui-monospace, Consolas, monospace; color: #a5b4fc; }
+.gauntlet-leg-grid { display: flex; flex-direction: column; gap: 0.35rem; }
+.gauntlet-leg-btn { display: flex; flex-direction: column; align-items: flex-start; gap: 0.1rem; text-align: left; }
+.gauntlet-leg-name { font-size: 0.82rem; }
+.gauntlet-leg-id { font-family: ui-monospace, Consolas, monospace; font-size: 0.7rem; color: #7c7ca8; }
 
 .error-region { background: #1a0f0f; border: 1px solid #4a1010; border-radius: 6px; padding: 0.6rem 0.8rem; }
 .error-title { margin: 0 0 0.3rem 0; font-size: 0.85rem; color: #fca5a5; }
