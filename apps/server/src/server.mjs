@@ -32,6 +32,7 @@ import { registerCompetitionRoutes } from './competition/competition.routes.js';
 import { registerOwnerProfileRoutes } from './profile/ownerProfile.routes.js';
 import { registerAvatarUploadRoutes } from './profile/avatarUpload.routes.js';
 import { registerLoadoutLibraryRoutes } from './profile/loadoutLibrary.routes.js';
+import { registerGauntletRunRoutes } from './gauntlet/gauntletRun.routes.js';
 import { registerFriendshipRoutes } from './friendships/friendships.routes.js';
 import { registerMatchInviteRoutes } from './match/matchInvites.routes.js';
 import { registerProfileRoutes } from './profile/profile.routes.js';
@@ -943,6 +944,46 @@ export async function startServer() {
     requireAuthenticatedSession,
     verifier,
     accountResolver: verifier === undefined ? undefined : accountResolver,
+  });
+
+  // why: 01.5 runtime-wiring allowance — register the four WP-445 gauntlet-run
+  // routes (POST/GET /api/me/gauntlet-runs, PATCH/DELETE /api/me/gauntlet-runs/:id)
+  // on the same long-lived pool. Same caller-injected session deps as the routes
+  // above; requireUnsuspendedAccount (WP-107) is the suspension guard. Gauntlet
+  // existence is INJECTED (D-24264) via resolveGauntletExistence built from the
+  // already-built gauntletCatalog, so the logic layer never imports the registry
+  // catalog. A pack's (setAbbr, mastermindSlug) must name a catalog gauntlet with
+  // an approved loadout menu for its playerCount; the `fixed` division
+  // additionally requires a hero-pool budget for that count (the fixed board's
+  // existence condition). A miss surfaces as 422 unknown_gauntlet, not a crash.
+  function resolveGauntletExistence(query) {
+    for (const definition of gauntletCatalog) {
+      if (
+        definition.setAbbr !== query.setAbbr ||
+        definition.mastermindSlug !== query.mastermindSlug
+      ) {
+        continue;
+      }
+      const approvedForCount = definition.approvedLoadouts?.[query.playerCount];
+      if (approvedForCount === undefined || approvedForCount.length === 0) {
+        return false;
+      }
+      if (query.division === 'fixed') {
+        const poolBudget = definition.heroPoolBudgets?.[query.playerCount];
+        if (poolBudget === undefined) {
+          return false;
+        }
+      }
+      return true;
+    }
+    return false;
+  }
+  registerGauntletRunRoutes(server.router, pool, {
+    requireAuthenticatedSession,
+    verifier,
+    accountResolver: verifier === undefined ? undefined : accountResolver,
+    requireUnsuspendedAccount,
+    resolveGauntletExistence,
   });
 
   // why: WP-351 / D-24143 — wire the six /api/me/friends* routes on the

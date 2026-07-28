@@ -33741,9 +33741,8 @@ Protect this file.
 
 ### D-24264 — Gauntlet Run Import Idempotency + Run-API Shape (Server)
 
-**Status:** Drafted 2026-07-28; not yet landed. Flips to Active (post-execution)
-at WP-445 execution. Reserved by WP-445 (`claude/wp445-run-api`), baseline
-`origin/main` @ `9c788d98`.
+**Status:** Active (post-execution) 2026-07-28. Landed by WP-445 (EC-480),
+baseline `origin/main` @ `9c788d98`.
 
 **Decision.** The play-side gauntlet run API — `/api/me/gauntlet-runs`, the
 sixth WP of the Mastermind Gauntlets epic — locks the following contract shape.
