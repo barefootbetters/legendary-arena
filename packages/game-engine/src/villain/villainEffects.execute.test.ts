@@ -547,13 +547,19 @@ describe('executeVillainAbilities — captureBystander', () => {
 });
 
 describe('executeVillainAbilities — safe-skip paths', () => {
-  it('no-ops a hook with empty effects', () => {
+  it('no-ops (no mutation) a hook with empty effects but records a breadcrumb (D-24266)', () => {
     const G = makeG({
       hooks: [hook('v-x', 'onFight', [])],
       wounds: ['w0'] as CardExtId[],
     });
     executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onFight');
     assert.equal(G.piles.wounds.length, 1, 'no mutation from an empty-effects hook');
+    // why: D-24266 — a printed timing line with no `[effect:]` marker is an
+    // un-implemented mechanic; it mutates nothing but now leaves a `no-handler`
+    // hollow breadcrumb rather than vanishing silently.
+    assert.equal(G.diagnostics?.hollowEffects.length, 1, 'one hollow breadcrumb recorded');
+    assert.equal(G.diagnostics?.hollowEffects[0]!.reason, 'no-handler');
+    assert.equal(G.diagnostics?.hollowEffects[0]!.mechanic, 'unmarked-ability');
   });
 
   it('silently skips an out-of-vocabulary effect without throwing', () => {
@@ -653,11 +659,13 @@ describe('executeVillainAbilities — onEscape dispatch (WP-186)', () => {
     );
   });
 
-  it('safe-skips an onEscape hook with empty effects (e.g. each-player-KO line left marker-free by WP-188)', () => {
+  it('does not mutate on an onEscape hook with empty effects, but records a breadcrumb (WP-188 line → D-24266)', () => {
     // why: WP-188 leaves unmarked escape lines marker-free with
     // reason:"no-vocabulary-keyword" (e.g. the each-player-KO pattern; D-18802).
-    // The parser still emits a hook with effects:[] so the timing is recorded;
-    // the executor must no-op without touching any state.
+    // The parser still emits a hook with effects:[] so the timing is recorded.
+    // The executor touches no state (mutation-free), but D-24266 now records a
+    // `no-handler` hollow breadcrumb so the deferred printed effect is visible in
+    // the operator log instead of being silently dropped.
     const G = makeG({
       hooks: [hook('v-unmarked', 'onEscape', [])],
       wounds: ['w0'] as CardExtId[],
@@ -667,6 +675,10 @@ describe('executeVillainAbilities — onEscape dispatch (WP-186)', () => {
     assert.equal(G.piles.wounds.length, 1, 'no mutation from an empty-effects hook');
     assert.equal(G.piles.bystanders.length, 1, 'bystander pile untouched');
     assert.deepStrictEqual(G.attachedBystanders, {});
+    // why: D-24266 — the marker-free escape line is now observed as hollow.
+    assert.equal(G.diagnostics?.hollowEffects.length, 1, 'one hollow breadcrumb recorded');
+    assert.equal(G.diagnostics?.hollowEffects[0]!.reason, 'no-handler');
+    assert.equal(G.diagnostics?.hollowEffects[0]!.timing, 'onEscape');
   });
 });
 
@@ -1825,6 +1837,49 @@ describe('executeVillainAbilities — hollow-effect detection (WP-257)', () => {
     assert.equal(records(G).length, 1, 'exactly one hollow record');
     assert.equal(records(G)[0]!.reason, 'parse-unrecognized');
     assert.equal(records(G)[0]!.mechanic, 'mind-control');
+  });
+
+  it('D-24266: a printed timing line with no [effect:] marker records a no-handler breadcrumb (the Doombot Legion case)', () => {
+    // why: the production bug Jeff reported. Doombot Legion's printed
+    // "Fight: Look at the top two cards of your deck. KO one of them and put the
+    // other back." carries no `[effect:]` marker, so the parser emits a hook with
+    // effects:[] and no unresolvedMarkers. Before D-24266 the executor dropped it
+    // silently — no record, no log line — so the operator could not tell an
+    // un-implemented printed effect from a card with no Fight effect at all.
+    const G = withDiagnosticsFields(
+      makeG({ hooks: [hook('henchman-doombot-legion-05', 'onFight', [])] }),
+      { 'henchman-doombot-legion-05': 'henchman' },
+    );
+    executeVillainAbilities(G, CTX, 'henchman-doombot-legion-05' as CardExtId, 'onFight');
+
+    assert.equal(records(G).length, 1, 'exactly one hollow record');
+    assert.equal(records(G)[0]!.reason, 'no-handler');
+    assert.equal(records(G)[0]!.mechanic, 'unmarked-ability');
+    assert.equal(records(G)[0]!.cardType, 'henchman');
+    assert.equal(records(G)[0]!.timing, 'onFight');
+    // why: the operator-visible breadcrumb — the whole point of D-24266 — must
+    // reach G.messages (the log projection), not just the structured channel.
+    // Log entries are LogEntry objects ({ text, outcome, card }) per WP-434, so
+    // read `.text` rather than treating the entry as a bare string.
+    const messages = (G as unknown as { messages: { text: string; outcome?: string }[] }).messages;
+    const breadcrumb = messages.find((entry) => entry.text.includes('Unhandled effect observed'));
+    assert.ok(breadcrumb, 'the hollow breadcrumb surfaces in the operator log');
+    assert.equal(breadcrumb.text.includes('henchman-doombot-legion-05'), true, 'the log line names the card');
+    // why: WP-434 — a hollow effect (declared mechanic, no handler) is `blocked` (red).
+    assert.equal(breadcrumb.outcome, 'blocked', 'the breadcrumb is coloured blocked');
+  });
+
+  it('a fully-marked hook that applies records NO breadcrumb (the negative case)', () => {
+    // why: D-24266 must fire ONLY for genuinely un-marked lines. A recognized
+    // captureBystander line reaches its handler and applies — no breadcrumb.
+    const G = withDiagnosticsFields(
+      makeG({
+        hooks: [hook('v-sentinel', 'onFight', ['captureBystander'])],
+        bystanders: ['b0'] as CardExtId[],
+      }),
+    );
+    executeVillainAbilities(G, CTX, 'v-sentinel' as CardExtId, 'onFight');
+    assert.equal(records(G).length, 0, 'an applied effect is never a breadcrumb');
   });
 
   it('the VillainEffectKeyword[] applied return is byte-unchanged when an unhandled effect is present', () => {
