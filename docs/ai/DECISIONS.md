@@ -33738,3 +33738,78 @@ draft (scheme/mastermind/villains/henchmen/playerCount, heroes empty) with zero
 API calls; an unknown-gauntlet pack shows the friendly message.
 
 Protect this file.
+
+### D-24264 — Gauntlet Run Import Idempotency + Run-API Shape (Server)
+
+**Status:** Drafted 2026-07-28; not yet landed. Flips to Active (post-execution)
+at WP-445 execution. Reserved by WP-445 (`claude/wp445-run-api`), baseline
+`origin/main` @ `9c788d98`.
+
+**Decision.** The play-side gauntlet run API — `/api/me/gauntlet-runs`, the
+sixth WP of the Mastermind Gauntlets epic — locks the following contract shape.
+This decision complements **D-24262** (which forbids storing any derived
+progression state); D-24264 locks the **API / import-idempotency shape**, not a
+re-statement of the storage lock.
+
+1. **Import is idempotent.** `POST /api/me/gauntlet-runs` validates a WP-440
+   identity pack (`validateGauntletPack`) and confirms the gauntlet + an approved
+   loadout menu exist in the registry for the pack's `(setAbbr, mastermindSlug,
+   division, playerCount)`, then INSERTs an active run with **empty `leg_picks`**.
+   If an active run for that identity already exists, the INSERT hits the
+   migration-039 partial-unique index `(player_id, set_abbr, mastermind_slug,
+   division, player_count) WHERE first_completed_at IS NULL`; the server
+   **catches that conflict and returns the existing active run (`200`)** instead
+   of surfacing a 409/500. A brand-new insert returns `201`. Once a run is
+   completed (`first_completed_at` set), a fresh `POST` opens a **new** active
+   run (the completed one has dropped out of the partial-unique index). This
+   makes re-importing the same download a safe no-op, never a duplicate-row error.
+
+2. **Heroes start empty.** Import seeds `leg_picks = '{}'`; the player assembles
+   per-leg picks via `PATCH` before a leg is playable (the epic's pick-before-play
+   rule). `PATCH` validates only the STRUCTURAL shape of `legPicks` (an object of
+   `schemeSlug → heroDeckIds[]`) — no registry/gameplay validity check on hero
+   ids (that is launch-time, a later WP).
+
+3. **Raw GET, derived read deferred.** `GET /api/me/gauntlet-runs` returns the
+   caller's **raw stored** runs — the `GauntletRunView` (`{ id, setAbbr,
+   mastermindSlug, division, playerCount, legPicks, createdAt, updatedAt,
+   firstCompletedAt }`), identity + picks + timestamps only. The **derived**
+   read (5-state `status`, hero pool, budget headroom `heroCount + 2`, per-leg
+   cleared, last-played leg — computed via `gauntletTruth.logic.ts` over
+   `leg_picks` + `legendary.competitive_scores`) is the **WP-446** follow-on and
+   is NOT part of WP-445. This split keeps the CRUD/persistence-mirror half
+   (WP-445) separable from the derivation-over-scores half (WP-446).
+
+4. **Auth, scoping, error shape.** All `/api/me/gauntlet-runs*` endpoints are
+   `authenticated-session-required` (`requireAuthenticatedSession` →
+   `requireUnsuspendedAccount`), `player_id`-scoped (cross-account / malformed /
+   missing `:id` → `404 not_found`, no existence leak; `:id` UUID-guarded before
+   any `::uuid` cast), set `Cache-Control: no-store`, and dispatch on a closed
+   `GauntletRunErrorCode` union `{ unauthorized, account_suspended, invalid_pack,
+   unknown_gauntlet, invalid_leg_picks, not_found }`. This mirrors the WP-301
+   loadout-library contract (D-24086 / D-9905 / D-11504 / D-11804).
+
+5. **Layer + persistence.** The logic layer imports `@legendary-arena/registry`
+   (`validateGauntletPack`) + `pg` + Node built-ins only; gauntlet existence is
+   reached through an **injected resolver** built in `server.mjs` from the
+   already-built `gauntletCatalog`, so the logic layer never builds the registry
+   catalog and stays DB-test-friendly. `legendary.player_gauntlet_runs` is
+   ordinary `legendary.*` domain storage (the `player_loadouts` precedent) — no
+   `G`/`ctx`/`bgio`-blob read, no snapshot, no carve-out.
+
+**Files (at execution).** `apps/server/src/gauntlet/gauntletRun.{routes,logic,
+logic.test}.ts` (new) + `gauntletRun.types.ts` (additive API types) +
+`apps/server/src/server.mjs` (01.5 wiring) + `docs/ai/REFERENCE/api-endpoints.md`
+(four `Wired` rows), and this entry flips Drafted → Active. No `.claude/rules/*`
+or `ARCHITECTURE.md` edit — the server already permits the registry runtime
+import and `legendary.*` domain storage; no new cross-layer edge or blob-read
+carve-out is added.
+
+**Verification (at execution).** `pnpm -r build` + `pnpm --filter
+@legendary-arena/server test` green; DB-gated cases (with `TEST_DATABASE_URL`):
+import-creates-one (empty `leg_picks`), re-import-attaches (200, one row),
+invalid-pack (400), unknown-gauntlet (422), PATCH-updates + `updated_at`
+advances, DELETE-removes (204), cross-account 404. Layer grep over
+`gauntletRun.logic.ts` finds no engine/preplan/boardgame.io/`apps/*` import.
+
+Protect this file.
