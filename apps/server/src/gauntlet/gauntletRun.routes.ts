@@ -5,9 +5,15 @@
  * the game-server framework's `Server({...})` instance:
  *
  *   * `POST   /api/me/gauntlet-runs`      — import a WP-440 pack (idempotent)
- *   * `GET    /api/me/gauntlet-runs`      — list the caller's raw stored runs
+ *   * `GET    /api/me/gauntlet-runs`      — list runs with DERIVED progression
  *   * `PATCH  /api/me/gauntlet-runs/:id`  — edit a run's per-leg hero picks
  *   * `DELETE /api/me/gauntlet-runs/:id`  — delete a run
+ *
+ * WP-446 enhances the `GET` handler alone: it now delegates to
+ * `listGauntletRunProgress` and returns `{ runs: GauntletRunProgressView[] }` —
+ * each run's raw fields plus its derived progression (status / pool / headroom /
+ * per-leg cleared / last-played), computed at read time and stored NOWHERE
+ * (D-24262). The other three handlers are byte-unchanged.
  *
  * Mirrors the WP-301 `loadoutLibrary.routes.ts` + WP-332 `competition.routes.ts`
  * structural shape: local `KoaRouter` / `KoaGauntletRunContext` interfaces (no
@@ -45,9 +51,13 @@ import type {
 import {
   deleteGauntletRun,
   importGauntletRun,
-  listGauntletRuns,
   updateGauntletRunLegPicks,
 } from './gauntletRun.logic.js';
+// why: WP-446 — the GET handler now returns each run's DERIVED progression
+// (status / pool / headroom / per-leg cleared / last-played) computed at read
+// time via the derived-progression module, instead of the raw stored run
+// `listGauntletRuns` returned. POST/PATCH/DELETE are unchanged.
+import { listGauntletRunProgress } from './gauntletRunProgress.logic.js';
 
 /**
  * Minimal structural shape of the Koa context surface this module touches.
@@ -230,7 +240,12 @@ export function registerGauntletRunRoutes(
       if (accountId === null) {
         return;
       }
-      const result = await listGauntletRuns(accountId, database);
+      const result = await listGauntletRunProgress(
+        accountId,
+        database,
+        deps.resolveGauntletRunProgressInputs,
+        deps.leaderboardDependencies,
+      );
       if (result.ok === true) {
         koaContext.status = 200;
         koaContext.body = { runs: result.value };

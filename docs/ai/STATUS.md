@@ -7,6 +7,48 @@
 
 ## Current State
 
+### WP-446 / EC-481 — Gauntlet Run Derived Progression Read (Server) (D-24265) (2026-07-28)
+
+**User-Visible Surface = `none — infrastructure`.** **No user-observable change —
+infrastructure only** (D-24026 inverted; no live-surface verification required).
+Seventh WP of the **Mastermind Gauntlets: download → import → build → track** epic —
+the DERIVED read WP-445 deferred. The API is enhanced but no UI consumes it until the
+WP-7 profile tracker lands.
+
+`GET /api/me/gauntlet-runs` now returns `{ runs: GauntletRunProgressView[] }` — each
+run the raw `GauntletRunView` fields PLUS a derived progression block computed at read
+time from `legPicks` + `legendary.competitive_scores`, storing **nothing** (D-24262):
+`status` (the 5-state `needs-heroes` | `ready` | `playing` | `all-legs-cleared` |
+`champion`, with `all-legs-cleared` **distinct** from `champion`), `pool` (sorted union
+of `legPicks` hero ids), `budgetHeadroom` (`budget − pool.length`), `heroCount`,
+`budget` (`heroCount + 2`), `isChampion`, and per-leg `legs: { schemeId, schemeName,
+cleared, hasFullPicks, lastPlayedAt }[]`. `POST`/`PATCH`/`DELETE` are byte-unchanged;
+the path/method/auth/cache are unchanged.
+
+- **Single source of truth:** per-leg `cleared` reuses `qualifiesAsLegClear` and
+  `isChampion` reuses `findBestPoolAssignment` from WP-442's `gauntletTruth.logic.ts`
+  **verbatim**, with the SAME injected inputs `getGauntletStandings` uses — so the
+  tracker and the leaderboard can never diverge (D-24265). Caller-centric aggregation
+  by `team_key`; for a solo run the champion verdict coincides with the caller's
+  presence in the leaderboard's fixed division (cross-checked).
+- **New** `apps/server/src/gauntlet/gauntletRunProgress.logic.{ts,test.ts}` (pure
+  `deriveGauntletRunStatus` + pure `deriveGauntletRunProgress` + DB entrypoint
+  `listGauntletRunProgress`); **additive** `GauntletRunProgressView` types in
+  `gauntletRun.types.ts` (authorized by D-24265); GET handler delegate in
+  `gauntletRun.routes.ts`; **`server.mjs`** wiring (01.5) builds the injected inputs
+  resolver + leaderboard deps from the startup `gauntletCatalog` + `PLAYER_COUNT_SETUP`;
+  `api-endpoints.md` GET row replaced whole (D-11804 §21, `Authorizing WP = WP-446`).
+- **Verification:** `pnpm -r build` green; `pnpm --filter @legendary-arena/server test`
+  green; the new `gauntletRunProgress.logic.test.ts` passes **20/20** with
+  `TEST_DATABASE_URL` set (incl. the DB-gated end-to-end + the agrees-with-
+  `getGauntletStandings` solo cross-check) and **loud-skips** its DB cases without it
+  (the pure status/derivation/drift tests run regardless). Layer grep, re-implementation
+  grep, and read-only (`INSERT`/`UPDATE`/`DELETE`) grep over `gauntletRunProgress.logic.ts`
+  all = 0.
+- **Persistence boundary:** READ-ONLY over `legendary.*` domain tables — no `G`/`ctx`/
+  `bgio`-blob read, no snapshot, no carve-out, no migration, no column, no write path
+  (never writes `first_completed_at`); stores **nothing derived** (D-24262).
+
 ### WP-445 / EC-480 — Gauntlet Run Import + Run-CRUD API (Server) (D-24264) (2026-07-28)
 
 **User-Visible Surface = `none — infrastructure`.** **No user-observable change —

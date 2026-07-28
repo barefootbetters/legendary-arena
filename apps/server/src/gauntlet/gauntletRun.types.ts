@@ -34,6 +34,16 @@ import type {
   SessionVerifier,
 } from '../auth/sessionToken.types.js';
 import type { RequireUnsuspendedAccountResult } from '../auth/requireUnsuspendedAccount.js';
+// why: WP-446 / D-24265 — the derived-progression inputs carry the gauntlet's
+// legs and approved loadouts as plain data (type-only import; both are
+// server-layer types built by the wiring layer), and the route bundle carries
+// the leaderboard dependency so the derived read resolves the published
+// scoring-config version exactly as `getGauntletStandings` does.
+import type {
+  GauntletApprovedLoadouts,
+  GauntletLeg,
+} from '../legends/gauntlet.logic.js';
+import type { LeaderboardDependencies } from '../leaderboards/leaderboard.types.js';
 
 // why: re-exported so the routes + logic modules (and tests) can reference the
 // identity-layer + auth-layer aliases through `./gauntletRun.types.js` without
@@ -222,14 +232,119 @@ export type GauntletExistenceResolver = (
   query: GauntletExistenceQuery,
 ) => boolean;
 
+// ---------------------------------------------------------------------------
+// Derived-progression contract types (WP-446 / EC-481 / D-24265) — additive
+// ---------------------------------------------------------------------------
+
+/**
+ * One leg of a run's derived progression (WP-446 / D-24265 §3). `schemeId` is
+ * the registry scheme `slug`; `schemeName` is its display name; `cleared` is
+ * `true` when at least one of the caller's `competitive_scores` rows for this
+ * leg qualifies via `qualifiesAsLegClear`; `hasFullPicks` is
+ * `leg_picks[schemeId].length === heroCount`; `lastPlayedAt` is the ISO
+ * `max(created_at)` over the caller's qualifying rows for the leg, or `null`
+ * when the leg has no qualifying row. Nothing here is stored — every field is
+ * derived on each read (D-24262).
+ */
+export interface GauntletRunLegProgress {
+  readonly schemeId: string;
+  readonly schemeName: string;
+  readonly cleared: boolean;
+  readonly hasFullPicks: boolean;
+  readonly lastPlayedAt: string | null;
+}
+
+/**
+ * The five derived states of a run (WP-446 / D-24265 §2), evaluated in the
+ * order `champion → all-legs-cleared → playing → ready → needs-heroes`.
+ * `all-legs-cleared` and `champion` are DISTINCT: a player may clear every leg
+ * with teams whose hero union exceeds the fixed pool budget and legitimately
+ * not be champion. A closed union backed by the drift-asserted
+ * `GAUNTLET_RUN_STATUSES` canonical array.
+ */
+export type GauntletRunStatus =
+  | 'needs-heroes'
+  | 'ready'
+  | 'playing'
+  | 'all-legs-cleared'
+  | 'champion';
+
+/**
+ * Canonical readonly array mirroring the `GauntletRunStatus` union. Adding a
+ * value requires updating both the union and this array in the same change (see
+ * code-style §Drift Detection); the drift-detection test asserts forward and
+ * backward inclusion with a synthetic phantom status.
+ */
+export const GAUNTLET_RUN_STATUSES: readonly GauntletRunStatus[] = [
+  'needs-heroes',
+  'ready',
+  'playing',
+  'all-legs-cleared',
+  'champion',
+] as const;
+
+/**
+ * The owner's DERIVED view of one gauntlet run on the wire (WP-446 / D-24265
+ * §3): the raw `GauntletRunView` fields PLUS the progression block computed at
+ * read time from `legPicks` + `legendary.competitive_scores`. `pool` is the
+ * sorted union of all `leg_picks` hero ids; `budget` is `heroCount + 2` (the
+ * fixed-pool budget, D-24187 §4); `budgetHeadroom` is `budget − pool.length`
+ * (negative allowed when picks exceed budget); `isChampion` is `true` only when
+ * every leg is cleared AND a budget-valid pool assignment exists. Nothing here
+ * is stored (D-24262).
+ */
+export interface GauntletRunProgressView extends GauntletRunView {
+  readonly status: GauntletRunStatus;
+  readonly pool: readonly string[];
+  readonly budgetHeadroom: number;
+  readonly heroCount: number;
+  readonly budget: number;
+  readonly isChampion: boolean;
+  readonly legs: readonly GauntletRunLegProgress[];
+}
+
+/**
+ * The injected per-run derivation inputs (WP-446 / D-24265 §5), built once in
+ * `server.mjs` from the startup `gauntletCatalog` + `PLAYER_COUNT_SETUP` so the
+ * logic layer never imports the registry. `legs` are the gauntlet's home-set
+ * scheme legs; `approvedLoadouts` is the gauntlet's approved menu (undefined
+ * when the requirement is not configured — the loadout clause is then skipped);
+ * `poolBudget` is `heroPoolBudgets[playerCount]` (`= heroCount + 2`) — the SAME
+ * value `findBestPoolAssignment` receives and the view's `budget`; `heroCount`
+ * is the run's per-`playerCount` hero-group count; `boardName` is
+ * `buildGauntletBoardName(definition)` for the cap-warning log.
+ */
+export interface GauntletRunProgressInputs {
+  readonly legs: readonly GauntletLeg[];
+  readonly approvedLoadouts: GauntletApprovedLoadouts | undefined;
+  readonly poolBudget: number;
+  readonly heroCount: number;
+  readonly boardName: string;
+}
+
+/**
+ * The injected resolver that maps one of the caller's raw runs to its
+ * derivation inputs (WP-446 / D-24265 §5). Built in `server.mjs` from the
+ * already-built `gauntletCatalog`, so the logic layer never builds the registry
+ * catalog. Returns `null` when no catalog gauntlet matches the run's identity
+ * (a run/catalog drift the DB entrypoint surfaces as an internal error rather
+ * than silently mis-deriving).
+ */
+export type GauntletRunProgressResolver = (
+  run: GauntletRunView,
+) => GauntletRunProgressInputs | null;
+
 /**
  * Caller-injected dependency bundle for `registerGauntletRunRoutes`. Mirrors
  * the WP-332 `CompetitionRouteDependencies`: `requireAuthenticatedSession` is
  * the WP-112 orchestrator (or a test fake); `verifier` and `accountResolver`
  * are the broker-specific implementations passed through at request time;
  * `requireUnsuspendedAccount` is the WP-107 guard; `resolveGauntletExistence`
- * is the injected registry-existence resolver. Production wiring binds these
- * once at startup in `server.mjs`.
+ * is the injected registry-existence resolver. `resolveGauntletRunProgressInputs`
+ * and `leaderboardDependencies` (WP-446 / D-24265) feed the derived GET read:
+ * the injected per-run inputs and the leaderboard dependency the derivation
+ * resolves the published scoring-config version from. Production wiring binds
+ * these once at startup in `server.mjs`.
  */
 export interface GauntletRunRouteDependencies {
   readonly requireAuthenticatedSession: (
@@ -243,4 +358,6 @@ export interface GauntletRunRouteDependencies {
     accountId: AccountId,
   ) => Promise<RequireUnsuspendedAccountResult>;
   readonly resolveGauntletExistence: GauntletExistenceResolver;
+  readonly resolveGauntletRunProgressInputs: GauntletRunProgressResolver;
+  readonly leaderboardDependencies: LeaderboardDependencies;
 }
