@@ -33815,9 +33815,9 @@ Protect this file.
 
 ### D-24265 — Gauntlet Run Derived-Progression Semantics (Server)
 
-**Status:** Drafted 2026-07-28; not yet landed. Reserved by WP-446 (EC-481),
-drafting baseline `origin/main` @ `85d096d9`. Flips to "Active
-(post-execution)" when WP-446 executes.
+**Status:** Active (post-execution) 2026-07-28. Reserved by WP-446 (EC-481),
+drafting baseline `origin/main` @ `85d096d9`; executed off `origin/main` @
+`47500b38`.
 
 **Decision.** The single-run derived-progression read — `GET
 /api/me/gauntlet-runs`, the seventh WP of the Mastermind Gauntlets epic — locks
