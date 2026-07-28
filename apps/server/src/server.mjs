@@ -27,7 +27,10 @@ import { createParGate } from './par/parGate.mjs';
 import { createPool } from './db/database.js';
 import { createBgioPgStore } from './db/bgioPgStore.js';
 import { registerLeaderboardRoutes } from './leaderboards/leaderboard.routes.js';
-import { buildGauntletCatalog } from './legends/gauntlet.logic.js';
+import {
+  buildGauntletCatalog,
+  buildGauntletBoardName,
+} from './legends/gauntlet.logic.js';
 import { registerCompetitionRoutes } from './competition/competition.routes.js';
 import { registerOwnerProfileRoutes } from './profile/ownerProfile.routes.js';
 import { registerAvatarUploadRoutes } from './profile/avatarUpload.routes.js';
@@ -978,12 +981,53 @@ export async function startServer() {
     }
     return false;
   }
+  // why: 01.5 runtime-wiring allowance — the WP-446 derived GET read needs its
+  // per-run derivation inputs and the leaderboard dependency INJECTED so the
+  // logic layer stays registry-free (D-24265 §5). resolveGauntletRunProgressInputs
+  // maps a stored run to its gauntlet's legs + approvedLoadouts + poolBudget
+  // (heroPoolBudgets[playerCount] = heroCount + 2) + heroCount (from the
+  // registry's PLAYER_COUNT_SETUP) + boardName (buildGauntletBoardName) — all
+  // read off the already-built gauntletCatalog, so the derivation reuses the
+  // SAME truth inputs getGauntletStandings uses without the logic layer touching
+  // the registry. leaderboardDependencies carries the same checkParPublished the
+  // leaderboard uses so tracker and leaderboard resolve the published
+  // scoring-config version identically. A run with no matching catalog gauntlet
+  // resolves to null (run/catalog drift → surfaced as an internal error, never a
+  // mis-derived view).
+  function resolveGauntletRunProgressInputs(run) {
+    for (const definition of gauntletCatalog) {
+      if (
+        definition.setAbbr !== run.setAbbr ||
+        definition.mastermindSlug !== run.mastermindSlug
+      ) {
+        continue;
+      }
+      const poolBudget = definition.heroPoolBudgets?.[run.playerCount];
+      const setupRow = PLAYER_COUNT_SETUP[run.playerCount];
+      if (poolBudget === undefined || setupRow === undefined) {
+        return null;
+      }
+      return {
+        legs: definition.legs,
+        approvedLoadouts: definition.approvedLoadouts,
+        poolBudget,
+        heroCount: setupRow.heroCount,
+        boardName: buildGauntletBoardName(definition),
+      };
+    }
+    return null;
+  }
   registerGauntletRunRoutes(server.router, pool, {
     requireAuthenticatedSession,
     verifier,
     accountResolver: verifier === undefined ? undefined : accountResolver,
     requireUnsuspendedAccount,
     resolveGauntletExistence,
+    resolveGauntletRunProgressInputs,
+    leaderboardDependencies: {
+      checkParPublished: parGate.checkParPublished,
+      getScenarioKeysForTheme,
+    },
   });
 
   // why: WP-351 / D-24143 — wire the six /api/me/friends* routes on the
