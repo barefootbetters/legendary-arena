@@ -33812,3 +33812,98 @@ advances, DELETE-removes (204), cross-account 404. Layer grep over
 `gauntletRun.logic.ts` finds no engine/preplan/boardgame.io/`apps/*` import.
 
 Protect this file.
+
+### D-24265 — Gauntlet Run Derived-Progression Semantics (Server)
+
+**Status:** Drafted 2026-07-28; not yet landed. Reserved by WP-446 (EC-481),
+drafting baseline `origin/main` @ `85d096d9`. Flips to "Active
+(post-execution)" when WP-446 executes.
+
+**Decision.** The single-run derived-progression read — `GET
+/api/me/gauntlet-runs`, the seventh WP of the Mastermind Gauntlets epic — locks
+the following DERIVATION semantics + view shape. This decision complements
+**D-24262** (which forbids storing any derived progression state) and **D-24264**
+(which locks the import + raw-API shape); D-24265 locks the **derivation
+semantics** that turn `leg_picks` + `legendary.competitive_scores` into a run's
+progression at read time. Nothing here is ever stored.
+
+1. **Single source of truth.** Per-leg `cleared` is decided by
+   `qualifiesAsLegClear` and champion by `findBestPoolAssignment` — the WP-442
+   `gauntletTruth.logic.ts` helpers, consumed **verbatim** (not re-implemented),
+   with the SAME injected inputs the leaderboard's `getGauntletStandings` uses:
+   the gauntlet's `approvedLoadouts`, the published scoring-config version
+   resolved from `leaderboardDependencies.checkParPublished(scenarioKey)` (null →
+   fail closed), and the injected `heroCount` / `poolBudget` / `boardName`. This
+   is the load-bearing guarantee that the tracker and the leaderboard can never
+   diverge on "cleared a leg" or "champion." Re-deriving either predicate is a
+   FAIL.
+
+2. **Five-state status, derived at read time (evaluated in this order).**
+   - `champion` — every leg cleared AND a budget-valid fixed-pool assignment
+     exists (`findBestPoolAssignment` non-null over the caller's winning teams);
+   - `all-legs-cleared` — every leg cleared but NO budget-valid pool;
+   - `playing` — ≥1 leg cleared, not all;
+   - `ready` — ≥1 leg has full picks (`leg_picks[schemeId].length === heroCount`),
+     0 legs cleared;
+   - `needs-heroes` — no leg has full picks (nothing launchable).
+   `all-legs-cleared` and `champion` are **DISTINCT** states — a player can win
+   every leg with teams whose union exceeds the fixed budget and legitimately not
+   be champion. That gap must read as strategy, never a bug (the epic's
+   invisible-failure class). A closed `GauntletRunStatus` union + a
+   drift-asserted `GAUNTLET_RUN_STATUSES` canonical array back this.
+
+3. **Derivation shape.** `pool` = the sorted union of the run's `leg_picks` hero
+   ids; `budget` = `heroCount + 2` (the fixed-pool budget, D-24187 §4, from the
+   injected `PLAYER_COUNT_SETUP` heroCount for the run's `player_count`);
+   `budgetHeadroom` = `budget − pool.length` (negative allowed when picks already
+   exceed budget); per-leg `lastPlayedAt` = the ISO `max(created_at)` over the
+   caller's qualifying `competitive_scores` for that leg (the derived
+   "where-you-left-off", never a stored column). The view is
+   `GauntletRunProgressView extends GauntletRunView` with `status`, `pool`,
+   `budgetHeadroom`, `heroCount`, `budget`, `isChampion`, and `legs:
+   {schemeId, schemeName, cleared, hasFullPicks, lastPlayedAt}[]`.
+
+4. **Caller-centric aggregation.** The read builds ONE `RosterLegAccumulator`
+   from the caller's own qualifying replays at the run's `player_count`, keyed by
+   `team_key` (hero identity) per leg, so the champion search runs over "the
+   caller's winning teams." This is intentionally distinct from
+   `getGauntletStandings`' per-roster grouping; for a solo run (`player_count =
+   1`, roster == the caller) the two coincide, which a cross-check test asserts.
+
+5. **Read-only + layer.** The derived read stores NOTHING and has NO write path
+   (it never writes `first_completed_at`). The logic layer imports only the
+   sibling server truth helper + the injected `DatabaseClient` + Node built-ins;
+   it does NOT import `game-engine` / `preplan` / `boardgame.io` /
+   `@legendary-arena/registry` / any `apps/*` — the derivation inputs arrive via
+   an INJECTED resolver built in `server.mjs` from the startup `gauntletCatalog`
+   + `PLAYER_COUNT_SETUP`. The score fold uses `for...of`, never `.reduce()`.
+
+6. **Deferred forks (flagged, not silently decided).** For **multiplayer** runs
+   the caller-centric aggregation (clause 4) aggregates the caller's qualifying
+   wins across any roster the caller was part of into one caller accumulator; a
+   stricter single-roster model was considered and deferred. For **`open`**
+   division runs the fixed-pool model is applied uniformly (same `budget`,
+   `isChampion`); open-division-specific presentation (secondary open per-leg
+   badge) is deferred to a future WP-8. Both are recorded here so a later WP
+   changing them supersedes this clause explicitly.
+
+**Files (at execution).** `apps/server/src/gauntlet/gauntletRunProgress.logic.
+{ts,test.ts}` (new) + `gauntletRun.types.ts` (additive `GauntletRunProgressView`
+types — authorized by this decision, mirroring the WP-445→WP-443 extension under
+D-24264) + `gauntletRun.routes.ts` (GET handler delegate; POST/PATCH/DELETE
+unchanged) + `apps/server/src/server.mjs` (01.5 wiring) +
+`docs/ai/REFERENCE/api-endpoints.md` (GET row replace-whole-row), and this entry
+flips Drafted → Active. No `.claude/rules/*` or `ARCHITECTURE.md` edit — the
+server already permits `legendary.*` domain reads and the reuse is
+server-internal; no new cross-layer edge or blob-read carve-out is added.
+
+**Verification (at execution).** `pnpm -r build` + `pnpm --filter
+@legendary-arena/server test` green; DB-gated cases (with `TEST_DATABASE_URL`):
+all 5 status states, champion-vs-all-legs-cleared, per-leg cleared + last-played,
+budget headroom, and the agrees-with-`getGauntletStandings` solo cross-check; a
+no-DB pure `deriveGauntletRunStatus` + `GAUNTLET_RUN_STATUSES` drift test. Layer
+grep over `gauntletRunProgress.logic.ts` finds no
+engine/preplan/boardgame.io/registry/`apps/*` import; a re-implementation grep
+finds no local `qualifiesAsLegClear`/`findBestPoolAssignment` definition.
+
+Protect this file.
