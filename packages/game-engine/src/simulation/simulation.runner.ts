@@ -27,6 +27,11 @@ import type { SimulationConfig, SimulationResult, LegalMove, AIPolicy } from './
 import type { SimulationLifecycleContext } from './ai.legalMoves.js';
 import type { ReplayMove } from '../replay/replay.types.js';
 import type { EndgameOutcome } from '../endgame/endgame.types.js';
+// why: the co-op harness's narrow per-game projection type. Imported TYPE-only
+// (erased at compile) so this file has no runtime dependency on coopWinRate.ts
+// and no import cycle — coopWinRate.ts imports the simulateOneCoopGame VALUE
+// from here, this file imports only the CoopGameRecord TYPE from there.
+import type { CoopGameRecord } from './coopWinRate.js';
 // why (WP-263 / D-24039): the hollow-effect record type is reused verbatim
 // from the WP-257 diagnostics contract — the capture projection surfaces the
 // runtime-only G.diagnostics channel, it never defines a parallel shape.
@@ -556,6 +561,66 @@ function simulateOneGame(
     loopResult.endgameWinner,
     maxTurns,
   );
+}
+
+/**
+ * Simulates one co-op game to a terminal state and returns the narrow
+ * per-game projection the co-op win-rate harness (WP-452) classifies.
+ *
+ * // why (narrow projection): this is an ADDITIVE sibling of simulateOneGame
+ * that surfaces ONLY the five CoopGameRecord fields — it does NOT widen the
+ * internal GameOutcome seam and does NOT touch runSimulation's byte-stable
+ * aggregate contract (the CapturedOutcomeSummary smallest-seam precedent). It
+ * reuses the existing per-turn loop + outcome builder; no turn loop is
+ * re-implemented. Every seat is driven by the SAME policy instance, modelling a
+ * fully-cooperative table; the caller (runCoopWinRate) constructs a fresh policy
+ * per seed so a game's outcome depends only on its own seed. The seed threads
+ * into the shuffle domain here (mulberry32) and into the policy's decision
+ * domain at the caller — the two seed domains stay independent (D-2704). The
+ * `registry` param is the engine-local CardRegistryReader TYPE; this file never
+ * imports the registry package.
+ *
+ * @param matchConfiguration - validated 9-field MatchSetupConfig.
+ * @param registry - card registry reader (setup-time resolution only).
+ * @param policy - the AI policy applied at every seat.
+ * @param seed - run-level seed string; hashed via djb2 → mulberry32 (shuffle).
+ * @param numPlayers - number of cooperative seats.
+ * @returns the narrow per-game co-op projection.
+ */
+export function simulateOneCoopGame(
+  matchConfiguration: MatchSetupConfig,
+  registry: CardRegistryReader,
+  policy: AIPolicy,
+  seed: string,
+  numPlayers: number,
+): CoopGameRecord {
+  const seatPolicies: AIPolicy[] = [];
+  for (let seatIndex = 0; seatIndex < numPlayers; seatIndex++) {
+    seatPolicies.push(policy);
+  }
+
+  const seedNumber = hashSeedString(seed);
+  const nextRandom = createMulberry32(seedNumber);
+  const setupContext = makeMockCtx({ numPlayers });
+  const gameState = buildInitialGameState(matchConfiguration, registry, setupContext);
+
+  const loopResult = runPerTurnLoop(gameState, seatPolicies, numPlayers, 0, nextRandom);
+
+  const outcome = buildGameOutcome(
+    gameState,
+    loopResult.turnsElapsed,
+    numPlayers,
+    loopResult.endgameReached,
+    loopResult.endgameWinner,
+  );
+
+  return {
+    isHeroesWin: outcome.isHeroesWin,
+    endgameReached: outcome.endgameReached,
+    endgameWinner: outcome.endgameWinner,
+    escapedVillains: outcome.escapedVillains,
+    turns: outcome.turns,
+  };
 }
 
 /**
