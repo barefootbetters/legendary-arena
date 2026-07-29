@@ -34254,5 +34254,173 @@ derived field. §21 is triggered (the `GET /api/me/gauntlet-runs` response shape
 `apps/server/src/gauntlet/gauntletRunProgress.logic.{ts,test.ts}` (modified) +
 `apps/server/src/server.mjs` (wiring) + `docs/ai/REFERENCE/api-endpoints.md`
 (GET row replaced).
+### D-24270 — `gain-attached-hero` villain effect primitive: a no-op classification marker that fixes the D-24266 "Gain that Hero" false positive (Drafted 2026-07-28 — WP-450; not yet landed)
+
+> **Status: Drafted at SPEC time; flips to Active (post-execution) when WP-450
+> executes.** Reserved in `NUMBER-LEDGER.md` under the same branch.
+
+**Context.** The D-24266 breadcrumb (shipped #1065) records a `no-handler`
+`unmarked-ability` hollow record for a fired villain/henchman timing line with no
+`[effect:]` marker. A live core game showed it FALSE-POSITIVES on `Fight: Gain that
+Hero` villains (core `skrull-queen-veranke`, core `skrull-shapeshifters`, rvlt
+`klaw`): the captured-hero return actually fires — it is handled **generically** at
+the fight site by `awardAttachedHeroes` (WP-431), which runs BEFORE
+`executeVillainAbilities` and is not gated on the printed text — so the line is
+markerless and the detector mis-reports the effect as unhandled. It fires on every
+capture-villain defeat, and a breadcrumb that cries wolf on correctly-handled
+effects loses its value.
+
+**Decision.** Append one primitive `gain-attached-hero` to the closed
+`VillainEffectPrimitive` union + `VILLAIN_EFFECT_PRIMITIVES` array (append-only; the
+final position depends on WP-447's execution order — both append one primitive — so
+the executor appends after whatever primitives exist on `main`, and the drift test
+tracks the resulting length). It is **no-param** (marker `[effect:gain-attached-hero]`,
+descriptor `{ primitive: 'gain-attached-hero' }`); `parseParameterizedEffect` accepts
+it on the no-param branch. It dispatches to `villainEffectGainAttachedHero`, a
+**deliberate no-op** returning `{ targets: [] }` and mutating nothing. Marking the
+three `Fight: Gain that Hero` lines gives the hook a descriptor → `applyVillainEffect`
+returns non-null → the effect classifies **applied (reachable)**, so the D-24266
+detector no longer flags it.
+
+**Why a no-op handler (not the alternatives).** The award is already performed by
+the generic WP-431 path; the handler exists purely to make the printed effect a
+recognized, reachable member of the vocabulary — honest classification, not new
+behaviour. Two alternatives were rejected: (a) **suppress in the detector** — it
+would need the fight-site "a hero was awarded" signal, but by the time
+`executeVillainAbilities` runs the attached-hero mapping is already consumed, and
+threading it in would change the executor signature used by all three fire sites and
+make detection implicit rather than declared; (b) **drive the award from the handler**
+(move `awardAttachedHeroes` into the primitive) — architecturally purest but a real
+ordering + `finalStateHash` risk (the award is a hashed `G` mutation) for zero
+behaviour gain. (a-marker + no-op) is the proportionate fix; driving-from-the-handler
+is noted as a possible future refactor.
+
+**Scope + determinism.** No gameplay change: `awardAttachedHeroes` (WP-431) is
+untouched and the handler mutates nothing. But marking a `Gain that Hero` line
+*suppresses* the D-24266 `G.diagnostics` hollow-record materialization on that
+villain's defeat, and **`G.diagnostics` IS part of the hashed final state** —
+`computeStateHash` serializes the whole `G`, and WP-257 keeps the channel absent on
+a fresh match precisely so the empty channel does not perturb the hash
+(`buildInitialGameState.ts` §diagnostics comment; the finalStateHash oracle excludes
+only `messages` + `logMeta` + `lastPlayEffectsFired` per D-24081/D-24114, NOT
+`diagnostics`). So the change is
+hash-relevant wherever the 3 villains are fought; it is **re-pin-free only because no
+pinned/golden fixture defeats Skrull Queen Veranke / Skrull Shapeshifters / Klaw** —
+a fixture-content fact the executor confirms by running the suite (any hash-oracle
+shift ⇒ a fixture fights one ⇒ regenerate + re-pin with a note). "No-op handler ⇒ no
+re-pin" is NOT the load-bearing reason. Klaw's own
+`Ambush:` line (a class-and-cost-filtered capture) stays markerless and keeps its
+onAmbush breadcrumb — its capture is a separate unimplemented conditional-capture
+mechanic, out of scope; consequently Klaw captures no hero, so its `Gain that Hero`
+is a legitimate no-op that the marker still correctly classifies reachable.
+
+**Files (at execution).** `packages/game-engine/src/rules/villainAbility.types.{ts,test.ts}`
++ `setup/villainAbility.setup.ts` + `villain/villainEffects.execute.{ts,test.ts}`
++ `scripts/convert-cards/apply-effect-markers.mjs` (local primitives array) +
+`scripts/convert-cards/inputs/villain-effect-markers.json` + generated
+`data/cards/{core,rvlt}.json`. No `.claude/rules/*` or `ARCHITECTURE.md` edit —
+within-layer effect-vocabulary growth, no cross-layer edge, no persistence carve-out;
+the drift discipline is the existing `code-style.md §Drift Detection` rule.
+
+**Verification.** `pnpm --filter @legendary-arena/game-engine build` + `test` green;
+tests confirm the marked line records no hollow event (applied, not
+`unmarked-ability`/`no-handler`), the handler mutates nothing, and the WP-431
+hero-return is unchanged; hash oracles unchanged (confirmed by the green suite — no
+pinned fixture fights the 3 villains — not assumed from the no-op handler).
+
+### D-24271 — `G.diagnostics` is a runtime-only observation channel, excluded from the state hash (phased: `hashGameState` now, `computeStateHash` deferred) (Active (post-execution) 2026-07-29 — WP-451)
+
+> **Status: Active (post-execution) 2026-07-29 — `hashGameState`-only landed.** WP-451
+> executed the fixture-golden `hashGameState` exclusion (game-engine 2087/0, server
+> 1008/0, NO fixture re-pin — the sentinel + PRE_WP080_HASH are byte-identical). The
+> `computeStateHash` (competitive-oracle) exclusion — the principled end-state below —
+> remains **deferred to its own future WP + a dedicated low-competitive-activity
+> deploy**.
+>
+> **🔒 SCOPE LOCKED (operator, 2026-07-29): `hashGameState`-only.** Under the locked
+> scope the competitive `replayHash` is UNCHANGED and there is no competitive
+> transition-window exposure; the `buildInitialGameState` absent-on-fresh literal
+> remains required (now justified by `computeStateHash`, which still hashes
+> `diagnostics`). The full "excluded from ALL state-hash surfaces" invariant is the
+> end-state the deferred follow-on completes.
+
+**Context.** Drafting WP-447 (scry-KO) and WP-450 (gain-attached-hero) each surfaced
+the same subtlety: `G.diagnostics` — the WP-257 hollow-effect observation channel,
+explicitly "runtime-only … never gameplay input" — is currently serialized into the
+game-state hash, so an observability-only change (the D-24266 breadcrumb firing, or
+marking a villain to suppress it) silently shifts `finalStateHash`. This forced
+each of those WPs into a fixture-content determinism check and left a latent
+competitive-verification footgun. Diagnostics has no business gating determinism or
+competitive equality — the exact argument already accepted for `messages` / `logMeta`
+/ `lastPlayEffectsFired`.
+
+**Decision.** `G.diagnostics` is excluded from **all** state-hash surfaces:
+- **`hashGameState`** (the test-fixture golden / `finalStateHash` oracle) — appended
+  to its existing `messages` + `logMeta` + `lastPlayEffectsFired` rest-destructure.
+  This is the load-bearing fix: it stops golden-fixture churn on every breadcrumb /
+  effect-marking WP.
+- **`computeStateHash`** (the production whole-G determinism / competitive oracle) —
+  its first field exclusion. This decouples the competitive `replayHash` (the
+  `bgio.replay_artifacts` natural key) and the step-9 anti-tamper compare from
+  observability drift.
+The now-false hash rationale is corrected where it actually lives:
+`buildInitialGameState.ts` (~566-568, the "hashGameState serializes the whole G"
+note that justified keeping diagnostics absent-on-fresh — the real stale comment),
+plus a "full G except the excluded observation channels" caveat on `game.ts` §onBegin
+and a new `diagnostics` why-comment in `hashGameState.ts`. Neither `game.ts` nor
+`hashGameState.ts` currently makes a "diagnostics is hashed" claim (their existing
+"STAYS in computeStateHash" / "full G" lines are about `lastPlayEffectsFired` /
+`logMeta`, which genuinely stay in `computeStateHash`). Invariant, pinned by tests:
+two `LegendaryGameState`s differing only in `diagnostics` hash identically under both
+oracles.
+
+**Determinism / re-pin.** Expected NO pinned-hash re-pin: no current fixture
+materializes a hollow record (D-24266 shipped in #1065 with no re-pin), so
+`diagnostics` is absent in every fixture's final G and stripping an absent field is a
+no-op. Confirmed empirically by running the full suite (conditional 01.5 re-pin of
+`PRE_WP080_HASH` / the sentinel `finalStateHash` only if a shift appears).
+
+**Competitive-risk decision (operator sign-off at SPEC review).** Changing
+`computeStateHash` alters the algorithm behind the competitive `replayHash` + the
+step-9 compare (`competition.logic.ts`: `reduced.stateHash === replayHash`).
+Assessed: **accepted scores are immune** (immutable per D-5302; resubmit takes the
+idempotency fast-path and never re-reduces); **the score math never reads
+`diagnostics`** (re-derived from terminal state via `deriveScoringInputs` /
+`evaluateEndgame`); the **only exposure is a one-time transition window** — a replay
+captured under old (diagnostics-inclusive) code but submitted after this deploy would
+re-reduce to a diagnostics-excluded hash `≠` its stored `replayHash` → a rare
+`replay_verification_failed`, recoverable by re-capture/resubmit, no data corruption
+(this window is LIVE in production — real matches materialize hollow records, unlike
+the fixtures). The other two `computeStateHash` consumers (`desync.detect`,
+`intent.validate`) are within-version-symmetric + self-healing (engine-authoritative
+resync, D-0402) — steady-state neutral, only a harmless transient rolling-deploy
+resync. **Recommended default (independent copilot-check + this analysis):
+`hashGameState`-only now — it fully fixes the recurring fixture churn at ZERO
+competitive risk — and defer the `computeStateHash` exclusion to its own dedicated,
+low-competitive-activity deploy** (principled but no forcing function today; puts a
+one-time risk on the ranking/revenue surface). **`both surfaces` remains available and
+defensible** for the unified end-state in one shot. Operator confirms the scope at SPEC
+review before execution.
+
+**Scope.** Only `diagnostics` is added to the exclusions — `notableEvents` stays
+hashed (it has no other guard). No DB migration, no `apps/server` code change (the
+server inherits `computeStateHash` from the engine; column shapes unchanged), no
+back-fill of historical rows (content-addressed, immutable, never re-compared). The
+WP-257 "keep `G.diagnostics` absent-on-fresh" workaround becomes unnecessary once the
+field is unhashed, but retiring it is a deferred cosmetic cleanup (out of scope).
+
+**Files (at execution).** `packages/game-engine/src/test/fixtures/hashGameState.{ts,test.ts}`
++ `replay/replay.hash.{ts,test.ts}` + `game.ts` (comment caveat) +
+`setup/buildInitialGameState.ts` (comment caveat only — the ~566-568 "hashGameState
+serializes the whole G" rationale becomes false; the absent-on-fresh seed literal is
+untouched). No `.claude/rules/*` or
+`ARCHITECTURE.md` edit — this narrows the hash to authoritative gameplay state within
+the existing Determinism / Persistence boundary; it does not add a cross-layer edge or
+a new persistence carve-out.
+
+**Verification.** `pnpm --filter @legendary-arena/game-engine build` + `test` green;
+diagnostics-invariance tests on both oracles + the exclusion-set pin; pinned hashes
+unchanged (verified) or re-pinned-with-note; `pnpm --filter @legendary-arena/server
+test` green (inherits the engine hash).
 
 Protect this file.
