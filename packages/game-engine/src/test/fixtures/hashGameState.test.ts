@@ -1,12 +1,13 @@
 /**
  * Tests for `hashGameState` — the WP-158 `finalStateHash` oracle.
  *
- * The load-bearing contract proven here (D-24081): the top-level `messages`
- * log is EXCLUDED from the hash, while every other field — crucially
- * `notableEvents` — still participates. These tests are deliberately
- * non-vacuous and cheat-proof: alongside the message-invariance guarantee
- * they assert that a non-message change AND a `notableEvents` change DO move
- * the hash, so the exclusion cannot have silently flattened the oracle.
+ * The load-bearing contract proven here: the runtime-only observation
+ * channels — `messages` (D-24081) and `diagnostics` (D-24271) — are EXCLUDED
+ * from the hash, while every other field — crucially `notableEvents` — still
+ * participates. These tests are deliberately non-vacuous and cheat-proof:
+ * alongside the invariance guarantees they assert that a non-message change
+ * AND a `notableEvents` change DO move the hash, so the exclusion cannot have
+ * silently flattened the oracle.
  *
  * No `boardgame.io` import. Test states are minimal plain objects cast to
  * `LegendaryGameState` (the hash only reads them via `JSON.stringify`); each
@@ -49,6 +50,30 @@ test('hashGameState is invariant to the messages log (D-24081)', () => {
 
   assert.equal(oneLine, empty, 'adding a message must not change the hash');
   assert.equal(manyLines, empty, 'adding several messages must not change the hash');
+});
+
+test('hashGameState is invariant to G.diagnostics (D-24271)', () => {
+  // why: D-24271 — G.diagnostics is the runtime-only hollow-effect observation
+  // channel ("never gameplay input"). Excluding it makes the D-24266 breadcrumb (and
+  // every villain/hero effect-marking WP that suppresses one) hash-neutral for this
+  // oracle: materializing a hollow record must NOT move the finalStateHash.
+  const absent = hashGameState(makeState());
+  const emptyChannel = hashGameState(
+    makeState({ diagnostics: { hollowEffects: [], hollowEffectsDropped: 0 } }),
+  );
+  const withRecords = hashGameState(
+    makeState({
+      diagnostics: {
+        hollowEffects: [
+          { cardId: 'henchman-doombot-legion-04', cardType: 'henchman', timing: 'onFight', mechanic: 'unmarked-ability', reason: 'no-handler', turn: 6 },
+        ],
+        hollowEffectsDropped: 2,
+      },
+    }),
+  );
+
+  assert.equal(emptyChannel, absent, 'an empty diagnostics channel must not change the hash');
+  assert.equal(withRecords, absent, 'materializing hollow records must not change the hash');
 });
 
 test('hashGameState still changes when a non-message field changes (non-vacuous guard)', () => {
