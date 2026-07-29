@@ -41,18 +41,33 @@ does not redefine anything.
 
 **VISION is authoritative.** Per the wiki
 [authority hierarchy](SCHEMA.md#authority-position), `docs/01-VISION.md`
-§Financial Sustainability outranks this page. If this page and VISION disagree,
-**this page is wrong** and must be corrected. Nothing here creates policy; it
-cites policy.
+§Financial Sustainability outranks this page. If any content on this page
+conflicts with VISION §Financial Sustainability, **VISION controls automatically**
+— no interpretation process is required, and this page must be amended to restore
+consistency. Nothing here creates policy; it cites policy.
 
 **Change control.** The revenue model is amended only in VISION; the locked
 profile boundary is amended only via a new entry in the marketing-repo decision
 log (`docs/corporate-memory/01-decision-log.md`), never by editing this page or
 the policy doc in place. This page follows those sources — it does not lead them.
 
+## Source ownership
+
+Where each decision actually lives. When in doubt, this table wins over any prose
+on the page.
+
+| Topic | Authoritative source |
+|-------|----------------------|
+| Revenue model (the four streams) | VISION §Financial Sustainability |
+| Profile free/paid boundary | Marketing-repo decision log + `docs/product/profile-features-free-vs-paid.md` |
+| Legendary Pass mechanics, reward tables, pricing | Marketing-repo product docs (+ decision log) |
+| Digital-goods / printables store rollout | Marketing-repo `docs/product/digital-goods-store-rollout.md` |
+| Tournament / organized-play funding | [`docs/TOURNAMENT-FUNDING.md`](../docs/TOURNAMENT-FUNDING.md) |
+| This page | Reference summary + non-normative rationale only |
+
 ## The revenue model (canonical: VISION §Financial Sustainability)
 
-Four streams, all fairness-safe:
+The four approved revenue streams (all fairness-safe):
 
 | Stream | What it sells | Never includes |
 |--------|---------------|----------------|
@@ -80,14 +95,166 @@ slogan divergence: VISION uses "No margin, no mission" in the nonprofit-margin
 sense; the funding doc uses "no organizer margin" in the opposite sense, and the
 slogan is banned from the funding doc to avoid collision.
 
-## Why free-to-play funds the model (loss-leader economics)
+## Profile-page application
+
+The profile is a marketing and virality asset (see [Profile Login](profile-login.md)),
+so basic identity — unique handle + public URL — is always free; the paid layer
+is prestige, self-expression, and convenience, mapped onto VISION's streams
+(Pass = Supporter Subscriptions; frames/banners = One-Time Cosmetics; supporter
+flair = Premium Recognition Tiers).
+
+The free/paid boundary is **locked (2026-07-03; amended 2026-07-04)**. Key calls:
+
+- **Always free:** unique handle + public URL, display name, static avatar, a
+  standard biography field, all earned badges, basic team display, replay
+  verification, recent personal history + basic stats, basic privacy controls.
+- **Paid (Legendary Pass / cosmetics):** cosmetic, presentation, archival,
+  analytics, export, and customization depth — for example animated avatars &
+  frames, custom banners, prestige themes, showcase slots, deeper history and
+  search, richer stat visualizations (same data), export tools, granular privacy.
+  Illustrative only; the policy doc below owns the authoritative enumeration.
+- **Convenience:** first handle change free, repeat changes paid.
+- **Not a tier lever:** bio length is not used as a monetization lever.
+- **Recognition, not rank:** supporter flair is allowed (VISION Premium
+  Recognition Tiers) but must read unambiguously as patronage.
+
+Full split and rationale live in the marketing-repo policy doc
+`C:\www\legendary-arena-com\docs\product\profile-features-free-vs-paid.md` — this
+page cites it; that doc holds the detailed table. Reviewed on major
+profile-feature additions (and at least annually); changes land as a new
+decision-log entry, not an in-place edit.
+
+## Scoreboard & performance surfaces
+
+The paid convenience/cosmetic layer also covers the player-facing scoreboard and
+stats UI in **arena-client** (`play.legendary-arena.com`). This is *not* the
+`/scoring/` page on this wiki, which is the internal engineering doc for the
+scoring system, not a product surface.
+
+Same filter as everywhere: features that confer no gameplay advantage (NG‑1…NG‑7)
+**may** be offered as paid cosmetic or convenience features, subject to the
+guardrails below — the goal is a real free experience, not to monetize everything
+that moves. Free keeps a genuine player experience: recent history, basic charts,
+own best PAR delta, replay verification, and the quality-normalized public views.
+Paid adds depth and tooling (illustrative): full lifetime history with search,
+richer interactive visualizations, high-quality branded exports, and
+pin-to-profile highlights. **Comparison tooling** is the one fairness-sensitive
+line — free keeps a fair baseline (compare against public examples + modest
+slots); paid expands slots and the side-by-side viewer, gating quantity/tooling
+only, never the ability to learn from public examples.
+
+Detailed split: the marketing-repo policy doc
+`C:\www\legendary-arena-com\docs\product\profile-features-free-vs-paid.md`
+(§Scoreboard & performance surfaces).
+
+## The physical → digital bridge
+
+Owning a [Legendary Forge](legendary-forge.md) diorama unlocks exclusive cosmetic
+profile items (frames, badges, banners). This is a differentiated,
+hard-to-copy lever that bridges the two businesses with zero pay-to-win, since the
+unlocks are purely cosmetic. Mechanics are owned by the `legendary-forge` repo;
+this page only notes the tie-in exists.
+
+## Additional revenue surfaces
+
+Two further applications of the existing streams, committed 2026-07-04
+(marketing-repo decision log). Neither is a new stream.
+
+- **Premium Digital Goods & Printables Store** (`legendary-arena.com` shop) —
+  printable playmats, art books, premium sound/theme packs, limited card-back
+  tools. Maps to **One-Time Cosmetic & Presentation Purchases** (+ rotating packs
+  via Subscriptions); rides the existing Snipcart/Stripe commerce layer. The
+  printables derive from Marvel/Upper Deck IP, so royalty routing (VISION:
+  royalties on all revenue) and licensing scope are launch prerequisites, not
+  afterthoughts.
+- **Tournament OS add-ons** — branded dashboards, automated reporting, private
+  scenario libraries, priority support for organizers. Maps to **Enterprise &
+  Organized-Play Licensing**. Platform→organizer billing only; never a path for
+  organizers to bill players for profit (see
+  [`docs/TOURNAMENT-FUNDING.md`](../docs/TOURNAMENT-FUNDING.md)).
+
+Rollout sequencing and priorities live in the marketing repo
+(`docs/product/digital-goods-store-rollout.md`), not here — this page records
+that the surfaces exist and which streams they belong to.
+
+## Seasonal engagement: the Legendary Pass (Stream #1 execution)
+
+The Legendary Supporter Subscriptions stream is being developed as a seasonal,
+dual-track **Legendary Pass** — a free track open to every logged-in player and a
+premium track. Rewards are unlocked solely by *play* (arena progression earned
+from completed games, personal-best PAR, verified replays, and rotating
+challenges); paid players never progress faster. This applies the Fortnite
+existence proof directly: it re-sells the same player base each season while
+rewarding the players who actually show up.
+
+Fairness properties that keep it inside every Non-Goal:
+
+- Progression currency is earned by play only; no purchasable progression boosters.
+- Every reward is cosmetic, convenience, or recognition — zero impact on rules,
+  scoring, PAR, matchmaking, leaderboard eligibility, or standing.
+- The free track is always present and meaningful; basic identity and public
+  leaderboard participation stay free (Guardrails #1 and #2).
+- All rewards are deterministic and fully previewable before claim or purchase — no
+  randomness (Guardrail #5). Season titles and flair read unambiguously as
+  patronage (Guardrail #3). Optional paid level-skips, when offered, are
+  transparent, linearly priced, and grant only the same cosmetics a player could
+  earn by play.
+
+### Classification
+
+> The Legendary Pass is an implementation of Revenue Stream #1 (Legendary
+> Supporter Subscriptions). It is not a fifth revenue stream and creates no
+> amendment to the VISION revenue model.
+
+The detailed mechanics — progression schedule, per-season reward tables, pricing,
+and level-skip terms — are a product spec tracked in the marketing-repo product
+docs and blessed via the decision log, exactly like the profile boundary and the
+digital-goods store. This page records only that the execution exists and which
+stream it belongs to; it does not define the mechanics or set the price.
+
+## Prohibited monetization
+
+Permanently out of scope unless VISION is amended. This is the quick blacklist for
+developers and reviewers; the Guardrails below give the principles and rationale,
+and `scripts/audit/vision/monetization.greps.mjs` enforces a subset in code.
+
+- Gameplay advantages of any kind (pay-to-win)
+- Competitive-ranking advantages, or paid matchmaking advantages
+- Paid leaderboard placement, or any paid competitive signal
+- Loot boxes, gacha, randomized or mystery purchases, gambling mechanics
+- Energy systems or pay-to-skip timers
+- Sale or brokering of player data
+- Third-party advertising or sponsor surfaces in gameplay
+
+## Guardrails (from VISION Non-Goals)
+
+1. **No paid competitive signal.** Nothing paid may confer — or *appear* to
+   confer — gameplay advantage or standing (NG‑1…NG‑7).
+2. **Basic identity is always free.** Unique handle + public profile URL.
+3. **Recognition ≠ rank.** Premium Recognition Tiers are explicitly authorized by
+   VISION, but supporter marks must read unambiguously as patronage, never as
+   competitive standing.
+4. **Royalties come first.** Revenue covers expenses + royalties before buffer or
+   expansion.
+5. **No randomness.** Every purchase is deterministic, fully disclosed, and
+   purchase-known — no loot boxes, gacha, or randomized/mystery goods (mirrors
+   VISION's "deterministic, fully disclosed" cosmetics language).
+6. **No ads or data monetization.** In-gameplay advertising, sponsor surfaces,
+   and selling or brokering player data are out (VISION NG‑5) — they would clash
+   with the trust/tribe positioning the free core is built to earn.
+
+## Economic rationale (non-normative)
+
+> This section is explanatory only. The authoritative monetization model is
+> VISION §Financial Sustainability; the examples and historical comparisons below
+> are illustrative and carry no governance weight.
+
+### Why free-to-play funds the model (loss-leader economics)
 
 The shape above — free to play (`play.legendary-arena.com`), free to browse the
 card registry (`cards.legendary-arena.com`), paid only for cosmetic, convenience,
 and recognition layers — is a deliberate **loss-leader / "razor-and-blades"**
-structure, not an accident of what happened to be easy to charge for. This
-section explains the economic reasoning behind the settled model. It introduces
-no new stream and moves no boundary; it is rationale, not policy.
+structure, not an accident of what happened to be easy to charge for.
 
 **The pattern, from outside the game industry.** Coca-Cola supplies Disney parks
 with fountain syrup at little or no cost in exchange for pouring-rights
@@ -132,7 +299,7 @@ and sell the cosmetic, convenience, and recognition **depth** around it — anim
 frames, richer stat tooling, supporter flair, export tools, the Forge digital
 bridge. That is precisely the split the four streams already encode.
 
-## Where the model sits among free-core precedents
+### Where the model sits among free-core precedents
 
 Three well-known projects give away their core and fund it three different ways.
 The comparison clarifies which parts of each precedent Legendary Arena borrows —
@@ -159,140 +326,12 @@ Legendary Arena is a deliberate blend of the first two:
   path to bill players (see [`docs/TOURNAMENT-FUNDING.md`](../docs/TOURNAMENT-FUNDING.md)).
 - **Not from the FSF — pure patronage.** The donation-funded model sustains a
   nonprofit mission; it does not cover Marvel / Upper Deck royalties, payroll, and
-  ongoing development. Recognition tiers (Guardrail #3) borrow patronage as a
-  *supplement*, never as the primary engine.
+  ongoing development. Recognition tiers (Guardrail #3) borrow the *idea* of
+  patronage as a supplement, never as the primary engine.
 
 The takeaway: instrument and iterate the fairness-safe product streams (Fortnite's
 lesson), lean on ecosystem-funded facilitation where it fits (Linux's lesson), and
 keep patronage a garnish, not the meal (the FSF's limit).
-
-## Profile-page application
-
-The profile is a marketing and virality asset (see [Profile Login](profile-login.md)),
-so basic identity — unique handle + public URL — is always free; the paid layer
-is prestige, self-expression, and convenience, mapped onto VISION's streams
-(Pass = Supporter Subscriptions; frames/banners = One-Time Cosmetics; supporter
-flair = Premium Recognition Tiers).
-
-The free/paid boundary is **locked (2026-07-03; amended 2026-07-04)**. Key calls:
-
-- **Always free:** unique handle + public URL, display name, static avatar, a
-  generous bio, all earned badges, basic team display, replay verification,
-  recent personal history + basic stats, basic privacy controls.
-- **Paid (Legendary Pass / cosmetics):** animated avatars & frames, custom
-  banners, prestige themes, showcase slots & highlights, full lifetime history
-  depth + search/filters, richer stat visualizations & dashboards (same data),
-  export tools, granular privacy, larger replay gallery.
-- **Convenience:** first handle change free, repeat changes paid.
-- **Not a tier lever:** bio length — everyone gets a decent length.
-- **Recognition, not rank:** supporter flair is allowed (VISION Premium
-  Recognition Tiers) but must read unambiguously as patronage.
-
-Full split and rationale live in the marketing-repo policy doc
-`C:\www\legendary-arena-com\docs\product\profile-features-free-vs-paid.md` — this
-page cites it; that doc holds the detailed table. Reviewed on major
-profile-feature additions (and at least annually); changes land as a new
-decision-log entry, not an in-place edit.
-
-## Scoreboard & performance surfaces
-
-The paid convenience/cosmetic layer also covers the player-facing scoreboard and
-stats UI in **arena-client** (`play.legendary-arena.com` — the WP-054 / WP-149
-public-leaderboard and personal-stats work). This is *not* the `/scoring/` page
-on this wiki, which is the internal engineering doc for the scoring system, not a
-product surface.
-
-Same filter as everywhere: anything that confers no gameplay advantage
-(NG‑1…NG‑7) defaults to paid. Free keeps a real player experience — recent
-history, basic charts, own best PAR delta, replay verification, and the
-quality-normalized public views. Paid adds depth and tooling: full lifetime
-history + search, rich interactive visualizations & dashboards, high-quality
-branded exports, pin-to-profile highlights, and priority loading for large
-histories. **Comparison tooling** is the one fairness-sensitive line — free keeps
-a fair baseline (compare against public examples + modest slots); paid expands
-slots and the side-by-side viewer, gating quantity/tooling only, never the
-ability to learn from public examples.
-
-Detailed split: the marketing-repo policy doc
-`C:\www\legendary-arena-com\docs\product\profile-features-free-vs-paid.md`
-(§Scoreboard & performance surfaces).
-
-## The physical → digital bridge
-
-Owning a [Legendary Forge](legendary-forge.md) diorama unlocks exclusive cosmetic
-profile items (frames, badges, banners). This is a differentiated,
-hard-to-copy lever that bridges the two businesses with zero pay-to-win, since the
-unlocks are purely cosmetic. Mechanics are owned by the `legendary-forge` repo;
-this page only notes the tie-in exists.
-
-## Additional revenue surfaces
-
-Two further applications of the existing streams, committed 2026-07-04
-(marketing-repo decision log). Neither is a new stream.
-
-- **Premium Digital Goods & Printables Store** (`legendary-arena.com` shop) —
-  printable playmats, art books, premium sound/theme packs, limited card-back
-  tools. Maps to **One-Time Cosmetic & Presentation Purchases** (+ rotating packs
-  via Subscriptions); rides the existing Snipcart/Stripe commerce layer. The
-  printables derive from Marvel/Upper Deck IP, so royalty routing (VISION:
-  royalties on all revenue) and licensing scope are launch prerequisites, not
-  afterthoughts.
-- **Tournament OS add-ons** — branded dashboards, automated reporting, private
-  scenario libraries, priority support for organizers. Maps to **Enterprise &
-  Organized-Play Licensing**. Platform→organizer billing only; never a path for
-  organizers to bill players for profit (see
-  [`docs/TOURNAMENT-FUNDING.md`](../docs/TOURNAMENT-FUNDING.md) / WP-097).
-
-Rollout sequencing and priorities live in the marketing repo
-(`docs/product/digital-goods-store-rollout.md`), not here — this page records
-that the surfaces exist and which streams they belong to.
-
-## Seasonal engagement: the Legendary Pass (Stream #1 execution)
-
-The Legendary Supporter Subscriptions stream is being sharpened into a **seasonal,
-dual-track "Legendary Pass"** — a free track open to every logged-in player and a
-premium track — where rewards are unlocked by *play* (arena progression earned
-from completed games, personal-best PAR, verified replays, and rotating
-challenges), never by spending. This applies the Fortnite existence proof directly:
-it re-sells the same player base each season while rewarding the players who
-actually show up.
-
-Fairness properties that keep it inside every Non-Goal:
-
-- Paid players never progress faster — progression currency is earned by play
-  only; no purchasable progression boosters.
-- Every reward is cosmetic, convenience, or recognition — zero impact on rules,
-  scoring, PAR, matchmaking, leaderboard eligibility, or standing.
-- The free track is always present and meaningful; basic identity and public
-  leaderboard participation stay free (Guardrail #1, #2).
-- Deterministic and fully previewable before claim or purchase — no randomness
-  (Guardrail #5). Season titles and flair read unambiguously as patronage
-  (Guardrail #3). Optional paid level-skips, where offered, are transparent,
-  linearly priced, and confer only the same cosmetics a player could earn by play.
-
-This is an **execution of Stream #1, not a new stream.** The detailed mechanics —
-the progression schedule, per-season reward tables, pricing, and level-skip terms
-— are a product spec tracked in the marketing-repo product docs and blessed via
-the decision log, exactly like the profile boundary and the digital-goods store.
-This page records only that the execution exists and which stream it belongs to;
-it does not define the mechanics or set the price.
-
-## Guardrails (from VISION Non-Goals)
-
-1. **No paid competitive signal.** Nothing paid may confer — or *appear* to
-   confer — gameplay advantage or standing (NG‑1…NG‑7).
-2. **Basic identity is always free.** Unique handle + public profile URL.
-3. **Recognition ≠ rank.** Premium Recognition Tiers are explicitly authorized by
-   VISION, but supporter marks must read unambiguously as patronage, never as
-   competitive standing.
-4. **Royalties come first.** Revenue covers expenses + royalties before buffer or
-   expansion.
-5. **No randomness.** Every purchase is deterministic, fully disclosed, and
-   purchase-known — no loot boxes, gacha, or randomized/mystery goods (mirrors
-   VISION's "deterministic, fully disclosed" cosmetics language).
-6. **No ads or data monetization.** In-gameplay advertising, sponsor surfaces,
-   and selling or brokering player data are out (VISION NG‑5) — they would clash
-   with the trust/tribe positioning the free core is built to earn.
 
 ## References
 
