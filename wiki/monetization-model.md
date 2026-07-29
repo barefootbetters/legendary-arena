@@ -16,7 +16,7 @@ source:
   - ../docs/01-VISION.md
   - ../docs/TOURNAMENT-FUNDING.md
 status: draft
-last-reviewed: 2026-07-04
+last-reviewed: 2026-07-29
 ---
 
 # Monetization Model
@@ -79,6 +79,58 @@ organizer-side (no organizer margin) — see
 slogan divergence: VISION uses "No margin, no mission" in the nonprofit-margin
 sense; the funding doc uses "no organizer margin" in the opposite sense, and the
 slogan is banned from the funding doc to avoid collision.
+
+## Why free-to-play funds the model (loss-leader economics)
+
+The shape above — free to play (`play.legendary-arena.com`), free to browse the
+card registry (`cards.legendary-arena.com`), paid only for cosmetic, convenience,
+and recognition layers — is a deliberate **loss-leader / "razor-and-blades"**
+structure, not an accident of what happened to be easy to charge for. This
+section explains the economic reasoning behind the settled model. It introduces
+no new stream and moves no boundary; it is rationale, not policy.
+
+**The pattern, from outside the game industry.** Coca-Cola supplies Disney parks
+with fountain syrup at little or no cost in exchange for pouring-rights
+exclusivity — the "free" product is an advertising expense that buys reach to a
+captive, high-affinity audience. Disney in turn sells the finished drink at a
+large markup, where the *complementary good* (the cup) and the captive venue —
+not the syrup — carry the economics. Gillette runs the mirror image: cheap
+handles, profitable blades. Give away, or price near cost, the thing that
+acquires the customer; earn on the recurring complement they come back for.
+
+**How it maps here:**
+
+| Role in the pattern | Legendary Arena surface |
+|---------------------|-------------------------|
+| The "free" acquisition good (buys reach) | Free play + free registry viewer |
+| The conversion step (capture identity, build the habit) | Free account + public profile — always free (Guardrail #2) |
+| The profitable "blades" (recurring, engagement-scaled) | Cosmetic / convenience / recognition depth — the four streams above |
+
+Free play and the registry viewer are the reach engine — how the brand gets in
+front of players and how word spreads. Treating them as a marketing investment,
+not as revenue left on the table, is the point; the money is made on the layers
+an already-engaged player chooses to add.
+
+**The trap this pattern hides — and why the leaderboard stays free.** The
+tempting misread of "charge for the valuable part" is to gate the competitive
+leaderboard behind payment. That is foreclosed here for two independent reasons:
+
+1. **Fairness (binding).** Competitive standing is exactly what revenue may never
+   touch (Guardrail #1, Guardrail #3; VISION NG‑1). Selling leaderboard presence
+   or standing is a paid competitive signal — out, regardless of its commercial
+   appeal.
+2. **It is also commercially self-defeating.** Unlike Gillette blades, a
+   leaderboard has a network effect: its value *is* the density of credible
+   competitors on it. Gating participation shrinks that pool, which lowers the
+   board's value, which lowers willingness to pay for anything attached to it — a
+   doom loop. Coca-Cola's markup was safe because the captive audience already
+   existed; a thin leaderboard has no such moat.
+
+So the fairness-safe answer and the commercially-correct answer coincide: keep
+ranked participation and basic identity free (a dense board and a healthy funnel),
+and sell the cosmetic, convenience, and recognition **depth** around it — animated
+frames, richer stat tooling, supporter flair, export tools, the Forge digital
+bridge. That is precisely the split the four streams already encode.
 
 ## Profile-page application
 
