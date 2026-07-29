@@ -34040,3 +34040,73 @@ growth, no new cross-layer edge or persistence carve-out; the drift discipline
 rule, not a new one.
 
 Protect this file.
+
+### D-24268 — The arena-client composition→match launch is a single reusable primitive (`launchMatchFromComposition`); it narrows the deferred WP-303 "Load into lobby / play a saved loadout" placeholder (Drafted 2026-07-28 — WP-448; not yet landed)
+
+> **Status: Drafted at SPEC time; flips to Active (post-execution) when WP-448
+> executes.** Reserved in `NUMBER-LEDGER.md` under the same branch.
+
+**Context.** `apps/arena-client/src/lobby/LobbyView.vue` carried **two
+byte-identical inline copies** of the create-and-join-from-a-composition launch
+chain — one in `submitFromJson` (the recommended LAGN/loadout-JSON path) and one
+in `submitCreate` (the manual power-user form). Both run `createMatch(config,
+playerCount, authToken)` → `persistMatchSetup(matchID, config)` →
+`joinMatch(matchID, '0', playerName, authToken)` → navigate
+`?match=<id>&player=0&credentials=<c>`, and both surface the same failure string
+`Failed to create and join the match. ${cause}`. The Mastermind Gauntlets epic's
+WP-7 (tracker UI) needs to launch a match from a gauntlet leg's approved
+composition + the player's picked heroes — the same chain from a third caller —
+and the long-deferred **WP-303** ("Lobby 'Save this loadout' / 'Load into lobby'
+integration", the placeholder named in WP-302's `WORK_INDEX.md` row) needs the
+same launch mechanism. Duplicating the chain a third and fourth time would let the
+lobby, the gauntlet launch, and a saved-loadout launch drift.
+
+**Decision.** Extract the chain into a **single reusable module**,
+`apps/arena-client/src/lobby/useCreateMatchFromComposition.ts`, exporting a
+**never-throw** `async launchMatchFromComposition({ config, playerCount,
+playerName, authToken })` that runs the create → persist → join(seat `'0'`) → nav
+sequence and returns a typed `{ ok: true, matchID } | { ok: false, message }`
+result (the failure `message` byte-identical to the pre-extraction string). Both
+`submitFromJson` and `submitCreate` consume it as the **single source** of the
+composition→match launch, with **zero behavior change** — the existing
+arena-client lobby suite passes unchanged as the correctness gate. This is a
+behavior-preserving extraction; it locks the launch primitive's shape, not new
+gameplay, scoring, or persistence behavior.
+
+**Scope of the single source.** The primitive covers **only** the authed
+create-and-join-from-a-composition launch. Three sibling flows stay separate,
+each a distinct primitive by API surface: `createWithBotAlly` (a different
+endpoint, `createMatchWithBot` → `{ matchId }`, with its own error message),
+`joinExisting` (a join-only flow with no create), and `startAutoplay` (the
+autoplay endpoint, which reads a server-returned credential rather than the
+authed join). Consolidating any of those is out of scope and would change
+behavior.
+
+**WP-303 supersession (the durable, forward-facing part).** This primitive **is**
+the launch mechanism the deferred WP-303 placeholder was going to build. WP-303's
+launch step is now this call — a future WP-303 becomes *wiring a saved
+composition into `launchMatchFromComposition`* (a call site), not building a
+create-and-join chain. The WP-303 placeholder is thereby **narrowed to its
+call-site wiring**; the launch chain itself is settled here. This is the reason
+this behavior-preserving extraction locks a decision at all: it changes what a
+future WP-303 means. **D-24087 (Profile Loadout Library, Active) is a separate
+profile surface (owner profile + public share page) and is unaffected** — this
+decision touches neither its storage, its `?loadout=<shareSlug>` public route,
+nor its opaque-`lagn` treatment.
+
+**Layer & boundary.** The module is App-layer only. It imports `createMatch` /
+`joinMatch` from `./lobbyApi`, `persistMatchSetup` from
+`../diagnostics/matchSetupSession`, and `MatchSetupConfig` **type-only** from
+`@legendary-arena/game-engine` — all already used by `LobbyView.vue`. It adds no
+new npm dependency and no runtime `@legendary-arena/registry` / `apps/server` /
+`pg` import, and passes `MatchSetupConfig` through unrenamed (the nine 00.2 §8.1
+fields untouched). No `.claude/rules/*` or `ARCHITECTURE.md` edit — this is
+within-layer client orchestration reuse, not a new cross-layer edge or
+persistence carve-out; the `createMatch` / `joinMatch` contracts are unchanged.
+
+**Files (at execution).** `apps/arena-client/src/lobby/useCreateMatchFromComposition.ts`
+(new) + `apps/arena-client/src/lobby/useCreateMatchFromComposition.test.ts` (new)
++ `apps/arena-client/src/lobby/LobbyView.vue` (modified — `submitFromJson` +
+`submitCreate` rewired, both inline chains removed).
+
+Protect this file.
