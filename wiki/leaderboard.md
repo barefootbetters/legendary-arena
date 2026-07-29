@@ -53,7 +53,28 @@ source:
   - ../apps/server/src/legends/gauntlet.logic.ts
   - ../docs/ai/DESIGN-RANKING.md
   - ../packages/registry/src/playerCountSetup.ts
-last-reviewed: 2026-07-17
+  - ../packages/registry/src/gauntletPack.ts
+  - ../apps/server/src/legends/gauntletTruth.logic.ts
+  - ../apps/server/src/gauntlet/gauntletRun.types.ts
+  - ../apps/server/src/gauntlet/gauntletRun.logic.ts
+  - ../apps/server/src/gauntlet/gauntletRun.routes.ts
+  - ../apps/server/src/gauntlet/gauntletRunProgress.logic.ts
+  - ../apps/arena-client/src/pages/MyProfilePage.vue
+  - ../apps/arena-client/src/lobby/useCreateMatchFromComposition.ts
+  - ../apps/legends-board/src/panels/gauntletPackDownload.ts
+  - ../apps/registry-viewer/src/lib/loadoutGauntletPackImport.ts
+  - ../data/migrations/039_create_player_gauntlet_runs.sql
+  - ../docs/ai/REFERENCE/api-endpoints.md
+  - ../docs/ai/work-packets/WP-440-gauntlet-pack-contract.md
+  - ../docs/ai/work-packets/WP-441-legends-gauntlet-download.md
+  - ../docs/ai/work-packets/WP-442-gauntlet-truth-helper.md
+  - ../docs/ai/work-packets/WP-443-gauntlet-run-persistence.md
+  - ../docs/ai/work-packets/WP-444-registry-viewer-gauntlet-pack-import.md
+  - ../docs/ai/work-packets/WP-445-gauntlet-run-import-api.md
+  - ../docs/ai/work-packets/WP-446-gauntlet-run-derived-progression.md
+  - ../docs/ai/work-packets/WP-448-composition-to-match-launch-primitive.md
+  - ../docs/ai/work-packets/WP-449-profile-gauntlet-tracker-ui.md
+last-reviewed: 2026-07-29
 ---
 
 # Leaderboard
@@ -172,6 +193,14 @@ invented.
 > second *division* beside the open one — the fixed-hero-pool
 > championship — also shipped 2026-07-16 (WP-384 + WP-385); see
 > [Fixed-hero-pool division](#fixed-hero-pool-division-d-24187) below.
+
+> **Want to run one yourself?** This section is about the public
+> *standings*. The personal **download → import → build → track** loop —
+> download a gauntlet on `legends.legendary-arena.com`, import it into your
+> play profile, assemble heroes per leg, and track progress toward the
+> championship — is documented under
+> [Gauntlet runs](#gauntlet-runs--download--import--build--track-wp-440446-448-449)
+> below.
 
 The gauntlet collapses the mastermind × scheme board explosion into one
 findable championship per mastermind. **Identity:** one gauntlet per
@@ -575,6 +604,160 @@ So the profile → leaderboard integration is currently **latent**: the shared
 `legendary.players` row is the join point a future "my rankings" panel would
 use, but no such panel is built, and by design it will key on the internal
 player ID, not the public handle.
+
+## Gauntlet runs — download → import → build → track (WP-440..446, 448, 449)
+
+> This documents the **shipped** personal gauntlet-run loop — the
+> download → import → build → track → champion arc that sits *beside* the
+> public standings above. All slices are on `origin/main`: WP-440..446 plus
+> WP-448 and WP-449 (WP-447 is an unrelated villain card mechanic, not part
+> of this arc). WP-449 (the profile tracker UI) merged as PR #1073. Public
+> **standings** are still a publisher-derived aggregation; a **run** is one
+> player's private progress toward claiming a gauntlet.
+
+The public gauntlet boards answer "who holds this championship." This loop
+answers the other half — **"let me go earn it"** — as an end-to-end player
+journey:
+
+1. **Download** a Mastermind Gauntlet on `legends.legendary-arena.com`.
+2. **Import** it into your play profile at `?route=me` on
+   `play.legendary-arena.com`.
+3. **Build** your own hero team for each leg.
+4. **Play** each leg, **score** it, **track** progress, and — once every leg
+   is cleared from one legal hero pool — **earn the championship**.
+
+Nothing about a player's *progress* is stored as a flag. Progression is
+**read-only derived state**, recomputed on every read from the run's hero
+picks plus the player's own competitive scores (the derived-progression
+lock, D-24262). The pieces:
+
+### The pack — an identity-only token (WP-440 / D-24260)
+
+A downloaded gauntlet is a tiny **identity token**, not a loadout. Its whole
+schema is a version stamp plus the gauntlet's identity:
+
+```
+{ "pack_version": 1,
+  "gauntlet": { "setAbbr": "core", "mastermindSlug": "magneto",
+                "division": "fixed", "playerCount": 1 } }
+```
+
+It carries **no** legs, hero picks, or adversary compositions — the server
+(or any registry-backed surface) **re-resolves** a gauntlet's legs and
+approved compositions from the live registry at import time. The schema, the
+pure `buildGauntletPack` builder, and the strict version-gated
+`validateGauntletPack` live in
+[`packages/registry/src/gauntletPack.ts`](../packages/registry/src/gauntletPack.ts).
+This is deliberately **not** a LAGN document — see
+[Gauntlet packs are not LAGN](lagn-v1.md#gauntlet-packs-are-not-lagn).
+
+### Legends download — zero-API, client-side (WP-441 / D-24261)
+
+The legends board pins **Core Set / Magneto** first as a showcase, and adds a
+**"Download Mastermind Gauntlet"** control with a player-count + division
+selector (defaulting to **solo + fixed**). It builds the pack **client-side**
+(an inline, **type-only** registry import — legends-board's only runtime
+dependency stays `vue`, preserving its zero-API invariant) and downloads
+`gauntlet-<set>-<mm>-<div>-p<N>.gauntlet.json`. No server call is involved.
+
+### Cards-builder consumer (WP-444 / D-24263)
+
+The Registry Viewer ("cards" surface) gains a **"Load Gauntlet Pack"** entry
+that resolves a pack **client-side** from its bundled registry into a
+prefilled builder: a **leg (scheme) picker**, then the default variant-0
+approved composition (villains / henchmen / counts) filled in, **heroes left
+empty** for the player to choose. Unknown or unoffered packs fail to a
+friendly message.
+
+### Shared truth — one source, cross-checked (WP-442)
+
+[`apps/server/src/legends/gauntletTruth.logic.ts`](../apps/server/src/legends/gauntletTruth.logic.ts)
+(`qualifiesAsLegClear` + `findBestPoolAssignment`) is the **single** source
+of truth for what "cleared a leg" and "champion" mean. It was extracted from
+the standings fold so that **both** the public leaderboard
+(`getGauntletStandings`) and the personal run tracker consume the *same*
+functions — a cross-check test proves the two can never drift on either
+verdict.
+
+### Run persistence — minimal + maximally derived (WP-443 / D-24262)
+
+Migration `039_create_player_gauntlet_runs.sql` adds
+`legendary.player_gauntlet_runs`. A row stores **only** identity
+(`player_id` FK, `set_abbr`, `mastermind_slug`, `division`, `player_count`),
+the player's per-leg hero picks (`leg_picks jsonb` — a `schemeSlug →
+heroDeckIds[]` map, the single authoritative hero state; no child hero
+table), and audit timestamps. It stores **nothing derived** — no status,
+hero-pool, pool-validity, standing, or "where you left off" column. A
+partial-unique index (`WHERE first_completed_at IS NULL`) enforces
+at-most-one **active** run per identity; a finished run drops out of the
+index and frees the slot. `first_completed_at` is a **write-once audit /
+archive-boundary** stamp — never read as championship truth (every read
+re-derives standing from `legendary.competitive_scores`). This is the
+**derived-progression lock**: no future work may cache a derived progression
+value without a superseding decision.
+
+### Import + run API (WP-445 / D-24264 · WP-446 / D-24265)
+
+`/api/me/gauntlet-runs` (`authenticated-session-required`) is the run CRUD
+surface:
+
+- **`POST`** — idempotent import. The whole request body is the untrusted
+  WP-440 pack; the server validates it, resolves the legs server-side, and
+  creates (or **attaches to**) the active run of that identity. The
+  migration-039 partial-unique conflict is caught and resolved to the
+  existing run — **never** a `409` / `500`. Invalid pack shape → `400`; a
+  gauntlet / player-count with no approved menu → `422`.
+- **`GET`** returns a derived
+  [`GauntletRunProgressView`](../apps/server/src/gauntlet/gauntletRun.types.ts)
+  per run — the **5-state status** `needs-heroes → ready → playing →
+  all-legs-cleared → champion`, the hero **pool** (sorted union of every
+  leg's picks), **budget headroom** (`budget − pool.length`, where budget =
+  `heroCount + 2`), per-leg `cleared` + `lastPlayedAt`, and `isChampion` —
+  **all computed at read time** via the WP-442 truth helper, nothing stored.
+- **`PATCH`** edits a run's `leg_picks` (structural validation only — hero-id
+  legality is a launch-time concern); **`DELETE`** removes a run. Every
+  handler is scoped by the resolved `player_id` (cross-account isolation) and
+  sets `Cache-Control: no-store`.
+
+The row-by-row request/response contract is in
+[`api-endpoints.md`](../docs/ai/REFERENCE/api-endpoints.md).
+
+### Play primitive + tracker UI (WP-448 / D-24268 · WP-449 / D-24269)
+
+`launchMatchFromComposition`
+([`useCreateMatchFromComposition.ts`](../apps/arena-client/src/lobby/useCreateMatchFromComposition.ts))
+is a single reusable **create → join** launch chain, shared by the lobby and
+the tracker. The `?route=me` **Gauntlet runs** section
+([`MyProfilePage.vue`](../apps/arena-client/src/pages/MyProfilePage.vue))
+renders import (file **and** paste), an **active-run card** (status badge,
+pool + budget headroom, per-leg rows showing each leg's hero picks and a
+**"Play this leg"** button), the derived **"where you left off"** leg, and
+completed history.
+
+The two "every leg won" states are **visibly distinct**:
+**`all-legs-cleared`** (amber) means every leg was won but the winning teams
+draw from more heroes than the one budgeted pool allows — trim to a legal
+pool to claim the title; **`champion`** (green trophy) means a single
+budget-valid pool cleared them all. The status ladder tests `champion`
+before `all-legs-cleared` so a claimed championship is never masked.
+
+**"Play this leg"** assembles a `MatchSetupConfig` from the run's picked
+heroes plus a **server-supplied `launch` block** — the variant-0 villains /
+henchmen and the canonical `GAUNTLET_LEG_STANDARD_SUPPLY` supply-stack counts
+(`{ bystanders: 30, wounds: 30, officers: 30, sidekicks: 15 }`) — because the
+arena client cannot import the registry. On gameover the existing
+submit-on-gameover watcher records the score, and the next tracker read
+re-derives the run's progression.
+
+### Live-verification
+
+The arc is merged to `origin/main` (WP-449 = PR #1073). Per the **D-24026**
+gate, "done" means user-observable on the deployed surface
+(`play.legendary-arena.com` `?route=me`); the tracker's live-verification
+follows that gate. Until an authenticated player finishes winning matches,
+both the public gauntlet standings and a personal run's cleared legs stay
+empty — the loop is wired end-to-end and waiting on **data supply**, the same
+precondition the public boards have.
 
 ## Edge Cases
 
