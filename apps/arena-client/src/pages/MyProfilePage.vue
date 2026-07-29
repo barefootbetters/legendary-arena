@@ -21,6 +21,17 @@ import {
   fetchMyScores,
   type MyCompetitiveScore,
 } from '../lib/api/competitionApi';
+import {
+  deleteGauntletRun,
+  importGauntletRun,
+  listGauntletRuns,
+  updateLegPicks,
+  type GauntletRunLegProgress,
+  type GauntletRunProgressView,
+  type GauntletRunStatus,
+} from '../lib/api/gauntletRunApi';
+import { launchMatchFromComposition } from '../lobby/useCreateMatchFromComposition';
+import type { MatchSetupConfig } from '@legendary-arena/game-engine';
 import { summarizeLoadout } from '../lib/loadoutSummary';
 import BillingSection from '../components/BillingSection.vue';
 import FriendsSection from '../components/FriendsSection.vue';
@@ -188,6 +199,128 @@ function shareLinkForSlug(shareSlug: string): string {
   return `${origin}/?loadout=${shareSlug}`;
 }
 
+/**
+ * Map a gauntlet-run failure code (surfaced verbatim from the server's
+ * `{ error: code }` body, or `null` for a network/parse failure) to a
+ * full-sentence message shown inline on the Gauntlet Runs section. Mirrors the
+ * `loadoutMessageForCode` precedent. The `invalid_pack` line is actionable — it
+ * tells the player where to get a valid pack.
+ */
+function gauntletRunMessageForCode(code: string | null): string {
+  if (code === 'invalid_pack') {
+    return 'That is not a valid gauntlet pack; re-download it from the gauntlet page on the wiki and import it again.';
+  }
+  if (code === 'unknown_gauntlet') {
+    return 'That gauntlet is not offered for this player count; it may have been retired. Download a current pack and try again.';
+  }
+  if (code === 'invalid_leg_picks') {
+    return 'Those hero picks are not in a valid shape; enter set-qualified hero ids separated by commas and try again.';
+  }
+  if (code === 'not_found') {
+    return 'That run no longer exists; it may have been deleted already.';
+  }
+  if (code === 'account_suspended') {
+    return 'Your account is suspended, so gauntlet runs are unavailable right now.';
+  }
+  if (code === 'unauthorized') {
+    return 'You are not signed in. Sign in to manage your gauntlet runs.';
+  }
+  return 'Could not reach the server. Check your connection and try again.';
+}
+
+/**
+ * One row in the Gauntlet Runs status badge: the display label plus a tone
+ * class. `champion` is green (celebratory / done); `all-legs-cleared` is amber
+ * (a strategy state, NOT an error); the three in-progress states are neutral.
+ * The two every-leg-cleared states occupy distinct badge treatments so a
+ * champion is never masked by all-legs-cleared (AC-4).
+ */
+function statusBadge(status: GauntletRunStatus): {
+  label: string;
+  toneClass: string;
+} {
+  if (status === 'champion') {
+    return { label: 'Champion', toneClass: 'gauntlet-badge--champion' };
+  }
+  if (status === 'all-legs-cleared') {
+    return {
+      label: 'All legs cleared',
+      toneClass: 'gauntlet-badge--all-legs-cleared',
+    };
+  }
+  if (status === 'playing') {
+    return { label: 'Playing', toneClass: 'gauntlet-badge--playing' };
+  }
+  if (status === 'ready') {
+    return { label: 'Ready', toneClass: 'gauntlet-badge--ready' };
+  }
+  return { label: 'Needs heroes', toneClass: 'gauntlet-badge--needs-heroes' };
+}
+
+/**
+ * The sort rank for a run's status, matching WP-446's evaluation order
+ * (`champion → all-legs-cleared → playing → ready → needs-heroes`). Active runs
+ * are displayed in this order so a champion-or-cleared run sorts above an
+ * in-progress one. Presentation-local only — never re-derives the status.
+ */
+function statusRank(status: GauntletRunStatus): number {
+  if (status === 'champion') {
+    return 0;
+  }
+  if (status === 'all-legs-cleared') {
+    return 1;
+  }
+  if (status === 'playing') {
+    return 2;
+  }
+  if (status === 'ready') {
+    return 3;
+  }
+  return 4;
+}
+
+/**
+ * The scheme id of a run's most-recently-played leg (the max non-null
+ * `lastPlayedAt`), or `null` when no leg has ever been played. Presentation-local
+ * only — used to highlight the "where you left off" leg; the derived per-leg
+ * `lastPlayedAt` values come from the server (D-24262).
+ */
+function lastPlayedLegId(run: GauntletRunProgressView): string | null {
+  let bestSchemeId: string | null = null;
+  let bestPlayedAt: string | null = null;
+  for (const leg of run.legs) {
+    if (leg.lastPlayedAt === null) {
+      continue;
+    }
+    if (
+      bestPlayedAt === null ||
+      Date.parse(leg.lastPlayedAt) > Date.parse(bestPlayedAt)
+    ) {
+      bestPlayedAt = leg.lastPlayedAt;
+      bestSchemeId = leg.schemeId;
+    }
+  }
+  return bestSchemeId;
+}
+
+/**
+ * Whether "Play this leg" may launch: the leg has a full hero pick AND the
+ * run's approved-menu launch composition resolved server-side. Both are
+ * required — an incomplete pick or a `null` launch block cannot assemble a
+ * valid nine-field `MatchSetupConfig`. Presentation-local only.
+ */
+function canPlayLeg(
+  run: GauntletRunProgressView,
+  leg: GauntletRunLegProgress,
+): boolean {
+  // why: BOTH conditions gate a launch — hasFullPicks proves the hero deck is
+  // complete, and launch !== null proves the server resolved the adversary
+  // composition + supply counts for this run's (division, playerCount). Missing
+  // either means no valid MatchSetupConfig can be built, so the button stays
+  // disabled with an explanatory line rather than launching an incomplete game.
+  return leg.hasFullPicks && run.launch !== null;
+}
+
 export default defineComponent({
   name: 'MyProfilePage',
   components: { BillingSection, FriendsSection, MatchInvitesSection },
@@ -259,6 +392,41 @@ export default defineComponent({
     const competitiveScores = ref<MyCompetitiveScore[]>([]);
     const scoresLoading = ref<boolean>(true);
     const scoresError = ref<string>('');
+
+    // why: WP-449 — the Gauntlet Runs section owns its own state, independent of
+    // the profile / loadout / scores surfaces so one section's feedback never
+    // clobbers another's. `gauntletRuns` is the server's DERIVED progression
+    // list (rendered verbatim, D-24262 — never recomputed here). `pickDrafts`
+    // holds the per-leg editable hero-id text, keyed `${runId}::${schemeId}` and
+    // reseeded from the server view after every load / mutation. The message
+    // refs carry the list-load error, the import error, the per-run row error,
+    // and the launch error separately.
+    const gauntletRuns = ref<GauntletRunProgressView[]>([]);
+    const gauntletError = ref<string>('');
+    const gauntletPasteText = ref<string>('');
+    const gauntletImportError = ref<string>('');
+    const gauntletImportInFlight = ref<boolean>(false);
+    const gauntletRowError = ref<string>('');
+    const gauntletPlayError = ref<string>('');
+    const pickDrafts = ref<Record<string, string>>({});
+
+    // why: the active runs (still in progress) are shown in WP-446 evaluation
+    // order (champion → all-legs-cleared → playing → ready → needs-heroes) so a
+    // champion-or-cleared run sorts above an in-progress one; the completed
+    // history (a first_completed_at stamp) is listed separately. Both read the
+    // same server view — the split is presentation-local, never a re-derivation.
+    const activeGauntletRuns = computed(() => {
+      const active = gauntletRuns.value.filter(
+        (run) => run.firstCompletedAt === null,
+      );
+      return [...active].sort(
+        (firstRun, secondRun) =>
+          statusRank(firstRun.status) - statusRank(secondRun.status),
+      );
+    });
+    const completedGauntletRuns = computed(() =>
+      gauntletRuns.value.filter((run) => run.firstCompletedAt !== null),
+    );
 
     // why: re-arm the avatar preview whenever the URL changes. Once `@error`
     // hides a broken URL, the <img> leaves the DOM, so `@load` can never fire
@@ -458,6 +626,208 @@ export default defineComponent({
     }
 
     /**
+     * Reseed the per-leg hero-pick drafts from a freshly-loaded run list. Each
+     * leg's draft is the run's stored `legPicks[schemeId]` joined by `, ` so the
+     * editable input shows what the server holds. Replaces the whole draft map so
+     * a deleted run leaves no stale draft behind.
+     */
+    function seedPickDrafts(runs: readonly GauntletRunProgressView[]): void {
+      const drafts: Record<string, string> = {};
+      for (const run of runs) {
+        for (const leg of run.legs) {
+          const picks = run.legPicks[leg.schemeId] ?? [];
+          drafts[`${run.id}::${leg.schemeId}`] = picks.join(', ');
+        }
+      }
+      pickDrafts.value = drafts;
+    }
+
+    /**
+     * Fetch the caller's gauntlet runs (with derived progression + launch block)
+     * and reseed the pick drafts. On failure sets the inline list-load error;
+     * never throws.
+     */
+    async function loadGauntletRuns(): Promise<void> {
+      gauntletError.value = '';
+      const result = await listGauntletRuns(readAuthToken());
+      if (result.ok === true) {
+        gauntletRuns.value = result.value.runs;
+        seedPickDrafts(result.value.runs);
+        return;
+      }
+      gauntletError.value = gauntletRunMessageForCode(result.code);
+    }
+
+    /**
+     * Import a gauntlet pack from a JSON string (shared by the paste box and the
+     * file picker). Guards the text with a local `JSON.parse` first — an
+     * unparseable value surfaces an inline error and sends no request — then
+     * POSTs the opaque pack and refreshes the derived list on success (the POST
+     * returns a raw view without the launch block, so the list refetch supplies
+     * the derived progression the tracker renders). Never throws.
+     */
+    async function importGauntletPack(packText: string): Promise<void> {
+      gauntletImportError.value = '';
+      let parsedPack: unknown;
+      try {
+        parsedPack = JSON.parse(packText);
+      } catch {
+        // why: guard the pack locally before any request — an unparseable paste
+        // or file is a client-side error, so we surface it inline and send
+        // nothing rather than round-tripping to the server for invalid_pack.
+        gauntletImportError.value =
+          'That is not valid JSON. Paste or upload a gauntlet pack downloaded from the gauntlet page.';
+        return;
+      }
+      if (gauntletImportInFlight.value === true) {
+        return;
+      }
+      gauntletImportInFlight.value = true;
+      try {
+        const result = await importGauntletRun(readAuthToken(), parsedPack);
+        if (result.ok === true) {
+          gauntletPasteText.value = '';
+          await loadGauntletRuns();
+          return;
+        }
+        gauntletImportError.value = gauntletRunMessageForCode(result.code);
+      } finally {
+        gauntletImportInFlight.value = false;
+      }
+    }
+
+    /**
+     * Import the gauntlet pack pasted into the textarea. Delegates to the shared
+     * `importGauntletPack`. Never throws.
+     */
+    async function submitImportPaste(): Promise<void> {
+      await importGauntletPack(gauntletPasteText.value);
+    }
+
+    /**
+     * Read the chosen pack file and import it. Returns early when the picker is
+     * dismissed with no file. A file that cannot be read as text surfaces an
+     * inline error; a readable file delegates to the shared `importGauntletPack`.
+     * Never throws.
+     */
+    async function onGauntletFileSelected(event: Event): Promise<void> {
+      const target = event.target as HTMLInputElement;
+      const file = target.files?.item(0) ?? null;
+      if (file === null) {
+        return;
+      }
+      let packText: string;
+      try {
+        packText = await file.text();
+      } catch {
+        // why: a file that cannot be read (permission / transient IO) is a
+        // client-side failure — surface it inline and send nothing.
+        gauntletImportError.value =
+          'That file could not be read. Choose a downloaded gauntlet pack JSON file and try again.';
+        return;
+      }
+      await importGauntletPack(packText);
+    }
+
+    /**
+     * Save one leg's edited hero picks via PATCH. Parses the leg's draft (a
+     * comma-separated hero-id list) into an array, merges it over the run's
+     * stored `legPicks` (PATCH replaces the whole map), and refreshes the list on
+     * success. Sets the inline row error otherwise. Never throws.
+     */
+    async function saveLegPicks(
+      run: GauntletRunProgressView,
+      leg: GauntletRunLegProgress,
+    ): Promise<void> {
+      gauntletRowError.value = '';
+      const draft = pickDrafts.value[`${run.id}::${leg.schemeId}`] ?? '';
+      const heroDeckIds: string[] = [];
+      for (const rawId of draft.split(',')) {
+        const trimmed = rawId.trim();
+        if (trimmed !== '') {
+          heroDeckIds.push(trimmed);
+        }
+      }
+      const nextLegPicks: Record<string, readonly string[]> = {
+        ...run.legPicks,
+        [leg.schemeId]: heroDeckIds,
+      };
+      const result = await updateLegPicks(readAuthToken(), run.id, nextLegPicks);
+      if (result.ok === true) {
+        await loadGauntletRuns();
+        return;
+      }
+      gauntletRowError.value = gauntletRunMessageForCode(result.code);
+    }
+
+    /**
+     * Launch a match for one leg via the WP-448 primitive. Enabled only when the
+     * leg has full picks and the run's launch block is present; assembles the
+     * nine-field `MatchSetupConfig` from the run's picks + the server-supplied
+     * launch composition, then calls `launchMatchFromComposition`. On a failed
+     * launch sets the inline play error. Never throws.
+     */
+    async function playLeg(
+      run: GauntletRunProgressView,
+      leg: GauntletRunLegProgress,
+    ): Promise<void> {
+      gauntletPlayError.value = '';
+      if (!canPlayLeg(run, leg) || run.launch === null) {
+        return;
+      }
+      const authToken = readAuthToken();
+      if (authToken === null) {
+        gauntletPlayError.value =
+          'You are not signed in. Sign in to play a gauntlet leg.';
+        return;
+      }
+      const config: MatchSetupConfig = {
+        // why: the progress leg carries the BARE scheme slug, but the match
+        // config wants the set-qualified D-10014 ext_id, so qualify it with the
+        // run's setAbbr (`${setAbbr}/${schemeId}`). mastermindId already arrives
+        // set-qualified in the launch block.
+        schemeId: `${run.setAbbr}/${leg.schemeId}`,
+        mastermindId: run.launch.mastermindId,
+        villainGroupIds: run.launch.villainGroupIds,
+        henchmanGroupIds: run.launch.henchmanGroupIds,
+        heroDeckIds: run.legPicks[leg.schemeId] ?? [],
+        bystandersCount: run.launch.bystandersCount,
+        woundsCount: run.launch.woundsCount,
+        officersCount: run.launch.officersCount,
+        sidekicksCount: run.launch.sidekicksCount,
+      };
+      const playerName =
+        view.value?.displayName ?? view.value?.handleCanonical ?? '';
+      const result = await launchMatchFromComposition({
+        config,
+        playerCount: run.playerCount,
+        playerName,
+        authToken,
+      });
+      if (result.ok === false) {
+        gauntletPlayError.value = result.message;
+      }
+    }
+
+    /**
+     * Delete (reset) one gauntlet run via DELETE, removing its row on success.
+     * Sets the inline row error otherwise. Never throws.
+     */
+    async function removeGauntletRun(
+      run: GauntletRunProgressView,
+    ): Promise<void> {
+      gauntletRowError.value = '';
+      const result = await deleteGauntletRun(readAuthToken(), run.id);
+      if (result.ok === true) {
+        gauntletRuns.value = gauntletRuns.value.filter(
+          (candidate) => candidate.id !== run.id,
+        );
+        return;
+      }
+      gauntletRowError.value = gauntletRunMessageForCode(result.code);
+    }
+
+    /**
      * Replace one row in place with an updated server view, reseeding
      * its rename draft. Leaves every other row untouched.
      */
@@ -586,6 +956,7 @@ export default defineComponent({
       void load();
       void loadLoadouts();
       void loadScores();
+      void loadGauntletRuns();
     });
 
     return {
@@ -617,6 +988,23 @@ export default defineComponent({
       competitiveScores,
       scoresLoading,
       scoresError,
+      activeGauntletRuns,
+      completedGauntletRuns,
+      gauntletError,
+      gauntletPasteText,
+      gauntletImportError,
+      gauntletImportInFlight,
+      gauntletRowError,
+      gauntletPlayError,
+      pickDrafts,
+      submitImportPaste,
+      onGauntletFileSelected,
+      saveLegPicks,
+      playLeg,
+      removeGauntletRun,
+      statusBadge,
+      lastPlayedLegId,
+      canPlayLeg,
       loadoutRows,
       loadoutsError,
       createName,
@@ -1117,6 +1505,265 @@ export default defineComponent({
         </ul>
       </section>
 
+      <!-- why: WP-449 / D-24269 — the Gauntlet Runs tracker. Renders the
+           server's DERIVED GauntletRunProgressView verbatim (status / pool /
+           budgetHeadroom / isChampion never recomputed client-side, D-24262);
+           only presentation-local values (last-played highlight, Play-button
+           enablement) are computed. "Play this leg" assembles a MatchSetupConfig
+           from the run's picks + the server-supplied launch block and reuses the
+           WP-448 launch primitive. champion (green) and all-legs-cleared (amber)
+           are visibly distinct states (AC-4). -->
+      <section class="profile-gauntlets" data-testid="my-profile-gauntlets">
+        <h2>Gauntlet Runs</h2>
+        <p class="profile-help">
+          Import a Mastermind Gauntlet pack downloaded from the gauntlet page,
+          pick your heroes for each leg, and launch a leg. Clearing every leg
+          with one legal hero pool makes you champion.
+        </p>
+
+        <div class="profile-gauntlet-import" data-testid="my-profile-gauntlet-import">
+          <label class="profile-field">
+            <span class="profile-field-label">Import a pack file</span>
+            <input
+              type="file"
+              accept="application/json,.json"
+              data-testid="my-profile-gauntlet-file"
+              @change="onGauntletFileSelected"
+            />
+          </label>
+          <label class="profile-field">
+            <span class="profile-field-label">…or paste a pack (JSON)</span>
+            <textarea
+              v-model="gauntletPasteText"
+              rows="4"
+              placeholder='{ "pack_version": 1, "gauntlet": { … } }'
+              data-testid="my-profile-gauntlet-paste"
+            ></textarea>
+          </label>
+          <button
+            type="button"
+            class="profile-save"
+            data-testid="my-profile-gauntlet-import-paste"
+            :disabled="gauntletImportInFlight"
+            @click="submitImportPaste"
+          >
+            Import pasted pack
+          </button>
+          <p
+            v-if="gauntletImportError !== ''"
+            class="profile-upload-error"
+            data-testid="my-profile-gauntlet-import-error"
+          >
+            {{ gauntletImportError }}
+          </p>
+        </div>
+
+        <p
+          v-if="gauntletError !== ''"
+          class="profile-upload-error"
+          data-testid="my-profile-gauntlet-error"
+        >
+          {{ gauntletError }}
+        </p>
+
+        <template v-if="activeGauntletRuns.length === 0">
+          <p class="profile-help" data-testid="my-profile-gauntlet-active-empty">
+            No active gauntlet runs yet. Import a pack above to start one.
+          </p>
+        </template>
+        <ul v-else class="profile-gauntlet-list">
+          <li
+            v-for="run in activeGauntletRuns"
+            :key="run.id"
+            class="profile-gauntlet-run"
+            :data-testid="`my-profile-gauntlet-run-${run.id}`"
+          >
+            <div class="profile-gauntlet-run-head">
+              <span
+                class="profile-gauntlet-badge"
+                :class="statusBadge(run.status).toneClass"
+                :data-testid="`my-profile-gauntlet-status-${run.id}`"
+              >
+                {{ statusBadge(run.status).label }}
+              </span>
+              <span class="profile-gauntlet-identity">
+                {{ run.setAbbr }} · {{ run.mastermindSlug }} ·
+                {{ run.playerCount }}-player
+              </span>
+            </div>
+
+            <!-- why: AC-4 — all-legs-cleared is an amber STRATEGY state, not an
+                 error; the copy names the budget/pool gap directly (never
+                 "incomplete" / "failed") and champion never renders this block. -->
+            <p
+              v-if="run.status === 'all-legs-cleared'"
+              class="profile-gauntlet-strategy"
+              :data-testid="`my-profile-gauntlet-all-cleared-${run.id}`"
+            >
+              You cleared every leg, but this run is not champion yet because
+              your winning teams use {{ run.pool.length }} heroes over the
+              {{ run.budget }}-hero budget. Trim the run to one legal pool.
+            </p>
+            <p
+              v-if="run.status === 'champion'"
+              class="profile-gauntlet-champion-note"
+              :data-testid="`my-profile-gauntlet-champion-${run.id}`"
+            >
+              Champion — every leg cleared with one legal hero pool.
+            </p>
+
+            <p class="profile-gauntlet-pool">
+              Hero pool: {{ run.pool.length }} / {{ run.budget }} budget ·
+              headroom {{ run.budgetHeadroom }}
+            </p>
+
+            <p
+              v-if="run.launch === null"
+              class="profile-gauntlet-launch-missing"
+              :data-testid="`my-profile-gauntlet-launch-missing-${run.id}`"
+            >
+              This gauntlet's adversary composition isn't configured for this
+              player count yet, so its legs can't be launched.
+            </p>
+
+            <ul class="profile-gauntlet-legs">
+              <li
+                v-for="leg in run.legs"
+                :key="leg.schemeId"
+                class="profile-gauntlet-leg"
+                :class="{
+                  'profile-gauntlet-leg--last-played':
+                    leg.schemeId === lastPlayedLegId(run),
+                }"
+                :data-testid="`my-profile-gauntlet-leg-${run.id}-${leg.schemeId}`"
+              >
+                <div class="profile-gauntlet-leg-head">
+                  <span class="profile-gauntlet-leg-name">{{ leg.schemeName }}</span>
+                  <span
+                    v-if="leg.cleared"
+                    class="profile-gauntlet-chip profile-gauntlet-chip--cleared"
+                    :data-testid="`my-profile-gauntlet-leg-cleared-${run.id}-${leg.schemeId}`"
+                  >
+                    cleared
+                  </span>
+                  <span
+                    v-else
+                    class="profile-gauntlet-chip profile-gauntlet-chip--uncleared"
+                  >
+                    not cleared
+                  </span>
+                  <span
+                    v-if="leg.hasFullPicks"
+                    class="profile-gauntlet-chip profile-gauntlet-chip--picks"
+                  >
+                    full picks
+                  </span>
+                  <span
+                    v-if="leg.schemeId === lastPlayedLegId(run)"
+                    class="profile-gauntlet-chip profile-gauntlet-chip--resume"
+                  >
+                    where you left off
+                  </span>
+                </div>
+
+                <p
+                  v-if="leg.lastPlayedAt !== null"
+                  class="profile-gauntlet-leg-played"
+                >
+                  Last played {{ leg.lastPlayedAt }}
+                </p>
+
+                <div class="profile-gauntlet-leg-edit">
+                  <input
+                    v-model="pickDrafts[`${run.id}::${leg.schemeId}`]"
+                    type="text"
+                    placeholder="core/spider-man, core/hulk, core/storm"
+                    :data-testid="`my-profile-gauntlet-picks-${run.id}-${leg.schemeId}`"
+                  />
+                  <button
+                    type="button"
+                    :data-testid="`my-profile-gauntlet-save-${run.id}-${leg.schemeId}`"
+                    @click="saveLegPicks(run, leg)"
+                  >
+                    Save picks
+                  </button>
+                  <button
+                    type="button"
+                    class="profile-gauntlet-play"
+                    :disabled="!canPlayLeg(run, leg)"
+                    :data-testid="`my-profile-gauntlet-play-${run.id}-${leg.schemeId}`"
+                    @click="playLeg(run, leg)"
+                  >
+                    Play this leg
+                  </button>
+                </div>
+                <p
+                  v-if="!canPlayLeg(run, leg)"
+                  class="profile-field-hint"
+                  :data-testid="`my-profile-gauntlet-play-hint-${run.id}-${leg.schemeId}`"
+                >
+                  <template v-if="run.launch === null">
+                    Launch is unavailable until this gauntlet's composition is
+                    configured.
+                  </template>
+                  <template v-else>
+                    Enter a full hero pick ({{ run.heroCount }} heroes) and save
+                    to enable Play this leg.
+                  </template>
+                </p>
+              </li>
+            </ul>
+          </li>
+        </ul>
+
+        <template v-if="completedGauntletRuns.length > 0">
+          <h3 class="profile-gauntlet-history-heading">Completed runs</h3>
+          <ul class="profile-gauntlet-list">
+            <li
+              v-for="run in completedGauntletRuns"
+              :key="run.id"
+              class="profile-gauntlet-run profile-gauntlet-run--history"
+              :data-testid="`my-profile-gauntlet-history-${run.id}`"
+            >
+              <div class="profile-gauntlet-run-head">
+                <span
+                  class="profile-gauntlet-badge"
+                  :class="statusBadge(run.status).toneClass"
+                >
+                  {{ statusBadge(run.status).label }}
+                </span>
+                <span class="profile-gauntlet-identity">
+                  {{ run.setAbbr }} · {{ run.mastermindSlug }} ·
+                  {{ run.playerCount }}-player
+                </span>
+                <button
+                  type="button"
+                  :data-testid="`my-profile-gauntlet-delete-${run.id}`"
+                  @click="removeGauntletRun(run)"
+                >
+                  Delete / reset
+                </button>
+              </div>
+            </li>
+          </ul>
+        </template>
+
+        <p
+          v-if="gauntletRowError !== ''"
+          class="profile-upload-error"
+          data-testid="my-profile-gauntlet-row-error"
+        >
+          {{ gauntletRowError }}
+        </p>
+        <p
+          v-if="gauntletPlayError !== ''"
+          class="profile-upload-error"
+          data-testid="my-profile-gauntlet-play-error"
+        >
+          {{ gauntletPlayError }}
+        </p>
+      </section>
+
       <!-- why: WP-352 / D-24144 — the owner's Friends section (packet #3
            of Friends & Ranked Trust). A thin client over WP-351's
            /api/me/friends* API, threaded the owner authToken the same way
@@ -1198,12 +1845,211 @@ export default defineComponent({
 .profile-links,
 .profile-teams,
 .profile-loadouts,
+.profile-gauntlets,
 .profile-friends,
 .profile-billing {
   padding: 1.25rem;
   border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 0.5rem;
   background: rgba(255, 255, 255, 0.5);
+}
+
+/* why: WP-449 — the Gauntlet Runs tracker. champion (green) and
+   all-legs-cleared (amber) MUST be visibly distinct (AC-4); the three
+   in-progress states use neutral tones. */
+.profile-gauntlets {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.profile-gauntlets h2 {
+  font-size: 1.125rem;
+  margin: 0 0 0.5rem 0;
+}
+
+.profile-gauntlet-import {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.profile-gauntlet-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.profile-gauntlet-run {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 0.375rem;
+}
+
+.profile-gauntlet-run-head {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.profile-gauntlet-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid transparent;
+}
+
+.gauntlet-badge--champion {
+  color: #1b5e20;
+  background: #e6f4ea;
+  border-color: #2a7d2a;
+}
+
+.gauntlet-badge--all-legs-cleared {
+  color: #8a5300;
+  background: #fff4e0;
+  border-color: #f4a261;
+}
+
+.gauntlet-badge--playing,
+.gauntlet-badge--ready,
+.gauntlet-badge--needs-heroes {
+  color: rgba(0, 0, 0, 0.65);
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.12);
+}
+
+.profile-gauntlet-identity {
+  font-size: 0.85rem;
+  opacity: 0.75;
+}
+
+.profile-gauntlet-strategy {
+  font-size: 0.85rem;
+  color: #8a5300;
+  background: #fff8ee;
+  border-left: 3px solid #f4a261;
+  padding: 0.4rem 0.6rem;
+  margin: 0;
+  border-radius: 0.2rem;
+}
+
+.profile-gauntlet-champion-note {
+  font-size: 0.85rem;
+  color: #1b5e20;
+  margin: 0;
+}
+
+.profile-gauntlet-pool {
+  font-size: 0.8rem;
+  opacity: 0.8;
+  margin: 0;
+}
+
+.profile-gauntlet-launch-missing {
+  font-size: 0.8rem;
+  color: #b3261e;
+  margin: 0;
+}
+
+.profile-gauntlet-legs {
+  list-style: none;
+  padding: 0;
+  margin: 0.25rem 0 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.profile-gauntlet-leg {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.5rem;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 0.3rem;
+}
+
+.profile-gauntlet-leg--last-played {
+  border-color: #4a90d9;
+  background: rgba(74, 144, 217, 0.06);
+}
+
+.profile-gauntlet-leg-head {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.profile-gauntlet-leg-name {
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.profile-gauntlet-chip {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.6rem;
+}
+
+.profile-gauntlet-chip--cleared {
+  color: #1b5e20;
+  background: #e6f4ea;
+}
+
+.profile-gauntlet-chip--uncleared {
+  color: rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.profile-gauntlet-chip--picks {
+  color: #0d47a1;
+  background: #e3f0fb;
+}
+
+.profile-gauntlet-chip--resume {
+  color: #4a90d9;
+  background: rgba(74, 144, 217, 0.12);
+  font-weight: 600;
+}
+
+.profile-gauntlet-leg-played {
+  font-size: 0.75rem;
+  opacity: 0.65;
+  margin: 0;
+}
+
+.profile-gauntlet-leg-edit {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.profile-gauntlet-leg-edit input {
+  flex: 1;
+  min-width: 12rem;
+}
+
+.profile-gauntlet-play:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.profile-gauntlet-history-heading {
+  font-size: 1rem;
+  margin: 0.5rem 0 0 0;
 }
 
 .profile-loadouts {

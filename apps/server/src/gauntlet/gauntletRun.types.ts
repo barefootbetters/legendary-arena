@@ -255,6 +255,35 @@ export interface GauntletRunLegProgress {
 }
 
 /**
+ * The server-resolved launch composition for one run (WP-449 / D-24269): the
+ * six `MatchSetupConfig` fields the client cannot derive without the registry
+ * (the approved variant-0 villains + henchmen and the four supply-STACK
+ * counts), plus the set-qualified `mastermindId`. The client assembles a full
+ * nine-field `MatchSetupConfig` for "Play this leg" from this block plus the
+ * three fields it CAN derive (`schemeId` per leg, `heroDeckIds` from
+ * `legPicks`). Present only when the gauntlet's approved menu is configured for
+ * the run's `(division, playerCount)`; `null` otherwise (see
+ * `GauntletRunProgressView.launch`).
+ *
+ * `villainGroupIds` / `henchmanGroupIds` are approved variant 0
+ * (`approvedLoadouts[playerCount][0]`, the D-24199 baseline). The four supply
+ * counts are the canonical `GAUNTLET_LEG_STANDARD_SUPPLY` launch defaults
+ * (v1 original edition), supply-STACK counts for a valid config — NOT
+ * villain-deck cards and NOT scoring; they do not gate leg-clear (D-24187), so
+ * they can never affect the WP-442 / WP-446 clear or champion derivation.
+ * `mastermindId` is `${setAbbr}/${mastermindSlug}` (D-10014).
+ */
+export interface GauntletRunLaunch {
+  readonly mastermindId: string;
+  readonly villainGroupIds: readonly string[];
+  readonly henchmanGroupIds: readonly string[];
+  readonly bystandersCount: number;
+  readonly woundsCount: number;
+  readonly officersCount: number;
+  readonly sidekicksCount: number;
+}
+
+/**
  * The five derived states of a run (WP-446 / D-24265 §2), evaluated in the
  * order `champion → all-legs-cleared → playing → ready → needs-heroes`.
  * `all-legs-cleared` and `champion` are DISTINCT: a player may clear every leg
@@ -301,6 +330,13 @@ export interface GauntletRunProgressView extends GauntletRunView {
   readonly budget: number;
   readonly isChampion: boolean;
   readonly legs: readonly GauntletRunLegProgress[];
+  // why: WP-449 / D-24269 — the additive per-run launch composition the client
+  // needs for "Play this leg" (it cannot import the registry). `null` when the
+  // gauntlet's approved menu is unconfigured for the run's (division,
+  // playerCount) — the same condition under which the WP-446 leg-clear loadout
+  // clause is skipped — so a run with no resolvable adversary composition
+  // disables its launch buttons rather than launching an incomplete config.
+  readonly launch: GauntletRunLaunch | null;
 }
 
 /**
@@ -320,6 +356,27 @@ export interface GauntletRunProgressInputs {
   readonly poolBudget: number;
   readonly heroCount: number;
   readonly boardName: string;
+  // why: WP-449 / D-24269 — the additive launch-block inputs, injected by the
+  // same `server.mjs` wiring layer that builds the rest of these inputs, so the
+  // logic layer stays registry-free. `launchComposition` is the approved
+  // variant-0 (`approvedLoadouts[playerCount][0]`) villains + henchmen, or
+  // `null` when the approved menu is unconfigured for this run's (division,
+  // playerCount). `launchSupply` is the canonical `GAUNTLET_LEG_STANDARD_SUPPLY`
+  // launch table (fixed constants that do not gate leg-clear, D-24187).
+  // `mastermindId` is the set-qualified `${setAbbr}/${mastermindSlug}` ext_id
+  // (D-10014). These feed ONLY the derived `launch` block — never leg-clear or
+  // champion derivation.
+  readonly launchComposition: {
+    readonly villainGroupIds: readonly string[];
+    readonly henchmanGroupIds: readonly string[];
+  } | null;
+  readonly launchSupply: {
+    readonly bystandersCount: number;
+    readonly woundsCount: number;
+    readonly officersCount: number;
+    readonly sidekicksCount: number;
+  };
+  readonly mastermindId: string;
 }
 
 /**

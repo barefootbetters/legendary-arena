@@ -34109,7 +34109,7 @@ persistence carve-out; the `createMatch` / `joinMatch` contracts are unchanged.
 + `apps/arena-client/src/lobby/LobbyView.vue` (modified — `submitFromJson` +
 `submitCreate` rewired, both inline chains removed).
 
-### D-24269 — The `?route=me` gauntlet tracker renders derived truth only; "Play this leg" assembles its `MatchSetupConfig` from the run's picked heroes plus a server-supplied `launch` block (arena-client cannot reach the registry) (Drafted 2026-07-28 — WP-449; not yet landed)
+### D-24269 — The `?route=me` gauntlet tracker renders derived truth only; "Play this leg" assembles its `MatchSetupConfig` from the run's picked heroes plus a server-supplied `launch` block (arena-client cannot reach the registry) (Active (post-execution) 2026-07-29 — WP-449)
 
 > **Status: Drafted 2026-07-28; amended 2026-07-28 with operator review calls 1–5;
 > not yet landed.** Reserved by WP-449 / EC-484 in `NUMBER-LEDGER.md` under branch
