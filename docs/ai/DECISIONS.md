@@ -34328,4 +34328,98 @@ tests confirm the marked line records no hollow event (applied, not
 hero-return is unchanged; hash oracles unchanged (confirmed by the green suite — no
 pinned fixture fights the 3 villains — not assumed from the no-op handler).
 
+### D-24271 — `G.diagnostics` is a runtime-only observation channel, excluded from the state hash (phased: `hashGameState` now, `computeStateHash` deferred) (Drafted 2026-07-29 — WP-451; not yet landed)
+
+> **Status: Drafted at SPEC time; flips to Active (post-execution) when WP-451
+> executes.** Reserved in `NUMBER-LEDGER.md` under the same branch.
+>
+> **🔒 SCOPE LOCKED (operator, 2026-07-29): `hashGameState`-only.** WP-451 executes the
+> fixture-golden `hashGameState` exclusion only (zero competitive risk, fixes the
+> recurring fixture churn). The `computeStateHash` (competitive-oracle) exclusion — the
+> principled end-state below — is **deferred to its own future WP + a dedicated
+> low-competitive-activity deploy**. Under the locked scope the competitive `replayHash`
+> is UNCHANGED and there is no competitive transition-window exposure; the
+> `buildInitialGameState` absent-on-fresh literal remains required (now justified by
+> `computeStateHash`, which still hashes `diagnostics`). The full "excluded from ALL
+> state-hash surfaces" invariant is the end-state the deferred follow-on completes.
+
+**Context.** Drafting WP-447 (scry-KO) and WP-450 (gain-attached-hero) each surfaced
+the same subtlety: `G.diagnostics` — the WP-257 hollow-effect observation channel,
+explicitly "runtime-only … never gameplay input" — is currently serialized into the
+game-state hash, so an observability-only change (the D-24266 breadcrumb firing, or
+marking a villain to suppress it) silently shifts `finalStateHash`. This forced
+each of those WPs into a fixture-content determinism check and left a latent
+competitive-verification footgun. Diagnostics has no business gating determinism or
+competitive equality — the exact argument already accepted for `messages` / `logMeta`
+/ `lastPlayEffectsFired`.
+
+**Decision.** `G.diagnostics` is excluded from **all** state-hash surfaces:
+- **`hashGameState`** (the test-fixture golden / `finalStateHash` oracle) — appended
+  to its existing `messages` + `logMeta` + `lastPlayEffectsFired` rest-destructure.
+  This is the load-bearing fix: it stops golden-fixture churn on every breadcrumb /
+  effect-marking WP.
+- **`computeStateHash`** (the production whole-G determinism / competitive oracle) —
+  its first field exclusion. This decouples the competitive `replayHash` (the
+  `bgio.replay_artifacts` natural key) and the step-9 anti-tamper compare from
+  observability drift.
+The now-false hash rationale is corrected where it actually lives:
+`buildInitialGameState.ts` (~566-568, the "hashGameState serializes the whole G"
+note that justified keeping diagnostics absent-on-fresh — the real stale comment),
+plus a "full G except the excluded observation channels" caveat on `game.ts` §onBegin
+and a new `diagnostics` why-comment in `hashGameState.ts`. Neither `game.ts` nor
+`hashGameState.ts` currently makes a "diagnostics is hashed" claim (their existing
+"STAYS in computeStateHash" / "full G" lines are about `lastPlayEffectsFired` /
+`logMeta`, which genuinely stay in `computeStateHash`). Invariant, pinned by tests:
+two `LegendaryGameState`s differing only in `diagnostics` hash identically under both
+oracles.
+
+**Determinism / re-pin.** Expected NO pinned-hash re-pin: no current fixture
+materializes a hollow record (D-24266 shipped in #1065 with no re-pin), so
+`diagnostics` is absent in every fixture's final G and stripping an absent field is a
+no-op. Confirmed empirically by running the full suite (conditional 01.5 re-pin of
+`PRE_WP080_HASH` / the sentinel `finalStateHash` only if a shift appears).
+
+**Competitive-risk decision (operator sign-off at SPEC review).** Changing
+`computeStateHash` alters the algorithm behind the competitive `replayHash` + the
+step-9 compare (`competition.logic.ts`: `reduced.stateHash === replayHash`).
+Assessed: **accepted scores are immune** (immutable per D-5302; resubmit takes the
+idempotency fast-path and never re-reduces); **the score math never reads
+`diagnostics`** (re-derived from terminal state via `deriveScoringInputs` /
+`evaluateEndgame`); the **only exposure is a one-time transition window** — a replay
+captured under old (diagnostics-inclusive) code but submitted after this deploy would
+re-reduce to a diagnostics-excluded hash `≠` its stored `replayHash` → a rare
+`replay_verification_failed`, recoverable by re-capture/resubmit, no data corruption
+(this window is LIVE in production — real matches materialize hollow records, unlike
+the fixtures). The other two `computeStateHash` consumers (`desync.detect`,
+`intent.validate`) are within-version-symmetric + self-healing (engine-authoritative
+resync, D-0402) — steady-state neutral, only a harmless transient rolling-deploy
+resync. **Recommended default (independent copilot-check + this analysis):
+`hashGameState`-only now — it fully fixes the recurring fixture churn at ZERO
+competitive risk — and defer the `computeStateHash` exclusion to its own dedicated,
+low-competitive-activity deploy** (principled but no forcing function today; puts a
+one-time risk on the ranking/revenue surface). **`both surfaces` remains available and
+defensible** for the unified end-state in one shot. Operator confirms the scope at SPEC
+review before execution.
+
+**Scope.** Only `diagnostics` is added to the exclusions — `notableEvents` stays
+hashed (it has no other guard). No DB migration, no `apps/server` code change (the
+server inherits `computeStateHash` from the engine; column shapes unchanged), no
+back-fill of historical rows (content-addressed, immutable, never re-compared). The
+WP-257 "keep `G.diagnostics` absent-on-fresh" workaround becomes unnecessary once the
+field is unhashed, but retiring it is a deferred cosmetic cleanup (out of scope).
+
+**Files (at execution).** `packages/game-engine/src/test/fixtures/hashGameState.{ts,test.ts}`
++ `replay/replay.hash.{ts,test.ts}` + `game.ts` (comment caveat) +
+`setup/buildInitialGameState.ts` (comment caveat only — the ~566-568 "hashGameState
+serializes the whole G" rationale becomes false; the absent-on-fresh seed literal is
+untouched). No `.claude/rules/*` or
+`ARCHITECTURE.md` edit — this narrows the hash to authoritative gameplay state within
+the existing Determinism / Persistence boundary; it does not add a cross-layer edge or
+a new persistence carve-out.
+
+**Verification.** `pnpm --filter @legendary-arena/game-engine build` + `test` green;
+diagnostics-invariance tests on both oracles + the exclusion-set pin; pinned hashes
+unchanged (verified) or re-pinned-with-note; `pnpm --filter @legendary-arena/server
+test` green (inherits the engine hash).
+
 Protect this file.
