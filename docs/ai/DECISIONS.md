@@ -34423,7 +34423,7 @@ diagnostics-invariance tests on both oracles + the exclusion-set pin; pinned has
 unchanged (verified) or re-pinned-with-note; `pnpm --filter @legendary-arena/server
 test` green (inherits the engine hash).
 
-### D-24272 — Bot-ally co-op strength is measured by a deterministic win-rate + loss-cause-taxonomy harness; no committed win-rate artifact, no CI freshness gate (Drafted 2026-07-29; not yet landed — WP-452)
+### D-24272 — Bot-ally co-op strength is measured by a deterministic win-rate + loss-cause-taxonomy harness; no committed win-rate artifact, no CI freshness gate (Landed 2026-07-29 — WP-452)
 
 **Context.** WP-452 is the first slice of the **Bot Ally Strengthening** epic
 (operator-chosen direction 2026-07-28: a dedicated T3 ally policy, measured by win
@@ -34467,7 +34467,21 @@ decision to build a **dedicated T3 `BotAlly` policy** (leaving the WP-049
 `CompetentHeuristic` frozen as the balance-sim baseline) is locked by a **later WP**'s
 own D-entry when it drafts.
 
-**Status:** Drafted 2026-07-29; lands at WP-452 execution. (Renumbered from D-24263
-after a landed collision with the gauntlet cards-consumer.)
+**Execution note (2026-07-29).** WP-452 pinned a 2-player core Magneto /
+**Midtown Bank Robbery** board for the baseline, but on its first run the harness
+surfaced that `core/midtown-bank-robbery` (and `core/negative-zone-prison-breakout`)
+trip the `SCHEME_LOSS` counter at initial setup — `evaluateEndgame` returns
+`scheme-wins` on turn 0, so the game is lost before a single move and the baseline
+measures nothing. This is a separate scheme-setup issue (out of WP-452's engine
+allowlist), flagged for a follow-up. The pinned scheme was swapped
+(operator-approved) to `core/legacy-virus-the` — the repo's canonical known-valid
+SENTINEL scheme (the exact scheme `runtime-observed-hollows.mjs` sweeps), which plays
+real ~7-turn games. **Baseline recorded:** the WP-049 `CompetentHeuristic` policy
+scores **0.0% co-op win rate over 60 seeds** on 2-player core Magneto /
+legacy-virus-the (all 60 games `loss-scheme-completed`; the `random` policy is
+identically 0.0%). This is the yardstick the epic's later WPs drive up.
+
+**Status:** Landed 2026-07-29 (WP-452 / EC-487, commit `49ebbb60`). (Renumbered from
+D-24263 after a landed collision with the gauntlet cards-consumer.)
 
 Protect this file.
