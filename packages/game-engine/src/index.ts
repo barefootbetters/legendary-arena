@@ -468,6 +468,17 @@ export { getLegalMoves } from "./simulation/ai.legalMoves.js";
 export type { SimulationLifecycleContext } from "./simulation/ai.legalMoves.js";
 export { runSimulation } from "./simulation/simulation.runner.js";
 
+// Co-op win-rate + loss-cause harness (WP-452 / D-24272) — the bot-ally-strength
+// yardstick the Bot Ally Strengthening epic reports against.
+export { runCoopWinRate } from "./simulation/coopWinRate.js";
+export type {
+  CoopGameRecord,
+  CoopWinRateReport,
+  CoopHarnessConfig,
+} from "./simulation/coopWinRate.js";
+export { classifyCoopOutcome, COOP_OUTCOME_CATEGORIES } from "./simulation/coopOutcome.js";
+export type { CoopOutcomeCategory } from "./simulation/coopOutcome.js";
+
 // PAR simulation engine (WP-049 / D-4901+)
 export { createCompetentHeuristicPolicy } from "./simulation/ai.competent.js";
 export {

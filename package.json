@@ -56,6 +56,7 @@
     "roadmap:counts:test":  "node --import tsx --test scripts/roadmap-counts.test.ts",
 
     "sim:coverage":         "node scripts/hero-effect-coverage.mjs",
+    "sim:coop-winrate":     "node scripts/coop-winrate.mjs",
     "sim:runtime-observed": "node scripts/runtime-observed-hollows.mjs",
     "sim:runtime-observed:check": "node scripts/runtime-observed-hollows.mjs --check",
     "ledger:heroes":        "node scripts/hero-mechanic-ledger.mjs",

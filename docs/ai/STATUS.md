@@ -7,6 +7,47 @@
 
 ## Current State
 
+### WP-452 / EC-487 — Co-op Win-Rate + Loss-Cause Harness (Game Engine / simulation) (D-24272) (2026-07-29)
+
+**User-Visible Surface = `none — infrastructure`.** No user-observable change —
+infrastructure only. Payoff: the **Bot Ally Strengthening epic's win-rate yardstick** —
+"is the bot ally stronger?" is now a measured number, not a subjective read. First WP
+of that epic. Live-verify N/A (nothing to observe on a live surface).
+
+Additive-only over the shipped `runSimulation` / `evaluateEndgame` path — no gameplay
+change, `runSimulation`'s aggregate contract byte-unchanged.
+
+- **New (Game Engine):** `simulation/coopOutcome.ts` — `COOP_OUTCOME_CATEGORIES` (locked
+  5-member canonical array: `win`, `loss-scheme-completed`, `loss-villains-escaped`,
+  `loss-tie`, `inconclusive-turn-cap`) + `classifyCoopOutcome` (reads `ESCAPE_LIMIT` +
+  the `EndgameOutcome` union, no literals; first-tripped-condition invariant documented).
+  `simulation/coopWinRate.ts` — `runCoopWinRate(config, registry: CardRegistryReader)`
+  with a **fresh policy instance per seed** (position-independence), an **empty-seeds
+  zeroed-report guard** (never `NaN`), and `for...of` aggregation.
+- **Additive seam:** `simulation.runner.ts` gains `simulateOneCoopGame` (65/0 lines,
+  purely additive narrow projection); `index.ts` re-exports the harness. Engine imports
+  only the `CardRegistryReader` **type** — never the registry package (layer lock).
+- **Operator entrypoint:** `scripts/coop-winrate.mjs` + root `sim:coop-winrate` alias —
+  loads the real registry via `createRegistryFromLocalFiles`, runs a pinned 2p core
+  Magneto board over a fixed 60-seed list, **prints only** (no committed artifact / no CI
+  freshness gate, D-24272).
+- **Baseline recorded:** WP-049 `CompetentHeuristic` scores **0.0% co-op win rate over 60
+  seeds** on 2p core Magneto / `legacy-virus-the` (all 60 `loss-scheme-completed`; the
+  `random` policy is identically 0.0%). This is the number the epic's later WPs drive up.
+- **Execution amendment (operator-approved):** WP-452 pinned `core/midtown-bank-robbery`,
+  but the harness surfaced on its first run that that scheme (and
+  `core/negative-zone-prison-breakout`) trip `SCHEME_LOSS` at setup — `evaluateEndgame`
+  returns `scheme-wins` on **turn 0**, an auto-loss before any move, so the baseline
+  measured nothing. The pinned scheme was swapped to `core/legacy-virus-the` (the
+  canonical known-valid SENTINEL scheme; real ~7-turn games). The turn-0 auto-loss on the
+  two schemes is a separate scheme-setup issue (out of this WP's engine allowlist),
+  **flagged for a follow-up**.
+- **Verification:** `pnpm -r build` green; `pnpm --filter @legendary-arena/game-engine
+  test` green (**2103** tests, +16 new — classifier per-category + non-vacuous drift +
+  `ESCAPE_LIMIT-1` boundary; harness aggregation + determinism + position-independence +
+  empty-seeds guard). Scope: exactly the 8 allowlisted files; `runSimulation` unchanged;
+  no `Math.random`; no `boardgame.io` / registry-package import in scope (grep-confirmed).
+
 ### WP-449 / EC-484 — Profile Gauntlet Tracker UI + Play-this-leg Launch (arena-client + server launch-block) (D-24269) (2026-07-29)
 
 **User-Visible Surface = `play.legendary-arena.com/?route=me`** (the authenticated
