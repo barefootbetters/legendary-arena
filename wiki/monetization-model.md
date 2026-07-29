@@ -132,6 +132,40 @@ and sell the cosmetic, convenience, and recognition **depth** around it — anim
 frames, richer stat tooling, supporter flair, export tools, the Forge digital
 bridge. That is precisely the split the four streams already encode.
 
+## Where the model sits among free-core precedents
+
+Three well-known projects give away their core and fund it three different ways.
+The comparison clarifies which parts of each precedent Legendary Arena borrows —
+and which it must not.
+
+| Precedent | Free core | Who pays | For what |
+|-----------|-----------|----------|----------|
+| **Fortnite** | The game | Players | Cosmetics, seasonal passes, recognition — optional, engagement-driven, deterministic, zero pay-to-win |
+| **Linux** | The kernel | Corporations that depend on it | A neutral maintainer / shared infrastructure (the Linux Foundation pays the steward; no license royalties) |
+| **GNU / FSF** | The software and the four freedoms | Donors and members | The mission itself (nonprofit patronage) |
+
+Legendary Arena is a deliberate blend of the first two:
+
+- **From Fortnite — the consumer engine.** Free-to-play plus cosmetic,
+  convenience, and recognition revenue is the proven at-scale model, and it is
+  exactly the four streams above. Fortnite also supplies the cautionary half:
+  after its 2023 FTC settlement over randomized "loot-llama" purchases, the
+  industry lesson is disclosed, deterministic purchases — which is why Guardrail
+  #5 bans randomness outright.
+- **From Linux — the shared-infrastructure piece.** Enterprise and
+  organized-play licensing is the Linux-Foundation logic in miniature: the
+  organizers, schools, and creators who depend on a healthy ecosystem help fund
+  the platform that keeps it healthy. Platform→organizer billing only, never a
+  path to bill players (see [`docs/TOURNAMENT-FUNDING.md`](../docs/TOURNAMENT-FUNDING.md)).
+- **Not from the FSF — pure patronage.** The donation-funded model sustains a
+  nonprofit mission; it does not cover Marvel / Upper Deck royalties, payroll, and
+  ongoing development. Recognition tiers (Guardrail #3) borrow patronage as a
+  *supplement*, never as the primary engine.
+
+The takeaway: instrument and iterate the fairness-safe product streams (Fortnite's
+lesson), lean on ecosystem-funded facilitation where it fits (Linux's lesson), and
+keep patronage a garnish, not the meal (the FSF's limit).
+
 ## Profile-page application
 
 The profile is a marketing and virality asset (see [Profile Login](profile-login.md)),
@@ -213,6 +247,36 @@ Rollout sequencing and priorities live in the marketing repo
 (`docs/product/digital-goods-store-rollout.md`), not here — this page records
 that the surfaces exist and which streams they belong to.
 
+## Seasonal engagement: the Legendary Pass (Stream #1 execution)
+
+The Legendary Supporter Subscriptions stream is being sharpened into a **seasonal,
+dual-track "Legendary Pass"** — a free track open to every logged-in player and a
+premium track — where rewards are unlocked by *play* (arena progression earned
+from completed games, personal-best PAR, verified replays, and rotating
+challenges), never by spending. This applies the Fortnite existence proof directly:
+it re-sells the same player base each season while rewarding the players who
+actually show up.
+
+Fairness properties that keep it inside every Non-Goal:
+
+- Paid players never progress faster — progression currency is earned by play
+  only; no purchasable progression boosters.
+- Every reward is cosmetic, convenience, or recognition — zero impact on rules,
+  scoring, PAR, matchmaking, leaderboard eligibility, or standing.
+- The free track is always present and meaningful; basic identity and public
+  leaderboard participation stay free (Guardrail #1, #2).
+- Deterministic and fully previewable before claim or purchase — no randomness
+  (Guardrail #5). Season titles and flair read unambiguously as patronage
+  (Guardrail #3). Optional paid level-skips, where offered, are transparent,
+  linearly priced, and confer only the same cosmetics a player could earn by play.
+
+This is an **execution of Stream #1, not a new stream.** The detailed mechanics —
+the progression schedule, per-season reward tables, pricing, and level-skip terms
+— are a product spec tracked in the marketing-repo product docs and blessed via
+the decision log, exactly like the profile boundary and the digital-goods store.
+This page records only that the execution exists and which stream it belongs to;
+it does not define the mechanics or set the price.
+
 ## Guardrails (from VISION Non-Goals)
 
 1. **No paid competitive signal.** Nothing paid may confer — or *appear* to
@@ -226,6 +290,9 @@ that the surfaces exist and which streams they belong to.
 5. **No randomness.** Every purchase is deterministic, fully disclosed, and
    purchase-known — no loot boxes, gacha, or randomized/mystery goods (mirrors
    VISION's "deterministic, fully disclosed" cosmetics language).
+6. **No ads or data monetization.** In-gameplay advertising, sponsor surfaces,
+   and selling or brokering player data are out (VISION NG‑5) — they would clash
+   with the trust/tribe positioning the free core is built to earn.
 
 ## References
 
