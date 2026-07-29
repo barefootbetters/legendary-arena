@@ -57,6 +57,7 @@ import {
 import type {
   AccountId,
   DatabaseClient,
+  GauntletRunLaunch,
   GauntletRunLegProgress,
   GauntletRunProgressInputs,
   GauntletRunProgressResolver,
@@ -199,6 +200,40 @@ function groupRowsByReplay(
     });
   }
   return replaysByHash;
+}
+
+/**
+ * Assemble the additive per-run `launch` block from the injected inputs
+ * (WP-449 / D-24269). Returns the full `GauntletRunLaunch` when the approved
+ * menu is configured for the run's `(division, playerCount)`
+ * (`inputs.launchComposition !== null`), or `null` otherwise. Pure — no DB, no
+ * I/O — so both branches are unit-testable.
+ *
+ * @param inputs the injected per-run derivation inputs (carries
+ *   `launchComposition`, `launchSupply`, and the set-qualified `mastermindId`).
+ * @returns the launch block, or `null` when the approved menu is unconfigured.
+ */
+function deriveGauntletRunLaunch(
+  inputs: GauntletRunProgressInputs,
+): GauntletRunLaunch | null {
+  // why: an unconfigured approved menu yields `launch === null`, NOT an empty
+  // composition — a run with no resolvable variant-0 adversary must disable its
+  // "Play this leg" buttons (the client gates on `launch !== null`) rather than
+  // launch a match with empty villain / henchman piles. The four supply counts
+  // are always present (fixed constants) but are meaningless without a
+  // composition, so the whole block collapses to null together.
+  if (inputs.launchComposition === null) {
+    return null;
+  }
+  return {
+    mastermindId: inputs.mastermindId,
+    villainGroupIds: inputs.launchComposition.villainGroupIds,
+    henchmanGroupIds: inputs.launchComposition.henchmanGroupIds,
+    bystandersCount: inputs.launchSupply.bystandersCount,
+    woundsCount: inputs.launchSupply.woundsCount,
+    officersCount: inputs.launchSupply.officersCount,
+    sidekicksCount: inputs.launchSupply.sidekicksCount,
+  };
 }
 
 /**
@@ -373,6 +408,7 @@ export function deriveGauntletRunProgress(
     budget,
     isChampion,
     legs,
+    launch: deriveGauntletRunLaunch(inputs),
   };
 }
 

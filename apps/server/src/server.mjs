@@ -81,6 +81,25 @@ import { getVersionInfo } from './version.mjs';
 const require = createRequire(import.meta.url);
 const { Server } = require('boardgame.io/server');
 
+// why: WP-449 / D-24269 — the ONE canonical launch supply table for
+// "Play this leg." These are available supply-STACK counts used to build a
+// valid MatchSetupConfig at launch (they map to bystandersCount / woundsCount /
+// officersCount / sidekicksCount); they are NOT cards inserted into the villain
+// deck and carry NO scoring / progression semantics. v1 = the original / common
+// Legendary edition counts (30 bystanders), deliberately NOT 2nd Edition's 42 —
+// do not silently switch editions. Because the D-24187 leg-clear predicate
+// matches only villain-segment + henchman-key + scheme + mastermind, these
+// counts CANNOT affect whether a leg clears or a run reaches champion (WP-442 /
+// WP-446 derivation); changing this table later is a v1 launch-default change
+// only. Defined ONCE here in the server wiring layer — never in a client file,
+// never in the registry — and injected into every run's launch block below.
+const GAUNTLET_LEG_STANDARD_SUPPLY = {
+  bystanders: 30,
+  wounds: 30,
+  officers: 30,
+  sidekicks: 15,
+};
+
 /**
  * Registers the /health endpoint on the boardgame.io koa router.
  * Returns { status: 'ok' } for Render health checks and pnpm check.
@@ -1007,12 +1026,39 @@ export async function startServer() {
       if (poolBudget === undefined || setupRow === undefined) {
         return null;
       }
+      // why: WP-449 / D-24269 — resolve the additive launch-block inputs here in
+      // the wiring layer so the logic layer stays registry-free. The launch
+      // composition is approved VARIANT 0 (approvedLoadouts[playerCount][0], the
+      // D-24199 baseline) — "Play this leg" deterministically launches variant 0
+      // with no picker. When the approved menu is unconfigured for this player
+      // count, variantZero is undefined and launchComposition is null, which the
+      // derivation collapses to launch === null (buttons disabled). The supply
+      // counts are the fixed GAUNTLET_LEG_STANDARD_SUPPLY table (launch-only, do
+      // not gate leg-clear, D-24187); mastermindId is the set-qualified ext_id
+      // (D-10014).
+      const approvedForCount = definition.approvedLoadouts?.[run.playerCount];
+      const variantZero = approvedForCount?.[0];
+      const launchComposition =
+        variantZero === undefined
+          ? null
+          : {
+              villainGroupIds: variantZero.villainGroupIds,
+              henchmanGroupIds: variantZero.henchmanGroupIds,
+            };
       return {
         legs: definition.legs,
         approvedLoadouts: definition.approvedLoadouts,
         poolBudget,
         heroCount: setupRow.heroCount,
         boardName: buildGauntletBoardName(definition),
+        launchComposition,
+        launchSupply: {
+          bystandersCount: GAUNTLET_LEG_STANDARD_SUPPLY.bystanders,
+          woundsCount: GAUNTLET_LEG_STANDARD_SUPPLY.wounds,
+          officersCount: GAUNTLET_LEG_STANDARD_SUPPLY.officers,
+          sidekicksCount: GAUNTLET_LEG_STANDARD_SUPPLY.sidekicks,
+        },
+        mastermindId: `${definition.setAbbr}/${definition.mastermindSlug}`,
       };
     }
     return null;

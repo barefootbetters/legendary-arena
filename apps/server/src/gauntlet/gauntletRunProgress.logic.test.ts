@@ -149,6 +149,20 @@ function fixtureInputs(
     poolBudget: 5,
     heroCount: 3,
     boardName: `gauntlet-${TEST_SET}-${TEST_MASTERMIND}`,
+    // why: WP-449 — the additive launch-block inputs. The default fixture is
+    // launch-configured (a variant-0 composition present) so the populated-launch
+    // assertions have a block to read; the null case overrides launchComposition.
+    launchComposition: {
+      villainGroupIds: [`${TEST_SET}/skrull`, `${TEST_SET}/hydra`],
+      henchmanGroupIds: [`${TEST_SET}/doombot`],
+    },
+    launchSupply: {
+      bystandersCount: 30,
+      woundsCount: 30,
+      officersCount: 30,
+      sidekicksCount: 15,
+    },
+    mastermindId: `${TEST_SET}/${TEST_MASTERMIND}`,
     ...overrides,
   };
 }
@@ -417,6 +431,38 @@ describe('deriveGauntletRunProgress (pure, synthetic rows)', () => {
     // champion (the distinct-states invariant, D-24265 §2).
     assert.equal(view.isChampion, false);
     assert.equal(view.status, 'all-legs-cleared');
+  });
+
+  test('launch block — populated from the injected variant-0 composition + canonical supply counts (WP-449)', () => {
+    const view = deriveGauntletRunProgress(
+      fixtureRun({}),
+      fixtureInputs(),
+      [],
+      deps.checkParPublished,
+    );
+    assert.ok(view.launch !== null, 'a configured menu yields a launch block');
+    assert.deepEqual(view.launch, {
+      mastermindId: `${TEST_SET}/${TEST_MASTERMIND}`,
+      villainGroupIds: [`${TEST_SET}/skrull`, `${TEST_SET}/hydra`],
+      henchmanGroupIds: [`${TEST_SET}/doombot`],
+      bystandersCount: 30,
+      woundsCount: 30,
+      officersCount: 30,
+      sidekicksCount: 15,
+    });
+  });
+
+  test('launch block — null when the approved menu is unconfigured for the run (WP-449)', () => {
+    const view = deriveGauntletRunProgress(
+      fixtureRun({}),
+      // why: an unconfigured approved menu (no variant-0 composition) must yield
+      // launch === null, NOT an empty composition — the client gates "Play this
+      // leg" on launch !== null, so a null block disables the launch buttons.
+      fixtureInputs({ launchComposition: null }),
+      [],
+      deps.checkParPublished,
+    );
+    assert.equal(view.launch, null);
   });
 
   test('an unpublished scenario never clears a leg (fail-closed via checkParPublished)', () => {
