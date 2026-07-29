@@ -34328,20 +34328,21 @@ tests confirm the marked line records no hollow event (applied, not
 hero-return is unchanged; hash oracles unchanged (confirmed by the green suite — no
 pinned fixture fights the 3 villains — not assumed from the no-op handler).
 
-### D-24271 — `G.diagnostics` is a runtime-only observation channel, excluded from the state hash (phased: `hashGameState` now, `computeStateHash` deferred) (Drafted 2026-07-29 — WP-451; not yet landed)
+### D-24271 — `G.diagnostics` is a runtime-only observation channel, excluded from the state hash (phased: `hashGameState` now, `computeStateHash` deferred) (Active (post-execution) 2026-07-29 — WP-451)
 
-> **Status: Drafted at SPEC time; flips to Active (post-execution) when WP-451
-> executes.** Reserved in `NUMBER-LEDGER.md` under the same branch.
+> **Status: Active (post-execution) 2026-07-29 — `hashGameState`-only landed.** WP-451
+> executed the fixture-golden `hashGameState` exclusion (game-engine 2087/0, server
+> 1008/0, NO fixture re-pin — the sentinel + PRE_WP080_HASH are byte-identical). The
+> `computeStateHash` (competitive-oracle) exclusion — the principled end-state below —
+> remains **deferred to its own future WP + a dedicated low-competitive-activity
+> deploy**.
 >
-> **🔒 SCOPE LOCKED (operator, 2026-07-29): `hashGameState`-only.** WP-451 executes the
-> fixture-golden `hashGameState` exclusion only (zero competitive risk, fixes the
-> recurring fixture churn). The `computeStateHash` (competitive-oracle) exclusion — the
-> principled end-state below — is **deferred to its own future WP + a dedicated
-> low-competitive-activity deploy**. Under the locked scope the competitive `replayHash`
-> is UNCHANGED and there is no competitive transition-window exposure; the
-> `buildInitialGameState` absent-on-fresh literal remains required (now justified by
-> `computeStateHash`, which still hashes `diagnostics`). The full "excluded from ALL
-> state-hash surfaces" invariant is the end-state the deferred follow-on completes.
+> **🔒 SCOPE LOCKED (operator, 2026-07-29): `hashGameState`-only.** Under the locked
+> scope the competitive `replayHash` is UNCHANGED and there is no competitive
+> transition-window exposure; the `buildInitialGameState` absent-on-fresh literal
+> remains required (now justified by `computeStateHash`, which still hashes
+> `diagnostics`). The full "excluded from ALL state-hash surfaces" invariant is the
+> end-state the deferred follow-on completes.
 
 **Context.** Drafting WP-447 (scry-KO) and WP-450 (gain-attached-hero) each surfaced
 the same subtlety: `G.diagnostics` — the WP-257 hollow-effect observation channel,
