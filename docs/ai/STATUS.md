@@ -7,6 +7,40 @@
 
 ## Current State
 
+### WP-448 / EC-483 — Composition→Match Launch Primitive (arena-client) (D-24268) (2026-07-28)
+
+**User-Visible Surface = `none — infrastructure`.** **No user-observable change —
+infrastructure only** (D-24026 inverted; no live-surface verification required).
+Eighth WP of the **Mastermind Gauntlets: download → import → build → track** epic —
+the reusable launch primitive the future WP-7 gauntlet-leg launch (and a future
+WP-303 "Load into lobby / play a saved loadout") will call.
+
+Behavior-preserving arena-client refactor: the byte-identical `createMatch(config,
+playerCount, authToken)` → `persistMatchSetup(matchID, config)` → `joinMatch(matchID,
+'0', playerName, authToken)` → navigate `?match=<id>&player=0&credentials=<c>` chain
+that lived inline in both `LobbyView.vue`'s `submitFromJson` (loadout-JSON path) **and**
+`submitCreate` (manual-form path) is extracted into a **new** `src/lobby/
+useCreateMatchFromComposition.ts` exporting a **never-throw** `async
+launchMatchFromComposition({ config, playerCount, playerName, authToken })` returning
+`{ ok: true, matchID } | { ok: false, message }` (failure message byte-identical to
+`Failed to create and join the match. ${cause}`). `LobbyView` consumes it as the
+**single source**; `submitCreate` keeps `buildConfig()` + `parsePositiveInteger` inside
+its own try (throw→catch parity). `createWithBotAlly` / `joinExisting` / `startAutoplay`
+are untouched.
+
+- **Layer-clean:** the module imports only `./lobbyApi` (`createMatch`/`joinMatch`),
+  `../diagnostics/matchSetupSession` (`persistMatchSetup`), and `type MatchSetupConfig`
+  (type-only) — no new npm dep, no runtime `registry`/`server`/`pg` import,
+  `MatchSetupConfig` passed through unrenamed.
+- **New** `useCreateMatchFromComposition.{ts,test.ts}` (stubbed-`fetch` isolation:
+  success create → join seat 0 → nav → `{ ok: true }`; create-fails → `{ ok: false }`
+  with the locked message and **no** join issued) + modified `LobbyView.vue`.
+- **Verification:** `pnpm --filter @legendary-arena/arena-client typecheck` (vue-tsc)
+  green; `pnpm --filter @legendary-arena/arena-client test` green (**1113** tests, +2
+  new). The existing `LobbyView.test.ts` / `lobbyApi.test.ts` pass **UNCHANGED** (the
+  `git diff origin/main` of both is empty — the behavior-preservation gate); `pnpm -r
+  build` green.
+
 ### WP-446 / EC-481 — Gauntlet Run Derived Progression Read (Server) (D-24265) (2026-07-28)
 
 **User-Visible Surface = `none — infrastructure`.** **No user-observable change —

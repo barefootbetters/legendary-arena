@@ -34041,10 +34041,10 @@ rule, not a new one.
 
 Protect this file.
 
-### D-24268 — The arena-client composition→match launch is a single reusable primitive (`launchMatchFromComposition`); it narrows the deferred WP-303 "Load into lobby / play a saved loadout" placeholder (Drafted 2026-07-28 — WP-448; not yet landed)
+### D-24268 — The arena-client composition→match launch is a single reusable primitive (`launchMatchFromComposition`); it narrows the deferred WP-303 "Load into lobby / play a saved loadout" placeholder (Active (post-execution) 2026-07-28 — WP-448)
 
-> **Status: Drafted at SPEC time; flips to Active (post-execution) when WP-448
-> executes.** Reserved in `NUMBER-LEDGER.md` under the same branch.
+> **Status: Active (post-execution) 2026-07-28.** Landed by WP-448 / EC-483.
+> Reserved in `NUMBER-LEDGER.md` under the same branch.
 
 **Context.** `apps/arena-client/src/lobby/LobbyView.vue` carried **two
 byte-identical inline copies** of the create-and-join-from-a-composition launch
