@@ -28,7 +28,7 @@ source:
   - ../packages/game-engine/src/endgame/endgame.types.ts
   - ../docs/ai/ARCHITECTURE.md
   - ../docs/01-VISION.md
-last-reviewed: 2026-07-22
+last-reviewed: 2026-07-29
 ---
 
 # Dopamine Trigger Framework
@@ -221,7 +221,8 @@ the tension built by loss-aversion, discharged.
 #### 5. Peak-end — the finale carries the memory
 
 Players remember a session by its **emotional peak** and its **ending**
-(the peak-end rule), far more than its average. The three endgame outcomes
+(the peak-end rule; Kahneman & Fredrickson 1993, Redelmeier & Kahneman 1996),
+far more than its average. The three endgame outcomes
 (`heroes-win` / `scheme-wins` / `tie`) are the disproportionately-weighted
 end beat — which is exactly why the [visual finale](visual-effects.md#endgame)
 and the [endgame stinger](sound-effects.md) get
@@ -297,7 +298,9 @@ is exactly why the [Dopamine Contract](#dopamine-contract) and the
 [Vision](vision.md) bright lines ([Monetization Model](monetization-model.md))
 are hard boundaries here: never gate core progress behind pay-driven VR, and
 never build an extinction-resistant "just one more" loop that exploits loss
-aversion. The healthiest variable ratio in Legendary Arena is the kind the
+aversion ([Monetization Model](monetization-model.md) Guardrails #1 and #5, and
+the [Vision](vision.md) Non-Goals). The healthiest variable ratio in Legendary
+Arena is the kind the
 player *earns* through [Rank 0–2 decisions](gameplay-strategy.md) —
 construction, play order, and Mastermind timing — which supports flow and
 mastery, not compulsion.
@@ -570,6 +573,19 @@ Concretely, it becomes: an effect-priority table, a per-tier build-up
 timing, and a "one crescendo per resolved move" sequencing rule shared by
 both layers.
 
+### Meta / Pass moments are out of scope
+
+Post-match celebrations — XP gains, Legendary Pass level-ups, reward claims, and
+season-end recognition — are **not** governed by this spine contract. They are
+meta-surface moments owned by the Legendary Pass product spec (see
+[Monetization Model](monetization-model.md) → Seasonal engagement), held to the
+same Non-Goals (no spend pressure, no compulsion, deterministic, skill-attributed
+where applicable) but paced separately. This framework covers only the in-match
+spine events the [Visual Effects](visual-effects.md) and
+[Sound Effects](sound-effects.md) layers already react to. Rule of thumb: a Pass
+claim must never borrow the sensory-intensity language reserved for a Mastermind
+defeat or the endgame finale.
+
 ## Interactions
 
 - **[Design System Overview](design-system-overview.md).** The parent hub;
@@ -612,6 +628,13 @@ both layers.
   the early/routine game being under-stated. Over-juicing the whole match
   flattens the very peaks this framework exists to create — this is a
   content-tuning constraint, not just a code one.
+- **Peak-end is strongest for a bounded match.** The rule holds most cleanly for
+  a single, discrete match with a clear start and end; across many sessions,
+  remembered satisfaction is also carried by narrative meaning
+  ([Narrative Psychology](narrative-psychology.md)) and skill attribution, not
+  the finale alone. Season-end and Pass milestones act as *secondary* ends — the
+  same restraint applies, though their pacing belongs to the Pass spec, not this
+  contract.
 - **Determinism and boundaries are untouched.** Like every feel-layer
   framework, this is pure client-side reaction: it never reads into or
   writes `G`/`ctx`, never affects validation, never branches engine logic.
@@ -665,7 +688,10 @@ Open choices the visual/audio WPs must resolve (not recommendations):
   [priority tiers](#priority-tiers) into a full ranking. The
   [visual–audio pairing](#visual-audio-pairing) table is the first draft (a
   per-event intensity band); the open work is turning the qualitative bands
-  into the exact numeric weights a WP consumes.
+  into the exact numeric weights a WP consumes. This table covers **spine events
+  only** — meta / Legendary Pass moments are out of its scope (their pacing
+  belongs to the Pass product spec, per *Meta / Pass moments are out of scope*
+  above).
 - **Build-up timing per tier** — how long the anticipation micro-beat is
   before a combo / reveal payoff. Needs playtesting: too long feels laggy,
   too short kills the crescendo.
