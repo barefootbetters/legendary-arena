@@ -199,7 +199,7 @@ invented.
 > download a gauntlet on `legends.legendary-arena.com`, import it into your
 > play profile, assemble heroes per leg, and track progress toward the
 > championship — is documented under
-> [Gauntlet runs](#gauntlet-runs--download--import--build--track-wp-440449)
+> [Gauntlet runs](#gauntlet-runs--download--import--build--track-wp-440446-448-449)
 > below.
 
 The gauntlet collapses the mastermind × scheme board explosion into one
@@ -605,7 +605,7 @@ So the profile → leaderboard integration is currently **latent**: the shared
 use, but no such panel is built, and by design it will key on the internal
 player ID, not the public handle.
 
-## Gauntlet runs — download → import → build → track (WP-440..449)
+## Gauntlet runs — download → import → build → track (WP-440..446, 448, 449)
 
 > This documents the **shipped** personal gauntlet-run loop — the
 > download → import → build → track → champion arc that sits *beside* the
