@@ -7,6 +7,55 @@
 
 ## Current State
 
+### WP-449 / EC-484 — Profile Gauntlet Tracker UI + Play-this-leg Launch (arena-client + server launch-block) (D-24269) (2026-07-29)
+
+**User-Visible Surface = `play.legendary-arena.com/?route=me`** (the authenticated
+owner profile — a new **Gauntlet Runs** section). **D-24026 live-verify
+operator-pending on deploy** — does NOT block merge (import a `core/magneto` pack →
+tracker renders → full hero pick → status advances → Play this leg launches →
+gameover auto-submits → reload → cleared chip + headroom update; all-legs-cleared
+visibly distinct from champion). **Final WP of the Mastermind Gauntlets: download →
+import → build → track** epic.
+
+Cross-layer (App + Server, folded per operator, D-24269). The client adds a Gauntlet
+Runs section to `MyProfilePage.vue` + a new never-throw `lib/api/gauntletRunApi.ts`
+(typed Bearer wrappers for the four WP-445 `/api/me/gauntlet-runs` calls, mirroring
+`loadoutLibraryApi.ts`): **import** (file picker + paste-JSON, `JSON.parse`-guarded →
+`POST`, actionable `invalid_pack`/`unknown_gauntlet` copy); the WP-446
+`GauntletRunProgressView` **active tracker** — the 5-state `status` with
+**`all-legs-cleared` (amber) vs `champion` (green) visibly distinct** badges + copy
+(the all-legs-cleared block names the pool/budget gap as strategy, never an error),
+`pool` + `budgetHeadroom`, per-leg rows (`schemeName`, cleared chip, `hasFullPicks`,
+`lastPlayedAt`), the derived **"where you left off"** leg highlighted; **per-leg picks**
+`PATCH` + **"Play this leg"** (enabled only when `hasFullPicks && launch !== null`)
+assembling a nine-field `MatchSetupConfig` (set-qualified `schemeId`/`mastermindId`,
+heroes from `legPicks`, adversary + supply counts from the server `launch` block) →
+WP-448 `launchMatchFromComposition`; **completed history** + delete/reset. Renders the
+server's derived view verbatim (D-24262 — never recomputes status/champion/pool);
+only last-played highlight + play-enablement are presentation-local.
+
+- **Server (additive):** `GauntletRunProgressView` gains `launch: GauntletRunLaunch |
+  null` (approved variant-0 villains/henchmen + the four supply counts + set-qualified
+  `mastermindId`); `null` when the approved menu is unconfigured for the run's
+  `(division, playerCount)`. `gauntletRunProgress.logic.ts` derives it; `server.mjs`
+  injects the variant-0 composition + the ONE named canonical
+  `GAUNTLET_LEG_STANDARD_SUPPLY` table (`{ bystanders: 30, wounds: 30, officers: 30,
+  sidekicks: 15 }`, v1 original edition — not 2E's 42). Supply-STACK counts only:
+  launch-only, do NOT gate leg-clear (D-24187), so they can never affect WP-442/446
+  clear/champion derivation; any separate per-player-count villain-deck table is left
+  untouched. No new endpoint, no migration, no client registry import — the single
+  server change is the additive `launch` serialization on the existing `GET`.
+- **Layer-clean:** the client adds no runtime `@legendary-arena/registry` / `apps/server`
+  / `pg` import (grep zero); `MatchSetupConfig` type-only via the WP-448 primitive,
+  passed through unrenamed.
+- **`api-endpoints.md`** GET `/api/me/gauntlet-runs` row replaced wholesale (D-11804 §21,
+  `Authorizing WP = WP-446 + WP-449`).
+- **Verification:** `pnpm -r build` green; `pnpm -r --no-bail test` green (arena-client
+  **1127** tests, +14 new gauntletRunApi; server progress-logic suite **22** incl. the
+  4 DB-gated cases run for real against local Postgres + the 2 new launch-block cases);
+  `pnpm --filter @legendary-arena/arena-client typecheck` (vue-tsc) green. Existing
+  MyProfilePage sections behavior-preserved.
+
 ### WP-448 / EC-483 — Composition→Match Launch Primitive (arena-client) (D-24268) (2026-07-28)
 
 **User-Visible Surface = `none — infrastructure`.** **No user-observable change —
