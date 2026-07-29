@@ -23,7 +23,9 @@ source:
   - ../packages/lagn-spec/src/migrate.ts
   - ../packages/registry/src/heroImageUrl.ts
   - ../apps/arena-client/src/components/play/CardTile.vue
-last-reviewed: 2026-07-21
+  - ../packages/registry/src/gauntletPack.ts
+  - ../docs/ai/work-packets/WP-440-gauntlet-pack-contract.md
+last-reviewed: 2026-07-29
 ---
 
 # LAGN Specification
@@ -525,6 +527,43 @@ re-export. The three-packet arc (D-24153 / D-24154 / D-24155) — **WP-361
 
 This reuses the same LAGN Tier-1 setup block documented above end-to-end: the
 server emits it, the client relays it, the viewer ingests it.
+
+## Gauntlet packs are not LAGN
+
+A **Mastermind Gauntlet pack** (`.gauntlet.json`, WP-440 / D-24260) is a
+*separate* format and must not be confused with a LAGN document. It is a tiny
+four-field **identity token** — a version stamp plus the gauntlet's identity:
+
+```
+{ "pack_version": 1,
+  "gauntlet": { "setAbbr": "core", "mastermindSlug": "magneto",
+                "division": "fixed", "playerCount": 1 } }
+```
+
+That is the whole schema. A gauntlet pack carries **no** legs, hero picks, or
+adversary compositions — it names *which* Mastermind Gauntlet a player wants,
+and any registry-backed surface (the play server, or the Registry Viewer)
+**re-resolves** that gauntlet's legs and approved compositions from the live
+registry at import time. Contrast a LAGN document, which *carries* a full
+one-match composition inline.
+
+The boundary is deliberate:
+
+- **LAGN stays strictly one-match.** A multi-leg / campaign container was
+  explicitly rejected — the gauntlet's multi-leg identity lives in the pack
+  token and is expanded from the registry, never serialized into a LAGN.
+- **Different schema, different home.** The pack schema and its
+  `buildGauntletPack` / `validateGauntletPack` helpers live in
+  [`packages/registry/src/gauntletPack.ts`](../packages/registry/src/gauntletPack.ts),
+  **not** `packages/lagn-spec`. It imports `zod` and Node built-ins only; it is
+  not part of the published `@legendary-arena/lagn` package.
+- **Different file extension.** Downloaded packs are `.gauntlet.json`
+  (`gauntlet-<set>-<mastermind>-<division>-p<N>.gauntlet.json`); LAGN files are
+  `.lagn.json`. The two are not interchangeable — a `.gauntlet.json` will not
+  validate as a LAGN document, and a LAGN file is not a gauntlet pack.
+
+For the full download → import → build → track loop the pack drives, see the
+[Leaderboard](leaderboard.md) page.
 
 ## Card Images: Embed, Side-Cart, or Prefetch? (Design Discussion)
 

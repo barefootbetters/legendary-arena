@@ -24,8 +24,10 @@ source:
   - ../packages/game-engine/src/test/fixtures/runFixture.ts
   - ../packages/game-engine/src/test/fixtures/fixtureSchema.ts
   - ../packages/game-engine/src/test/fixtures/replayFixtures.test.ts
+  - ../packages/game-engine/src/test/fixtures/hashGameState.ts
+  - ../docs/ai/work-packets/WP-451-exclude-diagnostics-from-state-hash.md
   - ../scripts/record-game-fixture.mjs
-last-reviewed: 2026-05-18
+last-reviewed: 2026-07-29
 ---
 
 # Complete-Game Fixtures
@@ -108,7 +110,7 @@ The full schema, with field semantics inline:
     ]
   },
   "expected": {
-    "finalStateHash":  "<64-char lowercase hex sha256 of canonical-JSON-serialized G>",
+    "finalStateHash":  "<64-char lowercase hex sha256 of canonical-JSON G, minus the runtime-only observation channels — see below>",
     "messages":        [ /* G.messages verbatim */ ],
     "snapshotPerTurn": [ /* createSnapshot() output, one per completed turn */ ],
     "outcome":         { "winner": "heroes-win", "counters": { /* G.counters */ } }
@@ -217,6 +219,26 @@ failing layer so the diff lands at the right grain.
 A passing fixture passes all three layers. A failing fixture is
 reported at the **first** layer that mismatches — fixing that
 layer often resolves the others automatically.
+
+> **What the hash covers — G minus the observation channels (WP-451 / D-24271).**
+> `hashGameState` does not hash `G` whole. It serializes `G` **minus** the
+> runtime-only observation channels — `messages` (D-24081), `logMeta`
+> (D-24114), `lastPlayEffectsFired` (D-24221), and `diagnostics`
+> (WP-451 / D-24271) — before taking the sha256. Each of those is
+> observability the placement oracle does not guard (`messages` has its own
+> oracle layer; the others feed the log-numbering counter, the client combo
+> cue, and the WP-257 hollow-effect channel), so hashing them would
+> double-count or churn the golden on every log line, play, or breadcrumb.
+> The consequence for authors: an **observability-only** change — a
+> `diagnostics` write, a villain marker, or the D-24266 hollow-effect
+> breadcrumb firing on an unimplemented effect — no longer shifts
+> `finalStateHash`, so it never forces a fixture re-record. `notableEvents`
+> is deliberately **not** excluded: it has no dedicated oracle layer, so the
+> hash is its only guard. **Scope lock (D-24271):** WP-451 excludes
+> `diagnostics` from `hashGameState` — the fixture oracle — **only**. The
+> parallel `computeStateHash` (the production competitive / replay hash in
+> `replay.hash.ts`) still includes `diagnostics`; its exclusion is a
+> deferred follow-on WP.
 
 ### Failure classification (debug vs re-record)
 
@@ -608,8 +630,11 @@ Catch them at PR review:
 - **Setting `meta.version != 1`.** v2 is not defined yet; see
   §Schema versioning and migration.
 - **Hand-crafting `finalStateHash` values.** The hash is a
-  canonical-JSON sha256 of `G`. You cannot compute it by hand
-  reliably. Let the recorder generate it.
+  canonical-JSON sha256 of `G` **minus** the runtime-only
+  observation channels (`messages`, `logMeta`,
+  `lastPlayEffectsFired`, `diagnostics` — see §The three oracle
+  layers). You cannot compute it by hand reliably. Let the
+  recorder generate it.
 - **Wrapping `validateFixture` in `try/catch` inside the
   driver.** The driver MUST surface validator throws via
   `assert.fail`; silently swallowing them lets malformed
