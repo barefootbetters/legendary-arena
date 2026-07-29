@@ -12,9 +12,10 @@
 
 After this session, a signed-in player at `play.legendary-arena.com/?route=me`
 has a **Gauntlet Runs** section on `MyProfilePage.vue` that: (1) **imports** a
-downloaded Mastermind Gauntlet pack (file picker + drag-drop + paste-JSON,
-mirroring the existing Saved-Loadouts paste box) via `POST
-/api/me/gauntlet-runs`; (2) renders the **active-run tracker** from the WP-446
+downloaded Mastermind Gauntlet pack (file picker + paste-JSON **required**;
+drag-drop is **optional polish**, mirroring the existing Saved-Loadouts paste
+box) via `POST /api/me/gauntlet-runs`; (2) renders the **active-run tracker**
+from the WP-446
 `GauntletRunProgressView` — the 5-state `status` shown so **`all-legs-cleared`
 and `champion` read as visibly distinct states**, the emerging hero **pool** +
 **budget headroom**, per-leg rows (scheme name, cleared chip, `hasFullPicks`,
@@ -141,25 +142,32 @@ the four supply counts (`bystandersCount`, `woundsCount`, `officersCount`,
 `sidekicksCount`) have **no registry source at all** (`PLAYER_COUNT_SETUP` carries
 only `heroCount` / group counts; the lobby reads supply counts out of a LAGN
 document, which a gauntlet run has none of). **A server touch is therefore
-unavoidable** for any working "Play this leg." **Chosen resolution:** extend the
+unavoidable** for any working "Play this leg." **Chosen resolution (operator-confirmed):** extend the
 WP-446 derived `GauntletRunProgressView` with a per-run `launch` block the server
-resolves from data it already holds (the approved variant-0 composition +
-canonical supply counts); the client assembles the `MatchSetupConfig` from that
-block + its three derivable fields. Alternatives and the supply-count sub-fork are
-enumerated in `## Contract`; the split-vs-fold sizing fork is below.
+resolves from data it already holds (the approved variant-0 composition + the
+named canonical launch supply table `GAUNTLET_LEG_STANDARD_SUPPLY`, see
+`## Contract`); the client assembles the `MatchSetupConfig` from that block + its
+three derivable fields. This fold — client **and** server touched in one WP for
+the minimum launch block "Play this leg" needs — is **the confirmed
+architecture**, not a live fork (the client cannot import the registry, so the
+launch composition must arrive over the existing HTTP read). Alternatives (split /
+new-endpoint) are recorded in `## Contract` as considered-and-rejected.
 
-**Split-vs-single (cross-layer, flagged for operator review):** this WP is
-**cross-layer (App + Server)** and sits at the ~8-file split threshold. The App
-half (the tracker UI + API wrappers) is the natural WP-7 of the epic; the Server
-half is a **minimal additive extension** of WP-446's already-derived read (one
-new derived sub-object, no new endpoint, no migration, no contract file). The two
-halves communicate only over HTTP — no import-boundary is crossed. **This draft
-folds them into one WP** so the feature is executable as a unit and "Play this
-leg" is not stranded on an unreserved dependency. **Operator fork:** the Server
-half may instead be split into its own single-layer server WP (a new reserved
-number) that this WP then hard-depends on — cleaner per one-layer-per-WP, at the
-cost of a second draft/exec cycle and a BLOCKED status on this WP until it lands.
-Recorded for review in D-24269.
+**Cross-layer scope (fold confirmed by operator):** this WP is **cross-layer
+(App + Server)** and sits at the ~8-file split threshold. The App half (the
+tracker UI + API wrappers) is the natural WP-7 of the epic; the Server half is a
+**minimal additive extension** of WP-446's already-derived read (one new derived
+sub-object, no new endpoint, no migration, no contract file). The two halves
+communicate only over HTTP — no import-boundary is crossed. **The operator
+confirmed the fold:** the client cannot import the registry, so extending the
+WP-446 derived `GET` with an additive `launch` block is *the* architecture, not
+one option among several. **Scope rule (locked):** WP-449 may touch client **and**
+server, but **only** for the minimum launch block "Play this leg" needs — **NO**
+new endpoint, **NO** migration, **NO** client registry import, **NO** new
+progression semantics, and **NO** change to WP-442 / WP-446 truth logic **except**
+the additive `launch` serialization on the existing `GET`. The split-into-its-own-
+server-WP and dedicated-endpoint options are **considered and rejected** (see
+`## Contract`); they are no longer live alternatives. Recorded in D-24269.
 
 ## Scope (In)
 
@@ -183,19 +191,32 @@ Recorded for review in D-24269.
 - **Modify** `apps/arena-client/src/pages/MyProfilePage.vue` — add one
   `.profile-gauntlets` `<section>` (rendered inside the existing `?route=me`
   guarded body) delivering:
-  - **Import**: file `<input type="file">` + a drag-drop target + a paste-JSON
-    textarea; each path reads text, `JSON.parse`-guards locally (mirroring
-    `submitCreateLoadout`), and calls `importGauntletRun`. Friendly typed
-    messages for `invalid_pack` / `unknown_gauntlet` / `unauthorized` (a
-    `gauntletRunMessageForCode` mapper, mirroring `loadoutMessageForCode`).
+  - **Import**: a file `<input type="file">` **and** a paste-JSON textarea are
+    **required**; a drag-drop target is **optional polish** (include only if it is
+    essentially free from existing components — it must NOT expand the file
+    allowlist or add scope). Each path reads text, `JSON.parse`-guards locally
+    (mirroring `submitCreateLoadout`), and calls `importGauntletRun`. Friendly
+    typed messages for `invalid_pack` / `unknown_gauntlet` / `unauthorized` (a
+    `gauntletRunMessageForCode` mapper, mirroring `loadoutMessageForCode`) — the
+    `invalid_pack` error is visible and actionable.
   - **Active tracker** (each run with `firstCompletedAt === null`): the 5-state
     `status` rendered as a badge with **distinct treatment for `all-legs-cleared`
-    vs `champion`** (champion = celebratory; all-legs-cleared = "Every leg
-    cleared — but your winning teams don't fit one budgeted pool" with the
-    `budget` / `budgetHeadroom` shown); the emerging `pool` (count + headroom);
-    per-leg rows (`schemeName`, a cleared chip, a `hasFullPicks` indicator,
-    `lastPlayedAt`); the derived **last-played leg** (the leg with the max
-    non-null `lastPlayedAt`) visually highlighted as "where you left off".
+    vs `champion`**:
+    - `champion` = **green** trophy / completed / done (celebratory).
+    - `all-legs-cleared` = **amber** "strategy remaining" state, NOT an error.
+      Heading **"All legs cleared"**; body (this wording or very close): "You
+      cleared every leg, but this run is not champion yet because your winning
+      teams use N heroes over the M-hero budget. Trim the run to one legal pool."
+      Show `budget` / `budgetHeadroom`. AVOID "incomplete" / "failed" / "error" —
+      the player did the hard part; the rest is optimization.
+    - champion must **never** be masked by all-legs-cleared; the two states occupy
+      separate badge + copy paths.
+    Then: the emerging `pool` (count + headroom); per-leg rows (`schemeName`, a
+    cleared chip, a `hasFullPicks` indicator, `lastPlayedAt`); the derived
+    **last-played leg** (the leg with the max non-null `lastPlayedAt`) visually
+    highlighted as "where you left off". The status **display order** matches
+    WP-446's evaluation order: `champion → all-legs-cleared → playing → ready →
+    needs-heroes`.
   - **Per-leg hero picks**: an editable `heroDeckIds` input per leg → `PATCH`
     (`updateLegPicks`); then a **"Play this leg"** button — enabled only when
     that leg's `hasFullPicks` is true **and** the run's `launch` block is present
@@ -219,7 +240,10 @@ Recorded for review in D-24269.
   assert the derived `launch` block (present with variant-0 ids + counts when the
   menu is configured; `null` when absent).
 - **Modify (server wiring)** `apps/server/src/server.mjs` — inject the variant-0
-  approved composition + the canonical supply counts into the
+  approved composition + the named canonical launch supply table
+  `GAUNTLET_LEG_STANDARD_SUPPLY` (defined server-side in the launch-block
+  resolution layer — the `server.mjs` injection or a small server module it
+  imports; NOT in any client file and NOT in the registry) into the
   `resolveGauntletRunProgressInputs` resolver it already builds (per `01.5`
   runtime-wiring allowance; no logic beyond wiring).
 - **Modify** `docs/ai/REFERENCE/api-endpoints.md` — replace the
@@ -228,11 +252,13 @@ Recorded for review in D-24269.
 
 ## Out of Scope
 
-- **No variant selector.** "Play this leg" always launches against **approved
-  variant 0** (the D-24199 baseline). Surfacing the other approved variants as a
-  launch-time choice is a deferred follow-on — the run's picks are leg-scoped and
-  variant-agnostic (any approved variant's win clears the leg), so a selector is
-  additive later and changes no stored truth.
+- **No variant selector (deferred, not forgotten).** "Play this leg"
+  **deterministically** launches against **approved variant 0** (the D-24199
+  baseline) for v1; the UI exposes **no** variant picker. Surfacing the other
+  approved variants as a launch-time choice is a **deferred optional UX**
+  follow-on — the run's picks are leg-scoped and variant-agnostic (any approved
+  variant's win clears the leg), so a selector is additive later and changes no
+  stored truth.
 - **No client-side status / champion / pool recomputation.** The client renders
   the server's `GauntletRunProgressView` verbatim (D-24262). It computes only
   presentation-local values (which leg is last-played for highlighting; whether a
@@ -335,29 +361,56 @@ config = {
 → launchMatchFromComposition({ config, playerCount: run.playerCount, playerName, authToken })
 ```
 
-### Resolution rationale, alternatives, and the supply-count sub-fork (D-24269)
+### Canonical launch supply table (`GAUNTLET_LEG_STANDARD_SUPPLY`, LOCKED)
 
-- **Chosen: server-supplied launch block (fold into WP-449).** Cleanest that
-  respects arena-client's no-registry rule: the server already holds the approved
-  composition; exposing it is additive; the client assembles the config with zero
-  registry access. Cross-layer but no import-boundary crossed.
-- **Alternative A2 — split the server half to its own server WP** that this WP
-  hard-depends on (one-layer-per-WP purity; costs a second cycle + a BLOCKED
-  status here). **Operator fork.**
-- **Alternative A3 — a dedicated launch-config endpoint** (`GET
+The four supply counts in the `launch` block come from **one named canonical v1
+launch table** (not scattered per-leg literals):
+
+```
+GAUNTLET_LEG_STANDARD_SUPPLY = {
+  bystanders: 30,
+  wounds:     30,
+  officers:   30,
+  sidekicks:  15,
+} as const
+```
+
+- These are **available supply-STACK counts** used to construct a valid
+  `MatchSetupConfig` at launch — they map to `bystandersCount` / `woundsCount` /
+  `officersCount` / `sidekicksCount`. They are **NOT** "cards inserted into the
+  villain deck," and they carry **no scoring / progression semantics**.
+- **v1 = the original / common Legendary edition counts** (30 bystanders),
+  deliberately **NOT** 2nd Edition (which uses 42) — do not silently switch
+  editions.
+- The table lives **server-side** in the launch-block resolution layer (the
+  `server.mjs` injection or a small server module it imports); it is defined
+  **once** as this named constant and referenced there — no per-leg supply
+  literals are scattered across the UI.
+- **Executor confirmation (implementation-time, put in the EC):** if the existing
+  match-setup / engine code has a **separate per-player-count table** for
+  *villain-deck* bystanders / strikes / twists / villains / henchmen, WP-449 must
+  **NOT** replace or touch it. WP-449 only supplies the missing supply-STACK
+  fields (`bystandersCount` / `woundsCount` / `officersCount` / `sidekicksCount`)
+  needed for a valid `MatchSetupConfig`. Confirm at implementation time how the
+  engine consumes these four fields and keep the villain-deck logic untouched.
+- **Non-effect on derivation:** because the D-24187 leg-clear predicate matches
+  only villain-segment + henchman-key + scheme + mastermind, **supply counts do
+  not affect whether a leg clears or whether a run reaches champion**. Changing
+  this table later cannot alter WP-442 / WP-446 clear / champion derivation — the
+  table is a v1 launch default only.
+
+### Alternatives (considered and rejected — folded per operator)
+
+- **A2 — split the server half into its own single-layer server WP** (one-layer-
+  per-WP purity; costs a second cycle + a BLOCKED status here). **Considered and
+  rejected; folded into WP-449 per operator.** Not a live alternative.
+- **A3 — a dedicated launch-config endpoint** (`GET
   /api/me/gauntlet-runs/:id/legs/:schemeId/launch-config` returning a full
   `MatchSetupConfig`): more surface + a per-leg round-trip for data the derived
-  read can carry inline. Rejected as heavier.
-- **Supply-count source sub-fork (operator review).** No registry source for the
-  four supply counts exists, and — critically — the D-24187 leg-clear predicate
-  matches only villain-segment + henchman-key + scheme + mastermind, so **supply
-  counts do not affect whether a leg clears**; they only need to be valid for the
-  match to launch and replay-verify. **Recommended (C1):** fixed canonical supply
-  counts defined in the server wiring layer (e.g. `woundsCount = 30` standard),
-  documented as not gating leg-clear. **Alternative (C2):** a new registry
-  per-player-count supply-count table (more faithful to official per-count setup,
-  larger). C1 recommended for v1; the exact constant values are an EC-locked
-  wiring detail Jeff confirms.
+  read carries inline. **Considered and rejected** (heavier); no new endpoint.
+- **C2 — a new registry per-player-count supply-count table** (more faithful to
+  official per-count setup, larger): **rejected for v1** in favour of the named
+  `GAUNTLET_LEG_STANDARD_SUPPLY` constant above.
 
 ## Non-Negotiable Constraints
 
@@ -375,9 +428,32 @@ config = {
   `GauntletRunProgressView` — it never recomputes `status`, `isChampion`, `pool`,
   or `budgetHeadroom`. No stored client state beyond the fetched view + local edit
   buffers (the leg-picks input drafts).
-- **`all-legs-cleared` ≠ `champion` must be visibly distinct** — separate badge
-  treatment + separate copy; the all-legs-cleared state names the budget gap as
-  strategy, never an error.
+- **`all-legs-cleared` ≠ `champion` must be visibly distinct** — `champion` =
+  **green** (trophy / done); `all-legs-cleared` = **amber** ("strategy remaining"):
+  separate badge treatment + separate copy path. The all-legs-cleared copy names
+  the budget gap (`budget` / `budgetHeadroom`) as strategy, never an error (no
+  "incomplete" / "failed" / "error" wording). champion must never be masked by
+  all-legs-cleared. The status **display order** matches WP-446's evaluation order:
+  `champion → all-legs-cleared → playing → ready → needs-heroes`.
+- **Canonical launch supply table (`GAUNTLET_LEG_STANDARD_SUPPLY`).** The four
+  supply counts come from the **single named server-side constant** (`{ bystanders:
+  30, wounds: 30, officers: 30, sidekicks: 15 }`, v1 original edition — not 2E's
+  42); no per-leg supply literals are scattered across the UI. These are
+  supply-STACK counts for a valid `MatchSetupConfig`, not villain-deck cards and
+  not scoring — changing them cannot affect WP-442 / WP-446 clear / champion
+  derivation (D-24187). Any existing separate per-player-count **villain-deck**
+  supply table is **not touched**.
+- **Fold scope rule (locked).** WP-449 touches client **and** server, but **only**
+  for the minimum launch block "Play this leg" needs — **NO** new endpoint, **NO**
+  migration, **NO** client registry import, **NO** new progression semantics, and
+  **NO** change to WP-442 / WP-446 truth logic **except** the additive `launch`
+  serialization on the existing `GET`.
+- **Variant 0 only (no picker).** "Play this leg" deterministically launches
+  approved variant 0 (`approvedLoadouts[playerCount][0]`, D-24199); the UI exposes
+  no variant selector (deferred optional UX).
+- **Import affordances.** File upload + paste-JSON are **required**; drag-drop is
+  **optional polish** that must NOT expand the file allowlist or scope.
+  `invalid_pack` errors are visible and actionable.
 - **Layer boundary.** `apps/arena-client` imports `MatchSetupConfig` type-only
   from `@legendary-arena/game-engine` (via the WP-448 primitive's input type) and
   adds **no** runtime import of `@legendary-arena/registry`, `apps/server`, or
@@ -419,9 +495,12 @@ never-throw result discriminator (see EC-484 Locked Values).
 3. `MyProfilePage.vue` renders a `.profile-gauntlets` section inside the guarded
    body with: an import control (file + drag-drop + paste, each `JSON.parse`-guarded
    before POST), the active-run tracker, per-leg rows, and the completed-history list.
-4. The 5-state `status` is rendered so **`all-legs-cleared` and `champion` have
-   distinct badge treatment and distinct copy**; the all-legs-cleared copy shows
-   `budget` + `budgetHeadroom` and reads as strategy, not error.
+4. The 5-state `status` is rendered so **`all-legs-cleared` (amber) and `champion`
+   (green) have distinct badge treatment and distinct copy**; the all-legs-cleared
+   copy shows `budget` + `budgetHeadroom`, explains the budget/pool gap directly,
+   and reads as strategy, not error; champion is never masked by all-legs-cleared;
+   the status display order matches WP-446's evaluation order (`champion →
+   all-legs-cleared → playing → ready → needs-heroes`).
 5. Each active run shows its `pool` size, `budgetHeadroom`, and per-leg rows
    (`schemeName`, cleared chip, `hasFullPicks` indicator, `lastPlayedAt`); the
    derived last-played leg is visually highlighted as "where you left off".
@@ -446,6 +525,24 @@ never-throw result discriminator (see EC-484 Locked Values).
 11. `pnpm --filter @legendary-arena/arena-client typecheck` exits 0.
 12. `pnpm -r build && pnpm -r --no-bail test` green (arena-client suite incl. the
     new API tests; server suite incl. the extended progress-logic test).
+13. **Canonical launch supply table (Call 1).** One named canonical launch supply
+    constant/table (`GAUNTLET_LEG_STANDARD_SUPPLY = { bystanders: 30, wounds: 30,
+    officers: 30, sidekicks: 15 }`, v1 original edition) exists server-side; "Play
+    this leg" uses that table for the launch-only supply counts; no per-leg
+    arbitrary supply literals are scattered across the UI; the table is documented
+    as a v1 launch default (not a scoring / leg-clear rule); changing the table
+    later cannot affect WP-442 / WP-446 clear / champion derivation. Any existing
+    separate per-player-count villain-deck supply table is left untouched.
+14. **Variant 0 only (Call 3).** "Play this leg" deterministically launches
+    approved variant 0; the UI exposes no variant picker; the variant selector is
+    documented as deferred optional UX (not forgotten).
+15. **Import affordances (Call 5).** Import by file works; import by pasted JSON
+    works; `invalid_pack` errors are visible + actionable; drag-drop, if present,
+    is optional polish (not a blocker) and does not expand the file allowlist.
+16. **Fold scope (Call 2).** The server change is the single additive `launch`
+    serialization on the existing `GET` — no new endpoint, no migration, no client
+    registry import, no new progression semantics, and no change to WP-442 /
+    WP-446 truth logic.
 
 ## Verification Steps
 
@@ -474,7 +571,7 @@ git grep -n "launch" -- apps/server/src/gauntlet/gauntletRun.types.ts   # expect
 
 ## Definition of Done
 
-- [ ] All Acceptance Criteria (1–12) pass.
+- [ ] All Acceptance Criteria (1–16) pass.
 - [ ] `pnpm --filter @legendary-arena/arena-client typecheck` exits 0.
 - [ ] `pnpm -r build && pnpm -r --no-bail test` green.
 - [ ] No files outside `## Files Expected to Change` were modified
@@ -558,8 +655,8 @@ response schema documents the new `launch` sub-object with canonical field names
   split-vs-single rationale.
 - **§5 Files Expected to Change** — PASS. Eight code/doc files (3 client + 4
   server + api-endpoints) marked new/modified with one-line descriptions +
-  governance ledgers; at the split threshold, flagged as a cross-layer operator
-  fork (not silently exceeded).
+  governance ledgers; at the split threshold, the cross-layer fold is
+  **operator-confirmed** (not silently exceeded; A2 split rejected).
 - **§6 Naming** — PASS. `MatchSetupConfig` nine fields (00.2 §8.1),
   `villainGroupIds`/`henchmanGroupIds`/`schemeId`/`mastermindId`,
   `GauntletRunProgressView`/`GauntletRunLegProgress`/`GauntletRunStatus` used
@@ -581,7 +678,7 @@ response schema documents the new `launch` sub-object with canonical field names
   the existing DB-free derived-logic suite.
 - **§13 Verification** — PASS. Exact `pnpm` commands with expected output + the
   D-24026 live-verify script; no vague "verify manually".
-- **§14 Acceptance Criteria** — PASS. Twelve binary, observable,
+- **§14 Acceptance Criteria** — PASS. Sixteen binary, observable,
   file/function-specific checks aligned to the deliverables.
 - **§15 Definition of Done** — PASS. Includes STATUS.md, DECISIONS.md,
   WORK_INDEX.md, the scope-boundary check, the §21 row replacement, and the §15.1
@@ -613,11 +710,17 @@ response schema documents the new `launch` sub-object with canonical field names
 
 **Verdict:** PASS — all 21 sections resolved (§10/§19 N/A with reason; §20 N/A
 with named justification; §21 triggered and satisfied via the wholesale row
-replacement).
+replacement). **Re-affirmed after the 2026-07-28 operator amendment** (calls 1–5
+are locks/refinements: named supply table, fold confirmed, variant-0, amber/green
+badges, import affordances); no section regresses and no new NOT-READY blocker is
+introduced.
 
 ## Pre-Flight (`01.4`) — READY TO EXECUTE
 
-**Date:** 2026-07-28 · **Baseline:** `origin/main` @ `7ebb8375`.
+**Date:** 2026-07-28 · **Baseline:** `origin/main` @ `7ebb8375`. **Amended
+2026-07-28** with operator review calls 1–5 (canonical supply table, fold
+confirmed, variant-0, amber/green badges, import affordances) — refinements /
+locks only; deps unchanged; no new NOT-READY blocker introduced.
 
 - **Sequencing:** hard-deps WP-440 ✅, WP-445 ✅, WP-446 ✅, WP-448 ✅ (all Done on
   `main`, verified). No dep is draft-state or in-flight. READY.
@@ -640,13 +743,16 @@ replacement).
   derived read (resolved; the load-bearing decision, D-24269); (b) *`schemeId` is
   a bare slug* — the client set-qualifies it as `${setAbbr}/${schemeId}`
   (resolved); (c) *no registry source for supply counts* — the server wiring
-  supplies canonical constants, which do not gate leg-clear (D-24187) (resolved;
-  the exact values are an EC-locked wiring detail + operator sub-fork); (d)
-  *cross-layer sizing* — folded into one WP with the split flagged as an operator
-  fork (resolved by informing, not blocking).
-- **Operator forks flagged for review (do not block execution):** fold-vs-split
-  of the server half; the supply-count source (fixed constants vs a new registry
-  table); the deferred variant selector. All recorded in D-24269 and the report.
+  supplies the named canonical `GAUNTLET_LEG_STANDARD_SUPPLY` table (`{ bystanders:
+  30, wounds: 30, officers: 30, sidekicks: 15 }`, v1), which does not gate
+  leg-clear (D-24187) (**resolved — operator-locked**); (d) *cross-layer sizing* —
+  **folded per operator** into one WP (the fold is the confirmed architecture, not
+  a fork).
+- **Operator forks — now resolved (calls 1–5):** the fold is confirmed (server
+  half stays in WP-449; split / new-endpoint rejected); the supply-count source is
+  locked to the named `GAUNTLET_LEG_STANDARD_SUPPLY` constant (C2 registry table
+  rejected); the variant selector is deferred (variant 0 only). All recorded in
+  D-24269. No open fork remains.
 
 **Verdict: READY TO EXECUTE.**
 
@@ -682,10 +788,13 @@ All 30 issues scanned; findings that were not a clean PASS:
   `all-legs-cleared` vs `champion` a distinct, non-error state with the budget gap
   shown — directly addressing the epic's invisible-failure risk.
 
-**Governance follow-ups:** D-24269 (reserved) records the tracker UX contract +
-the Play-this-leg composition-assembly resolution (chosen + A2/A3 + the
-supply-count sub-fork). The three operator forks are surfaced for design review;
-none blocks execution.
+**Governance follow-ups:** D-24269 records the tracker UX contract + the
+Play-this-leg composition-assembly resolution, amended 2026-07-28 with operator
+review calls 1–5: the fold is confirmed (A2 split / A3 endpoint recorded as
+considered-and-rejected), the supply-count source is locked to the named
+`GAUNTLET_LEG_STANDARD_SUPPLY` constant (C2 rejected), and the variant selector is
+deferred. No operator fork remains open.
 
-**Disposition:** CONFIRM — Pre-flight READY TO EXECUTE stands. Session-prompt
-generation authorized.
+**Disposition:** CONFIRM — Pre-flight READY TO EXECUTE stands (amendment adds
+locks/refinements only; all 21 lint sections still resolve; no new NOT-READY
+blocker). Session-prompt generation authorized.
