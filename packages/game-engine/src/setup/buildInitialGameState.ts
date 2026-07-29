@@ -563,9 +563,13 @@ export function buildInitialGameState(
     // pendingOptionalKoRewards), deliberately NOT a seeded
     // `{ hollowEffects: [], hollowEffectsDropped: 0 }` literal: a fresh match starts
     // with zero records either way, but an always-present empty literal would change
-    // the canonical-JSON finalStateHash (hashGameState serializes the whole G),
-    // which AC-E forbids — EMPTY_REGISTRY fixtures must hash byte-identically. So a
-    // fresh match has `G.diagnostics === undefined` (≡ empty, omitted by
+    // the whole-G canonical-JSON hash. NOTE (WP-451 / D-24271): the fixture-golden
+    // `hashGameState` oracle now EXCLUDES `diagnostics`, so this absent-on-fresh choice
+    // is no longer needed to keep THAT hash stable. It IS still required for
+    // `computeStateHash` (replay.hash.ts, the whole-G determinism oracle), which still
+    // serializes `diagnostics` — its exclusion is a deferred follow-on WP. So keeping the
+    // field absent keeps the PRE_WP080 / EMPTY_REGISTRY computeStateHash byte-identical.
+    // So a fresh match has `G.diagnostics === undefined` (≡ empty, omitted by
     // JSON.stringify); the first hollow event materializes the channel. There is no
     // mid-match reset — each match calls buildInitialGameState fresh. Hence the
     // field is intentionally NOT assigned in this literal.

@@ -4,12 +4,14 @@
  *
  * The hash is the `finalStateHash` oracle layer — the tightest of the
  * three oracle layers, intended to catch subtle state-placement
- * differences that the message log does not surface. The top-level
- * `messages` field is therefore EXCLUDED from the hash (D-24081): the
- * human-readable log has its own dedicated `messages` oracle layer in
- * `runFixture`, so hashing it too would double-count it and churn the
- * hash on every log addition. `notableEvents` is NOT excluded — it has no
- * dedicated layer, so the hash is its only guard. Two harness invocations
+ * differences that the message log does not surface. The runtime-only
+ * observation channels are therefore EXCLUDED from the hash — `messages`
+ * (D-24081), `logMeta` (D-24114), `lastPlayEffectsFired` (D-24221), and
+ * `diagnostics` (D-24271): each is observability the placement oracle does
+ * not guard, so hashing it would double-count or churn the hash on every
+ * log line / play / hollow-effect breadcrumb. `notableEvents` is NOT
+ * excluded — it has no dedicated layer, so the hash is its only guard. Two
+ * harness invocations
  * against identical inputs MUST produce byte-identical hashes on any
  * machine; that is the contract this file's canonical-JSON rules enforce.
  *
@@ -87,10 +89,23 @@ export function hashGameState(state: LegendaryGameState): string {
   // (replay.hash.ts, the whole-G determinism oracle); because the field is not seeded at
   // setup, the empty PRE_WP080 replay leaves that oracle byte-unchanged too — verified,
   // no re-pin. Same observability split as messages.
+  // why: WP-451 / D-24271 — also exclude G.diagnostics (the WP-257 hollow-effect
+  // observation channel). It is documented runtime-only, "NEVER read as gameplay input"
+  // (diagnostics/hollowEffect.types.ts), so it has no business gating this state-placement
+  // oracle — exactly the messages/logMeta/lastPlayEffectsFired rationale. Before this
+  // exclusion, an observability-only change (the D-24266 breadcrumb firing on an
+  // unimplemented villain effect, or a WP marking one to suppress it) silently shifted
+  // finalStateHash. NOTE (scope lock, D-24271): this WP excludes diagnostics from THIS
+  // oracle only; it deliberately STAYS in computeStateHash (replay.hash.ts) for now — the
+  // computeStateHash exclusion (which touches the competitive replayHash) is a deferred
+  // follow-on WP. Because diagnostics is not seeded at setup (buildInitialGameState keeps
+  // it absent-on-fresh), no current fixture materializes a hollow record, so stripping it
+  // here is byte-identical on every pinned fixture — no re-pin (verified).
   const {
     messages: _excludedMessageLog,
     logMeta: _excludedLogMeta,
     lastPlayEffectsFired: _excludedLastPlayEffectsFired,
+    diagnostics: _excludedDiagnostics,
     ...stateWithoutMessageLog
   } = state;
   const canonicalJson = JSON.stringify(stateWithoutMessageLog, sortKeysReplacer);
