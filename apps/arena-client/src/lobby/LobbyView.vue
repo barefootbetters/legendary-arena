@@ -2,7 +2,6 @@
 import { defineComponent, ref, computed, onMounted, nextTick } from 'vue';
 import type { MatchSetupConfig } from '@legendary-arena/game-engine';
 import {
-  createMatch,
   createMatchWithBot,
   joinMatch,
   listMatches,
@@ -21,6 +20,7 @@ import type { ParsedLoadout } from './parseLoadoutJson';
 import { convertLagnUpload } from './lagnLoadout';
 import type { LagnDisplayNames } from './lagnLoadout';
 import { persistMatchSetup } from '../diagnostics/matchSetupSession';
+import { launchMatchFromComposition } from './useCreateMatchFromComposition';
 import { useAuthStore } from '../stores/auth';
 
 // why: defineComponent({ setup() { return {...} } }) is required (NOT
@@ -300,24 +300,24 @@ export default defineComponent({
 
       isSubmitting.value = true;
       try {
+        // why: buildConfig() + the player-count parse stay INSIDE this try so a
+        // pre-launch throw (an empty/non-numeric supply count or player count)
+        // is caught here and surfaced with the same "Failed to create and join
+        // the match." message the inline chain produced before the WP-448
+        // extraction — preserving throw→catch parity. The launch primitive
+        // itself never throws; it receives the already-resolved (config,
+        // playerCount) and returns a typed result.
         const config = buildConfig();
         const seatCount = parsePositiveInteger(numPlayers.value, 'numPlayers');
-        const created = await createMatch(config, seatCount, authToken);
-        // why: stash the submitted setup so the play-surface Download diagnostics
-        // can include the input pile counts (matchSetupSession; client-local,
-        // no network egress). Best-effort — never blocks create/join.
-        persistMatchSetup(created.matchID, config);
-        const joined = await joinMatch(
-          created.matchID,
-          '0',
-          playerName.value.trim(),
+        const result = await launchMatchFromComposition({
+          config,
+          playerCount: seatCount,
+          playerName: playerName.value.trim(),
           authToken,
-        );
-        const query =
-          `?match=${encodeURIComponent(created.matchID)}` +
-          `&player=0` +
-          `&credentials=${encodeURIComponent(joined.playerCredentials)}`;
-        window.location.search = query;
+        });
+        if (result.ok === false) {
+          errorMessage.value = result.message;
+        }
       } catch (submitError) {
         const cause =
           submitError instanceof Error
@@ -577,43 +577,24 @@ export default defineComponent({
       }
 
       isSubmitting.value = true;
-      try {
-        // why: envelope `playerCount` maps to `numPlayers` at this call
-        // site per docs/ai/REFERENCE/MATCH-SETUP-SCHEMA.md §Player Count
-        // and the `createMatch(config, numPlayers, authToken)` signature in
-        // `./lobbyApi.ts`. The wire body becomes `{ numPlayers, setupData:
-        // composition }`; envelope fields other than playerCount are dropped
-        // on submission per D-9201 (envelope archival is a future
-        // server-side concern).
-        const created = await createMatch(
-          parsed.composition,
-          parsed.playerCount,
-          authToken,
-        );
-        // why: stash the submitted composition so the play-surface Download
-        // diagnostics can include the input pile counts (matchSetupSession;
-        // client-local, no network egress). Best-effort — never blocks create/join.
-        persistMatchSetup(created.matchID, parsed.composition);
-        const joined = await joinMatch(
-          created.matchID,
-          '0',
-          playerName.value.trim(),
-          authToken,
-        );
-        const query =
-          `?match=${encodeURIComponent(created.matchID)}` +
-          `&player=0` +
-          `&credentials=${encodeURIComponent(joined.playerCredentials)}`;
-        window.location.search = query;
-      } catch (submitError) {
-        const cause =
-          submitError instanceof Error
-            ? submitError.message
-            : String(submitError);
-        errorMessage.value = `Failed to create and join the match. ${cause}`;
-      } finally {
-        isSubmitting.value = false;
+      // why: envelope `playerCount` maps to `numPlayers` at this call site per
+      // docs/ai/REFERENCE/MATCH-SETUP-SCHEMA.md §Player Count and the
+      // `createMatch(config, numPlayers, authToken)` signature in
+      // `./lobbyApi.ts`. The wire body becomes `{ numPlayers, setupData:
+      // composition }`; envelope fields other than playerCount are dropped on
+      // submission per D-9201 (envelope archival is a future server-side
+      // concern). The create → persist → join(seat 0) → nav chain itself now
+      // lives once in launchMatchFromComposition (WP-448), never inline here.
+      const result = await launchMatchFromComposition({
+        config: parsed.composition,
+        playerCount: parsed.playerCount,
+        playerName: playerName.value.trim(),
+        authToken,
+      });
+      if (result.ok === false) {
+        errorMessage.value = result.message;
       }
+      isSubmitting.value = false;
     }
 
     async function startAutoplay(): Promise<void> {
