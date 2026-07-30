@@ -34643,6 +34643,10 @@ listed.
   test, and the Dashboard Gates job are untouched; the canonical pattern is not
   moved, exported, or refactored.
 
-**Status:** Drafted 2026-07-29 (WP-455 / EC-490); lands at WP-455 execution.
+**Status:** Active (post-execution) — landed 2026-07-29 (WP-455 / EC-490).
+`scripts/check-workindex-rows.mjs` + `pnpm workindex:rows:check` ship, reusing the
+single-source pattern by extraction; verified against the real WORK_INDEX and by
+a mutation proof. No hook framework, no `apps/dashboard` change; CI enforcement
+stays the Dashboard Gates test.
 
 Protect this file.
