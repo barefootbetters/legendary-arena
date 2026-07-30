@@ -34813,8 +34813,12 @@ live-verify operator-pending on `legends.legendary-arena.com`.
 
 ### D-24279 — The legends gauntlet index publishes a self-describing per-set roster with a villain/henchman gauntlet-coverage flag
 
-**Status:** Drafted 2026-07-30; not yet landed. Flips to Active
-(post-execution) when WP-461 executes.
+**Status:** Active (post-execution) — landed 2026-07-30 (WP-461 / EC-496).
+`SetDetails` types + optional `GauntletIndexSnapshot.sets`, pure
+`buildSetDetailsCatalog` (per-set-scoped coverage via exact
+`${setAbbr}/${mastermindSlug}` lookups), publisher emission, and wiring shipped;
+legends suite 94/0. D-24026 deploy live-verify operator-pending on the deployed
+`gauntlet-index.json`. WP-462 (client reveal) consumes this contract next.
 
 **Context.** WP-456 gave each *gauntlet* (mastermind) a "Show details" reveal of
 its approved adversaries. The operator asked (2026-07-30) for a *per-set* view —
