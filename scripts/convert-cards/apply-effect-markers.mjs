@@ -143,6 +143,16 @@ function isValidParameterizedEffectToken(token) {
   if (primitive === 'ko-hero') {
     if (parts.length === 2 && parts[1] === 'current') return true;
     if (parts.length === 3 && parts[1] === 'each' && /^[1-9][0-9]*$/.test(parts[2])) return true;
+    // why: D-24280 — the 4-token ko-hero:each:N:zone form (Juggernaut's
+    // source-zone-restricted each-player KO); zone is exactly discard or hand.
+    if (
+      parts.length === 4 &&
+      parts[1] === 'each' &&
+      /^[1-9][0-9]*$/.test(parts[2]) &&
+      (parts[3] === 'discard' || parts[3] === 'hand')
+    ) {
+      return true;
+    }
     return false;
   }
   if (primitive === 'gain-wound') {

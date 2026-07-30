@@ -87,6 +87,9 @@
       }
     },
     "core": {
+      "brotherhood": {
+        "juggernaut": { "ambush": ["ko-hero:each:2:discard"], "escape": ["ko-hero:each:2:hand"] }
+      },
       "enemies-of-asgard": {
         "destroyer": { "escape": ["koHeroEachPlayerMag2"] }
       },

@@ -210,12 +210,23 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
  *   - `capture-hq-hero`: `selector` 'rightmost' | 'highest-cost' | 'lowest-cost'
  *   - `hero-deck-top-to-escape`, `capture-bystander`, `scry-ko-own-deck`,
  *     `gain-attached-hero`: no params
+ *   - `ko-hero` with `target: 'each'`: optional `zone` (D-24280) restricts the
+ *     per-player KO to a single source zone (Juggernaut's "from their discard
+ *     pile" / "from their hand"); absent means the discard→hand→inPlay fallback.
  */
 export interface VillainEffectDescriptor {
   primitive: VillainEffectPrimitive;
   target?: 'current' | 'each';
   magnitude?: number;
   selector?: 'rightmost' | 'highest-cost' | 'lowest-cost';
+  // why: D-24280 — a source-zone restriction for the each-player `ko-hero` KO.
+  // It is a resolver-targeting detail present ONLY on `{ primitive: 'ko-hero',
+  // target: 'each' }` descriptors (Juggernaut Ambush = 'discard', Escape =
+  // 'hand'); a narrower union than `KoHeroTarget.zone` (no 'inPlay' — no printed
+  // "from their inPlay" text exists). Deliberately NOT part of `descriptorKey`
+  // below, so a zone-bearing descriptor reverse-maps to the same legacy keyword
+  // as its zone-less sibling and narrates identically (see `descriptorKey`).
+  zone?: 'discard' | 'hand';
 }
 
 // why: D-24023 — the frozen legacy-keyword → descriptor translation table. The
@@ -247,6 +258,13 @@ export const LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR: Readonly<
  * @returns A stable string key uniquely identifying the descriptor's shape.
  */
 function descriptorKey(descriptor: VillainEffectDescriptor): string {
+  // why: D-24280 — `zone` is DELIBERATELY excluded from the key. A zone-restricted
+  // each-player KO (e.g. Juggernaut's `ko-hero:each:2:discard`) shares a key with
+  // the zone-less `koHeroEachPlayerMag2` descriptor, so it reverse-maps to that
+  // legacy keyword and narrates per-target KO'd-hero names for free (WP-316) —
+  // the zone is a resolver-targeting detail invisible to the player-facing label.
+  // Adding `zone` here would make the reverse-map return undefined, silencing the
+  // KO's narration; do not add it.
   return [
     descriptor.primitive,
     descriptor.target ?? '',

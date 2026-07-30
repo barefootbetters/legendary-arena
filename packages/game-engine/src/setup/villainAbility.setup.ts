@@ -252,6 +252,21 @@ function parseParameterizedEffect(
       }
       return { primitive: 'ko-hero', target: 'each', magnitude };
     }
+    // why: D-24280 — the 4-token `ko-hero:each:<N>:<zone>` form (Juggernaut's
+    // source-zone-restricted each-player KO). `zone` is exactly `discard` or
+    // `hand` (no `inPlay` — no printed "from their inPlay" text); a bad zone or a
+    // 5th token falls through to `null`.
+    if (target === 'each' && parts.length === 4) {
+      const magnitude = parsePositiveInteger(parts[2]!);
+      if (magnitude === null) {
+        return null;
+      }
+      const zone = parts[3];
+      if (zone !== 'discard' && zone !== 'hand') {
+        return null;
+      }
+      return { primitive: 'ko-hero', target: 'each', magnitude, zone };
+    }
     return null;
   }
   if (primitiveToken === 'gain-wound') {

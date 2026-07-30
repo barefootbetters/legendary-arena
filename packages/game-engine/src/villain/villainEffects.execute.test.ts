@@ -737,6 +737,139 @@ describe('executeVillainAbilities — gain-attached-hero no-op (WP-450 / D-24270
   });
 });
 
+describe('executeVillainAbilities — ko-hero:each:N:zone (WP-463 / D-24280)', () => {
+  const WOUND = 'pile-wound' as CardExtId;
+  const AGENT = 'starting-shield-agent' as CardExtId;
+
+  // why: zone-restricted each KO is a parameterized descriptor, not a legacy
+  // keyword — build the hook directly (the `hook()` helper reads legacy keywords).
+  function zoneHook(cardId: string, timing: 'onAmbush' | 'onEscape', zone: 'discard' | 'hand'): VillainAbilityHook {
+    return {
+      cardId: cardId as CardExtId,
+      timing,
+      keywords: [],
+      effects: [{ primitive: 'ko-hero', target: 'each', magnitude: 2, zone }],
+    };
+  }
+
+  it('discard zone: KOs two worst heroes from discard only, leaving the hand untouched (AC-3)', () => {
+    const heroDisc = 'core/x/deep#0' as CardExtId;
+    const heroHand = 'core/x/hand#0' as CardExtId;
+    const G = makeG({
+      hooks: [zoneHook('v-jugg', 'onAmbush', 'discard')],
+      playerZones: {
+        '0': { deck: [], hand: [heroHand], discard: [WOUND, AGENT, heroDisc], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+    });
+    executeVillainAbilities(G, CTX, 'v-jugg' as CardExtId, 'onAmbush');
+    // why: AC-3 — Wound excluded, starter-first (AGENT), then the recruited hero;
+    // magnitude 2 KOs AGENT + heroDisc, leaving the Wound on the discard.
+    assert.deepStrictEqual(G.ko, [AGENT, heroDisc], 'the two worst discard heroes KOd, in order');
+    assert.deepStrictEqual(G.playerZones['0']!.discard, [WOUND], 'Wound stays — not a Hero');
+    assert.deepStrictEqual(G.playerZones['0']!.hand, [heroHand], 'hand untouched (no cross-zone fallback)');
+  });
+
+  it('hand zone: KOs from hand only, leaving a non-empty discard byte-unchanged (AC-8 no-crossover)', () => {
+    // why: the direction mirror — the legacy resolver checks discard FIRST, so a
+    // naive zone-lock could still drain discard on the Escape line. This pins it.
+    const heroHandA = 'core/x/a#0' as CardExtId;
+    const heroHandB = 'core/x/b#0' as CardExtId;
+    const heroDisc = 'core/x/keep#0' as CardExtId;
+    const G = makeG({
+      hooks: [zoneHook('v-jugg', 'onEscape', 'hand')],
+      playerZones: {
+        '0': { deck: [], hand: [heroHandB, heroHandA], discard: [heroDisc], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+    });
+    executeVillainAbilities(G, CTX, 'v-jugg' as CardExtId, 'onEscape');
+    assert.deepStrictEqual(G.ko, [heroHandA, heroHandB], 'both hand heroes KOd (lex-asc), from hand only');
+    assert.deepStrictEqual(G.playerZones['0']!.hand, [], 'hand emptied of heroes');
+    assert.deepStrictEqual(G.playerZones['0']!.discard, [heroDisc], 'discard byte-unchanged — no crossover');
+  });
+
+  it('magnitude cap + reachable no-op: short/empty zone KOs fewer/none and records NO hollow (AC-4)', () => {
+    const only = 'core/x/only#0' as CardExtId;
+    const shortG = makeG({
+      hooks: [zoneHook('v-jugg', 'onAmbush', 'discard')],
+      playerZones: {
+        '0': { deck: [], hand: [], discard: [only], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+    });
+    executeVillainAbilities(shortG, CTX, 'v-jugg' as CardExtId, 'onAmbush');
+    assert.deepStrictEqual(shortG.ko, [only], 'a 1-hero discard KOs one and stops (no fallback)');
+
+    const emptyG = makeG({
+      hooks: [zoneHook('v-jugg', 'onAmbush', 'discard')],
+      playerZones: {
+        '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+    });
+    executeVillainAbilities(emptyG, CTX, 'v-jugg' as CardExtId, 'onAmbush');
+    assert.deepStrictEqual(emptyG.ko, [], 'empty discard → nothing KOd');
+    assert.equal(
+      emptyG.diagnostics?.hollowEffects?.length ?? 0,
+      0,
+      'a reachable no-op records NO hollow effect',
+    );
+  });
+
+  it('each-player: KOs from EVERY player’s named zone, not just the current player (AC-5)', () => {
+    const h0 = 'core/x/p0#0' as CardExtId;
+    const h1 = 'core/x/p1#0' as CardExtId;
+    const G = makeG({
+      hooks: [zoneHook('v-jugg', 'onAmbush', 'discard')],
+      playerZones: {
+        '0': { deck: [], hand: [], discard: [h0], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [h1], inPlay: [], victory: [] },
+      },
+    });
+    executeVillainAbilities(G, CTX, 'v-jugg' as CardExtId, 'onAmbush');
+    // why: AC-5 — sorted player order '0' then '1'; each loses their discard hero.
+    assert.deepStrictEqual(G.ko, [h0, h1]);
+    assert.deepStrictEqual(G.playerZones['0']!.discard, []);
+    assert.deepStrictEqual(G.playerZones['1']!.discard, []);
+  });
+
+  it('narrates as koHeroEachPlayerMag2 with the KO’d ext_ids as targets (AC-7)', () => {
+    const hero = 'core/x/deep#0' as CardExtId;
+    const G = makeG({
+      hooks: [zoneHook('v-jugg', 'onAmbush', 'discard')],
+      playerZones: {
+        '0': { deck: [], hand: [], discard: [AGENT, hero], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+    });
+    const results = executeVillainAbilities(G, CTX, 'v-jugg' as CardExtId, 'onAmbush');
+    // why: AC-7 — the zone-bearing descriptor reverse-maps to the frozen keyword so
+    // the fire site narrates per-target; no new narration path.
+    assert.equal(results.length, 1);
+    assert.equal(results[0]!.keyword, 'koHeroEachPlayerMag2');
+    assert.deepStrictEqual(results[0]!.targets, [AGENT, hero]);
+  });
+
+  it('records NO unmarked-ability breadcrumb for the marked Juggernaut Ambush (AC-6)', () => {
+    const hero = 'core/x/deep#0' as CardExtId;
+    const G = makeG({
+      hooks: [zoneHook('core-villain-brotherhood-juggernaut-00', 'onAmbush', 'discard')],
+      playerZones: {
+        '0': { deck: [], hand: [], discard: [hero], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+    });
+    executeVillainAbilities(G, CTX, 'core-villain-brotherhood-juggernaut-00' as CardExtId, 'onAmbush');
+    assert.deepStrictEqual(G.ko, [hero], 'the Ambush KO fired (a discard hero moved to KO)');
+    assert.equal(
+      G.diagnostics?.hollowEffects?.length ?? 0,
+      0,
+      'no unmarked-ability breadcrumb — the line is now handled',
+    );
+  });
+});
+
 describe('executeVillainAbilities — safe-skip paths', () => {
   it('no-ops (no mutation) a hook with empty effects but records a breadcrumb (D-24266)', () => {
     const G = makeG({
