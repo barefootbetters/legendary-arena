@@ -16,9 +16,11 @@ import { PLAYER_COUNT_SETUP } from "./playerCountSetup.js";
 import type { SupportedPlayerCount } from "./playerCountSetup.js";
 
 const SUPPORTED_PLAYER_COUNTS: SupportedPlayerCount[] = [1, 2, 3, 4, 5];
-const VARIANTS_PER_MASTERMIND = 3;
+// why: D-24278 — one canonical configuration per mastermind (variant 0), not
+// D-24199's menu of three; heroes are the only ranked variable.
+const VARIANTS_PER_MASTERMIND = 1;
 
-test("every mastermind menu offers exactly three variants", () => {
+test("every mastermind menu offers exactly one variant", () => {
   assert.ok(
     GAUNTLET_LOADOUT_MENUS.length > 0,
     "the generated menu table must not be empty",
@@ -27,7 +29,7 @@ test("every mastermind menu offers exactly three variants", () => {
     assert.equal(
       menu.variants.length,
       VARIANTS_PER_MASTERMIND,
-      `${menu.setAbbr}/${menu.mastermindSlug} must offer three configurations`,
+      `${menu.setAbbr}/${menu.mastermindSlug} must offer one configuration`,
     );
   }
 });
@@ -91,30 +93,9 @@ test("every group id is set-qualified and every list is sorted and duplicate-fre
   }
 });
 
-test("a mastermind's three variants are distinct at every player count", () => {
-  for (const menu of GAUNTLET_LOADOUT_MENUS) {
-    for (const playerCount of SUPPORTED_PLAYER_COUNTS) {
-      const renderedCompositions = new Set<string>();
-      for (const variant of menu.variants) {
-        const composition = variant.compositionsByPlayerCount[playerCount];
-        renderedCompositions.add(
-          `${buildVillainSegment(composition)}|${buildHenchmanKey(composition)}`,
-        );
-      }
-      // why: solo takes a single villain group, so a mastermind whose printed
-      // alwaysLeads pins that slot legitimately collapses to one configuration
-      // there — the menu cannot manufacture choice the player count forbids.
-      const isSoloAnchorCollapse = playerCount === 1;
-      if (!isSoloAnchorCollapse) {
-        assert.equal(
-          renderedCompositions.size,
-          VARIANTS_PER_MASTERMIND,
-          `${menu.setAbbr}/${menu.mastermindSlug} variants collide at ${playerCount}p`,
-        );
-      }
-    }
-  }
-});
+// why: D-24278 removed the "three variants are distinct at every player count"
+// test — with one canonical variant per mastermind there is nothing to compare
+// for distinctness (the property it guarded no longer exists).
 
 test("getGauntletLoadoutMenu finds a known gauntlet and misses an unknown one", () => {
   const firstMenu = GAUNTLET_LOADOUT_MENUS[0];
