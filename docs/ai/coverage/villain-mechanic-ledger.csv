@@ -171,7 +171,9 @@ core-villain-brotherhood-sabretooth,Sabretooth,core,villain,(unmarked),unmarked,
 henchman-savage-land-mutates,Savage Land Mutates,core,henchman,(unmarked),unmarked,,,
 henchman-sentinel,Sentinel,core,henchman,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 core-villain-skrulls-skrull-queen-veranke,Skrull Queen Veranke,core,villain,captureHqHeroHighestCost,executable,WP-214,D-21401,packages/game-engine/src/villain/villainEffects.execute.ts#capture-hq-hero
+core-villain-skrulls-skrull-queen-veranke,Skrull Queen Veranke,core,villain,gain-attached-hero,executable,,,packages/game-engine/src/villain/villainEffects.execute.ts#gain-attached-hero
 core-villain-skrulls-skrull-shapeshifters,Skrull Shapeshifters,core,villain,captureHqHeroRightmost,executable,WP-214,D-21401,packages/game-engine/src/villain/villainEffects.execute.ts#capture-hq-hero
+core-villain-skrulls-skrull-shapeshifters,Skrull Shapeshifters,core,villain,gain-attached-hero,executable,,,packages/game-engine/src/villain/villainEffects.execute.ts#gain-attached-hero
 core-villain-skrulls-super-skrull,Super-Skrull,core,villain,koHeroEachPlayer,executable,WP-189,D-18901,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 core-villain-hydra-supreme-hydra,Supreme HYDRA,core,villain,(unmarked),unmarked,,,
 core-villain-radiation-the-leader,The Leader,core,villain,(unmarked),unmarked,,,
@@ -448,7 +450,7 @@ rvlt-villain-dark-avengers-dark-spider-man-scorpion,Dark Spider-Man (Scorpion),r
 rvlt-villain-dark-avengers-dark-wolverine-daken,Dark Wolverine (Daken),rvlt,villain,(unmarked),unmarked,,,
 rvlt-villain-army-of-evil-dome-of-darkforce,Dome of Darkforce,rvlt,villain,(unmarked),unmarked,,,
 henchman-hydra-base,HYDRA Base,rvlt,henchman,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
-rvlt-villain-army-of-evil-klaw,Klaw,rvlt,villain,(unmarked),unmarked,,,
+rvlt-villain-army-of-evil-klaw,Klaw,rvlt,villain,gain-attached-hero,executable,,,packages/game-engine/src/villain/villainEffects.execute.ts#gain-attached-hero
 rvlt-villain-lethal-legion-laser-maze,Laser Maze,rvlt,villain,(unmarked),unmarked,,,
 rvlt-villain-lethal-legion-living-laser,Living Laser,rvlt,villain,(unmarked),unmarked,,,
 rvlt-villain-lethal-legion-mbaku,M'Baku,rvlt,villain,(unmarked),unmarked,,,

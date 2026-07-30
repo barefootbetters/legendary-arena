@@ -730,6 +730,33 @@ describe('buildVillainAbilityHooks — dual-grammar equivalence (WP-252 / D-2402
     assert.deepStrictEqual(badHook!.effects, [], 'the malformed token yields no descriptor');
     assert.deepStrictEqual(badHook!.unresolvedMarkers, ['scry-ko-own-deck:2']);
   });
+
+  it('[effect:gain-attached-hero] parses as a no-param descriptor; a trailing token is rejected (WP-450 / D-24270)', () => {
+    const registry = makeRegistry(
+      'core',
+      [
+        {
+          slug: 'gah',
+          cards: [
+            { slug: 'ok', abilities: ['Fight: Gain that Hero. [effect:gain-attached-hero]'] },
+            { slug: 'bad', abilities: ['Fight: Gain that Hero. [effect:gain-attached-hero:x]'] },
+          ],
+        },
+      ],
+      [],
+    );
+    const hooks = buildVillainAbilityHooks(registry, makeConfig(['core/gah'], []));
+    const okHook = hooks.find((h) => h.cardId === 'core-villain-gah-ok-00');
+    const badHook = hooks.find((h) => h.cardId === 'core-villain-gah-bad-00');
+    // why: AC-2 — the no-param token yields { primitive: 'gain-attached-hero' }.
+    assert.deepStrictEqual(okHook!.effects, [{ primitive: 'gain-attached-hero' }]);
+    assert.deepStrictEqual(okHook!.keywords, [], 'gain-attached-hero is not a legacy keyword');
+    assert.equal(okHook!.unresolvedMarkers, undefined, 'a valid no-param descriptor is not unresolved');
+    // why: AC-2 — a trailing colon token is rejected → surfaces as an unresolved
+    // marker, not a silently-collapsed descriptor.
+    assert.deepStrictEqual(badHook!.effects, [], 'the malformed token yields no descriptor');
+    assert.deepStrictEqual(badHook!.unresolvedMarkers, ['gain-attached-hero:x']);
+  });
 });
 
 // ---------------------------------------------------------------------------

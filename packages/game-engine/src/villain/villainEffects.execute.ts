@@ -799,11 +799,38 @@ function selectScryKoTarget(revealed: CardExtId[]): CardExtId | null {
   return lowestSelected;
 }
 
+/**
+ * gain-attached-hero primitive — a deliberate NO-OP (WP-450 / D-24270).
+ *
+ * The captured-hero return on defeat ("Fight: Gain that Hero" — Skrull Queen
+ * Veranke, Skrull Shapeshifters, Klaw) is already performed GENERICALLY at the
+ * fight site by `awardAttachedHeroes` (WP-431), which runs BEFORE this executor
+ * and is not gated on the card text. This handler mutates nothing and returns
+ * `{ targets: [] }`.
+ */
+function villainEffectGainAttachedHero(
+  _G: LegendaryGameState,
+  _currentPlayer: string,
+  _cardId: CardExtId,
+  _timing: VillainAbilityTiming,
+  _descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  // why: D-24270 — the handler exists ONLY to make `Fight: Gain that Hero` a
+  // recognized, reachable effect so the D-24266 detector classifies the line
+  // applied rather than falsely recording an `unmarked-ability` breadcrumb (the
+  // award itself is the generic WP-431 `awardAttachedHeroes` at the fight site).
+  // It deliberately performs no mutation — driving the award from here would move
+  // a hashed `G` mutation into the executor (an ordering + finalStateHash risk)
+  // for no behaviour gain, so that refactor is out of scope. Reachable no-op,
+  // never hollow.
+  return { targets: [] };
+}
+
 // why: D-24023 — the ImplementationMap keyed by primitive (mirrors WP-251's
-// HERO_EFFECT_HANDLERS). Full Record over the 6 primitives; the drift test
+// HERO_EFFECT_HANDLERS). Full Record over the 7 primitives; the drift test
 // asserts the key set equals VILLAIN_EFFECT_PRIMITIVES. Replaces the former
 // 10-arm switch on VillainEffectKeyword. `scry-ko-own-deck` appended by WP-447
-// (D-24267).
+// (D-24267); `gain-attached-hero` (no-op) appended by WP-450 (D-24270).
 /** Villain effect handlers keyed by primitive. Single dispatch source. */
 const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandler> = {
   'ko-hero': villainEffectKoHero,
@@ -812,6 +839,7 @@ const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandl
   'hero-deck-top-to-escape': villainEffectHeroDeckTopToEscape,
   'capture-bystander': villainEffectCaptureBystander,
   'scry-ko-own-deck': villainEffectScryKoOwnDeck,
+  'gain-attached-hero': villainEffectGainAttachedHero,
 };
 
 /**

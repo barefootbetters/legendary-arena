@@ -91,8 +91,8 @@
         "destroyer": { "escape": ["koHeroEachPlayerMag2"] }
       },
       "skrulls": {
-        "skrull-shapeshifters": { "ambush": ["captureHqHeroRightmost"] },
-        "skrull-queen-veranke": { "ambush": ["captureHqHeroHighestCost"] },
+        "skrull-shapeshifters": { "ambush": ["captureHqHeroRightmost"], "fight": ["gain-attached-hero"] },
+        "skrull-queen-veranke": { "ambush": ["captureHqHeroHighestCost"], "fight": ["gain-attached-hero"] },
         "super-skrull": { "fight": ["koHeroEachPlayer"] }
       },
       "spider-foes": {
@@ -200,6 +200,7 @@
     },
     "rvlt": {
       "army-of-evil": {
+        "klaw": { "fight": ["gain-attached-hero"] },
         "mister-hyde": { "fight": ["koHeroCurrentPlayer"] }
       },
       "dark-avengers": {
