@@ -13,6 +13,7 @@ import type {
   SetDetails,
 } from "../snapshots/snapshotClient";
 import {
+  buildCoverageMatrix,
   buildFixedCountTabs,
   buildGauntletDetails,
   buildPlayerCountTabs,
@@ -21,6 +22,7 @@ import {
   formatCardDisplayName,
   groupGauntletsBySet,
   pinShowcaseGauntlet,
+  type CoverageMatrix,
   type GauntletDetails,
   type PlayerCountTab,
 } from "./gauntletDisplay";
@@ -208,6 +210,68 @@ function coverageLabel(usedByGauntlets: boolean): string {
   return usedByGauntlets
     ? "used by this set's gauntlets"
     : "not used by this set's gauntlets";
+}
+
+// why: WP-464 — the coverage matrix is a Core-Set pilot; the render guard and the
+// showcase pin both key on this abbr. `buildCoverageMatrix` itself is generic, so
+// extending to another set is a one-constant change here plus a render tweak.
+const MATRIX_COVERAGE_SET_ABBR = "core";
+
+// why: WP-464 — the matrix's player count is its OWN per-set state, separate from
+// the row download selector (`rowSelections`); a shared ref would cross-wire the
+// two (and pull the download default off 1). Defaults to 2 (operator choice).
+const matrixCountBySet = reactive<Record<string, number>>({});
+
+/** The matrix's selected player count for a set, defaulting to 2. */
+function matrixCountFor(setAbbr: string): number {
+  return matrixCountBySet[setAbbr] ?? 2;
+}
+
+/** Records the matrix's player-count choice off its `<select>` change event. */
+function onMatrixCountChange(setAbbr: string, event: Event): void {
+  const target = event.target as HTMLSelectElement;
+  matrixCountBySet[setAbbr] = Number(target.value);
+}
+
+// why: WP-464 — the Core coverage matrix, recomputed only when the grouped index
+// or the matrix's own count changes. Null when the Core group or its SetDetails is
+// absent (a pre-WP-461 snapshot), which suppresses the matrix render.
+const coreCoverageMatrix = computed<CoverageMatrix | null>(() => {
+  const coreGroup = setGroups.value.find(
+    (group) => group.setAbbr === MATRIX_COVERAGE_SET_ABBR,
+  );
+  if (coreGroup === undefined) {
+    return null;
+  }
+  const coreDetails = findSetDetails(props.index?.sets, MATRIX_COVERAGE_SET_ABBR);
+  if (coreDetails === undefined) {
+    return null;
+  }
+  return buildCoverageMatrix(
+    coreGroup.gauntlets,
+    coreDetails,
+    matrixCountFor(MATRIX_COVERAGE_SET_ABBR),
+  );
+});
+
+/**
+ * Whether a matrix row begins a new mastermind block (for the group divider).
+ *
+ * @param rowIndex The row's index in the matrix.
+ * @returns True for the first row and any row whose mastermind differs from the
+ *   row above it.
+ */
+function isMatrixMastermindStart(rowIndex: number): boolean {
+  const rows = coreCoverageMatrix.value?.rows ?? [];
+  const currentRow = rows[rowIndex];
+  const previousRow = rows[rowIndex - 1];
+  if (currentRow === undefined) {
+    return false;
+  }
+  if (previousRow === undefined) {
+    return true;
+  }
+  return currentRow.mastermindSlug !== previousRow.mastermindSlug;
 }
 </script>
 
@@ -433,6 +497,84 @@ function coverageLabel(usedByGauntlets: boolean): string {
             </details>
           </li>
         </ul>
+
+        <!-- WP-464: Core-Set gauntlet-coverage matrix — a per-leg launch grid at
+             the bottom of the Core group. Rows = masterminds × schemes, columns =
+             villains then henchmen; a ✓ links to that leg's cards-builder challenge
+             at the selected count. Rendered from already-published data (no API);
+             Core-only pilot (buildCoverageMatrix is generic). -->
+        <details
+          v-if="setGroup.setAbbr === 'core' && coreCoverageMatrix"
+          class="coverage-matrix"
+        >
+          <summary class="coverage-matrix-summary">Show gauntlet coverage matrix</summary>
+          <div class="coverage-matrix-body">
+            <label class="coverage-matrix-count">
+              <span>Player count</span>
+              <select
+                class="download-select"
+                :value="matrixCountFor(setGroup.setAbbr)"
+                aria-label="Coverage matrix player count"
+                @change="onMatrixCountChange(setGroup.setAbbr, $event)"
+              >
+                <option
+                  v-for="playerCount of PLAYER_COUNT_OPTIONS"
+                  :key="playerCount"
+                  :value="playerCount"
+                >{{ playerCount }}p</option>
+              </select>
+            </label>
+            <p class="coverage-matrix-legend">
+              A ✓ marks a villain/henchman fought in that (mastermind × scheme) leg
+              at {{ matrixCountFor(setGroup.setAbbr) }} players; click it to open that
+              fight in the cards builder.
+            </p>
+            <div class="coverage-matrix-scroll">
+              <table class="coverage-matrix-table">
+                <thead>
+                  <tr>
+                    <th scope="col" class="coverage-matrix-corner">Mastermind · Scheme</th>
+                    <th
+                      v-for="column of coreCoverageMatrix.columns"
+                      :key="`${column.kind}-${column.slug}`"
+                      scope="col"
+                      :class="['coverage-matrix-colhead', column.kind]"
+                    >{{ column.name }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="(row, rowIndex) of coreCoverageMatrix.rows"
+                    :key="`${row.mastermindSlug}-${row.schemeSlug}`"
+                    :class="{ 'coverage-matrix-mm-start': isMatrixMastermindStart(rowIndex) }"
+                  >
+                    <th scope="row" class="coverage-matrix-rowhead">
+                      <span class="coverage-matrix-mm">{{ formatCardDisplayName(row.mastermindName) }}</span>
+                      <span class="coverage-matrix-scheme">{{ formatCardDisplayName(row.schemeName) }}</span>
+                    </th>
+                    <td
+                      v-for="(cell, columnIndex) of row.cells"
+                      :key="columnIndex"
+                      class="coverage-matrix-cell"
+                    >
+                      <a
+                        v-if="cell.covered && cell.challengeUrl"
+                        :href="cell.challengeUrl"
+                        class="coverage-matrix-check"
+                        target="_blank"
+                        rel="noopener"
+                      >
+                        <span aria-hidden="true">✓</span>
+                        <span class="visually-hidden">Play {{ formatCardDisplayName(row.schemeName) }} vs {{ coreCoverageMatrix.columns[columnIndex]?.name }} at {{ matrixCountFor(setGroup.setAbbr) }}-player</span>
+                      </a>
+                      <span v-else class="coverage-matrix-blank" aria-hidden="true">·</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </details>
       </section>
     </div>
   </div>
@@ -761,5 +903,112 @@ function coverageLabel(usedByGauntlets: boolean): string {
   display: flex;
   flex-direction: column;
   gap: 0.05rem;
+}
+
+/* WP-464: Core-Set gauntlet-coverage matrix */
+.coverage-matrix {
+  margin: 0.75rem 0 0.25rem;
+}
+
+.coverage-matrix-summary {
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: var(--la-color-gold-bright);
+}
+
+.coverage-matrix-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.coverage-matrix-count {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--la-color-text-secondary);
+}
+
+.coverage-matrix-legend {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--la-color-text-muted);
+}
+
+/* why: WP-464 — the safety-net wrapper scrolls a wide matrix horizontally rather
+   than overflowing the page; 11 columns fit most viewports, small screens scroll
+   the table as a unit. */
+.coverage-matrix-scroll {
+  overflow-x: auto;
+}
+
+.coverage-matrix-table {
+  border-collapse: collapse;
+  font-size: 0.75rem;
+  color: var(--la-color-text-secondary);
+}
+
+.coverage-matrix-table th,
+.coverage-matrix-table td {
+  padding: 0.2rem 0.45rem;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.coverage-matrix-corner {
+  text-align: left;
+  color: var(--la-color-text-muted);
+  font-weight: 600;
+}
+
+.coverage-matrix-colhead {
+  color: var(--la-color-text-primary);
+  font-weight: 600;
+  vertical-align: bottom;
+}
+
+/* why: WP-464 — henchman columns are visually distinguished from villains (the two
+   column blocks) without relying on colour alone — italic + a lighter weight. */
+.coverage-matrix-colhead.henchman {
+  color: var(--la-color-text-secondary);
+  font-style: italic;
+}
+
+.coverage-matrix-rowhead {
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+
+.coverage-matrix-mm {
+  color: var(--la-color-text-primary);
+  font-weight: 600;
+}
+
+.coverage-matrix-scheme {
+  color: var(--la-color-text-muted);
+}
+
+/* why: WP-464 — a top border opens each new mastermind block so the 8 scheme-rows
+   read as one group (the ✓ pattern is identical within a mastermind × count). */
+.coverage-matrix-mm-start > * {
+  border-top: 1px solid var(--la-color-border-subtle);
+}
+
+.coverage-matrix-check {
+  color: var(--la-color-gold-bright);
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.coverage-matrix-check:hover {
+  text-decoration: underline;
+}
+
+.coverage-matrix-blank {
+  color: var(--la-color-border-strong);
 }
 </style>

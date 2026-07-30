@@ -800,3 +800,113 @@ export function findSetDetails(
   }
   return undefined;
 }
+
+/** One column of the coverage matrix: a villain or henchman group (WP-464). */
+export interface CoverageMatrixColumn {
+  readonly slug: string;
+  readonly name: string;
+  readonly kind: "villain" | "henchman";
+}
+
+/**
+ * One cell of the coverage matrix (WP-464). `covered` is true when the column's
+ * adversary is in the row's mastermind approved config at the selected player
+ * count; `challengeUrl` is that leg's cards-builder challenge, set ONLY when the
+ * cell is covered (an uncovered cell is a blank, not a link).
+ */
+export interface CoverageMatrixCell {
+  readonly covered: boolean;
+  readonly challengeUrl: string | null;
+}
+
+/** One row: a (mastermind × scheme) gauntlet leg with its per-column cells. */
+export interface CoverageMatrixRow {
+  readonly mastermindSlug: string;
+  readonly mastermindName: string;
+  readonly schemeSlug: string;
+  readonly schemeName: string;
+  readonly cells: readonly CoverageMatrixCell[];
+}
+
+/** The transposed per-set coverage matrix at one player count (WP-464). */
+export interface CoverageMatrix {
+  readonly columns: readonly CoverageMatrixColumn[];
+  readonly rows: readonly CoverageMatrixRow[];
+}
+
+/**
+ * Builds the transposed gauntlet-coverage matrix for a set at one player count
+ * (WP-464): rows = the set's masterminds × schemes (mastermind-major, then the
+ * scheme order published in `legs`), columns = the set's villains then henchmen. A
+ * cell is `covered` (with a challenge link) when the column adversary's
+ * set-qualified id is in that mastermind's approved config at the selected count.
+ *
+ * why: pure and data-injected — reads only the already-parsed gauntlet entries
+ * (their `legs` + `approvedLoadouts`) and the `SetDetails` roster (both already
+ * published, WP-395 / WP-461), so the board stays zero-API. Coverage derives from
+ * `selectApprovedLoadout` (the per-mastermind × count config), NEVER the per-*set*
+ * `SetAdversaryGroup.usedByGauntlets` flag (which would over-mark). The approved
+ * config does not vary by scheme (it is keyed by mastermind × count), so a
+ * mastermind's scheme-rows share a ✓ pattern and differ only in the per-leg
+ * challenge link. A count with no published config (`selectApprovedLoadout`
+ * undefined) leaves that mastermind's rows all-uncovered — never a throw.
+ *
+ * @param entries The set's gauntlet index entries (one per mastermind), in the
+ *   order the caller wants the mastermind row-groups.
+ * @param setDetails The set's published roster (villains + henchmen, with names).
+ * @param playerCount The player count the matrix reflects (1-5).
+ * @returns The columns and rows of the matrix.
+ */
+export function buildCoverageMatrix(
+  entries: readonly GauntletIndexEntry[],
+  setDetails: SetDetails,
+  playerCount: number,
+): CoverageMatrix {
+  const columns: CoverageMatrixColumn[] = [];
+  for (const villain of setDetails.villains) {
+    columns.push({ slug: villain.slug, name: villain.name, kind: "villain" });
+  }
+  for (const henchman of setDetails.henchmen) {
+    columns.push({ slug: henchman.slug, name: henchman.name, kind: "henchman" });
+  }
+
+  const rows: CoverageMatrixRow[] = [];
+  for (const entry of entries) {
+    const approvedLoadout = selectApprovedLoadout(entry, playerCount);
+    // why: build the id sets once per mastermind — the config is fixed per
+    // mastermind × count, so every scheme-row of this mastermind reuses them. An
+    // undefined loadout (missing count key) yields empty sets → all-uncovered.
+    const approvedVillainIds = new Set(approvedLoadout?.villainGroupIds ?? []);
+    const approvedHenchmanIds = new Set(approvedLoadout?.henchmanGroupIds ?? []);
+    for (const leg of entry.legs ?? []) {
+      // why: the challenge URL is per-leg (this scheme + this mastermind), computed
+      // once per row; every covered cell in the row links to the same leg (clicking
+      // any ✓ launches that leg's fight, which pins the whole approved loadout).
+      const challengeUrl = buildChallengeUrl(
+        setDetails.setAbbr,
+        leg.schemeSlug,
+        entry.mastermindSlug,
+        playerCount,
+        approvedLoadout,
+      );
+      const cells: CoverageMatrixCell[] = [];
+      for (const column of columns) {
+        const qualifiedId = `${setDetails.setAbbr}/${column.slug}`;
+        const covered =
+          column.kind === "villain"
+            ? approvedVillainIds.has(qualifiedId)
+            : approvedHenchmanIds.has(qualifiedId);
+        cells.push({ covered, challengeUrl: covered ? challengeUrl : null });
+      }
+      rows.push({
+        mastermindSlug: entry.mastermindSlug,
+        mastermindName: entry.mastermindName,
+        schemeSlug: leg.schemeSlug,
+        schemeName: leg.schemeName,
+        cells,
+      });
+    }
+  }
+
+  return { columns, rows };
+}
