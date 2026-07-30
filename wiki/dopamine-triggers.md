@@ -222,7 +222,8 @@ the tension built by loss-aversion, discharged.
 
 Players remember a session by its **emotional peak** and its **ending**
 (the peak-end rule; Kahneman & Fredrickson 1993, Redelmeier & Kahneman 1996),
-far more than its average. The three endgame outcomes
+far more than its average — an effect a 2022 meta-analysis found large and
+robust (Alaybek et al. 2022, *r* = 0.581 across 174 effect sizes). The three endgame outcomes
 (`heroes-win` / `scheme-wins` / `tie`) are the disproportionately-weighted
 end beat — which is exactly why the [visual finale](visual-effects.md#endgame)
 and the [endgame stinger](sound-effects.md) get
@@ -723,6 +724,13 @@ Out of scope for v1:
 - [Vision](vision.md), [Monetization Model](monetization-model.md) — the
   bright lines: free-game engagement craft, never pay-to-win or
   spend-pressure
+- Peak-end rule research — Kahneman & Fredrickson (1993); Redelmeier & Kahneman
+  (1996); Alaybek, B., Dalal, R. S., Fyffe, S., Aitken, J. A., Zhou, Y., Qu, X.,
+  Roman, A., & Baines, J. I. (2022). *All's well that ends (and peaks) well? A
+  meta-analysis of the peak-end rule and duration neglect.* Organizational
+  Behavior and Human Decision Processes, 170, 104149
+  (https://doi.org/10.1016/j.obhdp.2022.104149) — peak-end effect *r* = 0.581
+  (95% CI 0.487–0.661)
 - Companion feel-layer pages: [Design System Overview](design-system-overview.md),
   [Visual Effects](visual-effects.md), [Sound Effects](sound-effects.md),
   [Narrative Psychology](narrative-psychology.md)
