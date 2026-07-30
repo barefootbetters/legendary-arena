@@ -34600,6 +34600,9 @@ single-loadout builder cannot make the claim. Heroes stay free. No server,
 registry, persistence, or migration change; zero-API (client-side from the
 bundled registry).
 
-**Status:** Drafted 2026-07-29 (WP-454 / EC-489); lands at WP-454 execution.
+**Status:** Active (post-execution) — landed 2026-07-29 (WP-454 / EC-489). The
+guard shipped in `apps/registry-viewer`; local dev-server smoke confirmed the
+badge (qualifies / won't-count) and the pack-sourced adversary lock + unlock.
+D-24026 deploy live-verification is operator-pending on `cards.legendary-arena.com`.
 
 Protect this file.
