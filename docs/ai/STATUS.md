@@ -7,6 +7,36 @@
 
 ## Current State
 
+### WP-462 / EC-497 — Legends Board Per-Set "Show Set Details" Reveal (Client) (2026-07-30)
+
+**User-Visible Surface = `legends.legendary-arena.com`.** **D-24026 deploy
+live-verify operator-pending** on the CF Pages client deploy; **live-data
+dev-server smoke passed** (see below). No D-entry (client mirror of D-24279).
+
+Each set group on the legends gauntlet index gains a keyboard-accessible **"Show
+set details"** reveal listing the set's full roster — masterminds, schemes,
+villains, henchmen — with each villain/henchman marked fought (✓) / not-fought
+(✗) by *this set's* gauntlets. Renders WP-461's published `sets` field verbatim
+(no client recompute). The ✓/✗ coverage meaning is PER-SET-SCOPED (D-24279): a
+visually-hidden `aria-label` reads "used by this set's gauntlets" / "not used by
+this set's gauntlets", never the unscoped "any gauntlet", never colour alone,
+never `title` alone. Mirrors the snapshot types in `snapshotClient.ts` (never
+imports the server module); `vue`-only / zero-API; degrades to no-reveal on a
+pre-WP-461 snapshot. New pure `findSetDetails` + tests in `gauntletDisplay.ts`;
+the reveal in `GauntletIndexPanel.vue`. legends-board 117/0, vue-tsc 0, build 0;
+`pnpm -r build` 0.
+
+**Live-data verification:** WP-461 had already deployed + republished the R2
+snapshot (39 sets) by execution time, so the dev server against the live R2
+rendered the real reveal — Core Set showed all 4 masterminds + 8 schemes and
+marked villains `brotherhood`/`enemies-of-asgard`/`HYDRA`/`masters-of-evil` ✓ +
+`radiation`/`skrulls`/`spider-foes` ✗, henchmen `doombot-legion`/`hand-ninjas` ✓
++ `savage-land-mutates`/`sentinel` ✗ (exactly the published 4/7 villains, 2/4
+henchmen), authoritative names (HYDRA, not title-cased), per-set-scoped
+aria-labels, no horizontal overflow, no console errors. The completed
+**per-set "Show set details"** arc (WP-461 server + WP-462 client) reports —
+does not close — the coverage gap, per the operator's transparency-now decision.
+
 ### WP-461 / EC-496 — Publish Per-Set Gauntlet Roster + Coverage to the Legends Index (Server) (2026-07-30)
 
 **User-Visible Surface = `legends.legendary-arena.com`** (indirect — the data half).

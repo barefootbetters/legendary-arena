@@ -9,6 +9,7 @@ import type {
   GauntletIndexApprovedLoadouts,
   GauntletIndexEntry,
   GauntletSnapshotEntry,
+  SetDetails,
 } from "../snapshots/snapshotClient";
 
 /** One set's slice of the gauntlet index, for grouped rendering. */
@@ -770,4 +771,32 @@ export function buildGauntletDetails(
     loadoutsByCount.push({ playerCount, configs });
   }
   return { schemes, loadoutsByCount };
+}
+
+/**
+ * Finds the published per-set roster for a set by its abbreviation (WP-462), for
+ * the set-group "Show set details" reveal.
+ *
+ * why: pure lookup over the already-parsed `sets` field WP-461 publishes — the
+ * board renders the roster + coverage flags verbatim (no recompute). Returns
+ * `undefined` when `sets` is absent (a pre-WP-461 snapshot on the CDN) or has no
+ * entry for the set, in which case the reveal does not render for that group.
+ *
+ * @param sets The gauntlet index snapshot's `sets` roster, or undefined.
+ * @param setAbbr The set to look up.
+ * @returns The matching `SetDetails`, or `undefined`.
+ */
+export function findSetDetails(
+  sets: readonly SetDetails[] | undefined,
+  setAbbr: string,
+): SetDetails | undefined {
+  if (sets === undefined) {
+    return undefined;
+  }
+  for (const setDetails of sets) {
+    if (setDetails.setAbbr === setAbbr) {
+      return setDetails;
+    }
+  }
+  return undefined;
 }
