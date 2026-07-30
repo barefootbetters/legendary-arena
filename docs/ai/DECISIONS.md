@@ -34726,4 +34726,44 @@ dev-server smoke confirmed the index CTA href now threads the row count into bot
 the URL count and the pinned loadout. D-24026 deploy live-verify operator-pending
 on `legends.legendary-arena.com`.
 
+---
+
+### D-24278 — Ranked gauntlet qualification fixes the adversaries to one canonical configuration (variant 0); heroes are the only variable
+
+**Context.** D-24199 gave each mastermind gauntlet a **menu of three** approved
+villain/henchmen configurations per player count. An operator review (2026-07-30)
+concluded the adversary choice should be removed from ranked play entirely — "the
+only choice should be the heroes." A ranked leaderboard is a fair fixed-course
+time-trial: three approved courses per leg fragment the competition three ways
+(villains are part of `ScenarioKey`) without adding strategic depth, since an
+optimizer converges on whichever config is easiest.
+
+**Decision.** The approved-loadout menu is **one** canonical configuration per
+(mastermind × player count) — **variant 0**, the generator's canonical rotation
+that the challenge links, WP-444 pack import, and the WP-454 badge already default
+to. Ranked gauntlet qualification therefore fixes the villains and henchmen, and
+the **only** ranked-competitive variable is the hero team. Implemented by the
+single lever `VARIANTS_PER_MASTERMIND = 3 → 1` in
+`scripts/generate-gauntlet-loadouts.mjs` + a regeneration of
+`gauntletLoadouts.generated.ts` (110 menus × 1 variant); variant 0's compositions
+are byte-identical (only variants 1 and 2 drop).
+
+**Rationale / benefits.** One config concentrates leaderboard scores (~3× denser
+boards — directly addressing empty boards), cuts the PAR scenario count from
+~6,354 to ~2,118, and yields a legible "same fight, your heroes" competitive
+format. **Zero migration cost:** `legendary.competitive_scores` is empty in
+production, so dropping variants 1 and 2 re-keys and invalidates no scores — the
+cheapest this decision will ever have; once the first ranked score lands it would
+begin voiding runs on the retired variants.
+
+**Boundary — this supersedes D-24199's menu *size* only.** D-24199's core rule is
+intact: **ranked** legs require an approved loadout, and **casual** play keeps free
+selection (unchanged). The qualification logic (`matchesApprovedLoadout`) is
+untouched — it already compares against "an approved config," and there is now
+one. `ScenarioKey` / `henchman_key` shape and the scoring math are unchanged. No
+per-mastermind hand-curation (variant 0 is the uniform collapse target).
+
+**Status:** Drafted 2026-07-30 (WP-458 / EC-493); lands at WP-458 execution.
+Supersedes the menu size in **D-24199** (which stays Active for its core rule).
+
 Protect this file.
