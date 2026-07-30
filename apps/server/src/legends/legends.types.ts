@@ -146,11 +146,57 @@ export interface GauntletIndexEntry {
 }
 
 /**
+ * A named group in a set's roster with no coverage flag (WP-461): a mastermind
+ * or a scheme, where `slug`/`name` are the registry's canonical fields. Every
+ * mastermind is a gauntlet and every scheme is a leg of every gauntlet, so these
+ * are covered by construction and need no per-group coverage flag.
+ */
+export interface SetNamedGroup {
+  readonly slug: string;
+  readonly name: string;
+}
+
+/**
+ * A villain or henchman group in a set's roster with its gauntlet-coverage flag
+ * (WP-461). `usedByGauntlets` is PER-SET-SCOPED: true iff this group's
+ * set-qualified id (`${setAbbr}/${slug}`) appears in at least one approved
+ * configuration of one of THIS set's own masterminds at any player count — i.e.
+ * completing this set's gauntlet challenge would fight it. A group in the set but
+ * in no approved config of the set's masterminds is `false` (the transparency the
+ * WP-462 reveal surfaces).
+ */
+export interface SetAdversaryGroup {
+  readonly slug: string;
+  readonly name: string;
+  readonly usedByGauntlets: boolean;
+}
+
+/**
+ * The full per-set roster the legends board's "Show set details" reveal renders
+ * (WP-461 / D-24279): every mastermind, scheme, villain group, and henchman group
+ * a set ships, with villains/henchmen carrying the per-set gauntlet-coverage flag.
+ * Property order is fixed for deterministic JSON.
+ */
+export interface SetDetails {
+  readonly setAbbr: string;
+  readonly setName: string;
+  readonly masterminds: readonly SetNamedGroup[];
+  readonly schemes: readonly SetNamedGroup[];
+  readonly villains: readonly SetAdversaryGroup[];
+  readonly henchmen: readonly SetAdversaryGroup[];
+}
+
+/**
  * The gauntlet index artifact written to `legends/v1/gauntlet-index.json`
  * whenever a gauntlet catalog is provided to the publisher.
  */
 export interface GauntletIndexSnapshot {
   readonly gauntlets: readonly GauntletIndexEntry[];
+  // why: WP-461 / D-24279 — additive optional per-set rosters (masterminds/
+  // schemes/villains/henchmen with per-set villain/henchman coverage flags) so
+  // the board can render a "Show set details" reveal. Optional so a pre-WP-461
+  // consumer ignores it and an old snapshot still parses.
+  readonly sets?: readonly SetDetails[];
   readonly generatedAt: string;
   readonly schemaVersion: 1;
 }

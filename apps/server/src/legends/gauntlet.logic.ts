@@ -44,6 +44,9 @@ import type {
 import type {
   GauntletFixedSnapshotEntry,
   GauntletSnapshotEntry,
+  SetAdversaryGroup,
+  SetDetails,
+  SetNamedGroup,
 } from './legends.types.js';
 // why: WP-442 — the leg-clear predicate and the fixed-division pool search
 // were extracted into a shared pure helper so the leaderboard and WP-5's run
@@ -87,6 +90,13 @@ export interface GauntletSetSummary {
     readonly slug: string;
     readonly name: string;
   }[];
+  // why: WP-461 — the full villain/henchman rosters (not just the approved
+  // subset) so the publisher can emit every group per set, including the ones no
+  // gauntlet fights. Populated by the wiring layer from registry.getSet().villains
+  // /.henchmen; henchmen names are runtime-verified, not schema-typed (the
+  // registry types henchmen as z.unknown()).
+  readonly villains: readonly SetNamedGroup[];
+  readonly henchmen: readonly SetNamedGroup[];
 }
 
 /**
@@ -233,6 +243,137 @@ export function buildGauntletCatalog(
         ),
       });
     }
+  }
+
+  return catalog;
+}
+
+/**
+ * Sorts a slug/name roster ASC by slug and returns fresh `SetNamedGroup`
+ * records (masterminds and schemes — no coverage flag).
+ *
+ * @param groups The registry roster (mastermind or scheme summaries).
+ * @returns A fresh slug-ASC array of `{ slug, name }`.
+ */
+function buildNamedGroups(
+  groups: readonly { readonly slug: string; readonly name: string }[],
+): SetNamedGroup[] {
+  const sortedGroups = [...groups].sort((firstGroup, secondGroup) =>
+    firstGroup.slug < secondGroup.slug ? -1 : 1,
+  );
+  const namedGroups: SetNamedGroup[] = [];
+  for (const group of sortedGroups) {
+    namedGroups.push({ slug: group.slug, name: group.name });
+  }
+  return namedGroups;
+}
+
+/**
+ * Sorts a villain/henchman roster ASC by slug and stamps each with its per-set
+ * coverage flag: `usedByGauntlets` is true iff the group's set-qualified id
+ * (`${setAbbr}/${slug}`) is in `usedGroupIds`.
+ *
+ * @param groups The set's own villain (or henchman) roster.
+ * @param setAbbr The set the roster belongs to (for the set-qualified id).
+ * @param usedGroupIds The set-qualified ids used by this set's own masterminds'
+ *   approved configs.
+ * @returns A fresh slug-ASC array of `SetAdversaryGroup`.
+ */
+function buildAdversaryGroups(
+  groups: readonly { readonly slug: string; readonly name: string }[],
+  setAbbr: string,
+  usedGroupIds: ReadonlySet<string>,
+): SetAdversaryGroup[] {
+  const sortedGroups = [...groups].sort((firstGroup, secondGroup) =>
+    firstGroup.slug < secondGroup.slug ? -1 : 1,
+  );
+  const adversaryGroups: SetAdversaryGroup[] = [];
+  for (const group of sortedGroups) {
+    adversaryGroups.push({
+      slug: group.slug,
+      name: group.name,
+      usedByGauntlets: usedGroupIds.has(`${setAbbr}/${group.slug}`),
+    });
+  }
+  return adversaryGroups;
+}
+
+/**
+ * Builds the per-set details catalog the publisher emits as the gauntlet index's
+ * `sets` field (WP-461 / D-24279): one `SetDetails` per set with at least one
+ * scheme (matching `buildGauntletCatalog`'s inclusion), carrying the full roster
+ * of masterminds, schemes, villains, and henchmen, with each villain/henchman
+ * flagged `usedByGauntlets`.
+ *
+ * why: coverage is PER-SET-SCOPED — a villain/henchman group is `usedByGauntlets`
+ * true iff its set-qualified id appears in an approved config of one of THIS set's
+ * OWN masterminds, gathered by iterating the set's own masterminds and looking
+ * each up by the exact `${setAbbr}/${mastermindSlug}` key. Never a global scan of
+ * the whole map: a cross-set fallback (e.g. `2099`/`amwp` gauntlets pull `co2e/*`
+ * groups) must not flip the foreign set's own flags. "Does THIS set's challenge
+ * fight it" is the intended meaning; WP-462 renders the flag verbatim.
+ *
+ * @param setSummaries Plain per-set registry slices from the wiring layer, now
+ *   carrying the full `villains`/`henchmen` rosters (WP-461).
+ * @param approvedLoadoutsByGauntlet Optional approved-loadout lookup keyed
+ *   `setAbbr/mastermindSlug` (the same map `buildGauntletCatalog` consumes). When
+ *   absent, or a set's masterminds have no entry, every flag is false (nothing is
+ *   confirmed reachable) — never a throw.
+ * @returns One `SetDetails` per at-least-one-scheme set, `setAbbr` ASC, each
+ *   roster `slug` ASC.
+ */
+export function buildSetDetailsCatalog(
+  setSummaries: readonly GauntletSetSummary[],
+  approvedLoadoutsByGauntlet?: ReadonlyMap<string, GauntletApprovedLoadouts>,
+): SetDetails[] {
+  const catalog: SetDetails[] = [];
+
+  const sortedSets = [...setSummaries].sort((firstSet, secondSet) =>
+    firstSet.setAbbr < secondSet.setAbbr ? -1 : 1,
+  );
+
+  for (const setSummary of sortedSets) {
+    if (setSummary.schemes.length === 0) {
+      continue;
+    }
+
+    const usedVillainGroupIds = new Set<string>();
+    const usedHenchmanGroupIds = new Set<string>();
+    for (const mastermind of setSummary.masterminds) {
+      const approvedForGauntlet = approvedLoadoutsByGauntlet?.get(
+        `${setSummary.setAbbr}/${mastermind.slug}`,
+      );
+      if (approvedForGauntlet === undefined) {
+        continue;
+      }
+      for (const approvedConfigs of Object.values(approvedForGauntlet)) {
+        for (const approvedConfig of approvedConfigs) {
+          for (const villainGroupId of approvedConfig.villainGroupIds) {
+            usedVillainGroupIds.add(villainGroupId);
+          }
+          for (const henchmanGroupId of approvedConfig.henchmanGroupIds) {
+            usedHenchmanGroupIds.add(henchmanGroupId);
+          }
+        }
+      }
+    }
+
+    catalog.push({
+      setAbbr: setSummary.setAbbr,
+      setName: setSummary.setName,
+      masterminds: buildNamedGroups(setSummary.masterminds),
+      schemes: buildNamedGroups(setSummary.schemes),
+      villains: buildAdversaryGroups(
+        setSummary.villains,
+        setSummary.setAbbr,
+        usedVillainGroupIds,
+      ),
+      henchmen: buildAdversaryGroups(
+        setSummary.henchmen,
+        setSummary.setAbbr,
+        usedHenchmanGroupIds,
+      ),
+    });
   }
 
   return catalog;

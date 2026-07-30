@@ -19,6 +19,7 @@ import type { GauntletDefinition } from './gauntlet.logic.js';
 import type {
   LegendsPublisherHealthState,
   LegendsR2Client,
+  SetDetails,
 } from './legends.types.js';
 import { publishAllBoards } from './legends.publisher.js';
 
@@ -67,6 +68,9 @@ export function startLegendsPublisher(options: {
   // why: optional (WP-342 / D-24131) — forwarded verbatim to publishAllBoards;
   // absent means no gauntlet boards, byte-identical WP-142 behavior.
   readonly gauntletCatalog?: readonly GauntletDefinition[];
+  // why: WP-461 — forwarded verbatim to publishAllBoards as the per-set details
+  // catalog (the index's `sets` field); absent means no `sets` field emitted.
+  readonly setDetailsCatalog?: readonly SetDetails[];
   readonly intervalMs?: number;
   readonly leaderboardDeps: LeaderboardDependencies;
   readonly r2Client: LegendsR2Client;
@@ -108,6 +112,7 @@ export function startLegendsPublisher(options: {
         options.bucket,
         options.leaderboardDeps,
         options.gauntletCatalog,
+        options.setDetailsCatalog,
       );
 
       const anyFailed = result.boards.some(
