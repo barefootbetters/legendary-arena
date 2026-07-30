@@ -2500,7 +2500,7 @@
       "slug": "doombot-legion",
       "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hm-doombot-legion.webp",
       "abilities": [
-        "Fight: Look at the top two cards of your deck. KO one of them and put the other back."
+        "Fight: Look at the top two cards of your deck. KO one of them and put the other back. [effect:scry-ko-own-deck]"
       ],
       "vAttack": "3",
       "vp": "1"

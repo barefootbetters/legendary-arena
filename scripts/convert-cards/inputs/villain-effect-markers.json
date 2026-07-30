@@ -1,7 +1,7 @@
 {
   "_notes": [
     "WP-187 / EC-214 — curated, human-reviewed [effect:] marker map. WP-188 / EC-215 extends it to admit the Escape:/Overrun: timings. Consumed by apply-effect-markers.mjs, which appends [effect:<VillainEffectKeyword>] tokens to the matched Ambush:/Fight:/Escape:/Overrun: ability line in data/cards/*.json. WP-185's engine setup parser reads the Ambush/Fight markers; WP-186's parser reads the Escape/Overrun markers (collapsing both prefixes to the single onEscape timing engine-side).",
-    "Keys: villains -> setAbbr -> villainGroupSlug -> villainCardSlug -> { ambush?, fight?, escape?, overrun? }; henchmen -> setAbbr -> henchmanGroupSlug -> { ambush?, fight?, escape?, overrun? } (henchman ability text is group-level). Each list holds only the five locked VillainEffectKeyword strings: gainWoundEachPlayer, gainWoundCurrentPlayer, koHeroCurrentPlayer, heroDeckTopToEscape, captureBystander.",
+    "Keys: villains -> setAbbr -> villainGroupSlug -> villainCardSlug -> { ambush?, fight?, escape?, overrun? }; henchmen -> setAbbr -> henchmanGroupSlug -> { ambush?, fight?, escape?, overrun? } (henchman ability text is group-level). Each list holds either a locked VillainEffectKeyword string (gainWoundEachPlayer, gainWoundCurrentPlayer, koHeroCurrentPlayer, heroDeckTopToEscape, captureBystander, koHeroEachPlayer, koHeroEachPlayerMag2, captureHqHeroRightmost, captureHqHeroHighestCost, captureHqHeroLowestCost) OR a parameterized VillainEffectPrimitive token (e.g. scry-ko-own-deck — WP-447/D-24267, the first primitive used in curated data), both accepted by apply-effect-markers.mjs and the engine parser.",
     "v1 curation discipline (WP-185 semantics): a line is marked ONLY when its entire effect reduces to unconditional + magnitude-1 + single-target applications of the MVP vocabulary. Conditional (may / If / '... or ...' choice), magnitude>1 (two / all / 'for each'), wrong/multi target (each villain, the Mastermind, another player, target-restricted KO), and lines carrying an extra non-MVP clause ('... Then ...') are deliberately left unmarked. Conservatism over coverage.",
     "WP-188 curatable Escape shapes: ONLY 'Escape: Each player gains a Wound.' plus punctuation-/markup-only variants — this is gainWoundEachPlayer's first data (zero matches under WP-187, which found no unconditional each-player wound lines on Ambush/Fight). DEFER anything with 'If'/'When'/'Unless'/'For each', '... or ...' choices, magnitude>1, compound '(After the normal Escape KO) ...', or 'each other player' wording.",
     "WP-188 'overrun' curation: the gate is widened so --propose scans overrun and _unassigned can capture it, but ZERO overrun entries were curatable under v1 discipline. Villain/henchman overrun lines appear only in the standalone Fear-Itself / Villains-Only sets and all carry either conditional choices, '[keyword:Demolish]' (no MVP keyword), or 'Bindings' (Fear-Itself recoloring distinct from 'Wound'). An empty overrun curation set is a valid v1 outcome per WP-188 §v1 Curation, not a gap. Scheme overrun is explicitly out of scope.",
@@ -296,7 +296,11 @@
     "amwp": {
       "quantumnauts": { "fight": ["koHeroCurrentPlayer"] }
     },
+    "co2e": {
+      "doombot-legion": { "fight": ["scry-ko-own-deck"] }
+    },
     "core": {
+      "doombot-legion": { "fight": ["scry-ko-own-deck"] },
       "sentinel": { "fight": ["koHeroCurrentPlayer"] }
     },
     "cvwr": {
