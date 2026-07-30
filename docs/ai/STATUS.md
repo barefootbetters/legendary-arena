@@ -7,6 +7,36 @@
 
 ## Current State
 
+### WP-456 / EC-491 — Legends Board Per-Mastermind Gauntlet Details Reveal (D-24276) (2026-07-29)
+
+**User-Visible Surface = `legends.legendary-arena.com`** (the Legends Attract
+Board gauntlet index). **D-24026 deploy live-verify operator-pending**; live
+dev-server smoke passed.
+
+Each gauntlet in the index gains a keyboard-accessible **"Show details"** reveal
+(native `<details>`) showing the mastermind's **schemes** + the **approved villain
+and henchmen groups per player count** — so a player can see what a run must use to
+qualify (e.g. 2-player Magneto needs Brotherhood **+ Enemies of Asgard**). Completes
+the D-24199 intent that the requirement be *visible* (D-24186/D-24190).
+
+- **Client-only, zero-API.** The data was already published in the gauntlet-index
+  snapshot (`GauntletIndexEntry.legs` + `.approvedLoadouts`, WP-395) and already
+  parsed by the board (used for challenge links) — the reveal renders what's in
+  hand. No publisher/server/snapshot change, **no registry import** (the board
+  stays `vue`-only at runtime).
+- **New:** pure `buildGauntletDetails(entry, playerCounts)` in `gauntletDisplay.ts`
+  (+ `titleCaseGroupLabel`), reusing `listApprovedLoadouts`; degrades gracefully on
+  absent `approvedLoadouts`/`legs`. **Modified:** `GauntletIndexPanel.vue` (the
+  reveal + a precomputed details-by-board map), `gauntletDisplay.test.ts` (5 cases).
+- **Operator amendment (Jeff):** title-cased labels under **"Villains:" /
+  "Henchmen:"** headers (superseding the initial `formatApprovedLoadout` lowercase
+  lock). Known limitation: acronym groups render title-cased ("Hydra"), not
+  "HYDRA" — a faithful name would need the publisher to emit a group display name
+  (separate follow-on).
+- **Verified:** legends-board 110/0, `vue-tsc` 0, build 0, `pnpm -r build` 0; live
+  smoke on the real R2 index (110 reveals, Magneto 2p variants + 8 schemes, zero
+  non-R2 network, no console errors).
+
 ### WP-455 / EC-490 — Local WORK_INDEX Row-Pattern Check (D-24275) (2026-07-29)
 
 **User-Visible Surface = `none — infrastructure`.** No user-observable change —
