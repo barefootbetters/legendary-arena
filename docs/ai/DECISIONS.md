@@ -34688,4 +34688,37 @@ shows the Brotherhood + Enemies of Asgard variant + all schemes). Operator
 amendment at execution: title-cased labels under "Villains:" / "Henchmen:"
 headers. D-24026 deploy live-verify operator-pending on `legends.legendary-arena.com`.
 
+---
+
+### D-24277 — Legends index challenge-link CTA pins a player-count-consistent loadout
+
+**Context.** The legends gauntlet **index** "Challenge →" CTA
+(`firstLegChallengeUrl`, `GauntletIndexPanel.vue`) pinned the **solo** approved
+loadout — `selectApprovedLoadout(gauntlet)` with no count returns the count-`1`
+config — but passed `undefined` for the URL `playerCount`, so the cards builder
+fell back to `DEFAULT_PLAYER_COUNT = 2`. The result was a **solo composition
+judged at 2 players** ("A 2-player match needs 2 villain groups — this loadout has
+1"), which an operator hit. The per-leg links on `GauntletBoardPanel` were already
+consistent (one routed count to both `selectApprovedLoadout` and
+`buildChallengeUrl`); only the index CTA was inconsistent.
+
+**Decision.** The index CTA threads the **row's selected player count**
+(`selectionFor(gauntlet.board).playerCount` — the same source the row's Download
+control uses) into **both** `selectApprovedLoadout(entry, count)` and
+`buildChallengeUrl(..., count, loadout)`, via a new pure
+`buildRowChallengeUrl(entry, playerCount)` helper. The pinned approved
+villains/henchmen and the URL `playerCount` therefore always agree, and the link
+opens the cards builder on a **qualifying** loadout. A count with no approved
+loadout degrades gracefully (scheme + mastermind + count, no villain params); a
+legs-less entry yields `null`.
+
+**Boundary.** Client-only, `apps/legends-board`, zero-API — no publisher/server/
+snapshot change and no registry import. The **cards-builder consumer is
+untouched**: D-24190's `applyPreviewToDraft` already applies the URL
+`villainGroupIds`/`henchmanGroupIds` onto the shared draft, so a count-consistent
+link needs no registry-viewer change. `buildChallengeUrl` and
+`selectApprovedLoadout` signatures are unchanged (only the caller is fixed).
+
+**Status:** Drafted 2026-07-30 (WP-457 / EC-492); lands at WP-457 execution.
+
 Protect this file.
