@@ -309,25 +309,31 @@ function firstLegChallengeUrl(gauntlet: GauntletIndexEntry): string | null {
                   <strong>Schemes ({{ gauntletDetails(gauntlet).schemes.length }}):</strong>
                   {{ gauntletDetails(gauntlet).schemes.join(", ") }}
                 </p>
-                <div
-                  v-for="countDetail of gauntletDetails(gauntlet).loadoutsByCount"
-                  :key="countDetail.playerCount"
-                  class="gauntlet-details-count"
-                >
-                  <span class="gauntlet-details-count-label">{{ countDetail.playerCount }}-player approved adversaries</span>
-                  <p v-if="countDetail.configs.length === 0" class="gauntlet-details-none">
-                    Requirement not published for this player count.
-                  </p>
-                  <ul v-else class="gauntlet-details-configs">
-                    <li
-                      v-for="(config, configIndex) of countDetail.configs"
-                      :key="configIndex"
-                      class="gauntlet-details-config"
-                    >
-                      <span><strong>Villains:</strong> {{ config.villains.join(", ") }}</span>
-                      <span><strong>Henchmen:</strong> {{ config.henchmen.join(", ") }}</span>
-                    </li>
-                  </ul>
+                <!-- why: WP-459 — the per-count blocks flow into a responsive grid
+                     (multiple columns where width allows), so the reveal is a
+                     compact card instead of a tall single column. The Schemes line
+                     above stays full-width. -->
+                <div class="gauntlet-details-counts">
+                  <div
+                    v-for="countDetail of gauntletDetails(gauntlet).loadoutsByCount"
+                    :key="countDetail.playerCount"
+                    class="gauntlet-details-count"
+                  >
+                    <span class="gauntlet-details-count-label">{{ countDetail.playerCount }}-player approved adversaries</span>
+                    <p v-if="countDetail.configs.length === 0" class="gauntlet-details-none">
+                      Requirement not published for this player count.
+                    </p>
+                    <ul v-else class="gauntlet-details-configs">
+                      <li
+                        v-for="(config, configIndex) of countDetail.configs"
+                        :key="configIndex"
+                        class="gauntlet-details-config"
+                      >
+                        <span><strong>Villains:</strong> {{ config.villains.join(", ") }}</span>
+                        <span><strong>Henchmen:</strong> {{ config.henchmen.join(", ") }}</span>
+                      </li>
+                    </ul>
+                  </div>
                 </div>
               </div>
             </details>
@@ -396,6 +402,12 @@ function firstLegChallengeUrl(gauntlet: GauntletIndexEntry): string | null {
 .gauntlet-row {
   display: flex;
   align-items: center;
+  /* why: WP-459 — wrap so the `flex-basis: 100%` details reveal takes its OWN
+     full-width line below the row's top-line items, instead of being squeezed
+     into the leftover ~208px of a nowrap row (which forced the tall single
+     column). The top-line items already fit on one line, so only the reveal
+     wraps below. */
+  flex-wrap: wrap;
   gap: 1rem;
   padding: 0.45rem 0.25rem;
   border-bottom: 1px solid rgba(26, 26, 46, 0.6);
@@ -511,7 +523,7 @@ function firstLegChallengeUrl(gauntlet: GauntletIndexEntry): string | null {
 .gauntlet-details-body {
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
+  gap: 0.4rem;
   margin-top: 0.4rem;
   font-size: 0.8rem;
   color: var(--la-color-text-secondary);
@@ -521,10 +533,23 @@ function firstLegChallengeUrl(gauntlet: GauntletIndexEntry): string | null {
   margin: 0;
 }
 
+/* why: WP-459 — lay the per-count blocks in a responsive grid so they flow into
+   multiple columns on a wide row and collapse to one column on narrow viewports,
+   replacing the tall single-column stack that produced ~40 rows of whitespace. */
+.gauntlet-details-counts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 0.3rem 0.85rem;
+}
+
 .gauntlet-details-count {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  gap: 0.1rem;
+  /* why: WP-459 — min-width:0 + overflow-wrap let a long adversary name wrap
+     inside its column instead of forcing a wide track (horizontal scroll). */
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .gauntlet-details-count-label {
