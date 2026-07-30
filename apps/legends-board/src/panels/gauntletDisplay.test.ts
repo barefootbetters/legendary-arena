@@ -5,6 +5,7 @@ import {
   buildAttractBoardList,
   buildChallengeUrl,
   buildFixedCountTabs,
+  buildGauntletDetails,
   buildPlayerCountTabs,
   findRoutedCountTab,
   formatAverageScore,
@@ -541,5 +542,75 @@ describe("canonical loadout discoverability (WP-395)", () => {
       }),
       "brotherhood, enemies of asgard + doombot legion",
     );
+  });
+});
+
+describe("buildGauntletDetails", () => {
+  const magnetoEntry = {
+    legs: [
+      { schemeSlug: "legacy-virus-the", schemeName: "Legacy Virus, The" },
+      { schemeSlug: "midtown-bank-robbery", schemeName: "Midtown Bank Robbery" },
+    ],
+    approvedLoadouts: {
+      "2": [
+        {
+          villainGroupIds: ["core/brotherhood", "core/enemies-of-asgard"],
+          henchmanGroupIds: ["core/doombot-legion"],
+        },
+        {
+          villainGroupIds: ["core/brotherhood", "core/hydra"],
+          henchmanGroupIds: ["core/hand-ninjas"],
+        },
+      ],
+    },
+  };
+
+  it("lists the scheme names from the legs", () => {
+    const details = buildGauntletDetails(magnetoEntry, [1, 2, 3, 4, 5]);
+    assert.deepEqual(details.schemes, [
+      "Legacy Virus, The",
+      "Midtown Bank Robbery",
+    ]);
+  });
+
+  it("title-cases villains and henchmen separately, under the right player count", () => {
+    const details = buildGauntletDetails(magnetoEntry, [2]);
+    assert.equal(details.loadoutsByCount.length, 1);
+    const twoPlayer = details.loadoutsByCount[0];
+    assert.equal(twoPlayer.playerCount, 2);
+    // The second villain (Enemies Of Asgard) is a VILLAIN, title-cased; the
+    // henchman half is separate — no "villains + henchmen" divider string.
+    assert.deepEqual(twoPlayer.configs[0], {
+      villains: ["Brotherhood", "Enemies Of Asgard"],
+      henchmen: ["Doombot Legion"],
+    });
+    assert.deepEqual(twoPlayer.configs[1], {
+      villains: ["Brotherhood", "Hydra"],
+      henchmen: ["Hand Ninjas"],
+    });
+  });
+
+  it("returns empty configs for a count with no published loadout (no throw)", () => {
+    const details = buildGauntletDetails(magnetoEntry, [1, 3]);
+    assert.deepEqual(details.loadoutsByCount, [
+      { playerCount: 1, configs: [] },
+      { playerCount: 3, configs: [] },
+    ]);
+  });
+
+  it("returns empty configs for every count when approvedLoadouts is undefined", () => {
+    const details = buildGauntletDetails({ legs: magnetoEntry.legs }, [1, 2]);
+    assert.deepEqual(details.loadoutsByCount, [
+      { playerCount: 1, configs: [] },
+      { playerCount: 2, configs: [] },
+    ]);
+  });
+
+  it("returns empty schemes when the entry has no legs", () => {
+    const details = buildGauntletDetails(
+      { approvedLoadouts: magnetoEntry.approvedLoadouts },
+      [2],
+    );
+    assert.deepEqual(details.schemes, []);
   });
 });

@@ -14,11 +14,13 @@ import type {
 import {
   buildChallengeUrl,
   buildFixedCountTabs,
+  buildGauntletDetails,
   buildPlayerCountTabs,
   formatCardDisplayName,
   groupGauntletsBySet,
   pinShowcaseGauntlet,
   selectApprovedLoadout,
+  type GauntletDetails,
   type PlayerCountTab,
 } from "./gauntletDisplay";
 import {
@@ -42,6 +44,39 @@ const setGroups = computed(() => {
   // function's publisher-order-preserving contract is untouched.
   return pinShowcaseGauntlet(groupGauntletsBySet(props.index.gauntlets));
 });
+
+// why: WP-456 — the player counts the details reveal lists approved adversaries
+// for (the SupportedPlayerCount range the gauntlet index keys on).
+const DETAIL_PLAYER_COUNTS = [1, 2, 3, 4, 5];
+
+// why: WP-456 — precompute each gauntlet's details once per index change (keyed
+// by board name) rather than re-deriving inside the template on every render;
+// the reveal template reads this map. buildGauntletDetails is pure and reads only
+// the already-parsed snapshot entry (no API, no registry import).
+const gauntletDetailsByBoard = computed<Map<string, GauntletDetails>>(() => {
+  const detailsByBoard = new Map<string, GauntletDetails>();
+  for (const setGroup of setGroups.value) {
+    for (const gauntlet of setGroup.gauntlets) {
+      detailsByBoard.set(
+        gauntlet.board,
+        buildGauntletDetails(gauntlet, DETAIL_PLAYER_COUNTS),
+      );
+    }
+  }
+  return detailsByBoard;
+});
+
+const EMPTY_GAUNTLET_DETAILS: GauntletDetails = { schemes: [], loadoutsByCount: [] };
+
+/**
+ * The precomputed details for one gauntlet row, for the reveal template.
+ *
+ * @param gauntlet The gauntlet index entry.
+ * @returns Its details, or an empty shape if not yet computed.
+ */
+function gauntletDetails(gauntlet: GauntletIndexEntry): GauntletDetails {
+  return gauntletDetailsByBoard.value.get(gauntlet.board) ?? EMPTY_GAUNTLET_DETAILS;
+}
 
 /** One gauntlet row's download-selector state (WP-441). */
 interface GauntletDownloadSelection {
@@ -274,6 +309,40 @@ function firstLegChallengeUrl(gauntlet: GauntletIndexEntry): string | null {
                 @click="downloadRowPack(gauntlet)"
               >Download Mastermind Gauntlet</button>
             </div>
+
+            <!-- WP-456: per-mastermind details reveal — the schemes and the
+                 approved villains/henchmen per player count a run must use to
+                 qualify. Rendered from already-published snapshot data (no API);
+                 a native <details> so it is keyboard-accessible. -->
+            <details class="gauntlet-details">
+              <summary class="gauntlet-details-summary">Show details</summary>
+              <div class="gauntlet-details-body">
+                <p class="gauntlet-details-schemes">
+                  <strong>Schemes ({{ gauntletDetails(gauntlet).schemes.length }}):</strong>
+                  {{ gauntletDetails(gauntlet).schemes.join(", ") }}
+                </p>
+                <div
+                  v-for="countDetail of gauntletDetails(gauntlet).loadoutsByCount"
+                  :key="countDetail.playerCount"
+                  class="gauntlet-details-count"
+                >
+                  <span class="gauntlet-details-count-label">{{ countDetail.playerCount }}-player approved adversaries</span>
+                  <p v-if="countDetail.configs.length === 0" class="gauntlet-details-none">
+                    Requirement not published for this player count.
+                  </p>
+                  <ul v-else class="gauntlet-details-configs">
+                    <li
+                      v-for="(config, configIndex) of countDetail.configs"
+                      :key="configIndex"
+                      class="gauntlet-details-config"
+                    >
+                      <span><strong>Villains:</strong> {{ config.villains.join(", ") }}</span>
+                      <span><strong>Henchmen:</strong> {{ config.henchmen.join(", ") }}</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </details>
           </li>
         </ul>
       </section>
@@ -435,5 +504,64 @@ function firstLegChallengeUrl(gauntlet: GauntletIndexEntry): string | null {
 
 .download-button:hover {
   background: rgba(255, 215, 0, 0.12);
+}
+
+/* WP-456: per-mastermind gauntlet details reveal */
+.gauntlet-details {
+  flex-basis: 100%;
+  margin-top: 0.35rem;
+  border-top: 1px solid var(--la-color-border-subtle);
+  padding-top: 0.35rem;
+}
+
+.gauntlet-details-summary {
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: var(--la-color-gold-bright);
+}
+
+.gauntlet-details-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-top: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--la-color-text-secondary);
+}
+
+.gauntlet-details-schemes {
+  margin: 0;
+}
+
+.gauntlet-details-count {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.gauntlet-details-count-label {
+  color: var(--la-color-text-primary);
+  font-weight: 600;
+}
+
+.gauntlet-details-none {
+  margin: 0;
+  font-style: italic;
+  opacity: 0.75;
+}
+
+.gauntlet-details-configs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.gauntlet-details-config {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
 }
 </style>
