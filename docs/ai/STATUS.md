@@ -7,6 +7,27 @@
 
 ## Current State
 
+### WP-459 / EC-494 — Compact Multi-Column "Show Details" Reveal Layout (Legends Board) (2026-07-30)
+
+**User-Visible Surface = `legends.legendary-arena.com`.** **D-24026 deploy
+live-verify operator-pending**; live dev-server smoke passed. No D-entry (UI polish).
+
+Fixes the WP-456 "Show details" reveal's tall single-column, whitespace-heavy
+layout. The per-count blocks now flow into a **responsive multi-column grid**
+(`repeat(auto-fit, minmax(13rem, 1fr))`) with the Schemes line full-width above;
+`min-width:0` + `overflow-wrap` keep long adversary names in-column.
+
+- **Root cause (inline amendment):** the reveal was crammed into the ~208px
+  leftover of the `.gauntlet-row` because that row is `flex-wrap: nowrap`, so
+  WP-456's `.gauntlet-details { flex-basis: 100% }` couldn't take its own line —
+  that was *why* it rendered as ~40 tall rows. Added `flex-wrap: wrap` to
+  `.gauntlet-row` so the reveal takes its own full-width line (the top-line items
+  already fit, so they're unchanged). Presentation-only; `GauntletIndexPanel.vue`
+  only; rendered text + `buildGauntletDetails` untouched.
+- **Verified live** on the real R2 index: desktop (1280px) → full-width reveal,
+  **3-column grid**; mobile (375px) → 1 column, **no horizontal overflow**; content
+  unchanged; no console errors. legends-board 114/0, `vue-tsc` 0, builds 0.
+
 ### WP-458 / EC-493 — Collapse Approved Gauntlet Loadouts to One Canonical Configuration (Variant 0) (D-24278) (2026-07-30)
 
 **User-Visible Surface = `legends.legendary-arena.com`.** **D-24026 deploy
