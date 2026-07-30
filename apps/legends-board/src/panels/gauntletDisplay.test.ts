@@ -7,6 +7,7 @@ import {
   buildFixedCountTabs,
   buildGauntletDetails,
   buildPlayerCountTabs,
+  buildRowChallengeUrl,
   findRoutedCountTab,
   formatAverageScore,
   formatApprovedLoadout,
@@ -612,5 +613,66 @@ describe("buildGauntletDetails", () => {
       [2],
     );
     assert.deepEqual(details.schemes, []);
+  });
+});
+
+describe("buildRowChallengeUrl", () => {
+  const magnetoEntry = {
+    setAbbr: "core",
+    mastermindSlug: "magneto",
+    legs: [{ schemeSlug: "legacy-virus-the", schemeName: "Legacy Virus, The" }],
+    approvedLoadouts: {
+      "1": [
+        {
+          villainGroupIds: ["core/brotherhood"],
+          henchmanGroupIds: ["core/doombot-legion"],
+        },
+      ],
+      "2": [
+        {
+          villainGroupIds: ["core/brotherhood", "core/enemies-of-asgard"],
+          henchmanGroupIds: ["core/doombot-legion"],
+        },
+        {
+          villainGroupIds: ["core/brotherhood", "core/hydra"],
+          henchmanGroupIds: ["core/hand-ninjas"],
+        },
+      ],
+    },
+  };
+
+  it("at 2 players carries playerCount=2 and the 2-player approved villains", () => {
+    const url = new URL(buildRowChallengeUrl(magnetoEntry, 2) ?? "");
+    assert.equal(url.searchParams.get("playerCount"), "2");
+    // The first approved 2p variant — two villains, NOT the solo single-villain set.
+    assert.equal(
+      url.searchParams.get("villainGroupIds"),
+      "core/brotherhood,core/enemies-of-asgard",
+    );
+    assert.equal(url.searchParams.get("henchmanGroupIds"), "core/doombot-legion");
+  });
+
+  it("at 1 player carries the solo villains and playerCount=1", () => {
+    const url = new URL(buildRowChallengeUrl(magnetoEntry, 1) ?? "");
+    assert.equal(url.searchParams.get("playerCount"), "1");
+    assert.equal(url.searchParams.get("villainGroupIds"), "core/brotherhood");
+  });
+
+  it("returns null when the entry has no legs", () => {
+    const noLegs = {
+      setAbbr: "core",
+      mastermindSlug: "magneto",
+      approvedLoadouts: magnetoEntry.approvedLoadouts,
+    };
+    assert.equal(buildRowChallengeUrl(noLegs, 2), null);
+  });
+
+  it("degrades gracefully when the count has no approved loadout", () => {
+    // Player count 3 has no published loadout: the link still carries scheme,
+    // mastermind, and count — just no villain/henchmen params.
+    const url = new URL(buildRowChallengeUrl(magnetoEntry, 3) ?? "");
+    assert.equal(url.searchParams.get("playerCount"), "3");
+    assert.equal(url.searchParams.has("villainGroupIds"), false);
+    assert.equal(url.searchParams.has("henchmanGroupIds"), false);
   });
 });

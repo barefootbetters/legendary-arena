@@ -353,6 +353,52 @@ export function selectApprovedLoadout(
   return approvedForCount[0];
 }
 
+/**
+ * Builds the challenge link for a gauntlet's first leg at a given player count,
+ * pinning the approved loadout for THAT SAME count (WP-457 / D-24277).
+ *
+ * why: the pinned approved villains/henchmen and the URL player count must come
+ * from ONE count, or the cards builder judges a composition at the wrong count.
+ * The index CTA previously pinned the solo (count-1) loadout via a count-less
+ * `selectApprovedLoadout` but emitted no player count, so the builder defaulted
+ * to `DEFAULT_PLAYER_COUNT` (2) and a solo composition failed a 2-player check.
+ * Threading a single `playerCount` into BOTH `selectApprovedLoadout` and
+ * `buildChallengeUrl` opens a builder whose run can qualify —
+ * `GauntletBoardPanel`'s per-leg links already do exactly this. The cards-builder
+ * consumer needs no change: its `applyPreviewToDraft` (D-24190) already applies
+ * the URL villains/henchmen onto the draft.
+ *
+ * @param entry The gauntlet's index entry.
+ * @param playerCount The player count to pin (the row's selected count).
+ * @returns The challenge URL, or `null` when the entry has no legs.
+ */
+export function buildRowChallengeUrl(
+  entry: Pick<
+    GauntletIndexEntry,
+    "setAbbr" | "mastermindSlug" | "legs" | "approvedLoadouts"
+  >,
+  playerCount: number,
+): string | null {
+  const legs = entry.legs;
+  if (legs === undefined || legs.length === 0) {
+    return null;
+  }
+  const firstLeg = legs[0];
+  // why: `legs[0]` is `GauntletIndexLeg | undefined` under
+  // `noUncheckedIndexedAccess`; guard so the pinned link is never built from an
+  // undefined leg.
+  if (firstLeg === undefined) {
+    return null;
+  }
+  return buildChallengeUrl(
+    entry.setAbbr,
+    firstLeg.schemeSlug,
+    entry.mastermindSlug,
+    playerCount,
+    selectApprovedLoadout(entry, playerCount),
+  );
+}
+
 // why: a single end-anchored `-p<N>` suffix, N constrained to 2-5 — the solo
 // board has no suffix and player counts never exceed 5 (D-24134 §2).
 const BOARD_COUNT_SUFFIX_PATTERN = /-p[2-5]$/;

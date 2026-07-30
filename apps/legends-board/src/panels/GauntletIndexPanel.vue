@@ -12,14 +12,13 @@ import type {
   GauntletIndexSnapshot,
 } from "../snapshots/snapshotClient";
 import {
-  buildChallengeUrl,
   buildFixedCountTabs,
   buildGauntletDetails,
   buildPlayerCountTabs,
+  buildRowChallengeUrl,
   formatCardDisplayName,
   groupGauntletsBySet,
   pinShowcaseGauntlet,
-  selectApprovedLoadout,
   type GauntletDetails,
   type PlayerCountTab,
 } from "./gauntletDisplay";
@@ -175,24 +174,13 @@ function chipLabel(tab: PlayerCountTab): string {
  * the index entry predates WP-344 (no `legs`) so no link renders.
  */
 function firstLegChallengeUrl(gauntlet: GauntletIndexEntry): string | null {
-  const legs = gauntlet.legs;
-  if (legs === undefined || legs.length === 0) {
-    return null;
-  }
-  const firstLeg = legs[0];
-  if (firstLeg === undefined) {
-    return null;
-  }
-  // why: WP-395 — the index CTA has no routed count, so the solo approved
-  // configuration is pinned (see selectApprovedLoadout). An unpinned link
-  // would open a builder whose run cannot qualify.
-  return buildChallengeUrl(
-    gauntlet.setAbbr,
-    firstLeg.schemeSlug,
-    gauntlet.mastermindSlug,
-    undefined,
-    selectApprovedLoadout(gauntlet),
-  );
+  // why: WP-457 — thread the row's SELECTED player count (the same source the
+  // Download control uses) into the challenge link, so the pinned approved
+  // villains/henchmen and the URL count both match that count and the link opens
+  // a qualifying builder. Previously the CTA pinned the solo (count-1) loadout
+  // with no count, so the builder defaulted to 2 and judged a solo composition at
+  // 2 players ("needs 2 villain groups — has 1").
+  return buildRowChallengeUrl(gauntlet, selectionFor(gauntlet.board).playerCount);
 }
 </script>
 
