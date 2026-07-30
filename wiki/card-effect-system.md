@@ -38,6 +38,7 @@ source:
   - ../docs/ai/DESIGN-EFFECT-AUTHORING-SCALE.md
   - ../docs/ai/DESIGN-EFFECT-MODEL-DECISION.md
   - ../docs/ai/DESIGN-HOLLOW-EFFECT-DETECTION.md
+  - ../docs/ai/DESIGN-MASTERMIND-STRIKE-MIGRATION.md
   - ../docs/ai/ARCHITECTURE.md
   - ../docs/10-GLOSSARY.md
 last-reviewed: 2026-07-30
@@ -382,7 +383,8 @@ The cost model, from
    descriptor / ImplementationMap model the hero and villain paths use —
    or, as a smaller first step, a `mastermindId → resolver` registry that
    removes the `if/else` chain. This is the highest-leverage
-   anti-fragmentation move ahead of the incoming sets.
+   anti-fragmentation move ahead of the incoming sets; the full proposal
+   is [DESIGN-MASTERMIND-STRIKE-MIGRATION.md](../docs/ai/DESIGN-MASTERMIND-STRIKE-MIGRATION.md).
 2. **The composable-primitive vocabulary is still small.** The AST is at
    its Berserk / Empowered-era size (three node types, four value
    expressions). Absorbing 500 effects — with the large
@@ -406,8 +408,10 @@ this page:
 [DESIGN-EFFECT-MODEL-DECISION.md](../docs/ai/DESIGN-EFFECT-MODEL-DECISION.md)
 (D-24029, the composable-primitive decision), and
 [DESIGN-HOLLOW-EFFECT-DETECTION.md](../docs/ai/DESIGN-HOLLOW-EFFECT-DETECTION.md)
-(the coverage / hollow-detection spine). A dedicated design doc or Work
-Packet for the Master Strike migration (gap 1) does not exist yet.
+(the coverage / hollow-detection spine). The Master Strike migration
+(gap 1) is proposed in
+[DESIGN-MASTERMIND-STRIKE-MIGRATION.md](../docs/ai/DESIGN-MASTERMIND-STRIKE-MIGRATION.md)
+(draft); no Work Packet exists yet.
 
 ## References
 
@@ -429,8 +433,9 @@ Packet for the Master Strike migration (gap 1) does not exist yet.
   — coverage tooling
 - [`docs/ai/DESIGN-EFFECT-AUTHORING-SCALE.md`](../docs/ai/DESIGN-EFFECT-AUTHORING-SCALE.md),
   [`DESIGN-EFFECT-MODEL-DECISION.md`](../docs/ai/DESIGN-EFFECT-MODEL-DECISION.md),
-  [`DESIGN-HOLLOW-EFFECT-DETECTION.md`](../docs/ai/DESIGN-HOLLOW-EFFECT-DETECTION.md)
-  — the authoring-at-scale strategy, the composable-primitive decision, and hollow detection
+  [`DESIGN-HOLLOW-EFFECT-DETECTION.md`](../docs/ai/DESIGN-HOLLOW-EFFECT-DETECTION.md),
+  [`DESIGN-MASTERMIND-STRIKE-MIGRATION.md`](../docs/ai/DESIGN-MASTERMIND-STRIKE-MIGRATION.md)
+  — the authoring-at-scale strategy, the composable-primitive decision, hollow detection, and the Master Strike migration proposal (draft)
 - [`docs/ai/ARCHITECTURE.md`](../docs/ai/ARCHITECTURE.md) — determinism and
   persistence boundaries; the Layer Boundary that keeps registry data
   setup-time only
