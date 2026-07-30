@@ -7,6 +7,30 @@
 
 ## Current State
 
+### WP-458 / EC-493 — Collapse Approved Gauntlet Loadouts to One Canonical Configuration (Variant 0) (D-24278) (2026-07-30)
+
+**User-Visible Surface = `legends.legendary-arena.com`.** **D-24026 deploy
+live-verify operator-pending.**
+
+Ranked gauntlet qualification now fixes the adversaries to **one** canonical
+villain/henchmen configuration per mastermind per player count (variant 0), not
+three — so the **only** ranked-competitive variable is the hero team. Casual play
+free selection is unchanged. Operator decision D-24278 (a fair leaderboard is a
+fixed-course time-trial; one config concentrates scores ~3× and cuts PAR scenarios
+~6,354→~2,118), executed while `competitive_scores` is empty (zero migration).
+
+- **Single lever:** `scripts/generate-gauntlet-loadouts.mjs` `VARIANTS_PER_MASTERMIND
+  3→1`; `gauntletLoadouts.generated.ts` regenerated to 110 menus × 1 variant.
+  Variant 0 compositions are **byte-identical** (only variants 1/2 dropped) — e.g.
+  `core/magneto` 2p is still Brotherhood + Enemies-of-Asgard / Doombot Legion.
+- **Qualification logic untouched** (`matchesApprovedLoadout` compares against the
+  one approved config); registry test → "exactly one variant" (the distinctness
+  test removed); comment-only "three configurations" corrections across the
+  generator, `gauntletLoadouts.ts`, `gauntlet.logic.ts`, and legends-board
+  `gauntletDisplay.ts`. Supersedes **D-24199 menu-size only** (core rule intact).
+- **Verified:** `gauntlet:loadouts:check` OK (110); `pnpm -r build` 0; registry
+  186/0; gauntlet qualification tests 56/0; legends-board 114/0.
+
 ### WP-457 / EC-492 — Challenge-Link Player-Count Consistency (Legends Index CTA) (D-24277) (2026-07-30)
 
 **User-Visible Surface = `legends.legendary-arena.com`** (the gauntlet index
