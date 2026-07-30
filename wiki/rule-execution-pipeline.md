@@ -14,6 +14,7 @@ related:
   - master-strike.md
   - scheme-twist.md
   - scheme.md
+  - card-effect-system.md
   - turn-system.md
   - cardextid.md
   - card-type-taxonomy.md

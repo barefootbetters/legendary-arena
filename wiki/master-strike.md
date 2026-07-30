@@ -13,6 +13,7 @@ related:
   - scheme-twist.md
   - scheme.md
   - rule-execution-pipeline.md
+  - card-effect-system.md
   - turn-system.md
   - cardextid.md
   - card-type-taxonomy.md

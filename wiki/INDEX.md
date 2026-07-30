@@ -1,7 +1,7 @@
 # Wiki Index
 
-> **52 / 75** entity pages.
-> Last regenerated: 2026-07-25.
+> **53 / 75** entity pages.
+> Last regenerated: 2026-07-30.
 > See [SCHEMA.md](SCHEMA.md) for the entity-page contract and
 > [README.md](README.md) for purpose, conventions, and authority —
 > including [§ Tradeoffs](README.md#tradeoffs) on what the LLM-wiki
@@ -25,6 +25,14 @@ Discrete in-game mechanics with specific triggers and effects.
 
 Coordinated subsystems spanning multiple files / phases.
 
+- [Card Effect System](card-effect-system.md) — How printed card
+  text becomes executable, deterministic state changes: inline data
+  markers → setup-time descriptors on `G` → a small closed set of
+  executors. Covers the three effect subsystems (hero / villain /
+  scheme-mastermind), the composable-primitive AST, the marker-authoring
+  overlay scripts, the coverage tooling behind `/coverage`, and the
+  scaling directions + known gaps for the next ~500 effects (incl. the
+  hand-coded Master Strike path).
 - [Villain Deck](villain-deck.md) — Reveal pipeline for the
   antagonist stack; classifies drawn cards into one of five
   `RevealedCardType` values and routes the appropriate trigger.
@@ -338,6 +346,7 @@ following are useful entry points:
 
 - **`drift-detection`** — Closed sets backed by canonical readonly
   arrays + drift-detection tests:
+  [Card Effect System](card-effect-system.md),
   [Villain Deck](villain-deck.md),
   [Rule Execution Pipeline](rule-execution-pipeline.md),
   [Turn System](turn-system.md),
