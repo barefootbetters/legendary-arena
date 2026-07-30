@@ -10,12 +10,14 @@ import { computed, reactive } from "vue";
 import type {
   GauntletIndexEntry,
   GauntletIndexSnapshot,
+  SetDetails,
 } from "../snapshots/snapshotClient";
 import {
   buildFixedCountTabs,
   buildGauntletDetails,
   buildPlayerCountTabs,
   buildRowChallengeUrl,
+  findSetDetails,
   formatCardDisplayName,
   groupGauntletsBySet,
   pinShowcaseGauntlet,
@@ -182,6 +184,31 @@ function firstLegChallengeUrl(gauntlet: GauntletIndexEntry): string | null {
   // 2 players ("needs 2 villain groups — has 1").
   return buildRowChallengeUrl(gauntlet, selectionFor(gauntlet.board).playerCount);
 }
+
+/**
+ * The published per-set roster for a set group's "Show set details" reveal
+ * (WP-462), or `undefined` when the snapshot predates WP-461 (no `sets`) — the
+ * reveal then does not render for that group. Renders the coverage flag verbatim.
+ */
+function setDetailsFor(setAbbr: string): SetDetails | undefined {
+  return findSetDetails(props.index?.sets, setAbbr);
+}
+
+/** The comma-joined display names of a named-group roster (masterminds/schemes). */
+function joinNames(groups: readonly { readonly name: string }[]): string {
+  return groups.map((group) => group.name).join(", ");
+}
+
+/**
+ * The accessible label for a villain/henchman coverage mark (WP-462). PER-SET
+ * scoped per D-24279 — the flag means "this set's own gauntlets", never "any
+ * gauntlet"; the ✓/✗ glyph is aria-hidden and this text carries the meaning.
+ */
+function coverageLabel(usedByGauntlets: boolean): string {
+  return usedByGauntlets
+    ? "used by this set's gauntlets"
+    : "not used by this set's gauntlets";
+}
 </script>
 
 <template>
@@ -207,6 +234,73 @@ function firstLegChallengeUrl(gauntlet: GauntletIndexEntry): string | null {
         class="set-group"
       >
         <h3 class="set-name">{{ setGroup.setName }}</h3>
+
+        <!-- WP-462: per-SET details reveal — the set's FULL roster (every
+             mastermind, scheme, villain, henchman), with villains/henchmen marked
+             fought (✓) / not-fought (✗) by THIS set's gauntlets. Rendered from
+             WP-461's already-published `sets` field (no API, no recompute); a
+             native <details> so it is keyboard-accessible. Absent on a pre-WP-461
+             snapshot → the reveal does not render. -->
+        <details
+          v-if="setDetailsFor(setGroup.setAbbr)"
+          class="set-details"
+        >
+          <summary class="set-details-summary">Show set details</summary>
+          <div class="set-details-body">
+            <p class="set-details-legend">
+              A set challenge fights every mastermind and scheme below.
+              <span class="coverage-mark covered" aria-hidden="true">✓</span> a
+              villain/henchman this set's gauntlets fight;
+              <span class="coverage-mark uncovered" aria-hidden="true">✗</span> one
+              in the set no gauntlet currently uses.
+            </p>
+            <div class="set-details-section">
+              <span class="set-details-label">Masterminds</span>
+              <span class="set-details-line">{{ joinNames(setDetailsFor(setGroup.setAbbr)?.masterminds ?? []) }}</span>
+            </div>
+            <div class="set-details-section">
+              <span class="set-details-label">Schemes</span>
+              <span class="set-details-line">{{ joinNames(setDetailsFor(setGroup.setAbbr)?.schemes ?? []) }}</span>
+            </div>
+            <div class="set-details-section">
+              <span class="set-details-label">Villains</span>
+              <ul class="set-details-groups">
+                <li
+                  v-for="villain of setDetailsFor(setGroup.setAbbr)?.villains ?? []"
+                  :key="villain.slug"
+                  class="set-details-group"
+                >
+                  <span
+                    class="coverage-mark"
+                    :class="villain.usedByGauntlets ? 'covered' : 'uncovered'"
+                    aria-hidden="true"
+                  >{{ villain.usedByGauntlets ? "✓" : "✗" }}</span>
+                  <span>{{ villain.name }}</span>
+                  <span class="visually-hidden"> — {{ coverageLabel(villain.usedByGauntlets) }}</span>
+                </li>
+              </ul>
+            </div>
+            <div class="set-details-section">
+              <span class="set-details-label">Henchmen</span>
+              <ul class="set-details-groups">
+                <li
+                  v-for="henchman of setDetailsFor(setGroup.setAbbr)?.henchmen ?? []"
+                  :key="henchman.slug"
+                  class="set-details-group"
+                >
+                  <span
+                    class="coverage-mark"
+                    :class="henchman.usedByGauntlets ? 'covered' : 'uncovered'"
+                    aria-hidden="true"
+                  >{{ henchman.usedByGauntlets ? "✓" : "✗" }}</span>
+                  <span>{{ henchman.name }}</span>
+                  <span class="visually-hidden"> — {{ coverageLabel(henchman.usedByGauntlets) }}</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </details>
+
         <ul class="gauntlet-list">
           <li
             v-for="gauntlet of setGroup.gauntlets"
@@ -391,6 +485,96 @@ function firstLegChallengeUrl(gauntlet: GauntletIndexEntry): string | null {
   border-bottom: 1px solid var(--la-color-border-subtle);
   padding-bottom: 0.35rem;
   margin: 0 0 0.5rem;
+}
+
+/* WP-462: per-set "Show set details" reveal */
+.set-details {
+  margin: 0 0 0.75rem;
+}
+
+.set-details-summary {
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: var(--la-color-gold-bright);
+}
+
+.set-details-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--la-color-text-secondary);
+}
+
+.set-details-legend {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--la-color-text-muted);
+}
+
+.set-details-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.set-details-label {
+  color: var(--la-color-text-primary);
+  font-weight: 600;
+}
+
+.set-details-line {
+  overflow-wrap: anywhere;
+}
+
+.set-details-groups {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 0.15rem 0.85rem;
+}
+
+.set-details-group {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  /* why: WP-462 — min-width:0 + overflow-wrap let a long group name wrap inside
+     its grid column instead of forcing a wide track (horizontal scroll). */
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.coverage-mark {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* why: WP-462 — the ✓/✗ glyph difference (not colour) plus the visually-hidden
+   per-set-scoped label carry the meaning; colour is a secondary cue only. */
+.coverage-mark.covered {
+  color: var(--la-color-gold-bright);
+}
+
+.coverage-mark.uncovered {
+  color: var(--la-color-text-muted);
+}
+
+/* why: WP-462 — screen-reader-only text so the coverage mark's meaning ("used by
+   this set's gauntlets" / "not used…") is announced without a visible label;
+   `title` alone is not reliably exposed to AT or keyboards. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .gauntlet-list {

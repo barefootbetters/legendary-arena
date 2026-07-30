@@ -145,9 +145,44 @@ export type GauntletIndexApprovedLoadouts = Readonly<
   Record<string, readonly GauntletIndexApprovedLoadout[]>
 >;
 
+/** A named group in a set's roster with no coverage flag (WP-461): a mastermind
+ * or a scheme. Mirrored from apps/server/src/legends/legends.types.ts — DO NOT
+ * import (the zero-API layer boundary). */
+export interface SetNamedGroup {
+  readonly slug: string;
+  readonly name: string;
+}
+
+/** A villain or henchman group with its PER-SET gauntlet-coverage flag (WP-461):
+ * `usedByGauntlets` is true iff THIS set's own gauntlets fight it. Mirrored from
+ * apps/server/src/legends/legends.types.ts — DO NOT import. */
+export interface SetAdversaryGroup {
+  readonly slug: string;
+  readonly name: string;
+  readonly usedByGauntlets: boolean;
+}
+
+/** The full per-set roster the "Show set details" reveal renders (WP-461 /
+ * D-24279): every mastermind/scheme/villain/henchman a set ships, villains and
+ * henchmen carrying the per-set coverage flag. Mirrored from
+ * apps/server/src/legends/legends.types.ts — DO NOT import. */
+export interface SetDetails {
+  readonly setAbbr: string;
+  readonly setName: string;
+  readonly masterminds: readonly SetNamedGroup[];
+  readonly schemes: readonly SetNamedGroup[];
+  readonly villains: readonly SetAdversaryGroup[];
+  readonly henchmen: readonly SetAdversaryGroup[];
+}
+
 /** The gauntlet index artifact at `legends/v1/gauntlet-index.json`. */
 export interface GauntletIndexSnapshot {
   readonly gauntlets: readonly GauntletIndexEntry[];
+  // why: additive (WP-461 / D-24279) and OPTIONAL on the client mirror — the
+  // per-set rosters + coverage flags for the "Show set details" reveal. A
+  // pre-WP-461 index artifact in R2 lacks it, so the reveal simply does not
+  // render (no crash). Never imported cross-package.
+  readonly sets?: readonly SetDetails[];
   readonly generatedAt: string;
   readonly schemaVersion: 1;
 }

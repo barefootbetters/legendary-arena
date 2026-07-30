@@ -9,6 +9,7 @@ import {
   buildPlayerCountTabs,
   buildRowChallengeUrl,
   findRoutedCountTab,
+  findSetDetails,
   formatAverageScore,
   formatApprovedLoadout,
   formatCardDisplayName,
@@ -25,6 +26,7 @@ import {
 import type {
   GauntletEntryCounts,
   GauntletIndexEntry,
+  SetDetails,
 } from "../snapshots/snapshotClient.ts";
 
 /**
@@ -674,5 +676,42 @@ describe("buildRowChallengeUrl", () => {
     assert.equal(url.searchParams.get("playerCount"), "3");
     assert.equal(url.searchParams.has("villainGroupIds"), false);
     assert.equal(url.searchParams.has("henchmanGroupIds"), false);
+  });
+});
+
+describe("findSetDetails (WP-462)", () => {
+  const CORE_DETAILS: SetDetails = {
+    setAbbr: "core",
+    setName: "Core Set",
+    masterminds: [{ slug: "magneto", name: "Magneto" }],
+    schemes: [{ slug: "scheme-a", name: "Scheme A" }],
+    villains: [
+      { slug: "brotherhood", name: "The Brotherhood", usedByGauntlets: true },
+      { slug: "radiation", name: "Radiation", usedByGauntlets: false },
+    ],
+    henchmen: [
+      { slug: "doombot-legion", name: "Doombot Legion", usedByGauntlets: true },
+    ],
+  };
+  const CO2E_DETAILS: SetDetails = {
+    setAbbr: "co2e",
+    setName: "Core 2E",
+    masterminds: [],
+    schemes: [],
+    villains: [],
+    henchmen: [],
+  };
+
+  it("returns the matching set's details", () => {
+    const found = findSetDetails([CORE_DETAILS, CO2E_DETAILS], "co2e");
+    assert.equal(found, CO2E_DETAILS);
+  });
+
+  it("returns undefined for a set not in the roster", () => {
+    assert.equal(findSetDetails([CORE_DETAILS], "xmen"), undefined);
+  });
+
+  it("returns undefined when sets is absent (pre-WP-461 snapshot)", () => {
+    assert.equal(findSetDetails(undefined, "core"), undefined);
   });
 });
