@@ -34547,4 +34547,62 @@ engine shuffles with boardgame.io's real seeded PRNG, which distributes twists.
 
 **Status:** Drafted 2026-07-29; lands at WP-453 execution.
 
+---
+
+### D-24274 — Gauntlet loadout qualification is surfaced at build time as a client-side advisory, never a gate
+
+> Renumbered from D-24273 after PR #1083 landed a different WP-453/EC-488/D-24273
+> (simulation setup shuffle fidelity) first.
+
+**Context.** The downloaded gauntlet pack (WP-440) is identity-only; WP-444's
+cards-builder importer prefills the approved villain/henchmen composition for a
+picked leg but leaves those fields **editable**, and a hand-built loadout has no
+guard at all. Gauntlet-leg qualification is enforced only **after** a match is
+played — server-side at aggregation (`matchesApprovedLoadout`,
+`apps/server/src/legends/gauntletTruth.logic.ts`, WP-395/D-24199) or, for an
+uncalibrated `ScenarioKey`, rejected at submission (`par_not_published`). So a
+visitor could set up and play a match with the wrong adversaries and only
+discover it never counted toward the gauntlet post-game. (Surfaced by operator
+review, 2026-07-29.)
+
+**Decision.** The `cards.legendary-arena.com` Loadout Builder surfaces
+qualification at **build time**, as a client-side **advisory** — never a gate:
+
+1. **Qualification badge.** A new pure sibling helper
+   `apps/registry-viewer/src/lib/gauntletQualificationCheck.ts` —
+   `checkGauntletQualification` — compares the draft's `villainGroupIds` +
+   `henchmanGroupIds` + `playerCount` against the draft mastermind's approved
+   `GAUNTLET_LOADOUT_MENUS` by **exact set equality on the full set-qualified
+   `setAbbr/slug` ext_ids** (order-insensitive, sorting a spread copy — never the
+   live draft array), returning a discriminated `{ status }`: `not-a-gauntlet`
+   (menu absent → no badge), `unoffered-count`, `qualifies` + `variantIndex`, or
+   `not-qualifying` + `approvedVariantCount`. The exact full-ext_id comparison is
+   **deliberately stricter** than the server's bare-slug `ScenarioKey`
+   villain-segment comparison — correct here because the draft and the menu both
+   carry full ext_ids — and cannot **false-negative** a server-acceptable
+   loadout, because D-24131 both-sides-same-set + the server's exact
+   set-qualified `henchman_key` collapse the same-slug/different-set case.
+
+2. **Pack-sourced adversary lock.** A draft prefilled from a pack leg
+   (`onPickGauntletLeg`) renders its villain/henchmen fields read-only
+   (heroes-only), with an explicit **"Unlock adversaries"** escape hatch (cleared
+   in the user reset handler + the unlock, not inside `resetDraft` itself). This
+   turns a silent wrong-adversary mistake into a **deliberate** choice; a
+   hand-built draft is never auto-locked (but still shows the badge).
+
+**Boundary.** The badge and lock are **advisory** and do not block building,
+editing, exporting, or launching any loadout. The server-side qualification rule
+(`matchesApprovedLoadout`) is **untouched** and remains the sole adjudicator — the
+badge is a prediction from the same approved-menu data, not an enforcement. The
+**D-24187 fixed-hero-pool** constraint is explicitly **out of scope**: it is a
+cross-leg property inferred from submitted wins and adjudicated server-side, so a
+single-loadout builder cannot make the claim. Heroes stay free. No server,
+registry, persistence, or migration change; zero-API (client-side from the
+bundled registry).
+
+**Status:** Active (post-execution) — landed 2026-07-29 (WP-454 / EC-489). The
+guard shipped in `apps/registry-viewer`; local dev-server smoke confirmed the
+badge (qualifies / won't-count) and the pack-sourced adversary lock + unlock.
+D-24026 deploy live-verification is operator-pending on `cards.legendary-arena.com`.
+
 Protect this file.

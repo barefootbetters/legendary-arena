@@ -48,6 +48,10 @@ import {
 import { getGauntletLoadoutMenu } from "@legendary-arena/registry/gauntletLoadouts";
 import type { GauntletPack } from "@legendary-arena/registry/gauntletPack";
 import {
+  checkGauntletQualification,
+  type GauntletQualificationResult,
+} from "../lib/gauntletQualificationCheck";
+import {
   buildSupportPreset,
   parseSupportPreset,
   serializeSupportPreset,
@@ -385,6 +389,10 @@ function onPresetFileImport(event: Event): void {
  */
 function onResetDraft(): void {
   resetDraft({ preserveSupport: supportLocked.value });
+  // why: WP-454 — clearing the draft ends any pack-sourced adversary lock (this
+  // is the user reset handler; the lock is never cleared inside resetDraft
+  // itself, which onPickGauntletLeg calls before RE-locking).
+  adversaryFieldsLocked.value = false;
   presetStatus.value = supportLocked.value
     ? "Draft cleared — locked support pools kept."
     : "";
@@ -588,6 +596,9 @@ function onThemeSelected(themeId: string): void {
   const theme = props.themes.find((candidate) => candidate.themeId === themeId);
   if (theme) {
     prefillFromTheme(theme);
+    // why: WP-454 — a theme prefill replaces the draft with a non-pack
+    // composition, so any pack-sourced adversary lock no longer applies.
+    adversaryFieldsLocked.value = false;
   }
 }
 
@@ -674,6 +685,9 @@ function onPasteImport(): void {
   if (result.ok) {
     importSuccessAt.value = new Date().toISOString();
     importText.value = "";
+    // why: WP-454 — a MATCH-SETUP load replaces the draft with a non-pack
+    // composition, so any pack-sourced adversary lock no longer applies.
+    adversaryFieldsLocked.value = false;
     return;
   }
   importErrors.value = result.errors.map((entry) => ({
@@ -724,6 +738,9 @@ function applyLagnImport(text: string): void {
   // replace) — reset to a fresh blank, then overlay the imported composition
   // through the public draft API only (never by writing draft.composition.*).
   resetDraft();
+  // why: WP-454 — a LAGN load replaces the draft with a non-pack composition,
+  // so any pack-sourced adversary lock no longer applies.
+  adversaryFieldsLocked.value = false;
   if (composition.schemeId !== "") {
     setScheme(composition.schemeId);
   }
@@ -925,7 +942,87 @@ function onPickGauntletLeg(schemeId: string): void {
   // from PLAYER_COUNT_SETUP, which carries only heroCount, not the supply counts.
   setPlayerCount(prefill.playerCount);
   gauntletImportSuccessAt.value = new Date().toISOString();
+  // why: WP-454 — a pack-resolved leg is the approved composition, so lock the
+  // villain/henchmen fields (heroes only) to stop an accidental edit that would
+  // make the played match not count toward the gauntlet. The visitor can opt out
+  // with "Unlock adversaries" for a deliberate non-gauntlet loadout.
+  adversaryFieldsLocked.value = true;
 }
+
+// ── Gauntlet qualification guard (WP-454 / D-24274) ──────────────────────────
+// A build-time ADVISORY over the draft's adversary composition. The badge tells
+// the visitor, before play, whether the loadout would count toward the
+// mastermind's gauntlet; the lock keeps a pack-sourced leg's villains/henchmen
+// read-only until an explicit unlock. Both are advisory — the server remains the
+// sole adjudicator, and nothing here blocks building or exporting a loadout.
+
+/** True after a gauntlet-pack leg prefill; gates adversary-field editing. */
+const adversaryFieldsLocked = ref(false);
+
+/** Restores free editing of the villain/henchmen fields (the opt-out). */
+function unlockAdversaryFields(): void {
+  adversaryFieldsLocked.value = false;
+}
+
+/**
+ * The pre-play qualification verdict for the current draft, or null when the
+ * draft has no mastermind yet. Reacts to villain/henchmen/player-count edits.
+ * Resolves the draft mastermind's approved menu from the registry and delegates
+ * the comparison to the pure `checkGauntletQualification`.
+ */
+const gauntletQualification = computed<GauntletQualificationResult | null>(() => {
+  const mastermindId = draft.value.composition.mastermindId;
+  const separatorIndex = mastermindId.indexOf("/");
+  if (separatorIndex < 0) {
+    return null;
+  }
+  const setAbbr = mastermindId.slice(0, separatorIndex);
+  const mastermindSlug = mastermindId.slice(separatorIndex + 1);
+  return checkGauntletQualification({
+    villainGroupIds: draft.value.composition.villainGroupIds,
+    henchmanGroupIds: draft.value.composition.henchmanGroupIds,
+    playerCount: draft.value.playerCount,
+    menu: getGauntletLoadoutMenu(setAbbr, mastermindSlug),
+  });
+});
+
+/** The bare mastermind slug for the badge copy (from the set-qualified id). */
+const gauntletMastermindName = computed<string>(() => {
+  const mastermindId = draft.value.composition.mastermindId;
+  const separatorIndex = mastermindId.indexOf("/");
+  return separatorIndex < 0 ? mastermindId : mastermindId.slice(separatorIndex + 1);
+});
+
+/**
+ * The badge to render (tone + text), or null when there is nothing to say — the
+ * draft has no mastermind, or its mastermind hosts no gauntlet (`not-a-gauntlet`).
+ */
+const qualificationBadge = computed<
+  { tone: "qualifies" | "not-qualifying" | "unoffered"; text: string } | null
+>(() => {
+  const verdict = gauntletQualification.value;
+  if (verdict === null || verdict.status === "not-a-gauntlet") {
+    return null;
+  }
+  const mastermindName = gauntletMastermindName.value;
+  if (verdict.status === "qualifies") {
+    return {
+      tone: "qualifies",
+      text: `✓ Qualifies for the ${mastermindName} gauntlet (variant ${verdict.variantIndex}).`,
+    };
+  }
+  if (verdict.status === "unoffered-count") {
+    return {
+      tone: "unoffered",
+      text: `This ${mastermindName} gauntlet isn't offered at ${draft.value.playerCount} players.`,
+    };
+  }
+  const plural = verdict.approvedVariantCount === 1 ? "" : "s";
+  return {
+    tone: "not-qualifying",
+    text: `✗ These villains/henchmen won't count toward the ${mastermindName} gauntlet (${verdict.approvedVariantCount} approved configuration${plural}).`,
+  };
+});
 
 // ── URL share button (WP-114) ───────────────────────────────────────────────
 
@@ -1118,6 +1215,18 @@ function slotLabel(slot: PickerSlot): string {
 
       <!-- Composition: arrays -->
       <div class="field-group">
+        <!-- WP-454: pre-play gauntlet qualification badge (advisory only) -->
+        <p
+          v-if="qualificationBadge"
+          class="qual-badge"
+          :class="qualificationBadge.tone"
+          role="status"
+        >{{ qualificationBadge.text }}</p>
+        <!-- WP-454: pack-sourced adversary lock notice + opt-out -->
+        <p v-if="adversaryFieldsLocked" class="adversary-lock-note">
+          🔒 Villains &amp; henchmen are locked to the approved gauntlet loadout — pick your heroes only.
+          <button type="button" class="mini-btn" @click="unlockAdversaryFields">Unlock adversaries</button>
+        </p>
         <div class="field">
           <div class="field-row">
             <span class="field-label">villainGroupIds ({{ draft.composition.villainGroupIds.length }})</span>
@@ -1125,6 +1234,7 @@ function slotLabel(slot: PickerSlot): string {
               type="button"
               class="slot-btn"
               :class="{ active: activeSlot === 'villainGroupIds' }"
+              :disabled="adversaryFieldsLocked"
               @click="activeSlot = 'villainGroupIds'"
             >Pick…</button>
           </div>
@@ -1144,7 +1254,7 @@ function slotLabel(slot: PickerSlot): string {
                 class="chip-lock"
                 title="Always Leads — the selected mastermind requires this villain group; it can't be removed."
               >🔒</span>
-              <button v-else type="button" class="chip-close" @click="removeVillainGroup(groupId)">✕</button>
+              <button v-else-if="!adversaryFieldsLocked" type="button" class="chip-close" @click="removeVillainGroup(groupId)">✕</button>
             </li>
           </ul>
           <p v-if="missingRequiredVillainGroupIds.length > 0" class="requirement-warning" role="alert">
@@ -1161,13 +1271,14 @@ function slotLabel(slot: PickerSlot): string {
               type="button"
               class="slot-btn"
               :class="{ active: activeSlot === 'henchmanGroupIds' }"
+              :disabled="adversaryFieldsLocked"
               @click="activeSlot = 'henchmanGroupIds'"
             >Pick…</button>
           </div>
           <ul class="chip-list">
             <li v-for="groupId in draft.composition.henchmanGroupIds" :key="groupId" class="chip">
               {{ groupId }}
-              <button type="button" class="chip-close" @click="removeHenchmanGroup(groupId)">✕</button>
+              <button v-if="!adversaryFieldsLocked" type="button" class="chip-close" @click="removeHenchmanGroup(groupId)">✕</button>
             </li>
           </ul>
         </div>
@@ -1752,6 +1863,13 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: #6060c0
 .gauntlet-leg-btn { display: flex; flex-direction: column; align-items: flex-start; gap: 0.1rem; text-align: left; }
 .gauntlet-leg-name { font-size: 0.82rem; }
 .gauntlet-leg-id { font-family: ui-monospace, Consolas, monospace; font-size: 0.7rem; color: #7c7ca8; }
+
+/* WP-454: gauntlet qualification badge (advisory) + adversary-lock notice */
+.qual-badge { margin: 0 0 0.5rem; padding: 0.4rem 0.6rem; border-radius: 6px; font-size: 0.82rem; border: 1px solid transparent; }
+.qual-badge.qualifies { color: #6ee7b7; background: rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.4); }
+.qual-badge.not-qualifying { color: #fca5a5; background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.4); }
+.qual-badge.unoffered { color: #c8c8e8; background: rgba(148, 163, 184, 0.12); border-color: rgba(148, 163, 184, 0.35); }
+.adversary-lock-note { display: flex; align-items: center; flex-wrap: wrap; gap: 0.4rem; margin: 0 0 0.5rem; font-size: 0.8rem; color: #c8c8e8; }
 
 .error-region { background: #1a0f0f; border: 1px solid #4a1010; border-radius: 6px; padding: 0.6rem 0.8rem; }
 .error-title { margin: 0 0 0.3rem 0; font-size: 0.85rem; color: #fca5a5; }

@@ -7,6 +7,42 @@
 
 ## Current State
 
+### WP-454 / EC-489 — Gauntlet Loadout Qualification Guard (cards builder) (D-24274) (2026-07-29)
+
+**User-Visible Surface = `cards.legendary-arena.com`** (the Registry-Viewer Loadout
+Builder). **D-24026 deploy live-verify operator-pending** on the Cloudflare Pages
+deploy; local dev-server smoke verified the full flow.
+
+Closes the wrong-villains/henchmen footgun: WP-444 prefills the approved adversaries
+but leaves them editable, and a hand-built loadout had no guard — so a visitor could
+play a match with a non-approved composition and only discover **post-game** it never
+counted toward a gauntlet (qualification is enforced only server-side at aggregation,
+`matchesApprovedLoadout`, or rejected at submission `par_not_published`). This moves
+the feedback to **build time**, advisory-only — the server stays the sole adjudicator.
+
+- **New (App):** `apps/registry-viewer/src/lib/gauntletQualificationCheck.ts` —
+  `checkGauntletQualification` compares the draft's `villainGroupIds` +
+  `henchmanGroupIds` + `playerCount` against the mastermind's approved
+  `GAUNTLET_LOADOUT_MENUS` by **exact set equality on full set-qualified ext_ids**
+  (sorts spread copies, never the input arrays; narrows `playerCount` to
+  `SupportedPlayerCount`), returning a discriminated `{ status }` (`not-a-gauntlet` /
+  `unoffered-count` / `qualifies` + `variantIndex` / `not-qualifying` +
+  `approvedVariantCount`). Stricter than the server's bare-slug villain-segment; sound
+  (cannot false-negative) per D-24131 same-set + exact `henchman_key`. 10 `node:test`
+  cases incl. order-insensitivity + input non-mutation.
+- **Modified (App):** `LoadoutBuilder.vue` — a reactive **qualification badge** near
+  the villain/henchmen fields (qualifies / won't-count / unoffered; hidden when the
+  mastermind hosts no gauntlet; shows for hand-built drafts too) + a **pack-sourced
+  adversary lock** set on `onPickGauntletLeg` success (read-only chips, disabled Pick)
+  with an explicit **"Unlock adversaries"** opt-out; the lock is cleared in every other
+  draft-replacing handler (reset / JSON / LAGN / theme), never inside `resetDraft`.
+- **Advisory only** — never blocks building/exporting/launching. **Zero-API**, no new
+  registry import (reuses `getGauntletLoadoutMenu`). Out of scope: D-24187 fixed-hero-pool
+  (cross-leg, server-adjudicated); server/registry/persistence change.
+- **Numbering:** renumbered from WP-453 / EC-488 / D-24273 after PR #1083 landed a
+  different WP-453 (simulation setup shuffle fidelity) on those numbers first.
+- **Gates:** registry-viewer 197/0, `vue-tsc` 0, build 0, `pnpm -r build` 0.
+
 ### WP-452 / EC-487 — Co-op Win-Rate + Loss-Cause Harness (Game Engine / simulation) (D-24272) (2026-07-29)
 
 **User-Visible Surface = `none — infrastructure`.** No user-observable change —
