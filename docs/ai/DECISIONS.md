@@ -34811,4 +34811,65 @@ Supersedes the menu size in **D-24199** (which stays Active for its core rule:
 ranked legs require an approved loadout, casual stays free). D-24026 deploy
 live-verify operator-pending on `legends.legendary-arena.com`.
 
+### D-24279 — The legends gauntlet index publishes a self-describing per-set roster with a villain/henchman gauntlet-coverage flag
+
+**Status:** Drafted 2026-07-30; not yet landed. Flips to Active
+(post-execution) when WP-461 executes.
+
+**Context.** WP-456 gave each *gauntlet* (mastermind) a "Show details" reveal of
+its approved adversaries. The operator asked (2026-07-30) for a *per-set* view —
+list every villain, henchman, mastermind, and scheme in a set — because it was
+"unclear if all the villains and henchmen are being used" by the gauntlets. They
+are not: across a set's masterminds the approved menu caps at ~4 villain groups /
+2 henchman groups (`REQUIRED_GROUP_COUNTS`, all alphabetically-first, so they
+converge), so e.g. Core Set covers only 4 of 7 villains and 2 of 4 henchmen — the
+rest appear in no approved config and cannot be fought in ranked gauntlet play.
+The operator chose to **ship the transparency dropdown now** and treat closing
+that coverage gap as a separate decision (the ranked model's lean one-config
+collapse, D-24278, is deliberate for PAR tractability).
+
+**Decision.** The legends snapshot publisher emits an **additive optional**
+`sets?: readonly SetDetails[]` field on `GauntletIndexSnapshot`
+(`legends/v1/gauntlet-index.json`): one `SetDetails` per set with ≥1 scheme,
+carrying the **full per-set roster** — `masterminds`, `schemes`, `villains`,
+`henchmen`, each with the registry's authoritative `name` — and, per villain and
+henchman group, a `usedByGauntlets` boolean. `usedByGauntlets` is **PER-SET-SCOPED** — it means "does **this set's own**
+gauntlets fight this group," so completing *this set's* challenge would fight it.
+It is **true iff** the group's set-qualified id `` `${setAbbr}/${slug}` `` appears
+in at least one approved gauntlet configuration of one of **that set's own
+masterminds** at any player count. It is gathered by iterating the set's own
+masterminds and doing exact `` `${setAbbr}/${mastermindSlug}` `` lookups — never a
+global id scan (which would over-count a group fought only by *another* set's
+gauntlet: real in the data, `2099`/`amwp` gauntlets pull `co2e/*` fallback groups)
+and never a `startsWith` prefix match. Masterminds and schemes carry no flag
+(every mastermind is a gauntlet, every scheme is a leg — covered by construction).
+**The WP-462 client label depends on this scoping**: it must read "used by *this
+set's* gauntlets" / "not used by *this set's* gauntlets," never the unscoped "any
+gauntlet."
+
+**Rationale.**
+- **Computed once, server-side.** A pure `buildSetDetailsCatalog` folds the
+  wiring-injected set rosters against the `approvedLoadoutsByGauntlet` menu the
+  wiring layer already builds, so the coverage truth is computed once and the
+  snapshot is self-describing. The zero-API legends board (WP-462) renders the
+  flag verbatim — no client-side recompute.
+- **Layer lock preserved.** The legends module imports no registry/engine/preplan/
+  UI code; the villain/henchman rosters reach it as injected plain data threaded
+  the same `server.mjs` → `index.mjs` → `legends.scheduler.ts` →
+  `publishAllBoards` path as `gauntletCatalog` (D-24131) and the fixed-pool
+  budgets (D-24187).
+- **Additive + optional.** A pre-WP-461 consumer ignores the field; the client
+  mirror degrades to no-reveal when `sets` is absent. No board file, manifest,
+  standings query, or scoring surface changes.
+
+**Reports, does not close, the coverage gap.** This decision only makes the gap
+*visible*. Whether "completing a set challenge" should require fighting every
+villain/henchman — via a wider ranked menu, a separate completionist layer, or a
+different completion model — is explicitly left as a future decision.
+
+**Scope.** `apps/server/src/legends/legends.types.ts` (types + field),
+`gauntlet.logic.ts` (`GauntletSetSummary` rosters + `buildSetDetailsCatalog`),
+`legends.publisher.ts` (emission), + wiring. Consumed by WP-462 (client, no
+D-entry — it mirrors this contract). Reserved by WP-461.
+
 Protect this file.
