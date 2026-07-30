@@ -212,6 +212,16 @@ jobs:
       - name: Number allocation ledger
         run: pnpm ledger:numbers:check
 
+      # why (WP-455 / D-24275): the WORK_INDEX WP-row format drift guard, as a
+      # dedicated, self-describing gate. The same canonical WORK_INDEX_ROW_PATTERN
+      # is already enforced by the dashboard's workIndexRowPattern.test.ts inside
+      # the Dashboard Gates job, but there a drifted row surfaces confusingly as a
+      # coverage failure (twice mis-diagnosed during the WP-453/454 arc). This step
+      # names the failure for what it is. It reuses the single-source pattern by
+      # extraction (no second regex copy). Reads markdown only — no build dependency.
+      - name: WORK_INDEX row-pattern check
+        run: pnpm workindex:rows:check
+
   # ── 3c. Dashboard gates ──────────────────────────────────────────────────────
   # why: wires the apps/dashboard checks from
   # apps/dashboard/docs/code-checks-and-balances.md §11 into CI. The dashboard is
