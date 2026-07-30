@@ -34649,4 +34649,38 @@ single-source pattern by extraction; verified against the real WORK_INDEX and by
 a mutation proof. No hook framework, no `apps/dashboard` change; CI enforcement
 stays the Dashboard Gates test.
 
+---
+
+### D-24276 — The legends board surfaces each gauntlet's approved composition as a client-only reveal from the already-published snapshot
+
+**Context.** A run's qualifying composition (schemes + approved villain/henchmen
+groups per player count) is published in the gauntlet-index snapshot
+(`GauntletIndexEntry.legs` + `.approvedLoadouts`, WP-395/D-24199) and already
+parsed by the legends board — but used only to build challenge links, never
+*shown*. So a player who reaches the cards builder via a challenge link (which
+seeds only scheme + mastermind and auto-adds the Always-Leads villain) has no
+on-board way to learn the rest of the approved composition; the WP-454 badge
+tells them it "won't count" but not what to fix. `legends.types.ts:140-144`
+already states the intent: the requirement is published "so the board … can SHOW
+the requirement; a qualification rule the player cannot see reads as a broken
+feature (D-24186/D-24190)."
+
+**Decision.** The legends board gains a **client-only "Show details" reveal** per
+gauntlet, rendering the schemes and the approved villain + henchmen groups per
+player count from the **already-published** snapshot fields — no publisher,
+server, or snapshot-contract change, and **no registry import** (the board stays
+`vue`-only at runtime / zero-API; the data is already in hand). A thin pure
+`buildGauntletDetails` helper aggregates the display shape (reusing the existing
+`formatApprovedLoadout` / `listApprovedLoadouts`), degrading gracefully when a
+gauntlet's `approvedLoadouts` is absent (pre-WP-395 snapshot) rather than
+crashing.
+
+**Boundary.** Read-only projection — scores/ranks/persists nothing, mutates no
+snapshot. The **challenge-link / URL-param prefill fix** (making the challenge
+link actually apply the villain/henchmen params in the cards builder) is a
+separate `apps/registry-viewer` concern, explicitly out of scope — this decision
+covers the *reveal* (the operator-chosen option), not the prefill.
+
+**Status:** Drafted 2026-07-29 (WP-456 / EC-491); lands at WP-456 execution.
+
 Protect this file.
