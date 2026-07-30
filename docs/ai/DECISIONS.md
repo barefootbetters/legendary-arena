@@ -34274,10 +34274,29 @@ derived field. §21 is triggered (the `GET /api/me/gauntlet-runs` response shape
 `apps/server/src/gauntlet/gauntletRunProgress.logic.{ts,test.ts}` (modified) +
 `apps/server/src/server.mjs` (wiring) + `docs/ai/REFERENCE/api-endpoints.md`
 (GET row replaced).
-### D-24270 — `gain-attached-hero` villain effect primitive: a no-op classification marker that fixes the D-24266 "Gain that Hero" false positive (Drafted 2026-07-28 — WP-450; not yet landed)
+### D-24270 — `gain-attached-hero` villain effect primitive: a no-op classification marker that fixes the D-24266 "Gain that Hero" false positive (Active (post-execution) 2026-07-30 — WP-450)
 
-> **Status: Drafted at SPEC time; flips to Active (post-execution) when WP-450
-> executes.** Reserved in `NUMBER-LEDGER.md` under the same branch.
+> **Status: Active (post-execution) 2026-07-30.** Landed by WP-450 / EC-485
+> (game-engine 2115/0, whole-repo build green; the 3 `Fight: Gain that Hero`
+> villains — core `skrull-queen-veranke`, core `skrull-shapeshifters`, rvlt `klaw`
+> — flip in the villain mechanic ledger to `gain-attached-hero/executable` and the
+> D-24266 breadcrumb stops firing on their defeat; NO fixture re-pin, no
+> pinned/golden/sentinel fixture defeats any of the 3). Reserved in
+> `NUMBER-LEDGER.md` under the same branch. `gain-attached-hero` landed at
+> **position 7** (WP-447's `scry-ko-own-deck` landed first at position 6).
+>
+> **Execution notes.**
+> - `setup/villainAbility.setup.ts` needed **no code change** — the parser's generic
+>   no-param branch already accepts the new primitive and rejects a trailing colon
+>   token; AC-2 is locked by a new `villainAbility.setup.test.ts` case.
+> - **The finalStateHash half of the determinism concern below is now moot.**
+>   WP-451 (landed 2026-07-29, #1069) excluded `G.diagnostics` from `hashGameState`
+>   (the fixture-golden / `finalStateHash` oracle), so the suppressed diagnostics
+>   write no longer perturbs any golden fixture hash. The residual surface is
+>   `computeStateHash` (the competitive/sentinel-replay oracle — WP-451 deferred its
+>   diagnostics exclusion), and the full suite (which exercises the sentinel replays
+>   + `PRE_WP080_HASH`) stayed green, empirically confirming no re-pin. The paragraph
+>   below is retained as drafted for the record.
 
 **Context.** The D-24266 breadcrumb (shipped #1065) records a `no-handler`
 `unmarked-ability` hollow record for a fired villain/henchman timing line with no
@@ -34335,10 +34354,12 @@ mechanic, out of scope; consequently Klaw captures no hero, so its `Gain that He
 is a legitimate no-op that the marker still correctly classifies reachable.
 
 **Files (at execution).** `packages/game-engine/src/rules/villainAbility.types.{ts,test.ts}`
-+ `setup/villainAbility.setup.ts` + `villain/villainEffects.execute.{ts,test.ts}`
++ `setup/villainAbility.setup.test.ts` (AC-2 lock only — the `.ts` source needed no
+change, see Execution notes) + `villain/villainEffects.execute.{ts,test.ts}`
 + `scripts/convert-cards/apply-effect-markers.mjs` (local primitives array) +
 `scripts/convert-cards/inputs/villain-effect-markers.json` + generated
-`data/cards/{core,rvlt}.json`. No `.claude/rules/*` or `ARCHITECTURE.md` edit —
+`data/cards/{core,rvlt}.json` + the regenerated
+`docs/ai/coverage/villain-mechanic-ledger.{json,csv}`. No `.claude/rules/*` or `ARCHITECTURE.md` edit —
 within-layer effect-vocabulary growth, no cross-layer edge, no persistence carve-out;
 the drift discipline is the existing `code-style.md §Drift Detection` rule.
 

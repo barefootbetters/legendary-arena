@@ -685,6 +685,58 @@ describe('executeVillainAbilities — scry-ko-own-deck (WP-447 / D-24267)', () =
   });
 });
 
+describe('executeVillainAbilities — gain-attached-hero no-op (WP-450 / D-24270)', () => {
+  // why: gain-attached-hero is a deliberate no-op — the real hero return is the
+  // generic awardAttachedHeroes at the fight site (WP-431). Build the descriptor
+  // hook directly (it is not a legacy keyword, so the `hook()` helper can't).
+  function gainAttachedHeroHook(cardId: string): VillainAbilityHook {
+    return {
+      cardId: cardId as CardExtId,
+      timing: 'onFight',
+      keywords: [],
+      effects: [{ primitive: 'gain-attached-hero' }],
+    };
+  }
+
+  it('fires the no-op handler: no G mutation and NO hollow record (classified applied)', () => {
+    const G = makeG({
+      hooks: [gainAttachedHeroHook('core-villain-skrulls-skrull-queen-veranke-00')],
+      wounds: ['w0'] as CardExtId[],
+      ko: ['k0'] as CardExtId[],
+    });
+    executeVillainAbilities(
+      G,
+      CTX,
+      'core-villain-skrulls-skrull-queen-veranke-00' as CardExtId,
+      'onFight',
+    );
+    // why: the handler mutates nothing — the award is the generic WP-431 path.
+    assert.deepStrictEqual(G.ko, ['k0'], 'KO pile unchanged');
+    assert.equal(G.piles.wounds.length, 1, 'wound pile unchanged');
+    assert.deepStrictEqual(G.playerZones['0']!.discard, [], 'no zone mutation');
+    // why: AC-3/AC-4 — the marked line is a recognized reachable effect, so the
+    // D-24266 detector records NO breadcrumb (neither unmarked-ability nor
+    // no-handler). The false positive is closed.
+    assert.equal(
+      G.diagnostics?.hollowEffects?.length ?? 0,
+      0,
+      'no hollow record for a recognized, applied effect',
+    );
+  });
+
+  it('records NO unmarked-ability breadcrumb (the D-24266 false positive is gone)', () => {
+    // why: before WP-450 this same fired hook (empty effects) recorded a
+    // no-handler unmarked-ability breadcrumb; with the gain-attached-hero
+    // descriptor present the detector must stay silent. AC-4.
+    const G = makeG({
+      hooks: [gainAttachedHeroHook('rvlt-villain-army-of-evil-klaw-00')],
+    });
+    executeVillainAbilities(G, CTX, 'rvlt-villain-army-of-evil-klaw-00' as CardExtId, 'onFight');
+    const hollow = G.diagnostics?.hollowEffects ?? [];
+    assert.equal(hollow.length, 0, 'no unmarked-ability breadcrumb for the marked Fight line');
+  });
+});
+
 describe('executeVillainAbilities — safe-skip paths', () => {
   it('no-ops (no mutation) a hook with empty effects but records a breadcrumb (D-24266)', () => {
     const G = makeG({

@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "cardType": "villain",
   "summary": {
-    "totalRows": 713,
+    "totalRows": 715,
     "byStatus": {
-      "executable": 100,
+      "executable": 103,
       "deferred": 0,
       "unsupported": 1,
-      "unmarked": 612
+      "unmarked": 611
     },
-    "distinctMechanics": 9
+    "distinctMechanics": 10
   },
   "rows": [
     {
@@ -1905,6 +1905,17 @@
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#capture-hq-hero"
     },
     {
+      "extId": "core-villain-skrulls-skrull-queen-veranke",
+      "cardName": "Skrull Queen Veranke",
+      "set": "core",
+      "cardType": "villain",
+      "mechanic": "gain-attached-hero",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-attached-hero"
+    },
+    {
       "extId": "core-villain-skrulls-skrull-shapeshifters",
       "cardName": "Skrull Shapeshifters",
       "set": "core",
@@ -1914,6 +1925,17 @@
       "wp": "WP-214",
       "decision": "D-21401",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#capture-hq-hero"
+    },
+    {
+      "extId": "core-villain-skrulls-skrull-shapeshifters",
+      "cardName": "Skrull Shapeshifters",
+      "set": "core",
+      "cardType": "villain",
+      "mechanic": "gain-attached-hero",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-attached-hero"
     },
     {
       "extId": "core-villain-skrulls-super-skrull",
@@ -4956,11 +4978,11 @@
       "cardName": "Klaw",
       "set": "rvlt",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
+      "mechanic": "gain-attached-hero",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-attached-hero"
     },
     {
       "extId": "rvlt-villain-lethal-legion-laser-maze",

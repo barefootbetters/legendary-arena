@@ -111,9 +111,10 @@ function isLockedEffectKeyword(keyword) {
 // why: WP-252 / D-24023 — local hand-synced copy of the engine's
 // VILLAIN_EFFECT_PRIMITIVES (packages/game-engine/src/rules/villainAbility.types.ts).
 // Same no-import-from-packages discipline and loud-fail-on-drift posture as
-// VILLAIN_EFFECT_KEYWORDS above. The 6 primitives back the parameterized
+// VILLAIN_EFFECT_KEYWORDS above. The 7 primitives back the parameterized
 // [effect:<primitive>:<param>...] grammar the engine parser also accepts.
-// `scry-ko-own-deck` (no-param) appended by WP-447 (D-24267).
+// `scry-ko-own-deck` (no-param) appended by WP-447 (D-24267);
+// `gain-attached-hero` (no-param) appended by WP-450 (D-24270).
 const VILLAIN_EFFECT_PRIMITIVES = [
   'ko-hero',
   'gain-wound',
@@ -121,6 +122,7 @@ const VILLAIN_EFFECT_PRIMITIVES = [
   'hero-deck-top-to-escape',
   'capture-bystander',
   'scry-ko-own-deck',
+  'gain-attached-hero',
 ];
 
 /**

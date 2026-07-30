@@ -1254,7 +1254,7 @@
           "imageUrl": "https://images.legendary-arena.com/rvlt/rvlt-vi-army-of-evil-klaw.webp",
           "abilities": [
             "Ambush: Klaw captures a [hc:tech] or [hc:ranged] Hero that costs 5 or less from the HQ.",
-            "Fight: Gain that Hero"
+            "Fight: Gain that Hero [effect:gain-attached-hero]"
           ],
           "copies": 2
         },

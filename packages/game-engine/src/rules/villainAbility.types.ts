@@ -169,18 +169,28 @@ export interface VillainEffectResult {
 // so it parses through parseParameterizedEffect's generic no-param branch and
 // is NOT a legacy keyword (it has no LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR entry,
 // so the executor self-narrates via pushLog — see villainEffects.execute.ts).
+// why: D-24270 — `gain-attached-hero` is the seventh primitive (append-only,
+// position 7). It is a deliberate NO-OP in the executor: the captured-hero
+// return on defeat is performed generically at the fight site
+// (`awardAttachedHeroes`, WP-431) BEFORE the executor runs, so this primitive
+// adds no mutation. It exists solely to give the printed `Fight: Gain that Hero`
+// line a recognized, reachable descriptor so the D-24266 hollow-effect detector
+// classifies it applied instead of falsely flagging `unmarked-ability`. No-param
+// (parses through the generic no-param branch); NOT a legacy keyword.
 export type VillainEffectPrimitive =
   | 'ko-hero'
   | 'gain-wound'
   | 'capture-hq-hero'
   | 'hero-deck-top-to-escape'
   | 'capture-bystander'
-  | 'scry-ko-own-deck';
+  | 'scry-ko-own-deck'
+  | 'gain-attached-hero';
 
 // why: drift-detection array — must match VillainEffectPrimitive exactly
 // (villainAbility.types.test.ts asserts bidirectional parity). Adding a
 // primitive requires updating both this array and the union, plus a DECISIONS
-// entry. `scry-ko-own-deck` appended at position 6 by WP-447 (D-24267).
+// entry. `scry-ko-own-deck` appended at position 6 by WP-447 (D-24267);
+// `gain-attached-hero` appended at position 7 by WP-450 (D-24270).
 /** All villain effect primitives in canonical order. Single source of truth. */
 export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'ko-hero',
@@ -189,6 +199,7 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'hero-deck-top-to-escape',
   'capture-bystander',
   'scry-ko-own-deck',
+  'gain-attached-hero',
 ] as const;
 
 /**
@@ -197,7 +208,8 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
  *   - `ko-hero`:         `target` 'current' | 'each'; `magnitude` (each only)
  *   - `gain-wound`:      `target` 'current' | 'each'
  *   - `capture-hq-hero`: `selector` 'rightmost' | 'highest-cost' | 'lowest-cost'
- *   - `hero-deck-top-to-escape`, `capture-bystander`, `scry-ko-own-deck`: no params
+ *   - `hero-deck-top-to-escape`, `capture-bystander`, `scry-ko-own-deck`,
+ *     `gain-attached-hero`: no params
  */
 export interface VillainEffectDescriptor {
   primitive: VillainEffectPrimitive;
