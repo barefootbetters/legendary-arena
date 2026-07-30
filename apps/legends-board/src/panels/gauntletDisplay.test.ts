@@ -7,6 +7,7 @@ import {
   buildFixedCountTabs,
   buildGauntletDetails,
   buildPlayerCountTabs,
+  buildCoverageMatrix,
   buildRowChallengeUrl,
   findRoutedCountTab,
   findSetDetails,
@@ -713,5 +714,146 @@ describe("findSetDetails (WP-462)", () => {
 
   it("returns undefined when sets is absent (pre-WP-461 snapshot)", () => {
     assert.equal(findSetDetails(undefined, "core"), undefined);
+  });
+});
+
+describe("buildCoverageMatrix (WP-464)", () => {
+  // why: Magneto approves brotherhood (1p+) then adds enemies-of-asgard (2p+),
+  // henchman doombot-legion; it has NO "3" count key (undefined-loadout path).
+  const MAGNETO: GauntletIndexEntry = {
+    setAbbr: "core",
+    setName: "Core Set",
+    mastermindSlug: "magneto",
+    mastermindName: "Magneto",
+    legCount: 2,
+    entryCount: 0,
+    board: "gauntlet-core-magneto",
+    legs: [
+      { schemeSlug: "scheme-a", schemeName: "Scheme A" },
+      { schemeSlug: "scheme-b", schemeName: "Scheme B" },
+    ],
+    approvedLoadouts: {
+      "1": [
+        {
+          villainGroupIds: ["core/brotherhood"],
+          henchmanGroupIds: ["core/doombot-legion"],
+        },
+      ],
+      "2": [
+        {
+          villainGroupIds: ["core/brotherhood", "core/enemies-of-asgard"],
+          henchmanGroupIds: ["core/doombot-legion"],
+        },
+      ],
+    },
+  };
+  const DR_DOOM: GauntletIndexEntry = {
+    setAbbr: "core",
+    setName: "Core Set",
+    mastermindSlug: "dr-doom",
+    mastermindName: "Dr. Doom",
+    legCount: 2,
+    entryCount: 0,
+    board: "gauntlet-core-dr-doom",
+    legs: [
+      { schemeSlug: "scheme-a", schemeName: "Scheme A" },
+      { schemeSlug: "scheme-b", schemeName: "Scheme B" },
+    ],
+    approvedLoadouts: {
+      "2": [
+        {
+          villainGroupIds: ["core/masters-of-evil"],
+          henchmanGroupIds: ["core/doombot-legion"],
+        },
+      ],
+    },
+  };
+  const CORE_DETAILS: SetDetails = {
+    setAbbr: "core",
+    setName: "Core Set",
+    masterminds: [
+      { slug: "magneto", name: "Magneto" },
+      { slug: "dr-doom", name: "Dr. Doom" },
+    ],
+    schemes: [
+      { slug: "scheme-a", name: "Scheme A" },
+      { slug: "scheme-b", name: "Scheme B" },
+    ],
+    villains: [
+      { slug: "brotherhood", name: "The Brotherhood", usedByGauntlets: true },
+      { slug: "enemies-of-asgard", name: "Enemies of Asgard", usedByGauntlets: true },
+      { slug: "masters-of-evil", name: "Masters of Evil", usedByGauntlets: true },
+      { slug: "radiation", name: "Radiation", usedByGauntlets: false },
+    ],
+    henchmen: [
+      { slug: "doombot-legion", name: "Doombot Legion", usedByGauntlets: true },
+      { slug: "sentinel", name: "Sentinel", usedByGauntlets: false },
+    ],
+  };
+
+  it("orders columns villains-then-henchmen with kinds", () => {
+    const matrix = buildCoverageMatrix([MAGNETO], CORE_DETAILS, 2);
+    assert.deepStrictEqual(
+      matrix.columns.map((column) => `${column.kind}:${column.slug}`),
+      [
+        "villain:brotherhood",
+        "villain:enemies-of-asgard",
+        "villain:masters-of-evil",
+        "villain:radiation",
+        "henchman:doombot-legion",
+        "henchman:sentinel",
+      ],
+    );
+  });
+
+  it("emits one row per mastermind × scheme, mastermind-major", () => {
+    const matrix = buildCoverageMatrix([MAGNETO, DR_DOOM], CORE_DETAILS, 2);
+    assert.strictEqual(matrix.rows.length, 4);
+    assert.deepStrictEqual(
+      matrix.rows.map((row) => `${row.mastermindSlug}/${row.schemeSlug}`),
+      [
+        "magneto/scheme-a",
+        "magneto/scheme-b",
+        "dr-doom/scheme-a",
+        "dr-doom/scheme-b",
+      ],
+    );
+  });
+
+  it("marks a covered cell with a challenge link and an uncovered cell with none", () => {
+    const matrix = buildCoverageMatrix([MAGNETO], CORE_DETAILS, 2);
+    const row = matrix.rows[0]; // magneto / scheme-a
+    assert.ok(row);
+    // brotherhood (col 0) covered → link; masters-of-evil (col 2) not → null.
+    assert.strictEqual(row.cells[0]?.covered, true);
+    assert.ok(row.cells[0]?.challengeUrl?.startsWith("https://cards.legendary-arena.com/"));
+    assert.strictEqual(row.cells[2]?.covered, false);
+    assert.strictEqual(row.cells[2]?.challengeUrl, null);
+    // doombot-legion (col 4, henchman) covered.
+    assert.strictEqual(row.cells[4]?.covered, true);
+  });
+
+  it("is count-sensitive (enemies-of-asgard covered at 2p, not 1p)", () => {
+    const at1p = buildCoverageMatrix([MAGNETO], CORE_DETAILS, 1).rows[0];
+    const at2p = buildCoverageMatrix([MAGNETO], CORE_DETAILS, 2).rows[0];
+    // column 1 = enemies-of-asgard
+    assert.strictEqual(at1p?.cells[1]?.covered, false);
+    assert.strictEqual(at2p?.cells[1]?.covered, true);
+  });
+
+  it("a count with no published config leaves every cell uncovered, no throw", () => {
+    // Magneto has no "3" key → selectApprovedLoadout undefined at 3p.
+    const matrix = buildCoverageMatrix([MAGNETO], CORE_DETAILS, 3);
+    assert.strictEqual(matrix.rows.length, 2);
+    for (const row of matrix.rows) {
+      assert.ok(row.cells.every((cell) => cell.covered === false));
+      assert.ok(row.cells.every((cell) => cell.challengeUrl === null));
+    }
+  });
+
+  it("empty entries yield no rows but keep columns; no throw", () => {
+    const matrix = buildCoverageMatrix([], CORE_DETAILS, 2);
+    assert.strictEqual(matrix.rows.length, 0);
+    assert.strictEqual(matrix.columns.length, 6);
   });
 });
