@@ -34605,4 +34605,44 @@ guard shipped in `apps/registry-viewer`; local dev-server smoke confirmed the
 badge (qualifies / won't-count) and the pack-sourced adversary lock + unlock.
 D-24026 deploy live-verification is operator-pending on `cards.legendary-arena.com`.
 
+---
+
+### D-24275 — The WORK_INDEX row-pattern drift guard is also exposed as a local `pnpm` check that reuses the single-source pattern
+
+**Context.** The canonical `WORK_INDEX_ROW_PATTERN` is a regex literal in
+`apps/dashboard/scripts/build-governance-snapshot.mjs`, and its drift guard —
+"every WORK_INDEX WP row must parse under the canonical pattern" — runs **only**
+in CI, inside the dashboard's "Dashboard Gates" job
+(`apps/dashboard/src/composables/workIndexRowPattern.test.ts`). During the
+WP-453→WP-454 arc a draft row written in a non-canonical status form broke that
+guard, failed the whole Dashboard Gates job, and was **twice mis-diagnosed as a
+coverage failure** before `gh run view --log-failed` surfaced the row regex as
+the cause. There was no way to catch a row-format drift locally, before push.
+
+**Decision.** Add a **local** authoring-time mirror:
+`scripts/check-workindex-rows.mjs`, run via `pnpm workindex:rows:check`
+(with `workindex:rows:test` for its unit test, mirroring the
+`roadmap:counts:check` / `:test` precedent). It validates
+`docs/ai/work-packets/WORK_INDEX.md` and exits non-zero with the offending rows
+listed.
+
+- **Single source, no third copy.** The local check **extracts** the canonical
+  `WORK_INDEX_ROW_PATTERN` from `build-governance-snapshot.mjs` at runtime — the
+  same text-extraction the dashboard test uses — so there is exactly ONE
+  canonical regex and the local check can never drift from the CI guard. It must
+  not hard-code a second copy. (The loose "is this a WP row" candidate detector
+  is a local heuristic filter, not the single-sourced contract.)
+- **Mirror, not replacement.** CI enforcement stays the dashboard Dashboard Gates
+  test; the local check is an authoring-time convenience that catches the same
+  drift earlier.
+- **No git-hook framework.** The repo has none, and introducing one
+  (husky / simple-git-hooks + a `prepare` step) is out of scope and
+  disproportionate; the established convention is a `pnpm` `*:check` script. A
+  pre-push hook can be layered on later.
+- **No `apps/dashboard` change, no CI-workflow edit.** The generator, the CI
+  test, and the Dashboard Gates job are untouched; the canonical pattern is not
+  moved, exported, or refactored.
+
+**Status:** Drafted 2026-07-29 (WP-455 / EC-490); lands at WP-455 execution.
+
 Protect this file.
