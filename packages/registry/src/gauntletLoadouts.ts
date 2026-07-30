@@ -27,9 +27,10 @@ export interface GauntletLoadoutComposition {
 }
 
 /**
- * One of the three approved configurations for a mastermind, sized for every
- * supported player count. `variantIndex` is stable across regenerations for a
- * given card-data state and is what the board and challenge link cite.
+ * The approved configuration for a mastermind (variant 0, D-24278 — the one
+ * canonical configuration ranked qualification uses), sized for every supported
+ * player count. `variantIndex` is stable across regenerations for a given
+ * card-data state and is what the board and challenge link cite.
  */
 export interface GauntletLoadoutVariant {
   readonly variantIndex: number;

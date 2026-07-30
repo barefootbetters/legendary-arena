@@ -30123,7 +30123,11 @@ belongs to a 2.0 deprecation, not here.
 ### D-24199 — Gauntlet legs require a canonical villain/henchmen loadout; casual play stays free
 
 **Status:** Active (competitive-integrity contract) 2026-07-18. Decided by the
-operator the day it was raised. Implemented by **WP-395**.
+operator the day it was raised. Implemented by **WP-395**. **Menu size superseded
+by D-24278 (2026-07-30):** the approved menu is now ONE canonical configuration
+per mastermind (variant 0), not three — heroes are the only ranked variable. This
+core rule (ranked legs require an approved loadout; casual stays free) is
+unchanged; only the menu size shrank.
 
 **User-Visible Surface:** legends.legendary-arena.com
 
@@ -34763,7 +34767,11 @@ untouched — it already compares against "an approved config," and there is now
 one. `ScenarioKey` / `henchman_key` shape and the scoring math are unchanged. No
 per-mastermind hand-curation (variant 0 is the uniform collapse target).
 
-**Status:** Drafted 2026-07-30 (WP-458 / EC-493); lands at WP-458 execution.
-Supersedes the menu size in **D-24199** (which stays Active for its core rule).
+**Status:** Active (post-execution) — landed 2026-07-30 (WP-458 / EC-493).
+`VARIANTS_PER_MASTERMIND = 1`; `gauntletLoadouts.generated.ts` regenerated to 110
+menus × 1 variant (variant 0 byte-identical); qualification logic + tests green.
+Supersedes the menu size in **D-24199** (which stays Active for its core rule:
+ranked legs require an approved loadout, casual stays free). D-24026 deploy
+live-verify operator-pending on `legends.legendary-arena.com`.
 
 Protect this file.

@@ -23,8 +23,9 @@
  *   3. Fill the remaining villain and henchmen slots per player count from the
  *      mastermind's own set first, then from the Core Set / Core 2E pool
  *      (the D-24199 core-fallback rule).
- *   4. Emit three variants per mastermind by rotating the candidate list, so
- *      the menu preserves real player choice instead of dictating one game.
+ *   4. Emit one canonical variant (variant 0) per mastermind — the single
+ *      approved configuration ranked qualification uses (D-24278). Casual play
+ *      keeps free selection; only ranked qualification is fixed.
  *   5. Default mode: write the module. --check mode: regenerate in memory and
  *      exit non-zero if the committed module drifts (the CI freshness gate).
  *
@@ -55,10 +56,12 @@ const OUTPUT_PATH = join(
 // this menu exists to unblock).
 const CORE_FALLBACK_SET_ABBRS = ['core', 'co2e'];
 
-// why: three configurations per mastermind — D-24199's settled menu size. One
-// canonical loadout would dictate the game; an open choice is the explosion
-// this generator exists to prevent.
-const VARIANTS_PER_MASTERMIND = 3;
+// why: ONE canonical configuration per mastermind — variant 0 (D-24278,
+// superseding D-24199's menu of three). Ranked gauntlet qualification fixes the
+// villains and henchmen so the only competitive variable is the heroes; casual
+// play keeps free selection. Done while competitive_scores is empty, so dropping
+// the former variants 1/2 re-keys and invalidates no scores.
+const VARIANTS_PER_MASTERMIND = 1;
 
 // why: mirrors PLAYER_COUNT_SETUP in packages/registry/src/playerCountSetup.ts.
 // Duplicated rather than imported because this script runs before any build and
@@ -119,8 +122,8 @@ function buildGroupIds(setAbbreviation, groups) {
 
 /**
  * Picks `requiredCount` ids from `candidates`, starting at `rotationOffset` and
- * wrapping. The offset is what makes the three variants differ: variant 0 takes
- * the first candidates, variant 1 starts one later, and so on.
+ * wrapping. Variant 0 (the only variant now, D-24278) takes the first candidates
+ * (`rotationOffset 0`); the offset parameter is retained for the rotation logic.
  *
  * @param {string[]} candidates the ordered candidate ids.
  * @param {number} requiredCount how many ids to take.
@@ -197,7 +200,7 @@ function fillGroupSlots(
 }
 
 /**
- * Builds every mastermind's three-variant menu.
+ * Builds every mastermind's single-variant menu.
  *
  * @param {{abbr: string, data: object}[]} sets every set read from data/cards/.
  * @returns {object[]} one menu record per (set x mastermind), ordered by

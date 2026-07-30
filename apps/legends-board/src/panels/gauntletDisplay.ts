@@ -327,10 +327,10 @@ export function buildChallengeUrl(
 /**
  * Picks the approved configuration a challenge link should pin (WP-395).
  *
- * why: the menu offers three configurations and the link can only carry one.
- * The first is chosen deterministically so the same board always produces the
- * same link; the board itself lists all three, so the player keeps the choice
- * the menu preserves.
+ * why: the menu offers one approved configuration per player count (variant 0,
+ * D-24278 — was three under D-24199), and the link pins it deterministically so
+ * the same board always produces the same link. The board's "Show details"
+ * reveal lists the same approved config.
  *
  * @param entry The gauntlet's index entry.
  * @param playerCount The routed player count, or undefined on the index CTA.

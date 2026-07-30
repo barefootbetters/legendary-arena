@@ -28,9 +28,10 @@
  * injection precedent.
  *
  * WP-395 / D-24199 adds the canonical loadout requirement: a leg qualifies
- * only when its villain and henchmen groups match one of three approved
- * configurations for its player count, which is what makes PAR calibration
- * arithmetically possible. Casual play is unaffected.
+ * only when its villain and henchmen groups match the approved configuration
+ * for its player count (one canonical config per mastermind, D-24278; was three
+ * under D-24199), which is what makes PAR calibration arithmetically possible.
+ * Casual play is unaffected.
  *
  * Authority: WP-342; WP-344; WP-384; WP-395; EC-376 / EC-413 / EC-435
  * §Locked Values; D-24131; D-24134; D-24187; D-24199.
@@ -127,9 +128,10 @@ export interface GauntletApprovedLoadout {
 
 /**
  * The approved loadouts for one gauntlet, keyed by player count (WP-395 /
- * D-24199). Each count maps to the three configurations D-24199 settled on.
- * Built by the wiring layer (`server.mjs`) from the registry's generated
- * menu and stamped onto every definition, so this module stays registry-free.
+ * D-24199). Each count maps to the single approved configuration (D-24278;
+ * was three under D-24199). Built by the wiring layer (`server.mjs`) from the
+ * registry's generated menu and stamped onto every definition, so this module
+ * stays registry-free.
  */
 export type GauntletApprovedLoadouts = Readonly<
   Record<number, readonly GauntletApprovedLoadout[]>
