@@ -7,6 +7,32 @@
 
 ## Current State
 
+### WP-457 / EC-492 — Challenge-Link Player-Count Consistency (Legends Index CTA) (D-24277) (2026-07-30)
+
+**User-Visible Surface = `legends.legendary-arena.com`** (the gauntlet index
+"Challenge →" CTA). **D-24026 deploy live-verify operator-pending**; live
+dev-server smoke passed.
+
+Fixes a challenge link that opened a **non-qualifying** loadout. The index CTA
+pinned the **solo** approved loadout (`selectApprovedLoadout(gauntlet)` with no
+count → count-`1`) but emitted **no** `playerCount`, so the cards builder fell back
+to `DEFAULT_PLAYER_COUNT = 2` and judged a solo composition at 2 players ("needs 2
+villain groups — has 1", an operator issue).
+
+- **Fix:** new pure `buildRowChallengeUrl(entry, playerCount)` in
+  `gauntletDisplay.ts` threads the row's selected count
+  (`selectionFor(board).playerCount`) into **both** `selectApprovedLoadout` and
+  `buildChallengeUrl`, so the pinned villains/henchmen and the URL count agree →
+  the link opens a qualifying builder. `GauntletIndexPanel.vue`'s
+  `firstLegChallengeUrl` now calls it. Mirrors `GauntletBoardPanel`'s
+  already-consistent per-leg links.
+- **The registry-viewer consumer was untouched** — D-24190's `applyPreviewToDraft`
+  already applies the URL's `villainGroupIds`/`henchmanGroupIds` onto the draft, so
+  a count-consistent link needs no consumer change. Client-only, `vue`-only, zero-API.
+- **Verified:** legends-board 114/0, `vue-tsc` 0, build 0, `pnpm -r build` 0; live
+  smoke on the real R2 index — the Magneto CTA href now carries `playerCount=1` +
+  solo villains at the default count (pre-fix: no `playerCount` param).
+
 ### WP-456 / EC-491 — Legends Board Per-Mastermind Gauntlet Details Reveal (D-24276) (2026-07-29)
 
 **User-Visible Surface = `legends.legendary-arena.com`** (the Legends Attract

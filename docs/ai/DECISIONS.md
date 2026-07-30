@@ -34719,6 +34719,11 @@ untouched**: D-24190's `applyPreviewToDraft` already applies the URL
 link needs no registry-viewer change. `buildChallengeUrl` and
 `selectApprovedLoadout` signatures are unchanged (only the caller is fixed).
 
-**Status:** Drafted 2026-07-30 (WP-457 / EC-492); lands at WP-457 execution.
+**Status:** Active (post-execution) — landed 2026-07-30 (WP-457 / EC-492). Shipped
+in `apps/legends-board` (new pure `buildRowChallengeUrl`); the registry-viewer
+consumer was untouched (D-24190 already applies URL villains/henchmen). Live
+dev-server smoke confirmed the index CTA href now threads the row count into both
+the URL count and the pinned loadout. D-24026 deploy live-verify operator-pending
+on `legends.legendary-arena.com`.
 
 Protect this file.
