@@ -7,6 +7,33 @@
 
 ## Current State
 
+### WP-455 / EC-490 — Local WORK_INDEX Row-Pattern Check (D-24275) (2026-07-29)
+
+**User-Visible Surface = `none — infrastructure`.** No user-observable change —
+governance tooling only. **D-24026 inverted.** Payoff: a WORK_INDEX WP-row format
+drift is now catchable **locally** with `pnpm workindex:rows:check`, instead of
+only failing the dashboard "Dashboard Gates" CI job (where it read confusingly as
+a coverage failure and was twice mis-diagnosed during the WP-453/454 arc).
+
+- **New:** `scripts/check-workindex-rows.mjs` — pure `extractCanonicalPattern`
+  + `findUnparsedWpRows` + a `main()` guarded behind `isRunDirectly()`. It reuses
+  the **single-source** `WORK_INDEX_ROW_PATTERN` by extracting it from
+  `apps/dashboard/scripts/build-governance-snapshot.mjs` (the same text-extraction
+  the dashboard test uses — **no second regex copy**, so the local check can never
+  drift from the CI guard). CRLF-safe, repo-relative paths, full-sentence errors.
+- **New:** `scripts/check-workindex-rows.test.ts` — `node:test` on the pure
+  helpers (extraction + capture groups; throw-on-rename; conforming body → `[]`;
+  the exact WP-453 `Drafted …; not yet executed` regression flagged; prose not
+  flagged).
+- **Modified:** root `package.json` — `workindex:rows:check` + `workindex:rows:test`
+  (mirroring `roadmap:counts:check`/`:test`).
+- **Mirror, not replacement:** CI enforcement stays the dashboard Dashboard Gates
+  test; no git-hook framework introduced; no `apps/dashboard` change; no CI-workflow
+  edit.
+- **Verified:** `workindex:rows:test` 5/0; `workindex:rows:check` exit 0 on the real
+  WORK_INDEX; mutation proof (a bad row → exit 1 + row listed → reverted); `pnpm -r
+  build` 0; the dashboard drift-guard test unchanged + green.
+
 ### WP-454 / EC-489 — Gauntlet Loadout Qualification Guard (cards builder) (D-24274) (2026-07-29)
 
 **User-Visible Surface = `cards.legendary-arena.com`** (the Registry-Viewer Loadout
