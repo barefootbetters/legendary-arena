@@ -34484,4 +34484,67 @@ identically 0.0%). This is the yardstick the epic's later WPs drive up.
 **Status:** Landed 2026-07-29 (WP-452 / EC-487, commit `49ebbb60`). (Renumbered from
 D-24263 after a landed collision with the gauntlet cards-consumer.)
 
+---
+
+### D-24273 — Simulation setup deck shuffle uses the run-seeded mulberry32 Fisher–Yates, not the makeMockCtx reverse mock (Drafted 2026-07-29; not yet landed — WP-453)
+
+**Context.** WP-452's execution note (D-24272 above) flagged that
+`core/midtown-bank-robbery` and `core/negative-zone-prison-breakout` trip a
+`SCHEME_LOSS` at turn 0 in simulation, and called it "a separate scheme-setup
+issue." Investigation (2026-07-29) **corrects that framing**: it is not a
+scheme-setup issue and not a 0/undefined loss threshold. `buildInitialGameState`
+leaves `G.counters = {}` and `evaluateEndgame(G) = null` at initial state for
+every scheme, the two "failing" ones included.
+
+**Root cause.** `buildVillainDeck` lexically sorts the assembled deck before
+shuffling (for deterministic pre-shuffle ordering). Virtual `scheme-twist-<slug>-NN`
+ids sort **last** (`s` > `m`/`h`/`c`/`b`). The simulation setup path — and the
+fixture-replay harness — build their `SetupContext` via `makeMockCtx`, whose
+`random.Shuffle` is `(deck) => [...deck].reverse()` (a deterministic reverse the
+unit tests rely on to prove a shuffle ran). Reversing a list whose twists are at
+the bottom deterministically stacks **all** scheme-twists on **top** of the villain
+deck (verified: top 8 = `scheme-twist-…-07..00`). The two schemes whose twist
+resolver **chains** villain reveals (`performVillainReveal`) then cascade through
+the entire twist cluster in a single turn-1 reveal — `schemeTwistCount` reaches the
+`lossThreshold: 8` doom-clock proxy (D-24178) → `schemeLoss` → `scheme-wins` at
+turn 0. Non-chaining schemes are front-loaded by the same clustering (loss ≈ turn
+8), so the reverse mock systematically depresses **all** simulated win rates,
+including the WP-452 `legacy-virus-the` baseline of 0.0%.
+
+**Decision.**
+
+1. **Seeded setup shuffle.** Every simulation setup path (`simulateOneGame`,
+   `simulateOneCoopGame`, `simulateOneGameAndCaptureMoves`, and `par.aggregator`'s
+   own `simulateOneGame`) **and** the fixture-replay harness `runFixture` build
+   their setup `SetupContext` with the run's seeded mulberry32 Fisher–Yates
+   (`shuffleWithPrng(deck, nextRandom)` — the exact helper each file already uses
+   for per-turn reveals), never the `makeMockCtx` reverse mock. This is the same
+   PRNG domain, so every simulated game and every fixture replay stays fully
+   reproducible from `(config, seed)`.
+
+2. **`makeMockCtx` is not changed.** Its reverse shuffle is a deliberate
+   "shuffle ran" proof relied on by ~190 importers and pinned by
+   `buildInitialGameState.determinism.test.ts` and `replay.execute.test.ts`
+   (`PRE_WP080_HASH`). The fix is local to the simulation/fixture setup sites.
+
+3. **Recorder ↔ replay lockstep.** The fixture recorder
+   (`simulateOneGameAndCaptureMoves`) and the replay harness (`runFixture`) must
+   use the identical seeded setup shuffle, or the capture→replay contract breaks.
+   Consequence: the sole committed replay fixture
+   `sentinel-core-doom-2p.replay.json` is **re-recorded** (new `finalStateHash`)
+   via `scripts/record-game-fixture.mjs`; `PRE_WP080_HASH` stays byte-identical.
+
+4. **No PAR / competitive re-pin.** No committed PAR artifact or PAR CI gate
+   exists (PAR is disk-only tooling output), so there is nothing to re-pin.
+   Production competitive replay uses `computeStateHash` on live boardgame.io
+   state and is untouched.
+
+**Scope boundary.** This locks the *simulation/fixture shuffle fidelity*, not the
+twist mechanic. The scheme-twist doom-clock proxy (`schemeTwistHandler`,
+`lossThreshold`, D-24178) is faithful — chained reveals surfacing twists genuinely
+advance the scheme — and is out of scope. **Production is unaffected**: the live
+engine shuffles with boardgame.io's real seeded PRNG, which distributes twists.
+
+**Status:** Drafted 2026-07-29; lands at WP-453 execution.
+
 Protect this file.
