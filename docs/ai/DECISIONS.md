@@ -34681,6 +34681,11 @@ link actually apply the villain/henchmen params in the cards builder) is a
 separate `apps/registry-viewer` concern, explicitly out of scope — this decision
 covers the *reveal* (the operator-chosen option), not the prefill.
 
-**Status:** Drafted 2026-07-29 (WP-456 / EC-491); lands at WP-456 execution.
+**Status:** Active (post-execution) — landed 2026-07-29 (WP-456 / EC-491).
+Shipped in `apps/legends-board` (client-only, zero-API); live dev-server smoke
+against the real R2 gauntlet-index confirmed the reveal (110 gauntlets; Magneto 2p
+shows the Brotherhood + Enemies of Asgard variant + all schemes). Operator
+amendment at execution: title-cased labels under "Villains:" / "Henchmen:"
+headers. D-24026 deploy live-verify operator-pending on `legends.legendary-arena.com`.
 
 Protect this file.

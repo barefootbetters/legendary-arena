@@ -641,3 +641,87 @@ export function listApprovedLoadouts(
   }
   return entry.approvedLoadouts[String(playerCount)] ?? [];
 }
+
+/** One approved configuration, split into title-cased villain + henchmen labels. */
+export interface GauntletDetailConfig {
+  readonly villains: readonly string[];
+  readonly henchmen: readonly string[];
+}
+
+/** The approved configurations for one player count, for the details reveal. */
+export interface GauntletDetailCount {
+  readonly playerCount: number;
+  readonly configs: readonly GauntletDetailConfig[];
+}
+
+/** The full per-mastermind details a gauntlet's reveal renders (WP-456). */
+export interface GauntletDetails {
+  readonly schemes: readonly string[];
+  readonly loadoutsByCount: readonly GauntletDetailCount[];
+}
+
+/**
+ * Turns a set-qualified group id into a Title-Cased label.
+ *
+ * why: the board holds only the group's `setAbbr/slug` ext_id — the snapshot
+ * carries no authoritative group display name — so the reveal derives a label
+ * from the slug (WP-456, operator-directed title-casing). Each hyphen-separated
+ * word is capitalized (e.g. `core/enemies-of-asgard` -> "Enemies Of Asgard").
+ * Known limitation: acronym groups render title-cased ("Hydra", "Shield") rather
+ * than "HYDRA" / "S.H.I.E.L.D." — a faithful group name would need the publisher
+ * to emit it into the snapshot (out of scope here).
+ *
+ * @param groupId A `setAbbr/slug` id.
+ * @returns The slug words, each capitalized, space-joined.
+ */
+function titleCaseGroupLabel(groupId: string): string {
+  const slug = groupId.slice(groupId.indexOf("/") + 1);
+  const capitalizedWords: string[] = [];
+  for (const word of slug.split("-")) {
+    if (word.length === 0) {
+      continue;
+    }
+    capitalizedWords.push(word[0].toUpperCase() + word.slice(1));
+  }
+  return capitalizedWords.join(" ");
+}
+
+/**
+ * Builds the per-mastermind gauntlet details a legends-board reveal renders
+ * (WP-456 / D-24276): the scheme legs and, for each player count, the approved
+ * villain + henchmen groups a run must use to qualify.
+ *
+ * why: pure and data-injected — reads only the parsed index entry (the board is
+ * `vue`-only at runtime; the data is already published in the gauntlet index per
+ * WP-395/D-24199, so no registry import is needed). Villains and henchmen are
+ * kept SEPARATE (not the `formatApprovedLoadout` "villains + henchmen" string) so
+ * the reveal can head them "Villains:" / "Henchmen:", and each label is
+ * title-cased. Degrades gracefully: a count with no published loadout yields an
+ * empty `configs`, and an entry with no `legs` yields an empty `schemes` — never
+ * a throw (a pre-WP-395 snapshot still parses).
+ *
+ * @param entry The gauntlet's index entry (legs + approved loadouts, both optional).
+ * @param playerCounts The player counts to list (1..5).
+ * @returns The schemes and the approved configurations by player count.
+ */
+export function buildGauntletDetails(
+  entry: Pick<GauntletIndexEntry, "legs" | "approvedLoadouts">,
+  playerCounts: readonly number[],
+): GauntletDetails {
+  const schemes: string[] = [];
+  for (const leg of entry.legs ?? []) {
+    schemes.push(leg.schemeName);
+  }
+  const loadoutsByCount: GauntletDetailCount[] = [];
+  for (const playerCount of playerCounts) {
+    const configs: GauntletDetailConfig[] = [];
+    for (const approvedLoadout of listApprovedLoadouts(entry, playerCount)) {
+      configs.push({
+        villains: approvedLoadout.villainGroupIds.map(titleCaseGroupLabel),
+        henchmen: approvedLoadout.henchmanGroupIds.map(titleCaseGroupLabel),
+      });
+    }
+    loadoutsByCount.push({ playerCount, configs });
+  }
+  return { schemes, loadoutsByCount };
+}

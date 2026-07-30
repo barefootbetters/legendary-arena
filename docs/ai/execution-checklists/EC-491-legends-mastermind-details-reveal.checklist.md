@@ -3,6 +3,16 @@
 **Source:** docs/ai/work-packets/WP-456-legends-mastermind-details-reveal.md
 **Layer:** App (`apps/legends-board`) — client-only, zero-API
 
+> **Execution amendment (operator-directed, Jeff, 2026-07-29):** render
+> **title-cased** group labels under separate **"Villains:" / "Henchmen:"**
+> headers (a new `titleCaseGroupLabel` helper), **superseding** the original
+> "reuse `formatApprovedLoadout` (lowercase `villains + henchmen`)" lock below.
+> `buildGauntletDetails` therefore returns `configs: [{ villains, henchmen }]`
+> (separate title-cased label arrays), not a joined string. **Known limitation:**
+> acronym groups render title-cased ("Hydra", "Shield") not "HYDRA" /
+> "S.H.I.E.L.D." — a faithful group name would require the publisher to emit a
+> group display name into the snapshot (a separate follow-on).
+
 ## Before Starting
 - [ ] On `origin/main` @ `74164b2c` (drafting baseline), worktree clean.
 - [ ] `apps/legends-board/package.json` runtime deps are `{ vue }` only; registry
