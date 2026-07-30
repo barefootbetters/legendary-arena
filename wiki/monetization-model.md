@@ -60,7 +60,7 @@ on the page.
 |-------|----------------------|
 | Revenue model (the four streams) | VISION §Financial Sustainability |
 | Profile free/paid boundary | Marketing-repo decision log + `docs/product/profile-features-free-vs-paid.md` |
-| Legendary Pass mechanics, reward tables, pricing | Marketing-repo product docs (+ decision log) |
+| Legendary Pass mechanics, reward tables, pricing | Marketing-repo `docs/product/legendary-pass-spec.md` (+ decision log) |
 | Digital-goods / printables store rollout | Marketing-repo `docs/product/digital-goods-store-rollout.md` |
 | Tournament / organized-play funding | [`docs/TOURNAMENT-FUNDING.md`](../docs/TOURNAMENT-FUNDING.md) |
 | This page | Reference summary + non-normative rationale only |
@@ -208,9 +208,10 @@ Fairness properties that keep it inside every Non-Goal:
 
 The detailed mechanics — progression schedule, per-season reward tables, pricing,
 and level-skip terms — are a product spec tracked in the marketing-repo product
-docs and blessed via the decision log, exactly like the profile boundary and the
-digital-goods store. This page records only that the execution exists and which
-stream it belongs to; it does not define the mechanics or set the price.
+docs (`docs/product/legendary-pass-spec.md`) and blessed via the decision log,
+exactly like the profile boundary and the digital-goods store. This page records
+only that the execution exists and which stream it belongs to; it does not define
+the mechanics or set the price.
 
 ## Prohibited monetization
 
@@ -340,3 +341,4 @@ keep patronage a garnish, not the meal (the FSF's limit).
 - [Profile Login](profile-login.md) — the profile/auth surface the paid layer attaches to
 - [Legendary Forge](legendary-forge.md) — the physical product behind the digital-unlock bridge
 - `C:\www\legendary-arena-com\docs\product\profile-features-free-vs-paid.md` — profile free/paid boundary **policy** (marketing repo, internal; locked 2026-07-03, amended 2026-07-04)
+- `C:\www\legendary-arena-com\docs\product\legendary-pass-spec.md` — Legendary Pass mechanics + Season 1 reward table (marketing repo, internal; **draft**, all values hypotheses pending)
