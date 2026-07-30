@@ -701,6 +701,35 @@ describe('buildVillainAbilityHooks — dual-grammar equivalence (WP-252 / D-2402
       { primitive: 'ko-hero', target: 'each', magnitude: 2 },
     ]);
   });
+
+  it('[effect:scry-ko-own-deck] parses as a no-param descriptor; a trailing token is rejected (WP-447 / D-24267)', () => {
+    const registry = makeRegistry(
+      'core',
+      [
+        {
+          slug: 'scry',
+          cards: [
+            { slug: 'ok', abilities: ['Fight: Look at the top two. [effect:scry-ko-own-deck]'] },
+            { slug: 'bad', abilities: ['Fight: Look at the top two. [effect:scry-ko-own-deck:2]'] },
+          ],
+        },
+      ],
+      [],
+    );
+    const hooks = buildVillainAbilityHooks(registry, makeConfig(['core/scry'], []));
+    const okHook = hooks.find((h) => h.cardId === 'core-villain-scry-ok-00');
+    const badHook = hooks.find((h) => h.cardId === 'core-villain-scry-bad-00');
+    // why: AC-2 — the no-param token yields { primitive: 'scry-ko-own-deck' } via
+    // the parser's generic no-param branch (no legacy keyword, no unresolved marker).
+    assert.deepStrictEqual(okHook!.effects, [{ primitive: 'scry-ko-own-deck' }]);
+    assert.deepStrictEqual(okHook!.keywords, [], 'scry-ko-own-deck is not a legacy keyword');
+    assert.equal(okHook!.unresolvedMarkers, undefined, 'a valid no-param descriptor is not unresolved');
+    // why: AC-2 — a trailing colon token is rejected (parts.length > 1 for a
+    // no-param primitive → null), so it surfaces as an unresolved marker, not a
+    // silently-collapsed descriptor.
+    assert.deepStrictEqual(badHook!.effects, [], 'the malformed token yields no descriptor');
+    assert.deepStrictEqual(badHook!.unresolvedMarkers, ['scry-ko-own-deck:2']);
+  });
 });
 
 // ---------------------------------------------------------------------------

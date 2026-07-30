@@ -33967,10 +33967,23 @@ green (2086/2086); a new test drives the Doombot Legion henchman case and assert
 the `no-handler` record + the `blocked`-coloured operator log line; a negative
 test confirms an applied `captureBystander` hook records no breadcrumb.
 
-### D-24267 — `scry-ko-own-deck` is the sixth villain effect primitive: auto-resolved look-2/KO-1 over the current player's own deck (Drafted 2026-07-28 — WP-447; not yet landed)
+### D-24267 — `scry-ko-own-deck` is the sixth villain effect primitive: auto-resolved look-2/KO-1 over the current player's own deck (Active (post-execution) 2026-07-30 — WP-447)
 
-> **Status: Drafted at SPEC time; flips to Active (post-execution) when WP-447
-> executes.** Reserved in `NUMBER-LEDGER.md` under the same branch.
+> **Status: Active (post-execution) 2026-07-30.** Landed by WP-447 / EC-482
+> (game-engine 2112/0, whole-repo build green; villain mechanic ledger
+> regenerated — the two Doombot rows flip `unmarked → scry-ko-own-deck/executable`;
+> NO fixture re-pin, no record-game/replay fixture defeats a Doombot). Reserved in
+> `NUMBER-LEDGER.md` under the same branch.
+>
+> **Execution note — `setup/villainAbility.setup.ts` needed no code change.**
+> `parseParameterizedEffect` already routes any primitive not explicitly branched
+> (ko-hero / gain-wound / capture-hq-hero) through its generic **no-param** branch,
+> which returns `{ primitive }` for a bare token and `null` for a trailing colon
+> token. Once `scry-ko-own-deck` joined `VILLAIN_EFFECT_PRIMITIVES`,
+> `isVillainEffectPrimitive` accepted it and the no-param branch parsed it — so
+> AC-2 holds with no parser edit. The AC-2 assertions are locked by a new
+> `villainAbility.setup.test.ts` case (valid no-param → descriptor; `scry-ko-own-deck:2`
+> → unresolved marker).
 
 **Context.** Doombot Legion's printed *"Fight: Look at the top two cards of your
 deck. KO one of them and put the other back."* was unimplemented — the
@@ -34033,11 +34046,14 @@ scry variants (reveal-top-N, draw-one-put-other-back, discard-any-number, top-N
 reorder), N ≠ 2, KO-any-number, and hero-side scry cards are each out of scope.
 
 **Files (at execution).** `packages/game-engine/src/rules/villainAbility.types.{ts,test.ts}`
-+ `setup/villainAbility.setup.ts` + `villain/villainEffects.execute.{ts,test.ts}`
++ `setup/villainAbility.setup.test.ts` (AC-2 lock only — the `.ts` source needed no
+change, see Execution note) + `villain/villainEffects.execute.{ts,test.ts}`
 + `scripts/convert-cards/apply-effect-markers.mjs` (its hand-synced local primitives
 array — the script does not import the engine union) +
 `scripts/convert-cards/inputs/villain-effect-markers.json` + generated
-`data/cards/{core,co2e}.json` (via `apply-effect-markers.mjs`). No
+`data/cards/{core,co2e}.json` (via `apply-effect-markers.mjs`) + the regenerated
+`docs/ai/coverage/villain-mechanic-ledger.{json,csv}` (the two Doombot rows flip to
+executable). No
 `.claude/rules/*` or `ARCHITECTURE.md` edit — within-layer effect vocabulary
 growth, no new cross-layer edge or persistence carve-out; the drift discipline
 (union + array + test together) is the existing `code-style.md §Drift Detection`

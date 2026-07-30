@@ -161,17 +161,26 @@ export interface VillainEffectResult {
  * vocabulary the executor dispatches on (WP-252). Five primitives collapse the
  * ten fragmented keywords along the target × magnitude × selector axes.
  */
+// why: D-24267 — `scry-ko-own-deck` is the sixth primitive (append-only,
+// position 6), the first self-deck scry mechanic in the villain/henchman
+// vocabulary: look at min(2, deck.length) of the current player's own deck, KO
+// exactly one via the deterministic worst-first selectScryKoTarget, and leave
+// the other on top. It is a no-param primitive (no target/magnitude/selector),
+// so it parses through parseParameterizedEffect's generic no-param branch and
+// is NOT a legacy keyword (it has no LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR entry,
+// so the executor self-narrates via pushLog — see villainEffects.execute.ts).
 export type VillainEffectPrimitive =
   | 'ko-hero'
   | 'gain-wound'
   | 'capture-hq-hero'
   | 'hero-deck-top-to-escape'
-  | 'capture-bystander';
+  | 'capture-bystander'
+  | 'scry-ko-own-deck';
 
 // why: drift-detection array — must match VillainEffectPrimitive exactly
 // (villainAbility.types.test.ts asserts bidirectional parity). Adding a
 // primitive requires updating both this array and the union, plus a DECISIONS
-// entry.
+// entry. `scry-ko-own-deck` appended at position 6 by WP-447 (D-24267).
 /** All villain effect primitives in canonical order. Single source of truth. */
 export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'ko-hero',
@@ -179,6 +188,7 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'capture-hq-hero',
   'hero-deck-top-to-escape',
   'capture-bystander',
+  'scry-ko-own-deck',
 ] as const;
 
 /**
@@ -187,7 +197,7 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
  *   - `ko-hero`:         `target` 'current' | 'each'; `magnitude` (each only)
  *   - `gain-wound`:      `target` 'current' | 'each'
  *   - `capture-hq-hero`: `selector` 'rightmost' | 'highest-cost' | 'lowest-cost'
- *   - `hero-deck-top-to-escape`, `capture-bystander`: no params
+ *   - `hero-deck-top-to-escape`, `capture-bystander`, `scry-ko-own-deck`: no params
  */
 export interface VillainEffectDescriptor {
   primitive: VillainEffectPrimitive;

@@ -305,19 +305,21 @@ describe('VILLAIN_EFFECT_PRIMITIVES drift-detection', () => {
   // parameterized vocabulary (WP-252 / D-24023). Per code-style §Drift
   // Detection a canonical array must assert it matches its union exactly —
   // adding a primitive to the union but not the array (or vice versa) would
-  // silently break dispatch. The 5 primitives collapse the 10 frozen keywords.
-  it('contains exactly the 5 canonical primitives in order', () => {
+  // silently break dispatch. The 5 primitives collapse the 10 frozen keywords;
+  // WP-447 (D-24267) appended a sixth, `scry-ko-own-deck`, at position 6.
+  it('contains exactly the 6 canonical primitives in order', () => {
     const expectedPrimitives: VillainEffectPrimitive[] = [
       'ko-hero',
       'gain-wound',
       'capture-hq-hero',
       'hero-deck-top-to-escape',
       'capture-bystander',
+      'scry-ko-own-deck',
     ];
     assert.equal(
       VILLAIN_EFFECT_PRIMITIVES.length,
-      5,
-      'VILLAIN_EFFECT_PRIMITIVES must have exactly 5 entries',
+      6,
+      'VILLAIN_EFFECT_PRIMITIVES must have exactly 6 entries',
     );
     assert.deepStrictEqual(
       [...VILLAIN_EFFECT_PRIMITIVES],

@@ -4,12 +4,12 @@
   "summary": {
     "totalRows": 713,
     "byStatus": {
-      "executable": 98,
+      "executable": 100,
       "deferred": 0,
       "unsupported": 1,
-      "unmarked": 614
+      "unmarked": 612
     },
-    "distinctMechanics": 8
+    "distinctMechanics": 9
   },
   "rows": [
     {
@@ -1348,11 +1348,11 @@
       "cardName": "Doombot Legion",
       "set": "co2e",
       "cardType": "henchman",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
+      "mechanic": "scry-ko-own-deck",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#scry-ko-own-deck"
     },
     {
       "extId": "co2e-villain-enemies-of-asgard-enchantress",
@@ -1733,11 +1733,11 @@
       "cardName": "Doombot Legion",
       "set": "core",
       "cardType": "henchman",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
+      "mechanic": "scry-ko-own-deck",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#scry-ko-own-deck"
     },
     {
       "extId": "core-villain-enemies-of-asgard-enchantress",

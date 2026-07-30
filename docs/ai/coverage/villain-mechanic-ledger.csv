@@ -120,7 +120,7 @@ co2e-villain-masters-of-evil-baron-zemo,Baron Zemo,co2e,villain,(unmarked),unmar
 co2e-villain-sinister-syndicate-beetle,Beetle,co2e,villain,(unmarked),unmarked,,,
 co2e-villain-sinister-syndicate-boomerang,Boomerang,co2e,villain,(unmarked),unmarked,,,
 co2e-villain-enemies-of-asgard-destroyer,Destroyer,co2e,villain,(unmarked),unmarked,,,
-henchman-doombot-legion,Doombot Legion,co2e,henchman,(unmarked),unmarked,,,
+henchman-doombot-legion,Doombot Legion,co2e,henchman,scry-ko-own-deck,executable,,,packages/game-engine/src/villain/villainEffects.execute.ts#scry-ko-own-deck
 co2e-villain-enemies-of-asgard-enchantress,Enchantress,co2e,villain,(unmarked),unmarked,,,
 co2e-villain-hydra-endless-armies-of-hydra,Endless Armies of HYDRA,co2e,villain,(unmarked),unmarked,,,
 co2e-villain-enemies-of-asgard-frost-giant-warrior,Frost Giant Warrior,co2e,villain,(unmarked),unmarked,,,
@@ -155,7 +155,7 @@ core-villain-masters-of-evil-baron-zemo,Baron Zemo,core,villain,(unmarked),unmar
 core-villain-brotherhood-blob,Blob,core,villain,(unmarked),unmarked,,,
 core-villain-enemies-of-asgard-destroyer,Destroyer,core,villain,koHeroEachPlayerMag2,executable,WP-202,D-20201,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 core-villain-spider-foes-doctor-octopus,Doctor Octopus,core,villain,(unmarked),unmarked,,,
-henchman-doombot-legion,Doombot Legion,core,henchman,(unmarked),unmarked,,,
+henchman-doombot-legion,Doombot Legion,core,henchman,scry-ko-own-deck,executable,,,packages/game-engine/src/villain/villainEffects.execute.ts#scry-ko-own-deck
 core-villain-enemies-of-asgard-enchantress,Enchantress,core,villain,(unmarked),unmarked,,,
 core-villain-hydra-endless-armies-of-hydra,Endless Armies of HYDRA,core,villain,(unmarked),unmarked,,,
 core-villain-enemies-of-asgard-frost-giant,Frost Giant,core,villain,(unmarked),unmarked,,,

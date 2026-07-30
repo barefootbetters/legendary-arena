@@ -43,6 +43,7 @@ import {
 import { captureHeroFromHq } from '../board/heroCapture.logic.js';
 import type { CaptureHeroResult } from '../board/heroCapture.logic.js';
 import { moveCardFromZone } from '../moves/zoneOps.js';
+import { pushLog } from '../log/logPush.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
 import {
   SHIELD_AGENT_EXT_ID,
@@ -696,10 +697,113 @@ function villainEffectCaptureBystander(
   return { targets: [] };
 }
 
+/**
+ * scry-ko-own-deck primitive — look at the top two cards of the current
+ * (defeating) player's own deck, KO exactly one (the deterministically-worst
+ * card), and leave the other on top in its original position (D-24267 /
+ * WP-447). Doombot Legion's Fight: "Look at the top two cards of your deck. KO
+ * one of them and put the other back."
+ *
+ * Self-narrates via `pushLog` naming the KO'd card, because `scry-ko-own-deck`
+ * is not a legacy keyword — `descriptorToLegacyKeyword` returns undefined, so
+ * the executor records no `VillainEffectResult` for it and the generic
+ * `fightVillain.ts` "Fight effect:" line never fires. The returned `targets`
+ * (the KO'd ext_id) are for parity with the other handlers; the log line is the
+ * user-visible surface.
+ */
+function villainEffectScryKoOwnDeck(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  _cardId: CardExtId,
+  _timing: VillainAbilityTiming,
+  _descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  const zones = G.playerZones[currentPlayer];
+  if (!zones) return { targets: [] };
+  // why: empty deck is a reachable no-op, never a hollow record — the handler
+  // ran, there was simply nothing to look at. Scry never triggers the draw-time
+  // reshuffle; it operates only on the cards already in the deck.
+  if (zones.deck.length === 0) return { targets: [] };
+  // why: look-2 / KO-1 is baked to Doombot Legion's printed values. A
+  // parameterized look-count / KO-count is a future primitive, not this WP
+  // (WP-447 §Scope Out). `min(2, deck.length)` handles a 1-card deck (look at 1,
+  // KO it, no "other" to return).
+  const lookCount = Math.min(2, zones.deck.length);
+  const revealed = zones.deck.slice(0, lookCount);
+  const koTarget = selectScryKoTarget(revealed);
+  // why: revealed is non-empty (deck.length ≥ 1 guaranteed above), so
+  // selectScryKoTarget always returns a card; the null guard is defensive only.
+  if (koTarget === null) return { targets: [] };
+  // why: moveCardFromZone removes the FIRST occurrence of koTarget's ext_id.
+  // koTarget is one of the top two, and any earlier-index occurrence would have
+  // the same ext_id (KOing either copy is outcome-identical), so the first
+  // occurrence is always within the looked-at window — the non-KO'd revealed
+  // card is left on top in its original relative order. Auto-resolved: the
+  // interactive "player looks and picks which to KO" upgrade is a deferred
+  // follow-on (the koHeroCurrentPlayer WP-185 auto → WP-242 interactive path),
+  // because a block-all pending state without its UX would hard-freeze the client.
+  const moveResult = moveCardFromZone(zones.deck, [], koTarget);
+  if (!moveResult.found) return { targets: [] };
+  zones.deck = moveResult.from;
+  G.ko = koCard(G.ko, koTarget);
+  // why: scry-ko self-narrates — the keyword-less descriptor is silently dropped
+  // by the result-recording path (descriptorToLegacyKeyword → undefined), so the
+  // generic Fight-effect log line does not fire. Push the line here naming the
+  // KO'd card. `G.messages` is hash-excluded (D-24081), so this adds no replay
+  // surface; the descriptor-keyed overlay/badge narration is WP-253, not this WP.
+  const koName = resolveCardDisplayName(G, koTarget);
+  pushLog(G, `Fight effect: KO'd "${koName}" from the top of your deck.`, 'neutral', koTarget);
+  return { targets: [koTarget] };
+}
+
+/**
+ * Selects the deterministically-worst card to KO from the revealed scry cards.
+ *
+ * Priority (D-24267): (1) the first Wound in reveal order, else (2) the first
+ * starting S.H.I.E.L.D. card (Trooper / Agent), lex-lowest, else (3) the
+ * lexically-lowest ext_id among the revealed cards.
+ *
+ * @param revealed - The looked-at cards (the top `min(2, deck.length)` of the deck).
+ * @returns The ext_id to KO, or null when `revealed` is empty.
+ */
+// why: Wounds are KO-PREFERRED here because this thins the player's own deck —
+// removing a Wound from your deck is strictly good. This is the OPPOSITE of
+// selectKoHeroTarget (the KO-a-Hero pool), which EXCLUDES Wounds because there a
+// Wound is not a Hero and KOing one would invert the penalty into a benefit.
+// Different pool, different rule — do NOT merge the two selectors. Membership
+// uses closed enums (WOUND_EXT_ID, SHIELD_*_EXT_ID), so the pick reads no
+// registry and stays deterministic (no ctx.random).
+function selectScryKoTarget(revealed: CardExtId[]): CardExtId | null {
+  for (const candidate of revealed) {
+    if (candidate === WOUND_EXT_ID) {
+      return candidate;
+    }
+  }
+  let startingSelected: CardExtId | null = null;
+  for (const candidate of revealed) {
+    if (candidate === SHIELD_AGENT_EXT_ID || candidate === SHIELD_TROOPER_EXT_ID) {
+      if (startingSelected === null || candidate < startingSelected) {
+        startingSelected = candidate;
+      }
+    }
+  }
+  if (startingSelected !== null) {
+    return startingSelected;
+  }
+  let lowestSelected: CardExtId | null = null;
+  for (const candidate of revealed) {
+    if (lowestSelected === null || candidate < lowestSelected) {
+      lowestSelected = candidate;
+    }
+  }
+  return lowestSelected;
+}
+
 // why: D-24023 — the ImplementationMap keyed by primitive (mirrors WP-251's
-// HERO_EFFECT_HANDLERS). Full Record over the 5 primitives; the drift test
+// HERO_EFFECT_HANDLERS). Full Record over the 6 primitives; the drift test
 // asserts the key set equals VILLAIN_EFFECT_PRIMITIVES. Replaces the former
-// 10-arm switch on VillainEffectKeyword.
+// 10-arm switch on VillainEffectKeyword. `scry-ko-own-deck` appended by WP-447
+// (D-24267).
 /** Villain effect handlers keyed by primitive. Single dispatch source. */
 const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandler> = {
   'ko-hero': villainEffectKoHero,
@@ -707,6 +811,7 @@ const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandl
   'capture-hq-hero': villainEffectCaptureHqHero,
   'hero-deck-top-to-escape': villainEffectHeroDeckTopToEscape,
   'capture-bystander': villainEffectCaptureBystander,
+  'scry-ko-own-deck': villainEffectScryKoOwnDeck,
 };
 
 /**

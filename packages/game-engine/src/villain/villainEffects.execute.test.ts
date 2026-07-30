@@ -46,6 +46,11 @@ interface MakeGOptions {
   hq?: (CardExtId | null)[];
   villainAttachedHeroes?: Record<string, CardExtId[]>;
   cardStats?: Record<string, { cost: number }>;
+  // why: WP-447 — scry-ko-own-deck self-narrates via pushLog; a test asserting
+  // that log line supplies `messages: []` so pushLog records instead of no-oping,
+  // and `cardDisplayData` so the KO'd card resolves to a display name.
+  messages?: { text: string; outcome: string; card?: CardExtId }[];
+  cardDisplayData?: Record<string, { name: string }>;
 }
 
 /**
@@ -76,6 +81,14 @@ function makeG(options: MakeGOptions): LegendaryGameState {
     heroDeck: options.heroDeck ?? [],
     escapedPile: options.escapedPile ?? [],
     cardStats: options.cardStats ?? {},
+    // why: WP-447 — only present when a scry-ko test needs pushLog to record /
+    // a name to resolve; absent otherwise so unrelated tests keep the prior
+    // shape (pushLog guards on Array.isArray(G.messages), resolveCardDisplayName
+    // on optional chaining).
+    ...(options.messages !== undefined ? { messages: options.messages } : {}),
+    ...(options.cardDisplayData !== undefined
+      ? { cardDisplayData: options.cardDisplayData }
+      : {}),
     turnEconomy: {
       attack: 0,
       recruit: 0,
@@ -543,6 +556,132 @@ describe('executeVillainAbilities — captureBystander', () => {
     executeVillainAbilities(G, CTX, 'v-y' as CardExtId, 'onFight');
     assert.deepStrictEqual(G.playerZones['0']!.victory, []);
     assert.deepStrictEqual(G.attachedBystanders, {});
+  });
+});
+
+describe('executeVillainAbilities — scry-ko-own-deck (WP-447 / D-24267)', () => {
+  const WOUND = 'pile-wound' as CardExtId;
+  const AGENT = 'starting-shield-agent' as CardExtId;
+  const TROOPER = 'starting-shield-trooper' as CardExtId;
+
+  // why: scry-ko is not a legacy keyword, so the `hook()` helper (which reads
+  // LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR) cannot build it — construct the
+  // descriptor hook directly.
+  function scryHook(cardId: string): VillainAbilityHook {
+    return {
+      cardId: cardId as CardExtId,
+      timing: 'onFight',
+      keywords: [],
+      effects: [{ primitive: 'scry-ko-own-deck' }],
+    };
+  }
+
+  function scryG(deck: CardExtId[]): LegendaryGameState {
+    return makeG({
+      hooks: [scryHook('hm-doombot')],
+      playerZones: {
+        '0': { deck, hand: [], discard: [], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+    });
+  }
+
+  it('KOs a Wound off the top two and leaves the other card on top', () => {
+    const hero = 'core/spider-man/spider-man#0' as CardExtId;
+    const G = scryG([WOUND, hero, 'core/x/deep#0' as CardExtId]);
+    executeVillainAbilities(G, CTX, 'hm-doombot' as CardExtId, 'onFight');
+    assert.deepStrictEqual(G.ko, [WOUND], 'the Wound was KO’d');
+    assert.deepStrictEqual(
+      G.playerZones['0']!.deck,
+      [hero, 'core/x/deep#0' as CardExtId],
+      'the other revealed card stays on top, deeper cards untouched',
+    );
+  });
+
+  it('prefers a starting S.H.I.E.L.D. card over a recruited hero', () => {
+    const hero = 'core/spider-man/spider-man#0' as CardExtId;
+    const G = scryG([hero, AGENT]);
+    executeVillainAbilities(G, CTX, 'hm-doombot' as CardExtId, 'onFight');
+    assert.deepStrictEqual(G.ko, [AGENT], 'the S.H.I.E.L.D. agent was KO’d');
+    assert.deepStrictEqual(G.playerZones['0']!.deck, [hero], 'the recruited hero stays on top');
+  });
+
+  it('among two starting S.H.I.E.L.D. cards KOs the lexically-lowest', () => {
+    // why: 'starting-shield-agent' < 'starting-shield-trooper' lexically.
+    const G = scryG([TROOPER, AGENT]);
+    executeVillainAbilities(G, CTX, 'hm-doombot' as CardExtId, 'onFight');
+    assert.deepStrictEqual(G.ko, [AGENT], 'lex-lowest S.H.I.E.L.D. card KO’d');
+    assert.deepStrictEqual(G.playerZones['0']!.deck, [TROOPER]);
+  });
+
+  it('with two recruited heroes KOs the lexically-lowest ext_id', () => {
+    const heroA = 'core/aaa/aaa#0' as CardExtId;
+    const heroZ = 'core/zzz/zzz#0' as CardExtId;
+    const G = scryG([heroZ, heroA]);
+    executeVillainAbilities(G, CTX, 'hm-doombot' as CardExtId, 'onFight');
+    assert.deepStrictEqual(G.ko, [heroA], 'lex-lowest recruited hero KO’d');
+    assert.deepStrictEqual(G.playerZones['0']!.deck, [heroZ], 'the other stays on top');
+  });
+
+  it('with a single-card deck KOs that card and empties the deck', () => {
+    const only = 'core/x/only#0' as CardExtId;
+    const G = scryG([only]);
+    executeVillainAbilities(G, CTX, 'hm-doombot' as CardExtId, 'onFight');
+    assert.deepStrictEqual(G.ko, [only]);
+    assert.deepStrictEqual(G.playerZones['0']!.deck, [], 'no "other" to return');
+  });
+
+  it('no-ops on an empty deck and records NO hollow breadcrumb (reachable no-op)', () => {
+    const G = scryG([]);
+    executeVillainAbilities(G, CTX, 'hm-doombot' as CardExtId, 'onFight');
+    assert.deepStrictEqual(G.ko, [], 'nothing KO’d');
+    // why: the handler ran (a descriptor was present) — an empty deck is a
+    // reachable no-op, never a hollow record. AC-4.
+    assert.equal(
+      G.diagnostics?.hollowEffects?.length ?? 0,
+      0,
+      'no hollow record for a reachable no-op',
+    );
+  });
+
+  it('self-narrates a "Fight effect:" log line naming the KO’d card', () => {
+    const hero = 'core/spider-man/spider-man#0' as CardExtId;
+    const G = makeG({
+      hooks: [scryHook('hm-doombot')],
+      playerZones: {
+        '0': { deck: [WOUND, hero], hand: [], discard: [], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      messages: [],
+      cardDisplayData: { [WOUND]: { name: 'Wound' } },
+    });
+    executeVillainAbilities(G, CTX, 'hm-doombot' as CardExtId, 'onFight');
+    assert.equal(G.messages!.length, 1, 'exactly one log line pushed');
+    assert.match(
+      G.messages![0]!.text,
+      /Fight effect: KO'd "Wound" from the top of your deck\./,
+      'log line names the KO’d card',
+    );
+  });
+
+  it('records NO unmarked-ability breadcrumb for a marked Doombot Fight (D-24266 closed)', () => {
+    // why: AC-5 — the hook now carries a scry-ko descriptor, so the D-24266
+    // "printed-but-unmarked" detector must NOT fire; the effect is implemented.
+    const hero = 'core/spider-man/spider-man#0' as CardExtId;
+    const G = makeG({
+      hooks: [scryHook('henchman-doombot-legion-00')],
+      playerZones: {
+        '0': { deck: [WOUND, hero], hand: [], discard: [], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+    });
+    executeVillainAbilities(G, CTX, 'henchman-doombot-legion-00' as CardExtId, 'onFight');
+    assert.deepStrictEqual(G.ko, [WOUND], 'the scry-ko fired (a deck card moved to KO)');
+    assert.equal(
+      G.diagnostics?.hollowEffects?.length ?? 0,
+      0,
+      'no unmarked-ability breadcrumb — the line is now handled',
+    );
   });
 });
 
