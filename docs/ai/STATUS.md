@@ -7,6 +7,21 @@
 
 ## Current State
 
+### WP-460 / EC-495 — Move the Row Divider Below the "Show Details" Reveal Panel (Legends Board) (2026-07-30)
+
+**User-Visible Surface = `legends.legendary-arena.com`.** **D-24026 deploy
+live-verify operator-pending**; live smoke passed. No D-entry (UI polish).
+
+A one-line scoped-CSS refinement of WP-459 (operator visual request): removes the
+`.gauntlet-details` `border-top` — the horizontal divider that sat **above** the
+"Show details" panel. The `.gauntlet-row` `border-bottom` already sits **below**
+the expanded reveal (WP-459's `flex-wrap: wrap` puts the reveal on the row's own
+line), so it becomes the sole, correctly-placed divider. Presentation-only
+(`GauntletIndexPanel.vue`); rendered content unchanged; `vue`-only/zero-API.
+Browser-verified: `.gauntlet-details` computed `border-top-width: 0px`, row
+`border-bottom` below the expanded reveal, no overflow, no console errors.
+legends-board 114/0, `vue-tsc` 0, builds 0.
+
 ### WP-459 / EC-494 — Compact Multi-Column "Show Details" Reveal Layout (Legends Board) (2026-07-30)
 
 **User-Visible Surface = `legends.legendary-arena.com`.** **D-24026 deploy

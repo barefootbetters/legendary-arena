@@ -510,8 +510,9 @@ function firstLegChallengeUrl(gauntlet: GauntletIndexEntry): string | null {
 .gauntlet-details {
   flex-basis: 100%;
   margin-top: 0.35rem;
-  border-top: 1px solid var(--la-color-border-subtle);
-  padding-top: 0.35rem;
+  /* why: WP-460 — no divider ABOVE the reveal panel; the row's own
+     `border-bottom` is the horizontal divider, and it sits BELOW the expanded
+     "Show details" panel (the reveal wraps onto the row's own line). */
 }
 
 .gauntlet-details-summary {
