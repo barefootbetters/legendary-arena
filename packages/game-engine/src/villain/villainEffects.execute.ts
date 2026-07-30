@@ -572,10 +572,21 @@ function villainEffectKoHero(
   // NOT post-process the mutation (D-18902 mutation-location lock preserved).
   const targets: CardExtId[] = [];
   for (const playerId of playerIds) {
-    for (let iteration = 0; iteration < repetitions; iteration++) {
-      const koedId = koOneHeroForPlayer(G, playerId);
-      if (koedId !== null) {
+    // why: D-24280 — a `zone`-bearing descriptor (Juggernaut's discard/hand
+    // source-restricted KO) uses the zone-locked resolver, which KOs `repetitions`
+    // heroes from ONLY that zone (no discard→hand→inPlay fallback). Absent zone is
+    // the byte-unchanged legacy path (koOneHeroForPlayer, per-iteration).
+    if (descriptor.zone !== undefined) {
+      const koedIds = koHeroesFromZoneForPlayer(G, playerId, descriptor.zone, repetitions);
+      for (const koedId of koedIds) {
         targets.push(koedId);
+      }
+    } else {
+      for (let iteration = 0; iteration < repetitions; iteration++) {
+        const koedId = koOneHeroForPlayer(G, playerId);
+        if (koedId !== null) {
+          targets.push(koedId);
+        }
       }
     }
   }
@@ -980,6 +991,56 @@ function koOneHeroForPlayer(
   // why: WP-316 — no eligible hero in any zone (or the move missed); no KO,
   // no target.
   return null;
+}
+
+/**
+ * KOs up to `magnitude` heroes from ONE named source zone of a single player,
+ * with NO cross-zone fallback (D-24280). Returns the KO'd ext_ids in KO order.
+ *
+ * The source-zone-restricted sibling of `koOneHeroForPlayer`: used for the
+ * each-player `ko-hero` effect when the printed text names a single zone
+ * (Juggernaut's "from their discard pile" / "from their hand"). Reuses
+ * `selectKoHeroTarget` each iteration (Wounds excluded, starter S.H.I.E.L.D.
+ * first, then ext_id lex-asc) and re-selects over the shortened zone, so
+ * `magnitude` KOs the `magnitude` worst heroes in that zone.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param playerId - The target player id (any player; the each-player caller
+ *   iterates `Object.keys(G.playerZones).sort()`).
+ * @param zone - The single source zone to KO from ('discard' or 'hand').
+ * @param magnitude - The maximum number of heroes to KO from that zone.
+ * @returns The KO'd card ext_ids in KO order (WP-316 log targets).
+ */
+// why: D-24280 — unlike koOneHeroForPlayer (discard→hand→inPlay), this KOs ONLY
+// from `zones[zone]` because the printed effect is source-restricted — it cannot
+// reach the player's other zones, so a zone with fewer than `magnitude` heroes
+// yields fewer KOs and an empty zone yields none, a reachable no-op (never
+// hollow). Owns its own koCard mutation site so callers do not post-process
+// (D-18902 mutation-location lock). No `ctx.random`, no `.reduce()`.
+function koHeroesFromZoneForPlayer(
+  G: LegendaryGameState,
+  playerId: string,
+  zone: 'discard' | 'hand',
+  magnitude: number,
+): CardExtId[] {
+  const zones = G.playerZones[playerId];
+  if (!zones) return [];
+  const koedIds: CardExtId[] = [];
+  for (let iteration = 0; iteration < magnitude; iteration++) {
+    const target = selectKoHeroTarget(zones[zone]);
+    if (target === null) {
+      // why: the zone holds no more heroes — stop (no fallback to another zone).
+      break;
+    }
+    const moveResult = moveCardFromZone(zones[zone], [], target);
+    if (!moveResult.found) {
+      break;
+    }
+    zones[zone] = moveResult.from;
+    G.ko = koCard(G.ko, target);
+    koedIds.push(target);
+  }
+  return koedIds;
 }
 
 /**

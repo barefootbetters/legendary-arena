@@ -368,6 +368,33 @@ describe('legacy-keyword ↔ descriptor translation (WP-252 / D-24023)', () => {
     }
   });
 
+  it('a zone-bearing ko-hero:each descriptor reverse-maps to koHeroEachPlayerMag2 (D-24280)', () => {
+    // why: WP-463 — the load-bearing narration decision. `descriptorKey` must NOT
+    // include `zone`, so a zone-restricted each-player KO shares a key with the
+    // zone-less koHeroEachPlayerMag2 descriptor and reverse-maps to that keyword,
+    // narrating per-target for free. If a future change adds `zone` to the key this
+    // returns undefined and the KO goes silent — this test fails at the unit boundary.
+    assert.equal(
+      descriptorToLegacyKeyword({
+        primitive: 'ko-hero',
+        target: 'each',
+        magnitude: 2,
+        zone: 'discard',
+      }),
+      'koHeroEachPlayerMag2',
+    );
+    assert.equal(
+      descriptorToLegacyKeyword({
+        primitive: 'ko-hero',
+        target: 'each',
+        magnitude: 2,
+        zone: 'hand',
+      }),
+      'koHeroEachPlayerMag2',
+      'the hand zone reverse-maps identically — zone is invisible to the key',
+    );
+  });
+
   it('is injective — the 10 legacy descriptors are distinct', () => {
     const seen = new Set<string>();
     for (const keyword of VILLAIN_EFFECT_KEYWORDS) {

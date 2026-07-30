@@ -34878,10 +34878,25 @@ D-entry — it mirrors this contract). Reserved by WP-461.
 
 Protect this file.
 
-### D-24280 — Source-zone-restricted each-player Hero KO is a `zone` param on the `ko-hero` primitive, not a new primitive; and `descriptorKey` deliberately omits `zone` so it narrates as the generic each-KO (Drafted 2026-07-30 — WP-463; not yet landed)
+### D-24280 — Source-zone-restricted each-player Hero KO is a `zone` param on the `ko-hero` primitive, not a new primitive; and `descriptorKey` deliberately omits `zone` so it narrates as the generic each-KO (Active (post-execution) 2026-07-30 — WP-463)
 
-> **Status: Drafted at SPEC time; flips to Active (post-execution) when WP-463
-> executes.** Reserved in `NUMBER-LEDGER.md` under the same branch.
+> **Status: Active (post-execution) 2026-07-30.** Landed by WP-463 / EC-498
+> (game-engine 2123/0, whole-repo build green; core Juggernaut's Ambush now KOs
+> two Heroes from each player's discard pile and Escape from each hand, both
+> narrating per-target via the `koHeroEachPlayerMag2` reverse-map; `VILLAIN_EFFECT_PRIMITIVES`
+> unchanged at 7 — the primitive drift test was NOT touched; villain mechanic ledger
+> regenerated — core Juggernaut flips `unmarked → ko-hero/executable`, the co2e
+> non-grey Juggernaut sibling stays `unmarked` as expected; NO fixture re-pin, no
+> pinned/golden/sentinel fixture reveals or escapes Juggernaut, confirmed by the green
+> suite). Reserved in `NUMBER-LEDGER.md` under the same branch.
+>
+> **Execution note.** The setup parser's `ko-hero:each` branch required a real code
+> change (the 4-token form); a new `villainAbility.types.test.ts` unit test pins the
+> load-bearing reverse-map (`descriptorToLegacyKeyword({ …, zone:'discard' }) ===
+> 'koHeroEachPlayerMag2'`) so a future `descriptorKey` regression fails at the unit
+> boundary. The `_unassigned` D-18802 audit-anchor row for Juggernaut's Escape line is
+> left in place verbatim (per the "NO re-tagging" instruction on that historical note);
+> its supersession by this WP is recorded here and in the WORK_INDEX row.
 
 **Context.** A live Magneto match (2026-07-30, `gitSha b685eff`) surfaced the last
 onAmbush hollow: Juggernaut's *"Ambush: Each player KOs two Heroes from their discard

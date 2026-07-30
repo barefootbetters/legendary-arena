@@ -162,7 +162,7 @@ core-villain-enemies-of-asgard-frost-giant,Frost Giant,core,villain,(unmarked),u
 core-villain-spider-foes-green-goblin,Green Goblin,core,villain,captureBystander,executable,WP-185,D-18506,packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander
 core-villain-hydra-hydra-kidnappers,HYDRA Kidnappers,core,villain,(unmarked),unmarked,,,
 henchman-hand-ninjas,Hand Ninjas,core,henchman,(unmarked),unmarked,,,
-core-villain-brotherhood-juggernaut,Juggernaut,core,villain,(unmarked),unmarked,,,
+core-villain-brotherhood-juggernaut,Juggernaut,core,villain,ko-hero,executable,WP-252,D-24023,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 core-villain-radiation-maestro,Maestro,core,villain,(unmarked),unmarked,,,
 core-villain-masters-of-evil-melter,Melter,core,villain,(unmarked),unmarked,,,
 core-villain-brotherhood-mystique,Mystique,core,villain,(unmarked),unmarked,,,

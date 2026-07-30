@@ -757,6 +757,47 @@ describe('buildVillainAbilityHooks — dual-grammar equivalence (WP-252 / D-2402
     assert.deepStrictEqual(badHook!.effects, [], 'the malformed token yields no descriptor');
     assert.deepStrictEqual(badHook!.unresolvedMarkers, ['gain-attached-hero:x']);
   });
+
+  it('[effect:ko-hero:each:N:zone] parses a zone-restricted each KO; bad zone / 5-token rejected (WP-463 / D-24280)', () => {
+    const registry = makeRegistry(
+      'core',
+      [
+        {
+          slug: 'zk',
+          cards: [
+            { slug: 'disc', abilities: ['Ambush: Each player KOs two Heroes from their discard pile. [effect:ko-hero:each:2:discard]'] },
+            { slug: 'hand', abilities: ['Escape: Each player KOs two Heroes from their hand. [effect:ko-hero:each:2:hand]'] },
+            { slug: 'badzone', abilities: ['Ambush: x [effect:ko-hero:each:2:inPlay]'] },
+            { slug: 'toolong', abilities: ['Ambush: x [effect:ko-hero:each:2:discard:x]'] },
+            { slug: 'plain', abilities: ['Ambush: x [effect:ko-hero:each:2]'] },
+          ],
+        },
+      ],
+      [],
+    );
+    const hooks = buildVillainAbilityHooks(registry, makeConfig(['core/zk'], []));
+    const effectsFor = (slug: string) =>
+      hooks.find((h) => h.cardId === `core-villain-zk-${slug}-00`)!.effects;
+    const unresolvedFor = (slug: string) =>
+      hooks.find((h) => h.cardId === `core-villain-zk-${slug}-00`)!.unresolvedMarkers;
+    // why: AC-1 — the 4-token form yields a zone-bearing descriptor.
+    assert.deepStrictEqual(effectsFor('disc'), [
+      { primitive: 'ko-hero', target: 'each', magnitude: 2, zone: 'discard' },
+    ]);
+    assert.deepStrictEqual(effectsFor('hand'), [
+      { primitive: 'ko-hero', target: 'each', magnitude: 2, zone: 'hand' },
+    ]);
+    // why: AC-1 — 'inPlay' is not an admissible zone, and a 5th token is rejected;
+    // both fall through to unresolved (not a silently-collapsed descriptor).
+    assert.deepStrictEqual(effectsFor('badzone'), []);
+    assert.deepStrictEqual(unresolvedFor('badzone'), ['ko-hero:each:2:inPlay']);
+    assert.deepStrictEqual(effectsFor('toolong'), []);
+    assert.deepStrictEqual(unresolvedFor('toolong'), ['ko-hero:each:2:discard:x']);
+    // why: AC-1 — the 3-token zone-less form is unchanged (no zone field).
+    assert.deepStrictEqual(effectsFor('plain'), [
+      { primitive: 'ko-hero', target: 'each', magnitude: 2 },
+    ]);
+  });
 });
 
 // ---------------------------------------------------------------------------

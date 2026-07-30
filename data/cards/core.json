@@ -1990,8 +1990,8 @@
           "vAttack": "6",
           "imageUrl": "https://images.legendary-arena.com/core/core-vi-brotherhood-juggernaut.webp",
           "abilities": [
-            "Ambush: Each player KOs two Heroes from their discard pile.",
-            "Escape: Each player KOs two Heroes from their hand."
+            "Ambush: Each player KOs two Heroes from their discard pile. [effect:ko-hero:each:2:discard]",
+            "Escape: Each player KOs two Heroes from their hand. [effect:ko-hero:each:2:hand]"
           ],
           "copies": 2
         },
