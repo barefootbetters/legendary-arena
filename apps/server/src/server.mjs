@@ -30,6 +30,7 @@ import { registerLeaderboardRoutes } from './leaderboards/leaderboard.routes.js'
 import {
   buildGauntletCatalog,
   buildGauntletBoardName,
+  buildSetDetailsCatalog,
 } from './legends/gauntlet.logic.js';
 import { registerCompetitionRoutes } from './competition/competition.routes.js';
 import { registerOwnerProfileRoutes } from './profile/ownerProfile.routes.js';
@@ -531,7 +532,7 @@ export function tryConstructHankoVerifier() {
  * from PostgreSQL. Both startup tasks must succeed before the server accepts
  * requests. On failure, logs a full-sentence error and exits.
  *
- * @returns {Promise<{ appServer: import('http').Server, gauntletCatalog: import('./legends/gauntlet.logic.js').GauntletDefinition[], leaderboardDeps: import('./leaderboards/leaderboard.types.js').LeaderboardDependencies, pool: import('pg').Pool }>}
+ * @returns {Promise<{ appServer: import('http').Server, gauntletCatalog: import('./legends/gauntlet.logic.js').GauntletDefinition[], setDetailsCatalog: import('./legends/legends.types.js').SetDetails[], leaderboardDeps: import('./leaderboards/leaderboard.types.js').LeaderboardDependencies, pool: import('pg').Pool }>}
  *   The running HTTP server instance, the leaderboard deps bundle (for
  *   the legends publisher), and the long-lived `pg.Pool`. The caller
  *   (`apps/server/src/index.mjs`) closes the pool from the SIGTERM
@@ -582,11 +583,26 @@ export async function startServer() {
     for (const mastermind of setData.masterminds) {
       mastermindSummaries.push({ slug: mastermind.slug, name: mastermind.name });
     }
+    // why: WP-461 — the FULL villain/henchman rosters (not just the approved
+    // subset) so the publisher can list every group per set, including the ones
+    // no gauntlet fights (the coverage-transparency the reveal surfaces). Slugs
+    // and names are the registry's canonical fields verbatim; henchman names come
+    // from live data (the registry types henchmen as z.unknown()).
+    const villainSummaries = [];
+    for (const villain of setData.villains) {
+      villainSummaries.push({ slug: villain.slug, name: villain.name });
+    }
+    const henchmanSummaries = [];
+    for (const henchman of setData.henchmen) {
+      henchmanSummaries.push({ slug: henchman.slug, name: henchman.name });
+    }
     gauntletSetSummaries.push({
       setAbbr: setEntry.abbr,
       setName: setEntry.name,
       schemes: schemeSummaries,
       masterminds: mastermindSummaries,
+      villains: villainSummaries,
+      henchmen: henchmanSummaries,
     });
   }
   // why: WP-384 / D-24187 §4 — the fixed-division pool budgets are derived
@@ -637,6 +653,19 @@ export async function startServer() {
     `[server] gauntlet catalog built: ${gauntletCatalog.length} gauntlets ` +
     `across ${gauntletSetSummaries.length} sets (WP-342; fixed-pool budgets ` +
     `attached per WP-384)`
+  );
+  // why: WP-461 — the per-set details catalog (full rosters + per-set
+  // villain/henchman coverage flags) is built HERE from the same set summaries +
+  // approved-loadout map, then threaded to the publisher as plain data so the
+  // legends module keeps its no-registry-import lock (mirrors the gauntletCatalog
+  // injection). Coverage is per-set-scoped inside buildSetDetailsCatalog.
+  const setDetailsCatalog = buildSetDetailsCatalog(
+    gauntletSetSummaries,
+    approvedLoadoutsByGauntlet,
+  );
+  console.log(
+    `[server] set-details catalog built: ${setDetailsCatalog.length} sets ` +
+    `(WP-461; per-set rosters + gauntlet-coverage flags)`
   );
 
   const rules = getRules();
@@ -1410,6 +1439,9 @@ export async function startServer() {
     // legends module receives plain data only (no registry handle leaves
     // this wiring layer).
     gauntletCatalog,
+    // why: WP-461 — index.mjs threads this into startLegendsPublisher alongside
+    // the gauntlet catalog; the publisher emits it as the index's `sets` field.
+    setDetailsCatalog,
     leaderboardDeps: {
       checkParPublished: parGate.checkParPublished,
       getScenarioKeysForTheme,

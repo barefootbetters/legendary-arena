@@ -13,7 +13,7 @@ import assert from 'node:assert/strict';
 
 import { publishAllBoards, resetArchiveTracking } from './legends.publisher.js';
 import type { GauntletDefinition } from './gauntlet.logic.js';
-import type { LegendsR2Client } from './legends.types.js';
+import type { LegendsR2Client, SetDetails } from './legends.types.js';
 import type {
   DatabaseClient,
   LeaderboardDependencies,
@@ -487,6 +487,48 @@ describe('legends publisher gauntlet boards (WP-342)', () => {
     assert.equal(result.manifestWritten, false);
     const hasManifest = putCalls.some((put) => put.key.includes('manifest.json'));
     assert.equal(hasManifest, false);
+  });
+
+  test('WP-461: emits `sets` when a setDetailsCatalog is supplied, omits it otherwise', async () => {
+    const setDetailsCatalog: SetDetails[] = [
+      {
+        setAbbr: 'core',
+        setName: 'Core Set',
+        masterminds: [{ slug: 'mm-full', name: 'MM Full' }],
+        schemes: [{ slug: 'scheme-a', name: 'Scheme A' }],
+        villains: [
+          { slug: 'brotherhood', name: 'The Brotherhood', usedByGauntlets: true },
+          { slug: 'radiation', name: 'Radiation', usedByGauntlets: false },
+        ],
+        henchmen: [
+          { slug: 'doombot-legion', name: 'Doombot Legion', usedByGauntlets: true },
+        ],
+      },
+    ];
+
+    // With the catalog: the index carries `sets` verbatim.
+    const withR2 = createStubR2Client();
+    await publishAllBoards(
+      createGauntletStubDatabase(), withR2.client, 'test-bucket',
+      createGauntletStubDeps(), TEST_GAUNTLET_CATALOG, setDetailsCatalog,
+    );
+    const withIndexPut = withR2.putCalls.find((put) =>
+      put.key.includes('gauntlet-index.json'),
+    );
+    assert.ok(withIndexPut !== undefined);
+    assert.deepEqual(JSON.parse(withIndexPut.body).sets, setDetailsCatalog);
+
+    // Without the catalog: the index omits `sets` entirely (pre-WP-461 shape).
+    const withoutR2 = createStubR2Client();
+    await publishAllBoards(
+      createGauntletStubDatabase(), withoutR2.client, 'test-bucket',
+      createGauntletStubDeps(), TEST_GAUNTLET_CATALOG,
+    );
+    const withoutIndexPut = withoutR2.putCalls.find((put) =>
+      put.key.includes('gauntlet-index.json'),
+    );
+    assert.ok(withoutIndexPut !== undefined);
+    assert.equal('sets' in JSON.parse(withoutIndexPut.body), false);
   });
 });
 

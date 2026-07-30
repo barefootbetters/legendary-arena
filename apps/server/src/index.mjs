@@ -90,6 +90,9 @@ async function main() {
         // publisher emits gauntlet boards + gauntlet-index alongside the
         // WP-142 boards when this is present.
         gauntletCatalog: started.gauntletCatalog,
+        // why: WP-461 — the startup-built per-set details catalog; the publisher
+        // emits it as the gauntlet index's `sets` field (full rosters + coverage).
+        setDetailsCatalog: started.setDetailsCatalog,
         intervalMs: getLegendsPublisherIntervalMs(),
         leaderboardDeps: started.leaderboardDeps,
         r2Client,

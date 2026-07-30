@@ -21,6 +21,7 @@ import type {
   LegendsManifest,
   LegendsR2Client,
   PublishResult,
+  SetDetails,
 } from './legends.types.js';
 
 import type { GauntletDefinition } from './gauntlet.logic.js';
@@ -102,6 +103,10 @@ export async function publishAllBoards(
   // manifest additions). The wiring layer builds the catalog from the startup
   // registry; this module keeps its no-registry-import lock.
   gauntletCatalog?: readonly GauntletDefinition[],
+  // why: WP-461 — additive optional per-set details, built by the wiring layer
+  // via buildSetDetailsCatalog and emitted as the gauntlet index's `sets` field.
+  // Absent → the index omits `sets` (byte-compatible with a pre-WP-461 consumer).
+  setDetailsCatalog?: readonly SetDetails[],
 ): Promise<PublishResult> {
   // why: runId format is <ISO-timestamp>-<4-char-hex> per EC-157
   // §Locked Values. crypto.randomBytes(2) yields 4 hex chars.
@@ -377,6 +382,11 @@ export async function publishAllBoards(
     if (!indexBuildFailed) {
       const gauntletIndexJson = JSON.stringify({
         gauntlets: gauntletIndexEntries,
+        // why: WP-461 — emit the per-set roster via conditional spread. Assigning
+        // `sets: undefined` is a type error under exactOptionalPropertyTypes and
+        // would change the JSON shape; the spread omits the field entirely when
+        // no catalog was injected (byte-compatible with a pre-WP-461 consumer).
+        ...(setDetailsCatalog !== undefined ? { sets: setDetailsCatalog } : {}),
         generatedAt: new Date().toISOString(),
         schemaVersion: 1,
       });

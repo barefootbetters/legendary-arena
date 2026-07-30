@@ -24,9 +24,11 @@ import {
   buildGauntletBoardName,
   buildGauntletBoardNameForPlayerCount,
   buildGauntletCatalog,
+  buildSetDetailsCatalog,
   getGauntletStandings,
 } from './gauntlet.logic.js';
 import type {
+  GauntletApprovedLoadouts,
   GauntletDefinition,
   GauntletSetSummary,
 } from './gauntlet.logic.js';
@@ -50,6 +52,8 @@ const CORE_SUMMARY: GauntletSetSummary = {
     { slug: 'mm-two', name: 'Mastermind Two' },
     { slug: 'mm-one', name: 'Mastermind One' },
   ],
+  villains: [{ slug: 'brotherhood', name: 'The Brotherhood' }],
+  henchmen: [{ slug: 'doombot-legion', name: 'Doombot Legion' }],
 };
 
 const SCHEMELESS_SUMMARY: GauntletSetSummary = {
@@ -57,6 +61,8 @@ const SCHEMELESS_SUMMARY: GauntletSetSummary = {
   setName: 'Dimensions',
   schemes: [],
   masterminds: [{ slug: 'mm-orphan', name: 'Orphan Mastermind' }],
+  villains: [{ slug: 'v-orphan', name: 'Orphan Villains' }],
+  henchmen: [{ slug: 'h-orphan', name: 'Orphan Henchmen' }],
 };
 
 const TEST_DEFINITION: GauntletDefinition = {
@@ -831,5 +837,185 @@ describe('canonical loadout requirement (WP-395 / D-24199)', () => {
       1: [{ villainSegment: 'villains-x', henchmanKey: APPROVED_HENCHMEN }],
     });
     assert.strictEqual(second?.approvedLoadouts, undefined);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// buildSetDetailsCatalog (WP-461 / D-24279)
+// ---------------------------------------------------------------------------
+
+describe('buildSetDetailsCatalog (WP-461 / D-24279)', () => {
+  // why: a `core` set whose single gauntlet (core/magneto) approves brotherhood +
+  // doombot-legion — so radiation and sentinel are in the roster but fought by no
+  // gauntlet (the coverage gap the reveal surfaces).
+  const SD_CORE: GauntletSetSummary = {
+    setAbbr: 'core',
+    setName: 'Core Set',
+    schemes: [{ slug: 'scheme-a', name: 'Scheme A' }],
+    masterminds: [{ slug: 'magneto', name: 'Magneto' }],
+    villains: [
+      { slug: 'radiation', name: 'Radiation' },
+      { slug: 'brotherhood', name: 'The Brotherhood' },
+    ],
+    henchmen: [
+      { slug: 'sentinel', name: 'Sentinel' },
+      { slug: 'doombot-legion', name: 'Doombot Legion' },
+    ],
+  };
+  // why: a `co2e` set whose own gauntlet uses masters-of-evil, NOT
+  // enemies-of-asgard — enemies-of-asgard is fought only by the 2099 gauntlet
+  // below (cross-set fallback), so it must read false on co2e's own panel.
+  const SD_CO2E: GauntletSetSummary = {
+    setAbbr: 'co2e',
+    setName: 'Core 2E',
+    schemes: [{ slug: 'scheme-x', name: 'Scheme X' }],
+    masterminds: [{ slug: 'doom', name: 'Doctor Doom' }],
+    villains: [
+      { slug: 'enemies-of-asgard', name: 'Enemies of Asgard' },
+      { slug: 'masters-of-evil', name: 'Masters of Evil' },
+    ],
+    henchmen: [{ slug: 'hand-ninjas', name: 'Hand Ninjas' }],
+  };
+  // why: a `2099` set with an EMPTY own henchman roster whose gauntlet fights its
+  // own future-foes plus co2e fallbacks — exercises empty-roster + own-flag-true.
+  const SD_2099: GauntletSetSummary = {
+    setAbbr: '2099',
+    setName: '2099',
+    schemes: [{ slug: 'scheme-y', name: 'Scheme Y' }],
+    masterminds: [{ slug: 'spider-2099', name: 'Spider-Man 2099' }],
+    villains: [{ slug: 'future-foes', name: 'Future Foes' }],
+    henchmen: [],
+  };
+  const SD_SCHEMELESS: GauntletSetSummary = {
+    setAbbr: 'aaa',
+    setName: 'Schemeless',
+    schemes: [],
+    masterminds: [{ slug: 'mm', name: 'MM' }],
+    villains: [{ slug: 'v', name: 'V' }],
+    henchmen: [{ slug: 'h', name: 'H' }],
+  };
+
+  const SD_APPROVED: ReadonlyMap<string, GauntletApprovedLoadouts> = new Map([
+    [
+      'core/magneto',
+      {
+        1: [
+          {
+            villainSegment: '',
+            henchmanKey: '',
+            villainGroupIds: ['core/brotherhood'],
+            henchmanGroupIds: ['core/doombot-legion'],
+          },
+        ],
+      },
+    ],
+    [
+      'co2e/doom',
+      {
+        1: [
+          {
+            villainSegment: '',
+            henchmanKey: '',
+            villainGroupIds: ['co2e/masters-of-evil'],
+            henchmanGroupIds: ['co2e/hand-ninjas'],
+          },
+        ],
+      },
+    ],
+    [
+      '2099/spider-2099',
+      {
+        1: [
+          {
+            villainSegment: '',
+            henchmanKey: '',
+            // why: OWN future-foes + a co2e FALLBACK villain/henchman.
+            villainGroupIds: ['2099/future-foes', 'co2e/enemies-of-asgard'],
+            henchmanGroupIds: ['co2e/hand-ninjas'],
+          },
+        ],
+      },
+    ],
+  ]);
+
+  test('flags coverage per group and carries authoritative names', () => {
+    const catalog = buildSetDetailsCatalog([SD_CORE], SD_APPROVED);
+    assert.strictEqual(catalog.length, 1);
+    const core = catalog[0];
+    assert.strictEqual(core?.setName, 'Core Set');
+    // authoritative registry names, not re-derived slugs
+    assert.deepStrictEqual(
+      core?.masterminds,
+      [{ slug: 'magneto', name: 'Magneto' }],
+    );
+    assert.deepStrictEqual(core?.schemes, [{ slug: 'scheme-a', name: 'Scheme A' }]);
+    assert.deepStrictEqual(core?.villains, [
+      { slug: 'brotherhood', name: 'The Brotherhood', usedByGauntlets: true },
+      { slug: 'radiation', name: 'Radiation', usedByGauntlets: false },
+    ]);
+    assert.deepStrictEqual(core?.henchmen, [
+      { slug: 'doombot-legion', name: 'Doombot Legion', usedByGauntlets: true },
+      { slug: 'sentinel', name: 'Sentinel', usedByGauntlets: false },
+    ]);
+  });
+
+  test('orders sets setAbbr ASC and rosters slug ASC', () => {
+    const catalog = buildSetDetailsCatalog(
+      [SD_2099, SD_CORE, SD_CO2E],
+      SD_APPROVED,
+    );
+    assert.deepStrictEqual(
+      catalog.map((set) => set.setAbbr),
+      ['2099', 'co2e', 'core'],
+    );
+    const core = catalog.find((set) => set.setAbbr === 'core');
+    assert.deepStrictEqual(
+      core?.villains.map((villain) => villain.slug),
+      ['brotherhood', 'radiation'],
+    );
+  });
+
+  test('excludes a set with zero schemes', () => {
+    const catalog = buildSetDetailsCatalog(
+      [SD_SCHEMELESS, SD_CORE],
+      SD_APPROVED,
+    );
+    assert.deepStrictEqual(
+      catalog.map((set) => set.setAbbr),
+      ['core'],
+    );
+  });
+
+  test('absent approvedLoadouts flags every group false, no throw', () => {
+    const catalog = buildSetDetailsCatalog([SD_CORE]);
+    const core = catalog[0];
+    assert.ok(core);
+    assert.ok(core.villains.every((villain) => villain.usedByGauntlets === false));
+    assert.ok(core.henchmen.every((henchman) => henchman.usedByGauntlets === false));
+  });
+
+  test('cross-set fallback does not flip the foreign set flags', () => {
+    const catalog = buildSetDetailsCatalog([SD_CO2E, SD_2099], SD_APPROVED);
+    const co2e = catalog.find((set) => set.setAbbr === 'co2e');
+    // co2e's OWN gauntlet fights masters-of-evil, never enemies-of-asgard — only
+    // the 2099 gauntlet pulls co2e/enemies-of-asgard as a fallback, which must NOT
+    // flip co2e's own flag (a global scan would wrongly mark it true).
+    const enemiesOfAsgard = co2e?.villains.find(
+      (villain) => villain.slug === 'enemies-of-asgard',
+    );
+    const mastersOfEvil = co2e?.villains.find(
+      (villain) => villain.slug === 'masters-of-evil',
+    );
+    assert.strictEqual(enemiesOfAsgard?.usedByGauntlets, false);
+    assert.strictEqual(mastersOfEvil?.usedByGauntlets, true);
+  });
+
+  test('empty own roster yields an empty array; own group flags correctly', () => {
+    const catalog = buildSetDetailsCatalog([SD_2099], SD_APPROVED);
+    const set2099 = catalog[0];
+    assert.deepStrictEqual(set2099?.henchmen, []);
+    assert.deepStrictEqual(set2099?.villains, [
+      { slug: 'future-foes', name: 'Future Foes', usedByGauntlets: true },
+    ]);
   });
 });

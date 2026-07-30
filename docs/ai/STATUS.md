@@ -7,6 +7,30 @@
 
 ## Current State
 
+### WP-461 / EC-496 — Publish Per-Set Gauntlet Roster + Coverage to the Legends Index (Server) (2026-07-30)
+
+**User-Visible Surface = `legends.legendary-arena.com`** (indirect — the data half).
+**D-24026 deploy live-verify operator-pending** on the deployed
+`gauntlet-index.json` (after Render redeploys + the publisher's next cycle). **D-24279
+landed Active.**
+
+The legends snapshot publisher now emits an additive optional `sets: SetDetails[]`
+field into `gauntlet-index.json`: one entry per set with ≥1 scheme, carrying the
+full roster of masterminds, schemes, villains, and henchmen (authoritative registry
+names), with each villain/henchman flagged `usedByGauntlets`. The flag is
+**PER-SET-SCOPED** — true iff the group's set-qualified id appears in an approved
+config of one of *that set's own* masterminds, gathered by iterating the set's
+masterminds and doing exact `${setAbbr}/${mastermindSlug}` lookups (never a global
+scan, which would over-count cross-set fallbacks like `2099`/`amwp` → `co2e/*`).
+Computed once server-side in a pure `buildSetDetailsCatalog`; the legends module
+keeps its no-registry-import lock (rosters injected via the `gauntletCatalog` path:
+`server.mjs` → `index.mjs` → `legends.scheduler.ts` → `publishAllBoards`). Additive
++ optional — a pre-WP-461 consumer ignores it. **Reports, does not close**, the
+coverage gap (Core: 4/7 villains, 2/4 henchmen). WP-462 (client reveal) renders this
+verbatim next. Files: `legends.types.ts`, `gauntlet.logic.ts` (+test),
+`legends.publisher.ts` (+test), `server.mjs`, `index.mjs`, `legends.scheduler.ts`.
+Legends suite 94/0; `pnpm -r build` 0.
+
 ### WP-460 / EC-495 — Move the Row Divider Below the "Show Details" Reveal Panel (Legends Board) (2026-07-30)
 
 **User-Visible Surface = `legends.legendary-arena.com`.** **D-24026 deploy
