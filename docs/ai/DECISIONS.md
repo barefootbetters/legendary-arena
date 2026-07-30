@@ -34877,3 +34877,74 @@ different completion model — is explicitly left as a future decision.
 D-entry — it mirrors this contract). Reserved by WP-461.
 
 Protect this file.
+
+### D-24280 — Source-zone-restricted each-player Hero KO is a `zone` param on the `ko-hero` primitive, not a new primitive; and `descriptorKey` deliberately omits `zone` so it narrates as the generic each-KO (Drafted 2026-07-30 — WP-463; not yet landed)
+
+> **Status: Drafted at SPEC time; flips to Active (post-execution) when WP-463
+> executes.** Reserved in `NUMBER-LEDGER.md` under the same branch.
+
+**Context.** A live Magneto match (2026-07-30, `gitSha b685eff`) surfaced the last
+onAmbush hollow: Juggernaut's *"Ambush: Each player KOs two Heroes from their discard
+pile."* The existing magnitude-N each-player KO (`ko-hero:each:N`, D-20201) never
+covered it because its shared resolver `koOneHeroForPlayer` falls through discard →
+hand → inPlay, whereas Juggernaut's printed text is **source-restricted** to the
+discard pile. Its sibling `Escape: … from their hand` is the identical mechanic,
+hand-locked. Both were deferred as `no-vocabulary-keyword` (the "filtered source"
+class).
+
+**Decision — extend `ko-hero` with an optional `zone`, do NOT add a primitive.** A
+source-zone restriction is a *targeting variant* of the existing each-player KO. Per
+the D-24023 parameterized vocabulary ("a new target/magnitude/selector variant is a
+descriptor param, not a new keyword + switch arm"), the fix adds an optional
+`zone?: 'discard' | 'hand'` field to `VillainEffectDescriptor` and the 4-token grammar
+`ko-hero:each:<N>:<zone>` (parser + the `apply-effect-markers.mjs` local validator).
+`VILLAIN_EFFECT_PRIMITIVES` is **unchanged** — no primitive added, no primitive-count
+drift test change. A new executor resolver `koHeroesFromZoneForPlayer` KOs up to
+`magnitude` heroes from **only** `zones[zone]` (reusing `selectKoHeroTarget`: Wounds
+excluded, starter S.H.I.E.L.D. first, then ext_id lex-asc), with **no** cross-zone
+fallback; a short/empty zone is a reachable no-op (never hollow). It is wired into the
+`villainEffectKoHero` `target: 'each'` branch behind `descriptor.zone`; the zone-less
+path and the interactive `target: 'current'` path are byte-unchanged.
+
+**Decision — `descriptorKey` deliberately EXCLUDES `zone` (narration reuse).** The
+reverse-map key builder (`descriptorKey`, joining `primitive|target|magnitude|selector`)
+is **not** extended with `zone`. So `{ primitive: 'ko-hero', target: 'each',
+magnitude: 2, zone: 'discard' }` shares a key with the zone-less
+`koHeroEachPlayerMag2` descriptor and reverse-maps to that legacy keyword. The zone is
+a *resolver-targeting* detail invisible to the player-facing narration: the effect
+records a `koHeroEachPlayerMag2` `VillainEffectResult` carrying the actual KO'd hero
+ext_ids as `targets`, so the fire site narrates per-target KO'd-hero names (WP-316)
+for free — no new narration path, no `pushLog` self-narration (unlike scry-ko,
+D-24267), and the frozen 10-keyword surface (`EFFECT_KEYWORD_LABELS` /
+`notableEvents` / the injective round-trip test) is untouched. A new
+`ko-hero-from-zone` primitive was rejected: it would add primitive drift AND require
+its own self-narration for zero player-facing benefit.
+
+**Scope.** Marks **Juggernaut only** (core `brotherhood/juggernaut`): `ambush:
+["ko-hero:each:2:discard"]`, `escape: ["ko-hero:each:2:hand"]`, regenerated onto
+`data/cards/core.json`. A corpus scan of all 12 `Each player KOs … from their
+{discard,hand}` lines shows every other carries an extra filter/choice clause
+(non-grey, reveal-gated, "choose a player", cost-thresholded, Wounds-only) and stays
+deferred — conservatism over coverage. `inPlay` is not an admissible zone (no printed
+"from their inPlay" text); the `zone` param is honored only on the `each` branch (no
+current-player zone-restricted KO in the corpus); the interactive-choice upgrade is
+out of scope (the each-player KO stays auto-resolved, D-18902).
+
+**Determinism.** No `ctx.random.*` / `Math.random` / I/O; no new `G` field; KO via
+`zoneOps` helpers; no `.reduce()`. Marking makes Juggernaut apply a **real hashed KO**
+(not just suppress a diagnostics write), so a hash oracle shifts wherever a
+pinned/golden/sentinel fixture reveals or escapes Juggernaut — re-pin-free only if none
+does, a fixture-content fact the executor confirms by running the suite (regenerate +
+re-pin with a note if any shifts).
+
+**Files (at execution).** `packages/game-engine/src/rules/villainAbility.types.ts` +
+`setup/villainAbility.setup.{ts,test.ts}` + `villain/villainEffects.execute.{ts,test.ts}`
++ `scripts/convert-cards/apply-effect-markers.mjs` (grammar) +
+`scripts/convert-cards/inputs/villain-effect-markers.json` + generated
+`data/cards/core.json` + the regenerated `docs/ai/coverage/villain-mechanic-ledger.{json,csv}`.
+No `.claude/rules/*` or `ARCHITECTURE.md` edit — within-layer vocabulary growth
+(a descriptor param), no new cross-layer edge or persistence carve-out; the contract
+change (a `.types.ts` field) is recorded by this D-entry per `code-style.md §Contract
+Files`. Reserved by WP-463.
+
+Protect this file.
