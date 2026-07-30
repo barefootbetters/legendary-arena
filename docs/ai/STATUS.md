@@ -7,6 +7,36 @@
 
 ## Current State
 
+### WP-464 / EC-499 — Core Set Gauntlet-Coverage Matrix (Legends Board) (2026-07-30)
+
+**User-Visible Surface = `legends.legendary-arena.com`.** **D-24026 CF-Pages client
+deploy live-verify operator-pending**; **live-data dev-server smoke passed** (below).
+No D-entry (presentation-only, like WP-459).
+
+An operator-requested collapsible **coverage matrix** at the bottom of the Core Set
+group on the legends gauntlet index. **Transposed** (operator's choice, to avoid
+horizontal scroll): rows = the set's 4 masterminds × 8 schemes (32, grouped by
+mastermind), columns = the 7 villains + 4 henchmen. A cell shows a **checkmark
+hyperlink** to that scheme-leg's cards-builder challenge (approved loadout pinned)
+iff the column adversary is in the mastermind's approved config at the selected
+player count; else empty. A **player-count selector** defaults to **2p**, switchable
+1–5, ✓s update live. Zero-API — renders data already published in the gauntlet index
+(`approvedLoadouts` + `legs` + WP-461 `sets`) via the existing `buildChallengeUrl`;
+no new fetch/snapshot/contract. Coverage derives from `selectApprovedLoadout` (per
+mastermind × count), **never** the per-*set* `usedByGauntlets` (which would
+over-mark). Core-only pilot; the pure `buildCoverageMatrix` is generic. Files: new
+`buildCoverageMatrix` + tests in `gauntletDisplay.ts`; the matrix in
+`GauntletIndexPanel.vue`. legends-board 66/0, vue-tsc 0, build 0; `pnpm -r build` 0.
+
+**Live-data verification:** dev server against the real R2 rendered the Core matrix
+at 2p — 32 rows × 11 columns grouped by mastermind (Magneto/Dr. Doom/Loki/Red
+Skull), authoritative names (HYDRA), count selector default 2; Magneto / The Legacy
+Virus = `11000001000` (Brotherhood + Enemies-of-Asgard + Doombot-Legion), a ✓
+linking to the cards-builder challenge (`playerCount=2`, loadout pinned) with the
+accessible name "Play The Legacy Virus vs Brotherhood at 2-player", no horizontal
+overflow. The 1↔5 count-switch is unit-proven (1p-vs-2p coverage) + vue-tsc-verified
+(the `@change` reactive binding, same pattern as the proven download selector).
+
 ### WP-462 / EC-497 — Legends Board Per-Set "Show Set Details" Reveal (Client) (2026-07-30)
 
 **User-Visible Surface = `legends.legendary-arena.com`.** **D-24026 deploy
