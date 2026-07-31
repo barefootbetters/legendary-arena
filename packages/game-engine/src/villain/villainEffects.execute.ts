@@ -735,36 +735,52 @@ function villainEffectScryKoOwnDeck(
   // ran, there was simply nothing to look at. Scry never triggers the draw-time
   // reshuffle; it operates only on the cards already in the deck.
   if (zones.deck.length === 0) return { targets: [] };
-  // why: look-2 / KO-1 is baked to Doombot Legion's printed values. A
-  // parameterized look-count / KO-count is a future primitive, not this WP
-  // (WP-447 §Scope Out). `min(2, deck.length)` handles a 1-card deck (look at 1,
-  // KO it, no "other" to return).
-  const lookCount = Math.min(2, zones.deck.length);
-  const revealed = zones.deck.slice(0, lookCount);
-  const koTarget = selectScryKoTarget(revealed);
-  // why: revealed is non-empty (deck.length ≥ 1 guaranteed above), so
-  // selectScryKoTarget always returns a card; the null guard is defensive only.
-  if (koTarget === null) return { targets: [] };
-  // why: moveCardFromZone removes the FIRST occurrence of koTarget's ext_id.
-  // koTarget is one of the top two, and any earlier-index occurrence would have
-  // the same ext_id (KOing either copy is outcome-identical), so the first
-  // occurrence is always within the looked-at window — the non-KO'd revealed
-  // card is left on top in its original relative order. Auto-resolved: the
-  // interactive "player looks and picks which to KO" upgrade is a deferred
-  // follow-on (the koHeroCurrentPlayer WP-185 auto → WP-242 interactive path),
-  // because a block-all pending state without its UX would hard-freeze the client.
-  const moveResult = moveCardFromZone(zones.deck, [], koTarget);
-  if (!moveResult.found) return { targets: [] };
-  zones.deck = moveResult.from;
-  G.ko = koCard(G.ko, koTarget);
-  // why: scry-ko self-narrates — the keyword-less descriptor is silently dropped
-  // by the result-recording path (descriptorToLegacyKeyword → undefined), so the
-  // generic Fight-effect log line does not fire. Push the line here naming the
-  // KO'd card. `G.messages` is hash-excluded (D-24081), so this adds no replay
-  // surface; the descriptor-keyed overlay/badge narration is WP-253, not this WP.
-  const koName = resolveCardDisplayName(G, koTarget);
-  pushLog(G, `Fight effect: KO'd "${koName}" from the top of your deck.`, 'neutral', koTarget);
-  return { targets: [koTarget] };
+
+  // why: WP-470 / D-24282 — a single-card deck still AUTO-KOs (unchanged from
+  // WP-447). There is only one card to look at, so there is nothing to choose —
+  // parking a choice with one option would freeze the board for a no-decision.
+  // Look at 1, KO it, no "other" to return.
+  if (zones.deck.length === 1) {
+    const soleCard = zones.deck[0]!;
+    const moveResult = moveCardFromZone(zones.deck, [], soleCard);
+    if (!moveResult.found) return { targets: [] };
+    zones.deck = moveResult.from;
+    G.ko = koCard(G.ko, soleCard);
+    // why: scry-ko self-narrates — the keyword-less descriptor is dropped by the
+    // result-recording path (descriptorToLegacyKeyword → undefined), so the
+    // generic Fight-effect log line does not fire. `G.messages` is hash-excluded
+    // (D-24081), so this adds no replay surface.
+    const koName = resolveCardDisplayName(G, soleCard);
+    pushLog(G, `Fight effect: KO'd "${koName}" from the top of your deck.`, 'neutral', soleCard);
+    return { targets: [soleCard] };
+  }
+
+  // why: WP-470 / D-24282 — with ≥2 cards the interactive upgrade PARKS a choice
+  // and KOs nothing yet. The player looks at the top two and picks which to KO
+  // (the other stays on top); the auto-pick (selectScryKoTarget) is now only the
+  // bot/sim default (ai.legalMoves) so par/replay stay byte-identical, while live
+  // human play gets real agency (the Jeff-reported missing-agency bug — the
+  // auto-resolve KO'd a real hero when both top cards were heroes). The pending
+  // state ships WITH its block-all guard + UIState projection + client prompt
+  // (project_pending_choice_no_ux_freeze). The top-2 ext_ids are snapshotted onto
+  // the pending entry (D-24282): the block-all guard freezes the deck top, so the
+  // snapshot cannot drift, and KO-by-ext_id is outcome-identical.
+  const revealedCardIds = zones.deck.slice(0, 2);
+  if (!G.pendingScryKoChoices) G.pendingScryKoChoices = [];
+  G.pendingScryKoChoices.push({
+    choiceType: 'scry-ko',
+    playerID: currentPlayer,
+    revealedCardIds,
+  });
+  // why: self-narrate the park so the log records that the choice opened; the
+  // resolve move narrates the actual KO. Outcome 'neutral' — nothing has landed
+  // yet. `G.messages` is hash-excluded (D-24081), so this adds no replay surface.
+  pushLog(G, 'Fight effect: look at the top two cards of your deck — choose one to KO.', 'neutral');
+  // why: WP-316 — pending: true marks the parked interactive KO; no card is KO'd
+  // yet, so no target name is known. targets stays []. (This result is dropped by
+  // the recording path anyway — scry-ko is keyword-less — but the shape is kept
+  // parallel to the ko-hero parker for consistency.)
+  return { targets: [], pending: true };
 }
 
 /**
@@ -784,7 +800,7 @@ function villainEffectScryKoOwnDeck(
 // Different pool, different rule — do NOT merge the two selectors. Membership
 // uses closed enums (WOUND_EXT_ID, SHIELD_*_EXT_ID), so the pick reads no
 // registry and stays deterministic (no ctx.random).
-function selectScryKoTarget(revealed: CardExtId[]): CardExtId | null {
+export function selectScryKoTarget(revealed: CardExtId[]): CardExtId | null {
   for (const candidate of revealed) {
     if (candidate === WOUND_EXT_ID) {
       return candidate;

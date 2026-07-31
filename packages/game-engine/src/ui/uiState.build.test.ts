@@ -1202,6 +1202,58 @@ describe('buildUIState — pendingKoHeroChoice projection (WP-243 / D-24010)', (
 });
 
 // ---------------------------------------------------------------------------
+// WP-470 / EC-505 — pendingScryKoChoice projection (D-24282)
+// ---------------------------------------------------------------------------
+
+describe('buildUIState — pendingScryKoChoice projection (WP-470 / D-24282)', () => {
+  const HERO = 'core/black-widow/strike#0' as CardExtId;
+  const WOUND_ID = 'pile-wound' as CardExtId;
+
+  it('is undefined when the engine queue is empty', () => {
+    const gameState = createTestGameState();
+    assert.equal(gameState.pendingScryKoChoices, undefined);
+    const ui = buildUIState(gameState, mockCtx);
+    assert.equal(ui.pendingScryKoChoice, undefined, 'absent when no pending scry-KO choice');
+  });
+
+  it('projects the FRONT entry with the revealed snapshot (NOT the live deck) in order', () => {
+    const gameState = makeGameStateWithDisplayData();
+    // why: the projection reads the SNAPSHOT, not the live deck — set the deck to
+    // something different from revealedCardIds to prove the snapshot is the source.
+    gameState.playerZones['0']!.deck = [WOUND_ID, HERO, 'core/x/deep#0' as CardExtId];
+    gameState.pendingScryKoChoices = [
+      { choiceType: 'scry-ko', playerID: '0', revealedCardIds: [WOUND_ID, HERO] },
+    ];
+    const ui = buildUIState(gameState, mockCtx);
+    assert.ok(ui.pendingScryKoChoice !== undefined, 'present when queue non-empty');
+    assert.equal(ui.pendingScryKoChoice!.choiceType, 'scry-ko');
+    assert.equal(ui.pendingScryKoChoice!.playerID, '0');
+    assert.deepStrictEqual(
+      ui.pendingScryKoChoice!.revealedCards.map((c) => c.cardId),
+      [WOUND_ID, HERO],
+      'revealedCards mirror the snapshot in deck-top order',
+    );
+    assert.equal(
+      ui.pendingScryKoChoice!.revealedCards[1]!.display.name,
+      'Mission Accomplished',
+      'display is resolved from cardDisplayData',
+    );
+  });
+
+  it('mutating a projected revealed display does not affect G (defensive copy)', () => {
+    const gameState = makeGameStateWithDisplayData();
+    gameState.playerZones['0']!.deck = [HERO];
+    gameState.pendingScryKoChoices = [
+      { choiceType: 'scry-ko', playerID: '0', revealedCardIds: [HERO] },
+    ];
+    const originalName = gameState.cardDisplayData[HERO]!.name;
+    const ui = buildUIState(gameState, mockCtx);
+    ui.pendingScryKoChoice!.revealedCards[0]!.display.name = 'mutated';
+    assert.equal(gameState.cardDisplayData[HERO]!.name, originalName, 'G display untouched');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // WP-249 / EC-280 — pendingOptionalKoReward projection (D-24020)
 // ---------------------------------------------------------------------------
 

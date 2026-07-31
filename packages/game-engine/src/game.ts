@@ -8,6 +8,7 @@ import { drawCards, playCard, endTurn } from './moves/coreMoves.impl.js';
 import { HAND_SIZE, drawCardsIntoHand } from './moves/drawCards.logic.js';
 import { resolveHeroChoice } from './moves/heroChoice.resolve.js';
 import { resolveKoHeroChoice, hasPendingKoHeroChoice } from './moves/koHeroChoice.resolve.js';
+import { resolveScryKoChoice, hasPendingScryKoChoice } from './moves/scryKoChoice.resolve.js';
 import { resolveOptionalKoReward, hasPendingOptionalKoReward } from './moves/optionalKoReward.resolve.js';
 import { resolveOptionalPutBottomHQ, hasPendingOptionalPutBottomHQ } from './moves/resolveOptionalPutBottomHQ.js';
 import { resolvePutAnyNumberBottomHQ, hasPendingPutAnyNumberBottomHQ } from './moves/resolvePutAnyNumberBottomHQ.js';
@@ -99,6 +100,11 @@ function advanceStage({ G, events }: MoveContext): void {
   // so the player resolves the Fight effect before any other action. Placed
   // before any G read/write and before the cleanup turn-end check below.
   if (hasPendingKoHeroChoice(G)) { return; }
+  // why: block-all guard (D-24282) — while a Doombot scry-KO choice is pending
+  // the board is frozen; advanceStage (at any stage) returns with no side effects
+  // so the player picks which revealed card to KO before any other action. Mirrors
+  // the D-24008 KO-hero check above (both freeze the cleanup turn-end too).
+  if (hasPendingScryKoChoice(G)) { return; }
   // why: block-all guard (D-24019) — optional-KO-reward choice pending; the
   // board is frozen until resolved (this also blocks the cleanup turn-end
   // auto-transition below, mirroring the D-24008 KO-hero check above).
@@ -405,6 +411,11 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     healWounds: { move: healWounds, client: false },
     resolveHeroChoice: { move: resolveHeroChoice, client: false },
     resolveKoHeroChoice: { move: resolveKoHeroChoice, client: false },
+    // why: WP-470 / D-24282 — resolveScryKoChoice resolves the interactive Doombot
+    // scry-KO choice (pick which of the top two deck cards to KO). Server-only
+    // (client: false) per D-10008 — it mutates real G (playerZones.deck / G.ko),
+    // absent on UIState. NOT in CORE_MOVE_NAMES (mirrors resolveKoHeroChoice).
+    resolveScryKoChoice: { move: resolveScryKoChoice, client: false },
     resolveOptionalKoReward: { move: resolveOptionalKoReward, client: false },
     resolveOptionalPutBottomHQ: { move: resolveOptionalPutBottomHQ, client: false },
     // why: D-24132 — resolvePutAnyNumberBottomHQ resolves the multi-select HQ→bottom choice

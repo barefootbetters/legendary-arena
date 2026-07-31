@@ -505,6 +505,32 @@ export function filterUIStateForAudience(
     };
   }
 
+  // why: WP-470 / D-24282 — the pending Doombot scry-KO choice is redacted for EVERY
+  // audience except the choosing player. The revealedCards are the top of the chooser's
+  // OWN deck (their next draws) — leaking them to opponents or spectators would reveal
+  // hidden deck-order information. Present only when the audience is a player whose
+  // playerId equals the chooser's playerID; omitted (conditional assignment, never an
+  // `undefined` literal) for opponents AND spectators. Per-entry display spread prevents
+  // aliasing with the input UIState.
+  if (
+    uiState.pendingScryKoChoice !== undefined &&
+    audience.kind === 'player' &&
+    audience.playerId === uiState.pendingScryKoChoice.playerID
+  ) {
+    const revealedCopy = [];
+    for (const entry of uiState.pendingScryKoChoice.revealedCards) {
+      revealedCopy.push({
+        cardId: entry.cardId,
+        display: { ...entry.display },
+      });
+    }
+    result.pendingScryKoChoice = {
+      choiceType: uiState.pendingScryKoChoice.choiceType,
+      playerID: uiState.pendingScryKoChoice.playerID,
+      revealedCards: revealedCopy,
+    };
+  }
+
   // why: D-24020 — hand/discard are private to the chooser. pendingOptionalKoReward
   // is redacted for EVERY audience except the choosing player (the D-24011
   // hand-privacy analog). Its eligibleHand and eligibleDiscard lists carry the

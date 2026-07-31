@@ -322,6 +322,8 @@ export type {
   UIKoPileState,
   UIPendingHeroChoice,
   UIPendingKoHeroChoice,
+  UIPendingScryKoChoice,
+  UIScryKoRevealedCard,
   UIPendingOptionalKoReward,
   UIPendingDrawOrEmpowered,
   UIPendingVictoryPileCardPick,

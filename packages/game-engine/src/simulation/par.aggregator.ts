@@ -78,6 +78,7 @@ import { resolveDrawOrEmpowered } from '../moves/drawOrEmpowered.resolve.js';
 // each must be dispatchable in this duplicated MOVE_MAP or a parked pending choice hangs the PAR
 // per-turn loop (same class as the WP-286 resolveDrawOrEmpowered fix). Pinned by the drift guard.
 import { resolveKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
+import { resolveScryKoChoice } from '../moves/scryKoChoice.resolve.js';
 import { resolveOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
 import { resolveVictoryPileCardPick } from '../moves/resolveVictoryPileCardPick.js';
 import { resolveReturnZeroCostDiscard } from '../moves/resolveReturnZeroCostDiscard.js';
@@ -426,6 +427,8 @@ const MOVE_MAP: Record<string, MoveFn> = {
   // its pending choice is parked; a missing dispatch entry hangs the per-turn loop (maxTurns
   // bounds turns, not within-turn move-steps). Reuse the existing move fns, no re-implementation.
   resolveKoHeroChoice: (context, args) => resolveKoHeroChoice(context as never, args as never),
+  // why: WP-470 / D-24282 — same dispatch-completeness rule as the runner MOVE_MAP (pinned by the drift guard).
+  resolveScryKoChoice: (context, args) => resolveScryKoChoice(context as never, args as never),
   resolveOptionalKoReward: (context, args) => resolveOptionalKoReward(context as never, args as never),
   resolveVictoryPileCardPick: (context, args) => resolveVictoryPileCardPick(context as never, args as never),
   // why: D-24139 — same dispatch-completeness rule as the runner MOVE_MAP (pinned by the drift guard).

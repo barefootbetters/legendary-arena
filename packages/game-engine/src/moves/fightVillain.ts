@@ -29,6 +29,7 @@ import {
   resolveEffectResultNames,
 } from '../villain/villainEffects.execute.js';
 import { hasPendingKoHeroChoice } from './koHeroChoice.resolve.js';
+import { hasPendingScryKoChoice } from './scryKoChoice.resolve.js';
 import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
@@ -123,6 +124,10 @@ export function fightVillain(
   // resolves the Fight effect before fighting again. Placed immediately after
   // the stage gate, before any G/zone write.
   if (hasPendingKoHeroChoice(G)) return;
+  // why: block-all guard (D-24282) — a pending Doombot scry-KO choice freezes the
+  // board until the player picks which revealed card to KO. (fightVillain is the
+  // Doombot trigger path itself, so this guards a re-fight while the park is open.)
+  if (hasPendingScryKoChoice(G)) return;
   // why: block-all guard (D-24019) — optional-KO-reward choice pending; the
   // board is frozen until resolved (beside the D-24008 KO-hero check above).
   if (hasPendingOptionalKoReward(G)) return;

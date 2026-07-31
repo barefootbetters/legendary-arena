@@ -53,6 +53,9 @@ export type UiMoveName =
   | 'fightMastermind'
   | 'resolveHeroChoice'
   | 'resolveKoHeroChoice'
+  // why: WP-470 / D-24282 — unblocks the Doombot scry-KO prompt (pick which of the
+  // top two deck cards to KO).
+  | 'resolveScryKoChoice'
   | 'resolveOptionalKoReward'
   | 'resolveDrawOrEmpowered'
   // why: WP-313 / D-24099 — unblocks the victory-pile villain-pick prompt (The Ebony Blade).

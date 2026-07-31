@@ -40,6 +40,8 @@ import type {
   UIState,
   UIPendingHeroChoice,
   UIPendingKoHeroChoice,
+  UIPendingScryKoChoice,
+  UIScryKoRevealedCard,
   UIEligibleKoHeroCard,
 } from './uiState.types.js';
 import type { NotableGameEvent } from '../events/notableEvents.types.js';
@@ -826,6 +828,56 @@ describe('UIState type drift (WP-243 / EC-274) — KO-a-Hero choice projection',
       },
     } satisfies Pick<UIState, 'pendingKoHeroChoice'>;
     assert.equal(fixture.pendingKoHeroChoice!.remaining, 1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-470 / EC-505 — UIPendingScryKoChoice + UIScryKoRevealedCard drift pins
+// ---------------------------------------------------------------------------
+
+describe('UIState type drift (WP-470 / EC-505) — Doombot scry-KO choice projection', () => {
+  it('UIScryKoRevealedCard has exactly the two locked fields', () => {
+    const fixture = {
+      cardId: 'core/black-widow/strike#0',
+      display: {
+        extId: 'core/black-widow/strike#0',
+        name: 'Mission Accomplished',
+        imageUrl: '',
+        cost: 2,
+      },
+    } satisfies UIScryKoRevealedCard;
+
+    assert.deepStrictEqual(Object.keys(fixture).sort(), ['cardId', 'display']);
+  });
+
+  it('UIPendingScryKoChoice has exactly the three locked fields', () => {
+    const fixture = {
+      choiceType: 'scry-ko' as const,
+      playerID: '0',
+      revealedCards: [
+        {
+          cardId: 'pile-wound',
+          display: { extId: 'pile-wound', name: 'Wound', imageUrl: '', cost: null },
+        },
+      ],
+    } satisfies UIPendingScryKoChoice;
+
+    assert.deepStrictEqual(Object.keys(fixture).sort(), [
+      'choiceType',
+      'playerID',
+      'revealedCards',
+    ]);
+  });
+
+  it('UIState carries an optional pendingScryKoChoice field', () => {
+    const fixture = {
+      pendingScryKoChoice: {
+        choiceType: 'scry-ko' as const,
+        playerID: '0',
+        revealedCards: [],
+      },
+    } satisfies Pick<UIState, 'pendingScryKoChoice'>;
+    assert.equal(fixture.pendingScryKoChoice!.playerID, '0');
   });
 });
 

@@ -469,6 +469,34 @@ export interface PendingKoHeroChoice {
 }
 
 /**
+ * Pending Doombot scry-KO player choice state (WP-470 / D-24282).
+ *
+ * Created when a scry-ko-own-deck effect (Doombot Legion's Fight) looks at the
+ * top two cards of the defeating player's own deck and there are ≥2 cards to
+ * choose from. Appended to G.pendingScryKoChoices[] (FIFO queue). Removed
+ * (front-popped) by resolveScryKoChoice after the player selects which revealed
+ * card to KO. Must be undefined or empty at every turn-end (enforced by the
+ * block-all guards).
+ *
+ * // why: D-24282 — unlike PendingKoHeroChoice (which stores NO snapshot and
+ * recomputes eligibility fresh from current G, D-24007), this stores a snapshot
+ * of the top two ext_ids in `revealedCardIds`. Justified: the block-all guard
+ * freezes the deck top while the choice is pending, and KO-by-ext_id is
+ * outcome-identical (moveCardFromZone removes the first occurrence, always
+ * within the looked-at window — the same reasoning `villainEffectScryKoOwnDeck`
+ * relied on for its auto-resolve). Recomputing like ko-hero would re-read the
+ * deck the guard already froze, so the snapshot is both simpler and correct.
+ */
+export interface PendingScryKoChoice {
+  /** Discriminant for future extensibility; always 'scry-ko'. */
+  choiceType: 'scry-ko';
+  /** The player who must select which revealed card to KO. */
+  playerID: string;
+  /** The top `min(2, deck.length)` deck ext_ids revealed at park time (the choices). */
+  revealedCardIds: CardExtId[];
+}
+
+/**
  * Pending optional-KO-then-reward player choice state (WP-248 / D-24019).
  *
  * Created when an optional-ko-reward hero effect is played (`onPlay`) and the
@@ -782,6 +810,18 @@ export interface LegendaryGameState {
   // empty [] both mean "no pending choice" (guards test `.length`).
   /** FIFO queue of pending KO-a-Hero choices awaiting player resolution (WP-242). */
   pendingKoHeroChoices?: PendingKoHeroChoice[] | undefined;
+
+  // why: WP-470 / D-24282 — FIFO queue of pending Doombot scry-KO choices (one
+  // per Doombot Legion Fight defeated with ≥2 cards in the defeating player's
+  // deck). Entries are appended by villainEffectScryKoOwnDeck's park branch;
+  // front-popped by resolveScryKoChoice after the player picks which revealed
+  // card to KO. Must be undefined or empty at every turn-end. Runtime-only,
+  // never persisted (snapshots stay counts-only), mirroring pendingKoHeroChoices;
+  // **lazily initialized at the park site, never in Game.setup**. Optional so
+  // existing test state literals need no update. Absent (undefined) or empty []
+  // both mean "no pending choice" (guards test `.length`).
+  /** FIFO queue of pending Doombot scry-KO choices awaiting player resolution (WP-470). */
+  pendingScryKoChoices?: PendingScryKoChoice[] | undefined;
 
   // why: WP-248 / D-24019 — FIFO queue of pending optional-KO-then-reward
   // choices (one per played optional-ko-reward hero ability with ≥1 eligible

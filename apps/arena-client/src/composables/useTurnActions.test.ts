@@ -321,9 +321,11 @@ describe('useTurnActions — hasPendingDiscardToPlay gating (WP-383 / D-24184)',
     }
   });
 
-  // why: WP-380 — canHealWounds gates the Heal-Wounds button. Args after the 8
+  // why: WP-380 — canHealWounds gates the Heal-Wounds button. Args after the
   // pending flags are: hasWoundInHand, hasActedThisTurn, hasHealedThisTurn.
-  const NO_PENDING = [false, false, false, false, false, false, false, false, false] as const;
+  // WP-470 / D-24282 added hasPendingScryKoChoice (position 12), so the pending
+  // cluster is now 10 flags (positions 3–12).
+  const NO_PENDING = [false, false, false, false, false, false, false, false, false, false] as const;
 
   test('canHealWounds allowed on the viewer main turn with a Wound in hand, not acted, not healed', () => {
     const result = useTurnActions('main', true, ...NO_PENDING, true, false, false).canHealWounds();
@@ -346,8 +348,15 @@ describe('useTurnActions — hasPendingDiscardToPlay gating (WP-383 / D-24184)',
   });
 
   test('canHealWounds blocked while a block-all choice is pending', () => {
-    // 4th arg (hasPendingKoChoice) = true
-    const result = useTurnActions('main', true, false, true, false, false, false, false, false, false, false, true, false, false).canHealWounds();
+    // 4th arg (hasPendingKoChoice) = true; scry flag (position 12) = false, wound (13) = true
+    const result = useTurnActions('main', true, false, true, false, false, false, false, false, false, false, false, true, false, false).canHealWounds();
+    assert.equal(result.allowed, false);
+    assert.match(result.reason!, /pending choice/i);
+  });
+
+  test('canHealWounds blocked while a Doombot scry-KO choice is pending (WP-470)', () => {
+    // scry flag (position 12) = true, wound (13) = true — heal must be blocked by the pending choice
+    const result = useTurnActions('main', true, false, false, false, false, false, false, false, false, false, true, true, false, false).canHealWounds();
     assert.equal(result.allowed, false);
     assert.match(result.reason!, /pending choice/i);
   });
@@ -368,5 +377,30 @@ describe('useTurnActions — hasPendingDiscardToPlay gating (WP-383 / D-24184)',
     const result = useTurnActions('main', true, ...NO_PENDING, true, false, true).canHealWounds();
     assert.equal(result.allowed, false);
     assert.match(result.reason!, /already healed/i);
+  });
+});
+
+describe('useTurnActions — hasPendingScryKoChoice gating (WP-470 / D-24282)', () => {
+  const SCRY_KO_REASON =
+    'Choose one of the top two cards to KO before taking another action.';
+  // why: hasPendingScryKoChoice is the 10th pending flag (position 12): stage,
+  // isViewerTurn, then 9 falses for the other pending flags, then true.
+  const withScryKo = (stage: string) =>
+    useTurnActions(stage, true, false, false, false, false, false, false, false, false, false, true);
+
+  test('canEndTurn blocked at EVERY stage when hasPendingScryKoChoice is true', () => {
+    for (const stage of ['start', 'main', 'cleanup'] as const) {
+      const result = withScryKo(stage).canEndTurn();
+      assert.equal(result.allowed, false, `endTurn blocked at ${stage}`);
+      assert.equal(result.reason, SCRY_KO_REASON, 'scry-KO gate reason matches the locked value');
+    }
+  });
+
+  test('canPassPriority blocked at EVERY stage when hasPendingScryKoChoice is true (board frozen)', () => {
+    for (const stage of ['start', 'main', 'cleanup'] as const) {
+      const result = withScryKo(stage).canPassPriority();
+      assert.equal(result.allowed, false, `passPriority blocked at ${stage}`);
+      assert.equal(result.reason, SCRY_KO_REASON);
+    }
   });
 });

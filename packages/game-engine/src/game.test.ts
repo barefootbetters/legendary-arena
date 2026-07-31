@@ -132,16 +132,17 @@ describe('LegendaryGame', () => {
     );
   });
 
-  it('defines moves: advanceStage, dodgeCard, drawCards, endTurn, fightMastermind, fightVillain, healWounds, playCard, playFromUndercover, recruitHero, resolveDiscardToPlay, resolveDrawOrEmpowered, resolveHeroChoice, resolveKoHeroChoice, resolveOptionalKoReward, resolveOptionalPutBottomHQ, resolvePutAnyNumberBottomHQ, resolveReturnZeroCostDiscard, resolveVictoryPileCardPick, revealVillainCard, and sendUndercover', () => {
+  it('defines moves: advanceStage, dodgeCard, drawCards, endTurn, fightMastermind, fightVillain, healWounds, playCard, playFromUndercover, recruitHero, resolveDiscardToPlay, resolveDrawOrEmpowered, resolveHeroChoice, resolveKoHeroChoice, resolveOptionalKoReward, resolveOptionalPutBottomHQ, resolvePutAnyNumberBottomHQ, resolveReturnZeroCostDiscard, resolveScryKoChoice, resolveVictoryPileCardPick, revealVillainCard, and sendUndercover', () => {
     const moveNames = Object.keys(LegendaryGame.moves ?? {});
     assert.deepStrictEqual(
       moveNames.sort(),
       // why: WP-285 / EC-317 added resolveVictoryPileCardPick (14 → 15); WP-286 / EC-318 added
       // resolveDrawOrEmpowered (15 → 16); the Ionic Energy optional-put-bottom-hq fix added
       // resolveOptionalPutBottomHQ (16 → 17); D-24132 added resolvePutAnyNumberBottomHQ (17 → 18);
-      // D-24139 added resolveReturnZeroCostDiscard (18 → 19); WP-379 / D-24179 added healWounds (19 → 20); WP-383 / D-24184 added resolveDiscardToPlay (20 → 21).
-      ['advanceStage', 'dodgeCard', 'drawCards', 'endTurn', 'fightMastermind', 'fightVillain', 'healWounds', 'playCard', 'playFromUndercover', 'recruitHero', 'resolveDiscardToPlay', 'resolveDrawOrEmpowered', 'resolveHeroChoice', 'resolveKoHeroChoice', 'resolveOptionalKoReward', 'resolveOptionalPutBottomHQ', 'resolvePutAnyNumberBottomHQ', 'resolveReturnZeroCostDiscard', 'resolveVictoryPileCardPick', 'revealVillainCard', 'sendUndercover'],
-      'LegendaryGame must define exactly 21 moves',
+      // D-24139 added resolveReturnZeroCostDiscard (18 → 19); WP-379 / D-24179 added healWounds (19 → 20); WP-383 / D-24184 added resolveDiscardToPlay (20 → 21);
+      // WP-470 / D-24282 added resolveScryKoChoice (21 → 22) — sorts between resolveReturnZeroCostDiscard and resolveVictoryPileCardPick; NOT a CORE_MOVE_NAME (mirrors resolveKoHeroChoice).
+      ['advanceStage', 'dodgeCard', 'drawCards', 'endTurn', 'fightMastermind', 'fightVillain', 'healWounds', 'playCard', 'playFromUndercover', 'recruitHero', 'resolveDiscardToPlay', 'resolveDrawOrEmpowered', 'resolveHeroChoice', 'resolveKoHeroChoice', 'resolveOptionalKoReward', 'resolveOptionalPutBottomHQ', 'resolvePutAnyNumberBottomHQ', 'resolveReturnZeroCostDiscard', 'resolveScryKoChoice', 'resolveVictoryPileCardPick', 'revealVillainCard', 'sendUndercover'],
+      'LegendaryGame must define exactly 22 moves',
     );
   });
 

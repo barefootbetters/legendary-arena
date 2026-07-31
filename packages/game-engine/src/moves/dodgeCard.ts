@@ -20,6 +20,7 @@ import { moveCardFromZone } from './zoneOps.js';
 import { drawCardsIntoHand } from './drawCards.logic.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
 import { hasPendingKoHeroChoice } from './koHeroChoice.resolve.js';
+import { hasPendingScryKoChoice } from './scryKoChoice.resolve.js';
 import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
@@ -70,6 +71,9 @@ export function dodgeCard({ G, ctx, ...context }: MoveContext, { cardId }: Dodge
   // the board is frozen; dodgeCard returns with no side effects. Placed after the
   // stage gate, before any zone read/write, for board-freeze consistency.
   if (hasPendingKoHeroChoice(G)) return;
+  // why: block-all guard (D-24282) — a pending Doombot scry-KO choice freezes the
+  // board until the player picks which revealed card to KO.
+  if (hasPendingScryKoChoice(G)) return;
   // why: D-24051 — block-all guard (D-24019): optional-KO-reward choice pending;
   // the board is frozen until resolved (beside the D-24008 KO-hero check above).
   if (hasPendingOptionalKoReward(G)) return;

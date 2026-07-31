@@ -34,6 +34,8 @@ import type {
   UIKoPileState,
   UIPendingHeroChoice,
   UIPendingKoHeroChoice,
+  UIPendingScryKoChoice,
+  UIScryKoRevealedCard,
   UIPendingOptionalKoReward,
   UIPendingDrawOrEmpowered,
   UIPendingVictoryPileCardPick,
@@ -865,6 +867,34 @@ export function buildUIState(
     }
   }
 
+  // --- 13b.2 Project pending Doombot scry-KO choice (front of queue) ---
+  // why: WP-470 / D-24282 — project the FRONT entry of G.pendingScryKoChoices with
+  // its `revealedCardIds` snapshot (the top two deck cards, captured at park time)
+  // resolved to display data, in deck-top order. Unlike the ko-hero projection this
+  // reads the SNAPSHOT, not the live zone (D-24282): the block-all guard freezes the
+  // deck top while pending, so the snapshot cannot drift, and it is exactly what the
+  // resolve move validates the client's { cardId } against (the round-trip rule).
+  // resolveDisplay is spread fresh per entry so the projection holds no reference into
+  // G.cardDisplayData (aliasing defense, WP-111 D-11105). Redaction to the chooser-only
+  // audience is enforced by filterUIStateForAudience (the revealed cards are the top of
+  // the chooser's own deck — their next draws — and must not leak to opponents/spectators).
+  let pendingScryKoChoice: UIPendingScryKoChoice | undefined;
+  if (gameState.pendingScryKoChoices !== undefined && gameState.pendingScryKoChoices.length > 0) {
+    const frontChoice = gameState.pendingScryKoChoices[0]!;
+    const revealedCards: UIScryKoRevealedCard[] = [];
+    for (const cardId of frontChoice.revealedCardIds) {
+      revealedCards.push({
+        cardId,
+        display: { ...resolveDisplay(cardId, gameState) },
+      });
+    }
+    pendingScryKoChoice = {
+      choiceType: frontChoice.choiceType,
+      playerID: frontChoice.playerID,
+      revealedCards,
+    };
+  }
+
   // --- 13c. Project pending optional-KO-then-reward choice (front of queue) ---
   // why: D-24020 + WP-249 — project the FRONT entry of G.pendingOptionalKoRewards
   // with the chooser's eligible hand + discard cards recomputed fresh from current
@@ -1196,6 +1226,9 @@ export function buildUIState(
     ...(finalTurn !== undefined ? { finalTurn } : {}),
     ...(pendingHeroChoice !== undefined ? { pendingHeroChoice } : {}),
     ...(pendingKoHeroChoice !== undefined ? { pendingKoHeroChoice } : {}),
+    // why: WP-470 / D-24282 — conditional spread so an absent choice omits the field
+    // (no `pendingScryKoChoice: undefined` literal under exactOptionalPropertyTypes).
+    ...(pendingScryKoChoice !== undefined ? { pendingScryKoChoice } : {}),
     ...(pendingOptionalKoReward !== undefined ? { pendingOptionalKoReward } : {}),
     // why: WP-287 — conditional spread so an absent choice omits the field (no
     // `pendingDrawOrEmpowered: undefined` literal under exactOptionalPropertyTypes).

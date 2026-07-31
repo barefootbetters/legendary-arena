@@ -128,6 +128,11 @@ const NOT_YOUR_TURN: GatingResult = {
  *   End Turn / Pass Priority at any stage (the engine's block-all guard set freezes the
  *   board). Defaults to false. The cost is mandatory, so the reason names no decline
  *   exit. WP-383 / D-24184.
+ * @param hasPendingScryKoChoice Whether the viewer has an unresolved Doombot scry-KO
+ *   choice (from `UIState.pendingScryKoChoice !== undefined`). When true, blocks
+ *   `canEndTurn` and `canPassPriority` at ANY stage (the engine's full block-all guard
+ *   set freezes the board, mirroring `hasPendingKoChoice`). Defaults to false. The
+ *   choice is mandatory, so the reason names no decline exit. WP-470 / D-24282.
  * @param hasWoundInHand Whether the viewer holds at least one Wound in hand
  *   (derived client-side by scanning `viewer.handCards` for the Wound ext_id).
  *   Gates `canHealWounds`. Defaults to false. WP-380.
@@ -148,6 +153,7 @@ export function useTurnActions(
   hasPendingPutAnyNumberBottomHQ: boolean = false,
   hasPendingReturnZeroCostDiscard: boolean = false,
   hasPendingDiscardToPlay: boolean = false,
+  hasPendingScryKoChoice: boolean = false,
   hasWoundInHand: boolean = false,
   hasActedThisTurn: boolean = false,
   hasHealedThisTurn: boolean = false,
@@ -280,6 +286,15 @@ export function useTurnActions(
           reason: 'Discard a card from your hand to complete the play before taking another action.',
         };
       }
+      // why: WP-470 / D-24282 — End Turn / Pass Priority blocked at any stage while a
+      // Doombot scry-KO choice is pending (the engine's full block-all guard set freezes
+      // the board, mirroring hasPendingKoChoice). The choice is mandatory — no decline.
+      if (hasPendingScryKoChoice) {
+        return {
+          allowed: false,
+          reason: 'Choose one of the top two cards to KO before taking another action.',
+        };
+      }
       if (currentStage === 'cleanup' && hasPendingChoice) {
         return {
           allowed: false,
@@ -363,6 +378,15 @@ export function useTurnActions(
           reason: 'Discard a card from your hand to complete the play before taking another action.',
         };
       }
+      if (hasPendingScryKoChoice) {
+        // why: WP-470 / D-24282 — the engine's block-all guards block endTurn while
+        // pendingScryKoChoices is non-empty; this client-side gate surfaces the reason
+        // so the player sees a tooltip instead of a silent rejection.
+        return {
+          allowed: false,
+          reason: 'Choose one of the top two cards to KO before taking another action.',
+        };
+      }
       if (currentStage === 'cleanup' && hasPendingChoice) {
         // why: D-22203 — the engine's dual turn-end guard (WP-220) blocks
         // endTurn when pendingHeroChoice is set; this client-side gate
@@ -390,6 +414,7 @@ export function useTurnActions(
       }
       if (
         hasPendingKoChoice ||
+        hasPendingScryKoChoice ||
         hasPendingOptionalKoReward ||
         hasPendingVictoryPileCardPick ||
         hasPendingDrawOrEmpowered ||

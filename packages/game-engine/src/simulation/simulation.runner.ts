@@ -66,6 +66,7 @@ import { resolveDrawOrEmpowered } from '../moves/drawOrEmpowered.resolve.js';
 // hangs the per-turn loop. Their pending choices need preconditions a sweep rarely meets (so the
 // gap stayed latent past WP-286), but the drift guard now pins it.
 import { resolveKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
+import { resolveScryKoChoice } from '../moves/scryKoChoice.resolve.js';
 import { resolveOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
 import { resolveVictoryPileCardPick } from '../moves/resolveVictoryPileCardPick.js';
 import { resolveReturnZeroCostDiscard } from '../moves/resolveReturnZeroCostDiscard.js';
@@ -212,6 +213,9 @@ const MOVE_MAP: Record<string, MoveFn> = {
   // bounds turns, not within-turn move-steps). Mirrors the WP-286 resolveDrawOrEmpowered entry —
   // reuse the existing move fns, no re-implementation.
   resolveKoHeroChoice: (context, args) => resolveKoHeroChoice(context as never, args as never),
+  // why: WP-470 / D-24282 — getLegalMoves short-circuits to resolveScryKoChoice when a
+  // Doombot scry-KO choice is parked; a missing dispatch entry hangs the per-turn loop.
+  resolveScryKoChoice: (context, args) => resolveScryKoChoice(context as never, args as never),
   resolveOptionalKoReward: (context, args) => resolveOptionalKoReward(context as never, args as never),
   resolveVictoryPileCardPick: (context, args) => resolveVictoryPileCardPick(context as never, args as never),
   // why: D-24139 — getLegalMoves short-circuits to this resolve move when its pending
