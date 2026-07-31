@@ -7,6 +7,54 @@
 
 ## Current State
 
+### WP-471 / EC-506 — Year-Keyed Gauntlet-Config Registry Loader (Arc 1/5) (2026-07-31)
+
+**User-Visible Surface = none — infrastructure.** **D-24026 inverted** — no
+user-observable change in this packet; it is the registry foundation that enables
+WP-472 (server truth + leaderboard), WP-473 (run-tracker + launch), WP-474 (client +
+cards), and WP-475. Nothing consumes the loader yet.
+
+Arc 1/5 of the operator-directed per-scheme gauntlet variety: the registry loader over
+the hand-authored `data/gauntlet-configs.json`.
+
+**Execution reconciliation (operator-confirmed 2026-07-31).** The WP was drafted as if
+`data/gauntlet-configs.json` were new, with a simpler `{ villains[], henchmen[] }`
+all-sets shape plus a seeder. In fact the file **already shipped via #1116** — Core-only,
+with a richer self-documenting schema (`years[year].sets[set].masterminds[mm].schemes[scheme]`
+carrying `schemeName` / `villainPool` / `henchmanPool` / `variety`, plus `setName`,
+`mastermindName`, `anchorVillainGroup`, `baseVillainPool`, `baseHenchmanPool`, and a
+top-level `description`/`slicing`), already using full set-qualified ext_ids and carrying
+the exact Core swaps the WP §Contract lists. Rather than overwrite that authored file,
+this packet adds **only the loader over the existing #1116 file, unchanged**:
+
+- `packages/registry/src/gauntletConfigs.ts` (new) — a Zod validator
+  (`validateGauntletConfigs`, validate-at-load throw over the rich schema),
+  `getGauntletConfig(set, mastermind, scheme, count)` (slices `villainPool`/`henchmanPool`
+  by `PLAYER_COUNT_SETUP`, returns full ext_ids as-is), and `getActiveYear`, exported via
+  the barrel for WP-472.
+- **`getGauntletConfig` returns `undefined` for any absent leg** (non-Core set, unknown
+  mastermind, or unswapped/absent scheme), so the consumer falls back to the
+  per-mastermind `GAUNTLET_LOADOUT_MENUS` — the WP-472 absent-scheme → menu-fallback model.
+  The loader never synthesizes a composition.
+
+Reconciliation deltas vs the draft (folded inline per `01.0b`; documented in the WP-471 +
+EC-506 execution-reconciliation notes): **no seeder** created (`scripts/seed-gauntlet-configs.mjs`
+— the file is hand-authored, not machine-seeded); **`data/gauntlet-configs.json` not
+modified** (kept verbatim from #1116); **AC#1 narrowed** — non-Core legs are served by the
+menu via consumer fallback, not by seeding all sets into the JSON. Files touched are a
+**subset** of the EC allowlist: `gauntletConfigs.{ts,test.ts}` (new) + `index.ts` barrel +
+governance.
+
+Tests (15) prove: the Core swaps (Dr. Doom skrulls, Magneto spider-foes/sentinel/
+savage-land-mutates, Red Skull reorders, Loki radiation), that every **unswapped** Core leg
+reproduces `GAUNTLET_LOADOUT_MENUS` as sets, pool scaling by `PLAYER_COUNT_SETUP`,
+`undefined` for absent legs, malformed-throws, the file's `slicing` table matching
+`PLAYER_COUNT_SETUP`, and a fail-loud guard that every scheme key in the committed file is a
+real scheme of its set (`legacy-virus-the` typo class).
+
+registry 201/0 (+15 gauntletConfigs); `pnpm -r build` + `pnpm -r --no-bail test` green. No
+D-entry here (D-24283 lands at WP-472).
+
 ### WP-469 / EC-504 — Villain `reveal-or-wound` Conditional Each-Player Effect (Sabretooth + Core Siblings) (2026-07-31)
 
 **User-Visible Surface = game log + Wound piles.** **D-24026 live-verify

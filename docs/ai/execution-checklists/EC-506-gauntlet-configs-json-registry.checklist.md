@@ -65,3 +65,29 @@
 - A swap shows at the wrong count → the swapped adversary sits at the wrong pool index
   (position 2 = the 2-player slot).
 - Loader returns bare slugs → forgot to set-qualify `${setAbbr}/${slug}`.
+
+## Execution Reconciliation (2026-07-31, operator-confirmed)
+
+**Supersedes the Before-Starting file set and the seeder/all-sets items above.**
+`data/gauntlet-configs.json` was found already shipped via #1116 (Core-only, rich schema —
+`villainPool`/`henchmanPool`/`variety`, full ext_ids, matching the WP §Contract Core
+swaps). Reconciled path (see WP-471 §Execution Reconciliation for the full rationale):
+
+- **Actual target file set (subset of the drafted allowlist):**
+  `packages/registry/src/gauntletConfigs.{ts,test.ts}` (new) + `packages/registry/src/index.ts`
+  (barrel) + governance. **`scripts/seed-gauntlet-configs.mjs` is NOT created**;
+  **`data/gauntlet-configs.json` is NOT modified** (read-only, kept verbatim from #1116).
+- **Loader reads #1116's rich schema** and slices `villainPool`/`henchmanPool` by
+  `PLAYER_COUNT_SETUP` (not a duplicated `REQUIRED_GROUP_COUNTS`); ext_ids are already full
+  `setAbbr/slug` and are returned unchanged (the "loader returns bare slugs" smell is N/A —
+  no re-qualification step exists).
+- **`getGauntletConfig` returns `undefined` for any absent leg** → the consumer falls back
+  to the per-mastermind `GAUNTLET_LOADOUT_MENUS` (WP-472 model). AC#1/AC#3 narrowed
+  accordingly; the retained faithfulness guard is that every **unswapped** Core leg
+  reproduces the menu.
+- **Fail-loud scheme-key validation** is retained as a committed-file test asserting every
+  scheme key in `data/gauntlet-configs.json` is a real scheme of its set (vs `data/cards`),
+  guarding the `legacy-virus-the` typo class. A `slicing`-vs-`PLAYER_COUNT_SETUP` drift
+  guard is added.
+- **Retained:** registry zod-only; pure loader; validate-at-load throw; barrel exports; no
+  D-entry (D-24283 at WP-472); `User-Visible Surface = none — infrastructure`.
