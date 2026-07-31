@@ -35048,3 +35048,93 @@ carve-out; the contract change is recorded by this D-entry per `code-style.md §
 Files` + the §Drift Detection union/array/test discipline. Reserved by WP-469.
 
 Protect this file.
+
+### D-24282 — Doombot scry-ko-own-deck upgrades from auto-resolve to an interactive player choice (human players); bots/sims stay deterministic via selectScryKoTarget (Drafted 2026-07-30 — WP-470; not yet landed)
+
+> **Status: Drafted at SPEC time; flips to Active (post-execution) when WP-470
+> executes.** Reserved in `NUMBER-LEDGER.md` under the same branch.
+
+**Context.** WP-447 / D-24267 shipped Doombot Legion's *"Fight: Look at the top two
+cards of your deck. KO one of them and put the other back."* **auto-resolved** — the
+engine KOs the deterministic worst via `selectScryKoTarget` — and explicitly deferred
+the interactive choice "the exact koHeroCurrentPlayer WP-185 auto → WP-242 interactive
+path." A live Magneto match (2026-07-30) showed the cost of no agency: the auto-resolve
+KO'd a real "Dangerous Rescue" (log line 172) when both top cards were heroes and it
+fell back to lex-lowest. Jeff requested the interactive choice.
+
+**Decision.** Upgrade scry-ko to an **interactive** player choice for **human** players,
+mirroring the WP-242/243 KO-a-Hero pending-choice pattern. `villainEffectScryKoOwnDeck`
+parks a `PendingScryKoChoice { choiceType: 'scry-ko'; playerID; revealedCardIds:
+CardExtId[] }` onto a new runtime `G.pendingScryKoChoices` FIFO queue when the deck has
+≥2 cards (KOing nothing yet); a 1-card deck still auto-KOs (nothing to choose) and 0 is a
+no-op (the WP-242 0/1/≥2 branch). A `resolveScryKoChoice({ G, playerID }, { cardId })`
+bgio move (`client: false`, registered in `game.ts`) validates the FRONT entry (playerID
++ `choiceType === 'scry-ko'` + `cardId ∈ front.revealedCardIds`), KOs the chosen card
+from the deck leaving the other on top, and front-pops; every invalid state is a silent
+no-op leaving the queue intact (moves never throw). A `hasPendingScryKoChoice(G)`
+predicate blocks every action move + the End-Turn/advanceStage gate while pending — so
+the choice cannot be skipped.
+
+**Ship the trio together (no-UX pending = client freeze).** The engine block-all guard,
+the UIState `pendingScryKoChoice` projection (front of queue; the ≤2 revealed cards, with
+the WP-249/D-24020 filtered variant visible only to the choosing player), and the
+arena-client `PendingScryKoChoicePrompt.vue` all land in the same feature — landing the
+pending state without its guard + projection + prompt would hard-freeze the client
+(`project_pending_choice_no_ux_freeze`).
+
+**Determinism preserved.** Bots and the simulation harness (`ai.legalMoves`,
+`simulation.runner`, `par.aggregator`) resolve the pending choice via `selectScryKoTarget`
+— the **same worst-first card** the WP-447 auto-resolve KO'd — so par, replay, and
+competitive verification stay faithful; only live **human** play gets the prompt. But
+because a bot game fighting a Doombot now emits a **park + a resolve move** (vs one
+auto-KO) and carries a hashed `G.pendingScryKoChoices` while pending, record-game/replay/
+sentinel fixtures that fight a Doombot shift — a **fixture re-pin is LIKELY**, and
+`game.test.ts`'s move-set/count gains `resolveScryKoChoice`.
+
+**Scope.** `selectScryKoTarget` and the 0/1-card branches are unchanged; no reorder/swap
+of the two revealed cards (only the KO'd one is removed); Doombot is the only
+`scry-ko-own-deck` card; exactly one card is KO'd (Doombot's printed value); no preplan
+integration. `G.pendingScryKoChoices` is runtime-only — never persisted, snapshots stay
+counts-only.
+
+**Persisted-log replay backward-compat (the load-bearing risk).** This changes the
+reducer behavior of an existing move path (`fightVillain` → Doombot Fight), and the
+persistence boundary re-executes already-persisted `bgio` `initialState + log` blobs
+through the *current* reducer for the D-24119 replay reconstruction and the D-24187
+competitive-score verification (step-9 anti-tamper). A match log recorded under WP-447
+(auto-resolve, no `resolveScryKoChoice` move) replayed through the WP-470 reducer would
+**park a pending choice the old log never resolves** → subsequent logged moves hit the
+block-all guard and no-op → the replay diverges from the recorded `gameover`; those blobs
+are immutable and cannot be re-pinned. **Disposition:** at execution the operator confirms
+no accepted competitive score and no replay-reconstructed match fought a Doombot Legion
+henchman before this WP lands — plausibly empty (scry-ko-own-deck shipped 2026-07-30, one
+day before; Doombot Legion is an opt-in henchman group, and competitive scores require an
+approved ranked-gauntlet loadout). If empty, state it and proceed; if ANY such log exists,
+a version-gate/grandfather rule is required before landing (escalate — do not ship a
+silent replay divergence).
+
+**Move-registration completeness.** `resolveScryKoChoice` is NOT added to `CORE_MOVE_NAMES`
+(mirrors `resolveKoHeroChoice`); it IS added to `SIMULATION_MOVE_NAMES` + both sim
+`MOVE_MAP`s (`simulation.runner.ts` + `par.aggregator.ts`) — omitting this hangs the sim
+per-turn loop — with `simulation.moveDispatch.drift.test.ts` asserting membership, and to
+**both** `game.test.ts` move-list literals (description string + array) + the count.
+
+**Layer note.** Cross-layer (game-engine parker/move/guards/projection/bot + arena-client
+prompt), drafted as **one WP / one EC / one PR** with a per-layer allowlist and
+engine-then-client order — a tight vertical slice extending the existing pending-choice
+infrastructure, not building it. It stays one WP: **no second WP number**. If worked across
+two sessions, both halves land under WP-470 and the client half never merges to a deployed
+branch without the engine half — the WP-242/243 co-release split failed (UX shipped, engine
+did not, bug persisted), so this atomicity is deliberate.
+
+**Files (at execution).** Engine: `types.ts`, `villain/villainEffects.execute.{ts,test.ts}`,
+`moves/scryKoChoice.resolve.{ts,test.ts}` (new), `game.{ts,test.ts}`,
+`moves/coreMoves.impl.ts`/`dodgeCard.ts`/`fightMastermind.ts` (+ sibling guard sites),
+`ui/uiState.{types,build,filter}.ts` (+ tests), `simulation/ai.legalMoves.ts`/
+`simulation.runner.ts`/`par.aggregator.ts` (+ tests), re-pinned fixtures. Client:
+`components/play/PendingScryKoChoicePrompt.vue` (new), `composables/useTurnActions.ts`,
+`components/play/uiMoveName.types.ts`, `pages/PlayViewport.vue` (+ tests). The contract
+change (new pending-choice type + move + G field + UIState field) is recorded by this
+D-entry. Reserved by WP-470.
+
+Protect this file.
