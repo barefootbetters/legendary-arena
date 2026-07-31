@@ -564,7 +564,7 @@ function isMatrixMastermindStart(rowIndex: number): boolean {
                       >{{ formatCardDisplayName(row.mastermindName) }}</th>
                     </tr>
                     <tr>
-                      <th scope="row" class="coverage-matrix-rowhead">{{ formatCardDisplayName(row.schemeName) }}</th>
+                      <th scope="row" class="coverage-matrix-rowhead"><span class="coverage-matrix-scheme-text">{{ formatCardDisplayName(row.schemeName) }}</span></th>
                       <td
                         v-for="(cell, columnIndex) of row.cells"
                         :key="columnIndex"
@@ -1002,15 +1002,23 @@ function isMatrixMastermindStart(rowIndex: number): boolean {
   font-style: italic;
 }
 
-/* why: WP-466 — a long scheme name wraps to two lines and the column is
-   width-capped, so the row-label column stays narrow (was `nowrap`). */
 .coverage-matrix-rowhead {
   text-align: left;
+  color: var(--la-color-text-secondary);
+}
+
+/* why: WP-467 — the scheme name wraps inside a bounded inline-block SPAN, not the
+   <th> itself: a table cell in auto-layout ignores `max-width`, and the general
+   `.coverage-matrix-table th { white-space: nowrap }` out-specifies a class set on
+   the <th>. The span carries both the wrap (`white-space: normal`) and the width
+   bound, and the cell sizes to it — so a long scheme name wraps to ~2 lines and
+   never bleeds into the ✓ columns (the WP-466 attempt on the <th> did neither). */
+.coverage-matrix-scheme-text {
+  display: inline-block;
+  max-width: 8.5rem;
   white-space: normal;
-  max-width: 9rem;
   overflow-wrap: anywhere;
   line-height: 1.15;
-  color: var(--la-color-text-secondary);
 }
 
 /* why: WP-466 — the mastermind is named ONCE per block as a full-width header row
