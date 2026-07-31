@@ -22,8 +22,13 @@
   scheme-row's ✓ pattern reflects THAT leg — remove the per-mastermind reuse);
   `buildGauntletDetails` pairs each scheme with its own config; `buildRowChallengeUrl`
   pins the row's leg config; `selectApprovedLoadout`/`listApprovedLoadouts` take the leg.
-- Cards: add `schemeId` to `GauntletQualificationInput` + resolve the leg's config;
-  `resolveGauntletLegLoadout` selects the composition by `input.schemeId`.
+- Cards: add `schemeId` to `GauntletQualificationInput` + resolve the leg's config via
+  `getGauntletConfig`, **falling back to the per-mastermind menu
+  (`GauntletLoadoutMenu` / `compositionsByPlayerCount`) when it returns `undefined`** (all
+  non-Core, unswapped Core — the today-behaviour); `resolveGauntletLegLoadout` selects the
+  composition by `input.schemeId` the same way (loader where present, else scheme-blind
+  menu). The legends-board consumers instead read `leg.approvedLoadouts` (WP-472's
+  effective loadout — already menu-fallback-filled per leg).
 - Degrade cleanly on an old snapshot (no per-leg loadouts) — no crash.
 
 ## Guardrails

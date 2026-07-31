@@ -50,8 +50,11 @@ client tier — mirrors server wire types, imports no server/registry), the WP-4
   `legLaunch` map on the client's `GauntletRunLaunch` shape (alongside the per-run block).
 - **`apps/arena-client/src/pages/MyProfilePage.vue`** — `playLeg(run, leg)` selects the
   leg's launch composition `run.launch.legLaunch?.[leg.schemeSlug]` and falls back to the
-  per-run block when absent (old snapshot), then assembles the `MatchSetupConfig` as today.
-  (+ test if a spec exists for the page's launch assembly.)
+  per-run block when absent — either an old snapshot **or** a leg with no per-scheme
+  override (WP-473 populates `legLaunch` with each leg's effective composition, but the
+  `?? per-run block` fallback keeps the flat default correct if a leg is missing) — then
+  assembles the `MatchSetupConfig` as today. (+ test if a spec exists for the page's launch
+  assembly.)
 
 ## Out of Scope
 

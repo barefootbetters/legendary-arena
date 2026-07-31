@@ -27,11 +27,15 @@
 - `GauntletRunLaunch` gains a per-leg (per-scheme) `legLaunch` map **additively** — the
   per-run block is PRESERVED + still populated (mastermind default) so the arena-client
   consumer stays green until WP-475 migrates it; `deriveGauntletRunLaunch` builds each
-  leg's composition from the per-scheme config. **§21:** this is a `GET /api/me/gauntlet-runs`
+  leg's **effective** composition — the per-scheme config where `getGauntletConfig` is
+  non-`undefined` (authored/Core), else the leg's per-mastermind default. **§21:** this is a `GET /api/me/gauntlet-runs`
   response `run.launch` sub-shape change → whole-row update of `api-endpoints.md` (Status
   `Wired` / Auth `authenticated-session-required` unchanged; cite WP-473 + D-24283).
 - Wiring builds the per-leg approved map from the WP-471 loader / the WP-472 per-scheme
-  wiring source; gauntlet module stays registry-free (injected).
+  wiring source as an **overlay**; `getGauntletConfig` returns `undefined` for absent legs
+  (all non-Core, unswapped Core), which fall back to the per-mastermind default (the
+  existing `definition.approvedLoadouts?.[count]?.[0]` read is preserved, not discarded).
+  Gauntlet module stays registry-free (injected).
 - `ScenarioKey` / `henchman_key` / scoring math UNCHANGED; run `leg_picks` shape unchanged;
   PAR ~2,118 unchanged; `competitive_scores` empty → zero migration.
 - **No D-entry** (consumes D-24283, landed at WP-472).
@@ -40,7 +44,8 @@
 - Gauntlet module imports NO registry — per-scheme configs arrive injected (as today).
 - Deterministic fixed-property-order derivation; `for...of`, no `.reduce()`.
 - Do NOT change `ScenarioKey`/`henchman_key`, the scoring math, the persisted `leg_picks`
-  shape, or non-Core clear/launch behaviour (seeded configs → byte-identical).
+  shape, or non-Core clear/launch behaviour (`getGauntletConfig` → `undefined` for
+  non-Core → per-mastermind fallback → byte-identical to today).
 - Do NOT touch the shared truth signature (WP-472 owns the additive param) or the
   leaderboard caller.
 
@@ -67,5 +72,6 @@
 ## Common Failure Smells
 - A wrong-scheme win still clears the leg → the scheme wasn't passed to `qualifiesAsLegClear`.
 - Every leg launches the same adversaries → `GauntletRunLaunch` stayed per-run, not per-leg.
-- Non-Core clear/launch drifted → the injected per-leg map isn't seeded-equivalent.
+- Non-Core clear/launch drifted → the per-leg map/launch isn't falling back to the
+  per-mastermind default for absent legs (`getGauntletConfig` → `undefined` for non-Core).
 - Gauntlet module imports the registry → move the loader read to `server.mjs` wiring.

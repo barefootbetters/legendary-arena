@@ -27,6 +27,13 @@ scheme. No new decision — this consumes the D-24283 contract.
   carry `approvedLoadouts` (per count); the server `GauntletIndexLeg` type carries it;
   the registry `getGauntletConfig(...schemeSlug...)` exists (WP-471). `apps/legends-
   board` + `apps/registry-viewer` green.
+- **Two consumption shapes.** The legends-board consumers read `leg.approvedLoadouts`
+  off the mirror — WP-472 already stamps that as the leg's **effective** loadout
+  (per-scheme where authored, else the per-mastermind menu), so every leg carries one. The
+  registry-viewer consumers instead call `getGauntletConfig` **directly**, which returns
+  **`undefined` for any absent leg** (the JSON is Core-only, #1116); those consumers MUST
+  fall back to the per-mastermind menu (`GauntletLoadoutMenu` / `compositionsByPlayerCount`)
+  on `undefined` — exactly what the cards badge + pack prefill read today.
 - Chain map (2026-07-30): the client consumers already have the scheme in hand —
   `buildCoverageMatrix` iterates `leg.schemeSlug`, `buildRowChallengeUrl` uses
   `legs[0].schemeSlug`, the reveal lists `legs`, the pack prefill carries
@@ -59,13 +66,18 @@ WP-472's `GauntletIndexLeg` change, and the consumers in
   **`GauntletBoardPanel.vue`** — pass the leg to the updated helpers.
 - **`apps/registry-viewer/src/lib/gauntletQualificationCheck.ts`** — add `schemeId`
   to `GauntletQualificationInput`; resolve the leg's approved config via the **WP-471
-  `getGauntletConfig` loader** (RS-2: **not** by extending `GauntletLoadoutMenu` in
+  `getGauntletConfig` loader**, **falling back to the per-mastermind `GauntletLoadoutMenu`
+  when `getGauntletConfig` returns `undefined`** (all non-Core, unswapped Core — the
+  today-behaviour). (RS-2: **not** by extending `GauntletLoadoutMenu` in
   `packages/registry/src/gauntletLoadouts.ts`, which is intentionally **not** in this
-  allowlist — the barrel export from WP-471 makes `getGauntletConfig` reachable). (+ tests.)
+  allowlist — the barrel export from WP-471 makes `getGauntletConfig` reachable). (+ tests,
+  incl. an absent-leg case that resolves to the per-mastermind menu.)
 - **`apps/registry-viewer/src/lib/loadoutGauntletPackImport.ts`** —
   `resolveGauntletLegLoadout` **uses** the `input.schemeId` it already carries to select
-  the leg's composition (today it echoes `schemeId` but pulls villains/henchmen
-  scheme-blind from `compositionsByPlayerCount` — the client twin of the launch break). (+ tests.)
+  the leg's composition via `getGauntletConfig`, **falling back to the scheme-blind
+  `compositionsByPlayerCount`** (the per-mastermind menu) when the loader returns
+  `undefined` (today it echoes `schemeId` but always pulls scheme-blind — the client twin
+  of the launch break). (+ tests, incl. an absent-leg fallback case.)
 - **`apps/registry-viewer/src/components/LoadoutBuilder.vue`** — the orchestrator call
   sites thread the leg's scheme: `onPickGauntletLeg` passes `schemeId` into a resolver
   that now uses it; the `gauntletQualification` computed passes `schemeId` into

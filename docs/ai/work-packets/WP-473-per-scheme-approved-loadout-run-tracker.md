@@ -31,6 +31,10 @@ variant-0 applied to every leg. No new decision — consumes the **D-24283** con
   lookup (absent-scheme → today's per-mastermind fallback, WP-472), and the WP-471
   loader `getGauntletConfig(setAbbr, mastermindSlug, schemeSlug, playerCount)` is on
   `main`. `apps/server` green.
+- **`getGauntletConfig` returns `undefined` for any absent leg** (the JSON is Core-only,
+  #1116) → the consumer falls back to the leg's per-mastermind default. Both the leg-clear
+  path (WP-472's `?? approvedLoadouts`) and this packet's per-leg **launch** map are
+  **overlays** over the existing per-mastermind composition, not replacements of it.
 - Chain map (2026-07-30, confirmed by the WP-473 surface study): the leg-clear
   predicate `deriveGauntletRunProgress` (`gauntletRunProgress.logic.ts`) calls
   `qualifiesAsLegClear` with `inputs.approvedLoadouts` (a per-mastermind
@@ -63,7 +67,9 @@ composition read).
   passes the leg scheme (`replay.scenarioKey.split('::')[0]`, already computed for
   bucketing) into `qualifiesAsLegClear` so leg-clear qualifies against the **leg's**
   per-scheme config; `deriveGauntletRunLaunch` builds the launch composition **per leg**
-  from the per-scheme config instead of one per-run composition. (+ tests.)
+  as the leg's **effective** composition — the per-scheme config where `getGauntletConfig`
+  returns a value (authored/Core), else the leg's per-mastermind default — instead of one
+  per-run composition. (+ tests.)
 - **`apps/server/src/gauntlet/gauntletRun.types.ts`**: **additively** add a per-leg
   (per-scheme) launch map to `GauntletRunLaunch` **alongside** the existing per-run block
   (e.g. a new `legLaunch?: Record<schemeSlug, GauntletRunLaunchComposition>` field, per-run
@@ -74,8 +80,11 @@ composition read).
   `GauntletRunLegProgress` carry the per-leg approved config the two helpers read.
 - **`apps/server/src/server.mjs`** (01.5 wiring): `resolveGauntletRunProgressInputs`
   builds the per-leg approved map (from the WP-471 loader / the WP-472 per-scheme
-  wiring source) and feeds it to the two helpers, replacing the
-  `definition.approvedLoadouts?.[playerCount]?.[0]` single-composition read.
+  wiring source) and feeds it to the two helpers. It does **not** discard the
+  `definition.approvedLoadouts?.[playerCount]?.[0]` read — that per-mastermind
+  composition stays as the fallback for every leg where `getGauntletConfig` returns
+  `undefined` (all non-Core, unswapped Core); the per-leg map is the overlay layered
+  on top of it.
 - **Tests**: a leg clears only when won against its **own** approved config (a
   swapped-scheme win with the mastermind's *other* scheme's villains does **not**
   clear the requiring leg); the per-leg launch composition returns the leg's scheme's
@@ -120,8 +129,10 @@ zero migration/invalidation.
       adversaries per leg (a Core Dr. Doom "Secret Invasion…" leg launches Skrulls +
       Masters of Evil at 2p; a non-swapped Dr. Doom leg launches Brotherhood + Masters
       of Evil), not one per-run composition.
-- [ ] Non-Core runs clear + launch identically to today (seeded configs → no behaviour
-      change).
+- [ ] Non-Core runs clear + launch identically to today **via the per-mastermind
+      fallback** — `getGauntletConfig` returns `undefined` for every non-Core leg (the JSON
+      is Core-only), so leg-clear (`?? approvedLoadouts`) and the effective per-leg launch
+      both resolve to the per-mastermind default (no behaviour change).
 - [ ] The gauntlet module imports no registry; per-scheme configs arrive injected.
 - [ ] Server tests (run the affected pure files directly if the DB suite times out) +
       `pnpm -r build` exit 0. No `D-entry` here (D-24283 at WP-472).
