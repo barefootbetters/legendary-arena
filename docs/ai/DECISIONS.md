@@ -35138,3 +35138,68 @@ change (new pending-choice type + move + G field + UIState field) is recorded by
 D-entry. Reserved by WP-470.
 
 Protect this file.
+
+### D-24283 — Ranked gauntlet approved loadouts are keyed per (scheme × mastermind × player-count), from a year-keyed authored JSON, re-keyed additively across a five-WP lockstep (Drafted 2026-07-31 — WP-472; not yet landed)
+
+> **Status: Drafted at SPEC time; flips to Active (post-execution) when WP-472
+> executes.** Reserved in `NUMBER-LEDGER.md`. **Renumbered off #1118**, which took
+> D-24282 for the interactive Doombot scry-KO choice; this arc was re-drafted off
+> `origin/main` @ `f6c7c43b` (post-#1118). Supersedes D-24278 (one-config-per-mastermind).
+
+**Context.** The ranked gauntlet's approved adversaries are the same for every leg of a
+mastermind: today the approved-loadout truth is keyed per **(setAbbr × mastermindSlug)**
+→ variant → `compositionsByPlayerCount`, and there is **no scheme dimension anywhere in
+the type graph** — the scheme (`scenarioKey` segment 0) is used only by callers to
+*group* a win into the right leg, never to constrain which villains/henchmen are
+approved. So a mastermind's 8 legs are identical, and the operator wants them to vary
+per scheme ("Swap, don't grow" — same fight size, different adversaries) for a more
+interesting championship. #1116 shipped the authored per-scheme data
+(`data/gauntlet-configs.json`) + wiki; this arc wires it into gameplay.
+
+**Decision.** Ranked gauntlet approved loadouts are keyed per **(scheme × mastermind ×
+player-count)**, sourced from the year-keyed `data/gauntlet-configs.json` (WP-471) — one
+ordered adversary pool per scheme, scaled by `REQUIRED_GROUP_COUNTS`. The re-key is
+**additive**, not breaking: a new per-scheme loader (`getGauntletConfig`) plus an
+**optional** scheme parameter on the shared truth predicate (absent → today's
+per-mastermind selection), so readers migrate **one WP at a time** without breaking the
+build. This is a **five-WP lockstep**:
+
+1. **WP-471 (registry):** the additive per-scheme loader `getGauntletConfig(setAbbr,
+   mastermindSlug, schemeSlug, playerCount)` over the authored JSON. `GAUNTLET_LOADOUT_MENUS`
+   stays; nothing consumes the loader yet.
+2. **WP-472 (server truth + leaderboard + publisher):** `matchesApprovedLoadout` /
+   `qualifiesAsLegClear` gain the additive per-scheme lookup; the leaderboard caller
+   (`getGauntletStandings`) passes the leg scheme; `buildSetDetailsCatalog` (D-24279
+   `usedByGauntlets` coverage) recomputes per-scheme (a group is "used" if it appears in
+   **any** leg's config); the publisher emits the per-leg loadout onto `GauntletIndexLeg`.
+   **Lands this decision.**
+3. **WP-473 (server run-tracker + launch):** the run-tracker leg-clear passes the leg
+   scheme (closing "a leg requiring Skrulls can never clear while any villains match"),
+   and the per-leg **launch composition** re-keys `GauntletRunLaunch` from one per-run
+   block to a per-leg map (`deriveGauntletRunLaunch` + `resolveGauntletRunProgressInputs`)
+   so "Play this leg" fields the **leg's** adversaries — the functional break the
+   Copilot review flagged.
+4. **WP-474 (legends-board + registry-viewer consumers):** the legends-board mirror +
+   coverage matrix + reveal + challenge links per leg, and the cards-builder
+   qualification badge + pack prefill + `LoadoutBuilder.vue` thread the leg's `schemeId`.
+5. **WP-475 (arena-client "Play this leg"):** the primary play surface's run tracker
+   (`MyProfilePage.vue` + `gauntletRunApi.ts` mirror) selects the leg's launch composition
+   from the per-leg `legLaunch` map WP-473 adds. WP-473's launch re-key is **additive**
+   (per-leg map alongside the per-run block) so this consumer stays green until it migrates.
+
+**Consequences.** SUPERSEDES D-24278's one-config-per-**mastermind** axis but KEEPS its
+density (exactly 1 variant per leg) and D-24199's core rule (ranked legs require an
+approved loadout; casual free selection untouched). **PAR tractability UNCHANGED**: still
+exactly one config per leg per count ≈ 2,118 scenarios — a mastermind's schemes already
+each keyed a distinct `ScenarioKey` (`scheme::mastermind::villains`); only *which*
+villains vary per scheme now, so `ScenarioKey`/`henchman_key`/scoring math are unchanged
+and `competitive_scores` is empty (zero re-keying/invalidation). Year-keyed for the
+future annual championship (active-year runtime; past years archived in-file; archival
+machinery deferred; ties the `scoringConfigVersion` rollover D-24131§5). The additive
+optional-param approach is the arc-splitting invariant: each WP is independently green,
+and the "leg default vs leg-specific" gap closes incrementally as WP-473/474 migrate
+their callers. No `.claude/rules/*` or `ARCHITECTURE.md` edit — within-layer data-model
+re-key, no new cross-layer edge or persistence carve-out (the run's `leg_picks` shape is
+unchanged). Reserved by WP-472.
+
+Protect this file.
