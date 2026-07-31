@@ -34970,6 +34970,17 @@ Protect this file.
 > `NUMBER-LEDGER.md` under the same branch. (Reserved by WP-469 after a concurrent
 > collision renumbered it from WP-468/EC-503; #1114 used no D-entry, so D-24281 was
 > unaffected.)
+>
+> **AMENDED 2026-07-31 (hand → hand + in-play).** The reveal predicate was shipped
+> **hand-only** (rationale below: "the printed reveal is a hand action"). That was
+> wrong for this engine's turn flow: the Fight/Ambush/Escape effect resolves **after**
+> the play phase, so a qualifying Hero the player already played this turn sits in
+> `inPlay`, not `hand` — hand-only then wounded a player who plainly HAS a qualifying
+> Hero (live Magneto match: fought Sabretooth having already played Wolverine → wrongly
+> wounded). The predicate now scans **hand + in-play** (matching the D-24076
+> `playerMeetsDefeatRequirement` scope): if you HAVE an X-Men Hero (in hand or in play)
+> you do not gain the Wound. Discard + deck stay excluded. Operator-ruled; the
+> hand-only wording in the Semantics/Context below is superseded by this note.
 
 **Context.** A live Magneto match (2026-07-30) surfaced the last onFight hollow: core
 `brotherhood/sabretooth`'s *"Fight: Each player reveals an [team:x-men] Hero or gains a

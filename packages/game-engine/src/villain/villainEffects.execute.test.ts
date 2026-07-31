@@ -750,19 +750,21 @@ describe('executeVillainAbilities — reveal-or-wound (WP-469 / D-24281)', () =>
     };
   }
 
-  it('AC-3 team predicate: a hand X-Men Hero avoids the Wound; no match gains one; in-play does NOT count', () => {
+  it('AC-3 team predicate (D-24281 amended): an X-Men Hero in HAND or IN PLAY avoids the Wound; none anywhere gains one', () => {
     const G = makeG({
       hooks: [rowHook('v-sabretooth', 'onFight', 'team', 'x-men')],
       playerZones: {
-        '0': zone([XMEN]), // reveals from hand
-        '1': zone([], [XMEN]), // X-Men only in play → hand-only miss → wounded
+        '0': zone([XMEN]), // X-Men in hand → no wound
+        '1': zone([], [XMEN]), // X-Men ONLY in play → now counts → no wound (the bug fix)
+        '2': zone([PLAIN]), // no X-Men in hand or play → wounded
       },
       wounds: [WOUND, 'w1' as CardExtId],
       cardTraits: TRAITS,
     });
     executeVillainAbilities(G, CTX, 'v-sabretooth' as CardExtId, 'onFight');
-    assert.equal(G.playerZones['0']!.discard.length, 0, 'the revealer gains no wound');
-    assert.equal(G.playerZones['1']!.discard.length, 1, 'the in-play-only player is wounded (hand-only)');
+    assert.equal(G.playerZones['0']!.discard.length, 0, 'hand X-Men avoids the wound');
+    assert.equal(G.playerZones['1']!.discard.length, 0, 'in-play X-Men now satisfies the reveal — no wound');
+    assert.equal(G.playerZones['2']!.discard.length, 1, 'no X-Men in hand or play → wounded');
     assert.equal(G.piles.wounds.length, 1, 'exactly one wound left the pile');
   });
 
