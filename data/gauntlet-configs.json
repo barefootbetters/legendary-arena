@@ -1,0 +1,246 @@
+{
+  "schemaVersion": 1,
+  "description": "Authored gauntlet adversary configurations, keyed by season year. Each leg (a mastermind + scheme pairing) fields its own ordered villain and henchman pools, so a mastermind's schemes can field different adversaries for variety. Non-swapped legs reproduce the current generated gauntlet loadouts exactly; swapped legs carry the operator-curated variety. This file is authored data; the engine consumes it in a later work packet (per-scheme approved-loadout wiring). Group identifiers are set-qualified ext_ids (setAbbr/slug).",
+  "activeYear": "2026",
+  "slicing": {
+    "note": "A leg's composition for a given player count is the first N entries of each ordered pool, where N is the count below. Pools are ordered anchor-first (the mastermind's always-leads villain group), then thematically. Because the counts are monotonic, first-N produces nested sets that match the game's per-player-count setup requirements.",
+    "villainGroupCountByPlayerCount": { "1": 1, "2": 2, "3": 3, "4": 3, "5": 4 },
+    "henchmanGroupCountByPlayerCount": { "1": 1, "2": 1, "3": 1, "4": 2, "5": 2 }
+  },
+  "years": {
+    "2026": {
+      "label": "2026 Season",
+      "sets": {
+        "core": {
+          "setName": "Core Set",
+          "masterminds": {
+            "dr-doom": {
+              "mastermindName": "Dr. Doom",
+              "anchorVillainGroup": "core/masters-of-evil",
+              "baseVillainPool": ["core/masters-of-evil", "core/brotherhood", "core/enemies-of-asgard", "core/hydra"],
+              "baseHenchmanPool": ["core/doombot-legion", "core/hand-ninjas"],
+              "schemes": {
+                "midtown-bank-robbery": {
+                  "schemeName": "Midtown Bank Robbery",
+                  "villainPool": ["core/masters-of-evil", "core/brotherhood", "core/enemies-of-asgard", "core/hydra"],
+                  "henchmanPool": ["core/doombot-legion", "core/hand-ninjas"],
+                  "variety": null
+                },
+                "secret-invasion-of-the-skrull-shapeshifters": {
+                  "schemeName": "Secret Invasion of the Skrull Shapeshifters",
+                  "villainPool": ["core/masters-of-evil", "core/skrulls", "core/enemies-of-asgard", "core/hydra"],
+                  "henchmanPool": ["core/doombot-legion", "core/hand-ninjas"],
+                  "variety": "Skrulls replace Brotherhood"
+                },
+                "legacy-virus-the": {
+                  "schemeName": "Legacy Virus, The",
+                  "villainPool": ["core/masters-of-evil", "core/brotherhood", "core/enemies-of-asgard", "core/hydra"],
+                  "henchmanPool": ["core/doombot-legion", "core/hand-ninjas"],
+                  "variety": null
+                },
+                "negative-zone-prison-breakout": {
+                  "schemeName": "Negative Zone Prison Breakout",
+                  "villainPool": ["core/masters-of-evil", "core/skrulls", "core/enemies-of-asgard", "core/hydra"],
+                  "henchmanPool": ["core/doombot-legion", "core/hand-ninjas"],
+                  "variety": "Skrulls replace Brotherhood"
+                },
+                "portals-to-the-dark-dimension": {
+                  "schemeName": "Portals to the Dark Dimension",
+                  "villainPool": ["core/masters-of-evil", "core/brotherhood", "core/enemies-of-asgard", "core/hydra"],
+                  "henchmanPool": ["core/doombot-legion", "core/hand-ninjas"],
+                  "variety": null
+                },
+                "replace-earths-leaders-with-killbots": {
+                  "schemeName": "Replace Earth's Leaders with Killbots",
+                  "villainPool": ["core/masters-of-evil", "core/brotherhood", "core/enemies-of-asgard", "core/hydra"],
+                  "henchmanPool": ["core/doombot-legion", "core/hand-ninjas"],
+                  "variety": null
+                },
+                "super-hero-civil-war": {
+                  "schemeName": "Super Hero Civil War",
+                  "villainPool": ["core/masters-of-evil", "core/skrulls", "core/enemies-of-asgard", "core/hydra"],
+                  "henchmanPool": ["core/doombot-legion", "core/hand-ninjas"],
+                  "variety": "Skrulls replace Brotherhood"
+                },
+                "unleash-the-power-of-the-cosmic-cube": {
+                  "schemeName": "Unleash the Power of the Cosmic Cube",
+                  "villainPool": ["core/masters-of-evil", "core/skrulls", "core/enemies-of-asgard", "core/hydra"],
+                  "henchmanPool": ["core/doombot-legion", "core/hand-ninjas"],
+                  "variety": "Skrulls replace Brotherhood"
+                }
+              }
+            },
+            "magneto": {
+              "mastermindName": "Magneto",
+              "anchorVillainGroup": "core/brotherhood",
+              "baseVillainPool": ["core/brotherhood", "core/enemies-of-asgard", "core/hydra", "core/masters-of-evil"],
+              "baseHenchmanPool": ["core/doombot-legion", "core/hand-ninjas"],
+              "schemes": {
+                "midtown-bank-robbery": {
+                  "schemeName": "Midtown Bank Robbery",
+                  "villainPool": ["core/brotherhood", "core/spider-foes", "core/hydra", "core/masters-of-evil"],
+                  "henchmanPool": ["core/doombot-legion", "core/hand-ninjas"],
+                  "variety": "Spider-Foes replace Enemies of Asgard"
+                },
+                "secret-invasion-of-the-skrull-shapeshifters": {
+                  "schemeName": "Secret Invasion of the Skrull Shapeshifters",
+                  "villainPool": ["core/brotherhood", "core/enemies-of-asgard", "core/hydra", "core/masters-of-evil"],
+                  "henchmanPool": ["core/doombot-legion", "core/hand-ninjas"],
+                  "variety": null
+                },
+                "legacy-virus-the": {
+                  "schemeName": "Legacy Virus, The",
+                  "villainPool": ["core/brotherhood", "core/enemies-of-asgard", "core/hydra", "core/masters-of-evil"],
+                  "henchmanPool": ["core/doombot-legion", "core/hand-ninjas"],
+                  "variety": null
+                },
+                "negative-zone-prison-breakout": {
+                  "schemeName": "Negative Zone Prison Breakout",
+                  "villainPool": ["core/brotherhood", "core/enemies-of-asgard", "core/hydra", "core/masters-of-evil"],
+                  "henchmanPool": ["core/savage-land-mutates", "core/hand-ninjas"],
+                  "variety": "Savage Land Mutates replace Doombot Legion"
+                },
+                "portals-to-the-dark-dimension": {
+                  "schemeName": "Portals to the Dark Dimension",
+                  "villainPool": ["core/brotherhood", "core/enemies-of-asgard", "core/hydra", "core/masters-of-evil"],
+                  "henchmanPool": ["core/sentinel", "core/hand-ninjas"],
+                  "variety": "Sentinel replace Doombot Legion"
+                },
+                "replace-earths-leaders-with-killbots": {
+                  "schemeName": "Replace Earth's Leaders with Killbots",
+                  "villainPool": ["core/brotherhood", "core/enemies-of-asgard", "core/hydra", "core/masters-of-evil"],
+                  "henchmanPool": ["core/sentinel", "core/hand-ninjas"],
+                  "variety": "Sentinel replace Doombot Legion"
+                },
+                "super-hero-civil-war": {
+                  "schemeName": "Super Hero Civil War",
+                  "villainPool": ["core/brotherhood", "core/spider-foes", "core/hydra", "core/masters-of-evil"],
+                  "henchmanPool": ["core/doombot-legion", "core/hand-ninjas"],
+                  "variety": "Spider-Foes replace Enemies of Asgard"
+                },
+                "unleash-the-power-of-the-cosmic-cube": {
+                  "schemeName": "Unleash the Power of the Cosmic Cube",
+                  "villainPool": ["core/brotherhood", "core/enemies-of-asgard", "core/hydra", "core/masters-of-evil"],
+                  "henchmanPool": ["core/savage-land-mutates", "core/hand-ninjas"],
+                  "variety": "Savage Land Mutates replace Doombot Legion"
+                }
+              }
+            },
+            "red-skull": {
+              "mastermindName": "Red Skull",
+              "anchorVillainGroup": "core/hydra",
+              "baseVillainPool": ["core/hydra", "core/brotherhood", "core/enemies-of-asgard", "core/masters-of-evil"],
+              "baseHenchmanPool": ["core/doombot-legion", "core/hand-ninjas"],
+              "schemes": {
+                "midtown-bank-robbery": {
+                  "schemeName": "Midtown Bank Robbery",
+                  "villainPool": ["core/hydra", "core/masters-of-evil", "core/enemies-of-asgard", "core/brotherhood"],
+                  "henchmanPool": ["core/doombot-legion", "core/hand-ninjas"],
+                  "variety": "Masters of Evil promoted ahead of Brotherhood"
+                },
+                "secret-invasion-of-the-skrull-shapeshifters": {
+                  "schemeName": "Secret Invasion of the Skrull Shapeshifters",
+                  "villainPool": ["core/hydra", "core/brotherhood", "core/enemies-of-asgard", "core/masters-of-evil"],
+                  "henchmanPool": ["core/doombot-legion", "core/hand-ninjas"],
+                  "variety": null
+                },
+                "legacy-virus-the": {
+                  "schemeName": "Legacy Virus, The",
+                  "villainPool": ["core/hydra", "core/brotherhood", "core/enemies-of-asgard", "core/masters-of-evil"],
+                  "henchmanPool": ["core/doombot-legion", "core/hand-ninjas"],
+                  "variety": null
+                },
+                "negative-zone-prison-breakout": {
+                  "schemeName": "Negative Zone Prison Breakout",
+                  "villainPool": ["core/hydra", "core/brotherhood", "core/enemies-of-asgard", "core/masters-of-evil"],
+                  "henchmanPool": ["core/doombot-legion", "core/hand-ninjas"],
+                  "variety": null
+                },
+                "portals-to-the-dark-dimension": {
+                  "schemeName": "Portals to the Dark Dimension",
+                  "villainPool": ["core/hydra", "core/brotherhood", "core/enemies-of-asgard", "core/masters-of-evil"],
+                  "henchmanPool": ["core/hand-ninjas", "core/doombot-legion"],
+                  "variety": "Hand Ninjas lead ahead of Doombot Legion"
+                },
+                "replace-earths-leaders-with-killbots": {
+                  "schemeName": "Replace Earth's Leaders with Killbots",
+                  "villainPool": ["core/hydra", "core/masters-of-evil", "core/enemies-of-asgard", "core/brotherhood"],
+                  "henchmanPool": ["core/doombot-legion", "core/hand-ninjas"],
+                  "variety": "Masters of Evil promoted ahead of Brotherhood"
+                },
+                "super-hero-civil-war": {
+                  "schemeName": "Super Hero Civil War",
+                  "villainPool": ["core/hydra", "core/masters-of-evil", "core/enemies-of-asgard", "core/brotherhood"],
+                  "henchmanPool": ["core/doombot-legion", "core/hand-ninjas"],
+                  "variety": "Masters of Evil promoted ahead of Brotherhood"
+                },
+                "unleash-the-power-of-the-cosmic-cube": {
+                  "schemeName": "Unleash the Power of the Cosmic Cube",
+                  "villainPool": ["core/hydra", "core/brotherhood", "core/enemies-of-asgard", "core/masters-of-evil"],
+                  "henchmanPool": ["core/hand-ninjas", "core/doombot-legion"],
+                  "variety": "Hand Ninjas lead ahead of Doombot Legion"
+                }
+              }
+            },
+            "loki": {
+              "mastermindName": "Loki",
+              "anchorVillainGroup": "core/enemies-of-asgard",
+              "baseVillainPool": ["core/enemies-of-asgard", "core/brotherhood", "core/hydra", "core/masters-of-evil"],
+              "baseHenchmanPool": ["core/doombot-legion", "core/hand-ninjas"],
+              "schemes": {
+                "midtown-bank-robbery": {
+                  "schemeName": "Midtown Bank Robbery",
+                  "villainPool": ["core/enemies-of-asgard", "core/brotherhood", "core/hydra", "core/masters-of-evil"],
+                  "henchmanPool": ["core/doombot-legion", "core/hand-ninjas"],
+                  "variety": null
+                },
+                "secret-invasion-of-the-skrull-shapeshifters": {
+                  "schemeName": "Secret Invasion of the Skrull Shapeshifters",
+                  "villainPool": ["core/radiation", "core/brotherhood", "core/hydra", "core/masters-of-evil"],
+                  "henchmanPool": ["core/doombot-legion", "core/hand-ninjas"],
+                  "variety": "Radiation replace Enemies of Asgard"
+                },
+                "legacy-virus-the": {
+                  "schemeName": "Legacy Virus, The",
+                  "villainPool": ["core/enemies-of-asgard", "core/brotherhood", "core/hydra", "core/masters-of-evil"],
+                  "henchmanPool": ["core/savage-land-mutates", "core/hand-ninjas"],
+                  "variety": "Savage Land Mutates replace Doombot Legion"
+                },
+                "negative-zone-prison-breakout": {
+                  "schemeName": "Negative Zone Prison Breakout",
+                  "villainPool": ["core/enemies-of-asgard", "core/brotherhood", "core/hydra", "core/masters-of-evil"],
+                  "henchmanPool": ["core/savage-land-mutates", "core/hand-ninjas"],
+                  "variety": "Savage Land Mutates replace Doombot Legion"
+                },
+                "portals-to-the-dark-dimension": {
+                  "schemeName": "Portals to the Dark Dimension",
+                  "villainPool": ["core/radiation", "core/brotherhood", "core/hydra", "core/masters-of-evil"],
+                  "henchmanPool": ["core/doombot-legion", "core/hand-ninjas"],
+                  "variety": "Radiation replace Enemies of Asgard"
+                },
+                "replace-earths-leaders-with-killbots": {
+                  "schemeName": "Replace Earth's Leaders with Killbots",
+                  "villainPool": ["core/enemies-of-asgard", "core/brotherhood", "core/hydra", "core/masters-of-evil"],
+                  "henchmanPool": ["core/doombot-legion", "core/hand-ninjas"],
+                  "variety": null
+                },
+                "super-hero-civil-war": {
+                  "schemeName": "Super Hero Civil War",
+                  "villainPool": ["core/radiation", "core/brotherhood", "core/hydra", "core/masters-of-evil"],
+                  "henchmanPool": ["core/doombot-legion", "core/hand-ninjas"],
+                  "variety": "Radiation replace Enemies of Asgard"
+                },
+                "unleash-the-power-of-the-cosmic-cube": {
+                  "schemeName": "Unleash the Power of the Cosmic Cube",
+                  "villainPool": ["core/enemies-of-asgard", "core/brotherhood", "core/hydra", "core/masters-of-evil"],
+                  "henchmanPool": ["core/doombot-legion", "core/hand-ninjas"],
+                  "variety": null
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
