@@ -7,6 +7,36 @@
 
 ## Current State
 
+### WP-468 / EC-503 — Coverage-Matrix Dropdown Readability + Collapsible Masterminds (2026-07-30)
+
+**User-Visible Surface = `legends.legendary-arena.com`.** **D-24026 deploy
+live-verify operator-pending**; **live browser verify passed** (below). No D-entry
+(presentation-only).
+
+Two operator-directed changes to the legends gauntlet index: **(1)** the
+`.download-select` `<option>` text was the dark-theme light colour, so it was
+invisible against the native (light) dropdown popup until the blue hover highlight
+— options now render explicit dark-on-light (`#111827` / `#fff`) so values read when
+not highlighted (covers the download count/division selects **and** the
+coverage-matrix count select; the closed control keeps its light-on-dark toolbar
+styling). **(2)** collapsible masterminds — each mastermind's 8 scheme rows collapse
+under a clickable full-width `<button>` in the matrix group-header (`aria-expanded`
++ ▸/▾ caret); the scheme `<tr>` is `v-if` on `isMastermindExpanded`, **default
+collapsed**, so the matrix opens compact (4 mastermind headers) and the operator
+expands one at a time — avoiding the 32-row vertical scroll and keeping the rotated
+column headings lined up with the visible data. Single-file `GauntletIndexPanel.vue`
+(scoped CSS + template + a reactive `expandedMasterminds` record);
+`buildCoverageMatrix`, the data, ✓ cells/links, count selector, rotated headings,
+and scheme-wrap are unchanged. legends-board 123/0, vue-tsc 0, build 0; `pnpm -r
+build` 0.
+
+**Live verification** (port now pinned to 5173 by #1112): option computed `color:
+rgb(17,24,39)` on white, closed select light; the matrix opened with 4 collapsed
+mastermind toggle-headers (`aria-expanded=false`, 0 scheme rows); clicking Magneto
+revealed its 8 scheme rows with `aria-expanded=true` + caret ▾; clicking again
+collapsed back to 0 (measured after Vue's re-render, not the WP-467 synchronous
+mistake).
+
 ### WP-467 / EC-502 — Fix the Coverage-Matrix Scheme-Name Wrap (2026-07-30)
 
 **User-Visible Surface = `legends.legendary-arena.com`.** **D-24026 deploy
