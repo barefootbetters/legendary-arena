@@ -273,6 +273,23 @@ function isMatrixMastermindStart(rowIndex: number): boolean {
   }
   return currentRow.mastermindSlug !== previousRow.mastermindSlug;
 }
+
+// why: WP-468 — each mastermind's 8 scheme rows collapse under a clickable header
+// so the matrix opens compact (just the 4 mastermind headers) and the operator
+// expands one at a time — avoiding the 32-row vertical scroll and keeping the
+// rotated column headings close to the visible data. Default collapsed; the record
+// holds only the masterminds the operator has expanded.
+const expandedMasterminds = reactive<Record<string, boolean>>({});
+
+/** Whether a mastermind's scheme rows are expanded (default collapsed). */
+function isMastermindExpanded(mastermindSlug: string): boolean {
+  return expandedMasterminds[mastermindSlug] ?? false;
+}
+
+/** Toggles a mastermind's scheme rows open/closed. */
+function toggleMastermind(mastermindSlug: string): void {
+  expandedMasterminds[mastermindSlug] = !isMastermindExpanded(mastermindSlug);
+}
 </script>
 
 <template>
@@ -561,9 +578,21 @@ function isMatrixMastermindStart(rowIndex: number): boolean {
                         :colspan="coreCoverageMatrix.columns.length + 1"
                         scope="colgroup"
                         class="coverage-matrix-mm-header"
-                      >{{ formatCardDisplayName(row.mastermindName) }}</th>
+                      >
+                        <!-- why: WP-468 — the mastermind header toggles its scheme
+                             rows so the matrix opens compact and stays lined up. -->
+                        <button
+                          type="button"
+                          class="coverage-matrix-mm-toggle"
+                          :aria-expanded="isMastermindExpanded(row.mastermindSlug)"
+                          @click="toggleMastermind(row.mastermindSlug)"
+                        >
+                          <span class="coverage-matrix-mm-caret" aria-hidden="true">{{ isMastermindExpanded(row.mastermindSlug) ? "▾" : "▸" }}</span>
+                          {{ formatCardDisplayName(row.mastermindName) }}
+                        </button>
+                      </th>
                     </tr>
-                    <tr>
+                    <tr v-if="isMastermindExpanded(row.mastermindSlug)">
                       <th scope="row" class="coverage-matrix-rowhead"><span class="coverage-matrix-scheme-text">{{ formatCardDisplayName(row.schemeName) }}</span></th>
                       <td
                         v-for="(cell, columnIndex) of row.cells"
@@ -831,6 +860,17 @@ function isMatrixMastermindStart(rowIndex: number): boolean {
   font-variant-numeric: tabular-nums;
 }
 
+/* why: WP-468 — the native <select> dropdown popup renders on a light OS
+   background, so the inherited light (dark-theme) option text was invisible until
+   hovered (the OS highlight is blue + white). Give the option list explicit
+   dark-on-light so every value reads when NOT highlighted; the closed control keeps
+   its light-on-dark toolbar styling above. Covers the download count/division
+   selects and the coverage-matrix count select (all `.download-select`). */
+.download-select option {
+  color: #111827;
+  background: #ffffff;
+}
+
 .download-button {
   padding: 0.2rem 0.7rem;
   border-radius: 12px;
@@ -1029,6 +1069,28 @@ function isMatrixMastermindStart(rowIndex: number): boolean {
   color: var(--la-color-gold-bright);
   font-weight: 700;
   border-top: 1px solid var(--la-color-border-subtle);
+}
+
+/* why: WP-468 — the mastermind header is a full-width toggle button styled to read
+   as the header text (transparent, no chrome) while staying keyboard/click-operable. */
+.coverage-matrix-mm-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.coverage-matrix-mm-caret {
+  font-size: 0.7rem;
+  color: var(--la-color-text-secondary);
 }
 
 .coverage-matrix-check {
