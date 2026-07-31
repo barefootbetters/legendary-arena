@@ -878,32 +878,37 @@ function revealOrWoundTimingLabel(timing: VillainAbilityTiming): string {
 }
 
 /**
- * Returns whether a player's HAND holds a Hero whose trait matches the predicate.
+ * Returns whether a player HAS a Hero — in hand OR in play — whose trait matches
+ * the predicate.
  *
- * Scans `zones.hand` ONLY (never inPlay/discard/deck) via the setup-time
- * `G.cardTraits` snapshot: a `team` predicate needs a card whose `trait.team`
- * equals the (normalized) value, a `hero-class` predicate needs `trait.heroClass`.
+ * Scans the passed card ext_ids (the player's hand + in-play zones) via the
+ * setup-time `G.cardTraits` snapshot: a `team` predicate needs a card whose
+ * `trait.team` equals the (normalized) value, a `hero-class` predicate needs
+ * `trait.heroClass`.
  *
- * @param hand - The player's hand zone (CardExtId strings).
+ * @param cardIds - The player's hand + in-play card ext_ids.
  * @param cardTraits - The setup-time `{ team, heroClass }` trait snapshot.
  * @param kind - The predicate kind ('team' | 'hero-class').
  * @param value - The normalized trait slug to match.
- * @returns True when the hand holds at least one matching Hero.
+ * @returns True when the player has at least one matching Hero in hand or in play.
  */
-// why: D-24281 — HAND ONLY, deliberately NARROWER than the D-24076 defeat
-// requirement's hand+inPlay `playerMeetsDefeatRequirement`. In Legendary
-// "reveal a Hero" is a HAND action — a Hero already in play is not "revealed" —
-// so this is a new hand-only helper rather than a reuse of that predicate (which
-// is a different rule and must not be modified). The `value` is already
-// normalized to the cardTraits slug space at parse time (normalizeTraitSlug), so
-// the `===` comparison is casing/whitespace-safe. No `.reduce()`.
-function handHasHeroMatchingTrait(
-  hand: readonly CardExtId[],
+// why: D-24281 (AMENDED 2026-07-31) — scans HAND + IN-PLAY, matching the D-24076
+// defeat-requirement's `playerMeetsDefeatRequirement` scope. WP-469 originally
+// shipped this HAND-ONLY ("the printed reveal is a hand action"), but the
+// Fight/Ambush/Escape effect resolves AFTER the play phase, so a Hero the player
+// already played this turn sits in `inPlay`, not `hand` — hand-only then wounded a
+// player who plainly HAS a qualifying Hero (live Magneto match, 2026-07-31: fought
+// Sabretooth having already played Wolverine → wrongly wounded). Counting in-play
+// too makes "you have an X-Men Hero" satisfy the reveal, as the operator ruled.
+// Discard + deck stay excluded (only hand + play are "revealable"). `value` is
+// normalized at parse time, so `===` is casing/whitespace-safe. No `.reduce()`.
+function playerHasHeroMatchingTrait(
+  cardIds: readonly CardExtId[],
   cardTraits: LegendaryGameState['cardTraits'],
   kind: 'team' | 'hero-class',
   value: string,
 ): boolean {
-  for (const cardId of hand) {
+  for (const cardId of cardIds) {
     const trait = cardTraits[cardId];
     if (trait === undefined) {
       continue;
@@ -919,15 +924,15 @@ function handHasHeroMatchingTrait(
 }
 
 /**
- * reveal-or-wound primitive — each player either reveals (from hand) a Hero whose
- * trait matches the descriptor's predicate, or — only when they hold no match —
- * gains a Wound (D-24281 / WP-469). Sabretooth's "Fight: Each player reveals an
- * X-Men Hero or gains a Wound." and the core siblings (Frost Giant, Ymir, Ultron,
- * Zzzax) across Fight / Ambush / Escape timings.
+ * reveal-or-wound primitive — each player either reveals (from hand OR play) a Hero
+ * whose trait matches the descriptor's predicate, or — only when they have no match —
+ * gains a Wound (D-24281 / WP-469; amended 2026-07-31 to count in-play Heroes).
+ * Sabretooth's "Fight: Each player reveals an X-Men Hero or gains a Wound." and the
+ * core siblings (Frost Giant, Ymir, Ultron, Zzzax) across Fight / Ambush / Escape timings.
  *
  * Auto-resolved (a Wound-averse player always reveals when able, so no player
  * choice is parked) and deterministic — each player in
- * `Object.keys(G.playerZones).sort()`, the HAND-only trait predicate, one Wound on
+ * `Object.keys(G.playerZones).sort()`, the hand+in-play trait predicate, one Wound on
  * no match. Self-narrates via `pushLog` (like scry-ko, reveal-or-wound is not a
  * legacy keyword — `descriptorToLegacyKeyword` returns undefined, so no
  * `VillainEffectResult` is recorded and the generic `<timing> effect:` line never
@@ -959,11 +964,19 @@ function villainEffectRevealOrWound(
     if (!zones) {
       continue;
     }
-    if (handHasHeroMatchingTrait(zones.hand, G.cardTraits, requireKind, requireValue)) {
-      // why: revealed a matching Hero — no Wound, no mutation.
+    if (
+      playerHasHeroMatchingTrait(
+        [...zones.hand, ...zones.inPlay],
+        G.cardTraits,
+        requireKind,
+        requireValue,
+      )
+    ) {
+      // why: the player HAS a matching Hero in hand or in play — no Wound, no
+      // mutation (D-24281 amended: in-play Heroes count, see the helper).
       continue;
     }
-    // why: no matching Hero in hand — gain one Wound. Empty pile is a reachable
+    // why: no matching Hero in hand or in play — gain one Wound. Empty pile is a reachable
     // no-op (mirrors gain-wound:each): the player is NOT counted as wounded, so
     // the narration below stays honest.
     if (G.piles.wounds.length === 0) {
