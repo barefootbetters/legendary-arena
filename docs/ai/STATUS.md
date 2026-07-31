@@ -7,6 +7,33 @@
 
 ## Current State
 
+### WP-467 / EC-502 — Fix the Coverage-Matrix Scheme-Name Wrap (2026-07-30)
+
+**User-Visible Surface = `legends.legendary-arena.com`.** **D-24026 deploy
+live-verify operator-pending**; **real-geometry DOM verify passed** (below). No
+D-entry (presentation-only bug fix).
+
+Fixes the WP-466 scheme-name wrap, which did **not** take effect on the deployed
+page (operator-reported: a long scheme name stayed on one line and bled into the ✓
+columns). **Two root causes:** the general `.coverage-matrix-table th { white-space:
+nowrap }` rule **out-specifies** the `.coverage-matrix-rowhead` class on the same
+`<th>`, and `max-width` on a `<th>` is **ignored under auto table-layout**. **Fix:**
+the scheme name now lives in an inner **inline-block `<span>`** carrying the wrap +
+width bound (`display: inline-block; max-width: 8.5rem; white-space: normal;
+overflow-wrap`), which the cell sizes to and auto-layout cannot override; the
+ineffective props are trimmed off `.coverage-matrix-rowhead`. Single-file
+`GauntletIndexPanel.vue`; `buildCoverageMatrix`, the mastermind grouping, rotated
+headings, ✓ cells/links, and the count selector are unchanged. legends-board 123/0,
+vue-tsc 0, build 0; `pnpm -r build` 0.
+
+**Own miss corrected:** WP-466's scheme-wrap AC was falsely passed on a flawed
+dev-pane measurement — the pane wasn't compositing, so the 0-width viewport made a
+`<th>` height read as if wrapped. This WP verifies on **real intrinsic geometry**
+(measuring the span, whose bounded width lays out even in the hidden pane): the long
+"Replace Earth's Leaders with Killbots" span is **28px tall (2 lines)** bounded at
+136px, the short "The Legacy Virus" is 14px (1 line), and the scheme cell's right
+edge sits exactly at the first ✓ cell's left edge (**0px overlap** — no bleed).
+
 ### WP-466 / EC-501 — Compact the Core Coverage Matrix (Remove Horizontal Scroll) (2026-07-30)
 
 **User-Visible Surface = `legends.legendary-arena.com`.** **D-24026 deploy
