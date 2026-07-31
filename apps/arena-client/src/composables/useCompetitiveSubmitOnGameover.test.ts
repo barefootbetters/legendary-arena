@@ -117,6 +117,35 @@ test('a 200 wasExisting maps to already; a non-200 maps to failed', async () => 
   }
 });
 
+// why: WP-465 — a `par_not_published` rejection (the match is not a ranked-gauntlet
+// loadout) is PERMANENT ineligibility, not a transient failure, so it maps to the
+// distinct `'ineligible'` status; every other non-200 reason still maps to `'failed'`.
+test('a par_not_published rejection maps to ineligible; another reason maps to failed', async () => {
+  setActivePinia(createPinia());
+  const ineligibleStub = installFetchStub(422, { error: 'par_not_published' });
+  try {
+    useAuthStore().setSession('token-abc', null);
+    useUiStateStore().setSnapshot(loadUiStateFixture('endgame-win'));
+    const { submissionStatus } = useCompetitiveSubmitOnGameover(ref('match-1'));
+    await flush();
+    assert.equal(submissionStatus.value, 'ineligible');
+  } finally {
+    ineligibleStub.restore();
+  }
+
+  setActivePinia(createPinia());
+  const otherFailStub = installFetchStub(500, { error: 'internal_error' });
+  try {
+    useAuthStore().setSession('token-abc', null);
+    useUiStateStore().setSnapshot(loadUiStateFixture('endgame-win'));
+    const { submissionStatus } = useCompetitiveSubmitOnGameover(ref('match-1'));
+    await flush();
+    assert.equal(submissionStatus.value, 'failed');
+  } finally {
+    otherFailStub.restore();
+  }
+});
+
 test('does not re-fire the submit across a gameover re-transition (fire-once guard)', async () => {
   setActivePinia(createPinia());
   const stub = installFetchStub(200, { record: {}, wasExisting: false });
