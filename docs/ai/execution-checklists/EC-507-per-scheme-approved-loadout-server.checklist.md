@@ -4,8 +4,11 @@
 **Layer:** Server (`apps/server`) — legends module registry-free (injected data)
 
 ## Before Starting
-- [ ] WP-471 ✅ merged (`getGauntletConfig(setAbbr, mastermindSlug, schemeSlug,
-      playerCount)` + `getActiveYear` exist).
+- [ ] WP-471 ✅ merged (#1122) (`getGauntletConfig(setAbbr, mastermindSlug, schemeSlug,
+      playerCount)` + `getActiveYear` exist). **The loader reads the hand-authored
+      `data/gauntlet-configs.json` (Core-only, #1116), returns full ext_ids, and returns
+      `undefined` for any absent leg → consumer falls back to `GAUNTLET_LOADOUT_MENUS`.
+      There is NO seeded non-Core data; the per-scheme map is an OVERLAY over the menu.**
 - [ ] On `origin/main` (post-WP-471), worktree clean; server green.
 - [ ] **`competitive_scores` is empty** (`SELECT count(*)`), so re-keying qualification
       re-keys nothing. If NOT empty: any historical row on a now-swapped scheme that used
@@ -38,7 +41,11 @@
 - Run-tracker leg-clear (`gauntletRunProgress.logic.ts`) + per-leg launch
   (`resolveGauntletRunProgressInputs`, `GauntletRunLaunch`) are **OUT** → WP-473.
 - Wiring builds the per-(set/mastermind/scheme) map from the WP-471 loader
-  (`getActiveYear`); legends module stays registry-free (injected via the catalog path).
+  (`getActiveYear`) as an **overlay over** the per-mastermind menu loop: add a map entry
+  only where `getGauntletConfig` returns a value (authored/Core legs); a leg where it
+  returns `undefined` gets NO entry and resolves to the per-mastermind menu (qualification
+  `?? approvedLoadouts`, and the effective leg-stamp/publish). Legends module stays
+  registry-free (injected via the catalog path).
 - `ScenarioKey` / `henchman_key` / scoring math UNCHANGED; PAR count unchanged.
 - **Land D-24283** (reserved → Active): supersedes D-24278's per-mastermind axis;
   keeps 1 variant per leg + D-24199 core rule; PAR ~2,118 unchanged; zero migration.
@@ -56,7 +63,8 @@
 - Why the legends module still imports no registry (injected per-scheme map).
 
 ## Files to Produce
-- `server.mjs` — per-(set/mastermind/scheme) approved map from the WP-471 loader.
+- `server.mjs` — per-(set/mastermind/scheme) approved-map OVERLAY from the WP-471 loader
+  (entry only where `getGauntletConfig` is non-undefined; menu is the baseline/fallback).
 - `gauntlet.logic.ts` — build the scheme-keyed `ReadonlyMap` + additive per-leg stamp (type preserved);
   `getGauntletStandings` passes the leg's config; `buildSetDetailsCatalog` coverage
   recompute (+ test: reject a wrong-scheme match; coverage counts any-leg use).
@@ -76,5 +84,7 @@
 ## Common Failure Smells
 - A wrong-scheme run still qualifies → `matchesApprovedLoadout` didn't select by the
   parsed scheme, or the per-scheme map wasn't threaded.
-- Non-Core standings/publish drifted → the injected map isn't seeded-equivalent.
+- Non-Core standings/publish drifted → the overlay map isn't falling back to the
+  per-mastermind menu for absent legs (every non-Core leg: `getGauntletConfig` →
+  `undefined`), or the leg-stamp didn't use the effective (menu-fallback) loadout.
 - Legends module imports the registry → move the loader read to `server.mjs` (wiring).

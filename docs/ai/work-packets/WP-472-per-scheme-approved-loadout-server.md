@@ -33,9 +33,18 @@ still uses the mastermind default" gap is closed incrementally across WP-473/474
 
 ## Assumes
 
-- **On `origin/main` after WP-471 merges** — `packages/registry` exposes
+- **On `origin/main` after WP-471 merges (#1122)** — `packages/registry` exposes
   `getGauntletConfig(setAbbr, mastermindSlug, schemeSlug, playerCount)` +
   `getActiveYear()` from the year-keyed JSON. `apps/server` green.
+- **WP-471 shipped as a loader over the existing hand-authored `data/gauntlet-configs.json`
+  (authored #1116, Core-only today).** The loader returns full set-qualified ext_ids
+  (`villainGroupIds` / `henchmanGroupIds`) and — critically for this packet —
+  **`getGauntletConfig` returns `undefined` for ANY absent leg** (a non-Core set, or an
+  unswapped/absent scheme). An `undefined` result means "no per-scheme override": the
+  consumer falls back to the per-mastermind `GAUNTLET_LOADOUT_MENUS`. The loader never
+  synthesizes a composition and there is **no non-Core seeded data** in the JSON. This
+  packet's per-scheme map is therefore an **overlay** over the existing per-mastermind
+  menu, not a replacement of it. (See the WP-471 / EC-506 Execution Reconciliation.)
 - Chain map (2026-07-30): `matchesApprovedLoadout` (`gauntletTruth.logic.ts`) already
   receives `scenarioKey` (`scheme::mastermind::villains`) and parses `[2]` (villains)
   — the scheme `[0]` is in-hand, just unused. `server.mjs` wiring already gathers
@@ -57,10 +66,16 @@ draft in `DECISIONS.md`. Source: `server.mjs` (wiring ~607-660),
 
 ## Scope (In)
 
-- **`apps/server/src/server.mjs`** (01.5 wiring): build the approved-loadout map per
-  **(setAbbr/mastermindSlug/schemeSlug)** from the WP-471 loader (active year) — one
-  entry per leg per count — instead of the per-mastermind `GAUNTLET_LOADOUT_MENUS`
-  loop; pass it through the existing catalog-injection path.
+- **`apps/server/src/server.mjs`** (01.5 wiring): build the per-scheme approved-loadout
+  map per **(setAbbr/mastermindSlug/schemeSlug)** as an **overlay over** the existing
+  per-mastermind `GAUNTLET_LOADOUT_MENUS` loop (NOT a replacement). Iterate the menus as
+  the baseline; for each leg × count call `getGauntletConfig(setAbbr, mastermindSlug,
+  schemeSlug, count)` and add an entry to the per-scheme map **only when it returns a
+  value** (an authored per-scheme override — Core today). When it returns `undefined`
+  (every non-Core leg, and unswapped Core schemes), add **no** map entry — that leg is
+  served by the per-mastermind menu via the downstream `?? approvedLoadouts` fallback.
+  Pass both the per-mastermind menu (baseline) and the per-scheme overlay map through the
+  existing catalog-injection path.
 - **`apps/server/src/legends/gauntletTruth.logic.ts`** (the exact additive signature —
   do NOT deviate): `matchesApprovedLoadout`'s signature is **unchanged**;
   `qualifiesAsLegClear` gains **exactly one new optional trailing parameter**
@@ -76,13 +91,17 @@ draft in `DECISIONS.md`. Source: `server.mjs` (wiring ~607-660),
   per-scheme wiring) and passes it as the new optional arg to `qualifiesAsLegClear`; the
   scheme it keys by is `replay.scenarioKey.split('::')[0]` (already computed for score
   bucketing). `definition.approvedLoadouts` (per-mastermind) stays populated as the
-  fallback; `buildGauntletCatalog` stamps the per-scheme loadout onto each `GauntletLeg`
-  **additively** (a new leg field), leaving the entry-level menu in place.
+  fallback; `buildGauntletCatalog` stamps each `GauntletLeg`'s loadout **additively** (a
+  new leg field) as the **effective** loadout — the per-scheme overlay entry when present,
+  else the leg's per-mastermind menu loadout — so **every** leg (Core-swapped, Core-
+  unswapped, and non-Core) carries a leg-level loadout to publish, leaving the entry-level
+  menu in place.
 - **`apps/server/src/legends/gauntlet.logic.ts §coverage`**: `buildSetDetailsCatalog`
-  (D-24279 `usedByGauntlets` flags) recomputes against the per-scheme configs — a
-  villain/henchman group counts as "used" if it appears in **any leg's** approved config,
-  so per-scheme changes the coverage set. `buildGauntletCatalog` stamps the per-scheme
-  loadout onto each `GauntletDefinition` leg.
+  (D-24279 `usedByGauntlets` flags) recomputes against each leg's **effective** config
+  (per-scheme overlay where present, else the per-mastermind menu) — a villain/henchman
+  group counts as "used" if it appears in **any leg's** effective config, so per-scheme
+  overrides grow the coverage set, never shrink it. `buildGauntletCatalog` stamps the
+  effective loadout onto each `GauntletDefinition` leg.
 - **`apps/server/src/legends/legends.publisher.ts`**: `buildPublishedApprovedLoadouts`
   emits per-scheme; attach the per-count loadout to each **`GauntletIndexLeg`**.
 - **`apps/server/src/legends/legends.types.ts`**: **add** the published approved loadout
@@ -128,7 +147,12 @@ draft in `DECISIONS.md`. Source: `server.mjs` (wiring ~607-660),
 **Locked:** approved loadout keyed per (scheme × mastermind × count); published on
 `GauntletIndexLeg`; `matchesApprovedLoadout` selects by the leg scheme parsed from
 `scenarioKey`; D-24199 core rule + `ScenarioKey`/`henchman_key` shapes unchanged;
-PAR scenario count unchanged (~2,118 — one config per leg per count, as before).
+PAR scenario count unchanged (~2,118 — one config per leg per count, as before). **The
+per-scheme map is an OVERLAY over the per-mastermind menu:** `getGauntletConfig` returns
+`undefined` for any leg with no authored override (all non-Core, unswapped Core), and that
+leg resolves to the per-mastermind `GAUNTLET_LOADOUT_MENUS` everywhere (qualification via
+`?? approvedLoadouts`, and the effective leg-stamp/publish). The JSON is Core-only
+(#1116); there is no seeded non-Core data to read.
 
 ## Acceptance Criteria
 
@@ -138,7 +162,10 @@ PAR scenario count unchanged (~2,118 — one config per leg per count, as before
 - [ ] `matchesApprovedLoadout` qualifies a run only against **its leg's** approved
       config; a run matching a *different* scheme's villains of the same mastermind
       is rejected (new test).
-- [ ] Non-Core gauntlets qualify + publish identically to today (seeded configs).
+- [ ] Non-Core gauntlets qualify + publish identically to today **via the per-mastermind
+      menu fallback** — `getGauntletConfig` returns `undefined` for every non-Core leg (the
+      JSON is Core-only), so the per-scheme overlay map has no entry and both qualification
+      (`?? approvedLoadouts`) and the leg-stamp/publish resolve to the per-mastermind menu.
 - [ ] `buildSetDetailsCatalog` coverage uses **union-over-legs** semantics, not
       single-leg: the Core coverage input marks `radiation` **used** (it now appears in
       Loki's 3 swapped schemes) **and** still marks `enemies-of-asgard` **used** (still on
