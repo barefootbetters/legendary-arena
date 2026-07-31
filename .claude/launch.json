@@ -53,7 +53,7 @@
         "@legendary-arena/legends-board",
         "dev"
       ],
-      "autoPort": true
+      "port": 5173
     }
   ]
 }
