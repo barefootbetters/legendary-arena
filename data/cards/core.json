@@ -2013,8 +2013,8 @@
           "vAttack": "5",
           "imageUrl": "https://images.legendary-arena.com/core/core-vi-brotherhood-sabretooth.webp",
           "abilities": [
-            "Fight: Each player reveals an [team:x-men] Hero or gains a Wound.",
-            "Escape: Same effect."
+            "Fight: Each player reveals an [team:x-men] Hero or gains a Wound. [effect:reveal-or-wound:team:x-men]",
+            "Escape: Same effect. [effect:reveal-or-wound:team:x-men]"
           ],
           "copies": 2
         }
@@ -2058,8 +2058,8 @@
           "vAttack": "4",
           "imageUrl": "https://images.legendary-arena.com/core/core-vi-enemies-of-asgard-frost-giant.webp",
           "abilities": [
-            "Fight: Each player reveals a [hc:ranged] Hero or gains a Wound.",
-            "Escape: Same effect."
+            "Fight: Each player reveals a [hc:ranged] Hero or gains a Wound. [effect:reveal-or-wound:hc:ranged]",
+            "Escape: Same effect. [effect:reveal-or-wound:hc:ranged]"
           ],
           "copies": 3
         },
@@ -2070,7 +2070,7 @@
           "vAttack": "6",
           "imageUrl": "https://images.legendary-arena.com/core/core-vi-enemies-of-asgard-ymir-frost-giant-king.webp",
           "abilities": [
-            "Ambush: Each player reveals a [hc:ranged] Hero or gains a Wound.",
+            "Ambush: Each player reveals a [hc:ranged] Hero or gains a Wound. [effect:reveal-or-wound:hc:ranged]",
             "Fight: Choose a player. That player KOs any number of Wounds from their hand and discard pile."
           ],
           "copies": 2
@@ -2170,7 +2170,7 @@
           "imageUrl": "https://images.legendary-arena.com/core/core-vi-masters-of-evil-ultron.webp",
           "abilities": [
             "Ultron is worth +1[icon:piercing] for each [hc:tech] Hero you have among all your cards at the end of the game.",
-            "Escape: Each player reveals a [hc:tech] Hero or gains a Wound."
+            "Escape: Each player reveals a [hc:tech] Hero or gains a Wound. [effect:reveal-or-wound:hc:tech]"
           ],
           "copies": 2
         },
@@ -2233,8 +2233,8 @@
           "vAttack": "5",
           "imageUrl": "https://images.legendary-arena.com/core/core-vi-radiation-zzzax.webp",
           "abilities": [
-            "Fight: Each player reveals a [hc:strength] Hero or gains a Wound.",
-            "Escape: Same effect."
+            "Fight: Each player reveals a [hc:strength] Hero or gains a Wound. [effect:reveal-or-wound:hc:strength]",
+            "Escape: Same effect. [effect:reveal-or-wound:hc:strength]"
           ],
           "copies": 2
         }

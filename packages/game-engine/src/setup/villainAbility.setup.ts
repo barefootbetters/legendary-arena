@@ -26,6 +26,13 @@ import {
   VILLAIN_EFFECT_PRIMITIVES,
   LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR,
 } from '../rules/villainAbility.types.js';
+// why: D-24281 — reveal-or-wound stores its `requireValue` normalized to the
+// `cardTraits` slug space so the executor's `===` trait comparison is
+// casing/whitespace-safe. normalizeTraitSlug is the SINGLE canonical normalizer
+// (traits.normalize.ts), the same one buildCardTraits + the D-24076 defeat-
+// requirement setup use — reusing it here keeps marker values and trait slugs
+// in one space; a second normalizer would be a drift source.
+import { normalizeTraitSlug } from '../state/traits.normalize.js';
 // why: D-18704 / D-18706 — villain hooks must key by the copy-indexed
 // instance ext_id (matching the Fight/Ambush fire sites that pass a zone id),
 // fanning out exactly like the henchman path already does. The shared emitter
@@ -227,6 +234,7 @@ function parsePositiveInteger(token: string): number | null {
  *   - `ko-hero:current` | `ko-hero:each:<N>`
  *   - `gain-wound:current` | `gain-wound:each`
  *   - `capture-hq-hero:rightmost` | `:highest-cost` | `:lowest-cost`
+ *   - `reveal-or-wound:<kind>:<value>`  (kind `team` | `hc`; D-24281)
  *   - `hero-deck-top-to-escape` | `capture-bystander`  (no params)
  *
  * @param value - The raw marker value (the text inside `[effect:…]`).
@@ -287,6 +295,39 @@ function parseParameterizedEffect(
       return { primitive: 'capture-hq-hero', selector };
     }
     return null;
+  }
+  if (primitiveToken === 'reveal-or-wound') {
+    // why: D-24281 — grammar `reveal-or-wound:<kind>:<value>` (exactly 3 tokens).
+    // `kind` is the card-text namespace token `team` | `hc`; `hc` maps to the
+    // engine kind `hero-class` (mirroring the require-to-defeat marker's
+    // team/hc → team/hero-class mapping, D-24076). A wrong kind, a wrong token
+    // count, or an empty value falls through to null. The value is NORMALIZED to
+    // the cardTraits slug space so the handler's `===` match is casing/whitespace-
+    // safe and marker values live in one namespace with the trait snapshot.
+    if (parts.length !== 3) {
+      return null;
+    }
+    const kindToken = parts[1];
+    let requireKind: 'team' | 'hero-class';
+    if (kindToken === 'team') {
+      requireKind = 'team';
+    } else if (kindToken === 'hc') {
+      requireKind = 'hero-class';
+    } else {
+      return null;
+    }
+    const rawValue = parts[2] ?? '';
+    if (rawValue.length === 0) {
+      return null;
+    }
+    const requireValue = normalizeTraitSlug(rawValue);
+    // why: a value of only whitespace normalizes to '' — reject it so an empty
+    // predicate can never reach the handler (it would match no hero and wound
+    // every player unconditionally).
+    if (requireValue.length === 0) {
+      return null;
+    }
+    return { primitive: 'reveal-or-wound', requireKind, requireValue };
   }
   // why: hero-deck-top-to-escape and capture-bystander take no params; reject
   // any trailing colon-separated tokens so a malformed marker does not silently

@@ -837,11 +837,160 @@ function villainEffectGainAttachedHero(
   return { targets: [] };
 }
 
+/**
+ * Maps a villain ability timing to its human log-label ('Fight' / 'Ambush' /
+ * 'Escape') for the self-narrated reveal-or-wound line.
+ *
+ * The three fire sites hardcode "Fight effect:" / "Ambush effect:" / "Escape
+ * effect:" per site; reveal-or-wound fires at all three (Sabretooth Fight +
+ * Escape, Ymir Ambush, …) and self-narrates from one handler, so it needs the
+ * label from the timing it received.
+ *
+ * @param timing - The timing that fired ('onFight' | 'onAmbush' | 'onEscape').
+ * @returns The capitalized label matching the per-site convention.
+ */
+function revealOrWoundTimingLabel(timing: VillainAbilityTiming): string {
+  if (timing === 'onAmbush') {
+    return 'Ambush';
+  }
+  if (timing === 'onFight') {
+    return 'Fight';
+  }
+  // why: only 'onEscape' remains — the VillainAbilityTiming union is closed to
+  // the three values, so this is total without a default-throw.
+  return 'Escape';
+}
+
+/**
+ * Returns whether a player's HAND holds a Hero whose trait matches the predicate.
+ *
+ * Scans `zones.hand` ONLY (never inPlay/discard/deck) via the setup-time
+ * `G.cardTraits` snapshot: a `team` predicate needs a card whose `trait.team`
+ * equals the (normalized) value, a `hero-class` predicate needs `trait.heroClass`.
+ *
+ * @param hand - The player's hand zone (CardExtId strings).
+ * @param cardTraits - The setup-time `{ team, heroClass }` trait snapshot.
+ * @param kind - The predicate kind ('team' | 'hero-class').
+ * @param value - The normalized trait slug to match.
+ * @returns True when the hand holds at least one matching Hero.
+ */
+// why: D-24281 — HAND ONLY, deliberately NARROWER than the D-24076 defeat
+// requirement's hand+inPlay `playerMeetsDefeatRequirement`. In Legendary
+// "reveal a Hero" is a HAND action — a Hero already in play is not "revealed" —
+// so this is a new hand-only helper rather than a reuse of that predicate (which
+// is a different rule and must not be modified). The `value` is already
+// normalized to the cardTraits slug space at parse time (normalizeTraitSlug), so
+// the `===` comparison is casing/whitespace-safe. No `.reduce()`.
+function handHasHeroMatchingTrait(
+  hand: readonly CardExtId[],
+  cardTraits: LegendaryGameState['cardTraits'],
+  kind: 'team' | 'hero-class',
+  value: string,
+): boolean {
+  for (const cardId of hand) {
+    const trait = cardTraits[cardId];
+    if (trait === undefined) {
+      continue;
+    }
+    if (kind === 'team' && trait.team === value) {
+      return true;
+    }
+    if (kind === 'hero-class' && trait.heroClass === value) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * reveal-or-wound primitive — each player either reveals (from hand) a Hero whose
+ * trait matches the descriptor's predicate, or — only when they hold no match —
+ * gains a Wound (D-24281 / WP-469). Sabretooth's "Fight: Each player reveals an
+ * X-Men Hero or gains a Wound." and the core siblings (Frost Giant, Ymir, Ultron,
+ * Zzzax) across Fight / Ambush / Escape timings.
+ *
+ * Auto-resolved (a Wound-averse player always reveals when able, so no player
+ * choice is parked) and deterministic — each player in
+ * `Object.keys(G.playerZones).sort()`, the HAND-only trait predicate, one Wound on
+ * no match. Self-narrates via `pushLog` (like scry-ko, reveal-or-wound is not a
+ * legacy keyword — `descriptorToLegacyKeyword` returns undefined, so no
+ * `VillainEffectResult` is recorded and the generic `<timing> effect:` line never
+ * fires). Returns `{ targets: [] }`; the log line is the user-visible surface.
+ */
+function villainEffectRevealOrWound(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  _cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  const requireKind = descriptor.requireKind;
+  const requireValue = descriptor.requireValue;
+  // why: defensive — a well-formed reveal-or-wound descriptor always carries both
+  // predicate fields (parseParameterizedEffect sets them together, D-24281).
+  // A malformed hook lacking them cannot evaluate the predicate, so no player is
+  // wounded and the handler no-ops (never wounds everyone on an empty predicate).
+  // Reachable only via a hand-built test hook, never from the parser.
+  if (requireKind === undefined || requireValue === undefined) {
+    return { targets: [] };
+  }
+
+  // why: sorted player-id iteration for replay determinism (D-18902), matching
+  // the each-player gain-wound / ko-hero paths.
+  const woundedPlayerIds: string[] = [];
+  for (const playerId of Object.keys(G.playerZones).sort()) {
+    const zones = G.playerZones[playerId];
+    if (!zones) {
+      continue;
+    }
+    if (handHasHeroMatchingTrait(zones.hand, G.cardTraits, requireKind, requireValue)) {
+      // why: revealed a matching Hero — no Wound, no mutation.
+      continue;
+    }
+    // why: no matching Hero in hand — gain one Wound. Empty pile is a reachable
+    // no-op (mirrors gain-wound:each): the player is NOT counted as wounded, so
+    // the narration below stays honest.
+    if (G.piles.wounds.length === 0) {
+      continue;
+    }
+    const woundResult = gainWound(G.piles.wounds, zones.discard);
+    G.piles.wounds = woundResult.woundsPile;
+    zones.discard = woundResult.playerDiscard;
+    if (playerId === currentPlayer) {
+      // why: woundsDrawn projects the CURRENT player's wounds only (UI economy) —
+      // bump it only for the current player, parity with gain-wound:each and the
+      // escape-wound path; a non-current wounded player must not move it.
+      G.turnEconomy.woundsDrawn += 1;
+    }
+    woundedPlayerIds.push(playerId);
+  }
+
+  // why: self-narrate ONE line with the pinned templates (D-24281). reveal-or-wound
+  // is keyword-less so the result-recording path drops it; without this push the
+  // effect would land silently. `G.messages` is hash-excluded (D-24081), so this
+  // adds no replay surface. Outcome colour is honest per the WP-434 contract: the
+  // wound landed on ≥1 player → `applied`; every player revealed (the villain
+  // effect touched no one) → `blocked`.
+  const label = revealOrWoundTimingLabel(timing);
+  if (woundedPlayerIds.length > 0) {
+    const names = woundedPlayerIds.map((playerId) => `Player ${playerId}`).join(', ');
+    pushLog(
+      G,
+      `${label} effect: ${String(woundedPlayerIds.length)} player(s) had no matching Hero and gained a Wound (${names}).`,
+      'applied',
+    );
+  } else {
+    pushLog(G, `${label} effect: every player revealed a matching Hero.`, 'blocked');
+  }
+  return { targets: [] };
+}
+
 // why: D-24023 — the ImplementationMap keyed by primitive (mirrors WP-251's
-// HERO_EFFECT_HANDLERS). Full Record over the 7 primitives; the drift test
+// HERO_EFFECT_HANDLERS). Full Record over the 8 primitives; the drift test
 // asserts the key set equals VILLAIN_EFFECT_PRIMITIVES. Replaces the former
 // 10-arm switch on VillainEffectKeyword. `scry-ko-own-deck` appended by WP-447
-// (D-24267); `gain-attached-hero` (no-op) appended by WP-450 (D-24270).
+// (D-24267); `gain-attached-hero` (no-op) appended by WP-450 (D-24270);
+// `reveal-or-wound` appended by WP-469 (D-24281).
 /** Villain effect handlers keyed by primitive. Single dispatch source. */
 const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandler> = {
   'ko-hero': villainEffectKoHero,
@@ -851,6 +1000,7 @@ const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandl
   'capture-bystander': villainEffectCaptureBystander,
   'scry-ko-own-deck': villainEffectScryKoOwnDeck,
   'gain-attached-hero': villainEffectGainAttachedHero,
+  'reveal-or-wound': villainEffectRevealOrWound,
 };
 
 /**

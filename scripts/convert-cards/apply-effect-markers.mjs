@@ -111,10 +111,11 @@ function isLockedEffectKeyword(keyword) {
 // why: WP-252 / D-24023 — local hand-synced copy of the engine's
 // VILLAIN_EFFECT_PRIMITIVES (packages/game-engine/src/rules/villainAbility.types.ts).
 // Same no-import-from-packages discipline and loud-fail-on-drift posture as
-// VILLAIN_EFFECT_KEYWORDS above. The 7 primitives back the parameterized
+// VILLAIN_EFFECT_KEYWORDS above. The 8 primitives back the parameterized
 // [effect:<primitive>:<param>...] grammar the engine parser also accepts.
 // `scry-ko-own-deck` (no-param) appended by WP-447 (D-24267);
-// `gain-attached-hero` (no-param) appended by WP-450 (D-24270).
+// `gain-attached-hero` (no-param) appended by WP-450 (D-24270);
+// `reveal-or-wound` (:<kind>:<value>) appended by WP-469 (D-24281).
 const VILLAIN_EFFECT_PRIMITIVES = [
   'ko-hero',
   'gain-wound',
@@ -123,6 +124,7 @@ const VILLAIN_EFFECT_PRIMITIVES = [
   'capture-bystander',
   'scry-ko-own-deck',
   'gain-attached-hero',
+  'reveal-or-wound',
 ];
 
 /**
@@ -163,6 +165,13 @@ function isValidParameterizedEffectToken(token) {
       parts.length === 2 &&
       (parts[1] === 'rightmost' || parts[1] === 'highest-cost' || parts[1] === 'lowest-cost')
     );
+  }
+  if (primitive === 'reveal-or-wound') {
+    // why: D-24281 — grammar reveal-or-wound:<kind>:<value> (exactly 3 tokens);
+    // kind is the card-text namespace token team | hc; value is any non-empty slug
+    // (normalization happens engine-side at parse time). Mirrors the engine
+    // parser's reveal-or-wound branch so producer + consumer agree on the grammar.
+    return parts.length === 3 && (parts[1] === 'team' || parts[1] === 'hc') && parts[2].length > 0;
   }
   // why: hero-deck-top-to-escape and capture-bystander take no params.
   return parts.length === 1;

@@ -4,12 +4,12 @@
   "summary": {
     "totalRows": 715,
     "byStatus": {
-      "executable": 104,
+      "executable": 109,
       "deferred": 0,
       "unsupported": 1,
-      "unmarked": 610
+      "unmarked": 605
     },
-    "distinctMechanics": 11
+    "distinctMechanics": 12
   },
   "rows": [
     {
@@ -1766,11 +1766,11 @@
       "cardName": "Frost Giant",
       "set": "core",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "core-villain-spider-foes-green-goblin",
@@ -1865,11 +1865,11 @@
       "cardName": "Sabretooth",
       "set": "core",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "henchman-savage-land-mutates",
@@ -1986,11 +1986,11 @@
       "cardName": "Ultron",
       "set": "core",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "core-villain-spider-foes-venom",
@@ -2030,22 +2030,22 @@
       "cardName": "Ymir, Frost Giant King",
       "set": "core",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "core-villain-radiation-zzzax",
       "cardName": "Zzzax",
       "set": "core",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "cosm-villain-celestials-arishem-the-judge",
