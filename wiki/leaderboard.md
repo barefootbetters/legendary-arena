@@ -55,6 +55,7 @@ source:
   - ../packages/registry/src/playerCountSetup.ts
   - ../packages/registry/src/gauntletPack.ts
   - ../apps/server/src/legends/gauntletTruth.logic.ts
+  - ../data/gauntlet-configs.json
   - ../apps/server/src/gauntlet/gauntletRun.types.ts
   - ../apps/server/src/gauntlet/gauntletRun.logic.ts
   - ../apps/server/src/gauntlet/gauntletRun.routes.ts
@@ -290,6 +291,112 @@ published gauntlet index, which now carries `entryCounts` on all 110
 gauntlets). The remaining precondition for boards filling is data supply:
 authenticated players
 finishing winning matches.
+
+### Per-scheme adversary variety — the 2026 season configs (`data/gauntlet-configs.json`)
+
+> **Status: authored config data, not yet wired into gameplay.** This
+> subsection documents the season's authored gauntlet adversary
+> configurations. The data file is committed and canonical, but the
+> engine/leaderboard consumption of it — making each scheme actually field
+> its own adversaries, and "Play this leg" launch the right ones — is a
+> separate follow-on work packet. Until that lands, the live boards still
+> use the per-mastermind loadouts described above.
+
+The D-24199 note above collapses a mastermind's ranked adversaries to one
+canonical villain + henchmen loadout so PAR calibration stays reachable.
+The 2026 season **keeps that tractability but adds variety one level
+deeper**: each *leg* (a mastermind + scheme pairing) fields its own
+ordered adversary pools, so a mastermind's eight schemes no longer play
+identical villains. The scenario count is unchanged — `ScenarioKey` is
+already `scheme::mastermind::villains`, so a mastermind's schemes were
+always distinct keys; per-scheme variety only changes *which* villains a
+key carries, never *how many* keys exist.
+
+**Where the data lives:** `data/gauntlet-configs.json` — season-keyed
+(`years.2026`), then set → mastermind → scheme. Each leg stores an
+**ordered villain pool** (four groups) and **henchman pool** (two groups),
+anchor-first (the mastermind's always-leads group leads the villain pool).
+A given player count uses the first *N* of each pool, where *N* is the
+game's per-count setup requirement (villains 1/2/3/3/4, henchmen 1/1/1/2/2
+for 1–5 players). **Non-swapped legs reproduce the current generated
+loadouts exactly** — the variety is additive, scoped to the swapped legs
+below. Group identifiers are set-qualified ext_ids (`core/skrulls`).
+
+**Core Set, 2026 season** — 32 legs, 20 carrying variety (Dr. Doom 4,
+Magneto 6, Red Skull 5, Loki 5). Every swap keeps the fight *size*
+identical (same villain and henchman counts at every player count); it
+only varies *which* adversaries appear. Bold marks a leg's departure from
+its mastermind's base pool:
+
+#### Dr. Doom
+
+| Scheme | Villain pool (anchor-first) | Henchmen | Variety vs. base |
+|---|---|---|---|
+| Midtown Bank Robbery | Masters of Evil, Brotherhood, Enemies of Asgard, HYDRA | Doombot Legion, Hand Ninjas | — |
+| Secret Invasion of the Skrull Shapeshifters | Masters of Evil, Skrulls, Enemies of Asgard, HYDRA | Doombot Legion, Hand Ninjas | **Skrulls replace Brotherhood** |
+| Legacy Virus, The | Masters of Evil, Brotherhood, Enemies of Asgard, HYDRA | Doombot Legion, Hand Ninjas | — |
+| Negative Zone Prison Breakout | Masters of Evil, Skrulls, Enemies of Asgard, HYDRA | Doombot Legion, Hand Ninjas | **Skrulls replace Brotherhood** |
+| Portals to the Dark Dimension | Masters of Evil, Brotherhood, Enemies of Asgard, HYDRA | Doombot Legion, Hand Ninjas | — |
+| Replace Earth's Leaders with Killbots | Masters of Evil, Brotherhood, Enemies of Asgard, HYDRA | Doombot Legion, Hand Ninjas | — |
+| Super Hero Civil War | Masters of Evil, Skrulls, Enemies of Asgard, HYDRA | Doombot Legion, Hand Ninjas | **Skrulls replace Brotherhood** |
+| Unleash the Power of the Cosmic Cube | Masters of Evil, Skrulls, Enemies of Asgard, HYDRA | Doombot Legion, Hand Ninjas | **Skrulls replace Brotherhood** |
+
+#### Magneto
+
+| Scheme | Villain pool (anchor-first) | Henchmen | Variety vs. base |
+|---|---|---|---|
+| Midtown Bank Robbery | Brotherhood, Spider-Foes, HYDRA, Masters of Evil | Doombot Legion, Hand Ninjas | **Spider-Foes replace Enemies of Asgard** |
+| Secret Invasion of the Skrull Shapeshifters | Brotherhood, Enemies of Asgard, HYDRA, Masters of Evil | Doombot Legion, Hand Ninjas | — |
+| Legacy Virus, The | Brotherhood, Enemies of Asgard, HYDRA, Masters of Evil | Doombot Legion, Hand Ninjas | — |
+| Negative Zone Prison Breakout | Brotherhood, Enemies of Asgard, HYDRA, Masters of Evil | Savage Land Mutates, Hand Ninjas | **Savage Land Mutates replace Doombot Legion** |
+| Portals to the Dark Dimension | Brotherhood, Enemies of Asgard, HYDRA, Masters of Evil | Sentinel, Hand Ninjas | **Sentinel replace Doombot Legion** |
+| Replace Earth's Leaders with Killbots | Brotherhood, Enemies of Asgard, HYDRA, Masters of Evil | Sentinel, Hand Ninjas | **Sentinel replace Doombot Legion** |
+| Super Hero Civil War | Brotherhood, Spider-Foes, HYDRA, Masters of Evil | Doombot Legion, Hand Ninjas | **Spider-Foes replace Enemies of Asgard** |
+| Unleash the Power of the Cosmic Cube | Brotherhood, Enemies of Asgard, HYDRA, Masters of Evil | Savage Land Mutates, Hand Ninjas | **Savage Land Mutates replace Doombot Legion** |
+
+#### Red Skull
+
+| Scheme | Villain pool (anchor-first) | Henchmen | Variety vs. base |
+|---|---|---|---|
+| Midtown Bank Robbery | HYDRA, Masters of Evil, Enemies of Asgard, Brotherhood | Doombot Legion, Hand Ninjas | **Masters of Evil promoted ahead of Brotherhood** |
+| Secret Invasion of the Skrull Shapeshifters | HYDRA, Brotherhood, Enemies of Asgard, Masters of Evil | Doombot Legion, Hand Ninjas | — |
+| Legacy Virus, The | HYDRA, Brotherhood, Enemies of Asgard, Masters of Evil | Doombot Legion, Hand Ninjas | — |
+| Negative Zone Prison Breakout | HYDRA, Brotherhood, Enemies of Asgard, Masters of Evil | Doombot Legion, Hand Ninjas | — |
+| Portals to the Dark Dimension | HYDRA, Brotherhood, Enemies of Asgard, Masters of Evil | Hand Ninjas, Doombot Legion | **Hand Ninjas lead ahead of Doombot Legion** |
+| Replace Earth's Leaders with Killbots | HYDRA, Masters of Evil, Enemies of Asgard, Brotherhood | Doombot Legion, Hand Ninjas | **Masters of Evil promoted ahead of Brotherhood** |
+| Super Hero Civil War | HYDRA, Masters of Evil, Enemies of Asgard, Brotherhood | Doombot Legion, Hand Ninjas | **Masters of Evil promoted ahead of Brotherhood** |
+| Unleash the Power of the Cosmic Cube | HYDRA, Brotherhood, Enemies of Asgard, Masters of Evil | Hand Ninjas, Doombot Legion | **Hand Ninjas lead ahead of Doombot Legion** |
+
+#### Loki
+
+| Scheme | Villain pool (anchor-first) | Henchmen | Variety vs. base |
+|---|---|---|---|
+| Midtown Bank Robbery | Enemies of Asgard, Brotherhood, HYDRA, Masters of Evil | Doombot Legion, Hand Ninjas | — |
+| Secret Invasion of the Skrull Shapeshifters | Radiation, Brotherhood, HYDRA, Masters of Evil | Doombot Legion, Hand Ninjas | **Radiation replace Enemies of Asgard** |
+| Legacy Virus, The | Enemies of Asgard, Brotherhood, HYDRA, Masters of Evil | Savage Land Mutates, Hand Ninjas | **Savage Land Mutates replace Doombot Legion** |
+| Negative Zone Prison Breakout | Enemies of Asgard, Brotherhood, HYDRA, Masters of Evil | Savage Land Mutates, Hand Ninjas | **Savage Land Mutates replace Doombot Legion** |
+| Portals to the Dark Dimension | Radiation, Brotherhood, HYDRA, Masters of Evil | Doombot Legion, Hand Ninjas | **Radiation replace Enemies of Asgard** |
+| Replace Earth's Leaders with Killbots | Enemies of Asgard, Brotherhood, HYDRA, Masters of Evil | Doombot Legion, Hand Ninjas | — |
+| Super Hero Civil War | Radiation, Brotherhood, HYDRA, Masters of Evil | Doombot Legion, Hand Ninjas | **Radiation replace Enemies of Asgard** |
+| Unleash the Power of the Cosmic Cube | Enemies of Asgard, Brotherhood, HYDRA, Masters of Evil | Doombot Legion, Hand Ninjas | — |
+
+**Reading the swaps.** Dr. Doom fields **Skrulls** (in place of
+Brotherhood) on his four invasion- and breakout-flavored schemes. Magneto
+rotates through three flavors of his X-Men-adjacent rogues — **Spider-Foes**
+for villains, **Sentinel** and **Savage Land Mutates** for henchmen. Red
+Skull promotes **Masters of Evil** into the small-fight slot and leads with
+**Hand Ninjas** on two schemes. Loki fields **Radiation** in place of
+Enemies of Asgard on three schemes and **Savage Land Mutates** henchmen on
+two. Because a swap sits at a chosen pool position, it is visible even at
+low player counts — a two-player leg draws the first two villains, so a
+front-loaded swap changes the two-handed fight.
+
+> **One deliberate house-rule.** Loki's three Radiation legs field
+> Radiation *in place of* his always-leads Enemies of Asgard (a same-size
+> swap, per the "vary, don't grow" choice), so on those legs Loki does not
+> lead his signature group. This is intentional gauntlet curation, not a
+> setup bug — flag it if the intent was to *add* Radiation rather than
+> replace Enemies of Asgard.
 
 ### Fixed-hero-pool division (D-24187)
 
