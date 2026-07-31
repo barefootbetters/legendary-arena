@@ -59,6 +59,21 @@ export type {
   GauntletLoadoutMenu,
 } from "./gauntletLoadouts.js";
 
+// why: WP-471 / EC-506 — the year-keyed per-scheme gauntlet config loader. The
+// server truth + leaderboard (WP-472) reads these via the barrel to vary a
+// gauntlet's approved adversaries by scheme; the barrel uses explicit named
+// exports (no `export *`), so a new symbol is unreachable until added here.
+export {
+  getGauntletConfig,
+  getActiveYear,
+  validateGauntletConfigs,
+} from "./gauntletConfigs.js";
+export type {
+  GauntletConfigLeg,
+  GauntletConfigsFile,
+  GauntletConfigComposition,
+} from "./gauntletConfigs.js";
+
 // why: WP-440 / D-24260 — the identity-only Gauntlet Pack contract. The legends
 // download control (WP-2) builds this shape client-side and the server import
 // endpoint (WP-5) validates against the same strict schema, so a downloaded
