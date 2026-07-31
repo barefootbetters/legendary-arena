@@ -51,6 +51,10 @@ interface MakeGOptions {
   // and `cardDisplayData` so the KO'd card resolves to a display name.
   messages?: { text: string; outcome: string; card?: CardExtId }[];
   cardDisplayData?: Record<string, { name: string }>;
+  // why: WP-469 — reveal-or-wound reads G.cardTraits for the hand-only trait
+  // predicate; supplied only by reveal-or-wound tests so other tests keep the
+  // prior shape (the handler is the sole reader).
+  cardTraits?: Record<string, { heroClass: string | null; team: string | null }>;
 }
 
 /**
@@ -89,6 +93,7 @@ function makeG(options: MakeGOptions): LegendaryGameState {
     ...(options.cardDisplayData !== undefined
       ? { cardDisplayData: options.cardDisplayData }
       : {}),
+    ...(options.cardTraits !== undefined ? { cardTraits: options.cardTraits } : {}),
     turnEconomy: {
       attack: 0,
       recruit: 0,
@@ -682,6 +687,161 @@ describe('executeVillainAbilities — scry-ko-own-deck (WP-447 / D-24267)', () =
       0,
       'no unmarked-ability breadcrumb — the line is now handled',
     );
+  });
+});
+
+describe('executeVillainAbilities — reveal-or-wound (WP-469 / D-24281)', () => {
+  const XMEN = 'core/wolverine/wolverine#0' as CardExtId; // team x-men
+  const RANGED = 'core/hawkeye/hawkeye#0' as CardExtId; // hero-class ranged
+  const PLAIN = 'core/spider-man/spider-man#0' as CardExtId; // matches neither predicate
+
+  const TRAITS: Record<string, { heroClass: string | null; team: string | null }> = {
+    [XMEN]: { heroClass: 'covert', team: 'x-men' },
+    [RANGED]: { heroClass: 'ranged', team: 'avengers' },
+    [PLAIN]: { heroClass: 'covert', team: 'spider-friends' },
+  };
+
+  /** A player-zone with only hand + inPlay populated (the two the test varies). */
+  function zone(hand: CardExtId[] = [], inPlay: CardExtId[] = []) {
+    return { deck: [], hand, discard: [], inPlay, victory: [] };
+  }
+
+  // why: reveal-or-wound is not a legacy keyword, so the `hook()` helper cannot
+  // build it — construct the predicate-bearing descriptor hook directly.
+  function rowHook(
+    cardId: string,
+    timing: 'onAmbush' | 'onFight' | 'onEscape',
+    requireKind: 'team' | 'hero-class',
+    requireValue: string,
+  ): VillainAbilityHook {
+    return {
+      cardId: cardId as CardExtId,
+      timing,
+      keywords: [],
+      effects: [{ primitive: 'reveal-or-wound', requireKind, requireValue }],
+    };
+  }
+
+  it('AC-3 team predicate: a hand X-Men Hero avoids the Wound; no match gains one; in-play does NOT count', () => {
+    const G = makeG({
+      hooks: [rowHook('v-sabretooth', 'onFight', 'team', 'x-men')],
+      playerZones: {
+        '0': zone([XMEN]), // reveals from hand
+        '1': zone([], [XMEN]), // X-Men only in play → hand-only miss → wounded
+      },
+      wounds: [WOUND, 'w1' as CardExtId],
+      cardTraits: TRAITS,
+    });
+    executeVillainAbilities(G, CTX, 'v-sabretooth' as CardExtId, 'onFight');
+    assert.equal(G.playerZones['0']!.discard.length, 0, 'the revealer gains no wound');
+    assert.equal(G.playerZones['1']!.discard.length, 1, 'the in-play-only player is wounded (hand-only)');
+    assert.equal(G.piles.wounds.length, 1, 'exactly one wound left the pile');
+  });
+
+  it('AC-4 hero-class predicate over two players wounds only the one lacking a Ranged Hero (sorted order)', () => {
+    const G = makeG({
+      hooks: [rowHook('v-frost', 'onFight', 'hero-class', 'ranged')],
+      playerZones: {
+        '0': zone([RANGED]), // reveals
+        '1': zone([PLAIN]), // no ranged → wounded
+      },
+      wounds: [WOUND, 'w1' as CardExtId],
+      cardTraits: TRAITS,
+    });
+    executeVillainAbilities(G, CTX, 'v-frost' as CardExtId, 'onFight');
+    assert.equal(G.playerZones['0']!.discard.length, 0, 'ranged-holder unaffected');
+    assert.equal(G.playerZones['1']!.discard.length, 1, 'ranged-less player wounded');
+    assert.equal(G.piles.wounds.length, 1);
+  });
+
+  it('AC-5 empty wound pile → a no-match player takes no wound and no hollow is recorded', () => {
+    const G = makeG({
+      hooks: [rowHook('v-x', 'onFight', 'team', 'x-men')],
+      playerZones: { '0': zone([PLAIN]), '1': zone([XMEN]) },
+      wounds: [],
+      cardTraits: TRAITS,
+    });
+    executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onFight');
+    assert.equal(G.playerZones['0']!.discard.length, 0, 'no wound gained from an empty pile');
+    assert.equal(G.diagnostics?.hollowEffects?.length ?? 0, 0, 'reachable no-op, never hollow');
+  });
+
+  it('AC-5 woundsDrawn bumps only when the CURRENT player is the wounded one', () => {
+    // current player (0) has no match → wounded → woundsDrawn +1
+    const currentWounded = makeG({
+      hooks: [rowHook('v-x', 'onFight', 'team', 'x-men')],
+      playerZones: { '0': zone([PLAIN]), '1': zone([XMEN]) },
+      wounds: [WOUND, 'w1' as CardExtId],
+      cardTraits: TRAITS,
+    });
+    executeVillainAbilities(currentWounded, CTX, 'v-x' as CardExtId, 'onFight');
+    assert.equal(currentWounded.playerZones['0']!.discard.length, 1);
+    assert.equal(currentWounded.turnEconomy.woundsDrawn, 1, 'current-player wound is projected');
+
+    // only the non-current player (1) is wounded → woundsDrawn stays 0
+    const otherWounded = makeG({
+      hooks: [rowHook('v-x', 'onFight', 'team', 'x-men')],
+      playerZones: { '0': zone([XMEN]), '1': zone([PLAIN]) },
+      wounds: [WOUND, 'w1' as CardExtId],
+      cardTraits: TRAITS,
+    });
+    executeVillainAbilities(otherWounded, CTX, 'v-x' as CardExtId, 'onFight');
+    assert.equal(otherWounded.playerZones['1']!.discard.length, 1);
+    assert.equal(otherWounded.turnEconomy.woundsDrawn, 0, 'a non-current wound is NOT projected');
+  });
+
+  it('AC-6 a marked reveal-or-wound line records NO unmarked-ability breadcrumb at Fight AND at Escape', () => {
+    for (const timing of ['onFight', 'onEscape'] as const) {
+      const G = makeG({
+        hooks: [rowHook('brotherhood-sabretooth', timing, 'team', 'x-men')],
+        playerZones: { '0': zone([XMEN]), '1': zone([XMEN]) },
+        wounds: [WOUND],
+        cardTraits: TRAITS,
+      });
+      executeVillainAbilities(G, CTX, 'brotherhood-sabretooth' as CardExtId, timing);
+      assert.equal(
+        G.diagnostics?.hollowEffects?.length ?? 0,
+        0,
+        `no unmarked-ability breadcrumb at ${timing} — the line is handled`,
+      );
+    }
+  });
+
+  it('AC-7 narrates the wounded template naming players and records no keyword result', () => {
+    const G = makeG({
+      hooks: [rowHook('v-x', 'onFight', 'team', 'x-men')],
+      playerZones: { '0': zone([PLAIN]), '1': zone([PLAIN]) }, // both wounded
+      wounds: [WOUND, 'w1' as CardExtId, 'w2' as CardExtId],
+      cardTraits: TRAITS,
+      messages: [],
+    });
+    const results = executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onFight');
+    assert.equal(G.messages!.length, 1, 'exactly one log line pushed');
+    assert.match(
+      G.messages![0]!.text,
+      /Fight effect: 2 player\(s\) had no matching Hero and gained a Wound \(Player 0, Player 1\)\./,
+    );
+    assert.equal(G.messages![0]!.outcome, 'applied', 'the villain effect landed → applied');
+    // why: AC-7 — reveal-or-wound is keyword-less, so it self-narrates and emits
+    // NO VillainEffectResult (descriptorToLegacyKeyword → undefined).
+    assert.deepStrictEqual(results, [], 'no keyword-typed result recorded');
+  });
+
+  it('AC-7 narrates the all-revealed template when every player reveals (nobody wounded)', () => {
+    const G = makeG({
+      hooks: [rowHook('v-x', 'onEscape', 'hero-class', 'ranged')],
+      playerZones: { '0': zone([RANGED]), '1': zone([RANGED]) },
+      wounds: [WOUND],
+      cardTraits: TRAITS,
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onEscape');
+    assert.equal(G.playerZones['0']!.discard.length, 0);
+    assert.equal(G.playerZones['1']!.discard.length, 0);
+    assert.equal(G.messages!.length, 1, 'exactly one log line pushed');
+    assert.match(G.messages![0]!.text, /Escape effect: every player revealed a matching Hero\./);
+    assert.equal(G.messages![0]!.outcome, 'blocked', 'no wound landed → blocked');
+    assert.equal(G.piles.wounds.length, 1, 'wound pile untouched');
   });
 });
 

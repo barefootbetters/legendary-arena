@@ -798,6 +798,57 @@ describe('buildVillainAbilityHooks — dual-grammar equivalence (WP-252 / D-2402
       { primitive: 'ko-hero', target: 'each', magnitude: 2 },
     ]);
   });
+
+  it('[effect:reveal-or-wound:<kind>:<value>] parses + normalizes; bad kind / wrong-token-count / empty value rejected (WP-469 / D-24281)', () => {
+    const registry = makeRegistry(
+      'core',
+      [
+        {
+          slug: 'row',
+          cards: [
+            { slug: 'team', abilities: ['Fight: Each player reveals an X-Men Hero or gains a Wound. [effect:reveal-or-wound:team:x-men]'] },
+            { slug: 'hc', abilities: ['Fight: Each player reveals a Ranged Hero or gains a Wound. [effect:reveal-or-wound:hc:ranged]'] },
+            { slug: 'norm', abilities: ['Fight: x [effect:reveal-or-wound:team:X-Men]'] },
+            { slug: 'badkind', abilities: ['Fight: x [effect:reveal-or-wound:bogus:x]'] },
+            { slug: 'twotoken', abilities: ['Fight: x [effect:reveal-or-wound:team]'] },
+            { slug: 'emptyval', abilities: ['Fight: x [effect:reveal-or-wound:hc:]'] },
+          ],
+        },
+      ],
+      [],
+    );
+    const hooks = buildVillainAbilityHooks(registry, makeConfig(['core/row'], []));
+    const effectsFor = (slug: string) =>
+      hooks.find((h) => h.cardId === `core-villain-row-${slug}-00`)!.effects;
+    const unresolvedFor = (slug: string) =>
+      hooks.find((h) => h.cardId === `core-villain-row-${slug}-00`)!.unresolvedMarkers;
+    // why: AC-2 — the 3-token form yields the predicate descriptor; `hc` maps to
+    // the engine kind `hero-class`; `team` stays `team`.
+    assert.deepStrictEqual(effectsFor('team'), [
+      { primitive: 'reveal-or-wound', requireKind: 'team', requireValue: 'x-men' },
+    ]);
+    assert.deepStrictEqual(effectsFor('hc'), [
+      { primitive: 'reveal-or-wound', requireKind: 'hero-class', requireValue: 'ranged' },
+    ]);
+    // why: AC-2 — requireValue is normalized to the cardTraits slug space
+    // (normalizeTraitSlug lowercases), so 'X-Men' → 'x-men'.
+    assert.deepStrictEqual(effectsFor('norm'), [
+      { primitive: 'reveal-or-wound', requireKind: 'team', requireValue: 'x-men' },
+    ]);
+    // why: AC-2 — a parameterized token carries no legacy keyword.
+    assert.deepStrictEqual(
+      hooks.find((h) => h.cardId === 'core-villain-row-team-00')!.keywords,
+      [],
+    );
+    // why: AC-2 — a bad kind, a 2-token form, and an empty value all fall through
+    // to null → surfaced as unresolved markers, never a silently-collapsed descriptor.
+    assert.deepStrictEqual(effectsFor('badkind'), []);
+    assert.deepStrictEqual(unresolvedFor('badkind'), ['reveal-or-wound:bogus:x']);
+    assert.deepStrictEqual(effectsFor('twotoken'), []);
+    assert.deepStrictEqual(unresolvedFor('twotoken'), ['reveal-or-wound:team']);
+    assert.deepStrictEqual(effectsFor('emptyval'), []);
+    assert.deepStrictEqual(unresolvedFor('emptyval'), ['reveal-or-wound:hc:']);
+  });
 });
 
 // ---------------------------------------------------------------------------

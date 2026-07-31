@@ -177,6 +177,15 @@ export interface VillainEffectResult {
 // line a recognized, reachable descriptor so the D-24266 hollow-effect detector
 // classifies it applied instead of falsely flagging `unmarked-ability`. No-param
 // (parses through the generic no-param branch); NOT a legacy keyword.
+// why: D-24281 — `reveal-or-wound` is the eighth primitive (append-only,
+// position 8), the first CONDITIONAL each-player effect: each player either
+// reveals (from hand) a Hero whose trait matches the descriptor's
+// `requireKind`/`requireValue` predicate, or — only when they hold no match —
+// gains a Wound (Sabretooth + the core siblings). It carries its own descriptor
+// fields (below) rather than reusing target/magnitude/selector, and — like
+// `scry-ko-own-deck` — is NOT a legacy keyword (no
+// LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR entry), so it reverse-maps to `undefined`
+// and self-narrates via pushLog in the executor.
 export type VillainEffectPrimitive =
   | 'ko-hero'
   | 'gain-wound'
@@ -184,13 +193,15 @@ export type VillainEffectPrimitive =
   | 'hero-deck-top-to-escape'
   | 'capture-bystander'
   | 'scry-ko-own-deck'
-  | 'gain-attached-hero';
+  | 'gain-attached-hero'
+  | 'reveal-or-wound';
 
 // why: drift-detection array — must match VillainEffectPrimitive exactly
 // (villainAbility.types.test.ts asserts bidirectional parity). Adding a
 // primitive requires updating both this array and the union, plus a DECISIONS
 // entry. `scry-ko-own-deck` appended at position 6 by WP-447 (D-24267);
-// `gain-attached-hero` appended at position 7 by WP-450 (D-24270).
+// `gain-attached-hero` appended at position 7 by WP-450 (D-24270);
+// `reveal-or-wound` appended at position 8 by WP-469 (D-24281).
 /** All villain effect primitives in canonical order. Single source of truth. */
 export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'ko-hero',
@@ -200,6 +211,7 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'capture-bystander',
   'scry-ko-own-deck',
   'gain-attached-hero',
+  'reveal-or-wound',
 ] as const;
 
 /**
@@ -213,12 +225,25 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
  *   - `ko-hero` with `target: 'each'`: optional `zone` (D-24280) restricts the
  *     per-player KO to a single source zone (Juggernaut's "from their discard
  *     pile" / "from their hand"); absent means the discard→hand→inPlay fallback.
+ *   - `reveal-or-wound`: `requireKind` + `requireValue` (D-24281) — the
+ *     hero-trait predicate each player must satisfy from hand to avoid a Wound.
  */
 export interface VillainEffectDescriptor {
   primitive: VillainEffectPrimitive;
   target?: 'current' | 'each';
   magnitude?: number;
   selector?: 'rightmost' | 'highest-cost' | 'lowest-cost';
+  // why: D-24281 — the reveal-or-wound hero-trait predicate, present ONLY on
+  // `{ primitive: 'reveal-or-wound' }` descriptors. `requireKind` reuses the
+  // VillainDefeatRequirementKind shape ('team' | 'hero-class') and `requireValue`
+  // is stored NORMALIZED to the `cardTraits` slug space (normalizeTraitSlug =
+  // trim().toLowerCase(), matching buildCardTraits + the D-24076 setup) so the
+  // handler's `===` trait comparison is casing/whitespace-safe. Deliberately NOT
+  // part of `descriptorKey` below — reveal-or-wound is keyword-less (it has no
+  // LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR entry), so it reverse-maps to `undefined`
+  // regardless and self-narrates; adding these to the key would change nothing.
+  requireKind?: 'team' | 'hero-class';
+  requireValue?: string;
   // why: D-24280 — a source-zone restriction for the each-player `ko-hero` KO.
   // It is a resolver-targeting detail present ONLY on `{ primitive: 'ko-hero',
   // target: 'each' }` descriptors (Juggernaut Ambush = 'discard', Escape =

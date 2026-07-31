@@ -158,7 +158,7 @@ core-villain-spider-foes-doctor-octopus,Doctor Octopus,core,villain,(unmarked),u
 henchman-doombot-legion,Doombot Legion,core,henchman,scry-ko-own-deck,executable,,,packages/game-engine/src/villain/villainEffects.execute.ts#scry-ko-own-deck
 core-villain-enemies-of-asgard-enchantress,Enchantress,core,villain,(unmarked),unmarked,,,
 core-villain-hydra-endless-armies-of-hydra,Endless Armies of HYDRA,core,villain,(unmarked),unmarked,,,
-core-villain-enemies-of-asgard-frost-giant,Frost Giant,core,villain,(unmarked),unmarked,,,
+core-villain-enemies-of-asgard-frost-giant,Frost Giant,core,villain,reveal-or-wound,executable,,,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
 core-villain-spider-foes-green-goblin,Green Goblin,core,villain,captureBystander,executable,WP-185,D-18506,packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander
 core-villain-hydra-hydra-kidnappers,HYDRA Kidnappers,core,villain,(unmarked),unmarked,,,
 henchman-hand-ninjas,Hand Ninjas,core,henchman,(unmarked),unmarked,,,
@@ -167,7 +167,7 @@ core-villain-radiation-maestro,Maestro,core,villain,(unmarked),unmarked,,,
 core-villain-masters-of-evil-melter,Melter,core,villain,(unmarked),unmarked,,,
 core-villain-brotherhood-mystique,Mystique,core,villain,(unmarked),unmarked,,,
 core-villain-skrulls-paibok-the-power-skrull,Paibok the Power Skrull,core,villain,(unmarked),unmarked,,,
-core-villain-brotherhood-sabretooth,Sabretooth,core,villain,(unmarked),unmarked,,,
+core-villain-brotherhood-sabretooth,Sabretooth,core,villain,reveal-or-wound,executable,,,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
 henchman-savage-land-mutates,Savage Land Mutates,core,henchman,(unmarked),unmarked,,,
 henchman-sentinel,Sentinel,core,henchman,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 core-villain-skrulls-skrull-queen-veranke,Skrull Queen Veranke,core,villain,captureHqHeroHighestCost,executable,WP-214,D-21401,packages/game-engine/src/villain/villainEffects.execute.ts#capture-hq-hero
@@ -178,12 +178,12 @@ core-villain-skrulls-super-skrull,Super-Skrull,core,villain,koHeroEachPlayer,exe
 core-villain-hydra-supreme-hydra,Supreme HYDRA,core,villain,(unmarked),unmarked,,,
 core-villain-radiation-the-leader,The Leader,core,villain,(unmarked),unmarked,,,
 core-villain-spider-foes-the-lizard,The Lizard,core,villain,(unmarked),unmarked,,,
-core-villain-masters-of-evil-ultron,Ultron,core,villain,(unmarked),unmarked,,,
+core-villain-masters-of-evil-ultron,Ultron,core,villain,reveal-or-wound,executable,,,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
 core-villain-spider-foes-venom,Venom,core,villain,gainWoundEachPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
 core-villain-hydra-viper,Viper,core,villain,(unmarked),unmarked,,,
 core-villain-masters-of-evil-whirlwind,Whirlwind,core,villain,(unmarked),unmarked,,,
-core-villain-enemies-of-asgard-ymir-frost-giant-king,"Ymir, Frost Giant King",core,villain,(unmarked),unmarked,,,
-core-villain-radiation-zzzax,Zzzax,core,villain,(unmarked),unmarked,,,
+core-villain-enemies-of-asgard-ymir-frost-giant-king,"Ymir, Frost Giant King",core,villain,reveal-or-wound,executable,,,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
+core-villain-radiation-zzzax,Zzzax,core,villain,reveal-or-wound,executable,,,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
 cosm-villain-celestials-arishem-the-judge,"Arishem, The Judge",cosm,villain,(unmarked),unmarked,,,
 cosm-villain-black-order-of-thanos-black-dwarf,Black Dwarf,cosm,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 cosm-villain-black-order-of-thanos-corvus-glaive,Corvus Glaive,cosm,villain,(unmarked),unmarked,,,
