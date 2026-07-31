@@ -533,43 +533,57 @@ function isMatrixMastermindStart(rowIndex: number): boolean {
               <table class="coverage-matrix-table">
                 <thead>
                   <tr>
-                    <th scope="col" class="coverage-matrix-corner">Mastermind · Scheme</th>
+                    <th scope="col" class="coverage-matrix-corner">Scheme</th>
+                    <!-- why: WP-466 — the adversary name rides its own span so the
+                         CSS can rotate it 90° (writing-mode) and shrink each column
+                         to ~one line-height, removing the horizontal scroll. -->
                     <th
                       v-for="column of coreCoverageMatrix.columns"
                       :key="`${column.kind}-${column.slug}`"
                       scope="col"
                       :class="['coverage-matrix-colhead', column.kind]"
-                    >{{ column.name }}</th>
+                    ><span class="coverage-matrix-colhead-text">{{ column.name }}</span></th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr
+                  <!-- why: WP-466 — each mastermind is named ONCE as a group-header
+                       row spanning the table, above its 8 scheme rows; the row-label
+                       column then holds only the (wrappable) scheme name. -->
+                  <template
                     v-for="(row, rowIndex) of coreCoverageMatrix.rows"
                     :key="`${row.mastermindSlug}-${row.schemeSlug}`"
-                    :class="{ 'coverage-matrix-mm-start': isMatrixMastermindStart(rowIndex) }"
                   >
-                    <th scope="row" class="coverage-matrix-rowhead">
-                      <span class="coverage-matrix-mm">{{ formatCardDisplayName(row.mastermindName) }}</span>
-                      <span class="coverage-matrix-scheme">{{ formatCardDisplayName(row.schemeName) }}</span>
-                    </th>
-                    <td
-                      v-for="(cell, columnIndex) of row.cells"
-                      :key="columnIndex"
-                      class="coverage-matrix-cell"
+                    <tr
+                      v-if="isMatrixMastermindStart(rowIndex)"
+                      class="coverage-matrix-mm-row"
                     >
-                      <a
-                        v-if="cell.covered && cell.challengeUrl"
-                        :href="cell.challengeUrl"
-                        class="coverage-matrix-check"
-                        target="_blank"
-                        rel="noopener"
+                      <th
+                        :colspan="coreCoverageMatrix.columns.length + 1"
+                        scope="colgroup"
+                        class="coverage-matrix-mm-header"
+                      >{{ formatCardDisplayName(row.mastermindName) }}</th>
+                    </tr>
+                    <tr>
+                      <th scope="row" class="coverage-matrix-rowhead">{{ formatCardDisplayName(row.schemeName) }}</th>
+                      <td
+                        v-for="(cell, columnIndex) of row.cells"
+                        :key="columnIndex"
+                        class="coverage-matrix-cell"
                       >
-                        <span aria-hidden="true">✓</span>
-                        <span class="visually-hidden">Play {{ formatCardDisplayName(row.schemeName) }} vs {{ coreCoverageMatrix.columns[columnIndex]?.name }} at {{ matrixCountFor(setGroup.setAbbr) }}-player</span>
-                      </a>
-                      <span v-else class="coverage-matrix-blank" aria-hidden="true">·</span>
-                    </td>
-                  </tr>
+                        <a
+                          v-if="cell.covered && cell.challengeUrl"
+                          :href="cell.challengeUrl"
+                          class="coverage-matrix-check"
+                          target="_blank"
+                          rel="noopener"
+                        >
+                          <span aria-hidden="true">✓</span>
+                          <span class="visually-hidden">Play {{ formatCardDisplayName(row.schemeName) }} vs {{ coreCoverageMatrix.columns[columnIndex]?.name }} at {{ matrixCountFor(setGroup.setAbbr) }}-player</span>
+                        </a>
+                        <span v-else class="coverage-matrix-blank" aria-hidden="true">·</span>
+                      </td>
+                    </tr>
+                  </template>
                 </tbody>
               </table>
             </div>
@@ -959,42 +973,53 @@ function isMatrixMastermindStart(rowIndex: number): boolean {
 
 .coverage-matrix-corner {
   text-align: left;
+  vertical-align: bottom;
   color: var(--la-color-text-muted);
   font-weight: 600;
 }
 
+/* why: WP-466 — rotate the adversary name 90° (writing-mode) so each of the 11
+   columns is only ~one line-height wide; the header row grows taller instead,
+   which is cheap vertical space and is what removes the horizontal scroll. */
 .coverage-matrix-colhead {
   color: var(--la-color-text-primary);
   font-weight: 600;
   vertical-align: bottom;
+  padding: 0.2rem 0.15rem;
 }
 
-/* why: WP-464 — henchman columns are visually distinguished from villains (the two
-   column blocks) without relying on colour alone — italic + a lighter weight. */
-.coverage-matrix-colhead.henchman {
+.coverage-matrix-colhead-text {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  white-space: nowrap;
+  line-height: 1.1;
+}
+
+/* why: WP-464 — henchman columns are distinguished from villains without relying
+   on colour alone (italic + a lighter weight). */
+.coverage-matrix-colhead.henchman .coverage-matrix-colhead-text {
   color: var(--la-color-text-secondary);
   font-style: italic;
 }
 
+/* why: WP-466 — a long scheme name wraps to two lines and the column is
+   width-capped, so the row-label column stays narrow (was `nowrap`). */
 .coverage-matrix-rowhead {
   text-align: left;
-  display: flex;
-  flex-direction: column;
-  gap: 0.05rem;
+  white-space: normal;
+  max-width: 9rem;
+  overflow-wrap: anywhere;
+  line-height: 1.15;
+  color: var(--la-color-text-secondary);
 }
 
-.coverage-matrix-mm {
-  color: var(--la-color-text-primary);
-  font-weight: 600;
-}
-
-.coverage-matrix-scheme {
-  color: var(--la-color-text-muted);
-}
-
-/* why: WP-464 — a top border opens each new mastermind block so the 8 scheme-rows
-   read as one group (the ✓ pattern is identical within a mastermind × count). */
-.coverage-matrix-mm-start > * {
+/* why: WP-466 — the mastermind is named ONCE per block as a full-width header row
+   (replacing the per-row repetition); its top border opens the group. */
+.coverage-matrix-mm-header {
+  text-align: left;
+  padding-top: 0.5rem;
+  color: var(--la-color-gold-bright);
+  font-weight: 700;
   border-top: 1px solid var(--la-color-border-subtle);
 }
 
