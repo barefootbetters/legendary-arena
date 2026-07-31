@@ -35049,10 +35049,48 @@ Files` + the §Drift Detection union/array/test discipline. Reserved by WP-469.
 
 Protect this file.
 
-### D-24282 — Doombot scry-ko-own-deck upgrades from auto-resolve to an interactive player choice (human players); bots/sims stay deterministic via selectScryKoTarget (Drafted 2026-07-30 — WP-470; not yet landed)
+### D-24282 — Doombot scry-ko-own-deck upgrades from auto-resolve to an interactive player choice (human players); bots/sims stay deterministic via selectScryKoTarget (Active 2026-07-31 — WP-470)
 
-> **Status: Drafted at SPEC time; flips to Active (post-execution) when WP-470
-> executes.** Reserved in `NUMBER-LEDGER.md` under the same branch.
+> **Status: Active (landed 2026-07-31 by WP-470 / EC-505).** Reserved in
+> `NUMBER-LEDGER.md` under the same branch.
+>
+> **Landing note (2026-07-31).**
+> - **Implemented as specified.** Engine parker (deck 0 no-op / 1 auto-KO / ≥2 park),
+>   `resolveScryKoChoice` (`client: false`), `hasPendingScryKoChoice` at all 9 block-all
+>   guard sites (grep-parity with `hasPendingKoHeroChoice` confirmed) + `ai.legalMoves`
+>   short-circuit, `SIMULATION_MOVE_NAMES` + both sim `MOVE_MAP`s +
+>   `simulation.moveDispatch.drift.test.ts`, UIState `pendingScryKoChoice` projection +
+>   chooser-only filter + `UIPendingScryKoChoice`/`UIScryKoRevealedCard` barrel re-export,
+>   `game.test.ts` move-set 21→22 (both literals + count). Client
+>   `PendingScryKoChoicePrompt.vue` mounts in **both** `PlayDesktop.vue` and
+>   `PlayMobile.vue` per EC-505 (the drafted "Files" line's `PlayViewport.vue` was
+>   superseded by the EC-505 PS-2 correction). `useTurnActions.ts` gained a
+>   `hasPendingScryKoChoice` End-Turn/Pass-Priority/Heal gate.
+> - **Verification.** `pnpm -r build` green; game-engine 2150 tests / 0 fail; arena-client
+>   1131 tests / 0 fail + `vue-tsc` typecheck green; `sim:runtime-observed:check` returned
+>   (no per-turn hang — proves the sim MOVE_MAP registration).
+> - **Fixture re-pin outcome: NONE required.** No committed replay/record-game/sentinel
+>   fixture bot-game fights a Doombot Legion henchman, so no `finalStateHash` shifted (the
+>   full game-engine suite passed with zero fixture edits). The re-pin the WP flagged as
+>   "LIKELY" did not materialize; `selectScryKoTarget` (the bot/sim default) is unchanged,
+>   so had any fixture fought a Doombot the KO'd card would have been byte-identical.
+> - **Persisted-log replay disposition: EMPTY (safe to ship — no version-gate needed).**
+>   Prod `competitive_scores` / `bgio` blobs are not queryable from the execution
+>   environment (the local `.env` DB is not prod), so the disposition is reasoned from the
+>   mechanic's ship date + opt-in nature: (1) the ONLY reducer behavior WP-470 changes is
+>   the Doombot Legion `scry-ko-own-deck` Fight, which shipped in WP-447 on **2026-07-30**
+>   — before WP-447 that Fight line was an un-implemented no-op (D-24266 breadcrumb), so a
+>   pre-WP-447 Doombot fight created NO scry-ko state and replays identically under WP-470
+>   (the park branch is never reached). (2) The only at-risk window is matches recorded in
+>   the ~1-day 2026-07-30→07-31 span under WP-447's auto-resolve that actually defeated a
+>   Doombot Legion with ≥2 deck cards. (3) Competitive scores require an approved
+>   ranked-gauntlet loadout; the 2026-season gauntlet configs that list `core/doombot-legion`
+>   (`data/gauntlet-configs.json`, authored #1116) are **not yet consumed** by any
+>   match-creating surface, and prod `competitive_scores` was empty as of the
+>   gauntlet-leaderboard arc (boards fill only on data supply). The at-risk population is
+>   therefore empty; WP-470 ships no silent replay divergence.
+> - **Live-verify (D-24026) operator-pending** on the next client deploy: fight a Doombot
+>   with ≥2 deck cards → the prompt appears, KO one → the other stays on top.
 
 **Context.** WP-447 / D-24267 shipped Doombot Legion's *"Fight: Look at the top two
 cards of your deck. KO one of them and put the other back."* **auto-resolved** — the
