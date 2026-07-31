@@ -14,6 +14,7 @@ import assert from 'node:assert/strict';
 import {
   executeVillainAbilities,
   selectDefaultKoTarget,
+  selectScryKoTarget,
   buildKoEligibleTargets,
 } from './villainEffects.execute.js';
 import { resolveKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
@@ -591,41 +592,27 @@ describe('executeVillainAbilities — scry-ko-own-deck (WP-447 / D-24267)', () =
     });
   }
 
-  it('KOs a Wound off the top two and leaves the other card on top', () => {
+  it('WP-470: with ≥2 cards PARKS a choice with the top-2 ext_ids and KOs nothing yet', () => {
     const hero = 'core/spider-man/spider-man#0' as CardExtId;
     const G = scryG([WOUND, hero, 'core/x/deep#0' as CardExtId]);
     executeVillainAbilities(G, CTX, 'hm-doombot' as CardExtId, 'onFight');
-    assert.deepStrictEqual(G.ko, [WOUND], 'the Wound was KO’d');
+    // why: WP-470 / D-24282 — the ≥2 branch now parks an interactive choice; nothing
+    // is KO'd until resolveScryKoChoice, and the deck is untouched (block-all freeze).
+    assert.deepStrictEqual(G.ko, [], 'nothing KO’d yet — the choice is parked');
     assert.deepStrictEqual(
       G.playerZones['0']!.deck,
-      [hero, 'core/x/deep#0' as CardExtId],
-      'the other revealed card stays on top, deeper cards untouched',
+      [WOUND, hero, 'core/x/deep#0' as CardExtId],
+      'the deck is frozen (no card removed) until the player resolves',
     );
-  });
-
-  it('prefers a starting S.H.I.E.L.D. card over a recruited hero', () => {
-    const hero = 'core/spider-man/spider-man#0' as CardExtId;
-    const G = scryG([hero, AGENT]);
-    executeVillainAbilities(G, CTX, 'hm-doombot' as CardExtId, 'onFight');
-    assert.deepStrictEqual(G.ko, [AGENT], 'the S.H.I.E.L.D. agent was KO’d');
-    assert.deepStrictEqual(G.playerZones['0']!.deck, [hero], 'the recruited hero stays on top');
-  });
-
-  it('among two starting S.H.I.E.L.D. cards KOs the lexically-lowest', () => {
-    // why: 'starting-shield-agent' < 'starting-shield-trooper' lexically.
-    const G = scryG([TROOPER, AGENT]);
-    executeVillainAbilities(G, CTX, 'hm-doombot' as CardExtId, 'onFight');
-    assert.deepStrictEqual(G.ko, [AGENT], 'lex-lowest S.H.I.E.L.D. card KO’d');
-    assert.deepStrictEqual(G.playerZones['0']!.deck, [TROOPER]);
-  });
-
-  it('with two recruited heroes KOs the lexically-lowest ext_id', () => {
-    const heroA = 'core/aaa/aaa#0' as CardExtId;
-    const heroZ = 'core/zzz/zzz#0' as CardExtId;
-    const G = scryG([heroZ, heroA]);
-    executeVillainAbilities(G, CTX, 'hm-doombot' as CardExtId, 'onFight');
-    assert.deepStrictEqual(G.ko, [heroA], 'lex-lowest recruited hero KO’d');
-    assert.deepStrictEqual(G.playerZones['0']!.deck, [heroZ], 'the other stays on top');
+    assert.equal(G.pendingScryKoChoices?.length, 1, 'exactly one pending scry-KO choice');
+    const front = G.pendingScryKoChoices![0]!;
+    assert.equal(front.choiceType, 'scry-ko');
+    assert.equal(front.playerID, '0');
+    assert.deepStrictEqual(
+      front.revealedCardIds,
+      [WOUND, hero],
+      'the top two ext_ids are snapshotted onto the pending entry, in deck order',
+    );
   });
 
   it('with a single-card deck KOs that card and empties the deck', () => {
@@ -649,7 +636,27 @@ describe('executeVillainAbilities — scry-ko-own-deck (WP-447 / D-24267)', () =
     );
   });
 
-  it('self-narrates a "Fight effect:" log line naming the KO’d card', () => {
+  it('WP-470: the single-card auto-KO still self-narrates a "Fight effect:" line naming the KO’d card', () => {
+    const G = makeG({
+      hooks: [scryHook('hm-doombot')],
+      playerZones: {
+        '0': { deck: [WOUND], hand: [], discard: [], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      messages: [],
+      cardDisplayData: { [WOUND]: { name: 'Wound' } },
+    });
+    executeVillainAbilities(G, CTX, 'hm-doombot' as CardExtId, 'onFight');
+    assert.deepStrictEqual(G.ko, [WOUND], 'the sole card auto-KO’d (nothing to choose)');
+    assert.equal(G.messages!.length, 1, 'exactly one log line pushed');
+    assert.match(
+      G.messages![0]!.text,
+      /Fight effect: KO'd "Wound" from the top of your deck\./,
+      'log line names the KO’d card',
+    );
+  });
+
+  it('WP-470: the ≥2 park self-narrates a "look at the top two" line and KOs nothing', () => {
     const hero = 'core/spider-man/spider-man#0' as CardExtId;
     const G = makeG({
       hooks: [scryHook('hm-doombot')],
@@ -661,12 +668,29 @@ describe('executeVillainAbilities — scry-ko-own-deck (WP-447 / D-24267)', () =
       cardDisplayData: { [WOUND]: { name: 'Wound' } },
     });
     executeVillainAbilities(G, CTX, 'hm-doombot' as CardExtId, 'onFight');
+    assert.deepStrictEqual(G.ko, [], 'nothing KO’d — the choice is parked');
     assert.equal(G.messages!.length, 1, 'exactly one log line pushed');
     assert.match(
       G.messages![0]!.text,
-      /Fight effect: KO'd "Wound" from the top of your deck\./,
-      'log line names the KO’d card',
+      /Fight effect: look at the top two cards of your deck — choose one to KO\./,
+      'log line describes the parked choice',
     );
+  });
+
+  it('WP-470: selectScryKoTarget (the bot/sim default) preserves the WP-447 worst-first pick', () => {
+    // why: selectScryKoTarget is unchanged and now the bot/sim default (ai.legalMoves).
+    // These pin the auto-pick determinism: Wound-first → starting S.H.I.E.L.D. (lex-lowest)
+    // → lex-lowest ext_id, so a bot game fighting a Doombot KOs the SAME card as WP-447.
+    const hero = 'core/spider-man/spider-man#0' as CardExtId;
+    assert.equal(selectScryKoTarget([WOUND, hero]), WOUND, 'Wound is KO-preferred');
+    assert.equal(selectScryKoTarget([hero, AGENT]), AGENT, 'starting S.H.I.E.L.D. over a recruited hero');
+    assert.equal(selectScryKoTarget([TROOPER, AGENT]), AGENT, 'lex-lowest S.H.I.E.L.D. card');
+    assert.equal(
+      selectScryKoTarget(['core/zzz/zzz#0' as CardExtId, 'core/aaa/aaa#0' as CardExtId]),
+      'core/aaa/aaa#0' as CardExtId,
+      'lex-lowest recruited hero',
+    );
+    assert.equal(selectScryKoTarget([]), null, 'empty reveal → null');
   });
 
   it('records NO unmarked-ability breadcrumb for a marked Doombot Fight (D-24266 closed)', () => {
@@ -681,7 +705,11 @@ describe('executeVillainAbilities — scry-ko-own-deck (WP-447 / D-24267)', () =
       },
     });
     executeVillainAbilities(G, CTX, 'henchman-doombot-legion-00' as CardExtId, 'onFight');
-    assert.deepStrictEqual(G.ko, [WOUND], 'the scry-ko fired (a deck card moved to KO)');
+    // why: WP-470 — the ≥2 branch now PARKS instead of auto-KOing, but the effect still
+    // "fired" (a descriptor was present and ran), so the D-24266 unmarked-ability detector
+    // must NOT record a hollow breadcrumb. Assert the park rather than a KO.
+    assert.equal(G.pendingScryKoChoices?.length, 1, 'the scry-ko fired (a choice was parked)');
+    assert.deepStrictEqual(G.ko, [], 'nothing KO’d yet — the choice is parked');
     assert.equal(
       G.diagnostics?.hollowEffects?.length ?? 0,
       0,

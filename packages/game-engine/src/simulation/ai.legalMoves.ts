@@ -17,7 +17,8 @@ import { getAvailableAttack, getAvailableRecruit } from '../economy/economy.logi
 import { resolveFightCost } from '../economy/economy.resolve.js';
 import { isGuardBlocking, getPatrolModifier } from '../board/boardKeywords.logic.js';
 import { hasPendingKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
-import { selectDefaultKoTarget } from '../villain/villainEffects.execute.js';
+import { hasPendingScryKoChoice } from '../moves/scryKoChoice.resolve.js';
+import { selectDefaultKoTarget, selectScryKoTarget } from '../villain/villainEffects.execute.js';
 import { hasPendingOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
 import { selectDefaultOptionalKoTarget } from '../hero/heroEffects.execute.js';
 import {
@@ -54,6 +55,11 @@ export const SIMULATION_MOVE_NAMES = [
   'recruitHero',
   'fightMastermind',
   'resolveKoHeroChoice',
+  // why: WP-470 / D-24282 — getLegalMoves short-circuits to resolveScryKoChoice when a
+  // Doombot scry-KO choice is parked; it MUST be dispatchable in the sim (both MOVE_MAPs)
+  // or the per-turn loop hangs (maxTurns bounds turns, not within-turn move-steps —
+  // the WP-289 One-Hit-Wonder hang). Asserted by simulation.moveDispatch.drift.test.ts.
+  'resolveScryKoChoice',
   'resolveOptionalKoReward',
   'resolveVictoryPileCardPick',
   'resolveDrawOrEmpowered',
@@ -261,6 +267,26 @@ export function getLegalMoves(
     }
     // why: defensive — if no target exists (engine-invariant violation), fail
     // closed with an empty list rather than emit an unresolvable move.
+    return legalMoves;
+  }
+
+  // why: WP-470 / D-24282 — pending Doombot scry-KO short-circuit. When a scry-KO
+  // choice is parked the engine block-all guard freezes every other move, so the bot
+  // must resolve it first. The single legal move is resolveScryKoChoice with the
+  // deterministic default pick — selectScryKoTarget over the front entry's revealed
+  // snapshot — keeping the bot's KO target byte-identical to the WP-447 auto-resolve
+  // for replay determinism (only live human play gets the interactive prompt). The
+  // pick is non-null because the park requires ≥2 revealed cards. Returns a list of
+  // length EXACTLY 1 — omitting this MOVE_MAP path (or the dispatch entries) hangs the
+  // per-turn loop.
+  if (hasPendingScryKoChoice(gameState)) {
+    const front = gameState.pendingScryKoChoices![0]!;
+    const defaultCardId = selectScryKoTarget(front.revealedCardIds);
+    if (defaultCardId !== null) {
+      return [{ name: 'resolveScryKoChoice', args: { cardId: defaultCardId } }];
+    }
+    // why: defensive — an empty revealed snapshot is an engine-invariant violation;
+    // fail closed rather than emit an unresolvable move.
     return legalMoves;
   }
 

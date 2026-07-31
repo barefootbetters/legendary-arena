@@ -18,6 +18,7 @@ import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState } from '../types.js';
 import { applyCardPlay } from './coreMoves.impl.js';
 import { hasPendingKoHeroChoice } from './koHeroChoice.resolve.js';
+import { hasPendingScryKoChoice } from './scryKoChoice.resolve.js';
 import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
@@ -68,6 +69,11 @@ export function playFromUndercover(
   // why: block-all guard (D-24008) — while a KO-a-Hero choice is pending the
   // board is frozen; this move returns with no side effects.
   if (hasPendingKoHeroChoice(G)) {
+    return;
+  }
+  // why: block-all guard (D-24282) — a pending Doombot scry-KO choice freezes the
+  // board until the player picks which revealed card to KO.
+  if (hasPendingScryKoChoice(G)) {
     return;
   }
   // why: block-all guard (D-24019) — optional-KO-reward choice pending; the

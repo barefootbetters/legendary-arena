@@ -407,6 +407,71 @@ describe('filterUIStateForAudience — pendingKoHeroChoice redaction (D-24011)',
 });
 
 // ---------------------------------------------------------------------------
+// WP-470 / EC-505 — pendingScryKoChoice redaction (D-24282)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a UIState where player '0' owes a Doombot scry-KO choice over the top
+ * two cards of their OWN deck. The revealed ext_ids are the chooser's next
+ * draws — private information that must not appear in a non-chooser's UIState.
+ */
+function createScryChoiceUIState(): UIState {
+  const config = createTestConfig();
+  const registry = createMockRegistry();
+  const setupContext = makeMockCtx();
+  const gameState = buildInitialGameState(config, registry, setupContext);
+
+  gameState.playerZones['0']!.deck = [
+    'scry-deck-secret-a' as CardExtId,
+    'scry-deck-secret-b' as CardExtId,
+    'scry-deck-deep' as CardExtId,
+  ];
+  gameState.pendingScryKoChoices = [
+    {
+      choiceType: 'scry-ko',
+      playerID: '0',
+      revealedCardIds: ['scry-deck-secret-a' as CardExtId, 'scry-deck-secret-b' as CardExtId],
+    },
+  ];
+
+  return buildUIState(gameState, mockCtx);
+}
+
+describe('filterUIStateForAudience — pendingScryKoChoice redaction (D-24282)', () => {
+  it('the chooser sees pendingScryKoChoice with the revealed cards', () => {
+    const uiState = createScryChoiceUIState();
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+    assert.ok(result.pendingScryKoChoice !== undefined, 'chooser sees the scry-KO choice');
+    assert.equal(result.pendingScryKoChoice!.playerID, '0');
+    assert.equal(result.pendingScryKoChoice!.revealedCards.length, 2, 'both revealed cards present');
+  });
+
+  it('an opponent does NOT see pendingScryKoChoice and no revealed deck ext_id leaks', () => {
+    const uiState = createScryChoiceUIState();
+    const result = filterUIStateForAudience(uiState, PLAYER_1);
+    assert.equal(result.pendingScryKoChoice, undefined, 'opponent must not see the scry-KO choice');
+    const serialized = JSON.stringify(result);
+    assert.equal(serialized.includes('scry-deck-secret-a'), false, 'no revealed deck ext_id leaks');
+    assert.equal(serialized.includes('scry-deck-secret-b'), false, 'no revealed deck ext_id leaks');
+  });
+
+  it('a spectator does NOT see pendingScryKoChoice and no revealed deck ext_id leaks', () => {
+    const uiState = createScryChoiceUIState();
+    const result = filterUIStateForAudience(uiState, SPECTATOR);
+    assert.equal(result.pendingScryKoChoice, undefined, 'spectator must not see the scry-KO choice');
+    const serialized = JSON.stringify(result);
+    assert.equal(serialized.includes('scry-deck-secret-a'), false, 'no revealed deck ext_id leaks');
+    assert.equal(serialized.includes('scry-deck-secret-b'), false, 'no revealed deck ext_id leaks');
+  });
+
+  it('does not mutate the input UIState (pendingScryKoChoice still present on the source)', () => {
+    const uiState = createScryChoiceUIState();
+    filterUIStateForAudience(uiState, PLAYER_1);
+    assert.ok(uiState.pendingScryKoChoice !== undefined, 'source UIState unchanged');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // WP-249 / EC-280 — pendingOptionalKoReward redaction (D-24020, D-24011 analog)
 // ---------------------------------------------------------------------------
 

@@ -21,6 +21,7 @@ import type { LegendaryGameState } from '../types.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
 import { koCard } from '../board/ko.logic.js';
 import { hasPendingKoHeroChoice } from './koHeroChoice.resolve.js';
+import { hasPendingScryKoChoice } from './scryKoChoice.resolve.js';
 import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
@@ -66,6 +67,9 @@ export function healWounds({ G, ctx }: MoveContext): void {
   // block-all cluster the fight/recruit moves carry, so a pending choice freezes
   // Healing too.
   if (hasPendingKoHeroChoice(G)) return;
+  // why: block-all guard (D-24282) — a pending Doombot scry-KO choice freezes the
+  // board until the player picks which revealed card to KO.
+  if (hasPendingScryKoChoice(G)) return;
   // why: block-all guard (D-24019) — optional-KO-reward choice pending.
   if (hasPendingOptionalKoReward(G)) return;
   // why: block-all — pendingVictoryPileCardPick must be resolved first (D-24067)

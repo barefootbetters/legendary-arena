@@ -117,6 +117,13 @@ export interface UIState {
   // the chooser — the eligible list carries the chooser's hand identities
   // (D-24011 hand-leak). Absent (undefined) means no pending KO choice.
   pendingKoHeroChoice?: UIPendingKoHeroChoice;
+  // why: WP-470 / D-24282 — projects the FRONT of G.pendingScryKoChoices with the
+  // two revealed deck-top cards so the choosing player can render the "Look at the
+  // top two — choose one to KO" prompt. Redacted (omitted) for every audience
+  // except the chooser — the revealed cards are the top of the chooser's own deck
+  // (private information; opponents must not learn the chooser's next draws). Absent
+  // (undefined) means no pending scry-KO choice.
+  pendingScryKoChoice?: UIPendingScryKoChoice;
   // why: D-24020 + WP-249 — projects the FRONT of G.pendingOptionalKoRewards
   // with the derived reward label + the chooser's eligible hand/discard cards so
   // the choosing player can render the "KO a card for a reward, or Decline"
@@ -615,6 +622,38 @@ export interface UIPendingKoHeroChoice {
   playerID: string;
   eligible: UIEligibleKoHeroCard[];
   remaining: number;
+}
+
+/**
+ * One revealed card in a pending Doombot scry-KO choice (WP-470 / D-24282). The
+ * client renders each of the (up to two) revealed deck-top cards and submits
+ * `resolveScryKoChoice({ cardId })` for the one the player chooses to KO. `cardId`
+ * is the deck instance id the engine resolve matches against the front pending
+ * entry's `revealedCardIds` snapshot (the round-trip rule).
+ */
+export interface UIScryKoRevealedCard {
+  cardId: string;
+  display: UICardDisplay;
+}
+
+/**
+ * UI contract for resolving a pending Doombot scry-KO choice (WP-470 / D-24282).
+ * Only visible to the choosing player; redacted for opponents and spectators (the
+ * revealed cards are the top of the chooser's own deck — their next draws).
+ *
+ * `revealedCards` is the FRONT pending entry's `revealedCardIds` snapshot resolved
+ * to display data, in deck-top order (the two cards the player was shown). The
+ * client submits `{ cardId }` for the chosen card; the engine KOs it and leaves
+ * the other on top.
+ *
+ * @see WP-470 §Scope (In)
+ * @see EC-505 Locked Values
+ * @see DECISIONS.md D-24282
+ */
+export interface UIPendingScryKoChoice {
+  choiceType: "scry-ko";
+  playerID: string;
+  revealedCards: UIScryKoRevealedCard[];
 }
 
 /**

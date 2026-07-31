@@ -67,6 +67,20 @@ describe('simulation move-dispatch drift guard (WP-289 / D-24073)', () => {
     }
   });
 
+  it('resolveScryKoChoice is dispatchable in BOTH maps (WP-470 / D-24282 — else the sim hangs)', () => {
+    // why: WP-470 — Doombot Legion's scry-KO Fight now parks an interactive choice;
+    // getLegalMoves short-circuits to resolveScryKoChoice, so it MUST have a MOVE_MAP
+    // entry in both loops or a bot game fighting a Doombot with ≥2 deck cards hangs.
+    assert.ok(
+      SIMULATION_RUNNER_MOVE_NAMES.includes('resolveScryKoChoice'),
+      'resolveScryKoChoice must be a simulation.runner MOVE_MAP key',
+    );
+    assert.ok(
+      PAR_AGGREGATOR_MOVE_NAMES.includes('resolveScryKoChoice'),
+      'resolveScryKoChoice must be a par.aggregator MOVE_MAP key',
+    );
+  });
+
   it('NEGATIVE: the guard would FAIL if an emittable move lacked a dispatch entry (non-vacuous)', () => {
     const phantom = '__not_a_move__';
     // The real maps do not contain the phantom...

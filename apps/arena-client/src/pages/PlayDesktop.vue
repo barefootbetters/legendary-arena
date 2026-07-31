@@ -42,6 +42,7 @@ import PileBrowseModal from '../components/play/PileBrowseModal.vue';
 import CardReaderModal from '../components/play/CardReaderModal.vue';
 import PendingHeroChoicePrompt from '../components/play/PendingHeroChoicePrompt.vue';
 import PendingKoHeroChoicePrompt from '../components/play/PendingKoHeroChoicePrompt.vue';
+import PendingScryKoChoicePrompt from '../components/play/PendingScryKoChoicePrompt.vue';
 import OptionalKoRewardPrompt from '../components/play/OptionalKoRewardPrompt.vue';
 import DrawOrEmpoweredPrompt from '../components/play/DrawOrEmpoweredPrompt.vue';
 import VictoryPileCardPickPrompt from '../components/play/VictoryPileCardPickPrompt.vue';
@@ -107,6 +108,7 @@ export default defineComponent({
     CardReaderModal,
     PendingHeroChoicePrompt,
     PendingKoHeroChoicePrompt,
+    PendingScryKoChoicePrompt,
     OptionalKoRewardPrompt,
     DrawOrEmpoweredPrompt,
     VictoryPileCardPickPrompt,
@@ -409,6 +411,12 @@ export default defineComponent({
     const hasPendingDiscardToPlay = computed<boolean>(
       () => snapshot.value?.pendingDiscardToPlay !== undefined,
     );
+    // why: WP-470 / D-24282 — derived from UIState.pendingScryKoChoice !== undefined.
+    // Passed to TurnActionBar to block end-turn and pass-priority at EVERY stage while a
+    // Doombot scry-KO choice is pending (board frozen, mirrors hasPendingKoChoice).
+    const hasPendingScryKoChoice = computed<boolean>(
+      () => snapshot.value?.pendingScryKoChoice !== undefined,
+    );
 
     // why: WP-380 — Healing KOs Wounds from HAND specifically, so scan the viewer's
     // own handCards (UIPlayerState.woundCount counts every zone and cannot answer
@@ -444,6 +452,7 @@ export default defineComponent({
       hasPendingPutAnyNumberBottomHQ,
       hasPendingReturnZeroCostDiscard,
       hasPendingDiscardToPlay,
+      hasPendingScryKoChoice,
       hasWoundInHand,
     };
   },
@@ -598,6 +607,15 @@ export default defineComponent({
             :viewer-player-id="viewer.playerId"
             :submit-move="submitMove"
           />
+          <!-- why: WP-470 / D-24282 — the Doombot scry-KO prompt renders above
+               TurnActionBar in DOM order; appears only for the choosing player when
+               pendingScryKoChoice is set. NOT a modal; normal document flow. The
+               block-all guard guarantees at most one pending-choice type is set. -->
+          <PendingScryKoChoicePrompt
+            :pending-scry-ko-choice="snapshot.pendingScryKoChoice"
+            :viewer-player-id="viewer.playerId"
+            :submit-move="submitMove"
+          />
           <!-- why: D-24020 + WP-249 — the optional-KO-reward prompt renders above
                TurnActionBar in DOM order; appears only for the choosing player
                when pendingOptionalKoReward is set. NOT a modal; normal document
@@ -679,6 +697,7 @@ export default defineComponent({
             :has-pending-put-any-number-bottom-h-q="hasPendingPutAnyNumberBottomHQ"
             :has-pending-return-zero-cost-discard="hasPendingReturnZeroCostDiscard"
             :has-pending-discard-to-play="hasPendingDiscardToPlay"
+            :has-pending-scry-ko-choice="hasPendingScryKoChoice"
             :has-wound-in-hand="hasWoundInHand"
             :has-acted-this-turn="snapshot.game.hasActedThisTurn"
             :has-healed-this-turn="snapshot.game.hasHealedThisTurn"
