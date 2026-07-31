@@ -204,3 +204,39 @@ D-24283 contract (landed at WP-472). **NG:** none.
 
 Recorded at drafting; see the SPEC commit body for the pre-flight / copilot / lint
 subagent verdicts run against this WP + EC-506 (and the paired WP-472/473/474).
+
+## Execution Reconciliation (2026-07-31, operator-confirmed)
+
+This WP was drafted as if `data/gauntlet-configs.json` were **new**, with a simpler
+`{ villains[], henchmen[] }` all-sets shape plus a `scripts/seed-gauntlet-configs.mjs`
+seeder. At execution the file was found to **already exist on `origin/main`, authored
+by #1116** — Core-only, with a richer self-documenting schema
+(`years[year].sets[set].masterminds[mm].schemes[scheme]` carrying `schemeName` /
+`villainPool` / `henchmanPool` / `variety`, plus `setName`, `mastermindName`,
+`anchorVillainGroup`, `baseVillainPool`, `baseHenchmanPool`, and a top-level
+`description`/`slicing`), already using full set-qualified ext_ids and carrying the
+**exact Core swaps this §Contract lists**. Reconciled with the operator; the following
+supersede the corresponding draft text:
+
+- **Scope (In) / Files Expected to Change.** The seeder and a new JSON are **not**
+  created. `data/gauntlet-configs.json` is **read, not modified** (kept verbatim from
+  #1116). Files actually produced: `packages/registry/src/gauntletConfigs.{ts,test.ts}`
+  (new) + `packages/registry/src/index.ts` (barrel) + governance — a **subset** of the
+  drafted allowlist (no file outside it).
+- **Contract / JSON shape.** The loader reads #1116's **rich** schema (above), not the
+  drafted `schemeSlug → { villains[], henchmen[] }`. Composition ext_ids are already full
+  `setAbbr/slug`; the loader returns them unchanged (no re-qualification). It slices by
+  `PLAYER_COUNT_SETUP` (the canonical WP-370/D-24165 table the file's `slicing` block
+  mirrors), not a duplicated `REQUIRED_GROUP_COUNTS`.
+- **AC#1 (non-Core byte-identical) — narrowed.** `getGauntletConfig` returns **`undefined`
+  for any absent leg** (non-Core set, unknown mastermind, or unswapped/absent scheme);
+  the consumer falls back to the per-mastermind `GAUNTLET_LOADOUT_MENUS` (the WP-472
+  absent-scheme → menu-fallback model). The loader is not seeded for all sets and never
+  synthesizes a composition. The retained faithfulness guard: every **unswapped** Core leg
+  reproduces the menu (proved in `gauntletConfigs.test.ts`).
+- **AC#3 (unknown leg → seeded default) — superseded.** Unknown leg → `undefined` →
+  consumer menu-fallback (no synthesized default).
+- **Retained unchanged:** registry zod-only + Node built-ins; pure loader; validate-at-load
+  throw (full-sentence errors); the Core swaps + the Loki `radiation` Always-Leads omission;
+  the fail-loud scheme-key validator (now a committed-file test asserting every scheme key
+  is a real scheme of its set vs `data/cards`); the barrel exports; **no D-entry** here.
