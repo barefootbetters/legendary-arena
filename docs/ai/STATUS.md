@@ -7,6 +7,34 @@
 
 ## Current State
 
+### WP-466 / EC-501 — Compact the Core Coverage Matrix (Remove Horizontal Scroll) (2026-07-30)
+
+**User-Visible Surface = `legends.legendary-arena.com`.** **D-24026 deploy
+live-verify operator-pending**; **live-data DOM smoke passed** (below). No D-entry
+(presentation-only).
+
+Three operator-directed refinements to the WP-464 Core coverage matrix, all to
+**remove the horizontal scroll**: **(1)** each mastermind is named **once** as a
+full-width group-header row above its 8 scheme rows (via the existing
+`isMatrixMastermindStart`), so the row-label column holds only the scheme name;
+**(2)** the 11 villain/henchman column headings are **rotated 90°**
+(`writing-mode: vertical-rl`) so each column shrinks to ~one line-height wide (the
+header row grows taller instead); **(3)** long scheme names **wrap to two lines**
+(`white-space: normal` + `max-width` + `overflow-wrap`). Single-file
+`GauntletIndexPanel.vue` (scoped CSS + template regroup); `buildCoverageMatrix` +
+its tests are untouched; `vue`-only / zero-API; the ✓ cells, challenge links, count
+selector, and accessible names are unchanged. legends-board 123/0, vue-tsc 0, build
+0; `pnpm -r build` 0.
+
+**Live-data verification (DOM):** dev server against the real R2 — the Core matrix
+now renders 4 mastermind group-headers (Magneto / Dr. Doom / Loki / Red Skull, each
+once), the 11 column headings with computed `writing-mode: vertical-rl`, 32 scheme
+rows, the long "Replace Earth's Leaders with Killbots" label wrapped to 2 lines
+(22px tall), and a table intrinsic width of ~462px (down from ~1300px+ with
+horizontal name headers) — well within a normal panel width, so no horizontal
+scroll. The literal viewport-overflow assertion is the operator-pending deploy step
+(the dev pane isn't compositing, so viewport-relative measures read 0).
+
 ### WP-464 / EC-499 — Core Set Gauntlet-Coverage Matrix (Legends Board) (2026-07-30)
 
 **User-Visible Surface = `legends.legendary-arena.com`.** **D-24026 CF-Pages client
