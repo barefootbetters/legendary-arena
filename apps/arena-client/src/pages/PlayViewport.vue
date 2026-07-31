@@ -13,7 +13,10 @@ import BotAllyStallBanner from '../components/BotAllyStallBanner.vue';
 import UpdateAvailableBanner from '../components/UpdateAvailableBanner.vue';
 import { useViewport } from '../composables/useViewport';
 import { useSkinApplier } from '../composables/useSkinApplier';
-import { useCompetitiveSubmitOnGameover } from '../composables/useCompetitiveSubmitOnGameover';
+import {
+  useCompetitiveSubmitOnGameover,
+  type SubmissionStatus,
+} from '../composables/useCompetitiveSubmitOnGameover';
 import { useCardImagePrefetch } from '../composables/useCardImagePrefetch';
 import { useSoundEffects } from '../composables/useSoundEffects';
 import { useComboCue } from '../composables/useComboCue';
@@ -25,12 +28,24 @@ import type { SubmitMove } from '../components/play/uiMoveName.types';
 // why: WP-339 — the user-facing message for each post-match submission status.
 // Mounted once here at the shared viewport root (which holds matchId, D-16501), so
 // a single submit covers both the <PlayDesktop> and <PlayMobile> surfaces.
-const SUBMISSION_MESSAGES: Record<string, string> = {
+// why: WP-465 — typed `Record<Exclude<SubmissionStatus, 'idle'>, string>` so every
+// non-idle status is compile-forced to have copy (a new status without a message is a
+// vue-tsc error). `'idle'` is excluded because the banner is hidden while idle
+// (v-if="submissionStatus !== 'idle'"), so it intentionally has no message.
+const SUBMISSION_MESSAGES: Record<Exclude<SubmissionStatus, 'idle'>, string> = {
   submitting: 'Submitting your score…',
   submitted: 'Score submitted to the leaderboard.',
   already: 'Your score for this match was already submitted.',
   guest: 'Sign in to submit your score to the leaderboard.',
-  failed: 'Couldn’t submit your score. It may still be counted shortly.',
+  // why: WP-465 — `par_not_published`: the match is not a ranked-gauntlet loadout, so
+  // it is permanently not eligible to be scored. An honest, non-alarming line (not an
+  // error — the player did nothing wrong).
+  ineligible: 'This match isn’t part of a ranked gauntlet, so it isn’t scored to the leaderboard.',
+  // why: WP-465 — retry-NEUTRAL. The failed bucket mixes transient (network, 500) and
+  // permanent (not_owner, visibility_not_eligible, replay_verification_failed) reasons,
+  // so the old “It may still be counted shortly.” was a false promise for the permanent
+  // ones; this line is honest for both without implying a retry that does not happen.
+  failed: 'Couldn’t submit your score to the leaderboard.',
 };
 
 /**
@@ -121,9 +136,14 @@ export default defineComponent({
     const { submissionStatus } = useCompetitiveSubmitOnGameover(
       toRef(props, 'matchId'),
     );
-    const submissionMessage = computed<string>(
-      () => SUBMISSION_MESSAGES[submissionStatus.value] ?? '',
-    );
+    const submissionMessage = computed<string>(() => {
+      const status = submissionStatus.value;
+      // why: WP-465 — 'idle' has no banner (rendered only when status !== 'idle')
+      // and no message entry; narrowing it out lets SUBMISSION_MESSAGES be the
+      // exhaustive Record<Exclude<SubmissionStatus, 'idle'>, string> (a missing
+      // status is now a compile error, not a silent '').
+      return status === 'idle' ? '' : SUBMISSION_MESSAGES[status];
+    });
 
     // why: WP-415 — mounted ONCE at this 01.5 play-root host (the WP-410/412
     // precedent), so the bot-ally stall banner covers BOTH the <PlayMobile> and
@@ -305,5 +325,12 @@ export default defineComponent({
 
 .score-submission-status--guest {
   background: rgba(60, 52, 20, 0.94);
+}
+
+/* why: WP-465 — ineligible is neither success nor error, so it uses a neutral
+   blue/slate, deliberately distinct from --submitted (green), --failed (red), and
+   --guest (amber) so it never reads as a score being recorded or a failure. */
+.score-submission-status--ineligible {
+  background: rgba(40, 52, 78, 0.94);
 }
 </style>

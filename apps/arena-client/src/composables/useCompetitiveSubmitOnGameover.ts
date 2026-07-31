@@ -32,6 +32,8 @@ import { submitCompetitiveScore } from '../lib/api/competitionApi';
  * - `already` — accepted idempotently, the score was already submitted (200, `wasExisting: true`).
  * - `failed` — a non-200 or a network failure.
  * - `guest` — the player is not signed in; nothing was submitted.
+ * - `ineligible` — the match is permanently not eligible to be scored (not a
+ *   ranked-gauntlet loadout); NOT an error and NOT retriable (WP-465).
  */
 export type SubmissionStatus =
   | 'idle'
@@ -39,7 +41,8 @@ export type SubmissionStatus =
   | 'submitted'
   | 'already'
   | 'failed'
-  | 'guest';
+  | 'guest'
+  | 'ineligible';
 
 /**
  * Watch for gameover and submit the match's competitive score once.
@@ -63,7 +66,8 @@ export function useCompetitiveSubmitOnGameover(matchId: Ref<string>): {
   /**
    * Submit the current match's score once. A guest (null token) is a no-op that
    * sets `'guest'`; an authenticated player POSTs `{ matchId }` and the result
-   * maps to `submitted` / `already` / `failed`.
+   * maps to `submitted` / `already`, `ineligible` (a `par_not_published`
+   * rejection — the match is not a ranked-gauntlet loadout), or `failed`.
    */
   async function submitOnce(): Promise<void> {
     if (hasSubmitted) {
@@ -89,6 +93,15 @@ export function useCompetitiveSubmitOnGameover(matchId: Ref<string>): {
     const result = await submitCompetitiveScore(token, currentMatchId);
     if (result.status === 200) {
       submissionStatus.value = result.wasExisting === true ? 'already' : 'submitted';
+    } else if (result.error === 'par_not_published') {
+      // why: WP-465 — `par_not_published` means the finished match is not a
+      // ranked-gauntlet loadout, so it is PERMANENTLY not eligible to be scored —
+      // distinct from a retriable failure. `result.error` is an intentional
+      // cross-layer string couple mirroring the server's `SubmissionRejectionReason`
+      // (apps/server/src/competition/competition.types.ts); the client cannot import
+      // that enum across the layer boundary, so it matches by value. Any other /
+      // renamed reason falls through to `'failed'` by design (safe, no throw).
+      submissionStatus.value = 'ineligible';
     } else {
       submissionStatus.value = 'failed';
     }
