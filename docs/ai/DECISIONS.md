@@ -34963,3 +34963,88 @@ change (a `.types.ts` field) is recorded by this D-entry per `code-style.md §Co
 Files`. Reserved by WP-463.
 
 Protect this file.
+
+### D-24281 — `reveal-or-wound` is the eighth villain effect primitive: a conditional each-player effect gated by a hand-only hero-trait predicate, auto-resolved and self-narrating (Drafted 2026-07-30 — WP-469; not yet landed)
+
+> **Status: Drafted at SPEC time; flips to Active (post-execution) when WP-469
+> executes.** Reserved in `NUMBER-LEDGER.md` under the same branch. (Reserved by WP-469
+> after a concurrent collision renumbered it from WP-468/EC-503; #1114 used no D-entry,
+> so D-24281 was unaffected.)
+
+**Context.** A live Magneto match (2026-07-30) surfaced the last onFight hollow: core
+`brotherhood/sabretooth`'s *"Fight: Each player reveals an [team:x-men] Hero or gains a
+Wound."* (+ *"Escape: Same effect."*). This is a **conditional each-player**
+reveal-or-wound — the single most common unimplemented villain mechanic (41 corpus
+lines), deferred repeatedly as `conditional` because the vocabulary lacked a hero-trait
+predicate.
+
+**Decision.** Append one primitive `reveal-or-wound` to the closed
+`VillainEffectPrimitive` union + `VILLAIN_EFFECT_PRIMITIVES` array (position 8,
+append-only; the drift test moves to 8). Grammar `reveal-or-wound:<kind>:<value>` where
+`kind` ∈ `{ team, hc }` (`hc` → `'hero-class'`, mirroring the card-text `[hc:X]`/`[team:X]`
+namespaces and the D-24076 `[require-to-defeat:<kind>:<value>]` grammar) and `value`
+non-empty; the descriptor gains `requireKind` + `requireValue` fields (present only on
+this primitive).
+
+**Semantics (auto-resolved, deterministic).** For each player in
+`Object.keys(G.playerZones).sort()`, the handler scans that player's **hand** for a hero
+whose `G.cardTraits` `{ team, heroClass }` matches the predicate and, **only when no
+match**, applies `gainWound` (empty wound pile → reachable no-op). The wound branch
+mirrors `villainEffectGainWound`'s each-player path: when the wounded player is the
+current player it also increments `G.turnEconomy.woundsDrawn`, so the UI projection is
+not off-by-one. `requireValue` is stored normalized to the `cardTraits` slug space
+(`normalizeTraitSlug` = `trim().toLowerCase()`, matching `buildCardTraits` and the
+D-24076 setup) so the `===` comparison is casing/whitespace-safe. A matching player
+reveals for free — no mutation. There is **no player choice**: revealing to avoid the
+Wound is always optimal for a Wound-averse player (the rare Wound-synergy decline is a
+documented auto-resolve simplification, deferred with the interactive choice), so
+auto-resolution is faithful and avoids a block-all pending-choice
+(`project_pending_choice_no_ux_freeze`). This is a hero-vs-villain co-op game (§23
+no-PvP), so auto-revealing leaks no adversarial hand information.
+
+**Decision — hand-only predicate (deliberately narrower than the defeat requirement).**
+"Reveal a Hero" is a **hand** action; a Hero already in play is not revealed. So the
+handler uses a new **hand-only** trait-match helper reusing the `cardTraits` lookup, NOT
+the D-24076 `playerMeetsDefeatRequirement` (hand+inPlay) — which is not reused or
+modified.
+
+**Decision — keyword-less, self-narrating.** `reveal-or-wound` is not a legacy keyword,
+so `descriptorToLegacyKeyword` returns `undefined`, the executor records no
+`VillainEffectResult`, and `descriptorKey` is **not** extended with the predicate fields
+(leaving the 10-keyword frozen surface + the injective round-trip test untouched). The
+handler pushes ONE `G.messages` line via `pushLog` — ≥1 wounded → `<timing> effect: <N>
+player(s) had no matching Hero and gained a Wound (<names>).`; none → `<timing> effect:
+every player revealed a matching Hero.` (the WP-447 scry-ko precedent). `G.messages` is
+hash-excluded (D-24081), so no replay-hash surface is added by narration.
+
+**Scope.** Marks the **core** unconditional instances only — **5 cards / 8 markers**,
+with every core `"… Same effect."` Escape marked alongside its Fight (omitting one would
+leave an `unmarked-ability` hollow of the exact class this WP closes):
+`brotherhood/sabretooth` (fight + escape, `team:x-men`), `enemies-of-asgard/frost-giant`
+(fight + escape, `hc:ranged`), `enemies-of-asgard/ymir-frost-giant-king` (ambush,
+`hc:ranged`), `masters-of-evil/ultron` (escape, `hc:tech`), `radiation/zzzax` (fight +
+escape, `hc:strength`) — proving Fight/Ambush/Escape × team + hero-class. The stale
+`_unassigned` `reason:"conditional"` rows for these cards are removed. The ~35 cross-set
+unconditional instances are a data-only follow-on; the conditional/compound variants
+(each-**other**-player, Endgame/Sunlight-gated, ascend-to-Mastermind, player-to-your-right,
+"Or Suffer") each need a distinct target/gating primitive and stay deferred.
+
+**Determinism.** No `ctx.random.*` / `Math.random` / I/O; no new `G` field; Wound via
+`gainWound`/`zoneOps` (+ the `woundsDrawn` bump above); no `.reduce()`. Marking makes the
+5 core villains apply a **real hashed Wound** wherever a fixture reveals/fights one.
+These are among the most common Core adversaries (Brotherhood / Enemies of Asgard /
+Masters of Evil / Radiation), so a **re-pin is likely, not the exception** — the executor
+runs the suite and regenerates + re-pins any shifted `finalStateHash` oracle with a note
+(confirmed empirically, never assumed green).
+
+**Files (at execution).** `packages/game-engine/src/rules/villainAbility.types.{ts,test.ts}`
++ `setup/villainAbility.setup.{ts,test.ts}` + `villain/villainEffects.execute.{ts,test.ts}`
++ `scripts/convert-cards/apply-effect-markers.mjs` (local grammar) +
+`scripts/convert-cards/inputs/villain-effect-markers.json` + generated
+`data/cards/core.json` + the regenerated `docs/ai/coverage/villain-mechanic-ledger.{json,csv}`.
+No `.claude/rules/*` or `ARCHITECTURE.md` edit — within-layer vocabulary growth (a new
+closed-union primitive + descriptor fields), no new cross-layer edge or persistence
+carve-out; the contract change is recorded by this D-entry per `code-style.md §Contract
+Files` + the §Drift Detection union/array/test discipline. Reserved by WP-469.
+
+Protect this file.
