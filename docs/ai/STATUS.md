@@ -7,6 +7,38 @@
 
 ## Current State
 
+### WP-469 / EC-504 — Villain `reveal-or-wound` Conditional Each-Player Effect (Sabretooth + Core Siblings) (2026-07-31)
+
+**User-Visible Surface = game log + Wound piles.** **D-24026 live-verify
+operator-pending** (a driven match fighting Sabretooth — not a browser surface, so no
+in-session verify). Lands **D-24281 Active**.
+
+Closes the last onFight hollow observed in a live Magneto match (2026-07-30): core
+`brotherhood/sabretooth`'s *"Fight: Each player reveals an X-Men Hero or gains a
+Wound."* (+ *"Escape: Same effect."*) — a **conditional each-player** reveal-or-wound,
+the single most common unimplemented villain mechanic (41 corpus lines), previously
+deferred as `conditional` for lack of a hero-trait predicate. Appends **one** primitive
+`reveal-or-wound` to the closed `VillainEffectPrimitive` union + array (position 8,
+append-only; drift test → 8) with new `requireKind`/`requireValue` descriptor fields;
+grammar `reveal-or-wound:<team|hc>:<value>` (`hc` → `'hero-class'`; `requireValue`
+normalized to the `cardTraits` slug space) taught to both the engine parser and
+`apply-effect-markers.mjs`. `villainEffectRevealOrWound` scans **each** player's **hand**
+(sorted) via `G.cardTraits` — a new **hand-only** helper, faithfully narrower than the
+D-24076 `playerMeetsDefeatRequirement` (hand+inPlay, unchanged) because the printed
+"reveal" is a hand action — and `gainWound`s only on **no match** (mirroring
+`gain-wound:each`'s current-player `woundsDrawn` bump; empty pile → reachable no-op).
+Auto-resolved (no player choice), **self-narrates** one `pushLog` line (keyword-less →
+`descriptorToLegacyKeyword` undefined; the frozen 10-keyword surface + injective
+round-trip test + `descriptorKey` untouched). Marks **core only — 5 cards / 8 markers**
+(sabretooth/frost-giant/zzzax each Fight+Escape, ymir Ambush, ultron Escape — every core
+"Same effect." Escape marked) via the script onto `data/cards/core.json` (only 8 lines
+changed) + removes the 4 stale `_unassigned` rows; the ~35 cross-set instances are a
+data-only follow-on. Determinism-adjacent (real hashed Wound, no `ctx.random`/I-O/new `G`
+field): **no fixture re-pin needed** — no recorded fixture fights/escapes these core
+villains, confirmed empirically (`pnpm -r --no-bail test` green, `finalStateHash`
+unchanged). game-engine 2131/0; `ledger:villains` executable 104→109 (+`reveal-or-wound`),
+`ledger:villains:check` + `mechanics:metadata:check` + `sim:runtime-observed:check` green.
+
 ### WP-468 / EC-503 — Coverage-Matrix Dropdown Readability + Collapsible Masterminds (2026-07-30)
 
 **User-Visible Surface = `legends.legendary-arena.com`.** **D-24026 deploy

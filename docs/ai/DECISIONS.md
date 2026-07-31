@@ -34964,12 +34964,12 @@ Files`. Reserved by WP-463.
 
 Protect this file.
 
-### D-24281 — `reveal-or-wound` is the eighth villain effect primitive: a conditional each-player effect gated by a hand-only hero-trait predicate, auto-resolved and self-narrating (Drafted 2026-07-30 — WP-469; not yet landed)
+### D-24281 — `reveal-or-wound` is the eighth villain effect primitive: a conditional each-player effect gated by a hand-only hero-trait predicate, auto-resolved and self-narrating (Active 2026-07-31 — WP-469)
 
-> **Status: Drafted at SPEC time; flips to Active (post-execution) when WP-469
-> executes.** Reserved in `NUMBER-LEDGER.md` under the same branch. (Reserved by WP-469
-> after a concurrent collision renumbered it from WP-468/EC-503; #1114 used no D-entry,
-> so D-24281 was unaffected.)
+> **Status: Active (landed 2026-07-31 — WP-469 executed).** Reserved in
+> `NUMBER-LEDGER.md` under the same branch. (Reserved by WP-469 after a concurrent
+> collision renumbered it from WP-468/EC-503; #1114 used no D-entry, so D-24281 was
+> unaffected.)
 
 **Context.** A live Magneto match (2026-07-30) surfaced the last onFight hollow: core
 `brotherhood/sabretooth`'s *"Fight: Each player reveals an [team:x-men] Hero or gains a
