@@ -30,6 +30,7 @@ import { koAttachedHeroesOnEscape } from '../board/heroCapture.logic.js';
 import {
   executeVillainAbilities,
   resolveEffectResultNames,
+  villainCardEscapeTriggersSchemeTwist,
 } from '../villain/villainEffects.execute.js';
 import { hasPendingKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from '../moves/scryKoChoice.resolve.js';
@@ -292,6 +293,31 @@ export function performVillainReveal(
       }
       // why: captured heroes KO'd when villain escapes (tabletop rules)
       koAttachedHeroesOnEscape(G, pushResult.escapedCard);
+
+      // why: WP-481 / D-24287 — Mystique's "Escape: … becomes a Scheme Twist that
+      // takes effect immediately." The executor's become-scheme-twist handler is a
+      // no-op (it cannot reach the rule pipeline); the actual twist fires HERE, where
+      // the hookRegistry + implementationMap + RevealContext are in scope. Run the
+      // SAME two-call pattern the reveal path uses for a revealed scheme-twist card
+      // (Step 5/6 above): the active scheme's twist resolver runs, schemeTwistCount
+      // increments, and the loss threshold is checked. The escaped card stays in the
+      // escaped pile — resolvers use the cardId only to stamp a schemeTwistResolved
+      // notableEvent, never to route a card. "Takes effect immediately" → after the
+      // escape's own consequences (wound / bystander release / escape effects / hero KO).
+      if (villainCardEscapeTriggersSchemeTwist(G, pushResult.escapedCard)) {
+        pushLog(G,
+          `Escape effect: ${formatCardRef(G.cardDisplayData, pushResult.escapedCard)} becomes a Scheme Twist that takes effect immediately.`,
+        );
+        const escapeSchemeTwistEffects = executeRuleHooks(
+          G,
+          context,
+          'onSchemeTwistRevealed',
+          { cardId: pushResult.escapedCard },
+          G.hookRegistry,
+          implementationMap,
+        );
+        applyRuleEffects(G, context, escapeSchemeTwistEffects);
+      }
     }
 
     // why: Ambush fires on City entry. The hardcoded "each player gains a
