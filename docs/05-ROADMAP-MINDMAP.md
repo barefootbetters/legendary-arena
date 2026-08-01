@@ -196,6 +196,7 @@ mindmap
         ["WP-269 ✅ Hero mechanic metadata feed (producer half of the mechanic-query slice; deterministic transform turns the committed hero ledger into a normalized viewer-safe data/metadata/card-mechanics.json + data-only CardMechanicsIndexSchema + CI freshness gate; hidden fail-closed; D-24046)"]
         ["WP-270 ✅ Registry-viewer hero mechanic filter surface (consumer half; cardMechanicsClient + MechanicFilter ribbon over WP-269's feed, hidden!==true, OR-within / AND-across the text query; consumes D-24046)"]
         ["WP-271 ✅ Villain & henchman mechanic ledger (data-production half of beyond-heroes; new scripts/villain-mechanic-ledger.mjs mirrors the hero ledger, classifies [effect:X] by-hook via the dist's buildVillainAbilityHooks — resolved→executable / unresolvedMarkers→unsupported / no-marker→unmarked; ledger:villains:check CI gate; mastermind/scheme deferred — no ability-hook parser exists, named follow-ups; data-production only, feed-widening + dashboard view are consumption follow-ups per the D-24046 split; Shared Tooling, no engine/registry/app/data change, hero instruments byte-unchanged; User-Visible Surface none-infrastructure; D-24048)"]
+        ["WP-484 📝 Effect Implementation Index (first slice of the ewiki debug-effects.md direction; deterministic transform JOINS the committed hero + villain mechanic ledgers into one dual-scope schema-validated data/metadata/effect-implementation-index.json carrying per card×mechanic scope/status/handler/wp/decision + cards join + summary; handler/wp/decision verbatim from BOTH ledgers [populated for resolved rows both scopes, empty on unsupported/unmarked, never fabricated]; new data-only EffectImplementationIndexSchema on the /schema subpath + effect-index:check CI freshness gate, mirroring WP-269; NO engine touch / NO /debug/effects viewer / NO runtime tracing — future WPs; drafted 2026-08-01; EC-519; User-Visible Surface none-infrastructure; D-24289)"]
         ["WP-276 ✅ Registry-viewer mechanic filter searchable dropdown (reworks WP-270's chip ribbon into a searchable multi-select toggle + position:fixed popover listing all 134 mechanics, escaping the drawer's overflow:hidden clip; supersedes WP-270 AC-7 curated-visible ribbon as a consumer presentation choice — feed + v-model contract unchanged, filter stays OR-within / AND-across; D-24052)"]
         ["WP-277 ✅ Mechanic dropdown scroll fix (regression in WP-276 — the capture-phase window scroll listener that closes the position:fixed popover also caught the popover list's own scroll → instantly closed the dropdown, making the list look unscrollable; onViewportChange now ignores scrolls whose target is inside the popover root, still closes on outside page/drawer scroll + resize; bugfix, no DECISIONS change)"]
         ["WP-278 ✅ Registry-viewer search header redesign — unified FilterDropdown (new shared FilterDropdown.vue standard control rebuilds Set·Class·Type·Mechanics·Effects on one row + a contextual Patterns dropdown, collapsing the scheme-twist + mechanical-pattern ribbons and deleting AbilityEffectFilter/SchemeTwistFilter/PatternFilter/MechanicFilter; filtering logic unchanged — OR-within / AND-across, D-24046 + D-24052 preserved; D-24053)"]
@@ -634,7 +635,7 @@ mindmap
 | Client Integration Cluster | 21/21 | — |
 | Auth Stack & Profile Surface | 15/15 | — |
 | Engine + Server Wiring & Leaderboard HTTP | 3/3 | — |
-| Registry Viewer Enhancements | 26/26 | — |
+| Registry Viewer Enhancements | 26/27 | 1 open |
 | Phase 8 — Interactive Board Layout | 3/3 | — |
 | G-State Extensions | 4/4 | — |
 | Monetization Stack | 3/3 | — |
@@ -664,9 +665,9 @@ mindmap
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **466/478 WP ✅** (+ 4/4 Foundation Prompts) | 3 ⏸, 9 open |
+| **Total** | **466/479 WP ✅** (+ 4/4 Foundation Prompts) | 3 ⏸, 10 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 12):** WP-042.1 ⏸ blocked; WP-349 open; WP-391 open; WP-396 open; WP-398 open; WP-399 open; WP-368 open; WP-403 ⏸ blocked; WP-404 ⏸ blocked; WP-422 open; WP-429 open; WP-453 open.
+**Open / blocked WPs (derived from WORK_INDEX, 13):** WP-042.1 ⏸ blocked; WP-349 open; WP-391 open; WP-396 open; WP-398 open; WP-399 open; WP-368 open; WP-403 ⏸ blocked; WP-404 ⏸ blocked; WP-422 open; WP-429 open; WP-453 open; WP-484 open.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.
