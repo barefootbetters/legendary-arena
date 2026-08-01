@@ -7,6 +7,45 @@
 
 ## Current State
 
+### WP-472 / EC-507 — Per-Scheme Approved-Loadout: Server Truth + Leaderboard + Publisher (Arc 2/5) (2026-08-01)
+
+**User-Visible Surface = legends.legendary-arena.com.** **D-24026 live-verify operator-pending**
+(post-deploy, `gauntlet-index.json` legs carry per-scheme `approvedLoadouts`; Core Dr. Doom
+Secret-Invasion 2p = `core/skrulls` + `core/masters-of-evil`, a non-swapped Dr. Doom leg =
+`core/brotherhood` + `core/masters-of-evil`).
+
+Arc 2/5 of the operator-directed per-scheme gauntlet variety. Threads the WP-471 loader through
+the server's shared truth + leaderboard + publisher so the ranked gauntlet's approved loadouts
+are keyed per **(scheme × mastermind × player-count)** — as an **additive OVERLAY** over the
+per-mastermind `GAUNTLET_LOADOUT_MENUS`, not a replacement. `getGauntletConfig` returns
+`undefined` for every non-Core / unswapped leg (the config file is Core-only), so those legs
+carry no overlay entry and resolve to the per-mastermind menu everywhere — non-Core qualifies
+and publishes byte-identically to today.
+
+- **`gauntletTruth.logic.ts`:** `qualifiesAsLegClear` gains **exactly one** new optional trailing
+  param `approvedLoadoutsByScheme?: ReadonlyMap<string, GauntletApprovedLoadouts>`, resolving
+  `effective = map.get(scheme) ?? approvedLoadouts` before the existing match. `matchesApprovedLoadout`
+  signature, the `GauntletApprovedLoadouts` shape, and `definition.approvedLoadouts` are PRESERVED,
+  so WP-473's 3-arg call site compiles untouched (the additive-split invariant).
+- **`gauntlet.logic.ts`:** `buildGauntletCatalog` builds legs **per mastermind** and stamps each
+  leg's **effective** loadout (per-scheme overlay where authored, else the mastermind's menu) as a
+  new additive `GauntletLeg.approvedLoadouts`; `getGauntletStandings` builds the per-scheme map from
+  those legs and passes it to the predicate; `buildSetDetailsCatalog` (D-24279) coverage is now
+  **union-over-legs** (a group is used if it appears in ANY leg's effective config — Loki's
+  `radiation` swap adds it while the unswapped legs keep `enemies-of-asgard`).
+- **`legends.publisher.ts` / `legends.types.ts`:** the per-leg loadout is emitted onto each
+  `GauntletIndexLeg` (ids only); the entry-level `GauntletIndexEntry.approvedLoadouts` stays
+  **dual-written** per mastermind (RS-1, no deploy-window blank — WP-474 removes it).
+- **`server.mjs`:** the wiring projects the overlay from the year-keyed loader
+  (`getGauntletConfig` / `getActiveYear`) via `buildVillainSegment` / `buildHenchmanKey`, keeping
+  the legends module registry-free.
+
+Lands **D-24283 Active** (supersedes D-24278's per-mastermind axis; 1 variant/leg + D-24199 intact;
+PAR ~2,118 unchanged; `competitive_scores` empty → zero migration). Run-tracker + per-leg launch
+migrate in WP-473; clients in WP-474/475. Baselines: server legends+gauntlet **129/0** (16
+DB-gated skipped, no `TEST_DATABASE_URL`); the 3 affected legends files **85/0**; `pnpm -r build`
+green. Smoke-verified vs the real `data/gauntlet-configs.json`.
+
 ### WP-477 / EC-512 — Wire the Discard-Choice Gate into TurnActionBar (2026-07-31)
 
 **User-Visible Surface = play.legendary-arena.com.** **D-24026 live-verify operator-pending**

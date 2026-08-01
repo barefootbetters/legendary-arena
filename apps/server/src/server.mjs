@@ -19,6 +19,8 @@ import {
   GAUNTLET_LOADOUT_MENUS,
   buildVillainSegment,
   buildHenchmanKey,
+  getGauntletConfig,
+  getActiveYear,
   validateThemeFile,
 } from '@legendary-arena/registry';
 import { buildScenarioKey } from '@legendary-arena/game-engine';
@@ -644,10 +646,63 @@ export async function startServer() {
       approvedByPlayerCount,
     );
   }
+  // why: WP-472 / D-24283 — the per-scheme approved-loadout OVERLAY over the
+  // per-mastermind menu above, projected HERE at wiring time from the year-keyed
+  // config loader (getGauntletConfig, active year getActiveYear) so the legends
+  // module keeps its no-registry-import lock. For each gauntlet leg × count the
+  // loader returns an authored per-scheme composition (Core today) or undefined
+  // (every non-Core leg — the config file is Core-only). An overlay entry is
+  // added ONLY where the loader returns a value; an absent leg gets no entry and
+  // resolves downstream to the per-mastermind menu (qualification `?? approved`,
+  // and the effective leg-stamp/publish). The two comparison keys are derived
+  // the same way as the menu (buildVillainSegment / buildHenchmanKey) so the
+  // match stays apples-to-apples.
+  const approvedLoadoutsByScheme = new Map();
+  for (const setSummary of gauntletSetSummaries) {
+    for (const mastermind of setSummary.masterminds) {
+      for (const scheme of setSummary.schemes) {
+        const approvedByPlayerCount = {};
+        let hasAuthoredLeg = false;
+        for (const playerCount of Object.keys(PLAYER_COUNT_SETUP)) {
+          const count = Number(playerCount);
+          const composition = getGauntletConfig(
+            setSummary.setAbbr,
+            mastermind.slug,
+            scheme.slug,
+            count,
+          );
+          if (composition === undefined) {
+            continue;
+          }
+          approvedByPlayerCount[count] = [
+            {
+              villainSegment: buildVillainSegment(composition),
+              henchmanKey: buildHenchmanKey(composition),
+              villainGroupIds: composition.villainGroupIds,
+              henchmanGroupIds: composition.henchmanGroupIds,
+            },
+          ];
+          hasAuthoredLeg = true;
+        }
+        if (hasAuthoredLeg) {
+          approvedLoadoutsByScheme.set(
+            `${setSummary.setAbbr}/${mastermind.slug}/${scheme.slug}`,
+            approvedByPlayerCount,
+          );
+        }
+      }
+    }
+  }
+  console.log(
+    `[server] per-scheme gauntlet overlay built: ` +
+    `${approvedLoadoutsByScheme.size} authored legs for championship year ` +
+    `${getActiveYear()} (WP-472 / D-24283; overlay over the per-mastermind menu)`
+  );
   const gauntletCatalog = buildGauntletCatalog(
     gauntletSetSummaries,
     heroPoolBudgets,
     approvedLoadoutsByGauntlet,
+    approvedLoadoutsByScheme,
   );
   console.log(
     `[server] gauntlet catalog built: ${gauntletCatalog.length} gauntlets ` +
@@ -662,6 +717,7 @@ export async function startServer() {
   const setDetailsCatalog = buildSetDetailsCatalog(
     gauntletSetSummaries,
     approvedLoadoutsByGauntlet,
+    approvedLoadoutsByScheme,
   );
   console.log(
     `[server] set-details catalog built: ${setDetailsCatalog.length} sets ` +

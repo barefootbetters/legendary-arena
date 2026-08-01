@@ -35190,12 +35190,18 @@ D-entry. Reserved by WP-470.
 
 Protect this file.
 
-### D-24283 — Ranked gauntlet approved loadouts are keyed per (scheme × mastermind × player-count), from a year-keyed authored JSON, re-keyed additively across a five-WP lockstep (Drafted 2026-07-31 — WP-472; not yet landed)
+### D-24283 — Ranked gauntlet approved loadouts are keyed per (scheme × mastermind × player-count), from a year-keyed authored JSON, re-keyed additively across a five-WP lockstep (Active 2026-08-01 — WP-472 / EC-507)
 
-> **Status: Drafted at SPEC time; flips to Active (post-execution) when WP-472
-> executes.** Reserved in `NUMBER-LEDGER.md`. **Renumbered off #1118**, which took
-> D-24282 for the interactive Doombot scry-KO choice; this arc was re-drafted off
-> `origin/main` @ `f6c7c43b` (post-#1118). Supersedes D-24278 (one-config-per-mastermind).
+> **Status: Active (landed by WP-472 / EC-507 on 2026-08-01).** The server truth +
+> leaderboard + publisher now read the per-scheme overlay (`getGauntletConfig`) over
+> the per-mastermind menu; `qualifiesAsLegClear` gained the additive trailing
+> `approvedLoadoutsByScheme` param, the publisher emits the per-leg loadout on each
+> `GauntletIndexLeg` (entry-level dual-written per RS-1), and `buildSetDetailsCatalog`
+> coverage is union-over-legs. Run-tracker + per-leg launch (WP-473) and the clients
+> (WP-474/475) migrate off the same additive param next. Reserved in
+> `NUMBER-LEDGER.md`. **Renumbered off #1118**, which took D-24282 for the interactive
+> Doombot scry-KO choice; this arc was re-drafted off `origin/main` @ `f6c7c43b`
+> (post-#1118). Supersedes D-24278 (one-config-per-mastermind).
 
 **Context.** The ranked gauntlet's approved adversaries are the same for every leg of a
 mastermind: today the approved-loadout truth is keyed per **(setAbbr × mastermindSlug)**
@@ -35251,7 +35257,7 @@ optional-param approach is the arc-splitting invariant: each WP is independently
 and the "leg default vs leg-specific" gap closes incrementally as WP-473/474 migrate
 their callers. No `.claude/rules/*` or `ARCHITECTURE.md` edit — within-layer data-model
 re-key, no new cross-layer edge or persistence carve-out (the run's `leg_picks` shape is
-unchanged). Reserved by WP-472.
+unchanged). Landed by WP-472 / EC-507.
 
 Protect this file.
 

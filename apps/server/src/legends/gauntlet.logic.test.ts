@@ -1019,3 +1019,177 @@ describe('buildSetDetailsCatalog (WP-461 / D-24279)', () => {
     ]);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Per-scheme approved loadouts (WP-472 / D-24283)
+// ---------------------------------------------------------------------------
+
+describe('per-scheme approved loadouts (WP-472 / D-24283)', () => {
+  // why: the mastermind's per-mastermind menu (the fallback) approves the
+  // brotherhood + doombots at solo.
+  const MM_ONE_MENU: GauntletApprovedLoadouts = {
+    1: [
+      {
+        villainSegment: 'brotherhood',
+        henchmanKey: 'core/doombot-legion',
+        villainGroupIds: ['core/brotherhood'],
+        henchmanGroupIds: ['core/doombot-legion'],
+      },
+    ],
+  };
+  // why: a per-scheme OVERLAY that swaps skrulls onto mm-one's scheme-a leg only.
+  const SCHEME_A_OVERLAY: GauntletApprovedLoadouts = {
+    1: [
+      {
+        villainSegment: 'skrulls',
+        henchmanKey: 'core/doombot-legion',
+        villainGroupIds: ['core/skrulls'],
+        henchmanGroupIds: ['core/doombot-legion'],
+      },
+    ],
+  };
+
+  test('buildGauntletCatalog stamps the overlay on the swapped leg and the menu on the rest', () => {
+    const byGauntlet = new Map([['core/mm-one', MM_ONE_MENU]]);
+    const byScheme = new Map([['core/mm-one/scheme-a', SCHEME_A_OVERLAY]]);
+    const catalog = buildGauntletCatalog(
+      [CORE_SUMMARY],
+      undefined,
+      byGauntlet,
+      byScheme,
+    );
+
+    const mmOne = catalog.find((entry) => entry.mastermindSlug === 'mm-one');
+    const legA = mmOne?.legs.find((leg) => leg.schemeSlug === 'scheme-a');
+    const legB = mmOne?.legs.find((leg) => leg.schemeSlug === 'scheme-b');
+    // scheme-a carries the overlay; the unswapped scheme-b carries the menu.
+    assert.deepEqual(legA?.approvedLoadouts, SCHEME_A_OVERLAY);
+    assert.deepEqual(legB?.approvedLoadouts, MM_ONE_MENU);
+    // the per-mastermind menu is PRESERVED on the definition (WP-473 reads it).
+    assert.deepEqual(mmOne?.approvedLoadouts, MM_ONE_MENU);
+
+    // mm-two has no menu and no overlay — its legs carry no loadout at all.
+    const mmTwo = catalog.find((entry) => entry.mastermindSlug === 'mm-two');
+    assert.strictEqual(mmTwo?.legs[0]?.approvedLoadouts, undefined);
+    assert.strictEqual(mmTwo?.approvedLoadouts, undefined);
+  });
+
+  // why: a definition whose two legs carry DIFFERENT per-scheme configs, so
+  // getGauntletStandings must qualify each run against its own leg's config.
+  const PER_LEG_DEFINITION: GauntletDefinition = {
+    ...TEST_DEFINITION,
+    legs: [
+      {
+        schemeSlug: 'scheme-a',
+        schemeName: 'Scheme A',
+        approvedLoadouts: {
+          1: [{ villainSegment: 'villains-x', henchmanKey: APPROVED_HENCHMEN }],
+        },
+      },
+      {
+        schemeSlug: 'scheme-b',
+        schemeName: 'Scheme B',
+        approvedLoadouts: {
+          1: [{ villainSegment: 'villains-y', henchmanKey: OTHER_HENCHMEN }],
+        },
+      },
+    ],
+  };
+
+  async function perLegStandingsFor(rows: StubRow[]) {
+    const { database } = createStubDatabase(rows);
+    return getGauntletStandings(PER_LEG_DEFINITION, database, createStubDeps());
+  }
+
+  test('each leg qualifies against its own per-scheme config', async () => {
+    const standings = await perLegStandingsFor([
+      // scheme-a leg wants villains-x + doombots (soloRow uses villains-x).
+      soloRow('r1', 'scheme-a', -5, 1, 'Alice', {
+        henchman_key: APPROVED_HENCHMEN,
+      }),
+      // scheme-b leg wants villains-y + hand-ninjas.
+      soloRow('r2', 'scheme-b', -2, 1, 'Alice', {
+        scenario_key: 'scheme-b::mm-one::villains-y',
+        henchman_key: OTHER_HENCHMEN,
+      }),
+    ]);
+    assert.strictEqual(standings.get(1)?.open.length, 1);
+    assert.strictEqual(standings.get(1)?.open[0]?.totalScore, -7);
+  });
+
+  test("a run matching a DIFFERENT scheme's villains of the same mastermind is rejected", async () => {
+    const standings = await perLegStandingsFor([
+      // scheme-a leg requires villains-x + doombots; this run brings scheme-b's
+      // villains-y + hand-ninjas — rejected, so the gauntlet never completes.
+      soloRow('r1', 'scheme-a', -5, 1, 'Alice', {
+        scenario_key: 'scheme-a::mm-one::villains-y',
+        henchman_key: OTHER_HENCHMEN,
+      }),
+      soloRow('r2', 'scheme-b', -2, 1, 'Alice', {
+        scenario_key: 'scheme-b::mm-one::villains-y',
+        henchman_key: OTHER_HENCHMEN,
+      }),
+    ]);
+    assert.strictEqual(standings.get(1)?.open.length, 0);
+  });
+
+  // why: Loki's coverage — the menu anchors on enemies-of-asgard; a radiation
+  // overlay swaps the portals leg only. Union-over-legs must mark BOTH used.
+  const LOKI_SUMMARY: GauntletSetSummary = {
+    setAbbr: 'core',
+    setName: 'Core Set',
+    schemes: [
+      { slug: 'portals-to-the-dark-dimension', name: 'Portals' },
+      { slug: 'midtown-bank-robbery', name: 'Midtown' },
+    ],
+    masterminds: [{ slug: 'loki', name: 'Loki' }],
+    villains: [
+      { slug: 'radiation', name: 'Radiation' },
+      { slug: 'enemies-of-asgard', name: 'Enemies of Asgard' },
+    ],
+    henchmen: [{ slug: 'hand-ninjas', name: 'Hand Ninjas' }],
+  };
+  const LOKI_MENU: ReadonlyMap<string, GauntletApprovedLoadouts> = new Map([
+    [
+      'core/loki',
+      {
+        1: [
+          {
+            villainSegment: '',
+            henchmanKey: '',
+            villainGroupIds: ['core/enemies-of-asgard'],
+            henchmanGroupIds: ['core/hand-ninjas'],
+          },
+        ],
+      },
+    ],
+  ]);
+  const LOKI_OVERLAY: ReadonlyMap<string, GauntletApprovedLoadouts> = new Map([
+    [
+      'core/loki/portals-to-the-dark-dimension',
+      {
+        1: [
+          {
+            villainSegment: '',
+            henchmanKey: '',
+            villainGroupIds: ['core/radiation'],
+            henchmanGroupIds: ['core/hand-ninjas'],
+          },
+        ],
+      },
+    ],
+  ]);
+
+  test('buildSetDetailsCatalog coverage is union-over-legs (radiation AND enemies-of-asgard used)', () => {
+    const catalog = buildSetDetailsCatalog([LOKI_SUMMARY], LOKI_MENU, LOKI_OVERLAY);
+    const core = catalog[0];
+    const radiation = core?.villains.find((villain) => villain.slug === 'radiation');
+    const enemies = core?.villains.find(
+      (villain) => villain.slug === 'enemies-of-asgard',
+    );
+    // radiation is used via the swapped portals leg…
+    assert.strictEqual(radiation?.usedByGauntlets, true);
+    // …and enemies-of-asgard is STILL used via the unswapped midtown leg (menu).
+    assert.strictEqual(enemies?.usedByGauntlets, true);
+  });
+});

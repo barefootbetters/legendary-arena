@@ -140,17 +140,29 @@ export function matchesApprovedLoadout(
  * refactor is behavior-preserving; reordering these would change the
  * qualifying set, so the order is load-bearing, not incidental.
  *
+ * why: WP-472 / D-24283 — the loadout clause selects the leg's PER-SCHEME
+ * approved config when `approvedLoadoutsByScheme` carries one for the replay's
+ * scheme (ScenarioKey segment 0), else falls back to the per-mastermind
+ * `approvedLoadouts`. The new parameter is optional and trailing so WP-473's
+ * three-argument call site keeps compiling untouched (the additive-split
+ * invariant) — an absent map reproduces the pre-WP-472 per-mastermind match.
+ *
  * @param facts the already-fetched replay facts to decide on.
- * @param approvedLoadouts the gauntlet's approved configurations, or
- *   undefined when the requirement is not configured (loadout clause skipped).
+ * @param approvedLoadouts the gauntlet's per-mastermind approved configurations,
+ *   or undefined when the requirement is not configured (loadout clause skipped).
+ *   Used as the fallback when the replay's scheme has no per-scheme override.
  * @param publishedScoringConfigVersion the currently-published scoring config
  *   version for the replay's scenario, or null when unpublished.
+ * @param approvedLoadoutsByScheme optional per-scheme overlay keyed by scheme
+ *   slug (ScenarioKey segment 0); when it carries the replay's scheme, its
+ *   config is matched instead of `approvedLoadouts`.
  * @returns true when the replay qualifies as a cleared leg.
  */
 export function qualifiesAsLegClear(
   facts: LegClearReplayFacts,
   approvedLoadouts: GauntletApprovedLoadouts | undefined,
   publishedScoringConfigVersion: number | null,
+  approvedLoadoutsByScheme?: ReadonlyMap<string, GauntletApprovedLoadouts>,
 ): boolean {
   // (1) VISION §22 / D-24131 §5 — an unpublished scenario returns null and
   // its replays never qualify (fail closed).
@@ -178,9 +190,15 @@ export function qualifiesAsLegClear(
   }
   // (5) WP-395 / D-24199 clause (g) — a replay played with villain or
   // henchmen groups outside the approved menu simply does not qualify.
+  // why: WP-472 / D-24283 — select the leg's per-scheme config when present
+  // (keyed by the replay's scheme, ScenarioKey segment 0), else the
+  // per-mastermind menu. An absent map reproduces the pre-WP-472 match.
+  const effectiveApprovedLoadouts =
+    approvedLoadoutsByScheme?.get(facts.scenarioKey.split('::')[0] ?? '') ??
+    approvedLoadouts;
   if (
     !matchesApprovedLoadout(
-      approvedLoadouts,
+      effectiveApprovedLoadouts,
       facts.playerCount,
       facts.scenarioKey,
       facts.henchmanKey,
