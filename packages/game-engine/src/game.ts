@@ -9,6 +9,7 @@ import { HAND_SIZE, drawCardsIntoHand } from './moves/drawCards.logic.js';
 import { resolveHeroChoice } from './moves/heroChoice.resolve.js';
 import { resolveKoHeroChoice, hasPendingKoHeroChoice } from './moves/koHeroChoice.resolve.js';
 import { resolveScryKoChoice, hasPendingScryKoChoice } from './moves/scryKoChoice.resolve.js';
+import { resolveDiscardChoice, hasPendingDiscardChoice } from './moves/discardChoice.resolve.js';
 import { resolveOptionalKoReward, hasPendingOptionalKoReward } from './moves/optionalKoReward.resolve.js';
 import { resolveOptionalPutBottomHQ, hasPendingOptionalPutBottomHQ } from './moves/resolveOptionalPutBottomHQ.js';
 import { resolvePutAnyNumberBottomHQ, hasPendingPutAnyNumberBottomHQ } from './moves/resolvePutAnyNumberBottomHQ.js';
@@ -105,6 +106,11 @@ function advanceStage({ G, events }: MoveContext): void {
   // so the player picks which revealed card to KO before any other action. Mirrors
   // the D-24008 KO-hero check above (both freeze the cleanup turn-end too).
   if (hasPendingScryKoChoice(G)) { return; }
+  // why: block-all guard (WP-476 / D-24284) — while a discard-to-limit choice is
+  // pending the board is frozen; advanceStage (at any stage) returns with no side
+  // effects so the current player picks which cards to discard. A choice parked at
+  // the START stage must block the start→main advance until resolved.
+  if (hasPendingDiscardChoice(G)) { return; }
   // why: block-all guard (D-24019) — optional-KO-reward choice pending; the
   // board is frozen until resolved (this also blocks the cleanup turn-end
   // auto-transition below, mirroring the D-24008 KO-hero check above).
@@ -416,6 +422,12 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     // (client: false) per D-10008 — it mutates real G (playerZones.deck / G.ko),
     // absent on UIState. NOT in CORE_MOVE_NAMES (mirrors resolveKoHeroChoice).
     resolveScryKoChoice: { move: resolveScryKoChoice, client: false },
+    // why: WP-476 / D-24284 — resolveDiscardChoice resolves the interactive
+    // Magneto discard-to-limit choice (the current player picks which cards to
+    // discard down to four). Server-only (client: false) per D-10008 — it mutates
+    // real G (playerZones.hand / .discard), absent on UIState. NOT in
+    // CORE_MOVE_NAMES (mirrors resolveScryKoChoice / resolveKoHeroChoice).
+    resolveDiscardChoice: { move: resolveDiscardChoice, client: false },
     resolveOptionalKoReward: { move: resolveOptionalKoReward, client: false },
     resolveOptionalPutBottomHQ: { move: resolveOptionalPutBottomHQ, client: false },
     // why: D-24132 — resolvePutAnyNumberBottomHQ resolves the multi-select HQ→bottom choice

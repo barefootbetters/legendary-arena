@@ -67,6 +67,7 @@ import { resolveDrawOrEmpowered } from '../moves/drawOrEmpowered.resolve.js';
 // gap stayed latent past WP-286), but the drift guard now pins it.
 import { resolveKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { resolveScryKoChoice } from '../moves/scryKoChoice.resolve.js';
+import { resolveDiscardChoice } from '../moves/discardChoice.resolve.js';
 import { resolveOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
 import { resolveVictoryPileCardPick } from '../moves/resolveVictoryPileCardPick.js';
 import { resolveReturnZeroCostDiscard } from '../moves/resolveReturnZeroCostDiscard.js';
@@ -216,6 +217,9 @@ const MOVE_MAP: Record<string, MoveFn> = {
   // why: WP-470 / D-24282 — getLegalMoves short-circuits to resolveScryKoChoice when a
   // Doombot scry-KO choice is parked; a missing dispatch entry hangs the per-turn loop.
   resolveScryKoChoice: (context, args) => resolveScryKoChoice(context as never, args as never),
+  // why: WP-476 / D-24284 — getLegalMoves short-circuits to resolveDiscardChoice when a
+  // Magneto discard-to-limit choice is parked; a missing dispatch entry hangs the per-turn loop.
+  resolveDiscardChoice: (context, args) => resolveDiscardChoice(context as never, args as never),
   resolveOptionalKoReward: (context, args) => resolveOptionalKoReward(context as never, args as never),
   resolveVictoryPileCardPick: (context, args) => resolveVictoryPileCardPick(context as never, args as never),
   // why: D-24139 — getLegalMoves short-circuits to this resolve move when its pending

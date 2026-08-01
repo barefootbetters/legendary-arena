@@ -140,6 +140,13 @@ const NOT_YOUR_TURN: GatingResult = {
  *   (from `UIState.game.hasActedThisTurn`). Bars `canHealWounds`. Defaults to false. WP-380.
  * @param hasHealedThisTurn Whether the viewer has already used Healing this turn
  *   (from `UIState.game.hasHealedThisTurn`). Bars `canHealWounds`. Defaults to false. WP-380.
+ * @param hasPendingDiscardChoice Whether the viewer has an unresolved Magneto
+ *   discard-to-limit choice (from `UIState.pendingDiscardChoice !== undefined`). When
+ *   true, blocks `canEndTurn` and `canPassPriority` at ANY stage (the engine's full
+ *   block-all guard set freezes the board, mirroring `hasPendingScryKoChoice`).
+ *   Defaults to false. WP-476 / D-24284. Appended LAST (after the heal params) so the
+ *   existing positional callers stay valid without edits; degrades gracefully (no gate)
+ *   when the caller omits it.
  */
 export function useTurnActions(
   currentStage: string,
@@ -157,6 +164,7 @@ export function useTurnActions(
   hasWoundInHand: boolean = false,
   hasActedThisTurn: boolean = false,
   hasHealedThisTurn: boolean = false,
+  hasPendingDiscardChoice: boolean = false,
 ): {
   activeStep: TurnStep;
   canRevealVillain: () => GatingResult;
@@ -295,6 +303,16 @@ export function useTurnActions(
           reason: 'Choose one of the top two cards to KO before taking another action.',
         };
       }
+      // why: WP-476 / D-24284 — End Turn / Pass Priority blocked at any stage while a
+      // Magneto discard-to-limit choice is pending (the engine's full block-all guard
+      // set freezes the board, mirroring hasPendingScryKoChoice). The choice is
+      // mandatory — no decline exit to name.
+      if (hasPendingDiscardChoice) {
+        return {
+          allowed: false,
+          reason: 'Choose which cards to discard before taking another action.',
+        };
+      }
       if (currentStage === 'cleanup' && hasPendingChoice) {
         return {
           allowed: false,
@@ -385,6 +403,15 @@ export function useTurnActions(
         return {
           allowed: false,
           reason: 'Choose one of the top two cards to KO before taking another action.',
+        };
+      }
+      if (hasPendingDiscardChoice) {
+        // why: WP-476 / D-24284 — the engine's block-all guards block endTurn while
+        // pendingDiscardChoices is non-empty; this client-side gate surfaces the reason
+        // so the player sees a tooltip instead of a silent rejection.
+        return {
+          allowed: false,
+          reason: 'Choose which cards to discard before taking another action.',
         };
       }
       if (currentStage === 'cleanup' && hasPendingChoice) {

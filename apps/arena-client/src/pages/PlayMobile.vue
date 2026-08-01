@@ -32,6 +32,7 @@ import CardReaderModal from '../components/play/CardReaderModal.vue';
 import PendingHeroChoicePrompt from '../components/play/PendingHeroChoicePrompt.vue';
 import PendingKoHeroChoicePrompt from '../components/play/PendingKoHeroChoicePrompt.vue';
 import PendingScryKoChoicePrompt from '../components/play/PendingScryKoChoicePrompt.vue';
+import PendingDiscardChoicePrompt from '../components/play/PendingDiscardChoicePrompt.vue';
 import OptionalKoRewardPrompt from '../components/play/OptionalKoRewardPrompt.vue';
 import DrawOrEmpoweredPrompt from '../components/play/DrawOrEmpoweredPrompt.vue';
 import VictoryPileCardPickPrompt from '../components/play/VictoryPileCardPickPrompt.vue';
@@ -96,6 +97,7 @@ export default defineComponent({
     PendingHeroChoicePrompt,
     PendingKoHeroChoicePrompt,
     PendingScryKoChoicePrompt,
+    PendingDiscardChoicePrompt,
     OptionalKoRewardPrompt,
     DrawOrEmpoweredPrompt,
     VictoryPileCardPickPrompt,
@@ -447,6 +449,15 @@ export default defineComponent({
                pending-choice type is set. -->
           <PendingScryKoChoicePrompt
             :pending-scry-ko-choice="snapshot.pendingScryKoChoice"
+            :viewer-player-id="viewer.playerId"
+            :submit-move="submitMove"
+          />
+          <!-- why: WP-476 / D-24284 — the Magneto discard-to-limit prompt renders above
+               TurnActionBar; appears only for the choosing player when
+               pendingDiscardChoice is set. The block-all guard guarantees at most one
+               pending-choice type is set. -->
+          <PendingDiscardChoicePrompt
+            :pending-discard-choice="snapshot.pendingDiscardChoice"
             :viewer-player-id="viewer.playerId"
             :submit-move="submitMove"
           />

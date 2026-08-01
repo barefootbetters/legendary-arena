@@ -20,6 +20,7 @@ import { addResources } from '../economy/economy.logic.js';
 import { executeHeroEffects } from '../hero/heroEffects.execute.js';
 import { hasPendingKoHeroChoice } from './koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from './scryKoChoice.resolve.js';
+import { hasPendingDiscardChoice } from './discardChoice.resolve.js';
 import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
@@ -71,6 +72,14 @@ export function drawCards({ G, playerID, ...context }: MoveContext, args: DrawCa
   // the board is frozen; this move returns with no side effects so the player
   // picks which revealed card to KO first. Mirrors the D-24008 KO-hero check above.
   if (hasPendingScryKoChoice(G)) {
+    return;
+  }
+
+  // why: block-all guard (WP-476 / D-24284) — while a discard-to-limit choice is
+  // pending the board is frozen; this move returns with no side effects so the
+  // current player picks which cards to discard first. Mirrors the D-24282 scry-KO
+  // check above.
+  if (hasPendingDiscardChoice(G)) {
     return;
   }
 
@@ -230,6 +239,14 @@ export function playCard({ G, playerID, ...context }: MoveContext, args: PlayCar
     return;
   }
 
+  // why: block-all guard (WP-476 / D-24284) — while a discard-to-limit choice is
+  // pending the board is frozen; this move returns with no side effects so the
+  // current player picks which cards to discard first. Mirrors the D-24282 scry-KO
+  // check above.
+  if (hasPendingDiscardChoice(G)) {
+    return;
+  }
+
   // why: block-all guard (D-24019) — optional-KO-reward choice pending; the
   // board is frozen until resolved (beside the D-24008 KO-hero check above).
   if (hasPendingOptionalKoReward(G)) {
@@ -332,6 +349,14 @@ export function endTurn({ G, playerID, events }: MoveContext): void {
   // the board is frozen; this move returns with no side effects so the player
   // picks which revealed card to KO first. Mirrors the D-24008 KO-hero check above.
   if (hasPendingScryKoChoice(G)) {
+    return;
+  }
+
+  // why: block-all guard (WP-476 / D-24284) — while a discard-to-limit choice is
+  // pending the board is frozen; this move returns with no side effects so the
+  // current player picks which cards to discard first. Mirrors the D-24282 scry-KO
+  // check above.
+  if (hasPendingDiscardChoice(G)) {
     return;
   }
 

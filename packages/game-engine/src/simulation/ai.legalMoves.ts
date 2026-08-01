@@ -18,6 +18,8 @@ import { resolveFightCost } from '../economy/economy.resolve.js';
 import { isGuardBlocking, getPatrolModifier } from '../board/boardKeywords.logic.js';
 import { hasPendingKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from '../moves/scryKoChoice.resolve.js';
+import { hasPendingDiscardChoice } from '../moves/discardChoice.resolve.js';
+import { selectDiscardToLimitCards } from '../rules/mastermindHandlers.js';
 import { selectDefaultKoTarget, selectScryKoTarget } from '../villain/villainEffects.execute.js';
 import { hasPendingOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
 import { selectDefaultOptionalKoTarget } from '../hero/heroEffects.execute.js';
@@ -60,6 +62,12 @@ export const SIMULATION_MOVE_NAMES = [
   // or the per-turn loop hangs (maxTurns bounds turns, not within-turn move-steps —
   // the WP-289 One-Hit-Wonder hang). Asserted by simulation.moveDispatch.drift.test.ts.
   'resolveScryKoChoice',
+  // why: WP-476 / D-24284 — getLegalMoves short-circuits to resolveDiscardChoice when a
+  // Magneto discard-to-limit choice is parked for the active player; it MUST be
+  // dispatchable in the sim (both MOVE_MAPs) or the per-turn loop hangs (maxTurns bounds
+  // turns, not within-turn move-steps — the WP-289 hang). Asserted by
+  // simulation.moveDispatch.drift.test.ts.
+  'resolveDiscardChoice',
   'resolveOptionalKoReward',
   'resolveVictoryPileCardPick',
   'resolveDrawOrEmpowered',
@@ -287,6 +295,28 @@ export function getLegalMoves(
     }
     // why: defensive — an empty revealed snapshot is an engine-invariant violation;
     // fail closed rather than emit an unresolvable move.
+    return legalMoves;
+  }
+
+  // why: WP-476 / D-24284 — pending discard-to-limit short-circuit. When a Magneto
+  // discard choice is parked (for the active player only — non-current players are
+  // auto-picked synchronously inside the strike) the engine block-all guard freezes
+  // every other move, so the bot must resolve it first. The single legal move is
+  // resolveDiscardChoice with the deterministic cheapest-first selection —
+  // selectDiscardToLimitCards, the SAME selector the strike uses for non-current
+  // auto-picks — so the bot's discard is identical whether it parked or auto-picked
+  // (only live human play gets the interactive prompt). discardCount is > 0 because a
+  // choice is parked only when the hand exceeds the limit and the board is frozen.
+  // Returns a list of length EXACTLY 1 — omitting this path hangs the per-turn loop.
+  if (hasPendingDiscardChoice(gameState)) {
+    const front = gameState.pendingDiscardChoices![0]!;
+    const discardCount = zones.hand.length - front.limit;
+    if (discardCount > 0) {
+      const cardIds = selectDiscardToLimitCards(gameState, zones.hand, discardCount);
+      return [{ name: 'resolveDiscardChoice', args: { cardIds } }];
+    }
+    // why: defensive — a parked choice whose hand is already at/under the limit is an
+    // engine-invariant violation; fail closed rather than emit an unresolvable move.
     return legalMoves;
   }
 

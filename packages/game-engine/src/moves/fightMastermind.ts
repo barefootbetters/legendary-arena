@@ -22,6 +22,7 @@ import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { composeMastermindDefeatedNarrative } from '../events/notableEvents.compose.js';
 import { hasPendingKoHeroChoice } from './koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from './scryKoChoice.resolve.js';
+import { hasPendingDiscardChoice } from './discardChoice.resolve.js';
 import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
@@ -77,6 +78,9 @@ export function fightMastermind(
   // why: block-all guard (D-24282) — a pending Doombot scry-KO choice freezes the
   // board until the player picks which revealed card to KO.
   if (hasPendingScryKoChoice(G)) return;
+  // why: block-all guard (WP-476 / D-24284) — a pending discard-to-limit choice
+  // freezes the board until the current player picks which cards to discard.
+  if (hasPendingDiscardChoice(G)) return;
   // why: block-all guard (D-24019) — optional-KO-reward choice pending; the
   // board is frozen until resolved (beside the D-24008 KO-hero check above).
   if (hasPendingOptionalKoReward(G)) return;

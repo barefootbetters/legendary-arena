@@ -124,6 +124,13 @@ export interface UIState {
   // (private information; opponents must not learn the chooser's next draws). Absent
   // (undefined) means no pending scry-KO choice.
   pendingScryKoChoice?: UIPendingScryKoChoice;
+  // why: WP-476 / D-24284 — projects the FRONT of G.pendingDiscardChoices with the
+  // choosing player's current hand (the cards they may discard) and the limit, so
+  // the current player can render the "Choose which cards to discard down to four"
+  // prompt. Redacted (omitted) for every audience except the chooser — the hand
+  // carries the chooser's private card identities (D-24011). Absent (undefined)
+  // means no pending discard choice.
+  pendingDiscardChoice?: UIPendingDiscardChoice;
   // why: D-24020 + WP-249 — projects the FRONT of G.pendingOptionalKoRewards
   // with the derived reward label + the chooser's eligible hand/discard cards so
   // the choosing player can render the "KO a card for a reward, or Decline"
@@ -654,6 +661,40 @@ export interface UIPendingScryKoChoice {
   choiceType: "scry-ko";
   playerID: string;
   revealedCards: UIScryKoRevealedCard[];
+}
+
+/**
+ * One hand card in a pending discard-to-limit choice (WP-476 / D-24284). The
+ * client renders each hand card and lets the player select which to discard,
+ * then submits `resolveDiscardChoice({ cardIds })` with the selected ids.
+ * `cardId` is the hand instance id the engine resolve matches against the
+ * current hand (the round-trip rule).
+ */
+export interface UIDiscardChoiceHandCard {
+  cardId: string;
+  display: UICardDisplay;
+}
+
+/**
+ * UI contract for resolving a pending discard-to-limit choice (WP-476 / D-24284).
+ * Only visible to the choosing player; redacted for opponents and spectators (the
+ * hand carries the chooser's private card identities).
+ *
+ * `hand` is the chooser's current hand resolved to display data, in hand order
+ * (the cards they may discard). `limit` is the hand-size they must discard down
+ * to (4 for Magneto), so the client requires exactly `hand.length - limit`
+ * selections before submitting `{ cardIds }`. The engine KOs nothing — it moves
+ * the chosen cards hand→discard.
+ *
+ * @see WP-476 §Scope (In)
+ * @see EC-511 Locked Values
+ * @see DECISIONS.md D-24284
+ */
+export interface UIPendingDiscardChoice {
+  choiceType: "discard-to-limit";
+  playerID: string;
+  limit: number;
+  hand: UIDiscardChoiceHandCard[];
 }
 
 /**
