@@ -434,3 +434,32 @@ describe('useTurnActions — hasPendingDiscardChoice gating (WP-476 / D-24284)',
     }
   });
 });
+
+describe('useTurnActions — hasPendingReorderChoice gating (WP-480 / D-24286)', () => {
+  const REORDER_REASON =
+    'Choose the order to put the cards back on top before taking another action.';
+  // why: hasPendingReorderChoice is APPENDED LAST (position 17), after
+  // hasPendingDiscardChoice (16): stage, isViewerTurn, 10 pending falses, the heal trio
+  // (3 falses), hasPendingDiscardChoice false, then true.
+  const withReorderChoice = (stage: string) =>
+    useTurnActions(
+      stage, true, false, false, false, false, false, false, false, false, false, false,
+      false, false, false, false, true,
+    );
+
+  test('canEndTurn blocked at EVERY stage when hasPendingReorderChoice is true', () => {
+    for (const stage of ['start', 'main', 'cleanup'] as const) {
+      const result = withReorderChoice(stage).canEndTurn();
+      assert.equal(result.allowed, false, `endTurn blocked at ${stage}`);
+      assert.equal(result.reason, REORDER_REASON, 'reorder gate reason matches the locked value');
+    }
+  });
+
+  test('canPassPriority blocked at EVERY stage when hasPendingReorderChoice is true (board frozen)', () => {
+    for (const stage of ['start', 'main', 'cleanup'] as const) {
+      const result = withReorderChoice(stage).canPassPriority();
+      assert.equal(result.allowed, false, `passPriority blocked at ${stage}`);
+      assert.equal(result.reason, REORDER_REASON);
+    }
+  });
+});
