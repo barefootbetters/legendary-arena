@@ -676,6 +676,71 @@ describe('executeHeroEffects', () => {
       'deck should remain empty.');
     assert.deepEqual(gameState.playerZones['0'].hand, [],
       'hand should remain empty when deck is empty.');
+    // why: WP-478 — this is now the BOTH-empty case (deck AND discard empty). With a
+    // non-empty discard the reveal reshuffles instead (Test 17b below).
+  });
+
+  // -------------------------------------------------------------------------
+  // Test 17b: reveal — reshuffles the discard into an empty deck (WP-478 / D-24285)
+  // -------------------------------------------------------------------------
+  it('reveal reshuffles the discard into an empty deck, then reveals the card', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-x'],
+      deck: [],
+      discard: ['hero-y'],
+      cardStats: {
+        'hero-y': { attack: 0, recruit: 0, cost: 2, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 },
+      },
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-x' as string,
+          timing: 'onPlay',
+          keywords: ['reveal'],
+          effects: [legacyRevealEffect('reveal', 2)],
+        },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+
+    assert.deepEqual(gameState.playerZones['0'].hand, ['hero-y'],
+      'the reshuffled card is revealed and drawn (was a silent no-op pre-WP-478).');
+    assert.deepEqual(gameState.playerZones['0'].deck, [],
+      'the card left the reshuffled deck when drawn.');
+    assert.deepEqual(gameState.playerZones['0'].discard, [],
+      'the discard was reshuffled into the deck.');
+  });
+
+  // -------------------------------------------------------------------------
+  // Test 17c: reveal-count tops up mid-loop from the discard (WP-478 / D-24285)
+  // -------------------------------------------------------------------------
+  it('reveal-count tops up mid-loop from the discard to complete all reveals', () => {
+    const stat = (cost: number) => ({ attack: 0, recruit: 0, cost, fightCost: 0, fightCostMode: 'static' as const, fightCostBase: 0 });
+    const gameState = makeTestState({
+      inPlay: ['hero-x'],
+      deck: ['deck-a'],
+      discard: ['disc-b', 'disc-c', 'disc-d'],
+      cardStats: { 'deck-a': stat(2), 'disc-b': stat(2), 'disc-c': stat(2), 'disc-d': stat(2) },
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-x' as string,
+          timing: 'onPlay',
+          keywords: ['reveal'],
+          // why: reveal three, cost-lte 2 draw — the one deck card is drawn, the deck
+          // empties, and the loop reshuffles the discard to reveal the remaining two.
+          effects: [{ type: 'reveal', revealCount: 3, revealRules: revealRulesForLegacyKeyword('reveal', 2) }],
+        },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+
+    // why: mockCtx.Shuffle reverses, so [disc-b, disc-c, disc-d] → [disc-d, disc-c, disc-b];
+    // three reveals total draw deck-a, then disc-d, then disc-c; disc-b stays on the deck.
+    assert.deepEqual(gameState.playerZones['0'].hand, ['deck-a', 'disc-d', 'disc-c'],
+      'three cards revealed-and-drawn across the mid-loop reshuffle.');
+    assert.deepEqual(gameState.playerZones['0'].deck, ['disc-b'],
+      'the fourth reshuffled card stays on the deck (only three were owed).');
   });
 
   // -------------------------------------------------------------------------

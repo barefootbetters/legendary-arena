@@ -43,6 +43,8 @@ import {
 import { captureHeroFromHq } from '../board/heroCapture.logic.js';
 import type { CaptureHeroResult } from '../board/heroCapture.logic.js';
 import { moveCardFromZone } from '../moves/zoneOps.js';
+import { reshuffleDiscardIntoDeck } from '../moves/drawCards.logic.js';
+import type { ShuffleProvider } from '../setup/shuffle.js';
 import { pushLog } from '../log/logPush.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
 import {
@@ -93,6 +95,13 @@ export function executeVillainAbilities(
   ctx: unknown,
   cardId: CardExtId,
   timing: VillainAbilityTiming,
+  // why: WP-478 / D-24285 — the deterministic shuffle source, threaded down to the
+  // scry handler so it can reshuffle the current player's discard when their deck
+  // runs dry mid-look (the Legendary reveal-reshuffle rule). Optional: only the
+  // fire sites that can trigger a deck-reveal effect need supply it, and the scry
+  // handler no-ops the reshuffle on an empty discard before touching it. `ctx` does
+  // NOT carry `random` (it is the bare bgio ctx), so the provider is a separate arg.
+  shuffleContext?: ShuffleProvider,
 ): VillainEffectResult[] {
   // why: WP-316 — accumulator captures a result per effect whose handler ran,
   // in dispatch order. Each result pairs the reverse-mapped legacy keyword with
@@ -127,7 +136,7 @@ export function executeVillainAbilities(
   const hooks = getVillainHooksForCard(G.villainAbilityHooks, cardId, timing);
   for (const hook of hooks) {
     for (const descriptor of hook.effects) {
-      const application = applyVillainEffect(G, currentPlayer, cardId, timing, descriptor);
+      const application = applyVillainEffect(G, currentPlayer, cardId, timing, descriptor, shuffleContext);
       if (application !== null) {
         // why: D-24023 — each result's `keyword` stays VillainEffectKeyword
         // (reverse-mapped from the dispatched descriptor) so notableEvents,
@@ -463,6 +472,12 @@ type VillainEffectHandler = (
   cardId: CardExtId,
   timing: VillainAbilityTiming,
   descriptor: VillainEffectDescriptor,
+  // why: WP-478 / D-24285 — the shuffle source for a handler that reveals/looks at
+  // the player's own deck and must reshuffle the discard when it runs dry (only
+  // `villainEffectScryKoOwnDeck` reads it). Optional + trailing so the seven handlers
+  // that never touch the deck-reveal path keep their existing 5-param signatures
+  // (a shorter function is structurally assignable to this wider type).
+  shuffleContext?: ShuffleProvider,
 ) => VillainEffectApplication;
 
 /**
@@ -728,12 +743,21 @@ function villainEffectScryKoOwnDeck(
   _cardId: CardExtId,
   _timing: VillainAbilityTiming,
   _descriptor: VillainEffectDescriptor,
+  shuffleContext?: ShuffleProvider,
 ): VillainEffectApplication {
   const zones = G.playerZones[currentPlayer];
   if (!zones) return { targets: [] };
-  // why: empty deck is a reachable no-op, never a hollow record — the handler
-  // ran, there was simply nothing to look at. Scry never triggers the draw-time
-  // reshuffle; it operates only on the cards already in the deck.
+  // why: WP-478 / D-24285 — "look at the top two cards" is a reveal, so a short
+  // deck reshuffles the discard to top up toward two, per the standard Legendary
+  // rule (superseding WP-447's "scry never reshuffles" stance FOR THIS HANDLER).
+  // Runs BEFORE the 0/1/≥2 branch so the branch decides on the post-reshuffle deck.
+  // No-ops on an empty discard, so a genuinely exhausted deck+discard still falls
+  // through to the reachable no-op below.
+  if (zones.deck.length < 2) {
+    reshuffleDiscardIntoDeck(zones, shuffleContext);
+  }
+  // why: empty deck (after any reshuffle) is a reachable no-op, never a hollow
+  // record — the handler ran, there was simply nothing to look at.
   if (zones.deck.length === 0) return { targets: [] };
 
   // why: WP-470 / D-24282 — a single-card deck still AUTO-KOs (unchanged from
@@ -1054,6 +1078,7 @@ function applyVillainEffect(
   cardId: CardExtId,
   timing: VillainAbilityTiming,
   descriptor: VillainEffectDescriptor,
+  shuffleContext?: ShuffleProvider,
 ): VillainEffectApplication | null {
   const handler = VILLAIN_EFFECT_HANDLERS[descriptor.primitive];
   if (handler === undefined) {
@@ -1064,7 +1089,9 @@ function applyVillainEffect(
     // descriptor from the executor's results[] (post-safe-skip contract).
     return null;
   }
-  return handler(G, currentPlayer, cardId, timing, descriptor);
+  // why: WP-478 / D-24285 — forward the shuffle source so a deck-reveal handler
+  // (scry) can reshuffle the discard on exhaustion; the other handlers ignore it.
+  return handler(G, currentPlayer, cardId, timing, descriptor, shuffleContext);
 }
 
 // ---------------------------------------------------------------------------

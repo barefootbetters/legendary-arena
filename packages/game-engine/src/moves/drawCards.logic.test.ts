@@ -8,7 +8,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { HAND_SIZE, drawCardsIntoHand } from './drawCards.logic.js';
+import { HAND_SIZE, drawCardsIntoHand, reshuffleDiscardIntoDeck } from './drawCards.logic.js';
 import type { PlayerZones } from '../state/zones.types.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
 
@@ -91,5 +91,56 @@ describe('drawCardsIntoHand', () => {
     drawCardsIntoHand(zones, 2, reverseShuffleContext);
 
     assert.doesNotThrow(() => JSON.stringify(zones));
+  });
+});
+
+describe('reshuffleDiscardIntoDeck (WP-478 / D-24285)', () => {
+  it('appends the reshuffled discard AFTER cards already on top', () => {
+    // why: a partial reveal window left 'top' on the deck; the reshuffled discard
+    // (reversed by the fake shuffle) must slide in beneath it, not replace it.
+    const zones = makeZones({ deck: ['top'], discard: ['x', 'y'] });
+
+    reshuffleDiscardIntoDeck(zones, reverseShuffleContext);
+
+    assert.deepEqual(zones.deck, ['top', 'y', 'x']);
+    assert.deepEqual(zones.discard, []);
+  });
+
+  it('forms the whole deck from the discard when the deck is empty', () => {
+    const zones = makeZones({ deck: [], discard: ['a', 'b', 'c'] });
+
+    reshuffleDiscardIntoDeck(zones, reverseShuffleContext);
+
+    assert.deepEqual(zones.deck, ['c', 'b', 'a']);
+    assert.deepEqual(zones.discard, []);
+  });
+
+  it('is a no-op when the discard is empty (the terminal condition)', () => {
+    const zones = makeZones({ deck: ['only'], discard: [] });
+
+    reshuffleDiscardIntoDeck(zones, reverseShuffleContext);
+
+    assert.deepEqual(zones.deck, ['only']);
+    assert.deepEqual(zones.discard, []);
+  });
+
+  it('is a safe no-op on an empty discard even without a shuffle context', () => {
+    // why: the context is only dereferenced when there is a discard to shuffle, so a
+    // caller that never reaches a non-empty discard may pass undefined.
+    const zones = makeZones({ deck: ['only'], discard: [] });
+
+    assert.doesNotThrow(() => reshuffleDiscardIntoDeck(zones, undefined));
+    assert.deepEqual(zones.deck, ['only']);
+  });
+
+  it('leaves the deck unchanged when a non-empty discard has no shuffle source', () => {
+    // why: determinism — without ctx.random.Shuffle we cannot deterministically
+    // reform the deck, so leave the zones untouched rather than use a fallback RNG.
+    const zones = makeZones({ deck: [], discard: ['a', 'b'] });
+
+    reshuffleDiscardIntoDeck(zones, undefined);
+
+    assert.deepEqual(zones.deck, []);
+    assert.deepEqual(zones.discard, ['a', 'b']);
   });
 });

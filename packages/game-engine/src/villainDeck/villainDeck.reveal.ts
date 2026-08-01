@@ -270,6 +270,11 @@ export function performVillainReveal(
         ctx,
         pushResult.escapedCard,
         'onEscape',
+        // why: WP-478 / D-24285 — thread the reveal move's shuffle source so a future
+        // Escape-timed scry could reshuffle a short deck (no such marker today; kept
+        // uniform with the Fight fire site). Wrapped as a ShuffleProvider `{ random }`
+        // from the RevealContext's random API (the bare `ctx` carries only currentPlayer).
+        { random: context.random },
       );
       // why: WP-316 — Escape is LOG-ONLY: narrate the Escape: effect targets
       // into G.messages (hash-excluded, D-24081) but add NO escapeResolved (or
@@ -306,7 +311,9 @@ export function performVillainReveal(
     // edge (a contract violation the move never hits in production but
     // the emission must remain defensive).
     if (hasAmbush(cardId, G.cardKeywords ?? {})) {
-      const appliedAmbushResults = executeVillainAbilities(G, ctx, cardId, 'onAmbush');
+      // why: WP-478 / D-24285 — pass the reveal move's shuffle source (uniform with
+      // the Fight/Escape fire sites) so a future Ambush-timed scry could reshuffle.
+      const appliedAmbushResults = executeVillainAbilities(G, ctx, cardId, 'onAmbush', { random: context.random });
       // why: WP-316 — map results→keywords so the ambushResolved `appliedEffects`
       // field and the composeAmbushNarrative string stay byte-identical to main;
       // the hashed notableEvents surface (and the arena-client) never observe the

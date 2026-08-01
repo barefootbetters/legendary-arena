@@ -62,7 +62,7 @@ interface FightVillainArgs {
  * @param args - The city space index to fight.
  */
 export function fightVillain(
-  { G, ctx }: MoveContext,
+  { G, ctx, random }: MoveContext,
   { cityIndex }: FightVillainArgs,
 ): void {
   // Step 1: Validate args
@@ -184,7 +184,10 @@ export function fightVillain(
   // is already in the victory pile), avoiding a stranded bystander (WP-185).
   // WP-316: capture the executor's per-effect results (keywords + targets) for
   // the fightResolved emission and the effect-narration log line below.
-  const appliedFightResults = executeVillainAbilities(G, ctx, cardId, 'onFight');
+  // why: WP-478 / D-24285 — pass the move's `random` (wrapped as a ShuffleProvider
+  // `{ random }`) so a Fight scry (Doombot Legion) can reshuffle the current
+  // player's discard when their deck is short.
+  const appliedFightResults = executeVillainAbilities(G, ctx, cardId, 'onFight', { random });
   // why: WP-316 — map results→keywords so the fightResolved `appliedEffects`
   // field and the composeFightNarrative string stay byte-identical to main; the
   // hashed notableEvents surface (and the arena-client) never observe the

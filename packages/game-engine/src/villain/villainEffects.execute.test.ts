@@ -22,6 +22,7 @@ import type { LegendaryGameState } from '../types.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
 import type { VillainAbilityHook } from '../rules/villainAbility.types.js';
 import { LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR } from '../rules/villainAbility.types.js';
+import type { ShuffleProvider } from '../setup/shuffle.js';
 
 const WOUND = 'pile-wound' as CardExtId;
 const CTX = { currentPlayer: '0' };
@@ -715,6 +716,75 @@ describe('executeVillainAbilities — scry-ko-own-deck (WP-447 / D-24267)', () =
       0,
       'no unmarked-ability breadcrumb — the line is now handled',
     );
+  });
+
+  // why: WP-478 / D-24285 — a short deck reshuffles the discard to top up toward the
+  // look-2, per the standard Legendary reveal-reshuffle rule (reversing WP-447's
+  // "scry never reshuffles" stance). The reverse-shuffle proves the reshuffle ran.
+  const reverseShuffle: ShuffleProvider = {
+    random: { Shuffle: <T>(deck: T[]): T[] => [...deck].reverse() },
+  };
+
+  it('WP-478: reshuffles the discard into an empty deck, then parks a look-2 choice', () => {
+    const heroA = 'core/x/a#0' as CardExtId;
+    const heroB = 'core/x/b#0' as CardExtId;
+    const heroC = 'core/x/c#0' as CardExtId;
+    const G = makeG({
+      hooks: [scryHook('hm-doombot')],
+      playerZones: {
+        '0': { deck: [], hand: [], discard: [heroA, heroB, heroC], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+    });
+    executeVillainAbilities(G, CTX, 'hm-doombot' as CardExtId, 'onFight', reverseShuffle);
+    assert.deepStrictEqual(G.playerZones['0']!.discard, [], 'discard reshuffled into the deck');
+    assert.deepStrictEqual(
+      G.playerZones['0']!.deck,
+      [heroC, heroB, heroA],
+      'deck formed from the reversed discard (was a silent no-op pre-WP-478)',
+    );
+    assert.equal(G.pendingScryKoChoices?.length, 1, 'a look-2 choice is now parked');
+    assert.deepStrictEqual(
+      G.pendingScryKoChoices![0]!.revealedCardIds,
+      [heroC, heroB],
+      'the top two of the reshuffled deck',
+    );
+    assert.deepStrictEqual(G.ko, [], 'nothing KO’d yet — the player chooses');
+  });
+
+  it('WP-478: tops up a single-card deck from the discard to a real look-2 park', () => {
+    const soleCard = 'core/x/sole#0' as CardExtId;
+    const fromDiscard = 'core/x/disc#0' as CardExtId;
+    const G = makeG({
+      hooks: [scryHook('hm-doombot')],
+      playerZones: {
+        '0': { deck: [soleCard], hand: [], discard: [fromDiscard], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+    });
+    executeVillainAbilities(G, CTX, 'hm-doombot' as CardExtId, 'onFight', reverseShuffle);
+    // why: pre-WP-478 a 1-card deck auto-KO'd the sole card; now it tops up to a real
+    // look-2 (the retained card stays on top, the reshuffled card slides in beneath).
+    assert.equal(G.pendingScryKoChoices?.length, 1, 'now a real look-2 choice, not a sole-card auto-KO');
+    assert.deepStrictEqual(
+      G.pendingScryKoChoices![0]!.revealedCardIds,
+      [soleCard, fromDiscard],
+      'the retained card plus the reshuffled one',
+    );
+    assert.deepStrictEqual(G.ko, [], 'nothing auto-KO’d — the player now chooses');
+  });
+
+  it('WP-478: still a reachable no-op when deck AND discard are both empty', () => {
+    const G = makeG({
+      hooks: [scryHook('hm-doombot')],
+      playerZones: {
+        '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+    });
+    executeVillainAbilities(G, CTX, 'hm-doombot' as CardExtId, 'onFight', reverseShuffle);
+    assert.deepStrictEqual(G.ko, [], 'nothing KO’d');
+    assert.equal(G.pendingScryKoChoices?.length ?? 0, 0, 'no choice parked — nothing anywhere to look at');
   });
 });
 

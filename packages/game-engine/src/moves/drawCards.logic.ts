@@ -74,3 +74,57 @@ export function drawCardsIntoHand(
     playerZones.hand = result.to;
   }
 }
+
+/**
+ * Reshuffles the player's discard pile into their deck when a reveal / look-at-top
+ * effect has run the deck dry mid-effect.
+ *
+ * The standard Legendary rule (D-24285): whenever you need to draw OR reveal cards
+ * and your deck is empty, shuffle your discard pile to form a new deck — this can
+ * happen in the middle of an effect. `drawCardsIntoHand` above applies the same
+ * rule for drawing; this helper is the reveal/scry counterpart, shared by
+ * `heroEffectReveal` and `villainEffectScryKoOwnDeck`.
+ *
+ * The reshuffled discard is APPENDED after whatever is already in the deck, not a
+ * full replace: a partial reveal window may have already peeked cards and left them
+ * on top, and those must stay on top with the fresh deck sliding in beneath them.
+ * (`drawCardsIntoHand` full-replaces instead, but it only reaches its reshuffle
+ * when the deck is already empty, so there is nothing to preserve — the two are
+ * deliberately not merged.)
+ *
+ * No-op when the discard is empty: this is the terminal condition that lets a
+ * reveal/scry loop stop once nothing remains anywhere, and it means the
+ * `shuffleContext` is only dereferenced when there is actually a discard to
+ * shuffle — a caller with no shuffle source can still call this safely on an empty
+ * discard.
+ *
+ * Pure helper — no game-framework import, no I/O, no `Math.random()`, no
+ * `.reduce()`. Deterministic given the supplied shuffle context. Mutates the passed
+ * `playerZones` in place (matching `drawCardsIntoHand`).
+ *
+ * @param playerZones - The active player's zones; deck/discard mutated in place.
+ * @param shuffleContext - Provides the deterministic reshuffle (random.Shuffle).
+ *   Optional so a caller that never reaches a non-empty discard need not thread one.
+ */
+export function reshuffleDiscardIntoDeck(
+  playerZones: PlayerZones,
+  shuffleContext: ShuffleProvider | undefined,
+): void {
+  // why: empty discard is the terminal no-op — nothing to reshuffle, and the
+  // shuffleContext is left untouched so an absent one cannot throw here.
+  if (playerZones.discard.length === 0) {
+    return;
+  }
+  // why: without a shuffle source we cannot deterministically reform the deck, so
+  // leave the zones unchanged rather than reach for a non-deterministic fallback
+  // (determinism invariant — all randomness flows through ctx.random.Shuffle).
+  if (shuffleContext === undefined) {
+    return;
+  }
+  // why: APPEND the reshuffled discard after any cards already on top (a
+  // partial-reveal window's peeked-but-not-drawn cards stay on top); shuffleDeck
+  // copies its input so the discard array is not mutated before it is cleared.
+  const reshuffled = moveAllCards(playerZones.discard, []);
+  playerZones.discard = reshuffled.from;
+  playerZones.deck = [...playerZones.deck, ...shuffleDeck(reshuffled.to, shuffleContext)];
+}
