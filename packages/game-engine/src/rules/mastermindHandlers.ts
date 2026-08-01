@@ -14,7 +14,8 @@
 import type { RuleEffect } from './ruleHooks.types.js';
 import type { ImplementationMap } from './ruleRuntime.execute.js';
 import type { LegendaryGameState } from '../types.js';
-import type { CardExtId } from '../state/zones.types.js';
+import type { CardExtId, PlayerZones } from '../state/zones.types.js';
+import { reshuffleDiscardIntoDeck } from '../moves/drawCards.logic.js';
 import { composeMastermindStrikeNarrative } from '../events/notableEvents.compose.js';
 import { pushLog } from '../log/logPush.js';
 import { moveCardFromZone } from '../moves/zoneOps.js';
@@ -737,13 +738,30 @@ function resolveDoctorOctopusStrike(
 function resolveDoctorOctopusReveal(
   gameState: LegendaryGameState,
   playerId: string,
-  playerZones: { deck: CardExtId[]; discard: CardExtId[] },
+  // why: WP-482 / D-24288 — widened from the former inline { deck, discard } shape to
+  // the full PlayerZones so reshuffleDiscardIntoDeck (which requires PlayerZones) type-
+  // checks. The runtime object is already a PlayerZones (the caller passes
+  // gameState.playerZones[playerId]!); this is a pure type change, no runtime effect.
+  playerZones: PlayerZones,
   shuffleFunction: (<T>(items: T[]) => T[]) | null,
 ): void {
-  // why: reveal what is there and no more. The engine's reveal family never
-  // reshuffles the discard to top up a short deck (see the D-21502 no-op in
-  // effectPrimitive.interpret.ts); only the DRAW path reshuffles, which is the
-  // correct rule split — this effect reveals, it does not draw.
+  // why: WP-482 / D-24288 — "reveal the top 8 … put the rest back in random order" is a
+  // reveal, so a short deck reshuffles the discard to reveal a full 8 — the standard
+  // Legendary reveal-reshuffle rule (superseding D-24200's "revealed as-is, never topped
+  // up" clause + the D-24285 reveal-eight carve-out; both blockers are moot — the printed
+  // text is "random order" so NO player reorder is needed, and WP-478 shipped the helper).
+  // The top-up makes the strike HARSHER (reveals more → discards more non-grey Heroes), the
+  // faithful reading — NOT a benefit (the random shuffle-back below still denies deck info).
+  // Skip when the discard is empty or no shuffle source is available (reveal as-is, the
+  // former D-24200 path). shuffleFunction wrapped as a ShuffleProvider for the pure helper.
+  if (
+    playerZones.deck.length < DOCTOR_OCTOPUS_REVEAL_COUNT &&
+    playerZones.discard.length > 0 &&
+    shuffleFunction !== null
+  ) {
+    reshuffleDiscardIntoDeck(playerZones, { random: { Shuffle: shuffleFunction } });
+  }
+
   const revealCount = Math.min(
     DOCTOR_OCTOPUS_REVEAL_COUNT,
     playerZones.deck.length,
