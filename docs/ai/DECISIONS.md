@@ -35572,3 +35572,21 @@ green with unchanged hashes).
 **Status:** Active (landed by WP-484 / EC-519 on 2026-08-01). The transform (`scripts/build-effect-implementation-index.mjs`), the data-only `EffectImplementationIndexSchema`, the generated `data/metadata/effect-implementation-index.json` (1362 entries — 647 hero + 715 villain, 1029 cards), and the `effect-index:check` CI freshness gate all landed as specified; the join is a pure verbatim re-projection (one entry per ledger row), so a card reprinted across sets contributes one entry per set-appearance.
 
 Protect this file.
+
+### D-24290 — Core villain-effect vocabulary Tier A: three auto-resolve primitives (Drafted 2026-08-01 — WP-485; not yet landed)
+
+> **Status: Drafted at SPEC time; flips to Active (post-execution) when WP-485 executes.** Reserved in `NUMBER-LEDGER.md`.
+
+**Context.** 16 Core villain Fight/Ambush/Escape abilities carry printed text but no `[effect:]` marker, so they emit the D-24266 `unmarked-ability`/no-handler breadcrumb and do nothing (surfaced by a live Magneto/Spider-Foes gauntlet fight against a hollow Doctor Octopus, 2026-08-01). All 16 need NEW primitives; this is Tier A — the auto-resolve subset.
+
+**Decision.** Add three new auto-resolve `VILLAIN_EFFECT_PRIMITIVES` (append-only to the closed union + array, per D-24034):
+- `draw-cards-current:<N>` — the current (fighting) player draws N cards via the existing `drawCardsIntoHand` path (Enchantress: draw 3).
+- `ko-heroes-current-by-trait:<team|hero-class>:<value>` — KO ALL of the current player's heroes matching the trait, from HAND + IN-PLAY (Destroyer: KO all `[team:shield]`). Operator-ruled 2026-08-01 that "your Heroes" includes those played this turn (in-play), not only hand/discard.
+- `rescue-bystanders-current-by-trait-count:<team|hero-class>:<value>` — the current player rescues N Bystanders, N = count of matching heroes in hand+in-play, via the `capture-bystander` player-award mechanism, bounded by the Bystander supply (Baron Zemo: one per `[team:avengers]` Hero).
+
+Each is keyword-less and self-narrates via `pushLog` (like `scry-ko` / `reveal-or-wound`); all three are auto-resolve — no `pending*Choices`, no block-all guard, no resolve move. A new `countPlayerHeroesMatchingTrait` helper (count sibling of `playerHasHeroMatchingTrait`, same hand+in-play `G.cardTraits` scope) backs the two trait primitives. Markers are authored in `scripts/convert-cards/inputs/villain-effect-markers.json` and applied to `data/cards/core.json` by `apply-effect-markers.mjs` (its hand-synced vocabulary copy updated in lockstep).
+
+**Consequences.** Contract change (three new closed-union primitives) recorded here. No new `G` field, no persistence surface; the only randomness is the existing `drawCardsIntoHand` reshuffle-on-empty path (`finalStateHash` / PRE_WP080 sentinel re-pin ONLY if a committed fixture reaches a draw-cards-current reshuffle — likely none; confirm empirically). This is Tier A of an arc: Tier B (named city spaces — a state-shape change), Tier C (recursive villain-deck play), Tier D (interactive choices, incl. Viper's victory-pile villain-group predicate), and Tier E (Doctor Octopus cleanup-draw override — a hashed-field change) are follow-on WPs with their own D-entries as needed. Reserved by WP-485.
+
+Protect this file.
+
