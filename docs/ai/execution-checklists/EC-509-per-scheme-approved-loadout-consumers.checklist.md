@@ -62,3 +62,24 @@
   still selects per mastermind (once), not per leg.
 - Old snapshot crashes → the mirror/consumers don't tolerate absent `leg.approvedLoadouts`.
 - Cards badge ignores the scheme → `schemeId` not threaded into the input/lookup.
+
+## Execution Reconciliation (2026-08-01, operator-confirmed — SPLIT)
+
+**Supersedes the Before-Starting file set and the cards items above.** The registry-viewer
+half is **infeasible as drafted**: `getGauntletConfig` (WP-471) is **Node-only** (`node:fs`
+`readFileSync` at module load, reachable only via the registry root barrel; no
+`/gauntletConfigs` subpath), and `apps/registry-viewer` is a Vite browser app that must not
+import the root barrel. There is no browser-safe per-scheme data source in the cards builder
+today. **Operator decision: SPLIT** — this packet ships the **legends-board half only** (the
+published `gauntlet-index.json` is browser-safe), and the **cards half (AC#3)** moves to a
+new WP that first adds a browser-safe per-scheme registry export.
+
+- **Actual target file set (subset):** `snapshotClient.ts`, `gauntletDisplay.{ts,test.ts}`,
+  `GauntletIndexPanel.vue`, `GauntletBoardPanel.vue` (+ governance). The three registry-viewer
+  files are **NOT touched**.
+- **Leg-level read with entry-level fallback:** the mirror adds `GauntletIndexLeg.approvedLoadouts`;
+  consumers use `selectLegApprovedLoadout` (leg-level preferred, entry-level per-mastermind
+  fallback for a pre-WP-472 snapshot). `buildCoverageMatrix` selects per leg;
+  `buildRowChallengeUrl` + board per-leg links pin the leg's config; `buildGauntletDetails`
+  is per-scheme (`GauntletDetailConfig` gains `schemeName`).
+- No D-entry (consumes D-24283). See WP-474 §Execution Reconciliation for the full rationale.
