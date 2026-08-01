@@ -18,6 +18,8 @@ related:
   - monetization-model.md
   - leaderboard.md
   - wiki-viewer.md
+  - card-effect-system.md
+  - debug-effects.md
 status: draft
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\dashboard.md (this page — https://ewiki.legendary-arena.com/dashboard/)
@@ -34,7 +36,7 @@ source:
   - ../apps/dashboard/src/auth/hankoClient.ts
   - ../apps/dashboard/src/main.ts
   - ../.github/workflows/ci.yml
-last-reviewed: 2026-07-13
+last-reviewed: 2026-08-01
 ---
 
 # Dashboard
@@ -106,6 +108,14 @@ except `/login` sits behind an authenticated `AppLayout`:
 | `/pipeline` | `PipelinePage` | Governance throughput, sweep health, inspection triage |
 | `/debug` | `DebugPage` | Feature flags / diagnostic surface |
 | `/login` | `LoginPage` | Hanko sign-in (the only unauthenticated route) |
+
+> **Proposed — not built.** A `/debug/effects` view is a recorded direction: a
+> searchable render of a generated effect-implementation index plus the last
+> live effect traces for a card — the single place *"card X's ability didn't
+> fire, why?"* gets answered. No such route exists yet (only `/debug` above).
+> Its shape and rationale live in [Debug Effects](debug-effects.md); it would
+> mirror the shipped `/coverage` page. Treat it as a direction, not a
+> commitment.
 
 ### The `/players` page: data provenance (and what it is NOT)
 
@@ -364,3 +374,7 @@ threshold enforcement activates as real data sources are wired.
   operator-probe scripts.
 - [Wiki Viewer](wiki-viewer.md) — how to author, preview, and publish ewiki
   pages like this one.
+- [Card Effect System](card-effect-system.md) — the source of the coverage
+  ledgers `/coverage` renders.
+- [Debug Effects](debug-effects.md) — the per-card effect-debugging entry point
+  and the proposed `/debug/effects` view.

@@ -1,7 +1,7 @@
 # Wiki Index
 
-> **53 / 75** entity pages.
-> Last regenerated: 2026-07-30.
+> **54 / 75** entity pages.
+> Last regenerated: 2026-08-01.
 > See [SCHEMA.md](SCHEMA.md) for the entity-page contract and
 > [README.md](README.md) for purpose, conventions, and authority —
 > including [§ Tradeoffs](README.md#tradeoffs) on what the LLM-wiki
@@ -314,6 +314,14 @@ Software tools and services used in development or operations.
   provenance into one credential-redacted JSON report for diagnosing a
   frozen match. Sibling to Operational Health Checks (client-side vs
   perimeter). Notes the current transport/perf-data gap.
+- [Debug Effects](debug-effects.md) — *(draft)* the per-card
+  effect-debugging entry point — *"card X's ability didn't fire, why?"* —
+  mapping the shipped surfaces (the generated `card-mechanics.json` index, the
+  mechanic ledgers, the hollow-effect detector, `unresolvedMarkers`, and Play
+  Diagnostics provenance) and recording the **proposed** unification: a
+  generated effect-implementation index with descriptor → handler mapping plus
+  runtime effect traces behind a `/debug/effects` viewer. Derived, never a
+  hand-maintained card → effect lookup.
 - [Windows Engine Exe](windows-engine-exe.md) — *(draft, planning)*
   proposed standalone Windows `.exe` that packages the engine's
   headless `simulation/` harness (bot-vs-bot play, fixture replay,

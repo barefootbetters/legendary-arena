@@ -17,6 +17,8 @@ related:
   - card-type-taxonomy.md
   - cardextid.md
   - scheme-twist.md
+  - debug-effects.md
+  - play-diagnostics.md
 status: canonical
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\card-effect-system.md (this page — https://ewiki.legendary-arena.com/card-effect-system/)
@@ -264,6 +266,24 @@ hand:
   in-play headline is obs-weighted and its denominator is a monotonic
   high-water-mark, so fixing a mechanic cannot shrink the denominator and
   inflate the percentage — the metric is a floor, not a census.
+- **A generated, derived index** — [`build-card-mechanics-metadata.mjs`](../scripts/build-card-mechanics-metadata.mjs)
+  (WP-269 / D-24046) transforms the hero ledger into a published, viewer-safe
+  per-card mechanic index at `data/metadata/card-mechanics.json`, validated
+  against a registry schema and CI-gated for freshness. It is the "generated,
+  never hand-authored" pattern the effect-debugging direction extends.
+
+### Debugging a specific misfired effect
+
+The surfaces above measure coverage in aggregate; when one card's ability
+*"didn't do what it says"* the debugging entry point is
+[Debug Effects](debug-effects.md). It maps the shipped per-card surfaces (the
+generated `card-mechanics.json` index, the [hollow-effect detector](#coverage-tracking),
+`unresolvedMarkers`, and the client-side [Play Diagnostics](play-diagnostics.md)
+provenance) and records the **proposed** unification — a generated
+effect-implementation index with descriptor → handler mapping plus runtime
+effect traces behind a `/debug/effects` viewer. The `become-scheme-twist`
+fire-site case (D-24287) is why a runtime trace beats a static map: a no-op
+handler reads as *applied* while the real Scheme Twist fires elsewhere.
 
 ## Interactions
 
@@ -287,6 +307,13 @@ hand:
   runtime (ARCHITECTURE.md Layer Boundary).
 - **[Dashboard](dashboard.md).** Consumes the committed coverage ledgers
   as build-time static JSON to render `/coverage`.
+- **[Debug Effects](debug-effects.md).** The per-card debugging entry point —
+  *"card X's ability didn't fire, why?"* — mapping the shipped surfaces here
+  (generated index, hollow detector, `unresolvedMarkers`, Play Diagnostics) and
+  the proposed generated-index + runtime-trace unification.
+- **[Play Diagnostics](play-diagnostics.md).** The client-side per-seat outcome
+  provenance (`recentlyPlayedCards.outcome`) that reads the engine-authored
+  `LogEntry.outcome` for a played card.
 
 ## Edge Cases
 
@@ -456,6 +483,18 @@ The cost model, from
    *(Proposed)* a single "regenerate all coverage artifacts" convenience
    wrapper over the existing per-artifact scripts, to keep card-data PRs
    from reddening the gates piecemeal.
+4. **Effect debugging is scattered, not a single surface.** Answering *"card X
+   didn't fire, why?"* today means reading the ledgers, the generated
+   `card-mechanics.json`, `runtime-observed-hollows.json`, and a Play
+   Diagnostics export separately — and the hollow detector reports
+   *reachability*, not correctness, so a no-op fire-site handler
+   (`become-scheme-twist`, D-24287) reads *applied*. *(Proposed)* a generated
+   **Effect Implementation Index** (extend `card-mechanics.json` with
+   descriptor → handler-fn/file/decision metadata, widened to villains) plus
+   **runtime effect traces** behind a `/debug/effects` viewer — a derived index,
+   never a hand-maintained card → effect lookup. Recorded in
+   [Debug Effects](debug-effects.md); no design doc or DECISIONS entry governs
+   it yet.
 
 ### Where the deeper strategy lives
 
