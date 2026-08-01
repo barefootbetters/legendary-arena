@@ -7,6 +7,39 @@
 
 ## Current State
 
+### Per-Scheme Gauntlet Variety Arc — COMPLETE (WP-471..475 + WP-483) (2026-08-01)
+
+The operator-directed per-scheme gauntlet variety arc ("swap, don't grow" — a mastermind's
+schemes field different adversaries at the same fight size) is **landed end to end on `main`**
+(`3c673bee`). A leg's approved adversaries now vary by scheme across every surface:
+
+| Arc | Packet | PR | Surface |
+|---|---|---|---|
+| 1/5 | WP-471 — year-keyed registry loader (`getGauntletConfig`) | #1122 | registry |
+| 2/5 | WP-472 — server truth + leaderboard + publisher (lands D-24283) | #1142 | legends |
+| 3/5 | WP-473 — run-tracker leg-clear + per-leg launch (`legLaunch`) | #1144 | play (API) |
+| 4/5 | WP-474 — legends-board coverage matrix / reveal / links (SPLIT) | #1147 | legends |
+| 5/5 | WP-475 — arena-client "Play this leg" | #1150 | play |
+| 4/5 cards | WP-483 — browser-safe `./gauntletConfigs` export + cards badge/pack | #1154 | cards |
+
+**Contract:** D-24283 Active — approved loadouts keyed per (scheme × mastermind × player-count)
+as an additive OVERLAY over the per-mastermind menu (`effective = overlay.get(scheme) ?? menu`);
+PAR count unchanged (~2,118); `competitive_scores` empty → zero migration. WP-474 SPLIT off the
+cards half because WP-471's `getGauntletConfig` was Node-only (`node:fs` at load); WP-483 added a
+browser-safe generated literal + `@legendary-arena/registry/gauntletConfigs` subpath to unblock it.
+
+**Verified green on `main` (`3c673bee`):** `pnpm -r build` exit 0; `pnpm -r --no-bail test` exit 0
+— **5,669 tests, 0 failures** across all 12 packages (174 DB-gated server tests LOUD-skip without
+`TEST_DATABASE_URL`). All six PRs merged clean (each squash commit an ancestor of HEAD; branches
+deleted; WORK_INDEX/EC_INDEX rows all closed).
+
+**Remaining (operator-only):** each packet carries a **D-24026 live-verify** on its deployed
+surface (legends coverage matrix varies per scheme; play "Play this leg" fields the leg's
+adversaries; cards badge/pack honour the leg). **Cross-surface deploy-skew note:** WP-474's
+per-scheme links go live on legends before WP-483's cards badge redeploys, so a swapped-leg link
+shows a transient false "won't count" until the cards Pages deploy completes — self-heals, no code
+action.
+
 ### WP-483 / EC-518 — Per-Scheme Approved-Loadout: Browser-Safe Registry Export + Cards Consumers (Arc 4/5 cards half) (2026-08-01)
 
 **User-Visible Surface = cards.legendary-arena.com.** **D-24026 live-verify operator-pending**
