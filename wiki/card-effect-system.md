@@ -149,9 +149,26 @@ vocabulary is the `VillainEffectDescriptor` — a `VillainEffectPrimitive`
 plus optional `target` / `magnitude` / `selector` params
 (`VILLAIN_EFFECT_PRIMITIVES`: `ko-hero` · `gain-wound` ·
 `capture-hq-hero` · `hero-deck-top-to-escape` · `capture-bystander` ·
-`scry-ko-own-deck` · `gain-attached-hero`). A new target / magnitude /
-selector variant is a descriptor **param** (a data marker), not a new
-keyword plus switch arm plus drift test (D-24023).
+`scry-ko-own-deck` · `gain-attached-hero` · `reveal-or-wound`). A new
+target / magnitude / selector variant is a descriptor **param** (a data
+marker), not a new keyword plus switch arm plus drift test (D-24023).
+
+**Revealing a Hero counts hand + in play (D-24281).** The
+`reveal-or-wound` primitive — Sabretooth's *"Fight: Each player reveals an
+X-Men Hero or gains a Wound"* and its core siblings (Frost Giant, Ymir,
+Ultron, Zzzax, across Fight / Ambush / Escape) — is a **conditional
+each-player** effect keyed by a `{requireKind: team | hero-class,
+requireValue}` predicate. It is **auto-resolved**: a player who **has** a
+qualifying Hero reveals it and takes no Wound; only a player with none
+gains the Wound. "Have" means the Hero is in your **hand *or* already in
+play** — a Hero you played earlier this turn still counts. It is *not*
+hand-only: a villain's Fight effect resolves **after** you have played
+your cards to defeat it, so a hand-only check would wrongly Wound a player
+who plainly has (and just played) a qualifying Hero (D-24281, amended
+2026-07-31 after a live Sabretooth match). Discard and deck are excluded —
+only hand + in-play cards are "revealable." The scan reuses the setup-time
+`G.cardTraits` `{team, heroClass}` snapshot (the same source as the
+`VillainDefeatRequirement` precondition, D-24076).
 
 Ten earlier `VILLAIN_EFFECT_KEYWORDS` are **frozen** as the parser's
 legacy-translation input only. `LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR`

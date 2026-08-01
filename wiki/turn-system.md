@@ -232,6 +232,19 @@ they can never drift from the canonical arrays.
 - **`ctx.phase` is not in `G`.** Don't try to read it from `G`, and
   don't try to write to it through `G`. The phase is boardgame.io's
   field; the engine influences it only via `ctx.events.setPhase()`.
+- **"Reveal a Hero" villain effects count hand *and* in play — a
+  turn-timing consequence.** A villain Fight/Ambush/Escape effect like
+  *"reveal a [team/class] Hero or gain a Wound"* (e.g. Sabretooth)
+  resolves at its trigger point in the turn — and a **Fight** effect fires
+  during the `main` stage **after** you've played your cards to defeat the
+  villain. So the reveal counts a qualifying Hero in your **hand *or*
+  already in play**; a Hero you played this turn still counts, and a
+  hand-only check would wrongly Wound a player who plainly has one
+  (D-24281, amended 2026-07-31). By contrast a **Master Strike** fires at
+  the **`start`** stage (villain reveal), *before* you play, so a
+  start-of-turn reveal reads your fresh hand. See
+  [Card Effect System](card-effect-system.md) "Villain effects:
+  parameterized descriptors" for the mechanic.
 
 ## Code Touchpoints
 
