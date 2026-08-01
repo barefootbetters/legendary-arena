@@ -180,6 +180,7 @@ core/rogue,Rogue,core,(unmarked),unmarked,,,
 core/spider-man,Spider-Man,core,rescue,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#rescue
 core/spider-man,Spider-Man,core,reveal,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal
 core/spider-man,Spider-Man,core,reveal-count,unsupported,,,
+core/spider-man,Spider-Man,core,reveal-reorder,unsupported,,,
 core/storm,Storm,core,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw
 core/thor,Thor,core,(unmarked),unmarked,,,
 core/wolverine,Wolverine,core,draw,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#draw

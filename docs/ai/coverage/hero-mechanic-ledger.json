@@ -2,15 +2,15 @@
   "schemaVersion": 1,
   "cardType": "hero",
   "summary": {
-    "totalRows": 646,
+    "totalRows": 647,
     "byStatus": {
       "executable": 230,
       "deferred": 0,
       "condition": 5,
-      "unsupported": 365,
+      "unsupported": 366,
       "unmarked": 46
     },
-    "distinctMechanics": 117
+    "distinctMechanics": 118
   },
   "rows": [
     {
@@ -1818,6 +1818,16 @@
       "heroName": "Spider-Man",
       "set": "core",
       "mechanic": "reveal-count",
+      "status": "unsupported",
+      "wp": "",
+      "decision": "",
+      "handler": ""
+    },
+    {
+      "extId": "core/spider-man",
+      "heroName": "Spider-Man",
+      "set": "core",
+      "mechanic": "reveal-reorder",
       "status": "unsupported",
       "wp": "",
       "decision": "",

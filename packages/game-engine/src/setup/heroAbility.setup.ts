@@ -262,6 +262,15 @@ const REVEAL_RULE_PATTERN = /\[keyword:reveal:([a-z][a-z0-9-]*):([a-z][a-z0-9+-]
 /** Regex for [keyword:reveal-count:<n>] reveal-count modifier markup. */
 const REVEAL_COUNT_PATTERN = /\[keyword:reveal-count:(\d+)\]/g;
 
+// why: WP-479 / D-24286 — a bare `[keyword:reveal-reorder]` modifier marker (no
+// value segment) sets the reveal descriptor's `reorderRemainder` flag. Like
+// `reveal-count` it is a MODIFIER marker, never a HeroKeyword (absent from
+// HERO_KEYWORDS); KEYWORD_PATTERN matches it as keyword `reveal-reorder` but
+// isValidHeroKeyword is false, so it must be listed in RECOGNIZED_NON_KEYWORD_MARKERS
+// below to avoid a false parse-unrecognized flag.
+/** Regex for the [keyword:reveal-reorder] reveal-reorder modifier marker. */
+const REVEAL_REORDER_PATTERN = /\[keyword:reveal-reorder\]/;
+
 // why: D-24024 — the 8 legacy reveal keywords whose markers translate to the
 // collapsed `reveal` descriptor. Built from the canonical REVEAL_KEYWORDS array so
 // the parser and the translation function share one source of truth.
@@ -278,6 +287,9 @@ const REVEAL_KEYWORD_SET: ReadonlySet<HeroKeyword> = new Set<HeroKeyword>(REVEAL
 // never reach the keyword arm; only `reveal-count` needs listing here.)
 const RECOGNIZED_NON_KEYWORD_MARKERS: ReadonlySet<string> = new Set<string>([
   'reveal-count',
+  // why: WP-479 / D-24286 — reveal-reorder is a bare modifier marker (like
+  // reveal-count), not a HeroKeyword; exclude it from the unresolved-marker scan.
+  'reveal-reorder',
 ]);
 
 // why: D-24019 — the reward of an optional-ko-reward effect is dispatched to an
@@ -873,6 +885,11 @@ function parseAbilityText(abilityText: string): {
     }
   }
 
+  // why: WP-479 / D-24286 — the [keyword:reveal-reorder] modifier marker (bare, no
+  // value) flags that the reveal's non-drawn remainder is player-reordered. Threaded
+  // onto the collapsed reveal descriptor below, like revealCount.
+  const reorderRemainder = REVEAL_REORDER_PATTERN.test(abilityText);
+
   // Step 3: Extract [icon:X] markup
   const iconRegex = new RegExp(ICON_PATTERN.source, 'g');
   let iconMatch: RegExpExecArray | null = iconRegex.exec(abilityText);
@@ -1028,7 +1045,9 @@ function parseAbilityText(abilityText: string): {
         // why: D-24027 — the descriptor-level reveal-count (Step 2g; default 1) sets how
         // many deck-top cards the reveal handler peeks. Threaded onto the one collapsed
         // reveal descriptor this line emits, whether legacy-translated or parameterized.
-        effects.push({ type: 'reveal', revealCount, revealRules });
+        // why: WP-479 / D-24286 — thread reorderRemainder onto the reveal descriptor
+        // only when the marker is present, so descriptors without it stay byte-identical.
+        effects.push(reorderRemainder ? { type: 'reveal', revealCount, revealRules, reorderRemainder: true } : { type: 'reveal', revealCount, revealRules });
       } else if (magnitude !== undefined) {
         effects.push({ type: keyword, magnitude });
       } else {

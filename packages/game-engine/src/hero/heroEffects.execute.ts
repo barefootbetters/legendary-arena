@@ -861,9 +861,11 @@ function heroEffectReveal(
     if (peekOffset >= playerZones.deck.length) {
       reshuffleDiscardIntoDeck(playerZones, ctx as ShuffleProvider);
       // why: still short after the reshuffle means the discard was empty too — nothing
-      // remains anywhere, so this is the terminal no-op (the former D-21502 exit).
+      // remains anywhere, so stop the loop. `break` (not `return`) so the post-loop
+      // reorder park (WP-479 / D-24286) still runs on this deck-exhausted exit — a
+      // fully-expensive ≥2 remainder with an empty discard must still offer the reorder.
       if (peekOffset >= playerZones.deck.length) {
-        return;
+        break;
       }
     }
     const topCardId = playerZones.deck[peekOffset];
@@ -892,6 +894,30 @@ function heroEffectReveal(
     // re-reads deck[0] after a draw) byte-identical.
     if (playerZones.deck.length === deckLengthBeforeRules) {
       peekOffset++;
+    }
+  }
+
+  // why: WP-479 / D-24286 — "Put the rest back in any order". The revealed-but-not-drawn
+  // cards are the top `peekOffset` of the deck (drawn/KO'd cards were removed; non-drawn
+  // cards, incl. skipped no-stats starters, stayed on top in order and each bumped
+  // peekOffset). When the reveal is marked `reorderRemainder` and ≥2 remained, park an
+  // interactive reorder choice over them — the current player picks their top-of-deck
+  // order via resolveReorderChoice; the block-all guard freezes the deck top until then.
+  // A remainder of 0 or 1 has no order to choose, so it auto-skips (no park). peekOffset
+  // is clamped to deck.length defensively (it cannot structurally exceed it — the loop
+  // guard stops at the deck end).
+  if (effect.reorderRemainder === true) {
+    const remainderCount = Math.min(peekOffset, playerZones.deck.length);
+    if (remainderCount >= 2) {
+      const cardIds = playerZones.deck.slice(0, remainderCount);
+      if (!G.pendingReorderChoices) {
+        G.pendingReorderChoices = [];
+      }
+      G.pendingReorderChoices.push({
+        choiceType: 'reorder-deck-top',
+        playerID,
+        cardIds,
+      });
     }
   }
 }

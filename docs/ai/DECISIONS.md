@@ -35372,4 +35372,60 @@ rest back in any order"* interactive reorder) is a separate follow-on WP.
 **Drafted:** 2026-07-31. **Landed:** 2026-08-01 (WP-478 execution).
 **Status:** Active
 
+---
+
+### D-24286 — Reveal Remainder: Interactive "Put the Rest Back in Any Order" (WP-479)
+
+**Decision:** A reveal marked `reorderRemainder` (The Amazing Spider-Man's *"Put the
+rest back in any order"*) that leaves ≥2 revealed-but-not-drawn cards on top of the
+current player's deck parks an INTERACTIVE reorder choice; the player picks the order
+to put those cards back on top. This is the fourth instance of the pending-choice
+pattern (after WP-242/243 KO-a-Hero, WP-470 scry-KO, WP-476 discard-to-N).
+
+- **Trigger (modifier marker, not a keyword).** A bare `[keyword:reveal-reorder]`
+  modifier marker sets `HeroEffectDescriptor.reorderRemainder = true`. It is a
+  `RECOGNIZED_NON_KEYWORD_MARKERS` entry parsed by a dedicated presence check in
+  `setup/heroAbility.setup.ts`, exactly like `reveal-count` (D-24027) — `HERO_KEYWORDS`
+  is UNCHANGED (no keyword-drift edit). The marker is **hand-appended** to The Amazing
+  Spider-Man's ability line in `data/cards/core.json` (that line is hand-authored, like
+  its `reveal-count` markup; `hero-ability-markers.json` has no entry and
+  `apply-hero-ability-markers.mjs` would throw on the token).
+- **Park (`heroEffectReveal`).** The peek loop's terminal exhaustion exit was changed
+  from `return` to `break` so post-loop code runs on every exit. After the loop, when
+  `reorderRemainder` and the remainder count (`peekOffset`, clamped to `deck.length`)
+  is ≥ 2, a `PendingReorderChoice { choiceType: 'reorder-deck-top', playerID, cardIds }`
+  is pushed onto a new runtime `G.pendingReorderChoices` FIFO over the top-N cards. A
+  remainder of 0 or 1 auto-skips (nothing to order). Current player only.
+- **Resolve (`moves/reorderChoice.resolve.ts`).** `resolveReorderChoice({ G, playerID },
+  { orderedCardIds })` accepts ONLY a permutation (same multiset AND length) of the front
+  entry's `cardIds`, rewrites the top-N of the deck to that order (cards below untouched),
+  and front-pops; every invalid state is a silent no-op (moves never throw). A
+  defense-in-depth check re-verifies the live deck top still matches the parked remainder
+  before rewriting. The reorder is a PURE permutation — no `ctx.random`, no card added or
+  dropped.
+- **Block-all + projection + prompt (shipped together).** `hasPendingReorderChoice`
+  joins every action-move guard + the advanceStage/endTurn gate (the 10 existing
+  pending-choice sites). UIState gains `pendingReorderChoice` (the remainder face-up),
+  redacted to the choosing player only (D-24011). Client `PendingReorderChoicePrompt.vue`
+  renders the remainder and submits an order. The End-Turn-disable UX gate
+  (`useTurnActions` / `TurnActionBar`) is DEFERRED — the engine block-all is authoritative
+  (End-Turn no-ops server-side while pending), matching how WP-476 deferred the discard
+  gate to WP-477.
+- **Determinism.** Bots/sims resolve with the IDENTITY order (the parked `cardIds`
+  unchanged — the order the reveal loop already left), registered UNCONDITIONALLY in
+  `SIMULATION_MOVE_NAMES` + both sim MOVE_MAPs + the drift test, so par/replay stay
+  byte-identical to a no-reorder world except for the extra park→resolve move pair;
+  `game.test.ts` move-set +1 (24). The new hashed `G.pendingReorderChoices` field is a
+  `finalStateHash` + `PRE_WP080_HASH` dual-re-pin surface — but at execution NO
+  record-game/replay fixture plays The Amazing Spider-Man with a ≥2 remainder, so the
+  whole game-engine suite passed with both oracles unchanged (no re-pin needed).
+
+**Fixes:** Bug 2 from the live Magneto 1p report (the companion to WP-478's Bug 1) — the
+non-drawn revealed cards were silently left on top with no player choice.
+
+**Packet:** WP-479 / EC-514.
+
+**Drafted:** 2026-08-01. **Landed:** 2026-08-01 (WP-479 execution).
+**Status:** Active
+
 Protect this file.

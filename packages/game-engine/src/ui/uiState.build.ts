@@ -38,6 +38,8 @@ import type {
   UIScryKoRevealedCard,
   UIPendingDiscardChoice,
   UIDiscardChoiceHandCard,
+  UIPendingReorderChoice,
+  UIReorderChoiceCard,
   UIPendingOptionalKoReward,
   UIPendingDrawOrEmpowered,
   UIPendingVictoryPileCardPick,
@@ -928,6 +930,32 @@ export function buildUIState(
     }
   }
 
+  // why: WP-479 / D-24286 — project the FRONT entry of G.pendingReorderChoices with its
+  // `cardIds` snapshot (the revealed remainder on top of the deck, captured at park time)
+  // resolved to display data, in current deck-top order. Reads the SNAPSHOT, not the live
+  // zone (mirrors scry-KO, D-24282): the block-all guard freezes the deck top while pending,
+  // and it is exactly what resolveReorderChoice validates the client's { orderedCardIds }
+  // permutation against (the round-trip rule). resolveDisplay is spread fresh per entry
+  // (aliasing defense, WP-111 D-11105). Redaction to the chooser-only audience is enforced
+  // by filterUIStateForAudience (the remainder is the top of the chooser's own deck — their
+  // next draws — and must not leak to opponents/spectators).
+  let pendingReorderChoice: UIPendingReorderChoice | undefined;
+  if (gameState.pendingReorderChoices !== undefined && gameState.pendingReorderChoices.length > 0) {
+    const frontChoice = gameState.pendingReorderChoices[0]!;
+    const cards: UIReorderChoiceCard[] = [];
+    for (const cardId of frontChoice.cardIds) {
+      cards.push({
+        cardId,
+        display: { ...resolveDisplay(cardId, gameState) },
+      });
+    }
+    pendingReorderChoice = {
+      choiceType: frontChoice.choiceType,
+      playerID: frontChoice.playerID,
+      cards,
+    };
+  }
+
   // --- 13c. Project pending optional-KO-then-reward choice (front of queue) ---
   // why: D-24020 + WP-249 — project the FRONT entry of G.pendingOptionalKoRewards
   // with the chooser's eligible hand + discard cards recomputed fresh from current
@@ -1265,6 +1293,9 @@ export function buildUIState(
     // why: WP-476 / D-24284 — conditional spread so an absent choice omits the field
     // (no `pendingDiscardChoice: undefined` literal under exactOptionalPropertyTypes).
     ...(pendingDiscardChoice !== undefined ? { pendingDiscardChoice } : {}),
+    // why: WP-479 / D-24286 — conditional spread so an absent choice omits the field
+    // (no `pendingReorderChoice: undefined` literal under exactOptionalPropertyTypes).
+    ...(pendingReorderChoice !== undefined ? { pendingReorderChoice } : {}),
     ...(pendingOptionalKoReward !== undefined ? { pendingOptionalKoReward } : {}),
     // why: WP-287 — conditional spread so an absent choice omits the field (no
     // `pendingDrawOrEmpowered: undefined` literal under exactOptionalPropertyTypes).

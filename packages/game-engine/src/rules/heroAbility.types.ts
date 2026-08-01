@@ -139,6 +139,12 @@ export interface HeroEffectDescriptor {
   // action (RevealAction.amount).
   revealCount?: number;
   revealRules?: RevealRule[];
+  // why: WP-479 / D-24286 — for a collapsed 'reveal' effect, `reorderRemainder`
+  // marks that after the reveal loop the player may put the revealed-but-not-drawn
+  // remainder back on top in any order (The Amazing Spider-Man's "Put the rest back
+  // in any order"). Set by the `[keyword:reveal-reorder]` modifier marker; a
+  // modifier like `revealCount`, not a HeroKeyword. Other keywords ignore it.
+  reorderRemainder?: boolean;
 }
 
 // ---------------------------------------------------------------------------

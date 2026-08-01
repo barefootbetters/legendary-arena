@@ -31,6 +31,7 @@ import {
 import { hasPendingKoHeroChoice } from './koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from './scryKoChoice.resolve.js';
 import { hasPendingDiscardChoice } from './discardChoice.resolve.js';
+import { hasPendingReorderChoice } from './reorderChoice.resolve.js';
 import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
@@ -132,6 +133,7 @@ export function fightVillain(
   // why: block-all guard (WP-476 / D-24284) — a pending discard-to-limit choice
   // freezes the board until the current player picks which cards to discard.
   if (hasPendingDiscardChoice(G)) return;
+  if (hasPendingReorderChoice(G)) return; // why: WP-479 / D-24286 block-all guard
   // why: block-all guard (D-24019) — optional-KO-reward choice pending; the
   // board is frozen until resolved (beside the D-24008 KO-hero check above).
   if (hasPendingOptionalKoReward(G)) return;

@@ -34,6 +34,7 @@ import {
 import { hasPendingKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from '../moves/scryKoChoice.resolve.js';
 import { hasPendingDiscardChoice } from '../moves/discardChoice.resolve.js';
+import { hasPendingReorderChoice } from '../moves/reorderChoice.resolve.js';
 import { hasPendingOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
 import { hasPendingVictoryPileCardPick } from '../moves/resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from '../moves/drawOrEmpowered.resolve.js';
@@ -86,6 +87,7 @@ export function revealVillainCard({ G, ctx, ...context }: MoveContext): void {
   // (parked by a Magneto strike at THIS start stage) freezes the board until the
   // current player picks which cards to discard; blocks re-reveal until resolved.
   if (hasPendingDiscardChoice(G)) return;
+  if (hasPendingReorderChoice(G)) return; // why: WP-479 / D-24286 block-all guard
   // why: block-all guard (D-24019) — optional-KO-reward choice pending; the
   // board is frozen until resolved (beside the D-24008 KO-hero check above).
   if (hasPendingOptionalKoReward(G)) return;

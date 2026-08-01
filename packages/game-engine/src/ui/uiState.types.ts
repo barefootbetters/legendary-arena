@@ -131,6 +131,12 @@ export interface UIState {
   // carries the chooser's private card identities (D-24011). Absent (undefined)
   // means no pending discard choice.
   pendingDiscardChoice?: UIPendingDiscardChoice;
+  // why: WP-479 / D-24286 — projects the FRONT of G.pendingReorderChoices with the
+  // revealed remainder (the top-N of the chooser's deck the reveal left in place) so
+  // the current player can render the "Put the rest back in any order" prompt.
+  // Redacted (omitted) for every audience except the chooser — the remainder is the
+  // chooser's next draws (D-24011). Absent (undefined) means no pending reorder choice.
+  pendingReorderChoice?: UIPendingReorderChoice;
   // why: D-24020 + WP-249 — projects the FRONT of G.pendingOptionalKoRewards
   // with the derived reward label + the chooser's eligible hand/discard cards so
   // the choosing player can render the "KO a card for a reward, or Decline"
@@ -695,6 +701,40 @@ export interface UIPendingDiscardChoice {
   playerID: string;
   limit: number;
   hand: UIDiscardChoiceHandCard[];
+}
+
+/**
+ * One card in a pending reveal-remainder reorder choice (WP-479 / D-24286). The
+ * client renders the remainder face-up and lets the player pick the order to put
+ * them back on top of the deck, then submits
+ * `resolveReorderChoice({ orderedCardIds })` — a permutation of these ids.
+ * `cardId` is the deck instance id the engine resolve validates against the parked
+ * remainder (the round-trip rule).
+ */
+export interface UIReorderChoiceCard {
+  cardId: string;
+  display: UICardDisplay;
+}
+
+/**
+ * UI contract for resolving a pending reveal-remainder reorder choice
+ * (WP-479 / D-24286). Only visible to the choosing player; redacted for opponents
+ * and spectators (the remainder is the top of the chooser's own deck — their next
+ * draws).
+ *
+ * `cards` is the revealed remainder (the top-N of the deck the reveal left in
+ * place) resolved to display data, in current deck-top order. The client picks an
+ * order and submits `{ orderedCardIds }` — a permutation of `cards[].cardId`. The
+ * engine rewrites the top-N of the deck to that order.
+ *
+ * @see WP-479 §Scope (In)
+ * @see EC-514 Locked Values
+ * @see DECISIONS.md D-24286
+ */
+export interface UIPendingReorderChoice {
+  choiceType: "reorder-deck-top";
+  playerID: string;
+  cards: UIReorderChoiceCard[];
 }
 
 /**

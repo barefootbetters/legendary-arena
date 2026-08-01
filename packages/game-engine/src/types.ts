@@ -526,6 +526,32 @@ export interface PendingDiscardChoice {
 }
 
 /**
+ * Pending reveal-remainder reorder player choice state (WP-479 / D-24286).
+ *
+ * Created when a reveal marked `reorderRemainder` (The Amazing Spider-Man's
+ * "Put the rest back in any order") leaves ≥2 revealed-but-not-drawn cards on
+ * top of the current player's deck. Appended to G.pendingReorderChoices[] (FIFO
+ * queue). Removed (front-popped) by resolveReorderChoice after the player picks
+ * the order to put those cards back on top. Must be undefined or empty at every
+ * turn-end (enforced by the block-all guards).
+ *
+ * // why: D-24286 — like PendingScryKoChoice this stores a snapshot of the
+ * remainder ext_ids in `cardIds` (the top-N of the deck at park time). The
+ * block-all guard freezes the deck top while the choice is pending, so the
+ * snapshot cannot drift; resolveReorderChoice accepts only a permutation of
+ * `cardIds` and rewrites the top-N to that order. Only the current player
+ * reorders their own deck (reveal is a current-player effect).
+ */
+export interface PendingReorderChoice {
+  /** Discriminant for future extensibility; always 'reorder-deck-top'. */
+  choiceType: 'reorder-deck-top';
+  /** The player who must choose the order of the remainder. */
+  playerID: string;
+  /** The revealed remainder (top-N of the deck) at park time, in current order (the cards to reorder). */
+  cardIds: CardExtId[];
+}
+
+/**
  * Pending optional-KO-then-reward player choice state (WP-248 / D-24019).
  *
  * Created when an optional-ko-reward hero effect is played (`onPlay`) and the
@@ -864,6 +890,18 @@ export interface LegendaryGameState {
   // `.length`).
   /** FIFO queue of pending discard-to-limit choices awaiting player resolution (WP-476). */
   pendingDiscardChoices?: PendingDiscardChoice[] | undefined;
+
+  // why: WP-479 / D-24286 — FIFO queue of pending reveal-remainder reorder choices
+  // (at most one per reorder-marked reveal, parked ONLY for the current player when
+  // ≥2 revealed cards remained on top). Entries are appended by heroEffectReveal's
+  // post-loop park branch; front-popped by resolveReorderChoice after the player
+  // picks the order. Must be undefined or empty at every turn-end. Runtime-only,
+  // never persisted (snapshots stay counts-only), mirroring pendingDiscardChoices;
+  // **lazily initialized at the park site, never in Game.setup**. Optional so
+  // existing test state literals need no update. Absent (undefined) or empty []
+  // both mean "no pending choice" (guards test `.length`).
+  /** FIFO queue of pending reveal-remainder reorder choices awaiting player resolution (WP-479). */
+  pendingReorderChoices?: PendingReorderChoice[] | undefined;
 
   // why: WP-248 / D-24019 — FIFO queue of pending optional-KO-then-reward
   // choices (one per played optional-ko-reward hero ability with ≥1 eligible

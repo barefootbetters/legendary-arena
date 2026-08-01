@@ -558,6 +558,30 @@ export function filterUIStateForAudience(
     };
   }
 
+  // why: WP-479 / D-24286 — the reorder remainder is the top of the chooser's own deck
+  // (their next draws), private to the chooser. Present only when the audience is a player
+  // whose playerId equals the chooser's playerID; omitted (conditional assignment, never an
+  // `undefined` literal) for opponents AND spectators. Per-entry display spread prevents
+  // aliasing with the input UIState.
+  if (
+    uiState.pendingReorderChoice !== undefined &&
+    audience.kind === 'player' &&
+    audience.playerId === uiState.pendingReorderChoice.playerID
+  ) {
+    const cardsCopy = [];
+    for (const entry of uiState.pendingReorderChoice.cards) {
+      cardsCopy.push({
+        cardId: entry.cardId,
+        display: { ...entry.display },
+      });
+    }
+    result.pendingReorderChoice = {
+      choiceType: uiState.pendingReorderChoice.choiceType,
+      playerID: uiState.pendingReorderChoice.playerID,
+      cards: cardsCopy,
+    };
+  }
+
   // why: D-24020 — hand/discard are private to the chooser. pendingOptionalKoReward
   // is redacted for EVERY audience except the choosing player (the D-24011
   // hand-privacy analog). Its eligibleHand and eligibleDiscard lists carry the

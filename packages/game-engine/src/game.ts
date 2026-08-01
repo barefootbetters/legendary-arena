@@ -10,6 +10,7 @@ import { resolveHeroChoice } from './moves/heroChoice.resolve.js';
 import { resolveKoHeroChoice, hasPendingKoHeroChoice } from './moves/koHeroChoice.resolve.js';
 import { resolveScryKoChoice, hasPendingScryKoChoice } from './moves/scryKoChoice.resolve.js';
 import { resolveDiscardChoice, hasPendingDiscardChoice } from './moves/discardChoice.resolve.js';
+import { resolveReorderChoice, hasPendingReorderChoice } from './moves/reorderChoice.resolve.js';
 import { resolveOptionalKoReward, hasPendingOptionalKoReward } from './moves/optionalKoReward.resolve.js';
 import { resolveOptionalPutBottomHQ, hasPendingOptionalPutBottomHQ } from './moves/resolveOptionalPutBottomHQ.js';
 import { resolvePutAnyNumberBottomHQ, hasPendingPutAnyNumberBottomHQ } from './moves/resolvePutAnyNumberBottomHQ.js';
@@ -111,6 +112,10 @@ function advanceStage({ G, events }: MoveContext): void {
   // effects so the current player picks which cards to discard. A choice parked at
   // the START stage must block the start→main advance until resolved.
   if (hasPendingDiscardChoice(G)) { return; }
+  // why: block-all guard (WP-479 / D-24286) — while a reveal-remainder reorder
+  // choice is pending the board is frozen; advanceStage returns with no side effects
+  // so the current player picks their deck-top order before any other action.
+  if (hasPendingReorderChoice(G)) { return; }
   // why: block-all guard (D-24019) — optional-KO-reward choice pending; the
   // board is frozen until resolved (this also blocks the cleanup turn-end
   // auto-transition below, mirroring the D-24008 KO-hero check above).
@@ -428,6 +433,12 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     // real G (playerZones.hand / .discard), absent on UIState. NOT in
     // CORE_MOVE_NAMES (mirrors resolveScryKoChoice / resolveKoHeroChoice).
     resolveDiscardChoice: { move: resolveDiscardChoice, client: false },
+    // why: WP-479 / D-24286 — resolveReorderChoice resolves the interactive
+    // reveal-remainder reorder ("put the rest back in any order"): the current player
+    // picks the top-of-deck order for the revealed-but-not-drawn cards. Server-only
+    // (client: false) per D-10008 — it mutates real G (playerZones.deck), absent on
+    // UIState. NOT in CORE_MOVE_NAMES (mirrors resolveScryKoChoice / resolveDiscardChoice).
+    resolveReorderChoice: { move: resolveReorderChoice, client: false },
     resolveOptionalKoReward: { move: resolveOptionalKoReward, client: false },
     resolveOptionalPutBottomHQ: { move: resolveOptionalPutBottomHQ, client: false },
     // why: D-24132 — resolvePutAnyNumberBottomHQ resolves the multi-select HQ→bottom choice

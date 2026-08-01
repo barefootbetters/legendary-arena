@@ -744,6 +744,80 @@ describe('executeHeroEffects', () => {
   });
 
   // -------------------------------------------------------------------------
+  // Test 17d: reveal-reorder parks a choice over the ≥2 remainder (WP-479 / D-24286)
+  // -------------------------------------------------------------------------
+  const reorderStat = (cost: number) => ({ attack: 0, recruit: 0, cost, fightCost: 0, fightCostMode: 'static' as const, fightCostBase: 0 });
+
+  it('reveal-reorder parks a reorder choice over the ≥2 non-drawn remainder', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-x'],
+      // reveal 3: two expensive cards stay on top, one cheap card is drawn.
+      deck: ['keep-a', 'keep-b', 'draw-c'],
+      cardStats: { 'keep-a': reorderStat(3), 'keep-b': reorderStat(4), 'draw-c': reorderStat(0) },
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-x' as string,
+          timing: 'onPlay',
+          keywords: ['reveal'],
+          effects: [{ type: 'reveal', revealCount: 3, revealRules: revealRulesForLegacyKeyword('reveal', 2), reorderRemainder: true }],
+        },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+
+    assert.deepEqual(gameState.playerZones['0'].hand, ['draw-c'], 'the cost-0 card was drawn.');
+    assert.equal(gameState.pendingReorderChoices?.length, 1, 'a reorder choice is parked for the ≥2 remainder.');
+    const front = gameState.pendingReorderChoices![0]!;
+    assert.equal(front.choiceType, 'reorder-deck-top');
+    assert.equal(front.playerID, '0');
+    assert.deepEqual(front.cardIds, ['keep-a', 'keep-b'], 'the parked cards are the top-2 remainder in current order.');
+  });
+
+  it('reveal-reorder does NOT park when only one card remains (nothing to order)', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-x'],
+      deck: ['keep-a', 'draw-c'],
+      cardStats: { 'keep-a': reorderStat(3), 'draw-c': reorderStat(0) },
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-x' as string,
+          timing: 'onPlay',
+          keywords: ['reveal'],
+          effects: [{ type: 'reveal', revealCount: 3, revealRules: revealRulesForLegacyKeyword('reveal', 2), reorderRemainder: true }],
+        },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+
+    assert.deepEqual(gameState.playerZones['0'].hand, ['draw-c'], 'the cost-0 card was drawn.');
+    assert.equal(gameState.pendingReorderChoices?.length ?? 0, 0, 'a single-card remainder auto-skips (no park).');
+  });
+
+  it('a reveal WITHOUT the reorder marker never parks a reorder choice', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-x'],
+      deck: ['keep-a', 'keep-b'],
+      cardStats: { 'keep-a': reorderStat(3), 'keep-b': reorderStat(4) },
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-x' as string,
+          timing: 'onPlay',
+          keywords: ['reveal'],
+          // no reorderRemainder flag
+          effects: [{ type: 'reveal', revealCount: 3, revealRules: revealRulesForLegacyKeyword('reveal', 2) }],
+        },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+
+    assert.equal(gameState.pendingReorderChoices?.length ?? 0, 0, 'no marker ⇒ no reorder park (behavior-neutral).');
+    assert.deepEqual(gameState.playerZones['0'].deck, ['keep-a', 'keep-b'], 'the expensive cards stay on top in place.');
+  });
+
+  // -------------------------------------------------------------------------
   // Test 18: reveal — missing cardStats entry is a silent no-op (AC-8)
   // -------------------------------------------------------------------------
   it('reveal effect is a no-op when top card has no cardStats entry', () => {
