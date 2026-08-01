@@ -1181,15 +1181,37 @@ describe('mastermindStrikeHandler — Doctor Octopus reveal-eight (WP-397)', () 
     );
   });
 
-  it('reveals the whole deck when it holds fewer than 8, without topping up (AC-2)', () => {
+  it('tops up a short deck from the discard to reveal a full window (WP-482 / D-24288)', () => {
     const gameState = makeOctopusRevealState(['a', 'b'], { a: TECH });
     gameState.playerZones['0']!.discard = ['already-discarded'];
 
     mastermindStrikeHandler(gameState, reversingShuffleContext(), { cardId: 's' }, {});
 
-    // why: 'a' is non-grey (tech) and is discarded; 'b' is grey and returns.
-    // The pre-existing discard card must NOT be reshuffled into the deck —
-    // this effect reveals, it does not draw.
+    // why: WP-482 / D-24288 — a short deck (< 8) now reshuffles the discard to reveal a
+    // fuller window (reverses D-24200's no-top-up). deck [a,b] + reverse([already-discarded])
+    // = [a,b,already-discarded]; all 3 revealed; 'a' (tech) is non-grey → discarded; 'b' and
+    // 'already-discarded' (grey) return in Shuffle (reverse) order → [already-discarded, b].
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['already-discarded', 'b']);
+    assert.deepEqual(gameState.playerZones['0']!.discard, ['a']);
+  });
+
+  it('does NOT top up a short deck when the discard is empty (WP-482 / D-24288)', () => {
+    const gameState = makeOctopusRevealState(['a', 'b'], { a: TECH });
+    // discard is empty → nothing to reshuffle → reveal the short deck as-is.
+    mastermindStrikeHandler(gameState, reversingShuffleContext(), { cardId: 's' }, {});
+
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['b'], "'a' discarded, 'b' returned");
+    assert.deepEqual(gameState.playerZones['0']!.discard, ['a']);
+  });
+
+  it('does NOT top up when no shuffle source is available (WP-482 / D-24288)', () => {
+    const gameState = makeOctopusRevealState(['a', 'b'], { a: TECH });
+    gameState.playerZones['0']!.discard = ['already-discarded'];
+    // why: shuffleFunction is null (the strike context carries no random.Shuffle), so the
+    // top-up is skipped (reveal as-is) and the remainder returns in revealed order — the
+    // pre-WP-482 path, preserved for the no-shuffle degrade.
+    mastermindStrikeHandler(gameState, {}, { cardId: 's' }, {});
+
     assert.deepEqual(gameState.playerZones['0']!.deck, ['b']);
     assert.deepEqual(gameState.playerZones['0']!.discard, ['already-discarded', 'a']);
   });
