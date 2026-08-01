@@ -147,6 +147,12 @@ const NOT_YOUR_TURN: GatingResult = {
  *   Defaults to false. WP-476 / D-24284. Appended LAST (after the heal params) so the
  *   existing positional callers stay valid without edits; degrades gracefully (no gate)
  *   when the caller omits it.
+ * @param hasPendingReorderChoice Whether the viewer has an unresolved reveal-remainder
+ *   reorder choice (from `UIState.pendingReorderChoice !== undefined`). When true, blocks
+ *   `canEndTurn` and `canPassPriority` at ANY stage (the engine's full block-all guard set
+ *   freezes the board, mirroring `hasPendingDiscardChoice`). Defaults to false. WP-480 /
+ *   D-24286. Appended LAST (after `hasPendingDiscardChoice`) so existing positional callers
+ *   stay valid without edits; degrades gracefully (no gate) when the caller omits it.
  */
 export function useTurnActions(
   currentStage: string,
@@ -165,6 +171,7 @@ export function useTurnActions(
   hasActedThisTurn: boolean = false,
   hasHealedThisTurn: boolean = false,
   hasPendingDiscardChoice: boolean = false,
+  hasPendingReorderChoice: boolean = false,
 ): {
   activeStep: TurnStep;
   canRevealVillain: () => GatingResult;
@@ -313,6 +320,16 @@ export function useTurnActions(
           reason: 'Choose which cards to discard before taking another action.',
         };
       }
+      // why: WP-480 / D-24286 — End Turn / Pass Priority blocked at any stage while a
+      // reveal-remainder reorder choice is pending (the engine's full block-all guard set
+      // freezes the board, mirroring hasPendingDiscardChoice). The choice is mandatory —
+      // no decline exit to name.
+      if (hasPendingReorderChoice) {
+        return {
+          allowed: false,
+          reason: 'Choose the order to put the cards back on top before taking another action.',
+        };
+      }
       if (currentStage === 'cleanup' && hasPendingChoice) {
         return {
           allowed: false,
@@ -412,6 +429,15 @@ export function useTurnActions(
         return {
           allowed: false,
           reason: 'Choose which cards to discard before taking another action.',
+        };
+      }
+      if (hasPendingReorderChoice) {
+        // why: WP-480 / D-24286 — the engine's block-all guards block endTurn while
+        // pendingReorderChoices is non-empty; this client-side gate surfaces the reason
+        // so the player sees a tooltip instead of a silent rejection.
+        return {
+          allowed: false,
+          reason: 'Choose the order to put the cards back on top before taking another action.',
         };
       }
       if (currentStage === 'cleanup' && hasPendingChoice) {

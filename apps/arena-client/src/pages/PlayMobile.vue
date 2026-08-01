@@ -269,6 +269,12 @@ export default defineComponent({
     // why: WP-477 / WP-476 — derived from UIState.pendingDiscardChoice !== undefined. Passed to
     // TurnActionBar to block end-turn and pass-priority at EVERY stage while a Magneto
     // discard-to-limit choice is pending (board frozen, mirrors hasPendingScryKoChoice).
+    // why: WP-480 / D-24286 — derived from UIState.pendingReorderChoice !== undefined. Passed to
+    // TurnActionBar to block end-turn and pass-priority at EVERY stage while a reveal-remainder
+    // reorder choice is pending (board frozen, mirrors hasPendingDiscardChoice).
+    const hasPendingReorderChoice = computed<boolean>(
+      () => snapshot.value?.pendingReorderChoice !== undefined,
+    );
     const hasPendingDiscardChoice = computed<boolean>(
       () => snapshot.value?.pendingDiscardChoice !== undefined,
     );
@@ -303,6 +309,7 @@ export default defineComponent({
       hasPendingDiscardToPlay,
       hasPendingScryKoChoice,
       hasPendingDiscardChoice,
+      hasPendingReorderChoice,
       hasWoundInHand,
     };
   },
@@ -557,6 +564,7 @@ export default defineComponent({
             :has-pending-discard-to-play="hasPendingDiscardToPlay"
             :has-pending-scry-ko-choice="hasPendingScryKoChoice"
             :has-pending-discard-choice="hasPendingDiscardChoice"
+            :has-pending-reorder-choice="hasPendingReorderChoice"
             :has-wound-in-hand="hasWoundInHand"
             :has-acted-this-turn="snapshot.game.hasActedThisTurn"
             :has-healed-this-turn="snapshot.game.hasHealedThisTurn"
