@@ -7,6 +7,36 @@
 
 ## Current State
 
+### WP-484 — Effect Implementation Index (Contract + Transform + CI Gate) — DONE (2026-08-01)
+
+The first slice of the generated **Effect Implementation Index** (the ewiki
+`wiki/debug-effects.md` direction) landed. A deterministic transform
+(`scripts/build-effect-implementation-index.mjs`, npm scripts `effect-index` /
+`effect-index:check`) joins the two committed mechanic ledgers
+(`docs/ai/coverage/hero-mechanic-ledger.json` + `villain-mechanic-ledger.json`) into
+one published, schema-validated, dual-scope
+`data/metadata/effect-implementation-index.json` — **1362 entries** (647 hero + 715
+villain across 1029 cards). Each `entries[]` row carries per card×mechanic
+`{extId,name,set,scope,mechanic,status,handler,wp,decision}`; a per-card `cards{}` join
+and a `summary` (counts by scope + the five fixed `byStatus` keys) accompany it. It is a
+**pure verbatim join** — one entry per ledger row, `handler`/`wp`/`decision` passed
+through exactly (empty string `""` only on the ledger's own `unsupported`/`unmarked`
+rows, never fabricated); a card reprinted across sets contributes one entry per
+set-appearance. The new data-only `EffectImplementationIndexSchema` sits on the
+`@legendary-arena/registry/schema` subpath (zod-only, no engine import), the transform
+self-validates its output against it, and a `hero-effect-coverage` CI step
+(`effect-index:check`) fails on any drift, mirroring the WP-269 `card-mechanics.json`
+pattern. Locked by **D-24289** (Active).
+
+**Verified:** registry 215/0 (incl. +13 `EffectImplementationIndexSchema` accept/reject);
+`effect-index:check` clean and non-zero after a deliberate edit; two `pnpm effect-index`
+runs byte-identical (deterministic sentinel `generatedAt`, no `Date.now()`); grep
+`game-engine` NO MATCH in schema + transform; `pnpm -r build` green; no
+`packages/game-engine` / `apps/registry-viewer` / `apps/dashboard` / `apps/arena-client`
+file touched (EC-519). **No user-observable change — infrastructure only**
+(`User-Visible Surface = none — infrastructure`; the `/debug/effects` viewer that would
+surface it is an explicit future WP, so the D-24026 live-verify gate is N/A).
+
 ### Per-Scheme Gauntlet Variety Arc — COMPLETE (WP-471..475 + WP-483) (2026-08-01)
 
 The operator-directed per-scheme gauntlet variety arc ("swap, don't grow" — a mastermind's
