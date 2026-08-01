@@ -149,6 +149,16 @@ export default defineComponent({
       required: false,
       default: false,
     },
+    // why: WP-477 / WP-476 — completes WP-476's deferred discard-gate wiring. True while a
+    // Magneto discard-to-limit choice is pending; blocks End Turn / Pass Priority at ANY stage
+    // (the engine's full block-all guard freezes the board, mirroring hasPendingScryKoChoice).
+    // Threaded into the useTurnActions calls at its position-16 slot (last param, after the
+    // heal trio) — the slot WP-476 appended it at to keep positional callers stable.
+    hasPendingDiscardChoice: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
   },
   setup(props) {
     function activeStep(): 1 | 2 | 3 {
@@ -159,12 +169,17 @@ export default defineComponent({
       return useTurnActions(props.currentStage, props.isViewerTurn, props.hasPendingChoice, props.hasPendingKoChoice, props.hasPendingOptionalKoReward, props.hasPendingDrawOrEmpowered, props.hasPendingVictoryPileCardPick, props.hasPendingOptionalPutBottomHQ, props.hasPendingPutAnyNumberBottomHQ, props.hasPendingReturnZeroCostDiscard, props.hasPendingDiscardToPlay).canRevealVillain();
     }
 
+    // why: WP-477 — hasPendingDiscardChoice is useTurnActions' position-16 (last) param, so
+    // reaching it requires passing the heal trio (positions 13–15) too, even though
+    // canPassPriority / canEndTurn do not read them. Passing them is harmless (they only gate
+    // canHealWounds) and threads the discard gate so the buttons disable while a Magneto
+    // discard choice is pending.
     function passPriorityGate(): { allowed: boolean; reason: string | null } {
-      return useTurnActions(props.currentStage, props.isViewerTurn, props.hasPendingChoice, props.hasPendingKoChoice, props.hasPendingOptionalKoReward, props.hasPendingDrawOrEmpowered, props.hasPendingVictoryPileCardPick, props.hasPendingOptionalPutBottomHQ, props.hasPendingPutAnyNumberBottomHQ, props.hasPendingReturnZeroCostDiscard, props.hasPendingDiscardToPlay, props.hasPendingScryKoChoice).canPassPriority();
+      return useTurnActions(props.currentStage, props.isViewerTurn, props.hasPendingChoice, props.hasPendingKoChoice, props.hasPendingOptionalKoReward, props.hasPendingDrawOrEmpowered, props.hasPendingVictoryPileCardPick, props.hasPendingOptionalPutBottomHQ, props.hasPendingPutAnyNumberBottomHQ, props.hasPendingReturnZeroCostDiscard, props.hasPendingDiscardToPlay, props.hasPendingScryKoChoice, props.hasWoundInHand, props.hasActedThisTurn, props.hasHealedThisTurn, props.hasPendingDiscardChoice).canPassPriority();
     }
 
     function endTurnGate(): { allowed: boolean; reason: string | null } {
-      return useTurnActions(props.currentStage, props.isViewerTurn, props.hasPendingChoice, props.hasPendingKoChoice, props.hasPendingOptionalKoReward, props.hasPendingDrawOrEmpowered, props.hasPendingVictoryPileCardPick, props.hasPendingOptionalPutBottomHQ, props.hasPendingPutAnyNumberBottomHQ, props.hasPendingReturnZeroCostDiscard, props.hasPendingDiscardToPlay, props.hasPendingScryKoChoice).canEndTurn();
+      return useTurnActions(props.currentStage, props.isViewerTurn, props.hasPendingChoice, props.hasPendingKoChoice, props.hasPendingOptionalKoReward, props.hasPendingDrawOrEmpowered, props.hasPendingVictoryPileCardPick, props.hasPendingOptionalPutBottomHQ, props.hasPendingPutAnyNumberBottomHQ, props.hasPendingReturnZeroCostDiscard, props.hasPendingDiscardToPlay, props.hasPendingScryKoChoice, props.hasWoundInHand, props.hasActedThisTurn, props.hasHealedThisTurn, props.hasPendingDiscardChoice).canEndTurn();
     }
 
     // why: WP-380 — threads the three new props (hasWoundInHand from the page-level
@@ -173,7 +188,7 @@ export default defineComponent({
     // WP-470 — hasPendingScryKoChoice is threaded before them (position 12) so the heal
     // pending-cluster gate also fires while a Doombot scry-KO choice is pending.
     function healGate(): { allowed: boolean; reason: string | null } {
-      return useTurnActions(props.currentStage, props.isViewerTurn, props.hasPendingChoice, props.hasPendingKoChoice, props.hasPendingOptionalKoReward, props.hasPendingDrawOrEmpowered, props.hasPendingVictoryPileCardPick, props.hasPendingOptionalPutBottomHQ, props.hasPendingPutAnyNumberBottomHQ, props.hasPendingReturnZeroCostDiscard, props.hasPendingDiscardToPlay, props.hasPendingScryKoChoice, props.hasWoundInHand, props.hasActedThisTurn, props.hasHealedThisTurn).canHealWounds();
+      return useTurnActions(props.currentStage, props.isViewerTurn, props.hasPendingChoice, props.hasPendingKoChoice, props.hasPendingOptionalKoReward, props.hasPendingDrawOrEmpowered, props.hasPendingVictoryPileCardPick, props.hasPendingOptionalPutBottomHQ, props.hasPendingPutAnyNumberBottomHQ, props.hasPendingReturnZeroCostDiscard, props.hasPendingDiscardToPlay, props.hasPendingScryKoChoice, props.hasWoundInHand, props.hasActedThisTurn, props.hasHealedThisTurn, props.hasPendingDiscardChoice).canHealWounds();
     }
 
     function onReveal(): void {

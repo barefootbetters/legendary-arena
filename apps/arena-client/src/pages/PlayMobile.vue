@@ -264,6 +264,12 @@ export default defineComponent({
     const hasPendingScryKoChoice = computed<boolean>(
       () => snapshot.value?.pendingScryKoChoice !== undefined,
     );
+    // why: WP-477 / WP-476 — derived from UIState.pendingDiscardChoice !== undefined. Passed to
+    // TurnActionBar to block end-turn and pass-priority at EVERY stage while a Magneto
+    // discard-to-limit choice is pending (board frozen, mirrors hasPendingScryKoChoice).
+    const hasPendingDiscardChoice = computed<boolean>(
+      () => snapshot.value?.pendingDiscardChoice !== undefined,
+    );
 
     // why: WP-380 — Healing KOs Wounds from HAND specifically, so scan the viewer's
     // own handCards (UIPlayerState.woundCount counts every zone and cannot answer
@@ -294,6 +300,7 @@ export default defineComponent({
       hasPendingReturnZeroCostDiscard,
       hasPendingDiscardToPlay,
       hasPendingScryKoChoice,
+      hasPendingDiscardChoice,
       hasWoundInHand,
     };
   },
@@ -538,6 +545,7 @@ export default defineComponent({
             :has-pending-return-zero-cost-discard="hasPendingReturnZeroCostDiscard"
             :has-pending-discard-to-play="hasPendingDiscardToPlay"
             :has-pending-scry-ko-choice="hasPendingScryKoChoice"
+            :has-pending-discard-choice="hasPendingDiscardChoice"
             :has-wound-in-hand="hasWoundInHand"
             :has-acted-this-turn="snapshot.game.hasActedThisTurn"
             :has-healed-this-turn="snapshot.game.hasHealedThisTurn"

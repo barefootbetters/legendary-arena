@@ -203,6 +203,26 @@ describe('TurnActionBar (WP-129 — 3-step rewrite of WP-100; WP-236 — Draw sc
     );
   });
 
+  test('End Turn + Pass Priority are disabled at EVERY stage with the discard tooltip when hasPendingDiscardChoice is true (WP-477 / D-24284)', () => {
+    // why: WP-477 completes WP-476's deferred wiring — a pending Magneto discard-to-limit
+    // choice freezes the board, so both end-turn and pass-priority are blocked at every stage.
+    // Proves the prop threads through TurnActionBar to the position-16 useTurnActions slot.
+    const { submitMove } = recorder();
+    for (const stage of ['start', 'main', 'cleanup'] as const) {
+      const wrapper = mount(TurnActionBar, {
+        props: { currentStage: stage, submitMove, hasPendingDiscardChoice: true },
+      });
+      const endTurn = wrapper.find('[data-testid="play-action-end-turn"]');
+      const passPriority = wrapper.find('[data-testid="play-action-pass-priority"]');
+      assert.equal(passPriority.attributes('disabled'), '', `pass-priority disabled at ${stage}`);
+      assert.match(passPriority.attributes('title')!, /Choose which cards to discard/);
+      if (stage === 'cleanup') {
+        assert.equal(endTurn.attributes('disabled'), '', 'end-turn disabled at cleanup');
+        assert.match(endTurn.attributes('title')!, /Choose which cards to discard/);
+      }
+    }
+  });
+
   // why: WP-380 — the Heal Wounds button (engine healWounds). Lives in Step 2
   // (play.main); enabled only for the viewer with a Wound in hand, not acted, not
   // healed; disabled-with-tooltip otherwise per the EC-132 §3 precedence.
