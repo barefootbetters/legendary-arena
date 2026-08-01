@@ -90,6 +90,13 @@ export interface GauntletSnapshotBoard {
 export interface GauntletIndexLeg {
   readonly schemeSlug: string;
   readonly schemeName: string;
+  // why: WP-474 / D-24283 — mirrors WP-472's per-leg approved loadout (per
+  // player count) so a mastermind's legs can field different adversaries
+  // scheme-to-scheme. Consumers read THIS (leg-level) in preference to the
+  // entry-level field below; optional so a pre-WP-472 snapshot (leg carries no
+  // loadout) degrades to the entry-level per-mastermind fallback rather than
+  // crashing. Mirrored from apps/server/src/legends/legends.types.ts — DO NOT import.
+  readonly approvedLoadouts?: GauntletIndexApprovedLoadouts;
 }
 
 /** Complete-entry counts per player count for one gauntlet
@@ -123,11 +130,13 @@ export interface GauntletIndexEntry {
   // entirely (exact WP-345 rendering).
   readonly fixedEntryCounts?: GauntletEntryCounts;
   readonly legs?: readonly GauntletIndexLeg[];
-  // why: additive (WP-395 / D-24199) and OPTIONAL — the approved villain +
-  // henchmen configurations a ranked leg must be played with, keyed by player
-  // count as a string. A pre-WP-395 index artifact lacks it, which suppresses
-  // the requirement panel and leaves challenge links unpinned (exact WP-387
-  // rendering). Never imported cross-package.
+  // why: WP-395 / D-24199, now DEPRECATED as the per-scheme fallback (WP-474 /
+  // D-24283). The per-mastermind approved configurations, keyed by player count.
+  // WP-472 dual-writes this alongside the per-leg `GauntletIndexLeg.approvedLoadouts`;
+  // consumers now read the leg-level field and fall back to THIS only for a
+  // pre-WP-472 snapshot (where legs carry no loadout). A pre-WP-395 artifact lacks
+  // both, which suppresses the requirement panel and leaves links unpinned (exact
+  // WP-387 rendering). Never imported cross-package.
   readonly approvedLoadouts?: GauntletIndexApprovedLoadouts;
 }
 
