@@ -732,3 +732,206 @@ export type CardMechanicSource     = z.infer<typeof CardMechanicSourceSchema>;
 export type CardMechanicEntry      = z.infer<typeof CardMechanicEntrySchema>;
 export type CardMechanicsCardEntry = z.infer<typeof CardMechanicsCardEntrySchema>;
 export type CardMechanicsIndex     = z.infer<typeof CardMechanicsIndexSchema>;
+
+// ── Effect implementation index (effect-implementation-index.json — WP-484 / D-24289) ──
+// why: WP-484 — the published, dual-scope effect-implementation index. It is
+// generated from the TWO committed mechanic ledgers
+// (docs/ai/coverage/hero-mechanic-ledger.json + villain-mechanic-ledger.json) by
+// scripts/build-effect-implementation-index.mjs, mirroring the WP-269 / D-24046
+// card-mechanics.json feed pattern. It is the data backbone the future
+// /debug/effects viewer reads: for every card × mechanic it surfaces the ledger's
+// status + handler + wp + decision so "did card X's effect fire, and which handler
+// ran?" has a single answer surface. This schema stays data-only (zod + the parsed
+// object); it imports no engine-package module, so packages/registry never reaches
+// the engine and the Layer Boundary holds. D-24289 locks the published contract shape,
+// the closed scope/status unions, the verbatim (never-fabricated) handler/wp/decision
+// pass-through, and the bidirectional entry/card join.
+//
+// Unlike CardMechanicsIndexSchema, the entry `mechanic` is the ledger token
+// VERBATIM (not a normalized slug) — the villain `(unmarked)` sentinel appears as
+// the literal parenthesized string — so there is no slug regex here; token
+// normalization is card-mechanics.json's concern, not this index's.
+export const EFFECT_INDEX_ENTRY_SCOPES = [
+  "hero",
+  "villain",
+] as const;
+
+export const EFFECT_INDEX_STATUSES = [
+  "executable",
+  "deferred",
+  "condition",
+  "unsupported",
+  "unmarked",
+] as const;
+
+export const EffectIndexEntryScopeSchema = z.enum(EFFECT_INDEX_ENTRY_SCOPES);
+export const EffectIndexStatusSchema     = z.enum(EFFECT_INDEX_STATUSES);
+
+export const EffectImplementationEntrySchema = z
+  .object({
+    extId:    z.string().min(1),
+    name:     z.string().min(1),
+    set:      z.string().min(1),
+    scope:    EffectIndexEntryScopeSchema,
+    mechanic: z.string().min(1),
+    status:   EffectIndexStatusSchema,
+    // why: handler/wp/decision are verbatim ledger pass-throughs — the empty
+    // string "" where the ledger row carries no value (an unsupported/unmarked
+    // row where no handler ran), never null and never a fabricated path. So these
+    // accept an empty string (no .min(1)); the honesty constraint is enforced by
+    // the transform passing the ledger value through unchanged, not by the schema
+    // demanding a value.
+    handler:  z.string(),
+    wp:       z.string(),
+    decision: z.string(),
+  })
+  .strict();
+
+export const EffectImplementationCardEntrySchema = z
+  .object({
+    scope:     EffectIndexEntryScopeSchema,
+    mechanics: z.array(z.string().min(1)),
+  })
+  .strict();
+
+export const EffectImplementationSummarySchema = z
+  .object({
+    totalEntries: z.number().int().nonnegative(),
+    byScope: z
+      .object({
+        hero:    z.number().int().nonnegative(),
+        villain: z.number().int().nonnegative(),
+      })
+      .strict(),
+    // why: byStatus emits all five status keys in the fixed union order, a
+    // zero-count status included as 0, so the published shape stays stable across
+    // card-data changes (a status appearing or vanishing never adds or drops a key).
+    byStatus: z
+      .object({
+        executable:  z.number().int().nonnegative(),
+        deferred:    z.number().int().nonnegative(),
+        condition:   z.number().int().nonnegative(),
+        unsupported: z.number().int().nonnegative(),
+        unmarked:    z.number().int().nonnegative(),
+      })
+      .strict(),
+  })
+  .strict();
+
+// superRefine enforces the cross-field invariants the field-level types cannot
+// express, mirroring the CardMechanicsIndexSchema precedent above:
+//   - summary.totalEntries equals entries.length
+//   - summary.byScope / byStatus counts equal the actual entry tallies
+//   - entry -> card join: every entries[] (extId, mechanic) appears in
+//     cards[extId].mechanics, with cards[extId].scope matching the entry's scope
+//   - card -> entry join: every cards[extId].mechanics[] slug has a matching
+//     entries[] row for that (extId, mechanic)
+// These are pure structural checks over the parsed object; they require no engine
+// data, so the schema stays data-only.
+export const EffectImplementationIndexSchema = z
+  .object({
+    version:     z.literal(1),
+    scope:       z.literal("all"),
+    generatedAt: z.string().min(1),
+    summary:     EffectImplementationSummarySchema,
+    entries:     z.array(EffectImplementationEntrySchema),
+    cards:       z.record(z.string().min(1), EffectImplementationCardEntrySchema),
+  })
+  .strict()
+  .superRefine((index, ctx) => {
+    if (index.summary.totalEntries !== index.entries.length) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["summary", "totalEntries"],
+        message:
+          `summary.totalEntries is ${index.summary.totalEntries} but entries[] has ${index.entries.length} ` +
+          `rows. totalEntries must equal entries.length; recompute the summary from the final entries.`,
+      });
+    }
+
+    const scopeTally = { hero: 0, villain: 0 };
+    const statusTally = { executable: 0, deferred: 0, condition: 0, unsupported: 0, unmarked: 0 };
+    for (const entry of index.entries) {
+      scopeTally[entry.scope] += 1;
+      statusTally[entry.status] += 1;
+    }
+    for (const scopeName of EFFECT_INDEX_ENTRY_SCOPES) {
+      if (index.summary.byScope[scopeName] !== scopeTally[scopeName]) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["summary", "byScope", scopeName],
+          message:
+            `summary.byScope.${scopeName} is ${index.summary.byScope[scopeName]} but ${scopeTally[scopeName]} ` +
+            `entries carry scope "${scopeName}". Each byScope count must equal the actual entry tally.`,
+        });
+      }
+    }
+    for (const statusName of EFFECT_INDEX_STATUSES) {
+      if (index.summary.byStatus[statusName] !== statusTally[statusName]) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["summary", "byStatus", statusName],
+          message:
+            `summary.byStatus.${statusName} is ${index.summary.byStatus[statusName]} but ${statusTally[statusName]} ` +
+            `entries carry status "${statusName}". Each byStatus count must equal the actual entry tally.`,
+        });
+      }
+    }
+
+    for (const entry of index.entries) {
+      const cardEntry = index.cards[entry.extId];
+      if (!cardEntry) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["entries"],
+          message:
+            `Entry "${entry.extId}" (mechanic "${entry.mechanic}") has no cards["${entry.extId}"] record. ` +
+            `Every entries[] extId must appear in cards{}.`,
+        });
+        continue;
+      }
+      if (cardEntry.scope !== entry.scope) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["cards", entry.extId, "scope"],
+          message:
+            `cards["${entry.extId}"].scope is "${cardEntry.scope}" but its entry for mechanic "${entry.mechanic}" ` +
+            `carries scope "${entry.scope}". A card's scope must match the scope of its entries.`,
+        });
+      }
+      if (!cardEntry.mechanics.includes(entry.mechanic)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["entries"],
+          message:
+            `Entry "${entry.extId}" lists mechanic "${entry.mechanic}" but cards["${entry.extId}"].mechanics ` +
+            `does not include it. Every entries[] (extId, mechanic) must appear in cards[extId].mechanics.`,
+        });
+      }
+    }
+
+    const entryPairs = new Set<string>();
+    for (const entry of index.entries) {
+      entryPairs.add(`${entry.extId} ${entry.mechanic}`);
+    }
+    for (const [extId, cardEntry] of Object.entries(index.cards)) {
+      for (const mechanic of cardEntry.mechanics) {
+        if (!entryPairs.has(`${extId} ${mechanic}`)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["cards", extId, "mechanics"],
+            message:
+              `Card "${extId}" lists mechanic "${mechanic}" but no entries[] row has that (extId, mechanic) pair. ` +
+              `Every cards[extId].mechanics[] entry must have a matching entries[] row.`,
+          });
+        }
+      }
+    }
+  });
+
+export type EffectIndexEntryScope        = z.infer<typeof EffectIndexEntryScopeSchema>;
+export type EffectIndexStatus            = z.infer<typeof EffectIndexStatusSchema>;
+export type EffectImplementationEntry    = z.infer<typeof EffectImplementationEntrySchema>;
+export type EffectImplementationCardEntry = z.infer<typeof EffectImplementationCardEntrySchema>;
+export type EffectImplementationSummary  = z.infer<typeof EffectImplementationSummarySchema>;
+export type EffectImplementationIndex    = z.infer<typeof EffectImplementationIndexSchema>;

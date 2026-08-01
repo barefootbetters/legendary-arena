@@ -1,0 +1,162 @@
+/**
+ * schema.effectImplementationIndex.test.ts — WP-484 / D-24289 effect implementation index
+ *
+ * Proves EffectImplementationIndexSchema (a) accepts the committed, generated index
+ * at data/metadata/effect-implementation-index.json and (b) rejects each malformed
+ * payload the published contract forbids: missing/wrong version, a non-"all"
+ * top-level scope, an entry scope/status outside the closed unions, a summary count
+ * mismatch (totalEntries, byScope, byStatus), both directions of the entry/card
+ * join, and a card/entry scope disagreement. This is the producer-side guarantee
+ * that the future /debug/effects viewer can trust the index it reads.
+ *
+ * Runner:  node:test (native Node.js test runner)
+ * Invoke:  pnpm --filter @legendary-arena/registry test
+ *
+ * Assumptions:
+ *   - CWD is packages/registry/ (pnpm --filter sets CWD to the package root)
+ *   - data/metadata/effect-implementation-index.json exists at the monorepo root,
+ *     two levels up
+ *   - No network access, no database, no mocks — local files only
+ */
+
+import { describe, it } from "node:test";
+import { strict as assert } from "node:assert";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { EffectImplementationIndexSchema } from "./schema.js";
+
+// why: pnpm --filter sets CWD to packages/registry/; the generated index lives at
+// the monorepo root under data/metadata/, two directory levels up.
+const indexPath = join(process.cwd(), "..", "..", "data", "metadata", "effect-implementation-index.json");
+
+/**
+ * Returns a fresh, minimally-valid effect-implementation index. Each reject case
+ * mutates its own copy so the cases stay independent.
+ */
+function validIndex() {
+  return {
+    version: 1,
+    scope: "all",
+    generatedAt: "1970-01-01T00:00:00.000Z",
+    summary: {
+      totalEntries: 2,
+      byScope: { hero: 1, villain: 1 },
+      byStatus: { executable: 1, deferred: 0, condition: 0, unsupported: 0, unmarked: 1 },
+    },
+    entries: [
+      {
+        extId: "core/hulk",
+        name: "Hulk",
+        set: "core",
+        scope: "hero",
+        mechanic: "draw",
+        status: "executable",
+        handler: "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
+        wp: "",
+        decision: "",
+      },
+      {
+        extId: "core-villain-hydra-viper",
+        name: "Viper",
+        set: "core",
+        scope: "villain",
+        mechanic: "(unmarked)",
+        status: "unmarked",
+        handler: "",
+        wp: "",
+        decision: "",
+      },
+    ],
+    cards: {
+      "core/hulk": { scope: "hero", mechanics: ["draw"] },
+      "core-villain-hydra-viper": { scope: "villain", mechanics: ["(unmarked)"] },
+    },
+  };
+}
+
+describe("EffectImplementationIndexSchema — accepts valid indexes (WP-484 / D-24289)", () => {
+  it("accepts the minimal hand-built valid index", () => {
+    const result = EffectImplementationIndexSchema.safeParse(validIndex());
+    assert.equal(result.success, true, result.success ? "" : JSON.stringify(result.error.issues[0]));
+  });
+
+  it("accepts the committed, generated effect-implementation index", () => {
+    const index = JSON.parse(readFileSync(indexPath, "utf8"));
+    const result = EffectImplementationIndexSchema.safeParse(index);
+    assert.equal(
+      result.success,
+      true,
+      result.success
+        ? ""
+        : `data/metadata/effect-implementation-index.json must validate: ${JSON.stringify(result.error.issues[0])}`,
+    );
+  });
+});
+
+describe("EffectImplementationIndexSchema — rejects malformed indexes (WP-484 / D-24289)", () => {
+  it("rejects a missing version", () => {
+    const index = validIndex();
+    delete index.version;
+    assert.equal(EffectImplementationIndexSchema.safeParse(index).success, false);
+  });
+
+  it("rejects a version other than 1", () => {
+    const index = validIndex();
+    index.version = 2;
+    assert.equal(EffectImplementationIndexSchema.safeParse(index).success, false);
+  });
+
+  it("rejects a top-level scope other than all", () => {
+    const index = validIndex();
+    index.scope = "hero";
+    assert.equal(EffectImplementationIndexSchema.safeParse(index).success, false);
+  });
+
+  it("rejects an entry scope outside the closed union", () => {
+    const index = validIndex();
+    index.entries[0].scope = "sidekick";
+    assert.equal(EffectImplementationIndexSchema.safeParse(index).success, false);
+  });
+
+  it("rejects an entry status outside the closed union", () => {
+    const index = validIndex();
+    index.entries[0].status = "made-up";
+    assert.equal(EffectImplementationIndexSchema.safeParse(index).success, false);
+  });
+
+  it("rejects a summary.totalEntries that does not equal entries.length", () => {
+    const index = validIndex();
+    index.summary.totalEntries = 99;
+    assert.equal(EffectImplementationIndexSchema.safeParse(index).success, false);
+  });
+
+  it("rejects a byScope count that disagrees with the entry tally", () => {
+    const index = validIndex();
+    index.summary.byScope.hero = 99;
+    assert.equal(EffectImplementationIndexSchema.safeParse(index).success, false);
+  });
+
+  it("rejects a byStatus count that disagrees with the entry tally", () => {
+    const index = validIndex();
+    index.summary.byStatus.executable = 99;
+    assert.equal(EffectImplementationIndexSchema.safeParse(index).success, false);
+  });
+
+  it("rejects an entry->card join miss (an entry mechanic absent from cards{})", () => {
+    const index = validIndex();
+    index.entries[0].mechanic = "flight";
+    assert.equal(EffectImplementationIndexSchema.safeParse(index).success, false);
+  });
+
+  it("rejects a card->entry join miss (a card mechanic with no matching entry)", () => {
+    const index = validIndex();
+    index.cards["core/hulk"].mechanics = ["draw", "flight"];
+    assert.equal(EffectImplementationIndexSchema.safeParse(index).success, false);
+  });
+
+  it("rejects a card scope that disagrees with its entries", () => {
+    const index = validIndex();
+    index.cards["core/hulk"].scope = "villain";
+    assert.equal(EffectImplementationIndexSchema.safeParse(index).success, false);
+  });
+});
