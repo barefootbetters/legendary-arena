@@ -7,6 +7,44 @@
 
 ## Current State
 
+### WP-483 / EC-518 — Per-Scheme Approved-Loadout: Browser-Safe Registry Export + Cards Consumers (Arc 4/5 cards half) (2026-08-01)
+
+**User-Visible Surface = cards.legendary-arena.com.** **D-24026 live-verify operator-pending**
+(on the deployed cards builder, a Dr. Doom "Secret Invasion…" Gauntlet-Pack prefills Skrulls and
+the badge qualifies against the leg; a non-swapped scheme fills/qualifies Brotherhood).
+
+The cards half WP-474 split off. WP-474 shipped legends-board only because WP-471's
+`getGauntletConfig` was **Node-only** (`readFileSync` at module load, barrel-only) and broke the
+Vite browser build. This packet makes it browser-safe and threads the per-scheme config through
+the cards builder — completing the per-scheme arc.
+
+- **Browser-safe export:** new `scripts/generate-gauntlet-configs.mjs` (+ root `gauntlet:configs`
+  / `gauntlet:configs:check`) bakes `data/gauntlet-configs.json` into
+  `packages/registry/src/gauntletConfigs.generated.ts`; `gauntletConfigs.ts` now imports that
+  literal and validates it at load (dropping `node:fs` / `node:path` / `node:url`), with
+  `getGauntletConfig` / `getActiveYear` / `validateGauntletConfigs` signatures and the
+  `undefined`→menu-fallback semantics preserved verbatim. New `@legendary-arena/registry/gauntletConfigs`
+  subpath (transitive imports: `zod` + `./playerCountSetup` + the literal — no Node built-ins).
+  The server's barrel import is unchanged.
+- **Cards consumers:** `GauntletQualificationInput` gains a load-bearing `schemeId` + injected
+  `approvedComposition`; the per-scheme branch fires when `schemeId` is non-empty AND
+  `approvedComposition` is present → qualifies with `variantIndex: 0` (one canonical composition
+  per leg), else the per-mastermind menu path. `resolveGauntletLegLoadout` uses the injected
+  composition to prefill the leg's own adversaries (menu fallback for an absent leg).
+  `LoadoutBuilder.vue` resolves the leg config via the browser-safe `getGauntletConfig` (a new
+  `resolveLegConfig` helper, narrowing the player count) and injects it into the badge + prefill
+  call sites.
+
+**Drift gate:** the enforcing gate is the in-test deep-equal (`gauntletConfigs.generated.ts`
+deep-equals `data/gauntlet-configs.json`) run in CI via `pnpm -r … test`; `gauntlet:configs:check`
+is a convenience mirror (verified: exit 1 on a hand-edit, 0 restored). **No D-entry** (consumes
+D-24283). Baselines: registry **202/0** (+1 freshness), registry-viewer **203/0** (+6 per-scheme),
+typecheck clean, `pnpm -r build` green (the browser bundle builds with the new subpath — AC#1).
+
+**The per-scheme gauntlet variety arc is now fully complete** — WP-471 (loader) → WP-472 (server)
+→ WP-473 (run-tracker) → WP-474 (legends-board) → WP-475 (arena-client) → WP-483 (cards). Every
+packet carries an operator-pending D-24026 live-verify.
+
 ### WP-475 / EC-510 — Per-Scheme Approved-Loadout: Arena-Client "Play this leg" (Arc 5/5 — COMPLETES the arc) (2026-08-01)
 
 **User-Visible Surface = play.legendary-arena.com.** **D-24026 live-verify operator-pending**
