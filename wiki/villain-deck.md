@@ -9,6 +9,7 @@ tags:
   - trigger
 related:
   - master-strike.md
+  - card-effect-system.md
   - scheme-twist.md
   - scheme.md
   - rule-execution-pipeline.md
@@ -24,13 +25,14 @@ source:
   - ../packages/game-engine/src/villainDeck/villainDeck.types.ts
   - ../packages/game-engine/src/villainDeck/villainDeck.reveal.ts
   - ../packages/game-engine/src/villainDeck/villainDeck.setup.ts
+  - ../packages/game-engine/src/villain/villainEffects.execute.ts
   - ../docs/ai/ARCHITECTURE.md
   - ../docs/ai/work-packets/WP-014A-villain-reveal-pipeline.md
   - ../docs/ai/work-packets/WP-014B-villain-deck-composition.md
   - ../docs/ai/work-packets/WP-015-city-hq-zones-villain-movement.md
   - ../docs/ai/work-packets/WP-015A-reveal-safety-fixes.md
   - ../docs/10-GLOSSARY.md
-last-reviewed: 2026-05-07
+last-reviewed: 2026-08-01
 ---
 
 # Villain Deck
@@ -105,7 +107,9 @@ happens before triggers fire:
 - **Step 4 — City routing.** For `villain` and `henchman`: validate
   `G.city`, push the card into the City, handle escape (counter +
   wound + bystander resolution), handle Ambush on entry, attach a
-  bystander.
+  bystander. An escaping villain that carries a `become-scheme-twist`
+  `onEscape` hook additionally fires `onSchemeTwistRevealed` after its
+  escape abilities resolve (Mystique, WP-481 / D-24287 — see Edge Cases).
 - **Step 5 — Collect rule effects.** Always emit `onCardRevealed`.
   Conditionally emit `onSchemeTwistRevealed` or
   `onMastermindStrikeRevealed`. Trigger evaluation is delegated to
@@ -131,6 +135,11 @@ The full step contract is also documented inline in
   `onSchemeTwistRevealed`. Unlike Master Strike, the default
   scheme-twist handler can drive an `ENDGAME_CONDITIONS.SCHEME_LOSS`
   counter increment when the twist count crosses an MVP threshold.
+  `onSchemeTwistRevealed` has a **second trigger path** on top of the
+  `scheme-twist` classification: a villain escaping from the City with a
+  `become-scheme-twist` `onEscape` hook fires the same pipeline
+  (WP-481 / D-24287), so a Scheme Twist can occur without a
+  `scheme-twist` card being revealed at all.
 - **[Rule Execution Pipeline](rule-execution-pipeline.md).** All
   triggers route through `executeRuleHooks` → `applyRuleEffects`.
   The reveal move does not implement effects; it only collects them.
@@ -185,6 +194,17 @@ The full step contract is also documented inline in
   `G.currentStage === 'start'` returns silently — never throws.
   Moves never throw per
   [`game-engine.md` "Move Validation Contract"](../.claude/skills/legendary-game-engine/SKILL.md).
+- **An escape can trigger a Scheme Twist (WP-481 / D-24287).** After the
+  City push escapes a villain (index-4 overflow) and its `onEscape`
+  abilities resolve, `villainCardEscapeTriggersSchemeTwist(G, cardId)`
+  checks whether the escaped card carries a `become-scheme-twist` hook; if
+  so the reveal move runs the `onSchemeTwistRevealed` rule pipeline for the
+  escaped card (Mystique's *"Escape: … becomes a Scheme Twist"*). The
+  `become-scheme-twist` villain-effect executor is itself a deliberate
+  no-op — the Scheme Twist is realized here at the fire site, not by an
+  executor mutation — so the twist count and any `SCHEME_LOSS` progression
+  advance exactly as a revealed `scheme-twist` would. See
+  [Card Effect System](card-effect-system.md).
 
 ## Code Touchpoints
 
@@ -208,6 +228,7 @@ The full step contract is also documented inline in
 - WP-014B: Villain deck composition; setup-time `G.villainDeckCardTypes` registry resolution
 - WP-015: City routing added for `villain` and `henchman`; escape counter tracking
 - WP-015A: Deferred deck removal until placement confirmation; closed silent-loss path on malformed city
+- WP-481 (D-24287): Escape fire site can trigger a Scheme Twist — an escaping villain carrying a `become-scheme-twist` `onEscape` hook (Mystique) runs the `onSchemeTwistRevealed` pipeline, a second trigger path for that hook beyond the `scheme-twist` reveal classification
 
 ## References
 
