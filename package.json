@@ -69,6 +69,8 @@
     "ledger:numbers:next":  "node scripts/check-number-ledger.mjs --next",
     "mechanics:metadata":       "node scripts/build-card-mechanics-metadata.mjs",
     "mechanics:metadata:check": "node scripts/build-card-mechanics-metadata.mjs --check",
+    "effect-index":             "node scripts/build-effect-implementation-index.mjs",
+    "effect-index:check":       "node scripts/build-effect-implementation-index.mjs --check",
     "gauntlet:loadouts":        "node scripts/generate-gauntlet-loadouts.mjs",
     "gauntlet:loadouts:check":  "node scripts/generate-gauntlet-loadouts.mjs --check",
     "gauntlet:configs":         "node scripts/generate-gauntlet-configs.mjs",

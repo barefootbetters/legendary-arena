@@ -35546,7 +35546,7 @@ green with unchanged hashes).
 
 ---
 
-### D-24289 — Effect Implementation Index — derived dual-scope ledger join (Drafted 2026-08-01; not yet landed — WP-484)
+### D-24289 — Effect Implementation Index — derived dual-scope ledger join (Active 2026-08-01 — WP-484 / EC-519)
 
 **Decision:** The generated **Effect Implementation Index** — the first slice of the effect-debugging surface recorded in the ewiki `wiki/debug-effects.md` page — is a **derived** artifact, never a hand-authored per-card lookup (the drift-prone anti-pattern the marker + descriptor + coverage system exists to avoid). A deterministic transform (`scripts/build-effect-implementation-index.mjs`) joins the two committed mechanic ledgers (`docs/ai/coverage/hero-mechanic-ledger.json` + `villain-mechanic-ledger.json`) into one published, schema-validated, dual-scope `data/metadata/effect-implementation-index.json`, mirroring the WP-269 / D-24046 `card-mechanics.json` feed pattern.
 
@@ -35568,7 +35568,7 @@ green with unchanged hashes).
 
 **Packet:** WP-484 / EC-519.
 
-**Drafted:** 2026-08-01; not yet landed. Reserved by WP-484; hard-deps WP-269 / D-24046 (feed precedent) + WP-271 (villain ledger).
-**Status:** Drafted 2026-08-01; not yet landed. Flips to Active when WP-484 executes.
+**Drafted:** 2026-08-01. Reserved by WP-484; hard-deps WP-269 / D-24046 (feed precedent) + WP-271 (villain ledger).
+**Status:** Active (landed by WP-484 / EC-519 on 2026-08-01). The transform (`scripts/build-effect-implementation-index.mjs`), the data-only `EffectImplementationIndexSchema`, the generated `data/metadata/effect-implementation-index.json` (1362 entries — 647 hero + 715 villain, 1029 cards), and the `effect-index:check` CI freshness gate all landed as specified; the join is a pure verbatim re-projection (one entry per ledger row), so a card reprinted across sets contributes one entry per set-appearance.
 
 Protect this file.
