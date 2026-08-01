@@ -36,6 +36,10 @@ import type {
   GauntletLoadoutMenu,
   GauntletLoadoutVariant,
 } from "@legendary-arena/registry/gauntletLoadouts";
+// why: WP-483 — the leg's per-scheme approved composition the caller resolves via
+// the browser-safe getGauntletConfig loader, injected so this pure helper stays
+// registry-loader-free. Type-only import (no Node built-ins reach the browser build).
+import type { GauntletConfigComposition } from "@legendary-arena/registry/gauntletConfigs";
 import type { SupportedPlayerCount } from "@legendary-arena/registry/playerCountSetup";
 
 /** The result of parsing a pasted/uploaded Gauntlet Pack. */
@@ -89,6 +93,14 @@ export interface ResolveGauntletLegInput {
    * registry.
    */
   menu: GauntletLoadoutMenu | undefined;
+  /**
+   * The leg's per-scheme approved composition (WP-483 / D-24283), resolved by the
+   * caller via `getGauntletConfig(setAbbr, mastermindSlug, schemeSlug-from-schemeId,
+   * playerCount)`. When present, the prefill uses THIS leg config; when `undefined`
+   * (an absent leg — non-Core / unswapped) it falls back to the scheme-blind menu
+   * variant below (the WP-472 `overlay ?? menu` model).
+   */
+  approvedComposition?: GauntletConfigComposition;
   /** The chosen variant index; defaults to `0`. */
   variantIndex?: number;
 }
@@ -175,6 +187,26 @@ export function resolveGauntletLegLoadout(
   const chosenVariantIndex = input.variantIndex ?? 0;
   const { setAbbr, mastermindSlug, playerCount } = input.pack.gauntlet;
   const mastermindId = `${setAbbr}/${mastermindSlug}`;
+
+  // why: WP-483 / D-24283 — the PER-SCHEME prefill. When the caller resolved this
+  // leg's per-scheme config (via getGauntletConfig on input.schemeId's slug), use
+  // it directly — the leg's OWN approved adversaries (a Secret-Invasion leg fills
+  // Skrulls), not the scheme-blind menu variant. Copy into fresh arrays so the
+  // prefill never aliases the registry's readonly composition; heroes + supply
+  // stay at blank-draft defaults, as in the menu path. An absent leg (non-Core /
+  // unswapped) leaves approvedComposition undefined and falls through to the menu.
+  if (input.approvedComposition !== undefined) {
+    return {
+      ok: true,
+      prefill: {
+        schemeId: input.schemeId,
+        mastermindId,
+        villainGroupIds: [...input.approvedComposition.villainGroupIds],
+        henchmanGroupIds: [...input.approvedComposition.henchmanGroupIds],
+        playerCount,
+      },
+    };
+  }
 
   if (input.menu === undefined) {
     return {

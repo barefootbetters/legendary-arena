@@ -46,6 +46,13 @@ import {
   listGauntletLegSchemeIds,
 } from "../lib/loadoutGauntletPackImport";
 import { getGauntletLoadoutMenu } from "@legendary-arena/registry/gauntletLoadouts";
+// why: WP-483 — resolve the leg's PER-SCHEME approved composition at the
+// orchestrator (parallel to getGauntletLoadoutMenu) via the browser-safe
+// ./gauntletConfigs subpath, then inject it into the pure helpers so they stay
+// registry-loader-free. This subpath carries no Node built-ins (WP-483 refactor).
+import { getGauntletConfig } from "@legendary-arena/registry/gauntletConfigs";
+import type { GauntletConfigComposition } from "@legendary-arena/registry/gauntletConfigs";
+import type { SupportedPlayerCount } from "@legendary-arena/registry/playerCountSetup";
 import type { GauntletPack } from "@legendary-arena/registry/gauntletPack";
 import {
   checkGauntletQualification,
@@ -896,6 +903,40 @@ function onGauntletPackFile(event: Event): void {
 }
 
 /**
+ * Resolves a leg's per-scheme approved composition via the browser-safe
+ * `getGauntletConfig` loader (WP-483 / D-24283), or `undefined` for an absent leg
+ * — non-Core / unswapped, empty ids, or an out-of-range player count. The caller
+ * then falls back to the per-mastermind menu (the WP-472 `overlay ?? menu` model).
+ *
+ * @param setAbbr the gauntlet's home set abbreviation.
+ * @param mastermindSlug the gauntlet's mastermind slug.
+ * @param schemeId the leg's scheme ext_id (`setAbbr/schemeSlug`), or `""`.
+ * @param playerCount the draft/pack player count (narrowed to 1..5 here).
+ * @returns the leg's per-scheme composition, or `undefined`.
+ */
+function resolveLegConfig(
+  setAbbr: string,
+  mastermindSlug: string,
+  schemeId: string,
+  playerCount: number,
+): GauntletConfigComposition | undefined {
+  const separatorIndex = schemeId.indexOf("/");
+  if (setAbbr === "" || mastermindSlug === "" || separatorIndex < 0) {
+    return undefined;
+  }
+  if (!Number.isInteger(playerCount) || playerCount < 1 || playerCount > 5) {
+    return undefined;
+  }
+  const schemeSlug = schemeId.slice(separatorIndex + 1);
+  return getGauntletConfig(
+    setAbbr,
+    mastermindSlug,
+    schemeSlug,
+    playerCount as SupportedPlayerCount,
+  );
+}
+
+/**
  * Resolves the picked leg against the approved menu and prefills the draft.
  * On a friendly-failure result (unknown gauntlet / unoffered count / unknown
  * variant) it surfaces the message inline and leaves the draft untouched.
@@ -907,11 +948,20 @@ function onPickGauntletLeg(schemeId: string): void {
   }
   gauntletLegMessage.value = null;
   gauntletImportSuccessAt.value = null;
+  // why: WP-483 — resolve the leg's per-scheme composition (Skrulls for a Dr. Doom
+  // Secret-Invasion leg); an absent leg → undefined → the resolver uses the menu.
+  const approvedComposition = resolveLegConfig(
+    pack.gauntlet.setAbbr,
+    pack.gauntlet.mastermindSlug,
+    schemeId,
+    pack.gauntlet.playerCount,
+  );
   const result = resolveGauntletLegLoadout({
     pack,
     schemeId,
     menu: gauntletMenu.value,
     variantIndex: gauntletSelectedVariantIndex.value,
+    approvedComposition,
   });
   if (!result.ok) {
     gauntletLegMessage.value = result.message;
@@ -978,11 +1028,23 @@ const gauntletQualification = computed<GauntletQualificationResult | null>(() =>
   }
   const setAbbr = mastermindId.slice(0, separatorIndex);
   const mastermindSlug = mastermindId.slice(separatorIndex + 1);
+  // why: WP-483 — resolve the draft leg's per-scheme config and pass both it and
+  // the draft schemeId, so the badge qualifies against THIS leg's approved
+  // adversaries; an empty/absent leg → undefined → the per-mastermind menu path.
+  const schemeId = draft.value.composition.schemeId;
+  const approvedComposition = resolveLegConfig(
+    setAbbr,
+    mastermindSlug,
+    schemeId,
+    draft.value.playerCount,
+  );
   return checkGauntletQualification({
     villainGroupIds: draft.value.composition.villainGroupIds,
     henchmanGroupIds: draft.value.composition.henchmanGroupIds,
     playerCount: draft.value.playerCount,
+    schemeId,
     menu: getGauntletLoadoutMenu(setAbbr, mastermindSlug),
+    approvedComposition,
   });
 });
 

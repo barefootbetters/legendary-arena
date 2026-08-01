@@ -71,6 +71,8 @@
     "mechanics:metadata:check": "node scripts/build-card-mechanics-metadata.mjs --check",
     "gauntlet:loadouts":        "node scripts/generate-gauntlet-loadouts.mjs",
     "gauntlet:loadouts:check":  "node scripts/generate-gauntlet-loadouts.mjs --check",
+    "gauntlet:configs":         "node scripts/generate-gauntlet-configs.mjs",
+    "gauntlet:configs:check":   "node scripts/generate-gauntlet-configs.mjs --check",
 
     "themes:check-slugs":   "node scripts/check-theme-slug-resolution.mjs",
     "themes:check-slugs:check": "node scripts/check-theme-slug-resolution.mjs --check"

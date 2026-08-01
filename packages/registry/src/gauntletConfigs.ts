@@ -1,19 +1,27 @@
 /**
  * gauntletConfigs.ts — the year-keyed per-scheme gauntlet config loader
- * (WP-471 / EC-506 — per-scheme gauntlet variety, arc 1/5).
+ * (WP-471 / EC-506 — per-scheme gauntlet variety, arc 1/5; browser-safe data
+ * source added by WP-483 / EC-518).
  *
- * Reads the hand-authored `data/gauntlet-configs.json` and exposes a
- * per-(set × mastermind × scheme × player-count) lookup of the approved adversary
- * composition. The file varies a mastermind's approved villains and henchmen BY
- * SCHEME, so a mastermind's gauntlet legs are no longer identical
- * scheme-to-scheme.
+ * Exposes a per-(set × mastermind × scheme × player-count) lookup of the approved
+ * adversary composition, over the hand-authored `data/gauntlet-configs.json` baked
+ * into `gauntletConfigs.generated.ts` (WP-483). The file varies a mastermind's
+ * approved villains and henchmen BY SCHEME, so a mastermind's gauntlet legs are no
+ * longer identical scheme-to-scheme.
+ *
+ * why a baked literal, not `readFileSync` (WP-483): the loader originally read the
+ * JSON from disk at module load, which pulled `node:fs` into the load path and
+ * broke apps/registry-viewer's Vite BROWSER build (which needs this for the cards
+ * qualification badge + pack prefill). The generator `scripts/generate-gauntlet-configs.mjs`
+ * bakes the parsed JSON into `gauntletConfigs.generated.ts`; this module validates
+ * that literal at load. `data/gauntlet-configs.json` stays the source of truth —
+ * revisions are data edits, and the generated literal is regenerated + drift-gated.
  *
  * why the JSON is the source of truth: the compositions are hand-authored data
- * (authored under #1116; revisions are data edits, not a code change). This packet
- * adds only the registry LOADER over that existing file — the additive foundation
- * of the arc. The four downstream packets (WP-472 server truth + leaderboard,
- * WP-473 run-tracker + launch, WP-474 client + cards, WP-475 arena-client) migrate
- * their readers to it one at a time.
+ * (authored under #1116; revisions are data edits, not a code change). This module
+ * is the registry LOADER over that data. The downstream packets (WP-472 server
+ * truth + leaderboard, WP-473 run-tracker + launch, WP-474 legends-board, WP-475
+ * arena-client, WP-483 cards) consume it.
  *
  * why the loader returns `undefined` for an absent leg (rather than a synthesized
  * default): the authored file covers only the sets/masterminds/schemes that carry
@@ -28,19 +36,24 @@
  * active year (`activeYear`). Archival/rollover (reading a prior year) is deferred
  * — there is no consumer for it yet.
  *
- * Layer: Registry. Imports Node built-ins and `zod` only — never the game engine,
- * server, `pg`, any `apps/*` package, or `boardgame.io`. Composition ext_ids are
+ * Layer: Registry. Imports `zod`, `./playerCountSetup.js`, and the generated
+ * literal only — NO Node built-ins (browser-safe, per WP-483), and never the game
+ * engine, server, `pg`, any `apps/*` package, or `boardgame.io`. Composition ext_ids are
  * full D-10014 `setAbbr/slug` ids (a group's real home set, which is not always
  * the parent set — cross-set core-fallback groups keep their source qualifier),
  * and the loader returns them as-is.
  */
 
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import { getPlayerCountSetup } from "./playerCountSetup.js";
 import type { SupportedPlayerCount } from "./playerCountSetup.js";
+// why: WP-483 — the config data is baked into a generated TS literal
+// (gauntletConfigs.generated.ts, from data/gauntlet-configs.json) instead of read
+// from disk at module load. This drops the only Node dependency (node:fs) so the
+// module is browser-safe and can be exposed via the ./gauntletConfigs subpath for
+// apps/registry-viewer's Vite build; freshness is guarded by the in-test
+// deep-equal assertion in gauntletConfigs.test.ts (CI) + `pnpm gauntlet:configs:check`.
+import { GAUNTLET_CONFIGS_DATA } from "./gauntletConfigs.generated.js";
 
 /**
  * One authored gauntlet leg: the ordered villain and henchman pools (full
@@ -226,62 +239,16 @@ export function validateGauntletConfigs(input: unknown): GauntletConfigsFile {
   return file;
 }
 
-/**
- * Resolves the path to `data/gauntlet-configs.json` relative to this module, so
- * the lookup does not depend on the process's working directory.
- *
- * why import.meta.url-relative (not process.cwd()): this module ships in the
- * registry `dist`, imported by the server from an arbitrary cwd. Both
- * `packages/registry/src/gauntletConfigs.ts` (tests, via tsx) and
- * `packages/registry/dist/gauntletConfigs.js` (runtime) sit one directory under
- * `packages/registry`, so the repo root is three levels up in both cases.
- *
- * @returns the absolute path to the gauntlet-configs JSON file.
- */
-function resolveConfigsPath(): string {
-  const moduleDirectory = dirname(fileURLToPath(import.meta.url));
-  return join(moduleDirectory, "..", "..", "..", "data", "gauntlet-configs.json");
-}
-
-/**
- * Reads and validates the gauntlet-configs file once, at module load.
- *
- * why at load (registry setup-time throw is allowed): the file is immutable
- * game-reference data, so it is read and validated a single time; a malformed or
- * missing file is a deploy-blocking error surfaced loudly here rather than a
- * silent per-lookup failure later.
- *
- * @returns the validated gauntlet-configs file.
- * @throws Error when the file is missing, is not valid JSON, or fails validation.
- */
-function loadGauntletConfigs(): GauntletConfigsFile {
-  const configsPath = resolveConfigsPath();
-  let fileText: string;
-  try {
-    fileText = readFileSync(configsPath, "utf8");
-  } catch (readError) {
-    const reason = readError instanceof Error ? readError.message : String(readError);
-    throw new Error(
-      `Failed to read the gauntlet-configs file at ${configsPath}: ${reason}. Confirm the ` +
-        `data/gauntlet-configs.json file is present in the checkout.`,
-    );
-  }
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(fileText);
-  } catch (parseError) {
-    const reason = parseError instanceof Error ? parseError.message : String(parseError);
-    throw new Error(
-      `The gauntlet-configs file at ${configsPath} is not valid JSON: ${reason}. Fix the ` +
-        `hand-authored JSON.`,
-    );
-  }
-  return validateGauntletConfigs(parsed);
-}
-
-// why: read once at module load — the file is immutable reference data and this
-// is the registry's setup-time validation point (a bad file blocks the deploy).
-const GAUNTLET_CONFIGS: GauntletConfigsFile = loadGauntletConfigs();
+// why: validate the baked literal once at module load (registry setup-time throw
+// is allowed) — the same validate-at-load semantics the file-read path had, now
+// on the in-memory generated literal instead of a `readFileSync`. A malformed
+// literal (a stale/hand-edited generated module) is a deploy-blocking error
+// surfaced loudly here; `validateGauntletConfigs` throws a full-sentence message.
+// The literal's freshness against data/gauntlet-configs.json is guarded by the
+// in-test deep-equal assertion (CI) + `pnpm gauntlet:configs:check` — not at runtime.
+const GAUNTLET_CONFIGS: GauntletConfigsFile = validateGauntletConfigs(
+  GAUNTLET_CONFIGS_DATA,
+);
 
 /**
  * Returns the active championship year the loader reads from.
