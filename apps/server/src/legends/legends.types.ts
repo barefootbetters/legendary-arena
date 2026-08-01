@@ -84,6 +84,12 @@ export interface GauntletFixedSnapshotEntry {
 export interface GauntletIndexLeg {
   readonly schemeSlug: string;
   readonly schemeName: string;
+  // why: WP-472 / D-24283 — the leg's per-scheme approved villain + henchmen
+  // configuration, keyed by player count, colocated with its scheme so a
+  // mastermind's legs can field different adversaries scheme-to-scheme. Only
+  // the group ids travel (the server keeps the comparison keys). Optional so a
+  // pre-WP-472 snapshot still parses and a leg with no requirement omits it.
+  readonly approvedLoadouts?: GauntletIndexApprovedLoadouts;
 }
 
 /**

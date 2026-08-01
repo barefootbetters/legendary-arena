@@ -710,3 +710,115 @@ describe('legends publisher fixed-hero-pool boards (WP-384)', () => {
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-472 — per-scheme approved loadouts on the index legs (D-24283)
+// ---------------------------------------------------------------------------
+
+// why: a gauntlet whose scheme-a leg carries a per-scheme override and whose
+// definition still carries the per-mastermind menu (the dual-write source).
+const PER_LEG_GAUNTLET: GauntletDefinition = {
+  setAbbr: 'core',
+  setName: 'Core Set',
+  mastermindSlug: 'mm-full',
+  mastermindName: 'Full Mastermind',
+  legs: [
+    {
+      schemeSlug: 'scheme-a',
+      schemeName: 'Scheme A',
+      approvedLoadouts: {
+        1: [
+          {
+            villainSegment: 'skrulls',
+            henchmanKey: 'core/hand-ninjas',
+            villainGroupIds: ['core/skrulls'],
+            henchmanGroupIds: ['core/hand-ninjas'],
+          },
+        ],
+      },
+    },
+  ],
+  approvedLoadouts: {
+    1: [
+      {
+        villainSegment: 'brotherhood',
+        henchmanKey: 'core/doombot-legion',
+        villainGroupIds: ['core/brotherhood'],
+        henchmanGroupIds: ['core/doombot-legion'],
+      },
+    ],
+  },
+};
+
+describe('legends publisher per-scheme approved loadouts (WP-472 / D-24283)', () => {
+  beforeEach(() => {
+    resetArchiveTracking();
+  });
+
+  test('index legs carry the per-scheme loadout (ids only) and the entry-level field is dual-written per mastermind', async () => {
+    const { client, putCalls } = createStubR2Client();
+    await publishAllBoards(
+      createGauntletStubDatabase(), client, 'test-bucket',
+      createGauntletStubDeps(), [PER_LEG_GAUNTLET],
+    );
+
+    const indexPut = putCalls.find((put) =>
+      put.key.includes('gauntlet-index.json'),
+    );
+    assert.ok(indexPut !== undefined);
+    const index = JSON.parse(indexPut.body);
+    const entry = index.gauntlets.find(
+      (gauntlet: { board: string }) => gauntlet.board === 'gauntlet-core-mm-full',
+    );
+    assert.ok(entry !== undefined);
+
+    // Per-leg (per-scheme) loadout — only the ids travel, keyed by count string.
+    assert.deepEqual(entry.legs, [
+      {
+        schemeSlug: 'scheme-a',
+        schemeName: 'Scheme A',
+        approvedLoadouts: {
+          '1': [
+            {
+              villainGroupIds: ['core/skrulls'],
+              henchmanGroupIds: ['core/hand-ninjas'],
+            },
+          ],
+        },
+      },
+    ]);
+
+    // Entry-level dual-write (RS-1) — the per-mastermind menu, unchanged.
+    assert.deepEqual(entry.approvedLoadouts, {
+      '1': [
+        {
+          villainGroupIds: ['core/brotherhood'],
+          henchmanGroupIds: ['core/doombot-legion'],
+        },
+      ],
+    });
+  });
+
+  test('a leg with no per-scheme loadout publishes byte-identically (pre-WP-472 leg shape)', async () => {
+    const { client, putCalls } = createStubR2Client();
+    // GAUNTLET_WITH_ENTRIES carries neither a per-leg nor an entry-level loadout.
+    await publishAllBoards(
+      createGauntletStubDatabase(), client, 'test-bucket',
+      createGauntletStubDeps(), [GAUNTLET_WITH_ENTRIES],
+    );
+
+    const indexPut = putCalls.find((put) =>
+      put.key.includes('gauntlet-index.json'),
+    );
+    assert.ok(indexPut !== undefined);
+    const index = JSON.parse(indexPut.body);
+    const entry = index.gauntlets.find(
+      (gauntlet: { board: string }) => gauntlet.board === 'gauntlet-core-mm-full',
+    );
+    assert.deepEqual(entry.legs, [
+      { schemeSlug: 'scheme-a', schemeName: 'Scheme A' },
+    ]);
+    // No requirement anywhere → the field is omitted (undefined survives no JSON).
+    assert.equal('approvedLoadouts' in entry, false);
+  });
+});

@@ -248,6 +248,103 @@ describe('matchesApprovedLoadout (WP-442)', () => {
 });
 
 // ---------------------------------------------------------------------------
+// per-scheme approved-loadout selection (WP-472 / D-24283)
+// ---------------------------------------------------------------------------
+
+// why: two DISTINCT per-scheme configs for the same mastermind — scheme-a
+// approves villains-a + doombots, scheme-b approves villains-b + hand-ninjas —
+// so a test can prove the predicate selects by the replay's scheme, not the
+// mastermind default.
+const PER_SCHEME_LOADOUTS: ReadonlyMap<string, GauntletApprovedLoadouts> =
+  new Map([
+    [
+      'scheme-a',
+      {
+        1: [
+          {
+            villainSegment: 'villains-a',
+            henchmanKey: APPROVED_HENCHMEN,
+            villainGroupIds: ['core/villains-a'],
+            henchmanGroupIds: ['core/doombot-legion'],
+          },
+        ],
+      },
+    ],
+    [
+      'scheme-b',
+      {
+        1: [
+          {
+            villainSegment: 'villains-b',
+            henchmanKey: OTHER_HENCHMEN,
+            villainGroupIds: ['core/villains-b'],
+            henchmanGroupIds: ['core/hand-ninjas'],
+          },
+        ],
+      },
+    ],
+  ]);
+
+describe('qualifiesAsLegClear per-scheme selection (WP-472 / D-24283)', () => {
+  test("a run matching ITS leg's per-scheme config qualifies", () => {
+    assert.strictEqual(
+      qualifiesAsLegClear(
+        soloFacts({
+          scenarioKey: 'scheme-a::mm-one::villains-a',
+          henchmanKey: APPROVED_HENCHMEN,
+        }),
+        undefined,
+        1,
+        PER_SCHEME_LOADOUTS,
+      ),
+      true,
+    );
+  });
+
+  test("a run bringing a DIFFERENT scheme's villains of the same mastermind is rejected", () => {
+    // why: the core WP-472 guarantee — scheme-a approves villains-a, so a run on
+    // the scheme-a leg played with scheme-b's villains-b (an approved config for
+    // a DIFFERENT leg) must NOT qualify.
+    assert.strictEqual(
+      qualifiesAsLegClear(
+        soloFacts({
+          scenarioKey: 'scheme-a::mm-one::villains-b',
+          henchmanKey: OTHER_HENCHMEN,
+        }),
+        undefined,
+        1,
+        PER_SCHEME_LOADOUTS,
+      ),
+      false,
+    );
+  });
+
+  test('a scheme absent from the overlay falls back to the per-mastermind menu', () => {
+    // why: scheme-c has no per-scheme override, so the predicate matches against
+    // the base `approvedLoadouts` (SOLO_LOADOUTS approves villains-x + doombots).
+    assert.strictEqual(
+      qualifiesAsLegClear(
+        soloFacts({
+          scenarioKey: 'scheme-c::mm-one::villains-x',
+          henchmanKey: APPROVED_HENCHMEN,
+        }),
+        SOLO_LOADOUTS,
+        1,
+        PER_SCHEME_LOADOUTS,
+      ),
+      true,
+    );
+  });
+
+  test('an undefined overlay reproduces the pre-WP-472 per-mastermind match', () => {
+    assert.strictEqual(
+      qualifiesAsLegClear(soloFacts(), SOLO_LOADOUTS, 1, undefined),
+      true,
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
 // findBestPoolAssignment
 // ---------------------------------------------------------------------------
 

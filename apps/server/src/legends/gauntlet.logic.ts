@@ -105,6 +105,13 @@ export interface GauntletSetSummary {
 export interface GauntletLeg {
   readonly schemeSlug: string;
   readonly schemeName: string;
+  // why: WP-472 / D-24283 — the leg's EFFECTIVE approved loadout: the
+  // per-scheme overlay config when the leg is authored with variety, else the
+  // mastermind's per-mastermind menu. Stamped by buildGauntletCatalog so
+  // getGauntletStandings can qualify each leg against its own config and the
+  // publisher can emit the requirement per leg. Optional so pre-WP-472 callers
+  // and loadout-less tests keep their leg shape unchanged.
+  readonly approvedLoadouts?: GauntletApprovedLoadouts;
 }
 
 /**
@@ -195,13 +202,22 @@ export const GAUNTLET_PLAYER_COUNTS = [1, 2, 3, 4, 5] as const;
  * @param approvedLoadoutsByGauntlet Optional approved-loadout lookup keyed
  *   `setAbbr/mastermindSlug` (WP-395 / D-24199), built by the wiring layer
  *   from the registry's generated menu. A gauntlet with no entry carries no
- *   requirement and qualifies exactly as it did before this WP.
+ *   requirement and qualifies exactly as it did before this WP. Preserved on
+ *   the definition as `approvedLoadouts` so WP-473's per-run callers keep
+ *   reading the per-mastermind menu until they migrate.
+ * @param approvedLoadoutsByScheme Optional per-scheme OVERLAY lookup keyed
+ *   `setAbbr/mastermindSlug/schemeSlug` (WP-472 / D-24283), built by the
+ *   wiring layer from the year-keyed config loader. An entry exists only for a
+ *   leg with an authored per-scheme override; every other leg falls back to the
+ *   per-mastermind menu. Each leg's EFFECTIVE loadout (overlay when present,
+ *   else the menu) is stamped onto the leg.
  * @returns The ordered gauntlet definitions.
  */
 export function buildGauntletCatalog(
   setSummaries: readonly GauntletSetSummary[],
   heroPoolBudgets?: GauntletHeroPoolBudgets,
   approvedLoadoutsByGauntlet?: ReadonlyMap<string, GauntletApprovedLoadouts>,
+  approvedLoadoutsByScheme?: ReadonlyMap<string, GauntletApprovedLoadouts>,
 ): GauntletDefinition[] {
   const catalog: GauntletDefinition[] = [];
 
@@ -213,34 +229,56 @@ export function buildGauntletCatalog(
     if (setSummary.schemes.length === 0) {
       continue;
     }
-    const sortedLegs: GauntletLeg[] = [];
     const sortedSchemes = [...setSummary.schemes].sort(
       (firstScheme, secondScheme) =>
         firstScheme.slug < secondScheme.slug ? -1 : 1,
     );
-    for (const scheme of sortedSchemes) {
-      sortedLegs.push({ schemeSlug: scheme.slug, schemeName: scheme.name });
-    }
     const sortedMasterminds = [...setSummary.masterminds].sort(
       (firstMastermind, secondMastermind) =>
         firstMastermind.slug < secondMastermind.slug ? -1 : 1,
     );
     for (const mastermind of sortedMasterminds) {
+      // why: WP-472 / D-24283 — legs are now built PER MASTERMIND (not shared
+      // across a set's masterminds) because each mastermind × scheme carries a
+      // distinct effective loadout. The menu is this mastermind's per-mastermind
+      // fallback; the overlay entry (when present) is the leg's per-scheme config.
+      const mastermindMenu = approvedLoadoutsByGauntlet?.get(
+        `${setSummary.setAbbr}/${mastermind.slug}`,
+      );
+      const legs: GauntletLeg[] = [];
+      for (const scheme of sortedSchemes) {
+        const perSchemeLoadout = approvedLoadoutsByScheme?.get(
+          `${setSummary.setAbbr}/${mastermind.slug}/${scheme.slug}`,
+        );
+        // why: the leg's EFFECTIVE loadout is the per-scheme overlay when the
+        // leg is authored with variety, else the mastermind's menu. Added via
+        // conditional spread so a leg with neither stays exactly
+        // `{ schemeSlug, schemeName }` (exactOptionalPropertyTypes + the
+        // pre-WP-472 leg-shape tests).
+        const effectiveLoadout = perSchemeLoadout ?? mastermindMenu;
+        legs.push({
+          schemeSlug: scheme.slug,
+          schemeName: scheme.name,
+          ...(effectiveLoadout !== undefined
+            ? { approvedLoadouts: effectiveLoadout }
+            : {}),
+        });
+      }
       catalog.push({
         setAbbr: setSummary.setAbbr,
         setName: setSummary.setName,
         mastermindSlug: mastermind.slug,
         mastermindName: mastermind.name,
-        legs: sortedLegs,
+        legs,
         // why: WP-384 — the budgets ride every definition so the standings
         // computation stays registry-free; `undefined` flows through as an
         // absent optional field for pre-WP-384 callers.
         heroPoolBudgets,
-        // why: WP-395 — same injection shape as the budgets; the requirement
-        // is plain data so the predicate never imports the registry.
-        approvedLoadouts: approvedLoadoutsByGauntlet?.get(
-          `${setSummary.setAbbr}/${mastermind.slug}`,
-        ),
+        // why: WP-395 — the per-mastermind menu is PRESERVED on the definition
+        // (unchanged shape) so WP-473's per-run callers keep reading it until
+        // they migrate to the per-leg field; the per-scheme overlay rides the
+        // legs above, not this field.
+        approvedLoadouts: mastermindMenu,
       });
     }
   }
@@ -319,12 +357,19 @@ function buildAdversaryGroups(
  *   `setAbbr/mastermindSlug` (the same map `buildGauntletCatalog` consumes). When
  *   absent, or a set's masterminds have no entry, every flag is false (nothing is
  *   confirmed reachable) — never a throw.
+ * @param approvedLoadoutsByScheme Optional per-scheme OVERLAY lookup keyed
+ *   `setAbbr/mastermindSlug/schemeSlug` (WP-472 / D-24283). Coverage is
+ *   UNION-OVER-LEGS: a group counts as used if it appears in ANY leg's effective
+ *   config (the per-scheme overlay where authored, else the mastermind's menu),
+ *   so per-scheme variety GROWS the coverage set and never shrinks it. Absent →
+ *   coverage reduces to the per-mastermind menu (pre-WP-472 behaviour).
  * @returns One `SetDetails` per at-least-one-scheme set, `setAbbr` ASC, each
  *   roster `slug` ASC.
  */
 export function buildSetDetailsCatalog(
   setSummaries: readonly GauntletSetSummary[],
   approvedLoadoutsByGauntlet?: ReadonlyMap<string, GauntletApprovedLoadouts>,
+  approvedLoadoutsByScheme?: ReadonlyMap<string, GauntletApprovedLoadouts>,
 ): SetDetails[] {
   const catalog: SetDetails[] = [];
 
@@ -339,20 +384,34 @@ export function buildSetDetailsCatalog(
 
     const usedVillainGroupIds = new Set<string>();
     const usedHenchmanGroupIds = new Set<string>();
+    // why: WP-472 / D-24283 — union-over-legs coverage. For each of this set's
+    // own masterminds, walk every scheme (leg) and gather the ids from that
+    // leg's EFFECTIVE config: the per-scheme overlay when authored, else the
+    // mastermind's menu. A group is "used" if it appears in ANY leg's config, so
+    // a per-scheme swap (e.g. Loki's `radiation` legs) adds `radiation` while the
+    // mastermind's other legs keep `enemies-of-asgard` used. Still per-set-scoped
+    // (only this set's own masterminds), so a cross-set fallback never flips a
+    // foreign set's flags.
     for (const mastermind of setSummary.masterminds) {
-      const approvedForGauntlet = approvedLoadoutsByGauntlet?.get(
+      const mastermindMenu = approvedLoadoutsByGauntlet?.get(
         `${setSummary.setAbbr}/${mastermind.slug}`,
       );
-      if (approvedForGauntlet === undefined) {
-        continue;
-      }
-      for (const approvedConfigs of Object.values(approvedForGauntlet)) {
-        for (const approvedConfig of approvedConfigs) {
-          for (const villainGroupId of approvedConfig.villainGroupIds) {
-            usedVillainGroupIds.add(villainGroupId);
-          }
-          for (const henchmanGroupId of approvedConfig.henchmanGroupIds) {
-            usedHenchmanGroupIds.add(henchmanGroupId);
+      for (const scheme of setSummary.schemes) {
+        const perSchemeLoadout = approvedLoadoutsByScheme?.get(
+          `${setSummary.setAbbr}/${mastermind.slug}/${scheme.slug}`,
+        );
+        const effectiveForLeg = perSchemeLoadout ?? mastermindMenu;
+        if (effectiveForLeg === undefined) {
+          continue;
+        }
+        for (const approvedConfigs of Object.values(effectiveForLeg)) {
+          for (const approvedConfig of approvedConfigs) {
+            for (const villainGroupId of approvedConfig.villainGroupIds) {
+              usedVillainGroupIds.add(villainGroupId);
+            }
+            for (const henchmanGroupId of approvedConfig.henchmanGroupIds) {
+              usedHenchmanGroupIds.add(henchmanGroupId);
+            }
           }
         }
       }
@@ -512,6 +571,18 @@ export async function getGauntletStandings(
   for (const leg of definition.legs) {
     legSchemeSlugs.push(leg.schemeSlug);
   }
+  // why: WP-472 / D-24283 — the per-scheme approved-loadout map the leg-clear
+  // predicate selects by. Built from the effective loadout stamped on each leg
+  // (per-scheme overlay where authored, else the mastermind's menu) so a run
+  // qualifies against ITS leg's config, not the mastermind's default. A leg
+  // with no effective loadout adds no entry, and the predicate falls back to
+  // `definition.approvedLoadouts` — the pre-WP-472 behaviour.
+  const approvedLoadoutsByScheme = new Map<string, GauntletApprovedLoadouts>();
+  for (const leg of definition.legs) {
+    if (leg.approvedLoadouts !== undefined) {
+      approvedLoadoutsByScheme.set(leg.schemeSlug, leg.approvedLoadouts);
+    }
+  }
   // why: WP-442 — the fixed-division pool search no longer takes the
   // definition; it takes the precomputed board name so the extracted helper
   // never imports the board-name builder. Computed once here and passed into
@@ -613,6 +684,10 @@ export async function getGauntletStandings(
         legClearFacts,
         definition.approvedLoadouts,
         publishedScoringConfigVersion,
+        // why: WP-472 / D-24283 — pass the per-scheme overlay so the predicate
+        // selects the leg's own config; absent a scheme entry it falls back to
+        // the per-mastermind menu (`definition.approvedLoadouts`).
+        approvedLoadoutsByScheme,
       )
     ) {
       continue;

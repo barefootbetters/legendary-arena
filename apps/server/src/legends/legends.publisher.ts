@@ -17,14 +17,19 @@ import { randomBytes } from 'node:crypto';
 import type { DatabaseClient } from '../leaderboards/leaderboard.types.js';
 import type {
   BoardPublishOutcome,
+  GauntletIndexApprovedLoadouts,
   GauntletIndexEntry,
+  GauntletIndexLeg,
   LegendsManifest,
   LegendsR2Client,
   PublishResult,
   SetDetails,
 } from './legends.types.js';
 
-import type { GauntletDefinition } from './gauntlet.logic.js';
+import type {
+  GauntletApprovedLoadouts,
+  GauntletDefinition,
+} from './gauntlet.logic.js';
 import {
   buildFixedGauntletBoardNameForPlayerCount,
   buildGauntletBoardNameForPlayerCount,
@@ -276,11 +281,20 @@ export async function publishAllBoards(
           board: soloBoardName,
           entryCounts,
           fixedEntryCounts,
-          legs: gauntletDefinition.legs,
-          // why: WP-395 / D-24199 — publish the requirement alongside the legs
-          // so the client can render it and pin it into the challenge link.
-          // Only the ids travel; the derived comparison keys are server-side.
-          approvedLoadouts: buildPublishedApprovedLoadouts(gauntletDefinition),
+          // why: WP-472 / D-24283 — legs now carry their PER-SCHEME approved
+          // loadout so a mastermind's legs can differ scheme-to-scheme; WP-474's
+          // client mirror reads the leg-level field.
+          legs: buildPublishedLegs(gauntletDefinition),
+          // why: WP-395 / D-24199 — the entry-level per-mastermind requirement.
+          // why: WP-472 / D-24283 dual-write (RS-1) — kept POPULATED (per
+          // mastermind) so the deployed pre-WP-474 legends-board, which reads it
+          // via selectApprovedLoadout, keeps showing loadouts across the gap
+          // between the WP-472 and WP-474 Pages deploys; WP-474 removes it once
+          // the client mirror reads the per-leg field. Only the ids travel; the
+          // derived comparison keys are server-side.
+          approvedLoadouts: projectApprovedLoadouts(
+            gauntletDefinition.approvedLoadouts,
+          ),
         });
 
         for (const playerCount of GAUNTLET_PLAYER_COUNTS) {
@@ -493,18 +507,19 @@ export async function publishAllBoards(
 // ---------------------------------------------------------------------------
 
 /**
- * Projects a gauntlet's approved loadouts into the published index shape
- * (WP-395 / D-24199): only the set-qualified group ids a player must
- * configure, dropping the server-side comparison keys.
+ * Projects one set of approved loadouts into the published index shape
+ * (WP-395 / D-24199): only the set-qualified group ids a player must configure,
+ * dropping the server-side comparison keys. Shared by the entry-level
+ * (per-mastermind) and the per-leg (per-scheme) emission (WP-472 / D-24283).
  *
- * @param gauntletDefinition the gauntlet being published.
- * @returns the per-count approved configurations, or undefined when the
- *   gauntlet carries no requirement.
+ * @param approvedLoadouts the per-count approved configurations to project, or
+ *   undefined when the source carries no requirement.
+ * @returns the per-count published configurations, or undefined when the source
+ *   carries no requirement.
  */
-function buildPublishedApprovedLoadouts(
-  gauntletDefinition: GauntletDefinition,
+function projectApprovedLoadouts(
+  approvedLoadouts: GauntletApprovedLoadouts | undefined,
 ): GauntletIndexApprovedLoadouts | undefined {
-  const approvedLoadouts = gauntletDefinition.approvedLoadouts;
   if (approvedLoadouts === undefined) {
     return undefined;
   }
@@ -525,6 +540,35 @@ function buildPublishedApprovedLoadouts(
     publishedByPlayerCount[playerCount] = published;
   }
   return publishedByPlayerCount;
+}
+
+/**
+ * Projects a gauntlet's legs into the published index shape (WP-472 / D-24283),
+ * attaching each leg's per-scheme approved loadout when it carries one.
+ *
+ * why: the requirement is colocated with its scheme so a mastermind's legs can
+ * field different adversaries scheme-to-scheme; a leg with no effective loadout
+ * omits the field via conditional spread (exactOptionalPropertyTypes, and so a
+ * pre-WP-472 leg publishes byte-identically).
+ *
+ * @param gauntletDefinition the gauntlet being published.
+ * @returns the published legs in the definition's leg order.
+ */
+function buildPublishedLegs(
+  gauntletDefinition: GauntletDefinition,
+): GauntletIndexLeg[] {
+  const publishedLegs: GauntletIndexLeg[] = [];
+  for (const leg of gauntletDefinition.legs) {
+    const publishedLoadout = projectApprovedLoadouts(leg.approvedLoadouts);
+    publishedLegs.push({
+      schemeSlug: leg.schemeSlug,
+      schemeName: leg.schemeName,
+      ...(publishedLoadout !== undefined
+        ? { approvedLoadouts: publishedLoadout }
+        : {}),
+    });
+  }
+  return publishedLegs;
 }
 
 /**
