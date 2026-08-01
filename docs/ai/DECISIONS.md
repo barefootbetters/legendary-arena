@@ -35252,3 +35252,55 @@ re-key, no new cross-layer edge or persistence carve-out (the run's `leg_picks` 
 unchanged). Reserved by WP-472.
 
 Protect this file.
+
+### D-24284 — Mastermind Master-Strike "reveal an X-Men Hero or discard down to N" is a per-mastermind conditional with an interactive discard-to-N for the current player; non-current players (and bots) auto-pick (Drafted 2026-07-31 — WP-476; not yet landed)
+
+> **Status: Drafted at SPEC time; flips to Active when WP-476 executes.** Reserved in
+> `NUMBER-LEDGER.md` via the reserve-first SPEC #1126 (the first use of the #1120
+> reserve-before-drafting flow).
+
+**Context.** Magneto's Master Strike — *"Each player reveals an [team:x-men] Hero or
+discards down to four cards."* — was only half-implemented: `resolveMagnetoStrike`
+(`rules/mastermindHandlers.ts`) **always** discarded (auto-picking the front cards), never
+checking the X-Men-reveal alternative and giving the player no choice of what to discard
+(live Magneto 1p bug, 2026-07-31). Master Strikes are hardcoded per-mastermind (no
+text/marker vocabulary), and the strike fires at **start-of-turn** (villain reveal,
+`currentStage === 'start'`), so every player's hand is full and inPlay is empty.
+
+**Decision.** `resolveMagnetoStrike` honours the printed conditional in two parts:
+
+1. **Reveal-check (all players):** a player who has an X-Men Hero **in hand** (read
+   `G.cardTraits` `team === 'x-men'`, **HAND ONLY** — inPlay is empty at start-of-turn, so
+   this is faithful and deliberately NOT the D-24281 hand+inPlay scope) reveals it and
+   discards nothing.
+2. **Discard-to-4 (players with no X-Men):** the **current** player discards
+   **interactively** — a new `PendingDiscardChoice { choiceType: 'discard-to-limit',
+   playerID, limit }` on `G.pendingDiscardChoices`, resolved by a `resolveDiscardChoice`
+   move (validates the front entry, discards exactly down to the limit, front-pops, silent
+   no-op on any invalid state), gated by a `hasPendingDiscardChoice` block-all guard
+   threaded through every action move + the start→main / End-Turn advance, projected to the
+   choosing player via UIState (D-24011 private filter), with a deterministic bot/sim
+   default and a client `PendingDiscardChoicePrompt.vue`. This mirrors the WP-242/243
+   KO-a-Hero pending-choice machinery.
+
+**Non-current players auto-pick** (cheapest-first, deterministic). The pending-choice model
+assumes a **single current-player chooser** (the park, the bot resolver, the block-all
+guards, and the UIState projection are all current-player-scoped); an interactive discard
+for non-current human opponents is a **deferred follow-on** (larger — a non-active-chooser
+model). For 1p (the reported case) the current player is the only player, so this fully
+fixes it.
+
+**Consequences.** Contract change (new pending-choice type + `resolveDiscardChoice` move +
+`G.pendingDiscardChoices` field + a UIState field) recorded by this D-entry;
+`resolveDiscardChoice` must join `SIMULATION_MOVE_NAMES` + both sim MOVE_MAPs + the
+dispatch-drift test **unconditionally** (or the per-turn sim loop hangs); the replay /
+fixture MOVE_MAPs are core-moves-only and take it **only if** a committed replay log /
+fixture actually dispatches it. Determinism-adjacent: no
+`ctx.random` / I/O, but the new hashed `pendingDiscardChoices` field on a Magneto strike
+makes a **fixture re-pin LIKELY**. **Magneto only** — other masterminds' reveal-or-discard
+strikes are a separate code follow-on (strikes are hardcoded; the composable-strike
+migration in `DESIGN-MASTERMIND-STRIKE-MIGRATION.md` is the general path). No
+`.claude/rules/*` or `ARCHITECTURE.md` edit — within-layer engine growth + a client prompt.
+Reserved by WP-476, DRAFTED here, landed at WP-476 execution; 2026-07-31, claude/spec-bug2-master-strike.
+
+Protect this file.
