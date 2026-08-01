@@ -1121,6 +1121,17 @@
       "hidden": false
     },
     {
+      "slug": "reveal-reorder",
+      "label": "Reveal Reorder",
+      "scope": "hero",
+      "source": "free-text",
+      "cardCount": 1,
+      "cardIds": [
+        "core/spider-man"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "ritual-artifact",
       "label": "Ritual Artifact",
       "scope": "hero",
@@ -2329,7 +2340,8 @@
       "mechanics": [
         "rescue",
         "reveal",
-        "reveal-count"
+        "reveal-count",
+        "reveal-reorder"
       ]
     },
     "core/storm": {
