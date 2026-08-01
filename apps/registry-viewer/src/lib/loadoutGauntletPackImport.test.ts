@@ -256,6 +256,57 @@ describe("resolveGauntletLegLoadout — graceful failures", () => {
   });
 });
 
+describe("resolveGauntletLegLoadout — per-scheme composition (WP-483)", () => {
+  it("prefills the leg's per-scheme config when approvedComposition is injected", () => {
+    const parsed = parseGauntletPack(makeValidPackText());
+    assert.equal(parsed.ok, true);
+    if (!parsed.ok) return;
+    // why: the caller resolved the Secret-Invasion leg via getGauntletConfig; the
+    // prefill must use THOSE adversaries (Skrulls), not the menu's Brotherhood.
+    const result = resolveGauntletLegLoadout({
+      pack: parsed.pack,
+      schemeId: "core/secret-invasion-of-the-skrull-shapeshifters",
+      menu: makeCoreMagnetoMenu(),
+      approvedComposition: {
+        villainGroupIds: ["core/masters-of-evil", "core/skrulls"],
+        henchmanGroupIds: ["core/doombot-legion"],
+      },
+    });
+    assert.equal(result.ok, true);
+    if (result.ok) {
+      assert.equal(
+        result.prefill.schemeId,
+        "core/secret-invasion-of-the-skrull-shapeshifters",
+      );
+      assert.deepEqual(result.prefill.villainGroupIds, [
+        "core/masters-of-evil",
+        "core/skrulls",
+      ]);
+      assert.deepEqual(result.prefill.henchmanGroupIds, ["core/doombot-legion"]);
+      assert.equal(result.prefill.playerCount, 1);
+    }
+  });
+
+  it("falls back to the scheme-blind menu variant when approvedComposition is absent", () => {
+    // why: a non-Core / unswapped leg has no per-scheme override → the caller
+    // injects no approvedComposition → the menu variant fills, exactly as before.
+    const parsed = parseGauntletPack(makeValidPackText());
+    assert.equal(parsed.ok, true);
+    if (!parsed.ok) return;
+    const result = resolveGauntletLegLoadout({
+      pack: parsed.pack,
+      schemeId: "core/negative-zone-prison-breakout",
+      menu: makeCoreMagnetoMenu(),
+      approvedComposition: undefined,
+    });
+    assert.equal(result.ok, true);
+    if (result.ok) {
+      // the menu's variant-0 count-1 composition (Brotherhood), not a per-scheme swap.
+      assert.deepEqual(result.prefill.villainGroupIds, ["core/brotherhood"]);
+    }
+  });
+});
+
 describe("listGauntletLegSchemeIds — leg scheme ids", () => {
   it("maps a set's scheme cards to their set-qualified ext_ids", () => {
     const schemes = [

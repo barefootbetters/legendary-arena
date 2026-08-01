@@ -28,6 +28,10 @@ import type {
   GauntletLoadoutMenu,
   GauntletLoadoutComposition,
 } from "@legendary-arena/registry/gauntletLoadouts";
+// why: WP-483 — the per-scheme leg composition the caller resolves via the
+// browser-safe getGauntletConfig loader, injected here so this pure helper stays
+// registry-loader-free (data-injected, like the menu). Type-only import.
+import type { GauntletConfigComposition } from "@legendary-arena/registry/gauntletConfigs";
 import type { SupportedPlayerCount } from "@legendary-arena/registry/playerCountSetup";
 
 /** The draft facts a qualification check decides on, all data-injected. */
@@ -39,11 +43,26 @@ export interface GauntletQualificationInput {
   /** The draft's player count (envelope-level; a plain number, narrowed here). */
   playerCount: number;
   /**
+   * The draft's scheme ext_id (`setAbbr/schemeSlug`), or `""` when no scheme is
+   * picked. WP-483: this is the load-bearing PER-SCHEME selector — when it is
+   * non-empty AND `approvedComposition` is present, the per-scheme branch fires
+   * (qualify against that single leg config); otherwise the per-mastermind menu
+   * path runs, as before.
+   */
+  schemeId: string;
+  /**
    * The approved loadout menu for the draft's mastermind, or `undefined` when
    * the mastermind hosts no gauntlet. The caller resolves this via
    * `getGauntletLoadoutMenu(setAbbr, mastermindSlug)`.
    */
   menu: GauntletLoadoutMenu | undefined;
+  /**
+   * The leg's per-scheme approved composition (WP-483 / D-24283), resolved by the
+   * caller via `getGauntletConfig(setAbbr, mastermindSlug, schemeSlug, count)`, or
+   * `undefined` for an absent leg (non-Core / unswapped) — then the per-mastermind
+   * menu path runs (the WP-472 `overlay ?? menu` model).
+   */
+  approvedComposition?: GauntletConfigComposition;
 }
 
 /**
@@ -153,6 +172,20 @@ function matchesComposition(
 export function checkGauntletQualification(
   input: GauntletQualificationInput,
 ): GauntletQualificationResult {
+  // why: WP-483 / D-24283 — the PER-SCHEME branch. When the caller resolved this
+  // leg's per-scheme config (a non-empty schemeId AND an injected
+  // approvedComposition), qualify the draft against THAT single leg config — one
+  // canonical composition per leg, so a match reports variantIndex 0. This is the
+  // WP-472 overlay: an absent leg (approvedComposition undefined) falls through to
+  // the per-mastermind menu path below.
+  if (input.schemeId !== "" && input.approvedComposition !== undefined) {
+    if (matchesComposition(input, input.approvedComposition)) {
+      return { status: "qualifies", variantIndex: 0 };
+    }
+    // why: exactly one approved composition for the leg, so a miss is a
+    // one-variant not-qualifying (mirrors the menu path's count shape).
+    return { status: "not-qualifying", approvedVariantCount: 1 };
+  }
   if (input.menu === undefined) {
     return { status: "not-a-gauntlet" };
   }

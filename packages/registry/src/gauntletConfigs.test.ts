@@ -29,6 +29,7 @@ import { strict as assert } from "node:assert";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { getGauntletConfig, getActiveYear, validateGauntletConfigs } from "./gauntletConfigs.js";
+import { GAUNTLET_CONFIGS_DATA } from "./gauntletConfigs.generated.js";
 import { GAUNTLET_LOADOUT_MENUS } from "./gauntletLoadouts.js";
 import { PLAYER_COUNT_SETUP } from "./playerCountSetup.js";
 import type { SupportedPlayerCount } from "./playerCountSetup.js";
@@ -245,5 +246,18 @@ describe("committed-file guards", () => {
         }
       }
     }
+  });
+});
+
+describe("generated literal freshness (WP-483 — enforcing drift gate)", () => {
+  it("gauntletConfigs.generated.ts deep-equals data/gauntlet-configs.json", () => {
+    // why: WP-483 — the browser-safe loader validates the baked literal
+    // (gauntletConfigs.generated.ts), not the file at runtime. This deep-equal is
+    // the ENFORCING drift gate: it runs in CI via `pnpm -r … test`, so a stale or
+    // hand-edited generated module (or a data/gauntlet-configs.json edit without a
+    // regenerate) fails here. The standalone `pnpm gauntlet:configs:check` is a
+    // convenience mirror, not CI-wired (matching gauntlet:loadouts:check).
+    const sourceJson = JSON.parse(readFileSync(configsPath, "utf8"));
+    assert.deepEqual(GAUNTLET_CONFIGS_DATA, sourceJson);
   });
 });

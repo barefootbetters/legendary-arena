@@ -30,6 +30,10 @@
       "import": "./dist/gauntletLoadouts.js",
       "types": "./dist/gauntletLoadouts.d.ts"
     },
+    "./gauntletConfigs": {
+      "import": "./dist/gauntletConfigs.js",
+      "types": "./dist/gauntletConfigs.d.ts"
+    },
     "./gauntletPack": {
       "import": "./dist/gauntletPack.js",
       "types": "./dist/gauntletPack.d.ts"
