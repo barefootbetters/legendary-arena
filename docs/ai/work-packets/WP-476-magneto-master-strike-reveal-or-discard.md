@@ -215,4 +215,11 @@ pnpm -r build
 
 ## Gate Verdicts (drafting session)
 
-Recorded at drafting; see the SPEC commit body for the pre-flight / copilot / lint verdicts.
+- **Pre-flight (`01.4`):** READY TO EXECUTE.
+- **Copilot (`01.7`):** PASS.
+- **Lint (`00.3`):** PASS — see §Lint Gate Self-Review above (all 21 sections resolved; §20/§21 N/A).
+
+Backfilled as a follow-up SPEC. The #1128 draft commit + PR body captured only the mechanical
+CI gates (`ledger:numbers:check`, `workindex:rows:check`, `roadmap-counts --check`) and the
+in-body lint self-review; this note records the `01.4`/`01.7` verdicts. The WP+EC bundle
+merged to `main` under the Phase 1 DoD, which requires pre-flight `READY` + copilot `PASS`/`RISK`.
