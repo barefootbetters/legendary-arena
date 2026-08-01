@@ -194,14 +194,16 @@ export type VillainEffectPrimitive =
   | 'capture-bystander'
   | 'scry-ko-own-deck'
   | 'gain-attached-hero'
-  | 'reveal-or-wound';
+  | 'reveal-or-wound'
+  | 'become-scheme-twist';
 
 // why: drift-detection array — must match VillainEffectPrimitive exactly
 // (villainAbility.types.test.ts asserts bidirectional parity). Adding a
 // primitive requires updating both this array and the union, plus a DECISIONS
 // entry. `scry-ko-own-deck` appended at position 6 by WP-447 (D-24267);
 // `gain-attached-hero` appended at position 7 by WP-450 (D-24270);
-// `reveal-or-wound` appended at position 8 by WP-469 (D-24281).
+// `reveal-or-wound` appended at position 8 by WP-469 (D-24281);
+// `become-scheme-twist` appended at position 9 by WP-481 (D-24287).
 /** All villain effect primitives in canonical order. Single source of truth. */
 export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'ko-hero',
@@ -212,6 +214,7 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'scry-ko-own-deck',
   'gain-attached-hero',
   'reveal-or-wound',
+  'become-scheme-twist',
 ] as const;
 
 /**

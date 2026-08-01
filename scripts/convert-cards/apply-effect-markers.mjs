@@ -115,7 +115,8 @@ function isLockedEffectKeyword(keyword) {
 // [effect:<primitive>:<param>...] grammar the engine parser also accepts.
 // `scry-ko-own-deck` (no-param) appended by WP-447 (D-24267);
 // `gain-attached-hero` (no-param) appended by WP-450 (D-24270);
-// `reveal-or-wound` (:<kind>:<value>) appended by WP-469 (D-24281).
+// `reveal-or-wound` (:<kind>:<value>) appended by WP-469 (D-24281);
+// `become-scheme-twist` (no-param) appended by WP-481 (D-24287).
 const VILLAIN_EFFECT_PRIMITIVES = [
   'ko-hero',
   'gain-wound',
@@ -125,6 +126,7 @@ const VILLAIN_EFFECT_PRIMITIVES = [
   'scry-ko-own-deck',
   'gain-attached-hero',
   'reveal-or-wound',
+  'become-scheme-twist',
 ];
 
 /**

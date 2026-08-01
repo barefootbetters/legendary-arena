@@ -878,6 +878,63 @@ function villainEffectGainAttachedHero(
 }
 
 /**
+ * become-scheme-twist primitive — a deliberate NO-OP in the executor (WP-481 /
+ * D-24287).
+ *
+ * The handler exists ONLY to make Mystique's `Escape: … becomes a Scheme Twist`
+ * a recognized, reachable effect so the D-24266 detector classifies the line
+ * applied rather than falsely recording an `unmarked-ability` breadcrumb, and the
+ * WP-257 hollow detector sees a handler was reached. It deliberately performs no
+ * mutation: triggering the twist needs the scheme-twist RULE pipeline
+ * (executeRuleHooks('onSchemeTwistRevealed') + applyRuleEffects), which requires
+ * the hookRegistry + implementationMap + RevealContext the executor does NOT
+ * receive — so the actual twist is fired from the escape fire site in
+ * villainDeck.reveal.ts (villainCardEscapeTriggersSchemeTwist), where all three
+ * are in scope. Reachable no-op, never hollow.
+ */
+function villainEffectBecomeSchemeTwist(
+  _G: LegendaryGameState,
+  _currentPlayer: string,
+  _cardId: CardExtId,
+  _timing: VillainAbilityTiming,
+  _descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  return { targets: [] };
+}
+
+/**
+ * Whether the given card carries a `become-scheme-twist` onEscape descriptor —
+ * i.e. its escape should trigger the active scheme's Scheme Twist (WP-481 /
+ * D-24287). Read at the escape fire site (villainDeck.reveal.ts) to decide
+ * whether to run the onSchemeTwistRevealed rule pipeline after the escape's
+ * villain abilities resolve. Pure lookup over G.villainAbilityHooks; no mutation.
+ *
+ * @param G - Game state (read-only).
+ * @param cardId - The escaped card's zone-instance ext_id.
+ * @returns true when an onEscape hook for the card declares `become-scheme-twist`.
+ */
+export function villainCardEscapeTriggersSchemeTwist(
+  G: LegendaryGameState,
+  cardId: CardExtId,
+): boolean {
+  // why: guard against G states / test mocks lacking villainAbilityHooks (mirrors
+  // the executeVillainAbilities guard) — getVillainHooksForCard would throw on
+  // undefined. No hooks means no become-scheme-twist escape.
+  if (!G.villainAbilityHooks || G.villainAbilityHooks.length === 0) {
+    return false;
+  }
+  const hooks = getVillainHooksForCard(G.villainAbilityHooks, cardId, 'onEscape');
+  for (const hook of hooks) {
+    for (const descriptor of hook.effects ?? []) {
+      if (descriptor.primitive === 'become-scheme-twist') {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+/**
  * Maps a villain ability timing to its human log-label ('Fight' / 'Ambush' /
  * 'Escape') for the self-narrated reveal-or-wound line.
  *
@@ -1043,7 +1100,8 @@ function villainEffectRevealOrWound(
 // asserts the key set equals VILLAIN_EFFECT_PRIMITIVES. Replaces the former
 // 10-arm switch on VillainEffectKeyword. `scry-ko-own-deck` appended by WP-447
 // (D-24267); `gain-attached-hero` (no-op) appended by WP-450 (D-24270);
-// `reveal-or-wound` appended by WP-469 (D-24281).
+// `reveal-or-wound` appended by WP-469 (D-24281); `become-scheme-twist` (no-op —
+// the twist fires from the escape fire site) appended by WP-481 (D-24287).
 /** Villain effect handlers keyed by primitive. Single dispatch source. */
 const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandler> = {
   'ko-hero': villainEffectKoHero,
@@ -1054,6 +1112,7 @@ const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandl
   'scry-ko-own-deck': villainEffectScryKoOwnDeck,
   'gain-attached-hero': villainEffectGainAttachedHero,
   'reveal-or-wound': villainEffectRevealOrWound,
+  'become-scheme-twist': villainEffectBecomeSchemeTwist,
 };
 
 /**

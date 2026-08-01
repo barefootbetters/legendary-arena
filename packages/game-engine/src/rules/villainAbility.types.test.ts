@@ -308,8 +308,9 @@ describe('VILLAIN_EFFECT_PRIMITIVES drift-detection', () => {
   // silently break dispatch. The 5 primitives collapse the 10 frozen keywords;
   // WP-447 (D-24267) appended a sixth, `scry-ko-own-deck`, at position 6;
   // WP-450 (D-24270) appended a seventh, `gain-attached-hero`, at position 7;
-  // WP-469 (D-24281) appended an eighth, `reveal-or-wound`, at position 8.
-  it('contains exactly the 8 canonical primitives in order', () => {
+  // WP-469 (D-24281) appended an eighth, `reveal-or-wound`, at position 8;
+  // WP-481 (D-24287) appended a ninth, `become-scheme-twist`, at position 9.
+  it('contains exactly the 9 canonical primitives in order', () => {
     const expectedPrimitives: VillainEffectPrimitive[] = [
       'ko-hero',
       'gain-wound',
@@ -319,11 +320,12 @@ describe('VILLAIN_EFFECT_PRIMITIVES drift-detection', () => {
       'scry-ko-own-deck',
       'gain-attached-hero',
       'reveal-or-wound',
+      'become-scheme-twist',
     ];
     assert.equal(
       VILLAIN_EFFECT_PRIMITIVES.length,
-      8,
-      'VILLAIN_EFFECT_PRIMITIVES must have exactly 8 entries',
+      9,
+      'VILLAIN_EFFECT_PRIMITIVES must have exactly 9 entries',
     );
     assert.deepStrictEqual(
       [...VILLAIN_EFFECT_PRIMITIVES],

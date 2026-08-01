@@ -960,6 +960,115 @@ describe('revealVillainCard — onEscape fire site (WP-186 §Files #7a)', () => 
     );
   });
 
+  it('escaped villain carrying [effect:become-scheme-twist] fires the onSchemeTwistRevealed pipeline on escape (WP-481 / D-24287)', () => {
+    // why: WP-481 — Mystique's "Escape: … becomes a Scheme Twist." The escape
+    // fire-site bridge (villainCardEscapeTriggersSchemeTwist → executeRuleHooks
+    // 'onSchemeTwistRevealed' + applyRuleEffects) must fire the SAME twist pipeline
+    // a revealed scheme-twist card fires. Proven via the file's test-hook mechanism:
+    // an onSchemeTwistRevealed test hook pushes a `test-trigger:` message, so exactly
+    // one such message proves the bridge invoked the twist pipeline from the escape
+    // path. The escaped villain must still resolve normally (counter + escape pile).
+    const testHook = createTestHookDefinition(['onSchemeTwistRevealed']);
+    const escapedCardId = 'core-villain-brotherhood-mystique-00' as CardExtId;
+    const gameState = createMockGameState({
+      deck: ['new-villain' as CardExtId],
+      discard: [],
+      cardTypes: { 'new-villain': 'villain' },
+      hookDefinitions: [testHook],
+      villainAbilityHooks: [
+        {
+          cardId: escapedCardId,
+          timing: 'onEscape',
+          keywords: [],
+          effects: [{ primitive: 'become-scheme-twist' }],
+        },
+      ],
+    });
+    gameState.city = [
+      'c0' as CardExtId,
+      'c1' as CardExtId,
+      'c2' as CardExtId,
+      'c3' as CardExtId,
+      escapedCardId,
+    ];
+    gameState.playerZones = {
+      '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+    };
+    gameState.piles.wounds = ['w0'] as CardExtId[];
+
+    DEFAULT_IMPLEMENTATION_MAP[TEST_REVEAL_HOOK_ID] = testRevealHandler;
+    try {
+      const moveContext = createMockMoveContext(gameState);
+      revealVillainCard(moveContext);
+
+      const twistTriggers = moveContext.G.messages.filter((message) =>
+        message.text.startsWith('test-trigger:'),
+      );
+      assert.equal(
+        twistTriggers.length,
+        1,
+        'the become-scheme-twist escape fires onSchemeTwistRevealed exactly once',
+      );
+      assert.ok(
+        moveContext.G.messages.some((message) =>
+          message.text.includes('becomes a Scheme Twist that takes effect immediately'),
+        ),
+        'the escape narrates the become-scheme-twist line',
+      );
+      // the escaped villain still resolves normally
+      assert.equal(
+        moveContext.G.counters['escapedVillains'],
+        1,
+        'escape counter still increments',
+      );
+      assert.ok(
+        moveContext.G.escapedPile.includes(escapedCardId),
+        'the escaped villain still lands in the escaped pile (not routed into a twist pile)',
+      );
+    } finally {
+      delete DEFAULT_IMPLEMENTATION_MAP[TEST_REVEAL_HOOK_ID];
+    }
+  });
+
+  it('escaped villain WITHOUT become-scheme-twist does NOT fire onSchemeTwistRevealed (WP-481 negative)', () => {
+    const testHook = createTestHookDefinition(['onSchemeTwistRevealed']);
+    const escapedCardId = 'core-villain-brotherhood-blob-00' as CardExtId;
+    const gameState = createMockGameState({
+      deck: ['new-villain' as CardExtId],
+      discard: [],
+      cardTypes: { 'new-villain': 'villain' },
+      hookDefinitions: [testHook],
+      villainAbilityHooks: [],
+    });
+    gameState.city = [
+      'c0' as CardExtId,
+      'c1' as CardExtId,
+      'c2' as CardExtId,
+      'c3' as CardExtId,
+      escapedCardId,
+    ];
+    gameState.playerZones = {
+      '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+    };
+    gameState.piles.wounds = ['w0'] as CardExtId[];
+
+    DEFAULT_IMPLEMENTATION_MAP[TEST_REVEAL_HOOK_ID] = testRevealHandler;
+    try {
+      const moveContext = createMockMoveContext(gameState);
+      revealVillainCard(moveContext);
+      const twistTriggers = moveContext.G.messages.filter((message) =>
+        message.text.startsWith('test-trigger:'),
+      );
+      assert.equal(
+        twistTriggers.length,
+        0,
+        'a plain escape must NOT fire the scheme-twist pipeline',
+      );
+    } finally {
+      delete DEFAULT_IMPLEMENTATION_MAP[TEST_REVEAL_HOOK_ID];
+    }
+  });
+
   it('escaped card with no onEscape hook safely no-ops (per-card hook lookup misses)', () => {
     // why: this is the henchman-shape case — no onEscape hook authored for
     // the card, so executeVillainAbilities reaches the per-card lookup,

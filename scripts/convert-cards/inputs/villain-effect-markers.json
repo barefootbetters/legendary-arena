@@ -89,6 +89,7 @@
     "core": {
       "brotherhood": {
         "juggernaut": { "ambush": ["ko-hero:each:2:discard"], "escape": ["ko-hero:each:2:hand"] },
+        "mystique": { "escape": ["become-scheme-twist"] },
         "sabretooth": { "fight": ["reveal-or-wound:team:x-men"], "escape": ["reveal-or-wound:team:x-men"] }
       },
       "enemies-of-asgard": {

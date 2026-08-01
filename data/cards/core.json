@@ -2002,7 +2002,7 @@
           "vAttack": "5",
           "imageUrl": "https://images.legendary-arena.com/core/core-vi-brotherhood-mystique.webp",
           "abilities": [
-            "Escape: Mystique becomes a Scheme Twist that takes effect immediately."
+            "Escape: Mystique becomes a Scheme Twist that takes effect immediately. [effect:become-scheme-twist]"
           ],
           "copies": 2
         },

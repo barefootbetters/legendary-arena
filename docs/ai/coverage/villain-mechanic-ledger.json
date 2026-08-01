@@ -4,12 +4,12 @@
   "summary": {
     "totalRows": 715,
     "byStatus": {
-      "executable": 109,
+      "executable": 110,
       "deferred": 0,
       "unsupported": 1,
-      "unmarked": 605
+      "unmarked": 604
     },
-    "distinctMechanics": 12
+    "distinctMechanics": 13
   },
   "rows": [
     {
@@ -1843,11 +1843,11 @@
       "cardName": "Mystique",
       "set": "core",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
+      "mechanic": "become-scheme-twist",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": ""
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#become-scheme-twist"
     },
     {
       "extId": "core-villain-skrulls-paibok-the-power-skrull",
