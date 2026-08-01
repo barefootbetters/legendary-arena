@@ -7,6 +7,38 @@
 
 ## Current State
 
+### WP-473 / EC-508 — Per-Scheme Approved-Loadout: Run-Tracker Leg-Clear + Per-Leg Launch (Arc 3/5) (2026-08-01)
+
+**User-Visible Surface = play.legendary-arena.com.** **D-24026 live-verify operator-pending**
+(in a live run tracker, "Play this leg" on a swapped scheme launches that scheme's adversaries;
+clearing it credits only that leg).
+
+Arc 3/5. Migrates the two run-tracker consumers of WP-472's additive per-scheme truth, closing
+the functional break the re-key would otherwise leave (a leg requiring Skrulls could never
+qualify while "Play this leg" launched Brotherhood).
+
+- **Leg-clear (`deriveGauntletRunProgress`):** builds a per-scheme map from `inputs.legs` (each
+  leg's effective loadout, stamped by WP-472) and passes it into `qualifiesAsLegClear`, so a leg
+  clears only against its OWN approved config — a win carrying a different scheme's villains of
+  the same mastermind no longer clears the requiring leg. Uses the SAME map-from-legs the
+  leaderboard's `getGauntletStandings` builds, so tracker and leaderboard cannot disagree.
+- **Per-leg launch (`deriveGauntletRunLaunch`):** `GauntletRunLaunch` gains an additive per-leg
+  `legLaunch?: Record<schemeSlug, GauntletRunLaunchComposition>` overlay built from each leg's
+  effective variant-0 at the run's player count; the per-run block stays populated (the
+  mastermind default, RS-1) so the pre-WP-475 arena-client stays green. `legLaunch` is omitted
+  when no leg carries an effective composition.
+
+**Execution reconciliation (2026-08-01):** `server.mjs` was **not** modified. WP-472 already
+stamps each leg's effective loadout onto `definition.legs`, and `resolveGauntletRunProgressInputs`
+already injects `definition.legs` as `inputs.legs`, so both new reads take their per-leg data
+from `inputs.legs` with no new injected field — a subset of the drafted allowlist. **§21:**
+whole-row update of `GET /api/me/gauntlet-runs` in `api-endpoints.md` (the `run.launch` sub-shape
+gains the additive `legLaunch` overlay; Status `Wired` / Auth unchanged). **No D-entry**
+(consumes D-24283). Baselines: server gauntlet+legends **133/0** (16 DB-gated skipped),
+`gauntletRunProgress` **22/0**, `pnpm -r build` green. Smoke-verified vs real data: Core Dr. Doom
+Secret-Invasion leg `legLaunch` @2p = `core/skrulls` + `core/masters-of-evil`. WP-474 (client +
+cards) and WP-475 (arena-client "Play this leg") consume the `legLaunch` map next.
+
 ### WP-472 / EC-507 — Per-Scheme Approved-Loadout: Server Truth + Leaderboard + Publisher (Arc 2/5) (2026-08-01)
 
 **User-Visible Surface = legends.legendary-arena.com.** **D-24026 live-verify operator-pending**
