@@ -44,6 +44,7 @@ import PendingHeroChoicePrompt from '../components/play/PendingHeroChoicePrompt.
 import PendingKoHeroChoicePrompt from '../components/play/PendingKoHeroChoicePrompt.vue';
 import PendingScryKoChoicePrompt from '../components/play/PendingScryKoChoicePrompt.vue';
 import PendingDiscardChoicePrompt from '../components/play/PendingDiscardChoicePrompt.vue';
+import PendingReorderChoicePrompt from '../components/play/PendingReorderChoicePrompt.vue';
 import OptionalKoRewardPrompt from '../components/play/OptionalKoRewardPrompt.vue';
 import DrawOrEmpoweredPrompt from '../components/play/DrawOrEmpoweredPrompt.vue';
 import VictoryPileCardPickPrompt from '../components/play/VictoryPileCardPickPrompt.vue';
@@ -111,6 +112,7 @@ export default defineComponent({
     PendingKoHeroChoicePrompt,
     PendingScryKoChoicePrompt,
     PendingDiscardChoicePrompt,
+    PendingReorderChoicePrompt,
     OptionalKoRewardPrompt,
     DrawOrEmpoweredPrompt,
     VictoryPileCardPickPrompt,
@@ -631,6 +633,16 @@ export default defineComponent({
                block-all guard guarantees at most one pending-choice type is set. -->
           <PendingDiscardChoicePrompt
             :pending-discard-choice="snapshot.pendingDiscardChoice"
+            :viewer-player-id="viewer.playerId"
+            :submit-move="submitMove"
+          />
+          <!-- why: WP-479 / D-24286 — the reveal-remainder reorder prompt ("put the rest
+               back in any order") renders above TurnActionBar in DOM order; appears only
+               for the choosing player when pendingReorderChoice is set. NOT a modal; normal
+               document flow. The block-all guard guarantees at most one pending-choice
+               type is set. -->
+          <PendingReorderChoicePrompt
+            :pending-reorder-choice="snapshot.pendingReorderChoice"
             :viewer-player-id="viewer.playerId"
             :submit-move="submitMove"
           />

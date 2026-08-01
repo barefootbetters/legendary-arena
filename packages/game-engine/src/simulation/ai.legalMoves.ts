@@ -19,6 +19,7 @@ import { isGuardBlocking, getPatrolModifier } from '../board/boardKeywords.logic
 import { hasPendingKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from '../moves/scryKoChoice.resolve.js';
 import { hasPendingDiscardChoice } from '../moves/discardChoice.resolve.js';
+import { hasPendingReorderChoice } from '../moves/reorderChoice.resolve.js';
 import { selectDiscardToLimitCards } from '../rules/mastermindHandlers.js';
 import { selectDefaultKoTarget, selectScryKoTarget } from '../villain/villainEffects.execute.js';
 import { hasPendingOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
@@ -68,6 +69,11 @@ export const SIMULATION_MOVE_NAMES = [
   // turns, not within-turn move-steps — the WP-289 hang). Asserted by
   // simulation.moveDispatch.drift.test.ts.
   'resolveDiscardChoice',
+  // why: WP-479 / D-24286 — getLegalMoves short-circuits to resolveReorderChoice when a
+  // reveal-remainder reorder is parked; it MUST be dispatchable in the sim (both MOVE_MAPs)
+  // or the per-turn loop hangs (maxTurns bounds turns, not within-turn move-steps — the
+  // WP-289 hang). Asserted by simulation.moveDispatch.drift.test.ts.
+  'resolveReorderChoice',
   'resolveOptionalKoReward',
   'resolveVictoryPileCardPick',
   'resolveDrawOrEmpowered',
@@ -318,6 +324,17 @@ export function getLegalMoves(
     // why: defensive — a parked choice whose hand is already at/under the limit is an
     // engine-invariant violation; fail closed rather than emit an unresolvable move.
     return legalMoves;
+  }
+
+  // why: WP-479 / D-24286 — pending reveal-remainder reorder short-circuit. The engine
+  // block-all guard freezes every other move, so the bot must resolve it first. The
+  // deterministic default is the IDENTITY order (the parked cardIds unchanged — the order
+  // the reveal loop already left), so par/replay stay byte-identical to a no-reorder world
+  // except for the extra park→resolve move pair; only live human play gets the prompt.
+  // Returns a list of length EXACTLY 1 — omitting this path hangs the per-turn loop.
+  if (hasPendingReorderChoice(gameState)) {
+    const front = gameState.pendingReorderChoices![0]!;
+    return [{ name: 'resolveReorderChoice', args: { orderedCardIds: front.cardIds } }];
   }
 
   // why: WP-427 / D-24248 — pending optional-put-bottom-HQ short-circuit. While a

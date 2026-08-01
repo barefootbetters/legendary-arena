@@ -745,6 +745,23 @@ describe('buildHeroAbilityHooks reveal collapse parsing (WP-253)', () => {
     assert.equal(effect!.revealCount, 1, 'no reveal-count marker ⇒ the descriptor keeps revealCount 1');
   });
 
+  // -------------------------------------------------------------------------
+  // WP-479 / D-24286 — reveal-reorder modifier marker
+  // -------------------------------------------------------------------------
+
+  it('a [keyword:reveal-reorder] modifier sets reorderRemainder on the reveal descriptor (D-24286)', () => {
+    const { effect } = revealEffectFor('[keyword:reveal:cost-lte-2:draw][keyword:reveal-count:3][keyword:reveal-reorder]');
+    assert.ok(effect !== undefined, 'a reveal effect must be emitted');
+    assert.equal(effect!.reorderRemainder, true, 'the reveal-reorder modifier sets reorderRemainder');
+    assert.equal(effect!.revealCount, 3, 'reveal-count is unaffected by the reveal-reorder modifier');
+  });
+
+  it('an absent reveal-reorder modifier leaves reorderRemainder undefined', () => {
+    const { effect } = revealEffectFor('[keyword:reveal:cost-lte-2:draw][keyword:reveal-count:3]');
+    assert.ok(effect !== undefined, 'a reveal effect must be emitted');
+    assert.equal(effect!.reorderRemainder, undefined, 'no reveal-reorder marker ⇒ the field is omitted');
+  });
+
   it('the "The Amazing Spider-Man"-shaped line parses to revealCount 3 + cost-lte 2 → draw (WP-255)', () => {
     const { hook, effect } = revealEffectFor(
       'Reveal the top three cards of your deck. Put any that cost 2[icon:vp] or less into your hand. Put the rest back in any order. [keyword:reveal:cost-lte-2:draw][keyword:reveal-count:3]',

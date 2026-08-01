@@ -80,6 +80,7 @@ import { resolveDrawOrEmpowered } from '../moves/drawOrEmpowered.resolve.js';
 import { resolveKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { resolveScryKoChoice } from '../moves/scryKoChoice.resolve.js';
 import { resolveDiscardChoice } from '../moves/discardChoice.resolve.js';
+import { resolveReorderChoice } from '../moves/reorderChoice.resolve.js';
 import { resolveOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
 import { resolveVictoryPileCardPick } from '../moves/resolveVictoryPileCardPick.js';
 import { resolveReturnZeroCostDiscard } from '../moves/resolveReturnZeroCostDiscard.js';
@@ -432,6 +433,8 @@ const MOVE_MAP: Record<string, MoveFn> = {
   resolveScryKoChoice: (context, args) => resolveScryKoChoice(context as never, args as never),
   // why: WP-476 / D-24284 — same dispatch-completeness rule as the runner MOVE_MAP (pinned by the drift guard).
   resolveDiscardChoice: (context, args) => resolveDiscardChoice(context as never, args as never),
+  // why: WP-479 / D-24286 — same dispatch-completeness rule as the runner MOVE_MAP (pinned by the drift guard).
+  resolveReorderChoice: (context, args) => resolveReorderChoice(context as never, args as never),
   resolveOptionalKoReward: (context, args) => resolveOptionalKoReward(context as never, args as never),
   resolveVictoryPileCardPick: (context, args) => resolveVictoryPileCardPick(context as never, args as never),
   // why: D-24139 — same dispatch-completeness rule as the runner MOVE_MAP (pinned by the drift guard).
