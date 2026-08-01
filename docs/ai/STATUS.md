@@ -7,6 +7,43 @@
 
 ## Current State
 
+### WP-476 / EC-511 — Magneto Master Strike Reveal-or-Discard + Interactive Discard-to-4 (2026-07-31)
+
+**User-Visible Surface = play.legendary-arena.com.** **D-24026 live-verify operator-pending**
+(trigger Magneto's Master Strike in a live match post-deploy: a hand with an X-Men Hero
+discards nothing; a hand without one prompts the current player to pick which cards to
+discard down to four).
+
+Fixes a live Magneto 1p bug: the Master Strike *"Each player reveals an [team:x-men] Hero
+or discards down to four cards"* **always** force-discarded and auto-picked the front cards
+— it never checked the X-Men reveal alternative and gave the player no choice.
+`resolveMagnetoStrike` (`rules/mastermindHandlers.ts`) now honours the printed conditional:
+a player holding an X-Men Hero **in hand** (hand-only — the strike fires at start-of-turn
+with inPlay empty, deliberately **not** the D-24281 hand+inPlay scope) reveals it and
+discards nothing; a player who must discard does so — the **current** player via a new
+interactive `PendingDiscardChoice` on `G.pendingDiscardChoices` (resolved by
+`resolveDiscardChoice`, gated by a `hasPendingDiscardChoice` block-all guard threaded
+through every action move + the start→main / End-Turn advance, projected to the chooser via
+UIState with the D-24011 private filter, with a deterministic bot/sim default in
+`SIMULATION_MOVE_NAMES` + both sim MOVE_MAPs + the drift test, and a client
+`PendingDiscardChoicePrompt.vue`); **non-current** players auto-pick cheapest-first
+(interactive non-current deferred — single-current-player architecture). Magneto only. Lands
+**D-24284**.
+
+**Determinism note:** a fixture re-pin was **LIKELY** (new hashed `pendingDiscardChoices`
+field on a Magneto strike) but **empirically not needed** — no committed replay log / fixture
+dispatches a core/magneto strike, so no `finalStateHash` shifted and no
+`replay.execute.ts` / `runFixture.ts` MOVE_MAP entry was added (the only-if-dispatched
+branch resolved to "not added"). Baselines: game-engine **2150 → 2172** tests pass;
+arena-client **1133** pass; typecheck clean; `runtime-observed-hollows --check` OK (no sim
+hang); `pnpm -r build` green.
+
+**Scope boundary (noted):** `TurnActionBar.vue` is outside the WP-476 allowlist, so the
+`useTurnActions` `hasPendingDiscardChoice` gate (appended last, positional-safe) is not yet
+wired into TurnActionBar's End-Turn button. The engine block-all guard is authoritative
+(End Turn no-ops server-side while a discard is pending) and the prompt is prominently
+rendered, so this is a cosmetic follow-on, not a correctness gap.
+
 ### WP-471 / EC-506 — Year-Keyed Gauntlet-Config Registry Loader (Arc 1/5) (2026-07-31)
 
 **User-Visible Surface = none — infrastructure.** **D-24026 inverted** — no

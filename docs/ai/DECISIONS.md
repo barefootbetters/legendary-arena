@@ -35253,9 +35253,9 @@ unchanged). Reserved by WP-472.
 
 Protect this file.
 
-### D-24284 — Mastermind Master-Strike "reveal an X-Men Hero or discard down to N" is a per-mastermind conditional with an interactive discard-to-N for the current player; non-current players (and bots) auto-pick (Drafted 2026-07-31 — WP-476; not yet landed)
+### D-24284 — Mastermind Master-Strike "reveal an X-Men Hero or discard down to N" is a per-mastermind conditional with an interactive discard-to-N for the current player; non-current players (and bots) auto-pick (Active 2026-07-31 — WP-476 / EC-511)
 
-> **Status: Drafted at SPEC time; flips to Active when WP-476 executes.** Reserved in
+> **Status: Active (landed by WP-476 / EC-511 on 2026-07-31).** Reserved in
 > `NUMBER-LEDGER.md` via the reserve-first SPEC #1126 (the first use of the #1120
 > reserve-before-drafting flow).
 
