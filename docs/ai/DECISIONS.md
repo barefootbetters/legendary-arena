@@ -35544,4 +35544,31 @@ green with unchanged hashes).
 **Drafted:** 2026-08-01. **Landed:** 2026-08-01 (WP-482 execution).
 **Status:** Active
 
+---
+
+### D-24289 — Effect Implementation Index — derived dual-scope ledger join (Drafted 2026-08-01; not yet landed — WP-484)
+
+**Decision:** The generated **Effect Implementation Index** — the first slice of the effect-debugging surface recorded in the ewiki `wiki/debug-effects.md` page — is a **derived** artifact, never a hand-authored per-card lookup (the drift-prone anti-pattern the marker + descriptor + coverage system exists to avoid). A deterministic transform (`scripts/build-effect-implementation-index.mjs`) joins the two committed mechanic ledgers (`docs/ai/coverage/hero-mechanic-ledger.json` + `villain-mechanic-ledger.json`) into one published, schema-validated, dual-scope `data/metadata/effect-implementation-index.json`, mirroring the WP-269 / D-24046 `card-mechanics.json` feed pattern.
+
+**Contract (locked):**
+- Top-level `{ version: 1, scope: "all", generatedAt, summary, entries, cards }`.
+- `entries[]`: one per card × mechanic, `{ extId, name, set, scope, mechanic, status, handler, wp, decision }` in that property order; sorted by `(extId, mechanic)`.
+- `scope` per entry ∈ `{ hero, villain }`; `status` ∈ `{ executable, deferred, condition, unsupported, unmarked }` (the ledger status vocabulary); `summary.byStatus` emits all five keys in fixed order (zero counts as `0`).
+- `handler` / `wp` / `decision` are **verbatim ledger pass-through** — the empty string `""` where the ledger row is blank, never `null` and never a fabricated or inferred value. BOTH ledgers already derive `handler = <file>#<primitive>` + `wp` + `decision` for **resolved** rows (the hero ledger carries a handler on 230 of its 647 rows, e.g. `heroEffects.execute.ts#undercover`; the villain ledger likewise); the `""` values are the `unsupported`/`unmarked` rows in both scopes, where no handler exists — a meaningful "no handler ran" signal, not a gap to backfill.
+- `mechanic` is the ledger token **verbatim** — not normalized (the villain `unmarked` sentinel appears as the literal `"(unmarked)"`); token normalization is `card-mechanics.json`'s concern, not this index's.
+- `cards{ extId: { scope, mechanics[] } }` — a per-card join, sorted keys + sorted/de-duped mechanics; `.superRefine` enforces `summary` count integrity, bidirectional entry↔card join, and card/entry scope agreement.
+- `generatedAt` is an input-derived byte-stable sentinel (`1970-01-01T00:00:00.000Z` when neither ledger carries a timestamp; no `Date.now()`), so the `effect-index:check` freshness gate (in the `hero-effect-coverage` CI job) stays deterministic.
+- `EffectImplementationIndexSchema` is **data-only Zod** on the `@legendary-arena/registry/schema` subpath (no game-engine import); the transform reads only committed JSON ledgers + the registry dist schema (no game-engine dist).
+
+**Deferred (explicitly out of scope of WP-484, each a separate future WP):** co-locating handler metadata (`{decision, file, notes}`) inside the engine handler maps; per-ability-line / per-descriptor granularity (WP-484 is per card × mechanic, the ledger granularity); mechanic-token normalization to UI-safe slugs; the `/debug/effects` viewer; and the runtime structured effect trace.
+
+**Why derived, not authored.** A hand-maintained card → effect → code-location JSON would be a second source of truth that drifts the moment a marker is added and the lookup is not — the exact failure the marker/descriptor/coverage system was built to avoid (D-24029, D-24046). A derived join stays consistent with the parser by construction and is CI-gated for freshness like the ledgers it reads.
+
+**Fixes:** the scattered effect-debugging surface (mechanic ledgers + hollow detector + Play Diagnostics + `card-mechanics.json`) had no single per-card "did this effect fire / which handler / which decision" index; this is the data backbone the future `/debug/effects` viewer reads.
+
+**Packet:** WP-484 / EC-519.
+
+**Drafted:** 2026-08-01; not yet landed. Reserved by WP-484; hard-deps WP-269 / D-24046 (feed precedent) + WP-271 (villain ledger).
+**Status:** Drafted 2026-08-01; not yet landed. Flips to Active when WP-484 executes.
+
 Protect this file.
