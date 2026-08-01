@@ -273,6 +273,18 @@ export interface GauntletRunLegProgress {
  * they can never affect the WP-442 / WP-446 clear or champion derivation.
  * `mastermindId` is `${setAbbr}/${mastermindSlug}` (D-10014).
  */
+/**
+ * One leg's approved adversary composition for "Play this leg" (WP-473 /
+ * D-24283): the per-scheme villains + henchmen the leg must be played with. Only
+ * the two group-id lists vary per leg; the mastermind, supply counts, and the
+ * per-leg `schemeId` / `heroDeckIds` the client already has do not, so they are
+ * not repeated per entry.
+ */
+export interface GauntletRunLaunchComposition {
+  readonly villainGroupIds: readonly string[];
+  readonly henchmanGroupIds: readonly string[];
+}
+
 export interface GauntletRunLaunch {
   readonly mastermindId: string;
   readonly villainGroupIds: readonly string[];
@@ -281,6 +293,15 @@ export interface GauntletRunLaunch {
   readonly woundsCount: number;
   readonly officersCount: number;
   readonly sidekicksCount: number;
+  // why: WP-473 / D-24283 — the ADDITIVE per-leg (per-scheme) launch overlay,
+  // keyed by scheme slug: each leg's own approved adversaries so "Play this leg"
+  // fields the LEG's villains/henchmen, not one per-mastermind composition for
+  // every leg. The per-run `villainGroupIds`/`henchmanGroupIds` above are
+  // PRESERVED + still populated (the mastermind default) so the pre-WP-475
+  // arena-client consumer stays green until WP-475 reads this map. Omitted when
+  // no leg carries an effective composition (a pre-WP-472/unconfigured gauntlet),
+  // so an old snapshot degrades to the per-run block.
+  readonly legLaunch?: Readonly<Record<string, GauntletRunLaunchComposition>>;
 }
 
 /**
