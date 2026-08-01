@@ -30,6 +30,7 @@ import type { HeroEffectResult } from './heroEffects.types.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
 import { shuffleDeck } from '../setup/shuffle.js';
 import { moveCardFromZone, moveAllCards } from '../moves/zoneOps.js';
+import { reshuffleDiscardIntoDeck } from '../moves/drawCards.logic.js';
 import { addResources } from '../economy/economy.logic.js';
 import { koCard } from '../board/ko.logic.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
@@ -817,7 +818,7 @@ function heroEffectGainWound(
 
 function heroEffectReveal(
   G: LegendaryGameState,
-  _ctx: unknown,
+  ctx: unknown,
   playerID: string,
   _cardId: CardExtId,
   effect: HeroEffectDescriptor,
@@ -851,10 +852,19 @@ function heroEffectReveal(
   let peekOffset = 0;
   for (let peekIndex = 0; peekIndex < revealCount; peekIndex++) {
     // why: re-read the live deck each iteration (do NOT snapshot) — a prior draw/ko shifts
-    // the deck. The offset overrunning the deck end is the ONLY whole-loop exit; an empty
-    // deck / exhausted window is a silent no-op (no reshuffle, D-21502).
+    // the deck. When the offset overruns the deck end, a reveal still owes a card, so
+    // reshuffle the discard into the deck and retry — the standard Legendary rule that a
+    // reveal (like a draw) reshuffles an exhausted deck mid-effect (D-24285, superseding
+    // D-21502's no-op FOR THIS HANDLER; the D-24200 reveal-eight strike keeps its
+    // deliberate no-top-up). ctx narrows to ShuffleProvider exactly as the draw handler
+    // does — reshuffle needs ctx.random.Shuffle.
     if (peekOffset >= playerZones.deck.length) {
-      return;
+      reshuffleDiscardIntoDeck(playerZones, ctx as ShuffleProvider);
+      // why: still short after the reshuffle means the discard was empty too — nothing
+      // remains anywhere, so this is the terminal no-op (the former D-21502 exit).
+      if (peekOffset >= playerZones.deck.length) {
+        return;
+      }
     }
     const topCardId = playerZones.deck[peekOffset];
     // why: a peek with no card id OR no cardStats entry (a S.H.I.E.L.D. starter has no
