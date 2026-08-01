@@ -41,7 +41,7 @@ source:
   - ../docs/ai/DESIGN-MASTERMIND-STRIKE-MIGRATION.md
   - ../docs/ai/ARCHITECTURE.md
   - ../docs/10-GLOSSARY.md
-last-reviewed: 2026-07-30
+last-reviewed: 2026-08-01
 ---
 
 # Card Effect System
@@ -147,9 +147,10 @@ The villain/henchman path in
 made the same move from fragmented keywords to parameters. Its executable
 vocabulary is the `VillainEffectDescriptor` — a `VillainEffectPrimitive`
 plus optional `target` / `magnitude` / `selector` params
-(`VILLAIN_EFFECT_PRIMITIVES`: `ko-hero` · `gain-wound` ·
+(`VILLAIN_EFFECT_PRIMITIVES`, nine entries: `ko-hero` · `gain-wound` ·
 `capture-hq-hero` · `hero-deck-top-to-escape` · `capture-bystander` ·
-`scry-ko-own-deck` · `gain-attached-hero` · `reveal-or-wound`). A new
+`scry-ko-own-deck` · `gain-attached-hero` · `reveal-or-wound` ·
+`become-scheme-twist`). A new
 target / magnitude / selector variant is a descriptor **param** (a data
 marker), not a new keyword plus switch arm plus drift test (D-24023).
 
@@ -169,6 +170,20 @@ who plainly has (and just played) a qualifying Hero (D-24281, amended
 only hand + in-play cards are "revealable." The scan reuses the setup-time
 `G.cardTraits` `{team, heroClass}` snapshot (the same source as the
 `VillainDefeatRequirement` precondition, D-24076).
+
+**`become-scheme-twist` is a fire-site primitive, not an executor mutation
+(D-24287).** Mystique's *"Escape: … becomes a Scheme Twist"* is the ninth
+primitive, but its executor handler
+(`villainEffectBecomeSchemeTwist`) is a **deliberate no-op** — it exists only
+so the line parses to a reachable, recognized effect (the D-24266 unmarked-ability
+detector classifies it *applied* rather than a false breadcrumb, and the WP-257
+hollow detector sees a handler was reached). The actual Scheme Twist is fired at
+the [Villain Deck](villain-deck.md) escape site: after an escaping villain's
+`onEscape` abilities resolve, `villainCardEscapeTriggersSchemeTwist(G, cardId)`
+checks for the descriptor and, when present, runs the `onSchemeTwistRevealed`
+rule pipeline — the same pipeline a `scheme-twist` reveal uses. This is a second
+trigger path into `onSchemeTwistRevealed` that does not route through the villain
+executor's mutation surface at all.
 
 Ten earlier `VILLAIN_EFFECT_KEYWORDS` are **frozen** as the parser's
 legacy-translation input only. `LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR`
@@ -292,12 +307,31 @@ hand:
   vocabulary by hand and cannot import it. If the engine union changes, the
   script loud-fails on the new value until the mirror is updated — a
   deliberate guardrail, but a required manual step.
-- **The mastermind path is not marker-driven.** Each implemented mastermind
-  strike is a hand-coded branch in `mastermindHandlers.ts` keyed on
-  `mastermindId`, and reveal-and-choose card text is resolved by a
-  deterministic auto-pick because the engine has no interactive
-  reveal-and-choose model (D-24192). This asymmetry with the hero/villain
-  descriptor model is the current state, not a rule.
+- **The mastermind path is not marker-driven, and still auto-picks.** Each
+  implemented mastermind strike is a hand-coded branch in `mastermindHandlers.ts`
+  keyed on `mastermindId`, and its reveal-and-choose card text is resolved by a
+  deterministic auto-pick (D-24192). Note the original D-24192 rationale — "the
+  engine has no interactive reveal-and-choose model" — **no longer holds:** the
+  hero path now carries a full pending-choice interaction model (`PendingScry`
+  WP-470, `PendingDiscard` WP-476, `PendingReorderChoice` WP-479, each with a
+  `hasPending*Choice` block-all guard, a `resolve*` move, a UIState projection, and
+  a deterministic bot/sim default). Masterminds simply have not been migrated onto
+  it yet — the auto-pick is now a *not-yet-adopted* state, not a missing capability
+  (see [Known gaps](#known-gaps-and-directions) #1). The mastermind reveal-eight
+  strike also tops up a short deck by reshuffling the discard (D-24288; see below).
+  This asymmetry with the hero/villain descriptor model is the current state, not a
+  rule.
+- **Deck exhaustion mid-effect reshuffles the discard.** A reveal / look-at-top
+  effect that runs off the end of the deck reshuffles the owner's discard back into
+  the deck to continue, matching the tabletop rule — the shared
+  `reshuffleDiscardIntoDeck` helper (`ctx.random.Shuffle`, no new `G` field). This
+  applies to hero reveal (`heroEffectReveal`, WP-478/D-24285), the `scry-ko-own-deck`
+  villain primitive (WP-478), and the Doctor Octopus reveal-eight Master Strike, which
+  tops up a short deck to reveal a full eight (WP-482/D-24288). The top-up makes that
+  strike **harsher** (more revealed → more Heroes discarded), the faithful reading of
+  its printed "reveal the top eight … put the rest back in random order" — not a
+  benefit, because the shuffle-back still denies the player any ordering choice. The
+  reshuffle no-ops when the discard is empty or no shuffle source is threaded through.
 - **Determinism of the primitive interpreter.** The `bind`/`ref` execution
   context is a transient `Map`, never persisted to `G`/`ctx`; bound values
   are re-derived identically on replay (D-24029 §9 / D-24030).
@@ -353,6 +387,10 @@ hand:
 - WP-292 (D-24076) — villain defeat-requirement preconditions
 - WP-388 (D-24192) / WP-389 (D-24193) / WP-397 — implemented co2e mastermind strikes and the base-face selection rule
 - WP-447 (D-24267) / WP-450 (D-24270) — the `scry-ko-own-deck` and `gain-attached-hero` villain primitives
+- WP-469 (D-24281) — the `reveal-or-wound` conditional each-player villain primitive (eighth primitive)
+- WP-478 (D-24285) / WP-482 (D-24288) — mid-effect deck-exhaustion reshuffle for hero reveal and `scry-ko-own-deck`, and the Doctor Octopus reveal-eight Master Strike top-up
+- WP-479 (D-24286) — interactive hero reveal-reorder (`PendingReorderChoice`); the hero-path pending-choice interaction model matured to cover reveal/scry/discard/reorder
+- WP-481 (D-24287) — the `become-scheme-twist` villain primitive (ninth primitive; an escaping villain fires a Scheme Twist)
 - The hollow-effect detection and coverage-ledger spine (DESIGN-HOLLOW-EFFECT-DETECTION.md, DESIGN-EFFECT-AUTHORING-SCALE.md)
 
 ## Scaling and Open Directions
@@ -393,10 +431,13 @@ The cost model, from
    [`mastermindHandlers.ts`](../packages/game-engine/src/rules/mastermindHandlers.ts)
    keyed on `mastermindId`, so every new mastermind adds a branch plus a
    bespoke resolver — the fragmentation the hero and villain paths were
-   refactored away from. It is additionally blocked on the absence of a
-   **reveal-and-choose interaction model** (strikes that ask a player to
-   reveal or choose currently resolve via a deterministic auto-pick,
-   D-24192). *(Proposed)* migrate masterminds onto the same
+   refactored away from. Strikes that ask a player to reveal or choose still
+   resolve via a deterministic auto-pick (D-24192), but that is no longer
+   *blocked* on a missing capability: the hero path now ships a reusable
+   **pending-choice interaction model** (WP-470 scry / WP-476 discard / WP-479
+   reorder — block-all guard + resolve move + UIState projection + bot default),
+   so wiring a strike to prompt the player is now an adoption step rather than a
+   from-scratch build. *(Proposed)* migrate masterminds onto the same
    descriptor / ImplementationMap model the hero and villain paths use —
    or, as a smaller first step, a `mastermindId → resolver` registry that
    removes the `if/else` chain. This is the highest-leverage
