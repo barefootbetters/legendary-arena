@@ -23231,10 +23231,12 @@ under pure opacity (`sum(anomalyCounts) === cellCount`). See D-23503.
 
 **Decision:** The `reveal` effect does NOT trigger a deck reshuffle. If `playerZones[playerID].deck.length === 0`, the effect is a silent no-op. If `G.cardStats[topCardId]` is undefined (e.g., SHIELD starter cards), the effect is also a silent no-op — the card stays on top of the deck. This gap is deferred to a future WP.
 
+**Superseded (scoped) 2026-08-01 by D-24285 (WP-478):** the no-reshuffle half of this decision is superseded **for the `heroEffectReveal` peek loop and the `villainEffectScryKoOwnDeck` handler only** — those now reshuffle the discard into the deck on exhaustion (the standard Legendary rule). The missing-`cardStats` skip-and-advance guard is UNCHANGED. Note this is a SCOPED supersession: the Doctor Octopus reveal-eight mastermind strike ([D-24200](#d-24200--doctor-octopus-reveal-eight-strike)) still cites this decision's empty-deck no-op posture and deliberately keeps its no-top-up (a reshuffle there would turn the strike into a benefit) — do NOT add a reshuffle to that strike.
+
 **Packet:** WP-215 / EC-247.
 
 **Drafted:** 2026-06-05. **Landed:** 2026-06-05.
-**Status:** Active
+**Status:** Superseded (scoped) by D-24285 — see the supersession note above (the reshuffle behavior; the missing-`cardStats` guard remains Active).
 
 ---
 
@@ -35302,5 +35304,72 @@ strikes are a separate code follow-on (strikes are hardcoded; the composable-str
 migration in `DESIGN-MASTERMIND-STRIKE-MIGRATION.md` is the general path). No
 `.claude/rules/*` or `ARCHITECTURE.md` edit — within-layer engine growth + a client prompt.
 Reserved by WP-476, DRAFTED here, landed at WP-476 execution; 2026-07-31, claude/spec-bug2-master-strike.
+
+---
+
+### D-24285 — Reveal / Look-at-Top Effects Reshuffle the Discard on Exhaustion (WP-478)
+
+**Decision:** A reveal / look-at-top effect that runs the current player's deck dry
+mid-effect reshuffles that player's discard pile into a new deck (via the deterministic
+`shuffleDeck`) and continues — the standard Legendary rule that *"whenever you need to
+draw OR reveal cards and your deck is empty, shuffle your discard pile to form a new
+deck; this can happen in the middle of an effect."* This is the reveal/scry counterpart
+to the draw-side reshuffle `drawCardsIntoHand` already performs. Two handlers gain it:
+
+- **`heroEffectReveal`** (`hero/heroEffects.execute.ts`) — the peek loop reshuffles when
+  `peekOffset >= deck.length` and a reveal is still owed; it terminates (the former
+  no-op `return`) only when the discard is also empty. Covers the whole reveal family
+  (reveal-draw / reveal-ko / reveal-cost-attack / reveal-odd-draw / reveal-min /
+  choose-discard-or-return / `revealCount > 1`) through the one loop.
+- **`villainEffectScryKoOwnDeck`** (`villain/villainEffects.execute.ts`) — reshuffles when
+  `deck.length < 2` (topping up toward its look-2) BEFORE the unchanged `0 → no-op /
+  1 → auto-KO / ≥2 → park` branch.
+
+**Shared helper:** `reshuffleDiscardIntoDeck(playerZones, shuffleContext)` in
+`moves/drawCards.logic.ts` — when the discard is non-empty, `deck := [...deck,
+...shuffleDeck(discard, ctx)]` and clears the discard; **appends** the reshuffled discard
+after any cards already on top (a partial-reveal window's peeked-but-not-drawn cards stay
+on top). No-op on an empty discard, which is both the loop terminator and the reason the
+`shuffleContext` is only dereferenced when there is a discard to shuffle. Pure, no
+`boardgame.io` import, no `.reduce()`. `drawCardsIntoHand` is NOT refactored onto it (its
+full-replace path is only reached on an already-empty deck; the two are deliberately
+distinct).
+
+**RNG threading:** `executeVillainAbilities` gains an OPTIONAL trailing `shuffleContext?:
+ShuffleProvider` (an inline refinement of the WP-478 draft's "required param": optional
+keeps the ~28 existing test callers and the `extIdReconciliation.e2e.test.ts` caller valid
+without churn, and the helper no-ops before touching the context on an empty discard — so
+nothing can throw on a missing context). It threads through `applyVillainEffect` and the
+shared `VillainEffectHandler` type (the other 7 handlers keep their 5-param signatures —
+structurally assignable to the widened type). All three production callers pass the move
+`random` wrapped as `{ random }`: `fightVillain` (onFight) + `villainDeck.reveal.ts`
+(onEscape + onAmbush). The hero side narrows the ctx it already receives (`ctx as
+ShuffleProvider`, the draw-handler precedent).
+
+**Scoped supersession.** D-24285 supersedes the no-reshuffle half of **D-21502** (reveal)
+and the "scry never reshuffles" stance in **WP-447** — **for these two handlers only**.
+The Doctor Octopus reveal-eight mastermind strike (**D-24200**) deliberately keeps its
+no-top-up (a known-order / reshuffled top-up "would turn the strike into a benefit" and
+needs an interaction model D-24200 did not introduce) and is explicitly NOT superseded.
+D-21502's missing-`cardStats` skip guard also remains Active.
+
+**Determinism:** the only randomness is the injected `ctx.random.Shuffle` — no
+`Math.random`, no I/O, no new `G` field, no snapshot change, no canonical-array / union /
+drift edit. Non-empty-deck behavior is byte-identical to pre-WP-478 (the reshuffle branch
+is unreachable when the deck is not exhausted). No record-game / replay fixture exercises
+an empty-deck reveal or scry (confirmed empirically — the whole game-engine suite passes
+with `finalStateHash` unchanged), so no fixture regen and no `PRE_WP080_HASH` sentinel
+re-pin were needed; a future fixture that does hit the path is regenerated via
+`scripts/record-game-fixture.mjs`.
+
+**Fixes:** two dead effects reported from a live Magneto 1p match (2026-07-31) — The
+Amazing Spider-Man's reveal-top-3 and Doombot Legion's look-2/KO-1, both silent no-ops on
+an empty deck with cards sitting in the discard. Bug 2 (Amazing Spider-Man's *"put the
+rest back in any order"* interactive reorder) is a separate follow-on WP.
+
+**Packet:** WP-478 / EC-513.
+
+**Drafted:** 2026-07-31. **Landed:** 2026-08-01 (WP-478 execution).
+**Status:** Active
 
 Protect this file.
