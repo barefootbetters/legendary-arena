@@ -472,6 +472,68 @@ describe('filterUIStateForAudience — pendingScryKoChoice redaction (D-24282)',
 });
 
 // ---------------------------------------------------------------------------
+// WP-476 / EC-511 — pendingDiscardChoice redaction (D-24284, D-24011 analog)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a UIState where player '0' owes a Magneto discard-to-limit choice. The
+ * hand ext_ids are the cards the chooser must pick among — private information
+ * that must not appear in a non-chooser's UIState.
+ */
+function createDiscardChoiceUIState(): UIState {
+  const config = createTestConfig();
+  const registry = createMockRegistry();
+  const setupContext = makeMockCtx();
+  const gameState = buildInitialGameState(config, registry, setupContext);
+
+  gameState.playerZones['0']!.hand = [
+    'disc-hand-secret-a' as CardExtId,
+    'disc-hand-secret-b' as CardExtId,
+    'disc-hand-secret-c' as CardExtId,
+    'disc-hand-secret-d' as CardExtId,
+    'disc-hand-secret-e' as CardExtId,
+  ];
+  gameState.pendingDiscardChoices = [
+    { choiceType: 'discard-to-limit', playerID: '0', limit: 4 },
+  ];
+
+  return buildUIState(gameState, mockCtx);
+}
+
+describe('filterUIStateForAudience — pendingDiscardChoice redaction (D-24284)', () => {
+  it('the chooser sees pendingDiscardChoice with the hand and limit', () => {
+    const uiState = createDiscardChoiceUIState();
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+    assert.ok(result.pendingDiscardChoice !== undefined, 'chooser sees the discard choice');
+    assert.equal(result.pendingDiscardChoice!.playerID, '0');
+    assert.equal(result.pendingDiscardChoice!.limit, 4);
+    assert.equal(result.pendingDiscardChoice!.hand.length, 5, 'the full hand is projected to the chooser');
+  });
+
+  it('an opponent does NOT see pendingDiscardChoice and no hand ext_id leaks', () => {
+    const uiState = createDiscardChoiceUIState();
+    const result = filterUIStateForAudience(uiState, PLAYER_1);
+    assert.equal(result.pendingDiscardChoice, undefined, 'opponent must not see the discard choice');
+    const serialized = JSON.stringify(result);
+    assert.equal(serialized.includes('disc-hand-secret-a'), false, 'no hand ext_id leaks to an opponent');
+  });
+
+  it('a spectator does NOT see pendingDiscardChoice and no hand ext_id leaks', () => {
+    const uiState = createDiscardChoiceUIState();
+    const result = filterUIStateForAudience(uiState, SPECTATOR);
+    assert.equal(result.pendingDiscardChoice, undefined, 'spectator must not see the discard choice');
+    const serialized = JSON.stringify(result);
+    assert.equal(serialized.includes('disc-hand-secret-a'), false, 'no hand ext_id leaks to a spectator');
+  });
+
+  it('does not mutate the input UIState (pendingDiscardChoice still present on the source)', () => {
+    const uiState = createDiscardChoiceUIState();
+    filterUIStateForAudience(uiState, PLAYER_1);
+    assert.ok(uiState.pendingDiscardChoice !== undefined, 'source UIState unchanged');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // WP-249 / EC-280 — pendingOptionalKoReward redaction (D-24020, D-24011 analog)
 // ---------------------------------------------------------------------------
 

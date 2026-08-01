@@ -31,13 +31,13 @@ import { formatCardRef } from '../log/logDisplay.js';
 const MASTERMIND_MAGNETO = 'core/magneto';
 
 // why: core Magneto's Master Strike text: "Each player reveals an
-// [team:x-men] Hero or discards down to four cards." This takes the punitive
-// branch — each player discards down to four — because the engine has no
-// reveal-and-choose interaction model. Team affiliation IS available (WP-179
-// put it on G.cardTraits, which the co2e resolvers below read); the blocker
-// is the reveal-and-choose mechanic, not the data. A future WP can add it.
-// Note this is core/magneto only — co2e/magneto prints DIFFERENT text and
-// has its own resolver.
+// [team:x-men] Hero or discards down to four cards." WP-476 / D-24284
+// implements the printed conditional in full: a player holding an X-Men Hero
+// reveals it and discards nothing; a player who must discard does so — the
+// CURRENT player via an interactive pending-choice (they pick which cards),
+// non-current players via a deterministic cheapest-first auto-pick. Team
+// affiliation is on G.cardTraits (WP-179). Note this is core/magneto only —
+// co2e/magneto prints DIFFERENT text and has its own resolver.
 const MAGNETO_HAND_SIZE_LIMIT = 4;
 
 // why: both Red Skull faces print the identical Master Strike text —
@@ -177,43 +177,194 @@ function buildGenericStrikeEffects(): RuleEffect[] {
 }
 
 /**
- * Resolves Magneto's Master Strike (MVP punitive branch).
+ * Whether a player holds an X-Men Hero in HAND (the Magneto reveal branch).
  *
- * Strike text: "Each player reveals an [team:x-men] Hero or discards
- * down to four cards." MVP simplification: every player simply discards
- * down to four cards. Cards are moved from the top of each player's
- * hand into their discard pile until the hand has four or fewer cards.
+ * @param gameState - The game state (read-only; supplies cardTraits).
+ * @param hand - The player's hand, in order.
+ * @returns True when the hand holds at least one Hero whose team is 'x-men'.
+ */
+function playerHasXMenHeroInHand(
+  gameState: LegendaryGameState,
+  hand: readonly CardExtId[],
+): boolean {
+  // why: HAND-ONLY. Magneto's strike fires at start-of-turn (villainDeck.reveal
+  // gated on currentStage==='start'), so every player's hand is full and their
+  // inPlay zone is empty — the reveal has nothing to check in play. Do NOT copy
+  // D-24281's hand+in-play scope; that ruling is for the reveal-or-wound handler,
+  // whose strike timing differs. Reuses selectLowestCostHero's existing team
+  // scan (non-null iff a matching Hero exists), so no second cardTraits reader.
+  return selectLowestCostHero(gameState, hand, 'team', TEAM_X_MEN) !== null;
+}
+
+/**
+ * Narrows the rule-pipeline context to the active player id.
  *
- * Mutates G directly. Per-player messages are appended to G.messages so
- * replay tooling can observe the effect.
+ * @param context - The context the rule pipeline passed to the handler.
+ * @returns The current player id, or null when the context does not carry one.
+ */
+function resolveCurrentPlayer(context: unknown): string | null {
+  // why: the strike handler receives the villain-reveal RevealContext (the same
+  // object resolveShuffleFunction narrows for Doctor Octopus). It carries
+  // `ctx.currentPlayer` — the active player who parks the interactive discard.
+  // Narrowed structurally (no RevealContext import) so the rules module stays
+  // decoupled from the villain-deck module and free of any boardgame.io type. A
+  // context without it (unit-test stubs passing `{}`) yields null → the strike
+  // auto-picks every discard deterministically instead of parking a choice.
+  if (typeof context !== 'object' || context === null) {
+    return null;
+  }
+  const ctx = (context as { ctx?: unknown }).ctx;
+  if (typeof ctx !== 'object' || ctx === null) {
+    return null;
+  }
+  const currentPlayer = (ctx as { currentPlayer?: unknown }).currentPlayer;
+  if (typeof currentPlayer !== 'string' || currentPlayer.length === 0) {
+    return null;
+  }
+  return currentPlayer;
+}
+
+/**
+ * Selects the cheapest cards to discard down to a hand-size limit, keeping the
+ * most expensive cards. Deterministic — cheapest cost first, ties broken by
+ * lowest hand index.
+ *
+ * Used by both the Magneto strike's non-current-player auto-pick and the bot/sim
+ * resolution of the current player's parked choice, so the two stay identical.
+ *
+ * @param gameState - The game state (read-only; supplies cardStats).
+ * @param hand - The player's hand, in order.
+ * @param discardCount - How many cards to select for discard.
+ * @returns The chosen ext_ids (length min(discardCount, hand.length)).
+ */
+export function selectDiscardToLimitCards(
+  gameState: LegendaryGameState,
+  hand: readonly CardExtId[],
+  discardCount: number,
+): CardExtId[] {
+  // why: work on hand INDICES, not ext_ids, so duplicate ext_ids and Wounds are
+  // each selectable exactly once — selecting by ext_id could double-count a
+  // repeated card or never reach the count. remainingIndices starts in ascending
+  // hand-index order so a cost tie keeps the lowest index (matches
+  // selectLowestCostHero's strict-`<` tiebreak).
+  const remainingIndices: number[] = [];
+  for (let handIndex = 0; handIndex < hand.length; handIndex++) {
+    remainingIndices.push(handIndex);
+  }
+
+  const selected: CardExtId[] = [];
+  while (selected.length < discardCount && remainingIndices.length > 0) {
+    let cheapestSlot = 0;
+    let cheapestCost = Number.POSITIVE_INFINITY;
+    for (let slot = 0; slot < remainingIndices.length; slot++) {
+      const handIndex = remainingIndices[slot]!;
+      const cardExtId = hand[handIndex]!;
+      // why: unlike selectLowestCostHero (which skips Wounds because ITS effects
+      // target Heroes), "discard down to four cards" counts EVERY card in hand,
+      // Wounds included — and a Wound is the least valuable card to keep, so at
+      // cost 0 it sorts cheapest and is discarded first. S.H.I.E.L.D. starters
+      // likewise carry no cardStats entry (D-21502) → cost 0.
+      const cardCost = gameState.cardStats[cardExtId]?.cost ?? 0;
+      // why: strict `<` keeps the FIRST (lowest hand index) card on a cost tie.
+      if (cardCost < cheapestCost) {
+        cheapestCost = cardCost;
+        cheapestSlot = slot;
+      }
+    }
+    const chosenHandIndex = remainingIndices[cheapestSlot]!;
+    selected.push(hand[chosenHandIndex]!);
+    remainingIndices.splice(cheapestSlot, 1);
+  }
+  return selected;
+}
+
+/**
+ * Resolves Magneto's Master Strike: "Each player reveals an [team:x-men] Hero
+ * or discards down to four cards." (WP-476 / D-24284.)
+ *
+ * Each player (in sorted id order): a player holding an X-Men Hero in hand
+ * reveals it and discards nothing; otherwise a player over the limit discards
+ * down to four. The CURRENT player discards INTERACTIVELY — a PendingDiscardChoice
+ * is parked and they pick which cards (the printed player choice restored).
+ * Non-current players auto-pick the cheapest cards deterministically, because
+ * the pending-choice architecture is single-current-player-scoped (see
+ * WP-476 §Scope Out). For 1p (the reported case) the current player is the only
+ * player, so this fully fixes the bug.
+ *
+ * Mutates G directly. Per-player messages are appended to G.messages so replay
+ * tooling can observe the effect.
  *
  * @param gameState - The game state to mutate.
+ * @param currentPlayer - The active player id (parks the interactive choice), or
+ *   null when the context carried no current player (all players auto-pick).
  */
-function resolveMagnetoStrike(gameState: LegendaryGameState): void {
+function resolveMagnetoStrike(
+  gameState: LegendaryGameState,
+  currentPlayer: string | null,
+): void {
   const playerIds = Object.keys(gameState.playerZones).sort();
 
   for (const playerId of playerIds) {
     const playerZones = gameState.playerZones[playerId]!;
     const startingHandSize = playerZones.hand.length;
 
+    // why: the reveal branch of the printed "reveals an [team:x-men] Hero OR
+    // discards" — a player holding an X-Men Hero reveals it and is skipped.
+    if (playerHasXMenHeroInHand(gameState, playerZones.hand)) {
+      pushLog(gameState,
+        `[Magneto Master Strike] Player ${playerId} revealed an X-Men Hero — no discard.`,
+      );
+      continue;
+    }
+
     if (startingHandSize <= MAGNETO_HAND_SIZE_LIMIT) {
-      pushLog(gameState, 
+      pushLog(gameState,
         `[Magneto Master Strike] Player ${playerId} already has ${startingHandSize} card(s) in hand — no discard.`,
       );
       continue;
     }
 
     const discardCount = startingHandSize - MAGNETO_HAND_SIZE_LIMIT;
-    // why: discard from the front of the hand (top-of-hand convention)
-    // so the kept cards are the most recently drawn. The choice is
-    // arbitrary for MVP; future WP may let the player choose.
-    const discarded = playerZones.hand.slice(0, discardCount);
-    const kept = playerZones.hand.slice(discardCount);
-    playerZones.hand = kept;
-    playerZones.discard = [...playerZones.discard, ...discarded];
+
+    // why: the CURRENT player discards INTERACTIVELY — park a PendingDiscardChoice
+    // (KO nothing yet) and let them choose which cards to discard. Non-current
+    // players auto-pick below because the pending-choice architecture is
+    // single-current-player-scoped (D-24284): the block-all guards, UIState
+    // projection, and bot resolver all key on the active player. Lazy-init the
+    // queue at the park site (never in Game.setup — undefined = no pending
+    // choice). currentPlayer is null only for legacy test harnesses passing no
+    // ctx; they fall through to the deterministic auto-pick so the strike never
+    // blocks on an unknown chooser.
+    if (currentPlayer !== null && playerId === currentPlayer) {
+      if (!gameState.pendingDiscardChoices) {
+        gameState.pendingDiscardChoices = [];
+      }
+      gameState.pendingDiscardChoices.push({
+        choiceType: 'discard-to-limit',
+        playerID: playerId,
+        limit: MAGNETO_HAND_SIZE_LIMIT,
+      });
+      pushLog(gameState,
+        `[Magneto Master Strike] Player ${playerId} must discard down to ${MAGNETO_HAND_SIZE_LIMIT} — choose which cards to discard.`,
+      );
+      continue;
+    }
+
+    // why: non-current player — auto-pick the cheapest cards to discard down to
+    // the limit (keeping the expensive Heroes; Wounds sort cheapest and go
+    // first), deterministically. NOT Magneto's former front-of-hand
+    // hand.slice(0, discardCount), which discarded arbitrary cards.
+    const cardsToDiscard = selectDiscardToLimitCards(
+      gameState,
+      playerZones.hand,
+      discardCount,
+    );
+    for (const cardExtId of cardsToDiscard) {
+      discardCardFromHand(playerZones, cardExtId);
+    }
 
     pushLog(gameState,
-      `[Magneto Master Strike] Player ${playerId} discarded ${discardCount} card(s) down to ${MAGNETO_HAND_SIZE_LIMIT}.`,
+      `[Magneto Master Strike] Player ${playerId} discarded ${cardsToDiscard.length} card(s) down to ${MAGNETO_HAND_SIZE_LIMIT}.`,
     );
   }
 }
@@ -671,7 +822,10 @@ export function mastermindStrikeHandler(
   // bookkeeping only (its printed text is not yet implemented).
   const mastermindId = gameState.selection.mastermindId;
   if (mastermindId === MASTERMIND_MAGNETO) {
-    resolveMagnetoStrike(gameState);
+    // why: WP-476 / D-24284 — pass the active player so the strike can park an
+    // interactive discard choice for the current player (narrowed from the
+    // RevealContext, mirroring resolveShuffleFunction for Doctor Octopus).
+    resolveMagnetoStrike(gameState, resolveCurrentPlayer(strikeContext));
   } else if (MASTERMINDS_RED_SKULL.includes(mastermindId)) {
     resolveRedSkullStrike(gameState);
   } else if (mastermindId === MASTERMIND_CO2E_DOCTOR_DOOM) {

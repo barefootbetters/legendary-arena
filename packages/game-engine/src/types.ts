@@ -497,6 +497,35 @@ export interface PendingScryKoChoice {
 }
 
 /**
+ * Pending discard-to-limit player choice state (WP-476 / D-24284).
+ *
+ * Created when Magneto's Master Strike ("Each player reveals an [team:x-men]
+ * Hero or discards down to four cards") forces the CURRENT player — who holds
+ * no X-Men Hero to reveal — to discard down to the hand-size limit. Appended to
+ * G.pendingDiscardChoices[] (FIFO queue). Removed (front-popped) by
+ * resolveDiscardChoice after the player picks which cards to discard. Must be
+ * undefined or empty at every turn-end (enforced by the block-all guards).
+ *
+ * // why: D-24284 — only the current player parks an interactive choice; every
+ * non-current player who must discard is auto-picked synchronously inside the
+ * strike (cheapest-first), because the pending-choice architecture is
+ * single-current-player-scoped (the block-all guards + UIState projection + bot
+ * resolver all key on the active player). Stores NO card snapshot — the choice
+ * is "which of your hand cards to discard down to `limit`", validated fresh
+ * against the current hand by the resolve move (the block-all guard freezes the
+ * hand while pending). For 1p (the reported case) the current player is the
+ * only player, so this fully fixes it.
+ */
+export interface PendingDiscardChoice {
+  /** Discriminant for future extensibility; always 'discard-to-limit'. */
+  choiceType: 'discard-to-limit';
+  /** The player who must choose which cards to discard. */
+  playerID: string;
+  /** The hand-size the player must discard down to (MAGNETO_HAND_SIZE_LIMIT = 4). */
+  limit: number;
+}
+
+/**
  * Pending optional-KO-then-reward player choice state (WP-248 / D-24019).
  *
  * Created when an optional-ko-reward hero effect is played (`onPlay`) and the
@@ -822,6 +851,19 @@ export interface LegendaryGameState {
   // both mean "no pending choice" (guards test `.length`).
   /** FIFO queue of pending Doombot scry-KO choices awaiting player resolution (WP-470). */
   pendingScryKoChoices?: PendingScryKoChoice[] | undefined;
+
+  // why: WP-476 / D-24284 — FIFO queue of pending discard-to-limit choices (at
+  // most one per Magneto Master Strike, parked ONLY for the current player who
+  // must discard and holds no X-Men Hero to reveal). Entries are appended by
+  // resolveMagnetoStrike's park branch; front-popped by resolveDiscardChoice
+  // after the player picks which cards to discard. Must be undefined or empty at
+  // every turn-end. Runtime-only, never persisted (snapshots stay counts-only),
+  // mirroring pendingScryKoChoices; **lazily initialized at the park site, never
+  // in Game.setup**. Optional so existing test state literals need no update.
+  // Absent (undefined) or empty [] both mean "no pending choice" (guards test
+  // `.length`).
+  /** FIFO queue of pending discard-to-limit choices awaiting player resolution (WP-476). */
+  pendingDiscardChoices?: PendingDiscardChoice[] | undefined;
 
   // why: WP-248 / D-24019 — FIFO queue of pending optional-KO-then-reward
   // choices (one per played optional-ko-reward hero ability with ≥1 eligible

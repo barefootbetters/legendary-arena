@@ -531,6 +531,33 @@ export function filterUIStateForAudience(
     };
   }
 
+  // why: WP-476 / D-24284 — the pending discard-to-limit choice is redacted for EVERY
+  // audience except the choosing player. Its `hand` carries the chooser's PRIVATE hand
+  // identities — the very cards they must choose among — so passing it through to
+  // opponents or spectators would leak the hand (D-24011). Present only when the
+  // audience is a player whose playerId equals the chooser's playerID; omitted
+  // (conditional assignment, never an `undefined` literal) for opponents AND
+  // spectators. Per-entry display spread prevents aliasing with the input UIState.
+  if (
+    uiState.pendingDiscardChoice !== undefined &&
+    audience.kind === 'player' &&
+    audience.playerId === uiState.pendingDiscardChoice.playerID
+  ) {
+    const handCopy = [];
+    for (const entry of uiState.pendingDiscardChoice.hand) {
+      handCopy.push({
+        cardId: entry.cardId,
+        display: { ...entry.display },
+      });
+    }
+    result.pendingDiscardChoice = {
+      choiceType: uiState.pendingDiscardChoice.choiceType,
+      playerID: uiState.pendingDiscardChoice.playerID,
+      limit: uiState.pendingDiscardChoice.limit,
+      hand: handCopy,
+    };
+  }
+
   // why: D-24020 — hand/discard are private to the chooser. pendingOptionalKoReward
   // is redacted for EVERY audience except the choosing player (the D-24011
   // hand-privacy analog). Its eligibleHand and eligibleDiscard lists carry the

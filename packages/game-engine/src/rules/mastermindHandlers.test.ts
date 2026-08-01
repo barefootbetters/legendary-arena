@@ -10,8 +10,9 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { mastermindStrikeHandler } from './mastermindHandlers.js';
+import { mastermindStrikeHandler, selectDiscardToLimitCards } from './mastermindHandlers.js';
 import type { LegendaryGameState } from '../types.js';
+import type { CardExtId } from '../state/zones.types.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
 
 // ---------------------------------------------------------------------------
@@ -417,6 +418,137 @@ describe('mastermindStrikeHandler — Magneto Master Strike', () => {
       1,
       'Generic bystander capture still runs for any mastermind',
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Magneto Master Strike reveal-or-discard + interactive discard (WP-476 / D-24284)
+// ---------------------------------------------------------------------------
+
+describe('mastermindStrikeHandler — Magneto reveal-or-discard (WP-476 / D-24284)', () => {
+  /** A RevealContext-shaped strike context carrying the active player id. */
+  function ctxFor(currentPlayer: string): unknown {
+    return { ctx: { currentPlayer } };
+  }
+
+  it('a player holding an X-Men Hero reveals it and discards nothing (AC-1)', () => {
+    const gameState = makeCo2eState(
+      'core/magneto',
+      { '0': ['xm-a', 'b', 'c', 'd', 'e'] },
+      { 'xm-a': co2eStat(3) },
+      { 'xm-a': XMEN },
+    );
+
+    // why: even with the current player supplied, an X-Men Hero in hand takes the
+    // reveal branch — no park, no discard (the reported 1p bug: no more forced discard).
+    mastermindStrikeHandler(gameState, ctxFor('0'), { cardId: 'strike' }, {});
+
+    assert.deepStrictEqual(gameState.playerZones['0']!.hand, ['xm-a', 'b', 'c', 'd', 'e']);
+    assert.deepStrictEqual(gameState.playerZones['0']!.discard, []);
+    assert.equal(gameState.pendingDiscardChoices, undefined, 'no discard choice parked');
+  });
+
+  it('the CURRENT player who must discard gets a parked pendingDiscardChoice, nothing discarded yet (AC-2)', () => {
+    const gameState = makeCo2eState(
+      'core/magneto',
+      { '0': ['a', 'b', 'c', 'd', 'e'] },
+      {},
+      {},
+    );
+
+    mastermindStrikeHandler(gameState, ctxFor('0'), { cardId: 'strike' }, {});
+
+    assert.deepStrictEqual(
+      gameState.playerZones['0']!.hand,
+      ['a', 'b', 'c', 'd', 'e'],
+      'nothing discarded until the player resolves the choice',
+    );
+    assert.deepStrictEqual(gameState.pendingDiscardChoices, [
+      { choiceType: 'discard-to-limit', playerID: '0', limit: 4 },
+    ]);
+  });
+
+  it('a NON-current player who must discard auto-picks cheapest-first, no park (AC-3)', () => {
+    const gameState = makeCo2eState(
+      'core/magneto',
+      { '1': ['cheap', 'mid', 'pricey', 'w', 'x'] },
+      { cheap: co2eStat(1), mid: co2eStat(3), pricey: co2eStat(8), w: co2eStat(4), x: co2eStat(5) },
+      {},
+    );
+
+    // why: player '0' is current; player '1' is non-current → auto-pick the single
+    // cheapest card ('cheap', cost 1) down to 4, keeping the expensive cards. No park.
+    mastermindStrikeHandler(gameState, ctxFor('0'), { cardId: 'strike' }, {});
+
+    assert.deepStrictEqual(gameState.playerZones['1']!.hand, ['mid', 'pricey', 'w', 'x']);
+    assert.deepStrictEqual(gameState.playerZones['1']!.discard, ['cheap']);
+    assert.equal(gameState.pendingDiscardChoices, undefined, 'non-current players never park a choice');
+  });
+
+  it('parks the current player AND auto-picks a non-current player in the same strike', () => {
+    const gameState = makeCo2eState(
+      'core/magneto',
+      { '0': ['a', 'b', 'c', 'd', 'e'], '1': ['p', 'q', 'r', 's', 't'] },
+      {},
+      {},
+    );
+
+    mastermindStrikeHandler(gameState, ctxFor('0'), { cardId: 'strike' }, {});
+
+    // current player '0' parked (untouched); non-current '1' auto-discarded down to 4.
+    assert.deepStrictEqual(gameState.playerZones['0']!.hand, ['a', 'b', 'c', 'd', 'e']);
+    assert.equal(gameState.pendingDiscardChoices?.length, 1, 'exactly one park (the current player)');
+    assert.equal(gameState.playerZones['1']!.hand.length, 4, 'non-current auto-discarded to 4');
+    assert.equal(gameState.playerZones['1']!.discard.length, 1);
+  });
+
+  it('falls back to auto-pick for the current player when the context carries no ctx.currentPlayer', () => {
+    const gameState = makeCo2eState(
+      'core/magneto',
+      { '0': ['a', 'b', 'c', 'd', 'e'] },
+      {},
+      {},
+    );
+
+    // why: legacy harness passing `{}` (no ctx) — the strike auto-picks rather than
+    // blocking on an unknown chooser, so the sim/replay path never hangs.
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
+
+    assert.equal(gameState.playerZones['0']!.hand.length, 4, 'auto-discarded to 4 with no current player');
+    assert.equal(gameState.pendingDiscardChoices, undefined, 'no park without a current player');
+  });
+});
+
+describe('selectDiscardToLimitCards (WP-476 / D-24284)', () => {
+  const state = makeCo2eState(
+    'core/magneto',
+    {},
+    { cheap: co2eStat(1), mid: co2eStat(3), pricey: co2eStat(8) },
+    {},
+  );
+
+  it('returns the cheapest cards first, ties broken by lowest hand index', () => {
+    const hand = ['pricey', 'cheap', 'mid', 'cheap'] as CardExtId[];
+    // why: two cost-1 'cheap' copies are the cheapest; ties keep lower hand index
+    // first, so the index-1 copy is chosen before 'mid'.
+    assert.deepStrictEqual(
+      selectDiscardToLimitCards(state, hand, 2),
+      ['cheap', 'cheap'],
+    );
+  });
+
+  it('treats Wounds and unpriced starters as cost 0 (discarded first), always reaching the count', () => {
+    const hand = [WOUND_EXT_ID, 'mid', 'pricey'] as CardExtId[];
+    assert.deepStrictEqual(
+      selectDiscardToLimitCards(state, hand, 1),
+      [WOUND_EXT_ID],
+      'the cost-0 Wound is discarded before any priced Hero',
+    );
+  });
+
+  it('returns min(count, hand.length) cards and never throws on an over-count', () => {
+    const hand = ['mid', 'pricey'] as CardExtId[];
+    assert.deepStrictEqual(selectDiscardToLimitCards(state, hand, 5), ['mid', 'pricey']);
   });
 });
 
@@ -913,7 +1045,7 @@ describe('mastermindStrikeHandler — co2e Doctor Doom Master Strike (WP-388)', 
 });
 
 describe('mastermindStrikeHandler — co2e dispatch isolation (WP-388)', () => {
-  it('leaves core/magneto on its own branch, not the co2e one (AC-6)', () => {
+  it('leaves core/magneto on its own reveal-or-discard branch, not the co2e one (AC-6)', () => {
     const gameState = makeCo2eState(
       'core/magneto',
       { '0': ['xm-a', 'b', 'c', 'd', 'e'] },
@@ -923,10 +1055,12 @@ describe('mastermindStrikeHandler — co2e dispatch isolation (WP-388)', () => {
 
     mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
 
-    // why: core Magneto discards DOWN TO FOUR from the front of hand — it
-    // must not discard the single X-Men Hero the co2e resolver would pick.
-    assert.equal(gameState.playerZones['0']!.hand.length, 4);
-    assert.deepEqual(gameState.playerZones['0']!.discard, ['xm-a']);
+    // why: WP-476 — core Magneto's printed reveal branch: a player holding an
+    // X-Men Hero REVEALS it and discards nothing. The co2e/magneto resolver would
+    // instead DISCARD the X-Men Hero, so an untouched 5-card hand + empty discard
+    // proves the core branch ran, not the co2e one.
+    assert.equal(gameState.playerZones['0']!.hand.length, 5);
+    assert.deepEqual(gameState.playerZones['0']!.discard, []);
   });
 
   it('takes no branch for an unimplemented mastermind (AC-6)', () => {

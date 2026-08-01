@@ -56,6 +56,9 @@ export type UiMoveName =
   // why: WP-470 / D-24282 — unblocks the Doombot scry-KO prompt (pick which of the
   // top two deck cards to KO).
   | 'resolveScryKoChoice'
+  // why: WP-476 / D-24284 — unblocks the Magneto discard-to-limit prompt (pick which
+  // cards to discard down to four).
+  | 'resolveDiscardChoice'
   | 'resolveOptionalKoReward'
   | 'resolveDrawOrEmpowered'
   // why: WP-313 / D-24099 — unblocks the victory-pile villain-pick prompt (The Ebony Blade).

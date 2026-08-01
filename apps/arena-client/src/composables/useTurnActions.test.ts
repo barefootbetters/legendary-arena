@@ -404,3 +404,33 @@ describe('useTurnActions — hasPendingScryKoChoice gating (WP-470 / D-24282)', 
     }
   });
 });
+
+describe('useTurnActions — hasPendingDiscardChoice gating (WP-476 / D-24284)', () => {
+  const DISCARD_REASON =
+    'Choose which cards to discard before taking another action.';
+  // why: hasPendingDiscardChoice is APPENDED LAST (position 16) so the existing
+  // positional TurnActionBar caller stays valid without edits: stage, isViewerTurn,
+  // 10 pending falses, hasWoundInHand/hasActedThisTurn/hasHealedThisTurn (3 falses),
+  // then true.
+  const withDiscardChoice = (stage: string) =>
+    useTurnActions(
+      stage, true, false, false, false, false, false, false, false, false, false, false,
+      false, false, false, true,
+    );
+
+  test('canEndTurn blocked at EVERY stage when hasPendingDiscardChoice is true', () => {
+    for (const stage of ['start', 'main', 'cleanup'] as const) {
+      const result = withDiscardChoice(stage).canEndTurn();
+      assert.equal(result.allowed, false, `endTurn blocked at ${stage}`);
+      assert.equal(result.reason, DISCARD_REASON, 'discard gate reason matches the locked value');
+    }
+  });
+
+  test('canPassPriority blocked at EVERY stage when hasPendingDiscardChoice is true (board frozen)', () => {
+    for (const stage of ['start', 'main', 'cleanup'] as const) {
+      const result = withDiscardChoice(stage).canPassPriority();
+      assert.equal(result.allowed, false, `passPriority blocked at ${stage}`);
+      assert.equal(result.reason, DISCARD_REASON);
+    }
+  });
+});
