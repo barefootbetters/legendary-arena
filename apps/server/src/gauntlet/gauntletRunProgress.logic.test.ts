@@ -485,6 +485,141 @@ describe('deriveGauntletRunProgress (pure, synthetic rows)', () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// Pure: per-scheme leg-clear + per-leg launch (WP-473 / D-24283)
+// ---------------------------------------------------------------------------
+
+// why: two legs carrying DISTINCT per-scheme approved configs (WP-472 stamps
+// these onto the injected legs) — scheme-a approves villains-a + doombot,
+// scheme-b approves villains-b + handninja — so the tracker must qualify each
+// leg against its own config and launch each leg's own adversaries.
+const PER_SCHEME_LEGS = [
+  {
+    schemeSlug: 'scheme-a',
+    schemeName: 'Scheme A',
+    approvedLoadouts: {
+      1: [
+        {
+          villainSegment: 'villains-a',
+          henchmanKey: `${TEST_SET}/doombot`,
+          villainGroupIds: [`${TEST_SET}/villains-a`],
+          henchmanGroupIds: [`${TEST_SET}/doombot`],
+        },
+      ],
+    },
+  },
+  {
+    schemeSlug: 'scheme-b',
+    schemeName: 'Scheme B',
+    approvedLoadouts: {
+      1: [
+        {
+          villainSegment: 'villains-b',
+          henchmanKey: `${TEST_SET}/handninja`,
+          villainGroupIds: [`${TEST_SET}/villains-b`],
+          henchmanGroupIds: [`${TEST_SET}/handninja`],
+        },
+      ],
+    },
+  },
+] as const;
+
+/** A qualifying solo row on a specific villain segment + henchman key. */
+function perSchemeRow(
+  replayHash: string,
+  schemeSlug: string,
+  villainSegment: string,
+  henchmanKey: string,
+  finalScore: number,
+): FixtureRow {
+  return {
+    ...soloRow(replayHash, schemeSlug, finalScore, 'h1+h2+h3', '2026-07-02T10:00:00.000Z'),
+    scenario_key: `${schemeSlug}::${TEST_MASTERMIND}::${villainSegment}`,
+    henchman_key: henchmanKey,
+  };
+}
+
+describe('deriveGauntletRunProgress per-scheme leg-clear + launch (WP-473 / D-24283)', () => {
+  const deps = stubLeaderboardDeps();
+
+  test('each leg clears only against ITS OWN per-scheme approved config', () => {
+    const view = deriveGauntletRunProgress(
+      fixtureRun({}),
+      fixtureInputs({ legs: [...PER_SCHEME_LEGS], approvedLoadouts: undefined }),
+      [
+        perSchemeRow('r1', 'scheme-a', 'villains-a', `${TEST_SET}/doombot`, -5),
+        perSchemeRow('r2', 'scheme-b', 'villains-b', `${TEST_SET}/handninja`, -4),
+      ],
+      deps.checkParPublished,
+    );
+    const legA = view.legs.find((leg) => leg.schemeId === 'scheme-a');
+    const legB = view.legs.find((leg) => leg.schemeId === 'scheme-b');
+    assert.equal(legA?.cleared, true);
+    assert.equal(legB?.cleared, true);
+  });
+
+  test("a win carrying a DIFFERENT scheme's villains of the same mastermind does not clear the requiring leg", () => {
+    const view = deriveGauntletRunProgress(
+      fixtureRun({}),
+      fixtureInputs({ legs: [...PER_SCHEME_LEGS], approvedLoadouts: undefined }),
+      [
+        // scheme-a leg requires villains-a + doombot; this win brings scheme-b's
+        // villains-b + handninja → must NOT clear scheme-a.
+        perSchemeRow('r1', 'scheme-a', 'villains-b', `${TEST_SET}/handninja`, -5),
+        // scheme-b is cleared correctly, so the run is "playing", not champion.
+        perSchemeRow('r2', 'scheme-b', 'villains-b', `${TEST_SET}/handninja`, -4),
+      ],
+      deps.checkParPublished,
+    );
+    const legA = view.legs.find((leg) => leg.schemeId === 'scheme-a');
+    const legB = view.legs.find((leg) => leg.schemeId === 'scheme-b');
+    assert.equal(legA?.cleared, false);
+    assert.equal(legB?.cleared, true);
+    assert.equal(view.status, 'playing');
+  });
+
+  test('launch carries a per-leg legLaunch overlay; the per-run block stays the mastermind default', () => {
+    const view = deriveGauntletRunProgress(
+      fixtureRun({}),
+      fixtureInputs({ legs: [...PER_SCHEME_LEGS] }),
+      [],
+      deps.checkParPublished,
+    );
+    assert.ok(view.launch !== null);
+    // per-leg overlay: each leg's own adversaries.
+    assert.deepEqual(view.launch.legLaunch, {
+      'scheme-a': {
+        villainGroupIds: [`${TEST_SET}/villains-a`],
+        henchmanGroupIds: [`${TEST_SET}/doombot`],
+      },
+      'scheme-b': {
+        villainGroupIds: [`${TEST_SET}/villains-b`],
+        henchmanGroupIds: [`${TEST_SET}/handninja`],
+      },
+    });
+    // per-run block PRESERVED (mastermind default from launchComposition, RS-1).
+    assert.deepEqual(view.launch.villainGroupIds, [
+      `${TEST_SET}/skrull`,
+      `${TEST_SET}/hydra`,
+    ]);
+    assert.deepEqual(view.launch.henchmanGroupIds, [`${TEST_SET}/doombot`]);
+  });
+
+  test('legLaunch is omitted when no leg carries an effective loadout (byte-identical to the per-run block)', () => {
+    // why: the bare FIXTURE_LEGS carry no per-leg approvedLoadouts → no overlay,
+    // so `legLaunch` must be absent and the launch block stays exactly the WP-449
+    // per-run shape a pre-WP-473 consumer reads.
+    const view = deriveGauntletRunProgress(
+      fixtureRun({}),
+      fixtureInputs(),
+      [],
+      deps.checkParPublished,
+    );
+    assert.ok(view.launch !== null);
+    assert.equal('legLaunch' in view.launch, false);
+  });
+});
+
 describe('deriveGauntletRunProgress agrees with getGauntletStandings (pure stub-DB solo cross-check)', () => {
   const deps = stubLeaderboardDeps();
 

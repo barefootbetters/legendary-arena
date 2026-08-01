@@ -48,7 +48,10 @@ import type {
   LegClearReplayFacts,
   RosterLegAccumulator,
 } from '../legends/gauntletTruth.logic.js';
-import type { GauntletLeg } from '../legends/gauntlet.logic.js';
+import type {
+  GauntletApprovedLoadouts,
+  GauntletLeg,
+} from '../legends/gauntlet.logic.js';
 import type { LeaderboardDependencies } from '../leaderboards/leaderboard.types.js';
 import {
   listGauntletRuns,
@@ -204,16 +207,28 @@ function groupRowsByReplay(
 
 /**
  * Assemble the additive per-run `launch` block from the injected inputs
- * (WP-449 / D-24269). Returns the full `GauntletRunLaunch` when the approved
+ * (WP-449 / D-24269), plus the per-leg (per-scheme) `legLaunch` overlay
+ * (WP-473 / D-24283). Returns the full `GauntletRunLaunch` when the approved
  * menu is configured for the run's `(division, playerCount)`
  * (`inputs.launchComposition !== null`), or `null` otherwise. Pure — no DB, no
  * I/O — so both branches are unit-testable.
  *
- * @param inputs the injected per-run derivation inputs (carries
+ * why the per-leg overlay reads `inputs.legs[].approvedLoadouts`: WP-472 stamps
+ * each leg's EFFECTIVE approved loadout (the per-scheme override where authored,
+ * else the mastermind's menu) onto the leg, and the wiring already injects
+ * `definition.legs` as `inputs.legs`, so the per-leg composition is already in
+ * hand — no registry import and no new injected field. Each leg's launch
+ * composition is its approved variant 0 at the run's player count
+ * (`approvedLoadouts[playerCount][0]`), mirroring the per-run variant-0 read.
+ *
+ * @param run the caller's raw stored run view (for the player count the per-leg
+ *   composition is sliced at).
+ * @param inputs the injected per-run derivation inputs (carries `legs`,
  *   `launchComposition`, `launchSupply`, and the set-qualified `mastermindId`).
  * @returns the launch block, or `null` when the approved menu is unconfigured.
  */
 function deriveGauntletRunLaunch(
+  run: GauntletRunView,
   inputs: GauntletRunProgressInputs,
 ): GauntletRunLaunch | null {
   // why: an unconfigured approved menu yields `launch === null`, NOT an empty
@@ -225,6 +240,26 @@ function deriveGauntletRunLaunch(
   if (inputs.launchComposition === null) {
     return null;
   }
+  // why: WP-473 / D-24283 — build the per-leg overlay from each leg's effective
+  // approved loadout (variant 0 at the run's player count). A leg with no
+  // effective loadout adds no entry; when NO leg carries one (a pre-WP-472 /
+  // unconfigured definition — e.g. the bare-leg test fixtures) the whole
+  // `legLaunch` field is omitted so the block stays byte-identical to the per-run
+  // launch the WP-449 client reads.
+  const legLaunch: Record<
+    string,
+    { villainGroupIds: readonly string[]; henchmanGroupIds: readonly string[] }
+  > = {};
+  for (const leg of inputs.legs) {
+    const legVariantZero = leg.approvedLoadouts?.[run.playerCount]?.[0];
+    if (legVariantZero === undefined) {
+      continue;
+    }
+    legLaunch[leg.schemeSlug] = {
+      villainGroupIds: legVariantZero.villainGroupIds,
+      henchmanGroupIds: legVariantZero.henchmanGroupIds,
+    };
+  }
   return {
     mastermindId: inputs.mastermindId,
     villainGroupIds: inputs.launchComposition.villainGroupIds,
@@ -233,6 +268,9 @@ function deriveGauntletRunLaunch(
     woundsCount: inputs.launchSupply.woundsCount,
     officersCount: inputs.launchSupply.officersCount,
     sidekicksCount: inputs.launchSupply.sidekicksCount,
+    // why: omit the field entirely when empty (exactOptionalPropertyTypes +
+    // byte-identity with the pre-WP-473 per-run launch block).
+    ...(Object.keys(legLaunch).length > 0 ? { legLaunch } : {}),
   };
 }
 
@@ -261,6 +299,23 @@ export function deriveGauntletRunProgress(
   const legSchemeSlugs: string[] = [];
   for (const leg of inputs.legs) {
     legSchemeSlugs.push(leg.schemeSlug);
+  }
+  // why: WP-473 / D-24283 — the per-scheme approved-loadout map the leg-clear
+  // predicate selects by, built from each leg's effective loadout (WP-472 stamps
+  // the per-scheme override where authored, else the mastermind's menu, onto the
+  // injected `inputs.legs`). Passing it to `qualifiesAsLegClear` makes a leg
+  // clear only against ITS OWN config — so a win carrying a different scheme's
+  // villains of the same mastermind no longer clears the requiring leg. A leg
+  // with no effective loadout adds no entry and the predicate falls back to the
+  // per-mastermind `inputs.approvedLoadouts` (the WP-472 additive behaviour), so
+  // non-Core clears exactly as before. This is the SAME map-from-legs the
+  // leaderboard's `getGauntletStandings` builds — tracker and leaderboard cannot
+  // disagree on "cleared a leg."
+  const approvedLoadoutsByScheme = new Map<string, GauntletApprovedLoadouts>();
+  for (const leg of inputs.legs) {
+    if (leg.approvedLoadouts !== undefined) {
+      approvedLoadoutsByScheme.set(leg.schemeSlug, leg.approvedLoadouts);
+    }
   }
 
   const replaysByHash = groupRowsByReplay(qualifyingRows);
@@ -313,6 +368,9 @@ export function deriveGauntletRunProgress(
         legClearFacts,
         inputs.approvedLoadouts,
         publishedScoringConfigVersion,
+        // why: WP-473 / D-24283 — select the leg's per-scheme config; absent a
+        // scheme entry it falls back to the per-mastermind menu.
+        approvedLoadoutsByScheme,
       )
     ) {
       continue;
@@ -408,7 +466,7 @@ export function deriveGauntletRunProgress(
     budget,
     isChampion,
     legs,
-    launch: deriveGauntletRunLaunch(inputs),
+    launch: deriveGauntletRunLaunch(run, inputs),
   };
 }
 
