@@ -7,6 +7,34 @@
 
 ## Current State
 
+### WP-475 / EC-510 — Per-Scheme Approved-Loadout: Arena-Client "Play this leg" (Arc 5/5 — COMPLETES the arc) (2026-08-01)
+
+**User-Visible Surface = play.legendary-arena.com.** **D-24026 live-verify operator-pending**
+(in the live profile run tracker, click "Play this leg" on a swapped scheme — the created
+match fields that scheme's adversaries, not the mastermind default).
+
+Arc 5/5, the final consumer. The arena-client "Play this leg" reads the per-leg launch map
+WP-473 added to `GauntletRunLaunch`, so the primary play surface launches each leg's own
+adversaries.
+
+- **`gauntletRunApi.ts`** — mirrors the additive `GauntletRunLaunch.legLaunch`
+  (`Record<schemeSlug, GauntletRunLaunchComposition>`) alongside the per-run block.
+- **`MyProfilePage.vue`** — `playLeg(run, leg)` selects `run.launch.legLaunch?.[leg.schemeId]`
+  (the leg's bare scheme slug is the map key), falling back to the per-run block when the map
+  is absent (a pre-WP-473 snapshot) or the leg has no entry, then assembles the
+  `MatchSetupConfig` as before.
+
+Client tier, mirror-not-import (no server/registry). **No D-entry** (consumes D-24283).
+Baselines: arena-client **1136/0** (the `gauntletRunApi` list round-trip now carries
+`legLaunch`), `vue-tsc` typecheck clean, `pnpm -r build` green.
+
+**Per-scheme gauntlet variety arc (WP-471..475) is now complete** end to end: authored JSON
+→ registry loader → server truth/leaderboard/publisher → run-tracker + per-leg launch →
+legends-board coverage → arena-client "Play this leg". The one remaining follow-up is
+**WP-483** (the cards-builder/registry-viewer half WP-474 split off, needs a browser-safe
+per-scheme registry export first). All five packets carry an operator-pending D-24026
+live-verify.
+
 ### WP-474 / EC-509 — Per-Scheme Approved-Loadout: Client Consumers (Arc 4/5, legends-board only — SPLIT) (2026-08-01)
 
 **User-Visible Surface = legends.legendary-arena.com.** **D-24026 live-verify operator-pending**

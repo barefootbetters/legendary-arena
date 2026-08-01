@@ -74,6 +74,17 @@ export interface GauntletRunLegProgress {
  * `mastermindId`. `null` on the view when the gauntlet's approved menu is
  * unconfigured for the run's `(division, playerCount)`.
  */
+/**
+ * One leg's approved adversary composition for "Play this leg" (WP-475 /
+ * D-24283). Mirrors the server's `GauntletRunLaunchComposition`: only the
+ * per-scheme villains + henchmen (the mastermind, supply counts, and the leg's
+ * `schemeId` do not vary per leg, so they are not repeated here).
+ */
+export interface GauntletRunLaunchComposition {
+  readonly villainGroupIds: readonly string[];
+  readonly henchmanGroupIds: readonly string[];
+}
+
 export interface GauntletRunLaunch {
   readonly mastermindId: string;
   readonly villainGroupIds: readonly string[];
@@ -82,6 +93,12 @@ export interface GauntletRunLaunch {
   readonly woundsCount: number;
   readonly officersCount: number;
   readonly sidekicksCount: number;
+  // why: WP-475 / D-24283 — mirrors the server's additive per-leg (per-scheme)
+  // launch overlay, keyed by the leg's scheme slug: each leg's OWN approved
+  // adversaries so "Play this leg" fields the leg's villains/henchmen rather than
+  // the per-mastermind defaults above. Optional — absent on a pre-WP-473 snapshot,
+  // where `playLeg` falls back to the per-run block above.
+  readonly legLaunch?: Readonly<Record<string, GauntletRunLaunchComposition>>;
 }
 
 /**

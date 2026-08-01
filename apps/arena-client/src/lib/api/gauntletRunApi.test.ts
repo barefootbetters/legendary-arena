@@ -107,6 +107,15 @@ const PROGRESS_VIEW = {
     woundsCount: 30,
     officersCount: 30,
     sidekicksCount: 15,
+    // why: WP-475 / D-24283 — the additive per-leg launch overlay the client
+    // mirror now carries; the round-trip assertion below proves it is parsed
+    // verbatim, and `playLeg` selects `legLaunch[leg.schemeId]` for the match.
+    legLaunch: {
+      'super-hero-registration-act': {
+        villainGroupIds: ['core/skrulls'],
+        henchmanGroupIds: ['core/sentinel'],
+      },
+    },
   },
 };
 

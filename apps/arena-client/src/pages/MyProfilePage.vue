@@ -781,6 +781,17 @@ export default defineComponent({
           'You are not signed in. Sign in to play a gauntlet leg.';
         return;
       }
+      // why: WP-475 / D-24283 — assemble the LEG's own approved adversaries from
+      // the per-leg `legLaunch` map (keyed by the leg's bare scheme slug), so a
+      // swapped scheme launches its own villains/henchmen. Falls back to the
+      // per-run block when the map is absent (a pre-WP-473 snapshot) or the leg
+      // has no entry — the per-run mastermind default keeps the flat behaviour
+      // correct rather than launching empty piles.
+      const legLaunch = run.launch.legLaunch?.[leg.schemeId];
+      const villainGroupIds =
+        legLaunch?.villainGroupIds ?? run.launch.villainGroupIds;
+      const henchmanGroupIds =
+        legLaunch?.henchmanGroupIds ?? run.launch.henchmanGroupIds;
       const config: MatchSetupConfig = {
         // why: the progress leg carries the BARE scheme slug, but the match
         // config wants the set-qualified D-10014 ext_id, so qualify it with the
@@ -788,8 +799,8 @@ export default defineComponent({
         // set-qualified in the launch block.
         schemeId: `${run.setAbbr}/${leg.schemeId}`,
         mastermindId: run.launch.mastermindId,
-        villainGroupIds: run.launch.villainGroupIds,
-        henchmanGroupIds: run.launch.henchmanGroupIds,
+        villainGroupIds,
+        henchmanGroupIds,
         heroDeckIds: run.legPicks[leg.schemeId] ?? [],
         bystandersCount: run.launch.bystandersCount,
         woundsCount: run.launch.woundsCount,
