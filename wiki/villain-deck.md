@@ -26,6 +26,10 @@ source:
   - ../packages/game-engine/src/villainDeck/villainDeck.reveal.ts
   - ../packages/game-engine/src/villainDeck/villainDeck.setup.ts
   - ../packages/game-engine/src/villain/villainEffects.execute.ts
+  - ../packages/game-engine/src/board/city.logic.ts
+  - ../packages/game-engine/src/board/bystanders.logic.ts
+  - ../packages/game-engine/src/board/boardKeywords.logic.ts
+  - ../docs/legendary-universal-rules-v23.md
   - ../docs/ai/ARCHITECTURE.md
   - ../docs/ai/work-packets/WP-014A-villain-reveal-pipeline.md
   - ../docs/ai/work-packets/WP-014B-villain-deck-composition.md
@@ -76,9 +80,14 @@ O(1) at runtime — moves never query the registry. See
 |---|---|
 | `villain` | Pushed into the City |
 | `henchman` | Pushed into the City |
-| `bystander` | Discarded into villain-deck discard |
-| `scheme-twist` | Discarded; fires `onSchemeTwistRevealed` |
-| `mastermind-strike` | Discarded; fires `onMastermindStrikeRevealed` |
+| `bystander` | **Captured** — attached under the frontmost City villain (or the Mastermind if the City is empty); **never** discarded |
+| `scheme-twist` | Fires `onSchemeTwistRevealed`; card goes to `G.scheme.twistPile` |
+| `mastermind-strike` | Fires `onMastermindStrikeRevealed`; card goes to `G.mastermind.strikePile` |
+
+Note the final destinations: **no** revealed card routes to `G.villainDeck.discard`
+in the current engine — villains/henchmen enter the City, bystanders attach,
+twists go to `twistPile`, strikes go to `strikePile`. The `discard` array on
+`VillainDeckState` exists in the shape but is effectively dead (see Edge Cases).
 
 The canonical array `REVEALED_CARD_TYPES` in
 [`villainDeck.types.ts`](../packages/game-engine/src/villainDeck/villainDeck.types.ts)
@@ -96,20 +105,44 @@ happens before triggers fire:
 
 - **Step 0 — Stage gate.** Return silently unless
   `G.currentStage === 'start'`.
-- **Step 1 — Empty-deck handling.** If both deck and discard are
-  empty, log and return. If deck is empty but discard has cards,
-  reshuffle discard into deck via `shuffleDeck` (uses
-  `ctx.random.Shuffle`).
+- **Step 1 — Empty-deck handling.** If the deck is empty, log and
+  return — a no-op reveal. The villain deck does **not** reshuffle from
+  its discard (WP-367 / D-24160): unlike a hero deck, running the villain
+  deck out is terminal — it latches the final turn (game.ts `turn.onMove`,
+  D-24159) rather than being refilled. In practice `villainDeck.discard`
+  never accumulates anything to reshuffle anyway (see Step 7).
 - **Step 2 — Draw.** Read `deck[0]` (top of deck). Defer removal from
   the deck until placement is confirmed (see Edge Cases / WP-015A).
 - **Step 3 — Classify.** Look up `G.villainDeckCardTypes[cardId]`. If
   missing, log and return without removal.
-- **Step 4 — City routing.** For `villain` and `henchman`: validate
-  `G.city`, push the card into the City, handle escape (counter +
-  wound + bystander resolution), handle Ambush on entry, attach a
-  bystander. An escaping villain that carries a `become-scheme-twist`
-  `onEscape` hook additionally fires `onSchemeTwistRevealed` after its
-  escape abilities resolve (Mystique, WP-481 / D-24287 — see Edge Cases).
+- **Step 4 — City routing (`villain` / `henchman` only).** Validate
+  `G.city` (a malformed city returns silently, card kept on deck —
+  WP-015A), remove the card from the deck, then `pushVillainIntoCity`.
+  A push that overflows the five City spaces escapes the card at the far
+  edge; the **escape sequence** then runs in this exact order (the order
+  is contractual — reveal.ts):
+  1. increment `ENDGAME_CONDITIONS.ESCAPED_VILLAINS` and append the card
+     to `G.escapedPile`;
+  2. the current player gains **1 Wound** (the MVP system-level escape
+     penalty, WP-015 — supply-gated; this is *not* the tabletop "KO a Hero
+     ≤6 from the HQ" procedure, which is not modeled);
+  3. release the escaped villain's attached bystanders back to the supply
+     (before card-text effects, per D-18603);
+  4. fire the card's `onEscape` / `Overrun:` abilities via
+     `executeVillainAbilities`;
+  5. KO any heroes captured on the escaped villain;
+  6. if the escaped card carries a `become-scheme-twist` hook (Mystique),
+     fire `onSchemeTwistRevealed` — a second trigger path (WP-481 /
+     D-24287; see Edge Cases).
+
+  **Ambush fires only after the escape sequence fully resolves.** Ambush is
+  *not* a hardcoded "every player gains a Wound" — that loop was deleted
+  (D-18504). When `hasAmbush(cardId)` is true, the reveal move dispatches
+  the card's parsed `[effect:]` hooks via `executeVillainAbilities(…,
+  'onAmbush')` and emits an `ambushResolved` notable event. A villain/
+  henchman does **not** capture a bystander merely by entering the City
+  (WP-432 removed that non-canonical attach); bystanders enter play only via
+  a revealed `bystander` card or an explicit `capture-bystander` effect.
 - **Step 5 — Collect rule effects.** Always emit `onCardRevealed`.
   Conditionally emit `onSchemeTwistRevealed` or
   `onMastermindStrikeRevealed`. Trigger evaluation is delegated to
@@ -117,9 +150,31 @@ happens before triggers fire:
   logic.
 - **Step 6 — Apply effects.** `applyRuleEffects` mutates `G` from the
   collected `RuleEffect[]`.
-- **Step 7 — Final destination.** `villain` and `henchman` are
-  already in the City. `bystander`, `scheme-twist`, and
-  `mastermind-strike` go to `G.villainDeck.discard`.
+- **Step 7 — Final destination.** `villain` and `henchman` are already
+  in the City. A `bystander` is attached under its captor (frontmost City
+  villain, or the Mastermind if the City is empty — also mirrored onto
+  `G.mastermind.attachedBystanders` for the UI projection, D-12805).
+  `scheme-twist` goes to `G.scheme.twistPile`; `mastermind-strike` goes to
+  `G.mastermind.strikePile`. Nothing routes to `G.villainDeck.discard`.
+
+**Move wrapper vs. inner pipeline.** `revealVillainCard` (the boardgame.io
+move) is a thin wrapper that owns three gates, then delegates the draw →
+classify → route → trigger → apply body to `performVillainReveal`:
+
+- **Block-all pending-choice guards.** Before any state write, the wrapper
+  returns silently if any interactive choice is outstanding —
+  `hasPendingKoHeroChoice`, `hasPendingScryKoChoice`, `hasPendingDiscardChoice`,
+  `hasPendingReorderChoice`, `hasPendingOptionalKoReward`,
+  `hasPendingVictoryPileCardPick`, `hasPendingDrawOrEmpowered`,
+  `hasPendingReturnZeroCostDiscard`. The board is frozen until the player
+  resolves the choice (the [pending-choice interaction model](card-effect-system.md)).
+- **Once per turn.** `G.villainRevealedThisTurn` gates the start-of-turn
+  reveal; it is set after the attempt even when the deck is empty, so an
+  exhausted-deck no-op still spends the allowance (no same-turn retry loop).
+- **Chaining bypass.** Scheme/card effects that reveal *additional* cards
+  (e.g. the Midtown Bank Robbery twist) call `performVillainReveal`
+  directly, intentionally bypassing both the once-per-turn guard and the
+  stage gate.
 
 The full step contract is also documented inline in
 [`game-engine.md` "Villain Deck & Reveal Pipeline"](../.claude/skills/legendary-game-engine/SKILL.md).
@@ -148,11 +203,14 @@ The full step contract is also documented inline in
   card at index 4, increments `ENDGAME_CONDITIONS.ESCAPED_VILLAINS`,
   triggers a wound for the current player, and releases attached
   bystanders back to the supply.
-- **[Board Keywords](board-keywords.md) (Ambush).** Cards entering
-  the City with the Ambush keyword cause every player to gain a
-  wound on entry. Ambush evaluation happens inline in the reveal
-  move — the effect-type catalog has no `gainWound` member, so
-  structural city rules execute directly.
+- **[Board Keywords](board-keywords.md) (Ambush).** A card entering the
+  City with the Ambush keyword runs its **printed** `[effect:]` text via
+  `executeVillainAbilities(…, 'onAmbush')`, gated by a `hasAmbush`
+  fast-check. Ambush is **not** a blanket "every player gains a Wound" — the
+  hardcoded wound loop was deleted in D-18504 because it fired identical
+  wrong behaviour for every Ambush card regardless of printed text. The
+  reveal move emits an `ambushResolved` notable event with the parsed
+  effect keywords for the arena-client overlay.
 - **[Card Type Taxonomy](card-type-taxonomy.md).** `RevealedCardType`
   is a strict subset of the broader registry-side taxonomy. Only the
   five values listed above ever appear in `G.villainDeckCardTypes`;
@@ -162,7 +220,10 @@ The full step contract is also documented inline in
   never enter the villain deck.
 - **Endgame.** Escapes increment a counter consumed by
   `evaluateEndgame`; sustained escapes drive a scheme-wins outcome
-  (default `ESCAPE_LIMIT = 8` in MVP).
+  (default `ESCAPE_LIMIT = 8` in MVP). Separately, **exhausting the villain
+  deck latches the final turn** (game.ts `turn.onMove`, D-24159 / D-24160) —
+  the deck is not refilled, so its running out is itself an end-condition
+  trigger rather than a reshuffle.
 
 ## Edge Cases
 
@@ -182,10 +243,19 @@ The full step contract is also documented inline in
   `G.villainDeckCardTypes[cardId]` is undefined, the move logs a
   message and returns without modifying state — no removal, no
   trigger. This protects against partially-built decks at setup.
-- **Reshuffle from discard is deterministic.** When the deck empties
-  with a non-empty discard, the discard is shuffled into the deck via
-  `shuffleDeck` using `ctx.random.Shuffle`. No `Math.random()`
-  ever participates.
+- **The villain deck never reshuffles; its discard is dead state.**
+  Unlike a player deck (and unlike an earlier version of this page),
+  the villain deck does not shuffle its discard back in when it empties —
+  exhaustion latches the final turn (WP-367 / D-24160). The
+  `VillainDeckState.discard` array remains in the shape for historical
+  reasons but nothing routes to it: villains/henchmen go to the City,
+  bystanders attach, twists/strikes go to their own piles.
+- **Bystander captor selection.** A revealed `bystander` is captured by
+  the **frontmost** City villain — the highest occupied City index, i.e.
+  the one nearest the escape edge — or by the Mastermind when the City is
+  empty. It is stored in `G.attachedBystanders[captorId]`; a Mastermind
+  capture is additionally mirrored onto `G.mastermind.attachedBystanders`
+  for the UI (D-12805).
 - **Ambush gates on supply.** Ambush wound application is gated on
   `G.piles.wounds.length > 0` — once the wound supply is exhausted,
   Ambush degrades silently for the remaining players. Same gating
@@ -206,6 +276,26 @@ The full step contract is also documented inline in
   advance exactly as a revealed `scheme-twist` would. See
   [Card Effect System](card-effect-system.md).
 
+## Tabletop features not yet modeled
+
+`RevealedCardType` is a closed **five-value** set. Several villain-deck
+mechanics from the *Marvel Legendary Universal Rulebook v23* and later
+expansions are deliberately **not** modeled at this revision — documenting
+them here as engine behaviour would be inaccurate. Adding any of them is a
+design change (union + `REVEALED_CARD_TYPES` array + a `DECISIONS.md` entry +
+drift tests), not a card-data edit:
+
+- **Locations, Traps, Villainous Weapons, ambush-schemes** — none exist as
+  a revealed card type; the engine has no Location zone, Trap challenge
+  queue, or weapon-attachment/Artifact conversion.
+- **The full tabletop escape procedure** — a real escape has the escaping
+  villain KO a Hero of cost ≤ 6 from the HQ and, if it carries bystanders,
+  every player discards a card. The engine substitutes a single
+  current-player Wound (see Step 4). This is an MVP simplification, not the
+  rulebook sequence.
+- **Warmup Round** — the 4–5 player first-turn skip of the villain reveal is
+  not implemented; the only gate is `G.currentStage === 'start'`.
+
 ## Code Touchpoints
 
 - [`packages/game-engine/src/villainDeck/villainDeck.types.ts`](../packages/game-engine/src/villainDeck/villainDeck.types.ts)
@@ -214,7 +304,15 @@ The full step contract is also documented inline in
 - [`packages/game-engine/src/villainDeck/villainDeck.setup.ts`](../packages/game-engine/src/villainDeck/villainDeck.setup.ts)
   — `buildVillainDeck` (setup-time composition + classification map)
 - [`packages/game-engine/src/villainDeck/villainDeck.reveal.ts`](../packages/game-engine/src/villainDeck/villainDeck.reveal.ts)
-  — `revealVillainCard` move (the 8-step pipeline)
+  — `revealVillainCard` move wrapper + `performVillainReveal` (the 8-step pipeline)
+- [`packages/game-engine/src/board/city.logic.ts`](../packages/game-engine/src/board/city.logic.ts)
+  — `pushVillainIntoCity` (push + overflow escape)
+- [`packages/game-engine/src/board/bystanders.logic.ts`](../packages/game-engine/src/board/bystanders.logic.ts)
+  — `resolveEscapedBystanders` (release to supply on escape)
+- [`packages/game-engine/src/board/boardKeywords.logic.ts`](../packages/game-engine/src/board/boardKeywords.logic.ts)
+  — `hasAmbush` fast-check
+- [`packages/game-engine/src/villain/villainEffects.execute.ts`](../packages/game-engine/src/villain/villainEffects.execute.ts)
+  — `executeVillainAbilities` (onAmbush / onEscape), `villainCardEscapeTriggersSchemeTwist`
 - [`packages/game-engine/src/villainDeck/villainDeck.reveal.test.ts`](../packages/game-engine/src/villainDeck/villainDeck.reveal.test.ts)
   — reveal pipeline tests
 - [`packages/game-engine/src/villainDeck/villainDeck.city.integration.test.ts`](../packages/game-engine/src/villainDeck/villainDeck.city.integration.test.ts)
@@ -228,7 +326,11 @@ The full step contract is also documented inline in
 - WP-014B: Villain deck composition; setup-time `G.villainDeckCardTypes` registry resolution
 - WP-015: City routing added for `villain` and `henchman`; escape counter tracking
 - WP-015A: Deferred deck removal until placement confirmation; closed silent-loss path on malformed city
+- D-18504: Deleted the hardcoded "every player gains a Wound" Ambush loop; Ambush now dispatches the card's parsed `[effect:]` hooks
+- WP-367 (D-24159 / D-24160): Villain deck exhaustion latches the final turn — the deck does not reshuffle from its discard
+- WP-432 (supersedes D-1701): Removed the non-canonical city-entry bystander attach; bystanders enter play only via a revealed `bystander` card or a `capture-bystander` effect
 - WP-481 (D-24287): Escape fire site can trigger a Scheme Twist — an escaping villain carrying a `become-scheme-twist` `onEscape` hook (Mystique) runs the `onSchemeTwistRevealed` pipeline, a second trigger path for that hook beyond the `scheme-twist` reveal classification
+- 2026-08-01: Correctness pass against `villainDeck.reveal.ts` — fixed bystander routing (capture, not discard), scheme-twist/mastermind-strike final piles (`twistPile`/`strikePile`, not discard), empty-deck handling (terminal, no reshuffle), and the Ambush description; documented the move-wrapper guards, the real escape order, and the tabletop features not yet modeled
 
 ## References
 
