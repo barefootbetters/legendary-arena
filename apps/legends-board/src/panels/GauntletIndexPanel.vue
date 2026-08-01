@@ -504,6 +504,7 @@ function toggleMastermind(mastermindSlug: string): void {
                         :key="configIndex"
                         class="gauntlet-details-config"
                       >
+                        <span class="gauntlet-details-config-scheme">{{ formatCardDisplayName(config.schemeName) }}</span>
                         <span><strong>Villains:</strong> {{ config.villains.join(", ") }}</span>
                         <span><strong>Henchmen:</strong> {{ config.henchmen.join(", ") }}</span>
                       </li>

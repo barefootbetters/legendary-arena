@@ -7,6 +7,40 @@
 
 ## Current State
 
+### WP-474 / EC-509 — Per-Scheme Approved-Loadout: Client Consumers (Arc 4/5, legends-board only — SPLIT) (2026-08-01)
+
+**User-Visible Surface = legends.legendary-arena.com.** **D-24026 live-verify operator-pending**
+(deployed Core matrix at 2p: Dr. Doom's "Secret Invasion…" row marks Skrulls ✓ where a
+non-swapped row marks Brotherhood ✓).
+
+Arc 4/5. The legends-board consumers now read the per-scheme loadout WP-472 publishes on
+`GauntletIndexLeg`, so the coverage matrix's ✓ patterns finally **differ per scheme** (the
+point of the variety), and the reveal + challenge links resolve per leg.
+
+- **Mirror:** `snapshotClient.ts` adds `approvedLoadouts` onto `GauntletIndexLeg` (mirrors
+  WP-472); the entry-level field is retained as the pre-WP-472 fallback.
+- **`gauntletDisplay.ts`:** new `selectLegApprovedLoadout` reads the leg's own config,
+  falling back to the entry-level per-mastermind config only for an old snapshot;
+  `buildCoverageMatrix` selects **per leg** (rows differ per scheme); `buildRowChallengeUrl`
+  + the board panel's per-leg links pin each leg's config; `buildGauntletDetails` (WP-456
+  reveal) pairs each scheme with its own config (`GauntletDetailConfig` gains `schemeName`).
+- **Panels:** `GauntletIndexPanel.vue` labels each reveal config with its scheme;
+  `GauntletBoardPanel.vue` resolves each leg's link per scheme.
+
+**Execution reconciliation (operator-confirmed 2026-08-01 — SPLIT):** the registry-viewer /
+cards half (AC#3 — qualification badge + pack prefill + `LoadoutBuilder.vue`) was
+**infeasible as drafted**. It directed resolving the leg config via WP-471's
+`getGauntletConfig`, but that loader is **Node-only** (`node:fs` `readFileSync` at module
+load, reachable only through the registry root barrel — no `/gauntletConfigs` subpath), and
+`apps/registry-viewer` is a Vite **browser** app whose gauntlet libs must not import the root
+barrel. There is no browser-safe per-scheme data source in the cards builder today. Jeff's
+call: **ship the legends-board half now, spin the cards half into a new WP** (next-free
+**WP-483 / EC-518**, to be drafted) that first adds a browser-safe per-scheme registry export.
+So this packet touches only the 4 legends-board files (a subset of the drafted allowlist); the
+3 registry-viewer files are untouched. **No D-entry** (consumes D-24283). Baselines:
+legends-board **129/0** (+3 per-scheme tests; `buildGauntletDetails` tests rewritten
+per-scheme), typecheck clean, `pnpm -r build` green.
+
 ### WP-473 / EC-508 — Per-Scheme Approved-Loadout: Run-Tracker Leg-Clear + Per-Leg Launch (Arc 3/5) (2026-08-01)
 
 **User-Visible Surface = play.legendary-arena.com.** **D-24026 live-verify operator-pending**

@@ -8,6 +8,7 @@ import type {
   GauntletIndexApprovedLoadout,
   GauntletIndexApprovedLoadouts,
   GauntletIndexEntry,
+  GauntletIndexLeg,
   GauntletSnapshotEntry,
   SetDetails,
 } from "../snapshots/snapshotClient";
@@ -355,6 +356,32 @@ export function selectApprovedLoadout(
 }
 
 /**
+ * Selects the EFFECTIVE approved loadout for one leg at a player count
+ * (WP-474 / D-24283): the leg's own per-scheme config where present, else the
+ * gauntlet's per-mastermind entry-level config.
+ *
+ * why: WP-472 stamps each leg's effective loadout onto `GauntletIndexLeg`, so a
+ * mastermind's legs can field different adversaries scheme-to-scheme. The
+ * entry-level fallback is ONLY for a pre-WP-472 snapshot (legs carry no loadout);
+ * on a current snapshot every leg carries one and the fallback never fires.
+ *
+ * @param leg The gauntlet leg (may carry its own per-scheme `approvedLoadouts`).
+ * @param entry The gauntlet entry (its per-mastermind `approvedLoadouts` is the fallback).
+ * @param playerCount The routed player count, or undefined for the index CTA (solo).
+ * @returns The leg's effective configuration, or undefined when neither is published.
+ */
+export function selectLegApprovedLoadout(
+  leg: Pick<GauntletIndexLeg, "approvedLoadouts">,
+  entry: { approvedLoadouts?: GauntletIndexApprovedLoadouts },
+  playerCount?: number,
+): GauntletIndexApprovedLoadout | undefined {
+  return (
+    selectApprovedLoadout(leg, playerCount) ??
+    selectApprovedLoadout(entry, playerCount)
+  );
+}
+
+/**
  * Builds the challenge link for a gauntlet's first leg at a given player count,
  * pinning the approved loadout for THAT SAME count (WP-457 / D-24277).
  *
@@ -396,7 +423,10 @@ export function buildRowChallengeUrl(
     firstLeg.schemeSlug,
     entry.mastermindSlug,
     playerCount,
-    selectApprovedLoadout(entry, playerCount),
+    // why: WP-474 / D-24283 — pin the FIRST LEG's own per-scheme config (falling
+    // back to the per-mastermind config on a pre-WP-472 snapshot), so the CTA
+    // link opens on that leg's actual approved adversaries.
+    selectLegApprovedLoadout(firstLeg, entry, playerCount),
   );
 }
 
@@ -689,8 +719,10 @@ export function listApprovedLoadouts(
   return entry.approvedLoadouts[String(playerCount)] ?? [];
 }
 
-/** One approved configuration, split into title-cased villain + henchmen labels. */
+/** One leg's approved configuration, split into title-cased villain + henchmen
+ * labels, tagged with the scheme it belongs to (WP-474 / D-24283 — per scheme). */
 export interface GauntletDetailConfig {
+  readonly schemeName: string;
   readonly villains: readonly string[];
   readonly henchmen: readonly string[];
 }
@@ -747,9 +779,16 @@ function titleCaseGroupLabel(groupId: string): string {
  * empty `configs`, and an entry with no `legs` yields an empty `schemes` — never
  * a throw (a pre-WP-395 snapshot still parses).
  *
+ * why: WP-474 / D-24283 — the configs are now PER SCHEME (one per leg), each
+ * tagged with `schemeName`, because a mastermind's legs can field different
+ * adversaries. Each leg's effective config is its own per-scheme loadout (falling
+ * back to the per-mastermind config on a pre-WP-472 snapshot); a leg with no
+ * config at a count contributes nothing, so a count with no published loadout
+ * yields empty `configs` — never a throw.
+ *
  * @param entry The gauntlet's index entry (legs + approved loadouts, both optional).
  * @param playerCounts The player counts to list (1..5).
- * @returns The schemes and the approved configurations by player count.
+ * @returns The schemes and the per-scheme approved configurations by player count.
  */
 export function buildGauntletDetails(
   entry: Pick<GauntletIndexEntry, "legs" | "approvedLoadouts">,
@@ -762,8 +801,13 @@ export function buildGauntletDetails(
   const loadoutsByCount: GauntletDetailCount[] = [];
   for (const playerCount of playerCounts) {
     const configs: GauntletDetailConfig[] = [];
-    for (const approvedLoadout of listApprovedLoadouts(entry, playerCount)) {
+    for (const leg of entry.legs ?? []) {
+      const approvedLoadout = selectLegApprovedLoadout(leg, entry, playerCount);
+      if (approvedLoadout === undefined) {
+        continue;
+      }
       configs.push({
+        schemeName: leg.schemeName,
         villains: approvedLoadout.villainGroupIds.map(titleCaseGroupLabel),
         henchmen: approvedLoadout.henchmanGroupIds.map(titleCaseGroupLabel),
       });
@@ -842,14 +886,15 @@ export interface CoverageMatrix {
  * set-qualified id is in that mastermind's approved config at the selected count.
  *
  * why: pure and data-injected — reads only the already-parsed gauntlet entries
- * (their `legs` + `approvedLoadouts`) and the `SetDetails` roster (both already
- * published, WP-395 / WP-461), so the board stays zero-API. Coverage derives from
- * `selectApprovedLoadout` (the per-mastermind × count config), NEVER the per-*set*
- * `SetAdversaryGroup.usedByGauntlets` flag (which would over-mark). The approved
- * config does not vary by scheme (it is keyed by mastermind × count), so a
- * mastermind's scheme-rows share a ✓ pattern and differ only in the per-leg
- * challenge link. A count with no published config (`selectApprovedLoadout`
- * undefined) leaves that mastermind's rows all-uncovered — never a throw.
+ * (their `legs` + per-leg `approvedLoadouts`) and the `SetDetails` roster (both
+ * already published, WP-395 / WP-461 / WP-472), so the board stays zero-API.
+ * Coverage derives from `selectLegApprovedLoadout` (the PER-LEG × count config),
+ * NEVER the per-*set* `SetAdversaryGroup.usedByGauntlets` flag (which would
+ * over-mark). WP-474 / D-24283 — the approved config now varies BY SCHEME (each
+ * leg carries its own), so a mastermind's scheme-rows can show DIFFERENT ✓
+ * patterns (a swapped leg marks its swapped adversary). A leg with no config at
+ * this count (the entry-level fallback also absent) leaves that row
+ * all-uncovered — never a throw.
  *
  * @param entries The set's gauntlet index entries (one per mastermind), in the
  *   order the caller wants the mastermind row-groups.
@@ -872,16 +917,17 @@ export function buildCoverageMatrix(
 
   const rows: CoverageMatrixRow[] = [];
   for (const entry of entries) {
-    const approvedLoadout = selectApprovedLoadout(entry, playerCount);
-    // why: build the id sets once per mastermind — the config is fixed per
-    // mastermind × count, so every scheme-row of this mastermind reuses them. An
-    // undefined loadout (missing count key) yields empty sets → all-uncovered.
-    const approvedVillainIds = new Set(approvedLoadout?.villainGroupIds ?? []);
-    const approvedHenchmanIds = new Set(approvedLoadout?.henchmanGroupIds ?? []);
     for (const leg of entry.legs ?? []) {
-      // why: the challenge URL is per-leg (this scheme + this mastermind), computed
-      // once per row; every covered cell in the row links to the same leg (clicking
-      // any ✓ launches that leg's fight, which pins the whole approved loadout).
+      // why: WP-474 / D-24283 — select the config PER LEG (its own per-scheme
+      // loadout, else the per-mastermind fallback), so each scheme-row's ✓ pattern
+      // reflects THAT leg. An undefined loadout (no config at this count) yields
+      // empty sets → an all-uncovered row.
+      const approvedLoadout = selectLegApprovedLoadout(leg, entry, playerCount);
+      const approvedVillainIds = new Set(approvedLoadout?.villainGroupIds ?? []);
+      const approvedHenchmanIds = new Set(approvedLoadout?.henchmanGroupIds ?? []);
+      // why: the challenge URL is per-leg (this scheme + this mastermind); every
+      // covered cell in the row links to it (clicking any ✓ launches that leg's
+      // fight, which pins the leg's approved loadout).
       const challengeUrl = buildChallengeUrl(
         setDetails.setAbbr,
         leg.schemeSlug,

@@ -23,6 +23,7 @@ import {
   resolveBoardIndexEntry,
   rosterForEntry,
   selectApprovedLoadout,
+  selectLegApprovedLoadout,
 } from "./gauntletDisplay.ts";
 import type {
   GauntletEntryCounts,
@@ -549,24 +550,37 @@ describe("canonical loadout discoverability (WP-395)", () => {
   });
 });
 
-describe("buildGauntletDetails", () => {
+describe("buildGauntletDetails (WP-474 per-scheme)", () => {
+  // why: WP-474 — each leg carries its OWN per-scheme approved loadout, so the
+  // reveal pairs each scheme with its own villains/henchmen. Legacy-Virus fights
+  // Enemies of Asgard; Midtown fights Hydra — different adversaries per scheme.
   const magnetoEntry = {
     legs: [
-      { schemeSlug: "legacy-virus-the", schemeName: "Legacy Virus, The" },
-      { schemeSlug: "midtown-bank-robbery", schemeName: "Midtown Bank Robbery" },
+      {
+        schemeSlug: "legacy-virus-the",
+        schemeName: "Legacy Virus, The",
+        approvedLoadouts: {
+          "2": [
+            {
+              villainGroupIds: ["core/brotherhood", "core/enemies-of-asgard"],
+              henchmanGroupIds: ["core/doombot-legion"],
+            },
+          ],
+        },
+      },
+      {
+        schemeSlug: "midtown-bank-robbery",
+        schemeName: "Midtown Bank Robbery",
+        approvedLoadouts: {
+          "2": [
+            {
+              villainGroupIds: ["core/brotherhood", "core/hydra"],
+              henchmanGroupIds: ["core/hand-ninjas"],
+            },
+          ],
+        },
+      },
     ],
-    approvedLoadouts: {
-      "2": [
-        {
-          villainGroupIds: ["core/brotherhood", "core/enemies-of-asgard"],
-          henchmanGroupIds: ["core/doombot-legion"],
-        },
-        {
-          villainGroupIds: ["core/brotherhood", "core/hydra"],
-          henchmanGroupIds: ["core/hand-ninjas"],
-        },
-      ],
-    },
   };
 
   it("lists the scheme names from the legs", () => {
@@ -577,21 +591,46 @@ describe("buildGauntletDetails", () => {
     ]);
   });
 
-  it("title-cases villains and henchmen separately, under the right player count", () => {
+  it("pairs each scheme with its OWN per-scheme config, title-cased and separated", () => {
     const details = buildGauntletDetails(magnetoEntry, [2]);
     assert.equal(details.loadoutsByCount.length, 1);
     const twoPlayer = details.loadoutsByCount[0];
     assert.equal(twoPlayer.playerCount, 2);
-    // The second villain (Enemies Of Asgard) is a VILLAIN, title-cased; the
-    // henchman half is separate — no "villains + henchmen" divider string.
+    // one config PER LEG (per scheme), each tagged with its scheme name.
     assert.deepEqual(twoPlayer.configs[0], {
+      schemeName: "Legacy Virus, The",
       villains: ["Brotherhood", "Enemies Of Asgard"],
       henchmen: ["Doombot Legion"],
     });
     assert.deepEqual(twoPlayer.configs[1], {
+      schemeName: "Midtown Bank Robbery",
       villains: ["Brotherhood", "Hydra"],
       henchmen: ["Hand Ninjas"],
     });
+  });
+
+  it("falls back to the per-mastermind entry-level config on a pre-WP-472 snapshot", () => {
+    // why: legs carry no per-leg loadout (old snapshot) → each scheme resolves to
+    // the entry-level per-mastermind config (variant 0), so the reveal still renders.
+    const oldSnapshotEntry = {
+      legs: [
+        { schemeSlug: "scheme-a", schemeName: "Scheme A" },
+        { schemeSlug: "scheme-b", schemeName: "Scheme B" },
+      ],
+      approvedLoadouts: {
+        "2": [
+          {
+            villainGroupIds: ["core/brotherhood"],
+            henchmanGroupIds: ["core/doombot-legion"],
+          },
+        ],
+      },
+    };
+    const details = buildGauntletDetails(oldSnapshotEntry, [2]);
+    assert.deepEqual(details.loadoutsByCount[0].configs, [
+      { schemeName: "Scheme A", villains: ["Brotherhood"], henchmen: ["Doombot Legion"] },
+      { schemeName: "Scheme B", villains: ["Brotherhood"], henchmen: ["Doombot Legion"] },
+    ]);
   });
 
   it("returns empty configs for a count with no published loadout (no throw)", () => {
@@ -602,8 +641,16 @@ describe("buildGauntletDetails", () => {
     ]);
   });
 
-  it("returns empty configs for every count when approvedLoadouts is undefined", () => {
-    const details = buildGauntletDetails({ legs: magnetoEntry.legs }, [1, 2]);
+  it("returns empty configs for every count when no loadout is published", () => {
+    const details = buildGauntletDetails(
+      {
+        legs: [
+          { schemeSlug: "legacy-virus-the", schemeName: "Legacy Virus, The" },
+          { schemeSlug: "midtown-bank-robbery", schemeName: "Midtown Bank Robbery" },
+        ],
+      },
+      [1, 2],
+    );
     assert.deepEqual(details.loadoutsByCount, [
       { playerCount: 1, configs: [] },
       { playerCount: 2, configs: [] },
@@ -611,10 +658,7 @@ describe("buildGauntletDetails", () => {
   });
 
   it("returns empty schemes when the entry has no legs", () => {
-    const details = buildGauntletDetails(
-      { approvedLoadouts: magnetoEntry.approvedLoadouts },
-      [2],
-    );
+    const details = buildGauntletDetails({}, [2]);
     assert.deepEqual(details.schemes, []);
   });
 });
@@ -855,5 +899,142 @@ describe("buildCoverageMatrix (WP-464)", () => {
     const matrix = buildCoverageMatrix([], CORE_DETAILS, 2);
     assert.strictEqual(matrix.rows.length, 0);
     assert.strictEqual(matrix.columns.length, 6);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-474 / D-24283 — per-scheme approved loadouts (client consumers)
+// ---------------------------------------------------------------------------
+
+describe("selectLegApprovedLoadout (WP-474)", () => {
+  const LEG_WITH_OWN = {
+    approvedLoadouts: {
+      "2": [
+        {
+          villainGroupIds: ["core/skrulls"],
+          henchmanGroupIds: ["core/hand-ninjas"],
+        },
+      ],
+    },
+  };
+  const ENTRY_FALLBACK = {
+    approvedLoadouts: {
+      "2": [
+        {
+          villainGroupIds: ["core/brotherhood"],
+          henchmanGroupIds: ["core/doombot-legion"],
+        },
+      ],
+    },
+  };
+
+  it("prefers the leg's own per-scheme config", () => {
+    assert.deepEqual(selectLegApprovedLoadout(LEG_WITH_OWN, ENTRY_FALLBACK, 2), {
+      villainGroupIds: ["core/skrulls"],
+      henchmanGroupIds: ["core/hand-ninjas"],
+    });
+  });
+
+  it("falls back to the entry-level config when the leg carries none (old snapshot)", () => {
+    assert.deepEqual(selectLegApprovedLoadout({}, ENTRY_FALLBACK, 2), {
+      villainGroupIds: ["core/brotherhood"],
+      henchmanGroupIds: ["core/doombot-legion"],
+    });
+  });
+
+  it("returns undefined when neither the leg nor the entry has a config", () => {
+    assert.strictEqual(selectLegApprovedLoadout({}, {}, 2), undefined);
+  });
+});
+
+describe("buildCoverageMatrix per-scheme (WP-474)", () => {
+  const CORE_DETAILS: SetDetails = {
+    setAbbr: "core",
+    setName: "Core Set",
+    masterminds: [{ slug: "dr-doom", name: "Dr. Doom" }],
+    schemes: [
+      { slug: "scheme-a", name: "Scheme A" },
+      { slug: "scheme-b", name: "Scheme B" },
+    ],
+    villains: [
+      { slug: "brotherhood", name: "The Brotherhood", usedByGauntlets: true },
+      { slug: "enemies-of-asgard", name: "Enemies of Asgard", usedByGauntlets: true },
+      { slug: "masters-of-evil", name: "Masters of Evil", usedByGauntlets: true },
+    ],
+    henchmen: [
+      { slug: "doombot-legion", name: "Doombot Legion", usedByGauntlets: true },
+    ],
+  };
+  // why: scheme-a swaps in masters-of-evil; scheme-b keeps brotherhood — the two
+  // legs carry DIFFERENT per-leg loadouts. The entry-level field (enemies-of-asgard)
+  // must be IGNORED because every leg carries its own (proves leg-level wins).
+  const DOOM_PERSCHEME: GauntletIndexEntry = {
+    setAbbr: "core",
+    setName: "Core Set",
+    mastermindSlug: "dr-doom",
+    mastermindName: "Dr. Doom",
+    legCount: 2,
+    entryCount: 0,
+    board: "gauntlet-core-dr-doom",
+    legs: [
+      {
+        schemeSlug: "scheme-a",
+        schemeName: "Scheme A",
+        approvedLoadouts: {
+          "2": [
+            {
+              villainGroupIds: ["core/masters-of-evil"],
+              henchmanGroupIds: ["core/doombot-legion"],
+            },
+          ],
+        },
+      },
+      {
+        schemeSlug: "scheme-b",
+        schemeName: "Scheme B",
+        approvedLoadouts: {
+          "2": [
+            {
+              villainGroupIds: ["core/brotherhood"],
+              henchmanGroupIds: ["core/doombot-legion"],
+            },
+          ],
+        },
+      },
+    ],
+    approvedLoadouts: {
+      "2": [
+        {
+          villainGroupIds: ["core/enemies-of-asgard"],
+          henchmanGroupIds: ["core/doombot-legion"],
+        },
+      ],
+    },
+  };
+
+  it("shows DIFFERENT coverage per scheme (the point of the variety)", () => {
+    const matrix = buildCoverageMatrix([DOOM_PERSCHEME], CORE_DETAILS, 2);
+    // columns: 0 brotherhood, 1 enemies-of-asgard, 2 masters-of-evil, 3 doombot(henchman)
+    const schemeA = matrix.rows.find((row) => row.schemeSlug === "scheme-a");
+    const schemeB = matrix.rows.find((row) => row.schemeSlug === "scheme-b");
+    assert.ok(schemeA && schemeB);
+    // scheme-a marks masters-of-evil (col 2), NOT brotherhood (col 0).
+    assert.strictEqual(schemeA.cells[2]?.covered, true);
+    assert.strictEqual(schemeA.cells[0]?.covered, false);
+    // scheme-b marks brotherhood (col 0), NOT masters-of-evil (col 2).
+    assert.strictEqual(schemeB.cells[0]?.covered, true);
+    assert.strictEqual(schemeB.cells[2]?.covered, false);
+    // the entry-level fallback (enemies-of-asgard, col 1) is IGNORED for both.
+    assert.strictEqual(schemeA.cells[1]?.covered, false);
+    assert.strictEqual(schemeB.cells[1]?.covered, false);
+  });
+
+  it("buildRowChallengeUrl pins the FIRST LEG's own per-scheme villains", () => {
+    const url = new URL(buildRowChallengeUrl(DOOM_PERSCHEME, 2) ?? "");
+    assert.strictEqual(
+      url.searchParams.get("villainGroupIds"),
+      "core/masters-of-evil",
+    );
+    assert.strictEqual(url.searchParams.get("schemeId"), "core/scheme-a");
   });
 });

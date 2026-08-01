@@ -27,7 +27,7 @@ import {
   isFixedBoardName,
   listApprovedLoadouts,
   rosterForEntry,
-  selectApprovedLoadout,
+  selectLegApprovedLoadout,
   type PlayerCountTab,
 } from "./gauntletDisplay";
 
@@ -155,7 +155,9 @@ const challengeLegs = computed((): ChallengeLeg[] => {
   // why: WP-395 — pin the approved villain + henchmen groups too, so the
   // builder opens on a setup that can actually qualify. Without this the link
   // sends the player to build a run the board will silently reject.
-  const approvedLoadout = selectApprovedLoadout(entry, activePlayerCount.value);
+  // why: WP-474 / D-24283 — resolve the config PER LEG (its own per-scheme
+  // loadout, else the per-mastermind fallback), so each leg's link opens on THAT
+  // leg's approved adversaries instead of one composition for every leg.
   return entry.legs.map((leg) => ({
     schemeSlug: leg.schemeSlug,
     schemeName: leg.schemeName,
@@ -164,7 +166,7 @@ const challengeLegs = computed((): ChallengeLeg[] => {
       leg.schemeSlug,
       entry.mastermindSlug,
       activePlayerCount.value,
-      approvedLoadout,
+      selectLegApprovedLoadout(leg, entry, activePlayerCount.value),
     ),
   }));
 });

@@ -156,3 +156,43 @@ pnpm -r build
 ## Gate Verdicts (drafting session)
 
 Recorded at drafting; see the SPEC commit body (paired with WP-471 + WP-472).
+
+## Execution Reconciliation (2026-08-01, operator-confirmed — SPLIT)
+
+At execution the registry-viewer half was found **infeasible as drafted**: the WP
+directs the cards-builder consumers to resolve the leg's config via the WP-471
+`getGauntletConfig` loader, but that loader is **Node-only** — `packages/registry/src/gauntletConfigs.ts`
+imports `node:fs` and `readFileSync`s `data/gauntlet-configs.json` at module load, and
+it is reachable only through the registry **root barrel** (there is no `/gauntletConfigs`
+subpath). `apps/registry-viewer` is a Vite **browser** app whose gauntlet libs
+deliberately avoid the root barrel because it "pulls Node built-ins that break the Vite
+browser build" (see `loadoutGauntletPackImport.ts`). There is **no browser-safe
+per-scheme data source** in the cards builder today (it reads the bundled per-mastermind
+`GAUNTLET_LOADOUT_MENUS`). The draft assumed `getGauntletConfig` was browser-usable; the
+WP-471 reconciliation made it Node-only.
+
+**Operator decision (2026-08-01): SPLIT.** This packet ships the **legends-board half
+only** (the coverage matrix / reveal / challenge links go per-scheme — the visible
+variety, AC#1/#2/#4, reading the published `gauntlet-index.json` which is fully
+browser-safe). The **cards-builder / registry-viewer half (AC#3)** — the qualification
+badge + pack prefill + `LoadoutBuilder.vue` — is **deferred to a new WP** that first adds
+a **browser-safe per-scheme registry export** (a generated/bundled module + subpath, no
+`node:fs`), then threads `schemeId` through the cards consumers.
+
+- **Scope (In) / Files — narrowed to legends-board:** `snapshots/snapshotClient.ts`,
+  `panels/gauntletDisplay.{ts,test.ts}`, `panels/GauntletIndexPanel.vue`,
+  `panels/GauntletBoardPanel.vue` (a subset of the drafted allowlist). The three
+  registry-viewer files (`gauntletQualificationCheck.{ts,test.ts}`,
+  `loadoutGauntletPackImport.{ts,test.ts}`, `components/LoadoutBuilder.vue`) are **NOT
+  touched** here.
+- **AC#3 (cards badge + pack prefill) — deferred** to the follow-up WP; not a completion
+  gate for this packet.
+- **Implementation note:** the mirror adds `approvedLoadouts` onto `GauntletIndexLeg` and
+  consumers read the leg-level field, falling back to the entry-level per-mastermind field
+  ONLY for a pre-WP-472 snapshot (`selectLegApprovedLoadout`). `buildCoverageMatrix` now
+  selects PER LEG (rows differ per scheme); `buildRowChallengeUrl` + the board panel's
+  per-leg links pin the leg's own config; `buildGauntletDetails` pairs each scheme with
+  its own config (`GauntletDetailConfig` gains `schemeName`). The server's entry-level
+  dual-write (WP-472 RS-1) is left in place (harmless; the client no longer reads it) —
+  its removal was drafted for this packet but requires no client change and touches server
+  files outside this narrowed allowlist.
