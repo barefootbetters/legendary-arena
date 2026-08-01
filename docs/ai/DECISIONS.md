@@ -23231,7 +23231,7 @@ under pure opacity (`sum(anomalyCounts) === cellCount`). See D-23503.
 
 **Decision:** The `reveal` effect does NOT trigger a deck reshuffle. If `playerZones[playerID].deck.length === 0`, the effect is a silent no-op. If `G.cardStats[topCardId]` is undefined (e.g., SHIELD starter cards), the effect is also a silent no-op — the card stays on top of the deck. This gap is deferred to a future WP.
 
-**Superseded (scoped) 2026-08-01 by D-24285 (WP-478):** the no-reshuffle half of this decision is superseded **for the `heroEffectReveal` peek loop and the `villainEffectScryKoOwnDeck` handler only** — those now reshuffle the discard into the deck on exhaustion (the standard Legendary rule). The missing-`cardStats` skip-and-advance guard is UNCHANGED. Note this is a SCOPED supersession: the Doctor Octopus reveal-eight mastermind strike ([D-24200](#d-24200--doctor-octopus-reveal-eight-strike)) still cites this decision's empty-deck no-op posture and deliberately keeps its no-top-up (a reshuffle there would turn the strike into a benefit) — do NOT add a reshuffle to that strike.
+**Superseded (scoped) 2026-08-01 by D-24285 (WP-478):** the no-reshuffle half of this decision is superseded **for the `heroEffectReveal` peek loop and the `villainEffectScryKoOwnDeck` handler only** — those now reshuffle the discard into the deck on exhaustion (the standard Legendary rule). The missing-`cardStats` skip-and-advance guard is UNCHANGED. Note this is a SCOPED supersession: the Doctor Octopus reveal-eight mastermind strike ([D-24200](#d-24200--doctor-octopus-reveal-eight-strike)) still cites this decision's empty-deck no-op posture and deliberately keeps its no-top-up (a reshuffle there would turn the strike into a benefit) — do NOT add a reshuffle to that strike. **[Update 2026-08-01: this reveal-eight carve-out is now itself superseded by D-24288 (WP-482) — the strike DOES top up; see the D-24285 entry's update note.]**
 
 **Packet:** WP-215 / EC-247.
 
@@ -30413,6 +30413,7 @@ return the remainder to the top in `context.random.Shuffle` order.
 - **A short deck is revealed as-is**, never topped up from the discard pile —
   matching the D-21502 empty-deck no-op posture, since a reshuffle would need
   an interaction model this work does not introduce.
+  **Superseded 2026-08-01 by [D-24288](#d-24288--doctor-octopus-reveal-eight-strike-tops-up-from-the-discard-wp-482):** this no-top-up clause only; the reveal-eight branch now reshuffles the discard to reveal a full 8 when the deck is short (the "interaction model" concern was moot — the printed text is "random order", a shuffle not a player reorder — and WP-478's `reshuffleDiscardIntoDeck` shipped the helper). The non-grey-Hero discard and the random shuffle-back below are UNCHANGED.
 - **`ctx.random.Shuffle` is the only randomness**, so replay stays faithful
   under the framework PRNG. This is the first strike resolver to consume RNG.
 
@@ -35358,6 +35359,14 @@ The Doctor Octopus reveal-eight mastermind strike (**D-24200**) deliberately kee
 no-top-up (a known-order / reshuffled top-up "would turn the strike into a benefit" and
 needs an interaction model D-24200 did not introduce) and is explicitly NOT superseded.
 D-21502's missing-`cardStats` skip guard also remains Active.
+**Update 2026-08-01 — this reveal-eight carve-out is itself superseded by
+[D-24288](#d-24288--doctor-octopus-reveal-eight-strike-tops-up-from-the-discard-wp-482) (WP-482):**
+the reveal-eight strike now DOES top up (reshuffle the discard to reveal a full 8 on a
+short deck). The "benefit" concern was a mis-attribution — it applies to a *known-order*
+return, and D-24288 keeps D-24200's random shuffle-back, so the top-up only makes the strike
+harsher (reveals more → discards more non-grey Heroes). No interaction model is needed (the
+printed text is "random order"). This carve-out ("NOT superseded" / "do NOT add a reshuffle")
+no longer holds.
 
 **Determinism:** the only randomness is the injected `ctx.random.Shuffle` — no
 `Math.random`, no I/O, no new `G` field, no snapshot change, no canonical-array / union /
@@ -35486,6 +35495,53 @@ timings are data / follow-on work.
 **Packet:** WP-481 / EC-516.
 
 **Drafted:** 2026-08-01. **Landed:** 2026-08-01 (WP-481 execution).
+**Status:** Active
+
+---
+
+### D-24288 — Doctor Octopus reveal-eight strike tops up from the discard (WP-482)
+
+**Decision.** Doctor Octopus's Master Strike reveal-eight branch reshuffles the
+player's discard into their deck to reveal a **full 8** when the deck is short —
+the standard Legendary reveal-reshuffle rule. This SUPERSEDES two earlier
+deferrals: D-24200's *"A short deck is revealed as-is, never topped up from the
+discard pile"* clause, and the D-24285 reveal-eight carve-out (*"the D-24200
+reveal-eight strike KEEPS its no-top-up … explicitly NOT superseded"*).
+
+**Both deferrals are moot.** D-24200 deferred the top-up citing *"a reshuffle
+would need an interaction model this work does not introduce."* No interaction
+model is needed: the printed text is *"put the rest back in **random order**"* —
+a shuffle, not a player reorder — so D-24200's random shuffle-back stays. And
+WP-478 / D-24285 shipped the reusable `reshuffleDiscardIntoDeck` helper.
+
+**The top-up is HARSHER, not a benefit.** The D-24285 carve-out mis-attributed
+the "would turn the strike into a benefit" concern to the top-up; that concern
+is about a *known-order* return, which the unchanged random shuffle-back still
+prevents. Revealing a full 8 discards *more* non-grey Heroes — the faithful
+reading of "reveal the top 8."
+
+**Implementation.** In `resolveDoctorOctopusReveal` (`rules/mastermindHandlers.ts`):
+when `deck.length < DOCTOR_OCTOPUS_REVEAL_COUNT` AND `discard.length > 0` AND
+`shuffleFunction !== null`, call `reshuffleDiscardIntoDeck(playerZones,
+{ random: { Shuffle: shuffleFunction } })` before computing
+`revealCount = min(8, deck.length)`. The `playerZones` param was widened from the
+inline `{ deck, discard }` to full `PlayerZones` (the helper requires it; the
+runtime object already is one). The non-grey-Hero discard (`heroClass != null`)
+and the random shuffle-back are UNCHANGED. Skips the top-up when the discard is
+empty or no shuffle source is available (the former D-24200 as-is path).
+
+**Determinism.** The only randomness is `ctx.random.Shuffle` via the existing
+`shuffleFunction`; the top-up adds one Shuffle call on the short-deck path
+(before the shuffle-back). No `Math.random`, no I/O, no new `G` field, no new
+primitive/keyword/contract (a strike-resolver internal; this D-entry is
+rationale-only). No committed hash re-pin was needed — both hash oracles pin
+`core/dr-doom`, whose reveal-eight branch is unreachable (per D-24200), so no
+fixture exercises a short-deck reveal-eight (confirmed by the whole suite staying
+green with unchanged hashes).
+
+**Packet:** WP-482 / EC-517.
+
+**Drafted:** 2026-08-01. **Landed:** 2026-08-01 (WP-482 execution).
 **Status:** Active
 
 Protect this file.
