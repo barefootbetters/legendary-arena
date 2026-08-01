@@ -35428,4 +35428,58 @@ non-drawn revealed cards were silently left on top with no player choice.
 **Drafted:** 2026-08-01. **Landed:** 2026-08-01 (WP-479 execution).
 **Status:** Active
 
+---
+
+### D-24287 — Villain Escape Can Trigger the Active Scheme's Scheme Twist (WP-481)
+
+**Decision:** A villain/henchman whose ability line carries the new
+`become-scheme-twist` effect marker triggers the active scheme's Scheme Twist when the
+card **escapes** — the first time the villain-escape path invokes the scheme-twist rule
+pipeline. Implements Mystique's printed *"Escape: Mystique becomes a Scheme Twist that
+takes effect immediately."*
+
+- **Primitive (append-only, position 9).** `become-scheme-twist` joins the
+  `VillainEffectPrimitive` union + `VILLAIN_EFFECT_PRIMITIVES` array (drift test → 9) +
+  the script's local copy in `apply-effect-markers.mjs`. No-param token
+  `[effect:become-scheme-twist]`; `parseParameterizedEffect` accepts it via the generic
+  no-param branch. Marks Mystique (core brotherhood/mystique, 2 copies) Escape only.
+- **Executor handler is a deliberate NO-OP.** `villainEffectBecomeSchemeTwist` returns
+  `{ targets: [] }` and mutates nothing. Triggering the twist needs the scheme-twist RULE
+  pipeline (`executeRuleHooks('onSchemeTwistRevealed')` + `applyRuleEffects`), which
+  requires the `hookRegistry` + `implementationMap` + `RevealContext` the executor does
+  not receive. Its sole purpose is to make the marked line reachable so the D-24266
+  unmarked-ability + WP-257 hollow breadcrumbs do NOT fire (the `gain-attached-hero`
+  precedent, D-24270).
+- **The mechanic is a fire-site bridge.** In `villainDeck.reveal.ts`'s escape branch,
+  after `executeVillainAbilities('onEscape')` + `koAttachedHeroesOnEscape`, the exported
+  predicate `villainCardEscapeTriggersSchemeTwist(G, escapedCard)` scans the card's
+  onEscape hooks for the descriptor; when present the branch narrates the "becomes a
+  Scheme Twist" line and runs `executeRuleHooks(G, context, 'onSchemeTwistRevealed',
+  { cardId: escapedCard }, G.hookRegistry, implementationMap)` + `applyRuleEffects(G,
+  context, effects)` — the SAME two-call pattern the reveal path uses for a revealed
+  scheme-twist card (reveal.ts:398-411,429). The active scheme's twist resolver runs,
+  `schemeTwistCount` increments, and the loss threshold is checked, via
+  `buildGenericTwistEffects`. Placed after the escape's own consequences ("takes effect
+  immediately"). The predicate guards an absent/empty `villainAbilityHooks`.
+- **The escaped card is not routed into a twist pile.** Resolvers use `twistCardId` only
+  to stamp a `schemeTwistResolved` notableEvent; Mystique's ext_id is passed as the
+  trigger `cardId` (display-only) and she stays in `G.escapedPile` — the twist fires her
+  *effect*, not a physical card move.
+- **Determinism.** No new `G` field, no `Math.random`, no I/O. The only randomness is
+  whatever the active scheme's twist resolver consumes via the injected `ctx.random`
+  (threaded through the RevealContext already passed to `executeRuleHooks`). A hashed
+  `schemeTwistCount` increment + a `schemeTwistResolved` notableEvent (existing type) fire
+  from a new trigger path, so any replay/record-game fixture that escapes Mystique gets a
+  new `finalStateHash` + `PRE_WP080_HASH` (regenerate-with-note; none exists at execution
+  — confirmed by the whole-suite hashes staying unchanged).
+
+**Fixes:** Mystique's unimplemented Escape, surfaced twice as a D-24266 breadcrumb in a
+live Magneto match (2026-08-01). Other "becomes a Scheme Twist" villains and non-escape
+timings are data / follow-on work.
+
+**Packet:** WP-481 / EC-516.
+
+**Drafted:** 2026-08-01. **Landed:** 2026-08-01 (WP-481 execution).
+**Status:** Active
+
 Protect this file.
