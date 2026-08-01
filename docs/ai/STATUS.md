@@ -7,6 +7,25 @@
 
 ## Current State
 
+### WP-477 / EC-512 — Wire the Discard-Choice Gate into TurnActionBar (2026-07-31)
+
+**User-Visible Surface = play.legendary-arena.com.** **D-24026 live-verify operator-pending**
+(trigger a Magneto discard: the End-Turn / Pass-Priority buttons show disabled-with-tooltip
+until resolved).
+
+Completes WP-476's explicitly-deferred cosmetic follow-on (lightweight lane). WP-476 added a
+`hasPendingDiscardChoice` gate to `useTurnActions` (`canEndTurn` / `canPassPriority`) but
+`TurnActionBar.vue` was outside the WP-476 allowlist, so the gate was inert — the End-Turn /
+Pass-Priority buttons stayed enabled while a Magneto discard choice was pending (clicking
+no-op'd server-side via the authoritative engine block-all guard). This WP adds a
+`hasPendingDiscardChoice` prop to `TurnActionBar.vue` (threaded into the `useTurnActions` calls
+at the position-16 slot WP-476 appended it to) plus a `hasPendingDiscardChoice` computed in
+`PlayDesktop.vue` / `PlayMobile.vue` (from `snapshot.pendingDiscardChoice !== undefined`) passed
+as the prop, so the buttons disable-with-tooltip like every other pending choice. No engine
+change, no contract, no determinism impact; `useTurnActions.ts` untouched. arena-client **1134**
+pass (+1 TurnActionBar test) / typecheck clean / `pnpm -r build` green. **The WP-476 TurnActionBar
+scope-boundary note below is now resolved by this WP.**
+
 ### WP-476 / EC-511 — Magneto Master Strike Reveal-or-Discard + Interactive Discard-to-4 (2026-07-31)
 
 **User-Visible Surface = play.legendary-arena.com.** **D-24026 live-verify operator-pending**
