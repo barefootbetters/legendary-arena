@@ -61,6 +61,12 @@ Coordinated subsystems spanning multiple files / phases.
   surface (Hanko broker); the whole auth stack ships into arena-client
   (`play.legendary-arena.com`); the marketing site (`www.`) has no
   sign-in surface of its own.
+- [Play Board](play-board.md) — The rendered game mat on
+  `play.legendary-arena.com`: which board zone reads which `UIState`
+  field, and the two-stage projection→render contract (`buildUIState` →
+  the `filterUIStateForAudience` audience whitelist). Documents the
+  whitelist drop hazard and the ability-text marker vocabulary
+  (`[icon:…]` / `[hc:…]`) the Card Reader renders.
 
 ## Concept
 
