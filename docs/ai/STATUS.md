@@ -7,6 +7,42 @@
 
 ## Current State
 
+### WP-487 — Debug Effects Viewer (`/debug/effects` on the Dashboard) — DONE (2026-08-02)
+
+The third and final piece of the ewiki `wiki/debug-effects.md` direction landed (piece 1 = the
+WP-484 Effect Implementation Index; piece 2 = runtime effect tracing, still a future WP). The
+operator dashboard now serves a **read-only `/debug/effects` page** (`apps/dashboard`, beside
+`/coverage` and `/debug`, under the existing auth gate) that renders the committed dual-scope
+`data/metadata/effect-implementation-index.json` (WP-484) as a searchable per-card × mechanic
+table — `extId · name · set · scope · mechanic · status · handler · wp · decision`, plus a summary
+header (totals + by-scope + the five by-status chips) and scope / status / has-handler / text
+filters. It answers *"which handler runs card X's effect, and under which decision?"* in one place.
+
+**How it loads (the `/coverage` precedent, not R2, not mock-mode):** a new
+`apps/dashboard/scripts/build-effect-index.mjs` copies the root index into gitignored
+`apps/dashboard/src/data/effect-implementation-index.json` (empty-stub on failure, never aborts the
+build), wired into the dashboard `build` + a `prebuild:effect-index` script + the
+`check-generated-data.mjs` guard + `.gitignore` + two `.github/workflows/ci.yml`
+Dashboard-Gates steps (01.5 wiring — a `prebuild:effect-index` step so the gitignored
+bundle exists, and a `registry:build` step so the dashboard's first
+`@legendary-arena/registry/schema` import resolves, before CI typecheck/test/build). A new `useEffectIndex` composable statically
+imports it and validates once with `EffectImplementationIndexSchema.safeParse` (from the browser-safe
+`@legendary-arena/registry/schema` subpath — the dashboard's **first** `@legendary-arena/registry`
+`workspace:*` dep, a downward App→Registry import). Read-only: it authors no effect data, adds no
+second parser, and renders the index **verbatim** — a blank `handler`/`wp`/`decision` shows a neutral
+`"—"` (the honest "no handler ran" signal), never fabricated. A missing/invalid bundle degrades to an
+empty index + a visible load-error banner (never throws). Locked by **D-24292** (Active).
+
+**Verified:** dashboard 433/0 (+9 `useEffectIndex` accept/error/filter tests via an injection seam);
+`useEffectIndex.ts` 100% lines/branches/functions; all-files coverage 99.19/90.70/95.33 (thresholds
+90/80/88 hold); typecheck clean; `pnpm --filter dashboard build` + `pnpm -r build` green;
+`pnpm install --frozen-lockfile` clean (registry dep + regenerated `pnpm-lock.yaml` committed); grep
+`game-engine` / registry-barrel NO MATCH in the new source; no `packages/game-engine` /
+`packages/registry` / `apps/server` / `apps/registry-viewer` / `apps/arena-client` file touched
+(EC-522). **`User-Visible Surface = dashboard /debug/effects` — D-24026 live-verify operator-pending**
+(load `/debug/effects` on the deployed dashboard: the summary + table render, a filter narrows rows,
+a known executable villain shows its `<file>#<primitive>` handler while an unmarked row shows `"—"`).
+
 ### WP-485 — Core Villain-Effect Vocabulary, Tier A (auto-resolve primitives) — DONE (2026-08-01)
 
 Three currently-**unmarked** (D-24266 `unmarked-ability`/no-handler) Core villain

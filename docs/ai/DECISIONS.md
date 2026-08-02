@@ -35590,7 +35590,7 @@ Each is keyword-less and self-narrates via `pushLog` (like `scry-ko` / `reveal-o
 
 Protect this file.
 
-### D-24292 — Debug Effects Viewer — read-only dashboard consumer of the Effect Implementation Index (Drafted 2026-08-01; not yet landed — WP-487)
+### D-24292 — Debug Effects Viewer — read-only dashboard consumer of the Effect Implementation Index (Active 2026-08-02 — WP-487 / EC-522)
 
 **Decision:** The **`/debug/effects` viewer** — piece 3/3 of the ewiki `wiki/debug-effects.md` recommended direction (piece 1 = the generated Effect Implementation Index, shipped WP-484 / D-24289; piece 2 = runtime effect tracing, a separate future WP) — is a **read-only operator-dashboard page** that renders the committed dual-scope `data/metadata/effect-implementation-index.json` verbatim. It authors no new effect data, adds no second parser, recomputes no `status`/`handler`/`wp`/`decision`, and touches no engine/registry/server code — it is a pure consumer of the WP-484 artifact, the drift-safe posture D-24029 / D-24046 established (a hand-maintained card→effect lookup, or a second parser that can disagree with the real setup-time parser, is exactly what the marker/coverage system exists to avoid).
 
@@ -35607,8 +35607,8 @@ Protect this file.
 
 **Packet:** WP-487 / EC-522.
 
-**Drafted:** 2026-08-01. Reserved by WP-487 (renumbered from D-24290, taken by a parallel session, #1157); hard-deps WP-484 / D-24289 (the index) + WP-259 / D-24035 (the `/coverage` build-time-bundle precedent).
-**Status:** Drafted 2026-08-01; not yet landed. Flips to Active when WP-487 executes.
+**Drafted:** 2026-08-01. Reserved by WP-487 (renumbered from D-24290/D-24291, both taken by parallel sessions #1157/#1160); hard-deps WP-484 / D-24289 (the index) + WP-259 / D-24035 (the `/coverage` build-time-bundle precedent).
+**Status:** Active (landed by WP-487 / EC-522 on 2026-08-02). The `/debug/effects` dashboard page, the `useEffectIndex` composable (static import + `EffectImplementationIndexSchema.safeParse`, empty/error state never throws), the `build-effect-index.mjs` build-time copy into gitignored `src/data`, the `debug/effects` route + `AppLayout` nav link, and the `@legendary-arena/registry` `workspace:*` dep all landed as specified. `useEffectIndex.ts` is 100% covered; the index is rendered verbatim (blank `handler`/`wp`/`decision` → `"—"`). D-24026 live-verification on the deployed dashboard is operator-pending.
 
 Protect this file.
 
