@@ -10,6 +10,7 @@ import {
 // `import type` erases at compile time. Mirrors PileBrowseModal.
 import type { UICardDisplay } from '@legendary-arena/game-engine';
 import CardTile from './CardTile.vue';
+import AbilityText from './AbilityText.vue';
 
 /**
  * Single-card reader modal — shows one card at a readable size plus its full
@@ -26,7 +27,7 @@ import CardTile from './CardTile.vue';
  */
 export default defineComponent({
   name: 'CardReaderModal',
-  components: { CardTile },
+  components: { CardTile, AbilityText },
   props: {
     isOpen: {
       type: Boolean,
@@ -136,7 +137,7 @@ export default defineComponent({
               :key="index"
               class="card-reader-modal__line"
             >
-              {{ line }}
+              <AbilityText :text="line" />
             </p>
             <p
               v-if="gameText.length === 0"

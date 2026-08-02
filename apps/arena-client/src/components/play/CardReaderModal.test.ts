@@ -52,6 +52,28 @@ describe('CardReaderModal', () => {
     assert.match(text, /always wins ties/);
   });
 
+  test('renders ability markers as glyphs / labels, not raw brackets', () => {
+    mount(CardReaderModal, {
+      props: {
+        isOpen: true,
+        title: 'Magneto',
+        display: display('Magneto'),
+        gameText: [
+          'Master Strike: Each player reveals a [hc:strength] Hero or gains a Wound.',
+          'Each Villain gets +1[icon:attack].',
+        ],
+      },
+      attachTo: document.body,
+    });
+    const text = document.querySelector('[data-testid="play-card-reader-text"]')!.textContent!;
+    // markers are resolved to readable output ...
+    assert.match(text, /reveals a Strength Hero/);
+    assert.match(text, /\+1⚔/);
+    // ... and the raw markup never reaches the player.
+    assert.doesNotMatch(text, /\[hc:strength\]/);
+    assert.doesNotMatch(text, /\[icon:attack\]/);
+  });
+
   test('shows the no-rules placeholder when gameText is empty', () => {
     mount(CardReaderModal, {
       props: { isOpen: true, title: 'Some Scheme', display: display('Some Scheme'), gameText: [] },
