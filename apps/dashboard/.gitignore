@@ -1,3 +1,4 @@
 src/data/governance-snapshot.json
 src/data/coverage-ledger.json
 src/data/runtime-observed-hollows.json
+src/data/effect-implementation-index.json

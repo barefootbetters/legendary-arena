@@ -66,6 +66,11 @@ export const router = createRouter({
           component: () => import('../pages/debug/DebugPage.vue'),
         },
         {
+          path: 'debug/effects',
+          name: 'debug-effects',
+          component: () => import('../pages/debug/EffectsPage.vue'),
+        },
+        {
           path: 'pipeline',
           name: 'pipeline',
           component: () => import('../pages/pipeline/PipelinePage.vue'),

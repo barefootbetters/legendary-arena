@@ -87,6 +87,9 @@ importers:
 
   apps/dashboard:
     dependencies:
+      '@legendary-arena/registry':
+        specifier: workspace:*
+        version: link:../../packages/registry
       '@primevue/themes':
         specifier: ^4.0.0
         version: 4.5.4
