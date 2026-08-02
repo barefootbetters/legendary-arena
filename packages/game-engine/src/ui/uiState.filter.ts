@@ -422,11 +422,37 @@ export function filterUIStateForAudience(
         uiState.mastermind.attachedBystanders,
       ),
       strikePile: deepCopyDisplayEntries(uiState.mastermind.strikePile),
+      // why: EC-206 — the mastermind's Master-Strike / special-rules text is
+      // public shared-board information (like mastermind.display above) and
+      // must survive this whitelist. It is optional in UIMastermindState, so
+      // TypeScript does not flag its omission; without this pass-through the
+      // field is dropped here and the CardReaderModal renders "No rules text
+      // available for this card" for every match. Conditional spread (never a
+      // `gameText: undefined` literal) satisfies exactOptionalPropertyTypes;
+      // fresh array copy prevents aliasing with the input UIState.
+      ...(uiState.mastermind.gameText !== undefined
+        ? { gameText: [...uiState.mastermind.gameText] }
+        : {}),
     },
     scheme: {
       id: uiState.scheme.id,
       twistCount: uiState.scheme.twistCount,
       twistPile: deepCopyDisplayEntries(uiState.scheme.twistPile),
+      // why: EC-206 — the scheme's display (card art) and its twist /
+      // win-condition text are public shared-board information and must
+      // survive this whitelist. Both are optional in UISchemeState, so
+      // TypeScript does not flag their omission; without these pass-throughs
+      // the scheme tile renders blank art + name-only fallback and the
+      // CardReaderModal shows "No rules text available for this card" for
+      // every match. Conditional spreads satisfy exactOptionalPropertyTypes;
+      // display is shallow-copied and gameText is a fresh array copy to
+      // prevent aliasing with the input UIState.
+      ...(uiState.scheme.display !== undefined
+        ? { display: { ...uiState.scheme.display } }
+        : {}),
+      ...(uiState.scheme.gameText !== undefined
+        ? { gameText: [...uiState.scheme.gameText] }
+        : {}),
     },
     economy,
     log: [...uiState.log],

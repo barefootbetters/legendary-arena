@@ -329,6 +329,54 @@ describe('filterUIStateForAudience — WP-128 redaction matrix', () => {
     }
   });
 
+  it('EC-206 shared-board text/art (scheme.display, scheme.gameText, mastermind.gameText) survives the whitelist for every audience', () => {
+    // why: regression guard for the production bug where the audience filter's
+    // field-by-field whitelist silently dropped the EC-206 fields (they are
+    // optional in UIState, so TypeScript did not flag their omission). Symptom:
+    // blank scheme art + "No rules text available for this card" on the play
+    // surface. Inject known sentinels so the assertion is unambiguous
+    // regardless of the mock registry's ability/scheme data.
+    const uiState = createTestUIState();
+    uiState.scheme.display = {
+      extId: 'core-scheme-midtown-bank-robbery',
+      name: 'Midtown Bank Robbery',
+      imageUrl: 'https://images.legendary-arena.com/core/core-sc-midtown-bank-robbery.webp',
+      cost: null,
+    };
+    uiState.scheme.gameText = ['Setup: 8 Twists.', 'Evil Wins: ...'];
+    uiState.mastermind.gameText = ['Always Leads: Doombot Legion', 'Master Strike: ...'];
+
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      const result = filterUIStateForAudience(uiState, audience);
+      assert.equal(
+        result.scheme.display?.imageUrl,
+        'https://images.legendary-arena.com/core/core-sc-midtown-bank-robbery.webp',
+        'scheme.display must pass through the audience whitelist',
+      );
+      assert.deepEqual(
+        result.scheme.gameText,
+        ['Setup: 8 Twists.', 'Evil Wins: ...'],
+        'scheme.gameText must pass through the audience whitelist',
+      );
+      assert.deepEqual(
+        result.mastermind.gameText,
+        ['Always Leads: Doombot Legion', 'Master Strike: ...'],
+        'mastermind.gameText must pass through the audience whitelist',
+      );
+    }
+
+    // why: defensive-copy contract — mutating the filtered result must not
+    // reach back into the source UIState (mirrors the aliasing guards the
+    // WP-128 shared-board fields already hold to).
+    const mutable = filterUIStateForAudience(uiState, SPECTATOR);
+    mutable.scheme.display!.name = 'mutated';
+    (mutable.scheme.gameText as string[])[0] = 'mutated';
+    (mutable.mastermind.gameText as string[])[0] = 'mutated';
+    assert.equal(uiState.scheme.display!.name, 'Midtown Bank Robbery', 'source scheme.display not aliased');
+    assert.equal(uiState.scheme.gameText![0], 'Setup: 8 Twists.', 'source scheme.gameText not aliased');
+    assert.equal(uiState.mastermind.gameText![0], 'Always Leads: Doombot Legion', 'source mastermind.gameText not aliased');
+  });
+
 });
 
 // ---------------------------------------------------------------------------
