@@ -44,6 +44,10 @@ const GENERATED_DATA_FILES = [
     relativePath: join("src", "data", "runtime-observed-hollows.json"),
     remedy: "pnpm --filter @legendary-arena/dashboard prebuild:coverage",
   },
+  {
+    relativePath: join("src", "data", "effect-implementation-index.json"),
+    remedy: "pnpm --filter @legendary-arena/dashboard prebuild:effect-index",
+  },
 ];
 
 const missingFiles = [];

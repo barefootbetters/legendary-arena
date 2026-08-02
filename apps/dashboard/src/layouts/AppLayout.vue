@@ -31,6 +31,7 @@ const NAV_ITEMS: readonly NavItem[] = [
   { to: '/gameplay', label: 'Gameplay', abbreviation: 'Ga' },
   { to: '/system', label: 'System Health', abbreviation: 'Sy' },
   { to: '/debug', label: 'Debug', abbreviation: 'De' },
+  { to: '/debug/effects', label: 'Debug Effects', abbreviation: 'Ef' },
   { to: '/pipeline', label: 'Pipeline', abbreviation: 'Pi' },
 ];
 
