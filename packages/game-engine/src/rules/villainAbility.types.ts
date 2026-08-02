@@ -186,6 +186,19 @@ export interface VillainEffectResult {
 // `scry-ko-own-deck` — is NOT a legacy keyword (no
 // LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR entry), so it reverse-maps to `undefined`
 // and self-narrates via pushLog in the executor.
+// why: D-24290 — three auto-resolve Core villain-effect primitives (Tier A of the
+// villain-effect-vocabulary arc, WP-485) appended at positions 10, 11, 12:
+// `draw-cards-current` (Enchantress "Fight: Draw three cards." — the current
+// player draws N via drawCardsIntoHand); `ko-heroes-current-by-trait` (the
+// Destroyer "Fight: KO all your [team:shield] Heroes." — KO every current-player
+// hero matching the trait predicate from hand + in-play); and
+// `rescue-bystanders-current-by-trait-count` (Baron Zemo "Fight: For each of your
+// [team:avengers] Heroes, rescue a Bystander." — rescue one Bystander per matching
+// current-player hero, bounded by supply). All three are keyword-less (no
+// LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR entry), so they reverse-map to `undefined`
+// and self-narrate via pushLog — no pending-choice, no block-all guard, no resolve
+// move (auto-resolve). Adding a primitive requires updating both this union and the
+// array below together (drift test), plus a DECISIONS.md entry.
 export type VillainEffectPrimitive =
   | 'ko-hero'
   | 'gain-wound'
@@ -195,7 +208,10 @@ export type VillainEffectPrimitive =
   | 'scry-ko-own-deck'
   | 'gain-attached-hero'
   | 'reveal-or-wound'
-  | 'become-scheme-twist';
+  | 'become-scheme-twist'
+  | 'draw-cards-current'
+  | 'ko-heroes-current-by-trait'
+  | 'rescue-bystanders-current-by-trait-count';
 
 // why: drift-detection array — must match VillainEffectPrimitive exactly
 // (villainAbility.types.test.ts asserts bidirectional parity). Adding a
@@ -204,6 +220,9 @@ export type VillainEffectPrimitive =
 // `gain-attached-hero` appended at position 7 by WP-450 (D-24270);
 // `reveal-or-wound` appended at position 8 by WP-469 (D-24281);
 // `become-scheme-twist` appended at position 9 by WP-481 (D-24287).
+// `draw-cards-current`, `ko-heroes-current-by-trait`, and
+// `rescue-bystanders-current-by-trait-count` appended at positions 10, 11, 12 by
+// WP-485 (D-24290 — Tier A auto-resolve Core villain effects).
 /** All villain effect primitives in canonical order. Single source of truth. */
 export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'ko-hero',
@@ -215,6 +234,9 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'gain-attached-hero',
   'reveal-or-wound',
   'become-scheme-twist',
+  'draw-cards-current',
+  'ko-heroes-current-by-trait',
+  'rescue-bystanders-current-by-trait-count',
 ] as const;
 
 /**
@@ -230,12 +252,25 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
  *     pile" / "from their hand"); absent means the discard→hand→inPlay fallback.
  *   - `reveal-or-wound`: `requireKind` + `requireValue` (D-24281) — the
  *     hero-trait predicate each player must satisfy from hand to avoid a Wound.
+ *   - `draw-cards-current`: `drawCount` (D-24290) — how many cards the current
+ *     player draws (Enchantress: 3).
+ *   - `ko-heroes-current-by-trait` and `rescue-bystanders-current-by-trait-count`
+ *     (D-24290): `requireKind` + `requireValue` reused as the current-player
+ *     hero-trait predicate — the heroes to KO (Destroyer) / the count of matching
+ *     heroes to rescue Bystanders for (Baron Zemo).
  */
 export interface VillainEffectDescriptor {
   primitive: VillainEffectPrimitive;
   target?: 'current' | 'each';
   magnitude?: number;
   selector?: 'rightmost' | 'highest-cost' | 'lowest-cost';
+  // why: D-24290 — the number of cards the current player draws, present ONLY on
+  // `{ primitive: 'draw-cards-current' }` descriptors (Enchantress: 3). A positive
+  // integer set by the parser's `draw-cards-current:<N>` grammar. Deliberately NOT
+  // part of `descriptorKey` below — draw-cards-current is keyword-less (it has no
+  // LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR entry), so it reverse-maps to `undefined`
+  // and self-narrates regardless; adding it to the key would change nothing.
+  drawCount?: number;
   // why: D-24281 — the reveal-or-wound hero-trait predicate, present ONLY on
   // `{ primitive: 'reveal-or-wound' }` descriptors. `requireKind` reuses the
   // VillainDefeatRequirementKind shape ('team' | 'hero-class') and `requireValue`

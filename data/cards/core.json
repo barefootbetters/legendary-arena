@@ -2035,7 +2035,7 @@
           "vAttack": "7",
           "imageUrl": "https://images.legendary-arena.com/core/core-vi-enemies-of-asgard-destroyer.webp",
           "abilities": [
-            "Fight: KO all your [team:shield] Heroes.",
+            "Fight: KO all your [team:shield] Heroes. [effect:ko-heroes-current-by-trait:team:shield]",
             "Escape: Each player KOs two of their Heroes. [effect:koHeroEachPlayerMag2]"
           ],
           "copies": 1
@@ -2047,7 +2047,7 @@
           "vAttack": "6",
           "imageUrl": "https://images.legendary-arena.com/core/core-vi-enemies-of-asgard-enchantress.webp",
           "abilities": [
-            "Fight: Draw three cards."
+            "Fight: Draw three cards. [effect:draw-cards-current:3]"
           ],
           "copies": 2
         },
@@ -2147,7 +2147,7 @@
           "vAttack": "6",
           "imageUrl": "https://images.legendary-arena.com/core/core-vi-masters-of-evil-baron-zemo.webp",
           "abilities": [
-            "Fight: For each of your [team:avengers] Heroes, rescue a Bystander."
+            "Fight: For each of your [team:avengers] Heroes, rescue a Bystander. [effect:rescue-bystanders-current-by-trait-count:team:avengers]"
           ],
           "copies": 2
         },

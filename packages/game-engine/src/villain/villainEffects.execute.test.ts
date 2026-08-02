@@ -945,6 +945,252 @@ describe('executeVillainAbilities — reveal-or-wound (WP-469 / D-24281)', () =>
   });
 });
 
+describe('executeVillainAbilities — draw-cards-current (WP-485 / D-24290)', () => {
+  const reverseShuffle: ShuffleProvider = {
+    random: { Shuffle: <T>(deck: T[]): T[] => [...deck].reverse() },
+  };
+
+  function drawHook(cardId: string, drawCount: number): VillainAbilityHook {
+    return {
+      cardId: cardId as CardExtId,
+      timing: 'onFight',
+      keywords: [],
+      effects: [{ primitive: 'draw-cards-current', drawCount }],
+    };
+  }
+
+  it('AC-1 the current player draws N cards from their deck and the log records it', () => {
+    const a = 'core/x/a#0' as CardExtId;
+    const b = 'core/x/b#0' as CardExtId;
+    const c = 'core/x/c#0' as CardExtId;
+    const d = 'core/x/d#0' as CardExtId;
+    const G = makeG({
+      hooks: [drawHook('v-enchantress', 3)],
+      playerZones: {
+        '0': { deck: [a, b, c, d], hand: [], discard: [], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      messages: [],
+    });
+    const results = executeVillainAbilities(G, CTX, 'v-enchantress' as CardExtId, 'onFight', reverseShuffle);
+    assert.deepStrictEqual(G.playerZones['0']!.hand, [a, b, c], 'drew the top three cards');
+    assert.deepStrictEqual(G.playerZones['0']!.deck, [d], 'the fourth stays on the deck');
+    assert.equal(G.playerZones['1']!.hand.length, 0, 'only the current player draws');
+    assert.equal(G.messages!.length, 1, 'one self-narrated log line');
+    assert.match(G.messages![0]!.text, /Fight effect: drew 3 card\(s\)\./);
+    assert.equal(G.messages![0]!.outcome, 'applied');
+    // why: draw-cards-current is keyword-less → no VillainEffectResult recorded.
+    assert.deepStrictEqual(results, [], 'no keyword-typed result recorded');
+  });
+
+  it('reshuffles the discard when the deck runs short mid-draw (deterministic)', () => {
+    const top = 'core/x/top#0' as CardExtId;
+    const disc1 = 'core/x/d1#0' as CardExtId;
+    const disc2 = 'core/x/d2#0' as CardExtId;
+    const G = makeG({
+      hooks: [drawHook('v-enchantress', 3)],
+      playerZones: {
+        '0': { deck: [top], hand: [], discard: [disc1, disc2], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-enchantress' as CardExtId, 'onFight', reverseShuffle);
+    // why: draws `top`, then the empty deck reshuffles the reversed discard
+    // [disc2, disc1] and draws both — proving the reshuffle ran deterministically.
+    assert.deepStrictEqual(G.playerZones['0']!.hand, [top, disc2, disc1], 'drew across the reshuffle');
+    assert.deepStrictEqual(G.playerZones['0']!.discard, [], 'discard consumed by the reshuffle');
+  });
+
+  it('draws fewer than N (never throws) when deck + discard run dry', () => {
+    const only = 'core/x/only#0' as CardExtId;
+    const G = makeG({
+      hooks: [drawHook('v-enchantress', 3)],
+      playerZones: {
+        '0': { deck: [only], hand: [], discard: [], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-enchantress' as CardExtId, 'onFight', reverseShuffle);
+    assert.deepStrictEqual(G.playerZones['0']!.hand, [only], 'drew the one available card');
+    assert.match(G.messages![0]!.text, /Fight effect: drew 1 card\(s\)\./);
+  });
+
+  it('no-ops (never throws) when no shuffleContext is threaded (EC-520 guard)', () => {
+    const a = 'core/x/a#0' as CardExtId;
+    const G = makeG({
+      hooks: [drawHook('v-enchantress', 3)],
+      playerZones: {
+        '0': { deck: [a], hand: [], discard: [], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      messages: [],
+    });
+    // why: EC-520 — omitting shuffleContext must no-op, not throw (drawCardsIntoHand
+    // requires a ShuffleProvider; the handler guards rather than loosening it).
+    assert.doesNotThrow(() =>
+      executeVillainAbilities(G, CTX, 'v-enchantress' as CardExtId, 'onFight'),
+    );
+    assert.deepStrictEqual(G.playerZones['0']!.hand, [], 'nothing drawn without a shuffle source');
+  });
+});
+
+describe('executeVillainAbilities — ko-heroes-current-by-trait (WP-485 / D-24290)', () => {
+  const SHIELD_A = 'core/shield/a#0' as CardExtId;
+  const SHIELD_B = 'core/shield/b#0' as CardExtId;
+  const OTHER = 'core/x-men/wolverine#0' as CardExtId;
+  const TRAITS: Record<string, { heroClass: string | null; team: string | null }> = {
+    [SHIELD_A]: { heroClass: 'covert', team: 'shield' },
+    [SHIELD_B]: { heroClass: 'ranged', team: 'shield' },
+    [OTHER]: { heroClass: 'covert', team: 'x-men' },
+  };
+
+  function kotHook(cardId: string): VillainAbilityHook {
+    return {
+      cardId: cardId as CardExtId,
+      timing: 'onFight',
+      keywords: [],
+      effects: [
+        { primitive: 'ko-heroes-current-by-trait', requireKind: 'team', requireValue: 'shield' },
+      ],
+    };
+  }
+
+  it('AC-2 KOs every matching hero from BOTH hand and in-play, leaving non-matching', () => {
+    const G = makeG({
+      hooks: [kotHook('v-destroyer')],
+      playerZones: {
+        '0': {
+          deck: [],
+          hand: [SHIELD_A, OTHER],
+          discard: [SHIELD_B], // discard is NOT scanned — this must survive
+          inPlay: [SHIELD_B, OTHER],
+          victory: [],
+        },
+        '1': { deck: [], hand: [SHIELD_A], discard: [], inPlay: [], victory: [] },
+      },
+      cardTraits: TRAITS,
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-destroyer' as CardExtId, 'onFight');
+    assert.deepStrictEqual(G.playerZones['0']!.hand, [OTHER], 'SHIELD hero KO’d from hand');
+    assert.deepStrictEqual(G.playerZones['0']!.inPlay, [OTHER], 'SHIELD hero KO’d from in-play');
+    assert.deepStrictEqual(
+      G.playerZones['0']!.discard,
+      [SHIELD_B],
+      'discard is out of scope — its SHIELD hero survives',
+    );
+    assert.deepStrictEqual(G.ko, [SHIELD_A, SHIELD_B], 'both SHIELD heroes KO’d (hand then in-play order)');
+    assert.deepStrictEqual(
+      G.playerZones['1']!.hand,
+      [SHIELD_A],
+      'only the current player is affected',
+    );
+    assert.match(G.messages![0]!.text, /Fight effect: KO'd 2 of your shield Hero\(es\)\./);
+    assert.equal(G.messages![0]!.outcome, 'applied');
+  });
+
+  it('AC-2 a player with no matching hero no-ops cleanly (no KO, no hollow)', () => {
+    const G = makeG({
+      hooks: [kotHook('v-destroyer')],
+      playerZones: {
+        '0': { deck: [], hand: [OTHER], discard: [], inPlay: [OTHER], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      cardTraits: TRAITS,
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-destroyer' as CardExtId, 'onFight');
+    assert.deepStrictEqual(G.ko, [], 'nothing KO’d');
+    assert.deepStrictEqual(G.playerZones['0']!.hand, [OTHER], 'non-matching hero stays');
+    assert.equal(G.diagnostics?.hollowEffects?.length ?? 0, 0, 'reachable no-op, never hollow');
+    assert.match(G.messages![0]!.text, /Fight effect: KO'd 0 of your shield Hero\(es\)\./);
+    assert.equal(G.messages![0]!.outcome, 'blocked');
+  });
+});
+
+describe('executeVillainAbilities — rescue-bystanders-current-by-trait-count (WP-485 / D-24290)', () => {
+  const AV_A = 'core/avengers/cap#0' as CardExtId;
+  const AV_B = 'core/avengers/thor#0' as CardExtId;
+  const OTHER = 'core/x-men/wolverine#0' as CardExtId;
+  const TRAITS: Record<string, { heroClass: string | null; team: string | null }> = {
+    [AV_A]: { heroClass: 'strength', team: 'avengers' },
+    [AV_B]: { heroClass: 'ranged', team: 'avengers' },
+    [OTHER]: { heroClass: 'covert', team: 'x-men' },
+  };
+
+  function zemoHook(cardId: string): VillainAbilityHook {
+    return {
+      cardId: cardId as CardExtId,
+      timing: 'onFight',
+      keywords: [],
+      effects: [
+        {
+          primitive: 'rescue-bystanders-current-by-trait-count',
+          requireKind: 'team',
+          requireValue: 'avengers',
+        },
+      ],
+    };
+  }
+
+  it('AC-3 rescues one Bystander per matching hero (hand + in-play) into the victory pile', () => {
+    const bystanders = ['bys0', 'bys1', 'bys2'] as CardExtId[];
+    const G = makeG({
+      hooks: [zemoHook('v-zemo')],
+      playerZones: {
+        '0': { deck: [], hand: [AV_A, OTHER], discard: [], inPlay: [AV_B], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      bystanders,
+      messages: [],
+      cardTraits: TRAITS,
+    });
+    executeVillainAbilities(G, CTX, 'v-zemo' as CardExtId, 'onFight');
+    assert.equal(G.playerZones['0']!.victory.length, 2, 'two Avengers → two Bystanders rescued');
+    assert.equal(G.piles.bystanders.length, 1, 'the supply dropped by two');
+    assert.deepStrictEqual(G.attachedBystanders, {}, 'no stranded attachment left on the villain');
+    assert.match(G.messages![0]!.text, /Fight effect: rescued 2 Bystander\(s\) \(one per your avengers Hero\)\./);
+    assert.equal(G.messages![0]!.outcome, 'applied');
+  });
+
+  it('AC-3 is bounded by the Bystander supply', () => {
+    const G = makeG({
+      hooks: [zemoHook('v-zemo')],
+      playerZones: {
+        '0': { deck: [], hand: [AV_A, AV_B], discard: [], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      bystanders: ['bys0'] as CardExtId[], // supply of 1, two Avengers
+      messages: [],
+      cardTraits: TRAITS,
+    });
+    executeVillainAbilities(G, CTX, 'v-zemo' as CardExtId, 'onFight');
+    assert.equal(G.playerZones['0']!.victory.length, 1, 'only one Bystander available to rescue');
+    assert.equal(G.piles.bystanders.length, 0, 'supply exhausted');
+    assert.match(G.messages![0]!.text, /Fight effect: rescued 1 Bystander\(s\)/);
+  });
+
+  it('AC-3 zero matching heroes rescues nothing (no error)', () => {
+    const G = makeG({
+      hooks: [zemoHook('v-zemo')],
+      playerZones: {
+        '0': { deck: [], hand: [OTHER], discard: [], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      bystanders: ['bys0', 'bys1'] as CardExtId[],
+      messages: [],
+      cardTraits: TRAITS,
+    });
+    executeVillainAbilities(G, CTX, 'v-zemo' as CardExtId, 'onFight');
+    assert.equal(G.playerZones['0']!.victory.length, 0, 'no Avengers → no rescue');
+    assert.equal(G.piles.bystanders.length, 2, 'supply untouched');
+    assert.match(G.messages![0]!.text, /Fight effect: rescued 0 Bystander\(s\)/);
+    assert.equal(G.messages![0]!.outcome, 'blocked');
+  });
+});
+
 describe('executeVillainAbilities — gain-attached-hero no-op (WP-450 / D-24270)', () => {
   // why: gain-attached-hero is a deliberate no-op — the real hero return is the
   // generic awardAttachedHeroes at the fight site (WP-431). Build the descriptor
