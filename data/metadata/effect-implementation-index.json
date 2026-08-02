@@ -3,17 +3,17 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1362,
+    "totalEntries": 1363,
     "byScope": {
       "hero": 647,
-      "villain": 715
+      "villain": 716
     },
     "byStatus": {
-      "executable": 340,
+      "executable": 343,
       "deferred": 0,
       "condition": 5,
       "unsupported": 367,
-      "unmarked": 650
+      "unmarked": 648
     }
   },
   "entries": [
@@ -3432,6 +3432,17 @@
       "name": "Destroyer",
       "set": "core",
       "scope": "villain",
+      "mechanic": "ko-heroes-current-by-trait",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-heroes-current-by-trait",
+      "wp": "WP-485",
+      "decision": "D-24290"
+    },
+    {
+      "extId": "core-villain-enemies-of-asgard-destroyer",
+      "name": "Destroyer",
+      "set": "core",
+      "scope": "villain",
       "mechanic": "koHeroEachPlayerMag2",
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
@@ -3443,11 +3454,11 @@
       "name": "Enchantress",
       "set": "core",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "draw-cards-current",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#draw-cards-current",
+      "wp": "WP-485",
+      "decision": "D-24290"
     },
     {
       "extId": "core-villain-enemies-of-asgard-frost-giant",
@@ -3520,11 +3531,11 @@
       "name": "Baron Zemo",
       "set": "core",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "rescue-bystanders-current-by-trait-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#rescue-bystanders-current-by-trait-count",
+      "wp": "WP-485",
+      "decision": "D-24290"
     },
     {
       "extId": "core-villain-masters-of-evil-melter",
@@ -16384,13 +16395,14 @@
     "core-villain-enemies-of-asgard-destroyer": {
       "scope": "villain",
       "mechanics": [
+        "ko-heroes-current-by-trait",
         "koHeroEachPlayerMag2"
       ]
     },
     "core-villain-enemies-of-asgard-enchantress": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "draw-cards-current"
       ]
     },
     "core-villain-enemies-of-asgard-frost-giant": {
@@ -16432,7 +16444,7 @@
     "core-villain-masters-of-evil-baron-zemo": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "rescue-bystanders-current-by-trait-count"
       ]
     },
     "core-villain-masters-of-evil-melter": {
