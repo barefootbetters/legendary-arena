@@ -35590,3 +35590,25 @@ Each is keyword-less and self-narrates via `pushLog` (like `scry-ko` / `reveal-o
 
 Protect this file.
 
+### D-24292 — Debug Effects Viewer — read-only dashboard consumer of the Effect Implementation Index (Drafted 2026-08-01; not yet landed — WP-487)
+
+**Decision:** The **`/debug/effects` viewer** — piece 3/3 of the ewiki `wiki/debug-effects.md` recommended direction (piece 1 = the generated Effect Implementation Index, shipped WP-484 / D-24289; piece 2 = runtime effect tracing, a separate future WP) — is a **read-only operator-dashboard page** that renders the committed dual-scope `data/metadata/effect-implementation-index.json` verbatim. It authors no new effect data, adds no second parser, recomputes no `status`/`handler`/`wp`/`decision`, and touches no engine/registry/server code — it is a pure consumer of the WP-484 artifact, the drift-safe posture D-24029 / D-24046 established (a hand-maintained card→effect lookup, or a second parser that can disagree with the real setup-time parser, is exactly what the marker/coverage system exists to avoid).
+
+**Contract (locked):**
+- **Host:** dashboard route `/debug/effects` (child `name: 'debug-effects'`, beside `/coverage` and `/debug`, under the existing `AppLayout` auth gate). A dashboard page — never a registry-viewer / arena-client / server surface. (The ewiki `debug-effects.md` places it here.)
+- **Data source & load path:** the single source is `data/metadata/effect-implementation-index.json` (WP-484), consumed via a **build-time bundle copy** into gitignored `apps/dashboard/src/data/effect-implementation-index.json` and a **static import** in a `useEffectIndex` composable — the `/coverage` (`build-coverage-ledger.mjs` + `useCoverageLedger.ts`, WP-259 / D-24035) precedent — NOT a runtime R2 fetch and NOT the analytics mock-mode path. The bundled file is a gitignored build output guarded by `check-generated-data.mjs`.
+- **Read-only / no second parser:** the composable validates the bundle once with the existing `EffectImplementationIndexSchema.safeParse` (imported from the `@legendary-arena/registry/schema` subpath — never the registry barrel, never the game engine) and renders it verbatim. A missing/invalid bundle degrades to an empty index + a visible load-error state (never a throw, never a fabricated value — the `/coverage` empty-state posture); blank `handler`/`wp`/`decision` render as a neutral `"—"`, the honest "no handler ran" signal.
+
+**Deferred (explicitly out of scope of WP-487, each a separate future WP):** runtime effect tracing (piece 2 of the direction); descriptor-level / per-ability-line granularity (WP-487 renders the per card × mechanic index as-is); deep-link integration with Play Diagnostics / the hollow detector / `/coverage`; and any runtime-R2-fetch variant of the load path.
+
+**Why read-only + build-time bundle.** Rendering the CI-gated index verbatim keeps the viewer consistent with the parser by construction — it cannot disagree with the engine because it computes nothing. The build-time bundle copy matches the only working precedent for a dashboard page over a repo-root committed artifact (the dashboard cannot statically import outside its package root; R2 fetch would break the established `/coverage` convention).
+
+**Fixes:** the effect-debugging surfaces (mechanic ledgers + hollow detector + Play Diagnostics + the WP-484 index) still have no single **rendered** place a developer looks to answer *"card X's ability didn't fire — which handler, which decision?"*; this viewer is that place, over the index WP-484 built.
+
+**Packet:** WP-487 / EC-522.
+
+**Drafted:** 2026-08-01. Reserved by WP-487 (renumbered from D-24290, taken by a parallel session, #1157); hard-deps WP-484 / D-24289 (the index) + WP-259 / D-24035 (the `/coverage` build-time-bundle precedent).
+**Status:** Drafted 2026-08-01; not yet landed. Flips to Active when WP-487 executes.
+
+Protect this file.
+
