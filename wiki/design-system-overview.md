@@ -20,6 +20,7 @@ related:
   - villain-deck.md
   - vision.md
   - monetization-model.md
+  - play-board.md
 status: draft
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\design-system-overview.md (this page — https://ewiki.legendary-arena.com/design-system-overview/)
@@ -28,7 +29,7 @@ source:
   - ../packages/game-engine/src/moves/coreMoves.impl.ts
   - ../packages/game-engine/src/endgame/endgame.types.ts
   - ../docs/ai/ARCHITECTURE.md
-last-reviewed: 2026-07-22
+last-reviewed: 2026-08-02
 ---
 
 # Design System Overview
@@ -154,6 +155,14 @@ The only signals any feel-layer framework may read — all already projected:
   built on it works in the engine and silently does nothing in the browser.
 - **Any server round-trip** — the feel layer derives entirely from
   already-projected `UIState`.
+
+> **Projection has two gates, not one.** "Already projected" means a
+> field survived *both* `buildUIState` **and** the
+> `filterUIStateForAudience` audience whitelist — the filter rebuilds the
+> shared-board objects field-by-field and silently drops any new
+> **optional** field it wasn't taught to copy (no TypeScript catch). A
+> signal `buildUIState` emits is not usable here until the filter passes it
+> through. See [Play Board → the projection→render contract](play-board.md#edge-cases).
 
 ### Non-Goals — no feel-layer framework may
 
