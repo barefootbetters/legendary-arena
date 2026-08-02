@@ -264,6 +264,12 @@ services:
     # (2026-06-11: #273-#276 did not auto-deploy), so it is disabled here to
     # make CI the single, gated trigger and avoid double deploys.
     autoDeploy: false
+    # why: D-24293 — after the Hugo render, generate the Pagefind search index
+    # into apps/wiki-viewer/public/pagefind/. pagefind is a root devDependency
+    # installed by the `pnpm install --filter .` step above; `pnpm exec` runs
+    # the workspace-local binary. This must match the CI build
+    # (.github/workflows/wiki-viewer.yml) so the deployed artifact and the
+    # gated CI artifact are identical.
     buildCommand: |
       curl -sL "https://github.com/gohugoio/hugo/releases/download/v$(cat apps/wiki-viewer/.hugo-version)/hugo_extended_$(cat apps/wiki-viewer/.hugo-version)_linux-amd64.tar.gz" | tar -xz hugo
       ./hugo version
@@ -271,6 +277,7 @@ services:
       node apps/wiki-viewer/scripts/project-wiki.mjs
       node apps/wiki-viewer/scripts/check-links.mjs
       ./hugo --source apps/wiki-viewer --minify
+      pnpm exec pagefind --site apps/wiki-viewer/public
     staticPublishPath: apps/wiki-viewer/public
     pullRequestPreviewsEnabled: false
     envVars:
