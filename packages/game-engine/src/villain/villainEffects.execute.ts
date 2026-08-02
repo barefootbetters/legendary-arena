@@ -43,7 +43,7 @@ import {
 import { captureHeroFromHq } from '../board/heroCapture.logic.js';
 import type { CaptureHeroResult } from '../board/heroCapture.logic.js';
 import { moveCardFromZone } from '../moves/zoneOps.js';
-import { reshuffleDiscardIntoDeck } from '../moves/drawCards.logic.js';
+import { reshuffleDiscardIntoDeck, drawCardsIntoHand } from '../moves/drawCards.logic.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
 import { pushLog } from '../log/logPush.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
@@ -973,6 +973,30 @@ function revealOrWoundTimingLabel(timing: VillainAbilityTiming): string {
  * @param value - The normalized trait slug to match.
  * @returns True when the player has at least one matching Hero in hand or in play.
  */
+// why: D-24290 — the per-card trait match, extracted at the third caller
+// (playerHasHeroMatchingTrait, countPlayerHeroesMatchingTrait, and the
+// ko-heroes-current-by-trait handler) per the duplicate-first / abstract-on-third
+// rule (§Abstraction). A `team` predicate matches `trait.team`; a `hero-class`
+// predicate matches `trait.heroClass`. `value` is normalized at parse time, so
+// `===` is casing/whitespace-safe.
+function cardTraitMatches(
+  cardTraits: LegendaryGameState['cardTraits'],
+  cardId: CardExtId,
+  kind: 'team' | 'hero-class',
+  value: string,
+): boolean {
+  const trait = cardTraits[cardId];
+  if (trait === undefined) {
+    return false;
+  }
+  if (kind === 'team') {
+    return trait.team === value;
+  }
+  // why: the kind union is closed to 'team' | 'hero-class', so the remaining case
+  // is 'hero-class' — total without a default branch.
+  return trait.heroClass === value;
+}
+
 // why: D-24281 (AMENDED 2026-07-31) — scans HAND + IN-PLAY, matching the D-24076
 // defeat-requirement's `playerMeetsDefeatRequirement` scope. WP-469 originally
 // shipped this HAND-ONLY ("the printed reveal is a hand action"), but the
@@ -981,8 +1005,7 @@ function revealOrWoundTimingLabel(timing: VillainAbilityTiming): string {
 // player who plainly HAS a qualifying Hero (live Magneto match, 2026-07-31: fought
 // Sabretooth having already played Wolverine → wrongly wounded). Counting in-play
 // too makes "you have an X-Men Hero" satisfy the reveal, as the operator ruled.
-// Discard + deck stay excluded (only hand + play are "revealable"). `value` is
-// normalized at parse time, so `===` is casing/whitespace-safe. No `.reduce()`.
+// Discard + deck stay excluded (only hand + play are "revealable"). No `.reduce()`.
 function playerHasHeroMatchingTrait(
   cardIds: readonly CardExtId[],
   cardTraits: LegendaryGameState['cardTraits'],
@@ -990,18 +1013,40 @@ function playerHasHeroMatchingTrait(
   value: string,
 ): boolean {
   for (const cardId of cardIds) {
-    const trait = cardTraits[cardId];
-    if (trait === undefined) {
-      continue;
-    }
-    if (kind === 'team' && trait.team === value) {
-      return true;
-    }
-    if (kind === 'hero-class' && trait.heroClass === value) {
+    if (cardTraitMatches(cardTraits, cardId, kind, value)) {
       return true;
     }
   }
   return false;
+}
+
+/**
+ * Returns HOW MANY of a player's Heroes — in hand OR in play — match the trait
+ * predicate (the count sibling of `playerHasHeroMatchingTrait`, D-24290).
+ *
+ * Same hand+in-play scope and same `G.cardTraits` snapshot as its boolean sibling;
+ * used by `rescue-bystanders-current-by-trait-count` (Baron Zemo) to size the
+ * rescue by the number of matching Heroes rather than a mere has/has-not.
+ *
+ * @param cardIds - The player's hand + in-play card ext_ids.
+ * @param cardTraits - The setup-time `{ team, heroClass }` trait snapshot.
+ * @param kind - The predicate kind ('team' | 'hero-class').
+ * @param value - The normalized trait slug to match.
+ * @returns The number of matching Heroes across hand + in-play.
+ */
+function countPlayerHeroesMatchingTrait(
+  cardIds: readonly CardExtId[],
+  cardTraits: LegendaryGameState['cardTraits'],
+  kind: 'team' | 'hero-class',
+  value: string,
+): number {
+  let count = 0;
+  for (const cardId of cardIds) {
+    if (cardTraitMatches(cardTraits, cardId, kind, value)) {
+      count += 1;
+    }
+  }
+  return count;
 }
 
 /**
@@ -1095,13 +1140,200 @@ function villainEffectRevealOrWound(
   return { targets: [] };
 }
 
+/**
+ * draw-cards-current primitive — the current (defeating) player draws `drawCount`
+ * cards via the shared `drawCardsIntoHand` path (Enchantress "Fight: Draw three
+ * cards.", D-24290 / WP-485).
+ *
+ * Self-narrates via `pushLog`: like `scry-ko` / `reveal-or-wound`,
+ * draw-cards-current is keyword-less (`descriptorToLegacyKeyword` returns
+ * undefined), so the executor records no `VillainEffectResult` and the generic
+ * `<timing> effect:` line never fires — this push is the user-visible surface.
+ * Returns `{ targets: [] }` (drawn cards narrate by count, not by name).
+ */
+function villainEffectDrawCardsCurrent(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  _cardId: CardExtId,
+  _timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+  shuffleContext?: ShuffleProvider,
+): VillainEffectApplication {
+  const drawCount = descriptor.drawCount;
+  // why: EC-520 — guard BOTH optional inputs defensively rather than loosen
+  // `drawCardsIntoHand`'s required `count` / `ShuffleProvider` params (that helper
+  // is out of the allowlist). A malformed hook lacking `drawCount` (reachable only
+  // via a hand-built test hook — the parser always sets it) no-ops; an absent
+  // `shuffleContext` no-ops because a draw can reshuffle the discard and we never
+  // reach for a non-deterministic fallback (determinism invariant). The Fight fire
+  // site always threads `{ random }`, so live play always has one.
+  if (drawCount === undefined) {
+    return { targets: [] };
+  }
+  if (shuffleContext === undefined) {
+    return { targets: [] };
+  }
+  const zones = G.playerZones[currentPlayer];
+  if (!zones) {
+    return { targets: [] };
+  }
+  const handSizeBefore = zones.hand.length;
+  drawCardsIntoHand(zones, drawCount, shuffleContext);
+  const drawn = zones.hand.length - handSizeBefore;
+  // why: D-24290 — all three Tier-A primitives are Fight-timed (the markers are
+  // authored under `.fight`), so the label is hardcoded "Fight effect:" as the
+  // scry-ko handler does for the Fight-only Doombot; a draw that moved 0 cards
+  // (empty deck + discard) is honestly `blocked`, else `applied`.
+  pushLog(G, `Fight effect: drew ${String(drawn)} card(s).`, drawn > 0 ? 'applied' : 'blocked');
+  return { targets: [] };
+}
+
+/**
+ * ko-heroes-current-by-trait primitive — KO EVERY current-player Hero matching the
+ * trait predicate, from hand + in-play (the Destroyer "Fight: KO all your
+ * [team:shield] Heroes.", D-24290 / WP-485).
+ *
+ * Auto-resolved (KO all matching — no player choice) and deterministic. Scans hand
+ * then in-play in array order; a card matching the predicate is KO'd, the rest stay.
+ * Self-narrates via `pushLog` (keyword-less — no `VillainEffectResult`); returns the
+ * KO'd ext_ids as `targets` for parity (dropped by the recording path).
+ */
+function villainEffectKoHeroesCurrentByTrait(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  _cardId: CardExtId,
+  _timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  const requireKind = descriptor.requireKind;
+  const requireValue = descriptor.requireValue;
+  // why: defensive — a well-formed descriptor always carries both predicate fields
+  // (parseParameterizedEffect sets them together). A malformed hook lacking them
+  // cannot evaluate the predicate, so nothing is KO'd (reachable only via a
+  // hand-built test hook, never from the parser).
+  if (requireKind === undefined || requireValue === undefined) {
+    return { targets: [] };
+  }
+  const zones = G.playerZones[currentPlayer];
+  if (!zones) {
+    return { targets: [] };
+  }
+  // why: operator ruling 2026-08-01 — "your Heroes" includes Heroes played this
+  // turn, which sit in `inPlay` (the Fight effect resolves after the play phase),
+  // so the KO scans hand + in-play. This is the Destroyer's own zones, NOT the
+  // discard→hand→inPlay per-player KO helper (koOneHeroForPlayer), whose zones +
+  // starter-first selection are wrong for a "KO ALL matching" effect.
+  const targets: CardExtId[] = [];
+  const remainingHand: CardExtId[] = [];
+  for (const cardId of zones.hand) {
+    if (cardTraitMatches(G.cardTraits, cardId, requireKind, requireValue)) {
+      targets.push(cardId);
+    } else {
+      remainingHand.push(cardId);
+    }
+  }
+  const remainingInPlay: CardExtId[] = [];
+  for (const cardId of zones.inPlay) {
+    if (cardTraitMatches(G.cardTraits, cardId, requireKind, requireValue)) {
+      targets.push(cardId);
+    } else {
+      remainingInPlay.push(cardId);
+    }
+  }
+  zones.hand = remainingHand;
+  zones.inPlay = remainingInPlay;
+  for (const koedId of targets) {
+    G.ko = koCard(G.ko, koedId);
+  }
+  // why: D-24290 — Fight-timed self-narration (see draw-cards-current). Zero
+  // matching Heroes is a reachable no-op (`blocked`), never a hollow record.
+  pushLog(
+    G,
+    `Fight effect: KO'd ${String(targets.length)} of your ${requireValue} Hero(es).`,
+    targets.length > 0 ? 'applied' : 'blocked',
+  );
+  return { targets };
+}
+
+/**
+ * rescue-bystanders-current-by-trait-count primitive — the current player rescues
+ * one Bystander per Hero matching the trait predicate (hand + in-play), bounded by
+ * the Bystander supply (Baron Zemo "Fight: For each of your [team:avengers] Heroes,
+ * rescue a Bystander.", D-24290 / WP-485).
+ *
+ * Auto-resolved and deterministic. Self-narrates via `pushLog` (keyword-less — no
+ * `VillainEffectResult`); returns `{ targets: [] }` (rescued Bystanders narrate by
+ * count, not by name — the capture-bystander precedent).
+ */
+function villainEffectRescueBystandersCurrentByTraitCount(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  cardId: CardExtId,
+  _timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  const requireKind = descriptor.requireKind;
+  const requireValue = descriptor.requireValue;
+  // why: defensive — same guard as ko-heroes-current-by-trait (a hand-built test
+  // hook could omit the predicate; the parser never does).
+  if (requireKind === undefined || requireValue === undefined) {
+    return { targets: [] };
+  }
+  const zones = G.playerZones[currentPlayer];
+  if (!zones) {
+    return { targets: [] };
+  }
+  const rescueCount = countPlayerHeroesMatchingTrait(
+    [...zones.hand, ...zones.inPlay],
+    G.cardTraits,
+    requireKind,
+    requireValue,
+  );
+  // why: D-24290 — "rescue a Bystander" = award one from the supply to the current
+  // player's Victory Pile, reusing the `capture-bystander` onFight player-award
+  // mechanism (attach one to the triggering card, then award it). At the Fight fire
+  // site the card's attached-bystander entry was already awarded + cleared (Step 3b,
+  // fightVillain.ts) BEFORE this handler runs, so each iteration attaches exactly
+  // one and awards exactly one. `attachBystanderToVillain` no-ops on an empty
+  // supply, so the rescue is naturally bounded by the Bystander supply.
+  let rescued = 0;
+  for (let rescueIndex = 0; rescueIndex < rescueCount; rescueIndex++) {
+    if (G.piles.bystanders.length === 0) {
+      // why: the supply ran dry — stop (rescue is bounded by the Bystander supply).
+      break;
+    }
+    const attachResult = attachBystanderToVillain(
+      G.piles.bystanders,
+      cardId,
+      G.attachedBystanders,
+    );
+    G.piles.bystanders = attachResult.bystandersPile;
+    G.attachedBystanders = attachResult.attachedBystanders;
+    const awardResult = awardAttachedBystanders(cardId, G.attachedBystanders, zones.victory);
+    G.attachedBystanders = awardResult.attachedBystanders;
+    zones.victory = awardResult.playerVictory;
+    rescued += 1;
+  }
+  // why: D-24290 — Fight-timed self-narration (see draw-cards-current). Zero
+  // matching Heroes (or an empty supply) is a reachable no-op (`blocked`).
+  pushLog(
+    G,
+    `Fight effect: rescued ${String(rescued)} Bystander(s) (one per your ${requireValue} Hero).`,
+    rescued > 0 ? 'applied' : 'blocked',
+  );
+  return { targets: [] };
+}
+
 // why: D-24023 — the ImplementationMap keyed by primitive (mirrors WP-251's
-// HERO_EFFECT_HANDLERS). Full Record over the 8 primitives; the drift test
+// HERO_EFFECT_HANDLERS). Full Record over the 12 primitives; the drift test
 // asserts the key set equals VILLAIN_EFFECT_PRIMITIVES. Replaces the former
 // 10-arm switch on VillainEffectKeyword. `scry-ko-own-deck` appended by WP-447
 // (D-24267); `gain-attached-hero` (no-op) appended by WP-450 (D-24270);
 // `reveal-or-wound` appended by WP-469 (D-24281); `become-scheme-twist` (no-op —
-// the twist fires from the escape fire site) appended by WP-481 (D-24287).
+// the twist fires from the escape fire site) appended by WP-481 (D-24287);
+// `draw-cards-current`, `ko-heroes-current-by-trait`, and
+// `rescue-bystanders-current-by-trait-count` (auto-resolve) appended by WP-485
+// (D-24290).
 /** Villain effect handlers keyed by primitive. Single dispatch source. */
 const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandler> = {
   'ko-hero': villainEffectKoHero,
@@ -1113,6 +1345,9 @@ const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandl
   'gain-attached-hero': villainEffectGainAttachedHero,
   'reveal-or-wound': villainEffectRevealOrWound,
   'become-scheme-twist': villainEffectBecomeSchemeTwist,
+  'draw-cards-current': villainEffectDrawCardsCurrent,
+  'ko-heroes-current-by-trait': villainEffectKoHeroesCurrentByTrait,
+  'rescue-bystanders-current-by-trait-count': villainEffectRescueBystandersCurrentByTraitCount,
 };
 
 /**

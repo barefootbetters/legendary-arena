@@ -851,6 +851,113 @@ describe('buildVillainAbilityHooks — dual-grammar equivalence (WP-252 / D-2402
   });
 });
 
+describe('buildVillainAbilityHooks — Tier-A auto-resolve grammars (WP-485 / D-24290)', () => {
+  it('[effect:draw-cards-current:<N>] parses a positive integer; non-positive / wrong-token-count rejected', () => {
+    const registry = makeRegistry(
+      'core',
+      [
+        {
+          slug: 'draw',
+          cards: [
+            { slug: 'three', abilities: ['Fight: Draw three cards. [effect:draw-cards-current:3]'] },
+            { slug: 'zero', abilities: ['Fight: x [effect:draw-cards-current:0]'] },
+            { slug: 'noarg', abilities: ['Fight: x [effect:draw-cards-current]'] },
+            { slug: 'nan', abilities: ['Fight: x [effect:draw-cards-current:two]'] },
+          ],
+        },
+      ],
+      [],
+    );
+    const hooks = buildVillainAbilityHooks(registry, makeConfig(['core/draw'], []));
+    const effectsFor = (slug: string) =>
+      hooks.find((h) => h.cardId === `core-villain-draw-${slug}-00`)!.effects;
+    const unresolvedFor = (slug: string) =>
+      hooks.find((h) => h.cardId === `core-villain-draw-${slug}-00`)!.unresolvedMarkers;
+    assert.deepStrictEqual(effectsFor('three'), [
+      { primitive: 'draw-cards-current', drawCount: 3 },
+    ]);
+    // why: the token carries no legacy keyword.
+    assert.deepStrictEqual(
+      hooks.find((h) => h.cardId === 'core-villain-draw-three-00')!.keywords,
+      [],
+    );
+    // why: 0 is not a positive integer; a param-less form and a non-numeric form
+    // both fall through to null → surfaced as unresolved, never a silent descriptor.
+    assert.deepStrictEqual(effectsFor('zero'), []);
+    assert.deepStrictEqual(unresolvedFor('zero'), ['draw-cards-current:0']);
+    assert.deepStrictEqual(effectsFor('noarg'), []);
+    assert.deepStrictEqual(unresolvedFor('noarg'), ['draw-cards-current']);
+    assert.deepStrictEqual(effectsFor('nan'), []);
+    assert.deepStrictEqual(unresolvedFor('nan'), ['draw-cards-current:two']);
+  });
+
+  it('[effect:ko-heroes-current-by-trait:<kind>:<value>] parses + normalizes; bad kind / empty value rejected', () => {
+    const registry = makeRegistry(
+      'core',
+      [
+        {
+          slug: 'kot',
+          cards: [
+            { slug: 'team', abilities: ['Fight: KO all your [team:shield] Heroes. [effect:ko-heroes-current-by-trait:team:shield]'] },
+            { slug: 'hc', abilities: ['Fight: x [effect:ko-heroes-current-by-trait:hc:Tech]'] },
+            { slug: 'badkind', abilities: ['Fight: x [effect:ko-heroes-current-by-trait:bogus:x]'] },
+            { slug: 'emptyval', abilities: ['Fight: x [effect:ko-heroes-current-by-trait:team:]'] },
+          ],
+        },
+      ],
+      [],
+    );
+    const hooks = buildVillainAbilityHooks(registry, makeConfig(['core/kot'], []));
+    const effectsFor = (slug: string) =>
+      hooks.find((h) => h.cardId === `core-villain-kot-${slug}-00`)!.effects;
+    const unresolvedFor = (slug: string) =>
+      hooks.find((h) => h.cardId === `core-villain-kot-${slug}-00`)!.unresolvedMarkers;
+    assert.deepStrictEqual(effectsFor('team'), [
+      { primitive: 'ko-heroes-current-by-trait', requireKind: 'team', requireValue: 'shield' },
+    ]);
+    // why: `hc` maps to hero-class; the value normalizes ('Tech' → 'tech').
+    assert.deepStrictEqual(effectsFor('hc'), [
+      { primitive: 'ko-heroes-current-by-trait', requireKind: 'hero-class', requireValue: 'tech' },
+    ]);
+    assert.deepStrictEqual(effectsFor('badkind'), []);
+    assert.deepStrictEqual(unresolvedFor('badkind'), ['ko-heroes-current-by-trait:bogus:x']);
+    assert.deepStrictEqual(effectsFor('emptyval'), []);
+    assert.deepStrictEqual(unresolvedFor('emptyval'), ['ko-heroes-current-by-trait:team:']);
+  });
+
+  it('[effect:rescue-bystanders-current-by-trait-count:<kind>:<value>] parses + normalizes; malformed rejected', () => {
+    const registry = makeRegistry(
+      'core',
+      [
+        {
+          slug: 'zemo',
+          cards: [
+            { slug: 'avengers', abilities: ['Fight: For each of your [team:avengers] Heroes, rescue a Bystander. [effect:rescue-bystanders-current-by-trait-count:team:avengers]'] },
+            { slug: 'twotoken', abilities: ['Fight: x [effect:rescue-bystanders-current-by-trait-count:team]'] },
+          ],
+        },
+      ],
+      [],
+    );
+    const hooks = buildVillainAbilityHooks(registry, makeConfig(['core/zemo'], []));
+    const effectsFor = (slug: string) =>
+      hooks.find((h) => h.cardId === `core-villain-zemo-${slug}-00`)!.effects;
+    const unresolvedFor = (slug: string) =>
+      hooks.find((h) => h.cardId === `core-villain-zemo-${slug}-00`)!.unresolvedMarkers;
+    assert.deepStrictEqual(effectsFor('avengers'), [
+      {
+        primitive: 'rescue-bystanders-current-by-trait-count',
+        requireKind: 'team',
+        requireValue: 'avengers',
+      },
+    ]);
+    assert.deepStrictEqual(effectsFor('twotoken'), []);
+    assert.deepStrictEqual(unresolvedFor('twotoken'), [
+      'rescue-bystanders-current-by-trait-count:team',
+    ]);
+  });
+});
+
 // ---------------------------------------------------------------------------
 // WP-257 — unresolved-marker surfacing (D-24034)
 //

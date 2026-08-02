@@ -117,6 +117,10 @@ function isLockedEffectKeyword(keyword) {
 // `gain-attached-hero` (no-param) appended by WP-450 (D-24270);
 // `reveal-or-wound` (:<kind>:<value>) appended by WP-469 (D-24281);
 // `become-scheme-twist` (no-param) appended by WP-481 (D-24287).
+// `draw-cards-current` (:<N>), `ko-heroes-current-by-trait` (:<kind>:<value>), and
+// `rescue-bystanders-current-by-trait-count` (:<kind>:<value>) appended by WP-485
+// (D-24290 — Tier A auto-resolve Core villain effects), the first curated data to
+// use the parameterized grammar (Enchantress / Destroyer / Baron Zemo).
 const VILLAIN_EFFECT_PRIMITIVES = [
   'ko-hero',
   'gain-wound',
@@ -127,6 +131,9 @@ const VILLAIN_EFFECT_PRIMITIVES = [
   'gain-attached-hero',
   'reveal-or-wound',
   'become-scheme-twist',
+  'draw-cards-current',
+  'ko-heroes-current-by-trait',
+  'rescue-bystanders-current-by-trait-count',
 ];
 
 /**
@@ -173,6 +180,17 @@ function isValidParameterizedEffectToken(token) {
     // kind is the card-text namespace token team | hc; value is any non-empty slug
     // (normalization happens engine-side at parse time). Mirrors the engine
     // parser's reveal-or-wound branch so producer + consumer agree on the grammar.
+    return parts.length === 3 && (parts[1] === 'team' || parts[1] === 'hc') && parts[2].length > 0;
+  }
+  if (primitive === 'draw-cards-current') {
+    // why: D-24290 — grammar draw-cards-current:<N> (exactly 2 tokens); N is a
+    // positive integer. Mirrors the engine parser's parsePositiveInteger branch.
+    return parts.length === 2 && /^[1-9][0-9]*$/.test(parts[1]);
+  }
+  if (primitive === 'ko-heroes-current-by-trait' || primitive === 'rescue-bystanders-current-by-trait-count') {
+    // why: D-24290 — both use the shared trait-predicate grammar <kind>:<value>
+    // (exactly 3 tokens; kind team | hc; non-empty value), mirroring the engine
+    // parser's parseTraitPredicateTokens so producer + consumer agree.
     return parts.length === 3 && (parts[1] === 'team' || parts[1] === 'hc') && parts[2].length > 0;
   }
   // why: hero-deck-top-to-escape and capture-bystander take no params.

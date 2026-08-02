@@ -35573,9 +35573,9 @@ green with unchanged hashes).
 
 Protect this file.
 
-### D-24290 — Core villain-effect vocabulary Tier A: three auto-resolve primitives (Drafted 2026-08-01 — WP-485; not yet landed)
+### D-24290 — Core villain-effect vocabulary Tier A: three auto-resolve primitives (Active 2026-08-01 — WP-485)
 
-> **Status: Drafted at SPEC time; flips to Active (post-execution) when WP-485 executes.** Reserved in `NUMBER-LEDGER.md`.
+> **Status: Active — landed by WP-485 execution (2026-08-01).** Reserved in `NUMBER-LEDGER.md`.
 
 **Context.** 16 Core villain Fight/Ambush/Escape abilities carry printed text but no `[effect:]` marker, so they emit the D-24266 `unmarked-ability`/no-handler breadcrumb and do nothing (surfaced by a live Magneto/Spider-Foes gauntlet fight against a hollow Doctor Octopus, 2026-08-01). All 16 need NEW primitives; this is Tier A — the auto-resolve subset.
 
@@ -35586,7 +35586,7 @@ Protect this file.
 
 Each is keyword-less and self-narrates via `pushLog` (like `scry-ko` / `reveal-or-wound`); all three are auto-resolve — no `pending*Choices`, no block-all guard, no resolve move. A new `countPlayerHeroesMatchingTrait` helper (count sibling of `playerHasHeroMatchingTrait`, same hand+in-play `G.cardTraits` scope) backs the two trait primitives. Markers are authored in `scripts/convert-cards/inputs/villain-effect-markers.json` and applied to `data/cards/core.json` by `apply-effect-markers.mjs` (its hand-synced vocabulary copy updated in lockstep).
 
-**Consequences.** Contract change (three new closed-union primitives) recorded here. No new `G` field, no persistence surface; the only randomness is the existing `drawCardsIntoHand` reshuffle-on-empty path (`finalStateHash` / PRE_WP080 sentinel re-pin ONLY if a committed fixture reaches a draw-cards-current reshuffle — likely none; confirm empirically). This is Tier A of an arc: Tier B (named city spaces — a state-shape change), Tier C (recursive villain-deck play), Tier D (interactive choices, incl. Viper's victory-pile villain-group predicate), and Tier E (Doctor Octopus cleanup-draw override — a hashed-field change) are follow-on WPs with their own D-entries as needed. Reserved by WP-485.
+**Consequences.** Contract change (three new closed-union primitives) recorded here. No new `G` field, no persistence surface; the only randomness is the existing `drawCardsIntoHand` reshuffle-on-empty path (`finalStateHash` / PRE_WP080 sentinel re-pin ONLY if a committed fixture reaches a draw-cards-current reshuffle — **confirmed none at execution: the whole-repo `--no-bail` suite is green with no hash/sentinel change, so no re-pin was needed**). This is Tier A of an arc: Tier B (named city spaces — a state-shape change), Tier C (recursive villain-deck play), Tier D (interactive choices, incl. Viper's victory-pile villain-group predicate), and Tier E (Doctor Octopus cleanup-draw override — a hashed-field change) are follow-on WPs with their own D-entries as needed. Reserved by WP-485.
 
 Protect this file.
 

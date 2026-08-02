@@ -7,6 +7,44 @@
 
 ## Current State
 
+### WP-485 — Core Villain-Effect Vocabulary, Tier A (auto-resolve primitives) — DONE (2026-08-01)
+
+Three currently-**unmarked** (D-24266 `unmarked-ability`/no-handler) Core villain
+Fight abilities now do what the card says, via three new **auto-resolve**
+`VILLAIN_EFFECT_PRIMITIVES` (append-only union+array, D-24034):
+`draw-cards-current:<N>` (Enchantress — the current player draws 3),
+`ko-heroes-current-by-trait:<kind>:<value>` (the Destroyer — KO **all** the
+current player's `[team:shield]` Heroes from **hand + in-play**, per the
+2026-08-01 operator ruling that "your Heroes" includes those played this turn),
+and `rescue-bystanders-current-by-trait-count:<kind>:<value>` (Baron Zemo —
+rescue one Bystander per `[team:avengers]` Hero in hand+in-play, bounded by the
+Bystander supply, via the `capture-bystander` player-award mechanism). Each is
+keyword-less and self-narrates via `pushLog`; all three auto-resolve — no
+`pending*Choices`, no block-all guard, no resolve move. A new
+`countPlayerHeroesMatchingTrait` helper (plus a shared `cardTraitMatches` /
+trait-predicate parser extracted at the third copy) backs the two trait
+primitives. Markers authored in `villain-effect-markers.json`, applied to
+`data/cards/core.json` by `apply-effect-markers.mjs` (only the three Fight lines
+change; the stale `core` destroyer `_unassigned` row dropped, `msp1` left). Locked
+by **D-24290** (Active). This is **Tier A** of the Core villain-effect-vocabulary
+arc (surfaced by a live Magneto/Spider-Foes gauntlet fight against a hollow Doctor
+Octopus); Tiers B–E (named city spaces, recursive villain-deck play, interactive
+choices +Viper, Doc Ock cleanup-draw) are mapped as follow-on WPs.
+
+**Verified:** game-engine 2201→2216 pass (+15 new); whole-repo `pnpm -r --no-bail
+test` green; `pnpm ledger:villains:check` clean (the three abilities flip to
+`executable` with WP-485/D-24290 provenance + correct handler anchors; Destroyer
+gains a second executable Fight row beside its Escape). **NO
+`finalStateHash`/PRE_WP080 re-pin** — no committed fixture reaches these three
+fights (confirmed empirically by the green suite). **Ripple beyond the drafted
+allowlist:** WP-484's `effect-implementation-index.json` + `effect-index:check`
+gate landed *after* WP-485 was drafted; the villain-ledger change made that
+derived index stale, so it was regenerated in lockstep (three rows flip to
+executable; `effect-index:check` clean). **`User-Visible Surface =
+play.legendary-arena.com` — D-24026 live-verify operator-pending** (fight
+Enchantress / the Destroyer / Baron Zemo in a live match; each effect fires and
+the game log records it, no hollow breadcrumb).
+
 ### WP-484 — Effect Implementation Index (Contract + Transform + CI Gate) — DONE (2026-08-01)
 
 The first slice of the generated **Effect Implementation Index** (the ewiki

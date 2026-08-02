@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "cardType": "villain",
   "summary": {
-    "totalRows": 715,
+    "totalRows": 716,
     "byStatus": {
-      "executable": 110,
+      "executable": 113,
       "deferred": 0,
       "unsupported": 1,
-      "unmarked": 604
+      "unmarked": 602
     },
-    "distinctMechanics": 13
+    "distinctMechanics": 16
   },
   "rows": [
     {
@@ -1689,11 +1689,11 @@
       "cardName": "Baron Zemo",
       "set": "core",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "rescue-bystanders-current-by-trait-count",
+      "status": "executable",
+      "wp": "WP-485",
+      "decision": "D-24290",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#rescue-bystanders-current-by-trait-count"
     },
     {
       "extId": "core-villain-brotherhood-blob",
@@ -1705,6 +1705,17 @@
       "wp": "",
       "decision": "",
       "handler": ""
+    },
+    {
+      "extId": "core-villain-enemies-of-asgard-destroyer",
+      "cardName": "Destroyer",
+      "set": "core",
+      "cardType": "villain",
+      "mechanic": "ko-heroes-current-by-trait",
+      "status": "executable",
+      "wp": "WP-485",
+      "decision": "D-24290",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-heroes-current-by-trait"
     },
     {
       "extId": "core-villain-enemies-of-asgard-destroyer",
@@ -1744,11 +1755,11 @@
       "cardName": "Enchantress",
       "set": "core",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "draw-cards-current",
+      "status": "executable",
+      "wp": "WP-485",
+      "decision": "D-24290",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#draw-cards-current"
     },
     {
       "extId": "core-villain-hydra-endless-armies-of-hydra",

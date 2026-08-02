@@ -224,6 +224,55 @@ function parsePositiveInteger(token: string): number | null {
 }
 
 /**
+ * Parses the shared `<kind>:<value>` hero-trait predicate tail used by
+ * `reveal-or-wound`, `ko-heroes-current-by-trait`, and
+ * `rescue-bystanders-current-by-trait-count` (D-24281 / D-24290), or null when
+ * malformed.
+ *
+ * Requires exactly 3 colon-parts (`<primitive>:<kind>:<value>`). `kind` is the
+ * card-text namespace token `team` | `hc`; `hc` maps to the engine kind
+ * `hero-class` (mirroring the require-to-defeat marker's team/hc → team/hero-class
+ * mapping, D-24076). The value is NORMALIZED to the `cardTraits` slug space so a
+ * handler's `===` trait comparison is casing/whitespace-safe and marker values
+ * live in one namespace with the trait snapshot. A wrong kind, a wrong token
+ * count, or an empty (or whitespace-only) value returns null.
+ *
+ * @param parts - The colon-split marker parts (`parts[0]` is the primitive token).
+ * @returns The normalized predicate, or null when malformed.
+ */
+// why: D-24290 — extracted at the third trait-predicate copy (reveal-or-wound was
+// the first, the two by-trait primitives are the second and third) per the
+// duplicate-first / abstract-on-third rule (§Abstraction). One normalizer, one
+// grammar — a second inline copy would be a drift source between the three.
+function parseTraitPredicateTokens(
+  parts: string[],
+): { requireKind: 'team' | 'hero-class'; requireValue: string } | null {
+  if (parts.length !== 3) {
+    return null;
+  }
+  const kindToken = parts[1];
+  let requireKind: 'team' | 'hero-class';
+  if (kindToken === 'team') {
+    requireKind = 'team';
+  } else if (kindToken === 'hc') {
+    requireKind = 'hero-class';
+  } else {
+    return null;
+  }
+  const rawValue = parts[2] ?? '';
+  if (rawValue.length === 0) {
+    return null;
+  }
+  const requireValue = normalizeTraitSlug(rawValue);
+  // why: a value of only whitespace normalizes to '' — reject it so an empty
+  // predicate can never reach a handler (it would match no hero).
+  if (requireValue.length === 0) {
+    return null;
+  }
+  return { requireKind, requireValue };
+}
+
+/**
  * Parses a parameterized effect token `<primitive>[:<param>…]` into a
  * descriptor, or null when the token is not a valid parameterized effect.
  *
@@ -235,6 +284,9 @@ function parsePositiveInteger(token: string): number | null {
  *   - `gain-wound:current` | `gain-wound:each`
  *   - `capture-hq-hero:rightmost` | `:highest-cost` | `:lowest-cost`
  *   - `reveal-or-wound:<kind>:<value>`  (kind `team` | `hc`; D-24281)
+ *   - `draw-cards-current:<N>`  (N a positive integer; D-24290)
+ *   - `ko-heroes-current-by-trait:<kind>:<value>`  (kind `team` | `hc`; D-24290)
+ *   - `rescue-bystanders-current-by-trait-count:<kind>:<value>`  (D-24290)
  *   - `hero-deck-top-to-escape` | `capture-bystander`  (no params)
  *
  * @param value - The raw marker value (the text inside `[effect:…]`).
@@ -297,37 +349,61 @@ function parseParameterizedEffect(
     return null;
   }
   if (primitiveToken === 'reveal-or-wound') {
-    // why: D-24281 — grammar `reveal-or-wound:<kind>:<value>` (exactly 3 tokens).
-    // `kind` is the card-text namespace token `team` | `hc`; `hc` maps to the
-    // engine kind `hero-class` (mirroring the require-to-defeat marker's
-    // team/hc → team/hero-class mapping, D-24076). A wrong kind, a wrong token
-    // count, or an empty value falls through to null. The value is NORMALIZED to
-    // the cardTraits slug space so the handler's `===` match is casing/whitespace-
-    // safe and marker values live in one namespace with the trait snapshot.
-    if (parts.length !== 3) {
+    // why: D-24281 — grammar `reveal-or-wound:<kind>:<value>`; the shared
+    // predicate parser (D-24290) validates the kind/value tail and normalizes the
+    // value. A malformed tail returns null (an empty predicate would wound every
+    // player unconditionally, so it must never reach the handler).
+    const predicate = parseTraitPredicateTokens(parts);
+    if (predicate === null) {
       return null;
     }
-    const kindToken = parts[1];
-    let requireKind: 'team' | 'hero-class';
-    if (kindToken === 'team') {
-      requireKind = 'team';
-    } else if (kindToken === 'hc') {
-      requireKind = 'hero-class';
-    } else {
+    return {
+      primitive: 'reveal-or-wound',
+      requireKind: predicate.requireKind,
+      requireValue: predicate.requireValue,
+    };
+  }
+  if (primitiveToken === 'draw-cards-current') {
+    // why: D-24290 — grammar `draw-cards-current:<N>` (exactly 2 tokens); N is a
+    // positive integer (Enchantress: 3). A missing or non-positive-integer count
+    // falls through to null (the same strict magnitude grammar as `ko-hero:each:N`).
+    if (parts.length !== 2) {
       return null;
     }
-    const rawValue = parts[2] ?? '';
-    if (rawValue.length === 0) {
+    const drawCount = parsePositiveInteger(parts[1]!);
+    if (drawCount === null) {
       return null;
     }
-    const requireValue = normalizeTraitSlug(rawValue);
-    // why: a value of only whitespace normalizes to '' — reject it so an empty
-    // predicate can never reach the handler (it would match no hero and wound
-    // every player unconditionally).
-    if (requireValue.length === 0) {
+    return { primitive: 'draw-cards-current', drawCount };
+  }
+  if (primitiveToken === 'ko-heroes-current-by-trait') {
+    // why: D-24290 — grammar `ko-heroes-current-by-trait:<kind>:<value>` (the
+    // Destroyer). Reuses the shared trait-predicate parser as the KO filter; a
+    // malformed tail returns null.
+    const predicate = parseTraitPredicateTokens(parts);
+    if (predicate === null) {
       return null;
     }
-    return { primitive: 'reveal-or-wound', requireKind, requireValue };
+    return {
+      primitive: 'ko-heroes-current-by-trait',
+      requireKind: predicate.requireKind,
+      requireValue: predicate.requireValue,
+    };
+  }
+  if (primitiveToken === 'rescue-bystanders-current-by-trait-count') {
+    // why: D-24290 — grammar
+    // `rescue-bystanders-current-by-trait-count:<kind>:<value>` (Baron Zemo).
+    // Reuses the shared trait-predicate parser as the count filter; a malformed
+    // tail returns null.
+    const predicate = parseTraitPredicateTokens(parts);
+    if (predicate === null) {
+      return null;
+    }
+    return {
+      primitive: 'rescue-bystanders-current-by-trait-count',
+      requireKind: predicate.requireKind,
+      requireValue: predicate.requireValue,
+    };
   }
   // why: hero-deck-top-to-escape and capture-bystander take no params; reject
   // any trailing colon-separated tokens so a malformed marker does not silently

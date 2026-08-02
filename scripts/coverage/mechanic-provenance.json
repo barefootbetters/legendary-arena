@@ -31,6 +31,9 @@
     "gain-wound": { "wp": "WP-252", "decision": "D-24023" },
     "capture-hq-hero": { "wp": "WP-252", "decision": "D-24023" },
     "hero-deck-top-to-escape": { "wp": "WP-252", "decision": "D-24023" },
-    "capture-bystander": { "wp": "WP-252", "decision": "D-24023" }
+    "capture-bystander": { "wp": "WP-252", "decision": "D-24023" },
+    "draw-cards-current": { "wp": "WP-485", "decision": "D-24290" },
+    "ko-heroes-current-by-trait": { "wp": "WP-485", "decision": "D-24290" },
+    "rescue-bystanders-current-by-trait-count": { "wp": "WP-485", "decision": "D-24290" }
   }
 }

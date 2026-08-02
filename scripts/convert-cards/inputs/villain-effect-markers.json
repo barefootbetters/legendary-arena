@@ -93,11 +93,13 @@
         "sabretooth": { "fight": ["reveal-or-wound:team:x-men"], "escape": ["reveal-or-wound:team:x-men"] }
       },
       "enemies-of-asgard": {
-        "destroyer": { "escape": ["koHeroEachPlayerMag2"] },
+        "destroyer": { "fight": ["ko-heroes-current-by-trait:team:shield"], "escape": ["koHeroEachPlayerMag2"] },
+        "enchantress": { "fight": ["draw-cards-current:3"] },
         "frost-giant": { "fight": ["reveal-or-wound:hc:ranged"], "escape": ["reveal-or-wound:hc:ranged"] },
         "ymir-frost-giant-king": { "ambush": ["reveal-or-wound:hc:ranged"] }
       },
       "masters-of-evil": {
+        "baron-zemo": { "fight": ["rescue-bystanders-current-by-trait-count:team:avengers"] },
         "ultron": { "escape": ["reveal-or-wound:hc:tech"] }
       },
       "radiation": {
@@ -337,7 +339,6 @@
   },
   "_unassigned": [
     { "set": "amwp", "group": "armada-of-kang", "card": "quantumnaut-elite", "timing": "fight", "text": "Fight: KO two of your Heroes.", "reason": "magnitude>1" },
-    { "set": "core", "group": "enemies-of-asgard", "card": "destroyer", "timing": "fight", "text": "Fight: KO all your [team:shield] Heroes.", "reason": "magnitude>1" },
     { "set": "msp1", "group": "enemies-of-asgard", "card": "destroyer", "timing": "fight", "text": "Fight: KO all your [team:shield] Heroes.", "reason": "magnitude>1" },
     { "set": "core", "group": "radiation", "card": "maestro", "timing": "fight", "text": "Fight: For each of your [hc:strength] Heroes, KO one of your Heroes.", "reason": "magnitude>1" },
     { "set": "ssw2", "group": "kun-lun", "card": "razor-fist", "timing": "fight", "text": "Fight: For each of your Heroes that costs 3, KO one of your Heroes.", "reason": "magnitude>1" },

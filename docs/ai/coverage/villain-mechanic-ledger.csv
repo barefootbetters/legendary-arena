@@ -151,12 +151,13 @@ co2e-villain-masters-of-evil-whirlwind,Whirlwind,co2e,villain,(unmarked),unmarke
 co2e-villain-enemies-of-asgard-ymir-frost-giant-king,"Ymir, Frost Giant King",co2e,villain,(unmarked),unmarked,,,
 co2e-villain-radiation-zzzax,Zzzax,co2e,villain,(unmarked),unmarked,,,
 core-villain-radiation-abomination,Abomination,core,villain,(unmarked),unmarked,,,
-core-villain-masters-of-evil-baron-zemo,Baron Zemo,core,villain,(unmarked),unmarked,,,
+core-villain-masters-of-evil-baron-zemo,Baron Zemo,core,villain,rescue-bystanders-current-by-trait-count,executable,WP-485,D-24290,packages/game-engine/src/villain/villainEffects.execute.ts#rescue-bystanders-current-by-trait-count
 core-villain-brotherhood-blob,Blob,core,villain,(unmarked),unmarked,,,
+core-villain-enemies-of-asgard-destroyer,Destroyer,core,villain,ko-heroes-current-by-trait,executable,WP-485,D-24290,packages/game-engine/src/villain/villainEffects.execute.ts#ko-heroes-current-by-trait
 core-villain-enemies-of-asgard-destroyer,Destroyer,core,villain,koHeroEachPlayerMag2,executable,WP-202,D-20201,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 core-villain-spider-foes-doctor-octopus,Doctor Octopus,core,villain,(unmarked),unmarked,,,
 henchman-doombot-legion,Doombot Legion,core,henchman,scry-ko-own-deck,executable,,,packages/game-engine/src/villain/villainEffects.execute.ts#scry-ko-own-deck
-core-villain-enemies-of-asgard-enchantress,Enchantress,core,villain,(unmarked),unmarked,,,
+core-villain-enemies-of-asgard-enchantress,Enchantress,core,villain,draw-cards-current,executable,WP-485,D-24290,packages/game-engine/src/villain/villainEffects.execute.ts#draw-cards-current
 core-villain-hydra-endless-armies-of-hydra,Endless Armies of HYDRA,core,villain,(unmarked),unmarked,,,
 core-villain-enemies-of-asgard-frost-giant,Frost Giant,core,villain,reveal-or-wound,executable,,,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
 core-villain-spider-foes-green-goblin,Green Goblin,core,villain,captureBystander,executable,WP-185,D-18506,packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander

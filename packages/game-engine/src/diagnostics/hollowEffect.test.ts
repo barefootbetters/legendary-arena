@@ -22,6 +22,10 @@ import type {
   HollowEffectRecord,
 } from './hollowEffect.types.js';
 import { recordHollowEffect } from './hollowEffect.record.js';
+import { executeVillainAbilities } from '../villain/villainEffects.execute.js';
+import type { VillainAbilityHook } from '../rules/villainAbility.types.js';
+import type { CardExtId } from '../state/zones.types.js';
+import type { ShuffleProvider } from '../setup/shuffle.js';
 import type { LegendaryGameState } from '../types.js';
 
 // ---------------------------------------------------------------------------
@@ -238,4 +242,98 @@ describe('recordHollowEffect', () => {
     const second = buildAndWrite();
     assert.deepStrictEqual(first.diagnostics, second.diagnostics);
   });
+});
+
+// ---------------------------------------------------------------------------
+// WP-485 / D-24290 — the three Tier-A Core villain Fight abilities, once marked
+// with their new auto-resolve primitives, no longer record an `unmarked-ability`
+// hollow breadcrumb (D-24266). The handler runs; the marked hook carries a
+// descriptor, so detectVillainUnmarkedTimingLine short-circuits.
+// ---------------------------------------------------------------------------
+
+describe('WP-485 Tier-A abilities record no unmarked-ability breadcrumb', () => {
+  const CTX = { currentPlayer: '0' };
+  const AVENGER = 'core/avengers/cap#0' as CardExtId;
+  const SHIELD = 'core/shield/agent#0' as CardExtId;
+
+  /** Builds a G exercising only the fields the three Tier-A handlers read. */
+  function makeVillainG(hook: VillainAbilityHook): LegendaryGameState {
+    return {
+      villainAbilityHooks: [hook],
+      playerZones: {
+        '0': { deck: [AVENGER], hand: [SHIELD, AVENGER], discard: [], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      piles: { bystanders: ['bys0' as CardExtId], wounds: [], officers: [], sidekicks: [], horrors: [] },
+      ko: [],
+      attachedBystanders: {},
+      cardTraits: {
+        [SHIELD]: { heroClass: 'covert', team: 'shield' },
+        [AVENGER]: { heroClass: 'strength', team: 'avengers' },
+      },
+      messages: [],
+      turnEconomy: {
+        attack: 0,
+        recruit: 0,
+        spentAttack: 0,
+        spentRecruit: 0,
+        piercing: 0,
+        woundsDrawn: 0,
+      },
+    } as unknown as LegendaryGameState;
+  }
+
+  const reverseShuffle: ShuffleProvider = {
+    random: { Shuffle: <T>(deck: T[]): T[] => [...deck].reverse() },
+  };
+
+  const cases: Array<{ label: string; hook: VillainAbilityHook }> = [
+    {
+      label: 'draw-cards-current (Enchantress)',
+      hook: {
+        cardId: 'v-enchantress' as CardExtId,
+        timing: 'onFight',
+        keywords: [],
+        effects: [{ primitive: 'draw-cards-current', drawCount: 3 }],
+      },
+    },
+    {
+      label: 'ko-heroes-current-by-trait (Destroyer)',
+      hook: {
+        cardId: 'v-destroyer' as CardExtId,
+        timing: 'onFight',
+        keywords: [],
+        effects: [
+          { primitive: 'ko-heroes-current-by-trait', requireKind: 'team', requireValue: 'shield' },
+        ],
+      },
+    },
+    {
+      label: 'rescue-bystanders-current-by-trait-count (Baron Zemo)',
+      hook: {
+        cardId: 'v-zemo' as CardExtId,
+        timing: 'onFight',
+        keywords: [],
+        effects: [
+          {
+            primitive: 'rescue-bystanders-current-by-trait-count',
+            requireKind: 'team',
+            requireValue: 'avengers',
+          },
+        ],
+      },
+    },
+  ];
+
+  for (const { label, hook } of cases) {
+    it(`${label} records no hollow breadcrumb`, () => {
+      const G = makeVillainG(hook);
+      executeVillainAbilities(G, CTX, hook.cardId, 'onFight', reverseShuffle);
+      assert.equal(
+        G.diagnostics?.hollowEffects?.length ?? 0,
+        0,
+        `${label} is handled — no unmarked-ability / no-handler record`,
+      );
+    });
+  }
 });
