@@ -35612,3 +35612,95 @@ Protect this file.
 
 Protect this file.
 
+---
+
+### D-24293 — Engineering Wiki: Pagefind search — amends the JS-free enforcement of D-13808 / D-13811 (Active 2026-08-01 — INFRA, no WP)
+
+> **Amends** the CI "Production output is JS-free" enforcement introduced with
+> D-13811 (and rooted in D-13808 constraint #2). **Does not supersede** D-13808
+> (framework = Hugo Extended), D-13809 (external-link strategy), D-13810 / D-13812
+> (projection + source location), D-13811's hosting target (Render `static_site`,
+> build command, publish path), or D-13813 (CI-driven deploy) — all remain in
+> force. This entry narrows exactly ONE facet: the blanket "zero `<script>`"
+> output gate becomes "JS-free EXCEPT the sanctioned Pagefind search loader."
+
+**Context.** The engineering wiki (`apps/wiki-viewer/`) shipped with a
+CI-enforced blanket JS-free invariant — `.github/workflows/wiki-viewer.yml`
+failed the build on any `<script` in `public/`. That gate was a broad
+implementation of D-13808's "static output, no content-side scripting" posture,
+not a first-class decision of its own. The wiki therefore had **no in-page
+search**, while the marketing site (`www`, separate repo) has shipped Pagefind
+search since its WP-005. The operator requested Pagefind parity on the ewiki
+(2026-08-01).
+
+**Decision.** Add Pagefind — a **build-time static** search index plus a
+**chrome-level** default UI — to the ewiki, and amend the CI gate to permit
+exactly that one script and nothing else:
+
+1. **Templates** (`layouts/_default/baseof.html`): a header search mount
+   `#wiki-search` with a server-rendered stub `<input>` (visible on first paint
+   and in `hugo server` dev, where `/pagefind/` is not built);
+   `data-pagefind-body` on `<main class="content">` to scope the index to page
+   content (the sidebar page-list and header chrome are naturally excluded); and
+   ONE sanctioned loader `<script data-wiki-search>` before `</body>` that
+   lazy-loads Pagefind's UI on first interaction (focus/click the stub, or `/` /
+   Ctrl-Cmd-K). The external `pagefind-ui.js` is injected via `createElement`,
+   not a literal `<script>` tag, so the loader remains the ONLY `<script>` in
+   rendered HTML. This mirrors the proven www WP-005 implementation.
+2. **Styles** (`assets/css/style.css`): header flex row + stub styling + inert
+   `--pagefind-ui-*` token overrides that retint the default UI to the wiki
+   palette only once it mounts.
+3. **Build** (`package.json` `wiki-viewer:build`, `render.yaml` wiki
+   `buildCommand`): append `pnpm exec pagefind --site apps/wiki-viewer/public`
+   after the Hugo render. `pagefind@1.5.2` is a root devDependency (same pin as
+   www); its cross-platform binaries are recorded in `pnpm-lock.yaml` so the
+   linux CI/Render frozen installs resolve.
+4. **CI gate** (`.github/workflows/wiki-viewer.yml`): a new "Generate Pagefind
+   search index" step runs AFTER the determinism check and BEFORE the JS-free
+   gate; the former "Production output is JS-free" step becomes "Production
+   output is JS-free except the Pagefind loader," which scans only rendered
+   `*.html` pages (excluding Pagefind's own `/pagefind/` bundle) and asserts
+   every `<script` occurrence is the `data-wiki-search` loader — any other
+   script fails the build red — plus a presence check on
+   `public/pagefind/pagefind-ui.js`.
+
+**What is preserved (why this is an amendment, not a reversal).**
+- **D-13808 #1 (no runtime backend):** Pagefind is a build-time static index
+  (fragment files + WASM served as static assets); there is no server, no API,
+  no render-time data injection.
+- **D-13808 #2 (no content-side scripting):** the loader is layout chrome, never
+  authored inside wiki markdown. `[markup.goldmark.renderer] unsafe = false`
+  still escapes any `<script` written in page content to `&lt;script`, so the
+  gate's "every `<script` is the sanctioned loader" assertion cannot be
+  satisfied by content — only by the template.
+- **Determinism (D-13808 byte-identical html+css lock):** the determinism step
+  hashes only `*.html` + `*.css` and re-runs project+hugo WITHOUT Pagefind;
+  Pagefind runs after it, so `pagefind-ui.css` and the index never enter the
+  hash. The static loader markup and CSS additions are byte-identical across
+  builds (verified: two-build html+css hashes match).
+- **No arbitrary-JS creep:** the gate still fails on ANY script that is not the
+  single sanctioned loader, so the invariant's real intent (no unreviewed
+  client JS) is intact — it is now an allow-list of one, not a blanket ban.
+
+**Verification (local, Hugo 0.161.1 Extended + pagefind 1.5.2).**
+`pnpm run wiki-viewer:build` green end-to-end; Pagefind found the
+`data-pagefind-body` element and indexed 61 pages / 15,758 words; all 61
+rendered HTML pages carry exactly one `<script>`, all matching
+`<script data-wiki-search` after `--minify`; zero `<script>` under `/pagefind/`
+HTML (Pagefind emits JS/WASM, no HTML); the two-build determinism hash of
+html+css is identical. Live in-browser search behaviour is inherited from the
+byte-faithful www WP-005 port; the live ewiki is behind Cloudflare Access and
+its custom domain + localhost are un-automatable here, so build-artifact
+verification is the proof surface.
+
+**Status:** Active.
+
+**Citation:** This entry; `NUMBER-LEDGER.md` D-24293 reservation;
+`apps/wiki-viewer/layouts/_default/baseof.html` (mount + loader);
+`apps/wiki-viewer/assets/css/style.css`; root `package.json`
+(`wiki-viewer:build`, `pagefind` devDep); `render.yaml` `legendary-arena-wiki`
+`buildCommand`; `.github/workflows/wiki-viewer.yml` (Pagefind step + amended
+JS-free gate). Mirrors the www marketing-repo WP-005 Pagefind integration.
+
+Protect this file.
+

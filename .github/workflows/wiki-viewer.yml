@@ -113,14 +113,44 @@ jobs:
           fi
           echo "Determinism check passed: $first_hash"
 
-      - name: Production output is JS-free
+      # why: D-24293 — generate the Pagefind static search index into
+      # apps/wiki-viewer/public/pagefind/. This MUST run AFTER the determinism
+      # check (which hashes only *.html + *.css and re-runs project+hugo WITHOUT
+      # Pagefind, so the Pagefind bundle — including pagefind-ui.css — must not
+      # exist in the tree when that step samples it) and BEFORE the JS-free gate
+      # (which now allow-lists the sanctioned loader). pagefind is a root
+      # devDependency installed by the frozen `pnpm install` step above; the
+      # same `pnpm exec pagefind --site apps/wiki-viewer/public` invocation runs
+      # in render.yaml so the deployed artifact matches this gated one.
+      - name: Generate Pagefind search index
+        run: pnpm exec pagefind --site apps/wiki-viewer/public
+
+      # why: JS-free-EXCEPT-the-sanctioned-Pagefind-loader (D-24293, amending the
+      # D-13808 / D-13811 blanket JS-free invariant). The ewiki stays free of
+      # arbitrary and content-authored JavaScript; the ONE permitted script is
+      # the chrome-level Pagefind search loader, tagged `data-wiki-search` in
+      # apps/wiki-viewer/layouts/_default/baseof.html. Pagefind is a build-time
+      # static index (no runtime backend — D-13808 constraint #1 preserved) and
+      # the loader is layout chrome, never content-side scripting (D-13808
+      # constraint #2 preserved). The scan covers only rendered *.html pages —
+      # Pagefind's own /pagefind/*.js bundle is the search engine, not
+      # page-authored chrome, and is excluded — and asserts that EVERY <script
+      # occurrence is the sanctioned loader. Any other script fails the build red.
+      - name: Production output is JS-free except the Pagefind loader
         run: |
           set -e
-          if grep -RIl '<script' apps/wiki-viewer/public/ ; then
-            echo "Production output contains <script> tags — JS-free invariant violated." >&2
+          total_scripts=$(grep -rho --include='*.html' '<script' apps/wiki-viewer/public | wc -l | tr -d ' ')
+          sanctioned_scripts=$(grep -rho --include='*.html' '<script data-wiki-search' apps/wiki-viewer/public | wc -l | tr -d ' ')
+          echo "Rendered HTML <script> tags: $total_scripts; sanctioned data-wiki-search loaders: $sanctioned_scripts."
+          if [ "$total_scripts" -ne "$sanctioned_scripts" ]; then
+            echo "JS-free-except-Pagefind gate FAILED: $total_scripts <script> tag(s) in rendered HTML but only $sanctioned_scripts are the sanctioned data-wiki-search Pagefind loader. Per D-24293 the only permitted script on the ewiki is that loader — remove any other <script>, or keep the data-wiki-search marker if you are extending search." >&2
             exit 1
           fi
-          echo "Production output is JS-free."
+          if [ ! -f apps/wiki-viewer/public/pagefind/pagefind-ui.js ]; then
+            echo "JS-free-except-Pagefind gate FAILED: apps/wiki-viewer/public/pagefind/pagefind-ui.js is missing — the Pagefind index step did not produce the search bundle. Check the 'Generate Pagefind search index' step." >&2
+            exit 1
+          fi
+          echo "JS-free-except-Pagefind gate passed: all $total_scripts rendered-HTML <script> tag(s) are the sanctioned Pagefind loader, and the Pagefind bundle is present."
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

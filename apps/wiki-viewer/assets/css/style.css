@@ -52,12 +52,78 @@ pre code { background: transparent; padding: 0; }
 .site-header {
   border-bottom: 1px solid var(--color-border);
   padding: 1rem 1.5rem;
+  /* why: title on the left, search box on the right (D-24293). flex-wrap keeps
+     the search box from overflowing on narrow viewports — it drops below the
+     title instead. */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  /* why: positioned ancestor for the absolute Pagefind results drawer below,
+     so the drawer anchors to the header rather than the viewport. */
+  position: relative;
 }
 
 .site-title {
   font-weight: 700;
   font-size: 1.1rem;
   color: var(--color-fg);
+}
+
+/* Pagefind search (D-24293). The stub <input> is the server-rendered
+   affordance; Pagefind's default UI replaces #wiki-search's contents on
+   lazy-load. The overrides below theme that default UI to the wiki palette. */
+.header-search {
+  flex: 0 1 320px;
+  min-width: 180px;
+}
+
+#wiki-search-stub {
+  width: 100%;
+  padding: 0.4rem 0.7rem;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--color-fg);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+}
+
+#wiki-search-stub:focus {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+/* why: Pagefind's default UI ships its own pagefind-ui.css (loaded lazily with
+   resetStyles:false). These overrides only retint it to the wiki tokens; they
+   are inert until the UI mounts, so a page that never opens search is
+   unaffected. Pagefind exposes --pagefind-ui-* custom properties for exactly
+   this. */
+#wiki-search .pagefind-ui {
+  --pagefind-ui-primary: var(--color-accent);
+  --pagefind-ui-text: var(--color-fg);
+  --pagefind-ui-background: var(--color-bg);
+  --pagefind-ui-border: var(--color-border);
+  --pagefind-ui-font: var(--font-stack);
+  --pagefind-ui-border-radius: 6px;
+  --pagefind-ui-scale: 0.85;
+}
+
+/* why: the default UI's results drawer expands the header; float it over the
+   content instead so the header height stays stable while searching. */
+#wiki-search .pagefind-ui__drawer {
+  position: absolute;
+  z-index: 20;
+  right: 1.5rem;
+  left: auto;
+  width: min(420px, calc(100vw - 3rem));
+  margin-top: 0.4rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
 }
 
 .layout {
