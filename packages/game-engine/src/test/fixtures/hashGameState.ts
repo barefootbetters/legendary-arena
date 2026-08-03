@@ -95,12 +95,13 @@ export function hashGameState(state: LegendaryGameState): string {
   // oracle — exactly the messages/logMeta/lastPlayEffectsFired rationale. Before this
   // exclusion, an observability-only change (the D-24266 breadcrumb firing on an
   // unimplemented villain effect, or a WP marking one to suppress it) silently shifted
-  // finalStateHash. NOTE (scope lock, D-24271): this WP excludes diagnostics from THIS
-  // oracle only; it deliberately STAYS in computeStateHash (replay.hash.ts) for now — the
-  // computeStateHash exclusion (which touches the competitive replayHash) is a deferred
-  // follow-on WP. Because diagnostics is not seeded at setup (buildInitialGameState keeps
-  // it absent-on-fresh), no current fixture materializes a hollow record, so stripping it
-  // here is byte-identical on every pinned fixture — no re-pin (verified).
+  // finalStateHash. NOTE (D-24271 → WP-488 / D-24294): the D-24271-deferred follow-on has
+  // LANDED — computeStateHash (replay.hash.ts, the competitive replayHash / PRE_WP080
+  // oracle) now excludes diagnostics too, so BOTH oracles are diagnostics-blind (required
+  // once WP-488's effect traces materialize on every dispatch, not just the rare hollow).
+  // Because diagnostics is not seeded at setup (buildInitialGameState keeps it
+  // absent-on-fresh), no pinned fixture materialized a record, so stripping it in either
+  // oracle is byte-identical — no re-pin of finalStateHash or PRE_WP080_HASH (verified).
   const {
     messages: _excludedMessageLog,
     logMeta: _excludedLogMeta,
