@@ -9,11 +9,11 @@
       "villain": 716
     },
     "byStatus": {
-      "executable": 346,
+      "executable": 348,
       "deferred": 0,
       "condition": 5,
       "unsupported": 367,
-      "unmarked": 648
+      "unmarked": 646
     }
   },
   "entries": [
@@ -3586,11 +3586,11 @@
       "name": "Abomination",
       "set": "core",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "capture-bystander",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander",
+      "wp": "WP-252",
+      "decision": "D-24023"
     },
     {
       "extId": "core-villain-radiation-maestro",
@@ -3718,11 +3718,11 @@
       "name": "The Lizard",
       "set": "core",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "gain-wound",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound",
+      "wp": "WP-252",
+      "decision": "D-24023"
     },
     {
       "extId": "core-villain-spider-foes-venom",
@@ -16502,7 +16502,7 @@
     "core-villain-radiation-abomination": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "capture-bystander"
       ]
     },
     "core-villain-radiation-maestro": {
@@ -16564,7 +16564,7 @@
     "core-villain-spider-foes-the-lizard": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "gain-wound"
       ]
     },
     "core-villain-spider-foes-venom": {
