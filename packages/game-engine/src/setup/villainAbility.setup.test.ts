@@ -201,6 +201,60 @@ describe('buildVillainAbilityHooks — [effect:] marker extraction', () => {
   });
 });
 
+describe('buildVillainAbilityHooks — Tier-B @space gate + grammars (WP-489 / D-24295)', () => {
+  const registry = makeRegistry(
+    'core',
+    [
+      {
+        slug: 'tierb',
+        cards: [
+          { slug: 'abomination', abilities: ['Fight: rescue three. [effect:capture-bystander:3@streets+bridge]'] },
+          { slug: 'the-lizard', abilities: ['Fight: each other. [effect:gain-wound:each-other@sewers]'] },
+          { slug: 'ungated-eachother', abilities: ['Fight: bare. [effect:gain-wound:each-other]'] },
+          { slug: 'counted-nogate', abilities: ['Fight: two. [effect:capture-bystander:2]'] },
+          { slug: 'badspace', abilities: ['Fight: nope. [effect:capture-bystander:1@moon]'] },
+          { slug: 'emptyspace', abilities: ['Fight: nope. [effect:capture-bystander:1@streets+]'] },
+        ],
+      },
+    ],
+    [],
+  );
+  const hooks = buildVillainAbilityHooks(registry, makeConfig(['core/tierb'], []));
+  const hookFor = (slug: string) =>
+    hooks.find((h) => h.cardId === `core-villain-tierb-${slug}-00`)!;
+
+  it('lifts a multi-space @gate onto the counted capture-bystander descriptor', () => {
+    assert.deepStrictEqual(hookFor('abomination').effects, [
+      { primitive: 'capture-bystander', magnitude: 3, requireCitySpaces: ['streets', 'bridge'] },
+    ]);
+    // why: keyword-less — the counted+gated capture-bystander must NOT reverse-map.
+    assert.deepStrictEqual(hookFor('abomination').keywords, []);
+  });
+
+  it('parses gain-wound:each-other with a single-space @gate (default magnitude 1)', () => {
+    assert.deepStrictEqual(hookFor('the-lizard').effects, [
+      { primitive: 'gain-wound', target: 'each-other', magnitude: 1, requireCitySpaces: ['sewers'] },
+    ]);
+    assert.deepStrictEqual(hookFor('the-lizard').keywords, []);
+  });
+
+  it('parses an ungated each-other and an ungated counted capture-bystander', () => {
+    assert.deepStrictEqual(hookFor('ungated-eachother').effects, [
+      { primitive: 'gain-wound', target: 'each-other', magnitude: 1 },
+    ]);
+    assert.deepStrictEqual(hookFor('counted-nogate').effects, [
+      { primitive: 'capture-bystander', magnitude: 2 },
+    ]);
+  });
+
+  it('rejects an unknown or empty @space to unresolvedMarkers (never a silent accept)', () => {
+    assert.deepStrictEqual(hookFor('badspace').effects, []);
+    assert.deepStrictEqual(hookFor('badspace').unresolvedMarkers, ['capture-bystander:1@moon']);
+    assert.deepStrictEqual(hookFor('emptyspace').effects, []);
+    assert.deepStrictEqual(hookFor('emptyspace').unresolvedMarkers, ['capture-bystander:1@streets+']);
+  });
+});
+
 describe('buildVillainAbilityHooks — keywords/effects parity', () => {
   it('keywords and effects are distinct but parallel arrays (WP-252)', () => {
     const registry = makeRegistry(

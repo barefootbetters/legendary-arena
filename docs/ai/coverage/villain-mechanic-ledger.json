@@ -4,12 +4,12 @@
   "summary": {
     "totalRows": 716,
     "byStatus": {
-      "executable": 113,
+      "executable": 115,
       "deferred": 0,
       "unsupported": 1,
-      "unmarked": 602
+      "unmarked": 600
     },
-    "distinctMechanics": 16
+    "distinctMechanics": 18
   },
   "rows": [
     {
@@ -1678,11 +1678,11 @@
       "cardName": "Abomination",
       "set": "core",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "capture-bystander",
+      "status": "executable",
+      "wp": "WP-252",
+      "decision": "D-24023",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander"
     },
     {
       "extId": "core-villain-masters-of-evil-baron-zemo",
@@ -1986,11 +1986,11 @@
       "cardName": "The Lizard",
       "set": "core",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "gain-wound",
+      "status": "executable",
+      "wp": "WP-252",
+      "decision": "D-24023",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound"
     },
     {
       "extId": "core-villain-masters-of-evil-ultron",

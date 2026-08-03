@@ -136,6 +136,30 @@ const VILLAIN_EFFECT_PRIMITIVES = [
   'rescue-bystanders-current-by-trait-count',
 ];
 
+// why: WP-489 / D-24295 — hand-synced local copy of the engine's CITY_SPACE_NAMES
+// (packages/game-engine/src/board/citySpaceNames.ts). Same no-import-from-packages
+// discipline + loud-fail-on-drift posture as the two vocabularies above: the
+// universal `@<space>[+<space>…]` location-gate suffix validates each space against
+// this list, so a mistyped space in the marker map is rejected (never a silent
+// accept) and any engine-side rename breaks this script until it is updated here.
+const CITY_SPACE_NAMES = ['sewers', 'bank', 'rooftops', 'streets', 'bridge'];
+
+/**
+ * Returns true when a `@<space>[+<space>…]` gate suffix (the text after the `@`)
+ * is well-formed: non-empty, `+`-separated, every segment a canonical city space
+ * (D-24295). Mirrors the engine parser's parseCityGateSuffix.
+ *
+ * @param {string} spacesToken - the text after the `@`.
+ * @returns {boolean} true when every `+`-separated segment is a known space.
+ */
+function isValidCityGateSuffix(spacesToken) {
+  if (spacesToken.length === 0) return false;
+  for (const rawSpace of spacesToken.split('+')) {
+    if (!CITY_SPACE_NAMES.includes(rawSpace)) return false;
+  }
+  return true;
+}
+
 /**
  * Returns true when a token is a well-formed parameterized effect token
  * `<primitive>[:<param>...]`, mirroring the engine parser's grammar
@@ -148,7 +172,14 @@ const VILLAIN_EFFECT_PRIMITIVES = [
  * @returns {boolean} True when the token is a valid parameterized effect.
  */
 function isValidParameterizedEffectToken(token) {
-  const parts = token.split(':');
+  // why: D-24295 — strip the universal `@<space>[+<space>…]` location-gate suffix
+  // FIRST (mirrors the engine parser's parseParameterizedEffect). Reject more than
+  // one `@`; validate the suffix against CITY_SPACE_NAMES. The remaining left side
+  // parses by the primitive grammar below.
+  const gateSplit = token.split('@');
+  if (gateSplit.length > 2) return false;
+  if (gateSplit.length === 2 && !isValidCityGateSuffix(gateSplit[1])) return false;
+  const parts = gateSplit[0].split(':');
   const primitive = parts[0];
   if (!VILLAIN_EFFECT_PRIMITIVES.includes(primitive)) return false;
   if (primitive === 'ko-hero') {
@@ -167,7 +198,19 @@ function isValidParameterizedEffectToken(token) {
     return false;
   }
   if (primitive === 'gain-wound') {
-    return parts.length === 2 && (parts[1] === 'current' || parts[1] === 'each');
+    if (parts.length === 2 && (parts[1] === 'current' || parts[1] === 'each')) return true;
+    // why: D-24295 — gain-wound:each-other[:<N>] (the Lizard); optional positive-
+    // integer magnitude. Mirrors the engine parser's each-other branch.
+    if (parts.length === 2 && parts[1] === 'each-other') return true;
+    if (parts.length === 3 && parts[1] === 'each-other' && /^[1-9][0-9]*$/.test(parts[2])) return true;
+    return false;
+  }
+  if (primitive === 'capture-bystander') {
+    // why: D-24295 — no-arg form, or capture-bystander:<N> (Abomination's rescue
+    // count). Mirrors the engine parser's capture-bystander branch.
+    if (parts.length === 1) return true;
+    if (parts.length === 2 && /^[1-9][0-9]*$/.test(parts[1])) return true;
+    return false;
   }
   if (primitive === 'capture-hq-hero') {
     return (

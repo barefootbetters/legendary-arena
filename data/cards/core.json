@@ -2200,7 +2200,7 @@
           "vAttack": "5",
           "imageUrl": "https://images.legendary-arena.com/core/core-vi-radiation-abomination.webp",
           "abilities": [
-            "Fight: If you fight Abomination on the Streets or Bridge, rescue three Bystanders."
+            "Fight: If you fight Abomination on the Streets or Bridge, rescue three Bystanders. [effect:capture-bystander:3@streets+bridge]"
           ],
           "copies": 2
         },
@@ -2329,7 +2329,7 @@
           "vAttack": "3",
           "imageUrl": "https://images.legendary-arena.com/core/core-vi-spider-foes-the-lizard.webp",
           "abilities": [
-            "Fight: If you fight the Lizard in the Sewers, each other player gains a Wound."
+            "Fight: If you fight the Lizard in the Sewers, each other player gains a Wound. [effect:gain-wound:each-other@sewers]"
           ],
           "copies": 2
         },

@@ -11,6 +11,7 @@
  */
 
 import type { CardExtId } from '../state/zones.types.js';
+import type { CitySpaceName } from '../board/citySpaceNames.js';
 
 // ---------------------------------------------------------------------------
 // VillainAbilityTiming
@@ -250,6 +251,14 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
  *   - `ko-hero` with `target: 'each'`: optional `zone` (D-24280) restricts the
  *     per-player KO to a single source zone (Juggernaut's "from their discard
  *     pile" / "from their hand"); absent means the discard→hand→inPlay fallback.
+ *   - `gain-wound` with `target: 'each-other'` (D-24295): every player EXCEPT the
+ *     current player gains `magnitude` Wound(s) (default 1) — the Lizard.
+ *   - `capture-bystander`: optional `magnitude` (D-24295) is a rescue COUNT
+ *     (default 1) — the counted variant (Abomination: 3) self-narrates because its
+ *     magnitude-bearing descriptor has no legacy reverse-map entry.
+ *   - Any effect: optional `requireCitySpaces` (D-24295) is a location gate —
+ *     the effect fires only when the villain is fought on one of the listed City
+ *     spaces (Abomination: Streets/Bridge, the Lizard: Sewers).
  *   - `reveal-or-wound`: `requireKind` + `requireValue` (D-24281) — the
  *     hero-trait predicate each player must satisfy from hand to avoid a Wound.
  *   - `draw-cards-current`: `drawCount` (D-24290) — how many cards the current
@@ -261,9 +270,23 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
  */
 export interface VillainEffectDescriptor {
   primitive: VillainEffectPrimitive;
-  target?: 'current' | 'each';
+  // why: D-24295 — `'each-other'` (the Lizard) wounds every player EXCEPT the
+  // current player, appended to the `gain-wound` target axis alongside
+  // 'current' | 'each' (append-only per D-24034). Not part of `descriptorKey`
+  // beyond the existing `target` slot, so a `gain-wound:each-other` descriptor is
+  // keyword-less (no legacy reverse-map entry) and self-narrates.
+  target?: 'current' | 'each' | 'each-other';
   magnitude?: number;
   selector?: 'rightmost' | 'highest-cost' | 'lowest-cost';
+  // why: D-24295 — the universal location gate: the effect fires ONLY when the
+  // villain is fought on one of these named City spaces (Abomination:
+  // Streets/Bridge, the Lizard: Sewers). Additive optional; lifted from the
+  // marker's `@<space>[+<space>…]` gate suffix. Deliberately NOT part of
+  // `descriptorKey` below (a resolver-targeting detail like `zone`/`requireKind`),
+  // so it never affects the legacy reverse-map. The gate is checked in the
+  // executor BEFORE handler dispatch and fails closed on an undefined cityIndex
+  // (the Ambush/Escape fire sites, which have no fought space).
+  requireCitySpaces?: readonly CitySpaceName[];
   // why: D-24290 — the number of cards the current player draws, present ONLY on
   // `{ primitive: 'draw-cards-current' }` descriptors (Enchantress: 3). A positive
   // integer set by the parser's `draw-cards-current:<N>` grammar. Deliberately NOT

@@ -302,6 +302,10 @@ export function performVillainReveal(
         // uniform with the Fight fire site). Wrapped as a ShuffleProvider `{ random }`
         // from the RevealContext's random API (the bare `ctx` carries only currentPlayer).
         { random: context.random },
+        // why: WP-489 / D-24295 — the Escape fire site has no fought City space, so
+        // cityIndex is undefined; the location gate FAILS CLOSED, so any
+        // requireCitySpaces effect at Escape never fires (none of Tier B's cards escape).
+        undefined,
       );
       // why: WP-316 — Escape is LOG-ONLY: narrate the Escape: effect targets
       // into G.messages (hash-excluded, D-24081) but add NO escapeResolved (or
@@ -383,7 +387,9 @@ export function performVillainReveal(
     if (hasAmbush(cardId, G.cardKeywords ?? {})) {
       // why: WP-478 / D-24285 — pass the reveal move's shuffle source (uniform with
       // the Fight/Escape fire sites) so a future Ambush-timed scry could reshuffle.
-      const appliedAmbushResults = executeVillainAbilities(G, ctx, cardId, 'onAmbush', { random: context.random });
+      // why: WP-489 / D-24295 — the Ambush fire site has no fought City space, so
+      // cityIndex is undefined; the location gate FAILS CLOSED (no Tier-B card ambushes).
+      const appliedAmbushResults = executeVillainAbilities(G, ctx, cardId, 'onAmbush', { random: context.random }, undefined);
       // why: WP-316 — map results→keywords so the ambushResolved `appliedEffects`
       // field and the composeAmbushNarrative string stay byte-identical to main;
       // the hashed notableEvents surface (and the arena-client) never observe the

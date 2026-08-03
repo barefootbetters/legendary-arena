@@ -244,7 +244,10 @@ export function defeatCityVillainCore(
   // why: WP-478 / D-24285 — pass the caller's `random` (wrapped as a ShuffleProvider
   // `{ random }`) so a Fight scry (Doombot Legion) can reshuffle the current
   // player's discard when their deck is short.
-  const appliedFightResults = executeVillainAbilities(G, ctx, cardId, 'onFight', shuffleContext);
+  // why: WP-489 / D-24295 — pass the fought `cityIndex` (a plain number captured
+  // before the slot was nulled) so a location-gated Fight ability (Abomination /
+  // the Lizard) can check which named City space the villain was fought on.
+  const appliedFightResults = executeVillainAbilities(G, ctx, cardId, 'onFight', shuffleContext, cityIndex);
   // why: WP-316 — map results→keywords so the fightResolved `appliedEffects`
   // field and the composeFightNarrative string stay byte-identical to main; the
   // hashed notableEvents surface (and the arena-client) never observe the

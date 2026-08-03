@@ -26,6 +26,10 @@ import {
   VILLAIN_EFFECT_PRIMITIVES,
   LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR,
 } from '../rules/villainAbility.types.js';
+// why: D-24295 — the universal `@<space>` location-gate suffix validates each space
+// against the canonical CITY_SPACE_NAMES; CitySpaceName is the lifted field type.
+import type { CitySpaceName } from '../board/citySpaceNames.js';
+import { CITY_SPACE_NAMES } from '../board/citySpaceNames.js';
 // why: D-24281 — reveal-or-wound stores its `requireValue` normalized to the
 // `cardTraits` slug space so the executor's `===` trait comparison is
 // casing/whitespace-safe. normalizeTraitSlug is the SINGLE canonical normalizer
@@ -273,26 +277,110 @@ function parseTraitPredicateTokens(
 }
 
 /**
- * Parses a parameterized effect token `<primitive>[:<param>…]` into a
- * descriptor, or null when the token is not a valid parameterized effect.
+ * Validates a `@<space>[+<space>…]` gate suffix and lifts it to a
+ * `requireCitySpaces` list, or null when it is empty or names an unknown space
+ * (D-24295).
  *
- * Forward-compatible grammar (WP-252 / D-24023): no real card uses it yet, but
- * accepting it now is what makes a future magnitude (e.g. `ko-hero:each:3`) or
- * selector data-only — no new keyword, no code change. Colon-delimited and
- * positional per primitive:
+ * Each space is validated against the canonical `CITY_SPACE_NAMES`; an unknown or
+ * empty space returns null so the whole marker resolves to `unresolvedMarkers`
+ * rather than silently accepting a mistyped space.
+ *
+ * @param spacesToken - The text after the `@` (e.g. `streets+bridge`).
+ * @returns The validated space list, or null when empty / any space is unknown.
+ */
+function parseCityGateSuffix(spacesToken: string): CitySpaceName[] | null {
+  if (spacesToken.length === 0) {
+    return null;
+  }
+  const spaces: CitySpaceName[] = [];
+  for (const rawSpace of spacesToken.split('+')) {
+    // why: membership test against the closed CITY_SPACE_NAMES tuple; a `+`-split
+    // empty segment (e.g. `streets+`) has length 0 and is not a member → null.
+    if (!isCitySpaceName(rawSpace)) {
+      return null;
+    }
+    spaces.push(rawSpace);
+  }
+  return spaces;
+}
+
+/**
+ * Checks whether a string is one of the canonical City space names.
+ *
+ * @param value - The candidate space token.
+ * @returns True when value is a member of CITY_SPACE_NAMES.
+ */
+function isCitySpaceName(value: string): value is CitySpaceName {
+  for (const spaceName of CITY_SPACE_NAMES) {
+    if (spaceName === value) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Parses a full effect marker value into a descriptor, splitting off the
+ * universal `@<space>[+<space>…]` location-gate suffix FIRST (D-24295) and then
+ * parsing the remaining primitive grammar.
+ *
+ * The gate suffix is split before the primitive `:`-grammar so a location gate
+ * can decorate ANY effect token. An unknown / empty space, or more than one `@`,
+ * returns null (→ `unresolvedMarkers`, never a silent accept). The remaining
+ * left side parses by `parseUngatedEffect`; a present gate is attached as
+ * `requireCitySpaces`.
+ *
+ * @param value - The raw marker value (the text inside `[effect:…]`).
+ * @returns The parsed descriptor (with any location gate), or null.
+ */
+function parseParameterizedEffect(
+  value: string,
+): VillainEffectDescriptor | null {
+  const gateSplit = value.split('@');
+  // why: at most one `@` — a second gate suffix is malformed, not two gates.
+  if (gateSplit.length > 2) {
+    return null;
+  }
+  let requireCitySpaces: CitySpaceName[] | null = null;
+  if (gateSplit.length === 2) {
+    requireCitySpaces = parseCityGateSuffix(gateSplit[1]!);
+    if (requireCitySpaces === null) {
+      return null;
+    }
+  }
+  const descriptor = parseUngatedEffect(gateSplit[0]!);
+  if (descriptor === null) {
+    return null;
+  }
+  if (requireCitySpaces !== null) {
+    descriptor.requireCitySpaces = requireCitySpaces;
+  }
+  return descriptor;
+}
+
+/**
+ * Parses a parameterized effect token `<primitive>[:<param>…]` (WITHOUT any
+ * `@<space>` gate suffix — the wrapper strips that first) into a descriptor, or
+ * null when the token is not a valid parameterized effect.
+ *
+ * Forward-compatible grammar (WP-252 / D-24023): accepting it makes a future
+ * magnitude (e.g. `ko-hero:each:3`) or selector data-only — no new keyword, no
+ * code change. Colon-delimited and positional per primitive:
  *   - `ko-hero:current` | `ko-hero:each:<N>`
- *   - `gain-wound:current` | `gain-wound:each`
+ *   - `gain-wound:current` | `gain-wound:each` | `gain-wound:each-other[:<N>]` (D-24295)
  *   - `capture-hq-hero:rightmost` | `:highest-cost` | `:lowest-cost`
  *   - `reveal-or-wound:<kind>:<value>`  (kind `team` | `hc`; D-24281)
  *   - `draw-cards-current:<N>`  (N a positive integer; D-24290)
  *   - `ko-heroes-current-by-trait:<kind>:<value>`  (kind `team` | `hc`; D-24290)
  *   - `rescue-bystanders-current-by-trait-count:<kind>:<value>`  (D-24290)
- *   - `hero-deck-top-to-escape` | `capture-bystander`  (no params)
+ *   - `capture-bystander` | `capture-bystander:<N>`  (N a rescue count; D-24295)
+ *   - `hero-deck-top-to-escape`  (no params)
  *
- * @param value - The raw marker value (the text inside `[effect:…]`).
+ * @param value - The ungated marker value (the text inside `[effect:…]` minus
+ *   any `@<space>` suffix).
  * @returns The parsed descriptor, or null.
  */
-function parseParameterizedEffect(
+function parseUngatedEffect(
   value: string,
 ): VillainEffectDescriptor | null {
   const parts = value.split(':');
@@ -333,6 +421,41 @@ function parseParameterizedEffect(
     const target = parts[1];
     if (parts.length === 2 && (target === 'current' || target === 'each')) {
       return { primitive: 'gain-wound', target };
+    }
+    // why: D-24295 — `gain-wound:each-other[:<N>]` (the Lizard) wounds every OTHER
+    // player. Optional `:<N>` magnitude (default 1) mirrors ko-hero:each's magnitude
+    // grammar so a future N-wound each-other line is data-only. Keyword-less → the
+    // handler self-narrates.
+    if (target === 'each-other') {
+      if (parts.length === 2) {
+        return { primitive: 'gain-wound', target: 'each-other', magnitude: 1 };
+      }
+      if (parts.length === 3) {
+        const magnitude = parsePositiveInteger(parts[2]!);
+        if (magnitude === null) {
+          return null;
+        }
+        return { primitive: 'gain-wound', target: 'each-other', magnitude };
+      }
+      return null;
+    }
+    return null;
+  }
+  if (primitiveToken === 'capture-bystander') {
+    // why: D-24295 — the no-arg form parses to the legacy-keyword descriptor
+    // (magnitude undefined → Green Goblin's generic narration, unchanged). The
+    // counted `capture-bystander:<N>` form (Abomination: 3) carries the rescue
+    // COUNT as `magnitude`; its magnitude-bearing descriptor is keyword-less, so it
+    // self-narrates. A non-positive-integer or 3+-token form is rejected.
+    if (parts.length === 1) {
+      return { primitive: 'capture-bystander' };
+    }
+    if (parts.length === 2) {
+      const magnitude = parsePositiveInteger(parts[1]!);
+      if (magnitude === null) {
+        return null;
+      }
+      return { primitive: 'capture-bystander', magnitude };
     }
     return null;
   }
