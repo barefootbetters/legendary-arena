@@ -35742,9 +35742,9 @@ Protect this file.
 
 Protect this file.
 
-### D-24295 — Core villain-effect vocabulary Tier B: named city spaces + location gate (Drafted 2026-08-02 — WP-489; not yet landed)
+### D-24295 — Core villain-effect vocabulary Tier B: named city spaces + location gate (Active 2026-08-03 — WP-489 / EC-524)
 
-> **Status: Drafted at SPEC time; flips to Active (post-execution) when WP-489 executes.** Reserved in `NUMBER-LEDGER.md`. (Renumbered from D-24291 (#1160) then D-24294 (#1169 effect-runtime-tracing).)
+> **Status: Active (executed 2026-08-03).** Reserved in `NUMBER-LEDGER.md`. (Renumbered from D-24291 (#1160) then D-24294 (#1169 effect-runtime-tracing).)
 
 **Context.** Tier A (D-24290) took the auto-resolve villain abilities with no board condition. Tier B takes the next subset: abilities gated on the NAMED CITY SPACE the villain is fought on. The engine has no named spaces today — `G.city` is a 5-tuple indexed 0-4 (index 0 = entry, index 4 = escape edge, `board/city.types.ts`) — and the fought index is not even available at the villain-effect handler fire site (`fightVillain` knows it but nulls the slot before firing effects and never passes it to `executeVillainAbilities`). This D-entry supersedes the Tier A note's off-hand characterization of Tier B as "a state-shape change": it is NOT — no new `G` field is added.
 
@@ -35757,6 +35757,8 @@ Protect this file.
 **Scope refinement (2 cards, not 3).** The Tier A note listed {Whirlwind, Abomination, the Lizard} as Tier B. **Whirlwind is deferred to Tier D**: its "KO two of your Heroes" is inherently interactive (the current player chooses which Heroes to KO); the only faithful path is the interactive `pendingKoHeroChoices` pipeline (WP-242/D-24007) extended to a magnitude-bearing current-player KO. Whirlwind will reuse this WP's location gate AND that interactive pipeline when Tier D drafts. Keeping Tier B to the two auto-resolve city cards keeps it single-concern.
 
 **Consequences.** Additive contract change (descriptor `requireCitySpaces` + `each-other` target + counted `capture-bystander`; new engine constant; widened handler signature) recorded here. No new `G` field — but the markers attach to the two cards' `villainAbilityHooks` entries, which ARE a hashed top-level `G` field (`buildInitialGameState.ts`; not excluded by `hashGameState.ts`), so `finalStateHash` / `PRE_WP080` shift for any committed fixture whose villain deck INCLUDES Abomination or the Lizard — the fight need not occur. No committed engine fixture uses `core/radiation` or `core/spider-foes` today (verified: sentinel `core/brotherhood`, PRE_WP080 `test/*`), so no re-pin now; re-pin (dual) only if a future committed fixture's deck includes these cards. The named-space capability is reusable by future city-conditional villains (Whirlwind Tier D; cross-set city cards — Galactus destroy-space, Burrow, Conqueror, Momentum, Patrol — not marked here). Reserved by WP-489; hard-deps WP-485/D-24290 + WP-252/D-24023 + WP-202 + WP-478/D-24285 + D-24266 + D-24034.
+
+**Execution outcome (2026-08-03).** Landed as designed: `board/citySpaceNames.ts` (pure constant, index 0=Sewers … 4=Bridge), the `cityIndex?` thread, and the universal `requireCitySpaces` gate. game-engine 2281/0; `pnpm -r build` + `pnpm -r --no-bail test` exit 0; NO `finalStateHash` / `PRE_WP080` re-pin (confirmed empirically — no committed fixture deck includes `core/radiation` or `core/spider-foes`); regenerated `core.json` shows only the two Fight lines and the villain ledger flips Abomination + the Lizard to `executable`. **The provenance map was deliberately left unchanged:** the villain ledger keys `mechanic` by primitive, and both reused primitives (`capture-bystander`, `gain-wound`) already carry WP-252/D-24023 provenance — which correctly populates the two new rows — so keying WP-489 to those primitives would mis-attribute every other card using them (unlike Tier A, which added net-new primitives). `User-Visible Surface = play.legendary-arena.com` — D-24026 live-verify operator-pending.
 
 ### D-24296 — Destroyer's `team:shield` KO matches the teamless basic S.H.I.E.L.D. cards (Active 2026-08-03 — WP-490 / EC-525)
 
