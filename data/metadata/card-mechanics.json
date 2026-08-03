@@ -298,6 +298,19 @@
       "hidden": true
     },
     {
+      "slug": "defeat-with-bystander",
+      "label": "Defeat With Bystander",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 3,
+      "cardIds": [
+        "3dtc/black-widow",
+        "core/black-widow",
+        "msp1/black-widow"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "demolish",
       "label": "Demolish",
       "scope": "hero",
@@ -1878,6 +1891,7 @@
     },
     "3dtc/black-widow": {
       "mechanics": [
+        "defeat-with-bystander",
         "draw",
         "rescue"
       ]
@@ -2280,6 +2294,7 @@
     "core/black-widow": {
       "mechanics": [
         "attack-per-count",
+        "defeat-with-bystander",
         "draw",
         "optional-ko-reward",
         "rescue"
@@ -2917,6 +2932,7 @@
     },
     "msp1/black-widow": {
       "mechanics": [
+        "defeat-with-bystander",
         "draw",
         "rescue"
       ]
