@@ -562,16 +562,16 @@ export function buildInitialGameState(
     // pendingOptionalKoRewards), deliberately NOT a seeded
     // `{ hollowEffects: [], hollowEffectsDropped: 0 }` literal: a fresh match starts
     // with zero records either way, but an always-present empty literal would change
-    // the whole-G canonical-JSON hash. NOTE (WP-451 / D-24271): the fixture-golden
-    // `hashGameState` oracle now EXCLUDES `diagnostics`, so this absent-on-fresh choice
-    // is no longer needed to keep THAT hash stable. It IS still required for
-    // `computeStateHash` (replay.hash.ts, the whole-G determinism oracle), which still
-    // serializes `diagnostics` — its exclusion is a deferred follow-on WP. So keeping the
-    // field absent keeps the PRE_WP080 / EMPTY_REGISTRY computeStateHash byte-identical.
-    // So a fresh match has `G.diagnostics === undefined` (≡ empty, omitted by
-    // JSON.stringify); the first hollow event materializes the channel. There is no
-    // mid-match reset — each match calls buildInitialGameState fresh. Hence the
-    // field is intentionally NOT assigned in this literal.
+    // the whole-G canonical-JSON hash. NOTE (WP-451 / D-24271 → WP-488 / D-24294): BOTH
+    // hash oracles now EXCLUDE `diagnostics` — the fixture-golden `hashGameState` oracle
+    // (WP-451) and, since WP-488, `computeStateHash` (replay.hash.ts, the whole-G
+    // determinism / PRE_WP080 oracle) too. So the absent-on-fresh choice is no longer
+    // load-bearing for hash stability; it is kept as the correct lazy-init discipline —
+    // `G.diagnostics` materializes at its writer (recordHollowEffect / recordEffectTrace),
+    // never seeded here, so a fresh match has `G.diagnostics === undefined` (≡ empty,
+    // omitted by JSON.stringify) and the first hollow record OR effect trace materializes
+    // the channel. There is no mid-match reset — each match calls buildInitialGameState
+    // fresh. Hence the field is intentionally NOT assigned in this literal.
     // why: conditional spread per WP-029 exactOptionalPropertyTypes pattern —
     // the field is included only when scoringConfig was supplied; never written
     // as `activeScoringConfig: undefined` literally (D-6703).
