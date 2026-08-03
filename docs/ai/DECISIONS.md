@@ -35716,3 +35716,27 @@ JS-free gate). Mirrors the www marketing-repo WP-005 Pagefind integration.
 
 Protect this file.
 
+### D-24294 — Runtime Effect Tracing — hash-excluded per-dispatch trace on G.diagnostics (Drafted 2026-08-02; not yet landed — WP-488)
+
+**Decision:** The **runtime effect trace** — piece 2/3 of the ewiki `wiki/debug-effects.md` direction (piece 1 = the Effect Implementation Index, shipped WP-484 / D-24289; piece 3 = the `/debug/effects` viewer, shipped WP-487 / D-24292) — is a **runtime-only, hash-excluded, inert** engine diagnostic. On every card-effect descriptor dispatch the engine appends an `EffectTrace` to a new `traces: EffectTrace[]` on the existing `G.diagnostics` channel (the same runtime-only home as the WP-257 hollow records), recording the card, scope, timing, effect token, the handler that ran (a **string label**), a status, the fire site, the descriptor params, and the turn. It unifies "handler never reached" (the hollow case) and "handler reached but applied nothing" (a no-op like Mystique's `become-scheme-twist`) into one per-dispatch record, and captures the **secondary fire site** (D-24287) where the executor handler is a no-op but the real work fires elsewhere.
+
+**Contract (locked):**
+- **Home:** `G.diagnostics.traces: EffectTrace[]` (+ `tracesDropped`) — runtime-only, JSON-serializable, hash-excluded; NOT a module side channel, NOT a top-level `G` field, NEVER persisted. `EffectTrace = { cardId, scope: hero|villain|henchman, timing, effect, handler [string label, "" when none], status, fireSite, params, turn }`.
+- **Closed unions:** `EffectTraceStatus` = `fired | no-op | no-handler | secondary-site`; `EffectTraceFireSite` = `villain-executor | hero-executor | hero-primitive | escape-scheme-twist`; both asserted ↔ their canonical arrays by a drift test.
+- **Writer:** `recordEffectTrace(G, trace)` mirrors `recordHollowEffect`'s discipline — lazy-init `G.diagnostics` (never in `Game.setup()`), append, bound by `EFFECT_TRACES_CAP` with `tracesDropped++`, never throw, **never read as gameplay input** by any move/rule/`endIf`/bot/scoring path — with ONE divergence: it does **NOT** `pushLog` to `G.messages` (a per-dispatch log push would churn the hashed `messages` field + the `record-game-fixture` sentinels). `params` is an explicit scalar-field copy (omit `undefined`), never a spread-and-cast.
+- **Emit sites (caller loops, not the inner dispatch fns — they carry `turn`+`timing` together):** `executeVillainAbilities` (`villain-executor`; `no-op` is a fixed primitive allowlist `{ become-scheme-twist [D-24287], gain-attached-hero [D-24270] }`, NEVER `targets.length` — many real-firing handlers return empty `targets`), `executeHeroEffects` (both sub-paths: `hero-executor` via `executeSingleEffect`'s bool + `hero-primitive` via `interpretHeroPrimitiveEffect`'s bool), and the `villainCardEscapeTriggersSchemeTwist` block in `villainDeck.reveal.ts` (the `secondary-site` escape→scheme-twist emit).
+- **Determinism (BOTH oracles diagnostics-blind):** `hashGameState` (`finalStateHash`) already excludes `diagnostics` (WP-451 / D-24271); this WP completes the deferred second half by excluding **`diagnostics` only** from `computeStateHash` (`replay.hash.ts`, the `PRE_WP080_HASH` oracle) — keeping `messages`/`logMeta`/`lastPlayEffectsFired` hashed there (unlike `hashGameState`) — REQUIRED because traces materialize on **every** dispatch (unlike the rare hollow) and would otherwise shift the replay oracle. Adding the exclusion strips an absent-on-fresh field → **no re-pin** of `PRE_WP080_HASH` or any `record-game-fixture` `finalStateHash` sentinel (confirm empirically; if either shifts, STOP).
+
+**Deferred (explicitly out of scope of WP-488, each a separate future WP):** capturing "which zone helpers mutated state" (net-new instrumentation); wiring the trace into `effectProvenance` / a UIState projection / the `/debug/effects` viewer (client consumption); persisting or publishing traces; additional secondary fire sites beyond the D-24287 escape-twist case.
+
+**Why a hash-excluded G field, not a side channel.** State that must survive across a boardgame.io move has to live in the Immer-drafted `G`; a module-level side channel violates the ownership model. A runtime-only, JSON-serializable, hash-excluded `G` field is the sanctioned pattern (`G.messages` / `G.logMeta` / `G.lastPlayEffectsFired` / `G.diagnostics` are live precedent). Handler identity is a string label, never a function reference (`G` forbids functions).
+
+**Fixes:** the effect-debugging surfaces had no per-dispatch record of *which handler ran and whether it did anything* — the hollow detector only records misses, and reads a deliberate no-op (Mystique) as "applied." The trace is that record, and it makes the second hash oracle diagnostics-blind (closing the D-24271 deferral).
+
+**Packet:** WP-488 / EC-523.
+
+**Drafted:** 2026-08-02. Reserved by WP-488; hard-deps WP-257 / D-24034 (hollow detector + channel) + WP-451 / D-24271 (`hashGameState` exclusion) + D-24287 (the escape-twist secondary site).
+**Status:** Drafted 2026-08-02; not yet landed. Flips to Active when WP-488 executes.
+
+Protect this file.
+
