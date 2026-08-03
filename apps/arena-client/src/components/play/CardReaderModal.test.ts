@@ -52,7 +52,7 @@ describe('CardReaderModal', () => {
     assert.match(text, /always wins ties/);
   });
 
-  test('renders ability markers as glyphs / labels, not raw brackets', () => {
+  test('renders ability markers as icon images, not raw brackets', () => {
     mount(CardReaderModal, {
       props: {
         isOpen: true,
@@ -65,11 +65,26 @@ describe('CardReaderModal', () => {
       },
       attachTo: document.body,
     });
-    const text = document.querySelector('[data-testid="play-card-reader-text"]')!.textContent!;
-    // markers are resolved to readable output ...
-    assert.match(text, /reveals a Strength Hero/);
-    assert.match(text, /\+1⚔/);
+    const readerText = document.querySelector('[data-testid="play-card-reader-text"]')!;
+    // hero-class and resource markers render as their SVG icon images ...
+    const iconSrcs = Array.from(readerText.querySelectorAll('img.ability-icon-img')).map(
+      (img) => img.getAttribute('src'),
+    );
+    assert.ok(
+      iconSrcs.some((src) => src === 'https://images.legendary-arena.com/icons/hero-classes/class-strength.svg'),
+      'strength class icon image is rendered',
+    );
+    assert.ok(
+      iconSrcs.some((src) => src === 'https://images.legendary-arena.com/icons/card-info/info-attack.svg'),
+      'attack resource icon image is rendered',
+    );
+    // ... the class icon carries its accessible label ...
+    const strengthIcon = readerText.querySelector(
+      'img[src$="class-strength.svg"]',
+    ) as HTMLImageElement | null;
+    assert.equal(strengthIcon?.getAttribute('alt'), 'Strength');
     // ... and the raw markup never reaches the player.
+    const text = readerText.textContent!;
     assert.doesNotMatch(text, /\[hc:strength\]/);
     assert.doesNotMatch(text, /\[icon:attack\]/);
   });
