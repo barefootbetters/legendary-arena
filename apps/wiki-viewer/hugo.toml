@@ -13,7 +13,10 @@
 
 baseURL = "https://legendary-arena-wiki.example.invalid/"
 title = "Legendary Arena Engineering Wiki"
-languageCode = "en-us"
+# why: `locale` replaces `languageCode`, which Hugo deprecated in v0.158.0
+# (warned in the build log under the 0.161.1 pin). Same BCP-47 value; renamed
+# to silence the deprecation before it becomes a hard error on a future bump.
+locale = "en-us"
 
 enableGitInfo = false
 disableKinds = ["RSS", "sitemap", "taxonomy", "term"]
