@@ -27,6 +27,7 @@ import { gainWound } from '../board/wounds.logic.js';
 import { resolveEscapedBystanders } from '../board/bystanders.logic.js';
 import { hasAmbush } from '../board/boardKeywords.logic.js';
 import { koAttachedHeroesOnEscape } from '../board/heroCapture.logic.js';
+import { recordEffectTrace } from '../diagnostics/effectTrace.record.js';
 import {
   executeVillainAbilities,
   resolveEffectResultNames,
@@ -59,6 +60,27 @@ export interface RevealContext {
   random: { Shuffle: <T>(deck: T[]) => T[] };
   /** boardgame.io ctx fragment carrying the active player id. */
   ctx: { currentPlayer: string };
+}
+
+/**
+ * Reads the boardgame.io turn number off a `RevealContext`, defaulting to 0.
+ *
+ * `RevealContext.ctx` declares only `currentPlayer` — the reveal pipeline is fed a
+ * narrowed context that omits `turn` — so this returns 0 on the reveal path. That
+ * matches the villain executor's `readTurnNumber`, which also returns 0 for the
+ * reveal ctx, so the WP-488 `secondary-site` trace stamps a `turn` consistent with the
+ * villain-executor traces emitted on this same path. A full move ctx that happens to
+ * carry a numeric `turn` is honored defensively. Never throws.
+ *
+ * @param context - The reveal context (its `ctx` fragment is read for `turn`).
+ * @returns The turn number, or 0 when unavailable.
+ */
+function readRevealContextTurn(context: RevealContext): number {
+  const turn = (context.ctx as { turn?: unknown }).turn;
+  if (typeof turn === 'number' && Number.isFinite(turn)) {
+    return turn;
+  }
+  return 0;
 }
 
 /**
@@ -319,6 +341,24 @@ export function performVillainReveal(
           implementationMap,
         );
         applyRuleEffects(G, context, escapeSchemeTwistEffects);
+        // why: WP-488 / D-24294 — the become-scheme-twist executor handler is a deliberate
+        // no-op (D-24287); the REAL Scheme Twist just fired HERE via the rule pipeline. Emit
+        // a `secondary-site` trace so the Mystique case is answerable ("the executor was a
+        // no-op; the twist fired at the escape site"), distinct from the executor's `no-op`
+        // trace for the same card. `handler` names the rule trigger that ran; `turn` reads 0
+        // because the RevealContext carries no turn (consistent with the villain executor's
+        // hollow records on this same reveal path — readTurnNumber returns 0 there too).
+        recordEffectTrace(G, {
+          cardId: pushResult.escapedCard,
+          scope: 'villain',
+          timing: 'onEscape',
+          effect: 'become-scheme-twist',
+          handler: 'onSchemeTwistRevealed',
+          status: 'secondary-site',
+          fireSite: 'escape-scheme-twist',
+          params: {},
+          turn: readRevealContextTurn(context),
+        });
       }
     }
 

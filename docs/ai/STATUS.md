@@ -7,6 +7,45 @@
 
 ## Current State
 
+### WP-488 — Runtime Effect Tracing (`G.diagnostics.traces`) — DONE (2026-08-03)
+
+**No user-observable change — infrastructure only.** Piece 2/3 of the ewiki
+`wiki/debug-effects.md` direction landed (piece 1 = the WP-484 Effect Implementation
+Index; piece 3 = the WP-487 `/debug/effects` viewer). The engine now appends a
+**runtime-only, hash-excluded, inert** `EffectTrace` to a new `G.diagnostics.traces[]`
+on **every** card-effect dispatch — the same runtime-only `G.diagnostics` channel as the
+WP-257 hollow records — recording `{ cardId, scope, timing, effect, handler [string
+label], status [fired · no-op · no-handler · secondary-site], fireSite, params, turn }`.
+It unifies what today's surfaces answer separately — *"did a handler run at all?"* (the
+hollow detector) and *"did the handler mutate anything?"* — into one per-dispatch record,
+and critically captures the **secondary fire site**: Mystique's escape→Scheme-Twist, where
+the executor's `become-scheme-twist` handler is a deliberate no-op (D-24287) but the real
+Twist fires at the villain-deck escape site — traced there as `secondary-site`.
+
+**Writer + emit sites.** `recordEffectTrace(G, trace)` mirrors `recordHollowEffect`'s
+discipline (lazy-init `G.diagnostics` — never in `Game.setup()`; append; cap
+[`EFFECT_TRACES_CAP` = 512] + `tracesDropped`; never throw; never gameplay-read) with one
+divergence — it does **not** `pushLog` to `G.messages` (a per-dispatch log line would churn
+the hashed `messages` field + the `record-game-fixture` sentinels). It touches only
+`G.diagnostics`. Traces emit from the **caller loops** (they carry `turn` + `timing`
+together): `executeVillainAbilities` (villain-executor; `no-op` by the fixed allowlist
+`{ become-scheme-twist, gain-attached-hero }` — by primitive **identity**, never
+`targets.length`), `executeHeroEffects` (both sub-paths — legacy `executeSingleEffect` and
+primitive `interpretHeroPrimitiveEffect`), and the `villainDeck.reveal.ts` escape branch.
+
+**Determinism (completes the D-24271 deferral).** Because a trace materializes on every
+dispatch (unlike the rare hollow), `replay.hash.ts`'s `computeStateHash` now excludes
+`diagnostics` only — both hash oracles are diagnostics-blind (`hashGameState` already
+excluded it). `PRE_WP080_HASH` (`ec64506a`) and every `record-game-fixture` `finalStateHash`
+sentinel are **unchanged** — stripping an absent-on-fresh field is byte-identical (no
+re-pin). `traces?`/`tracesDropped?` are optional on `GameDiagnostics`, so `recordHollowEffect`
+and `buildInitialGameState` stay untouched. The trace is **inert** — never read by any
+move / rule / `endIf` / bot / scoring path — and JSON-serializable (`handler` a string
+label, never a function). No card semantics, no gameplay behavior, no client / viewer /
+UIState surface change (that is a future WP). `pnpm -r build` + `pnpm -r --no-bail test`
+exit 0. WP-488 / EC-523; lands **D-24294**. `User-Visible Surface = none — infrastructure`
+(D-24026 live-verification N/A — nothing to observe on a live surface).
+
 ### WP-486 — Instant-Defeat-With-Bystander (Silent Sniper hero keyword) — DONE (2026-08-03)
 
 Silent Sniper (`black-widow/silent-sniper`, reprinted in `core`/`msp1`/`3dtc`) stops being a

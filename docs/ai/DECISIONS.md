@@ -35718,7 +35718,7 @@ JS-free gate). Mirrors the www marketing-repo WP-005 Pagefind integration.
 
 Protect this file.
 
-### D-24294 — Runtime Effect Tracing — hash-excluded per-dispatch trace on G.diagnostics (Drafted 2026-08-02; not yet landed — WP-488)
+### D-24294 — Runtime Effect Tracing — hash-excluded per-dispatch trace on G.diagnostics (Active — WP-488)
 
 **Decision:** The **runtime effect trace** — piece 2/3 of the ewiki `wiki/debug-effects.md` direction (piece 1 = the Effect Implementation Index, shipped WP-484 / D-24289; piece 3 = the `/debug/effects` viewer, shipped WP-487 / D-24292) — is a **runtime-only, hash-excluded, inert** engine diagnostic. On every card-effect descriptor dispatch the engine appends an `EffectTrace` to a new `traces: EffectTrace[]` on the existing `G.diagnostics` channel (the same runtime-only home as the WP-257 hollow records), recording the card, scope, timing, effect token, the handler that ran (a **string label**), a status, the fire site, the descriptor params, and the turn. It unifies "handler never reached" (the hollow case) and "handler reached but applied nothing" (a no-op like Mystique's `become-scheme-twist`) into one per-dispatch record, and captures the **secondary fire site** (D-24287) where the executor handler is a no-op but the real work fires elsewhere.
 
@@ -35738,7 +35738,7 @@ Protect this file.
 **Packet:** WP-488 / EC-523.
 
 **Drafted:** 2026-08-02. Reserved by WP-488; hard-deps WP-257 / D-24034 (hollow detector + channel) + WP-451 / D-24271 (`hashGameState` exclusion) + D-24287 (the escape-twist secondary site).
-**Status:** Drafted 2026-08-02; not yet landed. Flips to Active when WP-488 executes.
+**Status:** **Active** (landed 2026-08-03; WP-488 / EC-523, impl commit `EC-523:`). `traces?`/`tracesDropped?` are OPTIONAL on `GameDiagnostics` (so `recordHollowEffect`'s pre-existing init and `buildInitialGameState`'s absent-on-fresh stay untouched; `recordEffectTrace` seeds them on a hollow-first channel). `computeStateHash` (`replay.hash.ts`) now excludes `diagnostics` only — `PRE_WP080_HASH` (`ec64506a`) and every `record-game-fixture` `finalStateHash` sentinel UNCHANGED (no re-pin, confirmed empirically). Whole-repo `--no-bail` green.
 
 Protect this file.
 

@@ -21,9 +21,11 @@ import type { HeroKeyword } from '../rules/heroKeywords.js';
 import { HERO_KEYWORDS } from '../rules/heroKeywords.js';
 import type { HeroAbilityHook, HeroEffectDescriptor } from '../rules/heroAbility.types.js';
 import { getHooksForCard } from '../rules/heroAbility.types.js';
-import type { EffectExecutionReason } from '../diagnostics/hollowEffect.types.js';
+import type { EffectExecutionReason, EffectTrace } from '../diagnostics/hollowEffect.types.js';
 import { isHollowReason, DEFERRED_BY_DESIGN_MECHANICS } from '../diagnostics/hollowEffect.types.js';
 import { recordHollowEffect } from '../diagnostics/hollowEffect.record.js';
+import { recordEffectTrace } from '../diagnostics/effectTrace.record.js';
+import type { EffectNode } from '../rules/effectPrimitive.types.js';
 import type { RevealRule, RevealAction, RevealPredicate, RevealActionKind } from '../rules/revealRule.js';
 import { evaluateAllConditions } from './heroConditions.evaluate.js';
 import type { HeroEffectResult } from './heroEffects.types.js';
@@ -350,6 +352,11 @@ export function executeHeroEffects(
   // application). Returned to applyCardPlay; NOT read by any rule.
   let firedEffectCount = 0;
 
+  // why: WP-488 / D-24294 — the turn stamped on every EffectTrace this play emits, read
+  // once from the FnContext wrapper (readTurnNumber reads the nested bgio ctx.turn). Reused
+  // for both hero sub-paths below rather than re-read per effect.
+  const turn = readTurnNumber(ctx);
+
   for (const hook of hooks) {
     // why: cardId is threaded through to condition evaluation so heroClassMatch
     // and requiresTeam can exclude the triggering card from their inPlay scan
@@ -380,9 +387,15 @@ export function executeHeroEffects(
     // which carries only primitiveEffects.)
     if (hook.effects !== undefined) {
       for (const effect of hook.effects) {
-        if (executeSingleEffect(G, ctx, playerID, cardId, effect)) {
+        const fired = executeSingleEffect(G, ctx, playerID, cardId, effect);
+        if (fired) {
           firedEffectCount++;
         }
+        // why: WP-488 / D-24294 — emit a trace per legacy hero effect dispatch from THIS
+        // caller loop (it carries turn + hook.timing + cardId + the descriptor + the
+        // dispatch boolean together). `fired` maps to `fired`/`no-handler`. Inert +
+        // hash-excluded.
+        recordEffectTrace(G, buildHeroLegacyEffectTrace(cardId, hook.timing, effect, fired, turn));
       }
     }
 
@@ -396,9 +409,14 @@ export function executeHeroEffects(
         // why: WP-317 — pass the hook's source card so a composable gain-resource grant
         // (Empowered / Berserk) logs which card granted, mirroring the card-named
         // `did not activate` line above.
-        if (interpretHeroPrimitiveEffect(G, ctx, playerID, primitiveEffect, cardId)) {
+        const fired = interpretHeroPrimitiveEffect(G, ctx, playerID, primitiveEffect, cardId);
+        if (fired) {
           firedEffectCount++;
         }
+        // why: WP-488 / D-24294 — emit a trace per primitive-composition hero effect
+        // dispatch (hero-primitive), so composed hero effects are not untraced. `fired`
+        // maps to `fired`/`no-handler` by interpretHeroPrimitiveEffect's boolean.
+        recordEffectTrace(G, buildHeroPrimitiveEffectTrace(cardId, hook.timing, primitiveEffect, fired, turn));
       }
     }
 
@@ -590,6 +608,129 @@ function detectHollowHeroHook(
     reason: firstHollow.reason as 'parse-unrecognized' | 'no-handler' | 'unsupported-keyword',
     turn: readTurnNumber(ctx),
   });
+}
+
+// ---------------------------------------------------------------------------
+// Effect-trace emission (WP-488 / D-24294)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds the per-dispatch `EffectTrace` for one legacy hero effect
+ * (`hook.effects` → `executeSingleEffect`, WP-488 / D-24294).
+ *
+ * `fired` (executeSingleEffect's boolean) maps to `fired`; a false return (unsupported
+ * keyword, failed magnitude pre-gate, or an undefined handler) maps to `no-handler`.
+ * The `handler` label is the keyword token (the HERO_EFFECT_HANDLERS map key) when a
+ * handler ran, `""` when none — a STRING label, never the function. `effect` is the
+ * keyword token verbatim.
+ *
+ * @param cardId - The played hero card's CardExtId.
+ * @param timing - The hook timing label.
+ * @param effect - The dispatched hero effect descriptor.
+ * @param fired - Whether executeSingleEffect reached a handler and ran.
+ * @param turn - The turn number for the trace.
+ * @returns The effect trace to record.
+ */
+function buildHeroLegacyEffectTrace(
+  cardId: CardExtId,
+  timing: string,
+  effect: HeroEffectDescriptor,
+  fired: boolean,
+  turn: number,
+): EffectTrace {
+  // why: effect.type is typed HeroKeyword but read defensively so a malformed hook /
+  // test cast cannot throw before the guarded writer runs.
+  const keywordValue = (effect as { type?: unknown }).type;
+  const effectToken = typeof keywordValue === 'string' ? keywordValue : '';
+  return {
+    cardId,
+    scope: 'hero',
+    timing,
+    effect: effectToken,
+    handler: fired ? effectToken : '',
+    status: fired ? 'fired' : 'no-handler',
+    fireSite: 'hero-executor',
+    params: buildHeroEffectTraceParams(effect),
+    turn,
+  };
+}
+
+/**
+ * Builds the per-dispatch `EffectTrace` for one primitive-composition hero effect
+ * (`hook.primitiveEffects` → `interpretHeroPrimitiveEffect`, WP-488 / D-24294).
+ *
+ * `fired` (the interpreter's boolean — false only for an unknown top-level node) maps
+ * to `fired`/`no-handler`. The `handler` label and `effect` token are the composition's
+ * top-level node `type` (the EFFECT_NODE_HANDLERS map key, e.g. `sequence`), read
+ * defensively. `params` stays `{}` — a composition is a nested AST with no flat scalar
+ * descriptor fields to copy, and spreading the tree would leak non-scalar nodes into G.
+ *
+ * @param cardId - The played hero card's CardExtId.
+ * @param timing - The hook timing label.
+ * @param node - The top-level composition effect node.
+ * @param fired - Whether the interpreter dispatched to a real handler.
+ * @param turn - The turn number for the trace.
+ * @returns The effect trace to record.
+ */
+function buildHeroPrimitiveEffectTrace(
+  cardId: CardExtId,
+  timing: string,
+  node: EffectNode,
+  fired: boolean,
+  turn: number,
+): EffectTrace {
+  const nodeType = (node as { type?: unknown }).type;
+  const effectToken = typeof nodeType === 'string' ? nodeType : '';
+  return {
+    cardId,
+    scope: 'hero',
+    timing,
+    effect: effectToken,
+    handler: fired ? effectToken : '',
+    status: fired ? 'fired' : 'no-handler',
+    fireSite: 'hero-primitive',
+    params: {},
+    turn,
+  };
+}
+
+/**
+ * Copies a hero descriptor's own SCALAR parameter fields into a trace `params`
+ * snapshot, omitting `undefined` keys (WP-488 / D-24294).
+ *
+ * Explicit field-by-field copy — NEVER a spread-and-cast (which would leak the
+ * `type` keyword and the non-scalar `empoweredClasses` / `revealRules` arrays and
+ * break `exactOptionalPropertyTypes`). Every copied value is `string | number |
+ * boolean`; the `type` token is carried as the trace's `effect`, not here.
+ *
+ * @param effect - The dispatched hero effect descriptor.
+ * @returns A shallow scalar snapshot of the descriptor's parameter fields.
+ */
+function buildHeroEffectTraceParams(
+  effect: HeroEffectDescriptor,
+): Record<string, string | number | boolean> {
+  const params: Record<string, string | number | boolean> = {};
+  if (effect.magnitude !== undefined) {
+    params.magnitude = effect.magnitude;
+  }
+  if (effect.countSource !== undefined) {
+    params.countSource = effect.countSource;
+  }
+  if (effect.rewardType !== undefined) {
+    params.rewardType = effect.rewardType;
+  }
+  if (effect.empoweredClass !== undefined) {
+    params.empoweredClass = effect.empoweredClass;
+  }
+  if (effect.revealCount !== undefined) {
+    params.revealCount = effect.revealCount;
+  }
+  if (effect.reorderRemainder !== undefined) {
+    params.reorderRemainder = effect.reorderRemainder;
+  }
+  // why: empoweredClasses (string[]) and revealRules (RevealRule[]) are non-scalar —
+  // deliberately omitted; params carries only string | number | boolean per D-24294.
+  return params;
 }
 
 // ---------------------------------------------------------------------------

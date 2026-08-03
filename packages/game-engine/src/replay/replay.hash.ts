@@ -65,6 +65,17 @@ function djb2Hash(input: string): string {
  * @returns A hex string hash of the canonical serialization.
  */
 export function computeStateHash(gameState: LegendaryGameState): string {
-  const canonicalJson = JSON.stringify(gameState, sortedKeyReplacer);
+  // why: WP-488 / D-24294 — exclude the runtime-only G.diagnostics channel from the
+  // replay determinism hash, completing the D-24271-deferred second oracle (hashGameState
+  // already excludes it). A trace materializes on EVERY effect dispatch (unlike the rare
+  // hollow), so WITHOUT this exclusion a replay fixture that plays any effect would populate
+  // G.diagnostics.traces and shift PRE_WP080_HASH. Exclude ONLY diagnostics here —
+  // messages / logMeta / lastPlayEffectsFired STAY hashed by computeStateHash (unlike
+  // hashGameState, which also excludes them); removing them would shift PRE_WP080_HASH.
+  // Rest-destructure of a shallow copy — gameState is never mutated, and only the top-level
+  // diagnostics key is affected. Because the pinned fixtures hash with diagnostics absent,
+  // stripping an absent field is byte-identical — no re-pin (confirmed empirically).
+  const { diagnostics: _excludedDiagnostics, ...stateWithoutDiagnostics } = gameState;
+  const canonicalJson = JSON.stringify(stateWithoutDiagnostics, sortedKeyReplacer);
   return djb2Hash(canonicalJson);
 }
