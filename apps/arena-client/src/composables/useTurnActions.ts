@@ -153,6 +153,12 @@ const NOT_YOUR_TURN: GatingResult = {
  *   freezes the board, mirroring `hasPendingDiscardChoice`). Defaults to false. WP-480 /
  *   D-24286. Appended LAST (after `hasPendingDiscardChoice`) so existing positional callers
  *   stay valid without edits; degrades gracefully (no gate) when the caller omits it.
+ * @param hasPendingDefeatChoice Whether the viewer has an unresolved Silent Sniper
+ *   defeat-with-a-Bystander choice (from `UIState.pendingDefeatChoice !== undefined`). When
+ *   true, blocks `canEndTurn` and `canPassPriority` at ANY stage (the engine's full block-all
+ *   guard set freezes the board, mirroring `hasPendingReorderChoice`). Defaults to false.
+ *   WP-486 / D-24291. Appended LAST (after `hasPendingReorderChoice`) so existing positional
+ *   callers stay valid without edits; degrades gracefully (no gate) when the caller omits it.
  */
 export function useTurnActions(
   currentStage: string,
@@ -172,6 +178,7 @@ export function useTurnActions(
   hasHealedThisTurn: boolean = false,
   hasPendingDiscardChoice: boolean = false,
   hasPendingReorderChoice: boolean = false,
+  hasPendingDefeatChoice: boolean = false,
 ): {
   activeStep: TurnStep;
   canRevealVillain: () => GatingResult;
@@ -330,6 +337,16 @@ export function useTurnActions(
           reason: 'Choose the order to put the cards back on top before taking another action.',
         };
       }
+      // why: WP-486 / D-24291 — End Turn / Pass Priority blocked at any stage while a
+      // Silent Sniper defeat-with-a-Bystander choice is pending (the engine's full
+      // block-all guard set freezes the board, mirroring hasPendingReorderChoice). The
+      // choice is mandatory — no decline exit to name.
+      if (hasPendingDefeatChoice) {
+        return {
+          allowed: false,
+          reason: 'Choose which Villain or Mastermind to defeat before taking another action.',
+        };
+      }
       if (currentStage === 'cleanup' && hasPendingChoice) {
         return {
           allowed: false,
@@ -438,6 +455,15 @@ export function useTurnActions(
         return {
           allowed: false,
           reason: 'Choose the order to put the cards back on top before taking another action.',
+        };
+      }
+      if (hasPendingDefeatChoice) {
+        // why: WP-486 / D-24291 — the engine's block-all guards block endTurn while
+        // pendingDefeatChoices is non-empty; this client-side gate surfaces the reason
+        // so the player sees a tooltip instead of a silent rejection.
+        return {
+          allowed: false,
+          reason: 'Choose which Villain or Mastermind to defeat before taking another action.',
         };
       }
       if (currentStage === 'cleanup' && hasPendingChoice) {

@@ -24,6 +24,7 @@ import { hasPendingKoHeroChoice } from './koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from './scryKoChoice.resolve.js';
 import { hasPendingDiscardChoice } from './discardChoice.resolve.js';
 import { hasPendingReorderChoice } from './reorderChoice.resolve.js';
+import { hasPendingDefeatChoice } from './defeatChoice.resolve.js';
 import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
@@ -83,6 +84,7 @@ export function fightMastermind(
   // freezes the board until the current player picks which cards to discard.
   if (hasPendingDiscardChoice(G)) return;
   if (hasPendingReorderChoice(G)) return; // why: WP-479 / D-24286 block-all guard
+  if (hasPendingDefeatChoice(G)) return; // why: WP-486 / D-24291 block-all guard
   // why: block-all guard (D-24019) — optional-KO-reward choice pending; the
   // board is frozen until resolved (beside the D-24008 KO-hero check above).
   if (hasPendingOptionalKoReward(G)) return;
@@ -99,18 +101,62 @@ export function fightMastermind(
   // fight or recruit for the rest of the turn (the reverse lock).
   if (hasHealedThisTurn(G)) return;
 
-  // Step 3: Mutate G
+  // Step 3: Mutate G — reuse the shared mastermind-tactic defeat-core
+  // (WP-486 / D-24291), then spend attack + mark acted. Both are EXCLUDED from
+  // the shared core and stay here in the fight move: Silent Sniper's defeat spends
+  // no attack and is a card play, not a fight. The tactic defeat fires NO onFight
+  // ability (unlike a villain), so nothing between reads G.turnEconomy or
+  // G.hasActedThisTurn — running them after the core is byte-identical to the
+  // prior inline order (the unmodified fightMastermind tests are the oracle).
+  defeatMastermindTacticCore(G, ctx);
+  G.turnEconomy = spendAttack(G.turnEconomy, requiredFightCost);
+  // why: D-24180 — this successful mastermind fight marks the player as having
+  // acted this turn, which bars the Wound Healing ability for the rest of the turn.
+  G.hasActedThisTurn = true;
+}
+
+/**
+ * Shared mastermind-tactic defeat-core (WP-486 / D-24291).
+ *
+ * Defeats the top tactic into the current player's victory pile, rescues every
+ * Bystander the Mastermind currently holds (both stores), drops the mirror
+ * attachment, and — when all tactics are defeated — sets the endgame counter and
+ * emits the mastermindDefeated notable event. The exact Step-3+ body
+ * fightMastermind formerly inlined, MINUS `spendAttack` and `G.hasActedThisTurn`
+ * (those stay in the fight moves). Reused by fightMastermind (the normal fight)
+ * and by Silent Sniper's `defeat-with-bystander` hero effect / its
+ * resolveDefeatChoice move (the free defeat, no attack spend).
+ *
+ * Unlike the villain core, a tactic defeat fires no onFight ability, so this core
+ * takes no ShuffleProvider. The caller guarantees at least one tactic remains; an
+ * empty tactics deck is a silent no-op (moves never throw). The defeating player
+ * is `ctx.currentPlayer`.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param ctx - The bare boardgame.io ctx (currentPlayer), typed unknown to avoid
+ *   a framework import.
+ */
+export function defeatMastermindTacticCore(
+  G: LegendaryGameState,
+  ctx: unknown,
+): void {
+  // why: narrow the unknown ctx to the one field this core reads (the defeating
+  // player), mirroring executeVillainAbilities — no framework import.
+  const currentPlayer = (ctx as { currentPlayer: string }).currentPlayer;
+
+  // why: defense-in-depth — the caller (fightMastermind gate / hero eligibility
+  // builder) guarantees a tactic remains, but an empty deck is a silent no-op
+  // rather than an out-of-range read (moves never throw).
+  if (G.mastermind.tacticsDeck.length === 0) {
+    return;
+  }
+
   // why: capture the tactic card ID before defeatTopTactic moves it from
   // tacticsDeck to tacticsDefeated — the player earns this card in their
   // victory pile (tabletop Legendary: defeated tactics are VP cards).
   const defeatedTacticId = G.mastermind.tacticsDeck[0]!;
   G.mastermind = defeatTopTactic(G.mastermind);
-  G.playerZones[ctx.currentPlayer]!.victory.push(defeatedTacticId);
-  G.turnEconomy = spendAttack(G.turnEconomy, requiredFightCost);
-
-  // why: D-24180 — this successful mastermind fight marks the player as having
-  // acted this turn, which bars the Wound Healing ability for the rest of the turn.
-  G.hasActedThisTurn = true;
+  G.playerZones[currentPlayer]!.victory.push(defeatedTacticId);
 
   // why: WP-323 — name the mastermind (G.mastermind.id is the qualified
   // "core/magneto", not a display name; baseCardId keys cardDisplayData — the
@@ -122,8 +168,8 @@ export function fightMastermind(
     G.mastermind.baseCardId,
   );
   const defeatedTacticName = resolveCardName(G.cardDisplayData, defeatedTacticId);
-  pushLog(G, 
-    `Player ${ctx.currentPlayer} fought ${mastermindDisplayName} and defeated the tactic "${defeatedTacticName}".`,
+  pushLog(G,
+    `Player ${currentPlayer} fought ${mastermindDisplayName} and defeated the tactic "${defeatedTacticName}".`,
   );
 
   // why: EVERY tactic defeat rescues all bystanders the Mastermind is
@@ -145,7 +191,7 @@ export function fightMastermind(
   const mastermindBaseCardId = G.mastermind.baseCardId;
   const rescuedBystanders = G.mastermind.attachedBystanders ?? [];
   for (const bystanderCardId of rescuedBystanders) {
-    G.playerZones[ctx.currentPlayer]!.victory.push(bystanderCardId);
+    G.playerZones[currentPlayer]!.victory.push(bystanderCardId);
   }
   G.mastermind = { ...G.mastermind, attachedBystanders: [] };
 
@@ -161,8 +207,8 @@ export function fightMastermind(
   }
 
   if (rescuedBystanders.length > 0) {
-    pushLog(G, 
-      `Player ${ctx.currentPlayer} rescued ${rescuedBystanders.length} bystander(s) from the mastermind into their victory pile.`,
+    pushLog(G,
+      `Player ${currentPlayer} rescued ${rescuedBystanders.length} bystander(s) from the mastermind into their victory pile.`,
     );
   }
 
@@ -171,7 +217,7 @@ export function fightMastermind(
     // evaluator from WP-010 — use constant, never string literal
     G.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED] = 1;
     // why: WP-323 — reuse the mastermind display name resolved above.
-    pushLog(G, 
+    pushLog(G,
       `All tactics defeated — mastermind ${mastermindDisplayName} is vanquished!`,
     );
 
@@ -190,7 +236,7 @@ export function fightMastermind(
         : G.mastermind.id;
     G.notableEvents.push({
       type: 'mastermindDefeated',
-      playerId: ctx.currentPlayer,
+      playerId: currentPlayer,
       mastermindId: G.mastermind.id,
       bystandersRescued: rescuedBystanders.length,
       narrative: composeMastermindDefeatedNarrative(

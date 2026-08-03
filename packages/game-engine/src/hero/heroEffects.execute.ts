@@ -40,6 +40,10 @@ import { interpretHeroPrimitiveEffect } from './effectPrimitive.interpret.js';
 import { getEligibleVictoryVillains } from '../moves/resolveVictoryPileCardPick.js';
 import { getEligibleZeroCostDiscardCards } from '../moves/resolveReturnZeroCostDiscard.js';
 import { getEligibleDiscardToPlayCards } from '../moves/resolveDiscardToPlay.js';
+import {
+  buildDefeatWithBystanderTargets,
+  dispatchDefeatWithBystanderTarget,
+} from '../moves/defeatChoice.resolve.js';
 import { formatCardRef } from '../log/logDisplay.js';
 import {
   describeRevealPredicate,
@@ -81,6 +85,8 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   'ko-wound-reward',
   // why: WP-383 / D-24184 — mandatory discard-to-play COST; has a HERO_EFFECT_HANDLERS entry (heroEffectDiscardToPlay) that parks the PendingDiscardToPlay, so it belongs here.
   'discard-to-play',
+  // why: WP-486 / D-24291 — Silent Sniper's "Defeat a Villain or Mastermind that has a Bystander."; has a HERO_EFFECT_HANDLERS entry (heroEffectDefeatWithBystander) that defeats one eligible target via the shared fight-defeat path or parks a PendingDefeatChoice, so it belongs here.
+  'defeat-with-bystander',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -210,6 +216,10 @@ const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   // why: draw-or-empowered parks a pending choice carrying empoweredClass (not a magnitude);
   // the draw or the empowered grant is applied at resolve time, not at play time (D-24069)
   'draw-or-empowered',
+  // why: WP-486 / D-24291 — defeat-with-bystander carries no magnitude (it defeats one
+  // eligible target); the target set is computed from G at play time, so the magnitude
+  // pre-gate must not drop it.
+  'defeat-with-bystander',
 ]);
 
 // ---------------------------------------------------------------------------
@@ -1767,6 +1777,88 @@ function heroEffectShuffleDiscardEmptyReward(
 // why: WP-253 / D-24024 — the 7 legacy reveal-* entries are gone; ALL 8 reveal
 // keywords now dispatch through the single parameterized `reveal` handler (their
 // markers are translated to a `reveal` descriptor with revealRules at parse time).
+/**
+ * Hero handler for the `defeat-with-bystander` keyword (WP-486 / D-24291).
+ *
+ * Silent Sniper's "Defeat a Villain or Mastermind that has a Bystander." Builds the
+ * deterministic eligible-target set (City Villains holding a Bystander, ascending;
+ * then the Mastermind when it holds one), then resolves by cardinality:
+ * 0 → a self-narrated no-op (NEVER a hollow record — the keyword is in MVP_KEYWORDS,
+ * so it reached its handler); exactly 1 → auto-defeat via the shared fight-defeat
+ * core (no prompt); ≥2 → park a PendingDefeatChoice (block-all until resolved) so
+ * the current player picks which target.
+ *
+ * why (D-24291): the defeat REUSES the shared fight-defeat cores (a documented
+ * internal invocation), so the onFight/onDefeat hooks and Bystander/hero award run
+ * in exactly one place. It spends NO attack and sets NO acted-this-turn flag —
+ * Silent Sniper is a card play, not a fight — so `spendAttack` + `G.hasActedThisTurn`
+ * stay in the fight moves and are excluded from the shared cores.
+ *
+ * why (ctx): executeHeroEffects is called with the move-context WRAPPER (playCard's
+ * `...context` = `{ ctx, random, events, ... }`), so the bare bgio ctx (currentPlayer
+ * + turn, read by the shared cores + the villain executor) is `ctx.ctx`, and the
+ * ShuffleProvider for a villain Fight scry is the wrapper's `.random`.
+ */
+function heroEffectDefeatWithBystander(
+  G: LegendaryGameState,
+  ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  const targets = buildDefeatWithBystanderTargets(G);
+
+  // why: 0 eligible targets is a REACHABLE self-narrated no-op — the printed
+  // ability had no legal target this play. It records NO hollow event (the handler
+  // ran; the keyword is in MVP_KEYWORDS → classifyHeroEffectReason returns
+  // `applied`), matching the D-24017 "surface the reason, don't fail silently" rule.
+  if (targets.length === 0) {
+    // why: WP-434 — nothing happened because the board offered no legal target, so
+    // the outcome is `blocked` (the ability was suppressed, not partially applied).
+    pushLog(G,
+      `Player ${playerID}'s ${formatCardRef(G.cardDisplayData, cardId)} found no Villain or Mastermind holding a Bystander to defeat.`,
+      'blocked',
+      cardId, // why: WP-438 — the played card whose ability found no target.
+    );
+    return;
+  }
+
+  // why: executeHeroEffects receives the move-context WRAPPER; the shared cores +
+  // the villain executor read the BARE bgio ctx (currentPlayer + `.turn`), which is
+  // the wrapper's nested `.ctx`. The Fight scry ShuffleProvider is the wrapper's
+  // top-level `.random` (the same narrowing the draw handler uses).
+  const bareCtx = (ctx as { ctx: unknown }).ctx;
+  const shuffleContext: ShuffleProvider = { random: (ctx as ShuffleProvider).random };
+
+  // why: exactly 1 eligible target → auto-defeat with no prompt (mandatory-if-able).
+  // The dispatch routes through the shared core; a villain's onFight may park its
+  // own nested pending, which the block-all guards then serialize.
+  if (targets.length === 1) {
+    dispatchDefeatWithBystanderTarget(G, bareCtx, targets[0]!, shuffleContext);
+    return;
+  }
+
+  // why: ≥2 eligible targets → park a PendingDefeatChoice; the current player must
+  // pick which to defeat. Lazily initialize the FIFO queue (never in Game.setup);
+  // snapshots stay counts-only, so it is never persisted. Shipped WITH its UIState
+  // projection + client prompt + block-all guard (pending_choice_no_ux_freeze).
+  if (!G.pendingDefeatChoices) {
+    G.pendingDefeatChoices = [];
+  }
+  G.pendingDefeatChoices.push({
+    choiceType: 'defeat-with-bystander',
+    playerID,
+    targets,
+  });
+  // why: WP-434 — parking a mandatory choice is `neutral` (the effect is mid-flight,
+  // neither applied nor blocked); the applied/blocked outcome is logged at resolve.
+  pushLog(G,
+    `Player ${playerID} must choose which Villain or Mastermind to defeat with ${formatCardRef(G.cardDisplayData, cardId)}.`,
+    'neutral',
+    cardId, // why: WP-438 — the played card that parked the defeat choice.
+  );
+}
+
 export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler>> = {
   draw: heroEffectDraw,
   attack: heroEffectAttack,
@@ -1789,6 +1881,10 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   'gain-wound-self': heroEffectGainWound,
   'gain-wound-each': heroEffectGainWound,
   'shuffle-discard-empty-reward': heroEffectShuffleDiscardEmptyReward,
+  // why: WP-486 / D-24291 — Silent Sniper's "Defeat a Villain or Mastermind that
+  // has a Bystander." (defeats one eligible target via the shared fight-defeat core,
+  // or parks a PendingDefeatChoice when ≥2 qualify).
+  'defeat-with-bystander': heroEffectDefeatWithBystander,
 };
 
 // ---------------------------------------------------------------------------

@@ -463,3 +463,32 @@ describe('useTurnActions — hasPendingReorderChoice gating (WP-480 / D-24286)',
     }
   });
 });
+
+describe('useTurnActions — hasPendingDefeatChoice gating (WP-486 / D-24291)', () => {
+  const DEFEAT_REASON =
+    'Choose which Villain or Mastermind to defeat before taking another action.';
+  // why: hasPendingDefeatChoice is APPENDED LAST (position 18), after
+  // hasPendingReorderChoice (17): stage, isViewerTurn, then 15 pending/heal falses
+  // (positions 3–17, reorder false), then true.
+  const withDefeatChoice = (stage: string) =>
+    useTurnActions(
+      stage, true, false, false, false, false, false, false, false, false, false, false,
+      false, false, false, false, false, true,
+    );
+
+  test('canEndTurn blocked at EVERY stage when hasPendingDefeatChoice is true', () => {
+    for (const stage of ['start', 'main', 'cleanup'] as const) {
+      const result = withDefeatChoice(stage).canEndTurn();
+      assert.equal(result.allowed, false, `endTurn blocked at ${stage}`);
+      assert.equal(result.reason, DEFEAT_REASON, 'defeat gate reason matches the locked value');
+    }
+  });
+
+  test('canPassPriority blocked at EVERY stage when hasPendingDefeatChoice is true (board frozen)', () => {
+    for (const stage of ['start', 'main', 'cleanup'] as const) {
+      const result = withDefeatChoice(stage).canPassPriority();
+      assert.equal(result.allowed, false, `passPriority blocked at ${stage}`);
+      assert.equal(result.reason, DEFEAT_REASON);
+    }
+  });
+});

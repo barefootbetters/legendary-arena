@@ -20,6 +20,7 @@ import { hasPendingKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from '../moves/scryKoChoice.resolve.js';
 import { hasPendingDiscardChoice } from '../moves/discardChoice.resolve.js';
 import { hasPendingReorderChoice } from '../moves/reorderChoice.resolve.js';
+import { hasPendingDefeatChoice } from '../moves/defeatChoice.resolve.js';
 import { selectDiscardToLimitCards } from '../rules/mastermindHandlers.js';
 import { selectDefaultKoTarget, selectScryKoTarget } from '../villain/villainEffects.execute.js';
 import { hasPendingOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
@@ -74,6 +75,11 @@ export const SIMULATION_MOVE_NAMES = [
   // or the per-turn loop hangs (maxTurns bounds turns, not within-turn move-steps — the
   // WP-289 hang). Asserted by simulation.moveDispatch.drift.test.ts.
   'resolveReorderChoice',
+  // why: WP-486 / D-24291 — getLegalMoves short-circuits to resolveDefeatChoice when a
+  // Silent Sniper defeat-with-a-Bystander choice is parked; it MUST be dispatchable in
+  // the sim (both MOVE_MAPs) or the per-turn loop hangs (maxTurns bounds turns, not
+  // within-turn move-steps — the WP-289 hang). Asserted by simulation.moveDispatch.drift.test.ts.
+  'resolveDefeatChoice',
   'resolveOptionalKoReward',
   'resolveVictoryPileCardPick',
   'resolveDrawOrEmpowered',
@@ -335,6 +341,22 @@ export function getLegalMoves(
   if (hasPendingReorderChoice(gameState)) {
     const front = gameState.pendingReorderChoices![0]!;
     return [{ name: 'resolveReorderChoice', args: { orderedCardIds: front.cardIds } }];
+  }
+
+  // why: WP-486 / D-24291 — pending defeat-with-a-Bystander short-circuit. The engine
+  // block-all guard freezes every other move, so the bot must resolve it first. The
+  // deterministic default picks the FIRST parked target (the pinned order: City spaces
+  // ascending, then the Mastermind), so par/replay stay byte-identical except for the
+  // extra park→resolve move pair; only live human play gets the prompt. Returns a list
+  // of length EXACTLY 1 — omitting this path hangs the per-turn loop.
+  if (hasPendingDefeatChoice(gameState)) {
+    const front = gameState.pendingDefeatChoices![0]!;
+    const target = front.targets[0]!;
+    return [
+      target.kind === 'villain'
+        ? { name: 'resolveDefeatChoice', args: { targetKind: 'villain', cityIndex: target.cityIndex } }
+        : { name: 'resolveDefeatChoice', args: { targetKind: 'mastermind' } },
+    ];
   }
 
   // why: WP-427 / D-24248 — pending optional-put-bottom-HQ short-circuit. While a

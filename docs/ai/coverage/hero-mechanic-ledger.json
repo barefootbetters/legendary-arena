@@ -2,15 +2,15 @@
   "schemaVersion": 1,
   "cardType": "hero",
   "summary": {
-    "totalRows": 647,
+    "totalRows": 650,
     "byStatus": {
-      "executable": 230,
+      "executable": 233,
       "deferred": 0,
       "condition": 5,
       "unsupported": 366,
       "unmarked": 46
     },
-    "distinctMechanics": 118
+    "distinctMechanics": 119
   },
   "rows": [
     {
@@ -152,6 +152,16 @@
       "wp": "",
       "decision": "",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover"
+    },
+    {
+      "extId": "3dtc/black-widow",
+      "heroName": "Black Widow",
+      "set": "3dtc",
+      "mechanic": "defeat-with-bystander",
+      "status": "executable",
+      "wp": "WP-486",
+      "decision": "D-24291",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#defeat-with-bystander"
     },
     {
       "extId": "3dtc/black-widow",
@@ -1652,6 +1662,16 @@
       "wp": "WP-247",
       "decision": "",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count"
+    },
+    {
+      "extId": "core/black-widow",
+      "heroName": "Black Widow",
+      "set": "core",
+      "mechanic": "defeat-with-bystander",
+      "status": "executable",
+      "wp": "WP-486",
+      "decision": "D-24291",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#defeat-with-bystander"
     },
     {
       "extId": "core/black-widow",
@@ -3582,6 +3602,16 @@
       "wp": "",
       "decision": "",
       "handler": ""
+    },
+    {
+      "extId": "msp1/black-widow",
+      "heroName": "Black Widow",
+      "set": "msp1",
+      "mechanic": "defeat-with-bystander",
+      "status": "executable",
+      "wp": "WP-486",
+      "decision": "D-24291",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#defeat-with-bystander"
     },
     {
       "extId": "msp1/black-widow",

@@ -1039,3 +1039,55 @@ describe('filterUIStateForAudience — matchCardImageUrls (WP-410 / D-24222)', (
     assert.deepStrictEqual(result.matchCardImageUrls, SAMPLE_MANIFEST);
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-486 / EC-521 — pendingDefeatChoice redaction (D-24011)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a UIState where player '0' owes a Silent Sniper defeat-with-a-Bystander
+ * choice between a City Villain and the Mastermind. The choice is the chooser's
+ * pending decision — it must not project to opponents or spectators.
+ */
+function createDefeatChoiceUIState(): UIState {
+  const config = createTestConfig();
+  const registry = createMockRegistry();
+  const setupContext = makeMockCtx();
+  const gameState = buildInitialGameState(config, registry, setupContext);
+
+  gameState.pendingDefeatChoices = [
+    {
+      choiceType: 'defeat-with-bystander',
+      playerID: '0',
+      targets: [
+        { kind: 'villain', cityIndex: 0, cardId: 'defeat-villain-a' },
+        { kind: 'mastermind', cardId: gameState.mastermind.baseCardId },
+      ],
+    },
+  ];
+
+  return buildUIState(gameState, mockCtx);
+}
+
+describe('filterUIStateForAudience — pendingDefeatChoice redaction (WP-486 / D-24291)', () => {
+  it('the chooser sees pendingDefeatChoice with the full target list', () => {
+    const uiState = createDefeatChoiceUIState();
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+    assert.ok(result.pendingDefeatChoice !== undefined, 'chooser sees the defeat choice');
+    assert.equal(result.pendingDefeatChoice!.playerID, '0');
+    assert.equal(result.pendingDefeatChoice!.targets.length, 2, 'both parked targets survive for the chooser');
+    assert.equal(result.pendingDefeatChoice!.targets[0]!.cityIndex, 0, 'the villain target keeps its cityIndex selector');
+  });
+
+  it('an opponent does NOT see pendingDefeatChoice', () => {
+    const uiState = createDefeatChoiceUIState();
+    const result = filterUIStateForAudience(uiState, PLAYER_1);
+    assert.equal(result.pendingDefeatChoice, undefined, 'opponent must not see the defeat choice');
+  });
+
+  it('a spectator does NOT see pendingDefeatChoice', () => {
+    const uiState = createDefeatChoiceUIState();
+    const result = filterUIStateForAudience(uiState, SPECTATOR);
+    assert.equal(result.pendingDefeatChoice, undefined, 'spectator must not see the defeat choice');
+  });
+});

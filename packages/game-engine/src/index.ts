@@ -327,6 +327,8 @@ export type {
   UIPendingDiscardChoice,
   UIDiscardChoiceHandCard,
   UIPendingReorderChoice,
+  UIPendingDefeatChoice,
+  UIDefeatChoiceTarget,
   UIReorderChoiceCard,
   UIPendingOptionalKoReward,
   UIPendingDrawOrEmpowered,

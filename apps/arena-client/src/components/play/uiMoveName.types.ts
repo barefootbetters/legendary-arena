@@ -62,6 +62,9 @@ export type UiMoveName =
   // why: WP-479 / D-24286 — unblocks the reveal-remainder reorder prompt (put the
   // non-drawn revealed cards back on top of the deck in any order).
   | 'resolveReorderChoice'
+  // why: WP-486 / D-24291 — unblocks the Silent Sniper defeat-with-a-Bystander prompt
+  // (pick which Villain or the Mastermind to defeat for free).
+  | 'resolveDefeatChoice'
   | 'resolveOptionalKoReward'
   | 'resolveDrawOrEmpowered'
   // why: WP-313 / D-24099 — unblocks the victory-pile villain-pick prompt (The Ebony Blade).
