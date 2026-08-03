@@ -27,6 +27,18 @@ export const WOUND_EXT_ID: CardExtId = 'pile-wound';
 /** Well-known ext_id for S.H.I.E.L.D. Officer pile cards. */
 export const SHIELD_OFFICER_EXT_ID: CardExtId = 'pile-shield-officer';
 
+// why: D-24296 — the two starting-deck S.H.I.E.L.D. ext_ids live here beside the
+// other well-known basic-S.H.I.E.L.D. / pile ext_ids (Officer above) so a single
+// neutral leaf module owns them all. buildInitialGameState still owns the starting
+// DECK composition; it re-exports these for back-compat. Relocated from
+// buildInitialGameState so the villain-effect handler can import all three basic
+// S.H.I.E.L.D. ext_ids from one place without importing the setup orchestrator.
+/** Well-known ext_id for S.H.I.E.L.D. Agent starting cards (recruit 1). */
+export const SHIELD_AGENT_EXT_ID: CardExtId = 'starting-shield-agent';
+
+/** Well-known ext_id for S.H.I.E.L.D. Trooper starting cards (attack 1). */
+export const SHIELD_TROOPER_EXT_ID: CardExtId = 'starting-shield-trooper';
+
 /** Well-known ext_id for Sidekick pile cards. */
 export const SIDEKICK_EXT_ID: CardExtId = 'pile-sidekick';
 

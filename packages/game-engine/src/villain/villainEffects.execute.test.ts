@@ -1110,6 +1110,111 @@ describe('executeVillainAbilities — ko-heroes-current-by-trait (WP-485 / D-242
   });
 });
 
+describe('executeVillainAbilities — ko-heroes-current-by-trait basic-S.H.I.E.L.D. widening (WP-490 / D-24296)', () => {
+  // why: the three basic S.H.I.E.L.D. cards are synthetic game components with NO
+  // G.cardTraits entry, so the generic team predicate misses them — the live
+  // Loki/Thor 2p bug (2026-08-03) where Destroyer KO'd 0 despite the player holding
+  // S.H.I.E.L.D. Agents/Troopers. The KO handler is widened to name them for a
+  // team:shield predicate ONLY.
+  const AGENT = 'starting-shield-agent' as CardExtId;
+  const TROOPER = 'starting-shield-trooper' as CardExtId;
+  const OFFICER = 'pile-shield-officer' as CardExtId;
+  const REGISTRY_SHIELD = 'core/shield/nick-fury#0' as CardExtId;
+  const OTHER = 'core/x-men/wolverine#0' as CardExtId;
+  // why: NO entry for the three basic-S.H.I.E.L.D. ext_ids — exactly the live data
+  // shape (teamless). REGISTRY_SHIELD carries a real team:shield trait; OTHER does not.
+  const TRAITS: Record<string, { heroClass: string | null; team: string | null }> = {
+    [REGISTRY_SHIELD]: { heroClass: 'covert', team: 'shield' },
+    [OTHER]: { heroClass: 'covert', team: 'x-men' },
+  };
+
+  function destroyerHook(cardId: string): VillainAbilityHook {
+    return {
+      cardId: cardId as CardExtId,
+      timing: 'onFight',
+      keywords: [],
+      effects: [
+        { primitive: 'ko-heroes-current-by-trait', requireKind: 'team', requireValue: 'shield' },
+      ],
+    };
+  }
+
+  it('KOs the teamless basic S.H.I.E.L.D. cards (Agent/Trooper/Officer) from hand + in-play', () => {
+    const G = makeG({
+      hooks: [destroyerHook('v-destroyer')],
+      playerZones: {
+        '0': {
+          deck: [],
+          hand: [AGENT, OTHER],
+          discard: [TROOPER], // discard out of scope — survives
+          inPlay: [TROOPER, OFFICER, OTHER],
+          victory: [],
+        },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      cardTraits: TRAITS,
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-destroyer' as CardExtId, 'onFight');
+    assert.deepStrictEqual(G.playerZones['0']!.hand, [OTHER], 'Agent KO’d from hand');
+    assert.deepStrictEqual(G.playerZones['0']!.inPlay, [OTHER], 'Trooper + Officer KO’d from in-play');
+    assert.deepStrictEqual(
+      G.playerZones['0']!.discard,
+      [TROOPER],
+      'discard is out of scope — its S.H.I.E.L.D. card survives',
+    );
+    assert.deepStrictEqual(G.ko, [AGENT, TROOPER, OFFICER], 'all three basic S.H.I.E.L.D. cards KO’d');
+    assert.match(G.messages![0]!.text, /Fight effect: KO'd 3 of your shield Hero\(es\)\./);
+    assert.equal(G.messages![0]!.outcome, 'applied');
+  });
+
+  it('KOs registry team:shield heroes AND basic S.H.I.E.L.D. cards together', () => {
+    const G = makeG({
+      hooks: [destroyerHook('v-destroyer')],
+      playerZones: {
+        '0': { deck: [], hand: [REGISTRY_SHIELD, AGENT], discard: [], inPlay: [OTHER], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      cardTraits: TRAITS,
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-destroyer' as CardExtId, 'onFight');
+    assert.deepStrictEqual(G.playerZones['0']!.hand, [], 'both S.H.I.E.L.D. heroes KO’d from hand');
+    assert.deepStrictEqual(G.playerZones['0']!.inPlay, [OTHER], 'the x-men hero stays');
+    assert.deepStrictEqual(G.ko, [REGISTRY_SHIELD, AGENT], 'registry + basic S.H.I.E.L.D. both KO’d');
+  });
+
+  it('the widening is team:shield ONLY — a hero-class predicate never KOs basic S.H.I.E.L.D. cards', () => {
+    const G = makeG({
+      hooks: [
+        {
+          cardId: 'v-hc' as CardExtId,
+          timing: 'onFight',
+          keywords: [],
+          effects: [
+            // why: a hero-class predicate must NOT rescue the teamless basic
+            // S.H.I.E.L.D. cards — only a team:shield predicate does.
+            { primitive: 'ko-heroes-current-by-trait', requireKind: 'hero-class', requireValue: 'shield' },
+          ],
+        },
+      ],
+      playerZones: {
+        '0': { deck: [], hand: [AGENT, TROOPER, OFFICER], discard: [], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      cardTraits: TRAITS,
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-hc' as CardExtId, 'onFight');
+    assert.deepStrictEqual(G.ko, [], 'no basic S.H.I.E.L.D. card KO’d under a hero-class predicate');
+    assert.deepStrictEqual(
+      G.playerZones['0']!.hand,
+      [AGENT, TROOPER, OFFICER],
+      'all three basic S.H.I.E.L.D. cards survive a hero-class predicate',
+    );
+  });
+});
+
 describe('executeVillainAbilities — rescue-bystanders-current-by-trait-count (WP-485 / D-24290)', () => {
   const AV_A = 'core/avengers/cap#0' as CardExtId;
   const AV_B = 'core/avengers/thor#0' as CardExtId;
