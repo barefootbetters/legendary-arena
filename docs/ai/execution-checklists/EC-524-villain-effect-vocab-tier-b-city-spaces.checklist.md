@@ -16,12 +16,11 @@ markers — downward edge only.
       (`moves/fightVillain.ts:51-80`) NOT yet passed to `executeVillainAbilities`
       (`villain/villainEffects.execute.ts:93-105`); `shuffleContext?` is the
       trailing-optional threading precedent (WP-478).
-- [ ] **Operator has confirmed the FULL index→name binding against the authoritative
-      rulebook** (WP Verification §1) — ENDPOINTS included (which named space is index 0
-      = entry, which is index 4 = escape edge) plus the middle order. Proposed:
-      `['sewers','bank','rooftops','streets','bridge']` (0-4). `keywords-full.json` is
-      corroborating-only (~20% unreliable); do NOT lock the constant on it. A reversed
-      endpoint binding fires both cards on the wrong spaces with green tests.
+- [x] **Index→name binding CONFIRMED (operator, 2026-08-02)** against the authoritative
+      `docs/ai/DESIGN-BOARD-LAYOUT.md` §City row (entry=Sewers, escape=Bridge, advancement
+      Sewers→Bank→Rooftops→Streets→Bridge) composed with `city.types.ts` (index 0 = entry):
+      **`['sewers','bank','rooftops','streets','bridge']` (0-4)**. D-24295 formally locks
+      this mapping. `keywords-full.json` superseded (was corroborating-only, ~20% unreliable).
 - [ ] **Scaffold:** add the `each-other` target value + `requireCitySpaces` field and run
       `pnpm --filter @legendary-arena/game-engine test`. Expect **NO pre-existing break**
       (no primitive added → the primitives-count drift stays 12; the round-trip is over the
@@ -44,8 +43,8 @@ markers — downward edge only.
 
 ## Locked Values (do not re-derive)
 - **`CITY_SPACE_NAMES` = `['sewers','bank','rooftops','streets','bridge']`** (index
-  0=entry=Sewers … 4=escape=Bridge) — **proposed, pending the Before-Starting
-  operator-confirm gate; do not treat as final until confirmed.** Pure engine constant —
+  0=entry=Sewers … 4=escape=Bridge) — **CONFIRMED & LOCKED (operator, 2026-08-02) per
+  `docs/ai/DESIGN-BOARD-LAYOUT.md`; D-24295 lands the formal lock.** Pure engine constant —
   **NOT a `G` field.**
 - **NO new `VillainEffectPrimitive`.** Reuse `gain-wound` + `capture-bystander`.
   Additive descriptor changes ONLY: `requireCitySpaces?: readonly CitySpaceName[]`;

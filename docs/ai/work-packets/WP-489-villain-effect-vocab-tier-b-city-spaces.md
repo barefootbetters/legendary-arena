@@ -39,10 +39,11 @@ space" log) instead of the silent `unmarked-ability` breadcrumb they emit today.
     pass the index into `executeVillainAbilities`
     (`villain/villainEffects.execute.ts:93-105`) or the `VillainEffectHandler`
     signature (`:469-481`). Threading it is the core of this WP.
-  - The `keywords-full.json` glossary *corroborates* (does not prove — it is
-    ~20%-unreliable, hallucinated descriptions) the entry space as the **Sewers** (`:70`,
-    `:524`) and Rooftops / Streets as named city spaces (`:314`). The authoritative
-    index→name binding is operator-confirmed against the physical board (Verification §1).
+  - The authoritative index→name binding is **`docs/ai/DESIGN-BOARD-LAYOUT.md` §City row
+    (lines 307-315)**: entry edge = Sewers, escape edge = Bridge, advancement
+    Sewers→Bank→Rooftops→Streets→Bridge. Composed with `city.types.ts` (index 0 = entry) →
+    Sewers(0)…Bridge(4). Operator-confirmed 2026-08-02 (Verification §1). The
+    `keywords-full.json` glossary (~20% unreliable) was corroborating-only and is superseded.
 
 ## Context
 
@@ -194,11 +195,13 @@ Governance: `docs/ai/DECISIONS.md`, `docs/ai/work-packets/WORK_INDEX.md`,
 
 ## Contract
 
-- **`CITY_SPACE_NAMES`** (index 0-4), **proposed pending operator confirmation**:
-  `['sewers','bank','rooftops','streets','bridge']` (index 0 = entry, index 4 = escape edge
-  per `city.types.ts`). Load-bearing faithfulness binding; **NOT locked** until the operator
-  confirms the full mapping — endpoints included — against the authoritative rulebook (see
-  Verification Step 1). `keywords-full.json` is corroborating-only.
+- **`CITY_SPACE_NAMES`** (index 0-4), **CONFIRMED & LOCKED (operator, 2026-08-02)**:
+  `['sewers','bank','rooftops','streets','bridge']`. Confirmed against the authoritative
+  `docs/ai/DESIGN-BOARD-LAYOUT.md` (entry edge = Sewers, escape edge = Bridge; advancement
+  Sewers→Bank→Rooftops→Streets→Bridge) composed with `board/city.types.ts:26-27` (index 0 =
+  entry, index 4 = escape edge) → Sewers(0)…Bridge(4). D-24295 formally locks this
+  engine-index→slot-name mapping (the "future board-layout-WP lock" DESIGN-BOARD-LAYOUT.md
+  §City row flagged). `keywords-full.json` was corroborating-only and is superseded.
 - **`VillainEffectDescriptor`** additive fields: `requireCitySpaces?: readonly
   CitySpaceName[]`; `target` union gains `'each-other'`; `magnitude?` now read by the
   `capture-bystander` handler as a rescue count. No `VillainEffectPrimitive` added
@@ -241,20 +244,17 @@ Governance: `docs/ai/DECISIONS.md`, `docs/ai/work-packets/WORK_INDEX.md`,
 
 ## Verification Steps
 
-1. **Confirm the FULL index→name binding against the authoritative rulebook
-   (load-bearing).** The engine locks only the *convention* — index 0 = entry, index 4 =
-   escape edge (`board/city.types.ts:23-29`). Which **named** space sits at each index is
-   NOT reliably derivable from the repo: the `keywords-full.json` glossary is
-   **known ~20% unreliable** (hallucinated descriptions — see the `keywords-json v23
-   divergence` note) and is **corroborating-only**, never authoritative. Before execution
-   locks `CITY_SPACE_NAMES`, the operator confirms the **entire** binding — above all the
-   **endpoints** (which named space a newly-revealed Villain *enters* = index 0, and which
-   it is pushed *off* to escape = index 4) plus the middle order — against the physical
-   Upper Deck Marvel Legendary board / official rulebook. Proposed (pending confirmation):
-   **Sewers(0), Bank(1), Rooftops(2), Streets(3), Bridge(4)**. Tier B exercises the
-   Lizard's **Sewers** binding and Abomination's **Streets and Bridge** bindings; a
-   reversed endpoint binding would make both cards fire on exactly the wrong spaces with
-   green tests, so this confirmation is a hard execution precondition.
+1. **Index→name binding — CONFIRMED (operator, 2026-08-02).** The engine locks only the
+   *convention* — index 0 = entry, index 4 = escape edge (`board/city.types.ts:26-27`). The
+   **named**-space binding is settled by the authoritative `docs/ai/DESIGN-BOARD-LAYOUT.md`
+   (§City row, lines 307-315): entry edge = **Sewers**, escape edge = **Bridge**, advancement
+   **Sewers → Bank → Rooftops → Streets → Bridge**. Composed with the engine convention →
+   **Sewers(0), Bank(1), Rooftops(2), Streets(3), Bridge(4)**. `keywords-full.json` (~20%
+   unreliable) was corroborating-only and is superseded by DESIGN-BOARD-LAYOUT.md.
+   DESIGN-BOARD-LAYOUT.md §City row flagged the engine-index→slot-name mapping as "a future
+   board-layout-WP lock" — **D-24295 formally lands that lock at execution.** (Tier B
+   exercises the Lizard's Sewers binding and Abomination's Streets + Bridge bindings; the
+   confirmed binding fires both on the correct spaces.)
 2. `pnpm --filter @legendary-arena/game-engine test` — new handler/parser/constant
    tests pass.
 3. `node scripts/convert-cards/apply-effect-markers.mjs`; `git diff --stat
