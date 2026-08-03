@@ -103,6 +103,7 @@
         "ultron": { "escape": ["reveal-or-wound:hc:tech"] }
       },
       "radiation": {
+        "abomination": { "fight": ["capture-bystander:3@streets+bridge"] },
         "zzzax": { "fight": ["reveal-or-wound:hc:strength"], "escape": ["reveal-or-wound:hc:strength"] }
       },
       "skrulls": {
@@ -112,6 +113,7 @@
       },
       "spider-foes": {
         "green-goblin": { "ambush": ["captureBystander"] },
+        "the-lizard": { "fight": ["gain-wound:each-other@sewers"] },
         "venom": { "escape": ["gainWoundEachPlayer"] }
       }
     },
@@ -395,7 +397,6 @@
     { "set": "cvwr", "group": "heroes-for-hire", "card": "tarantula", "timing": "fight", "text": "Fight: Each player discards two cards or gains a Wound.", "reason": "conditional" },
     { "set": "msp1", "group": "chitauri", "card": "chitauri-leviathan", "timing": "fight", "text": "Fight: Each player with no Bystanders in their Victory Pile gains a Wound.", "reason": "conditional" },
     { "set": "dkcy", "group": "four-horsemen", "card": "war", "timing": "fight", "text": "Fight: Each other player reveals an [hc:instinct] Hero or gains a Wound.", "reason": "multi-target" },
-    { "set": "core", "group": "spider-foes", "card": "the-lizard", "timing": "fight", "text": "Fight: If you fight the Lizard in the Sewers, each other player gains a Wound.", "reason": "multi-target" },
     { "set": "dkcy", "group": "emissaries-of-evil", "card": "rhino", "timing": "ambush", "text": "Ambush: Reveal the top card of the Villain Deck. If it's a Master Strike, each player gains a Wound.", "reason": "conditional" },
     { "set": "rvlt", "group": "dark-avengers", "card": "captain-marvel-noh-varr", "timing": "ambush", "text": "Ambush: If any other Dark Avengers are in the city, each player gains a Wound.", "reason": "conditional" },
 

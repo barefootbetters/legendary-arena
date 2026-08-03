@@ -566,6 +566,89 @@ describe('executeVillainAbilities — captureBystander', () => {
   });
 });
 
+describe('executeVillainAbilities — Tier-B city-space gate (WP-489 / D-24295)', () => {
+  // why: Abomination "Fight: If you fight Abomination on the Streets or Bridge,
+  // rescue three Bystanders." — a counted, location-gated capture-bystander.
+  const abominationHook: VillainAbilityHook = {
+    cardId: 'v-abomination' as CardExtId,
+    timing: 'onFight',
+    keywords: [],
+    effects: [{ primitive: 'capture-bystander', magnitude: 3, requireCitySpaces: ['streets', 'bridge'] }],
+  };
+  // why: the Lizard "Fight: If you fight the Lizard in the Sewers, each other
+  // player gains a Wound." — a location-gated gain-wound:each-other.
+  const lizardHook: VillainAbilityHook = {
+    cardId: 'v-lizard' as CardExtId,
+    timing: 'onFight',
+    keywords: [],
+    effects: [{ primitive: 'gain-wound', target: 'each-other', magnitude: 1, requireCitySpaces: ['sewers'] }],
+  };
+
+  it('Abomination rescues exactly 3 Bystanders when fought on the Streets (index 3)', () => {
+    const G = makeG({
+      hooks: [abominationHook],
+      bystanders: ['b0', 'b1', 'b2', 'b3'] as CardExtId[],
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-abomination' as CardExtId, 'onFight', undefined, 3);
+    assert.deepStrictEqual(G.playerZones['0']!.victory, ['b0', 'b1', 'b2'], '3 rescued to current player');
+    assert.deepStrictEqual(G.piles.bystanders, ['b3'], 'one bystander left in the supply');
+    assert.equal(G.attachedBystanders['v-abomination' as CardExtId], undefined, 'none left stranded');
+    assert.match(G.messages.at(-1)!.text, /rescued 3 Bystander/);
+    assert.equal(G.diagnostics?.hollowEffects?.length ?? 0, 0, 'gated-pass is not hollow');
+  });
+
+  it('Abomination also fires on the Bridge (index 4)', () => {
+    const G = makeG({ hooks: [abominationHook], bystanders: ['b0', 'b1', 'b2', 'b3'] as CardExtId[] });
+    executeVillainAbilities(G, CTX, 'v-abomination' as CardExtId, 'onFight', undefined, 4);
+    assert.deepStrictEqual(G.playerZones['0']!.victory, ['b0', 'b1', 'b2']);
+  });
+
+  it('Abomination rescue is supply-bounded (rescues what the supply holds)', () => {
+    const G = makeG({ hooks: [abominationHook], bystanders: ['b0'] as CardExtId[], messages: [] });
+    executeVillainAbilities(G, CTX, 'v-abomination' as CardExtId, 'onFight', undefined, 3);
+    assert.deepStrictEqual(G.playerZones['0']!.victory, ['b0'], 'rescues only the one available');
+    assert.deepStrictEqual(G.piles.bystanders, []);
+    assert.match(G.messages.at(-1)!.text, /rescued 1 Bystander/);
+  });
+
+  it('Abomination rescues nothing when fought off the gated spaces (Sewers, index 0)', () => {
+    const G = makeG({ hooks: [abominationHook], bystanders: ['b0', 'b1', 'b2'] as CardExtId[], messages: [] });
+    executeVillainAbilities(G, CTX, 'v-abomination' as CardExtId, 'onFight', undefined, 0);
+    assert.deepStrictEqual(G.playerZones['0']!.victory, [], 'no rescue off-space');
+    assert.deepStrictEqual(G.piles.bystanders, ['b0', 'b1', 'b2'], 'supply untouched');
+    assert.match(G.messages.at(-1)!.text, /not fought on the Streets or Bridge; no effect/);
+  });
+
+  it('Abomination fails closed on an undefined cityIndex (non-fight fire site)', () => {
+    const G = makeG({ hooks: [abominationHook], bystanders: ['b0', 'b1', 'b2'] as CardExtId[] });
+    executeVillainAbilities(G, CTX, 'v-abomination' as CardExtId, 'onFight', undefined, undefined);
+    assert.deepStrictEqual(G.playerZones['0']!.victory, [], 'no rescue without a fought space');
+    assert.deepStrictEqual(G.piles.bystanders, ['b0', 'b1', 'b2']);
+  });
+
+  it('the Lizard wounds each OTHER player (never the current) in the Sewers (index 0)', () => {
+    const G = makeG({
+      hooks: [lizardHook],
+      wounds: ['w0', 'w1'] as CardExtId[],
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-lizard' as CardExtId, 'onFight', undefined, 0);
+    assert.equal(G.playerZones['1']!.discard.length, 1, 'the other player gained a Wound');
+    assert.deepStrictEqual(G.playerZones['0']!.discard, [], 'the current player is never wounded');
+    assert.equal(G.turnEconomy.woundsDrawn, 0, 'woundsDrawn tracks the current player only');
+    assert.match(G.messages.at(-1)!.text, /each other player gained a Wound/);
+  });
+
+  it('the Lizard wounds no one when fought off the Sewers (Streets, index 3)', () => {
+    const G = makeG({ hooks: [lizardHook], wounds: ['w0', 'w1'] as CardExtId[], messages: [] });
+    executeVillainAbilities(G, CTX, 'v-lizard' as CardExtId, 'onFight', undefined, 3);
+    assert.equal(G.playerZones['1']!.discard.length, 0, 'no wound off-space');
+    assert.deepStrictEqual(G.piles.wounds, ['w0', 'w1'], 'wound supply untouched');
+    assert.match(G.messages.at(-1)!.text, /not fought on the Sewers; no effect/);
+  });
+});
+
 describe('executeVillainAbilities — scry-ko-own-deck (WP-447 / D-24267)', () => {
   const WOUND = 'pile-wound' as CardExtId;
   const AGENT = 'starting-shield-agent' as CardExtId;

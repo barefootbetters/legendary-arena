@@ -31,6 +31,8 @@ import {
   descriptorToLegacyKeyword,
   VILLAIN_EFFECT_PRIMITIVES,
 } from '../rules/villainAbility.types.js';
+import type { CitySpaceName } from '../board/citySpaceNames.js';
+import { citySpaceNameForIndex } from '../board/citySpaceNames.js';
 import type { ResolvedEffectResult } from '../events/notableEvents.compose.js';
 import type { HollowEffectRecord, EffectTrace, EffectTraceStatus } from '../diagnostics/hollowEffect.types.js';
 import { recordHollowEffect } from '../diagnostics/hollowEffect.record.js';
@@ -104,6 +106,12 @@ export function executeVillainAbilities(
   // handler no-ops the reshuffle on an empty discard before touching it. `ctx` does
   // NOT carry `random` (it is the bare bgio ctx), so the provider is a separate arg.
   shuffleContext?: ShuffleProvider,
+  // why: WP-489 / D-24295 — the 0-based City index the villain was fought on, for
+  // the universal location gate (Abomination / the Lizard). Trailing-optional
+  // (mirroring shuffleContext?): only the Fight fire site knows a fought space;
+  // the Ambush/Escape reveal sites pass undefined, and the gate FAILS CLOSED on
+  // undefined so a location-gated effect never fires without a fought space.
+  cityIndex?: number,
 ): VillainEffectResult[] {
   // why: WP-316 — accumulator captures a result per effect whose handler ran,
   // in dispatch order. Each result pairs the reverse-mapped legacy keyword with
@@ -138,7 +146,21 @@ export function executeVillainAbilities(
   const hooks = getVillainHooksForCard(G.villainAbilityHooks, cardId, timing);
   for (const hook of hooks) {
     for (const descriptor of hook.effects) {
-      const application = applyVillainEffect(G, currentPlayer, cardId, timing, descriptor, shuffleContext);
+      // why: WP-489 / D-24295 — the universal location gate, checked BEFORE handler
+      // dispatch. A descriptor carrying `requireCitySpaces` fires only when the
+      // villain was fought on a listed space; otherwise skip + self-narrate "no
+      // effect". This is NOT hollow (the handler exists — the location blocked it),
+      // so it records neither a hollow nor an EffectTrace: the descriptor was never
+      // dispatched. Fails CLOSED on an undefined / out-of-range cityIndex (the
+      // Ambush/Escape fire sites, which have no fought space).
+      if (
+        descriptor.requireCitySpaces !== undefined &&
+        !isCityGateSatisfied(descriptor.requireCitySpaces, cityIndex)
+      ) {
+        narrateCityGateBlocked(G, timing, descriptor.requireCitySpaces);
+        continue;
+      }
+      const application = applyVillainEffect(G, currentPlayer, cardId, timing, descriptor, shuffleContext, cityIndex);
       if (application !== null) {
         // why: D-24023 — each result's `keyword` stays VillainEffectKeyword
         // (reverse-mapped from the dispatched descriptor) so notableEvents,
@@ -450,6 +472,84 @@ function isVillainEffectPrimitive(value: string): value is VillainEffectPrimitiv
 }
 
 // ---------------------------------------------------------------------------
+// City-space location gate (WP-489 / D-24295)
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns whether the fought City index satisfies a descriptor's location gate.
+ *
+ * Fails CLOSED: an undefined / out-of-range `cityIndex` (the Ambush/Escape fire
+ * sites, which have no fought space) resolves to `undefined` and matches no
+ * listed space, so a location-gated effect never fires without a fought space.
+ *
+ * @param requireCitySpaces - The named spaces the effect is gated on.
+ * @param cityIndex - The 0-based City index fought, or undefined at a non-fight site.
+ * @returns True when the fought space is one of the listed spaces.
+ */
+function isCityGateSatisfied(
+  requireCitySpaces: readonly CitySpaceName[],
+  cityIndex: number | undefined,
+): boolean {
+  const foughtSpace = citySpaceNameForIndex(cityIndex);
+  if (foughtSpace === undefined) {
+    return false;
+  }
+  for (const required of requireCitySpaces) {
+    if (required === foughtSpace) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Self-narrates a "no effect — wrong space" line when a location-gated effect is
+ * skipped (WP-489 / D-24295).
+ *
+ * The gated effect is keyword-less and never dispatched, so without this push the
+ * skip would be invisible in the log. `G.messages` is hash-excluded (D-24081), so
+ * this adds no replay surface. Outcome `blocked` per the WP-434 contract (the
+ * effect touched no one).
+ *
+ * @param G - Game state (mutated only via the hash-excluded message log).
+ * @param timing - The timing that fired (for the "<Fight|Ambush|Escape> effect:" label).
+ * @param requireCitySpaces - The spaces the effect required (named in the line).
+ */
+function narrateCityGateBlocked(
+  G: LegendaryGameState,
+  timing: VillainAbilityTiming,
+  requireCitySpaces: readonly CitySpaceName[],
+): void {
+  const label = villainEffectTimingLabel(timing);
+  pushLog(
+    G,
+    `${label} effect: not fought on ${formatCitySpaceList(requireCitySpaces)}; no effect.`,
+    'blocked',
+  );
+}
+
+/**
+ * Formats a City-space list into readable prose with a single leading "the"
+ * (e.g. `['streets','bridge']` → "the Streets or Bridge"; `['sewers']` → "the
+ * Sewers").
+ *
+ * @param spaces - The named City spaces (already validated at parse time).
+ * @returns The prose list for a log line.
+ */
+function formatCitySpaceList(spaces: readonly CitySpaceName[]): string {
+  const capitalized: string[] = [];
+  for (const space of spaces) {
+    capitalized.push(space.charAt(0).toUpperCase() + space.slice(1));
+  }
+  if (capitalized.length === 1) {
+    return `the ${capitalized[0]}`;
+  }
+  const last = capitalized[capitalized.length - 1]!;
+  const rest = capitalized.slice(0, capitalized.length - 1).join(', ');
+  return `the ${rest} or ${last}`;
+}
+
+// ---------------------------------------------------------------------------
 // Effect-trace emission (WP-488 / D-24294)
 // ---------------------------------------------------------------------------
 
@@ -605,6 +705,11 @@ type VillainEffectHandler = (
   // that never touch the deck-reveal path keep their existing 5-param signatures
   // (a shorter function is structurally assignable to this wider type).
   shuffleContext?: ShuffleProvider,
+  // why: WP-489 / D-24295 — the fought City index, threaded uniform with
+  // shuffleContext so the handler signature carries the full fire-site context. No
+  // current handler reads it (the location gate runs in the executor loop BEFORE
+  // dispatch); a shorter handler stays structurally assignable to this wider type.
+  cityIndex?: number,
 ) => VillainEffectApplication;
 
 /**
@@ -618,9 +723,50 @@ function villainEffectGainWound(
   G: LegendaryGameState,
   currentPlayer: string,
   _cardId: CardExtId,
-  _timing: VillainAbilityTiming,
+  timing: VillainAbilityTiming,
   descriptor: VillainEffectDescriptor,
 ): VillainEffectApplication {
+  // why: WP-489 / D-24295 — the Lizard "each OTHER player gains a Wound": wound
+  // every player EXCEPT the current one. Sorted iteration (D-18902 determinism),
+  // supply-bounded, `magnitude` repetitions (default 1) mirroring ko-hero:each so a
+  // future N-wound each-other line is data-only. Keyword-less (no legacy reverse-
+  // map, see descriptorKey), so it MUST self-narrate — the generic
+  // "<timing> effect:" line never fires for it.
+  if (descriptor.target === 'each-other') {
+    const repetitions = descriptor.magnitude ?? 1;
+    const woundedPlayerIds: string[] = [];
+    for (const playerId of Object.keys(G.playerZones).sort()) {
+      // why: "each OTHER player" — the current player is never wounded by this effect.
+      if (playerId === currentPlayer) continue;
+      const zones = G.playerZones[playerId];
+      if (!zones) continue;
+      let woundedThisPlayer = false;
+      for (let iteration = 0; iteration < repetitions; iteration++) {
+        // why: supply-bounded — stop once the shared Wound pile is empty (a
+        // reachable no-op, never a hollow record).
+        if (G.piles.wounds.length === 0) break;
+        const woundResult = gainWound(G.piles.wounds, zones.discard);
+        G.piles.wounds = woundResult.woundsPile;
+        zones.discard = woundResult.playerDiscard;
+        woundedThisPlayer = true;
+      }
+      if (woundedThisPlayer) {
+        woundedPlayerIds.push(playerId);
+      }
+    }
+    // why: self-narrate (keyword-less). `G.messages` is hash-excluded (D-24081).
+    // Honest outcome per the WP-434 contract: a wound landed → `applied`; no other
+    // player could be wounded (solo, or empty supply) → `blocked`. woundsDrawn is
+    // NOT bumped — the current player is never wounded by each-other.
+    const label = villainEffectTimingLabel(timing);
+    if (woundedPlayerIds.length > 0) {
+      const names = woundedPlayerIds.map((playerId) => `Player ${playerId}`).join(', ');
+      pushLog(G, `${label} effect: each other player gained a Wound (${names}).`, 'applied');
+    } else {
+      pushLog(G, `${label} effect: no other player gained a Wound.`, 'blocked');
+    }
+    return { targets: [] };
+  }
   // why: WP-316 — wounds narrate via the generic keyword label, not a card
   // name; targets stays [] for both branches.
   if (descriptor.target === 'each') {
@@ -819,34 +965,80 @@ function villainEffectCaptureBystander(
   currentPlayer: string,
   cardId: CardExtId,
   timing: VillainAbilityTiming,
-  _descriptor: VillainEffectDescriptor,
+  descriptor: VillainEffectDescriptor,
 ): VillainEffectApplication {
-  const attachResult = attachBystanderToVillain(
-    G.piles.bystanders,
-    cardId,
-    G.attachedBystanders,
-  );
-  G.piles.bystanders = attachResult.bystandersPile;
-  G.attachedBystanders = attachResult.attachedBystanders;
-  if (timing === 'onFight') {
-    // why: the Fight fire site is post-award, so a bystander attached now
-    // to a card already in the victory pile would be stranded (never
-    // awarded). Award it immediately to preserve tabletop "rescue on
-    // defeat" semantics (D-18506). No-op when the pile was empty (nothing
-    // was attached).
-    const zones = G.playerZones[currentPlayer];
-    if (zones) {
-      const awardResult = awardAttachedBystanders(
-        cardId,
-        G.attachedBystanders,
-        zones.victory,
-      );
+  const rescueCount = descriptor.magnitude;
+  if (rescueCount === undefined) {
+    // why: the un-counted variant — verbatim WP-185 / D-18506 behavior. This
+    // descriptor reverse-maps to the `captureBystander` legacy keyword, so it
+    // narrates via the generic "<timing> effect:" line and MUST NOT self-narrate
+    // (that would double-log). Attach one bystander; award it immediately on Fight.
+    const attachResult = attachBystanderToVillain(
+      G.piles.bystanders,
+      cardId,
+      G.attachedBystanders,
+    );
+    G.piles.bystanders = attachResult.bystandersPile;
+    G.attachedBystanders = attachResult.attachedBystanders;
+    if (timing === 'onFight') {
+      // why: the Fight fire site is post-award, so a bystander attached now
+      // to a card already in the victory pile would be stranded (never
+      // awarded). Award it immediately to preserve tabletop "rescue on
+      // defeat" semantics (D-18506). No-op when the pile was empty (nothing
+      // was attached).
+      const zones = G.playerZones[currentPlayer];
+      if (zones) {
+        const awardResult = awardAttachedBystanders(
+          cardId,
+          G.attachedBystanders,
+          zones.victory,
+        );
+        G.attachedBystanders = awardResult.attachedBystanders;
+        zones.victory = awardResult.playerVictory;
+      }
+    }
+    // why: WP-316 — a captured bystander narrates via the generic keyword label,
+    // not a card name; targets stays [].
+    return { targets: [] };
+  }
+  // why: WP-489 / D-24295 — the COUNTED variant (Abomination: rescue three). Its
+  // magnitude-bearing descriptor has NO legacy reverse-map entry (descriptorKey
+  // includes magnitude), so it is keyword-less and self-narrates; the generic
+  // "Fight effect:" line never fires, and fightVillain's `bystandersRescued` was
+  // snapshotted BEFORE effects ran, so there is no double-count. Mirrors
+  // rescue-bystanders-current-by-trait-count's attach+award loop; supply-bounded.
+  const zones = G.playerZones[currentPlayer];
+  let rescued = 0;
+  for (let rescueIndex = 0; rescueIndex < rescueCount; rescueIndex++) {
+    if (G.piles.bystanders.length === 0) {
+      // why: the supply ran dry — stop (rescue is bounded by the Bystander supply).
+      break;
+    }
+    const attachResult = attachBystanderToVillain(
+      G.piles.bystanders,
+      cardId,
+      G.attachedBystanders,
+    );
+    G.piles.bystanders = attachResult.bystandersPile;
+    G.attachedBystanders = attachResult.attachedBystanders;
+    if (timing === 'onFight' && zones) {
+      // why: award immediately on Fight (post-award fire site) so the rescued
+      // bystander is not stranded on a card already in the victory pile (D-18506).
+      const awardResult = awardAttachedBystanders(cardId, G.attachedBystanders, zones.victory);
       G.attachedBystanders = awardResult.attachedBystanders;
       zones.victory = awardResult.playerVictory;
     }
+    rescued += 1;
   }
-  // why: WP-316 — a captured bystander narrates via the generic keyword label,
-  // not a card name; targets stays [].
+  // why: self-narrate the actual count (keyword-less). `G.messages` is hash-
+  // excluded (D-24081). Zero rescued (empty supply) is a reachable no-op → `blocked`.
+  const label = villainEffectTimingLabel(timing);
+  pushLog(
+    G,
+    `${label} effect: rescued ${String(rescued)} Bystander(s).`,
+    rescued > 0 ? 'applied' : 'blocked',
+  );
+  // why: WP-316 — rescued bystanders narrate by count, not by name; targets stays [].
   return { targets: [] };
 }
 
@@ -1063,17 +1255,18 @@ export function villainCardEscapeTriggersSchemeTwist(
 
 /**
  * Maps a villain ability timing to its human log-label ('Fight' / 'Ambush' /
- * 'Escape') for the self-narrated reveal-or-wound line.
+ * 'Escape') for a self-narrated effect line.
  *
  * The three fire sites hardcode "Fight effect:" / "Ambush effect:" / "Escape
- * effect:" per site; reveal-or-wound fires at all three (Sabretooth Fight +
- * Escape, Ymir Ambush, …) and self-narrates from one handler, so it needs the
- * label from the timing it received.
+ * effect:" per site; several keyword-less handlers self-narrate from one handler
+ * that fires at more than one timing (reveal-or-wound at all three; the WP-489
+ * gain-wound:each-other / counted capture-bystander / city-gate lines), so they
+ * need the label from the timing they received.
  *
  * @param timing - The timing that fired ('onFight' | 'onAmbush' | 'onEscape').
  * @returns The capitalized label matching the per-site convention.
  */
-function revealOrWoundTimingLabel(timing: VillainAbilityTiming): string {
+function villainEffectTimingLabel(timing: VillainAbilityTiming): string {
   if (timing === 'onAmbush') {
     return 'Ambush';
   }
@@ -1253,7 +1446,7 @@ function villainEffectRevealOrWound(
   // adds no replay surface. Outcome colour is honest per the WP-434 contract: the
   // wound landed on ≥1 player → `applied`; every player revealed (the villain
   // effect touched no one) → `blocked`.
-  const label = revealOrWoundTimingLabel(timing);
+  const label = villainEffectTimingLabel(timing);
   if (woundedPlayerIds.length > 0) {
     const names = woundedPlayerIds.map((playerId) => `Player ${playerId}`).join(', ');
     pushLog(
@@ -1544,6 +1737,7 @@ function applyVillainEffect(
   timing: VillainAbilityTiming,
   descriptor: VillainEffectDescriptor,
   shuffleContext?: ShuffleProvider,
+  cityIndex?: number,
 ): VillainEffectApplication | null {
   const handler = VILLAIN_EFFECT_HANDLERS[descriptor.primitive];
   if (handler === undefined) {
@@ -1556,7 +1750,9 @@ function applyVillainEffect(
   }
   // why: WP-478 / D-24285 — forward the shuffle source so a deck-reveal handler
   // (scry) can reshuffle the discard on exhaustion; the other handlers ignore it.
-  return handler(G, currentPlayer, cardId, timing, descriptor, shuffleContext);
+  // WP-489 / D-24295 — forward the fought City index for signature uniformity (the
+  // location gate already ran in the executor loop; no handler reads it today).
+  return handler(G, currentPlayer, cardId, timing, descriptor, shuffleContext, cityIndex);
 }
 
 // ---------------------------------------------------------------------------

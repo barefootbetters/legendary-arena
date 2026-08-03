@@ -150,7 +150,7 @@ co2e-villain-hydra-viper,Viper,co2e,villain,(unmarked),unmarked,,,
 co2e-villain-masters-of-evil-whirlwind,Whirlwind,co2e,villain,(unmarked),unmarked,,,
 co2e-villain-enemies-of-asgard-ymir-frost-giant-king,"Ymir, Frost Giant King",co2e,villain,(unmarked),unmarked,,,
 co2e-villain-radiation-zzzax,Zzzax,co2e,villain,(unmarked),unmarked,,,
-core-villain-radiation-abomination,Abomination,core,villain,(unmarked),unmarked,,,
+core-villain-radiation-abomination,Abomination,core,villain,capture-bystander,executable,WP-252,D-24023,packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander
 core-villain-masters-of-evil-baron-zemo,Baron Zemo,core,villain,rescue-bystanders-current-by-trait-count,executable,WP-485,D-24290,packages/game-engine/src/villain/villainEffects.execute.ts#rescue-bystanders-current-by-trait-count
 core-villain-brotherhood-blob,Blob,core,villain,(unmarked),unmarked,,,
 core-villain-enemies-of-asgard-destroyer,Destroyer,core,villain,ko-heroes-current-by-trait,executable,WP-485,D-24290,packages/game-engine/src/villain/villainEffects.execute.ts#ko-heroes-current-by-trait
@@ -178,7 +178,7 @@ core-villain-skrulls-skrull-shapeshifters,Skrull Shapeshifters,core,villain,gain
 core-villain-skrulls-super-skrull,Super-Skrull,core,villain,koHeroEachPlayer,executable,WP-189,D-18901,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 core-villain-hydra-supreme-hydra,Supreme HYDRA,core,villain,(unmarked),unmarked,,,
 core-villain-radiation-the-leader,The Leader,core,villain,(unmarked),unmarked,,,
-core-villain-spider-foes-the-lizard,The Lizard,core,villain,(unmarked),unmarked,,,
+core-villain-spider-foes-the-lizard,The Lizard,core,villain,gain-wound,executable,WP-252,D-24023,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
 core-villain-masters-of-evil-ultron,Ultron,core,villain,reveal-or-wound,executable,,,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
 core-villain-spider-foes-venom,Venom,core,villain,gainWoundEachPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
 core-villain-hydra-viper,Viper,core,villain,(unmarked),unmarked,,,

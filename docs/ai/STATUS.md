@@ -7,6 +7,46 @@
 
 ## Current State
 
+### WP-489 — Core Villain-Effect Vocabulary, Tier B (Named City Spaces) — DONE (2026-08-03)
+
+Tier B of the Core villain-effect-vocabulary arc: gives the engine **named City
+spaces** + a **universal location gate**, wiring two previously-hollow
+(D-24266 `unmarked-ability`) Core villain Fight abilities. **Abomination** —
+fought on the Streets (index 3) or Bridge (index 4) → rescues 3 Bystanders to the
+current player (supply-bounded). **The Lizard** — fought in the Sewers (index 0) →
+each *other* player gains a Wound (never the current player). Off-space fights
+self-narrate "not fought on … ; no effect".
+
+- **`board/citySpaceNames.ts`** (new): `CITY_SPACE_NAMES` pure constant
+  (`['sewers','bank','rooftops','streets','bridge']`, index 0 = entry … 4 = escape
+  edge, operator-confirmed against DESIGN-BOARD-LAYOUT.md), `CitySpaceName`,
+  `citySpaceNameForIndex` (out-of-range/undefined → undefined). **Not a `G` field.**
+- **Descriptor** (`villainAbility.types.ts`): additive `requireCitySpaces?` +
+  `'each-other'` `gain-wound` target; `capture-bystander`'s `magnitude?` read as a
+  rescue count. **No new `VillainEffectPrimitive`** (the count stays 12).
+- **Parser** (`villainAbility.setup.ts`): a universal `@<space>[+<space>…]` gate
+  suffix split off first and validated against `CITY_SPACE_NAMES` (unknown/empty
+  space → `unresolvedMarkers`, never a silent accept); `gain-wound:each-other[:N]`;
+  `capture-bystander:N`.
+- **Executor** (`villainEffects.execute.ts`): `cityIndex?` threaded through
+  `executeVillainAbilities` + the handler signature (fails **closed** on undefined);
+  the location gate runs before dispatch (skip + self-narrate off-space); the
+  `each-other` + counted `capture-bystander` handlers self-narrate (keyword-less).
+  `fightVillain` passes the fought `cityIndex`; the reveal fire sites pass undefined.
+- **Card data**: markers `capture-bystander:3@streets+bridge` (Abomination) +
+  `gain-wound:each-other@sewers` (the Lizard) → `apply-effect-markers.mjs` →
+  `core.json` (only the 2 Fight lines). Villain ledger flips both to `executable`.
+
+game-engine 2281/0; `pnpm -r build` + `pnpm -r --no-bail test` exit 0. **No
+`finalStateHash`/`PRE_WP080` re-pin** (no committed fixture deck includes
+`core/radiation` or `core/spider-foes`). Provenance map deliberately unchanged —
+the reused primitives already carry WP-252/D-24023, which correctly populates the
+two new ledger rows. WP-489 / EC-524; lands **D-24295**.
+`User-Visible Surface = play.legendary-arena.com` — **D-24026 live-verify
+operator-pending** (fight Abomination on the Streets/Bridge → 3 Bystanders; the
+Lizard in the Sewers → each other player wounded; off-space fights narrate "no
+effect").
+
 ### WP-488 — Runtime Effect Tracing (`G.diagnostics.traces`) — DONE (2026-08-03)
 
 **No user-observable change — infrastructure only.** Piece 2/3 of the ewiki

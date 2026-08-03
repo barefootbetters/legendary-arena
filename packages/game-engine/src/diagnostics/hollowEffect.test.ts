@@ -337,3 +337,71 @@ describe('WP-485 Tier-A abilities record no unmarked-ability breadcrumb', () => 
     });
   }
 });
+
+// ---------------------------------------------------------------------------
+// WP-489 / D-24295 — Abomination + the Lizard, once marked with their
+// location-gated Tier-B effects, no longer record an `unmarked-ability` hollow
+// breadcrumb (D-24266) — whether the gate passes (effect fires) or fails (self-
+// narrated no-effect). The marked hook carries a descriptor, so
+// detectVillainUnmarkedTimingLine short-circuits regardless of the gate outcome.
+// ---------------------------------------------------------------------------
+
+describe('WP-489 Tier-B abilities record no unmarked-ability breadcrumb', () => {
+  const CTX = { currentPlayer: '0' };
+  const BYSTANDER = 'bys0' as CardExtId;
+
+  /** Builds a G exercising only the fields the two Tier-B handlers read. */
+  function makeVillainG(hook: VillainAbilityHook): LegendaryGameState {
+    return {
+      villainAbilityHooks: [hook],
+      playerZones: {
+        '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      piles: { bystanders: [BYSTANDER], wounds: ['w0' as CardExtId], officers: [], sidekicks: [], horrors: [] },
+      ko: [],
+      attachedBystanders: {},
+      messages: [],
+      turnEconomy: {
+        attack: 0,
+        recruit: 0,
+        spentAttack: 0,
+        spentRecruit: 0,
+        piercing: 0,
+        woundsDrawn: 0,
+      },
+    } as unknown as LegendaryGameState;
+  }
+
+  const abomination: VillainAbilityHook = {
+    cardId: 'v-abomination' as CardExtId,
+    timing: 'onFight',
+    keywords: [],
+    effects: [{ primitive: 'capture-bystander', magnitude: 3, requireCitySpaces: ['streets', 'bridge'] }],
+  };
+  const lizard: VillainAbilityHook = {
+    cardId: 'v-lizard' as CardExtId,
+    timing: 'onFight',
+    keywords: [],
+    effects: [{ primitive: 'gain-wound', target: 'each-other', magnitude: 1, requireCitySpaces: ['sewers'] }],
+  };
+
+  const cases: Array<{ label: string; hook: VillainAbilityHook; cityIndex: number }> = [
+    { label: 'Abomination gate-pass (Streets)', hook: abomination, cityIndex: 3 },
+    { label: 'Abomination gate-fail (Sewers)', hook: abomination, cityIndex: 0 },
+    { label: 'the Lizard gate-pass (Sewers)', hook: lizard, cityIndex: 0 },
+    { label: 'the Lizard gate-fail (Bridge)', hook: lizard, cityIndex: 4 },
+  ];
+
+  for (const { label, hook, cityIndex } of cases) {
+    it(`${label} records no hollow breadcrumb`, () => {
+      const G = makeVillainG(hook);
+      executeVillainAbilities(G, CTX, hook.cardId, 'onFight', undefined, cityIndex);
+      assert.equal(
+        G.diagnostics?.hollowEffects?.length ?? 0,
+        0,
+        `${label} is handled — no unmarked-ability / no-handler record`,
+      );
+    });
+  }
+});

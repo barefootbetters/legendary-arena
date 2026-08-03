@@ -25,6 +25,7 @@ import type {
   VillainEffectKeyword,
   VillainEffectResult,
   VillainEffectPrimitive,
+  VillainEffectDescriptor,
   VillainDefeatRequirementKind,
 } from './villainAbility.types.js';
 import type { CardExtId } from '../state/zones.types.js';
@@ -426,5 +427,46 @@ describe('legacy-keyword ↔ descriptor translation (WP-252 / D-24023)', () => {
       VILLAIN_EFFECT_KEYWORDS.length,
       'all 10 legacy descriptors must be distinct',
     );
+  });
+});
+
+describe('Tier-B descriptor additions (WP-489 / D-24295)', () => {
+  // why: ADD positive coverage for the additive descriptor fields (no primitive
+  // added — the count stays 12). The `each-other` target and the counted
+  // `capture-bystander` MUST be keyword-less (no legacy reverse-map entry) so
+  // they self-narrate; a legacy reverse-map would double-log with the generic
+  // "Fight effect:" line.
+  it("reverse-maps a gain-wound:each-other descriptor to undefined (keyword-less)", () => {
+    assert.equal(
+      descriptorToLegacyKeyword({ primitive: 'gain-wound', target: 'each-other', magnitude: 1 }),
+      undefined,
+      'each-other is not a legacy keyword — it must self-narrate',
+    );
+  });
+
+  it('reverse-maps a counted capture-bystander:N descriptor to undefined (keyword-less)', () => {
+    // why: descriptorKey includes magnitude, so { capture-bystander, magnitude: 3 }
+    // has NO legacy entry (the legacy captureBystander is magnitude-less) — it must
+    // self-narrate. The un-counted capture-bystander stays keyworded (below).
+    assert.equal(
+      descriptorToLegacyKeyword({ primitive: 'capture-bystander', magnitude: 3 }),
+      undefined,
+      'the counted capture-bystander must self-narrate, not reverse-map',
+    );
+    assert.equal(
+      descriptorToLegacyKeyword({ primitive: 'capture-bystander' }),
+      'captureBystander',
+      'the un-counted capture-bystander keeps its legacy keyword (generic narration)',
+    );
+  });
+
+  it('JSON round-trips a descriptor carrying requireCitySpaces', () => {
+    const descriptor: VillainEffectDescriptor = {
+      primitive: 'capture-bystander',
+      magnitude: 3,
+      requireCitySpaces: ['streets', 'bridge'],
+    };
+    const deserialized = JSON.parse(JSON.stringify(descriptor)) as VillainEffectDescriptor;
+    assert.deepStrictEqual(deserialized, descriptor, 'the location-gate field must survive JSON round-trip');
   });
 });
