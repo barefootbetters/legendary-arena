@@ -117,9 +117,13 @@ empty index + a visible load-error banner (never throws). Locked by **D-24292** 
 `pnpm install --frozen-lockfile` clean (registry dep + regenerated `pnpm-lock.yaml` committed); grep
 `game-engine` / registry-barrel NO MATCH in the new source; no `packages/game-engine` /
 `packages/registry` / `apps/server` / `apps/registry-viewer` / `apps/arena-client` file touched
-(EC-522). **`User-Visible Surface = dashboard /debug/effects` — D-24026 live-verify operator-pending**
-(load `/debug/effects` on the deployed dashboard: the summary + table render, a filter narrows rows,
-a known executable villain shows its `<file>#<primitive>` handler while an unmarked row shows `"—"`).
+(EC-522). **`User-Visible Surface = dashboard /debug/effects` — ✅ D-24026 LIVE-VERIFIED 2026-08-03**
+(operator-authenticated on the deployed `dashboard.legendary-arena.com/debug/effects`): the summary
+header renders (**1366** card × mechanic rows · 650 hero · 716 villain · the five status chips
+346/0/5/367/648) above the 9-column table; the scope/status/has-handler/search filters narrow rows;
+Cyber-Nostra (villain, executable) shows its `villainEffects.execute.ts#hero-deck-top-to-escape`
+handler, Doctor Doom 2099 (hero, executable) shows `heroEffects.execute.ts#undercover`, and unmarked
+rows (Venture / Hela 2099) render Handler/WP/Decision as `"—"` — verbatim, never fabricated.
 
 ### WP-485 — Core Villain-Effect Vocabulary, Tier A (auto-resolve primitives) — DONE (2026-08-01)
 
