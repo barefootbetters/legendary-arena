@@ -40,6 +40,8 @@ import type {
   UIDiscardChoiceHandCard,
   UIPendingReorderChoice,
   UIReorderChoiceCard,
+  UIPendingDefeatChoice,
+  UIDefeatChoiceTarget,
   UIPendingOptionalKoReward,
   UIPendingDrawOrEmpowered,
   UIPendingVictoryPileCardPick,
@@ -956,6 +958,34 @@ export function buildUIState(
     };
   }
 
+  // why: WP-486 / D-24291 — project the FRONT entry of G.pendingDefeatChoices with its
+  // eligible-target snapshot (City Villains holding a Bystander + the Mastermind, in
+  // deterministic order), each resolved to display data for the prompt. The block-all
+  // guard freezes the board while pending, so the snapshot still names the exact targets
+  // resolveDefeatChoice validates the client's { targetKind, cityIndex } against (the
+  // round-trip rule). resolveDisplay is spread fresh per target (aliasing defense,
+  // WP-111 D-11105). Redaction to the chooser-only audience is enforced by
+  // filterUIStateForAudience (it is the chooser's pending decision, D-24011).
+  let pendingDefeatChoice: UIPendingDefeatChoice | undefined;
+  if (gameState.pendingDefeatChoices !== undefined && gameState.pendingDefeatChoices.length > 0) {
+    const frontChoice = gameState.pendingDefeatChoices[0]!;
+    const targets: UIDefeatChoiceTarget[] = [];
+    for (const target of frontChoice.targets) {
+      targets.push({
+        kind: target.kind,
+        // why: cityIndex is present only for a villain target; conditional spread
+        // avoids an explicit `undefined` under exactOptionalPropertyTypes.
+        ...(target.cityIndex !== undefined ? { cityIndex: target.cityIndex } : {}),
+        display: { ...resolveDisplay(target.cardId, gameState) },
+      });
+    }
+    pendingDefeatChoice = {
+      choiceType: frontChoice.choiceType,
+      playerID: frontChoice.playerID,
+      targets,
+    };
+  }
+
   // --- 13c. Project pending optional-KO-then-reward choice (front of queue) ---
   // why: D-24020 + WP-249 — project the FRONT entry of G.pendingOptionalKoRewards
   // with the chooser's eligible hand + discard cards recomputed fresh from current
@@ -1296,6 +1326,9 @@ export function buildUIState(
     // why: WP-479 / D-24286 — conditional spread so an absent choice omits the field
     // (no `pendingReorderChoice: undefined` literal under exactOptionalPropertyTypes).
     ...(pendingReorderChoice !== undefined ? { pendingReorderChoice } : {}),
+    // why: WP-486 / D-24291 — conditional spread so an absent choice omits the field
+    // (no `pendingDefeatChoice: undefined` literal under exactOptionalPropertyTypes).
+    ...(pendingDefeatChoice !== undefined ? { pendingDefeatChoice } : {}),
     ...(pendingOptionalKoReward !== undefined ? { pendingOptionalKoReward } : {}),
     // why: WP-287 — conditional spread so an absent choice omits the field (no
     // `pendingDrawOrEmpowered: undefined` literal under exactOptionalPropertyTypes).

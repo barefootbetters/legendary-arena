@@ -552,6 +552,56 @@ export interface PendingReorderChoice {
 }
 
 /**
+ * One eligible target of Silent Sniper's `defeat-with-bystander` hero effect
+ * (WP-486 / D-24291).
+ *
+ * A target is either a City Villain that holds ≥1 attached Bystander, or the
+ * Mastermind (its current tactic) when the Mastermind holds ≥1 captured Bystander
+ * AND at least one tactic remains. The eligible-target list is built
+ * deterministically (City spaces ascending, Mastermind last) so the UIState
+ * projection and the bot/sim default agree byte-for-byte.
+ */
+export interface DefeatWithBystanderTarget {
+  /** Which store the target lives in — a City villain or the Mastermind tactic. */
+  kind: 'villain' | 'mastermind';
+  /**
+   * The City space index for a `villain` target (its unique, block-all-frozen
+   * selector); `undefined` for the `mastermind` target.
+   */
+  cityIndex?: number | undefined;
+  /**
+   * Display identity: the villain's ext_id for a `villain` target, or the
+   * Mastermind's baseCardId for the `mastermind` target (used only for the
+   * client prompt label — never a stat/gameplay key).
+   */
+  cardId: CardExtId;
+}
+
+/**
+ * Pending defeat-with-a-Bystander player choice state (WP-486 / D-24291).
+ *
+ * Created when Silent Sniper is played and ≥2 eligible targets qualify — the
+ * player must pick which Villain or the Mastermind to defeat for free. Appended
+ * to G.pendingDefeatChoices[] (FIFO queue); front-popped by resolveDefeatChoice
+ * BEFORE it dispatches the defeat (so a villain's onFight-parked nested choice
+ * lands behind it in FIFO). Must be undefined or empty at every turn-end
+ * (enforced by the block-all guards).
+ *
+ * // why: D-24291 — the block-all guard freezes the board while pending, so the
+ * snapshotted `targets` cannot drift; resolveDefeatChoice accepts only a target
+ * present in this snapshot. Only the current player (who played the card)
+ * resolves it.
+ */
+export interface PendingDefeatChoice {
+  /** Discriminant; always 'defeat-with-bystander'. */
+  choiceType: 'defeat-with-bystander';
+  /** The player who must choose which target to defeat. */
+  playerID: string;
+  /** The eligible targets at park time, in deterministic order (City ascending, Mastermind last). */
+  targets: DefeatWithBystanderTarget[];
+}
+
+/**
  * Pending optional-KO-then-reward player choice state (WP-248 / D-24019).
  *
  * Created when an optional-ko-reward hero effect is played (`onPlay`) and the
@@ -902,6 +952,19 @@ export interface LegendaryGameState {
   // both mean "no pending choice" (guards test `.length`).
   /** FIFO queue of pending reveal-remainder reorder choices awaiting player resolution (WP-479). */
   pendingReorderChoices?: PendingReorderChoice[] | undefined;
+
+  // why: WP-486 / D-24291 — FIFO queue of pending defeat-with-a-Bystander choices
+  // (parked ONLY for the current player when Silent Sniper's `defeat-with-bystander`
+  // effect found ≥2 eligible targets). Entries are appended by
+  // heroEffectDefeatWithBystander's ≥2 branch; front-popped by resolveDefeatChoice
+  // BEFORE it dispatches the defeat (a nested onFight park lands behind it, FIFO).
+  // Must be undefined or empty at every turn-end. Runtime-only, never persisted
+  // (snapshots stay counts-only), mirroring pendingReorderChoices; **lazily
+  // initialized at the park site, never in Game.setup**. Optional so existing test
+  // state literals need no update. Absent (undefined) or empty [] both mean "no
+  // pending choice" (guards test `.length`).
+  /** FIFO queue of pending defeat-with-a-Bystander choices awaiting player resolution (WP-486). */
+  pendingDefeatChoices?: PendingDefeatChoice[] | undefined;
 
   // why: WP-248 / D-24019 — FIFO queue of pending optional-KO-then-reward
   // choices (one per played optional-ko-reward hero ability with ≥1 eligible

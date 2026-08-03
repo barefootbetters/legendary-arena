@@ -23,6 +23,7 @@ import { hasPendingKoHeroChoice } from './koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from './scryKoChoice.resolve.js';
 import { hasPendingDiscardChoice } from './discardChoice.resolve.js';
 import { hasPendingReorderChoice } from './reorderChoice.resolve.js';
+import { hasPendingDefeatChoice } from './defeatChoice.resolve.js';
 import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
@@ -80,6 +81,7 @@ export function dodgeCard({ G, ctx, ...context }: MoveContext, { cardId }: Dodge
   // freezes the board until the current player picks which cards to discard.
   if (hasPendingDiscardChoice(G)) return;
   if (hasPendingReorderChoice(G)) return; // why: WP-479 / D-24286 block-all guard
+  if (hasPendingDefeatChoice(G)) return; // why: WP-486 / D-24291 block-all guard
   // why: D-24051 — block-all guard (D-24019): optional-KO-reward choice pending;
   // the board is frozen until resolved (beside the D-24008 KO-hero check above).
   if (hasPendingOptionalKoReward(G)) return;

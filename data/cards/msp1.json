@@ -73,7 +73,7 @@
           "attack": "4",
           "recruit": null,
           "abilities": [
-            "Defeat a Villain or Mastermind that has a Bystander."
+            "Defeat a Villain or Mastermind that has a Bystander. [keyword:defeat-with-bystander]"
           ]
         }
       ],

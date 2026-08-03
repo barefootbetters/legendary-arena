@@ -608,6 +608,32 @@ export function filterUIStateForAudience(
     };
   }
 
+  // why: WP-486 / D-24291 — a pending defeat-with-a-Bystander choice is the chooser's
+  // pending decision (the board is frozen for everyone, but only the chooser resolves
+  // it). Present only when the audience is the choosing player; omitted (conditional
+  // assignment, never an `undefined` literal) for opponents AND spectators. Per-target
+  // display spread prevents aliasing with the input UIState.
+  if (
+    uiState.pendingDefeatChoice !== undefined &&
+    audience.kind === 'player' &&
+    audience.playerId === uiState.pendingDefeatChoice.playerID
+  ) {
+    const targetsCopy = [];
+    for (const entry of uiState.pendingDefeatChoice.targets) {
+      targetsCopy.push({
+        kind: entry.kind,
+        // why: cityIndex present only for a villain target (exactOptionalPropertyTypes).
+        ...(entry.cityIndex !== undefined ? { cityIndex: entry.cityIndex } : {}),
+        display: { ...entry.display },
+      });
+    }
+    result.pendingDefeatChoice = {
+      choiceType: uiState.pendingDefeatChoice.choiceType,
+      playerID: uiState.pendingDefeatChoice.playerID,
+      targets: targetsCopy,
+    };
+  }
+
   // why: D-24020 — hand/discard are private to the chooser. pendingOptionalKoReward
   // is redacted for EVERY audience except the choosing player (the D-24011
   // hand-privacy analog). Its eligibleHand and eligibleDiscard lists carry the

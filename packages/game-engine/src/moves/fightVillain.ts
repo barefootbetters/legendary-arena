@@ -28,10 +28,12 @@ import {
   executeVillainAbilities,
   resolveEffectResultNames,
 } from '../villain/villainEffects.execute.js';
+import type { ShuffleProvider } from '../setup/shuffle.js';
 import { hasPendingKoHeroChoice } from './koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from './scryKoChoice.resolve.js';
 import { hasPendingDiscardChoice } from './discardChoice.resolve.js';
 import { hasPendingReorderChoice } from './reorderChoice.resolve.js';
+import { hasPendingDefeatChoice } from './defeatChoice.resolve.js';
 import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
@@ -134,6 +136,7 @@ export function fightVillain(
   // freezes the board until the current player picks which cards to discard.
   if (hasPendingDiscardChoice(G)) return;
   if (hasPendingReorderChoice(G)) return; // why: WP-479 / D-24286 block-all guard
+  if (hasPendingDefeatChoice(G)) return; // why: WP-486 / D-24291 block-all guard
   // why: block-all guard (D-24019) — optional-KO-reward choice pending; the
   // board is frozen until resolved (beside the D-24008 KO-hero check above).
   if (hasPendingOptionalKoReward(G)) return;
@@ -150,21 +153,79 @@ export function fightVillain(
   // fight or recruit for the rest of the turn (the reverse lock).
   if (hasHealedThisTurn(G)) return;
 
-  // Step 3: Mutate G
+  // Step 3: Mutate G — reuse the shared villain defeat-core (WP-486 / D-24291),
+  // then spend attack + mark acted. Both are EXCLUDED from the shared core and
+  // stay here in the fight move: Silent Sniper's defeat spends no attack and is a
+  // card play, not a fight, so its onPlay handler must not spend attack or set the
+  // acted-this-turn flag. No onFight villain ability reads G.turnEconomy.attack or
+  // G.hasActedThisTurn (the only turnEconomy writes in villainEffects are to
+  // woundsDrawn), so running spendAttack + hasActedThisTurn AFTER the core is
+  // byte-identical to the prior inline order — the unmodified fightVillain tests
+  // are the oracle.
+  defeatCityVillainCore(G, ctx, cityIndex, { random });
+  G.turnEconomy = spendAttack(G.turnEconomy, requiredFightCost);
+  // why: D-24180 — this successful fight marks the player as having acted this
+  // turn, which bars the Wound Healing ability for the rest of the turn.
+  G.hasActedThisTurn = true;
+}
+
+/**
+ * Shared villain defeat-core (WP-486 / D-24291).
+ *
+ * Removes the villain/henchman at `cityIndex` from the City into the current
+ * player's victory pile, awards its attached Bystanders and captured HQ Heroes,
+ * fires the villain's `onFight` abilities, and emits the log lines + the
+ * fightResolved notable event — the exact Step-3+ body fightVillain formerly
+ * inlined, MINUS `spendAttack` and `G.hasActedThisTurn` (those stay in the fight
+ * moves; see fightVillain for why the exclusion is byte-identical). Reused by
+ * fightVillain (the normal fight) and by Silent Sniper's `defeat-with-bystander`
+ * hero effect / its resolveDefeatChoice move (the free defeat, no attack spend).
+ *
+ * why (WP-486): a documented internal invocation of the existing defeat path —
+ * the onFight/onDefeat hook execution and Bystander/hero award live in exactly
+ * one place, so the free defeat can never drift from the paid fight.
+ *
+ * The caller guarantees `cityIndex` holds a villain; a null/undefined space is a
+ * silent no-op (moves never throw). The defeating player is `ctx.currentPlayer`.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param ctx - The bare boardgame.io ctx (currentPlayer + turn), typed unknown to
+ *   avoid a framework import; forwarded to executeVillainAbilities.
+ * @param cityIndex - The City space index of the villain to defeat.
+ * @param shuffleContext - ShuffleProvider ({ random }) for a Fight scry reshuffle.
+ */
+export function defeatCityVillainCore(
+  G: LegendaryGameState,
+  ctx: unknown,
+  cityIndex: number,
+  shuffleContext: ShuffleProvider,
+): void {
+  // why: mirrors executeVillainAbilities — narrow the unknown ctx to the one
+  // field this core reads (the defeating player), no framework import.
+  const currentPlayer = (ctx as { currentPlayer: string }).currentPlayer;
+
+  const cardId = G.city[cityIndex];
+  // why: defense-in-depth — the caller (fightVillain gate / hero eligibility
+  // builder) guarantees an occupied space, but an empty space is a silent no-op
+  // rather than a throw (moves never throw).
+  if (cardId === null || cardId === undefined) {
+    return;
+  }
+
   // why: MVP has no attack point check; WP-018 adds the economy. Any player
   // can fight any occupied City space without spending attack points.
   G.city[cityIndex] = null;
-  G.playerZones[ctx.currentPlayer]!.victory.push(cardId);
+  G.playerZones[currentPlayer]!.victory.push(cardId);
 
   // Step 3b: Award attached bystanders to player's victory zone (WP-017)
-  const victoryBefore = G.playerZones[ctx.currentPlayer]!.victory.length;
+  const victoryBefore = G.playerZones[currentPlayer]!.victory.length;
   const awardResult = awardAttachedBystanders(
     cardId,
     G.attachedBystanders,
-    G.playerZones[ctx.currentPlayer]!.victory,
+    G.playerZones[currentPlayer]!.victory,
   );
   G.attachedBystanders = awardResult.attachedBystanders;
-  G.playerZones[ctx.currentPlayer]!.victory = awardResult.playerVictory;
+  G.playerZones[currentPlayer]!.victory = awardResult.playerVictory;
 
   // Step 3c: Award attached heroes to player's discard pile (WP-214)
   // why: WP-431 — capture the attached-hero list BEFORE awardAttachedHeroes
@@ -172,13 +233,7 @@ export function fightVillain(
   // the defeating player's discard ("Fight: Gain that Hero"). Deterministic
   // append order; empty when the villain captured no HQ hero.
   const heroesReturnedToDiscard = [...(G.villainAttachedHeroes?.[cardId] ?? [])];
-  awardAttachedHeroes(G, cardId, ctx.currentPlayer);
-
-  G.turnEconomy = spendAttack(G.turnEconomy, requiredFightCost);
-
-  // why: D-24180 — this successful fight marks the player as having acted this
-  // turn, which bars the Wound Healing ability for the rest of the turn.
-  G.hasActedThisTurn = true;
+  awardAttachedHeroes(G, cardId, currentPlayer);
 
   // why: Fight: effects fire after the bystander award (Step 3b) and before
   // the message push, so they observe post-award pile state. A Fight:
@@ -186,23 +241,23 @@ export function fightVillain(
   // is already in the victory pile), avoiding a stranded bystander (WP-185).
   // WP-316: capture the executor's per-effect results (keywords + targets) for
   // the fightResolved emission and the effect-narration log line below.
-  // why: WP-478 / D-24285 — pass the move's `random` (wrapped as a ShuffleProvider
+  // why: WP-478 / D-24285 — pass the caller's `random` (wrapped as a ShuffleProvider
   // `{ random }`) so a Fight scry (Doombot Legion) can reshuffle the current
   // player's discard when their deck is short.
-  const appliedFightResults = executeVillainAbilities(G, ctx, cardId, 'onFight', { random });
+  const appliedFightResults = executeVillainAbilities(G, ctx, cardId, 'onFight', shuffleContext);
   // why: WP-316 — map results→keywords so the fightResolved `appliedEffects`
   // field and the composeFightNarrative string stay byte-identical to main; the
   // hashed notableEvents surface (and the arena-client) never observe the
   // per-target widening, so finalStateHash is unchanged.
   const appliedFightEffects = appliedFightResults.map((result) => result.keyword);
 
-  pushLog(G, 
-    `Player ${ctx.currentPlayer} fought ${formatCardRef(G.cardDisplayData, cardId)} at city space ${cityIndex}.`,
+  pushLog(G,
+    `Player ${currentPlayer} fought ${formatCardRef(G.cardDisplayData, cardId)} at city space ${cityIndex}.`,
   );
   const bystandersRescued = awardResult.playerVictory.length - victoryBefore;
   if (awardResult.playerVictory.length > victoryBefore) {
     pushLog(G,
-      `Player ${ctx.currentPlayer} rescued ${bystandersRescued} bystander(s) from ${formatCardRef(G.cardDisplayData, cardId)}.`,
+      `Player ${currentPlayer} rescued ${bystandersRescued} bystander(s) from ${formatCardRef(G.cardDisplayData, cardId)}.`,
     );
   }
   // why: WP-431 — narrate the captured HQ hero(es) returning to the defeating
@@ -212,7 +267,7 @@ export function fightVillain(
   // hash-excluded per D-24081). One line per hero; none when no hero was captured.
   for (const heroId of heroesReturnedToDiscard) {
     pushLog(G,
-      `Player ${ctx.currentPlayer} gained ${formatCardRef(G.cardDisplayData, heroId)} from ${formatCardRef(G.cardDisplayData, cardId)} into their discard pile.`,
+      `Player ${currentPlayer} gained ${formatCardRef(G.cardDisplayData, heroId)} from ${formatCardRef(G.cardDisplayData, cardId)} into their discard pile.`,
     );
   }
 
@@ -226,12 +281,12 @@ export function fightVillain(
   // before the fightResolved event push. Length-guarded: no line when no effect
   // applied (an effectless fight pushes no effect line).
   if (appliedFightResults.length > 0) {
-    pushLog(G, 
+    pushLog(G,
       `Fight effect: ${composeEffectResultLogLine(resolvedFightResults)}.`,
     );
   }
 
-  // why: WP-200 — emission is the LAST step in this move (after Fight:
+  // why: WP-200 — emission is the LAST step in this core (after Fight:
   // effect dispatch AND after both `G.messages.push` calls), so the event
   // observes the fully settled post-mutation state. `bystandersRescued`
   // reflects the post-award delta; `appliedEffects` is the executor's
@@ -248,7 +303,7 @@ export function fightVillain(
       : cardId;
   G.notableEvents.push({
     type: 'fightResolved',
-    playerId: ctx.currentPlayer,
+    playerId: currentPlayer,
     cardId,
     citySpace: cityIndex,
     bystandersRescued,

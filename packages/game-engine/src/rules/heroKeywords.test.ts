@@ -62,11 +62,20 @@ describe('size-changing keyword (WP-290 / EC-322 / D-24074)', () => {
     );
   });
 
-  it('HERO_KEYWORDS array has exactly 32 entries after the discard-to-play addition', () => {
+  it('HERO_KEYWORDS array has exactly 33 entries after the defeat-with-bystander addition', () => {
     assert.equal(
       HERO_KEYWORDS.length,
-      32,
-      'HERO_KEYWORDS must have exactly 32 entries (31 + discard-to-play, D-24184)',
+      33,
+      'HERO_KEYWORDS must have exactly 33 entries (32 + defeat-with-bystander, D-24291)',
+    );
+  });
+});
+
+describe('defeat-with-bystander keyword (WP-486 / EC-521 / D-24291)', () => {
+  it('is registered in HERO_KEYWORDS', () => {
+    assert.ok(
+      HERO_KEYWORDS.includes('defeat-with-bystander'),
+      'defeat-with-bystander must be in HERO_KEYWORDS array',
     );
   });
 });

@@ -11,6 +11,7 @@ import { resolveKoHeroChoice, hasPendingKoHeroChoice } from './moves/koHeroChoic
 import { resolveScryKoChoice, hasPendingScryKoChoice } from './moves/scryKoChoice.resolve.js';
 import { resolveDiscardChoice, hasPendingDiscardChoice } from './moves/discardChoice.resolve.js';
 import { resolveReorderChoice, hasPendingReorderChoice } from './moves/reorderChoice.resolve.js';
+import { resolveDefeatChoice, hasPendingDefeatChoice } from './moves/defeatChoice.resolve.js';
 import { resolveOptionalKoReward, hasPendingOptionalKoReward } from './moves/optionalKoReward.resolve.js';
 import { resolveOptionalPutBottomHQ, hasPendingOptionalPutBottomHQ } from './moves/resolveOptionalPutBottomHQ.js';
 import { resolvePutAnyNumberBottomHQ, hasPendingPutAnyNumberBottomHQ } from './moves/resolvePutAnyNumberBottomHQ.js';
@@ -116,6 +117,11 @@ function advanceStage({ G, events }: MoveContext): void {
   // choice is pending the board is frozen; advanceStage returns with no side effects
   // so the current player picks their deck-top order before any other action.
   if (hasPendingReorderChoice(G)) { return; }
+  // why: block-all guard (WP-486 / D-24291) — while a defeat-with-a-Bystander choice
+  // is pending the board is frozen; advanceStage returns with no side effects so the
+  // current player picks which target to defeat before the stage advances or the
+  // cleanup turn-end fires (the pending queue must be empty at turn-end).
+  if (hasPendingDefeatChoice(G)) { return; }
   // why: block-all guard (D-24019) — optional-KO-reward choice pending; the
   // board is frozen until resolved (this also blocks the cleanup turn-end
   // auto-transition below, mirroring the D-24008 KO-hero check above).
@@ -439,6 +445,12 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     // (client: false) per D-10008 — it mutates real G (playerZones.deck), absent on
     // UIState. NOT in CORE_MOVE_NAMES (mirrors resolveScryKoChoice / resolveDiscardChoice).
     resolveReorderChoice: { move: resolveReorderChoice, client: false },
+    // why: WP-486 / D-24291 — resolveDefeatChoice resolves the interactive Silent
+    // Sniper defeat-with-a-Bystander choice: the current player picks which Villain
+    // (by City space) or the Mastermind to defeat for free. Server-only (client:
+    // false) per D-10008 — it mutates real G (city / victory / mastermind), absent on
+    // UIState. NOT in CORE_MOVE_NAMES (mirrors resolveReorderChoice).
+    resolveDefeatChoice: { move: resolveDefeatChoice, client: false },
     resolveOptionalKoReward: { move: resolveOptionalKoReward, client: false },
     resolveOptionalPutBottomHQ: { move: resolveOptionalPutBottomHQ, client: false },
     // why: D-24132 — resolvePutAnyNumberBottomHQ resolves the multi-select HQ→bottom choice

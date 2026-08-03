@@ -3,13 +3,13 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1363,
+    "totalEntries": 1366,
     "byScope": {
-      "hero": 647,
+      "hero": 650,
       "villain": 716
     },
     "byStatus": {
-      "executable": 343,
+      "executable": 346,
       "deferred": 0,
       "condition": 5,
       "unsupported": 367,
@@ -258,6 +258,17 @@
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover",
       "wp": "",
       "decision": ""
+    },
+    {
+      "extId": "3dtc/black-widow",
+      "name": "Black Widow",
+      "set": "3dtc",
+      "scope": "hero",
+      "mechanic": "defeat-with-bystander",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#defeat-with-bystander",
+      "wp": "WP-486",
+      "decision": "D-24291"
     },
     {
       "extId": "3dtc/black-widow",
@@ -3734,6 +3745,17 @@
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
       "wp": "WP-247",
       "decision": ""
+    },
+    {
+      "extId": "core/black-widow",
+      "name": "Black Widow",
+      "set": "core",
+      "scope": "hero",
+      "mechanic": "defeat-with-bystander",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#defeat-with-bystander",
+      "wp": "WP-486",
+      "decision": "D-24291"
     },
     {
       "extId": "core/black-widow",
@@ -8541,6 +8563,17 @@
       "handler": "",
       "wp": "",
       "decision": ""
+    },
+    {
+      "extId": "msp1/black-widow",
+      "name": "Black Widow",
+      "set": "msp1",
+      "scope": "hero",
+      "mechanic": "defeat-with-bystander",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#defeat-with-bystander",
+      "wp": "WP-486",
+      "decision": "D-24291"
     },
     {
       "extId": "msp1/black-widow",
@@ -15102,6 +15135,7 @@
     "3dtc/black-widow": {
       "scope": "hero",
       "mechanics": [
+        "defeat-with-bystander",
         "draw",
         "rescue"
       ]
@@ -16543,6 +16577,7 @@
       "scope": "hero",
       "mechanics": [
         "attack-per-count",
+        "defeat-with-bystander",
         "draw",
         "optional-ko-reward",
         "rescue"
@@ -18719,6 +18754,7 @@
     "msp1/black-widow": {
       "scope": "hero",
       "mechanics": [
+        "defeat-with-bystander",
         "draw",
         "rescue"
       ]

@@ -21,6 +21,7 @@ import { hasPendingKoHeroChoice } from './koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from './scryKoChoice.resolve.js';
 import { hasPendingDiscardChoice } from './discardChoice.resolve.js';
 import { hasPendingReorderChoice } from './reorderChoice.resolve.js';
+import { hasPendingDefeatChoice } from './defeatChoice.resolve.js';
 import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
@@ -86,6 +87,11 @@ export function playFromUndercover(
   // why: block-all guard (WP-479 / D-24286) — a pending reveal-remainder reorder
   // freezes the board until the current player picks their deck-top order.
   if (hasPendingReorderChoice(G)) {
+    return;
+  }
+  // why: block-all guard (WP-486 / D-24291) — a pending defeat-with-a-Bystander
+  // choice freezes the board until the current player picks which target to defeat.
+  if (hasPendingDefeatChoice(G)) {
     return;
   }
   // why: block-all guard (D-24019) — optional-KO-reward choice pending; the

@@ -53,7 +53,7 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     );
   });
 
-  it('has exactly 19 handlers and none for the deferred keywords', () => {
+  it('has exactly 20 handlers and none for the deferred keywords', () => {
     // why: WP-286 / D-24069 added the draw-or-empowered park handler (9 → 10); the
     // Ionic Energy optional-put-bottom-hq fix added its park handler (10 → 11); D-24132
     // added the put-any-number-bottom-hq park handler (11 → 12); D-24133 added the
@@ -62,8 +62,9 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     // one shared gain-wound handler under both gain-wound-self and gain-wound-each (14 → 16);
     // D-24148 / WP-356 added the shuffle-discard-empty-reward immediate handler (16 → 17);
     // WP-382 / D-24183 added the ko-wound-reward immediate handler (17 → 18);
-    // WP-383 / D-24184 added the discard-to-play park handler (18 → 19).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 19);
+    // WP-383 / D-24184 added the discard-to-play park handler (18 → 19);
+    // WP-486 / D-24291 added the defeat-with-bystander handler (19 → 20).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 20);
     // why: the generic 'wound' keyword stays deferred — the un-defer is two NEW narrow
     // keywords (gain-wound-*), never a handler for the generic form.
     assert.equal(HERO_EFFECT_HANDLERS['wound'], undefined);
@@ -4196,5 +4197,79 @@ describe('heroEffectKoWoundReward (WP-382 / D-24183)', () => {
     const gameState = makeKoWoundState({ hand: [WOUND_EXT_ID], rewardType: 'attack', magnitude: 1 });
     executeHeroEffects(gameState, mockCtx, '0', 'hero-healing-factor' as string);
     assert.ok(JSON.stringify(gameState).length > 0, 'state must serialize after KO-and-reward');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// defeat-with-bystander onPlay handler cardinality (WP-486 / EC-521 / D-24291)
+// ---------------------------------------------------------------------------
+
+describe('defeat-with-bystander handler (WP-486 / D-24291)', () => {
+  // why: executeHeroEffects receives the move-context WRAPPER in production
+  // (playCard's `...context` = { ctx, random, ... }); the handler reads the bare
+  // bgio ctx (currentPlayer + turn) off `ctx.ctx`. Build that shape here so the
+  // exactly-1 auto-defeat path (which reads currentPlayer via the shared core)
+  // resolves the same way it does in a real move.
+  function defeatWrapper() {
+    return { ctx: { numPlayers: 1, currentPlayer: '0', turn: 1 }, random: makeMockCtx().random };
+  }
+
+  function defeatHookState() {
+    return makeTestState({
+      inPlay: ['hero-silent-sniper'],
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-silent-sniper' as string,
+          timing: 'onPlay',
+          keywords: ['defeat-with-bystander'],
+          effects: [{ type: 'defeat-with-bystander' }],
+        },
+      ],
+    });
+  }
+
+  it('0 eligible targets → a self-narrated no-op that records NO hollow event', () => {
+    const gameState = defeatHookState();
+    // no city villain holds a Bystander, mastermind holds none
+    executeHeroEffects(gameState, defeatWrapper(), '0', 'hero-silent-sniper' as string);
+
+    assert.equal(gameState.pendingDefeatChoices ?? undefined, undefined, 'no choice is parked with 0 targets');
+    assert.equal(
+      (gameState.diagnostics?.hollowEffects ?? []).length,
+      0,
+      'a 0-target defeat-with-bystander is a reachable no-op — NEVER a hollow record',
+    );
+    assert.ok(
+      gameState.messages.some((entry) => entry.text.includes('found no Villain or Mastermind holding a Bystander')),
+      'the 0-target no-op is self-narrated in the game log',
+    );
+  });
+
+  it('exactly 1 eligible target → auto-defeats it with no prompt', () => {
+    const gameState = defeatHookState();
+    gameState.city = ['villain-a', null, null, null, null];
+    gameState.attachedBystanders = { 'villain-a': ['bystander-1'] };
+    // why: the minimal heroEffects test builder omits notableEvents (hero effects
+    // never emitted one before); the shared villain defeat-core pushes a
+    // fightResolved event, so init it here (production G always has it).
+    gameState.notableEvents = [];
+    executeHeroEffects(gameState, defeatWrapper(), '0', 'hero-silent-sniper' as string);
+
+    assert.equal(gameState.city[0], null, 'the sole eligible villain is auto-defeated');
+    assert.ok(gameState.playerZones['0']!.victory.includes('villain-a'), 'the villain is in the victory pile');
+    assert.ok(gameState.playerZones['0']!.victory.includes('bystander-1'), 'its Bystander is rescued');
+    assert.equal(gameState.pendingDefeatChoices ?? undefined, undefined, 'no choice is parked for a single target');
+  });
+
+  it('≥2 eligible targets → parks a PendingDefeatChoice (no defeat yet)', () => {
+    const gameState = defeatHookState();
+    gameState.city = ['villain-a', null, 'villain-c', null, null];
+    gameState.attachedBystanders = { 'villain-a': ['bystander-1'], 'villain-c': ['bystander-2'] };
+    executeHeroEffects(gameState, defeatWrapper(), '0', 'hero-silent-sniper' as string);
+
+    assert.equal(gameState.pendingDefeatChoices?.length, 1, 'a defeat choice is parked for ≥2 targets');
+    assert.equal(gameState.pendingDefeatChoices![0]!.targets.length, 2, 'both eligible targets are parked');
+    assert.equal(gameState.city[0], 'villain-a', 'nothing is defeated until the player resolves the choice');
+    assert.equal(gameState.city[2], 'villain-c', 'nothing is defeated until the player resolves the choice');
   });
 });

@@ -69,6 +69,7 @@ import { resolveKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { resolveScryKoChoice } from '../moves/scryKoChoice.resolve.js';
 import { resolveDiscardChoice } from '../moves/discardChoice.resolve.js';
 import { resolveReorderChoice } from '../moves/reorderChoice.resolve.js';
+import { resolveDefeatChoice } from '../moves/defeatChoice.resolve.js';
 import { resolveOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
 import { resolveVictoryPileCardPick } from '../moves/resolveVictoryPileCardPick.js';
 import { resolveReturnZeroCostDiscard } from '../moves/resolveReturnZeroCostDiscard.js';
@@ -224,6 +225,9 @@ const MOVE_MAP: Record<string, MoveFn> = {
   // why: WP-479 / D-24286 — getLegalMoves short-circuits to resolveReorderChoice when a
   // reveal-remainder reorder is parked; a missing dispatch entry hangs the per-turn loop.
   resolveReorderChoice: (context, args) => resolveReorderChoice(context as never, args as never),
+  // why: WP-486 / D-24291 — getLegalMoves short-circuits to resolveDefeatChoice when a
+  // Silent Sniper defeat-with-a-Bystander choice is parked; a missing dispatch entry hangs the per-turn loop.
+  resolveDefeatChoice: (context, args) => resolveDefeatChoice(context as never, args as never),
   resolveOptionalKoReward: (context, args) => resolveOptionalKoReward(context as never, args as never),
   resolveVictoryPileCardPick: (context, args) => resolveVictoryPileCardPick(context as never, args as never),
   // why: D-24139 — getLegalMoves short-circuits to this resolve move when its pending

@@ -45,6 +45,7 @@ import PendingKoHeroChoicePrompt from '../components/play/PendingKoHeroChoicePro
 import PendingScryKoChoicePrompt from '../components/play/PendingScryKoChoicePrompt.vue';
 import PendingDiscardChoicePrompt from '../components/play/PendingDiscardChoicePrompt.vue';
 import PendingReorderChoicePrompt from '../components/play/PendingReorderChoicePrompt.vue';
+import PendingDefeatChoicePrompt from '../components/play/PendingDefeatChoicePrompt.vue';
 import OptionalKoRewardPrompt from '../components/play/OptionalKoRewardPrompt.vue';
 import DrawOrEmpoweredPrompt from '../components/play/DrawOrEmpoweredPrompt.vue';
 import VictoryPileCardPickPrompt from '../components/play/VictoryPileCardPickPrompt.vue';
@@ -113,6 +114,7 @@ export default defineComponent({
     PendingScryKoChoicePrompt,
     PendingDiscardChoicePrompt,
     PendingReorderChoicePrompt,
+    PendingDefeatChoicePrompt,
     OptionalKoRewardPrompt,
     DrawOrEmpoweredPrompt,
     VictoryPileCardPickPrompt,
@@ -433,6 +435,12 @@ export default defineComponent({
     const hasPendingReorderChoice = computed<boolean>(
       () => snapshot.value?.pendingReorderChoice !== undefined,
     );
+    // why: WP-486 / D-24291 — derived from UIState.pendingDefeatChoice !== undefined. Passed to
+    // TurnActionBar to block end-turn and pass-priority at EVERY stage while a Silent Sniper
+    // defeat-with-a-Bystander choice is pending (board frozen, mirrors hasPendingReorderChoice).
+    const hasPendingDefeatChoice = computed<boolean>(
+      () => snapshot.value?.pendingDefeatChoice !== undefined,
+    );
 
     // why: WP-380 — Healing KOs Wounds from HAND specifically, so scan the viewer's
     // own handCards (UIPlayerState.woundCount counts every zone and cannot answer
@@ -471,6 +479,7 @@ export default defineComponent({
       hasPendingScryKoChoice,
       hasPendingDiscardChoice,
       hasPendingReorderChoice,
+      hasPendingDefeatChoice,
       hasWoundInHand,
     };
   },
@@ -653,6 +662,16 @@ export default defineComponent({
             :viewer-player-id="viewer.playerId"
             :submit-move="submitMove"
           />
+          <!-- why: WP-486 / D-24291 — the Silent Sniper defeat-with-a-Bystander prompt
+               ("Defeat a Villain or Mastermind that has a Bystander") renders above
+               TurnActionBar in DOM order; appears only for the choosing player when
+               pendingDefeatChoice is set. NOT a modal; normal document flow. The block-all
+               guard guarantees at most one pending-choice type is set. -->
+          <PendingDefeatChoicePrompt
+            :pending-defeat-choice="snapshot.pendingDefeatChoice"
+            :viewer-player-id="viewer.playerId"
+            :submit-move="submitMove"
+          />
           <!-- why: D-24020 + WP-249 — the optional-KO-reward prompt renders above
                TurnActionBar in DOM order; appears only for the choosing player
                when pendingOptionalKoReward is set. NOT a modal; normal document
@@ -737,6 +756,7 @@ export default defineComponent({
             :has-pending-scry-ko-choice="hasPendingScryKoChoice"
             :has-pending-discard-choice="hasPendingDiscardChoice"
             :has-pending-reorder-choice="hasPendingReorderChoice"
+            :has-pending-defeat-choice="hasPendingDefeatChoice"
             :has-wound-in-hand="hasWoundInHand"
             :has-acted-this-turn="snapshot.game.hasActedThisTurn"
             :has-healed-this-turn="snapshot.game.hasHealedThisTurn"

@@ -137,6 +137,12 @@ export interface UIState {
   // Redacted (omitted) for every audience except the chooser — the remainder is the
   // chooser's next draws (D-24011). Absent (undefined) means no pending reorder choice.
   pendingReorderChoice?: UIPendingReorderChoice;
+  // why: WP-486 / D-24291 — projects the FRONT of G.pendingDefeatChoices with the
+  // eligible-target set (City Villains holding a Bystander + the Mastermind) so the
+  // current player can render the "Choose which to defeat" prompt for Silent Sniper.
+  // Redacted (omitted) for every audience except the chooser — it is the chooser's
+  // pending decision (D-24011). Absent (undefined) means no pending defeat choice.
+  pendingDefeatChoice?: UIPendingDefeatChoice;
   // why: D-24020 + WP-249 — projects the FRONT of G.pendingOptionalKoRewards
   // with the derived reward label + the chooser's eligible hand/discard cards so
   // the choosing player can render the "KO a card for a reward, or Decline"
@@ -735,6 +741,43 @@ export interface UIPendingReorderChoice {
   choiceType: "reorder-deck-top";
   playerID: string;
   cards: UIReorderChoiceCard[];
+}
+
+/**
+ * One eligible target in a pending defeat-with-a-Bystander choice (WP-486 /
+ * D-24291). A City Villain holding a Bystander (identified for submission by its
+ * `cityIndex`), or the Mastermind (its current tactic). `display` carries the
+ * villain's or Mastermind's card display for the prompt label/image.
+ *
+ * The client submits `resolveDefeatChoice({ targetKind, cityIndex })` — the
+ * `cityIndex` is present here for `kind:"villain"` and is the selector the engine
+ * resolve validates against the parked target set (the round-trip rule).
+ */
+export interface UIDefeatChoiceTarget {
+  kind: "villain" | "mastermind";
+  cityIndex?: number;
+  display: UICardDisplay;
+}
+
+/**
+ * UI contract for resolving a pending defeat-with-a-Bystander choice (WP-486 /
+ * D-24291). Only visible to the choosing player (the one who played Silent
+ * Sniper); redacted for opponents and spectators — the target set is public board
+ * data, but WHOSE decision it is (and the resulting board freeze) is private to
+ * the chooser, exactly like the reorder choice.
+ *
+ * `targets` is the eligible-target set at park time (City Villains holding a
+ * Bystander, ascending; then the Mastermind), resolved to display data. The client
+ * picks one and submits `{ targetKind, cityIndex }`.
+ *
+ * @see WP-486 §Scope (In)
+ * @see EC-521 Locked Values
+ * @see DECISIONS.md D-24291
+ */
+export interface UIPendingDefeatChoice {
+  choiceType: "defeat-with-bystander";
+  playerID: string;
+  targets: UIDefeatChoiceTarget[];
 }
 
 /**
