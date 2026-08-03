@@ -112,24 +112,71 @@ Card / scheme / mastermind text ships from the engine with inline markup —
 `[icon:attack]`, `[hc:strength]`, `[keyword:Patrol]`, `[rule:Shards]`,
 `[team:X-Men]` (the same vocabulary the
 [Card Effect System](card-effect-system.md) and the card browser use). The
-board must **render these markers, not print them raw**:
+board must **render these markers, not print them raw**. The play surface
+renders the three visual marker families as their **real SVG icon** — the
+same art printed on the physical card — served from the card-image domain
+(`images.legendary-arena.com/icons/…`, same origin as card art so no new
+CSP `img-src` entry):
 
-- `[icon:X]` → a glyph (`attack` → ⚔, `recruit` → ★, `cost` → ◆, …)
-- `[hc:X]` → a hero-class chip (`strength` → "Strength")
-- `[keyword:X]` / `[rule:X]` / `[team:X]` → the label text
+| Marker | Asset | Values |
+|---|---|---|
+| `[hc:X]` | `/icons/hero-classes/class-{X}.svg` | the 5 classes below |
+| `[icon:X]` | `/icons/card-info/info-{X}.svg` | `attack` `recruit` `cost` `vp` `focus` `piercing` `token` |
+| `[team:X]` | `/icons/hero-teams/team-{slug}.svg` | slugged team name (`X-Men` → `team-x-men`), open set |
+
+`[keyword:X]` / `[rule:X]` render as their label text (no icon).
+
+**Hero-class icons** (`[hc:…]`):
+
+![Covert](https://images.legendary-arena.com/icons/hero-classes/class-covert.svg "width=44px")
+![Instinct](https://images.legendary-arena.com/icons/hero-classes/class-instinct.svg "width=44px")
+![Ranged](https://images.legendary-arena.com/icons/hero-classes/class-ranged.svg "width=44px")
+![Strength](https://images.legendary-arena.com/icons/hero-classes/class-strength.svg "width=44px")
+![Tech](https://images.legendary-arena.com/icons/hero-classes/class-tech.svg "width=44px")
+
+*Covert · Instinct · Ranged · Strength · Tech*
+
+**Resource icons** (`[icon:…]`):
+
+![attack](https://images.legendary-arena.com/icons/card-info/info-attack.svg "width=40px")
+![recruit](https://images.legendary-arena.com/icons/card-info/info-recruit.svg "width=40px")
+![cost](https://images.legendary-arena.com/icons/card-info/info-cost.svg "width=40px")
+![vp](https://images.legendary-arena.com/icons/card-info/info-vp.svg "width=40px")
+![focus](https://images.legendary-arena.com/icons/card-info/info-focus.svg "width=40px")
+![piercing](https://images.legendary-arena.com/icons/card-info/info-piercing.svg "width=40px")
+![token](https://images.legendary-arena.com/icons/card-info/info-token.svg "width=40px")
+
+*attack · recruit · cost · vp · focus · piercing · token*
+
+**Team icons** (`[team:…]`, sample of the set):
+
+![Avengers](https://images.legendary-arena.com/icons/hero-teams/team-avengers.svg "width=40px")
+![X-Men](https://images.legendary-arena.com/icons/hero-teams/team-x-men.svg "width=40px")
+![Brotherhood](https://images.legendary-arena.com/icons/hero-teams/team-brotherhood.svg "width=40px")
+![Guardians of the Galaxy](https://images.legendary-arena.com/icons/hero-teams/team-guardians-of-the-galaxy.svg "width=40px")
+![S.H.I.E.L.D.](https://images.legendary-arena.com/icons/hero-teams/team-shield.svg "width=40px")
+
+*Avengers · X-Men · Brotherhood · Guardians of the Galaxy · S.H.I.E.L.D.*
 
 [`abilityMarkers.ts`](../apps/arena-client/src/lib/abilityMarkers.ts)
-parses a line into tokens and
+parses a line into tokens and resolves each marker's icon URL;
 [`AbilityText.vue`](../apps/arena-client/src/components/play/AbilityText.vue)
-renders them; `CardReaderModal` renders each `gameText` line through it.
-Unknown `icon` / `hc` values fall back to the raw value (no data loss).
+renders each as an inline `<img>` (with the readable label as `alt` /
+`title`), and `CardReaderModal` renders each `gameText` line through it.
+Every icon carries an `@error` fallback to its text label, so a missing
+asset (an unknown team slug, a future class) degrades to a readable word
+instead of a broken image; an `hc` / `icon` value with no shipped asset
+renders as text without even requesting one.
 
-> **Cross-surface duplication.** The parser and the glyph / hero-class-label
-> maps mirror the canonical tokenizer in the registry-viewer
-> (`apps/registry-viewer/src/composables/useRules.ts` +
-> `CardDetail.vue`). The two apps are separate surfaces and may not import
-> each other, so the maps are duplicated verbatim. **If the registry-viewer
-> maps change, update `abilityMarkers.ts` to match.**
+> **Cross-surface note.** The **parser** and the marker vocabulary mirror
+> the canonical tokenizer in the registry-viewer
+> (`apps/registry-viewer/src/composables/useRules.ts` + `CardDetail.vue`);
+> the two apps are separate surfaces and may not import each other, so the
+> parser is duplicated verbatim. **The rendering has diverged on purpose:**
+> the card browser prints hero-class / resource markers as coloured
+> words / unicode glyphs, while the play board renders the real SVG icons
+> documented here. Keep the *parser* in sync; the *rendering* is
+> surface-specific.
 
 ## Interactions
 
@@ -165,9 +212,16 @@ Unknown `icon` / `hc` values fall back to the raw value (no data loss).
   reconstruction and cover it with a filter test.**
 - **Ability markers must be rendered, not printed.** Before PR #1166 the
   Card Reader printed `gameText` lines verbatim, so players saw
-  `reveals a [hc:strength] Hero`. Any new surface that shows `gameText` /
-  `abilityText` must route it through
-  [`AbilityText`](../apps/arena-client/src/components/play/AbilityText.vue).
+  `reveals a [hc:strength] Hero`; #1166 rendered them and #1171 swapped the
+  glyph/word rendering for the real SVG icons above. Any new surface that
+  shows `gameText` / `abilityText` must route it through
+  [`AbilityText`](../apps/arena-client/src/components/play/AbilityText.vue),
+  never print the raw line.
+- **Marker icons fall back to text, never a broken image.** Each icon
+  `<img>` has an `@error` handler that swaps to the marker's text label, and
+  an `hc` / `icon` value outside the shipped asset sets renders as text with
+  no request. So a new team, a renamed slug, or an R2 hiccup degrades to a
+  readable word — it never leaves a broken-image glyph in the rules text.
 - **Very old match blobs lack baked text.** `scheme.gameText` /
   `mastermind.gameText` and the scheme `display` entry are baked into `G`
   at match setup. A match created **before EC-206 (2026-05-26)** has a `G`
@@ -189,7 +243,9 @@ Unknown `icon` / `hc` values fall back to the raw value (no data loss).
   gate 2: the audience whitelist (the drop hazard above).
 - [`AbilityText.vue`](../apps/arena-client/src/components/play/AbilityText.vue)
   / [`abilityMarkers.ts`](../apps/arena-client/src/lib/abilityMarkers.ts) —
-  marker parsing + rendering.
+  marker parsing + the icon-URL builders (`heroClassIconUrl`,
+  `resourceIconUrl`, `teamIconUrl`, `abilityTokenIconUrl`) + inline
+  `<img>` rendering with text fallback.
 
 ## References
 
