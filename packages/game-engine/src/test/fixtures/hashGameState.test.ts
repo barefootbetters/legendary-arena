@@ -76,6 +76,29 @@ test('hashGameState is invariant to G.diagnostics (D-24271)', () => {
   assert.equal(withRecords, absent, 'materializing hollow records must not change the hash');
 });
 
+test('hashGameState is invariant to populated G.diagnostics.traces (WP-488 / D-24294)', () => {
+  // why: WP-488 — the per-dispatch effect traces live inside G.diagnostics, which this
+  // oracle already excludes (D-24271). A trace materializes on EVERY dispatch, so this
+  // asserts a GENUINELY POPULATED traces list (not just an empty channel) leaves the
+  // finalStateHash byte-unchanged — the trace surface cannot re-pin this oracle.
+  const absent = hashGameState(makeState());
+  const withTraces = hashGameState(
+    makeState({
+      diagnostics: {
+        hollowEffects: [],
+        hollowEffectsDropped: 0,
+        traces: [
+          { cardId: 'core/villain/mystique#0', scope: 'villain', timing: 'onEscape', effect: 'become-scheme-twist', handler: 'become-scheme-twist', status: 'no-op', fireSite: 'villain-executor', params: {}, turn: 4 },
+          { cardId: 'core/hero/spider-man#1', scope: 'hero', timing: 'onPlay', effect: 'draw', handler: 'draw', status: 'fired', fireSite: 'hero-executor', params: { magnitude: 2 }, turn: 4 },
+        ],
+        tracesDropped: 3,
+      },
+    }),
+  );
+
+  assert.equal(withTraces, absent, 'materializing effect traces must not change the finalStateHash');
+});
+
 test('hashGameState still changes when a non-message field changes (non-vacuous guard)', () => {
   // why: proves the exclusion did not flatten the oracle — a real
   // state-placement difference (a played card, a counter) MUST move the hash.

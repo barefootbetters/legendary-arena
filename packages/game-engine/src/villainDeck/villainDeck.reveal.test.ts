@@ -1025,6 +1025,25 @@ describe('revealVillainCard — onEscape fire site (WP-186 §Files #7a)', () => 
         moveContext.G.escapedPile.includes(escapedCardId),
         'the escaped villain still lands in the escaped pile (not routed into a twist pile)',
       );
+      // why: WP-488 / D-24294 — the become-scheme-twist executor handler is a deliberate
+      // no-op, so its villain-executor trace reads `no-op`; the REAL Scheme Twist fires at
+      // the escape site, recorded as a DISTINCT `secondary-site` trace. Both must exist for
+      // the escaped card — the whole point of the trace (answering "the executor was a no-op;
+      // the twist fired at the escape site").
+      const escapeTraces = moveContext.G.diagnostics?.traces ?? [];
+      const executorNoOp = escapeTraces.find(
+        (trace) =>
+          trace.fireSite === 'villain-executor' &&
+          trace.effect === 'become-scheme-twist' &&
+          trace.cardId === escapedCardId,
+      );
+      const secondarySite = escapeTraces.find(
+        (trace) => trace.fireSite === 'escape-scheme-twist' && trace.cardId === escapedCardId,
+      );
+      assert.ok(executorNoOp, 'the become-scheme-twist executor emits a villain-executor trace');
+      assert.equal(executorNoOp!.status, 'no-op', 'the executor handler is a deliberate no-op');
+      assert.ok(secondarySite, 'the escape site emits a secondary-site trace');
+      assert.equal(secondarySite!.status, 'secondary-site', 'the real Twist fired at the escape site');
     } finally {
       delete DEFAULT_IMPLEMENTATION_MAP[TEST_REVEAL_HOOK_ID];
     }
@@ -1064,6 +1083,11 @@ describe('revealVillainCard — onEscape fire site (WP-186 §Files #7a)', () => 
         0,
         'a plain escape must NOT fire the scheme-twist pipeline',
       );
+      // why: WP-488 / D-24294 — no become-scheme-twist escape → no secondary-site trace.
+      const secondarySite = (moveContext.G.diagnostics?.traces ?? []).find(
+        (trace) => trace.fireSite === 'escape-scheme-twist',
+      );
+      assert.equal(secondarySite, undefined, 'no secondary-site trace without a become-scheme-twist escape');
     } finally {
       delete DEFAULT_IMPLEMENTATION_MAP[TEST_REVEAL_HOOK_ID];
     }

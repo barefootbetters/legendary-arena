@@ -32,8 +32,9 @@ import {
   VILLAIN_EFFECT_PRIMITIVES,
 } from '../rules/villainAbility.types.js';
 import type { ResolvedEffectResult } from '../events/notableEvents.compose.js';
-import type { HollowEffectRecord } from '../diagnostics/hollowEffect.types.js';
+import type { HollowEffectRecord, EffectTrace, EffectTraceStatus } from '../diagnostics/hollowEffect.types.js';
 import { recordHollowEffect } from '../diagnostics/hollowEffect.record.js';
+import { recordEffectTrace } from '../diagnostics/effectTrace.record.js';
 import { gainWound } from '../board/wounds.logic.js';
 import { koCard } from '../board/ko.logic.js';
 import {
@@ -168,6 +169,12 @@ export function executeVillainAbilities(
         // non-applied descriptor was never recorded there).
         recordHollowEffect(G, buildVillainDescriptorHollowRecord(cardId, cardType, timing, descriptor, turn));
       }
+      // why: WP-488 / D-24294 — emit a runtime EffectTrace for EVERY villain descriptor
+      // dispatch (both the applied and the null/no-handler branch), from THIS caller loop
+      // — it carries `turn` + `timing` + `cardId` + the descriptor + the dispatch result
+      // together, which the inner applyVillainEffect does not. Inert + hash-excluded; a
+      // no-handler dispatch now produces BOTH a hollow record (above, unchanged) and a trace.
+      recordEffectTrace(G, buildVillainEffectTrace(cardType, cardId, timing, descriptor, application, turn));
     }
     // why: WP-257 / D-24034 — an unresolved `[effect:X]` marker the parser saw
     // but could not turn into a descriptor is `parse-unrecognized` hollow. These
@@ -440,6 +447,125 @@ function isVillainEffectPrimitive(value: string): value is VillainEffectPrimitiv
     }
   }
   return false;
+}
+
+// ---------------------------------------------------------------------------
+// Effect-trace emission (WP-488 / D-24294)
+// ---------------------------------------------------------------------------
+
+// why: WP-488 / D-24294 — the FIXED allowlist of villain primitives whose handlers are
+// DELIBERATE no-ops that mutate nothing (become-scheme-twist, D-24287 — the real twist
+// fires at the escape site; gain-attached-hero, D-24270 — the award is the generic
+// WP-431 awardAttachedHeroes at the fight site). A trace for either must read `no-op`,
+// decided by PRIMITIVE IDENTITY — NEVER by `targets.length`, because many real-firing
+// handlers (gain-wound, capture-bystander, reveal-or-wound, draw-cards-current,
+// rescue-bystanders-current, scry-ko-own-deck) legitimately return empty `targets` and
+// MUST read as `fired`. Adding a future deliberate-no-op handler requires adding it here,
+// or its trace mislabels as `fired`.
+const DELIBERATE_NO_OP_VILLAIN_PRIMITIVES: ReadonlySet<VillainEffectPrimitive> =
+  new Set<VillainEffectPrimitive>(['become-scheme-twist', 'gain-attached-hero']);
+
+/**
+ * Builds the per-dispatch `EffectTrace` for one villain/henchman descriptor
+ * (WP-488 / D-24294).
+ *
+ * Status is decided by handler reachability + the fixed no-op allowlist, never by
+ * mutation: a `null` application → `no-handler` (co-recorded as a hollow); a
+ * deliberate-no-op primitive → `no-op`; any other handler that ran → `fired`. The
+ * `handler` label is the primitive token (the VILLAIN_EFFECT_HANDLERS map key) when a
+ * handler ran, `""` when none — a STRING label, never a function reference (G forbids
+ * functions). `effect` is the primitive token verbatim, read defensively so a malformed
+ * descriptor cannot throw before the guarded writer runs.
+ *
+ * @param cardType - The resolved scope ('villain' | 'henchman').
+ * @param cardId - The triggering card-instance ext_id.
+ * @param timing - The timing that fired ('onAmbush' | 'onFight' | 'onEscape').
+ * @param descriptor - The dispatched descriptor.
+ * @param application - The dispatch result (null when no handler was reached).
+ * @param turn - The turn number for the trace (0 on the reveal path, per readTurnNumber).
+ * @returns The effect trace to record.
+ */
+function buildVillainEffectTrace(
+  cardType: 'villain' | 'henchman',
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+  application: VillainEffectApplication | null,
+  turn: number,
+): EffectTrace {
+  // why: descriptor.primitive is typed but a malformed hook / test cast can carry a
+  // non-string; read it defensively so the trace build never throws (the emit is
+  // best-effort — a trace bug must never break an ability execution).
+  const primitiveValue = (descriptor as { primitive?: unknown }).primitive;
+  const effectToken = typeof primitiveValue === 'string' ? primitiveValue : '';
+  let status: EffectTraceStatus;
+  let handler: string;
+  if (application === null) {
+    // why: applyVillainEffect reached no handler for this primitive.
+    status = 'no-handler';
+    handler = '';
+  } else if (
+    typeof primitiveValue === 'string' &&
+    DELIBERATE_NO_OP_VILLAIN_PRIMITIVES.has(primitiveValue as VillainEffectPrimitive)
+  ) {
+    // why: a deliberate-no-op handler ran — decided by primitive identity, never targets.length.
+    status = 'no-op';
+    handler = effectToken;
+  } else {
+    status = 'fired';
+    handler = effectToken;
+  }
+  return {
+    cardId,
+    scope: cardType,
+    timing,
+    effect: effectToken,
+    handler,
+    status,
+    fireSite: 'villain-executor',
+    params: buildVillainEffectTraceParams(descriptor),
+    turn,
+  };
+}
+
+/**
+ * Copies a villain descriptor's own SCALAR parameter fields into a trace `params`
+ * snapshot, omitting `undefined` keys (WP-488 / D-24294).
+ *
+ * Explicit field-by-field copy — NEVER a spread-and-cast of the raw descriptor, which
+ * would leak the non-scalar `primitive` (and break `exactOptionalPropertyTypes`). Every
+ * copied value is `string | number | boolean`; the `primitive` token is carried as the
+ * trace's `effect`, not here.
+ *
+ * @param descriptor - The dispatched descriptor.
+ * @returns A shallow scalar snapshot of the descriptor's parameter fields.
+ */
+function buildVillainEffectTraceParams(
+  descriptor: VillainEffectDescriptor,
+): Record<string, string | number | boolean> {
+  const params: Record<string, string | number | boolean> = {};
+  if (descriptor.target !== undefined) {
+    params.target = descriptor.target;
+  }
+  if (descriptor.magnitude !== undefined) {
+    params.magnitude = descriptor.magnitude;
+  }
+  if (descriptor.selector !== undefined) {
+    params.selector = descriptor.selector;
+  }
+  if (descriptor.drawCount !== undefined) {
+    params.drawCount = descriptor.drawCount;
+  }
+  if (descriptor.requireKind !== undefined) {
+    params.requireKind = descriptor.requireKind;
+  }
+  if (descriptor.requireValue !== undefined) {
+    params.requireValue = descriptor.requireValue;
+  }
+  if (descriptor.zone !== undefined) {
+    params.zone = descriptor.zone;
+  }
+  return params;
 }
 
 // ---------------------------------------------------------------------------
