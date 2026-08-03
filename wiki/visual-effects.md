@@ -33,7 +33,7 @@ source:
   - ../apps/arena-client/src/components/play/NotableEventOverlay.vue
   - ../apps/arena-client/src/pages/PlayViewport.vue
   - ../docs/ai/ARCHITECTURE.md
-last-reviewed: 2026-07-27
+last-reviewed: 2026-08-02
 ---
 
 # Visual Effects Framework
@@ -98,26 +98,73 @@ This section is the **immovable governance layer** of the page. Everything
 below it may evolve; this may not without a `DECISIONS.md` entry. A future
 Work Packet is judged against this contract, not against the flavor text.
 
-### Allowed input surfaces
+### Critical Invariants
 
-The only signals VFX may read — all already projected onto `UIState`:
+The load-bearing rules, in one place. Everything else on this page is
+detail; these eight do not move without a `DECISIONS.md` entry:
 
-- `UIState.notableEvents` — the six locked event variants ([Surface 1](#surface-1)).
-- `UIState.game.lastPlayEffectsFired` — the combo chain count ([Surface 2](#combo-signal)).
-- **Local move dispatch** — the client's own `playCard` / `recruitHero` /
-  `fightVillain` / `drawCards` / `dodgeCard` / `endTurn` ([Surface 3](#surface-3)).
-- `UIState` outcome / progress fields — `EndgameOutcome`,
-  `progress.escapedVillains`, `scheme.twistCount`, `players[].woundCount`
-  ([Surface 4](#endgame)).
+1. **VFX is a pure presentation layer** — it renders, it never decides.
+2. **VFX consumes projected `UIState` only** — never `G`, never `ctx`.
+3. **VFX never affects gameplay outcomes** — no move validation, no engine
+   branching.
+4. **VFX never participates in determinism** — it is absent from the state
+   hash; replays and bot-vs-bot sims render none.
+5. **VFX introduces no new timing authority** — the engine already owns
+   every event and its ordering.
+6. **VFX invents no new gameplay events** — it is a consumer of the shared
+   trigger spine, never a producer.
+7. **Audio, visual, narrative, and dopamine consume the identical trigger
+   vocabulary** — one signal, many renderers (the
+   [Shared Trigger Principle](#shared-trigger-principle)).
+8. **Combo-tier boundaries are shared across all renderers** — the single
+   [`comboTierForCount`](#combo-tier-contract), never a per-renderer copy.
 
-### Forbidden input surfaces
+#### Shared Trigger Principle {#shared-trigger-principle}
 
-- `G` / `ctx` — engine-internal state is never read by VFX.
-- `G.messages` — the game log is **not** projected to clients (D-20008);
-  any effect built on it works in the engine and silently does nothing in
-  the browser.
-- **Any server round-trip** — VFX derives entirely from the
-  already-projected `UIState`.
+> **One engine signal. Many renderers.**
+>
+> The engine owns trigger generation. Audio, visual, narrative, and dopamine
+> systems are **consumers** — none may redefine a trigger, retime it, or
+> invent a new gameplay event. This is the architectural heart of every
+> "juice" system on the site; the rest of this page is written against it
+> rather than re-deriving it per effect.
+
+**Trigger Ownership.** The engine is the sole author of the event vocabulary
+(the [shared trigger spine](design-system-overview.md#shared-trigger-spine))
+and of the combo scalar. A consumer layer reacts; it never generates.
+
+**Shared Renderer Contract.** When more than one sensory system reacts to the
+same event, five things MUST be identical across them:
+
+| Property | Must match across renderers |
+|---|---|
+| Trigger source | the same `UIState` field / event |
+| Tier mapping | the one [`comboTierForCount`](#combo-tier-contract) |
+| Fire time | the same `UIState` change — they peak together |
+| Suppression rules | the same gating (intensity / off) |
+| Accessibility gates | the same `prefers-reduced-motion` handling |
+
+Worked examples: combo *sting* + combo *burst* + synergy *call-out*; Master
+Strike *sting* + strike *vignette*; heroes-win *music* + heroes-win *finale*.
+Each is one engine signal driving several renderers that crest on the same
+frame.
+
+### Input surface authority
+
+Every candidate signal, its authority, and whether VFX may read it — an
+audit checklist, not an essay. A future implementation is checked against it
+row by row:
+
+| Surface | Authority | VFX may read |
+|---|---|---|
+| `UIState.notableEvents` (six locked variants) | Engine (projected) | ✅ — [Surface 1](#surface-1) |
+| `UIState.game.lastPlayEffectsFired` (combo count) | Engine (projected) | ✅ — [Surface 2](#combo-signal) |
+| `UIState` outcome / progress (`EndgameOutcome`, `progress.escapedVillains`, `scheme.twistCount`, `players[].woundCount`) | Engine (projected) | ✅ — [Surface 4](#endgame) |
+| Local move dispatch (`playCard` / `recruitHero` / `fightVillain` / `drawCards` / `dodgeCard` / `endTurn`) | Client | ✅ — [Surface 3](#surface-3) |
+| `G` | Engine-internal | ❌ never |
+| `ctx` | Engine-internal | ❌ never |
+| `G.messages` (game log) | Not projected (D-20008) | ❌ — works in-engine, silently does nothing in the browser |
+| Any server round-trip | External | ❌ — VFX derives entirely from already-projected `UIState` |
 
 ### Non-Goals — the VFX layer MUST NOT
 
@@ -167,13 +214,20 @@ apex tier by WP-425 / D-24246):
   audio sting (`combo-legendary.mp3`) ships with WP-425; the visual
   `LEGENDARY!` call-out consumes the same boundary when the VFX layer is built.
 
-### Accessibility requirements (mandatory)
+### Accessibility gate (mandatory — pass/fail) {#accessibility-requirements-mandatory}
 
-- Honour the OS `prefers-reduced-motion` setting.
-- Expose an in-app intensity / off control, persisted (localStorage).
+No VFX feature may ship unless **all four** hold; acceptance testing MUST
+verify each:
+
+- `prefers-reduced-motion` is honoured (OS setting).
+- An in-app intensity / off control exists, persisted (localStorage).
 - Screen-shake and full-screen flashes are gated behind both.
-- The layer degrades cleanly to **no effects** when disabled — never a
-  loss of game functionality.
+- Disabled mode preserves full gameplay parity — the layer degrades to
+  **no effects**, never a loss of game functionality.
+
+There is **no `prefers-reduced-motion` handling in the client today**
+(verified: zero matches under `apps/arena-client/src`), so this is a
+day-one requirement for the implementing Work Packet, not a retrofit.
 
 ### Shipped: game-log outcome colours (static, NOT part of the VFX layer) {#game-log-outcome-colours}
 
@@ -213,6 +267,16 @@ The plain-text export tags non-`neutral` lines `[applied]` / `[partial]`
 
 ## Mechanics
 
+> **Illustrative Visual Concepts (Non-Normative).** Everything below the
+> [contract](#vfx-trigger-contract) — every animated mock and every
+> "suggested visual character" — demonstrates *possible* visual character
+> only. None of it is a requirement. A future implementation may substitute
+> entirely different visuals provided it honours the
+> [trigger contract](#vfx-trigger-contract), the
+> [accessibility gate](#accessibility-requirements-mandatory), the
+> [performance budget](#performance-budget), and event-priority ordering.
+> Read the galleries as mood, not spec — the fixed rules all live above.
+
 ### Priority tiers {#priority-tiers}
 
 Not every trigger earns the same investment, and a Work Packet should
@@ -245,7 +309,7 @@ build in this order rather than attempting twenty effects at once:
 Visual effects are a **client-side presentation concern**, exactly like
 audio. They can only react to what the client actually receives — fields
 on the projected `UIState` — **not** engine-internal `G` and **not** the
-game log (per the [contract](#forbidden-input-surfaces) above). The
+game log (per the [contract](#input-surface-authority) above). The
 candidate signals, in decreasing order of readiness:
 
 #### Surface 1 — Notable events (the primary, ready-made hook) {#surface-1}
@@ -683,6 +747,15 @@ Holding the budget (the disciplines):
   tear down finished effects.
 - **Lazy-load** the particle library off the first-paint path.
 
+**Performance Invariant.** When an effect would exceed the budget, the
+priority order is fixed and non-negotiable:
+
+1. **Retain gameplay** — the mat, inputs, and `UIState` rendering always win.
+2. **Drop visual fidelity** — shed particles / bursts before anything else.
+3. **Never stall rendering** — VFX yields the frame; it never blocks it.
+4. **Never queue a backlog** — drop overflow effects; do not defer them into
+   a later storm (see [Multiplayer event storms](#edge-cases)).
+
 ## Interactions
 
 - **[Design System Overview](design-system-overview.md).** The parent
@@ -722,6 +795,18 @@ Holding the budget (the disciplines):
 
 ## Edge Cases
 
+- **Multiplayer event storms — a coalescing policy is required.** Several
+  notable events can arrive in a single `UIState` update (e.g.
+  `fightResolved` + `fightResolved` + `mastermindStrikeResolved` + a T4
+  combo, all at once). The VFX layer MUST define — **deterministically and
+  shared with the audio layer** ([Shared Renderer Contract](#shared-trigger-principle))
+  — whether simultaneous effects **queue, merge, suppress, or replace**;
+  otherwise they stack into an unreadable, budget-blowing pile-up.
+  Precedence follows the [priority tiers](#priority-tiers) (a Master Strike
+  outranks a draw); the exact coalescing rule is an open
+  [architecture decision](#decisions-pending). This is the multiplayer
+  corollary of the [Performance Invariant](#performance-budget)'s "never
+  queue a backlog."
 - **Villain escape has no client signal.** When a villain escapes the City
   it can carry a captured bystander away, but the escape path is
   **log-only** — it emits *no* notable event (deferred `escapeResolved`,
@@ -738,7 +823,7 @@ Holding the budget (the disciplines):
   projected to clients (D-20008). Only `notableEvents` and typed `UIState`
   surfaces reach the browser. Effects built on the log would work in the
   engine and do nothing in production. (Restated as a hard rule in the
-  [contract](#forbidden-input-surfaces).)
+  [contract](#input-surface-authority).)
 - **`lastPlayEffectsFired` is a scalar, not a stream.** It is overwritten
   each play and reset to `0` each turn — so the combo consumer must track
   its own last-seen value and fire on *change* (as `useComboCue` does), not
@@ -809,7 +894,22 @@ when all of the following hold (each objectively checkable):
 ## Decisions Pending
 
 Open choices a Work Packet must resolve (these are questions, not
-recommendations):
+recommendations), split by the kind of decision so each lands with the
+right owner.
+
+### Architecture decisions pending
+
+- **Multiplayer event-storm coalescing** — the policy for simultaneous
+  events (**queue / merge / suppress / replace**), shared with the audio
+  layer and deterministic (see [Edge Cases](#edge-cases)). Precedence
+  follows the [priority tiers](#priority-tiers); the coalescing rule itself
+  is unpicked.
+- **`escapeResolved` event** (WP-186) — required before escape effects
+  (Tier 3) are possible.
+- **`heroRecruited` result event** — would replace client-side
+  delta-watching for the recruit effect.
+
+### Implementation decisions pending
 
 - **Library selection** — `canvas-confetti` vs `tsparticles` vs hand-rolled
   CSS/WAAPI per effect class (the [posture](#library-posture)
@@ -824,6 +924,11 @@ recommendations):
   consumes the same locked boundary when the VFX layer is built (see
   [synergy call-out](#synergy-callout)). A *fifth* tier would be a further
   `DECISIONS.md` change adding it for both layers at once.
+- **Performance-budget figures** — ratify or retune the numbers above
+  against real mobile hardware.
+
+### Content decisions pending
+
 - **The synergy call-out label** — the named popup per tier
   ([synergy call-out](#synergy-callout)). Two open calls beyond the apex
   rung above: (a) does the word announce at `small` or start at `medium`
@@ -841,12 +946,6 @@ recommendations):
   confirmed to cover on-screen catchphrase use (**D-24259**). Secondary:
   a display-fit call for long cries (e.g. Spider-Man's full-sentence line
   at the smaller tiers).
-- **Performance-budget figures** — ratify or retune the numbers above
-  against real mobile hardware.
-- **`escapeResolved` event** (WP-186) — required before escape effects
-  (Tier 3) are possible.
-- **`heroRecruited` result event** — would replace client-side
-  delta-watching for the recruit effect.
 
 ## Deferred
 
