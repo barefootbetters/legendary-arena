@@ -63,6 +63,47 @@ Source: ARCHITECTURE.md, Architectural Principles #1
 
 Source: ARCHITECTURE.md, Architectural Principles #2
 
+### UIState Projection Integrity [Derived Rule]
+
+The client-visible `UIState` is produced by a **two-stage** engine-side
+pipeline, run by `playerView` (`packages/game-engine/src/game.ts`) — it is
+the sole engine→client projection boundary:
+
+1. `buildUIState(G, ctx)` (`ui/uiState.build.ts`) builds the full projection.
+2. `filterUIStateForAudience(full, audience)` (`ui/uiState.filter.ts`) is a
+   **whitelist** that redacts private data and rebuilds the shared-board
+   objects (`scheme` / `mastermind` / `city` / `hq` / player zones)
+   **field-by-field**.
+
+**Board-Visible Field Rule (Invariant).** Adding any client-visible
+`UIState` field is a **five-step contract**. `UIState` fields are optional,
+so TypeScript does NOT flag a missed step — an incomplete add is silently
+dropped at the filter and never reaches the client:
+
+1. Declare the field on the `UIState` type (`ui/uiState.types.ts`).
+2. Populate it in `buildUIState` (`ui/uiState.build.ts`).
+3. **Pass it through** `filterUIStateForAudience` (`ui/uiState.filter.ts`)
+   with the correct audience disposition (public shared-board vs
+   owner-redacted).
+4. Add an audience-filter test asserting the field survives for the
+   intended audiences.
+5. Verify it appears in the Play Diagnostics `uiStateSnapshot`.
+
+A field that reaches step 2 but not step 3 is dropped at the filter
+whitelist. This is a **known, shipped failure mode**: the audience filter
+was not updated when EC-206 added `scheme.display` / `scheme.gameText` /
+`mastermind.gameText`, so every match rendered a blank scheme tile and "No
+rules text available" until the pass-through was restored (PR #1165). The
+`matchCardImageUrls` pass-through in `uiState.filter.ts` exists for this
+same reason. A related client-side corollary: any surface that renders
+`gameText` / `abilityText` MUST route it through `AbilityText.vue` — raw
+marker syntax (`[hc:…]`, `[icon:…]`) is never shown to a player.
+
+Source: ARCHITECTURE.md, Architectural Principles #2 (UI consumes read-only
+projections); DECISIONS.md D-12803 (WP-128 audience-filter redaction
+matrix). Descriptive companion: [ewiki Play Board](../../wiki/play-board.md)
+(zone→field map, projection pipeline, missing-data triage).
+
 ### G and ctx Are Runtime-Only
 - `G` is never persisted **by application code**, nor written to any `legendary.*` domain table (but see the boardgame.io framework-store exemption, D-24095, under §Persistence Boundary (Cross-Layer))
 - `ctx` is never persisted or serialized by application code

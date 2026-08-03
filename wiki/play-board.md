@@ -170,6 +170,11 @@ reconstruction also copies it — this is invariant #5 and the
 
 ### Board-visible field rule {#board-visible-field-rule}
 
+> **Enforced.** This rule is codified as an Invariant in
+> [`.claude/rules/architecture.md`](../.claude/rules/architecture.md)
+> §"UIState Projection Integrity" (Board-Visible Field Rule). The steps
+> below are the descriptive companion; the rules file is authoritative.
+
 Adding a board-visible field is a **five-step contract**, not a one-line
 projection edit. Because the fields are optional, TypeScript will not
 catch a missed step — the field simply never reaches the board.
