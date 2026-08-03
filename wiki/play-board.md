@@ -35,22 +35,27 @@ last-reviewed: 2026-08-02
 
 ## Summary
 
-The **Play Board** is the rendered game mat on `play.legendary-arena.com`
-— the mastermind and scheme tiles, the city, the HQ, your hand and piles,
-and the card-reader modal. It is a **pure read-only view of the engine's
-projected `UIState`**: the client renders what the engine already decided
-and never computes game state itself.
+The **Play Board** is the rendered game mat on `play.legendary-arena.com`.
+It is a **pure, read-only visualization of the engine-projected
+`UIState`.** The client never computes game state, derives gameplay
+outcomes, or rebuilds projections: all board-visible data originates in
+the game engine, is shaped and audience-filtered by `playerView`, and is
+delivered to the client already visibility-safe.
 
-This page documents two things no other page covers: the **zones on the
-mat and which `UIState` field feeds each**, and the **two-stage
-projection→render contract** that the board depends on. The second is
-where two shipped bugs lived (2026-08-02) — worth reading before adding
-any field to the board.
+This page describes:
 
-The board's authoritative layout spec is
+- the board **zones and their authoritative `UIState` sources**;
+- the engine→client **projection pipeline**;
+- the **projection-boundary hazards** that have caused production defects.
+
+The invariants and workflow rules below **restate**, for the board's
+context, the authoritative contracts in
+[ARCHITECTURE.md](../docs/ai/ARCHITECTURE.md) and
+[`.claude/rules/*.md`](../.claude/rules/architecture.md); this wiki page
+is descriptive and cites them, it does not mint new governance (per
+[`SCHEMA.md`](SCHEMA.md)). The board's authoritative layout spec is
 [`DESIGN-BOARD-LAYOUT.md`](../docs/ai/DESIGN-BOARD-LAYOUT.md) (WP-128 /
-WP-129, EC-131 / EC-132); this page is the descriptive companion and the
-home for the projection-boundary gotchas.
+WP-129, EC-131 / EC-132).
 
 ## Mechanics
 
@@ -65,29 +70,85 @@ does **not** run `buildUIState` — the projection is produced **server-side**
 by `playerView` and arrives already shaped. This is the same invariant the
 [Design System Overview](design-system-overview.md) feel layer inherits.
 
+### Critical invariants
+
+These are the [ARCHITECTURE.md](../docs/ai/ARCHITECTURE.md) invariants as
+they bind the board. They are not new to this page — they are cited here
+because the board is the surface most tempted to break them.
+
+1. **Engine owns truth.** `G` is authoritative; the board never second-guesses it.
+2. **`UIState` owns presentation.** The board renders only data exposed through the projection.
+3. **The client performs no gameplay calculation.** Rendering code may transform *visuals* (format text, size an icon) but may never derive gameplay *state*.
+4. **Audience filtering happens before delivery.** The board must treat every field it receives as already visibility-safe; it performs no redaction of its own.
+5. **Board-visible fields require filter pass-through.** A field present in `buildUIState()` is not board-visible until `filterUIStateForAudience()` copies it (see the [Board-visible field rule](#board-visible-field-rule)).
+6. **Ability text must be token-rendered.** Raw marker syntax (`[hc:…]`, `[icon:…]`) is never shown to a player; it is always routed through `AbilityText`.
+
+### Non-Goals
+
+The board is **not** responsible for any of the following — they belong to
+the engine and the projection pipeline:
+
+- game-state computation;
+- rule evaluation, ability resolution, or turn progression;
+- visibility determination or player-specific redaction;
+- building or reshaping the projection.
+
+If board code starts doing any of these, the layer boundary is already broken.
+
 ### Board zones and their `UIState` source
 
-| Zone / tile | Component | `UIState` field |
-|---|---|---|
-| Mastermind | `MastermindTile.vue` | `mastermind` (`display`, `gameText`, `tacticsRemaining`, `strikePile`) |
-| Scheme | `SchemeTile.vue` / `SchemeTwistPile.vue` | `scheme` (`display`, `gameText`, `twistCount`, `twistPile`) |
-| City | `CityRow.vue` / `EscapedPile.vue` | `city` |
-| HQ | `HQRow.vue` | `hq.slots` / `hq.slotDisplay` |
-| Hand / played | `HandRow.vue` / `PlayedCardsRow.vue` | `players[].hand` / `handDisplay` |
-| Decks & piles | `SharedDecks.vue` / `KOPile.vue` / `YourVictoryPile.vue` | `decks`, `piles`, `koPile` |
-| Economy | `EconomyBar.vue` | `economy` |
-| Card reader | `CardReaderModal.vue` | the tile's `display` + `gameText` |
-| Event overlay | `NotableEventOverlay.vue` | `notableEvents` |
+The **Authority** column records how the audience filter treats each
+field: *public* fields are identical for every viewer (shared board);
+*redacted* fields are visible only to their owner and stripped for
+opponents / spectators. Every field is engine-owned and passes through
+the filter — "public" vs "redacted" is the filter's disposition, not a
+different source.
+
+| Zone / tile | Component | `UIState` source | Authority |
+|---|---|---|---|
+| Mastermind | `MastermindTile.vue` | `mastermind` (`display`, `gameText`, `tacticsRemaining`, `strikePile`) | Engine — public |
+| Scheme | `SchemeTile.vue` / `SchemeTwistPile.vue` | `scheme` (`display`, `gameText`, `twistCount`, `twistPile`) | Engine — public |
+| City | `CityRow.vue` / `EscapedPile.vue` | `city` | Engine — public |
+| HQ | `HQRow.vue` | `hq.slots` / `hq.slotDisplay` | Engine — public |
+| Hand / played | `HandRow.vue` / `PlayedCardsRow.vue` | `players[].hand` / `handDisplay` | Engine — **redacted** (owner-only) |
+| Decks & piles | `SharedDecks.vue` / `KOPile.vue` / `YourVictoryPile.vue` | `decks`, `piles`, `koPile` | Engine — public (counts / public piles) |
+| Economy | `EconomyBar.vue` | `economy` | Engine — public |
+| Card reader | `CardReaderModal.vue` | the tile's `display` + `gameText` | Engine — public |
+| Event overlay | `NotableEventOverlay.vue` | `notableEvents` | Engine — public |
 
 The **Card Reader** (`CardReaderModal`) is the single shared modal the
 Mastermind and Scheme tiles open on "Read card"; it shows the card at a
 readable size plus its `gameText` (Master-Strike / special rules, or the
 scheme's twist / win conditions).
 
-### The projection→render contract (two gates)
+### Engine projection pipeline (authoritative data flow)
 
-Every frame the board renders has passed through **two** engine-side
-stages, in this order:
+Every frame the board renders has travelled this path, engine → client:
+
+```
+Game State (G)                 authoritative engine state
+      │
+      ▼
+playerView()  ┌──────────────────────────────────────────────┐
+              │  buildUIState(G, ctx)   → full UIState        │  server-side
+              │  filterUIStateForAudience(full, audience)     │  (per audience)
+              └──────────────────────────────────────────────┘
+      │            audience-filtered, visibility-safe UIState
+      ▼
+   network      (boardgame.io transport)
+      │
+      ▼
+bgioClient.ts   const projection = state.G   (verbatim; no client re-projection)
+      │
+      ▼
+  Pinia store
+      │
+      ▼
+Play Board components   render only
+```
+
+`playerView` is the **sole** engine→client projection boundary; it runs
+**two** engine-side stages, in order:
 
 1. **`buildUIState(G, ctx)`**
    ([`uiState.build.ts`](../packages/game-engine/src/ui/uiState.build.ts))
@@ -104,16 +165,36 @@ stages, in this order:
 The load-bearing subtlety: the filter is a **whitelist that reconstructs
 `scheme` / `mastermind` / `city` / `hq` object-by-object**. A field
 `buildUIState` populates does **not** reach the client unless the filter's
-reconstruction also copies it. See [Edge Cases](#edge-cases).
+reconstruction also copies it — this is invariant #5 and the
+[Board-visible field rule](#board-visible-field-rule).
+
+### Board-visible field rule {#board-visible-field-rule}
+
+Adding a board-visible field is a **five-step contract**, not a one-line
+projection edit. Because the fields are optional, TypeScript will not
+catch a missed step — the field simply never reaches the board.
+
+1. Declare the field on the `UIState` type ([`uiState.types.ts`](../packages/game-engine/src/ui/uiState.types.ts)).
+2. Populate it in `buildUIState()` ([`uiState.build.ts`](../packages/game-engine/src/ui/uiState.build.ts)).
+3. **Pass it through** `filterUIStateForAudience()` ([`uiState.filter.ts`](../packages/game-engine/src/ui/uiState.filter.ts)) — with the correct audience disposition (public vs redacted).
+4. Add audience-filter **test coverage** asserting the field survives for the intended audiences.
+5. Verify it appears in the [Play Diagnostics](play-diagnostics.md) `uiStateSnapshot`.
+
+Skipping step 3 or 4 is the exact defect class that blanked the scheme
+tile in PR #1165; see [Edge Cases](#edge-cases).
 
 ### Ability-text markers
 
 Card / scheme / mastermind text ships from the engine with inline markup —
 `[icon:attack]`, `[hc:strength]`, `[keyword:Patrol]`, `[rule:Shards]`,
 `[team:X-Men]` (the same vocabulary the
-[Card Effect System](card-effect-system.md) and the card browser use). The
-board must **render these markers, not print them raw**. The play surface
-renders the three visual marker families as their **real SVG icon** — the
+[Card Effect System](card-effect-system.md) and the card browser use).
+**Any surface that displays `gameText` / `abilityText` must render its
+marker tokens through
+[`AbilityText`](../apps/arena-client/src/components/play/AbilityText.vue);
+rendering raw marker syntax to a player is prohibited (invariant #6).**
+The play surface renders the three visual marker families as their **real
+SVG icon** — the
 same art printed on the physical card — served from the card-image domain
 (`images.legendary-arena.com/icons/…`, same origin as card art so no new
 CSP `img-src` entry):
@@ -196,6 +277,20 @@ renders as text without even requesting one.
 - **[Card Effect System](card-effect-system.md)** — the source of the
   `[keyword:…]` / `[icon:…]` marker vocabulary the board renders.
 
+## Debugging: missing-data triage
+
+When the board is missing data, the pipeline gives a deterministic path.
+Start from the [Play Diagnostics](play-diagnostics.md) bundle and read its
+`uiStateSnapshot`:
+
+1. **Is the field in `uiStateSnapshot`?**
+   - **Present, but the tile is blank** → the bug is in the **board component binding** (arena-client), not the projection.
+2. **Absent from `uiStateSnapshot`, but `buildUIState` populates it** → the field is being dropped by **`filterUIStateForAudience`** (the whitelist missed it — the #1165 class). Fix per the [Board-visible field rule](#board-visible-field-rule).
+3. **The field never existed in the projection for this match** → it is a **projection version drift** case: the match's `G` predates the field. Inspect `buildUIState` and the match creation date (see Edge Cases).
+
+One question — "is the field in the snapshot?" — routes every missing-data
+report to exactly one of the three layers.
+
 ## Edge Cases {#edge-cases}
 
 - **The audience filter silently drops new optional projection fields.**
@@ -208,8 +303,8 @@ renders as text without even requesting one.
   `buildUIState` but not to the filter, so every match rendered a blank
   scheme tile and "No rules text available" for both cards. The
   `matchCardImageUrls` pass-through in the filter exists for exactly this
-  reason. **When you add a board-visible field, add it to the filter's
-  reconstruction and cover it with a filter test.**
+  reason. Prevention is the [Board-visible field rule](#board-visible-field-rule)
+  (steps 3–4).
 - **Ability markers must be rendered, not printed.** Before PR #1166 the
   Card Reader printed `gameText` lines verbatim, so players saw
   `reveals a [hc:strength] Hero`; #1166 rendered them and #1171 swapped the
@@ -222,12 +317,21 @@ renders as text without even requesting one.
   an `hc` / `icon` value outside the shipped asset sets renders as text with
   no request. So a new team, a renamed slug, or an R2 hiccup degrades to a
   readable word — it never leaves a broken-image glyph in the rules text.
-- **Very old match blobs lack baked text.** `scheme.gameText` /
-  `mastermind.gameText` and the scheme `display` entry are baked into `G`
-  at match setup. A match created **before EC-206 (2026-05-26)** has a `G`
-  with no such text; the current server projects it correctly but there is
-  nothing to project — the tiles fall back to name-only. Not a bug in the
-  render path; the blob is frozen (snapshots are not save-games).
+- **Projection version drift.** Because the board renders a *projected*
+  object rather than live engine state, and because much of a match's
+  display data (`scheme.gameText` / `mastermind.gameText`, the scheme
+  `display` entry) is **baked into `G` at match setup**, a field added to
+  the projection *after* a match was created may be **absent from that
+  match's historical `G`**. Symptoms: the board renders name-only content,
+  display metadata is missing, or ability text is unavailable — for that
+  match only. Diagnosis: verify the match creation date, inspect the stored
+  `G`, and confirm the projection field existed when the match was
+  initialized. Concrete case: a match created **before EC-206 (2026-05-26)**
+  has no baked scheme/mastermind text; the current server projects it
+  correctly but there is nothing to project. This is **distinct from the
+  filter-drop bug** above — the render path and the filter are both correct;
+  the *data* was never baked. The blob is frozen (snapshots are not
+  save-games), so the only remedy is a new match.
 
 ## Code Touchpoints
 
