@@ -268,41 +268,26 @@ The plain-text export tags non-`neutral` lines `[applied]` / `[partial]`
 ## Mechanics
 
 > **Illustrative Visual Concepts (Non-Normative).** Everything below the
-> [contract](#vfx-trigger-contract) — every animated mock and every
-> "suggested visual character" — demonstrates *possible* visual character
-> only. None of it is a requirement. A future implementation may substitute
-> entirely different visuals provided it honours the
-> [trigger contract](#vfx-trigger-contract), the
-> [accessibility gate](#accessibility-requirements-mandatory), the
+> [contract](#vfx-trigger-contract) — the "suggested visual character"
+> columns here and the animated mocks in [Appendix A](#appendix-mocks) —
+> demonstrates *possible* visual character only. None of it is a
+> requirement. A future implementation may substitute entirely different
+> visuals provided it honours the [trigger contract](#vfx-trigger-contract),
+> the [accessibility gate](#accessibility-requirements-mandatory), the
 > [performance budget](#performance-budget), and event-priority ordering.
-> Read the galleries as mood, not spec — the fixed rules all live above.
+> Read the tables and the mock appendix as mood, not spec — the fixed rules
+> all live above.
 
 ### Priority tiers {#priority-tiers}
 
 Not every trigger earns the same investment, and a Work Packet should
 build in this order rather than attempting twenty effects at once:
 
-**Tier 1 — Required** (the majority of player excitement):
-
-- Combo chains (`lastPlayEffectsFired`)
-- `mastermindStrikeResolved`
-- `mastermindDefeated`
-- `fightResolved`
-
-**Tier 2 — Recommended**:
-
-- `ambushResolved`
-- `schemeTwistResolved`
-- `healResolved`
-- `recruitHero`
-- `drawCards`
-
-**Tier 3 — Future**:
-
-- Escape effects (blocked on `escapeResolved`; see [Edge Cases](#edge-cases))
-- Narrative-lens variants (see [Future direction](#playstyle-lens))
-- Ambient menace layer (`escapedVillains` / `scheme.twistCount` rising)
-- Per-target sub-effect visuals (blocked on richer `appliedEffects`)
+| Tier | Priority | Triggers |
+|---|---|---|
+| **1** | Required (the majority of player excitement) | Combo chains (`lastPlayEffectsFired`), `mastermindStrikeResolved`, `mastermindDefeated`, `fightResolved` |
+| **2** | Recommended | `ambushResolved`, `schemeTwistResolved`, `healResolved`, `recruitHero`, `drawCards` |
+| **3** | Future | Escape effects (blocked on `escapeResolved`; see [Edge Cases](#edge-cases)); narrative-lens variants (see [Future direction](#playstyle-lens)); ambient menace layer (`escapedVillains` / `scheme.twistCount` rising); per-target sub-effect visuals (blocked on richer `appliedEffects`) |
 
 ### The trigger surface
 
@@ -334,47 +319,10 @@ stream — one effect per event type — with zero new engine work.
 | `schemeTwistResolved` | T2 | A Scheme Twist is revealed and resolved | A darker, subtler **desaturation ripple** radiating from the scheme tile; less violent than a Strike |
 | `healResolved` | T2 | A player uses the Wound Healing ability | Soft green **restorative shimmer** rising off the hand |
 
-**Animated mocks of each row.** The clips below are *illustrative proposal
-mocks* of the "suggested visual character" for each Surface-1 event, each
-layered over a themed sample card. Every one is a hand-built, CSS-only animated
-SVG (no JavaScript, so they animate on the JS-free wiki) that loops and honours
-`prefers-reduced-motion` by holding a single static frame instead of animating.
-Nothing here ships — the effect *character* is proposal-level, exactly as this
-section's intro says. (`mastermindDefeated`'s character is a *full-screen*,
-card-less finale — a victory bloom + confetti storm — so its mock below is a
-viewport-scale scene rather than a card overlay; the same full-screen treatment
-recurs at [Surface 4](#endgame).)
+*Animated mocks of all six rows — CSS-only, non-normative — are in
+[Appendix A.1](#appendix-surface-1).*
 
-![Animated mock of mastermindStrikeResolved: a Mastermind card jolts with a screen-shake while a red vignette pulses in from the edges and dark shard particles burst outward, then settles. Loops.](/visual-effects/surface1-mastermind-strike.svg "width=33%")
-
-*`mastermindStrikeResolved` (T1) — **screen-shake + red edge-vignette pulse + dark shard burst**, the signature "uh-oh" jolt. Sample card: Galactus (Mastermind).*
-
-![Animated mock of mastermindDefeated: a full-screen golden victory bloom bursts from the centre with radiating light rays and an expanding shockwave ring, while a storm of colourful confetti falls across the screen. Loops.](/visual-effects/surface1-mastermind-defeated.svg "width=66%")
-
-*`mastermindDefeated` (T1) — a **full-screen victory bloom + confetti storm**, the biggest positive payoff in the game. Card-less: a viewport-scale finale, not a card overlay (mirrors the [Surface 4](#endgame) `heroes-win` treatment).*
-
-![Animated mock of fightResolved: a villain card takes a white-gold impact flash and an expanding shockwave ring at the City space while gold coins arc upward, then settles. Loops.](/visual-effects/surface1-fight-resolved.svg "width=33%")
-
-*`fightResolved` (T1) — **impact burst + shockwave ring** at the City space, with a **gold-coin flourish** for a rescued bystander (`bystandersRescued > 0`). Sample card: Sakaar Imperial Guard Lieutenant Caiera (Villain).*
-
-![Animated mock of ambushResolved: a villain card drops hard into its City space with an impact shake and a dust puff, then a sickly green-and-purple edge-glow pulses menacingly. Loops.](/visual-effects/surface1-ambush-resolved.svg "width=33%")
-
-*`ambushResolved` (T2) — a **hard card-slam** drop-in with an impact shake and dust puff, then a **menacing green edge-glow** as the villain settles. Sample card: Spider-Foes — Green Goblin (Villain).*
-
-![Animated mock of schemeTwistResolved: a Scheme Twist card dims under a slow grey desaturation wash while faint ash-grey rings ripple outward from the centre. Loops.](/visual-effects/surface1-scheme-twist-resolved.svg "width=33%")
-
-*`schemeTwistResolved` (T2) — a slow **desaturation ripple**: a grey wash dims the card while ash-grey rings radiate from the tile — darker and subtler than a Strike. Sample card: Scheme Twist.*
-
-![Animated mock of healResolved: a Wound card glows with a soft green light while green motes rise and fade upward off the card. Loops.](/visual-effects/surface1-heal-resolved.svg "width=33%")
-
-*`healResolved` (T2) — a soft green **restorative shimmer**: a gentle green glow with motes rising off the card. Sample card: Wound.*
-
-*All six are CSS-only animated SVGs; each loops and drops to a static frame
-under `prefers-reduced-motion`. Sample card art is illustrative only. Animation
-source: [surface1-effects.py](../ewiki/visual-effects/surface1-effects.py) —
-regenerate with `python surface1-effects.py`.*
-
-#### Surface 1b — Sub-effects inside a fight or ambush (`appliedEffects`)
+#### Surface 1b — Sub-effects inside a fight or ambush (`appliedEffects`) {#surface-1b}
 
 `FightResolvedEvent` and `AmbushResolvedEvent` each carry
 `appliedEffects: VillainEffectKeyword[]` (the villain-effect keywords
@@ -391,31 +339,8 @@ limit below).
 | **Bystander captured** | `appliedEffects` contains `captureBystander` | An ominous **pull-away** — the bystander token yanked toward the villain |
 | **Bystander rescued** | `FightResolvedEvent.bystandersRescued > 0` (and `MastermindDefeatedEvent.bystandersRescued`) | A bright **rescue sparkle** / coin arc into the victory pile |
 
-**Animated mocks of each sub-effect.** The same *illustrative proposal mock*
-treatment as the [Surface 1](#surface-1) gallery — CSS-only animated SVGs that
-loop and hold a static frame under `prefers-reduced-motion` — for the four
-`appliedEffects` sub-effects. These are **Tier-3 fidelity** (see the precision
-limit below); the mocks show the *character*, not shipped behaviour.
-
-![Animated mock of the wound-gained sub-effect: a Wound card takes a dull red damage flash with a small recoil, pulsing twice then settling. Loops.](/visual-effects/surface1b-wound-gained.svg "width=33%")
-
-*Wound gained (`gainWound*`) — a dull red **damage flash** with a small recoil. Sample card: Bindings (Wound).*
-
-![Animated mock of the hero-KO'd sub-effect: a KO'd hero card cracks with a white flash, breaks into dark shards, and slides down toward the KO pile while dissolving. Loops.](/visual-effects/surface1b-hero-ko.svg "width=33%")
-
-*Hero KO'd (`koHero*`) — a sharp **shatter / dissolve** as the card cracks, breaks into shards, and slides to the KO pile. Sample card: Kree Starforce Demon Druid (Villain).*
-
-![Animated mock of the bystander-captured sub-effect: a captured bystander card is yanked toward the villain, sliding off to the right, shrinking and fading under an ominous dark pull, then resets. Loops.](/visual-effects/surface1b-bystander-captured.svg "width=33%")
-
-*Bystander captured (`captureBystander`) — an ominous **pull-away** as the card is yanked toward the villain under a dark grab. Sample card: Photographer (Bystander).*
-
-![Animated mock of the bystander-rescued sub-effect: a rescued bystander card lifts with a bright golden sparkle burst while twinkles shimmer and gold coins arc up toward the victory pile. Loops.](/visual-effects/surface1b-bystander-rescued.svg "width=33%")
-
-*Bystander rescued (`bystandersRescued > 0`) — a bright **rescue sparkle** with coins arcing to the victory pile. Sample card: Stan Lee (Bystander).*
-
-*All four are CSS-only animated SVGs (same generator as the Surface-1 gallery:
-[surface1-effects.py](../ewiki/visual-effects/surface1-effects.py)); sample card
-art is illustrative only.*
+*Animated mocks of the four Tier-3 sub-effects are in
+[Appendix A.2](#appendix-surface-1b).*
 
 > **Precision limit.** `appliedEffects` carries the **keyword only** — not
 > which bystander was captured or how many wounds each player took. A
@@ -456,30 +381,9 @@ source both renderers consume. Pitch the visual tiers to ascend in
 lockstep with the audio so a T3 chain's flash and its flourish sting peak
 together — that synchrony is most of the "juice."
 
-**Animated mocks — the flash *and* the word, per tier.** These pair each
-Surface-2 visual tier with the [synergy call-out](#synergy-callout) that peaks
-with it: the burst and the word fire off the one `lastPlayEffectsFired` change
-and crest together (the naming ladder lives on the
-[Narrative Psychology Framework](narrative-psychology.md#synergy-callouts)).
-Card-less, CSS-only, looping, `prefers-reduced-motion`-aware — and each tier is
-drawn bigger than the last, so a bigger chain literally *looks* bigger.
-
-![Animated mock of the tier-1 combo cue: a brief blue spark bursts as the word Combo! pops on-screen, then fades. Loops.](/visual-effects/surface2-combo-spark.svg "width=33%")
-
-*T1 (`1`) — a brief blue **spark** + **Combo!** — "that worked."*
-
-![Animated mock of the tier-2 combo cue: a larger gold burst with an expanding shockwave ring as the word Team-Up! pops, then fades. Loops.](/visual-effects/surface2-combo-burst.svg "width=46%")
-
-*T2 (`2`) — a larger gold **burst** with a shockwave ring + **Team-Up!** — "oh, it *linked*."*
-
-![Animated mock of the tier-3 combo cue: a full-screen golden bloom with rotating rays and ascending streaks of light as the word Unstoppable! pops, then loops.](/visual-effects/surface2-combo-flourish.svg "width=72%")
-
-*T3 (`3–4`) — a full-screen ascending **flourish** + **Unstoppable!** — "I *built* this." The apex **`LEGENDARY!`** rung above it (`>= 5`) is the locked 4th tier (D-24246): WP-425 ships its audio sting; the visual finale follows — see the [call-out note](#synergy-callout).*
-
-*Card-less CSS-only animated SVGs; source:
-[surface2-combo.py](../ewiki/visual-effects/surface2-combo.py). The words are the
-narrative page's proposal; the tier boundaries are the locked
-[Combo Tier Contract](#combo-tier-contract).*
+*Animated mocks pairing each tier's flash with its escalating call-out are
+in [Appendix A.3](#appendix-surface-2) — each tier drawn bigger than the
+last, so a bigger chain literally looks bigger.*
 
 > **Mirror the shipped composable, don't reinvent it.** The audio side is
 > [`useComboCue.ts`](../apps/arena-client/src/composables/useComboCue.ts):
@@ -586,30 +490,8 @@ authoritative result.
 | `dodgeCard` | T3 | Dodge — discard to draw a replacement | A fast card **flick** out and a replacement slide in |
 | `endTurn` | T3 | The player ends their turn | A soft **sweep** clearing the played row |
 
-**Animated mocks of the action moves.** Local tactile cues for four moves —
-same CSS-only, looping, `prefers-reduced-motion`-aware treatment as the other
-galleries, but drawn with **abstract card shapes** since the cue is the *motion*
-(pull, deal, slash, flick), not the art. Proposal-level. (`playCard` and
-`endTurn` aren't mocked here.)
-
-![Animated mock of recruitHero: a hero card in an HQ slot glows gold, then is pulled down into the hand, and the cycle repeats. Loops.](/visual-effects/surface3-recruit.svg "width=44%")
-
-*`recruitHero` (T2) — an HQ-slot **glow** that pulls the card down into the hand.*
-
-![Animated mock of drawCards: cards deal one after another off a deck and fan out into a hand at the bottom, then reset. Loops.](/visual-effects/surface3-draw.svg "width=44%")
-
-*`drawCards` (T2) — a quick **deal / fan** off the deck into the hand.*
-
-![Animated mock of fightVillain: a bright slash streak sweeps in from the upper-left and lands on a villain card with an impact burst and recoil, then resets. Loops.](/visual-effects/surface3-fight.svg "width=44%")
-
-*`fightVillain` (T2) — a directional **slash / impact streak** into the target, with a recoil.*
-
-![Animated mock of dodgeCard: the hand card flicks out to the right with a spin while a replacement card slides in from the deck into the slot, then repeats. Loops.](/visual-effects/surface3-dodge.svg "width=44%")
-
-*`dodgeCard` (T3) — a fast card **flick** out and a replacement **slide** in.*
-
-*Card-less CSS-only animated SVGs (abstract card shapes); source:
-[surface3-moves.py](../ewiki/visual-effects/surface3-moves.py).*
+*Animated mocks of the action-move cues (abstract card shapes — the cue is
+the motion, not the art) are in [Appendix A.4](#appendix-surface-3).*
 
 > **Recruit has no result event.** `recruitHero` emits no notable event;
 > the only signals are the local move dispatch and the resulting
@@ -630,25 +512,8 @@ its own full-screen finale:
 | **`scheme-wins`** | `escapedVillains` ≥ `ESCAPE_LIMIT` (8) — *the city is overrun*; **or** `schemeLoss` ≥ 1 — *the scheme completes* | A dark, **deflating collapse** — desaturate to ash; the two reasons can take distinct treatments (an escape stampede vs. the scheme snapping shut) |
 | **`tie`** | `finalTurnTie` ≥ 1 — a deck emptied and the final turn ended with no win or loss (WP-367 / D-24159) | Something **wry and suspended** — a held, unresolved shimmer; neither bloom nor collapse |
 
-**Animated mocks of the three finales.** Full-screen, card-less endgame moments
-— same CSS-only, looping, `prefers-reduced-motion`-aware treatment as the other
-galleries. Proposal-level (the `heroes-win` bloom is the finale-scale sibling of
-the Surface-1 [`mastermindDefeated`](#surface-1) mock).
-
-![Animated mock of the heroes-win finale: a full-screen golden victory bloom with rotating rays, a slow light sweep, and a storm of colourful confetti. Loops.](/visual-effects/surface4-heroes-win.svg "width=66%")
-
-*`heroes-win` — a triumphant **victory bloom**: rotating rays, a slow light sweep, and a confetti storm (the game's biggest positive beat).*
-
-![Animated mock of the scheme-wins finale: a grey glow deflates and a ring collapses inward while ash drifts down and a dark vignette closes in. Loops.](/visual-effects/surface4-scheme-wins.svg "width=66%")
-
-*`scheme-wins` — a dark **deflating collapse**: a grey glow deflates and a ring caves inward while ash drifts down and the vignette closes in (desaturating to ash).*
-
-![Animated mock of the tie finale: a warm orb and a cool orb hover in balance, gently see-sawing while a neutral shimmer holds between them, never resolving. Loops.](/visual-effects/surface4-tie.svg "width=66%")
-
-*`tie` — **wry and suspended**: a warm orb and a cool orb hover in balance, gently see-sawing under a neutral shimmer that never resolves — neither bloom nor collapse.*
-
-*Card-less CSS-only animated SVGs; source:
-[surface4-finales.py](../ewiki/visual-effects/surface4-finales.py).*
+*Animated mocks of the three full-screen finales are in
+[Appendix A.5](#appendix-surface-4).*
 
 > **The tie is real, and deck-exhaustion is *not* a loss.** An emptied
 > Hero or Villain deck latches the final turn; if nobody has won or lost
@@ -958,6 +823,152 @@ Explicitly out of scope for v1:
   danger meter).
 - **Per-target sub-effect fidelity** — blocked on a richer `appliedEffects`
   payload (target / count).
+
+## Appendix A — Illustrative Visual Mocks (Non-Normative) {#appendix-mocks}
+
+> **None of this is a requirement.** Every clip below is an *illustrative
+> proposal mock* of a "suggested visual character" from the
+> [Mechanics](#mechanics) tables — it demonstrates *possible* character
+> only. A future implementation may substitute entirely different visuals
+> provided it honours the [trigger contract](#vfx-trigger-contract), the
+> [accessibility gate](#accessibility-requirements-mandatory), the
+> [performance budget](#performance-budget), and event-priority ordering.
+> The mocks live in this appendix — not inline in the governance sections —
+> precisely so the fixed rules read first and the mood-boarding reads last.
+
+Every mock is a hand-built, **CSS-only animated SVG** (no JavaScript, so
+they animate on the JS-free wiki) that loops and honours
+`prefers-reduced-motion` by holding a single static frame instead of
+animating. Sample card art is illustrative only. Generators live under
+[`ewiki/visual-effects/`](../ewiki/visual-effects/).
+
+### A.1 — Surface 1: notable events {#appendix-surface-1}
+
+Proposal mocks of the [Surface 1](#surface-1) "suggested visual character"
+column, each layered over a themed sample card. (`mastermindDefeated`'s
+character is a *full-screen*, card-less finale — a victory bloom + confetti
+storm — so its mock is a viewport-scale scene rather than a card overlay;
+the same full-screen treatment recurs at [Surface 4](#endgame).)
+
+![Animated mock of mastermindStrikeResolved: a Mastermind card jolts with a screen-shake while a red vignette pulses in from the edges and dark shard particles burst outward, then settles. Loops.](/visual-effects/surface1-mastermind-strike.svg "width=33%")
+
+*`mastermindStrikeResolved` (T1) — **screen-shake + red edge-vignette pulse + dark shard burst**, the signature "uh-oh" jolt. Sample card: Galactus (Mastermind).*
+
+![Animated mock of mastermindDefeated: a full-screen golden victory bloom bursts from the centre with radiating light rays and an expanding shockwave ring, while a storm of colourful confetti falls across the screen. Loops.](/visual-effects/surface1-mastermind-defeated.svg "width=66%")
+
+*`mastermindDefeated` (T1) — a **full-screen victory bloom + confetti storm**, the biggest positive payoff in the game. Card-less: a viewport-scale finale, not a card overlay (mirrors the [Surface 4](#endgame) `heroes-win` treatment).*
+
+![Animated mock of fightResolved: a villain card takes a white-gold impact flash and an expanding shockwave ring at the City space while gold coins arc upward, then settles. Loops.](/visual-effects/surface1-fight-resolved.svg "width=33%")
+
+*`fightResolved` (T1) — **impact burst + shockwave ring** at the City space, with a **gold-coin flourish** for a rescued bystander (`bystandersRescued > 0`). Sample card: Sakaar Imperial Guard Lieutenant Caiera (Villain).*
+
+![Animated mock of ambushResolved: a villain card drops hard into its City space with an impact shake and a dust puff, then a sickly green-and-purple edge-glow pulses menacingly. Loops.](/visual-effects/surface1-ambush-resolved.svg "width=33%")
+
+*`ambushResolved` (T2) — a **hard card-slam** drop-in with an impact shake and dust puff, then a **menacing green edge-glow** as the villain settles. Sample card: Spider-Foes — Green Goblin (Villain).*
+
+![Animated mock of schemeTwistResolved: a Scheme Twist card dims under a slow grey desaturation wash while faint ash-grey rings ripple outward from the centre. Loops.](/visual-effects/surface1-scheme-twist-resolved.svg "width=33%")
+
+*`schemeTwistResolved` (T2) — a slow **desaturation ripple**: a grey wash dims the card while ash-grey rings radiate from the tile — darker and subtler than a Strike. Sample card: Scheme Twist.*
+
+![Animated mock of healResolved: a Wound card glows with a soft green light while green motes rise and fade upward off the card. Loops.](/visual-effects/surface1-heal-resolved.svg "width=33%")
+
+*`healResolved` (T2) — a soft green **restorative shimmer**: a gentle green glow with motes rising off the card. Sample card: Wound.*
+
+*Source: [surface1-effects.py](../ewiki/visual-effects/surface1-effects.py) —
+regenerate with `python surface1-effects.py`.*
+
+### A.2 — Surface 1b: fight/ambush sub-effects {#appendix-surface-1b}
+
+Proposal mocks of the [Surface 1b](#surface-1b) `appliedEffects`
+sub-effects — **Tier-3 fidelity**; the mocks show the *character*, not
+shipped behaviour.
+
+![Animated mock of the wound-gained sub-effect: a Wound card takes a dull red damage flash with a small recoil, pulsing twice then settling. Loops.](/visual-effects/surface1b-wound-gained.svg "width=33%")
+
+*Wound gained (`gainWound*`) — a dull red **damage flash** with a small recoil. Sample card: Bindings (Wound).*
+
+![Animated mock of the hero-KO'd sub-effect: a KO'd hero card cracks with a white flash, breaks into dark shards, and slides down toward the KO pile while dissolving. Loops.](/visual-effects/surface1b-hero-ko.svg "width=33%")
+
+*Hero KO'd (`koHero*`) — a sharp **shatter / dissolve** as the card cracks, breaks into shards, and slides to the KO pile. Sample card: Kree Starforce Demon Druid (Villain).*
+
+![Animated mock of the bystander-captured sub-effect: a captured bystander card is yanked toward the villain, sliding off to the right, shrinking and fading under an ominous dark pull, then resets. Loops.](/visual-effects/surface1b-bystander-captured.svg "width=33%")
+
+*Bystander captured (`captureBystander`) — an ominous **pull-away** as the card is yanked toward the villain under a dark grab. Sample card: Photographer (Bystander).*
+
+![Animated mock of the bystander-rescued sub-effect: a rescued bystander card lifts with a bright golden sparkle burst while twinkles shimmer and gold coins arc up toward the victory pile. Loops.](/visual-effects/surface1b-bystander-rescued.svg "width=33%")
+
+*Bystander rescued (`bystandersRescued > 0`) — a bright **rescue sparkle** with coins arcing to the victory pile. Sample card: Stan Lee (Bystander).*
+
+*Source: [surface1-effects.py](../ewiki/visual-effects/surface1-effects.py)
+(same generator as A.1).*
+
+### A.3 — Surface 2: the combo cascade {#appendix-surface-2}
+
+Proposal mocks pairing each [Surface 2](#combo-signal) visual tier with the
+[synergy call-out](#synergy-callout) that peaks with it — the burst and the
+word fire off the one `lastPlayEffectsFired` change and crest together.
+Card-less, and each tier is drawn bigger than the last, so a bigger chain
+literally *looks* bigger.
+
+![Animated mock of the tier-1 combo cue: a brief blue spark bursts as the word Combo! pops on-screen, then fades. Loops.](/visual-effects/surface2-combo-spark.svg "width=33%")
+
+*T1 (`1`) — a brief blue **spark** + **Combo!** — "that worked."*
+
+![Animated mock of the tier-2 combo cue: a larger gold burst with an expanding shockwave ring as the word Team-Up! pops, then fades. Loops.](/visual-effects/surface2-combo-burst.svg "width=46%")
+
+*T2 (`2`) — a larger gold **burst** with a shockwave ring + **Team-Up!** — "oh, it *linked*."*
+
+![Animated mock of the tier-3 combo cue: a full-screen golden bloom with rotating rays and ascending streaks of light as the word Unstoppable! pops, then loops.](/visual-effects/surface2-combo-flourish.svg "width=72%")
+
+*T3 (`3–4`) — a full-screen ascending **flourish** + **Unstoppable!** — "I *built* this." The apex **`LEGENDARY!`** rung above it (`>= 5`) is the locked 4th tier (D-24246): WP-425 ships its audio sting; the visual finale follows — see the [call-out note](#synergy-callout).*
+
+*Source: [surface2-combo.py](../ewiki/visual-effects/surface2-combo.py). The
+words are the narrative page's proposal; the tier boundaries are the locked
+[Combo Tier Contract](#combo-tier-contract).*
+
+### A.4 — Surface 3: action-move cues {#appendix-surface-3}
+
+Proposal mocks of the [Surface 3](#surface-3) local tactile cues, drawn with
+**abstract card shapes** since the cue is the *motion* (pull, deal, slash,
+flick), not the art. (`playCard` and `endTurn` aren't mocked.)
+
+![Animated mock of recruitHero: a hero card in an HQ slot glows gold, then is pulled down into the hand, and the cycle repeats. Loops.](/visual-effects/surface3-recruit.svg "width=44%")
+
+*`recruitHero` (T2) — an HQ-slot **glow** that pulls the card down into the hand.*
+
+![Animated mock of drawCards: cards deal one after another off a deck and fan out into a hand at the bottom, then reset. Loops.](/visual-effects/surface3-draw.svg "width=44%")
+
+*`drawCards` (T2) — a quick **deal / fan** off the deck into the hand.*
+
+![Animated mock of fightVillain: a bright slash streak sweeps in from the upper-left and lands on a villain card with an impact burst and recoil, then resets. Loops.](/visual-effects/surface3-fight.svg "width=44%")
+
+*`fightVillain` (T2) — a directional **slash / impact streak** into the target, with a recoil.*
+
+![Animated mock of dodgeCard: the hand card flicks out to the right with a spin while a replacement card slides in from the deck into the slot, then repeats. Loops.](/visual-effects/surface3-dodge.svg "width=44%")
+
+*`dodgeCard` (T3) — a fast card **flick** out and a replacement **slide** in.*
+
+*Source: [surface3-moves.py](../ewiki/visual-effects/surface3-moves.py).*
+
+### A.5 — Surface 4: endgame finales {#appendix-surface-4}
+
+Proposal mocks of the three full-screen, card-less [Surface 4](#endgame)
+finales (the `heroes-win` bloom is the finale-scale sibling of the A.1
+`mastermindDefeated` mock).
+
+![Animated mock of the heroes-win finale: a full-screen golden victory bloom with rotating rays, a slow light sweep, and a storm of colourful confetti. Loops.](/visual-effects/surface4-heroes-win.svg "width=66%")
+
+*`heroes-win` — a triumphant **victory bloom**: rotating rays, a slow light sweep, and a confetti storm (the game's biggest positive beat).*
+
+![Animated mock of the scheme-wins finale: a grey glow deflates and a ring collapses inward while ash drifts down and a dark vignette closes in. Loops.](/visual-effects/surface4-scheme-wins.svg "width=66%")
+
+*`scheme-wins` — a dark **deflating collapse**: a grey glow deflates and a ring caves inward while ash drifts down and the vignette closes in (desaturating to ash).*
+
+![Animated mock of the tie finale: a warm orb and a cool orb hover in balance, gently see-sawing while a neutral shimmer holds between them, never resolving. Loops.](/visual-effects/surface4-tie.svg "width=66%")
+
+*`tie` — **wry and suspended**: a warm orb and a cool orb hover in balance, gently see-sawing under a neutral shimmer that never resolves — neither bloom nor collapse.*
+
+*Source: [surface4-finales.py](../ewiki/visual-effects/surface4-finales.py).*
 
 ## References
 
