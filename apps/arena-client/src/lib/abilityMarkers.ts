@@ -116,3 +116,96 @@ export function abilityTokenDisplay(token: AbilityToken): string {
   }
   return token.value;
 }
+
+/**
+ * The human-readable word for a token — used as the `alt` / `title` on an
+ * icon image and as the text fallback when the image cannot load.
+ *
+ * Unlike {@link abilityTokenDisplay}, this never returns a glyph: `icon`
+ * tokens return their name ("attack"), not "⚔".
+ */
+export function abilityTokenLabel(token: AbilityToken): string {
+  if (token.type === 'hc') {
+    return HERO_CLASS_LABEL[token.value] ?? token.value;
+  }
+  return token.value;
+}
+
+// why: the marker icons are real SVG assets on the card-image domain (same
+// origin as card art, so no new CSP img-src entry). Three sibling folders:
+// hero-classes/class-{X}.svg, hero-teams/team-{slug}.svg, and
+// card-info/info-{X}.svg. Kept as a single base so a domain move is one edit.
+const ICON_ASSET_BASE = 'https://images.legendary-arena.com/icons';
+
+// why: closed sets that actually have an SVG asset. An unknown `hc` / `icon`
+// value (e.g. a future class the art hasn't shipped) renders as its text
+// label / glyph instead of a broken image. `team` is intentionally open —
+// the team art set is large and slugged, so any `[team:X]` attempts the image
+// and falls back to text via the <img> error handler when the slug misses.
+const HERO_CLASSES_WITH_ICON: ReadonlySet<string> = new Set([
+  'covert',
+  'instinct',
+  'ranged',
+  'strength',
+  'tech',
+]);
+const RESOURCE_ICONS_WITH_ASSET: ReadonlySet<string> = new Set([
+  'attack',
+  'recruit',
+  'cost',
+  'vp',
+  'focus',
+  'piercing',
+  'token',
+]);
+
+/**
+ * Builds the hero-class icon URL for a `[hc:X]` value (e.g. `strength`).
+ */
+export function heroClassIconUrl(heroClass: string): string {
+  return `${ICON_ASSET_BASE}/hero-classes/class-${heroClass}.svg`;
+}
+
+/**
+ * Builds the resource icon URL for an `[icon:X]` value (e.g. `attack`).
+ */
+export function resourceIconUrl(iconName: string): string {
+  return `${ICON_ASSET_BASE}/card-info/info-${iconName}.svg`;
+}
+
+/**
+ * Slugs a `[team:X]` value to its asset slug: lower-cased, trimmed, and
+ * whitespace collapsed to single hyphens (e.g. "Guardians of the Galaxy" ->
+ * "guardians-of-the-galaxy", "X-Men" -> "x-men").
+ */
+export function teamIconSlug(team: string): string {
+  return team.toLowerCase().trim().replace(/\s+/g, '-');
+}
+
+/**
+ * Builds the team icon URL for a `[team:X]` value.
+ */
+export function teamIconUrl(team: string): string {
+  return `${ICON_ASSET_BASE}/hero-teams/team-${teamIconSlug(team)}.svg`;
+}
+
+/**
+ * Resolves the SVG icon URL a token should render as, or `null` when the
+ * token renders as text (plain text, keyword/rule, or an `hc` / `icon` value
+ * with no shipped asset).
+ *
+ * @param token - A token from {@link parseAbilityMarkers}.
+ * @returns The icon URL, or `null` to render the token as text.
+ */
+export function abilityTokenIconUrl(token: AbilityToken): string | null {
+  if (token.type === 'hc' && HERO_CLASSES_WITH_ICON.has(token.value)) {
+    return heroClassIconUrl(token.value);
+  }
+  if (token.type === 'icon' && RESOURCE_ICONS_WITH_ASSET.has(token.value)) {
+    return resourceIconUrl(token.value);
+  }
+  if (token.type === 'team') {
+    return teamIconUrl(token.value);
+  }
+  return null;
+}
