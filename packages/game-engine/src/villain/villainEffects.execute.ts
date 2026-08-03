@@ -46,11 +46,12 @@ import { moveCardFromZone } from '../moves/zoneOps.js';
 import { reshuffleDiscardIntoDeck, drawCardsIntoHand } from '../moves/drawCards.logic.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
 import { pushLog } from '../log/logPush.js';
-import { WOUND_EXT_ID } from '../setup/pilesInit.js';
 import {
+  WOUND_EXT_ID,
   SHIELD_AGENT_EXT_ID,
   SHIELD_TROOPER_EXT_ID,
-} from '../setup/buildInitialGameState.js';
+  SHIELD_OFFICER_EXT_ID,
+} from '../setup/pilesInit.js';
 
 /**
  * A single KO-a-Hero target: which zone the card sits in and its ext_id.
@@ -1188,6 +1189,50 @@ function villainEffectDrawCardsCurrent(
   return { targets: [] };
 }
 
+// why: D-24296 — the basic S.H.I.E.L.D. cards (starting Agents + Troopers, and the
+// recruited S.H.I.E.L.D. Officer) ARE team S.H.I.E.L.D. physically, so the Destroyer
+// "KO all your [team:shield] Heroes" is meant to wipe them — but they are synthetic
+// game-component cards with no `G.cardTraits` entry (cardTraits is built only from
+// registry hero entries, buildCardTraits.ts), so the generic team predicate misses
+// them and the Fight KO'd zero (live Loki/Thor 2p, 2026-08-03). This set names the
+// three teamless basic-S.H.I.E.L.D. ext_ids for the KO handler ONLY.
+const BASIC_SHIELD_EXT_IDS: ReadonlySet<CardExtId> = new Set([
+  SHIELD_AGENT_EXT_ID,
+  SHIELD_TROOPER_EXT_ID,
+  SHIELD_OFFICER_EXT_ID,
+]);
+
+/**
+ * Whether a card matches the ko-heroes-current-by-trait predicate — the shared
+ * `cardTraitMatches`, WIDENED so a `team:shield` predicate also matches the three
+ * teamless basic-S.H.I.E.L.D. cards (D-24296).
+ *
+ * Deliberately local to the Destroyer KO handler: the shared `cardTraitMatches`,
+ * `playerHasHeroMatchingTrait`, and `countPlayerHeroesMatchingTrait` are LEFT
+ * UNCHANGED, so the corpus-wide `[team:shield]` synergies and Baron Zemo's
+ * rescue-by-count are unaffected (narrow fix — operator ruling 2026-08-03).
+ *
+ * @param cardTraits - The setup-time `{ team, heroClass }` trait snapshot.
+ * @param cardId - The card being tested.
+ * @param kind - The predicate kind ('team' | 'hero-class').
+ * @param value - The normalized trait slug to match.
+ * @returns True if the card matches the trait, or is a basic S.H.I.E.L.D. card
+ *   under a `team:shield` predicate.
+ */
+function koHeroMatchesTraitOrBasicShield(
+  cardTraits: LegendaryGameState['cardTraits'],
+  cardId: CardExtId,
+  kind: 'team' | 'hero-class',
+  value: string,
+): boolean {
+  if (cardTraitMatches(cardTraits, cardId, kind, value)) {
+    return true;
+  }
+  // why: only a team:shield predicate rescues the teamless basic-S.H.I.E.L.D. cards;
+  // a hero-class predicate (or any other team value) never matches them.
+  return kind === 'team' && value === 'shield' && BASIC_SHIELD_EXT_IDS.has(cardId);
+}
+
 /**
  * ko-heroes-current-by-trait primitive — KO EVERY current-player Hero matching the
  * trait predicate, from hand + in-play (the Destroyer "Fight: KO all your
@@ -1226,7 +1271,7 @@ function villainEffectKoHeroesCurrentByTrait(
   const targets: CardExtId[] = [];
   const remainingHand: CardExtId[] = [];
   for (const cardId of zones.hand) {
-    if (cardTraitMatches(G.cardTraits, cardId, requireKind, requireValue)) {
+    if (koHeroMatchesTraitOrBasicShield(G.cardTraits, cardId, requireKind, requireValue)) {
       targets.push(cardId);
     } else {
       remainingHand.push(cardId);
@@ -1234,7 +1279,7 @@ function villainEffectKoHeroesCurrentByTrait(
   }
   const remainingInPlay: CardExtId[] = [];
   for (const cardId of zones.inPlay) {
-    if (cardTraitMatches(G.cardTraits, cardId, requireKind, requireValue)) {
+    if (koHeroMatchesTraitOrBasicShield(G.cardTraits, cardId, requireKind, requireValue)) {
       targets.push(cardId);
     } else {
       remainingInPlay.push(cardId);

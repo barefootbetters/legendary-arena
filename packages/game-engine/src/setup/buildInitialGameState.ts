@@ -28,6 +28,8 @@ import {
   BYSTANDER_EXT_ID,
   WOUND_EXT_ID,
   SHIELD_OFFICER_EXT_ID,
+  SHIELD_AGENT_EXT_ID,
+  SHIELD_TROOPER_EXT_ID,
   SIDEKICK_EXT_ID,
 } from './pilesInit.js';
 import { buildDefaultHookDefinitions } from '../rules/ruleRuntime.impl.js';
@@ -64,23 +66,20 @@ import type { CardStatEntry } from '../economy/economy.types.js';
 import type { HeroAbilityHook } from '../rules/heroAbility.types.js';
 import { executeSchemeSetup } from '../scheme/schemeSetup.execute.js';
 
-// why: Pile ext_id constants are re-exported from pilesInit.ts for backward
-// compatibility. The canonical definitions live in pilesInit.ts — importing
-// them here prevents silent drift from duplicate string literals.
-export { BYSTANDER_EXT_ID, WOUND_EXT_ID, SHIELD_OFFICER_EXT_ID, SIDEKICK_EXT_ID };
-
-// ── Well-known ext_ids for generic game component cards ─────────────────────
-
-// why: Starting cards (S.H.I.E.L.D. Agents and Troopers) are standard game
-// components that exist in every Legendary game. They are not set-specific
-// cards and do not appear in the registry's per-set card data. These ext_id
-// constants provide well-known identifiers for zone tracking.
-
-/** Well-known ext_id for S.H.I.E.L.D. Agent starting cards. */
-export const SHIELD_AGENT_EXT_ID: CardExtId = 'starting-shield-agent';
-
-/** Well-known ext_id for S.H.I.E.L.D. Trooper starting cards. */
-export const SHIELD_TROOPER_EXT_ID: CardExtId = 'starting-shield-trooper';
+// why: Pile + starting-card ext_id constants are re-exported from pilesInit.ts for
+// backward compatibility. The canonical definitions live in pilesInit.ts — importing
+// them here prevents silent drift from duplicate string literals. SHIELD_AGENT_EXT_ID
+// / SHIELD_TROOPER_EXT_ID relocated to pilesInit under D-24296 (well-known basic
+// S.H.I.E.L.D. ext_ids belong beside SHIELD_OFFICER_EXT_ID); existing importers of
+// these names from this module are unaffected by the re-export.
+export {
+  BYSTANDER_EXT_ID,
+  WOUND_EXT_ID,
+  SHIELD_OFFICER_EXT_ID,
+  SHIELD_AGENT_EXT_ID,
+  SHIELD_TROOPER_EXT_ID,
+  SIDEKICK_EXT_ID,
+};
 
 // ── Starting deck composition ───────────────────────────────────────────────
 
