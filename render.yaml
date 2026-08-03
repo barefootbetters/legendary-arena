@@ -265,11 +265,21 @@ services:
     # make CI the single, gated trigger and avoid double deploys.
     autoDeploy: false
     # why: D-24293 — after the Hugo render, generate the Pagefind search index
-    # into apps/wiki-viewer/public/pagefind/. pagefind is a root devDependency
-    # installed by the `pnpm install --filter .` step above; `pnpm exec` runs
-    # the workspace-local binary. This must match the CI build
-    # (.github/workflows/wiki-viewer.yml) so the deployed artifact and the
-    # gated CI artifact are identical.
+    # into apps/wiki-viewer/public/pagefind/. This uses `pnpm dlx pagefind@1.5.2`
+    # (fetch-and-run the pinned version) rather than `pnpm exec pagefind` on
+    # PURPOSE: Render's build runs a FILTERED install (`pnpm install --filter .`)
+    # and a static service can run with NODE_ENV=production, either of which can
+    # leave the pagefind devDependency binary absent — `pnpm exec` would then fail
+    # with "command not found" and the deploy would publish HTML with NO
+    # /pagefind/ index (observed 2026-08-02: the search box rendered but every
+    # /pagefind/* 404'd). `pnpm dlx` does not depend on the project install, so it
+    # is robust here. CI (.github/workflows/wiki-viewer.yml) keeps `pnpm exec`
+    # because it does a full frozen install that guarantees the pinned binary is
+    # present; both produce a byte-identical index from the same pagefind 1.5.2.
+    # NOTE: this service is Blueprint-managed but its Build Command does NOT
+    # auto-sync from render.yaml — a manual Render Blueprint sync (or dashboard
+    # Build Command edit) is required for a render.yaml build-step change to take
+    # effect on the live service.
     buildCommand: |
       curl -sL "https://github.com/gohugoio/hugo/releases/download/v$(cat apps/wiki-viewer/.hugo-version)/hugo_extended_$(cat apps/wiki-viewer/.hugo-version)_linux-amd64.tar.gz" | tar -xz hugo
       ./hugo version
@@ -277,7 +287,7 @@ services:
       node apps/wiki-viewer/scripts/project-wiki.mjs
       node apps/wiki-viewer/scripts/check-links.mjs
       ./hugo --source apps/wiki-viewer --minify
-      pnpm exec pagefind --site apps/wiki-viewer/public
+      pnpm dlx pagefind@1.5.2 --site apps/wiki-viewer/public
     staticPublishPath: apps/wiki-viewer/public
     pullRequestPreviewsEnabled: false
     envVars:
