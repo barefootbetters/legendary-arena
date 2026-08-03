@@ -42,10 +42,26 @@ game-engine 2281/0; `pnpm -r build` + `pnpm -r --no-bail test` exit 0. **No
 `core/radiation` or `core/spider-foes`). Provenance map deliberately unchanged —
 the reused primitives already carry WP-252/D-24023, which correctly populates the
 two new ledger rows. WP-489 / EC-524; lands **D-24295**.
-`User-Visible Surface = play.legendary-arena.com` — **D-24026 live-verify
-operator-pending** (fight Abomination on the Streets/Bridge → 3 Bystanders; the
-Lizard in the Sewers → each other player wounded; off-space fights narrate "no
-effect").
+`User-Visible Surface = play.legendary-arena.com` — **D-24026 live-verify: gate
+mechanism CONFIRMED live on `a6dfa19` (2026-08-03); two positive paths still
+pending.** Confirmed across two live matches on the deployed WP-489 build:
+- **The Lizard** gate-deny (Magneto/Thor 2p, match `fJdx1h8ULs9`): fought at the
+  Bank (index 1) twice → `[blocked] Fight effect: not fought on the Sewers; no
+  effect.` — correct (it had advanced off the Sewers).
+- **Abomination** gate-deny (Loki/radiation 2p, match `fbKZay-AXvm`): fought at the
+  Bank (index 1) → `[blocked] Fight effect: not fought on the Streets or Bridge;
+  no effect.` — correct; the multi-space wording. (Its other copy escaped, unfought.)
+- No unexpected hollows: the only `unmarked-ability` breadcrumbs are the deferred
+  tiers (Doctor Octopus, Maestro, The Leader, Ymir onFight) — all out of WP-489 scope.
+
+**Still pending (structural, not a correctness doubt — both are unit-tested):** the
+two *positive* paths have not been drawn into a fightable gated position. The
+Lizard (Sewers = index 0 = entry) is gate-eligible only the turn it is revealed,
+before the next reveal pushes it off; Abomination (Streets = 3 / Bridge = 4 = late
+spaces) is gate-eligible only after it advances several spaces — in both games it
+was fought early at the Bank or escaped. To finish the live-verify: fight the
+Lizard the turn it enters (→ each other player gains a Wound); let Abomination ride
+to the Streets/Bridge, then fight it there (→ rescue 3 Bystanders).
 
 ### WP-488 — Runtime Effect Tracing (`G.diagnostics.traces`) — DONE (2026-08-03)
 
