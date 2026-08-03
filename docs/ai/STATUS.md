@@ -7,6 +7,45 @@
 
 ## Current State
 
+### WP-486 — Instant-Defeat-With-Bystander (Silent Sniper hero keyword) — DONE (2026-08-03)
+
+Silent Sniper (`black-widow/silent-sniper`, reprinted in `core`/`msp1`/`3dtc`) stops being a
+hollow vanilla +4-attack card: its printed *"Defeat a Villain or Mastermind that has a
+Bystander."* now actually resolves. A new bare HERO keyword **`defeat-with-bystander`** (union +
+`HERO_KEYWORDS` array + `MVP_KEYWORDS` + `HANDLED_KEYWORDS` + `HERO_EFFECT_HANDLERS`; marker
+`[keyword:defeat-with-bystander]` authored in `hero-ability-markers.json` for the 3 reprints and
+applied by the generator — exactly 3 set-JSON lines changed) whose onPlay handler defeats **one**
+eligible target with **no attack spend**: a City Villain holding a Bystander, or the Mastermind
+tactic when the Mastermind holds one. Mandatory-if-able: **0 → self-narrated no-op** (never a
+hollow record — the keyword is in `MVP_KEYWORDS`), **1 → auto-defeat**, **≥2 → an interactive
+`PendingDefeatChoice`**.
+
+**Reuses the defeat path (no duplication).** The onFight/onDefeat hooks + Bystander/hero award
+were extracted into two documented shared cores — `defeatCityVillainCore` (`moves/fightVillain.ts`,
+fires `onFight`) and `defeatMastermindTacticCore` (`moves/fightMastermind.ts`, no `onFight`) —
+that **exclude `spendAttack` + `G.hasActedThisTurn`** (both stay inline in the fight moves;
+Silent Sniper is a card play, not a fight). The extraction is byte-identical: `fightVillain` /
+`fightMastermind` tests pass unmodified, and no villain `onFight` handler reads
+`turnEconomy.attack`/`hasActedThisTurn`.
+
+**Pending-choice vertical (shipped together — no-UX-freeze):** hashed FIFO `G.pendingDefeatChoices`
+(lazy-init, never persisted) + `resolveDefeatChoice` move (front-pops **before** dispatch so a
+nested `onFight` park lands behind it, FIFO) + `hasPendingDefeatChoice` block-all guard at the full
+`hasPendingReorderChoice` grep-span (8 action sites **plus `game.ts` `advanceStage`**) +
+`uiState.build.ts` projection under the D-24011 chooser-only filter + deterministic bot/sim default
+in `ai.legalMoves.ts` (+ both sim MOVE_MAPs + `SIMULATION_MOVE_NAMES`) + arena-client
+`PendingDefeatChoicePrompt.vue` (wired into `TurnActionBar` / `useTurnActions` / `PlayDesktop` /
+`PlayMobile`). Move count **24 → 25** (`resolveDefeatChoice`, not a `CORE_MOVE_NAME`).
+
+**Baselines:** game-engine 2220→2240 pass, arena-client 1154→1156 pass, whole-repo `--no-bail`
+green; hero-ledger + effect-index regenerated (`defeat-with-bystander` → executable ×3, WP-486 /
+D-24291) + provenance +1; `ledger:heroes:check` + `effect-index:check` exit 0. **NO
+`finalStateHash`/`PRE_WP080` re-pin** — confirmed empirically (the committed-fixture replay test
+passes; no fixture plays Silent Sniper into a qualifying board). **D-24291 Active.** **D-24026
+live-verify operator-pending** (`play.legendary-arena.com`): play Silent Sniper in a live match
+with a Bystander-holding Villain and/or Mastermind present — the defeat resolves (prompt when ≥2),
+no hollow.
+
 ### WP-487 — Debug Effects Viewer (`/debug/effects` on the Dashboard) — DONE (2026-08-02)
 
 The third and final piece of the ewiki `wiki/debug-effects.md` direction landed (piece 1 = the
