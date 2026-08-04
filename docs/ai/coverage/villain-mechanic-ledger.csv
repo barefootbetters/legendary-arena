@@ -1,8 +1,8 @@
 ext_id,card_name,set,card_type,mechanic,status,wp,decision,handler
-2099-villain-alchemax-enforcers-cyber-nostra,Cyber-Nostra,2099,villain,heroDeckTopToEscape,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#hero-deck-top-to-escape
+2099-villain-alchemax-enforcers-cyber-nostra,Cyber-Nostra,2099,villain,heroDeckTopToEscape,executable,WP-185,D-18502,packages/game-engine/src/villain/villainEffects.execute.ts#hero-deck-top-to-escape
 2099-villain-false-aesir-of-alchemax-heimdall-2099,Heimdall 2099,2099,villain,captureBystander,executable,WP-185,D-18506,packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander
 2099-villain-false-aesir-of-alchemax-hela-2099,Hela 2099,2099,villain,(unmarked),unmarked,,,
-2099-villain-alchemax-enforcers-jigsaw-2099,Jigsaw 2099,2099,villain,heroDeckTopToEscape,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#hero-deck-top-to-escape
+2099-villain-alchemax-enforcers-jigsaw-2099,Jigsaw 2099,2099,villain,heroDeckTopToEscape,executable,WP-185,D-18502,packages/game-engine/src/villain/villainEffects.execute.ts#hero-deck-top-to-escape
 2099-villain-false-aesir-of-alchemax-loki-2099,Loki 2099,2099,villain,(unmarked),unmarked,,,
 2099-villain-false-aesir-of-alchemax-thor-2099,Thor 2099,2099,villain,(unmarked),unmarked,,,
 2099-villain-alchemax-enforcers-venture,Venture,2099,villain,(unmarked),unmarked,,,
@@ -15,12 +15,12 @@ amwp-villain-quantum-realm-axian-bartender,Axian Bartender,amwp,villain,(unmarke
 amwp-villain-armada-of-kang-build-a-conquering-army,Build a Conquering Army,amwp,villain,(unmarked),unmarked,,,
 amwp-villain-armada-of-kang-city-defense-system,City Defense System,amwp,villain,(unmarked),unmarked,,,
 amwp-villain-ghost-chasers-corrupted-government-agents,Corrupted Government Agents,amwp,villain,(unmarked),unmarked,,,
-amwp-villain-cross-technologies-cross-security-detail,Cross' Security Detail,amwp,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+amwp-villain-cross-technologies-cross-security-detail,Cross' Security Detail,amwp,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 amwp-villain-ghost-chasers-dr-bill-foster,Dr. Bill Foster,amwp,villain,(unmarked),unmarked,,,
 amwp-villain-armada-of-kang-energy-shield,Energy Shield,amwp,villain,(unmarked),unmarked,,,
 amwp-villain-ghost-chasers-goliath,Goliath,amwp,villain,(unmarked),unmarked,,,
 amwp-villain-ghost-chasers-high-speed-car-chase,High-Speed Car Chase,amwp,villain,(unmarked),unmarked,,,
-amwp-villain-quantum-realm-hungering-energy,Hungering Energy,amwp,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+amwp-villain-quantum-realm-hungering-energy,Hungering Energy,amwp,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 amwp-villain-cross-technologies-hydra-arms-dealer,Hydra Arms Dealer,amwp,villain,(unmarked),unmarked,,,
 amwp-villain-quantum-realm-lord-krylars-appetizer,Lord Krylar's Appetizer,amwp,villain,(unmarked),unmarked,,,
 amwp-villain-quantum-realm-lord-krylars-valet,Lord Krylar's Valet,amwp,villain,(unmarked),unmarked,,,
@@ -30,7 +30,7 @@ amwp-villain-armada-of-kang-pursuit-craft,Pursuit Craft,amwp,villain,(unmarked),
 henchman-quantum-hound,Quantum Hound,amwp,henchman,(unmarked),unmarked,,,
 amwp-villain-quantum-realm-quantumania,Quantumania,amwp,villain,(unmarked),unmarked,,,
 amwp-villain-armada-of-kang-quantumnaut-elite,Quantumnaut Elite,amwp,villain,(unmarked),unmarked,,,
-henchman-quantumnauts,Quantumnauts,amwp,henchman,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+henchman-quantumnauts,Quantumnauts,amwp,henchman,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 amwp-villain-quantum-realm-quantumoeba,Quantumoeba,amwp,villain,(unmarked),unmarked,,,
 amwp-villain-cross-technologies-shrinksperiments,Shrinksperiments,amwp,villain,(unmarked),unmarked,,,
 amwp-villain-quantum-realm-sky-manta,Sky Manta,amwp,villain,(unmarked),unmarked,,,
@@ -44,40 +44,40 @@ anni-villain-annihilation-wave-annihilation-armada,Annihilation Armada,anni,vill
 anni-villain-timelines-of-kang-immortus,Immortus,anni,villain,(unmarked),unmarked,,,
 anni-villain-timelines-of-kang-iron-lad,Iron Lad,anni,villain,(unmarked),unmarked,,,
 anni-villain-timelines-of-kang-pharaoh-rama-tut,Pharaoh Rama-Tut,anni,villain,(unmarked),unmarked,,,
-anni-villain-annihilation-wave-queens-of-annihilation,Queens of Annihilation,anni,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+anni-villain-annihilation-wave-queens-of-annihilation,Queens of Annihilation,anni,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 anni-villain-annihilation-wave-ravenous,Ravenous,anni,villain,(unmarked),unmarked,,,
 anni-villain-timelines-of-kang-scarlet-centurion,Scarlet Centurion,anni,villain,(unmarked),unmarked,,,
 anni-villain-annihilation-wave-weaponized-galactus,Weaponized Galactus,anni,villain,(unmarked),unmarked,,,
 antm-villain-ultrons-legacy-alkhema,Alkhema,antm,villain,(unmarked),unmarked,,,
-antm-villain-queens-vengeance-blackbird,Blackbird,antm,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+antm-villain-queens-vengeance-blackbird,Blackbird,antm,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 antm-villain-ultrons-legacy-brutish-ultron-14,Brutish Ultron-14,antm,villain,(unmarked),unmarked,,,
 antm-villain-ultrons-legacy-crimson-cowl,Crimson Cowl,antm,villain,captureBystander,executable,WP-185,D-18506,packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander
 antm-villain-queens-vengeance-daystar,Daystar,antm,villain,(unmarked),unmarked,,,
 antm-villain-ultrons-legacy-future-ultron-prime,Future Ultron Prime,antm,villain,(unmarked),unmarked,,,
-antm-villain-queens-vengeance-gigantus,Gigantus,antm,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+antm-villain-queens-vengeance-gigantus,Gigantus,antm,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 antm-villain-queens-vengeance-iron-knight,Iron Knight,antm,villain,(unmarked),unmarked,,,
 antm-villain-ultrons-legacy-legions-of-ultron,Legions of Ultron,antm,villain,(unmarked),unmarked,,,
 antm-villain-queens-vengeance-mordred-the-evil,Mordred the Evil,antm,villain,(unmarked),unmarked,,,
-antm-villain-ultrons-legacy-original-ultron-1,Original Ultron-1,antm,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+antm-villain-ultrons-legacy-original-ultron-1,Original Ultron-1,antm,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 antm-villain-queens-vengeance-pixie,Pixie,antm,villain,(unmarked),unmarked,,,
 antm-villain-queens-vengeance-star-knight,Star-Knight,antm,villain,(unmarked),unmarked,,,
-antm-villain-ultrons-legacy-ultron-roboticks,Ultron Roboticks,antm,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+antm-villain-ultrons-legacy-ultron-roboticks,Ultron Roboticks,antm,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 antm-villain-ultrons-legacy-ultron-pym,Ultron-Pym,antm,villain,(unmarked),unmarked,,,
 antm-villain-queens-vengeance-yeoman-america,Yeoman America,antm,villain,(unmarked),unmarked,,,
 asrd-villain-dark-council-jarnbjorn-first-axe-of-thor,"Jarnbjorn, First Axe of Thor",asrd,villain,(unmarked),unmarked,,,
 asrd-villain-omens-of-ragnarok-jormungand-the-world-serpent,"Jormungand, The World-Serpent",asrd,villain,(unmarked),unmarked,,,
 asrd-villain-dark-council-laufey-father-of-loki,"Laufey, Father Of Loki",asrd,villain,(unmarked),unmarked,,,
 asrd-villain-dark-council-sindr-fire-giant-queen,"Sindr, Fire Giant Queen",asrd,villain,(unmarked),unmarked,,,
-asrd-villain-omens-of-ragnarok-skurge-the-executioner,"Skurge, The Executioner",asrd,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+asrd-villain-omens-of-ragnarok-skurge-the-executioner,"Skurge, The Executioner",asrd,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 asrd-villain-omens-of-ragnarok-surtur-fire-giant-king,"Surtur, Fire Giant King",asrd,villain,(unmarked),unmarked,,,
 asrd-villain-dark-council-the-casket-of-ancient-winters,The Casket of Ancient Winters,asrd,villain,(unmarked),unmarked,,,
 asrd-villain-omens-of-ragnarok-the-eternal-flame,The Eternal Flame,asrd,villain,(unmarked),unmarked,,,
 asrd-villain-omens-of-ragnarok-the-fenris-wolf,The Fenris Wolf,asrd,villain,(unmarked),unmarked,,,
 asrd-villain-omens-of-ragnarok-the-hel-crown,The Hel-Crown,asrd,villain,(unmarked),unmarked,,,
 asrd-villain-dark-council-the-mangog,The Mangog,asrd,villain,(unmarked),unmarked,,,
-asrd-villain-dark-council-ulik-the-troll,"Ulik, The Troll",asrd,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+asrd-villain-dark-council-ulik-the-troll,"Ulik, The Troll",asrd,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 bkpt-villain-killmongers-league-baron-macabre,Baron Macabre,bkpt,villain,(unmarked),unmarked,,,
-bkpt-villain-enemies-of-wakanda-jakarra,Jakarra,bkpt,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+bkpt-villain-enemies-of-wakanda-jakarra,Jakarra,bkpt,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 bkpt-villain-killmongers-league-malice,Malice,bkpt,villain,(unmarked),unmarked,,,
 bkpt-villain-enemies-of-wakanda-nightshade,Nightshade,bkpt,villain,(unmarked),unmarked,,,
 bkpt-villain-killmongers-league-preyy,Preyy,bkpt,villain,(unmarked),unmarked,,,
@@ -95,19 +95,19 @@ bkwd-villain-taskmasters-thunderbolts-joystick,Joystick,bkwd,villain,(unmarked),
 bkwd-villain-elite-assassins-snapdragon,Snapdragon,bkwd,villain,(unmarked),unmarked,,,
 ca75-villain-masters-of-evil-wwii-black-knight,Black Knight,ca75,villain,captureBystander,executable,WP-185,D-18506,packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander
 ca75-villain-zolas-creations-captain-zolandia,Captain Zolandia,ca75,villain,(unmarked),unmarked,,,
-ca75-villain-zolas-creations-doughboy,Doughboy,ca75,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+ca75-villain-zolas-creations-doughboy,Doughboy,ca75,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 ca75-villain-masters-of-evil-wwii-executioner,Executioner,ca75,villain,captureBystander,executable,WP-185,D-18506,packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander
-ca75-villain-zolas-creations-man-fish,Man-Fish,ca75,villain,gainWoundEachPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
+ca75-villain-zolas-creations-man-fish,Man-Fish,ca75,villain,gainWoundEachPlayer,executable,WP-185,D-18502,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
 ca75-villain-masters-of-evil-wwii-melter-wwii,Melter (WWII),ca75,villain,captureBystander,executable,WP-185,D-18506,packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander
 ca75-villain-zolas-creations-primus,Primus,ca75,villain,(unmarked),unmarked,,,
 ca75-villain-masters-of-evil-wwii-radioactive-man,Radioactive Man,ca75,villain,captureBystander,executable,WP-185,D-18506,packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander
 chmp-villain-wrecking-crew-bulldozer,Bulldozer,chmp,villain,(unmarked),unmarked,,,
 chmp-villain-monsters-unleashed-goom,Goom,chmp,villain,captureBystander,executable,WP-185,D-18506,packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander
-chmp-villain-monsters-unleashed-goom,Goom,chmp,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+chmp-villain-monsters-unleashed-goom,Goom,chmp,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 chmp-villain-monsters-unleashed-groot-from-planet-x,Groot from Planet X,chmp,villain,(unmarked),unmarked,,,
 chmp-villain-monsters-unleashed-monsteroso,Monsteroso,chmp,villain,(unmarked),unmarked,,,
 chmp-villain-monsters-unleashed-orrgo,Orrgo,chmp,villain,(unmarked),unmarked,,,
-chmp-villain-wrecking-crew-piledriver,Piledriver,chmp,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+chmp-villain-wrecking-crew-piledriver,Piledriver,chmp,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 chmp-villain-monsters-unleashed-sporr,Sporr,chmp,villain,(unmarked),unmarked,,,
 chmp-villain-wrecking-crew-the-wrecker,The Wrecker,chmp,villain,(unmarked),unmarked,,,
 chmp-villain-wrecking-crew-thunderball,Thunderball,chmp,villain,(unmarked),unmarked,,,
@@ -136,7 +136,7 @@ co2e-villain-skulls-paibok-the-power-skrull,Paibok the Power Skrull,co2e,villain
 co2e-villain-brotherhood-of-mutants-sabretooth,Sabretooth,co2e,villain,(unmarked),unmarked,,,
 henchman-savage-land-mutates,Savage Land Mutates,co2e,henchman,(unmarked),unmarked,,,
 co2e-villain-sinister-spider-foes-scorpion,Scorpion,co2e,villain,(unmarked),unmarked,,,
-henchman-sentinel,Sentinel,co2e,henchman,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+henchman-sentinel,Sentinel,co2e,henchman,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 co2e-villain-skulls-skrull-queen-veranke,Skrull Queen Veranke,co2e,villain,(unmarked),unmarked,,,
 co2e-villain-skulls-skrull-shapeshifter,Skrull Shapeshifter,co2e,villain,(unmarked),unmarked,,,
 co2e-villain-sinister-syndicate-speed-demon,Speed Demon,co2e,villain,(unmarked),unmarked,,,
@@ -170,7 +170,7 @@ core-villain-brotherhood-mystique,Mystique,core,villain,become-scheme-twist,exec
 core-villain-skrulls-paibok-the-power-skrull,Paibok the Power Skrull,core,villain,(unmarked),unmarked,,,
 core-villain-brotherhood-sabretooth,Sabretooth,core,villain,reveal-or-wound,executable,WP-469,D-24281,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
 henchman-savage-land-mutates,Savage Land Mutates,core,henchman,(unmarked),unmarked,,,
-henchman-sentinel,Sentinel,core,henchman,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+henchman-sentinel,Sentinel,core,henchman,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 core-villain-skrulls-skrull-queen-veranke,Skrull Queen Veranke,core,villain,captureHqHeroHighestCost,executable,WP-214,D-21401,packages/game-engine/src/villain/villainEffects.execute.ts#capture-hq-hero
 core-villain-skrulls-skrull-queen-veranke,Skrull Queen Veranke,core,villain,gain-attached-hero,executable,WP-450,D-24270,packages/game-engine/src/villain/villainEffects.execute.ts#gain-attached-hero
 core-villain-skrulls-skrull-shapeshifters,Skrull Shapeshifters,core,villain,captureHqHeroRightmost,executable,WP-214,D-21401,packages/game-engine/src/villain/villainEffects.execute.ts#capture-hq-hero
@@ -180,13 +180,13 @@ core-villain-hydra-supreme-hydra,Supreme HYDRA,core,villain,(unmarked),unmarked,
 core-villain-radiation-the-leader,The Leader,core,villain,(unmarked),unmarked,,,
 core-villain-spider-foes-the-lizard,The Lizard,core,villain,gain-wound,executable,WP-252,D-24023,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
 core-villain-masters-of-evil-ultron,Ultron,core,villain,reveal-or-wound,executable,WP-469,D-24281,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
-core-villain-spider-foes-venom,Venom,core,villain,gainWoundEachPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
+core-villain-spider-foes-venom,Venom,core,villain,gainWoundEachPlayer,executable,WP-185,D-18502,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
 core-villain-hydra-viper,Viper,core,villain,(unmarked),unmarked,,,
 core-villain-masters-of-evil-whirlwind,Whirlwind,core,villain,ko-hero,executable,WP-252,D-24023,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 core-villain-enemies-of-asgard-ymir-frost-giant-king,"Ymir, Frost Giant King",core,villain,reveal-or-wound,executable,WP-469,D-24281,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
 core-villain-radiation-zzzax,Zzzax,core,villain,reveal-or-wound,executable,WP-469,D-24281,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
 cosm-villain-celestials-arishem-the-judge,"Arishem, The Judge",cosm,villain,(unmarked),unmarked,,,
-cosm-villain-black-order-of-thanos-black-dwarf,Black Dwarf,cosm,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+cosm-villain-black-order-of-thanos-black-dwarf,Black Dwarf,cosm,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 cosm-villain-black-order-of-thanos-corvus-glaive,Corvus Glaive,cosm,villain,(unmarked),unmarked,,,
 cosm-villain-black-order-of-thanos-ebony-maw,Ebony Maw,cosm,villain,(unmarked),unmarked,,,
 cosm-villain-celestials-exitar-the-exterminator,"Exitar, The Exterminator",cosm,villain,(unmarked),unmarked,,,
@@ -197,9 +197,9 @@ cosm-villain-celestials-nezarr-the-calculator,"Nezarr, The Calculator",cosm,vill
 cosm-villain-black-order-of-thanos-proxima-midnight,Proxima Midnight,cosm,villain,(unmarked),unmarked,,,
 henchman-sidera-maris-bridge-builders,"Sidera Maris, Bridge Builders",cosm,henchman,(unmarked),unmarked,,,
 cosm-villain-black-order-of-thanos-supergiant,Supergiant,cosm,villain,(unmarked),unmarked,,,
-cosm-villain-elders-of-the-universe-the-champion-of-the-universe,The Champion of the Universe,cosm,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+cosm-villain-elders-of-the-universe-the-champion-of-the-universe,The Champion of the Universe,cosm,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 cosm-villain-elders-of-the-universe-the-collector,The Collector,cosm,villain,(unmarked),unmarked,,,
-cosm-villain-from-beyond-the-mapmakers,The Mapmakers,cosm,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+cosm-villain-from-beyond-the-mapmakers,The Mapmakers,cosm,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 cosm-villain-elders-of-the-universe-the-runner,The Runner,cosm,villain,(unmarked),unmarked,,,
 cosm-villain-from-beyond-the-shaper-of-worlds,The Shaper of Worlds,cosm,villain,(unmarked),unmarked,,,
 cosm-villain-elders-of-the-universe-the-trader,The Trader,cosm,villain,(unmarked),unmarked,,,
@@ -217,11 +217,11 @@ cvwr-villain-registration-enforcers-deadpool,Deadpool,cvwr,villain,(unmarked),un
 cvwr-villain-shield-elite-dum-dum-dugan,Dum Dum Dugan,cvwr,villain,(unmarked),unmarked,,,
 cvwr-villain-thunderbolts-fixer,Fixer,cvwr,villain,(unmarked),unmarked,,,
 cvwr-villain-great-lakes-avengers-flatman,Flatman,cvwr,villain,(unmarked),unmarked,,,
-cvwr-villain-heroes-for-hire-humbug,Humbug,cvwr,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+cvwr-villain-heroes-for-hire-humbug,Humbug,cvwr,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 cvwr-villain-superhuman-registration-act-iron-spider,Iron Spider,cvwr,villain,(unmarked),unmarked,,,
 cvwr-villain-thunderbolts-mach-iv,Mach-IV,cvwr,villain,(unmarked),unmarked,,,
-henchman-mandroid,Mandroid,cvwr,henchman,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
-cvwr-villain-registration-enforcers-micromax,Micromax,cvwr,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+henchman-mandroid,Mandroid,cvwr,henchman,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+cvwr-villain-registration-enforcers-micromax,Micromax,cvwr,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 cvwr-villain-csa-special-marshals-moonstone,Moonstone,cvwr,villain,(unmarked),unmarked,,,
 cvwr-villain-great-lakes-avengers-mr-immortal,Mr. Immortal,cvwr,villain,(unmarked),unmarked,,,
 cvwr-villain-superhuman-registration-act-ms-marvel,Ms. Marvel,cvwr,villain,(unmarked),unmarked,,,
@@ -237,7 +237,7 @@ cvwr-villain-csa-special-marshals-venom,Venom,cvwr,villain,(unmarked),unmarked,,
 cvwr-villain-superhuman-registration-act-yellowjacket,Yellowjacket,cvwr,villain,(unmarked),unmarked,,,
 dead-villain-deadpools-friends-blind-al-and-deuce,Blind Al and Deuce,dead,villain,(unmarked),unmarked,,,
 dead-villain-evil-deadpool-corpse-d-e-a-d-p-o-o-l,D.E.A.D.P.O.O.L.,dead,villain,(unmarked),unmarked,,,
-dead-villain-deadpools-friends-sluggo,Sluggo,dead,villain,gainWoundEachPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
+dead-villain-deadpools-friends-sluggo,Sluggo,dead,villain,gainWoundEachPlayer,executable,WP-185,D-18502,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
 dead-villain-deadpools-friends-taskmaster,Taskmaster,dead,villain,captureBystander,executable,WP-185,D-18506,packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander
 dead-villain-evil-deadpool-corpse-the-deadpool-kid,The Deadpool Kid,dead,villain,(unmarked),unmarked,,,
 dead-villain-evil-deadpool-corpse-ultimate-deadpool,Ultimate Deadpool,dead,villain,(unmarked),unmarked,,,
@@ -260,11 +260,11 @@ dkcy-villain-emissaries-of-evil-gladiator,Gladiator,dkcy,villain,(unmarked),unma
 dkcy-villain-streets-of-new-york-hammerhead,Hammerhead,dkcy,villain,(unmarked),unmarked,,,
 dkcy-villain-streets-of-new-york-jigsaw,Jigsaw,dkcy,villain,(unmarked),unmarked,,,
 dkcy-villain-underworld-lilith-daughter-of-dracula,"Lilith, Daughter of Dracula",dkcy,villain,(unmarked),unmarked,,,
-henchman-maggia-goons,Maggia Goons,dkcy,henchman,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+henchman-maggia-goons,Maggia Goons,dkcy,henchman,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 dkcy-villain-four-horsemen-pestilence,Pestilence,dkcy,villain,(unmarked),unmarked,,,
 henchman-phalanx,Phalanx,dkcy,henchman,(unmarked),unmarked,,,
 dkcy-villain-mutant-liberation-front-reignfire,Reignfire,dkcy,villain,(unmarked),unmarked,,,
-dkcy-villain-emissaries-of-evil-rhino,Rhino,dkcy,villain,gainWoundEachPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
+dkcy-villain-emissaries-of-evil-rhino,Rhino,dkcy,villain,gainWoundEachPlayer,executable,WP-185,D-18502,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
 dkcy-villain-marauders-scalphunter,Scalphunter,dkcy,villain,(unmarked),unmarked,,,
 dkcy-villain-streets-of-new-york-tombstone,Tombstone,dkcy,villain,(unmarked),unmarked,,,
 dkcy-villain-marauders-vertigo,Vertigo,dkcy,villain,(unmarked),unmarked,,,
@@ -291,7 +291,7 @@ fear-villain-mighty-the-wolverine,Wolverine,fear,villain,(unmarked),unmarked,,,
 ff04-villain-heralds-of-galactus-firelord,Firelord,ff04,villain,(unmarked),unmarked,,,
 ff04-villain-subterranea-giganto,Giganto,ff04,villain,(unmarked),unmarked,,,
 ff04-villain-subterranea-megataur,Megataur,ff04,villain,(unmarked),unmarked,,,
-ff04-villain-subterranea-moloids,Moloids,ff04,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+ff04-villain-subterranea-moloids,Moloids,ff04,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 ff04-villain-heralds-of-galactus-morg,Morg,ff04,villain,(unmarked),unmarked,,,
 ff04-villain-subterranea-raktar-the-molan-king,Ra'ktar the Molan King,ff04,villain,(unmarked),unmarked,,,
 ff04-villain-heralds-of-galactus-stardust,Stardust,ff04,villain,(unmarked),unmarked,,,
@@ -312,14 +312,14 @@ gotg-villain-infinity-gems-time-gem,Time Gem,gotg,villain,(unmarked),unmarked,,,
 mdns-villain-fallen-atrocity,Atrocity,mdns,villain,(unmarked),unmarked,,,
 mdns-villain-lilin-blackout,Blackout,mdns,villain,(unmarked),unmarked,,,
 mdns-villain-lilin-meatmarket,Meatmarket,mdns,villain,(unmarked),unmarked,,,
-mdns-villain-fallen-metarchus,Metarchus,mdns,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+mdns-villain-fallen-metarchus,Metarchus,mdns,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 mdns-villain-lilin-outcast,Outcast,mdns,villain,(unmarked),unmarked,,,
 mdns-villain-fallen-patriarch,Patriarch,mdns,villain,(unmarked),unmarked,,,
 mdns-villain-fallen-salom-sorceress-supreme,"Salomé, Sorceress Supreme",mdns,villain,(unmarked),unmarked,,,
 mdns-villain-lilin-sister-nil,Sister Nil,mdns,villain,(unmarked),unmarked,,,
-mdns-villain-lilin-skinner,Skinner,mdns,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+mdns-villain-lilin-skinner,Skinner,mdns,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 mgtg-villain-followers-of-ronan-exolon-attendants,Exolon Attendants,mgtg,villain,(unmarked),unmarked,,,
-mgtg-villain-followers-of-ronan-exolon-monks,Exolon Monks,mgtg,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+mgtg-villain-followers-of-ronan-exolon-monks,Exolon Monks,mgtg,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 mgtg-villain-ravagers-gef,Gef,mgtg,villain,(unmarked),unmarked,,,
 mgtg-villain-followers-of-ronan-korath-the-pursuer,Korath the Pursuer,mgtg,villain,(unmarked),unmarked,,,
 mgtg-villain-followers-of-ronan-koraths-disrupter-rifle,Korath's Disrupter Rifle,mgtg,villain,(unmarked),unmarked,,,
@@ -353,8 +353,8 @@ msis-villain-infinity-stones-the-time-stone,The Time Stone,msis,villain,(unmarke
 msmc-villain-reavers-bonebreaker,Bonebreaker,msmc,villain,(unmarked),unmarked,,,
 msmc-villain-purifiers-cameron-hodge,Cameron Hodge,msmc,villain,(unmarked),unmarked,,,
 msmc-villain-reavers-donald-pierce,Donald Pierce,msmc,villain,(unmarked),unmarked,,,
-msmc-villain-acolytes-frenzy,Frenzy,msmc,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
-msmc-villain-clan-yashida-gorgon,Gorgon,msmc,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+msmc-villain-acolytes-frenzy,Frenzy,msmc,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+msmc-villain-clan-yashida-gorgon,Gorgon,msmc,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 msmc-villain-purifiers-leper-queen,Leper Queen,msmc,villain,(unmarked),unmarked,,,
 msmc-villain-clan-yashida-lord-shingen,Lord Shingen,msmc,villain,captureBystander,executable,WP-185,D-18506,packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander
 henchman-mr-sinister-clones,Mr. Sinister Clones,msmc,henchman,(unmarked),unmarked,,,
@@ -381,7 +381,7 @@ msp1-villain-chitauri-chitauri-soldier,Chitauri Soldier,msp1,villain,captureByst
 msp1-villain-enemies-of-asgard-destroyer,Destroyer,msp1,villain,koHeroEachPlayerMag2,executable,WP-202,D-20201,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 msp1-villain-hydra-endless-armies-of-hydra,Endless Armies of HYDRA,msp1,villain,(unmarked),unmarked,,,
 msp1-villain-enemies-of-asgard-enslaved-hawkeye,Enslaved Hawkeye,msp1,villain,(unmarked),unmarked,,,
-msp1-villain-gamma-hunters-fighter-jet,Fighter Jet,msp1,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+msp1-villain-gamma-hunters-fighter-jet,Fighter Jet,msp1,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 msp1-villain-enemies-of-asgard-frost-giant,Frost Giant,msp1,villain,(unmarked),unmarked,,,
 msp1-villain-hydra-hydra-motorcycle-squad,HYDRA Motorcycle Squad,msp1,villain,(unmarked),unmarked,,,
 henchman-hydra-pilots,HYDRA Pilots,msp1,henchman,(unmarked),unmarked,,,
@@ -396,20 +396,20 @@ msp1-villain-iron-foes-raza-ten-rings-leader,"Raza, Ten Rings Leader",msp1,villa
 msp1-villain-gamma-hunters-sonic-cannon,Sonic Cannon,msp1,villain,(unmarked),unmarked,,,
 henchman-ten-rings-fanatics,Ten Rings Fanatics,msp1,henchman,(unmarked),unmarked,,,
 msp1-villain-iron-foes-whiplash,Whiplash,msp1,villain,(unmarked),unmarked,,,
-nmut-villain-hellions-catseye,Catseye,nmut,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+nmut-villain-hellions-catseye,Catseye,nmut,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 nmut-villain-demons-of-limbo-crotus,Crotus,nmut,villain,(unmarked),unmarked,,,
 nmut-villain-demons-of-limbo-demon-bear,Demon Bear,nmut,villain,(unmarked),unmarked,,,
 nmut-villain-hellions-empath,Empath,nmut,villain,(unmarked),unmarked,,,
 nmut-villain-hellions-jetstream,Jetstream,nmut,villain,(unmarked),unmarked,,,
-nmut-villain-demons-of-limbo-nastirh,N'astirh,nmut,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+nmut-villain-demons-of-limbo-nastirh,N'astirh,nmut,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 nmut-villain-hellions-roulette,Roulette,nmut,villain,(unmarked),unmarked,,,
 nmut-villain-demons-of-limbo-sym,S'ym,nmut,villain,(unmarked),unmarked,,,
 nmut-villain-hellions-tarot,Tarot,nmut,villain,(unmarked),unmarked,,,
-nmut-villain-hellions-thunderbird,Thunderbird,nmut,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+nmut-villain-hellions-thunderbird,Thunderbird,nmut,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 nmut-villain-demons-of-limbo-witchfire,Witchfire,nmut,villain,(unmarked),unmarked,,,
 noir-villain-x-men-noir-bobby-iceman-drake,Bobby “Iceman“ Drake,noir,villain,(unmarked),unmarked,,,
 noir-villain-x-men-noir-comrade-rasputin-steel-wall,"Comrade Rasputin, Steel Wall",noir,villain,(unmarked),unmarked,,,
-noir-villain-goblins-freak-show-fancy-dan,Fancy Dan,noir,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+noir-villain-goblins-freak-show-fancy-dan,Fancy Dan,noir,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 noir-villain-x-men-noir-henry-beast-mccoy,Henry “Beast“ McCoy,noir,villain,(unmarked),unmarked,,,
 noir-villain-x-men-noir-jean-grey-noir,Jean Grey Noir,noir,villain,(unmarked),unmarked,,,
 noir-villain-goblins-freak-show-kraven-animal-trainer,"Kraven, Animal Trainer",noir,villain,(unmarked),unmarked,,,
@@ -418,7 +418,7 @@ noir-villain-x-men-noir-ororo-munroe-storm-tossed,"Ororo Munroe, Storm-Tossed",n
 noir-villain-goblins-freak-show-ox,Ox,noir,villain,(unmarked),unmarked,,,
 noir-villain-x-men-noir-scott-cyclops-summers,Scott “Cyclops“ Summers,noir,villain,(unmarked),unmarked,,,
 noir-villain-goblins-freak-show-the-chameleon,The Chameleon,noir,villain,(unmarked),unmarked,,,
-noir-villain-goblins-freak-show-vulture-carnival-cannibal,"Vulture, Carnival Cannibal",noir,villain,gainWoundEachPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
+noir-villain-goblins-freak-show-vulture-carnival-cannibal,"Vulture, Carnival Cannibal",noir,villain,gainWoundEachPlayer,executable,WP-185,D-18502,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
 noir-villain-x-men-noir-warden-emma-frost,Warden Emma Frost,noir,villain,(unmarked),unmarked,,,
 pttr-villain-maximum-carnage-carrion,Carrion,pttr,villain,(unmarked),unmarked,,,
 pttr-villain-sinister-six-chameleon,Chameleon,pttr,villain,(unmarked),unmarked,,,
@@ -428,7 +428,7 @@ pttr-villain-sinister-six-hobgoblin,Hobgoblin,pttr,villain,(unmarked),unmarked,,
 pttr-villain-sinister-six-kraven-the-hunter,Kraven the Hunter,pttr,villain,(unmarked),unmarked,,,
 pttr-villain-sinister-six-sandman,Sandman,pttr,villain,(unmarked),unmarked,,,
 pttr-villain-sinister-six-shocker,Shocker,pttr,villain,(unmarked),unmarked,,,
-pttr-villain-maximum-carnage-shriek,Shriek,pttr,villain,gainWoundEachPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
+pttr-villain-maximum-carnage-shriek,Shriek,pttr,villain,gainWoundEachPlayer,executable,WP-185,D-18502,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
 pttr-villain-sinister-six-vulture,Vulture,pttr,villain,(unmarked),unmarked,,,
 rlmk-villain-shiar-imperial-elite-gladiator,Gladiator,rlmk,villain,(unmarked),unmarked,,,
 rlmk-villain-inhuman-rebellion-lash,Lash,rlmk,villain,(unmarked),unmarked,,,
@@ -438,7 +438,7 @@ rlmk-villain-inhuman-rebellion-omega,Omega,rlmk,villain,(unmarked),unmarked,,,
 rlmk-villain-shiar-imperial-elite-plutonia,Plutonia,rlmk,villain,(unmarked),unmarked,,,
 rlmk-villain-shiar-imperial-elite-starbolt,Starbolt,rlmk,villain,(unmarked),unmarked,,,
 rlmk-villain-inhuman-rebellion-the-unspoken,The Unspoken,rlmk,villain,(unmarked),unmarked,,,
-rvlt-villain-dark-avengers-ares,Ares,rvlt,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+rvlt-villain-dark-avengers-ares,Ares,rvlt,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 rvlt-villain-army-of-evil-blackout,Blackout,rvlt,villain,(unmarked),unmarked,,,
 rvlt-villain-hoods-gang-cancer,Cancer,rvlt,villain,(unmarked),unmarked,,,
 rvlt-villain-dark-avengers-captain-marvel-noh-varr,Captain Marvel (Noh-Varr),rvlt,villain,(unmarked),unmarked,,,
@@ -450,15 +450,15 @@ rvlt-villain-dark-avengers-dark-ms-marvel-moonnstone,Dark Ms. Marvel (Moonnstone
 rvlt-villain-dark-avengers-dark-spider-man-scorpion,Dark Spider-Man (Scorpion),rvlt,villain,(unmarked),unmarked,,,
 rvlt-villain-dark-avengers-dark-wolverine-daken,Dark Wolverine (Daken),rvlt,villain,(unmarked),unmarked,,,
 rvlt-villain-army-of-evil-dome-of-darkforce,Dome of Darkforce,rvlt,villain,(unmarked),unmarked,,,
-henchman-hydra-base,HYDRA Base,rvlt,henchman,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+henchman-hydra-base,HYDRA Base,rvlt,henchman,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 rvlt-villain-army-of-evil-klaw,Klaw,rvlt,villain,gain-attached-hero,executable,WP-450,D-24270,packages/game-engine/src/villain/villainEffects.execute.ts#gain-attached-hero
 rvlt-villain-lethal-legion-laser-maze,Laser Maze,rvlt,villain,(unmarked),unmarked,,,
 rvlt-villain-lethal-legion-living-laser,Living Laser,rvlt,villain,(unmarked),unmarked,,,
 rvlt-villain-lethal-legion-mbaku,M'Baku,rvlt,villain,(unmarked),unmarked,,,
-rvlt-villain-hoods-gang-madam-masque,Madam Masque,rvlt,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
-rvlt-villain-army-of-evil-mister-hyde,Mister Hyde,rvlt,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+rvlt-villain-hoods-gang-madam-masque,Madam Masque,rvlt,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+rvlt-villain-army-of-evil-mister-hyde,Mister Hyde,rvlt,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 rvlt-villain-lethal-legion-power-man-erik-josten,Power Man (Erik Josten),rvlt,villain,(unmarked),unmarked,,,
-rvlt-villain-dark-avengers-sentry,Sentry,rvlt,villain,gainWoundEachPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
+rvlt-villain-dark-avengers-sentry,Sentry,rvlt,villain,gainWoundEachPlayer,executable,WP-185,D-18502,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
 rvlt-villain-dark-avengers-sentrys-watchtower,Sentry's Watchtower,rvlt,villain,(unmarked),unmarked,,,
 rvlt-villain-lethal-legion-swordsman,Swordsman,rvlt,villain,(unmarked),unmarked,,,
 rvlt-villain-hoods-gang-the-brothers-grimm,The Brothers Grimm,rvlt,villain,(unmarked),unmarked,,,
@@ -484,10 +484,10 @@ smhc-villain-vulture-tech-turbine-powered,Turbine Powered,smhc,villain,(unmarked
 ssw1-villain-domain-of-apocalypse-apocalyptic-blink,Apocalyptic Blink,ssw1,villain,(unmarked),unmarked,,,
 ssw1-villain-domain-of-apocalypse-apocalyptic-magneto,Apocalyptic Magneto,ssw1,villain,(unmarked),unmarked,,,
 ssw1-villain-domain-of-apocalypse-apocalyptic-rogue,Apocalyptic Rogue,ssw1,villain,(unmarked),unmarked,,,
-ssw1-villain-domain-of-apocalypse-apocalyptic-weapon-x,Apocalyptic Weapon X,ssw1,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+ssw1-villain-domain-of-apocalypse-apocalyptic-weapon-x,Apocalyptic Weapon X,ssw1,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 ssw1-villain-sentinel-territories-colossus-of-future-past,Colossus of Future Past,ssw1,villain,(unmarked),unmarked,,,
 henchman-ghost-racers,Ghost Racers,ssw1,henchman,(unmarked),unmarked,,,
-ssw1-villain-limbo-inferno-colossus,Inferno Colossus,ssw1,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+ssw1-villain-limbo-inferno-colossus,Inferno Colossus,ssw1,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 ssw1-villain-limbo-inferno-cyclops,Inferno Cyclops,ssw1,villain,captureBystander,executable,WP-185,D-18506,packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander
 ssw1-villain-limbo-inferno-darkchilde,Inferno Darkchilde,ssw1,villain,(unmarked),unmarked,,,
 ssw1-villain-limbo-inferno-nightcrawler,Inferno Nightcrawler,ssw1,villain,(unmarked),unmarked,,,
@@ -511,7 +511,7 @@ ssw1-villain-deadlands-the-zombie-madame-hydra,Zombie Madame Hydra,ssw1,villain,
 ssw1-villain-deadlands-the-zombie-mr-sinister,Zombie Mr. Sinister,ssw1,villain,(unmarked),unmarked,,,
 ssw1-villain-deadlands-the-zombie-mysterio,Zombie Mysterio,ssw1,villain,(unmarked),unmarked,,,
 ssw1-villain-deadlands-the-zombie-thanos,Zombie Thanos,ssw1,villain,(unmarked),unmarked,,,
-ssw1-villain-deadlands-the-zombie-venom,Zombie Venom,ssw1,villain,gainWoundEachPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
+ssw1-villain-deadlands-the-zombie-venom,Zombie Venom,ssw1,villain,gainWoundEachPlayer,executable,WP-185,D-18502,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
 ssw2-villain-x-men-92-92-beast,'92 Beast,ssw2,villain,(unmarked),unmarked,,,
 ssw2-villain-x-men-92-92-jubilee,'92 Jubilee,ssw2,villain,(unmarked),unmarked,,,
 ssw2-villain-x-men-92-92-professor-x,'92 Professor X,ssw2,villain,(unmarked),unmarked,,,
@@ -522,13 +522,13 @@ ssw2-villain-deadpools-secret-secret-wars-deadpool,Deadpool,ssw2,villain,(unmark
 ssw2-villain-utopolis-doctor-spectrum,Doctor Spectrum,ssw2,villain,(unmarked),unmarked,,,
 ssw2-villain-deadpools-secret-secret-wars-doop,Doop,ssw2,villain,(unmarked),unmarked,,,
 ssw2-villain-guardians-of-knowhere-drax-the-destroyer,Drax the Destroyer,ssw2,villain,(unmarked),unmarked,,,
-ssw2-villain-guardians-of-knowhere-gamora,Gamora,ssw2,villain,gainWoundEachPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
+ssw2-villain-guardians-of-knowhere-gamora,Gamora,ssw2,villain,gainWoundEachPlayer,executable,WP-185,D-18502,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
 ssw2-villain-monster-metropolis-ghost-deadpool,Ghost Deadpool,ssw2,villain,(unmarked),unmarked,,,
 ssw2-villain-guardians-of-knowhere-groot,Groot,ssw2,villain,(unmarked),unmarked,,,
 ssw2-villain-deadpools-secret-secret-wars-howard-the-duck,Howard the Duck,ssw2,villain,captureBystander,executable,WP-185,D-18506,packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander
-henchman-khonshu-guardians,Khonshu Guardians,ssw2,henchman,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+henchman-khonshu-guardians,Khonshu Guardians,ssw2,henchman,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 ssw2-villain-kun-lun-laughing-skull,Laughing Skull,ssw2,villain,(unmarked),unmarked,,,
-henchman-magma-men,Magma Men,ssw2,henchman,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+henchman-magma-men,Magma Men,ssw2,henchman,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 ssw2-villain-monster-metropolis-man-thing,Man-Thing,ssw2,villain,(unmarked),unmarked,,,
 ssw2-villain-monster-metropolis-marcus-symbiote-centaur,Marcus Symbiote Centaur,ssw2,villain,(unmarked),unmarked,,,
 ssw2-villain-utopolis-nighthawk,Nighthawk,ssw2,villain,(unmarked),unmarked,,,
@@ -539,7 +539,7 @@ ssw2-villain-kun-lun-red-sai,Red Sai,ssw2,villain,(unmarked),unmarked,,,
 ssw2-villain-guardians-of-knowhere-rocket-raccoon,Rocket Raccoon,ssw2,villain,(unmarked),unmarked,,,
 henchman-spider-infected,Spider-Infected,ssw2,henchman,captureBystander,unsupported,WP-185,D-18506,
 ssw2-villain-utopolis-warrior-woman,Warrior Woman,ssw2,villain,(unmarked),unmarked,,,
-ssw2-villain-utopolis-whizzer,Whizzer,ssw2,villain,gainWoundEachPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
+ssw2-villain-utopolis-whizzer,Whizzer,ssw2,villain,gainWoundEachPlayer,executable,WP-185,D-18502,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
 vill-villain-x-men-first-class-angel,Angel,vill,villain,(unmarked),unmarked,,,
 vill-villain-avengers-ant-man,Ant-Man,vill,villain,(unmarked),unmarked,,,
 henchman-asgardian-warriors,Asgardian Warriors,vill,henchman,(unmarked),unmarked,,,
@@ -586,14 +586,14 @@ vnom-villain-poisons-poison-sabretooth,Poison Sabretooth,vnom,villain,(unmarked)
 vnom-villain-poisons-poison-scarlet-witch,Poison Scarlet Witch,vnom,villain,(unmarked),unmarked,,,
 vnom-villain-poisons-poison-spider-man,Poison Spider-Man,vnom,villain,(unmarked),unmarked,,,
 vnom-villain-poisons-poison-storm,Poison Storm,vnom,villain,(unmarked),unmarked,,,
-vnom-villain-life-foundation-riot,Riot,vnom,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+vnom-villain-life-foundation-riot,Riot,vnom,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 vnom-villain-life-foundation-scream,Scream,vnom,villain,(unmarked),unmarked,,,
 vnom-villain-poisons-symbiotic-armor,Symbiotic Armor,vnom,villain,(unmarked),unmarked,,,
 wpnx-villain-berserkers-cyber,Cyber,wpnx,villain,(unmarked),unmarked,,,
-wpnx-villain-weapon-plus-daken,Daken,wpnx,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+wpnx-villain-weapon-plus-daken,Daken,wpnx,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 wpnx-villain-berserkers-feral,Feral,wpnx,villain,(unmarked),unmarked,,,
 wpnx-villain-weapon-plus-huntsman-weapon-xii,Huntsman (Weapon XII),wpnx,villain,(unmarked),unmarked,,,
-wpnx-villain-weapon-plus-nuke-weapon-vii,Nuke (Weapon VII),wpnx,villain,gainWoundEachPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
+wpnx-villain-weapon-plus-nuke-weapon-vii,Nuke (Weapon VII),wpnx,villain,gainWoundEachPlayer,executable,WP-185,D-18502,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
 wpnx-villain-weapon-plus-skinless-man-weapon-iii,Skinless Man (Weapon III),wpnx,villain,(unmarked),unmarked,,,
 wpnx-villain-berserkers-thornn,Thornn,wpnx,villain,(unmarked),unmarked,,,
 wpnx-villain-weapon-plus-typhoid-mary-weapon-ix,Typhoid Mary (Weapon IX),wpnx,villain,(unmarked),unmarked,,,
@@ -614,17 +614,17 @@ henchman-giants-of-jotunheim,Giants of Jotunheim,wtif,henchman,(unmarked),unmark
 wtif-villain-rival-overlords-loki,Loki,wtif,villain,(unmarked),unmarked,,,
 wtif-villain-stranges-demons-moose-demon,Moose Demon,wtif,villain,(unmarked),unmarked,,,
 wtif-villain-intergalactic-party-animals-party-korath,Party Korath,wtif,villain,(unmarked),unmarked,,,
-wtif-villain-intergalactic-party-animals-party-korg,Party Korg,wtif,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+wtif-villain-intergalactic-party-animals-party-korg,Party Korg,wtif,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 wtif-villain-intergalactic-party-animals-party-kraglin,Party Kraglin,wtif,villain,(unmarked),unmarked,,,
 wtif-villain-intergalactic-party-animals-party-nebula,Party Nebula,wtif,villain,(unmarked),unmarked,,,
 wtif-villain-intergalactic-party-animals-party-skrull,Party Skrull,wtif,villain,(unmarked),unmarked,,,
 wtif-villain-intergalactic-party-animals-party-surtur,Party Surtur,wtif,villain,(unmarked),unmarked,,,
-wtif-villain-black-order-guards-proxima-midnight,Proxima Midnight,wtif,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+wtif-villain-black-order-guards-proxima-midnight,Proxima Midnight,wtif,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 wtif-villain-rival-overlords-red-skull-hydra-occultist,"Red Skull, HYDRA Occultist",wtif,villain,(unmarked),unmarked,,,
 wtif-villain-stranges-demons-skull-demon,Skull Demon,wtif,villain,(unmarked),unmarked,,,
 wtif-villain-rival-overlords-thanos,Thanos,wtif,villain,(unmarked),unmarked,,,
 wtif-villain-stranges-demons-two-headed-ram-demon,Two-Headed Ram Demon,wtif,villain,(unmarked),unmarked,,,
-wtif-villain-rival-overlords-ulysses-klaue,Ulysses Klaue,wtif,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+wtif-villain-rival-overlords-ulysses-klaue,Ulysses Klaue,wtif,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 henchman-vibranium-liberator-drones,Vibranium Liberator Drones,wtif,henchman,(unmarked),unmarked,,,
 wtif-villain-stranges-demons-wolf-demon,Wolf Demon,wtif,villain,(unmarked),unmarked,,,
 wtif-villain-rival-overlords-yondu,Yondu,wtif,villain,captureBystander,executable,WP-185,D-18506,packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander
@@ -633,7 +633,7 @@ wtif-villain-zombie-avengers-zombie-captain-america,Zombie Captain America,wtif,
 wtif-villain-zombie-avengers-zombie-doctor-strange,Zombie Doctor Strange,wtif,villain,(unmarked),unmarked,,,
 wtif-villain-zombie-avengers-zombie-hawkeye,Zombie Hawkeye,wtif,villain,(unmarked),unmarked,,,
 wtif-villain-zombie-avengers-zombie-iron-man,Zombie Iron Man,wtif,villain,(unmarked),unmarked,,,
-wtif-villain-zombie-avengers-zombie-wasp,Zombie Wasp,wtif,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+wtif-villain-zombie-avengers-zombie-wasp,Zombie Wasp,wtif,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 wtif-villain-zombie-avengers-zombie-wong,Zombie Wong,wtif,villain,(unmarked),unmarked,,,
 wwhk-villain-intelligencia-battle-of-wits,Battle of Wits,wwhk,villain,(unmarked),unmarked,,,
 wwhk-villain-aspects-of-the-void-black-anti-hurricane,Black Anti-Hurricane,wwhk,villain,(unmarked),unmarked,,,
@@ -644,7 +644,7 @@ wwhk-villain-code-red-crimson-dynamo,Crimson Dynamo,wwhk,villain,(unmarked),unma
 henchman-cytoplasm-spikes,Cytoplasm Spikes,wwhk,henchman,(unmarked),unmarked,,,
 henchman-deaths-heads,Death's Heads,wwhk,henchman,(unmarked),unmarked,,,
 wwhk-villain-aspects-of-the-void-demonform,Demonform,wwhk,villain,(unmarked),unmarked,,,
-wwhk-villain-intelligencia-doc-samson,Doc Samson,wwhk,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+wwhk-villain-intelligencia-doc-samson,Doc Samson,wwhk,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 wwhk-villain-illuminati-dr-strange,Dr. Strange,wwhk,villain,(unmarked),unmarked,,,
 wwhk-villain-illuminati-dr-strange-possessed-by-zom,"Dr. Strange, Possessed by Zom",wwhk,villain,(unmarked),unmarked,,,
 wwhk-villain-code-red-elektra-red-blades,"Elektra, Red Blades",wwhk,villain,(unmarked),unmarked,,,
@@ -652,7 +652,7 @@ wwhk-villain-warbound-elloe-kaifi,Elloe Kaifi,wwhk,villain,(unmarked),unmarked,,
 wwhk-villain-illuminati-enchain-the-hulk,Enchain the Hulk,wwhk,villain,(unmarked),unmarked,,,
 wwhk-villain-sakaar-imperial-guard-gladiators-colosseum,Gladiators' Colosseum,wwhk,villain,(unmarked),unmarked,,,
 wwhk-villain-sakaar-imperial-guard-great-devil-corker,Great Devil Corker,wwhk,villain,(unmarked),unmarked,,,
-wwhk-villain-sakaar-imperial-guard-headman-charr,Headman Charr,wwhk,villain,gainWoundEachPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
+wwhk-villain-sakaar-imperial-guard-headman-charr,Headman Charr,wwhk,villain,gainWoundEachPlayer,executable,WP-185,D-18502,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
 wwhk-villain-warbound-hiroim,Hiroim,wwhk,villain,(unmarked),unmarked,,,
 wwhk-villain-illuminati-hulkbuster-iron-man,Hulkbuster Iron Man,wwhk,villain,(unmarked),unmarked,,,
 wwhk-villain-aspects-of-the-void-infini-tendrils,Infini-Tendrils,wwhk,villain,captureBystander,executable,WP-185,D-18506,packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander
@@ -661,7 +661,7 @@ wwhk-villain-warbound-korg,Korg,wwhk,villain,(unmarked),unmarked,,,
 wwhk-villain-sakaar-imperial-guard-lieutenant-caiera,Lieutenant Caiera,wwhk,villain,(unmarked),unmarked,,,
 wwhk-villain-warbound-miek-the-unhived,Miek The Unhived,wwhk,villain,(unmarked),unmarked,,,
 wwhk-villain-warbound-no-name-brood-queen,"No-Name, Brood Queen",wwhk,villain,(unmarked),unmarked,,,
-wwhk-villain-sakaar-imperial-guard-primus-vand,Primus Vand,wwhk,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+wwhk-villain-sakaar-imperial-guard-primus-vand,Primus Vand,wwhk,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 wwhk-villain-aspects-of-the-void-psychotic-break,Psychotic Break,wwhk,villain,(unmarked),unmarked,,,
 wwhk-villain-code-red-punisher-red-dot-sniper,"Punisher, Red Dot Sniper",wwhk,villain,(unmarked),unmarked,,,
 wwhk-villain-code-red-red-she-hulk,Red She-Hulk,wwhk,villain,(unmarked),unmarked,,,
@@ -676,7 +676,7 @@ wwhk-villain-warbound-warbound-rescue,Warbound Rescue,wwhk,villain,(unmarked),un
 wwhk-villain-u-foes-x-ray,X-Ray,wwhk,villain,(unmarked),unmarked,,,
 xmen-villain-murderworld-animatronic-killer-clowns,Animatronic Killer Clowns,xmen,villain,(unmarked),unmarked,,,
 xmen-villain-shadow-x-betrayal-of-the-shadow,Betrayal of the Shadow,xmen,villain,(unmarked),unmarked,,,
-xmen-villain-shiar-imperial-guard-blackthorn,Blackthorn,xmen,villain,gainWoundEachPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
+xmen-villain-shiar-imperial-guard-blackthorn,Blackthorn,xmen,villain,gainWoundEachPlayer,executable,WP-185,D-18502,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
 henchman-brood-the,"Brood, The",xmen,henchman,(unmarked),unmarked,,,
 xmen-villain-hellfire-club-corrupt-the-phoenix-force,Corrupt the Phoenix Force,xmen,villain,(unmarked),unmarked,,,
 xmen-villain-shadow-x-dark-angel,Dark Angel,xmen,villain,(unmarked),unmarked,,,
@@ -685,13 +685,13 @@ xmen-villain-shadow-x-dark-cyclops,Dark Cyclops,xmen,villain,(unmarked),unmarked
 xmen-villain-shadow-x-dark-iceman,Dark Iceman,xmen,villain,(unmarked),unmarked,,,
 xmen-villain-shadow-x-dark-marvel-girl,Dark Marvel Girl,xmen,villain,(unmarked),unmarked,,,
 xmen-villain-hellfire-club-emma-frost-white-queen,Emma Frost (White Queen),xmen,villain,(unmarked),unmarked,,,
-xmen-villain-dark-descendants-fatale,Fatale,xmen,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+xmen-villain-dark-descendants-fatale,Fatale,xmen,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 xmen-villain-shiar-imperial-guard-gladiator,Gladiator,xmen,villain,(unmarked),unmarked,,,
 xmen-villain-murderworld-guillotine-rollercoaster,Guillotine Rollercoaster,xmen,villain,(unmarked),unmarked,,,
 xmen-villain-hellfire-club-harry-leland-black-bishop,Harry Leland (Black Bishop),xmen,villain,(unmarked),unmarked,,,
 xmen-villain-dark-descendants-havok-brainwashed,"Havok, Brainwashed",xmen,villain,(unmarked),unmarked,,,
 henchman-hellfire-cult,Hellfire Cult,xmen,henchman,(unmarked),unmarked,,,
-xmen-villain-sisterhood-of-mutants-lady-deathstrike,Lady Deathstrike,xmen,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+xmen-villain-sisterhood-of-mutants-lady-deathstrike,Lady Deathstrike,xmen,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 xmen-villain-sisterhood-of-mutants-lady-mastermind,Lady Mastermind,xmen,villain,(unmarked),unmarked,,,
 xmen-villain-mojoverse-major-domo,Major Domo,xmen,villain,(unmarked),unmarked,,,
 xmen-villain-hellfire-club-mastermind-jason-wyngarde,Mastermind (Jason Wyngarde),xmen,villain,(unmarked),unmarked,,,
@@ -705,13 +705,13 @@ xmen-villain-dark-descendants-psychic-subjugation,Psychic Subjugation,xmen,villa
 xmen-villain-dark-descendants-random,Random,xmen,villain,(unmarked),unmarked,,,
 xmen-villain-sisterhood-of-mutants-resurrect-madelyne-pryor,Resurrect Madelyne Pryor,xmen,villain,(unmarked),unmarked,,,
 henchman-sapien-league,Sapien League,xmen,henchman,(unmarked),unmarked,,,
-xmen-villain-hellfire-club-sebastian-shaw-black-king,Sebastian Shaw (Black King),xmen,villain,gainWoundEachPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
+xmen-villain-hellfire-club-sebastian-shaw-black-king,Sebastian Shaw (Black King),xmen,villain,gainWoundEachPlayer,executable,WP-185,D-18502,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
 xmen-villain-sisterhood-of-mutants-selene,Selene,xmen,villain,(unmarked),unmarked,,,
-henchman-shiar-death-commandos,Shi'ar Death Commandos,xmen,henchman,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+henchman-shiar-death-commandos,Shi'ar Death Commandos,xmen,henchman,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 henchman-shiar-patrol-craft,Shi'ar Patrol Craft,xmen,henchman,(unmarked),unmarked,,,
 xmen-villain-shiar-imperial-guard-shiar-trial-by-combat,Shi'ar Trial by Combat,xmen,villain,(unmarked),unmarked,,,
 xmen-villain-shiar-imperial-guard-smasher,Smasher,xmen,villain,(unmarked),unmarked,,,
 xmen-villain-mojoverse-spiral,Spiral,xmen,villain,(unmarked),unmarked,,,
 xmen-villain-murderworld-sulfuric-acid-water-slide,Sulfuric Acid Water Slide,xmen,villain,(unmarked),unmarked,,,
 xmen-villain-sisterhood-of-mutants-typhoid-mary,Typhoid Mary,xmen,villain,(unmarked),unmarked,,,
-xmen-villain-mojoverse-warwolves,Warwolves,xmen,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+xmen-villain-mojoverse-warwolves,Warwolves,xmen,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero

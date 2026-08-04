@@ -20,7 +20,7 @@
       "mechanic": "heroDeckTopToEscape",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18502",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#hero-deck-top-to-escape"
     },
     {
@@ -53,7 +53,7 @@
       "mechanic": "heroDeckTopToEscape",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18502",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#hero-deck-top-to-escape"
     },
     {
@@ -196,7 +196,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -251,7 +251,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -361,7 +361,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -515,7 +515,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -570,7 +570,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -625,7 +625,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -669,7 +669,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -702,7 +702,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -779,7 +779,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -856,7 +856,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -878,7 +878,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -1076,7 +1076,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -1098,7 +1098,7 @@
       "mechanic": "gainWoundEachPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18502",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound"
     },
     {
@@ -1164,7 +1164,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -1208,7 +1208,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -1527,7 +1527,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -1901,7 +1901,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -2011,7 +2011,7 @@
       "mechanic": "gainWoundEachPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18502",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound"
     },
     {
@@ -2077,7 +2077,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -2198,7 +2198,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -2220,7 +2220,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -2418,7 +2418,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -2451,7 +2451,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -2462,7 +2462,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -2638,7 +2638,7 @@
       "mechanic": "gainWoundEachPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18502",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound"
     },
     {
@@ -2891,7 +2891,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -2935,7 +2935,7 @@
       "mechanic": "gainWoundEachPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18502",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound"
     },
     {
@@ -3232,7 +3232,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -3463,7 +3463,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -3518,7 +3518,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -3540,7 +3540,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -3914,7 +3914,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -3925,7 +3925,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -4222,7 +4222,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -4387,7 +4387,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -4442,7 +4442,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -4486,7 +4486,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -4530,7 +4530,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -4629,7 +4629,7 @@
       "mechanic": "gainWoundEachPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18502",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound"
     },
     {
@@ -4739,7 +4739,7 @@
       "mechanic": "gainWoundEachPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18502",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound"
     },
     {
@@ -4849,7 +4849,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -4981,7 +4981,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -5036,7 +5036,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -5047,7 +5047,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -5069,7 +5069,7 @@
       "mechanic": "gainWoundEachPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18502",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound"
     },
     {
@@ -5355,7 +5355,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -5388,7 +5388,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -5652,7 +5652,7 @@
       "mechanic": "gainWoundEachPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18502",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound"
     },
     {
@@ -5773,7 +5773,7 @@
       "mechanic": "gainWoundEachPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18502",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound"
     },
     {
@@ -5817,7 +5817,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -5839,7 +5839,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -5960,7 +5960,7 @@
       "mechanic": "gainWoundEachPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18502",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound"
     },
     {
@@ -6477,7 +6477,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -6521,7 +6521,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -6554,7 +6554,7 @@
       "mechanic": "gainWoundEachPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18502",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound"
     },
     {
@@ -6785,7 +6785,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -6840,7 +6840,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -6895,7 +6895,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -6994,7 +6994,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -7115,7 +7115,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -7203,7 +7203,7 @@
       "mechanic": "gainWoundEachPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18502",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound"
     },
     {
@@ -7302,7 +7302,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -7467,7 +7467,7 @@
       "mechanic": "gainWoundEachPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18502",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound"
     },
     {
@@ -7566,7 +7566,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -7632,7 +7632,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -7786,7 +7786,7 @@
       "mechanic": "gainWoundEachPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18502",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound"
     },
     {
@@ -7808,7 +7808,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
@@ -7885,7 +7885,7 @@
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
-      "decision": "",
+      "decision": "D-18503",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     }
   ]

@@ -143,9 +143,9 @@ chmp/totally-awesome-hulk,Totally Awesome Hulk,chmp,size-changing,executable,WP-
 chmp/viv-vision,Viv Vision,chmp,cheering-crowds,unsupported,,,,crowdsourcing
 chmp/viv-vision,Viv Vision,chmp,size-changing,executable,WP-290,D-24074,packages/game-engine/src/hero/heroEffects.execute.ts#size-changing,alter-molecular-density|expanding-neural-network
 chmp/viv-vision,Viv Vision,chmp,versatile,unsupported,,,,crowdsourcing
-co2e/black-widow,Black Widow,co2e,attack-per-count,executable,WP-247,,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,intelligence-network
+co2e/black-widow,Black Widow,co2e,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,intelligence-network
 co2e/black-widow,Black Widow,co2e,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,intelligence-network
-co2e/black-widow,Black Widow,co2e,optional-ko-reward,executable,WP-248,,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward,dangerous-rescue
+co2e/black-widow,Black Widow,co2e,optional-ko-reward,executable,WP-248,D-24019,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward,dangerous-rescue
 co2e/black-widow,Black Widow,co2e,rescue,executable,WP-215,D-21501,packages/game-engine/src/hero/heroEffects.execute.ts#rescue,gather-intel|intelligence-network
 co2e/captain-america,Captain America,co2e,(unmarked),unmarked,,,,
 co2e/cyclops,Cyclops,co2e,discard-to-play,executable,WP-383,D-24184,packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play,determination|optic-blast|x-men-united
@@ -155,7 +155,7 @@ co2e/hawkeye,Hawkeye,co2e,draw,executable,WP-022,D-2201,packages/game-engine/src
 co2e/hulk,Hulk,co2e,ko-wound-reward,executable,WP-382,D-24183,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward,dont-make-me-angry
 co2e/iron-man,Iron Man,co2e,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,endless-invention|quantum-breakthrough
 co2e/nick-fury,Nick Fury,co2e,(unmarked),unmarked,,,,
-co2e/rogue,Rogue,co2e,optional-ko-reward,executable,WP-248,,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward,energy-drain
+co2e/rogue,Rogue,co2e,optional-ko-reward,executable,WP-248,D-24019,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward,energy-drain
 co2e/spider-man,Spider-Man,co2e,reveal,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal,astonishing-strength|web-shooters|with-great-power
 co2e/spider-man,Spider-Man,co2e,reveal-count,unsupported,,,,with-great-power
 co2e/spider-man-miles-morales,Spider-Man (Miles Morales),co2e,(unmarked),unmarked,,,,
@@ -163,10 +163,10 @@ co2e/storm,Storm,co2e,(unmarked),unmarked,,,,
 co2e/thor,Thor,co2e,(unmarked),unmarked,,,,
 co2e/wolverine,Wolverine,co2e,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,berserker-rage|frenzied-slashing|keen-senses
 co2e/wolverine,Wolverine,co2e,ko-wound-reward,executable,WP-382,D-24183,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward,healing-factor
-core/black-widow,Black Widow,core,attack-per-count,executable,WP-247,,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,covert-operation
+core/black-widow,Black Widow,core,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,covert-operation
 core/black-widow,Black Widow,core,defeat-with-bystander,executable,WP-486,D-24291,packages/game-engine/src/hero/heroEffects.execute.ts#defeat-with-bystander,silent-sniper
 core/black-widow,Black Widow,core,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,mission-accomplished
-core/black-widow,Black Widow,core,optional-ko-reward,executable,WP-248,,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward,dangerous-rescue
+core/black-widow,Black Widow,core,optional-ko-reward,executable,WP-248,D-24019,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward,dangerous-rescue
 core/black-widow,Black Widow,core,rescue,executable,WP-215,D-21501,packages/game-engine/src/hero/heroEffects.execute.ts#rescue,mission-accomplished
 core/captain-america,Captain America,core,(unmarked),unmarked,,,,
 core/cyclops,Cyclops,core,discard-to-play,executable,WP-383,D-24184,packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play,determination|optic-blast

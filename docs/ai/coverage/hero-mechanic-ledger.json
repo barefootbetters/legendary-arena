@@ -2787,7 +2787,7 @@
       "mechanic": "attack-per-count",
       "status": "executable",
       "wp": "WP-247",
-      "decision": "",
+      "decision": "D-24016",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
       "designs": [
         {
@@ -2819,7 +2819,7 @@
       "mechanic": "optional-ko-reward",
       "status": "executable",
       "wp": "WP-248",
-      "decision": "",
+      "decision": "D-24019",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward",
       "designs": [
         {
@@ -2985,7 +2985,7 @@
       "mechanic": "optional-ko-reward",
       "status": "executable",
       "wp": "WP-248",
-      "decision": "",
+      "decision": "D-24019",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward",
       "designs": [
         {
@@ -3114,7 +3114,7 @@
       "mechanic": "attack-per-count",
       "status": "executable",
       "wp": "WP-247",
-      "decision": "",
+      "decision": "D-24016",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
       "designs": [
         {
@@ -3162,7 +3162,7 @@
       "mechanic": "optional-ko-reward",
       "status": "executable",
       "wp": "WP-248",
-      "decision": "",
+      "decision": "D-24019",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward",
       "designs": [
         {
