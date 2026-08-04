@@ -4,12 +4,12 @@
   "summary": {
     "totalRows": 716,
     "byStatus": {
-      "executable": 116,
+      "executable": 117,
       "deferred": 0,
       "unsupported": 1,
-      "unmarked": 599
+      "unmarked": 598
     },
-    "distinctMechanics": 18
+    "distinctMechanics": 19
   },
   "rows": [
     {
@@ -2019,11 +2019,11 @@
       "cardName": "Viper",
       "set": "core",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "gain-wound-unless-victory-villain-group",
+      "status": "executable",
+      "wp": "WP-494",
+      "decision": "D-24299",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound-unless-victory-villain-group"
     },
     {
       "extId": "core-villain-masters-of-evil-whirlwind",

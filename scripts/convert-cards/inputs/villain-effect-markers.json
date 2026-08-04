@@ -98,6 +98,9 @@
         "frost-giant": { "fight": ["reveal-or-wound:hc:ranged"], "escape": ["reveal-or-wound:hc:ranged"] },
         "ymir-frost-giant-king": { "ambush": ["reveal-or-wound:hc:ranged"] }
       },
+      "hydra": {
+        "viper": { "fight": ["gain-wound-unless-victory-villain-group:hydra"], "escape": ["gain-wound-unless-victory-villain-group:hydra"] }
+      },
       "masters-of-evil": {
         "baron-zemo": { "fight": ["rescue-bystanders-current-by-trait-count:team:avengers"] },
         "ultron": { "escape": ["reveal-or-wound:hc:tech"] },
@@ -393,7 +396,6 @@
     { "set": "2099", "group": "alchemax-enforcers", "card": "venture", "timing": "fight", "text": "Fight: Either KO that captured Hero or choose a player to gain it.", "reason": "conditional" },
     { "set": "msis", "group": "infinity-stones", "card": "nebula-stone-seeker", "timing": "fight", "text": "Fight: Either KO that Hero or choose a player to gain it.", "reason": "conditional" },
 
-    { "set": "core", "group": "hydra", "card": "viper", "timing": "fight", "text": "Fight: Each player without another HYDRA Villain in their Victory Pile gains a Wound.", "reason": "conditional" },
     { "set": "cvwr", "group": "heroes-for-hire", "card": "tarantula", "timing": "fight", "text": "Fight: Each player discards two cards or gains a Wound.", "reason": "conditional" },
     { "set": "msp1", "group": "chitauri", "card": "chitauri-leviathan", "timing": "fight", "text": "Fight: Each player with no Bystanders in their Victory Pile gains a Wound.", "reason": "conditional" },
     { "set": "dkcy", "group": "four-horsemen", "card": "war", "timing": "fight", "text": "Fight: Each other player reveals an [hc:instinct] Hero or gains a Wound.", "reason": "multi-target" },

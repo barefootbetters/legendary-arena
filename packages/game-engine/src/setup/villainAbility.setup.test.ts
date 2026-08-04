@@ -301,6 +301,46 @@ describe('buildVillainAbilityHooks — ko-hero:current:N grammar (WP-492 / D-242
   });
 });
 
+describe('buildVillainAbilityHooks — gain-wound-unless-victory-villain-group grammar (WP-494 / D-24299)', () => {
+  const registry = makeRegistry(
+    'core',
+    [
+      {
+        slug: 'hydra',
+        cards: [
+          { slug: 'viper', abilities: [
+            'Fight: each player wounds. [effect:gain-wound-unless-victory-villain-group:hydra]',
+            'Escape: same. [effect:gain-wound-unless-victory-villain-group:hydra]',
+          ] },
+          { slug: 'empty-group', abilities: ['Fight: nope. [effect:gain-wound-unless-victory-villain-group:]'] },
+          { slug: 'extra-tokens', abilities: ['Fight: nope. [effect:gain-wound-unless-victory-villain-group:hydra:extra]'] },
+        ],
+      },
+    ],
+    [],
+  );
+  const hooks = buildVillainAbilityHooks(registry, makeConfig(['core/hydra'], []));
+  const hookFor = (slug: string, timing: string) =>
+    hooks.find((h) => h.cardId === `core-villain-hydra-${slug}-00` && h.timing === timing)!;
+
+  it('parses the group slug on BOTH the fight and escape timings', () => {
+    assert.deepStrictEqual(hookFor('viper', 'onFight').effects, [
+      { primitive: 'gain-wound-unless-victory-villain-group', victoryVillainGroup: 'hydra' },
+    ]);
+    assert.deepStrictEqual(hookFor('viper', 'onEscape').effects, [
+      { primitive: 'gain-wound-unless-victory-villain-group', victoryVillainGroup: 'hydra' },
+    ]);
+    // why: keyword-less — must NOT reverse-map.
+    assert.deepStrictEqual(hookFor('viper', 'onFight').keywords, []);
+  });
+
+  it('rejects an empty group slug or extra tokens to unresolvedMarkers', () => {
+    assert.deepStrictEqual(hookFor('empty-group', 'onFight').effects, []);
+    assert.deepStrictEqual(hookFor('empty-group', 'onFight').unresolvedMarkers, ['gain-wound-unless-victory-villain-group:']);
+    assert.deepStrictEqual(hookFor('extra-tokens', 'onFight').effects, []);
+  });
+});
+
 describe('buildVillainAbilityHooks — keywords/effects parity', () => {
   it('keywords and effects are distinct but parallel arrays (WP-252)', () => {
     const registry = makeRegistry(

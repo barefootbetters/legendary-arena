@@ -1730,8 +1730,129 @@ function villainEffectRescueBystandersCurrentByTraitCount(
   return { targets: [] };
 }
 
+/**
+ * Whether a player's Victory Pile holds a villain of the target group OTHER than
+ * the just-defeated/escaped card (WP-494 / D-24299).
+ *
+ * Matches on the FULL anchored ext_id prefix `${setAbbr}-villain-${group}-` — a bare
+ * `.includes('-villain-')` would false-match villain-deck bystanders
+ * (`bystander-villain-deck-NN`, which carry the substring but start `bystander-`) and
+ * would not scope to the group. The fought card is excluded ("*another*").
+ *
+ * @param victory - The player's Victory Pile ext_ids.
+ * @param groupPrefix - The anchored prefix `${setAbbr}-villain-${group}-`.
+ * @param foughtCardId - The Viper being resolved (excluded from the scan).
+ * @returns True when the pile holds another group villain.
+ */
+function victoryPileHasOtherGroupVillain(
+  victory: readonly CardExtId[],
+  groupPrefix: string,
+  foughtCardId: CardExtId,
+): boolean {
+  for (const victoryId of victory) {
+    if (victoryId !== foughtCardId && victoryId.startsWith(groupPrefix)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * gain-wound-unless-victory-villain-group primitive — each player gains a Wound
+ * UNLESS their Victory Pile holds another villain of the descriptor's group (Viper
+ * "Fight/Escape: Each player without another HYDRA Villain in their Victory Pile
+ * gains a Wound.", D-24299 / WP-494).
+ *
+ * Auto-resolved (no player choice) and deterministic — the reveal-or-wound skeleton
+ * with the predicate swapped from a hand/play hero-trait to a Victory-Pile
+ * villain-group membership test. Self-narrates via `pushLog` (keyword-less —
+ * `descriptorToLegacyKeyword` returns undefined, so no `VillainEffectResult` is
+ * recorded and the generic `<timing> effect:` line never fires). Returns
+ * `{ targets: [] }`.
+ */
+function villainEffectGainWoundUnlessVictoryVillainGroup(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  const group = descriptor.victoryVillainGroup;
+  // why: defensive — a well-formed descriptor always carries the group (the parser
+  // sets it, D-24299). A malformed hook lacking it cannot evaluate the predicate, so
+  // no player is wounded (never wounds everyone on an empty predicate). Reachable
+  // only via a hand-built test hook, never from the parser.
+  if (group === undefined) {
+    return { targets: [] };
+  }
+  // why: D-24299 Path B — derive the villain group ext_id prefix from the fought
+  // card's OWN ext_id rather than a villain-group `G` map (a new hashed setup field
+  // would re-pin every committed fixture). The `-villain-` infix is unambiguous
+  // (`setAbbr` has no hyphens); the match anchors on the FULL prefix
+  // `${setAbbr}-villain-${group}-` (a bare `.includes('-villain-')` would false-match
+  // villain-deck bystanders `bystander-villain-deck-NN`). A `cardId` lacking the infix
+  // (a non-villain fire site) → no wound.
+  const villainInfix = '-villain-';
+  const infixIndex = cardId.indexOf(villainInfix);
+  if (infixIndex < 0) {
+    return { targets: [] };
+  }
+  const setAbbr = cardId.slice(0, infixIndex);
+  const groupPrefix = `${setAbbr}${villainInfix}${group}-`;
+
+  // why: sorted player-id iteration for replay determinism (D-18902), matching
+  // reveal-or-wound / gain-wound:each.
+  const woundedPlayerIds: string[] = [];
+  for (const playerId of Object.keys(G.playerZones).sort()) {
+    const zones = G.playerZones[playerId];
+    if (!zones) {
+      continue;
+    }
+    if (victoryPileHasOtherGroupVillain(zones.victory, groupPrefix, cardId)) {
+      // why: the player HAS another group villain in their Victory Pile — no Wound.
+      continue;
+    }
+    // why: no other group villain — gain one Wound. Empty pile is a reachable no-op
+    // (mirrors gain-wound:each): the player is NOT counted as wounded, so the
+    // narration below stays honest.
+    if (G.piles.wounds.length === 0) {
+      continue;
+    }
+    const woundResult = gainWound(G.piles.wounds, zones.discard);
+    G.piles.wounds = woundResult.woundsPile;
+    zones.discard = woundResult.playerDiscard;
+    if (playerId === currentPlayer) {
+      // why: woundsDrawn projects the CURRENT player's wounds only (UI economy) —
+      // parity with reveal-or-wound / gain-wound:each; a non-current wounded player
+      // must not move it.
+      G.turnEconomy.woundsDrawn += 1;
+    }
+    woundedPlayerIds.push(playerId);
+  }
+
+  // why: self-narrate ONE line (keyword-less — the result-recording path drops it).
+  // `G.messages` is hash-excluded (D-24081). Honest colour per the WP-434 contract:
+  // a wound landed → `applied`; every player was safe → `blocked`.
+  const label = villainEffectTimingLabel(timing);
+  if (woundedPlayerIds.length > 0) {
+    const names = woundedPlayerIds.map((playerId) => `Player ${playerId}`).join(', ');
+    pushLog(
+      G,
+      `${label} effect: ${String(woundedPlayerIds.length)} player(s) had no other ${group} Villain in their Victory Pile and gained a Wound (${names}).`,
+      'applied',
+    );
+  } else {
+    pushLog(
+      G,
+      `${label} effect: every player had another ${group} Villain in their Victory Pile.`,
+      'blocked',
+    );
+  }
+  return { targets: [] };
+}
+
 // why: D-24023 — the ImplementationMap keyed by primitive (mirrors WP-251's
-// HERO_EFFECT_HANDLERS). Full Record over the 12 primitives; the drift test
+// HERO_EFFECT_HANDLERS). Full Record over the 13 primitives; the drift test
 // asserts the key set equals VILLAIN_EFFECT_PRIMITIVES. Replaces the former
 // 10-arm switch on VillainEffectKeyword. `scry-ko-own-deck` appended by WP-447
 // (D-24267); `gain-attached-hero` (no-op) appended by WP-450 (D-24270);
@@ -1739,7 +1860,8 @@ function villainEffectRescueBystandersCurrentByTraitCount(
 // the twist fires from the escape fire site) appended by WP-481 (D-24287);
 // `draw-cards-current`, `ko-heroes-current-by-trait`, and
 // `rescue-bystanders-current-by-trait-count` (auto-resolve) appended by WP-485
-// (D-24290).
+// (D-24290); `gain-wound-unless-victory-villain-group` (auto-resolve, conditional
+// each-player wound on a Victory-Pile group predicate) appended by WP-494 (D-24299).
 /** Villain effect handlers keyed by primitive. Single dispatch source. */
 const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandler> = {
   'ko-hero': villainEffectKoHero,
@@ -1754,6 +1876,7 @@ const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandl
   'draw-cards-current': villainEffectDrawCardsCurrent,
   'ko-heroes-current-by-trait': villainEffectKoHeroesCurrentByTrait,
   'rescue-bystanders-current-by-trait-count': villainEffectRescueBystandersCurrentByTraitCount,
+  'gain-wound-unless-victory-villain-group': villainEffectGainWoundUnlessVictoryVillainGroup,
 };
 
 /**

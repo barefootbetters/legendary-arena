@@ -419,3 +419,48 @@ describe('WP-489 Tier-B abilities record no unmarked-ability breadcrumb', () => 
     });
   }
 });
+
+// ---------------------------------------------------------------------------
+// WP-494 / D-24299 — Viper's conditional victory-pile-gated each-player wound
+// records no `unmarked-ability` breadcrumb at either the Fight or Escape timing.
+// ---------------------------------------------------------------------------
+
+describe('WP-494 Viper records no unmarked-ability breadcrumb', () => {
+  const CTX = { currentPlayer: '0' };
+  const VIPER = 'core-villain-hydra-viper-00' as CardExtId;
+
+  /** Builds a G exercising only the fields the Viper handler reads. */
+  function makeVillainG(timing: 'onFight' | 'onEscape'): LegendaryGameState {
+    return {
+      villainAbilityHooks: [
+        {
+          cardId: VIPER,
+          timing,
+          keywords: [],
+          effects: [{ primitive: 'gain-wound-unless-victory-villain-group', victoryVillainGroup: 'hydra' }],
+        },
+      ],
+      playerZones: {
+        '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [VIPER] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      piles: { bystanders: [], wounds: ['w0' as CardExtId], officers: [], sidekicks: [], horrors: [] },
+      ko: [],
+      attachedBystanders: {},
+      messages: [],
+      turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 },
+    } as unknown as LegendaryGameState;
+  }
+
+  for (const timing of ['onFight', 'onEscape'] as const) {
+    it(`records no hollow breadcrumb at ${timing}`, () => {
+      const G = makeVillainG(timing);
+      executeVillainAbilities(G, CTX, VIPER, timing);
+      assert.equal(
+        G.diagnostics?.hollowEffects?.length ?? 0,
+        0,
+        `Viper is handled at ${timing} — no unmarked-ability record`,
+      );
+    });
+  }
+});

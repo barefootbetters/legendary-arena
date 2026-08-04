@@ -134,6 +134,7 @@ const VILLAIN_EFFECT_PRIMITIVES = [
   'draw-cards-current',
   'ko-heroes-current-by-trait',
   'rescue-bystanders-current-by-trait-count',
+  'gain-wound-unless-victory-villain-group',
 ];
 
 // why: WP-489 / D-24295 — hand-synced local copy of the engine's CITY_SPACE_NAMES
@@ -239,6 +240,11 @@ function isValidParameterizedEffectToken(token) {
     // (exactly 3 tokens; kind team | hc; non-empty value), mirroring the engine
     // parser's parseTraitPredicateTokens so producer + consumer agree.
     return parts.length === 3 && (parts[1] === 'team' || parts[1] === 'hc') && parts[2].length > 0;
+  }
+  if (primitive === 'gain-wound-unless-victory-villain-group') {
+    // why: D-24299 — grammar :<groupSlug> (exactly 2 tokens; non-empty slug, e.g.
+    // hydra). Mirrors the engine parser's branch so producer + consumer agree.
+    return parts.length === 2 && parts[1].length > 0;
   }
   // why: hero-deck-top-to-escape and capture-bystander take no params.
   return parts.length === 1;
