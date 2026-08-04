@@ -7,6 +7,31 @@
 
 ## Current State
 
+### WP-495 — Provenance Decision Backfill (fill the remaining blank Decision cells on /debug/effects + /coverage) — DONE (2026-08-03)
+
+The WP-493 follow-on. After WP-493 filled the never-attributed mechanics, the only
+executable rows still rendering a blank **Decision** were the six
+`scripts/coverage/mechanic-provenance.json` keys that carried a `wp` but an empty
+`decision` string. This fills those six decision values (each key's `wp` unchanged),
+then regenerates the two mechanic ledgers + the effect index that read the map verbatim.
+
+- **6 decisions traced to their DECISIONS.md headings:** `koHeroCurrentPlayer`→**D-18503**
+  (its specific resolution decision, mirroring the existing `captureBystander`→D-18506
+  convention), `gainWoundEachPlayer` / `gainWoundCurrentPlayer` / `heroDeckTopToEscape`→**D-18502**
+  (the WP-185 five-keyword vocabulary lock that defines them; no mechanic-specific D exists),
+  `attack-per-count`→**D-24016** (WP-247), `optional-ko-reward`→**D-24019** (WP-248).
+- **Data-only, verbatim pass-through** — no generator/schema/dashboard code changed; no new
+  decision reserved (all four cited ids predate this WP).
+
+**Row identity preserved:** both ledger `summary` blocks and `card-mechanics.json` are
+byte-identical; only the `decision` cell of the 75 affected rows changed (5 hero + 70 villain;
+`executable`-blank-decision for the six mechanics → 0). WP-493's decision-only keys (`wp:""`)
+untouched. `ledger:heroes:check` + `ledger:villains:check` + `effect-index:check` green;
+`pnpm -r build` + `pnpm -r --no-bail test` exit 0; **no `finalStateHash`/`PRE_WP080` re-pin**
+(build-time coverage artifacts). Gates (drafting): independent subagents confirmed all four
+attributions with no defect. `User-Visible Surface = dashboard /debug/effects + /coverage` —
+**D-24026 live-verify operator-pending**.
+
 ### WP-493 — Mechanic Provenance Backfill (fill the blank WP/Decision columns on /debug/effects + /coverage) — DONE (2026-08-03)
 
 A **data-only** backfill of `scripts/coverage/mechanic-provenance.json`. 173 effect rows
