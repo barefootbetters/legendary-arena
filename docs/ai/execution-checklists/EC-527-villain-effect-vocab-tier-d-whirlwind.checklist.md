@@ -40,17 +40,22 @@ projection) + Registry card-data markers — downward edge only.
   unchanged (magnitude-less → legacy `koHeroCurrentPlayer`); `ko-hero:current:1`
   REJECTED (→ `unresolvedMarkers`). The `@space` gate suffix is WP-489's (unchanged).
 - **Card marker (Fight):** Whirlwind `ko-hero:current:2@rooftops+bridge`.
-- **Magnitude-M KO rule:** `M = descriptor.magnitude ?? 1`. Loop KO up to M of the
-  current player's heroes: while owed > 0 and distinct-eligible `O ≤ 1` → auto-KO the
-  single option (deterministic single-KO resolver), decrement; `O === 0` → stop; if
-  owed > 0 and `O ≥ 2` → push ONE `PendingKoHeroChoice{…, remaining: owed}` and stop —
-  **OMIT `remaining` when owed === 1** (absent ≡ 1), so the M=1 park is the exact
-  `{ choiceType, playerID }` object the two `deepStrictEqual` shape tests pin.
+- **Magnitude-M KO rule (physical-count form — landed):** `M = descriptor.magnitude
+  ?? 1`. Loop KO up to M of the current player's heroes using the PHYSICAL KO-able
+  count `P` (`countKoableHeroes`, non-deduped) and the distinct options `O`
+  (`buildKoEligibleTargets`), both recomputed fresh: **park** ONE
+  `PendingKoHeroChoice{…, remaining: owed}` only when `P > owed && O ≥ 2` (a genuine
+  choice of which to spare); otherwise the KO is **forced** (`P ≤ owed` → all die, or
+  `O ≤ 1` → identical copies) → auto-KO the deterministic single target, decrement;
+  `O === 0` → stop. **OMIT `remaining` when owed === 1** (absent ≡ 1) so the M=1 park
+  is the exact `{ choiceType, playerID }` object the two `deepStrictEqual` shape tests
+  pin. (Refined at execution from the drafted deduped-`O`-only rule so exactly-2-distinct
+  auto-KOs both per AC-3; identical to the `O`-rule for M=1.)
 - **Resolve move:** KO the pick, decrement front `remaining ?? 1`; auto-KO any now-forced
-  remainder (`O ≤ 1`); `shift()` when it hits 0, else keep the decremented entry. Imports
-  `buildKoEligibleTargets` (exported from `villainEffects.execute.ts`) to recompute `O`;
-  the forced-remainder KO uses this move's OWN `moveCardFromZone`+`koCard` (NOT the
-  module-private `koSingleTarget`).
+  remainder (`P ≤ owed || O ≤ 1`); `shift()` when it hits 0, else keep the decremented
+  entry. Imports `buildKoEligibleTargets` + `countKoableHeroes` (exported from
+  `villainEffects.execute.ts`); the forced-remainder KO uses this move's OWN
+  `moveCardFromZone`+`koCard` (NOT the module-private `koSingleTarget`).
 - **UIState:** `pendingKoHeroChoice.remaining` = Σ `entry.remaining ?? 1` over the queue.
 - **CI ripple:** `pnpm -r build && pnpm ledger:villains` then `ledger:villains:check`.
   Provenance map UNCHANGED (`ko-hero` already WP-252/D-24023 — populates the new row).

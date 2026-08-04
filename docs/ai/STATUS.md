@@ -7,6 +7,42 @@
 
 ## Current State
 
+### WP-492 — Core Villain-Effect Vocabulary, Tier D (Whirlwind — Interactive Location-Gated KO) — DONE (2026-08-03)
+
+The first **interactive** Core villain Fight ability from the villain-effect-vocabulary
+arc: **Whirlwind** ("*Fight: If you fight Whirlwind on the Rooftops or Bridge, KO two of
+your Heroes.*"), previously hollow (D-24266 `unmarked-ability`). Fought on the Rooftops
+(index 2) or Bridge (index 4), the current player KOs `min(2, their KO-able hero count)`
+Heroes — **choosing which** when they hold more than two; off-space fights log "no
+effect" (the WP-489 gate).
+
+- **Reuse, not reinvention.** The WP-489 `requireCitySpaces` gate is unchanged, and the
+  WP-242 interactive KO-a-Hero queue (`pendingKoHeroChoices` + `resolveKoHeroChoice` +
+  block-all guards + the WP-243 UIState projection + `PendingKoHeroChoicePrompt.vue`,
+  which already renders `remaining > 1`) is reused — **no arena-client change, no bot
+  change**. The one new capability: a magnitude-N current-player KO.
+- **`types.ts`**: additive optional `PendingKoHeroChoice.remaining?` (absent ≡ 1; the
+  M=1 parker omits it, so the WP-242 shape tests stay byte-identical).
+- **`villainEffects.execute.ts`**: `villainEffectKoHero` `target:'current'` generalized
+  to magnitude M. Parks an interactive choice **only** when the player has more KO-able
+  heroes than owed AND ≥ 2 distinct options (`P > owed && O ≥ 2` — a genuine choice of
+  which to spare); otherwise auto-KOs `min(M, physical)` with no prompt (so exactly-2
+  auto-KOs both). New `countKoableHeroes` helper. M ≥ 2 self-narrates (keyword-less);
+  M = 1 keeps the `koHeroCurrentPlayer` keyword.
+- **`koHeroChoice.resolve.ts`**: decrements the front entry's `remaining`, auto-resolves
+  any now-forced remainder, front-pops at 0. **`ui/uiState.build.ts`**: `remaining` =
+  Σ `entry.remaining ?? 1`. Parser + generator: `ko-hero:current:N` (N ≥ 2), `:1`
+  rejected. Whirlwind marker `ko-hero:current:2@rooftops+bridge`; `core.json` regenerated
+  (1 Fight line); villain ledger flips Whirlwind `(unmarked)` → `ko-hero` executable.
+
+game-engine 2281→2296 pass; `pnpm -r build` + `pnpm -r --no-bail test` exit 0;
+arena-client 1156/1156 unchanged. **No `finalStateHash`/`PRE_WP080` re-pin** (no committed
+fixture deck includes `core/masters-of-evil`). Provenance map unchanged (`ko-hero` already
+WP-252/D-24023). No new primitive, `G` field, or choice type. WP-492 / EC-527; lands
+**D-24298**. `User-Visible Surface = play.legendary-arena.com` — **D-24026 live-verify
+operator-pending** (fight Whirlwind on the Rooftops/Bridge with > 2 Heroes → the KO prompt
+appears with `2 remaining` then `1 remaining`; off-space fights narrate "no effect").
+
 ### WP-491 — Hero Ledger Design Attribution (which of a hero's cards carries each effect) — DONE (2026-08-03)
 
 Adds an additive **`designs`** attribution to the hero mechanic ledger — the card

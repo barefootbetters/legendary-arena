@@ -204,10 +204,12 @@ Governance: `docs/ai/DECISIONS.md`, `docs/ai/work-packets/WORK_INDEX.md`,
   `ko-hero:current` and `ko-hero:current:1` disposition: bare parses to
   magnitude-less (legacy `koHeroCurrentPlayer`); `:1` is rejected.
 - **Magnitude-M current-player KO semantics:** KO `min(M, physical KO-able heroes)`
-  of the current player's Heroes; interactive (parked `PendingKoHeroChoice`) for
-  every step where a genuine choice of *which* hero exists (distinct options ≥ 2),
-  auto-resolved (deterministic single-KO resolver) for every forced step; M = 1 is
-  byte-identical to WP-242.
+  of the current player's Heroes; interactive (parked `PendingKoHeroChoice`) only when
+  a genuine choice of *which* hero to spare exists — the player has MORE KO-able heroes
+  than owed AND ≥ 2 distinct options (`P > owed && O ≥ 2`); auto-resolved (deterministic
+  single-KO resolver) for every forced step (`P ≤ owed` or `O ≤ 1`); M = 1 is
+  byte-identical to WP-242. (Rule landed in the `P`-vs-owed form so exactly-2-distinct
+  auto-KOs both per AC-3 — see D-24298.)
 - **Location gate:** reuse the WP-489 `requireCitySpaces` gate — checked before
   handler dispatch, fails closed on `undefined` cityIndex. Whirlwind:
   `requireCitySpaces = ['rooftops', 'bridge']`.
