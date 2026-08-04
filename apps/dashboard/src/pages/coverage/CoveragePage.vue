@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue';
 import { useCoverageLedger, statusLabel } from '../../composables/useCoverageLedger.js';
 import { useInPlayCoverage } from '../../composables/useInPlayCoverage.js';
-import type { LedgerStatus, RuntimeObservedEntry } from '../../types/coverage.js';
+import type { LedgerRow, LedgerStatus, RuntimeObservedEntry } from '../../types/coverage.js';
 
 const {
   summary,
@@ -28,6 +28,18 @@ const HOLLOW_REASONS = ['no-handler', 'unsupported-keyword', 'parse-unrecognized
 /** Maps a ledger status to its CSS modifier class for the colored badges. */
 function statusClass(status: LedgerStatus): string {
   return `cov-${status}`;
+}
+
+/**
+ * The Design column label (WP-491): the card design name(s) that print this
+ * mechanic, comma-joined, or an em dash when there is no carrying design (an
+ * `(unmarked)` row, or an older schemaVersion-1 ledger without the field).
+ */
+function designLabel(designs: LedgerRow['designs']): string {
+  if (!designs || designs.length === 0) {
+    return '—';
+  }
+  return designs.map((design) => design.name).join(', ');
 }
 
 /** The runtime-observed entry for a mechanic, or undefined if never hit in play. */
@@ -215,6 +227,7 @@ const STATUS_FILTERS: readonly (LedgerStatus | 'all')[] = [
         <thead>
           <tr>
             <th>Card</th>
+            <th>Design</th>
             <th>Set</th>
             <th>Mechanic</th>
             <th>Status</th>
@@ -228,6 +241,9 @@ const STATUS_FILTERS: readonly (LedgerStatus | 'all')[] = [
               <span class="card-name">{{ row.heroName }}</span>
               <span class="mono dim ext">{{ row.extId }}</span>
             </td>
+            <!-- why: WP-491 — the card design(s) that print this mechanic; "—" for a
+                 villain-less/unmarked row (hero-level, no carrying design). -->
+            <td>{{ designLabel(row.designs) }}</td>
             <td class="mono dim">{{ row.set }}</td>
             <td class="mono">{{ row.mechanic }}</td>
             <td>

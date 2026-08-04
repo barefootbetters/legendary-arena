@@ -7,6 +7,56 @@
 
 ## Current State
 
+### WP-491 — Hero Ledger Design Attribution (which of a hero's cards carries each effect) — DONE (2026-08-03)
+
+Adds an additive **`designs`** attribution to the hero mechanic ledger — the card
+design(s) whose printed ability carries each mechanic — surfaced as a new **Design**
+column on both the `/debug/effects` and `/coverage` dashboards, so an operator can
+see *which* of a hero's ~4 physical card designs owns each effect (villains already
+answer this per-card). Black Widow (`core/black-widow`) now shows `draw`/`rescue` →
+Mission Accomplished, `optional-ko-reward` → Dangerous Rescue, `attack-per-count` →
+Covert Operation, `defeat-with-bystander` → Silent Sniper.
+
+- **Additive attribution, NOT a row re-partition (the load-bearing choice).** The
+  hero ledger keeps **one row per `(extId, mechanic)`** (row count 650 → 650,
+  `summary` byte-identical) and each row gains a slug-sorted `designs` array (`[]`
+  for the hero-level `(unmarked)` row). Because row identity is unchanged, the
+  `/coverage` metrics (`buildMechanicDictionary` row counts, `executablePercent`),
+  and `card-mechanics.json` (registry-viewer glossary) are byte-identical, and no
+  viewer row key collides. A per-design-row split was rejected — 246 hero×mechanic
+  pairs carry a mechanic on 2+ designs (e.g. `cyber-mod` on three Ghost Rider 2099
+  designs → one row lists all three), which would have made duplicate keys +
+  inflated counts, and per-design `(unmarked)` rows would have grown the glossary
+  `unmarked` bucket 46 → ~231.
+- **`scripts/hero-mechanic-ledger.mjs`**: per-`(extId, mechanic)` → designs map built
+  from the per-design `listCards()` entries (reusing the same normalize/reduce/fold
+  pipeline per design; the per-design `extractMechanics()` Set dedups a mechanic
+  printed on 2+ lines of one design). `SCHEMA_VERSION` 1 → 2; CSV gains a pipe-joined
+  `designs` slug column. Unmarked stays hero-level (operator ruling).
+- **`packages/registry/src/schema.ts`**: new `EffectDesignSchema` (`{slug, name}`,
+  `.strict()`) + additive optional `designs: z.array(EffectDesignSchema).min(1).optional()`
+  on `EffectImplementationEntrySchema` (marked-hero entries only; villain + unmarked
+  omit). `version` stays `z.literal(1)`. 6 new schema tests (accept/absent/reject).
+- **`scripts/build-effect-implementation-index.mjs`**: passes `designs` through in
+  `normalizeRow` for hero rows with ≥1 design; villain + unmarked omit. Index
+  self-validates against the strict schema (1366 entries; 604 hero-with-designs).
+- **Dashboards**: `LedgerRow.designs?` (`types/coverage.ts`); a **Design** column on
+  `CoveragePage.vue` and `EffectsPage.vue` (design name(s) joined, else "—", row keys
+  unchanged); `useEffectIndex` search also matches a design name.
+- **Determinism**: build-time generated artifacts only — no `G`/`ctx`/RNG/replay/hash
+  surface. **No `finalStateHash` / `PRE_WP080_HASH` re-pin** (engine + replay/sentinel
+  suites green, no oracle edit). `card-mechanics.json` + `villain-mechanic-ledger.json`
+  byte-identical after regen.
+
+Registry 221/0 (+6 designs cases); dashboard 435/0 (+2 WP-491 cases), `useEffectIndex.ts`
+100% coverage, thresholds hold; `ledger:heroes:check` + `effect-index:check` green;
+`pnpm -r build` + `pnpm -r --no-bail test` green. Lands **D-24297** (Active). §17
+(§10/§22; No conflict). §20 N/A. §21 N/A. `User-Visible Surface = dashboard
+/debug/effects + /coverage` — **D-24026 live-verify operator-pending**. Hard-deps
+WP-484/D-24289 + WP-487/D-24292 + WP-259/D-24035 + WP-271. See
+[WP-491](work-packets/WP-491-hero-ledger-per-design-granularity.md) +
+[EC-526](execution-checklists/EC-526-hero-ledger-per-design-granularity.checklist.md).
+
 ### WP-489 — Core Villain-Effect Vocabulary, Tier B (Named City Spaces) — DONE (2026-08-03)
 
 Tier B of the Core villain-effect-vocabulary arc: gives the engine **named City

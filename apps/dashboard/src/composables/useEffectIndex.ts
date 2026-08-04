@@ -118,7 +118,11 @@ export function filterEntries(
       continue;
     }
     if (needle !== '') {
-      const haystack = `${entry.extId} ${entry.name}`.toLowerCase();
+      // why: WP-491 — the search also matches a card DESIGN name (e.g. "Silent Sniper")
+      // so an operator can find the effect by the specific card that prints it, not just
+      // the hero name. Villain / unmarked entries have no `designs`, contributing nothing.
+      const designNames = (entry.designs ?? []).map((design) => design.name).join(' ');
+      const haystack = `${entry.extId} ${entry.name} ${designNames}`.toLowerCase();
       if (!haystack.includes(needle)) {
         continue;
       }

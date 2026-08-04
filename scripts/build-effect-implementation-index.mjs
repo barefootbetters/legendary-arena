@@ -178,7 +178,7 @@ function normalizeRow(row, scope, name) {
   // fabricates a handler path or decision id the ledger does not carry (the
   // load-bearing honesty rule, AC-5). "" is a meaningful "no handler ran" signal,
   // never null.
-  return {
+  const entry = {
     extId: row.extId,
     name,
     set: row.set,
@@ -189,6 +189,15 @@ function normalizeRow(row, scope, name) {
     wp: row.wp,
     decision: row.decision,
   };
+  // why: WP-491 / D-24297 — carry the hero ledger's per-mechanic `designs` (which of
+  // the hero's card designs print this mechanic) through VERBATIM. Only the hero ledger
+  // carries `designs`, and only marked rows have a non-empty list — an `(unmarked)` row
+  // carries `[]`, so the key is OMITTED there (the schema is `.min(1).optional()`).
+  // Villain rows have no `designs` field at all, so villain entries never carry it.
+  if (scope === 'hero' && Array.isArray(row.designs) && row.designs.length > 0) {
+    entry.designs = row.designs;
+  }
+  return entry;
 }
 
 /**

@@ -16,6 +16,10 @@
  *   wp         — Work Packet that implemented the mechanic (from provenance map)
  *   decision   — DECISIONS.md id for it (from provenance map)
  *   handler    — where the code is (module#key) for executable mechanics
+ *   designs    — the card design(s) whose abilities print this mechanic, as a
+ *                {slug, name}[] (WP-491). One row still covers one (extId, mechanic);
+ *                a mechanic printed on 2+ of a hero's designs lists them all here.
+ *                Empty ([]) for an (unmarked) row (which is hero-level, not per-design).
  *
  * Status meanings (the five kinds of state, not just done/not-done):
  *   executable   — mechanic ∈ MVP_KEYWORDS (its executor mutates G today); a STATIC
@@ -74,7 +78,10 @@ const OUTPUT_DIRECTORY = join(REPO_ROOT, 'docs', 'ai', 'coverage');
 const LEDGER_JSON_PATH = join(OUTPUT_DIRECTORY, 'hero-mechanic-ledger.json');
 const LEDGER_CSV_PATH = join(OUTPUT_DIRECTORY, 'hero-mechanic-ledger.csv');
 
-const SCHEMA_VERSION = 1;
+// why: WP-491 bumped the row shape — each row gained an additive `designs` column
+// (the card design(s) whose abilities print the mechanic). The row set is unchanged
+// (still one row per (extId, mechanic)); only the new column warrants the version bump.
+const SCHEMA_VERSION = 2;
 // why: every executable hero KEYWORD mechanic is dispatched from this one module
 // (HERO_EFFECT_HANDLERS, keyed by the mechanic name); the handler column points
 // here so a broken card is a direct jump to the function.
@@ -340,6 +347,22 @@ function handlerForMechanic(mechanic, status) {
 }
 
 /**
+ * Converts a carrying-design `slug -> display name` map into the slug-sorted
+ * `{slug, name}[]` a ledger row carries in its `designs` column. Sorted by slug so
+ * the regenerated JSON + CSV stay byte-stable run to run (WP-491 / D-24297).
+ *
+ * @param {Map<string, string>} nameBySlug - carrying-design slug -> display name.
+ * @returns {{slug: string, name: string}[]} the slug-sorted design list.
+ */
+function toSortedDesigns(nameBySlug) {
+  const designs = [];
+  for (const slug of [...nameBySlug.keys()].sort()) {
+    designs.push({ slug, name: nameBySlug.get(slug) });
+  }
+  return designs;
+}
+
+/**
  * Builds one ledger row, joining the provenance map and deriving the handler
  * location for executable mechanics.
  *
@@ -348,9 +371,11 @@ function handlerForMechanic(mechanic, status) {
  * @param {string} mechanic - the mechanic name (or UNMARKED_MECHANIC).
  * @param {'executable'|'deferred'|'unsupported'|'unmarked'} status - the state.
  * @param {Record<string, {wp?: string, decision?: string}>} provenance - the map.
+ * @param {{slug: string, name: string}[]} designs - the card design(s) whose
+ *   abilities print this mechanic (WP-491); an empty list for an `(unmarked)` row.
  * @returns {object} the ledger row.
  */
-function buildRow(extId, info, mechanic, status, provenance) {
+function buildRow(extId, info, mechanic, status, provenance, designs) {
   const entry = provenance[mechanic] ?? {};
   const handler = handlerForMechanic(mechanic, status);
   return {
@@ -362,6 +387,7 @@ function buildRow(extId, info, mechanic, status, provenance) {
     wp: entry.wp ?? '',
     decision: entry.decision ?? '',
     handler,
+    designs,
   };
 }
 
@@ -384,24 +410,51 @@ function buildLedger(registry, provenance) {
     const existing = heroesByExtId.get(card.extId) ?? {
       setAbbr: card.setAbbr,
       heroName: card.heroName ?? card.name,
-      abilities: [],
+      designs: [],
     };
+    // why: WP-491 — retain each hero card DESIGN separately (its slug + display name
+    // + own ability lines) instead of merging every design's abilities into one array.
+    // The per-design abilities are what attribute a mechanic to the specific design(s)
+    // that print it (the `designs` column below); the UNION of per-design mechanics
+    // still equals the old whole-hero merged extraction, so row identity — one row per
+    // (extId, mechanic) — is unchanged, and only the additive `designs` column is new.
+    const abilities = [];
     for (const ability of card.abilities) {
       if (typeof ability === 'string' && ability.trim() !== '') {
-        existing.abilities.push(ability.trim());
+        abilities.push(ability.trim());
       }
     }
+    existing.designs.push({ slug: card.slug, name: card.name, abilities });
     heroesByExtId.set(card.extId, existing);
   }
 
   const rows = [];
   for (const [extId, info] of heroesByExtId) {
-    if (info.abilities.length === 0) {
+    const hasAbilityText = info.designs.some((design) => design.abilities.length > 0);
+    if (!hasAbilityText) {
       continue;
     }
-    const mechanics = extractMechanics(info.abilities);
-    if (mechanics.size === 0) {
-      rows.push(buildRow(extId, info, UNMARKED_MECHANIC, 'unmarked', provenance));
+    // why: WP-491 — map each normalized mechanic to the design(s) whose abilities print
+    // it, reusing the SAME extraction pipeline per design so the union of per-design
+    // mechanics equals the old whole-hero set (row identity unchanged). extractMechanics
+    // returns a Set, so a design that prints one mechanic on several ability lines is
+    // deduped to one design entry, and a mechanic on several designs collects each once.
+    const designNamesByMechanic = new Map();
+    for (const design of info.designs) {
+      for (const mechanic of extractMechanics(design.abilities)) {
+        if (!designNamesByMechanic.has(mechanic)) {
+          designNamesByMechanic.set(mechanic, new Map());
+        }
+        designNamesByMechanic.get(mechanic).set(design.slug, design.name);
+      }
+    }
+    if (designNamesByMechanic.size === 0) {
+      // why: WP-491 / D-24297 — an `(unmarked)` row is hero-level (the hero prints
+      // ability text but no recognized [keyword:X] token on any design), so it carries
+      // NO design attribution — an empty `designs` list, never per-design unmarked rows.
+      // This keeps the `(unmarked)` semantics exactly as before so the downstream
+      // card-mechanics.json glossary `unmarked` bucket stays byte-identical.
+      rows.push(buildRow(extId, info, UNMARKED_MECHANIC, 'unmarked', provenance, []));
       continue;
     }
     // why: D-24045 — build THIS hero's hooks the same way the coverage probe does
@@ -416,8 +469,9 @@ function buildLedger(registry, provenance) {
         cardResolvedMarkers.add(marker);
       }
     }
-    for (const mechanic of [...mechanics].sort()) {
-      rows.push(buildRow(extId, info, mechanic, statusForMechanic(mechanic, cardResolvedMarkers), provenance));
+    for (const mechanic of [...designNamesByMechanic.keys()].sort()) {
+      const designs = toSortedDesigns(designNamesByMechanic.get(mechanic));
+      rows.push(buildRow(extId, info, mechanic, statusForMechanic(mechanic, cardResolvedMarkers), provenance, designs));
     }
   }
 
@@ -467,9 +521,13 @@ function toCsvField(value) {
  * @returns {string} the CSV document.
  */
 function serializeCsv(rows) {
-  const header = ['ext_id', 'hero_name', 'set', 'mechanic', 'status', 'wp', 'decision', 'handler'];
+  const header = ['ext_id', 'hero_name', 'set', 'mechanic', 'status', 'wp', 'decision', 'handler', 'designs'];
   const lines = [header.join(',')];
   for (const row of rows) {
+    // why: WP-491 — the CSV flattens the `designs` object array to a pipe-joined list
+    // of design slugs (empty for an `(unmarked)` row); the JSON keeps the full
+    // {slug, name} objects. Slugs are already slug-sorted, so the cell is byte-stable.
+    const designSlugs = row.designs.map((design) => design.slug).join('|');
     lines.push(
       [
         row.extId,
@@ -480,6 +538,7 @@ function serializeCsv(rows) {
         row.wp,
         row.decision,
         row.handler,
+        designSlugs,
       ]
         .map((field) => toCsvField(String(field)))
         .join(','),

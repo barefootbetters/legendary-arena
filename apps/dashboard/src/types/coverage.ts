@@ -17,6 +17,12 @@ export const LEDGER_STATUSES: readonly LedgerStatus[] = [
   'unmarked',
 ];
 
+/** One card design that prints a mechanic — the WP-491 attribution unit. */
+export interface LedgerDesign {
+  slug: string;
+  name: string;
+}
+
 /** One ledger row: a (hero card × mechanic) pair with its status + provenance. */
 export interface LedgerRow {
   extId: string;
@@ -30,6 +36,12 @@ export interface LedgerRow {
   decision: string;
   /** module#key for executable mechanics — the bug→code jump (blank otherwise). */
   handler: string;
+  /**
+   * The card design(s) whose printed ability carries this mechanic (WP-491). Empty
+   * for an `(unmarked)` row (hero-level, no carrying design). Optional so an older
+   * (schemaVersion 1) bundled ledger still type-checks.
+   */
+  designs?: readonly LedgerDesign[];
 }
 
 export interface LedgerByStatus {
