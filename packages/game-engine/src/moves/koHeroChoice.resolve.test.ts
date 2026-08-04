@@ -291,6 +291,53 @@ describe('resolveKoHeroChoice — front-only multi-entry integrity', () => {
   });
 });
 
+describe('resolveKoHeroChoice — magnitude-N drain (WP-492 / D-24298)', () => {
+  it('decrements a remaining:2 entry and keeps it while a real choice remains', () => {
+    const state = makeTestGameState({
+      hand: ['h-a', 'h-b', 'h-c'] as CardExtId[],
+      pendingKoHeroChoices: [{ choiceType: 'ko-hero', playerID: '0', remaining: 2 }],
+    });
+    resolveKoHeroChoice({ G: state, playerID: '0' } as never, { zone: 'hand', cardId: 'h-a' });
+    // why: 3 heroes, owed 2 → still a genuine choice after KOing one; the entry
+    // persists with remaining decremented to 1 (not front-popped).
+    assert.deepStrictEqual(state.ko, ['h-a']);
+    assert.deepStrictEqual(state.pendingKoHeroChoices, [
+      { choiceType: 'ko-hero', playerID: '0', remaining: 1 },
+    ]);
+    assert.deepStrictEqual(state.playerZones['0']!.hand, ['h-b', 'h-c']);
+
+    resolveKoHeroChoice({ G: state, playerID: '0' } as never, { zone: 'hand', cardId: 'h-b' });
+    // why: the second pick finishes the entry (remaining 1 → 0) → front-pop; h-c spared.
+    assert.deepStrictEqual(state.ko, ['h-a', 'h-b']);
+    assert.equal(state.pendingKoHeroChoices?.length ?? 0, 0);
+    assert.deepStrictEqual(state.playerZones['0']!.hand, ['h-c']);
+  });
+
+  it('auto-resolves the forced remainder in one pick when the choice collapses', () => {
+    const state = makeTestGameState({
+      hand: ['h-a', 'h-b'] as CardExtId[],
+      pendingKoHeroChoices: [{ choiceType: 'ko-hero', playerID: '0', remaining: 2 }],
+    });
+    resolveKoHeroChoice({ G: state, playerID: '0' } as never, { zone: 'hand', cardId: 'h-a' });
+    // why: after KOing h-a only h-b remains (physical 1 ≤ owed 1) → the forced
+    // remainder auto-KOs h-b in the SAME resolve, the entry front-pops, no second prompt.
+    assert.deepStrictEqual([...state.ko].sort(), ['h-a', 'h-b']);
+    assert.equal(state.pendingKoHeroChoices?.length ?? 0, 0);
+    assert.deepStrictEqual(state.playerZones['0']!.hand, []);
+  });
+
+  it('a bare entry (remaining absent) still front-pops after one KO (byte-identical WP-242)', () => {
+    const state = makeTestGameState({
+      hand: ['h-a', 'h-b'] as CardExtId[],
+      pendingKoHeroChoices: [{ choiceType: 'ko-hero', playerID: '0' }],
+    });
+    resolveKoHeroChoice({ G: state, playerID: '0' } as never, { zone: 'hand', cardId: 'h-a' });
+    assert.deepStrictEqual(state.ko, ['h-a']);
+    assert.equal(state.pendingKoHeroChoices?.length ?? 0, 0, 'bare entry owes 1 → front-pop');
+    assert.deepStrictEqual(state.playerZones['0']!.hand, ['h-b']);
+  });
+});
+
 describe('resolveKoHeroChoice — silent no-ops leave the queue byte-identical', () => {
   function expectNoOp(
     args: { zone: 'discard' | 'hand' | 'inPlay'; cardId: CardExtId },

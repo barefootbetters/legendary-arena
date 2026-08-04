@@ -844,7 +844,10 @@ export function buildUIState(
   // with its eligible targets recomputed fresh from current G (no snapshot —
   // WP-242 stores none). The eligible list spans the chooser's non-wound
   // discard → hand → inPlay in array index order, deduped per (zone, cardId)
-  // by buildKoEligibleTargets. `remaining` = queue length (≥1 when present).
+  // by buildKoEligibleTargets. `remaining` = total KOs owed = Σ (entry.remaining ??
+  // 1) over the queue (WP-492 / D-24298): a queue of single-KO entries reads its
+  // length unchanged (each owes 1), and a magnitude-N park (Whirlwind, one entry
+  // with `remaining: 2`) reads 2.
   // resolveDisplay is spread fresh per entry so the projection holds no
   // reference into G.cardDisplayData (aliasing defense, WP-111 D-11105).
   // Redaction to the chooser-only audience is enforced by
@@ -864,11 +867,16 @@ export function buildUIState(
           display: { ...resolveDisplay(target.cardId, gameState) },
         });
       }
+      // why: WP-492 / D-24298 — total KOs owed across the queue, not entry count.
+      let remaining = 0;
+      for (const choice of gameState.pendingKoHeroChoices) {
+        remaining += choice.remaining ?? 1;
+      }
       pendingKoHeroChoice = {
         choiceType: frontChoice.choiceType,
         playerID: frontChoice.playerID,
         eligible,
-        remaining: gameState.pendingKoHeroChoices.length,
+        remaining,
       };
     }
   }

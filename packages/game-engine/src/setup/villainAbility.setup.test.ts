@@ -255,6 +255,52 @@ describe('buildVillainAbilityHooks — Tier-B @space gate + grammars (WP-489 / D
   });
 });
 
+describe('buildVillainAbilityHooks — ko-hero:current:N grammar (WP-492 / D-24298)', () => {
+  const registry = makeRegistry(
+    'core',
+    [
+      {
+        slug: 'tierd',
+        cards: [
+          { slug: 'whirlwind', abilities: ['Fight: KO two. [effect:ko-hero:current:2@rooftops+bridge]'] },
+          { slug: 'mag2-nogate', abilities: ['Fight: KO two. [effect:ko-hero:current:2]'] },
+          { slug: 'bare-current', abilities: ['Fight: KO one. [effect:ko-hero:current]'] },
+          { slug: 'mag1-reject', abilities: ['Fight: nope. [effect:ko-hero:current:1]'] },
+        ],
+      },
+    ],
+    [],
+  );
+  const hooks = buildVillainAbilityHooks(registry, makeConfig(['core/tierd'], []));
+  const hookFor = (slug: string) => hooks.find((h) => h.cardId === `core-villain-tierd-${slug}-00`)!;
+
+  it('parses ko-hero:current:2 with the @space gate (Whirlwind)', () => {
+    assert.deepStrictEqual(hookFor('whirlwind').effects, [
+      { primitive: 'ko-hero', target: 'current', magnitude: 2, requireCitySpaces: ['rooftops', 'bridge'] },
+    ]);
+    // why: keyword-less (magnitude in the descriptorKey) — must NOT reverse-map.
+    assert.deepStrictEqual(hookFor('whirlwind').keywords, []);
+  });
+
+  it('parses an ungated ko-hero:current:2 and keeps bare ko-hero:current magnitude-less', () => {
+    assert.deepStrictEqual(hookFor('mag2-nogate').effects, [
+      { primitive: 'ko-hero', target: 'current', magnitude: 2 },
+    ]);
+    // why: bare `ko-hero:current` parses to the MAGNITUDE-LESS descriptor, which
+    // reverse-maps to `koHeroCurrentPlayer` at execution (descriptorToLegacyKeyword)
+    // — the parameterized marker itself carries no parse-time legacy keyword.
+    assert.deepStrictEqual(hookFor('bare-current').effects, [
+      { primitive: 'ko-hero', target: 'current' },
+    ]);
+    assert.deepStrictEqual(hookFor('bare-current').keywords, []);
+  });
+
+  it('rejects ko-hero:current:1 to unresolvedMarkers (magnitude 1 is the bare form)', () => {
+    assert.deepStrictEqual(hookFor('mag1-reject').effects, []);
+    assert.deepStrictEqual(hookFor('mag1-reject').unresolvedMarkers, ['ko-hero:current:1']);
+  });
+});
+
 describe('buildVillainAbilityHooks — keywords/effects parity', () => {
   it('keywords and effects are distinct but parallel arrays (WP-252)', () => {
     const registry = makeRegistry(

@@ -184,6 +184,10 @@ function isValidParameterizedEffectToken(token) {
   if (!VILLAIN_EFFECT_PRIMITIVES.includes(primitive)) return false;
   if (primitive === 'ko-hero') {
     if (parts.length === 2 && parts[1] === 'current') return true;
+    // why: D-24298 — ko-hero:current:<N> (N ≥ 2) is the magnitude-N interactive
+    // current-player KO (Whirlwind); N=1 is the bare ko-hero:current, so a :1 here
+    // is rejected. Mirrors the engine parser's ko-hero:current branch.
+    if (parts.length === 3 && parts[1] === 'current' && /^[1-9][0-9]*$/.test(parts[2]) && Number(parts[2]) >= 2) return true;
     if (parts.length === 3 && parts[1] === 'each' && /^[1-9][0-9]*$/.test(parts[2])) return true;
     // why: D-24280 — the 4-token ko-hero:each:N:zone form (Juggernaut's
     // source-zone-restricted each-player KO); zone is exactly discard or hand.

@@ -1038,6 +1038,25 @@ describe('buildUIState — pendingKoHeroChoice projection (WP-243 / D-24010)', (
     assert.equal(ui.pendingKoHeroChoice!.remaining, 2, 'remaining = queue length');
   });
 
+  it('remaining sums entry.remaining ?? 1 across the queue (WP-492 / D-24298)', () => {
+    // why: a magnitude-N park (Whirlwind, one entry owing 2) projects its owed count;
+    // a mixed queue sums each entry's owed (present remaining + absent-as-1).
+    const magnitudeOnly = withKoChoice();
+    magnitudeOnly.pendingKoHeroChoices = [{ choiceType: 'ko-hero', playerID: '0', remaining: 2 }];
+    assert.equal(buildUIState(magnitudeOnly, mockCtx).pendingKoHeroChoice!.remaining, 2);
+
+    const mixed = withKoChoice();
+    mixed.pendingKoHeroChoices = [
+      { choiceType: 'ko-hero', playerID: '0', remaining: 2 },
+      { choiceType: 'ko-hero', playerID: '0' },
+    ];
+    assert.equal(
+      buildUIState(mixed, mockCtx).pendingKoHeroChoice!.remaining,
+      3,
+      'Σ = 2 (magnitude entry) + 1 (bare entry)',
+    );
+  });
+
   it('eligible order is byte-identical across repeated calls on the same G', () => {
     const gameState = withKoChoice();
     const a = buildUIState(gameState, mockCtx);

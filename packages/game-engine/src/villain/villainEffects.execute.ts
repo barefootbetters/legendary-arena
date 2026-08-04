@@ -16,7 +16,7 @@
  * attachBystanderToVillain, awardAttachedBystanders.
  */
 
-import type { LegendaryGameState } from '../types.js';
+import type { LegendaryGameState, PendingKoHeroChoice } from '../types.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
 import type {
   VillainAbilityTiming,
@@ -814,31 +814,73 @@ function villainEffectKoHero(
   G: LegendaryGameState,
   currentPlayer: string,
   _cardId: CardExtId,
-  _timing: VillainAbilityTiming,
+  timing: VillainAbilityTiming,
   descriptor: VillainEffectDescriptor,
 ): VillainEffectApplication {
   if (descriptor.target === 'current') {
-    // why: interactive KO for the current player (supersedes the WP-185
-    // auto-resolution deferral, D-24006). 0 eligible → no-op; exactly 1 →
-    // auto-KO (no decision to make, D-24007 decision C); ≥2 → append a
-    // pending choice and KO nothing yet (the player picks via
-    // resolveKoHeroChoice, D-24007).
+    // why: WP-492 / D-24298 — magnitude-M interactive current-player KO. M = 1 is
+    // the byte-identical WP-242 path (0 eligible → no-op; exactly 1 distinct option
+    // → auto-KO, D-24007 decision C; ≥ 2 → park ONE bare {choiceType,playerID}
+    // entry). M ≥ 2 (Whirlwind "KO two of your Heroes") KOs up to M: auto-KO every
+    // FORCED step (distinct-eligible options O ≤ 1) and, once a genuine choice
+    // remains (O ≥ 2), park ONE entry carrying the owed count — the resolve move
+    // auto-resolves any later forced remainder, so a single-option pick is never
+    // shown. Because a KO never GROWS O, one call is either all-auto (O ≤ 1
+    // throughout) or an immediate park (O ≥ 2 at the first step).
     const zones = G.playerZones[currentPlayer];
     if (!zones) return { targets: [] };
-    const eligible = buildKoEligibleTargets(zones);
-    if (eligible.length === 0) return { targets: [] };
-    if (eligible.length === 1) {
-      // why: WP-316 — the auto-KO'd hero is the log target; koSingleTarget
-      // returns its ext_id (or null if the move unexpectedly missed).
+    const magnitude = descriptor.magnitude ?? 1;
+
+    const targets: CardExtId[] = [];
+    let owed = magnitude;
+    while (owed > 0) {
+      const eligible = buildKoEligibleTargets(zones);
+      if (eligible.length === 0) break; // why: no heroes left to KO.
+      // why: a genuine choice of WHICH heroes to KO exists only when the player has
+      // MORE KO-able heroes than the count owed (they get to spare some) AND ≥ 2
+      // distinct options exist. Otherwise the KO is forced (every hero dies, or all
+      // copies are identical), so auto-resolve it with no prompt.
+      if (countKoableHeroes(zones) > owed && eligible.length >= 2) break;
       const koedId = koSingleTarget(G, zones, eligible[0]!);
-      return { targets: koedId !== null ? [koedId] : [] };
+      if (koedId === null) break; // why: defensive — an unexpected move miss stops progress.
+      targets.push(koedId);
+      owed -= 1;
     }
-    if (!G.pendingKoHeroChoices) G.pendingKoHeroChoices = [];
-    G.pendingKoHeroChoices.push({ choiceType: 'ko-hero', playerID: currentPlayer });
-    // why: WP-316 / D-24102 — pending: true marks the parked interactive KO; no
-    // hero is KO'd yet at this fire site, so no target name is known (resolve-time
-    // naming is a deferred follow-up, WP-316 §Scope Out). targets stays [].
-    return { targets: [], pending: true };
+
+    let parked = false;
+    if (owed > 0 && countKoableHeroes(zones) > owed && buildKoEligibleTargets(zones).length >= 2) {
+      if (!G.pendingKoHeroChoices) G.pendingKoHeroChoices = [];
+      const entry: PendingKoHeroChoice = { choiceType: 'ko-hero', playerID: currentPlayer };
+      // why: WP-492 / D-24298 — OMIT `remaining` when owed === 1 (absent ≡ 1), so
+      // the M=1 park is the exact {choiceType,playerID} object the WP-242 shape
+      // tests pin (byte-identical). It carries the owed count only for a M ≥ 2 park.
+      if (owed >= 2) {
+        entry.remaining = owed;
+      }
+      G.pendingKoHeroChoices.push(entry);
+      parked = true;
+    }
+
+    // why: WP-492 / D-24298 — M ≥ 2 is keyword-less (descriptorKey includes
+    // magnitude → no LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR entry → reverse-maps to
+    // undefined) so it self-narrates; M = 1 keeps the koHeroCurrentPlayer keyword
+    // and narrates via the generic Fight-effect line — it MUST NOT self-narrate
+    // (that would double-log). `G.messages` is hash-excluded (D-24081).
+    if (magnitude >= 2) {
+      const label = villainEffectTimingLabel(timing);
+      if (parked) {
+        pushLog(G, `${label} effect: KO ${String(owed)} of your Heroes — choose which.`, 'neutral');
+      } else if (targets.length > 0) {
+        const names = targets.map((koedId) => resolveCardDisplayName(G, koedId)).join(', ');
+        pushLog(G, `${label} effect: KO'd ${String(targets.length)} of your Heroes (${names}).`, 'applied');
+      } else {
+        pushLog(G, `${label} effect: no Heroes to KO.`, 'blocked');
+      }
+    }
+
+    // why: WP-316 / D-24102 — pending: true marks a parked interactive KO (targets
+    // stays whatever was auto-KO'd before the park — none, since a park is immediate).
+    return parked ? { targets, pending: true } : { targets };
   }
   // why: target === 'each'. Iteration order is Object.keys(G.playerZones).sort()
   // — default JavaScript string compare → lexical ascending (D-18902), NOT
@@ -1990,6 +2032,33 @@ export function buildKoEligibleTargets(zones: PlayerZones): KoHeroTarget[] {
     }
   }
   return targets;
+}
+
+/**
+ * Counts a player's PHYSICAL KO-able heroes — every non-wound card across discard,
+ * hand, and inPlay, WITHOUT the per-(zone, cardId) dedupe `buildKoEligibleTargets`
+ * applies (WP-492 / D-24298).
+ *
+ * The magnitude-N current-player KO (Whirlwind) parks an interactive choice only
+ * when the player has MORE KO-able heroes than the count owed (a genuine choice of
+ * WHICH to spare); when the physical count is ≤ the count owed the KO is forced
+ * (every hero dies), so it auto-resolves with no prompt. Distinct from the deduped
+ * option count: two identical copies are one option but two physical heroes.
+ *
+ * @param zones - The player's card zones.
+ * @returns The number of non-wound cards across discard + hand + inPlay.
+ */
+export function countKoableHeroes(zones: PlayerZones): number {
+  let count = 0;
+  const orderedZones: KoHeroTarget['zone'][] = ['discard', 'hand', 'inPlay'];
+  for (const zoneName of orderedZones) {
+    for (const cardId of zones[zoneName]) {
+      // why: a wound is never a "hero" for KO purposes (D-18503) — excluded here too.
+      if (cardId === WOUND_EXT_ID) continue;
+      count += 1;
+    }
+  }
+  return count;
 }
 
 /**

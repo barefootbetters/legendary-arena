@@ -2181,7 +2181,7 @@
           "vAttack": "4",
           "imageUrl": "https://images.legendary-arena.com/core/core-vi-masters-of-evil-whirlwind.webp",
           "abilities": [
-            "Fight: If you fight Whirlwind on the Rooftops or Bridge, KO two of your Heroes."
+            "Fight: If you fight Whirlwind on the Rooftops or Bridge, KO two of your Heroes. [effect:ko-hero:current:2@rooftops+bridge]"
           ],
           "copies": 2
         }

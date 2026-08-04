@@ -393,6 +393,18 @@ function parseUngatedEffect(
     if (target === 'current' && parts.length === 2) {
       return { primitive: 'ko-hero', target: 'current' };
     }
+    // why: WP-492 / D-24298 — `ko-hero:current:<N>` (N ≥ 2) is the magnitude-N
+    // interactive current-player KO (Whirlwind "KO two of your Heroes"). Magnitude 1
+    // is the bare `ko-hero:current` above (magnitude-less → reverse-maps to the
+    // `koHeroCurrentPlayer` legacy keyword); `ko-hero:current:1` is REJECTED here so
+    // magnitude-1 never produces a keyword-less `{ …, magnitude: 1 }` descriptor.
+    if (target === 'current' && parts.length === 3) {
+      const magnitude = parsePositiveInteger(parts[2]!);
+      if (magnitude === null || magnitude < 2) {
+        return null;
+      }
+      return { primitive: 'ko-hero', target: 'current', magnitude };
+    }
     if (target === 'each' && parts.length === 3) {
       const magnitude = parsePositiveInteger(parts[2]!);
       if (magnitude === null) {

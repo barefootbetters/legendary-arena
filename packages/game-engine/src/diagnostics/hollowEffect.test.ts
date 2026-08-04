@@ -386,11 +386,25 @@ describe('WP-489 Tier-B abilities record no unmarked-ability breadcrumb', () => 
     effects: [{ primitive: 'gain-wound', target: 'each-other', magnitude: 1, requireCitySpaces: ['sewers'] }],
   };
 
+  // why: WP-492 / D-24298 — Whirlwind's magnitude-2 location-gated current-player KO
+  // (keyword-less) must also record no `unmarked-ability` breadcrumb, whether the
+  // gate passes (a reachable no-op here, since the test G holds no heroes) or fails.
+  const whirlwind: VillainAbilityHook = {
+    cardId: 'v-whirlwind' as CardExtId,
+    timing: 'onFight',
+    keywords: [],
+    effects: [
+      { primitive: 'ko-hero', target: 'current', magnitude: 2, requireCitySpaces: ['rooftops', 'bridge'] },
+    ],
+  };
+
   const cases: Array<{ label: string; hook: VillainAbilityHook; cityIndex: number }> = [
     { label: 'Abomination gate-pass (Streets)', hook: abomination, cityIndex: 3 },
     { label: 'Abomination gate-fail (Sewers)', hook: abomination, cityIndex: 0 },
     { label: 'the Lizard gate-pass (Sewers)', hook: lizard, cityIndex: 0 },
     { label: 'the Lizard gate-fail (Bridge)', hook: lizard, cityIndex: 4 },
+    { label: 'Whirlwind gate-pass (Rooftops)', hook: whirlwind, cityIndex: 2 },
+    { label: 'Whirlwind gate-fail (Sewers)', hook: whirlwind, cityIndex: 0 },
   ];
 
   for (const { label, hook, cityIndex } of cases) {

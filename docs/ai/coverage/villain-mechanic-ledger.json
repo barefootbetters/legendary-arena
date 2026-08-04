@@ -4,10 +4,10 @@
   "summary": {
     "totalRows": 716,
     "byStatus": {
-      "executable": 115,
+      "executable": 116,
       "deferred": 0,
       "unsupported": 1,
-      "unmarked": 600
+      "unmarked": 599
     },
     "distinctMechanics": 18
   },
@@ -2030,11 +2030,11 @@
       "cardName": "Whirlwind",
       "set": "core",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "ko-hero",
+      "status": "executable",
+      "wp": "WP-252",
+      "decision": "D-24023",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
       "extId": "core-villain-enemies-of-asgard-ymir-frost-giant-king",
