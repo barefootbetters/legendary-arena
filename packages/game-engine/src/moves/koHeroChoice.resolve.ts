@@ -22,6 +22,12 @@ import { koCard } from '../board/ko.logic.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
 import { pushLog } from '../log/logPush.js';
 import { resolveCardName } from '../log/logDisplay.js';
+// why: WP-492 / D-24298 — a magnitude-N KO entry (Whirlwind) owes more than one KO.
+// After the player's pick, the resolve move auto-resolves any now-FORCED remainder,
+// which needs the chooser's fresh distinct-eligible options. buildKoEligibleTargets
+// is the SAME recompute the parker + the UIState projection use (no snapshot,
+// D-24007); imported here so the forced remainder shares one eligibility source.
+import { buildKoEligibleTargets, countKoableHeroes } from '../villain/villainEffects.execute.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -105,6 +111,46 @@ export function resolveKoHeroChoice({ G, playerID }: MoveContext, args: ResolveK
   const koHeroName = resolveCardName(G.cardDisplayData, args.cardId);
   pushLog(G, `Player ${playerID} KO'd ${koHeroName} (${args.cardId}).`);
 
-  // Step 6: Front-pop ONLY on success (front-pop = Array.shift, D-24007/D-24008)
-  queue.shift();
+  // Step 6: Decrement the front entry's remaining KOs owed (WP-492 / D-24298).
+  // why: a bare entry (remaining absent) owes 1 → decrement to 0 → front-pop,
+  // byte-identical to WP-242. A magnitude entry (Whirlwind) owes N; after this KO it
+  // owes N-1.
+  const owedAfterPick = (front.remaining ?? 1) - 1;
+  if (owedAfterPick <= 0) {
+    // why: this entry is fully resolved — front-pop (Array.shift, D-24007/D-24008).
+    queue.shift();
+    return;
+  }
+
+  // why: WP-492 / D-24298 — this entry still owes KOs. Auto-resolve any now-FORCED
+  // remainder so the player is never shown a single-option pick: while exactly one
+  // distinct eligible option remains, KO it (no decision) and decrement. Once a
+  // genuine choice remains (≥ 2 options), keep the decremented entry so the player
+  // picks again. A KO never grows the option count, so this terminates.
+  let owed = owedAfterPick;
+  while (owed > 0) {
+    const eligible = buildKoEligibleTargets(playerZones);
+    if (eligible.length === 0) break; // why: nothing left to KO (fewer heroes than owed).
+    // why: a genuine choice still remains only when the player has MORE KO-able
+    // heroes than the count owed AND ≥ 2 distinct options — mirror the parker. Once
+    // the KO is forced (physical ≤ owed, or all copies identical) auto-resolve it.
+    if (countKoableHeroes(playerZones) > owed && eligible.length >= 2) break;
+    const forced = eligible[0]!;
+    const forcedMove = moveCardFromZone(playerZones[forced.zone], [], forced.cardId);
+    if (!forcedMove.found) break; // why: defensive — an unexpected move miss stops progress.
+    playerZones[forced.zone] = forcedMove.from;
+    G.ko = koCard(G.ko, forced.cardId);
+    const forcedName = resolveCardName(G.cardDisplayData, forced.cardId);
+    pushLog(G, `Player ${playerID} KO'd ${forcedName} (${forced.cardId}).`);
+    owed -= 1;
+  }
+
+  if (owed <= 0) {
+    // why: the forced remainder finished the entry — front-pop.
+    queue.shift();
+    return;
+  }
+  // why: a genuine choice still remains — persist the decremented owed count so the
+  // player (or bot) makes the next pick and the UIState projects the right remaining.
+  front.remaining = owed;
 }

@@ -466,6 +466,13 @@ export interface PendingKoHeroChoice {
   choiceType: 'ko-hero';
   /** The player who must select a hero to KO. */
   playerID: string;
+  // why: WP-492 / D-24298 — the count of KOs this one entry still owes (Whirlwind
+  // "KO two of your Heroes"). Additive OPTIONAL and append-only (D-24034): ABSENT
+  // means 1, so every pre-existing single-KO entry is byte-identical (the M=1
+  // parker OMITS this field, and resolveKoHeroChoice / the UIState projection read
+  // `remaining ?? 1`). Present only on a magnitude ≥ 2 park (the parker writes the
+  // owed count); the resolve move decrements it and front-pops when it reaches 0.
+  remaining?: number;
 }
 
 /**

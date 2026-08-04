@@ -182,7 +182,7 @@ core-villain-spider-foes-the-lizard,The Lizard,core,villain,gain-wound,executabl
 core-villain-masters-of-evil-ultron,Ultron,core,villain,reveal-or-wound,executable,,,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
 core-villain-spider-foes-venom,Venom,core,villain,gainWoundEachPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
 core-villain-hydra-viper,Viper,core,villain,(unmarked),unmarked,,,
-core-villain-masters-of-evil-whirlwind,Whirlwind,core,villain,(unmarked),unmarked,,,
+core-villain-masters-of-evil-whirlwind,Whirlwind,core,villain,ko-hero,executable,WP-252,D-24023,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 core-villain-enemies-of-asgard-ymir-frost-giant-king,"Ymir, Frost Giant King",core,villain,reveal-or-wound,executable,,,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
 core-villain-radiation-zzzax,Zzzax,core,villain,reveal-or-wound,executable,,,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
 cosm-villain-celestials-arishem-the-judge,"Arishem, The Judge",cosm,villain,(unmarked),unmarked,,,

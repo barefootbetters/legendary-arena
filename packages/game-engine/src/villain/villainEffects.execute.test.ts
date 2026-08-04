@@ -649,6 +649,73 @@ describe('executeVillainAbilities — Tier-B city-space gate (WP-489 / D-24295)'
   });
 });
 
+describe('executeVillainAbilities — Whirlwind magnitude-2 current KO (WP-492 / D-24298)', () => {
+  // why: Whirlwind "Fight: If you fight Whirlwind on the Rooftops or Bridge, KO two
+  // of your Heroes." — a location-gated magnitude-2 interactive current-player KO.
+  const whirlwindHook = (): VillainAbilityHook => ({
+    cardId: 'v-whirlwind' as CardExtId,
+    timing: 'onFight',
+    keywords: [],
+    effects: [
+      { primitive: 'ko-hero', target: 'current', magnitude: 2, requireCitySpaces: ['rooftops', 'bridge'] },
+    ],
+  });
+  const zonesWith = (hand: string[]) => ({
+    '0': { deck: [], hand: hand as CardExtId[], discard: [], inPlay: [], victory: [] },
+    '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+  });
+
+  it('parks a magnitude-2 interactive choice on the Rooftops (index 2) with > 2 distinct heroes', () => {
+    const G = makeG({ hooks: [whirlwindHook()], playerZones: zonesWith(['h-a', 'h-b', 'h-c']), messages: [] });
+    executeVillainAbilities(G, CTX, 'v-whirlwind' as CardExtId, 'onFight', undefined, 2);
+    assert.deepStrictEqual(G.pendingKoHeroChoices, [
+      { choiceType: 'ko-hero', playerID: '0', remaining: 2 },
+    ]);
+    assert.deepStrictEqual(G.ko, [], 'no hero KO’d yet — the player chooses which two');
+    assert.match(G.messages.at(-1)!.text, /KO 2 of your Heroes — choose which/);
+  });
+
+  it('auto-KOs both on the Bridge (index 4) with exactly 2 distinct heroes — no prompt', () => {
+    const G = makeG({ hooks: [whirlwindHook()], playerZones: zonesWith(['h-a', 'h-b']), messages: [] });
+    executeVillainAbilities(G, CTX, 'v-whirlwind' as CardExtId, 'onFight', undefined, 4);
+    assert.equal(G.pendingKoHeroChoices?.length ?? 0, 0, 'no park — both die, no meaningful choice');
+    assert.deepStrictEqual([...G.ko].sort(), ['h-a', 'h-b']);
+    assert.match(G.messages.at(-1)!.text, /KO'd 2 of your Heroes/);
+  });
+
+  it('auto-KOs the only eligible hero when just 1 exists (KO fewer than 2)', () => {
+    const G = makeG({ hooks: [whirlwindHook()], playerZones: zonesWith(['h-a']), messages: [] });
+    executeVillainAbilities(G, CTX, 'v-whirlwind' as CardExtId, 'onFight', undefined, 2);
+    assert.deepStrictEqual(G.ko, ['h-a']);
+    assert.equal(G.pendingKoHeroChoices?.length ?? 0, 0);
+    assert.match(G.messages.at(-1)!.text, /KO'd 1 of your Heroes/);
+  });
+
+  it('is a reachable no-op (not hollow) with zero eligible heroes', () => {
+    const G = makeG({ hooks: [whirlwindHook()], messages: [] });
+    executeVillainAbilities(G, CTX, 'v-whirlwind' as CardExtId, 'onFight', undefined, 2);
+    assert.deepStrictEqual(G.ko, []);
+    assert.equal(G.pendingKoHeroChoices?.length ?? 0, 0);
+    assert.match(G.messages.at(-1)!.text, /no Heroes to KO/);
+    assert.equal(G.diagnostics?.hollowEffects?.length ?? 0, 0, 'reachable no-op, not a hollow record');
+  });
+
+  it('auto-KOs both identical copies (physical 2, one distinct option) — no prompt', () => {
+    const G = makeG({ hooks: [whirlwindHook()], playerZones: zonesWith(['h-a', 'h-a']), messages: [] });
+    executeVillainAbilities(G, CTX, 'v-whirlwind' as CardExtId, 'onFight', undefined, 4);
+    assert.deepStrictEqual(G.ko, ['h-a', 'h-a']);
+    assert.equal(G.pendingKoHeroChoices?.length ?? 0, 0);
+  });
+
+  it('the WP-489 location gate denies the effect off the Rooftops/Bridge (Sewers, index 0)', () => {
+    const G = makeG({ hooks: [whirlwindHook()], playerZones: zonesWith(['h-a', 'h-b', 'h-c']), messages: [] });
+    executeVillainAbilities(G, CTX, 'v-whirlwind' as CardExtId, 'onFight', undefined, 0);
+    assert.deepStrictEqual(G.ko, [], 'no KO off-space');
+    assert.equal(G.pendingKoHeroChoices?.length ?? 0, 0);
+    assert.match(G.messages.at(-1)!.text, /not fought on the Rooftops or Bridge; no effect/);
+  });
+});
+
 describe('executeVillainAbilities — scry-ko-own-deck (WP-447 / D-24267)', () => {
   const WOUND = 'pile-wound' as CardExtId;
   const AGENT = 'starting-shield-agent' as CardExtId;

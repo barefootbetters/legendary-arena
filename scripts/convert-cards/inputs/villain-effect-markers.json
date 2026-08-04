@@ -100,7 +100,8 @@
       },
       "masters-of-evil": {
         "baron-zemo": { "fight": ["rescue-bystanders-current-by-trait-count:team:avengers"] },
-        "ultron": { "escape": ["reveal-or-wound:hc:tech"] }
+        "ultron": { "escape": ["reveal-or-wound:hc:tech"] },
+        "whirlwind": { "fight": ["ko-hero:current:2@rooftops+bridge"] }
       },
       "radiation": {
         "abomination": { "fight": ["capture-bystander:3@streets+bridge"] },
@@ -387,7 +388,6 @@
     { "set": "anni", "group": "timelines-of-kang", "card": "scarlet-centurion", "timing": "fight", "text": "Fight: If you played a [hc:covert] Hero this turn, KO one of your Heroes.", "reason": "conditional" },
     { "set": "mgtg", "group": "ravagers", "card": "tullk", "timing": "fight", "text": "Fight: If Tullk was [keyword:Commanding] the Ravagers, KO one of your Heroes.", "reason": "conditional" },
     { "set": "mgtg", "group": "ravagers", "card": "yondu-udonta", "timing": "fight", "text": "Fight: If Yondu was [keyword:Commanding] the Ravagers, KO up to two of your Heroes.", "reason": "conditional" },
-    { "set": "core", "group": "masters-of-evil", "card": "whirlwind", "timing": "fight", "text": "Fight: If you fight Whirlwind on the Rooftops or Bridge, KO two of your Heroes.", "reason": "conditional" },
     { "set": "amwp", "group": "ghost-chasers", "card": "anitolov", "timing": "fight", "text": "Fight: [keyword:Heist]: You may KO up to two of your Heroes.", "reason": "conditional" },
     { "set": "wtif", "group": "intergalactic-party-animals", "card": "party-surtur", "timing": "fight", "text": "Fight: You may KO a grey Hero from your discard pile.", "reason": "conditional" },
     { "set": "2099", "group": "alchemax-enforcers", "card": "venture", "timing": "fight", "text": "Fight: Either KO that captured Hero or choose a player to gain it.", "reason": "conditional" },
