@@ -15,6 +15,7 @@ related:
   - scheme-twist.md
   - card-type-taxonomy.md
   - profile-login.md
+  - seed-challenges.md
 status: draft
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\leaderboard.md (this page — https://ewiki.legendary-arena.com/leaderboard/)
@@ -631,6 +632,10 @@ The end-to-end chain, in order:
   `LeaderboardEntry` records the board displays. Lower `finalScore` is
   better (negative = under PAR). The board never recomputes — it renders
   what the engine already produced.
+- **[Seed Challenges](seed-challenges.md).** A *proposed* board type where
+  every entrant plays an identical seeded board, ranked head-to-head on that
+  shared puzzle rather than PAR-normalized across different boards. It reuses
+  this same capture → verify → score → publish pipeline; not yet built.
 - **[PAR Simulation Calibration](par-simulation-calibration.md).** Sets
   each scenario's `ParBaseline` (the "course rating"). Without a calibrated
   PAR, a scenario cannot admit leaderboard entries.
