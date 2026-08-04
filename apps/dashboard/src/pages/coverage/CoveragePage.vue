@@ -179,6 +179,7 @@ const STATUS_FILTERS: readonly (LedgerStatus | 'all')[] = [
             <th>Mechanic</th>
             <th>Status</th>
             <th>WP</th>
+            <th>Decision</th>
             <th>Handler</th>
           </tr>
         </thead>
@@ -199,6 +200,9 @@ const STATUS_FILTERS: readonly (LedgerStatus | 'all')[] = [
               }}</span>
             </td>
             <td class="mono dim">{{ row.wp || '—' }}</td>
+            <!-- why: WP-496 — the DECISIONS.md id governing this mechanic, mirroring the
+                 by-mechanic table + /debug/effects; "—" for an unattributed row (never fabricated). -->
+            <td class="mono dim">{{ row.decision || '—' }}</td>
             <td class="mono dim handler">{{ row.handler || '—' }}</td>
           </tr>
         </tbody>
