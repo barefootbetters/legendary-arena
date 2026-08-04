@@ -1350,8 +1350,8 @@
       "cardType": "henchman",
       "mechanic": "scry-ko-own-deck",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-447",
+      "decision": "D-24267",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#scry-ko-own-deck"
     },
     {
@@ -1746,8 +1746,8 @@
       "cardType": "henchman",
       "mechanic": "scry-ko-own-deck",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-447",
+      "decision": "D-24267",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#scry-ko-own-deck"
     },
     {
@@ -1779,8 +1779,8 @@
       "cardType": "villain",
       "mechanic": "reveal-or-wound",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-469",
+      "decision": "D-24281",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
@@ -1856,8 +1856,8 @@
       "cardType": "villain",
       "mechanic": "become-scheme-twist",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-481",
+      "decision": "D-24287",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#become-scheme-twist"
     },
     {
@@ -1878,8 +1878,8 @@
       "cardType": "villain",
       "mechanic": "reveal-or-wound",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-469",
+      "decision": "D-24281",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
@@ -1922,8 +1922,8 @@
       "cardType": "villain",
       "mechanic": "gain-attached-hero",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-450",
+      "decision": "D-24270",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-attached-hero"
     },
     {
@@ -1944,8 +1944,8 @@
       "cardType": "villain",
       "mechanic": "gain-attached-hero",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-450",
+      "decision": "D-24270",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-attached-hero"
     },
     {
@@ -1999,8 +1999,8 @@
       "cardType": "villain",
       "mechanic": "reveal-or-wound",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-469",
+      "decision": "D-24281",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
@@ -2043,8 +2043,8 @@
       "cardType": "villain",
       "mechanic": "reveal-or-wound",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-469",
+      "decision": "D-24281",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
@@ -2054,8 +2054,8 @@
       "cardType": "villain",
       "mechanic": "reveal-or-wound",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-469",
+      "decision": "D-24281",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
@@ -4991,8 +4991,8 @@
       "cardType": "villain",
       "mechanic": "gain-attached-hero",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-450",
+      "decision": "D-24270",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-attached-hero"
     },
     {

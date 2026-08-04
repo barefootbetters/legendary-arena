@@ -55,8 +55,8 @@
       "set": "2099",
       "mechanic": "undercover",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-282",
+      "decision": "D-24060",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover",
       "designs": [
         {
@@ -119,8 +119,8 @@
       "set": "2099",
       "mechanic": "undercover",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-282",
+      "decision": "D-24060",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover",
       "designs": [
         {
@@ -175,8 +175,8 @@
       "set": "2099",
       "mechanic": "undercover",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-282",
+      "decision": "D-24060",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover",
       "designs": [
         {
@@ -267,8 +267,8 @@
       "set": "2099",
       "mechanic": "undercover",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-282",
+      "decision": "D-24060",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover",
       "designs": [
         {
@@ -303,8 +303,8 @@
       "set": "3dtc",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -319,8 +319,8 @@
       "set": "3dtc",
       "mechanic": "rescue",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-215",
+      "decision": "D-21501",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#rescue",
       "designs": [
         {
@@ -357,8 +357,8 @@
       "set": "3dtc",
       "mechanic": "gain-wound-each",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-364",
+      "decision": "D-24156",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-each",
       "designs": [
         {
@@ -373,8 +373,8 @@
       "set": "3dtc",
       "mechanic": "ko-wound-reward",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-382",
+      "decision": "D-24183",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward",
       "designs": [
         {
@@ -472,8 +472,8 @@
       "set": "amwp",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-290",
+      "decision": "D-24074",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -552,8 +552,8 @@
       "set": "amwp",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-290",
+      "decision": "D-24074",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -600,8 +600,8 @@
       "set": "amwp",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-290",
+      "decision": "D-24074",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -624,8 +624,8 @@
       "set": "amwp",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -640,8 +640,8 @@
       "set": "amwp",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -742,8 +742,8 @@
       "set": "anni",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -978,8 +978,8 @@
       "set": "antm",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -1014,8 +1014,8 @@
       "set": "antm",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-290",
+      "decision": "D-24074",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -1055,7 +1055,7 @@
       "mechanic": "return-zero-cost-discard",
       "status": "executable",
       "wp": "",
-      "decision": "",
+      "decision": "D-24139",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#return-zero-cost-discard",
       "designs": [
         {
@@ -1070,8 +1070,8 @@
       "set": "antm",
       "mechanic": "victory-villain-attack",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-285",
+      "decision": "D-24099",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#victory-villain-attack",
       "designs": [
         {
@@ -1086,8 +1086,8 @@
       "set": "antm",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -1138,8 +1138,8 @@
       "set": "antm",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-290",
+      "decision": "D-24074",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -1154,8 +1154,8 @@
       "set": "antm",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -1190,8 +1190,8 @@
       "set": "antm",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-290",
+      "decision": "D-24074",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -1235,7 +1235,7 @@
       "mechanic": "optional-put-bottom-hq",
       "status": "executable",
       "wp": "",
-      "decision": "",
+      "decision": "D-24130",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-put-bottom-hq",
       "designs": [
         {
@@ -1251,7 +1251,7 @@
       "mechanic": "put-any-number-bottom-hq",
       "status": "executable",
       "wp": "",
-      "decision": "",
+      "decision": "D-24132",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#put-any-number-bottom-hq",
       "designs": [
         {
@@ -1267,7 +1267,7 @@
       "mechanic": "put-bottom-hq-icon-reward",
       "status": "executable",
       "wp": "",
-      "decision": "",
+      "decision": "D-24133",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#put-bottom-hq-icon-reward",
       "designs": [
         {
@@ -1282,8 +1282,8 @@
       "set": "antm",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-290",
+      "decision": "D-24074",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -1518,8 +1518,8 @@
       "set": "asrd",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -1642,8 +1642,8 @@
       "set": "bkpt",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -1898,8 +1898,8 @@
       "set": "bkwd",
       "mechanic": "undercover",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-282",
+      "decision": "D-24060",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover",
       "designs": [
         {
@@ -1954,8 +1954,8 @@
       "set": "bkwd",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -1974,8 +1974,8 @@
       "set": "bkwd",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -1990,8 +1990,8 @@
       "set": "bkwd",
       "mechanic": "undercover",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-282",
+      "decision": "D-24060",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover",
       "designs": [
         {
@@ -2126,8 +2126,8 @@
       "set": "bkwd",
       "mechanic": "undercover",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-282",
+      "decision": "D-24060",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover",
       "designs": [
         {
@@ -2214,8 +2214,8 @@
       "set": "ca75",
       "mechanic": "rescue",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-215",
+      "decision": "D-21501",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#rescue",
       "designs": [
         {
@@ -2250,8 +2250,8 @@
       "set": "ca75",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -2290,8 +2290,8 @@
       "set": "ca75",
       "mechanic": "rescue",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-215",
+      "decision": "D-21501",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#rescue",
       "designs": [
         {
@@ -2342,8 +2342,8 @@
       "set": "ca75",
       "mechanic": "rescue",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-215",
+      "decision": "D-21501",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#rescue",
       "designs": [
         {
@@ -2382,8 +2382,8 @@
       "set": "ca75",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -2454,8 +2454,8 @@
       "set": "chmp",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -2470,8 +2470,8 @@
       "set": "chmp",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-290",
+      "decision": "D-24074",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -2522,8 +2522,8 @@
       "set": "chmp",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -2538,8 +2538,8 @@
       "set": "chmp",
       "mechanic": "rescue",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-215",
+      "decision": "D-21501",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#rescue",
       "designs": [
         {
@@ -2554,8 +2554,8 @@
       "set": "chmp",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-290",
+      "decision": "D-24074",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -2618,8 +2618,8 @@
       "set": "chmp",
       "mechanic": "rescue",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-215",
+      "decision": "D-21501",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#rescue",
       "designs": [
         {
@@ -2634,8 +2634,8 @@
       "set": "chmp",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-290",
+      "decision": "D-24074",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -2690,8 +2690,8 @@
       "set": "chmp",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -2706,8 +2706,8 @@
       "set": "chmp",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-290",
+      "decision": "D-24074",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -2750,8 +2750,8 @@
       "set": "chmp",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-290",
+      "decision": "D-24074",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -2802,8 +2802,8 @@
       "set": "co2e",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -2834,8 +2834,8 @@
       "set": "co2e",
       "mechanic": "rescue",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-215",
+      "decision": "D-21501",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#rescue",
       "designs": [
         {
@@ -2865,8 +2865,8 @@
       "set": "co2e",
       "mechanic": "discard-to-play",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-383",
+      "decision": "D-24184",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play",
       "designs": [
         {
@@ -2889,8 +2889,8 @@
       "set": "co2e",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -2921,8 +2921,8 @@
       "set": "co2e",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -2937,8 +2937,8 @@
       "set": "co2e",
       "mechanic": "ko-wound-reward",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-382",
+      "decision": "D-24183",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward",
       "designs": [
         {
@@ -2953,8 +2953,8 @@
       "set": "co2e",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -3073,8 +3073,8 @@
       "set": "co2e",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -3097,8 +3097,8 @@
       "set": "co2e",
       "mechanic": "ko-wound-reward",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-382",
+      "decision": "D-24183",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward",
       "designs": [
         {
@@ -3145,8 +3145,8 @@
       "set": "core",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -3177,8 +3177,8 @@
       "set": "core",
       "mechanic": "rescue",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-215",
+      "decision": "D-21501",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#rescue",
       "designs": [
         {
@@ -3204,8 +3204,8 @@
       "set": "core",
       "mechanic": "discard-to-play",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-383",
+      "decision": "D-24184",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play",
       "designs": [
         {
@@ -3235,8 +3235,8 @@
       "set": "core",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -3267,8 +3267,8 @@
       "set": "core",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -3283,8 +3283,8 @@
       "set": "core",
       "mechanic": "gain-wound-each",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-364",
+      "decision": "D-24156",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-each",
       "designs": [
         {
@@ -3299,8 +3299,8 @@
       "set": "core",
       "mechanic": "ko-wound-reward",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-382",
+      "decision": "D-24183",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward",
       "designs": [
         {
@@ -3315,8 +3315,8 @@
       "set": "core",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -3357,8 +3357,8 @@
       "set": "core",
       "mechanic": "rescue",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-215",
+      "decision": "D-21501",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#rescue",
       "designs": [
         {
@@ -3433,8 +3433,8 @@
       "set": "core",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -3460,8 +3460,8 @@
       "set": "core",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -3484,8 +3484,8 @@
       "set": "core",
       "mechanic": "ko-wound-reward",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-382",
+      "decision": "D-24183",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward",
       "designs": [
         {
@@ -3599,8 +3599,8 @@
       "set": "cosm",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -3615,8 +3615,8 @@
       "set": "cosm",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -3691,8 +3691,8 @@
       "set": "cosm",
       "mechanic": "rescue",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-215",
+      "decision": "D-21501",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#rescue",
       "designs": [
         {
@@ -3828,8 +3828,8 @@
       "set": "cvwr",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -3844,8 +3844,8 @@
       "set": "cvwr",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-290",
+      "decision": "D-24074",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -3876,8 +3876,8 @@
       "set": "cvwr",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -3908,8 +3908,8 @@
       "set": "cvwr",
       "mechanic": "gain-wound-self",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-364",
+      "decision": "D-24156",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-self",
       "designs": [
         {
@@ -3924,8 +3924,8 @@
       "set": "cvwr",
       "mechanic": "ko-wound-reward",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-382",
+      "decision": "D-24183",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward",
       "designs": [
         {
@@ -3940,8 +3940,8 @@
       "set": "cvwr",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-290",
+      "decision": "D-24074",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -3988,8 +3988,8 @@
       "set": "cvwr",
       "mechanic": "gain-wound-self",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-364",
+      "decision": "D-24156",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-self",
       "designs": [
         {
@@ -4015,8 +4015,8 @@
       "set": "cvwr",
       "mechanic": "rescue",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-215",
+      "decision": "D-21501",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#rescue",
       "designs": [
         {
@@ -4047,8 +4047,8 @@
       "set": "cvwr",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -4063,8 +4063,8 @@
       "set": "cvwr",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -4083,8 +4083,8 @@
       "set": "cvwr",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-290",
+      "decision": "D-24074",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -4115,8 +4115,8 @@
       "set": "cvwr",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -4135,8 +4135,8 @@
       "set": "cvwr",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -4183,8 +4183,8 @@
       "set": "cvwr",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-290",
+      "decision": "D-24074",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -4203,8 +4203,8 @@
       "set": "cvwr",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -4319,8 +4319,8 @@
       "set": "dead",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -4529,8 +4529,8 @@
       "set": "dkcy",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -4572,8 +4572,8 @@
       "set": "dkcy",
       "mechanic": "gain-wound-self",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-364",
+      "decision": "D-24156",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-self",
       "designs": [
         {
@@ -4599,8 +4599,8 @@
       "set": "dkcy",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -4639,8 +4639,8 @@
       "set": "dkcy",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -4671,8 +4671,8 @@
       "set": "dkcy",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -4687,8 +4687,8 @@
       "set": "dkcy",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -4703,8 +4703,8 @@
       "set": "dkcy",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -4735,8 +4735,8 @@
       "set": "dkcy",
       "mechanic": "rescue",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-215",
+      "decision": "D-21501",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#rescue",
       "designs": [
         {
@@ -4786,8 +4786,8 @@
       "set": "dkcy",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -4818,8 +4818,8 @@
       "set": "dkcy",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -4854,8 +4854,8 @@
       "set": "dstr",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -5022,8 +5022,8 @@
       "set": "dstr",
       "mechanic": "ko-wound-reward",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-382",
+      "decision": "D-24183",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward",
       "designs": [
         {
@@ -5222,8 +5222,8 @@
       "set": "ff04",
       "mechanic": "gain-wound-self",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-364",
+      "decision": "D-24156",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-self",
       "designs": [
         {
@@ -5238,8 +5238,8 @@
       "set": "ff04",
       "mechanic": "ko-wound-reward",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-382",
+      "decision": "D-24183",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward",
       "designs": [
         {
@@ -5274,8 +5274,8 @@
       "set": "ff04",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -5797,8 +5797,8 @@
       "set": "mgtg",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -5833,8 +5833,8 @@
       "set": "mgtg",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -6009,8 +6009,8 @@
       "set": "msis",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -6041,8 +6041,8 @@
       "set": "msis",
       "mechanic": "ko-wound-reward",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-382",
+      "decision": "D-24183",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward",
       "designs": [
         {
@@ -6077,8 +6077,8 @@
       "set": "msis",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -6233,8 +6233,8 @@
       "set": "msmc",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -6445,8 +6445,8 @@
       "set": "msmc",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -6765,8 +6765,8 @@
       "set": "msp1",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -6781,8 +6781,8 @@
       "set": "msp1",
       "mechanic": "rescue",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-215",
+      "decision": "D-21501",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#rescue",
       "designs": [
         {
@@ -6808,8 +6808,8 @@
       "set": "msp1",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -6824,8 +6824,8 @@
       "set": "msp1",
       "mechanic": "gain-wound-each",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-364",
+      "decision": "D-24156",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-each",
       "designs": [
         {
@@ -6840,8 +6840,8 @@
       "set": "msp1",
       "mechanic": "ko-wound-reward",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-382",
+      "decision": "D-24183",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward",
       "designs": [
         {
@@ -6856,8 +6856,8 @@
       "set": "msp1",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -6966,7 +6966,7 @@
       "mechanic": "put-any-number-bottom-hq",
       "status": "executable",
       "wp": "",
-      "decision": "",
+      "decision": "D-24132",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#put-any-number-bottom-hq",
       "designs": [
         {
@@ -7237,8 +7237,8 @@
       "set": "pttr",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -7393,8 +7393,8 @@
       "set": "rlmk",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -7665,8 +7665,8 @@
       "set": "rvlt",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -7788,8 +7788,8 @@
       "set": "rvlt",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -7912,8 +7912,8 @@
       "set": "shld",
       "mechanic": "undercover",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-282",
+      "decision": "D-24060",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover",
       "designs": [
         {
@@ -7936,8 +7936,8 @@
       "set": "shld",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -7976,8 +7976,8 @@
       "set": "shld",
       "mechanic": "undercover",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-282",
+      "decision": "D-24060",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover",
       "designs": [
         {
@@ -8000,8 +8000,8 @@
       "set": "shld",
       "mechanic": "undercover",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-282",
+      "decision": "D-24060",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover",
       "designs": [
         {
@@ -8027,8 +8027,8 @@
       "set": "shld",
       "mechanic": "undercover",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-282",
+      "decision": "D-24060",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover",
       "designs": [
         {
@@ -8065,8 +8065,8 @@
       "set": "shld",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -8117,8 +8117,8 @@
       "set": "shld",
       "mechanic": "undercover",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-282",
+      "decision": "D-24060",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover",
       "designs": [
         {
@@ -8165,8 +8165,8 @@
       "set": "shld",
       "mechanic": "undercover",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-282",
+      "decision": "D-24060",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover",
       "designs": [
         {
@@ -8189,8 +8189,8 @@
       "set": "shld",
       "mechanic": "undercover",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-282",
+      "decision": "D-24060",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover",
       "designs": [
         {
@@ -8205,8 +8205,8 @@
       "set": "shld",
       "mechanic": "undercover",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-282",
+      "decision": "D-24060",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover",
       "designs": [
         {
@@ -8221,8 +8221,8 @@
       "set": "shld",
       "mechanic": "undercover",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-282",
+      "decision": "D-24060",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover",
       "designs": [
         {
@@ -8337,8 +8337,8 @@
       "set": "smhc",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -8567,8 +8567,8 @@
       "set": "ssw1",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -8583,8 +8583,8 @@
       "set": "ssw1",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -8703,8 +8703,8 @@
       "set": "ssw1",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -8819,8 +8819,8 @@
       "set": "ssw2",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -9101,8 +9101,8 @@
       "set": "ssw2",
       "mechanic": "discard-to-play",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-383",
+      "decision": "D-24184",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play",
       "designs": [
         {
@@ -9173,8 +9173,8 @@
       "set": "ssw2",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -9377,8 +9377,8 @@
       "set": "vill",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -9393,8 +9393,8 @@
       "set": "vill",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -9429,8 +9429,8 @@
       "set": "vill",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -9469,8 +9469,8 @@
       "set": "vill",
       "mechanic": "discard-to-play",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-383",
+      "decision": "D-24184",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play",
       "designs": [
         {
@@ -9981,8 +9981,8 @@
       "set": "wtif",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -10073,8 +10073,8 @@
       "set": "wtif",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -10133,8 +10133,8 @@
       "set": "wtif",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -10282,7 +10282,7 @@
       "mechanic": "put-any-number-bottom-hq",
       "status": "executable",
       "wp": "",
-      "decision": "",
+      "decision": "D-24132",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#put-any-number-bottom-hq",
       "designs": [
         {
@@ -10381,8 +10381,8 @@
       "set": "wwhk",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -10581,8 +10581,8 @@
       "set": "wwhk",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -10653,8 +10653,8 @@
       "set": "wwhk",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -10685,8 +10685,8 @@
       "set": "wwhk",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -10789,8 +10789,8 @@
       "set": "wwhk",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -10917,8 +10917,8 @@
       "set": "wwhk",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -10969,8 +10969,8 @@
       "set": "wwhk",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -11317,8 +11317,8 @@
       "set": "xmen",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -11593,8 +11593,8 @@
       "set": "xmen",
       "mechanic": "discard-to-play",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-383",
+      "decision": "D-24184",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play",
       "designs": [
         {
@@ -11645,8 +11645,8 @@
       "set": "xmen",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -11694,7 +11694,7 @@
       "mechanic": "put-bottom-hq-icon-reward",
       "status": "executable",
       "wp": "",
-      "decision": "",
+      "decision": "D-24133",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#put-bottom-hq-icon-reward",
       "designs": [
         {
@@ -11757,8 +11757,8 @@
       "set": "xmen",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -11853,8 +11853,8 @@
       "set": "xmen",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -11901,8 +11901,8 @@
       "set": "xmen",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
@@ -11973,8 +11973,8 @@
       "set": "xmen",
       "mechanic": "draw",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-022",
+      "decision": "D-2201",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
