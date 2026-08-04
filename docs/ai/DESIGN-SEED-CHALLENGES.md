@@ -73,8 +73,10 @@ the feature.
   (Vision §23, D-0005: "Players never share game state or act inside each
   other's matches").
 - A **shared seed** means each entrant plays their **own independent match**
-  that merely happens to be seeded identically. There is one `G` per entrant,
-  never shared. The seed is an *input to setup*, not a channel between
+  that merely happens to be seeded identically. Every entrant receives an
+  independent match instance; the system never creates a shared game or a
+  synchronized session between competitors. There is one `G` per entrant,
+  never shared, and the seed is an *input to setup*, not a channel between
   players. Comparison happens only afterward, at the leaderboard layer, over
   independently played, replay-verified runs — exactly the D-0005 shape.
 
@@ -83,6 +85,26 @@ So a seed challenge is the *same* async-comparison model as
 runs share a board. Everything D-0005 requires still holds: no shared state,
 quality-normalized ranking (§25 — a seed board ranks by FinalScore, never by
 volume of attempts), replay-verified inputs (§24).
+
+### Competitive integrity — verification is the source of truth
+
+A published seed is knowable in advance, so the integrity of a seed board
+rests entirely on the **existing server-side verification path**, never on a
+client claim. This is a first-class requirement, not an edge case, and it is
+already how the competitive pipeline works:
+
+- Rankings are computed **exclusively from server-verified match results**.
+  The server re-executes the captured match through boardgame.io's own
+  reducer, recomputes `computeStateHash`, and scores server-side; it **never
+  trusts a client-supplied score, statistic, or board state** (D-5301).
+- **Replay verification remains the authoritative integrity mechanism** for
+  seed challenges. A published challenge is exactly as trustworthy as the
+  replay that reconstructs it — the same trust root the PAR-scored boards
+  already stand on.
+
+A knowable board is safe only *because* the score it publishes is one the
+server reproduced from the match log, not one the client reported. Any future
+seed-challenge WP that weakened this would break the surface's whole premise.
 
 ---
 
@@ -118,6 +140,49 @@ the seed together:
 - Player count (a 1-player board and a 3-player board seeded the same are
   still different puzzles — they draw different setup counts).
 - The seed.
+
+### Challenge identity (formal)
+
+Elevate this from an incidental property to a formal identifier. A challenge
+is identified by the tuple:
+
+```
+(version, playerCount, setupConfig, seed)
+```
+
+- **`setupConfig`** — all board-defining inputs: the locked 9-field
+  `MatchSetupConfig` composition (Scheme, Mastermind, villain/henchman groups,
+  supply counts) plus any challenge-pinned hero selection (the hero fork
+  below).
+- **`playerCount`** — the seed draws different setup counts per player count.
+- **`seed`** — the RNG seed.
+- **`version`** — the reproducibility pin. There is no single `ruleset_version`
+  field today; in this codebase the pin decomposes into two existing concepts:
+  the **`scoringConfigVersion`** (already immutable per VISION §22) and the
+  **engine determinism version** (an engine change that shifts
+  `computeStateHash` — the project already re-pins sentinel state hashes when a
+  `G` field changes). Both must be bound to a published challenge (see below).
+
+**The seed alone is never a challenge identifier.** Two entrants who share a
+seed but differ on any other tuple element played different boards.
+
+### Version binding and the determinism dependency
+
+The `version` element is not cosmetic — it is the challenge's compatibility
+contract, and it carries a real architectural dependency worth stating plainly:
+
+- A challenge's board and scores are reproducible only while the engine
+  **replays that seed identically**. Any engine change that shifts the
+  deterministic hash (a new `G` field, a rule change, a setup-order change)
+  makes a previously published challenge replay differently — historical
+  comparability breaks until remediated.
+- A challenge scored under one `scoringConfigVersion` is not comparable to one
+  scored under another (VISION §22 immutability).
+
+So a published challenge must **bind its engine/determinism version and its
+`scoringConfigVersion`**, exactly as the PAR artifacts already bind theirs.
+This is the same class of constraint the PAR pipeline already solved; seed
+challenges inherit it rather than inventing a new one.
 
 ### The hero question (a genuine design fork)
 
@@ -161,19 +226,25 @@ Three time-scoped views, all built on challenge boards:
 
 Each tier is legitimate **because** its inputs are same-seed: a daily board
 compares identical boards directly; the weekly compares seven identical-board
-results per entrant; the all-time is the archive of those. No PAR
-normalization is *required* to make same-seed comparison fair (that is the
-point — the board variance PAR exists to correct is simply absent). See §6 for
-why PAR still matters for *vetting*, and §7(d) for the read-path implication.
+results per entrant; the all-time is the archive of those.
+
+**Why PAR normalization is not needed here.** PAR exists to compensate for
+board-to-board difficulty variance — it is a *course rating* that makes scores
+on different scenarios comparable. On a seed board every entrant faces an
+identical board, so board-difficulty variance is eliminated by construction.
+Same-seed ranking therefore compares verified scores **directly**, without PAR
+normalization. (PAR still matters for *vetting* — see §6 — and the current read
+layer's PAR gate is a build implication, see §7(d).)
 
 ---
 
 ## 6. Seed vetting — publish only fit seeds
 
-A shared seed is only fair if the board is actually winnable. A seed rigged by
-the shuffle into an auto-loss fails everyone equally, but it is a terrible
-challenge; a trivial seed is a non-contest. Both are filtered **before
-publication**, not voided after:
+A shared seed is only a **valid competitive board** if it is *demonstrably
+winnable and materially decision-sensitive*. A seed rigged by the shuffle into
+an auto-loss fails everyone equally; a trivial seed is a non-contest; and a
+board whose outcome is a coin-flip regardless of play measures luck, not skill.
+All three are filtered **before publication**, not voided after:
 
 1. **Simulate the candidate.** Play the (loadout + seed) many times with the
    calibration bot and record the outcome distribution.
@@ -182,8 +253,16 @@ publication**, not voided after:
    (~100%), and **keep the middle band** (target roughly 40–60% for the
    calibration policy — the exact band is a tuning parameter, not a locked
    value).
-3. **Publish from the curated pool only.** A challenge is drawn from vetted
-   seeds, so every live board is provably beatable and worth playing.
+3. **Screen for decision-sensitivity** *(criterion to design)*. Win rate alone
+   does not prove a board rewards skill — a ~50% board can still be a coin-flip.
+   A decision-sensitivity measure (e.g. outcome variance across decision-seeds,
+   or across policy tiers, on the *same* fixed setup seed) is a criterion to
+   design; the current win-rate harness does not measure it. Flagged so it is
+   not assumed solved.
+4. **Publish from the curated pool only — publication is gated on vetting.** A
+   candidate that fails the configured calibration criteria is **not eligible
+   for challenge rotation**. Every live board is therefore provably beatable,
+   decision-relevant, and worth playing.
 
 This is deliberately the **same machinery** as PAR simulation calibration
 (`par-simulation-calibration.md`) — Monte-Carlo win-rate over the sim harness
@@ -283,19 +362,25 @@ session. Numbers, decisions, and dependencies are allocated then.
 
 ## 9. Open design questions
 
-- **Hero pinning for the daily flagship** — fully-pinned vs scenario+seed
-  (recommended fully-pinned in §4; confirm at draft time).
+- **Board scope** — fully-pinned challenge definitions vs partially-
+  configurable (free-hero) definitions (recommended fully-pinned for the daily
+  flagship, §4; confirm at draft time).
 - **Weekly aggregation function** — sum-of-daily vs best-N-of-seven; both are
   quality-normalized, they reward slightly different consistency profiles.
 - **Vetting band + trial count** — the 40–60% target and how many trials per
-  candidate; tune against the chosen bot policy.
-- **PAR-free vs seed-PAR ranking** (§7d) — cheapest correct read path.
+  candidate; tune against the chosen bot policy. Plus how (or whether) to
+  measure decision-sensitivity (§6.3).
+- **Ranking model** — direct verified-score comparison (**recommended**, §5)
+  vs per-seed normalization; the current read layer's PAR gate (§7d) is the
+  cheapest-correct-path question underneath it.
+- **Challenge versioning & expiry** — how a published challenge binds its
+  engine/determinism version and `scoringConfigVersion` (§4 version binding),
+  and what happens to historical boards when either changes.
 - **Seed-rotation cadence and pool refill** — how far ahead to vet, how to
   rotate, and whether daily seeds are announced or surprise.
-- **Anti-cheat surface** — a published seed is knowable in advance; confirm
-  the replay-verification path (which already re-executes server-side and
-  never trusts a client number) is sufficient, or whether same-seed play
-  needs any additional guard.
+- **Anti-cheat surface** — largely answered by §2 (competitive integrity rests
+  on server-side replay verification, which never trusts a client number);
+  confirm no additional guard is needed for a knowable board.
 
 ---
 
