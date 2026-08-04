@@ -37,42 +37,50 @@ last-reviewed: 2026-08-04
 
 ## Summary
 
-A **seed challenge** is a competitive board on which every entrant plays the
-**identical seeded game** — same villain-deck order, same setup, same draws —
-so their ranking reflects decisions rather than luck of the draw. It is a
-proposed [Leaderboard](leaderboard.md) surface that reuses the engine's
-existing determinism and the verified-[Scoring](scoring.md) pipeline, adding a
-pre-publication vetting step (built on the same simulation machinery as
-[PAR Simulation Calibration](par-simulation-calibration.md)) so only fair,
-winnable-but-demanding seeds go live.
+A **seed challenge** is a proposed competitive [Leaderboard](leaderboard.md)
+surface on which every entrant plays the **identical deterministic board** —
+the challenge fixes both the game setup and the RNG seed, so participants face
+the same villain-deck order, card reveals, and draws. Rankings therefore
+reflect player decisions rather than board variance.
+
+It reuses the engine's existing determinism and the
+verified-[Scoring](scoring.md) pipeline. Before publication, candidate boards
+are screened with the same simulation framework used by
+[PAR Simulation Calibration](par-simulation-calibration.md), so that only fair,
+winnable, and non-trivial boards go live.
 
 ## Mechanics
 
 ### Shared seed removes board variance
 
-Every shuffle and draw in the engine is deterministic — it routes through
-`ctx.random.*`, and the replay pipeline already reconstructs a finished match
-from its persisted seed (`plugins.random.data.seed`;
-[`matchReplay.logic.ts`](../apps/server/src/replay/matchReplay.logic.ts)). A
-fixed seed therefore reproduces an identical board. A seed challenge exploits
-that: publish a board with a fixed seed, and everyone who plays it faces the
-same cards in the same order. The board variance that a raw leaderboard
-otherwise mixes into the ranking is simply absent.
+The engine's random events are deterministic and derive from the persisted
+match seed (`plugins.random.data.seed`;
+[`matchReplay.logic.ts`](../apps/server/src/replay/matchReplay.logic.ts) already
+reconstructs a finished match from it). A fixed seed therefore reproduces the
+same board, draw order, and reveal sequence across independent matches. A seed
+challenge exploits this by publishing a fixed challenge configuration: every
+entrant plays an independent match generated from the same definition and so
+faces the same board — the board variance a raw leaderboard would otherwise mix
+into the ranking is simply absent.
 
-> **A shared seed is not a shared match.** Each entrant plays their own
-> independent game that merely happens to be seeded identically — one `G` per
-> entrant, never shared, compared only afterward at the leaderboard layer.
-> This is the [`DESIGN-RANKING.md`](../docs/ai/DESIGN-RANKING.md) async-
-> comparison model with one extra input (the seed) fixed, and it stays inside
-> the Vision §23(b) / D-0005 authorization for asynchronous comparison. It is
-> **not** live or shared-match PvP, which remains forbidden.
+> **A shared seed is not a shared match.** Every entrant receives an
+> independent match instance (one `G` per entrant, never shared); the system
+> never creates a shared game or a synchronized session between competitors,
+> and comparison happens only afterward at the leaderboard layer. This is the
+> [`DESIGN-RANKING.md`](../docs/ai/DESIGN-RANKING.md) async-comparison model
+> with one extra input (the seed) fixed, and it stays inside the Vision §23(b)
+> / D-0005 authorization for asynchronous comparison. It is **not** live or
+> shared-match PvP, which remains forbidden.
 
 ### A challenge is a loadout plus a seed
 
 A seed alone is not an identity — the same seed under a different
-Scheme / Mastermind / villains produces a different puzzle. A proposed
-challenge therefore pins the full [Scheme](scheme.md), Mastermind, villain and
-henchman groups, supply counts, and player count *together with* the seed. How
+Scheme / Mastermind / villains produces a different puzzle. The design gives a
+challenge a formal identity tuple, `(version, playerCount, setupConfig, seed)`,
+where `setupConfig` is the full [Scheme](scheme.md), Mastermind, villain and
+henchman groups and supply counts, and `version` binds the reproducibility
+pins (the immutable `scoringConfigVersion` and the engine determinism version);
+see [`DESIGN-SEED-CHALLENGES.md`](../docs/ai/DESIGN-SEED-CHALLENGES.md) §4. How
 much of the hero side is pinned is an open fork (see
 [Open Questions](#open-questions)): the design recommends a fully-pinned board
 (identical decks) for the flagship daily challenge, with a free-hero variant
@@ -121,18 +129,30 @@ aimed at a different question.
 
 ## Edge Cases
 
-- **Seed identity requires a pinned loadout.** Publishing "a seed" without
-  fixing the composition and player count would let entrants play different
-  boards under one label — the challenge identity is the *(loadout + seed)*
-  pair, not the seed alone.
+- **Challenge identity is the full tuple, not the seed.** Publishing "a seed"
+  without fixing the composition, player count, and version pins would let
+  entrants play different boards under one label — identity is
+  `(version, playerCount, setupConfig, seed)` (design doc §4), never the seed
+  alone.
+- **Validity depends on the engine and scoring version (determinism
+  dependency).** A challenge is reproducible only while the engine replays its
+  seed identically and its `scoringConfigVersion` is unchanged. An engine
+  change that shifts the deterministic state hash, or a scoring-config change,
+  makes a previously published challenge replay or score differently — its
+  historical comparability breaks until remediated. A published challenge
+  therefore has to bind both versions, as the PAR artifacts already do.
 - **The vetting band measures bot competence, not the human ceiling.** The
   win-rate band is a proxy (as PAR's baseline is) — good for filtering
   unwinnable and trivial boards, not a statement about how hard the board is
-  for a strong human. It is a tunable calibration parameter.
-- **A published seed is knowable in advance.** Because entrants can learn the
-  seed, integrity rests on the existing server-side replay verification (which
-  re-executes the match and never trusts a client-supplied score). Whether
-  same-seed play needs any further guard is an open question.
+  for a strong human. It is a tunable calibration parameter, and win rate alone
+  does not prove a board is decision-sensitive (design doc §6).
+- **A published seed is knowable in advance — verification is the source of
+  truth.** Because entrants can learn the seed, integrity rests entirely on the
+  existing server-side replay verification: the server re-executes the match,
+  recomputes its state hash, and scores server-side, never trusting a
+  client-supplied score or board state (D-5301). This is the same trust root
+  the PAR-scored boards use; see the competitive-integrity discussion in
+  [`DESIGN-SEED-CHALLENGES.md`](../docs/ai/DESIGN-SEED-CHALLENGES.md) §2.
 - **Not yet built.** No caller-specified seed exists at match creation today
   (boardgame.io mints a `Date.now()` seed and exposes no create-time seed
   API), `competitive_scores` has no seed column, and there is no curated-seed
@@ -144,13 +164,16 @@ aimed at a different question.
 Each item is unresolved until the design is drafted for execution; see
 [`DESIGN-SEED-CHALLENGES.md`](../docs/ai/DESIGN-SEED-CHALLENGES.md) §9.
 
-- **Hero pinning** — fully-pinned decks vs scenario+seed with free heroes for
-  the daily flagship.
+- **Board scope** — fully-pinned challenge definitions vs partially-
+  configurable (free-hero) definitions for the daily flagship.
 - **Weekly aggregation** — sum-of-daily vs best-N-of-seven.
-- **Vetting band and trial count** — the target win-rate window and how many
-  simulated trials per candidate.
-- **Ranking read path** — a PAR-free same-seed ranking vs per-seed PAR, given
-  the current read layer gates on published PAR.
+- **Vetting band and trial count** — the target win-rate window, how many
+  simulated trials per candidate, and whether to measure decision-sensitivity.
+- **Ranking model** — direct verified-score comparison (recommended) vs
+  per-seed normalization, given the current read layer gates on published PAR.
+- **Challenge versioning and expiry** — how a published challenge binds its
+  engine/determinism version and `scoringConfigVersion`, and what happens to
+  historical boards when either changes.
 - **Seed rotation** — how far ahead to vet, rotation cadence, and whether the
   daily seed is announced or a surprise.
 - **Plumbing** — the custom random plugin, the create-proxy seed injection
