@@ -65,7 +65,12 @@ untouched. `ledger:heroes:check` + `ledger:villains:check` + `effect-index:check
 `pnpm -r build` + `pnpm -r --no-bail test` exit 0; **no `finalStateHash`/`PRE_WP080` re-pin**
 (build-time coverage artifacts). Gates (drafting): independent subagents confirmed all four
 attributions with no defect. `User-Visible Surface = dashboard /debug/effects + /coverage` —
-**D-24026 live-verify operator-pending**.
+**D-24026 live-verify CONFIRMED 2026-08-04** — operator-viewed the deployed `/debug/effects`:
+`koHeroCurrentPlayer` villain rows (Cross' Security Detail, Hungering Energy, Queens of
+Annihilation, …) render `WP-185` / `D-18503` and `heroDeckTopToEscape` (Cyber-Nostra, Jigsaw
+2099) render `WP-185` / `D-18502` — both were `WP-185` / `—` pre-WP-495. Untouched rows stayed
+correct (`captureBystander` `WP-185`/`D-18506`; WP-493 decision-only rows blank-WP+filled-Decision;
+`Unsupported`/`Unmarked` still `—`/`—`).
 
 ### WP-493 — Mechanic Provenance Backfill (fill the blank WP/Decision columns on /debug/effects + /coverage) — DONE (2026-08-03)
 
