@@ -7,6 +7,41 @@
 
 ## Current State
 
+### WP-494 — Core Villain-Effect Vocabulary, Tier D (Viper — Conditional Victory-Pile-Gated Each-Player Wound) — DONE (2026-08-03)
+
+The first **victory-pile villain-group-gated** conditional each-player wound: **Viper**
+(`core/hydra/viper`) — "*Fight: Each player without another HYDRA Villain in their
+Victory Pile gains a Wound.*" + "*Escape: Same effect.*", previously hollow (D-24266
+`unmarked-ability`). Each player gains a Wound **unless** their Victory Pile already
+holds another HYDRA villain; fires at **both** the Fight and Escape sites. Auto-resolve
+(no player choice).
+
+- **New keyword-less primitive** `gain-wound-unless-victory-villain-group` (count
+  12→13, append-only union+array+drift) + an additive descriptor field
+  `victoryVillainGroup?` + the grammar `:<groupSlug>`. Handler mirrors
+  `villainEffectRevealOrWound` (sorted per-player, supply-bound, `woundsDrawn`
+  current-only, self-narrate).
+- **Path B — no new `G` field:** the engine has no villain group/team map, and the
+  group can't be split from the ext_id (hyphenated slugs). So the handler **derives**
+  the group prefix from the fought Viper's own ext_id (`setAbbr` before the
+  unambiguous `-villain-` infix) and matches Victory-Pile villains by the **full**
+  `${setAbbr}-villain-${group}-` prefix (a bare `.includes('-villain-')` would
+  false-match `bystander-villain-deck-NN` — unit-pinned), excluding the fought `cardId`
+  ("another"). A new hashed `G.villainGroups` map would have re-pinned every committed
+  fixture; Path B reads only already-hashed state.
+- **New primitive → one new provenance entry** `{ WP-494, D-24299 }`. Regenerated
+  `core.json` (Viper's 2 lines), the villain ledger, and
+  `effect-implementation-index.json` — `core-villain-hydra-viper` flips executable;
+  the `co2e-villain-hydra-viper` twin stays unmarked (set-scoped, deliberate).
+
+game-engine 2296→2308 pass; `pnpm -r build` + `pnpm -r --no-bail test` exit 0;
+arena-client 1156/1156 unchanged. **No `finalStateHash`/`PRE_WP080` re-pin** (no
+committed fixture deck includes `core/hydra`). No new `G` field, no interactive
+machinery, no arena-client change. WP-494 / EC-529; lands **D-24299**.
+`User-Visible Surface = play.legendary-arena.com` — **D-24026 live-verify
+operator-pending** (defeat Viper while one player holds another HYDRA villain → no
+wound; another does not → a Wound; confirm the Escape line fires the same).
+
 ### WP-495 — Provenance Decision Backfill (fill the remaining blank Decision cells on /debug/effects + /coverage) — DONE (2026-08-03)
 
 The WP-493 follow-on. After WP-493 filled the never-attributed mechanics, the only
