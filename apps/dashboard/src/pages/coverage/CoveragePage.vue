@@ -146,59 +146,6 @@ const STATUS_FILTERS: readonly (LedgerStatus | 'all')[] = [
     </section>
 
     <section class="block">
-      <h2>By mechanic — the implementation worklist</h2>
-      <p class="block-note">
-        One row per mechanic (implementing one clears every card using it). Unsupported first.
-        <span class="runtime-note">
-          The <strong>Observed in play</strong> column overlays <em>runtime-observed</em> hollows —
-          mechanics actually hit during a fixed-seed deterministic sim sweep ({{
-            runtimeObservedSummary.distinctMechanics
-          }}
-          distinct · {{ runtimeObservedSummary.totalObservations }} observations). Static status
-          answers "unsupported in theory?"; this answers "did it bite a player in play?"
-        </span>
-      </p>
-      <table class="cov-table">
-        <thead>
-          <tr>
-            <th>Mechanic</th>
-            <th>Status</th>
-            <th>Observed in play</th>
-            <th class="num">Cards</th>
-            <th>WP</th>
-            <th>Decision</th>
-            <th>Handler</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="entry in mechanics" :key="entry.mechanic">
-            <td class="mono">{{ entry.mechanic }}</td>
-            <td>
-              <span class="badge" :class="statusClass(entry.status)">{{
-                statusLabel(entry.status)
-              }}</span>
-            </td>
-            <td>
-              <span
-                v-if="runtimeObservedFor(entry.mechanic)"
-                class="badge cov-runtime"
-                :title="`hit ${runtimeObservedFor(entry.mechanic)!.hitCount}× in play · last seen turn ${runtimeObservedFor(entry.mechanic)!.lastSeenTurn}`"
-              >
-                ⚡ {{ runtimeObservedFor(entry.mechanic)!.hitCount }}× ·
-                {{ dominantReason(runtimeObservedFor(entry.mechanic)!) }}
-              </span>
-              <span v-else class="not-observed">not observed in play</span>
-            </td>
-            <td class="num">{{ entry.cardCount }}</td>
-            <td class="mono dim">{{ entry.wp || '—' }}</td>
-            <td class="mono dim">{{ entry.decision || '—' }}</td>
-            <td class="mono dim handler">{{ entry.handler || '—' }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
-
-    <section class="block">
       <h2>By card — debugging index</h2>
       <div class="controls">
         <div class="filter-buttons">
@@ -253,6 +200,59 @@ const STATUS_FILTERS: readonly (LedgerStatus | 'all')[] = [
             </td>
             <td class="mono dim">{{ row.wp || '—' }}</td>
             <td class="mono dim handler">{{ row.handler || '—' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="block">
+      <h2>By mechanic — the implementation worklist</h2>
+      <p class="block-note">
+        One row per mechanic (implementing one clears every card using it). Unsupported first.
+        <span class="runtime-note">
+          The <strong>Observed in play</strong> column overlays <em>runtime-observed</em> hollows —
+          mechanics actually hit during a fixed-seed deterministic sim sweep ({{
+            runtimeObservedSummary.distinctMechanics
+          }}
+          distinct · {{ runtimeObservedSummary.totalObservations }} observations). Static status
+          answers "unsupported in theory?"; this answers "did it bite a player in play?"
+        </span>
+      </p>
+      <table class="cov-table">
+        <thead>
+          <tr>
+            <th>Mechanic</th>
+            <th>Status</th>
+            <th>Observed in play</th>
+            <th class="num">Cards</th>
+            <th>WP</th>
+            <th>Decision</th>
+            <th>Handler</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="entry in mechanics" :key="entry.mechanic">
+            <td class="mono">{{ entry.mechanic }}</td>
+            <td>
+              <span class="badge" :class="statusClass(entry.status)">{{
+                statusLabel(entry.status)
+              }}</span>
+            </td>
+            <td>
+              <span
+                v-if="runtimeObservedFor(entry.mechanic)"
+                class="badge cov-runtime"
+                :title="`hit ${runtimeObservedFor(entry.mechanic)!.hitCount}× in play · last seen turn ${runtimeObservedFor(entry.mechanic)!.lastSeenTurn}`"
+              >
+                ⚡ {{ runtimeObservedFor(entry.mechanic)!.hitCount }}× ·
+                {{ dominantReason(runtimeObservedFor(entry.mechanic)!) }}
+              </span>
+              <span v-else class="not-observed">not observed in play</span>
+            </td>
+            <td class="num">{{ entry.cardCount }}</td>
+            <td class="mono dim">{{ entry.wp || '—' }}</td>
+            <td class="mono dim">{{ entry.decision || '—' }}</td>
+            <td class="mono dim handler">{{ entry.handler || '—' }}</td>
           </tr>
         </tbody>
       </table>
