@@ -7,6 +7,29 @@
 
 ## Current State
 
+### WP-496 — Coverage Decision Column (/coverage by-card table provenance parity) — DONE (2026-08-04)
+
+The `/coverage` by-card table rendered `Card · Design · Set · Mechanic · Status · WP · Handler`
+but omitted the **Decision** column — even though the same page's by-mechanic table and the
+`/debug/effects` viewer both showed it, and every by-card row already carried `row.decision`
+(the `LedgerRow` type declares it; the build-time coverage bundle is a full byte-copy of the
+committed ledger). After WP-493/WP-495 filled those decision values, this was the last surface
+still hiding them.
+
+- **One additive Vue display column** in `apps/dashboard/src/pages/coverage/CoveragePage.vue`:
+  a `<th>Decision</th>` header + `<td>{{ row.decision || '—' }}</td>` cell, inserted between WP
+  and Handler (mirroring the by-mechanic table's `WP · Decision · Handler` order and the
+  `/debug/effects` WP+Decision pairing). No schema/type/bundle/generated-artifact/engine change;
+  reserves no decision. Lightweight lane.
+- **Verified locally** (localhost dev server, auth-bypassed for the visual): the by-card table
+  header is `Card · Design · Set · Mechanic · Status · WP · Decision · Handler`, executable rows
+  show filled decisions (`undercover`→WP-282/D-24060, `reveal-attack-choose`→WP-253/D-24024,
+  `defeat-with-bystander`→WP-486/D-24291), and `unsupported`/`unmarked` rows show `—` (never
+  fabricated). `pnpm --filter @legendary-arena/dashboard test` 435/0 + `build` 0; `pnpm -r build` 0.
+
+`User-Visible Surface = dashboard /coverage` — **D-24026 live-verify operator-pending** (the
+column renders on the deployed `/coverage`; verified locally, deployed confirmation is operator-gated).
+
 ### WP-494 — Core Villain-Effect Vocabulary, Tier D (Viper — Conditional Victory-Pile-Gated Each-Player Wound) — DONE (2026-08-03)
 
 The first **victory-pile villain-group-gated** conditional each-player wound: **Viper**
