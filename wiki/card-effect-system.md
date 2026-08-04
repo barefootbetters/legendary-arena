@@ -43,7 +43,7 @@ source:
   - ../docs/ai/DESIGN-MASTERMIND-STRIKE-MIGRATION.md
   - ../docs/ai/ARCHITECTURE.md
   - ../docs/10-GLOSSARY.md
-last-reviewed: 2026-08-01
+last-reviewed: 2026-08-03
 ---
 
 # Card Effect System
@@ -250,7 +250,13 @@ hand:
   (`pnpm ledger:heroes`) emits one row per card × mechanic with a status of
   `executable` · `deferred` · `condition` · `unsupported` (a code gap) ·
   `unmarked` (a data gap); a villain sibling exists. Output is committed
-  under `docs/ai/coverage/` and CI-gated for freshness.
+  under `docs/ai/coverage/` and CI-gated for freshness. Authoring a new
+  effect marker ripples through generated artifacts in order —
+  `data/cards/core.json` → `villain-mechanic-ledger.{json,csv}`
+  (`pnpm ledger:villains`) → `data/metadata/effect-implementation-index.json`
+  (`pnpm effect-index`), plus a hand-added `scripts/coverage/mechanic-provenance.json`
+  row for a net-new primitive — so regenerate and re-check the whole chain, not
+  just `core.json`.
 - **Coverage gate** — [`hero-effect-coverage.mjs`](../scripts/hero-effect-coverage.mjs)
   (`pnpm sim:coverage`) buckets every parsed hero ability line into
   executable / parsed-not-executed / no-effect against a committed

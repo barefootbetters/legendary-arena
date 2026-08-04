@@ -146,6 +146,27 @@ For each WP, extract:
   cleanup PR #833; and WP-393's execution (#849) still needed an inline
   file-allowlist amendment because EC-423 omitted the file. ECs for WPs with no
   WORK_INDEX row (operator-directed EC-only work, e.g. EC-417) are exempt.
+- **Effect-marker WPs MUST gate the effect-implementation-index ripple.** Any WP
+  that marks (or unmarks) a card's ability — the villain-effect-vocab Tier family
+  (`gain-wound`, city-spaces, KO, reveal-or-wound, …) and any effect-marker
+  enrichment — regenerates a **chain** of CI-gated artifacts, not just
+  `core.json`. Marking a villain card ripples:
+  `data/cards/core.json` → `docs/ai/coverage/villain-mechanic-ledger.{json,csv}`
+  (`pnpm ledger:villains`, gated by `ledger:villains:check`) →
+  `data/metadata/effect-implementation-index.json` (`pnpm effect-index`, gated by
+  `effect-index:check`) — **and** `scripts/coverage/mechanic-provenance.json` gets
+  a hand-added `{ wp, decision }` row for a **net-new** primitive. Both `Files to
+  Produce` and `After Completing` MUST list the index regen and gate it:
+  `pnpm -r build && pnpm ledger:villains && pnpm effect-index`, then
+  `ledger:villains:check` + `effect-index:check` exit 0. This is **CI-enforced**
+  (`ci.yml` runs both `:check` steps), and the effect-index step is the drift-prone
+  one: it is a *second-order* ripple off the ledger, so an EC that gates only the
+  ledger ships a stale index that reads green locally. The drift this prevents:
+  WP-492 (Whirlwind) shipped a stale `effect-implementation-index.json` that
+  WP-493's provenance backfill silently healed; WP-489 (Tier B) likely did the
+  same; WP-494 (Viper) caught it only at the pre-flight/copilot gate. Codify it in
+  the EC so each Tier WP stops rediscovering it. (EC-529 is the reference
+  execution — it gates the full chain.)
 - Short Title in the EC header should match the filename slug semantically
 - The "Common Failure Smells" section is optional — include it when the WP
   has known failure modes that are non-obvious from the guardrails alone
