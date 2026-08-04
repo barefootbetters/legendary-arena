@@ -108,6 +108,14 @@ winnable-but-demanding band are kept. This is the same Monte-Carlo win-rate
 machinery [PAR Simulation Calibration](par-simulation-calibration.md) uses,
 aimed at a different question.
 
+The design also proposes screening the *opening*: because this engine has no
+always-available cheap recruit (`recruitHero` pulls only from the HQ; the
+Officer / Sidekick piles are effect-granted), an all-expensive opening HQ can
+strand a player. Since the seed fixes the hero-deck shuffle, a candidate can be
+screened for an affordable opening HQ (e.g. enough low-cost heroes in the first
+few refills) as a *curation* criterion, with no rules change — see
+[`DESIGN-SEED-CHALLENGES.md`](../docs/ai/DESIGN-SEED-CHALLENGES.md) §6.
+
 ## Interactions
 
 - **[Leaderboard](leaderboard.md).** A seed challenge is a proposed board type
@@ -169,6 +177,10 @@ Each item is unresolved until the design is drafted for execution; see
 - **Weekly aggregation** — sum-of-daily vs best-N-of-seven.
 - **Vetting band and trial count** — the target win-rate window, how many
   simulated trials per candidate, and whether to measure decision-sensitivity.
+- **Opening-HQ fairness** — screen published seeds for an affordable opening (a
+  curation criterion) vs a game-wide setup rule that smooths openings (an
+  invented mechanic diverging from physical Legendary); decide after the sim
+  quantifies how much opening-HQ cost affects win rate.
 - **Ranking model** — direct verified-score comparison (recommended) vs
   per-seed normalization, given the current read layer gates on published PAR.
 - **Challenge versioning and expiry** — how a published challenge binds its
