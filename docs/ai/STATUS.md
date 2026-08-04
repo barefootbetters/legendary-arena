@@ -27,8 +27,12 @@ still hiding them.
   `defeat-with-bystander`→WP-486/D-24291), and `unsupported`/`unmarked` rows show `—` (never
   fabricated). `pnpm --filter @legendary-arena/dashboard test` 435/0 + `build` 0; `pnpm -r build` 0.
 
-`User-Visible Surface = dashboard /coverage` — **D-24026 live-verify operator-pending** (the
-column renders on the deployed `/coverage`; verified locally, deployed confirmation is operator-gated).
+`User-Visible Surface = dashboard /coverage` — **D-24026 live-verify CONFIRMED 2026-08-04** —
+operator-viewed the deployed `/coverage`: the by-card table header renders `Card · Design · Set ·
+Mechanic · Status · WP · Decision · Handler` (Decision column added by this WP), and the
+by-mechanic table shows the WP-493/WP-495 fills (`draw`→WP-022/D-2201, `attack-per-count`→WP-247/D-24016,
+`optional-ko-reward`→WP-248/D-24019, decision-only `return-zero-cost-discard`→—/D-24139, etc.). `/coverage`
+now shows the same WP+Decision provenance as `/debug/effects`.
 
 ### WP-494 — Core Villain-Effect Vocabulary, Tier D (Viper — Conditional Victory-Pile-Gated Each-Player Wound) — DONE (2026-08-03)
 
