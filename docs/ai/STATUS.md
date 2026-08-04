@@ -42,7 +42,7 @@ was complete. WP-491's `designs` column coexists untouched. `pnpm -r build` +
 artifacts, hash-excluded). Gate that mattered: the drafting-session subagents caught a
 mis-attribution (`return-zero-cost-discard`→WP-353, actually the Friend-Request-Email packet)
 before execution. `User-Visible Surface = dashboard /debug/effects + /coverage` —
-**D-24026 live-verify operator-pending** (the columns render populated on the deployed dashboard).
+**D-24026 live-verify CONFIRMED 2026-08-03** — operator-viewed the deployed `/debug/effects`: `asrd/warriors-three-the` Fandral-the-Dashing `draw` renders `WP-022` / `D-2201` (the original symptom), the four decision-only mechanics render blank-WP + filled-Decision (Black Knight `return-zero-cost-discard` `—`/`D-24139`; Wonder Man `optional-put-bottom-hq` `—`/`D-24130`, `put-any-number-bottom-hq` `—`/`D-24132`, `put-bottom-hq-icon-reward` `—`/`D-24133`), the WP-attributed keys populated (rescue/undercover/size-changing/gain-wound/ko-wound-reward/victory-villain-attack), and legitimately-blank `Unsupported`/`Unmarked` rows still show `—`/`—`.
 
 ### WP-492 — Core Villain-Effect Vocabulary, Tier D (Whirlwind — Interactive Location-Gated KO) — DONE (2026-08-03)
 
