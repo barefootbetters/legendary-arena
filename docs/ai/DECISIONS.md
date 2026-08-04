@@ -35774,9 +35774,9 @@ Protect this file.
 
 Protect this file.
 
-### D-24297 — Hero mechanic ledger carries additive per-mechanic design attribution (which of a hero's cards carries each effect) (Drafted 2026-08-03 — WP-491 / EC-526; not yet landed)
+### D-24297 — Hero mechanic ledger carries additive per-mechanic design attribution (which of a hero's cards carries each effect) (Active 2026-08-03 — WP-491 / EC-526)
 
-> **Status: Reserved (drafted at WP-491 draft; flips to Active at WP-491 execution).** Reserved in `NUMBER-LEDGER.md`.
+> **Status: Active (executed 2026-08-03 — WP-491 / EC-526).** Reserved in `NUMBER-LEDGER.md`.
 
 **Context.** The hero mechanic ledger (`scripts/hero-mechanic-ledger.mjs` `buildLedger`) merges every design of a hero's deck into one abilities array keyed only by the hero `extId`, then extracts a flat mechanic set — so the generated Effect Implementation Index (WP-484), the `/debug/effects` viewer (WP-487), and the `/coverage` viewer (WP-259) collapse a hero's ~4 physical card designs into one card key and cannot say **which design carries each effect**. Black Widow (`core/black-widow`) surfaces `attack-per-count`, `defeat-with-bystander`, `draw`, `optional-ko-reward`, `rescue` with no design attribution, though the source card data attributes them cleanly per design (`mission-accomplished`=draw+rescue; `dangerous-rescue`=optional-ko-reward; `covert-operation`=attack-per-count; `silent-sniper`=defeat-with-bystander). Villains (WP-271) already key one row per individual card. `registry.listCards()` already returns one entry **per design** (`packages/registry/src/shared.ts`), so the attribution is present in the input and thrown away at the merge.
 
