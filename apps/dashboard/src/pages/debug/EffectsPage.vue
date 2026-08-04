@@ -8,7 +8,7 @@ import {
   type ScopeFilter,
   type StatusFilter,
 } from '../../composables/useEffectIndex.js';
-import type { EffectIndexStatus } from '@legendary-arena/registry/schema';
+import type { EffectDesign, EffectIndexStatus } from '@legendary-arena/registry/schema';
 
 const { summary, entries, error } = useEffectIndex();
 
@@ -45,6 +45,18 @@ const displayedEntries = computed(() => filteredEntries.value.slice(0, DISPLAY_C
 /** Maps a status to its CSS modifier class for the colored badges. */
 function statusClass(status: EffectIndexStatus): string {
   return `fx-${status}`;
+}
+
+/**
+ * The Design column label (WP-491): the hero card design name(s) that print this
+ * mechanic, comma-joined, or an em dash for a villain / unmarked-hero entry (which
+ * omit `designs` — a villain's extId already names the card).
+ */
+function designLabel(designs: readonly EffectDesign[] | undefined): string {
+  if (!designs || designs.length === 0) {
+    return '—';
+  }
+  return designs.map((design) => design.name).join(', ');
 }
 </script>
 
@@ -141,6 +153,7 @@ function statusClass(status: EffectIndexStatus): string {
         <thead>
           <tr>
             <th>Card</th>
+            <th>Design</th>
             <th>Set</th>
             <th>Scope</th>
             <th>Mechanic</th>
@@ -156,6 +169,9 @@ function statusClass(status: EffectIndexStatus): string {
               <span class="card-name">{{ entry.name }}</span>
               <span class="mono dim ext">{{ entry.extId }}</span>
             </td>
+            <!-- why: WP-491 — the hero card design(s) printing this mechanic; "—" for
+                 a villain / unmarked entry (no per-design attribution). -->
+            <td>{{ designLabel(entry.designs) }}</td>
             <td class="mono dim">{{ entry.set }}</td>
             <td>
               <span class="badge" :class="`fx-scope-${entry.scope}`">{{

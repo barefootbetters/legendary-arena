@@ -160,3 +160,40 @@ describe("EffectImplementationIndexSchema — rejects malformed indexes (WP-484 
     assert.equal(EffectImplementationIndexSchema.safeParse(index).success, false);
   });
 });
+
+describe("EffectImplementationEntrySchema — the optional designs field (WP-491 / D-24297)", () => {
+  it("accepts a hero entry carrying a valid non-empty designs list", () => {
+    const index = validIndex();
+    index.entries[0].designs = [{ slug: "mission-accomplished", name: "Mission Accomplished" }];
+    assert.equal(EffectImplementationIndexSchema.safeParse(index).success, true);
+  });
+
+  it("accepts an entry with no designs field (villain + unmarked-hero rows omit it)", () => {
+    // validIndex()'s entries carry no designs at all; the base index must still validate.
+    assert.equal(EffectImplementationIndexSchema.safeParse(validIndex()).success, true);
+  });
+
+  it("rejects an empty designs list (present ⇒ non-empty; the transform omits instead)", () => {
+    const index = validIndex();
+    index.entries[0].designs = [];
+    assert.equal(EffectImplementationIndexSchema.safeParse(index).success, false);
+  });
+
+  it("rejects a designs element missing its slug", () => {
+    const index = validIndex();
+    index.entries[0].designs = [{ name: "Mission Accomplished" }];
+    assert.equal(EffectImplementationIndexSchema.safeParse(index).success, false);
+  });
+
+  it("rejects a designs element missing its name", () => {
+    const index = validIndex();
+    index.entries[0].designs = [{ slug: "mission-accomplished" }];
+    assert.equal(EffectImplementationIndexSchema.safeParse(index).success, false);
+  });
+
+  it("rejects a designs element with an unknown extra key (the object is strict)", () => {
+    const index = validIndex();
+    index.entries[0].designs = [{ slug: "mission-accomplished", name: "Mission Accomplished", extra: 1 }];
+    assert.equal(EffectImplementationIndexSchema.safeParse(index).success, false);
+  });
+});

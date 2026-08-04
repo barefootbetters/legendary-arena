@@ -767,6 +767,17 @@ export const EFFECT_INDEX_STATUSES = [
 export const EffectIndexEntryScopeSchema = z.enum(EFFECT_INDEX_ENTRY_SCOPES);
 export const EffectIndexStatusSchema     = z.enum(EFFECT_INDEX_STATUSES);
 
+// why: WP-491 / D-24297 — a hero effect can be printed on any of a hero's ~4 card
+// designs; `EffectDesign` identifies one carrying design (its slug + display name),
+// read verbatim from the registry card. Both fields are required and non-empty, and
+// the object is `.strict()` so a malformed design element is rejected at parse time.
+export const EffectDesignSchema = z
+  .object({
+    slug: z.string().min(1),
+    name: z.string().min(1),
+  })
+  .strict();
+
 export const EffectImplementationEntrySchema = z
   .object({
     extId:    z.string().min(1),
@@ -784,6 +795,12 @@ export const EffectImplementationEntrySchema = z
     handler:  z.string(),
     wp:       z.string(),
     decision: z.string(),
+    // why: WP-491 / D-24297 — the card design(s) whose printed ability carries this
+    // mechanic. Optional and populated for HERO entries only (villain entries and hero
+    // `(unmarked)` entries omit it — a villain's extId already names the card, and an
+    // unmarked row has no carrying design). `.min(1)` when present: the transform never
+    // emits an empty `designs`, it omits the key instead.
+    designs:  z.array(EffectDesignSchema).min(1).optional(),
   })
   .strict();
 
@@ -931,6 +948,7 @@ export const EffectImplementationIndexSchema = z
 
 export type EffectIndexEntryScope        = z.infer<typeof EffectIndexEntryScopeSchema>;
 export type EffectIndexStatus            = z.infer<typeof EffectIndexStatusSchema>;
+export type EffectDesign                 = z.infer<typeof EffectDesignSchema>;
 export type EffectImplementationEntry    = z.infer<typeof EffectImplementationEntrySchema>;
 export type EffectImplementationCardEntry = z.infer<typeof EffectImplementationCardEntrySchema>;
 export type EffectImplementationSummary  = z.infer<typeof EffectImplementationSummarySchema>;

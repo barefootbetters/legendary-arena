@@ -178,3 +178,40 @@ test('useEffectIndex falls back to the bundled index when none is injected', () 
   assert.ok(view.summary.value.byScope.hero > 0);
   assert.ok(view.summary.value.byScope.villain > 0);
 });
+
+test('WP-491: a hero entry carries designs and a villain entry omits them', () => {
+  const index = makeIndex([
+    makeEntry({
+      extId: 'core/black-widow',
+      name: 'Black Widow',
+      scope: 'hero',
+      mechanic: 'defeat-with-bystander',
+      designs: [{ slug: 'silent-sniper', name: 'Silent Sniper' }],
+    }),
+    makeEntry({
+      extId: 'core-villain-hydra-viper',
+      name: 'Viper',
+      scope: 'villain',
+      mechanic: 'captureBystander',
+    }),
+  ]);
+  const view = useEffectIndex({ index });
+  const hero = view.entries.value.find((entry) => entry.scope === 'hero');
+  const villain = view.entries.value.find((entry) => entry.scope === 'villain');
+  assert.deepEqual(hero?.designs, [{ slug: 'silent-sniper', name: 'Silent Sniper' }]);
+  assert.equal(villain?.designs, undefined);
+});
+
+test('WP-491: filterEntries matches a card design name', () => {
+  const entries = [
+    makeEntry({
+      extId: 'core/black-widow',
+      name: 'Black Widow',
+      designs: [{ slug: 'silent-sniper', name: 'Silent Sniper' }],
+    }),
+    makeEntry({ extId: 'core/hulk', name: 'Hulk' }),
+  ];
+  const result = filterEntries(entries, { ...NO_FILTER, search: 'silent sniper' });
+  assert.equal(result.length, 1);
+  assert.equal(result[0]?.extId, 'core/black-widow');
+});
