@@ -7,6 +7,43 @@
 
 ## Current State
 
+### WP-493 — Mechanic Provenance Backfill (fill the blank WP/Decision columns on /debug/effects + /coverage) — DONE (2026-08-03)
+
+A **data-only** backfill of `scripts/coverage/mechanic-provenance.json`. 173 effect rows
+were `executable` with a live handler but rendered a **blank WP/Decision** on
+`/debug/effects` and `/coverage` — a provenance gap, not a code gap: both mechanic-ledger
+generators build the `wp`/`decision` columns by looking the mechanic up in the map
+**verbatim** (`buildRow` → `provenance[mechanic] ?? {}`), and the map was only ever seeded
+from later mechanic-implementing WPs. The foundational MVP keywords and four recent villain
+primitives were never attributed, so the ledgers passed `""` through and the effect index
+(fed verbatim) showed blank.
+
+- **17 traced keys added** — each located by `git log -S<handler>` / DECISIONS heading.
+  13 hero (`draw`→WP-022/D-2201, `rescue`→WP-215/D-21501, `undercover`→WP-282/D-24060,
+  `size-changing`→WP-290/D-24074, `gain-wound-self`/`-each`→WP-364/D-24156,
+  `ko-wound-reward`→WP-382/D-24183, `discard-to-play`→WP-383/D-24184,
+  `victory-villain-attack`→WP-285/D-24099) + 4 villain (`scry-ko-own-deck`→WP-447/D-24267,
+  `reveal-or-wound`→WP-469/D-24281, `become-scheme-twist`→WP-481/D-24287,
+  `gain-attached-hero`→WP-450/D-24270).
+- **4 mechanics are decision-only** (`wp:""`, INFRA/bug-fix commits with no formal WP): the
+  three HQ-bottom zone-manip ones (`put-any-number-bottom-hq`→D-24132,
+  `put-bottom-hq-icon-reward`→D-24133, `optional-put-bottom-hq`→D-24130) + `return-zero-cost-discard`→D-24139.
+- **Verbatim pass-through is the whole mechanism** — no generator/schema/dashboard code
+  changed; regenerating the two mechanic ledgers + the effect index fills the columns. No
+  new decision reserved (every cited D-id predates this WP).
+
+**Row identity preserved:** the hero + villain ledger `summary` blocks and
+`data/metadata/card-mechanics.json` are byte-identical after regen; only the `wp`/`decision`
+cells of the 173 affected rows changed (`git diff` shows only `wp`/`decision` field-lines).
+`executable`-blank-both dropped 162→0 (hero) and 11→0 (villain), confirming the traced list
+was complete. WP-491's `designs` column coexists untouched. `pnpm -r build` +
+`pnpm -r --no-bail test` exit 0; `ledger:heroes:check` + `ledger:villains:check` +
+`effect-index:check` green; **no `finalStateHash`/`PRE_WP080` re-pin** (build-time coverage
+artifacts, hash-excluded). Gate that mattered: the drafting-session subagents caught a
+mis-attribution (`return-zero-cost-discard`→WP-353, actually the Friend-Request-Email packet)
+before execution. `User-Visible Surface = dashboard /debug/effects + /coverage` —
+**D-24026 live-verify operator-pending** (the columns render populated on the deployed dashboard).
+
 ### WP-492 — Core Villain-Effect Vocabulary, Tier D (Whirlwind — Interactive Location-Gated KO) — DONE (2026-08-03)
 
 The first **interactive** Core villain Fight ability from the villain-effect-vocabulary

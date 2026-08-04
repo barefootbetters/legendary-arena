@@ -120,7 +120,7 @@ co2e-villain-masters-of-evil-baron-zemo,Baron Zemo,co2e,villain,(unmarked),unmar
 co2e-villain-sinister-syndicate-beetle,Beetle,co2e,villain,(unmarked),unmarked,,,
 co2e-villain-sinister-syndicate-boomerang,Boomerang,co2e,villain,(unmarked),unmarked,,,
 co2e-villain-enemies-of-asgard-destroyer,Destroyer,co2e,villain,(unmarked),unmarked,,,
-henchman-doombot-legion,Doombot Legion,co2e,henchman,scry-ko-own-deck,executable,,,packages/game-engine/src/villain/villainEffects.execute.ts#scry-ko-own-deck
+henchman-doombot-legion,Doombot Legion,co2e,henchman,scry-ko-own-deck,executable,WP-447,D-24267,packages/game-engine/src/villain/villainEffects.execute.ts#scry-ko-own-deck
 co2e-villain-enemies-of-asgard-enchantress,Enchantress,co2e,villain,(unmarked),unmarked,,,
 co2e-villain-hydra-endless-armies-of-hydra,Endless Armies of HYDRA,co2e,villain,(unmarked),unmarked,,,
 co2e-villain-enemies-of-asgard-frost-giant-warrior,Frost Giant Warrior,co2e,villain,(unmarked),unmarked,,,
@@ -156,35 +156,35 @@ core-villain-brotherhood-blob,Blob,core,villain,(unmarked),unmarked,,,
 core-villain-enemies-of-asgard-destroyer,Destroyer,core,villain,ko-heroes-current-by-trait,executable,WP-485,D-24290,packages/game-engine/src/villain/villainEffects.execute.ts#ko-heroes-current-by-trait
 core-villain-enemies-of-asgard-destroyer,Destroyer,core,villain,koHeroEachPlayerMag2,executable,WP-202,D-20201,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 core-villain-spider-foes-doctor-octopus,Doctor Octopus,core,villain,(unmarked),unmarked,,,
-henchman-doombot-legion,Doombot Legion,core,henchman,scry-ko-own-deck,executable,,,packages/game-engine/src/villain/villainEffects.execute.ts#scry-ko-own-deck
+henchman-doombot-legion,Doombot Legion,core,henchman,scry-ko-own-deck,executable,WP-447,D-24267,packages/game-engine/src/villain/villainEffects.execute.ts#scry-ko-own-deck
 core-villain-enemies-of-asgard-enchantress,Enchantress,core,villain,draw-cards-current,executable,WP-485,D-24290,packages/game-engine/src/villain/villainEffects.execute.ts#draw-cards-current
 core-villain-hydra-endless-armies-of-hydra,Endless Armies of HYDRA,core,villain,(unmarked),unmarked,,,
-core-villain-enemies-of-asgard-frost-giant,Frost Giant,core,villain,reveal-or-wound,executable,,,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
+core-villain-enemies-of-asgard-frost-giant,Frost Giant,core,villain,reveal-or-wound,executable,WP-469,D-24281,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
 core-villain-spider-foes-green-goblin,Green Goblin,core,villain,captureBystander,executable,WP-185,D-18506,packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander
 core-villain-hydra-hydra-kidnappers,HYDRA Kidnappers,core,villain,(unmarked),unmarked,,,
 henchman-hand-ninjas,Hand Ninjas,core,henchman,(unmarked),unmarked,,,
 core-villain-brotherhood-juggernaut,Juggernaut,core,villain,ko-hero,executable,WP-252,D-24023,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 core-villain-radiation-maestro,Maestro,core,villain,(unmarked),unmarked,,,
 core-villain-masters-of-evil-melter,Melter,core,villain,(unmarked),unmarked,,,
-core-villain-brotherhood-mystique,Mystique,core,villain,become-scheme-twist,executable,,,packages/game-engine/src/villain/villainEffects.execute.ts#become-scheme-twist
+core-villain-brotherhood-mystique,Mystique,core,villain,become-scheme-twist,executable,WP-481,D-24287,packages/game-engine/src/villain/villainEffects.execute.ts#become-scheme-twist
 core-villain-skrulls-paibok-the-power-skrull,Paibok the Power Skrull,core,villain,(unmarked),unmarked,,,
-core-villain-brotherhood-sabretooth,Sabretooth,core,villain,reveal-or-wound,executable,,,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
+core-villain-brotherhood-sabretooth,Sabretooth,core,villain,reveal-or-wound,executable,WP-469,D-24281,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
 henchman-savage-land-mutates,Savage Land Mutates,core,henchman,(unmarked),unmarked,,,
 henchman-sentinel,Sentinel,core,henchman,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 core-villain-skrulls-skrull-queen-veranke,Skrull Queen Veranke,core,villain,captureHqHeroHighestCost,executable,WP-214,D-21401,packages/game-engine/src/villain/villainEffects.execute.ts#capture-hq-hero
-core-villain-skrulls-skrull-queen-veranke,Skrull Queen Veranke,core,villain,gain-attached-hero,executable,,,packages/game-engine/src/villain/villainEffects.execute.ts#gain-attached-hero
+core-villain-skrulls-skrull-queen-veranke,Skrull Queen Veranke,core,villain,gain-attached-hero,executable,WP-450,D-24270,packages/game-engine/src/villain/villainEffects.execute.ts#gain-attached-hero
 core-villain-skrulls-skrull-shapeshifters,Skrull Shapeshifters,core,villain,captureHqHeroRightmost,executable,WP-214,D-21401,packages/game-engine/src/villain/villainEffects.execute.ts#capture-hq-hero
-core-villain-skrulls-skrull-shapeshifters,Skrull Shapeshifters,core,villain,gain-attached-hero,executable,,,packages/game-engine/src/villain/villainEffects.execute.ts#gain-attached-hero
+core-villain-skrulls-skrull-shapeshifters,Skrull Shapeshifters,core,villain,gain-attached-hero,executable,WP-450,D-24270,packages/game-engine/src/villain/villainEffects.execute.ts#gain-attached-hero
 core-villain-skrulls-super-skrull,Super-Skrull,core,villain,koHeroEachPlayer,executable,WP-189,D-18901,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 core-villain-hydra-supreme-hydra,Supreme HYDRA,core,villain,(unmarked),unmarked,,,
 core-villain-radiation-the-leader,The Leader,core,villain,(unmarked),unmarked,,,
 core-villain-spider-foes-the-lizard,The Lizard,core,villain,gain-wound,executable,WP-252,D-24023,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
-core-villain-masters-of-evil-ultron,Ultron,core,villain,reveal-or-wound,executable,,,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
+core-villain-masters-of-evil-ultron,Ultron,core,villain,reveal-or-wound,executable,WP-469,D-24281,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
 core-villain-spider-foes-venom,Venom,core,villain,gainWoundEachPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
 core-villain-hydra-viper,Viper,core,villain,(unmarked),unmarked,,,
 core-villain-masters-of-evil-whirlwind,Whirlwind,core,villain,ko-hero,executable,WP-252,D-24023,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
-core-villain-enemies-of-asgard-ymir-frost-giant-king,"Ymir, Frost Giant King",core,villain,reveal-or-wound,executable,,,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
-core-villain-radiation-zzzax,Zzzax,core,villain,reveal-or-wound,executable,,,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
+core-villain-enemies-of-asgard-ymir-frost-giant-king,"Ymir, Frost Giant King",core,villain,reveal-or-wound,executable,WP-469,D-24281,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
+core-villain-radiation-zzzax,Zzzax,core,villain,reveal-or-wound,executable,WP-469,D-24281,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
 cosm-villain-celestials-arishem-the-judge,"Arishem, The Judge",cosm,villain,(unmarked),unmarked,,,
 cosm-villain-black-order-of-thanos-black-dwarf,Black Dwarf,cosm,villain,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 cosm-villain-black-order-of-thanos-corvus-glaive,Corvus Glaive,cosm,villain,(unmarked),unmarked,,,
@@ -451,7 +451,7 @@ rvlt-villain-dark-avengers-dark-spider-man-scorpion,Dark Spider-Man (Scorpion),r
 rvlt-villain-dark-avengers-dark-wolverine-daken,Dark Wolverine (Daken),rvlt,villain,(unmarked),unmarked,,,
 rvlt-villain-army-of-evil-dome-of-darkforce,Dome of Darkforce,rvlt,villain,(unmarked),unmarked,,,
 henchman-hydra-base,HYDRA Base,rvlt,henchman,koHeroCurrentPlayer,executable,WP-185,,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
-rvlt-villain-army-of-evil-klaw,Klaw,rvlt,villain,gain-attached-hero,executable,,,packages/game-engine/src/villain/villainEffects.execute.ts#gain-attached-hero
+rvlt-villain-army-of-evil-klaw,Klaw,rvlt,villain,gain-attached-hero,executable,WP-450,D-24270,packages/game-engine/src/villain/villainEffects.execute.ts#gain-attached-hero
 rvlt-villain-lethal-legion-laser-maze,Laser Maze,rvlt,villain,(unmarked),unmarked,,,
 rvlt-villain-lethal-legion-living-laser,Living Laser,rvlt,villain,(unmarked),unmarked,,,
 rvlt-villain-lethal-legion-mbaku,M'Baku,rvlt,villain,(unmarked),unmarked,,,

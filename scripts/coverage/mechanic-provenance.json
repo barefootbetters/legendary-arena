@@ -35,6 +35,23 @@
     "draw-cards-current": { "wp": "WP-485", "decision": "D-24290" },
     "ko-heroes-current-by-trait": { "wp": "WP-485", "decision": "D-24290" },
     "rescue-bystanders-current-by-trait-count": { "wp": "WP-485", "decision": "D-24290" },
-    "defeat-with-bystander": { "wp": "WP-486", "decision": "D-24291" }
+    "defeat-with-bystander": { "wp": "WP-486", "decision": "D-24291" },
+    "draw": { "wp": "WP-022", "decision": "D-2201" },
+    "rescue": { "wp": "WP-215", "decision": "D-21501" },
+    "undercover": { "wp": "WP-282", "decision": "D-24060" },
+    "size-changing": { "wp": "WP-290", "decision": "D-24074" },
+    "gain-wound-self": { "wp": "WP-364", "decision": "D-24156" },
+    "gain-wound-each": { "wp": "WP-364", "decision": "D-24156" },
+    "ko-wound-reward": { "wp": "WP-382", "decision": "D-24183" },
+    "discard-to-play": { "wp": "WP-383", "decision": "D-24184" },
+    "victory-villain-attack": { "wp": "WP-285", "decision": "D-24099" },
+    "put-any-number-bottom-hq": { "wp": "", "decision": "D-24132" },
+    "put-bottom-hq-icon-reward": { "wp": "", "decision": "D-24133" },
+    "optional-put-bottom-hq": { "wp": "", "decision": "D-24130" },
+    "return-zero-cost-discard": { "wp": "", "decision": "D-24139" },
+    "scry-ko-own-deck": { "wp": "WP-447", "decision": "D-24267" },
+    "reveal-or-wound": { "wp": "WP-469", "decision": "D-24281" },
+    "become-scheme-twist": { "wp": "WP-481", "decision": "D-24287" },
+    "gain-attached-hero": { "wp": "WP-450", "decision": "D-24270" }
   }
 }
