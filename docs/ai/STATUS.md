@@ -52,7 +52,11 @@ Registry 221/0 (+6 designs cases); dashboard 435/0 (+2 WP-491 cases), `useEffect
 100% coverage, thresholds hold; `ledger:heroes:check` + `effect-index:check` green;
 `pnpm -r build` + `pnpm -r --no-bail test` green. Lands **D-24297** (Active). §17
 (§10/§22; No conflict). §20 N/A. §21 N/A. `User-Visible Surface = dashboard
-/debug/effects + /coverage` — **D-24026 live-verify operator-pending**. Hard-deps
+/debug/effects + /coverage` — **D-24026 live-verify CONFIRMED 2026-08-04** (the
+Design column renders on the deployed `dashboard.legendary-arena.com/debug/effects`:
+Black Widow `defeat-with-bystander` → Silent Sniper, `draw`/`rescue` → Mission
+Accomplished; Ghost Rider 2099 `cyber-mod` → Cyber-Specter, Hell Ride, Infernal
+Chainsaw in one row; villains + unmarked rows → "—"). Hard-deps
 WP-484/D-24289 + WP-487/D-24292 + WP-259/D-24035 + WP-271. See
 [WP-491](work-packets/WP-491-hero-ledger-per-design-granularity.md) +
 [EC-526](execution-checklists/EC-526-hero-ledger-per-design-granularity.checklist.md).
