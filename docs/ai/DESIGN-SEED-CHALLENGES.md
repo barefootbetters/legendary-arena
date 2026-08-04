@@ -259,7 +259,19 @@ All three are filtered **before publication**, not voided after:
    or across policy tiers, on the *same* fixed setup seed) is a criterion to
    design; the current win-rate harness does not measure it. Flagged so it is
    not assumed solved.
-4. **Publish from the curated pool only — publication is gated on vetting.** A
+4. **Screen the opening for recruit access** *(criterion to design)*. This
+   codebase has **no always-available cheap recruit** — `recruitHero` pulls only
+   from the five HQ slots, and the Officer/Sidekick piles are effect-granted
+   supply, not a standing purchase — so an all-expensive opening HQ can strand a
+   player for a turn or two. Because the seed determines the hero-deck shuffle,
+   a candidate's opening HQ is knowable at vet time, so a criterion such as
+   "≥N heroes at cost ≤3 across the first K HQ refills" can screen out punishing
+   openings **without touching any game rule**. This works only for a *fixed*
+   hero deck (an unknown free-hero deck cannot be pre-vetted) — another argument
+   for the fully-pinned flagship. Note the shared seed already equalizes the
+   opening *between entrants* on a fully-pinned board (everyone gets the
+   identical HQ); this criterion is about the opening being *good*, not *equal*.
+5. **Publish from the curated pool only — publication is gated on vetting.** A
    candidate that fails the configured calibration criteria is **not eligible
    for challenge rotation**. Every live board is therefore provably beatable,
    decision-relevant, and worth playing.
@@ -274,6 +286,17 @@ competence on the board, which is a proxy for human difficulty, exactly as
 PAR's 55th-percentile baseline is. It is a good filter for "unwinnable" and
 "trivial"; it is not a claim about the human skill ceiling. Calibrate the band
 against the chosen bot policy and treat it as tunable.
+
+**Curate, don't house-rule.** The opening-recruit screen (step 4) is
+deliberately a *curation* criterion, not a setup-rule change. Guaranteeing an
+affordable opening by *rigging the shuffle* or *adding an HQ-smoothing rule*
+would be an invented mechanic that diverges from physical Marvel Legendary —
+a rough HQ is part of the real game — and so is a separate, deliberate,
+game-wide design decision (a DECISIONS-level call), never a seed detail (§9).
+And **measure before building either**: the same sim can correlate opening-HQ
+cost against win rate across decision-seeds. If opening cost barely moves the
+outcome there is nothing to screen for; if it dominates, that is the evidence
+for the criterion.
 
 ---
 
@@ -370,6 +393,13 @@ session. Numbers, decisions, and dependencies are allocated then.
 - **Vetting band + trial count** — the 40–60% target and how many trials per
   candidate; tune against the chosen bot policy. Plus how (or whether) to
   measure decision-sensitivity (§6.3).
+- **Opening-HQ fairness** — whether to screen published seeds for an affordable
+  opening (a *curation* criterion, §6 step 4 — faithful, no rules change) or to
+  smooth openings with a game-wide *setup rule* (an invented mechanic that
+  diverges from physical Legendary — a separate DECISIONS-level call). Decide
+  only after the sim quantifies how much opening-HQ cost actually drives win
+  rate. This engine has no always-available cheap recruit, so the opening
+  lockout is real, not hypothetical.
 - **Ranking model** — direct verified-score comparison (**recommended**, §5)
   vs per-seed normalization; the current read layer's PAR gate (§7d) is the
   cheapest-correct-path question underneath it.
