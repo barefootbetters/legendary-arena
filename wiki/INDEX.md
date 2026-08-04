@@ -1,7 +1,7 @@
 # Wiki Index
 
-> **54 / 75** entity pages.
-> Last regenerated: 2026-08-01.
+> **55 / 75** entity pages.
+> Last regenerated: 2026-08-04.
 > See [SCHEMA.md](SCHEMA.md) for the entity-page contract and
 > [README.md](README.md) for purpose, conventions, and authority —
 > including [§ Tradeoffs](README.md#tradeoffs) on what the LLM-wiki
@@ -57,6 +57,12 @@ Coordinated subsystems spanning multiple files / phases.
   heuristic plays 500+ complete games, each scored with the live Raw Score
   formula, and PAR is the 55th percentile of the distribution; hashed,
   immutable `seed`/`simulation` artifacts gate leaderboard submission.
+- [Seed Challenges](seed-challenges.md) — *Proposed.* Shared-seed
+  competitive boards: every entrant plays the *identical* seeded game, so
+  ranking reflects decisions rather than luck of the draw. Adds
+  daily/weekly/all-time views and a pre-publication seed-vetting step
+  (reusing the PAR simulation harness). Not yet built — design in
+  `docs/ai/DESIGN-SEED-CHALLENGES.md`.
 - [Profile Login](profile-login.md) — Player sign-in and profile
   surface (Hanko broker); the whole auth stack ships into arena-client
   (`play.legendary-arena.com`); the marketing site (`www.`) has no

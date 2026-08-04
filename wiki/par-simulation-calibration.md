@@ -16,6 +16,7 @@ related:
   - cardextid.md
   - complete-game-fixtures.md
   - windows-engine-exe.md
+  - seed-challenges.md
 status: canonical
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\par-simulation-calibration.md (this page — https://ewiki.legendary-arena.com/par-simulation-calibration/)
@@ -486,6 +487,10 @@ newly-added scenario from "playable" into "competitively rankable".
   Windows `.exe`. Calibration *derives PAR values* from the harness; the exe
   effort *distributes the harness* as a binary. Same substrate, different
   purpose; the exe changes no calibration logic.
+- **[Seed Challenges](seed-challenges.md).** A *proposed* reuse of this same
+  Monte-Carlo win-rate harness for a different question — vetting whether a
+  single seeded board is a fair contest (winnable but not trivial) before it
+  is published as a challenge, rather than deriving a scenario's PAR baseline.
 - **Determinism & replays.** Calibration inherits the engine's determinism:
   identical seeds reproduce identical games and therefore an identical PAR.
   [13-REPLAYS-REFERENCE](../docs/13-REPLAYS-REFERENCE.md) requires that

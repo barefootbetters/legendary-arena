@@ -23,6 +23,7 @@ related:
   - cardextid.md
   - card-type-taxonomy.md
   - board-keywords.md
+  - seed-challenges.md
 status: canonical
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\scoring.md (this page — https://ewiki.legendary-arena.com/scoring/)
@@ -302,6 +303,10 @@ future WPs per the source `// why:` comment.
   server-side — it never trusts a client number (D-5301). The full
   match → row → snapshot pipeline is documented on
   [Leaderboard](leaderboard.md).
+- **[Seed Challenges](seed-challenges.md).** A *proposed* competitive board
+  (see [Leaderboard](leaderboard.md)) reuses this scoring pipeline unchanged —
+  a seeded match is scored identically; the shared seed removes *board*
+  variance, not the scoring math.
 
 ## Edge Cases
 
