@@ -26,7 +26,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#hero-deck-top-to-escape",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18502"
     },
     {
       "extId": "2099-villain-alchemax-enforcers-jigsaw-2099",
@@ -37,7 +37,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#hero-deck-top-to-escape",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18502"
     },
     {
       "extId": "2099-villain-alchemax-enforcers-venture",
@@ -602,7 +602,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "amwp-villain-cross-technologies-hydra-arms-dealer",
@@ -767,7 +767,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "amwp-villain-quantum-realm-lord-krylars-appetizer",
@@ -1180,7 +1180,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "anni-villain-annihilation-wave-ravenous",
@@ -1525,7 +1525,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "antm-villain-queens-vengeance-daystar",
@@ -1547,7 +1547,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "antm-villain-queens-vengeance-iron-knight",
@@ -1668,7 +1668,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "antm-villain-ultrons-legacy-ultron-pym",
@@ -1690,7 +1690,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "antm/ant-man",
@@ -2094,7 +2094,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "asrd-villain-omens-of-ragnarok-jormungand-the-world-serpent",
@@ -2116,7 +2116,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "asrd-villain-omens-of-ragnarok-surtur-fire-giant-king",
@@ -2419,7 +2419,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "bkpt-villain-enemies-of-wakanda-nightshade",
@@ -3336,7 +3336,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "ca75-villain-zolas-creations-man-fish",
@@ -3347,7 +3347,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18502"
     },
     {
       "extId": "ca75-villain-zolas-creations-primus",
@@ -3637,7 +3637,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "chmp-villain-monsters-unleashed-groot-from-planet-x",
@@ -3736,7 +3736,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "chmp-villain-wrecking-crew-the-wrecker",
@@ -4505,7 +4505,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
       "wp": "WP-247",
-      "decision": "",
+      "decision": "D-24016",
       "designs": [
         {
           "slug": "intelligence-network",
@@ -4539,7 +4539,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward",
       "wp": "WP-248",
-      "decision": "",
+      "decision": "D-24019",
       "designs": [
         {
           "slug": "dangerous-rescue",
@@ -4713,7 +4713,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward",
       "wp": "WP-248",
-      "decision": "",
+      "decision": "D-24019",
       "designs": [
         {
           "slug": "energy-drain",
@@ -5177,7 +5177,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18502"
     },
     {
       "extId": "core/black-widow",
@@ -5188,7 +5188,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
       "wp": "WP-247",
-      "decision": "",
+      "decision": "D-24016",
       "designs": [
         {
           "slug": "covert-operation",
@@ -5239,7 +5239,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward",
       "wp": "WP-248",
-      "decision": "",
+      "decision": "D-24019",
       "designs": [
         {
           "slug": "dangerous-rescue",
@@ -5594,7 +5594,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "cosm-villain-black-order-of-thanos-corvus-glaive",
@@ -5704,7 +5704,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "cosm-villain-elders-of-the-universe-the-collector",
@@ -5770,7 +5770,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "cosm-villain-from-beyond-the-shaper-of-worlds",
@@ -6146,7 +6146,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "cvwr-villain-heroes-for-hire-shang-chi",
@@ -6212,7 +6212,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "cvwr-villain-shield-elite-agent-eric-marshall",
@@ -6889,7 +6889,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18502"
     },
     {
       "extId": "dead-villain-deadpools-friends-taskmaster",
@@ -7287,7 +7287,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18502"
     },
     {
       "extId": "dkcy-villain-four-horsemen-death",
@@ -8496,7 +8496,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "ff04-villain-subterranea-raktar-the-molan-king",
@@ -9080,7 +9080,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "henchman-hydra-pilots",
@@ -9113,7 +9113,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "henchman-m-o-d-o-k-s",
@@ -9135,7 +9135,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "henchman-magma-men",
@@ -9146,7 +9146,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "henchman-mandroid",
@@ -9157,7 +9157,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "henchman-mr-sinister-clones",
@@ -9212,7 +9212,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "henchman-sakaaran-hivelings",
@@ -9267,7 +9267,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "henchman-sentinel",
@@ -9278,7 +9278,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "henchman-sentinel-squad-o-n-e",
@@ -9300,7 +9300,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "henchman-shiar-patrol-craft",
@@ -9432,7 +9432,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "mdns-villain-fallen-patriarch",
@@ -9509,7 +9509,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "mdns/blade-daywalker",
@@ -9842,7 +9842,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "mgtg-villain-followers-of-ronan-korath-the-pursuer",
@@ -10677,7 +10677,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "msmc-villain-acolytes-random",
@@ -10721,7 +10721,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "msmc-villain-clan-yashida-lord-shingen",
@@ -11566,7 +11566,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "msp1-villain-gamma-hunters-lt-gen-thunderbolt-ross",
@@ -11865,7 +11865,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "nmut-villain-demons-of-limbo-sym",
@@ -11898,7 +11898,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "nmut-villain-hellions-empath",
@@ -11953,7 +11953,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "nmut/karma",
@@ -12168,7 +12168,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "noir-villain-goblins-freak-show-kraven-animal-trainer",
@@ -12223,7 +12223,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18502"
     },
     {
       "extId": "noir-villain-x-men-noir-bobby-iceman-drake",
@@ -12453,7 +12453,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18502"
     },
     {
       "extId": "pttr-villain-sinister-six-chameleon",
@@ -13132,7 +13132,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "rvlt-villain-dark-avengers-ares",
@@ -13143,7 +13143,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "rvlt-villain-dark-avengers-captain-marvel-noh-varr",
@@ -13209,7 +13209,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18502"
     },
     {
       "extId": "rvlt-villain-dark-avengers-sentrys-watchtower",
@@ -13253,7 +13253,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "rvlt-villain-hoods-gang-the-brothers-grimm",
@@ -14572,7 +14572,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18502"
     },
     {
       "extId": "ssw1-villain-domain-of-apocalypse-apocalyptic-blink",
@@ -14616,7 +14616,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "ssw1-villain-limbo-inferno-colossus",
@@ -14627,7 +14627,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "ssw1-villain-limbo-inferno-cyclops",
@@ -15091,7 +15091,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18502"
     },
     {
       "extId": "ssw2-villain-guardians-of-knowhere-groot",
@@ -15245,7 +15245,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18502"
     },
     {
       "extId": "ssw2-villain-x-men-92-92-beast",
@@ -16587,7 +16587,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "vnom-villain-life-foundation-scream",
@@ -16969,7 +16969,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "wpnx-villain-weapon-plus-huntsman-weapon-xii",
@@ -16991,7 +16991,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18502"
     },
     {
       "extId": "wpnx-villain-weapon-plus-skinless-man-weapon-iii",
@@ -17223,7 +17223,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "wtif-villain-intergalactic-party-animals-captain-marvel-end-of-the-party",
@@ -17267,7 +17267,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "wtif-villain-intergalactic-party-animals-party-kraglin",
@@ -17388,7 +17388,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "wtif-villain-rival-overlords-yondu",
@@ -17542,7 +17542,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "wtif-villain-zombie-avengers-zombie-wong",
@@ -18183,7 +18183,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "wwhk-villain-intelligencia-the-leader-gamma-fiend",
@@ -18227,7 +18227,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18502"
     },
     {
       "extId": "wwhk-villain-sakaar-imperial-guard-lieutenant-caiera",
@@ -18249,7 +18249,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "wwhk-villain-u-foes-ironclad",
@@ -19297,7 +19297,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "xmen-villain-dark-descendants-havok-brainwashed",
@@ -19396,7 +19396,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18502"
     },
     {
       "extId": "xmen-villain-mojoverse-major-domo",
@@ -19451,7 +19451,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "xmen-villain-murderworld-animatronic-killer-clowns",
@@ -19583,7 +19583,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18502"
     },
     {
       "extId": "xmen-villain-shiar-imperial-guard-gladiator",
@@ -19638,7 +19638,7 @@
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
-      "decision": ""
+      "decision": "D-18503"
     },
     {
       "extId": "xmen-villain-sisterhood-of-mutants-lady-mastermind",
