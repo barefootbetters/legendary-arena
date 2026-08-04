@@ -540,6 +540,27 @@ function parseUngatedEffect(
       requireValue: predicate.requireValue,
     };
   }
+  if (primitiveToken === 'gain-wound-unless-victory-villain-group') {
+    // why: D-24299 — grammar `gain-wound-unless-victory-villain-group:<groupSlug>`
+    // (exactly 2 tokens; the group slug non-empty). Viper: `:hydra`. The slug is
+    // normalized (normalizeTraitSlug = trim().toLowerCase()) so it matches the
+    // registry-verbatim lowercase-kebab group segment in the villain instance
+    // ext_id. A missing/empty slug or extra tokens returns null (→ unresolvedMarkers).
+    if (parts.length !== 2) {
+      return null;
+    }
+    const rawGroup = parts[1] ?? '';
+    if (rawGroup.length === 0) {
+      return null;
+    }
+    const victoryVillainGroup = normalizeTraitSlug(rawGroup);
+    // why: a slug of only whitespace normalizes to '' — reject it so an empty
+    // predicate can never reach the handler (it would match no villain).
+    if (victoryVillainGroup.length === 0) {
+      return null;
+    }
+    return { primitive: 'gain-wound-unless-victory-villain-group', victoryVillainGroup };
+  }
   // why: hero-deck-top-to-escape and capture-bystander take no params; reject
   // any trailing colon-separated tokens so a malformed marker does not silently
   // collapse to a param-less descriptor.

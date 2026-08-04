@@ -716,6 +716,81 @@ describe('executeVillainAbilities — Whirlwind magnitude-2 current KO (WP-492 /
   });
 });
 
+describe('executeVillainAbilities — Viper gain-wound-unless-victory-villain-group (WP-494 / D-24299)', () => {
+  // why: Viper "Fight/Escape: Each player without another HYDRA Villain in their
+  // Victory Pile gains a Wound." — a conditional each-player wound gated on a
+  // Victory-Pile villain-group predicate; the group prefix derives from the fought
+  // Viper's own ext_id (Path B).
+  const VIPER = 'core-villain-hydra-viper-00' as CardExtId;
+  const KIDNAPPERS = 'core-villain-hydra-hydra-kidnappers-00' as CardExtId; // another HYDRA villain
+  const WHIRLWIND = 'core-villain-masters-of-evil-whirlwind-00' as CardExtId; // NOT hydra
+  const BYSTANDER = 'bystander-villain-deck-07' as CardExtId; // carries `-villain-` but not the anchored prefix
+  const viperHook: VillainAbilityHook = {
+    cardId: VIPER,
+    timing: 'onFight',
+    keywords: [],
+    effects: [{ primitive: 'gain-wound-unless-victory-villain-group', victoryVillainGroup: 'hydra' }],
+  };
+  const zones = (p0victory: string[], p1victory: string[]) => ({
+    '0': { deck: [], hand: [], discard: [], inPlay: [], victory: p0victory as CardExtId[] },
+    '1': { deck: [], hand: [], discard: [], inPlay: [], victory: p1victory as CardExtId[] },
+  });
+
+  it('wounds a player with no other HYDRA villain; spares one who holds another', () => {
+    // P0 victory = only the fought Viper (excluded as "another") → wounded.
+    // P1 victory = a HYDRA Kidnappers (another HYDRA villain) → NOT wounded.
+    const G = makeG({
+      hooks: [viperHook],
+      playerZones: zones([VIPER], [KIDNAPPERS]),
+      wounds: ['w0', 'w1'] as CardExtId[],
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, VIPER, 'onFight');
+    assert.equal(G.playerZones['0']!.discard.length, 1, 'P0 (only the fought Viper) gains a Wound');
+    assert.equal(G.playerZones['1']!.discard.length, 0, 'P1 (holds another HYDRA villain) is spared');
+    assert.equal(G.turnEconomy.woundsDrawn, 1, 'woundsDrawn tracks the current player only');
+    assert.match(G.messages.at(-1)!.text, /had no other hydra Villain in their Victory Pile and gained a Wound/);
+  });
+
+  it('a non-HYDRA villain (masters-of-evil) in the Victory Pile does NOT spare a player', () => {
+    const G = makeG({ hooks: [viperHook], playerZones: zones([VIPER], [WHIRLWIND]), wounds: ['w0', 'w1'] as CardExtId[] });
+    executeVillainAbilities(G, CTX, VIPER, 'onFight');
+    assert.equal(G.playerZones['1']!.discard.length, 1, 'a Masters-of-Evil villain is not HYDRA — P1 still wounded');
+  });
+
+  it('a victory-pile bystander (bystander-villain-deck-NN) does NOT false-match the prefix', () => {
+    // BYSTANDER carries the `-villain-` substring but starts `bystander-`, so it must
+    // NOT count as a HYDRA villain — the player still gets wounded.
+    const G = makeG({ hooks: [viperHook], playerZones: zones([VIPER], [BYSTANDER]), wounds: ['w0', 'w1'] as CardExtId[] });
+    executeVillainAbilities(G, CTX, VIPER, 'onFight');
+    assert.equal(G.playerZones['1']!.discard.length, 1, 'a bystander is not a HYDRA villain — P1 wounded');
+  });
+
+  it('a player holding ANOTHER HYDRA villain beside the fought Viper is spared', () => {
+    const G = makeG({ hooks: [viperHook], playerZones: zones([VIPER, KIDNAPPERS], []), wounds: ['w0', 'w1'] as CardExtId[] });
+    executeVillainAbilities(G, CTX, VIPER, 'onFight');
+    assert.equal(G.playerZones['0']!.discard.length, 0, 'P0 has another HYDRA villain (Kidnappers) → spared');
+    assert.equal(G.playerZones['1']!.discard.length, 1, 'P1 has none → wounded');
+  });
+
+  it('fires identically at the Escape site (Viper in escapedPile, no victory exclusion needed)', () => {
+    const escapeHook: VillainAbilityHook = { ...viperHook, timing: 'onEscape' };
+    const G = makeG({ hooks: [escapeHook], playerZones: zones([], [KIDNAPPERS]), wounds: ['w0', 'w1'] as CardExtId[], messages: [] });
+    executeVillainAbilities(G, CTX, VIPER, 'onEscape');
+    assert.equal(G.playerZones['0']!.discard.length, 1, 'P0 (empty victory) wounded on escape');
+    assert.equal(G.playerZones['1']!.discard.length, 0, 'P1 (holds a HYDRA villain) spared on escape');
+    assert.match(G.messages.at(-1)!.text, /Escape effect:/);
+  });
+
+  it('is supply-bounded and self-narrates blocked when every player is safe', () => {
+    const G = makeG({ hooks: [viperHook], playerZones: zones([VIPER, KIDNAPPERS], [KIDNAPPERS]), wounds: ['w0'] as CardExtId[], messages: [] });
+    executeVillainAbilities(G, CTX, VIPER, 'onFight');
+    assert.equal(G.playerZones['0']!.discard.length, 0);
+    assert.equal(G.playerZones['1']!.discard.length, 0);
+    assert.match(G.messages.at(-1)!.text, /every player had another hydra Villain/);
+  });
+});
+
 describe('executeVillainAbilities — scry-ko-own-deck (WP-447 / D-24267)', () => {
   const WOUND = 'pile-wound' as CardExtId;
   const AGENT = 'starting-shield-agent' as CardExtId;

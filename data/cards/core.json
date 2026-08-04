@@ -2125,8 +2125,8 @@
           "vAttack": "5",
           "imageUrl": "https://images.legendary-arena.com/core/core-vi-hydra-viper.webp",
           "abilities": [
-            "Fight: Each player without another HYDRA Villain in their Victory Pile gains a Wound.",
-            "Escape: Same effect."
+            "Fight: Each player without another HYDRA Villain in their Victory Pile gains a Wound. [effect:gain-wound-unless-victory-villain-group:hydra]",
+            "Escape: Same effect. [effect:gain-wound-unless-victory-villain-group:hydra]"
           ],
           "copies": 1
         }

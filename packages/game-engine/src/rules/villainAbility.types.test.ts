@@ -313,8 +313,10 @@ describe('VILLAIN_EFFECT_PRIMITIVES drift-detection', () => {
   // WP-481 (D-24287) appended a ninth, `become-scheme-twist`, at position 9;
   // WP-485 (D-24290) appended a tenth/eleventh/twelfth — `draw-cards-current`,
   // `ko-heroes-current-by-trait`, `rescue-bystanders-current-by-trait-count` — at
-  // positions 10, 11, 12 (Tier-A auto-resolve Core villain effects).
-  it('contains exactly the 12 canonical primitives in order', () => {
+  // positions 10, 11, 12 (Tier-A auto-resolve Core villain effects); WP-494
+  // (D-24299) appended a thirteenth, `gain-wound-unless-victory-villain-group`, at
+  // position 13 (Viper — conditional each-player wound on a Victory-Pile group predicate).
+  it('contains exactly the 13 canonical primitives in order', () => {
     const expectedPrimitives: VillainEffectPrimitive[] = [
       'ko-hero',
       'gain-wound',
@@ -328,11 +330,12 @@ describe('VILLAIN_EFFECT_PRIMITIVES drift-detection', () => {
       'draw-cards-current',
       'ko-heroes-current-by-trait',
       'rescue-bystanders-current-by-trait-count',
+      'gain-wound-unless-victory-villain-group',
     ];
     assert.equal(
       VILLAIN_EFFECT_PRIMITIVES.length,
-      12,
-      'VILLAIN_EFFECT_PRIMITIVES must have exactly 12 entries',
+      13,
+      'VILLAIN_EFFECT_PRIMITIVES must have exactly 13 entries',
     );
     assert.deepStrictEqual(
       [...VILLAIN_EFFECT_PRIMITIVES],
@@ -468,5 +471,27 @@ describe('Tier-B descriptor additions (WP-489 / D-24295)', () => {
     };
     const deserialized = JSON.parse(JSON.stringify(descriptor)) as VillainEffectDescriptor;
     assert.deepStrictEqual(deserialized, descriptor, 'the location-gate field must survive JSON round-trip');
+  });
+});
+
+describe('Tier-D descriptor additions (WP-494 / D-24299)', () => {
+  it('a gain-wound-unless-victory-villain-group descriptor is keyword-less (self-narrates)', () => {
+    assert.equal(
+      descriptorToLegacyKeyword({
+        primitive: 'gain-wound-unless-victory-villain-group',
+        victoryVillainGroup: 'hydra',
+      }),
+      undefined,
+      'Viper is not a legacy keyword — it must self-narrate',
+    );
+  });
+
+  it('JSON round-trips a descriptor carrying victoryVillainGroup', () => {
+    const descriptor: VillainEffectDescriptor = {
+      primitive: 'gain-wound-unless-victory-villain-group',
+      victoryVillainGroup: 'hydra',
+    };
+    const deserialized = JSON.parse(JSON.stringify(descriptor)) as VillainEffectDescriptor;
+    assert.deepStrictEqual(deserialized, descriptor, 'the victory-group field must survive JSON round-trip');
   });
 });

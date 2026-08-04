@@ -212,7 +212,8 @@ export type VillainEffectPrimitive =
   | 'become-scheme-twist'
   | 'draw-cards-current'
   | 'ko-heroes-current-by-trait'
-  | 'rescue-bystanders-current-by-trait-count';
+  | 'rescue-bystanders-current-by-trait-count'
+  | 'gain-wound-unless-victory-villain-group';
 
 // why: drift-detection array — must match VillainEffectPrimitive exactly
 // (villainAbility.types.test.ts asserts bidirectional parity). Adding a
@@ -224,6 +225,9 @@ export type VillainEffectPrimitive =
 // `draw-cards-current`, `ko-heroes-current-by-trait`, and
 // `rescue-bystanders-current-by-trait-count` appended at positions 10, 11, 12 by
 // WP-485 (D-24290 — Tier A auto-resolve Core villain effects).
+// `gain-wound-unless-victory-villain-group` appended at position 13 by WP-494
+// (D-24299 — Viper's conditional each-player wound gated on a Victory-Pile
+// villain-group predicate; Tier D).
 /** All villain effect primitives in canonical order. Single source of truth. */
 export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'ko-hero',
@@ -238,6 +242,7 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'draw-cards-current',
   'ko-heroes-current-by-trait',
   'rescue-bystanders-current-by-trait-count',
+  'gain-wound-unless-victory-villain-group',
 ] as const;
 
 /**
@@ -313,6 +318,16 @@ export interface VillainEffectDescriptor {
   // below, so a zone-bearing descriptor reverse-maps to the same legacy keyword
   // as its zone-less sibling and narrates identically (see `descriptorKey`).
   zone?: 'discard' | 'hand';
+  // why: D-24299 — the target villain GROUP slug (e.g. 'hydra'), present ONLY on
+  // `{ primitive: 'gain-wound-unless-victory-villain-group' }` descriptors (Viper).
+  // Each player gains a Wound UNLESS their Victory Pile holds another villain of
+  // this group. Normalized (normalizeTraitSlug) at parse time to match the
+  // registry-verbatim lowercase-kebab group slug in the villain instance ext_id
+  // (`{setAbbr}-villain-{groupSlug}-{cardSlug}-NN`). Deliberately NOT part of
+  // `descriptorKey` below — the primitive is keyword-less (no
+  // LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR entry), so it reverse-maps to `undefined`
+  // and self-narrates; adding it to the key would change nothing.
+  victoryVillainGroup?: string;
 }
 
 // why: D-24023 — the frozen legacy-keyword → descriptor translation table. The

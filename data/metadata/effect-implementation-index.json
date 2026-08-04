@@ -9,11 +9,11 @@
       "villain": 716
     },
     "byStatus": {
-      "executable": 349,
+      "executable": 350,
       "deferred": 0,
       "condition": 5,
       "unsupported": 367,
-      "unmarked": 645
+      "unmarked": 644
     }
   },
   "entries": [
@@ -4975,11 +4975,11 @@
       "name": "Viper",
       "set": "core",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "gain-wound-unless-victory-villain-group",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound-unless-victory-villain-group",
+      "wp": "WP-494",
+      "decision": "D-24299"
     },
     {
       "extId": "core-villain-masters-of-evil-baron-zemo",
@@ -21984,7 +21984,7 @@
     "core-villain-hydra-viper": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "gain-wound-unless-victory-villain-group"
       ]
     },
     "core-villain-masters-of-evil-baron-zemo": {
