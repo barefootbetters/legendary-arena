@@ -15,7 +15,7 @@ client, one cross-layer WP.
 ## Assumes
 
 - Baseline: `origin/main` @ `aaaa5c95` (WP-382 / EC-411 landed; working tree clean).
-- **WP-353-era pending-choice infrastructure** — the mandatory, no-decline
+- **D-24139 pending-choice infrastructure** — the mandatory, no-decline
   pending-choice pattern is established by `return-zero-cost-discard`
   (D-24139): `PendingReturnZeroCostDiscard` (`types.ts`), the park handler
   (`heroEffects.execute.ts`), `resolveReturnZeroCostDiscard` move, the
