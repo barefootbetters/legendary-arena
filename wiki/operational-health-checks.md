@@ -43,7 +43,13 @@ reports whether the live ewiki was actually rebuilt from the newest
 commit that should have triggered a build. All three are invoked via
 pnpm aliases (`pnpm check`, `pnpm check:domains`, `pnpm check:wiki`,
 `pnpm check:incident`) and are the first diagnostic step when
-something looks broken in production.
+something looks broken in production. A fourth surface — [SPA asset
+delivery](#spa-asset-delivery) — is not operator-run: it is the CI and
+post-deploy gates that catch a deployed SPA serving the wrong or failed
+bytes for a hashed asset while the HTML document itself still returns a
+healthy `200` (a masked/missing bundle, or a cold-deploy stylesheet
+abort) — failures the reachability probes above cannot see by
+construction.
 
 ## Mechanics
 
@@ -290,7 +296,7 @@ failure above, not this one.)
    (non-CORS) mode and the abort surface is gone. The module
    `<script crossorigin>` is left as-is (the JS path never aborted).
 2. [`.github/workflows/spa-warm-on-deploy.yml`](../.github/workflows/spa-warm-on-deploy.yml)
-   + [`scripts/wait-for-spa-deploy.mjs`](../scripts/wait-for-spa-deploy.mjs) — on
+   with [`scripts/wait-for-spa-deploy.mjs`](../scripts/wait-for-spa-deploy.mjs) — on
    a push touching `apps/arena-client/**`, poll `version.json` (the WP-418
    `{gitSha}` stamp) until this commit is the one being served, then run the
    `check-spa-assets --url` probe against play. Fetching every hashed asset
