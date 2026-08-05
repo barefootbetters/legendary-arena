@@ -35841,4 +35841,20 @@ Protect this file.
 
 **Consequences.** Additive contract change (one new optional hashed `G` field + a new `rules/tacticHandlers.ts` dispatcher). No new zone, `RuleEffect`, move, phase, or code category (same "rule handler" family as `mastermindHandlers.ts`). Reserved by WP-497; hard-deps WP-019 (tactics MVP) + WP-024 (strike-dispatch precedent) + WP-386/D-24188 + WP-388/D-24192 (per-mastermind resolver pattern) + WP-236 (`onBegin` `HAND_SIZE` draw).
 
+---
+
+### D-24302 — Join-by-reference (match ID or invite link) lobby contract (Drafted 2026-08-04 — WP-499 / EC-534; not yet landed)
+
+> **Status: Drafted 2026-08-04; not yet landed.** Reserved in `NUMBER-LEDGER.md`. Flips to Active at WP-499 execution.
+
+**Context.** The lobby has two ways to join a match: click **Join** on a row in the auto-fetched public list (`GET /games/legendary-arena?isGameover=false`), or open a WP-369 copy-join-link (`?route=lobby&match=<id>`) that merely *highlights* a row already in that list. There is no way to type/paste a match ID or link to join directly, so an **unlisted** match — or one not in the fetched list — is unreachable without the exact deep link. Surfaced 2026-08-04 when an operator tried to play with a newly-registered friend: the by-`@handle` invite path errored (root cause: the handle-claim feature was never wired — `claimHandle` has zero non-test call sites), and the only working path was emailing the copy-link.
+
+**Decision.**
+- **Parse a reference to a match ID.** A pure `parseMatchReference(raw): string | null` (`apps/arena-client/src/lobby/matchReference.ts`, no I/O, no boardgame.io import) accepts either a raw boardgame.io match ID or a full invite-link URL: trim; empty → `null`; if it contains `?`, read the `match` query param (present, non-empty → the id; absent → `null`, a malformed link); else if it matches `^[A-Za-z0-9_-]+$`, the trimmed string is the id; else `null`.
+- **Resolve via a read-only single-match fetch.** `lobbyApi.fetchMatch(matchID): Promise<LobbyMatchSummary | null>` does `GET /games/legendary-arena/:id` (public, like `listMatches`; no Authorization header) — **404 → `null`** (unknown match, rendered as inline copy, not an exception), other non-2xx → throw a full-sentence error, 200 → the existing `LobbyMatchSummary` mapping. Using the per-match GET (not the filtered list) is what makes **unlisted** matches joinable by ID.
+- **Join reuses the existing path.** `joinByReference()` parses → fetches → selects the **first open seat** (existing `isOpenSeat`; a `gameover` or full match → inline error, no join) → delegates to the existing `joinExisting(matchID, seatId)`, which owns the playerName guard, the Bearer token, `POST /api/match/join`, and the navigation. No new endpoint, credential path, or navigation code.
+- **Trust model unchanged.** A match is joinable by anyone holding its ID — exactly as it already is by anyone holding the WP-369 shareable link. This adds a manual-entry path to an existing capability; it introduces **no new exposure** and no identity/friendship requirement (it is deliberately identity-agnostic, sidestepping the broken by-`@handle` invite).
+
+**Consequences.** App-layer only (`apps/arena-client`): one new pure parser + one read-only `lobbyApi` helper + a lobby input/handler. No server/engine/registry/data change, no new HTTP endpoint, no contract file. Zero determinism/persistence surface (no `G`/RNG/replay/hash). The handle-claim fix (auto-assigning handles so by-`@handle` invites work) is a separate Track-2 follow-up WP, not this one. Reserved by WP-499; hard-deps WP-307/D-24092 (authenticated match-gate join) + WP-369 (copy-join-link `?match=<id>` deep link).
+
 Protect this file.
