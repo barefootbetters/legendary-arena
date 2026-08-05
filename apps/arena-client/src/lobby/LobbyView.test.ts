@@ -351,3 +351,138 @@ test('WP-376: the bot-ally block uses co-op copy with no versus/opponent framing
   assert.ok(text.includes('bot ally'), 'the copy frames the bot as an ally');
   assert.ok(!/\bvs\b|opponent|beat the bot|versus/.test(text), 'no PvP/versus framing (VISION §23(b))');
 });
+
+// --- WP-499 / EC-534: "Join by match ID or link" affordance ---
+
+/**
+ * Stub fetch routing by URL for the join-by-reference flow: the single-match
+ * GET (`/games/legendary-arena/<id>`) returns `singleMatch` at `matchStatus`
+ * (default 200), the authed join returns a credential, and the mount-time list
+ * / requirements calls succeed. Records every call for assertions.
+ */
+function stubJoinByRefFetch(
+  singleMatch: unknown,
+  matchStatus = 200,
+): RecordedCall[] {
+  const recorded: RecordedCall[] = [];
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    recorded.push({ url, init });
+    if (url.includes('/api/match/join')) {
+      return { ok: true, status: 200, json: async () => ({ playerCredentials: 'ref-cred' }) } as Response;
+    }
+    if (url.includes('/api/match/setup-requirements')) {
+      return { ok: true, status: 200, json: async () => ({ requirements: SETUP_REQUIREMENTS }) } as Response;
+    }
+    // why: the single-match GET carries an id path segment after the game name;
+    // the mount-time list is `/games/legendary-arena?isGameover=false` (no `/id`).
+    if (url.includes('/games/legendary-arena/')) {
+      const ok = matchStatus >= 200 && matchStatus < 300;
+      return { ok, status: matchStatus, json: async () => singleMatch } as Response;
+    }
+    return { ok: true, status: 200, json: async () => ({ matches: [] }) } as Response;
+  }) as typeof globalThis.fetch;
+  return recorded;
+}
+
+test('WP-499: Join by reference fetches the match and joins the FIRST open seat', async () => {
+  setSearch('?route=lobby');
+  // seat 0 is taken (Host); seat 1 is open — the join must target seat 1.
+  const calls = stubJoinByRefFetch({ players: [{ id: 0, name: 'Host' }, { id: 1 }] });
+  const wrapper = mountLobby();
+  await flushPromises();
+  signIn();
+  await wrapper.find('#playerName').setValue('Guest Player');
+
+  await wrapper.find('[data-testid="lobby-join-reference-input"]').setValue('KdHnMXaOPin');
+  await wrapper.find('[data-testid="lobby-join-reference-submit"]').trigger('click');
+  await flushPromises();
+
+  assert.ok(
+    calls.some((call) => call.url.endsWith('/games/legendary-arena/KdHnMXaOPin')),
+    'the single match was fetched by id',
+  );
+  const joinCall = calls.find((call) => call.url.includes('/api/match/join'));
+  assert.ok(joinCall, 'the authed join was called');
+  const joinBody = JSON.parse(String(joinCall!.init?.body)) as { matchID: string; playerID: string };
+  assert.equal(joinBody.matchID, 'KdHnMXaOPin');
+  assert.equal(joinBody.playerID, '1', 'joined the first OPEN seat, not seat 0');
+});
+
+test('WP-499: Join by reference accepts a full invite link', async () => {
+  setSearch('?route=lobby');
+  const calls = stubJoinByRefFetch({ players: [{ id: 0 }] });
+  const wrapper = mountLobby();
+  await flushPromises();
+  signIn();
+  await wrapper.find('#playerName').setValue('Guest Player');
+
+  await wrapper
+    .find('[data-testid="lobby-join-reference-input"]')
+    .setValue('https://play.legendary-arena.com/?route=lobby&match=LinkedMatch1');
+  await wrapper.find('[data-testid="lobby-join-reference-submit"]').trigger('click');
+  await flushPromises();
+
+  const joinCall = calls.find((call) => call.url.includes('/api/match/join'));
+  assert.ok(joinCall, 'the link resolved to a join');
+  const joinBody = JSON.parse(String(joinCall!.init?.body)) as { matchID: string };
+  assert.equal(joinBody.matchID, 'LinkedMatch1');
+});
+
+test('WP-499: empty input shows inline copy and fetches nothing', async () => {
+  setSearch('?route=lobby');
+  const calls = stubJoinByRefFetch({ players: [{ id: 0 }] });
+  const wrapper = mountLobby();
+  await flushPromises();
+  signIn();
+  await wrapper.find('#playerName').setValue('Guest Player');
+
+  await wrapper.find('[data-testid="lobby-join-reference-submit"]').trigger('click');
+  await flushPromises();
+
+  assert.match(
+    wrapper.find('[data-testid="lobby-error"]').text(),
+    /Enter a match ID or an invite link/,
+  );
+  assert.ok(!calls.some((call) => call.url.includes('/games/legendary-arena/')), 'no single-match fetch');
+  assert.ok(!calls.some((call) => call.url.includes('/api/match/join')), 'no join');
+});
+
+test('WP-499: an unknown match (404) shows not-found and does not join', async () => {
+  setSearch('?route=lobby');
+  const calls = stubJoinByRefFetch(null, 404);
+  const wrapper = mountLobby();
+  await flushPromises();
+  signIn();
+  await wrapper.find('#playerName').setValue('Guest Player');
+
+  await wrapper.find('[data-testid="lobby-join-reference-input"]').setValue('missingmatch');
+  await wrapper.find('[data-testid="lobby-join-reference-submit"]').trigger('click');
+  await flushPromises();
+
+  assert.match(
+    wrapper.find('[data-testid="lobby-error"]').text(),
+    /No match found with ID missingmatch/,
+  );
+  assert.ok(!calls.some((call) => call.url.includes('/api/match/join')), 'no join on a missing match');
+});
+
+test('WP-499: a match with no open seat shows an error and does not join', async () => {
+  setSearch('?route=lobby');
+  // both seats taken → no open seat
+  const calls = stubJoinByRefFetch({ players: [{ id: 0, name: 'Host' }, { id: 1, name: 'Guest' }] });
+  const wrapper = mountLobby();
+  await flushPromises();
+  signIn();
+  await wrapper.find('#playerName').setValue('Guest Player');
+
+  await wrapper.find('[data-testid="lobby-join-reference-input"]').setValue('FullMatch01');
+  await wrapper.find('[data-testid="lobby-join-reference-submit"]').trigger('click');
+  await flushPromises();
+
+  assert.match(
+    wrapper.find('[data-testid="lobby-error"]').text(),
+    /has no open seats/,
+  );
+  assert.ok(!calls.some((call) => call.url.includes('/api/match/join')), 'no join on a full match');
+});

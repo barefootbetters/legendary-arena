@@ -251,3 +251,61 @@ export async function joinMatch(
   const body = (await response.json()) as { playerCredentials: string };
   return { playerCredentials: body.playerCredentials };
 }
+
+/**
+ * Fetches a single match by ID from the boardgame.io lobby's per-match route
+ * (`GET /games/legendary-arena/:id`). This is a public read like
+ * {@link listMatches} (no Authorization header) and, unlike the list route,
+ * does NOT filter unlisted matches — so a match reached by a pasted ID or
+ * invite link is resolvable even when it is absent from the public list.
+ *
+ * The per-match response is the bare match object (not wrapped in
+ * `{ matches: [...] }`); it is normalized to the same {@link LobbyMatchSummary}
+ * shape the list uses — `matchID` from the argument, stringified seat ids,
+ * explicit null for `gameover`/`setupData`.
+ *
+ * @param matchID  ID of the match to fetch.
+ * @returns The normalized summary, or `null` when no such match exists (404).
+ * @throws Error with a full-sentence message on a non-404 error response.
+ */
+export async function fetchMatch(
+  matchID: string,
+): Promise<LobbyMatchSummary | null> {
+  const endpoint = `${serverUrl}/games/legendary-arena/${encodeURIComponent(matchID)}`;
+  const response = await fetch(endpoint);
+
+  if (response.status === 404) {
+    // why: an unknown match ID is a normal "not found" the caller renders as
+    // inline copy ("no match found with that ID"), not an exception — distinct
+    // from a transport or 5xx failure below, which throws so it surfaces.
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch match ${matchID} at ${endpoint}: server returned HTTP ${response.status}. Check the match ID or link and try again.`,
+    );
+  }
+
+  const raw = (await response.json()) as {
+    players: Array<{ id: number; name?: string }>;
+    setupData?: MatchSetupConfig | null;
+    gameover?: unknown;
+  };
+
+  const players: { id: string; name?: string }[] = [];
+  for (const seat of raw.players) {
+    const mapped: { id: string; name?: string } = { id: String(seat.id) };
+    if (typeof seat.name === 'string') {
+      mapped.name = seat.name;
+    }
+    players.push(mapped);
+  }
+
+  return {
+    matchID,
+    players,
+    setupData: raw.setupData ?? null,
+    gameover: raw.gameover ?? null,
+  };
+}

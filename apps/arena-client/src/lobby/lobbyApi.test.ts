@@ -1,7 +1,7 @@
 import { test, describe, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createMatch, createMatchWithBot, joinMatch, listMatches, serverUrl } from './lobbyApi';
+import { createMatch, createMatchWithBot, fetchMatch, joinMatch, listMatches, serverUrl } from './lobbyApi';
 import type { LobbyMatchSummary } from './lobbyApi';
 import type { MatchSetupConfig } from '@legendary-arena/game-engine';
 import { parseLoadoutJson } from './parseLoadoutJson';
@@ -361,5 +361,55 @@ describe('parseLoadoutJson + createMatch (WP-092)', () => {
     };
     assert.equal(wireBody.numPlayers, 3);
     assert.deepEqual(wireBody.setupData, SAMPLE_CONFIG);
+  });
+});
+
+describe('fetchMatch (WP-499)', () => {
+  afterEach(() => {
+    restoreFetch();
+  });
+
+  test('GETs the per-match route and maps the single-match object to a summary', async () => {
+    installFetchStub(() =>
+      jsonResponse(200, {
+        players: [
+          { id: 0, name: 'Host' },
+          { id: 1 },
+        ],
+        setupData: SAMPLE_CONFIG,
+      }),
+    );
+
+    const summary = await fetchMatch('KdHnMXaOPin');
+
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0]!.url, `${serverUrl}/games/legendary-arena/KdHnMXaOPin`);
+    // why: fetchMatch is a public read like listMatches — no Authorization header.
+    assert.equal(calls[0]!.init, undefined);
+    assert.ok(summary !== null);
+    assert.equal(summary!.matchID, 'KdHnMXaOPin');
+    assert.deepEqual(summary!.players, [{ id: '0', name: 'Host' }, { id: '1' }]);
+    assert.deepEqual(summary!.setupData, SAMPLE_CONFIG);
+    assert.equal(summary!.gameover, null);
+  });
+
+  test('returns null when the match is not found (404)', async () => {
+    installFetchStub(() => textResponse(404, 'match not found'));
+    const summary = await fetchMatch('does-not-exist');
+    assert.equal(summary, null);
+  });
+
+  test('throws a full-sentence error on a non-404 error response', async () => {
+    installFetchStub(() => textResponse(500, 'boom'));
+    await assert.rejects(
+      fetchMatch('KdHnMXaOPin'),
+      /Failed to fetch match KdHnMXaOPin .* HTTP 500/,
+    );
+  });
+
+  test('url-encodes the match ID in the request path', async () => {
+    installFetchStub(() => jsonResponse(200, { players: [] }));
+    await fetchMatch('a b/c');
+    assert.equal(calls[0]!.url, `${serverUrl}/games/legendary-arena/a%20b%2Fc`);
   });
 });

@@ -3,12 +3,14 @@ import { defineComponent, ref, computed, onMounted, nextTick } from 'vue';
 import type { MatchSetupConfig } from '@legendary-arena/game-engine';
 import {
   createMatchWithBot,
+  fetchMatch,
   joinMatch,
   listMatches,
   serverUrl,
   fetchSetupRequirements,
 } from './lobbyApi';
 import type { LobbyMatchSummary } from './lobbyApi';
+import { parseMatchReference } from './matchReference';
 import {
   computePlayerCountMismatches,
   formatMismatchWarning,
@@ -89,6 +91,11 @@ export default defineComponent({
 
     const numPlayers = ref('2');
     const playerName = ref('');
+
+    // why: WP-499 — the "Join by match ID or link" input. Holds the raw pasted
+    // reference (a bare match ID or a full copy-join-link) until the player
+    // clicks Join; `joinByReference` parses + resolves + seats them.
+    const joinReference = ref('');
 
     const matches = ref<LobbyMatchSummary[]>([]);
     // why: WP-326 — the "Join existing match" list shows only joinable matches
@@ -462,6 +469,48 @@ export default defineComponent({
       return typeof seat.name !== 'string';
     }
 
+    async function joinByReference(): Promise<void> {
+      if (isSubmitting.value) {
+        return;
+      }
+      const matchID = parseMatchReference(joinReference.value);
+      if (matchID === null) {
+        errorMessage.value =
+          'Enter a match ID or an invite link to join a match.';
+        return;
+      }
+
+      let match: LobbyMatchSummary | null;
+      try {
+        match = await fetchMatch(matchID);
+      } catch (fetchError) {
+        const cause =
+          fetchError instanceof Error ? fetchError.message : String(fetchError);
+        errorMessage.value = `Could not look up match ${matchID}. ${cause}`;
+        return;
+      }
+
+      if (match === null) {
+        errorMessage.value = `No match found with ID ${matchID}. Check the ID or invite link and try again.`;
+        return;
+      }
+      if (match.gameover !== null) {
+        errorMessage.value = `Match ${matchID} has already finished, so it cannot be joined.`;
+        return;
+      }
+      const openSeat = match.players.find(isOpenSeat);
+      if (openSeat === undefined) {
+        errorMessage.value = `Match ${matchID} has no open seats to join.`;
+        return;
+      }
+
+      // why: WP-499 — reuse the existing authenticated join path. `joinExisting`
+      // owns the playerName guard, the bearer token, POST /api/match/join, and
+      // the navigation, so a manual join-by-reference is byte-identical to the
+      // row Join button (no duplicated credential or navigation code).
+      await joinExisting(matchID, openSeat.id);
+    }
+
     function applyParseResult(input: string): void {
       // why: D-24018 — recognize a LAGN file (WP-244) first and convert it to
       // the composition shape parseLoadoutJson already validates. A LAGN file
@@ -693,6 +742,8 @@ export default defineComponent({
       refreshMatches,
       submitCreate,
       joinExisting,
+      joinByReference,
+      joinReference,
       isOpenSeat,
       autoplayPlayerCount,
       autoplayPolicy,
@@ -1046,6 +1097,28 @@ export default defineComponent({
 
     <section class="join-existing" aria-labelledby="join-existing-heading">
       <h2 id="join-existing-heading">Join existing match</h2>
+
+      <!-- why: WP-499 — join by a pasted match ID or invite link, so an
+           unlisted match (absent from the list below) or a link from a friend
+           can be joined directly without hunting the list. -->
+      <div class="join-by-reference">
+        <label for="join-reference">Join by match ID or link</label>
+        <input
+          id="join-reference"
+          v-model="joinReference"
+          type="text"
+          placeholder="Paste a match ID or invite link"
+          data-testid="lobby-join-reference-input"
+        />
+        <button
+          type="button"
+          :disabled="isSubmitting"
+          data-testid="lobby-join-reference-submit"
+          @click="joinByReference"
+        >
+          Join
+        </button>
+      </div>
 
       <button
         type="button"
