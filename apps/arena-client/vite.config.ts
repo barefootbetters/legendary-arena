@@ -82,8 +82,48 @@ function emitVersionJsonPlugin(shortGitSha: string): Plugin {
   };
 }
 
+// why: Vite injects `crossorigin` onto every built `<link rel="stylesheet">`
+// and module `<script>` it emits. For a SAME-ORIGIN stylesheet with no
+// Subresource-Integrity (`integrity`) attribute, `crossorigin` buys nothing —
+// it only forces the browser to fetch the sheet in CORS mode. On Cloudflare
+// Pages, that CORS-mode fetch during the cold-cache window right after a deploy
+// (new hashed asset = `cf-cache-status: MISS`, served through the Pages
+// Functions runtime because of the root `functions/_middleware.ts`)
+// intermittently aborts in the browser (`net::ERR_ABORTED`) even though the
+// asset itself serves a clean 200. The sheet never applies and the page renders
+// fully unstyled until a reload. Observed live on play.legendary-arena.com,
+// 2026-08-04, immediately after the EC-534 deploy. The asset, its bytes, and
+// its `Access-Control-Allow-Origin: *` header are all correct and consistent
+// server-side (verified 21/21 requests) — the failure is purely the browser
+// aborting the CORS-mode request, so the fix is to stop requesting the
+// same-origin stylesheet in CORS mode at all. Script/`modulepreload` links are
+// left untouched: only the stylesheet exhibited the abort, so the change stays
+// scoped to the one surface that needs it.
+function stripCrossoriginFromStylesheetLinksPlugin(): Plugin {
+  return {
+    name: 'legendary-strip-crossorigin-from-stylesheet-links',
+    apply: () => true,
+    // why: order 'post' runs after Vite has injected its built asset tags into
+    // index.html, so the emitted `<link rel="stylesheet" crossorigin ...>` is
+    // present in the HTML string this handler receives and can be rewritten.
+    transformIndexHtml: {
+      order: 'post',
+      handler(html: string): string {
+        // why: rewrite only stylesheet <link> tags. The callback removes the
+        // `crossorigin` attribute (valueless or `="..."`) from within each
+        // matched tag, leaving the href and every other attribute intact.
+        const stylesheetLinkPattern = /<link\b[^>]*\brel="stylesheet"[^>]*>/g;
+        const crossoriginAttributePattern = /\s+crossorigin(?:=("[^"]*"|'[^']*'))?/g;
+        return html.replace(stylesheetLinkPattern, (linkTag) =>
+          linkTag.replace(crossoriginAttributePattern, ''),
+        );
+      },
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [vue(), emitVersionJsonPlugin(gitSha)],
+  plugins: [vue(), emitVersionJsonPlugin(gitSha), stripCrossoriginFromStylesheetLinksPlugin()],
   // why: these are build-time constants replaced by Vite, not runtime globals
   define: {
     __APP_VERSION__: JSON.stringify(version),
