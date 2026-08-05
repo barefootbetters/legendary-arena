@@ -12,6 +12,7 @@
 {{- $page := .page -}}
 {{- $name := $page.File.BaseFileName -}}
 {{- $blobBase := "https://github.com/barefootbetters/legendary-arena/blob/main" -}}
+{{- $canonical := index $page.Params "canonical-source" -}}
 <details class="editing-this-page">
   <summary>Editing this page</summary>
   <div class="editing-this-page-body">
@@ -34,15 +35,34 @@
         <li>Edit <code>docs/09-CHANGELOG.md</code>.</li>
         <li>Commit with the <code>SPEC:</code> prefix and push to <code>main</code>.</li>
       </ol>
+    {{- else if $canonical -}}
+      {{- /*
+        why: a mirror page synthesizes a single upstream doc that owns its
+        canonical prose (the canonical-source front-matter field). The
+        editable truth lives there, so this page directs the editor upstream
+        and back — distinct from the native variant below, which treats
+        wiki/<slug>.md as the source. Field spec: wiki/SCHEMA.md
+        §Front-Matter Format; decision D-24304.
+      */ -}}
+      <p>
+        This page synthesizes
+        <a href="{{ $blobBase }}/{{ $canonical }}"><code>{{ $canonical }}</code></a>,
+        which owns the canonical prose. Edit that doc, then re-sync this page —
+        the other <strong>Sources</strong> entries are references it draws on,
+        not edit targets.
+      </p>
+      <ol>
+        <li>Edit <code>{{ $canonical }}</code> (the canonical source).</li>
+        <li>Update <code>wiki/{{ $name }}.md</code> to match and bump <code>last-reviewed</code>.</li>
+        <li>Run <code>pnpm wiki-viewer:check-links</code>, commit with the <code>SPEC:</code> prefix, and push to <code>main</code>.</li>
+      </ol>
     {{- else -}}
       <p>
         The editable source for this page is
         <a href="{{ $blobBase }}/wiki/{{ $name }}.md"><code>wiki/{{ $name }}.md</code></a>
         in the <code>legendary-arena</code> repo. The <strong>Sources</strong>
         section lists the repo files this page is built from — those are
-        references it documents, not this page's editable copy. If one of
-        them is a REFERENCE doc that owns the canonical prose, edit that doc
-        too and bump <code>last-reviewed</code>.
+        references it documents, not this page's editable copy.
       </p>
       <ol>
         <li>Edit <code>wiki/{{ $name }}.md</code>.</li>

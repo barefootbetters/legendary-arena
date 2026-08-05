@@ -25,6 +25,13 @@ import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const projectedRoot = join(here, '..', 'content');
+// why: check-links runs from apps/wiki-viewer/scripts/, so the engine repo
+// root is three directories up. The canonical-source guard resolves the
+// front-matter path (repo-root-relative) and the `source` entries
+// (wiki/-relative, `../`-prefixed) against these two bases to prove they
+// point at the same file.
+const repoRoot = resolve(here, '..', '..', '..');
+const wikiDir = join(repoRoot, 'wiki');
 
 const MARKDOWN_LINK_PATTERN = /\[([^\]]+)\]\(([^)]+)\)/g;
 const FENCED_CODE_BLOCK_PATTERN = /```[\s\S]*?```/g;
@@ -61,6 +68,92 @@ function fileExistsCaseSensitive(absolutePath) {
   const fileName = absolutePath.slice(directory.length + 1);
   const entries = readdirSync(directory);
   return entries.includes(fileName);
+}
+
+/**
+ * Extract the YAML front-matter block from a projected page.
+ *
+ * why: the projection inserts the GENERATED banner AFTER the closing `---`,
+ * so the front-matter block is always the text between the first two `---`
+ * delimiters and is safe to slice out. A page with no front matter (or an
+ * unterminated block) yields an empty string and is treated as field-less.
+ *
+ * @param {string} body - Raw markdown of a projected content/ page.
+ * @returns {string} The front-matter block contents, or '' when absent.
+ */
+function extractFrontMatter(body) {
+  if (!body.startsWith('---')) {
+    return '';
+  }
+  const closingIndex = body.indexOf('\n---', 3);
+  if (closingIndex === -1) {
+    return '';
+  }
+  return body.slice(3, closingIndex);
+}
+
+/**
+ * Normalise one `source` entry to a comparable path: drop the self-reference
+ * parenthetical (` (this page — …)`) and any `#anchor`, then trim.
+ *
+ * @param {string} entry - A raw `source` list item.
+ * @returns {string} The bare path portion of the entry.
+ */
+function bareSourcePath(entry) {
+  const withoutParenthetical = entry.split(' (')[0];
+  const anchorIndex = withoutParenthetical.indexOf('#');
+  const withoutAnchor =
+    anchorIndex === -1 ? withoutParenthetical : withoutParenthetical.slice(0, anchorIndex);
+  return withoutAnchor.trim();
+}
+
+/**
+ * Validate the optional `canonical-source` front-matter field (D-24304).
+ *
+ * For every projected page that declares `canonical-source`, assert two
+ * things: (1) the named upstream file exists on disk, and (2) the same file
+ * is also cited in `source` (so the Sources section still links it and the
+ * two representations cannot drift). Returns a list of violation strings;
+ * an empty list means the guard passed.
+ *
+ * @returns {string[]} Human-readable violation messages.
+ */
+function checkCanonicalSources() {
+  const sourceFiles = readdirSync(projectedRoot).filter((name) => name.endsWith('.md'));
+  const violations = [];
+
+  for (const fileName of sourceFiles) {
+    const frontMatter = extractFrontMatter(readFileSync(join(projectedRoot, fileName), 'utf8'));
+    const canonicalMatch = frontMatter.match(/^canonical-source:\s*(.+)$/m);
+    if (!canonicalMatch) {
+      continue;
+    }
+    const canonicalPath = canonicalMatch[1].trim();
+
+    // (1) The named upstream file must exist at the repo root.
+    const canonicalAbsolute = resolve(repoRoot, canonicalPath);
+    if (!fileExistsCaseSensitive(canonicalAbsolute)) {
+      violations.push(
+        `${fileName}: canonical-source "${canonicalPath}" does not exist at ${canonicalAbsolute}. Point it at the upstream doc that owns this page's prose.`
+      );
+    }
+
+    // (2) The same file must also be cited in `source` (resolved-path match).
+    // why: source entries are wiki/-relative (`../…`); canonical-source is
+    // repo-root-relative. Comparing resolved absolute paths lets the two
+    // representations differ textually while still proving they are the
+    // same file — so provenance in the Sources section cannot silently drift.
+    const sourceEntries = [...frontMatter.matchAll(/^\s+-\s+(.+)$/gm)].map((entry) =>
+      resolve(wikiDir, bareSourcePath(entry[1]))
+    );
+    if (!sourceEntries.includes(canonicalAbsolute)) {
+      violations.push(
+        `${fileName}: canonical-source "${canonicalPath}" is not listed in the page's source. Add it to source (in its ../-relative form) so the Sources section links it.`
+      );
+    }
+  }
+
+  return violations;
 }
 
 function checkLinks() {
@@ -115,6 +208,17 @@ function checkLinks() {
 }
 
 try {
+  const canonicalViolations = checkCanonicalSources();
+  if (canonicalViolations.length > 0) {
+    for (const violation of canonicalViolations) {
+      process.stderr.write(`canonical-source violation: ${violation}\n`);
+    }
+    process.stderr.write(
+      `canonical-source check failed with ${canonicalViolations.length} violation(s). See wiki/SCHEMA.md §Mirror pages and DECISIONS.md D-24304.\n`
+    );
+    process.exit(1);
+  }
+
   const broken = checkLinks();
   if (broken.length > 0) {
     for (const entry of broken) {
