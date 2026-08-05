@@ -3,7 +3,7 @@
 > **The contract for every page under `wiki/`.**
 > If a page violates this schema, the page is wrong — not the schema.
 >
-> **Last updated:** 2026-07-23
+> **Last updated:** 2026-08-05
 
 ---
 
@@ -212,6 +212,7 @@ last-reviewed: 2026-05-07
 | `status` | yes | enum | `canonical` \| `draft` \| `deprecated` |
 | `source` | conditional | list | **First entry is the page's own self-reference** (see below). Remaining entries are the authoritative artifacts cited by the page, as relative paths. **Non-empty for `canonical`.** For `deprecated`, cite the replacement (or DECISIONS entry explaining the deprecation). |
 | `last-reviewed` | yes | date `YYYY-MM-DD` | When the page was last verified against current code/docs. |
+| `canonical-source` | no | single repo-root-relative path | **Mirror pages only** (see below). Names the one upstream doc that owns this page's canonical prose. Singular, not a list. When present, the same file **must** also be cited in `source`. Absent on every native page. |
 
 #### Self-reference (first `source` entry)
 
@@ -235,7 +236,37 @@ from most consumers of these docs, so a relative path resolves
 differently depending on where the reader is standing.
 
 `tags` and `related` are **lists**, even when they contain one entry,
-to keep the schema regular.
+to keep the schema regular. `canonical-source` is the deliberate exception:
+it is a **single** path, because a mirror page has exactly one prose owner —
+a list would imply several, contradicting "mirror."
+
+#### Mirror pages (`canonical-source`)
+
+Most wiki pages are **native**: the page itself is the canonical prose, and its
+`source` entries are the code/docs it *documents* (not an edit target). A few
+pages are **mirrors**: the prose is a synthesis / restatement of **one** upstream
+doc that is separately maintained and owns the wording. `development-workflow`
+is the canonical example — it restates
+`docs/ai/REFERENCE/development-workflow.md`.
+
+A page qualifies for `canonical-source` **only** if it is a mirror by that test.
+Documenting code, or citing a data spec such as
+`docs/ai/REFERENCE/00.2-data-requirements.md` for field definitions, does **not**
+qualify — those are native pages whose `source` entries are references, not
+owners. When in doubt, the page is native and omits the field.
+
+why: the "Editing this page" affordance (`layouts/partials/editing-this-page.html`)
+uses `canonical-source` to direct an editor to the upstream doc and back on
+mirror pages, instead of the native "edit `wiki/<slug>.md`" instruction which
+would wrongly imply the wiki page is the source of truth. The field is consumed
+only by that partial — it is **not** rendered in the metadata panel, so the
+six-field panel surface lock (`layouts/_default/single.html`, WP-139 / EC-142)
+is unaffected. Decision: `docs/ai/DECISIONS.md` D-24304.
+
+Path form: repo-root-relative (`docs/ai/REFERENCE/development-workflow.md`) so it
+links directly to the GitHub blob. The same file also appears in `source` in the
+`../`-relative form; `check-links.mjs` asserts the resolved paths agree so
+provenance cannot drift.
 
 ---
 

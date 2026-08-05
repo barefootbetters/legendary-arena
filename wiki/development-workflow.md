@@ -22,27 +22,9 @@ source:
   - ../docs/ai/REFERENCE/01-render-infrastructure.md
   - ../docs/ai/REFERENCE/01.0a-wp-drafting-phase.md
   - ../docs/ai/REFERENCE/01.0b-wp-execution-phase.md
-last-reviewed: 2026-06-12
+last-reviewed: 2026-08-05
+canonical-source: docs/ai/REFERENCE/development-workflow.md
 ---
-
-> **Editing this page**
->
-> This is the operator-facing guide. Its canonical source is
-> `docs/ai/REFERENCE/development-workflow.md` (in this same
-> `legendary-arena` repo) — that REFERENCE doc is what we edit. This page
-> synthesizes it together with the companion REFERENCE docs listed in the
-> metadata panel above (`01-render-infrastructure.md`,
-> `01.0a-wp-drafting-phase.md`, `01.0b-wp-execution-phase.md`).
->
-> - **To change the workflow itself:** edit
->   `docs/ai/REFERENCE/development-workflow.md`, commit with the `SPEC:`
->   prefix, push to `main`.
-> - **To update this page:** edit `wiki/development-workflow.md`, commit
->   with the `SPEC:` prefix, push to `main`. Run `pnpm wiki-viewer:check-links`
->   first — the merge to `main` rebuilds and publishes ewiki via Cloudflare
->   Pages.
-> - **Keep both in sync.** When the REFERENCE source changes, update this
->   page to match and bump `last-reviewed`.
 
 ## Summary
 

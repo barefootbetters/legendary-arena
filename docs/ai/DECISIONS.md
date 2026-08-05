@@ -35894,3 +35894,54 @@ Reserved by WP-498; hard-deps WP-383/D-24184 (discard-to-play site + keyword sub
 **Consequences.** Server identity only (`apps/server`): two new functions + a fail-open wiring line + a backfill script; no engine/registry/client change, no schema migration, no new HTTP endpoint, zero determinism/persistence-of-`G` surface. Handles remain **presentation/routing aliases** — `AccountId` stays the identity/trust key (FR-2), so auto-assignment does not touch ranked eligibility or the friendship trust key. **Out of scope (paired follow-up WP):** the change-handle/claim **endpoint** + the profile **UI** field, and rewiring `claimHandle`'s `handle_canonical IS NULL` guard to `handle_locked_at IS NULL` so a claim can overwrite an unlocked auto-handle. Reserved by WP-500; hard-deps WP-101 (handle contract) + WP-174 (provisioning) + WP-499/D-24302 (join-by-ID + diagnosis).
 
 Protect this file.
+
+### D-24304 — Engineering Wiki: optional `canonical-source` front-matter for mirror pages — amends the D-13810 field surface (Active 2026-08-05 — INFRA, no WP)
+
+> **Amends** the WP-139 / D-13810 wiki front-matter surface by adding **one
+> optional** field. **Does not** touch the six-field metadata-panel render lock
+> (D-13810 / EC-142): `canonical-source` is consumed **only** by the
+> `editing-this-page.html` partial and is never rendered in the panel, so the
+> `single.html` field-surface lock is unaffected.
+
+**Context.** #1225 (INFRA) added an "Editing this page" affordance to every ewiki
+page with two variants: **native** ("edit `wiki/<slug>.md`; the Sources list are
+files it documents, not an edit target") and **changelog** (generated; "edit
+`docs/09-CHANGELOG.md`"). A third archetype had no precise handling: a **mirror
+page** — a wiki page whose prose is a synthesis of a single upstream doc that
+owns the wording. `development-workflow` is the only clear one today (it restates
+`docs/ai/REFERENCE/development-workflow.md`). Mirror pages fell to the native
+variant, which wrongly implies the wiki page is the source of truth. Deriving the
+owner from `source` is ambiguous — `development-workflow` cites **four** REFERENCE
+docs with no marker for which owns the prose.
+
+**Decision.** Introduce an optional, singular `canonical-source` front-matter
+field: a repo-root-relative path to the one upstream doc that owns a mirror
+page's canonical prose. Present **only** on mirror pages (native pages omit it);
+when present, the same file must also be cited in `source`. When set, the
+editing-this-page block renders a **mirror variant** directing the editor to edit
+the upstream doc, then re-sync the wiki page and bump `last-reviewed`.
+
+1. **Schema** (`wiki/SCHEMA.md`): add the `canonical-source` field-reference row +
+   a "Mirror pages" subsection defining the native-vs-mirror test and the
+   qualifying rubric (documenting code or citing a data spec does **not**
+   qualify). Amended **before** any template reads the field, per the
+   `single.html` "amendment first, never a template-side widening" rule.
+2. **Template** (`layouts/partials/editing-this-page.html`): a new
+   `{{ else if $canonical }}` branch between the `changelog` slug-check and the
+   native default. Panel untouched.
+3. **Validation** (`apps/wiki-viewer/scripts/check-links.mjs`): when a page has
+   `canonical-source`, assert the target file exists **and** its resolved path
+   also appears in `source` — a cheap drift guard keeping provenance complete.
+4. **Assignment** (SPEC content edit): `development-workflow.md` gains
+   `canonical-source: docs/ai/REFERENCE/development-workflow.md` and its now-
+   redundant hand-authored "Editing this page" blockquote is removed (the auto
+   mirror variant replaces it). No other page qualifies today.
+
+**Consequences.** ewiki tooling only (`apps/wiki-viewer` + `wiki/`): one optional
+schema field, one template branch, one validation check, one content edit. Native
+pages render byte-identical output. No engine/registry/server/client surface, no
+schema migration, no determinism or persistence-of-`G` surface. The mirror rubric
+in SCHEMA.md lets future pages self-select; the check-links guard catches a
+`canonical-source` that drifts out of `source`.
+
+Protect this file.
