@@ -47,8 +47,12 @@ source:
   - ../apps/arena-client/src/pages/MyProfilePage.vue
   - ../apps/arena-client/src/composables/useAuthNav.ts
   - ../apps/arena-client/src/composables/useCompetitiveSubmitOnGameover.ts
+  - ../apps/server/src/identity/handle.logic.ts
+  - ../apps/server/src/auth/accountProvisioning.logic.ts
+  - ../apps/server/src/match/matchInvites.routes.ts
+  - ../docs/ai/work-packets/WP-499-join-by-match-id.md
   - ../docs/ai/work-packets/WORK_INDEX.md
-last-reviewed: 2026-07-11
+last-reviewed: 2026-08-04
 ---
 
 # Profile Login
@@ -347,6 +351,46 @@ Both `GET /api/me/profile` (12-key read) and `PATCH /api/me/profile` (recognized
 fields gain `displayName`; error set gains `invalid_display_name`) rows in
 `api-endpoints.md` were updated whole-row per D-11804.
 
+> **⚠ Handle claiming is unwired — no account obtains a handle through the app (discovered 2026-08-04).**
+> The read/write split above assumes a player *can* claim a handle. In practice
+> **none can.** `claimHandle` (`apps/server/src/identity/handle.logic.ts`) is the
+> **sole writer** of `handle_canonical` / `display_handle` (WP-101), and it has
+> **zero non-test call sites** — no HTTP route exposes it, and `MyProfilePage.vue`
+> only *renders* `@{handleCanonical}` (there is **no input to claim or change a
+> handle** anywhere in the profile UI). First-sign-in provisioning
+> (`accountProvisioning.logic.ts`, WP-174) inserts only `ext_id, email,
+> display_name, auth_provider, auth_provider_id` — **never** a handle. Net effect:
+> `handle_canonical` is **NULL for every account created through the app**, so the
+> owner-profile `@handle` line never renders (its `v-if="handleCanonical !== null"`
+> is always false) and `getHandleForAccount` always returns `null`.
+>
+> **This silently disables every `@handle` affordance the section below documents
+> as "SHIPPED."** `findAccountByHandle` (the resolver behind add-a-friend and
+> match-invite) matches on `handle_canonical`; with every row NULL it returns
+> `handle_not_found` (**HTTP 404**) for any name typed in. Both the Friends
+> "add by `@handle`" search (WP-351, `POST /api/me/friends/requests`,
+> `friendships.routes.ts`) and the match-invite-by-`@handle` (WP-358 / WP-366,
+> `POST /api/match/invites`, `matchInvites.routes.ts`) therefore fail for **every**
+> target, and discovery-by-`@handle` (FR-2) has no data to resolve against. The
+> flows are code-complete and correct — they are simply **unreachable** until a
+> handle exists to look up.
+>
+> **Surfaced operationally 2026-08-04:** an operator tried to invite a
+> newly-registered friend by username and hit the 404; the only path that worked
+> was emailing the WP-369 copy-join-link (identity-agnostic — it resolves a match
+> by ID, never a handle). **Fix, two tracks:**
+> - *Track 1 —* **[WP-499](../docs/ai/work-packets/WP-499-join-by-match-id.md)** /
+>   D-24302 productizes that copy-link as a first-class lobby **"Join by match ID
+>   or link"** input: paste a raw match ID or a full invite link and join the first
+>   open seat via the existing `POST /api/match/join`. Identity-agnostic, so two
+>   players can play together with **no handle at all** while Track 2 is pending.
+> - *Track 2 —* a follow-up WP wires **handle claiming itself** — auto-assign a
+>   handle derived from the display name at first sign-in (slugified +
+>   collision-suffixed, kept changeable), a profile field to view/change it, and a
+>   backfill for the existing NULL rows — the root-cause fix that makes the
+>   `@handle` flows below actually reachable. Until it lands, treat every
+>   `@handle`-keyed feature on this page as **built but dormant**.
+
 ### Friends & Ranked Trust Layer
 
 > **Status: SHIPPED — packets #1–#6 all Done 2026-07-11.** The subsystem landed
@@ -624,7 +668,14 @@ during implementation.
    plumbing) + offers a copy-join-link, and auto-hides when full;
    `InviteFriendControl.vue` was deleted (superseded). Seat-fill is polled from
    the public lobby `listMatches` (boardgame.io `matchData` is deliberately not
-   plumbed to the UI). This closes the friends-invite lobby flow.
+   plumbed to the UI). This closes the friends-invite lobby flow. **The
+   copy-join-link is later productized into an identity-agnostic manual-join by
+   [WP-499](../docs/ai/work-packets/WP-499-join-by-match-id.md) / D-24302** (a
+   lobby "Join by match ID or link" input) — the reliable path to play together
+   while handle claiming stays unwired (see the ⚠ callout in *Owner-page identity
+   fields* above): it also adds a read-only `GET /games/legendary-arena/:id` fetch
+   so an **unlisted** match, which the public `listMatches` omits, is reachable by
+   ID.
 6. Abuse controls — **executed as
    [WP-355](../docs/ai/work-packets/WP-355-friend-abuse-controls.md)**
    (executed 2026-07-11, D-24147 Active): a separate `legendary.player_blocks`
@@ -696,6 +747,14 @@ during implementation.
   `"My account"`** (the last as a non-blocking placeholder shown only until
   the fetch resolves). Because `display_name` is NOT NULL, the real name
   normally wins.
+- **Every `@handle` lookup 404s today — handle claiming is unwired.** Any feature
+  that resolves a typed name through `findAccountByHandle` (add-a-friend, invite
+  by `@handle`) returns `handle_not_found` for **every** target, because no account
+  has a `handle_canonical`: `claimHandle` has no production caller and the profile
+  UI has no claim field, so provisioning leaves the column NULL for everyone. This
+  is not a per-account bug — it is the whole `@handle` surface being dormant. Full
+  diagnosis + the two-track fix (WP-499 join-by-ID now; a handle-claim WP next) is
+  in the ⚠ callout under *Owner-page identity fields*.
 - **Avatar upload has two non-obvious contract catches** (WP-298). First,
   the upload `fetch` must **not** set a `Content-Type` header — the browser
   sets `multipart/form-data; boundary=…` itself, and a manual `Content-Type`
