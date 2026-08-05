@@ -35944,4 +35944,20 @@ schema migration, no determinism or persistence-of-`G` surface. The mirror rubri
 in SCHEMA.md lets future pages self-select; the check-links guard catches a
 `canonical-source` that drifts out of `source`.
 
+---
+
+### D-24305 — Change-handle contract (freely-changeable-while-unlocked; third disjoint handle writer) (Drafted 2026-08-05 — WP-501 / EC-536; not yet landed)
+
+> **Status: Drafted 2026-08-05; not yet landed.** Reserved in `NUMBER-LEDGER.md`. Flips to Active at WP-501 execution.
+
+**Context.** WP-500 / D-24303 auto-assigns every account a `@handle` (changeable — `handle_locked_at` NULL) but there is **no way to change it**: `MyProfilePage.vue` only renders `@handle`, and a slug collision leaves a user with e.g. `jeff2` when they wanted `jeff` (the operator's own account, 2026-08-05). This decision locks the change mechanism.
+
+**Decision.**
+- **`changeHandle` — freely changeable while unlocked.** New `changeHandle(accountId, requestedHandle, database): Promise<Result<{ handleCanonical: string; displayHandle: string }>>` in `handle.logic.ts`, structured like `claimHandle`: `validateHandleFormat` (→ `invalid_handle` / `reserved_handle`), then `UPDATE legendary.players SET handle_canonical = <canonical>, display_handle = <display> WHERE ext_id = <accountId> AND handle_locked_at IS NULL RETURNING`. A partial-unique `23505` → `handle_taken`; an empty `RETURNING` disambiguates via `findPlayerByAccountId` to `unknown_account` (no row) or `handle_already_locked` (row exists but locked). It **never** `throw`s (returns `Result` / `Promise.reject`). This realizes the D-24303 "auto-assign but changeable" model: a handle can be changed any number of times while `handle_locked_at IS NULL` — which is every account today (no lock feature is wired). The previous handle is **released to the free pool** (no redirect/reservation — standard username-change behavior).
+- **Third disjoint writer (extends D-24303).** `changeHandle` is the **third** sanctioned writer of `handle_canonical` + `display_handle` (after `claimHandle` and `assignAutoHandle`) and — like `assignAutoHandle` — **never writes `handle_locked_at`**. Unlike `assignAutoHandle` (which only fills a NULL handle), `changeHandle` *overwrites* an existing unlocked handle. The `handle.logic.ts` writer-invariant header (amended by WP-500) gains a one-line note.
+- **No contract-union change.** `changeHandle` reuses the **existing** five `HandleErrorCode` values (including `handle_already_locked` for the defensive locked case), so `handle.types.ts` and its drift test are **not** touched. `changeHandle` returns a small `{ handleCanonical, displayHandle }` rather than `HandleClaim` (whose required-`string` `handleLockedAt` cannot represent an unlocked/NULL handle).
+- **Endpoint + UI.** New `PATCH /api/me/handle` (`authenticated-session-required`, body `{ handle }`) in a new `handle.routes.ts` (`registerHandleRoutes`, mirroring `ownerProfile.routes.ts`; identity session-resolved, `Cache-Control: no-store`), registered in `server.mjs`. `ownerProfileApi.changeHandle` wraps it; `MyProfilePage.vue` gains a change-your-handle affordance (input + Change + inline error) near the `@handle` line. `api-endpoints.md` gains the endpoint + `changeHandle` Library-only rows (D-11804).
+
+**Consequences.** Cross-layer (server identity + arena-client owner profile); no schema migration (columns exist since migration 008), no engine touch, zero determinism/persistence-of-`G` surface. Handles stay presentation/routing aliases — `AccountId` remains the identity/trust key (FR-2), so a handle change does not affect ranked eligibility or friendships (a friendship is keyed on `AccountId` and survives a handle change — FR-3). **Out of scope (deferred follow-ups):** the explicit **lock/claim** action (a "make permanent" that sets `handle_locked_at`, which would rewire `claimHandle`'s `handle_canonical IS NULL` guard to `handle_locked_at IS NULL`); a per-account change **rate-limit / cooldown** (anti-squat). Reserved by WP-501; hard-deps WP-101 (handle contract) + WP-500/D-24303 (auto-assign + changeable model) + WP-104 (owner-profile edit surface).
+
 Protect this file.
