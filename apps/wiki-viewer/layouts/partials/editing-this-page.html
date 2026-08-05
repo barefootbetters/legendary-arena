@@ -1,0 +1,58 @@
+{{- /*
+  why: Every ewiki page is operator-facing and synthesized from repo
+  sources, so an editor arriving on any page needs to know where the
+  editable source lives and how to publish a change. The mechanics are
+  identical site-wide, so they live in this one partial rather than being
+  hand-copied into each page's markdown (copy-pasted prose drifts — the
+  very failure this note prevents). Rendered at the foot of every single
+  page and collapsed by default via the native <details> element so it
+  never gates content and needs no JavaScript (ewiki is JS-free; the
+  Pagefind allow-list carve-out is D-24293 and does not apply here).
+*/ -}}
+{{- $page := .page -}}
+{{- $name := $page.File.BaseFileName -}}
+{{- $blobBase := "https://github.com/barefootbetters/legendary-arena/blob/main" -}}
+<details class="editing-this-page">
+  <summary>Editing this page</summary>
+  <div class="editing-this-page-body">
+    {{- if eq $name "changelog" -}}
+      {{- /*
+        why: changelog.md is the one page projected from docs/ rather than
+        wiki/ (docs/09-CHANGELOG.md, D-24164). Editing the wiki copy is
+        silently discarded on the next build, so this page must point at
+        the upstream doc instead. Keep this branch in sync with the
+        docs-projected set in apps/wiki-viewer/scripts/project-wiki.mjs
+        should another docs-projected page ever be added.
+      */ -}}
+      <p>
+        This page is <strong>auto-generated</strong> from
+        <a href="{{ $blobBase }}/docs/09-CHANGELOG.md"><code>docs/09-CHANGELOG.md</code></a>.
+        Editing the wiki copy is discarded on the next build — change the
+        upstream doc.
+      </p>
+      <ol>
+        <li>Edit <code>docs/09-CHANGELOG.md</code>.</li>
+        <li>Commit with the <code>SPEC:</code> prefix and push to <code>main</code>.</li>
+      </ol>
+    {{- else -}}
+      <p>
+        The editable source for this page is
+        <a href="{{ $blobBase }}/wiki/{{ $name }}.md"><code>wiki/{{ $name }}.md</code></a>
+        in the <code>legendary-arena</code> repo. The <strong>Sources</strong>
+        section lists the repo files this page is built from — those are
+        references it documents, not this page's editable copy. If one of
+        them is a REFERENCE doc that owns the canonical prose, edit that doc
+        too and bump <code>last-reviewed</code>.
+      </p>
+      <ol>
+        <li>Edit <code>wiki/{{ $name }}.md</code>.</li>
+        <li>Run <code>pnpm wiki-viewer:check-links</code>.</li>
+        <li>Commit with the <code>SPEC:</code> prefix and push to <code>main</code>.</li>
+      </ol>
+    {{- end -}}
+    <p>
+      Merging to <code>main</code> rebuilds and publishes ewiki via
+      Cloudflare Pages.
+    </p>
+  </div>
+</details>
