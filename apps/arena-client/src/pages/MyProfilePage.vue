@@ -2,11 +2,13 @@
 import { computed, defineComponent, onMounted, ref, watch } from 'vue';
 
 import {
+  changeHandle,
   fetchOwnerProfile,
   replaceOwnerLinks,
   updateOwnerProfile,
   uploadOwnerAvatar,
   type AvatarUploadErrorCode,
+  type HandleErrorCode,
   type OwnerProfileLink,
   type OwnerProfileView,
 } from '../lib/api/ownerProfileApi';
@@ -366,6 +368,11 @@ export default defineComponent({
     // why: WP-359 / D-24151 — the friend-request email opt-out toggle.
     // Defaults to true (emails on) until the loaded profile seeds it.
     const formFriendRequestEmails = ref(true);
+    // why: WP-501 / D-24305 — the change-your-handle field. `handleInput` holds
+    // the typed new handle; `handleChangeError` shows an inline failure beneath
+    // the field (taken / invalid / reserved), separate from the page banner.
+    const handleInput = ref('');
+    const handleChangeError = ref('');
     const draftLinks = ref<DraftLink[]>([]);
 
     // why: WP-302 — the Saved Loadouts section owns its own state,
@@ -515,6 +522,45 @@ export default defineComponent({
         return;
       }
       errorBanner.value = bannerCopyForCode(result.code);
+    }
+
+    /**
+     * Map a change-handle failure code to inline copy shown beneath the
+     * handle field. (WP-501 / D-24305.)
+     */
+    function handleChangeErrorCopy(code: HandleErrorCode | null): string {
+      if (code === 'handle_taken') {
+        return 'That handle is already taken. Try another.';
+      }
+      if (code === 'invalid_handle') {
+        return 'Use 3–24 characters: start with a letter, then lowercase letters, digits, or underscore.';
+      }
+      if (code === 'reserved_handle') {
+        return 'That handle is reserved. Choose a different one.';
+      }
+      if (code === 'handle_already_locked') {
+        return 'Your handle is locked and cannot be changed.';
+      }
+      return 'Could not change your handle. Please try again.';
+    }
+
+    async function submitHandleChange(): Promise<void> {
+      handleChangeError.value = '';
+      const result = await changeHandle(readAuthToken(), handleInput.value);
+      if (result.ok === true) {
+        // why: WP-501 — reflect the new handle immediately. `view`'s fields are
+        // readonly, so reassign the ref with the updated handleCanonical rather
+        // than mutating in place; the rendered @handle updates without a refetch.
+        if (view.value !== null) {
+          view.value = {
+            ...view.value,
+            handleCanonical: result.handleCanonical,
+          };
+        }
+        handleInput.value = '';
+        return;
+      }
+      handleChangeError.value = handleChangeErrorCopy(result.code);
     }
 
     /**
@@ -990,6 +1036,9 @@ export default defineComponent({
       formAboutMeVisibility,
       formLinksVisibility,
       formFriendRequestEmails,
+      handleInput,
+      handleChangeError,
+      submitHandleChange,
       draftLinks,
       providerOptions: ALLOWED_PROVIDERS,
       saveProfile,
@@ -1068,6 +1117,37 @@ export default defineComponent({
         >
           @{{ view.handleCanonical }}
         </p>
+        <!-- why: WP-501 / D-24305 — change your @handle. The WP-500
+             auto-assigned slug (e.g. jeff2) is editable while unlocked; the
+             new handle renders immediately on success, errors show inline. -->
+        <div
+          v-if="view !== null"
+          class="profile-handle-change"
+          data-testid="my-profile-handle-change"
+        >
+          <label for="handle-input">Change your @handle</label>
+          <input
+            id="handle-input"
+            v-model="handleInput"
+            type="text"
+            placeholder="new handle"
+            data-testid="my-profile-handle-input"
+          />
+          <button
+            type="button"
+            data-testid="my-profile-handle-submit"
+            @click="submitHandleChange"
+          >
+            Change
+          </button>
+          <p
+            v-if="handleChangeError !== ''"
+            class="profile-handle-error"
+            data-testid="my-profile-handle-error"
+          >
+            {{ handleChangeError }}
+          </p>
+        </div>
         <p
           v-if="view !== null"
           class="profile-account-id"

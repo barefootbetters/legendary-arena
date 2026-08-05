@@ -14,7 +14,9 @@ import assert from 'node:assert/strict';
 
 import {
   uploadOwnerAvatar,
+  changeHandle,
   AVATAR_UPLOAD_ERROR_CODES,
+  HANDLE_ERROR_CODES,
   type OwnerProfilePatch,
   type OwnerProfileView,
 } from './ownerProfileApi';
@@ -200,6 +202,80 @@ test('AVATAR_UPLOAD_ERROR_CODES mirrors the server union exactly (drift guard)',
   assert.equal(new Set(AVATAR_UPLOAD_ERROR_CODES).size, 5);
   assert.deepEqual(
     [...AVATAR_UPLOAD_ERROR_CODES].sort(),
+    [...expectedServerUnion].sort(),
+  );
+});
+
+// --- WP-501 / EC-536: changeHandle ---
+
+test('changeHandle returns ok with the new handle on 200 and sends PATCH + Authorization + JSON body', async () => {
+  const stub = installFetchStub(200, { handleCanonical: 'jeff', displayHandle: 'Jeff' });
+  try {
+    const result = await changeHandle('token-abc', 'Jeff');
+    assert.deepEqual(result, {
+      ok: true,
+      handleCanonical: 'jeff',
+      displayHandle: 'Jeff',
+    });
+    assert.equal(stub.calls.length, 1);
+    const call = stub.calls[0];
+    assert.ok(call);
+    assert.ok(call.url.endsWith('/api/me/handle'));
+    assert.equal(call.init.method, 'PATCH');
+    const headers = call.init.headers as Record<string, string>;
+    assert.equal(headers.Authorization, 'Bearer token-abc');
+    assert.equal(headers['Content-Type'], 'application/json');
+    assert.deepEqual(JSON.parse(String(call.init.body)), { handle: 'Jeff' });
+  } finally {
+    stub.restore();
+  }
+});
+
+test('changeHandle maps a 409 handle_taken body to ok:false with the code preserved', async () => {
+  const stub = installFetchStub(409, { error: 'handle_taken' });
+  try {
+    const result = await changeHandle('token-abc', 'jeff');
+    assert.deepEqual(result, { ok: false, status: 409, code: 'handle_taken' });
+  } finally {
+    stub.restore();
+  }
+});
+
+test('changeHandle returns a null code for an unrecognized error body', async () => {
+  const stub = installFetchStub(400, { error: 'something_unexpected' });
+  try {
+    const result = await changeHandle('token-abc', 'jeff');
+    assert.deepEqual(result, { ok: false, status: 400, code: null });
+  } finally {
+    stub.restore();
+  }
+});
+
+test('changeHandle returns status 0 with a null code when fetch throws', async () => {
+  const stub = installThrowingFetchStub();
+  try {
+    const result = await changeHandle('token-abc', 'jeff');
+    assert.deepEqual(result, { ok: false, status: 0, code: null });
+  } finally {
+    stub.restore();
+  }
+});
+
+test('HANDLE_ERROR_CODES mirrors the server HandleErrorCode union exactly (drift guard)', () => {
+  // why: client-local mirror of the server's HandleErrorCode union; a failure
+  // here means the mirror drifted from the server contract and must be
+  // brought back into lockstep.
+  const expectedServerUnion = [
+    'invalid_handle',
+    'reserved_handle',
+    'handle_taken',
+    'handle_already_locked',
+    'unknown_account',
+  ];
+  assert.equal(HANDLE_ERROR_CODES.length, 5);
+  assert.equal(new Set(HANDLE_ERROR_CODES).size, 5);
+  assert.deepEqual(
+    [...HANDLE_ERROR_CODES].sort(),
     [...expectedServerUnion].sort(),
   );
 });
