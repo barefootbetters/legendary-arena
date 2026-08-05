@@ -7,6 +7,43 @@
 
 ## Current State
 
+### WP-500 — Auto-Assign Changeable Handles at Sign-In + Backfill — DONE (2026-08-05)
+
+Track 2 core of the friend-invite fix. The handle-claim feature (WP-101) was never wired —
+`claimHandle` has zero non-test callers — so `handle_canonical` is NULL for every account and
+every `@handle` affordance (friend-request WP-351, match-invite WP-358/366, all via
+`findAccountByHandle`) returns `handle_not_found` for every target (diagnosed under WP-499). This
+makes every account reachable by `@handle`.
+
+- **`deriveHandle(displayName)`** (new pure fn, `handle.logic.ts`) — slugs the display name to a
+  `HANDLE_REGEX`-valid handle: lowercase, non-alphanumeric runs → `_`, strip edge `_`, prefix `u`
+  for a leading non-letter, pad `0` to 3, truncate 24, `player` fallback for empty/reserved.
+- **`assignAutoHandle(accountId, displayName, db)`** (new) — idempotent (`WHERE handle_canonical
+  IS NULL`), collision-safe (`base`,`base2`,…,`base`+ext_id-hex; each truncated to `24 −
+  suffix.length` + `HANDLE_REGEX`-validated; partial-unique `23505` advances the suffix). Sets
+  `handle_canonical` + `display_handle` and **NEVER** `handle_locked_at` (NULL = changeable). Never
+  `throw`s (returns `null` / `Promise.reject`).
+- **Resolver wiring** (`accountResolver.logic.ts`) — `assignAutoHandle` called in
+  `attemptProvisioning` (the no-match branch → new accounts) inside an **explicit fail-open
+  `try/catch`**; a handle hiccup never breaks sign-in.
+- **`scripts/backfill-handles.mjs`** (new) — one-time `node --env-file=.env` backfill of existing
+  NULL rows, reusing the same TS fns via the D-13405 tsx-register precedent (`apps/server` has no
+  dist). Heals the entire existing user base (auto-assign only fires for new accounts).
+- **Amends the WP-101 handle invariant (D-24303):** `handle_locked_at` is now independent (NULL =
+  auto-assigned/changeable; `now()` = explicit claim/immutable); `assignAutoHandle` is a sanctioned
+  second, disjoint writer of `handle_canonical` + `display_handle`. Header + `api-endpoints.md`
+  `claimHandle` row amended; `assignAutoHandle` row added (D-11804).
+- Server-only; **no schema migration** (columns exist since migration 008); zero determinism
+  surface. **Verified:** server suite exit 0; `deriveHandle` pure tests + `assignAutoHandle`
+  DB-gated (incl. collision→`twin2`) against real Postgres; resolver assign-on-provision + fail-open
+  tests; backfill end-to-end (2 NULL → assigned 2, `handle_locked_at` NULL, reachable via
+  `findAccountByHandle`); `pnpm -r build` 0.
+- **D-24026 live-verify operator-pending:** run `node --env-file=.env scripts/backfill-handles.mjs`
+  against **prod** (a REQUIRED post-deploy step — the whole existing user base is NULL-handle), then
+  confirm a signed-in account shows a `@handle` and a friend-request to it resolves.
+- **Paired follow-up (not this WP):** the change-handle/claim endpoint + profile UI + rewiring
+  `claimHandle`'s guard.
+
 ### WP-499 — Join by Match ID or Link (lobby manual-join affordance) — DONE (2026-08-04)
 
 The lobby could only join a match by clicking a row in the auto-fetched public list, or via a
