@@ -21,5 +21,13 @@
     {{- with .Params.source -}}
       {{ partial "source-citations.html" (dict "items" . "page" $.Page) }}
     {{- end -}}
+    {{- /*
+    why: the "Editing this page" affordance renders on every single page
+    (no front-matter gate) and drives entirely off .File — it adds no
+    rendered front-matter field, so the six-field surface lock above is
+    unaffected. Placed last so this editor-facing housekeeping never gates
+    the content a reader came for.
+    */ -}}
+    {{ partial "editing-this-page.html" (dict "page" $.Page) }}
   </article>
 {{ end }}
