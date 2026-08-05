@@ -7,6 +7,40 @@
 
 ## Current State
 
+### WP-502 — Match End-of-Life Controls: Play Again + End Game — DONE (2026-08-05)
+
+Two player-facing controls on the play surface (play.legendary-arena.com), closing the gap where a
+finished match rendered only the inline `EndgameSummary` with no next step and there was no way to
+close out a match that could not finish.
+
+- **"End Game"** — a confirm-gated control in the turn action bar (shown on the active player's
+  turn) that closes an in-progress match out for **every** seat (a co-op table that ran out of
+  time). Implemented as a new **`endMatchEarly`** server-only move that latches a new
+  `ENDGAME_CONDITIONS.MATCH_ENDED_EARLY` endgame counter. Modeled as a **counter, not
+  `events.endGame`**, because the client-visible `UIState.gameOver` is derived by `buildUIState`
+  from `evaluateEndgame(G.counters)`, not `ctx.gameover` — an event-end would terminate the match
+  but never surface the endgame panel (hard-freeze). `evaluateEndgame` checks `MATCH_ENDED_EARLY`
+  **first** → `{ outcome: 'tie', reason: 'The players ended the match early.', endedEarly: true }`;
+  the top-level `endIf` then ends the match for all seats. The move never throws and is a no-op once
+  the match is already over; NOT a `CORE_MOVE_NAME`.
+- **"Play Again"** — on match end, a panel (mounted once at the viewport root) that relaunches a
+  fresh match with the **same loadout** at seat 0 via `launchMatchFromComposition` (the stashed
+  `MatchSetupConfig` + the snapshot seat count). The arcade "insert another quarter" replay. Gated
+  on an authenticated account + a stashed loadout; a guest/non-creator sees only Back to Lobby.
+- **An early-ended match is never scored.** `endedEarly` is an **additive optional** marker on
+  `EndgameResult` + `UIGameOverState` (outcome stays `'tie'` — no `EndgameOutcome`-union change).
+  The server (`submitCompetitiveScoreImpl`) rejects an `endedEarly` gameover with a new
+  `ended_early` `SubmissionRejectionReason` (union + `SUBMISSION_REJECTION_REASONS` array, in
+  lockstep) **before** any INSERT (authoritative); the client submit-on-gameover hook also skips the
+  POST → `'ineligible'` (advisory).
+- Cross-layer (Game Engine + Server + Arena Client). **No new top-level `G` field** (runtime-only
+  counter) → **no `finalStateHash`/`PRE_WP080` re-pin**; replay-safe, no RNG, no `G` persistence.
+  **Verified:** engine 2330 + arena-client 1195 + server competition suites green; arena-client
+  `typecheck` 0; `pnpm -r build` 0; number-ledger `--check` 0. Local fixture live-verify: End Game
+  renders + two-click confirm works; the endgame action panel renders on match end.
+  **D-24026 prod live-verify (End Game closes for all seats; early-ended match records no
+  leaderboard score) is operator-pending post-deploy.** Lands **D-24306** (Active).
+
 ### WP-500 — Auto-Assign Changeable Handles at Sign-In + Backfill — DONE (2026-08-05)
 
 Track 2 core of the friend-invite fix. The handle-claim feature (WP-101) was never wired —
