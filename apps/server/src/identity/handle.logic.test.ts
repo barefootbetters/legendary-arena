@@ -20,6 +20,8 @@ import {
   claimHandle,
   findAccountByHandle,
   getHandleForAccount,
+  deriveHandle,
+  assignAutoHandle,
 } from './handle.logic.js';
 import {
   HANDLE_ERROR_CODES,
@@ -155,6 +157,150 @@ describe('handle logic (WP-101)', () => {
     assert.ok(result.ok === false);
     assert.equal(result.code, 'reserved_handle');
   });
+
+  // --- WP-500 / EC-535: deriveHandle (pure, always run) ---
+
+  test('deriveHandle returns the pinned slugs for representative names', () => {
+    assert.equal(deriveHandle('Jeff'), 'jeff');
+    assert.equal(deriveHandle('Spider-Man'), 'spider_man');
+    assert.equal(deriveHandle('88Legend'), 'u88legend'); // leading non-letter → prefix u
+    assert.equal(deriveHandle('Jo'), 'jo0'); // pad to 3 with 0
+  });
+
+  test('deriveHandle falls back to "player" for empty, emoji-only, and reserved names', () => {
+    assert.equal(deriveHandle(''), 'player');
+    assert.equal(deriveHandle('   '), 'player');
+    assert.equal(deriveHandle('🎮🎮'), 'player');
+    assert.equal(deriveHandle('Admin'), 'player'); // canonicalizes to a reserved handle
+    assert.equal(deriveHandle('api'), 'player');
+  });
+
+  test('deriveHandle truncates to the 24-char ceiling and stays HANDLE_REGEX-valid', () => {
+    const long = deriveHandle('Abcdefghijklmnopqrstuvwxyz Extra Words Here');
+    assert.ok(long.length <= 24, `expected <=24 chars, got ${long.length}`);
+    assert.ok(HANDLE_REGEX.test(long));
+  });
+
+  test('deriveHandle always returns a HANDLE_REGEX-valid handle across varied inputs', () => {
+    const samples = [
+      'Jeff', 'Spider-Man', '88Legend', 'Jo', 'J', '💥', 'Dr. Strange!!!',
+      'multiple   spaces', '___weird___', 'Über Held', '42', 'a', 'ADMIN',
+      'a-very-long-display-name-that-exceeds-twenty-four-characters', 'null', '  ',
+    ];
+    for (const sample of samples) {
+      const handle = deriveHandle(sample);
+      assert.ok(
+        HANDLE_REGEX.test(handle),
+        `deriveHandle(${JSON.stringify(sample)}) = ${JSON.stringify(handle)} is not HANDLE_REGEX-valid`,
+      );
+      assert.ok(RESERVED_HANDLES.includes(handle) === false || handle === 'player');
+    }
+  });
+
+  // --- WP-500 / EC-535: assignAutoHandle (DB-gated) ---
+
+  test(
+    'assignAutoHandle assigns a derived handle and leaves handle_locked_at NULL (changeable)',
+    hasTestDatabase ? {} : { skip: 'requires test database' },
+    async () => {
+      assert.ok(testPool !== null);
+      let counter = 0;
+      const idProvider = () =>
+        `00000000-0000-4000-8000-${String(counter++).padStart(12, '0')}`;
+      const accountResult = await createPlayerAccount(
+        {
+          email: 'auto@example.com',
+          displayName: 'Auto User',
+          authProvider: 'email',
+          authProviderId: 'auto@example.com',
+        },
+        testPool,
+        idProvider,
+      );
+      assert.ok(accountResult.ok === true);
+      const accountId = accountResult.value.accountId;
+
+      const handle = await assignAutoHandle(accountId, 'Auto User', testPool);
+      assert.equal(handle, 'auto_user');
+
+      const inspection = await testPool.query(
+        'SELECT handle_canonical, display_handle, handle_locked_at ' +
+          'FROM legendary.players WHERE ext_id = $1 LIMIT 1',
+        [accountId],
+      );
+      assert.equal(inspection.rows[0].handle_canonical, 'auto_user');
+      assert.equal(inspection.rows[0].display_handle, 'auto_user');
+      // the whole point: auto-assigned handles are NOT locked (changeable)
+      assert.equal(inspection.rows[0].handle_locked_at, null);
+
+      // reachable by the friend/invite lookup now
+      const lookup = await findAccountByHandle('auto_user', testPool);
+      assert.ok(lookup !== null);
+      assert.equal(lookup.accountId, accountId);
+    },
+  );
+
+  test(
+    'assignAutoHandle is idempotent — a second call is a no-op returning null',
+    hasTestDatabase ? {} : { skip: 'requires test database' },
+    async () => {
+      assert.ok(testPool !== null);
+      let counter = 0;
+      const idProvider = () =>
+        `00000000-0000-4000-8000-${String(counter++).padStart(12, '0')}`;
+      const accountResult = await createPlayerAccount(
+        {
+          email: 'idem-auto@example.com',
+          displayName: 'Idem Auto',
+          authProvider: 'email',
+          authProviderId: 'idem-auto@example.com',
+        },
+        testPool,
+        idProvider,
+      );
+      assert.ok(accountResult.ok === true);
+      const accountId = accountResult.value.accountId;
+
+      const first = await assignAutoHandle(accountId, 'Idem Auto', testPool);
+      assert.equal(first, 'idem_auto');
+      const second = await assignAutoHandle(accountId, 'Different Name', testPool);
+      assert.equal(second, null); // already has a handle → no-op, not overwritten
+
+      const inspection = await testPool.query(
+        'SELECT handle_canonical FROM legendary.players WHERE ext_id = $1 LIMIT 1',
+        [accountId],
+      );
+      assert.equal(inspection.rows[0].handle_canonical, 'idem_auto');
+    },
+  );
+
+  test(
+    'assignAutoHandle appends a numeric suffix on a slug collision',
+    hasTestDatabase ? {} : { skip: 'requires test database' },
+    async () => {
+      assert.ok(testPool !== null);
+      let counter = 0;
+      const idProvider = () =>
+        `00000000-0000-4000-8000-${String(counter++).padStart(12, '0')}`;
+      const first = await createPlayerAccount(
+        { email: 'a1@example.com', displayName: 'Twin', authProvider: 'email', authProviderId: 'a1@example.com' },
+        testPool,
+        idProvider,
+      );
+      const second = await createPlayerAccount(
+        { email: 'a2@example.com', displayName: 'Twin', authProvider: 'email', authProviderId: 'a2@example.com' },
+        testPool,
+        idProvider,
+      );
+      assert.ok(first.ok === true && second.ok === true);
+
+      const h1 = await assignAutoHandle(first.value.accountId, 'Twin', testPool);
+      const h2 = await assignAutoHandle(second.value.accountId, 'Twin', testPool);
+      assert.equal(h1, 'twin');
+      assert.equal(h2, 'twin2'); // collision → next suffix
+      assert.ok(HANDLE_REGEX.test(h2));
+    },
+  );
 
   test(
     'claimHandle succeeds against a fresh account and writes three columns',

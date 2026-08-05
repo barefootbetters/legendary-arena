@@ -15,12 +15,24 @@
  * only through the `DatabaseClient` alias; a direct `pg` import is
  * forbidden in this file.
  *
- * Single-writer invariant: this module's `claimHandle` contains the
- * only PostgreSQL update statement that writes `handle_canonical`,
- * `display_handle`, or `handle_locked_at`. No other code path may
- * set those columns; once non-null, they are immutable.
+ * Handle-writer invariant (amended by WP-500 / D-24303): the handle
+ * columns have TWO sanctioned writers, and `handle_locked_at` is now
+ * INDEPENDENT of the other two:
+ *   - `claimHandle` — the only writer of `handle_locked_at` (an explicit
+ *     claim; sets all three columns and stamps the lock). A claimed
+ *     handle (`handle_locked_at` non-NULL) is immutable.
+ *   - `assignAutoHandle` (WP-500) — a second, DISJOINT writer that sets
+ *     only `handle_canonical` + `display_handle` (equal, an auto-derived
+ *     slug) and NEVER `handle_locked_at`. An auto-assigned handle
+ *     (`handle_locked_at` NULL) is CHANGEABLE by a later claim.
+ * Mutual-presence: `handle_canonical` + `display_handle` are NULL
+ * together or non-NULL together; `handle_locked_at` may be NULL while
+ * they are set (auto-assigned). This invariant is prose-enforced — no
+ * automated gate asserts it (migration 008's "verified by tests"
+ * comment is stale and, being a migration, immutable).
  *
- * Authority: WP-101 §Scope (In) §B; EC-114 §Locked Values; D-5201
+ * Authority: WP-101 §Scope (In) §B; EC-114 §Locked Values; WP-500 /
+ * EC-535 / D-24303 (auto-assigned changeable handles); D-5201
  * (AccountId distinct from engine PlayerId); D-5203 (identity
  * persistence taxonomy — handle columns extend this).
  */
@@ -323,4 +335,151 @@ export async function getHandleForAccount(
         ? row.handle_locked_at.toISOString()
         : row.handle_locked_at,
   };
+}
+
+// why: the fallback for an empty / underivable / reserved display name.
+// `player` is not in RESERVED_HANDLES and matches HANDLE_REGEX, so it is
+// always a valid last resort; collisions on it get numbered like any base.
+const AUTO_HANDLE_FALLBACK = 'player';
+
+// why: how many numeric suffixes (base, base2, … base20) to try before
+// the deterministic ext_id-hex fallback. 20 is far beyond any realistic
+// same-slug collision count for auto-assignment.
+const AUTO_HANDLE_MAX_SUFFIX_ATTEMPTS = 20;
+
+/**
+ * Derive a valid, deterministic account handle from a display name.
+ * PURE — no I/O, no database. Always returns a string matching
+ * `HANDLE_REGEX` (`^[a-z][a-z0-9_]{2,23}$`): trims, lowercases, turns
+ * every run of non-alphanumerics into a single underscore, strips edge
+ * underscores, prefixes a letter when the result would start with a
+ * digit/underscore, truncates to 24, pads short results, and falls back
+ * to `player` for an empty, reserved, or otherwise invalid result. The
+ * value is a starting point, not a lock — `assignAutoHandle` leaves it
+ * changeable (WP-500 / D-24303).
+ */
+export function deriveHandle(displayName: string): string {
+  const lowered = displayName.trim().toLowerCase();
+  const underscored = lowered.replace(/[^a-z0-9]+/g, '_');
+  const stripped = underscored.replace(/^_+/, '').replace(/_+$/, '');
+  if (stripped === '') {
+    return AUTO_HANDLE_FALLBACK;
+  }
+  // why: HANDLE_REGEX requires a leading lowercase letter; a slug that
+  // starts with a digit (e.g. "88legend") gets a `u` prefix rather than
+  // being dropped, so the name is preserved.
+  let candidate = /^[a-z]/.test(stripped) ? stripped : `u${stripped}`;
+  candidate = candidate.slice(0, 24);
+  while (candidate.length < 3) {
+    candidate = `${candidate}0`;
+  }
+  if (RESERVED_HANDLES.includes(candidate) || HANDLE_REGEX.test(candidate) === false) {
+    return AUTO_HANDLE_FALLBACK;
+  }
+  return candidate;
+}
+
+/**
+ * Fit a base slug plus a suffix within the 24-char handle ceiling and
+ * validate it. Returns the candidate, or `null` if it cannot be made
+ * valid (suffix alone too long, or the result is reserved).
+ */
+function fitAutoHandleCandidate(base: string, suffix: string): string | null {
+  // why: reserve room for the suffix BEFORE concatenating — handle_canonical
+  // is bare `text` with no length CHECK, so a 24-char base + "2" would
+  // persist as an invalid 25-char handle. Validate every candidate against
+  // HANDLE_REGEX so nothing out-of-format ever reaches the UPDATE.
+  const maxBaseLength = 24 - suffix.length;
+  if (maxBaseLength < 1) {
+    return null;
+  }
+  const candidate = `${base.slice(0, maxBaseLength)}${suffix}`;
+  if (HANDLE_REGEX.test(candidate) === false || RESERVED_HANDLES.includes(candidate)) {
+    return null;
+  }
+  return candidate;
+}
+
+/**
+ * Build the ordered candidate list for an auto-assigned handle: the bare
+ * base, then `base2`…`base20`, then a deterministic `base`+ext_id-hex
+ * fallback. Each candidate is length-fitted + format-validated.
+ */
+function buildAutoHandleCandidates(base: string, accountId: AccountId): string[] {
+  const candidates: string[] = [];
+  for (let attempt = 1; attempt <= AUTO_HANDLE_MAX_SUFFIX_ATTEMPTS; attempt += 1) {
+    const suffix = attempt === 1 ? '' : String(attempt);
+    const candidate = fitAutoHandleCandidate(base, suffix);
+    if (candidate !== null) {
+      candidates.push(candidate);
+    }
+  }
+  // why: after the numeric suffixes, a short hex slice of the ext_id (a
+  // UUID) is a near-unique deterministic last resort; if even this
+  // collides the caller gets `null` (fail-open) and the backfill / next
+  // sign-in retries.
+  const extIdHex = accountId.replace(/[^a-f0-9]/gi, '').slice(0, 6).toLowerCase();
+  const fallback = fitAutoHandleCandidate(base, extIdHex);
+  if (fallback !== null && candidates.includes(fallback) === false) {
+    candidates.push(fallback);
+  }
+  return candidates;
+}
+
+/**
+ * Idempotently assign an auto-derived, CHANGEABLE handle to an account
+ * that has none. Sets `handle_canonical` + `display_handle` to the
+ * derived slug and leaves `handle_locked_at` NULL (so a later explicit
+ * `claimHandle` can still lock a user-chosen handle). Collision-safe:
+ * advances through numbered candidates on a partial-unique `23505`.
+ * Returns the assigned handle, or `null` when the account already has a
+ * handle, does not exist, or no candidate could be placed. Never
+ * `throw`s (returns a rejected promise on an unexpected error), so this
+ * module keeps its zero-`throw` property; the caller wraps it fail-open.
+ */
+export async function assignAutoHandle(
+  accountId: AccountId,
+  displayName: string,
+  database: DatabaseClient,
+): Promise<string | null> {
+  const base = deriveHandle(displayName);
+  const candidates = buildAutoHandleCandidates(base, accountId);
+  for (const candidate of candidates) {
+    let result;
+    try {
+      result = await database.query(
+        'UPDATE legendary.players ' +
+          'SET handle_canonical = $2, ' +
+          '    display_handle   = $2 ' +
+          'WHERE ext_id = $1 ' +
+          '  AND handle_canonical IS NULL ' +
+          'RETURNING handle_canonical',
+        [accountId, candidate],
+      );
+    } catch (error) {
+      // why: SQLSTATE '23505' on the partial-unique index
+      // legendary_players_handle_canonical_unique means another account
+      // already holds this candidate; advance to the next suffix.
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        (error as { code?: unknown }).code === '23505'
+      ) {
+        continue;
+      }
+      // why: return a rejected promise rather than `throw` so this file
+      // keeps its zero-`throw` property (WP-101 gate); the resolver's
+      // try/catch treats it as a best-effort failure and never breaks
+      // sign-in.
+      return Promise.reject(error);
+    }
+    if (result.rows.length === 1) {
+      return result.rows[0].handle_canonical as string;
+    }
+    // why: an empty RETURNING with no error means the WHERE matched no
+    // row — the account already has a handle (or does not exist). No
+    // later candidate can succeed either, so this is an idempotent no-op.
+    return null;
+  }
+  return null;
 }

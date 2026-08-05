@@ -228,7 +228,12 @@ describe('productionAccountResolver — WP-174 provisioning', () => {
         if (queryCount === 1) {
           return { rows: [], rowCount: 0 };
         }
-        capturedDisplayName = params[2];
+        // why: capture on the provision INSERT (query 2) only — query 3 is
+        // the WP-500 assignAutoHandle UPDATE (params [accountId, handle]),
+        // whose params[2] is undefined and would clobber the capture.
+        if (queryCount === 2) {
+          capturedDisplayName = params[2];
+        }
         return {
           rows: [
             {
@@ -266,7 +271,12 @@ describe('productionAccountResolver — WP-174 provisioning', () => {
         if (queryCount === 1) {
           return { rows: [], rowCount: 0 };
         }
-        capturedEmail = params[1];
+        // why: capture on the provision INSERT (query 2) only — query 3 is
+        // the WP-500 assignAutoHandle UPDATE (params[1] is the handle),
+        // which would otherwise clobber the captured email.
+        if (queryCount === 2) {
+          capturedEmail = params[1];
+        }
         return {
           rows: [
             {
@@ -285,6 +295,75 @@ describe('productionAccountResolver — WP-174 provisioning', () => {
     await productionAccountResolver(claimUppercase, fakeDatabase);
 
     assert.equal(capturedEmail, 'alice@example.com');
+  });
+
+  test('WP-500: assigns an auto-handle to a newly-provisioned account', async () => {
+    let sawHandleUpdate = false;
+    let queryCount = 0;
+    const fakeDatabase = {
+      query: async (text: string, params: unknown[]) => {
+        queryCount += 1;
+        if (queryCount === 1) {
+          return { rows: [], rowCount: 0 }; // lookup miss → provision
+        }
+        if (text.includes('UPDATE legendary.players') && text.includes('handle_canonical')) {
+          sawHandleUpdate = true;
+          return { rows: [{ handle_canonical: params[1] }], rowCount: 1 };
+        }
+        return {
+          rows: [
+            {
+              ext_id: 'new-uuid',
+              email: params[1],
+              display_name: params[2],
+              auth_provider: params[3],
+              auth_provider_id: params[4],
+            },
+          ],
+          rowCount: 1,
+        };
+      },
+    } as unknown as pg.Pool;
+
+    const result = await productionAccountResolver(claimWithEmail, fakeDatabase);
+    assert.ok(result.ok === true);
+    assert.equal(result.value, 'new-uuid');
+    assert.ok(sawHandleUpdate, 'assignAutoHandle must issue the handle UPDATE after provisioning');
+  });
+
+  test('WP-500: resolution succeeds even when auto-handle assignment throws (fail-open)', async () => {
+    let queryCount = 0;
+    const fakeDatabase = {
+      query: async (text: string, params: unknown[]) => {
+        queryCount += 1;
+        if (queryCount === 1) {
+          return { rows: [], rowCount: 0 };
+        }
+        if (text.includes('UPDATE legendary.players') && text.includes('handle_canonical')) {
+          // why: a non-23505 DB fault during handle assignment must be
+          // swallowed by the resolver's fail-open wrap — sign-in unbroken.
+          const error = new Error('connection reset during handle assignment');
+          (error as { code?: string }).code = '08006';
+          throw error;
+        }
+        return {
+          rows: [
+            {
+              ext_id: 'failopen-uuid',
+              email: params[1],
+              display_name: params[2],
+              auth_provider: params[3],
+              auth_provider_id: params[4],
+            },
+          ],
+          rowCount: 1,
+        };
+      },
+    } as unknown as pg.Pool;
+
+    const result = await productionAccountResolver(claimWithEmail, fakeDatabase);
+    assert.ok(result.ok === true, 'sign-in must not break when auto-handle assignment fails');
+    assert.equal(result.value, 'failopen-uuid');
   });
 });
 

@@ -35879,9 +35879,9 @@ Reserved by WP-498; hard-deps WP-383/D-24184 (discard-to-play site + keyword sub
 
 ---
 
-### D-24303 — Auto-assigned changeable handles + WP-101 mutual-presence invariant amendment (Drafted 2026-08-05 — WP-500 / EC-535; not yet landed)
+### D-24303 — Auto-assigned changeable handles + WP-101 mutual-presence invariant amendment (Active — WP-500 / EC-535; landed 2026-08-05)
 
-> **Status: Drafted 2026-08-05; not yet landed.** Reserved in `NUMBER-LEDGER.md`. Flips to Active at WP-500 execution.
+> **Status: Active. Landed 2026-08-05** (WP-500 / EC-535; server suite exit 0, `assignAutoHandle` DB-gated + backfill verified against local Postgres, no re-pin).
 
 **Context.** WP-101 built the account handle (`handle_canonical` / `display_handle` / `handle_locked_at`, `HANDLE_REGEX = ^[a-z][a-z0-9_]{2,23}$`, `RESERVED_HANDLES`) but the claim path was **never wired**: `claimHandle` — the sole writer — has zero non-test callers, no HTTP endpoint, and no profile field. So `handle_canonical` is **NULL for every account**, and every `@handle` affordance (friend-request WP-351; match-invite WP-358/366, both via `findAccountByHandle`) returns `handle_not_found` for every target. Surfaced when an operator tried to invite a newly-registered friend by username (2026-08-04); the diagnosis + the identity-agnostic workaround shipped under WP-499 / D-24302, and this decision is the root-cause fix.
 

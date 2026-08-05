@@ -43,6 +43,7 @@
 
 import { findAccountByAuthProviderSub } from './accountLookup.logic.js';
 import { provisionPlayerAccount } from './accountProvisioning.logic.js';
+import { assignAutoHandle } from '../identity/handle.logic.js';
 import type { ProvisionedAccount } from './accountProvisioning.logic.js';
 import type {
   AccountResolver,
@@ -199,6 +200,30 @@ async function attemptProvisioning(
     authProvider: claim.authProvider,
     accountId: provisionResult.value.accountId,
   });
+
+  // why: WP-500 / D-24303 — assign a changeable @handle derived from the
+  // display name so the new account is immediately reachable by the
+  // by-@handle friend-request / match-invite flows. This runs only on the
+  // no-match (fresh provision) branch; existing NULL-handle accounts are
+  // healed by scripts/backfill-handles.mjs. The explicit try/catch is
+  // required because assignAutoHandle is a DIRECT DB call that can reject
+  // (unlike the dependency-injected marketing enqueue below) — a handle
+  // hiccup must never break sign-in, and the assign is idempotent so a
+  // later attempt or the backfill heals a skipped account.
+  try {
+    await assignAutoHandle(
+      provisionResult.value.accountId,
+      displayName,
+      database,
+    );
+  } catch (handleError) {
+    const handleCause =
+      handleError instanceof Error ? handleError.message : String(handleError);
+    console.warn(
+      '[accountResolver] Auto-handle assignment failed (non-fatal); account remains reachable via backfill',
+      { accountId: provisionResult.value.accountId, cause: handleCause },
+    );
+  }
 
   // why: D-24079 — best-effort marketing enqueue fires only on a fresh
   // provision, at this orchestration layer; the injected wrapper is the
