@@ -406,15 +406,18 @@ export default defineComponent({
       class="turn-action-bar__end-game"
       data-testid="play-end-game"
     >
-      <button
-        v-if="!isConfirmingEndGame"
-        type="button"
-        class="turn-action-bar__end-game-request"
-        data-testid="play-action-end-game"
-        @click="requestEndGame"
-      >
-        End Game
-      </button>
+      <template v-if="!isConfirmingEndGame">
+        <span class="turn-action-bar__end-game-label">Out of time?</span>
+        <button
+          type="button"
+          class="turn-action-bar__end-game-request"
+          data-testid="play-action-end-game"
+          title="End the match now for every player (e.g. your group ran out of time). This closes the game out for everyone."
+          @click="requestEndGame"
+        >
+          ⏹ End Game for everyone
+        </button>
+      </template>
       <template v-else>
         <span class="turn-action-bar__end-game-prompt">End the match for everyone?</span>
         <button
@@ -490,36 +493,58 @@ export default defineComponent({
   font-size: 0.8rem;
 }
 
-/* why: WP-502 — the End Game control sits below the three steps, de-emphasized
-   (small, muted) so it never competes with the primary turn actions, and the
+/* why: WP-502 (discoverability follow-up) — the End Game control sits below the
+   three steps. It must be de-emphasized relative to the primary turn actions but
+   still clearly a button a player can find when their group runs out of time — the
+   first cut was faded to 75% opacity at 0.75rem and was effectively invisible on a
+   busy board. It now reads as a real outlined button with a lead-in label; the
    confirm button is tinted danger-red to signal irreversibility. */
 .turn-action-bar__end-game {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.4rem;
-  margin-top: 0.35rem;
-  padding-top: 0.3rem;
-  border-top: 1px dashed var(--color-foreground, #999);
-  font-size: 0.75rem;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--color-foreground, #999);
+  font-size: 0.8rem;
 }
 
 .turn-action-bar__end-game button {
-  padding: 0.2rem 0.5rem;
-  font-size: 0.75rem;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.turn-action-bar__end-game-label {
+  font-weight: 600;
+  opacity: 0.85;
 }
 
 .turn-action-bar__end-game-request {
-  opacity: 0.75;
+  border: 1px solid rgba(160, 60, 60, 0.8);
+  border-radius: 0.3rem;
+  background: rgba(120, 40, 40, 0.12);
+  color: var(--color-foreground, #7a2828);
+  font-weight: 600;
+}
+
+.turn-action-bar__end-game-request:hover {
+  background: rgba(120, 40, 40, 0.22);
 }
 
 .turn-action-bar__end-game-prompt {
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .turn-action-bar__end-game-confirm {
   background: rgba(120, 40, 40, 0.94);
   color: #f4f4f5;
   border: 1px solid rgba(160, 60, 60, 0.9);
+  border-radius: 0.3rem;
+}
+
+.turn-action-bar__end-game-cancel {
+  border-radius: 0.3rem;
 }
 </style>
