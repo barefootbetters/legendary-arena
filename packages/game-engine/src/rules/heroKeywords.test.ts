@@ -62,11 +62,11 @@ describe('size-changing keyword (WP-290 / EC-322 / D-24074)', () => {
     );
   });
 
-  it('HERO_KEYWORDS array has exactly 33 entries after the defeat-with-bystander addition', () => {
+  it('HERO_KEYWORDS array has exactly 34 entries after the return-on-discard addition', () => {
     assert.equal(
       HERO_KEYWORDS.length,
-      33,
-      'HERO_KEYWORDS must have exactly 33 entries (32 + defeat-with-bystander, D-24291)',
+      34,
+      'HERO_KEYWORDS must have exactly 34 entries (33 + return-on-discard, D-24301)',
     );
   });
 });
@@ -76,6 +76,15 @@ describe('defeat-with-bystander keyword (WP-486 / EC-521 / D-24291)', () => {
     assert.ok(
       HERO_KEYWORDS.includes('defeat-with-bystander'),
       'defeat-with-bystander must be in HERO_KEYWORDS array',
+    );
+  });
+});
+
+describe('return-on-discard keyword (WP-498 / EC-533 / D-24301)', () => {
+  it('is registered in HERO_KEYWORDS', () => {
+    assert.ok(
+      HERO_KEYWORDS.includes('return-on-discard'),
+      'return-on-discard must be in HERO_KEYWORDS array',
     );
   });
 });

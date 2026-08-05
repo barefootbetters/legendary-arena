@@ -191,6 +191,12 @@ export interface UIState {
   // for every audience except the chooser (keyed on .playerID). Absent (undefined) means
   // no pending choice; the client must not render the prompt then.
   pendingDiscardToPlay?: UIPendingDiscardToPlay;
+  // why: WP-498 / D-24301 — projects the FRONT entry of G.pendingReturnOnDiscard with the
+  // single returnable card (its instance cardId + display) so the chooser can render the
+  // OPTIONAL "you may return this card to your hand" prompt (Return + Decline). Redacted
+  // (omitted) for every audience except the chooser (keyed on .playerID). Absent
+  // (undefined) means no pending choice; the client must not render the prompt then.
+  pendingReturnOnDiscard?: UIPendingReturnOnDiscard;
   // why: WP-258 — projects the WP-257 runtime hollow-effect channel
   // (G.diagnostics.hollowEffects) so the client can render a structured debug
   // panel + carry the records on the Download-diagnostics export. OPTIONAL on
@@ -928,6 +934,26 @@ export interface UIPendingDiscardToPlay {
   /** How many more cards the player must discard to complete the play. */
   remaining: number;
   eligibleDiscardCards: UIEligibleKoHeroCard[];
+}
+
+/**
+ * UI contract for resolving a pending OPTIONAL return-on-discard choice ("If a
+ * card effect makes you discard this card, you may return this card to your
+ * hand" — Cyclops Unending Energy, WP-498 / D-24301).
+ *
+ * `eligibleReturnCards` REUSES `UIEligibleKoHeroCard` (zone is always 'discard'
+ * here) — the single just-discarded card that may be returned, recomputed fresh
+ * via getEligibleReturnOnDiscardCards (the same predicate the resolve move
+ * validates against, the round-trip rule). The choice is OPTIONAL: the client
+ * renders one Return button (per eligible card) AND a Decline button
+ * (`resolveReturnOnDiscard({ decline: true })`). Only visible to the chooser;
+ * redacted for opponents and spectators (keyed on .playerID).
+ */
+export interface UIPendingReturnOnDiscard {
+  // why: the redaction key; the chooser-only filter compares audience.playerId
+  // against this, mirroring UIPendingDiscardToPlay.playerID.
+  playerID: string;
+  eligibleReturnCards: UIEligibleKoHeroCard[];
 }
 
 /**

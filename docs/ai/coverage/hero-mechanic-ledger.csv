@@ -170,6 +170,7 @@ core/black-widow,Black Widow,core,optional-ko-reward,executable,WP-248,D-24019,p
 core/black-widow,Black Widow,core,rescue,executable,WP-215,D-21501,packages/game-engine/src/hero/heroEffects.execute.ts#rescue,mission-accomplished
 core/captain-america,Captain America,core,(unmarked),unmarked,,,,
 core/cyclops,Cyclops,core,discard-to-play,executable,WP-383,D-24184,packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play,determination|optic-blast
+core/cyclops,Cyclops,core,return-on-discard,executable,WP-498,D-24301,packages/game-engine/src/hero/heroEffects.execute.ts#return-on-discard,unending-energy
 core/deadpool,Deadpool,core,(unmarked),unmarked,,,,
 core/emma-frost,Emma Frost,core,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,mental-discipline
 core/gambit,Gambit,core,reveal-cost-attack,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-cost-attack,high-stakes-jackpot

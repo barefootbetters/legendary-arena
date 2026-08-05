@@ -7,6 +7,42 @@
 
 ## Current State
 
+### WP-498 — Return-on-Discard Reactive Hero Ability (Cyclops "Unending Energy") — DONE (2026-08-05)
+
+Implements the previously-unimplemented Cyclops "Unending Energy" (`core/cyclops/unending-energy`)
+ability — *"If a card effect makes you discard this card, you may return this card to your hand."*
+— as the engine's **first reactive (non-play-initiated) hero ability**.
+
+- **New `return-on-discard` `HeroKeyword`** (`HERO_KEYWORDS` 33→34, bare marker) + the first reactive
+  **`onDiscard` `HeroAbilityTiming`** (`HERO_ABILITY_TIMINGS` 5→6). Enrolled in a new
+  `DISCARD_TIME_EXECUTED_KEYWORDS` set → `MVP_KEYWORDS` so the play-time hook visit does not emit a
+  `no-handler` hollow (the `dodge`/`undercover` pattern); parser default `onDiscard` via
+  `KEYWORD_TIMING_DEFAULTS`.
+- **New forced-discard chokepoint** `discardFromHand(G, playerID, cardId)` (`moves/discardFromHand.ts`)
+  + G-only `checkReturnOnDiscard` reaction, through which **all six** card-effect hand→discard sites
+  route (`resolveDiscardToPlay`, `discardChoice.resolve`, `mastermindHandlers.discardCardFromHand`,
+  `schemeTwistResolvers.discardHand`, `dodgeCard`, and `ruleRuntime.effects.applyDiscardHand`). A
+  cheat-proof drift-guard test asserts no hand→discard zoneOps idiom exists outside the chokepoint
+  (allowlisting the end-of-turn cleanup discard).
+- **Optional** `PendingReturnOnDiscard` (lazy-init FIFO) + `resolveReturnOnDiscard` move
+  (`{ decline: true } | { cardId }`, `client: false`) + block-all guards on every action move +
+  `ai.legalMoves` accept-default + chooser-only `UIPendingReturnOnDiscard` projection +
+  `ReturnOnDiscardPrompt.vue`.
+- **Two execution amendments** (inline, 01.0b file-allowlist class): the chokepoint landed in a
+  dedicated `moves/discardFromHand.ts` (not `zoneOps.ts` — its "never mutate inputs" contract forbids
+  a G-mutating chokepoint), and the closed set is SIX sites, not five (the drift-guard surfaced the
+  `ruleRuntime.effects.applyDiscardHand` site the surface study missed).
+- **Determinism:** `G.pendingReturnOnDiscard` is hashed but lazy-init → **no `finalStateHash` /
+  `PRE_WP080_HASH` re-pin** (all 163 hash/fixture/sentinel tests byte-unchanged). game-engine
+  2320→2338 pass, arena-client 1156→1165 pass, vue-tsc 0, whole-repo build 0;
+  `mechanics:metadata`/`ledger:heroes`/`effect-index`/`sim:runtime-observed` checks all green. Only
+  `core/cyclops/unending-energy` marked (co2e twin deferred). Move count 25→26. **D-24301 Active.**
+
+`User-Visible Surface = play.legendary-arena.com` — **D-24026 live-verify operator-pending** (pay a
+Determination/Optic Blast discard-to-play cost with Unending Energy → return prompt; accept returns
+it, decline leaves it in discard). See [WP-498](work-packets/WP-498-return-on-discard-hero-ability.md)
++ [EC-533](execution-checklists/EC-533-return-on-discard-hero-ability.checklist.md).
+
 ### WP-496 — Coverage Decision Column (/coverage by-card table provenance parity) — DONE (2026-08-04)
 
 The `/coverage` by-card table rendered `Card · Design · Set · Mechanic · Status · WP · Handler`

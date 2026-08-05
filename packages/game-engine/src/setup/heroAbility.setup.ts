@@ -377,6 +377,12 @@ const TIMING_MARKUP_MAP: Record<string, HeroAbilityTiming> = {
 // onPlay default.
 const KEYWORD_TIMING_DEFAULTS: Partial<Record<HeroKeyword, HeroAbilityTiming>> = {
   'wall-crawl': 'onRecruit',
+  // why: WP-498 / D-24301 — return-on-discard is reactive: it fires when a card
+  // effect discards the marked card from hand, so its hook lands on onDiscard (the
+  // parser default is onPlay). The timing is declarative-only — the discardFromHand
+  // chokepoint keys on the keyword, not this timing — but the hook must carry it so
+  // the per-hook timing-membership drift test passes.
+  'return-on-discard': 'onDiscard',
 };
 
 // why: D-24055 — the rulebook value for Spectrum: ≥3 Hero classes.

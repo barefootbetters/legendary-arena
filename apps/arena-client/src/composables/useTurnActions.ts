@@ -179,6 +179,9 @@ export function useTurnActions(
   hasPendingDiscardChoice: boolean = false,
   hasPendingReorderChoice: boolean = false,
   hasPendingDefeatChoice: boolean = false,
+  // why: WP-498 / D-24301 — appended LAST (after hasPendingDefeatChoice) so existing
+  // positional callers stay valid without edits; degrades gracefully (no gate) when omitted.
+  hasPendingReturnOnDiscard: boolean = false,
 ): {
   activeStep: TurnStep;
   canRevealVillain: () => GatingResult;
@@ -345,6 +348,15 @@ export function useTurnActions(
         return {
           allowed: false,
           reason: 'Choose which Villain or Mastermind to defeat before taking another action.',
+        };
+      }
+      // why: WP-498 / D-24301 — End Turn / Pass Priority blocked at any stage while an
+      // OPTIONAL return-on-discard choice is pending (the engine's full block-all guard
+      // set freezes the board). The choice is optional — Return the card OR Decline.
+      if (hasPendingReturnOnDiscard) {
+        return {
+          allowed: false,
+          reason: 'Return the discarded card to your hand or decline before taking another action.',
         };
       }
       if (currentStage === 'cleanup' && hasPendingChoice) {

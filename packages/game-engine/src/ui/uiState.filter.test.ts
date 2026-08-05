@@ -794,6 +794,45 @@ describe('filterUIStateForAudience — pendingOptionalPutBottomHQ redaction', ()
 });
 
 // ---------------------------------------------------------------------------
+// WP-498 / D-24301 — pendingReturnOnDiscard redaction (chooser-scoped)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a UIState where player '0' owes an OPTIONAL return-on-discard choice for
+ * a card in their discard pile. The choice is chooser-scoped (only they may
+ * resolve it) — it must not appear in a non-chooser's UIState.
+ */
+function createReturnOnDiscardUIState(): UIState {
+  const config = createTestConfig();
+  const registry = createMockRegistry();
+  const setupContext = makeMockCtx();
+  const gameState = buildInitialGameState(config, registry, setupContext);
+  const card = gameState.playerZones['0']!.deck[0]!;
+  gameState.playerZones['0']!.discard = [card];
+  gameState.pendingReturnOnDiscard = [{ playerID: '0', cardId: card }];
+  return buildUIState(gameState, mockCtx);
+}
+
+describe('filterUIStateForAudience — pendingReturnOnDiscard redaction', () => {
+  it('the chooser sees pendingReturnOnDiscard with the returnable card', () => {
+    const result = filterUIStateForAudience(createReturnOnDiscardUIState(), PLAYER_0);
+    assert.ok(result.pendingReturnOnDiscard !== undefined, 'chooser sees the return-on-discard choice');
+    assert.equal(result.pendingReturnOnDiscard!.playerID, '0');
+    assert.equal(result.pendingReturnOnDiscard!.eligibleReturnCards.length, 1);
+  });
+
+  it('an opponent does NOT see pendingReturnOnDiscard', () => {
+    const result = filterUIStateForAudience(createReturnOnDiscardUIState(), PLAYER_1);
+    assert.equal(result.pendingReturnOnDiscard, undefined, 'opponent must not see the choice');
+  });
+
+  it('a spectator does NOT see pendingReturnOnDiscard', () => {
+    const result = filterUIStateForAudience(createReturnOnDiscardUIState(), SPECTATOR);
+    assert.equal(result.pendingReturnOnDiscard, undefined, 'spectator must not see the choice');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // D-24132 — pendingPutAnyNumberBottomHQ redaction (chooser-scoped, multi-select sibling)
 // ---------------------------------------------------------------------------
 

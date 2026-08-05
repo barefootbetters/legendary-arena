@@ -2,15 +2,15 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 650,
+    "totalRows": 651,
     "byStatus": {
-      "executable": 233,
+      "executable": 234,
       "deferred": 0,
       "condition": 5,
       "unsupported": 366,
       "unmarked": 46
     },
-    "distinctMechanics": 119
+    "distinctMechanics": 120
   },
   "rows": [
     {
@@ -3215,6 +3215,22 @@
         {
           "slug": "optic-blast",
           "name": "Optic Blast"
+        }
+      ]
+    },
+    {
+      "extId": "core/cyclops",
+      "heroName": "Cyclops",
+      "set": "core",
+      "mechanic": "return-on-discard",
+      "status": "executable",
+      "wp": "WP-498",
+      "decision": "D-24301",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#return-on-discard",
+      "designs": [
+        {
+          "slug": "unending-energy",
+          "name": "Unending Energy"
         }
       ]
     },

@@ -19,6 +19,7 @@ import { reshuffleDiscardIntoDeck } from '../moves/drawCards.logic.js';
 import { composeMastermindStrikeNarrative } from '../events/notableEvents.compose.js';
 import { pushLog } from '../log/logPush.js';
 import { moveCardFromZone } from '../moves/zoneOps.js';
+import { discardFromHand } from '../moves/discardFromHand.js';
 import { koCard } from '../board/ko.logic.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
 import { gainWound } from '../board/wounds.logic.js';
@@ -361,7 +362,7 @@ function resolveMagnetoStrike(
       discardCount,
     );
     for (const cardExtId of cardsToDiscard) {
-      discardCardFromHand(playerZones, cardExtId);
+      discardCardFromHand(gameState, playerId, cardExtId);
     }
 
     pushLog(gameState,
@@ -454,28 +455,25 @@ function selectLowestCostHero(
 }
 
 /**
- * Moves one card from a player's hand to their discard pile.
+ * Moves one card from a player's hand to their discard pile via the shared
+ * forced-discard chokepoint.
  *
- * @param playerZones - The player's zones, mutated in place.
+ * // why: WP-498 / D-24301 — a mastermind strike is "a card effect [that] makes
+ * you discard", so it routes through discardFromHand, which fires the
+ * return-on-discard reaction (Cyclops Unending Energy force-discarded to a
+ * strike offers to return to hand). Takes gameState + playerId (not raw zones)
+ * because the reaction reads G.heroAbilityHooks and parks on G.
+ *
+ * @param gameState - The game state, mutated in place.
+ * @param playerId - The player whose hand card is discarded.
  * @param cardExtId - The card to discard.
  */
 function discardCardFromHand(
-  playerZones: { hand: CardExtId[]; discard: CardExtId[] },
+  gameState: LegendaryGameState,
+  playerId: string,
   cardExtId: CardExtId,
 ): void {
-  // why: moveCardFromZone is NON-mutating — it returns { from, to, found } —
-  // so BOTH arrays must be assigned back. The Red Skull KO path above assigns
-  // only `.from` because its destination is a throwaway `[]` and the append
-  // goes through koCard; copying that shape here would drop the discarded
-  // card silently. Duplicate ext_ids are fungible tokens (WP-382 / D-24183),
-  // so first-match removal is observationally identical to index removal.
-  const moveResult = moveCardFromZone(
-    playerZones.hand,
-    playerZones.discard,
-    cardExtId,
-  );
-  playerZones.hand = moveResult.from;
-  playerZones.discard = moveResult.to;
+  discardFromHand(gameState, playerId, cardExtId);
 }
 
 /**
@@ -591,7 +589,7 @@ function resolveDoctorDoomStrike(gameState: LegendaryGameState): void {
       if (targetExtId === null) {
         break;
       }
-      discardCardFromHand(playerZones, targetExtId);
+      discardCardFromHand(gameState, playerId, targetExtId);
       discardedCount += 1;
     }
 
@@ -636,7 +634,7 @@ function resolveLokiStrike(gameState: LegendaryGameState): void {
       continue;
     }
 
-    discardCardFromHand(playerZones, targetExtId);
+    discardCardFromHand(gameState, playerId, targetExtId);
     pushLog(gameState,
       `[Loki Master Strike] Player ${playerId} discarded ${formatCardRef(gameState.cardDisplayData, targetExtId)}.`,
     );
@@ -676,7 +674,7 @@ function resolveCo2eMagnetoStrike(gameState: LegendaryGameState): void {
       continue;
     }
 
-    discardCardFromHand(playerZones, targetExtId);
+    discardCardFromHand(gameState, playerId, targetExtId);
     pushLog(gameState,
       `[Magneto Master Strike] Player ${playerId} discarded ${formatCardRef(gameState.cardDisplayData, targetExtId)}.`,
     );
@@ -713,7 +711,7 @@ function resolveDoctorOctopusStrike(
     // "may" — surrendering one chosen Hero beats revealing eight cards and
     // losing every non-grey Hero among them. D-24192 auto-pick.
     if (targetExtId !== null) {
-      discardCardFromHand(playerZones, targetExtId);
+      discardCardFromHand(gameState, playerId, targetExtId);
       pushLog(gameState,
         `[Doctor Octopus Master Strike] Player ${playerId} discarded ${formatCardRef(gameState.cardDisplayData, targetExtId)}.`,
       );

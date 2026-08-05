@@ -3,6 +3,14 @@
 **Source:** docs/ai/work-packets/WP-498-return-on-discard-hero-ability.md
 **Layer:** Game Engine + Arena Client + Card Data
 
+> **Execution amendments (as-built, 2026-08-05 — inline, 01.0b file-allowlist class):**
+> **(1)** The chokepoint landed in a dedicated `moves/discardFromHand.ts` (below it says
+> `zoneOps.ts`) — `zoneOps.ts`'s module contract is "pure array helpers that never mutate
+> their inputs", which a G-mutating, reaction-parking chokepoint violates. **(2)** The closed
+> set is **SIX** sites, not five: the drift-guard surfaced `rules/ruleRuntime.effects.ts`
+> `applyDiscardHand` (the generic `discardHand` rule effect) the surface study missed. See
+> D-24301 for the full as-built record.
+
 ## Before Starting
 - [ ] Baseline: `origin/main` @ `cb54a7d0` (or later — the WP-498 draft/reserve); working tree clean, synced.
 - [ ] D-24139 + WP-383 substrate present: `HeroKeyword` union + `HERO_KEYWORDS`, the marker pipeline (`apply-hero-ability-markers.mjs` + `inputs/hero-ability-markers.json`), `getHooksForCard`, `setup/heroAbility.setup.ts`.

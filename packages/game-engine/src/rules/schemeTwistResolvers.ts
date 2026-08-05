@@ -16,7 +16,7 @@ import type { CardExtId } from '../state/zones.types.js';
 import type { RevealContext } from '../villainDeck/villainDeck.reveal.js';
 import type { ImplementationMap } from './ruleRuntime.execute.js';
 import { gainWound } from '../board/wounds.logic.js';
-import { moveAllCards } from '../moves/zoneOps.js';
+import { discardFromHand } from '../moves/discardFromHand.js';
 import { performVillainReveal } from '../villainDeck/villainDeck.reveal.js';
 import { koCard } from '../board/ko.logic.js';
 import { refillHqSlot } from '../board/city.logic.js';
@@ -148,12 +148,13 @@ function revealOrPunish(
             );
           }
         } else if (penalty === 'discardHand') {
-          const moveResult = moveAllCards(
-            gameState.playerZones[playerId]!.hand,
-            gameState.playerZones[playerId]!.discard,
-          );
-          gameState.playerZones[playerId]!.hand = moveResult.from;
-          gameState.playerZones[playerId]!.discard = moveResult.to;
+          // why: WP-498 / D-24301 — route each hand card through the single
+          // forced-discard chokepoint so a return-on-discard card discarded to
+          // this scheme-twist penalty offers to return. Snapshot the hand first
+          // (discardFromHand mutates it in place).
+          for (const cardId of [...gameState.playerZones[playerId]!.hand]) {
+            discardFromHand(gameState, playerId, cardId);
+          }
           pushLog(gameState, 
             `[Scheme Twist] Player ${playerId} has no matching ${condition.field} "${condition.value}" hero — discarded entire hand.`,
           );

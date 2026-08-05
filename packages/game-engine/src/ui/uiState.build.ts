@@ -50,6 +50,7 @@ import type {
   UIPendingPutAnyNumberBottomHQ,
   UIPendingReturnZeroCostDiscard,
   UIPendingDiscardToPlay,
+  UIPendingReturnOnDiscard,
   UIHqCardChoice,
   UIEligibleKoHeroCard,
 } from './uiState.types.js';
@@ -66,6 +67,7 @@ import { getEligibleZeroCostDiscardCards } from '../moves/resolveReturnZeroCostD
 // helper (the chooser's whole hand) so the projected list is byte-identical to what
 // resolveDiscardToPlay validates at resolve time (the round-trip rule).
 import { getEligibleDiscardToPlayCards } from '../moves/resolveDiscardToPlay.js';
+import { getEligibleReturnOnDiscardCards } from '../moves/resolveReturnOnDiscard.js';
 // why: WP-258 — the projected hollow-effect record type is the engine's
 // canonical HollowEffectRecord (WP-257), reused directly, not a parallel UI type.
 import type { HollowEffectRecord } from '../diagnostics/hollowEffect.types.js';
@@ -1216,6 +1218,32 @@ export function buildUIState(
     };
   }
 
+  // why: WP-498 / D-24301 — project the FRONT entry of G.pendingReturnOnDiscard with the
+  // single returnable card recomputed fresh via getEligibleReturnOnDiscardCards — the SAME
+  // predicate the resolve move validates with, so the client's { cardId } selection always
+  // round-trips. The card lives in the chooser's discard pile (zone 'discard'). Each display
+  // is spread fresh (aliasing defense, WP-111 D-11105). Chooser-only redaction is enforced by
+  // filterUIStateForAudience (keyed on .playerID), mirroring pendingDiscardToPlay.
+  let pendingReturnOnDiscard: UIPendingReturnOnDiscard | undefined;
+  if (
+    gameState.pendingReturnOnDiscard !== undefined &&
+    gameState.pendingReturnOnDiscard.length > 0
+  ) {
+    const frontReturn = gameState.pendingReturnOnDiscard[0]!;
+    const eligibleReturnCards: UIEligibleKoHeroCard[] = [];
+    for (const cardId of getEligibleReturnOnDiscardCards(gameState, frontReturn.playerID)) {
+      eligibleReturnCards.push({
+        zone: 'discard',
+        cardId,
+        display: { ...resolveDisplay(cardId, gameState) },
+      });
+    }
+    pendingReturnOnDiscard = {
+      playerID: frontReturn.playerID,
+      eligibleReturnCards,
+    };
+  }
+
   // --- 13d. Project hollow-effect diagnostics (read-only) ---
   // why: WP-258 — surface the WP-257 runtime channel G.diagnostics.hollowEffects
   // onto UIState. Read-only over G (buildUIState NEVER mutates G); per-record
@@ -1354,6 +1382,7 @@ export function buildUIState(
     ...(pendingReturnZeroCostDiscard !== undefined ? { pendingReturnZeroCostDiscard } : {}),
     // why: WP-383 / D-24184 — omit-when-absent (never an `undefined` literal) under exactOptionalPropertyTypes.
     ...(pendingDiscardToPlay !== undefined ? { pendingDiscardToPlay } : {}),
+    ...(pendingReturnOnDiscard !== undefined ? { pendingReturnOnDiscard } : {}),
     // why: WP-258 — conditional spread so an absent channel omits the field
     // (no `hollowEffects: undefined` literal under exactOptionalPropertyTypes,
     // and no empty-array injection that would dirty optional-field fixtures).

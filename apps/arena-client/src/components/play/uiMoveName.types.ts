@@ -77,6 +77,8 @@ export type UiMoveName =
   // why: D-24139 — unblocks the return-zero-cost-discard prompt (Black Knight's Defend the Weak).
   | 'resolveReturnZeroCostDiscard'
   | 'resolveDiscardToPlay'
+  // why: WP-498 / D-24301 — unblocks the optional return-on-discard prompt (Cyclops Unending Energy).
+  | 'resolveReturnOnDiscard'
   // why: WP-380 / D-24181 — surfaces the WP-379 Wound "Healing" ability (engine
   // healWounds). Dispatched with an empty payload; the move takes no arguments.
   | 'healWounds';

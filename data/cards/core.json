@@ -274,7 +274,7 @@
           "attack": "4",
           "recruit": null,
           "abilities": [
-            "If a card effect makes you discard this card, you may return this card to your hand."
+            "If a card effect makes you discard this card, you may return this card to your hand. [keyword:return-on-discard]"
           ]
         },
         {

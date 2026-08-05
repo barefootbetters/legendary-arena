@@ -338,6 +338,7 @@ export type {
   UIPendingPutAnyNumberBottomHQ,
   UIPendingReturnZeroCostDiscard,
   UIPendingDiscardToPlay,
+  UIPendingReturnOnDiscard,
   UIHqCardChoice,
   UIEligibleKoHeroCard,
 } from "./ui/uiState.types.js";

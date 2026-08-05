@@ -233,7 +233,7 @@ describe('buildHeroAbilityHooks', () => {
 describe('HERO_KEYWORDS drift-detection', () => {
   // why: prevents union/array divergence — same pattern as
   // REVEALED_CARD_TYPES drift detection
-  it('contains exactly the 33 canonical keyword values', () => {
+  it('contains exactly the 34 canonical keyword values', () => {
     const expectedKeywords = [
       'draw',
       'attack',
@@ -268,12 +268,13 @@ describe('HERO_KEYWORDS drift-detection', () => {
       'shuffle-discard-empty-reward', // why: D-24148 / WP-356 — mandatory empty-discard-reward-or-shuffle (Reprocess / Electromagnetic Eyebeams)
       'discard-to-play', // why: WP-383 / D-24184 — mandatory play COST "discard a card to play this card" (Cyclops Determination/Optic Blast + siblings)
       'defeat-with-bystander', // why: WP-486 / D-24291 — Silent Sniper "Defeat a Villain or Mastermind that has a Bystander."
+      'return-on-discard', // why: WP-498 / D-24301 — Cyclops Unending Energy "If a card effect makes you discard this card, you may return this card to your hand."
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      33,
-      'HERO_KEYWORDS must have exactly 33 entries',
+      34,
+      'HERO_KEYWORDS must have exactly 34 entries',
     );
 
     assert.deepStrictEqual(
@@ -1336,19 +1337,20 @@ describe('buildHeroAbilityHooks — resolved composition markers (WP-268 / D-240
 
 describe('HERO_ABILITY_TIMINGS drift-detection', () => {
   // why: same pattern as HERO_KEYWORDS drift detection
-  it('contains exactly the 5 canonical timing values', () => {
+  it('contains exactly the 6 canonical timing values', () => {
     const expectedTimings = [
       'onPlay',
       'onFight',
       'onRecruit',
       'onKO',
       'onReveal',
+      'onDiscard', // why: WP-498 / D-24301 — the first reactive timing
     ];
 
     assert.equal(
       HERO_ABILITY_TIMINGS.length,
-      5,
-      'HERO_ABILITY_TIMINGS must have exactly 5 entries',
+      6,
+      'HERO_ABILITY_TIMINGS must have exactly 6 entries',
     );
 
     assert.deepStrictEqual(

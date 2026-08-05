@@ -30,6 +30,7 @@ import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
 import { hasPendingReturnZeroCostDiscard } from './resolveReturnZeroCostDiscard.js';
 import { hasPendingDiscardToPlay } from './resolveDiscardToPlay.js';
+import { hasPendingReturnOnDiscard } from './resolveReturnOnDiscard.js';
 import { hasHealedThisTurn } from './healWounds.js';
 import { resolveCardName } from '../log/logDisplay.js';
 import { pushLog } from '../log/logPush.js';
@@ -96,6 +97,8 @@ export function fightMastermind(
   if (hasPendingReturnZeroCostDiscard(G)) return;
   // why: block-all — pendingDiscardToPlay must be resolved before any other action (WP-383 / D-24184)
   if (hasPendingDiscardToPlay(G)) return;
+  // why: block-all — pendingReturnOnDiscard must be resolved before any other action (WP-498 / D-24301)
+  if (hasPendingReturnOnDiscard(G)) return;
 
   // why: D-24180 — a player who used the Wound Healing ability this turn may not
   // fight or recruit for the rest of the turn (the reverse lock).

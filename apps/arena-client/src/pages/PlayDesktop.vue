@@ -50,6 +50,7 @@ import OptionalKoRewardPrompt from '../components/play/OptionalKoRewardPrompt.vu
 import DrawOrEmpoweredPrompt from '../components/play/DrawOrEmpoweredPrompt.vue';
 import VictoryPileCardPickPrompt from '../components/play/VictoryPileCardPickPrompt.vue';
 import OptionalPutBottomHQPrompt from '../components/play/OptionalPutBottomHQPrompt.vue';
+import ReturnOnDiscardPrompt from '../components/play/ReturnOnDiscardPrompt.vue';
 import PutAnyNumberBottomHQPrompt from '../components/play/PutAnyNumberBottomHQPrompt.vue';
 import ReturnZeroCostDiscardPrompt from '../components/play/ReturnZeroCostDiscardPrompt.vue';
 import DiscardToPlayPrompt from '../components/play/DiscardToPlayPrompt.vue';
@@ -119,6 +120,7 @@ export default defineComponent({
     DrawOrEmpoweredPrompt,
     VictoryPileCardPickPrompt,
     OptionalPutBottomHQPrompt,
+    ReturnOnDiscardPrompt,
     PutAnyNumberBottomHQPrompt,
     ReturnZeroCostDiscardPrompt,
     DiscardToPlayPrompt,
@@ -417,6 +419,12 @@ export default defineComponent({
     const hasPendingDiscardToPlay = computed<boolean>(
       () => snapshot.value?.pendingDiscardToPlay !== undefined,
     );
+    // why: WP-498 / D-24301 — derived from UIState.pendingReturnOnDiscard !== undefined.
+    // Passed to TurnActionBar to gate End Turn / Pass Priority while the OPTIONAL
+    // return-on-discard choice is pending (board frozen).
+    const hasPendingReturnOnDiscard = computed<boolean>(
+      () => snapshot.value?.pendingReturnOnDiscard !== undefined,
+    );
     // why: WP-470 / D-24282 — derived from UIState.pendingScryKoChoice !== undefined.
     // Passed to TurnActionBar to block end-turn and pass-priority at EVERY stage while a
     // Doombot scry-KO choice is pending (board frozen, mirrors hasPendingKoChoice).
@@ -476,6 +484,7 @@ export default defineComponent({
       hasPendingPutAnyNumberBottomHQ,
       hasPendingReturnZeroCostDiscard,
       hasPendingDiscardToPlay,
+      hasPendingReturnOnDiscard,
       hasPendingScryKoChoice,
       hasPendingDiscardChoice,
       hasPendingReorderChoice,
@@ -708,6 +717,14 @@ export default defineComponent({
             :viewer-player-id="viewer.playerId"
             :submit-move="submitMove"
           />
+          <!-- why: WP-498 / D-24301 — the optional return-on-discard prompt (Cyclops
+               Unending Energy) renders above TurnActionBar in DOM order; appears only for
+               the choosing player when pendingReturnOnDiscard is set. Normal doc flow. -->
+          <ReturnOnDiscardPrompt
+            :pending-return-on-discard="snapshot.pendingReturnOnDiscard"
+            :viewer-player-id="viewer.playerId"
+            :submit-move="submitMove"
+          />
           <!-- why: D-24132 — the put-any-number-bottom-hq multi-select prompt (Wonder Man's 8th
                Wonder of the World et al.) renders above TurnActionBar in DOM order; appears only
                for the choosing player when pendingPutAnyNumberBottomHQ is set. Normal doc flow. -->
@@ -753,6 +770,7 @@ export default defineComponent({
             :has-pending-put-any-number-bottom-h-q="hasPendingPutAnyNumberBottomHQ"
             :has-pending-return-zero-cost-discard="hasPendingReturnZeroCostDiscard"
             :has-pending-discard-to-play="hasPendingDiscardToPlay"
+            :has-pending-return-on-discard="hasPendingReturnOnDiscard"
             :has-pending-scry-ko-choice="hasPendingScryKoChoice"
             :has-pending-discard-choice="hasPendingDiscardChoice"
             :has-pending-reorder-choice="hasPendingReorderChoice"

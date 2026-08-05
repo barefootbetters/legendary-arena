@@ -10,7 +10,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { executeHeroEffects, selectDefaultOptionalKoTarget, MVP_KEYWORDS, HANDLED_KEYWORDS, HERO_EFFECT_HANDLERS, RECRUIT_TIME_EXECUTED_KEYWORDS, HAND_ACTION_EXECUTED_KEYWORDS, FACE_DOWN_EXECUTED_KEYWORDS, CLASS_GRANT_KEYWORDS } from './heroEffects.execute.js';
+import { executeHeroEffects, selectDefaultOptionalKoTarget, MVP_KEYWORDS, HANDLED_KEYWORDS, HERO_EFFECT_HANDLERS, RECRUIT_TIME_EXECUTED_KEYWORDS, HAND_ACTION_EXECUTED_KEYWORDS, FACE_DOWN_EXECUTED_KEYWORDS, CLASS_GRANT_KEYWORDS, DISCARD_TIME_EXECUTED_KEYWORDS } from './heroEffects.execute.js';
 import { makeMockCtx } from '../test/mockCtx.js';
 import type { LegendaryGameState, PendingHeroChoice } from '../types.js';
 import type { HeroAbilityHook, HeroEffectDescriptor } from '../rules/heroAbility.types.js';
@@ -91,6 +91,10 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     // (the heroClassMatch / distinctHeroClassesAtLeast reads consult cardSizeChangingClasses),
     // so it has no handler / reveal translation / move executor — its own reachability category.
     const classGrantExecuted = new Set<string>(CLASS_GRANT_KEYWORDS);
+    // why: WP-498 / D-24301 — return-on-discard executes reactively at the discardFromHand
+    // chokepoint (checkReturnOnDiscard parks a pending choice), so it has no handler / reveal
+    // translation / move executor / class-grant — its own reachability category.
+    const discardTimeExecuted = new Set<string>(DISCARD_TIME_EXECUTED_KEYWORDS);
     for (const keyword of MVP_KEYWORDS) {
       const hasHandler = HERO_EFFECT_HANDLERS[keyword as HeroKeyword] !== undefined;
       const translates = revealRulesForLegacyKeyword(keyword as HeroKeyword, 1).length > 0;
@@ -98,9 +102,10 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
       const executesAtHandAction = handActionExecuted.has(keyword);
       const executesAtFaceDown = faceDownExecuted.has(keyword);
       const executesAsClassGrant = classGrantExecuted.has(keyword);
+      const executesAtDiscardTime = discardTimeExecuted.has(keyword);
       assert.ok(
-        hasHandler || translates || executesAtRecruit || executesAtHandAction || executesAtFaceDown || executesAsClassGrant,
-        `MVP keyword "${keyword}" must be handled directly, via reveal translation, at recruit time, via a hand-action move, via the face-down moves, or as a class-grant`,
+        hasHandler || translates || executesAtRecruit || executesAtHandAction || executesAtFaceDown || executesAsClassGrant || executesAtDiscardTime,
+        `MVP keyword "${keyword}" must be handled directly, via reveal translation, at recruit time, via a hand-action move, via the face-down moves, as a class-grant, or at discard time`,
       );
     }
   });
