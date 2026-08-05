@@ -271,13 +271,21 @@ article.entity h1, .section-landing h1 {
   color: var(--color-muted);
 }
 
-.editing-this-page-body ol {
-  padding-left: 1.25rem;
-  margin: 0.4rem 0;
+.editing-this-page-body p {
+  margin: 0.5rem 0;
 }
 
 .editing-this-page-body p:last-child {
   margin-bottom: 0;
+}
+
+.editing-this-page-body kbd {
+  font-family: var(--mono-stack);
+  font-size: 0.85em;
+  padding: 0.05rem 0.3rem;
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  background: #f8fafc;
 }
 
 blockquote {
