@@ -131,15 +131,25 @@ jobs:
       - name: Typecheck arena-client
         run: pnpm --filter @legendary-arena/arena-client typecheck
 
-  # ── 3d. Hero-effect coverage gate ────────────────────────────────────────────
-  # why: WP-250 / D-24021 — gate hero-effect coverage against a committed baseline
-  # so the Lever 1/2 effect-system refactor (docs/ai/DESIGN-EFFECT-AUTHORING-SCALE.md)
-  # cannot silently reduce how many printed hero abilities actually execute.
-  # Hybrid posture: a noEffect rise or a vanished set hard-fails; a brand-new
-  # unmodeled [keyword:X] warns only. Builds the workspace first so the probe can
-  # import game-engine + registry dist/.
+  # ── 3d. Coverage & Ledger gates ──────────────────────────────────────────────
+  # why: this job aggregates the repo's markdown/artifact integrity gates that
+  # share one workspace build — the hero-effect coverage baseline (below), the
+  # node-toolchain pin, the hero/villain mechanic-ledger + metadata + effect-index
+  # + runtime-observed freshness checks, the WP/EC/D number-allocation ledger, and
+  # the WORK_INDEX row-pattern check. The display name is "Coverage & Ledger Gates"
+  # (not "Hero Effect Coverage") so a failure in any of them — e.g. a duplicate
+  # number-ledger reservation — surfaces under an honest name instead of reading
+  # as a coverage regression (the same self-describing-gate principle the
+  # WORK_INDEX row-pattern step below was split out for).
+  #
+  # The coverage gate itself (WP-250 / D-24021) gates hero-effect coverage against
+  # a committed baseline so the Lever 1/2 effect-system refactor
+  # (docs/ai/DESIGN-EFFECT-AUTHORING-SCALE.md) cannot silently reduce how many
+  # printed hero abilities actually execute. Hybrid posture: a noEffect rise or a
+  # vanished set hard-fails; a brand-new unmodeled [keyword:X] warns only. Builds
+  # the workspace first so the probe can import game-engine + registry dist/.
   hero-effect-coverage:
-    name: Hero Effect Coverage
+    name: Coverage & Ledger Gates
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
