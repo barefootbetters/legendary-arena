@@ -35843,9 +35843,9 @@ Protect this file.
 
 ---
 
-### D-24302 — Join-by-reference (match ID or invite link) lobby contract (Drafted 2026-08-04 — WP-499 / EC-534; not yet landed)
+### D-24302 — Join-by-reference (match ID or invite link) lobby contract (Active — WP-499 / EC-534; landed 2026-08-04)
 
-> **Status: Drafted 2026-08-04; not yet landed.** Reserved in `NUMBER-LEDGER.md`. Flips to Active at WP-499 execution.
+> **Status: Active. Landed 2026-08-04** (WP-499 / EC-534; arena-client 1174/0, no re-pin).
 
 **Context.** The lobby has two ways to join a match: click **Join** on a row in the auto-fetched public list (`GET /games/legendary-arena?isGameover=false`), or open a WP-369 copy-join-link (`?route=lobby&match=<id>`) that merely *highlights* a row already in that list. There is no way to type/paste a match ID or link to join directly, so an **unlisted** match — or one not in the fetched list — is unreachable without the exact deep link. Surfaced 2026-08-04 when an operator tried to play with a newly-registered friend: the by-`@handle` invite path errored (root cause: the handle-claim feature was never wired — `claimHandle` has zero non-test call sites), and the only working path was emailing the copy-link.
 

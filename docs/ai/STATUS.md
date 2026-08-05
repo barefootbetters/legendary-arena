@@ -7,6 +7,33 @@
 
 ## Current State
 
+### WP-499 — Join by Match ID or Link (lobby manual-join affordance) — DONE (2026-08-04)
+
+The lobby could only join a match by clicking a row in the auto-fetched public list, or via a
+copy-join-link (`?route=lobby&match=<id>`) that merely *highlights* a listed row — so an
+**unlisted** match, or a link/ID from a friend, was unreachable without hunting the list. This
+WP (Track 1 of the friend-invite bug fix) adds a **"Join by match ID or link"** input to the
+lobby. It is the productized, identity-agnostic form of the copy-link, and the reliable way to
+play with a brand-new friend while the never-wired handle-claim system blocks by-`@handle`
+invites (diagnosed this session; Track-2 handle fix is a separate follow-up WP).
+
+- **`matchReference.parseMatchReference`** (new pure helper) — reduces a raw match ID **or** a
+  full invite-link URL to the bare match ID (reads the `match` query param, strips a trailing
+  `#fragment`), returning `null` for empty/malformed input.
+- **`lobbyApi.fetchMatch`** — read-only `GET /games/legendary-arena/:id` (public, like
+  `listMatches`), `404 → null`, mapping the single-match object to `LobbyMatchSummary`. Because
+  the per-match route does not filter unlisted matches, a pasted ID reaches them.
+- **`LobbyView.joinByReference`** — parse → fetch → first open seat → delegate to the existing
+  `joinExisting` (reuses the authenticated `POST /api/match/join` + navigation); inline error
+  copy for empty/malformed/not-found/no-open-seat/finished.
+- App-layer only (`apps/arena-client`); no server/endpoint/contract change; zero determinism
+  surface. Tests: `matchReference` (9), `fetchMatch` (4), `LobbyView` join-by-reference (5,
+  incl. the join-POST happy path per the WP-376 jsdom precedent). Full arena-client suite
+  **1174/0**; `pnpm -r build` 0. Browser-verified the control renders + the empty-input error
+  path on the worktree dev server. Lands **D-24302**.
+- **D-24026 live-verify operator-pending:** confirm the happy-path join (paste an ID and a link
+  → lands in the match) on the deployed lobby.
+
 ### WP-498 — Return-on-Discard Reactive Hero Ability (Cyclops "Unending Energy") — DONE (2026-08-05)
 
 Implements the previously-unimplemented Cyclops "Unending Energy" (`core/cyclops/unending-energy`)
