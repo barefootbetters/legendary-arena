@@ -1,0 +1,74 @@
+# Post-deploy asset warm for the arena-client SPA (play.legendary-arena.com).
+#
+# The failure this exists for: arena-client auto-deploys via the Cloudflare
+# Pages GitHub integration on every push to main. Each deploy emits a NEW
+# content-hashed CSS/JS bundle that starts life COLD at the edge
+# (cf-cache-status: MISS). During that cold window the first real visitors are
+# served the new hashed assets through the Pages Functions runtime (the root
+# functions/_middleware.ts wraps every request via context.next()), and the
+# browser's early-load fetch of the app stylesheet intermittently aborts
+# (net::ERR_ABORTED) even though the asset serves a clean 200 — the page renders
+# fully unstyled until a reload. Observed live on play.legendary-arena.com on
+# 2026-08-04, immediately after a deploy.
+#
+# This job removes the cold window from the visitor's path: after the deploy is
+# live it fetches every hashed asset once, which primes the edge cache so the
+# first human request is a HIT served directly, not a cold MISS through
+# Functions. It is defense-in-depth alongside the build-time fix that stops the
+# app stylesheet being requested in CORS mode at all
+# (apps/arena-client/vite.config.ts, INFRA: strip-crossorigin plugin).
+#
+# It reuses two dependency-free scripts:
+#   - scripts/wait-for-spa-deploy.mjs — polls version.json until this commit is
+#     the one being served, so the warm runs against the NEW bundle, not the
+#     outgoing one (Cloudflare Pages takes minutes to build and propagate).
+#   - scripts/check-spa-assets.mjs --url — fetches every referenced asset, which
+#     both WARMS the edge and VERIFIES nothing is HTML-masked, in one pass.
+#
+# workflow_dispatch permits an operator to warm on demand (e.g. after a manual
+# Cloudflare cache purge) without waiting for a push.
+
+name: SPA Warm On Deploy
+
+on:
+  push:
+    branches: [main]
+    # why: only run when the deploy content could actually change. A docs-only
+    # or engine-only push does not alter the arena-client bundle, so warming
+    # would poll for a version.json gitSha that never changes and time out.
+    paths:
+      - 'apps/arena-client/**'
+  workflow_dispatch:
+
+# why: if several arena-client pushes land in quick succession, only the newest
+# deploy is worth warming — cancel any in-flight warm for an already-superseded
+# commit rather than polling for a bundle that will never go live.
+concurrency:
+  group: spa-warm-on-deploy
+  cancel-in-progress: true
+
+jobs:
+  warm:
+    name: Warm live arena-client assets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      # why package-manager-cache: false — this job runs only dependency-free
+      # scripts (built-in fetch), so it deliberately skips pnpm; leaving the
+      # default true makes setup-node try to prime a pnpm cache and fail with
+      # "Unable to locate executable file: pnpm" (same footgun documented in
+      # spa-assets-nightly.yml).
+      - uses: actions/setup-node@v5
+        with: { node-version-file: .node-version, package-manager-cache: false }
+
+      # why: wait until version.json reports THIS commit before warming, so the
+      # fetch primes the new hashed assets rather than the outgoing deploy's.
+      - name: Wait for the arena-client deploy to go live
+        run: node scripts/wait-for-spa-deploy.mjs --url https://play.legendary-arena.com --sha ${{ github.sha }}
+
+      # why: fetching every referenced asset primes the Cloudflare edge cache
+      # (the warm) and, as a bonus, fails the run if any asset is HTML-masked
+      # (the same masking check the nightly probe performs).
+      - name: Warm and verify live arena-client assets
+        run: node scripts/check-spa-assets.mjs --url https://play.legendary-arena.com
