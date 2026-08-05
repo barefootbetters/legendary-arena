@@ -14,6 +14,7 @@ import assert from 'node:assert/strict';
 import { filterUIStateForAudience } from './uiState.filter.js';
 import { buildUIState } from './uiState.build.js';
 import { buildInitialGameState } from '../setup/buildInitialGameState.js';
+import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { makeMockCtx } from '../test/mockCtx.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
 import type { CardRegistryReader } from '../matchSetup.validate.js';
@@ -1128,5 +1129,25 @@ describe('filterUIStateForAudience — pendingDefeatChoice redaction (WP-486 / D
     const uiState = createDefeatChoiceUIState();
     const result = filterUIStateForAudience(uiState, SPECTATOR);
     assert.equal(result.pendingDefeatChoice, undefined, 'spectator must not see the defeat choice');
+  });
+
+  // why: WP-502 / D-24306 — the early-end gameOver is public board state (the
+  // match is over for everyone), so its endedEarly marker must survive the
+  // audience filter's `{ ...uiState.gameOver }` spread for players AND spectators.
+  it('an early-ended gameOver.endedEarly survives the filter for every audience', () => {
+    const gameState = buildInitialGameState(
+      createTestConfig(),
+      createMockRegistry(),
+      makeMockCtx(),
+    );
+    gameState.counters[ENDGAME_CONDITIONS.MATCH_ENDED_EARLY] = 1;
+    const uiState = buildUIState(gameState, mockCtx);
+    assert.equal(uiState.gameOver?.endedEarly, true, 'precondition: build projects endedEarly');
+
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      const result = filterUIStateForAudience(uiState, audience);
+      assert.equal(result.gameOver?.endedEarly, true, 'endedEarly must survive the filter');
+      assert.equal(result.gameOver?.outcome, 'tie', 'early end reuses the tie outcome');
+    }
   });
 });

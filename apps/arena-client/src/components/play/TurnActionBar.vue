@@ -1,5 +1,5 @@
 <script lang="ts">
-import { defineComponent, type PropType } from 'vue';
+import { defineComponent, ref, watch, type PropType } from 'vue';
 import { useTurnActions } from '../../composables/useTurnActions';
 import type { SubmitMove } from './uiMoveName.types';
 
@@ -246,6 +246,45 @@ export default defineComponent({
       props.submitMove('healWounds', {});
     }
 
+    // why: WP-502 / D-24306 — End Game is a two-click affordance (request →
+    // confirm) rather than a native window.confirm, so the confirmation is part of
+    // the component's own DOM (testable, styleable, and consistent with the rest of
+    // the bar). Ending the match is irreversible and closes it out for every seat,
+    // so it must never fire on a single stray click.
+    const isConfirmingEndGame = ref(false);
+
+    function requestEndGame(): void {
+      isConfirmingEndGame.value = true;
+    }
+
+    function cancelEndGame(): void {
+      isConfirmingEndGame.value = false;
+    }
+
+    function confirmEndGame(): void {
+      // why: WP-502 / D-24306 — empty-object payload; the endMatchEarly move takes
+      // no arguments. It latches MATCH_ENDED_EARLY so the engine's endIf ends the
+      // match (an endedEarly tie) for ALL seats on the next frame, and every
+      // client's UIState projects the endgame panel. Only the current player's
+      // move applies, which is why this control is shown only on the viewer's turn.
+      props.submitMove('endMatchEarly', {});
+      isConfirmingEndGame.value = false;
+    }
+
+    // why: WP-502 — the confirm affordance is hidden (not unmounted) between the
+    // viewer's turns via `v-if="isViewerTurn"`, so a confirm left un-actioned would
+    // survive to the viewer's NEXT turn and render the armed "Yes, end it" button
+    // first — a single stray click could then end the match. Re-arm to the safe
+    // (un-confirming) state whenever it stops being the viewer's turn.
+    watch(
+      () => props.isViewerTurn,
+      (isViewerTurn) => {
+        if (!isViewerTurn) {
+          isConfirmingEndGame.value = false;
+        }
+      },
+    );
+
     return {
       activeStep,
       revealGate,
@@ -256,6 +295,10 @@ export default defineComponent({
       onPassPriority,
       onEndTurn,
       onHealWounds,
+      isConfirmingEndGame,
+      requestEndGame,
+      cancelEndGame,
+      confirmEndGame,
     };
   },
 });
@@ -352,6 +395,46 @@ export default defineComponent({
         </button>
       </li>
     </ol>
+    <!-- why: WP-502 / D-24306 — the "End Game" escape hatch closes out an
+         in-progress match for EVERY seat (e.g. a co-op table that ran out of
+         time). Shown only on the viewer's turn because only the current player's
+         move applies (boardgame.io gates top-level moves to the active player).
+         Two-click confirm: the first click reveals the confirm/cancel pair so an
+         irreversible match-end never fires on a single stray click. -->
+    <div
+      v-if="isViewerTurn"
+      class="turn-action-bar__end-game"
+      data-testid="play-end-game"
+    >
+      <button
+        v-if="!isConfirmingEndGame"
+        type="button"
+        class="turn-action-bar__end-game-request"
+        data-testid="play-action-end-game"
+        @click="requestEndGame"
+      >
+        End Game
+      </button>
+      <template v-else>
+        <span class="turn-action-bar__end-game-prompt">End the match for everyone?</span>
+        <button
+          type="button"
+          class="turn-action-bar__end-game-confirm"
+          data-testid="play-action-end-game-confirm"
+          @click="confirmEndGame"
+        >
+          Yes, end it
+        </button>
+        <button
+          type="button"
+          class="turn-action-bar__end-game-cancel"
+          data-testid="play-action-end-game-cancel"
+          @click="cancelEndGame"
+        >
+          Keep playing
+        </button>
+      </template>
+    </div>
   </section>
 </template>
 
@@ -405,5 +488,38 @@ export default defineComponent({
 .turn-action-bar__step button {
   padding: 0.25rem 0.5rem;
   font-size: 0.8rem;
+}
+
+/* why: WP-502 — the End Game control sits below the three steps, de-emphasized
+   (small, muted) so it never competes with the primary turn actions, and the
+   confirm button is tinted danger-red to signal irreversibility. */
+.turn-action-bar__end-game {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.35rem;
+  padding-top: 0.3rem;
+  border-top: 1px dashed var(--color-foreground, #999);
+  font-size: 0.75rem;
+}
+
+.turn-action-bar__end-game button {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+.turn-action-bar__end-game-request {
+  opacity: 0.75;
+}
+
+.turn-action-bar__end-game-prompt {
+  font-weight: 600;
+}
+
+.turn-action-bar__end-game-confirm {
+  background: rgba(120, 40, 40, 0.94);
+  color: #f4f4f5;
+  border: 1px solid rgba(160, 60, 60, 0.9);
 }
 </style>

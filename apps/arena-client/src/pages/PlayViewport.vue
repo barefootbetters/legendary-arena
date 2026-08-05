@@ -11,6 +11,7 @@ import HollowEffectsPanel from '../components/play/HollowEffectsPanel.vue';
 import AudioControls from '../components/play/AudioControls.vue';
 import BotAllyStallBanner from '../components/BotAllyStallBanner.vue';
 import UpdateAvailableBanner from '../components/UpdateAvailableBanner.vue';
+import EndgameActions from '../components/play/EndgameActions.vue';
 import { useViewport } from '../composables/useViewport';
 import { useSkinApplier } from '../composables/useSkinApplier';
 import {
@@ -23,7 +24,11 @@ import { useComboCue } from '../composables/useComboCue';
 import { useBotAllyStatus } from '../composables/useBotAllyStatus';
 import { useDeployVersionCheck } from '../composables/useDeployVersionCheck';
 import { useUiStateStore } from '../stores/uiState';
+import { useAuthStore } from '../stores/auth';
+import { readMatchSetup } from '../diagnostics/matchSetupSession';
+import { launchMatchFromComposition } from '../lobby/useCreateMatchFromComposition';
 import type { SubmitMove } from '../components/play/uiMoveName.types';
+import type { MatchSetupConfig } from '@legendary-arena/game-engine';
 
 // why: WP-339 — the user-facing message for each post-match submission status.
 // Mounted once here at the shared viewport root (which holds matchId, D-16501), so
@@ -74,7 +79,7 @@ const SUBMISSION_MESSAGES: Record<Exclude<SubmissionStatus, 'idle'>, string> = {
  */
 export default defineComponent({
   name: 'PlayViewport',
-  components: { PlayDesktop, PlayMobile, DiagnosticExportButton, ViewLoadoutButton, WaitingForPlayersPanel, HollowEffectsPanel, AudioControls, BotAllyStallBanner, UpdateAvailableBanner },
+  components: { PlayDesktop, PlayMobile, DiagnosticExportButton, ViewLoadoutButton, WaitingForPlayersPanel, HollowEffectsPanel, AudioControls, BotAllyStallBanner, UpdateAvailableBanner, EndgameActions },
   props: {
     submitMove: {
       type: Function as PropType<SubmitMove>,
@@ -179,6 +184,76 @@ export default defineComponent({
       window.location.assign('/');
     }
 
+    // why: WP-502 / D-24306 — the post-match "Play Again" / "Back to Lobby" panel
+    // is mounted ONCE here at the shared viewport root (the WP-410/412/415/418
+    // wiring precedent), so it covers BOTH the <PlayMobile> and <PlayDesktop>
+    // surfaces. It reads the SAME useUiStateStore snapshot the submit hook reads;
+    // gameOver presence is the "match over" signal. Pure client — no engine/G write.
+    const endgameStore = useUiStateStore();
+    const { snapshot: endgameSnapshot } = storeToRefs(endgameStore);
+    const authStore = useAuthStore();
+
+    const isGameOver = computed<boolean>(
+      () => endgameSnapshot.value?.gameOver !== undefined,
+    );
+    const isEndedEarly = computed<boolean>(
+      () => endgameSnapshot.value?.gameOver?.endedEarly === true,
+    );
+    // why: the loadout this match launched with, stashed client-side at create
+    // (matchSetupSession). Null when the viewer joined a match they did not create
+    // or the tab's session cleared — Play Again then hides (only Back to Lobby).
+    const stashedConfig = computed<MatchSetupConfig | null>(() => {
+      const raw = readMatchSetup(props.matchId);
+      return raw !== null ? (raw as MatchSetupConfig) : null;
+    });
+    // why: the composition is player-count-specific (WP-370), so Play Again MUST
+    // reuse the ORIGINAL seat count — derived from the projected seat list, the
+    // server-authoritative count of players in this match.
+    const seatCount = computed<number>(
+      () => endgameSnapshot.value?.players?.length ?? 0,
+    );
+    // why: Play Again needs an authenticated account (create requires auth,
+    // D-24092) AND a stashed loadout AND a valid seat count. A guest or a
+    // no-loadout viewer sees only Back to Lobby.
+    const canPlayAgain = computed<boolean>(
+      () =>
+        isGameOver.value &&
+        authStore.token !== null &&
+        stashedConfig.value !== null &&
+        seatCount.value >= 1,
+    );
+
+    const isRelaunching = ref(false);
+    const playAgainError = ref('');
+
+    /**
+     * Relaunches a fresh match with this match's loadout (same composition, same
+     * seat count) and drops the player into seat 0. On success
+     * launchMatchFromComposition navigates the tab (window.location.search), so
+     * this component unmounts; only a failure returns here to surface a message.
+     */
+    async function playAgain(): Promise<void> {
+      const config = stashedConfig.value;
+      const authToken = authStore.token;
+      if (config === null || authToken === null || isRelaunching.value) {
+        return;
+      }
+      isRelaunching.value = true;
+      playAgainError.value = '';
+      const result = await launchMatchFromComposition({
+        config,
+        playerCount: seatCount.value,
+        // why: the join seat label is cosmetic; neither the auth store nor the
+        // UIState projection carries a display name, so a stable default is used.
+        playerName: 'Player',
+        authToken,
+      });
+      if (!result.ok) {
+        playAgainError.value = result.message;
+        isRelaunching.value = false;
+      }
+    }
+
     return {
       isMobile,
       viewportRoot,
@@ -193,6 +268,12 @@ export default defineComponent({
       returnToLobby,
       isUpdateAvailable,
       reloadForUpdate,
+      isGameOver,
+      isEndedEarly,
+      canPlayAgain,
+      isRelaunching,
+      playAgainError,
+      playAgain,
     };
   },
 });
@@ -274,6 +355,21 @@ export default defineComponent({
     <UpdateAvailableBanner
       :update-available="isUpdateAvailable"
       :refresh="reloadForUpdate"
+    />
+    <!--
+      // why: WP-502 / D-24306 — the post-match action panel, mounted ONCE here at
+      // the shared viewport root so "Play Again" (relaunch the same loadout) and
+      // "Back to Lobby" cover BOTH the <PlayMobile> and <PlayDesktop> surfaces.
+      // Self-hides until the match is over (v-if visible inside the component).
+    -->
+    <EndgameActions
+      :visible="isGameOver"
+      :ended-early="isEndedEarly"
+      :can-play-again="canPlayAgain"
+      :is-relaunching="isRelaunching"
+      :error-message="playAgainError"
+      :on-play-again="playAgain"
+      :on-return-to-lobby="returnToLobby"
     />
     <!--
       // why: WP-339 — a small, non-blocking post-match submission status. Shown

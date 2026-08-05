@@ -91,6 +91,33 @@ test('an authenticated player submits once on gameover → submitted', async () 
   }
 });
 
+// why: WP-502 / D-24306 — a match the players ended early (the endedEarly gameover
+// marker) is never a ranked result, so an authenticated player is NOT submitted:
+// the POST is skipped entirely and the status is the permanent, non-error
+// 'ineligible' (the same disposition as par_not_published), never 'failed'.
+test('an early-ended match is never submitted; status becomes ineligible', async () => {
+  setActivePinia(createPinia());
+  const stub = installFetchStub(200, { record: {}, wasExisting: false });
+  try {
+    useAuthStore().setSession('token-abc', null);
+    const uiStateStore = useUiStateStore();
+    // why: clone before mutating — loadUiStateFixture returns a shared reference,
+    // so flagging endedEarly on the raw object would leak into other tests.
+    const snapshot = structuredClone(loadUiStateFixture('endgame-win'));
+    // why: flag the fixture's gameover as an early end — the marker the client reads.
+    snapshot.gameOver = { ...snapshot.gameOver!, endedEarly: true };
+    uiStateStore.setSnapshot(snapshot);
+
+    const { submissionStatus } = useCompetitiveSubmitOnGameover(ref('match-1'));
+    await flush();
+
+    assert.equal(submissionStatus.value, 'ineligible');
+    assert.equal(stub.calls.length, 0, 'an early-ended match must never POST');
+  } finally {
+    stub.restore();
+  }
+});
+
 test('a 200 wasExisting maps to already; a non-200 maps to failed', async () => {
   setActivePinia(createPinia());
   const existingStub = installFetchStub(200, { record: {}, wasExisting: true });

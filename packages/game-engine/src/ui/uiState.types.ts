@@ -542,6 +542,13 @@ export interface UIGameOverState {
   reason: string;
   scores?: FinalScoreSummary;
   par?: UIParBreakdown;
+  // why: WP-502 / D-24306 — present ONLY when the players ended the match early
+  // (the MATCH_ENDED_EARLY condition). The client reads it to (a) label the
+  // endgame panel as an early end rather than a genuine tie and (b) skip the
+  // competitive-score submission (an abandoned match is never scored). Absent on
+  // every natural win / loss / tie. Optional + omit-when-absent, so it survives
+  // the audience filter's `{ ...uiState.gameOver }` spread with no whitelist edit.
+  endedEarly?: boolean;
 }
 
 // why: projected for WP-062 HUD consumption; `bystandersRescued` aggregates

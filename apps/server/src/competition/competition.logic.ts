@@ -776,6 +776,15 @@ export async function submitCompetitiveScoreImpl(
   // stores SQL NULL rather than rejecting — outcome is supplementary
   // provenance for the gauntlet boards, never a verification gate.
   const endgameResult = evaluateEndgame(reduced.finalState as LegendaryGameState);
+  // why: WP-502 / D-24306 — a match the players ended early (the endedEarly
+  // marker on the reduced gameover) is NEVER a ranked result. Reject before
+  // computing or writing any score, so an abandoned/timed-out match cannot land
+  // on the gauntlet leaderboards. This is the server-authoritative enforcement of
+  // "never score an early end"; the client also skips the submit, but the server
+  // is the adjudicator (the client is advisory). Permanent, non-retriable.
+  if (endgameResult?.endedEarly === true) {
+    return { ok: false, reason: 'ended_early' };
+  }
   // why: WP-367 / D-24161 — CompetitiveOutcome stays the two-value decisive set
   // { heroes-win, scheme-wins }. The engine's new deck-exhaustion 'tie' outcome
   // (D-24159) is not a decisive competitive result, so it maps to SQL NULL here

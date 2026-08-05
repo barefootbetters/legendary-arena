@@ -249,6 +249,21 @@ describe('buildUIState', () => {
     assert.ok(result.gameOver !== undefined, 'gameOver must be present when endgame triggers');
     assert.equal(result.gameOver!.outcome, 'heroes-win');
     assert.ok(result.gameOver!.scores !== undefined, 'scores must be present in gameOver');
+    // why: WP-502 — a natural finish must NOT carry the endedEarly marker.
+    assert.equal(result.gameOver!.endedEarly, undefined, 'a natural win never sets endedEarly');
+  });
+
+  // why: WP-502 / D-24306 — the MATCH_ENDED_EARLY counter projects a 'tie' gameOver
+  // flagged endedEarly so the client labels the early end and skips scoring.
+  it('projects gameOver.endedEarly when the match was ended early', () => {
+    const gameState = createTestGameState();
+    gameState.counters[ENDGAME_CONDITIONS.MATCH_ENDED_EARLY] = 1;
+
+    const result = buildUIState(gameState, mockCtx);
+
+    assert.ok(result.gameOver !== undefined, 'gameOver must be present when the match is ended early');
+    assert.equal(result.gameOver!.outcome, 'tie');
+    assert.equal(result.gameOver!.endedEarly, true, 'endedEarly must be true for a player-ended match');
   });
 });
 

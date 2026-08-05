@@ -81,7 +81,11 @@ export type UiMoveName =
   | 'resolveReturnOnDiscard'
   // why: WP-380 / D-24181 — surfaces the WP-379 Wound "Healing" ability (engine
   // healWounds). Dispatched with an empty payload; the move takes no arguments.
-  | 'healWounds';
+  | 'healWounds'
+  // why: WP-502 / D-24306 — surfaces the "End Game" control (engine endMatchEarly).
+  // Dispatched with an empty payload; the move takes no arguments. Latches the
+  // MATCH_ENDED_EARLY endgame counter so the match ends for every seat.
+  | 'endMatchEarly';
 
 /**
  * Function signature shared by every prop-drilled `submitMove` in the

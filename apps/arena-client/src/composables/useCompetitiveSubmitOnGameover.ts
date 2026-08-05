@@ -78,6 +78,19 @@ export function useCompetitiveSubmitOnGameover(matchId: Ref<string>): {
       // why: no live match id (a non-live mount) — nothing to submit.
       return;
     }
+
+    // why: WP-502 / D-24306 — a match the players ended early (the endedEarly
+    // gameover marker) is never a ranked result, so skip the submission entirely.
+    // The server is the authority and also rejects it (ended_early); this client
+    // skip avoids a doomed POST. Permanent + non-retriable, so it maps to
+    // 'ineligible' (mirrors the par_not_published disposition), never 'failed'.
+    if (uiStateStore.snapshot?.gameOver?.endedEarly === true) {
+      hasSubmitted = true;
+      submittedForMatch = currentMatchId;
+      submissionStatus.value = 'ineligible';
+      return;
+    }
+
     hasSubmitted = true;
     submittedForMatch = currentMatchId;
 
