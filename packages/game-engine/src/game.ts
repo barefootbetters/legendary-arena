@@ -33,6 +33,7 @@ import { revealVillainCard } from './villainDeck/villainDeck.reveal.js';
 import { fightVillain } from './moves/fightVillain.js';
 import { recruitHero } from './moves/recruitHero.js';
 import { healWounds } from './moves/healWounds.js';
+import { endMatchEarly } from './moves/endMatchEarly.js';
 import { dodgeCard } from './moves/dodgeCard.js';
 import { sendUndercover } from './moves/sendUndercover.js';
 import { playFromUndercover } from './moves/playFromUndercover.js';
@@ -429,6 +430,13 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     // (client: false) per D-10008 — it mutates real G (playerZones.hand / G.ko),
     // absent on UIState.
     healWounds: { move: healWounds, client: false },
+    // why: WP-502 / D-24306 — endMatchEarly is the player-initiated "End Game"
+    // control: it latches the MATCH_ENDED_EARLY endgame counter so the match ends
+    // (endedEarly tie) for every seat via the top-level endIf. Server-only
+    // (client: false) per D-10008 — it mutates real G (G.counters), absent on
+    // UIState. NOT in CORE_MOVE_NAMES (mirrors the resolve* / healWounds
+    // non-core moves).
+    endMatchEarly: { move: endMatchEarly, client: false },
     resolveHeroChoice: { move: resolveHeroChoice, client: false },
     resolveKoHeroChoice: { move: resolveKoHeroChoice, client: false },
     // why: WP-470 / D-24282 — resolveScryKoChoice resolves the interactive Doombot

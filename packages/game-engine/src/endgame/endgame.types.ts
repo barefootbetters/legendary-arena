@@ -29,6 +29,15 @@ export interface EndgameResult {
   outcome: EndgameOutcome;
   /** Human-readable description of the triggering condition. */
   reason: string;
+  // why: WP-502 / D-24306 — additive optional marker set ONLY when the players
+  // ended the match early (the MATCH_ENDED_EARLY condition below). Kept off the
+  // EndgameOutcome union deliberately: an early end reuses the 'tie' outcome so
+  // the union's large blast radius (competition/dashboard/coop/campaign/simulation
+  // switches + the competitive_scores.outcome column) is untouched. Consumers that
+  // must NOT score an abandoned match (the competitive submission path) key on
+  // this flag; every genuine win/loss/tie leaves it absent.
+  /** True when the match was ended early by the players; never scored. */
+  endedEarly?: boolean;
 }
 
 /**
@@ -53,6 +62,14 @@ export const ENDGAME_CONDITIONS = {
   // outcome. Separate from the latch so the game only ends at end of turn, not
   // the instant a deck empties.
   FINAL_TURN_TIE: 'finalTurnTie',
+  // why: WP-502 / D-24306 — the player-initiated "End Game" latch. Set to 1 by
+  // the endMatchEarly move when the players choose to close out an in-progress
+  // match (e.g. they ran out of time). evaluateEndgame reads it FIRST (highest
+  // priority) and returns a 'tie' outcome flagged endedEarly, so the top-level
+  // endIf sets ctx.gameover for all seats and buildUIState projects the endgame
+  // panel to every connected client. Never set at setup — a runtime-only write,
+  // so initial G is unchanged (no finalStateHash re-pin).
+  MATCH_ENDED_EARLY: 'matchEndedEarly',
 } as const;
 
 // why: 8 is the standard Legendary escape limit for MVP; becomes part of

@@ -86,7 +86,12 @@ export type SubmissionRejectionReason =
   // that has not reached gameover. Scoring is end-of-match only (D-4804), so the
   // server rejects (and does NOT capture) an unfinished match rather than scoring
   // a non-terminal state. Maps to HTTP 409 (a conflict with match state).
-  | 'match_not_finished';
+  | 'match_not_finished'
+  // why: WP-502 / D-24306 — the finished match was ended early by the players
+  // (the endedEarly gameover marker). An abandoned/timed-out match is never a
+  // ranked result, so the server refuses to score it — a PERMANENT ineligibility,
+  // not a retriable failure. Maps to HTTP 422 (the default eligibility branch).
+  | 'ended_early';
 
 /**
  * Canonical readonly array mirroring the `SubmissionRejectionReason`
@@ -110,6 +115,7 @@ export const SUBMISSION_REJECTION_REASONS: readonly SubmissionRejectionReason[] 
   'par_not_published',
   'replay_verification_failed',
   'match_not_finished',
+  'ended_early',
 ] as const;
 
 /**

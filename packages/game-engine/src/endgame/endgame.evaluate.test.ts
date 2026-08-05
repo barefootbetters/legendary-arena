@@ -117,6 +117,51 @@ describe('evaluateEndgame', () => {
     assert.strictEqual(result, null);
   });
 
+  // why: WP-502 / D-24306 — the player-initiated End Game latch resolves to a tie
+  // flagged endedEarly so the competitive path can refuse to score it.
+  it('returns an endedEarly tie when MATCH_ENDED_EARLY is set', () => {
+    const result = evaluateEndgame(makeMinimalState({
+      [ENDGAME_CONDITIONS.MATCH_ENDED_EARLY]: 1,
+    }));
+    assert.deepStrictEqual(result, {
+      outcome: 'tie',
+      reason: 'The players ended the match early.',
+      endedEarly: true,
+    });
+  });
+
+  // why: WP-502 — End Game is highest priority: closing out an in-progress match
+  // supersedes every natural win / loss / tie that might also be latched.
+  it('MATCH_ENDED_EARLY takes priority over every natural win/loss/tie condition', () => {
+    const result = evaluateEndgame(makeMinimalState({
+      [ENDGAME_CONDITIONS.MATCH_ENDED_EARLY]: 1,
+      [ENDGAME_CONDITIONS.ESCAPED_VILLAINS]: ESCAPE_LIMIT,
+      [ENDGAME_CONDITIONS.SCHEME_LOSS]: 1,
+      [ENDGAME_CONDITIONS.MASTERMIND_DEFEATED]: 1,
+      [ENDGAME_CONDITIONS.FINAL_TURN_TIE]: 1,
+    }));
+    assert.deepStrictEqual(result, {
+      outcome: 'tie',
+      reason: 'The players ended the match early.',
+      endedEarly: true,
+    });
+  });
+
+  // why: WP-502 — endedEarly is early-end-only; a genuine tie/win/loss must NEVER
+  // carry the marker, or the competitive path would wrongly skip scoring them.
+  it('a natural tie / win / loss never carries the endedEarly marker', () => {
+    for (const counters of [
+      { [ENDGAME_CONDITIONS.FINAL_TURN_TIE]: 1 },
+      { [ENDGAME_CONDITIONS.MASTERMIND_DEFEATED]: 1 },
+      { [ENDGAME_CONDITIONS.SCHEME_LOSS]: 1 },
+      { [ENDGAME_CONDITIONS.ESCAPED_VILLAINS]: ESCAPE_LIMIT },
+    ]) {
+      const result = evaluateEndgame(makeMinimalState(counters));
+      assert.notStrictEqual(result, null);
+      assert.strictEqual(result?.endedEarly, undefined);
+    }
+  });
+
   it('JSON.stringify succeeds for all return values', () => {
     const nullResult = evaluateEndgame(makeMinimalState({}));
     assert.strictEqual(JSON.stringify(nullResult), 'null');

@@ -1290,6 +1290,11 @@ export function buildUIState(
       reason: endgameResult.reason,
       scores: finalScores,
       ...(par !== undefined ? { par } : {}),
+      // why: WP-502 / D-24306 — surface the early-end marker to clients so the
+      // endgame panel labels a player-ended match and the competitive submission
+      // is skipped. Omit-when-absent (no `endedEarly: false` literal) under
+      // exactOptionalPropertyTypes; only ever true for a MATCH_ENDED_EARLY result.
+      ...(endgameResult.endedEarly === true ? { endedEarly: true } : {}),
     };
   }
 

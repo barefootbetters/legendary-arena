@@ -165,6 +165,17 @@ const LOSS_FINAL_STATE = {
   counters: { [ENDGAME_CONDITIONS.SCHEME_LOSS]: 1 },
 } as unknown as LegendaryGameState;
 
+// why: WP-502 / D-24306 — an early-ended match fixture. The MATCH_ENDED_EARLY
+// counter makes the engine's endgame evaluation return an endedEarly tie, which
+// the submission path must reject as ended_early (an abandoned match is never
+// scored). Its own counter yields its own canonical hash → its own submittable
+// replay identity.
+const ENDED_EARLY_FINAL_STATE = {
+  ...(TEST_FINAL_STATE as unknown as Record<string, unknown>),
+  counters: { [ENDGAME_CONDITIONS.MATCH_ENDED_EARLY]: 1 },
+} as unknown as LegendaryGameState;
+const ENDED_EARLY_REPLAY_HASH = computeStateHash(ENDED_EARLY_FINAL_STATE);
+
 // why: WP-344 player-count fixture — identical to WIN_FINAL_STATE except the
 // per-player zone record carries TWO seats, which is the seat-count source
 // step 14c reads (D-24134 §1). The extra seat changes the canonical hash, so
@@ -873,6 +884,69 @@ describe('competition logic (WP-053)', () => {
   // Test 9 — logic-pure: drift detection (union ↔ canonical array)
   // -------------------------------------------------------------------------
 
+  // -------------------------------------------------------------------------
+  // WP-502 / D-24306 — a player-ended match is never scored (ended_early)
+  // -------------------------------------------------------------------------
+
+  test(
+    'rejects a match the players ended early with ended_early (no score written)',
+    hasTestDatabase ? {} : { skip: 'requires test database' },
+    async () => {
+      assert.ok(testPool !== null);
+      const accountResult = await createPlayerAccount(
+        {
+          email: 'wp502-early@example.test',
+          displayName: 'Early Ender',
+          authProvider: 'email',
+          authProviderId: 'wp502-early',
+        },
+        testPool,
+      );
+      assert.ok(accountResult.ok === true);
+      const account = accountResult.value;
+
+      const ownershipResult = await assignReplayOwnership(
+        account.accountId,
+        ENDED_EARLY_REPLAY_HASH,
+        TEST_SCENARIO_KEY,
+        testPool,
+      );
+      assert.ok(ownershipResult.ok === true);
+      await updateReplayVisibility(
+        ownershipResult.value.ownershipId,
+        'public',
+        testPool,
+      );
+
+      const result = await submitCompetitiveScoreImpl(
+        account,
+        ENDED_EARLY_REPLAY_HASH,
+        testPool,
+        {
+          // why: reduce to the early-ended final state so the impl's endgame
+          // evaluation sees the endedEarly marker and rejects before scoring.
+          reduceReplay: async (replayHash: string) =>
+            replayHash === ENDED_EARLY_REPLAY_HASH
+              ? {
+                  finalState: ENDED_EARLY_FINAL_STATE,
+                  stateHash: ENDED_EARLY_REPLAY_HASH,
+                  turnCount: TEST_TURN_COUNT,
+                }
+              : null,
+          checkParPublished: stubCheckParPublished,
+        },
+      );
+      assert.deepEqual(result, { ok: false, reason: 'ended_early' });
+
+      // No competitive_scores row was written for the abandoned match.
+      const rows = await testPool.query(
+        'SELECT 1 FROM legendary.competitive_scores WHERE account_id = $1',
+        [account.accountId],
+      );
+      assert.strictEqual(rows.rowCount, 0);
+    },
+  );
+
   test('SUBMISSION_REJECTION_REASONS array matches SubmissionRejectionReason union', () => {
     // Forward inclusion + exhaustiveness via `never` default.
     function assertNever(value: never): never {
@@ -889,6 +963,7 @@ describe('competition logic (WP-053)', () => {
         case 'par_not_published':
         case 'replay_verification_failed':
         case 'match_not_finished':
+        case 'ended_early':
           break;
         default:
           assertNever(reason);
@@ -904,6 +979,7 @@ describe('competition logic (WP-053)', () => {
       'par_not_published',
       'replay_verification_failed',
       'match_not_finished',
+      'ended_early',
     ];
     for (const reason of expectedReasons) {
       assert.ok(

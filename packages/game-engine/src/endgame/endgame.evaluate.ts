@@ -23,10 +23,26 @@ import { ENDGAME_CONDITIONS, ESCAPE_LIMIT } from './endgame.types.js';
  * @returns An EndgameResult if the game has ended, or null if it continues.
  */
 export function evaluateEndgame(gameState: LegendaryGameState): EndgameResult | null {
+  const matchEndedEarlyCount = gameState.counters[ENDGAME_CONDITIONS.MATCH_ENDED_EARLY] ?? 0;
   const escapedVillainCount = gameState.counters[ENDGAME_CONDITIONS.ESCAPED_VILLAINS] ?? 0;
   const schemeLossCount = gameState.counters[ENDGAME_CONDITIONS.SCHEME_LOSS] ?? 0;
   const mastermindDefeatedCount = gameState.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED] ?? 0;
   const finalTurnTieCount = gameState.counters[ENDGAME_CONDITIONS.FINAL_TURN_TIE] ?? 0;
+
+  // why: WP-502 / D-24306 — the player-initiated "End Game" latch is checked
+  // FIRST (highest priority): when the players close out an in-progress match it
+  // supersedes every natural win/loss/tie condition. The result carries the
+  // endedEarly marker so the competitive submission path can refuse to score an
+  // abandoned match, while the outcome stays 'tie' (no EndgameOutcome-union
+  // change). This is a pure counter read like every branch below — no mutation,
+  // no I/O.
+  if (matchEndedEarlyCount >= 1) {
+    return {
+      outcome: 'tie',
+      reason: 'The players ended the match early.',
+      endedEarly: true,
+    };
+  }
 
   // why: Loss conditions checked before victory so a simultaneous trigger
   // resolves as a loss -- matches Legendary rulebook precedence. The
