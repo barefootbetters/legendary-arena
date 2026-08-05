@@ -14,6 +14,7 @@ related:
   - responsive-viewport-targets.md
   - card-effect-system.md
   - turn-system.md
+  - operational-health-checks.md
 status: canonical
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\play-board.md (this page — https://ewiki.legendary-arena.com/play-board/)
@@ -28,7 +29,7 @@ source:
   - ../packages/game-engine/src/game.ts
   - ../docs/ai/DESIGN-BOARD-LAYOUT.md
   - ../docs/ai/ARCHITECTURE.md
-last-reviewed: 2026-08-02
+last-reviewed: 2026-08-05
 ---
 
 # Play Board
@@ -283,6 +284,14 @@ renders as text without even requesting one.
   `[keyword:…]` / `[icon:…]` marker vocabulary the board renders.
 
 ## Debugging: missing-data triage
+
+> **First, rule out asset delivery.** If the *entire* board renders as raw,
+> unstyled HTML — no styling at all, not one blank tile — that is not a
+> projection problem: a SPA stylesheet failed to load (a cold-deploy
+> `crossorigin` abort, or a masked/missing bundle). Diagnose it via
+> [Operational Health Checks §SPA asset delivery](operational-health-checks.md#spa-asset-delivery),
+> not the pipeline below. The triage here is for a board that renders styled
+> but is missing *specific* data.
 
 When the board is missing data, the pipeline gives a deterministic path.
 Start from the [Play Diagnostics](play-diagnostics.md) bundle and read its

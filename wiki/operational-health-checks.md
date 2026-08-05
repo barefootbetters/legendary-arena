@@ -11,16 +11,21 @@ tags:
   - domains
 related:
   - play-diagnostics.md
+  - play-board.md
 status: canonical
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\operational-health-checks.md (this page — https://ewiki.legendary-arena.com/operational-health-checks/)
   - ../scripts/check-connections.mjs
   - ../scripts/check-subdomains.mjs
   - ../scripts/check-wiki-freshness.mjs
+  - ../scripts/check-spa-assets.mjs
+  - ../scripts/wait-for-spa-deploy.mjs
+  - ../.github/workflows/spa-assets-nightly.yml
+  - ../.github/workflows/spa-warm-on-deploy.yml
   - ../docs/ops/domains.json
   - ../docs/ops/DOMAINS.md
   - ../package.json
-last-reviewed: 2026-07-19
+last-reviewed: 2026-08-05
 ---
 
 ## Summary
@@ -230,6 +235,73 @@ reassurance it exists to prevent.
 short-circuits on the first failure. Use this as the single entry
 point when `legendary-arena.com` is reported broken — it covers
 every external dependency and every live subdomain in one run.
+
+### SPA asset delivery — masking gate + cold-deploy warm {#spa-asset-delivery}
+
+The two public SPAs (`apps/arena-client`, `apps/legends-board`) deploy as
+content-hashed bundles to Cloudflare Pages, and each fails in a way the
+connection and domain probes above structurally cannot see, because in both
+cases the HTML document itself serves a healthy `200`. Two distinct failure
+modes, and the gates that catch them:
+
+**Asset masking — a referenced bundle is missing from the deploy.** Both SPAs
+ship the Cloudflare Pages catch-all (`/*  /index.html  200`), so when a hashed
+bundle named by the deployed `index.html` is absent at the edge, the request
+does not `404` — it falls through to `index.html`, returning HTML with a `200`
+where the browser expects JavaScript. The module never executes, the app never
+mounts, and the surface sits on its no-JS fallback with no failed request and no
+console error: a silent white page. Observed live on
+`legends.legendary-arena.com` on 2026-07-18.
+[`scripts/check-spa-assets.mjs`](../scripts/check-spa-assets.mjs) catches it in
+two modes — `--dist <dir>` (hermetic, in PR CI: proves a *build* references only
+assets it emitted) and `--url <origin>` (live, run nightly by
+[`.github/workflows/spa-assets-nightly.yml`](../.github/workflows/spa-assets-nightly.yml)
+with a 3× retry to absorb a mid-rollout: proves a *deploy* actually serves
+them). The two are complementary; neither substitutes for the other.
+
+**Cold-deploy stylesheet abort — the page renders fully unstyled right after a
+deploy.** Distinct from masking: here every asset is present and served
+correctly, but the *browser* aborts the app stylesheet on some loads. Vite
+injects `crossorigin` onto the built `<link rel="stylesheet">`; for a
+same-origin, no-`integrity` sheet that only forces a CORS-mode fetch. During the
+cold-cache window after a deploy — a new hashed asset is `cf-cache-status: MISS`,
+served through the arena-client root
+[`functions/_middleware.ts`](../apps/arena-client/functions/_middleware.ts)
+Pages-Functions path — that CORS-mode fetch intermittently aborts in the browser
+(`net::ERR_ABORTED`) and the sheet never applies, leaving a raw, unstyled page.
+It self-heals once the edge is warm (`HIT`). Observed live on
+`play.legendary-arena.com` on 2026-08-04, immediately after a deploy.
+
+*Triage.* The tell is that the asset is fine and the failure is browser-side.
+`curl -sS -D - -o /dev/null <hashed-css-url>` returns `200` / `acao: *` / full
+bytes on every hit (verified 21/21 during the incident), and an in-page
+`fetch()` of the same URL succeeds — while the browser network panel shows
+`[FAILED: net::ERR_ABORTED]` on the `crossorigin` stylesheet even though the JS
+and `brand-tokens.local.css` load `200`. A clean `curl` plus a browser abort ⇒
+cold-cache stylesheet abort, **not** a missing or broken asset. (If `curl`
+itself returns HTML or a non-`200` for the hashed asset, it is the *masking*
+failure above, not this one.)
+
+*Fix (both shipped 2026-08-05, `INFRA:`).* Two layers of defense:
+
+1. [`apps/arena-client/vite.config.ts`](../apps/arena-client/vite.config.ts) — a
+   `transformIndexHtml` plugin strips `crossorigin` from built
+   `<link rel="stylesheet">` tags, so the same-origin sheet is fetched in normal
+   (non-CORS) mode and the abort surface is gone. The module
+   `<script crossorigin>` is left as-is (the JS path never aborted).
+2. [`.github/workflows/spa-warm-on-deploy.yml`](../.github/workflows/spa-warm-on-deploy.yml)
+   + [`scripts/wait-for-spa-deploy.mjs`](../scripts/wait-for-spa-deploy.mjs) — on
+   a push touching `apps/arena-client/**`, poll `version.json` (the WP-418
+   `{gitSha}` stamp) until this commit is the one being served, then run the
+   `check-spa-assets --url` probe against play. Fetching every hashed asset
+   primes the edge cache, so the first real visitor gets a `HIT` served directly
+   rather than a cold `MISS` through Functions — the warm removes the cold window
+   from the visitor path even where the CORS-mode abort would otherwise bite.
+
+Unlike the `pnpm check:*` scripts, neither gate is operator-run from a local
+`.env`: the masking probe runs in CI (PR + nightly) and the warm runs on deploy.
+Both accept a `workflow_dispatch` for on-demand verification straight after a
+manual Cloudflare cache purge.
 
 ### Latest run snapshot — 2026-05-19
 
@@ -453,6 +525,16 @@ fails the same way, ruling out half-provisioned states.
 - [`scripts/check-subdomains.mjs`](../scripts/check-subdomains.mjs) —
   ESM, no external imports beyond Node built-ins; uses `fetch` with
   `redirect: 'manual'` and a 10 s `AbortSignal` timeout.
+- [`scripts/check-spa-assets.mjs`](../scripts/check-spa-assets.mjs) —
+  the SPA asset-masking gate; `--dist` (hermetic, PR CI) and `--url`
+  (live) modes, both dependency-free. The live mode also warms the edge.
+- [`scripts/wait-for-spa-deploy.mjs`](../scripts/wait-for-spa-deploy.mjs) —
+  polls `version.json` until a target commit is live, so the post-deploy
+  warm runs against the new bundle rather than the outgoing one.
+- [`.github/workflows/spa-assets-nightly.yml`](../.github/workflows/spa-assets-nightly.yml) —
+  runs the live masking probe nightly and on `workflow_dispatch`.
+- [`.github/workflows/spa-warm-on-deploy.yml`](../.github/workflows/spa-warm-on-deploy.yml) —
+  waits for the arena-client deploy, then warms + verifies its assets.
 - [`package.json`](../package.json) — defines the `check`
   (`node --env-file=.env scripts/check-connections.mjs`),
   `check:domains` (`node scripts/check-subdomains.mjs`), and
@@ -479,6 +561,13 @@ fails the same way, ruling out half-provisioned states.
 
 - [`scripts/check-connections.mjs`](../scripts/check-connections.mjs)
 - [`scripts/check-subdomains.mjs`](../scripts/check-subdomains.mjs)
+- [`scripts/check-spa-assets.mjs`](../scripts/check-spa-assets.mjs) /
+  [`scripts/wait-for-spa-deploy.mjs`](../scripts/wait-for-spa-deploy.mjs) —
+  SPA asset-masking gate + post-deploy warm
+- [`.github/workflows/spa-assets-nightly.yml`](../.github/workflows/spa-assets-nightly.yml) /
+  [`.github/workflows/spa-warm-on-deploy.yml`](../.github/workflows/spa-warm-on-deploy.yml)
+- [PR #1224 — cold-deploy stylesheet abort fix](https://github.com/barefootbetters/legendary-arena/pull/1224) —
+  strip-`crossorigin` build plugin + `spa-warm-on-deploy` (2026-08-05)
 - [`docs/ops/domains.json`](../docs/ops/domains.json)
 - [`docs/ops/DOMAINS.md`](../docs/ops/DOMAINS.md)
 - [`package.json`](../package.json) — `check` and `check:domains` aliases
