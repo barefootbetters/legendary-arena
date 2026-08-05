@@ -820,6 +820,30 @@ export function filterUIStateForAudience(
     };
   }
 
+  // why: WP-498 / D-24301 — pendingReturnOnDiscard is chooser-only; the OPTIONAL
+  // return prompt is projected ONLY to the discarding player, redacted (omitted)
+  // for opponents AND spectators — mirroring pendingDiscardToPlay. The
+  // eligibleReturnCards list carries the chooser's own just-discarded card;
+  // per-entry display spread prevents aliasing with the input.
+  if (
+    uiState.pendingReturnOnDiscard !== undefined &&
+    audience.kind === 'player' &&
+    audience.playerId === uiState.pendingReturnOnDiscard.playerID
+  ) {
+    const eligibleReturnCardsCopy = [];
+    for (const entry of uiState.pendingReturnOnDiscard.eligibleReturnCards) {
+      eligibleReturnCardsCopy.push({
+        zone: entry.zone,
+        cardId: entry.cardId,
+        display: { ...entry.display },
+      });
+    }
+    result.pendingReturnOnDiscard = {
+      playerID: uiState.pendingReturnOnDiscard.playerID,
+      eligibleReturnCards: eligibleReturnCardsCopy,
+    };
+  }
+
   // why: WP-258 / D-12803 — hollowEffects is PUBLIC card/mechanic data, not
   // hidden info. The filter passes it through value-unchanged for EVERY
   // audience (own-player AND other-player AND spectator) — it redacts /

@@ -157,6 +157,21 @@ export const FACE_DOWN_EXECUTED_KEYWORDS: readonly HeroKeyword[] = ['undercover'
 // would break the HERO_EFFECT_HANDLERS-keys ↔ HANDLED_KEYWORDS bidirectional test).
 export const CLASS_GRANT_KEYWORDS: readonly HeroKeyword[] = ['size-changing'];
 
+// why: WP-498 / D-24301 — return-on-discard executes REACTIVELY at the discardFromHand
+// chokepoint (checkReturnOnDiscard parks a pending choice when a card effect discards the
+// marked card from hand), so — like wall-crawl / dodge / undercover / size-changing — it has
+// NO HERO_EFFECT_HANDLERS entry and is NOT in HANDLED_KEYWORDS. It still joins MVP_KEYWORDS
+// via this discard-time category for two load-bearing reasons: (a) the hero mechanic ledger
+// classifies an MVP_KEYWORDS member `executable`; (b) classifyHeroEffectReason returns
+// `applied` for it, so the onDiscard hook that executeHeroEffects visits at PLAY time (it does
+// not filter by timing) classifies not-hollow instead of firing a `no-handler` hollow —
+// without this membership the now-recognized keyword would trade the old parse-unrecognized
+// hollow for a fresh no-handler one (a regression). Kept a SEPARATE set from the
+// recruit-/hand-/face-down-/class-grant categories (duplicate-first per §16.1 — they execute
+// at different sites); NOT added to HANDLED_KEYWORDS (that demands a handler and would break
+// the HERO_EFFECT_HANDLERS-keys ↔ HANDLED_KEYWORDS bidirectional test).
+export const DISCARD_TIME_EXECUTED_KEYWORDS: readonly HeroKeyword[] = ['return-on-discard'];
+
 // why (WP-251 / D-24024; D-24049; D-24051; D-24060): MVP_KEYWORDS = HANDLED_KEYWORDS ∪ the
 // frozen-translated reveal keywords ∪ the recruit-time-executed keywords ∪ the
 // hand-action-executed keywords ∪ the face-down-action-executed keywords — the set of
@@ -173,6 +188,7 @@ export const MVP_KEYWORDS = new Set<string>([
   ...HAND_ACTION_EXECUTED_KEYWORDS,
   ...FACE_DOWN_EXECUTED_KEYWORDS,
   ...CLASS_GRANT_KEYWORDS,
+  ...DISCARD_TIME_EXECUTED_KEYWORDS,
 ]);
 
 // why: D-24019 — the reward of an optional-ko-reward effect is dispatched to an

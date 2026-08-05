@@ -10,7 +10,7 @@
 
 import type { RuleEffect } from './ruleHooks.types.js';
 import type { LegendaryGameState } from '../types.js';
-import { moveAllCards } from '../moves/zoneOps.js';
+import { discardFromHand } from '../moves/discardFromHand.js';
 import { drawCardsIntoHand } from '../moves/drawCards.logic.js';
 import { pushLog } from '../log/logPush.js';
 
@@ -100,9 +100,12 @@ function applyDiscardHand(
     return;
   }
 
-  const moveResult = moveAllCards(playerZones.hand, playerZones.discard);
-  playerZones.hand = moveResult.from;
-  playerZones.discard = moveResult.to;
+  // why: WP-498 / D-24301 — route each hand card through the single forced-discard
+  // chokepoint so a return-on-discard card discarded by this rule effect offers to
+  // return. Snapshot the hand first (discardFromHand mutates it in place).
+  for (const cardId of [...playerZones.hand]) {
+    discardFromHand(gameState, effect.playerId, cardId);
+  }
 }
 
 /**

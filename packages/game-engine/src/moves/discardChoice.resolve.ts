@@ -22,6 +22,7 @@ import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import { moveCardFromZone } from './zoneOps.js';
+import { discardFromHand } from './discardFromHand.js';
 import { pushLog } from '../log/logPush.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
@@ -108,9 +109,15 @@ export function resolveDiscardChoice({ G, playerID }: MoveContext, args: Resolve
     removedCards.push(cardId);
   }
 
-  // Step 4: Mutate — shorten the hand to the kept cards and append the discards
-  playerZones.hand = workingHand;
-  playerZones.discard = [...playerZones.discard, ...removedCards];
+  // Step 4: Mutate — discard each chosen card through the single forced-discard
+  // chokepoint (WP-498 / D-24301), which fires the return-on-discard reaction so
+  // a Cyclops Unending Energy discarded to a discard-to-limit strike offers to
+  // return. Step 3 already validated every id is present (exactly-to-limit), so
+  // each discardFromHand finds its card; duplicate ext_ids are fungible, so
+  // first-match removal per id consumes copies correctly.
+  for (const cardId of removedCards) {
+    discardFromHand(G, playerID, cardId);
+  }
 
   // Step 5: Narrate the resolved discard so the player sees the count they
   // discarded. `G.messages` is hash-excluded (D-24081), so this adds no

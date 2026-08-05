@@ -16,7 +16,7 @@
 
 import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState } from '../types.js';
-import { moveCardFromZone } from './zoneOps.js';
+import { discardFromHand } from './discardFromHand.js';
 import { drawCardsIntoHand } from './drawCards.logic.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
 import { hasPendingKoHeroChoice } from './koHeroChoice.resolve.js';
@@ -29,6 +29,7 @@ import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
 import { hasPendingReturnZeroCostDiscard } from './resolveReturnZeroCostDiscard.js';
 import { hasPendingDiscardToPlay } from './resolveDiscardToPlay.js';
+import { hasPendingReturnOnDiscard } from './resolveReturnOnDiscard.js';
 import { getHooksForCard } from '../rules/heroAbility.types.js';
 import { formatCardRef } from '../log/logDisplay.js';
 import { pushLog } from '../log/logPush.js';
@@ -93,6 +94,8 @@ export function dodgeCard({ G, ctx, ...context }: MoveContext, { cardId }: Dodge
   if (hasPendingReturnZeroCostDiscard(G)) return;
   // why: block-all — pendingDiscardToPlay must be resolved before any other action (WP-383 / D-24184)
   if (hasPendingDiscardToPlay(G)) return;
+  // why: block-all — pendingReturnOnDiscard must be resolved before any other action (WP-498 / D-24301)
+  if (hasPendingReturnOnDiscard(G)) return;
 
   // Step 3: Eligibility — the card must be in the current player's hand AND carry
   // a dodge hook (read-only, timing-agnostic). pid = ctx.currentPlayer matches the
@@ -117,10 +120,11 @@ export function dodgeCard({ G, ctx, ...context }: MoveContext, { cardId }: Dodge
   // dodged card is reshuffled and drawn straight back into hand (rule-correct).
   // "Ignore all the other text on that card" is automatic: the card is discarded,
   // never played, so its other abilities never fire.
-  const moveResult = moveCardFromZone(playerZones.hand, playerZones.discard, cardId);
-  if (!moveResult.found) return;
-  playerZones.hand = moveResult.from;
-  playerZones.discard = moveResult.to;
+  // why: WP-498 / D-24301 — route the Dodge discard through the single
+  // forced-discard chokepoint so a Dodge of a return-on-discard card fires the
+  // reaction. discardFromHand returns `found`; a not-found target early-returns
+  // BEFORE the reshuffle-then-draw (preserving the pre-chokepoint control flow).
+  if (!discardFromHand(G, pid, cardId)) return;
 
   // why: D-24051 — context (the move-context rest-spread) carries random.Shuffle for
   // the empty-deck reshuffle (the same idiom drawCards uses); ctx itself has no

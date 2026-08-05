@@ -702,6 +702,29 @@ export interface PendingReturnZeroCostDiscard {
 }
 
 /**
+ * Pending optional return-on-discard choice state (D-24301).
+ *
+ * Created when a card effect discards a hero card carrying the `return-on-discard`
+ * keyword (Cyclops Unending Energy) from a player's hand — the discardFromHand
+ * chokepoint's checkReturnOnDiscard reaction appends one entry to
+ * G.pendingReturnOnDiscard[] (FIFO). resolveReturnOnDiscard front-pops it after the
+ * player accepts (moving the card discard→hand) or declines. Must be undefined or
+ * empty at every turn-end (enforced by the block-all guards).
+ *
+ * // why: the printed text is "you MAY return this card to your hand" — an OPTIONAL,
+ * decline-shaped choice (unlike the mandatory PendingReturnZeroCostDiscard /
+ * PendingDiscardToPlay). The reaction fires at the chokepoint AFTER the card has
+ * already moved to the discard pile, so `cardId` is the exact discarded card that
+ * may be returned; discard contents are read fresh at resolve time.
+ */
+export interface PendingReturnOnDiscard {
+  /** The player who may return the discarded card to their hand. */
+  playerID: string;
+  /** The just-discarded hero card (now in the player's discard pile) that may return. */
+  cardId: CardExtId;
+}
+
+/**
  * Pending mandatory discard-to-play cost choice state (D-24184).
  *
  * Created when a card printed "To play this card, you must discard a card from
@@ -1046,6 +1069,18 @@ export interface LegendaryGameState {
   // in Game.setup**.
   /** FIFO queue of pending discard-to-play cost choices awaiting resolution (D-24184). */
   pendingDiscardToPlay?: PendingDiscardToPlay[] | undefined;
+
+  // why: WP-498 / D-24301 — a card effect that discards a `return-on-discard` hero
+  // card (Cyclops Unending Energy) from a player's hand parks one entry at the
+  // discardFromHand chokepoint (checkReturnOnDiscard). The choice is OPTIONAL ("you
+  // may return this card"); resolveReturnOnDiscard front-pops it on accept (card
+  // moves discard→hand) or decline (card stays in discard). Must be undefined or
+  // empty at every turn-end. Optional so existing test state literals do not need
+  // updating; **lazily initialized at the park site, never in Game.setup** — this
+  // is what keeps the empty-replay PRE_WP080_HASH / hashGameState oracles from
+  // re-pinning (canonical JSON omits an undefined field).
+  /** FIFO queue of pending optional return-on-discard choices awaiting resolution (D-24301). */
+  pendingReturnOnDiscard?: PendingReturnOnDiscard[] | undefined;
 
   // why: playerZones is keyed by player ID string (boardgame.io uses "0", "1",
   // etc.). Each player has exactly 5 zone arrays. Only deck is non-empty after

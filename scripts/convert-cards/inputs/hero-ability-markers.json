@@ -146,6 +146,12 @@
       "markupToken": "[keyword:discard-to-play:1]"
     },
     {
+      "heroSlug": "cyclops",
+      "cardSlug": "unending-energy",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:return-on-discard]"
+    },
+    {
       "heroSlug": "hulk",
       "cardSlug": "unstoppable-hulk",
       "abilityIndex": 0,

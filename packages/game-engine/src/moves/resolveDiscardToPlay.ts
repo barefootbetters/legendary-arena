@@ -25,6 +25,7 @@ import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import { getHooksForCard } from '../rules/heroAbility.types.js';
+import { discardFromHand } from './discardFromHand.js';
 import { formatCardRef } from '../log/logDisplay.js';
 import { pushLog } from '../log/logPush.js';
 
@@ -170,13 +171,12 @@ export function resolveDiscardToPlay(
     return;
   }
 
-  // Step 4: Move the card from hand to discard (remove exactly the found
-  // occurrence), log, decrement remaining, then front-pop when it hits 0.
-  playerZones.hand = [
-    ...playerZones.hand.slice(0, foundIndex),
-    ...playerZones.hand.slice(foundIndex + 1),
-  ];
-  playerZones.discard = [...playerZones.discard, targetCardId];
+  // Step 4: Move the card from hand to discard through the single forced-discard
+  // chokepoint (WP-498 / D-24301) — this fires the return-on-discard reaction so
+  // discarding Cyclops Unending Energy to pay this cost offers to return it. The
+  // card is guaranteed present (foundIndex !== -1 above), so the move always
+  // succeeds. Then log, decrement remaining, and front-pop when it hits 0.
+  discardFromHand(G, playerID, targetCardId);
   pushLog(G,
     `Player ${playerID} discarded ${formatCardRef(G.cardDisplayData, targetCardId)} from their hand to pay the cost of ${formatCardRef(G.cardDisplayData, front.sourceCardId)}.`,
   );

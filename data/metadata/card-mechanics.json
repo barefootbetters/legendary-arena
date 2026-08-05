@@ -1001,6 +1001,17 @@
       "hidden": false
     },
     {
+      "slug": "return-on-discard",
+      "label": "Return On Discard",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "core/cyclops"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "return-zero-cost-discard",
       "label": "Return Zero Cost Discard",
       "scope": "hero",
@@ -2307,7 +2318,8 @@
     },
     "core/cyclops": {
       "mechanics": [
-        "discard-to-play"
+        "discard-to-play",
+        "return-on-discard"
       ]
     },
     "core/deadpool": {

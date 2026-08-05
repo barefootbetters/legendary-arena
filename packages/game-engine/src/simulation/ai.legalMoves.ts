@@ -38,6 +38,10 @@ import {
   hasPendingDiscardToPlay,
   getEligibleDiscardToPlayCards,
 } from '../moves/resolveDiscardToPlay.js';
+import {
+  hasPendingReturnOnDiscard,
+  getEligibleReturnOnDiscardCards,
+} from '../moves/resolveReturnOnDiscard.js';
 import { hasPendingOptionalPutBottomHQ } from '../moves/resolveOptionalPutBottomHQ.js';
 import { hasPendingPutAnyNumberBottomHQ } from '../moves/resolvePutAnyNumberBottomHQ.js';
 
@@ -85,6 +89,10 @@ export const SIMULATION_MOVE_NAMES = [
   'resolveDrawOrEmpowered',
   'resolveReturnZeroCostDiscard',
   'resolveDiscardToPlay',
+  // why: WP-498 / D-24301 — getLegalMoves short-circuits to resolveReturnOnDiscard when the
+  // optional return-on-discard choice is parked; it MUST be dispatchable in the sim or the
+  // per-turn loop hangs (the WP-289 / D-24073 within-turn hang).
+  'resolveReturnOnDiscard',
   // why: WP-427 / D-24248 — getLegalMoves now short-circuits to these two put-bottom-HQ
   // resolve moves when their block-all choice is parked; they MUST be dispatchable in the
   // sim (both MOVE_MAPs) or the per-turn loop hangs (maxTurns bounds turns, not
@@ -218,6 +226,19 @@ export function getLegalMoves(
     }
     // why: defensive — if no eligible card (engine-invariant violation after park), fail closed.
     return legalMoves;
+  }
+
+  // why: pending return-on-discard short-circuit (WP-498 / D-24301) — while an OPTIONAL
+  // return-on-discard choice is pending the block-all guard freezes every other move, so
+  // the bot must resolve it first. Deterministic default: ACCEPT the return (strictly
+  // beneficial — a free card back in hand). Returns a list of length EXACTLY 1. If the
+  // returnable card is somehow gone, decline (a valid resolution that clears the queue).
+  if (hasPendingReturnOnDiscard(gameState)) {
+    const eligibleReturns = getEligibleReturnOnDiscardCards(gameState, activePlayer);
+    if (eligibleReturns.length > 0) {
+      return [{ name: 'resolveReturnOnDiscard', args: { cardId: eligibleReturns[0]! } }];
+    }
+    return [{ name: 'resolveReturnOnDiscard', args: { decline: true } }];
   }
 
   // why: pending draw-or-empowered short-circuit (D-24069) — while a draw-or-empowered

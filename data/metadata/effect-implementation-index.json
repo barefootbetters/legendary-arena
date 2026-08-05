@@ -3,13 +3,13 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1366,
+    "totalEntries": 1367,
     "byScope": {
-      "hero": 650,
+      "hero": 651,
       "villain": 716
     },
     "byStatus": {
-      "executable": 350,
+      "executable": 351,
       "deferred": 0,
       "condition": 5,
       "unsupported": 367,
@@ -5293,6 +5293,23 @@
         {
           "slug": "optic-blast",
           "name": "Optic Blast"
+        }
+      ]
+    },
+    {
+      "extId": "core/cyclops",
+      "name": "Cyclops",
+      "set": "core",
+      "scope": "hero",
+      "mechanic": "return-on-discard",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#return-on-discard",
+      "wp": "WP-498",
+      "decision": "D-24301",
+      "designs": [
+        {
+          "slug": "unending-energy",
+          "name": "Unending Energy"
         }
       ]
     },
@@ -22104,7 +22121,8 @@
     "core/cyclops": {
       "scope": "hero",
       "mechanics": [
-        "discard-to-play"
+        "discard-to-play",
+        "return-on-discard"
       ]
     },
     "core/deadpool": {

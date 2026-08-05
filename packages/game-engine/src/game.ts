@@ -17,6 +17,7 @@ import { resolveOptionalPutBottomHQ, hasPendingOptionalPutBottomHQ } from './mov
 import { resolvePutAnyNumberBottomHQ, hasPendingPutAnyNumberBottomHQ } from './moves/resolvePutAnyNumberBottomHQ.js';
 import { resolveReturnZeroCostDiscard, hasPendingReturnZeroCostDiscard } from './moves/resolveReturnZeroCostDiscard.js';
 import { resolveDiscardToPlay, hasPendingDiscardToPlay } from './moves/resolveDiscardToPlay.js';
+import { resolveReturnOnDiscard, hasPendingReturnOnDiscard } from './moves/resolveReturnOnDiscard.js';
 import { resolveVictoryPileCardPick, hasPendingVictoryPileCardPick } from './moves/resolveVictoryPileCardPick.js';
 import { resolveDrawOrEmpowered, hasPendingDrawOrEmpowered } from './moves/drawOrEmpowered.resolve.js';
 import { executeRuleHooks } from './rules/ruleRuntime.execute.js';
@@ -138,6 +139,8 @@ function advanceStage({ G, events }: MoveContext): void {
   if (hasPendingReturnZeroCostDiscard(G)) { return; }
   // why: block-all — pendingDiscardToPlay must be resolved before any other action (WP-383 / D-24184)
   if (hasPendingDiscardToPlay(G)) { return; }
+  // why: block-all — pendingReturnOnDiscard (optional return-a-discarded-card) must be resolved before any other action (WP-498 / D-24301)
+  if (hasPendingReturnOnDiscard(G)) { return; }
   // why: turn cannot end while a player-choice reveal is pending; at cleanup,
   // advanceTurnStage would otherwise call events.endTurn() and bypass the
   // endTurn-move guard (D-22002). The KO turn-end block is already covered by
@@ -464,6 +467,10 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     // (client: false) per D-10008 — it mutates playerZones fields.
     resolveReturnZeroCostDiscard: { move: resolveReturnZeroCostDiscard, client: false },
     resolveDiscardToPlay: { move: resolveDiscardToPlay, client: false },
+    // why: WP-498 / D-24301 — resolveReturnOnDiscard resolves the OPTIONAL
+    // return-a-discarded-card choice (Cyclops Unending Energy). Server-only
+    // (client: false) per D-10008 — it mutates playerZones fields.
+    resolveReturnOnDiscard: { move: resolveReturnOnDiscard, client: false },
   },
 
   // why: phase `next` fields declare the intended linear progression
