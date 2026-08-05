@@ -1,17 +1,26 @@
 {{- /*
-  why: Every ewiki page is operator-facing and synthesized from repo
-  sources, so an editor arriving on any page needs to know where the
-  editable source lives and how to publish a change. The mechanics are
-  identical site-wide, so they live in this one partial rather than being
-  hand-copied into each page's markdown (copy-pasted prose drifts — the
-  very failure this note prevents). Rendered at the foot of every single
-  page and collapsed by default via the native <details> element so it
-  never gates content and needs no JavaScript (ewiki is JS-free; the
-  Pagefind allow-list carve-out is D-24293 and does not apply here).
+  why: Every ewiki page is operator-facing and synthesized from repo sources,
+  so an editor arriving on any page needs to know — without hunting — where the
+  editable source lives, how to change it in the browser with no clone, what
+  fails the build, and how it deploys. The mechanics are identical site-wide, so
+  they live in this one partial rather than being hand-copied into each page's
+  markdown (copy-pasted prose drifts, and did: the first cut of this block
+  carried the wrong commit prefix and named the wrong deploy target on every
+  page — corrected here). Rendered at the foot of every single page and
+  collapsed by default via the native <details> element so it never gates
+  content and needs no JavaScript (ewiki is JS-free; the Pagefind allow-list
+  carve-out is D-24293 and does not apply here).
+
+  Commit-prefix convention (verified against git history): INFRA: is canonical
+  for ewiki page edits (wiki/*.md) and changelog/doc edits; SPEC: is only for a
+  page that IS a design/spec artifact — which, among mirror pages, is the
+  upstream REFERENCE workflow doc. Deploy target is Render (a static_site fired
+  by the wiki-viewer workflow's deploy hook), NOT Cloudflare Pages.
 */ -}}
 {{- $page := .page -}}
 {{- $name := $page.File.BaseFileName -}}
 {{- $blobBase := "https://github.com/barefootbetters/legendary-arena/blob/main" -}}
+{{- $editBase := "https://github.com/barefootbetters/legendary-arena/edit/main" -}}
 {{- $canonical := index $page.Params "canonical-source" -}}
 <details class="editing-this-page">
   <summary>Editing this page</summary>
@@ -20,42 +29,45 @@
       {{- /*
         why: changelog.md is the one page projected from docs/ rather than
         wiki/ (docs/09-CHANGELOG.md, D-24164). Editing the wiki copy is
-        silently discarded on the next build, so this page must point at
-        the upstream doc instead. Keep this branch in sync with the
-        docs-projected set in apps/wiki-viewer/scripts/project-wiki.mjs
-        should another docs-projected page ever be added.
+        silently discarded on the next build, so this page must point at the
+        upstream doc instead. Keep this branch in sync with the docs-projected
+        set in apps/wiki-viewer/scripts/project-wiki.mjs should another
+        docs-projected page ever be added.
       */ -}}
       <p>
         This page is <strong>auto-generated</strong> from
-        <a href="{{ $blobBase }}/docs/09-CHANGELOG.md"><code>docs/09-CHANGELOG.md</code></a>.
-        Editing the wiki copy is discarded on the next build — change the
-        upstream doc.
+        <a href="{{ $blobBase }}/docs/09-CHANGELOG.md"><code>docs/09-CHANGELOG.md</code></a>
+        — editing the wiki copy is discarded on the next build.
       </p>
-      <ol>
-        <li>Edit <code>docs/09-CHANGELOG.md</code>.</li>
-        <li>Commit with the <code>SPEC:</code> prefix and push to <code>main</code>.</li>
-      </ol>
+      <p>
+        <strong>Fast path:</strong>
+        <a href="{{ $editBase }}/docs/09-CHANGELOG.md">✏️ Edit <code>docs/09-CHANGELOG.md</code> on GitHub</a>.
+        Commit with the <code>INFRA:</code> prefix on a new branch, open a PR, and
+        merge when CI is green.
+      </p>
     {{- else if $canonical -}}
       {{- /*
         why: a mirror page synthesizes a single upstream doc that owns its
-        canonical prose (the canonical-source front-matter field). The
-        editable truth lives there, so this page directs the editor upstream
-        and back — distinct from the native variant below, which treats
-        wiki/<slug>.md as the source. Field spec: wiki/SCHEMA.md
-        §Front-Matter Format; decision D-24304.
+        canonical prose (the canonical-source front-matter field). The editable
+        truth lives there, so this page directs the editor upstream and back —
+        distinct from the native variant below, which treats wiki/<slug>.md as
+        the source. Field spec: wiki/SCHEMA.md §Front-Matter Format; decision
+        D-24304.
       */ -}}
       <p>
         This page synthesizes
         <a href="{{ $blobBase }}/{{ $canonical }}"><code>{{ $canonical }}</code></a>,
-        which owns the canonical prose. Edit that doc, then re-sync this page —
-        the other <strong>Sources</strong> entries are references it draws on,
-        not edit targets.
+        which owns the canonical prose — the other <strong>Sources</strong>
+        entries are references it draws on, not edit targets.
       </p>
-      <ol>
-        <li>Edit <code>{{ $canonical }}</code> (the canonical source).</li>
-        <li>Update <code>wiki/{{ $name }}.md</code> to match and bump <code>last-reviewed</code>.</li>
-        <li>Run <code>pnpm wiki-viewer:check-links</code>, commit with the <code>SPEC:</code> prefix, and push to <code>main</code>.</li>
-      </ol>
+      <p>
+        <strong>Fast path:</strong>
+        <a href="{{ $editBase }}/{{ $canonical }}">✏️ Edit the canonical doc on GitHub</a>
+        (commit <code>SPEC:</code>), then update this page to match —
+        <a href="{{ $editBase }}/wiki/{{ $name }}.md">edit <code>wiki/{{ $name }}.md</code></a>
+        (commit <code>INFRA:</code>) and bump <code>last-reviewed</code>. Branch → PR,
+        merge when green.
+      </p>
     {{- else -}}
       <p>
         The editable source for this page is
@@ -64,15 +76,34 @@
         section lists the repo files this page is built from — those are
         references it documents, not this page's editable copy.
       </p>
-      <ol>
-        <li>Edit <code>wiki/{{ $name }}.md</code>.</li>
-        <li>Run <code>pnpm wiki-viewer:check-links</code>.</li>
-        <li>Commit with the <code>SPEC:</code> prefix and push to <code>main</code>.</li>
-      </ol>
+      <p>
+        <strong>Fast path</strong> — fix this page in your browser, no clone:
+        <a href="{{ $editBase }}/wiki/{{ $name }}.md">✏️ Edit <code>wiki/{{ $name }}.md</code> on GitHub</a>.
+        Commit with the <code>INFRA:</code> prefix on a new branch, open a PR, and
+        merge when CI is green. (<code>main</code> is unprotected, but branch → PR
+        is the convention.)
+      </p>
     {{- end -}}
     <p>
-      Merging to <code>main</code> rebuilds and publishes ewiki via
-      Cloudflare Pages.
+      Bigger or multi-file change? Press <kbd>.</kbd> on the repo for
+      <a href="https://github.dev/barefootbetters/legendary-arena">github.dev</a>
+      (VS Code in the browser), or clone and run <code>pnpm wiki-viewer:dev</code>
+      (serves <code>localhost:1313</code> with live-reload) to preview before
+      publishing. Full contract:
+      <a href="/ewiki-authoring/">ewiki authoring</a> ·
+      <a href="/wiki-viewer/">Wiki Viewer</a> ·
+      <a href="/hugo-onboarding/">Hugo onboarding</a>.
+    </p>
+    <p>
+      <strong>The build is strict</strong> — no raw HTML, no shortcodes, and
+      internal links are case-sensitive (<code>scoring.md</code>, never
+      <code>Scoring.md</code>). A bad edit fails the build and never deploys; the
+      same gates run on your PR.
+    </p>
+    <p>
+      After merge, the <code>wiki-viewer</code> workflow runs the gates (~30s) and
+      fires the Render deploy hook; the Render static site rebuilds and the change
+      is live in a few minutes.
     </p>
   </div>
 </details>
