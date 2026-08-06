@@ -216,3 +216,29 @@ test('a rejected add renders the locked per-code error copy', async () => {
     /already pending/i,
   );
 });
+
+test('a rejected add renders the specific WP-355 abuse-control copy (not the generic banner)', async () => {
+  // why: before the mirror was extended, blocked / rate_limited /
+  // request_cooldown narrowed to null on the client and fell through to
+  // the generic banner; this asserts each now renders its own line.
+  const abuseCases = [
+    { code: 'blocked', status: 403, pattern: /blocked/i },
+    { code: 'rate_limited', status: 429, pattern: /too many requests/i },
+    { code: 'request_cooldown', status: 429, pattern: /recently declined/i },
+  ];
+  for (const abuseCase of abuseCases) {
+    const wrapper = await mountLoaded([], [], []);
+    routeHandler = (url) => {
+      if (url.endsWith('/api/me/friends/requests')) {
+        return { status: abuseCase.status, body: { error: abuseCase.code } };
+      }
+      return { status: 200, body: { friends: [], incoming: [], outgoing: [] } };
+    };
+    await wrapper.find('[data-testid="friends-add-input"]').setValue('bob');
+    await wrapper.find('[data-testid="friends-add-button"]').trigger('click');
+    await flushPromises();
+    const errorText = wrapper.find('[data-testid="friends-error"]').text();
+    assert.match(errorText, abuseCase.pattern);
+    assert.doesNotMatch(errorText, /something went wrong/i);
+  }
+});

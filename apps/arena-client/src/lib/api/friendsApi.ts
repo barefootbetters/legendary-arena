@@ -62,6 +62,11 @@ export const FRIEND_API_ERROR_CODES = [
   // so the client renders "No player with that Account ID." rather than the
   // generic banner. Kept in lockstep with the server union.
   'account_not_found',
+  // why: WP-355 (D-24147) — the three abuse-control send-guard codes,
+  // mirrored from the server union additively after the WP-351 eleven.
+  'blocked',
+  'rate_limited',
+  'request_cooldown',
 ] as const;
 
 /**
