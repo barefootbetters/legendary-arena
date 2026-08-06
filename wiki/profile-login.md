@@ -443,7 +443,7 @@ user to pick from is workable in principle, but:
   is already an owner-chosen, non-PII image, so "which `@jeff` — the one with the Hulk avatar?"
   is both usable and safe.
 
-**Matching a player by `@handle` OR AccountId (UUID) — forward-looking, not yet built.**
+**Matching a player by `@handle` OR AccountId (UUID) — SHIPPED for friend requests (WP-504 / D-24308).**
 Two addressing paths, mirroring WP-499's identity-agnostic join-by-match-ID:
 
 - **`@handle`** — the friendly discovery path (type it, search it). Requires uniqueness (above);
@@ -454,9 +454,31 @@ Two addressing paths, mirroring WP-499's identity-agnostic join-by-match-ID:
   capability** (exactly like WP-499's shareable match link), **not** an enumeration surface —
   you can only reach an account whose ID was deliberately shared with you. The AccountId is
   already surfaced on the owner profile for this purpose.
-- A future WP would let add-friend / invite accept **either** form — the human path plus the
-  unambiguous path — and use the UUID (or the avatar picker) as the disambiguation fallback if
-  two people ever genuinely collide in a shared display context.
+
+**What WP-504 built (the add-friend surface).** `POST /api/me/friends/requests` now accepts
+**exactly one** of `{ handle }` (unchanged) or `{ accountId }`. The add-friend input accepts an
+`@handle` **or** a pasted Account ID; a pure client `parsePlayerIdentifier` discriminates and sends
+the matching field. The `accountId` path is screened by a pure `isWellFormedAccountId` shape guard
+(a malformed id is rejected as `invalid_request` with **no** database round-trip), then resolved by
+`findPlayerByAccountId` — a well-formed-but-unknown id returns a new `account_not_found` (404),
+rendered as "No player with that Account ID." Supplying both fields, or neither, is `invalid_request`.
+A resolved target — by **either** path — funnels into the *same* abuse-control chain (block →
+cooldown → rate-limit) and `sendFriendRequest`, so the accountId path inherits every existing guard.
+
+**Why this doesn't weaken FR-2 (the load-bearing call, D-24308).** FR-2 is an **output-redaction**
+invariant — no friend/invite/block/profile *response* ever emits an `accountId`/`ext_id`/`player_id`.
+Accepting a *self-held* AccountId as request **input** emits no identifier and reveals nothing (the
+only way to hold another player's AccountId is if they shared their own), so it is entirely compatible
+with FR-2. The response redaction is unchanged and still asserted by a no-`accountId`-on-the-wire test.
+This is the same copy-paste-capability trust model as WP-499's join-by-match-ID.
+
+**Not on match-invites (deliberately).** The paired idea — accept a UUID when *inviting* someone to a
+match — was evaluated and **dropped as redundant**: match-invite creation is friend-gated
+(`createMatchInvite` returns `not_friends` for a non-friend), so a valid invite target is always
+*already* a friend addressable by `@handle`. The UUID path only earns its keep on the friend-**request**
+surface, where you are adding someone who is not yet a friend and whose handle you may not have. If a
+disambiguation fallback is ever wanted when two people collide in a shared display context, the UUID
+(or the avatar picker above) is the safe, non-identifying answer.
 
 ### A note that cost a day: no global body parser
 
