@@ -371,6 +371,7 @@ function parseParameterizedEffect(
  *   - `capture-hq-hero:rightmost` | `:highest-cost` | `:lowest-cost`
  *   - `reveal-or-wound:<kind>:<value>`  (kind `team` | `hc`; D-24281)
  *   - `draw-cards-current:<N>`  (N a positive integer; D-24290)
+ *   - `override-next-hand-size:<N>`  (N the absolute next-hand target; D-24307)
  *   - `ko-heroes-current-by-trait:<kind>:<value>`  (kind `team` | `hc`; D-24290)
  *   - `rescue-bystanders-current-by-trait-count:<kind>:<value>`  (D-24290)
  *   - `capture-bystander` | `capture-bystander:<N>`  (N a rescue count; D-24295)
@@ -510,6 +511,20 @@ function parseUngatedEffect(
       return null;
     }
     return { primitive: 'draw-cards-current', drawCount };
+  }
+  if (primitiveToken === 'override-next-hand-size') {
+    // why: D-24307 — grammar `override-next-hand-size:<N>` (exactly 2 tokens); N is
+    // the ABSOLUTE next-hand target size (Doctor Octopus villain Fight: 8), carried
+    // as `magnitude` (the same strict positive-integer grammar as `ko-hero:each:N`).
+    // A missing or non-positive-integer target falls through to null.
+    if (parts.length !== 2) {
+      return null;
+    }
+    const magnitude = parsePositiveInteger(parts[1]!);
+    if (magnitude === null) {
+      return null;
+    }
+    return { primitive: 'override-next-hand-size', magnitude };
   }
   if (primitiveToken === 'ko-heroes-current-by-trait') {
     // why: D-24290 — grammar `ko-heroes-current-by-trait:<kind>:<value>` (the

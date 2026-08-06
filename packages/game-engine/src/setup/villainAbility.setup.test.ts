@@ -991,6 +991,47 @@ describe('buildVillainAbilityHooks — dual-grammar equivalence (WP-252 / D-2402
   });
 });
 
+describe('buildVillainAbilityHooks — override-next-hand-size grammar (WP-503 / D-24307)', () => {
+  it('[effect:override-next-hand-size:<N>] parses a positive integer into magnitude; non-positive / wrong-token-count rejected', () => {
+    const registry = makeRegistry(
+      'core',
+      [
+        {
+          slug: 'ohs',
+          cards: [
+            { slug: 'eight', abilities: ['Fight: draw eight instead of six. [effect:override-next-hand-size:8]'] },
+            { slug: 'zero', abilities: ['Fight: x [effect:override-next-hand-size:0]'] },
+            { slug: 'noarg', abilities: ['Fight: x [effect:override-next-hand-size]'] },
+            { slug: 'nan', abilities: ['Fight: x [effect:override-next-hand-size:eight]'] },
+          ],
+        },
+      ],
+      [],
+    );
+    const hooks = buildVillainAbilityHooks(registry, makeConfig(['core/ohs'], []));
+    const effectsFor = (slug: string) =>
+      hooks.find((h) => h.cardId === `core-villain-ohs-${slug}-00`)!.effects;
+    const unresolvedFor = (slug: string) =>
+      hooks.find((h) => h.cardId === `core-villain-ohs-${slug}-00`)!.unresolvedMarkers;
+    assert.deepStrictEqual(effectsFor('eight'), [
+      { primitive: 'override-next-hand-size', magnitude: 8 },
+    ]);
+    // why: the token carries no legacy keyword (keyword-less, self-narrates).
+    assert.deepStrictEqual(
+      hooks.find((h) => h.cardId === 'core-villain-ohs-eight-00')!.keywords,
+      [],
+    );
+    // why: 0 is not a positive integer; a param-less form and a non-numeric form
+    // both fall through to null → surfaced as unresolved, never a silent descriptor.
+    assert.deepStrictEqual(effectsFor('zero'), []);
+    assert.deepStrictEqual(unresolvedFor('zero'), ['override-next-hand-size:0']);
+    assert.deepStrictEqual(effectsFor('noarg'), []);
+    assert.deepStrictEqual(unresolvedFor('noarg'), ['override-next-hand-size']);
+    assert.deepStrictEqual(effectsFor('nan'), []);
+    assert.deepStrictEqual(unresolvedFor('nan'), ['override-next-hand-size:eight']);
+  });
+});
+
 describe('buildVillainAbilityHooks — Tier-A auto-resolve grammars (WP-485 / D-24290)', () => {
   it('[effect:draw-cards-current:<N>] parses a positive integer; non-positive / wrong-token-count rejected', () => {
     const registry = makeRegistry(

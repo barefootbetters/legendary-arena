@@ -46,7 +46,7 @@ import {
 import { captureHeroFromHq } from '../board/heroCapture.logic.js';
 import type { CaptureHeroResult } from '../board/heroCapture.logic.js';
 import { moveCardFromZone } from '../moves/zoneOps.js';
-import { reshuffleDiscardIntoDeck, drawCardsIntoHand } from '../moves/drawCards.logic.js';
+import { reshuffleDiscardIntoDeck, drawCardsIntoHand, HAND_SIZE } from '../moves/drawCards.logic.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
 import { pushLog } from '../log/logPush.js';
 import {
@@ -1550,6 +1550,59 @@ function villainEffectDrawCardsCurrent(
   return { targets: [] };
 }
 
+/**
+ * override-next-hand-size primitive — set the current (defeating) player's next
+ * `onBegin` hand-fill target to the descriptor `magnitude` (the core spider-foes
+ * Doctor Octopus villain Fight: "draw eight cards instead of six", D-24307 /
+ * WP-503).
+ *
+ * Writes the WP-497-owned shared `G.handSizeOverrides[currentPlayer]`; the
+ * play-phase `onBegin` fill (game.ts) consumes and clears it on the fighting
+ * player's next turn. This handler adds NO new `G` field and NO second
+ * consumption point (WP-497 owns both).
+ *
+ * Self-narrates via `pushLog`: like `draw-cards-current`, override-next-hand-size
+ * is keyword-less (`descriptorToLegacyKeyword` returns undefined), so the executor
+ * records no `VillainEffectResult` and the generic `<timing> effect:` line never
+ * fires — this push is the user-visible surface. Returns `{ targets: [] }` (the
+ * override touches no card).
+ */
+function villainEffectOverrideNextHandSize(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  _cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  const targetHandSize = descriptor.magnitude;
+  // why: EC-538 — a malformed hook lacking `magnitude` (reachable only via a
+  // hand-built test hook — the parser always sets it) no-ops rather than writing an
+  // undefined override, which the WP-497 `onBegin` fill would then read as `??
+  // HAND_SIZE` (a silent wrong fill). Guard it here.
+  if (targetHandSize === undefined) {
+    return { targets: [] };
+  }
+  // why: D-24307 — the villain-side WRITER of the WP-497-owned field. Lazy-init the
+  // container with WP-497's exact idiom (never seeded in buildInitialGameState);
+  // WP-497's game.ts `onBegin` reads `handSizeOverrides[player] ?? HAND_SIZE` and
+  // deletes the entry after one fill. NO new `G` field, NO second consumption site.
+  if (G.handSizeOverrides === undefined) {
+    G.handSizeOverrides = {};
+  }
+  G.handSizeOverrides[currentPlayer] = targetHandSize;
+  // why: self-narrate (keyword-less; the D-24266 unmarked-ability breadcrumb is
+  // removed by marking the card). `G.messages` is hash-excluded (D-24081), so this
+  // adds no replay surface. The label is derived from the fired timing (Doc Ock is
+  // Fight-timed) for correctness at any fire site.
+  const label = villainEffectTimingLabel(timing);
+  pushLog(
+    G,
+    `${label} effect: your next hand draws ${String(targetHandSize)} cards instead of ${String(HAND_SIZE)}.`,
+    'applied',
+  );
+  return { targets: [] };
+}
+
 // why: D-24296 — the basic S.H.I.E.L.D. cards (starting Agents + Troopers, and the
 // recruited S.H.I.E.L.D. Officer) ARE team S.H.I.E.L.D. physically, so the Destroyer
 // "KO all your [team:shield] Heroes" is meant to wipe them — but they are synthetic
@@ -1852,7 +1905,7 @@ function villainEffectGainWoundUnlessVictoryVillainGroup(
 }
 
 // why: D-24023 — the ImplementationMap keyed by primitive (mirrors WP-251's
-// HERO_EFFECT_HANDLERS). Full Record over the 13 primitives; the drift test
+// HERO_EFFECT_HANDLERS). Full Record over the 14 primitives; the drift test
 // asserts the key set equals VILLAIN_EFFECT_PRIMITIVES. Replaces the former
 // 10-arm switch on VillainEffectKeyword. `scry-ko-own-deck` appended by WP-447
 // (D-24267); `gain-attached-hero` (no-op) appended by WP-450 (D-24270);
@@ -1862,6 +1915,9 @@ function villainEffectGainWoundUnlessVictoryVillainGroup(
 // `rescue-bystanders-current-by-trait-count` (auto-resolve) appended by WP-485
 // (D-24290); `gain-wound-unless-victory-villain-group` (auto-resolve, conditional
 // each-player wound on a Victory-Pile group predicate) appended by WP-494 (D-24299).
+// `override-next-hand-size` (auto-resolve — writes the WP-497 `handSizeOverrides`
+// field) appended by WP-503 (D-24307 — the core spider-foes Doctor Octopus villain
+// Fight: draw 8 next hand instead of 6).
 /** Villain effect handlers keyed by primitive. Single dispatch source. */
 const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandler> = {
   'ko-hero': villainEffectKoHero,
@@ -1877,6 +1933,7 @@ const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandl
   'ko-heroes-current-by-trait': villainEffectKoHeroesCurrentByTrait,
   'rescue-bystanders-current-by-trait-count': villainEffectRescueBystandersCurrentByTraitCount,
   'gain-wound-unless-victory-villain-group': villainEffectGainWoundUnlessVictoryVillainGroup,
+  'override-next-hand-size': villainEffectOverrideNextHandSize,
 };
 
 /**

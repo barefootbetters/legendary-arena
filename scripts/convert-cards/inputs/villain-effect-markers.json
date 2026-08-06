@@ -116,6 +116,7 @@
         "super-skrull": { "fight": ["koHeroEachPlayer"] }
       },
       "spider-foes": {
+        "doctor-octopus": { "fight": ["override-next-hand-size:8"] },
         "green-goblin": { "ambush": ["captureBystander"] },
         "the-lizard": { "fight": ["gain-wound:each-other@sewers"] },
         "venom": { "escape": ["gainWoundEachPlayer"] }

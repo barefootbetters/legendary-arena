@@ -155,7 +155,7 @@ core-villain-masters-of-evil-baron-zemo,Baron Zemo,core,villain,rescue-bystander
 core-villain-brotherhood-blob,Blob,core,villain,(unmarked),unmarked,,,
 core-villain-enemies-of-asgard-destroyer,Destroyer,core,villain,ko-heroes-current-by-trait,executable,WP-485,D-24290,packages/game-engine/src/villain/villainEffects.execute.ts#ko-heroes-current-by-trait
 core-villain-enemies-of-asgard-destroyer,Destroyer,core,villain,koHeroEachPlayerMag2,executable,WP-202,D-20201,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
-core-villain-spider-foes-doctor-octopus,Doctor Octopus,core,villain,(unmarked),unmarked,,,
+core-villain-spider-foes-doctor-octopus,Doctor Octopus,core,villain,override-next-hand-size,executable,WP-503,D-24307,packages/game-engine/src/villain/villainEffects.execute.ts#override-next-hand-size
 henchman-doombot-legion,Doombot Legion,core,henchman,scry-ko-own-deck,executable,WP-447,D-24267,packages/game-engine/src/villain/villainEffects.execute.ts#scry-ko-own-deck
 core-villain-enemies-of-asgard-enchantress,Enchantress,core,villain,draw-cards-current,executable,WP-485,D-24290,packages/game-engine/src/villain/villainEffects.execute.ts#draw-cards-current
 core-villain-hydra-endless-armies-of-hydra,Endless Armies of HYDRA,core,villain,(unmarked),unmarked,,,

@@ -7,6 +7,32 @@
 
 ## Current State
 
+### WP-503 — Doctor Octopus (Villain) Fight: Draw 8 Instead of 6 Next Hand — DONE (2026-08-05)
+
+The core spider-foes **Doctor Octopus** villain Fight ("draw eight cards instead of six") was a live
+`no-handler` hollow (Magneto match `zdcAitTRmIY`, log 17.2.17). This implements it as the villain-side
+sibling of WP-497's mastermind-tactic Octet — same effect + shared field, different subsystem.
+
+- **New primitive `override-next-hand-size`** (`VILLAIN_EFFECT_PRIMITIVES` 13→14, append-only per
+  D-24034). Marker `[effect:override-next-hand-size:<N>]`; `<N>` (8) is the absolute next-hand
+  target, carried on `magnitude`. Dedicated parser arm (mirrors `draw-cards-current`) + the
+  apply-effect-markers.mjs local validator/grammar synced in lockstep.
+- **Handler `villainEffectOverrideNextHandSize`** sets `G.handSizeOverrides[currentPlayer] = magnitude`
+  (lazy-init, WP-497's exact idiom) and self-narrates (keyword-less). **Reuses WP-497's field +
+  `onBegin` consumption verbatim** — NO new `G` field, NO second consumption site (grep-verified: one
+  declaration, one consumption, two disjoint writers — the WP-497 tactic resolver + this handler).
+- **Magneto composition (AC-5): orthogonal, no shared merge point.** The override governs the
+  play-phase `onBegin` fill; Magneto's `MAGNETO_HAND_SIZE_LIMIT` is a Master-Strike-time discard-to-4
+  park. A test asserts independence via the real `discard-to-limit` resolve move (the override
+  survives the trim; the write never touches the park).
+- `core/spider-foes/doctor-octopus` flips unmarked → **executable** in the villain ledger +
+  effect-index with `{ WP-503, D-24307 }` provenance; the co2e/other-set twins stay deferred.
+- **Determinism:** no `ctx.random`; no committed fixture includes or fights the spider-foes Doc Ock →
+  **no re-pin** (sentinel `finalStateHash` + `PRE_WP080_HASH` byte-identical).
+- **Verified:** game-engine **2342/0**; `ledger:villains:check` + `effect-index:check` +
+  `sim:runtime-observed:check` + `roadmap:counts:check` 0; `pnpm -r build` 0. Lands **D-24307**
+  (Active). **D-24026 live-verify operator-pending** (fight Doc Ock, end the turn, next hand is 8).
+
 ### WP-497 — Mastermind Tactic onFight Execution Framework + Doc Ock "Octet of Valence Electrons" — DONE (2026-08-05)
 
 First WP of the Mastermind-Tactic-Fight arc. Defeating a Mastermind tactic fired **none** of its

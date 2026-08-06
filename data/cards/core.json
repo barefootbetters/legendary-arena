@@ -2307,7 +2307,7 @@
           "vAttack": "4",
           "imageUrl": "https://images.legendary-arena.com/core/core-vi-spider-foes-doctor-octopus.webp",
           "abilities": [
-            "Fight: When you draw a new hand of cards at the end of this turn, draw eight cards instead of six."
+            "Fight: When you draw a new hand of cards at the end of this turn, draw eight cards instead of six. [effect:override-next-hand-size:8]"
           ],
           "copies": 2
         },
