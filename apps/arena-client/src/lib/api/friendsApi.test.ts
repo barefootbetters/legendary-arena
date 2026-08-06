@@ -114,7 +114,7 @@ test('fetchFriendRequests returns both lists on 200', async () => {
 test('sendFriendRequest posts {handle} and returns the FriendSummary on 201', async () => {
   const stub = installFetchStub(201, sampleFriend({ handle: 'bob', status: 'pending' }));
   try {
-    const result = await sendFriendRequest('t', 'bob');
+    const result = await sendFriendRequest('t', { handle: 'bob' });
     assert.ok(result.ok === true);
     assert.equal(result.value.handle, 'bob');
     const [call] = stub.calls;
@@ -127,10 +127,29 @@ test('sendFriendRequest posts {handle} and returns the FriendSummary on 201', as
   }
 });
 
+test('sendFriendRequest posts {accountId} when given an accountId target', async () => {
+  const stub = installFetchStub(201, sampleFriend({ handle: 'bob', status: 'pending' }));
+  try {
+    const result = await sendFriendRequest('t', {
+      accountId: '4f2219e4-1c3b-4a5d-8e6f-0a1b2c3d4e5f',
+    });
+    assert.ok(result.ok === true);
+    const [call] = stub.calls;
+    assert.ok(call);
+    assert.equal(call.init.method, 'POST');
+    // The body carries the accountId field, never a handle.
+    assert.deepEqual(JSON.parse(String(call.init.body)), {
+      accountId: '4f2219e4-1c3b-4a5d-8e6f-0a1b2c3d4e5f',
+    });
+  } finally {
+    stub.restore();
+  }
+});
+
 test('sendFriendRequest maps a 409 body.error to the typed code', async () => {
   const stub = installFetchStub(409, { error: 'already_pending' });
   try {
-    const result = await sendFriendRequest('t', 'bob');
+    const result = await sendFriendRequest('t', { handle: 'bob' });
     assert.ok(result.ok === false);
     assert.equal(result.status, 409);
     assert.equal(result.code, 'already_pending');
@@ -139,10 +158,24 @@ test('sendFriendRequest maps a 409 body.error to the typed code', async () => {
   }
 });
 
+test('sendFriendRequest maps a 404 account_not_found to the typed code', async () => {
+  const stub = installFetchStub(404, { error: 'account_not_found' });
+  try {
+    const result = await sendFriendRequest('t', {
+      accountId: '4f2219e4-1c3b-4a5d-8e6f-0a1b2c3d4e5f',
+    });
+    assert.ok(result.ok === false);
+    assert.equal(result.status, 404);
+    assert.equal(result.code, 'account_not_found');
+  } finally {
+    stub.restore();
+  }
+});
+
 test('sendFriendRequest maps an unrecognized body.error to null code', async () => {
   const stub = installFetchStub(400, { error: 'totally_unknown' });
   try {
-    const result = await sendFriendRequest('t', 'bob');
+    const result = await sendFriendRequest('t', { handle: 'bob' });
     assert.ok(result.ok === false);
     assert.equal(result.code, null);
   } finally {
@@ -210,7 +243,7 @@ test('a network throw yields { ok:false, status:0, code:null } on every wrapper'
   try {
     assert.deepEqual(await fetchFriends('t'), { ok: false, status: 0, code: null });
     assert.deepEqual(await fetchFriendRequests('t'), { ok: false, status: 0, code: null });
-    assert.deepEqual(await sendFriendRequest('t', 'x'), { ok: false, status: 0, code: null });
+    assert.deepEqual(await sendFriendRequest('t', { handle: 'x' }), { ok: false, status: 0, code: null });
     assert.deepEqual(await acceptFriendRequest('t', 'x'), { ok: false, status: 0, code: null });
     assert.deepEqual(await declineFriendRequest('t', 'x'), { ok: false, status: 0, code: null });
     assert.deepEqual(await removeFriend('t', 'x'), { ok: false, status: 0, code: null });
@@ -248,6 +281,7 @@ test('FRIEND_API_ERROR_CODES mirrors the WP-351 server union exactly (drift guar
     'invalid_request',
     'handle_required',
     'handle_not_found',
+    'account_not_found',
   ];
   assert.equal(FRIEND_API_ERROR_CODES.length, expectedServerUnion.length);
   assert.equal(new Set(FRIEND_API_ERROR_CODES).size, expectedServerUnion.length);

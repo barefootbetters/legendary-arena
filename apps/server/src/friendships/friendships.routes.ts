@@ -50,6 +50,7 @@ import type {
   FriendshipStatus,
   FriendshipView,
 } from './friendships.types.js';
+import type { PlayerAccount } from '../identity/identity.types.js';
 import {
   sendFriendRequest,
   acceptFriendRequest,
@@ -60,6 +61,15 @@ import {
   listOutgoingRequests,
 } from './friendships.logic.js';
 import { findAccountByHandle, getHandleForAccount } from '../identity/handle.logic.js';
+// why: WP-504 — the add-friend route now also accepts a target by AccountId.
+// `isWellFormedAccountId` screens malformed UUIDs before a DB round-trip and
+// `findPlayerByAccountId` resolves the AccountId to a PlayerAccount (the twin
+// of `findAccountByHandle` for the handle path). Same server layer; no new
+// cross-layer import.
+import {
+  findPlayerByAccountId,
+  isWellFormedAccountId,
+} from '../identity/identity.logic.js';
 import {
   notifyFriendRequestReceived,
   notifyFriendRequestAccepted,
@@ -161,6 +171,10 @@ export type FriendApiErrorCode =
   | 'invalid_request'
   | 'handle_required'
   | 'handle_not_found'
+  // why: WP-504 (D-24308) — a well-formed but unknown AccountId on the
+  // add-by-AccountId path is a not-found, distinct from invalid_request
+  // (malformed) and handle_not_found (the handle path). Maps to 404.
+  | 'account_not_found'
   // why: WP-355 (D-24147) — the three abuse-control send-guard codes,
   // added additively to WP-351's union (the six existing endpoint shapes
   // are otherwise byte-identical).
@@ -185,6 +199,7 @@ export const FRIEND_API_ERROR_CODES: readonly FriendApiErrorCode[] = [
   'invalid_request',
   'handle_required',
   'handle_not_found',
+  'account_not_found',
   'blocked',
   'rate_limited',
   'request_cooldown',
@@ -237,6 +252,7 @@ function statusForFriendApiErrorCode(code: FriendApiErrorCode): number {
   }
   if (
     code === 'handle_not_found' ||
+    code === 'account_not_found' ||
     code === 'no_pending_request' ||
     code === 'not_friends'
   ) {
@@ -444,16 +460,58 @@ export function registerFriendshipRoutes(
           ? (rawBody as Record<string, unknown>)
           : {};
       const handleValue = body.handle;
-      if (typeof handleValue !== 'string' || handleValue.trim().length === 0) {
+      const accountIdValue = body.accountId;
+      const hasHandle =
+        typeof handleValue === 'string' && handleValue.trim().length > 0;
+      const hasAccountId =
+        typeof accountIdValue === 'string' &&
+        accountIdValue.trim().length > 0;
+      // why: exactly one identifier is accepted — supplying both is
+      // ambiguous and supplying neither is empty; either case is a 400
+      // invalid_request before any target resolution.
+      if (hasHandle === hasAccountId) {
         koaContext.status = statusForFriendApiErrorCode('invalid_request');
         koaContext.body = { error: 'invalid_request' };
         return;
       }
-      const targetAccount = await findAccountByHandle(handleValue, database);
-      if (targetAccount === null) {
-        koaContext.status = statusForFriendApiErrorCode('handle_not_found');
-        koaContext.body = { error: 'handle_not_found' };
-        return;
+
+      // Resolve the target by whichever identifier was supplied. Both
+      // resolvers return a PlayerAccount; from here the two paths are
+      // identical — the resolved targetAccount funnels into the unchanged
+      // WP-355 block/cooldown/rate-limit chain and sendFriendRequest.
+      let targetAccount: PlayerAccount;
+      if (hasHandle === true) {
+        const resolvedByHandle = await findAccountByHandle(
+          handleValue as string,
+          database,
+        );
+        if (resolvedByHandle === null) {
+          koaContext.status = statusForFriendApiErrorCode('handle_not_found');
+          koaContext.body = { error: 'handle_not_found' };
+          return;
+        }
+        targetAccount = resolvedByHandle;
+      } else {
+        // why: reject a malformed AccountId as invalid_request without a DB
+        // round-trip — findPlayerByAccountId is the authority on existence,
+        // not this shape guard.
+        if (isWellFormedAccountId(accountIdValue as string) === false) {
+          koaContext.status = statusForFriendApiErrorCode('invalid_request');
+          koaContext.body = { error: 'invalid_request' };
+          return;
+        }
+        const resolvedByAccountId = await findPlayerByAccountId(
+          accountIdValue as AccountId,
+          database,
+        );
+        // why: a well-formed but unknown AccountId is a not-found the client
+        // renders as inline copy — distinct from invalid_request (malformed).
+        if (resolvedByAccountId === null) {
+          koaContext.status = statusForFriendApiErrorCode('account_not_found');
+          koaContext.body = { error: 'account_not_found' };
+          return;
+        }
+        targetAccount = resolvedByAccountId;
       }
 
       // why: WP-355 (D-24147) — the three abuse-control guards, in the

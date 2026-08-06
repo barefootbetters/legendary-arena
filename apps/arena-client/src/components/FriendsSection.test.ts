@@ -144,6 +144,43 @@ test('Add friend POSTs the typed handle (leading @ stripped) and clears the box'
   assert.equal(input.value, '');
 });
 
+test('pasting an Account ID POSTs {accountId} not {handle}', async () => {
+  const wrapper = await mountLoaded([], [], []);
+  await wrapper
+    .find('[data-testid="friends-add-input"]')
+    .setValue('4f2219e4-1c3b-4a5d-8e6f-0a1b2c3d4e5f');
+  await wrapper.find('[data-testid="friends-add-button"]').trigger('click');
+  await flushPromises();
+  const post = capturedCalls.find(
+    (call) => call.method === 'POST' && call.url.endsWith('/api/me/friends/requests'),
+  );
+  assert.ok(post, 'a POST to /api/me/friends/requests fired');
+  assert.deepEqual(post.body, {
+    accountId: '4f2219e4-1c3b-4a5d-8e6f-0a1b2c3d4e5f',
+  });
+});
+
+test('an unknown Account ID renders the account-not-found copy', async () => {
+  const wrapper = await mountLoaded([], [], []);
+  // Next send fails with account_not_found (a well-formed but unknown UUID).
+  routeHandler = (url) => {
+    if (url.endsWith('/api/me/friends/requests')) {
+      return { status: 404, body: { error: 'account_not_found' } };
+    }
+    return { status: 200, body: { friends: [], incoming: [], outgoing: [] } };
+  };
+  await wrapper
+    .find('[data-testid="friends-add-input"]')
+    .setValue('4f2219e4-1c3b-4a5d-8e6f-0a1b2c3d4e5f');
+  await wrapper.find('[data-testid="friends-add-button"]').trigger('click');
+  await flushPromises();
+  assert.equal(wrapper.find('[data-testid="friends-error"]').exists(), true);
+  assert.match(
+    wrapper.find('[data-testid="friends-error"]').text(),
+    /No player with that Account ID\./,
+  );
+});
+
 test('Accept / Decline / Remove fire the matching endpoint', async () => {
   const wrapper = await mountLoaded(
     [friend({ handle: 'buddy' })],

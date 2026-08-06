@@ -26,6 +26,7 @@ import {
   createGuestIdentity,
   createPlayerAccount,
   findPlayerByEmail,
+  isWellFormedAccountId,
 } from './identity.logic.js';
 
 import { assignReplayOwnership } from './replayOwnership.logic.js';
@@ -263,6 +264,37 @@ describe('identity logic (WP-052)', () => {
         );
       }
     }
+  });
+
+  test('isWellFormedAccountId accepts a canonical UUID (any case) and rejects malformed input', () => {
+    assert.equal(
+      isWellFormedAccountId('4f2219e4-1c3b-4a5d-8e6f-0a1b2c3d4e5f'),
+      true,
+    );
+    // Upper-case hex is accepted — the guard is case-insensitive.
+    assert.equal(
+      isWellFormedAccountId('4F2219E4-1C3B-4A5D-8E6F-0A1B2C3D4E5F'),
+      true,
+    );
+    // Shape guard, NOT v4-only: any version / variant nibble passes.
+    assert.equal(
+      isWellFormedAccountId('00000000-0000-0000-0000-000000000000'),
+      true,
+    );
+    assert.equal(isWellFormedAccountId(''), false);
+    assert.equal(isWellFormedAccountId('nova'), false);
+    // Too short (missing the final group).
+    assert.equal(isWellFormedAccountId('4f2219e4-1c3b-4a5d-8e6f'), false);
+    // Too long (an extra hex digit in the final group).
+    assert.equal(
+      isWellFormedAccountId('4f2219e4-1c3b-4a5d-8e6f-0a1b2c3d4e5f0'),
+      false,
+    );
+    // Non-hex character in the first group.
+    assert.equal(
+      isWellFormedAccountId('gggggggg-1c3b-4a5d-8e6f-0a1b2c3d4e5f'),
+      false,
+    );
   });
 
   test(

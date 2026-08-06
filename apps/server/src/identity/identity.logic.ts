@@ -255,6 +255,23 @@ export async function findPlayerByAccountId(
 }
 
 /**
+ * Return `true` when `value` is a well-formed UUID in the canonical
+ * `8-4-4-4-12` hexadecimal layout (case-insensitive). This is a cheap
+ * SHAPE guard, not a version check and not an existence check: it lets a
+ * caller reject obvious garbage before a database round-trip, while
+ * `findPlayerByAccountId` remains the sole authority on whether the
+ * `AccountId` actually exists. Pure — no I/O.
+ */
+export function isWellFormedAccountId(value: string): boolean {
+  // why: general UUID shape (any version / variant nibble), matched
+  // case-insensitively — the DB lookup is the authority on existence, so
+  // this guard only screens malformed input to avoid a pointless query.
+  const uuidShape =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidShape.test(value);
+}
+
+/**
  * Construct an ephemeral `GuestIdentity`. Pure function: no DB
  * access, no I/O. The `guestSessionId` is a UUID v4 from
  * `idProvider` (defaulting to `randomUUID`). Guests do not have
