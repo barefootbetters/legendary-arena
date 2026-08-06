@@ -931,6 +931,18 @@ export interface LegendaryGameState {
   /** Count of hero effects that fired for the most recent play this turn (observability only). */
   lastPlayEffectsFired?: number;
 
+  // why: WP-497 / D-24300 — per-player next-`onBegin` hand-fill override, keyed by
+  // PlayerID; value = that player's next fill target (e.g. 8 for Doc Ock's "Octet
+  // of Valence Electrons" tactic). Written only by a tactic resolver
+  // (rules/tacticHandlers.ts); read-and-deleted only at the play-phase `onBegin`
+  // fill for the keyed player. It is gameplay-affecting so it MUST be hashed (not
+  // excluded like lastPlayEffectsFired), but — following that same hygiene pattern
+  // — it is **lazily created**, NEVER seeded in buildInitialGameState: an untriggered
+  // game leaves it undefined, so canonical JSON omits it and every committed
+  // replay/sentinel oracle stays byte-identical (no re-pin). Absent = no override.
+  /** Per-player next-`onBegin` hand-fill override (lazy; WP-497 / D-24300). */
+  handSizeOverrides?: Record<string, number>;
+
   // why: pending player-choice state set by reveal-attack-choose executor (D-22001).
   // Must be undefined at every turn-end. Optional so existing test state literals
   // do not need updating. Absent (undefined) = no pending choice.

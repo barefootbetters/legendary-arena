@@ -648,8 +648,18 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
           // a subsequent drawCards submission is a guarded no-op.
           const activePlayerZones = G.playerZones[ctx.currentPlayer];
           if (activePlayerZones) {
-            const cardsToDraw = Math.max(0, HAND_SIZE - activePlayerZones.hand.length);
+            // why: WP-497 / D-24300 — a tactic Fight resolver (Doc Ock's "Octet of
+            // Valence Electrons") may have recorded a per-player next-hand override;
+            // fill to it instead of HAND_SIZE, then CONSUME it (delete the entry) so
+            // it raises exactly this one fill and no later turn. "Draw a new hand
+            // this turn" (tabletop) ≡ this player's next onBegin fill (there is no
+            // end-of-turn cleanup draw here). Absent override → the default HAND_SIZE.
+            const fillTarget = G.handSizeOverrides?.[ctx.currentPlayer] ?? HAND_SIZE;
+            const cardsToDraw = Math.max(0, fillTarget - activePlayerZones.hand.length);
             drawCardsIntoHand(activePlayerZones, cardsToDraw, { random });
+            if (G.handSizeOverrides?.[ctx.currentPlayer] !== undefined) {
+              delete G.handSizeOverrides[ctx.currentPlayer];
+            }
             G.hasDrawnThisTurn = true;
           }
 

@@ -11,7 +11,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { fightMastermind } from './fightMastermind.js';
+import { fightMastermind, defeatMastermindTacticCore } from './fightMastermind.js';
 import { mastermindStrikeHandler } from '../rules/mastermindHandlers.js';
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
@@ -531,5 +531,46 @@ describe('fightMastermind — integration: Master Strike capture then per-fight 
       1,
       'the vanquish event reports the single bystander rescued on the final fight',
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-497 / D-24300 — tactic onFight dispatch (Doc Ock "Octet of Valence Electrons")
+// ---------------------------------------------------------------------------
+
+const OCTET_TACTIC_ID =
+  'co2e-mastermind-doctor-octopus-octet-of-valence-electrons' as CardExtId;
+
+describe('defeatMastermindTacticCore — tactic onFight dispatch (WP-497 / D-24300)', () => {
+  it('AC-1: defeating the Octet tactic sets the defeating player next-hand override to 8', () => {
+    const gameState = createMockGameState({
+      mastermind: {
+        id: 'co2e/doctor-octopus' as CardExtId,
+        baseCardId: 'co2e-mastermind-doctor-octopus-doctor-octopus' as CardExtId,
+        tacticsDeck: [OCTET_TACTIC_ID, 'tactic-2' as CardExtId],
+        tacticsDefeated: [] as CardExtId[],
+      },
+    });
+
+    defeatMastermindTacticCore(gameState, { currentPlayer: '0' });
+
+    assert.deepEqual(gameState.handSizeOverrides, { '0': 8 },
+      'defeating Octet records the +8 next-hand override for the current player');
+  });
+
+  it('AC-5: defeating a non-Octet tactic leaves handSizeOverrides absent (silent no-op)', () => {
+    const gameState = createMockGameState({
+      mastermind: {
+        id: 'test-mastermind' as CardExtId,
+        baseCardId: 'test-mastermind-base' as CardExtId,
+        tacticsDeck: ['tactic-1', 'tactic-2', 'tactic-3'] as CardExtId[],
+        tacticsDefeated: [] as CardExtId[],
+      },
+    });
+
+    defeatMastermindTacticCore(gameState, { currentPlayer: '0' });
+
+    assert.equal(gameState.handSizeOverrides, undefined,
+      'an unimplemented tactic id fires no onFight effect (stays inert)');
   });
 });
