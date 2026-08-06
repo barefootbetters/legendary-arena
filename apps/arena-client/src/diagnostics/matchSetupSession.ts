@@ -28,6 +28,24 @@
 // any other sessionStorage use and makes them greppable in a browser inspector.
 const MATCH_SETUP_KEY_PREFIX = 'legendary-arena:match-setup:';
 
+// why: WP-502 (Play Again bot-ally fix) — a match created "with a bot ally" is a
+// co-op match whose non-human seats are server-driven bots (a different create
+// endpoint than a plain human match). Play Again must recreate it AS a bot-ally
+// match, so the bot parameters are stashed alongside the composition at create
+// time and read back when the player replays. Absent for a plain human match.
+const BOT_ALLY_SETUP_KEY_PREFIX = 'legendary-arena:bot-ally-setup:';
+
+/**
+ * The bot-ally parameters of a created match, stashed so Play Again can rebuild a
+ * co-op-with-bot match faithfully instead of relaunching a plain human match.
+ */
+export interface BotAllySetup {
+  /** How many seats the bot ally fills (the non-human seats). */
+  botCount: number;
+  /** Which driver policy drives the bot(s). */
+  policy: 'competent' | 'random';
+}
+
 /**
  * Returns the live `sessionStorage`, or `null` when it is unavailable.
  *
@@ -94,6 +112,63 @@ export function readMatchSetup(matchId: string | null): unknown {
   } catch (parseError) {
     // why: a corrupt entry resolves to null rather than throwing in the export
     // path — a malformed setup must not break the diagnostics download.
+    return null;
+  }
+}
+
+/**
+ * Persists the bot-ally parameters for a created bot-ally match (WP-502 Play
+ * Again fix). Called once at bot-ally match creation. A failure to persist is
+ * swallowed: the stash is a Play-Again convenience, never load-bearing for play.
+ *
+ * @param matchId The server-assigned match id the bot-ally setup belongs to.
+ * @param setup The bot count + policy used to create the match.
+ */
+export function persistBotAllySetup(matchId: string, setup: BotAllySetup): void {
+  const store = getSessionStorageSafely();
+  if (store === null || matchId === '') {
+    return;
+  }
+  try {
+    store.setItem(`${BOT_ALLY_SETUP_KEY_PREFIX}${matchId}`, JSON.stringify(setup));
+  } catch (persistError) {
+    // why: a quota or serialization failure must never block match creation —
+    // swallow it so the create flow continues unaffected.
+  }
+}
+
+/**
+ * Reads back the bot-ally parameters for a match, or `null` when none was stored
+ * (a plain human match, a joiner who did not create the match, or a cleared
+ * session). The presence of a value is the signal that Play Again must rebuild a
+ * bot-ally match rather than a plain human match.
+ *
+ * @param matchId The match id to read, or null when no match is active.
+ * @returns The parsed bot-ally setup, or null when absent / unreadable / malformed.
+ */
+export function readBotAllySetup(matchId: string | null): BotAllySetup | null {
+  const store = getSessionStorageSafely();
+  if (store === null || matchId === null || matchId === '') {
+    return null;
+  }
+  const raw = store.getItem(`${BOT_ALLY_SETUP_KEY_PREFIX}${matchId}`);
+  if (raw === null) {
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(raw) as Partial<BotAllySetup>;
+    // why: validate the shape — a corrupt or partial entry must not drive a bad
+    // create call. Only a well-formed { botCount, policy } switches Play Again to
+    // the bot-ally path; anything else falls back to the plain relaunch.
+    if (
+      typeof parsed.botCount === 'number' &&
+      parsed.botCount >= 1 &&
+      (parsed.policy === 'competent' || parsed.policy === 'random')
+    ) {
+      return { botCount: parsed.botCount, policy: parsed.policy };
+    }
+    return null;
+  } catch (parseError) {
     return null;
   }
 }

@@ -15,8 +15,12 @@
  * type-only from the engine and passed straight through — no field renames.
  */
 
-import { createMatch, joinMatch } from './lobbyApi';
-import { persistMatchSetup } from '../diagnostics/matchSetupSession';
+import { createMatch, createMatchWithBot, joinMatch } from './lobbyApi';
+import {
+  persistMatchSetup,
+  persistBotAllySetup,
+  type BotAllySetup,
+} from '../diagnostics/matchSetupSession';
 import type { MatchSetupConfig } from '@legendary-arena/game-engine';
 
 /**
@@ -83,5 +87,69 @@ export async function launchMatchFromComposition(
     const cause =
       launchError instanceof Error ? launchError.message : String(launchError);
     return { ok: false, message: `Failed to create and join the match. ${cause}` };
+  }
+}
+
+/**
+ * Fully-resolved inputs for a bot-ally create-and-join launch — the same as
+ * {@link LaunchMatchInput} plus the bot parameters (WP-502 Play Again fix).
+ */
+export interface LaunchBotAllyInput extends LaunchMatchInput {
+  /** How many of the seats the bot ally fills (1..playerCount-1). */
+  botCount: number;
+  /** Which driver policy drives the bot(s). */
+  policy: BotAllySetup['policy'];
+}
+
+/**
+ * Creates a bot-ally (co-op-with-bot) match from the given composition, stashes
+ * the input setup AND the bot-ally parameters (so a later Play Again rebuilds a
+ * bot-ally match again), joins the human into seat 0, and navigates to the play
+ * surface. The bot seats are joined + driven server-side by the create-with-bot
+ * endpoint — the human only ever joins seat 0. Returns a typed result and never
+ * throws (mirrors {@link launchMatchFromComposition}).
+ *
+ * @param input The resolved config, seat count, bot count, policy, name, token.
+ * @returns `{ ok: true, matchID }` on success, or `{ ok: false, message }`.
+ */
+export async function launchBotAllyFromComposition(
+  input: LaunchBotAllyInput,
+): Promise<LaunchMatchResult> {
+  try {
+    const created = await createMatchWithBot(
+      input.config,
+      input.playerCount,
+      input.botCount,
+      input.policy,
+      input.authToken,
+    );
+    // why: stash BOTH the composition (diagnostics + Play Again) and the bot-ally
+    // parameters, so a subsequent Play Again on THIS match also rebuilds a
+    // bot-ally match rather than falling back to a plain human match.
+    persistMatchSetup(created.matchId, input.config);
+    persistBotAllySetup(created.matchId, {
+      botCount: input.botCount,
+      policy: input.policy,
+    });
+    // why: the human always joins their OWN seat 0 via the authed join; the bot
+    // seats were already joined + auto-readied by create-with-bot.
+    const joined = await joinMatch(
+      created.matchId,
+      '0',
+      input.playerName,
+      input.authToken,
+    );
+    window.location.search =
+      `?match=${encodeURIComponent(created.matchId)}` +
+      `&player=0` +
+      `&credentials=${encodeURIComponent(joined.playerCredentials)}`;
+    return { ok: true, matchID: created.matchId };
+  } catch (launchError) {
+    const cause =
+      launchError instanceof Error ? launchError.message : String(launchError);
+    return {
+      ok: false,
+      message: `Failed to create and join the bot-ally match. ${cause}`,
+    };
   }
 }

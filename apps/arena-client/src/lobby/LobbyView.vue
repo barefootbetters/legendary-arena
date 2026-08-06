@@ -21,7 +21,7 @@ import { parseLoadoutJson } from './parseLoadoutJson';
 import type { ParsedLoadout } from './parseLoadoutJson';
 import { convertLagnUpload } from './lagnLoadout';
 import type { LagnDisplayNames } from './lagnLoadout';
-import { persistMatchSetup } from '../diagnostics/matchSetupSession';
+import { persistMatchSetup, persistBotAllySetup } from '../diagnostics/matchSetupSession';
 import { launchMatchFromComposition } from './useCreateMatchFromComposition';
 import { useAuthStore } from '../stores/auth';
 
@@ -402,6 +402,10 @@ export default defineComponent({
         );
         // why: best-effort client-local setup stash (as createAndJoin does).
         persistMatchSetup(created.matchId, config);
+        // why: WP-502 Play Again fix — also stash the bot parameters so a later
+        // Play Again on this match rebuilds a bot-ally match (same bot count +
+        // policy) instead of a plain human match with an empty bot seat.
+        persistBotAllySetup(created.matchId, { botCount, policy });
         // why: the human joins their OWN seat 0 with the auth token — never the
         // server's credential (see the function-level note).
         const joined = await joinMatch(
