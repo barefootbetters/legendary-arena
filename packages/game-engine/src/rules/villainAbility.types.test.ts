@@ -315,8 +315,11 @@ describe('VILLAIN_EFFECT_PRIMITIVES drift-detection', () => {
   // `ko-heroes-current-by-trait`, `rescue-bystanders-current-by-trait-count` — at
   // positions 10, 11, 12 (Tier-A auto-resolve Core villain effects); WP-494
   // (D-24299) appended a thirteenth, `gain-wound-unless-victory-villain-group`, at
-  // position 13 (Viper — conditional each-player wound on a Victory-Pile group predicate).
-  it('contains exactly the 13 canonical primitives in order', () => {
+  // position 13 (Viper — conditional each-player wound on a Victory-Pile group predicate);
+  // WP-503 (D-24307) appended a fourteenth, `override-next-hand-size`, at position 14
+  // (the core spider-foes Doctor Octopus villain Fight — draw 8 next hand, writes the
+  // WP-497 `handSizeOverrides` field).
+  it('contains exactly the 14 canonical primitives in order', () => {
     const expectedPrimitives: VillainEffectPrimitive[] = [
       'ko-hero',
       'gain-wound',
@@ -331,11 +334,12 @@ describe('VILLAIN_EFFECT_PRIMITIVES drift-detection', () => {
       'ko-heroes-current-by-trait',
       'rescue-bystanders-current-by-trait-count',
       'gain-wound-unless-victory-villain-group',
+      'override-next-hand-size',
     ];
     assert.equal(
       VILLAIN_EFFECT_PRIMITIVES.length,
-      13,
-      'VILLAIN_EFFECT_PRIMITIVES must have exactly 13 entries',
+      14,
+      'VILLAIN_EFFECT_PRIMITIVES must have exactly 14 entries',
     );
     assert.deepStrictEqual(
       [...VILLAIN_EFFECT_PRIMITIVES],

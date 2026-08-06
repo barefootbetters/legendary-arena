@@ -18,6 +18,7 @@ import {
   buildKoEligibleTargets,
 } from './villainEffects.execute.js';
 import { resolveKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
+import { resolveDiscardChoice } from '../moves/discardChoice.resolve.js';
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
 import type { VillainAbilityHook } from '../rules/villainAbility.types.js';
@@ -3070,5 +3071,115 @@ describe('executeVillainAbilities — hollow-effect detection (WP-257)', () => {
       executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onAmbush'),
     );
     assert.equal(records(G).length, 1, 'record stored even with non-array messages');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// override-next-hand-size (WP-503 / D-24307) — the core spider-foes Doctor
+// Octopus villain Fight: draw 8 next hand instead of 6.
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a single onFight hook carrying the parameterized override-next-hand-size
+ * descriptor (the `hook` helper above only translates legacy keyword strings, so a
+ * parameterized descriptor is constructed directly, mirroring the parser output).
+ */
+function overrideHandSizeHook(cardId: string, magnitude: number): VillainAbilityHook {
+  return {
+    cardId: cardId as CardExtId,
+    timing: 'onFight',
+    keywords: [],
+    effects: [{ primitive: 'override-next-hand-size', magnitude }],
+  };
+}
+
+describe('executeVillainAbilities — override-next-hand-size (WP-503 / D-24307)', () => {
+  it('sets the current player next-hand override to the magnitude, self-narrates, and records no hollow', () => {
+    const G = makeG({
+      hooks: [overrideHandSizeHook('v-docock', 8)],
+      playerZones: {
+        '0': { deck: [], hand: ['a', 'b', 'c', 'd', 'e', 'f'] as CardExtId[], discard: [], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-docock' as CardExtId, 'onFight');
+
+    // why: AC-1 — the villain-side writer sets the WP-497-owned field for the
+    // fighting (current) player only, to the absolute magnitude (8).
+    assert.deepEqual(G.handSizeOverrides, { '0': 8 });
+    // why: the override is consumed later at the play-phase onBegin fill (WP-497),
+    // NOT now — the hand is untouched at Fight time.
+    assert.equal(G.playerZones['0']!.hand.length, 6, 'hand unchanged at Fight time');
+    // why: keyword-less self-narration (D-24266 breadcrumb removed by marking).
+    assert.equal(G.messages!.length, 1, 'one self-narrated Fight-effect line');
+    assert.match(G.messages![0]!.text, /next hand draws 8 cards instead of 6/);
+    // why: no `no-handler` hollow — the handler was reached and fired.
+    assert.equal(G.diagnostics?.hollowEffects?.length ?? 0, 0, 'no hollow record when the handler fires');
+  });
+
+  it('is a no-op (writes no override) when the descriptor lacks a magnitude', () => {
+    // why: a malformed hook (reachable only via a hand-built fixture — the parser
+    // always sets magnitude) must not write an undefined override that the WP-497
+    // onBegin fill would then read as `?? HAND_SIZE`.
+    const G = makeG({
+      hooks: [{ cardId: 'v-bad' as CardExtId, timing: 'onFight', keywords: [], effects: [{ primitive: 'override-next-hand-size' }] }],
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-bad' as CardExtId, 'onFight');
+    assert.equal(G.handSizeOverrides, undefined, 'no override written without a magnitude');
+  });
+});
+
+describe('override-next-hand-size ⟂ Magneto discard-to-limit (WP-503 / D-24307, AC-5)', () => {
+  // why: AC-5 — the two effects are ORTHOGONAL lifecycles with no shared merge
+  // point. Doc Ock's override governs the play-phase onBegin fill (WP-497's field);
+  // Magneto's MAGNETO_HAND_SIZE_LIMIT is a Master-Strike-time discard-to-4 reaction
+  // that parks a `discard-to-limit` pending choice. This asserts neither touches the
+  // other, using the REAL discard-to-limit resolve move (the move a Magneto park
+  // flows into).
+  it('the Doc Ock override write does not touch a parked Magneto discard-to-limit choice', () => {
+    const G = makeG({
+      hooks: [overrideHandSizeHook('v-docock', 8)],
+      playerZones: {
+        '0': { deck: [], hand: ['a', 'b', 'c', 'd', 'e', 'f'] as CardExtId[], discard: [], inPlay: [], victory: [] },
+      },
+      messages: [],
+    });
+    // why: pre-park a Magneto-shaped discard-to-4 choice (exactly what
+    // resolveMagnetoStrike parks for the current player).
+    G.pendingDiscardChoices = [{ choiceType: 'discard-to-limit', playerID: '0', limit: 4 }];
+
+    executeVillainAbilities(G, CTX, 'v-docock' as CardExtId, 'onFight');
+
+    // why: the override was written, but the Magneto park is byte-unchanged and the
+    // hand is NOT trimmed by the override (no shared merge point).
+    assert.deepEqual(G.handSizeOverrides, { '0': 8 });
+    assert.deepEqual(G.pendingDiscardChoices, [{ choiceType: 'discard-to-limit', playerID: '0', limit: 4 }]);
+    assert.equal(G.playerZones['0']!.hand.length, 6, 'the override does not trim the hand');
+  });
+
+  it('resolving the Magneto discard-to-4 trims the hand to 4 and leaves the Doc Ock override intact', () => {
+    const G = makeG({
+      playerZones: {
+        '0': { deck: [], hand: ['a', 'b', 'c', 'd', 'e', 'f'] as CardExtId[], discard: [], inPlay: [], victory: [] },
+      },
+      messages: [],
+    });
+    // why: the fighting player already carries a Doc Ock override (fought Doc Ock
+    // earlier this turn) AND is now hit by a Magneto Master Strike discard-to-4.
+    G.handSizeOverrides = { '0': 8 };
+    G.pendingDiscardChoices = [{ choiceType: 'discard-to-limit', playerID: '0', limit: 4 }];
+
+    // why: resolve the parked discard-to-4 (drop 2 of 6) — the real move a Magneto
+    // strike flows into. The hand trims to 4.
+    resolveDiscardChoice({ G, playerID: '0' } as unknown as Parameters<typeof resolveDiscardChoice>[0], {
+      cardIds: ['a', 'b'] as CardExtId[],
+    });
+
+    assert.equal(G.playerZones['0']!.hand.length, 4, 'Magneto strike trims the current hand to 4');
+    // why: the Master-Strike-time trim does NOT touch the Doc Ock override — it
+    // survives for the fighting player's next onBegin fill (WP-497 consumes it there).
+    assert.deepEqual(G.handSizeOverrides, { '0': 8 }, 'the override is untouched by the discard');
   });
 });

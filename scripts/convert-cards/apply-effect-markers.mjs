@@ -121,6 +121,8 @@ function isLockedEffectKeyword(keyword) {
 // `rescue-bystanders-current-by-trait-count` (:<kind>:<value>) appended by WP-485
 // (D-24290 — Tier A auto-resolve Core villain effects), the first curated data to
 // use the parameterized grammar (Enchantress / Destroyer / Baron Zemo).
+// `override-next-hand-size` (:<N>) appended by WP-503 (D-24307 — the core
+// spider-foes Doctor Octopus villain Fight: draw N (8) next hand instead of 6).
 const VILLAIN_EFFECT_PRIMITIVES = [
   'ko-hero',
   'gain-wound',
@@ -135,6 +137,7 @@ const VILLAIN_EFFECT_PRIMITIVES = [
   'ko-heroes-current-by-trait',
   'rescue-bystanders-current-by-trait-count',
   'gain-wound-unless-victory-villain-group',
+  'override-next-hand-size',
 ];
 
 // why: WP-489 / D-24295 — hand-synced local copy of the engine's CITY_SPACE_NAMES
@@ -233,6 +236,12 @@ function isValidParameterizedEffectToken(token) {
   if (primitive === 'draw-cards-current') {
     // why: D-24290 — grammar draw-cards-current:<N> (exactly 2 tokens); N is a
     // positive integer. Mirrors the engine parser's parsePositiveInteger branch.
+    return parts.length === 2 && /^[1-9][0-9]*$/.test(parts[1]);
+  }
+  if (primitive === 'override-next-hand-size') {
+    // why: D-24307 — grammar override-next-hand-size:<N> (exactly 2 tokens); N is
+    // the absolute next-hand target size (Doc Ock: 8). Mirrors the engine parser's
+    // parsePositiveInteger branch so producer + consumer agree on the grammar.
     return parts.length === 2 && /^[1-9][0-9]*$/.test(parts[1]);
   }
   if (primitive === 'ko-heroes-current-by-trait' || primitive === 'rescue-bystanders-current-by-trait-count') {

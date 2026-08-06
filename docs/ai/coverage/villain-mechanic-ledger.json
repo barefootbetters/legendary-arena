@@ -4,12 +4,12 @@
   "summary": {
     "totalRows": 716,
     "byStatus": {
-      "executable": 117,
+      "executable": 118,
       "deferred": 0,
       "unsupported": 1,
-      "unmarked": 598
+      "unmarked": 597
     },
-    "distinctMechanics": 19
+    "distinctMechanics": 20
   },
   "rows": [
     {
@@ -1733,11 +1733,11 @@
       "cardName": "Doctor Octopus",
       "set": "core",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "override-next-hand-size",
+      "status": "executable",
+      "wp": "WP-503",
+      "decision": "D-24307",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#override-next-hand-size"
     },
     {
       "extId": "henchman-doombot-legion",

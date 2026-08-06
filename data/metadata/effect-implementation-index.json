@@ -9,11 +9,11 @@
       "villain": 716
     },
     "byStatus": {
-      "executable": 351,
+      "executable": 352,
       "deferred": 0,
       "condition": 5,
       "unsupported": 367,
-      "unmarked": 644
+      "unmarked": 643
     }
   },
   "entries": [
@@ -5140,11 +5140,11 @@
       "name": "Doctor Octopus",
       "set": "core",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "override-next-hand-size",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#override-next-hand-size",
+      "wp": "WP-503",
+      "decision": "D-24307"
     },
     {
       "extId": "core-villain-spider-foes-green-goblin",
@@ -22081,7 +22081,7 @@
     "core-villain-spider-foes-doctor-octopus": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "override-next-hand-size"
       ]
     },
     "core-villain-spider-foes-green-goblin": {

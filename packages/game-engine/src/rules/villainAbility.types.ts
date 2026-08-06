@@ -213,7 +213,8 @@ export type VillainEffectPrimitive =
   | 'draw-cards-current'
   | 'ko-heroes-current-by-trait'
   | 'rescue-bystanders-current-by-trait-count'
-  | 'gain-wound-unless-victory-villain-group';
+  | 'gain-wound-unless-victory-villain-group'
+  | 'override-next-hand-size';
 
 // why: drift-detection array — must match VillainEffectPrimitive exactly
 // (villainAbility.types.test.ts asserts bidirectional parity). Adding a
@@ -228,6 +229,10 @@ export type VillainEffectPrimitive =
 // `gain-wound-unless-victory-villain-group` appended at position 13 by WP-494
 // (D-24299 — Viper's conditional each-player wound gated on a Victory-Pile
 // villain-group predicate; Tier D).
+// `override-next-hand-size` appended at position 14 by WP-503 (D-24307 — the
+// core spider-foes Doctor Octopus villain Fight: sets the fighting player's next
+// `onBegin` hand-fill target to `magnitude` (8) by writing the WP-497-owned
+// shared `G.handSizeOverrides` field; keyword-less auto-resolve, self-narrates).
 /** All villain effect primitives in canonical order. Single source of truth. */
 export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'ko-hero',
@@ -243,6 +248,7 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'ko-heroes-current-by-trait',
   'rescue-bystanders-current-by-trait-count',
   'gain-wound-unless-victory-villain-group',
+  'override-next-hand-size',
 ] as const;
 
 /**
@@ -261,6 +267,9 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
  *   - `capture-bystander`: optional `magnitude` (D-24295) is a rescue COUNT
  *     (default 1) — the counted variant (Abomination: 3) self-narrates because its
  *     magnitude-bearing descriptor has no legacy reverse-map entry.
+ *   - `override-next-hand-size` (D-24307): `magnitude` is the ABSOLUTE next-hand
+ *     target size (Doctor Octopus villain Fight: 8), written into the WP-497-owned
+ *     `G.handSizeOverrides[currentPlayer]`; keyword-less, self-narrates.
  *   - Any effect: optional `requireCitySpaces` (D-24295) is a location gate —
  *     the effect fires only when the villain is fought on one of the listed City
  *     spaces (Abomination: Streets/Bridge, the Lizard: Sewers).
