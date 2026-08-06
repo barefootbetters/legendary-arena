@@ -35987,3 +35987,50 @@ in SCHEMA.md lets future pages self-select; the check-links guard catches a
 **Consequences.** Additive contract change (one new primitive + handler + parser arm + marker; one card flips unmarked → executable in the villain ledger + effect-index with `{ WP-503, D-24307 }` provenance). Single layer (Game Engine + card-data markers); no client change (auto-resolve, no pending choice, no UIState field). No new zone / move / phase / code category. Reserved by WP-503; landed at WP-503 execution. §17 (§1/§2/§10; No conflict; determinism line). §20 N/A. §21 N/A. `User-Visible Surface = play.legendary-arena.com` — **D-24026 live-verify operator-pending** (fight Doc Ock, end the turn, next hand is 8). The co2e / other-set Doc Ock villain twins stay unmarked (deferred, the WP-494 twin precedent).
 
 Protect this file.
+
+### D-24310 — Engineering Wiki: cross-repo `canonical-source` via `canonical-source-repo` — extends D-24304 (Active 2026-08-05 — INFRA, no WP)
+
+> **Extends** D-24304 (optional `canonical-source` for mirror pages) with an
+> optional companion field for mirror pages whose canonical doc lives in a
+> **different repo**. Does not change same-repo behaviour, and — like D-24304 —
+> is consumed only by the `editing-this-page.html` partial, never rendered in
+> the metadata panel, so the six-field D-13810 / EC-142 panel surface lock is
+> untouched.
+
+**Context.** D-24304 added `canonical-source` for mirror pages, but resolved the
+path against **this** repo only (`github.com/barefootbetters/legendary-arena`).
+The three homepage pages (`homepage-spec`, `homepage-appendix`,
+`homepage-review-template`) mirror docs in the separate marketing repo
+(`legendary-arena/legendary-arena-website`), which the same-repo field could not
+link — so they kept a hand-authored provenance blockquote as an interim (the
+#1250 slim).
+
+**Decision.** Add an optional `canonical-source-repo` front-matter field: a
+GitHub `owner/repo` slug. When present, `canonical-source` is a path within
+**that** repo, and the footer's mirror variant links
+`github.com/<owner/repo>/blob/main/<path>` (and the edit link to `/edit/main/`),
+noting the repo inline. When absent, same-repo behaviour is unchanged.
+
+1. **Schema** (`wiki/SCHEMA.md`): add the `canonical-source-repo` field row + a
+   "Cross-repo mirrors" paragraph in the Mirror pages subsection.
+2. **Template** (`editing-this-page.html`): the mirror variant computes its blob
+   and edit bases from `canonical-source-repo` when set; the canonical-doc edit
+   step reads "following that repo's commit convention" cross-repo (the marketing
+   repo owns its own convention) instead of the same-repo `SPEC:`.
+3. **Validation** (`check-links.mjs`): cross-repo, the doc is not checked out
+   here, so the existence + source-membership checks cannot apply — the guard
+   instead validates only that the slug matches `owner/repo` and the path is
+   non-empty. Same-repo checks are unchanged.
+4. **Adoption** (content): the three homepage pages set both fields
+   (`canonical-source-repo: legendary-arena/legendary-arena-website`) and drop
+   their interim provenance blockquote — the footer's mirror variant now links
+   the marketing-repo source, the same clean state `development-workflow` is in.
+
+**Consequences.** ewiki tooling only (`apps/wiki-viewer` + `wiki/`): one optional
+schema field, one template conditional, one validation branch, three content
+migrations. Same-repo mirrors and native pages render unchanged. No
+engine/registry/server/client surface, no schema migration, no determinism or
+persistence-of-`G` surface. Branch pinning is fixed to `main` (a non-`main`
+canonical branch is a future extension if ever needed).
+
+Protect this file.

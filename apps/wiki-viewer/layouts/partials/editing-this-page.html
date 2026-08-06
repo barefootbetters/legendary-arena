@@ -22,6 +22,21 @@
 {{- $blobBase := "https://github.com/barefootbetters/legendary-arena/blob/main" -}}
 {{- $editBase := "https://github.com/barefootbetters/legendary-arena/edit/main" -}}
 {{- $canonical := index $page.Params "canonical-source" -}}
+{{- /*
+  why: canonical-source-repo (optional) names an EXTERNAL GitHub owner/repo
+  when a mirror page's canonical doc lives in a different repo (e.g. a
+  marketing-site doc in legendary-arena/legendary-arena-website). Absent → the
+  doc is in this repo and the default bases apply; present → build the blob and
+  edit URLs against that repo's main branch instead. Decision D-24310 (extends
+  D-24304).
+*/ -}}
+{{- $canonicalRepo := index $page.Params "canonical-source-repo" -}}
+{{- $canonicalBlobBase := $blobBase -}}
+{{- $canonicalEditBase := $editBase -}}
+{{- if $canonicalRepo -}}
+  {{- $canonicalBlobBase = printf "https://github.com/%s/blob/main" $canonicalRepo -}}
+  {{- $canonicalEditBase = printf "https://github.com/%s/edit/main" $canonicalRepo -}}
+{{- end -}}
 <details class="editing-this-page">
   <summary>Editing this page</summary>
   <div class="editing-this-page-body">
@@ -56,14 +71,14 @@
       */ -}}
       <p>
         This page synthesizes
-        <a href="{{ $blobBase }}/{{ $canonical }}"><code>{{ $canonical }}</code></a>,
+        <a href="{{ $canonicalBlobBase }}/{{ $canonical }}"><code>{{ $canonical }}</code></a>{{ with $canonicalRepo }} in the <code>{{ . }}</code> repo{{ end }},
         which owns the canonical prose — the other <strong>Sources</strong>
         entries are references it draws on, not edit targets.
       </p>
       <p>
         <strong>Fast path:</strong>
-        <a href="{{ $editBase }}/{{ $canonical }}">✏️ Edit the canonical doc on GitHub</a>
-        (commit <code>SPEC:</code>), then update this page to match —
+        <a href="{{ $canonicalEditBase }}/{{ $canonical }}">✏️ Edit the canonical doc on GitHub</a>
+        {{ if $canonicalRepo }}(following that repo's commit convention){{ else }}(commit <code>SPEC:</code>){{ end }}, then update this page to match —
         <a href="{{ $editBase }}/wiki/{{ $name }}.md">edit <code>wiki/{{ $name }}.md</code></a>
         (commit <code>INFRA:</code>) and bump <code>last-reviewed</code>. Branch → PR,
         merge when green.
