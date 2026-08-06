@@ -20,6 +20,7 @@ import { getAvailableAttack, spendAttack } from '../economy/economy.logic.js';
 import { defeatTopTactic, areAllTacticsDefeated } from '../mastermind/mastermind.logic.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { composeMastermindDefeatedNarrative } from '../events/notableEvents.compose.js';
+import { dispatchTacticOnFight } from '../rules/tacticHandlers.js';
 import { hasPendingKoHeroChoice } from './koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from './scryKoChoice.resolve.js';
 import { hasPendingDiscardChoice } from './discardChoice.resolve.js';
@@ -47,8 +48,11 @@ type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
  *
  * @param context - boardgame.io move context with G, ctx.
  */
-// why: MVP defeats exactly 1 tactic per fight; multi-tactic defeat
-// and tactic text effects are WP-024
+// why: MVP defeats exactly 1 tactic per fight; multi-tactic defeat is WP-024.
+// why: WP-497 / D-24300 — tactic Fight effects are NOW executed by
+// defeatMastermindTacticCore's dispatchTacticOnFight step; the former "tactic
+// text effects are WP-024" note was stale (WP-024 did scheme + mastermind STRIKE
+// execution; tactic Fight was scoped out of WP-316/386/388 and had no owner).
 export function fightMastermind(
   { G, ctx }: MoveContext,
 ): void {
@@ -248,4 +252,13 @@ export function defeatMastermindTacticCore(
       ),
     });
   }
+
+  // why: WP-497 / D-24300 — FINAL step: fire the defeated tactic's printed Fight
+  // ability (per-tactic dispatch keyed by defeatedTacticId; unknown id → silent
+  // no-op, so every unimplemented tactic stays inert). Runs AFTER the tactic +
+  // bystanders are awarded and the all-tactics endgame block, on the current
+  // player, whether or not this was the vanquishing tactic (Universal Rules v23:
+  // tactic Fight effects resolve on defeat). Placed last so it observes fully-
+  // settled state.
+  dispatchTacticOnFight(G, ctx, defeatedTacticId);
 }

@@ -245,6 +245,42 @@ describe('LegendaryGame', () => {
     assert.equal(gameState.hasDrawnThisTurn, true);
   });
 
+  it('play-phase onBegin honours a handSizeOverride (fills to 8) and clears it (WP-497 / D-24300, AC-2/AC-3)', () => {
+    // why: WP-497 — a defeated Doc Ock "Octet of Valence Electrons" tactic records
+    // G.handSizeOverrides[player] = 8; that player's NEXT onBegin fills to 8 instead
+    // of HAND_SIZE, then the entry is consumed (deleted) so no later turn draws 8.
+    const gameState = LegendaryGame.setup!(
+      makeMockCtx({ numPlayers: 2 }) as Parameters<NonNullable<typeof LegendaryGame.setup>>[0],
+      createMockMatchConfiguration(),
+    );
+    assert.ok(gameState.playerZones['0']!.deck.length >= 8, 'starting deck must have >= 8 cards');
+
+    const playPhase = (
+      LegendaryGame.phases as Record<string, { turn?: { onBegin?: (context: unknown) => void } }>
+    ).play;
+    const onBegin = playPhase!.turn!.onBegin!;
+    const beginContext = {
+      G: gameState,
+      ctx: { currentPlayer: '0', numPlayers: 2, phase: 'play', turn: 1 },
+      random: { Shuffle: <T>(deck: T[]): T[] => [...deck].reverse() },
+      events: { setPhase: (): void => {}, endTurn: (): void => {} },
+    };
+
+    // AC-2: override set → onBegin fills to 8 and deletes the consumed entry.
+    gameState.handSizeOverrides = { '0': 8 };
+    onBegin(beginContext);
+    assert.equal(gameState.playerZones['0']!.hand.length, 8, 'onBegin fills to the override (8)');
+    assert.equal(gameState.handSizeOverrides['0'], undefined, 'the consumed override entry is deleted');
+
+    // AC-3: no override on a later fill → back to HAND_SIZE (the override did not
+    // persist). Install a fresh ≥HAND_SIZE deck so the fill is not deck-limited by
+    // AC-2's 8-card draw (which is a deck-size artifact, not the override).
+    gameState.playerZones['0']!.hand = [];
+    gameState.playerZones['0']!.deck = ['x1', 'x2', 'x3', 'x4', 'x5', 'x6', 'x7', 'x8'];
+    onBegin(beginContext);
+    assert.equal(gameState.playerZones['0']!.hand.length, HAND_SIZE, 'a later fill draws to HAND_SIZE, not 8');
+  });
+
   it('play-phase onBegin numbers the first play turn as 1, not the framework ctx.turn (lobby offset)', () => {
     // why: the lobby phase consumes framework turn 1 (startMatchIfReady exits via
     // setPhase('play')), so the play phase's first turn arrives as ctx.turn === 2.

@@ -7,6 +7,35 @@
 
 ## Current State
 
+### WP-497 — Mastermind Tactic onFight Execution Framework + Doc Ock "Octet of Valence Electrons" — DONE (2026-08-05)
+
+First WP of the Mastermind-Tactic-Fight arc. Defeating a Mastermind tactic fired **none** of its
+printed **Fight:** ability — `defeatMastermindTacticCore` (`moves/fightMastermind.ts`) awarded the
+tactic + bystanders and (on the last tactic) set the endgame counter but ran no tactic text; the
+`// tactic text effects are WP-024` comment was stale (WP-024 did strikes/schemes). Surfaced live
+2026-08-04 (co-op match `KdHnMXaOPin`: all four Doc Ock tactics defeated, zero effect).
+
+- **Per-tactic onFight dispatcher** — new `rules/tacticHandlers.ts` `dispatchTacticOnFight(G, ctx,
+  defeatedTacticId)`, wired as the final step of `defeatMastermindTacticCore`, branching on the
+  defeated tactic ext_id (`${setAbbr}-mastermind-${slug}-${tacticSlug}`). Mirrors the WP-386/388
+  per-mastermind strike-resolver pattern (operator ruling 2026-08-04 — **not** a marker vocabulary;
+  abstract on the third copy). Unknown id → **silent no-op**, so every unimplemented tactic stays
+  exactly as inert as before — strictly additive. No boardgame.io import, no RNG.
+- **First resolver — "Octet of Valence Electrons"** (draw 8 next hand instead of 6) — sets a new
+  optional, **lazily-created hashed** `handSizeOverrides?: Record<string, number>` (per-player
+  next-`onBegin`-fill override, **not** seeded in `buildInitialGameState`). The play-phase `onBegin`
+  fill reads `target = handSizeOverrides?.[current] ?? HAND_SIZE`, then consumes-and-deletes the
+  entry (one fill only) — this engine has no end-of-turn cleanup draw, so "your new hand this turn"
+  ≡ the defeating player's next `onBegin` fill.
+- **Determinism:** lazy-create ⇒ no committed fixture (empty-registry `PRE_WP080`, `core/dr-doom`
+  sentinel) ever creates the key ⇒ **no re-pin** (both oracles byte-identical, as predicted).
+- `simulation/onBeginParity.ts` was **out of scope** — no parity test binds it to `game.ts` and no
+  committed sim sweep uses co2e Doc Ock as mastermind. **Known PAR-sim gap**, noted for a follow-up.
+- **Verified:** game-engine **2337/0**; sentinel `finalStateHash` + `PRE_WP080_HASH` byte-identical;
+  `sim:runtime-observed:check` current (no regen); `pnpm -r build` 0. Lands **D-24300** (Active).
+  **D-24026 live-verify operator-pending** (defeat Octet → next hand draws 8 + Fight log line).
+  Unblocks **WP-503** (villain Doc Ock reuses `handSizeOverrides`).
+
 ### WP-501 — Change Your Handle (owner-profile handle edit) — DONE (2026-08-05)
 
 WP-500 gave every account an auto-assigned `@handle`, but a slug collision could leave a user

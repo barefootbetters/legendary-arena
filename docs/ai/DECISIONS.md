@@ -35825,9 +35825,9 @@ Protect this file.
 
 Protect this file.
 
-### D-24300 — Mastermind Tactic onFight execution framework + Doc Ock "Octet of Valence Electrons" (Drafted 2026-08-04 — WP-497 / EC-532; not yet landed)
+### D-24300 — Mastermind Tactic onFight execution framework + Doc Ock "Octet of Valence Electrons" (Active — WP-497 / EC-532; landed 2026-08-05)
 
-> **Status: Drafted 2026-08-04; not yet landed.** Reserved in `NUMBER-LEDGER.md`. Flips to Active at WP-497 execution.
+> **Status: Active. Landed 2026-08-05** (WP-497 / EC-532, commit `EC-532:`; game-engine 2337 pass / 0 fail; sentinel `finalStateHash` + `PRE_WP080_HASH` byte-identical — no re-pin, as predicted; `sim:runtime-observed:check` current; `pnpm -r build` 0). Reserved in `NUMBER-LEDGER.md`.
 
 **Context.** Defeating a Mastermind tactic fires **none** of the tactic's printed **Fight:** ability. `defeatMastermindTacticCore` (`moves/fightMastermind.ts`) moves the tactic to the victory pile, rescues bystanders, and (on the final tactic) sets the endgame counter — but runs no tactic text. The `// tactic text effects are WP-024` comment there is **stale/misleading**: WP-024 implemented scheme + mastermind **strike** execution; tactic **Fight** effects were explicitly scoped **out** of WP-316, WP-386, and WP-388, and no shipped WP owns them. Surfaced live 2026-08-04 (co-op match `KdHnMXaOPin`: all four Doctor Octopus tactics — Octal Octyls, Octet of Valence Electrons, High Octane, Absolute Octarchy — defeated, zero effect).
 
