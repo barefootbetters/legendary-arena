@@ -36,6 +36,8 @@
  * D-11804 (api-endpoints catalog).
  */
 
+import koaBody from 'koa-body';
+
 import type {
   AccountResolver,
   RequireAuthenticatedSessionOptions,
@@ -338,6 +340,34 @@ async function enrichFriendshipViews(
  * dependency bundle with the WP-112 `requireAuthenticatedSession`
  * orchestrator.
  */
+// why: boardgame.io installs koa-body ONLY on its own /games/* routes — there
+// is no global body parser (same note as matchGate/billing/analytics/…) — so
+// these custom /api routes must parse their own JSON body. Without it,
+// `koaContext.request.body` is undefined and add-friend-by-@handle / block
+// silently fail. Latent: the handlers were only tested with an injected
+// `request.body`, never the real Node request stream (the WP-307/matchGate trap).
+const jsonBodyParser = koaBody();
+
+/**
+ * Parse the JSON request body into `koaContext.request.body` when a real Node
+ * request stream is present. A no-op for a fake test context — mirrors
+ * matchGate's `ensureJsonBodyParsed`.
+ */
+async function ensureJsonBodyParsed(
+  koaContext: KoaFriendshipContext,
+): Promise<void> {
+  const nodeRequest = koaContext.req as { on?: unknown };
+  if (typeof nodeRequest.on !== 'function') {
+    return;
+  }
+  await (
+    jsonBodyParser as unknown as (
+      koaContext: KoaFriendshipContext,
+      next: () => Promise<void>,
+    ) => Promise<void>
+  )(koaContext, async () => {});
+}
+
 export function registerFriendshipRoutes(
   router: KoaRouter,
   database: DatabaseClient,
@@ -407,6 +437,7 @@ export function registerFriendshipRoutes(
       if ((await requireActingHandle(koaContext, accountId)) === false) {
         return;
       }
+      await ensureJsonBodyParsed(koaContext);
       const rawBody = koaContext.request.body;
       const body =
         rawBody !== null && typeof rawBody === 'object'
@@ -696,6 +727,7 @@ export function registerFriendshipRoutes(
       if (accountId === null) {
         return;
       }
+      await ensureJsonBodyParsed(koaContext);
       const rawBody = koaContext.request.body;
       const body =
         rawBody !== null && typeof rawBody === 'object'

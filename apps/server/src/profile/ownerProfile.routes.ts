@@ -40,6 +40,8 @@
  * statement lock).
  */
 
+import koaBody from 'koa-body';
+
 import type {
   AccountId,
   AccountResolver,
@@ -182,6 +184,36 @@ function statusForSessionValidationCode(code: SessionValidationCode): number {
  * returns 500 with `code: 'session_verifier_not_configured'`
  * (D-11204 fail-closed posture).
  */
+// why: boardgame.io installs koa-body ONLY on its own /games/* routes — there
+// is no global body parser (same note as matchGate/billing/analytics/…) — so
+// these custom /api routes must parse their own JSON body. Without it,
+// `koaContext.request.body` is undefined and every PATCH/PUT here silently
+// fails. This gap was latent: the handlers were only ever tested with an
+// injected `request.body`, never the real Node request stream (the identical
+// WP-307/matchGate trap).
+const jsonBodyParser = koaBody();
+
+/**
+ * Parse the JSON request body into `koaContext.request.body` when a real Node
+ * request stream is present. A no-op for a fake test context (which injects
+ * `request.body` directly and exposes no stream) — mirrors matchGate's
+ * `ensureJsonBodyParsed`.
+ */
+async function ensureJsonBodyParsed(
+  koaContext: KoaOwnerProfileContext,
+): Promise<void> {
+  const nodeRequest = koaContext.req as { on?: unknown };
+  if (typeof nodeRequest.on !== 'function') {
+    return;
+  }
+  await (
+    jsonBodyParser as unknown as (
+      koaContext: KoaOwnerProfileContext,
+      next: () => Promise<void>,
+    ) => Promise<void>
+  )(koaContext, async () => {});
+}
+
 export function registerOwnerProfileRoutes(
   router: KoaRouter,
   database: DatabaseClient,
@@ -258,6 +290,7 @@ export function registerOwnerProfileRoutes(
       if (accountId === null) {
         return;
       }
+      await ensureJsonBodyParsed(koaContext);
       const rawBody = koaContext.request.body;
       if (rawBody === undefined || rawBody === null || typeof rawBody !== 'object') {
         koaContext.status = 400;
@@ -296,6 +329,7 @@ export function registerOwnerProfileRoutes(
       if (accountId === null) {
         return;
       }
+      await ensureJsonBodyParsed(koaContext);
       const rawBody = koaContext.request.body;
       if (rawBody === undefined || rawBody === null || typeof rawBody !== 'object') {
         koaContext.status = 400;
