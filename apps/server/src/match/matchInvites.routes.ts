@@ -27,6 +27,8 @@
  * set); D-11504 (Cache-Control first); D-11804 (catalog).
  */
 
+import koaBody from 'koa-body';
+
 import type {
   AccountResolver,
   RequireAuthenticatedSessionOptions,
@@ -160,6 +162,34 @@ function statusForMatchInviteApiErrorCode(code: MatchInviteApiErrorCode): number
  * in place). Production callers pass the game-server framework's router, the
  * long-lived `pg.Pool`, and the dependency bundle.
  */
+// why: boardgame.io installs koa-body ONLY on its own /games/* routes — there
+// is no global body parser (same note as matchGate/billing/analytics/…) — so
+// this custom /api route must parse its own JSON body. Without it,
+// `koaContext.request.body` is undefined and invite-by-@handle silently fails.
+// Latent: the handler was only tested with an injected `request.body`, never
+// the real Node request stream (the WP-307/matchGate trap).
+const jsonBodyParser = koaBody();
+
+/**
+ * Parse the JSON request body into `koaContext.request.body` when a real Node
+ * request stream is present. A no-op for a fake test context — mirrors
+ * matchGate's `ensureJsonBodyParsed`.
+ */
+async function ensureJsonBodyParsed(
+  koaContext: KoaMatchInviteContext,
+): Promise<void> {
+  const nodeRequest = koaContext.req as { on?: unknown };
+  if (typeof nodeRequest.on !== 'function') {
+    return;
+  }
+  await (
+    jsonBodyParser as unknown as (
+      koaContext: KoaMatchInviteContext,
+      next: () => Promise<void>,
+    ) => Promise<void>
+  )(koaContext, async () => {});
+}
+
 export function registerMatchInviteRoutes(
   router: KoaRouter,
   database: DatabaseClient,
@@ -201,6 +231,7 @@ export function registerMatchInviteRoutes(
       if (accountId === null) {
         return;
       }
+      await ensureJsonBodyParsed(koaContext);
       const rawBody = koaContext.request.body;
       const body =
         rawBody !== null && typeof rawBody === 'object'
