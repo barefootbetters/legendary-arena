@@ -108,13 +108,17 @@ function bareSourcePath(entry) {
 }
 
 /**
- * Validate the optional `canonical-source` front-matter field (D-24304).
+ * Validate the optional `canonical-source` front-matter field (D-24304),
+ * including its cross-repo companion `canonical-source-repo` (D-24310).
  *
- * For every projected page that declares `canonical-source`, assert two
- * things: (1) the named upstream file exists on disk, and (2) the same file
- * is also cited in `source` (so the Sources section still links it and the
- * two representations cannot drift). Returns a list of violation strings;
- * an empty list means the guard passed.
+ * For a **same-repo** mirror (no `canonical-source-repo`), assert two things:
+ * (1) the named upstream file exists on disk, and (2) the same file is also
+ * cited in `source` (so the Sources section still links it and the two
+ * representations cannot drift). For a **cross-repo** mirror (the canonical
+ * doc lives in another repo, named by `canonical-source-repo`), the file is
+ * not checked out here, so instead assert only that the repo slug is a valid
+ * GitHub `owner/repo` and the path is non-empty. Returns a list of violation
+ * strings; an empty list means the guard passed.
  *
  * @returns {string[]} Human-readable violation messages.
  */
@@ -129,12 +133,34 @@ function checkCanonicalSources() {
       continue;
     }
     const canonicalPath = canonicalMatch[1].trim();
+    const canonicalRepoMatch = frontMatter.match(/^canonical-source-repo:\s*(.+)$/m);
+    const canonicalRepo = canonicalRepoMatch ? canonicalRepoMatch[1].trim() : '';
 
+    if (canonicalRepo) {
+      // Cross-repo mirror (D-24310): the canonical doc lives in another repo,
+      // so it is not checked out here — the local existence and source-membership
+      // checks below cannot apply. Validate only that the repo slug is a
+      // plausible GitHub owner/repo and that the path is non-empty; the footer
+      // builds the link from these two values.
+      if (!/^[\w.-]+\/[\w.-]+$/.test(canonicalRepo)) {
+        violations.push(
+          `${fileName}: canonical-source-repo "${canonicalRepo}" is not a valid GitHub owner/repo slug. Use the form "owner/repo" (e.g. legendary-arena/legendary-arena-website).`
+        );
+      }
+      if (canonicalPath === '') {
+        violations.push(
+          `${fileName}: canonical-source is empty but canonical-source-repo is set. Give the path to the owning doc within that repo.`
+        );
+      }
+      continue;
+    }
+
+    // Same-repo mirror: the two checks below both apply.
     // (1) The named upstream file must exist at the repo root.
     const canonicalAbsolute = resolve(repoRoot, canonicalPath);
     if (!fileExistsCaseSensitive(canonicalAbsolute)) {
       violations.push(
-        `${fileName}: canonical-source "${canonicalPath}" does not exist at ${canonicalAbsolute}. Point it at the upstream doc that owns this page's prose.`
+        `${fileName}: canonical-source "${canonicalPath}" does not exist at ${canonicalAbsolute}. Point it at the upstream doc that owns this page's prose (or set canonical-source-repo if it lives in another repo).`
       );
     }
 

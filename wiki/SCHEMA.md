@@ -212,7 +212,8 @@ last-reviewed: 2026-05-07
 | `status` | yes | enum | `canonical` \| `draft` \| `deprecated` |
 | `source` | conditional | list | **First entry is the page's own self-reference** (see below). Remaining entries are the authoritative artifacts cited by the page, as relative paths. **Non-empty for `canonical`.** For `deprecated`, cite the replacement (or DECISIONS entry explaining the deprecation). |
 | `last-reviewed` | yes | date `YYYY-MM-DD` | When the page was last verified against current code/docs. |
-| `canonical-source` | no | single repo-root-relative path | **Mirror pages only** (see below). Names the one upstream doc that owns this page's canonical prose. Singular, not a list. When present, the same file **must** also be cited in `source`. Absent on every native page. |
+| `canonical-source` | no | single path | **Mirror pages only** (see below). Names the one upstream doc that owns this page's canonical prose. Singular, not a list. For a **same-repo** mirror it is repo-root-relative and the same file **must** also be cited in `source`; for a **cross-repo** mirror it is relative to `canonical-source-repo`'s root. Absent on every native page. |
+| `canonical-source-repo` | no | GitHub `owner/repo` slug | **Cross-repo mirror pages only.** Present when the canonical doc lives in a *different* repo (e.g. `legendary-arena/legendary-arena-website`). Makes `canonical-source` relative to that repo's `main`; the footer links there. Omit for a same-repo mirror. |
 
 #### Self-reference (first `source` entry)
 
@@ -263,10 +264,21 @@ only by that partial — it is **not** rendered in the metadata panel, so the
 six-field panel surface lock (`layouts/_default/single.html`, WP-139 / EC-142)
 is unaffected. Decision: `docs/ai/DECISIONS.md` D-24304.
 
-Path form: repo-root-relative (`docs/ai/REFERENCE/development-workflow.md`) so it
-links directly to the GitHub blob. The same file also appears in `source` in the
-`../`-relative form; `check-links.mjs` asserts the resolved paths agree so
-provenance cannot drift.
+Path form (same-repo): repo-root-relative
+(`docs/ai/REFERENCE/development-workflow.md`) so it links directly to the GitHub
+blob. The same file also appears in `source` in the `../`-relative form;
+`check-links.mjs` asserts the resolved paths agree so provenance cannot drift.
+
+**Cross-repo mirrors (`canonical-source-repo`).** Some pages mirror a doc in a
+*different* repo — e.g. the homepage pages mirror
+`docs/marketing/*.md` in `legendary-arena/legendary-arena-website`. Set
+`canonical-source-repo` to that GitHub `owner/repo` slug and make
+`canonical-source` the path within it; the footer links
+`github.com/<owner/repo>/blob/main/<path>`. Because the doc is not checked out
+here, `check-links.mjs` cannot verify it exists or that it appears in `source`,
+so for a cross-repo mirror it validates only that the slug is a plausible
+`owner/repo` and the path is non-empty. Decision: `docs/ai/DECISIONS.md`
+D-24310 (extends D-24304).
 
 ---
 

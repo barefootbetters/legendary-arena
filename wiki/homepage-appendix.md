@@ -19,17 +19,11 @@ source:
   - ../docs/01-VISION.md
   - ../docs/ai/work-packets/WP-149-public-leaderboard-marketing-page.md
 last-reviewed: 2026-08-05
+canonical-source: docs/marketing/homepage-appendix.md
+canonical-source-repo: legendary-arena/legendary-arena-website
 ---
 
 # Homepage Appendix
-
-> **Editing this page**
->
-> This page mirrors the homepage strategy reference
-> `docs/marketing/homepage-appendix.md` in the separate `legendary-arena-website`
-> (marketing) repo, which owns the content — edit there, then re-sync this
-> page. The "Editing this page" footer below covers the ewiki edit mechanics;
-> the marketing doc is the source of truth for the content.
 
 ## Summary
 
