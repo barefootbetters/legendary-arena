@@ -7,6 +7,26 @@
 
 ## Current State
 
+### WP-504 — Friend Request by @handle OR Account ID (handle-or-UUID matching) — DONE (2026-08-06)
+
+- `POST /api/me/friends/requests` now accepts **exactly one** of `{ handle }` (unchanged) or
+  `{ accountId }` (the target's own AccountId/UUID, shared out-of-band — a copy-paste capability
+  like WP-499's match link, never enumerable). Both/neither → `invalid_request`.
+- accountId path: pure `isWellFormedAccountId` shape guard (malformed → `invalid_request`, no DB
+  round-trip) → `findPlayerByAccountId` (unknown → new `account_not_found` 404) → the **unchanged**
+  WP-355 block/cooldown/rate-limit chain + `sendFriendRequest` (`self_friendship` etc. in the logic
+  layer; no new self guard). `account_not_found` added to all **five** drift sites.
+- Client: new pure `parsePlayerIdentifier` discriminator; the existing `add()` composable routes by
+  it; the add-friend input accepts "@handle or Account ID"; `account_not_found` → "No player with
+  that Account ID."
+- **FR-2 preserved** — it is an output-redaction invariant; this change is **input-only**, so no
+  response ever gains `accountId`. D-24308 records the scope clarification.
+- **Dropped, not deferred:** match-invite-by-accountId (WP-505) — invites are friend-gated, so the
+  target is always already a friend addressable by `@handle`.
+- Verified: arena-client 1219/1219 + vue-tsc 0; server friendships routes 23/23 + `isWellFormedAccountId`
+  units (DB-gated, serialized against local Postgres); `pnpm -r build` 0. **D-24308 Active.**
+  **D-24026 live-verify operator-pending** (paste an Account ID on the deployed Friends section).
+
 ### WP-503 — Doctor Octopus (Villain) Fight: Draw 8 Instead of 6 Next Hand — DONE (2026-08-05)
 
 The core spider-foes **Doctor Octopus** villain Fight ("draw eight cards instead of six") was a live
