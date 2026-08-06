@@ -17,24 +17,18 @@ source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\homepage-spec.md (this page — https://ewiki.legendary-arena.com/homepage-spec/)
   - ../docs/01-VISION.md
   - ../docs/ai/work-packets/WP-149-public-leaderboard-marketing-page.md
-last-reviewed: 2026-05-15
+last-reviewed: 2026-08-05
 ---
 
 # Homepage Spec
 
 > **Editing this page**
 >
-> This ewiki page mirrors the homepage build document. The source lives at
-> `C:\www\legendary-arena-com\docs\marketing\homepage-spec.md`
-> (in the `legendary-arena-website` repo, not this repo).
->
-> - **To edit the source document:** edit the file in the marketing repo,
->   commit with `SPEC:` prefix, push to `main`.
-> - **To edit this ewiki page:** edit
->   `C:\pcloud\BB\DEV\legendary-arena\wiki\homepage-spec.md`,
->   commit with `SPEC:` prefix, push to `main` in the `legendary-arena` repo.
-> - **Keep both in sync.** If the source document changes, update this
->   ewiki page too.
+> This page mirrors the homepage build document
+> `docs/marketing/homepage-spec.md` in the separate `legendary-arena-website`
+> (marketing) repo, which owns the content — edit there, then re-sync this
+> page. The "Editing this page" footer below covers the ewiki edit mechanics;
+> the marketing doc is the source of truth for the content.
 
 ## Summary
 
