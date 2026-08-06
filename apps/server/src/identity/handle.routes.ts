@@ -24,6 +24,8 @@
  * first-statement lock); D-11202 (bearer header).
  */
 
+import koaBody from 'koa-body';
+
 import type {
   AccountResolver,
   RequireAuthenticatedSessionOptions,
@@ -32,6 +34,37 @@ import type {
 } from '../auth/sessionToken.types.js';
 import type { AccountId, DatabaseClient } from './identity.types.js';
 import { changeHandle } from './handle.logic.js';
+
+// why: boardgame.io installs koa-body ONLY on its own /games/* routes — there
+// is no global body parser (same note as matchGate/billing/analytics/…) — so
+// this custom /api route must parse its own JSON body. Without it,
+// `koaContext.request.body` is undefined and every PATCH resolves to
+// `invalid_handle`. This gap is latent under unit test: the route tests inject
+// `request.body` directly and never exercise the real Node request stream —
+// the identical WP-307/matchGate trap (fixed there with the same helper).
+const jsonBodyParser = koaBody();
+
+/**
+ * Parse the JSON request body into `koaContext.request.body` when a real Node
+ * request stream is present. A no-op for the unit-test fake context (which
+ * injects `request.body` directly and exposes no stream), so the same handler
+ * works in production and under `node:test` — mirrors matchGate's
+ * `ensureJsonBodyParsed`.
+ */
+async function ensureJsonBodyParsed(
+  koaContext: KoaHandleContext,
+): Promise<void> {
+  const nodeRequest = koaContext.req as { on?: unknown };
+  if (typeof nodeRequest.on !== 'function') {
+    return;
+  }
+  await (
+    jsonBodyParser as unknown as (
+      koaContext: KoaHandleContext,
+      next: () => Promise<void>,
+    ) => Promise<void>
+  )(koaContext, async () => {});
+}
 
 /**
  * Closed-set re-statement of the orchestrator's session-validation codes
@@ -151,6 +184,10 @@ export function registerHandleRoutes(
       if (accountId === null) {
         return;
       }
+      // why: parse the JSON body ourselves (no global parser — see the note on
+      // jsonBodyParser above); without this `request.body` is undefined and
+      // every change resolves to invalid_handle.
+      await ensureJsonBodyParsed(koaContext);
       const body = koaContext.request.body;
       if (
         typeof body !== 'object' ||
