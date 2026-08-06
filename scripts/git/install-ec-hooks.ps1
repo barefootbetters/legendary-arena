@@ -27,7 +27,7 @@ if (-not (Test-Path $hooksDir)) {
 }
 
 # Verify hook files exist
-$requiredHooks = @('pre-commit', 'commit-msg')
+$requiredHooks = @('pre-commit', 'commit-msg', 'pre-push')
 foreach ($hook in $requiredHooks) {
     $hookPath = Join-Path $hooksDir $hook
     if (-not (Test-Path $hookPath)) {

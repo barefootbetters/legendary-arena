@@ -1,5 +1,13 @@
 * text=auto
 
+# why: the git hooks under .githooks/ are executed by /bin/sh, which chokes on
+# CRLF line terminators — `* text=auto` above would otherwise check them out
+# with CRLF on a Windows clone and silently break the hook (heredocs and `read`
+# mangle, so the script no-ops or misfires). Force LF so the hooks — and any
+# other shell script — run identically on every platform.
+.githooks/** text eol=lf
+*.sh text eol=lf
+
 # why (D-24242): the number-allocation ledger is append-only. `merge=union` makes
 # git keep BOTH sides' distinct reservation lines on a local rebase/merge, so two
 # sessions reserving different WP/EC/D numbers never conflict here (unlike the
