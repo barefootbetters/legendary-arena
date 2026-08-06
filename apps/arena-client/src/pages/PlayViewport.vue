@@ -25,8 +25,11 @@ import { useBotAllyStatus } from '../composables/useBotAllyStatus';
 import { useDeployVersionCheck } from '../composables/useDeployVersionCheck';
 import { useUiStateStore } from '../stores/uiState';
 import { useAuthStore } from '../stores/auth';
-import { readMatchSetup } from '../diagnostics/matchSetupSession';
-import { launchMatchFromComposition } from '../lobby/useCreateMatchFromComposition';
+import { readMatchSetup, readBotAllySetup } from '../diagnostics/matchSetupSession';
+import {
+  launchMatchFromComposition,
+  launchBotAllyFromComposition,
+} from '../lobby/useCreateMatchFromComposition';
 import type { SubmitMove } from '../components/play/uiMoveName.types';
 import type { MatchSetupConfig } from '@legendary-arena/game-engine';
 
@@ -240,14 +243,30 @@ export default defineComponent({
       }
       isRelaunching.value = true;
       playAgainError.value = '';
-      const result = await launchMatchFromComposition({
-        config,
-        playerCount: seatCount.value,
-        // why: the join seat label is cosmetic; neither the auth store nor the
-        // UIState projection carries a display name, so a stable default is used.
-        playerName: 'Player',
-        authToken,
-      });
+      // why: WP-502 Play Again fix — if THIS match was created with a bot ally
+      // (the bot parameters were stashed at create time), rebuild a bot-ally
+      // match so the bot seat is filled again; otherwise relaunching via the
+      // plain create path would leave the bot's seat empty ("waiting for a
+      // friend"). A plain human match has no stash and takes the plain path.
+      const botAlly = readBotAllySetup(props.matchId);
+      // why: the join seat label is cosmetic; neither the auth store nor the
+      // UIState projection carries a display name, so a stable default is used.
+      const result =
+        botAlly !== null
+          ? await launchBotAllyFromComposition({
+              config,
+              playerCount: seatCount.value,
+              botCount: botAlly.botCount,
+              policy: botAlly.policy,
+              playerName: 'Player',
+              authToken,
+            })
+          : await launchMatchFromComposition({
+              config,
+              playerCount: seatCount.value,
+              playerName: 'Player',
+              authToken,
+            });
       if (!result.ok) {
         playAgainError.value = result.message;
         isRelaunching.value = false;

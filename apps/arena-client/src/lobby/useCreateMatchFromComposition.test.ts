@@ -1,7 +1,10 @@
 import { test, describe, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { launchMatchFromComposition } from './useCreateMatchFromComposition';
+import {
+  launchMatchFromComposition,
+  launchBotAllyFromComposition,
+} from './useCreateMatchFromComposition';
 import { serverUrl } from './lobbyApi';
 import type { MatchSetupConfig } from '@legendary-arena/game-engine';
 
@@ -179,6 +182,83 @@ describe('launchMatchFromComposition (WP-448)', () => {
     // only the create was attempted — no join, and no navigation
     assert.equal(calls.length, 1);
     assert.equal(calls[0]!.url, `${serverUrl}/api/match/create`);
+    assert.equal(navigatedSearch, null);
+  });
+});
+
+// WP-502 Play Again fix — the bot-ally launch primitive rebuilds a co-op match.
+describe('launchBotAllyFromComposition (WP-502)', () => {
+  beforeEach(() => {
+    installWindowStub();
+  });
+
+  afterEach(() => {
+    restoreFetch();
+    restoreWindow();
+  });
+
+  test('success: creates a bot-ally match (numPlayers/botCount/policy), joins seat 0, navigates', async () => {
+    installFetchStub((url) => {
+      if (url.endsWith('/api/match/create-with-bot')) {
+        return jsonResponse(200, { matchId: 'match-bot' });
+      }
+      if (url.endsWith('/api/match/join')) {
+        return jsonResponse(200, { playerCredentials: 'secret-bot' });
+      }
+      return textResponse(500, `unexpected url ${url}`);
+    });
+
+    const result = await launchBotAllyFromComposition({
+      config: SAMPLE_CONFIG,
+      playerCount: 2,
+      botCount: 1,
+      policy: 'competent',
+      playerName: 'Tester',
+      authToken: 'test-token',
+    });
+
+    assert.deepEqual(result, { ok: true, matchID: 'match-bot' });
+
+    // create-with-bot then join seat 0, in that order
+    assert.equal(calls.length, 2);
+    assert.equal(calls[0]!.url, `${serverUrl}/api/match/create-with-bot`);
+    assert.equal(calls[1]!.url, `${serverUrl}/api/match/join`);
+
+    // the create body carries the bot parameters (so the server seats the bot)
+    const createBody = JSON.parse(String(calls[0]!.init!.body));
+    assert.equal(createBody.numPlayers, 2);
+    assert.equal(createBody.botCount, 1);
+    assert.equal(createBody.policy, 'competent');
+
+    // the human joins their own seat 0 and navigates to the new match
+    const joinBody = JSON.parse(String(calls[1]!.init!.body));
+    assert.equal(joinBody.playerID, '0');
+    assert.match(navigatedSearch ?? '', /match=match-bot/);
+    assert.match(navigatedSearch ?? '', /player=0/);
+  });
+
+  test('failure: a create-with-bot error returns { ok: false } with a bot-ally message and does not navigate', async () => {
+    installFetchStub((url) => {
+      if (url.endsWith('/api/match/create-with-bot')) {
+        return textResponse(400, 'a bot-ally match needs at least 2 seats');
+      }
+      return textResponse(500, `unexpected url ${url}`);
+    });
+
+    const result = await launchBotAllyFromComposition({
+      config: SAMPLE_CONFIG,
+      playerCount: 2,
+      botCount: 1,
+      policy: 'random',
+      playerName: 'Tester',
+      authToken: 'test-token',
+    });
+
+    assert.equal(result.ok, false);
+    if (result.ok === false) {
+      assert.match(result.message, /^Failed to create and join the bot-ally match\. /);
+    }
+    assert.equal(calls.length, 1);
     assert.equal(navigatedSearch, null);
   });
 });
