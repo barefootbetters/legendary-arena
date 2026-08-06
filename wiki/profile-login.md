@@ -390,10 +390,91 @@ fields gain `displayName`; error set gains `invalid_display_name`) rows in
 > live-verify gate). Treat existing-account `@handle` reachability as **pending that
 > backfill run**; newly-created accounts are reachable immediately.
 >
-> **Still a follow-up (not yet built):** the change-handle/claim **endpoint + profile UI
-> field** (so a user can pick a nicer handle than the auto-derived slug), and rewiring
-> `claimHandle`'s `handle_canonical IS NULL` guard to `handle_locked_at IS NULL` so a claim
-> can overwrite an unlocked auto-handle.
+> **Update — change-handle SHIPPED (WP-501 / D-24305, PR #1239).** A signed-in user can now
+> change their auto-assigned handle: `changeHandle` + `PATCH /api/me/handle` + a `?route=me`
+> "Change your @handle" field, freely changeable while unlocked (`handle_locked_at IS NULL`).
+> A follow-up bug fix added the missing per-route JSON body parser these custom `/api` routes
+> require ([No global body parser](#a-note-that-cost-a-day-no-global-body-parser); PR #1241/#1242).
+> **Still deferred:** the explicit **lock/claim** action (rewiring `claimHandle`'s
+> `handle_canonical IS NULL` guard to `handle_locked_at IS NULL`) + a per-account change
+> rate-limit/cooldown.
+
+### Handle vs display name — identity, uniqueness, and matching (design rationale)
+
+Three names describe a player, and they do **different jobs**. Conflating them is the
+root of most "why can't I find my friend" confusion, so the split is deliberate:
+
+| Name | Unique? | Job | Where it shows |
+|---|---|---|---|
+| `display_name` | **No** | Human **label** — what you call yourself | Lobby, in-match, profile heading |
+| `handle_canonical` (`@handle`) | **Yes** | **Address** — how others find/invite/link you | Add-friend, invite, public profile URL |
+| `AccountId` / `ext_id` (UUID) | **Yes (by construction)** | **Identity/trust key** — what the system keys on | Owner profile; never a discovery surface |
+
+**Why the handle is unique — the "big deal."** A handle is an *address*, not a label.
+Add-friend, match-invite, and the public-profile URL (`?profile=<handle>`, WP-300) all
+resolve `@handle → exactly one account`. Duplicate handles make `@handle` ambiguous
+("which of the three `@jeff`s?") and break the profile URL outright — a single URL cannot
+point at two people. Uniqueness is enforced at the database (the migration-008 partial
+unique index on `handle_canonical`), not merely in application code.
+
+**Display names are deliberately NOT unique.** In-game and on the profile heading a player
+shows as their `display_name`, so two people can both be "Jeff" with no conflict.
+Uniqueness only bites at the *find/invite* moment, on the `@handle`. This "unique handle +
+free display name" split is where the industry settled — Discord, GitHub, Twitter/X all use
+it. Discord actually *tried* the alternative (duplicate names + a `#1234` discriminator) and
+**abandoned it** for unique usernames, because the disambiguation step confused users.
+
+**"What if we just allowed duplicate handles and returned a picker?"** (Evaluated
+2026-08-06; **not adopted** at current scale.) Returning a *list* of matching handles for the
+user to pick from is workable in principle, but:
+
+- **Scarcity is already solved.** WP-500 auto-suffixing (`@jeff`, `@jeff2`, …) plus WP-501
+  free rename mean any un-taken handle is claimable — no one is blocked from a name they want.
+- **The disambiguator must be NON-identifying.** The first instinct — reveal **full name /
+  city / state** so the picker is useful — is a doxxing and harassment vector. Anyone who
+  guesses a handle would learn a real person's location. The app does **not** collect that PII
+  today, so this would mean *adding* PII collection specifically in order to expose it. It
+  directly undercuts **FR-2** (the friends system exposes **only** `@handle` — never email,
+  legal name, or AccountId) and the WP-355 abuse controls. This is a business / trust / ToS
+  risk, not just an aesthetic preference.
+- **A safe disambiguator exists.** If we ever want one, use something that identifies the
+  *account* without identifying the *human*: the **avatar thumbnail** (operator-preferred
+  2026-08-06), a join date, or a short opaque suffix — never real name or location. The avatar
+  is already an owner-chosen, non-PII image, so "which `@jeff` — the one with the Hulk avatar?"
+  is both usable and safe.
+
+**Matching a player by `@handle` OR AccountId (UUID) — forward-looking, not yet built.**
+Two addressing paths, mirroring WP-499's identity-agnostic join-by-match-ID:
+
+- **`@handle`** — the friendly discovery path (type it, search it). Requires uniqueness (above);
+  resolves via `findAccountByHandle`.
+- **`AccountId` / `ext_id` (UUID)** — unambiguous *by construction* (it resolves to exactly one
+  account), so it sidesteps the duplicate question entirely; resolves via `findPlayerByAccountId`.
+  A random v4 UUID is non-enumerable, so "reach me by UUID" is a **copy-paste / link / QR
+  capability** (exactly like WP-499's shareable match link), **not** an enumeration surface —
+  you can only reach an account whose ID was deliberately shared with you. The AccountId is
+  already surfaced on the owner profile for this purpose.
+- A future WP would let add-friend / invite accept **either** form — the human path plus the
+  unambiguous path — and use the UUID (or the avatar picker) as the disambiguation fallback if
+  two people ever genuinely collide in a shared display context.
+
+### A note that cost a day: no global body parser
+
+The change-handle endpoint (`PATCH /api/me/handle`) shipped, unit-tested green — and then
+rejected **every** valid handle in production with `invalid_handle`. Root cause: boardgame.io
+installs its `koa-body` parser **only on its own `/games/*` routes**; there is **no global
+body parser**. A custom `/api/*` route that reads `koaContext.request.body` **without
+attaching its own parser** gets `undefined` in production, so its validation guard fires
+"invalid" on a body it never actually parsed.
+
+It stayed latent because **every route unit test injects `request.body` directly** — the
+handler reads the injected object and passes, while the real Node request stream is never
+exercised. The same trap had already bitten `matchGate` (WP-307), and was found lurking in
+`ownerProfile`, `friendships`, and `matchInvites` at the same time. Fixed by copying
+`matchGate`'s per-route `ensureJsonBodyParsed` helper into each affected route (PR #1241 for
+the handle route, #1242 for the other three). **Lesson:** any new `/api` route that reads a
+body must attach its own parser, and the unit test alone will never prove it — live-verify the
+real `POST`/`PATCH`.
 
 ### Friends & Ranked Trust Layer
 
