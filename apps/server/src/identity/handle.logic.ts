@@ -25,6 +25,10 @@
  *     only `handle_canonical` + `display_handle` (equal, an auto-derived
  *     slug) and NEVER `handle_locked_at`. An auto-assigned handle
  *     (`handle_locked_at` NULL) is CHANGEABLE by a later claim.
+ *   - `changeHandle` (WP-501 / D-24305) — a third, DISJOINT writer that
+ *     OVERWRITES `handle_canonical` + `display_handle` to a new value
+ *     (never `handle_locked_at`) only while the handle is unlocked
+ *     (`handle_locked_at IS NULL`). A user freely changing their handle.
  * Mutual-presence: `handle_canonical` + `display_handle` are NULL
  * together or non-NULL together; `handle_locked_at` may be NULL while
  * they are set (auto-assigned). This invariant is prose-enforced — no
@@ -256,6 +260,93 @@ export async function claimHandle(
   return {
     ok: false,
     reason: `Account already has handle "${existingClaim.handleCanonical}" locked; handles are immutable after first claim.`,
+    code: 'handle_already_locked',
+  };
+}
+
+/**
+ * Change an account's handle to a new available value while it is
+ * unlocked. Overwrites `handle_canonical` + `display_handle` (only where
+ * `handle_locked_at IS NULL`) and returns the new pair on success; the
+ * previous handle is released to the free pool. Reuses the five
+ * `HandleErrorCode` values: `invalid_handle` / `reserved_handle` (format),
+ * `handle_taken` (another account holds it), `handle_already_locked` (the
+ * caller's handle is locked), `unknown_account` (no such account). Never
+ * throws — every failure path returns a typed `Result`. Returns a bare
+ * `{ handleCanonical, displayHandle }` rather than `HandleClaim` because a
+ * changed handle is unlocked (`handle_locked_at` NULL) and cannot populate
+ * the required-`string` `HandleClaim.handleLockedAt`. (WP-501 / D-24305 —
+ * the third disjoint writer; see the module header.)
+ */
+export async function changeHandle(
+  accountId: AccountId,
+  requestedHandle: string,
+  database: DatabaseClient,
+): Promise<Result<{ handleCanonical: string; displayHandle: string }>> {
+  const validation = validateHandleFormat(requestedHandle);
+  if (validation.ok === false) {
+    return validation;
+  }
+  const { canonical, display } = validation.value;
+  let result;
+  try {
+    // why: WP-501 / D-24305 — this UPDATE sets ONLY handle_canonical +
+    // display_handle and NEVER handle_locked_at, so a changed handle stays
+    // changeable; the `handle_locked_at IS NULL` guard makes the change
+    // apply only while unlocked (a claimed/locked handle is immutable).
+    result = await database.query(
+      'UPDATE legendary.players ' +
+        'SET handle_canonical = $2, ' +
+        '    display_handle   = $3 ' +
+        'WHERE ext_id = $1 ' +
+        '  AND handle_locked_at IS NULL ' +
+        'RETURNING handle_canonical, display_handle',
+      [accountId, canonical, display],
+    );
+  } catch (error) {
+    // why: SQLSTATE '23505' on the partial UNIQUE index
+    // `legendary_players_handle_canonical_unique` means another account
+    // already holds this canonical → `handle_taken`.
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      (error as { code?: unknown }).code === '23505'
+    ) {
+      return {
+        ok: false,
+        reason: `The handle "${canonical}" is already taken by another account; choose a different handle.`,
+        code: 'handle_taken',
+      };
+    }
+    // why: return a rejected promise rather than `throw` so this file keeps
+    // its zero-`throw` property (WP-101 gate); the route maps it to 500.
+    return Promise.reject(error);
+  }
+  if (result.rows.length === 1) {
+    return {
+      ok: true,
+      value: {
+        handleCanonical: result.rows[0].handle_canonical,
+        displayHandle: result.rows[0].display_handle,
+      },
+    };
+  }
+  // why: an empty RETURNING means the WHERE (ext_id AND handle_locked_at IS
+  // NULL) matched no row — either the account does not exist, or its handle
+  // is locked. `findPlayerByAccountId` disambiguates the two.
+  const existing = await findPlayerByAccountId(accountId, database);
+  if (existing === null) {
+    return {
+      ok: false,
+      reason:
+        'No player account exists for the supplied accountId; sign in before changing a handle.',
+      code: 'unknown_account',
+    };
+  }
+  return {
+    ok: false,
+    reason:
+      'This handle is locked and cannot be changed; handles are immutable after an explicit claim.',
     code: 'handle_already_locked',
   };
 }

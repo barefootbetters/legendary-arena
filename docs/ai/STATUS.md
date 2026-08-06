@@ -7,6 +7,29 @@
 
 ## Current State
 
+### WP-501 — Change Your Handle (owner-profile handle edit) — DONE (2026-08-05)
+
+WP-500 gave every account an auto-assigned `@handle`, but a slug collision could leave a user
+stuck with e.g. `jeff2`. This lets a signed-in user change it. Track 2 follow-up.
+
+- **`changeHandle`** (`handle.logic.ts`) — `validateHandleFormat` → `UPDATE handle_canonical +
+  display_handle WHERE ext_id = $ AND handle_locked_at IS NULL` (**freely changeable while
+  unlocked**, the D-24303 model) and **never** `handle_locked_at`; `23505` → `handle_taken`;
+  a 0-row result disambiguates `unknown_account` vs `handle_already_locked`. Reuses the existing
+  five `HandleErrorCode` (no `handle.types.ts` change), returns `{ handleCanonical, displayHandle }`,
+  never `throw`s. The **third disjoint writer** of the handle columns (extends D-24303).
+- **`PATCH /api/me/handle`** (`handle.routes.ts` + `server.mjs`) — authenticated-session; identity
+  session-resolved; `Cache-Control: no-store`; 400 invalid/reserved, 409 taken/locked, 401 unknown.
+- **Client** — `ownerProfileApi.changeHandle` (discriminated union + a drift-guarded
+  `HANDLE_ERROR_CODES` mirror) + a `?route=me` change-handle affordance. `api-endpoints.md` gained
+  both rows (D-11804).
+- No schema migration; no engine/determinism surface. Tests: handle logic+route **28/28** (DB-gated),
+  arena-client **1188/0** (all `changeHandle` branches + drift guard); `pnpm -r build` 0; full server
+  suite serialized **1161/1162** (the one failure is an unrelated WP-336 replay flake; the
+  concurrent-run failures were the documented shared-DB race).
+- Lands **D-24305**. **Out of scope (deferred):** the explicit lock/claim action + `claimHandle`
+  guard rewire; change rate-limit/cooldown. **D-24026 live-verify operator-pending.**
+
 ### WP-502 — Match End-of-Life Controls: Play Again + End Game — DONE (2026-08-05)
 
 Two player-facing controls on the play surface (play.legendary-arena.com), closing the gap where a

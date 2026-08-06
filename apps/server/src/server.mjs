@@ -36,6 +36,7 @@ import {
 } from './legends/gauntlet.logic.js';
 import { registerCompetitionRoutes } from './competition/competition.routes.js';
 import { registerOwnerProfileRoutes } from './profile/ownerProfile.routes.js';
+import { registerHandleRoutes } from './identity/handle.routes.js';
 import { registerAvatarUploadRoutes } from './profile/avatarUpload.routes.js';
 import { registerLoadoutLibraryRoutes } from './profile/loadoutLibrary.routes.js';
 import { registerGauntletRunRoutes } from './gauntlet/gauntletRun.routes.js';
@@ -958,6 +959,16 @@ export async function startServer() {
   // path handles the dev-mode case unchanged, surfacing 500 with
   // code: 'session_verifier_not_configured' per D-11204.
   registerOwnerProfileRoutes(server.router, pool, {
+    requireAuthenticatedSession,
+    verifier,
+    accountResolver: verifier === undefined ? undefined : accountResolver,
+  });
+
+  // why: WP-501 / D-24305 — register PATCH /api/me/handle (change your
+  // @handle) on the same long-lived pool, with the same caller-injected
+  // auth deps as registerOwnerProfileRoutes. changeHandle overwrites an
+  // unlocked handle; the WP-500 auto-assigned slug is now editable.
+  registerHandleRoutes(server.router, pool, {
     requireAuthenticatedSession,
     verifier,
     accountResolver: verifier === undefined ? undefined : accountResolver,

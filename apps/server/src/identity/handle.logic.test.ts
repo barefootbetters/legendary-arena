@@ -22,7 +22,9 @@ import {
   getHandleForAccount,
   deriveHandle,
   assignAutoHandle,
+  changeHandle,
 } from './handle.logic.js';
+import type { AccountId } from './identity.types.js';
 import {
   HANDLE_ERROR_CODES,
   RESERVED_HANDLES,
@@ -436,6 +438,122 @@ describe('handle logic (WP-101)', () => {
       );
       assert.ok(claimB.ok === false);
       assert.equal(claimB.code, 'handle_taken');
+    },
+  );
+
+  // --- WP-501 / EC-536: changeHandle (DB-gated) ---
+
+  test(
+    'changeHandle overwrites an unlocked handle, leaves handle_locked_at NULL, and releases the old handle',
+    hasTestDatabase ? {} : { skip: 'requires test database' },
+    async () => {
+      assert.ok(testPool !== null);
+      let counter = 0;
+      const idProvider = () =>
+        `00000000-0000-4000-8000-${String(counter++).padStart(12, '0')}`;
+      const accountResult = await createPlayerAccount(
+        {
+          email: 'chg@example.com',
+          displayName: 'Change Me',
+          authProvider: 'email',
+          authProviderId: 'chg@example.com',
+        },
+        testPool,
+        idProvider,
+      );
+      assert.ok(accountResult.ok === true);
+      const accountId = accountResult.value.accountId;
+
+      const assigned = await assignAutoHandle(accountId, 'Change Me', testPool);
+      assert.equal(assigned, 'change_me');
+
+      const result = await changeHandle(accountId, 'ChosenName', testPool);
+      assert.ok(result.ok === true);
+      assert.equal(result.value.handleCanonical, 'chosenname');
+      assert.equal(result.value.displayHandle, 'ChosenName');
+
+      const inspection = await testPool.query(
+        'SELECT handle_canonical, display_handle, handle_locked_at ' +
+          'FROM legendary.players WHERE ext_id = $1',
+        [accountId],
+      );
+      assert.equal(inspection.rows[0].handle_canonical, 'chosenname');
+      assert.equal(inspection.rows[0].display_handle, 'ChosenName');
+      // why: a changed handle stays changeable — handle_locked_at is untouched.
+      assert.equal(inspection.rows[0].handle_locked_at, null);
+
+      // the new handle resolves; the old one is released to the free pool
+      const foundNew = await findAccountByHandle('chosenname', testPool);
+      assert.ok(foundNew !== null && foundNew.accountId === accountId);
+      const foundOld = await findAccountByHandle('change_me', testPool);
+      assert.equal(foundOld, null);
+    },
+  );
+
+  test(
+    'changeHandle returns handle_taken when another account holds the target',
+    hasTestDatabase ? {} : { skip: 'requires test database' },
+    async () => {
+      assert.ok(testPool !== null);
+      let counter = 100;
+      const idProvider = () =>
+        `00000000-0000-4000-8000-${String(counter++).padStart(12, '0')}`;
+      const alpha = await createPlayerAccount(
+        { email: 'a@example.com', displayName: 'Alpha', authProvider: 'email', authProviderId: 'a@example.com' },
+        testPool,
+        idProvider,
+      );
+      const bravo = await createPlayerAccount(
+        { email: 'b@example.com', displayName: 'Bravo', authProvider: 'email', authProviderId: 'b@example.com' },
+        testPool,
+        idProvider,
+      );
+      assert.ok(alpha.ok === true && bravo.ok === true);
+      await assignAutoHandle(alpha.value.accountId, 'Alpha', testPool);
+      await assignAutoHandle(bravo.value.accountId, 'Bravo', testPool);
+
+      const result = await changeHandle(bravo.value.accountId, 'alpha', testPool);
+      assert.ok(result.ok === false);
+      assert.equal(result.code, 'handle_taken');
+    },
+  );
+
+  test(
+    'changeHandle rejects an invalid or reserved handle',
+    hasTestDatabase ? {} : { skip: 'requires test database' },
+    async () => {
+      assert.ok(testPool !== null);
+      const idProvider = () => '00000000-0000-4000-8000-000000000200';
+      const account = await createPlayerAccount(
+        { email: 'v@example.com', displayName: 'Vee', authProvider: 'email', authProviderId: 'v@example.com' },
+        testPool,
+        idProvider,
+      );
+      assert.ok(account.ok === true);
+      await assignAutoHandle(account.value.accountId, 'Vee', testPool);
+
+      const tooShort = await changeHandle(account.value.accountId, 'no', testPool);
+      assert.ok(tooShort.ok === false);
+      assert.equal(tooShort.code, 'invalid_handle');
+
+      const reserved = await changeHandle(account.value.accountId, 'admin', testPool);
+      assert.ok(reserved.ok === false);
+      assert.equal(reserved.code, 'reserved_handle');
+    },
+  );
+
+  test(
+    'changeHandle returns unknown_account for a non-existent account',
+    hasTestDatabase ? {} : { skip: 'requires test database' },
+    async () => {
+      assert.ok(testPool !== null);
+      const result = await changeHandle(
+        '00000000-0000-4000-8000-999999999999' as AccountId,
+        'ghosthandle',
+        testPool,
+      );
+      assert.ok(result.ok === false);
+      assert.equal(result.code, 'unknown_account');
     },
   );
 });

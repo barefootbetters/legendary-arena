@@ -35946,9 +35946,9 @@ in SCHEMA.md lets future pages self-select; the check-links guard catches a
 
 ---
 
-### D-24305 — Change-handle contract (freely-changeable-while-unlocked; third disjoint handle writer) (Drafted 2026-08-05 — WP-501 / EC-536; not yet landed)
+### D-24305 — Change-handle contract (freely-changeable-while-unlocked; third disjoint handle writer) (Active — WP-501 / EC-536; landed 2026-08-05)
 
-> **Status: Drafted 2026-08-05; not yet landed.** Reserved in `NUMBER-LEDGER.md`. Flips to Active at WP-501 execution.
+> **Status: Active. Landed 2026-08-05** (WP-501 / EC-536; handle logic+route 28/28, arena-client 1188/0, no migration).
 
 **Context.** WP-500 / D-24303 auto-assigns every account a `@handle` (changeable — `handle_locked_at` NULL) but there is **no way to change it**: `MyProfilePage.vue` only renders `@handle`, and a slug collision leaves a user with e.g. `jeff2` when they wanted `jeff` (the operator's own account, 2026-08-05). This decision locks the change mechanism.
 

@@ -227,6 +227,99 @@ function narrowAvatarUploadCode(raw: unknown): AvatarUploadErrorCode | null {
   return null;
 }
 
+// why: client-local mirror of the server's `HandleErrorCode` union in
+// apps/server/src/identity/handle.types.ts. Server-layer types cannot be
+// imported here (engine/server-isolation rule), so the codes are mirrored by
+// hand; the drift test in ownerProfileApi.test.ts asserts set-equality with
+// the server union, failing loudly if the server union moves.
+export const HANDLE_ERROR_CODES = [
+  'invalid_handle',
+  'reserved_handle',
+  'handle_taken',
+  'handle_already_locked',
+  'unknown_account',
+] as const;
+
+/**
+ * Closed set of failure codes the change-handle endpoint
+ * (`PATCH /api/me/handle`) may return in its `{ error }` body. Client-local
+ * mirror of the server `HandleErrorCode` union (see `HANDLE_ERROR_CODES`).
+ */
+export type HandleErrorCode = (typeof HANDLE_ERROR_CODES)[number];
+
+/**
+ * Result discriminator for `changeHandle`. The success branch carries the
+ * new canonical + display handle; the failure branch carries the HTTP status
+ * plus the closed-set error code (or `null` for a transport failure or an
+ * unrecognized code). Mirrors the shape of `OwnerProfileApiResult`.
+ */
+export type ChangeHandleApiResult =
+  | { ok: true; handleCanonical: string; displayHandle: string }
+  | { ok: false; status: number; code: HandleErrorCode | null };
+
+/**
+ * Narrow an unknown response-body `code` value to the closed handle
+ * error-code set. Returns `null` when absent, not a string, or unknown.
+ */
+function narrowHandleCode(raw: unknown): HandleErrorCode | null {
+  if (typeof raw !== 'string') {
+    return null;
+  }
+  for (const knownCode of HANDLE_ERROR_CODES) {
+    if (knownCode === raw) {
+      return knownCode;
+    }
+  }
+  return null;
+}
+
+/**
+ * Change the authenticated owner's `@handle`. Returns
+ * `{ ok: true, handleCanonical, displayHandle }` on HTTP 200; returns
+ * `{ ok: false, status, code }` on every other status. Never throws.
+ */
+export async function changeHandle(
+  authToken: string | null,
+  handle: string,
+): Promise<ChangeHandleApiResult> {
+  let response: Response;
+  try {
+    response = await fetch(buildApiUrl('/api/me/handle'), {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(authToken === null
+          ? {}
+          : { Authorization: `Bearer ${authToken}` }),
+      },
+      body: JSON.stringify({ handle }),
+    });
+  } catch {
+    return { ok: false, status: 0, code: null };
+  }
+  if (response.status !== 200) {
+    let code: HandleErrorCode | null = null;
+    try {
+      const body = (await response.json()) as { error?: unknown };
+      code = narrowHandleCode(body.error);
+    } catch {
+      // why: a malformed / empty error body is a transport-level failure;
+      // surface only the status so the page renders a generic error.
+      code = null;
+    }
+    return { ok: false, status: response.status, code };
+  }
+  const value = (await response.json()) as {
+    handleCanonical: string;
+    displayHandle: string;
+  };
+  return {
+    ok: true,
+    handleCanonical: value.handleCanonical,
+    displayHandle: value.displayHandle,
+  };
+}
+
 /**
  * Parse a non-200 avatar-upload response into the failure branch. Reads the
  * failure code from `body.code`.
