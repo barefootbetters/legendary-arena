@@ -7,6 +7,32 @@
 
 ## Current State
 
+### WP-506 — Core Magneto Tactic "Crushing Shockwave" onFight Resolver — DONE (2026-08-07)
+
+Defeating core Magneto's **"Crushing Shockwave"** tactic now fires its printed **Fight:** ability
+— the **second** resolver of the Mastermind-Tactic-Fight arc (after WP-497's Doc Ock Octet). Before
+this, `dispatchTacticOnFight` shipped only the Octet resolver, so every core Magneto tactic ext_id
+fell through to the silent no-op (surfaced live 2026-08-06 in a core Magneto co-op match).
+
+- **Engine — `resolveCrushingShockwave(G, currentPlayer)` in `rules/tacticHandlers.ts`** + a
+  `dispatchTacticOnFight` branch keyed by `core-mastermind-magneto-crushing-shockwave`. For each
+  player in `Object.keys(G.playerZones).sort()` **except** the defeating `currentPlayer`: a player
+  holding an `[team:x-men]` Hero **reveals** it (a log-only no-op); every other player **gains up to
+  two Wounds** from the supply.
+- **No-choice deterministic auto-resolve** (a free reveal beats two Wounds — fully faithful, no
+  blocking pending-choice; D-24192 / D-24284 precedent). Three deltas from the sibling
+  `resolveCo2eMagnetoStrike`: **reveal** not discard, **two** Wounds not one, **each OTHER** player.
+- The two `gainWound` calls **thread** (both returned arrays assigned back between calls, since
+  `gainWound` is non-mutating); a supply shortfall gains the available count and is a **logged
+  no-op** (moves never throw). Team read is **team-only** with a **map-level `?.`**. Inlined the
+  X-Men-in-hand scan (`handHasXMenHero`) — `mastermindHandlers.ts` untouched; **no new `G` field**.
+- Verified: game-engine **2349 → 2356 (+7)**, 0 fail; control-stub non-vacuity (6/7 positive
+  assertions fail when stubbed); `pnpm -r build` 0; `sim:runtime-observed:check` current, no
+  regeneration; sentinel `finalStateHash` + `PRE_WP080_HASH` **byte-identical** (no committed
+  fixture defeats a Magneto tactic — no re-pin). **D-24312 Active.** **D-24026 live-verify
+  operator-pending** (defeat Crushing Shockwave on the deployed play surface → each other
+  X-Men-less player gains two Wounds + the Fight log lines show).
+
 ### WP-504 — Friend Request by @handle OR Account ID (handle-or-UUID matching) — DONE (2026-08-06)
 
 - `POST /api/me/friends/requests` now accepts **exactly one** of `{ handle }` (unchanged) or
