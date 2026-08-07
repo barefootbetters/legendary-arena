@@ -7,6 +7,46 @@
 
 ## Current State
 
+### WP-510 — Super Hero Civil War Hero-Deck-Depletion Loss + the `pile-depleted` Resource-Loss Kind — DONE (2026-08-07)
+
+Super Hero Civil War now models its **printed** Evil-Wins — **"If the Hero Deck runs out"** — instead of
+the `lossThresholdByPlayerCount` twist proxy. Third WP of the resource-loss-scheme-fidelity epic, and the
+first **stack-depletion** subclass (after WP-508/509's escaped-pile-count).
+
+- **`pile-depleted` kind (D-24318):** `SchemeResourceLossCondition` widened from a single interface to a
+  **discriminated union on `kind`** — the `'escaped-pile-count'` member unchanged, plus a new
+  `{ kind: 'pile-depleted', pile: 'heroDeck' }` (WP-511 extends `pile` to `'wounds'`). A new pure helper
+  `applyPileDepletionResourceLoss(G)` sets `SCHEME_LOSS` when the named pile is empty
+  (`remainingPileCount('heroDeck') → G.heroDeck.length`), wired into the **play-phase `turn.onMove`** hook
+  beside `latchFinalTurnIfDeckExhausted` — a **central per-move chokepoint**, not a `recruitHero`-only check,
+  because the Civil War twist's `ko-from-hq` (`koCount: 2`) resolver drains the hero deck via HQ refills
+  outside any recruit move. Twist-proxy suppression is inherited (kind-agnostic gate). Civil War config gains
+  the condition; `lossThresholdByPlayerCount` stays but is inert for loss.
+- **Tie-override is free (D-24319):** an empty hero deck both latches the deck-exhaustion final turn AND
+  sets `SCHEME_LOSS` on the same move. Because `evaluateEndgame` checks `SCHEME_LOSS` before `FINAL_TURN_TIE`
+  and `resolveFinalTurnTieIfUnresolved` only ties when `evaluateEndgame === null` (and the top-level `endIf`
+  ends the match on that move), the loss **pre-empts** the tie with **no change** to `finalTurn.logic.ts` or
+  `evaluateEndgame`.
+- **Reachability (honest scope):** the loss models `heroDeck.length === 0` faithfully; reaching zero is
+  reliable at **3-5 players** (recruiting + twist drain). At **2 players with a full-size deck** it may
+  under-loss — which is why the card prints *"use only 4 Heroes at 2 players."* That per-player hero-deck
+  **sizing** is a setup-time override deferred to **WP-511** (with Legacy Virus's 6-wounds/player sizing).
+  WP-510 ships the depletion **mechanic** (a strict improvement over the twist proxy at every count).
+- **Civil War only:** Legacy Virus is deferred to WP-511 — its flat-30 wound stack would be unlosable at
+  *every* count with the proxy suppressed (a hard regression, unlike Civil War's degree-only 2p weakness).
+  Conversion schemes (Secret Invasion, Killbots) shift to **WP-512**.
+- **Determinism:** the check is a `G.heroDeck.length` read + existing-counter write; sentinel
+  `finalStateHash` + `PRE_WP080_HASH` **byte-identical** (no committed Civil War fixture depletes the hero
+  deck); `sim:runtime-observed:check` current. No new `G` field, no new counter, `evaluateEndgame` stays
+  counter-only.
+- **Verification:** game-engine 2374→2382 (+8) pass / 0 fail; whole-workspace `pnpm -r --no-bail test`
+  green (12 packages, 0 fail); **dual control-revert non-vacuous** (config → 5 fails; `game.ts` wiring →
+  1 fail); `pnpm -r build` 0. Pre-flight READY + copilot RISK→HOLD-resolved (R1/R2/RS1/RS2 folded).
+  **Inline amendment:** `game.test.ts` added as the 8th file so the wiring-revert exercises the real
+  `turn.onMove` closure.
+- **Operator-pending:** D-24026 live-verify — a Super Hero Civil War match on play.legendary-arena.com ends
+  `scheme-wins` when the Hero Deck runs out (reliably at 3-5p).
+
 ### WP-509 — Negative Zone Prison Breakout Villain-Escape Loss + Retire the Generic ESCAPE_LIMIT Proxy — DONE (2026-08-07)
 
 Negative Zone Prison Breakout now loses only when its **printed** Evil-Wins is met — **12 Villains
