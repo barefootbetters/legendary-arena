@@ -61,7 +61,8 @@ export function latchFinalTurnIfDeckExhausted(gameState: LegendaryGameState): vo
  * (evaluateEndgame still returns null), sets FINAL_TURN_TIE so evaluateEndgame
  * returns the 'tie' outcome. The evaluateEndgame === null guard is what
  * implements "you can finish the current turn as a final chance to win": a
- * mastermind defeated / scheme completed / 8th villain escaped during the final
+ * mastermind defeated / a scheme loss (twist-count or a per-scheme resource
+ * condition such as an escaped-pile count or pile depletion) during the final
  * turn wins or loses outright instead of tying.
  *
  * @param gameState - The game state to inspect and (on an unresolved tie) mutate.
