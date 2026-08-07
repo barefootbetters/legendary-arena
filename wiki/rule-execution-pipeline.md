@@ -29,13 +29,16 @@ source:
   - ../packages/game-engine/src/rules/ruleRuntime.effects.ts
   - ../packages/game-engine/src/rules/ruleRuntime.impl.ts
   - ../packages/game-engine/src/rules/ruleHooks.registry.ts
+  - ../packages/game-engine/src/rules/schemeHandlers.ts
+  - ../packages/game-engine/src/rules/schemeTwistResolvers.ts
   - ../docs/ai/ARCHITECTURE.md
+  - ../docs/ai/DECISIONS.md
   - ../docs/ai/work-packets/WP-009A-scheme-mastermind-rule-hooks-contracts.md
   - ../docs/ai/work-packets/WP-009B-rule-execution-minimal-mvp.md
   - ../docs/ai/work-packets/WP-014A-villain-reveal-pipeline.md
   - ../docs/ai/work-packets/WP-024-scheme-mastermind-ability-execution.md
   - ../docs/10-GLOSSARY.md
-last-reviewed: 2026-05-07
+last-reviewed: 2026-08-07
 ---
 
 # Rule Execution Pipeline
@@ -140,6 +143,18 @@ The pipeline meets the engine's determinism invariants
   every handler in a single trigger fire sees the same pre-effect
   state.
 
+> **Documented exception — scheme-twist resolvers (WP-200).** The
+> `schemeTwistHandler` is a config-driven dispatcher whose *resolvers*
+> (`SCHEME_TWIST_RESOLVERS`) mutate `G` **directly** during Phase 1 to
+> carry out the scheme's printed twist text, then return only the generic
+> counter/loss effects. It is the one registered handler that deviates
+> from the pure return-effects model above. The deviation is deliberate
+> and localized to scheme twists; every other handler still returns
+> effects without touching `G`. Determinism is preserved (the resolvers
+> use no randomness and read only `G`), but a reader must not assume
+> Phase 1 is side-effect-free for the twist trigger. See
+> [Scheme Twist](scheme-twist.md).
+
 ### Closed sets (drift-detection invariants)
 
 Two closed sets define the pipeline's surface area. Both are
@@ -204,8 +219,16 @@ plumbing.
 - **[Scheme Twist](scheme-twist.md).** Registered handler for
   `onSchemeTwistRevealed`. Demonstrates the predict-post-effect
   pattern — handlers can gate conditional effects on a *predicted*
-  post-effect read of `G` because they run before
-  `applyRuleEffects`.
+  post-effect read of `G` because they run before `applyRuleEffects`.
+  Since WP-200 it is also a config-driven dispatcher whose resolvers
+  mutate `G` directly (the documented exception above), and its
+  `SCHEME_LOSS` write is per-scheme-config-gated (D-24178) — a
+  doom-clock *proxy* for the six resource-loss schemes rather than their
+  real Evil-Wins. A planned sibling path (the WP-508+ resource-loss
+  epic) writes `SCHEME_LOSS` **inline in the villain-reveal escape
+  path**, not via a `modifyCounter` effect — an instance of the
+  "apply the change inline in the originating move" escape hatch noted
+  under *Effect types* below.
 - **[Scheme](scheme.md) and Mastermind.** `HookDefinition.kind` is
   the closed two-value union that identifies the hook's owning
   entity; `sourceId` references the entity's ext_id. The pipeline
@@ -275,6 +298,8 @@ plumbing.
 - WP-009B: Two-phase execution pipeline implemented; `ImplementationMap` separation; default scheme/mastermind hooks (stubs)
 - WP-014A: Trigger emission added at `revealVillainCard` (`onCardRevealed` always; `onSchemeTwistRevealed` and `onMastermindStrikeRevealed` conditional on classification)
 - WP-024: WP-009B stubs replaced with real scheme/mastermind handlers via EC-024
+- WP-200: the scheme-twist handler became a config-driven dispatcher whose resolvers mutate `G` directly (the documented pure-handler exception)
+- D-24178: per-scheme scheme-loss threshold; records the twist-count `SCHEME_LOSS` write as a doom-clock proxy for the six resource-loss schemes (real conditions modelled by the WP-508+ epic)
 
 ## References
 
