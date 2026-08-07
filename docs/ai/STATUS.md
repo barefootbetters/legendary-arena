@@ -7,6 +7,40 @@
 
 ## Current State
 
+### WP-509 — Negative Zone Prison Breakout Villain-Escape Loss + Retire the Generic ESCAPE_LIMIT Proxy — DONE (2026-08-07)
+
+Negative Zone Prison Breakout now loses only when its **printed** Evil-Wins is met — **12 Villains
+escaped** — instead of at the eighth twist or the old generic 8-escape cap. Second WP of the
+resource-loss-scheme-fidelity epic (after WP-508 / Midtown). Builds directly on WP-508's framework with
+**no new condition kind**.
+
+- **Negative Zone villain-escape loss (D-24316):** `core/negative-zone-prison-breakout` gains
+  `resourceLossCondition: { kind: 'escaped-pile-count', cardType: 'villain', threshold: 12 }` — reusing
+  WP-508's `'escaped-pile-count'` kind unchanged. Counts `'villain'`-typed entries in `G.escapedPile`
+  only — **villains only**, per Universal Rules v23 §"Schemes that Count Escaped Villains" (henchmen are
+  typed `'henchman'`, carried bystanders `'bystander'`, so both are excluded by construction). Test guard:
+  "11 villains + 6 henchmen does NOT lose". The twist-count proxy is suppressed (same `resourceLossCondition
+  != null` gate as Midtown). `schemeResourceLoss.ts` / `schemeTwistConfig.types.ts` untouched.
+- **Retire the generic escape loss (D-24317):** the generic `escapedVillains >= ESCAPE_LIMIT (8)` →
+  `scheme-wins` branch is **removed** from `evaluateEndgame` (with its unused local + `ESCAPE_LIMIT`
+  import); villain-escape losses now flow through `SCHEME_LOSS` from the escape path. `evaluateEndgame`
+  stays counter-only. The `ESCAPED_VILLAINS` counter (per-escape increment) and the `ESCAPE_LIMIT`
+  constant are **retained** — `ESCAPE_LIMIT` remains the `coopOutcome.ts` loss-cause heuristic threshold
+  and a `sweep.analyze.ts` diagnostic. `classifyCoopOutcome` keeps its `'loss-villains-escaped'` category
+  and branch (comment reworded from a claimed "load-bearing invariant" to a documented heuristic); no
+  `COOP_OUTCOME_CATEGORIES` / `CoopGameRecord` change.
+- **Determinism:** `evaluateEndgame` is a pure `G.counters` read **outside** the hashed state, so removing
+  the branch leaves `finalStateHash` + `PRE_WP080_HASH` **byte-identical** (verified); `sim:runtime-observed:check`
+  current. Outcome-only shifts (a match that lost at 8 escapes now continues) are confined to
+  outcome/simulation fixtures — none committed depended on the 8-escape loss. No new `G` field.
+- **Verification:** game-engine 2370→2374 (+4) pass / 0 fail; whole-workspace `pnpm -r --no-bail test`
+  green (12 packages, 0 fail — the WP-508 lesson); control-revert non-vacuous (2 fails without the
+  config); `pnpm -r build` 0. Pre-flight READY + copilot PASS (both findings folded).
+- **Operator-pending:** D-24026 live-verify — a Negative Zone match on play.legendary-arena.com continues
+  past 8 escaped villains and ends `scheme-wins` at 12.
+- **Epic remainder:** WP-510 (stack-depletion — Legacy Virus, Civil War), WP-511 (conversion — Secret
+  Invasion, Killbots).
+
 ### WP-508 — Escaped-Pile Bystander Carry-Away + Midtown Bank Robbery Resource Loss — DONE (2026-08-07)
 
 Midtown Bank Robbery now loses only when its **printed** Evil-Wins is met — **8 Bystanders carried

@@ -29,14 +29,15 @@ describe('evaluateEndgame', () => {
     assert.strictEqual(resultWithZeros, null);
   });
 
-  it('returns scheme-wins when escapedVillains >= ESCAPE_LIMIT', () => {
+  it('returns null for escapedVillains >= ESCAPE_LIMIT (generic escape cap retired — D-24317)', () => {
+    // why: WP-509 / D-24317 removed the generic escapedVillains >= ESCAPE_LIMIT
+    // loss. Escaped villains alone no longer end the game; villain-escape losses
+    // are per-scheme (Negative Zone latches SCHEME_LOSS via an escaped-pile-count
+    // resourceLossCondition). The counter is still tracked for stats.
     const result = evaluateEndgame(makeMinimalState({
       [ENDGAME_CONDITIONS.ESCAPED_VILLAINS]: ESCAPE_LIMIT,
     }));
-    assert.deepStrictEqual(result, {
-      outcome: 'scheme-wins',
-      reason: 'Too many villains escaped.',
-    });
+    assert.strictEqual(result, null);
   });
 
   it('returns scheme-wins when schemeLoss >= 1', () => {
@@ -135,7 +136,6 @@ describe('evaluateEndgame', () => {
   it('MATCH_ENDED_EARLY takes priority over every natural win/loss/tie condition', () => {
     const result = evaluateEndgame(makeMinimalState({
       [ENDGAME_CONDITIONS.MATCH_ENDED_EARLY]: 1,
-      [ENDGAME_CONDITIONS.ESCAPED_VILLAINS]: ESCAPE_LIMIT,
       [ENDGAME_CONDITIONS.SCHEME_LOSS]: 1,
       [ENDGAME_CONDITIONS.MASTERMIND_DEFEATED]: 1,
       [ENDGAME_CONDITIONS.FINAL_TURN_TIE]: 1,
@@ -154,7 +154,6 @@ describe('evaluateEndgame', () => {
       { [ENDGAME_CONDITIONS.FINAL_TURN_TIE]: 1 },
       { [ENDGAME_CONDITIONS.MASTERMIND_DEFEATED]: 1 },
       { [ENDGAME_CONDITIONS.SCHEME_LOSS]: 1 },
-      { [ENDGAME_CONDITIONS.ESCAPED_VILLAINS]: ESCAPE_LIMIT },
     ]) {
       const result = evaluateEndgame(makeMinimalState(counters));
       assert.notStrictEqual(result, null);
@@ -175,10 +174,5 @@ describe('evaluateEndgame', () => {
       [ENDGAME_CONDITIONS.MASTERMIND_DEFEATED]: 1,
     }));
     assert.doesNotThrow(() => JSON.stringify(heroesWinResult));
-
-    const escapeResult = evaluateEndgame(makeMinimalState({
-      [ENDGAME_CONDITIONS.ESCAPED_VILLAINS]: ESCAPE_LIMIT,
-    }));
-    assert.doesNotThrow(() => JSON.stringify(escapeResult));
   });
 });

@@ -40,7 +40,7 @@ export type CoopOutcomeCategory = (typeof COOP_OUTCOME_CATEGORIES)[number];
  *   1. heroes win → 'win'
  *   2. turn cap hit with no terminal → 'inconclusive-turn-cap'
  *   3. deck-exhaustion tie → 'loss-tie'
- *   4. scheme wins → 'loss-villains-escaped' (escape overrun) | 'loss-scheme-completed'
+ *   4. scheme wins → 'loss-villains-escaped' (escape-driven heuristic) | 'loss-scheme-completed'
  *
  * @param record - the narrow per-game projection from simulateOneCoopGame.
  * @returns the canonical category for this game.
@@ -64,16 +64,18 @@ export function classifyCoopOutcome(record: CoopGameRecord): CoopOutcomeCategory
     return 'loss-tie';
   }
 
-  // why (load-bearing invariant): evaluateEndgame ends on the FIRST tripped
-  // condition, so at a 'scheme-wins' terminal escapedVillains >= ESCAPE_LIMIT
-  // iff escape-overrun was the trigger (had a lower-numbered condition tripped
-  // first, the game would have ended there, before the escape count reached the
-  // limit). The same-turn double-trip — SCHEME_LOSS and escape-overrun both true
-  // on one turn — is a known, accepted limitation of this proxy; surfacing a
-  // typed loss-cause from evaluateEndgame itself is deliberately out of scope
-  // (it would touch endgame.evaluate.ts, outside this WP's allowlist). Read the
-  // threshold from ESCAPE_LIMIT, never a literal, so the limit changing here is
-  // impossible to drift from the engine's.
+  // why (loss-cause heuristic, D-24317): the generic `escapedVillains >=
+  // ESCAPE_LIMIT` game-loss was RETIRED from evaluateEndgame — villain-escape
+  // losses are now per-scheme (Negative Zone latches SCHEME_LOSS at 12 escaped
+  // villains via an 'escaped-pile-count' resourceLossCondition, WP-509/D-24316).
+  // So this is no longer a load-bearing engine invariant; it is a loss-cause
+  // HEURISTIC for the WP-452 breakdown: at a 'scheme-wins' terminal a high
+  // escaped-villain count almost always means an escape-driven loss (a Negative
+  // Zone loss carries escapedVillains >= 12 >= ESCAPE_LIMIT). It can
+  // over-attribute a non-escape scheme loss that coincidentally accrued >=
+  // ESCAPE_LIMIT escapes — the same class of approximation the escape-overrun
+  // proxy always carried, accepted here for the analysis-only breakdown. Read
+  // the threshold from ESCAPE_LIMIT, never a literal, so it cannot drift.
   if (record.escapedVillains >= ESCAPE_LIMIT) {
     return 'loss-villains-escaped';
   }

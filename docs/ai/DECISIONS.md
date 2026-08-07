@@ -36110,3 +36110,25 @@ Protect this file.
 **Fences.** Data-only config (JSON-serializable); no new `G` field; `SCHEME_LOSS` set to 1 (idempotent; `evaluateEndgame` checks ≥ 1). Determinism preserved (no re-pin; see D-24314). Reserved by WP-508; landed at WP-508 execution.
 
 Protect this file.
+
+### D-24316 — Negative Zone Prison Breakout loses via `resourceLossCondition` (escaped-pile-count / `'villain'` / 12), villains only (Active — WP-509 / EC-544; landed 2026-08-07)
+
+**Context.** Negative Zone Prison Breakout's printed Evil-Wins is *"If 12 Villains escape"* (`data/cards/core.json`). It was riding the twist-count doom-clock proxy (D-24178) and, worse, ended early at the generic `escapedVillains >= ESCAPE_LIMIT (8)` cap in `evaluateEndgame`. WP-508 shipped the escaped-pile resource-loss framework (D-24315); this WP reuses it for the villain-escape subclass.
+
+**Decision.** `core/negative-zone-prison-breakout` gains `resourceLossCondition: { kind: 'escaped-pile-count', cardType: 'villain', threshold: 12 }` — **reusing the WP-508 `'escaped-pile-count'` kind unchanged** (no new kind; `schemeResourceLoss.ts` and `schemeTwistConfig.types.ts` untouched — `cardType` is already `RevealedCardType`). It loses when `G.escapedPile` holds ≥ 12 `'villain'`-typed entries, checked at the end of the escape branch by the existing `applyEscapedPileResourceLoss`. Its `lossThreshold: 8` stays but is inert for loss (twist-count proxy suppressed, keyed on `resourceLossCondition != null`, same as Midtown).
+
+**Villains only (faithfulness).** Universal Rules v23 §"Schemes that Count Escaped Villains": *"These count only the Villain cards currently in the Escape Pile."* Escaped villains are typed `'villain'`, henchmen `'henchman'`, carried bystanders `'bystander'` (`villainDeck.setup.ts`), so counting the pile by `'villain'` type is faithful by construction. The `ESCAPED_VILLAINS` counter increments per escaped adversary (villain **or** henchman) and is therefore **not** used for the loss — see the test guard "11 villains + 6 henchmen does NOT lose" (17 escaped, over the retired cap of 8, but only 11 villains → no loss).
+
+**Fences.** Data-only config; no new `G` field; no re-pin (see D-24317 — `evaluateEndgame` is outside the hashed state). Reserved by WP-509; landed at WP-509 execution.
+
+Protect this file.
+
+### D-24317 — Retire the generic `escapedVillains >= ESCAPE_LIMIT` game-loss from `evaluateEndgame`; villain-escape losses are per-scheme (Active — WP-509 / EC-544; landed 2026-08-07)
+
+**Context.** `evaluateEndgame` carried a generic `escapedVillains >= ESCAPE_LIMIT (8)` → `scheme-wins` branch — an MVP cap (its own comment: *"becomes part of MatchSetupConfig in a later packet when scheme-specific limits are implemented"*). It fired for **every** scheme at 8 escaped adversaries: it preempted Negative Zone's real 12 and was simply wrong for any scheme whose Evil-Wins is not villain-escape-count. With D-24316 modeling the real per-scheme condition, the generic branch had to go — Negative Zone could never reach 12 while the generic 8 stood.
+
+**Decision.** The `escapedVillainCount >= ESCAPE_LIMIT` branch (plus its now-unused local and the `ESCAPE_LIMIT` import) is removed from `evaluateEndgame`; villain-escape losses now arrive via `SCHEME_LOSS` from the escape path (D-24316 / D-24315 framework). `evaluateEndgame` stays counter-only. The `ESCAPED_VILLAINS` counter keeps incrementing per escaped adversary (stats + heuristic); the `ESCAPE_LIMIT` constant is **retained** — it remains the `coopOutcome.ts` loss-cause heuristic threshold and a `sweep.analyze.ts` diagnostic. `classifyCoopOutcome` keeps its `'loss-villains-escaped'` category and its `escapedVillains >= ESCAPE_LIMIT` branch, now documented as a **loss-cause heuristic** (a Negative Zone loss carries escapedVillains ≥ 12 ≥ 8, so the label stays correct); `COOP_OUTCOME_CATEGORIES` / `CoopGameRecord` unchanged (no dead category, no closed-set churn).
+
+**Fences.** `evaluateEndgame` is a pure `G.counters` read **outside** the hashed state, so removing the branch does not move `finalStateHash` / `PRE_WP080_HASH` — verified byte-identical at execution. It CAN change a match *outcome* (a match that lost at 8 escapes now continues); no committed replay/sentinel/simulation fixture depended on the 8-escape loss (`sim:runtime-observed:check` current; whole-workspace suite green). Reserved by WP-509; landed at WP-509 execution.
+
+Protect this file.

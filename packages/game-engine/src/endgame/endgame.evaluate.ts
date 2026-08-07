@@ -10,7 +10,7 @@
 
 import type { LegendaryGameState } from '../types.js';
 import type { EndgameResult } from './endgame.types.js';
-import { ENDGAME_CONDITIONS, ESCAPE_LIMIT } from './endgame.types.js';
+import { ENDGAME_CONDITIONS } from './endgame.types.js';
 
 /**
  * Evaluates whether the game has ended based on G.counters.
@@ -24,7 +24,6 @@ import { ENDGAME_CONDITIONS, ESCAPE_LIMIT } from './endgame.types.js';
  */
 export function evaluateEndgame(gameState: LegendaryGameState): EndgameResult | null {
   const matchEndedEarlyCount = gameState.counters[ENDGAME_CONDITIONS.MATCH_ENDED_EARLY] ?? 0;
-  const escapedVillainCount = gameState.counters[ENDGAME_CONDITIONS.ESCAPED_VILLAINS] ?? 0;
   const schemeLossCount = gameState.counters[ENDGAME_CONDITIONS.SCHEME_LOSS] ?? 0;
   const mastermindDefeatedCount = gameState.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED] ?? 0;
   const finalTurnTieCount = gameState.counters[ENDGAME_CONDITIONS.FINAL_TURN_TIE] ?? 0;
@@ -49,9 +48,13 @@ export function evaluateEndgame(gameState: LegendaryGameState): EndgameResult | 
   // deck-exhaustion tie is checked LAST: it is only ever resolved (its counter
   // set by turn.onEnd) when no win or loss fired during the final turn, so it
   // can never contend with a win/loss here. See WP-367 / D-24159.
-  if (escapedVillainCount >= ESCAPE_LIMIT) {
-    return { outcome: 'scheme-wins', reason: 'Too many villains escaped.' };
-  } else if (schemeLossCount >= 1) {
+  // why: D-24317 — the generic `escapedVillains >= ESCAPE_LIMIT` loss was
+  // retired. Villain-escape losses are now per-scheme: a scheme declaring an
+  // 'escaped-pile-count' resourceLossCondition (e.g. Negative Zone, 12 villains)
+  // latches SCHEME_LOSS from the escape path, so it is covered by the
+  // schemeLoss branch below. The ESCAPED_VILLAINS counter is still incremented
+  // (stats + the coopOutcome loss-cause heuristic) but no longer ends the game.
+  if (schemeLossCount >= 1) {
     return { outcome: 'scheme-wins', reason: 'The scheme has been completed.' };
   } else if (mastermindDefeatedCount >= 1) {
     return { outcome: 'heroes-win', reason: 'The mastermind has been defeated.' };
