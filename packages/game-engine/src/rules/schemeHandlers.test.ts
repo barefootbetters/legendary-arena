@@ -456,6 +456,38 @@ describe('schemeTwistHandler — Midtown Bank Robbery', () => {
       );
     });
   });
+
+  it('suppresses the twist-count proxy at its stack size (real loss is escaped-pile count, D-24315)', () => {
+    // why: Midtown declares a resourceLossCondition (escaped-pile bystander
+    // count), so the twist-count doom-clock proxy is suppressed — even at
+    // predicted twist 8 (its printed stack size) the handler must NOT push
+    // SCHEME_LOSS. The real loss is evaluated from the escape path instead.
+    const gameState = makeMidtownState({
+      bankVillain: 'core/magneto-001',
+      bystanderCount: 2,
+      nextCardId: 'villain-next',
+      nextCardType: 'villain',
+    });
+    gameState.counters.schemeTwistCount = 7; // predicted 8 = printed stack size
+
+    const effects = schemeTwistHandler(
+      gameState,
+      makeRevealContext(),
+      { cardId: 'twist-card' },
+      DEFAULT_IMPLEMENTATION_MAP,
+    );
+
+    assert.equal(
+      triggersSchemeLoss(effects),
+      false,
+      'Midtown must not trip the twist-count proxy — its loss is the escaped-pile count',
+    );
+    // proxy suppression is loss-only: the twist count still increments.
+    const counterEffect = effects.find(
+      (effect) => (effect as { counter?: string }).counter === 'schemeTwistCount',
+    );
+    assert.ok(counterEffect, 'twist count still increments under proxy suppression');
+  });
 });
 
 // ---------------------------------------------------------------------------

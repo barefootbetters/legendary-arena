@@ -41,8 +41,17 @@ export const SCHEME_TWIST_CONFIGS: Map<string, SchemeTwistConfig> = new Map([
       schemeId: 'core/midtown-bank-robbery',
       resolverId: 'midtown-bank-robbery',
       params: {},
-      // why: 8-twist stack (resource loss — 8 bystanders carried away); doom-clock proxy (D-24178).
+      // why: real Evil-Wins is a RESOURCE condition (D-24315) — 8 Bystanders
+      // carried away by escaping villains, counted in G.escapedPile. Declaring
+      // resourceLossCondition SUPPRESSES the twist-count doom-clock proxy for
+      // this scheme; lossThreshold (the printed 8-twist stack size) is retained
+      // but is now INERT for loss (kept for any path still reading it, per D-24178).
       lossThreshold: 8,
+      resourceLossCondition: {
+        kind: 'escaped-pile-count',
+        cardType: 'bystander',
+        threshold: 8,
+      },
     },
   ],
   [

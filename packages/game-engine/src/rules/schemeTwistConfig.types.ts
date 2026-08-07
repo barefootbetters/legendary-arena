@@ -10,8 +10,28 @@
 
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
+import type { RevealedCardType } from '../villainDeck/villainDeck.types.js';
 import type { RevealContext } from '../villainDeck/villainDeck.reveal.js';
 import type { ImplementationMap } from './ruleRuntime.execute.js';
+
+/**
+ * Declares a scheme's real "Evil Wins" condition as a resource threshold,
+ * so the scheme loses when the condition is met rather than on the
+ * twist-count doom-clock proxy (D-24178 / D-24315).
+ *
+ * The only kind in v1 is `'escaped-pile-count'`: the scheme loses when the
+ * Escaped Villains pile (`G.escapedPile`) holds at least `threshold` entries
+ * whose card type equals `cardType`. Data-only (a plain object literal, no
+ * functions) so `SchemeTwistConfig` stays JSON-serializable.
+ */
+export interface SchemeResourceLossCondition {
+  /** The only condition kind in v1 — count entries in the escaped pile. */
+  kind: 'escaped-pile-count';
+  /** The card type to count in `G.escapedPile`. */
+  cardType: RevealedCardType;
+  /** The count at which the scheme is lost (evil wins). */
+  threshold: number;
+}
 
 /**
  * Identifies a registered scheme twist resolver function.
@@ -52,6 +72,14 @@ export interface SchemeTwistConfig {
    * (D-24178). Data-only (a plain map, no functions).
    */
   lossThresholdByPlayerCount?: Record<string, number>;
+  /**
+   * The scheme's real Evil-Wins condition, when it is a resource threshold
+   * rather than a twist count (D-24315). When present, the twist-count
+   * doom-clock proxy (D-24178) is SUPPRESSED for this scheme — the scheme
+   * loses only when this condition is met. Absent for true twist-loss schemes
+   * (Portals, Cosmic Cube), which keep the twist-threshold loss. Data-only.
+   */
+  resourceLossCondition?: SchemeResourceLossCondition;
 }
 
 /**

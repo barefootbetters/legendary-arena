@@ -4,7 +4,7 @@
  * Three pure functions for the bystander lifecycle:
  * - attachBystanderToVillain: attach one bystander on City entry
  * - awardAttachedBystanders: award bystanders to player on villain defeat
- * - resolveEscapedBystanders: return bystanders to supply on villain escape
+ * - carryEscapedBystandersToPile: carry bystanders into the escaped pile on villain escape
  *
  * All functions return new objects and never mutate inputs.
  * No boardgame.io import. No side effects.
@@ -28,12 +28,12 @@ export interface AwardBystandersResult {
   playerVictory: CardExtId[];
 }
 
-/** Result of a resolveEscapedBystanders operation. */
-export interface ResolveEscapedBystandersResult {
+/** Result of a carryEscapedBystandersToPile operation. */
+export interface CarryEscapedBystandersResult {
   /** Updated attached bystanders mapping (entry removed). */
   attachedBystanders: Record<CardExtId, CardExtId[]>;
-  /** Updated bystanders supply pile (escaped bystanders returned). */
-  bystandersPile: CardExtId[];
+  /** Updated Escaped Villains pile (carried-away bystanders appended). */
+  escapedPile: CardExtId[];
 }
 
 /**
@@ -112,32 +112,36 @@ export function awardAttachedBystanders(
 }
 
 /**
- * Resolves bystanders attached to an escaped villain by returning them
- * to the supply pile.
+ * Carries the bystanders attached to an escaped villain into the Escaped
+ * Villains pile.
  *
- * Returns any bystanders in the mapping entry for escapedCardId to the
- * end of bystandersPile and removes the mapping entry. If no entry exists,
- * returns all inputs unchanged.
+ * Appends any bystanders in the mapping entry for escapedCardId to the end of
+ * escapedPile and removes the mapping entry. If no entry exists, returns all
+ * inputs unchanged (deterministic no-op).
  *
  * @param escapedCardId - The escaped villain or henchman.
  * @param attachedBystanders - The current attached bystanders mapping.
- * @param bystandersPile - The shared bystanders supply pile.
- * @returns New objects for both the mapping and supply pile.
+ * @param escapedPile - The Escaped Villains pile (G.escapedPile).
+ * @returns New objects for both the mapping and the escaped pile.
  */
-// why: escaped villains release bystanders to prevent memory leaks and
-// supply depletion. Returned to end of pile to maintain deterministic
-// ordering.
-export function resolveEscapedBystanders(
+// why: D-24314 / Universal Rules v23 escape handling — an escaping villain
+// CARRIES AWAY its captured bystanders into the Escaped Villains pile; they are
+// "carried away," not released back to the shared supply. Routing them here (not
+// to G.piles.bystanders) is what makes them countable for resource-loss schemes
+// such as Midtown Bank Robbery ("8 Bystanders carried away by escaping
+// Villains"). Appended to the end for deterministic ordering; the mapping entry
+// is still deleted so no bystander leaks.
+export function carryEscapedBystandersToPile(
   escapedCardId: CardExtId,
   attachedBystanders: Record<CardExtId, CardExtId[]>,
-  bystandersPile: CardExtId[],
-): ResolveEscapedBystandersResult {
+  escapedPile: CardExtId[],
+): CarryEscapedBystandersResult {
   const bystanders = attachedBystanders[escapedCardId];
 
   if (!bystanders || bystanders.length === 0) {
     return {
       attachedBystanders: { ...attachedBystanders },
-      bystandersPile: [...bystandersPile],
+      escapedPile: [...escapedPile],
     };
   }
 
@@ -146,6 +150,6 @@ export function resolveEscapedBystanders(
 
   return {
     attachedBystanders: updatedMapping,
-    bystandersPile: [...bystandersPile, ...bystanders],
+    escapedPile: [...escapedPile, ...bystanders],
   };
 }

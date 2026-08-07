@@ -36088,3 +36088,25 @@ Protect this file.
 **Consequences.** Cross-layer (registry schema contract + shared-tooling generator + dashboard reader), each layer's boundary respected: the registry owns the widened contract, the generator reads data only, the dashboard reads the index verbatim. Regenerated index 1367 → 1823 entries (+456 mastermind rows; 2 executable, 454 unmarked). **No engine / `G` / runtime / determinism surface** — no `finalStateHash` / `PRE_WP080` re-pin, no card-data change. Registry 221 → 222 / 0; `effect-index:test` 7 / 0; dashboard 435 → 436 / 0 + `vue-tsc` 0; `pnpm -r build` 0. No Vue component-render test was added — the dashboard has no component-render infrastructure; coverage is the composable tests (`scopeLabel` + the mastermind scope filter) plus the `vue-tsc` typecheck of `EffectsPage.vue`. §17 (§22 product legibility; No conflict; determinism untouched; NG-1..7 not crossed). §20 N/A. §21 N/A. `User-Visible Surface = dashboard.legendary-arena.com/debug/effects` — **D-24026 live-verify operator-pending** (filter to Mastermind → core Magneto's four tactics show, Crushing Shockwave + Octet `executable`, the rest `unmarked`). Reserved by WP-507; landed at WP-507 execution.
 
 Protect this file.
+
+### D-24314 — Escaping villains carry their captured Bystanders into the Escaped Villains pile (`G.escapedPile`), not back to the supply (Active — WP-508 / EC-543; landed 2026-08-07)
+
+**Context.** On a villain escape the engine returned the villain's attached Bystanders to the shared supply (`resolveEscapedBystanders`, "prevent memory leaks"). That is the opposite of the tabletop rule ("carried away") and left the Bystanders uncountable — so Midtown Bank Robbery's printed Evil-Wins ("8 Bystanders carried away by escaping Villains") could not be modeled and rode the twist-count doom-clock proxy (D-24178). Surfaced live 2026-08-07: a core Magneto / Midtown co-op ended `scheme-wins` at twist 8 with an empty escaped pile.
+
+**Decision.** The escape path routes an escaping villain's captured Bystanders into `G.escapedPile` via the renamed helper `carryEscapedBystandersToPile` (result type `CarryEscapedBystandersResult`; the `game-engine` package barrel re-exports updated in lockstep). `G.escapedPile` is the canonical zone for every card carried off the city (escaped villains + their Bystanders); the `ESCAPED_VILLAINS` counter still counts escaped villain cards only. `G.piles.bystanders` is untouched on escape; the `attachedBystanders` mapping entry is still deleted (no leak).
+
+**Fences.** `G.escapedPile` is hashed, so this re-pins any fixture that escapes a villain **with attached Bystanders**. No committed fixture does — sentinel `finalStateHash` + `PRE_WP080_HASH` verified byte-identical at execution. No new `G` field. Reserved by WP-508; landed at WP-508 execution.
+
+Protect this file.
+
+### D-24315 — Scheme resource-loss conditions: data-only `SchemeTwistConfig.resourceLossCondition` (escaped-pile card-type count) that sets `SCHEME_LOSS` from the escape path and suppresses the twist-count proxy (Active — WP-508 / EC-543; landed 2026-08-07)
+
+**Context.** D-24178 records six core schemes whose real Evil-Wins is a resource condition, not a twist count — for them the twist-count `SCHEME_LOSS` write is a doom-clock proxy. WP-508 begins modeling the real conditions, starting with the escaped-pile-count subclass (Midtown; later Negative Zone / Secret Invasion / Killbots).
+
+**Decision.** `SchemeTwistConfig` gains an optional data-only `resourceLossCondition` = `{ kind: 'escaped-pile-count'; cardType: RevealedCardType; threshold: number }`. A new pure module `rules/schemeResourceLoss.ts` (`countEscapedPileByType` + `applyEscapedPileResourceLoss`) sets `G.counters[SCHEME_LOSS] = 1` when `G.escapedPile` holds ≥ `threshold` entries of `cardType`, checked at the **end of the escape branch** (the only place the pile grows). `evaluateEndgame` stays counter-only. When a scheme declares a `resourceLossCondition`, the twist-count proxy is **suppressed** for it: `schemeTwistHandler` (which holds `config`) passes `suppressTwistLoss` into `buildGenericTwistEffects`; the twist count still increments. Wired for Midtown Bank Robbery (`cardType: 'bystander'`, `threshold: 8`). Twist-loss schemes (Portals, Cosmic Cube) declare none and keep the twist-threshold loss.
+
+**Classification refinement (surfaced at execution).** Escaped-pile entries are classified via `G.villainDeckCardTypes`, which covers villain-deck cards but **not** supply Bystanders (`BYSTANDER_EXT_ID = 'pile-bystander'`, which Midtown's twist captures from the supply). `countEscapedPileByType` therefore also maps `BYSTANDER_EXT_ID` → `'bystander'`; without this Midtown would undercount its supply-captured Bystanders. This refines the WP's "via `villainDeckCardTypes`" wording.
+
+**Fences.** Data-only config (JSON-serializable); no new `G` field; `SCHEME_LOSS` set to 1 (idempotent; `evaluateEndgame` checks ≥ 1). Determinism preserved (no re-pin; see D-24314). Reserved by WP-508; landed at WP-508 execution.
+
+Protect this file.

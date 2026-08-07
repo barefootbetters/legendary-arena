@@ -165,12 +165,12 @@ export type { GainWoundResult } from "./board/wounds.logic.js";
 export {
   attachBystanderToVillain,
   awardAttachedBystanders,
-  resolveEscapedBystanders,
+  carryEscapedBystandersToPile,
 } from "./board/bystanders.logic.js";
 export type {
   AttachBystanderResult,
   AwardBystandersResult,
-  ResolveEscapedBystandersResult,
+  CarryEscapedBystandersResult,
 } from "./board/bystanders.logic.js";
 export { computeFinalScores } from "./scoring/scoring.logic.js";
 export type {

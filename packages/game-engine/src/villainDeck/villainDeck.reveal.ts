@@ -24,7 +24,8 @@ import { pushVillainIntoCity } from '../board/city.logic.js';
 import { validateCityShape } from '../board/city.validate.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { gainWound } from '../board/wounds.logic.js';
-import { resolveEscapedBystanders } from '../board/bystanders.logic.js';
+import { carryEscapedBystandersToPile } from '../board/bystanders.logic.js';
+import { applyEscapedPileResourceLoss } from '../rules/schemeResourceLoss.js';
 import { hasAmbush } from '../board/boardKeywords.logic.js';
 import { koAttachedHeroesOnEscape } from '../board/heroCapture.logic.js';
 import { recordEffectTrace } from '../diagnostics/effectTrace.record.js';
@@ -263,19 +264,23 @@ export function performVillainReveal(
         );
       }
 
-      // why: escaped villain releases bystanders back to supply to prevent
-      // memory leaks and bystander depletion
-      const bystanderPileBefore = G.piles.bystanders.length;
-      const escapeBystanderResult = resolveEscapedBystanders(
+      // why: D-24314 — an escaping villain CARRIES its captured bystanders into
+      // the Escaped Villains pile (G.escapedPile), not back to the shared supply.
+      // This is faithful to Universal Rules v23 escape handling and makes the
+      // bystanders countable for resource-loss schemes (e.g. Midtown Bank
+      // Robbery: "8 Bystanders carried away by escaping Villains"). The mapping
+      // entry is still cleared (no leak); G.piles.bystanders is NOT touched here.
+      const escapedPileBeforeBystanders = G.escapedPile.length;
+      const escapeBystanderResult = carryEscapedBystandersToPile(
         pushResult.escapedCard,
         G.attachedBystanders,
-        G.piles.bystanders,
+        G.escapedPile,
       );
       G.attachedBystanders = escapeBystanderResult.attachedBystanders;
-      G.piles.bystanders = escapeBystanderResult.bystandersPile;
-      if (escapeBystanderResult.bystandersPile.length > bystanderPileBefore) {
-        pushLog(G, 
-          `Bystanders from escaped villain ${formatCardRef(G.cardDisplayData, pushResult.escapedCard)} returned to supply.`,
+      G.escapedPile = escapeBystanderResult.escapedPile;
+      if (escapeBystanderResult.escapedPile.length > escapedPileBeforeBystanders) {
+        pushLog(G,
+          `Bystanders from escaped villain ${formatCardRef(G.cardDisplayData, pushResult.escapedCard)} carried into the Escaped Villains pile.`,
         );
       }
 
@@ -364,6 +369,15 @@ export function performVillainReveal(
           turn: readRevealContextTurn(context),
         });
       }
+
+      // why: D-24315 — evaluate the active scheme's escaped-pile resource-loss
+      // condition at the END of the escape branch, after every escape
+      // consequence has settled (bystander carry-away, current-player wound,
+      // card-text Escape: effects, captured-hero KO, and the Mystique
+      // escape→scheme-twist path). This is the only place G.escapedPile grows,
+      // so the count reflects the full escape. No-op for schemes with no
+      // resourceLossCondition.
+      applyEscapedPileResourceLoss(G);
     }
 
     // why: Ambush fires on City entry. The hardcoded "each player gains a

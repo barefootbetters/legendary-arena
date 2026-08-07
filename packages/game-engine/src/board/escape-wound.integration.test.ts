@@ -267,7 +267,7 @@ describe('bystander award on defeat', () => {
 });
 
 describe('escape with attached bystanders', () => {
-  it('escape with attached bystanders: bystanders returned to supply pile, mapping entry removed, no bystander leak', () => {
+  it('escape with attached bystanders: bystanders carried into the escaped pile, mapping entry removed, no bystander leak', () => {
     const gameState = createMockGameState({
       deck: ['new-villain'],
       cardTypes: {
@@ -290,9 +290,16 @@ describe('escape with attached bystanders', () => {
       !('city-villain-4' in gameState.attachedBystanders),
       'Mapping entry for escaped villain must be removed',
     );
+    // why: D-24314 — an escaping villain CARRIES its captured bystanders into
+    // the Escaped Villains pile (countable for resource-loss schemes), NOT back
+    // to the shared supply.
     assert.ok(
-      gameState.piles.bystanders.includes('bystander-attached-1'),
-      'Attached bystander must be returned to supply pile',
+      gameState.escapedPile.includes('bystander-attached-1'),
+      'Attached bystander must be carried into the Escaped Villains pile',
+    );
+    assert.ok(
+      !gameState.piles.bystanders.includes('bystander-attached-1'),
+      'Attached bystander must NOT be returned to the supply pile',
     );
   });
 });

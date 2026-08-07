@@ -2,7 +2,7 @@
  * Tests for bystander capture helpers.
  *
  * Verifies attachBystanderToVillain, awardAttachedBystanders, and
- * resolveEscapedBystanders behavior, immutability, and JSON serializability.
+ * carryEscapedBystandersToPile behavior, immutability, and JSON serializability.
  *
  * Uses node:test and node:assert only — no boardgame.io imports.
  */
@@ -12,7 +12,7 @@ import assert from 'node:assert/strict';
 import {
   attachBystanderToVillain,
   awardAttachedBystanders,
-  resolveEscapedBystanders,
+  carryEscapedBystandersToPile,
 } from './bystanders.logic.js';
 
 describe('attachBystanderToVillain', () => {
@@ -118,24 +118,52 @@ describe('awardAttachedBystanders', () => {
   });
 });
 
-describe('resolveEscapedBystanders', () => {
-  it('returns bystanders to supply pile and removes mapping', () => {
+describe('carryEscapedBystandersToPile', () => {
+  it('carries bystanders into the escaped pile and removes mapping', () => {
     const attachedBystanders = {
       'villain-a': ['bystander-1', 'bystander-2'],
     };
-    const bystandersPile = ['bystander-3'];
+    const escapedPile = ['core-villain-brotherhood-blob-00'];
 
-    const result = resolveEscapedBystanders(
+    const result = carryEscapedBystandersToPile(
       'villain-a',
       attachedBystanders,
-      bystandersPile,
+      escapedPile,
     );
 
+    // why: bystanders are carried INTO the escaped pile (D-24314), not returned
+    // to the supply — this is what makes them countable for resource losses.
     assert.deepStrictEqual(
-      result.bystandersPile,
-      ['bystander-3', 'bystander-1', 'bystander-2'],
+      result.escapedPile,
+      ['core-villain-brotherhood-blob-00', 'bystander-1', 'bystander-2'],
     );
     assert.ok(!('villain-a' in result.attachedBystanders));
+  });
+
+  it('no mapping entry: returns the escaped pile unchanged (no-op)', () => {
+    const attachedBystanders = { 'villain-b': ['bystander-1'] };
+    const escapedPile = ['core-villain-brotherhood-blob-00'];
+
+    const result = carryEscapedBystandersToPile(
+      'villain-a',
+      attachedBystanders,
+      escapedPile,
+    );
+
+    assert.deepStrictEqual(result.escapedPile, ['core-villain-brotherhood-blob-00']);
+    assert.deepStrictEqual(result.attachedBystanders['villain-b'], ['bystander-1']);
+  });
+
+  it('does not mutate the input escaped pile', () => {
+    const escapedPile = ['v-1'];
+    const result = carryEscapedBystandersToPile(
+      'villain-a',
+      { 'villain-a': ['bystander-1'] },
+      escapedPile,
+    );
+
+    assert.deepStrictEqual(escapedPile, ['v-1'], 'input escaped pile must be unchanged');
+    assert.deepStrictEqual(result.escapedPile, ['v-1', 'bystander-1']);
   });
 });
 
@@ -161,14 +189,14 @@ describe('bystander helpers — JSON serialization', () => {
       'awardAttachedBystanders result must serialize',
     );
 
-    const resolveResult = resolveEscapedBystanders(
+    const carryResult = carryEscapedBystandersToPile(
       'villain-a',
       { 'villain-a': ['bystander-1'] },
       [],
     );
     assert.ok(
-      JSON.stringify(resolveResult).length > 0,
-      'resolveEscapedBystanders result must serialize',
+      JSON.stringify(carryResult).length > 0,
+      'carryEscapedBystandersToPile result must serialize',
     );
   });
 });
