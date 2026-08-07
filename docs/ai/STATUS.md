@@ -7,6 +7,34 @@
 
 ## Current State
 
+### WP-507 — Mastermind-Tactic Coverage in the Effect-Implementation Index (`/debug/effects`) — DONE (2026-08-07)
+
+Mastermind **tactic** cards now appear in the effect-implementation index, so `/debug/effects` shows
+whether each tactic's printed **Fight:** ability is implemented. Before this the index was a verbatim
+join of the hero + villain ledgers only — tactics were in neither, so a defeated-but-inert tactic (the
+whole WP-497 arc) was invisible until played. This closes that observability gap.
+
+- **Registry (contract change):** `"mastermind"` added to `EFFECT_INDEX_ENTRY_SCOPES`, a required
+  `mastermind` key to `EffectImplementationSummarySchema.byScope`, and `mastermind: 0` to the
+  `superRefine` `scopeTally` accumulator (the loop reads the array but the accumulator is a literal —
+  `NaN` without the seed). **D-24313 Active.**
+- **Generator (engine-free):** `readMastermindTactics` enumerates every mastermind tactic from
+  `data/cards/*.json` (sorted `readdir`) into `mastermind`-scoped entries (ext_id
+  `${setAbbr}-mastermind-${slug}-${tacticSlug}`, `mechanic` = tactic slug), with
+  status/handler/wp/decision from the new `scripts/coverage/tactic-provenance.json` overlay or the
+  `unmarked`/blank default — **verbatim honesty, never fabricated**. New `effect-index:test` `.test.ts`
+  (CLI guarded behind `isRunDirectly`) + a `ci.yml` step gate the honesty invariants. Regenerated
+  index: **1367 → 1823 entries** (+456 mastermind rows; 2 executable — WP-497 Octet + WP-506 Crushing
+  Shockwave — 454 unmarked).
+- **Dashboard:** `scopeLabel` mastermind case + `EMPTY_INDEX.byScope.mastermind`; `EffectsPage.vue`
+  gains the **Mastermind** filter chip, the `byScope` count, and a `.fx-scope-mastermind` badge. No
+  component-render test added — the dashboard has no Vue-render test infra; coverage is the composable
+  tests (`scopeLabel` + the mastermind scope filter) + the `vue-tsc` typecheck of `EffectsPage.vue`.
+- Verified: registry **221→222/0**, `effect-index:test` **7/0**, dashboard **435→436/0** + `vue-tsc` 0,
+  `effect-index:check` current, `pnpm -r build` 0. **No engine/`G`/determinism surface** (no re-pin).
+  **D-24026 live-verify operator-pending** (filter `/debug/effects` to Mastermind → the four core Magneto
+  tactics show; Crushing Shockwave + Octet `executable`, the rest `unmarked`).
+
 ### WP-506 — Core Magneto Tactic "Crushing Shockwave" onFight Resolver — DONE (2026-08-07)
 
 Defeating core Magneto's **"Crushing Shockwave"** tactic now fires its printed **Fight:** ability
