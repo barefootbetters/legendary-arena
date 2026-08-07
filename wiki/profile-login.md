@@ -501,14 +501,15 @@ The **block → cooldown → rate-limit** guards (the WP-355 abuse controls, D-2
 `sendFriendRequest`, in that locked order, so the `accountId` path inherits them unchanged — a UUID
 gives no way around a block or the daily cap.
 
-> **Known client gap (server is correct; the message isn't).** The three WP-355 codes — `blocked`,
-> `request_cooldown`, `rate_limited` — are enforced authoritatively on the server, but the client's
-> hand-maintained error-code mirror still lags the server union by exactly these three, so today they
-> surface as the **generic** "couldn't send" banner instead of a specific reason. The client's drift
-> guard only compares the mirror to a *hardcoded copy of itself*, not to the server, which is why the
-> lag went unnoticed. Tracked as a follow-up (add the three codes to the client mirror + friendly copy);
-> it does not affect enforcement, only the wording the sender reads. Surfaced during the WP-504 audit
-> (2026-08-06).
+> **Client error-message parity — fixed (2026-08-06, PR #1254).** For a while the three WP-355 codes —
+> `blocked`, `request_cooldown`, `rate_limited` — were enforced authoritatively on the server but
+> **missing** from the client's hand-maintained error-code mirror, so they surfaced as the generic
+> "couldn't send" banner instead of a specific reason. They are now mirrored and each renders its own
+> line (see the rejection table above), in lockstep with the server union (WP-351's eleven + WP-504's
+> `account_not_found` + these three = 15 codes). **Standing caveat (why it went unnoticed):** the
+> client's drift guard only compares the mirror to a *hardcoded copy of itself*, not to the live server
+> union — so a newly added server code can still silently lag until someone updates both the mirror and
+> that copy. Surfaced during the WP-504 audit and closed the same day.
 
 ### A note that cost a day: no global body parser
 
