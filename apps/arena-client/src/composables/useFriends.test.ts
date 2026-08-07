@@ -122,6 +122,30 @@ test('add(handle) POSTs to /requests then refetches', async () => {
   assert.ok(reads.length >= 2);
 });
 
+test('add(uuid) POSTs {accountId} not {handle}', async () => {
+  routeReads([], [], []);
+  const f = useFriends(() => 'token');
+  const ok = await f.add('4f2219e4-1c3b-4a5d-8e6f-0a1b2c3d4e5f');
+  assert.equal(ok, true);
+  const post = capturedCalls.find(
+    (call) => call.method === 'POST' && call.url.endsWith('/api/me/friends/requests'),
+  );
+  assert.ok(post, 'a POST to /api/me/friends/requests was made');
+  assert.deepEqual(post.body, {
+    accountId: '4f2219e4-1c3b-4a5d-8e6f-0a1b2c3d4e5f',
+  });
+});
+
+test('add(unparseable) sets invalid_request inline and makes no network call', async () => {
+  routeReads([], [], []);
+  const f = useFriends(() => 'token');
+  const ok = await f.add('   ');
+  assert.equal(ok, false);
+  assert.equal(f.errorCode.value, 'invalid_request');
+  // No request of any kind was issued for an unparseable input.
+  assert.equal(capturedCalls.length, 0);
+});
+
 test('accept / decline / remove call the right endpoint then refetch', async () => {
   routeReads([], [], []);
   const f = useFriends(() => 'token');

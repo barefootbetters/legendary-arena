@@ -57,6 +57,11 @@ export const FRIEND_API_ERROR_CODES = [
   'invalid_request',
   'handle_required',
   'handle_not_found',
+  // why: WP-504 — a well-formed but unknown Account ID on the
+  // add-by-Account-ID path returns account_not_found (404); mirrored here
+  // so the client renders "No player with that Account ID." rather than the
+  // generic banner. Kept in lockstep with the server union.
+  'account_not_found',
 ] as const;
 
 /**
@@ -183,19 +188,21 @@ export async function fetchFriendRequests(
 }
 
 /**
- * Send a friend request by `@handle` (`POST /api/me/friends/requests`).
- * Returns the new pending `FriendSummary` on 201.
+ * Send a friend request by `@handle` or by Account ID
+ * (`POST /api/me/friends/requests`). The `target` carries exactly one
+ * identifier — `{ handle }` or `{ accountId }` — and is serialized to the
+ * matching body field. Returns the new pending `FriendSummary` on 201.
  */
 export async function sendFriendRequest(
   authToken: string | null,
-  handle: string,
+  target: { handle: string } | { accountId: string },
 ): Promise<FriendsApiResult<FriendSummary>> {
   let response: Response;
   try {
     response = await fetch(buildApiUrl('/api/me/friends/requests'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeaders(authToken) },
-      body: JSON.stringify({ handle }),
+      body: JSON.stringify(target),
     });
   } catch {
     return { ok: false, status: 0, code: null };

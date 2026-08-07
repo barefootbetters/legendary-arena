@@ -249,6 +249,7 @@ describe('friend-request routes (WP-351)', () => {
       'invalid_request',
       'handle_required',
       'handle_not_found',
+      'account_not_found',
       'blocked',
       'rate_limited',
       'request_cooldown',
@@ -370,6 +371,90 @@ describe('friend-request routes (WP-351)', () => {
       await aliceHandlers.get('POST /api/me/friends/requests')!(afterFriends);
       assert.equal(afterFriends.status, 409);
       assert.deepEqual(afterFriends.body, { error: 'already_friends' });
+    },
+  );
+
+  // --- DB-backed: send by AccountId (WP-504) ---
+
+  test(
+    'POST send by accountId: happy path 201 resolves the target (no accountId on the wire)',
+    hasTestDatabase ? {} : { skip: 'requires test database' },
+    async () => {
+      assert.ok(testPool !== null);
+      const alice = await provisionAccountWithHandle(testPool, 'aid-a');
+      const bob = await provisionAccountWithHandle(testPool, 'aid-b');
+      const handlers = handlersForActor(alice.accountId);
+      const koaContext = makeContext({ body: { accountId: bob.accountId } });
+      await handlers.get('POST /api/me/friends/requests')!(koaContext);
+      assert.equal(koaContext.status, 201);
+      assertIsFriendSummary(koaContext.body);
+      const summary = koaContext.body as Record<string, unknown>;
+      // The AccountId resolved to Bob — the enriched summary carries his
+      // handle + displayName and NO accountId (FR-2 preserved).
+      assert.equal(summary.handle, bob.handle);
+      assert.equal(summary.displayName, bob.displayName);
+      assert.equal(summary.status, 'pending');
+      assert.equal(summary.direction, 'outgoing');
+    },
+  );
+
+  test(
+    'POST send by accountId: malformed accountId → 400 invalid_request',
+    hasTestDatabase ? {} : { skip: 'requires test database' },
+    async () => {
+      assert.ok(testPool !== null);
+      const alice = await provisionAccountWithHandle(testPool, 'aid-mal');
+      const handlers = handlersForActor(alice.accountId);
+      const koaContext = makeContext({ body: { accountId: 'not-a-uuid' } });
+      await handlers.get('POST /api/me/friends/requests')!(koaContext);
+      assert.equal(koaContext.status, 400);
+      assert.deepEqual(koaContext.body, { error: 'invalid_request' });
+    },
+  );
+
+  test(
+    'POST send by accountId: well-formed but unknown → 404 account_not_found',
+    hasTestDatabase ? {} : { skip: 'requires test database' },
+    async () => {
+      assert.ok(testPool !== null);
+      const alice = await provisionAccountWithHandle(testPool, 'aid-unk');
+      const handlers = handlersForActor(alice.accountId);
+      // A syntactically valid UUID that was never provisioned.
+      const koaContext = makeContext({ body: { accountId: randomUUID() } });
+      await handlers.get('POST /api/me/friends/requests')!(koaContext);
+      assert.equal(koaContext.status, 404);
+      assert.deepEqual(koaContext.body, { error: 'account_not_found' });
+    },
+  );
+
+  test(
+    'POST send: both handle and accountId present → 400 invalid_request',
+    hasTestDatabase ? {} : { skip: 'requires test database' },
+    async () => {
+      assert.ok(testPool !== null);
+      const alice = await provisionAccountWithHandle(testPool, 'both-a');
+      const bob = await provisionAccountWithHandle(testPool, 'both-b');
+      const handlers = handlersForActor(alice.accountId);
+      const koaContext = makeContext({
+        body: { handle: bob.handle, accountId: bob.accountId },
+      });
+      await handlers.get('POST /api/me/friends/requests')!(koaContext);
+      assert.equal(koaContext.status, 400);
+      assert.deepEqual(koaContext.body, { error: 'invalid_request' });
+    },
+  );
+
+  test(
+    'POST send by accountId: own accountId → 409 self_friendship',
+    hasTestDatabase ? {} : { skip: 'requires test database' },
+    async () => {
+      assert.ok(testPool !== null);
+      const alice = await provisionAccountWithHandle(testPool, 'aid-self');
+      const handlers = handlersForActor(alice.accountId);
+      const koaContext = makeContext({ body: { accountId: alice.accountId } });
+      await handlers.get('POST /api/me/friends/requests')!(koaContext);
+      assert.equal(koaContext.status, 409);
+      assert.deepEqual(koaContext.body, { error: 'self_friendship' });
     },
   );
 

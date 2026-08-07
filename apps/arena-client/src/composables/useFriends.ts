@@ -30,6 +30,7 @@ import {
   type FriendApiErrorCode,
   type FriendSummary,
 } from '../lib/api/friendsApi';
+import { parsePlayerIdentifier } from '../lib/api/playerIdentifier';
 
 /**
  * The reactive surface returned by `useFriends`. The three lists are the
@@ -44,7 +45,7 @@ export interface UseFriends {
   readonly isLoading: Ref<boolean>;
   readonly errorCode: Ref<FriendApiErrorCode | null>;
   readonly load: () => Promise<void>;
-  readonly add: (handle: string) => Promise<boolean>;
+  readonly add: (raw: string) => Promise<boolean>;
   readonly accept: (handle: string) => Promise<boolean>;
   readonly decline: (handle: string) => Promise<boolean>;
   readonly remove: (handle: string) => Promise<boolean>;
@@ -96,12 +97,26 @@ export function useFriends(readAuthToken: () => string | null): UseFriends {
   // corrupted by a rejected mutation.
 
   /**
-   * Send a friend request by `@handle`, then reload on success.
-   * Returns true on success, false on failure (with `errorCode` set).
+   * Send a friend request by `@handle` or by Account ID, then reload on
+   * success. `raw` is discriminated by `parsePlayerIdentifier`; an
+   * unparseable input never reaches the network. Returns true on success,
+   * false on failure (with `errorCode` set).
    */
-  async function add(handle: string): Promise<boolean> {
+  async function add(raw: string): Promise<boolean> {
     errorCode.value = null;
-    const result = await sendFriendRequest(readAuthToken(), handle);
+    const identifier = parsePlayerIdentifier(raw);
+    if (identifier === null) {
+      // why: an empty / whitespace-only input has nothing to send — set the
+      // inline invalid_request state and skip the network call entirely,
+      // rather than posting an empty body the server would reject anyway.
+      errorCode.value = 'invalid_request';
+      return false;
+    }
+    const target =
+      identifier.kind === 'accountId'
+        ? { accountId: identifier.value }
+        : { handle: identifier.value };
+    const result = await sendFriendRequest(readAuthToken(), target);
     if (result.ok === false) {
       errorCode.value = result.code;
       return false;

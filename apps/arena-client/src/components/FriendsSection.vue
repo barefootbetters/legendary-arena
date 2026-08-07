@@ -26,6 +26,9 @@ function friendMessageForCode(code: FriendApiErrorCode | null): string {
   if (code === 'handle_not_found') {
     return 'No player with that handle.';
   }
+  if (code === 'account_not_found') {
+    return 'No player with that Account ID.';
+  }
   if (code === 'handle_required') {
     return 'Claim a handle first to add friends.';
   }
@@ -116,15 +119,15 @@ export default defineComponent({
   <section class="friends-section" data-testid="friends-section">
     <h2>Friends</h2>
     <p class="friends-help">
-      Add a friend by their <strong>@handle</strong>. They'll get a request to
-      accept before you're connected.
+      Add a friend by their <strong>@handle or Account ID</strong>. They'll get
+      a request to accept before you're connected.
     </p>
 
     <div class="friends-add" data-testid="friends-add">
       <input
         v-model="addHandle"
         type="text"
-        placeholder="@handle"
+        placeholder="@handle or Account ID"
         data-testid="friends-add-input"
         @keyup.enter="onAdd"
       />
