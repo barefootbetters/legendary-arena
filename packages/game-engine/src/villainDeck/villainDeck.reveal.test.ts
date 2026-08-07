@@ -28,6 +28,8 @@ import { makeMockCtx } from '../test/mockCtx.js';
 import { TURN_STAGES } from '../turn/turnPhases.types.js';
 import { buildDefaultHookDefinitions } from '../rules/ruleRuntime.impl.js';
 import { DEFAULT_IMPLEMENTATION_MAP } from '../rules/ruleRuntime.impl.js';
+import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
+import { BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
 import { initializeCity, initializeHq } from '../board/city.logic.js';
 import { buildInitialGameState } from '../setup/buildInitialGameState.js';
 
@@ -851,12 +853,13 @@ describe('revealVillainCard — bystander capture routing', () => {
 describe('revealVillainCard — onEscape fire site (WP-186 §Files #7a)', () => {
   it('escaped villain carrying [effect:gainWoundEachPlayer] fires on all players AND preserves the pre-existing escape branch order', () => {
     // why: WP-186 appended one executeVillainAbilities(..., 'onEscape') call
-    // inside the existing escape branch AFTER resolveEscapedBystanders. This
-    // integration test asserts (a) the new card-text effect fires on a real
-    // escape, (b) it does NOT replace the generic WP-015 escape wound (which
-    // still hits the current player), and (c) the pre-existing escape branch
-    // body — counter increment, escape-pile push, generic wound, bystander
-    // release — all still occur in the same order.
+    // inside the existing escape branch AFTER the bystander carry-away
+    // (carryEscapedBystandersToPile, WP-508 / D-24314). This integration test
+    // asserts (a) the new card-text effect fires on a real escape, (b) it does
+    // NOT replace the generic WP-015 escape wound (which still hits the current
+    // player), and (c) the pre-existing escape branch body — counter increment,
+    // escape-pile push, generic wound, bystander carry-away — all still occur in
+    // the same order.
     const escapedCardId = 'core-villain-spider-foes-venom-00' as CardExtId;
     const gameState = createMockGameState({
       deck: ['new-villain' as CardExtId],
@@ -889,11 +892,10 @@ describe('revealVillainCard — onEscape fire site (WP-186 §Files #7a)', () => 
       'w3',
       'w4',
     ] as CardExtId[];
-    // Attach a bystander to the escaped card so the release step is exercised.
-    // Pre-populate the supply pile with another bystander so that the
-    // newly-entering villain's attachBystanderToVillain step (which runs
-    // AFTER the escape branch) consumes the existing one and leaves the
-    // released bystander still observable in the supply pile.
+    // Attach a bystander to the escaped card so the carry-away step is
+    // exercised. Pre-populate the supply pile with another bystander so the
+    // assertion can prove the carried bystander lands in the Escaped Villains
+    // pile and is NOT returned to the supply.
     gameState.attachedBystanders = {
       [escapedCardId]: ['attached-bystander' as CardExtId],
     };
@@ -913,15 +915,20 @@ describe('revealVillainCard — onEscape fire site (WP-186 §Files #7a)', () => 
       moveContext.G.escapedPile.includes(escapedCardId),
       'escaped card must be in G.escapedPile',
     );
-    // (c) Bystander release ran — attached bystander returned to supply.
+    // (c) Bystander carry-away ran — attached bystander CARRIED INTO the escaped
+    // pile (D-24314), not returned to the supply; the mapping entry is cleared.
     assert.equal(
       moveContext.G.attachedBystanders[escapedCardId],
       undefined,
-      'attached bystander must be released from the escaped card',
+      'attached bystander must be cleared from the escaped-card mapping',
     );
     assert.ok(
-      moveContext.G.piles.bystanders.includes('attached-bystander' as CardExtId),
-      'released bystander must return to the supply pile',
+      moveContext.G.escapedPile.includes('attached-bystander' as CardExtId),
+      'carried bystander must be in the Escaped Villains pile',
+    );
+    assert.ok(
+      !moveContext.G.piles.bystanders.includes('attached-bystander' as CardExtId),
+      'carried bystander must NOT be returned to the supply pile',
     );
     // (d) WP-015 generic current-player wound PRESERVED (p0 gets 1 generic
     // wound) AND new gainWoundEachPlayer card-text effect layers on top.
@@ -1943,6 +1950,81 @@ describe('revealVillainCard — once-per-turn guard (WP-212)', () => {
     assert.ok(
       serialized,
       'JSON.stringify(G) must produce a non-empty string after a reveal sets the flag',
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Escaped-pile resource loss (WP-508 / D-24315) — Midtown Bank Robbery
+// ---------------------------------------------------------------------------
+
+describe('revealVillainCard — escaped-pile resource loss (Midtown, WP-508)', () => {
+  /**
+   * Builds a Midtown state where a full city forces the frontmost villain to
+   * escape when a new villain enters, carrying `bystanderCount` supply
+   * bystanders into the Escaped Villains pile.
+   */
+  function makeMidtownEscapeState(bystanderCount: number): LegendaryGameState {
+    const escapedCardId = 'core-villain-brotherhood-blob-00' as CardExtId;
+    const gameState = createMockGameState({
+      deck: ['new-villain' as CardExtId],
+      discard: [],
+      cardTypes: { 'new-villain': 'villain' },
+    });
+    gameState.selection.schemeId = 'core/midtown-bank-robbery';
+    gameState.playerZones = {
+      '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+    };
+    gameState.piles.wounds = ['w0'] as CardExtId[];
+    // why: a full city means the space-4 card escapes when the new villain
+    // enters at space 0.
+    gameState.city = [
+      'c0' as CardExtId,
+      'c1' as CardExtId,
+      'c2' as CardExtId,
+      'c3' as CardExtId,
+      escapedCardId,
+    ];
+    // why: the escaping villain carries supply bystanders (BYSTANDER_EXT_ID) —
+    // Midtown's twist captures from the supply, so this is the realistic case
+    // and exercises the supply-bystander classification end-to-end.
+    gameState.attachedBystanders = {
+      [escapedCardId]: Array.from({ length: bystanderCount }, () => BYSTANDER_EXT_ID),
+    };
+    return gameState;
+  }
+
+  it('sets SCHEME_LOSS when an escape brings the escaped pile to 8 bystanders', () => {
+    const gameState = makeMidtownEscapeState(8);
+    const moveContext = createMockMoveContext(gameState);
+    revealVillainCard(moveContext);
+
+    assert.equal(
+      moveContext.G.escapedPile.filter((id) => id === BYSTANDER_EXT_ID).length,
+      8,
+      '8 bystanders must be carried into the Escaped Villains pile',
+    );
+    assert.equal(
+      moveContext.G.counters[ENDGAME_CONDITIONS.SCHEME_LOSS],
+      1,
+      'Midtown loses when 8 bystanders are carried away by an escaping villain',
+    );
+  });
+
+  it('does NOT set SCHEME_LOSS when only 7 bystanders are carried away', () => {
+    const gameState = makeMidtownEscapeState(7);
+    const moveContext = createMockMoveContext(gameState);
+    revealVillainCard(moveContext);
+
+    assert.equal(
+      moveContext.G.escapedPile.filter((id) => id === BYSTANDER_EXT_ID).length,
+      7,
+      '7 bystanders carried into the escaped pile',
+    );
+    assert.equal(
+      moveContext.G.counters[ENDGAME_CONDITIONS.SCHEME_LOSS],
+      undefined,
+      'below the 8-bystander threshold: no scheme loss',
     );
   });
 });

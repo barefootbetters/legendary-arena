@@ -33,12 +33,17 @@ const MVP_SCHEME_TWIST_THRESHOLD = 7;
  * every scheme twist regardless of the card-specific text.
  *
  * @param gameState - Current game state (read-only).
- * @param threshold - Twist count at which scheme loss triggers.
+ * @param threshold - Twist count at which the doom-clock proxy loss triggers.
+ * @param suppressTwistLoss - When true, the twist-threshold SCHEME_LOSS effect
+ *   is NOT emitted because the scheme declares a real resourceLossCondition
+ *   (D-24315) whose loss is signalled from the escape path instead. The twist
+ *   count increment still fires unconditionally.
  * @returns Generic RuleEffect[] applied to every twist.
  */
 function buildGenericTwistEffects(
   gameState: LegendaryGameState,
   threshold: number,
+  suppressTwistLoss: boolean,
 ): RuleEffect[] {
   const effects: RuleEffect[] = [];
 
@@ -60,7 +65,11 @@ function buildGenericTwistEffects(
   const predictedTwistCount =
     (gameState.counters.schemeTwistCount ?? 0) + 1;
 
-  if (predictedTwistCount >= threshold) {
+  // why: D-24315 — a scheme that declares a resourceLossCondition loses on that
+  // real condition (signalled from the escape path), so the twist-count
+  // doom-clock proxy is suppressed for it. The twist count still increments
+  // above; only this loss push is gated.
+  if (!suppressTwistLoss && predictedTwistCount >= threshold) {
     effects.push({
       type: 'modifyCounter',
       counter: ENDGAME_CONDITIONS.SCHEME_LOSS,
@@ -168,5 +177,12 @@ export function schemeTwistHandler(
   const effectiveThreshold =
     playerCountThreshold ?? config?.lossThreshold ?? MVP_SCHEME_TWIST_THRESHOLD;
 
-  return buildGenericTwistEffects(gameState, effectiveThreshold);
+  // why: D-24315 — when the active scheme declares a real resourceLossCondition,
+  // its loss is governed by that condition (evaluated in the escape path via
+  // applyEscapedPileResourceLoss), so the twist-count doom-clock proxy must not
+  // also fire. `config` is in scope here in the dispatcher, so the suppression is
+  // resolved here and passed in — buildGenericTwistEffects never re-fetches config.
+  const suppressTwistLoss = config?.resourceLossCondition != null;
+
+  return buildGenericTwistEffects(gameState, effectiveThreshold, suppressTwistLoss);
 }
