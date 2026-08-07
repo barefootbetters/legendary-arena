@@ -11,7 +11,7 @@
       `UIState.city.escapedPile`).
 - [ ] Baseline is `origin/main`; capture the SHA and confirm it advanced past
       the WP-508 draft baseline `1dfc78a9`.
-- [ ] EXACT target file set = the eleven files in `Files to Produce` below. Any
+- [ ] EXACT target file set = the twelve files (11 planned + escape-wound.integration.test.ts, lockstep fixture correction) in `Files to Produce` below. Any
       edit outside this set is a FAIL — surface as a blocker, do not improvise.
 - [ ] `pnpm --filter @legendary-arena/game-engine build` exits 0.
 - [ ] `pnpm --filter @legendary-arena/game-engine test` exits 0 (record baseline
@@ -80,6 +80,7 @@
 - `packages/game-engine/src/board/bystanders.logic.test.ts` — **modified** — carry-away destination assertions.
 - `packages/game-engine/src/rules/schemeHandlers.test.ts` — **modified** — proxy suppressed for resource vs kept for twist-loss.
 - `packages/game-engine/src/villainDeck/villainDeck.reveal.test.ts` — **modified** — escape carries bystanders + sets `SCHEME_LOSS` at threshold.
+- `packages/game-engine/src/board/escape-wound.integration.test.ts` — **modified** — **inline amendment (12th file)**: it asserted the old return-to-supply behaviour; corrected in lockstep to assert carry-into-escaped-pile.
 
 ## After Completing
 - [ ] `pnpm --filter @legendary-arena/game-engine build` exits 0.
@@ -87,7 +88,7 @@
 - [ ] Control-stub check performed for BOTH helpers (assertions proven non-vacuous), then restored.
 - [ ] Sentinel `finalStateHash` + `PRE_WP080_HASH` byte-identical; `pnpm sim:runtime-observed:check` current (no regeneration).
 - [ ] `pnpm -r build` exits 0.
-- [ ] `git diff --name-only` = the eleven-file allowlist + governance only.
+- [ ] `git diff --name-only` = the twelve-file allowlist + governance only.
 - [ ] Live-on-surface verification (D-24026) performed or explicitly operator-pending (Midtown match past twist 8; loss only at 8 escaped Bystanders).
 - [ ] `docs/ai/STATUS.md` updated.
 - [ ] `docs/ai/DECISIONS.md` updated — D-24314 + D-24315 flipped Active.

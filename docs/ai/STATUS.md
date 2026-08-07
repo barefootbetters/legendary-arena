@@ -7,6 +7,35 @@
 
 ## Current State
 
+### WP-508 — Escaped-Pile Bystander Carry-Away + Midtown Bank Robbery Resource Loss — DONE (2026-08-07)
+
+Midtown Bank Robbery now loses only when its **printed** Evil-Wins is met — **8 Bystanders carried
+away by escaping Villains** — instead of the instant the 8th Scheme Twist is drawn. This is the first
+WP of the resource-loss-scheme-fidelity epic (D-24178 records six schemes losing on a twist-count
+doom-clock proxy). Fixes the operator-reported 2026-08-07 core Magneto/Midtown co-op that ended
+`scheme-wins` at twist 8 with an **empty** escaped pile and a dominant hero board.
+
+- **Carry-away (D-24314):** an escaping villain's captured Bystanders are routed into `G.escapedPile`
+  (renamed `resolveEscapedBystanders` → `carryEscapedBystandersToPile`; result type →
+  `CarryEscapedBystandersResult`; `index.ts` barrel re-exports updated in lockstep), not returned to the
+  supply. `ESCAPED_VILLAINS` counter and `G.piles.bystanders` untouched on escape.
+- **Resource-loss framework (D-24315):** data-only `SchemeTwistConfig.resourceLossCondition`
+  (`{kind:'escaped-pile-count',cardType,threshold}`) + a new pure `rules/schemeResourceLoss.ts`
+  (`countEscapedPileByType` + `applyEscapedPileResourceLoss`) sets `SCHEME_LOSS` from the **end of the
+  escape branch**; `evaluateEndgame` stays counter-only. The twist-count proxy is **suppressed** for any
+  scheme declaring a `resourceLossCondition` (gated in the dispatcher via `suppressTwistLoss`). Midtown
+  wired at bystander ≥ 8. Supply Bystanders (`pile-bystander`, absent from `villainDeckCardTypes`) are
+  classified as `'bystander'` so Midtown's supply-captured Bystanders count (D-24315 refinement).
+- **Determinism:** sentinel `finalStateHash` + `PRE_WP080_HASH` **byte-identical** (no committed fixture
+  escapes a villain with attached bystanders); no new `G` field.
+- Verified: game-engine **2358→2370 / 0** (+12 cases; both new helpers control-stub non-vacuous),
+  `pnpm -r build` 0, `sim:runtime-observed:check` current. **D-24314 + D-24315 Active.** Inline
+  amendment: `escape-wound.integration.test.ts` added as the 12th allowlist file (lockstep fixture
+  correction — it asserted the old return-to-supply behaviour). **D-24026 live-verify operator-pending**
+  (play a Midtown match past twist 8; loss should fire only at 8 escaped Bystanders). Remaining epic
+  WPs: WP-509 (Negative Zone + scheme-aware `ESCAPE_LIMIT`), WP-510 (Legacy Virus + Civil War
+  stack-depletion), WP-511 (Secret Invasion + Killbots conversion schemes).
+
 ### WP-507 — Mastermind-Tactic Coverage in the Effect-Implementation Index (`/debug/effects`) — DONE (2026-08-07)
 
 Mastermind **tactic** cards now appear in the effect-implementation index, so `/debug/effects` shows
