@@ -480,6 +480,36 @@ surface, where you are adding someone who is not yet a friend and whose handle y
 disambiguation fallback is ever wanted when two people collide in a shared display context, the UUID
 (or the avatar picker above) is the safe, non-identifying answer.
 
+**Every way an add-friend can be rejected.** `POST /api/me/friends/requests` has one success path
+(`201` + a `FriendSummary`) and a closed set of typed rejections. WP-504 added `account_not_found`
+and its route tests now exercise all of them; they fall into three groups:
+
+| Rejection | HTTP | Fires when | What the sender sees |
+|---|---|---|---|
+| `invalid_request` | 400 | both `handle` **and** `accountId` sent, or neither; or a malformed Account ID | "Enter an @handle or an Account ID." |
+| `handle_not_found` | 404 | the `@handle` resolves to no account | "No player with that handle." |
+| `account_not_found` | 404 | a well-formed Account ID that matches no account | "No player with that Account ID." |
+| `handle_required` | 409 | the **sender** hasn't claimed a handle yet | "Claim a handle first to add friends." |
+| `self_friendship` | 409 | you addressed your own handle/AccountId | generic |
+| `already_pending` / `already_friends` | 409 | a request is already outstanding / you're already friends | generic |
+| `blocked` | 403 | either party has blocked the other (symmetric) | generic *(see gap below)* |
+| `request_cooldown` | 429 | re-sending within `24h` of a decline | generic *(see gap below)* |
+| `rate_limited` | 429 | more than `20` outgoing pending requests in a trailing 24h | generic *(see gap below)* |
+| `unauthorized` | 401 | not signed in | redirect to login |
+
+The **block → cooldown → rate-limit** guards (the WP-355 abuse controls, D-24147) run **before**
+`sendFriendRequest`, in that locked order, so the `accountId` path inherits them unchanged — a UUID
+gives no way around a block or the daily cap.
+
+> **Known client gap (server is correct; the message isn't).** The three WP-355 codes — `blocked`,
+> `request_cooldown`, `rate_limited` — are enforced authoritatively on the server, but the client's
+> hand-maintained error-code mirror still lags the server union by exactly these three, so today they
+> surface as the **generic** "couldn't send" banner instead of a specific reason. The client's drift
+> guard only compares the mirror to a *hardcoded copy of itself*, not to the server, which is why the
+> lag went unnoticed. Tracked as a follow-up (add the three codes to the client mirror + friendly copy);
+> it does not affect enforcement, only the wording the sender reads. Surfaced during the WP-504 audit
+> (2026-08-06).
+
 ### A note that cost a day: no global body parser
 
 The change-handle endpoint (`PATCH /api/me/handle`) shipped, unit-tested green — and then
