@@ -265,7 +265,7 @@ test('a null authToken sends no Authorization header', async () => {
   }
 });
 
-test('FRIEND_API_ERROR_CODES mirrors the WP-351 server union exactly (drift guard)', () => {
+test('FRIEND_API_ERROR_CODES mirrors the server union exactly (WP-351 + WP-355) (drift guard)', () => {
   // why: this list is a client-local mirror of the server's
   // FriendApiErrorCode union; a failure here means the mirror drifted from
   // the server contract and must be brought back into lockstep.
@@ -282,6 +282,9 @@ test('FRIEND_API_ERROR_CODES mirrors the WP-351 server union exactly (drift guar
     'handle_required',
     'handle_not_found',
     'account_not_found',
+    'blocked',
+    'rate_limited',
+    'request_cooldown',
   ];
   assert.equal(FRIEND_API_ERROR_CODES.length, expectedServerUnion.length);
   assert.equal(new Set(FRIEND_API_ERROR_CODES).size, expectedServerUnion.length);

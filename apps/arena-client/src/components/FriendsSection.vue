@@ -47,6 +47,18 @@ function friendMessageForCode(code: FriendApiErrorCode | null): string {
   if (code === 'unauthorized') {
     return 'Please sign in again.';
   }
+  // why: WP-355 (D-24147) abuse-control send guards — each gets its own
+  // line so the reader learns why the request was refused rather than the
+  // generic banner.
+  if (code === 'blocked') {
+    return "You've been blocked by that player.";
+  }
+  if (code === 'rate_limited') {
+    return "You've sent too many requests today. Try again later.";
+  }
+  if (code === 'request_cooldown') {
+    return 'That player recently declined — wait a while before re-requesting.';
+  }
   // why: unknown_account / invalid_request / a network null all fall
   // through to one generic line — the section stays usable and never
   // leaks an internal code to the reader.
