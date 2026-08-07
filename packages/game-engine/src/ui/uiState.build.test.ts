@@ -1883,3 +1883,60 @@ describe('buildUIState — matchCardImageUrls (WP-410 / D-24222)', () => {
     assert.deepStrictEqual(result.matchCardImageUrls, []);
   });
 });
+
+describe('buildUIState — city captured-card projection (WP-505)', () => {
+  const villainExtId = 'core-villain-brotherhood-magneto-00' as CardExtId;
+  const heroExtId = 'core/black-widow/strike#0' as CardExtId;
+  const bystanderExtId = 'core-bystander-00' as CardExtId;
+
+  it('projects attachedHeroDisplay index-aligned with attachedHeroes', () => {
+    const gameState = makeGameStateWithDisplayData();
+    gameState.villainAttachedHeroes[villainExtId] = [heroExtId];
+
+    const ui = buildUIState(gameState, mockCtx);
+    const space0 = ui.city.spaces[0]!;
+
+    assert.deepStrictEqual(space0.attachedHeroes, [heroExtId]);
+    assert.equal(space0.attachedHeroDisplay.length, space0.attachedHeroes.length);
+    // why: index-aligned — the display at position i is the hero at attachedHeroes[i].
+    assert.equal(space0.attachedHeroDisplay[0]!.extId, heroExtId);
+    assert.equal(space0.attachedHeroDisplay[0]!.name, 'Mission Accomplished');
+  });
+
+  it('projects attachedBystanderCount as a count only (no ext_ids leaked)', () => {
+    const gameState = makeGameStateWithDisplayData();
+    gameState.attachedBystanders[villainExtId] = [bystanderExtId, bystanderExtId];
+
+    const ui = buildUIState(gameState, mockCtx);
+    const space0 = ui.city.spaces[0]!;
+
+    assert.equal(space0.attachedBystanderCount, 2);
+    // why: count-only — the field is a number, never the bystander ext_ids
+    // (face-down identity must not leak).
+    assert.equal(typeof space0.attachedBystanderCount, 'number');
+  });
+
+  it('defaults to empty display + zero count when the villain holds nothing', () => {
+    const gameState = makeGameStateWithDisplayData();
+
+    const ui = buildUIState(gameState, mockCtx);
+    const space0 = ui.city.spaces[0]!;
+
+    assert.deepStrictEqual(space0.attachedHeroDisplay, []);
+    assert.equal(space0.attachedBystanderCount, 0);
+  });
+
+  it('attachedHeroDisplay is aliasing-safe (new entry objects)', () => {
+    const gameState = makeGameStateWithDisplayData();
+    gameState.villainAttachedHeroes[villainExtId] = [heroExtId];
+
+    const ui = buildUIState(gameState, mockCtx);
+    const space0 = ui.city.spaces[0]!;
+
+    assert.notStrictEqual(
+      space0.attachedHeroDisplay[0],
+      gameState.cardDisplayData[heroExtId],
+      'projected display must be a fresh object, not a G reference',
+    );
+  });
+});

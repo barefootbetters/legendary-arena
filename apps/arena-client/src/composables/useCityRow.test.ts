@@ -19,6 +19,8 @@ function makeCity(spaces: (string | null)[]): UICityState {
               cost: 4,
             },
             attachedHeroes: [],
+            attachedHeroDisplay: [],
+            attachedBystanderCount: 0,
             fightCost: 0,
           },
     ),

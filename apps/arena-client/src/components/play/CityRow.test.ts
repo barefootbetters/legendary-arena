@@ -37,6 +37,8 @@ function villain(extId: string, cost: number): UICityCard {
       cost,
     },
     attachedHeroes: [],
+    attachedHeroDisplay: [],
+    attachedBystanderCount: 0,
     fightCost: 0,
   };
 }
@@ -184,5 +186,86 @@ describe('CityRow (WP-129 — extends WP-100)', () => {
       wrapper.find('[data-testid="play-city-villain-deck"]').text(),
       /\[22\]/,
     );
+  });
+});
+
+describe('CityRow — captured cards under villains (WP-505)', () => {
+  function cityWithCaptures(): UICityState {
+    return {
+      spaces: [
+        {
+          extId: 'captor',
+          type: 'villain',
+          keywords: [],
+          display: {
+            extId: 'captor',
+            name: 'Captor',
+            imageUrl: 'https://images.legendary-arena.com/captor.png',
+            cost: 3,
+          },
+          attachedHeroes: ['hero-1'],
+          attachedHeroDisplay: [
+            {
+              extId: 'hero-1',
+              name: 'Spider-Man',
+              imageUrl: 'https://images.legendary-arena.com/hero-1.png',
+              cost: 0,
+            },
+          ],
+          attachedBystanderCount: 2,
+          fightCost: 3,
+        },
+        null,
+        null,
+        null,
+        null,
+      ],
+      escapedPile: [],
+    };
+  }
+
+  test('renders face-up captured hero art under the villain', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(CityRow, {
+      props: {
+        city: cityWithCaptures(),
+        decks: DECKS,
+        currentStage: 'main',
+        economy: economy({ attack: 9, availableAttack: 9 }),
+        submitMove,
+      },
+    });
+    const heroes = wrapper.findAll('[data-testid="play-city-captured-hero"]');
+    assert.equal(heroes.length, 1);
+  });
+
+  test('renders a count-only bystander badge, never the identity', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(CityRow, {
+      props: {
+        city: cityWithCaptures(),
+        decks: DECKS,
+        currentStage: 'main',
+        economy: economy({ attack: 9, availableAttack: 9 }),
+        submitMove,
+      },
+    });
+    const badge = wrapper.find('[data-testid="play-city-captured-bystanders"]');
+    assert.equal(badge.exists(), true);
+    assert.match(badge.text(), /2 captured/);
+  });
+
+  test('renders no captured block when a villain holds nothing', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(CityRow, {
+      props: {
+        city: fullCity(),
+        decks: DECKS,
+        currentStage: 'main',
+        economy: economy({ attack: 9, availableAttack: 9 }),
+        submitMove,
+      },
+    });
+    assert.equal(wrapper.find('[data-testid="play-city-captured"]').exists(), false);
   });
 });

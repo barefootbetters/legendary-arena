@@ -181,7 +181,7 @@ describe('MastermindTile (WP-129 — extends WP-100)', () => {
     assert.match(payload.gameText[0]!, /Master Strike/);
   });
 
-  test('renders attachedBystanders list when projected (forward-compat)', () => {
+  test('renders attachedBystanders as a count-only badge (WP-505)', () => {
     const { submitMove } = recorder();
     const wrapper = mount(MastermindTile, {
       props: {
@@ -196,6 +196,15 @@ describe('MastermindTile (WP-129 — extends WP-100)', () => {
                 cost: null,
               },
             },
+            {
+              extId: 'bystander-2',
+              display: {
+                extId: 'bystander-2',
+                name: 'Civilian Beta',
+                imageUrl: 'https://images.legendary-arena.com/bystander-2.png',
+                cost: null,
+              },
+            },
           ],
         }),
         currentStage: 'main',
@@ -203,9 +212,15 @@ describe('MastermindTile (WP-129 — extends WP-100)', () => {
         submitMove,
       },
     });
-    assert.match(
-      wrapper.find('[data-testid="play-mastermind-bystanders-list"]').text(),
-      /Civilian Alpha/,
+    const badge = wrapper.find('[data-testid="play-mastermind-bystanders"]');
+    assert.equal(badge.exists(), true);
+    assert.match(badge.text(), /2 captured/);
+    // why: WP-505 — face-down bystanders are count-only; the captured
+    // identities must NOT leak to the board, and the old <li> list is gone.
+    assert.equal(badge.text().includes('Civilian'), false);
+    assert.equal(
+      wrapper.find('[data-testid="play-mastermind-bystanders-list"]').exists(),
+      false,
     );
   });
 });

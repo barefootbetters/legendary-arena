@@ -26,6 +26,28 @@
 - Verified: arena-client 1219/1219 + vue-tsc 0; server friendships routes 23/23 + `isWellFormedAccountId`
   units (DB-gated, serialized against local Postgres); `pnpm -r build` 0. **D-24308 Active.**
   **D-24026 live-verify operator-pending** (paste an Account ID on the deployed Friends section).
+### WP-505 — Captured Cards Under City Villains & the Mastermind — DONE (2026-08-06)
+
+Captured cards are now visible on the play board. Three capture stores were tracked in `G` at runtime
+but never fully displayed; this projects + renders them.
+
+- **Engine — two additive, public `UICityCard` fields** via the 5-step Board-Visible Field contract
+  (type → `buildUIState` → `filterUIStateForAudience` passthrough → non-vacuous audience test →
+  Play Diagnostics `uiStateSnapshot`):
+  - `attachedHeroDisplay: UICardDisplay[]` — index-aligned with `attachedHeroes`; face-up captured
+    heroes need a display payload because the client has no ext_id→image resolver.
+  - `attachedBystanderCount: number` — count only (`G.attachedBystanders[space].length`); face-down =
+    identity hidden, so the count reverses the D-12806 city-villain safe-skip **for the count only**
+    (D-24311), never the ext_ids, and is still never flattened onto the mastermind tile.
+- **Client** — `CityRow.vue` renders face-up captured-hero art (`CardTile`) + an "N captured" bystander
+  badge under each villain; `MastermindTile.vue` swaps its `<li>` bystander list for the same
+  count badge (no engine change — the mastermind projection already existed since WP-154 / D-15401).
+- Repaired the stale `uiState.types.drift.test.ts` `Object.keys` assertion to the full 8-key
+  `UICityCard` set (a WP-214 omission), and corrected the false "mastermind ships []/no source today"
+  comments while preserving the "never flatten onto the mastermind tile" prohibition.
+- **Completes** the arena-client render WP-214 explicitly deferred. Determinism untouched (projection
+  is hash-excluded — no re-pin). game-engine 2349/0; arena-client 1211/0; typecheck 0; `pnpm -r build` 0.
+- **D-24311 Active.** `User-Visible Surface = play.legendary-arena.com` — **D-24026 live-verify operator-pending**.
 
 ### WP-503 — Doctor Octopus (Villain) Fight: Draw 8 Instead of 6 Next Hand — DONE (2026-08-05)
 

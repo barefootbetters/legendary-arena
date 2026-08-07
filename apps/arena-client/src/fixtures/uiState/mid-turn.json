@@ -68,6 +68,8 @@
           "cost": null
         },
         "attachedHeroes": [],
+        "attachedHeroDisplay": [],
+        "attachedBystanderCount": 0,
         "fightCost": 0
       },
       {
@@ -83,6 +85,8 @@
           "cost": null
         },
         "attachedHeroes": [],
+        "attachedHeroDisplay": [],
+        "attachedBystanderCount": 0,
         "fightCost": 0
       },
       null,
@@ -99,6 +103,8 @@
           "cost": null
         },
         "attachedHeroes": [],
+        "attachedHeroDisplay": [],
+        "attachedBystanderCount": 0,
         "fightCost": 0
       },
       null

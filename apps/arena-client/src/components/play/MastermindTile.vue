@@ -13,12 +13,12 @@ import type { SubmitMove } from './uiMoveName.types';
  * Mastermind tile — renders the mastermind id + tactics-remaining counter
  * + WP-128 `attachedBystanders` array. Click fires `fightMastermind`.
  *
- * SAFE-SKIP-WP128: `mastermind.attachedBystanders` ships as `[]` per
- * WP-128 / D-12806 / D-12805 (Interpretation B locked). Per D-12805 these
- * are bystanders captured by the mastermind itself (Master Strike effects,
- * not city-villain captures); engine has no source today and the array is
- * empty. The tile renders the empty list rather than stub data; future
- * engine WP back-fill needs only fixture/test updates.
+ * `mastermind.attachedBystanders` (D-12805 Interpretation B) is bystanders
+ * captured by the mastermind itself via Master Strike — populated at runtime
+ * since WP-154 / D-15401. Per WP-505 it renders as a count-only "N captured"
+ * badge (face-down = identity hidden), matching the city-villain badge; these
+ * are the mastermind's own captures, never the top-level city-villain
+ * `G.attachedBystanders` (which render on the city row).
  *
  * Cost gating: the mastermind is fightable when `economy.availableAttack
  * >= mastermind.display.cost`. Disabled-state tooltip precedence locked at
@@ -146,26 +146,17 @@ export default defineComponent({
     >
       Read card ▸
     </button>
-    <!-- why: captured bystanders render only when the mastermind actually has
-         some (attachedBystanders ships [] today per SAFE-SKIP-WP128); the
-         always-on "None captured." line was pure noise on the board. -->
-    <section
+    <!-- why: WP-505 — captured bystanders are face down, so they render as a
+         count-only "N captured" badge (identity hidden), matching the
+         city-villain badge; shown only when the mastermind holds some. -->
+    <span
       v-if="mastermind.attachedBystanders.length > 0"
       class="mastermind-bystanders"
       data-testid="play-mastermind-bystanders"
-      aria-label="Mastermind captured bystanders"
+      :aria-label="mastermind.attachedBystanders.length + ' bystanders captured'"
     >
-      <header>Captured bystanders</header>
-      <ul data-testid="play-mastermind-bystanders-list">
-        <li
-          v-for="entry in mastermind.attachedBystanders"
-          :key="entry.extId"
-          class="mastermind-bystander"
-        >
-          {{ entry.display.name }}
-        </li>
-      </ul>
-    </section>
+      {{ mastermind.attachedBystanders.length }} captured
+    </span>
   </section>
 </template>
 
@@ -196,15 +187,17 @@ export default defineComponent({
   opacity: 0.85;
 }
 
-.mastermind-bystanders ul {
-  margin: 0;
-  padding-left: 1.25rem;
-}
-
-.mastermind-bystanders__empty {
-  margin: 0;
-  font-style: italic;
-  opacity: 0.7;
+/* why: WP-505 — count-only badge (face-down bystanders), matching the
+   city-villain "N captured" pill. */
+.mastermind-bystanders {
+  align-self: flex-start;
+  padding: 0.05rem 0.4rem;
+  border-radius: 0.75rem;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .mastermind-read {

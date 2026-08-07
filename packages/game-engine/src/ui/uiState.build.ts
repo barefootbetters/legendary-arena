@@ -623,6 +623,12 @@ export function buildUIState(
       const cardKeywords = gameState.cardKeywords[space];
       // why: WP-214 — spread copy prevents aliasing with G.villainAttachedHeroes
       const spaceAttachedHeroes = gameState.villainAttachedHeroes?.[space] ?? [];
+      // why: WP-505 — count only of face-down captured bystanders. Bystanders
+      // captured under a city villain are FACE DOWN, so their identity stays
+      // hidden — project the count (rendered as an "N captured" badge), never
+      // the ext_ids. This reverses the D-12806 city-villain safe-skip for the
+      // count only (D-24311); it is still never flattened onto the mastermind.
+      const spaceAttachedBystanders = gameState.attachedBystanders?.[space] ?? [];
       citySpaces.push({
         extId: space,
         type: gameState.villainDeckCardTypes[space] ?? 'unknown',
@@ -634,6 +640,14 @@ export function buildUIState(
         // why: WP-214 — attached heroes projected as string[] for arena-client
         // rendering; spread copy ensures no aliasing with G state
         attachedHeroes: [...spaceAttachedHeroes],
+        // why: WP-505 — face-up captured heroes need a display payload to
+        // render as art (the client has no ext_id→image resolver); resolveDisplay
+        // per hero, index-aligned with attachedHeroes above.
+        attachedHeroDisplay: spaceAttachedHeroes.map((heroId) =>
+          resolveDisplay(heroId, gameState),
+        ),
+        // why: WP-505 / D-24311 — count only (face-down = identity hidden).
+        attachedBystanderCount: spaceAttachedBystanders.length,
         // why: WP-214 — engine-resolved fight cost; UI must not recompute
         // dynamic values (engine-owns-truth invariant)
         fightCost: resolveFightCost(gameState, space),
@@ -675,14 +689,13 @@ export function buildUIState(
   // copy via resolveDisplay prevents aliasing. Cite pre-flight
   // 2026-04-29 PS-5.
   //
-  // why: WP-128 / D-12806 — Option A safe-skip per pre-flight 2026-05-03
-  // PS-3. Gap (attachedBystanders): `G.mastermind.attachedBystanders`
-  // does not exist; engine has no mastermind-side bystander capture
-  // surface today. **Do NOT flatten `G.attachedBystanders`** (city-villain
-  // captures, top-level on `LegendaryGameState`) into this field —
-  // D-12805 Interpretation B forbids it; those captures are rendered
-  // on the city row, not on the mastermind tile. Future WP-NNN will
-  // resolve `G.mastermind.attachedBystanders` for Master Strike captures.
+  // why: WP-128 / D-12805 — `G.mastermind.attachedBystanders` IS populated at
+  // runtime (WP-154 / D-15401: Master Strike captures a bystander onto the
+  // mastermind); project it directly. **Still do NOT flatten
+  // `G.attachedBystanders`** (the top-level city-villain captures) into this
+  // field — D-12805 Interpretation B keeps the two capture stores separate;
+  // city-villain bystanders render on the city row as
+  // `UICityCard.attachedBystanderCount` (WP-505 / D-24311), never here.
   //
   const mastermindAttachedBystanders: UIDisplayEntry[] = buildDisplayEntries(
     gameState.mastermind.attachedBystanders,

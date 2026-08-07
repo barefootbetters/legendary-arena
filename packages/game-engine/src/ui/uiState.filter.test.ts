@@ -1151,3 +1151,60 @@ describe('filterUIStateForAudience — pendingDefeatChoice redaction (WP-486 / D
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-505 — city captured-card fields survive the audience filter (public)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a UIState with a city villain holding one captured hero and two
+ * captured bystanders, so the WP-505 fields are non-empty (count > 0).
+ */
+function createWp505CityUIState(): UIState {
+  const config = createTestConfig();
+  const registry = createMockRegistry();
+  const setupContext = makeMockCtx();
+  const gameState = buildInitialGameState(config, registry, setupContext);
+
+  const villainExtId = 'wp505-villain-00' as CardExtId;
+  const heroExtId = 'wp505-hero-00' as CardExtId;
+  gameState.city[0] = villainExtId;
+  gameState.villainAttachedHeroes[villainExtId] = [heroExtId];
+  gameState.attachedBystanders[villainExtId] = ['wp505-bys-00', 'wp505-bys-01'] as CardExtId[];
+
+  return buildUIState(gameState, mockCtx);
+}
+
+describe('filterUIStateForAudience — WP-505 city captured-card fields', () => {
+  // why: non-vacuous — attachedBystanderCount is 2 (a 0 count is falsy and
+  // would pass a truthiness check trivially) and attachedHeroDisplay has one
+  // entry, asserted by EXACT equality against the pre-filter UIState for every
+  // audience. Both fields are public board state and must never be redacted.
+  for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+    it(`preserves attachedHeroDisplay + attachedBystanderCount for ${audience.kind}`, () => {
+      const uiState = createWp505CityUIState();
+      const space0 = uiState.city.spaces[0]!;
+      assert.equal(space0.attachedBystanderCount, 2, 'precondition: count is non-zero');
+      assert.equal(space0.attachedHeroDisplay.length, 1, 'precondition: one captured hero');
+
+      const result = filterUIStateForAudience(uiState, audience);
+      const filtered0 = result.city.spaces[0]!;
+
+      assert.equal(
+        filtered0.attachedBystanderCount,
+        space0.attachedBystanderCount,
+        `attachedBystanderCount must survive for ${audience.kind}`,
+      );
+      assert.equal(
+        filtered0.attachedHeroDisplay.length,
+        space0.attachedHeroDisplay.length,
+        `attachedHeroDisplay length must survive for ${audience.kind}`,
+      );
+      assert.equal(
+        filtered0.attachedHeroDisplay[0]!.extId,
+        space0.attachedHeroDisplay[0]!.extId,
+        `attachedHeroDisplay[0] identity must survive for ${audience.kind}`,
+      );
+    });
+  }
+});

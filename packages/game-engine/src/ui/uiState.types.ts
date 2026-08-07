@@ -393,6 +393,22 @@ export interface UICityCard {
   display: UICardDisplay;
   /** Hero ext_ids captured under this villain (WP-214). Empty array when none. */
   attachedHeroes: string[];
+  /**
+   * Display payloads for the heroes captured face-up under this villain
+   * (WP-505), index-aligned with `attachedHeroes` (same length, same order).
+   * Captured heroes are face up — their identity is public — so the client
+   * renders them as card art. This parallel-display field exists because the
+   * client has no ext_id→image resolver (mirrors the HQ slots/slotDisplay
+   * pattern); `attachedHeroes` alone cannot render art.
+   */
+  attachedHeroDisplay: UICardDisplay[];
+  /**
+   * Count of bystanders captured face-down under this villain (WP-505 / D-24311).
+   * Count only — captured bystanders are face down, so which bystander it is
+   * stays hidden; the client renders an "N captured" badge. Never the ext_ids
+   * or display (that would leak a face-down identity).
+   */
+  attachedBystanderCount: number;
   /** Engine-resolved fight cost for this villain (WP-214). Static or dynamic. */
   fightCost: number;
 }
@@ -436,10 +452,12 @@ export interface UIHQState {
  *
  * // why: WP-128 / D-12805 — `attachedBystanders` represents bystanders
  * captured by the mastermind itself (Master Strike effects, per
- * Interpretation B). Engine has no source today; ships as `[]` per
- * D-12806 safe-skip. **Do NOT flatten `G.attachedBystanders`** (city-villain
- * captures, top-level on `LegendaryGameState`) — those captures are
- * rendered on the city row, not on the mastermind tile.
+ * Interpretation B). This IS populated at runtime (WP-154 / D-15401 wired
+ * `G.mastermind.attachedBystanders`; `mastermindHandlers.ts` captures onto
+ * it). **Still do NOT flatten `G.attachedBystanders`** (the top-level
+ * city-villain captures) onto the mastermind tile — those are a separate
+ * capture store, rendered on the city row as `UICityCard.attachedBystanderCount`
+ * (WP-505 / D-24311), never here.
  *
  * // why: WP-128 / D-12806 — `strikePile` ships as `[]` until a future
  * WP adds `G.mastermind.strikePile` so resolved Master Strike cards are
