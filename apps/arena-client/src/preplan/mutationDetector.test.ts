@@ -111,6 +111,8 @@ describe('detectPlayerAffectingMutations', () => {
       keywords: [],
       display: { extId: 'core/sentinel', name: 'Sentinel', imageUrl: '', cost: null },
       attachedHeroes: [],
+      attachedHeroDisplay: [],
+      attachedBystanderCount: 0,
       fightCost: 0,
     };
     const current = makeUIState({

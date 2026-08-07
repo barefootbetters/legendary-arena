@@ -144,6 +144,36 @@ export default defineComponent({
           >
             {{ cell.slotName }}
           </div>
+          <!-- why: WP-505 — captured cards render underneath the villain tile.
+               Face-up captured heroes (attachedHeroDisplay) show as card art
+               so players see which hero was taken; face-down captured
+               bystanders show as a count-only "N captured" badge (identity
+               hidden = face-down). Rendered outside the fight button so
+               clicking a captured card does not fight the villain. -->
+          <div
+            v-if="cell.card !== null && (cell.card.attachedHeroDisplay.length > 0 || cell.card.attachedBystanderCount > 0)"
+            class="city-space__captured"
+            data-testid="play-city-captured"
+            :data-city-index="cell.cityIndex"
+          >
+            <CardTile
+              v-for="(heroDisplay, heroIndex) in cell.card.attachedHeroDisplay"
+              :key="'captured-hero-' + heroIndex"
+              class="city-space__captured-hero"
+              data-testid="play-city-captured-hero"
+              :display="heroDisplay"
+              size="sm"
+              :show-cost="false"
+            />
+            <span
+              v-if="cell.card.attachedBystanderCount > 0"
+              class="city-space__captured-bystanders"
+              data-testid="play-city-captured-bystanders"
+              :aria-label="cell.card.attachedBystanderCount + ' bystanders captured'"
+            >
+              {{ cell.card.attachedBystanderCount }} captured
+            </span>
+          </div>
         </template>
         <template v-else>
           <div class="city-space-deck" data-testid="play-city-villain-deck">
@@ -197,5 +227,33 @@ export default defineComponent({
 .city-space__name {
   display: block;
   font-weight: 600;
+}
+
+/* why: WP-505 — captured cards sit beneath the villain tile. Heroes render at
+   a reduced scale so the stack reads as "held under" the villain; the bystander
+   badge is a compact count pill. */
+.city-space__captured {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem;
+  margin-top: 0.2rem;
+  padding-left: 0.4rem;
+}
+
+.city-space__captured-hero {
+  transform: scale(0.7);
+  transform-origin: top left;
+}
+
+.city-space__captured-bystanders {
+  padding: 0.05rem 0.35rem;
+  border-radius: 0.75rem;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 </style>

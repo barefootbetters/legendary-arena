@@ -88,6 +88,12 @@ function deepCopyCitySpaces(
         keywords: [...space.keywords],
         display: { ...space.display },
         attachedHeroes: [...space.attachedHeroes],
+        // why: WP-505 — captured-card display is public board state; per-entry
+        // shallow copy prevents aliasing, mirroring the display copy above. Both
+        // new fields MUST pass through here or the audience filter silently
+        // drops them (the EC-206 / PR #1165 whitelist failure mode).
+        attachedHeroDisplay: space.attachedHeroDisplay.map((entry) => ({ ...entry })),
+        attachedBystanderCount: space.attachedBystanderCount,
         fightCost: space.fightCost,
       });
     }

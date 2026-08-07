@@ -148,9 +148,19 @@ describe('UIState type drift (WP-111 / EC-118)', () => {
     assert.deepStrictEqual(Object.keys(fixture).sort(), ['display', 'extId']);
   });
 
-  it('UICityCard retains existing fields AND has additive display', () => {
-    // why: WP-111 — additive extension of UICityCard; existing extId /
-    // type / keywords preserved verbatim.
+  it('UICityCard retains existing fields AND has additive display + captured-card fields', () => {
+    // why: WP-111 additive display; WP-214 attachedHeroes/fightCost; WP-505
+    // attachedHeroDisplay/attachedBystanderCount. This fixture is the
+    // game-engine drift guard: `.test.ts` is tsc-excluded and tsx strips the
+    // `satisfies`, so the runtime Object.keys assertion below (NOT typecheck)
+    // is what pins the UICityCard field set. It was stale from WP-214 (pinned
+    // only 4 keys); WP-505 repairs it to the full 8.
+    const heroDisplay = {
+      extId: 'core-hero-spider-man-strike-00',
+      name: 'Spider-Man',
+      imageUrl: '',
+      cost: 0,
+    };
     const fixture = {
       extId: 'core-villain-brotherhood-magneto-00',
       type: 'villain',
@@ -161,11 +171,19 @@ describe('UIState type drift (WP-111 / EC-118)', () => {
         imageUrl: '',
         cost: 5,
       },
+      attachedHeroes: ['core-hero-spider-man-strike-00'],
+      attachedHeroDisplay: [heroDisplay],
+      attachedBystanderCount: 2,
+      fightCost: 5,
     } satisfies UICityCard;
 
     assert.deepStrictEqual(Object.keys(fixture).sort(), [
+      'attachedBystanderCount',
+      'attachedHeroDisplay',
+      'attachedHeroes',
       'display',
       'extId',
+      'fightCost',
       'keywords',
       'type',
     ]);
