@@ -244,14 +244,23 @@ export async function verifyDeterminism(
 ): Promise<DeterminismVerdict> {
   const registry = await loadRunnerRegistry();
   const document = await loadScenarioDocument(config.scenarioPath, registry);
-  const simulationConfig = buildSimulationConfig(document, config);
-  // why: the determinism self-check runs the SAME simulation twice; because
-  // runSimulation is documented as pure — identical (config, registry) yields
-  // byte-identical SimulationResult — any mismatch localizes a leaked
-  // wall-clock or Math.random into THIS app, not the engine.
-  const firstJson = canonicalizeResult(runSimulation(simulationConfig, registry));
+  // why: build a FRESH SimulationConfig for EACH run. The per-seat AI policies
+  // carry per-run mutable PRNG state, so reusing the same policy objects across
+  // both runs would advance the second run's decision PRNG and report a false
+  // mismatch on any scenario whose outcome depends on AI decisions. Each run
+  // must start from freshly-seeded policies — exactly as `runScenario`
+  // constructs them per call. Determinism is seed-driven: identical seeds yield
+  // identical fresh policies, so two fresh-config runs are byte-identical, and a
+  // real mismatch still localizes a leaked wall-clock / Math.random into the
+  // engine. (Before this, Midtown Bank Robbery happened to pass only because it
+  // force-lost on the twist-count doom clock, an AI-independent outcome;
+  // WP-508/D-24315 suppresses that proxy, making the outcome AI-driven and
+  // surfacing the stale policy-reuse.)
+  const firstJson = canonicalizeResult(
+    runSimulation(buildSimulationConfig(document, config), registry),
+  );
   const secondJson = canonicalizeResult(
-    runSimulation(simulationConfig, registry),
+    runSimulation(buildSimulationConfig(document, config), registry),
   );
   return compareCanonicalResults(firstJson, secondJson);
 }
