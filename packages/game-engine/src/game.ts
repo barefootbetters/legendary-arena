@@ -28,6 +28,7 @@ import {
   latchFinalTurnIfDeckExhausted,
   resolveFinalTurnTieIfUnresolved,
 } from './endgame/finalTurn.logic.js';
+import { applyPileDepletionResourceLoss } from './rules/schemeResourceLoss.js';
 import { setPlayerReady, startMatchIfReady } from './lobby/lobby.moves.js';
 import { revealVillainCard } from './villainDeck/villainDeck.reveal.js';
 import { fightVillain } from './moves/fightVillain.js';
@@ -574,6 +575,13 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
         // finalTurn.logic.ts.
         onMove: ({ G }) => {
           latchFinalTurnIfDeckExhausted(G);
+          // why: same cadence as the final-turn latch above — a pile-depletion
+          // scheme (Super Hero Civil War: hero deck) can empty on any move, incl.
+          // twist-driven HQ refills, so the check runs per-move here rather than at
+          // recruitHero. Setting SCHEME_LOSS here pre-empts the deck-exhaustion tie
+          // via evaluateEndgame precedence (SCHEME_LOSS before FINAL_TURN_TIE) and
+          // the tie-resolution guard — no finalTurn.logic change needed (D-24319).
+          applyPileDepletionResourceLoss(G);
         },
         // why: Each new turn must begin at the first canonical turn stage.
         // TURN_STAGES[0] is used instead of a hardcoded string to prevent

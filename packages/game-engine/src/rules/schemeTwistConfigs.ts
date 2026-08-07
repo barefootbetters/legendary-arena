@@ -106,9 +106,18 @@ export const SCHEME_TWIST_CONFIGS: Map<string, SchemeTwistConfig> = new Map([
       schemeId: 'core/super-hero-civil-war',
       resolverId: 'ko-from-hq',
       params: { koCount: 2 },
-      // why: player-count-dependent stack (resource loss — hero deck empties):
-      // 8 twists at 2-3 players, 5 at 4-5 (D-24178).
+      // why: real Evil-Wins is a RESOURCE condition (D-24318) — "If the Hero
+      // Deck runs out", modeled as the 'pile-depleted' kind on G.heroDeck.
+      // Declaring resourceLossCondition SUPPRESSES the twist-count doom-clock
+      // proxy for this scheme; lossThresholdByPlayerCount (the printed 8/5-twist
+      // stack) is retained but now INERT for loss (D-24178 / D-24318). The
+      // per-player hero-deck SIZING ("4 Heroes at 2 players") is deferred to
+      // WP-511; until then 2p full-deck may under-loss (reachable at 3-5p).
       lossThresholdByPlayerCount: { '2': 8, '3': 8, '4': 5, '5': 5 },
+      resourceLossCondition: {
+        kind: 'pile-depleted',
+        pile: 'heroDeck',
+      },
     },
   ],
 ]);

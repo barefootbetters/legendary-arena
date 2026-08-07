@@ -324,6 +324,48 @@ describe('LegendaryGame', () => {
     assert.equal(gameState.logMeta!.firstPlayTurn, 2, 'firstPlayTurn is stable across turns');
   });
 
+  it('play-phase onMove wires the pile-depletion loss check — an empty hero deck for Civil War sets SCHEME_LOSS (WP-510 / D-24318, AC-6)', () => {
+    // why: proves the WIRING, not just the helper — reverting the
+    // applyPileDepletionResourceLoss(G) call in game.ts turn.onMove must make this
+    // fail (non-vacuous control). A Super Hero Civil War state whose hero deck is
+    // empty must latch SCHEME_LOSS the moment onMove runs.
+    const playPhase = (
+      LegendaryGame.phases as Record<
+        string,
+        { turn?: { onMove?: (context: unknown) => void } }
+      >
+    ).play;
+    const onMove = playPhase?.turn?.onMove;
+    assert.notEqual(onMove, undefined, 'play phase must define a turn.onMove hook');
+
+    const gameState = {
+      selection: {
+        schemeId: 'core/super-hero-civil-war',
+        mastermindId: 'test-mastermind',
+        villainGroupIds: [],
+        henchmanGroupIds: [],
+        heroDeckIds: [],
+      },
+      counters: {},
+      villainDeck: { deck: ['v-1'], discard: [] },
+      heroDeck: [],
+      messages: [],
+    } as unknown as LegendaryGameState;
+
+    onMove!({ G: gameState });
+
+    assert.equal(
+      gameState.counters[ENDGAME_CONDITIONS.SCHEME_LOSS],
+      1,
+      'onMove must run the pile-depletion check and set SCHEME_LOSS on an empty hero deck',
+    );
+    assert.equal(
+      evaluateEndgame(gameState)?.outcome,
+      'scheme-wins',
+      'the wired loss must resolve to scheme-wins',
+    );
+  });
+
   it('defines a TOP-LEVEL endIf that returns the evaluateEndgame result for a terminal G and undefined for a mid-game G (WP-411 / D-24223 — AC-1)', () => {
     // why: AC-1 — the fix is a TOP-LEVEL LegendaryGame.endIf (sibling of
     // moves/phases), NOT a phase endIf. Only a top-level endIf sets

@@ -19,19 +19,31 @@ import type { ImplementationMap } from './ruleRuntime.execute.js';
  * so the scheme loses when the condition is met rather than on the
  * twist-count doom-clock proxy (D-24178 / D-24315).
  *
- * The only kind in v1 is `'escaped-pile-count'`: the scheme loses when the
- * Escaped Villains pile (`G.escapedPile`) holds at least `threshold` entries
- * whose card type equals `cardType`. Data-only (a plain object literal, no
- * functions) so `SchemeTwistConfig` stays JSON-serializable.
+ * A discriminated union on `kind` (data-only object literals, no functions, so
+ * `SchemeTwistConfig` stays JSON-serializable):
+ *
+ * - `'escaped-pile-count'` (D-24315): the scheme loses when the Escaped Villains
+ *   pile (`G.escapedPile`) holds at least `threshold` entries whose card type
+ *   equals `cardType` (Midtown Bank Robbery, Negative Zone Prison Breakout).
+ * - `'pile-depleted'` (D-24318): the scheme loses when a named pile runs out —
+ *   `G[pile].length === 0` (Super Hero Civil War: `pile: 'heroDeck'`). WP-511
+ *   extends `pile` to `'wounds'` (Legacy Virus).
  */
-export interface SchemeResourceLossCondition {
-  /** The only condition kind in v1 — count entries in the escaped pile. */
-  kind: 'escaped-pile-count';
-  /** The card type to count in `G.escapedPile`. */
-  cardType: RevealedCardType;
-  /** The count at which the scheme is lost (evil wins). */
-  threshold: number;
-}
+export type SchemeResourceLossCondition =
+  | {
+      /** Count entries of a card type in the Escaped Villains pile. */
+      kind: 'escaped-pile-count';
+      /** The card type to count in `G.escapedPile`. */
+      cardType: RevealedCardType;
+      /** The count at which the scheme is lost (evil wins). */
+      threshold: number;
+    }
+  | {
+      /** A named pile running out (reaching zero cards) is the loss. */
+      kind: 'pile-depleted';
+      /** The pile whose emptiness ends the game. */
+      pile: 'heroDeck';
+    };
 
 /**
  * Identifies a registered scheme twist resolver function.
