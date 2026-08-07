@@ -229,21 +229,22 @@ export default defineComponent({
   font-weight: 600;
 }
 
-/* why: WP-505 — captured cards sit beneath the villain tile. Heroes render at
-   a reduced scale so the stack reads as "held under" the villain; the bystander
-   badge is a compact count pill. */
+/* why: WP-505 — captured cards sit beneath the villain tile as a compact,
+   "held under" strip. Heroes are shrunk for REAL by locally overriding the
+   `--card-width-sm` custom property that CardTile reads for its width — NOT a
+   `transform: scale()`, which left a full-size layout box that crowded and
+   overlapped the villain tile above. The border-top reads as "attached below".
+   `min-width: 0` + `overflow-x: auto` keep the strip inside the city column. */
 .city-space__captured {
+  --card-width-sm: 2.5rem;
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.2rem;
-  margin-top: 0.2rem;
-  padding-left: 0.4rem;
-}
-
-.city-space__captured-hero {
-  transform: scale(0.7);
-  transform-origin: top left;
+  min-width: 0;
+  margin-top: 0.3rem;
+  padding-top: 0.25rem;
+  border-top: 1px solid var(--color-foreground, #666);
 }
 
 .city-space__captured-bystanders {
