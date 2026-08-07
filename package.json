@@ -71,6 +71,7 @@
     "mechanics:metadata:check": "node scripts/build-card-mechanics-metadata.mjs --check",
     "effect-index":             "node scripts/build-effect-implementation-index.mjs",
     "effect-index:check":       "node scripts/build-effect-implementation-index.mjs --check",
+    "effect-index:test":        "node --import tsx --test scripts/build-effect-implementation-index.test.ts",
     "gauntlet:loadouts":        "node scripts/generate-gauntlet-loadouts.mjs",
     "gauntlet:loadouts:check":  "node scripts/generate-gauntlet-loadouts.mjs --check",
     "gauntlet:configs":         "node scripts/generate-gauntlet-configs.mjs",

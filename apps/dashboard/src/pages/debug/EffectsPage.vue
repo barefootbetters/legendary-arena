@@ -23,7 +23,7 @@ const STATUS_ORDER: readonly EffectIndexStatus[] = [
   'unmarked',
 ];
 
-const SCOPE_FILTERS: readonly ScopeFilter[] = ['all', 'hero', 'villain'];
+const SCOPE_FILTERS: readonly ScopeFilter[] = ['all', 'hero', 'villain', 'mastermind'];
 const STATUS_FILTERS: readonly StatusFilter[] = ['all', ...STATUS_ORDER];
 
 const search = ref('');
@@ -65,10 +65,11 @@ function designLabel(designs: readonly EffectDesign[] | undefined): string {
     <header class="page-header">
       <h1>Debug Effects</h1>
       <p class="subtitle">
-        Every card × mechanic across both scopes — the "which handler runs this card's effect, and
-        under which decision?" index. Source:
+        Every card × mechanic across hero, villain, and mastermind scopes — the "which handler runs
+        this card's effect, and under which decision?" index. Source:
         <code>data/metadata/effect-implementation-index.json</code> (a verbatim join of the hero +
-        villain mechanic ledgers by <code>pnpm effect-index</code>; CI-gated). Read-only.
+        villain mechanic ledgers and the mastermind-tactic feed by <code>pnpm effect-index</code>;
+        CI-gated). Read-only.
       </p>
     </header>
 
@@ -79,7 +80,8 @@ function designLabel(designs: readonly EffectDesign[] | undefined): string {
         <span class="headline-num">{{ summary.totalEntries }}</span>
         <span class="headline-label">card × mechanic rows</span>
         <span class="headline-sub"
-          >{{ summary.byScope.hero }} hero · {{ summary.byScope.villain }} villain</span
+          >{{ summary.byScope.hero }} hero · {{ summary.byScope.villain }} villain ·
+          {{ summary.byScope.mastermind }} mastermind</span
         >
       </div>
       <div class="summary-chips">
@@ -428,5 +430,8 @@ function designLabel(designs: readonly EffectDesign[] | undefined): string {
 }
 .fx-scope-villain {
   color: var(--p-purple-500, #a855f7);
+}
+.fx-scope-mastermind {
+  color: var(--p-amber-500, #f59e0b);
 }
 </style>
