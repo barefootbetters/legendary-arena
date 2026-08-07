@@ -26,6 +26,9 @@ source:
   - ../packages/game-engine/src/events/notableEvents.compose.ts
   - ../packages/game-engine/src/ui/uiState.types.ts
   - ../packages/game-engine/src/ui/uiState.build.ts
+  - ../packages/game-engine/src/ui/uiState.filter.ts
+  - ../apps/arena-client/src/components/play/CityRow.vue
+  - ../apps/arena-client/src/components/play/MastermindTile.vue
   - ../packages/game-engine/src/moves/coreMoves.impl.ts
   - ../packages/game-engine/src/endgame/endgame.types.ts
   - ../apps/arena-client/src/composables/useComboCue.ts
@@ -33,7 +36,7 @@ source:
   - ../apps/arena-client/src/components/play/NotableEventOverlay.vue
   - ../apps/arena-client/src/pages/PlayViewport.vue
   - ../docs/ai/ARCHITECTURE.md
-last-reviewed: 2026-08-02
+last-reviewed: 2026-08-06
 ---
 
 # Visual Effects Framework
@@ -160,6 +163,7 @@ row by row:
 | `UIState.notableEvents` (six locked variants) | Engine (projected) | ✅ — [Surface 1](#surface-1) |
 | `UIState.game.lastPlayEffectsFired` (combo count) | Engine (projected) | ✅ — [Surface 2](#combo-signal) |
 | `UIState` outcome / progress (`EndgameOutcome`, `progress.escapedVillains`, `scheme.twistCount`, `players[].woundCount`) | Engine (projected) | ✅ — [Surface 4](#endgame) |
+| `UIState` captured-card display (`city.spaces[].attachedHeroDisplay` / `attachedBystanderCount`, `mastermind.attachedBystanders`) | Engine (projected, WP-505 / D-24311) | ✅ — a persistent **board anchor** for the capture / rescue sub-effects ([Surface 1b](#surface-1b)); board state, not VFX |
 | Local move dispatch (`playCard` / `recruitHero` / `fightVillain` / `drawCards` / `dodgeCard` / `endTurn`) | Client | ✅ — [Surface 3](#surface-3) |
 | `G` | Engine-internal | ❌ never |
 | `ctx` | Engine-internal | ❌ never |
@@ -336,11 +340,26 @@ limit below).
 |---|---|---|
 | **Wound gained** | `appliedEffects` contains `gainWoundEachPlayer` / `gainWoundCurrentPlayer`; also a delta on `UIState.players[id].woundCount`; scheme wounds show as `schemeTwistResolved` with `resolverKey === 'woundAll'` | A dull red **damage flash** on the afflicted player panel |
 | **Hero KO'd** | `appliedEffects` contains `koHeroCurrentPlayer` / `koHeroEachPlayer` / `koHeroEachPlayerMag2`; the KO'd heroes are named in `narrative` | A sharp **shatter / dissolve** on the KO'd card as it slides to the KO pile |
-| **Bystander captured** | `appliedEffects` contains `captureBystander` | An ominous **pull-away** — the bystander token yanked toward the villain |
-| **Bystander rescued** | `FightResolvedEvent.bystandersRescued > 0` (and `MastermindDefeatedEvent.bystandersRescued`) | A bright **rescue sparkle** / coin arc into the victory pile |
+| **Bystander captured** | `appliedEffects` contains `captureBystander` | An ominous **pull-away** — the bystander token yanked toward the villain, **landing on the villain's persistent "N captured" badge** (WP-505) |
+| **Bystander rescued** | `FightResolvedEvent.bystandersRescued > 0` (and `MastermindDefeatedEvent.bystandersRescued`) | A bright **rescue sparkle** / coin arc into the victory pile, **pulling off the villain / mastermind's captured stack** (WP-505) |
 
 *Animated mocks of the four Tier-3 sub-effects are in
 [Appendix A.2](#appendix-surface-1b).*
+
+> **The capture / rescue anchor now exists on the board (WP-505 / D-24311).**
+> Until this shipped, captured cards were **not shown at all** — a "pull-away"
+> would have animated a token into nothing. The play board now renders captured
+> cards **persistently**: **face-up captured Heroes** as card art
+> (`city.spaces[].attachedHeroDisplay`) and **face-down captured Bystanders** as
+> a **count-only "N captured" badge** (`attachedBystanderCount`, identity hidden
+> = face-down), under each city villain **and** the mastermind
+> (`mastermind.attachedBystanders`). That persistent display is **board state,
+> not VFX** — it is the static destination the capture pull-away flies *to* and
+> the source the rescue sparkle pulls *from*, so these two sub-effects finally
+> have a real on-board target. Because the count is a live projected field, a
+> capture effect can *also* fire on the count ticking up (e.g. `0 → 1`) as a
+> secondary trigger — still bounded by the keyword-only precision limit below
+> (the badge is a count, so it never reveals *which* bystander).
 
 > **Precision limit.** `appliedEffects` carries the **keyword only** — not
 > which bystander was captured or how many wounds each player took. A
@@ -676,9 +695,12 @@ priority order is fixed and non-negotiable:
   it can carry a captured bystander away, but the escape path is
   **log-only** — it emits *no* notable event (deferred `escapeResolved`,
   WP-186 / D-20001). So "a villain broke through" and "a bystander was
-  carried off" cannot be shown today without adding that event. This is the
-  one dramatic moment with no ready hook — identical to the audio gap, and
-  the reason escape effects are Tier 3.
+  carried off" cannot be shown today without adding that event. (Since WP-505
+  the villain's captured-card stack is now **visible** on the board, so it
+  *disappears* when the villain escapes — a real board change the player can
+  see — but there is still no notable *event* to hang a dramatic escape flash
+  on.) This is the one dramatic moment with no ready hook — identical to the
+  audio gap, and the reason escape effects are Tier 3.
 - **`appliedEffects` is keyword-only.** For wound / KO / bystander-capture
   flashes, the event tells you the *kind* of effect but not the target or
   count. A keyword is enough to fire an effect; anything richer needs new
