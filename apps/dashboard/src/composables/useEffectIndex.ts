@@ -28,7 +28,7 @@ const EMPTY_INDEX: EffectImplementationIndex = {
   generatedAt: '1970-01-01T00:00:00.000Z',
   summary: {
     totalEntries: 0,
-    byScope: { hero: 0, villain: 0 },
+    byScope: { hero: 0, villain: 0, mastermind: 0 },
     byStatus: { executable: 0, deferred: 0, condition: 0, unsupported: 0, unmarked: 0 },
   },
   entries: [],
@@ -54,6 +54,8 @@ export function scopeLabel(scope: EffectIndexEntryScope): string {
       return 'Hero';
     case 'villain':
       return 'Villain';
+    case 'mastermind':
+      return 'Mastermind';
     default:
       return assertNever(scope);
   }

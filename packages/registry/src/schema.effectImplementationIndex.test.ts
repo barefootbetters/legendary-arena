@@ -39,9 +39,12 @@ function validIndex() {
     scope: "all",
     generatedAt: "1970-01-01T00:00:00.000Z",
     summary: {
-      totalEntries: 2,
-      byScope: { hero: 1, villain: 1 },
-      byStatus: { executable: 1, deferred: 0, condition: 0, unsupported: 0, unmarked: 1 },
+      totalEntries: 3,
+      // why: WP-507 — the fixture carries one hero + one villain + one mastermind
+      // entry so the byScope.mastermind tally (and the mastermind entry/card join)
+      // is exercised, not just declared.
+      byScope: { hero: 1, villain: 1, mastermind: 1 },
+      byStatus: { executable: 2, deferred: 0, condition: 0, unsupported: 0, unmarked: 1 },
     },
     entries: [
       {
@@ -66,10 +69,22 @@ function validIndex() {
         wp: "",
         decision: "",
       },
+      {
+        extId: "core-mastermind-magneto-crushing-shockwave",
+        name: "Crushing Shockwave",
+        set: "core",
+        scope: "mastermind",
+        mechanic: "crushing-shockwave",
+        status: "executable",
+        handler: "packages/game-engine/src/rules/tacticHandlers.ts#resolveCrushingShockwave",
+        wp: "WP-506",
+        decision: "D-24312",
+      },
     ],
     cards: {
       "core/hulk": { scope: "hero", mechanics: ["draw"] },
       "core-villain-hydra-viper": { scope: "villain", mechanics: ["(unmarked)"] },
+      "core-mastermind-magneto-crushing-shockwave": { scope: "mastermind", mechanics: ["crushing-shockwave"] },
     },
   };
 }
@@ -133,6 +148,14 @@ describe("EffectImplementationIndexSchema — rejects malformed indexes (WP-484 
   it("rejects a byScope count that disagrees with the entry tally", () => {
     const index = validIndex();
     index.summary.byScope.hero = 99;
+    assert.equal(EffectImplementationIndexSchema.safeParse(index).success, false);
+  });
+
+  it("rejects a byScope.mastermind count that disagrees with the entry tally", () => {
+    // why: WP-507 — the mastermind scope is tallied by the same superRefine loop;
+    // a wrong mastermind count must fail exactly like a wrong hero count.
+    const index = validIndex();
+    index.summary.byScope.mastermind = 99;
     assert.equal(EffectImplementationIndexSchema.safeParse(index).success, false);
   });
 

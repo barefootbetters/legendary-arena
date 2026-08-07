@@ -429,6 +429,13 @@ jobs:
       - name: Run root roadmap-counts suite
         run: pnpm roadmap:counts:test
 
+      # why: same reason as roadmap-counts — the effect-index generator's
+      # mastermind-tactic-feed suite (WP-507) lives at the workspace root, which
+      # `pnpm -r` skips; without this step the tactic feed's verbatim-honesty
+      # invariants (unmapped tactic → unmarked + blanks) would be un-gated.
+      - name: Run root effect-index generator suite
+        run: pnpm effect-index:test
+
   # ── 4. Upload to R2 (tags only) ────────────────────────────────────────────
   upload-r2:
     name: Upload to Cloudflare R2

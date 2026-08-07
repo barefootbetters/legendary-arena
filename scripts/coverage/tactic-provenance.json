@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "_comment": "Mastermind-tactic ext_id -> {status, handler, wp, decision} provenance overlay for the effect-implementation index's mastermind-scoped tactic feed (WP-507 / D-24313). Tactic IDENTITY (extId / name / set / mechanic) is enumerated automatically from the mastermind card data by scripts/build-effect-implementation-index.mjs, so every tactic appears in the index without an entry here; this file curates ONLY status/handler/wp/decision for tactics whose onFight resolver is actually implemented (the WP-493 generated-identity / curated-provenance split). A tactic absent from this map defaults to status 'unmarked' with blank handler/wp/decision -- the honest 'no handler ran' signal, never a fabricated attribution. Add one row per newly-implemented tactic; no generator change needed. Keyed by the tactic ext_id ${setAbbr}-mastermind-${mastermindSlug}-${tacticSlug}.",
+  "tactics": {
+    "co2e-mastermind-doctor-octopus-octet-of-valence-electrons": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveOctetOfValenceElectrons",
+      "wp": "WP-497",
+      "decision": "D-24300"
+    },
+    "core-mastermind-magneto-crushing-shockwave": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveCrushingShockwave",
+      "wp": "WP-506",
+      "decision": "D-24312"
+    }
+  }
+}

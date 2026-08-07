@@ -1,55 +1,64 @@
 #!/usr/bin/env node
 /**
- * Effect implementation index builder (WP-484 / D-24289).
+ * Effect implementation index builder (WP-484 / D-24289; WP-507 / D-24313 tactic feed).
  *
- * Joins the TWO committed mechanic ledgers
+ * Joins the two committed mechanic ledgers
  * (docs/ai/coverage/hero-mechanic-ledger.json +
- * docs/ai/coverage/villain-mechanic-ledger.json) into one published, dual-scope
- * effect-implementation index at data/metadata/effect-implementation-index.json.
- * The index is the data backbone the future /debug/effects viewer reads: for
- * every card x mechanic it surfaces the ledger's status + handler + wp + decision
- * so "did card X's printed effect fire, and which handler ran?" has a single
- * answer surface. It mirrors the WP-269 / D-24046 card-mechanics.json feed
- * pattern but reads both ledgers and carries the ledger tokens VERBATIM.
+ * docs/ai/coverage/villain-mechanic-ledger.json) AND a mastermind-tactic feed read
+ * from the card data into one published, three-scope effect-implementation index at
+ * data/metadata/effect-implementation-index.json. The index is the data backbone the
+ * /debug/effects viewer reads: for every card x mechanic it surfaces status + handler
+ * + wp + decision so "did card X's printed effect fire, and which handler ran?" has a
+ * single answer surface. It mirrors the WP-269 / D-24046 card-mechanics.json feed
+ * pattern but reads both ledgers (verbatim) plus the tactic feed.
  *
  * What it does, in order:
- *   1. Read the hero ledger and the villain ledger (the two derivation sources).
- *   2. Normalize every ledger row into a scope-tagged entry (hero row heroName OR
- *      villain row cardName -> name; scope = "hero" | "villain"), passing
- *      status/handler/wp/decision through verbatim.
- *   3. Sort entries by (extId, mechanic); build the per-card cards{} join
+ *   1. Read the hero ledger and the villain ledger (the two verbatim derivation sources).
+ *   2. Read the mastermind-tactic provenance overlay + enumerate every mastermind
+ *      tactic from the card data (WP-507): tactic IDENTITY (extId/name/set/mechanic)
+ *      comes from data/cards/*.json, its status/handler/wp/decision from the overlay
+ *      or the 'unmarked' default (never fabricated).
+ *   3. Normalize every ledger row + tactic into a scope-tagged entry (hero row
+ *      heroName OR villain row cardName -> name; scope = "hero" | "villain" |
+ *      "mastermind"), passing status/handler/wp/decision through verbatim.
+ *   4. Sort entries by (extId, mechanic); build the per-card cards{} join
  *      (single scope + sorted, de-duplicated mechanics); compute the summary
  *      (counts by scope + status).
- *   4. Validate the assembled index against EffectImplementationIndexSchema (the
+ *   5. Validate the assembled index against EffectImplementationIndexSchema (the
  *      same registry schema a future consumer parses with), so the artifact and
  *      the contract can never drift apart.
- *   5. Default mode: write the file. --check mode: regenerate in memory and exit
+ *   6. Default mode: write the file. --check mode: regenerate in memory and exit
  *      non-zero if the committed file drifts (the CI freshness gate).
  *
- * Deterministic: identical ledger inputs always yield byte-identical output. No
- * wall-clock reads — see resolveGeneratedAt below. This transform is a pure
- * ledger->artifact re-projection; it fabricates nothing.
+ * Deterministic: identical inputs always yield byte-identical output. No wall-clock
+ * reads — see resolveGeneratedAt below. This transform is a pure re-projection; it
+ * fabricates nothing.
  */
 
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { readFileSync, writeFileSync, mkdirSync, readdirSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 // why: the transform self-validates its output against the very schema a future
 // consumer parses with (imported from the registry dist), so a published index can
 // never diverge from EffectImplementationIndexSchema — producer and contract stay
 // locked. This is the ONLY packages/** module the transform imports.
-// why: unlike build-card-mechanics-metadata.mjs, this transform reads NO
-// engine dist. The two committed ledgers already carry status + handler +
-// wp + decision for every row, so this join needs no source classification and
-// no engine vocabulary — reading committed JSON is sufficient and keeps the
-// engine out of this build step entirely.
+// why: unlike build-card-mechanics-metadata.mjs, this transform reads NO engine dist.
+// The two committed ledgers already carry status + handler + wp + decision for every
+// row, and the mastermind-tactic feed (WP-507) reads only the card data + the committed
+// tactic-provenance overlay — so this join needs no source classification and no engine
+// vocabulary. Reading committed JSON + card data is sufficient and keeps the engine out
+// of this build step entirely.
 import { EffectImplementationIndexSchema } from '../packages/registry/dist/schema.js';
 
 const SCRIPT_DIRECTORY = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = dirname(SCRIPT_DIRECTORY);
 const HERO_LEDGER_PATH = join(REPO_ROOT, 'docs', 'ai', 'coverage', 'hero-mechanic-ledger.json');
 const VILLAIN_LEDGER_PATH = join(REPO_ROOT, 'docs', 'ai', 'coverage', 'villain-mechanic-ledger.json');
+// why: WP-507 — the mastermind-tactic feed's two inputs: the card-data directory
+// (tactic identity) and the committed provenance overlay (curated status/handler/wp/decision).
+const CARD_DATA_DIRECTORY = join(REPO_ROOT, 'data', 'cards');
+const TACTIC_PROVENANCE_PATH = join(REPO_ROOT, 'scripts', 'coverage', 'tactic-provenance.json');
 const OUTPUT_DIRECTORY = join(REPO_ROOT, 'data', 'metadata');
 const OUTPUT_PATH = join(OUTPUT_DIRECTORY, 'effect-implementation-index.json');
 
@@ -64,9 +73,14 @@ const GENERATED_AT_SENTINEL = '1970-01-01T00:00:00.000Z';
 
 // why: the byStatus summary emits these five keys in this fixed order, a zero-count
 // status included as 0, so the published shape is stable across card-data changes
-// (a status appearing or vanishing never adds or drops a summary key). This matches
+// (a status appearing or vanishing never adds or drops a key). This matches
 // the EffectIndexStatus closed union in packages/registry/src/schema.ts.
 const STATUS_ORDER = ['executable', 'deferred', 'condition', 'unsupported', 'unmarked'];
+
+// why: WP-507 — a tactic with no implemented resolver is honestly 'unmarked' with
+// blank handler/wp/decision (the "no handler ran" signal), never a fabricated
+// attribution. This is the default overlay for a tactic absent from tactic-provenance.json.
+const UNMARKED_TACTIC_STATUS = 'unmarked';
 
 /** Error type signalling a probe/transform failure (exit code 2). */
 class TransformFailure extends Error {}
@@ -105,7 +119,7 @@ function resolveGeneratedAt(heroLedger, villainLedger) {
 
 /**
  * Reads and shape-checks one mechanic ledger. A wrong shape is a transform failure:
- * the index pins a dual-scope contract, so a mis-scoped or shapeless ledger must
+ * the index pins a three-scope contract, so a mis-scoped or shapeless ledger must
  * STOP rather than silently publish a mislabeled index.
  *
  * @param {string} ledgerPath - absolute path to the ledger JSON file.
@@ -125,7 +139,7 @@ function readLedger(ledgerPath, expectedCardType) {
   if (parsed.cardType !== expectedCardType) {
     throw new TransformFailure(
       `The ledger at ${ledgerPath} has cardType "${parsed.cardType}", expected "${expectedCardType}". ` +
-        `The effect index pins a dual-scope join; reconcile the ledger scope before regenerating.`,
+        `The effect index pins a three-scope join; reconcile the ledger scope before regenerating.`,
     );
   }
   if (!Array.isArray(parsed.rows)) {
@@ -135,6 +149,159 @@ function readLedger(ledgerPath, expectedCardType) {
     );
   }
   return parsed;
+}
+
+/**
+ * Reads the mastermind-tactic provenance overlay (WP-507): a curated map of tactic
+ * ext_id -> { status, handler, wp, decision } for the tactics whose onFight resolver
+ * is implemented. Tactic IDENTITY is enumerated from the card data, so this file
+ * carries ONLY status/handler/wp/decision (the WP-493 generated-identity /
+ * curated-provenance split); a malformed overlay is a transform failure.
+ *
+ * @returns {Record<string, object>} the `tactics` map (ext_id -> overlay).
+ */
+function readTacticProvenance() {
+  let parsed;
+  try {
+    parsed = JSON.parse(readFileSync(TACTIC_PROVENANCE_PATH, 'utf8'));
+  } catch (error) {
+    throw new TransformFailure(
+      `Cannot read the tactic provenance overlay at ${TACTIC_PROVENANCE_PATH}. It supplies status/handler/wp/decision ` +
+        `for implemented mastermind tactics. Restore the committed file. Underlying error: ${error.message}`,
+    );
+  }
+  if (parsed === null || typeof parsed !== 'object' || typeof parsed.tactics !== 'object' || parsed.tactics === null) {
+    throw new TransformFailure(
+      `The tactic provenance overlay at ${TACTIC_PROVENANCE_PATH} has no "tactics" object. ` +
+        `Expected { schemaVersion, _comment, tactics: { "<ext_id>": { status, handler, wp, decision } } }.`,
+    );
+  }
+  return parsed.tactics;
+}
+
+/**
+ * Normalizes one mastermind tactic into a mastermind-scoped effect-index entry in the
+ * locked property order. Identity (extId/name/set/mechanic) comes from the card data;
+ * status/handler/wp/decision come from the provenance overlay VERBATIM, or the
+ * 'unmarked'/blank default when the tactic has no implemented resolver.
+ *
+ * @param {string} extId - the tactic ext_id (`${setAbbr}-mastermind-${slug}-${tacticSlug}`).
+ * @param {string} name - the tactic card's display name.
+ * @param {string} setAbbr - the file-level set abbreviation.
+ * @param {string} tacticSlug - the tactic card's slug (also the entry's `mechanic`).
+ * @param {object|undefined} overlay - the provenance overlay for this tactic, if any.
+ * @returns {object} the normalized mastermind entry.
+ */
+export function normalizeTactic(extId, name, setAbbr, tacticSlug, overlay) {
+  // why: verbatim honesty (WP-493 / AC-5) — a tactic absent from the provenance overlay
+  // is 'unmarked' with blank handler/wp/decision; the transform never synthesizes a
+  // handler path, WP, or decision a tactic does not have. "" is a meaningful
+  // "no handler ran" signal, never null.
+  const hasOverlay = overlay !== null && typeof overlay === 'object';
+  const status =
+    hasOverlay && typeof overlay.status === 'string' && overlay.status.length > 0
+      ? overlay.status
+      : UNMARKED_TACTIC_STATUS;
+  const handler = hasOverlay && typeof overlay.handler === 'string' ? overlay.handler : '';
+  const wp = hasOverlay && typeof overlay.wp === 'string' ? overlay.wp : '';
+  const decision = hasOverlay && typeof overlay.decision === 'string' ? overlay.decision : '';
+  // why: mechanic = the tactic SLUG — each tactic is its own card × mechanic row (a
+  // mastermind contributes one row per tactic), matching how the grid reads elsewhere.
+  return {
+    extId,
+    name,
+    set: setAbbr,
+    scope: 'mastermind',
+    mechanic: tacticSlug,
+    status,
+    handler,
+    wp,
+    decision,
+  };
+}
+
+/**
+ * Enumerates every mastermind tactic across all card-data sets into mastermind-scoped
+ * entries (WP-507). Stays engine-free: reads data/cards/*.json (tactic identity) + the
+ * committed provenance overlay only. Files are read in a sorted order for a stable
+ * intermediate (the terminal (extId, mechanic) sort normalizes final order anyway). A
+ * missing/malformed card file, or a masterminds-bearing set with no file-level `abbr`,
+ * is a transform failure — the ext_id grammar depends on both.
+ *
+ * @param {Record<string, object>} provenance - the tactic provenance overlay map.
+ * @returns {object[]} the mastermind-scoped tactic entries (unsorted).
+ */
+export function readMastermindTactics(provenance) {
+  let fileNames;
+  try {
+    fileNames = readdirSync(CARD_DATA_DIRECTORY)
+      .filter((name) => name.endsWith('.json'))
+      .sort();
+  } catch (error) {
+    throw new TransformFailure(
+      `Cannot read the card-data directory at ${CARD_DATA_DIRECTORY}. It supplies mastermind-tactic identity ` +
+        `for the effect index. Underlying error: ${error.message}`,
+    );
+  }
+
+  const entries = [];
+  for (const fileName of fileNames) {
+    const filePath = join(CARD_DATA_DIRECTORY, fileName);
+    let setData;
+    try {
+      setData = JSON.parse(readFileSync(filePath, 'utf8'));
+    } catch (error) {
+      throw new TransformFailure(
+        `Cannot read or parse the card-data set at ${filePath}. Re-check the card data before regenerating ` +
+          `the effect index. Underlying error: ${error.message}`,
+      );
+    }
+
+    // why: a set with no masterminds contributes no tactics — skip it, not a failure.
+    if (!Array.isArray(setData.masterminds) || setData.masterminds.length === 0) {
+      continue;
+    }
+    const setAbbr = setData.abbr;
+    if (typeof setAbbr !== 'string' || setAbbr.length === 0) {
+      throw new TransformFailure(
+        `The card-data set at ${filePath} carries masterminds but no file-level "abbr" string. ` +
+          `The tactic ext_id grammar "\${setAbbr}-mastermind-\${slug}-\${tacticSlug}" needs it; add the "abbr" field.`,
+      );
+    }
+
+    for (const mastermind of setData.masterminds) {
+      const mastermindSlug = mastermind.slug;
+      if (typeof mastermindSlug !== 'string' || mastermindSlug.length === 0) {
+        continue;
+      }
+      if (!Array.isArray(mastermind.cards)) {
+        continue;
+      }
+      for (const card of mastermind.cards) {
+        // why: only tactic cards (tactic === true) carry a Fight ability; the base
+        // mastermind card is skipped.
+        if (card.tactic !== true) {
+          continue;
+        }
+        const tacticSlug = card.slug;
+        const tacticName = card.name;
+        if (
+          typeof tacticSlug !== 'string' ||
+          tacticSlug.length === 0 ||
+          typeof tacticName !== 'string' ||
+          tacticName.length === 0
+        ) {
+          throw new TransformFailure(
+            `A tactic card under mastermind "${mastermindSlug}" in ${filePath} is missing its slug or name. ` +
+              `Every tactic card needs both to build its ext_id and index row.`,
+          );
+        }
+        const extId = `${setAbbr}-mastermind-${mastermindSlug}-${tacticSlug}`;
+        entries.push(normalizeTactic(extId, tacticName, setAbbr, tacticSlug, provenance[extId]));
+      }
+    }
+  }
+  return entries;
 }
 
 /**
@@ -201,22 +368,27 @@ function normalizeRow(row, scope, name) {
 }
 
 /**
- * Collects normalized entries from both ledgers (one entry per ledger row — a pure
- * verbatim join) and sorts them ascending by (extId, mechanic). Ties on that key
- * (the same henchman reprinted across sets shares extId + mechanic but differs by
- * set) preserve ledger order via the stable sort, so the output stays byte-stable.
+ * Collects normalized entries from both ledgers plus the mastermind-tactic feed (one
+ * entry per ledger row / tactic — a pure verbatim join) and sorts them ascending by
+ * (extId, mechanic). Ties on that key (the same henchman reprinted across sets shares
+ * extId + mechanic but differs by set) preserve input order via the stable sort, so
+ * the output stays byte-stable.
  *
  * @param {object} heroLedger - the parsed hero ledger.
  * @param {object} villainLedger - the parsed villain ledger.
+ * @param {object[]} tacticEntries - the mastermind-scoped tactic entries.
  * @returns {object[]} the sorted entry list.
  */
-function collectEntries(heroLedger, villainLedger) {
+function collectEntries(heroLedger, villainLedger, tacticEntries) {
   const entries = [];
   for (const row of heroLedger.rows) {
     entries.push(normalizeRow(row, 'hero', row.heroName));
   }
   for (const row of villainLedger.rows) {
     entries.push(normalizeRow(row, 'villain', row.cardName));
+  }
+  for (const tacticEntry of tacticEntries) {
+    entries.push(tacticEntry);
   }
   entries.sort((left, right) => {
     if (left.extId !== right.extId) {
@@ -233,8 +405,9 @@ function collectEntries(heroLedger, villainLedger) {
 /**
  * Builds the per-card cards{} join from the entries: keys sorted ascending, each
  * card carrying its single scope and a sorted, de-duplicated mechanics[] list.
- * Throws if one extId ever carries two different scopes (the ledgers use disjoint
- * id-spaces, so this would signal a corrupted source rather than valid data).
+ * Throws if one extId ever carries two different scopes (the hero, villain, and
+ * mastermind-tactic feeds use disjoint id-spaces, so this would signal a corrupted
+ * source rather than valid data).
  *
  * @param {object[]} entries - the sorted entry list.
  * @returns {object} the cards{} join object with sorted keys.
@@ -247,7 +420,7 @@ function buildCards(entries) {
     if (existingScope !== undefined && existingScope !== entry.scope) {
       throw new TransformFailure(
         `Card "${entry.extId}" appears with both scope "${existingScope}" and "${entry.scope}". ` +
-          `Hero and villain ledgers use disjoint id-spaces; a shared extId signals a corrupted ledger.`,
+          `The hero, villain, and mastermind-tactic feeds use disjoint id-spaces; a shared extId signals a corrupted source.`,
       );
     }
     scopeByCard.set(entry.extId, entry.scope);
@@ -274,8 +447,11 @@ function buildCards(entries) {
  * @param {object[]} entries - the sorted entry list.
  * @returns {object} the summary object in locked property order.
  */
-function buildSummary(entries) {
-  const byScope = { hero: 0, villain: 0 };
+export function buildSummary(entries) {
+  // why: WP-507 — byScope seeds all three scopes at 0 (a zero-count scope stays 0
+  // in the published shape); the mastermind seed matches the schema's byScope object
+  // and its superRefine tally, so a scope with no entries never drops the key.
+  const byScope = { hero: 0, villain: 0, mastermind: 0 };
   const byStatus = {};
   for (const statusName of STATUS_ORDER) {
     byStatus[statusName] = 0;
@@ -298,10 +474,11 @@ function buildSummary(entries) {
  *
  * @param {object} heroLedger - the parsed hero ledger.
  * @param {object} villainLedger - the parsed villain ledger.
+ * @param {object[]} tacticEntries - the mastermind-scoped tactic entries.
  * @returns {object} the validated effect-implementation index.
  */
-function buildIndex(heroLedger, villainLedger) {
-  const entries = collectEntries(heroLedger, villainLedger);
+function buildIndex(heroLedger, villainLedger, tacticEntries) {
+  const entries = collectEntries(heroLedger, villainLedger, tacticEntries);
   const cards = buildCards(entries);
   const summary = buildSummary(entries);
 
@@ -346,7 +523,9 @@ function main() {
 
   const heroLedger = readLedger(HERO_LEDGER_PATH, 'hero');
   const villainLedger = readLedger(VILLAIN_LEDGER_PATH, 'villain');
-  const index = buildIndex(heroLedger, villainLedger);
+  const tacticProvenance = readTacticProvenance();
+  const tacticEntries = readMastermindTactics(tacticProvenance);
+  const index = buildIndex(heroLedger, villainLedger, tacticEntries);
   const freshText = serializeJson(index);
 
   if (mode === '--check') {
@@ -374,20 +553,40 @@ function main() {
   mkdirSync(OUTPUT_DIRECTORY, { recursive: true });
   writeFileSync(OUTPUT_PATH, freshText, 'utf8');
   console.log(`Effect-implementation index written (${index.entries.length} entries):`);
-  console.log(`  scope ${index.scope} · ${index.summary.byScope.hero} hero + ${index.summary.byScope.villain} villain · ${Object.keys(index.cards).length} cards`);
+  console.log(
+    `  scope ${index.scope} · ${index.summary.byScope.hero} hero + ${index.summary.byScope.villain} villain + ` +
+      `${index.summary.byScope.mastermind} mastermind · ${Object.keys(index.cards).length} cards`,
+  );
   console.log(`  ${OUTPUT_PATH}`);
   return 0;
 }
 
-try {
-  process.exitCode = main();
-} catch (error) {
-  if (error instanceof TransformFailure) {
-    console.error(`Transform failure: ${error.message}`);
-    process.exitCode = 2;
-  } else {
-    console.error('Transform failure: the effect-implementation index builder threw an unexpected error.');
-    console.error(error);
-    process.exitCode = 2;
+/**
+ * Whether this module was invoked directly as a CLI (vs imported by the test).
+ * Guarding the CLI behind a direct-run check keeps importing the pure helpers
+ * side-effect free (mirrors roadmap-counts.mjs `isRunDirectly`).
+ *
+ * @returns {boolean} true when run as `node scripts/build-effect-implementation-index.mjs`.
+ */
+function isRunDirectly() {
+  const invokedPath = process.argv[1];
+  if (invokedPath === undefined) {
+    return false;
+  }
+  return resolve(invokedPath) === fileURLToPath(import.meta.url);
+}
+
+if (isRunDirectly()) {
+  try {
+    process.exitCode = main();
+  } catch (error) {
+    if (error instanceof TransformFailure) {
+      console.error(`Transform failure: ${error.message}`);
+      process.exitCode = 2;
+    } else {
+      console.error('Transform failure: the effect-implementation index builder threw an unexpected error.');
+      console.error(error);
+      process.exitCode = 2;
+    }
   }
 }

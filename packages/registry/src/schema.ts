@@ -751,9 +751,15 @@ export type CardMechanicsIndex     = z.infer<typeof CardMechanicsIndexSchema>;
 // VERBATIM (not a normalized slug) — the villain `(unmarked)` sentinel appears as
 // the literal parenthesized string — so there is no slug regex here; token
 // normalization is card-mechanics.json's concern, not this index's.
+// why: WP-507 / D-24313 — "mastermind" is a closed-enum widening (a registry
+// contract change) so mastermind TACTIC cards can appear in the index alongside
+// hero + villain scopes. It stays in lockstep with EffectImplementationSummarySchema.byScope,
+// the superRefine scopeTally accumulator, and every dashboard consumer (scopeLabel,
+// the filter chip list, the badge CSS) — all widened together.
 export const EFFECT_INDEX_ENTRY_SCOPES = [
   "hero",
   "villain",
+  "mastermind",
 ] as const;
 
 export const EFFECT_INDEX_STATUSES = [
@@ -816,8 +822,9 @@ export const EffectImplementationSummarySchema = z
     totalEntries: z.number().int().nonnegative(),
     byScope: z
       .object({
-        hero:    z.number().int().nonnegative(),
-        villain: z.number().int().nonnegative(),
+        hero:       z.number().int().nonnegative(),
+        villain:    z.number().int().nonnegative(),
+        mastermind: z.number().int().nonnegative(),
       })
       .strict(),
     // why: byStatus emits all five status keys in the fixed union order, a
@@ -866,7 +873,11 @@ export const EffectImplementationIndexSchema = z
       });
     }
 
-    const scopeTally = { hero: 0, villain: 0 };
+    // why: the comparison loop below iterates EFFECT_INDEX_ENTRY_SCOPES, but this
+    // accumulator is a hardcoded literal — the WP-507 "mastermind" scope needs its
+    // own `mastermind: 0` seed here, else a mastermind entry does
+    // `scopeTally['mastermind'] += 1` on undefined → NaN and every regenerated index fails.
+    const scopeTally = { hero: 0, villain: 0, mastermind: 0 };
     const statusTally = { executable: 0, deferred: 0, condition: 0, unsupported: 0, unmarked: 0 };
     for (const entry of index.entries) {
       scopeTally[entry.scope] += 1;

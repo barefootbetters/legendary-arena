@@ -34,7 +34,7 @@ function makeEntry(overrides: Partial<EffectImplementationEntry>): EffectImpleme
  * per-card join are derived), so the fixture passes EffectImplementationIndexSchema.
  */
 function makeIndex(entries: EffectImplementationEntry[]): EffectImplementationIndex {
-  const byScope = { hero: 0, villain: 0 };
+  const byScope = { hero: 0, villain: 0, mastermind: 0 };
   const byStatus = { executable: 0, deferred: 0, condition: 0, unsupported: 0, unmarked: 0 };
   const cards: EffectImplementationIndex['cards'] = {};
   for (const entry of entries) {
@@ -67,6 +67,7 @@ const NO_FILTER: EffectIndexFilter = {
 test('scopeLabel covers every scope and throws on an unknown one', () => {
   assert.equal(scopeLabel('hero'), 'Hero');
   assert.equal(scopeLabel('villain'), 'Villain');
+  assert.equal(scopeLabel('mastermind'), 'Mastermind');
   assert.throws(() => scopeLabel('sidekick' as unknown as EffectIndexEntryScope));
 });
 
@@ -87,6 +88,20 @@ test('filterEntries narrows by scope', () => {
   const result = filterEntries(entries, { ...NO_FILTER, scope: 'villain' });
   assert.equal(result.length, 1);
   assert.equal(result[0]?.extId, 'b');
+});
+
+test('filterEntries narrows to the mastermind scope (WP-507)', () => {
+  const entries = [
+    makeEntry({ extId: 'core/hulk', scope: 'hero' }),
+    makeEntry({
+      extId: 'core-mastermind-magneto-crushing-shockwave',
+      scope: 'mastermind',
+      mechanic: 'crushing-shockwave',
+    }),
+  ];
+  const result = filterEntries(entries, { ...NO_FILTER, scope: 'mastermind' });
+  assert.equal(result.length, 1);
+  assert.equal(result[0]?.extId, 'core-mastermind-magneto-crushing-shockwave');
 });
 
 test('filterEntries narrows by status', () => {
@@ -158,7 +173,7 @@ test('useEffectIndex surfaces the raw stub error message when present', () => {
     generatedAt: '1970-01-01T00:00:00.000Z',
     summary: {
       totalEntries: 0,
-      byScope: { hero: 0, villain: 0 },
+      byScope: { hero: 0, villain: 0, mastermind: 0 },
       byStatus: { executable: 0, deferred: 0, condition: 0, unsupported: 0, unmarked: 0 },
     },
     entries: [],
