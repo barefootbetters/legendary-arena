@@ -73,8 +73,20 @@ export const SCHEME_TWIST_CONFIGS: Map<string, SchemeTwistConfig> = new Map([
       schemeId: 'core/negative-zone-prison-breakout',
       resolverId: 'chained-reveals',
       params: { revealCount: 2 },
-      // why: 8-twist stack (resource loss — 12 villains escape); doom-clock proxy (D-24178).
+      // why: real Evil-Wins is a RESOURCE condition (D-24316) — "If 12 Villains
+      // escape", counted as 'villain'-typed entries in G.escapedPile. Villains
+      // only, per Universal Rules v23 §"Schemes that Count Escaped Villains"
+      // (henchmen — typed 'henchman' — are excluded, so counting the pile by
+      // 'villain' type is faithful; the ESCAPED_VILLAINS counter would wrongly
+      // include them). Declaring resourceLossCondition SUPPRESSES the twist-count
+      // doom-clock proxy for this scheme; lossThreshold (the printed 8-twist
+      // stack size) is retained but now INERT for loss (D-24178 / D-24317).
       lossThreshold: 8,
+      resourceLossCondition: {
+        kind: 'escaped-pile-count',
+        cardType: 'villain',
+        threshold: 12,
+      },
     },
   ],
   [

@@ -156,3 +156,57 @@ describe('AC-6 — evaluateEndgame composition', () => {
     assert.equal(evaluateEndgame(state), null);
   });
 });
+
+describe('escaped-pile-count villain — Negative Zone (WP-509 / D-24316)', () => {
+  const NEG_ZONE = 'core/negative-zone-prison-breakout';
+
+  /** An escaped pile with `villains` villain cards plus optional non-villains. */
+  function negZoneState(
+    villains: number,
+    others: { henchmen?: number; bystanders?: number } = {},
+    counters: Record<string, number> = {},
+  ): LegendaryGameState {
+    const escapedPile: string[] = [];
+    const types: Record<string, RevealedCardType> = {};
+    for (let i = 0; i < villains; i++) {
+      const id = `core-villain-negzone-${i}`;
+      escapedPile.push(id);
+      types[id] = 'villain';
+    }
+    for (let i = 0; i < (others.henchmen ?? 0); i++) {
+      const id = `henchman-doombot-legion-${i}`;
+      escapedPile.push(id);
+      types[id] = 'henchman';
+    }
+    for (let i = 0; i < (others.bystanders ?? 0); i++) {
+      escapedPile.push(BYSTANDER_EXT_ID); // supply bystander (no type entry)
+    }
+    return makeState(NEG_ZONE, escapedPile, types, counters);
+  }
+
+  it('counts villains only — henchmen and bystanders in the pile are excluded', () => {
+    const state = negZoneState(3, { henchmen: 4, bystanders: 5 });
+    assert.equal(countEscapedPileByType(state, 'villain'), 3);
+  });
+
+  it('sets SCHEME_LOSS when 12 villains have escaped', () => {
+    const state = negZoneState(12);
+    applyEscapedPileResourceLoss(state);
+    assert.equal(state.counters[ENDGAME_CONDITIONS.SCHEME_LOSS], 1);
+  });
+
+  it('does NOT set SCHEME_LOSS at 11 villains (below threshold)', () => {
+    const state = negZoneState(11);
+    applyEscapedPileResourceLoss(state);
+    assert.equal(state.counters[ENDGAME_CONDITIONS.SCHEME_LOSS], undefined);
+  });
+
+  it('11 villains + 6 henchmen does NOT lose — henchmen never count toward the 12 (villains-only, D-24316)', () => {
+    // why: the faithfulness guard. 17 escaped adversaries (over the retired
+    // ESCAPE_LIMIT 8) but only 11 villains — Negative Zone loses on villains
+    // only per Universal Rules v23 §Escaped Villains.
+    const state = negZoneState(11, { henchmen: 6 });
+    applyEscapedPileResourceLoss(state);
+    assert.equal(state.counters[ENDGAME_CONDITIONS.SCHEME_LOSS], undefined);
+  });
+});

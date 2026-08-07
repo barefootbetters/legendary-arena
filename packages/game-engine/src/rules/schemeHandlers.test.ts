@@ -540,20 +540,18 @@ describe('scheme loss threshold (D-24178)', () => {
     assert.equal(triggersSchemeLoss(makeCivilWar(3, 5)), false, '5p must not lose at predicted twist 4');
   });
 
-  it('a resource-loss scheme (Negative Zone) runs its full 8-twist stack, not the fallback 7', () => {
-    const at7 = makeTestState({ schemeTwistCount: 6 });
-    at7.selection.schemeId = 'core/negative-zone-prison-breakout';
+  it('Negative Zone suppresses the twist-count proxy at its stack size (real loss is escaped-villain count, D-24316)', () => {
+    // why: WP-509 — Negative Zone declares a resourceLossCondition
+    // (escaped-pile-count / villain / 12), so the twist-count doom-clock proxy
+    // is suppressed. Even at predicted twist 8 (its printed stack size) the
+    // handler must NOT push SCHEME_LOSS; the real loss is evaluated in the escape
+    // path from the escaped-villain count.
+    const atStack = makeTestState({ schemeTwistCount: 7 }); // predicted 8
+    atStack.selection.schemeId = 'core/negative-zone-prison-breakout';
     assert.equal(
-      triggersSchemeLoss(schemeTwistHandler(at7, {}, { cardId: 't' }, DEFAULT_IMPLEMENTATION_MAP)),
+      triggersSchemeLoss(schemeTwistHandler(atStack, {}, { cardId: 't' }, DEFAULT_IMPLEMENTATION_MAP)),
       false,
-      'must not lose a twist early at predicted 7',
-    );
-    const at8 = makeTestState({ schemeTwistCount: 7 });
-    at8.selection.schemeId = 'core/negative-zone-prison-breakout';
-    assert.equal(
-      triggersSchemeLoss(schemeTwistHandler(at8, {}, { cardId: 't' }, DEFAULT_IMPLEMENTATION_MAP)),
-      true,
-      'doom clock reaches the full 8-twist stack',
+      'Negative Zone must not trip the twist-count proxy — its loss is the escaped-villain count',
     );
   });
 
