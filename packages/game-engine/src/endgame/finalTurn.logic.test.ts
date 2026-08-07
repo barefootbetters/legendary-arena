@@ -7,6 +7,8 @@ import {
   resolveFinalTurnTieIfUnresolved,
 } from './finalTurn.logic.js';
 import { ENDGAME_CONDITIONS } from './endgame.types.js';
+import { evaluateEndgame } from './endgame.evaluate.js';
+import { applyPileDepletionResourceLoss } from '../rules/schemeResourceLoss.js';
 
 /**
  * Builds a minimal LegendaryGameState carrying only the fields the final-turn
@@ -134,5 +136,60 @@ describe('resolveFinalTurnTieIfUnresolved (WP-367 / D-24159)', () => {
     });
     resolveFinalTurnTieIfUnresolved(state);
     assert.equal(state.counters[ENDGAME_CONDITIONS.FINAL_TURN_TIE], 1);
+  });
+});
+
+describe('D-24319 — Civil War hero-deck depletion pre-empts the deck-exhaustion tie (WP-510)', () => {
+  /** A Super Hero Civil War state with an empty hero deck (villain deck intact). */
+  function civilWarHeroDeckEmpty(): LegendaryGameState {
+    return {
+      selection: {
+        schemeId: 'core/super-hero-civil-war',
+        mastermindId: 'test-mastermind',
+        villainGroupIds: [],
+        henchmanGroupIds: [],
+        heroDeckIds: [],
+      },
+      counters: {},
+      villainDeck: { deck: ['v-1'], discard: [] },
+      heroDeck: [],
+      messages: [],
+    } as unknown as LegendaryGameState;
+  }
+
+  // why: the full override chain, not a hand-set SCHEME_LOSS. The empty hero deck
+  // latches the final turn AND triggers the pile-depletion scheme loss on the same
+  // move; the loss must pre-empt the tie purely by precedence (SCHEME_LOSS before
+  // FINAL_TURN_TIE in evaluateEndgame + the tie-resolution guard) — no change to
+  // finalTurn.logic.ts.
+  it('an empty hero deck sets SCHEME_LOSS, latches the final turn, and the tie never resolves → scheme-wins', () => {
+    const state = civilWarHeroDeckEmpty();
+
+    // The two turn.onMove siblings, in wiring order (game.ts).
+    latchFinalTurnIfDeckExhausted(state);
+    applyPileDepletionResourceLoss(state);
+
+    assert.equal(
+      state.counters[ENDGAME_CONDITIONS.FINAL_TURN_TRIGGERED],
+      1,
+      'the empty hero deck must still latch the final turn',
+    );
+    assert.equal(
+      state.counters[ENDGAME_CONDITIONS.SCHEME_LOSS],
+      1,
+      'hero-deck depletion must set the scheme loss',
+    );
+
+    // The tie resolution (turn.onEnd) must be a no-op — the scheme loss won.
+    resolveFinalTurnTieIfUnresolved(state);
+    assert.equal(
+      state.counters[ENDGAME_CONDITIONS.FINAL_TURN_TIE],
+      undefined,
+      'the tie must NOT resolve once the scheme loss is latched',
+    );
+
+    const result = evaluateEndgame(state);
+    assert.ok(result, 'endgame must have resolved');
+    assert.equal(result!.outcome, 'scheme-wins', 'evil wins by hero-deck depletion, not a tie');
   });
 });

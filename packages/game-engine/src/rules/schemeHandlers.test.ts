@@ -522,7 +522,13 @@ describe('scheme loss threshold (D-24178)', () => {
     );
   });
 
-  it('Super Hero Civil War: loses at twist 8 for 2-3 players, twist 5 for 4-5 players', () => {
+  it('Super Hero Civil War suppresses the twist-count proxy at every player count (real loss is hero-deck depletion, D-24318)', () => {
+    // why: WP-510 — Civil War declares a resourceLossCondition
+    // (pile-depleted / heroDeck), so the twist-count doom-clock proxy is
+    // suppressed for it (the kind-agnostic suppressTwistLoss gate). Even at its
+    // printed stack size — predicted twist 8 at 2-3p, twist 5 at 4-5p — the
+    // handler must NOT push SCHEME_LOSS; the real loss is evaluated per-move from
+    // the hero-deck depletion check. The twist still increments the count.
     const makeCivilWar = (twistCount: number, players: number) => {
       const state = makeTestState({ schemeTwistCount: twistCount });
       state.selection.schemeId = 'core/super-hero-civil-war';
@@ -530,14 +536,19 @@ describe('scheme loss threshold (D-24178)', () => {
       return schemeTwistHandler(state, {}, { cardId: 't' }, DEFAULT_IMPLEMENTATION_MAP);
     };
 
-    // 2 players (threshold 8): predicted 5 → no loss; predicted 8 → loss.
-    assert.equal(triggersSchemeLoss(makeCivilWar(4, 2)), false, '2p must not lose at predicted twist 5');
-    assert.equal(triggersSchemeLoss(makeCivilWar(7, 2)), true, '2p must lose at predicted twist 8');
+    // 2-3 players (printed stack 8): predicted 8 must NOT trip the proxy.
+    assert.equal(triggersSchemeLoss(makeCivilWar(7, 2)), false, '2p must not trip the proxy at predicted twist 8');
+    assert.equal(triggersSchemeLoss(makeCivilWar(7, 3)), false, '3p must not trip the proxy at predicted twist 8');
+    // 4-5 players (printed stack 5): predicted 5 must NOT trip the proxy.
+    assert.equal(triggersSchemeLoss(makeCivilWar(4, 4)), false, '4p must not trip the proxy at predicted twist 5');
+    assert.equal(triggersSchemeLoss(makeCivilWar(4, 5)), false, '5p must not trip the proxy at predicted twist 5');
 
-    // 4 players (threshold 5): predicted 5 → loss.
-    assert.equal(triggersSchemeLoss(makeCivilWar(4, 4)), true, '4p must lose at predicted twist 5');
-    // 5 players (threshold 5): predicted 4 → no loss.
-    assert.equal(triggersSchemeLoss(makeCivilWar(3, 5)), false, '5p must not lose at predicted twist 4');
+    // proxy suppression is loss-only: the twist count still increments.
+    const effects = makeCivilWar(7, 2);
+    const counterEffect = effects.find(
+      (effect) => (effect as { counter?: string }).counter === 'schemeTwistCount',
+    );
+    assert.ok(counterEffect, 'twist count still increments under proxy suppression');
   });
 
   it('Negative Zone suppresses the twist-count proxy at its stack size (real loss is escaped-villain count, D-24316)', () => {

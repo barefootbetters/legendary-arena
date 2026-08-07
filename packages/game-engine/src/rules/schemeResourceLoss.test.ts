@@ -15,6 +15,7 @@ import assert from 'node:assert/strict';
 import {
   countEscapedPileByType,
   applyEscapedPileResourceLoss,
+  applyPileDepletionResourceLoss,
 } from './schemeResourceLoss.js';
 import { evaluateEndgame } from '../endgame/endgame.evaluate.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
@@ -208,5 +209,77 @@ describe('escaped-pile-count villain — Negative Zone (WP-509 / D-24316)', () =
     const state = negZoneState(11, { henchmen: 6 });
     applyEscapedPileResourceLoss(state);
     assert.equal(state.counters[ENDGAME_CONDITIONS.SCHEME_LOSS], undefined);
+  });
+});
+
+describe('applyPileDepletionResourceLoss — Super Hero Civil War (WP-510 / D-24318)', () => {
+  const CIVIL_WAR = 'core/super-hero-civil-war';
+
+  /** A minimal state whose hero deck holds `heroDeckLength` cards. */
+  function civilWarState(
+    heroDeckLength: number,
+    counters: Record<string, number> = {},
+  ): LegendaryGameState {
+    const heroDeck: string[] = [];
+    for (let i = 0; i < heroDeckLength; i++) {
+      heroDeck.push(`core-hero-card-${i}`);
+    }
+    return {
+      selection: {
+        schemeId: CIVIL_WAR,
+        mastermindId: 'test-mastermind',
+        villainGroupIds: [],
+        henchmanGroupIds: [],
+        heroDeckIds: [],
+      },
+      heroDeck,
+      counters,
+      messages: [],
+    } as unknown as LegendaryGameState;
+  }
+
+  it('sets SCHEME_LOSS when the hero deck is empty (pile-depleted / heroDeck)', () => {
+    const state = civilWarState(0);
+    applyPileDepletionResourceLoss(state);
+    assert.equal(state.counters[ENDGAME_CONDITIONS.SCHEME_LOSS], 1);
+  });
+
+  it('does NOT set SCHEME_LOSS while the hero deck holds ≥ 1 card', () => {
+    const state = civilWarState(1);
+    applyPileDepletionResourceLoss(state);
+    assert.equal(state.counters[ENDGAME_CONDITIONS.SCHEME_LOSS], undefined);
+  });
+
+  it('is idempotent once the loss is latched (does not re-log)', () => {
+    const state = civilWarState(0, { [ENDGAME_CONDITIONS.SCHEME_LOSS]: 1 });
+    applyPileDepletionResourceLoss(state);
+    assert.equal(state.counters[ENDGAME_CONDITIONS.SCHEME_LOSS], 1);
+    assert.equal(state.messages.length, 0, 'no duplicate loss log once latched');
+  });
+
+  it('is a no-op for an escaped-pile-count scheme (kind guard — does not read heroDeck)', () => {
+    // why: Midtown declares an 'escaped-pile-count' condition, NOT 'pile-depleted';
+    // applyPileDepletionResourceLoss must ignore it even with an empty hero deck.
+    const state = civilWarState(0);
+    (state.selection as { schemeId: string }).schemeId = MIDTOWN;
+    applyPileDepletionResourceLoss(state);
+    assert.equal(state.counters[ENDGAME_CONDITIONS.SCHEME_LOSS], undefined);
+  });
+
+  it('is a no-op for a scheme with no resourceLossCondition', () => {
+    // Cosmic Cube is a true twist-loss scheme — no resourceLossCondition.
+    const state = civilWarState(0);
+    (state.selection as { schemeId: string }).schemeId =
+      'core/unleash-the-power-of-the-cosmic-cube';
+    applyPileDepletionResourceLoss(state);
+    assert.equal(state.counters[ENDGAME_CONDITIONS.SCHEME_LOSS], undefined);
+  });
+
+  it('AC-3 composition — evaluateEndgame returns scheme-wins once the loss latches', () => {
+    const state = civilWarState(0);
+    applyPileDepletionResourceLoss(state);
+    const result = evaluateEndgame(state);
+    assert.ok(result, 'endgame must have resolved');
+    assert.equal(result!.outcome, 'scheme-wins');
   });
 });

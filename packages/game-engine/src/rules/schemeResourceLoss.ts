@@ -111,3 +111,68 @@ export function applyEscapedPileResourceLoss(
     );
   }
 }
+
+/**
+ * Returns the number of cards remaining in a named depletion-loss pile.
+ *
+ * Maps a `pile-depleted` condition's `pile` name to the length of the
+ * corresponding zone in `G`. WP-510 supports only `'heroDeck'`
+ * (`G.heroDeck`); WP-511 will extend this to `'wounds'` (`G.piles.wounds`).
+ *
+ * @param gameState - The current game state (read-only).
+ * @param pile - The pile name from the resourceLossCondition.
+ * @returns The remaining card count in that pile.
+ */
+function remainingPileCount(
+  gameState: LegendaryGameState,
+  pile: 'heroDeck',
+): number {
+  // why: an explicit switch (not dynamic G[pile] indexing) so each supported
+  // pile maps to its real zone location — the hero deck lives at G.heroDeck,
+  // not under G.piles, and future piles (wounds) live elsewhere again.
+  switch (pile) {
+    case 'heroDeck':
+      return gameState.heroDeck.length;
+  }
+}
+
+/**
+ * Applies the active scheme's pile-depletion resource-loss condition, if any.
+ *
+ * If the active scheme declares a `'pile-depleted'` resourceLossCondition and
+ * the named pile is empty (`remainingPileCount === 0`), sets the SCHEME_LOSS
+ * counter to 1 (idempotent) and logs once. A no-op for schemes without a
+ * `'pile-depleted'` condition, or when already lost. Never throws.
+ *
+ * @param gameState - The game state to mutate (counters + log only).
+ */
+export function applyPileDepletionResourceLoss(
+  gameState: LegendaryGameState,
+): void {
+  const config = SCHEME_TWIST_CONFIGS.get(gameState.selection.schemeId);
+  const condition = config?.resourceLossCondition;
+  if (!condition || condition.kind !== 'pile-depleted') {
+    return;
+  }
+
+  // why: idempotent — once the scheme loss is latched, do not re-check or
+  // re-log. evaluateEndgame treats SCHEME_LOSS >= 1 as the loss, so a single
+  // set to 1 is sufficient.
+  if ((gameState.counters[ENDGAME_CONDITIONS.SCHEME_LOSS] ?? 0) >= 1) {
+    return;
+  }
+
+  if (remainingPileCount(gameState, condition.pile) === 0) {
+    // why: SCHEME_LOSS is set HERE (called from the play-phase turn.onMove
+    // hook, a central per-move chokepoint) rather than at the recruitHero
+    // refill, because the named pile can be drained by paths other than a
+    // recruit — Super Hero Civil War's ko-from-hq twist forces HQ refills that
+    // drain G.heroDeck outside any recruit move. evaluateEndgame stays
+    // counter-only; the depletion decision lives here at the check site.
+    gameState.counters[ENDGAME_CONDITIONS.SCHEME_LOSS] = 1;
+    pushLog(
+      gameState,
+      `Scheme loss triggered — the ${condition.pile} pile has run out.`,
+    );
+  }
+}
