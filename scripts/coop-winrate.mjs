@@ -51,17 +51,25 @@ const PLAYER_COUNT = 2;
 // SENTINEL_CORE in runtime-observed-hollows.mjs. All ext_ids are set-qualified
 // `<setAbbr>/<slug>` per D-10014 and verified present in data/cards/core.json.
 //
-// why (scheme substitution — EC-487 execution amendment, 2026-07-29): WP-452
-// pinned `core/midtown-bank-robbery`, but that scheme (and
-// `core/negative-zone-prison-breakout`) trips the SCHEME_LOSS counter at
-// initial setup, so evaluateEndgame returns `scheme-wins` on turn 0 — the game
-// is lost before a single move and the baseline measures nothing. The harness
-// surfaced this on its first run (its intended purpose). The scheme is swapped
-// to `core/legacy-virus-the` — the repo's canonical known-valid SENTINEL scheme
-// (the exact scheme runtime-observed-hollows.mjs sweeps) — which plays real
-// games (~7 turns) and yields an honest, fast baseline. The turn-0 auto-loss on
-// Midtown Bank Robbery / Negative Zone Prison Breakout is a separate scheme-setup
-// issue (out of this WP's engine allowlist) flagged for a follow-up.
+// why (scheme substitution): WP-452 pinned `core/midtown-bank-robbery`, but that
+// scheme (and `core/negative-zone-prison-breakout`) trips the SCHEME_LOSS counter
+// at initial setup, so evaluateEndgame returns `scheme-wins` on turn 0 — the game
+// is lost before a single move and the baseline measures nothing (the harness
+// surfaced this on its first run, its intended purpose). It was then swapped to
+// `core/legacy-virus-the`, and — WP-511 (D-24322) — to
+// `core/unleash-the-power-of-the-cosmic-cube`: Legacy Virus now loses on real
+// wound-stack depletion (deck-dependent), which no longer terminates the sweep
+// deterministically, while Cosmic Cube is a true twist-loss scheme (deterministic
+// ~twist 8, sim-visible via the twist-count path) that plays real games and yields
+// an honest, fast baseline.
+//
+// COMPARABILITY (D-24322): this is a bot-ally STRENGTH yardstick — pre/post-WP-511
+// win-rate numbers are NOT comparable. WP-511 both (a) suppressed Legacy Virus's
+// twist-count proxy loss in favour of wound depletion and (b) switched this
+// backdrop to Cosmic Cube (whose "each player gains a Wound" twist clogs hero
+// hands, lowering the absolute win rate for scheme-difficulty reasons unrelated to
+// bot strength). Read this yardstick as a go-forward baseline from WP-511 on; do
+// NOT compare a post-WP-511 run to a pre-WP-511 Legacy-Virus number.
 const MATCH_CONFIGURATION = {
   schemeId: 'core/unleash-the-power-of-the-cosmic-cube',
   mastermindId: 'core/magneto',
