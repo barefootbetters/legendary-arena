@@ -1798,9 +1798,9 @@ describe('executeVillainAbilities — onEscape dispatch (WP-186)', () => {
     // (the Fight fire site runs post-award and would otherwise strand the
     // bystander). Under 'onEscape' the bystander attaches to the escaped
     // card now in G.escapedPile and follows it out of the city; the reveal
-    // fire site calls executeVillainAbilities AFTER resolveEscapedBystanders
-    // has released the escaping card's pre-escape attachments, so this new
-    // attachment is to a clean slot.
+    // fire site calls executeVillainAbilities AFTER carryEscapedBystandersToPile
+    // has carried the escaping card's pre-escape attachments into the escaped
+    // pile, so this new attachment is to a clean slot.
     const G = makeG({
       hooks: [hook('v-escaped', 'onEscape', ['captureBystander'])],
       bystanders: ['b0', 'b1'] as CardExtId[],

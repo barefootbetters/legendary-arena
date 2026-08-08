@@ -285,9 +285,9 @@ export function performVillainReveal(
       }
 
       // why: card-specific Escape:/Overrun: effects fire AFTER
-      // resolveEscapedBystanders per D-18603 — a captureBystander effect
+      // carryEscapedBystandersToPile per D-18603 — a captureBystander effect
       // reached via an Escape: marker attaches to the escaped card now in
-      // G.escapedPile (post-release), not the still-attached pre-release
+      // G.escapedPile (post-carry), not the still-attached pre-carry
       // state. The generic per-escape current-player wound above (WP-015
       // legacy system-level penalty) is PRESERVED; card-text effects layer
       // on top, they do not replace it. Overrun: is a v1 synonym of Escape:
