@@ -28,6 +28,7 @@ source:
   - ../packages/game-engine/src/villain/villainEffects.execute.ts
   - ../packages/game-engine/src/board/city.logic.ts
   - ../packages/game-engine/src/board/bystanders.logic.ts
+  - ../packages/game-engine/src/rules/schemeResourceLoss.ts
   - ../packages/game-engine/src/board/boardKeywords.logic.ts
   - ../docs/legendary-universal-rules-v23.md
   - ../docs/ai/ARCHITECTURE.md
@@ -36,7 +37,7 @@ source:
   - ../docs/ai/work-packets/WP-015-city-hq-zones-villain-movement.md
   - ../docs/ai/work-packets/WP-015A-reveal-safety-fixes.md
   - ../docs/10-GLOSSARY.md
-last-reviewed: 2026-08-01
+last-reviewed: 2026-08-08
 ---
 
 # Villain Deck
@@ -126,8 +127,11 @@ happens before triggers fire:
   2. the current player gains **1 Wound** (the MVP system-level escape
      penalty, WP-015 — supply-gated; this is *not* the tabletop "KO a Hero
      ≤6 from the HQ" procedure, which is not modeled);
-  3. release the escaped villain's attached bystanders back to the supply
-     (before card-text effects, per D-18603);
+  3. **carry** the escaped villain's attached bystanders into `G.escapedPile`
+     alongside it (WP-508 / D-24314, `carryEscapedBystandersToPile`) — the
+     tabletop *"Bystanders carried away by escaping Villains"*, **not** released
+     back to the supply (the pre-WP-508 behaviour). This is what makes the escaped
+     pile a **countable resource** for the resource-loss schemes (see Endgame);
   4. fire the card's `onEscape` / `Overrun:` abilities via
      `executeVillainAbilities`;
   5. KO any heroes captured on the escaped villain;
@@ -201,8 +205,9 @@ The full step contract is also documented inline in
 - **City** — `villain` and `henchman` reveals push into `G.city` via
   `pushVillainIntoCity`. A push that overflows the city escapes the
   card at index 4, increments `ENDGAME_CONDITIONS.ESCAPED_VILLAINS`,
-  triggers a wound for the current player, and releases attached
-  bystanders back to the supply.
+  triggers a wound for the current player, and **carries** its attached
+  bystanders into `G.escapedPile` with it (WP-508 / D-24314) — not back
+  to the supply.
 - **[Board Keywords](board-keywords.md) (Ambush).** A card entering the
   City with the Ambush keyword runs its **printed** `[effect:]` text via
   `executeVillainAbilities(…, 'onAmbush')`, gated by a `hasAmbush`
@@ -218,12 +223,24 @@ The full step contract is also documented inline in
   [`data/metadata/card-types.json`](../data/metadata/card-types.json))
   also includes hero, sidekick, S.H.I.E.L.D., and other types that
   never enter the villain deck.
-- **Endgame.** Escapes increment a counter consumed by
-  `evaluateEndgame`; sustained escapes drive a scheme-wins outcome
-  (default `ESCAPE_LIMIT = 8` in MVP). Separately, **exhausting the villain
-  deck latches the final turn** (game.ts `turn.onMove`, D-24159 / D-24160) —
-  the deck is not refilled, so its running out is itself an end-condition
-  trigger rather than a reshuffle.
+- **Endgame — the escaped pile is a per-scheme resource, not a global cap.**
+  The old generic `escapedVillains >= ESCAPE_LIMIT (8)` scheme-wins loss was
+  **retired** (WP-509 / D-24317). Escape / carry-away losses are now declared
+  **per scheme** via `SchemeTwistConfig.resourceLossCondition` (kind
+  `escaped-pile-count`), which counts entries of a given type in `G.escapedPile`
+  and latches `SCHEME_LOSS` from the escape path: **Midtown Bank Robbery** loses
+  at **8 Bystanders** carried into the pile (WP-508 / D-24315), **Negative Zone
+  Prison Breakout** at **12 Villains** escaped (WP-509 / D-24316 — *villains only*,
+  counted by card type so real villains, not carried bystanders/henchmen, count).
+  `evaluateEndgame` stays counter-only — the resource check does the counting and
+  sets `SCHEME_LOSS`. The `ESCAPED_VILLAINS` counter still increments per escaped
+  adversary (stats + the co-op loss-cause heuristic) but no longer ends the game;
+  `ESCAPE_LIMIT` survives only as that heuristic threshold. Schemes with no
+  `resourceLossCondition` still fall back to the twist-count doom-clock proxy
+  (D-24178 — see [Scheme Twist](scheme-twist.md)). Separately, **exhausting the
+  villain deck latches the final turn** (game.ts `turn.onMove`, D-24159 / D-24160) —
+  the deck is not refilled, so its running out is itself an end-condition trigger
+  rather than a reshuffle.
 
 ## Edge Cases
 
@@ -289,10 +306,12 @@ drift tests), not a card-data edit:
   a revealed card type; the engine has no Location zone, Trap challenge
   queue, or weapon-attachment/Artifact conversion.
 - **The full tabletop escape procedure** — a real escape has the escaping
-  villain KO a Hero of cost ≤ 6 from the HQ and, if it carries bystanders,
-  every player discards a card. The engine substitutes a single
-  current-player Wound (see Step 4). This is an MVP simplification, not the
-  rulebook sequence.
+  villain KO a Hero of cost ≤ 6 from the HQ, and (per some schemes) triggers
+  per-player discards. The engine substitutes a single current-player Wound
+  (see Step 4). The *"Bystanders carried away by escaping Villains"* half **is**
+  now modeled (WP-508 — attached bystanders travel into `G.escapedPile`, which the
+  resource-loss schemes count); the KO-a-Hero and per-player-discard steps remain
+  unmodeled MVP simplifications.
 - **Warmup Round** — the 4–5 player first-turn skip of the villain reveal is
   not implemented; the only gate is `G.currentStage === 'start'`.
 
@@ -308,7 +327,9 @@ drift tests), not a card-data edit:
 - [`packages/game-engine/src/board/city.logic.ts`](../packages/game-engine/src/board/city.logic.ts)
   — `pushVillainIntoCity` (push + overflow escape)
 - [`packages/game-engine/src/board/bystanders.logic.ts`](../packages/game-engine/src/board/bystanders.logic.ts)
-  — `resolveEscapedBystanders` (release to supply on escape)
+  — `carryEscapedBystandersToPile` (carry attached bystanders into `G.escapedPile` on escape, WP-508)
+- [`packages/game-engine/src/rules/schemeResourceLoss.ts`](../packages/game-engine/src/rules/schemeResourceLoss.ts)
+  — `countEscapedPileByType` + `applyEscapedPileResourceLoss` (per-scheme escaped-pile resource-loss, WP-508/509)
 - [`packages/game-engine/src/board/boardKeywords.logic.ts`](../packages/game-engine/src/board/boardKeywords.logic.ts)
   — `hasAmbush` fast-check
 - [`packages/game-engine/src/villain/villainEffects.execute.ts`](../packages/game-engine/src/villain/villainEffects.execute.ts)
@@ -331,6 +352,8 @@ drift tests), not a card-data edit:
 - WP-432 (supersedes D-1701): Removed the non-canonical city-entry bystander attach; bystanders enter play only via a revealed `bystander` card or a `capture-bystander` effect
 - WP-481 (D-24287): Escape fire site can trigger a Scheme Twist — an escaping villain carrying a `become-scheme-twist` `onEscape` hook (Mystique) runs the `onSchemeTwistRevealed` pipeline, a second trigger path for that hook beyond the `scheme-twist` reveal classification
 - 2026-08-01: Correctness pass against `villainDeck.reveal.ts` — fixed bystander routing (capture, not discard), scheme-twist/mastermind-strike final piles (`twistPile`/`strikePile`, not discard), empty-deck handling (terminal, no reshuffle), and the Ambush description; documented the move-wrapper guards, the real escape order, and the tabletop features not yet modeled
+- WP-508 (D-24314 / D-24315): escaping villains now **carry** their attached bystanders into `G.escapedPile` (renamed `resolveEscapedBystanders` → `carryEscapedBystandersToPile`), not back to the supply; introduced the data-only `SchemeTwistConfig.resourceLossCondition` (`escaped-pile-count`) framework that counts the escaped pile by card type and latches `SCHEME_LOSS` from the escape path — Midtown Bank Robbery wired at 8 carried-away Bystanders
+- WP-509 (D-24316 / D-24317): **retired** the generic `escapedVillains >= ESCAPE_LIMIT (8)` scheme-wins loss; escape losses are now per-scheme — Negative Zone Prison Breakout loses at 12 escaped **Villains** (villains only, counted by card type). `ESCAPED_VILLAINS` counter + `ESCAPE_LIMIT` constant retained (counter still increments; `ESCAPE_LIMIT` is now only the co-op loss-cause heuristic threshold)
 
 ## References
 
