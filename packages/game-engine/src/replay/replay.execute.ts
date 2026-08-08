@@ -17,6 +17,18 @@
  * matches. See `docs/ai/DECISIONS.md §D-0205` (RNG Truth Source for
  * Replay) and `docs/ai/MOVE_LOG_FORMAT.md §Known Gaps / Risks Gap #4`
  * for the forensics trail that led to this narrowing.
+ *
+ * why (D-24322 clarification): being a reducer-determinism harness, this path
+ * intentionally does NOT run the bgio play-phase `turn.onMove` effects — neither
+ * `latchFinalTurnIfDeckExhausted` nor `applyPileDepletionResourceLoss`. So a
+ * recorded pile-depletion game (Civil War hero deck / Legacy Virus wounds,
+ * D-24318/D-24320) replayed here will not set `SCHEME_LOSS`, exactly as it already
+ * omits the deck-exhaustion final-turn latch. This is consistent, not divergent:
+ * setup sizing IS honored (it runs in `buildInitialGameState`), and FAITHFUL replay
+ * reconstruction (server-layer D-24119) uses boardgame.io's own reducer, which DOES
+ * run `turn.onMove`. The live sim harnesses (`simulation.runner.ts`,
+ * `par.aggregator.ts`) DO mirror `turn.onMove` for pile-depletion losses; this
+ * determinism harness deliberately does not.
  */
 
 import type { LegendaryGameState } from '../types.js';

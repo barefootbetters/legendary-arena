@@ -78,8 +78,12 @@ const SEAT_SEED_SEPARATOR = '::seat:';
 // ~2.7 ms each) — well within a per-PR budget, which is why WP-259's per-PR
 // `--check` is kept (no cron). This matrix is a hardcoded locked value — the
 // harness must NEVER read hero-mechanic-ledger.json (or any generated artifact) at
-// runtime; the sets / heroes below were chosen at scaffold time and the
-// distinct-mechanic count plateaus at 16 by 8 seeds.
+// runtime; the sets / heroes below were chosen at scaffold time. The distinct-mechanic
+// count plateaued at 16 by 8 seeds under the ORIGINAL Legacy Virus backdrop; under the
+// WP-511 Cosmic Cube backdrop (D-24322) it is 10 (Cosmic Cube's "wound all" twist plays
+// fewer hero abilities). The 8-seed lock is retained — 8 seeds still saturate the
+// distinct-mechanic count for the current backdrop; a follow-up may recover the lost
+// coverage with a better backdrop.
 const PLAYER_COUNT = 1;
 
 // why: bounding each competent game (WP-264 / D-24040); 50 is well above the
@@ -88,8 +92,10 @@ const PLAYER_COUNT = 1;
 const MAX_TURNS = 50;
 
 // why: a few seeds per board so each board's hollow-able abilities get drawn +
-// played across runs; the distinct-mechanic count plateaus at 8 seeds (8, 16, and
-// 24 seeds all surface 16 mechanics), so 8 is the affordable lock.
+// played across runs; the distinct-mechanic count plateaus by 8 seeds (measured 8,
+// 16, 24 seeds all surface the same count), so 8 is the affordable lock. The
+// plateau value depends on the backdrop scheme (16 under the original Legacy Virus,
+// 10 under the WP-511 Cosmic Cube backdrop — D-24322); 8 seeds saturates either.
 const SEEDS_PER_BOARD = 8;
 
 // why: the known-valid board core every hero-deck set is dropped onto (the only
