@@ -63,8 +63,18 @@ export const SCHEME_TWIST_CONFIGS: Map<string, SchemeTwistConfig> = new Map([
         condition: { field: 'heroClass', value: 'tech' },
         penalty: 'gainWound',
       },
-      // why: 8-twist stack (resource loss — wound stack empties); doom-clock proxy (D-24178).
+      // why: real Evil-Wins is a RESOURCE condition (D-24320) — "If the Wound
+      // stack runs out", modeled as the 'pile-depleted' kind on G.piles.wounds.
+      // Declaring resourceLossCondition SUPPRESSES the twist-count doom-clock
+      // proxy for this scheme; lossThreshold (the printed 8-twist stack size) is
+      // retained but now INERT for loss (D-24178 / D-24320). The Wound stack is
+      // sized 6×players at setup (D-24321), so the stack is small enough to run
+      // out as the card intends.
       lossThreshold: 8,
+      resourceLossCondition: {
+        kind: 'pile-depleted',
+        pile: 'wounds',
+      },
     },
   ],
   [

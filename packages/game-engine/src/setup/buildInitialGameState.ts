@@ -32,6 +32,7 @@ import {
   SHIELD_TROOPER_EXT_ID,
   SIDEKICK_EXT_ID,
 } from './pilesInit.js';
+import { resolveEffectiveWoundsCount } from './schemeSetupSizing.js';
 import { buildDefaultHookDefinitions } from '../rules/ruleRuntime.impl.js';
 import {
   buildVillainDeck,
@@ -302,8 +303,21 @@ export function buildInitialGameState(
     playerZones[playerId] = playerState.zones;
   }
 
-  // Build global piles sized from config count fields
-  const piles = buildGlobalPiles(config, context);
+  // Build global piles sized from config count fields.
+  // why: scheme-specific setup sizing (D-24321) — Legacy Virus builds its Wound
+  // stack at 6×players (its printed setup), overriding the requested woundsCount.
+  // This is a POST-VALIDATION override: the config's woundsCount already passed
+  // the 30 floor (D-24032); this sizes the built pile, which for Legacy Virus is
+  // deliberately below the floor. Other schemes pass through unchanged.
+  const effectiveWoundsCount = resolveEffectiveWoundsCount(
+    config.schemeId,
+    numPlayers,
+    config.woundsCount,
+  );
+  const piles = buildGlobalPiles(
+    { ...config, woundsCount: effectiveWoundsCount },
+    context,
+  );
 
   // Build selection metadata from config
   const selection = buildMatchSelection(config);

@@ -95,8 +95,16 @@ const SEEDS_PER_BOARD = 8;
 // why: the known-valid board core every hero-deck set is dropped onto (the only
 // committed valid-board fixture, sentinel-core-doom). Heroes vary per set; scheme /
 // mastermind / villain group / henchman group / supply counts are fixed.
+// why (WP-511): the backdrop scheme must terminate DETERMINISTICALLY for the
+// coverage sweep to stay fast. Legacy Virus was suitable while it lost on the
+// twist-COUNT proxy (deck-independent, ~twist 8), but WP-511 makes it lose on
+// real wound-stack depletion — deck-dependent and often not reached in a solo
+// game, so games ran to MAX_TURNS and the check timed out. Cosmic Cube is a true
+// twist-loss scheme ("Twist 8: Evil Wins!"), whose loss is set in the twist-count
+// path the sim already honors, so every game ends at ~twist 8 regardless of the
+// hero deck under test — the property a coverage backdrop needs.
 const SENTINEL_CORE = {
-  schemeId: 'core/legacy-virus-the',
+  schemeId: 'core/unleash-the-power-of-the-cosmic-cube',
   mastermindId: 'core/dr-doom',
   villainGroupIds: ['core/brotherhood'],
   henchmanGroupIds: ['core/savage-land-mutates'],

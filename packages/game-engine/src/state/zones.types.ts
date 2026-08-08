@@ -87,7 +87,11 @@ export interface PlayerState {
 export interface GlobalPiles {
   /** Bystander cards. Size equals config.bystandersCount. */
   bystanders: Zone;
-  /** Wound cards. Size equals config.woundsCount. */
+  /**
+   * Wound cards. Size equals config.woundsCount, EXCEPT when a scheme applies a
+   * setup-sizing override (D-24321) — Legacy Virus builds 6×players Wounds. The
+   * built pile length is the runtime source of truth (see resolveEffectiveWoundsCount).
+   */
   wounds: Zone;
   /** S.H.I.E.L.D. Officer cards. Size equals config.officersCount. */
   officers: Zone;

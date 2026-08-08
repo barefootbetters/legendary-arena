@@ -25,9 +25,9 @@ import type { ImplementationMap } from './ruleRuntime.execute.js';
  * - `'escaped-pile-count'` (D-24315): the scheme loses when the Escaped Villains
  *   pile (`G.escapedPile`) holds at least `threshold` entries whose card type
  *   equals `cardType` (Midtown Bank Robbery, Negative Zone Prison Breakout).
- * - `'pile-depleted'` (D-24318): the scheme loses when a named pile runs out —
- *   `G[pile].length === 0` (Super Hero Civil War: `pile: 'heroDeck'`). WP-511
- *   extends `pile` to `'wounds'` (Legacy Virus).
+ * - `'pile-depleted'` (D-24318 / D-24320): the scheme loses when a named pile runs
+ *   out — the pile's length reaches 0. Super Hero Civil War: `pile: 'heroDeck'`
+ *   (`G.heroDeck`); Legacy Virus: `pile: 'wounds'` (`G.piles.wounds`).
  */
 export type SchemeResourceLossCondition =
   | {
@@ -41,8 +41,8 @@ export type SchemeResourceLossCondition =
   | {
       /** A named pile running out (reaching zero cards) is the loss. */
       kind: 'pile-depleted';
-      /** The pile whose emptiness ends the game. */
-      pile: 'heroDeck';
+      /** The pile whose emptiness ends the game (`heroDeck` or `wounds`). */
+      pile: 'heroDeck' | 'wounds';
     };
 
 /**

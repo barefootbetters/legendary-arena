@@ -200,8 +200,15 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // observation (totalObs 179 -> 178, percentResolved 33.0 -> 33.1). resolvedObs is
   // unchanged (59). The committed in-play-hollow-baseline.json peak is NOT rebuilt
   // (it is a deliberate high-water reference, held at 140).
+  // 2026-08-08 (WP-511): the runtime-observed coverage backdrop scheme was switched
+  // from Legacy Virus to Cosmic Cube — Legacy Virus now loses on real wound-stack
+  // depletion (D-24320/D-24321), which is deck-dependent and no longer terminates
+  // the solo coverage sweep deterministically, so it timed out. Cosmic Cube is a
+  // true twist-loss backdrop (deterministic ~twist 8). Its "wound all" twist plays
+  // fewer hero abilities, so the sweep observes fewer mechanics: totalObs 178 -> 163,
+  // percentResolved 33.1 -> 36.2 (resolvedObs unchanged at 59 over a smaller total).
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 178);
-  assert.equal(view.percentResolved.value, 33.1);
+  assert.equal(view.totalObs.value, 163);
+  assert.equal(view.percentResolved.value, 36.2);
   assert.ok(view.remaining.value.length > 0);
 });

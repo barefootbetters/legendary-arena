@@ -566,6 +566,21 @@ describe('scheme loss threshold (D-24178)', () => {
     );
   });
 
+  it('Legacy Virus suppresses the twist-count proxy at its stack size (real loss is wound-stack depletion, D-24320)', () => {
+    // why: WP-511 — Legacy Virus declares a resourceLossCondition
+    // (pile-depleted / wounds), so the twist-count doom-clock proxy is
+    // suppressed. Even at predicted twist 8 (its printed stack size) the handler
+    // must NOT push SCHEME_LOSS; the real loss is evaluated per-move from the
+    // wound-stack depletion check (the stack is sized 6×players at setup).
+    const atStack = makeTestState({ schemeTwistCount: 7 }); // predicted 8
+    atStack.selection.schemeId = 'core/legacy-virus-the';
+    assert.equal(
+      triggersSchemeLoss(schemeTwistHandler(atStack, {}, { cardId: 't' }, DEFAULT_IMPLEMENTATION_MAP)),
+      false,
+      'Legacy Virus must not trip the twist-count proxy — its loss is wound-stack depletion',
+    );
+  });
+
   it('an unconfigured scheme still falls back to the MVP default threshold (7)', () => {
     const state = makeTestState({ schemeTwistCount: 6 });
     // 'test-scheme' has no config → fallback 7 → predicted 7 → loss.

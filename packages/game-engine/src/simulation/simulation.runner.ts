@@ -44,6 +44,7 @@ import { filterUIStateForAudience } from '../ui/uiState.filter.js';
 import { getLegalMoves } from './ai.legalMoves.js';
 import { computeFinalScores } from '../scoring/scoring.logic.js';
 import { evaluateEndgame } from '../endgame/endgame.evaluate.js';
+import { applyPileDepletionResourceLoss } from '../rules/schemeResourceLoss.js';
 import { resetTurnEconomy } from '../economy/economy.logic.js';
 import { applyOnBeginParity } from './onBeginParity.js';
 
@@ -474,6 +475,16 @@ function runPerTurnLoop(
       );
       moveFn(moveContext, intent.move.args);
     }
+
+    // why: mirror bgio's play-phase turn.onMove — after each dispatched move,
+    // evaluate pile-depletion scheme losses (WP-510/WP-511, D-24318/D-24320) so
+    // schemes whose Evil-Wins fires in turn.onMove (Legacy Virus wound stack,
+    // Civil War hero deck) terminate in-sim. This loop reimplements the turn loop
+    // and never calls the bgio hook, so without this it runs those schemes to
+    // maxTurns and under-reports the loss (the next iteration's evaluateEndgame
+    // reads the SCHEME_LOSS this sets). Idempotent + pile-agnostic; a no-op for
+    // schemes without a pile-depleted resourceLossCondition.
+    applyPileDepletionResourceLoss(gameState);
 
     // why: zero-legal-moves + endTurn-illegal fallback (RS-6 second clause).
     // If the policy returned endTurn when the stage is not cleanup, the

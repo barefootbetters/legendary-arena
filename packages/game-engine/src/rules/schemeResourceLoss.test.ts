@@ -283,3 +283,57 @@ describe('applyPileDepletionResourceLoss — Super Hero Civil War (WP-510 / D-24
     assert.equal(result!.outcome, 'scheme-wins');
   });
 });
+
+describe('applyPileDepletionResourceLoss — Legacy Virus wounds (WP-511 / D-24320)', () => {
+  const LEGACY_VIRUS = 'core/legacy-virus-the';
+
+  /** A minimal state whose Wound stack holds `woundsRemaining` cards. */
+  function legacyVirusState(
+    woundsRemaining: number,
+    counters: Record<string, number> = {},
+  ): LegendaryGameState {
+    const wounds: string[] = [];
+    for (let i = 0; i < woundsRemaining; i++) {
+      wounds.push('pile-wound');
+    }
+    return {
+      selection: {
+        schemeId: LEGACY_VIRUS,
+        mastermindId: 'test-mastermind',
+        villainGroupIds: [],
+        henchmanGroupIds: [],
+        heroDeckIds: [],
+      },
+      piles: { wounds },
+      counters,
+      messages: [],
+    } as unknown as LegendaryGameState;
+  }
+
+  it('sets SCHEME_LOSS when the Wound stack is empty (pile-depleted / wounds)', () => {
+    const state = legacyVirusState(0);
+    applyPileDepletionResourceLoss(state);
+    assert.equal(state.counters[ENDGAME_CONDITIONS.SCHEME_LOSS], 1);
+  });
+
+  it('does NOT set SCHEME_LOSS while the Wound stack holds ≥ 1 card', () => {
+    const state = legacyVirusState(1);
+    applyPileDepletionResourceLoss(state);
+    assert.equal(state.counters[ENDGAME_CONDITIONS.SCHEME_LOSS], undefined);
+  });
+
+  it('is idempotent once the loss is latched (does not re-log)', () => {
+    const state = legacyVirusState(0, { [ENDGAME_CONDITIONS.SCHEME_LOSS]: 1 });
+    applyPileDepletionResourceLoss(state);
+    assert.equal(state.counters[ENDGAME_CONDITIONS.SCHEME_LOSS], 1);
+    assert.equal(state.messages.length, 0, 'no duplicate loss log once latched');
+  });
+
+  it('AC-7 composition — evaluateEndgame returns scheme-wins once the wound-depletion loss latches', () => {
+    const state = legacyVirusState(0);
+    applyPileDepletionResourceLoss(state);
+    const result = evaluateEndgame(state);
+    assert.ok(result, 'endgame must have resolved');
+    assert.equal(result!.outcome, 'scheme-wins');
+  });
+});

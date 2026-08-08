@@ -116,8 +116,8 @@ export function applyEscapedPileResourceLoss(
  * Returns the number of cards remaining in a named depletion-loss pile.
  *
  * Maps a `pile-depleted` condition's `pile` name to the length of the
- * corresponding zone in `G`. WP-510 supports only `'heroDeck'`
- * (`G.heroDeck`); WP-511 will extend this to `'wounds'` (`G.piles.wounds`).
+ * corresponding zone in `G`. `'heroDeck'` → `G.heroDeck` (Super Hero Civil War,
+ * WP-510); `'wounds'` → `G.piles.wounds` (Legacy Virus, WP-511).
  *
  * @param gameState - The current game state (read-only).
  * @param pile - The pile name from the resourceLossCondition.
@@ -125,14 +125,16 @@ export function applyEscapedPileResourceLoss(
  */
 function remainingPileCount(
   gameState: LegendaryGameState,
-  pile: 'heroDeck',
+  pile: 'heroDeck' | 'wounds',
 ): number {
   // why: an explicit switch (not dynamic G[pile] indexing) so each supported
   // pile maps to its real zone location — the hero deck lives at G.heroDeck,
-  // not under G.piles, and future piles (wounds) live elsewhere again.
+  // the wound stack under G.piles.wounds.
   switch (pile) {
     case 'heroDeck':
       return gameState.heroDeck.length;
+    case 'wounds':
+      return gameState.piles.wounds.length;
   }
 }
 

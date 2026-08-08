@@ -54,6 +54,7 @@ import { makeMockCtx } from '../test/mockCtx.js';
 import { buildUIState } from '../ui/uiState.build.js';
 import { filterUIStateForAudience } from '../ui/uiState.filter.js';
 import { evaluateEndgame } from '../endgame/endgame.evaluate.js';
+import { applyPileDepletionResourceLoss } from '../rules/schemeResourceLoss.js';
 import { computeFinalScores } from '../scoring/scoring.logic.js';
 import { computeRawScore, computeParScore } from '../scoring/parScoring.logic.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
@@ -607,6 +608,15 @@ function simulateOneGame(
       moveFn(moveContext, intent.move.args);
     }
     movesDispatched += 1;
+
+    // why: mirror bgio's play-phase turn.onMove — evaluate pile-depletion scheme
+    // losses (WP-510/WP-511, D-24318/D-24320) after each dispatched move so
+    // Legacy Virus (wounds) / Civil War (hero deck) terminate in-sim rather than
+    // running to MAX_TURNS_PER_GAME. This aggregator reimplements the turn loop
+    // and never calls the bgio hook; the next iteration's evaluateEndgame reads
+    // the SCHEME_LOSS this sets. Idempotent + pile-agnostic (mirrors the
+    // simulation.runner.ts placement).
+    applyPileDepletionResourceLoss(gameState);
 
     // why: zero-legal-moves fallback. If the policy returned endTurn
     // outside cleanup, the move is a silent no-op and the loop would
