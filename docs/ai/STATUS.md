@@ -7,6 +7,59 @@
 
 ## Current State
 
+### WP-511 — Legacy Virus Wound-Stack-Depletion Loss + Scheme-Specific Setup Sizing — DONE (2026-08-07)
+
+Legacy Virus now models its **printed** Evil-Wins — **"If the Wound stack runs out"** — with a wound
+stack correctly sized at **6 per player** (its printed setup), instead of losing on the twist-count proxy
+against a flat 30-wound stack. Fourth WP of the resource-loss-scheme-fidelity epic; the first to cross into
+the **setup layer**.
+
+- **Wound-depletion loss (D-24320):** reuses WP-510's `pile-depleted` kind, widened by one literal —
+  `SchemeResourceLossCondition.pile` becomes `'heroDeck' | 'wounds'` and `remainingPileCount` gains
+  `'wounds' → G.piles.wounds.length`. Legacy Virus gains `resourceLossCondition: { kind: 'pile-depleted',
+  pile: 'wounds' }`, evaluated on the **existing** play-phase `turn.onMove` chokepoint (no new wiring;
+  `applyPileDepletionResourceLoss` untouched). Twist proxy suppressed. No tie interaction (the final-turn
+  latch ignores wounds).
+- **Scheme setup sizing (D-24321):** the epic's first — a pure `resolveEffectiveWoundsCount(schemeId,
+  numPlayers, requestedCount)` helper (`setup/schemeSetupSizing.ts`) returns `6 × numPlayers` for Legacy
+  Virus, applied in `buildInitialGameState` as a **post-validation** override (`{ ...config, woundsCount }`
+  into the single `buildGlobalPiles` call). The 30 `woundsCount` floor (D-24032) is **not** changed — it
+  governs the requested config; the scheme rule governs the built pile (12 at 2p, below the floor by
+  design). `pilesInit.ts` untouched.
+- **Known cosmetic divergence (scoped out):** the LAGN loadout / match-summary reads the persisted
+  `matchConfiguration.woundsCount` (30) while the match plays on 12 — inert (the loadout is the requested
+  composition; the engine always re-overrides at setup). In-match `UIState` and snapshots read the built
+  pile (12), so gameplay is correct.
+- **Determinism — a deliberate, verified re-pin:** resizing the built pile re-pinned exactly one committed
+  fixture — `sentinel-core-doom-2p.replay.json` (2p Legacy Virus) `finalStateHash` (30→12 wounds),
+  regenerated via `record-game-fixture.mjs --input` (diff was hash-only, no snapshot/message drift).
+  **`PRE_WP080_HASH` runs a non-Legacy-Virus scheme and stayed `ec64506a`** (correcting the WP-510
+  pre-flight premise). No new `G` field, no new counter; `evaluateEndgame` stays counter-only.
+- **Verification:** game-engine 2382→2390 (+8) pass / 0 fail; whole-workspace `pnpm -r --no-bail test`
+  green (12 packages, 0 fail); **dual control-revert non-vacuous** (sizing revert → fixture hash fails;
+  config revert → 3 fails); `pnpm -r build` 0. Pre-flight READY + copilot RISK→HOLD-resolved (RS-1/#1 the
+  loadout-display divergence, #2 the fixture-diff review, RS-2 the `zones.types.ts` lockstep comment — all
+  folded). `zones.types.ts` added as a 10th file (lockstep doc fix).
+- **Execution-scope expansion (D-24322, folded per operator 2026-08-08):** executing surfaced a
+  WP-510-inherited gap — the bgio-bypassing sim harnesses (`simulation.runner.ts`, `par.aggregator.ts`)
+  never honored pile-depletion losses (they fire in `turn.onMove`, which the sim reimplements around;
+  escaped-pile losses fire in a move, so were already sim-visible). The Legacy-Virus coverage backdrop
+  exposed it: its now-deck-dependent wound loss stopped terminating the solo hollows sweep, timing out the
+  `sim:runtime-observed:check` **CI gate** (>10 min). Folded in: (1) both sim turn loops now call
+  `applyPileDepletionResourceLoss` after each move (mirror `turn.onMove`) so pile-depletion losses (Civil
+  War + Legacy Virus) terminate in-sim; (2) the hollows + coop-winrate backdrops switched Legacy Virus →
+  **Cosmic Cube** (deterministic twist-8 loss, sim-visible), regenerating the coverage artifact. **Cost:**
+  the artifact drops ~16→10 distinct mechanics (Cosmic Cube's wound-all twist plays fewer hero abilities);
+  dashboard in-play coverage `totalObs` 178→163, `percentResolved` 33.1→36.2 (the `useInPlayCoverage` test
+  pinned values updated lockstep). Portals gives 12 but loses via the fragile MVP fallback; **a follow-up
+  may optimize the coverage backdrop** to recover the drop. `sim:runtime-observed:check` green (4 s). The
+  expansion was verified by the full suite + control-reverts, not a second pre-flight/copilot pass.
+- **Operator-pending:** D-24026 live-verify — a Legacy Virus match on play.legendary-arena.com uses a
+  6-per-player Wound stack and ends `scheme-wins` when it runs out.
+- **Epic remainder:** WP-512 — Civil War's "4 Heroes at 2p" hero-deck sizing (reuses this WP's setup-sizing
+  pattern) + conversion schemes (Secret Invasion, Killbots); plus the deferred coverage-backdrop
+  optimization (D-24322 follow-up).
+
 ### WP-510 — Super Hero Civil War Hero-Deck-Depletion Loss + the `pile-depleted` Resource-Loss Kind — DONE (2026-08-07)
 
 Super Hero Civil War now models its **printed** Evil-Wins — **"If the Hero Deck runs out"** — instead of

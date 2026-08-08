@@ -63,7 +63,7 @@ const PLAYER_COUNT = 2;
 // Midtown Bank Robbery / Negative Zone Prison Breakout is a separate scheme-setup
 // issue (out of this WP's engine allowlist) flagged for a follow-up.
 const MATCH_CONFIGURATION = {
-  schemeId: 'core/legacy-virus-the',
+  schemeId: 'core/unleash-the-power-of-the-cosmic-cube',
   mastermindId: 'core/magneto',
   villainGroupIds: ['core/brotherhood', 'core/hydra'],
   henchmanGroupIds: ['core/savage-land-mutates'],
