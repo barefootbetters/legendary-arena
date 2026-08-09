@@ -7,6 +7,41 @@
 
 ## Current State
 
+### WP-514 — Secret Invasion of the Skrull Shapeshifters: Cross-Deck Hero Conversion + Escape Loss — DONE (2026-08-09)
+
+Secret Invasion now plays its printed rules: 12 Heroes are shuffled into the Villain Deck at setup as
+**Skrull Villains**, are fought and can escape, are **gained** on defeat, and the Twist drags the highest-cost
+HQ Hero into the Sewers as a Skrull — instead of the twist-count doom-clock proxy (D-24178). Sixth WP of the
+resource-loss-scheme-fidelity epic and the **second conversion scheme** (reuses WP-513's converted-card
+overlay). This completes all six resource-loss core schemes.
+
+- **Cross-deck conversion (D-24326):** extends `ConvertedVillainOrigin` with `'skrull'`. A new pure helper
+  `setup/convertHeroesToSkrulls.ts` takes the top 12 of the shuffled hero reservoir **before**
+  `fillHqFromDeck` (so they never also reach HQ / `G.heroDeck`), types them `'villain'` + origin `'skrull'`,
+  injects them into the villain deck, and re-shuffles it via a **single new `ctx.random.Shuffle`** — gated to
+  Secret Invasion and run after the hero-deck shuffle (the last setup draw), so non-SI games add zero draws.
+  Loss reuses the D-24325 kind unchanged: `escaped-converted-count` / `skrull` / **6** (no `schemeResourceLoss.ts`
+  change — origin-parametric).
+- **Skrull combat (D-24327):** attack = **Hero `cost` + 2**, overlay-first in `resolveFightCost` — a
+  **documented PROXY** for the printed "VP + 2" (hero VP exists nowhere in the data, generated or upstream;
+  operator-chosen 2026-08-09; swap seam to `G.cardVictoryPoints` noted; cost skews slightly harder than VP).
+  **Defeat-to-gain:** a guarded `'skrull'` branch in the shared `defeatCityVillainCore` routes the fought Hero
+  to the defeating player's discard + clears its overlay + logs the gain (non-skrull defeats unchanged).
+  **Twist:** a new `'secret-invasion'` resolver moves the highest-cost HQ Hero (ties → lowest slot) into the
+  Sewers (`pushVillainIntoCity`) + refills the slot, routing any displaced escape through the standard
+  escaped-pile + resource-loss pipeline.
+- **Determinism:** lazy overlay + SI-gated last-draw re-shuffle → sentinel `finalStateHash` + `PRE_WP080_HASH`
+  **byte-identical** (no committed Secret Invasion fixture). No fixture/hash drift.
+- **Tests:** engine 2403→**2425** [+22] / 0 fail; whole-workspace `pnpm -r --no-bail test` green; control-revert
+  non-vacuous (neutralized skrull guard fails the defeat-to-gain test); `sim:runtime-observed:check` current
+  (Portals backdrop unaffected); `pnpm -r build` 0.
+- **Gates:** pre-flight READY (one WP, not a split); copilot RISK→PASS. **D-24326 + D-24327 Active.**
+- **Operator-pending:** D-24026 live-verify — a Secret Invasion match on play.legendary-arena.com fields Skrull
+  Villains (cost+2 attack), gains a Hero on defeat, drags the top-cost HQ hero to the Sewers on a Twist, and
+  ends `scheme-wins` at 6 escaped Skrulls.
+- **Epic status:** all six resource-loss schemes now faithful (Midtown/Negative Zone/Civil War/Legacy
+  Virus/Killbots/Secret Invasion). Remaining epic item: Civil War's "4 Heroes at 2p" hero-deck sizing.
+
 ### WP-512 — Recover Runtime-Observed Coverage: Portals Backdrop + Deterministic-Termination Guard — DONE (2026-08-09)
 
 The D-24322 coverage-backdrop follow-up. WP-511 switched the runtime-observed hollows sweep + co-op
