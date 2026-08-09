@@ -106,6 +106,17 @@ jobs:
           AWS_SECRET_ACCESS_KEY="$(printf '%s' "$AWS_SECRET_ACCESS_KEY" | tr -d '[:space:]')"
           R2_ACCOUNT_ID="$(printf '%s' "$R2_ACCOUNT_ID" | tr -d '[:space:]')"
           R2_BACKUP_BUCKET="$(printf '%s' "$R2_BACKUP_BUCKET" | tr -d '[:space:]')"
+          # why: R2_ACCOUNT_ID must be the BARE 32-hex Cloudflare account id — the R2
+          # endpoint is https://<id>.r2.cloudflarestorage.com. A pasted full endpoint or
+          # URL yields an invalid multi-label SNI host and a TLS handshake failure (not
+          # an auth error). Recover the id from a wrapped value, then require 32-hex so a
+          # wrong value fails clearly here instead of cryptically at the TLS layer.
+          R2_ACCOUNT_ID="${R2_ACCOUNT_ID#https://}"
+          R2_ACCOUNT_ID="${R2_ACCOUNT_ID%%.r2.cloudflarestorage.com*}"
+          if ! printf '%s' "$R2_ACCOUNT_ID" | grep -qiE '^[0-9a-f]{32}$'; then
+            echo "R2_ACCOUNT_ID is not a bare 32-hex Cloudflare account id (length ${#R2_ACCOUNT_ID} after sanitizing). Set the secret to just the account id — no https://, no .r2.cloudflarestorage.com, no bucket name." >&2
+            exit 1
+          fi
           # why: a DB dump must never land in the public images bucket.
           if [ "$R2_BACKUP_BUCKET" = "legendary-images" ]; then
             echo "R2_BACKUP_BUCKET must not be the public images bucket." >&2
