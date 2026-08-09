@@ -50,9 +50,13 @@ jobs:
           curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
           sudo apt-get update
           sudo apt-get install -y postgresql-client-18
-          # why: enforce the >=18 floor at runtime. A silent runner-image change that
-          # ships an older client must fail the run, not dump with a version mismatch.
-          major="$(pg_dump --version | grep -oE '[0-9]+' | head -1)"
+          # why: the runner ships a distro postgresql-client (v16) whose
+          # /usr/bin/pg_dump shadows the freshly-installed pgdg v18 binary on PATH.
+          # Prepend the versioned bin dir so every later step's `pg_dump` is v18, and
+          # enforce the >=18 floor against that explicit path (not the shadowed one) —
+          # a missing v18 binary fails the run under `set -e`, not a silent mismatch.
+          echo "/usr/lib/postgresql/18/bin" >> "$GITHUB_PATH"
+          major="$(/usr/lib/postgresql/18/bin/pg_dump --version | grep -oE '[0-9]+' | head -1)"
           if [ "$major" -lt 18 ]; then
             echo "pg_dump major version $major is below the required 18; refusing to run." >&2
             exit 1
