@@ -15,11 +15,22 @@
 import { fileURLToPath } from 'node:url';
 import { stdin } from 'node:process';
 
-// why: v1 keeps 35 daily backups; the weekly/monthly grandfather-father-son tiers
-// named in docs/ops/DISASTER_RECOVERY.md are a deferred enhancement (WP-416 Out of
-// Scope). One age-based window keeps the selection simple and testable.
-const RETENTION_DAYS = 35;
-const RETENTION_MS = RETENTION_DAYS * 24 * 60 * 60 * 1000;
+// why: grandfather-father-son (GFS) retention. Keep every daily backup for the
+// DAILY window, then thin to one-per-week out to the WEEKLY window, then
+// one-per-month out to the MONTHLY window, then delete. The daily window preserves
+// the ~24h RPO for recent recovery; the weekly/monthly tiers keep long-horizon
+// restore points ("the database as of three months ago") at a fraction of the
+// storage of keeping every daily forever. Windows are cumulative ages measured from
+// the reference date ("now"). Documented in docs/ops/DISASTER_RECOVERY.md §3.
+const DAILY_RETENTION_DAYS = 35; // keep ALL backups at least this recent
+const WEEKLY_RETENTION_DAYS = 84; // 12 weeks: keep one-per-week out to here
+const MONTHLY_RETENTION_DAYS = 365; // 12 months: keep one-per-month out to here
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const WEEK_MS = 7 * DAY_MS;
+const DAILY_RETENTION_MS = DAILY_RETENTION_DAYS * DAY_MS;
+const WEEKLY_RETENTION_MS = WEEKLY_RETENTION_DAYS * DAY_MS;
+const MONTHLY_RETENTION_MS = MONTHLY_RETENTION_DAYS * DAY_MS;
 
 // Matches the locked R2 key filename `legendary-arena-<YYYYMMDDTHHMMSSZ>.dump`.
 const BACKUP_KEY_PATTERN =
@@ -68,28 +79,93 @@ export function parseBackupTimestamp(objectKey) {
 }
 
 /**
- * Select the backup object keys that fall outside the retention window.
+ * The fixed 7-day bucket a UTC epoch falls in, counted from the Unix epoch. Two
+ * backups share a bucket when they land in the same 7-day span, so "one per week"
+ * means "one per bucket". Fixed-width buckets (not ISO weeks) keep this pure and
+ * free of calendar edge cases; the exact week alignment does not matter for
+ * retention, only that each 7-day span keeps one representative.
  *
- * A key is pruned when its embedded timestamp is strictly older than
- * RETENTION_DAYS before the reference date. A backup exactly at the boundary is
- * kept. Keys with no well-formed backup timestamp are ignored (never pruned), so an
- * unrelated object under the prefix is never deleted.
+ * @param {number} epoch - UTC epoch in milliseconds.
+ * @returns {number} the bucket index.
+ */
+function weekBucketOf(epoch) {
+  return Math.floor(epoch / WEEK_MS);
+}
+
+/**
+ * The calendar-month bucket (UTC) a backup falls in, as a single comparable
+ * integer `year * 12 + monthIndex`, so "one per month" means "one per bucket".
+ *
+ * @param {number} epoch - UTC epoch in milliseconds.
+ * @returns {number} the bucket index.
+ */
+function monthBucketOf(epoch) {
+  const date = new Date(epoch);
+  return date.getUTCFullYear() * 12 + date.getUTCMonth();
+}
+
+/**
+ * Select the backup object keys to delete under a grandfather-father-son policy.
+ *
+ * A backup is KEPT when it satisfies any tier, measuring age against referenceDate:
+ *   - Daily:   age <= DAILY_RETENTION_DAYS — every recent backup is kept.
+ *   - Weekly:  age <= WEEKLY_RETENTION_DAYS AND it is the earliest backup in its
+ *              7-day bucket (its week's representative).
+ *   - Monthly: age <= MONTHLY_RETENTION_DAYS AND it is the earliest backup in its
+ *              calendar-month bucket (its month's representative).
+ * Everything else is pruned. Choosing the EARLIEST backup of each week/month as the
+ * representative makes the transition seamless: the earliest backup of a period is
+ * kept first as a daily, then as that period's weekly rep, then (for the first week
+ * of a month) as the monthly rep, without a gap. Keys with no well-formed backup
+ * timestamp are ignored (never pruned), so an unrelated object under the prefix is
+ * never deleted.
+ *
+ * Boundaries are inclusive-keep (age exactly at a window is kept), matching the v1
+ * behaviour where a backup exactly RETENTION_DAYS old survived.
  *
  * @param {string[]} objectKeys - existing backup keys under the `db-backups/` prefix.
  * @param {Date} referenceDate - "now" for the comparison. The workflow passes the
- *   current time; tests pass a fixed date so the boundary is deterministic.
+ *   current time; tests pass a fixed date so every boundary is deterministic.
  * @returns {string[]} the subset of `objectKeys` to delete.
  */
 export function selectBackupsToPrune(objectKeys, referenceDate) {
   const referenceEpoch = referenceDate.getTime();
-  const keysToPrune = [];
+
+  // First pass: parse timestamps and record the earliest epoch seen in each week
+  // and month bucket. The earliest backup of a bucket is its retained representative.
+  const parsedBackups = [];
+  const earliestEpochByWeek = new Map();
+  const earliestEpochByMonth = new Map();
   for (const objectKey of objectKeys) {
     const backupEpoch = parseBackupTimestamp(objectKey);
     if (backupEpoch === null) {
       continue;
     }
+    parsedBackups.push({ objectKey, backupEpoch });
+    const weekBucket = weekBucketOf(backupEpoch);
+    const monthBucket = monthBucketOf(backupEpoch);
+    const earliestWeekEpoch = earliestEpochByWeek.get(weekBucket);
+    if (earliestWeekEpoch === undefined || backupEpoch < earliestWeekEpoch) {
+      earliestEpochByWeek.set(weekBucket, backupEpoch);
+    }
+    const earliestMonthEpoch = earliestEpochByMonth.get(monthBucket);
+    if (earliestMonthEpoch === undefined || backupEpoch < earliestMonthEpoch) {
+      earliestEpochByMonth.set(monthBucket, backupEpoch);
+    }
+  }
+
+  // Second pass: keep each backup that satisfies any tier; prune the rest.
+  const keysToPrune = [];
+  for (const { objectKey, backupEpoch } of parsedBackups) {
     const ageMs = referenceEpoch - backupEpoch;
-    if (ageMs > RETENTION_MS) {
+    const isWeekRepresentative =
+      earliestEpochByWeek.get(weekBucketOf(backupEpoch)) === backupEpoch;
+    const isMonthRepresentative =
+      earliestEpochByMonth.get(monthBucketOf(backupEpoch)) === backupEpoch;
+    const isKeptDaily = ageMs <= DAILY_RETENTION_MS;
+    const isKeptWeekly = ageMs <= WEEKLY_RETENTION_MS && isWeekRepresentative;
+    const isKeptMonthly = ageMs <= MONTHLY_RETENTION_MS && isMonthRepresentative;
+    if (!isKeptDaily && !isKeptWeekly && !isKeptMonthly) {
       keysToPrune.push(objectKey);
     }
   }

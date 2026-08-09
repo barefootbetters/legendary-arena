@@ -126,7 +126,9 @@ jobs:
           key="db-backups/${BACKUP_KEYDATE}/legendary-arena-${BACKUP_STAMP}.dump"
           aws s3 cp "/tmp/legendary-arena-${BACKUP_STAMP}.dump" "s3://${R2_BACKUP_BUCKET}/${key}" --endpoint-url "$endpoint"
           # Prune: list existing backup keys, let the pure selector choose which fall
-          # outside the 35-day window, delete only those. This runs only after the
+          # outside the grandfather-father-son retention policy (35 daily / 12 weekly
+          # / 12 monthly; scripts/db-backup-retention.mjs), delete only those. Runs
+          # only after the
           # upload above succeeded (set -euo pipefail aborts the step on any failure).
           aws s3 ls "s3://${R2_BACKUP_BUCKET}/db-backups/" --recursive --endpoint-url "$endpoint" \
             | awk '{ print $4 }' \
