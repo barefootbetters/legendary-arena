@@ -36,9 +36,14 @@ overlay). This completes all six resource-loss core schemes.
   non-vacuous (neutralized skrull guard fails the defeat-to-gain test); `sim:runtime-observed:check` current
   (Portals backdrop unaffected); `pnpm -r build` 0.
 - **Gates:** pre-flight READY (one WP, not a split); copilot RISK→PASS. **D-24326 + D-24327 Active.**
-- **Operator-pending:** D-24026 live-verify — a Secret Invasion match on play.legendary-arena.com fields Skrull
-  Villains (cost+2 attack), gains a Hero on defeat, drags the top-cost HQ hero to the Sewers on a Twist, and
-  ends `scheme-wins` at 6 escaped Skrulls.
+- **D-24026 live-verify ✅ (2026-08-09):** a real 2p co-op vs Magneto (game `1d5c66ad`, **victory**) confirmed
+  every mechanic: hero deck started at 53 (70 − 5 HQ − **12** converted); 12 Heroes surfaced as Skrull Villains
+  in the city; **9× "defeated the Skrull … gained the Hero into their discard pile"**; the Twist dragged the
+  highest-cost HQ Hero to the Sewers each time (Silent Sniper 7 / God of Thunder 8 / Call Lightning 6 / Optic
+  Blast 3); **5 Skrulls in the escaped pile** — one short of the 6-threshold loss, heroes won by vanquishing
+  Magneto first (the resource-loss condition real and nearly triggered). Edge cases held: the twist-pushed
+  Skrull escaped a full city, Mystique's escape-becomes-twist fired the Secret Invasion twist, and an escaping
+  Skrull carried its captured Bystander to the escaped pile.
 - **Epic status:** all six resource-loss schemes now faithful (Midtown/Negative Zone/Civil War/Legacy
   Virus/Killbots/Secret Invasion). Remaining epic item: Civil War's "4 Heroes at 2p" hero-deck sizing.
 
