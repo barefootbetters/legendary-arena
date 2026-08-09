@@ -35,6 +35,12 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version-file: .node-version
+          # why: setup-node@v5 defaults package-manager-cache to true, which reads
+          # the repo's `packageManager: pnpm` field and tries to prime a pnpm cache
+          # before pnpm is installed on the runner — failing the step. This job needs
+          # only plain `node` for scripts/db-backup-retention.mjs (node: built-ins,
+          # no install), so disable the package-manager cache entirely.
+          package-manager-cache: false
 
       - name: Install and verify PostgreSQL 18 client
         if: steps.guard.outputs.has_secrets == 'true'
