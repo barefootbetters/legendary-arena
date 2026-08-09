@@ -56,22 +56,25 @@ const PLAYER_COUNT = 2;
 // at initial setup, so evaluateEndgame returns `scheme-wins` on turn 0 — the game
 // is lost before a single move and the baseline measures nothing (the harness
 // surfaced this on its first run, its intended purpose). It was then swapped to
-// `core/legacy-virus-the`, and — WP-511 (D-24322) — to
-// `core/unleash-the-power-of-the-cosmic-cube`: Legacy Virus now loses on real
-// wound-stack depletion (deck-dependent), which no longer terminates the sweep
-// deterministically, while Cosmic Cube is a true twist-loss scheme (deterministic
-// ~twist 8, sim-visible via the twist-count path) that plays real games and yields
-// an honest, fast baseline.
+// `core/legacy-virus-the`, then — WP-511 (D-24322) — to
+// `core/unleash-the-power-of-the-cosmic-cube` (Legacy Virus now loses on real
+// wound-stack depletion, deck-dependent, no longer deterministic), and now —
+// WP-512 (D-24323) — to `core/portals-to-the-dark-dimension` so BOTH sim harnesses
+// share one sentinel backdrop. Portals is a true twist-loss scheme (deterministic
+// "Twist 7: Evil Wins!" via the MVP fallback, no engine config) that plays real
+// games and yields an honest, fast baseline. Switching costs the yardstick nothing:
+// the competent bot wins 0% on Cosmic Cube AND Portals AND Legacy Virus — the floor
+// is a bot-strength property (the Bot-Ally Strengthening epic owns it), not a
+// backdrop property.
 //
 // COMPARABILITY (D-24322): this is a bot-ally STRENGTH yardstick — pre/post-WP-511
 // win-rate numbers are NOT comparable. WP-511 both (a) suppressed Legacy Virus's
 // twist-count proxy loss in favour of wound depletion and (b) switched this
-// backdrop to Cosmic Cube (whose "each player gains a Wound" twist clogs hero
-// hands, lowering the absolute win rate for scheme-difficulty reasons unrelated to
-// bot strength). Read this yardstick as a go-forward baseline from WP-511 on; do
-// NOT compare a post-WP-511 run to a pre-WP-511 Legacy-Virus number.
+// backdrop (to Cosmic Cube, then Portals under WP-512) — scheme-difficulty shifts
+// unrelated to bot strength. Read this yardstick as a go-forward baseline from
+// WP-511 on; do NOT compare it to a pre-WP-511 Legacy-Virus number.
 const MATCH_CONFIGURATION = {
-  schemeId: 'core/unleash-the-power-of-the-cosmic-cube',
+  schemeId: 'core/portals-to-the-dark-dimension',
   mastermindId: 'core/magneto',
   villainGroupIds: ['core/brotherhood', 'core/hydra'],
   henchmanGroupIds: ['core/savage-land-mutates'],

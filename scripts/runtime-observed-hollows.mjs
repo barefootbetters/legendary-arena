@@ -79,11 +79,11 @@ const SEAT_SEED_SEPARATOR = '::seat:';
 // `--check` is kept (no cron). This matrix is a hardcoded locked value — the
 // harness must NEVER read hero-mechanic-ledger.json (or any generated artifact) at
 // runtime; the sets / heroes below were chosen at scaffold time. The distinct-mechanic
-// count plateaued at 16 by 8 seeds under the ORIGINAL Legacy Virus backdrop; under the
-// WP-511 Cosmic Cube backdrop (D-24322) it is 10 (Cosmic Cube's "wound all" twist plays
-// fewer hero abilities). The 8-seed lock is retained — 8 seeds still saturate the
-// distinct-mechanic count for the current backdrop; a follow-up may recover the lost
-// coverage with a better backdrop.
+// count plateaued at 16 by 8 seeds under the ORIGINAL Legacy Virus backdrop, 10 under
+// the WP-511 Cosmic Cube backdrop, and 12 under the WP-512 Portals backdrop (D-24323 —
+// Portals' board-buff twists don't pollute the hero decks, so more abilities fire; this
+// WP is the coverage-recovery follow-up D-24322 anticipated). The 8-seed lock is
+// retained — 8 seeds still saturate the distinct-mechanic count for the current backdrop.
 const PLAYER_COUNT = 1;
 
 // why: bounding each competent game (WP-264 / D-24040); 50 is well above the
@@ -95,22 +95,28 @@ const MAX_TURNS = 50;
 // played across runs; the distinct-mechanic count plateaus by 8 seeds (measured 8,
 // 16, 24 seeds all surface the same count), so 8 is the affordable lock. The
 // plateau value depends on the backdrop scheme (16 under the original Legacy Virus,
-// 10 under the WP-511 Cosmic Cube backdrop — D-24322); 8 seeds saturates either.
+// 10 under the WP-511 Cosmic Cube backdrop, 12 under the WP-512 Portals backdrop —
+// D-24323); 8 seeds saturates all three.
 const SEEDS_PER_BOARD = 8;
 
 // why: the known-valid board core every hero-deck set is dropped onto (the only
 // committed valid-board fixture, sentinel-core-doom). Heroes vary per set; scheme /
 // mastermind / villain group / henchman group / supply counts are fixed.
-// why (WP-511): the backdrop scheme must terminate DETERMINISTICALLY for the
-// coverage sweep to stay fast. Legacy Virus was suitable while it lost on the
-// twist-COUNT proxy (deck-independent, ~twist 8), but WP-511 makes it lose on
-// real wound-stack depletion — deck-dependent and often not reached in a solo
-// game, so games ran to MAX_TURNS and the check timed out. Cosmic Cube is a true
-// twist-loss scheme ("Twist 8: Evil Wins!"), whose loss is set in the twist-count
-// path the sim already honors, so every game ends at ~twist 8 regardless of the
-// hero deck under test — the property a coverage backdrop needs.
+// why (WP-512 / D-24323): the backdrop scheme must terminate DETERMINISTICALLY so
+// the sweep stays fast, AND should not pollute the hero decks under test (a twist
+// that adds Wounds to players clogs draws and suppresses the very hero abilities
+// this sweep measures). Portals to the Dark Dimension is a faithful TRUE twist-loss
+// scheme (printed "Twist 7: Evil Wins!") that loses at twist 7 via the engine's
+// MVP_SCHEME_TWIST_THRESHOLD fallback — it declares NO SCHEME_TWIST_CONFIGS entry
+// because its faithful loss IS the twist count, so it never needs a resource-loss
+// condition — deck-independent, every game. Its Dark-Portal twists buff the board
+// (mastermind / city villains) instead of wounding players, so heroes keep drawing
+// and playing: 12 distinct mechanics vs Cosmic Cube's 10 (D-24322). WP-511's Cosmic
+// Cube backdrop terminated fine but its "wound all" twist polluted the decks; this
+// recovers the lost coverage with NO engine change. The termination guard in
+// harvest() fails loudly if any future backdrop stops terminating (the WP-511 lesson).
 const SENTINEL_CORE = {
-  schemeId: 'core/unleash-the-power-of-the-cosmic-cube',
+  schemeId: 'core/portals-to-the-dark-dimension',
   mastermindId: 'core/dr-doom',
   villainGroupIds: ['core/brotherhood'],
   henchmanGroupIds: ['core/savage-land-mutates'],
@@ -224,11 +230,16 @@ function buildPoliciesForCell(cellSeed, playerCount) {
  * artifact never ships a silent undercount.
  *
  * @param {object} registry - the real CardRegistry from createRegistryFromLocalFiles.
- * @returns {{byMechanic: Map<string, object>, gamesPlayed: number, totalObservations: number, hollowEffectsDropped: number, summaryByReason: Record<string, number>}}
+ * @returns {{byMechanic: Map<string, object>, gamesPlayed: number, totalObservations: number, hollowEffectsDropped: number, gamesNotTerminated: number, summaryByReason: Record<string, number>}}
  */
 function harvest(registry) {
   const byMechanic = new Map();
-  const counters = { gamesPlayed: 0, totalObservations: 0, hollowEffectsDropped: 0 };
+  const counters = {
+    gamesPlayed: 0,
+    totalObservations: 0,
+    hollowEffectsDropped: 0,
+    gamesNotTerminated: 0,
+  };
   const summaryByReason = emptyByReason();
 
   // why: one aggregation callback shared across every board × seed cell — counts
@@ -238,6 +249,13 @@ function harvest(registry) {
   const aggregateCell = (cell) => {
     counters.gamesPlayed += 1;
     counters.hollowEffectsDropped += cell.hollowEffectsDropped ?? 0;
+    // why (WP-512 / D-24323): the backdrop must lose DETERMINISTICALLY. A game that
+    // exited via the MAX_TURNS safety cap instead of endgame has endgameReached ===
+    // false (SweepCellResult, WP-193) — the WP-511 non-termination that, as a silent
+    // grind, timed out the CI gate. Count them; assertAllGamesTerminated fails loudly.
+    if (cell.endgameReached === false) {
+      counters.gamesNotTerminated += 1;
+    }
     for (const record of cell.hollowEffects ?? []) {
       counters.totalObservations += 1;
       summaryByReason[record.reason] += 1;
@@ -291,6 +309,7 @@ function harvest(registry) {
     gamesPlayed: counters.gamesPlayed,
     totalObservations: counters.totalObservations,
     hollowEffectsDropped: counters.hollowEffectsDropped,
+    gamesNotTerminated: counters.gamesNotTerminated,
     summaryByReason,
   };
 }
@@ -402,6 +421,23 @@ function assertHarvestLoaded(harvested) {
 }
 
 /**
+ * Asserts every swept game reached endgame (WP-512 / D-24323). A game that exited
+ * via the MAX_TURNS safety cap instead of `evaluateEndgame` (endgameReached ===
+ * false) means the backdrop scheme stopped losing deterministically — the WP-511
+ * regression, which as a silent MAX_TURNS grind timed out the CI gate. Fail LOUDLY
+ * and immediately (exit 2) instead of letting the sweep crawl.
+ *
+ * @param {object} harvested - the harvest() result.
+ */
+function assertAllGamesTerminated(harvested) {
+  if (harvested.gamesNotTerminated > 0) {
+    throw new ProbeFailure(
+      `${harvested.gamesNotTerminated} of ${harvested.gamesPlayed} swept game(s) did not reach endgame — they hit the ${MAX_TURNS}-turn safety cap. The coverage backdrop "${SENTINEL_CORE.schemeId}" must lose DETERMINISTICALLY; a non-terminating backdrop grinds to MAX_TURNS and times out the sim:runtime-observed:check gate (the WP-511 regression). Choose a true twist-loss backdrop or restore its deterministic termination.`,
+    );
+  }
+}
+
+/**
  * Runs `--check`: regenerate, diff the committed artifact, return the exit code.
  *
  * // why (--check exit-1-on-drift): mirrors hero-effect-coverage — a freshness
@@ -452,6 +488,7 @@ async function main() {
   });
   const harvested = harvest(registry);
   assertHarvestLoaded(harvested);
+  assertAllGamesTerminated(harvested);
 
   const artifact = buildArtifact(harvested);
   const text = serializeDeterministic(artifact);

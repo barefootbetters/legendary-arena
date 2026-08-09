@@ -207,8 +207,16 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // true twist-loss backdrop (deterministic ~twist 8). Its "wound all" twist plays
   // fewer hero abilities, so the sweep observes fewer mechanics: totalObs 178 -> 163,
   // percentResolved 33.1 -> 36.2 (resolvedObs unchanged at 59 over a smaller total).
+  // 2026-08-09 (WP-512 / D-24323): the backdrop was switched again, Cosmic Cube ->
+  // Portals to the Dark Dimension — a faithful true-twist-loss scheme ("Twist 7:
+  // Evil Wins!", loses via the MVP fallback, no engine change) whose Dark-Portal
+  // twists buff the board rather than polluting hero decks. More hero abilities fire:
+  // the sweep observes 12 distinct mechanics (up from 10), so totalObs 163 -> 188
+  // (above even the pre-WP-511 178), percentResolved 36.2 -> 31.4 (resolvedObs
+  // unchanged at 59 over a LARGER, more honest denominator). The 140 high-water
+  // baseline is still NOT rebuilt.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 163);
-  assert.equal(view.percentResolved.value, 36.2);
+  assert.equal(view.totalObs.value, 188);
+  assert.equal(view.percentResolved.value, 31.4);
   assert.ok(view.remaining.value.length > 0);
 });
