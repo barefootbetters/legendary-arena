@@ -1,7 +1,7 @@
 # Wiki Index
 
-> **55 / 75** entity pages.
-> Last regenerated: 2026-08-04.
+> **56 / 75** entity pages.
+> Last regenerated: 2026-08-09.
 > See [SCHEMA.md](SCHEMA.md) for the entity-page contract and
 > [README.md](README.md) for purpose, conventions, and authority —
 > including [§ Tradeoffs](README.md#tradeoffs) on what the LLM-wiki
@@ -162,6 +162,13 @@ Cross-cutting governance, methodology, and readiness assessments.
   Claude Code sessions on WP/EC contracts → GitHub → auto-deploy via
   Render + Cloudflare on merge to `main`; a nightly CI triage agent
   turns sweep results into new work packets.
+- [Disaster Recovery](disaster-recovery.md) — Operator playbook (mirror
+  of `docs/ops/DISASTER_RECOVERY.md`) for restoring **service** after
+  infrastructure loss: the two backup layers (Render managed + the WP-416
+  `pg_dump` → R2 external copy), the five recovery scenarios (DR-01…DR-05)
+  with honest recoverability verdicts, and the capability-graded validation
+  checklist. The remaining gap is operational — provision the backup
+  secrets and drill a restore.
 - [Homepage Marketing Scorecard](homepage-marketing-scorecard.md) —
   SB7 + Player Needs Pyramid graded assessment of the homepage;
   tracks readiness across three questions (Problem / Product / Results).
