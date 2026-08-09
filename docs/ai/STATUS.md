@@ -7,6 +7,35 @@
 
 ## Current State
 
+### WP-512 — Recover Runtime-Observed Coverage: Portals Backdrop + Deterministic-Termination Guard — DONE (2026-08-09)
+
+The D-24322 coverage-backdrop follow-up. WP-511 switched the runtime-observed hollows sweep + co-op
+yardstick off Legacy Virus (deck-dependent loss → non-terminating solo sweep) onto **Cosmic Cube**, at a
+coverage cost (~16→10 distinct mechanics; dashboard `totalObs` 178→163). This WP recovers it by switching
+both backdrops to **Portals to the Dark Dimension** — with **no engine change**.
+
+- **Backdrop (D-24323):** `core/portals-to-the-dark-dimension` is a faithful TRUE twist-loss scheme
+  (printed *"Twist 7: Evil Wins!"*) that loses at twist 7 via the engine's `MVP_SCHEME_TWIST_THRESHOLD`
+  fallback — it declares **no** `SCHEME_TWIST_CONFIGS` entry (its faithful loss IS the twist count), so no
+  engine change is needed. Its Dark-Portal twists buff the board rather than adding Wounds to hero decks
+  (Cosmic Cube's "wound all" polluted draws), so more hero abilities fire. Regenerated artifact: **12**
+  distinct mechanics (+`rooftops` +`streets`) / 125 obs / 312 games / 0 dropped. Dashboard `totalObs`
+  163→**188** (above even the pre-WP-511 178), `resolvedObs` **59** unchanged, `percentResolved` 36.2→**31.4**
+  (a larger, more honest denominator).
+- **Termination guard (D-24323):** `assertAllGamesTerminated` throws `ProbeFailure` (exit 2) if any swept
+  game exits via the `MAX_TURNS` cap (`endgameReached === false`) — so a future non-terminating backdrop
+  fails loudly instead of grinding to a silent `sim:runtime-observed:check` timeout (the WP-511 regression).
+  Control-tripped non-vacuously: `MAX_TURNS=2` → 312/312 caught.
+- **Rejected:** an explicit `SCHEME_TWIST_CONFIGS` `lossThreshold: 7` for Portals (D-24322's suggestion) —
+  `resolverId` is a required closed-union field with no no-op member, so it is a contract-touching engine
+  change for zero behavioral gain. Bumping `SEEDS_PER_BOARD` to recover ~16 — unrecoverable (Portals
+  plateaus at 12; the 16 was Legacy-Virus-specific and is now deck-dependent). `SEEDS_PER_BOARD` stays 8.
+- **Verification:** `sim:runtime-observed:check` green (~6 s); coop harness runs real games on Portals
+  (60 games, 0 turn-cap; 0% bot win-rate is backdrop-independent, a Bot-Ally-epic concern); whole-workspace
+  `pnpm -r --no-bail test` green; `git diff --name-only` = the 4-file allowlist, **zero `packages/`**; no
+  `finalStateHash`/`PRE_WP080` interaction; `in-play-hollow-baseline.json` unchanged at 140.
+- **D-24026 live-verify:** operator-pending — `/coverage` sits behind the deployed dashboard.
+
 ### WP-513 — Replace Earth's Leaders with Killbots: Converted-Bystander Villains + Escape Loss — DONE (2026-08-08)
 
 Killbots now plays its printed rules: the 18 villain-deck Bystanders act as **Killbot Villains** whose
