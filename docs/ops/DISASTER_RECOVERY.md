@@ -36,7 +36,9 @@ Consequence, stated plainly so it is not discovered during a crisis:
 
 - **DR-01 / DR-03** (database loss, accidental deletion) are recoverable through
   Render's own dashboard restore / PITR **and**, once the workflow is
-  provisioned, from the R2 dump — but neither path has been drilled yet.
+  provisioned, from the R2 dump. The restore *mechanics* were drilled 2026-08-09
+  (a full `pg_dump`/`pg_restore` of prod into a scratch DB; row counts matched —
+  §7); a drill from an actual R2 object remains pending the pipeline's first dump.
 - **DR-05** (Render itself loses the data, or the account is lost) becomes
   recoverable **once the R2 backup is live *and* one restore drill is recorded**
   (§5 DR-05): the dump on Cloudflare R2 is the only copy that survives losing
@@ -334,6 +336,35 @@ greppable. A drill with no record is treated as **not performed**.
 **Cadence:** database restore drill **monthly**; full server rebuild
 **quarterly**; complete platform recovery **semiannually**; re-run **all**
 after any major infrastructure change.
+
+### Drill history
+
+**2026-08-09 — DR-05 restore-mechanics drill (local `pg_restore` of a prod dump).**
+
+```
+Date:                2026-08-09
+Scenario:            DR-05 — restore of a full `pg_dump -Fc` of production Postgres
+Backup object key:   n/a — dumped directly from prod for this drill; the WP-416 R2
+                     pipeline was not yet live (BACKUP_DATABASE_URL secret fix in
+                     progress), so no R2 object existed yet to restore
+Commit SHA restored: n/a — data-fidelity drill; schema as on `main` at drill time
+Observed RPO:        ~0 (dump taken at drill time)
+Observed RTO:        12s (dump 10s + restore 2s) into a throwaway local database
+Duration:            ~1 min including validation
+Result:              PASS
+Issues found:        none — pg_restore --list OK (integrity gate); restored row
+                     counts matched prod exactly: legendary.players 4,
+                     player_profiles 1, friendships 1, competitive_scores 0,
+                     bgio.matches 3
+Corrective action:   none. Follow-up: re-drill from an actual R2 object once the
+                     WP-416 pipeline produces its first dump.
+```
+
+**Scope of this drill.** It proved the restore *mechanics and data fidelity*
+(dump → readable archive → restore → row-count match), satisfying the §3
+integrity gate "restore drilled within 90 days." It did **not** exercise full
+service bring-up (§6 Phases 3–10) or restore the literal R2 artifact — both are
+named follow-ups, the latter blocked only on the backup-secret fix.
 
 ---
 
