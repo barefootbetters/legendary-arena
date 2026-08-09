@@ -21,12 +21,12 @@ Prerequisite #1 — a provider-independent database backup — **now exists in
 code** (WP-416 / D-24236): the `.github/workflows/db-backup.yml` GitHub Actions
 workflow runs `pg_dump -Fc` daily against the Render database and uploads the
 dump to a **private** Cloudflare R2 bucket under `db-backups/`, pruned to a
-35-day window. It runs in CI, independent of the app server. **It is not live
-until the operator provisions its secrets** — the five GitHub Actions secrets
-(`BACKUP_DATABASE_URL`, `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`,
-`R2_SECRET_ACCESS_KEY`, `R2_BACKUP_BUCKET`, the last a private bucket) — and runs
-it once via `workflow_dispatch` to confirm an object lands in R2. Until then the
-workflow skips green and no external backup is produced.
+35-day window. It runs in CI, independent of the app server. **It is live as of 2026-08-09** —
+the five GitHub Actions secrets (`BACKUP_DATABASE_URL`, `R2_ACCOUNT_ID`,
+`R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BACKUP_BUCKET`, the last a
+private bucket) are provisioned, and a `workflow_dispatch` run confirmed a dump
+landed in R2 (`db-backups/2026/08/09/…dump`, ~2.7 MB). Daily backups now run on
+the `17 9 * * *` schedule.
 
 Alongside it, Render's managed Postgres still produces internal backups (daily
 snapshots and, on the current `pro-4gb` plan, point-in-time recovery — confirm
@@ -38,16 +38,19 @@ Consequence, stated plainly so it is not discovered during a crisis:
   Render's own dashboard restore / PITR **and**, once the workflow is
   provisioned, from the R2 dump. The restore *mechanics* were drilled 2026-08-09
   (a full `pg_dump`/`pg_restore` of prod into a scratch DB; row counts matched —
-  §7); a drill from an actual R2 object remains pending the pipeline's first dump.
+  §7), and re-drilled the same day from the **actual R2 object** (downloaded and
+  restored; stable tables matched — §7).
 - **DR-05** (Render itself loses the data, or the account is lost) becomes
   recoverable **once the R2 backup is live *and* one restore drill is recorded**
   (§5 DR-05): the dump on Cloudflare R2 is the only copy that survives losing
-  Render, and an un-drilled dump is an assumption, not a recovery. Until the
-  secrets are provisioned, this scenario remains unrecoverable.
+  Render, and an un-drilled dump is an assumption, not a recovery. **Both hold as
+  of 2026-08-09** — the backup is live and the R2 object has been restored in a
+  drill (§7), so this scenario is now recoverable.
 
-**The remaining gap is operational, not code:** provision the secrets, run the
-first backup, and **drill the restore** (§5–6) — a backup nobody has restored is
-still an assumption. Long-term retention beyond the 35-day daily window
+**The core provision-and-drill work is complete** (2026-08-09, §7): secrets
+provisioned, first backup in R2, and the R2 object restored in a drill. Remaining
+items are operational hardening, not the core gap. Long-term retention beyond the
+35-day daily window
 (weekly/monthly GFS tiers) is a named follow-up.
 
 ---
@@ -365,6 +368,32 @@ Corrective action:   none. Follow-up: re-drill from an actual R2 object once the
 integrity gate "restore drilled within 90 days." It did **not** exercise full
 service bring-up (§6 Phases 3–10) or restore the literal R2 artifact — both are
 named follow-ups, the latter blocked only on the backup-secret fix.
+
+**2026-08-09 — DR-05 drill from the actual R2 object (definitive).**
+
+```
+Date:                2026-08-09
+Scenario:            DR-05 — restore of the literal R2 backup object (not a fresh dump)
+Backup object key:   db-backups/2026/08/09/legendary-arena-20260809T225114Z.dump (2,702,371 bytes)
+Commit SHA restored: n/a — data-fidelity drill; schema as on `main` at backup time
+Observed RPO:        minutes (object age at drill time; daily-cadence RPO otherwise)
+Observed RTO:        3s (download 1s + restore 2s) into a throwaway local database
+Duration:            ~1 min including validation
+Result:              PASS
+Issues found:        none. pg_restore --list OK (integrity gate). Stable tables
+                     matched prod exactly (players 4, player_profiles 1,
+                     friendships 1, competitive_scores 0). bgio.matches read
+                     restored 1 vs live prod 2 — the RPO gap, not a fidelity
+                     fault: the snapshot predates a match prod gained after 22:51.
+Corrective action:   none. The R2 object downloads, its archive is readable, and
+                     it restores cleanly — DR-05's recovery path is proven.
+```
+
+**Scope.** This is the definitive DR-05 drill: it exercised the *actual recovery
+artifact* (download the R2 object → readable archive → restore → count-check),
+not a freshly-taken dump. It still did not exercise full service bring-up (§6
+Phases 3–10) — the quarterly full-rebuild drill on the Ubuntu lab remains the
+place for that.
 
 ---
 
