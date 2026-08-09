@@ -35,6 +35,12 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version-file: .node-version
+          # why: setup-node@v5 defaults package-manager-cache to true, which reads
+          # the repo's `packageManager: pnpm` field and tries to prime a pnpm cache
+          # before pnpm is installed on the runner — failing the step. This job needs
+          # only plain `node` for scripts/db-backup-retention.mjs (node: built-ins,
+          # no install), so disable the package-manager cache entirely.
+          package-manager-cache: false
 
       - name: Install and verify PostgreSQL 18 client
         if: steps.guard.outputs.has_secrets == 'true'
@@ -44,9 +50,13 @@ jobs:
           curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
           sudo apt-get update
           sudo apt-get install -y postgresql-client-18
-          # why: enforce the >=18 floor at runtime. A silent runner-image change that
-          # ships an older client must fail the run, not dump with a version mismatch.
-          major="$(pg_dump --version | grep -oE '[0-9]+' | head -1)"
+          # why: the runner ships a distro postgresql-client (v16) whose
+          # /usr/bin/pg_dump shadows the freshly-installed pgdg v18 binary on PATH.
+          # Prepend the versioned bin dir so every later step's `pg_dump` is v18, and
+          # enforce the >=18 floor against that explicit path (not the shadowed one) —
+          # a missing v18 binary fails the run under `set -e`, not a silent mismatch.
+          echo "/usr/lib/postgresql/18/bin" >> "$GITHUB_PATH"
+          major="$(/usr/lib/postgresql/18/bin/pg_dump --version | grep -oE '[0-9]+' | head -1)"
           if [ "$major" -lt 18 ]; then
             echo "pg_dump major version $major is below the required 18; refusing to run." >&2
             exit 1
@@ -88,6 +98,25 @@ jobs:
           R2_BACKUP_BUCKET: ${{ secrets.R2_BACKUP_BUCKET }}
         run: |
           set -euo pipefail
+          # why: operator-provisioned secrets occasionally carry a trailing newline or
+          # stray whitespace from a paste. Whitespace is never valid in an account id,
+          # access key, or bucket name — and a newline in the account id breaks the R2
+          # endpoint hostname (a TLS handshake failure, not an auth error). Strip it.
+          AWS_ACCESS_KEY_ID="$(printf '%s' "$AWS_ACCESS_KEY_ID" | tr -d '[:space:]')"
+          AWS_SECRET_ACCESS_KEY="$(printf '%s' "$AWS_SECRET_ACCESS_KEY" | tr -d '[:space:]')"
+          R2_ACCOUNT_ID="$(printf '%s' "$R2_ACCOUNT_ID" | tr -d '[:space:]')"
+          R2_BACKUP_BUCKET="$(printf '%s' "$R2_BACKUP_BUCKET" | tr -d '[:space:]')"
+          # why: R2_ACCOUNT_ID must be the BARE 32-hex Cloudflare account id — the R2
+          # endpoint is https://<id>.r2.cloudflarestorage.com. A pasted full endpoint or
+          # URL yields an invalid multi-label SNI host and a TLS handshake failure (not
+          # an auth error). Recover the id from a wrapped value, then require 32-hex so a
+          # wrong value fails clearly here instead of cryptically at the TLS layer.
+          R2_ACCOUNT_ID="${R2_ACCOUNT_ID#https://}"
+          R2_ACCOUNT_ID="${R2_ACCOUNT_ID%%.r2.cloudflarestorage.com*}"
+          if ! printf '%s' "$R2_ACCOUNT_ID" | grep -qiE '^[0-9a-f]{32}$'; then
+            echo "R2_ACCOUNT_ID is not a bare 32-hex Cloudflare account id (length ${#R2_ACCOUNT_ID} after sanitizing). Set the secret to just the account id — no https://, no .r2.cloudflarestorage.com, no bucket name." >&2
+            exit 1
+          fi
           # why: a DB dump must never land in the public images bucket.
           if [ "$R2_BACKUP_BUCKET" = "legendary-images" ]; then
             echo "R2_BACKUP_BUCKET must not be the public images bucket." >&2
