@@ -1,6 +1,6 @@
 # Disaster Recovery — Legendary Arena
 
-> **Last updated:** 2026-07-23
+> **Last updated:** 2026-08-09
 >
 > Operator-focused recovery procedures for restoring **service** (players
 > able to log in and play), not just files, after infrastructure loss,
@@ -38,9 +38,10 @@ Consequence, stated plainly so it is not discovered during a crisis:
   Render's own dashboard restore / PITR **and**, once the workflow is
   provisioned, from the R2 dump — but neither path has been drilled yet.
 - **DR-05** (Render itself loses the data, or the account is lost) becomes
-  recoverable **once the R2 backup is live**: the dump on Cloudflare R2 is the
-  only copy that survives losing Render. Until the secrets are provisioned, this
-  scenario remains unrecoverable.
+  recoverable **once the R2 backup is live *and* one restore drill is recorded**
+  (§5 DR-05): the dump on Cloudflare R2 is the only copy that survives losing
+  Render, and an un-drilled dump is an assumption, not a recovery. Until the
+  secrets are provisioned, this scenario remains unrecoverable.
 
 **The remaining gap is operational, not code:** provision the secrets, run the
 first backup, and **drill the restore** (§5–6) — a backup nobody has restored is
@@ -74,18 +75,36 @@ Postgres (`legendary.*` and `bgio.*`).
 If an item is not listed here, assume it is lost in a disaster. Recovery
 depends on every one of these being independently available.
 
-| Asset | Where it lives | Recovery source |
-|---|---|---|
-| **Source code** | GitHub `barefootbetters/legendary-arena` | `git clone` |
-| **Database** | Render managed Postgres (`legendary-arena-db`) | Render restore / PITR; **plus** the WP-416 R2 dump once its secrets are provisioned |
-| **Secrets / config** | Render dashboard env vars (`sync: false` in [`render.yaml`](../../render.yaml)) — see §4 | Operator's own secret store (password manager / vault) |
-| **Infrastructure definition** | [`render.yaml`](../../render.yaml) (blueprint) | GitHub |
-| **DNS + CDN + Access** | Cloudflare (Pages, R2, Access, DNS) | Cloudflare dashboard |
-| **TLS certificates** | Render / Cloudflare (managed); Certbot on a self-hosted box | Re-issued automatically / via Certbot |
-| **Card images** | Cloudflare R2 (`images.legendary-arena.com`) | R2 (independent of Render) |
+Assets are tiered by what their loss *means* for recovery:
 
-**The real assets are the source code, the database data, and the secrets.**
-The server is replaceable; those three are not.
+- **Tier 0 — Existential:** unique, irreplaceable; loss without a backup is
+  unrecoverable. These are the only assets a backup strategy exists for.
+- **Tier 1 — Service capability:** required for players to play, but
+  reconstructable from a provider dashboard or from Tier-0 source (not unique
+  data of their own).
+- **Tier 2 — Rebuildable:** convenience / operational; reprovisioned from
+  scratch with no data loss.
+
+| Tier | Asset | Where it lives | Recovery source |
+|---|---|---|---|
+| **0** | **Source code** | GitHub `barefootbetters/legendary-arena` | `git clone` |
+| **0** | **Database** | Render managed Postgres (`legendary-arena-db`) | Render restore / PITR; **plus** the WP-416 R2 dump once its secrets are provisioned |
+| **0** | **Secrets / config** | Operator secret store (values are `sync: false` in [`render.yaml`](../../render.yaml)) — see §4 | Operator's own password manager / vault |
+| **1** | **Infrastructure definition** | [`render.yaml`](../../render.yaml) (blueprint) | GitHub (Tier-0 source), applied via Render |
+| **1** | **DNS + CDN + Access** | Cloudflare (Pages, R2, Access, DNS) | Cloudflare dashboard |
+| **1** | **TLS certificates** | Render / Cloudflare (managed); Certbot on a self-hosted box | Re-issued automatically / via Certbot |
+| **1** | **Card images** | Cloudflare R2 (`images.legendary-arena.com`) | R2 (independent of Render) |
+| **2** | **Ubuntu lab / staging box** | operator-provisioned droplet | reprovision ([Ubuntu Lab Provisioning](../../wiki/ubuntu-lab-provisioning.md)) |
+| **2** | **Operator workstations** | local machines | reinstall + `git clone` |
+| **2** | **CI/CD runners** | GitHub Actions (hosted) | provider-managed |
+| **2** | **Monitoring / dashboards** | derived views | rebuild from source |
+
+**The real assets are the Tier-0 three: source code, database data, and
+secrets.** The server is replaceable; those three are not.
+
+> **Trigger rule.** Loss of a **Tier-2** asset alone does **not** trigger
+> disaster recovery — reprovision it and move on. DR is for Tier-0 loss (and
+> Tier-1 loss a provider dashboard cannot immediately restore).
 
 ---
 
@@ -112,6 +131,25 @@ infrastructure** (no standby host, no alternate-jurisdiction copy) — those wou
 be cost and attack surface aimed at risks below the license-loss and
 operational-drill gaps that actually bound recovery here.
 
+### Backup integrity gates
+
+A backup that *exists* is not a backup that *works*. Each database backup must
+satisfy **all** of these before any scenario may count it as a fallback:
+
+1. The object exists at its expected `db-backups/…` key.
+2. Its size is non-zero (the workflow already refuses a dump ≤ 1024 bytes on
+   *produce*; this re-checks on *consume*).
+3. `pg_restore --list <dump>` succeeds — the custom-format archive's table of
+   contents is readable (catches a truncated or corrupt dump without a full
+   restore).
+4. Its age is ≤ the §1 RPO at the moment it is relied upon.
+5. A restore drill (§7) has been recorded within the last **90 days**.
+
+**Failure of any gate ⇒ the backup is considered _unavailable_,** and any
+scenario that depended on it drops to "not recoverable" until a good backup
+passes all five. Gates 1–3 are cheap enough to automate as a post-upload smoke
+check; gates 4–5 are policy checks against this document.
+
 ---
 
 ## 4. Secrets to re-provision (from `render.yaml`)
@@ -128,11 +166,38 @@ operator's secret store (they are **not** in the repo):
 (provided by the DB service). Production startup is fatal-on-missing for
 several of these, so a missing secret shows up immediately as a boot failure.
 
+**Secret-recovery validation.** Restoring secrets is complete only when both
+hold: (a) the recovered inventory **matches** the `sync: false` set in
+[`render.yaml`](../../render.yaml) — no secret silently missing — and (b)
+production startup completes with **no** fatal-on-missing failures in the logs.
+Until both hold, recovery is **not** complete regardless of infrastructure
+state: a booting host with a missing `JWT_SECRET` or `STRIPE_SECRET_KEY` has
+not recovered service.
+
 ---
 
 ## 5. Recovery scenarios
 
 Each scenario: trigger, **honest current recoverability**, and procedure.
+
+### Recovery order (all scenarios)
+
+Whatever the scenario, restore in dependency order — upstream before
+downstream — so each step has what the next one needs:
+
+1. **Access & credentials** — operator secret store, and logins to Cloudflare /
+   Render / GitHub. Without these, nothing else can start.
+2. **Source code** — `git clone`.
+3. **Database** — snapshot / PITR / R2 dump restore (§5 DR-01, DR-03, DR-05).
+4. **Application infrastructure** — host, config, `node scripts/migrate.mjs`,
+   deploy.
+5. **External services** — DNS repoint, R2, Stripe, Brevo.
+6. **Capability validation** — §6, top to bottom.
+7. **Declare recovery complete** — §8.
+
+> **Rule.** Database recovery always precedes application validation.
+> Validating the app against an empty or half-restored database produces false
+> failures and wastes the drill.
 
 ### DR-01 — Database loss
 
@@ -176,10 +241,11 @@ Each scenario: trigger, **honest current recoverability**, and procedure.
 ### DR-05 — Cloud-provider / account failure
 
 - **Trigger:** Render outage that loses data, or loss of the Render account.
-- **Recoverable?** **Once the WP-416 backup is live — yes**, from the R2 dump
-  (the only database copy that survives losing Render). Until the operator
-  provisions the workflow's secrets and it produces its first dump, this scenario
-  remains unrecoverable.
+- **Recoverable?** **NO** until *all three* hold: (a) the R2 backup is
+  configured (secrets provisioned), (b) a successful backup object is present
+  and passes the §3 integrity gates, and (c) a restore drill has been recorded
+  (§7). **Backup existence alone is not recoverability.** Once all three hold:
+  yes, from the R2 dump — the only database copy that survives losing Render.
 - **Procedure:** provision Postgres elsewhere → restore the latest `db-backups/…`
   R2 dump (`pg_restore`) → stand up the server (DR-02) pointed at it → repoint DNS
   → §6 validation.
@@ -237,13 +303,21 @@ infrastructure component.
 Keep evidence — the drill history is itself an asset.
 
 ```
-Date:            YYYY-MM-DD
-Scenario:        DR-0X (e.g. full database restore)
-Duration:        __ minutes
-Result:          PASS / FAIL
-Issues found:    …
-Corrective action: …
+Date:                YYYY-MM-DD
+Scenario:            DR-0X (e.g. full database restore)
+Backup object key:   db-backups/YYYY/MM/DD/legendary-arena-<stamp>.dump
+Commit SHA restored: <sha the dump's schema/data corresponds to, if known>
+Observed RPO:        __ (age of the backup used, at restore time)
+Observed RTO:        __ (= Total recovery time, below)
+Duration:            __ minutes
+Result:              PASS / FAIL
+Issues found:        …
+Corrective action:   …
 ```
+
+The drill **record itself** — this block plus the command output you captured —
+is the evidence. Screenshots are **not** required; a text log is more useful and
+greppable. A drill with no record is treated as **not performed**.
 
 **Metrics to record each drill** (these become the real RTO evidence):
 
@@ -282,7 +356,28 @@ emails function; payments function (test mode); no critical errors in logs.
 
 ---
 
-## 9. Future structure
+## 9. Non-goals — what recovery does not preserve
+
+Disaster recovery restores **durable persisted data only**. It does **not**
+preserve, and no drill is expected to recover:
+
+- **Active matches in progress** — live `G` / `ctx` is runtime-only. A
+  *completed* match persists via `bgio.matches`; an in-flight one does not
+  survive a cutover.
+- **Open WebSocket / Socket.IO connections** — clients reconnect and resync.
+- **Runtime memory and process-local state.**
+- **Temporary caches.**
+- **Analytics hash continuity after an `ANALYTICS_USER_ID_SALT` rotation**
+  (DR-04) — one-way by design.
+
+This aligns with the persistence boundary: `G` and `ctx` are runtime-only, and
+snapshots are derived counts, never save-games. Recovery guarantees the durable
+record — accounts, profiles, friendships, scores, match metadata, replay
+metadata — not the ephemeral session running on top of it.
+
+---
+
+## 10. Future structure
 
 Kept as **one** document today (duplicate-first: split only when a section
 grows unwieldy). If/when the procedures deepen, split into:
