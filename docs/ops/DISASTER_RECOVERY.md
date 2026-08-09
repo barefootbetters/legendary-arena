@@ -20,8 +20,9 @@
 Prerequisite #1 — a provider-independent database backup — **now exists in
 code** (WP-416 / D-24236): the `.github/workflows/db-backup.yml` GitHub Actions
 workflow runs `pg_dump -Fc` daily against the Render database and uploads the
-dump to a **private** Cloudflare R2 bucket under `db-backups/`, pruned to a
-35-day window. It runs in CI, independent of the app server. **It is live as of 2026-08-09** —
+dump to a **private** Cloudflare R2 bucket under `db-backups/`, pruned by a
+grandfather-father-son policy (35 daily · 12 weekly · 12 monthly). It runs in CI,
+independent of the app server. **It is live as of 2026-08-09** —
 the five GitHub Actions secrets (`BACKUP_DATABASE_URL`, `R2_ACCOUNT_ID`,
 `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BACKUP_BUCKET`, the last a
 private bucket) are provisioned, and a `workflow_dispatch` run confirmed a dump
@@ -48,10 +49,10 @@ Consequence, stated plainly so it is not discovered during a crisis:
   drill (§7), so this scenario is now recoverable.
 
 **The core provision-and-drill work is complete** (2026-08-09, §7): secrets
-provisioned, first backup in R2, and the R2 object restored in a drill. Remaining
-items are operational hardening, not the core gap. Long-term retention beyond the
-35-day daily window
-(weekly/monthly GFS tiers) is a named follow-up.
+provisioned, first backup in R2, and the R2 object restored in a drill.
+Grandfather-father-son long-term retention (weekly/monthly tiers) is now **enabled**
+(2026-08-09, §3). The one remaining follow-up is a second offsite copy of the dump
+(§3).
 
 ---
 
@@ -118,21 +119,20 @@ secrets.** The server is replaceable; those three are not.
 | What | Source | Method | Storage | Retention | Verified by |
 |---|---|---|---|---|---|
 | Database (managed) | Render Postgres | Render automated snapshots + PITR | Render (internal) | Per Render plan — **confirm in dashboard** | **Never drilled** |
-| Database (external) | Render Postgres | `pg_dump -Fc` — daily GitHub Actions (`.github/workflows/db-backup.yml`, WP-416) | Cloudflare R2 (private `R2_BACKUP_BUCKET`, `db-backups/` prefix) | 35 days (v1; weekly/monthly GFS deferred) | **Restore drill (§5–6) — pending** |
+| Database (external) | Render Postgres | `pg_dump -Fc` — daily GitHub Actions (`.github/workflows/db-backup.yml`, WP-416) | Cloudflare R2 (private `R2_BACKUP_BUCKET`, `db-backups/` prefix) | GFS: 35 daily · 12 weekly · 12 monthly | **Drilled 2026-08-09 (§7)** |
 | Card images | R2 upload pipeline | manual/scripted | Cloudflare R2 | indefinite | image loads |
 | Source code | GitHub | git | GitHub + local clones | full history | every clone |
 | Secrets | operator | manual | operator secret store | operator-managed | §4 completeness |
 
-**Remaining gap is operational, not code:** the external row now has a pipeline
-(WP-416), but it is inert until the operator provisions the five GitHub Actions
-secrets and runs it once via `workflow_dispatch` — **and** until a restore has
-actually been drilled (§5–6). Long-term retention beyond 35 daily days
-(weekly/monthly GFS tiers) is the named follow-up. A second follow-up — **a
-second offsite copy of the dump** (mirror the R2 object to a different vendor,
-e.g. pCloud or Backblaze B2, so a single-vendor loss of Cloudflare cannot take
-both the card images and the only database backup at once) — completes a 3-2-1
-posture. Both are additive to the existing pipeline and require **no new primary
-infrastructure** (no standby host, no alternate-jurisdiction copy) — those would
+**Now live and hardened:** the external row's pipeline (WP-416) is provisioned and
+producing daily backups, a restore has been drilled (§7), and **grandfather-
+father-son retention is enabled** — 35 daily, then one-per-week out to 12 weeks,
+then one-per-month out to 12 months (`scripts/db-backup-retention.mjs`). The one
+remaining follow-up — **a second offsite copy of the dump** (mirror the R2 object
+to a different vendor, e.g. pCloud or Backblaze B2, so a single-vendor loss of
+Cloudflare cannot take both the card images and the only database backup at once) —
+completes a 3-2-1 posture. It is additive to the existing pipeline and requires
+**no new primary infrastructure** (no standby host, no alternate-jurisdiction copy) — those would
 be cost and attack surface aimed at risks below the license-loss and
 operational-drill gaps that actually bound recovery here.
 
