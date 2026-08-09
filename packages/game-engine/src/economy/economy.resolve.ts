@@ -45,6 +45,18 @@ export function resolveFightCost(
     return G.counters[KILLBOT_TWISTS_NEXT_TO_SCHEME] ?? 0;
   }
 
+  // why: WP-514 / D-24327 — a converted Skrull (a Hero shuffled into the Villain Deck
+  // by Secret Invasion) attacks for the Hero's cost + 2. Checked OVERLAY-FIRST, beside
+  // the Killbot branch. PROXY: the printed attack is the Hero's VP + 2, but hero VP
+  // exists nowhere in the data (generated or upstream — buildCardVictoryPoints emits
+  // villains/henchmen/masterminds only), so we approximate with the Hero's cost (present
+  // in G.cardStats). Swap seam: change `G.cardStats[...]?.cost` to
+  // `G.cardVictoryPoints?.[villainCardId]` if hero VP is ever authored. cost typically
+  // runs slightly higher than VP, so Skrulls skew a touch harder than printed.
+  if (G.convertedVillainOrigins?.[villainCardId] === 'skrull') {
+    return (G.cardStats[villainCardId]?.cost ?? 0) + 2;
+  }
+
   const villainStats = G.cardStats[villainCardId];
   if (villainStats === undefined) {
     return 0;

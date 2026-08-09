@@ -678,3 +678,76 @@ describe('WP-200 — schemeTwistResolved emission per resolver', () => {
     }
   });
 });
+
+// ===========================================================================
+// secret-invasion (WP-514 / D-24327)
+// ===========================================================================
+
+describe('secret-invasion resolver', () => {
+  const resolver = SCHEME_TWIST_RESOLVERS['secret-invasion'];
+  const SECRET_INVASION = 'core/secret-invasion-of-the-skrull-shapeshifters';
+
+  it('moves the highest-cost HQ Hero into the Sewers as a Skrull and refills the slot', () => {
+    const gameState = makeResolverState({ schemeId: SECRET_INVASION });
+    gameState.hq = ['hero-cheap', 'hero-mid', 'hero-expensive', null, null] as LegendaryGameState['hq'];
+    gameState.cardStats['hero-cheap'] = { attack: 0, recruit: 0, cost: 2, fightCost: 0 };
+    gameState.cardStats['hero-mid'] = { attack: 0, recruit: 0, cost: 4, fightCost: 0 };
+    gameState.cardStats['hero-expensive'] = { attack: 0, recruit: 0, cost: 6, fightCost: 0 };
+    gameState.heroDeck = ['hero-refill'];
+
+    resolver(gameState, makeRevealContext(), emptyImplementationMap, {});
+
+    // highest-cost hero (cost 6) entered the Sewers (city space 0) as a Skrull
+    assert.equal(gameState.city[0], 'hero-expensive', 'highest-cost hero moved to the Sewers');
+    assert.equal(gameState.villainDeckCardTypes['hero-expensive'], 'villain', 'typed as a villain');
+    assert.equal(gameState.convertedVillainOrigins!['hero-expensive'], 'skrull', 'marked skrull origin');
+    // the vacated slot (index 2) was refilled from the hero deck
+    assert.equal(gameState.hq[2], 'hero-refill', 'vacated HQ slot refilled');
+    assert.equal(gameState.heroDeck.length, 0, 'hero deck consumed for the refill');
+    // the cheaper heroes are untouched
+    assert.equal(gameState.hq[0], 'hero-cheap');
+    assert.equal(gameState.hq[1], 'hero-mid');
+  });
+
+  it('tie-breaks by lowest slot index (the flip of ko-from-hq keeps low-slot ties)', () => {
+    const gameState = makeResolverState({ schemeId: SECRET_INVASION });
+    gameState.hq = ['hero-a', 'hero-b', null, null, null] as LegendaryGameState['hq'];
+    gameState.cardStats['hero-a'] = { attack: 0, recruit: 0, cost: 5, fightCost: 0 };
+    gameState.cardStats['hero-b'] = { attack: 0, recruit: 0, cost: 5, fightCost: 0 };
+
+    resolver(gameState, makeRevealContext(), emptyImplementationMap, {});
+
+    assert.equal(gameState.city[0], 'hero-a', 'slot 0 hero chosen on a highest-cost tie');
+    assert.equal(gameState.convertedVillainOrigins!['hero-b'], undefined, 'slot 1 hero not converted');
+  });
+
+  it('routes the displaced card to the escaped pile when the city is full', () => {
+    const gameState = makeResolverState({ schemeId: SECRET_INVASION });
+    gameState.hq = ['hero-x', null, null, null, null] as LegendaryGameState['hq'];
+    gameState.cardStats['hero-x'] = { attack: 0, recruit: 0, cost: 3, fightCost: 0 };
+    gameState.city = ['v0', 'v1', 'v2', 'v3', 'v4'] as LegendaryGameState['city'];
+
+    resolver(gameState, makeRevealContext(), emptyImplementationMap, {});
+
+    assert.equal(gameState.city[0], 'hero-x', 'skrull entered the Sewers');
+    assert.ok(gameState.escapedPile.includes('v4'), 'the escape-edge villain was carried to the escaped pile');
+    assert.equal(gameState.convertedVillainOrigins!['hero-x'], 'skrull');
+  });
+
+  it('handles an empty HQ without throwing and still emits one event', () => {
+    const gameState = makeResolverState({ schemeId: SECRET_INVASION });
+
+    resolver(gameState, makeRevealContext(), emptyImplementationMap, {});
+
+    assert.ok(
+      gameState.messages.some((message) => message.text.includes('No Hero in the HQ')),
+      'must log the empty-HQ message',
+    );
+    assert.equal(gameState.notableEvents.length, 1);
+    const event = gameState.notableEvents[0]!;
+    assert.equal(event.type, 'schemeTwistResolved');
+    if (event.type === 'schemeTwistResolved') {
+      assert.equal(event.resolverKey, 'secretInvasion');
+    }
+  });
+});

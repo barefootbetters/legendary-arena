@@ -1,8 +1,8 @@
 /**
  * Drift-detection + JSON-serialisability tests for notable game event types.
  *
- * Pins the four-variant `NOTABLE_EVENT_TYPES` array against the
- * `NotableGameEventType` union and the five-entry `SCHEME_TWIST_RESOLVER_KEYS`
+ * Pins the six-variant `NOTABLE_EVENT_TYPES` array against the
+ * `NotableGameEventType` union and the seven-entry `SCHEME_TWIST_RESOLVER_KEYS`
  * array against the `SchemeTwistResolverKey` union (bidirectional + length +
  * uniqueness). Pins JSON round-trip per event variant so a future widening
  * cannot smuggle a non-serialisable field into `NotableGameEvent`.
@@ -76,7 +76,7 @@ describe('NOTABLE_EVENT_TYPES drift detection', () => {
 });
 
 describe('SCHEME_TWIST_RESOLVER_KEYS drift detection', () => {
-  it('contains exactly six entries in canonical order', () => {
+  it('contains exactly seven entries in canonical order', () => {
     assert.deepStrictEqual(
       [...SCHEME_TWIST_RESOLVER_KEYS],
       [
@@ -86,6 +86,7 @@ describe('SCHEME_TWIST_RESOLVER_KEYS drift detection', () => {
         'koFromHq',
         'midtownBankRobbery',
         'killbots',
+        'secretInvasion',
       ],
     );
   });
@@ -103,6 +104,7 @@ describe('SCHEME_TWIST_RESOLVER_KEYS drift detection', () => {
       'koFromHq',
       'midtownBankRobbery',
       'killbots',
+      'secretInvasion',
     ];
     for (const member of unionMembers) {
       assert.ok(

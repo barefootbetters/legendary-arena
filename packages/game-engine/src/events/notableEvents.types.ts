@@ -72,11 +72,12 @@ export const NOTABLE_EVENT_TYPES: readonly NotableGameEventType[] = [
 /**
  * Closed canonical union of camelCase scheme-twist resolver keys.
  *
- * Locked to the five WP-182 resolver framework entries. Each key maps to a
- * resolver function in `schemeTwistResolvers.ts`. The resolver registry
- * keys are hyphen-case identifiers (`'reveal-or-punish'`, etc.) — this
- * union is the camelCase form embedded in `SchemeTwistResolvedEvent.resolverKey`
- * so UI consumers receive a JavaScript-idiomatic key.
+ * The seven resolver framework entries (WP-182 shipped five; WP-513 added
+ * `killbots`; WP-514 added `secretInvasion`). Each key maps to a resolver
+ * function in `schemeTwistResolvers.ts`. The resolver registry keys are
+ * hyphen-case identifiers (`'reveal-or-punish'`, etc.) — this union is the
+ * camelCase form embedded in `SchemeTwistResolvedEvent.resolverKey` so UI
+ * consumers receive a JavaScript-idiomatic key.
  */
 export type SchemeTwistResolverKey =
   | 'revealOrPunish'
@@ -84,12 +85,13 @@ export type SchemeTwistResolverKey =
   | 'woundAll'
   | 'koFromHq'
   | 'midtownBankRobbery'
-  | 'killbots';
+  | 'killbots'
+  | 'secretInvasion';
 
 // why: drift-detection array — must match `SchemeTwistResolverKey` exactly.
-// The five-entry canonical order tracks WP-182's resolver framework
-// byte-for-byte. Adding a sixth (e.g., a new scheme's resolver) tracks with
-// WP-182, not WP-200 — the resolver framework owns its own vocabulary.
+// The seven-entry canonical order tracks the resolver framework byte-for-byte.
+// Adding a resolver key tracks with the resolver framework, not WP-200 — the
+// framework owns its own vocabulary.
 /**
  * All scheme-twist resolver keys in canonical order. Single source of truth.
  */
@@ -100,6 +102,7 @@ export const SCHEME_TWIST_RESOLVER_KEYS: readonly SchemeTwistResolverKey[] = [
   'koFromHq',
   'midtownBankRobbery',
   'killbots',
+  'secretInvasion',
 ] as const;
 
 // ---------------------------------------------------------------------------
@@ -153,7 +156,7 @@ export interface AmbushResolvedEvent {
 
 /**
  * Emitted by each resolver in `rules/schemeTwistResolvers.ts` after the
- * resolver finishes mutating G. `resolverKey` identifies which of the five
+ * resolver finishes mutating G. `resolverKey` identifies which of the seven
  * resolver implementations ran (camelCase per `SchemeTwistResolverKey`).
  */
 export interface SchemeTwistResolvedEvent {
@@ -161,7 +164,7 @@ export interface SchemeTwistResolvedEvent {
   type: 'schemeTwistResolved';
   /** Zone-instance ext_id of the scheme-twist card that triggered. */
   twistCardId: CardExtId;
-  /** Which of the five locked resolvers handled the twist. */
+  /** Which of the locked resolvers handled the twist. */
   resolverKey: SchemeTwistResolverKey;
   /** Engine-composed single-sentence English narrative. */
   narrative: string;

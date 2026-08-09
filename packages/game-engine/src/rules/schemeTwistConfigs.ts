@@ -4,18 +4,12 @@
  * Maps scheme ext_ids to their SchemeTwistConfig entries. The dispatcher
  * looks up the active scheme's config to route to the correct resolver.
  *
- * Core-set coverage (v1): 5 of 8 schemes. The remaining 3 require new
- * resolvers in future WPs:
- * - core/portals-to-the-dark-dimension (dark dimension pile) — its printed
- *   loss-twist is 7, which happens to equal the unconfigured MVP fallback, so it
- *   loses at the right count today even without a config.
- * - core/replace-earths-leaders-with-killbots (leader replacement) — 5-twist
- *   villain-deck stack; unconfigured, so it uses the wrong fallback of 7.
- * - core/secret-invasion-of-the-skrull-shapeshifters (HQ-to-City hero
- *   conversion — verified twist text does not match reveal-or-punish) — 8-twist
- *   resource-loss stack; unconfigured, so it uses the wrong fallback of 7.
- * Those 3 need both a resolver AND a lossThreshold in a future scheme-fidelity
- * packet (D-24178).
+ * Core-set coverage (v1): 7 of 8 schemes configured. The one remaining is:
+ * - core/portals-to-the-dark-dimension (dark dimension pile) — a TRUE twist-loss
+ *   scheme whose printed loss-twist is 7, which equals the unconfigured MVP
+ *   fallback, so it loses at the right count today even without a config entry.
+ * Killbots (WP-513 / D-24325) and Secret Invasion (WP-514 / D-24327) are the two
+ * conversion schemes, now configured with their escaped-converted-count losses.
  *
  * why (D-24178): each config's lossThreshold is the scheme's PRINTED twist-stack
  * size, so no scheme resolves a twist early. Only twist-loss schemes (printed
@@ -149,6 +143,28 @@ export const SCHEME_TWIST_CONFIGS: Map<string, SchemeTwistConfig> = new Map([
         kind: 'escaped-converted-count',
         origin: 'killbot',
         threshold: 5,
+      },
+    },
+  ],
+  [
+    'core/secret-invasion-of-the-skrull-shapeshifters',
+    {
+      schemeId: 'core/secret-invasion-of-the-skrull-shapeshifters',
+      resolverId: 'secret-invasion',
+      params: {},
+      // why: real Evil-Wins is a RESOURCE condition (D-24326) — "If 6 Heroes get
+      // into the Escaped Villains pile", counted as 'skrull'-origin entries in
+      // G.escapedPile (12 Heroes shuffled into the Villain Deck at setup convert to
+      // Skrull Villains — D-24326 — counted by converted origin, distinct from real
+      // villains). Declaring resourceLossCondition SUPPRESSES the twist-count
+      // doom-clock proxy; lossThreshold (the printed 8-twist stack) is retained but
+      // now INERT for loss (D-24178 / D-24327). The 'secret-invasion' twist drags the
+      // highest-cost HQ Hero into the Sewers as a Skrull (cost + 2 attack, D-24327).
+      lossThreshold: 8,
+      resourceLossCondition: {
+        kind: 'escaped-converted-count',
+        origin: 'skrull',
+        threshold: 6,
       },
     },
   ],

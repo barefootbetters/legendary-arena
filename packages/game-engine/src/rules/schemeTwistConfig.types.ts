@@ -28,10 +28,11 @@ import type { ImplementationMap } from './ruleRuntime.execute.js';
  * - `'pile-depleted'` (D-24318 / D-24320): the scheme loses when a named pile runs
  *   out — the pile's length reaches 0. Super Hero Civil War: `pile: 'heroDeck'`
  *   (`G.heroDeck`); Legacy Virus: `pile: 'wounds'` (`G.piles.wounds`).
- * - `'escaped-converted-count'` (D-24325): the scheme loses when at least
+ * - `'escaped-converted-count'` (D-24325 / D-24326): the scheme loses when at least
  *   `threshold` entries in `G.escapedPile` carry a converted-villain `origin`
  *   (`G.convertedVillainOrigins`) — counts converted cards distinctly from real
- *   villains. Killbots: `origin: 'killbot'`, `threshold: 5`.
+ *   villains. Killbots: `origin: 'killbot'`, `threshold: 5`. Secret Invasion:
+ *   `origin: 'skrull'`, `threshold: 6` (6 Heroes into the Escaped Villains pile).
  */
 export type SchemeResourceLossCondition =
   | {
@@ -66,7 +67,8 @@ export type SchemeTwistResolverId =
   | 'wound-all'
   | 'ko-from-hq'
   | 'midtown-bank-robbery'
-  | 'killbots';
+  | 'killbots'
+  | 'secret-invasion';
 
 /**
  * Configuration for a single scheme's twist behavior.

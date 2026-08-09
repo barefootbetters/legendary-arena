@@ -415,3 +415,73 @@ describe('escaped-converted-count — Killbots (WP-513 / D-24325)', () => {
     assert.equal(result!.outcome, 'scheme-wins');
   });
 });
+
+describe('escaped-converted-count — Secret Invasion (WP-514 / D-24326)', () => {
+  const SECRET_INVASION = 'core/secret-invasion-of-the-skrull-shapeshifters';
+
+  /**
+   * A Secret Invasion state: `skrulls` escaped Skrull-origin cards (converted
+   * Heroes), `realVillains` escaped real villains (typed 'villain', NO converted
+   * origin — must not count toward the 6-Hero loss).
+   */
+  function secretInvasionState(
+    skrulls: number,
+    realVillains = 0,
+    counters: Record<string, number> = {},
+  ): LegendaryGameState {
+    const escapedPile: string[] = [];
+    const convertedVillainOrigins: Record<string, 'skrull'> = {};
+    for (let i = 0; i < skrulls; i++) {
+      const id = `hero-skrull-${String(i).padStart(2, '0')}`;
+      escapedPile.push(id);
+      convertedVillainOrigins[id] = 'skrull';
+    }
+    for (let i = 0; i < realVillains; i++) {
+      escapedPile.push(`core-villain-hydra-${i}`); // typed 'villain', no origin
+    }
+    return {
+      selection: {
+        schemeId: SECRET_INVASION,
+        mastermindId: 'test-mastermind',
+        villainGroupIds: [],
+        henchmanGroupIds: [],
+        heroDeckIds: [],
+      },
+      escapedPile,
+      convertedVillainOrigins,
+      counters,
+      messages: [],
+    } as unknown as LegendaryGameState;
+  }
+
+  it('counts only skrull-origin entries — real escaped villains are excluded', () => {
+    const state = secretInvasionState(4, 5);
+    assert.equal(countEscapedByConvertedOrigin(state, 'skrull'), 4);
+  });
+
+  it('sets SCHEME_LOSS when 6 Skrulls (Heroes) have escaped', () => {
+    const state = secretInvasionState(6);
+    applyEscapedPileResourceLoss(state);
+    assert.equal(state.counters[ENDGAME_CONDITIONS.SCHEME_LOSS], 1);
+  });
+
+  it('does NOT set SCHEME_LOSS at 5 Skrulls (below threshold)', () => {
+    const state = secretInvasionState(5);
+    applyEscapedPileResourceLoss(state);
+    assert.equal(state.counters[ENDGAME_CONDITIONS.SCHEME_LOSS], undefined);
+  });
+
+  it('5 Skrulls + 6 real escaped villains does NOT lose — real villains never count', () => {
+    const state = secretInvasionState(5, 6);
+    applyEscapedPileResourceLoss(state);
+    assert.equal(state.counters[ENDGAME_CONDITIONS.SCHEME_LOSS], undefined);
+  });
+
+  it('AC composition — evaluateEndgame returns scheme-wins once 6 Skrulls escape', () => {
+    const state = secretInvasionState(6);
+    applyEscapedPileResourceLoss(state);
+    const result = evaluateEndgame(state);
+    assert.ok(result, 'endgame must have resolved');
+    assert.equal(result!.outcome, 'scheme-wins');
+  });
+});

@@ -191,3 +191,46 @@ describe('resolveFightCost — converted Killbot villain', () => {
     assert.equal(resolveFightCost(G, 'other-villain' as CardExtId), 0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Converted Skrull villains (WP-514 / D-24327) — attack = Hero cost + 2 (PROXY)
+// ---------------------------------------------------------------------------
+
+describe('resolveFightCost — converted Skrull villain', () => {
+  /** A G where `skrullId` is a converted Skrull whose Hero cost is `cost`. */
+  function makeSkrullG(skrullId: string, cost: number): LegendaryGameState {
+    return {
+      // a converted Hero DOES have a cardStats row (heroes carry cost); the skrull
+      // attack reads that cost + 2 (a documented proxy for the printed VP + 2).
+      cardStats: {
+        [skrullId]: { fightCost: 0, fightCostMode: 'static', fightCostBase: 0, cost },
+      },
+      villainAttachedHeroes: {},
+      convertedVillainOrigins: { [skrullId]: 'skrull' },
+      counters: {},
+    } as unknown as LegendaryGameState;
+  }
+
+  it('resolves attack = the Hero cost + 2 (overlay-first)', () => {
+    const G = makeSkrullG('core/x-men/cyclops-determination-00', 2);
+    assert.equal(resolveFightCost(G, 'core/x-men/cyclops-determination-00' as CardExtId), 4);
+  });
+
+  it('a 6-cost Hero Skrull attacks for 8', () => {
+    const G = makeSkrullG('core/x-men/wolverine-berserker-rage-00', 6);
+    assert.equal(resolveFightCost(G, 'core/x-men/wolverine-berserker-rage-00' as CardExtId), 8);
+  });
+
+  it('a 0-cost / missing-cost Skrull attacks for 2 (no NaN)', () => {
+    const G = makeSkrullG('hero-no-cost', 0);
+    const cost = resolveFightCost(G, 'hero-no-cost' as CardExtId);
+    assert.equal(cost, 2);
+    assert.ok(Number.isFinite(cost));
+  });
+
+  it('a non-converted villain is unaffected by the skrull branch', () => {
+    const G = makeSkrullG('hero-a', 3);
+    // 'plain-villain' has no origin and no cardStats → the pre-existing 0 fallback.
+    assert.equal(resolveFightCost(G, 'plain-villain' as CardExtId), 0);
+  });
+});

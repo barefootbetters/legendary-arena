@@ -218,7 +218,23 @@ export function defeatCityVillainCore(
   // why: MVP has no attack point check; WP-018 adds the economy. Any player
   // can fight any occupied City space without spending attack points.
   G.city[cityIndex] = null;
-  G.playerZones[currentPlayer]!.victory.push(cardId);
+  // why: WP-514 / D-24327 — Secret Invasion "If you defeat that Hero, you gain it":
+  // a defeated Skrull (a Hero acting as a villain) routes to the defeating player's
+  // DISCARD instead of the victory pile, and its conversion overlay is cleared (it is
+  // a Hero again in the discard). Guarded on the 'skrull' origin — every non-Skrull
+  // defeat routes to victory unchanged (tested both ways). The fought cardId is pushed
+  // DIRECTLY here (awardAttachedHeroes below handles a villain's ATTACHED heroes, not
+  // the fought card). A gain log line follows so a Hero the player never recruited does
+  // not appear in their deck with no trail (mirrors the attached-hero log below).
+  if (G.convertedVillainOrigins?.[cardId] === 'skrull') {
+    G.playerZones[currentPlayer]!.discard.push(cardId);
+    delete G.convertedVillainOrigins[cardId];
+    pushLog(G,
+      `Player ${currentPlayer} defeated the Skrull ${formatCardRef(G.cardDisplayData, cardId)} and gained the Hero into their discard pile.`,
+    );
+  } else {
+    G.playerZones[currentPlayer]!.victory.push(cardId);
+  }
 
   // Step 3b: Award attached bystanders to player's victory zone (WP-017)
   const victoryBefore = G.playerZones[currentPlayer]!.victory.length;

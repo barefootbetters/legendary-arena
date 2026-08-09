@@ -62,9 +62,10 @@ export { REVEALED_CARD_TYPES } from './villainDeck/villainDeck.types.js';
 
 // why: WP-513 / D-24324 — a converted card's "counts-as" villain identity, kept
 // as a scheme-runtime overlay (G.convertedVillainOrigins), distinct from the
-// card's RevealedCardType. Extensible: WP-514 (Secret Invasion) adds 'skrull'.
+// card's RevealedCardType. 'killbot' (Killbots, WP-513); 'skrull' (Secret Invasion,
+// WP-514 / D-24326 — 12 Heroes shuffled into the Villain Deck count as Skrull villains).
 /** Converted-card villain origin — the named villain group a card "counts as". */
-export type ConvertedVillainOrigin = 'killbot';
+export type ConvertedVillainOrigin = 'killbot' | 'skrull';
 
 // why: WP-513 / D-24325 — Killbots' "number of Twists next to this Scheme" counter
 // key (G.counters). Seeded 3 at setup, +1 per Killbots twist; a Killbot's attack
