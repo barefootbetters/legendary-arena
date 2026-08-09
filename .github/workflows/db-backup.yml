@@ -98,6 +98,14 @@ jobs:
           R2_BACKUP_BUCKET: ${{ secrets.R2_BACKUP_BUCKET }}
         run: |
           set -euo pipefail
+          # why: operator-provisioned secrets occasionally carry a trailing newline or
+          # stray whitespace from a paste. Whitespace is never valid in an account id,
+          # access key, or bucket name — and a newline in the account id breaks the R2
+          # endpoint hostname (a TLS handshake failure, not an auth error). Strip it.
+          AWS_ACCESS_KEY_ID="$(printf '%s' "$AWS_ACCESS_KEY_ID" | tr -d '[:space:]')"
+          AWS_SECRET_ACCESS_KEY="$(printf '%s' "$AWS_SECRET_ACCESS_KEY" | tr -d '[:space:]')"
+          R2_ACCOUNT_ID="$(printf '%s' "$R2_ACCOUNT_ID" | tr -d '[:space:]')"
+          R2_BACKUP_BUCKET="$(printf '%s' "$R2_BACKUP_BUCKET" | tr -d '[:space:]')"
           # why: a DB dump must never land in the public images bucket.
           if [ "$R2_BACKUP_BUCKET" = "legendary-images" ]; then
             echo "R2_BACKUP_BUCKET must not be the public images bucket." >&2
