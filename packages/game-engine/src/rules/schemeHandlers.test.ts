@@ -596,6 +596,21 @@ describe('scheme loss threshold (D-24178)', () => {
     );
   });
 
+  it('Secret Invasion suppresses the twist-count proxy at its stack size (real loss is escaped-Skrull count, D-24326)', () => {
+    // why: WP-514 — Secret Invasion declares a resourceLossCondition
+    // (escaped-converted-count / skrull / 6), so the twist-count doom-clock proxy
+    // is suppressed. Even at predicted twist 8 (its printed stack size) the handler
+    // must NOT push SCHEME_LOSS; the real loss is the escaped-Skrull count, and the
+    // twist instead drags the highest-cost HQ Hero into the Sewers as a Skrull.
+    const atStack = makeTestState({ schemeTwistCount: 7 }); // predicted 8 = printed stack
+    atStack.selection.schemeId = 'core/secret-invasion-of-the-skrull-shapeshifters';
+    assert.equal(
+      triggersSchemeLoss(schemeTwistHandler(atStack, {}, { cardId: 't' }, DEFAULT_IMPLEMENTATION_MAP)),
+      false,
+      'Secret Invasion must not trip the twist-count proxy — its loss is the escaped-Skrull count',
+    );
+  });
+
   it('an unconfigured scheme still falls back to the MVP default threshold (7)', () => {
     const state = makeTestState({ schemeTwistCount: 6 });
     // 'test-scheme' has no config → fallback 7 → predicted 7 → loss.

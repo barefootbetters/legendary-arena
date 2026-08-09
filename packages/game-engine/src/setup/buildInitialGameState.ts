@@ -43,6 +43,7 @@ import {
 import { initializeCity, fillHqFromDeck } from '../board/city.logic.js';
 import { buildCardStats, resetTurnEconomy } from '../economy/economy.logic.js';
 import { buildHeroDeck } from './buildHeroDeck.js';
+import { convertHeroesToSkrulls } from './convertHeroesToSkrulls.js';
 import {
   buildMastermindState,
   isMastermindRegistryReader,
@@ -333,15 +334,16 @@ export function buildInitialGameState(
   // producing an empty deck, which the reveal pipeline already supports.
   const villainDeckResult = buildVillainDeck(config, registry, context);
 
-  // why: WP-513 — lazy materialization (RS-1). Only a converting scheme (Killbots)
-  // produces converted origins; every other game leaves G.convertedVillainOrigins
-  // ABSENT (see the conditional spread below) so it is omitted from the state hash
-  // (no re-pin — mirrors diagnostics / lastPlayEffectsFired). The Killbots "twists
-  // next to this Scheme" counter (D-24325) is seeded at 3 — the card's "3 additional
-  // Twists next to this Scheme" placed at setup — and drives every Killbot's attack.
-  const convertedVillainOrigins = villainDeckResult.convertedOrigins;
-  const hasConvertedVillains = Object.keys(convertedVillainOrigins).length > 0;
-  const hasKillbots = Object.values(convertedVillainOrigins).includes('killbot');
+  // why: WP-513 — the Killbots "twists next to this Scheme" counter (D-24325) is
+  // seeded at 3 (the card's "3 additional Twists next to this Scheme" placed at
+  // setup) and drives every Killbot's attack. hasKillbots is decided by
+  // buildVillainDeck (bystander conversion). Secret Invasion's skrull conversion
+  // (WP-514 / D-24326) runs later — after the hero deck is built — and augments the
+  // converted-villain overlay + the villain deck; the final convertedVillainOrigins
+  // and its hasConvertedVillains flag (RS-1 lazy materialization: the overlay is
+  // included in G only for a converting scheme, so non-converting games omit the
+  // key and their state hash is unchanged) are computed there.
+  const hasKillbots = Object.values(villainDeckResult.convertedOrigins).includes('killbot');
   const initialCounters: Record<string, number> = hasKillbots
     ? { [KILLBOT_TWISTS_NEXT_TO_SCHEME]: 3 }
     : {};
@@ -473,7 +475,26 @@ export function buildInitialGameState(
     registry,
     context,
   );
-  const filledHqResult = fillHqFromDeck(shuffledHeroDeck, HQ_SLOT_COUNT);
+
+  // why: WP-514 / D-24326 — Secret Invasion converts 12 Heroes from the reservoir
+  // into Skrull Villains and shuffles them into the Villain Deck. The 12 are drawn
+  // from the top of the shuffled reservoir BEFORE fillHqFromDeck consumes it (so they
+  // never also land in the HQ / G.heroDeck — RS-4), and the villain deck is re-shuffled
+  // by a SINGLE new ctx.random draw. That draw runs AFTER the hero-deck shuffle (the
+  // prior last random draw) so it is the LAST draw in setup; non-Secret-Invasion games
+  // take the passthrough (no new draw, no overlay), leaving their state hash
+  // byte-identical.
+  const skrullConversion = convertHeroesToSkrulls(
+    config.schemeId,
+    shuffledHeroDeck,
+    villainDeckResult.state,
+    villainDeckResult.cardTypes,
+    villainDeckResult.convertedOrigins,
+    context,
+  );
+  const convertedVillainOrigins = skrullConversion.convertedOrigins;
+  const hasConvertedVillains = Object.keys(convertedVillainOrigins).length > 0;
+  const filledHqResult = fillHqFromDeck(skrullConversion.heroReservoir, HQ_SLOT_COUNT);
 
   // why: build the base state first, then apply scheme setup instructions.
   // executeSchemeSetup returns updated state — pure function, no mutation.
@@ -511,12 +532,15 @@ export function buildInitialGameState(
     counters: initialCounters,
     hookRegistry: buildDefaultHookDefinitions(config),
     // why: villain deck built from registry data at setup time; see D-1410
-    // through D-1413 for ext_id conventions and composition rules.
-    villainDeck: villainDeckResult.state,
-    villainDeckCardTypes: villainDeckResult.cardTypes,
-    // why: WP-513 / D-24324 — lazy: include the converted-villain overlay ONLY when
-    // a scheme converted cards (Killbots), so non-converting games omit the key
-    // entirely and their state hash is unchanged (RS-1).
+    // through D-1413 for ext_id conventions and composition rules. WP-514: for
+    // Secret Invasion the deck + card-type map are the skrull-augmented versions
+    // (12 Heroes injected as 'villain'-typed Skrulls); passthrough for every other
+    // scheme (byte-identical to villainDeckResult.state / .cardTypes).
+    villainDeck: skrullConversion.villainDeckState,
+    villainDeckCardTypes: skrullConversion.villainDeckCardTypes,
+    // why: WP-513 / D-24324 + WP-514 / D-24326 — lazy: include the converted-villain
+    // overlay ONLY when a scheme converted cards (Killbots or Secret Invasion), so
+    // non-converting games omit the key entirely and their state hash is unchanged (RS-1).
     ...(hasConvertedVillains ? { convertedVillainOrigins } : {}),
     // why: KO pile starts empty; cards enter via koCard helper (WP-017)
     ko: [],

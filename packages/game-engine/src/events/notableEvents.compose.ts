@@ -192,9 +192,9 @@ export function composeAmbushNarrative(
 // ---------------------------------------------------------------------------
 
 // why: pure-string mapping from camelCase resolver key to a stable English
-// phrase. Locked byte-for-byte (replay-affecting) — adding a sixth resolver
-// key requires expanding both the `SchemeTwistResolverKey` union AND this
-// map, then re-pinning the replay hashes.
+// phrase. Locked byte-for-byte (replay-affecting) — adding a resolver key
+// requires expanding both the `SchemeTwistResolverKey` union AND this map,
+// then re-pinning the replay hashes.
 const RESOLVER_KEY_PHRASES: Readonly<Record<SchemeTwistResolverKey, string>> = {
   revealOrPunish: 'players were forced to reveal a matching hero or suffer a penalty',
   chainedReveals: 'extra villain-deck cards were revealed',
@@ -202,13 +202,14 @@ const RESOLVER_KEY_PHRASES: Readonly<Record<SchemeTwistResolverKey, string>> = {
   koFromHq: 'heroes were KO’d from the HQ',
   midtownBankRobbery: 'the Bank villain captured bystanders and another card was revealed',
   killbots: 'a Twist was placed next to the Scheme, raising every Killbot’s attack',
+  secretInvasion: 'the highest-cost HQ Hero moved into the Sewers as a Skrull Villain',
 };
 
 /**
  * Composes the single-sentence narrative for a `schemeTwistResolved` event.
  *
  * @param cardName - Human-facing name of the scheme-twist card.
- * @param resolverKey - Which of the five locked resolvers handled the twist.
+ * @param resolverKey - Which of the locked resolvers handled the twist.
  * @returns Single English sentence describing the resolved scheme twist.
  */
 export function composeSchemeTwistNarrative(

@@ -11,7 +11,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { fightVillain } from './fightVillain.js';
+import { fightVillain, defeatCityVillainCore } from './fightVillain.js';
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { VillainAbilityHook } from '../rules/villainAbility.types.js';
@@ -528,6 +528,64 @@ describe('fightVillain — captured-hero return log (WP-431)', () => {
       moveContext.G.messages.filter((message) => message.text.includes('into their discard pile.')).length,
       0,
       'no hero-return line for a villain with no attached hero',
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// defeat-to-gain for Skrulls (WP-514 / D-24327)
+// ---------------------------------------------------------------------------
+
+describe('defeatCityVillainCore — Skrull defeat-to-gain (WP-514 / D-24327)', () => {
+  const shuffleContext = { random: makeMockCtx({ numPlayers: 1 }).random };
+
+  it('routes a defeated Skrull to the player discard, clears its overlay, and logs the gain', () => {
+    const gameState = createMockGameState({
+      city: ['hero-skrull', null, null, null, null],
+    });
+    gameState.convertedVillainOrigins = {
+      'hero-skrull': 'skrull',
+    } as LegendaryGameState['convertedVillainOrigins'];
+
+    defeatCityVillainCore(gameState, { currentPlayer: '0' }, 0, shuffleContext);
+
+    assert.ok(
+      gameState.playerZones['0']!.discard.includes('hero-skrull' as CardExtId),
+      'the gained Hero lands in the defeating player discard pile',
+    );
+    assert.ok(
+      !gameState.playerZones['0']!.victory.includes('hero-skrull' as CardExtId),
+      'the Skrull does NOT go to the victory pile',
+    );
+    assert.equal(
+      gameState.convertedVillainOrigins!['hero-skrull'],
+      undefined,
+      'the skrull overlay entry is cleared (it is a Hero again)',
+    );
+    assert.ok(
+      gameState.messages.some((message) => message.text.includes('gained the Hero')),
+      'a gain log line is emitted (no untrailed hero in the deck)',
+    );
+  });
+
+  it('a non-Skrull villain still routes to the victory pile (non-vacuous both-ways)', () => {
+    const gameState = createMockGameState({
+      city: ['villain-real', null, null, null, null],
+    });
+
+    defeatCityVillainCore(gameState, { currentPlayer: '0' }, 0, shuffleContext);
+
+    assert.ok(
+      gameState.playerZones['0']!.victory.includes('villain-real' as CardExtId),
+      'a real villain still routes to the victory pile',
+    );
+    assert.ok(
+      !gameState.playerZones['0']!.discard.includes('villain-real' as CardExtId),
+      'a real villain does NOT land in the discard pile',
+    );
+    assert.ok(
+      !gameState.messages.some((message) => message.text.includes('gained the Hero')),
+      'no gain log line for a non-Skrull defeat',
     );
   });
 });

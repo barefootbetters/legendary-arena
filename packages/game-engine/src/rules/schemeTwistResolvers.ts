@@ -21,8 +21,11 @@ import { gainWound } from '../board/wounds.logic.js';
 import { discardFromHand } from '../moves/discardFromHand.js';
 import { performVillainReveal } from '../villainDeck/villainDeck.reveal.js';
 import { koCard } from '../board/ko.logic.js';
-import { refillHqSlot } from '../board/city.logic.js';
-import { attachBystanderToVillain } from '../board/bystanders.logic.js';
+import { refillHqSlot, pushVillainIntoCity } from '../board/city.logic.js';
+import { attachBystanderToVillain, carryEscapedBystandersToPile } from '../board/bystanders.logic.js';
+import { koAttachedHeroesOnEscape } from '../board/heroCapture.logic.js';
+import { applyEscapedPileResourceLoss } from './schemeResourceLoss.js';
+import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { composeSchemeTwistNarrative } from '../events/notableEvents.compose.js';
 import { pushLog } from '../log/logPush.js';
 
@@ -558,6 +561,123 @@ function killbots(
 }
 
 // -------------------------------------------------------------------------
+// secret-invasion
+// -------------------------------------------------------------------------
+
+/**
+ * "The highest-cost Hero from the HQ moves into the Sewers as a Skrull Villain."
+ * (Secret Invasion of the Skrull Shapeshifters, WP-514 / D-24327)
+ *
+ * Selects the highest-cost Hero in the HQ (ties broken by lowest slot index — the
+ * flip of koFromHq's cost-ascending comparator), converts it to a Skrull Villain
+ * (typed `'villain'` in villainDeckCardTypes + origin `'skrull'` in
+ * convertedVillainOrigins, so it routes/fights/escapes via the existing villain
+ * path and attacks for its cost + 2 — resolveFightCost), pushes it into the Sewers
+ * (city space 0 via pushVillainIntoCity), refills the vacated HQ slot, and emits one
+ * `schemeTwistResolved` event. If the city was full, the displaced card escapes and
+ * is routed through the standard escape consequences (Escaped Villains pile + counter
+ * + carried bystanders + KO'd captured heroes + the escaped-converted-count loss
+ * check); the per-reveal wound and card-text Escape: effects are a reveal-move
+ * concern and are intentionally not replayed by this twist.
+ *
+ * @param gameState - Game state to mutate (HQ + city + overlay + log + notable event).
+ * @param _context - Unused (no villain-deck reveal).
+ * @param _implementationMap - Unused.
+ * @param _params - Unused (no resolver params).
+ * @param twistCardId - The scheme-twist card instance that triggered.
+ */
+function secretInvasion(
+  gameState: LegendaryGameState,
+  _context: RevealContext,
+  _implementationMap: ImplementationMap,
+  _params: Record<string, unknown>,
+  twistCardId?: CardExtId,
+): void {
+  // why: scan the HQ and pick the highest-cost Hero, ties broken by lowest slot
+  // index — the flip of koFromHq's cost-ascending comparator (RS-3).
+  const eligible: Array<{ cardId: string; slotIndex: number; cost: number }> = [];
+  for (let slotIndex = 0; slotIndex < gameState.hq.length; slotIndex++) {
+    const cardId = gameState.hq[slotIndex];
+    if (cardId === null || cardId === undefined) continue;
+    const stats = gameState.cardStats[cardId];
+    const cardCost = stats ? stats.cost : 0;
+    eligible.push({ cardId, slotIndex, cost: cardCost });
+  }
+  eligible.sort((entryA, entryB) => {
+    if (entryA.cost !== entryB.cost) return entryB.cost - entryA.cost;
+    return entryA.slotIndex - entryB.slotIndex;
+  });
+
+  if (eligible.length === 0) {
+    pushLog(gameState, '[Scheme Twist] No Hero in the HQ to convert into a Skrull.');
+  } else {
+    const target = eligible[0]!;
+
+    // why: convert the Hero to a Skrull Villain — typed 'villain' for native
+    // routing/fight/escape, origin 'skrull' for identity (attack = cost + 2, the
+    // escaped-converted-count loss). The overlay object already exists for this
+    // scheme (materialized at setup), but guard defensively.
+    gameState.villainDeckCardTypes[target.cardId] = 'villain';
+    if (!gameState.convertedVillainOrigins) {
+      gameState.convertedVillainOrigins = {};
+    }
+    gameState.convertedVillainOrigins[target.cardId] = 'skrull';
+
+    // why: remove the Hero from its HQ slot before it enters the city, then refill
+    // the vacated slot from the hero deck (mirrors koFromHq's remove-then-refill).
+    gameState.hq[target.slotIndex] = null;
+
+    // why: the Skrull enters the Sewers (city space 0) via pushVillainIntoCity,
+    // cascading the entry-side block toward the escape edge.
+    const pushResult = pushVillainIntoCity(gameState.city, target.cardId);
+    gameState.city = pushResult.city;
+    pushLog(gameState,
+      `[Scheme Twist] The highest-cost HQ Hero "${resolveCardName(gameState, target.cardId)}" moved into the Sewers as a Skrull Villain (cost ${target.cost}).`,
+    );
+
+    if (pushResult.escapedCard !== null) {
+      // why: a full city displaces the card at the escape edge. Route it through
+      // the loss-relevant escape consequences (mirrors the reveal path's escape
+      // branch, minus the reveal-move wound + card-text Escape: effects): count the
+      // escape, add it to the Escaped Villains pile, carry its bystanders, KO its
+      // captured heroes, then evaluate the escaped-converted-count loss.
+      gameState.counters[ENDGAME_CONDITIONS.ESCAPED_VILLAINS] =
+        (gameState.counters[ENDGAME_CONDITIONS.ESCAPED_VILLAINS] ?? 0) + 1;
+      gameState.escapedPile = [...gameState.escapedPile, pushResult.escapedCard];
+      pushLog(gameState,
+        `[Scheme Twist] ${resolveCardName(gameState, pushResult.escapedCard)} escaped from the city.`,
+      );
+      const carryResult = carryEscapedBystandersToPile(
+        pushResult.escapedCard,
+        gameState.attachedBystanders,
+        gameState.escapedPile,
+      );
+      gameState.attachedBystanders = carryResult.attachedBystanders;
+      gameState.escapedPile = carryResult.escapedPile;
+      koAttachedHeroesOnEscape(gameState, pushResult.escapedCard);
+      applyEscapedPileResourceLoss(gameState);
+    }
+
+    // why: refill the vacated HQ slot from the hero deck front (FIFO; empty deck
+    // leaves the slot null per D-13503).
+    const refillResult = refillHqSlot(gameState.hq, target.slotIndex, gameState.heroDeck);
+    gameState.hq = refillResult.hq;
+    gameState.heroDeck = refillResult.heroDeck;
+  }
+
+  const resolvedTwistCardId = twistCardId ?? UNKNOWN_TWIST_CARD_ID;
+  gameState.notableEvents.push({
+    type: 'schemeTwistResolved',
+    twistCardId: resolvedTwistCardId,
+    resolverKey: 'secretInvasion',
+    narrative: composeSchemeTwistNarrative(
+      resolveCardName(gameState, resolvedTwistCardId),
+      'secretInvasion',
+    ),
+  });
+}
+
+// -------------------------------------------------------------------------
 // Resolver Registry
 // -------------------------------------------------------------------------
 
@@ -573,4 +693,5 @@ export const SCHEME_TWIST_RESOLVERS: Record<SchemeTwistResolverId, SchemeTwistRe
   'ko-from-hq': koFromHq,
   'midtown-bank-robbery': midtownBankRobbery,
   'killbots': killbots,
+  'secret-invasion': secretInvasion,
 };
