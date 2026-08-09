@@ -8,7 +8,7 @@
  * No boardgame.io imports. No registry imports.
  */
 
-import type { LegendaryGameState } from '../types.js';
+import type { LegendaryGameState, ConvertedVillainOrigin } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { RevealedCardType } from '../villainDeck/villainDeck.types.js';
 import type { RevealContext } from '../villainDeck/villainDeck.reveal.js';
@@ -28,6 +28,10 @@ import type { ImplementationMap } from './ruleRuntime.execute.js';
  * - `'pile-depleted'` (D-24318 / D-24320): the scheme loses when a named pile runs
  *   out — the pile's length reaches 0. Super Hero Civil War: `pile: 'heroDeck'`
  *   (`G.heroDeck`); Legacy Virus: `pile: 'wounds'` (`G.piles.wounds`).
+ * - `'escaped-converted-count'` (D-24325): the scheme loses when at least
+ *   `threshold` entries in `G.escapedPile` carry a converted-villain `origin`
+ *   (`G.convertedVillainOrigins`) — counts converted cards distinctly from real
+ *   villains. Killbots: `origin: 'killbot'`, `threshold: 5`.
  */
 export type SchemeResourceLossCondition =
   | {
@@ -43,6 +47,14 @@ export type SchemeResourceLossCondition =
       kind: 'pile-depleted';
       /** The pile whose emptiness ends the game (`heroDeck` or `wounds`). */
       pile: 'heroDeck' | 'wounds';
+    }
+  | {
+      /** Count escaped-pile entries carrying a converted-villain origin. */
+      kind: 'escaped-converted-count';
+      /** The converted origin to count (e.g. 'killbot'). */
+      origin: ConvertedVillainOrigin;
+      /** The count at which the scheme is lost (evil wins). */
+      threshold: number;
     };
 
 /**
@@ -53,7 +65,8 @@ export type SchemeTwistResolverId =
   | 'chained-reveals'
   | 'wound-all'
   | 'ko-from-hq'
-  | 'midtown-bank-robbery';
+  | 'midtown-bank-robbery'
+  | 'killbots';
 
 /**
  * Configuration for a single scheme's twist behavior.

@@ -13,6 +13,8 @@
 
 import type { CardExtId } from '../state/zones.types.js';
 import type { LegendaryGameState } from '../types.js';
+// why: WP-513 / D-24325 — value import for the Killbots per-scheme twist counter key.
+import { KILLBOT_TWISTS_NEXT_TO_SCHEME } from '../types.js';
 
 /**
  * Resolves the fight cost for a villain at the current game state.
@@ -33,6 +35,16 @@ export function resolveFightCost(
   G: LegendaryGameState,
   villainCardId: CardExtId,
 ): number {
+  // why: WP-513 / D-24325 — a converted Killbot's attack is dynamic: it equals the
+  // per-scheme "twists next to this Scheme" counter (seeded 3, +1 per Killbots
+  // twist). Checked OVERLAY-FIRST, before the cardStats guard, because converted
+  // villain-deck Bystanders carry no cardStats row (that guard would return 0).
+  // Reads G.counters — a deliberate input-widening; the UI still consumes only the
+  // engine-resolved value and never recomputes.
+  if (G.convertedVillainOrigins?.[villainCardId] === 'killbot') {
+    return G.counters[KILLBOT_TWISTS_NEXT_TO_SCHEME] ?? 0;
+  }
+
   const villainStats = G.cardStats[villainCardId];
   if (villainStats === undefined) {
     return 0;

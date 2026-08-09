@@ -12,6 +12,8 @@
 
 import type { SchemeTwistResolver, SchemeTwistResolverId } from './schemeTwistConfig.types.js';
 import type { LegendaryGameState } from '../types.js';
+// why: WP-513 / D-24325 — value import for the Killbots per-scheme twist counter key.
+import { KILLBOT_TWISTS_NEXT_TO_SCHEME } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { RevealContext } from '../villainDeck/villainDeck.reveal.js';
 import type { ImplementationMap } from './ruleRuntime.execute.js';
@@ -275,8 +277,8 @@ function woundAll(
 ): void {
   const woundCount = params['woundCount'] as number | undefined;
 
-  // why: branch-then-emit; single terminal push so the EC grep counts
-  // exactly 5 event-emission calls across the file.
+  // why: branch-then-emit; single terminal push — one schemeTwistResolved
+  // emission per resolver (six across this file after WP-513's killbots).
   if (typeof woundCount !== 'number' || woundCount < 1) {
     pushLog(gameState, 
       '[Scheme Twist] wound-all resolver received invalid params — expected woundCount as a positive integer.',
@@ -510,6 +512,52 @@ function midtownBankRobbery(
 }
 
 // -------------------------------------------------------------------------
+// killbots
+// -------------------------------------------------------------------------
+
+/**
+ * "Put the Twist next to this Scheme." (Replace Earth's Leaders with Killbots)
+ *
+ * Increments the per-scheme "twists next to this Scheme" counter
+ * (`KILLBOT_TWISTS_NEXT_TO_SCHEME`, seeded 3 at setup). Every converted Killbot
+ * Villain's attack equals this counter (`resolveFightCost`, D-24325), so each
+ * Killbots twist raises all Killbot attack by 1. No card is moved — the counter
+ * IS the "twists next to the Scheme" pile. Emits one `schemeTwistResolved` event
+ * (one push per resolver — six across this file after WP-513).
+ *
+ * @param gameState - Game state to mutate (counter + log + notable event).
+ * @param _context - Unused (no villain-deck reveal).
+ * @param _implementationMap - Unused.
+ * @param _params - Unused (no resolver params).
+ * @param twistCardId - The scheme-twist card instance that triggered.
+ */
+function killbots(
+  gameState: LegendaryGameState,
+  _context: RevealContext,
+  _implementationMap: ImplementationMap,
+  _params: Record<string, unknown>,
+  twistCardId?: CardExtId,
+): void {
+  const nextCount = (gameState.counters[KILLBOT_TWISTS_NEXT_TO_SCHEME] ?? 0) + 1;
+  gameState.counters[KILLBOT_TWISTS_NEXT_TO_SCHEME] = nextCount;
+  pushLog(
+    gameState,
+    `[Scheme Twist] A Twist is placed next to the Scheme — Killbots now attack for ${nextCount}.`,
+  );
+
+  const resolvedTwistCardId = twistCardId ?? UNKNOWN_TWIST_CARD_ID;
+  gameState.notableEvents.push({
+    type: 'schemeTwistResolved',
+    twistCardId: resolvedTwistCardId,
+    resolverKey: 'killbots',
+    narrative: composeSchemeTwistNarrative(
+      resolveCardName(gameState, resolvedTwistCardId),
+      'killbots',
+    ),
+  });
+}
+
+// -------------------------------------------------------------------------
 // Resolver Registry
 // -------------------------------------------------------------------------
 
@@ -524,4 +572,5 @@ export const SCHEME_TWIST_RESOLVERS: Record<SchemeTwistResolverId, SchemeTwistRe
   'wound-all': woundAll,
   'ko-from-hq': koFromHq,
   'midtown-bank-robbery': midtownBankRobbery,
+  'killbots': killbots,
 };

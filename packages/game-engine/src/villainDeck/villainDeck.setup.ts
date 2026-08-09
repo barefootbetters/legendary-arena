@@ -17,7 +17,15 @@
 
 import type { CardExtId } from '../state/zones.types.js';
 import type { RevealedCardType, VillainDeckState } from './villainDeck.types.js';
+// why: type-only import (erased at compile time) — no runtime cycle with types.ts,
+// which re-exports villainDeck.types. ConvertedVillainOrigin is the WP-513 overlay.
+import type { ConvertedVillainOrigin } from '../types.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
+
+// why: WP-513 / D-24325 — the scheme whose villain-deck Bystanders convert to
+// Killbot Villains. Localized here (this builder is already scheme-aware via the
+// per-scheme bystander count) rather than threaded through a shared const.
+const KILLBOTS_SCHEME_ID = 'core/replace-earths-leaders-with-killbots';
 import type { SetupContext } from '../types.js';
 import { shuffleDeck } from '../setup/shuffle.js';
 
@@ -143,6 +151,12 @@ export interface BuildVillainDeckResult {
   state: VillainDeckState;
   /** Card type classification for every card in the deck. */
   cardTypes: Record<CardExtId, RevealedCardType>;
+  /**
+   * Converted-card villain origins (WP-513 / D-24324) — empty unless the scheme
+   * converts cards (Killbots). buildInitialGameState materializes
+   * `G.convertedVillainOrigins` from this ONLY when non-empty (lazy — RS-1).
+   */
+  convertedOrigins: Record<CardExtId, ConvertedVillainOrigin>;
 }
 
 /**
@@ -170,10 +184,16 @@ export function buildVillainDeck(
   // at runtime. If the registry doesn't have the required methods, we return
   // an empty deck — the reveal pipeline handles this gracefully (WP-014A).
   if (!isVillainDeckRegistryReader(registry)) {
-    return { state: { deck: [], discard: [] }, cardTypes: {} };
+    return { state: { deck: [], discard: [] }, cardTypes: {}, convertedOrigins: {} };
   }
   const deck: CardExtId[] = [];
   const cardTypes: Record<CardExtId, RevealedCardType> = {};
+  // why: WP-513 — populated only for a converting scheme (Killbots); empty
+  // otherwise so buildInitialGameState leaves G.convertedVillainOrigins absent.
+  const convertedOrigins: Record<CardExtId, ConvertedVillainOrigin> = {};
+  // why: Killbots' villain-deck Bystanders "count as" Killbot Villains — typed
+  // 'villain' below for native city routing + recorded as 'killbot' converts.
+  const isKillbots = config.schemeId === KILLBOTS_SCHEME_ID;
 
   // --- 1. Villain cards (from getSet — copies live in per-set card data) ---
   // why: D-10014 — Builder Filtering Order — iterate named set only.
@@ -281,7 +301,16 @@ export function buildVillainDeck(
     const paddedIndex = String(bystanderIndex).padStart(2, '0');
     const extId = `bystander-villain-deck-${paddedIndex}` as CardExtId;
     deck.push(extId);
-    cardTypes[extId] = 'bystander';
+    if (isKillbots) {
+      // why: WP-513 / D-24324 — convert at one co-located site: type 'villain' so
+      // the reveal pipeline routes it into the city (fought/escaped as a villain),
+      // and record 'killbot' so the escaped count + dynamic attack read the overlay
+      // (never the shared 'villain' type, which would include real villains).
+      cardTypes[extId] = 'villain';
+      convertedOrigins[extId] = 'killbot';
+    } else {
+      cardTypes[extId] = 'bystander';
+    }
   }
 
   // --- 5. Master Strikes (generic virtual instanced cards) ---
@@ -311,6 +340,7 @@ export function buildVillainDeck(
   return {
     state: { deck: shuffledDeck, discard: [] },
     cardTypes,
+    convertedOrigins,
   };
 }
 

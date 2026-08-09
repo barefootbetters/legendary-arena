@@ -12,6 +12,7 @@ import assert from 'node:assert/strict';
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import { resolveFightCost } from './economy.resolve.js';
+import { KILLBOT_TWISTS_NEXT_TO_SCHEME } from '../types.js';
 
 /**
  * Builds a minimal G suitable for resolveFightCost tests.
@@ -156,5 +157,37 @@ describe('resolveFightCost — multiple captured heroes', () => {
     const cost = resolveFightCost(G, 'villain-skrull' as CardExtId);
     assert.equal(cost, 4);
     assert.ok(Number.isFinite(cost));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Converted Killbot villains (WP-513 / D-24325) — attack = twist counter
+// ---------------------------------------------------------------------------
+
+describe('resolveFightCost — converted Killbot villain', () => {
+  /** A G where `killbotId` is a converted Killbot and the twist counter = `count`. */
+  function makeKillbotG(killbotId: string, count: number): LegendaryGameState {
+    return {
+      cardStats: {}, // converted bystanders have NO cardStats row — overlay-first must win
+      villainAttachedHeroes: {},
+      convertedVillainOrigins: { [killbotId]: 'killbot' },
+      counters: { [KILLBOT_TWISTS_NEXT_TO_SCHEME]: count },
+    } as unknown as LegendaryGameState;
+  }
+
+  it('resolves attack = the per-scheme twist counter (overlay-first, no cardStats row)', () => {
+    const G = makeKillbotG('bystander-villain-deck-00', 3);
+    assert.equal(resolveFightCost(G, 'bystander-villain-deck-00' as CardExtId), 3);
+  });
+
+  it('scales with the counter — 3 at setup, 8 after five Killbots twists', () => {
+    const G = makeKillbotG('bystander-villain-deck-00', 8);
+    assert.equal(resolveFightCost(G, 'bystander-villain-deck-00' as CardExtId), 8);
+  });
+
+  it('a non-converted card falls through to the normal cardStats path (0 when absent)', () => {
+    const G = makeKillbotG('bystander-villain-deck-00', 5);
+    // 'other-villain' has no origin and no cardStats → the pre-existing 0 fallback.
+    assert.equal(resolveFightCost(G, 'other-villain' as CardExtId), 0);
   });
 });

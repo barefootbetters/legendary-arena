@@ -60,6 +60,18 @@ export type {
 export type { VillainDeckState, RevealedCardType } from './villainDeck/villainDeck.types.js';
 export { REVEALED_CARD_TYPES } from './villainDeck/villainDeck.types.js';
 
+// why: WP-513 / D-24324 — a converted card's "counts-as" villain identity, kept
+// as a scheme-runtime overlay (G.convertedVillainOrigins), distinct from the
+// card's RevealedCardType. Extensible: WP-514 (Secret Invasion) adds 'skrull'.
+/** Converted-card villain origin — the named villain group a card "counts as". */
+export type ConvertedVillainOrigin = 'killbot';
+
+// why: WP-513 / D-24325 — Killbots' "number of Twists next to this Scheme" counter
+// key (G.counters). Seeded 3 at setup, +1 per Killbots twist; a Killbot's attack
+// equals this value. A plain counter key (not an endgame condition).
+/** G.counters key for Killbots' "twists next to this Scheme" (drives Killbot attack). */
+export const KILLBOT_TWISTS_NEXT_TO_SCHEME = 'killbotTwistsNextToScheme';
+
 // why: City and HQ zone types are defined canonically in
 // src/board/city.types.ts (WP-015). Re-exported here so that consumers
 // importing from './types.js' have access.
@@ -1213,6 +1225,18 @@ export interface LegendaryGameState {
   // named fields. Order is chronological (insertion order); no reshuffle in MVP.
   /** Escaped villain cards — append-only, chronological. */
   escapedPile: CardExtId[];
+
+  // why: WP-513 / D-24324 — converted-card villain overlay. Some schemes make a
+  // card "count as" a villain of a named group (Killbots: villain-deck Bystanders
+  // count as Killbot Villains). Such cards are typed 'villain' in
+  // villainDeckCardTypes (native reveal/fight/escape routing) and recorded here
+  // with their converted identity, used for the distinct escaped count, dynamic
+  // attack, and (future) display. Materialized LAZILY — present only for schemes
+  // that convert cards, ABSENT (undefined) otherwise — so it is omitted from the
+  // state hash for every other game (no re-pin; mirrors lastPlayEffectsFired /
+  // diagnostics). Readers guard with `?? {}`.
+  /** Converted-card villain identities (e.g. 'killbot'); absent unless a scheme converts. */
+  convertedVillainOrigins?: Record<CardExtId, ConvertedVillainOrigin>;
 
   // why: per-turn attack/recruit point accumulation and spend tracking.
   // Reset at start of each player turn. Values are integers >= 0.

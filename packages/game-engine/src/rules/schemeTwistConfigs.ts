@@ -130,4 +130,26 @@ export const SCHEME_TWIST_CONFIGS: Map<string, SchemeTwistConfig> = new Map([
       },
     },
   ],
+  [
+    'core/replace-earths-leaders-with-killbots',
+    {
+      schemeId: 'core/replace-earths-leaders-with-killbots',
+      resolverId: 'killbots',
+      params: {},
+      // why: real Evil-Wins is a RESOURCE condition (D-24325) — "If 5 Killbots
+      // escape", counted as 'killbot'-origin entries in G.escapedPile (the 18
+      // villain-deck Bystanders convert to Killbot Villains — D-24324 — counted by
+      // converted origin, distinct from real villains). Declaring
+      // resourceLossCondition SUPPRESSES the twist-count doom-clock proxy;
+      // lossThreshold (the printed 5-twist stack) is retained but now INERT for
+      // loss (D-24178 / D-24325). The 'killbots' twist raises the per-scheme twist
+      // counter that drives Killbot attack.
+      lossThreshold: 5,
+      resourceLossCondition: {
+        kind: 'escaped-converted-count',
+        origin: 'killbot',
+        threshold: 5,
+      },
+    },
+  ],
 ]);

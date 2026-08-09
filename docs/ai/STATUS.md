@@ -7,6 +7,40 @@
 
 ## Current State
 
+### WP-513 — Replace Earth's Leaders with Killbots: Converted-Bystander Villains + Escape Loss — DONE (2026-08-08)
+
+Killbots now plays its printed rules: the 18 villain-deck Bystanders act as **Killbot Villains** whose
+attack scales with the twists placed next to the Scheme, and evil wins when **5 Killbots escape** — instead
+of the unreachable twist-count proxy. Fifth WP of the resource-loss-scheme-fidelity epic and the **first
+conversion scheme** (Killbots-first, self-contained; Secret Invasion is a later WP).
+
+- **Converted-card overlay (D-24324):** a card that "counts as" a villain is typed `'villain'` in
+  `G.villainDeckCardTypes` (native reveal/fight/escape routing — the closed `RevealedCardType` union is NOT
+  extended) plus a new **lazily-materialized** `G.convertedVillainOrigins` overlay (`'killbot'`; absent for
+  non-converting schemes → no hash re-pin). Set at one co-located site in `buildVillainDeck`.
+- **Killbots model (D-24325):** attack = a per-scheme `KILLBOT_TWISTS_NEXT_TO_SCHEME` counter (`G.counters`,
+  seeded 3, +1 per the new `'killbots'` twist resolver), resolved **overlay-first in `resolveFightCost`**
+  (before the `cardStats → 0` guard, since converted bystanders have no stat row). The loss is a new
+  `resourceLossCondition` kind `escaped-converted-count` (origin `'killbot'`, threshold 5), counting by
+  overlay origin — real escaped villains never count. Widened `applyEscapedPileResourceLoss` in-place (the
+  escape-branch call site is untouched); twist proxy suppressed. Added the `'killbots'`
+  `SchemeTwistResolverKey` + narrative + drift array.
+- **Gate reconciliation:** pre-flight READY (one WP); copilot recommended a split, **superseded** — its
+  rationale (a virtual-bystander `<unknown>`/0-attack display gap) was refuted by the pre-flight's source
+  read (`buildCardDisplayData §7` already covers `bystander-villain-deck-NN`; attack rides the existing
+  `fightCost` projection). Folded RS-1 (lazy field), RS-2 (widen-in-place), RS-3 (overlay-first attack,
+  dropped `economy.logic.ts`), RS-4 (no new UIState field; Killbot display-label deferred) → the WP shrank
+  from ~14 to ~15 files (incl. the `notableEvents` resolver-key contract).
+- **Determinism:** lazy overlay + Killbots-only counter → sentinel `finalStateHash` + `PRE_WP080_HASH`
+  **byte-identical** (no re-pin; verified — no committed Killbots fixture). No fixture/hash drift.
+- **Verification:** game-engine 2390→2403 (+13) pass / 0 fail; whole-workspace green; dual control-revert
+  non-vacuous (config → 3 fails; attack → 2 fails); `pnpm -r build` 0; `sim:runtime-observed:check` current.
+- **Operator-pending:** D-24026 live-verify — a Killbots match on play.legendary-arena.com fields Killbot
+  Villains with scaling attack and ends `scheme-wins` at 5 escaped Killbots.
+- **Epic remainder:** Secret Invasion (heroes→Skrull villains: cross-deck shuffle, VP+2 dynamic attack,
+  defeat-to-gain, HQ→Sewers twist — reuses this overlay, adds `'skrull'`); Civil War's "4 Heroes at 2p"
+  hero sizing; the D-24322 coverage-backdrop optimization.
+
 ### WP-511 — Legacy Virus Wound-Stack-Depletion Loss + Scheme-Specific Setup Sizing — DONE (2026-08-07)
 
 Legacy Virus now models its **printed** Evil-Wins — **"If the Wound stack runs out"** — with a wound
@@ -56,7 +90,7 @@ the **setup layer**.
   expansion was verified by the full suite + control-reverts, not a second pre-flight/copilot pass.
 - **Operator-pending:** D-24026 live-verify — a Legacy Virus match on play.legendary-arena.com uses a
   6-per-player Wound stack and ends `scheme-wins` when it runs out.
-- **Epic remainder:** WP-512 — Civil War's "4 Heroes at 2p" hero-deck sizing (reuses this WP's setup-sizing
+- **Epic remainder:** WP-513 — Civil War's "4 Heroes at 2p" hero-deck sizing (reuses this WP's setup-sizing
   pattern) + conversion schemes (Secret Invasion, Killbots); plus the deferred coverage-backdrop
   optimization (D-24322 follow-up).
 
@@ -87,7 +121,7 @@ first **stack-depletion** subclass (after WP-508/509's escaped-pile-count).
   WP-510 ships the depletion **mechanic** (a strict improvement over the twist proxy at every count).
 - **Civil War only:** Legacy Virus is deferred to WP-511 — its flat-30 wound stack would be unlosable at
   *every* count with the proxy suppressed (a hard regression, unlike Civil War's degree-only 2p weakness).
-  Conversion schemes (Secret Invasion, Killbots) shift to **WP-512**.
+  Conversion schemes (Secret Invasion, Killbots) shift to **WP-513**.
 - **Determinism:** the check is a `G.heroDeck.length` read + existing-counter write; sentinel
   `finalStateHash` + `PRE_WP080_HASH` **byte-identical** (no committed Civil War fixture depletes the hero
   deck); `sim:runtime-observed:check` current. No new `G` field, no new counter, `evaluateEndgame` stays

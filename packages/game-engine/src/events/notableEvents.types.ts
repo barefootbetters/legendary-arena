@@ -83,7 +83,8 @@ export type SchemeTwistResolverKey =
   | 'chainedReveals'
   | 'woundAll'
   | 'koFromHq'
-  | 'midtownBankRobbery';
+  | 'midtownBankRobbery'
+  | 'killbots';
 
 // why: drift-detection array — must match `SchemeTwistResolverKey` exactly.
 // The five-entry canonical order tracks WP-182's resolver framework
@@ -98,6 +99,7 @@ export const SCHEME_TWIST_RESOLVER_KEYS: readonly SchemeTwistResolverKey[] = [
   'woundAll',
   'koFromHq',
   'midtownBankRobbery',
+  'killbots',
 ] as const;
 
 // ---------------------------------------------------------------------------

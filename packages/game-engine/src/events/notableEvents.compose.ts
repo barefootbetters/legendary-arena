@@ -201,6 +201,7 @@ const RESOLVER_KEY_PHRASES: Readonly<Record<SchemeTwistResolverKey, string>> = {
   woundAll: 'every player gained wounds',
   koFromHq: 'heroes were KO’d from the HQ',
   midtownBankRobbery: 'the Bank villain captured bystanders and another card was revealed',
+  killbots: 'a Twist was placed next to the Scheme, raising every Killbot’s attack',
 };
 
 /**
