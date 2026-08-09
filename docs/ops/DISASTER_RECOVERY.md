@@ -103,7 +103,14 @@ The server is replaceable; those three are not.
 (WP-416), but it is inert until the operator provisions the five GitHub Actions
 secrets and runs it once via `workflow_dispatch` — **and** until a restore has
 actually been drilled (§5–6). Long-term retention beyond 35 daily days
-(weekly/monthly GFS tiers) is the named follow-up.
+(weekly/monthly GFS tiers) is the named follow-up. A second follow-up — **a
+second offsite copy of the dump** (mirror the R2 object to a different vendor,
+e.g. pCloud or Backblaze B2, so a single-vendor loss of Cloudflare cannot take
+both the card images and the only database backup at once) — completes a 3-2-1
+posture. Both are additive to the existing pipeline and require **no new primary
+infrastructure** (no standby host, no alternate-jurisdiction copy) — those would
+be cost and attack surface aimed at risks below the license-loss and
+operational-drill gaps that actually bound recovery here.
 
 ---
 
