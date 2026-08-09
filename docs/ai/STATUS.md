@@ -34,7 +34,9 @@ both backdrops to **Portals to the Dark Dimension** — with **no engine change*
   (60 games, 0 turn-cap; 0% bot win-rate is backdrop-independent, a Bot-Ally-epic concern); whole-workspace
   `pnpm -r --no-bail test` green; `git diff --name-only` = the 4-file allowlist, **zero `packages/`**; no
   `finalStateHash`/`PRE_WP080` interaction; `in-play-hollow-baseline.json` unchanged at 140.
-- **D-24026 live-verify:** operator-pending — `/coverage` sits behind the deployed dashboard.
+- **D-24026 live-verify:** ✅ live-verified 2026-08-09 — `/coverage` on the deployed dashboard reads
+  `59 / 188` (31.4%) in-play hollows resolved and "12 distinct · 125 observations", with the two new
+  mechanics `rooftops` + `streets` both showing "observed in play" (⚡ 1× each).
 
 ### WP-513 — Replace Earth's Leaders with Killbots: Converted-Bystander Villains + Escape Loss — DONE (2026-08-08)
 
