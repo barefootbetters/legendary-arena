@@ -691,3 +691,84 @@ describe('villainCardInstanceExtIds (WP-191)', () => {
     assert.deepStrictEqual(deckVillains, expected, 'deck villain ids must equal emitter output');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Killbots converted bystanders (WP-513 / D-24324)
+// ---------------------------------------------------------------------------
+
+/**
+ * A minimal registry whose `core` set declares the Killbots scheme with 18
+ * villain-deck Bystanders (villainDeckBystanderCount: 18). Villains/henchmen are
+ * omitted (empty groups in the config) so the built deck is bystanders + twists +
+ * strikes — enough to assert the conversion.
+ */
+function createKillbotsMockRegistry(): VillainDeckRegistryReader {
+  const setAbbr = 'core';
+  const coreSetData = {
+    abbr: setAbbr,
+    name: 'Core',
+    villains: [],
+    henchmen: [],
+    schemes: [
+      {
+        id: 6,
+        slug: 'replace-earths-leaders-with-killbots',
+        name: "Replace Earth's Leaders with Killbots",
+        villainDeckTwistCount: 5,
+        villainDeckBystanderCount: 18,
+        imageUrl: 'https://example.com/killbots.webp',
+        cards: [],
+      },
+    ],
+    heroes: [],
+    bystanders: [],
+    wounds: [],
+    other: [],
+  };
+  return {
+    listCards: () => [],
+    listSets: () => [{ abbr: setAbbr }],
+    getSet: (abbr: string) => (abbr === setAbbr ? coreSetData : undefined),
+  } as unknown as VillainDeckRegistryReader;
+}
+
+function createKillbotsConfig(): MatchSetupConfig {
+  return {
+    schemeId: 'core/replace-earths-leaders-with-killbots',
+    mastermindId: 'core/dr-doom',
+    villainGroupIds: [],
+    henchmanGroupIds: [],
+    heroDeckIds: [],
+    bystandersCount: 5,
+    woundsCount: 5,
+    officersCount: 5,
+    sidekicksCount: 5,
+  };
+}
+
+describe('buildVillainDeck — Killbots converted bystanders (WP-513 / D-24324)', () => {
+  it('types all 18 villain-deck bystanders as villain and records origin killbot', () => {
+    const context = makeMockCtx({ numPlayers: 2 });
+    const result = buildVillainDeck(createKillbotsConfig(), createKillbotsMockRegistry(), context);
+
+    const convertedIds = Object.keys(result.convertedOrigins);
+    assert.equal(convertedIds.length, 18, 'all 18 villain-deck bystanders converted');
+    for (const id of convertedIds) {
+      assert.ok(id.startsWith('bystander-villain-deck-'), `${id} is a villain-deck bystander`);
+      assert.equal(result.convertedOrigins[id], 'killbot');
+      assert.equal(
+        result.cardTypes[id],
+        'villain',
+        `${id} must be typed 'villain' for native city routing`,
+      );
+    }
+    // why: no entry remains typed 'bystander' — all were converted to Killbot villains.
+    assert.equal(countByType(result, 'bystander'), 0, 'no plain bystanders remain');
+  });
+
+  it('a non-Killbots scheme produces an empty convertedOrigins (lazy overlay)', () => {
+    const context = makeMockCtx({ numPlayers: 2 });
+    const result = buildVillainDeck(createMidtownConfig(), createMidtownMockRegistry(), context);
+    assert.equal(Object.keys(result.convertedOrigins).length, 0);
+  });
+});

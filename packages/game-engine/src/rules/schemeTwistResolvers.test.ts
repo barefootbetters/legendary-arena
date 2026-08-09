@@ -516,6 +516,7 @@ describe('midtown-bank-robbery resolver', () => {
 import type { CardExtId as CardExtIdAlias } from '../state/zones.types.js';
 
 const TWIST_CARD_ID = 'core-scheme-twist-test' as CardExtIdAlias;
+import { KILLBOT_TWISTS_NEXT_TO_SCHEME } from '../types.js';
 
 describe('WP-200 — schemeTwistResolved emission per resolver', () => {
   it('revealOrPunish emits exactly one event with resolverKey "revealOrPunish"', () => {
@@ -649,6 +650,31 @@ describe('WP-200 — schemeTwistResolved emission per resolver', () => {
     const event = gameState.notableEvents[0]!;
     if (event.type === 'schemeTwistResolved') {
       assert.equal(event.twistCardId, 'unknown-twist-card');
+    }
+  });
+
+  it('killbots increments the twist counter and emits exactly one event with resolverKey "killbots" (WP-513)', () => {
+    const gameState = makeResolverState();
+    gameState.counters[KILLBOT_TWISTS_NEXT_TO_SCHEME] = 3; // seeded at setup
+
+    SCHEME_TWIST_RESOLVERS['killbots'](
+      gameState,
+      makeRevealContext(),
+      emptyImplementationMap,
+      {},
+      TWIST_CARD_ID,
+    );
+
+    assert.equal(
+      gameState.counters[KILLBOT_TWISTS_NEXT_TO_SCHEME],
+      4,
+      'the Killbots twist raises "twists next to this Scheme" 3 → 4',
+    );
+    assert.equal(gameState.notableEvents.length, 1);
+    const event = gameState.notableEvents[0]!;
+    assert.equal(event.type, 'schemeTwistResolved');
+    if (event.type === 'schemeTwistResolved') {
+      assert.equal(event.resolverKey, 'killbots');
     }
   });
 });

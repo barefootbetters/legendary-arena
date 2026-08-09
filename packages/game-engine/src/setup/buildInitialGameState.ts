@@ -18,6 +18,8 @@ import type {
   LobbyState,
   ScenarioScoringConfig,
 } from '../types.js';
+// why: WP-513 / D-24325 — value import for the Killbots per-scheme twist counter key.
+import { KILLBOT_TWISTS_NEXT_TO_SCHEME } from '../types.js';
 import { TURN_STAGES } from '../turn/turnPhases.types.js';
 import type { LogEntry } from '../log/logOutcome.types.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
@@ -331,6 +333,19 @@ export function buildInitialGameState(
   // producing an empty deck, which the reveal pipeline already supports.
   const villainDeckResult = buildVillainDeck(config, registry, context);
 
+  // why: WP-513 — lazy materialization (RS-1). Only a converting scheme (Killbots)
+  // produces converted origins; every other game leaves G.convertedVillainOrigins
+  // ABSENT (see the conditional spread below) so it is omitted from the state hash
+  // (no re-pin — mirrors diagnostics / lastPlayEffectsFired). The Killbots "twists
+  // next to this Scheme" counter (D-24325) is seeded at 3 — the card's "3 additional
+  // Twists next to this Scheme" placed at setup — and drives every Killbot's attack.
+  const convertedVillainOrigins = villainDeckResult.convertedOrigins;
+  const hasConvertedVillains = Object.keys(convertedVillainOrigins).length > 0;
+  const hasKillbots = Object.values(convertedVillainOrigins).includes('killbot');
+  const initialCounters: Record<string, number> = hasKillbots
+    ? { [KILLBOT_TWISTS_NEXT_TO_SCHEME]: 3 }
+    : {};
+
   // why: cardStats extracted to local variable so buildMastermindState
   // can add the mastermind base card entry to it. buildMastermindState
   // MUST execute after buildCardStats (ordering invariant — EC-019).
@@ -493,12 +508,16 @@ export function buildInitialGameState(
     // not yet stamped at setup, so these carry no numbering prefix (matches prior
     // behaviour where setup messages were bare strings).
     messages: setupMessages.map((text): LogEntry => ({ text, outcome: 'neutral' })),
-    counters: {},
+    counters: initialCounters,
     hookRegistry: buildDefaultHookDefinitions(config),
     // why: villain deck built from registry data at setup time; see D-1410
     // through D-1413 for ext_id conventions and composition rules.
     villainDeck: villainDeckResult.state,
     villainDeckCardTypes: villainDeckResult.cardTypes,
+    // why: WP-513 / D-24324 — lazy: include the converted-villain overlay ONLY when
+    // a scheme converted cards (Killbots), so non-converting games omit the key
+    // entirely and their state hash is unchanged (RS-1).
+    ...(hasConvertedVillains ? { convertedVillainOrigins } : {}),
     // why: KO pile starts empty; cards enter via koCard helper (WP-017)
     ko: [],
     // why: no bystanders attached at game start; populated during reveals (WP-017)

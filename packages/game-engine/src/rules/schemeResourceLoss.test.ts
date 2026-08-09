@@ -16,6 +16,7 @@ import {
   countEscapedPileByType,
   applyEscapedPileResourceLoss,
   applyPileDepletionResourceLoss,
+  countEscapedByConvertedOrigin,
 } from './schemeResourceLoss.js';
 import { evaluateEndgame } from '../endgame/endgame.evaluate.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
@@ -332,6 +333,83 @@ describe('applyPileDepletionResourceLoss — Legacy Virus wounds (WP-511 / D-243
   it('AC-7 composition — evaluateEndgame returns scheme-wins once the wound-depletion loss latches', () => {
     const state = legacyVirusState(0);
     applyPileDepletionResourceLoss(state);
+    const result = evaluateEndgame(state);
+    assert.ok(result, 'endgame must have resolved');
+    assert.equal(result!.outcome, 'scheme-wins');
+  });
+});
+
+describe('escaped-converted-count — Killbots (WP-513 / D-24325)', () => {
+  const KILLBOTS = 'core/replace-earths-leaders-with-killbots';
+
+  /**
+   * A Killbots state: `killbots` escaped Killbot-origin cards, `realVillains`
+   * escaped real villains (typed 'villain', NO converted origin — must not count).
+   */
+  function killbotsState(
+    killbots: number,
+    realVillains = 0,
+    counters: Record<string, number> = {},
+  ): LegendaryGameState {
+    const escapedPile: string[] = [];
+    const convertedVillainOrigins: Record<string, 'killbot'> = {};
+    for (let i = 0; i < killbots; i++) {
+      const id = `bystander-villain-deck-${String(i).padStart(2, '0')}`;
+      escapedPile.push(id);
+      convertedVillainOrigins[id] = 'killbot';
+    }
+    for (let i = 0; i < realVillains; i++) {
+      escapedPile.push(`core-villain-brotherhood-blob-${i}`); // typed 'villain', no origin
+    }
+    return {
+      selection: {
+        schemeId: KILLBOTS,
+        mastermindId: 'test-mastermind',
+        villainGroupIds: [],
+        henchmanGroupIds: [],
+        heroDeckIds: [],
+      },
+      escapedPile,
+      convertedVillainOrigins,
+      counters,
+      messages: [],
+    } as unknown as LegendaryGameState;
+  }
+
+  it('counts only converted-origin entries — real escaped villains are excluded', () => {
+    const state = killbotsState(3, 4);
+    assert.equal(countEscapedByConvertedOrigin(state, 'killbot'), 3);
+  });
+
+  it('returns 0 when the overlay is absent (non-converting scheme)', () => {
+    const state = killbotsState(0);
+    delete (state as { convertedVillainOrigins?: unknown }).convertedVillainOrigins;
+    assert.equal(countEscapedByConvertedOrigin(state, 'killbot'), 0);
+  });
+
+  it('sets SCHEME_LOSS when 5 Killbots have escaped', () => {
+    const state = killbotsState(5);
+    applyEscapedPileResourceLoss(state);
+    assert.equal(state.counters[ENDGAME_CONDITIONS.SCHEME_LOSS], 1);
+  });
+
+  it('does NOT set SCHEME_LOSS at 4 Killbots (below threshold)', () => {
+    const state = killbotsState(4);
+    applyEscapedPileResourceLoss(state);
+    assert.equal(state.counters[ENDGAME_CONDITIONS.SCHEME_LOSS], undefined);
+  });
+
+  it('4 Killbots + 6 real escaped villains does NOT lose — real villains never count', () => {
+    // why: faithfulness guard. 10 escaped adversaries, but only 4 are Killbots;
+    // counting the shared 'villain' type would wrongly trip the loss.
+    const state = killbotsState(4, 6);
+    applyEscapedPileResourceLoss(state);
+    assert.equal(state.counters[ENDGAME_CONDITIONS.SCHEME_LOSS], undefined);
+  });
+
+  it('AC composition — evaluateEndgame returns scheme-wins once 5 Killbots escape', () => {
+    const state = killbotsState(5);
+    applyEscapedPileResourceLoss(state);
     const result = evaluateEndgame(state);
     assert.ok(result, 'endgame must have resolved');
     assert.equal(result!.outcome, 'scheme-wins');

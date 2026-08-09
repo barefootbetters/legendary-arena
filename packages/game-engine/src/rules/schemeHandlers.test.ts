@@ -581,6 +581,21 @@ describe('scheme loss threshold (D-24178)', () => {
     );
   });
 
+  it('Killbots suppresses the twist-count proxy at its stack size (real loss is escaped-Killbot count, D-24325)', () => {
+    // why: WP-513 — Killbots declares a resourceLossCondition
+    // (escaped-converted-count / killbot / 5), so the twist-count doom-clock proxy
+    // is suppressed. Even at predicted twist 5 (its printed stack size) the handler
+    // must NOT push SCHEME_LOSS; the real loss is the escaped-Killbot count, and
+    // the twist instead raises the per-scheme Killbot-attack counter.
+    const atStack = makeTestState({ schemeTwistCount: 4 }); // predicted 5 = printed stack
+    atStack.selection.schemeId = 'core/replace-earths-leaders-with-killbots';
+    assert.equal(
+      triggersSchemeLoss(schemeTwistHandler(atStack, {}, { cardId: 't' }, DEFAULT_IMPLEMENTATION_MAP)),
+      false,
+      'Killbots must not trip the twist-count proxy — its loss is the escaped-Killbot count',
+    );
+  });
+
   it('an unconfigured scheme still falls back to the MVP default threshold (7)', () => {
     const state = makeTestState({ schemeTwistCount: 6 });
     // 'test-scheme' has no config → fallback 7 → predicted 7 → loss.

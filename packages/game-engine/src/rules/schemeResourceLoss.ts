@@ -10,7 +10,7 @@
  * game log. No boardgame.io import. No registry import. No `.reduce()`.
  */
 
-import type { LegendaryGameState } from '../types.js';
+import type { LegendaryGameState, ConvertedVillainOrigin } from '../types.js';
 import type { RevealedCardType } from '../villainDeck/villainDeck.types.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
@@ -72,13 +72,40 @@ export function countEscapedPileByType(
 }
 
 /**
+ * Counts entries in the Escaped Villains pile carrying a converted-villain origin.
+ *
+ * Reads `G.convertedVillainOrigins` (absent for non-converting schemes → 0). Uses
+ * an explicit `for...of` loop (no `.reduce()`). This counts converted cards (e.g.
+ * Killbots) DISTINCTLY from real villains — a converted card is typed `'villain'`
+ * for routing, so `countEscapedPileByType(gs, 'villain')` would wrongly include it.
+ *
+ * @param gameState - The current game state (read-only).
+ * @param origin - The converted origin to count (e.g. 'killbot').
+ * @returns The number of matching entries in `G.escapedPile`.
+ */
+export function countEscapedByConvertedOrigin(
+  gameState: LegendaryGameState,
+  origin: ConvertedVillainOrigin,
+): number {
+  const origins = gameState.convertedVillainOrigins ?? {};
+  let matchCount = 0;
+  for (const escapedCardId of gameState.escapedPile) {
+    if (origins[escapedCardId] === origin) {
+      matchCount = matchCount + 1;
+    }
+  }
+  return matchCount;
+}
+
+/**
  * Applies the active scheme's escaped-pile resource-loss condition, if any.
  *
- * If the active scheme declares an `'escaped-pile-count'` resourceLossCondition
- * and the escaped pile holds at least `threshold` entries of the configured
- * card type, sets the SCHEME_LOSS counter to 1 (idempotent) and logs once. A
- * no-op for schemes without a resourceLossCondition, or when already lost.
- * Never throws.
+ * Handles both escape-pile loss kinds — `'escaped-pile-count'` (by card type,
+ * D-24315) and `'escaped-converted-count'` (by converted origin, D-24325) — and
+ * sets the SCHEME_LOSS counter to 1 (idempotent) + logs once when the escaped
+ * pile holds at least `threshold` matching entries. A no-op for schemes without a
+ * matching resourceLossCondition (including `'pile-depleted'`, handled by
+ * applyPileDepletionResourceLoss), or when already lost. Never throws.
  *
  * @param gameState - The game state to mutate (counters + log only).
  */
@@ -87,7 +114,11 @@ export function applyEscapedPileResourceLoss(
 ): void {
   const config = SCHEME_TWIST_CONFIGS.get(gameState.selection.schemeId);
   const condition = config?.resourceLossCondition;
-  if (!condition || condition.kind !== 'escaped-pile-count') {
+  if (
+    !condition ||
+    (condition.kind !== 'escaped-pile-count' &&
+      condition.kind !== 'escaped-converted-count')
+  ) {
     return;
   }
 
@@ -98,7 +129,16 @@ export function applyEscapedPileResourceLoss(
     return;
   }
 
-  const matchCount = countEscapedPileByType(gameState, condition.cardType);
+  // why: both kinds count the escaped pile — by card type, or by converted
+  // origin (Killbots: converted cards are typed 'villain' for routing, so they
+  // must be counted by origin, not by the shared 'villain' type).
+  const matchCount =
+    condition.kind === 'escaped-pile-count'
+      ? countEscapedPileByType(gameState, condition.cardType)
+      : countEscapedByConvertedOrigin(gameState, condition.origin);
+  const matchLabel =
+    condition.kind === 'escaped-pile-count' ? condition.cardType : condition.origin;
+
   if (matchCount >= condition.threshold) {
     // why: SCHEME_LOSS is set HERE, in the escape path, rather than derived
     // inside evaluateEndgame, because evaluateEndgame reads only G.counters
@@ -107,7 +147,7 @@ export function applyEscapedPileResourceLoss(
     gameState.counters[ENDGAME_CONDITIONS.SCHEME_LOSS] = 1;
     pushLog(
       gameState,
-      `Scheme loss triggered — ${matchCount} ${condition.cardType} card(s) carried away by escaping villains (threshold ${condition.threshold}).`,
+      `Scheme loss triggered — ${matchCount} ${matchLabel} card(s) carried away by escaping villains (threshold ${condition.threshold}).`,
     );
   }
 }
