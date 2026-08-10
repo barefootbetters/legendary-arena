@@ -142,6 +142,16 @@ Hanko (`HANKO_*`), R2 (`R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`,
 `SWEEP_SUBMIT_TOKEN` handoff tokens, `ANALYTICS_USER_ID_SALT`, and the
 `LEGENDS_PUBLISHER_*` toggles. Consult the Render dashboard for live values.
 
+The operator dashboard's **DR Readiness** tile (WP-517) reads an **optional**
+`DASH_GITHUB_TOKEN` (fine-grained PAT, `Issues:read` only) plus an optional
+`DASH_GITHUB_REPO`. The `GET /api/dash/dr-readiness` feed is **mock-first**: an
+unset/invalid token — or any GitHub fetch failure — returns `200` with
+`data.source:"mock"` (never a `500`), so the server starts and the tile renders
+without it. Set `DASH_GITHUB_TOKEN` on Render to derive live last-drill /
+next-due / overdue from the `DR drill due` issues; `DASH_GITHUB_REPO` defaults
+to `barefootbetters/legendary-arena` and only needs overriding for a fork /
+staging repo.
+
 **Critical:** `PORT` is auto-injected by Render. Setting it manually in
 the dashboard causes port conflicts and silent startup failures.
 
