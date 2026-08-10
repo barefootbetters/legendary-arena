@@ -51,8 +51,8 @@ Consequence, stated plainly so it is not discovered during a crisis:
 **The core provision-and-drill work is complete** (2026-08-09, §7): secrets
 provisioned, first backup in R2, and the R2 object restored in a drill.
 Grandfather-father-son long-term retention (weekly/monthly tiers) is now **enabled**
-(2026-08-09, §3). The one remaining follow-up is a second offsite copy of the dump
-(§3).
+(2026-08-09, §3). The second offsite copy (3-2-1) is **wired** into `db-backup.yml`
+(pCloud mirror), pending only its `RCLONE_PCLOUD_TOKEN` secret (§3).
 
 ---
 
@@ -120,6 +120,7 @@ secrets.** The server is replaceable; those three are not.
 |---|---|---|---|---|---|
 | Database (managed) | Render Postgres | Render automated snapshots + PITR | Render (internal) | Per Render plan — **confirm in dashboard** | **Never drilled** |
 | Database (external) | Render Postgres | `pg_dump -Fc` — daily GitHub Actions (`.github/workflows/db-backup.yml`, WP-416) | Cloudflare R2 (private `R2_BACKUP_BUCKET`, `db-backups/` prefix) | GFS: 35 daily · 12 weekly · 12 monthly | **Drilled 2026-08-09 (§7)** |
+| Database (2nd offsite) | the same dump | `rclone copyto` — same `db-backup.yml` run, after the R2 upload | pCloud (`db-backups/` path), independent of Cloudflare | GFS mirror (same selector) | **pending `RCLONE_PCLOUD_TOKEN`** |
 | Card images | R2 upload pipeline | manual/scripted | Cloudflare R2 | indefinite | image loads |
 | Source code | GitHub | git | GitHub + local clones | full history | every clone |
 | Secrets | operator | manual | operator secret store | operator-managed | §4 completeness |
@@ -127,11 +128,12 @@ secrets.** The server is replaceable; those three are not.
 **Now live and hardened:** the external row's pipeline (WP-416) is provisioned and
 producing daily backups, a restore has been drilled (§7), and **grandfather-
 father-son retention is enabled** — 35 daily, then one-per-week out to 12 weeks,
-then one-per-month out to 12 months (`scripts/db-backup-retention.mjs`). The one
-remaining follow-up — **a second offsite copy of the dump** (mirror the R2 object
-to a different vendor, e.g. pCloud or Backblaze B2, so a single-vendor loss of
-Cloudflare cannot take both the card images and the only database backup at once) —
-completes a 3-2-1 posture. It is additive to the existing pipeline and requires
+then one-per-month out to 12 months (`scripts/db-backup-retention.mjs`). The
+**second offsite copy** (3-2-1) is now **wired into `db-backup.yml`**: after the R2
+upload the same dump is `rclone`-mirrored to **pCloud** — a vendor independent of
+Cloudflare — and pruned to the same GFS policy. Like the R2 leg it skips green
+until its secret (`RCLONE_PCLOUD_TOKEN`) is provisioned; until then only the R2
+copy is produced. It is additive to the existing pipeline and requires
 **no new primary infrastructure** (no standby host, no alternate-jurisdiction copy) — those would
 be cost and attack surface aimed at risks below the license-loss and
 operational-drill gaps that actually bound recovery here.

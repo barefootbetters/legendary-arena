@@ -24,7 +24,13 @@ jobs:
         # map secret-presence to a step output. When BACKUP_DATABASE_URL is absent
         # the later steps skip and the job concludes green — a skip, not a pass, and
         # never a reported backup success.
-        run: echo "has_secrets=${{ secrets.BACKUP_DATABASE_URL != '' }}" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "has_secrets=${{ secrets.BACKUP_DATABASE_URL != '' }}" >> "$GITHUB_OUTPUT"
+          # why: the pCloud second-offsite-copy (3-2-1, DISASTER_RECOVERY.md §3) is
+          # optional and independently gated. When RCLONE_PCLOUD_TOKEN is absent the
+          # mirror step skips green and only the R2 copy is produced — no failure, the
+          # same skip-not-pass posture as the primary guard above.
+          echo "has_pcloud=${{ secrets.RCLONE_PCLOUD_TOKEN != '' }}" >> "$GITHUB_OUTPUT"
 
       - name: Checkout
         if: steps.guard.outputs.has_secrets == 'true'
@@ -136,5 +142,47 @@ jobs:
             | while read -r staleKey; do
                 if [ -n "$staleKey" ]; then
                   aws s3 rm "s3://${R2_BACKUP_BUCKET}/${staleKey}" --endpoint-url "$endpoint"
+                fi
+              done
+
+      - name: Mirror to pCloud (second offsite copy) and prune
+        # why: 3-2-1 — a copy on a vendor independent of Cloudflare, so a single-vendor
+        # loss of Cloudflare cannot take both the card images and the only DB backup.
+        # Independently gated: skips green until RCLONE_PCLOUD_TOKEN is provisioned.
+        if: steps.guard.outputs.has_secrets == 'true' && steps.guard.outputs.has_pcloud == 'true'
+        env:
+          # why: rclone reads a remote's config from RCLONE_CONFIG_<NAME>_* env vars,
+          # so CI needs no rclone.conf file and no interactive login. TOKEN is the JSON
+          # blob from `rclone authorize pcloud`; HOSTNAME picks the pCloud data region
+          # (api.pcloud.com = US, eapi.pcloud.com = EU) and MUST match the region the
+          # token was minted in, or every API call fails.
+          RCLONE_CONFIG_PCLOUD_TYPE: pcloud
+          RCLONE_CONFIG_PCLOUD_TOKEN: ${{ secrets.RCLONE_PCLOUD_TOKEN }}
+          RCLONE_CONFIG_PCLOUD_HOSTNAME: ${{ secrets.RCLONE_PCLOUD_HOSTNAME }}
+        run: |
+          set -euo pipefail
+          # why: ubuntu-latest ships aws-cli but not rclone; install a pinned release
+          # (not `apt`, whose rclone lags) so the pCloud backend behaviour is stable.
+          rclone_version=v1.73.3
+          curl -fsSL "https://downloads.rclone.org/${rclone_version}/rclone-${rclone_version}-linux-amd64.zip" -o /tmp/rclone.zip
+          unzip -qo /tmp/rclone.zip -d /tmp
+          sudo install "/tmp/rclone-${rclone_version}-linux-amd64/rclone" /usr/local/bin/rclone
+          rclone version | head -1
+          # why: default to US pCloud when the operator did not set a region; an EU
+          # account needs RCLONE_PCLOUD_HOSTNAME=eapi.pcloud.com.
+          export RCLONE_CONFIG_PCLOUD_HOSTNAME="${RCLONE_CONFIG_PCLOUD_HOSTNAME:-api.pcloud.com}"
+          key="db-backups/${BACKUP_KEYDATE}/legendary-arena-${BACKUP_STAMP}.dump"
+          # Copy the same dump already sent to R2 — a genuinely independent second
+          # vendor. rclone creates the nested folders on pCloud.
+          rclone copyto "/tmp/legendary-arena-${BACKUP_STAMP}.dump" "pcloud:${key}" --low-level-retries 3
+          # Prune pCloud to the SAME grandfather-father-son policy as R2, via the same
+          # pure selector. rclone lsf yields keys relative to db-backups/; re-prefix so
+          # they match the selector's `db-backups/...legendary-arena-<stamp>.dump` shape.
+          rclone lsf pcloud:db-backups/ --recursive --files-only \
+            | sed 's#^#db-backups/#' \
+            | node scripts/db-backup-retention.mjs \
+            | while read -r staleKey; do
+                if [ -n "$staleKey" ]; then
+                  rclone delete "pcloud:${staleKey}"
                 fi
               done
