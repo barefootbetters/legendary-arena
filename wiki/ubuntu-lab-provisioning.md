@@ -22,7 +22,7 @@ source:
   - ../render.yaml
   - ../docs/ops/DOMAINS.md
   - ../docs/ops/domains.json
-last-reviewed: 2026-07-24
+last-reviewed: 2026-08-09
 ---
 
 # Ubuntu Lab Provisioning
@@ -171,7 +171,7 @@ headers, or live match traffic silently fails):
 server {
     server_name lab.<your-domain>;
     location / {
-        proxy_pass http://127.0.0.1:3000;      # the port apps/server listens on
+        proxy_pass http://127.0.0.1:3000;      # apps/server port — export PORT=3000 (§3); it defaults to 8000
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade; # WebSocket upgrade for Socket.IO
         proxy_set_header Connection "upgrade";
@@ -196,6 +196,9 @@ pnpm install && pnpm -r build                      # same as render.yaml buildCo
 sudo -u postgres createuser -P la_lab              # prompts for a lab password
 sudo -u postgres createdb -O la_lab la_lab
 export DATABASE_URL="postgres://la_lab:<password>@localhost:5432/la_lab"
+export PORT=3000                                    # apps/server defaults to 8000
+                                                    # (process.env.PORT ?? '8000'); pin it to
+                                                    # match the Nginx proxy_pass in §2
 
 node scripts/migrate.mjs                            # migrations against the LAB DB
 pm2 start "node --import ./apps/server/node_modules/tsx/dist/loader.mjs \
