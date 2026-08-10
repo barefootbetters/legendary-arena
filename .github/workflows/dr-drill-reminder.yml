@@ -58,6 +58,11 @@ jobs:
             lines.push(
               '',
               '## On completion',
+              // why: WP-517 — the dashboard DR-readiness feed (GET /api/dash/dr-readiness)
+              // reads this exact `- [ ] Drill passed` line on the newest CLOSED drill issue
+              // as the PASS/FAIL source: checked = pass, present-unchecked = fail, absent =
+              // unknown. Keep the label verbatim ("Drill passed") — the server matches on it.
+              '- [ ] Drill passed',
               '- [ ] Record the result in `docs/ops/DISASTER_RECOVERY.md` §7 (drill-record',
               '  template) with observed RTO / RPO.',
               '- [ ] If any runbook step was wrong or undocumented, fix the runbook in the',
