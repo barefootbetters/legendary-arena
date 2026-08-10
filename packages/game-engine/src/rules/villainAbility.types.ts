@@ -209,6 +209,16 @@ export interface VillainEffectResult {
 // (a rational chooser KOs all their own Wounds — pure upside). No-param (parses via
 // the generic no-param branch); keyword-less (no LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR
 // entry), so it reverse-maps to `undefined` and self-narrates via pushLog.
+// why: D-24332 — `ko-cullable-each-deck-top` is the sixteenth primitive (append-only,
+// position 16): each player reveals their deck top and the fighting player KOs the
+// "cullable" ones — a Wound or a basic starting S.H.I.E.L.D. card (Agent / Trooper) —
+// keeping every real Hero and the recruited Officer (Melter, Masters of Evil — "Fight:
+// Each player reveals the top card of their deck. For each card, you choose to KO it or
+// put it back."). The per-card KO/keep choice collapses to a rational cooperative
+// chooser (thin weak starters/Wounds, keep real cards); because a real Hero is never
+// force-KO'd, the auto-resolve carries no agency loss (the WP-470 scry-ko failure mode,
+// which force-KO'd one of two cards, cannot arise here). No-param; keyword-less, so it
+// reverse-maps to `undefined` and self-narrates via pushLog.
 export type VillainEffectPrimitive =
   | 'ko-hero'
   | 'gain-wound'
@@ -224,7 +234,8 @@ export type VillainEffectPrimitive =
   | 'rescue-bystanders-current-by-trait-count'
   | 'gain-wound-unless-victory-villain-group'
   | 'override-next-hand-size'
-  | 'ko-wounds-current-hand-and-discard';
+  | 'ko-wounds-current-hand-and-discard'
+  | 'ko-cullable-each-deck-top';
 
 // why: drift-detection array — must match VillainEffectPrimitive exactly
 // (villainAbility.types.test.ts asserts bidirectional parity). Adding a
@@ -246,6 +257,10 @@ export type VillainEffectPrimitive =
 // `ko-wounds-current-hand-and-discard` appended at position 15 by WP-516 (D-24329 —
 // Ymir, Frost Giant King Fight: the current player KOs every Wound from their hand +
 // discard; keyword-less no-param auto-resolve, self-narrates).
+// `ko-cullable-each-deck-top` appended at position 16 by WP-519 (D-24332 — Melter,
+// Masters of Evil Fight: each player reveals their deck top; KO only the cullable ones
+// (Wound / basic S.H.I.E.L.D. Agent|Trooper), keep real Heroes + Officer; keyword-less
+// no-param auto-resolve, self-narrates; reshuffle-on-empty via shuffleContext).
 /** All villain effect primitives in canonical order. Single source of truth. */
 export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'ko-hero',
@@ -263,6 +278,7 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'gain-wound-unless-victory-villain-group',
   'override-next-hand-size',
   'ko-wounds-current-hand-and-discard',
+  'ko-cullable-each-deck-top',
 ] as const;
 
 /**
@@ -272,7 +288,8 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
  *   - `gain-wound`:      `target` 'current' | 'each'
  *   - `capture-hq-hero`: `selector` 'rightmost' | 'highest-cost' | 'lowest-cost'
  *   - `hero-deck-top-to-escape`, `capture-bystander`, `scry-ko-own-deck`,
- *     `gain-attached-hero`: no params
+ *     `gain-attached-hero`, `ko-wounds-current-hand-and-discard`,
+ *     `ko-cullable-each-deck-top`: no params
  *   - `ko-hero` with `target: 'each'`: optional `zone` (D-24280) restricts the
  *     per-player KO to a single source zone (Juggernaut's "from their discard
  *     pile" / "from their hand"); absent means the discard→hand→inPlay fallback.

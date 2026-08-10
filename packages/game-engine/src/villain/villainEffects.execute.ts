@@ -1676,6 +1676,120 @@ function villainEffectKoWoundsCurrentHandAndDiscard(
   return { targets: koedWounds };
 }
 
+/**
+ * Whether a revealed deck-top card is "cullable" — worth KO'ing for a rational
+ * cooperative chooser (D-24332 / WP-519). True iff the card is a Wound or a basic
+ * STARTING S.H.I.E.L.D. card (Agent / Trooper).
+ *
+ * This is the `selectScryKoTarget` tiers-1–2 "worst-worthy" set (D-24267): thinning
+ * a Wound or a weak starter from any deck is pure deck-building upside. It
+ * deliberately EXCLUDES the recruited S.H.I.E.L.D. Officer and every real Hero — a
+ * rational player keeps those, and Melter's Fight lets them "put it back" — and it
+ * EXCLUDES `selectScryKoTarget`'s tier-3 lex-lowest fallback, which exists only
+ * because scry-ko MUST KO one of two cards; Melter's keep-option means an
+ * un-cullable top is simply left in place. Closed-enum membership (no registry read,
+ * no trait predicate), so the decision stays deterministic (no `ctx.random`).
+ *
+ * @param cardId - The revealed deck-top card's ext_id.
+ * @returns True when the card is a Wound or a basic starting S.H.I.E.L.D. card.
+ */
+function isCullableDeckTopCard(cardId: CardExtId): boolean {
+  return (
+    cardId === WOUND_EXT_ID ||
+    cardId === SHIELD_AGENT_EXT_ID ||
+    cardId === SHIELD_TROOPER_EXT_ID
+  );
+}
+
+/**
+ * ko-cullable-each-deck-top primitive — each player reveals the top card of their
+ * deck and the fighting player KOs the cullable ones (Wounds / basic S.H.I.E.L.D.
+ * starters), keeping every real Hero + Officer (Melter, Masters of Evil — "Fight:
+ * Each player reveals the top card of their deck. For each card, you choose to KO it
+ * or put it back.", D-24332 / WP-519).
+ *
+ * Auto-resolved and deterministic. The printed per-card KO/keep choice collapses to a
+ * rational cooperative chooser: thin weak starters/Wounds (pure upside), keep real
+ * cards. Because a real Hero is never force-KO'd, the WP-470 scry-ko agency bug
+ * (which arose only because scry-ko must KO one of two cards) cannot occur — so there
+ * is no pending choice, no player-selection UI, no client change. Self-narrates via
+ * `pushLog` (keyword-less — `descriptorToLegacyKeyword` returns undefined, so no
+ * `VillainEffectResult` is recorded and the generic `<timing> effect:` line never
+ * fires). Returns the KO'd card ext_ids as `targets` for parity with the other
+ * handlers (dropped by the recording path).
+ */
+function villainEffectKoCullableEachDeckTop(
+  G: LegendaryGameState,
+  _currentPlayer: string,
+  _cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  _descriptor: VillainEffectDescriptor,
+  shuffleContext?: ShuffleProvider,
+): VillainEffectApplication {
+  const koedCardIds: CardExtId[] = [];
+  // why: D-18902 — sorted player-id iteration for replay determinism, matching the
+  // each-player wound / reveal-or-wound paths. "Each player" is faithful: every
+  // player's deck top is revealed, not only the fighting player's.
+  for (const playerId of Object.keys(G.playerZones).sort()) {
+    const zones = G.playerZones[playerId];
+    if (!zones) {
+      continue;
+    }
+    // why: D-24285 — "reveals the top card" is a reveal, so an empty deck reshuffles
+    // the player's discard into the deck first (the Legendary reveal-reshuffle rule,
+    // the scry-ko precedent). reshuffleDiscardIntoDeck no-ops on an empty discard or
+    // an absent shuffleContext, so a genuinely exhausted deck + discard falls through
+    // to the reachable no-op below (no reveal, no KO — never a hollow).
+    if (zones.deck.length === 0) {
+      reshuffleDiscardIntoDeck(zones, shuffleContext);
+    }
+    if (zones.deck.length === 0) {
+      continue;
+    }
+    const topCard = zones.deck[0]!;
+    // why: D-24332 — the printed "you choose to KO it or put it back" collapses to a
+    // rational cooperative chooser: KO the revealed top ONLY when it is cullable (a
+    // Wound or a basic starter), otherwise keep it on top. A real Hero / Officer is
+    // never force-KO'd.
+    if (!isCullableDeckTopCard(topCard)) {
+      continue;
+    }
+    const moveResult = moveCardFromZone(zones.deck, [], topCard);
+    if (!moveResult.found) {
+      // why: defensive — an unexpected move miss stops this player without a throw.
+      continue;
+    }
+    zones.deck = moveResult.from;
+    // why: the culled card goes to the general KO pile (`G.ko`), not back to the
+    // player's discard or any supply — a KO removes it from play (koCard appends;
+    // the deck removal is the moveCardFromZone above). Same as the scry-ko handler.
+    G.ko = koCard(G.ko, topCard);
+    koedCardIds.push(topCard);
+  }
+  // why: self-narrate (keyword-less — descriptorToLegacyKeyword returns undefined, so
+  // no VillainEffectResult is recorded and the generic "<timing> effect:" line never
+  // fires; the D-24266 unmarked-ability breadcrumb is removed by marking the card).
+  // G.messages is hash-excluded (D-24081). Honest colour per the WP-434 contract:
+  // ≥1 card KO'd → applied; nothing cullable revealed → blocked. Label from the fired
+  // timing (Melter is Fight).
+  const label = villainEffectTimingLabel(timing);
+  if (koedCardIds.length > 0) {
+    const names = koedCardIds.map((koedId) => resolveCardDisplayName(G, koedId)).join(', ');
+    pushLog(
+      G,
+      `${label} effect: KO'd ${String(koedCardIds.length)} card(s) from the top of players' decks (${names}).`,
+      'applied',
+    );
+  } else {
+    pushLog(
+      G,
+      `${label} effect: revealed each player's deck top; nothing worth KO'ing.`,
+      'blocked',
+    );
+  }
+  return { targets: koedCardIds };
+}
+
 // why: D-24296 — the basic S.H.I.E.L.D. cards (starting Agents + Troopers, and the
 // recruited S.H.I.E.L.D. Officer) ARE team S.H.I.E.L.D. physically, so the Destroyer
 // "KO all your [team:shield] Heroes" is meant to wipe them — but they are synthetic
@@ -1990,7 +2104,9 @@ function villainEffectGainWoundUnlessVictoryVillainGroup(
 // each-player wound on a Victory-Pile group predicate) appended by WP-494 (D-24299).
 // `override-next-hand-size` (auto-resolve — writes the WP-497 `handSizeOverrides`
 // field) appended by WP-503 (D-24307 — the core spider-foes Doctor Octopus villain
-// Fight: draw 8 next hand instead of 6). `ko-wounds-current-hand-and-discard`
+// Fight: draw 8 next hand instead of 6). `ko-cullable-each-deck-top` (auto-resolve —
+// each player reveals their deck top, KO the cullable ones, keep real Heroes) appended
+// by WP-519 (D-24332 — Melter, Masters of Evil Fight). `ko-wounds-current-hand-and-discard`
 // (auto-resolve — KO the current player's Wounds from hand + discard) appended by
 // WP-516 (D-24329 — Ymir, Frost Giant King Fight).
 /** Villain effect handlers keyed by primitive. Single dispatch source. */
@@ -2010,6 +2126,7 @@ const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandl
   'gain-wound-unless-victory-villain-group': villainEffectGainWoundUnlessVictoryVillainGroup,
   'override-next-hand-size': villainEffectOverrideNextHandSize,
   'ko-wounds-current-hand-and-discard': villainEffectKoWoundsCurrentHandAndDiscard,
+  'ko-cullable-each-deck-top': villainEffectKoCullableEachDeckTop,
 };
 
 /**

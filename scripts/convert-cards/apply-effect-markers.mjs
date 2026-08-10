@@ -126,6 +126,9 @@ function isLockedEffectKeyword(keyword) {
 // `ko-wounds-current-hand-and-discard` (no-param) appended by WP-516 (D-24329 —
 // Ymir, Frost Giant King Fight: the current player KOs every Wound from their hand +
 // discard; validates via the terminal no-param `return parts.length === 1` branch).
+// `ko-cullable-each-deck-top` (no-param) appended by WP-519 (D-24332 — Melter, Masters
+// of Evil Fight: each player reveals their deck top, KO the cullable ones (Wound /
+// basic S.H.I.E.L.D. starter), keep real Heroes; validates via the same no-param branch).
 const VILLAIN_EFFECT_PRIMITIVES = [
   'ko-hero',
   'gain-wound',
@@ -142,6 +145,7 @@ const VILLAIN_EFFECT_PRIMITIVES = [
   'gain-wound-unless-victory-villain-group',
   'override-next-hand-size',
   'ko-wounds-current-hand-and-discard',
+  'ko-cullable-each-deck-top',
 ];
 
 // why: WP-489 / D-24295 — hand-synced local copy of the engine's CITY_SPACE_NAMES

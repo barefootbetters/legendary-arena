@@ -320,8 +320,11 @@ describe('VILLAIN_EFFECT_PRIMITIVES drift-detection', () => {
   // (the core spider-foes Doctor Octopus villain Fight — draw 8 next hand, writes the
   // WP-497 `handSizeOverrides` field). WP-516 (D-24329) appended a fifteenth,
   // `ko-wounds-current-hand-and-discard`, at position 15 (Ymir, Frost Giant King
-  // Fight — the current player KOs every Wound from their hand + discard).
-  it('contains exactly the 15 canonical primitives in order', () => {
+  // Fight — the current player KOs every Wound from their hand + discard). WP-519
+  // (D-24332) appended a sixteenth, `ko-cullable-each-deck-top`, at position 16
+  // (Melter, Masters of Evil Fight — each player reveals their deck top, KO the
+  // cullable ones (Wound / basic S.H.I.E.L.D. starter), keep real Heroes).
+  it('contains exactly the 16 canonical primitives in order', () => {
     const expectedPrimitives: VillainEffectPrimitive[] = [
       'ko-hero',
       'gain-wound',
@@ -338,11 +341,12 @@ describe('VILLAIN_EFFECT_PRIMITIVES drift-detection', () => {
       'gain-wound-unless-victory-villain-group',
       'override-next-hand-size',
       'ko-wounds-current-hand-and-discard',
+      'ko-cullable-each-deck-top',
     ];
     assert.equal(
       VILLAIN_EFFECT_PRIMITIVES.length,
-      15,
-      'VILLAIN_EFFECT_PRIMITIVES must have exactly 15 entries',
+      16,
+      'VILLAIN_EFFECT_PRIMITIVES must have exactly 16 entries',
     );
     assert.deepStrictEqual(
       [...VILLAIN_EFFECT_PRIMITIVES],

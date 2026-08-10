@@ -383,6 +383,47 @@ describe('buildVillainAbilityHooks — ko-wounds-current-hand-and-discard gramma
   });
 });
 
+describe('buildVillainAbilityHooks — ko-cullable-each-deck-top grammar (WP-519 / D-24332)', () => {
+  const registry = makeRegistry(
+    'core',
+    [
+      {
+        slug: 'masters-of-evil',
+        cards: [
+          {
+            slug: 'melter',
+            abilities: [
+              'Fight: Each player reveals the top card of their deck. For each card, you choose to KO it or put it back. [effect:ko-cullable-each-deck-top]',
+            ],
+          },
+          // why: a no-param primitive rejects any trailing colon token (guards a
+          // malformed marker from collapsing to the param-less descriptor).
+          { slug: 'extra-tokens', abilities: ['Fight: nope. [effect:ko-cullable-each-deck-top:1]'] },
+        ],
+      },
+    ],
+    [],
+  );
+  const hooks = buildVillainAbilityHooks(registry, makeConfig(['core/masters-of-evil'], []));
+  const hookFor = (slug: string, timing: string) =>
+    hooks.find((h) => h.cardId === `core-villain-masters-of-evil-${slug}-00` && h.timing === timing)!;
+
+  it('parses the no-param Fight marker to a bare descriptor via the generic branch', () => {
+    assert.deepStrictEqual(hookFor('melter', 'onFight').effects, [
+      { primitive: 'ko-cullable-each-deck-top' },
+    ]);
+    // why: keyword-less — must NOT reverse-map to a legacy keyword.
+    assert.deepStrictEqual(hookFor('melter', 'onFight').keywords, []);
+  });
+
+  it('rejects a trailing param token to unresolvedMarkers', () => {
+    assert.deepStrictEqual(hookFor('extra-tokens', 'onFight').effects, []);
+    assert.deepStrictEqual(hookFor('extra-tokens', 'onFight').unresolvedMarkers, [
+      'ko-cullable-each-deck-top:1',
+    ]);
+  });
+});
+
 describe('buildVillainAbilityHooks — keywords/effects parity', () => {
   it('keywords and effects are distinct but parallel arrays (WP-252)', () => {
     const registry = makeRegistry(
