@@ -159,10 +159,16 @@ dashboard** (see the DR-readiness note below); `/metrics/dau`, `/alerts`, and
 > `checkout.session.completed` webhook envelope's `amount_total` (the price
 > allowlist carries no amount, so the amount comes from the stored envelope, in
 > cents ÷100; a missing amount is skipped, never fabricated). Executed as
-> **WP-373 / EC-402 / D-24168** (Active). **These feeds still render mock in the
-> deployed dashboard until the deploy sets `VITE_USE_MOCKS=false` + a
-> `VITE_API_BASE_URL` and prod Stripe data flows** — code-live ≠ dashboard-live.
-> The **gameplay + KPI slice** (`/matches`, `/players`, `/kpis`) is now **live
+> **WP-373 / EC-402 / D-24168** (Active). **These feeds now take the live path in
+> the deployed dashboard** — the LIVE flip is on as of 2026-08-10 (the System
+> Health admin tiles reach the prod API and the Sweep tile reads LIVE, so
+> `VITE_USE_MOCKS` is off + `VITE_API_BASE_URL` is set), and these
+> `admin-session-required` feeds share that gate, so an admin operator sees live
+> data (a non-admin gets `403`, as on the System Health tiles). What they show is
+> then bounded by real prod Stripe data — early operation may be sparse or `0`,
+> never fabricated. This supersedes the 2026-07 *"renders mock until the flip"*
+> note; the definitive per-widget state is still the widget's freshness badge /
+> the CF Pages env, not this page. The **gameplay + KPI slice** (`/matches`, `/players`, `/kpis`) is now **live
 > server-side** — **executed as WP-374 / EC-403 / D-24169** — via
 > `apps/server/src/dashboard/dashboardGameplay.{types,logic,routes}.ts`. `/matches`
 > reads the `bgio.matches` blob as a read-only **match-summary projection**
@@ -171,7 +177,9 @@ dashboard** (see the DR-readiness note below); `/metrics/dau`, `/alerts`, and
 > `state`/`log`), `/players` aggregates `competitive_scores` (with an *approximate*
 > `lastActive` — no activity log exists), and `/kpis` returns the derivable subset
 > with prior-window trends (**DAU omitted** — no activity signal). As with billing,
-> these render mock in the deployed dashboard until the live flip. `/metrics/dau`
+> that flip is now on in prod (2026-08-10), so these fetch **live** for an admin
+> operator — the figures reflect the real gameplay tables (sparse in early
+> operation). `/metrics/dau`
 > stays deferred, and `/system/nodes` (infra telemetry) and `/alerts` (no alerting
 > model) stay blocked until that data infrastructure exists.
 
