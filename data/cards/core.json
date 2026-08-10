@@ -2158,7 +2158,7 @@
           "vAttack": "5",
           "imageUrl": "https://images.legendary-arena.com/core/core-vi-masters-of-evil-melter.webp",
           "abilities": [
-            "Fight: Each player reveals the top card of their deck. For each card, you choose to KO it or put it back."
+            "Fight: Each player reveals the top card of their deck. For each card, you choose to KO it or put it back. [effect:ko-cullable-each-deck-top]"
           ],
           "copies": 2
         },

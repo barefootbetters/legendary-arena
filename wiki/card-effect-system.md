@@ -149,13 +149,13 @@ The villain/henchman path in
 made the same move from fragmented keywords to parameters. Its executable
 vocabulary is the `VillainEffectDescriptor` — a `VillainEffectPrimitive`
 plus optional `target` / `magnitude` / `selector` / predicate params
-(`VILLAIN_EFFECT_PRIMITIVES`, fifteen entries: `ko-hero` · `gain-wound` ·
+(`VILLAIN_EFFECT_PRIMITIVES`, sixteen entries: `ko-hero` · `gain-wound` ·
 `capture-hq-hero` · `hero-deck-top-to-escape` · `capture-bystander` ·
 `scry-ko-own-deck` · `gain-attached-hero` · `reveal-or-wound` ·
 `become-scheme-twist` · `draw-cards-current` · `ko-heroes-current-by-trait` ·
 `rescue-bystanders-current-by-trait-count` ·
 `gain-wound-unless-victory-villain-group` · `override-next-hand-size` ·
-`ko-wounds-current-hand-and-discard`). A new
+`ko-wounds-current-hand-and-discard` · `ko-cullable-each-deck-top`). A new
 target / magnitude / selector variant is a descriptor **param** (a data
 marker), not a new keyword plus switch arm plus drift test (D-24023).
 
@@ -205,6 +205,27 @@ played this turn sits in-play), this scans **hand + discard only**: Wounds enter
 a deck via `gainWound` (→ discard) or a draw (→ hand) and are never played into
 in-play. It self-narrates via `pushLog` (keyword-less → no reverse-map, no
 `VillainEffectResult`).
+
+**Thinning weak cards off every deck top is a beneficial villain Fight
+(D-24332).** The `ko-cullable-each-deck-top` primitive — Melter's (Masters of
+Evil) *"Fight: Each player reveals the top card of their deck. For each card,
+you choose to KO it or put it back."* — is the sixteenth primitive: keyword-less,
+no-param, auto-resolve. Each player (sorted, for replay determinism) reveals the
+top card of their deck, reshuffling their discard into the deck first when it is
+empty (the standard reveal-reshuffle rule, shared with `scry-ko-own-deck`,
+D-24285). The printed per-card **KO-or-keep** choice collapses to a rational
+cooperative chooser: KO the revealed card only when it is **cullable** — a Wound
+or a basic starting S.H.I.E.L.D. card (Agent / Trooper) — and **keep** every real
+Hero and the recruited S.H.I.E.L.D. Officer on top. "Cullable" is the same
+worst-worthy set the interactive `scry-ko-own-deck` auto-pick uses (D-24267,
+tiers 1–2); the tier-3 lexical fallback is deliberately excluded, because
+Melter's keep-option means an un-cullable top is simply left in place rather than
+force-KO'd. Because a real Hero is **never** force-KO'd, this auto-resolve carries
+no agency loss — the failure mode that made `scry-ko-own-deck` an *interactive*
+pending choice (WP-470/D-24282: its must-KO-one rule could destroy a real Hero
+when both revealed cards were Heroes) cannot arise here — so there is no pending
+choice, no player-selection UI, and no client change. It self-narrates via
+`pushLog` (keyword-less → no reverse-map, no `VillainEffectResult`).
 
 Ten earlier `VILLAIN_EFFECT_KEYWORDS` are **frozen** as the parser's
 legacy-translation input only. `LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR`
@@ -445,6 +466,7 @@ handler reads as *applied* while the real Scheme Twist fires elsewhere.
 - WP-481 (D-24287) — the `become-scheme-twist` villain primitive (ninth primitive; an escaping villain fires a Scheme Twist)
 - WP-485 (D-24290) / WP-494 (D-24299) / WP-503 (D-24307) — the auto-resolve `draw-cards-current`, `ko-heroes-current-by-trait`, `rescue-bystanders-current-by-trait-count`, `gain-wound-unless-victory-villain-group`, and `override-next-hand-size` villain primitives (tenth–fourteenth)
 - WP-516 (D-24329) — the `ko-wounds-current-hand-and-discard` villain primitive (fifteenth; Ymir's Fight KOs the current player's Wounds from hand + discard)
+- WP-519 (D-24332) — the `ko-cullable-each-deck-top` villain primitive (sixteenth; Melter's Fight reveals every player's deck top and KOs the cullable ones — Wounds / basic S.H.I.E.L.D. starters — keeping real Heroes)
 - The hollow-effect detection and coverage-ledger spine (DESIGN-HOLLOW-EFFECT-DETECTION.md, DESIGN-EFFECT-AUTHORING-SCALE.md)
 
 ## Scaling and Open Directions

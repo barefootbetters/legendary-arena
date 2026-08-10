@@ -7,6 +7,39 @@
 
 ## Current State
 
+### WP-519 — Melter (Villain) Fight: KO Each Player's Cullable Deck-Top Card — DONE (2026-08-10)
+
+The core Masters-of-Evil villain **Melter** now plays his printed Fight — *"Each player reveals the top card
+of their deck. For each card, you choose to KO it or put it back."* — instead of doing nothing. The gap
+surfaced in a 2p co-op Secret Invasion vs Dr. Doom live-verify (2026-08-10, match `25b12dd6`): both Melter
+copies logged the D-24266 `unmarked-ability` `no-handler` breadcrumb on `onFight` (turns 10 and 29). The
+effect is player-**beneficial** (thinning weak cards is upside, and a real Hero is never KO'd), so the impact
+was low, but the ability was genuinely hollow.
+
+- **New primitive (D-24332):** `ko-cullable-each-deck-top` — the sixteenth `VillainEffectPrimitive`
+  (append-only D-24034, 15 → 16), a keyword-less **no-param auto-resolve** effect. Its handler
+  `villainEffectKoCullableEachDeckTop` iterates every player (`Object.keys(G.playerZones).sort()`), reveals
+  each deck top — reshuffling an empty deck's discard first (`reshuffleDiscardIntoDeck`, the `scry-ko-own-deck`
+  reveal-reshuffle rule, D-24285) — and KOs it to `G.ko` (`moveCardFromZone` + `koCard`) **only when cullable**.
+- **The choice-collapse (locked):** the printed per-card *"KO it or put it back"* collapses to a rational
+  cooperative chooser — KO the revealed top iff it is **cullable** (a Wound or a basic starting S.H.I.E.L.D.
+  Agent/Trooper — the `selectScryKoTarget` tiers-1–2 worst-worthy set, D-24267), otherwise **keep** it; every
+  real Hero and the recruited S.H.I.E.L.D. Officer stays on top. Because a real Hero is never force-KO'd, the
+  WP-470 `scry-ko-own-deck` agency bug (which forced a KO of one of two Heroes) cannot arise — so **no pending
+  choice, no player-selection UI, no client change** (the operator-selected fidelity level).
+- **No new parser arm** (no-param parses via the generic terminal branch); the Melter Fight line is the only
+  card marked (Baron Zemo / Ultron / Whirlwind, same group, were already marked — **not a cluster**; the four
+  co2e 2nd-edition Masters-of-Evil villains are unmarked, a separate whole-set gap).
+- **Determinism:** randomness only via the seeded reshuffle. Although `masters-of-evil` is referenced by
+  scoring fixtures, no **hashed** oracle includes/fights it (sentinel = `core/brotherhood`, `PRE_WP080_HASH`
+  = synthetic `test/test-villain-group-001`; the `parScoring.*` refs are string scenario-keys), so
+  `finalStateHash` + `PRE_WP080_HASH` are **byte-identical** (verified — full engine suite green,
+  `sim:runtime-observed:check` no diff). Regenerated `data/cards/core.json`, the villain mechanic ledger,
+  `effect-implementation-index.json`, and the mechanic provenance; refreshed the ewiki villain-effect vocab.
+- Two-commit topology (one branch, one PR). **D-24026 operator-pending** — post-deploy: fight Melter and
+  confirm a Wound / basic starter on a deck top leaves for the KO pile while a real Hero on a deck top is kept.
+  See [WP-519](work-packets/WP-519-melter-fight-ko-cullable-deck-top.md) + [EC-554](execution-checklists/EC-554-melter-fight-ko-cullable-deck-top.checklist.md).
+
 ### WP-516 — Ymir, Frost Giant King (Villain) Fight: KO Your Wounds from Hand + Discard — DONE (2026-08-09)
 
 The core Enemies-of-Asgard villain **Ymir, Frost Giant King** now plays his printed Fight — *"Choose a

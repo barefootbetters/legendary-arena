@@ -4,12 +4,12 @@
   "summary": {
     "totalRows": 717,
     "byStatus": {
-      "executable": 119,
+      "executable": 120,
       "deferred": 0,
       "unsupported": 1,
-      "unmarked": 597
+      "unmarked": 596
     },
-    "distinctMechanics": 21
+    "distinctMechanics": 22
   },
   "rows": [
     {
@@ -1843,11 +1843,11 @@
       "cardName": "Melter",
       "set": "core",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "ko-cullable-each-deck-top",
+      "status": "executable",
+      "wp": "WP-519",
+      "decision": "D-24332",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-cullable-each-deck-top"
     },
     {
       "extId": "core-villain-brotherhood-mystique",

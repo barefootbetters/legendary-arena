@@ -165,7 +165,7 @@ core-villain-hydra-hydra-kidnappers,HYDRA Kidnappers,core,villain,(unmarked),unm
 henchman-hand-ninjas,Hand Ninjas,core,henchman,(unmarked),unmarked,,,
 core-villain-brotherhood-juggernaut,Juggernaut,core,villain,ko-hero,executable,WP-252,D-24023,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 core-villain-radiation-maestro,Maestro,core,villain,(unmarked),unmarked,,,
-core-villain-masters-of-evil-melter,Melter,core,villain,(unmarked),unmarked,,,
+core-villain-masters-of-evil-melter,Melter,core,villain,ko-cullable-each-deck-top,executable,WP-519,D-24332,packages/game-engine/src/villain/villainEffects.execute.ts#ko-cullable-each-deck-top
 core-villain-brotherhood-mystique,Mystique,core,villain,become-scheme-twist,executable,WP-481,D-24287,packages/game-engine/src/villain/villainEffects.execute.ts#become-scheme-twist
 core-villain-skrulls-paibok-the-power-skrull,Paibok the Power Skrull,core,villain,(unmarked),unmarked,,,
 core-villain-brotherhood-sabretooth,Sabretooth,core,villain,reveal-or-wound,executable,WP-469,D-24281,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound

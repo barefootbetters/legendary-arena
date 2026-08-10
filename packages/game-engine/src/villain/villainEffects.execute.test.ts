@@ -1014,6 +1014,135 @@ describe('executeVillainAbilities — scry-ko-own-deck (WP-447 / D-24267)', () =
   });
 });
 
+describe('executeVillainAbilities — ko-cullable-each-deck-top (WP-519 / D-24332)', () => {
+  const WOUND_TOP = 'pile-wound' as CardExtId;
+  const AGENT = 'starting-shield-agent' as CardExtId;
+  const TROOPER = 'starting-shield-trooper' as CardExtId;
+  const OFFICER = 'pile-shield-officer' as CardExtId;
+  const HERO_A = 'core/spider-man/spider-man#0' as CardExtId;
+  const HERO_B = 'core/iron-man/iron-man#0' as CardExtId;
+
+  // why: ko-cullable-each-deck-top is keyword-less, so the hook() helper (which reads
+  // LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR) cannot build it — construct the descriptor
+  // hook directly, mirroring scryHook.
+  function melterHook(cardId: string): VillainAbilityHook {
+    return {
+      cardId: cardId as CardExtId,
+      timing: 'onFight',
+      keywords: [],
+      effects: [{ primitive: 'ko-cullable-each-deck-top' }],
+    };
+  }
+
+  // why: a deterministic reverse "shuffle" so the reshuffle-on-empty path is testable
+  // (matches the scry / draw-cards reshuffle test doubles).
+  const reverseShuffle: ShuffleProvider = {
+    random: { Shuffle: <T>(deck: T[]): T[] => [...deck].reverse() },
+  };
+
+  it("KOs each player's cullable deck top (Wound / basic starter) and keeps real Heroes (AC-1/AC-2)", () => {
+    const G = makeG({
+      hooks: [melterHook('v-melter')],
+      playerZones: {
+        '0': { deck: [WOUND_TOP, HERO_A], hand: [], discard: [], inPlay: [], victory: [] },
+        '1': { deck: [HERO_B, TROOPER], hand: [], discard: [], inPlay: [], victory: [] },
+        '2': { deck: [AGENT], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+    });
+    executeVillainAbilities(G, CTX, 'v-melter' as CardExtId, 'onFight');
+    // P0: Wound top culled, Hero kept beneath. P1: real-Hero top kept — only the TOP
+    // card is revealed, so the buried Trooper is untouched. P2: basic Agent culled.
+    assert.deepStrictEqual(G.playerZones['0']!.deck, [HERO_A], 'P0 Wound culled, Hero kept');
+    assert.deepStrictEqual(
+      G.playerZones['1']!.deck,
+      [HERO_B, TROOPER],
+      'P1 real-Hero top kept; only the top card is revealed',
+    );
+    assert.deepStrictEqual(G.playerZones['2']!.deck, [], 'P2 basic Agent culled');
+    assert.deepStrictEqual(G.ko, [WOUND_TOP, AGENT], 'culled cards go to G.ko in sorted-player order');
+  });
+
+  it('keeps the recruited S.H.I.E.L.D. Officer (not a basic starter)', () => {
+    const G = makeG({
+      hooks: [melterHook('v-melter')],
+      playerZones: {
+        '0': { deck: [OFFICER], hand: [], discard: [], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+    });
+    executeVillainAbilities(G, CTX, 'v-melter' as CardExtId, 'onFight');
+    assert.deepStrictEqual(G.playerZones['0']!.deck, [OFFICER], 'the Officer is kept, never culled');
+    assert.deepStrictEqual(G.ko, [], 'nothing culled');
+  });
+
+  it('reveals every player deck top and reshuffles an empty deck first (AC-3)', () => {
+    const G = makeG({
+      hooks: [melterHook('v-melter')],
+      playerZones: {
+        // why: P0 deck empty with a Wound in discard — the reshuffle must bring it up.
+        '0': { deck: [], hand: [], discard: [WOUND_TOP], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+    });
+    executeVillainAbilities(G, CTX, 'v-melter' as CardExtId, 'onFight', reverseShuffle);
+    // reverseShuffle([WOUND]) === [WOUND] appended under the empty deck → top = Wound → culled.
+    assert.deepStrictEqual(G.ko, [WOUND_TOP], 'the reshuffled Wound is revealed and culled');
+    assert.deepStrictEqual(G.playerZones['0']!.deck, [], 'deck empty after culling the sole reshuffled card');
+    assert.deepStrictEqual(G.playerZones['0']!.discard, [], 'discard consumed by the reshuffle');
+  });
+
+  it('no-ops for a player with empty deck AND empty discard — no crash, no hollow (AC-3)', () => {
+    const G = makeG({
+      hooks: [melterHook('v-melter')],
+      playerZones: {
+        '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+    });
+    executeVillainAbilities(G, CTX, 'v-melter' as CardExtId, 'onFight', reverseShuffle);
+    assert.deepStrictEqual(G.ko, [], 'nothing to reveal or cull');
+    assert.equal(G.diagnostics?.hollowEffects?.length ?? 0, 0, 'reachable no-op, not a hollow');
+  });
+
+  it('self-narrates an applied line naming the culled cards and records NO hollow (AC-1/AC-6)', () => {
+    const G = makeG({
+      hooks: [melterHook('v-melter')],
+      playerZones: {
+        '0': { deck: [WOUND_TOP, HERO_A], hand: [], discard: [], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      messages: [],
+      cardDisplayData: { [WOUND_TOP]: { name: 'Wound' } },
+    });
+    executeVillainAbilities(G, CTX, 'v-melter' as CardExtId, 'onFight');
+    const last = G.messages![G.messages!.length - 1]!;
+    assert.match(last.text, /Fight effect: KO'd 1 card\(s\)/, 'names the culled count');
+    assert.match(last.text, /Wound/, 'names the culled card');
+    assert.equal(last.outcome, 'applied');
+    // why: the marked line now carries a descriptor, so the D-24266 unmarked-ability
+    // detector records NO `no-handler` hollow — the live-surfaced breadcrumb is gone.
+    assert.equal(G.diagnostics?.hollowEffects?.length ?? 0, 0, 'marked line → no unmarked-ability hollow');
+  });
+
+  it('self-narrates a blocked no-op when no deck top is cullable (real Heroes only)', () => {
+    const G = makeG({
+      hooks: [melterHook('v-melter')],
+      playerZones: {
+        '0': { deck: [HERO_A], hand: [], discard: [], inPlay: [], victory: [] },
+        '1': { deck: [HERO_B], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-melter' as CardExtId, 'onFight');
+    assert.deepStrictEqual(G.ko, [], 'no real Hero is ever culled');
+    assert.deepStrictEqual(G.playerZones['0']!.deck, [HERO_A], 'P0 Hero kept on top');
+    assert.deepStrictEqual(G.playerZones['1']!.deck, [HERO_B], 'P1 Hero kept on top');
+    const last = G.messages![G.messages!.length - 1]!;
+    assert.match(last.text, /nothing worth KO/);
+    assert.equal(last.outcome, 'blocked');
+  });
+});
+
 describe('executeVillainAbilities — reveal-or-wound (WP-469 / D-24281)', () => {
   const XMEN = 'core/wolverine/wolverine#0' as CardExtId; // team x-men
   const RANGED = 'core/hawkeye/hawkeye#0' as CardExtId; // hero-class ranged

@@ -103,6 +103,7 @@
       },
       "masters-of-evil": {
         "baron-zemo": { "fight": ["rescue-bystanders-current-by-trait-count:team:avengers"] },
+        "melter": { "fight": ["ko-cullable-each-deck-top"] },
         "ultron": { "escape": ["reveal-or-wound:hc:tech"] },
         "whirlwind": { "fight": ["ko-hero:current:2@rooftops+bridge"] }
       },
