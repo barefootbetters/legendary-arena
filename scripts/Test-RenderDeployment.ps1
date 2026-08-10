@@ -117,6 +117,29 @@ $serverProbes = @(
         ExpectStatus   = 401
         TimeoutSec     = $script:WarmRequestTimeoutSec
     }
+    # why: the /api/dash/* admin family (WP-373/374/439/517) had zero smoke
+    # coverage — the profile/entitlements probes above exercise the
+    # authenticated-session gate, not the admin-session gate. These two probe
+    # the admin-gated dashboard feeds unauthenticated: requireAdminSession's
+    # upstream session check fails with no bearer, so the route returns 401
+    # (admin `forbidden`/403 only fires for an authenticated non-admin, which a
+    # tokenless probe cannot produce). A 401 here proves both that the route is
+    # registered on the deployed server AND that the admin gate is active — the
+    # exact "is the endpoint deployed / is the gate wired" signal.
+    @{
+        Name           = 'dashboard runtime-health admin gate (GET /api/dash/system/runtime)'
+        Path           = '/api/dash/system/runtime'
+        Method         = 'GET'
+        ExpectStatus   = 401
+        TimeoutSec     = $script:WarmRequestTimeoutSec
+    }
+    @{
+        Name           = 'dashboard DR-readiness admin gate (GET /api/dash/dr-readiness)'
+        Path           = '/api/dash/dr-readiness'
+        Method         = 'GET'
+        ExpectStatus   = 401
+        TimeoutSec     = $script:WarmRequestTimeoutSec
+    }
 )
 
 if ($IncludeWebhookProbe) {
