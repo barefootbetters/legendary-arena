@@ -51,8 +51,8 @@ Consequence, stated plainly so it is not discovered during a crisis:
 **The core provision-and-drill work is complete** (2026-08-09, §7): secrets
 provisioned, first backup in R2, and the R2 object restored in a drill.
 Grandfather-father-son long-term retention (weekly/monthly tiers) is now **enabled**
-(2026-08-09, §3). The second offsite copy (3-2-1) is **wired** into `db-backup.yml`
-(pCloud mirror), pending only its `RCLONE_PCLOUD_TOKEN` secret (§3).
+(2026-08-09, §3). The second offsite copy (3-2-1) is **live** — the dump mirrors to pCloud each run
+and the pCloud copy has been restored in a drill (2026-08-10, §7).
 
 ---
 
@@ -120,7 +120,7 @@ secrets.** The server is replaceable; those three are not.
 |---|---|---|---|---|---|
 | Database (managed) | Render Postgres | Render automated snapshots + PITR | Render (internal) | Per Render plan — **confirm in dashboard** | **Never drilled** |
 | Database (external) | Render Postgres | `pg_dump -Fc` — daily GitHub Actions (`.github/workflows/db-backup.yml`, WP-416) | Cloudflare R2 (private `R2_BACKUP_BUCKET`, `db-backups/` prefix) | GFS: 35 daily · 12 weekly · 12 monthly | **Drilled 2026-08-09 (§7)** |
-| Database (2nd offsite) | the same dump | `rclone copyto` — same `db-backup.yml` run, after the R2 upload | pCloud (`db-backups/` path), independent of Cloudflare | GFS mirror (same selector) | **pending `RCLONE_PCLOUD_TOKEN`** |
+| Database (2nd offsite) | the same dump | `rclone copyto` — same `db-backup.yml` run, after the R2 upload | pCloud (`db-backups/` path), independent of Cloudflare | GFS mirror (same selector) | **Drilled 2026-08-10 (§7)** |
 | Card images | R2 upload pipeline | manual/scripted | Cloudflare R2 | indefinite | image loads |
 | Source code | GitHub | git | GitHub + local clones | full history | every clone |
 | Secrets | operator | manual | operator secret store | operator-managed | §4 completeness |
@@ -129,11 +129,11 @@ secrets.** The server is replaceable; those three are not.
 producing daily backups, a restore has been drilled (§7), and **grandfather-
 father-son retention is enabled** — 35 daily, then one-per-week out to 12 weeks,
 then one-per-month out to 12 months (`scripts/db-backup-retention.mjs`). The
-**second offsite copy** (3-2-1) is now **wired into `db-backup.yml`**: after the R2
-upload the same dump is `rclone`-mirrored to **pCloud** — a vendor independent of
-Cloudflare — and pruned to the same GFS policy. Like the R2 leg it skips green
-until its secret (`RCLONE_PCLOUD_TOKEN`) is provisioned; until then only the R2
-copy is produced. It is additive to the existing pipeline and requires
+**second offsite copy** (3-2-1) is **live as of 2026-08-10**: after the R2 upload
+the same dump is `rclone`-mirrored to **pCloud** — a vendor independent of
+Cloudflare — and pruned to the same GFS policy. A backup run confirmed the object
+lands in both vendors, and the pCloud copy has been restored in a drill (§7). It
+is additive to the existing pipeline and requires
 **no new primary infrastructure** (no standby host, no alternate-jurisdiction copy) — those would
 be cost and attack surface aimed at risks below the license-loss and
 operational-drill gaps that actually bound recovery here.
@@ -396,6 +396,30 @@ artifact* (download the R2 object → readable archive → restore → count-che
 not a freshly-taken dump. It still did not exercise full service bring-up (§6
 Phases 3–10) — the quarterly full-rebuild drill on the Ubuntu lab remains the
 place for that.
+
+**2026-08-10 — DR-05 drill from the pCloud second copy (3-2-1 close-out).**
+
+```
+Date:                2026-08-10
+Scenario:            DR-05 — restore of the R2→pCloud mirrored object from the
+                     second vendor (pCloud), proving the 3-2-1 copy is recoverable
+Backup object key:   db-backups/2026/08/10/legendary-arena-20260810T002522Z.dump (2,534,907 bytes)
+Commit SHA restored: n/a — data-fidelity drill; schema as on `main` at backup time
+Observed RPO:        minutes (object age at drill time; daily-cadence RPO otherwise)
+Observed RTO:        6s (download 4s + restore 2s) into a throwaway local database
+Duration:            ~1 min including validation
+Result:              PASS
+Issues found:        none. pg_restore --list OK. All tables matched prod exactly:
+                     players 4, player_profiles 1, friendships 1,
+                     competitive_scores 0, bgio.matches 1.
+Corrective action:   none. The pCloud copy downloads, its archive is readable, and
+                     it restores cleanly — the second vendor is a real recovery path.
+```
+
+**Scope.** Confirms the second offsite copy is itself restorable (not merely
+present), so a single-vendor loss of Cloudflare leaves an independently-recoverable
+copy on pCloud. Same data-fidelity scope as the R2 drills; full service bring-up
+stays the quarterly Ubuntu-lab exercise.
 
 ---
 
