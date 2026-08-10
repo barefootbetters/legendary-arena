@@ -241,6 +241,36 @@ The full step contract is also documented inline in
   villain deck latches the final turn** (game.ts `turn.onMove`, D-24159 / D-24160) —
   the deck is not refilled, so its running out is itself an end-condition trigger
   rather than a reshuffle.
+- **Converted-card villains — a card that "counts as" a villain (Killbots,
+  Secret Invasion).** Some schemes turn non-villain cards into villains. The card
+  is typed **`'villain'`** in `G.villainDeckCardTypes` (so it reveals into the city,
+  is fought, and escapes via the **existing** villain path — `RevealedCardType`
+  is *not* extended) plus a lazily-materialized **`G.convertedVillainOrigins`**
+  overlay recording the group it counts as (`'killbot'` | `'skrull'`; absent for
+  every non-converting game, so the state hash is unchanged). Two schemes use it:
+  **Replace Earth's Leaders with Killbots** (WP-513 / D-24324/D-24325) converts its
+  18 villain-deck Bystanders to Killbot Villains at setup, whose attack equals a
+  per-scheme "twists next to this Scheme" counter (`G.counters`, seeded 3, +1 per
+  Killbots twist); **Secret Invasion of the Skrull Shapeshifters** (WP-514 /
+  D-24326/D-24327) shuffles **12 Heroes from the Hero Deck into the Villain Deck**
+  at setup — a deterministic cross-deck conversion (the top 12 of the shuffled hero
+  reservoir are taken *before* the HQ is filled, typed `'villain'` + origin
+  `'skrull'`, and the villain deck is re-shuffled by a single scheme-gated RNG draw
+  that is the *last* setup draw, so non-Secret-Invasion games stay byte-identical).
+  A Skrull's attack is the Hero's **cost + 2** (a documented proxy for the printed
+  "VP + 2" — no card data carries hero VP); **defeating a Skrull gains the Hero into
+  the defeating player's discard** (a guarded branch in the shared city-villain
+  defeat core) rather than the victory pile; and the `secret-invasion` twist drags
+  the highest-cost HQ Hero into the Sewers as a fresh Skrull.
+- **Escaped-converted-count loss.** Both converted-card schemes lose via the
+  `escaped-converted-count` `resourceLossCondition` kind (D-24325 / D-24326), which
+  counts escaped-pile entries by **converted `origin`** — never the shared
+  `'villain'` type, which would wrongly include the scheme's real villains: Killbots
+  at **5** escaped Killbots, Secret Invasion at **6** escaped Skrulls. This is a
+  sibling of the `escaped-pile-count` kind above; a third kind, `pile-depleted`
+  (Civil War hero deck / Legacy Virus wound stack), is checked in `turn.onMove`
+  rather than the escape path. See [Scheme Twist](scheme-twist.md) for the full
+  six-scheme resource-loss taxonomy.
 
 ## Edge Cases
 
@@ -329,7 +359,11 @@ drift tests), not a card-data edit:
 - [`packages/game-engine/src/board/bystanders.logic.ts`](../packages/game-engine/src/board/bystanders.logic.ts)
   — `carryEscapedBystandersToPile` (carry attached bystanders into `G.escapedPile` on escape, WP-508)
 - [`packages/game-engine/src/rules/schemeResourceLoss.ts`](../packages/game-engine/src/rules/schemeResourceLoss.ts)
-  — `countEscapedPileByType` + `applyEscapedPileResourceLoss` (per-scheme escaped-pile resource-loss, WP-508/509)
+  — `countEscapedPileByType` + `countEscapedByConvertedOrigin` + `applyEscapedPileResourceLoss` + `applyPileDepletionResourceLoss` (the three resource-loss kinds, WP-508..514)
+- [`packages/game-engine/src/setup/convertHeroesToSkrulls.ts`](../packages/game-engine/src/setup/convertHeroesToSkrulls.ts)
+  — Secret Invasion's deterministic 12-hero cross-deck conversion at setup (WP-514)
+- [`packages/game-engine/src/setup/schemeSetupSizing.ts`](../packages/game-engine/src/setup/schemeSetupSizing.ts)
+  — `resolveEffectiveWoundsCount` (Legacy Virus 6×players, WP-511) + `resolveEffectiveHeroDeckIds` (Civil War 4-hero @2p, WP-515 drafted)
 - [`packages/game-engine/src/board/boardKeywords.logic.ts`](../packages/game-engine/src/board/boardKeywords.logic.ts)
   — `hasAmbush` fast-check
 - [`packages/game-engine/src/villain/villainEffects.execute.ts`](../packages/game-engine/src/villain/villainEffects.execute.ts)
@@ -354,6 +388,10 @@ drift tests), not a card-data edit:
 - 2026-08-01: Correctness pass against `villainDeck.reveal.ts` — fixed bystander routing (capture, not discard), scheme-twist/mastermind-strike final piles (`twistPile`/`strikePile`, not discard), empty-deck handling (terminal, no reshuffle), and the Ambush description; documented the move-wrapper guards, the real escape order, and the tabletop features not yet modeled
 - WP-508 (D-24314 / D-24315): escaping villains now **carry** their attached bystanders into `G.escapedPile` (renamed `resolveEscapedBystanders` → `carryEscapedBystandersToPile`), not back to the supply; introduced the data-only `SchemeTwistConfig.resourceLossCondition` (`escaped-pile-count`) framework that counts the escaped pile by card type and latches `SCHEME_LOSS` from the escape path — Midtown Bank Robbery wired at 8 carried-away Bystanders
 - WP-509 (D-24316 / D-24317): **retired** the generic `escapedVillains >= ESCAPE_LIMIT (8)` scheme-wins loss; escape losses are now per-scheme — Negative Zone Prison Breakout loses at 12 escaped **Villains** (villains only, counted by card type). `ESCAPED_VILLAINS` counter + `ESCAPE_LIMIT` constant retained (counter still increments; `ESCAPE_LIMIT` is now only the co-op loss-cause heuristic threshold)
+- WP-510 (D-24318 / D-24319): second resource-loss kind — `pile-depleted` — Super Hero Civil War loses when the **Hero Deck runs out** (`G.heroDeck` empty), checked in the play-phase `turn.onMove` hook (a per-move chokepoint, since the scheme's "KO all HQ heroes" twist drains the deck via refills outside any recruit); the twist proxy is suppressed
+- WP-511 (D-24320 / D-24321): reused `pile-depleted` for **The Legacy Virus** (Wound stack empty, `G.piles.wounds`) + first scheme-specific **setup sizing** — the Wound stack builds at `6×players` (post-validation override) so it is small enough to run out
+- WP-513 (D-24324 / D-24325): **converted-card villains** — `G.convertedVillainOrigins` overlay + the `escaped-converted-count` loss kind; **Replace Earth's Leaders with Killbots** converts its 18 villain-deck Bystanders to Killbot Villains (attack = a per-scheme twist counter), losing at 5 escaped Killbots (counted by origin, not the shared `'villain'` type)
+- WP-514 (D-24326 / D-24327): second converted-card scheme — **Secret Invasion of the Skrull Shapeshifters** shuffles 12 Heroes from the Hero Deck into the Villain Deck at setup (deterministic cross-deck re-shuffle, the last setup RNG draw) as Skrull Villains (attack = Hero cost + 2, a proxy for the printed VP + 2); defeating a Skrull gains the Hero to your discard; the `secret-invasion` twist drags the highest-cost HQ Hero to the Sewers; Evil Wins at 6 escaped Skrulls. Resource-loss-scheme-fidelity epic complete (all six schemes faithful)
 
 ## References
 

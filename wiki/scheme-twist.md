@@ -82,12 +82,16 @@ is the registered `ImplementationMap` entry. Since WP-200 it is a
 and, when a config is found, invokes the matching resolver from
 `SCHEME_TWIST_RESOLVERS`
 ([`rules/schemeTwistResolvers.ts`](../packages/game-engine/src/rules/schemeTwistResolvers.ts)).
-The five resolvers (`reveal-or-punish`, `chained-reveals`, `wound-all`,
-`ko-from-hq`, `midtown-bank-robbery`) carry out the scheme's printed
-twist text — they **mutate `G` directly** and push a `schemeTwistResolved`
-event, rather than returning effects (see the resolver note under
-[Rule Execution Pipeline](rule-execution-pipeline.md)). An unconfigured
-scheme runs no card-specific text (counter-only).
+The seven resolvers (`reveal-or-punish`, `chained-reveals`, `wound-all`,
+`ko-from-hq`, `midtown-bank-robbery`, `killbots`, `secret-invasion`) carry
+out the scheme's printed twist text — they **mutate `G` directly** and push
+a `schemeTwistResolved` event, rather than returning effects (see the
+resolver note under [Rule Execution Pipeline](rule-execution-pipeline.md)).
+The last two are the converted-card schemes: `killbots` raises the
+per-scheme "twists next to this Scheme" counter that drives Killbot attack
+(WP-513), and `secret-invasion` drags the highest-cost HQ Hero into the
+Sewers as a Skrull Villain (WP-514). An unconfigured scheme runs no
+card-specific text (counter-only).
 
 After the resolver (or fallback) runs, the dispatcher appends two
 generic effects unconditionally, for every scheme:
@@ -161,43 +165,63 @@ printed *"Twist N: Evil Wins!"* schemes:
 | Unleash the Power of the Cosmic Cube | Twist 8 |
 
 For the other **six** core schemes the printed Evil-Wins is a
-**resource** condition, and the twist count is only a **doom-clock
-proxy** at the full twist-stack size (D-24178): the engine ends the game
-when the last twist is drawn *as a stand-in* for a loss condition it does
-not yet model.
+**resource** condition. The twist count *used to be* only a **doom-clock
+proxy** at the full twist-stack size (D-24178) — the engine ended the game
+when the last twist was drawn *as a stand-in* for a loss condition it did
+not model. **As of the resource-loss-scheme-fidelity epic (WP-508..514,
+shipped 2026-08), all six are now modelled on their real conditions**, and
+the twist-count proxy is *suppressed* for each (a scheme that declares a
+`resourceLossCondition` no longer loses on twist count).
 
 | Scheme | Printed Evil-Wins (real) | Modelled today |
 |---|---|---|
-| Midtown Bank Robbery | 8 Bystanders carried away by escaping Villains | proxy @ 8 twists |
-| Negative Zone Prison Breakout | 12 Villains escape | proxy @ 8 twists |
-| The Legacy Virus | Wound stack runs out | proxy @ 8 twists |
-| Super Hero Civil War | Hero Deck runs out | proxy @ 8/5 twists |
-| Secret Invasion of the Skrull Shapeshifters | 6 Heroes reach the Escaped Villains pile | *unconfigured* — proxy @ 7 |
-| Replace Earth's Leaders with Killbots | 5 "Killbots" escape | *unconfigured* — proxy @ 7 |
+| Midtown Bank Robbery | 8 Bystanders carried away by escaping Villains | ✅ `escaped-pile-count` / bystander / 8 (WP-508) |
+| Negative Zone Prison Breakout | 12 Villains escape | ✅ `escaped-pile-count` / villain / 12 (WP-509) |
+| Super Hero Civil War | Hero Deck runs out | ✅ `pile-depleted` / heroDeck (WP-510); "4 Heroes at 2p" deck sizing drafted (WP-515) |
+| The Legacy Virus | Wound stack runs out | ✅ `pile-depleted` / wounds; stack sized 6×players (WP-511) |
+| Replace Earth's Leaders with Killbots | 5 "Killbots" escape | ✅ `escaped-converted-count` / killbot / 5 (WP-513) |
+| Secret Invasion of the Skrull Shapeshifters | 6 Heroes reach the Escaped Villains pile | ✅ `escaped-converted-count` / skrull / 6 (WP-514) |
 
-**Consequence of the proxy.** A resource-loss scheme can end for evil
-even though its real condition is nowhere near met. Observed 2026-08-07:
-a Midtown Bank Robbery co-op match ended `scheme-wins` the instant the
-eighth twist was drawn, with an **empty** Escaped Villains pile (zero
-Bystanders carried away) and a dominant hero board. Two schemes are worse
-off — Secret Invasion and Killbots are **unconfigured**, so they fall
-back to the arbitrary 7; and Killbots has only 5 twists in its villain
-deck (3 more sit beside the Scheme), so its proxy is *unreachable* and it
-can never lose on twist count at all.
+**Why the proxy was wrong (historical).** A resource-loss scheme could end
+for evil even though its real condition was nowhere near met. Observed
+2026-08-07: a Midtown Bank Robbery co-op ended `scheme-wins` the instant
+the eighth twist was drawn, with an **empty** Escaped Villains pile and a
+dominant hero board. Killbots was worse — only 5 twists sit in its villain
+deck (3 more beside the Scheme), so its proxy was *unreachable* and it
+could never lose on twist count at all. Both are the motivation for the
+epic below.
 
-**Replacing the proxy.** The resource-loss-scheme-fidelity epic (WP-508+,
-in progress — not yet shipped) models the real conditions. Its first
-mechanic is the *escaped-pile count*: escaping villains carry their
-captured Bystanders into `G.escapedPile` (D-24314, replacing the
-return-to-supply behaviour), and a data-only
-`SchemeTwistConfig.resourceLossCondition` counts escaped-pile entries of
-a given card type against a threshold — writing `SCHEME_LOSS` from the
-escape path and **suppressing the twist-count proxy** for that scheme
-(D-24315). This unifies four of the six resource schemes (bystanders,
-villains, heroes, killbots — all counted in the escaped pile); Legacy
-Virus (wound stack empty) and Civil War (hero deck empty) are modelled
-separately. Until a scheme's real condition lands, its twist-stack proxy
-remains in force.
+**The three resource-loss kinds** (`SchemeTwistConfig.resourceLossCondition`,
+a data-only discriminated union on `kind`; each writes `SCHEME_LOSS` from
+its check site and suppresses the twist proxy — `evaluateEndgame` stays
+counter-only):
+
+- **`escaped-pile-count`** (D-24315) — counts entries of a `cardType` in
+  `G.escapedPile` against a `threshold`, checked in the escape path.
+  Escaping villains **carry** their captured Bystanders into `G.escapedPile`
+  (D-24314, replacing the old return-to-supply). Midtown (bystander/8),
+  Negative Zone (villain/12).
+- **`pile-depleted`** (D-24318/D-24320) — a named pile reaching zero:
+  `heroDeck` (Civil War, WP-510) or `wounds` (Legacy Virus, WP-511),
+  checked in the play-phase `turn.onMove` hook (a central per-move
+  chokepoint, since twist-driven refills can drain the pile outside any
+  recruit). Some schemes also need **setup sizing** so the pile is small
+  enough to run out — Legacy Virus builds `6×players` Wounds (D-24321);
+  Civil War builds a 4-hero deck at 2 players (WP-515, drafted).
+- **`escaped-converted-count`** (D-24325/D-24326) — the **converted-card**
+  schemes: a card that "counts as" a villain of a named group is typed
+  `'villain'` for native routing plus a `G.convertedVillainOrigins` overlay
+  (`'killbot'` | `'skrull'`); the loss counts escaped entries by **origin**
+  (never the shared `'villain'` type, which would include real villains).
+  Killbots — its 18 villain-deck Bystanders convert, attack = a per-scheme
+  "twists next to this Scheme" counter (WP-513). Secret Invasion — setup
+  shuffles 12 Heroes from the Hero Deck into the Villain Deck as Skrull
+  Villains (attack = the Hero's cost + 2, a documented proxy for the
+  printed VP + 2, which no card data carries); defeating a Skrull **gains**
+  the Hero into your discard; the `secret-invasion` twist drags the
+  highest-cost HQ Hero into the Sewers as a Skrull; Evil Wins at 6 escaped
+  Skrulls (WP-514). See [Villain Deck](villain-deck.md) for the
+  converted-card model and the cross-deck setup shuffle.
 
 ## Interactions
 
@@ -292,7 +316,8 @@ remains in force.
 - WP-024: WP-009B stubs replaced with real handlers; threshold + loss-counter logic landed via EC-024
 - WP-200: `schemeTwistHandler` became a config-driven dispatcher (`SCHEME_TWIST_CONFIGS` + the five `SCHEME_TWIST_RESOLVERS`); resolvers mutate `G` and emit a `schemeTwistResolved` event
 - D-24178: per-scheme loss threshold = printed twist-stack size (`lossThreshold` / `lossThresholdByPlayerCount`); `MVP_SCHEME_TWIST_THRESHOLD = 7` demoted to unconfigured-only fallback; records the twist-count loss as a doom-clock proxy for the six resource-loss schemes
-- WP-508+ (in progress): resource-loss-scheme-fidelity epic — models the real Evil-Wins conditions (escaped-pile carry-away + `resourceLossCondition`, D-24314 / D-24315) and suppresses the proxy per scheme
+- WP-508..514 (shipped 2026-08): resource-loss-scheme-fidelity epic — models the real Evil-Wins conditions for all six resource schemes via three `resourceLossCondition` kinds and suppresses the proxy per scheme. WP-508 `escaped-pile-count` framework + Midtown (D-24314/D-24315); WP-509 Negative Zone + retired generic `ESCAPE_LIMIT` (D-24316/D-24317); WP-510 `pile-depleted` + Civil War hero-deck (D-24318/D-24319); WP-511 Legacy Virus wounds + `6×players` setup sizing (D-24320/D-24321); WP-513 converted-card villains (`convertedVillainOrigins`) + `escaped-converted-count` + Killbots (D-24324/D-24325); WP-514 Secret Invasion cross-deck hero→Skrull conversion + defeat-to-gain + HQ→Sewers twist (D-24326/D-24327, live-verified). The `SCHEME_TWIST_RESOLVERS` registry grew to **seven** (added `killbots`, `secret-invasion`)
+- WP-515 (drafted, D-24328): Super Hero Civil War "use only 4 Heroes at 2 players" hero-deck setup sizing — makes the WP-510 hero-deck-depletion loss reachable at 2p (mirrors WP-511's wound sizing)
 
 ## References
 
