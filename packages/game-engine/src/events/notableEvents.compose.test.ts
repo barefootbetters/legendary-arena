@@ -71,6 +71,37 @@ describe('composeFightNarrative (WP-319 — names the effect targets)', () => {
     );
   });
 
+  it('appends the Skrull-gain clause when skrullGained is true (WP-518 — no bystanders, no effects)', () => {
+    const narrative = composeFightNarrative('Optic Blast', 0, [], true);
+    assert.equal(
+      narrative,
+      'Fought "Optic Blast" and gained the Hero into the active player\'s discard pile.',
+    );
+  });
+
+  it('places the Skrull-gain clause after the bystander clause and before the Fight effect clause (WP-518)', () => {
+    const narrative = composeFightNarrative(
+      'Determination',
+      1,
+      [{ keyword: 'koHeroCurrentPlayer', targetNames: ['Wolverine'] }],
+      true,
+    );
+    assert.equal(
+      narrative,
+      'Fought "Determination" and rescued 1 bystander(s) and gained the Hero into the active player\'s discard pile; Fight effect: the active player KO’d a hero (Wolverine).',
+    );
+  });
+
+  it('omits the Skrull-gain clause when skrullGained is false — byte-identical to the 3-arg form (WP-518)', () => {
+    // why: WP-518 — the fourth param defaults to false; an explicit false must
+    // reproduce the pre-WP-518 output exactly, so ordinary villain defeats (and
+    // the hashed notableEvents narrative) are unchanged.
+    assert.equal(
+      composeFightNarrative('Magneto', 2, [], false),
+      composeFightNarrative('Magneto', 2, []),
+    );
+  });
+
   it('falls back to the raw cardId when display data was missing at the call site', () => {
     // why: defensive fallback — the call site substitutes the raw cardId
     // into `cardName` when `G.cardDisplayData[cardId]` is missing, so the

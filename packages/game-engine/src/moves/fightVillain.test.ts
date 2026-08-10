@@ -568,6 +568,45 @@ describe('defeatCityVillainCore — Skrull defeat-to-gain (WP-514 / D-24327)', (
     );
   });
 
+  it('WP-518: the fightResolved overlay narrative announces the Skrull gain', () => {
+    const gameState = createMockGameState({
+      city: ['hero-skrull', null, null, null, null],
+    });
+    gameState.convertedVillainOrigins = {
+      'hero-skrull': 'skrull',
+    } as LegendaryGameState['convertedVillainOrigins'];
+
+    defeatCityVillainCore(gameState, { currentPlayer: '0' }, 0, shuffleContext);
+
+    const event = gameState.notableEvents[gameState.notableEvents.length - 1]!;
+    assert.equal(event.type, 'fightResolved');
+    if (event.type === 'fightResolved') {
+      // why: WP-518 / D-24331 — the center-screen overlay must name the gain, not
+      // just the durable log; otherwise the Skrull defeat reads as an ordinary kill.
+      assert.ok(
+        event.narrative.includes("gained the Hero into the active player's discard pile"),
+        'the overlay narrative announces the Skrull gain',
+      );
+    }
+  });
+
+  it('WP-518: a non-Skrull defeat narrative does NOT mention a gain (byte-identical path)', () => {
+    const gameState = createMockGameState({
+      city: ['villain-real', null, null, null, null],
+    });
+
+    defeatCityVillainCore(gameState, { currentPlayer: '0' }, 0, shuffleContext);
+
+    const event = gameState.notableEvents[gameState.notableEvents.length - 1]!;
+    assert.equal(event.type, 'fightResolved');
+    if (event.type === 'fightResolved') {
+      assert.ok(
+        !event.narrative.includes('gained the Hero'),
+        'an ordinary villain defeat narrative carries no Skrull-gain clause',
+      );
+    }
+  });
+
   it('a non-Skrull villain still routes to the victory pile (non-vacuous both-ways)', () => {
     const gameState = createMockGameState({
       city: ['villain-real', null, null, null, null],
