@@ -200,6 +200,15 @@ export interface VillainEffectResult {
 // and self-narrate via pushLog — no pending-choice, no block-all guard, no resolve
 // move (auto-resolve). Adding a primitive requires updating both this union and the
 // array below together (drift test), plus a DECISIONS.md entry.
+// why: D-24329 — `ko-wounds-current-hand-and-discard` is the fifteenth primitive
+// (append-only, position 15), the first Wound-KO villain primitive: the current
+// (fighting) player KOs every Wound (the shared `WOUND_EXT_ID` `pile-wound`) from
+// their own hand + discard pile (Ymir, Frost Giant King — "Fight: Choose a player.
+// That player KOs any number of Wounds from their hand and discard pile."). "Choose a
+// player" collapses to the current player and "any number" to KO-all in solo/co-op
+// (a rational chooser KOs all their own Wounds — pure upside). No-param (parses via
+// the generic no-param branch); keyword-less (no LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR
+// entry), so it reverse-maps to `undefined` and self-narrates via pushLog.
 export type VillainEffectPrimitive =
   | 'ko-hero'
   | 'gain-wound'
@@ -214,7 +223,8 @@ export type VillainEffectPrimitive =
   | 'ko-heroes-current-by-trait'
   | 'rescue-bystanders-current-by-trait-count'
   | 'gain-wound-unless-victory-villain-group'
-  | 'override-next-hand-size';
+  | 'override-next-hand-size'
+  | 'ko-wounds-current-hand-and-discard';
 
 // why: drift-detection array — must match VillainEffectPrimitive exactly
 // (villainAbility.types.test.ts asserts bidirectional parity). Adding a
@@ -233,6 +243,9 @@ export type VillainEffectPrimitive =
 // core spider-foes Doctor Octopus villain Fight: sets the fighting player's next
 // `onBegin` hand-fill target to `magnitude` (8) by writing the WP-497-owned
 // shared `G.handSizeOverrides` field; keyword-less auto-resolve, self-narrates).
+// `ko-wounds-current-hand-and-discard` appended at position 15 by WP-516 (D-24329 —
+// Ymir, Frost Giant King Fight: the current player KOs every Wound from their hand +
+// discard; keyword-less no-param auto-resolve, self-narrates).
 /** All villain effect primitives in canonical order. Single source of truth. */
 export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'ko-hero',
@@ -249,6 +262,7 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'rescue-bystanders-current-by-trait-count',
   'gain-wound-unless-victory-villain-group',
   'override-next-hand-size',
+  'ko-wounds-current-hand-and-discard',
 ] as const;
 
 /**

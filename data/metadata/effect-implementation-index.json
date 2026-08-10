@@ -3,14 +3,14 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1823,
+    "totalEntries": 1824,
     "byScope": {
       "hero": 651,
-      "villain": 716,
+      "villain": 717,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 354,
+      "executable": 355,
       "deferred": 0,
       "condition": 5,
       "unsupported": 367,
@@ -6290,6 +6290,17 @@
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound",
       "wp": "WP-469",
       "decision": "D-24281"
+    },
+    {
+      "extId": "core-villain-enemies-of-asgard-ymir-frost-giant-king",
+      "name": "Ymir, Frost Giant King",
+      "set": "core",
+      "scope": "villain",
+      "mechanic": "ko-wounds-current-hand-and-discard",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-wounds-current-hand-and-discard",
+      "wp": "WP-516",
+      "decision": "D-24329"
     },
     {
       "extId": "core-villain-enemies-of-asgard-ymir-frost-giant-king",
@@ -27738,6 +27749,7 @@
     "core-villain-enemies-of-asgard-ymir-frost-giant-king": {
       "scope": "villain",
       "mechanics": [
+        "ko-wounds-current-hand-and-discard",
         "reveal-or-wound"
       ]
     },

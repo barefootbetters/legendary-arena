@@ -38,6 +38,7 @@
     "defeat-with-bystander": { "wp": "WP-486", "decision": "D-24291" },
     "gain-wound-unless-victory-villain-group": { "wp": "WP-494", "decision": "D-24299" },
     "override-next-hand-size": { "wp": "WP-503", "decision": "D-24307" },
+    "ko-wounds-current-hand-and-discard": { "wp": "WP-516", "decision": "D-24329" },
     "draw": { "wp": "WP-022", "decision": "D-2201" },
     "rescue": { "wp": "WP-215", "decision": "D-21501" },
     "undercover": { "wp": "WP-282", "decision": "D-24060" },

@@ -111,7 +111,7 @@ function isLockedEffectKeyword(keyword) {
 // why: WP-252 / D-24023 — local hand-synced copy of the engine's
 // VILLAIN_EFFECT_PRIMITIVES (packages/game-engine/src/rules/villainAbility.types.ts).
 // Same no-import-from-packages discipline and loud-fail-on-drift posture as
-// VILLAIN_EFFECT_KEYWORDS above. The 8 primitives back the parameterized
+// VILLAIN_EFFECT_KEYWORDS above. The 15 primitives back the parameterized
 // [effect:<primitive>:<param>...] grammar the engine parser also accepts.
 // `scry-ko-own-deck` (no-param) appended by WP-447 (D-24267);
 // `gain-attached-hero` (no-param) appended by WP-450 (D-24270);
@@ -123,6 +123,9 @@ function isLockedEffectKeyword(keyword) {
 // use the parameterized grammar (Enchantress / Destroyer / Baron Zemo).
 // `override-next-hand-size` (:<N>) appended by WP-503 (D-24307 — the core
 // spider-foes Doctor Octopus villain Fight: draw N (8) next hand instead of 6).
+// `ko-wounds-current-hand-and-discard` (no-param) appended by WP-516 (D-24329 —
+// Ymir, Frost Giant King Fight: the current player KOs every Wound from their hand +
+// discard; validates via the terminal no-param `return parts.length === 1` branch).
 const VILLAIN_EFFECT_PRIMITIVES = [
   'ko-hero',
   'gain-wound',
@@ -138,6 +141,7 @@ const VILLAIN_EFFECT_PRIMITIVES = [
   'rescue-bystanders-current-by-trait-count',
   'gain-wound-unless-victory-villain-group',
   'override-next-hand-size',
+  'ko-wounds-current-hand-and-discard',
 ];
 
 // why: WP-489 / D-24295 — hand-synced local copy of the engine's CITY_SPACE_NAMES

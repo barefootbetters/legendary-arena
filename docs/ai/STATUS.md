@@ -7,6 +7,34 @@
 
 ## Current State
 
+### WP-516 — Ymir, Frost Giant King (Villain) Fight: KO Your Wounds from Hand + Discard — DONE (2026-08-09)
+
+The core Enemies-of-Asgard villain **Ymir, Frost Giant King** now plays his printed Fight — *"Choose a
+player. That player KOs any number of Wounds from their hand and discard pile."* — instead of doing nothing.
+The gap surfaced in passing during the WP-514 Secret Invasion live-verify (a 2p Secret Invasion + Magneto
+co-op match): both Ymir copies logged the D-24266 `unmarked-ability` `no-handler` breadcrumb on `onFight`.
+The effect is player-**beneficial** (KO'ing Wounds is pure upside), so the impact was low, but the ability
+was genuinely hollow.
+
+- **New primitive (D-24329):** `ko-wounds-current-hand-and-discard` — the fifteenth `VillainEffectPrimitive`
+  (append-only D-24034, 14 → 15), a keyword-less **no-param auto-resolve** effect (the WP-485/WP-503 Tier-A
+  shape). Its handler `villainEffectKoWoundsCurrentHandAndDiscard` KOs every Wound (`WOUND_EXT_ID`
+  `pile-wound`) from the current (fighting) player's **hand + discard** to `G.ko`, matching by ext_id,
+  rebuilding each zone with a kept-list `for...of`, and self-narrating via `pushLog`.
+- **Two locked narrowings:** *"Choose a player"* → the **current player** and *"any number"* → **all** in the
+  shipped solo/co-op modes (a rational chooser KOs all their own Wounds — pure upside — so there is no
+  player-selection UI and no partial-KO pending choice); the scan is **hand + discard only** (not in-play —
+  Wounds are never played there, unlike `ko-heroes-current-by-trait`).
+- **No new parser arm** (no-param parses via the generic terminal branch); the Ymir Fight line is the only
+  card marked (Destroyer / Enchantress / Frost Giant, same group, were already marked — **not a cluster**).
+- **Determinism:** no `ctx.random`; no committed fixture references Enemies-of-Asgard or Ymir, so
+  `finalStateHash` + `PRE_WP080_HASH` are **byte-identical** (verified — full engine suite green,
+  `sim:runtime-observed:check` no diff). Regenerated `data/cards/core.json`, the villain mechanic ledger,
+  `effect-implementation-index.json`, and the mechanic provenance; refreshed the ewiki villain-effect vocab.
+- Lightweight lane (one branch, two-commit topology). **D-24026 live-verify operator-pending** (fight Ymir
+  with Wounds in hand/discard → they leave for the KO pile). See
+  [WP-516](work-packets/WP-516-ymir-fight-ko-wounds.md) + [EC-551](execution-checklists/EC-551-ymir-fight-ko-wounds.checklist.md).
+
 ### WP-514 — Secret Invasion of the Skrull Shapeshifters: Cross-Deck Hero Conversion + Escape Loss — DONE (2026-08-09)
 
 Secret Invasion now plays its printed rules: 12 Heroes are shuffled into the Villain Deck at setup as
