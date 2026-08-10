@@ -63,8 +63,13 @@ ledger, no `DISASTER_RECOVERY.md` §7 parse (D-24330).
 - Read-only end to end (never creates/edits/closes issues). No `packages/**` change; no
   engine/registry/determinism/persistence/RNG surface. Two-commit topology (`EC-552:` + `SPEC:`); server
   1053/0 + dashboard coverage/typecheck/lint/format green; `pnpm -r build` 0; repo-wide `--no-bail` green.
-- **User-visible:** dashboard System-Health DR-readiness tile. **D-24026 operator-pending** (the auth-gated
-  deployed dashboard — confirm the tile live post-deploy). See
+- **User-visible:** dashboard System-Health DR-readiness tile. **D-24026 ✅ live-verified 2026-08-10** — the
+  DR Readiness tile renders on the deployed `dashboard.legendary-arena.com/system` System-Health page,
+  correctly admin-gated (it returned `403` alongside the sibling Server Runtime Health tile until the
+  operator's `legendary.players.is_admin` was set `TRUE`, then both resolved), serving the **mock-first**
+  payload (`data.source:"mock"` — last-drill/next-due/overdue placeholder) because `DASH_GITHUB_TOKEN` is
+  unset in prod: the token-less mock fallback is confirmed working live (`200`, never a `500`). The
+  github-derived live path activates once `DASH_GITHUB_TOKEN` (`issues:read`) is set on the server. See
   [WP-517](work-packets/WP-517-dr-readiness-dashboard-tile.md) + [EC-552](execution-checklists/EC-552-dr-readiness-dashboard-tile.checklist.md).
 
 ### WP-516 — Ymir, Frost Giant King (Villain) Fight: KO Your Wounds from Hand + Discard — DONE (2026-08-09)
