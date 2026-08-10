@@ -39,6 +39,33 @@ was low, but the ability was genuinely hollow.
 - Two-commit topology (one branch, one PR). **D-24026 operator-pending** — post-deploy: fight Melter and
   confirm a Wound / basic starter on a deck top leaves for the KO pile while a real Hero on a deck top is kept.
   See [WP-519](work-packets/WP-519-melter-fight-ko-cullable-deck-top.md) + [EC-554](execution-checklists/EC-554-melter-fight-ko-cullable-deck-top.checklist.md).
+### WP-517 — DR Readiness Dashboard Tile (Reminder marker + Server feed + Dashboard tile) — DONE (2026-08-10)
+
+Disaster-recovery drill readiness is now a daily-visible tile on the dashboard's System-Health (ops)
+page — **last drill** (date + PASS/FAIL), **next due**, and an **overdue** flag — instead of a cadence
+that could silently lapse in the Issues tab. The signal is projected from the `DR drill due — <Month>
+<Year>` GitHub issues the `dr-drill-reminder` workflow opens each month (#1298); no parallel status
+ledger, no `DISASTER_RECOVERY.md` §7 parse (D-24330).
+
+- **Reminder marker:** `dr-drill-reminder.yml` now adds one `- [ ] Drill passed` checkbox to the issue
+  body — the operator checks it before closing a drill, and the feed reads it on the newest closed drill
+  issue (checked = `pass`, present-unchecked = `fail`, absent = `unknown`). Cadence/schedule untouched.
+- **Server feed (`GET /api/dash/dr-readiness`):** admin-gated (`requireAdminSession`), `Cache-Control:
+  no-store`, `{ data: DrReadiness }` — mirrors the `dashboardRuntime` idiom exactly. The derivation
+  `deriveDrReadiness(issues, referenceDate)` is **pure** (the reference date is injected at the route
+  boundary — the single clock read), so it is unit-tested against fixture issues with a fixed date.
+  **Mock-first (D-24330):** no/invalid `DASH_GITHUB_TOKEN` — or any GitHub fetch failure — returns 200
+  with `data.source:"mock"`, never a 500; the live path caches ≥5 min (GitHub REST rate limits). Repo
+  coordinate via an explicit `owner/repo` (`DASH_GITHUB_REPO` → default `barefootbetters/legendary-arena`);
+  pull requests excluded; em-dash (U+2014) `DR drill due — ` title match.
+- **Dashboard tile:** a mock-first `DrReadinessWidget` mounted on `SystemHealthPage` (ops-health, **not**
+  `/vision`); a new `drReadinessMocks.ts` mirrors the wire shape (the dashboard has no server import).
+- Read-only end to end (never creates/edits/closes issues). No `packages/**` change; no
+  engine/registry/determinism/persistence/RNG surface. Two-commit topology (`EC-552:` + `SPEC:`); server
+  1053/0 + dashboard coverage/typecheck/lint/format green; `pnpm -r build` 0; repo-wide `--no-bail` green.
+- **User-visible:** dashboard System-Health DR-readiness tile. **D-24026 operator-pending** (the auth-gated
+  deployed dashboard — confirm the tile live post-deploy). See
+  [WP-517](work-packets/WP-517-dr-readiness-dashboard-tile.md) + [EC-552](execution-checklists/EC-552-dr-readiness-dashboard-tile.checklist.md).
 
 ### WP-516 — Ymir, Frost Giant King (Villain) Fight: KO Your Wounds from Hand + Discard — DONE (2026-08-09)
 

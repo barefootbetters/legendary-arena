@@ -8,6 +8,9 @@ import SweepHealthWidget from '../../widgets/SweepHealthWidget.vue';
 // clustering question for THIS server process (CPU % / event-loop lag / memory /
 // uptime / cores / WEB_CONCURRENCY).
 import RuntimeHealthWidget from '../../widgets/RuntimeHealthWidget.vue';
+// why: WP-517 — the DR-readiness ops tile (last drill / next due / overdue),
+// projected from the `DR drill due` GitHub issues via GET /api/dash/dr-readiness.
+import DrReadinessWidget from '../../widgets/DrReadinessWidget.vue';
 import { INFRA_COST_BUDGETS } from '../../config/infraCostBudgets.js';
 
 // why: the former per-node DataTable (fetchServerNodes → GET /api/dash/system/nodes)
@@ -43,6 +46,11 @@ import { INFRA_COST_BUDGETS } from '../../config/infraCostBudgets.js';
     <!-- why: WP-210 §Scope (In) — the sweep-health widget renders below the
          three WP-204 widgets, consuming GET /api/sweep/latest (D-20402). -->
     <SweepHealthWidget />
+
+    <!-- why: WP-517 — the DR-readiness ops tile (last drill date + PASS/FAIL,
+         next due, overdue flag) from the `DR drill due` GitHub issues. Ops-health
+         surface, not `/vision` (product roadmap). Mock-first by default. -->
+    <DrReadinessWidget />
   </div>
 </template>
 

@@ -58,6 +58,7 @@ import { registerAnalyticsRoutes } from './analytics/analytics.routes.js';
 import { registerDashboardBillingRoutes } from './dashboard/dashboardBilling.routes.js';
 import { registerDashboardGameplayRoutes } from './dashboard/dashboardGameplay.routes.js';
 import { registerDashboardRuntimeRoutes } from './dashboard/dashboardRuntime.routes.js';
+import { registerDashboardDrReadinessRoutes } from './dashboard/dashboardDrReadiness.routes.js';
 import { getAnalyticsUserIdSalt } from './analytics/userIdHash.js';
 import { registerSweepRoutes } from './sweep/sweep.routes.js';
 import { registerInspectionRoutes } from './inspection/inspection.routes.js';
@@ -1386,6 +1387,19 @@ export async function startServer() {
   // metric reads `process`/`perf_hooks`/`os`, never the DB or registry). Decision
   // support for "is one Node process CPU-saturated — is clustering worth it yet?".
   registerDashboardRuntimeRoutes(server.router, pool, {
+    requireAdminSession,
+    verifier,
+    accountResolver: verifier === undefined ? undefined : accountResolver,
+  });
+
+  // why: WP-517 / D-24330 — the dashboard DR-readiness slice: GET
+  // /api/dash/dr-readiness projects the `DR drill due — <Month> <Year>` GitHub
+  // issues (opened by the dr-drill-reminder workflow, #1298) into last-drill /
+  // next-due / overdue for the System-Health ops tile. Same admin gate as the
+  // other /api/dash/* routes; the pool is threaded only for the session lookup
+  // (the projection reads the GitHub REST API, never the DB or registry).
+  // Mock-first: absent/invalid DASH_GITHUB_TOKEN → 200 mock, never a 500.
+  registerDashboardDrReadinessRoutes(server.router, pool, {
     requireAdminSession,
     verifier,
     accountResolver: verifier === undefined ? undefined : accountResolver,
