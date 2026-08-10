@@ -1,0 +1,76 @@
+name: DR Drill Reminder
+
+# why: recurring accountability for the disaster-recovery drill cadence
+# (docs/ops/DISASTER_RECOVERY.md §7). A backup or recovery procedure not exercised
+# on schedule is unvalidated, so this opens a dated checklist issue each month — the
+# monthly DB-restore drill always, plus the quarterly full-service rebuild
+# (Jan/Apr/Jul/Oct) and the semiannual complete-platform recovery (Jan/Jul). The
+# issue is the tracked artifact: closing it is the record that the drill was run.
+
+on:
+  schedule:
+    # why: 09:00 UTC on the 1st of each month — a predictable monthly cadence, off
+    # the top-of-hour contention the other scheduled workflows already avoid.
+    - cron: '0 9 1 * *'
+  workflow_dispatch:
+
+permissions:
+  # why: least privilege — this workflow only creates an issue.
+  issues: write
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Open the DR drill checklist issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const now = new Date();
+            const month = now.getUTCMonth() + 1; // 1-12
+            const year = now.getUTCFullYear();
+            const monthName = now.toLocaleString('en-US', { month: 'long', timeZone: 'UTC' });
+
+            const lines = [
+              'Recurring disaster-recovery drill reminder (auto-opened; see',
+              '`docs/ops/DISASTER_RECOVERY.md` §7 cadence). Check off what you run, record',
+              'the result in §7, then close this issue.',
+              '',
+              '## Due this month',
+              '- [ ] **Monthly — database restore drill.** Restore the latest offsite dump',
+              '  (R2 or pCloud) into a scratch DB; `pg_restore --list` + row-count check',
+              '  (`docs/ops/DISASTER_RECOVERY.md` §5, DR-01 / DR-05).',
+            ];
+            if ([1, 4, 7, 10].includes(month)) {
+              lines.push(
+                '- [ ] **Quarterly — full-service rebuild drill.** Follow',
+                '  `docs/ops/SERVER_REBUILD_RUNBOOK.md` end-to-end on the Ubuntu lab; the §6',
+                '  capability checklist (login → match → leaderboard → friendships → images →',
+                '  email → test-mode payments) to a binary PASS.',
+              );
+            }
+            if ([1, 7].includes(month)) {
+              lines.push(
+                '- [ ] **Semiannual — complete platform recovery.** Full rebuild + all §6',
+                '  capabilities from documentation alone.',
+              );
+            }
+            lines.push(
+              '',
+              '## On completion',
+              '- [ ] Record the result in `docs/ops/DISASTER_RECOVERY.md` §7 (drill-record',
+              '  template) with observed RTO / RPO.',
+              '- [ ] If any runbook step was wrong or undocumented, fix the runbook in the',
+              '  same change — the corrected runbook is the real output.',
+              '- [ ] Close this issue.',
+              '',
+              '_If the RPO / RTO defaults (§1: 24h / 4h) are not yet confirmed, lock them so a',
+              'drill result has a pass/fail bar._',
+            );
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `DR drill due — ${monthName} ${year}`,
+              body: lines.join('\n'),
+            });
