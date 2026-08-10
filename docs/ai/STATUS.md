@@ -7,6 +7,33 @@
 
 ## Current State
 
+### WP-521 — co2e Baron Zemo (Villain) Ambush: Capture a Bystander + One per Avengers Hero in the HQ — DONE (2026-08-10)
+
+The co2e (Legendary 2nd-edition) Masters-of-Evil villain **Baron Zemo** now plays his printed Ambush —
+*"Baron Zemo captures a Bystander. Then he captures another Bystander for each [team:avengers] Hero in
+the HQ."* — instead of doing nothing (D-24266 `unmarked-ability`). This is **epic 1/3** of the co2e MoE
+deferred-primitive epic (D-24333); with WP-519 (Melter) and WP-520 (marking) already merged, and WP-522
+(Ultron) + WP-523 (Whirlwind) drafted, it continues closing the co2e MoE hollow-line gap.
+
+- **New primitive (D-24334):** `capture-bystanders-plus-per-hq-hero-by-trait` — the seventeenth
+  `VillainEffectPrimitive` (append-only D-24034, 16 → 17), a predicate-parameterized
+  (`{requireKind, requireValue}` = `team:avengers`) auto-resolve. Its handler
+  `villainEffectCaptureBystandersPlusPerHqHeroByTrait` attaches `1 + countHqHeroesByTrait(G.hq, …)`
+  Bystanders to Baron Zemo via `attachBystanderToVillain`, supply-bounded, and self-narrates.
+- **First HQ-by-trait count:** the new local `countHqHeroesByTrait` runs the shared `cardTraitMatches`
+  over the five `G.hq` slots — every prior trait scanner read a player's hand + in-play only.
+- **Attach-only at Ambush:** the captured Bystanders are attached, not awarded — the award is deferred to
+  Baron Zemo's defeat (the `capture-bystander` attach-at-Ambush / award-on-defeat split, D-18506),
+  distinct from the Fight-timed `rescue-bystanders-current-by-trait-count`.
+- **Determinism:** no `ctx.random`. The marker adds an Ambush descriptor to Baron Zemo's hashed
+  `villainAbilityHooks`, but no committed fixture references co2e Masters of Evil, so `finalStateHash` +
+  `PRE_WP080_HASH` are **byte-identical** (verified — full engine suite green). Regenerated `co2e.json`,
+  the villain ledger, `effect-implementation-index.json`, and provenance; refreshed the ewiki vocab.
+- Two-commit topology. **D-24026 operator-pending** — post-deploy: reveal Baron Zemo with Avengers Heroes
+  in the HQ and confirm the captured-Bystander count (1 + HQ Avengers) and the award on his defeat.
+  See [WP-521](work-packets/WP-521-co2e-baron-zemo-ambush-capture-per-hq-avengers.md) +
+  [EC-556](execution-checklists/EC-556-co2e-baron-zemo-ambush-capture-per-hq-avengers.checklist.md).
+
 ### WP-519 — Melter (Villain) Fight: KO Each Player's Cullable Deck-Top Card — DONE (2026-08-10)
 
 The core Masters-of-Evil villain **Melter** now plays his printed Fight — *"Each player reveals the top card
