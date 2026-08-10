@@ -10,11 +10,11 @@
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 356,
+      "executable": 357,
       "deferred": 0,
       "condition": 5,
       "unsupported": 367,
-      "unmarked": 1096
+      "unmarked": 1095
     }
   },
   "entries": [
@@ -5470,11 +5470,11 @@
       "name": "Baron Zemo",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "capture-bystanders-plus-per-hq-hero-by-trait",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystanders-plus-per-hq-hero-by-trait",
+      "wp": "WP-521",
+      "decision": "D-24334"
     },
     {
       "extId": "co2e-villain-masters-of-evil-melter",
@@ -27395,7 +27395,7 @@
     "co2e-villain-masters-of-evil-baron-zemo": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "capture-bystanders-plus-per-hq-hero-by-trait"
       ]
     },
     "co2e-villain-masters-of-evil-melter": {

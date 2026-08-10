@@ -4,12 +4,12 @@
   "summary": {
     "totalRows": 717,
     "byStatus": {
-      "executable": 120,
+      "executable": 121,
       "deferred": 0,
       "unsupported": 1,
-      "unmarked": 596
+      "unmarked": 595
     },
-    "distinctMechanics": 22
+    "distinctMechanics": 23
   },
   "rows": [
     {
@@ -1304,11 +1304,11 @@
       "cardName": "Baron Zemo",
       "set": "co2e",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "capture-bystanders-plus-per-hq-hero-by-trait",
+      "status": "executable",
+      "wp": "WP-521",
+      "decision": "D-24334",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystanders-plus-per-hq-hero-by-trait"
     },
     {
       "extId": "co2e-villain-sinister-syndicate-beetle",

@@ -129,6 +129,9 @@ function isLockedEffectKeyword(keyword) {
 // `ko-cullable-each-deck-top` (no-param) appended by WP-519 (D-24332 — Melter, Masters
 // of Evil Fight: each player reveals their deck top, KO the cullable ones (Wound /
 // basic S.H.I.E.L.D. starter), keep real Heroes; validates via the same no-param branch).
+// `capture-bystanders-plus-per-hq-hero-by-trait` (`:team:avengers`) appended by WP-521
+// (D-24334 — co2e Baron Zemo Ambush: capture 1 Bystander + 1 per HQ Hero matching the
+// trait; validates via the `:<kind>:<value>` predicate tail, the reveal-or-wound precedent).
 const VILLAIN_EFFECT_PRIMITIVES = [
   'ko-hero',
   'gain-wound',
@@ -146,6 +149,7 @@ const VILLAIN_EFFECT_PRIMITIVES = [
   'override-next-hand-size',
   'ko-wounds-current-hand-and-discard',
   'ko-cullable-each-deck-top',
+  'capture-bystanders-plus-per-hq-hero-by-trait',
 ];
 
 // why: WP-489 / D-24295 — hand-synced local copy of the engine's CITY_SPACE_NAMES
@@ -252,10 +256,15 @@ function isValidParameterizedEffectToken(token) {
     // parsePositiveInteger branch so producer + consumer agree on the grammar.
     return parts.length === 2 && /^[1-9][0-9]*$/.test(parts[1]);
   }
-  if (primitive === 'ko-heroes-current-by-trait' || primitive === 'rescue-bystanders-current-by-trait-count') {
-    // why: D-24290 — both use the shared trait-predicate grammar <kind>:<value>
+  if (
+    primitive === 'ko-heroes-current-by-trait' ||
+    primitive === 'rescue-bystanders-current-by-trait-count' ||
+    primitive === 'capture-bystanders-plus-per-hq-hero-by-trait'
+  ) {
+    // why: D-24290 / D-24334 — all use the shared trait-predicate grammar <kind>:<value>
     // (exactly 3 tokens; kind team | hc; non-empty value), mirroring the engine
-    // parser's parseTraitPredicateTokens so producer + consumer agree.
+    // parser's parseTraitPredicateTokens so producer + consumer agree. co2e Baron Zemo
+    // Ambush is `capture-bystanders-plus-per-hq-hero-by-trait:team:avengers`.
     return parts.length === 3 && (parts[1] === 'team' || parts[1] === 'hc') && parts[2].length > 0;
   }
   if (primitive === 'gain-wound-unless-victory-villain-group') {

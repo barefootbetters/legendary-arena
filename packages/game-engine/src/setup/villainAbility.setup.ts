@@ -555,6 +555,22 @@ function parseUngatedEffect(
       requireValue: predicate.requireValue,
     };
   }
+  if (primitiveToken === 'capture-bystanders-plus-per-hq-hero-by-trait') {
+    // why: D-24334 — grammar
+    // `capture-bystanders-plus-per-hq-hero-by-trait:<kind>:<value>` (co2e Baron Zemo
+    // Ambush: `:team:avengers`). Reuses the shared trait-predicate parser as the
+    // HQ-hero count filter; a malformed tail returns null (an empty predicate would
+    // make the per-HQ-hero count meaningless, so it must never reach the handler).
+    const predicate = parseTraitPredicateTokens(parts);
+    if (predicate === null) {
+      return null;
+    }
+    return {
+      primitive: 'capture-bystanders-plus-per-hq-hero-by-trait',
+      requireKind: predicate.requireKind,
+      requireValue: predicate.requireValue,
+    };
+  }
   if (primitiveToken === 'gain-wound-unless-victory-villain-group') {
     // why: D-24299 — grammar `gain-wound-unless-victory-villain-group:<groupSlug>`
     // (exactly 2 tokens; the group slug non-empty). Viper: `:hydra`. The slug is

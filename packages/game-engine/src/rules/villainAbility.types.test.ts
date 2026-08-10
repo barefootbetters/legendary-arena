@@ -323,8 +323,11 @@ describe('VILLAIN_EFFECT_PRIMITIVES drift-detection', () => {
   // Fight — the current player KOs every Wound from their hand + discard). WP-519
   // (D-24332) appended a sixteenth, `ko-cullable-each-deck-top`, at position 16
   // (Melter, Masters of Evil Fight — each player reveals their deck top, KO the
-  // cullable ones (Wound / basic S.H.I.E.L.D. starter), keep real Heroes).
-  it('contains exactly the 16 canonical primitives in order', () => {
+  // cullable ones (Wound / basic S.H.I.E.L.D. starter), keep real Heroes). WP-521
+  // (D-24334) appended a seventeenth, `capture-bystanders-plus-per-hq-hero-by-trait`,
+  // at position 17 (co2e Baron Zemo Ambush — capture 1 Bystander + 1 per HQ Hero
+  // matching a trait predicate).
+  it('contains exactly the 17 canonical primitives in order', () => {
     const expectedPrimitives: VillainEffectPrimitive[] = [
       'ko-hero',
       'gain-wound',
@@ -342,11 +345,12 @@ describe('VILLAIN_EFFECT_PRIMITIVES drift-detection', () => {
       'override-next-hand-size',
       'ko-wounds-current-hand-and-discard',
       'ko-cullable-each-deck-top',
+      'capture-bystanders-plus-per-hq-hero-by-trait',
     ];
     assert.equal(
       VILLAIN_EFFECT_PRIMITIVES.length,
-      16,
-      'VILLAIN_EFFECT_PRIMITIVES must have exactly 16 entries',
+      17,
+      'VILLAIN_EFFECT_PRIMITIVES must have exactly 17 entries',
     );
     assert.deepStrictEqual(
       [...VILLAIN_EFFECT_PRIMITIVES],

@@ -149,13 +149,14 @@ The villain/henchman path in
 made the same move from fragmented keywords to parameters. Its executable
 vocabulary is the `VillainEffectDescriptor` — a `VillainEffectPrimitive`
 plus optional `target` / `magnitude` / `selector` / predicate params
-(`VILLAIN_EFFECT_PRIMITIVES`, sixteen entries: `ko-hero` · `gain-wound` ·
+(`VILLAIN_EFFECT_PRIMITIVES`, seventeen entries: `ko-hero` · `gain-wound` ·
 `capture-hq-hero` · `hero-deck-top-to-escape` · `capture-bystander` ·
 `scry-ko-own-deck` · `gain-attached-hero` · `reveal-or-wound` ·
 `become-scheme-twist` · `draw-cards-current` · `ko-heroes-current-by-trait` ·
 `rescue-bystanders-current-by-trait-count` ·
 `gain-wound-unless-victory-villain-group` · `override-next-hand-size` ·
-`ko-wounds-current-hand-and-discard` · `ko-cullable-each-deck-top`). A new
+`ko-wounds-current-hand-and-discard` · `ko-cullable-each-deck-top` ·
+`capture-bystanders-plus-per-hq-hero-by-trait`). A new
 target / magnitude / selector variant is a descriptor **param** (a data
 marker), not a new keyword plus switch arm plus drift test (D-24023).
 
@@ -226,6 +227,20 @@ pending choice (WP-470/D-24282: its must-KO-one rule could destroy a real Hero
 when both revealed cards were Heroes) cannot arise here — so there is no pending
 choice, no player-selection UI, and no client change. It self-narrates via
 `pushLog` (keyword-less → no reverse-map, no `VillainEffectResult`).
+
+**Counting the HQ by trait (D-24334).** The
+`capture-bystanders-plus-per-hq-hero-by-trait` primitive — co2e Baron Zemo's
+Ambush *"captures a Bystander. Then he captures another Bystander for each
+[team:avengers] Hero in the HQ."* — is the seventeenth primitive: an auto-resolve,
+predicate-parameterized (`{requireKind, requireValue}`, e.g. `team:avengers`)
+capture that attaches `1 + (HQ Heroes matching the trait)` Bystanders to the
+triggering villain. It introduces the engine's **first HQ-by-trait count** — a
+small `countHqHeroesByTrait` that runs the shared `cardTraitMatches` over the five
+`G.hq` slots (every other trait scanner reads a player's hand + in-play). Because
+it fires at **Ambush**, it *attaches only* — the award is deferred to Baron Zemo's
+defeat (the same attach-at-Ambush / award-on-defeat split as `capture-bystander`,
+D-18506), unlike the Fight-timed `rescue-bystanders-current-by-trait-count` which
+attaches and awards each iteration. Supply-bounded; self-narrates via `pushLog`.
 
 Ten earlier `VILLAIN_EFFECT_KEYWORDS` are **frozen** as the parser's
 legacy-translation input only. `LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR`
@@ -467,6 +482,7 @@ handler reads as *applied* while the real Scheme Twist fires elsewhere.
 - WP-485 (D-24290) / WP-494 (D-24299) / WP-503 (D-24307) — the auto-resolve `draw-cards-current`, `ko-heroes-current-by-trait`, `rescue-bystanders-current-by-trait-count`, `gain-wound-unless-victory-villain-group`, and `override-next-hand-size` villain primitives (tenth–fourteenth)
 - WP-516 (D-24329) — the `ko-wounds-current-hand-and-discard` villain primitive (fifteenth; Ymir's Fight KOs the current player's Wounds from hand + discard)
 - WP-519 (D-24332) — the `ko-cullable-each-deck-top` villain primitive (sixteenth; Melter's Fight reveals every player's deck top and KOs the cullable ones — Wounds / basic S.H.I.E.L.D. starters — keeping real Heroes)
+- WP-521 (D-24334) — the `capture-bystanders-plus-per-hq-hero-by-trait` villain primitive (seventeenth; co2e Baron Zemo's Ambush captures 1 Bystander + 1 per HQ Hero matching a trait — the first HQ-by-trait count; attach-only at Ambush, award on defeat)
 - The hollow-effect detection and coverage-ledger spine (DESIGN-HOLLOW-EFFECT-DETECTION.md, DESIGN-EFFECT-AUTHORING-SCALE.md)
 
 ## Scaling and Open Directions

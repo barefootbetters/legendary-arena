@@ -1220,6 +1220,43 @@ describe('buildVillainAbilityHooks — Tier-A auto-resolve grammars (WP-485 / D-
       'rescue-bystanders-current-by-trait-count:team',
     ]);
   });
+
+  it('[effect:capture-bystanders-plus-per-hq-hero-by-trait:<kind>:<value>] parses + normalizes; malformed rejected (WP-521 / D-24334)', () => {
+    const registry = makeRegistry(
+      'co2e',
+      [
+        {
+          slug: 'masters-of-evil',
+          cards: [
+            { slug: 'baron-zemo', abilities: ['Ambush: Baron Zemo captures a Bystander. Then he captures another Bystander for each [team:avengers] Hero in the HQ. [effect:capture-bystanders-plus-per-hq-hero-by-trait:team:avengers]'] },
+            { slug: 'twotoken', abilities: ['Ambush: x [effect:capture-bystanders-plus-per-hq-hero-by-trait:team]'] },
+          ],
+        },
+      ],
+      [],
+    );
+    const hooks = buildVillainAbilityHooks(registry, makeConfig(['co2e/masters-of-evil'], []));
+    const effectsFor = (slug: string) =>
+      hooks.find((h) => h.cardId === `co2e-villain-masters-of-evil-${slug}-00` && h.timing === 'onAmbush')!.effects;
+    const unresolvedFor = (slug: string) =>
+      hooks.find((h) => h.cardId === `co2e-villain-masters-of-evil-${slug}-00` && h.timing === 'onAmbush')!.unresolvedMarkers;
+    assert.deepStrictEqual(effectsFor('baron-zemo'), [
+      {
+        primitive: 'capture-bystanders-plus-per-hq-hero-by-trait',
+        requireKind: 'team',
+        requireValue: 'avengers',
+      },
+    ]);
+    // why: keyword-less — must NOT reverse-map to a legacy keyword.
+    assert.deepStrictEqual(
+      hooks.find((h) => h.cardId === 'co2e-villain-masters-of-evil-baron-zemo-00' && h.timing === 'onAmbush')!.keywords,
+      [],
+    );
+    assert.deepStrictEqual(effectsFor('twotoken'), []);
+    assert.deepStrictEqual(unresolvedFor('twotoken'), [
+      'capture-bystanders-plus-per-hq-hero-by-trait:team',
+    ]);
+  });
 });
 
 // ---------------------------------------------------------------------------
