@@ -33,10 +33,14 @@ source:
   - ../apps/dashboard/src/services/endpoints.ts
   - ../apps/dashboard/src/pages/players/PlayerAnalyticsPage.vue
   - ../apps/server/src/analytics/analytics.routes.ts
+  - ../apps/server/src/dashboard/dashboardRuntime.routes.ts
+  - ../apps/server/src/dashboard/dashboardDrReadiness.routes.ts
+  - ../apps/dashboard/src/widgets/DrReadinessWidget.vue
+  - ../apps/dashboard/src/pages/system/SystemHealthPage.vue
   - ../apps/dashboard/src/auth/hankoClient.ts
   - ../apps/dashboard/src/main.ts
   - ../.github/workflows/ci.yml
-last-reviewed: 2026-08-01
+last-reviewed: 2026-08-10
 ---
 
 # Dashboard
@@ -104,7 +108,7 @@ except `/login` sits behind an authenticated `AppLayout`:
 | `/players` | `PlayerAnalyticsPage` | A player-records table + traffic-sources, activation-funnel, retention-cohorts trend widgets (see [Data provenance](#the-players-page-data-provenance-and-what-it-is-not)) |
 | `/monetization` | `MonetizationPage` | Revenue, net revenue, paid-action errors |
 | `/gameplay` | `GameplayPage` | Match / gameplay analytics |
-| `/system` | `SystemHealthPage` | Server status, error rate, ops-at-a-glance |
+| `/system` | `SystemHealthPage` | Runtime health + DR readiness (live admin-gated tiles), error rate, ops-at-a-glance |
 | `/pipeline` | `PipelinePage` | Governance throughput, sweep health, inspection triage |
 | `/debug` | `DebugPage` | Feature flags / diagnostic surface |
 | `/login` | `LoginPage` | Hanko sign-in (the only unauthenticated route) |
@@ -128,7 +132,7 @@ two independent feeds, wired through two different HTTP clients:
 | Feed on the page | Client | Live URL | Backed by |
 |---|---|---|---|
 | Traffic-sources, activation-funnel, retention-cohorts trend widgets | [`analyticsLiveFetchers.ts`](../apps/dashboard/src/services/analyticsLiveFetchers.ts) (via the `mocks.ts` `fetch*` aliases) | `${VITE_API_BASE_URL}/api/analytics/{traffic-sources,activation-funnel,retention-cohorts}` | **Real server routes** in [`apps/server/src/analytics/analytics.routes.ts`](../apps/server/src/analytics/analytics.routes.ts), reading the `legendary.analytics_events` table (session/UTM acquisition telemetry, per D-20501) |
-| The player-records table (`fetchPlayerRecords` — handle, last-active, etc.) | [`endpoints.ts`](../apps/dashboard/src/services/endpoints.ts) → the axios `apiClient` ([`api.ts`](../apps/dashboard/src/services/api.ts), default base `…/api/dash`) | `${VITE_API_BASE_URL}/players` (`/api/dash/players` by default) | **No server route** — nothing under `/api/dash/*` is registered in `apps/server`. This feed is **mock-only** in practice ([`mockPlayerRecords()`](../apps/dashboard/src/services/mocks.ts) returns synthetic names like *"Alice Chen"*); a live call would 404. |
+| The player-records table (`fetchPlayerRecords` — handle, last-active, etc.) | [`endpoints.ts`](../apps/dashboard/src/services/endpoints.ts) → the axios `apiClient` ([`api.ts`](../apps/dashboard/src/services/api.ts), default base `…/api/dash`) | `${VITE_API_BASE_URL}/players` (`/api/dash/players` by default) | **Server route wired (WP-374 / D-24169)** — `GET /api/dash/players` reads `legendary.players` LEFT JOIN aggregated `legendary.competitive_scores` (most-recent 100 by `created_at`; `matchesPlayed` / `winRate` from score rows, an *approximate* `lastActive` — no per-account activity log exists), `admin-session-required`. Whether the table renders that live data or the [`mockPlayerRecords()`](../apps/dashboard/src/services/mocks.ts) synthetic set (names like *"Alice Chen"*) follows the same `VITE_USE_MOCKS` client flip as every feed here — deploy-environment state, not visible from the repo. (This cell formerly read *"nothing under `/api/dash/*` is registered … a live call would 404"* — accurate only before WP-373/374/439/517 landed the admin `/api/dash/*` routes.) |
 
 Both clients now share **one base-URL convention** (aligned 2026-07-13): the
 `VITE_API_BASE_URL` is the API **server root** (e.g. `https://api.legendary-arena.com`),
@@ -139,8 +143,11 @@ and every call passes an **absolute** path — `analyticsLiveFetchers` builds
 double-prefixed the analytics fetchers and 404'd them in live mode; the fix moved the
 `/api/dash` prefix onto the paths.) Server coverage: the `/api/analytics/*` widgets
 plus the `endpoints.ts` **billing/revenue (WP-373)** and **matches/players/kpis
-(WP-374)** feeds are now wired; `/metrics/dau`, `/alerts`, and `/system/nodes` remain
-mock (no data source yet — see the note above).
+(WP-374)** feeds are wired, and the **System Health** page's **runtime-health
+(WP-439, `/api/dash/system/runtime`)** and **DR-readiness (WP-517,
+`/api/dash/dr-readiness`)** admin tiles are wired **and fetch live in the deployed
+dashboard** (see the DR-readiness note below); `/metrics/dau`, `/alerts`, and
+`/system/nodes` remain mock (no data source yet — see the note above).
 
 > **Wiring underway (2026-07).** The `/api/dash/*` family is being wired to real
 > data, and the **billing + revenue** slice is now **live server-side** — a new
@@ -167,6 +174,24 @@ mock (no data source yet — see the note above).
 > these render mock in the deployed dashboard until the live flip. `/metrics/dau`
 > stays deferred, and `/system/nodes` (infra telemetry) and `/alerts` (no alerting
 > model) stay blocked until that data infrastructure exists.
+
+> **System Health admin tiles now live (2026-08).** Two `/api/dash/*` **admin**
+> feeds power the `/system` page and, unlike the analytics feeds above, are
+> **confirmed fetching live in the deployed dashboard** (observed 2026-08-10):
+> the **runtime-health** tile (**WP-439 / D-24258**, `GET /api/dash/system/runtime`
+> — live process CPU / event-loop lag / memory / uptime) and the **DR-readiness**
+> tile (**WP-517 / EC-552 / D-24330**, `GET /api/dash/dr-readiness`). Both are
+> gated by `requireAdminSession` (`no-store`, `{ data }` envelope), so a signed-in
+> operator whose `legendary.players.is_admin` is not `TRUE` gets `403` on **both**
+> — an account-level condition (not a bug) that blocks the whole admin surface,
+> not just one tile. DR-readiness is the first `/api/dash/*` feed **live-verified**
+> on the deployed page per **D-24026**. It also carries a **server-side
+> mock-first** fallback, distinct from the dashboard's client-side
+> `VITE_USE_MOCKS`: with no `DASH_GITHUB_TOKEN` set the route returns `200`
+> `data.source:"mock"` (never `500`), so the tile renders a placeholder until the
+> token is set on Render — then it derives last-drill / next-due / overdue from
+> the `DR drill due` GitHub issues the `dr-drill-reminder` workflow opens (see
+> [Disaster Recovery](disaster-recovery.md)).
 
 **Why it is *not* the friends-invite / lobby flow.** That flow — friend
 requests, match invites, the pre-match "Waiting for players" panel — lives in a
