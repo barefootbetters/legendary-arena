@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "cardType": "villain",
   "summary": {
-    "totalRows": 716,
+    "totalRows": 717,
     "byStatus": {
-      "executable": 118,
+      "executable": 119,
       "deferred": 0,
       "unsupported": 1,
       "unmarked": 597
     },
-    "distinctMechanics": 20
+    "distinctMechanics": 21
   },
   "rows": [
     {
@@ -2035,6 +2035,17 @@
       "wp": "WP-252",
       "decision": "D-24023",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
+    },
+    {
+      "extId": "core-villain-enemies-of-asgard-ymir-frost-giant-king",
+      "cardName": "Ymir, Frost Giant King",
+      "set": "core",
+      "cardType": "villain",
+      "mechanic": "ko-wounds-current-hand-and-discard",
+      "status": "executable",
+      "wp": "WP-516",
+      "decision": "D-24329",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-wounds-current-hand-and-discard"
     },
     {
       "extId": "core-villain-enemies-of-asgard-ymir-frost-giant-king",

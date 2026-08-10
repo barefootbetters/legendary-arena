@@ -1603,6 +1603,79 @@ function villainEffectOverrideNextHandSize(
   return { targets: [] };
 }
 
+/**
+ * ko-wounds-current-hand-and-discard primitive — the current (fighting) player KOs
+ * every Wound from their own hand + discard pile (Ymir, Frost Giant King "Fight:
+ * Choose a player. That player KOs any number of Wounds from their hand and discard
+ * pile.", D-24329 / WP-516).
+ *
+ * Auto-resolved and deterministic. "Choose a player" collapses to the current player
+ * and "any number" to KO-all in the shipped solo/co-op modes: a rational chooser
+ * KOs all their own Wounds (pure upside), so there is no player-selection UI and no
+ * partial-KO choice. Self-narrates via `pushLog` (keyword-less —
+ * `descriptorToLegacyKeyword` returns undefined, so no `VillainEffectResult` is
+ * recorded and the generic `<timing> effect:` line never fires). Returns the KO'd
+ * Wound ext_ids as `targets` for parity with `villainEffectKoHeroesCurrentByTrait`
+ * (dropped by the recording path).
+ */
+function villainEffectKoWoundsCurrentHandAndDiscard(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  _cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  _descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  const zones = G.playerZones[currentPlayer];
+  // why: D-24329 — single-target, the CURRENT player only. "Choose a player"
+  // collapses to the fighting player; other players' zones are never touched (unlike
+  // the each-player KO helper). A missing zone is a reachable no-op guard.
+  if (!zones) {
+    return { targets: [] };
+  }
+  // why: D-24329 — a Wound is the shared synthetic `WOUND_EXT_ID` (`pile-wound`);
+  // match by ext_id equality (no registry read, no trait predicate). Scan hand +
+  // discard ONLY (the printed zones) — Wounds enter via gainWound (→ discard) or a
+  // draw (→ hand) and are never played into inPlay, so inPlay is deliberately not
+  // scanned (distinct from ko-heroes-current-by-trait, whose Heroes can sit in-play).
+  // Rebuild each zone with a kept-list for...of (no .reduce(), no splice-in-loop).
+  const koedWounds: CardExtId[] = [];
+  const remainingHand: CardExtId[] = [];
+  for (const cardId of zones.hand) {
+    if (cardId === WOUND_EXT_ID) {
+      koedWounds.push(cardId);
+    } else {
+      remainingHand.push(cardId);
+    }
+  }
+  const remainingDiscard: CardExtId[] = [];
+  for (const cardId of zones.discard) {
+    if (cardId === WOUND_EXT_ID) {
+      koedWounds.push(cardId);
+    } else {
+      remainingDiscard.push(cardId);
+    }
+  }
+  zones.hand = remainingHand;
+  zones.discard = remainingDiscard;
+  // why: KO'd Wounds go to the general KO pile (`G.ko`), NOT back to the
+  // `G.piles.wounds` supply — a KO removes them from play (koCard is a
+  // destination-only append; the source removal is the zone rebuild above).
+  for (const woundId of koedWounds) {
+    G.ko = koCard(G.ko, woundId);
+  }
+  // why: self-narrate (keyword-less; the D-24266 unmarked-ability breadcrumb is
+  // removed by marking the card). `G.messages` is hash-excluded (D-24081). Honest
+  // colour per the WP-434 contract: ≥1 Wound KO'd → `applied`; zero Wounds is a
+  // reachable no-op → `blocked`. Label derived from the fired timing (Ymir is Fight).
+  const label = villainEffectTimingLabel(timing);
+  pushLog(
+    G,
+    `${label} effect: KO'd ${String(koedWounds.length)} Wound(s) from your hand and discard pile.`,
+    koedWounds.length > 0 ? 'applied' : 'blocked',
+  );
+  return { targets: koedWounds };
+}
+
 // why: D-24296 — the basic S.H.I.E.L.D. cards (starting Agents + Troopers, and the
 // recruited S.H.I.E.L.D. Officer) ARE team S.H.I.E.L.D. physically, so the Destroyer
 // "KO all your [team:shield] Heroes" is meant to wipe them — but they are synthetic
@@ -1905,7 +1978,7 @@ function villainEffectGainWoundUnlessVictoryVillainGroup(
 }
 
 // why: D-24023 — the ImplementationMap keyed by primitive (mirrors WP-251's
-// HERO_EFFECT_HANDLERS). Full Record over the 14 primitives; the drift test
+// HERO_EFFECT_HANDLERS). Full Record over the 15 primitives; the drift test
 // asserts the key set equals VILLAIN_EFFECT_PRIMITIVES. Replaces the former
 // 10-arm switch on VillainEffectKeyword. `scry-ko-own-deck` appended by WP-447
 // (D-24267); `gain-attached-hero` (no-op) appended by WP-450 (D-24270);
@@ -1917,7 +1990,9 @@ function villainEffectGainWoundUnlessVictoryVillainGroup(
 // each-player wound on a Victory-Pile group predicate) appended by WP-494 (D-24299).
 // `override-next-hand-size` (auto-resolve — writes the WP-497 `handSizeOverrides`
 // field) appended by WP-503 (D-24307 — the core spider-foes Doctor Octopus villain
-// Fight: draw 8 next hand instead of 6).
+// Fight: draw 8 next hand instead of 6). `ko-wounds-current-hand-and-discard`
+// (auto-resolve — KO the current player's Wounds from hand + discard) appended by
+// WP-516 (D-24329 — Ymir, Frost Giant King Fight).
 /** Villain effect handlers keyed by primitive. Single dispatch source. */
 const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandler> = {
   'ko-hero': villainEffectKoHero,
@@ -1934,6 +2009,7 @@ const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandl
   'rescue-bystanders-current-by-trait-count': villainEffectRescueBystandersCurrentByTraitCount,
   'gain-wound-unless-victory-villain-group': villainEffectGainWoundUnlessVictoryVillainGroup,
   'override-next-hand-size': villainEffectOverrideNextHandSize,
+  'ko-wounds-current-hand-and-discard': villainEffectKoWoundsCurrentHandAndDiscard,
 };
 
 /**

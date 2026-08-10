@@ -2071,7 +2071,7 @@
           "imageUrl": "https://images.legendary-arena.com/core/core-vi-enemies-of-asgard-ymir-frost-giant-king.webp",
           "abilities": [
             "Ambush: Each player reveals a [hc:ranged] Hero or gains a Wound. [effect:reveal-or-wound:hc:ranged]",
-            "Fight: Choose a player. That player KOs any number of Wounds from their hand and discard pile."
+            "Fight: Choose a player. That player KOs any number of Wounds from their hand and discard pile. [effect:ko-wounds-current-hand-and-discard]"
           ],
           "copies": 2
         }

@@ -148,11 +148,14 @@ The villain/henchman path in
 [`villainAbility.types.ts`](../packages/game-engine/src/rules/villainAbility.types.ts)
 made the same move from fragmented keywords to parameters. Its executable
 vocabulary is the `VillainEffectDescriptor` — a `VillainEffectPrimitive`
-plus optional `target` / `magnitude` / `selector` params
-(`VILLAIN_EFFECT_PRIMITIVES`, nine entries: `ko-hero` · `gain-wound` ·
+plus optional `target` / `magnitude` / `selector` / predicate params
+(`VILLAIN_EFFECT_PRIMITIVES`, fifteen entries: `ko-hero` · `gain-wound` ·
 `capture-hq-hero` · `hero-deck-top-to-escape` · `capture-bystander` ·
 `scry-ko-own-deck` · `gain-attached-hero` · `reveal-or-wound` ·
-`become-scheme-twist`). A new
+`become-scheme-twist` · `draw-cards-current` · `ko-heroes-current-by-trait` ·
+`rescue-bystanders-current-by-trait-count` ·
+`gain-wound-unless-victory-villain-group` · `override-next-hand-size` ·
+`ko-wounds-current-hand-and-discard`). A new
 target / magnitude / selector variant is a descriptor **param** (a data
 marker), not a new keyword plus switch arm plus drift test (D-24023).
 
@@ -186,6 +189,22 @@ checks for the descriptor and, when present, runs the `onSchemeTwistRevealed`
 rule pipeline — the same pipeline a `scheme-twist` reveal uses. This is a second
 trigger path into `onSchemeTwistRevealed` that does not route through the villain
 executor's mutation surface at all.
+
+**KO-ing your own Wounds is a beneficial villain Fight (D-24329).** The
+`ko-wounds-current-hand-and-discard` primitive — Ymir, Frost Giant King's
+*"Fight: Choose a player. That player KOs any number of Wounds from their hand
+and discard pile."* — is a keyword-less, no-param, auto-resolve effect: the
+current (fighting) player KOs **every** Wound (the shared `WOUND_EXT_ID`,
+`pile-wound`) from their own **hand + discard pile** to the KO pile. Two
+narrowings are deliberate. "Choose a player" collapses to the **current player**
+and "any number" to **all** in the shipped solo / co-op modes — a rational
+chooser KOs all their own Wounds, since it is pure upside — so there is no
+player-selection UI and no partial-KO choice. And unlike
+`ko-heroes-current-by-trait` (which scans hand **and** in-play, because a Hero
+played this turn sits in-play), this scans **hand + discard only**: Wounds enter
+a deck via `gainWound` (→ discard) or a draw (→ hand) and are never played into
+in-play. It self-narrates via `pushLog` (keyword-less → no reverse-map, no
+`VillainEffectResult`).
 
 Ten earlier `VILLAIN_EFFECT_KEYWORDS` are **frozen** as the parser's
 legacy-translation input only. `LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR`
@@ -424,6 +443,8 @@ handler reads as *applied* while the real Scheme Twist fires elsewhere.
 - WP-478 (D-24285) / WP-482 (D-24288) — mid-effect deck-exhaustion reshuffle for hero reveal and `scry-ko-own-deck`, and the Doctor Octopus reveal-eight Master Strike top-up
 - WP-479 (D-24286) — interactive hero reveal-reorder (`PendingReorderChoice`); the hero-path pending-choice interaction model matured to cover reveal/scry/discard/reorder
 - WP-481 (D-24287) — the `become-scheme-twist` villain primitive (ninth primitive; an escaping villain fires a Scheme Twist)
+- WP-485 (D-24290) / WP-494 (D-24299) / WP-503 (D-24307) — the auto-resolve `draw-cards-current`, `ko-heroes-current-by-trait`, `rescue-bystanders-current-by-trait-count`, `gain-wound-unless-victory-villain-group`, and `override-next-hand-size` villain primitives (tenth–fourteenth)
+- WP-516 (D-24329) — the `ko-wounds-current-hand-and-discard` villain primitive (fifteenth; Ymir's Fight KOs the current player's Wounds from hand + discard)
 - The hollow-effect detection and coverage-ledger spine (DESIGN-HOLLOW-EFFECT-DETECTION.md, DESIGN-EFFECT-AUTHORING-SCALE.md)
 
 ## Scaling and Open Directions

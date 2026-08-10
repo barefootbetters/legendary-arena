@@ -96,7 +96,7 @@
         "destroyer": { "fight": ["ko-heroes-current-by-trait:team:shield"], "escape": ["koHeroEachPlayerMag2"] },
         "enchantress": { "fight": ["draw-cards-current:3"] },
         "frost-giant": { "fight": ["reveal-or-wound:hc:ranged"], "escape": ["reveal-or-wound:hc:ranged"] },
-        "ymir-frost-giant-king": { "ambush": ["reveal-or-wound:hc:ranged"] }
+        "ymir-frost-giant-king": { "ambush": ["reveal-or-wound:hc:ranged"], "fight": ["ko-wounds-current-hand-and-discard"] }
       },
       "hydra": {
         "viper": { "fight": ["gain-wound-unless-victory-villain-group:hydra"], "escape": ["gain-wound-unless-victory-villain-group:hydra"] }

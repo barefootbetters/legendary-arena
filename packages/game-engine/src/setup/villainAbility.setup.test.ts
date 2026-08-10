@@ -341,6 +341,48 @@ describe('buildVillainAbilityHooks — gain-wound-unless-victory-villain-group g
   });
 });
 
+describe('buildVillainAbilityHooks — ko-wounds-current-hand-and-discard grammar (WP-516 / D-24329)', () => {
+  const registry = makeRegistry(
+    'core',
+    [
+      {
+        slug: 'enemies-of-asgard',
+        cards: [
+          {
+            slug: 'ymir-frost-giant-king',
+            abilities: [
+              'Ambush: reveal or wound. [effect:reveal-or-wound:hc:ranged]',
+              'Fight: KO your Wounds. [effect:ko-wounds-current-hand-and-discard]',
+            ],
+          },
+          // why: a no-param primitive rejects any trailing colon token (guards a
+          // malformed marker from collapsing to the param-less descriptor).
+          { slug: 'extra-tokens', abilities: ['Fight: nope. [effect:ko-wounds-current-hand-and-discard:1]'] },
+        ],
+      },
+    ],
+    [],
+  );
+  const hooks = buildVillainAbilityHooks(registry, makeConfig(['core/enemies-of-asgard'], []));
+  const hookFor = (slug: string, timing: string) =>
+    hooks.find((h) => h.cardId === `core-villain-enemies-of-asgard-${slug}-00` && h.timing === timing)!;
+
+  it('parses the no-param Fight marker to a bare descriptor via the generic branch', () => {
+    assert.deepStrictEqual(hookFor('ymir-frost-giant-king', 'onFight').effects, [
+      { primitive: 'ko-wounds-current-hand-and-discard' },
+    ]);
+    // why: keyword-less — must NOT reverse-map to a legacy keyword.
+    assert.deepStrictEqual(hookFor('ymir-frost-giant-king', 'onFight').keywords, []);
+  });
+
+  it('rejects a trailing param token to unresolvedMarkers', () => {
+    assert.deepStrictEqual(hookFor('extra-tokens', 'onFight').effects, []);
+    assert.deepStrictEqual(hookFor('extra-tokens', 'onFight').unresolvedMarkers, [
+      'ko-wounds-current-hand-and-discard:1',
+    ]);
+  });
+});
+
 describe('buildVillainAbilityHooks — keywords/effects parity', () => {
   it('keywords and effects are distinct but parallel arrays (WP-252)', () => {
     const registry = makeRegistry(

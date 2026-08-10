@@ -3183,3 +3183,81 @@ describe('override-next-hand-size ⟂ Magneto discard-to-limit (WP-503 / D-24307
     assert.deepEqual(G.handSizeOverrides, { '0': 8 }, 'the override is untouched by the discard');
   });
 });
+
+// ---------------------------------------------------------------------------
+// ko-wounds-current-hand-and-discard (WP-516 / D-24329) — Ymir, Frost Giant
+// King Fight: the current player KOs every Wound from their hand + discard.
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a single onFight hook carrying the parameterized no-param
+ * ko-wounds-current-hand-and-discard descriptor (the `hook` helper above only
+ * translates legacy keyword strings, so a parameterized descriptor is constructed
+ * directly, mirroring the parser output).
+ */
+function koWoundsHook(cardId: string): VillainAbilityHook {
+  return {
+    cardId: cardId as CardExtId,
+    timing: 'onFight',
+    keywords: [],
+    effects: [{ primitive: 'ko-wounds-current-hand-and-discard' }],
+  };
+}
+
+describe('executeVillainAbilities — ko-wounds-current-hand-and-discard (WP-516 / D-24329)', () => {
+  const CARD_A = 'core/x-men/wolverine#0' as CardExtId;
+  const CARD_B = 'core/shield/a#0' as CardExtId;
+
+  it('AC-1 KOs every Wound from the current player hand + discard, leaving non-Wounds, and self-narrates', () => {
+    const G = makeG({
+      hooks: [koWoundsHook('v-ymir')],
+      playerZones: {
+        '0': {
+          deck: [],
+          hand: [WOUND, CARD_A, WOUND],
+          discard: [CARD_B, WOUND],
+          inPlay: [WOUND], // in-play is NOT scanned — Wounds are never played there
+          victory: [],
+        },
+        '1': { deck: [], hand: [WOUND], discard: [WOUND], inPlay: [], victory: [] },
+      },
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-ymir' as CardExtId, 'onFight');
+
+    // why: AC-1 — every Wound leaves the current player's hand + discard; non-Wounds stay.
+    assert.deepStrictEqual(G.playerZones['0']!.hand, [CARD_A], 'Wounds KO’d from hand, non-Wound stays');
+    assert.deepStrictEqual(G.playerZones['0']!.discard, [CARD_B], 'Wound KO’d from discard, non-Wound stays');
+    // why: in-play is deliberately out of scope (the printed text names hand + discard only).
+    assert.deepStrictEqual(G.playerZones['0']!.inPlay, [WOUND], 'in-play Wound is untouched');
+    // why: all three KO’d Wounds land in the general KO pile (hand-order then discard-order).
+    assert.deepStrictEqual(G.ko, [WOUND, WOUND, WOUND], 'three Wounds KO’d to the KO pile');
+    // why: AC-3 — the non-current player's Wounds are untouched (single-target).
+    assert.deepStrictEqual(G.playerZones['1']!.hand, [WOUND], 'non-current player hand untouched');
+    assert.deepStrictEqual(G.playerZones['1']!.discard, [WOUND], 'non-current player discard untouched');
+    // why: keyword-less self-narration (D-24266 breadcrumb removed by marking).
+    assert.equal(G.messages!.length, 1, 'one self-narrated Fight-effect line');
+    assert.match(G.messages![0]!.text, /Fight effect: KO'd 3 Wound\(s\) from your hand and discard pile\./);
+    assert.equal(G.messages![0]!.outcome, 'applied');
+    assert.equal(G.diagnostics?.hollowEffects?.length ?? 0, 0, 'no hollow record when the handler fires');
+  });
+
+  it('AC-2 a player with zero Wounds is a reachable no-op (blocked, no crash, no hollow)', () => {
+    const G = makeG({
+      hooks: [koWoundsHook('v-ymir')],
+      playerZones: {
+        '0': { deck: [], hand: [CARD_A], discard: [CARD_B], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-ymir' as CardExtId, 'onFight');
+
+    assert.deepStrictEqual(G.ko, [], 'nothing KO’d');
+    assert.deepStrictEqual(G.playerZones['0']!.hand, [CARD_A], 'non-Wound hand stays');
+    assert.deepStrictEqual(G.playerZones['0']!.discard, [CARD_B], 'non-Wound discard stays');
+    assert.match(G.messages![0]!.text, /Fight effect: KO'd 0 Wound\(s\) from your hand and discard pile\./);
+    assert.equal(G.messages![0]!.outcome, 'blocked');
+    assert.equal(G.diagnostics?.hollowEffects?.length ?? 0, 0, 'reachable no-op, never hollow');
+  });
+});
