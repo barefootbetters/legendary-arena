@@ -439,14 +439,17 @@ metadata — not the ephemeral session running on top of it.
 
 ## 10. Future structure
 
-Kept as **one** document today (duplicate-first: split only when a section
-grows unwieldy). If/when the procedures deepen, split into:
+Kept close to **one** document (duplicate-first: split only when a section grows
+unwieldy). Current split:
 
 - `DISASTER_RECOVERY.md` — this overview + scenarios + acceptance (stays).
-- `POSTGRES_RESTORE_RUNBOOK.md` — database-specific restore commands.
-- `SERVER_REBUILD_RUNBOOK.md` — full Ubuntu/Render rebuild steps.
+- [`SERVER_REBUILD_RUNBOOK.md`](SERVER_REBUILD_RUNBOOK.md) — **split out
+  2026-08-09**: the step-by-step **quarterly full-service rebuild drill** (bare
+  host → running service → §6 capability validation), rehearsed on the Ubuntu lab.
+- `POSTGRES_RESTORE_RUNBOOK.md` — not yet split; the DB-restore commands live in
+  `SERVER_REBUILD_RUNBOOK.md` §4 until they grow enough to warrant their own file.
 
-**Not yet decided (operator):** the RPO/RTO values (§1); whether building the
-external `pg_dump` → R2 backup pipeline (prerequisite #1) proceeds as its own
-Work Packet; and whether a passing DR drill becomes a *binding* release gate
-(that would need a `DECISIONS.md` entry — it is descriptive here, not enforced).
+**Not yet decided (operator):** the RPO/RTO values (§1), and whether a passing DR
+drill becomes a *binding* release gate (that would need a `DECISIONS.md` entry — it
+is descriptive here, not enforced). *(The external `pg_dump` → R2 pipeline question
+is resolved — built as WP-416 and live since 2026-08-09, §0.)*
