@@ -22,10 +22,12 @@ source:
   - ../scripts/wait-for-spa-deploy.mjs
   - ../.github/workflows/spa-assets-nightly.yml
   - ../.github/workflows/spa-warm-on-deploy.yml
+  - ../apps/arena-client/functions/_middleware.ts
+  - ../apps/arena-client/public/_headers
   - ../docs/ops/domains.json
   - ../docs/ops/DOMAINS.md
   - ../package.json
-last-reviewed: 2026-08-05
+last-reviewed: 2026-08-10
 ---
 
 ## Summary
@@ -309,6 +311,61 @@ Unlike the `pnpm check:*` scripts, neither gate is operator-run from a local
 Both accept a `workflow_dispatch` for on-demand verification straight after a
 manual Cloudflare cache purge.
 
+**Edge-cache poisoning — a healthy hashed asset masked by a stale HTML entry.**
+A third failure mode on the same surface, and the nastiest, because the
+**origin is healthy the entire time** — the bad bytes live only in Cloudflare's
+edge cache. Observed live on `play.legendary-arena.com` on 2026-08-10: the whole
+app was a blank screen, and the browser console carried exactly one error —
+`Failed to load module script: Expected a JavaScript-or-Wasm module script but
+the server responded with a MIME type of "text/html"`.
+
+It compounds the two building blocks the masking mode already uses. (1)
+Cloudflare Pages' built-in SPA fallback answers any unmatched path — including a
+missing `/assets/<hash>.js` — with `200` + `index.html` (`text/html`). (2)
+[`apps/arena-client/public/_headers`](../apps/arena-client/public/_headers) marks
+`/assets/*` `Cache-Control: public, max-age=31536000, immutable`. So when any
+client asks for a hashed chunk that is not in the *current* deploy — a browser on
+a stale `index.html` requesting an old hash, or a request that races a rollout —
+origin returns the `200`-HTML fallback and Cloudflare caches that HTML **against
+the asset URL, immutable, for a year**. Every subsequent visitor is then served
+HTML where the `<script type="module">` expects JavaScript, strict MIME checking
+rejects it, and the app never mounts. Because the entry is `immutable`, browsers
+do not even revalidate it.
+
+*Triage — the tell is a split between the cached and the origin-fresh fetch of
+the same URL.* Fetch the failing entry bundle two ways from the browser console
+and compare `cf-cache-status`, `content-type`, and `age`:
+
+```js
+await fetch(url, { cache: 'default' }); // what the module loader used
+await fetch(url, { cache: 'reload' });  // forces origin revalidation
+```
+
+During the 2026-08-10 incident the `default` fetch returned `HIT` /
+`text/html` / 1959 bytes (the poisoned shell) while the `reload` fetch returned
+`HIT` / `application/javascript` / 665 KB (the correct bundle) — two different
+edge entries for one URL. A `default`→HTML but `reload`→JS split ⇒ edge-cache
+poisoning: **the deploy is fine, the cache is not.** Contrast the *masking* mode,
+where origin genuinely lacks the asset so **both** fetches return HTML; and the
+*cold-deploy stylesheet abort*, where the asset is fine and the failure is a
+browser-side `net::ERR_ABORTED`.
+
+*Immediate remediation (operator).* Purge the Cloudflare cache for the
+`legendary-arena.com` zone — Caching → Configuration → **Purge Everything**
+(safer than a single-URL purge, since more than one hash can be poisoned). The
+site recovers within seconds because origin is already correct.
+
+*Prevention (shipped 2026-08-10, `INFRA:`).* The arena-client Pages-Functions
+middleware [`apps/arena-client/functions/_middleware.ts`](../apps/arena-client/functions/_middleware.ts)
+now returns a real, uncacheable `404` whenever a request under `/assets/`
+resolves to the HTML shell (a missing hashed chunk). The poisoning entry is never
+created — a `404 no-store` is not cached against the asset URL — and the clean
+miss feeds the same WP-418 `vite:preloadError` update-available path as a genuine
+stale-bundle. Real assets are untouched: an existing chunk comes back as
+`javascript`/`css`, so the guard's HTML condition is false and it passes straight
+through. Note this makes the arena-client middleware do more than inject profile
+link-preview meta — it is also the asset-shell guard.
+
 ### Latest run snapshot — 2026-05-19
 
 Both scripts were run from
@@ -537,6 +594,13 @@ fails the same way, ruling out half-provisioned states.
 - [`scripts/wait-for-spa-deploy.mjs`](../scripts/wait-for-spa-deploy.mjs) —
   polls `version.json` until a target commit is live, so the post-deploy
   warm runs against the new bundle rather than the outgoing one.
+- [`apps/arena-client/functions/_middleware.ts`](../apps/arena-client/functions/_middleware.ts) —
+  the Pages-Functions middleware; besides injecting profile link-preview meta,
+  it returns an uncacheable `404` for a `/assets/` request that fell through to
+  the HTML shell (the edge-cache-poisoning guard, 2026-08-10).
+- [`apps/arena-client/public/_headers`](../apps/arena-client/public/_headers) —
+  marks `/assets/*` `immutable, max-age=31536000`; the header that pins a
+  poisoned HTML entry for a year if the shell is ever served at an asset URL.
 - [`.github/workflows/spa-assets-nightly.yml`](../.github/workflows/spa-assets-nightly.yml) —
   runs the live masking probe nightly and on `workflow_dispatch`.
 - [`.github/workflows/spa-warm-on-deploy.yml`](../.github/workflows/spa-warm-on-deploy.yml) —
@@ -574,6 +638,9 @@ fails the same way, ruling out half-provisioned states.
   [`.github/workflows/spa-warm-on-deploy.yml`](../.github/workflows/spa-warm-on-deploy.yml)
 - [PR #1224 — cold-deploy stylesheet abort fix](https://github.com/barefootbetters/legendary-arena/pull/1224) —
   strip-`crossorigin` build plugin + `spa-warm-on-deploy` (2026-08-05)
+- [PR #1310 — edge-cache-poisoning `404` guard](https://github.com/barefootbetters/legendary-arena/pull/1310) —
+  middleware returns an uncacheable `404` for a missing hashed asset instead of
+  the poisoning `200`-HTML shell (2026-08-10)
 - [`docs/ops/domains.json`](../docs/ops/domains.json)
 - [`docs/ops/DOMAINS.md`](../docs/ops/DOMAINS.md)
 - [`package.json`](../package.json) — `check` and `check:domains` aliases

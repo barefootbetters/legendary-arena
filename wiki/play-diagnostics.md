@@ -24,7 +24,7 @@ source:
   - ../docs/ai/work-packets/WP-228-arena-client-diagnostic-capture-export.md
   - ../docs/ai/work-packets/WP-314-diagnostic-effect-provenance.md
   - ../docs/ai/DECISIONS.md
-last-reviewed: 2026-07-25
+last-reviewed: 2026-08-10
 ---
 
 ## Summary
@@ -258,6 +258,16 @@ or the stored entry is corrupt.
 
 ## Edge Cases
 
+- **A blank screen on load is a different failure class — Play Diagnostics
+  cannot see it.** This tool captures a *running* client; when the app never
+  boots (a white page with no UI at all), the **Download diagnostics** button
+  never mounts, so there is nothing to export. A blank-on-load is almost always
+  an asset-delivery failure at the CDN, not a match wedge — a missing/masked
+  bundle, a cold-deploy stylesheet abort, or an edge-cache-**poisoned** hashed
+  asset serving `text/html` at a `.js` URL (the tell is the
+  `Failed to load module script: Expected a JavaScript-or-Wasm module script`
+  console error). Diagnose those from the network layer, not from here: see
+  [Operational Health Checks → SPA asset delivery](operational-health-checks.md#spa-asset-delivery).
 - **Empty `entries` does not mean the capture is broken.** A report
   with `entryCount: 0` most often means either the freeze was
   logically silent (a wedge that threw no error and logged nothing) or
