@@ -132,29 +132,47 @@ function composeEffectResultClause(result: ResolvedEffectResult): string {
  * @param bystandersRescued - Bystanders rescued into the victory pile (>= 0).
  * @param effectResults - Fight: effect results the executor applied, with target
  *   ext_ids already resolved to display names (WP-319).
+ * @param skrullGained - True when the defeated card was a Secret Invasion Skrull
+ *   (a Hero acting as a Villain) gained into the defeating player's discard
+ *   (WP-518 / D-24331). Defaults to false so every non-Skrull caller and the
+ *   existing golden tests stay byte-identical.
  * @returns Single English sentence describing the resolved fight.
  */
 export function composeFightNarrative(
   cardName: string,
   bystandersRescued: number,
   effectResults: ResolvedEffectResult[],
+  skrullGained: boolean = false,
 ): string {
   const bystanderClause =
     bystandersRescued > 0
       ? ` and rescued ${String(bystandersRescued)} bystander(s)`
       : '';
-  if (effectResults.length === 0) {
-    return `Fought "${cardName}"${bystanderClause}.`;
-  }
+  // why: WP-518 / D-24331 — Secret Invasion "If you defeat that Hero, you gain
+  // it". The engine already routes a defeated Skrull to the defeating player's
+  // discard (WP-514 defeatCityVillainCore), but without this clause the overlay
+  // reads `Fought "X"` — identical to an ordinary villain kill — so the gain
+  // lands silently and players report it as not happening. Empty for every
+  // non-Skrull defeat, so those narratives are byte-identical (the notableEvents
+  // narrative is hashed; this clause fires only on Skrull defeats, which no
+  // committed fixture performs, so the sentinel / PRE_WP080 hashes are unchanged).
+  // Third-person voice ("the active player") matches the effect clauses below —
+  // the overlay is a shared, all-audience projection, not owner-scoped.
+  const skrullGainClause = skrullGained
+    ? " and gained the Hero into the active player's discard pile"
+    : '';
   // why: WP-319 / D-24105 — the fightResolved narrative (shown by the
-  // center-screen NotableEventOverlay) now NAMES the specific effect target(s)
+  // center-screen NotableEventOverlay) NAMES the specific effect target(s)
   // via the shared composeEffectResultLogLine, matching the durable-log
   // `Fight effect:` line. Supersedes the WP-316 choice to keep this narrative
   // keyword-granular for byte-identity: the sentinel replay fires no fight
   // event, so `finalStateHash` is unchanged (verified). The `appliedEffects`
   // keyword field on the event is unchanged; only this narrative string is enriched.
-  const effectClause = composeEffectResultLogLine(effectResults);
-  return `Fought "${cardName}"${bystanderClause}; Fight effect: ${effectClause}.`;
+  const effectClause =
+    effectResults.length > 0
+      ? `; Fight effect: ${composeEffectResultLogLine(effectResults)}`
+      : '';
+  return `Fought "${cardName}"${bystanderClause}${skrullGainClause}${effectClause}.`;
 }
 
 // ---------------------------------------------------------------------------

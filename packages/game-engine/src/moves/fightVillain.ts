@@ -226,7 +226,12 @@ export function defeatCityVillainCore(
   // DIRECTLY here (awardAttachedHeroes below handles a villain's ATTACHED heroes, not
   // the fought card). A gain log line follows so a Hero the player never recruited does
   // not appear in their deck with no trail (mirrors the attached-hero log below).
+  // why: WP-518 / D-24331 — capture the Skrull origin BEFORE the delete below so
+  // the fightResolved narrative (composed after the origin overlay is cleared) can
+  // announce the gain in the center-screen overlay, not only in the durable log.
+  let skrullGained = false;
   if (G.convertedVillainOrigins?.[cardId] === 'skrull') {
+    skrullGained = true;
     G.playerZones[currentPlayer]!.discard.push(cardId);
     delete G.convertedVillainOrigins[cardId];
     pushLog(G,
@@ -338,6 +343,9 @@ export function defeatCityVillainCore(
       fightCardName,
       bystandersRescued,
       resolvedFightResults,
+      // why: WP-518 / D-24331 — announce the Secret Invasion Skrull gain in the
+      // overlay; false for every ordinary villain defeat (byte-identical narrative).
+      skrullGained,
     ),
   });
 }
