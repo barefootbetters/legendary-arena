@@ -1971,6 +1971,107 @@ function villainEffectRescueBystandersCurrentByTraitCount(
 }
 
 /**
+ * Counts the Heroes in the HQ whose trait matches the predicate (D-24334 / WP-521).
+ *
+ * The engine's first HQ-by-trait scan: it iterates the five `G.hq` slots, skips the
+ * empty (`null`) ones, and counts those whose `G.cardTraits` entry matches via the
+ * shared `cardTraitMatches`. Deliberately separate from the player-zone scanners
+ * (`countPlayerHeroesMatchingTrait`), which read hand + in-play — this reads the HQ.
+ *
+ * @param hq - The HQ zone (five `CardExtId | null` slots).
+ * @param cardTraits - The setup-time `{ team, heroClass }` trait snapshot.
+ * @param kind - The predicate kind ('team' | 'hero-class').
+ * @param value - The normalized trait slug to match.
+ * @returns How many non-empty HQ slots hold a Hero matching the trait.
+ */
+function countHqHeroesByTrait(
+  hq: LegendaryGameState['hq'],
+  cardTraits: LegendaryGameState['cardTraits'],
+  kind: 'team' | 'hero-class',
+  value: string,
+): number {
+  let count = 0;
+  for (const slot of hq) {
+    // why: an empty HQ slot holds no Hero; synthetic cards never sit in the HQ and
+    // an `[team:…]` predicate never matches them, so no BASIC_SHIELD-style widening
+    // (D-24296) is needed here.
+    if (slot === null) {
+      continue;
+    }
+    if (cardTraitMatches(cardTraits, slot, kind, value)) {
+      count += 1;
+    }
+  }
+  return count;
+}
+
+/**
+ * capture-bystanders-plus-per-hq-hero-by-trait primitive — capture ONE Bystander onto
+ * the triggering villain, then ONE more for each HQ Hero matching the trait predicate
+ * (co2e Baron Zemo Ambush — "captures a Bystander. Then he captures another Bystander
+ * for each [team:avengers] Hero in the HQ.", D-24334 / WP-521).
+ *
+ * Auto-resolved and deterministic. The base count is fixed at 1; the additional
+ * captures scale with `countHqHeroesByTrait`. Bystanders are **attached only** (no
+ * award) — this fires at Ambush, and Baron Zemo's attached Bystanders are awarded to
+ * the defeating player on his defeat (`defeatCityVillainCore` Step 3b, D-18506); this
+ * is the same attach-at-Ambush / award-on-defeat split the `capture-bystander` handler
+ * uses (contrast the Fight-timed `rescue-bystanders-current-by-trait-count`, which
+ * attaches AND awards each iteration). Supply-bounded on `G.piles.bystanders`.
+ * Self-narrates via `pushLog` (keyword-less).
+ */
+function villainEffectCaptureBystandersPlusPerHqHeroByTrait(
+  G: LegendaryGameState,
+  _currentPlayer: string,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  const requireKind = descriptor.requireKind;
+  const requireValue = descriptor.requireValue;
+  // why: defensive — same guard as the other trait-predicate handlers (a hand-built
+  // test hook could omit the predicate; the parser never does). No predicate → no
+  // per-HQ-hero count, so capture nothing rather than guess.
+  if (requireKind === undefined || requireValue === undefined) {
+    return { targets: [] };
+  }
+  // why: D-24334 — base 1 ("captures a Bystander") + one per HQ Hero matching the
+  // trait ("another Bystander for each [team:avengers] Hero in the HQ").
+  const captureCount = 1 + countHqHeroesByTrait(G.hq, G.cardTraits, requireKind, requireValue);
+  let captured = 0;
+  for (let captureIndex = 0; captureIndex < captureCount; captureIndex++) {
+    // why: supply-bounded — stop once the shared Bystander pile is empty (a reachable
+    // no-op tail, never a hollow record). attachBystanderToVillain also no-ops an
+    // empty supply, but breaking keeps the narrated count honest.
+    if (G.piles.bystanders.length === 0) {
+      break;
+    }
+    const attachResult = attachBystanderToVillain(
+      G.piles.bystanders,
+      cardId,
+      G.attachedBystanders,
+    );
+    G.piles.bystanders = attachResult.bystandersPile;
+    G.attachedBystanders = attachResult.attachedBystanders;
+    // why: ATTACH-ONLY at Ambush — do NOT award now. Baron Zemo's attached Bystanders
+    // are awarded to the defeating player at his defeat (D-18506); awarding here would
+    // double-award (unlike the Fight-timed rescue-bystanders handler above).
+    captured += 1;
+  }
+  // why: self-narrate the actual count (keyword-less → descriptorToLegacyKeyword
+  // returns undefined, no VillainEffectResult, generic "<timing> effect:" line never
+  // fires). `G.messages` is hash-excluded (D-24081). Zero captured (empty supply at
+  // the start) is a reachable no-op → `blocked`; the base 1 makes `applied` the norm.
+  const label = villainEffectTimingLabel(timing);
+  pushLog(
+    G,
+    `${label} effect: captured ${String(captured)} Bystander(s) (1 + one per ${requireValue} Hero in the HQ).`,
+    captured > 0 ? 'applied' : 'blocked',
+  );
+  return { targets: [] };
+}
+
+/**
  * Whether a player's Victory Pile holds a villain of the target group OTHER than
  * the just-defeated/escaped card (WP-494 / D-24299).
  *
@@ -2106,7 +2207,10 @@ function villainEffectGainWoundUnlessVictoryVillainGroup(
 // field) appended by WP-503 (D-24307 — the core spider-foes Doctor Octopus villain
 // Fight: draw 8 next hand instead of 6). `ko-cullable-each-deck-top` (auto-resolve —
 // each player reveals their deck top, KO the cullable ones, keep real Heroes) appended
-// by WP-519 (D-24332 — Melter, Masters of Evil Fight). `ko-wounds-current-hand-and-discard`
+// by WP-519 (D-24332 — Melter, Masters of Evil Fight). `capture-bystanders-plus-per-hq-hero-by-trait`
+// (auto-resolve — attach 1 Bystander + 1 per HQ Hero matching a trait; attach-only at
+// Ambush, award on defeat) appended by WP-521 (D-24334 — co2e Baron Zemo Ambush).
+// `ko-wounds-current-hand-and-discard`
 // (auto-resolve — KO the current player's Wounds from hand + discard) appended by
 // WP-516 (D-24329 — Ymir, Frost Giant King Fight).
 /** Villain effect handlers keyed by primitive. Single dispatch source. */
@@ -2127,6 +2231,7 @@ const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandl
   'override-next-hand-size': villainEffectOverrideNextHandSize,
   'ko-wounds-current-hand-and-discard': villainEffectKoWoundsCurrentHandAndDiscard,
   'ko-cullable-each-deck-top': villainEffectKoCullableEachDeckTop,
+  'capture-bystanders-plus-per-hq-hero-by-trait': villainEffectCaptureBystandersPlusPerHqHeroByTrait,
 };
 
 /**

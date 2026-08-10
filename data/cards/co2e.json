@@ -2227,7 +2227,7 @@
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-masters-of-evil-baron-zemo.webp",
           "abilities": [
             "Baron Zemo gets +1[icon:attack] for each Bystander he has.",
-            "Ambush: Baron Zemo captures a Bystander. Then he captures another Bystander for each [team:avengers] Hero in the HQ."
+            "Ambush: Baron Zemo captures a Bystander. Then he captures another Bystander for each [team:avengers] Hero in the HQ. [effect:capture-bystanders-plus-per-hq-hero-by-trait:team:avengers]"
           ],
           "copies": 2
         },

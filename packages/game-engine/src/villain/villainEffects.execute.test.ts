@@ -3390,3 +3390,108 @@ describe('executeVillainAbilities — ko-wounds-current-hand-and-discard (WP-516
     assert.equal(G.diagnostics?.hollowEffects?.length ?? 0, 0, 'reachable no-op, never hollow');
   });
 });
+
+describe('executeVillainAbilities — capture-bystanders-plus-per-hq-hero-by-trait (WP-521 / D-24334)', () => {
+  const AVENGER_A = 'core/avengers/iron-man#0' as CardExtId;
+  const AVENGER_B = 'core/avengers/captain-america#0' as CardExtId;
+  const XMEN = 'core/x-men/wolverine#0' as CardExtId;
+  const TRAITS: Record<string, { heroClass: string | null; team: string | null }> = {
+    [AVENGER_A]: { heroClass: 'tech', team: 'avengers' },
+    [AVENGER_B]: { heroClass: 'strength', team: 'avengers' },
+    [XMEN]: { heroClass: 'covert', team: 'x-men' },
+  };
+
+  // why: capture-bystanders-plus-per-hq-hero-by-trait is predicate-parameterized and
+  // keyword-less, so the hook() helper (which reads LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR)
+  // can't build it — construct the descriptor hook directly.
+  function zemoHook(cardId: string): VillainAbilityHook {
+    return {
+      cardId: cardId as CardExtId,
+      timing: 'onAmbush',
+      keywords: [],
+      effects: [
+        {
+          primitive: 'capture-bystanders-plus-per-hq-hero-by-trait',
+          requireKind: 'team',
+          requireValue: 'avengers',
+        },
+      ],
+    };
+  }
+
+  it('AC-1 attaches 1 + (HQ Avengers) Bystanders to the villain, attach-only at Ambush (no award)', () => {
+    const G = makeG({
+      hooks: [zemoHook('v-zemo')],
+      hq: [AVENGER_A, XMEN, AVENGER_B, null, null],
+      cardTraits: TRAITS,
+      bystanders: ['b0', 'b1', 'b2', 'b3'] as CardExtId[],
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-zemo' as CardExtId, 'onAmbush');
+    // 1 base + 2 HQ Avengers (AVENGER_A, AVENGER_B) = 3 attached to Baron Zemo.
+    assert.deepStrictEqual(
+      G.attachedBystanders['v-zemo'],
+      ['b0', 'b1', 'b2'],
+      '3 Bystanders attached to the villain',
+    );
+    assert.deepStrictEqual(G.piles.bystanders, ['b3'] as CardExtId[], 'supply reduced by 3');
+    // why: attach-only at Ambush — no award to any player's victory pile (the award
+    // is deferred to Baron Zemo's defeat, D-18506).
+    assert.deepStrictEqual(G.playerZones['0']!.victory, [], 'no award at Ambush (player 0)');
+    assert.deepStrictEqual(G.playerZones['1']!.victory, [], 'no award at Ambush (player 1)');
+    assert.match(G.messages![0]!.text, /Ambush effect: captured 3 Bystander\(s\)/);
+    assert.equal(G.messages![0]!.outcome, 'applied');
+    assert.equal(G.diagnostics?.hollowEffects?.length ?? 0, 0, 'no hollow — the marked line is handled');
+  });
+
+  it('AC-2 with zero HQ Avengers attaches exactly the base 1', () => {
+    const G = makeG({
+      hooks: [zemoHook('v-zemo')],
+      hq: [XMEN, null, null, null, null],
+      cardTraits: TRAITS,
+      bystanders: ['b0', 'b1'] as CardExtId[],
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-zemo' as CardExtId, 'onAmbush');
+    assert.deepStrictEqual(G.attachedBystanders['v-zemo'], ['b0'], 'base 1 Bystander only');
+    assert.deepStrictEqual(G.piles.bystanders, ['b1'] as CardExtId[], 'supply reduced by 1');
+  });
+
+  it('AC-2 empty Bystander supply is a reachable no-op (blocked, no hollow)', () => {
+    const G = makeG({
+      hooks: [zemoHook('v-zemo')],
+      hq: [AVENGER_A, AVENGER_B, null, null, null],
+      cardTraits: TRAITS,
+      bystanders: [],
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-zemo' as CardExtId, 'onAmbush');
+    assert.equal(G.attachedBystanders['v-zemo'] ?? undefined, undefined, 'nothing attached');
+    assert.match(G.messages![0]!.text, /Ambush effect: captured 0 Bystander\(s\)/);
+    assert.equal(G.messages![0]!.outcome, 'blocked');
+    assert.equal(G.diagnostics?.hollowEffects?.length ?? 0, 0, 'reachable no-op, never hollow');
+  });
+
+  it('AC-3 counts HQ heroes only — player-zone Avengers are never counted', () => {
+    const G = makeG({
+      hooks: [zemoHook('v-zemo')],
+      hq: [AVENGER_A, null, null, null, null],
+      // why: the player holds Avengers in hand + in-play — the HQ scan must ignore them
+      // (the printed count is "for each [team:avengers] Hero in the HQ").
+      playerZones: {
+        '0': { deck: [], hand: [AVENGER_B], discard: [], inPlay: [AVENGER_B], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      cardTraits: TRAITS,
+      bystanders: ['b0', 'b1', 'b2', 'b3'] as CardExtId[],
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-zemo' as CardExtId, 'onAmbush');
+    // 1 base + 1 HQ Avenger (AVENGER_A) = 2; the player-zone Avengers are ignored.
+    assert.deepStrictEqual(
+      G.attachedBystanders['v-zemo'],
+      ['b0', 'b1'],
+      'only the HQ Avenger is counted (2 total)',
+    );
+  });
+});

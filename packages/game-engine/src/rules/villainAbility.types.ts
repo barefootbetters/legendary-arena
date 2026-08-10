@@ -219,6 +219,14 @@ export interface VillainEffectResult {
 // force-KO'd, the auto-resolve carries no agency loss (the WP-470 scry-ko failure mode,
 // which force-KO'd one of two cards, cannot arise here). No-param; keyword-less, so it
 // reverse-maps to `undefined` and self-narrates via pushLog.
+// why: D-24334 — `capture-bystanders-plus-per-hq-hero-by-trait` is the seventeenth
+// primitive (append-only, position 17): capture ONE Bystander onto the triggering
+// villain, then ONE more for each Hero in the HQ matching a `{ requireKind,
+// requireValue }` trait predicate (co2e Baron Zemo, Masters of Evil — "captures a
+// Bystander. Then he captures another Bystander for each [team:avengers] Hero in the
+// HQ."). Attach-only at Ambush (the award is deferred to defeat, D-18506); the count
+// uses the first HQ-by-trait scan. Predicate-parameterized (parses via the shared
+// trait-predicate arm, like reveal-or-wound); keyword-less, self-narrates via pushLog.
 export type VillainEffectPrimitive =
   | 'ko-hero'
   | 'gain-wound'
@@ -235,7 +243,8 @@ export type VillainEffectPrimitive =
   | 'gain-wound-unless-victory-villain-group'
   | 'override-next-hand-size'
   | 'ko-wounds-current-hand-and-discard'
-  | 'ko-cullable-each-deck-top';
+  | 'ko-cullable-each-deck-top'
+  | 'capture-bystanders-plus-per-hq-hero-by-trait';
 
 // why: drift-detection array — must match VillainEffectPrimitive exactly
 // (villainAbility.types.test.ts asserts bidirectional parity). Adding a
@@ -261,6 +270,9 @@ export type VillainEffectPrimitive =
 // Masters of Evil Fight: each player reveals their deck top; KO only the cullable ones
 // (Wound / basic S.H.I.E.L.D. Agent|Trooper), keep real Heroes + Officer; keyword-less
 // no-param auto-resolve, self-narrates; reshuffle-on-empty via shuffleContext).
+// `capture-bystanders-plus-per-hq-hero-by-trait` appended at position 17 by WP-521
+// (D-24334 — co2e Baron Zemo Ambush: capture 1 Bystander + 1 per HQ Hero matching a
+// trait predicate; predicate-parameterized, keyword-less auto-resolve, self-narrates).
 /** All villain effect primitives in canonical order. Single source of truth. */
 export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'ko-hero',
@@ -279,6 +291,7 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'override-next-hand-size',
   'ko-wounds-current-hand-and-discard',
   'ko-cullable-each-deck-top',
+  'capture-bystanders-plus-per-hq-hero-by-trait',
 ] as const;
 
 /**
@@ -312,6 +325,9 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
  *     (D-24290): `requireKind` + `requireValue` reused as the current-player
  *     hero-trait predicate — the heroes to KO (Destroyer) / the count of matching
  *     heroes to rescue Bystanders for (Baron Zemo).
+ *   - `capture-bystanders-plus-per-hq-hero-by-trait` (D-24334): `requireKind` +
+ *     `requireValue` as an HQ hero-trait predicate — capture 1 Bystander + 1 per HQ
+ *     Hero matching the trait (co2e Baron Zemo Ambush: `[team:avengers]`).
  */
 export interface VillainEffectDescriptor {
   primitive: VillainEffectPrimitive;

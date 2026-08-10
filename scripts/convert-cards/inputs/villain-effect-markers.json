@@ -86,6 +86,11 @@
         "piledriver": { "fight": ["koHeroCurrentPlayer"] }
       }
     },
+    "co2e": {
+      "masters-of-evil": {
+        "baron-zemo": { "ambush": ["capture-bystanders-plus-per-hq-hero-by-trait:team:avengers"] }
+      }
+    },
     "core": {
       "brotherhood": {
         "juggernaut": { "ambush": ["ko-hero:each:2:discard"], "escape": ["ko-hero:each:2:hand"] },

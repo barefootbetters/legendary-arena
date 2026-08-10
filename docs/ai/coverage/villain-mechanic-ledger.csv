@@ -116,7 +116,7 @@ chmp-villain-monsters-unleashed-trull-the-unhuman,Trull the Unhuman,chmp,villain
 chmp-villain-monsters-unleashed-zzutak,Zzutak,chmp,villain,(unmarked),unmarked,,,
 co2e-villain-radiation-abomination,Abomination,co2e,villain,(unmarked),unmarked,,,
 co2e-villain-hydra-baron-strucker-supreme-hydra,"Baron Strucker, Supreme Hydra",co2e,villain,(unmarked),unmarked,,,
-co2e-villain-masters-of-evil-baron-zemo,Baron Zemo,co2e,villain,(unmarked),unmarked,,,
+co2e-villain-masters-of-evil-baron-zemo,Baron Zemo,co2e,villain,capture-bystanders-plus-per-hq-hero-by-trait,executable,WP-521,D-24334,packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystanders-plus-per-hq-hero-by-trait
 co2e-villain-sinister-syndicate-beetle,Beetle,co2e,villain,(unmarked),unmarked,,,
 co2e-villain-sinister-syndicate-boomerang,Boomerang,co2e,villain,(unmarked),unmarked,,,
 co2e-villain-enemies-of-asgard-destroyer,Destroyer,co2e,villain,(unmarked),unmarked,,,
