@@ -8,6 +8,16 @@
  * `<meta>` into `<head>` via `HTMLRewriter`, so a shared profile link
  * unfurls into a rich preview card in crawlers that do not run the SPA.
  *
+ * It also guards the hashed-asset surface: a request under `/assets/` whose
+ * served response is the SPA HTML shell means the chunk is absent (a stale
+ * client asking for an old hash, or a request that raced a deploy), and the
+ * middleware returns a real, uncacheable `404` for it instead of letting the
+ * `200`-HTML fall through — see `serveAssetNotFoundIfHtmlShell`. This stops a
+ * CDN cache-poisoning incident (2026-08-10) in which that `200 text/html` was
+ * served at a `.js` URL, tripped strict MIME checking (blank screen), and —
+ * because `public/_headers` marks `/assets/*` immutable for a year — was
+ * cached by Cloudflare against the asset URL and poisoned every visitor.
+ *
  * Every other request — no `?profile=`, non-HTML response, non-GET method,
  * malformed handle, and any API non-200 / timeout / error — passes the
  * unmodified asset response straight through (fail-soft). The middleware
@@ -101,16 +111,73 @@ function readProfileHandle(requestUrl: string): string | null {
 }
 
 /**
+ * Return a real `404` when a request under `/assets/` resolved to the SPA HTML
+ * shell — i.e. the hashed build asset does not exist in the current deployment.
+ *
+ * Cloudflare Pages' built-in single-page-application fallback answers any
+ * unmatched path with `200` + `index.html` (`text/html`). For a normal SPA
+ * route that is correct, but for a `/assets/<hash>.js|.css` URL it is a trap: a
+ * client on a stale `index.html` (or a request that raced a deploy) asks for a
+ * hash that is gone, receives HTML at a script URL, and the browser rejects it
+ * under strict MIME checking so the module never executes — a blank screen.
+ * Worse, `public/_headers` marks `/assets/*` `immutable, max-age=31536000`, so
+ * Cloudflare caches that HTML against the asset URL and poisons every visitor
+ * until the cache is purged (production incident 2026-08-10).
+ *
+ * Returning an uncacheable `404` for the missing hashed asset makes it fail
+ * cleanly: the poisoned entry is never created, and the SPA's `vite:preloadError`
+ * update-available path (WP-418) can prompt a reload. Real assets are untouched
+ * — an existing chunk is served by `context.next()` with a `javascript`/`css`
+ * content-type, so `isHtml` is false and this guard does not fire.
+ *
+ * @param requestPathname The request URL's pathname.
+ * @param isHtmlShell Whether the served response's content-type is HTML.
+ * @returns A `404` Response for a missing hashed asset, or `null` to pass through.
+ */
+function serveAssetNotFoundIfHtmlShell(
+  requestPathname: string,
+  isHtmlShell: boolean,
+): Response | null {
+  if (!isHtmlShell || !requestPathname.startsWith('/assets/')) {
+    return null;
+  }
+  return new Response(
+    'Asset not found. This hashed build asset is not part of the current deployment.',
+    {
+      status: 404,
+      headers: {
+        'content-type': 'text/plain; charset=utf-8',
+        // why: the missing-asset 404 must never be cached — the whole incident
+        // was a stale HTML body pinned against an asset URL. no-store keeps the
+        // edge and the browser re-asking origin until a good deploy answers.
+        'cache-control': 'no-store',
+      },
+    },
+  );
+}
+
+/**
  * Cloudflare Pages Functions middleware entry point.
  */
 export const onRequest: PagesFunction<Env> = async (context) => {
   const response = await context.next();
 
+  const contentType = response.headers.get('content-type') ?? '';
+  const isHtml = contentType.includes('text/html');
+
+  // why: a hashed /assets/* request that came back as the HTML shell is a
+  // missing chunk — return a clean, uncacheable 404 instead of the poisoning
+  // 200-HTML (see serveAssetNotFoundIfHtmlShell). Runs before the profile-meta
+  // path because that path only ever acts on the root/SPA HTML document.
+  const requestPathname = new URL(context.request.url).pathname;
+  const assetNotFound = serveAssetNotFoundIfHtmlShell(requestPathname, isHtml);
+  if (assetNotFound !== null) {
+    return assetNotFound;
+  }
+
   // why: asset requests and paramless page loads must be zero-cost
   // pass-throughs — the middleware only acts on a GET whose response is the
   // HTML shell and whose URL carries a valid ?profile=<handle>.
-  const contentType = response.headers.get('content-type') ?? '';
-  const isHtml = contentType.includes('text/html');
   const handle = readProfileHandle(context.request.url);
   if (context.request.method !== 'GET' || !isHtml || handle === null) {
     return response;
