@@ -31,8 +31,13 @@ was genuinely hollow.
   `finalStateHash` + `PRE_WP080_HASH` are **byte-identical** (verified — full engine suite green,
   `sim:runtime-observed:check` no diff). Regenerated `data/cards/core.json`, the villain mechanic ledger,
   `effect-implementation-index.json`, and the mechanic provenance; refreshed the ewiki villain-effect vocab.
-- Lightweight lane (one branch, two-commit topology). **D-24026 live-verify operator-pending** (fight Ymir
-  with Wounds in hand/discard → they leave for the KO pile). See
+- Lightweight lane (one branch, two-commit topology). **D-24026 ✅ live-verified 2026-08-09** — a 2p co-op
+  Secret Invasion match vs Magneto (Enemies of Asgard + Brotherhood + Doombot Legion). Ymir was fought at
+  turn 16; the game log records `16.2.9 [applied] Fight effect: KO'd 1 Wound(s) from your hand and discard
+  pile.` immediately before the defeat — **no `no-handler` breadcrumb**, and the match diagnostics carry
+  **zero** hollow records. All four Enemies-of-Asgard villains now resolve their printed effects in live play
+  (Frost Giant / Ymir-Ambush reveal-or-wound, **Ymir-Fight KO-wounds**, Destroyer KO-`[team:shield]`,
+  Enchantress draw-3). See
   [WP-516](work-packets/WP-516-ymir-fight-ko-wounds.md) + [EC-551](execution-checklists/EC-551-ymir-fight-ko-wounds.checklist.md).
 
 ### WP-514 — Secret Invasion of the Skrull Shapeshifters: Cross-Deck Hero Conversion + Escape Loss — DONE (2026-08-09)
