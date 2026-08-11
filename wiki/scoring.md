@@ -46,7 +46,7 @@ source:
   - ../docs/ai/work-packets/WP-051-par-publication-server-gate.md
   - ../docs/ai/work-packets/WP-053a-par-artifact-scoring-config.md
   - ../docs/10-GLOSSARY.md
-last-reviewed: 2026-07-18
+last-reviewed: 2026-08-11
 ---
 
 # Scoring
@@ -214,6 +214,26 @@ Do not describe these penalties as "counted from" anything until
 their producer lands. Player-facing guidance written against the
 specification rather than the implementation has already drifted
 once on exactly this point.
+
+#### External weight anchor — the rulebook 4 : 3 : 1 penalty ratio
+
+The community [Legendary Leagues](https://www.legendaryleagues.com/about/ranking)
+ranking system scores a match with the rulebook Total Score
+`VP − 4·(bystanders carried away) − 3·(scheme twists) − 1·(escaped villains)`.
+Read as a *ratio*, that is independent corroboration of the moral
+hierarchy `penaltyEventWeights` encode (VISION §21): a lost bystander
+outweighs a scheme twist, which outweighs an escaped villain, **4 : 3 : 1**.
+Two of those three — `bystanderLost` and `schemeTwistNegative` — are exactly
+the penalties still safe-skipping to zero above for lack of a producer. When
+those producers are wired, the 4 : 3 : 1 ratio is a ready-made **Phase-1
+seed** for their relative weights rather than a number invented from scratch
+(at centesimal precision that reads as `400 / 300 / 100` before any
+simulation refinement). This is an anchor for the *ordering and rough
+magnitude*, not a replacement for calibration — the published weights remain
+whatever `validateScoringConfig` accepts under a pinned
+`scoringConfigVersion`. The full contrast between this absolute PAR model and
+the ordinal league model — pros, cons, and other borrowings — lives on
+[PAR Simulation Calibration §Comparison](par-simulation-calibration.md#comparison-absolute-par-vs-ordinal-league-ranking).
 
 ### Pipeline shape
 
@@ -392,6 +412,12 @@ future WPs per the source `// why:` comment.
 - [`docs/12-SCORING-REFERENCE.md`](../docs/12-SCORING-REFERENCE.md) —
   the formula, weights, caps, and worked examples (canonical home;
   not duplicated in the wiki)
+- [Legendary Leagues — Ranking](https://www.legendaryleagues.com/about/ranking)
+  — the community ordinal-ranking system; source of the rulebook 4 : 3 : 1
+  Total Score penalty ratio anchored in
+  [Penalty producer status](#penalty-producer-status--four-of-five-safe-skip-to-zero)
+  and contrasted in full on
+  [PAR Simulation Calibration §Comparison](par-simulation-calibration.md#comparison-absolute-par-vs-ordinal-league-ranking)
 - [`docs/12.1-PAR-ARTIFACT-INTEGRITY.md`](../docs/12.1-PAR-ARTIFACT-INTEGRITY.md)
   — rationale for hashing PAR artifacts
 - [`.claude/skills/legendary-game-engine/SKILL.md`](../.claude/skills/legendary-game-engine/SKILL.md)
