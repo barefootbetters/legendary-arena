@@ -151,9 +151,12 @@ rates this effort lands — and may need to route to *two* licensors, not one.
 - **[Legendary Forge](legendary-forge.md)** — the physical diorama line also
   derives from Marvel/Upper Deck IP; its printables and cosmetic unlocks sit under
   the same licensing/royalty umbrella.
-- **Marketing-repo corporate memory** — the acquisition plan
-  (`docs/corporate-memory/04-ip-licensing-acquisition-plan.md`) is the
-  authoritative artifact; the open-questions tracker records the gap.
+- **Marketing-repo corporate memory** (`C:\www\legendary-arena-com\docs\corporate-memory\`)
+  — the authoritative artifacts for this effort: the acquisition **plan** (`04`)
+  and its counsel/agent **companion** (`05`); the **open-questions** tracker (`03`)
+  records the gap; the **decision log** (`01`) holds the royalty-routing / licensing
+  prerequisite; the **business brief** (`00`) sets the Marvel/Legendary-lineage
+  brand guardrail. Full list in References below.
 
 ## Edge Cases
 
@@ -198,3 +201,12 @@ rates this effort lands — and may need to route to *two* licensors, not one.
   internal; **draft, pre-engagement**)
 - `C:\www\legendary-arena-com\docs\corporate-memory\03-open-questions.md` — the
   🔴 "IP license not yet secured" gap entry
+- `C:\www\legendary-arena-com\docs\corporate-memory\01-decision-log.md` — the
+  2026-07-04 entry flagging royalty routing + licensing scope as launch
+  prerequisites (the printables store); commitment to pursue a license lands here
+- `C:\www\legendary-arena-com\docs\corporate-memory\00-business-brief.md` —
+  §Brand guardrails: the Marvel/*Legendary* lineage is **internal-only context**,
+  never a brand-facing claim
+- `C:\www\legendary-arena-com\docs\corporate-memory\README.md` — the corporate-memory
+  layer index (scope, update rules, `SPEC:` commit convention) and entry point to
+  the files above
