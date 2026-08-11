@@ -7,6 +7,31 @@
 
 ## Current State
 
+### WP-526 — URL-Preview Scheme-Aware Setup-Requirement Display — DONE (2026-08-11)
+
+Lightweight-lane follow-up to the Secret Invasion "6 Heroes" epic, surfaced from a live
+`cards.legendary-arena.com` test: a shared `?schemeId=…` deep-link loads a **read-only
+preview** (WP-114; "Edit this loadout" is the only draft-promotion path, D-114XX), but the
+preview showed the composition with **no setup requirement** — so a Secret Invasion link
+read "needs 5 heroes" (from the *empty* editor draft below) until you clicked Edit. WP-524's
+scheme-aware count was correct; the preview surface just never got taught about it.
+
+A new pure `resolveSetupRequirement(previewDocument)` in
+`apps/registry-viewer/src/lib/previewSetupRequirement.ts` resolves the requirement for the
+preview's player count **and** scheme (scheme-aware `heroCount` via `getPlayerCountSetup` +
+the WP-524 `resolveEffectiveHeroCount`); `LoadoutPreview.vue` calls it in a computed and
+renders a `[data-testid="preview-setup-requirement"]` line mirroring the builder's "For a
+N-player match: …". Purely additive display — respects the locked read-only preview-first
+design (no draft mutation, no promotion change). A shared Secret Invasion deep-link now shows
+"6 heroes" in the preview without clicking Edit.
+
+registry-viewer **210** pass / 0 fail (after `pnpm -r build` — the 3 LAGN failures were stale
+fresh-worktree dist, not this change); vue-tsc typecheck clean; control-revert non-vacuous
+(neuter the resolver → the SI-6 helper test fails, others green); `pnpm -r build` 0. **No new
+D-entry** (applies D-24337 to the preview surface); no registry / engine / server / contract /
+determinism surface. Lightweight lane, one PR (`EC-561:` + `SPEC:`). **D-24026 live-verify
+operator-pending.**
+
 ### WP-525 — Secret Invasion "6 Heroes" — Scheme-Aware Play-Lobby Requirement Projection — DONE (2026-08-11)
 
 Completes the Secret Invasion "6 Heroes" split epic. WP-524 made the engine + registry-viewer

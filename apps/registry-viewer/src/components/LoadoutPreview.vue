@@ -24,6 +24,7 @@ import type {
 
 import type { CardRegistry, FlatCard } from "../registry/browser";
 import type { SetupMatchedCount } from "../composables/useSetupFromUrl";
+import { resolveSetupRequirement } from "../lib/previewSetupRequirement";
 
 interface Props {
   hasUrlParams: boolean;
@@ -122,6 +123,13 @@ const heroProvidedTotal = computed<number>(
   () => props.parsedParams.heroDeckIds?.length ?? 0,
 );
 
+// why: WP-526 / D-24337 — surface the scheme-aware setup requirement in the
+// read-only preview so a shared deep-link (e.g. Secret Invasion, which requires
+// 6 heroes) shows the correct required counts WITHOUT first clicking "Edit this
+// loadout". The pure helper reuses the same registry resolver the builder uses;
+// null when the URL player count is outside 1..5 (no row to show).
+const setupRequirement = computed(() => resolveSetupRequirement(props.previewDocument));
+
 const editStatus = ref<"idle" | "loaded" | "rejected">("idle");
 const copyLinkStatus = ref<"idle" | "copied" | "failed">("idle");
 
@@ -176,6 +184,18 @@ async function onCopyLink(): Promise<void> {
         <span class="count-chip">Henchman Groups: {{ matchedCount.henchmanGroups }} / {{ henchmanProvidedTotal }}</span>
         <span class="count-chip">Hero Decks: {{ matchedCount.heroDecks }} / {{ heroProvidedTotal }}</span>
       </div>
+
+      <p
+        v-if="setupRequirement"
+        class="setup-requirement"
+        data-testid="preview-setup-requirement"
+      >
+        For a {{ setupRequirement.playerCount }}-player match:
+        {{ setupRequirement.row.villainGroupCount }} villain groups,
+        {{ setupRequirement.row.henchmenGroupCount }} henchmen groups,
+        {{ setupRequirement.row.heroCount }} heroes,
+        {{ setupRequirement.row.villainDeckBystanderCount }} villain-deck bystanders.
+      </p>
     </header>
 
     <div class="preview-body">
@@ -303,6 +323,12 @@ async function onCopyLink(): Promise<void> {
   padding: 0.2rem 0.6rem;
   font-size: 0.72rem;
   color: #c8c8e0;
+}
+
+.setup-requirement {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #a0a0c8;
 }
 
 .preview-body {
