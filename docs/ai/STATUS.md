@@ -7,6 +7,38 @@
 
 ## Current State
 
+### WP-522 — co2e Ultron (Villain) Fight: Take a Tech Hero from the HQ (KO or Gift) — DONE (2026-08-10)
+
+co2e (Legendary 2nd-edition) Masters-of-Evil villain **Ultron** now plays his printed **Fight** —
+*"Choose a [hc:tech] Hero from the HQ. Either KO that Hero or choose a player to gain it."* — instead
+of doing nothing (D-24266 `unmarked-ability`). This is **epic 2/3** of the co2e MoE deferred-primitive
+epic (D-24333); with WP-519 (Melter), WP-520 (marking), and WP-521 (Baron Zemo) already merged, only
+WP-523 (Whirlwind Ambush) remains.
+
+The printed KO-or-gift double-choice was resolved via **Fork A (auto-resolve)** — operator-confirmed at
+execution. In the shipped co-op modes, gifting an HQ Hero into a player's discard strictly dominates
+KO'ing it (the player gains a free Hero *and* the HQ refills; a KO only refills), so a rational
+cooperative chooser always gifts. The new eighteenth `VillainEffectPrimitive`
+`give-hq-hero-by-trait-to-current` removes the **highest-cost** `[hc:tech]` HQ Hero (ties → rightmost
+index, matching `captureHeroFromHq`), refills the vacated slot from `G.heroDeck`, and gives the Hero to
+the current (fighting) player's **discard** (the "gain" routing, D-24327 — never the victory pile). The
+KO branch is not implemented (dominated) and "choose a player" collapses to the fighting player (the
+WP-519 Melter / WP-516 Ymir precedent) — so there is **no pending choice, no UIState field, no client
+change**. Keyword-less auto-resolve; self-narrates via `pushLog`; no `ctx.random`.
+
+Fork B (a full interactive pending-choice for which Hero / KO-vs-gift / which player — the scry-ko
+WP-470 shape) was documented as the alternative and declined: the KO option is strictly dominated in
+co-op, so auto-resolving to the gift preserves the only outcome a rational player would pick at a
+fraction of the cost.
+
+`pnpm -r build` 0; engine test **2452 pass / 0 fail** (+5: 4 handler + 1 parse); `ledger:villains:check`
++ `effect-index:check` + `sim:runtime-observed:check` + `roadmap:counts:check` + `check:wiki` +
+`wiki-viewer:check-links` all 0; `PRE_WP080_HASH` + `finalStateHash` **byte-identical** (no committed
+fixture references `co2e/masters-of-evil`). co2e Ultron Fight flips unmarked → **executable** with
+`{ WP-522, D-24335 }` (the Escape `reveal-or-wound` marker is preserved). **D-24335 Active.** Two-commit
+topology (`EC-557:` + `SPEC:`), one PR. **D-24026 live-verify operator-pending** (post-deploy: fight
+co2e Ultron with a Tech Hero in the HQ → it enters your discard, the HQ refills, no `no-handler`).
+
 ### WP-520 — co2e Masters of Evil: Mark the Timing Lines Covered by Existing Primitives — DONE (2026-08-10)
 
 Three currently-hollow co2e (Legendary 2nd-edition) Masters-of-Evil timing lines now play their
