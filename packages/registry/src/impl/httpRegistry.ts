@@ -16,7 +16,7 @@ import {
   applyQuery,
   buildHealthReport,
 } from "../shared.js";
-import { PLAYER_COUNT_SETUP } from "../playerCountSetup.js";
+import { PLAYER_COUNT_SETUP, resolveEffectiveHeroCount } from "../playerCountSetup.js";
 import { hashCanonicalJson, deriveRegistryVersion } from "../canonicalJson.js";
 import type {
   CardRegistry,
@@ -173,6 +173,11 @@ export async function createRegistryFromHttp(
     // rides on the registry object so the engine reads it at setup time
     // without importing this package.
     playerCountSetup: PLAYER_COUNT_SETUP,
+
+    // why: D-24337 — the scheme-aware hero-count override rides on the registry
+    // object (like playerCountSetup) so the engine reaches the single definition
+    // structurally without importing this package.
+    resolveEffectiveHeroCount,
 
     /** @returns High-level counts for the registry. */
     info(): RegistryInfo {
