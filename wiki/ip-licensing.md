@@ -127,6 +127,14 @@ relationships — trading equity/control for credibility and open doors. Retain 
 counsel before any outreach. The step-by-step execution lives in the plan doc;
 this page records the strategy, not the checklist.
 
+A hard constraint shapes all of this: **Disney does not accept unsolicited
+submissions** (a legal shield against "you stole my idea" claims), so a cold solo
+approach to Marvel is *policy-blocked*, not merely low-odds — it must arrive through
+Upper Deck, a studio partner, or counsel/an agent with an existing Disney
+relationship. Counsel and agent selection criteria and a **verified** candidate
+shortlist live in the marketing-repo corporate memory
+(`docs/corporate-memory/05-counsel-and-agent-selection.md`).
+
 ### Relationship to the royalty covenant
 
 VISION's "royalties on *all* revenue" rule and the printables-store royalty-routing
@@ -184,5 +192,9 @@ rates this effort lands — and may need to route to *two* licensors, not one.
 - `C:\www\legendary-arena-com\docs\corporate-memory\04-ip-licensing-acquisition-plan.md`
   — the acquisition plan: IP stack, DXP context, deal economics, phased approach,
   risks, research sources (marketing repo, internal; **draft, pre-outreach**)
+- `C:\www\legendary-arena-com\docs\corporate-memory\05-counsel-and-agent-selection.md`
+  — Phase 0/3 companion: Disney no-unsolicited policy, counsel/agent selection
+  criteria, and verified candidate counsel/agents with citations (marketing repo,
+  internal; **draft, pre-engagement**)
 - `C:\www\legendary-arena-com\docs\corporate-memory\03-open-questions.md` — the
   🔴 "IP license not yet secured" gap entry
