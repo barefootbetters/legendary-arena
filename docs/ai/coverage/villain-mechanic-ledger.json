@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "cardType": "villain",
   "summary": {
-    "totalRows": 717,
+    "totalRows": 718,
     "byStatus": {
-      "executable": 124,
+      "executable": 125,
       "deferred": 0,
       "unsupported": 1,
       "unmarked": 592
     },
-    "distinctMechanics": 23
+    "distinctMechanics": 24
   },
   "rows": [
     {
@@ -1606,6 +1606,17 @@
       "wp": "",
       "decision": "",
       "handler": ""
+    },
+    {
+      "extId": "co2e-villain-masters-of-evil-ultron",
+      "cardName": "Ultron",
+      "set": "co2e",
+      "cardType": "villain",
+      "mechanic": "give-hq-hero-by-trait-to-current",
+      "status": "executable",
+      "wp": "WP-522",
+      "decision": "D-24335",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#give-hq-hero-by-trait-to-current"
     },
     {
       "extId": "co2e-villain-masters-of-evil-ultron",

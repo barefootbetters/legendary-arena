@@ -45,6 +45,10 @@ import {
 } from '../board/bystanders.logic.js';
 import { captureHeroFromHq } from '../board/heroCapture.logic.js';
 import type { CaptureHeroResult } from '../board/heroCapture.logic.js';
+// why: WP-522 / D-24335 — give-hq-hero-by-trait-to-current refills the vacated HQ slot
+// from G.heroDeck after removing the gifted Hero, the same refill contract
+// captureHeroFromHq uses (leaves null when the reservoir is empty).
+import { refillHqSlot } from '../board/city.logic.js';
 import { moveCardFromZone } from '../moves/zoneOps.js';
 import { reshuffleDiscardIntoDeck, drawCardsIntoHand, HAND_SIZE } from '../moves/drawCards.logic.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
@@ -2072,6 +2076,109 @@ function villainEffectCaptureBystandersPlusPerHqHeroByTrait(
 }
 
 /**
+ * Returns the HQ slot index of the highest-cost Hero matching the trait predicate,
+ * or null when no non-empty HQ slot matches (D-24335 / WP-522).
+ *
+ * Scans the five `G.hq` slots left-to-right, skipping empty (`null`) slots and slots
+ * whose Hero does not match the `{ kind, value }` trait predicate (via the shared
+ * `cardTraitMatches`). Among the matches, the highest `G.cardStats[id]?.cost ?? 0`
+ * wins; ties resolve to the RIGHTMOST index — the same selection determinism as
+ * `captureHeroFromHq`'s `highestCost` selector (WP-214).
+ *
+ * @param G - Game state (read-only here; only `G.hq`, `G.cardTraits`, `G.cardStats`).
+ * @param kind - The predicate kind ('team' | 'hero-class').
+ * @param value - The normalized trait slug to match.
+ * @returns The selected HQ slot index, or null when no HQ Hero matches.
+ */
+function selectHqHeroIndexByTraitHighestCost(
+  G: LegendaryGameState,
+  kind: 'team' | 'hero-class',
+  value: string,
+): number | null {
+  let selectedIndex: number | null = null;
+  let highestCost = -1;
+  for (let hqIndex = 0; hqIndex < G.hq.length; hqIndex++) {
+    const slot = G.hq[hqIndex];
+    if (slot === null || slot === undefined) {
+      continue;
+    }
+    if (!cardTraitMatches(G.cardTraits, slot, kind, value)) {
+      continue;
+    }
+    const heroCost = G.cardStats[slot]?.cost ?? 0;
+    // why: D-24335 — highest cost wins; a tie (equal cost) resolves to the RIGHTMOST
+    // index (hqIndex > selectedIndex), mirroring captureHeroFromHq's highestCost
+    // selector so HQ selection determinism is identical across both call sites.
+    if (heroCost > highestCost || (heroCost === highestCost && hqIndex > (selectedIndex ?? -1))) {
+      highestCost = heroCost;
+      selectedIndex = hqIndex;
+    }
+  }
+  return selectedIndex;
+}
+
+/**
+ * give-hq-hero-by-trait-to-current primitive — remove the highest-cost HQ Hero matching
+ * the trait predicate, refill the vacated HQ slot from `G.heroDeck`, and give the Hero to
+ * the current (fighting) player's discard (co2e Ultron Fight — "Choose a [hc:tech] Hero
+ * from the HQ. Either KO that Hero or choose a player to gain it.", D-24335 / WP-522).
+ *
+ * The printed KO-or-gift double-choice auto-resolves to the gift, to the current player.
+ * Self-narrates via `pushLog` (keyword-less → descriptorToLegacyKeyword returns undefined,
+ * so no VillainEffectResult is recorded and the generic "<timing> effect:" line never
+ * fires); the log line names the Hero + recipient. Returns `{ targets: [] }`.
+ */
+function villainEffectGiveHqHeroByTraitToCurrent(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  _cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  const label = villainEffectTimingLabel(timing);
+  const requireKind = descriptor.requireKind;
+  const requireValue = descriptor.requireValue;
+  // why: defensive — same guard as the other trait-predicate handlers (a hand-built test
+  // hook could omit the predicate; the parser never does). No predicate → match no HQ Hero
+  // rather than guess.
+  if (requireKind === undefined || requireValue === undefined) {
+    return { targets: [] };
+  }
+  // why: D-24335 — the printed KO-or-gift collapse. In co-op a gift gives a player a free
+  // Hero AND refills the HQ, strictly dominating a KO (which only refills), so a rational
+  // cooperative chooser always gifts and never KOs — the KO branch is not implemented (the
+  // WP-519 Melter / WP-516 Ymir dominated-option collapse).
+  const selectedIndex = selectHqHeroIndexByTraitHighestCost(G, requireKind, requireValue);
+  if (selectedIndex === null) {
+    // why: no HQ Hero matches the predicate — a reachable no-op (never a hollow record).
+    pushLog(G, `${label} effect: no ${requireValue} Hero in the HQ; no effect.`, 'blocked');
+    return { targets: [] };
+  }
+  const heroId = G.hq[selectedIndex] as CardExtId;
+  // why: vacate the selected slot, then refill it from G.heroDeck — the captureHeroFromHq
+  // refill contract (leaves the slot null when the reservoir is empty).
+  G.hq[selectedIndex] = null;
+  const refillResult = refillHqSlot(G.hq, selectedIndex, G.heroDeck);
+  G.hq = refillResult.hq;
+  G.heroDeck = refillResult.heroDeck;
+  // why: D-24327 — "gain" routes to the recipient's DISCARD (never the victory pile);
+  // D-24335 — the recipient is the current (fighting) player (the collapsed "choose a
+  // player"). No other player's zones are touched.
+  const zones = G.playerZones[currentPlayer];
+  if (zones) {
+    zones.discard.push(heroId);
+  }
+  // why: self-narrate (keyword-less). `G.messages` is hash-excluded (D-24081). Naming the
+  // Hero + recipient is the user-visible surface; outcome `applied` (a Hero was gifted).
+  pushLog(
+    G,
+    `${label} effect: gave ${resolveCardDisplayName(G, heroId)} from the HQ to Player ${currentPlayer}'s discard.`,
+    'applied',
+  );
+  return { targets: [] };
+}
+
+/**
  * Whether a player's Victory Pile holds a villain of the target group OTHER than
  * the just-defeated/escaped card (WP-494 / D-24299).
  *
@@ -2212,7 +2319,9 @@ function villainEffectGainWoundUnlessVictoryVillainGroup(
 // Ambush, award on defeat) appended by WP-521 (D-24334 — co2e Baron Zemo Ambush).
 // `ko-wounds-current-hand-and-discard`
 // (auto-resolve — KO the current player's Wounds from hand + discard) appended by
-// WP-516 (D-24329 — Ymir, Frost Giant King Fight).
+// WP-516 (D-24329 — Ymir, Frost Giant King Fight). `give-hq-hero-by-trait-to-current`
+// (auto-resolve — remove the highest-cost HQ Hero matching a trait and give it to the
+// current player's discard, refill the slot) appended by WP-522 (D-24335 — co2e Ultron Fight).
 /** Villain effect handlers keyed by primitive. Single dispatch source. */
 const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandler> = {
   'ko-hero': villainEffectKoHero,
@@ -2232,6 +2341,7 @@ const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandl
   'ko-wounds-current-hand-and-discard': villainEffectKoWoundsCurrentHandAndDiscard,
   'ko-cullable-each-deck-top': villainEffectKoCullableEachDeckTop,
   'capture-bystanders-plus-per-hq-hero-by-trait': villainEffectCaptureBystandersPlusPerHqHeroByTrait,
+  'give-hq-hero-by-trait-to-current': villainEffectGiveHqHeroByTraitToCurrent,
 };
 
 /**

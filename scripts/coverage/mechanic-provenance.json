@@ -41,6 +41,7 @@
     "ko-wounds-current-hand-and-discard": { "wp": "WP-516", "decision": "D-24329" },
     "ko-cullable-each-deck-top": { "wp": "WP-519", "decision": "D-24332" },
     "capture-bystanders-plus-per-hq-hero-by-trait": { "wp": "WP-521", "decision": "D-24334" },
+    "give-hq-hero-by-trait-to-current": { "wp": "WP-522", "decision": "D-24335" },
     "draw": { "wp": "WP-022", "decision": "D-2201" },
     "rescue": { "wp": "WP-215", "decision": "D-21501" },
     "undercover": { "wp": "WP-282", "decision": "D-24060" },

@@ -3,14 +3,14 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1824,
+    "totalEntries": 1825,
     "byScope": {
       "hero": 651,
-      "villain": 717,
+      "villain": 718,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 360,
+      "executable": 361,
       "deferred": 0,
       "condition": 5,
       "unsupported": 367,
@@ -5486,6 +5486,17 @@
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-cullable-each-deck-top",
       "wp": "WP-519",
       "decision": "D-24332"
+    },
+    {
+      "extId": "co2e-villain-masters-of-evil-ultron",
+      "name": "Ultron",
+      "set": "co2e",
+      "scope": "villain",
+      "mechanic": "give-hq-hero-by-trait-to-current",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#give-hq-hero-by-trait-to-current",
+      "wp": "WP-522",
+      "decision": "D-24335"
     },
     {
       "extId": "co2e-villain-masters-of-evil-ultron",
@@ -27407,6 +27418,7 @@
     "co2e-villain-masters-of-evil-ultron": {
       "scope": "villain",
       "mechanics": [
+        "give-hq-hero-by-trait-to-current",
         "reveal-or-wound"
       ]
     },

@@ -149,14 +149,15 @@ The villain/henchman path in
 made the same move from fragmented keywords to parameters. Its executable
 vocabulary is the `VillainEffectDescriptor` — a `VillainEffectPrimitive`
 plus optional `target` / `magnitude` / `selector` / predicate params
-(`VILLAIN_EFFECT_PRIMITIVES`, seventeen entries: `ko-hero` · `gain-wound` ·
+(`VILLAIN_EFFECT_PRIMITIVES`, eighteen entries: `ko-hero` · `gain-wound` ·
 `capture-hq-hero` · `hero-deck-top-to-escape` · `capture-bystander` ·
 `scry-ko-own-deck` · `gain-attached-hero` · `reveal-or-wound` ·
 `become-scheme-twist` · `draw-cards-current` · `ko-heroes-current-by-trait` ·
 `rescue-bystanders-current-by-trait-count` ·
 `gain-wound-unless-victory-villain-group` · `override-next-hand-size` ·
 `ko-wounds-current-hand-and-discard` · `ko-cullable-each-deck-top` ·
-`capture-bystanders-plus-per-hq-hero-by-trait`). A new
+`capture-bystanders-plus-per-hq-hero-by-trait` ·
+`give-hq-hero-by-trait-to-current`). A new
 target / magnitude / selector variant is a descriptor **param** (a data
 marker), not a new keyword plus switch arm plus drift test (D-24023).
 
@@ -241,6 +242,21 @@ it fires at **Ambush**, it *attaches only* — the award is deferred to Baron Ze
 defeat (the same attach-at-Ambush / award-on-defeat split as `capture-bystander`,
 D-18506), unlike the Fight-timed `rescue-bystanders-current-by-trait-count` which
 attaches and awards each iteration. Supply-bounded; self-narrates via `pushLog`.
+
+**Giving an HQ Hero away (D-24335).** The `give-hq-hero-by-trait-to-current`
+primitive — co2e Ultron's Fight *"Choose a [hc:tech] Hero from the HQ. Either KO
+that Hero or choose a player to gain it."* — is the eighteenth primitive: an
+auto-resolve, predicate-parameterized (`{requireKind, requireValue}`, e.g.
+`hc:tech`) effect that removes the **highest-cost** HQ Hero matching the trait
+(ties → rightmost index, the `captureHeroFromHq` selection rule), refills the
+vacated slot from the hero deck, and gives the Hero to the current (fighting)
+player's **discard** (the "gain" routing, D-24327 — never the victory pile). The
+printed **KO-or-gift** double-choice auto-resolves to the gift: in co-op a gift
+gives a player a free Hero *and* refills the HQ, strictly dominating a KO (which
+only refills), so a rational cooperative chooser never KOs — the KO branch is not
+implemented, and "choose a player" collapses to the fighting player (the WP-519
+Melter / WP-516 Ymir dominated-option collapses). No `[hc:tech]` HQ Hero is a
+reachable no-op. Self-narrates via `pushLog` (keyword-less).
 
 Ten earlier `VILLAIN_EFFECT_KEYWORDS` are **frozen** as the parser's
 legacy-translation input only. `LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR`
@@ -483,6 +499,7 @@ handler reads as *applied* while the real Scheme Twist fires elsewhere.
 - WP-516 (D-24329) — the `ko-wounds-current-hand-and-discard` villain primitive (fifteenth; Ymir's Fight KOs the current player's Wounds from hand + discard)
 - WP-519 (D-24332) — the `ko-cullable-each-deck-top` villain primitive (sixteenth; Melter's Fight reveals every player's deck top and KOs the cullable ones — Wounds / basic S.H.I.E.L.D. starters — keeping real Heroes)
 - WP-521 (D-24334) — the `capture-bystanders-plus-per-hq-hero-by-trait` villain primitive (seventeenth; co2e Baron Zemo's Ambush captures 1 Bystander + 1 per HQ Hero matching a trait — the first HQ-by-trait count; attach-only at Ambush, award on defeat)
+- WP-522 (D-24335) — the `give-hq-hero-by-trait-to-current` villain primitive (eighteenth; co2e Ultron's Fight removes the highest-cost `[hc:tech]` HQ Hero and gives it to the current player's discard, refilling the slot — the KO-or-gift choice auto-resolves to the dominant gift)
 - The hollow-effect detection and coverage-ledger spine (DESIGN-HOLLOW-EFFECT-DETECTION.md, DESIGN-EFFECT-AUTHORING-SCALE.md)
 
 ## Scaling and Open Directions

@@ -2250,7 +2250,7 @@
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-masters-of-evil-ultron.webp",
           "abilities": [
             "Ultron gets +1[icon:attack] for each [hc:tech] Hero in the HQ.",
-            "Fight: Choose a [hc:tech] Hero from the HQ. Either KO that Hero or choose a player to gain it.",
+            "Fight: Choose a [hc:tech] Hero from the HQ. Either KO that Hero or choose a player to gain it. [effect:give-hq-hero-by-trait-to-current:hc:tech]",
             "Escape: Each player reveals a [hc:tech] Hero or gains a Wound. [effect:reveal-or-wound:hc:tech]"
           ],
           "copies": 2
