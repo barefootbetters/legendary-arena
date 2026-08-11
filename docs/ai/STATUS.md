@@ -7,6 +7,37 @@
 
 ## Current State
 
+### WP-523 — co2e Whirlwind (Villain) Ambush: Two Villains in the City Swap Spaces — DONE (2026-08-10)
+
+co2e (Legendary 2nd-edition) Masters-of-Evil villain **Whirlwind** now plays his printed **Ambush** —
+*"Two Villains in the city swap spaces."* — instead of doing nothing (D-24266 `unmarked-ability`). This
+is **epic 3/3** of the co2e MoE deferred-primitive epic (D-24333) and the engine's **first City
+board-position manipulation** — every prior effect read or removed City occupants; none *repositioned*
+them. **This completes the co2e Masters-of-Evil epic: WP-519 (Melter), WP-520 (marking), WP-521 (Baron
+Zemo), WP-522 (Ultron), and WP-523 (Whirlwind) are all merged.**
+
+The card names neither a chooser nor a pair, so the swap rule was resolved via the **swap-rule fork** —
+operator-confirmed at execution as **Rule B (frontmost ↔ rearmost) + Whirlwind eligible**. The new
+nineteenth `VillainEffectPrimitive` `swap-two-city-villains` collects the City indices whose occupant is
+a `villain` (henchmen excluded — the card says "Villains") and, with at least two, swaps the
+**lowest-index** (entrance side, the Sewers) with the **highest-index** (escape side, the Bridge)
+occupant — the largest positional displacement, the "disrupt the board" reading. Whirlwind itself is
+eligible (it is pushed into the City before its Ambush fires). Fewer than two City Villains is a
+reachable no-op. The swap exchanges two `CardExtId` strings between `G.city` indices (no card object
+enters the City) and uses no `ctx.random` (positional). No-param, keyword-less auto-resolve; self-narrates
+via `pushLog`; no client change. The helper is written general enough to serve the wider unimplemented
+City-swap/reposition family (Ravagers, Infinity Stones, named-space Twists, …), but only Whirlwind's
+Ambush is wired here.
+
+`pnpm -r build` 0; engine test **2458 pass / 0 fail** (+6: 4 handler + 2 parse); `ledger:villains:check`
++ `effect-index:check` + `sim:runtime-observed:check` + `roadmap:counts:check` + `check:wiki` +
+`wiki-viewer:check-links` all 0; `PRE_WP080_HASH` + `finalStateHash` **byte-identical** (no committed
+fixture references `co2e/masters-of-evil`). co2e Whirlwind Ambush flips unmarked → **executable** with
+`{ WP-523, D-24336 }` (the Fight `ko-hero:current@rooftops+bridge` marker is preserved). **D-24336
+Active.** Two-commit topology (`EC-558:` + `SPEC:`), one PR. **D-24026 live-verify operator-pending**
+(post-deploy: reveal co2e Whirlwind with ≥ 2 City Villains → the entrance and escape-edge Villains swap
+spaces, no `no-handler`).
+
 ### WP-522 — co2e Ultron (Villain) Fight: Take a Tech Hero from the HQ (KO or Gift) — DONE (2026-08-10)
 
 co2e (Legendary 2nd-edition) Masters-of-Evil villain **Ultron** now plays his printed **Fight** —
