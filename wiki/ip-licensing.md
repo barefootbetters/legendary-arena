@@ -231,6 +231,11 @@ rates this effort lands — and may need to route to *two* licensors, not one.
   — community-acquisition companion: sponsorship/partnership on the Legendary
   community sites/leagues, gated on the license-clean decision (marketing repo,
   internal; **draft, pre-outreach**)
+- `C:\www\legendary-arena-com\docs\corporate-memory\07-ud-partnership-readiness-program.md`
+  — the execution arm: WP-formatted readiness program (PASS/FAIL success criteria,
+  workstreams, exit gate, KPI ties) to make LA a credible UD partnership candidate;
+  a business program that spawns engine WPs for its code items (marketing repo,
+  internal; **draft, proposed**)
 - `C:\www\legendary-arena-com\docs\corporate-memory\02-kpi-dictionary.md` —
   canonical definitions for the traction metrics the plan and ad plan reference
 - `C:\www\legendary-arena-com\docs\corporate-memory\03-open-questions.md` — the
