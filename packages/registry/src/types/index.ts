@@ -223,6 +223,20 @@ export interface CardRegistry {
    * forbids game-engine → registry imports.
    */
   playerCountSetup: Readonly<Record<SupportedPlayerCount, PlayerCountSetupRow>>;
+
+  /**
+   * Scheme-aware effective hero-group count (D-24337). Returns the standard
+   * `playerCountSetup[numPlayers].heroCount` for most schemes, but the printed
+   * override for schemes that size the Hero Deck differently — Secret Invasion of
+   * the Skrull Shapeshifters requires 6 heroes ("6 Heroes" setup clause).
+   *
+   * why: carried on the registry object (like `playerCountSetup`) so the game
+   * engine reaches the ONE definition at setup time via structural typing, without
+   * importing this package (the layer boundary forbids game-engine → registry).
+   * Required — both registry impls must expose it so every registry the engine
+   * receives can apply the override.
+   */
+  resolveEffectiveHeroCount(schemeId: string, numPlayers: number, baseHeroCount: number): number;
 }
 
 // ── Factory options ──────────────────────────────────────────────────────────

@@ -75,6 +75,12 @@ function createMockRegistry(): CardRegistryReader {
         { key: 'test-hero-test-hero-001-1', cardType: 'hero', slug: '1', setAbbr: 'test', abilities: [] },
         { key: 'test-hero-test-hero-002-1', cardType: 'hero', slug: '1', setAbbr: 'test', abilities: [] },
         { key: 'test-hero-test-hero-003-1', cardType: 'hero', slug: '1', setAbbr: 'test', abilities: [] },
+        // why: test-hero-004..006 give the scheme-aware hero-count gate (D-24337)
+        // six known heroes so a 6-hero Secret-Invasion-style loadout can pass
+        // existence and exercise the raised requirement.
+        { key: 'test-hero-test-hero-004-1', cardType: 'hero', slug: '1', setAbbr: 'test', abilities: [] },
+        { key: 'test-hero-test-hero-005-1', cardType: 'hero', slug: '1', setAbbr: 'test', abilities: [] },
+        { key: 'test-hero-test-hero-006-1', cardType: 'hero', slug: '1', setAbbr: 'test', abilities: [] },
         { key: 'test-hero-black-widow-1', cardType: 'hero', slug: '1', setAbbr: 'test', abilities: [] },
         { key: 'core-hero-black-widow-1', cardType: 'hero', slug: '1', setAbbr: 'core', abilities: [] },
         // villain flat-card keys feed buildKnownVillainGroupQualifiedIds.
@@ -359,6 +365,74 @@ describe('validateMatchSetup — player-count composition gate (WP-370 / D-24165
     const result = validateMatchSetup(createValidInput(), registry, 9);
 
     assert.equal(result.ok, true, 'An out-of-range player count has no table row to check.');
+  });
+});
+
+/**
+ * A registry mock whose resolveEffectiveHeroCount raises the test scheme's hero
+ * requirement to 6 — mimicking Secret Invasion's "6 Heroes" (D-24337). Keyed to
+ * the existing test scheme so the config passes existence and the gate runs.
+ */
+function createMockRegistryWithHeroOverride() {
+  return {
+    ...createMockRegistryWithTable(),
+    resolveEffectiveHeroCount(schemeId: string, _numPlayers: number, baseHeroCount: number): number {
+      return schemeId === 'test/test-scheme-001' ? Math.max(baseHeroCount, 6) : baseHeroCount;
+    },
+  };
+}
+
+/** The first `count` known test hero qualified-ids (mock has 001..006). */
+function testHeroIds(count: number): string[] {
+  return ['001', '002', '003', '004', '005', '006'].slice(0, count).map((n) => `test/test-hero-${n}`);
+}
+
+describe('validateMatchSetup — scheme-aware hero-count gate (D-24337)', () => {
+  it('rejects a 5-hero loadout for a scheme that requires 6 (the override raises the base)', () => {
+    const registry = createMockRegistryWithHeroOverride();
+    // why: base@2p is 5 (would pass), but the override scheme requires 6 — proving
+    // the engine forwards schemeId and enforces the raised count, not the base.
+    const input = { ...createValidInput(), heroDeckIds: testHeroIds(5) };
+    const result = validateMatchSetup(input, registry, 2);
+
+    assert.equal(result.ok, false);
+    if (!result.ok) {
+      const error = result.errors.find((each) => each.field === 'heroDeckIds');
+      assert.ok(error, 'Expected a heroDeckIds error for the raised hero count.');
+      assert.ok(
+        error.message.includes('requires 6') && error.message.includes('provides 5'),
+        'Message should name the raised required count and the actual count.',
+      );
+    }
+  });
+
+  it('accepts a 6-hero loadout for the same scheme', () => {
+    const registry = createMockRegistryWithHeroOverride();
+    const input = { ...createValidInput(), heroDeckIds: testHeroIds(6) };
+    const result = validateMatchSetup(input, registry, 2);
+
+    assert.equal(result.ok, true, 'A 6-hero loadout must pass the raised requirement.');
+  });
+
+  it('keeps the base 5-hero requirement for a scheme without an override', () => {
+    const registry = createMockRegistryWithHeroOverride();
+    // why: core/core-scheme-only exists in the mock and is NOT the override scheme,
+    // so the base count (5 at 2p) applies — a 5-hero loadout passes.
+    const input = { ...createValidInput(), schemeId: 'core/core-scheme-only', heroDeckIds: testHeroIds(5) };
+    const result = validateMatchSetup(input, registry, 2);
+
+    assert.equal(result.ok, true, 'A non-override scheme keeps the base 5-hero requirement.');
+  });
+
+  it('falls back to the base hero count when the registry omits the resolver (NOTE-A)', () => {
+    // why: RS-1 / copilot NOTE-A — a table-only mock (no resolveEffectiveHeroCount)
+    // reverts to the base count via the `?? row.heroCount` fallback, so 5 heroes
+    // @2p passes even for the would-be-override scheme.
+    const registry = createMockRegistryWithTable();
+    const input = { ...createValidInput(), heroDeckIds: testHeroIds(5) };
+    const result = validateMatchSetup(input, registry, 2);
+
+    assert.equal(result.ok, true, 'A resolver-less mock must use the base hero count.');
   });
 });
 

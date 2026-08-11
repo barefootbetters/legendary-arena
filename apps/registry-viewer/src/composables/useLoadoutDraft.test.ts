@@ -312,6 +312,39 @@ describe("useLoadoutDraft — player-count setup requirements (WP-372 / D-24165)
     assert.equal(hero?.actual, 3);
     assert.equal(henchman, undefined, "one henchman still satisfies 2 players");
   });
+
+  it("requires 6 heroes for Secret Invasion (D-24337) in both the display and the mismatch", () => {
+    const api = useLoadoutDraft(FULL_REGISTRY);
+    api.prefillFromTheme(
+      makeTheme(
+        makeSetupIntent({
+          villainGroupIds: ["brotherhood"],
+          henchmanGroupIds: ["sentinel"],
+          heroDeckIds: ["spider-man", "wolverine", "storm"],
+        }),
+      ),
+    );
+    api.setPlayerCount(2); // base needs 5 heroes
+    // why: the scheme override raises the requirement to 6 — call setScheme AFTER
+    // prefill, which sets its own scheme from the theme.
+    api.setScheme("core/secret-invasion-of-the-skrull-shapeshifters");
+
+    // display: the required hero count reflects the scheme override, not the base 5
+    assert.equal(api.requiredPlayerCountSetup.value?.heroCount, 6);
+
+    const mismatches: ReadonlyArray<{ field: string; required: number; actual: number }> =
+      api.playerCountCompositionMismatches.value;
+    const hero = mismatches.find((mismatch) => mismatch.field === "heroDeckIds");
+    assert.equal(hero?.required, 6, "Secret Invasion requires 6 heroes, not the base 5.");
+    assert.equal(hero?.actual, 3);
+  });
+
+  it("keeps the base 5-hero requirement for a non-Secret-Invasion scheme", () => {
+    const api = useLoadoutDraft(FULL_REGISTRY);
+    api.setPlayerCount(2);
+    api.setScheme("core/some-other-scheme");
+    assert.equal(api.requiredPlayerCountSetup.value?.heroCount, 5);
+  });
 });
 
 describe("useLoadoutDraft — composed readiness", () => {

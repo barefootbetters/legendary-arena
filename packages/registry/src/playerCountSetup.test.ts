@@ -13,7 +13,11 @@ import {
   PLAYER_COUNT_SETUP,
   getPlayerCountSetup,
   checkPlayerCountComposition,
+  resolveEffectiveHeroCount,
 } from './playerCountSetup.js';
+
+/** The scheme whose printed setup requires 6 heroes (D-24337). */
+const SECRET_INVASION = 'core/secret-invasion-of-the-skrull-shapeshifters';
 
 describe('PLAYER_COUNT_SETUP table', () => {
   it('locks the exact rules values for player counts 1–5', () => {
@@ -87,5 +91,73 @@ describe('checkPlayerCountComposition', () => {
       heroDeckIds: [],
     });
     assert.deepEqual(mismatches, []);
+  });
+
+  it('requires 6 heroes for Secret Invasion — a 5-hero loadout is a mismatch', () => {
+    // why: D-24337 — the scheme's "6 Heroes" clause. A standard 5-hero 2p loadout
+    // is correct for every OTHER scheme but wrong for Secret Invasion.
+    const mismatches = checkPlayerCountComposition({
+      playerCount: 2,
+      schemeId: SECRET_INVASION,
+      villainGroupIds: ['a', 'b'],
+      henchmanGroupIds: ['h'],
+      heroDeckIds: ['1', '2', '3', '4', '5'], // requires 6 for this scheme
+    });
+    const byField = Object.fromEntries(mismatches.map((each) => [each.field, each]));
+    assert.deepEqual(
+      { required: byField.heroDeckIds.required, actual: byField.heroDeckIds.actual },
+      { required: 6, actual: 5 },
+    );
+  });
+
+  it('passes a 6-hero Secret Invasion loadout', () => {
+    const mismatches = checkPlayerCountComposition({
+      playerCount: 2,
+      schemeId: SECRET_INVASION,
+      villainGroupIds: ['a', 'b'],
+      henchmanGroupIds: ['h'],
+      heroDeckIds: ['1', '2', '3', '4', '5', '6'],
+    });
+    assert.deepEqual(mismatches, []);
+  });
+
+  it('leaves the 5-hero requirement intact for a non-Secret-Invasion scheme (and when no schemeId is given)', () => {
+    const withOtherScheme = checkPlayerCountComposition({
+      playerCount: 2,
+      schemeId: 'core/some-other-scheme',
+      villainGroupIds: ['a', 'b'],
+      henchmanGroupIds: ['h'],
+      heroDeckIds: ['1', '2', '3', '4', '5'],
+    });
+    assert.deepEqual(withOtherScheme, []);
+    const withoutScheme = checkPlayerCountComposition({
+      playerCount: 2,
+      villainGroupIds: ['a', 'b'],
+      henchmanGroupIds: ['h'],
+      heroDeckIds: ['1', '2', '3', '4', '5'],
+    });
+    assert.deepEqual(withoutScheme, []);
+  });
+});
+
+describe('resolveEffectiveHeroCount', () => {
+  it('returns 6 for Secret Invasion at every player count (flat "6 Heroes")', () => {
+    // why: 2/3/4p base 5 → 6; 5p base 6 → 6 (unchanged); solo-1p base 3 → 6.
+    assert.equal(resolveEffectiveHeroCount(SECRET_INVASION, 1, 3), 6);
+    assert.equal(resolveEffectiveHeroCount(SECRET_INVASION, 2, 5), 6);
+    assert.equal(resolveEffectiveHeroCount(SECRET_INVASION, 3, 5), 6);
+    assert.equal(resolveEffectiveHeroCount(SECRET_INVASION, 4, 5), 6);
+    assert.equal(resolveEffectiveHeroCount(SECRET_INVASION, 5, 6), 6);
+  });
+
+  it('returns the base count unchanged for any other scheme', () => {
+    assert.equal(resolveEffectiveHeroCount('core/some-other-scheme', 2, 5), 5);
+    assert.equal(resolveEffectiveHeroCount('', 1, 3), 3);
+    assert.equal(resolveEffectiveHeroCount('core/legacy-virus-the', 5, 6), 6);
+  });
+
+  it('never mutates the base PLAYER_COUNT_SETUP table', () => {
+    resolveEffectiveHeroCount(SECRET_INVASION, 2, PLAYER_COUNT_SETUP[2].heroCount);
+    assert.equal(PLAYER_COUNT_SETUP[2].heroCount, 5);
   });
 });

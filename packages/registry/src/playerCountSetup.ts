@@ -71,6 +71,52 @@ export function getPlayerCountSetup(
   return undefined;
 }
 
+/** The scheme whose printed setup overrides the standard hero-group count. */
+const SECRET_INVASION_SCHEME_ID = 'core/secret-invasion-of-the-skrull-shapeshifters';
+
+// why: the card prints "Setup: 8 Twists. 6 Heroes. Skrull Villain Group required.
+// Shuffle 12 random Heroes from the Hero Deck into the Villain Deck." A fixed count
+// from the physical card, not a configurable param (mirrors SKRULL_HERO_COUNT = 12
+// in the engine's convertHeroesToSkrulls).
+/** Secret Invasion's printed hero-group count (its "6 Heroes" setup clause). */
+const SECRET_INVASION_HERO_COUNT = 6;
+
+/**
+ * Returns the effective hero-group count a match must supply, applying any
+ * scheme-specific setup override (D-24337).
+ *
+ * For Secret Invasion of the Skrull Shapeshifters the count is `Math.max(base, 6)`
+ * — the printed "6 Heroes" clause, flat at every player count (2/3/4p 5→6; 5p is
+ * already 6; solo-1p 3→6). Every other scheme returns the base count unchanged.
+ *
+ * why: this is a REQUIREMENT increase, not a build-time downsize. Unlike the two
+ * engine `schemeSetupSizing` overrides (Legacy Virus wounds, Civil War hero deck)
+ * — which post-validation size a BUILT pile below the validated config — "6 Heroes"
+ * means the operator must actually SUPPLY 6 hero groups, so the override lives on
+ * the requirement side (this resolver) and every hero-count enforcement site reaches
+ * this one definition: `checkPlayerCountComposition` (below), the game engine's
+ * `validatePlayerCountComposition` (via the registry object it reads structurally),
+ * and the loadout builder. The base `PLAYER_COUNT_SETUP` table is never mutated.
+ *
+ * `numPlayers` is accepted for symmetry with the per-player-count table and for a
+ * future per-count scheme override; the Secret Invasion branch is count-independent.
+ *
+ * @param schemeId - The selected scheme ext_id (`MatchSetupConfig.schemeId`).
+ * @param numPlayers - The match player count (reserved; unused by the flat override).
+ * @param baseHeroCount - The standard `PLAYER_COUNT_SETUP[numPlayers].heroCount`.
+ * @returns The hero-group count the match must supply for this scheme.
+ */
+export function resolveEffectiveHeroCount(
+  schemeId: string,
+  numPlayers: number,
+  baseHeroCount: number,
+): number {
+  if (schemeId === SECRET_INVASION_SCHEME_ID) {
+    return Math.max(baseHeroCount, SECRET_INVASION_HERO_COUNT);
+  }
+  return baseHeroCount;
+}
+
 /** One composition-count mismatch against the player-count table. */
 export interface PlayerCountCompositionMismatch {
   /** The composition array field whose length is wrong. */
@@ -89,6 +135,13 @@ export interface PlayerCountCompositionInput {
   readonly villainGroupIds: readonly unknown[];
   readonly henchmanGroupIds: readonly unknown[];
   readonly heroDeckIds: readonly unknown[];
+  /**
+   * The selected scheme ext_id, so the hero-count requirement can be
+   * scheme-aware (D-24337 — Secret Invasion requires 6 heroes). Optional:
+   * when absent the base `heroCount` is used, so existing callers that omit it
+   * keep the standard behaviour.
+   */
+  readonly schemeId?: string;
 }
 
 /**
@@ -125,11 +178,18 @@ export function checkPlayerCountComposition(
       actual: input.henchmanGroupIds.length,
     });
   }
-  if (input.heroDeckIds.length !== row.heroCount) {
+  // why: the hero-count requirement is scheme-aware (D-24337). A missing schemeId
+  // resolves to the base count, so callers that omit it are unaffected.
+  const requiredHeroCount = resolveEffectiveHeroCount(
+    input.schemeId ?? '',
+    input.playerCount,
+    row.heroCount,
+  );
+  if (input.heroDeckIds.length !== requiredHeroCount) {
     mismatches.push({
       field: 'heroDeckIds',
       label: 'heroes',
-      required: row.heroCount,
+      required: requiredHeroCount,
       actual: input.heroDeckIds.length,
     });
   }

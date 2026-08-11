@@ -61,6 +61,17 @@ export interface CardRegistryReader {
    * composition check rather than fail.
    */
   playerCountSetup?: Readonly<Record<number, PlayerCountSetupRow>>;
+  /**
+   * Scheme-aware effective hero-group count (D-24337 — Secret Invasion "6 Heroes").
+   *
+   * why: read structurally off the registry object, like `playerCountSetup`, so
+   * the engine reaches the ONE registry-side definition without importing the
+   * registry package. Optional so a hand-rolled test mock that omits it falls back
+   * to the base `heroCount` (the `?.`/`??` below); every production registry impl
+   * carries it as a required member of `CardRegistry`, so it is never absent in a
+   * real Game.setup.
+   */
+  resolveEffectiveHeroCount?(schemeId: string, numPlayers: number, baseHeroCount: number): number;
 }
 
 /**
@@ -493,7 +504,17 @@ function validatePlayerCountComposition(
   }
   checkCompositionCount('villainGroupIds', 'villain groups', row.villainGroupCount, numPlayers, input, errors);
   checkCompositionCount('henchmanGroupIds', 'henchmen groups', row.henchmenGroupCount, numPlayers, input, errors);
-  checkCompositionCount('heroDeckIds', 'heroes', row.heroCount, numPlayers, input, errors);
+  // why: D-24337 — the hero-group requirement is scheme-aware. Forward the
+  // config's schemeId (already in `input`) to the registry-side resolver so a
+  // scheme with a printed hero-count override (Secret Invasion "6 Heroes")
+  // demands that count. The `?.`/`?? row.heroCount` fallback keeps a table-only
+  // test mock (no resolver method) on the base count; every production registry
+  // carries the resolver (required on CardRegistry), so it never reverts in a
+  // real Game.setup.
+  const schemeId = typeof input.schemeId === 'string' ? input.schemeId : '';
+  const requiredHeroCount =
+    registry.resolveEffectiveHeroCount?.(schemeId, numPlayers, row.heroCount) ?? row.heroCount;
+  checkCompositionCount('heroDeckIds', 'heroes', requiredHeroCount, numPlayers, input, errors);
 }
 
 /**

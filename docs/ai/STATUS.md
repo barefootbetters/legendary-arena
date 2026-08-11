@@ -7,6 +7,31 @@
 
 ## Current State
 
+### WP-524 — Secret Invasion "6 Heroes" Setup Requirement — Enforcement Core — DONE (2026-08-11)
+
+Secret Invasion of the Skrull Shapeshifters now **requires 6 hero groups** (its printed *"Setup: …
+6 Heroes …"*) instead of the standard 5. WP-514/D-24326 shipped the 12-hero → Skrull conversion +
+combat but dropped the "6 Heroes" clause, so live matches ran with 5 hero groups. This is a
+requirement **INCREASE** — the opposite class from the two `schemeSetupSizing` DOWNSIZE overrides
+(Legacy Virus wounds, Civil War hero deck) — so, unlike EC-550, it touches the requirement/validation
+side, not a build-time transform.
+
+A new pure `resolveEffectiveHeroCount(schemeId, numPlayers, baseHeroCount)` in
+`packages/registry/src/playerCountSetup.ts` returns `Math.max(base, 6)` for
+`core/secret-invasion-of-the-skrull-shapeshifters` (FLAT 6; solo-1p 3→6), else the base count. It is
+threaded through `checkPlayerCountComposition` (optional `schemeId`) and exposed as a **required**
+member of `CardRegistry` (both impls) so the game engine's `validatePlayerCountComposition` reaches the
+one definition structurally and forwards `input.schemeId`; the registry-viewer builder displays/gates 6.
+The base `PLAYER_COUNT_SETUP` table is unchanged.
+
+registry **228** / game-engine **2470** / registry-viewer **205** pass / 0 fail; whole-workspace
+`pnpm -r --no-bail test` exit 0; control-revert non-vacuous at all three layers; sentinel
+`finalStateHash` + `PRE_WP080_HASH` **byte-identical** (no committed Secret Invasion fixture);
+`sim:runtime-observed:check` current; `pnpm -r build` 0. **D-24337 Active.** This is the **enforcement
+core** of the split epic — the arena-client play lobby + server projection are **WP-525** (ships as a
+set; NOT production-deployed alone). **D-24337** flagged an operator review point: flat-6 takes solo (1p)
+from 3→6. **D-24026 live-verify operator-pending (with WP-525).**
+
 ### WP-515 — Super Hero Civil War: "Use Only 4 Heroes at 2 Players" Hero-Deck Setup Sizing — DONE (2026-08-10)
 
 A **2-player** Super Hero Civil War match now builds its Hero Deck from only **4** hero groups
