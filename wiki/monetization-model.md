@@ -77,7 +77,9 @@ The four approved revenue streams (all fairness-safe):
 | **Enterprise & Organized-Play Licensing** | Paid hosting / white-label for organizers, creators, schools, libraries — facilitation only | Player advantage |
 
 A non-negotiable portion of every dollar flows as royalties to **Upper Deck
-Entertainment and Marvel**. See VISION for the full covenant.
+Entertainment and Marvel**. See VISION for the full covenant, and
+[IP Licensing](ip-licensing.md) for the rights this covenant assumes and the
+plan to secure them (no license exists yet).
 
 ![Pie chart of the four Legendary Arena revenue streams — Legendary Supporter Subscriptions (45%), One-Time Cosmetic & Presentation Purchases (25%), Enterprise & Organized-Play Licensing (18%), and Premium Recognition Tiers (12%). Proportions are illustrative, not a forecast.](/monetization-model/revenue-streams.svg "width=88%")
 
