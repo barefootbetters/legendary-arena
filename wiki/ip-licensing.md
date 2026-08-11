@@ -135,6 +135,21 @@ relationship. Counsel and agent selection criteria and a **verified** candidate
 shortlist live in the marketing-repo corporate memory
 (`docs/corporate-memory/05-counsel-and-agent-selection.md`).
 
+The framing that shapes the ask: **earn a partnership, don't request a license.**
+Upper Deck doesn't need software — it needs more Legendary sales, players, and
+engagement — so the pitch is a **partnership program** (official companion platform
+/ limited pilot / revenue share) built around *their* business, with the full
+Marvel digital grant as a later conversation once UD is a partner. This does not
+have to end in an independent license: plausible **endgames** include a UD
+partnership, a digital-studio partnership, **acquisition / exclusive partnership**,
+an independent licensee, or the de-branded Marvel-direct fallback. A low-IP
+**companion platform** (collection/organized-play tooling, statistics, original
+strategy content) is a relationship-building wedge — but `[CONFIRM]` it is *lower*
+IP exposure, **not zero**: reproducing card **text**/art is copyright and card
+**names**/"Legendary®" are trademark (only mechanics are free; fan card databases
+have been taken down before), so counsel scopes what may be reproduced. The plan
+(`04`) owns the detail.
+
 ### Relationship to the royalty covenant
 
 VISION's "royalties on *all* revenue" rule and the printables-store royalty-routing
