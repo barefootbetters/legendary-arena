@@ -21,6 +21,11 @@ const LEGACY_VIRUS_SCHEME_ID = 'core/legacy-virus-the';
 /** Legacy Virus prints "Wound stack holds 6 Wounds per player". */
 const LEGACY_VIRUS_WOUNDS_PER_PLAYER = 6;
 
+const CIVIL_WAR_SCHEME_ID = 'core/super-hero-civil-war';
+
+/** Super Hero Civil War prints "If only 2 players, use only 4 Heroes in the Hero Deck". */
+const CIVIL_WAR_2P_HERO_GROUPS = 4;
+
 /**
  * Returns the effective Wound-stack size for a match, applying any
  * scheme-specific setup sizing.
@@ -47,4 +52,44 @@ export function resolveEffectiveWoundsCount(
     return LEGACY_VIRUS_WOUNDS_PER_PLAYER * numPlayers;
   }
   return requestedWoundsCount;
+}
+
+/**
+ * Returns the effective Hero-Deck group id list for a match, applying any
+ * scheme-specific setup sizing (D-24328).
+ *
+ * For Super Hero Civil War at exactly 2 players, the deck is built from only the
+ * first 4 of the requested hero groups — the card's printed setup ("If only 2
+ * players, use only 4 Heroes in the Hero Deck"). That smaller 56-card deck is what
+ * makes WP-510/D-24318's "Evil Wins: If the Hero Deck runs out" reachable at 2p; the
+ * default 5-group / 70-card deck is too large to run out in a normal 2p game. Every
+ * other scheme and player count uses the requested ids unchanged.
+ *
+ * This is a POST-VALIDATION override (the second sizing case, a sibling to
+ * `resolveEffectiveWoundsCount`): the loadout still provides and validates its normal
+ * 5 hero-deck ids (matchSetup.validate requires exactly 5 at 2p), and this rule sizes
+ * the BUILT deck below that — the same config-floor / built-pile split as D-24321's
+ * wound sizing.
+ *
+ * @param schemeId - The selected scheme ext_id (`config.schemeId`).
+ * @param numPlayers - The match player count (`ctx.numPlayers`).
+ * @param requestedHeroDeckIds - The validated `config.heroDeckIds`.
+ * @returns The hero-group id list to build into the Hero Deck.
+ */
+export function resolveEffectiveHeroDeckIds(
+  schemeId: string,
+  numPlayers: number,
+  requestedHeroDeckIds: string[],
+): string[] {
+  if (schemeId === CIVIL_WAR_SCHEME_ID && numPlayers === 2) {
+    // why: the card's printed setup ("If only 2 players, use only 4 Heroes in the Hero
+    // Deck") — the smaller deck is Civil War's 2p doom clock, and the depletion loss
+    // (WP-510/D-24318) is unreachable at the flat 5-group deck. The first 4 is a
+    // deterministic engine choice: the card lets the table pick which 4, but the engine
+    // cannot ask, so it keeps the first 4 of the loadout's list (a stable, arbitrary
+    // default; a future loadout-layer refinement could let a 2p Civil War loadout name
+    // exactly 4). `slice` is safe on a list already shorter than 4 (returns it unchanged).
+    return requestedHeroDeckIds.slice(0, CIVIL_WAR_2P_HERO_GROUPS);
+  }
+  return requestedHeroDeckIds;
 }
