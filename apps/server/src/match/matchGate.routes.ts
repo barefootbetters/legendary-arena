@@ -24,11 +24,15 @@
  * documented follow-up, not this WP.
  *
  * Layer-boundary contract: this module imports nothing from
- * `boardgame.io`, `@legendary-arena/game-engine`,
- * `@legendary-arena/registry`, `@legendary-arena/preplan`, or any UI /
- * client package. The authenticated-session provider, `verifier`, and
- * `accountResolver` are caller-injected (WP-104 / WP-109 / WP-115
- * pattern); `serverUrl` is the in-process loopback origin.
+ * `boardgame.io`, `@legendary-arena/game-engine`, `@legendary-arena/preplan`,
+ * or any UI / client package. It DOES import the pure, browser-safe
+ * per-player-count setup table + hero-count resolver from
+ * `@legendary-arena/registry/playerCountSetup` (WP-371 / D-24167; WP-525 /
+ * D-24337) — game reference data, not engine or persistence logic — to
+ * project the read-only `/api/match/setup-requirements` response; the server
+ * may import `registry` (Layer Boundary). The authenticated-session provider,
+ * `verifier`, and `accountResolver` are caller-injected (WP-104 / WP-109 /
+ * WP-115 pattern); `serverUrl` is the in-process loopback origin.
  *
  * Authority: WP-307; EC-337; D-24092 (policy); D-24093 (mechanism +
  * soft-gate limitation); D-11202 (bearer header); D-11204 (fail-closed
@@ -46,7 +50,15 @@ import { INTERNAL_DELEGATION_HEADER } from './nativeLobbyGuard.js';
 import { recordSeatAccount } from './seatAccount.logic.js';
 import type { AccountId } from '../identity/identity.types.js';
 import koaBody from 'koa-body';
-import { PLAYER_COUNT_SETUP } from '@legendary-arena/registry';
+// why: the pure, browser-safe setup table + scheme-aware hero-count resolver
+// live on their own subpath (zero node deps); imported from the subpath — not
+// the barrel, which does not re-export resolveEffectiveHeroCount — so this WP
+// needs no registry-package change (D-24337 lives entirely in registry/engine).
+import {
+  PLAYER_COUNT_SETUP,
+  resolveEffectiveHeroCount,
+  type PlayerCountSetupRow,
+} from '@legendary-arena/registry/playerCountSetup';
 
 /**
  * Closed-set re-statement of the orchestrator's session-validation result
@@ -99,6 +111,8 @@ export interface MatchGateDependencies {
 interface KoaMatchGateContext {
   readonly req: SessionTokenRequest;
   request: { body?: unknown };
+  /** Parsed query string (koa `ctx.query`); a repeated key yields a string[]. */
+  readonly query: Record<string, string | string[] | undefined>;
   status: number;
   body: unknown;
   set(field: string, value: string): void;
@@ -179,6 +193,37 @@ async function resolveAuthenticatedAccountId(
 // forwarded to the native lobby as undefined, and Game.setup rejects the create
 // with "Missing setupData". This gap was latent: the unit tests inject
 // request.body directly and the WP-307 live-verify only exercised the 401 paths.
+/**
+ * Projects the per-player-count setup requirements for a scheme, applying the
+ * scheme-aware hero-count override (WP-525 / D-24338, over WP-524 / D-24337).
+ *
+ * An empty `schemeId` returns the base `PLAYER_COUNT_SETUP` unchanged — the
+ * no-param `/api/match/setup-requirements` response stays byte-identical to
+ * WP-371's, so every existing caller is unaffected. A scheme with a printed
+ * hero-count override (Secret Invasion → 6 heroes) gets a per-row effective
+ * `heroCount`; every other row field is unchanged. Server wires — the "6" comes
+ * from the single registry resolver, never re-hardcoded here.
+ *
+ * @param schemeId The selected scheme ext_id, or '' for the base table.
+ * @returns The requirements table keyed by player count.
+ */
+function projectSetupRequirements(
+  schemeId: string,
+): Readonly<Record<number, PlayerCountSetupRow>> {
+  if (schemeId === '') {
+    return PLAYER_COUNT_SETUP;
+  }
+  const projected: Record<number, PlayerCountSetupRow> = {};
+  for (const [countKey, row] of Object.entries(PLAYER_COUNT_SETUP)) {
+    const numPlayers = Number(countKey);
+    projected[numPlayers] = {
+      ...row,
+      heroCount: resolveEffectiveHeroCount(schemeId, numPlayers, row.heroCount),
+    };
+  }
+  return projected;
+}
+
 const guardedRouteJsonBodyParser = koaBody();
 
 /**
@@ -228,7 +273,15 @@ export function registerMatchGateRoutes(
   router.get('/api/match/setup-requirements', (koaContext) => {
     koaContext.set('Cache-Control', 'public, max-age=3600');
     koaContext.status = 200;
-    koaContext.body = { requirements: PLAYER_COUNT_SETUP };
+    // why: WP-525 / D-24338 — an optional `schemeId` makes the hero-count
+    // requirement scheme-aware (Secret Invasion requires 6, D-24337), so the
+    // scheme-blind play lobby AGREES with the engine WP-524 enforces. Absent →
+    // the base PLAYER_COUNT_SETUP, byte-identical to the pre-WP-525 response, so
+    // un-updated callers are unaffected. The `schemeId` query is part of the URL
+    // cache key, so per-scheme responses cache independently under max-age=3600.
+    const schemeIdQuery = koaContext.query.schemeId;
+    const schemeId = typeof schemeIdQuery === 'string' ? schemeIdQuery : '';
+    koaContext.body = { requirements: projectSetupRequirements(schemeId) };
   });
 
   // why: playing a seat requires a free account (D-24092). Authenticate

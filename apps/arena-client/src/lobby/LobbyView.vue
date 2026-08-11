@@ -1,5 +1,5 @@
 <script lang="ts">
-import { defineComponent, ref, computed, onMounted, nextTick } from 'vue';
+import { defineComponent, ref, computed, onMounted, watch, nextTick } from 'vue';
 import type { MatchSetupConfig } from '@legendary-arena/game-engine';
 import {
   createMatchWithBot,
@@ -154,7 +154,53 @@ export default defineComponent({
     // the server on mount (guest endpoint). Null until loaded (or if the fetch
     // fails), in which case the pre-submit check stays silent and the
     // authoritative engine block (WP-370, surfaced as a create 400) still applies.
-    const setupRequirements = ref<SetupRequirements | null>(null);
+    // why: WP-525 / D-24338 — the required counts are scheme-aware (Secret
+    // Invasion requires 6 heroes), and the manual form and the pasted-loadout
+    // path each carry their OWN scheme, so each keeps its own requirements table
+    // fetched for its selected scheme. arena-client cannot import the registry
+    // (layer boundary), so the scheme-aware count arrives as server data; the
+    // pure comparator playerCountRequirements.ts is unchanged.
+    const manualSetupRequirements = ref<SetupRequirements | null>(null);
+    const jsonSetupRequirements = ref<SetupRequirements | null>(null);
+
+    // why: re-fetch when the selected scheme changes so the pre-submit check and
+    // the Create gate reflect the scheme. The in-flight scheme is captured so a
+    // stale response (the scheme changed again mid-fetch) is discarded.
+    async function refreshManualSetupRequirements(): Promise<void> {
+      const requestedSchemeId = schemeId.value;
+      try {
+        const requirements = await fetchSetupRequirements(requestedSchemeId);
+        if (schemeId.value === requestedSchemeId) {
+          manualSetupRequirements.value = requirements;
+        }
+      } catch {
+        if (schemeId.value === requestedSchemeId) {
+          manualSetupRequirements.value = null;
+        }
+      }
+    }
+    async function refreshJsonSetupRequirements(): Promise<void> {
+      const requestedSchemeId = parsedLoadout.value?.composition.schemeId ?? '';
+      try {
+        const requirements = await fetchSetupRequirements(requestedSchemeId);
+        if ((parsedLoadout.value?.composition.schemeId ?? '') === requestedSchemeId) {
+          jsonSetupRequirements.value = requirements;
+        }
+      } catch {
+        if ((parsedLoadout.value?.composition.schemeId ?? '') === requestedSchemeId) {
+          jsonSetupRequirements.value = null;
+        }
+      }
+    }
+    watch(schemeId, () => {
+      void refreshManualSetupRequirements();
+    });
+    watch(
+      () => parsedLoadout.value?.composition.schemeId,
+      () => {
+        void refreshJsonSetupRequirements();
+      },
+    );
     // why: content-preview state so the operator can confirm the uploaded
     // setup (mastermind, scheme, villains, henchmen, heroes) before creating
     // the match. `loadoutDisplayNames` is populated only on the LAGN path
@@ -198,7 +244,7 @@ export default defineComponent({
         return [];
       }
       return computePlayerCountMismatches(
-        setupRequirements.value,
+        jsonSetupRequirements.value,
         parsed.playerCount,
         {
           villainGroups: parsed.composition.villainGroupIds.length,
@@ -209,7 +255,7 @@ export default defineComponent({
     });
     const manualPlayerCountMismatches = computed(() => {
       return computePlayerCountMismatches(
-        setupRequirements.value,
+        manualSetupRequirements.value,
         Number(numPlayers.value),
         {
           villainGroups: splitCsv(villainGroupIds.value).length,
@@ -689,15 +735,11 @@ export default defineComponent({
 
     onMounted(async () => {
       await refreshMatches();
-      // why: WP-371 — load the player-count setup requirements for the
-      // pre-submit check. Best-effort: on any failure the pre-check stays
-      // silent (setupRequirements stays null) and the authoritative engine
-      // block still rejects a bad composition at create time.
-      try {
-        setupRequirements.value = await fetchSetupRequirements();
-      } catch {
-        setupRequirements.value = null;
-      }
+      // why: WP-371 / WP-525 — load the scheme-aware player-count setup
+      // requirements for both create paths' pre-submit checks. Best-effort: on
+      // any failure the ref stays null and the authoritative engine block still
+      // rejects a bad composition at create time.
+      await Promise.all([refreshManualSetupRequirements(), refreshJsonSetupRequirements()]);
       // why: WP-369 — after the list loads, scroll the highlighted match into
       // view. Guarded because jsdom (tests) does not implement scrollIntoView.
       if (highlightMatchId !== '') {

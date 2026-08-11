@@ -130,11 +130,21 @@ export async function createMatchWithBot(
  * data); the caller treats a failure as "pre-check unavailable" and falls back
  * to the authoritative engine block.
  *
+ * why: WP-525 / D-24338 — an optional `schemeId` makes the required hero count
+ * scheme-aware (Secret Invasion requires 6), so the play lobby agrees with the
+ * engine. Omitting it returns the base table (byte-identical to pre-WP-525).
+ *
+ * @param schemeId The selected scheme ext_id, so the server can project the
+ *   scheme-aware hero count; omit for the base table.
  * @returns the requirements table keyed by player count.
  * @throws Error with a full-sentence message on a non-2xx response.
  */
-export async function fetchSetupRequirements(): Promise<SetupRequirements> {
-  const endpoint = `${serverUrl}/api/match/setup-requirements`;
+export async function fetchSetupRequirements(schemeId?: string): Promise<SetupRequirements> {
+  const trimmedSchemeId = schemeId?.trim() ?? '';
+  const endpoint =
+    trimmedSchemeId === ''
+      ? `${serverUrl}/api/match/setup-requirements`
+      : `${serverUrl}/api/match/setup-requirements?schemeId=${encodeURIComponent(trimmedSchemeId)}`;
   const response = await fetch(endpoint);
   if (!response.ok) {
     throw new Error(
