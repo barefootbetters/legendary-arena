@@ -374,6 +374,7 @@ function parseParameterizedEffect(
  *   - `override-next-hand-size:<N>`  (N the absolute next-hand target; D-24307)
  *   - `ko-heroes-current-by-trait:<kind>:<value>`  (kind `team` | `hc`; D-24290)
  *   - `rescue-bystanders-current-by-trait-count:<kind>:<value>`  (D-24290)
+ *   - `give-hq-hero-by-trait-to-current:<kind>:<value>`  (kind `team` | `hc`; D-24335)
  *   - `capture-bystander` | `capture-bystander:<N>`  (N a rescue count; D-24295)
  *   - `hero-deck-top-to-escape`  (no params)
  *
@@ -567,6 +568,21 @@ function parseUngatedEffect(
     }
     return {
       primitive: 'capture-bystanders-plus-per-hq-hero-by-trait',
+      requireKind: predicate.requireKind,
+      requireValue: predicate.requireValue,
+    };
+  }
+  if (primitiveToken === 'give-hq-hero-by-trait-to-current') {
+    // why: D-24335 — grammar `give-hq-hero-by-trait-to-current:<kind>:<value>` (co2e
+    // Ultron Fight: `:hc:tech`). Reuses the shared trait-predicate parser as the HQ-hero
+    // filter; a malformed tail returns null (an empty predicate would match no HQ Hero,
+    // so it must never reach the handler).
+    const predicate = parseTraitPredicateTokens(parts);
+    if (predicate === null) {
+      return null;
+    }
+    return {
+      primitive: 'give-hq-hero-by-trait-to-current',
       requireKind: predicate.requireKind,
       requireValue: predicate.requireValue,
     };

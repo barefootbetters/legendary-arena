@@ -132,6 +132,9 @@ function isLockedEffectKeyword(keyword) {
 // `capture-bystanders-plus-per-hq-hero-by-trait` (`:team:avengers`) appended by WP-521
 // (D-24334 — co2e Baron Zemo Ambush: capture 1 Bystander + 1 per HQ Hero matching the
 // trait; validates via the `:<kind>:<value>` predicate tail, the reveal-or-wound precedent).
+// `give-hq-hero-by-trait-to-current` (`:hc:tech`) appended by WP-522 (D-24335 — co2e Ultron
+// Fight: remove the highest-cost HQ Hero matching the trait and give it to the current
+// player's discard; validates via the same `:<kind>:<value>` predicate tail).
 const VILLAIN_EFFECT_PRIMITIVES = [
   'ko-hero',
   'gain-wound',
@@ -150,6 +153,7 @@ const VILLAIN_EFFECT_PRIMITIVES = [
   'ko-wounds-current-hand-and-discard',
   'ko-cullable-each-deck-top',
   'capture-bystanders-plus-per-hq-hero-by-trait',
+  'give-hq-hero-by-trait-to-current',
 ];
 
 // why: WP-489 / D-24295 — hand-synced local copy of the engine's CITY_SPACE_NAMES
@@ -259,12 +263,14 @@ function isValidParameterizedEffectToken(token) {
   if (
     primitive === 'ko-heroes-current-by-trait' ||
     primitive === 'rescue-bystanders-current-by-trait-count' ||
-    primitive === 'capture-bystanders-plus-per-hq-hero-by-trait'
+    primitive === 'capture-bystanders-plus-per-hq-hero-by-trait' ||
+    primitive === 'give-hq-hero-by-trait-to-current'
   ) {
-    // why: D-24290 / D-24334 — all use the shared trait-predicate grammar <kind>:<value>
-    // (exactly 3 tokens; kind team | hc; non-empty value), mirroring the engine
-    // parser's parseTraitPredicateTokens so producer + consumer agree. co2e Baron Zemo
-    // Ambush is `capture-bystanders-plus-per-hq-hero-by-trait:team:avengers`.
+    // why: D-24290 / D-24334 / D-24335 — all use the shared trait-predicate grammar
+    // <kind>:<value> (exactly 3 tokens; kind team | hc; non-empty value), mirroring the
+    // engine parser's parseTraitPredicateTokens so producer + consumer agree. co2e Baron
+    // Zemo Ambush is `capture-bystanders-plus-per-hq-hero-by-trait:team:avengers`; co2e
+    // Ultron Fight is `give-hq-hero-by-trait-to-current:hc:tech`.
     return parts.length === 3 && (parts[1] === 'team' || parts[1] === 'hc') && parts[2].length > 0;
   }
   if (primitive === 'gain-wound-unless-victory-villain-group') {

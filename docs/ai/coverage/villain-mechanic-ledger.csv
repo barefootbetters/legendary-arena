@@ -144,6 +144,7 @@ co2e-villain-skulls-super-skrull,Super-Skrull,co2e,villain,(unmarked),unmarked,,
 co2e-villain-brotherhood-of-mutants-the-blob,The Blob,co2e,villain,(unmarked),unmarked,,,
 co2e-villain-radiation-the-leader,The Leader,co2e,villain,(unmarked),unmarked,,,
 co2e-villain-sinister-spider-foes-the-lizard,The Lizard,co2e,villain,(unmarked),unmarked,,,
+co2e-villain-masters-of-evil-ultron,Ultron,co2e,villain,give-hq-hero-by-trait-to-current,executable,WP-522,D-24335,packages/game-engine/src/villain/villainEffects.execute.ts#give-hq-hero-by-trait-to-current
 co2e-villain-masters-of-evil-ultron,Ultron,co2e,villain,reveal-or-wound,executable,WP-469,D-24281,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
 co2e-villain-sinister-spider-foes-venom,Venom,co2e,villain,(unmarked),unmarked,,,
 co2e-villain-hydra-viper,Viper,co2e,villain,(unmarked),unmarked,,,

@@ -3495,3 +3495,115 @@ describe('executeVillainAbilities — capture-bystanders-plus-per-hq-hero-by-tra
     );
   });
 });
+
+describe('executeVillainAbilities — give-hq-hero-by-trait-to-current (WP-522 / D-24335)', () => {
+  const TECH_LOW = 'co2e/heroes/tech-low#0' as CardExtId;
+  const TECH_HIGH = 'co2e/heroes/tech-high#0' as CardExtId;
+  const NON_TECH = 'co2e/heroes/strength-guy#0' as CardExtId;
+  const TECH_A = 'co2e/heroes/tech-a#0' as CardExtId;
+  const TECH_B = 'co2e/heroes/tech-b#0' as CardExtId;
+  const REFILL = 'core/heroes/refill#0' as CardExtId;
+  const TRAITS: Record<string, { heroClass: string | null; team: string | null }> = {
+    [TECH_LOW]: { heroClass: 'tech', team: null },
+    [TECH_HIGH]: { heroClass: 'tech', team: null },
+    [NON_TECH]: { heroClass: 'strength', team: null },
+    [TECH_A]: { heroClass: 'tech', team: null },
+    [TECH_B]: { heroClass: 'tech', team: null },
+  };
+
+  // why: give-hq-hero-by-trait-to-current is predicate-parameterized and keyword-less, so
+  // the hook() helper (which reads LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR) can't build it —
+  // construct the descriptor hook directly.
+  function ultronHook(cardId: string): VillainAbilityHook {
+    return {
+      cardId: cardId as CardExtId,
+      timing: 'onFight',
+      keywords: [],
+      effects: [
+        {
+          primitive: 'give-hq-hero-by-trait-to-current',
+          requireKind: 'hero-class',
+          requireValue: 'tech',
+        },
+      ],
+    };
+  }
+
+  it('AC-1 gifts the highest-cost tech HQ Hero to the current player discard, refills the slot', () => {
+    const G = makeG({
+      hooks: [ultronHook('v-ultron')],
+      hq: [TECH_LOW, NON_TECH, TECH_HIGH, null, null],
+      cardStats: { [TECH_LOW]: { cost: 3 }, [NON_TECH]: { cost: 9 }, [TECH_HIGH]: { cost: 5 } },
+      cardTraits: TRAITS,
+      heroDeck: [REFILL] as CardExtId[],
+      cardDisplayData: { [TECH_HIGH]: { name: 'Ultron Drone' } },
+      messages: [],
+    });
+    const results = executeVillainAbilities(G, CTX, 'v-ultron' as CardExtId, 'onFight');
+    // why: highest-cost TECH is TECH_HIGH (cost 5 vs TECH_LOW's 3); NON_TECH's cost 9 is
+    // ignored because it fails the [hc:tech] predicate.
+    assert.deepStrictEqual(G.playerZones['0']!.discard, [TECH_HIGH], 'gifted Hero in current player discard');
+    assert.equal(G.hq[2], REFILL, 'vacated HQ slot refilled from the hero deck');
+    assert.deepStrictEqual(G.heroDeck, [] as CardExtId[], 'hero deck reservoir consumed');
+    // why: keyword-less → no VillainEffectResult recorded (the log line is the surface).
+    assert.deepStrictEqual(results, []);
+    assert.match(G.messages![0]!.text, /Fight effect: gave Ultron Drone from the HQ to Player 0's discard/);
+    assert.equal(G.messages![0]!.outcome, 'applied');
+    assert.equal(G.diagnostics?.hollowEffects?.length ?? 0, 0, 'no hollow — the marked line is handled');
+  });
+
+  it('AC-2 with no tech Hero in the HQ is a reachable no-op (blocked, HQ unchanged)', () => {
+    const G = makeG({
+      hooks: [ultronHook('v-ultron')],
+      hq: [NON_TECH, null, null, null, null],
+      cardStats: { [NON_TECH]: { cost: 9 } },
+      cardTraits: TRAITS,
+      heroDeck: [REFILL] as CardExtId[],
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-ultron' as CardExtId, 'onFight');
+    assert.equal(G.hq[0], NON_TECH, 'HQ unchanged — no tech Hero to remove');
+    assert.deepStrictEqual(G.heroDeck, [REFILL] as CardExtId[], 'hero deck untouched');
+    assert.deepStrictEqual(G.playerZones['0']!.discard, [] as CardExtId[], 'no Hero gifted');
+    assert.match(G.messages![0]!.text, /Fight effect: no tech Hero in the HQ; no effect/);
+    assert.equal(G.messages![0]!.outcome, 'blocked');
+    assert.equal(G.diagnostics?.hollowEffects?.length ?? 0, 0, 'reachable no-op, never hollow');
+  });
+
+  it('AC-3 breaks a cost tie to the rightmost HQ index', () => {
+    const G = makeG({
+      hooks: [ultronHook('v-ultron')],
+      hq: [TECH_A, null, TECH_B, null, null],
+      cardStats: { [TECH_A]: { cost: 5 }, [TECH_B]: { cost: 5 } },
+      cardTraits: TRAITS,
+      heroDeck: [] as CardExtId[],
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-ultron' as CardExtId, 'onFight');
+    // why: equal cost 5 → the RIGHTMOST index wins (TECH_B at index 2), matching
+    // captureHeroFromHq's highestCost tie rule.
+    assert.deepStrictEqual(G.playerZones['0']!.discard, [TECH_B], 'rightmost equal-cost tech Hero gifted');
+    assert.equal(G.hq[0], TECH_A, 'the left equal-cost tech Hero stays in the HQ');
+    // why: empty reservoir → the vacated slot is left null (refillHqSlot empty branch).
+    assert.equal(G.hq[2], null, 'vacated slot null when the hero deck is empty');
+  });
+
+  it('AC-4 the gift lands in discard, never victory, and no other player zone changes', () => {
+    const G = makeG({
+      hooks: [ultronHook('v-ultron')],
+      hq: [TECH_HIGH, null, null, null, null],
+      cardStats: { [TECH_HIGH]: { cost: 5 } },
+      cardTraits: TRAITS,
+      heroDeck: [REFILL] as CardExtId[],
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-ultron' as CardExtId, 'onFight');
+    assert.deepStrictEqual(G.playerZones['0']!.discard, [TECH_HIGH], 'gift in current player discard');
+    assert.deepStrictEqual(G.playerZones['0']!.victory, [] as CardExtId[], 'never the victory pile (D-24327)');
+    assert.deepStrictEqual(
+      G.playerZones['1']!,
+      { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      'no other player zone changes',
+    );
+  });
+});

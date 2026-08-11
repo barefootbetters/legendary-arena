@@ -227,6 +227,17 @@ export interface VillainEffectResult {
 // HQ."). Attach-only at Ambush (the award is deferred to defeat, D-18506); the count
 // uses the first HQ-by-trait scan. Predicate-parameterized (parses via the shared
 // trait-predicate arm, like reveal-or-wound); keyword-less, self-narrates via pushLog.
+// why: D-24335 — `give-hq-hero-by-trait-to-current` is the eighteenth primitive
+// (append-only, position 18): remove the highest-cost HQ Hero matching a `{ requireKind,
+// requireValue }` trait predicate, refill the vacated HQ slot from `G.heroDeck`, and give
+// the Hero to the current (fighting) player's discard (co2e Ultron, Masters of Evil — "Fight:
+// Choose a [hc:tech] Hero from the HQ. Either KO that Hero or choose a player to gain it.").
+// The printed KO-or-gift double-choice auto-resolves to the gift: in co-op a gift gives a
+// player a free Hero AND refills the HQ, strictly dominating a KO (which only refills), so a
+// rational cooperative chooser never KOs (the KO branch is not implemented — the WP-519 Melter
+// / WP-516 Ymir "choose a player → current player" collapse). Predicate-parameterized (parses
+// via the shared trait-predicate arm, like reveal-or-wound); keyword-less, self-narrates via
+// pushLog.
 export type VillainEffectPrimitive =
   | 'ko-hero'
   | 'gain-wound'
@@ -244,7 +255,8 @@ export type VillainEffectPrimitive =
   | 'override-next-hand-size'
   | 'ko-wounds-current-hand-and-discard'
   | 'ko-cullable-each-deck-top'
-  | 'capture-bystanders-plus-per-hq-hero-by-trait';
+  | 'capture-bystanders-plus-per-hq-hero-by-trait'
+  | 'give-hq-hero-by-trait-to-current';
 
 // why: drift-detection array — must match VillainEffectPrimitive exactly
 // (villainAbility.types.test.ts asserts bidirectional parity). Adding a
@@ -273,6 +285,11 @@ export type VillainEffectPrimitive =
 // `capture-bystanders-plus-per-hq-hero-by-trait` appended at position 17 by WP-521
 // (D-24334 — co2e Baron Zemo Ambush: capture 1 Bystander + 1 per HQ Hero matching a
 // trait predicate; predicate-parameterized, keyword-less auto-resolve, self-narrates).
+// `give-hq-hero-by-trait-to-current` appended at position 18 by WP-522 (D-24335 — co2e
+// Ultron Fight: remove the highest-cost HQ Hero matching a trait predicate and give it to
+// the current player's discard, refilling the HQ slot; the printed KO-or-gift collapses to
+// the gift (dominant in co-op); predicate-parameterized, keyword-less auto-resolve,
+// self-narrates).
 /** All villain effect primitives in canonical order. Single source of truth. */
 export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'ko-hero',
@@ -292,6 +309,7 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'ko-wounds-current-hand-and-discard',
   'ko-cullable-each-deck-top',
   'capture-bystanders-plus-per-hq-hero-by-trait',
+  'give-hq-hero-by-trait-to-current',
 ] as const;
 
 /**
@@ -328,6 +346,9 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
  *   - `capture-bystanders-plus-per-hq-hero-by-trait` (D-24334): `requireKind` +
  *     `requireValue` as an HQ hero-trait predicate — capture 1 Bystander + 1 per HQ
  *     Hero matching the trait (co2e Baron Zemo Ambush: `[team:avengers]`).
+ *   - `give-hq-hero-by-trait-to-current` (D-24335): `requireKind` + `requireValue` as
+ *     an HQ hero-trait predicate — remove the highest-cost HQ Hero matching the trait
+ *     and give it to the current player's discard (co2e Ultron Fight: `[hc:tech]`).
  */
 export interface VillainEffectDescriptor {
   primitive: VillainEffectPrimitive;

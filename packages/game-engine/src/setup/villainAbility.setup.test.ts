@@ -1257,6 +1257,46 @@ describe('buildVillainAbilityHooks — Tier-A auto-resolve grammars (WP-485 / D-
       'capture-bystanders-plus-per-hq-hero-by-trait:team',
     ]);
   });
+
+  it('[effect:give-hq-hero-by-trait-to-current:<kind>:<value>] parses + normalizes; malformed rejected (WP-522 / D-24335)', () => {
+    const registry = makeRegistry(
+      'co2e',
+      [
+        {
+          slug: 'masters-of-evil',
+          cards: [
+            { slug: 'ultron', abilities: ['Fight: Choose a [hc:tech] Hero from the HQ. Either KO that Hero or choose a player to gain it. [effect:give-hq-hero-by-trait-to-current:hc:tech]'] },
+            { slug: 'twotoken', abilities: ['Fight: x [effect:give-hq-hero-by-trait-to-current:hc]'] },
+          ],
+        },
+      ],
+      [],
+    );
+    const hooks = buildVillainAbilityHooks(registry, makeConfig(['co2e/masters-of-evil'], []));
+    const effectsFor = (slug: string) =>
+      hooks.find((h) => h.cardId === `co2e-villain-masters-of-evil-${slug}-00` && h.timing === 'onFight')!.effects;
+    const unresolvedFor = (slug: string) =>
+      hooks.find((h) => h.cardId === `co2e-villain-masters-of-evil-${slug}-00` && h.timing === 'onFight')!.unresolvedMarkers;
+    // why: `hc` maps to the engine kind `hero-class`; the value normalizes to the
+    // cardTraits slug space (already lowercase here).
+    assert.deepStrictEqual(effectsFor('ultron'), [
+      {
+        primitive: 'give-hq-hero-by-trait-to-current',
+        requireKind: 'hero-class',
+        requireValue: 'tech',
+      },
+    ]);
+    // why: keyword-less — must NOT reverse-map to a legacy keyword.
+    assert.deepStrictEqual(
+      hooks.find((h) => h.cardId === 'co2e-villain-masters-of-evil-ultron-00' && h.timing === 'onFight')!.keywords,
+      [],
+    );
+    // why: a 2-token tail (missing the value) is malformed → surfaced as an unresolved marker.
+    assert.deepStrictEqual(effectsFor('twotoken'), []);
+    assert.deepStrictEqual(unresolvedFor('twotoken'), [
+      'give-hq-hero-by-trait-to-current:hc',
+    ]);
+  });
 });
 
 // ---------------------------------------------------------------------------

@@ -327,7 +327,10 @@ describe('VILLAIN_EFFECT_PRIMITIVES drift-detection', () => {
   // (D-24334) appended a seventeenth, `capture-bystanders-plus-per-hq-hero-by-trait`,
   // at position 17 (co2e Baron Zemo Ambush — capture 1 Bystander + 1 per HQ Hero
   // matching a trait predicate).
-  it('contains exactly the 17 canonical primitives in order', () => {
+  // why: WP-522 (D-24335) appended an eighteenth, `give-hq-hero-by-trait-to-current`,
+  // at position 18 (co2e Ultron Fight — remove the highest-cost HQ Hero matching a
+  // trait and give it to the current player's discard).
+  it('contains exactly the 18 canonical primitives in order', () => {
     const expectedPrimitives: VillainEffectPrimitive[] = [
       'ko-hero',
       'gain-wound',
@@ -346,11 +349,12 @@ describe('VILLAIN_EFFECT_PRIMITIVES drift-detection', () => {
       'ko-wounds-current-hand-and-discard',
       'ko-cullable-each-deck-top',
       'capture-bystanders-plus-per-hq-hero-by-trait',
+      'give-hq-hero-by-trait-to-current',
     ];
     assert.equal(
       VILLAIN_EFFECT_PRIMITIVES.length,
-      17,
-      'VILLAIN_EFFECT_PRIMITIVES must have exactly 17 entries',
+      18,
+      'VILLAIN_EFFECT_PRIMITIVES must have exactly 18 entries',
     );
     assert.deepStrictEqual(
       [...VILLAIN_EFFECT_PRIMITIVES],
