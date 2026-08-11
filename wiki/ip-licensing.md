@@ -31,11 +31,15 @@ last-reviewed: 2026-08-11
 
 ## Summary
 
-Legendary Arena is a digital *Marvel Legendary* deck-builder, which means it
-depends on **two separate intellectual-property rights it does not yet license**:
-Upper Deck Entertainment owns the *Legendary* game system and name; Marvel (Disney)
-owns the characters and art — and the **digital** character rights are a distinct
-grant that Upper Deck never held. The
+Legendary Arena is a digital deck-builder **built on the *Legendary* system that
+currently uses Marvel characters it does not license** — an unlicensed derivative
+that *uses* the IP, not officially "a Marvel Legendary" product (the accurate
+framing is also the more legally careful one, and mirrors the business brief's
+guardrail that the Marvel/*Legendary* lineage is internal-only context). It
+therefore depends on **two separate intellectual-property rights it does not yet
+license**: Upper Deck Entertainment owns the *Legendary* game system and name;
+Marvel (Disney) owns the characters and art — and the **digital** character rights
+are a distinct grant that Upper Deck never held. The
 [Monetization Model](monetization-model.md) and
 [`docs/01-VISION.md`](../docs/01-VISION.md) §Financial Sustainability both treat
 royalties to Upper Deck and Marvel as a non-negotiable covenant. This page records
@@ -150,6 +154,15 @@ IP exposure, **not zero**: reproducing card **text**/art is copyright and card
 have been taken down before), so counsel scopes what may be reproduced. The plan
 (`04`) owns the detail.
 
+Reaching that community has its own companion plan (`06`): the engaged online
+Legendary player base lives on community-run sites and leagues (the Bageltop Games
+ecosystem — `legendarycardgame.com`, `legendaryleagues.com`). Neither sells ad
+inventory, so the play is **sponsorship/partnership** (a charity-drive goodwill
+entry, content collaboration, league sponsorship), **gated on the license-clean
+decision** — advertising an unlicensed Marvel build into the rights-holders' own
+community is Risk 7 amplified, so any placement points at the license-clean surface
+only. Traction is measured with the canonical KPI definitions (`02`).
+
 ### Relationship to the royalty covenant
 
 VISION's "royalties on *all* revenue" rule and the printables-store royalty-routing
@@ -214,6 +227,12 @@ rates this effort lands — and may need to route to *two* licensors, not one.
   — Phase 0/3 companion: Disney no-unsolicited policy, counsel/agent selection
   criteria, and verified candidate counsel/agents with citations (marketing repo,
   internal; **draft, pre-engagement**)
+- `C:\www\legendary-arena-com\docs\corporate-memory\06-community-advertising-and-sponsorship-plan.md`
+  — community-acquisition companion: sponsorship/partnership on the Legendary
+  community sites/leagues, gated on the license-clean decision (marketing repo,
+  internal; **draft, pre-outreach**)
+- `C:\www\legendary-arena-com\docs\corporate-memory\02-kpi-dictionary.md` —
+  canonical definitions for the traction metrics the plan and ad plan reference
 - `C:\www\legendary-arena-com\docs\corporate-memory\03-open-questions.md` — the
   🔴 "IP license not yet secured" gap entry
 - `C:\www\legendary-arena-com\docs\corporate-memory\01-decision-log.md` — the
