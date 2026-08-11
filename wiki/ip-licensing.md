@@ -108,13 +108,17 @@ partners over a **6–18 month** timeline.
 
 ### How it would be secured (shape, not a runbook)
 
-The acquisition plan sequences the effort as: **retain IP counsel first**, then
-diligence (does UD still hold the physical Marvel license; what is the digital
-boundary; study DXP), then a pitch package leading with traction and the
-royalty-first / no-pay-to-win covenant, then **Upper Deck first** as the warm entry
-point and potential broker toward Marvel — ideally a **joint / tri-party deal**
-(Marvel + UD + you) — then NDA → term sheet(s) → contract, standing up royalty
-accounting as a delivery step. The step-by-step execution lives in the plan doc;
+The plan's recommended sequence for an independent/small team: **(1)** prove the
+product with a **license-clean, non-Marvel (fantasy) build** and real player
+metrics — no Marvel IP in anything shown; **(2)** approach **Upper Deck** with a
+partnership/royalty proposal (UD routinely puts new IPs on the Legendary system —
+Alien, Predator, Big Trouble in Little China, Firefly, Buffy — and already
+partnered a studio for digital via DXP, so this is an on-pattern ask); **(3)** go
+to Marvel **jointly**, UD as broker, ideally a tri-party deal. A high-probability
+alternative to going solo is **partnering with an established digital board-game
+studio** (Dire Wolf Digital, Asmodee Digital) that already holds IP-holder
+relationships — trading equity/control for credibility and open doors. Retain IP
+counsel before any outreach. The step-by-step execution lives in the plan doc;
 this page records the strategy, not the checklist.
 
 ### Relationship to the royalty covenant
@@ -154,6 +158,12 @@ rates this effort lands — and may need to route to *two* licensors, not one.
 - **"$10k / 10%" is a misconception to correct, not a plan input.** With two
   possible royalty stacks, it under-budgets a Marvel-branded license by a wide
   margin.
+- **The currently-public build shows Marvel IP.** The plan's "show a license-clean
+  build" guidance is not just about the demo — legendary-arena.com is live today
+  with actual Marvel names and art, so it's a decision about the already-public
+  product: reskin the public build to fantasy (DXP-style) and keep Marvel private
+  for the licensed release, or accept the standing exposure. Counsel should weigh in
+  before any outreach (outreach points the rights-holders at whatever is public).
 - **This is not a decision.** No license has been pursued or granted; the plan is
   pre-outreach. When it moves to commitment, that lands in the marketing-repo
   decision log, and this page's status updates then.
