@@ -2238,7 +2238,7 @@
           "vAttack": "5",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-masters-of-evil-melter.webp",
           "abilities": [
-            "Fight: Each player reveals the top card of their deck. For each card, you choose to KO it or put it back."
+            "Fight: Each player reveals the top card of their deck. For each card, you choose to KO it or put it back. [effect:ko-cullable-each-deck-top]"
           ],
           "copies": 2
         },
@@ -2251,7 +2251,7 @@
           "abilities": [
             "Ultron gets +1[icon:attack] for each [hc:tech] Hero in the HQ.",
             "Fight: Choose a [hc:tech] Hero from the HQ. Either KO that Hero or choose a player to gain it.",
-            "Escape: Each player reveals a [hc:tech] Hero or gains a Wound."
+            "Escape: Each player reveals a [hc:tech] Hero or gains a Wound. [effect:reveal-or-wound:hc:tech]"
           ],
           "copies": 2
         },
@@ -2263,7 +2263,7 @@
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-masters-of-evil-whirlwind.webp",
           "abilities": [
             "Ambush: Two Villains in the city swap spaces.",
-            "Fight: If you fight Whirlwind on the Rooftops or Bridge, KO one of your Heroes."
+            "Fight: If you fight Whirlwind on the Rooftops or Bridge, KO one of your Heroes. [effect:ko-hero:current@rooftops+bridge]"
           ],
           "copies": 2
         }

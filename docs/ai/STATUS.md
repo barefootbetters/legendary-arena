@@ -7,6 +7,36 @@
 
 ## Current State
 
+### WP-520 — co2e Masters of Evil: Mark the Timing Lines Covered by Existing Primitives — DONE (2026-08-10)
+
+Three currently-hollow co2e (Legendary 2nd-edition) Masters-of-Evil timing lines now play their
+printed abilities instead of doing nothing (D-24266 `unmarked-ability`), by reusing already-shipped
+villain-effect primitives — **no engine change, no new primitive, no test change**:
+
+- **Melter** Fight *"Each player reveals the top card of their deck. For each card, you choose to KO
+  it or put it back."* → `[effect:ko-cullable-each-deck-top]` (WP-519 / D-24332).
+- **Ultron** Escape *"Each player reveals a [hc:tech] Hero or gains a Wound."* →
+  `[effect:reveal-or-wound:hc:tech]` (WP-469 / D-24281).
+- **Whirlwind** Fight *"If you fight Whirlwind on the Rooftops or Bridge, KO one of your Heroes."* →
+  `[effect:ko-hero:current@rooftops+bridge]` (WP-252 / D-24023; magnitude-1 implicit — `ko-hero:current:1`
+  is a rejected token, D-24298; distinct from core Whirlwind's `:2`, KO two).
+
+This is the **curatable-subset** increment of the co2e MoE faithfulness work (WP-185 conservatism-over-
+coverage): only the three lines whose whole effect reduces to an existing primitive are marked. The co2e
+`masters-of-evil` marker block already existed (WP-521 created it for Baron Zemo Ambush, which merged
+first), so this WP **appended** the melter/ultron/whirlwind rows. `apply-effect-markers.mjs` reported
+`co2e.json — 3 new marker(s)` (idempotent); the three lines flip unmarked → **executable** in the villain
+ledger + effect-index, each attributed to its owning primitive's WP/D (no net-new provenance row). The
+remaining deferred timing lines (Ultron Fight, Whirlwind Ambush — each needs a new primitive, the D-24333
+epic) and the two variable-attack passives stay unmarked.
+
+`pnpm -r build` 0; engine test **2447 pass / 0 fail** (baseline-identical); `ledger:villains:check` +
+`effect-index:check` + `sim:runtime-observed:check` + `roadmap:counts:check` all 0; `PRE_WP080_HASH` +
+`finalStateHash` **byte-identical** (no committed fixture references `co2e/masters-of-evil`). **D-24333 Active**.
+Two-commit topology (`EC-555:` + `SPEC:`), one PR. **D-24026 live-verify operator-pending** (post-deploy:
+a co2e MoE match — Melter cull / Ultron escape reveal-or-wound / Whirlwind Fight KO-one on Rooftops/Bridge,
+each logging its effect with no `no-handler` breadcrumb).
+
 ### WP-521 — co2e Baron Zemo (Villain) Ambush: Capture a Bystander + One per Avengers Hero in the HQ — DONE (2026-08-10)
 
 The co2e (Legendary 2nd-edition) Masters-of-Evil villain **Baron Zemo** now plays his printed Ambush —

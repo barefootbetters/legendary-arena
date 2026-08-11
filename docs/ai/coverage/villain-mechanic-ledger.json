@@ -4,10 +4,10 @@
   "summary": {
     "totalRows": 717,
     "byStatus": {
-      "executable": 121,
+      "executable": 124,
       "deferred": 0,
       "unsupported": 1,
-      "unmarked": 595
+      "unmarked": 592
     },
     "distinctMechanics": 23
   },
@@ -1458,11 +1458,11 @@
       "cardName": "Melter",
       "set": "co2e",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "ko-cullable-each-deck-top",
+      "status": "executable",
+      "wp": "WP-519",
+      "decision": "D-24332",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-cullable-each-deck-top"
     },
     {
       "extId": "co2e-villain-brotherhood-of-mutants-mystique",
@@ -1612,11 +1612,11 @@
       "cardName": "Ultron",
       "set": "co2e",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "co2e-villain-sinister-spider-foes-venom",
@@ -1645,11 +1645,11 @@
       "cardName": "Whirlwind",
       "set": "co2e",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "ko-hero",
+      "status": "executable",
+      "wp": "WP-252",
+      "decision": "D-24023",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
       "extId": "co2e-villain-enemies-of-asgard-ymir-frost-giant-king",
