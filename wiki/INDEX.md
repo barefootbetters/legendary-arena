@@ -1,7 +1,7 @@
 # Wiki Index
 
-> **56 / 75** entity pages.
-> Last regenerated: 2026-08-09.
+> **57 / 75** entity pages.
+> Last regenerated: 2026-08-11.
 > See [SCHEMA.md](SCHEMA.md) for the entity-page contract and
 > [README.md](README.md) for purpose, conventions, and authority —
 > including [§ Tradeoffs](README.md#tradeoffs) on what the LLM-wiki
@@ -357,6 +357,15 @@ Brand governance and commercial-positioning references.
   free/paid boundary, and the Legendary Forge
   physical→digital cosmetic-unlock bridge. Cites VISION; defines
   nothing.
+- [IP Licensing](ip-licensing.md) — The two *separate* rights Legendary
+  Arena needs but does not yet license (Upper Deck's *Legendary* system +
+  Marvel's **digital** character rights, which UD never held — the reason
+  *Legendary DXP* is a fantasy reskin, not Marvel), why Upper Deck is the
+  warm entry point toward a joint/tri-party Marvel deal, the realistic
+  economics (15–30% per licensor + non-refundable minimum guarantee, not
+  the assumed $10k/10%), and the market-gap opportunity (no official
+  digital Marvel Legendary exists). Cites the marketing-repo acquisition
+  plan + VISION; defines nothing.
 
 ## Keyword
 
