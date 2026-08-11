@@ -149,7 +149,7 @@ The villain/henchman path in
 made the same move from fragmented keywords to parameters. Its executable
 vocabulary is the `VillainEffectDescriptor` — a `VillainEffectPrimitive`
 plus optional `target` / `magnitude` / `selector` / predicate params
-(`VILLAIN_EFFECT_PRIMITIVES`, eighteen entries: `ko-hero` · `gain-wound` ·
+(`VILLAIN_EFFECT_PRIMITIVES`, nineteen entries: `ko-hero` · `gain-wound` ·
 `capture-hq-hero` · `hero-deck-top-to-escape` · `capture-bystander` ·
 `scry-ko-own-deck` · `gain-attached-hero` · `reveal-or-wound` ·
 `become-scheme-twist` · `draw-cards-current` · `ko-heroes-current-by-trait` ·
@@ -157,7 +157,7 @@ plus optional `target` / `magnitude` / `selector` / predicate params
 `gain-wound-unless-victory-villain-group` · `override-next-hand-size` ·
 `ko-wounds-current-hand-and-discard` · `ko-cullable-each-deck-top` ·
 `capture-bystanders-plus-per-hq-hero-by-trait` ·
-`give-hq-hero-by-trait-to-current`). A new
+`give-hq-hero-by-trait-to-current` · `swap-two-city-villains`). A new
 target / magnitude / selector variant is a descriptor **param** (a data
 marker), not a new keyword plus switch arm plus drift test (D-24023).
 
@@ -257,6 +257,24 @@ only refills), so a rational cooperative chooser never KOs — the KO branch is 
 implemented, and "choose a player" collapses to the fighting player (the WP-519
 Melter / WP-516 Ymir dominated-option collapses). No `[hc:tech]` HQ Hero is a
 reachable no-op. Self-narrates via `pushLog` (keyword-less).
+
+**Moving Villains around the City (D-24336).** The `swap-two-city-villains`
+primitive — co2e Whirlwind's Ambush *"Two Villains in the city swap spaces."* — is
+the nineteenth primitive and the engine's **first City board-position
+manipulation** (every prior effect read or removed City occupants; none
+*repositioned* them). It is a **no-param** auto-resolve: the handler collects the
+City indices whose occupant is a `villain` (henchmen excluded — the card says
+"Villains") and, with at least two, swaps the **lowest-index** (entrance side, the
+Sewers) with the **highest-index** (escape side, the Bridge) — **Rule B**, the
+locked "disrupt the board" reading, chosen because the card names no chooser and the
+City has no die (the largest positional displacement shoves an about-to-escape
+Villain back to the entrance). Whirlwind itself is eligible (it is pushed into the
+City before its Ambush fires). Fewer than two City Villains is a reachable no-op. The
+swap exchanges two `CardExtId` strings between `G.city` indices — no card object
+enters the City — and uses no `ctx.random`. Self-narrates via `pushLog`
+(keyword-less). It is the first of an as-yet-unimplemented City-swap/reposition
+family (Ravagers, Infinity Stones, named-space Twists, …); the helper is written
+general enough to serve those, but only Whirlwind's Ambush is wired here.
 
 Ten earlier `VILLAIN_EFFECT_KEYWORDS` are **frozen** as the parser's
 legacy-translation input only. `LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR`
@@ -500,6 +518,7 @@ handler reads as *applied* while the real Scheme Twist fires elsewhere.
 - WP-519 (D-24332) — the `ko-cullable-each-deck-top` villain primitive (sixteenth; Melter's Fight reveals every player's deck top and KOs the cullable ones — Wounds / basic S.H.I.E.L.D. starters — keeping real Heroes)
 - WP-521 (D-24334) — the `capture-bystanders-plus-per-hq-hero-by-trait` villain primitive (seventeenth; co2e Baron Zemo's Ambush captures 1 Bystander + 1 per HQ Hero matching a trait — the first HQ-by-trait count; attach-only at Ambush, award on defeat)
 - WP-522 (D-24335) — the `give-hq-hero-by-trait-to-current` villain primitive (eighteenth; co2e Ultron's Fight removes the highest-cost `[hc:tech]` HQ Hero and gives it to the current player's discard, refilling the slot — the KO-or-gift choice auto-resolves to the dominant gift)
+- WP-523 (D-24336) — the `swap-two-city-villains` villain primitive (nineteenth; co2e Whirlwind's Ambush swaps the lowest-index and highest-index villain-occupied City spaces — the first City board-position manipulation; henchmen excluded, fewer than two Villains is a no-op)
 - The hollow-effect detection and coverage-ledger spine (DESIGN-HOLLOW-EFFECT-DETECTION.md, DESIGN-EFFECT-AUTHORING-SCALE.md)
 
 ## Scaling and Open Directions

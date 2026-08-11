@@ -2262,7 +2262,7 @@
           "vAttack": "4",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-masters-of-evil-whirlwind.webp",
           "abilities": [
-            "Ambush: Two Villains in the city swap spaces.",
+            "Ambush: Two Villains in the city swap spaces. [effect:swap-two-city-villains]",
             "Fight: If you fight Whirlwind on the Rooftops or Bridge, KO one of your Heroes. [effect:ko-hero:current@rooftops+bridge]"
           ],
           "copies": 2

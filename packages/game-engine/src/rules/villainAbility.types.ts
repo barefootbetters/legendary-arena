@@ -238,6 +238,17 @@ export interface VillainEffectResult {
 // / WP-516 Ymir "choose a player → current player" collapse). Predicate-parameterized (parses
 // via the shared trait-predicate arm, like reveal-or-wound); keyword-less, self-narrates via
 // pushLog.
+// why: D-24336 — `swap-two-city-villains` is the nineteenth primitive (append-only,
+// position 19): the engine's FIRST City board-position manipulation. It collects the City
+// indices whose occupant is a `villain` (henchmen excluded), and — with at least two —
+// swaps the lowest-index (entrance side) and highest-index (escape side) such spaces (Rule
+// B "frontmost ↔ rearmost", the locked "disrupt the board" reading — the card names no
+// chooser, so the engine picks deterministically); fewer than two is a reachable no-op (co2e
+// Whirlwind, Masters of Evil — "Ambush: Two Villains in the city swap spaces."). No-param
+// (parses via the generic terminal `parts.length === 1` branch — no parser arm, like
+// ko-cullable-each-deck-top); keyword-less, self-narrates via pushLog. No `ctx.random` (the
+// selection is positional). The swap exchanges two `CardExtId` strings between `G.city`
+// indices — no card objects enter the City.
 export type VillainEffectPrimitive =
   | 'ko-hero'
   | 'gain-wound'
@@ -256,7 +267,8 @@ export type VillainEffectPrimitive =
   | 'ko-wounds-current-hand-and-discard'
   | 'ko-cullable-each-deck-top'
   | 'capture-bystanders-plus-per-hq-hero-by-trait'
-  | 'give-hq-hero-by-trait-to-current';
+  | 'give-hq-hero-by-trait-to-current'
+  | 'swap-two-city-villains';
 
 // why: drift-detection array — must match VillainEffectPrimitive exactly
 // (villainAbility.types.test.ts asserts bidirectional parity). Adding a
@@ -290,6 +302,10 @@ export type VillainEffectPrimitive =
 // the current player's discard, refilling the HQ slot; the printed KO-or-gift collapses to
 // the gift (dominant in co-op); predicate-parameterized, keyword-less auto-resolve,
 // self-narrates).
+// why: `swap-two-city-villains` appended at position 19 by WP-523 (D-24336 — co2e
+// Whirlwind Ambush: swap the lowest-index and highest-index villain-occupied City spaces
+// (Rule B), henchmen excluded, fewer than two is a no-op; the first City board-position
+// manipulation; no-param, keyword-less auto-resolve, self-narrates).
 /** All villain effect primitives in canonical order. Single source of truth. */
 export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'ko-hero',
@@ -310,6 +326,7 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'ko-cullable-each-deck-top',
   'capture-bystanders-plus-per-hq-hero-by-trait',
   'give-hq-hero-by-trait-to-current',
+  'swap-two-city-villains',
 ] as const;
 
 /**
@@ -320,7 +337,7 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
  *   - `capture-hq-hero`: `selector` 'rightmost' | 'highest-cost' | 'lowest-cost'
  *   - `hero-deck-top-to-escape`, `capture-bystander`, `scry-ko-own-deck`,
  *     `gain-attached-hero`, `ko-wounds-current-hand-and-discard`,
- *     `ko-cullable-each-deck-top`: no params
+ *     `ko-cullable-each-deck-top`, `swap-two-city-villains`: no params
  *   - `ko-hero` with `target: 'each'`: optional `zone` (D-24280) restricts the
  *     per-player KO to a single source zone (Juggernaut's "from their discard
  *     pile" / "from their hand"); absent means the discard→hand→inPlay fallback.

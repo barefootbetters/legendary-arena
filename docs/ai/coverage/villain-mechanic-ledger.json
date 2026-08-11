@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "cardType": "villain",
   "summary": {
-    "totalRows": 718,
+    "totalRows": 719,
     "byStatus": {
-      "executable": 125,
+      "executable": 126,
       "deferred": 0,
       "unsupported": 1,
       "unmarked": 592
     },
-    "distinctMechanics": 24
+    "distinctMechanics": 25
   },
   "rows": [
     {
@@ -1661,6 +1661,17 @@
       "wp": "WP-252",
       "decision": "D-24023",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
+    },
+    {
+      "extId": "co2e-villain-masters-of-evil-whirlwind",
+      "cardName": "Whirlwind",
+      "set": "co2e",
+      "cardType": "villain",
+      "mechanic": "swap-two-city-villains",
+      "status": "executable",
+      "wp": "WP-523",
+      "decision": "D-24336",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#swap-two-city-villains"
     },
     {
       "extId": "co2e-villain-enemies-of-asgard-ymir-frost-giant-king",

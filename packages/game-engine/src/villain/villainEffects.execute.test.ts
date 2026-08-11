@@ -3607,3 +3607,88 @@ describe('executeVillainAbilities — give-hq-hero-by-trait-to-current (WP-522 /
     );
   });
 });
+
+describe('executeVillainAbilities — swap-two-city-villains (WP-523 / D-24336)', () => {
+  const V_LOW = 'co2e-villain-masters-of-evil-whirlwind-00' as CardExtId;
+  const V_MID = 'co2e-villain-radiation-the-leader-00' as CardExtId;
+  const V_HIGH = 'co2e-villain-brotherhood-of-mutants-juggernaut-00' as CardExtId;
+  const HENCH = 'henchman-hand-ninjas-00' as CardExtId;
+
+  // why: swap-two-city-villains is a no-param, keyword-less primitive, so the hook() helper
+  // (which reads LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR) can't build it — construct directly.
+  function swapHook(cardId: string): VillainAbilityHook {
+    return {
+      cardId: cardId as CardExtId,
+      timing: 'onAmbush',
+      keywords: [],
+      effects: [{ primitive: 'swap-two-city-villains' }],
+    };
+  }
+
+  // why: makeG does not model G.city / G.villainDeckCardTypes — attach them post-build via
+  // cast (the same pattern the WP-257 hollow tests use for villainDeckCardTypes).
+  function makeCityG(
+    city: (CardExtId | null)[],
+    cardTypes: Record<string, 'villain' | 'henchman'>,
+  ): LegendaryGameState {
+    const G = makeG({ hooks: [swapHook('v-whirl')], messages: [] });
+    (G as { city?: unknown }).city = city;
+    (G as { villainDeckCardTypes?: unknown }).villainDeckCardTypes = cardTypes;
+    return G;
+  }
+
+  it('AC-1 swaps the lowest-index and highest-index villain-occupied City spaces (Rule B)', () => {
+    const G = makeCityG(
+      [V_LOW, null, HENCH, null, V_HIGH],
+      { [V_LOW]: 'villain', [V_HIGH]: 'villain', [HENCH]: 'henchman' },
+    );
+    const results = executeVillainAbilities(G, CTX, 'v-whirl' as CardExtId, 'onAmbush');
+    assert.equal(G.city[0], V_HIGH, 'entrance (index 0) now holds the former escape-side Villain');
+    assert.equal(G.city[4], V_LOW, 'escape edge (index 4) now holds the former entrance Villain');
+    assert.equal(G.city[2], HENCH, 'the henchman space is untouched');
+    // why: keyword-less → no VillainEffectResult recorded (the log line is the surface).
+    assert.deepStrictEqual(results, []);
+    assert.match(G.messages![0]!.text, /swapped City spaces/);
+    assert.equal(G.messages![0]!.outcome, 'applied');
+    assert.equal(G.diagnostics?.hollowEffects?.length ?? 0, 0, 'no hollow — the marked line is handled');
+  });
+
+  it('AC-2 fewer than two City Villains is a reachable no-op (blocked, City unchanged)', () => {
+    const G = makeCityG(
+      [V_LOW, HENCH, null, null, null],
+      { [V_LOW]: 'villain', [HENCH]: 'henchman' },
+    );
+    executeVillainAbilities(G, CTX, 'v-whirl' as CardExtId, 'onAmbush');
+    assert.equal(G.city[0], V_LOW, 'the lone Villain stays put');
+    assert.equal(G.city[1], HENCH, 'the henchman stays put');
+    assert.match(G.messages![0]!.text, /fewer than two Villains in the City; no swap/);
+    assert.equal(G.messages![0]!.outcome, 'blocked');
+    assert.equal(G.diagnostics?.hollowEffects?.length ?? 0, 0, 'reachable no-op, never hollow');
+  });
+
+  it('AC-3 never selects a henchman even when it sits at an extreme index', () => {
+    // why: a henchman occupies index 0 (the lowest occupied space); the two swapped spaces
+    // must be the villain-occupied indices 1 and 3, leaving the henchman at 0 in place.
+    const G = makeCityG(
+      [HENCH, V_LOW, null, V_HIGH, null],
+      { [HENCH]: 'henchman', [V_LOW]: 'villain', [V_HIGH]: 'villain' },
+    );
+    executeVillainAbilities(G, CTX, 'v-whirl' as CardExtId, 'onAmbush');
+    assert.equal(G.city[0], HENCH, 'the henchman at the lowest index is never selected');
+    assert.equal(G.city[1], V_HIGH, 'the two Villain spaces (1 and 3) swap');
+    assert.equal(G.city[3], V_LOW, 'the two Villain spaces (1 and 3) swap');
+  });
+
+  it('AC-4 swaps only the two extreme Villains — a middle Villain and other spaces are unchanged', () => {
+    const G = makeCityG(
+      [V_LOW, V_MID, null, null, V_HIGH],
+      { [V_LOW]: 'villain', [V_MID]: 'villain', [V_HIGH]: 'villain' },
+    );
+    executeVillainAbilities(G, CTX, 'v-whirl' as CardExtId, 'onAmbush');
+    assert.equal(G.city[0], V_HIGH, 'lowest villain index gets the highest occupant');
+    assert.equal(G.city[4], V_LOW, 'highest villain index gets the lowest occupant');
+    assert.equal(G.city[1], V_MID, 'the middle Villain is untouched');
+    assert.equal(G.city[2], null, 'empty spaces stay empty');
+    assert.equal(G.city[3], null, 'empty spaces stay empty');
+  });
+});

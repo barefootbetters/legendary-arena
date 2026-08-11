@@ -91,7 +91,7 @@
         "baron-zemo": { "ambush": ["capture-bystanders-plus-per-hq-hero-by-trait:team:avengers"] },
         "melter": { "fight": ["ko-cullable-each-deck-top"] },
         "ultron": { "fight": ["give-hq-hero-by-trait-to-current:hc:tech"], "escape": ["reveal-or-wound:hc:tech"] },
-        "whirlwind": { "fight": ["ko-hero:current@rooftops+bridge"] }
+        "whirlwind": { "fight": ["ko-hero:current@rooftops+bridge"], "ambush": ["swap-two-city-villains"] }
       }
     },
     "core": {

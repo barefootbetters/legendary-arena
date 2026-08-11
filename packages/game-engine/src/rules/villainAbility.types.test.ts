@@ -330,7 +330,10 @@ describe('VILLAIN_EFFECT_PRIMITIVES drift-detection', () => {
   // why: WP-522 (D-24335) appended an eighteenth, `give-hq-hero-by-trait-to-current`,
   // at position 18 (co2e Ultron Fight — remove the highest-cost HQ Hero matching a
   // trait and give it to the current player's discard).
-  it('contains exactly the 18 canonical primitives in order', () => {
+  // why: WP-523 (D-24336) appended a nineteenth, `swap-two-city-villains`, at position 19
+  // (co2e Whirlwind Ambush — swap the lowest- and highest-index villain-occupied City
+  // spaces; the first City board-position manipulation).
+  it('contains exactly the 19 canonical primitives in order', () => {
     const expectedPrimitives: VillainEffectPrimitive[] = [
       'ko-hero',
       'gain-wound',
@@ -350,11 +353,12 @@ describe('VILLAIN_EFFECT_PRIMITIVES drift-detection', () => {
       'ko-cullable-each-deck-top',
       'capture-bystanders-plus-per-hq-hero-by-trait',
       'give-hq-hero-by-trait-to-current',
+      'swap-two-city-villains',
     ];
     assert.equal(
       VILLAIN_EFFECT_PRIMITIVES.length,
-      18,
-      'VILLAIN_EFFECT_PRIMITIVES must have exactly 18 entries',
+      19,
+      'VILLAIN_EFFECT_PRIMITIVES must have exactly 19 entries',
     );
     assert.deepStrictEqual(
       [...VILLAIN_EFFECT_PRIMITIVES],

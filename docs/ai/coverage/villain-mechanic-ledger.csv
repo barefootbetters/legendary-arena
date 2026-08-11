@@ -149,6 +149,7 @@ co2e-villain-masters-of-evil-ultron,Ultron,co2e,villain,reveal-or-wound,executab
 co2e-villain-sinister-spider-foes-venom,Venom,co2e,villain,(unmarked),unmarked,,,
 co2e-villain-hydra-viper,Viper,co2e,villain,(unmarked),unmarked,,,
 co2e-villain-masters-of-evil-whirlwind,Whirlwind,co2e,villain,ko-hero,executable,WP-252,D-24023,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+co2e-villain-masters-of-evil-whirlwind,Whirlwind,co2e,villain,swap-two-city-villains,executable,WP-523,D-24336,packages/game-engine/src/villain/villainEffects.execute.ts#swap-two-city-villains
 co2e-villain-enemies-of-asgard-ymir-frost-giant-king,"Ymir, Frost Giant King",co2e,villain,(unmarked),unmarked,,,
 co2e-villain-radiation-zzzax,Zzzax,co2e,villain,(unmarked),unmarked,,,
 core-villain-radiation-abomination,Abomination,core,villain,capture-bystander,executable,WP-252,D-24023,packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander
