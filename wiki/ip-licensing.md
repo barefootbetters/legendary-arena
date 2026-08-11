@@ -109,8 +109,14 @@ partners over a **6–18 month** timeline.
 ### How it would be secured (shape, not a runbook)
 
 The plan's recommended sequence for an independent/small team: **(1)** prove the
-product with a **license-clean, non-Marvel (fantasy) build** and real player
-metrics — no Marvel IP in anything shown; **(2)** approach **Upper Deck** with a
+product with a **license-clean, non-Marvel build** and real player metrics — no
+Marvel IP in anything shown. That build can be skinned with **original**,
+**fantasy** (DXP-style), or **verified public-domain Golden Age hero** content;
+the PD-superhero route keeps the superhero genre (a more on-brand UD pitch) while
+needing only the Upper Deck system license, not Marvel — but `[CONFIRM]` PD status
+is a per-character *and per-issue* legal question (some titles were renewed; later
+publishers made copyrighted versions of otherwise-PD heroes), so counsel must
+clear each one. Then **(2)** approach **Upper Deck** with a
 partnership/royalty proposal (UD routinely puts new IPs on the Legendary system —
 Alien, Predator, Big Trouble in Little China, Firefly, Buffy — and already
 partnered a studio for digital via DXP, so this is an on-pattern ask); **(3)** go
