@@ -36353,4 +36353,20 @@ Protect this file.
 
 **Scope / fences.** Server + arena-client wiring only — **no engine / registry / determinism surface touched**. Autoplay is **Out of Scope** (its default-loadout pool is a fixed non-Secret-Invasion scheme, so Secret Invasion never reaches it; the bot-ally path `POST /api/match/create-with-bot` has no scheme-blind client gate — it relies on the engine 400). `api-endpoints.md` whole-row replaced for `/api/match/setup-requirements` (D-11804 §21; `Auth` stays `guest`, `Status` `Wired`). **Ship as a set with WP-524 / D-24337** — WP-524's live engine change without this play-lobby change is the un-creatable-scheme regression this split avoids. Server 12-test matchGate suite + full server suite green; arena-client 1229 pass / 0 fail (two new scheme-aware Create-gate tests); whole-workspace green; control-revert non-vacuous (neuter the server projection → the SI route test fails; neuter the client `schemeId` pass-through → the SI Create-gate test fails; base + other-scheme stay green). Hard-dep WP-524 / D-24337.
 
+### D-24339 — `bystanderLost` penalty is derived at end-of-match from `G.escapedPile`, not a new counter (Drafted 2026-08-11 — WP-528 / EC-563; not yet landed)
+
+**Decision.** The `bystanderLost` `PenaltyEventType` is produced by deriving its count at end-of-match from `G.escapedPile` — counting entries whose `villainDeckCardTypes[extId] === 'bystander'` — rather than from a new `G.counters.BYSTANDERS_LOST` counter or a structured event log (the two options the stale `deriveScoringInputs` safe-skip comment named).
+
+**Why the derivation, not a counter.** `G.escapedPile` already durably records carried-away Bystanders: `carryEscapedBystandersToPile` (D-24314) routes a captured Bystander into it when its Villain escapes — from both the villain-deck reveal escape branch and the scheme-twist city-displacement escape branch. A pure derivation therefore reads state that already exists and adds **no** `G` field — keeping `finalStateHash` and `PRE_WP080_HASH` byte-identical and avoiding the dual hash re-pin a new counter would force. It also mirrors the existing `bystandersRescued` derivation exactly (same `'bystander'` discriminator, opposite zone: victory pile for rescued, escaped pile for lost).
+
+**Symmetric across both derivation copies.** The same derivation is applied in `deriveScoringInputs` (real-match / leaderboard) and `deriveScoringInputsFromFinalState` (`par.aggregator.ts`, PAR-calibration). Counting `bystanderLost` on only the real-match path would make calibrated PAR baselines systematically too easy on any bystander-losing scenario, breaking the `finalScore = rawScore − parScore` premise.
+
+**No double-count.** Villains in `escapedPile` remain the `villainEscaped` / `ENDGAME_CONDITIONS.ESCAPED_VILLAINS` count; only `bystander`-typed entries feed `bystanderLost`.
+
+**Scoring-version posture.** Wiring a penalty producer shifts the score distribution for a given `ScenarioScoringConfig`. Because this lands **before** any production `ScenarioScoringConfig` or `legendary.competitive_scores` row depends on `bystanderLost`, no retroactive `scoringConfigVersion` bump or re-score is owed. Any producer wired **after** production configs / competitive entries exist MUST bump `scoringConfigVersion` (the general rule this entry also records).
+
+**Scope.** This entry covers only `bystanderLost`. The remaining safe-skips (`schemeTwistNegative`, `mastermindTacticUntaken`, `scenarioSpecificPenalty`) and any re-anchoring of per-config penalty weights to the community/rulebook 4:3:1 ratio are separate future work.
+
+_Reserved by WP-528; flips Active at WP-528 execution. Hard-dep: WP-048 ✅ + D-24314 ✅._
+
 Protect this file.
