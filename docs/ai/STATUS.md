@@ -7,6 +7,29 @@
 
 ## Current State
 
+### WP-525 — Secret Invasion "6 Heroes" — Scheme-Aware Play-Lobby Requirement Projection — DONE (2026-08-11)
+
+Completes the Secret Invasion "6 Heroes" split epic. WP-524 made the engine + registry-viewer
+require 6 hero groups, but the arena-client **play lobby** was scheme-blind — it compared the
+loadout against a flat `GET /api/match/setup-requirements` projection and **disables Create** on a
+mismatch, so WP-524 alone would have made Secret Invasion un-creatable via `play.legendary-arena.com`.
+
+The endpoint gains an optional `schemeId` query: a pure `projectSetupRequirements(schemeId)` projects
+each row's `heroCount` through the WP-524 `resolveEffectiveHeroCount` (imported from the browser-safe
+`@legendary-arena/registry/playerCountSetup` subpath — **no registry change**); absent → the base table,
+byte-identical to the pre-WP-525 response. The arena-client lobby (registry-barred) threads the selected
+scheme (manual form + pasted loadout, each its own per-path requirements ref) into
+`fetchSetupRequirements(schemeId?)` and re-fetches on scheme change; `playerCountRequirements.ts` is
+unchanged (pure comparator). Autoplay is Out of Scope (fixed non-SI default pool). `api-endpoints.md`
+whole-row replaced (§21).
+
+server matchGate **12/12** + full server suite green; arena-client **1229** pass / 0 fail (two new
+scheme-aware Create-gate tests); whole-workspace `pnpm -r --no-bail test` exit 0; control-revert
+non-vacuous at both layers (neuter server projection → SI route test fails; neuter client `schemeId` →
+SI Create-gate test fails); vue-tsc typecheck clean; `pnpm -r build` 0. **D-24338 Active.** No engine /
+registry / determinism surface. **The play lobby now agrees with the engine — Secret Invasion: 6 enables
+Create, 5 flagged.** **D-24026 live-verify operator-pending.**
+
 ### WP-524 — Secret Invasion "6 Heroes" Setup Requirement — Enforcement Core — DONE (2026-08-11)
 
 Secret Invasion of the Skrull Shapeshifters now **requires 6 hero groups** (its printed *"Setup: …

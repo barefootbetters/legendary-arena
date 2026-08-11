@@ -52,6 +52,7 @@ type Handler = (koaContext: FakeContext) => Promise<void> | void;
 interface FakeContext {
   req: { headers: Record<string, string> };
   request: { body?: unknown };
+  query: Record<string, string | string[] | undefined>;
   status: number;
   body: unknown;
   headers: Record<string, string>;
@@ -103,10 +104,14 @@ function collectRoutes(
 /**
  * Builds a fake Koa context carrying the given request body.
  */
-function makeContext(body: unknown): FakeContext {
+function makeContext(
+  body: unknown,
+  query: Record<string, string | string[] | undefined> = {},
+): FakeContext {
   return {
     req: { headers: { authorization: 'Bearer test-token' } },
     request: { body },
+    query,
     status: 0,
     body: undefined,
     headers: {},
@@ -172,6 +177,40 @@ describe('matchGate.routes (WP-307)', () => {
     });
     assert.equal(body.requirements[5]?.heroCount, 6);
     assert.equal(koaContext.headers['Cache-Control'], 'public, max-age=3600');
+  });
+
+  test('GET /api/match/setup-requirements?schemeId=<Secret Invasion> projects heroCount 6 at every player count (WP-525 / D-24338)', async () => {
+    // why: the scheme-aware projection makes the play lobby agree with the engine
+    // (WP-524/D-24337 — Secret Invasion requires 6 heroes). Only heroCount changes;
+    // the other row fields are the base table.
+    const handlers = collectRoutes(unauthenticatedDeps);
+    const koaContext = makeContext(undefined, {
+      schemeId: 'core/secret-invasion-of-the-skrull-shapeshifters',
+    });
+
+    await handlers.get('/api/match/setup-requirements')!(koaContext);
+
+    assert.equal(koaContext.status, 200);
+    const body = koaContext.body as {
+      requirements: Record<string, { villainGroupCount: number; heroCount: number }>;
+    };
+    assert.equal(body.requirements[1]?.heroCount, 6); // base 3 → 6
+    assert.equal(body.requirements[2]?.heroCount, 6); // base 5 → 6
+    assert.equal(body.requirements[5]?.heroCount, 6); // base 6 → 6
+    // other fields unchanged
+    assert.equal(body.requirements[3]?.villainGroupCount, 3);
+    assert.equal(koaContext.headers['Cache-Control'], 'public, max-age=3600');
+  });
+
+  test('GET /api/match/setup-requirements?schemeId=<other scheme> returns the base heroCount (backward compatible)', async () => {
+    const handlers = collectRoutes(unauthenticatedDeps);
+    const koaContext = makeContext(undefined, { schemeId: 'core/some-other-scheme' });
+
+    await handlers.get('/api/match/setup-requirements')!(koaContext);
+
+    const body = koaContext.body as { requirements: Record<string, { heroCount: number }> };
+    assert.equal(body.requirements[2]?.heroCount, 5); // base 5, no override
+    assert.equal(body.requirements[5]?.heroCount, 6);
   });
 
   test('POST /api/match/create without a valid session returns 401 and never delegates', async () => {

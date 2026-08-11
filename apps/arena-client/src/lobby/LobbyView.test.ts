@@ -156,6 +156,100 @@ test('WP-371: a manual composition that matches the player count clears the warn
   );
 });
 
+// --- WP-525 / D-24338: scheme-aware requirement projection on the play lobby ---
+
+const SECRET_INVASION_SCHEME = 'core/secret-invasion-of-the-skrull-shapeshifters';
+
+/**
+ * Scheme-aware requirements stub mimicking the WP-525 server projection: the
+ * Secret Invasion query gets heroCount 6 at every player count; every other
+ * request gets the base table. Keyed off the `?schemeId=` query in the URL.
+ */
+function stubSchemeAwareRequirements(): void {
+  const secretInvasionRequirements = Object.fromEntries(
+    Object.entries(SETUP_REQUIREMENTS).map(([count, row]) => [count, { ...row, heroCount: 6 }]),
+  );
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.includes('/api/match/setup-requirements')) {
+      // why: the client URL-encodes the schemeId ('/' → '%2F'), so match on the
+      // scheme SLUG (hyphens survive encoding), not the full 'core/…' ext_id.
+      const requirements = url.includes('secret-invasion-of-the-skrull-shapeshifters')
+        ? secretInvasionRequirements
+        : SETUP_REQUIREMENTS;
+      return { ok: true, status: 200, json: async () => ({ requirements }) } as Response;
+    }
+    return { ok: true, status: 200, json: async () => ({ matches: [] }) } as Response;
+  }) as typeof globalThis.fetch;
+}
+
+test('WP-525: with Secret Invasion selected the play lobby requires 6 heroes — 5 disables Create, 6 enables it', async () => {
+  setSearch('?route=lobby');
+  stubSchemeAwareRequirements();
+  const wrapper = mountLobby();
+  await flushPromises();
+
+  // select Secret Invasion → the scheme watcher re-fetches the scheme-aware table
+  await wrapper.find('#schemeId').setValue(SECRET_INVASION_SCHEME);
+  await flushPromises();
+
+  // 2 villains / 1 henchman / 5 heroes — correct for a normal 2p scheme, but SI needs 6
+  await setManualComposition(wrapper, {
+    numPlayers: '2',
+    villains: 'core/x,core/y',
+    henchmen: 'core/h',
+    heroes: 'a,b,c,d,e',
+  });
+  await flushPromises();
+
+  const createButton = wrapper.find('[data-testid="lobby-submit-create"]');
+  assert.ok(
+    (createButton.element as HTMLButtonElement).disabled,
+    'Secret Invasion + 5 heroes must disable Create (the scheme requires 6)',
+  );
+  const warnings = wrapper.find('[data-testid="lobby-manual-player-count-warnings"]');
+  assert.match(warnings.text(), /needs 6 heroes/);
+
+  // add a 6th hero → matches the scheme requirement → Create enabled
+  await setManualComposition(wrapper, {
+    numPlayers: '2',
+    villains: 'core/x,core/y',
+    henchmen: 'core/h',
+    heroes: 'a,b,c,d,e,f',
+  });
+  await flushPromises();
+  assert.ok(
+    !(createButton.element as HTMLButtonElement).disabled,
+    'Secret Invasion + 6 heroes must enable Create',
+  );
+});
+
+test('WP-525: switching away from Secret Invasion restores the base 5-hero requirement', async () => {
+  setSearch('?route=lobby');
+  stubSchemeAwareRequirements();
+  const wrapper = mountLobby();
+  await flushPromises();
+
+  await wrapper.find('#schemeId').setValue(SECRET_INVASION_SCHEME);
+  await flushPromises();
+  await wrapper.find('#schemeId').setValue('core/some-other-scheme');
+  await flushPromises();
+
+  await setManualComposition(wrapper, {
+    numPlayers: '2',
+    villains: 'core/x,core/y',
+    henchmen: 'core/h',
+    heroes: 'a,b,c,d,e',
+  });
+  await flushPromises();
+
+  const createButton = wrapper.find('[data-testid="lobby-submit-create"]');
+  assert.ok(
+    !(createButton.element as HTMLButtonElement).disabled,
+    'a non-Secret-Invasion scheme keeps the base 5-hero requirement — 5 heroes enables Create',
+  );
+});
+
 test('WP-371: when the requirements fetch is unavailable the pre-check stays silent (no false block)', async () => {
   setSearch('?route=lobby');
   // stubMatches serves every fetch as `{ matches }` — the requirements fetch
