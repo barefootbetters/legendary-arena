@@ -10,9 +10,11 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { resolveEffectiveWoundsCount } from './schemeSetupSizing.js';
+import { resolveEffectiveWoundsCount, resolveEffectiveHeroDeckIds } from './schemeSetupSizing.js';
 
 const LEGACY_VIRUS = 'core/legacy-virus-the';
+const CIVIL_WAR = 'core/super-hero-civil-war';
+const FIVE_HERO_IDS = ['a', 'b', 'c', 'd', 'e'];
 
 describe('resolveEffectiveWoundsCount (WP-511 / D-24321)', () => {
   it('sizes Legacy Virus at 6×players (12/18/24/30 at 2/3/4/5 players)', () => {
@@ -33,5 +35,35 @@ describe('resolveEffectiveWoundsCount (WP-511 / D-24321)', () => {
     assert.equal(resolveEffectiveWoundsCount('core/midtown-bank-robbery', 2, 30), 30);
     assert.equal(resolveEffectiveWoundsCount('core/super-hero-civil-war', 5, 30), 30);
     assert.equal(resolveEffectiveWoundsCount('test/test-scheme-001', 3, 15), 15);
+  });
+});
+
+describe('resolveEffectiveHeroDeckIds (WP-515 / D-24328)', () => {
+  it('AC-1 sizes Super Hero Civil War to the first 4 hero groups at exactly 2 players', () => {
+    assert.deepStrictEqual(
+      resolveEffectiveHeroDeckIds(CIVIL_WAR, 2, [...FIVE_HERO_IDS]),
+      ['a', 'b', 'c', 'd'],
+    );
+  });
+
+  it('AC-2 passes Civil War through unchanged at 3/4/5 players', () => {
+    // why: the sizing is gated to exactly 2 players — the 5-group deck is fine at 3-5p.
+    assert.deepStrictEqual(resolveEffectiveHeroDeckIds(CIVIL_WAR, 3, [...FIVE_HERO_IDS]), FIVE_HERO_IDS);
+    assert.deepStrictEqual(resolveEffectiveHeroDeckIds(CIVIL_WAR, 4, [...FIVE_HERO_IDS]), FIVE_HERO_IDS);
+    assert.deepStrictEqual(resolveEffectiveHeroDeckIds(CIVIL_WAR, 5, [...FIVE_HERO_IDS]), FIVE_HERO_IDS);
+  });
+
+  it('AC-2 passes any non-Civil-War scheme through unchanged at 2 players', () => {
+    assert.deepStrictEqual(resolveEffectiveHeroDeckIds(LEGACY_VIRUS, 2, [...FIVE_HERO_IDS]), FIVE_HERO_IDS);
+    assert.deepStrictEqual(
+      resolveEffectiveHeroDeckIds('core/midtown-bank-robbery', 2, [...FIVE_HERO_IDS]),
+      FIVE_HERO_IDS,
+    );
+  });
+
+  it('returns a list already shorter than 4 unchanged (slice is safe on the short-list path)', () => {
+    // why: matchSetup.validate requires 5 ids at 2p, but the helper must not throw or
+    // over-shrink a shorter list — slice(0, 4) returns a <4-id list intact.
+    assert.deepStrictEqual(resolveEffectiveHeroDeckIds(CIVIL_WAR, 2, ['a', 'b', 'c']), ['a', 'b', 'c']);
   });
 });

@@ -34,7 +34,7 @@ import {
   SHIELD_TROOPER_EXT_ID,
   SIDEKICK_EXT_ID,
 } from './pilesInit.js';
-import { resolveEffectiveWoundsCount } from './schemeSetupSizing.js';
+import { resolveEffectiveWoundsCount, resolveEffectiveHeroDeckIds } from './schemeSetupSizing.js';
 import { buildDefaultHookDefinitions } from '../rules/ruleRuntime.impl.js';
 import {
   buildVillainDeck,
@@ -470,8 +470,15 @@ export function buildInitialGameState(
   // the first 5 cards into G.hq slots 0..4 (deck top → slot 0); the
   // remainder lives at G.heroDeck. Narrow test mocks → empty reservoir →
   // empty HQ (mirrors sibling builders).
+  // why: WP-515 / D-24328 — Super Hero Civil War's printed setup sizes the Hero Deck to
+  // 4 groups at exactly 2 players; resolveEffectiveHeroDeckIds applies that POST-VALIDATION
+  // override on the id list fed to the existing single shuffle (the loadout still validated
+  // its normal 5 ids). This makes WP-510/D-24318's hero-deck-depletion loss reachable at 2p
+  // (the 5-group deck was too big to run out). Every other scheme / player count is unchanged
+  // → byte-identical. Runs BEFORE the WP-514 convertHeroesToSkrulls step (a passthrough for
+  // Civil War), so the two sizing paths never overlap.
   const shuffledHeroDeck = buildHeroDeck(
-    [...config.heroDeckIds],
+    resolveEffectiveHeroDeckIds(config.schemeId, numPlayers, [...config.heroDeckIds]),
     registry,
     context,
   );
