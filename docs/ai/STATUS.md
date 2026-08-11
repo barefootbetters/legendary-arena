@@ -7,6 +7,41 @@
 
 ## Current State
 
+### WP-515 — Super Hero Civil War: "Use Only 4 Heroes at 2 Players" Hero-Deck Setup Sizing — DONE (2026-08-10)
+
+A **2-player** Super Hero Civil War match now builds its Hero Deck from only **4** hero groups
+(56 cards) instead of 5 (70) — the card's printed *"Setup: … If only 2 players, use only 4 Heroes
+in the Hero Deck."* WP-510/D-24318 shipped the scheme's *"Evil Wins: If the Hero Deck runs out"* loss
+but flagged that at 2 players the full-size deck is too large to deplete in a normal game; this WP adds
+the **missing setup sizing** so the loss is reachable at 2p as printed. **No loss-logic change.** This
+is the **seventh and final WP of the resource-loss-scheme-fidelity epic (D-24178) — the epic is now
+complete.**
+
+The implementation mirrors WP-511/D-24321's wound sizing exactly: a new
+`resolveEffectiveHeroDeckIds(schemeId, numPlayers, requestedHeroDeckIds)` in `setup/schemeSetupSizing.ts`
+(sibling to `resolveEffectiveWoundsCount`) returns `requestedHeroDeckIds.slice(0, 4)` for
+`core/super-hero-civil-war` at exactly 2 players, else the requested ids unchanged. It is applied
+**post-validation** at the `buildHeroDeck` call in `buildInitialGameState` — the loadout still provides
+and validates its normal 5 ids (`matchSetup.validate` requires 5 at 2p), and the scheme rule sizes the
+**built** deck below that (the config-floor / built-pile split). The engine keeps the first 4 ids
+deterministically (the card lets the table pick which 4; the engine cannot ask). No new `ctx.random`
+draw; no `matchSetup.validate` / `setupContract` / `schemeTwistConfigs` / `buildHeroDeck` change.
+
+`pnpm --filter @legendary-arena/game-engine build` 0; engine test **2458 → 2466 (+8) pass / 0 fail**;
+**whole-workspace `pnpm -r --no-bail test` 0**; control-revert non-vacuous (neutering the branch fails
+the 2p-Civil-War unit + build tests while 3-5p / non-Civil-War stay green); sentinel `finalStateHash` +
+`PRE_WP080_HASH` **byte-identical** (no committed 2p Civil War fixture — the sentinel is Legacy Virus,
+`PRE_WP080` is the test scheme); `sim:runtime-observed:check` current (byte-identical — that sweep runs
+at 1 player, so the 2p gate never fires); `pnpm -r build` 0. **D-24328 Active**; RS-1 fixed (D-24318's
+§Reachability note corrected — the 2p hero-sizing follow-up is WP-515/D-24328, not WP-511). Two-commit
+topology (`EC-550:` + `SPEC:`), one PR. **D-24026 live-verify operator-pending** (post-deploy: a 2-player
+Super Hero Civil War match can lose to hero-deck depletion).
+
+**Epic complete — the resource-loss-scheme-fidelity epic (D-24178) is done:** WP-508/509 (escaped-pile
+losses), WP-510 (Civil War hero-deck-depletion mechanic), WP-511 (Legacy Virus wound sizing), WP-512..514
+(Secret Invasion + coverage), and WP-515 (this — Civil War 2p hero sizing) together make every
+resource-loss scheme's printed doom clock faithful and reachable at every supported player count.
+
 ### WP-523 — co2e Whirlwind (Villain) Ambush: Two Villains in the City Swap Spaces — DONE (2026-08-10)
 
 co2e (Legendary 2nd-edition) Masters-of-Evil villain **Whirlwind** now plays his printed **Ambush** —
