@@ -88,7 +88,10 @@
     },
     "co2e": {
       "masters-of-evil": {
-        "baron-zemo": { "ambush": ["capture-bystanders-plus-per-hq-hero-by-trait:team:avengers"] }
+        "baron-zemo": { "ambush": ["capture-bystanders-plus-per-hq-hero-by-trait:team:avengers"] },
+        "melter": { "fight": ["ko-cullable-each-deck-top"] },
+        "ultron": { "escape": ["reveal-or-wound:hc:tech"] },
+        "whirlwind": { "fight": ["ko-hero:current@rooftops+bridge"] }
       }
     },
     "core": {

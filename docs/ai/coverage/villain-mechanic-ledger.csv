@@ -130,7 +130,7 @@ henchman-hand-ninjas,Hand Ninjas,co2e,henchman,(unmarked),unmarked,,,
 co2e-villain-sinister-syndicate-hydro-man,Hydro-Man,co2e,villain,(unmarked),unmarked,,,
 co2e-villain-brotherhood-of-mutants-juggernaut,Juggernaut,co2e,villain,(unmarked),unmarked,,,
 co2e-villain-radiation-maestro-wasteland-hulk,"Maestro, Wasteland Hulk",co2e,villain,(unmarked),unmarked,,,
-co2e-villain-masters-of-evil-melter,Melter,co2e,villain,(unmarked),unmarked,,,
+co2e-villain-masters-of-evil-melter,Melter,co2e,villain,ko-cullable-each-deck-top,executable,WP-519,D-24332,packages/game-engine/src/villain/villainEffects.execute.ts#ko-cullable-each-deck-top
 co2e-villain-brotherhood-of-mutants-mystique,Mystique,co2e,villain,(unmarked),unmarked,,,
 co2e-villain-skulls-paibok-the-power-skrull,Paibok the Power Skrull,co2e,villain,(unmarked),unmarked,,,
 co2e-villain-brotherhood-of-mutants-sabretooth,Sabretooth,co2e,villain,(unmarked),unmarked,,,
@@ -144,10 +144,10 @@ co2e-villain-skulls-super-skrull,Super-Skrull,co2e,villain,(unmarked),unmarked,,
 co2e-villain-brotherhood-of-mutants-the-blob,The Blob,co2e,villain,(unmarked),unmarked,,,
 co2e-villain-radiation-the-leader,The Leader,co2e,villain,(unmarked),unmarked,,,
 co2e-villain-sinister-spider-foes-the-lizard,The Lizard,co2e,villain,(unmarked),unmarked,,,
-co2e-villain-masters-of-evil-ultron,Ultron,co2e,villain,(unmarked),unmarked,,,
+co2e-villain-masters-of-evil-ultron,Ultron,co2e,villain,reveal-or-wound,executable,WP-469,D-24281,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
 co2e-villain-sinister-spider-foes-venom,Venom,co2e,villain,(unmarked),unmarked,,,
 co2e-villain-hydra-viper,Viper,co2e,villain,(unmarked),unmarked,,,
-co2e-villain-masters-of-evil-whirlwind,Whirlwind,co2e,villain,(unmarked),unmarked,,,
+co2e-villain-masters-of-evil-whirlwind,Whirlwind,co2e,villain,ko-hero,executable,WP-252,D-24023,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 co2e-villain-enemies-of-asgard-ymir-frost-giant-king,"Ymir, Frost Giant King",co2e,villain,(unmarked),unmarked,,,
 co2e-villain-radiation-zzzax,Zzzax,co2e,villain,(unmarked),unmarked,,,
 core-villain-radiation-abomination,Abomination,core,villain,capture-bystander,executable,WP-252,D-24023,packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander

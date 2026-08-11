@@ -10,11 +10,11 @@
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 357,
+      "executable": 360,
       "deferred": 0,
       "condition": 5,
       "unsupported": 367,
-      "unmarked": 1095
+      "unmarked": 1092
     }
   },
   "entries": [
@@ -5481,33 +5481,33 @@
       "name": "Melter",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "ko-cullable-each-deck-top",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-cullable-each-deck-top",
+      "wp": "WP-519",
+      "decision": "D-24332"
     },
     {
       "extId": "co2e-villain-masters-of-evil-ultron",
       "name": "Ultron",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound",
+      "wp": "WP-469",
+      "decision": "D-24281"
     },
     {
       "extId": "co2e-villain-masters-of-evil-whirlwind",
       "name": "Whirlwind",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "ko-hero",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
+      "wp": "WP-252",
+      "decision": "D-24023"
     },
     {
       "extId": "co2e-villain-radiation-abomination",
@@ -27401,19 +27401,19 @@
     "co2e-villain-masters-of-evil-melter": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "ko-cullable-each-deck-top"
       ]
     },
     "co2e-villain-masters-of-evil-ultron": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "reveal-or-wound"
       ]
     },
     "co2e-villain-masters-of-evil-whirlwind": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "ko-hero"
       ]
     },
     "co2e-villain-radiation-abomination": {
