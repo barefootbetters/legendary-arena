@@ -39,7 +39,7 @@ source:
   - ../docs/ai/work-packets/WP-048-par-scenario-scoring-leaderboards.md
   - ../docs/ai/work-packets/WP-250-hero-effect-coverage-gate.md
   - ../docs/ai/work-packets/WP-257-hollow-effect-detector.md
-last-reviewed: 2026-07-25
+last-reviewed: 2026-08-11
 ---
 
 # PAR Simulation Calibration
@@ -458,6 +458,124 @@ submitted to a scenario leaderboard if a PAR artifact exists for that
 `ScenarioKey`. Simulation calibration is therefore the gate that turns a
 newly-added scenario from "playable" into "competitively rankable".
 
+## Comparison: absolute PAR vs. ordinal league ranking
+
+[Legendary Leagues](https://www.legendaryleagues.com/about/ranking) is a
+long-running community ranking system for the physical game. It solves the
+same core problem this pipeline exists for — *how do you rank results across
+setups of wildly different difficulty?* — with the **opposite** mechanism.
+Reading the two side by side is the clearest way to see what PAR buys and
+what it costs.
+
+### How Legendary Leagues ranks
+
+It is a **purely ordinal** system. For each match, every player's result in
+each **scoring category** (won-or-not, villains/henchmen escaped,
+turns-to-finish, VP, and a penalised Total Score) is ranked against the
+other players' results in that same category. Those per-category ranks are
+summed, and the sum is itself re-ranked to give the player's overall finish
+for the match. Match finishes are summed across the season for the
+standings. **No absolute score ever enters the standings — only positions.**
+
+Three interchangeable "methods" pick *what skill means* for a season:
+
+- **Classic** — ranks VP twice (raw total VP, and the penalised Total
+  Score), so score dominates.
+- **Points Per Turn (PPT)** — replaces both VP ranks with `VP / turns`,
+  rewarding fast wins over slow bystander-farming ("rescuing all the
+  bystanders may not result in victory with this system").
+- **Single VP** — keeps only the penalised Total Score, dropping the raw-VP
+  rank.
+
+The penalised Total Score is the community/rulebook formula
+`Total Score = VP − 4·(Bystanders carried away) − 3·(Scheme Twists) − 1·(Escaped Villains)`.
+An **adjusted-points** rule keeps standings fair when fewer players complete
+a later match — each absent player adds one point to every finisher — so a
+full early field cannot out-bank a thin later one.
+
+### The essential difference
+
+| | **PAR (this system)** | **Legendary Leagues** |
+|---|---|---|
+| Scale | **Absolute** — `finalScore = rawScore − PAR`, a real number | **Ordinal** — position only; magnitude discarded |
+| Difficulty normalisation | Per-scenario simulated baseline (55th-pct T2) | Rank-only; difficulty cancels *if* ranked players shared the setup |
+| Opponents required | **None** — a solo run gets a meaningful score | A **field** — ranking needs ≥ 2 comparable results |
+| All-time / cross-setup boards | Yes — versioned, immutable, comparable forever | No — meaningful only within a match/season cohort |
+| Trust model | Server-side **replay-verified**; no client number trusted | **Self-reported** ("you provide the numbers") |
+| Prerequisite | A rules-faithful engine + Monte-Carlo calibration | None — works on paper, day one, for any content |
+| Reproducibility | Deterministic, hashed artifact | Standings **fluctuate** as late results post |
+
+### What the ordinal model does better
+
+- **Zero calibration cost.** It ranks brand-new — even unimplemented —
+  content the day it appears. PAR cannot competitively rank a scenario until
+  the engine plays it faithfully *and* the sweep has calibrated it; the whole
+  [Prerequisite](#prerequisite-a-rules-faithful-engine) section of this page
+  is that cost.
+- **Immune to absolute-scale distortion.** Because only positions count, a
+  miscalibrated weight or a blow-out game cannot inflate a season total.
+  PAR's percentile choice buys *some* of this robustness; ordinal ranking has
+  it by construction.
+- **Difficulty falls out for free** — no baseline to derive — provided
+  everyone ranked against each other played the same setup.
+- **"What is skill" is a per-season knob** (Classic / PPT / Single VP) rather
+  than an engine change.
+
+### What PAR does better
+
+- **A lone player gets a real, comparable score.** For a co-op game whose
+  leaderboards must fill at low traffic, this is decisive — ordinal ranking
+  is undefined for a field of one.
+- **Absolute, all-time, cross-setup comparability.** "Best result ever
+  recorded on this Mastermind" is expressible; an ordinal league can only say
+  "you beat six of nine people this week."
+- **Cheat-resistant.** Replay-verified server-side scoring (D-5301) is a
+  different integrity class from self-reported numbers — the precondition for
+  real stakes.
+- **Immutable and reproducible.** Version-pinned hashed artifacts do not
+  drift as more results arrive.
+
+### What PAR can borrow
+
+1. **Anchor the penalty weights to the 4 : 3 : 1 rulebook ratio.** Legendary
+   Leagues (and the rulebook it cites) weight a lost bystander at 4×, a
+   scheme twist at 3×, and an escaped villain at 1×. That is exactly the
+   "moral hierarchy" VISION §21 asserts for our `PenaltyEventType` weights —
+   and it is external, community-validated evidence for both the *ordering*
+   and the rough *magnitudes*. Two of those three penalties (`bystanderLost`,
+   `schemeTwistNegative`) are precisely the ones still safe-skipping to zero
+   for lack of an engine producer
+   ([Scoring — penalty producer status](scoring.md)). The takeaway is
+   concrete: wiring the `bystanderLost` and `schemeTwistNegative` producers
+   should be prioritised, and their Phase-1 seed weights can start from the
+   4 : 3 : 1 anchor rather than being invented from scratch.
+2. **Expose the score components as category sub-boards.** `ScoreBreakdown`
+   already carries `weightedRoundCost`, `weightedBystanderReward`,
+   `weightedVictoryPointReward`, and the penalty total as separate fields.
+   Surfacing "fewest turns", "most VP", "cleanest (fewest escapes)" as their
+   own leaderboards — the way Legendary Leagues ranks each category — is a
+   UI/product move that needs **no engine change** and gives players more ways
+   to be the best at something.
+3. **A Points-Per-Turn view.** PPT's insight — that raw VP over-rewards slow,
+   exhaustive play — is worth a derived `VP / turns` board alongside the PAR
+   board. PAR already prices turns via `weightedRoundCost`, but a *ratio*
+   board reads differently and directly discourages stalling. Also a
+   no-engine-change derived view.
+4. **An ordinal league layer on top of Seed Challenges.** The ordinal model's
+   one hard requirement — that ranked players share a setup — is exactly what
+   [Seed Challenges](seed-challenges.md) guarantee. A Legendary-Leagues-style
+   season run over a fixed seeded board would let us keep PAR as the absolute
+   per-run score *and* run head-to-head standings with the adjusted-points
+   fairness rule on top. The two systems are complementary, not competing:
+   PAR scores the run; ordinal ranking seasons it.
+
+The through-line: PAR and ordinal ranking optimise for different worlds.
+Ordinal ranking is the right tool for a **synchronous field playing one
+shared setup**; PAR is the right tool for an **asynchronous, low-traffic,
+solo-friendly, cross-time competitive record** — the world VISION §20–26
+commits us to. The borrowings above take the parts of the ordinal model that
+*don't* require giving up absolute, verifiable, solo-viable scoring.
+
 ## Interactions
 
 - **[Scoring](scoring.md).** Calibration is Layer A's *derivation
@@ -609,6 +727,11 @@ newly-added scenario from "playable" into "competitively rankable".
 - [Scoring](scoring.md) — the Raw Score / Final Score formula, type
   contracts, and `scoringConfigVersion` pin (canonical home; not duplicated
   here)
+- [Legendary Leagues — Ranking](https://www.legendaryleagues.com/about/ranking)
+  — the community ordinal-ranking system (Classic / Points-Per-Turn /
+  Single VP methods, the `VP − 4·bystanders − 3·twists − 1·escapes` Total
+  Score, and adjusted-points standings) contrasted in
+  [§Comparison](#comparison-absolute-par-vs-ordinal-league-ranking)
 - [`docs/05-ROADMAP-MINDMAP.md`](../docs/05-ROADMAP-MINDMAP.md) — Next
   Horizons ("get the core set fully playable first"); the roadmap detail on
   what hero/villain ability coverage has landed vs what remains; the
