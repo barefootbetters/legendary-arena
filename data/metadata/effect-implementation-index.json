@@ -3,14 +3,14 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1825,
+    "totalEntries": 1826,
     "byScope": {
       "hero": 651,
-      "villain": 718,
+      "villain": 719,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 361,
+      "executable": 362,
       "deferred": 0,
       "condition": 5,
       "unsupported": 367,
@@ -5519,6 +5519,17 @@
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-252",
       "decision": "D-24023"
+    },
+    {
+      "extId": "co2e-villain-masters-of-evil-whirlwind",
+      "name": "Whirlwind",
+      "set": "co2e",
+      "scope": "villain",
+      "mechanic": "swap-two-city-villains",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#swap-two-city-villains",
+      "wp": "WP-523",
+      "decision": "D-24336"
     },
     {
       "extId": "co2e-villain-radiation-abomination",
@@ -27425,7 +27436,8 @@
     "co2e-villain-masters-of-evil-whirlwind": {
       "scope": "villain",
       "mechanics": [
-        "ko-hero"
+        "ko-hero",
+        "swap-two-city-villains"
       ]
     },
     "co2e-villain-radiation-abomination": {

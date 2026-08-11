@@ -135,6 +135,9 @@ function isLockedEffectKeyword(keyword) {
 // `give-hq-hero-by-trait-to-current` (`:hc:tech`) appended by WP-522 (D-24335 — co2e Ultron
 // Fight: remove the highest-cost HQ Hero matching the trait and give it to the current
 // player's discard; validates via the same `:<kind>:<value>` predicate tail).
+// `swap-two-city-villains` (no-param) appended by WP-523 (D-24336 — co2e Whirlwind Ambush:
+// swap two City Villains' spaces; validates via the terminal no-param `parts.length === 1`
+// branch, like ko-cullable-each-deck-top).
 const VILLAIN_EFFECT_PRIMITIVES = [
   'ko-hero',
   'gain-wound',
@@ -154,6 +157,7 @@ const VILLAIN_EFFECT_PRIMITIVES = [
   'ko-cullable-each-deck-top',
   'capture-bystanders-plus-per-hq-hero-by-trait',
   'give-hq-hero-by-trait-to-current',
+  'swap-two-city-villains',
 ];
 
 // why: WP-489 / D-24295 — hand-synced local copy of the engine's CITY_SPACE_NAMES

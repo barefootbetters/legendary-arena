@@ -2179,6 +2179,90 @@ function villainEffectGiveHqHeroByTraitToCurrent(
 }
 
 /**
+ * Collects the City indices whose occupant is a `villain` (not a henchman, not empty),
+ * in ascending index order (D-24336 / WP-523).
+ *
+ * "Two Villains in the city" counts only `villain`-classified occupants
+ * (`G.villainDeckCardTypes[id] === 'villain'`). An empty slot (`null`) or a henchman
+ * occupant is skipped. Feeds the frontmost-rearmost swap rule below.
+ *
+ * @param G - Game state (read-only here; only `G.city` + `G.villainDeckCardTypes`).
+ * @returns The villain-occupied City indices in ascending order.
+ */
+function collectCityVillainIndices(G: LegendaryGameState): number[] {
+  const indices: number[] = [];
+  const cardTypes = G.villainDeckCardTypes;
+  for (let cityIndex = 0; cityIndex < G.city.length; cityIndex++) {
+    const occupant = G.city[cityIndex];
+    if (occupant === null || occupant === undefined) {
+      continue;
+    }
+    // why: D-24336 — henchmen are excluded ("Two Villains"); classify by the villain-deck
+    // card-type map. An absent classification does NOT count as a villain (production always
+    // builds the map; a narrow test mock that omits it simply holds no villains here).
+    if (cardTypes?.[occupant] === 'villain') {
+      indices.push(cityIndex);
+    }
+  }
+  return indices;
+}
+
+/**
+ * swap-two-city-villains primitive — swap the City spaces of two Villains (co2e Whirlwind
+ * Ambush "Two Villains in the city swap spaces.", D-24336 / WP-523). The engine's FIRST City
+ * board-position manipulation.
+ *
+ * Rule B (locked, operator-confirmed): with at least two villain-occupied City spaces, swap
+ * the LOWEST-index (entrance side) with the HIGHEST-index (escape side) — the largest
+ * positional displacement, the "disrupt the board" reading. The card names no chooser, so
+ * the engine picks deterministically (no `ctx.random`). Henchmen are never swapped; Whirlwind
+ * itself is eligible (it is pushed into the City before its Ambush fires). Fewer than two
+ * villain-occupied spaces is a reachable no-op. `cityIndex` is unused — the Ambush fire site
+ * passes undefined and the swap is space-relative, reading `G.city` directly (not the WP-489
+ * location gate).
+ *
+ * Self-narrates via `pushLog` (keyword-less → no reverse-map, no VillainEffectResult, the
+ * generic "<timing> effect:" line never fires). The swap exchanges two `CardExtId` strings
+ * between `G.city` indices — no card object enters the City. Returns `{ targets: [] }`.
+ */
+function villainEffectSwapTwoCityVillains(
+  G: LegendaryGameState,
+  _currentPlayer: string,
+  _cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  _descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  const label = villainEffectTimingLabel(timing);
+  const villainIndices = collectCityVillainIndices(G);
+  if (villainIndices.length < 2) {
+    // why: D-24336 — "Two Villains" needs at least two villain-occupied City spaces; a
+    // sparser board is a reachable no-op (never a hollow record).
+    pushLog(G, `${label} effect: fewer than two Villains in the City; no swap.`, 'blocked');
+    return { targets: [] };
+  }
+  // why: D-24336 — Rule B: swap the lowest-index (entrance side) villain-occupied space with
+  // the highest-index (escape side) one — the maximum positional displacement. Direct
+  // index assignment mirrors the defeat null-out write (fightVillain.ts); the City stores
+  // CardExtId strings, so this exchanges two strings, never card objects.
+  const lowIndex = villainIndices[0]!;
+  const highIndex = villainIndices[villainIndices.length - 1]!;
+  const lowOccupant = G.city[lowIndex] as CardExtId;
+  const highOccupant = G.city[highIndex] as CardExtId;
+  G.city[lowIndex] = highOccupant;
+  G.city[highIndex] = lowOccupant;
+  // why: self-narrate (keyword-less). `G.messages` is hash-excluded (D-24081). Name the two
+  // Villains + their spaces; outcome `applied` (a swap happened).
+  const lowSpace = citySpaceNameForIndex(lowIndex) ?? String(lowIndex);
+  const highSpace = citySpaceNameForIndex(highIndex) ?? String(highIndex);
+  pushLog(
+    G,
+    `${label} effect: ${resolveCardDisplayName(G, lowOccupant)} (${lowSpace}) and ${resolveCardDisplayName(G, highOccupant)} (${highSpace}) swapped City spaces.`,
+    'applied',
+  );
+  return { targets: [] };
+}
+
+/**
  * Whether a player's Victory Pile holds a villain of the target group OTHER than
  * the just-defeated/escaped card (WP-494 / D-24299).
  *
@@ -2322,6 +2406,9 @@ function villainEffectGainWoundUnlessVictoryVillainGroup(
 // WP-516 (D-24329 — Ymir, Frost Giant King Fight). `give-hq-hero-by-trait-to-current`
 // (auto-resolve — remove the highest-cost HQ Hero matching a trait and give it to the
 // current player's discard, refill the slot) appended by WP-522 (D-24335 — co2e Ultron Fight).
+// why: `swap-two-city-villains` (auto-resolve — swap the lowest- and highest-index
+// villain-occupied City spaces, henchmen excluded, fewer than two is a no-op) appended by
+// WP-523 (D-24336 — co2e Whirlwind Ambush; the first City board-position manipulation).
 /** Villain effect handlers keyed by primitive. Single dispatch source. */
 const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandler> = {
   'ko-hero': villainEffectKoHero,
@@ -2342,6 +2429,7 @@ const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandl
   'ko-cullable-each-deck-top': villainEffectKoCullableEachDeckTop,
   'capture-bystanders-plus-per-hq-hero-by-trait': villainEffectCaptureBystandersPlusPerHqHeroByTrait,
   'give-hq-hero-by-trait-to-current': villainEffectGiveHqHeroByTraitToCurrent,
+  'swap-two-city-villains': villainEffectSwapTwoCityVillains,
 };
 
 /**

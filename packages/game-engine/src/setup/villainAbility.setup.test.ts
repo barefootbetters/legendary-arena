@@ -424,6 +424,45 @@ describe('buildVillainAbilityHooks — ko-cullable-each-deck-top grammar (WP-519
   });
 });
 
+describe('buildVillainAbilityHooks — swap-two-city-villains grammar (WP-523 / D-24336)', () => {
+  const registry = makeRegistry(
+    'co2e',
+    [
+      {
+        slug: 'masters-of-evil',
+        cards: [
+          {
+            slug: 'whirlwind',
+            abilities: ['Ambush: Two Villains in the city swap spaces. [effect:swap-two-city-villains]'],
+          },
+          // why: a no-param primitive rejects any trailing colon token (guards a malformed
+          // marker from collapsing to the param-less descriptor).
+          { slug: 'extra-tokens', abilities: ['Ambush: nope. [effect:swap-two-city-villains:1]'] },
+        ],
+      },
+    ],
+    [],
+  );
+  const hooks = buildVillainAbilityHooks(registry, makeConfig(['co2e/masters-of-evil'], []));
+  const hookFor = (slug: string, timing: string) =>
+    hooks.find((h) => h.cardId === `co2e-villain-masters-of-evil-${slug}-00` && h.timing === timing)!;
+
+  it('parses the no-param Ambush marker to a bare descriptor via the generic branch', () => {
+    assert.deepStrictEqual(hookFor('whirlwind', 'onAmbush').effects, [
+      { primitive: 'swap-two-city-villains' },
+    ]);
+    // why: keyword-less — must NOT reverse-map to a legacy keyword.
+    assert.deepStrictEqual(hookFor('whirlwind', 'onAmbush').keywords, []);
+  });
+
+  it('rejects a trailing param token to unresolvedMarkers', () => {
+    assert.deepStrictEqual(hookFor('extra-tokens', 'onAmbush').effects, []);
+    assert.deepStrictEqual(hookFor('extra-tokens', 'onAmbush').unresolvedMarkers, [
+      'swap-two-city-villains:1',
+    ]);
+  });
+});
+
 describe('buildVillainAbilityHooks — keywords/effects parity', () => {
   it('keywords and effects are distinct but parallel arrays (WP-252)', () => {
     const registry = makeRegistry(
