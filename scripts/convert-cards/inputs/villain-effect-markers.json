@@ -120,6 +120,7 @@
         "zzzax": { "fight": ["reveal-or-wound:hc:strength"], "escape": ["reveal-or-wound:hc:strength"] }
       },
       "skrulls": {
+        "paibok-the-power-skrull": { "fight": ["give-hq-hero-each-player"] },
         "skrull-shapeshifters": { "ambush": ["captureHqHeroRightmost"], "fight": ["gain-attached-hero"] },
         "skrull-queen-veranke": { "ambush": ["captureHqHeroHighestCost"], "fight": ["gain-attached-hero"] },
         "super-skrull": { "fight": ["koHeroEachPlayer"] }

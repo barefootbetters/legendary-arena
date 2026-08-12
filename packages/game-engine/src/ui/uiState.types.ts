@@ -197,6 +197,10 @@ export interface UIState {
   // (omitted) for every audience except the chooser (keyed on .playerID). Absent
   // (undefined) means no pending choice; the client must not render the prompt then.
   pendingReturnOnDiscard?: UIPendingReturnOnDiscard;
+  // why: WP-532 / D-24343 — the current (fighting) player's interactive give-HQ-Hero
+  // pick (Paibok Fight). OPTIONAL: absent omits the field (existing UIState fixtures need
+  // no backfill), chooser-only (filterUIStateForAudience keys on .playerID).
+  pendingGiveHqHeroChoice?: UIPendingGiveHqHeroChoice;
   // why: WP-258 — projects the WP-257 runtime hollow-effect channel
   // (G.diagnostics.hollowEffects) so the client can render a structured debug
   // panel + carry the records on the Download-diagnostics export. OPTIONAL on
@@ -979,6 +983,27 @@ export interface UIPendingReturnOnDiscard {
   // against this, mirroring UIPendingDiscardToPlay.playerID.
   playerID: string;
   eligibleReturnCards: UIEligibleKoHeroCard[];
+}
+
+/**
+ * UI contract for resolving a pending give-HQ-Hero choice ("Choose a Hero in the
+ * HQ for each player. Each player gains that Hero." — Paibok the Power Skrull Fight,
+ * WP-532 / D-24343).
+ *
+ * `eligible` REUSES `UIHqCardChoice` (a Hero + its display; the HQ is the implied
+ * zone) — the non-null `G.hq` occupants recomputed fresh via
+ * getEligibleGiveHqHeroCards (the same predicate the resolve move validates against,
+ * the round-trip rule). The client renders one Gain button per eligible HQ Hero and
+ * submits `resolveGiveHqHeroChoice({ cardId })`. Only visible to the choosing player;
+ * redacted (omitted) for opponents and spectators (keyed on .playerID) — the HQ is
+ * PUBLIC, but only the chooser's prompt is projected so no one else sees the choice UI.
+ */
+export interface UIPendingGiveHqHeroChoice {
+  choiceType: "give-hq-hero";
+  // why: the redaction key; the chooser-only filter compares audience.playerId
+  // against this, mirroring UIPendingReturnOnDiscard.playerID.
+  playerID: string;
+  eligible: UIHqCardChoice[];
 }
 
 /**

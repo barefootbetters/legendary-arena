@@ -76,6 +76,7 @@ import { resolveVictoryPileCardPick } from '../moves/resolveVictoryPileCardPick.
 import { resolveReturnZeroCostDiscard } from '../moves/resolveReturnZeroCostDiscard.js';
 import { resolveDiscardToPlay } from '../moves/resolveDiscardToPlay.js';
 import { resolveReturnOnDiscard } from '../moves/resolveReturnOnDiscard.js';
+import { resolveGiveHqHeroChoice } from '../moves/giveHqHeroChoice.resolve.js';
 import { resolveOptionalPutBottomHQ } from '../moves/resolveOptionalPutBottomHQ.js';
 import { resolvePutAnyNumberBottomHQ } from '../moves/resolvePutAnyNumberBottomHQ.js';
 import { advanceTurnStage } from '../turn/turnLoop.js';
@@ -237,6 +238,10 @@ const MOVE_MAP: Record<string, MoveFn> = {
   resolveReturnZeroCostDiscard: (context, args) => resolveReturnZeroCostDiscard(context as never, args as never),
   resolveDiscardToPlay: (context, args) => resolveDiscardToPlay(context as never, args as never),
   resolveReturnOnDiscard: (context, args) => resolveReturnOnDiscard(context as never, args as never),
+  // why: WP-532 / D-24343 — getLegalMoves short-circuits to resolveGiveHqHeroChoice when the
+  // interactive give-HQ-Hero choice (Paibok Fight) is parked; a missing dispatch entry hangs
+  // the per-turn loop. Reuse the existing move fn, no re-implementation.
+  resolveGiveHqHeroChoice: (context, args) => resolveGiveHqHeroChoice(context as never, args as never),
   // why: WP-427 / D-24248 — getLegalMoves short-circuits to these two put-bottom-HQ resolve
   // moves when their block-all choice is parked; a missing dispatch entry hangs the per-turn
   // loop (observed: sim:runtime-observed:check hung when the getLegalMoves short-circuit landed

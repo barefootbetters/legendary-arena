@@ -2253,7 +2253,7 @@
           "vAttack": "8",
           "imageUrl": "https://images.legendary-arena.com/core/core-vi-skrulls-paibok-the-power-skrull.webp",
           "abilities": [
-            "Fight: Choose a Hero in the HQ for each player. Each player gains that Hero."
+            "Fight: Choose a Hero in the HQ for each player. Each player gains that Hero. [effect:give-hq-hero-each-player]"
           ],
           "copies": 1
         },

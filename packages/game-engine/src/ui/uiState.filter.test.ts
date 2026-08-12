@@ -834,6 +834,51 @@ describe('filterUIStateForAudience — pendingReturnOnDiscard redaction', () => 
 });
 
 // ---------------------------------------------------------------------------
+// WP-532 / D-24343 — pendingGiveHqHeroChoice redaction (chooser-scoped, Paibok Fight)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a UIState where the current player '0' owes an interactive give-HQ-Hero
+ * choice (Paibok Fight). The eligible list is projected from the PUBLIC G.hq, but the
+ * prompt is chooser-scoped — it must not appear in a non-chooser's UIState. Exercises
+ * the full Board-Visible Field round-trip: buildUIState populates it, and the audience
+ * filter passes it through only for the chooser.
+ */
+function createGiveHqHeroUIState(): UIState {
+  const config = createTestConfig();
+  const registry = createMockRegistry();
+  const setupContext = makeMockCtx();
+  const gameState = buildInitialGameState(config, registry, setupContext);
+  // why: buildInitialGameState leaves G.hq unfilled; seed two known cards (from player 0's
+  // starting deck) into the HQ so the give-HQ-Hero projection has eligible Heroes to surface.
+  const heroA = gameState.playerZones['0']!.deck[0]!;
+  const heroB = gameState.playerZones['0']!.deck[1]!;
+  gameState.hq = [heroA, heroB, null, null, null] as LegendaryGameState['hq'];
+  gameState.pendingGiveHqHeroChoices = [{ choiceType: 'give-hq-hero', playerID: '0' }];
+  return buildUIState(gameState, mockCtx);
+}
+
+describe('filterUIStateForAudience — pendingGiveHqHeroChoice redaction', () => {
+  it('the chooser sees pendingGiveHqHeroChoice with the eligible HQ Heroes', () => {
+    const result = filterUIStateForAudience(createGiveHqHeroUIState(), PLAYER_0);
+    assert.ok(result.pendingGiveHqHeroChoice !== undefined, 'chooser sees the give-HQ-Hero choice');
+    assert.equal(result.pendingGiveHqHeroChoice!.playerID, '0');
+    assert.equal(result.pendingGiveHqHeroChoice!.choiceType, 'give-hq-hero');
+    assert.ok(result.pendingGiveHqHeroChoice!.eligible.length > 0, 'projects the HQ Heroes to gain');
+  });
+
+  it('an opponent does NOT see pendingGiveHqHeroChoice', () => {
+    const result = filterUIStateForAudience(createGiveHqHeroUIState(), PLAYER_1);
+    assert.equal(result.pendingGiveHqHeroChoice, undefined, 'opponent must not see the choice');
+  });
+
+  it('a spectator does NOT see pendingGiveHqHeroChoice', () => {
+    const result = filterUIStateForAudience(createGiveHqHeroUIState(), SPECTATOR);
+    assert.equal(result.pendingGiveHqHeroChoice, undefined, 'spectator must not see the choice');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // D-24132 — pendingPutAnyNumberBottomHQ redaction (chooser-scoped, multi-select sibling)
 // ---------------------------------------------------------------------------
 

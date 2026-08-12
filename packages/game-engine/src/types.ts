@@ -738,6 +738,31 @@ export interface PendingReturnOnDiscard {
 }
 
 /**
+ * Pending give-HQ-Hero player choice state (WP-532 / D-24343).
+ *
+ * Created when the `give-hq-hero-each-player` villain-effect handler (Paibok the
+ * Power Skrull Fight) reaches the CURRENT (fighting) player with ≥ 2 HQ Heroes
+ * available — it appends one entry to G.pendingGiveHqHeroChoices[] (FIFO).
+ * resolveGiveHqHeroChoice front-pops it after the player picks which HQ Hero to
+ * gain (moving that Hero into their discard + refilling the HQ slot). Must be
+ * undefined or empty at every turn-end (enforced by the block-all guards).
+ *
+ * // why: D-24343 — the current (fighting) player picks WHICH HQ Hero interactively
+ * (the D-24284 current-parks / others-auto split); every OTHER player — and a
+ * bot-driven current player, via ai.legalMoves — auto-gains the highest-cost HQ
+ * Hero synchronously, so only the current player ever parks an entry. Eligibility is
+ * derived fresh from the PUBLIC G.hq by the projection, the move validation, and the
+ * bot default (no snapshot) — HQ contents are public, so no hand-leak redaction. The
+ * choice is single-Hero (no `remaining`): each player gains exactly one Hero.
+ */
+export interface PendingGiveHqHeroChoice {
+  /** Discriminant for future extensibility; always 'give-hq-hero'. */
+  choiceType: 'give-hq-hero';
+  /** The player who must pick an HQ Hero to gain. */
+  playerID: string;
+}
+
+/**
  * Pending mandatory discard-to-play cost choice state (D-24184).
  *
  * Created when a card printed "To play this card, you must discard a card from
@@ -1106,6 +1131,13 @@ export interface LegendaryGameState {
   // re-pinning (canonical JSON omits an undefined field).
   /** FIFO queue of pending optional return-on-discard choices awaiting resolution (D-24301). */
   pendingReturnOnDiscard?: PendingReturnOnDiscard[] | undefined;
+  // why: WP-532 / D-24343 — the current (fighting) player's pending give-HQ-Hero pick
+  // (Paibok Fight). Optional so existing test-state literals need no update; **lazily
+  // initialized at the park site, never in Game.setup** — an undefined field is omitted
+  // from canonical JSON, keeping the empty-replay PRE_WP080_HASH / hashGameState oracles
+  // from re-pinning. Absent (undefined) or empty [] both mean "no pending choice".
+  /** FIFO queue of pending give-HQ-Hero choices awaiting player resolution (WP-532). */
+  pendingGiveHqHeroChoices?: PendingGiveHqHeroChoice[] | undefined;
 
   // why: playerZones is keyed by player ID string (boardgame.io uses "0", "1",
   // etc.). Each player has exactly 5 zone arrays. Only deck is non-empty after

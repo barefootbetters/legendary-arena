@@ -4,12 +4,12 @@
   "summary": {
     "totalRows": 719,
     "byStatus": {
-      "executable": 126,
+      "executable": 127,
       "deferred": 0,
       "unsupported": 1,
-      "unmarked": 592
+      "unmarked": 591
     },
-    "distinctMechanics": 25
+    "distinctMechanics": 26
   },
   "rows": [
     {
@@ -1887,11 +1887,11 @@
       "cardName": "Paibok the Power Skrull",
       "set": "core",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "give-hq-hero-each-player",
+      "status": "executable",
+      "wp": "WP-532",
+      "decision": "D-24343",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#give-hq-hero-each-player"
     },
     {
       "extId": "core-villain-brotherhood-sabretooth",

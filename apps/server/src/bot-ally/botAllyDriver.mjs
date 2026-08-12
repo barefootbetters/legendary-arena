@@ -699,7 +699,7 @@ async function driveBotTurn(driver, deps, botSeat, maxMoveStepsPerTurn) {
   return result;
 }
 
-// why: WP-433 — the nine block-all pending-choice flags on `G`. When a bot turn
+// why: WP-433 — the ten block-all pending-choice flags on `G`. When a bot turn
 // faults, logging which of these is set is the single most useful signal for
 // telling a getLegalMoves resolution gap (a pending is set) from a transient
 // store/_stateID wedge (none set) — the exact discriminator that three rounds of
@@ -714,6 +714,11 @@ const PENDING_CHOICE_FLAGS = [
   'pendingDiscardToPlay',
   'pendingOptionalPutBottomHQ',
   'pendingPutAnyNumberBottomHQ',
+  // why: WP-532 / D-24343 — Paibok the Power Skrull's give-an-HQ-Hero pending
+  // queue; logging it when a bot turn faults discriminates a getLegalMoves
+  // resolution gap from a store/_stateID wedge. Keep in lockstep with
+  // PENDING_CHOICE_MOVE_NAMES in botLoopProgress.mjs.
+  'pendingGiveHqHeroChoices',
 ];
 
 /**

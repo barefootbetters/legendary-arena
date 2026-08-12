@@ -272,6 +272,29 @@ test('summarizeBotTurnState reports pending flags, economy, and degrades safely 
   assert.equal(summarizeBotTurnState(null, '1'), 'state=unavailable', 'a null state degrades to a marker, never throws');
 });
 
+test('summarizeBotTurnState lists the pendingGiveHqHeroChoices queue when set (WP-532)', () => {
+  // why: WP-532 / D-24343 — Paibok the Power Skrull's give-an-HQ-Hero pending
+  // queue must be recognized among the block-all flags, so a faulting bot turn
+  // logs it as the discriminator between a resolution gap and a store wedge.
+  const withGiveHqHero = summarizeBotTurnState(
+    {
+      ctx: { turn: 9 },
+      _stateID: 120,
+      G: {
+        currentStage: 'main',
+        turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0 },
+        playerZones: { '1': { hand: [] } },
+        pendingGiveHqHeroChoices: [{ playerID: '1', cardId: 'core-spider-man' }],
+      },
+    },
+    '1',
+  );
+  assert.ok(
+    withGiveHqHero.includes('pending=[pendingGiveHqHeroChoices]'),
+    'the give-an-HQ-Hero queue is listed among the block-all pending flags',
+  );
+});
+
 test('stopAllBotAllyDrivers stops and de-registers every registered driver (WP-424)', () => {
   // why: the SIGTERM handler calls this so the draining old instance stops
   // driving any bot seat; every driver must be stopped and removed from the map.

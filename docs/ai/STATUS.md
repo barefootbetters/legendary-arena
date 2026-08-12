@@ -7,6 +7,41 @@
 
 ## Current State
 
+### WP-532 — Paibok the Power Skrull Fight: Each Player Gains an HQ Hero (Interactive) — DONE (2026-08-12)
+
+The core Skrulls villain **Paibok the Power Skrull**'s Fight — *"Choose a Hero in the HQ
+for each player. Each player gains that Hero."* — was an **unmarked `no-handler` hollow**
+(D-24266; reported live from a Dr. Doom / Secret Invasion match, turn 36: the Fight fired
+nothing). Fixed by implementing the 20th `VillainEffectPrimitive`,
+**`give-hq-hero-each-player`** — the **second interactive** villain effect.
+
+Every player gains one HQ Hero into their **discard** (D-24327), the vacated slot refilling
+from `G.heroDeck` (`refillHqSlot`). **Fidelity is operator-locked (D-24343):** the current
+(fighting) player picks *which* HQ Hero **interactively** (a new `pendingGiveHqHeroChoice`
+on the D-24284 current-parks / others-auto split), while every other player — and any
+bot/auto-driven player — auto-gains the **highest-cost** HQ Hero (ties → rightmost).
+Non-current players resolve first (sorted); the current player parks at ≥2 HQ Heroes,
+auto-gains at exactly 1, no-ops at 0.
+
+Cross-layer, shipped as a single vertical slice so the engine block-all guard + UIState
+projection + client prompt land together (the no-UX-freeze invariant). Engine: new pending
+type + `resolveGiveHqHeroChoice` move (move count 27→28) + the D-24301 `returnOnDiscard`
+9-site block-all guard + `ai.legalMoves` short-circuit + UIState build/filter/type + engine
+barrel export. Server: `PENDING_CHOICE_MOVE_NAMES`/`PENDING_CHOICE_FLAGS` bot-loop wiring.
+Client: new `PendingGiveHqHeroChoicePrompt.vue` mounted in PlayDesktop + PlayMobile. Card
+data: core Paibok Fight marked → `villain-mechanic-ledger` flips `(unmarked)` → `executable`
+(co2e twin left unmarked, fast follow-up).
+
+**No hashed-oracle re-pin** (the new `pendingGiveHqHeroChoices` field is lazily created /
+undefined by default → `finalStateHash`/`PRE_WP080_HASH` byte-identical; no committed fixture
+fights Paibok). Tests: game-engine **2481→2500** (+19), arena-client **1244/0** typecheck 0,
+server bot-loop cases green. All gates green (`ledger:villains` / `effect-index` /
+`sim:runtime-observed` / `roadmap:counts` / `check:wiki` / `wiki-viewer:check-links`);
+`pnpm -r build` 0. **D-24343 Active.** `User-Visible Surface = play.legendary-arena.com` —
+**D-24026 operator-pending** (post-deploy: fight Paibok, confirm the "choose a Hero to gain"
+prompt appears for the fighting human, the picked Hero enters discard + HQ refills, and the
+bot ally gains the highest-cost Hero).
+
 ### WP-527 — Dashboard Money-Widget Source Badge Truthfulness — DONE (2026-08-11)
 
 The Monetization page's **Paid-Action Errors** widget hardcoded a `MOCK` source badge

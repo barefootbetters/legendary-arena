@@ -43,6 +43,7 @@ import ReturnOnDiscardPrompt from '../components/play/ReturnOnDiscardPrompt.vue'
 import PutAnyNumberBottomHQPrompt from '../components/play/PutAnyNumberBottomHQPrompt.vue';
 import ReturnZeroCostDiscardPrompt from '../components/play/ReturnZeroCostDiscardPrompt.vue';
 import DiscardToPlayPrompt from '../components/play/DiscardToPlayPrompt.vue';
+import PendingGiveHqHeroChoicePrompt from '../components/play/PendingGiveHqHeroChoicePrompt.vue';
 import GameLogPanel from '../components/log/GameLogPanel.vue';
 import type { SubmitMove } from '../components/play/uiMoveName.types';
 
@@ -111,6 +112,7 @@ export default defineComponent({
     PutAnyNumberBottomHQPrompt,
     ReturnZeroCostDiscardPrompt,
     DiscardToPlayPrompt,
+    PendingGiveHqHeroChoicePrompt,
   },
   props: {
     submitMove: {
@@ -294,6 +296,12 @@ export default defineComponent({
     const hasPendingDiscardChoice = computed<boolean>(
       () => snapshot.value?.pendingDiscardChoice !== undefined,
     );
+    // why: WP-532 / D-24343 — derived from UIState.pendingGiveHqHeroChoice !== undefined. Passed
+    // to TurnActionBar to block end-turn and pass-priority at EVERY stage while a Paibok Fight
+    // give-HQ-Hero choice is pending (board frozen, mirrors hasPendingDefeatChoice).
+    const hasPendingGiveHqHeroChoice = computed<boolean>(
+      () => snapshot.value?.pendingGiveHqHeroChoice !== undefined,
+    );
 
     // why: WP-380 — Healing KOs Wounds from HAND specifically, so scan the viewer's
     // own handCards (UIPlayerState.woundCount counts every zone and cannot answer
@@ -328,6 +336,7 @@ export default defineComponent({
       hasPendingDiscardChoice,
       hasPendingReorderChoice,
       hasPendingDefeatChoice,
+      hasPendingGiveHqHeroChoice,
       hasWoundInHand,
     };
   },
@@ -583,6 +592,14 @@ export default defineComponent({
             :viewer-player-id="viewer.playerId"
             :submit-move="submitMove"
           />
+          <!-- why: WP-532 / D-24343 — the Paibok Fight give-HQ-Hero prompt renders above
+               TurnActionBar; appears only for the choosing player when pendingGiveHqHeroChoice
+               is set. The block-all guard guarantees at most one pending-choice type is set. -->
+          <PendingGiveHqHeroChoicePrompt
+            :pending-give-hq-hero-choice="snapshot.pendingGiveHqHeroChoice"
+            :viewer-player-id="viewer.playerId"
+            :submit-move="submitMove"
+          />
           <TurnActionBar
             :current-stage="snapshot.game.currentStage"
             :is-viewer-turn="isViewerTurn"
@@ -600,6 +617,7 @@ export default defineComponent({
             :has-pending-discard-choice="hasPendingDiscardChoice"
             :has-pending-reorder-choice="hasPendingReorderChoice"
             :has-pending-defeat-choice="hasPendingDefeatChoice"
+            :has-pending-give-hq-hero-choice="hasPendingGiveHqHeroChoice"
             :has-wound-in-hand="hasWoundInHand"
             :has-acted-this-turn="snapshot.game.hasActedThisTurn"
             :has-healed-this-turn="snapshot.game.hasHealedThisTurn"

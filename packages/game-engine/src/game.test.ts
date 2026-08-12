@@ -132,7 +132,7 @@ describe('LegendaryGame', () => {
     );
   });
 
-  it('defines moves: advanceStage, dodgeCard, drawCards, endMatchEarly, endTurn, fightMastermind, fightVillain, healWounds, playCard, playFromUndercover, recruitHero, resolveDefeatChoice, resolveDiscardChoice, resolveDiscardToPlay, resolveDrawOrEmpowered, resolveHeroChoice, resolveKoHeroChoice, resolveOptionalKoReward, resolveOptionalPutBottomHQ, resolvePutAnyNumberBottomHQ, resolveReorderChoice, resolveReturnOnDiscard, resolveReturnZeroCostDiscard, resolveScryKoChoice, resolveVictoryPileCardPick, revealVillainCard, and sendUndercover', () => {
+  it('defines moves: advanceStage, dodgeCard, drawCards, endMatchEarly, endTurn, fightMastermind, fightVillain, healWounds, playCard, playFromUndercover, recruitHero, resolveDefeatChoice, resolveDiscardChoice, resolveDiscardToPlay, resolveDrawOrEmpowered, resolveGiveHqHeroChoice, resolveHeroChoice, resolveKoHeroChoice, resolveOptionalKoReward, resolveOptionalPutBottomHQ, resolvePutAnyNumberBottomHQ, resolveReorderChoice, resolveReturnOnDiscard, resolveReturnZeroCostDiscard, resolveScryKoChoice, resolveVictoryPileCardPick, revealVillainCard, and sendUndercover', () => {
     const moveNames = Object.keys(LegendaryGame.moves ?? {});
     assert.deepStrictEqual(
       moveNames.sort(),
@@ -146,8 +146,9 @@ describe('LegendaryGame', () => {
       // WP-486 / D-24291 added resolveDefeatChoice (24 → 25) — sorts between recruitHero and resolveDiscardChoice; NOT a CORE_MOVE_NAME (mirrors resolveReorderChoice).
       // WP-498 / D-24301 added resolveReturnOnDiscard (25 → 26) — sorts between resolveReorderChoice and resolveReturnZeroCostDiscard; NOT a CORE_MOVE_NAME (mirrors resolveDefeatChoice).
       // WP-502 / D-24306 added endMatchEarly (26 → 27) — the player-initiated "End Game" control; sorts between drawCards and endTurn; NOT a CORE_MOVE_NAME (mirrors healWounds / the resolve* moves).
-      ['advanceStage', 'dodgeCard', 'drawCards', 'endMatchEarly', 'endTurn', 'fightMastermind', 'fightVillain', 'healWounds', 'playCard', 'playFromUndercover', 'recruitHero', 'resolveDefeatChoice', 'resolveDiscardChoice', 'resolveDiscardToPlay', 'resolveDrawOrEmpowered', 'resolveHeroChoice', 'resolveKoHeroChoice', 'resolveOptionalKoReward', 'resolveOptionalPutBottomHQ', 'resolvePutAnyNumberBottomHQ', 'resolveReorderChoice', 'resolveReturnOnDiscard', 'resolveReturnZeroCostDiscard', 'resolveScryKoChoice', 'resolveVictoryPileCardPick', 'revealVillainCard', 'sendUndercover'],
-      'LegendaryGame must define exactly 27 moves',
+      // WP-532 / D-24343 added resolveGiveHqHeroChoice (27 → 28) — the interactive give-HQ-Hero pick (Paibok Fight); sorts between resolveDrawOrEmpowered and resolveHeroChoice; NOT a CORE_MOVE_NAME (mirrors resolveReturnOnDiscard).
+      ['advanceStage', 'dodgeCard', 'drawCards', 'endMatchEarly', 'endTurn', 'fightMastermind', 'fightVillain', 'healWounds', 'playCard', 'playFromUndercover', 'recruitHero', 'resolveDefeatChoice', 'resolveDiscardChoice', 'resolveDiscardToPlay', 'resolveDrawOrEmpowered', 'resolveGiveHqHeroChoice', 'resolveHeroChoice', 'resolveKoHeroChoice', 'resolveOptionalKoReward', 'resolveOptionalPutBottomHQ', 'resolvePutAnyNumberBottomHQ', 'resolveReorderChoice', 'resolveReturnOnDiscard', 'resolveReturnZeroCostDiscard', 'resolveScryKoChoice', 'resolveVictoryPileCardPick', 'revealVillainCard', 'sendUndercover'],
+      'LegendaryGame must define exactly 28 moves',
     );
   });
 

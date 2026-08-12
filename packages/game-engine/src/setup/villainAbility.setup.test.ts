@@ -463,6 +463,47 @@ describe('buildVillainAbilityHooks — swap-two-city-villains grammar (WP-523 / 
   });
 });
 
+describe('buildVillainAbilityHooks — give-hq-hero-each-player grammar (WP-532 / D-24343)', () => {
+  const registry = makeRegistry(
+    'core',
+    [
+      {
+        slug: 'skrulls',
+        cards: [
+          {
+            slug: 'paibok-the-power-skrull',
+            abilities: [
+              'Fight: Choose a Hero in the HQ for each player. Each player gains that Hero. [effect:give-hq-hero-each-player]',
+            ],
+          },
+          // why: a no-param primitive rejects any trailing colon token (guards a malformed
+          // marker from collapsing to the param-less descriptor).
+          { slug: 'extra-tokens', abilities: ['Fight: nope. [effect:give-hq-hero-each-player:1]'] },
+        ],
+      },
+    ],
+    [],
+  );
+  const hooks = buildVillainAbilityHooks(registry, makeConfig(['core/skrulls'], []));
+  const hookFor = (slug: string, timing: string) =>
+    hooks.find((h) => h.cardId === `core-villain-skrulls-${slug}-00` && h.timing === timing)!;
+
+  it('parses the no-param Fight marker to a bare descriptor via the generic branch', () => {
+    assert.deepStrictEqual(hookFor('paibok-the-power-skrull', 'onFight').effects, [
+      { primitive: 'give-hq-hero-each-player' },
+    ]);
+    // why: keyword-less — must NOT reverse-map to a legacy keyword.
+    assert.deepStrictEqual(hookFor('paibok-the-power-skrull', 'onFight').keywords, []);
+  });
+
+  it('rejects a trailing param token to unresolvedMarkers', () => {
+    assert.deepStrictEqual(hookFor('extra-tokens', 'onFight').effects, []);
+    assert.deepStrictEqual(hookFor('extra-tokens', 'onFight').unresolvedMarkers, [
+      'give-hq-hero-each-player:1',
+    ]);
+  });
+});
+
 describe('buildVillainAbilityHooks — keywords/effects parity', () => {
   it('keywords and effects are distinct but parallel arrays (WP-252)', () => {
     const registry = makeRegistry(

@@ -3692,3 +3692,104 @@ describe('executeVillainAbilities — swap-two-city-villains (WP-523 / D-24336)'
     assert.equal(G.city[3], null, 'empty spaces stay empty');
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-532 / D-24343: give-hq-hero-each-player (Paibok the Power Skrull Fight)
+// ---------------------------------------------------------------------------
+
+describe('executeVillainAbilities — give-hq-hero-each-player (WP-532 / D-24343)', () => {
+  const paibokHook: VillainAbilityHook = {
+    cardId: 'v-paibok' as CardExtId,
+    timing: 'onFight',
+    keywords: [],
+    effects: [{ primitive: 'give-hq-hero-each-player' }],
+  };
+
+  // why: a 3-player G so non-current auto-gain (players 1 & 2) is observable alongside
+  // the current player (0) parking; empty player zones so the discards start clean.
+  function make3pG(
+    hq: (CardExtId | null)[],
+    heroDeck: CardExtId[],
+    cardStats: Record<string, { cost: number }>,
+  ): LegendaryGameState {
+    return makeG({
+      hooks: [paibokHook],
+      hq: hq as LegendaryGameState['hq'],
+      heroDeck,
+      cardStats,
+      messages: [],
+      playerZones: {
+        '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+        '2': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+    });
+  }
+
+  it('non-current players auto-gain the highest-cost HQ Hero (sorted, refilling), then the current player parks (≥ 2 HQ Heroes)', () => {
+    const G = make3pG(
+      ['h0', 'h1', 'h2', 'h3', 'h4'] as CardExtId[],
+      ['r0', 'r1', 'r2', 'r3'] as CardExtId[],
+      { h0: { cost: 3 }, h1: { cost: 7 }, h2: { cost: 2 }, h3: { cost: 5 }, h4: { cost: 1 }, r0: { cost: 9 }, r1: { cost: 9 }, r2: { cost: 0 }, r3: { cost: 0 } },
+    );
+    const results = executeVillainAbilities(G, CTX, 'v-paibok' as CardExtId, 'onFight');
+    // player 1 (first non-current, sorted) gains highest-cost h1(7); slot refills r0(9).
+    // player 2 then gains the new highest-cost r0(9); slot refills r1.
+    assert.deepStrictEqual(G.playerZones['1']!.discard, ['h1'], 'player 1 gained highest-cost h1');
+    assert.deepStrictEqual(G.playerZones['2']!.discard, ['r0'], 'player 2 gained the new highest-cost r0');
+    assert.deepStrictEqual(G.playerZones['0']!.discard, [], 'current player has NOT gained yet (parked)');
+    assert.deepStrictEqual(G.playerZones['1']!.victory, [], 'gain routes to discard, never victory');
+    assert.equal(G.pendingGiveHqHeroChoices?.length, 1, 'current player parked exactly one choice');
+    assert.deepStrictEqual(G.pendingGiveHqHeroChoices![0], { choiceType: 'give-hq-hero', playerID: '0' });
+    // keyword-less primitive → no VillainEffectResult recorded (self-narrates instead).
+    assert.deepStrictEqual(results, []);
+    assert.equal(G.diagnostics?.hollowEffects?.length ?? 0, 0, 'handler ran — never a hollow');
+  });
+
+  it('current player AUTO-gains (no park) when exactly 1 HQ Hero remains', () => {
+    // heroDeck empty → no refill; player 1 takes h4, leaving exactly h3 for player 0.
+    const G = make3pG(
+      [null, null, null, 'h3', 'h4'] as CardExtId[],
+      [] as CardExtId[],
+      { h3: { cost: 1 }, h4: { cost: 1 } },
+    );
+    executeVillainAbilities(G, CTX, 'v-paibok' as CardExtId, 'onFight');
+    // player 1 gains the tie-break rightmost h4; player 2 then gains h3 (the last one);
+    // the current player 0 finds an empty HQ → no-op.
+    assert.deepStrictEqual(G.playerZones['1']!.discard, ['h4'], 'tie → rightmost (h4)');
+    assert.deepStrictEqual(G.playerZones['2']!.discard, ['h3'], 'player 2 gains the remaining h3');
+    assert.deepStrictEqual(G.playerZones['0']!.discard, [], 'no HQ Hero left for the current player');
+    assert.equal(G.pendingGiveHqHeroChoices?.length ?? 0, 0, 'no park (nothing to choose)');
+  });
+
+  it('current player auto-gains the sole remaining Hero when the HQ has exactly one at their turn', () => {
+    // 2-player G, heroDeck empty: player 1 takes h4, leaving exactly h0 for the current player 0.
+    const G = makeG({
+      hooks: [paibokHook],
+      hq: ['h0', null, null, null, 'h4'] as LegendaryGameState['hq'],
+      heroDeck: [] as CardExtId[],
+      cardStats: { h0: { cost: 5 }, h4: { cost: 8 } },
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-paibok' as CardExtId, 'onFight');
+    assert.deepStrictEqual(G.playerZones['1']!.discard, ['h4'], 'player 1 gained highest-cost h4');
+    assert.deepStrictEqual(G.playerZones['0']!.discard, ['h0'], 'current player AUTO-gained the sole remaining h0');
+    assert.equal(G.pendingGiveHqHeroChoices?.length ?? 0, 0, 'exactly-1 is forced → no park');
+  });
+
+  it('full no-op (blocked) when the HQ is entirely empty — no gains, no park, no hollow', () => {
+    const G = makeG({
+      hooks: [paibokHook],
+      hq: [null, null, null, null, null] as LegendaryGameState['hq'],
+      heroDeck: [] as CardExtId[],
+      cardStats: {},
+      messages: [],
+    });
+    assert.doesNotThrow(() => executeVillainAbilities(G, CTX, 'v-paibok' as CardExtId, 'onFight'));
+    assert.deepStrictEqual(G.playerZones['0']!.discard, []);
+    assert.deepStrictEqual(G.playerZones['1']!.discard, []);
+    assert.equal(G.pendingGiveHqHeroChoices?.length ?? 0, 0, 'no park on an empty HQ');
+    assert.match(G.messages.at(-1)!.text, /no Hero in the HQ to gain/, 'self-narrates the blocked no-op');
+    assert.equal(G.diagnostics?.hollowEffects?.length ?? 0, 0, 'handler ran — never a hollow');
+  });
+});

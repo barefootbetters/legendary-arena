@@ -249,6 +249,16 @@ export interface VillainEffectResult {
 // ko-cullable-each-deck-top); keyword-less, self-narrates via pushLog. No `ctx.random` (the
 // selection is positional). The swap exchanges two `CardExtId` strings between `G.city`
 // indices — no card objects enter the City.
+// why: D-24343 — `give-hq-hero-each-player` is the twentieth primitive (append-only,
+// position 20): the second INTERACTIVE villain effect (after WP-492's magnitude-N KO).
+// Paibok the Power Skrull Fight ("Choose a Hero in the HQ for each player. Each player
+// gains that Hero."). Every player gains one HQ Hero into their discard (D-24327
+// gain-routing), the vacated slot refilling from `G.heroDeck` (`refillHqSlot`) — the
+// WP-522 give-hq-hero-by-trait mechanics minus the trait filter, broadened to each
+// player. Fidelity (operator-locked): the current (fighting) player picks WHICH HQ Hero
+// interactively (a new `pendingGiveHqHeroChoice` on the D-24284 current-parks /
+// others-auto split); every other player — and any bot/auto-driven player — auto-picks
+// the highest-cost HQ Hero (ties → rightmost). No-param; keyword-less, self-narrates.
 export type VillainEffectPrimitive =
   | 'ko-hero'
   | 'gain-wound'
@@ -268,7 +278,8 @@ export type VillainEffectPrimitive =
   | 'ko-cullable-each-deck-top'
   | 'capture-bystanders-plus-per-hq-hero-by-trait'
   | 'give-hq-hero-by-trait-to-current'
-  | 'swap-two-city-villains';
+  | 'swap-two-city-villains'
+  | 'give-hq-hero-each-player';
 
 // why: drift-detection array — must match VillainEffectPrimitive exactly
 // (villainAbility.types.test.ts asserts bidirectional parity). Adding a
@@ -306,6 +317,11 @@ export type VillainEffectPrimitive =
 // Whirlwind Ambush: swap the lowest-index and highest-index villain-occupied City spaces
 // (Rule B), henchmen excluded, fewer than two is a no-op; the first City board-position
 // manipulation; no-param, keyword-less auto-resolve, self-narrates).
+// why: `give-hq-hero-each-player` appended at position 20 by WP-532 (D-24343 — Paibok
+// the Power Skrull Fight: each player gains one HQ Hero into their discard, HQ refills;
+// the second INTERACTIVE villain effect — the current player parks a new
+// `pendingGiveHqHeroChoice`, non-current + bot players auto-gain the highest-cost HQ
+// Hero; no-param, keyword-less auto-narrating).
 /** All villain effect primitives in canonical order. Single source of truth. */
 export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'ko-hero',
@@ -327,6 +343,7 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'capture-bystanders-plus-per-hq-hero-by-trait',
   'give-hq-hero-by-trait-to-current',
   'swap-two-city-villains',
+  'give-hq-hero-each-player',
 ] as const;
 
 /**

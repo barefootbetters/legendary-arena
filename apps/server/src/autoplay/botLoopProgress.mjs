@@ -36,7 +36,7 @@
 // the ninth — the last block-all choice that lacked a getLegalMoves short-circuit,
 // added alongside the engine short-circuit so a bot turn that reveals a discard-or-
 // return hero card resolves it instead of faulting. Keep in lockstep with
-// PENDING_CHOICE_FLAGS in botAllyDriver.mjs (both enumerate the nine block-all choices).
+// PENDING_CHOICE_FLAGS in botAllyDriver.mjs (both enumerate the ten block-all choices).
 const PENDING_CHOICE_MOVE_NAMES = [
   'resolveKoHeroChoice',
   'resolveOptionalKoReward',
@@ -47,6 +47,11 @@ const PENDING_CHOICE_MOVE_NAMES = [
   'resolveOptionalPutBottomHQ',
   'resolvePutAnyNumberBottomHQ',
   'resolveHeroChoice',
+  // why: WP-532 / D-24343 — Paibok the Power Skrull parks a give-an-HQ-Hero
+  // choice; the engine short-circuits getLegalMoves to this resolve move so the
+  // bot drains it before any stage fallback. Keep in lockstep with
+  // PENDING_CHOICE_FLAGS in botAllyDriver.mjs.
+  'resolveGiveHqHeroChoice',
 ];
 
 /**

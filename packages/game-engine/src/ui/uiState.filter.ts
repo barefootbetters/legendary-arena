@@ -850,6 +850,30 @@ export function filterUIStateForAudience(
     };
   }
 
+  // why: WP-532 / D-24343 — pendingGiveHqHeroChoice is chooser-only; the interactive
+  // give-HQ-Hero prompt is projected ONLY to the current (fighting) player, redacted
+  // (omitted) for opponents AND spectators — mirroring pendingReturnOnDiscard. The
+  // eligible list carries PUBLIC HQ Heroes, but only the chooser's prompt is surfaced;
+  // per-entry display spread prevents aliasing with the input.
+  if (
+    uiState.pendingGiveHqHeroChoice !== undefined &&
+    audience.kind === 'player' &&
+    audience.playerId === uiState.pendingGiveHqHeroChoice.playerID
+  ) {
+    const eligibleGiveCardsCopy = [];
+    for (const entry of uiState.pendingGiveHqHeroChoice.eligible) {
+      eligibleGiveCardsCopy.push({
+        cardId: entry.cardId,
+        display: { ...entry.display },
+      });
+    }
+    result.pendingGiveHqHeroChoice = {
+      choiceType: uiState.pendingGiveHqHeroChoice.choiceType,
+      playerID: uiState.pendingGiveHqHeroChoice.playerID,
+      eligible: eligibleGiveCardsCopy,
+    };
+  }
+
   // why: WP-258 / D-12803 — hollowEffects is PUBLIC card/mechanic data, not
   // hidden info. The filter passes it through value-unchanged for EVERY
   // audience (own-player AND other-player AND spectator) — it redacts /
