@@ -187,15 +187,17 @@ the pipeline is pure.
 
 #### Penalty producer status
 
-**Two of the five `PenaltyEventType` values have an engine producer today —
-`villainEscaped` and `schemeTwistNegative`.** Both are pure end-of-match counter
-reads. The remaining three are hardcoded to `0` in `deriveScoringInputs` as
-D-4801 safe-skips, each with a `// why:` comment naming its deferred follow-up:
+**Three of the five `PenaltyEventType` values have an engine producer today —
+`villainEscaped`, `schemeTwistNegative`, and `bystanderLost`.** The first two are
+pure end-of-match counter reads; `bystanderLost` counts the `bystander`-typed
+entries of `G.escapedPile`. The remaining two are hardcoded to `0` in
+`deriveScoringInputs` as D-4801 safe-skips, each with a `// why:` comment naming
+its deferred follow-up:
 
 | Penalty event | Producer | Status |
 |---|---|---|
 | `villainEscaped` | `ENDGAME_CONDITIONS.ESCAPED_VILLAINS` counter | **live** |
-| `bystanderLost` | none | safe-skip `0` — needs an escaped-pile / event-log producer (WP-528) |
+| `bystanderLost` | `G.escapedPile` (`bystander`-typed entries) | **live** — counts civilians carried away by escaping Villains (WP-528 / D-24339) |
 | `schemeTwistNegative` | `G.counters.schemeTwistCount` counter | **live** — counts every scheme twist (WP-529 / D-24340; no polarity classification) |
 | `mastermindTacticUntaken` | none | safe-skip `0` — derivable at endgame, but the semantics need per-turn history |
 | `scenarioSpecificPenalty` | none | safe-skip `0` — no generic producer; awaits structured scenario events |
@@ -203,12 +205,11 @@ D-4801 safe-skips, each with a `// why:` comment naming its deferred follow-up:
 This is load-bearing for anyone reasoning about live scores. The
 weights and their structural invariants are fully specified and
 validated, but a penalty with no producer contributes nothing to
-`weightedPenaltyTotal`. In particular **`bystanderLost` — which the
-structural invariants rank above both `villainEscaped` and the rescue
-reward — cannot currently fire**, so a match
-played today is not scored on civilian casualties at all. The
-rescue side (`bystanderReward`) *is* live, being derived from the
-victory pile.
+`weightedPenaltyTotal`. `bystanderLost` — which the structural
+invariants rank above both `villainEscaped` and the rescue reward — is
+**now produced** (from the escaped pile), so a match that lets civilians
+be carried away *is* scored on that loss; the rescue side
+(`bystanderReward`) is likewise live, derived from the victory pile.
 
 Do not describe a still-safe-skipped penalty as "counted from" anything until
 its producer lands. Player-facing guidance written against the
@@ -223,11 +224,10 @@ ranking system scores a match with the rulebook Total Score
 Read as a *ratio*, that is independent corroboration of the moral
 hierarchy `penaltyEventWeights` encode (VISION §21): a lost bystander
 outweighs a scheme twist, which outweighs an escaped villain, **4 : 3 : 1**.
-Of those three, `schemeTwistNegative` is now produced (WP-529 / D-24340) and
-`villainEscaped` was already live; only `bystanderLost` still safe-skips to zero
-above for lack of a producer (WP-528). Once it too is wired, the 4 : 3 : 1 ratio is
-a ready-made **Phase-1 seed** for their relative weights rather than a number
-invented from scratch
+All three of those terms are now produced — `bystanderLost` (WP-528 / D-24339),
+`schemeTwistNegative` (WP-529 / D-24340), and `villainEscaped` (already live) —
+so the 4 : 3 : 1 ratio is a ready-made **Phase-1 seed** for their relative weights
+rather than a number invented from scratch
 (at centesimal precision that reads as `400 / 300 / 100` before any
 simulation refinement). This is an anchor for the *ordering and rough
 magnitude*, not a replacement for calibration — the published weights remain
@@ -292,7 +292,7 @@ future WPs per the source `// why:` comment.
   on the team that plays it.
 - **[Villain Deck](villain-deck.md).** Three of the five
   `PenaltyEventType` values are *specified* to source from the
-  villain-deck pipeline, and two are wired up today —
+  villain-deck pipeline, and all three are wired up today —
   see [Penalty producer status](#penalty-producer-status):
   - `villainEscaped` — **live**; counted from
     `ENDGAME_CONDITIONS.ESCAPED_VILLAINS`
@@ -300,8 +300,10 @@ future WPs per the source `// why:` comment.
     **every** scheme twist via `G.counters.schemeTwistCount` — no
     polarity/qualification (every Legendary twist advances the villain's
     scheme; the rulebook subtracts 3 × every twist)
-  - `bystanderLost` — **not yet produced**; will count from the
-    escaped-pile derivation when its producer lands (WP-528)
+  - `bystanderLost` — **live** (WP-528 / D-24339); counts the
+    `bystander`-typed entries of `G.escapedPile` (civilians an escaping
+    Villain carried away, D-24314) — mirrors the `bystandersRescued`
+    victory-zone count
 - **[Scheme Twist](scheme-twist.md).** The `schemeTwistNegative`
   penalty event ties scoring to twist outcomes. The Scheme Twist
   page documents the trigger; this page documents the penalty
