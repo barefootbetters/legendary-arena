@@ -1,6 +1,6 @@
 # Wiki Index
 
-> **58 / 76** entity pages.
+> **59 / 76** entity pages.
 > Last regenerated: 2026-08-11.
 > See [SCHEMA.md](SCHEMA.md) for the entity-page contract and
 > [README.md](README.md) for purpose, conventions, and authority —
@@ -172,6 +172,14 @@ Cross-cutting governance, methodology, and readiness assessments.
   with honest recoverability verdicts, and the capability-graded validation
   checklist. The remaining gap is operational — provision the backup
   secrets and drill a restore.
+- [AI Second Brain](ai-second-brain.md) — *(draft, planning)* proposed
+  self-hosted knowledge platform where the corpus is owned and durable while
+  the agent layer stays swappable — *knowledge is permanent, agents are
+  replaceable.* Ten vendor-neutral design principles, a PostgreSQL + pgvector /
+  LiteLLM / Open WebUI / MCP stack, the per-domain knowledge repositories, and
+  the backup-and-restore discipline it inherits from Disaster Recovery. The
+  knowledge-architecture companion to the host-build page
+  [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md); no `D-`/`WP-` yet.
 - [Homepage Marketing Scorecard](homepage-marketing-scorecard.md) —
   SB7 + Player Needs Pyramid graded assessment of the homepage;
   tracks readiness across three questions (Problem / Product / Results).

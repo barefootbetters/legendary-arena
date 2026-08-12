@@ -16,6 +16,7 @@ related:
   - operational-health-checks.md
   - data-file-locations.md
   - workspace-map.md
+  - ai-second-brain.md
 status: draft
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\ubuntu-lab-provisioning.md (this page — https://ewiki.legendary-arena.com/ubuntu-lab-provisioning/)
