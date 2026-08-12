@@ -36385,4 +36385,22 @@ _Active — landed at WP-528 execution (EC-563). Hard-dep: WP-048 ✅ + D-24314 
 
 _Active — landed at WP-529 execution (EC-564). Hard-dep: WP-048 ✅ + D-24178 ✅._
 
+### D-24341 — AI Second Brain knowledge platform: architecture + governance-vehicle lock (Active 2026-08-11 — architecture record, no WP)
+
+**Decision.** Adopt a self-hosted **AI second brain** — an operator-owned knowledge platform whose durable store is the system of record and whose AI models and agent frameworks are *replaceable* clients (*knowledge is permanent; agents are replaceable*). It is governed as a **standalone DECISIONS architecture record plus the ewiki design page** ([`ai-second-brain`](https://ewiki.legendary-arena.com/ai-second-brain/)), **not** as an engine Work Packet.
+
+**Governance vehicle (why a D-record, not a WP).** The platform is operator/personal cross-project infrastructure that crosses **none** of the engine layers (Registry / Game Engine / Server) the Work Packet spine governs. Forcing it through the `01.0a` WP+EC workflow would be a category mismatch. Instead it follows the **Ubuntu Lab Provisioning precedent**: a `DECISIONS.md` architectural lock in this engine repo, a descriptive ewiki companion, and the executable runbook deferred to when it is built (a future Work Packet or a separate program repo). This entry is the authoritative source the ewiki page cites; the page stays `status: draft` until the platform is actually built.
+
+**Ownership & model independence.** Knowledge lives on operator-controlled hardware in open, portable formats (PostgreSQL, Markdown, Git, MCP). Models reach it only through MCP + a routing gateway, so swapping a model (Claude → open-weights → whatever is next) is a configuration change, never a data migration. **No single-vendor lock-in format may be persisted into the store** (e.g. proprietary embeddings only one provider can read), or the swap-freely property silently breaks.
+
+**Retrieval architecture (mostly-Markdown, minority-vector).** Roughly **90% navigable structured Markdown / 10% semantic vector**, not a vector-first system. Governed, structured, context-sensitive records — `DECISIONS.md`, Work Packets, Execution Contracts, runbooks, the Architecture Inventory, the wikis — are reached by **exact reference / grep / per-domain index navigation**, and are **never chunk-embedded** (chunking strips the surrounding context those records exist to preserve). The vector layer (`pgvector` + HNSW, `nomic-embed-text` 768-dim as the CPU-friendly default) is reserved for **high-volume unstructured reference** (transcripts, research archives, email) where exact lookup does not scale.
+
+**Hosting.** Runs on a **dedicated, separately hardened host** — never co-located with production `api.legendary-arena.com` — because a chat surface, model gateway, and vector DB next to the live game server is a resource-contention and attack-surface concern.
+
+**Operating discipline & boundaries.** Work runs in a **Plan → Build → Verify → Improve** loop with the operator as product manager (defines intent, boundaries, acceptance criteria) and the AI as researcher/executor within them. **Permissions beat prompts** is a hard rule: enforce boundaries with scoped credentials, blocked commands, hooks, and read-only access, not with instructions a model can ignore or a swap can drop. AI capability is layered simplest-first (skills → verification checks → conservative safety/logging hooks → subagents-for-research → orchestration last). Deliberately **out of scope until a real pain point justifies it**: always-on autonomous ingestion (fights the deterministic/auditable/grepable posture) and a general knowledge graph (only the Work Packet → EC → Decision → Change → Release governance chain is a possible future).
+
+**Scope / deferred.** This entry locks the *architecture and governance vehicle* only. The buildable artifacts — the ingestion script, Postgres schema, `docker-compose`, and provision/deploy runbook — are execution instruction and are **deferred** to a future Work Packet or separate program repo; they are deliberately kept off both this record and the descriptive ewiki page.
+
+_Active — architecture record, no WP. ewiki companion: `ai-second-brain` (stays `status: draft` until built). Precedent: Ubuntu Lab Provisioning governance pattern. No engine-layer, determinism, or persistence impact._
+
 Protect this file.
