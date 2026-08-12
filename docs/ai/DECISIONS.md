@@ -36369,4 +36369,20 @@ Protect this file.
 
 _Reserved by WP-528; flips Active at WP-528 execution. Hard-dep: WP-048 ✅ + D-24314 ✅._
 
+### D-24340 — `schemeTwistNegative` counts every scheme twist (from `G.counters.schemeTwistCount`), not a polarity subset (Drafted 2026-08-11 — WP-529 / EC-564; not yet landed)
+
+**Decision.** The `schemeTwistNegative` `PenaltyEventType` is produced by deriving its count at end-of-match as `G.counters.schemeTwistCount ?? 0` — the total number of scheme twists flipped during the match — rather than by classifying each twist's outcome as "negative" or not.
+
+**Why every twist counts (not a polarity subset).** In Legendary a Scheme Twist *is* the villain's clock: every twist advances the scheme against the players, and there is no beneficial scheme twist. The community/rulebook Total Score confirms it — it subtracts `3 × (Number of Scheme Twists)` unconditionally. So a per-twist polarity/outcome classification (which the Scoring wiki previously anticipated as "a discriminated scheme-twist outcome projection") is neither needed nor faithful; the faithful producer is simply the count of twists flipped.
+
+**Why the counter, not new state.** Every revealed scheme twist already increments the durable `G.counters.schemeTwistCount` via `buildGenericTwistEffects` (`rules/schemeHandlers.ts`) — including the Mystique escape→twist path and schemes whose twist-count loss is suppressed by a `resourceLossCondition` (the increment still runs; only the loss latch is suppressed). Reading it adds **no** `G` field, keeping `finalStateHash` and `PRE_WP080_HASH` byte-identical (no re-pin). It mirrors the existing `escapes = counters[ESCAPED_VILLAINS] ?? 0` counter read.
+
+**Symmetric across both derivation copies.** Applied in `deriveScoringInputs` (real-match) and `deriveScoringInputsFromFinalState` (`par.aggregator.ts`, PAR-calibration). Counting on only the real-match path would make calibrated PAR baselines systematically too easy on twist-heavy scenarios.
+
+**Scoring-version posture.** Wiring a penalty producer shifts the score distribution for a given `ScenarioScoringConfig`. Because this lands **before** any production `ScenarioScoringConfig` or `legendary.competitive_scores` row depends on `schemeTwistNegative`, no retroactive `scoringConfigVersion` bump or re-score is owed. Any producer wired **after** production configs exist MUST bump `scoringConfigVersion`.
+
+**Scope.** This entry covers only `schemeTwistNegative`. The remaining safe-skips (`mastermindTacticUntaken`, `scenarioSpecificPenalty`) and any re-anchoring of per-config penalty weights to the community/rulebook 4:3:1 ratio are separate future work. (`bystanderLost` is WP-528 / D-24339.)
+
+_Reserved by WP-529; flips Active at WP-529 execution. Hard-dep: WP-048 ✅ + D-24178 ✅._
+
 Protect this file.
