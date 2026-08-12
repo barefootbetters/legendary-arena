@@ -7,6 +7,36 @@
 
 ## Current State
 
+### WP-527 — Dashboard Money-Widget Source Badge Truthfulness — DONE (2026-08-11)
+
+The Monetization page's **Paid-Action Errors** widget hardcoded a `MOCK` source badge
+(`ref<'MOCK'>('MOCK')` + a literal `<span class="source">MOCK</span>`) on **live** billing-health
+data (`fetchBillingHealth` is live when `VITE_USE_MOCKS` is off), defeating the operator's
+mock-vs-live trust signal. Both money widgets also rendered `NaNh ago` because the live
+`/api/dash/*` routes return a bare `{ data }` envelope with no `updatedAt`, so `useDataFreshness`
+computed `now - undefined = NaN`.
+
+Fix (app-layer only, 3 files): `PaidActionErrorsWidget.vue` now derives its freshness badge from
+the fetched `ServiceResponse.source` (D-19804), threaded through `useDataFreshness` and gated by
+`v-if="sourceLabel"`, mirroring the already-correct `RevenueChartWidget` (live bare-envelope
+`source` undefined → no badge; mock → `MOCK`). `useDataFreshness` hardened: `relativeTime` uses
+`Number.isFinite` so null / undefined / NaN `updatedAt` all read `'Never'` (no more `'NaNh ago'`),
+and `sourceLabel` returns `''` for null OR undefined `source`. This transitively fixes
+`NetRevenueChartWidget`'s `NaNh ago` with **no edit to that widget** (its `MOCK` is the intentional
+D-19602 deduction-placeholder posture, preserved). `RevenueChartWidget.vue` untouched (reference).
+New `useDataFreshness.test.ts` (3 tests; `setInterval` mocked so no timer leaks the node:test
+process).
+
+Dashboard Gates green: lint / typecheck / `test:coverage` **442 / 0** at
+**99.44 / 90.77 / 94.98** (≥ 90/80/88) / format / build; whole-workspace
+`pnpm -r --no-bail test` green. No server / route / `endpoints.ts` / mock change; **no new
+D-entry** (enforces D-19804, preserves D-19602). Standard two-session lane, two-commit topology
+(`EC-562:` + `SPEC:`). Executed in an isolated worktree because the canonical checkout was on a
+concurrent session's branch. **User-Visible Surface = dashboard.legendary-arena.com — D-24026
+live-verify operator-pending** (behind the dashboard Hanko + Cloudflare Access gate; the
+Paid-Action Errors widget should show no false `MOCK` badge and no `NaNh ago` on the deployed
+Monetization page).
+
 ### WP-528 — Wire the `bystanderLost` Penalty Producer — DONE (2026-08-11)
 
 Second `PenaltyEventType` producer to go live after `villainEscaped` (sibling of WP-529's

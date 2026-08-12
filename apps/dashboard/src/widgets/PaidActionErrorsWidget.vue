@@ -24,8 +24,12 @@ const sparklinesFetch = useFetch(() => fetchBillingHealthSparklines(range.value)
 const data = summaryFetch.data;
 const loading = computed(() => summaryFetch.loading.value || sparklinesFetch.loading.value);
 const error = computed(() => summaryFetch.error.value ?? sparklinesFetch.error.value);
-const sourceLabelRef = ref<'MOCK'>('MOCK');
-const { relativeTime } = useDataFreshness(summaryFetch.updatedAt, sourceLabelRef);
+// why: WP-527 / D-19804 — the freshness badge's source label is owned by the
+// fetched ServiceResponse.source (LIVE / CACHED / MOCK), read straight from the
+// useFetch result exactly like RevenueChartWidget. The live /api/dash/* bare
+// { data } envelope carries no source, so sourceLabel is '' and the badge is
+// hidden (v-if); a hardcoded 'MOCK' mislabels live billing data.
+const { relativeTime, sourceLabel } = useDataFreshness(summaryFetch.updatedAt, summaryFetch.source);
 
 const themeVersion = ref(0);
 function handleThemeChange(): void {
@@ -112,8 +116,8 @@ const intentSparkline = computed<EChartsOption>(() => {
   <div class="widget">
     <header class="widget-header">
       <h3>Paid-Action Errors</h3>
-      <span class="freshness-badge">
-        <span class="source">MOCK</span>
+      <span v-if="sourceLabel" class="freshness-badge">
+        <span class="source">{{ sourceLabel }}</span>
         <span class="timestamp">{{ relativeTime }}</span>
       </span>
     </header>
