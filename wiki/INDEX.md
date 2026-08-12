@@ -1,6 +1,6 @@
 # Wiki Index
 
-> **57 / 75** entity pages.
+> **58 / 76** entity pages.
 > Last regenerated: 2026-08-11.
 > See [SCHEMA.md](SCHEMA.md) for the entity-page contract and
 > [README.md](README.md) for purpose, conventions, and authority —
@@ -20,6 +20,9 @@ Discrete in-game mechanics with specific triggers and effects.
 - [Scheme Twist](scheme-twist.md) — Trigger fired on `scheme-twist`
   reveal. Drives the `ENDGAME_CONDITIONS.SCHEME_LOSS` counter via the
   predict-post-effect handler pattern.
+- [Wounds](wounds.md) — Unplayable filler cards; the Healing ability KOs
+  all Wounds from hand if the player doesn't recruit or fight, an
+  acted/healed mutual exclusion enforced both ways (D-24179 / D-24180).
 
 ## System
 

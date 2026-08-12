@@ -380,6 +380,54 @@ describe('useTurnActions — hasPendingDiscardToPlay gating (WP-383 / D-24184)',
   });
 });
 
+describe('useTurnActions — canHealWounds mirrors the engine healWounds block-all guard set (EC-565)', () => {
+  // why: EC-565 — canHealWounds MUST block on every pending-choice type the engine
+  // healWounds move early-returns on (healWounds.ts). Five guards drifted out of this
+  // gate as each pending choice was added after WP-380, leaving the Heal-Wounds button a
+  // live-but-dead click while one of them was unresolved. Each case sets a Wound in hand
+  // (position 13, not acted, not healed) and exactly one pending flag true, proving that
+  // flag alone blocks Healing. Positional map (19 args): 1 stage, 2 isViewerTurn,
+  // 3 pendingChoice, 4 koChoice, 5 optionalKoReward, 6 drawOrEmpowered, 7 victoryPileCardPick,
+  // 8 optionalPutBottomHQ, 9 putAnyNumberBottomHQ, 10 returnZeroCostDiscard, 11 discardToPlay,
+  // 12 scryKoChoice, 13 hasWoundInHand, 14 hasActedThisTurn, 15 hasHealedThisTurn,
+  // 16 discardChoice, 17 reorderChoice, 18 defeatChoice, 19 returnOnDiscard.
+
+  test('canHealWounds blocked while a discard-to-play cost is pending (D-24184)', () => {
+    // position 11 (discardToPlay) = true, position 13 (wound) = true
+    const result = useTurnActions('main', true, false, false, false, false, false, false, false, false, true, false, true, false, false, false, false, false, false).canHealWounds();
+    assert.equal(result.allowed, false);
+    assert.match(result.reason!, /pending choice/i);
+  });
+
+  test('canHealWounds blocked while a Magneto discard-to-limit choice is pending (D-24284)', () => {
+    // position 16 (discardChoice) = true, position 13 (wound) = true
+    const result = useTurnActions('main', true, false, false, false, false, false, false, false, false, false, false, true, false, false, true, false, false, false).canHealWounds();
+    assert.equal(result.allowed, false);
+    assert.match(result.reason!, /pending choice/i);
+  });
+
+  test('canHealWounds blocked while a reveal-remainder reorder choice is pending (D-24286)', () => {
+    // position 17 (reorderChoice) = true, position 13 (wound) = true
+    const result = useTurnActions('main', true, false, false, false, false, false, false, false, false, false, false, true, false, false, false, true, false, false).canHealWounds();
+    assert.equal(result.allowed, false);
+    assert.match(result.reason!, /pending choice/i);
+  });
+
+  test('canHealWounds blocked while a Silent Sniper defeat choice is pending (D-24291)', () => {
+    // position 18 (defeatChoice) = true, position 13 (wound) = true
+    const result = useTurnActions('main', true, false, false, false, false, false, false, false, false, false, false, true, false, false, false, false, true, false).canHealWounds();
+    assert.equal(result.allowed, false);
+    assert.match(result.reason!, /pending choice/i);
+  });
+
+  test('canHealWounds blocked while a return-on-discard choice is pending (D-24301)', () => {
+    // position 19 (returnOnDiscard) = true, position 13 (wound) = true
+    const result = useTurnActions('main', true, false, false, false, false, false, false, false, false, false, false, true, false, false, false, false, false, true).canHealWounds();
+    assert.equal(result.allowed, false);
+    assert.match(result.reason!, /pending choice/i);
+  });
+});
+
 describe('useTurnActions — hasPendingScryKoChoice gating (WP-470 / D-24282)', () => {
   const SCRY_KO_REASON =
     'Choose one of the top two cards to KO before taking another action.';

@@ -285,6 +285,28 @@ describe('TurnActionBar (WP-129 — 3-step rewrite of WP-100; WP-236 — Draw sc
     assert.match(heal.attributes('title')!, /already healed/i);
   });
 
+  // why: EC-565 — the heal button must disable while a return-on-discard choice is
+  // pending, proving hasPendingReturnOnDiscard is actually threaded into healGate().
+  // Before the fix the prop was declared but never passed, so canHealWounds could not
+  // see it and the button stayed a live-but-dead click (the engine healWounds no-ops).
+  test('Heal Wounds is disabled while a return-on-discard choice is pending (engine parity)', () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(TurnActionBar, {
+      props: {
+        currentStage: 'main',
+        isViewerTurn: true,
+        hasWoundInHand: true,
+        hasPendingReturnOnDiscard: true,
+        submitMove,
+      },
+    });
+    const heal = wrapper.find('[data-testid="play-action-heal-wounds"]');
+    assert.equal(heal.attributes('disabled'), '');
+    assert.match(heal.attributes('title')!, /pending choice/i);
+    void heal.trigger('click');
+    assert.equal(calls.length, 0, 'a disabled heal button emits no move');
+  });
+
   // WP-502 / D-24306 — the End Game control (two-click confirm → endMatchEarly).
 
   test('End Game requires a confirm: the first click emits nothing, only reveals the prompt', async () => {

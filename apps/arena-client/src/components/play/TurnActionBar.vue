@@ -214,8 +214,12 @@ export default defineComponent({
     // trailing useTurnActions params so canHealWounds gates the Heal-Wounds button.
     // WP-470 — hasPendingScryKoChoice is threaded before them (position 12) so the heal
     // pending-cluster gate also fires while a Doombot scry-KO choice is pending.
+    // EC-565 — hasPendingReturnOnDiscard (position 19) MUST be threaded too: canHealWounds
+    // now mirrors the engine's full block-all guard set, so every pending-choice prop the
+    // gate reads has to reach it — omitting this one let Healing stay a live-but-dead click
+    // while a return-on-discard choice (D-24301) was unresolved.
     function healGate(): { allowed: boolean; reason: string | null } {
-      return useTurnActions(props.currentStage, props.isViewerTurn, props.hasPendingChoice, props.hasPendingKoChoice, props.hasPendingOptionalKoReward, props.hasPendingDrawOrEmpowered, props.hasPendingVictoryPileCardPick, props.hasPendingOptionalPutBottomHQ, props.hasPendingPutAnyNumberBottomHQ, props.hasPendingReturnZeroCostDiscard, props.hasPendingDiscardToPlay, props.hasPendingScryKoChoice, props.hasWoundInHand, props.hasActedThisTurn, props.hasHealedThisTurn, props.hasPendingDiscardChoice, props.hasPendingReorderChoice, props.hasPendingDefeatChoice).canHealWounds();
+      return useTurnActions(props.currentStage, props.isViewerTurn, props.hasPendingChoice, props.hasPendingKoChoice, props.hasPendingOptionalKoReward, props.hasPendingDrawOrEmpowered, props.hasPendingVictoryPileCardPick, props.hasPendingOptionalPutBottomHQ, props.hasPendingPutAnyNumberBottomHQ, props.hasPendingReturnZeroCostDiscard, props.hasPendingDiscardToPlay, props.hasPendingScryKoChoice, props.hasWoundInHand, props.hasActedThisTurn, props.hasHealedThisTurn, props.hasPendingDiscardChoice, props.hasPendingReorderChoice, props.hasPendingDefeatChoice, props.hasPendingReturnOnDiscard).canHealWounds();
     }
 
     function onReveal(): void {
