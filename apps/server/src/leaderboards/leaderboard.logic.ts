@@ -49,6 +49,18 @@ import type {
   ThemeLeaderboard,
   ThemeLeaderboardQueryOptions,
 } from './leaderboard.types.js';
+import type { Pool, PoolClient } from 'pg';
+
+/**
+ * A read source for the leaderboard SELECTs: either the shared `Pool`
+ * (the normal case — each query runs on whatever connection the pool
+ * hands out) or a single checked-out `PoolClient`. The legends publisher
+ * (WP-142) checks out ONE client and passes it here so its whole run
+ * executes inside a single READ ONLY snapshot transaction; passing the
+ * pool instead silently scattered the reads across connections. `Pool`
+ * satisfies this union, so every other caller is unaffected.
+ */
+export type LeaderboardReadClient = Pool | PoolClient;
 
 // ---------------------------------------------------------------------------
 // Production dependencies (fail-closed default)
@@ -162,7 +174,7 @@ function mapRowToEntry(
  */
 export async function getScenarioLeaderboard(
   options: LeaderboardQueryOptions,
-  database: DatabaseClient,
+  database: LeaderboardReadClient,
   deps: LeaderboardDependencies = PRODUCTION_DEPENDENCIES,
 ): Promise<ScenarioLeaderboard> {
   // why: PAR-missing returns empty leaderboard, not an error. Per
@@ -300,7 +312,7 @@ export async function getPublicScoreByReplayHash(
  * verified score" view; callers compose stricter filters on top.
  */
 export async function listScenarioKeys(
-  database: DatabaseClient,
+  database: LeaderboardReadClient,
 ): Promise<string[]> {
   // why: alphabetical sort gives every consumer a deterministic
   // ordering without coupling to insertion time, scenario rarity,
@@ -485,7 +497,7 @@ export async function getThemeLeaderboard(
  */
 export async function getGlobalTopLeaderboard(
   options: GlobalTopLeaderboardQueryOptions,
-  database: DatabaseClient,
+  database: LeaderboardReadClient,
   deps: LeaderboardDependencies = PRODUCTION_DEPENDENCIES,
 ): Promise<GlobalTopLeaderboard> {
   const allScenarioKeys = await listScenarioKeys(database);

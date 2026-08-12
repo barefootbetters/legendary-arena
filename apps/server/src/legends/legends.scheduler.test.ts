@@ -36,29 +36,47 @@ function createStubR2Client(): LegendsR2Client {
   };
 }
 
-function createStubDatabase(): DatabaseClient {
+/**
+ * Wrap a bare query implementation into a Pool-like stub. The WP-142 publisher
+ * checks out ONE connection (`database.connect()`) and runs its whole READ ONLY
+ * snapshot on it, so every DB stub must answer `connect()` with a client that
+ * shares the same canned query logic plus a no-op `release()`.
+ */
+function asPoolStub(
+  queryImpl: (
+    text: string,
+    params?: unknown[],
+  ) => Promise<{ rows: unknown[]; rowCount: number }>,
+): DatabaseClient {
   return {
-    async query(text: string) {
-      if (
-        text === 'BEGIN' ||
-        text === 'SET TRANSACTION READ ONLY' ||
-        text === 'COMMIT' ||
-        text === 'ROLLBACK'
-      ) {
-        return { rows: [], rowCount: 0 };
-      }
-      if (text.includes('DISTINCT cs.scenario_key')) {
-        return { rows: [], rowCount: 0 };
-      }
-      if (text.includes('COUNT(*)')) {
-        return { rows: [{ total: '0' }], rowCount: 1 };
-      }
-      if (text.includes('FROM legendary.competitive_scores')) {
-        return { rows: [], rowCount: 0 };
-      }
-      return { rows: [], rowCount: 0 };
+    query: queryImpl,
+    async connect() {
+      return { query: queryImpl, release() {} };
     },
-  } as DatabaseClient;
+  } as unknown as DatabaseClient;
+}
+
+function createStubDatabase(): DatabaseClient {
+  return asPoolStub(async (text: string) => {
+    if (
+      text === 'BEGIN' ||
+      text === 'SET TRANSACTION READ ONLY' ||
+      text === 'COMMIT' ||
+      text === 'ROLLBACK'
+    ) {
+      return { rows: [], rowCount: 0 };
+    }
+    if (text.includes('DISTINCT cs.scenario_key')) {
+      return { rows: [], rowCount: 0 };
+    }
+    if (text.includes('COUNT(*)')) {
+      return { rows: [{ total: '0' }], rowCount: 1 };
+    }
+    if (text.includes('FROM legendary.competitive_scores')) {
+      return { rows: [], rowCount: 0 };
+    }
+    return { rows: [], rowCount: 0 };
+  });
 }
 
 function createStubDeps(): LeaderboardDependencies {
@@ -101,20 +119,20 @@ describe('legends scheduler (WP-142)', () => {
 
   test('stop() prevents further runs', async () => {
     let publishCount = 0;
-    const database = createStubDatabase();
 
-    // why: we mock the query function to count how many times
-    // listScenarioKeys is called (which means a publish run started).
-    const originalQuery = database.query.bind(database);
-    (database as { query: typeof database.query }).query = async (
-      text: string,
-      params?: unknown[],
-    ) => {
+    // why: count how many times listScenarioKeys runs (its DISTINCT query marks
+    // the start of a publish run). The publisher runs reads on the checked-out
+    // client, so the counter lives in the shared query impl asPoolStub hands to
+    // both the pool and every connect()'d client.
+    const database = asPoolStub(async (text: string) => {
       if (text.includes('DISTINCT cs.scenario_key')) {
         publishCount = publishCount + 1;
       }
-      return originalQuery(text, params);
-    };
+      if (text.includes('COUNT(*)')) {
+        return { rows: [{ total: '0' }], rowCount: 1 };
+      }
+      return { rows: [], rowCount: 0 };
+    });
 
     const handle = startLegendsPublisher({
       bucket: 'test-bucket',
@@ -189,40 +207,38 @@ describe('legends scheduler (WP-142)', () => {
     };
 
     // why: need at least one scenario key so a board PUT is attempted
-    const database: DatabaseClient = {
-      async query(text: string) {
-        if (
-          text === 'BEGIN' ||
-          text === 'SET TRANSACTION READ ONLY' ||
-          text === 'COMMIT' ||
-          text === 'ROLLBACK'
-        ) {
-          return { rows: [], rowCount: 0 };
-        }
-        if (text.includes('DISTINCT cs.scenario_key')) {
-          return { rows: [{ scenario_key: 'err-sc' }], rowCount: 1 };
-        }
-        if (text.includes('COUNT(*)')) {
-          return { rows: [{ total: '1' }], rowCount: 1 };
-        }
-        if (text.includes('FROM legendary.competitive_scores')) {
-          return {
-            rows: [{
-              replay_hash: 'h1',
-              player_display_name: 'Test',
-              scenario_key: 'err-sc',
-              final_score: 10,
-              raw_score: 8,
-              par_version: 'v1',
-              scoring_config_version: 1,
-              created_at: '2026-01-01T00:00:00Z',
-            }],
-            rowCount: 1,
-          };
-        }
+    const database = asPoolStub(async (text: string) => {
+      if (
+        text === 'BEGIN' ||
+        text === 'SET TRANSACTION READ ONLY' ||
+        text === 'COMMIT' ||
+        text === 'ROLLBACK'
+      ) {
         return { rows: [], rowCount: 0 };
-      },
-    } as DatabaseClient;
+      }
+      if (text.includes('DISTINCT cs.scenario_key')) {
+        return { rows: [{ scenario_key: 'err-sc' }], rowCount: 1 };
+      }
+      if (text.includes('COUNT(*)')) {
+        return { rows: [{ total: '1' }], rowCount: 1 };
+      }
+      if (text.includes('FROM legendary.competitive_scores')) {
+        return {
+          rows: [{
+            replay_hash: 'h1',
+            player_display_name: 'Test',
+            scenario_key: 'err-sc',
+            final_score: 10,
+            raw_score: 8,
+            par_version: 'v1',
+            scoring_config_version: 1,
+            created_at: '2026-01-01T00:00:00Z',
+          }],
+          rowCount: 1,
+        };
+      }
+      return { rows: [], rowCount: 0 };
+    });
 
     const deps: LeaderboardDependencies = {
       checkParPublished: () => ({

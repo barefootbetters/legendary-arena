@@ -37,10 +37,11 @@
  * §Locked Values; D-24131; D-24134; D-24187; D-24199.
  */
 
-import type {
-  DatabaseClient,
-  LeaderboardDependencies,
-} from '../leaderboards/leaderboard.types.js';
+import type { LeaderboardDependencies } from '../leaderboards/leaderboard.types.js';
+// why: getGauntletStandings runs inside the legends publisher's single pinned
+// READ ONLY snapshot connection (WP-142), so it accepts either the shared Pool
+// or a checked-out PoolClient — see LeaderboardReadClient.
+import type { LeaderboardReadClient } from '../leaderboards/leaderboard.logic.js';
 import type {
   GauntletFixedSnapshotEntry,
   GauntletSnapshotEntry,
@@ -564,7 +565,7 @@ export interface GauntletStandingsForCount {
  */
 export async function getGauntletStandings(
   definition: GauntletDefinition,
-  database: DatabaseClient,
+  database: LeaderboardReadClient,
   leaderboardDeps: LeaderboardDependencies,
 ): Promise<ReadonlyMap<number, GauntletStandingsForCount>> {
   const legSchemeSlugs: string[] = [];

@@ -23,6 +23,26 @@ import type {
 // Stubs
 // ---------------------------------------------------------------------------
 
+/**
+ * Wrap a bare query implementation into a Pool-like stub. The WP-142 publisher
+ * now checks out ONE connection (`database.connect()`) and runs its whole
+ * READ ONLY snapshot on it, so every DB stub must answer `connect()` with a
+ * client that shares the same canned query logic plus a no-op `release()`.
+ */
+function asPoolStub(
+  queryImpl: (
+    text: string,
+    params?: unknown[],
+  ) => Promise<{ rows: unknown[]; rowCount: number }>,
+): DatabaseClient {
+  return {
+    query: queryImpl,
+    async connect() {
+      return { query: queryImpl, release() {} };
+    },
+  } as unknown as DatabaseClient;
+}
+
 interface PutCall {
   readonly body: string;
   readonly bucket: string;
@@ -57,8 +77,7 @@ function createStubDatabase(options?: {
 }): DatabaseClient {
   const scenarioKeys = options?.scenarioKeys ?? ['test-scenario'];
 
-  return {
-    async query(text: string, params?: unknown[]) {
+  return asPoolStub(async (text: string, params?: unknown[]) => {
       if (options?.failOnQuery !== undefined && text.includes(options.failOnQuery)) {
         throw new Error(`Simulated DB failure on: ${options.failOnQuery}`);
       }
@@ -116,8 +135,7 @@ function createStubDatabase(options?: {
       }
 
       return { rows: [], rowCount: 0 };
-    },
-  } as DatabaseClient;
+  });
 }
 
 function createStubDeps(): LeaderboardDependencies {
@@ -159,6 +177,83 @@ describe('legends publisher (WP-142)', () => {
     assert.ok(putKeys.some((key) => key.includes('global-top.json')));
     assert.ok(putKeys.some((key) => key.includes('scenario-alpha-scenario.json')));
     assert.ok(putKeys.some((key) => key.includes('manifest.json')));
+  });
+
+  test('runs the whole snapshot on ONE pinned REPEATABLE READ connection and releases it', async () => {
+    // why: guards the WP-142 fix — the publisher must check out a single
+    // connection, open a REPEATABLE READ READ ONLY transaction on it, run every
+    // read through it, COMMIT, and release exactly once. The pre-fix code ran
+    // BEGIN / reads / COMMIT as bare `database.query(...)` calls on the pool,
+    // which scattered them across connections and leaked one idle-in-transaction.
+    const clientQueries: string[] = [];
+    const poolQueries: string[] = [];
+    let connectCount = 0;
+    let releaseCount = 0;
+
+    const cannedQuery = async (
+      text: string,
+    ): Promise<{ rows: unknown[]; rowCount: number }> => {
+      if (text.includes('DISTINCT cs.scenario_key')) {
+        return { rows: [{ scenario_key: 'pinned-scenario' }], rowCount: 1 };
+      }
+      if (text.includes('COUNT(*)')) {
+        return { rows: [{ total: '1' }], rowCount: 1 };
+      }
+      if (text.includes('FROM legendary.competitive_scores')) {
+        return {
+          rows: [
+            {
+              replay_hash: 'hash-1',
+              player_display_name: 'Alice',
+              scenario_key: 'pinned-scenario',
+              final_score: 42,
+              raw_score: 40,
+              par_version: 'v1',
+              scoring_config_version: 1,
+              created_at: '2026-01-01T00:00:00.000Z',
+            },
+          ],
+          rowCount: 1,
+        };
+      }
+      return { rows: [], rowCount: 0 };
+    };
+
+    const database = {
+      async query(text: string) {
+        poolQueries.push(text);
+        return cannedQuery(text);
+      },
+      async connect() {
+        connectCount = connectCount + 1;
+        return {
+          async query(text: string) {
+            clientQueries.push(text);
+            return cannedQuery(text);
+          },
+          release() {
+            releaseCount = releaseCount + 1;
+          },
+        };
+      },
+    } as unknown as DatabaseClient;
+
+    const { client } = createStubR2Client();
+    const deps = createStubDeps();
+
+    const result = await publishAllBoards(database, client, 'test-bucket', deps);
+
+    assert.equal(result.manifestWritten, true);
+    // Exactly one checkout, released exactly once — no idle-in-transaction leak.
+    assert.equal(connectCount, 1);
+    assert.equal(releaseCount, 1);
+    // The snapshot opens at REPEATABLE READ READ ONLY and closes with COMMIT,
+    // both on the pinned client.
+    assert.equal(clientQueries[0], 'BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
+    assert.equal(clientQueries[clientQueries.length - 1], 'COMMIT');
+    // Every read ran on the pinned client; nothing touched the bare pool.
+    assert.ok(clientQueries.some((text) => text.includes('DISTINCT cs.scenario_key')));
+    assert.equal(poolQueries.length, 0);
   });
 
   test('manifest is NOT written when a board PUT fails', async () => {
@@ -300,8 +395,7 @@ const TEST_GAUNTLET_CATALOG: readonly GauntletDefinition[] = [
  * complete-player row for `mm-full` and nothing for `mm-empty`.
  */
 function createGauntletStubDatabase(): DatabaseClient {
-  return {
-    async query(text: string, params?: unknown[]) {
+  return asPoolStub(async (text: string, params?: unknown[]) => {
       if (
         text === 'BEGIN' ||
         text === 'SET TRANSACTION READ ONLY' ||
@@ -342,8 +436,7 @@ function createGauntletStubDatabase(): DatabaseClient {
       }
 
       return { rows: [], rowCount: 0 };
-    },
-  } as DatabaseClient;
+  });
 }
 
 /**
@@ -556,8 +649,7 @@ const BUDGETED_GAUNTLET_CATALOG: readonly GauntletDefinition[] = [
  * on the qualifying row, so the fixed division computes one entry.
  */
 function createTeamedGauntletStubDatabase(): DatabaseClient {
-  return {
-    async query(text: string, params?: unknown[]) {
+  return asPoolStub(async (text: string, params?: unknown[]) => {
       if (
         text === 'BEGIN' ||
         text === 'SET TRANSACTION READ ONLY' ||
@@ -596,8 +688,7 @@ function createTeamedGauntletStubDatabase(): DatabaseClient {
       }
 
       return { rows: [], rowCount: 0 };
-    },
-  } as DatabaseClient;
+  });
 }
 
 describe('legends publisher fixed-hero-pool boards (WP-384)', () => {
