@@ -85,10 +85,19 @@ export function deriveScoringInputs(
   // zero. Same `?? 0` pattern used by EC-068 buildProgressCounters.
   const escapes = gameState.counters[ENDGAME_CONDITIONS.ESCAPED_VILLAINS] ?? 0;
 
-  // why: no engine producer today; follow-up WP will introduce bystander-
-  // lost tracking (either via ENDGAME_CONDITIONS.BYSTANDERS_LOST counter
-  // or via a structured event log). D-4801 safe-skip.
-  const bystanderLostCount = 0;
+  // why: WP-528 / D-24339 — a civilian is "lost" when an escaping Villain carries a
+  // Bystander into G.escapedPile (carryEscapedBystandersToPile, D-24314, from BOTH the
+  // reveal and scheme-twist escape paths). Count the 'bystander'-typed entries of that
+  // pile — the exact mirror of the bystandersRescued victory-zone loop above. The escaped
+  // Villain cards themselves (typed 'villain') are the separate villainEscaped count, so
+  // they are not double-counted here. Derives from existing terminal state, adding no G
+  // field (finalStateHash / PRE_WP080_HASH byte-identical; no BYSTANDERS_LOST counter).
+  let bystanderLostCount = 0;
+  for (const cardExtId of gameState.escapedPile) {
+    if (gameState.villainDeckCardTypes[cardExtId] === 'bystander') {
+      bystanderLostCount = bystanderLostCount + 1;
+    }
+  }
 
   // why: WP-529 / D-24340 — every Legendary scheme twist advances the villain's
   // scheme against the players (there is no beneficial twist; the community/rulebook

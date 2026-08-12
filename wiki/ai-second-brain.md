@@ -8,6 +8,7 @@ tags:
   - postgres
   - mcp
   - operator-reference
+  - governance
   - draft
 related:
   - ubuntu-lab-provisioning.md
@@ -314,6 +315,59 @@ the knowledge base is not:
 Because the models reach the knowledge only through MCP and the gateway, a model
 swap is a configuration change, not a data migration. The corpus never moves.
 
+### Operating discipline
+
+The knowledge base is only half the platform; the other half is *how work runs
+against it*. The operating model is a repeatable loop rather than one-shot
+prompting — **Plan → Build → Verify → Improve** — which maps onto the repo's
+existing Work Packet / Execution Contract / gate / acceptance-criteria discipline:
+
+1. **Plan** with routed context (goal, authoritative sources, non-goals, risks,
+   acceptance criteria) before a substantial task begins.
+2. **Build** — the AI drafts or executes within those constraints.
+3. **Verify** against deterministic checks or a reviewable verification report;
+   work is not "done" until it passes.
+4. **Improve** — every failure (a hallucination, a missed file, a dropped
+   caveat) becomes a durable upgrade to a rule, check, template, or skill.
+
+The operator's role in that loop is **product manager, not typist**: the operator
+defines intent, boundaries, authoritative sources, and what success looks like;
+the AI proposes and executes within them. Five operating principles govern the
+loop — companions to the ten architecture principles above, aimed at *how work is
+conducted* rather than *how knowledge is stored*:
+
+- **Plan Before Delegation.** No substantial AI task begins without a written
+  goal, context, constraints, and acceptance criteria.
+- **Verification Is Required.** AI work is complete only when it passes
+  deterministic checks or produces a reviewable verification report.
+- **Context Must Be Routed, Not Dumped.** The system tells the AI where to look
+  (routing + per-domain indexes); it does not blindly load everything — the
+  [retrieval strategy](#retrieval-strategy-navigation-first-vector-where-it-earns-its-keep)
+  stated as a rule.
+- **Every Failure Upgrades the System.** Bugs and bad outputs become improvements
+  to rules, skills, templates, or checks — the repo's scaffold-then-spec instinct
+  applied to the brain itself.
+- **Permissions Beat Prompts (hard rule).** Do not rely on an instruction like
+  "never delete the database." Enforce boundaries with scoped credentials,
+  blocked commands, hooks, and read-only access. A real boundary holds when a
+  prompt is ignored or a model is swapped; an instruction does not.
+
+**Context limits are respected with handoff documents.** No single AI session
+carries a migration *and* a wiki rewrite *and* DR planning *and* code changes at
+once — long context degrades. Work moves between focused sessions through written
+handoffs (plan → implementation report → verification report → upgrade notes),
+each session owning one stage.
+
+**The AI layers are added conservatively, simplest first** — reusable skills,
+then deterministic verification checks, then hooks (starting with
+dangerous-action blockers and session logging only), then subagents, with
+multi-agent orchestration last, once the base is proven. Subagents are used for
+**research and adversarial review** (fan-out search, edge-case hunting,
+challenging assumptions), never as authorities that edit source-of-truth docs,
+make governance decisions, or touch secrets, databases, or production. The
+concrete templates, hook scripts, and skill definitions are build detail — they
+live in the future Work Packet, not on this descriptive page.
+
 ### Backup and recovery
 
 Owning the knowledge base means owning its durability. The discipline mirrors
@@ -348,6 +402,11 @@ out of scope until a real pain point justifies them:
   the repo already implies — Work Packet → Execution Contract → Decision → Change
   → Release — because those links are real and queryable. Even that is a possible
   future, not a v1 goal (see [Open Questions](#open-questions)).
+- **No full multi-agent orchestration yet.** Autonomous harnesses (self-driving
+  agent loops, agent teams that act without review) come *after* the base — the
+  Markdown/wiki store, skills, verification checks, and conservative hooks — is
+  proven reliable, searchable, and recoverable. Building the orchestrator first
+  adds risk and complexity before the foundation earns it.
 
 ## Interactions
 

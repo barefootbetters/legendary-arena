@@ -556,6 +556,7 @@ function makeTerminalStateWithTwists(
     mastermind: { baseCardId: 'test-mastermind', tacticsDefeated: [] },
     villainDeckCardTypes: {},
     cardVictoryPoints: {},
+    escapedPile: [],
     counters,
   } as unknown as LegendaryGameState;
 }
@@ -591,5 +592,73 @@ describe('deriveScoringInputs schemeTwistNegative producer (WP-529 / D-24340)', 
     const breakdown = buildScoreBreakdown(inputs, config);
     assert.equal(breakdown.penaltyBreakdown.schemeTwistNegative, 3 * 400);
     assert.equal(breakdown.weightedPenaltyTotal, 1200);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-528 / D-24339 — bystanderLost penalty producer (escaped-pile derivation)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds the smallest terminal LegendaryGameState for the bystanderLost
+ * derivation: no players (VP / rescues 0), a mastermind stub, empty counters,
+ * and the escaped pile + card-type map under test. Cast narrowly per the
+ * ai.legalMoves.test.ts precedent.
+ */
+function makeTerminalStateWithEscapedPile(
+  escapedPile: string[],
+  villainDeckCardTypes: Record<string, string>,
+): LegendaryGameState {
+  return {
+    playerZones: {},
+    mastermind: { baseCardId: 'test-mastermind', tacticsDefeated: [] },
+    villainDeckCardTypes,
+    cardVictoryPoints: {},
+    escapedPile,
+    counters: {},
+  } as unknown as LegendaryGameState;
+}
+
+describe('deriveScoringInputs bystanderLost producer (WP-528 / D-24339)', () => {
+  it('AC-1: counts the bystander-typed entries of G.escapedPile', () => {
+    const state = makeTerminalStateWithEscapedPile(
+      ['bys-1', 'bys-2', 'bys-3'],
+      { 'bys-1': 'bystander', 'bys-2': 'bystander', 'bys-3': 'bystander' },
+    );
+    const inputs = deriveScoringInputs(makeReplayResult(10), state);
+    assert.equal(inputs.penaltyEventCounts.bystanderLost, 3);
+    // why: also the control-revert (AC-5) — reverting the derivation to `= 0`
+    // makes this assertion fail, so the producer is non-vacuously tested.
+    assert.notEqual(inputs.penaltyEventCounts.bystanderLost, 0);
+  });
+
+  it('AC-2: an empty escapedPile yields bystanderLost 0 (no throw)', () => {
+    const state = makeTerminalStateWithEscapedPile([], {});
+    const inputs = deriveScoringInputs(makeReplayResult(10), state);
+    assert.equal(inputs.penaltyEventCounts.bystanderLost, 0);
+  });
+
+  it('AC-3: an escapedPile mixing villains and bystanders counts only the bystanders (villains are the villainEscaped count)', () => {
+    const state = makeTerminalStateWithEscapedPile(
+      ['vil-1', 'bys-1', 'vil-2', 'bys-2'],
+      { 'vil-1': 'villain', 'bys-1': 'bystander', 'vil-2': 'villain', 'bys-2': 'bystander' },
+    );
+    const inputs = deriveScoringInputs(makeReplayResult(10), state);
+    assert.equal(inputs.penaltyEventCounts.bystanderLost, 2);
+  });
+
+  it('AC-4: the derived count flows through buildScoreBreakdown into the weighted penalty total', () => {
+    // why: REFERENCE_PENALTY_WEIGHTS.bystanderLost === 500; the bare terminal state
+    // carries no other penalty, reward, round, or VP, so the whole weighted penalty
+    // total is the 2-bystander contribution (2 x 500 = 1000).
+    const config = makeReferenceConfig();
+    const state = makeTerminalStateWithEscapedPile(
+      ['bys-1', 'bys-2'],
+      { 'bys-1': 'bystander', 'bys-2': 'bystander' },
+    );
+    const inputs = deriveScoringInputs(makeReplayResult(10), state);
+    const breakdown = buildScoreBreakdown(inputs, config);
+    assert.equal(breakdown.penaltyBreakdown.bystanderLost, 2 * 500);
+    assert.equal(breakdown.weightedPenaltyTotal, 1000);
   });
 });

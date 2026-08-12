@@ -555,6 +555,7 @@ function makeTerminalStateWithTwists(schemeTwistCount: number): LegendaryGameSta
     mastermind: { baseCardId: 'test-mastermind', tacticsDefeated: [] },
     villainDeckCardTypes: {},
     cardVictoryPoints: {},
+    escapedPile: [],
     counters: { schemeTwistCount },
   } as unknown as LegendaryGameState;
 }
@@ -576,9 +577,53 @@ describe('deriveScoringInputsFromFinalState schemeTwistNegative producer (WP-529
       mastermind: { baseCardId: 'test-mastermind', tacticsDefeated: [] },
       villainDeckCardTypes: {},
       cardVictoryPoints: {},
+      escapedPile: [],
       counters: {},
     } as unknown as LegendaryGameState;
     const inputs = deriveScoringInputsFromFinalState(state, 10);
     assert.equal(inputs.penaltyEventCounts.schemeTwistNegative, 0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-528 / D-24339 — bystanderLost producer symmetry with the live path
+// ---------------------------------------------------------------------------
+
+describe('deriveScoringInputsFromFinalState bystanderLost producer (WP-528 / D-24339)', () => {
+  test('AC-6: the PAR-calibration path counts bystander-typed escapedPile entries symmetrically (incl. a scheme-twist-carried Bystander)', () => {
+    // why: the producer counts by card type, so a Bystander carried away via the
+    // scheme-twist escape path (schemeTwistResolvers.ts) is counted identically to one
+    // from the reveal path — both land in escapedPile typed 'bystander'. The escaped
+    // Villain ('villain') is the separate villainEscaped count and must not be counted.
+    const state = {
+      playerZones: {},
+      mastermind: { baseCardId: 'test-mastermind', tacticsDefeated: [] },
+      villainDeckCardTypes: {
+        'vil-1': 'villain',
+        'bys-reveal': 'bystander',
+        'bys-twist': 'bystander',
+      },
+      cardVictoryPoints: {},
+      escapedPile: ['vil-1', 'bys-reveal', 'bys-twist'],
+      counters: {},
+    } as unknown as LegendaryGameState;
+    const inputs = deriveScoringInputsFromFinalState(state, 10);
+    assert.equal(inputs.penaltyEventCounts.bystanderLost, 2);
+    // why: control-revert — reverting this aggregator copy to `0` fails here, proving
+    // the two derivations are symmetric on bystander-loss.
+    assert.notEqual(inputs.penaltyEventCounts.bystanderLost, 0);
+  });
+
+  test('an empty escapedPile yields bystanderLost 0 (no throw)', () => {
+    const state = {
+      playerZones: {},
+      mastermind: { baseCardId: 'test-mastermind', tacticsDefeated: [] },
+      villainDeckCardTypes: {},
+      cardVictoryPoints: {},
+      escapedPile: [],
+      counters: {},
+    } as unknown as LegendaryGameState;
+    const inputs = deriveScoringInputsFromFinalState(state, 10);
+    assert.equal(inputs.penaltyEventCounts.bystanderLost, 0);
   });
 });
