@@ -36403,4 +36403,22 @@ _Active — landed at WP-529 execution (EC-564). Hard-dep: WP-048 ✅ + D-24178 
 
 _Active — architecture record, no WP. ewiki companion: `ai-second-brain` (stays `status: draft` until built). Precedent: Ubuntu Lab Provisioning governance pattern. No engine-layer, determinism, or persistence impact._
 
+### D-24342 — Penalty weights anchored to the rulebook 4:3:1 ratio (Drafted 2026-08-12 — WP-531 / EC-566; not yet landed)
+
+**Decision.** The three **rulebook** penalty weights are anchored to the community/rulebook **4:3:1** ratio — `bystanderLost : schemeTwistNegative : villainEscaped = 4 : 3 : 1` — expressed in this engine's centesimal weights as **`bystanderLost 400` : `schemeTwistNegative 300` : `villainEscaped 100`** (`villainEscaped = 100` is the rulebook's "1.00" unit). This is the Legendary Leagues / rulebook Total Score relationship (`Total Score = VP − 4·bystanders − 3·twists − 1·escapes`), validated by the cross-system review that also motivated the producer WPs (WP-528 / WP-529).
+
+**Scale.** The ratio is fixed; the absolute scale is the minimal centesimal mapping `400 / 300 / 100`. The alternative `800 / 600 / 200` (retaining the reference's prior `villainEscaped = 200`) is rejected as non-minimal — the rulebook's lightest penalty maps to `1.00`, not `2.00`.
+
+**Where it applies.** The frozen scoring surface `docs/12-SCORING-REFERENCE.md` (all three weight statements: the default-weights table, the "Default Values Satisfy All Invariants" worked block, and the "Full Formula (Expanded)" line) and the test `ScenarioScoringConfig` (`data/scoring-configs/test-…json`, previously `villainEscaped 100 / schemeTwistNegative 50 / bystanderLost 300`), the latter with a `scoringConfigVersion` bump `1 → 2`. This establishes the authoring standard for production configs when they are created; none exist yet.
+
+**Unchanged.** `mastermindTacticUntaken` (+100) and `scenarioSpecificPenalty` (scenario-defined) are Legendary-Arena-specific penalties **not** part of the rulebook triple, and the reward weights (`W_BP` bystanderReward, `W_VP`, `W_R`) are untouched.
+
+**Deliberate parity.** Lowering `villainEscaped` to the rulebook 1-unit (`100`) makes it equal to `mastermindTacticUntaken` (`100`) and `roundCost` (`W_R = 100`) in the reference defaults. This is intended, not a collision: neither equality is an enforced structural invariant, and semantically a villain escape, a missed tactic, and one round of elapsed time are all reasonably "one unit" of cost. The reference prose framing `mastermindTacticUntaken` as a "minor / tiebreaker-level" penalty (calibrated when escape was `200`) is now parity, not sub-escape; kept as-is (a scenario may still weight tactics lower via its own config).
+
+**Invariants preserved.** All three `12-SCORING-REFERENCE` structural invariants (enforced by `validateScoringConfig`) hold under the new weights: `W_BP > villainEscaped` (reference `300 > 100`; test config `200 > 100`); `bystanderLost > villainEscaped` (`400 > 100`); `bystanderLost > W_BP` (reference `400 > 300`; test config `400 > 200`).
+
+**No logic / no re-score.** Weights are data consumed by the existing `computeRawScore`; no engine logic changes and no `G` state is touched, so `finalStateHash` is unaffected. No production `ScenarioScoringConfig` or `legendary.competitive_scores` row exists under the old weights, so no historical re-score is owed; the `scoringConfigVersion` bump is the forward comparability boundary (VISION §22). SAFE-KNOBS §"Explicitly Non-Configurable" lists scoring formulas as a governed surface, so this change is a WP + this record, not a customer knob.
+
+_Reserved by WP-531; flips Active at WP-531 execution. Hard-dep: WP-048 ✅ + WP-528 ✅ + WP-529 ✅._
+
 Protect this file.
