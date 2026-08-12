@@ -33,6 +33,14 @@ test('findPendingChoiceMove returns the resolveOptionalKoReward short-circuit', 
   assert.deepEqual(found, { name: 'resolveOptionalKoReward', args: { zone: 'hand', index: 2 } });
 });
 
+test('findPendingChoiceMove returns the resolveGiveHqHeroChoice short-circuit (WP-532)', () => {
+  // why: WP-532 / D-24343 — Paibok the Power Skrull parks a give-an-HQ-Hero
+  // choice; the loop must drain the engine's resolve short-circuit like any other.
+  const parked = [{ name: 'resolveGiveHqHeroChoice', args: { cardId: 'core-spider-man' } }];
+  const found = findPendingChoiceMove(parked);
+  assert.deepEqual(found, { name: 'resolveGiveHqHeroChoice', args: { cardId: 'core-spider-man' } });
+});
+
 test('findPendingChoiceMove drains every block-all resolve short-circuit (WP-427)', () => {
   // why: the list had drifted to 2 of the engine's block-all resolve moves; each must be
   // recognized so the bot drains the parked choice via the fast-path (the put-bottom-HQ
@@ -48,6 +56,7 @@ test('findPendingChoiceMove drains every block-all resolve short-circuit (WP-427
     'resolveOptionalPutBottomHQ',
     'resolvePutAnyNumberBottomHQ',
     'resolveHeroChoice',
+    'resolveGiveHqHeroChoice',
   ];
   for (const name of allResolveMoves) {
     const parked = [{ name, args: { any: 'default' } }];

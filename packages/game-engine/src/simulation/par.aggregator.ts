@@ -88,6 +88,7 @@ import { resolveVictoryPileCardPick } from '../moves/resolveVictoryPileCardPick.
 import { resolveReturnZeroCostDiscard } from '../moves/resolveReturnZeroCostDiscard.js';
 import { resolveDiscardToPlay } from '../moves/resolveDiscardToPlay.js';
 import { resolveReturnOnDiscard } from '../moves/resolveReturnOnDiscard.js';
+import { resolveGiveHqHeroChoice } from '../moves/giveHqHeroChoice.resolve.js';
 import { resolveOptionalPutBottomHQ } from '../moves/resolveOptionalPutBottomHQ.js';
 import { resolvePutAnyNumberBottomHQ } from '../moves/resolvePutAnyNumberBottomHQ.js';
 
@@ -446,6 +447,9 @@ const MOVE_MAP: Record<string, MoveFn> = {
   resolveReturnZeroCostDiscard: (context, args) => resolveReturnZeroCostDiscard(context as never, args as never),
   resolveDiscardToPlay: (context, args) => resolveDiscardToPlay(context as never, args as never),
   resolveReturnOnDiscard: (context, args) => resolveReturnOnDiscard(context as never, args as never),
+  // why: WP-532 / D-24343 — same dispatch-completeness rule as the runner MOVE_MAP; the
+  // interactive give-HQ-Hero resolve (Paibok Fight) must be dispatchable here too (pinned by the drift guard).
+  resolveGiveHqHeroChoice: (context, args) => resolveGiveHqHeroChoice(context as never, args as never),
   // why: WP-427 / D-24248 — same dispatch-completeness rule as the runner MOVE_MAP; the two
   // put-bottom-HQ resolve moves getLegalMoves now short-circuits to must be dispatchable here
   // too, or the per-turn loop hangs (pinned by the drift guard).

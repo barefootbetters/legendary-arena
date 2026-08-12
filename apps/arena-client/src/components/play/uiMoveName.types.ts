@@ -79,6 +79,9 @@ export type UiMoveName =
   | 'resolveDiscardToPlay'
   // why: WP-498 / D-24301 — unblocks the optional return-on-discard prompt (Cyclops Unending Energy).
   | 'resolveReturnOnDiscard'
+  // why: WP-532 / D-24343 — unblocks the Paibok the Power Skrull Fight give-HQ-Hero prompt
+  // (pick which HQ Hero every player gains).
+  | 'resolveGiveHqHeroChoice'
   // why: WP-380 / D-24181 — surfaces the WP-379 Wound "Healing" ability (engine
   // healWounds). Dispatched with an empty payload; the move takes no arguments.
   | 'healWounds'

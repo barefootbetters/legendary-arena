@@ -16,7 +16,7 @@
  * attachBystanderToVillain, awardAttachedBystanders.
  */
 
-import type { LegendaryGameState, PendingKoHeroChoice } from '../types.js';
+import type { LegendaryGameState, PendingKoHeroChoice, PendingGiveHqHeroChoice } from '../types.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
 import type {
   VillainAbilityTiming,
@@ -2118,6 +2118,159 @@ function selectHqHeroIndexByTraitHighestCost(
 }
 
 /**
+ * Selects the HQ slot index of the highest-cost Hero currently in the HQ, or null
+ * when the HQ holds no Hero. Ties resolve to the RIGHTMOST index — the same
+ * selection determinism as `captureHeroFromHq`'s `highestCost` selector (WP-214)
+ * and `selectHqHeroIndexByTraitHighestCost`, but with NO trait filter: Paibok gives
+ * "a Hero in the HQ" (any class/team, D-24343). Shared by the each-player handler's
+ * non-current auto-gain and (via the resolve move) the bot default pick.
+ *
+ * @param G - Game state (read-only; only `G.hq` and `G.cardStats`).
+ * @returns The selected HQ slot index, or null when no HQ Hero exists.
+ */
+export function selectHighestCostHqIndex(G: LegendaryGameState): number | null {
+  let selectedIndex: number | null = null;
+  let highestCost = -1;
+  for (let hqIndex = 0; hqIndex < G.hq.length; hqIndex++) {
+    const slot = G.hq[hqIndex];
+    if (slot === null || slot === undefined) {
+      continue;
+    }
+    const heroCost = G.cardStats[slot]?.cost ?? 0;
+    // why: D-24343 — highest cost wins; a tie (equal cost) resolves to the RIGHTMOST
+    // index, mirroring captureHeroFromHq's highestCost selector so HQ selection
+    // determinism is identical across every HQ-selection call site.
+    if (heroCost > highestCost || (heroCost === highestCost && hqIndex > (selectedIndex ?? -1))) {
+      highestCost = heroCost;
+      selectedIndex = hqIndex;
+    }
+  }
+  return selectedIndex;
+}
+
+/**
+ * Removes the HQ Hero at `hqIndex`, refills the vacated slot from `G.heroDeck`, and
+ * pushes the removed Hero onto `playerId`'s discard pile — the shared "gain an HQ
+ * Hero" mutation for `give-hq-hero-each-player` (WP-532 / D-24343).
+ *
+ * @param G - Game state (mutated: `G.hq`, `G.heroDeck`, the recipient's discard).
+ * @param playerId - The recipient whose discard the Hero enters.
+ * @param hqIndex - The HQ slot to take (expected to hold a non-null Hero).
+ * @returns The gained Hero ext_id, or null when the slot was empty.
+ */
+function gainHqHeroToPlayerDiscard(
+  G: LegendaryGameState,
+  playerId: string,
+  hqIndex: number,
+): CardExtId | null {
+  const heroId = G.hq[hqIndex];
+  if (heroId === null || heroId === undefined) {
+    return null;
+  }
+  // why: vacate the selected slot, then refill it from G.heroDeck — the refillHqSlot
+  // contract (leaves the slot null when the reservoir is empty).
+  G.hq[hqIndex] = null;
+  const refillResult = refillHqSlot(G.hq, hqIndex, G.heroDeck);
+  G.hq = refillResult.hq;
+  G.heroDeck = refillResult.heroDeck;
+  // why: D-24327 — "gain" routes to the recipient's DISCARD, never the victory pile.
+  const zones = G.playerZones[playerId];
+  if (zones) {
+    zones.discard.push(heroId);
+  }
+  return heroId;
+}
+
+/**
+ * give-hq-hero-each-player primitive — every player gains one Hero from the HQ into
+ * their discard (Paibok the Power Skrull Fight — "Choose a Hero in the HQ for each
+ * player. Each player gains that Hero.", D-24343 / WP-532).
+ *
+ * Non-current players resolve FIRST (sorted) — each auto-gains the highest-cost HQ
+ * Hero + refill; THEN the current (fighting) player either parks an interactive choice
+ * (≥ 2 HQ Heroes), auto-gains the sole remaining Hero (exactly 1), or no-ops (0).
+ * Keyword-less → self-narrates via `pushLog`; returns `{ targets: [] }` (plus
+ * `pending: true` when the current player parked).
+ */
+function villainEffectGiveHqHeroEachPlayer(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  _cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  _descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  const label = villainEffectTimingLabel(timing);
+  // why: D-24343 / D-24284 — the operator-locked current-parks / others-auto split (the
+  // human fighting player picks their own Hero; bot allies + non-current players get the
+  // highest-cost Hero). This is a design choice, NOT an engine limitation — a
+  // current-player-multi-pick rendering was available on the same queue but deliberately
+  // not taken. Non-current players resolve FIRST, sorted (Object.keys().sort() = lexical
+  // ascending, D-18902), each gaining the highest-cost HQ Hero + refill, so the current
+  // player later picks from the HQ that remains (a single deterministic sequence).
+  const gainedNames: string[] = [];
+  for (const playerId of Object.keys(G.playerZones).sort()) {
+    if (playerId === currentPlayer) {
+      continue;
+    }
+    const hqIndex = selectHighestCostHqIndex(G);
+    if (hqIndex === null) {
+      // why: the HQ holds no Hero — a reachable no-op for this player (never a hollow).
+      continue;
+    }
+    const gainedId = gainHqHeroToPlayerDiscard(G, playerId, hqIndex);
+    if (gainedId !== null) {
+      gainedNames.push(`Player ${playerId} gained ${resolveCardDisplayName(G, gainedId)}`);
+    }
+  }
+
+  // why: count the non-null HQ Heroes that remain for the current player. ≥ 2 → a genuine
+  // "which Hero" choice → park; exactly 1 → the gain is forced → auto-resolve; 0 → no-op.
+  const currentHqIndices: number[] = [];
+  for (let hqIndex = 0; hqIndex < G.hq.length; hqIndex++) {
+    const slot = G.hq[hqIndex];
+    if (slot !== null && slot !== undefined) {
+      currentHqIndices.push(hqIndex);
+    }
+  }
+
+  let parked = false;
+  if (currentHqIndices.length >= 2) {
+    // why: D-24343 / D-24284 — the current (human) player picks interactively; park one
+    // give-hq-hero entry. A bot-driven current player is auto-resolved by ai.legalMoves
+    // (highest-cost), so the queue never deadlocks. Lazily create the FIFO queue at the
+    // park site (never in Game.setup) so an undefined field keeps the hash oracles stable.
+    if (!G.pendingGiveHqHeroChoices) {
+      G.pendingGiveHqHeroChoices = [];
+    }
+    const entry: PendingGiveHqHeroChoice = { choiceType: 'give-hq-hero', playerID: currentPlayer };
+    G.pendingGiveHqHeroChoices.push(entry);
+    parked = true;
+  } else if (currentHqIndices.length === 1) {
+    // why: exactly one HQ Hero remains — the gain is forced, so auto-resolve it (no prompt).
+    const gainedId = gainHqHeroToPlayerDiscard(G, currentPlayer, currentHqIndices[0]!);
+    if (gainedId !== null) {
+      gainedNames.push(`Player ${currentPlayer} gained ${resolveCardDisplayName(G, gainedId)}`);
+    }
+  }
+
+  // why: self-narrate (keyword-less). G.messages is hash-excluded (D-24081). Report the
+  // auto-gains that landed, plus the interactive prompt when the current player parked;
+  // an all-empty HQ (nobody gained, no park) is a blocked no-op.
+  if (gainedNames.length > 0) {
+    pushLog(G, `${label} effect: ${gainedNames.join('; ')} from the HQ.`, 'applied');
+  }
+  if (parked) {
+    pushLog(G, `${label} effect: Player ${currentPlayer} — choose a Hero in the HQ to gain.`, 'neutral');
+  } else if (gainedNames.length === 0) {
+    pushLog(G, `${label} effect: no Hero in the HQ to gain; no effect.`, 'blocked');
+  }
+
+  // why: WP-316 — targets stays [] (gains narrate by recipient, not a card-name surface);
+  // pending: true marks the parked interactive choice for the current player.
+  return parked ? { targets: [], pending: true } : { targets: [] };
+}
+
+/**
  * give-hq-hero-by-trait-to-current primitive — remove the highest-cost HQ Hero matching
  * the trait predicate, refill the vacated HQ slot from `G.heroDeck`, and give the Hero to
  * the current (fighting) player's discard (co2e Ultron Fight — "Choose a [hc:tech] Hero
@@ -2430,6 +2583,7 @@ const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandl
   'capture-bystanders-plus-per-hq-hero-by-trait': villainEffectCaptureBystandersPlusPerHqHeroByTrait,
   'give-hq-hero-by-trait-to-current': villainEffectGiveHqHeroByTraitToCurrent,
   'swap-two-city-villains': villainEffectSwapTwoCityVillains,
+  'give-hq-hero-each-player': villainEffectGiveHqHeroEachPlayer,
 };
 
 /**

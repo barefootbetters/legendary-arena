@@ -43,6 +43,7 @@
     "capture-bystanders-plus-per-hq-hero-by-trait": { "wp": "WP-521", "decision": "D-24334" },
     "give-hq-hero-by-trait-to-current": { "wp": "WP-522", "decision": "D-24335" },
     "swap-two-city-villains": { "wp": "WP-523", "decision": "D-24336" },
+    "give-hq-hero-each-player": { "wp": "WP-532", "decision": "D-24343" },
     "draw": { "wp": "WP-022", "decision": "D-2201" },
     "rescue": { "wp": "WP-215", "decision": "D-21501" },
     "undercover": { "wp": "WP-282", "decision": "D-24060" },

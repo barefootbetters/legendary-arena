@@ -27,6 +27,7 @@ import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
 import { hasPendingReturnZeroCostDiscard } from './resolveReturnZeroCostDiscard.js';
 import { hasPendingDiscardToPlay } from './resolveDiscardToPlay.js';
 import { hasPendingReturnOnDiscard } from './resolveReturnOnDiscard.js';
+import { hasPendingGiveHqHeroChoice } from './giveHqHeroChoice.resolve.js';
 import { hasHealedThisTurn } from './healWounds.js';
 import { getHooksForCard, filterHooksByTiming } from '../rules/heroAbility.types.js';
 import { formatCardRef } from '../log/logDisplay.js';
@@ -114,6 +115,8 @@ export function recruitHero(
   if (hasPendingDiscardToPlay(G)) return;
   // why: block-all — pendingReturnOnDiscard must be resolved before any other action (WP-498 / D-24301)
   if (hasPendingReturnOnDiscard(G)) return;
+  // why: block-all — pendingGiveHqHeroChoice (Paibok Fight) must be resolved first (WP-532 / D-24343)
+  if (hasPendingGiveHqHeroChoice(G)) return;
 
   // why: D-24180 — a player who used the Wound Healing ability this turn may not
   // fight or recruit for the rest of the turn (the reverse lock).

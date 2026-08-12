@@ -18,6 +18,7 @@ import { resolvePutAnyNumberBottomHQ, hasPendingPutAnyNumberBottomHQ } from './m
 import { resolveReturnZeroCostDiscard, hasPendingReturnZeroCostDiscard } from './moves/resolveReturnZeroCostDiscard.js';
 import { resolveDiscardToPlay, hasPendingDiscardToPlay } from './moves/resolveDiscardToPlay.js';
 import { resolveReturnOnDiscard, hasPendingReturnOnDiscard } from './moves/resolveReturnOnDiscard.js';
+import { resolveGiveHqHeroChoice, hasPendingGiveHqHeroChoice } from './moves/giveHqHeroChoice.resolve.js';
 import { resolveVictoryPileCardPick, hasPendingVictoryPileCardPick } from './moves/resolveVictoryPileCardPick.js';
 import { resolveDrawOrEmpowered, hasPendingDrawOrEmpowered } from './moves/drawOrEmpowered.resolve.js';
 import { executeRuleHooks } from './rules/ruleRuntime.execute.js';
@@ -143,6 +144,8 @@ function advanceStage({ G, events }: MoveContext): void {
   if (hasPendingDiscardToPlay(G)) { return; }
   // why: block-all — pendingReturnOnDiscard (optional return-a-discarded-card) must be resolved before any other action (WP-498 / D-24301)
   if (hasPendingReturnOnDiscard(G)) { return; }
+  // why: block-all — pendingGiveHqHeroChoice (interactive give-HQ-Hero pick, Paibok Fight) must be resolved before any other action (WP-532 / D-24343)
+  if (hasPendingGiveHqHeroChoice(G)) { return; }
   // why: turn cannot end while a player-choice reveal is pending; at cleanup,
   // advanceTurnStage would otherwise call events.endTurn() and bypass the
   // endTurn-move guard (D-22002). The KO turn-end block is already covered by
@@ -480,6 +483,11 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     // return-a-discarded-card choice (Cyclops Unending Energy). Server-only
     // (client: false) per D-10008 — it mutates playerZones fields.
     resolveReturnOnDiscard: { move: resolveReturnOnDiscard, client: false },
+    // why: WP-532 / D-24343 — resolveGiveHqHeroChoice resolves the interactive
+    // give-HQ-Hero choice (Paibok the Power Skrull Fight). Server-only
+    // (client: false) per D-10008 — it mutates G.hq / G.heroDeck / playerZones.
+    // NOT in CORE_MOVE_NAMES (mirrors resolveKoHeroChoice / resolveReturnOnDiscard).
+    resolveGiveHqHeroChoice: { move: resolveGiveHqHeroChoice, client: false },
   },
 
   // why: phase `next` fields declare the intended linear progression

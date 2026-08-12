@@ -29,6 +29,7 @@ import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
 import { hasPendingReturnZeroCostDiscard } from './resolveReturnZeroCostDiscard.js';
 import { hasPendingDiscardToPlay, getDiscardToPlayCost } from './resolveDiscardToPlay.js';
 import { hasPendingReturnOnDiscard } from './resolveReturnOnDiscard.js';
+import { hasPendingGiveHqHeroChoice } from './giveHqHeroChoice.resolve.js';
 import { formatBaseEconomyClause, formatPlayedCardLabel } from '../log/logDisplay.js';
 import { pushLog } from '../log/logPush.js';
 
@@ -124,6 +125,10 @@ export function drawCards({ G, playerID, ...context }: MoveContext, args: DrawCa
 
   // why: block-all — pendingReturnOnDiscard must be resolved before any other action (WP-498 / D-24301)
   if (hasPendingReturnOnDiscard(G)) {
+    return;
+  }
+  // why: block-all — pendingGiveHqHeroChoice (interactive give-HQ-Hero pick, Paibok Fight) must be resolved before any other action (WP-532 / D-24343)
+  if (hasPendingGiveHqHeroChoice(G)) {
     return;
   }
 
@@ -305,6 +310,10 @@ export function playCard({ G, playerID, ...context }: MoveContext, args: PlayCar
   if (hasPendingReturnOnDiscard(G)) {
     return;
   }
+  // why: block-all — pendingGiveHqHeroChoice (interactive give-HQ-Hero pick, Paibok Fight) must be resolved before any other action (WP-532 / D-24343)
+  if (hasPendingGiveHqHeroChoice(G)) {
+    return;
+  }
 
   // Step 3: Mutate G
   const playerZones = G.playerZones[playerID];
@@ -432,6 +441,10 @@ export function endTurn({ G, playerID, events }: MoveContext): void {
 
   // why: block-all — pendingReturnOnDiscard must be resolved before any other action (WP-498 / D-24301)
   if (hasPendingReturnOnDiscard(G)) {
+    return;
+  }
+  // why: block-all — pendingGiveHqHeroChoice (interactive give-HQ-Hero pick, Paibok Fight) must be resolved before any other action (WP-532 / D-24343)
+  if (hasPendingGiveHqHeroChoice(G)) {
     return;
   }
 

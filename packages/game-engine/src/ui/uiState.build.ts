@@ -51,6 +51,7 @@ import type {
   UIPendingReturnZeroCostDiscard,
   UIPendingDiscardToPlay,
   UIPendingReturnOnDiscard,
+  UIPendingGiveHqHeroChoice,
   UIHqCardChoice,
   UIEligibleKoHeroCard,
 } from './uiState.types.js';
@@ -68,6 +69,10 @@ import { getEligibleZeroCostDiscardCards } from '../moves/resolveReturnZeroCostD
 // resolveDiscardToPlay validates at resolve time (the round-trip rule).
 import { getEligibleDiscardToPlayCards } from '../moves/resolveDiscardToPlay.js';
 import { getEligibleReturnOnDiscardCards } from '../moves/resolveReturnOnDiscard.js';
+// why: WP-532 / D-24343 — reuse the engine's authoritative give-HQ-Hero eligibility helper
+// so the projected list is byte-identical to what resolveGiveHqHeroChoice validates against
+// (the round-trip rule) — never a re-implemented HQ filter.
+import { getEligibleGiveHqHeroCards } from '../moves/giveHqHeroChoice.resolve.js';
 // why: WP-258 — the projected hollow-effect record type is the engine's
 // canonical HollowEffectRecord (WP-257), reused directly, not a parallel UI type.
 import type { HollowEffectRecord } from '../diagnostics/hollowEffect.types.js';
@@ -1257,6 +1262,32 @@ export function buildUIState(
     };
   }
 
+  // why: WP-532 / D-24343 — project the FRONT entry of G.pendingGiveHqHeroChoices with the
+  // gainable HQ Heroes recomputed fresh via getEligibleGiveHqHeroCards — the SAME predicate
+  // the resolve move validates with, so the client's { cardId } selection always round-trips.
+  // The Heroes live in the PUBLIC G.hq; each display is spread fresh (aliasing defense, WP-111
+  // D-11105). Chooser-only redaction is enforced by filterUIStateForAudience (keyed on
+  // .playerID), so only the fighting player sees the prompt.
+  let pendingGiveHqHeroChoice: UIPendingGiveHqHeroChoice | undefined;
+  if (
+    gameState.pendingGiveHqHeroChoices !== undefined &&
+    gameState.pendingGiveHqHeroChoices.length > 0
+  ) {
+    const frontGive = gameState.pendingGiveHqHeroChoices[0]!;
+    const eligibleGiveCards: UIHqCardChoice[] = [];
+    for (const cardId of getEligibleGiveHqHeroCards(gameState, frontGive.playerID)) {
+      eligibleGiveCards.push({
+        cardId,
+        display: { ...resolveDisplay(cardId, gameState) },
+      });
+    }
+    pendingGiveHqHeroChoice = {
+      choiceType: 'give-hq-hero',
+      playerID: frontGive.playerID,
+      eligible: eligibleGiveCards,
+    };
+  }
+
   // --- 13d. Project hollow-effect diagnostics (read-only) ---
   // why: WP-258 — surface the WP-257 runtime channel G.diagnostics.hollowEffects
   // onto UIState. Read-only over G (buildUIState NEVER mutates G); per-record
@@ -1401,6 +1432,8 @@ export function buildUIState(
     // why: WP-383 / D-24184 — omit-when-absent (never an `undefined` literal) under exactOptionalPropertyTypes.
     ...(pendingDiscardToPlay !== undefined ? { pendingDiscardToPlay } : {}),
     ...(pendingReturnOnDiscard !== undefined ? { pendingReturnOnDiscard } : {}),
+    // why: WP-532 / D-24343 — omit-when-absent (never an `undefined` literal) under exactOptionalPropertyTypes.
+    ...(pendingGiveHqHeroChoice !== undefined ? { pendingGiveHqHeroChoice } : {}),
     // why: WP-258 — conditional spread so an absent channel omits the field
     // (no `hollowEffects: undefined` literal under exactOptionalPropertyTypes,
     // and no empty-array injection that would dirty optional-field fixtures).

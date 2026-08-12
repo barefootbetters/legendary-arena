@@ -333,7 +333,7 @@ describe('VILLAIN_EFFECT_PRIMITIVES drift-detection', () => {
   // why: WP-523 (D-24336) appended a nineteenth, `swap-two-city-villains`, at position 19
   // (co2e Whirlwind Ambush — swap the lowest- and highest-index villain-occupied City
   // spaces; the first City board-position manipulation).
-  it('contains exactly the 19 canonical primitives in order', () => {
+  it('contains exactly the 20 canonical primitives in order', () => {
     const expectedPrimitives: VillainEffectPrimitive[] = [
       'ko-hero',
       'gain-wound',
@@ -354,11 +354,12 @@ describe('VILLAIN_EFFECT_PRIMITIVES drift-detection', () => {
       'capture-bystanders-plus-per-hq-hero-by-trait',
       'give-hq-hero-by-trait-to-current',
       'swap-two-city-villains',
+      'give-hq-hero-each-player',
     ];
     assert.equal(
       VILLAIN_EFFECT_PRIMITIVES.length,
-      19,
-      'VILLAIN_EFFECT_PRIMITIVES must have exactly 19 entries',
+      20,
+      'VILLAIN_EFFECT_PRIMITIVES must have exactly 20 entries',
     );
     assert.deepStrictEqual(
       [...VILLAIN_EFFECT_PRIMITIVES],

@@ -28,6 +28,7 @@ import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
 import { hasPendingReturnZeroCostDiscard } from './resolveReturnZeroCostDiscard.js';
 import { hasPendingDiscardToPlay } from './resolveDiscardToPlay.js';
 import { hasPendingReturnOnDiscard } from './resolveReturnOnDiscard.js';
+import { hasPendingGiveHqHeroChoice } from './giveHqHeroChoice.resolve.js';
 import { formatPlayedCardLabel } from '../log/logDisplay.js';
 import { pushLog } from '../log/logPush.js';
 
@@ -119,6 +120,10 @@ export function playFromUndercover(
   }
   // why: block-all — pendingReturnOnDiscard must be resolved before any other action (WP-498 / D-24301)
   if (hasPendingReturnOnDiscard(G)) {
+    return;
+  }
+  // why: block-all — pendingGiveHqHeroChoice (interactive give-HQ-Hero pick, Paibok Fight) must be resolved before any other action (WP-532 / D-24343)
+  if (hasPendingGiveHqHeroChoice(G)) {
     return;
   }
 

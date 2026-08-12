@@ -169,7 +169,7 @@ core-villain-brotherhood-juggernaut,Juggernaut,core,villain,ko-hero,executable,W
 core-villain-radiation-maestro,Maestro,core,villain,(unmarked),unmarked,,,
 core-villain-masters-of-evil-melter,Melter,core,villain,ko-cullable-each-deck-top,executable,WP-519,D-24332,packages/game-engine/src/villain/villainEffects.execute.ts#ko-cullable-each-deck-top
 core-villain-brotherhood-mystique,Mystique,core,villain,become-scheme-twist,executable,WP-481,D-24287,packages/game-engine/src/villain/villainEffects.execute.ts#become-scheme-twist
-core-villain-skrulls-paibok-the-power-skrull,Paibok the Power Skrull,core,villain,(unmarked),unmarked,,,
+core-villain-skrulls-paibok-the-power-skrull,Paibok the Power Skrull,core,villain,give-hq-hero-each-player,executable,WP-532,D-24343,packages/game-engine/src/villain/villainEffects.execute.ts#give-hq-hero-each-player
 core-villain-brotherhood-sabretooth,Sabretooth,core,villain,reveal-or-wound,executable,WP-469,D-24281,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
 henchman-savage-land-mutates,Savage Land Mutates,core,henchman,(unmarked),unmarked,,,
 henchman-sentinel,Sentinel,core,henchman,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero

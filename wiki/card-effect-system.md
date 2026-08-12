@@ -157,7 +157,8 @@ plus optional `target` / `magnitude` / `selector` / predicate params
 `gain-wound-unless-victory-villain-group` · `override-next-hand-size` ·
 `ko-wounds-current-hand-and-discard` · `ko-cullable-each-deck-top` ·
 `capture-bystanders-plus-per-hq-hero-by-trait` ·
-`give-hq-hero-by-trait-to-current` · `swap-two-city-villains`). A new
+`give-hq-hero-by-trait-to-current` · `swap-two-city-villains` ·
+`give-hq-hero-each-player`). A new
 target / magnitude / selector variant is a descriptor **param** (a data
 marker), not a new keyword plus switch arm plus drift test (D-24023).
 
@@ -257,6 +258,23 @@ only refills), so a rational cooperative chooser never KOs — the KO branch is 
 implemented, and "choose a player" collapses to the fighting player (the WP-519
 Melter / WP-516 Ymir dominated-option collapses). No `[hc:tech]` HQ Hero is a
 reachable no-op. Self-narrates via `pushLog` (keyword-less).
+
+**Every player gains an HQ Hero — interactively (D-24343).** The
+`give-hq-hero-each-player` primitive — Paibok the Power Skrull's Fight *"Choose a
+Hero in the HQ for each player. Each player gains that Hero."* — is the twentieth
+primitive and the **second interactive** villain effect (after WP-492's magnitude-N
+KO). It broadens `give-hq-hero-by-trait-to-current` (remove an HQ Hero → discard +
+refill) to **every player** with **no trait filter**. Fidelity is
+operator-locked: the current (fighting) player picks *which* HQ Hero
+**interactively** — a new `pendingGiveHqHeroChoice` on the current-parks / others-auto
+split — while every
+**other** player, and any bot/auto-driven player, auto-gains the **highest-cost** HQ
+Hero (ties → rightmost). Non-current players resolve first (sorted, a single
+deterministic sequence); the current player parks when ≥ 2 HQ Heroes remain,
+auto-gains the sole Hero when exactly 1, and no-ops when 0. This is a design choice,
+not an engine limit — a current-player-multi-pick rendering was available on the same
+queue but deliberately not taken. Gains route to **discard** (D-24327), never
+victory. Self-narrates via `pushLog` (keyword-less).
 
 **Moving Villains around the City (D-24336).** The `swap-two-city-villains`
 primitive — co2e Whirlwind's Ambush *"Two Villains in the city swap spaces."* — is
@@ -519,6 +537,7 @@ handler reads as *applied* while the real Scheme Twist fires elsewhere.
 - WP-521 (D-24334) — the `capture-bystanders-plus-per-hq-hero-by-trait` villain primitive (seventeenth; co2e Baron Zemo's Ambush captures 1 Bystander + 1 per HQ Hero matching a trait — the first HQ-by-trait count; attach-only at Ambush, award on defeat)
 - WP-522 (D-24335) — the `give-hq-hero-by-trait-to-current` villain primitive (eighteenth; co2e Ultron's Fight removes the highest-cost `[hc:tech]` HQ Hero and gives it to the current player's discard, refilling the slot — the KO-or-gift choice auto-resolves to the dominant gift)
 - WP-523 (D-24336) — the `swap-two-city-villains` villain primitive (nineteenth; co2e Whirlwind's Ambush swaps the lowest-index and highest-index villain-occupied City spaces — the first City board-position manipulation; henchmen excluded, fewer than two Villains is a no-op)
+- WP-532 (D-24343) — the `give-hq-hero-each-player` villain primitive (twentieth; the second interactive villain effect — Paibok the Power Skrull's Fight gives every player one HQ Hero into their discard; the current player picks interactively via `pendingGiveHqHeroChoice`, non-current + bot players auto-gain the highest-cost Hero; refills the HQ, gains route to discard)
 - The hollow-effect detection and coverage-ledger spine (DESIGN-HOLLOW-EFFECT-DETECTION.md, DESIGN-EFFECT-AUTHORING-SCALE.md)
 
 ## Scaling and Open Directions

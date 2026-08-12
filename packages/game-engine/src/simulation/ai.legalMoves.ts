@@ -42,6 +42,10 @@ import {
   hasPendingReturnOnDiscard,
   getEligibleReturnOnDiscardCards,
 } from '../moves/resolveReturnOnDiscard.js';
+import {
+  hasPendingGiveHqHeroChoice,
+  selectDefaultGiveHqHeroCard,
+} from '../moves/giveHqHeroChoice.resolve.js';
 import { hasPendingOptionalPutBottomHQ } from '../moves/resolveOptionalPutBottomHQ.js';
 import { hasPendingPutAnyNumberBottomHQ } from '../moves/resolvePutAnyNumberBottomHQ.js';
 
@@ -93,6 +97,10 @@ export const SIMULATION_MOVE_NAMES = [
   // optional return-on-discard choice is parked; it MUST be dispatchable in the sim or the
   // per-turn loop hangs (the WP-289 / D-24073 within-turn hang).
   'resolveReturnOnDiscard',
+  // why: WP-532 / D-24343 — getLegalMoves short-circuits to resolveGiveHqHeroChoice when the
+  // interactive give-HQ-Hero choice (Paibok Fight) is parked; it MUST be dispatchable in the
+  // sim or the per-turn loop hangs (the WP-289 / D-24073 within-turn hang).
+  'resolveGiveHqHeroChoice',
   // why: WP-427 / D-24248 — getLegalMoves now short-circuits to these two put-bottom-HQ
   // resolve moves when their block-all choice is parked; they MUST be dispatchable in the
   // sim (both MOVE_MAPs) or the per-turn loop hangs (maxTurns bounds turns, not
@@ -239,6 +247,20 @@ export function getLegalMoves(
       return [{ name: 'resolveReturnOnDiscard', args: { cardId: eligibleReturns[0]! } }];
     }
     return [{ name: 'resolveReturnOnDiscard', args: { decline: true } }];
+  }
+
+  // why: WP-532 / D-24343 — pending give-HQ-Hero short-circuit. While the interactive
+  // give-HQ-Hero choice (Paibok Fight) is parked the block-all guard freezes every other
+  // move, so the bot must resolve it first. Deterministic default: the HIGHEST-COST HQ Hero
+  // (ties → rightmost), matching the handler's non-current auto-gain (the operator-locked
+  // "for the bot, just choose the highest cost"). Returns a list of length EXACTLY 1; fail
+  // closed with the base list if no HQ Hero exists (engine-invariant violation after park).
+  if (hasPendingGiveHqHeroChoice(gameState)) {
+    const defaultHqHero = selectDefaultGiveHqHeroCard(gameState, activePlayer);
+    if (defaultHqHero !== null) {
+      return [{ name: 'resolveGiveHqHeroChoice', args: { cardId: defaultHqHero } }];
+    }
+    return legalMoves;
   }
 
   // why: pending draw-or-empowered short-circuit (D-24069) — while a draw-or-empowered

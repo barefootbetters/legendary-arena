@@ -182,6 +182,11 @@ export function useTurnActions(
   // why: WP-498 / D-24301 — appended LAST (after hasPendingDefeatChoice) so existing
   // positional callers stay valid without edits; degrades gracefully (no gate) when omitted.
   hasPendingReturnOnDiscard: boolean = false,
+  // why: WP-532 / D-24343 — appended LAST (after hasPendingReturnOnDiscard) so existing
+  // positional callers stay valid without edits; degrades gracefully (no gate) when omitted.
+  // True while a Paibok Fight give-HQ-Hero choice is pending; blocks End Turn / Pass
+  // Priority at ANY stage (the engine's full block-all guard set freezes the board).
+  hasPendingGiveHqHeroChoice: boolean = false,
 ): {
   activeStep: TurnStep;
   canRevealVillain: () => GatingResult;
@@ -359,6 +364,15 @@ export function useTurnActions(
           reason: 'Return the discarded card to your hand or decline before taking another action.',
         };
       }
+      // why: WP-532 / D-24343 — End Turn / Pass Priority blocked at any stage while a
+      // Paibok Fight give-HQ-Hero choice is pending (the engine's full block-all guard
+      // set freezes the board). The choice is mandatory — no decline exit to name.
+      if (hasPendingGiveHqHeroChoice) {
+        return {
+          allowed: false,
+          reason: 'Choose a Hero from the HQ for each player to gain before taking another action.',
+        };
+      }
       if (currentStage === 'cleanup' && hasPendingChoice) {
         return {
           allowed: false,
@@ -478,6 +492,15 @@ export function useTurnActions(
           reason: 'Choose which Villain or Mastermind to defeat before taking another action.',
         };
       }
+      if (hasPendingGiveHqHeroChoice) {
+        // why: WP-532 / D-24343 — the engine's block-all guards block endTurn while
+        // pendingGiveHqHeroChoice is set (Paibok Fight); this client-side gate surfaces
+        // the reason so the player sees a tooltip instead of a silent rejection.
+        return {
+          allowed: false,
+          reason: 'Choose a Hero from the HQ for each player to gain before taking another action.',
+        };
+      }
       if (currentStage === 'cleanup' && hasPendingChoice) {
         // why: D-22203 — the engine's dual turn-end guard (WP-220) blocks
         // endTurn when pendingHeroChoice is set; this client-side gate
@@ -517,7 +540,8 @@ export function useTurnActions(
         hasPendingDiscardChoice ||
         hasPendingReorderChoice ||
         hasPendingDefeatChoice ||
-        hasPendingReturnOnDiscard
+        hasPendingReturnOnDiscard ||
+        hasPendingGiveHqHeroChoice
       ) {
         return {
           allowed: false,

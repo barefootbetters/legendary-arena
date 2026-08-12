@@ -138,6 +138,9 @@ function isLockedEffectKeyword(keyword) {
 // `swap-two-city-villains` (no-param) appended by WP-523 (D-24336 — co2e Whirlwind Ambush:
 // swap two City Villains' spaces; validates via the terminal no-param `parts.length === 1`
 // branch, like ko-cullable-each-deck-top).
+// `give-hq-hero-each-player` (no-param) appended by WP-532 (D-24343 — the core skrulls
+// Paibok the Power Skrull Fight: choose a Hero in the HQ for each player, each player gains
+// that Hero; validates via the terminal no-param `parts.length === 1` branch).
 const VILLAIN_EFFECT_PRIMITIVES = [
   'ko-hero',
   'gain-wound',
@@ -158,6 +161,7 @@ const VILLAIN_EFFECT_PRIMITIVES = [
   'capture-bystanders-plus-per-hq-hero-by-trait',
   'give-hq-hero-by-trait-to-current',
   'swap-two-city-villains',
+  'give-hq-hero-each-player',
 ];
 
 // why: WP-489 / D-24295 — hand-synced local copy of the engine's CITY_SPACE_NAMES
