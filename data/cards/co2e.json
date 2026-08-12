@@ -2450,7 +2450,7 @@
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-skulls-paibok-the-power-skrull.webp",
           "abilities": [
             "Paibok gets +1[icon:attack] for each Hero Class among Heroes in the HQ.",
-            "Fight: Choose a Hero from the HQ for each player. Each player gains that Hero."
+            "Fight: Choose a Hero from the HQ for each player. Each player gains that Hero. [effect:give-hq-hero-each-player]"
           ],
           "copies": 2
         },

@@ -10,11 +10,11 @@
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 363,
+      "executable": 364,
       "deferred": 0,
       "condition": 5,
       "unsupported": 367,
-      "unmarked": 1091
+      "unmarked": 1090
     }
   },
   "entries": [
@@ -5668,11 +5668,11 @@
       "name": "Paibok the Power Skrull",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "give-hq-hero-each-player",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#give-hq-hero-each-player",
+      "wp": "WP-532",
+      "decision": "D-24343"
     },
     {
       "extId": "co2e-villain-skulls-skrull-queen-veranke",
@@ -27515,7 +27515,7 @@
     "co2e-villain-skulls-paibok-the-power-skrull": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "give-hq-hero-each-player"
       ]
     },
     "co2e-villain-skulls-skrull-queen-veranke": {

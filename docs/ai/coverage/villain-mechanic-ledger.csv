@@ -132,7 +132,7 @@ co2e-villain-brotherhood-of-mutants-juggernaut,Juggernaut,co2e,villain,(unmarked
 co2e-villain-radiation-maestro-wasteland-hulk,"Maestro, Wasteland Hulk",co2e,villain,(unmarked),unmarked,,,
 co2e-villain-masters-of-evil-melter,Melter,co2e,villain,ko-cullable-each-deck-top,executable,WP-519,D-24332,packages/game-engine/src/villain/villainEffects.execute.ts#ko-cullable-each-deck-top
 co2e-villain-brotherhood-of-mutants-mystique,Mystique,co2e,villain,(unmarked),unmarked,,,
-co2e-villain-skulls-paibok-the-power-skrull,Paibok the Power Skrull,co2e,villain,(unmarked),unmarked,,,
+co2e-villain-skulls-paibok-the-power-skrull,Paibok the Power Skrull,co2e,villain,give-hq-hero-each-player,executable,WP-532,D-24343,packages/game-engine/src/villain/villainEffects.execute.ts#give-hq-hero-each-player
 co2e-villain-brotherhood-of-mutants-sabretooth,Sabretooth,co2e,villain,(unmarked),unmarked,,,
 henchman-savage-land-mutates,Savage Land Mutates,co2e,henchman,(unmarked),unmarked,,,
 co2e-villain-sinister-spider-foes-scorpion,Scorpion,co2e,villain,(unmarked),unmarked,,,
