@@ -29,10 +29,16 @@ export function useDataFreshness(
   });
 
   const relativeTime = computed(() => {
-    if (updatedAt.value === null) {
+    const timestamp = updatedAt.value;
+    // why: WP-527 / D-19804 — the live /api/dash/* routes return a bare { data }
+    // envelope carrying no updatedAt, so at runtime the timestamp arrives absent
+    // (undefined) or NaN despite the number|null type; an unguarded
+    // `now - timestamp` then renders "NaNh ago". Number.isFinite rejects
+    // null / undefined / NaN alike, so every no-timestamp case maps to 'Never'.
+    if (timestamp === null || !Number.isFinite(timestamp)) {
       return 'Never';
     }
-    const diffMs = now.value - updatedAt.value;
+    const diffMs = now.value - timestamp;
     const diffSeconds = Math.floor(diffMs / 1000);
 
     if (diffSeconds < 5) {
@@ -50,7 +56,10 @@ export function useDataFreshness(
   });
 
   const sourceLabel = computed(() => {
-    if (source.value === null) {
+    // why: WP-527 — the live bare { data } envelope carries no source, so
+    // source.value is undefined (not just null); both mean "no provenance
+    // label", so both collapse to '' and the badge's v-if="sourceLabel" hides it.
+    if (source.value === null || source.value === undefined) {
       return '';
     }
     return source.value;
