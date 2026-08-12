@@ -89,10 +89,11 @@ Dashboard Gates green: lint / typecheck / `test:coverage` **442 / 0** at
 `pnpm -r --no-bail test` green. No server / route / `endpoints.ts` / mock change; **no new
 D-entry** (enforces D-19804, preserves D-19602). Standard two-session lane, two-commit topology
 (`EC-562:` + `SPEC:`). Executed in an isolated worktree because the canonical checkout was on a
-concurrent session's branch. **User-Visible Surface = dashboard.legendary-arena.com — D-24026
-live-verify operator-pending** (behind the dashboard Hanko + Cloudflare Access gate; the
-Paid-Action Errors widget should show no false `MOCK` badge and no `NaNh ago` on the deployed
-Monetization page).
+concurrent session's branch. **User-Visible Surface = dashboard.legendary-arena.com — D-24026 ✅
+live-verified 2026-08-11** — on the deployed Monetization page, the Paid-Action Errors widget shows
+**no source badge at all** (live fetch → `source` undefined → `v-if="sourceLabel"` hides it, the
+false `MOCK` gone), and Net Revenue's freshness reads **`Never`** instead of `NaNh ago` (the
+`useDataFreshness` non-finite guard), with its legitimate D-19602 `MOCK` preserved.
 
 ### WP-528 — Wire the `bystanderLost` Penalty Producer — DONE (2026-08-11)
 
