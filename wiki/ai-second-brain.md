@@ -20,6 +20,7 @@ status: draft
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\ai-second-brain.md (this page — https://ewiki.legendary-arena.com/ai-second-brain/)
   - ../docs/ai/DECISIONS.md#d-24341
+  - ../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md
 last-reviewed: 2026-08-11
 ---
 
