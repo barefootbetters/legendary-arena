@@ -185,18 +185,18 @@ The derivation step is the single boundary between match runtime
 and the scoring system. Once `ScoringInputs` exists, the rest of
 the pipeline is pure.
 
-#### Penalty producer status — four of five safe-skip to zero
+#### Penalty producer status
 
-**Only `villainEscaped` has an engine producer today.** The other
-four `PenaltyEventType` values are hardcoded to `0` in
-`deriveScoringInputs` as D-4801 safe-skips, each with a `// why:`
-comment naming its deferred follow-up:
+**Two of the five `PenaltyEventType` values have an engine producer today —
+`villainEscaped` and `schemeTwistNegative`.** Both are pure end-of-match counter
+reads. The remaining three are hardcoded to `0` in `deriveScoringInputs` as
+D-4801 safe-skips, each with a `// why:` comment naming its deferred follow-up:
 
 | Penalty event | Producer | Status |
 |---|---|---|
 | `villainEscaped` | `ENDGAME_CONDITIONS.ESCAPED_VILLAINS` counter | **live** |
-| `bystanderLost` | none | safe-skip `0` — needs a `BYSTANDERS_LOST` counter or a structured event log |
-| `schemeTwistNegative` | none | safe-skip `0` — twist polarity is not classified in `G` |
+| `bystanderLost` | none | safe-skip `0` — needs an escaped-pile / event-log producer (WP-528) |
+| `schemeTwistNegative` | `G.counters.schemeTwistCount` counter | **live** — counts every scheme twist (WP-529 / D-24340; no polarity classification) |
 | `mastermindTacticUntaken` | none | safe-skip `0` — derivable at endgame, but the semantics need per-turn history |
 | `scenarioSpecificPenalty` | none | safe-skip `0` — no generic producer; awaits structured scenario events |
 
@@ -210,8 +210,8 @@ played today is not scored on civilian casualties at all. The
 rescue side (`bystanderReward`) *is* live, being derived from the
 victory pile.
 
-Do not describe these penalties as "counted from" anything until
-their producer lands. Player-facing guidance written against the
+Do not describe a still-safe-skipped penalty as "counted from" anything until
+its producer lands. Player-facing guidance written against the
 specification rather than the implementation has already drifted
 once on exactly this point.
 
@@ -223,10 +223,11 @@ ranking system scores a match with the rulebook Total Score
 Read as a *ratio*, that is independent corroboration of the moral
 hierarchy `penaltyEventWeights` encode (VISION §21): a lost bystander
 outweighs a scheme twist, which outweighs an escaped villain, **4 : 3 : 1**.
-Two of those three — `bystanderLost` and `schemeTwistNegative` — are exactly
-the penalties still safe-skipping to zero above for lack of a producer. When
-those producers are wired, the 4 : 3 : 1 ratio is a ready-made **Phase-1
-seed** for their relative weights rather than a number invented from scratch
+Of those three, `schemeTwistNegative` is now produced (WP-529 / D-24340) and
+`villainEscaped` was already live; only `bystanderLost` still safe-skips to zero
+above for lack of a producer (WP-528). Once it too is wired, the 4 : 3 : 1 ratio is
+a ready-made **Phase-1 seed** for their relative weights rather than a number
+invented from scratch
 (at centesimal precision that reads as `400 / 300 / 100` before any
 simulation refinement). This is an anchor for the *ordering and rough
 magnitude*, not a replacement for calibration — the published weights remain
@@ -284,22 +285,23 @@ future WPs per the source `// why:` comment.
   player decisions — Hero Deck construction, play order, Mastermind timing —
   were made well. The `mastermindTacticUntaken` penalty is the scoring hook
   for that page's Rank-2 Mastermind-timing decision (specified but not yet
-  produced — see [Penalty producer status](#penalty-producer-status--four-of-five-safe-skip-to-zero)).
+  produced — see [Penalty producer status](#penalty-producer-status)).
 - **[Scheme](scheme.md), Mastermind, and Villain Groups.** Together
   they form the scenario identity — the `ScenarioKey` is derived
   exclusively from these slugs. PAR is keyed on the scenario, never
   on the team that plays it.
 - **[Villain Deck](villain-deck.md).** Three of the five
   `PenaltyEventType` values are *specified* to source from the
-  villain-deck pipeline, but only the first is wired up today —
-  see [Penalty producer status](#penalty-producer-status--four-of-five-safe-skip-to-zero):
+  villain-deck pipeline, and two are wired up today —
+  see [Penalty producer status](#penalty-producer-status):
   - `villainEscaped` — **live**; counted from
     `ENDGAME_CONDITIONS.ESCAPED_VILLAINS`
-  - `bystanderLost` — **not yet produced**; will count from
-    bystander-resolution paths when the counter lands
-  - `schemeTwistNegative` — **not yet produced**; will count from
-    scheme-twist outcomes that qualify (per the per-scenario
-    penalty config)
+  - `schemeTwistNegative` — **live** (WP-529 / D-24340); counts
+    **every** scheme twist via `G.counters.schemeTwistCount` — no
+    polarity/qualification (every Legendary twist advances the villain's
+    scheme; the rulebook subtracts 3 × every twist)
+  - `bystanderLost` — **not yet produced**; will count from the
+    escaped-pile derivation when its producer lands (WP-528)
 - **[Scheme Twist](scheme-twist.md).** The `schemeTwistNegative`
   penalty event ties scoring to twist outcomes. The Scheme Twist
   page documents the trigger; this page documents the penalty
@@ -415,7 +417,7 @@ future WPs per the source `// why:` comment.
 - [Legendary Leagues — Ranking](https://www.legendaryleagues.com/about/ranking)
   — the community ordinal-ranking system; source of the rulebook 4 : 3 : 1
   Total Score penalty ratio anchored in
-  [Penalty producer status](#penalty-producer-status--four-of-five-safe-skip-to-zero)
+  [Penalty producer status](#penalty-producer-status)
   and contrasted in full on
   [PAR Simulation Calibration §Comparison](par-simulation-calibration.md#comparison-absolute-par-vs-ordinal-league-ranking)
 - [`docs/12.1-PAR-ARTIFACT-INTEGRITY.md`](../docs/12.1-PAR-ARTIFACT-INTEGRITY.md)

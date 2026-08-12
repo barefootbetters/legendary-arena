@@ -7,6 +7,39 @@
 
 ## Current State
 
+### WP-529 — Wire the `schemeTwistNegative` Penalty Producer — DONE (2026-08-11)
+
+Third `PenaltyEventType` producer to go live (after `villainEscaped`). Both score-derivation
+paths hard-coded `schemeTwistNegative` to `0` as a D-4801 safe-skip — `deriveScoringInputs`
+(real-match / leaderboard) and `deriveScoringInputsFromFinalState` (the PAR-calibration path
+in `par.aggregator.ts`) — so the villain's scheme advancing was invisible to a match's Final
+Score, and PAR baselines were calibrated as if scheme twists carried no cost.
+
+Both now derive `schemeTwistNegative = G.counters.schemeTwistCount ?? 0` — a pure end-of-match
+counter read, mirroring the existing `escapes = counters[ESCAPED_VILLAINS] ?? 0` read. **D-24340
+(Active):** every Legendary scheme twist advances the villain's scheme against the players (no
+beneficial twist; the community/rulebook Total Score subtracts `3 × (twists)` unconditionally),
+so the producer counts **every** twist — no per-twist polarity classification. The durable
+`G.counters.schemeTwistCount` already tallies every revealed twist (`schemeHandlers.ts
+buildGenericTwistEffects`), so **no new `G` field** is added and `finalStateHash` /
+`PRE_WP080_HASH` stay **byte-identical** (no re-pin).
+
+Kept symmetric across both derivation copies so calibrated PAR is not systematically easier than
+the live score. Tests AC-1..AC-5 (`deriveScoringInputsFromFinalState` exported for the AC-5
+symmetry unit test); **control-revert non-vacuous** (zeroing either derivation fails
+AC-1/AC-3/AC-5, observed). `wiki/scoring.md` producer status flipped live — the count-bearing
+heading was renamed count-neutral and its three referencing anchor links updated atomically
+(`wiki-viewer:check-links` 0), and the polarity "outcomes that qualify" prose was replaced with
+"counts every scheme twist (no polarity/qualification)".
+
+game-engine **2470 → 2475** tests / 0 fail; whole-workspace `pnpm -r --no-bail test` green
+(scaffold observed — no existing fixture shifted); `pnpm -r build` 0. Lightweight lane barred
+(PAR/scoring); standard two-session lane, two-commit topology (`EC-564:` + `SPEC:`), one PR.
+**WP-528 coordination:** `bystanderLost` (WP-528) was not merged at execution, so the live
+producer set is `villainEscaped` + `schemeTwistNegative`; the wiki table and the aggregator
+JSDoc are phrased against that actual set. **Engine producer live; player-observable once a
+production `ScenarioScoringConfig` is authored** — **D-24026 live-verify operator-pending.**
+
 ### WP-530 — Heal-Wounds Button Pending-Choice Gate Parity — DONE (2026-08-11)
 
 Investigation of a reported "bug on the heal wounds button" (you should be able to heal after

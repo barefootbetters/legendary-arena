@@ -19,6 +19,7 @@ import {
   computeFinalScore,
   computeParScore,
   computeRawScore,
+  deriveScoringInputs,
   validateScoringConfig,
 } from './parScoring.logic.js';
 import {
@@ -30,6 +31,8 @@ import {
   type ScoreBreakdown,
   type ScoringInputs,
 } from './parScoring.types.js';
+import type { LegendaryGameState } from '../types.js';
+import type { ReplayResult } from '../replay/replay.types.js';
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -526,5 +529,67 @@ describe('parScoring logic (WP-048)', () => {
 
     const entryRoundtrip: LeaderboardEntry = JSON.parse(JSON.stringify(entry));
     assert.deepStrictEqual(entryRoundtrip, entry);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-529 / D-24340 — schemeTwistNegative penalty producer (counter read)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds the smallest terminal LegendaryGameState that deriveScoringInputs and
+ * computeFinalScores accept: no players (so VP and rescues are 0), a mastermind
+ * stub (computeFinalScores reads baseCardId + tacticsDefeated), empty card-type /
+ * victory-point maps, and only the counters under test. Cast narrowly per the
+ * ai.legalMoves.test.ts precedent — the derivation reads a small, explicit slice
+ * of G, so a full game setup would only add noise.
+ */
+function makeTerminalStateWithTwists(
+  overrides: { schemeTwistCount?: number } = {},
+): LegendaryGameState {
+  const counters: Record<string, number> = {};
+  if (overrides.schemeTwistCount !== undefined) {
+    counters.schemeTwistCount = overrides.schemeTwistCount;
+  }
+  return {
+    playerZones: {},
+    mastermind: { baseCardId: 'test-mastermind', tacticsDefeated: [] },
+    villainDeckCardTypes: {},
+    cardVictoryPoints: {},
+    counters,
+  } as unknown as LegendaryGameState;
+}
+
+/** Minimal ReplayResult — deriveScoringInputs reads only `.turnCount`. */
+function makeReplayResult(turnCount: number): ReplayResult {
+  return { turnCount } as unknown as ReplayResult;
+}
+
+describe('deriveScoringInputs schemeTwistNegative producer (WP-529 / D-24340)', () => {
+  it('AC-1: maps G.counters.schemeTwistCount to penaltyEventCounts.schemeTwistNegative', () => {
+    const state = makeTerminalStateWithTwists({ schemeTwistCount: 7 });
+    const inputs = deriveScoringInputs(makeReplayResult(10), state);
+    assert.equal(inputs.penaltyEventCounts.schemeTwistNegative, 7);
+    // why: also the control-revert (AC-4) — reverting the derivation to `= 0`
+    // makes this assertion fail, so the producer is non-vacuously tested.
+    assert.notEqual(inputs.penaltyEventCounts.schemeTwistNegative, 0);
+  });
+
+  it('AC-2: an absent schemeTwistCount counter yields schemeTwistNegative 0 (the ?? 0 lazy path)', () => {
+    const state = makeTerminalStateWithTwists();
+    const inputs = deriveScoringInputs(makeReplayResult(10), state);
+    assert.equal(inputs.penaltyEventCounts.schemeTwistNegative, 0);
+  });
+
+  it('AC-3: the derived count flows through buildScoreBreakdown into the weighted penalty total', () => {
+    // why: REFERENCE_PENALTY_WEIGHTS.schemeTwistNegative === 400; the bare terminal
+    // state carries no other penalty, reward, round, or VP, so the whole weighted
+    // penalty total is the 3-twist contribution (3 x 400 = 1200).
+    const config = makeReferenceConfig();
+    const state = makeTerminalStateWithTwists({ schemeTwistCount: 3 });
+    const inputs = deriveScoringInputs(makeReplayResult(10), state);
+    const breakdown = buildScoreBreakdown(inputs, config);
+    assert.equal(breakdown.penaltyBreakdown.schemeTwistNegative, 3 * 400);
+    assert.equal(breakdown.weightedPenaltyTotal, 1200);
   });
 });
