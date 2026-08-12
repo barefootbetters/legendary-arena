@@ -33,6 +33,7 @@ import {
 
 import {
   aggregateParFromSimulation,
+  deriveScoringInputsFromFinalState,
   generateScenarioPar,
   validateParResult,
   validateTierOrdering,
@@ -41,6 +42,7 @@ import {
   ParAggregationError,
   PAR_MIN_SAMPLE_SIZE,
 } from './par.aggregator.js';
+import type { LegendaryGameState } from '../types.js';
 import {
   AI_POLICY_TIERS,
   AI_POLICY_TIER_DEFINITIONS,
@@ -535,3 +537,48 @@ function buildTierScores(count: number, median: number): number[] {
   }
   return scores;
 }
+
+// ---------------------------------------------------------------------------
+// WP-529 / D-24340 — schemeTwistNegative producer symmetry with the live path
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds the smallest terminal LegendaryGameState that
+ * deriveScoringInputsFromFinalState + computeFinalScores accept: no players
+ * (VP and rescues 0), a mastermind stub, empty card-type / victory-point maps,
+ * and only the counters under test. Mirrors the logic-suite helper so the AC-5
+ * symmetry assertion compares like with like.
+ */
+function makeTerminalStateWithTwists(schemeTwistCount: number): LegendaryGameState {
+  return {
+    playerZones: {},
+    mastermind: { baseCardId: 'test-mastermind', tacticsDefeated: [] },
+    villainDeckCardTypes: {},
+    cardVictoryPoints: {},
+    counters: { schemeTwistCount },
+  } as unknown as LegendaryGameState;
+}
+
+describe('deriveScoringInputsFromFinalState schemeTwistNegative producer (WP-529 / D-24340)', () => {
+  test('AC-5: the PAR-calibration path derives schemeTwistNegative from the same counter as the live path', () => {
+    const state = makeTerminalStateWithTwists(7);
+    const inputs = deriveScoringInputsFromFinalState(state, 10);
+    assert.equal(inputs.penaltyEventCounts.schemeTwistNegative, 7);
+    // why: control-revert — reverting this aggregator copy to `0` fails here, so the
+    // two derivations are proven symmetric (calibrated PAR scores twists identically
+    // to the live score).
+    assert.notEqual(inputs.penaltyEventCounts.schemeTwistNegative, 0);
+  });
+
+  test('an absent schemeTwistCount counter yields schemeTwistNegative 0 (the ?? 0 lazy path)', () => {
+    const state = {
+      playerZones: {},
+      mastermind: { baseCardId: 'test-mastermind', tacticsDefeated: [] },
+      villainDeckCardTypes: {},
+      cardVictoryPoints: {},
+      counters: {},
+    } as unknown as LegendaryGameState;
+    const inputs = deriveScoringInputsFromFinalState(state, 10);
+    assert.equal(inputs.penaltyEventCounts.schemeTwistNegative, 0);
+  });
+});

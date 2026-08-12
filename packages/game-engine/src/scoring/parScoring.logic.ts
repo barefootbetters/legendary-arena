@@ -90,10 +90,14 @@ export function deriveScoringInputs(
   // or via a structured event log). D-4801 safe-skip.
   const bystanderLostCount = 0;
 
-  // why: no engine producer today; scheme-twist polarity is not
-  // classified in G today. Follow-up WP will add a discriminated
-  // scheme-twist outcome projection. D-4801 safe-skip.
-  const schemeTwistNegativeCount = 0;
+  // why: WP-529 / D-24340 — every Legendary scheme twist advances the villain's
+  // scheme against the players (there is no beneficial twist; the community/rulebook
+  // Total Score subtracts 3 x every twist), so schemeTwistNegative counts ALL twists
+  // with no polarity classification. The durable G.counters.schemeTwistCount already
+  // tallies every revealed twist (schemeHandlers.ts buildGenericTwistEffects), so this
+  // is a pure counter read — mirrors the `escapes` read above — deriving from existing
+  // terminal state, adding no G field (finalStateHash / PRE_WP080_HASH byte-identical).
+  const schemeTwistNegativeCount = gameState.counters.schemeTwistCount ?? 0;
 
   // why: no engine producer today. Untaken mastermind tactics are
   // derivable at endgame from G.mastermind.tacticsRemaining.length but the

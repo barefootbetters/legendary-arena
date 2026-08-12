@@ -671,8 +671,13 @@ function simulateOneGame(
  * Mirrors parScoring.logic.ts deriveScoringInputs but reads directly from
  * LegendaryGameState rather than a ReplayResult (WP-048's
  * deriveScoringInputs requires a ReplayResult — not available in this
- * pipeline). All five penalty-event types follow the WP-048 safe-skip
- * (D-4801) for categories with no engine producer today.
+ * pipeline). Two penalty-event types have engine producers derived here by
+ * counter reads — villainEscaped (ESCAPED_VILLAINS) and schemeTwistNegative
+ * (schemeTwistCount, WP-529 / D-24340); the remaining three (bystanderLost,
+ * mastermindTacticUntaken, scenarioSpecificPenalty) follow the WP-048 safe-skip
+ * (D-4801) for categories with no engine producer today. Kept symmetric with
+ * deriveScoringInputs so calibrated PAR is not systematically easier than the
+ * live score.
  *
  * // why: VP sum uses computeFinalScores per D-4803 team-aggregate rule
  * — the sum across all players, not a single player's total. Bystanders
@@ -680,7 +685,12 @@ function simulateOneGame(
  * WP-067's aggregation. Escapes read G.counters[ESCAPED_VILLAINS] with
  * `?? 0` because the counter is lazily initialised.
  */
-function deriveScoringInputsFromFinalState(
+// why: exported for the EC-564 AC-5 symmetry unit test — it must assert this
+// PAR-calibration derivation reads schemeTwistNegative from the same counter as
+// the live deriveScoringInputs. The function is otherwise only reached through a
+// full generateScenarioPar simulation, which is far too heavy to unit-test the
+// single counter read.
+export function deriveScoringInputsFromFinalState(
   finalState: LegendaryGameState,
   turnCount: number,
 ): ScoringInputs {
@@ -703,13 +713,23 @@ function deriveScoringInputsFromFinalState(
 
   const escapes = finalState.counters[ENDGAME_CONDITIONS.ESCAPED_VILLAINS] ?? 0;
 
-  // why: D-4801 safe-skip — the four penalty types without an engine
-  // producer today are zeroed here. The PAR pipeline rides on whatever
-  // engine producers exist; adding more producers is downstream work.
+  // why: WP-529 / D-24340 — schemeTwistNegative counts EVERY scheme twist (every
+  // Legendary twist advances the villain's scheme against the players; the rulebook
+  // Total Score subtracts 3 x every twist — no polarity classification). Reads the
+  // durable G.counters.schemeTwistCount, mirroring the `escapes` counter read, so the
+  // PAR-calibration path scores twists identically to the live deriveScoringInputs
+  // (symmetric — else a calibrated PAR would be systematically easier than the live
+  // score on twist-heavy scenarios). Derives from existing terminal state — no G field.
+  const schemeTwistNegativeCount = finalState.counters.schemeTwistCount ?? 0;
+
+  // why: D-4801 safe-skip — the three penalty types still without an engine producer
+  // (bystanderLost [WP-528], mastermindTacticUntaken, scenarioSpecificPenalty) are
+  // zeroed here. The PAR pipeline rides on whatever engine producers exist; wiring the
+  // rest is downstream work.
   const penaltyEventCounts: Record<PenaltyEventType, number> = {
     villainEscaped: escapes,
     bystanderLost: 0,
-    schemeTwistNegative: 0,
+    schemeTwistNegative: schemeTwistNegativeCount,
     mastermindTacticUntaken: 0,
     scenarioSpecificPenalty: 0,
   };
