@@ -7,6 +7,44 @@
 
 ## Current State
 
+### WP-530 — Heal-Wounds Button Pending-Choice Gate Parity — DONE (2026-08-11)
+
+Investigation of a reported "bug on the heal wounds button" (you should be able to heal after
+playing cards / triggering effects, as long as you don't recruit or fight). **That reported
+path is correct and unchanged**: `G.hasActedThisTurn` — the flag that bars Healing — is set
+**only** by `fightVillain` / `fightMastermind` / `recruitHero`, never by `playCard` or any
+triggered effect (confirmed from a 2p Dr. Doom + Secret Invasion match log where healing
+succeeded with cards in play).
+
+The investigation surfaced a **latent client/engine divergence**. The arena-client Heal-Wounds
+button gate `canHealWounds` (`useTurnActions.ts`, WP-380 / D-24181) checked only **6** of the
+engine `healWounds` move's **11** block-all pending-choice guards. As each new pending-choice
+type landed after WP-380, its guard was added to the engine move but not the client gate — so
+while one of five choices (`discardToPlay` D-24184, `discardChoice` D-24284, `reorderChoice`
+D-24286, `defeatChoice` D-24291, `returnOnDiscard` D-24301) was unresolved, the button rendered
+**enabled** but the click silently no-op'd at the engine — a live-but-dead button, the
+`getLegalMoves`↔move-guard divergence class.
+
+Fix: `canHealWounds` now ORs all eleven pending predicates (mirrors the engine `healWounds`
+guard set exactly), and `TurnActionBar.vue healGate()` threads the already-declared-but-unpassed
+`hasPendingReturnOnDiscard` prop (position 19). Four files (`useTurnActions.ts` +
+`TurnActionBar.vue` + `useTurnActions.test.ts` [+5 parity cases] + `TurnActionBar.test.ts`
+[+1 wiring case]). Scaffold OBSERVED (affected-file baseline 74 → 80; full arena-client suite
+**1221 / 0**; typecheck 0); `pnpm -r build && pnpm -r --no-bail test` green. Additive gate
+guards + one prop thread — no engine / contract / determinism surface; **no new D-entry**
+(applies D-24184 / D-24284 / D-24286 / D-24291 / D-24301). Lightweight lane, one PR
+(`EC-565:` + `SPEC:`). (Renumbered from WP-528/EC-563 after #1340 took those numbers for the
+bystanderLost producer.) **D-24026 live-verify operator-pending.**
+
+**Proactive follow-up flagged (out of scope):** the engine `healWounds` move itself does not
+guard `pendingOptionalPutBottomHQ` / `pendingPutAnyNumberBottomHQ` (guards the `advanceStage`
+cluster carries) — an engine-layer question for a separate WP; this client fix mirrors the
+engine's *actual* 11-guard set, it does not add engine guards.
+
+Also shipped alongside: a **Wounds** ewiki page (`wiki/wounds.md`) documenting the Healing
+ability, the acted/healed mutual-exclusion (D-24179 / D-24180), the `healWounds` move contract,
+and this gate-parity requirement.
+
 ### WP-526 — URL-Preview Scheme-Aware Setup-Requirement Display — DONE (2026-08-11)
 
 Lightweight-lane follow-up to the Secret Invasion "6 Heroes" epic, surfaced from a live
