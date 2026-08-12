@@ -32,9 +32,11 @@ last-reviewed: 2026-08-11
 > is locked by [DECISIONS.md D-24341](../docs/ai/DECISIONS.md#d-24341) — a
 > standalone architecture record, **not** an engine Work Packet (the platform
 > crosses no engine layer), mirroring the Ubuntu Lab Provisioning governance
-> pattern. No executable runbook / Work Packet exists yet; the buildable steps
-> are deferred. The page stays `status: draft` — cite this record, but treat
-> every unbuilt claim as a plan, not a fact, until the platform is built.
+> pattern. The executable build runbook lives at
+> [`docs/ops/AI_SECOND_BRAIN_RUNBOOK.md`](../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md)
+> — an operator runbook, not an engine Work Packet — but nothing there has been
+> run yet. The page stays `status: draft` — cite this record, but treat every
+> unbuilt claim as a plan, not a fact, until the platform is built.
 >
 > **Scope note.** The knowledge this platform indexes spans more than Legendary
 > Arena — engineering consulting work, Barefoot Betters, and cross-project
@@ -240,9 +242,9 @@ principles; the choice is convenience vs minimalism, and it is recorded in
 > **The executable pieces are not on this page.** The ingestion script, the
 > Postgres schema DDL, a `docker-compose` for the stack, and the
 > provision-and-deploy runbook are *execution instruction* — which the wiki
-> [SCHEMA](SCHEMA.md) keeps off entity pages. When this platform is committed to,
-> those land in a Work Packet / operator runbook that this page then cites; the
-> page stays the descriptive design record.
+> [SCHEMA](SCHEMA.md) keeps off entity pages. They live in the operator runbook,
+> [`docs/ops/AI_SECOND_BRAIN_RUNBOOK.md`](../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md);
+> this page stays the descriptive design record it realizes.
 
 ### Knowledge-query MCP surface
 
@@ -455,7 +457,8 @@ multi-agent orchestration last, once the base is proven. Subagents are used for
 challenging assumptions), never as authorities that edit source-of-truth docs,
 make governance decisions, or touch secrets, databases, or production. The
 concrete templates, hook scripts, and skill definitions are build detail — they
-live in the future Work Packet, not on this descriptive page.
+live in the [operator runbook](../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md), not on
+this descriptive page.
 
 **A minimal feedback surface makes the improvement loop real.** *Every Failure
 Upgrades the System* only works if failures are captured somewhere durable. The
@@ -516,8 +519,9 @@ out of scope until a real pain point justifies them:
 
 ### Pilot scope (recommended first vertical)
 
-Start narrow — this names *what* to build first, not *how* (the build steps stay
-in the future Work Packet). The first useful slice:
+Start narrow — this names *what* to build first, not *how* (the build steps live
+in the [operator runbook](../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md)). The first
+useful slice:
 
 - **Navigation only** over the Legendary Arena governance corpus — `DECISIONS.md`,
   a small working set of Work Packets and Execution Contracts, and this wiki —
@@ -540,6 +544,10 @@ answers the question* discipline as the scope boundaries.
   that would run on a host. The split follows the same instinct the rest of the
   repo uses: *how the box is built* and *what runs on the box* are separate
   documents.
+- **[`docs/ops/AI_SECOND_BRAIN_RUNBOOK.md`](../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md)**
+  — the executable operator runbook this page is the design record for: provision,
+  `docker-compose`, schema, ingestion, first skills, and the restore drill. This
+  page defines *what and why*; the runbook is *how*.
 - **[Disaster Recovery](disaster-recovery.md)** — the recovery discipline this
   platform inherits: two backup layers, rehearsed restores, honest
   recoverability verdicts. The knowledge base is another crown-jewel store that
@@ -605,16 +613,21 @@ answers the question* discipline as the scope boundaries.
   reached exactly, never chunk-embedded. This is *why* the architecture looks the
   way it does — it protects the determinism and auditability of the governed
   corpus (see [Retrieval strategy](#retrieval-strategy-navigation-first-vector-where-it-earns-its-keep)).
+- **2026-08-11 — build runbook drafted** at
+  [`docs/ops/AI_SECOND_BRAIN_RUNBOOK.md`](../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md),
+  realizing the D-24341 deferral of the executable steps into an operator runbook
+  (not an engine Work Packet). Drafted, not yet run.
 
 ## Open Questions
 
 The architecture and governance vehicle are locked by
 [DECISIONS.md D-24341](../docs/ai/DECISIONS.md#d-24341); what remains are
-implementation choices, ordered below by decision urgency. The executable runbook
-itself — ingestion script, schema DDL, `docker-compose`, provision-and-deploy
-steps, the first core skills — does not yet exist and belongs in a future Work
-Packet or separate program repo, not on this descriptive page. The page stays
-`status: draft` until the platform is built.
+implementation choices, ordered below by decision urgency. The executable build
+runbook now exists as
+[`docs/ops/AI_SECOND_BRAIN_RUNBOOK.md`](../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md)
+(provision, `docker-compose`, schema, ingestion, first skills, restore drill), but
+nothing there has been run yet — the page stays `status: draft` until the platform
+is built.
 
 1. **Ingestion: framework or pure-custom?** The design is settled (deterministic,
    structure-aware, incremental, provenance-rich); the implementation is not.
@@ -645,6 +658,9 @@ Packet or separate program repo, not on this descriptive page. The page stays
 
 - [DECISIONS.md D-24341](../docs/ai/DECISIONS.md#d-24341) — the architecture +
   governance-vehicle lock this page is the descriptive companion to.
+- [`docs/ops/AI_SECOND_BRAIN_RUNBOOK.md`](../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md)
+  — the executable operator runbook (provision, `docker-compose`, schema,
+  ingestion, first skills, restore drill) this page is the design record for.
 - [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md) — the host-build sibling
   page (droplet hardening, Node/Postgres/Nginx stack, restore and DR drills).
 - [Disaster Recovery](disaster-recovery.md) — the backup-and-restore discipline
