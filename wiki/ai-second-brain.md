@@ -244,6 +244,26 @@ principles; the choice is convenience vs minimalism, and it is recorded in
 > those land in a Work Packet / operator runbook that this page then cites; the
 > page stays the descriptive design record.
 
+### Knowledge-query MCP surface
+
+Every agent reaches the vector layer through **one shared MCP server**, not by
+talking to Postgres directly. Keeping the interface stable and model-agnostic is
+what makes the replaceable-agent claim real: swapping Claude Code for another
+model, or adding Open WebUI beside it, does not change how knowledge is
+retrieved. The contract is deliberately narrow:
+
+- **Inputs.** A natural-language query, an optional domain filter, an optional
+  source-path prefix, a top-*k*, and a hybrid-vs-dense-only flag.
+- **Behaviour.** Hybrid retrieval (dense similarity + Postgres full-text) with
+  metadata filters applied as SQL; returns matching chunks with their full
+  provenance.
+- **Citation shape.** Every result carries `source_path`, `header_path`,
+  `domain`, `content_hash`, and a short excerpt — so the calling agent can ground
+  its answer and the operator can verify it.
+- **Guarantees.** Read-only; never mutates the store; and **never returns the
+  governance documents that were deliberately kept out of the vector layer** —
+  those are reached by exact/navigational retrieval, not this surface.
+
 ### Vector and embedding strategy
 
 For the minority vector layer only (governed docs are navigated, not embedded —
@@ -260,6 +280,27 @@ see [Retrieval strategy](#retrieval-strategy-navigation-first-vector-where-it-ea
   single-vendor-readable embedding format into the knowledge base — that would
   quietly break *Model Independence* (see Edge Cases).
 
+The vector store is a single Postgres table (or one per domain if growth later
+demands it). The columns below are the **design invariant** the eventual DDL must
+satisfy — they are what make *Auditability* and *Deterministic Recovery* real;
+the actual DDL lives in the future runbook, not here:
+
+| Column | Purpose |
+|---|---|
+| `id` | Stable node identifier |
+| `embedding` | `vector(768)` (nomic-embed-text) |
+| `content` | Chunk text |
+| `source_path` | Repo-relative (or absolute) path to the source |
+| `domain` | Engineering / Legendary Arena / … |
+| `header_path` | Markdown header trail (`# A → ## B → …`) |
+| `content_hash` | SHA-256 of the source chunk at ingest time |
+| `git_commit` | Commit that produced the source (when Git-backed) |
+| `ingested_at` | Timestamp of the upsert |
+
+An HNSW index rides the `embedding` column; `domain` and `source_path` carry
+plain indexes for fast metadata filtering; full-text search uses Postgres's
+existing `tsvector` facilities.
+
 ### Hosting and security posture
 
 - **Host.** A dedicated **unmanaged Ubuntu 24.04 VPS** with full root. As of
@@ -274,8 +315,12 @@ see [Retrieval strategy](#retrieval-strategy-navigation-first-vector-where-it-ea
   own auth, or Cloudflare Access / Authelia in front of it. The same host
   hardening the lab already documents — UFW, Fail2Ban, SSH-key-only
   ([Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md)) — applies here.
-- **Secrets stay on the owned host.** Model API keys, Postgres credentials, and
-  MCP tokens live only on this box — the ownership the whole design is for.
+- **Secrets stay on the owned host, scoped per server.** Model API keys,
+  Postgres credentials, and MCP tokens live only on this box. Each MCP server
+  gets its **own least-privilege credential** — the knowledge-query and Postgres
+  read servers hold a read-only DB role, the filesystem server is confined to the
+  allowed corpus paths — so a compromised or misbehaving connector cannot exceed
+  its brief. This is *Permissions Beat Prompts* at the credential layer.
 
 ### Knowledge repositories
 
@@ -304,6 +349,15 @@ same way it navigates this wiki's own [INDEX.md](INDEX.md) — following links
 through structured Markdown, which models do extremely well. Routing (which
 domain a question belongs to) plus index navigation covers the large majority of
 retrieval; the vector layer only catches what index navigation cannot.
+
+Navigation-first only works if the index discipline is consistent. Every domain
+root and every significant project folder carries an `INDEX.md` that: **lists**
+its authoritative documents with one-line descriptions and relative links;
+**groups** entries by role (decisions, execution, reference, risk, …) once the
+set is large; **never duplicates** content — it only points; and is **kept under
+the same review discipline** as the documents it indexes. An agent begins most
+lookups by reading the relevant `INDEX.md` and following links, exactly as a
+human operator navigates this wiki.
 
 **Local Markdown is the first-class format.** The corpus is portable Markdown in
 operator-controlled repositories. A local viewer/editor (e.g. Obsidian) may be
@@ -403,6 +457,14 @@ make governance decisions, or touch secrets, databases, or production. The
 concrete templates, hook scripts, and skill definitions are build detail — they
 live in the future Work Packet, not on this descriptive page.
 
+**A minimal feedback surface makes the improvement loop real.** *Every Failure
+Upgrades the System* only works if failures are captured somewhere durable. The
+design intends a lightweight, reviewable record — query logs, citation failures
+(a cited chunk that turned out wrong or missing), and verification-report
+outcomes — that the operator periodically reads to spot missing rules, checks, or
+templates. It is an operator-reviewed log, not an auto-applied learning loop; the
+capture format is build detail for the Work Packet.
+
 ### Backup and recovery
 
 Owning the knowledge base means owning its durability. The discipline mirrors
@@ -418,6 +480,11 @@ the engine's data-recovery posture in [Disaster Recovery](disaster-recovery.md):
 - A backup is proven only after a restore has actually been rehearsed on a
   throwaway host, exactly as the Ubuntu lab rehearses the game DB restore
   ([Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md), Restore drill).
+- **The vector index is a derived artifact, not a source of truth.** A full
+  rebuild of the index from the source Markdown corpus is always preferred over
+  restoring a potentially stale index — the same "snapshots are derived records"
+  instinct the engine applies to `G`. Only the source corpus and the knowledge
+  DB's non-derived tables are true backup targets.
 
 ### Scope boundaries (what this deliberately is not)
 
@@ -442,6 +509,29 @@ out of scope until a real pain point justifies them:
   Markdown/wiki store, skills, verification checks, and conservative hooks — is
   proven reliable, searchable, and recoverable. Building the orchestrator first
   adds risk and complexity before the foundation earns it.
+- **Single-operator by design.** This is one operator's brain — not a
+  multi-tenant service, a shared team knowledge base, or a public-facing product.
+  Multi-user collaboration, tenancy isolation, and public sharing are out of
+  scope; naming that here keeps them from creeping in as implicit requirements.
+
+### Pilot scope (recommended first vertical)
+
+Start narrow — this names *what* to build first, not *how* (the build steps stay
+in the future Work Packet). The first useful slice:
+
+- **Navigation only** over the Legendary Arena governance corpus — `DECISIONS.md`,
+  a small working set of Work Packets and Execution Contracts, and this wiki —
+  reached exclusively via the Filesystem / Git MCP servers and per-domain
+  `INDEX.md` files. It is the best-defined domain today and needs no vector layer.
+- **One reference corpus** for the first vector layer — a single high-volume,
+  unstructured archive (a research-PDF collection or a meeting-transcript set).
+  That is the *only* material chunked and embedded in the pilot.
+
+Everything else waits until the pilot has been used for real work, failures have
+been captured (the feedback surface above), and the recovery path has been
+rehearsed. Expanding domains or adding vector corpora is an explicit later
+decision, not an automatic next step — the same *build the simplest thing that
+answers the question* discipline as the scope boundaries.
 
 ## Interactions
 
@@ -509,32 +599,47 @@ out of scope until a real pain point justifies them:
   this ewiki page, not an engine Work Packet — the Ubuntu Lab Provisioning
   precedent). This page is its descriptive companion and stays `draft` until the
   platform is built.
+- **2026-08-11 — navigation-first / do-not-vectorize-governance** established as
+  the load-bearing retrieval decision: ~90% structured-Markdown navigation, a
+  minority vector layer over high-volume reference only, and governance records
+  reached exactly, never chunk-embedded. This is *why* the architecture looks the
+  way it does — it protects the determinism and auditability of the governed
+  corpus (see [Retrieval strategy](#retrieval-strategy-navigation-first-vector-where-it-earns-its-keep)).
 
 ## Open Questions
 
-- **Ingestion: framework or pure-custom?** The design is settled (deterministic,
-  structure-aware, incremental, provenance-rich); the implementation is not.
-  LlamaIndex vs a no-framework script is a convenience-vs-minimalism call, weighed
-  in [Ingestion and retrieval](#ingestion-and-retrieval) but not made.
-- **Which models, and local vs hosted mix?** The replaceable-agent principle
-  says "any." The recommended posture is hosted models via LiteLLM for reasoning
-  quality with CPU embeddings local; a resident small local model is optional and
-  host-size-dependent. The specific default roster is not chosen.
-- **Host sizing and vendor.** A dedicated separate host is decided; the exact VPS
-  (an ~8 GB / 2 vCPU class box is the starting recommendation; NameHero unmanaged
-  Ubuntu is a 2026-08 candidate) and the cost ceiling are not.
-- **A governance-chain graph — later, if ever.** The Work Packet → Execution
-  Contract → Decision → Change → Release chain is the one relationship graph with
-  real payoff. Whether it is worth building on top of the Markdown + index layer,
-  and when, is open; a general knowledge graph is ruled out (see
-  [Scope boundaries](#scope-boundaries-what-this-deliberately-is-not)).
-- **Architecture locked; the runbook is not.** The architecture and governance
-  vehicle are locked by [DECISIONS.md D-24341](../docs/ai/DECISIONS.md#d-24341).
-  What does **not** yet exist is the executable runbook — the buildable artifacts
-  (ingestion script, schema, `docker-compose`, provision-and-deploy steps, the
-  first core skills) belong in a future Work Packet or a separate program repo,
-  not on this descriptive page. The page stays `status: draft` until the platform
-  is built.
+The architecture and governance vehicle are locked by
+[DECISIONS.md D-24341](../docs/ai/DECISIONS.md#d-24341); what remains are
+implementation choices, ordered below by decision urgency. The executable runbook
+itself — ingestion script, schema DDL, `docker-compose`, provision-and-deploy
+steps, the first core skills — does not yet exist and belongs in a future Work
+Packet or separate program repo, not on this descriptive page. The page stays
+`status: draft` until the platform is built.
+
+1. **Ingestion: framework or pure-custom?** The design is settled (deterministic,
+   structure-aware, incremental, provenance-rich); the implementation is not.
+   *Decision criteria:* operator preference for minimal dependencies vs. speed to
+   a first working pipeline, and tolerance for pinning and periodically reviewing
+   a framework. LlamaIndex buys Markdown-aware parsing + hybrid `pgvector` +
+   incremental tracking at the cost of framework weight and version churn; a
+   pure-custom script (Postgres client + embedding client + header splitter) is
+   lighter and fully operator-controlled. Record the choice in the Work Packet.
+2. **Default model roster and local/hosted mix.** *Provisional default:* hosted
+   models via LiteLLM for reasoning quality, `nomic-embed-text` local for
+   embeddings, an optional small CPU-resident model for sensitive domains. The
+   exact roster (which hosted models, whether a local model is kept warm) is open
+   and host-size-dependent.
+3. **Host sizing and vendor.** A dedicated separate host is decided; the starting
+   recommendation is an ~8 GB / 2 vCPU class unmanaged Ubuntu 24.04 box (NameHero
+   unmanaged is a 2026-08 candidate). *Still open:* the cost ceiling and the
+   trigger to step up (a resident local model, concurrent load, or a larger
+   vector corpus).
+4. **A governance-chain graph — later, if ever.** The Work Packet → Execution
+   Contract → Decision → Change → Release chain is the one relationship graph with
+   real payoff; a general knowledge graph is ruled out (see
+   [Scope boundaries](#scope-boundaries-what-this-deliberately-is-not)). *Gate:*
+   do not consider it until the navigation + vector base has been used for real
+   work and the recovery path has been rehearsed.
 
 ## References
 
