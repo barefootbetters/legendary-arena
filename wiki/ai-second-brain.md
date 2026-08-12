@@ -203,6 +203,18 @@ Two tiers, chosen per corpus:
 > grepable, binary. Chunk → embed → retrieve is the wrong tool for a record whose
 > value is its exact, whole-context wording.
 
+**Retrieval order — simplest method that answers, first.** A query walks the
+tiers in ascending cost/uncertainty and stops at the first that answers:
+
+1. **Direct reference** — the exact file/heading is known (a cited `D-####`, a WP id).
+2. **INDEX navigation** — route to a domain, follow its `INDEX.md` links.
+3. **Full-text search** — grep / Postgres full-text over the corpus.
+4. **Vector search** — semantic recall over the reference layer, when the wording is unknown.
+5. **Web search** — only when the answer is not in the corpus at all.
+
+Escalating past a tier is a signal the earlier tier is thin (a missing index
+entry, an unrecorded decision) — worth fixing, not just routing around.
+
 ### Ingestion and retrieval
 
 The ingestion pipeline is a **deterministic, agent-independent** stage that feeds
@@ -265,6 +277,11 @@ retrieved. The contract is deliberately narrow:
 - **Guarantees.** Read-only; never mutates the store; and **never returns the
   governance documents that were deliberately kept out of the vector layer** —
   those are reached by exact/navigational retrieval, not this surface.
+
+Open WebUI retrieves from the *same* knowledge store — either by calling this
+knowledge-query server or via its own RAG features against the identical Postgres
+table. Either way the data and provenance are the same; the chat surface stays a
+replaceable front-end, not a second source of truth.
 
 ### Vector and embedding strategy
 
@@ -370,8 +387,47 @@ is local Markdown, not any one app's workflow.
 **Voice is split by domain, not universal.** Each domain carries its own tone
 profile — engineering-professional, Legendary Arena product, Barefoot Betters
 wellness, governance-audit-grade — so a skill drafting in one domain does not
-bleed marketing tone into a technical or governance document. A skill references
-the voice profile for the domain it is writing in.
+bleed marketing tone into a technical or governance document. The profiles live
+as small, version-controlled Markdown files inside each domain (or a shared
+`voices/` folder at the knowledge root); a skill loads the one for the domain it
+is writing in by name and never invents tone — voice stays under the same
+ownership and review discipline as the rest of the corpus.
+
+### Knowledge governance (how knowledge enters, moves, and earns authority)
+
+Storage, retrieval, and backup are covered above; this is the missing axis —
+*how knowledge enters the system, is promoted, and leaves.* Without it the corpus
+drifts into `research-old/ research-final/ research-revised/` five years on.
+
+**Corpus classes.** Every item is one of three classes, and the class decides how
+it is retrieved — this is the same navigation-vs-vector split, stated as a
+property of the *content* rather than the query:
+
+| Class | Examples | Retrieval |
+|---|---|---|
+| **Authoritative** | Decisions, Work Packets, ECs, runbooks, indexes | Navigation / exact only — **never vectorized** |
+| **Reference** | Research PDFs, transcripts, long-form notes | Vectorized (the minority layer) |
+| **Transient** | Inbox captures, scratch files, session outputs | Not ingested at all |
+
+**Lifecycle.** `Capture → Normalize → Store → Reference → Review → Archive`. The
+rules that keep it honest: a **raw capture is not authoritative**; a normalized
+note **cites its source artifacts**; **archived material stays searchable** (it is
+demoted, not deleted); and **deletion is exceptional and documented** — the
+default is archive, not remove.
+
+**Promotion.** Authority is earned by stage, never assumed:
+`Raw Capture → Research Note → Referenced Artifact → Authoritative Record`. **Only
+the final stage** may become a Decision, Work Packet, EC, runbook, or index entry.
+This is the guard against the AI blurring a temporary finding with policy — a
+transcript summary is Reference, not a decision, until it is promoted deliberately.
+
+**Quality gates.** A knowledge artifact is **governed** only if all hold: its
+**source** is identified, a **last-updated** date is present, a **domain** is
+assigned, it is **reachable from an `INDEX.md`**, its **links resolve**, and its
+**ownership** is known. Anything failing a gate is `unmanaged` — findable, but not
+citable as governed knowledge. These gates are what make *Auditability* a check
+rather than an aspiration, and they are exactly the kind of binary rule a
+`checks/`-bearing skill (below) can enforce.
 
 ### The agent layer is replaceable
 
@@ -431,10 +487,15 @@ conducted* rather than *how knowledge is stored*:
 - **Skills Over Monoliths.** Reusable capabilities are small, purpose-specific
   skills (each carrying only its own instructions, templates, examples, and
   verification checks), loaded on demand — not one giant prompt or an always-on
-  agent. Each skill is independently inspectable and upgradable. Prefer small
+  agent. Each skill is independently inspectable and upgradable. A complete skill
+  states its **purpose, inputs, outputs, examples, verification, and failure
+  modes** — *a skill without verification is incomplete.* Prefer small
   deterministic CLI checks wrapped by a skill over a monolithic MCP server loaded
   wholesale — determinism and auditability over improvisation. Start with a few
   core skills, not a large template pack; a skill folder is itself a dependency.
+  The declared v1 skill set lives in the
+  [operator runbook](../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md) (§8), not on this
+  page, so the list has one home.
 - **Read-Only Connectors First.** External services connect through read-only or
   narrowly-scoped interfaces by default. Write actions — sending email,
   publishing content, modifying DNS, deleting files, changing production data —
@@ -446,8 +507,11 @@ conducted* rather than *how knowledge is stored*:
 **Context limits are respected with handoff documents.** No single AI session
 carries a migration *and* a wiki rewrite *and* DR planning *and* code changes at
 once — long context degrades. Work moves between focused sessions through written
-handoffs (plan → implementation report → verification report → upgrade notes),
-each session owning one stage.
+handoffs (plan → implementation report → verification report → upgrade notes)
+that live alongside the work they describe (a `handoffs/` folder or the relevant
+project directory), each session owning one stage. Those handoffs are **Transient**
+class (see [Knowledge governance](#knowledge-governance-how-knowledge-enters-moves-and-earns-authority)) —
+retrieval targets while active, promoted only if a lasting record is warranted.
 
 **The AI layers are added conservatively, simplest first** — reusable skills,
 then deterministic verification checks, then hooks (starting with
@@ -493,8 +557,8 @@ the engine's data-recovery posture in [Disaster Recovery](disaster-recovery.md):
 
 The organizing discipline is *build the simplest thing that answers the actual
 question* — organized Markdown plus routing plus a small vector layer gets most
-of the value at a fraction of the complexity. Two capabilities are deliberately
-out of scope until a real pain point justifies them:
+of the value at a fraction of the complexity. Several capabilities are
+deliberately out of scope until a real pain point justifies them:
 
 - **No always-on autonomous ingestion.** The platform is not a daemon that
   perpetually vacuums Teams chats, email, and scratch notes into the knowledge
@@ -517,6 +581,14 @@ out of scope until a real pain point justifies them:
   Multi-user collaboration, tenancy isolation, and public sharing are out of
   scope; naming that here keeps them from creeping in as implicit requirements.
 
+**It is also not a category of product it will be mistaken for.** The platform is
+**not** a CRM, a project-management tool, a chat archive, a social-media
+scheduler, a permanent email archive, a replacement for the source systems it
+reads, or a replacement for Git. It indexes and reasons over knowledge that lives
+authoritatively elsewhere; it never becomes the operational system of record for
+any of those. Naming the anti-goals explicitly is what stops "could it also just…"
+requirement creep.
+
 ### Pilot scope (recommended first vertical)
 
 Start narrow — this names *what* to build first, not *how* (the build steps live
@@ -536,6 +608,24 @@ been captured (the feedback surface above), and the recovery path has been
 rehearsed. Expanding domains or adding vector corpora is an explicit later
 decision, not an automatic next step — the same *build the simplest thing that
 answers the question* discipline as the scope boundaries.
+
+### Success criteria
+
+Design goals, not Work Packet acceptance — the marks that say the platform is
+doing its job. The platform is successful when the operator can:
+
+- **Locate any governed decision in under a minute** — via routing + `INDEX.md`,
+  without semantic search.
+- **Restore the entire corpus on a fresh host** from backups alone (the §9
+  runbook drill), vector index rebuilt from source.
+- **Swap the model or agent framework without migrating data** — a config change,
+  not a data migration.
+- **Answer a project-specific question with citations** that resolve to the exact
+  source file and heading.
+- **Onboard a new domain without an architecture change** — a new folder, its
+  `INDEX.md`, and (if it has a reference corpus) an ingestion run; nothing else.
+
+Each is observable, so "is the brain working?" is a check, not an opinion.
 
 ## Interactions
 
