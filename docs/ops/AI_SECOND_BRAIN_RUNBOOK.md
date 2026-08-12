@@ -27,7 +27,8 @@
 
 - **Goal.** Stand up the self-hosted AI Second Brain — a mostly-Markdown
   knowledge store with a minority vector layer and a replaceable agent layer in
-  front — on a **dedicated host**, and prove the pilot slice works.
+  front — and prove the pilot slice works. A dedicated host is the end-state; the
+  bootstrap build may co-locate on the existing box (see the hosting note below).
 - **Design source of truth.** [AI Second Brain](../../wiki/ai-second-brain.md)
   (descriptive) + [D-24341](../ai/DECISIONS.md#d-24341) (locked decision). Read
   those first; this runbook assumes them.
@@ -35,8 +36,13 @@
   over the Legendary Arena governance corpus, plus **one** reference corpus in the
   first vector layer. Expanding domains or corpora is a later, explicit decision —
   not part of this build.
-- **Not on the production box.** This runs on its **own** host, never co-located
-  with `api.legendary-arena.com` (ewiki *Hosting and security posture*).
+- **Hosting: dedicated host is the end-state; bootstrap co-location is allowed.**
+  A separate host from `api.legendary-arena.com` is the target (D-24341). During
+  bootstrap the brain **may run on the existing box**, provided it stays
+  *logically* separate — its own OS user + process isolation, its own DB role and
+  credentials, independent backups, and resource limits so it cannot starve the
+  game server. Split it onto its own host once contention, load, or a resident
+  local model justifies it (ewiki *Hosting and security posture*).
 
 > **Safety guardrails (non-negotiable — from the design record).**
 > - **Read-only connectors first.** Every MCP server gets its own least-privilege
@@ -54,9 +60,11 @@
 
 ## 1. Prerequisites
 
-- [ ] **A dedicated host** — an unmanaged Ubuntu 24.04 VPS with full root
-  (~8 GB RAM / 2 vCPU class to start; NameHero unmanaged is a 2026-08 candidate).
-  **Not** the production `api.` box.
+- [ ] **A host with full root** — an unmanaged Ubuntu 24.04 VPS (~8 GB RAM /
+  2 vCPU class to start; NameHero unmanaged is a 2026-08 candidate). A dedicated
+  box is the end-state; the bootstrap build may use the existing box **if** the
+  brain is fenced off with its own OS user, DB role, backups, and resource limits
+  (§0 hosting note).
 - [ ] **Host hardened** per [Ubuntu Lab Provisioning](../../wiki/ubuntu-lab-provisioning.md)
   §1 — non-root user, SSH-key-only, UFW, Fail2Ban, unattended-upgrades. Do that
   first; this runbook starts from a hardened host.

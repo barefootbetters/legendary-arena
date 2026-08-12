@@ -131,7 +131,7 @@ to the corpus. Every layer is open-source or an open protocol, so no piece is a
 lock-in point:
 
 ```
-Ubuntu 24.04 LTS  (dedicated host — NOT the production api. box)
+Ubuntu 24.04 LTS  (dedicated host is the end-state; co-located w/ prod OK to bootstrap)
 │
 ├── PostgreSQL + pgvector        # system of record — knowledge + embeddings (HNSW)
 │
@@ -164,12 +164,16 @@ Ubuntu 24.04 LTS  (dedicated host — NOT the production api. box)
     └── Research                 # reference material, notes, sources
 ```
 
-> **Runs on its own host — not co-located with production.** Putting a chat
-> surface, a model gateway, and a vector DB next to the live game server
-> (`api.legendary-arena.com`, [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md))
-> is a resource-contention and attack-surface concern. The recommendation is a
-> **dedicated, separately hardened host**; this is no longer weighed as an open
-> question.
+> **Preferred deployment: its own host — but co-location is fine to bootstrap.**
+> A **dedicated host is the end-state target**: a chat surface, model gateway, and
+> vector DB next to the live game server (`api.legendary-arena.com`,
+> [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md)) is a resource-contention
+> and attack-surface concern. But **co-location on the same host is acceptable
+> during the bootstrap phase**, while infrastructure is small and operator-managed,
+> as long as the brain stays *logically* separate — process isolation, its own
+> credentials, independent backups, clear service boundaries. Physical separation
+> is a scaling/risk decision (v1 = one host; v2 = split), not a prerequisite for
+> first deployment. Locked by [D-24341](../docs/ai/DECISIONS.md#d-24341).
 
 ### Retrieval strategy: navigation first, vector where it earns its keep
 
@@ -323,9 +327,11 @@ existing `tsvector` facilities.
 
 ### Hosting and security posture
 
-- **Host.** A dedicated **unmanaged Ubuntu 24.04 VPS** with full root. As of
-  2026-08, a NameHero unmanaged Cloud VPS is a candidate; the point is the
-  *class* of host, not the vendor. A roughly **8 GB RAM / 2 vCPU** box
+- **Host.** An **unmanaged Ubuntu 24.04 VPS** with full root — a dedicated one is
+  the end-state, though the bootstrap build may co-locate on the existing box with
+  isolation (see the deployment callout above). As of 2026-08, a NameHero
+  unmanaged Cloud VPS is a candidate for the eventual dedicated box; the point is
+  the *class* of host, not the vendor. A roughly **8 GB RAM / 2 vCPU** box
   comfortably runs Postgres + LiteLLM + Open WebUI + CPU embeddings; step up if a
   small local model is kept resident.
 - **Local vs hosted models.** Standard VPS lines have no GPU, so treat **local
@@ -656,10 +662,13 @@ Each is observable, so "is the brain working?" is a check, not an opinion.
 
 ## Edge Cases
 
-- **Co-hosting with production is a footgun.** Running a model gateway, a chat
-  surface, and a vector DB on the live game-server box adds attack surface and
-  resource contention to a host whose job is serving matches. Prefer a separate
-  host or hard isolation; do not fold it onto `api.` casually.
+- **Co-hosting during bootstrap needs real isolation.** Running a model gateway,
+  a chat surface, and a vector DB on the live game-server box adds attack surface
+  and resource contention to a host whose job is serving matches. It is an
+  accepted *bootstrap* configuration (D-24341), but only with genuine logical
+  isolation — process/user isolation, separate credentials, independent backups,
+  resource limits — never a casual co-tenant. A dedicated host remains the
+  end-state; co-location is the temporary, deliberately-fenced start.
 - **Publishing knowledge-domain detail on a gated-but-hosted surface.** This
   page names real consulting and product domains. The ewiki is behind
   Cloudflare Access, not fully public, but it is still hosted off-box. Keep
@@ -733,11 +742,13 @@ is built.
    embeddings, an optional small CPU-resident model for sensitive domains. The
    exact roster (which hosted models, whether a local model is kept warm) is open
    and host-size-dependent.
-3. **Host sizing and vendor.** A dedicated separate host is decided; the starting
-   recommendation is an ~8 GB / 2 vCPU class unmanaged Ubuntu 24.04 box (NameHero
-   unmanaged is a 2026-08 candidate). *Still open:* the cost ceiling and the
-   trigger to step up (a resident local model, concurrent load, or a larger
-   vector corpus).
+3. **Host sizing, vendor, and when to split off production.** A dedicated host is
+   the end-state; v1 co-locates on the existing box (D-24341). The starting
+   recommendation for the eventual dedicated box is an ~8 GB / 2 vCPU class
+   unmanaged Ubuntu 24.04 (NameHero unmanaged is a 2026-08 candidate). *Still
+   open:* the cost ceiling, and the **trigger to move off the shared host to its
+   own** — resource contention with the game server, a resident local model,
+   concurrent load, or a larger vector corpus.
 4. **A governance-chain graph — later, if ever.** The Work Packet → Execution
    Contract → Decision → Change → Release chain is the one relationship graph with
    real payoff; a general knowledge graph is ruled out (see
