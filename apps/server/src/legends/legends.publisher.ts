@@ -120,95 +120,66 @@ export async function publishAllBoards(
   const boardOutcomes: BoardPublishOutcome[] = [];
   const boardPayloads: BoardPayload[] = [];
   let anyBoardFailed = false;
+  // why: boardNames and writtenGauntletBoardNames are populated inside the
+  // snapshot transaction below but consumed by the manifest write AFTER it, so
+  // they are declared out here rather than scoped to the try block.
+  let boardNames: string[] = [];
+  const writtenGauntletBoardNames: string[] = [];
 
-  // why: READ ONLY transaction ensures the publisher does not contend
-  // with hot match traffic per WP-142 §Non-Negotiable Constraints.
-  // All leaderboard queries run inside this scope for a consistent
-  // point-in-time snapshot.
-  await database.query('BEGIN');
-  await database.query('SET TRANSACTION READ ONLY');
-
-  let scenarioKeys: string[];
+  const client = await database.connect();
+  // why: run the ENTIRE publish snapshot on ONE checked-out connection at
+  // REPEATABLE READ READ ONLY so every board in a run sees a single, consistent
+  // point-in-time view, per WP-142 §Non-Negotiable Constraints. The previous
+  // code ran BEGIN / reads / COMMIT as separate database.query(...) calls on the
+  // POOL: each could land on a different connection, so the reads never joined
+  // the transaction, READ COMMITTED re-snapshotted per statement, and the BEGIN
+  // left a connection idle-in-transaction — the promised snapshot never existed
+  // and the checkout leaked. try/finally releases the client on every path
+  // (early return, COMMIT, or a thrown query). Precedent: adminProfile.logic.ts
+  // also opens BEGIN ISOLATION LEVEL REPEATABLE READ.
   try {
-    scenarioKeys = await listScenarioKeys(database);
-  } catch (error) {
-    await database.query('ROLLBACK');
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error(
-      JSON.stringify({
-        runId,
-        board: '*',
-        rowCount: 0,
-        byteCount: 0,
-        putLatencyMs: 0,
-        success: false,
-        error: `Failed to list scenario keys: ${errorMessage}`,
-      }),
-    );
-    return { boards: [], manifestWritten: false, runId };
-  }
+    await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
 
-  const boardNames = buildBoardList(scenarioKeys);
-
-  // --- Build and write global-top snapshot ---
-  try {
-    const globalLeaderboard = await getGlobalTopLeaderboard(
-      { limit: GLOBAL_TOP_QUERY_LIMIT, offset: 0 },
-      database,
-      leaderboardDeps,
-    );
-    const globalSnapshot = buildGlobalTopSnapshot(globalLeaderboard);
-    const globalJson = serializeSnapshot(globalSnapshot);
-
-    boardPayloads.push({
-      boardName: 'global-top',
-      jsonPayload: globalJson,
-      rowCount: globalSnapshot.rowCount,
-    });
-
-    const outcome = await writeBoardToR2(
-      r2Client, bucket, 'global-top', globalJson, globalSnapshot.rowCount, runId,
-    );
-    boardOutcomes.push(outcome);
-    if (!outcome.success) {
-      anyBoardFailed = true;
-    }
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    anyBoardFailed = true;
-    boardOutcomes.push({
-      board: 'global-top',
-      byteCount: 0,
-      errorMessage,
-      putLatencyMs: 0,
-      rowCount: 0,
-      success: false,
-    });
-    logBoardOutcome(runId, 'global-top', 0, 0, 0, false, errorMessage);
-  }
-
-  // --- Build and write per-scenario snapshots (sorted ASC) ---
-  const sortedScenarioKeys = [...scenarioKeys].sort();
-  for (const scenarioKey of sortedScenarioKeys) {
-    const boardName = `scenario-${scenarioKey.toLowerCase()}`;
+    let scenarioKeys: string[];
     try {
-      const scenarioLeaderboard = await getScenarioLeaderboard(
-        { scenarioKey, limit: SCENARIO_QUERY_LIMIT, offset: 0 },
-        database,
+      scenarioKeys = await listScenarioKeys(client);
+    } catch (error) {
+      await client.query('ROLLBACK');
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(
+        JSON.stringify({
+          runId,
+          board: '*',
+          rowCount: 0,
+          byteCount: 0,
+          putLatencyMs: 0,
+          success: false,
+          error: `Failed to list scenario keys: ${errorMessage}`,
+        }),
+      );
+      return { boards: [], manifestWritten: false, runId };
+    }
+
+    boardNames = buildBoardList(scenarioKeys);
+
+    // --- Build and write global-top snapshot ---
+    try {
+      const globalLeaderboard = await getGlobalTopLeaderboard(
+        { limit: GLOBAL_TOP_QUERY_LIMIT, offset: 0 },
+        client,
         leaderboardDeps,
       );
-      const scenarioSnapshot = buildScenarioSnapshot(scenarioLeaderboard);
-      const scenarioJson = serializeSnapshot(scenarioSnapshot);
+      const globalSnapshot = buildGlobalTopSnapshot(globalLeaderboard);
+      const globalJson = serializeSnapshot(globalSnapshot);
 
       boardPayloads.push({
-        boardName: scenarioSnapshot.board,
-        jsonPayload: scenarioJson,
-        rowCount: scenarioSnapshot.rowCount,
+        boardName: 'global-top',
+        jsonPayload: globalJson,
+        rowCount: globalSnapshot.rowCount,
       });
 
       const outcome = await writeBoardToR2(
-        r2Client, bucket, scenarioSnapshot.board, scenarioJson,
-        scenarioSnapshot.rowCount, runId,
+        r2Client, bucket, 'global-top', globalJson, globalSnapshot.rowCount, runId,
       );
       boardOutcomes.push(outcome);
       if (!outcome.success) {
@@ -218,211 +189,254 @@ export async function publishAllBoards(
       const errorMessage = error instanceof Error ? error.message : String(error);
       anyBoardFailed = true;
       boardOutcomes.push({
-        board: boardName,
+        board: 'global-top',
         byteCount: 0,
         errorMessage,
         putLatencyMs: 0,
         rowCount: 0,
         success: false,
       });
-      logBoardOutcome(runId, boardName, 0, 0, 0, false, errorMessage);
+      logBoardOutcome(runId, 'global-top', 0, 0, 0, false, errorMessage);
     }
-  }
 
-  // --- Build and write gauntlet boards + index (WP-342 / D-24131) ---
-  // why: standings queries run inside the same READ ONLY transaction as the
-  // leaderboard queries so all boards in one publish run see one consistent
-  // point-in-time snapshot.
-  const writtenGauntletBoardNames: string[] = [];
-  if (gauntletCatalog !== undefined) {
-    const gauntletIndexEntries: GauntletIndexEntry[] = [];
-    let indexBuildFailed = false;
-
-    for (const gauntletDefinition of gauntletCatalog) {
-      const soloBoardName = buildGauntletBoardNameForPlayerCount(
-        gauntletDefinition,
-        1,
-      );
+    // --- Build and write per-scenario snapshots (sorted ASC) ---
+    const sortedScenarioKeys = [...scenarioKeys].sort();
+    for (const scenarioKey of sortedScenarioKeys) {
+      const boardName = `scenario-${scenarioKey.toLowerCase()}`;
       try {
-        const standingsByPlayerCount = await getGauntletStandings(
-          gauntletDefinition,
-          database,
+        const scenarioLeaderboard = await getScenarioLeaderboard(
+          { scenarioKey, limit: SCENARIO_QUERY_LIMIT, offset: 0 },
+          client,
           leaderboardDeps,
         );
+        const scenarioSnapshot = buildScenarioSnapshot(scenarioLeaderboard);
+        const scenarioJson = serializeSnapshot(scenarioSnapshot);
 
-        const entryCounts = {
-          '1': standingsByPlayerCount.get(1)?.open.length ?? 0,
-          '2': standingsByPlayerCount.get(2)?.open.length ?? 0,
-          '3': standingsByPlayerCount.get(3)?.open.length ?? 0,
-          '4': standingsByPlayerCount.get(4)?.open.length ?? 0,
-          '5': standingsByPlayerCount.get(5)?.open.length ?? 0,
-        };
-        // why: WP-384 / D-24187 §6 — the fixed division's per-count claim
-        // state, additive beside entryCounts; the client's fixed chips and
-        // division-tab gating read these.
-        const fixedEntryCounts = {
-          '1': standingsByPlayerCount.get(1)?.fixed.length ?? 0,
-          '2': standingsByPlayerCount.get(2)?.fixed.length ?? 0,
-          '3': standingsByPlayerCount.get(3)?.fixed.length ?? 0,
-          '4': standingsByPlayerCount.get(4)?.fixed.length ?? 0,
-          '5': standingsByPlayerCount.get(5)?.fixed.length ?? 0,
-        };
-
-        gauntletIndexEntries.push({
-          setAbbr: gauntletDefinition.setAbbr,
-          setName: gauntletDefinition.setName,
-          mastermindSlug: gauntletDefinition.mastermindSlug,
-          mastermindName: gauntletDefinition.mastermindName,
-          legCount: gauntletDefinition.legs.length,
-          // why: entryCount predates the player-count dimension and reports
-          // the SOLO board (D-24134 §5) — the deployed WP-343 index renders
-          // it unchanged; per-count detail is the additive entryCounts.
-          entryCount: entryCounts['1'],
-          board: soloBoardName,
-          entryCounts,
-          fixedEntryCounts,
-          // why: WP-472 / D-24283 — legs now carry their PER-SCHEME approved
-          // loadout so a mastermind's legs can differ scheme-to-scheme; WP-474's
-          // client mirror reads the leg-level field.
-          legs: buildPublishedLegs(gauntletDefinition),
-          // why: WP-395 / D-24199 — the entry-level per-mastermind requirement.
-          // why: WP-472 / D-24283 dual-write (RS-1) — kept POPULATED (per
-          // mastermind) so the deployed pre-WP-474 legends-board, which reads it
-          // via selectApprovedLoadout, keeps showing loadouts across the gap
-          // between the WP-472 and WP-474 Pages deploys; WP-474 removes it once
-          // the client mirror reads the per-leg field. Only the ids travel; the
-          // derived comparison keys are server-side.
-          approvedLoadouts: projectApprovedLoadouts(
-            gauntletDefinition.approvedLoadouts,
-          ),
+        boardPayloads.push({
+          boardName: scenarioSnapshot.board,
+          jsonPayload: scenarioJson,
+          rowCount: scenarioSnapshot.rowCount,
         });
 
-        for (const playerCount of GAUNTLET_PLAYER_COUNTS) {
-          const standings =
-            standingsByPlayerCount.get(playerCount)?.open ?? [];
-          // why: zero-entry boards (any count) appear via the index's
-          // entryCounts but get NO board file (D-24131 §7 / D-24134 §2) —
-          // the index carries "unclaimed" state without writing 500+ empty
-          // JSON files every publish cycle.
-          if (standings.length === 0) {
-            continue;
-          }
-
-          const boardName = buildGauntletBoardNameForPlayerCount(
-            gauntletDefinition,
-            playerCount,
-          );
-          const gauntletJson = JSON.stringify({
-            board: boardName,
-            entries: standings,
-            rowCount: standings.length,
-            schemaVersion: 1,
-          });
-
-          boardPayloads.push({
-            boardName,
-            jsonPayload: gauntletJson,
-            rowCount: standings.length,
-          });
-
-          const outcome = await writeBoardToR2(
-            r2Client, bucket, boardName, gauntletJson, standings.length, runId,
-          );
-          boardOutcomes.push(outcome);
-          if (!outcome.success) {
-            anyBoardFailed = true;
-          } else {
-            writtenGauntletBoardNames.push(boardName);
-          }
-        }
-
-        // why: WP-384 / D-24187 §3 — the fixed-hero-pool division publishes
-        // as additive `-fixed[-p<N>]` files under the same lazy rule
-        // (≥1 complete entry only); open-division files above are untouched.
-        for (const playerCount of GAUNTLET_PLAYER_COUNTS) {
-          const fixedStandings =
-            standingsByPlayerCount.get(playerCount)?.fixed ?? [];
-          if (fixedStandings.length === 0) {
-            continue;
-          }
-
-          const fixedBoardName = buildFixedGauntletBoardNameForPlayerCount(
-            gauntletDefinition,
-            playerCount,
-          );
-          const fixedJson = JSON.stringify({
-            board: fixedBoardName,
-            entries: fixedStandings,
-            rowCount: fixedStandings.length,
-            schemaVersion: 1,
-          });
-
-          boardPayloads.push({
-            boardName: fixedBoardName,
-            jsonPayload: fixedJson,
-            rowCount: fixedStandings.length,
-          });
-
-          const fixedOutcome = await writeBoardToR2(
-            r2Client, bucket, fixedBoardName, fixedJson,
-            fixedStandings.length, runId,
-          );
-          boardOutcomes.push(fixedOutcome);
-          if (!fixedOutcome.success) {
-            anyBoardFailed = true;
-          } else {
-            writtenGauntletBoardNames.push(fixedBoardName);
-          }
+        const outcome = await writeBoardToR2(
+          r2Client, bucket, scenarioSnapshot.board, scenarioJson,
+          scenarioSnapshot.rowCount, runId,
+        );
+        boardOutcomes.push(outcome);
+        if (!outcome.success) {
+          anyBoardFailed = true;
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         anyBoardFailed = true;
-        indexBuildFailed = true;
         boardOutcomes.push({
-          board: soloBoardName,
+          board: boardName,
           byteCount: 0,
           errorMessage,
           putLatencyMs: 0,
           rowCount: 0,
           success: false,
         });
-        logBoardOutcome(runId, soloBoardName, 0, 0, 0, false, errorMessage);
+        logBoardOutcome(runId, boardName, 0, 0, 0, false, errorMessage);
       }
     }
 
-    // why: the index is only written when every gauntlet computed — a partial
-    // index would silently drop boards; the stale prior index stays consistent
-    // (same posture as the manifest-last rule).
-    if (!indexBuildFailed) {
-      const gauntletIndexJson = JSON.stringify({
-        gauntlets: gauntletIndexEntries,
-        // why: WP-461 — emit the per-set roster via conditional spread. Assigning
-        // `sets: undefined` is a type error under exactOptionalPropertyTypes and
-        // would change the JSON shape; the spread omits the field entirely when
-        // no catalog was injected (byte-compatible with a pre-WP-461 consumer).
-        ...(setDetailsCatalog !== undefined ? { sets: setDetailsCatalog } : {}),
-        generatedAt: new Date().toISOString(),
-        schemaVersion: 1,
-      });
+    // --- Build and write gauntlet boards + index (WP-342 / D-24131) ---
+    // why: standings queries run inside the same READ ONLY transaction as the
+    // leaderboard queries so all boards in one publish run see one consistent
+    // point-in-time snapshot.
+    if (gauntletCatalog !== undefined) {
+      const gauntletIndexEntries: GauntletIndexEntry[] = [];
+      let indexBuildFailed = false;
 
-      boardPayloads.push({
-        boardName: 'gauntlet-index',
-        jsonPayload: gauntletIndexJson,
-        rowCount: gauntletIndexEntries.length,
-      });
+      for (const gauntletDefinition of gauntletCatalog) {
+        const soloBoardName = buildGauntletBoardNameForPlayerCount(
+          gauntletDefinition,
+          1,
+        );
+        try {
+          const standingsByPlayerCount = await getGauntletStandings(
+            gauntletDefinition,
+            client,
+            leaderboardDeps,
+          );
 
-      const indexOutcome = await writeBoardToR2(
-        r2Client, bucket, 'gauntlet-index', gauntletIndexJson,
-        gauntletIndexEntries.length, runId,
-      );
-      boardOutcomes.push(indexOutcome);
-      if (!indexOutcome.success) {
-        anyBoardFailed = true;
+          const entryCounts = {
+            '1': standingsByPlayerCount.get(1)?.open.length ?? 0,
+            '2': standingsByPlayerCount.get(2)?.open.length ?? 0,
+            '3': standingsByPlayerCount.get(3)?.open.length ?? 0,
+            '4': standingsByPlayerCount.get(4)?.open.length ?? 0,
+            '5': standingsByPlayerCount.get(5)?.open.length ?? 0,
+          };
+          // why: WP-384 / D-24187 §6 — the fixed division's per-count claim
+          // state, additive beside entryCounts; the client's fixed chips and
+          // division-tab gating read these.
+          const fixedEntryCounts = {
+            '1': standingsByPlayerCount.get(1)?.fixed.length ?? 0,
+            '2': standingsByPlayerCount.get(2)?.fixed.length ?? 0,
+            '3': standingsByPlayerCount.get(3)?.fixed.length ?? 0,
+            '4': standingsByPlayerCount.get(4)?.fixed.length ?? 0,
+            '5': standingsByPlayerCount.get(5)?.fixed.length ?? 0,
+          };
+
+          gauntletIndexEntries.push({
+            setAbbr: gauntletDefinition.setAbbr,
+            setName: gauntletDefinition.setName,
+            mastermindSlug: gauntletDefinition.mastermindSlug,
+            mastermindName: gauntletDefinition.mastermindName,
+            legCount: gauntletDefinition.legs.length,
+            // why: entryCount predates the player-count dimension and reports
+            // the SOLO board (D-24134 §5) — the deployed WP-343 index renders
+            // it unchanged; per-count detail is the additive entryCounts.
+            entryCount: entryCounts['1'],
+            board: soloBoardName,
+            entryCounts,
+            fixedEntryCounts,
+            // why: WP-472 / D-24283 — legs now carry their PER-SCHEME approved
+            // loadout so a mastermind's legs can differ scheme-to-scheme; WP-474's
+            // client mirror reads the leg-level field.
+            legs: buildPublishedLegs(gauntletDefinition),
+            // why: WP-395 / D-24199 — the entry-level per-mastermind requirement.
+            // why: WP-472 / D-24283 dual-write (RS-1) — kept POPULATED (per
+            // mastermind) so the deployed pre-WP-474 legends-board, which reads it
+            // via selectApprovedLoadout, keeps showing loadouts across the gap
+            // between the WP-472 and WP-474 Pages deploys; WP-474 removes it once
+            // the client mirror reads the per-leg field. Only the ids travel; the
+            // derived comparison keys are server-side.
+            approvedLoadouts: projectApprovedLoadouts(
+              gauntletDefinition.approvedLoadouts,
+            ),
+          });
+
+          for (const playerCount of GAUNTLET_PLAYER_COUNTS) {
+            const standings =
+              standingsByPlayerCount.get(playerCount)?.open ?? [];
+            // why: zero-entry boards (any count) appear via the index's
+            // entryCounts but get NO board file (D-24131 §7 / D-24134 §2) —
+            // the index carries "unclaimed" state without writing 500+ empty
+            // JSON files every publish cycle.
+            if (standings.length === 0) {
+              continue;
+            }
+
+            const boardName = buildGauntletBoardNameForPlayerCount(
+              gauntletDefinition,
+              playerCount,
+            );
+            const gauntletJson = JSON.stringify({
+              board: boardName,
+              entries: standings,
+              rowCount: standings.length,
+              schemaVersion: 1,
+            });
+
+            boardPayloads.push({
+              boardName,
+              jsonPayload: gauntletJson,
+              rowCount: standings.length,
+            });
+
+            const outcome = await writeBoardToR2(
+              r2Client, bucket, boardName, gauntletJson, standings.length, runId,
+            );
+            boardOutcomes.push(outcome);
+            if (!outcome.success) {
+              anyBoardFailed = true;
+            } else {
+              writtenGauntletBoardNames.push(boardName);
+            }
+          }
+
+          // why: WP-384 / D-24187 §3 — the fixed-hero-pool division publishes
+          // as additive `-fixed[-p<N>]` files under the same lazy rule
+          // (≥1 complete entry only); open-division files above are untouched.
+          for (const playerCount of GAUNTLET_PLAYER_COUNTS) {
+            const fixedStandings =
+              standingsByPlayerCount.get(playerCount)?.fixed ?? [];
+            if (fixedStandings.length === 0) {
+              continue;
+            }
+
+            const fixedBoardName = buildFixedGauntletBoardNameForPlayerCount(
+              gauntletDefinition,
+              playerCount,
+            );
+            const fixedJson = JSON.stringify({
+              board: fixedBoardName,
+              entries: fixedStandings,
+              rowCount: fixedStandings.length,
+              schemaVersion: 1,
+            });
+
+            boardPayloads.push({
+              boardName: fixedBoardName,
+              jsonPayload: fixedJson,
+              rowCount: fixedStandings.length,
+            });
+
+            const fixedOutcome = await writeBoardToR2(
+              r2Client, bucket, fixedBoardName, fixedJson,
+              fixedStandings.length, runId,
+            );
+            boardOutcomes.push(fixedOutcome);
+            if (!fixedOutcome.success) {
+              anyBoardFailed = true;
+            } else {
+              writtenGauntletBoardNames.push(fixedBoardName);
+            }
+          }
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          anyBoardFailed = true;
+          indexBuildFailed = true;
+          boardOutcomes.push({
+            board: soloBoardName,
+            byteCount: 0,
+            errorMessage,
+            putLatencyMs: 0,
+            rowCount: 0,
+            success: false,
+          });
+          logBoardOutcome(runId, soloBoardName, 0, 0, 0, false, errorMessage);
+        }
+      }
+
+      // why: the index is only written when every gauntlet computed — a partial
+      // index would silently drop boards; the stale prior index stays consistent
+      // (same posture as the manifest-last rule).
+      if (!indexBuildFailed) {
+        const gauntletIndexJson = JSON.stringify({
+          gauntlets: gauntletIndexEntries,
+          // why: WP-461 — emit the per-set roster via conditional spread. Assigning
+          // `sets: undefined` is a type error under exactOptionalPropertyTypes and
+          // would change the JSON shape; the spread omits the field entirely when
+          // no catalog was injected (byte-compatible with a pre-WP-461 consumer).
+          ...(setDetailsCatalog !== undefined ? { sets: setDetailsCatalog } : {}),
+          generatedAt: new Date().toISOString(),
+          schemaVersion: 1,
+        });
+
+        boardPayloads.push({
+          boardName: 'gauntlet-index',
+          jsonPayload: gauntletIndexJson,
+          rowCount: gauntletIndexEntries.length,
+        });
+
+        const indexOutcome = await writeBoardToR2(
+          r2Client, bucket, 'gauntlet-index', gauntletIndexJson,
+          gauntletIndexEntries.length, runId,
+        );
+        boardOutcomes.push(indexOutcome);
+        if (!indexOutcome.success) {
+          anyBoardFailed = true;
+        }
       }
     }
+
+    await client.query('COMMIT');
+  } finally {
+    client.release();
   }
-
-  await database.query('COMMIT');
 
   // --- Write archive (once per UTC day) ---
   const currentDateUtc = new Date().toISOString().slice(0, 10);
