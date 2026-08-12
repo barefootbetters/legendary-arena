@@ -19,6 +19,7 @@ related:
 status: draft
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\ai-second-brain.md (this page — https://ewiki.legendary-arena.com/ai-second-brain/)
+  - ../docs/ai/DECISIONS.md#d-24341
 last-reviewed: 2026-08-11
 ---
 
@@ -27,12 +28,13 @@ last-reviewed: 2026-08-11
 > **Proposed architecture — not yet built.** This page records a *design
 > intent*: a self-hosted knowledge platform where organizational knowledge is
 > owned locally and durable, while the AI models and agent frameworks that read
-> it stay swappable. No component described here is running yet. There is **no
-> `DECISIONS.md` entry and no Work Packet** for it at this revision — so the page
-> is `status: draft`, cites only artifacts that exist today, and marks every
-> unbuilt claim as a plan, not a fact. When the platform is committed to, the
-> governing decision and any executable runbook land in the appropriate repo
-> first, and this page is flipped to cite them.
+> it stay swappable. No component described here is running yet. The architecture
+> is locked by [DECISIONS.md D-24341](../docs/ai/DECISIONS.md#d-24341) — a
+> standalone architecture record, **not** an engine Work Packet (the platform
+> crosses no engine layer), mirroring the Ubuntu Lab Provisioning governance
+> pattern. No executable runbook / Work Packet exists yet; the buildable steps
+> are deferred. The page stays `status: draft` — cite this record, but treat
+> every unbuilt claim as a plan, not a fact, until the platform is built.
 >
 > **Scope note.** The knowledge this platform indexes spans more than Legendary
 > Arena — engineering consulting work, Barefoot Betters, and cross-project
@@ -55,6 +57,11 @@ Markdown in Git, with a small PostgreSQL vector layer over high-volume reference
 material — is the system of record. Whatever model or agent framework happens to
 be best this quarter (Claude Code today, something else later) connects to that
 store and is expected to be swapped without migrating a single row.
+
+Its purpose is to help the operator **research, ideate, organize, retrieve, and
+verify** — structured thinking, project memory, and decision traceability. It is
+explicitly *not* built to automate everything, replace judgment, auto-ingest all
+data, auto-publish content, or auto-edit governance files.
 
 This page is the design record for that platform. It is a companion to
 [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md) — that page covers *how
@@ -298,6 +305,18 @@ through structured Markdown, which models do extremely well. Routing (which
 domain a question belongs to) plus index navigation covers the large majority of
 retrieval; the vector layer only catches what index navigation cannot.
 
+**Local Markdown is the first-class format.** The corpus is portable Markdown in
+operator-controlled repositories. A local viewer/editor (e.g. Obsidian) may be
+used as a convenience layer over those files, but it is **never the system of
+record** — Git, the wikis, and PostgreSQL remain the durable sources. The point
+is local Markdown, not any one app's workflow.
+
+**Voice is split by domain, not universal.** Each domain carries its own tone
+profile — engineering-professional, Legendary Arena product, Barefoot Betters
+wellness, governance-audit-grade — so a skill drafting in one domain does not
+bleed marketing tone into a technical or governance document. A skill references
+the voice profile for the domain it is writing in.
+
 ### The agent layer is replaceable
 
 The architectural payoff is that every agent-side component is disposable while
@@ -332,7 +351,7 @@ existing Work Packet / Execution Contract / gate / acceptance-criteria disciplin
 
 The operator's role in that loop is **product manager, not typist**: the operator
 defines intent, boundaries, authoritative sources, and what success looks like;
-the AI proposes and executes within them. Five operating principles govern the
+the AI proposes and executes within them. Seven operating principles govern the
 loop — companions to the ten architecture principles above, aimed at *how work is
 conducted* rather than *how knowledge is stored*:
 
@@ -340,8 +359,10 @@ conducted* rather than *how knowledge is stored*:
   goal, context, constraints, and acceptance criteria.
 - **Verification Is Required.** AI work is complete only when it passes
   deterministic checks or produces a reviewable verification report.
-- **Context Must Be Routed, Not Dumped.** The system tells the AI where to look
-  (routing + per-domain indexes); it does not blindly load everything — the
+- **Context Must Be Routed, Not Dumped (progressive disclosure).** The system
+  tells the AI where to look (routing + per-domain indexes) and loads detailed
+  procedures only when needed; it does not blindly front-load all history,
+  decisions, tool schemas, and preferences — the
   [retrieval strategy](#retrieval-strategy-navigation-first-vector-where-it-earns-its-keep)
   stated as a rule.
 - **Every Failure Upgrades the System.** Bugs and bad outputs become improvements
@@ -351,6 +372,20 @@ conducted* rather than *how knowledge is stored*:
   "never delete the database." Enforce boundaries with scoped credentials,
   blocked commands, hooks, and read-only access. A real boundary holds when a
   prompt is ignored or a model is swapped; an instruction does not.
+- **Skills Over Monoliths.** Reusable capabilities are small, purpose-specific
+  skills (each carrying only its own instructions, templates, examples, and
+  verification checks), loaded on demand — not one giant prompt or an always-on
+  agent. Each skill is independently inspectable and upgradable. Prefer small
+  deterministic CLI checks wrapped by a skill over a monolithic MCP server loaded
+  wholesale — determinism and auditability over improvisation. Start with a few
+  core skills, not a large template pack; a skill folder is itself a dependency.
+- **Read-Only Connectors First.** External services connect through read-only or
+  narrowly-scoped interfaces by default. Write actions — sending email,
+  publishing content, modifying DNS, deleting files, changing production data —
+  require explicit operator review and a *separate* permission boundary. AI
+  prepares, summarizes, compares, and recommends; it must not silently publish,
+  send, approve, or govern. AI output is draft material until the operator
+  reviews it.
 
 **Context limits are respected with handoff documents.** No single AI session
 carries a migration *and* a wiki rewrite *and* DR planning *and* code changes at
@@ -467,6 +502,14 @@ out of scope until a real pain point justifies them:
   formulations) that tension is real; route those through a local CPU model, or
   scope what the knowledge-query MCP server will return to a hosted model.
 
+## History
+
+- **2026-08-11 — [D-24341](../docs/ai/DECISIONS.md#d-24341)** locks the AI Second
+  Brain architecture and its governance vehicle (a standalone DECISIONS record +
+  this ewiki page, not an engine Work Packet — the Ubuntu Lab Provisioning
+  precedent). This page is its descriptive companion and stays `draft` until the
+  platform is built.
+
 ## Open Questions
 
 - **Ingestion: framework or pure-custom?** The design is settled (deterministic,
@@ -485,14 +528,18 @@ out of scope until a real pain point justifies them:
   real payoff. Whether it is worth building on top of the Markdown + index layer,
   and when, is open; a general knowledge graph is ruled out (see
   [Scope boundaries](#scope-boundaries-what-this-deliberately-is-not)).
-- **Governance transcription is pending.** There is no `DECISIONS.md` entry and
-  no Work Packet for this platform. Until one exists, this page is a design
-  record only and governs nothing — read it as intent, not as a built system.
-  The buildable artifacts (ingestion script, schema, `docker-compose`, the
-  provision-and-deploy runbook) belong in that Work Packet, not on this page.
+- **Architecture locked; the runbook is not.** The architecture and governance
+  vehicle are locked by [DECISIONS.md D-24341](../docs/ai/DECISIONS.md#d-24341).
+  What does **not** yet exist is the executable runbook — the buildable artifacts
+  (ingestion script, schema, `docker-compose`, provision-and-deploy steps, the
+  first core skills) belong in a future Work Packet or a separate program repo,
+  not on this descriptive page. The page stays `status: draft` until the platform
+  is built.
 
 ## References
 
+- [DECISIONS.md D-24341](../docs/ai/DECISIONS.md#d-24341) — the architecture +
+  governance-vehicle lock this page is the descriptive companion to.
 - [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md) — the host-build sibling
   page (droplet hardening, Node/Postgres/Nginx stack, restore and DR drills).
 - [Disaster Recovery](disaster-recovery.md) — the backup-and-restore discipline
