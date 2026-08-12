@@ -7,6 +7,28 @@
 
 ## Current State
 
+### WP-533 — co2e Paibok the Power Skrull Fight: Mark the co2e Twin — DONE (2026-08-12)
+
+The **co2e** (Legendary 2nd-edition) **Paibok the Power Skrull** twin that WP-532
+deferred. The co2e Skrulls (group slug `skulls`, a co2e-source typo) Paibok Fight —
+*"Choose a Hero from the HQ for each player. Each player gains that Hero."* — was
+unmarked (`no-handler` hollow, D-24266). Marked with the **existing**
+`give-hq-hero-each-player` primitive (WP-532 / D-24343) — **card-data only, no engine /
+client / server change, no new primitive, no new D-entry** (lightweight lane).
+
+A 1-line `co2e.json` marker → `villain-mechanic-ledger` flips the co2e Paibok row
+**`(unmarked)` → `executable`** + `effect-implementation-index` regen
+(`mechanic-provenance` unchanged — the primitive already carries its `{WP-532, D-24343}`
+row). The co2e-only `+1[icon:attack] per Hero Class in the HQ` passive is a
+variable-attack line (not a timing line) — out of scope (D-24333 passive-class posture).
+
+**No hash re-pin** (no committed fixture fights co2e Paibok → `finalStateHash` /
+`PRE_WP080_HASH` byte-identical). Scaffold: `registry` test **228/0** + `ledger:villains`
+/ `effect-index` / `sim:runtime-observed` / `roadmap:counts` checks all 0; `pnpm -r
+build` 0. `User-Visible Surface = play.legendary-arena.com` — **D-24026 operator-pending**
+(post-deploy: fight co2e Paibok, confirm the "choose a Hero to gain" prompt + each
+player gains an HQ Hero). Both Paibok cards (Core + co2e) are now executable.
+
 ### WP-532 — Paibok the Power Skrull Fight: Each Player Gains an HQ Hero (Interactive) — DONE (2026-08-12)
 
 The core Skrulls villain **Paibok the Power Skrull**'s Fight — *"Choose a Hero in the HQ
