@@ -494,10 +494,13 @@ export function useTurnActions(
     },
     // why: WP-380 / D-24181 — the Wound "Healing" ability (engine healWounds).
     // Precedence: turn → main stage → block-all pending → wound-in-hand →
-    // not-acted → not-healed. The pending set mirrors the engine healWounds
-    // guards exactly (D-24008 / D-24019 / D-24067 / D-24069 / D-24139 — the same
-    // 5-guard cluster as fightVillain), so a grayed button never hides a legal
-    // move and a live button never offers an illegal one.
+    // not-acted → not-healed. The pending set MUST mirror the engine
+    // healWounds block-all guards EXACTLY (healWounds.ts): every pending-choice
+    // type that freezes the board in the move also blocks Healing here, so a live
+    // button never offers a heal the engine will silently no-op. EC-565 restores
+    // the five guards — discardToPlay (D-24184), discardChoice (D-24284),
+    // reorderChoice (D-24286), defeatChoice (D-24291), returnOnDiscard (D-24301) —
+    // that drifted out of this gate as each pending choice was added after WP-380.
     canHealWounds: () => {
       if (!isViewerTurn) return NOT_YOUR_TURN;
       if (currentStage !== 'main') {
@@ -509,7 +512,12 @@ export function useTurnActions(
         hasPendingOptionalKoReward ||
         hasPendingVictoryPileCardPick ||
         hasPendingDrawOrEmpowered ||
-        hasPendingReturnZeroCostDiscard
+        hasPendingReturnZeroCostDiscard ||
+        hasPendingDiscardToPlay ||
+        hasPendingDiscardChoice ||
+        hasPendingReorderChoice ||
+        hasPendingDefeatChoice ||
+        hasPendingReturnOnDiscard
       ) {
         return {
           allowed: false,
