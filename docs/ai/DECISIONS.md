@@ -36437,4 +36437,16 @@ _Reserved by WP-531; flips Active at WP-531 execution. Hard-dep: WP-048 ✅ + WP
 
 _Active 2026-08-12 — landed at WP-532 execution. The 20th `VillainEffectPrimitive` (union+array lockstep, drift 19→20); move count 27→28 (`resolveGiveHqHeroChoice`, not a CORE_MOVE_NAME). Block-all guard follows the D-24301 `returnOnDiscard` 9-site convention (NOT the 12-file ko-hero set). No new hashed-oracle re-pin (the new `pendingGiveHqHeroChoices` field is lazily created / undefined by default → `finalStateHash`/`PRE_WP080_HASH` byte-identical; no committed fixture fights Paibok). co2e twin left `(unmarked)` — fast follow-up. Hard-deps: WP-242/D-24007 + WP-243/D-24010 + WP-476/D-24284 + WP-522/D-24335._
 
+### D-24344 — Preferences foundation uses the "Option A" path (all under `registry-viewer/src/prefs/`, no new workspace package) (Active 2026-08-12 — WP-534 / EC-569)
+
+**Decision.** The registry-viewer preferences foundation (WP-534) is delivered via the **Option A** path: every preferences module — the Zod preferences schema, the section registry, the Pinia store factory, its persistence layer, and the `usePreferences` composable — lives under `apps/registry-viewer/src/prefs/`. **No new workspace package** (`packages/ui-preferences/`) is created; `apps/registry-viewer` stays an independent Vue 3 SPA that gains `pinia` as a dependency.
+
+**Why Option A.** The viewer is self-contained and the preferences system is viewer-specific; a shared workspace package would add a build edge and cross-package coupling for no current consumer. Keeping everything in-app is the lower-friction delivery for the foundation and for every follow-up section WP (Display / Filters / DataSource / Advanced), which register into the in-app section registry.
+
+**Supersedes the never-merged D-1414.** The original WP-068 locked this same Option-A choice as D-1414, but WP-068 and D-1414 never merged to `main` — they survived only on retired commit `8ec6ceda`. D-24344 re-locks the decision on `main` under the WP-534 resurrection; the code was brought forward verbatim (scaffold-verified: 0 typecheck errors + 17/17 prefs tests on current `main`).
+
+**Scope.** Foundation only — **no user-visible UI**. The settings drawer, the gear icon, and the app-specific sections are later WPs that build on this foundation.
+
+_Active — landed at WP-534 execution (EC-569). Hard-dep: none._
+
 Protect this file.

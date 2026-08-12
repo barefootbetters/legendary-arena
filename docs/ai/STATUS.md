@@ -7,6 +7,35 @@
 
 ## Current State
 
+### WP-534 — Preferences Foundation for the Registry Viewer — DONE (2026-08-12)
+
+Resurrected and landed the never-merged **WP-068** preferences foundation for `apps/registry-viewer`.
+WP-068 (a complete, tested ~909-line Pinia + Zod preferences foundation) was drafted "Ready" in
+2026-04 but never merged — it, its EC-070, D-1414, and the `docs/14` design plan survived only on
+retired commit `8ec6ceda`. It surfaced during the 2026-08 branch cleanup as the one stale branch
+holding genuine unlanded work, was re-drafted under fresh numbers (WP-534 / EC-569 / D-24344, #1364),
+and is now executed.
+
+The **invisible foundation** is live: `pinia ^2.1.7` + `createPinia()` merged into `main.ts` (not
+clobbered — the current `main.ts` was still the pre-WP-068 4-line baseline) with the `registerSections`
+side-effect import; the `src/prefs/` tree — a typed Zod preferences schema for the three shared-tier
+sections (Appearance / Accessibility / AdvancedBase) composed into a `PREFERENCES_SCHEMA_VERSION = 2`
+envelope, a section registry (`registerSection` with duplicate rejection), a corruption-safe Pinia
+store factory (`createPreferencesStore` — localStorage envelope, quota guard, `resetAll` /
+`resetSection` / `importJson` / `exportJson`, never throws), a `usePreferences` composable, and a
+`registerSections` stub that registers **zero** app-specific sections yet — plus its unit tests; and
+the ported `docs/14-PREFERENCES-PANEL-IMPLEMENTATION-PLAN.md`.
+
+**D-24344 (Active)** re-locks the Option-A path (everything under `apps/registry-viewer/src/prefs/`,
+no new workspace package), superseding the never-merged D-1414. **No user-visible UI change** — the
+settings drawer, gear icon, and app-specific sections are later WPs that build on this foundation.
+
+registry-viewer build **0** / typecheck **0** / test **227 / 0** (210 baseline + 17 prefs, incl. the
+schema-purity guard); whole-workspace `pnpm -r --no-bail test` green; `git diff` = `main.ts` +
+`package.json` + `pnpm-lock` + `src/prefs/**` + the plan doc (no component / `src/lib` edits).
+Standard two-session lane, two-commit topology (`EC-569:` + `SPEC:`). **Foundation only — no
+user-visible surface; D-24026 N/A this WP.**
+
 ### WP-533 — co2e Paibok the Power Skrull Fight: Mark the co2e Twin — DONE (2026-08-12)
 
 The **co2e** (Legendary 2nd-edition) **Paibok the Power Skrull** twin that WP-532
