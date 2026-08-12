@@ -36369,7 +36369,7 @@ Protect this file.
 
 _Reserved by WP-528; flips Active at WP-528 execution. Hard-dep: WP-048 ✅ + D-24314 ✅._
 
-### D-24340 — `schemeTwistNegative` counts every scheme twist (from `G.counters.schemeTwistCount`), not a polarity subset (Drafted 2026-08-11 — WP-529 / EC-564; not yet landed)
+### D-24340 — `schemeTwistNegative` counts every scheme twist (from `G.counters.schemeTwistCount`), not a polarity subset (Active 2026-08-11 — WP-529 / EC-564)
 
 **Decision.** The `schemeTwistNegative` `PenaltyEventType` is produced by deriving its count at end-of-match as `G.counters.schemeTwistCount ?? 0` — the total number of scheme twists flipped during the match — rather than by classifying each twist's outcome as "negative" or not.
 
@@ -36383,6 +36383,6 @@ _Reserved by WP-528; flips Active at WP-528 execution. Hard-dep: WP-048 ✅ + D-
 
 **Scope.** This entry covers only `schemeTwistNegative`. The remaining safe-skips (`mastermindTacticUntaken`, `scenarioSpecificPenalty`) and any re-anchoring of per-config penalty weights to the community/rulebook 4:3:1 ratio are separate future work. (`bystanderLost` is WP-528 / D-24339.)
 
-_Reserved by WP-529; flips Active at WP-529 execution. Hard-dep: WP-048 ✅ + D-24178 ✅._
+_Active — landed at WP-529 execution (EC-564). Hard-dep: WP-048 ✅ + D-24178 ✅._
 
 Protect this file.
