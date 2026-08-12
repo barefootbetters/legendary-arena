@@ -7,6 +7,38 @@
 
 ## Current State
 
+### WP-528 — Wire the `bystanderLost` Penalty Producer — DONE (2026-08-11)
+
+Second `PenaltyEventType` producer to go live after `villainEscaped` (sibling of WP-529's
+`schemeTwistNegative`, which shipped first). Both score-derivation paths hard-coded
+`bystanderLost` to `0` as a D-4801 safe-skip — `deriveScoringInputs` (real-match / leaderboard)
+and `deriveScoringInputsFromFinalState` (the PAR-calibration path in `par.aggregator.ts`) — so a
+match that let civilians be carried away was not scored on that loss, even though the structural
+invariants rank `bystanderLost` the **heaviest** penalty.
+
+Both now count the `bystander`-typed entries of `G.escapedPile` — the cards an escaping Villain
+carried away (`carryEscapedBystandersToPile` / D-24314, from both the reveal and scheme-twist
+escape paths) — the exact mirror of the existing `bystandersRescued` victory-zone loop. Escaped
+Villains (typed `villain`) are the separate `villainEscaped` count, so they are not double-counted.
+**D-24339 (Active):** deriving from the existing `escapedPile` adds **no new `G` field**, so
+`finalStateHash` / `PRE_WP080_HASH` stay **byte-identical** (no `BYSTANDERS_LOST` counter, no
+re-pin). Kept symmetric across both copies so calibrated PAR is not systematically easier than the
+live score.
+
+Tests AC-1..AC-6 (mixed villain/bystander no-double-count; a scheme-twist-carried Bystander;
+empty-pile no-throw); **control-revert non-vacuous** (zeroing either derivation fails
+AC-1/AC-3/AC-4/AC-6, observed). `wiki/scoring.md` producer status flipped live (third producer;
+aggregator JSDoc → three). game-engine **2475 → 2481** tests / 0 fail; whole-workspace
+`pnpm -r --no-bail test` green (the scaffold's only shift was the WP-529 test mocks needing
+`escapedPile: []`, folded in). **Engine producer live; player-observable once a production
+`ScenarioScoringConfig` is authored** — **D-24026 live-verify operator-pending.**
+
+**Execution note (concurrent-session entanglement):** a parallel `infra/ewiki-ai-second-brain`
+session sharing the canonical checkout ran a `git commit -a` that swept these five uncommitted
+WP-528 files into its own commit (`7197ae21`). This WP was recovered and re-committed cleanly on
+its own branch via an isolated worktree; that other branch must strip the five files before it
+merges (surfaced to the operator).
+
 ### WP-529 — Wire the `schemeTwistNegative` Penalty Producer — DONE (2026-08-11)
 
 Third `PenaltyEventType` producer to go live (after `villainEscaped`). Both score-derivation

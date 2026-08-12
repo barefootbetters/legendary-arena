@@ -671,13 +671,14 @@ function simulateOneGame(
  * Mirrors parScoring.logic.ts deriveScoringInputs but reads directly from
  * LegendaryGameState rather than a ReplayResult (WP-048's
  * deriveScoringInputs requires a ReplayResult — not available in this
- * pipeline). Two penalty-event types have engine producers derived here by
- * counter reads — villainEscaped (ESCAPED_VILLAINS) and schemeTwistNegative
- * (schemeTwistCount, WP-529 / D-24340); the remaining three (bystanderLost,
- * mastermindTacticUntaken, scenarioSpecificPenalty) follow the WP-048 safe-skip
- * (D-4801) for categories with no engine producer today. Kept symmetric with
- * deriveScoringInputs so calibrated PAR is not systematically easier than the
- * live score.
+ * pipeline). Three penalty-event types have engine producers derived here —
+ * villainEscaped (ESCAPED_VILLAINS counter) and schemeTwistNegative
+ * (schemeTwistCount counter, WP-529 / D-24340) by counter reads, and
+ * bystanderLost (WP-528 / D-24339) by counting 'bystander'-typed entries of
+ * G.escapedPile; the remaining two (mastermindTacticUntaken,
+ * scenarioSpecificPenalty) follow the WP-048 safe-skip (D-4801) for categories
+ * with no engine producer today. Kept symmetric with deriveScoringInputs so
+ * calibrated PAR is not systematically easier than the live score.
  *
  * // why: VP sum uses computeFinalScores per D-4803 team-aggregate rule
  * — the sum across all players, not a single player's total. Bystanders
@@ -722,13 +723,26 @@ export function deriveScoringInputsFromFinalState(
   // score on twist-heavy scenarios). Derives from existing terminal state — no G field.
   const schemeTwistNegativeCount = finalState.counters.schemeTwistCount ?? 0;
 
-  // why: D-4801 safe-skip — the three penalty types still without an engine producer
-  // (bystanderLost [WP-528], mastermindTacticUntaken, scenarioSpecificPenalty) are
-  // zeroed here. The PAR pipeline rides on whatever engine producers exist; wiring the
-  // rest is downstream work.
+  // why: WP-528 / D-24339 — count the 'bystander'-typed entries of G.escapedPile
+  // (civilians an escaping Villain carried away, carryEscapedBystandersToPile / D-24314,
+  // from both the reveal and scheme-twist escape paths), the mirror of the
+  // bystandersRescued victory-zone loop above and of the live deriveScoringInputs (kept
+  // symmetric — else calibrated PAR would be easier than the live score on bystander-loss
+  // scenarios). Escaped Villains (typed 'villain') are the separate villainEscaped count,
+  // so they are not double-counted. Derives from existing terminal state — no G field.
+  let bystanderLostCount = 0;
+  for (const cardExtId of finalState.escapedPile) {
+    if (finalState.villainDeckCardTypes[cardExtId] === 'bystander') {
+      bystanderLostCount = bystanderLostCount + 1;
+    }
+  }
+
+  // why: D-4801 safe-skip — the two penalty types still without an engine producer
+  // (mastermindTacticUntaken, scenarioSpecificPenalty) are zeroed here. The PAR pipeline
+  // rides on whatever engine producers exist; wiring the rest is downstream work.
   const penaltyEventCounts: Record<PenaltyEventType, number> = {
     villainEscaped: escapes,
-    bystanderLost: 0,
+    bystanderLost: bystanderLostCount,
     schemeTwistNegative: schemeTwistNegativeCount,
     mastermindTacticUntaken: 0,
     scenarioSpecificPenalty: 0,

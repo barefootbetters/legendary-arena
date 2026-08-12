@@ -36353,7 +36353,7 @@ Protect this file.
 
 **Scope / fences.** Server + arena-client wiring only — **no engine / registry / determinism surface touched**. Autoplay is **Out of Scope** (its default-loadout pool is a fixed non-Secret-Invasion scheme, so Secret Invasion never reaches it; the bot-ally path `POST /api/match/create-with-bot` has no scheme-blind client gate — it relies on the engine 400). `api-endpoints.md` whole-row replaced for `/api/match/setup-requirements` (D-11804 §21; `Auth` stays `guest`, `Status` `Wired`). **Ship as a set with WP-524 / D-24337** — WP-524's live engine change without this play-lobby change is the un-creatable-scheme regression this split avoids. Server 12-test matchGate suite + full server suite green; arena-client 1229 pass / 0 fail (two new scheme-aware Create-gate tests); whole-workspace green; control-revert non-vacuous (neuter the server projection → the SI route test fails; neuter the client `schemeId` pass-through → the SI Create-gate test fails; base + other-scheme stay green). Hard-dep WP-524 / D-24337.
 
-### D-24339 — `bystanderLost` penalty is derived at end-of-match from `G.escapedPile`, not a new counter (Drafted 2026-08-11 — WP-528 / EC-563; not yet landed)
+### D-24339 — `bystanderLost` penalty is derived at end-of-match from `G.escapedPile`, not a new counter (Active 2026-08-11 — WP-528 / EC-563)
 
 **Decision.** The `bystanderLost` `PenaltyEventType` is produced by deriving its count at end-of-match from `G.escapedPile` — counting entries whose `villainDeckCardTypes[extId] === 'bystander'` — rather than from a new `G.counters.BYSTANDERS_LOST` counter or a structured event log (the two options the stale `deriveScoringInputs` safe-skip comment named).
 
@@ -36367,7 +36367,7 @@ Protect this file.
 
 **Scope.** This entry covers only `bystanderLost`. The remaining safe-skips (`schemeTwistNegative`, `mastermindTacticUntaken`, `scenarioSpecificPenalty`) and any re-anchoring of per-config penalty weights to the community/rulebook 4:3:1 ratio are separate future work.
 
-_Reserved by WP-528; flips Active at WP-528 execution. Hard-dep: WP-048 ✅ + D-24314 ✅._
+_Active — landed at WP-528 execution (EC-563). Hard-dep: WP-048 ✅ + D-24314 ✅._
 
 ### D-24340 — `schemeTwistNegative` counts every scheme twist (from `G.counters.schemeTwistCount`), not a polarity subset (Active 2026-08-11 — WP-529 / EC-564)
 
