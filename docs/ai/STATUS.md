@@ -7,6 +7,16 @@
 
 ## Current State
 
+### WP-537 — Core Loki Master Strike (auto reveal-[hc:strength]-or-Wound) — DONE (2026-08-13)
+
+Implemented core Loki's Master Strike — *"Each player reveals a `[hc:strength]` Hero or gains a Wound."* `core/loki` previously took no branch in `mastermindStrikeHandler` and fell through to generic bystander-capture + strike-counter bookkeeping (the Strike was inert) — one of the two hollow Core Master Strikes found in the 2026-08-13 mastermind-coverage audit (the other, Dr. Doom, is WP-538).
+
+Added `MASTERMIND_CORE_LOKI` + a dispatch branch + `resolveCoreLokiStrike`: per player (sorted), a Strength Hero is revealed and **kept** (the printed escape, no penalty); a player holding none gains a Wound via `gainWoundToDiscard` (empty supply → logged no-op). Auto-resolve — no pending-choice. Deliberately distinct from the co2e `resolveLokiStrike` (different printed penalty). Engine-only: no new `G` field, no `ctx.random`, no card-data / marker / mechanic-ledger / effect-index / arena-client change. 4 new tests (reveal-keeps / no-hero-Wound / supply-empty / multi-player partition); engine 2529/0, `pnpm -r build` + `--no-bail test` exit 0; `finalStateHash` / `PRE_WP080_HASH` byte-identical (no committed fixture reveals a `core/loki` strike). D-24346 Active.
+
+**User-Visible Surface = play.legendary-arena.com** — a Core Loki match now punishes a Strength-Hero-less player with a Wound on a Master Strike. D-24026 live-verification **operator-pending** (confirm a Loki Master Strike firing in a deployed match).
+
+---
+
 ### WP-535 — Rogue "Copy Powers": Interactive Copy-a-Hero Ability — DONE (2026-08-12)
 
 Implemented Rogue's previously-unimplemented `core/rogue/copy-powers` — *"Play this card as a copy of
