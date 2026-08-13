@@ -10,11 +10,11 @@
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 364,
+      "executable": 365,
       "deferred": 0,
       "condition": 5,
       "unsupported": 367,
-      "unmarked": 1090
+      "unmarked": 1089
     }
   },
   "entries": [
@@ -6844,11 +6844,17 @@
       "name": "Rogue",
       "set": "core",
       "scope": "hero",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
+      "mechanic": "copy-powers",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#copy-powers",
       "wp": "",
-      "decision": ""
+      "decision": "",
+      "designs": [
+        {
+          "slug": "copy-powers",
+          "name": "Copy Powers"
+        }
+      ]
     },
     {
       "extId": "core/spider-man",
@@ -27968,7 +27974,7 @@
     "core/rogue": {
       "scope": "hero",
       "mechanics": [
-        "(unmarked)"
+        "copy-powers"
       ]
     },
     "core/spider-man": {

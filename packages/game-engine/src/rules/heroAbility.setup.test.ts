@@ -233,7 +233,7 @@ describe('buildHeroAbilityHooks', () => {
 describe('HERO_KEYWORDS drift-detection', () => {
   // why: prevents union/array divergence — same pattern as
   // REVEALED_CARD_TYPES drift detection
-  it('contains exactly the 34 canonical keyword values', () => {
+  it('contains exactly the 35 canonical keyword values', () => {
     const expectedKeywords = [
       'draw',
       'attack',
@@ -268,13 +268,14 @@ describe('HERO_KEYWORDS drift-detection', () => {
       'shuffle-discard-empty-reward', // why: D-24148 / WP-356 — mandatory empty-discard-reward-or-shuffle (Reprocess / Electromagnetic Eyebeams)
       'discard-to-play', // why: WP-383 / D-24184 — mandatory play COST "discard a card to play this card" (Cyclops Determination/Optic Blast + siblings)
       'defeat-with-bystander', // why: WP-486 / D-24291 — Silent Sniper "Defeat a Villain or Mastermind that has a Bystander."
+      'copy-powers', // why: WP-535 / D-24345 — Rogue's Copy Powers "Play this card as a copy of another Hero you played this turn."
       'return-on-discard', // why: WP-498 / D-24301 — Cyclops Unending Energy "If a card effect makes you discard this card, you may return this card to your hand."
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      34,
-      'HERO_KEYWORDS must have exactly 34 entries',
+      35,
+      'HERO_KEYWORDS must have exactly 35 entries',
     );
 
     assert.deepStrictEqual(

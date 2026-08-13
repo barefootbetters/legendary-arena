@@ -41,6 +41,7 @@ import { hasPendingReturnZeroCostDiscard } from './resolveReturnZeroCostDiscard.
 import { hasPendingDiscardToPlay } from './resolveDiscardToPlay.js';
 import { hasPendingReturnOnDiscard } from './resolveReturnOnDiscard.js';
 import { hasPendingGiveHqHeroChoice } from './giveHqHeroChoice.resolve.js';
+import { hasPendingCopyPowersChoice } from './copyPowersChoice.resolve.js';
 import { hasHealedThisTurn } from './healWounds.js';
 import {
   composeFightNarrative,
@@ -154,6 +155,8 @@ export function fightVillain(
   if (hasPendingReturnOnDiscard(G)) return;
   // why: block-all — pendingGiveHqHeroChoice (Paibok Fight) must be resolved first (WP-532 / D-24343)
   if (hasPendingGiveHqHeroChoice(G)) return;
+  // why: block-all — pendingCopyPowersChoice (Rogue's Copy Powers) must be resolved first (WP-535 / D-24345)
+  if (hasPendingCopyPowersChoice(G)) return;
 
   // why: D-24180 — a player who used the Wound Healing ability this turn may not
   // fight or recruit for the rest of the turn (the reverse lock).

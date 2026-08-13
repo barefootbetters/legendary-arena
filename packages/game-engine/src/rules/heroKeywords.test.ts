@@ -62,11 +62,11 @@ describe('size-changing keyword (WP-290 / EC-322 / D-24074)', () => {
     );
   });
 
-  it('HERO_KEYWORDS array has exactly 34 entries after the return-on-discard addition', () => {
+  it('HERO_KEYWORDS array has exactly 35 entries after the copy-powers addition', () => {
     assert.equal(
       HERO_KEYWORDS.length,
-      34,
-      'HERO_KEYWORDS must have exactly 34 entries (33 + return-on-discard, D-24301)',
+      35,
+      'HERO_KEYWORDS must have exactly 35 entries (34 + copy-powers, D-24345)',
     );
   });
 });
@@ -76,6 +76,15 @@ describe('defeat-with-bystander keyword (WP-486 / EC-521 / D-24291)', () => {
     assert.ok(
       HERO_KEYWORDS.includes('defeat-with-bystander'),
       'defeat-with-bystander must be in HERO_KEYWORDS array',
+    );
+  });
+});
+
+describe('copy-powers keyword (WP-535 / EC-570 / D-24345)', () => {
+  it('is registered in HERO_KEYWORDS', () => {
+    assert.ok(
+      HERO_KEYWORDS.includes('copy-powers'),
+      'copy-powers must be in HERO_KEYWORDS array',
     );
   });
 });

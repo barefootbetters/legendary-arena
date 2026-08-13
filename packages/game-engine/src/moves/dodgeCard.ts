@@ -31,6 +31,7 @@ import { hasPendingReturnZeroCostDiscard } from './resolveReturnZeroCostDiscard.
 import { hasPendingDiscardToPlay } from './resolveDiscardToPlay.js';
 import { hasPendingReturnOnDiscard } from './resolveReturnOnDiscard.js';
 import { hasPendingGiveHqHeroChoice } from './giveHqHeroChoice.resolve.js';
+import { hasPendingCopyPowersChoice } from './copyPowersChoice.resolve.js';
 import { getHooksForCard } from '../rules/heroAbility.types.js';
 import { formatCardRef } from '../log/logDisplay.js';
 import { pushLog } from '../log/logPush.js';
@@ -99,6 +100,8 @@ export function dodgeCard({ G, ctx, ...context }: MoveContext, { cardId }: Dodge
   if (hasPendingReturnOnDiscard(G)) return;
   // why: block-all — pendingGiveHqHeroChoice (Paibok Fight) must be resolved first (WP-532 / D-24343)
   if (hasPendingGiveHqHeroChoice(G)) return;
+  // why: block-all — pendingCopyPowersChoice (Rogue's Copy Powers) must be resolved first (WP-535 / D-24345)
+  if (hasPendingCopyPowersChoice(G)) return;
 
   // Step 3: Eligibility — the card must be in the current player's hand AND carry
   // a dodge hook (read-only, timing-agnostic). pid = ctx.currentPlayer matches the

@@ -55,6 +55,7 @@ import PutAnyNumberBottomHQPrompt from '../components/play/PutAnyNumberBottomHQP
 import ReturnZeroCostDiscardPrompt from '../components/play/ReturnZeroCostDiscardPrompt.vue';
 import DiscardToPlayPrompt from '../components/play/DiscardToPlayPrompt.vue';
 import PendingGiveHqHeroChoicePrompt from '../components/play/PendingGiveHqHeroChoicePrompt.vue';
+import PendingCopyPowersChoicePrompt from '../components/play/PendingCopyPowersChoicePrompt.vue';
 import type { SubmitMove } from '../components/play/uiMoveName.types';
 
 interface ActivePile {
@@ -126,6 +127,7 @@ export default defineComponent({
     ReturnZeroCostDiscardPrompt,
     DiscardToPlayPrompt,
     PendingGiveHqHeroChoicePrompt,
+    PendingCopyPowersChoicePrompt,
   },
   props: {
     submitMove: {
@@ -457,6 +459,12 @@ export default defineComponent({
     const hasPendingGiveHqHeroChoice = computed<boolean>(
       () => snapshot.value?.pendingGiveHqHeroChoice !== undefined,
     );
+    // why: WP-535 / D-24345 — derived from UIState.pendingCopyPowersChoice !== undefined. Passed
+    // to TurnActionBar to block end-turn and pass-priority at EVERY stage while a Rogue Copy
+    // Powers copy-a-Hero choice is pending (board frozen, mirrors hasPendingGiveHqHeroChoice).
+    const hasPendingCopyPowersChoice = computed<boolean>(
+      () => snapshot.value?.pendingCopyPowersChoice !== undefined,
+    );
 
     // why: WP-380 — Healing KOs Wounds from HAND specifically, so scan the viewer's
     // own handCards (UIPlayerState.woundCount counts every zone and cannot answer
@@ -498,6 +506,7 @@ export default defineComponent({
       hasPendingReorderChoice,
       hasPendingDefeatChoice,
       hasPendingGiveHqHeroChoice,
+      hasPendingCopyPowersChoice,
       hasWoundInHand,
     };
   },
@@ -776,6 +785,15 @@ export default defineComponent({
             :viewer-player-id="viewer.playerId"
             :submit-move="submitMove"
           />
+          <!-- why: WP-535 / D-24345 — the Rogue Copy Powers copy-a-Hero prompt renders above
+               TurnActionBar in DOM order; appears only for the choosing player when
+               pendingCopyPowersChoice is set. NOT a modal; normal document flow. The
+               block-all guard guarantees at most one pending-choice type is set. -->
+          <PendingCopyPowersChoicePrompt
+            :pending-copy-powers-choice="snapshot.pendingCopyPowersChoice"
+            :viewer-player-id="viewer.playerId"
+            :submit-move="submitMove"
+          />
           <TurnActionBar
             :current-stage="snapshot.game.currentStage"
             :is-viewer-turn="isViewerTurn"
@@ -794,6 +812,7 @@ export default defineComponent({
             :has-pending-reorder-choice="hasPendingReorderChoice"
             :has-pending-defeat-choice="hasPendingDefeatChoice"
             :has-pending-give-hq-hero-choice="hasPendingGiveHqHeroChoice"
+            :has-pending-copy-powers-choice="hasPendingCopyPowersChoice"
             :has-wound-in-hand="hasWoundInHand"
             :has-acted-this-turn="snapshot.game.hasActedThisTurn"
             :has-healed-this-turn="snapshot.game.hasHealedThisTurn"

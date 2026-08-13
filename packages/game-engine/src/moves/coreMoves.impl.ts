@@ -30,6 +30,7 @@ import { hasPendingReturnZeroCostDiscard } from './resolveReturnZeroCostDiscard.
 import { hasPendingDiscardToPlay, getDiscardToPlayCost } from './resolveDiscardToPlay.js';
 import { hasPendingReturnOnDiscard } from './resolveReturnOnDiscard.js';
 import { hasPendingGiveHqHeroChoice } from './giveHqHeroChoice.resolve.js';
+import { hasPendingCopyPowersChoice } from './copyPowersChoice.resolve.js';
 import { formatBaseEconomyClause, formatPlayedCardLabel } from '../log/logDisplay.js';
 import { pushLog } from '../log/logPush.js';
 
@@ -129,6 +130,10 @@ export function drawCards({ G, playerID, ...context }: MoveContext, args: DrawCa
   }
   // why: block-all — pendingGiveHqHeroChoice (interactive give-HQ-Hero pick, Paibok Fight) must be resolved before any other action (WP-532 / D-24343)
   if (hasPendingGiveHqHeroChoice(G)) {
+    return;
+  }
+  // why: block-all — pendingCopyPowersChoice (interactive copy-a-Hero pick, Rogue's Copy Powers) must be resolved before any other action (WP-535 / D-24345)
+  if (hasPendingCopyPowersChoice(G)) {
     return;
   }
 
@@ -314,6 +319,10 @@ export function playCard({ G, playerID, ...context }: MoveContext, args: PlayCar
   if (hasPendingGiveHqHeroChoice(G)) {
     return;
   }
+  // why: block-all — pendingCopyPowersChoice (interactive copy-a-Hero pick, Rogue's Copy Powers) must be resolved before any other action (WP-535 / D-24345)
+  if (hasPendingCopyPowersChoice(G)) {
+    return;
+  }
 
   // Step 3: Mutate G
   const playerZones = G.playerZones[playerID];
@@ -445,6 +454,10 @@ export function endTurn({ G, playerID, events }: MoveContext): void {
   }
   // why: block-all — pendingGiveHqHeroChoice (interactive give-HQ-Hero pick, Paibok Fight) must be resolved before any other action (WP-532 / D-24343)
   if (hasPendingGiveHqHeroChoice(G)) {
+    return;
+  }
+  // why: block-all — pendingCopyPowersChoice (interactive copy-a-Hero pick, Rogue's Copy Powers) must be resolved before any other action (WP-535 / D-24345)
+  if (hasPendingCopyPowersChoice(G)) {
     return;
   }
 
