@@ -7,6 +7,40 @@
 
 ## Current State
 
+### WP-535 — Rogue "Copy Powers": Interactive Copy-a-Hero Ability — DONE (2026-08-12)
+
+Implemented Rogue's previously-unimplemented `core/rogue/copy-powers` — *"Play this card as a copy of
+another Hero you played this turn. This card is both [hc:covert] and the color you copy."* (surfaced
+from Jeff's live 2p Secret Invasion game, where Rogue was the 6th hero and the card logged the generic
+`[blocked] a play condition was not met`). New `copy-powers` **HeroKeyword** (union+array 34→35,
+`HANDLED`/`NO_MAGNITUDE` keyword sets, `[keyword:copy-powers]` marker + regen `core.json`) with a
+handler parking an **interactive pending-choice** (the WP-532 give-HQ-Hero pattern, ~20 touch-points):
+the current player picks one Hero played this turn (`inPlay` minus **all** Copy Powers copies, real
+Heroes only), and `resolveCopyPowersChoice` **re-fires** that Hero's on-play ability via the reentrant
+`executeHeroEffects` — threading the **full MoveContext incl. `ctx.random`** (a first for a resolve
+move; the copied ability may draw/reshuffle) — and grants Copy Powers the **copied class** (covert is
+baked in card data).
+
+**All four forks landed on the operator recommendation (D-24345 Active):** interactive (bot
+auto-defaults highest-cost); re-fire the ABILITY not stats; full dual-class; 0-eligible no-op /
+1-eligible auto. The runtime dual-class **reuses the existing `cardSizeChangingClasses` map** (D-24074
+— no new hashed `G` field, no `sizeChanging.logic.ts` change); the one new field
+(`pendingCopyPowersChoices` FIFO) is **lazy-materialized**, so non-Copy-Powers games keep byte-identical
+`finalStateHash` / `PRE_WP080_HASH`. Shipped atomically with the block-all guard (9 sites), the
+`buildUIState` + `filterUIStateForAudience` chooser-only projection, and the arena-client
+`PendingCopyPowersChoicePrompt.vue` (engine `pending*` without a client prompt = hard-freeze).
+
+Move count 28→29 (`resolveCopyPowersChoice`, not a CORE_MOVE_NAME); `HERO_EFFECT_HANDLERS` 20→21.
+game-engine build **0** / test **2521 / 0** (20 new copy-powers tests: handler / resolve / exec-ctx
+copied-draw / two-Copy-Powers no-recursion / ai short-circuit / uiState build+filter round-trip /
+drift); arena-client typecheck **0** / test **1253 / 0** (9 new prompt tests); whole-workspace
+`pnpm -r --no-bail test` green; card-data gates (`ledger:heroes`, `effect-index`,
+`sim:runtime-observed`, `roadmap:counts`) regenerated + current; control-revert non-vacuous (neuter
+the eligible-set builder → 8 copy tests fail, drift + give-HQ green). **Steal Abilities** (Rogue's
+other copy card) is a related follow-up, OUT of scope. Standard two-session lane, two-commit topology
+(`EC-570:` + `SPEC:`). `User-Visible Surface = play.legendary-arena.com` — **D-24026 live-verify
+operator-pending**.
+
 ### WP-534 — Preferences Foundation for the Registry Viewer — DONE (2026-08-12)
 
 Resurrected and landed the never-merged **WP-068** preferences foundation for `apps/registry-viewer`.
