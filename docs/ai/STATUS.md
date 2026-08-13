@@ -7,6 +7,18 @@
 
 ## Current State
 
+### WP-538 — Core Dr. Doom Master Strike (6-card gate + reveal-[hc:tech]-or-interactive-put-2-on-top) — DONE (2026-08-13)
+
+Implemented core Dr. Doom's Master Strike — *"Each player with exactly 6 cards in hand reveals a `[hc:tech]` Hero or puts 2 cards from their hand on top of their deck."* `core/dr-doom` previously took no branch in `mastermindStrikeHandler`; the Strike was inert (the second of the two hollow Core Master Strikes from the 2026-08-13 audit; Loki was WP-537).
+
+Added `MASTERMIND_CORE_DR_DOOM` + `resolveCoreDoomStrike`: per player (sorted), an exactly-6-cards gate → reveal a Tech Hero (kept, no penalty) → else put 2 cards on top of the deck. **Interactive** for the current player via a new `PendingPutCardsOnDeckChoice` (pick which 2 + top order); **auto cheapest-2** for non-current/bot players — the WP-476 Magneto discard-to-4 split. The new pending-choice ships end-to-end (no-UX-freeze): lazy-init `G` queue + `putCardsOnDeckChoice.resolve.ts` move + block-all guards on every action move + move registration (count 29→30) + `ai.legalMoves` short-circuit + both sim MOVE_MAPs + UIState build/types/**filter pass-through** (chooser-only) + `PendingPutCardsOnDeckChoicePrompt.vue` in `PlayDesktop`/`PlayMobile` + `useTurnActions`/`TurnActionBar` gating. Cross-layer (game-engine + arena-client). No `data/cards` / marker / ledger / effect-index change; no `ctx.random`; the `G` field is optional + lazy-init.
+
+The sole complete-game sentinel `sentinel-core-doom-2p` legitimately parks now (P1's 6-card hand, no Tech Hero), so `runFixture` gained a `resolvePutCardsOnDeckChoice` dispatch entry + the fixture script gained a scripted resolve move; the fixture was re-recorded (`finalStateHash` reflects the new park→resolve trajectory; it now regression-tests the interactive path end-to-end). Engine **2546/0** (incl. the new resolve-move / strike / filter cases), arena-client vue-tsc + tests green, `pnpm -r build` + `--no-bail test` exit 0. D-24347 Active.
+
+**User-Visible Surface = play.legendary-arena.com** — a Core Dr. Doom match now prompts the current player (6 cards, no Tech Hero) to put 2 cards on top of their deck (others auto). D-24026 live-verification **operator-pending**. With WP-537, **all 4 Core Master Strikes now fire** (Magneto, Red Skull, Loki, Dr. Doom).
+
+---
+
 ### WP-537 — Core Loki Master Strike (auto reveal-[hc:strength]-or-Wound) — DONE (2026-08-13)
 
 Implemented core Loki's Master Strike — *"Each player reveals a `[hc:strength]` Hero or gains a Wound."* `core/loki` previously took no branch in `mastermindStrikeHandler` and fell through to generic bystander-capture + strike-counter bookkeeping (the Strike was inert) — one of the two hollow Core Master Strikes found in the 2026-08-13 mastermind-coverage audit (the other, Dr. Doom, is WP-538).
