@@ -227,6 +227,17 @@
       "hidden": true
     },
     {
+      "slug": "copy-powers",
+      "label": "Copy Powers",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "core/rogue"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "cosmic-threat",
       "label": "Cosmic Threat",
       "scope": "hero",
@@ -1601,7 +1612,7 @@
       "label": "Unmarked",
       "scope": "hero",
       "source": "free-text",
-      "cardCount": 46,
+      "cardCount": 45,
       "cardIds": [
         "3dtc/deadpool",
         "3dtc/howard-the-duck",
@@ -1616,7 +1627,6 @@
         "core/captain-america",
         "core/deadpool",
         "core/nick-fury",
-        "core/rogue",
         "core/thor",
         "cosm/nebula",
         "cvwr/captain-america-secret-avenger",
@@ -2360,7 +2370,7 @@
     },
     "core/rogue": {
       "mechanics": [
-        "unmarked"
+        "copy-powers"
       ]
     },
     "core/spider-man": {
