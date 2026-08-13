@@ -29,7 +29,7 @@ source:
   - ../packages/game-engine/src/endgame/endgame.types.ts
   - ../docs/ai/ARCHITECTURE.md
   - ../docs/01-VISION.md
-  - Design session 2026-08-13 — the "powerless to protector" north star, the "power reveals character" pillar, and the card-counting / anticipation coaching layer
+  - Design session 2026-08-13 — the "powerless to protector" north star, the "power reveals character" pillar, the card-counting / anticipation coaching layer, and the seven-reward-driver model (competence / agency / identity + prediction-error and investment lenses)
 last-reviewed: 2026-08-13
 ---
 
@@ -74,14 +74,13 @@ lands as a reward, a threat, or a relief, and how to **pace and time** the
 sensory cues so the payoff feels earned rather than noisy.
 
 It maps the [shared trigger spine](design-system-overview.md#shared-trigger-spine)
-to the small set of reward mechanisms that actually drive satisfaction in a
-deck-builder: **variable reward** (you don't know what the villain deck
-will reveal), **escalating reward** (a synergy chain that keeps paying
-off), **loss aversion** (the escape and scheme counters climbing toward
-defeat), and the **peak-end** shape of a match (the finale carries
-disproportionate emotional weight). Each maps to signals the client already
-receives, so the framework is buildable on the same client-side reaction
-surface as visual and audio.
+to the [seven reward drivers](#seven-drivers) that actually drive satisfaction
+in a deck-builder — three from behavioural economics (**variable reward**,
+**escalation**, **relief**), three from self-determination (**competence**,
+**agency**, **identity**), and **peak-end** binding the memory. The first set
+explains why a *moment* feels good; the second explains why a *player* bonds to
+the game. Each maps to signals the client already receives, so the framework is
+buildable on the same client-side reaction surface as visual and audio.
 
 This is **engagement craft, not compulsion engineering.** Legendary Arena's
 satisfaction comes from *good play being visibly rewarded* — a well-built
@@ -141,6 +140,13 @@ treat them consistently:
   sequence into a single crescendo, never a collision.
 - **Reward the skill, not the luck** — the escalating-combo payoff is
   attributed to the player's deck-building, not to randomness.
+- **Player authorship over randomness** — the sharpened form of the line above:
+  the strongest rewards must originate from the player's decisions, preparation,
+  construction, and timing, so the felt attribution is "**I** authored this
+  outcome" more often than "the game produced it." The sensory peak follows an
+  *authored* moment. (A clarification of the existing skill-not-luck invariant,
+  not a new constraint — it names why [competence](#competence) and
+  [agency](#agency) sit among the reward drivers.)
 
 ### Non-Goals — this framework MUST NOT
 
@@ -149,7 +155,15 @@ treat them consistently:
 - introduce any reward that gates play, pressures spend, manufactures
   scarcity, or builds a compulsion loop — the [Vision](vision.md) bright
   lines ([Monetization Model](monetization-model.md)) are hard boundaries,
-  not guidance.
+  not guidance;
+- reach for **false dopamine** — engagement without mastery. Making the
+  compulsion-loop line above concrete, the framework MUST NOT use loot-box
+  anticipation, artificial scarcity, reward timers, forced re-engagement,
+  login-streak anxiety, or near-miss manipulation *disconnected from player
+  skill* (a legitimate near miss ties to a board state the player can improve;
+  a rigged tease does not — see [Variable ratio](#variable-ratio)). These
+  manufacture compulsion; this framework rewards competence, agency, identity,
+  and relief instead.
 
 The reward loop lives entirely inside the **free game.**
 
@@ -179,20 +193,23 @@ equally:
 - Difficulty ↔ reward coupling (a clutch win near the escape cap feels
   bigger)
 
-### The five reward mechanisms
+### The seven reward drivers {#seven-drivers}
 
-Each mechanism is a *pattern* in how the spine's events arrive over time —
-not a new signal. The client already has everything needed to detect them.
+Each driver is a *pattern* in how the spine's events arrive over time — not a
+new signal. The client already has everything needed to detect them. The first
+three are the **behavioural-economics** engine (what the events *do* to the
+player); the next three are the **self-determination** engine (what the player
+*becomes*); peak-end binds the memory. Together they are why a player bonds to
+Legendary Arena, not merely why a single moment feels good.
 
-#### 1. Variable reward — the villain-deck reveal
+#### 1. Variable reward — the villain-deck reveal {#variable-reward}
 
-The single strongest satisfaction driver in the game is **not knowing what
-comes next.** Every villain-deck reveal
-([Villain Deck](villain-deck.md)) is a sealed outcome — a harmless card, a
-menacing Ambush, a Scheme Twist, or a Master Strike — resolved from a
-deterministic-but-player-unknown shuffle (`ctx.random`, so it replays
-identically yet feels random *to the player*). That variable-ratio shape is
-the classic reason "flip the top card" is compelling.
+The strongest *moment-to-moment* driver is **not knowing what comes next.**
+Every villain-deck reveal ([Villain Deck](villain-deck.md)) is a sealed outcome
+— a harmless card, a menacing Ambush, a Scheme Twist, or a Master Strike —
+resolved from a deterministic-but-player-unknown shuffle (`ctx.random`, so it
+replays identically yet feels random *to the player*). That variable-ratio shape
+is the classic reason "flip the top card" is compelling.
 
 - **Design use:** give the *reveal itself* a beat of anticipation before the
   outcome cue resolves — a brief hold, then the payoff. The
@@ -202,8 +219,15 @@ the classic reason "flip the top card" is compelling.
 - **Guardrail:** the variability is *in the game's own randomness*, which
   the player already accepted by sitting down — it is not a manufactured
   loot-box or a spend-gated pull.
+- **Sharper account — prediction error, not randomness.** Behaviourally the hit
+  is not the randomness itself but the *violation of expectation*: reward tracks
+  how far the outcome **beat the forecast** the brain was already running
+  (Schultz, Dayan & Montague 1997). An expected 2-cost recruit that arrives is
+  flat; expecting junk and drawing exactly the rare Hero you needed is a spike.
+  See the [prediction-error lens](#prediction-error) below for the design
+  implication.
 
-#### 2. Escalating reward — the synergy chain (the flagship)
+#### 2. Escalation — the synergy chain (the flagship) {#escalation}
 
 The chain-reaction combo is a **compounding** reward: one card's effect
 fires another, and another, and each step should pay off bigger than the
@@ -220,35 +244,88 @@ and the [combo cue](sound-effects.md#tiered-combo), and it rides the live
 
 - **Design use:** the ascending visual/audio tiers must **peak together**
   and land *after* a micro-beat of build-up, so a 3-chain reads as a
-  crescendo the player caused, not a random flash. Reward the *skill*, not
-  the luck.
+  crescendo the player caused, not a random flash. The `>= 3` row is already a
+  [competence](#competence) hit — the escalation and the "I engineered it"
+  feeling arrive on the same event.
 
-#### 3. Loss aversion — the menace counters
+#### 3. Relief — discharging the menace {#relief}
 
-Losing hurts more than winning feels good — so the villains *closing in* is
-a potent (negative) driver that makes the eventual win sweeter. Two
-already-projected counters climb toward defeat:
+Losing hurts more than winning feels good, so the villains *closing in* is a
+potent negative driver that makes the eventual win sweeter — and **removing a
+threat** is its own reward, distinct from any positive gain. The tension and its
+discharge are one driver:
 
-- `UIState.progress.escapedVillains` → loss at `ESCAPE_LIMIT` (8).
-- `UIState.scheme.twistCount` → the scheme completes at its own limit
-  (`schemeLoss` flips terminal).
+- **The tension** rides two already-projected counters climbing toward defeat:
+  `UIState.progress.escapedVillains` → loss at `ESCAPE_LIMIT` (8), and
+  `UIState.scheme.twistCount` → the scheme completes at its own limit
+  (`schemeLoss` flips terminal). This is the emotional core of the *adaptive
+  danger-meter score* on [Sound Effects](sound-effects.md) and a candidate for a
+  rising *ambient* visual menace.
+- **The discharge** is `fightResolved` (a villain cleared from the City),
+  `healResolved` (wounds KO'd), or a Master Strike *survived* without disaster —
+  the built tension, released.
 
-- **Design use:** this is the emotional core of the *adaptive danger-meter
-  score* on [Sound Effects](sound-effects.md)
-  and a candidate for a rising *ambient* visual menace. Pressure builds
-  tension; relieving it (defeating the threat, see below) is the reward.
+- **Design use:** pair the relief cue's *character* to the tension it discharges
+  — a bigger exhale after a bigger scare — and never fire a positive cue while
+  the menace is still *rising* (that is threat, not reward).
 
-#### 4. Relief — defeating the threat / healing
+#### 4. Competence — "I engineered this" {#competence}
 
-Reward isn't only positive gains; **removing a threat** is its own hit.
-`fightResolved` (a villain cleared from the City), `healResolved` (wounds
-KO'd), and a Master Strike *survived* without disaster are relief beats —
-the tension built by loss-aversion, discharged.
+The strongest *intrinsic* driver in the game is the evidence that the player's
+own understanding, planning, or execution shaped the outcome — the competence
+need at the centre of Self-Determination Theory (Deci & Ryan 1985; Ryan & Deci
+2000). Thinning is not satisfying because cards vanish; it is satisfying because
+the player feels *sharper*. A 3-chain is not satisfying because particles fired;
+it is satisfying because the player realises they *built* the engine that
+chained.
 
-- **Design use:** pair the relief cue's *character* to the tension it
-  discharges — a bigger exhale after a bigger scare.
+- **Where it already lives:** the `>= 3` [escalation](#escalation) row, every
+  successful [thin](gameplay-strategy.md#deck-thinning), a correctly-sequenced
+  hand ([Rank 1](gameplay-strategy.md#rank-1)), a well-read
+  [card-count](#card-counting), a well-timed Mastermind push
+  ([Rank 2](gameplay-strategy.md#rank-2)).
+- **Design use:** a reward moment should make *why* the player succeeded legible
+  — surface the class that enabled the chain, the thin that raised the density —
+  so the takeaway is "**I** did that," never "the game gave me that." This is the
+  reward side of [Gameplay Strategy](gameplay-strategy.md#coaching-layers)'s four
+  coachable layers.
 
-#### 5. Peak-end — the finale carries the memory
+#### 5. Agency — "I chose this" {#agency}
+
+A chosen reward is valued more than an identical granted one — the autonomy need,
+the second SDT pillar (Ryan & Deci 2000). "A card appeared" and "I *recruited*
+that card" are mechanically identical and emotionally miles apart; the second
+validates that the player *authored* the moment. Legendary Arena is dense with
+real choices: recruit vs. fight, when to attempt a Tactic, sacrificing a
+this-turn gain for future deck quality.
+
+- **Where it already lives:** the interleave order (recruit ↔ fight), the
+  Mastermind-timing decision ([Rank 2](gameplay-strategy.md#rank-2)), the escape
+  KO pick, every construction and thinning call.
+- **Design use:** let the *choosing* carry weight, not only the outcome — a
+  chosen line that pays off should read as the player's decision vindicated, not
+  as the game's gift. This is the reward-side twin of the
+  [Narrative Agency hook](narrative-psychology.md) ("I act on the world").
+
+#### 6. Identity — "the hero I am" {#identity}
+
+People repeat actions that confirm who they believe they are (identity-based
+motivation; Oyserman 2009) — one of the deepest reasons Marvel, RPG, and
+faction games earn loyalty. The reward is not "I won"; it is "**I am the kind of
+hero who wins this way.**" Two players can take the mechanically-identical action
+and feel opposite rewards: one *rescued the civilian*, the other *cleared an
+obstacle to conquest*.
+
+- **Where it already lives:** this is the reward face of the page's
+  [second pillar](#the-heart) (power *reveals* character) and of the
+  [builder / destroyer lens](narrative-psychology.md#playstyle-modes) — the same
+  spine event, coloured by which heart the player brought to it.
+- **Design use:** let identity-affirming beats (a bystander rescued, a teammate
+  shielded, a ruthless overrun) carry a flavour the player recognises as
+  *theirs* — the mechanical outcome may be identical, the emotional outcome must
+  not be.
+
+#### 7. Peak-end — the finale carries the memory {#peak-end}
 
 Players remember a session by its **emotional peak** and its **ending**
 (the peak-end rule; Kahneman & Fredrickson 1993, Redelmeier & Kahneman 1996),
@@ -263,12 +340,42 @@ the biggest treatment in the game.
   single biggest mid-match peak (a Mastermind vanquished). A restrained
   early game makes the peak read as a peak.
 
+#### Supporting lens — positive prediction error {#prediction-error}
+
+Not a headline driver but the mechanism *under* [variable reward](#variable-reward):
+the brain constantly forecasts the next outcome, and the reward spike scales with
+how far reality **exceeds** that forecast, not with raw randomness (Schultz,
+Dayan & Montague 1997). The implication for the sensory layers: occasionally
+mark *"that was bigger than expected"* — an unforeseen combo extension, a perfect
+HQ refill, an improbable comeback line — rather than giving every outcome the
+same cue. A surprise that beats the forecast has earned a larger beat than a
+result that merely met it.
+
+#### Supporting lens — investment amplification (the IKEA effect) {#investment}
+
+People value what they helped build (the IKEA effect; Norton, Mochon & Ariely
+2012), and Legendary Arena is fundamentally a *construction* game. The player
+grows attached to their deck, their engine, their line — so a late combo is not
+just a combo, it is **proof their earlier decisions paid off**, and it lands
+harder the more [class focus](gameplay-strategy.md#rank-0),
+[thinning](gameplay-strategy.md#deck-thinning), and planning went in first. This
+is why the drivers feed [competence](#competence) and [identity](#identity)
+rather than standing alone, and why the [powerless → protector](#the-heart) arc
+works: the hero is *built*, not granted.
+
+- **Design use:** let the size of a payoff track the investment behind it — the
+  same combo should feel bigger at the end of a deliberately-built engine than as
+  an early fluke.
+
 ### Core reinforcement principles {#reinforcement-principles}
 
-The [five reward mechanisms](#the-five-reward-mechanisms) rest on a small set
-of operant-conditioning principles. This table is the quick reference — each
-principle is already expressed by one or more of those mechanisms, so it is a
-*lens on the same behaviour*, not a competing list.
+The [seven reward drivers](#seven-drivers) rest on a small set of
+operant-conditioning principles. This table is the quick reference — each
+principle is already expressed by one or more of those drivers, so it is a
+*lens on the same behaviour*, not a competing list. (The behavioural-economics
+principles below feed drivers 1–3 and 7; the [competence](#competence),
+[agency](#agency), and [identity](#identity) drivers add the
+self-determination side those operant principles don't capture.)
 
 | Principle | What it means | How Legendary uses it |
 |---|---|---|
@@ -805,6 +912,25 @@ Out of scope for v1:
   Behavior and Human Decision Processes, 170, 104149
   (https://doi.org/10.1016/j.obhdp.2022.104149) — peak-end effect *r* = 0.581
   (95% CI 0.487–0.661)
+- Self-Determination Theory — Deci, E. L., & Ryan, R. M. (1985). *Intrinsic
+  Motivation and Self-Determination in Human Behavior.* Plenum; Ryan, R. M., &
+  Deci, E. L. (2000). *Self-determination theory and the facilitation of
+  intrinsic motivation, social development, and well-being.* American
+  Psychologist, 55(1), 68–78 (https://doi.org/10.1037/0003-066X.55.1.68) — the
+  competence and autonomy needs behind the [competence](#competence) and
+  [agency](#agency) drivers
+- Reward prediction error — Schultz, W., Dayan, P., & Montague, P. R. (1997).
+  *A neural substrate of prediction and reward.* Science, 275(5306), 1593–1599
+  (https://doi.org/10.1126/science.275.5306.1593) — the
+  [prediction-error lens](#prediction-error) under variable reward
+- The IKEA effect — Norton, M. I., Mochon, D., & Ariely, D. (2012). *The IKEA
+  effect: When labor leads to love.* Journal of Consumer Psychology, 22(3),
+  453–460 (https://doi.org/10.1016/j.jcps.2011.08.002) — the
+  [investment-amplification lens](#investment)
+- Identity-based motivation — Oyserman, D. (2009). *Identity-based motivation:
+  Implications for action-readiness, procedural-readiness, and consumer
+  behavior.* Journal of Consumer Psychology, 19(3), 250–260
+  (https://doi.org/10.1016/j.jcps.2009.05.008) — the [identity](#identity) driver
 - Companion feel-layer pages: [Design System Overview](design-system-overview.md),
   [Visual Effects](visual-effects.md), [Sound Effects](sound-effects.md),
   [Narrative Psychology](narrative-psychology.md)
