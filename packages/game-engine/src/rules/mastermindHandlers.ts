@@ -53,6 +53,12 @@ const MASTERMINDS_RED_SKULL: readonly string[] = [
   'co2e/red-skull',
 ];
 
+// why: core Loki's Master Strike — "Each player reveals a [hc:strength] Hero
+// or gains a Wound." This is core/loki ONLY; co2e/loki prints a DIFFERENT
+// penalty (discard a Strength Hero / stack a Hypno-Thrall) and has its own
+// resolver (resolveLokiStrike), so folding them would play the wrong text.
+const MASTERMIND_CORE_LOKI = 'core/loki';
+
 // why: WP-388 / D-24192 — the four remaining co2e masterminds whose printed
 // Master Strike is implemented. Each is its own constant because each prints
 // different text; there is no shared-text list like Red Skull's.
@@ -602,6 +608,55 @@ function resolveDoctorDoomStrike(gameState: LegendaryGameState): void {
 }
 
 /**
+ * Resolves core Loki's Master Strike: "Each player reveals a [hc:strength]
+ * Hero or gains a Wound."
+ *
+ * Each player (in sorted id order) who holds a Strength Hero reveals it and
+ * KEEPS it — reveal is the printed escape, not a cost. A player holding none
+ * gains a Wound (or takes a logged no-op when the Wound supply is empty).
+ *
+ * Auto-resolve: revealing is never a meaningful choice, so this parks no
+ * pending choice. Distinct from co2e Loki (resolveLokiStrike), which prints a
+ * different penalty (discard / Hypno-Thrall).
+ *
+ * Mutates G directly, mirroring resolveCo2eMagnetoStrike. One durable log line
+ * per player.
+ *
+ * @param gameState - The game state to mutate.
+ */
+function resolveCoreLokiStrike(gameState: LegendaryGameState): void {
+  const playerIds = Object.keys(gameState.playerZones).sort();
+
+  for (const playerId of playerIds) {
+    const playerZones = gameState.playerZones[playerId]!;
+    const revealedHero = selectLowestCostHero(
+      gameState,
+      playerZones.hand,
+      'heroClass',
+      HERO_CLASS_STRENGTH,
+    );
+
+    // why: reveal is the printed ESCAPE — a player holding a Strength Hero
+    // reveals it and KEEPS it, taking no Wound (contrast co2e Loki, which
+    // discards). selectLowestCostHero is used only as the existence check here;
+    // the revealed card is never removed from hand.
+    if (revealedHero !== null) {
+      pushLog(gameState,
+        `[Loki Master Strike] Player ${playerId} revealed ${formatCardRef(gameState.cardDisplayData, revealedHero)} — no Wound.`,
+      );
+      continue;
+    }
+
+    const tookWound = gainWoundToDiscard(gameState, playerZones);
+    pushLog(gameState,
+      tookWound
+        ? `[Loki Master Strike] Player ${playerId} has no [hc:strength] Hero in hand and gained a Wound.`
+        : `[Loki Master Strike] Player ${playerId} has no [hc:strength] Hero in hand and the Wound supply is empty — no effect.`,
+    );
+  }
+}
+
+/**
  * Resolves co2e Loki's Master Strike: "Each player discards a
  * [hc:strength] Hero or stacks a non-grey Hero from their hand next to Loki
  * as a Hypno-Thrall."
@@ -844,6 +899,8 @@ export function mastermindStrikeHandler(
     resolveMagnetoStrike(gameState, resolveCurrentPlayer(strikeContext));
   } else if (MASTERMINDS_RED_SKULL.includes(mastermindId)) {
     resolveRedSkullStrike(gameState);
+  } else if (mastermindId === MASTERMIND_CORE_LOKI) {
+    resolveCoreLokiStrike(gameState);
   } else if (mastermindId === MASTERMIND_CO2E_DOCTOR_DOOM) {
     resolveDoctorDoomStrike(gameState);
   } else if (mastermindId === MASTERMIND_CO2E_LOKI) {

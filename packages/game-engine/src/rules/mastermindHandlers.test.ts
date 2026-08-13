@@ -938,6 +938,76 @@ describe('mastermindStrikeHandler — co2e Magneto Master Strike (WP-388)', () =
   });
 });
 
+describe('mastermindStrikeHandler — core Loki Master Strike (WP-537 / D-24346)', () => {
+  it('a player revealing a Strength Hero keeps it and takes no Wound', () => {
+    const gameState = makeCo2eState(
+      'core/loki',
+      { '0': ['st-a', 'te-a'] },
+      { 'st-a': co2eStat(3), 'te-a': co2eStat(1) },
+      { 'st-a': STRENGTH, 'te-a': TECH },
+    );
+    gameState.piles.wounds = ['wound-1'];
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
+
+    // why: reveal is the printed escape — the Strength Hero is kept, hand and
+    // discard unchanged, and no Wound is drawn.
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['st-a', 'te-a']);
+    assert.deepEqual(gameState.playerZones['0']!.discard, []);
+    assert.equal(gameState.piles.wounds.length, 1, 'wounds pile untouched');
+  });
+
+  it('gains a Wound when the player holds no Strength Hero', () => {
+    const gameState = makeCo2eState(
+      'core/loki',
+      { '0': ['te-a'] },
+      { 'te-a': co2eStat(1) },
+      { 'te-a': TECH },
+    );
+    gameState.piles.wounds = ['wound-1', 'wound-2'];
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
+
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['te-a'], 'hand unchanged');
+    assert.deepEqual(gameState.playerZones['0']!.discard, ['wound-1']);
+    assert.equal(gameState.piles.wounds.length, 1, 'wounds pile shrinks by exactly one');
+  });
+
+  it('degrades to a no-op when the wounds pile is empty', () => {
+    const gameState = makeCo2eState(
+      'core/loki',
+      { '0': ['te-a'] },
+      {},
+      { 'te-a': TECH },
+    );
+    gameState.piles.wounds = [];
+
+    assert.doesNotThrow(() =>
+      mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {}),
+    );
+    assert.deepEqual(gameState.playerZones['0']!.discard, []);
+  });
+
+  it('resolves players independently in sorted id order (reveal vs Wound)', () => {
+    const gameState = makeCo2eState(
+      'core/loki',
+      { '0': ['st-a'], '1': ['te-a'] },
+      { 'st-a': co2eStat(2), 'te-a': co2eStat(2) },
+      { 'st-a': STRENGTH, 'te-a': TECH },
+    );
+    gameState.piles.wounds = ['wound-1', 'wound-2'];
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
+
+    // Player 0 reveals + keeps its Strength Hero (no Wound); player 1 holds none
+    // and gains exactly one Wound.
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['st-a']);
+    assert.deepEqual(gameState.playerZones['0']!.discard, []);
+    assert.deepEqual(gameState.playerZones['1']!.discard, ['wound-1']);
+    assert.equal(gameState.piles.wounds.length, 1);
+  });
+});
+
 describe('mastermindStrikeHandler — co2e Loki Master Strike (WP-388)', () => {
   it('discards the lowest-cost Strength Hero from each player (AC-2)', () => {
     const gameState = makeCo2eState(
