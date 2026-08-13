@@ -36481,6 +36481,20 @@ condition (the hand-built-hook unit tests missed it because they set no conditio
 parser change reclassifies the copy-powers hook from condition-gated → executable, so the
 hero-mechanic-ledger / effect-index / card-mechanics / runtime-observed feeds regenerate.
 
-_Active 2026-08-12 — landed at WP-535 execution (EC-570). Move count 28→29 (`resolveCopyPowersChoice`, not a CORE_MOVE_NAME); `HERO_EFFECT_HANDLERS` 20→21; `HERO_KEYWORDS` 34→35. No new hashed-oracle re-pin (the new `pendingCopyPowersChoices` field is lazily created / undefined by default → `finalStateHash`/`PRE_WP080_HASH` byte-identical; the dual-class reuses the existing lazy `cardSizeChangingClasses` map). Hard-deps: WP-532/D-24343 (give-HQ-Hero pending-choice precedent) + WP-251/D-24022 (`HERO_EFFECT_HANDLERS`) + WP-290/D-24074 (size-changing dual-class map). Post-merge fix-forward (2026-08-12): the descriptive-`[hc:X]` parser exclusion above._
+**Fix-forward #2 (2026-08-13, post-deploy, EC-570).** The copy-of-copy exclusion in
+`buildCopyPowersTargets` compared each in-play card against the **bare** ext_id
+`core/rogue/copy-powers`, but zones store **instance** ids (`<base>#<copyIndex>`, e.g.
+`core/rogue/copy-powers#0`). The bare id never matched a real instance, so the exclusion never
+fired: with only Copy Powers in play it counted **itself** as the single eligible target → the
+1-eligible auto path re-fired `executeHeroEffects` on Copy Powers → unbounded recursion → stack
+overflow → **server crash** (observed live as a ~30s "connection lost — reconnecting" whenever
+Copy Powers was the only Hero in play). Fix: strip the `#N` suffix to a base id for the
+exclusion AND the dedup (two instances of one Hero now collapse to one choice); the trait
+lookup keeps the full instance id (cardTraits is instance-keyed). Root of the miss: the unit
+tests used **bare** ext_ids, which the exclusion happened to match — so they never exercised
+the production instance-id format. Added instance-suffixed regression tests (`…#0`, `…#1`).
+Pure-logic change: no card-data / derived-feed drift.
+
+_Active 2026-08-12 — landed at WP-535 execution (EC-570). Move count 28→29 (`resolveCopyPowersChoice`, not a CORE_MOVE_NAME); `HERO_EFFECT_HANDLERS` 20→21; `HERO_KEYWORDS` 34→35. No new hashed-oracle re-pin (the new `pendingCopyPowersChoices` field is lazily created / undefined by default → `finalStateHash`/`PRE_WP080_HASH` byte-identical; the dual-class reuses the existing lazy `cardSizeChangingClasses` map). Hard-deps: WP-532/D-24343 (give-HQ-Hero pending-choice precedent) + WP-251/D-24022 (`HERO_EFFECT_HANDLERS`) + WP-290/D-24074 (size-changing dual-class map). Post-merge fix-forwards: (2026-08-12) the descriptive-`[hc:X]` parser exclusion; (2026-08-13) the instance-id copy-of-self exclusion (recursion crash)._
 
 Protect this file.

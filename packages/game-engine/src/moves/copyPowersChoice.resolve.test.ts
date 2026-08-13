@@ -238,3 +238,37 @@ describe('two Copy Powers — no copy-of-copy recursion (Finding 5)', () => {
     assert.deepStrictEqual(G.cardSizeChangingClasses?.[COPY], ['ranged', 'instinct'], 'instinct already present, not re-added');
   });
 });
+
+describe('buildCopyPowersTargets — instance-suffixed ext_ids (production zone format)', () => {
+  // why: zones store INSTANCE ids (`<base>#<copyIndex>`), never the bare base. The original
+  // tests used bare ids, so they missed that the copy-of-copy exclusion (bare
+  // COPY_POWERS_EXT_ID) never matched a real `core/rogue/copy-powers#0` — Copy Powers counted
+  // ITSELF as eligible → the 1-eligible auto path re-fired executeHeroEffects on Copy Powers →
+  // unbounded recursion → server crash (Jeff's ~30s "connection lost — reconnecting" with
+  // nothing else in play). These lock the instance-id format.
+  const COPY_0 = 'core/rogue/copy-powers#0' as CardExtId;
+  const COPY_1 = 'core/rogue/copy-powers#1' as CardExtId;
+  const OPTIC_0 = 'core/cyclops/optic-blast#0' as CardExtId;
+  const OPTIC_1 = 'core/cyclops/optic-blast#1' as CardExtId;
+  const traits = {
+    [COPY_0]: { heroClass: 'covert', team: null },
+    [COPY_1]: { heroClass: 'covert', team: null },
+    [OPTIC_0]: { heroClass: 'ranged', team: null },
+    [OPTIC_1]: { heroClass: 'ranged', team: null },
+  };
+
+  it('excludes an instance-suffixed Copy Powers played alone → [] (no self-copy → no recursion)', () => {
+    const G = makeG({ inPlay0: [COPY_0], cardTraits: traits });
+    assert.deepStrictEqual(buildCopyPowersTargets(G, '0'), [], 'Copy Powers#0 must not count itself');
+  });
+
+  it('excludes ALL instance-suffixed Copy Powers copies, keeping only the real Hero', () => {
+    const G = makeG({ inPlay0: [COPY_0, COPY_1, OPTIC_0], cardTraits: traits });
+    assert.deepStrictEqual(buildCopyPowersTargets(G, '0'), [OPTIC_0], 'both #0 and #1 excluded');
+  });
+
+  it('dedupes two instances of the same Hero to a single choice (by base id)', () => {
+    const G = makeG({ inPlay0: [OPTIC_0, OPTIC_1], cardTraits: traits });
+    assert.deepStrictEqual(buildCopyPowersTargets(G, '0'), [OPTIC_0], 'one Optic Blast choice, not two');
+  });
+});

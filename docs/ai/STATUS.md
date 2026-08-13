@@ -52,6 +52,17 @@ missed it); regenerated the ledger / effect-index / card-mechanics / runtime-obs
 Engine **2522 / 0**. (The original merged build was never wrong at runtime for un-gated copies,
 but any covert-less turn would have blocked the copy after deploy.)
 
+**Fix-forward #2 (2026-08-13, post-deploy):** with the parse fix live, Copy Powers worked
+(copied Optic Blast / Keen Senses in Jeff's game), but playing it with **nothing else in play**
+crashed the server (~30s "connection lost — reconnecting"). Root cause: the copy-of-self
+exclusion in `buildCopyPowersTargets` compared against the **bare** `core/rogue/copy-powers`,
+but zones hold **instance** ids (`…#0`) — so Copy Powers counted itself as the lone eligible
+target → auto-copied itself → `executeHeroEffects` recursed without end → stack overflow →
+Render restart. Fix: strip the `#N` suffix for the exclusion + dedup (trait lookup keeps the
+instance id). The unit tests used bare ext_ids and never hit the production instance-id format;
+added instance-suffixed regression tests (`…#0`/`…#1`). Pure-logic change, no feed drift.
+Engine **2525 / 0**.
+
 ### WP-534 — Preferences Foundation for the Registry Viewer — DONE (2026-08-12)
 
 Resurrected and landed the never-merged **WP-068** preferences foundation for `apps/registry-viewer`.
