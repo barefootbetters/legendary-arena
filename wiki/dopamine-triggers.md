@@ -63,6 +63,17 @@ identical trigger spine, re-coloured by which heart the player brings to it.
 The reward framework serves *both* — the point is that the game reveals the
 choice, and celebrates whichever one the player authors.
 
+**Reward creates intensity; meaning creates memory.** Reward alone makes a
+moment *exciting* — but not *remembered*. The moments a player carries for years
+are the ones where reward and meaning arrive **together**: defeating a Mastermind
+is *satisfying* because it is a victory, and *memorable* because it completes the
+journey from powerless to protector. Dopamine provides the energy;
+[narrative](narrative-psychology.md) provides the significance. That is the
+division of labour across the feel layer — this page makes the moment *land*,
+[Narrative Psychology](narrative-psychology.md) makes it *matter* — and it is why
+[identity](#identity) sits among the reward drivers below: identity is the seam
+where the two meet.
+
 ## Summary
 
 This page is the **reward-psychology reference** for
@@ -201,6 +212,13 @@ three are the **behavioural-economics** engine (what the events *do* to the
 player); the next three are the **self-determination** engine (what the player
 *becomes*); peak-end binds the memory. Together they are why a player bonds to
 Legendary Arena, not merely why a single moment feels good.
+
+**The set is treated as closed.** Seven is clean, teachable, and
+governance-friendly; a new psychological idea should have to justify itself
+*under* one of the seven (as the [prediction-error](#prediction-error) and
+[investment](#investment) lenses do) rather than becoming an eighth driver. Add
+a driver only when it explains a satisfaction none of the seven already
+explain.
 
 #### 1. Variable reward — the villain-deck reveal {#variable-reward}
 
