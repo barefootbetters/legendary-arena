@@ -7,6 +7,16 @@
 
 ## Current State
 
+### WP-539 — Portals to the Dark Dimension Scheme Twist (Dark-Portal attack buffs) — DONE (2026-08-13)
+
+Implemented the Core scheme "Portals to the Dark Dimension" — the **last truly-hollow Core scheme** (no `SCHEME_TWIST_CONFIGS` entry; lost at twist 7 only by MVP-fallback coincidence). Now a TRUE twist-loss (`lossThreshold: 7`, no `resourceLossCondition`) with the printed Dark-Portal attack buffs.
+
+Added a `DARK_PORTAL_COUNT` counter + a `portals` resolver (twist 1 → Dark Portal above the Mastermind; twists 2-6 → the leftmost portal-less city space [Bridge=index 4 first]; twist 7 → Evil Wins). The **villain** buff lives in `resolveFightCost` (+1 to a villain whose city space has a Dark Portal, `count >= 6-index`, stacking on static/dynamic/killbot/skrull costs); the **mastermind** buff lives in a new centralized `resolveMastermindFightCost` (+1 once ≥1 portal) that replaces the inline reads at `fightMastermind` + `ai.legalMoves` (uiState.build projects no mastermind requirement → 2 sites, not the 3 the WP anticipated). Extended the `SchemeTwistResolverId`/`SchemeTwistResolverKey` unions + registry + phrases. Engine-only; no `ctx.random`; counter-only state; no `data/cards`/marker/ledger/index/client change; no fixture/hash re-pin (no committed fixture reaches a Portals twist). 14 new tests; engine **2560/0**, `pnpm -r build` + `--no-bail test` exit 0. D-24348 Active.
+
+**User-Visible Surface = play.legendary-arena.com** — a Core Portals match now raises the Mastermind's fight requirement after twist 1 and each city space's villains as its Dark Portal lands (twists 2-6), and Evil Wins at twist 7. D-24026 live-verification **operator-pending**. All 8 Core schemes are now configured (Portals was the last hollow one).
+
+---
+
 ### WP-538 — Core Dr. Doom Master Strike (6-card gate + reveal-[hc:tech]-or-interactive-put-2-on-top) — DONE (2026-08-13)
 
 Implemented core Dr. Doom's Master Strike — *"Each player with exactly 6 cards in hand reveals a `[hc:tech]` Hero or puts 2 cards from their hand on top of their deck."* `core/dr-doom` previously took no branch in `mastermindStrikeHandler`; the Strike was inert (the second of the two hollow Core Master Strikes from the 2026-08-13 audit; Loki was WP-537).
