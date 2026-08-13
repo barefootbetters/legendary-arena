@@ -52,6 +52,8 @@ import type {
   UIPendingDiscardToPlay,
   UIPendingReturnOnDiscard,
   UIPendingGiveHqHeroChoice,
+  UIPendingCopyPowersChoice,
+  UICopyHeroChoice,
   UIHqCardChoice,
   UIEligibleKoHeroCard,
 } from './uiState.types.js';
@@ -73,6 +75,10 @@ import { getEligibleReturnOnDiscardCards } from '../moves/resolveReturnOnDiscard
 // so the projected list is byte-identical to what resolveGiveHqHeroChoice validates against
 // (the round-trip rule) — never a re-implemented HQ filter.
 import { getEligibleGiveHqHeroCards } from '../moves/giveHqHeroChoice.resolve.js';
+// why: WP-535 / D-24345 — the copyable-Hero list is recomputed fresh here from the same
+// predicate resolveCopyPowersChoice validates against, so the projected list is
+// byte-identical to what the resolve move accepts (the round-trip rule).
+import { getEligibleCopyPowersCards } from '../moves/copyPowersChoice.resolve.js';
 // why: WP-258 — the projected hollow-effect record type is the engine's
 // canonical HollowEffectRecord (WP-257), reused directly, not a parallel UI type.
 import type { HollowEffectRecord } from '../diagnostics/hollowEffect.types.js';
@@ -1288,6 +1294,32 @@ export function buildUIState(
     };
   }
 
+  // why: WP-535 / D-24345 — project the FRONT entry of G.pendingCopyPowersChoices with the
+  // copyable Heroes recomputed fresh via getEligibleCopyPowersCards — the SAME predicate the
+  // resolve move validates with, so the client's { cardId } selection always round-trips.
+  // The Heroes live in the current player's PUBLIC inPlay; each display is spread fresh
+  // (aliasing defense, WP-111 D-11105). Chooser-only redaction is enforced by
+  // filterUIStateForAudience (keyed on .playerID), so only the copying player sees the prompt.
+  let pendingCopyPowersChoice: UIPendingCopyPowersChoice | undefined;
+  if (
+    gameState.pendingCopyPowersChoices !== undefined &&
+    gameState.pendingCopyPowersChoices.length > 0
+  ) {
+    const frontCopy = gameState.pendingCopyPowersChoices[0]!;
+    const eligibleCopyCards: UICopyHeroChoice[] = [];
+    for (const cardId of getEligibleCopyPowersCards(gameState, frontCopy.playerID)) {
+      eligibleCopyCards.push({
+        cardId,
+        display: { ...resolveDisplay(cardId, gameState) },
+      });
+    }
+    pendingCopyPowersChoice = {
+      choiceType: 'copy-powers',
+      playerID: frontCopy.playerID,
+      eligible: eligibleCopyCards,
+    };
+  }
+
   // --- 13d. Project hollow-effect diagnostics (read-only) ---
   // why: WP-258 — surface the WP-257 runtime channel G.diagnostics.hollowEffects
   // onto UIState. Read-only over G (buildUIState NEVER mutates G); per-record
@@ -1434,6 +1466,7 @@ export function buildUIState(
     ...(pendingReturnOnDiscard !== undefined ? { pendingReturnOnDiscard } : {}),
     // why: WP-532 / D-24343 — omit-when-absent (never an `undefined` literal) under exactOptionalPropertyTypes.
     ...(pendingGiveHqHeroChoice !== undefined ? { pendingGiveHqHeroChoice } : {}),
+    ...(pendingCopyPowersChoice !== undefined ? { pendingCopyPowersChoice } : {}),
     // why: WP-258 — conditional spread so an absent channel omits the field
     // (no `hollowEffects: undefined` literal under exactOptionalPropertyTypes,
     // and no empty-array injection that would dirty optional-field fixtures).

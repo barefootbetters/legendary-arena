@@ -201,6 +201,10 @@ export interface UIState {
   // pick (Paibok Fight). OPTIONAL: absent omits the field (existing UIState fixtures need
   // no backfill), chooser-only (filterUIStateForAudience keys on .playerID).
   pendingGiveHqHeroChoice?: UIPendingGiveHqHeroChoice;
+  // why: WP-535 / D-24345 — the current player's interactive Copy Powers copy-a-Hero
+  // pick (Rogue). OPTIONAL: absent omits the field (existing UIState fixtures need no
+  // backfill), chooser-only (filterUIStateForAudience keys on .playerID).
+  pendingCopyPowersChoice?: UIPendingCopyPowersChoice;
   // why: WP-258 — projects the WP-257 runtime hollow-effect channel
   // (G.diagnostics.hollowEffects) so the client can render a structured debug
   // panel + carry the records on the Download-diagnostics export. OPTIONAL on
@@ -1004,6 +1008,34 @@ export interface UIPendingGiveHqHeroChoice {
   // against this, mirroring UIPendingReturnOnDiscard.playerID.
   playerID: string;
   eligible: UIHqCardChoice[];
+}
+
+/**
+ * A single Copy Powers candidate — an in-play Hero the player may copy + its display.
+ * Duplicate-first sibling of UIHqCardChoice (identical shape, different implied zone: the
+ * candidates live in `inPlay`, not the HQ).
+ */
+export interface UICopyHeroChoice {
+  cardId: string;
+  display: UICardDisplay;
+}
+
+/**
+ * UI contract for resolving a pending Copy Powers choice ("Play this card as a copy of
+ * another Hero you played this turn." — Rogue's Copy Powers, WP-535 / D-24345).
+ *
+ * `eligible` is the current player's real in-play Heroes (minus Copy Powers) recomputed
+ * fresh via getEligibleCopyPowersCards (the same predicate the resolve move validates
+ * against, the round-trip rule). The client renders one Copy button per eligible Hero and
+ * submits `resolveCopyPowersChoice({ cardId })`. Only visible to the choosing player;
+ * redacted (omitted) for opponents and spectators (keyed on .playerID).
+ */
+export interface UIPendingCopyPowersChoice {
+  choiceType: "copy-powers";
+  // why: the redaction key; the chooser-only filter compares audience.playerId
+  // against this, mirroring UIPendingGiveHqHeroChoice.playerID.
+  playerID: string;
+  eligible: UICopyHeroChoice[];
 }
 
 /**

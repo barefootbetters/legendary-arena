@@ -89,6 +89,8 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   'discard-to-play',
   // why: WP-486 / D-24291 — Silent Sniper's "Defeat a Villain or Mastermind that has a Bystander."; has a HERO_EFFECT_HANDLERS entry (heroEffectDefeatWithBystander) that defeats one eligible target via the shared fight-defeat path or parks a PendingDefeatChoice, so it belongs here.
   'defeat-with-bystander',
+  // why: WP-535 / D-24345 — Rogue's Copy Powers "Play this card as a copy of another Hero you played this turn."; has a HERO_EFFECT_HANDLERS entry (heroEffectCopyPowers) that re-fires the chosen Hero's ability via the reentrant executeHeroEffects (or parks a PendingCopyPowersChoice when ≥2 qualify), so it belongs here.
+  'copy-powers',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -238,6 +240,10 @@ const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   // eligible target); the target set is computed from G at play time, so the magnitude
   // pre-gate must not drop it.
   'defeat-with-bystander',
+  // why: WP-535 / D-24345 — copy-powers carries no magnitude (it copies exactly one Hero);
+  // the eligible-Hero set is computed from inPlay at play time, so the magnitude pre-gate
+  // must not drop it.
+  'copy-powers',
 ]);
 
 // ---------------------------------------------------------------------------
@@ -2016,6 +2022,182 @@ function heroEffectDefeatWithBystander(
   );
 }
 
+// why: WP-535 / D-24345 — the ext_id of every Rogue Copy Powers copy. Excluding this
+// ext_id (not just the one played instance) from the eligible-Hero set means a Copy
+// Powers can never copy itself OR another Copy Powers, which neutralizes copy-of-copy
+// recursion when two Copy Powers are played the same turn (Finding 5).
+export const COPY_POWERS_EXT_ID = 'core/rogue/copy-powers' as CardExtId;
+
+/**
+ * The Heroes the given player may copy for a Copy Powers play — the real Heroes in that
+ * player's `inPlay` (deduplicated, in play order), excluding the Copy Powers ext_id.
+ *
+ * "Real Hero" = a card with a non-null printed `heroClass`. S.H.I.E.L.D. starters,
+ * Sidekicks, and Wounds carry `heroClass: null` (no class to copy, no Hero ability to
+ * re-fire), so a non-null class is the Hero discriminant (the same test
+ * heroConditions.evaluate.ts uses for distinct-class scans).
+ *
+ * // why: shared by the park-time handler, the UIState projection, the resolve
+ * validation, and the bot default (the round-trip rule) so the client can only submit a
+ * Hero the resolve move accepts. Deduplicated because two copies of the same Hero card
+ * are the same ability + class — one choice, not two.
+ *
+ * @param G - The game state to inspect (not mutated).
+ * @param playerID - The player whose in-play Heroes are the copy candidates.
+ * @returns The copyable Hero ext_ids in play order, or [] when the player has none.
+ */
+export function buildCopyPowersTargets(
+  G: LegendaryGameState,
+  playerID: string,
+): CardExtId[] {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones) {
+    return [];
+  }
+  const targets: CardExtId[] = [];
+  const seen = new Set<CardExtId>();
+  for (const playedCardId of playerZones.inPlay) {
+    const candidate = playedCardId as CardExtId;
+    if (candidate === COPY_POWERS_EXT_ID) {
+      continue;
+    }
+    if (seen.has(candidate)) {
+      continue;
+    }
+    const traitEntry = G.cardTraits[candidate];
+    if (traitEntry !== undefined && typeof traitEntry.heroClass === 'string' && traitEntry.heroClass.length > 0) {
+      seen.add(candidate);
+      targets.push(candidate);
+    }
+  }
+  return targets;
+}
+
+/**
+ * Applies a resolved Copy Powers copy: re-fires the chosen Hero's on-play ability and
+ * grants Copy Powers the copied Hero's class.
+ *
+ * Used by BOTH re-fire paths — the 1-eligible in-handler auto path and the ≥2 resolve
+ * move — so the copy behaves identically however it was selected.
+ *
+ * // why (ctx): the copied ability may draw / reshuffle, so this threads the FULL
+ * move-context WRAPPER (`{ ctx, random, events, ... }`) straight into
+ * executeHeroEffects — the only resolve-time re-fire in the engine that needs
+ * `ctx.random`. Passing `{G, playerID}` alone (the shape other resolve moves use) would
+ * crash a copied draw. executeHeroEffects is REENTRANT and visits only the chosen Hero's
+ * hooks; it does NOT re-append inPlay or re-add base attack/recruit economy (Fork 2 —
+ * ability only; base economy belongs to applyCardPlay, off the copy path).
+ *
+ * // why (dual-class): Copy Powers "is both covert and the color you copy." Covert is
+ * already baked in card data (core.json `hc:covert`); this writes the copied class into
+ * the EXISTING runtime `cardSizeChangingClasses` map (D-24074 reuse — no new G field), so
+ * every downstream `[hc:<copied>]` gate counts Copy Powers as that class too. cardTraits
+ * is never mutated. The class is granted BEFORE the re-fire so Copy Powers already counts
+ * as the copied class if the copied ability itself reads classes.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param ctx - The move-context wrapper (its `.ctx` is the bare bgio ctx, `.random` the shuffle source).
+ * @param playerID - The player copying (the Copy Powers owner).
+ * @param sourceCardId - The Copy Powers card ext_id receiving the copied class.
+ * @param chosenHeroId - The Hero whose ability is re-fired and whose class is copied.
+ */
+export function applyCopyPowers(
+  G: LegendaryGameState,
+  ctx: unknown,
+  playerID: string,
+  sourceCardId: CardExtId,
+  chosenHeroId: CardExtId,
+): void {
+  pushLog(G,
+    `Player ${playerID}'s ${formatCardRef(G.cardDisplayData, sourceCardId)} copied ${formatCardRef(G.cardDisplayData, chosenHeroId)}.`,
+    'neutral',
+    sourceCardId, // why: WP-438 — the Copy Powers card that produced the copy.
+  );
+
+  // Grant the copied class into the existing runtime dual-class map (D-24074 reuse).
+  const copiedClass = G.cardTraits[chosenHeroId]?.heroClass;
+  if (typeof copiedClass === 'string' && copiedClass.length > 0) {
+    if (!G.cardSizeChangingClasses) {
+      G.cardSizeChangingClasses = {};
+    }
+    const existingClasses = G.cardSizeChangingClasses[sourceCardId];
+    if (existingClasses === undefined) {
+      G.cardSizeChangingClasses[sourceCardId] = [copiedClass];
+    } else if (!existingClasses.includes(copiedClass)) {
+      existingClasses.push(copiedClass);
+    }
+  }
+
+  // Re-fire the copied Hero's on-play ability. The count return is observability only.
+  executeHeroEffects(G, ctx, playerID, chosenHeroId);
+}
+
+/**
+ * Hero handler for the `copy-powers` keyword (WP-535 / D-24345).
+ *
+ * Rogue's "Copy Powers": "Play this card as a copy of another Hero you played this
+ * turn." Builds the eligible-Hero set (the player's real in-play Heroes minus Copy
+ * Powers), then resolves by cardinality:
+ * 0 → a self-narrated no-op (NEVER a hollow record — the keyword is in MVP_KEYWORDS, so
+ * it reached its handler); exactly 1 → auto-copy (no prompt); ≥2 → park a
+ * PendingCopyPowersChoice (block-all until resolved) so the current player picks which
+ * Hero to copy.
+ *
+ * // why (ctx): executeHeroEffects is called with the move-context WRAPPER, so this
+ * handler received that same wrapper and threads it unchanged into applyCopyPowers →
+ * executeHeroEffects for the auto path (the copied ability may draw via `ctx.random`).
+ */
+function heroEffectCopyPowers(
+  G: LegendaryGameState,
+  ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  const targets = buildCopyPowersTargets(G, playerID);
+
+  // why: 0 eligible Heroes is a REACHABLE self-narrated no-op — Copy Powers was the only
+  // Hero played (or only S.H.I.E.L.D./Wounds alongside it). It records NO hollow event
+  // (the handler ran; the keyword is in MVP_KEYWORDS → classifyHeroEffectReason returns
+  // `applied`). WP-434 — nothing happened, so the outcome is `blocked`.
+  if (targets.length === 0) {
+    pushLog(G,
+      `Player ${playerID}'s ${formatCardRef(G.cardDisplayData, cardId)} found no other Hero played this turn to copy.`,
+      'blocked',
+      cardId, // why: WP-438 — the played card whose ability found no Hero to copy.
+    );
+    return;
+  }
+
+  // why: exactly 1 eligible Hero → auto-copy with no prompt (mandatory-if-able). The
+  // re-fire threads the same move-context wrapper this handler received.
+  if (targets.length === 1) {
+    applyCopyPowers(G, ctx, playerID, cardId, targets[0]!);
+    return;
+  }
+
+  // why: ≥2 eligible Heroes → park a PendingCopyPowersChoice; the current player must
+  // pick which Hero to copy. Lazily initialize the FIFO queue (never in Game.setup); an
+  // undefined field stays out of canonical JSON, keeping the hash oracles from re-pinning.
+  // Shipped WITH its UIState projection + client prompt + block-all guard
+  // (pending_choice_no_ux_freeze).
+  if (!G.pendingCopyPowersChoices) {
+    G.pendingCopyPowersChoices = [];
+  }
+  G.pendingCopyPowersChoices.push({
+    choiceType: 'copy-powers',
+    playerID,
+    sourceCardId: cardId,
+  });
+  // why: WP-434 — parking a mandatory choice is `neutral` (the effect is mid-flight,
+  // neither applied nor blocked); the applied/blocked outcome is logged at resolve.
+  pushLog(G,
+    `Player ${playerID} must choose which Hero to copy with ${formatCardRef(G.cardDisplayData, cardId)}.`,
+    'neutral',
+    cardId, // why: WP-438 — the played card that parked the Copy Powers choice.
+  );
+}
+
 export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler>> = {
   draw: heroEffectDraw,
   attack: heroEffectAttack,
@@ -2042,6 +2224,10 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   // has a Bystander." (defeats one eligible target via the shared fight-defeat core,
   // or parks a PendingDefeatChoice when ≥2 qualify).
   'defeat-with-bystander': heroEffectDefeatWithBystander,
+  // why: WP-535 / D-24345 — Rogue's Copy Powers "Play this card as a copy of another
+  // Hero you played this turn." (re-fires the chosen Hero's ability + grants the copied
+  // class, or parks a PendingCopyPowersChoice when ≥2 Heroes qualify).
+  'copy-powers': heroEffectCopyPowers,
 };
 
 // ---------------------------------------------------------------------------

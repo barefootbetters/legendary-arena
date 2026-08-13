@@ -879,6 +879,55 @@ describe('filterUIStateForAudience — pendingGiveHqHeroChoice redaction', () =>
 });
 
 // ---------------------------------------------------------------------------
+// WP-535 / D-24345 — pendingCopyPowersChoice redaction (chooser-scoped, Rogue Copy Powers)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a UIState where the current player '0' owes an interactive Copy Powers choice
+ * (Rogue). The eligible list is projected from the player's own in-play Heroes, but the
+ * prompt is chooser-scoped. Exercises the full Board-Visible Field round-trip: buildUIState
+ * populates it and the audience filter passes it through only for the chooser (without the
+ * filter pass-through arm the built field would be silently dropped → a client freeze).
+ */
+function createCopyPowersUIState(): UIState {
+  const config = createTestConfig();
+  const registry = createMockRegistry();
+  const setupContext = makeMockCtx();
+  const gameState = buildInitialGameState(config, registry, setupContext);
+  // why: seed two DISTINCT real Heroes into player 0's inPlay with guaranteed non-null
+  // classes so buildCopyPowersTargets surfaces both as copyable (the starting S.H.I.E.L.D.
+  // cards carry heroClass null and would be filtered out; two copies of one ext_id would
+  // dedupe to a single choice).
+  const heroA = 'core/gambit/card-shark' as CardExtId;
+  const heroB = 'core/wolverine/keen-senses' as CardExtId;
+  gameState.playerZones['0']!.inPlay = [heroA, heroB] as LegendaryGameState['playerZones']['0']['inPlay'];
+  gameState.cardTraits[heroA] = { heroClass: 'instinct', team: null };
+  gameState.cardTraits[heroB] = { heroClass: 'covert', team: null };
+  gameState.pendingCopyPowersChoices = [{ choiceType: 'copy-powers', playerID: '0', sourceCardId: 'core/rogue/copy-powers' }];
+  return buildUIState(gameState, mockCtx);
+}
+
+describe('filterUIStateForAudience — pendingCopyPowersChoice redaction', () => {
+  it('the chooser sees pendingCopyPowersChoice with the eligible Heroes', () => {
+    const result = filterUIStateForAudience(createCopyPowersUIState(), PLAYER_0);
+    assert.ok(result.pendingCopyPowersChoice !== undefined, 'chooser sees the Copy Powers choice');
+    assert.equal(result.pendingCopyPowersChoice!.playerID, '0');
+    assert.equal(result.pendingCopyPowersChoice!.choiceType, 'copy-powers');
+    assert.equal(result.pendingCopyPowersChoice!.eligible.length, 2, 'projects both in-play Heroes to copy');
+  });
+
+  it('an opponent does NOT see pendingCopyPowersChoice', () => {
+    const result = filterUIStateForAudience(createCopyPowersUIState(), PLAYER_1);
+    assert.equal(result.pendingCopyPowersChoice, undefined, 'opponent must not see the choice');
+  });
+
+  it('a spectator does NOT see pendingCopyPowersChoice', () => {
+    const result = filterUIStateForAudience(createCopyPowersUIState(), SPECTATOR);
+    assert.equal(result.pendingCopyPowersChoice, undefined, 'spectator must not see the choice');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // D-24132 — pendingPutAnyNumberBottomHQ redaction (chooser-scoped, multi-select sibling)
 // ---------------------------------------------------------------------------
 

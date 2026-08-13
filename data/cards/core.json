@@ -1141,7 +1141,7 @@
           "attack": null,
           "recruit": null,
           "abilities": [
-            "Play this card as a copy of another Hero you played this turn. This card is both [hc:covert] and the color you copy."
+            "Play this card as a copy of another Hero you played this turn. This card is both [hc:covert] and the color you copy. [keyword:copy-powers]"
           ]
         },
         {

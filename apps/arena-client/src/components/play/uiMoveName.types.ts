@@ -82,6 +82,9 @@ export type UiMoveName =
   // why: WP-532 / D-24343 — unblocks the Paibok the Power Skrull Fight give-HQ-Hero prompt
   // (pick which HQ Hero every player gains).
   | 'resolveGiveHqHeroChoice'
+  // why: WP-535 / D-24345 — unblocks the Rogue Copy Powers copy-a-Hero prompt
+  // (pick which in-play Hero to copy).
+  | 'resolveCopyPowersChoice'
   // why: WP-380 / D-24181 — surfaces the WP-379 Wound "Healing" ability (engine
   // healWounds). Dispatched with an empty payload; the move takes no arguments.
   | 'healWounds'

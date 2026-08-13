@@ -622,6 +622,33 @@ export interface PendingDefeatChoice {
 }
 
 /**
+ * A pending Copy Powers choice — parked by the `copy-powers` hero-effect handler
+ * (Rogue's "Copy Powers": "Play this card as a copy of another Hero you played this
+ * turn.") when the current player has ≥ 2 eligible Heroes to copy (WP-535 / D-24345).
+ *
+ * The player picks which Hero to copy; `resolveCopyPowersChoice` re-fires that Hero's
+ * on-play ability (via the reentrant `executeHeroEffects`) and grants Copy Powers the
+ * copied class. Appended to `G.pendingCopyPowersChoices[]` (FIFO queue); front-popped by
+ * `resolveCopyPowersChoice` BEFORE it applies the copy (so a copied ability that parks
+ * its OWN nested pending lands behind it in FIFO). Must be undefined or empty at every
+ * turn-end (enforced by the block-all guards).
+ *
+ * // why: WP-535 — the block-all guard freezes the board while pending, so the eligible
+ * Hero set (recomputed fresh from `inPlay`, the round-trip rule) cannot drift;
+ * resolveCopyPowersChoice accepts only a Hero eligible NOW. Only the current player (who
+ * played Copy Powers) resolves it. No eligible snapshot is stored — `sourceCardId` alone
+ * identifies which Copy Powers card the runtime dual-class is granted to.
+ */
+export interface PendingCopyPowersChoice {
+  /** Discriminant; always 'copy-powers'. */
+  choiceType: 'copy-powers';
+  /** The player who must choose which Hero to copy. */
+  playerID: string;
+  /** The Copy Powers card ext_id doing the copying (the runtime dual-class grant target). */
+  sourceCardId: CardExtId;
+}
+
+/**
  * Pending optional-KO-then-reward player choice state (WP-248 / D-24019).
  *
  * Created when an optional-ko-reward hero effect is played (`onPlay`) and the
@@ -1138,6 +1165,14 @@ export interface LegendaryGameState {
   // from re-pinning. Absent (undefined) or empty [] both mean "no pending choice".
   /** FIFO queue of pending give-HQ-Hero choices awaiting player resolution (WP-532). */
   pendingGiveHqHeroChoices?: PendingGiveHqHeroChoice[] | undefined;
+  // why: WP-535 / D-24345 — the current player's pending Copy-a-Hero pick (Rogue's Copy
+  // Powers). Optional so existing test-state literals need no update; **lazily initialized
+  // at the park site, never in Game.setup** — an undefined field is omitted from canonical
+  // JSON, keeping the empty-replay PRE_WP080_HASH / hashGameState oracles from re-pinning.
+  // Absent (undefined) or empty [] both mean "no pending choice". The copied class reuses
+  // the EXISTING lazy cardSizeChangingClasses map (D-24074), so no second new G field.
+  /** FIFO queue of pending Copy Powers choices awaiting player resolution (WP-535). */
+  pendingCopyPowersChoices?: PendingCopyPowersChoice[] | undefined;
 
   // why: playerZones is keyed by player ID string (boardgame.io uses "0", "1",
   // etc.). Each player has exactly 5 zone arrays. Only deck is non-empty after

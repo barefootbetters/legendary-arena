@@ -4,13 +4,13 @@
   "summary": {
     "totalRows": 651,
     "byStatus": {
-      "executable": 234,
+      "executable": 235,
       "deferred": 0,
       "condition": 5,
       "unsupported": 366,
-      "unmarked": 46
+      "unmarked": 45
     },
-    "distinctMechanics": 120
+    "distinctMechanics": 121
   },
   "rows": [
     {
@@ -3360,12 +3360,17 @@
       "extId": "core/rogue",
       "heroName": "Rogue",
       "set": "core",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
+      "mechanic": "copy-powers",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": "",
-      "designs": []
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#copy-powers",
+      "designs": [
+        {
+          "slug": "copy-powers",
+          "name": "Copy Powers"
+        }
+      ]
     },
     {
       "extId": "core/spider-man",

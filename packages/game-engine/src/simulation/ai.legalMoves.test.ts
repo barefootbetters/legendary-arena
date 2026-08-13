@@ -492,3 +492,40 @@ describe('getLegalMoves — pending hero-reveal discard-or-return short-circuit 
     assert.ok(legalMoves.some((move) => move.name === 'advanceStage'));
   });
 });
+
+describe('getLegalMoves — pending Copy Powers short-circuit (WP-535 / D-24345)', () => {
+  const COPY = 'core/rogue/copy-powers' as CardExtId;
+  const GAMBIT = 'core/gambit/card-shark' as CardExtId;
+  const WOLVERINE = 'core/wolverine/keen-senses' as CardExtId;
+
+  function makeCopyG(): LegendaryGameState {
+    return {
+      currentStage: 'main',
+      villainRevealedThisTurn: false,
+      playerZones: {
+        '0': { deck: [], hand: [], discard: [], inPlay: [COPY, GAMBIT, WOLVERINE], victory: [] },
+      },
+      turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 },
+      cardStats: { [GAMBIT]: { cost: 4 }, [WOLVERINE]: { cost: 6 } },
+      cardTraits: {
+        [COPY]: { heroClass: 'covert', team: null },
+        [GAMBIT]: { heroClass: 'instinct', team: 'x-men' },
+        [WOLVERINE]: { heroClass: 'instinct', team: 'x-men' },
+      },
+      cardKeywords: {},
+      hq: [null, null, null, null, null],
+      city: [null, null, null, null, null],
+      mastermind: { baseCardId: 'm-base', tacticsDeck: [] },
+      pendingCopyPowersChoices: [{ choiceType: 'copy-powers', playerID: '0', sourceCardId: COPY }],
+    } as unknown as LegendaryGameState;
+  }
+
+  test('returns EXACTLY one resolveCopyPowersChoice targeting the highest-cost eligible Hero', () => {
+    const legalMoves = getLegalMoves(makeCopyG(), CONTEXT);
+    assert.equal(legalMoves.length, 1, 'exactly one legal move while pending');
+    const only = legalMoves[0]!;
+    assert.equal(only.name, 'resolveCopyPowersChoice', 'the single move is resolveCopyPowersChoice');
+    // Wolverine (cost 6) beats Gambit (cost 4); Copy Powers itself is excluded from the eligible set.
+    assert.deepStrictEqual(only.args, { cardId: WOLVERINE });
+  });
+});

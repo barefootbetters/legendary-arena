@@ -46,6 +46,10 @@ import {
   hasPendingGiveHqHeroChoice,
   selectDefaultGiveHqHeroCard,
 } from '../moves/giveHqHeroChoice.resolve.js';
+import {
+  hasPendingCopyPowersChoice,
+  selectDefaultCopyPowersCard,
+} from '../moves/copyPowersChoice.resolve.js';
 import { hasPendingOptionalPutBottomHQ } from '../moves/resolveOptionalPutBottomHQ.js';
 import { hasPendingPutAnyNumberBottomHQ } from '../moves/resolvePutAnyNumberBottomHQ.js';
 
@@ -259,6 +263,20 @@ export function getLegalMoves(
     const defaultHqHero = selectDefaultGiveHqHeroCard(gameState, activePlayer);
     if (defaultHqHero !== null) {
       return [{ name: 'resolveGiveHqHeroChoice', args: { cardId: defaultHqHero } }];
+    }
+    return legalMoves;
+  }
+
+  // why: WP-535 / D-24345 — pending Copy Powers short-circuit. While the interactive
+  // copy-a-Hero choice (Rogue's Copy Powers) is parked the block-all guard freezes every
+  // other move, so the bot must resolve it first. Deterministic default: the HIGHEST-COST
+  // eligible Hero (ties → earliest played), matching selectDefaultCopyPowersCard. Returns a
+  // list of length EXACTLY 1; fail closed with the base list if no eligible Hero exists
+  // (engine-invariant violation after park).
+  if (hasPendingCopyPowersChoice(gameState)) {
+    const defaultHeroToCopy = selectDefaultCopyPowersCard(gameState, activePlayer);
+    if (defaultHeroToCopy !== null) {
+      return [{ name: 'resolveCopyPowersChoice', args: { cardId: defaultHeroToCopy } }];
     }
     return legalMoves;
   }

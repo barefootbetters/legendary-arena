@@ -19,6 +19,7 @@ import { resolveReturnZeroCostDiscard, hasPendingReturnZeroCostDiscard } from '.
 import { resolveDiscardToPlay, hasPendingDiscardToPlay } from './moves/resolveDiscardToPlay.js';
 import { resolveReturnOnDiscard, hasPendingReturnOnDiscard } from './moves/resolveReturnOnDiscard.js';
 import { resolveGiveHqHeroChoice, hasPendingGiveHqHeroChoice } from './moves/giveHqHeroChoice.resolve.js';
+import { resolveCopyPowersChoice, hasPendingCopyPowersChoice } from './moves/copyPowersChoice.resolve.js';
 import { resolveVictoryPileCardPick, hasPendingVictoryPileCardPick } from './moves/resolveVictoryPileCardPick.js';
 import { resolveDrawOrEmpowered, hasPendingDrawOrEmpowered } from './moves/drawOrEmpowered.resolve.js';
 import { executeRuleHooks } from './rules/ruleRuntime.execute.js';
@@ -146,6 +147,8 @@ function advanceStage({ G, events }: MoveContext): void {
   if (hasPendingReturnOnDiscard(G)) { return; }
   // why: block-all — pendingGiveHqHeroChoice (interactive give-HQ-Hero pick, Paibok Fight) must be resolved before any other action (WP-532 / D-24343)
   if (hasPendingGiveHqHeroChoice(G)) { return; }
+  // why: block-all — pendingCopyPowersChoice (interactive copy-a-Hero pick, Rogue's Copy Powers) must be resolved before any other action (WP-535 / D-24345)
+  if (hasPendingCopyPowersChoice(G)) { return; }
   // why: turn cannot end while a player-choice reveal is pending; at cleanup,
   // advanceTurnStage would otherwise call events.endTurn() and bypass the
   // endTurn-move guard (D-22002). The KO turn-end block is already covered by
@@ -488,6 +491,11 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     // (client: false) per D-10008 — it mutates G.hq / G.heroDeck / playerZones.
     // NOT in CORE_MOVE_NAMES (mirrors resolveKoHeroChoice / resolveReturnOnDiscard).
     resolveGiveHqHeroChoice: { move: resolveGiveHqHeroChoice, client: false },
+    // why: WP-535 / D-24345 — resolveCopyPowersChoice resolves the interactive
+    // copy-a-Hero choice (Rogue's Copy Powers). Server-only (client: false) per
+    // D-10008 — it re-fires the copied Hero's ability (mutating G) and grants the
+    // copied class. NOT in CORE_MOVE_NAMES (mirrors resolveGiveHqHeroChoice).
+    resolveCopyPowersChoice: { move: resolveCopyPowersChoice, client: false },
   },
 
   // why: phase `next` fields declare the intended linear progression

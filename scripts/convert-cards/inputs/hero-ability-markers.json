@@ -128,6 +128,12 @@
   ],
   "core": [
     {
+      "heroSlug": "rogue",
+      "cardSlug": "copy-powers",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:copy-powers]"
+    },
+    {
       "heroSlug": "black-widow",
       "cardSlug": "silent-sniper",
       "abilityIndex": 0,

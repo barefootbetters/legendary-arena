@@ -874,6 +874,31 @@ export function filterUIStateForAudience(
     };
   }
 
+  // why: WP-535 / D-24345 — pendingCopyPowersChoice is chooser-only; the interactive
+  // Copy Powers prompt is projected ONLY to the copying player, redacted (omitted) for
+  // opponents AND spectators — mirroring pendingGiveHqHeroChoice. The eligible list carries
+  // PUBLIC in-play Heroes, but only the chooser's prompt is surfaced; per-entry display
+  // spread prevents aliasing with the input. (Board-Visible Field Rule: without this arm the
+  // built field is silently dropped at the filter → a client freeze with no prompt.)
+  if (
+    uiState.pendingCopyPowersChoice !== undefined &&
+    audience.kind === 'player' &&
+    audience.playerId === uiState.pendingCopyPowersChoice.playerID
+  ) {
+    const eligibleCopyCardsCopy = [];
+    for (const entry of uiState.pendingCopyPowersChoice.eligible) {
+      eligibleCopyCardsCopy.push({
+        cardId: entry.cardId,
+        display: { ...entry.display },
+      });
+    }
+    result.pendingCopyPowersChoice = {
+      choiceType: uiState.pendingCopyPowersChoice.choiceType,
+      playerID: uiState.pendingCopyPowersChoice.playerID,
+      eligible: eligibleCopyCardsCopy,
+    };
+  }
+
   // why: WP-258 / D-12803 — hollowEffects is PUBLIC card/mechanic data, not
   // hidden info. The filter passes it through value-unchanged for EVERY
   // audience (own-player AND other-player AND spectator) — it redacts /

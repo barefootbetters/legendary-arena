@@ -187,6 +187,11 @@ export function useTurnActions(
   // True while a Paibok Fight give-HQ-Hero choice is pending; blocks End Turn / Pass
   // Priority at ANY stage (the engine's full block-all guard set freezes the board).
   hasPendingGiveHqHeroChoice: boolean = false,
+  // why: WP-535 / D-24345 — appended LAST (after hasPendingGiveHqHeroChoice) so existing
+  // positional callers stay valid without edits; degrades gracefully (no gate) when omitted.
+  // True while a Rogue Copy Powers copy-a-Hero choice is pending; blocks End Turn / Pass
+  // Priority at ANY stage (the engine's full block-all guard set freezes the board).
+  hasPendingCopyPowersChoice: boolean = false,
 ): {
   activeStep: TurnStep;
   canRevealVillain: () => GatingResult;
@@ -373,6 +378,15 @@ export function useTurnActions(
           reason: 'Choose a Hero from the HQ for each player to gain before taking another action.',
         };
       }
+      // why: WP-535 / D-24345 — End Turn / Pass Priority blocked at any stage while a
+      // Rogue Copy Powers copy-a-Hero choice is pending (the engine's full block-all guard
+      // set freezes the board). The choice is mandatory — no decline exit to name.
+      if (hasPendingCopyPowersChoice) {
+        return {
+          allowed: false,
+          reason: 'Choose a Hero to copy before taking another action.',
+        };
+      }
       if (currentStage === 'cleanup' && hasPendingChoice) {
         return {
           allowed: false,
@@ -501,6 +515,15 @@ export function useTurnActions(
           reason: 'Choose a Hero from the HQ for each player to gain before taking another action.',
         };
       }
+      if (hasPendingCopyPowersChoice) {
+        // why: WP-535 / D-24345 — the engine's block-all guards block endTurn while
+        // pendingCopyPowersChoices is non-empty (Rogue's Copy Powers); this client-side
+        // gate surfaces the reason so the player sees a tooltip instead of a silent rejection.
+        return {
+          allowed: false,
+          reason: 'Choose a Hero to copy before taking another action.',
+        };
+      }
       if (currentStage === 'cleanup' && hasPendingChoice) {
         // why: D-22203 — the engine's dual turn-end guard (WP-220) blocks
         // endTurn when pendingHeroChoice is set; this client-side gate
@@ -541,7 +564,8 @@ export function useTurnActions(
         hasPendingReorderChoice ||
         hasPendingDefeatChoice ||
         hasPendingReturnOnDiscard ||
-        hasPendingGiveHqHeroChoice
+        hasPendingGiveHqHeroChoice ||
+        hasPendingCopyPowersChoice
       ) {
         return {
           allowed: false,
