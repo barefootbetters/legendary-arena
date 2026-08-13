@@ -325,6 +325,7 @@ export type {
   UIPendingScryKoChoice,
   UIScryKoRevealedCard,
   UIPendingDiscardChoice,
+  UIPendingPutCardsOnDeckChoice,
   UIDiscardChoiceHandCard,
   UIPendingReorderChoice,
   UIPendingDefeatChoice,

@@ -10,6 +10,7 @@ import { resolveHeroChoice } from './moves/heroChoice.resolve.js';
 import { resolveKoHeroChoice, hasPendingKoHeroChoice } from './moves/koHeroChoice.resolve.js';
 import { resolveScryKoChoice, hasPendingScryKoChoice } from './moves/scryKoChoice.resolve.js';
 import { resolveDiscardChoice, hasPendingDiscardChoice } from './moves/discardChoice.resolve.js';
+import { resolvePutCardsOnDeckChoice, hasPendingPutCardsOnDeckChoice } from './moves/putCardsOnDeckChoice.resolve.js';
 import { resolveReorderChoice, hasPendingReorderChoice } from './moves/reorderChoice.resolve.js';
 import { resolveDefeatChoice, hasPendingDefeatChoice } from './moves/defeatChoice.resolve.js';
 import { resolveOptionalKoReward, hasPendingOptionalKoReward } from './moves/optionalKoReward.resolve.js';
@@ -118,6 +119,10 @@ function advanceStage({ G, events }: MoveContext): void {
   // effects so the current player picks which cards to discard. A choice parked at
   // the START stage must block the start→main advance until resolved.
   if (hasPendingDiscardChoice(G)) { return; }
+  // why: block-all guard (WP-538 / D-24347) — while a put-cards-on-deck choice is
+  // pending the board is frozen; advanceStage returns with no side effects so the
+  // current player picks which cards to put on top before any other action.
+  if (hasPendingPutCardsOnDeckChoice(G)) { return; }
   // why: block-all guard (WP-479 / D-24286) — while a reveal-remainder reorder
   // choice is pending the board is frozen; advanceStage returns with no side effects
   // so the current player picks their deck-top order before any other action.
@@ -457,6 +462,12 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     // real G (playerZones.hand / .discard), absent on UIState. NOT in
     // CORE_MOVE_NAMES (mirrors resolveScryKoChoice / resolveKoHeroChoice).
     resolveDiscardChoice: { move: resolveDiscardChoice, client: false },
+    // why: WP-538 / D-24347 — resolvePutCardsOnDeckChoice resolves the interactive
+    // core Dr. Doom put-2-on-top choice (the current player picks which cards to put
+    // on top of their deck, in top order). Server-only (client: false) per D-10008 —
+    // it mutates real G (playerZones.hand / .deck), absent on UIState. NOT in
+    // CORE_MOVE_NAMES (mirrors resolveDiscardChoice / resolveReorderChoice).
+    resolvePutCardsOnDeckChoice: { move: resolvePutCardsOnDeckChoice, client: false },
     // why: WP-479 / D-24286 — resolveReorderChoice resolves the interactive
     // reveal-remainder reorder ("put the rest back in any order"): the current player
     // picks the top-of-deck order for the revealed-but-not-drawn cards. Server-only

@@ -590,6 +590,31 @@ export function filterUIStateForAudience(
     };
   }
 
+  // why: WP-538 / D-24347 — the put-cards-on-deck hand carries the chooser's private card
+  // identities, private to the chooser. Present only when the audience is a player whose
+  // playerId equals the chooser's playerID; omitted (conditional assignment, never an
+  // `undefined` literal) for opponents AND spectators. Per-entry display spread prevents
+  // aliasing with the input UIState — mirroring pendingDiscardChoice.
+  if (
+    uiState.pendingPutCardsOnDeckChoice !== undefined &&
+    audience.kind === 'player' &&
+    audience.playerId === uiState.pendingPutCardsOnDeckChoice.playerID
+  ) {
+    const handCopy = [];
+    for (const entry of uiState.pendingPutCardsOnDeckChoice.hand) {
+      handCopy.push({
+        cardId: entry.cardId,
+        display: { ...entry.display },
+      });
+    }
+    result.pendingPutCardsOnDeckChoice = {
+      choiceType: uiState.pendingPutCardsOnDeckChoice.choiceType,
+      playerID: uiState.pendingPutCardsOnDeckChoice.playerID,
+      count: uiState.pendingPutCardsOnDeckChoice.count,
+      hand: handCopy,
+    };
+  }
+
   // why: WP-479 / D-24286 — the reorder remainder is the top of the chooser's own deck
   // (their next draws), private to the chooser. Present only when the audience is a player
   // whose playerId equals the chooser's playerID; omitted (conditional assignment, never an

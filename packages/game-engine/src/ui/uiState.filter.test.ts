@@ -583,6 +583,69 @@ describe('filterUIStateForAudience — pendingDiscardChoice redaction (D-24284)'
 });
 
 // ---------------------------------------------------------------------------
+// WP-538 / EC-573 — pendingPutCardsOnDeckChoice redaction (D-24347, D-24011 analog)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a UIState where player '0' owes a core Dr. Doom put-cards-on-deck choice.
+ * The hand ext_ids are the cards the chooser must pick among — private information
+ * that must not appear in a non-chooser's UIState.
+ */
+function createPutCardsOnDeckChoiceUIState(): UIState {
+  const config = createTestConfig();
+  const registry = createMockRegistry();
+  const setupContext = makeMockCtx();
+  const gameState = buildInitialGameState(config, registry, setupContext);
+
+  gameState.playerZones['0']!.hand = [
+    'putdeck-hand-secret-a' as CardExtId,
+    'putdeck-hand-secret-b' as CardExtId,
+    'putdeck-hand-secret-c' as CardExtId,
+    'putdeck-hand-secret-d' as CardExtId,
+    'putdeck-hand-secret-e' as CardExtId,
+    'putdeck-hand-secret-f' as CardExtId,
+  ];
+  gameState.pendingPutCardsOnDeckChoices = [
+    { choiceType: 'put-cards-on-deck', playerID: '0', count: 2 },
+  ];
+
+  return buildUIState(gameState, mockCtx);
+}
+
+describe('filterUIStateForAudience — pendingPutCardsOnDeckChoice redaction (D-24347)', () => {
+  it('the chooser sees pendingPutCardsOnDeckChoice with the hand and count', () => {
+    const uiState = createPutCardsOnDeckChoiceUIState();
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+    assert.ok(result.pendingPutCardsOnDeckChoice !== undefined, 'chooser sees the put-cards-on-deck choice');
+    assert.equal(result.pendingPutCardsOnDeckChoice!.playerID, '0');
+    assert.equal(result.pendingPutCardsOnDeckChoice!.count, 2);
+    assert.equal(result.pendingPutCardsOnDeckChoice!.hand.length, 6, 'the full hand is projected to the chooser');
+  });
+
+  it('an opponent does NOT see pendingPutCardsOnDeckChoice and no hand ext_id leaks', () => {
+    const uiState = createPutCardsOnDeckChoiceUIState();
+    const result = filterUIStateForAudience(uiState, PLAYER_1);
+    assert.equal(result.pendingPutCardsOnDeckChoice, undefined, 'opponent must not see the choice');
+    const serialized = JSON.stringify(result);
+    assert.equal(serialized.includes('putdeck-hand-secret-a'), false, 'no hand ext_id leaks to an opponent');
+  });
+
+  it('a spectator does NOT see pendingPutCardsOnDeckChoice and no hand ext_id leaks', () => {
+    const uiState = createPutCardsOnDeckChoiceUIState();
+    const result = filterUIStateForAudience(uiState, SPECTATOR);
+    assert.equal(result.pendingPutCardsOnDeckChoice, undefined, 'spectator must not see the choice');
+    const serialized = JSON.stringify(result);
+    assert.equal(serialized.includes('putdeck-hand-secret-a'), false, 'no hand ext_id leaks to a spectator');
+  });
+
+  it('does not mutate the input UIState (pendingPutCardsOnDeckChoice still present on the source)', () => {
+    const uiState = createPutCardsOnDeckChoiceUIState();
+    filterUIStateForAudience(uiState, PLAYER_1);
+    assert.ok(uiState.pendingPutCardsOnDeckChoice !== undefined, 'source UIState unchanged');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // WP-249 / EC-280 — pendingOptionalKoReward redaction (D-24020, D-24011 analog)
 // ---------------------------------------------------------------------------
 

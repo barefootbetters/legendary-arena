@@ -131,6 +131,13 @@ export interface UIState {
   // carries the chooser's private card identities (D-24011). Absent (undefined)
   // means no pending discard choice.
   pendingDiscardChoice?: UIPendingDiscardChoice;
+  // why: WP-538 / D-24347 — projects the FRONT of G.pendingPutCardsOnDeckChoices with
+  // the chooser's current hand (the cards they may put on top) and the count, so the
+  // current player can render the "Choose 2 cards to put on top of your deck" prompt.
+  // Redacted (omitted) for every audience except the chooser — the hand carries the
+  // chooser's private card identities (D-24011). Absent (undefined) means no pending
+  // put-cards-on-deck choice.
+  pendingPutCardsOnDeckChoice?: UIPendingPutCardsOnDeckChoice;
   // why: WP-479 / D-24286 — projects the FRONT of G.pendingReorderChoices with the
   // revealed remainder (the top-N of the chooser's deck the reveal left in place) so
   // the current player can render the "Put the rest back in any order" prompt.
@@ -745,6 +752,28 @@ export interface UIPendingDiscardChoice {
   choiceType: "discard-to-limit";
   playerID: string;
   limit: number;
+  hand: UIDiscardChoiceHandCard[];
+}
+
+/**
+ * UI contract for resolving a pending put-cards-on-deck choice (WP-538 / D-24347).
+ * Only visible to the choosing player; redacted for opponents and spectators (the
+ * hand carries the chooser's private card identities).
+ *
+ * `hand` is the chooser's current hand resolved to display data, in hand order
+ * (the cards they may put on top). `count` is how many they must put on top (2 for
+ * Dr. Doom), so the client requires exactly `count` selections, in top-down order,
+ * before submitting `{ cardIds }` (cardIds[0] ends up on top). The engine moves the
+ * chosen cards hand→deck-top.
+ *
+ * @see WP-538 §Scope (In)
+ * @see EC-573 Locked Values
+ * @see DECISIONS.md D-24347
+ */
+export interface UIPendingPutCardsOnDeckChoice {
+  choiceType: "put-cards-on-deck";
+  playerID: string;
+  count: number;
   hand: UIDiscardChoiceHandCard[];
 }
 

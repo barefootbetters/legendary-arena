@@ -192,6 +192,11 @@ export function useTurnActions(
   // True while a Rogue Copy Powers copy-a-Hero choice is pending; blocks End Turn / Pass
   // Priority at ANY stage (the engine's full block-all guard set freezes the board).
   hasPendingCopyPowersChoice: boolean = false,
+  // why: WP-538 / D-24347 — appended LAST (after hasPendingCopyPowersChoice) so existing
+  // positional callers stay valid without edits; degrades gracefully (no gate) when omitted.
+  // True while a core Dr. Doom put-cards-on-deck choice is pending; blocks End Turn / Pass
+  // Priority at ANY stage (the engine's full block-all guard set freezes the board).
+  hasPendingPutCardsOnDeckChoice: boolean = false,
 ): {
   activeStep: TurnStep;
   canRevealVillain: () => GatingResult;
@@ -387,6 +392,15 @@ export function useTurnActions(
           reason: 'Choose a Hero to copy before taking another action.',
         };
       }
+      if (hasPendingPutCardsOnDeckChoice) {
+        // why: WP-538 / D-24347 — a core Dr. Doom put-cards-on-deck choice is pending
+        // (the engine's full block-all guard set freezes the board). The choice is
+        // mandatory — no decline exit to name.
+        return {
+          allowed: false,
+          reason: 'Put cards on top of your deck before taking another action.',
+        };
+      }
       if (currentStage === 'cleanup' && hasPendingChoice) {
         return {
           allowed: false,
@@ -524,6 +538,15 @@ export function useTurnActions(
           reason: 'Choose a Hero to copy before taking another action.',
         };
       }
+      if (hasPendingPutCardsOnDeckChoice) {
+        // why: WP-538 / D-24347 — the engine's block-all guards block endTurn while
+        // pendingPutCardsOnDeckChoices is non-empty (core Dr. Doom); this client-side gate
+        // surfaces the reason so the player sees a tooltip instead of a silent rejection.
+        return {
+          allowed: false,
+          reason: 'Put cards on top of your deck before taking another action.',
+        };
+      }
       if (currentStage === 'cleanup' && hasPendingChoice) {
         // why: D-22203 — the engine's dual turn-end guard (WP-220) blocks
         // endTurn when pendingHeroChoice is set; this client-side gate
@@ -565,7 +588,8 @@ export function useTurnActions(
         hasPendingDefeatChoice ||
         hasPendingReturnOnDiscard ||
         hasPendingGiveHqHeroChoice ||
-        hasPendingCopyPowersChoice
+        hasPendingCopyPowersChoice ||
+        hasPendingPutCardsOnDeckChoice
       ) {
         return {
           allowed: false,

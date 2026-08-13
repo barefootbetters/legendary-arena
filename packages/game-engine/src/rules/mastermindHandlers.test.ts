@@ -1008,6 +1008,79 @@ describe('mastermindStrikeHandler — core Loki Master Strike (WP-537 / D-24346)
   });
 });
 
+describe('mastermindStrikeHandler — core Dr. Doom Master Strike (WP-538 / D-24347)', () => {
+  /** A RevealContext-shaped strike context carrying the active player id. */
+  function ctxFor(currentPlayer: string): unknown {
+    return { ctx: { currentPlayer } };
+  }
+
+  it('a player without exactly 6 cards is unaffected (no park, no deck change)', () => {
+    const gameState = makeCo2eState(
+      'core/dr-doom',
+      { '0': ['a', 'b', 'c'] }, // 3 cards, not 6
+      {},
+      {},
+    );
+    mastermindStrikeHandler(gameState, ctxFor('0'), { cardId: 'strike' }, {});
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['a', 'b', 'c']);
+    assert.deepEqual(gameState.playerZones['0']!.deck, []);
+    assert.equal(gameState.pendingPutCardsOnDeckChoices, undefined, 'no choice parked');
+  });
+
+  it('a 6-card hand holding a Tech Hero reveals it and keeps it (no park, no deck change)', () => {
+    const gameState = makeCo2eState(
+      'core/dr-doom',
+      { '0': ['te-a', 'b', 'c', 'd', 'e', 'f'] },
+      { 'te-a': co2eStat(3) },
+      { 'te-a': TECH },
+    );
+    mastermindStrikeHandler(gameState, ctxFor('0'), { cardId: 'strike' }, {});
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['te-a', 'b', 'c', 'd', 'e', 'f']);
+    assert.deepEqual(gameState.playerZones['0']!.deck, []);
+    assert.equal(gameState.pendingPutCardsOnDeckChoices, undefined, 'no choice parked');
+  });
+
+  it('the CURRENT player with 6 cards and no Tech Hero gets a parked choice, nothing moved yet', () => {
+    const gameState = makeCo2eState(
+      'core/dr-doom',
+      { '0': ['a', 'b', 'c', 'd', 'e', 'f'] },
+      {},
+      {},
+    );
+    mastermindStrikeHandler(gameState, ctxFor('0'), { cardId: 'strike' }, {});
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['a', 'b', 'c', 'd', 'e', 'f'], 'hand unchanged at park');
+    assert.deepEqual(gameState.playerZones['0']!.deck, [], 'deck unchanged at park');
+    assert.equal(gameState.pendingPutCardsOnDeckChoices?.length, 1, 'one choice parked');
+    assert.deepEqual(gameState.pendingPutCardsOnDeckChoices![0], {
+      choiceType: 'put-cards-on-deck',
+      playerID: '0',
+      count: 2,
+    });
+  });
+
+  it('a NON-current player with 6 cards and no Tech Hero auto-puts the 2 cheapest on top', () => {
+    const gameState = makeCo2eState(
+      'core/dr-doom',
+      { '1': ['hi1', 'hi2', 'hi3', 'hi4', 'cheap1', 'cheap2'] },
+      {
+        hi1: co2eStat(5), hi2: co2eStat(5), hi3: co2eStat(5), hi4: co2eStat(5),
+        cheap1: co2eStat(1), cheap2: co2eStat(1),
+      },
+      {},
+    );
+    // why: current player is '0' (not in this state); player '1' is non-current → auto.
+    mastermindStrikeHandler(gameState, ctxFor('0'), { cardId: 'strike' }, {});
+    assert.deepEqual(gameState.playerZones['1']!.hand, ['hi1', 'hi2', 'hi3', 'hi4'], 'expensive Heroes kept in hand');
+    assert.equal(gameState.playerZones['1']!.deck.length, 2, 'two cards put on top of the deck');
+    assert.ok(
+      gameState.playerZones['1']!.deck.includes('cheap1') &&
+        gameState.playerZones['1']!.deck.includes('cheap2'),
+      'the two cheapest were the ones put on deck',
+    );
+    assert.equal(gameState.pendingPutCardsOnDeckChoices, undefined, 'a non-current player does not park');
+  });
+});
+
 describe('mastermindStrikeHandler — co2e Loki Master Strike (WP-388)', () => {
   it('discards the lowest-cost Strength Hero from each player (AC-2)', () => {
     const gameState = makeCo2eState(

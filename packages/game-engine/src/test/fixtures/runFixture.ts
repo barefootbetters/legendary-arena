@@ -44,6 +44,7 @@ import { fightVillain } from '../../moves/fightVillain.js';
 import { recruitHero } from '../../moves/recruitHero.js';
 import { fightMastermind } from '../../moves/fightMastermind.js';
 import { setPlayerReady, startMatchIfReady } from '../../lobby/lobby.moves.js';
+import { resolvePutCardsOnDeckChoice } from '../../moves/putCardsOnDeckChoice.resolve.js';
 import { advanceTurnStage } from '../../turn/turnLoop.js';
 import { hashGameState } from './hashGameState.js';
 
@@ -173,6 +174,12 @@ const MOVE_MAP: Record<string, MoveDispatch> = {
   setPlayerReady: (context, args) =>
     setPlayerReady(context as never, args as never),
   startMatchIfReady: (context) => startMatchIfReady(context as never),
+  // why: WP-538 / D-24347 — core Dr. Doom's Master Strike parks an interactive
+  // put-cards-on-deck choice for the current player when their 6-card hand holds no
+  // Tech Hero; the sentinel fixture must be able to resolve it (via a scripted move)
+  // or the block-all guard freezes the scripted tail. Reads only G + playerID.
+  resolvePutCardsOnDeckChoice: (context, args) =>
+    resolvePutCardsOnDeckChoice(context as never, args as never),
 };
 
 /**
