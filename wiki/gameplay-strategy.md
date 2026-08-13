@@ -28,7 +28,7 @@ source:
   - ../docs/01-VISION.md
   - ../docs/12-SCORING-REFERENCE.md
   - ../packages/game-engine/src/scoring/parScoring.logic.ts
-last-reviewed: 2026-07-23
+last-reviewed: 2026-08-13
 ---
 
 # Gameplay Strategy
@@ -253,6 +253,40 @@ Several real, non-luck choices recur below the headline ranking:
   shuffle them back — a setup-only lever against an overly expensive opening
   HQ (introduced in *What If…?*).
 
+### The four coachable layers {#coaching-layers}
+
+The [decision hierarchy](#decision-hierarchy) ranks *where skill lives*; this
+is the same skill viewed from the outside — the small set of **observable
+dimensions** an analytics or coaching layer could grade a played turn against.
+It is the companion of the
+[Dopamine framework's card-counting section](dopamine-triggers.md#card-counting),
+which frames these four as the skills the reward loop honours; this page grounds
+each one in a rank above. Descriptive, as ever: these are the axes a coach
+*would measure*, not coaching advice this page hands out.
+
+| Layer | The skill it measures | Grounded in | Graded against |
+|---|---|---|---|
+| **Sequencing** | Play order within a turn — enabler before payoff so the chain fires | [Rank 1](#rank-1) | The best ordering of the actual hand |
+| **Acquisition** | *What* to recruit and *when* — building the engine and trimming the dilution | [Rank 0](#rank-0) / [Rank 3](#ranks-3-5) / [thinning](#deck-thinning) | Class-focus and thinning value for the matchup |
+| **Anticipation** | Reading the known deck — banking recruit capacity for a statistically-due card | [Rank 3](#ranks-3-5) recruiting, against the known [Hero Deck](#rank-0) composition | The probability inferable from visible play |
+| **Efficiency** | The whole turn measured against a competent line | the full hierarchy | [PAR](par-simulation-calibration.md) — the machine performance of these decisions |
+
+**Anticipation is the axis the ranking above understates.** The Hero Deck is a
+*known, finite* pool — all 14 of a Hero's cards, with fixed counts of each (see
+[Rank 0](#rank-0)) — so a player who tracks what has already surfaced can reason
+about what is still coming: the rare high-cost card that hasn't appeared is
+increasingly *due*, which argues for banking recruit power now to seize it when
+it hits the HQ. That is probability-tracking from public information — the
+deck-builder's card counting — and it rides entirely on the
+[Rank 3](#ranks-3-5) recruit and interleaving decisions, never on hidden state.
+
+**Why efficiency sits apart from the other three.** Sequencing, acquisition,
+and anticipation are levers *the player pulls*; efficiency is the *scoreboard* —
+one number for how the whole turn compared to the line a competent team would
+have taken, which is exactly what [PAR](par-simulation-calibration.md) computes.
+A coaching layer built on these four would surface the first three as teachable
+levers and efficiency as the aggregate they roll up into.
+
 ## Interactions
 
 - **[Scoring](scoring.md).** Scoring is the *measurement* of the skill this
@@ -268,7 +302,10 @@ Several real, non-luck choices recur below the headline ranking:
 - **[Dopamine Trigger Framework](dopamine-triggers.md).** Its "reward the
   skill, not the luck" invariant refers directly to the decisions here — the
   escalating-combo payoff is attributed to the player's
-  [construction](#rank-0) and [play order](#rank-1), not to randomness.
+  [construction](#rank-0) and [play order](#rank-1), not to randomness. Its
+  [card-counting section](dopamine-triggers.md#card-counting) and the
+  [four coachable layers](#coaching-layers) here are two views of the same
+  skill axes — the reward-side framing and the decision-side grounding.
 - **[Narrative Psychology Framework](narrative-psychology.md).** Its
   **Agency** hook ("I act on the world") and **Archetype** hook are the
   meaning-side of [Hero Deck construction](#rank-0) and thinning — the player
