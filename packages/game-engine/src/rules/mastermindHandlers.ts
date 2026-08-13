@@ -82,6 +82,19 @@ const MASTERMIND_CO2E_DOCTOR_OCTOPUS = 'co2e/doctor-octopus';
 const TEAM_X_MEN = 'x-men';
 const TEAM_SPIDER_FRIENDS = 'spider-friends';
 const HERO_CLASS_STRENGTH = 'strength';
+const HERO_CLASS_TECH = 'tech';
+
+// why: core Dr. Doom's Master Strike — "Each player with exactly 6 cards in hand
+// reveals a [hc:tech] Hero or puts 2 cards from their hand on top of their deck."
+// This is core/dr-doom ONLY; co2e/doctor-doom prints DIFFERENT text and has its
+// own resolver (resolveDoctorDoomStrike), so folding them would play the wrong
+// card text.
+const MASTERMIND_CORE_DR_DOOM = 'core/dr-doom';
+// why: core Dr. Doom's Strike affects only players holding EXACTLY this many
+// cards; a player with any other hand size is unaffected.
+const DOOM_STRIKE_HAND_GATE = 6;
+// why: the printed penalty puts exactly this many cards on top of the deck.
+const DOOM_PUT_ON_DECK_COUNT = 2;
 
 // why: WP-397 — Doctor Octopus's printed strike reveals the top 8 cards of the
 // deck for any player who does not discard a Spider-Friends Hero.
@@ -373,6 +386,105 @@ function resolveMagnetoStrike(
 
     pushLog(gameState,
       `[Magneto Master Strike] Player ${playerId} discarded ${cardsToDiscard.length} card(s) down to ${MAGNETO_HAND_SIZE_LIMIT}.`,
+    );
+  }
+}
+
+/**
+ * Resolves core Dr. Doom's Master Strike: "Each player with exactly 6 cards in
+ * hand reveals a [hc:tech] Hero or puts 2 cards from their hand on top of their
+ * deck."
+ *
+ * Per player (sorted id order): a player not holding exactly DOOM_STRIKE_HAND_GATE
+ * cards is unaffected. A gated player holding a Tech Hero reveals it and KEEPS it
+ * (the printed escape, no penalty). Otherwise the player puts
+ * DOOM_PUT_ON_DECK_COUNT cards on top of their deck — the CURRENT player
+ * INTERACTIVELY (park a PendingPutCardsOnDeckChoice; they pick which cards and the
+ * top order), non-current players via a deterministic cheapest-first auto-pick
+ * (mirroring resolveMagnetoStrike, D-24347).
+ *
+ * Mutates G directly. One durable log line per player.
+ *
+ * @param gameState - The game state to mutate.
+ * @param currentPlayer - The active player (null in legacy test harnesses),
+ *   narrowed from the strike RevealContext; only they park interactively.
+ */
+function resolveCoreDoomStrike(
+  gameState: LegendaryGameState,
+  currentPlayer: string | null,
+): void {
+  const playerIds = Object.keys(gameState.playerZones).sort();
+
+  for (const playerId of playerIds) {
+    const playerZones = gameState.playerZones[playerId]!;
+
+    // why: the exactly-6-cards gate — a player with any other hand size is
+    // untouched by the printed strike.
+    if (playerZones.hand.length !== DOOM_STRIKE_HAND_GATE) {
+      pushLog(gameState,
+        `[Dr. Doom Master Strike] Player ${playerId} does not have exactly ${DOOM_STRIKE_HAND_GATE} cards in hand — unaffected.`,
+      );
+      continue;
+    }
+
+    // why: the reveal branch of the printed "reveals a [hc:tech] Hero OR puts 2
+    // cards on top" — a gated player holding a Tech Hero reveals it and KEEPS it,
+    // taking no penalty. selectLowestCostHero is the existence check only; the
+    // revealed card is never removed.
+    if (selectLowestCostHero(gameState, playerZones.hand, 'heroClass', HERO_CLASS_TECH) !== null) {
+      pushLog(gameState,
+        `[Dr. Doom Master Strike] Player ${playerId} revealed a [hc:tech] Hero — no cards put on deck.`,
+      );
+      continue;
+    }
+
+    // why: the CURRENT player puts cards on deck INTERACTIVELY — park a
+    // PendingPutCardsOnDeckChoice and let them choose which cards and the top
+    // order. Non-current players auto-pick below because the pending-choice
+    // architecture is single-current-player-scoped (D-24347): the block-all
+    // guards, UIState projection, and bot resolver all key on the active player.
+    // Lazy-init the queue at the park site (never in Game.setup — undefined = no
+    // pending choice). currentPlayer is null only for legacy test harnesses
+    // passing no ctx; they fall through to the deterministic auto-pick so the
+    // strike never blocks on an unknown chooser.
+    if (currentPlayer !== null && playerId === currentPlayer) {
+      if (!gameState.pendingPutCardsOnDeckChoices) {
+        gameState.pendingPutCardsOnDeckChoices = [];
+      }
+      gameState.pendingPutCardsOnDeckChoices.push({
+        choiceType: 'put-cards-on-deck',
+        playerID: playerId,
+        count: DOOM_PUT_ON_DECK_COUNT,
+      });
+      pushLog(gameState,
+        `[Dr. Doom Master Strike] Player ${playerId} must put ${DOOM_PUT_ON_DECK_COUNT} cards on top of their deck — choose which cards.`,
+      );
+      continue;
+    }
+
+    // why: non-current player — auto-pick the cheapest cards to put on top
+    // (keeping the expensive Heroes; Wounds sort cheapest and go first),
+    // deterministically. selectDiscardToLimitCards is the SAME cheapest-first
+    // selector the current player parks against, so a bot's placement is identical
+    // whether it parked or auto-picked.
+    const cardsToPut = selectDiscardToLimitCards(
+      gameState,
+      playerZones.hand,
+      DOOM_PUT_ON_DECK_COUNT,
+    );
+    let workingHand = playerZones.hand;
+    const movedCards: CardExtId[] = [];
+    for (const cardExtId of cardsToPut) {
+      const moveResult = moveCardFromZone(workingHand, [], cardExtId);
+      if (!moveResult.found) { continue; }
+      workingHand = moveResult.from;
+      movedCards.push(cardExtId);
+    }
+    playerZones.hand = workingHand;
+    playerZones.deck = [...movedCards, ...playerZones.deck];
+
+    pushLog(gameState,
+      `[Dr. Doom Master Strike] Player ${playerId} put ${movedCards.length} card(s) on top of their deck.`,
     );
   }
 }
@@ -901,6 +1013,11 @@ export function mastermindStrikeHandler(
     resolveRedSkullStrike(gameState);
   } else if (mastermindId === MASTERMIND_CORE_LOKI) {
     resolveCoreLokiStrike(gameState);
+  } else if (mastermindId === MASTERMIND_CORE_DR_DOOM) {
+    // why: WP-538 / D-24347 — pass the active player so the strike can park an
+    // interactive put-cards-on-deck choice for the current player (mirroring
+    // the resolveMagnetoStrike interactive branch).
+    resolveCoreDoomStrike(gameState, resolveCurrentPlayer(strikeContext));
   } else if (mastermindId === MASTERMIND_CO2E_DOCTOR_DOOM) {
     resolveDoctorDoomStrike(gameState);
   } else if (mastermindId === MASTERMIND_CO2E_LOKI) {

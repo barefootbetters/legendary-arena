@@ -69,6 +69,7 @@ import { resolveDrawOrEmpowered } from '../moves/drawOrEmpowered.resolve.js';
 import { resolveKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { resolveScryKoChoice } from '../moves/scryKoChoice.resolve.js';
 import { resolveDiscardChoice } from '../moves/discardChoice.resolve.js';
+import { resolvePutCardsOnDeckChoice } from '../moves/putCardsOnDeckChoice.resolve.js';
 import { resolveReorderChoice } from '../moves/reorderChoice.resolve.js';
 import { resolveDefeatChoice } from '../moves/defeatChoice.resolve.js';
 import { resolveOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
@@ -225,6 +226,7 @@ const MOVE_MAP: Record<string, MoveFn> = {
   // why: WP-476 / D-24284 — getLegalMoves short-circuits to resolveDiscardChoice when a
   // Magneto discard-to-limit choice is parked; a missing dispatch entry hangs the per-turn loop.
   resolveDiscardChoice: (context, args) => resolveDiscardChoice(context as never, args as never),
+  resolvePutCardsOnDeckChoice: (context, args) => resolvePutCardsOnDeckChoice(context as never, args as never),
   // why: WP-479 / D-24286 — getLegalMoves short-circuits to resolveReorderChoice when a
   // reveal-remainder reorder is parked; a missing dispatch entry hangs the per-turn loop.
   resolveReorderChoice: (context, args) => resolveReorderChoice(context as never, args as never),

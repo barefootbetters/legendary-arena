@@ -1,7 +1,15 @@
 {
   "expected": {
-    "finalStateHash": "bb896b689122ee3fcfe34d02480dd0b6c186479139f477b2add869dd432adcd9",
+    "finalStateHash": "2ef3aa99b3542800a27881ceec926aa4dcf948e6004eecddfbf97bc495de67e7",
     "messages": [
+      {
+        "outcome": "neutral",
+        "text": "[Dr. Doom Master Strike] Player 0 does not have exactly 6 cards in hand — unaffected."
+      },
+      {
+        "outcome": "neutral",
+        "text": "[Dr. Doom Master Strike] Player 1 does not have exactly 6 cards in hand — unaffected."
+      },
       {
         "outcome": "neutral",
         "text": "Mastermind strike revealed — strike count incremented."
@@ -18,7 +26,19 @@
       },
       {
         "outcome": "neutral",
+        "text": "[Dr. Doom Master Strike] Player 0 does not have exactly 6 cards in hand — unaffected."
+      },
+      {
+        "outcome": "neutral",
+        "text": "[Dr. Doom Master Strike] Player 1 must put 2 cards on top of their deck — choose which cards."
+      },
+      {
+        "outcome": "neutral",
         "text": "Mastermind strike revealed — strike count incremented."
+      },
+      {
+        "outcome": "neutral",
+        "text": "Player 1 put 2 card(s) on top of their deck."
       },
       {
         "card": "starting-shield-trooper",
@@ -40,6 +60,8 @@
         },
         "matchId": "sentinel-core-doom-2p",
         "messages": [
+          "[Dr. Doom Master Strike] Player 0 does not have exactly 6 cards in hand — unaffected.",
+          "[Dr. Doom Master Strike] Player 1 does not have exactly 6 cards in hand — unaffected.",
           "Mastermind strike revealed — strike count incremented.",
           "Player 0 played S.H.I.E.L.D. Trooper (starting-shield-trooper) (+1 attack).",
           "Player 0 played S.H.I.E.L.D. Agent (starting-shield-agent) (+1 recruit)."
@@ -73,10 +95,15 @@
         },
         "matchId": "sentinel-core-doom-2p",
         "messages": [
+          "[Dr. Doom Master Strike] Player 0 does not have exactly 6 cards in hand — unaffected.",
+          "[Dr. Doom Master Strike] Player 1 does not have exactly 6 cards in hand — unaffected.",
           "Mastermind strike revealed — strike count incremented.",
           "Player 0 played S.H.I.E.L.D. Trooper (starting-shield-trooper) (+1 attack).",
           "Player 0 played S.H.I.E.L.D. Agent (starting-shield-agent) (+1 recruit).",
+          "[Dr. Doom Master Strike] Player 0 does not have exactly 6 cards in hand — unaffected.",
+          "[Dr. Doom Master Strike] Player 1 must put 2 cards on top of their deck — choose which cards.",
           "Mastermind strike revealed — strike count incremented.",
+          "Player 1 put 2 card(s) on top of their deck.",
           "Player 1 played S.H.I.E.L.D. Trooper (starting-shield-trooper) (+1 attack)."
         ],
         "phase": "play",
@@ -90,8 +117,8 @@
             "victoryCount": 0
           },
           {
-            "deckCount": 6,
-            "discardCount": 6,
+            "deckCount": 8,
+            "discardCount": 4,
             "handCount": 0,
             "inPlayCount": 0,
             "playerId": "1",
@@ -168,6 +195,16 @@
       {
         "args": null,
         "moveName": "revealVillainCard",
+        "playerId": "1"
+      },
+      {
+        "args": {
+          "cardIds": [
+            "starting-shield-trooper",
+            "starting-shield-trooper"
+          ]
+        },
+        "moveName": "resolvePutCardsOnDeckChoice",
         "playerId": "1"
       },
       {

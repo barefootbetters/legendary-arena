@@ -19,6 +19,7 @@ import { isGuardBlocking, getPatrolModifier } from '../board/boardKeywords.logic
 import { hasPendingKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from '../moves/scryKoChoice.resolve.js';
 import { hasPendingDiscardChoice } from '../moves/discardChoice.resolve.js';
+import { hasPendingPutCardsOnDeckChoice } from '../moves/putCardsOnDeckChoice.resolve.js';
 import { hasPendingReorderChoice } from '../moves/reorderChoice.resolve.js';
 import { hasPendingDefeatChoice } from '../moves/defeatChoice.resolve.js';
 import { selectDiscardToLimitCards } from '../rules/mastermindHandlers.js';
@@ -82,6 +83,11 @@ export const SIMULATION_MOVE_NAMES = [
   // turns, not within-turn move-steps — the WP-289 hang). Asserted by
   // simulation.moveDispatch.drift.test.ts.
   'resolveDiscardChoice',
+  // why: WP-538 / D-24347 — getLegalMoves short-circuits to resolvePutCardsOnDeckChoice
+  // when a core Dr. Doom put-cards-on-deck choice is parked for the active player; it MUST
+  // be dispatchable in the sim (both MOVE_MAPs) or the per-turn loop hangs. Asserted by
+  // simulation.moveDispatch.drift.test.ts.
+  'resolvePutCardsOnDeckChoice',
   // why: WP-479 / D-24286 — getLegalMoves short-circuits to resolveReorderChoice when a
   // reveal-remainder reorder is parked; it MUST be dispatchable in the sim (both MOVE_MAPs)
   // or the per-turn loop hangs (maxTurns bounds turns, not within-turn move-steps — the
@@ -389,6 +395,23 @@ export function getLegalMoves(
       return [{ name: 'resolveDiscardChoice', args: { cardIds } }];
     }
     // why: defensive — a parked choice whose hand is already at/under the limit is an
+    // engine-invariant violation; fail closed rather than emit an unresolvable move.
+    return legalMoves;
+  }
+
+  // why: WP-538 / D-24347 — pending core Dr. Doom put-cards-on-deck short-circuit. The
+  // engine block-all guard freezes every other move, so the bot must resolve it first. The
+  // deterministic default is the cheapest-first selection — selectDiscardToLimitCards, the
+  // SAME selector the strike uses for non-current auto-picks — so the bot's placement is
+  // identical whether it parked or auto-picked; only live human play gets the prompt.
+  // Returns a list of length EXACTLY 1 — omitting this path hangs the per-turn loop.
+  if (hasPendingPutCardsOnDeckChoice(gameState)) {
+    const front = gameState.pendingPutCardsOnDeckChoices![0]!;
+    if (zones.hand.length >= front.count) {
+      const cardIds = selectDiscardToLimitCards(gameState, zones.hand, front.count);
+      return [{ name: 'resolvePutCardsOnDeckChoice', args: { cardIds } }];
+    }
+    // why: defensive — a parked choice whose hand holds fewer than `count` cards is an
     // engine-invariant violation; fail closed rather than emit an unresolvable move.
     return legalMoves;
   }

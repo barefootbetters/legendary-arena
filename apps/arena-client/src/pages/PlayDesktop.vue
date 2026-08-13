@@ -44,6 +44,7 @@ import PendingHeroChoicePrompt from '../components/play/PendingHeroChoicePrompt.
 import PendingKoHeroChoicePrompt from '../components/play/PendingKoHeroChoicePrompt.vue';
 import PendingScryKoChoicePrompt from '../components/play/PendingScryKoChoicePrompt.vue';
 import PendingDiscardChoicePrompt from '../components/play/PendingDiscardChoicePrompt.vue';
+import PendingPutCardsOnDeckChoicePrompt from '../components/play/PendingPutCardsOnDeckChoicePrompt.vue';
 import PendingReorderChoicePrompt from '../components/play/PendingReorderChoicePrompt.vue';
 import PendingDefeatChoicePrompt from '../components/play/PendingDefeatChoicePrompt.vue';
 import OptionalKoRewardPrompt from '../components/play/OptionalKoRewardPrompt.vue';
@@ -116,6 +117,7 @@ export default defineComponent({
     PendingKoHeroChoicePrompt,
     PendingScryKoChoicePrompt,
     PendingDiscardChoicePrompt,
+    PendingPutCardsOnDeckChoicePrompt,
     PendingReorderChoicePrompt,
     PendingDefeatChoicePrompt,
     OptionalKoRewardPrompt,
@@ -441,6 +443,12 @@ export default defineComponent({
     const hasPendingDiscardChoice = computed<boolean>(
       () => snapshot.value?.pendingDiscardChoice !== undefined,
     );
+    // why: WP-538 / D-24347 — derived from UIState.pendingPutCardsOnDeckChoice !== undefined.
+    // Passed to TurnActionBar to block end-turn and pass-priority at EVERY stage while a core
+    // Dr. Doom put-cards-on-deck choice is pending (board frozen, mirrors hasPendingDiscardChoice).
+    const hasPendingPutCardsOnDeckChoice = computed<boolean>(
+      () => snapshot.value?.pendingPutCardsOnDeckChoice !== undefined,
+    );
     // why: WP-480 / D-24286 — derived from UIState.pendingReorderChoice !== undefined. Passed to
     // TurnActionBar to block end-turn and pass-priority at EVERY stage while a reveal-remainder
     // reorder choice is pending (board frozen, mirrors hasPendingDiscardChoice).
@@ -503,6 +511,7 @@ export default defineComponent({
       hasPendingReturnOnDiscard,
       hasPendingScryKoChoice,
       hasPendingDiscardChoice,
+      hasPendingPutCardsOnDeckChoice,
       hasPendingReorderChoice,
       hasPendingDefeatChoice,
       hasPendingGiveHqHeroChoice,
@@ -679,6 +688,16 @@ export default defineComponent({
             :viewer-player-id="viewer.playerId"
             :submit-move="submitMove"
           />
+          <!-- why: WP-538 / D-24347 — the core Dr. Doom put-cards-on-deck prompt ("put 2
+               cards on top of your deck") renders above TurnActionBar in DOM order; appears
+               only for the choosing player when pendingPutCardsOnDeckChoice is set. NOT a
+               modal; normal document flow. The block-all guard guarantees at most one
+               pending-choice type is set. -->
+          <PendingPutCardsOnDeckChoicePrompt
+            :pending-put-cards-on-deck-choice="snapshot.pendingPutCardsOnDeckChoice"
+            :viewer-player-id="viewer.playerId"
+            :submit-move="submitMove"
+          />
           <!-- why: WP-479 / D-24286 — the reveal-remainder reorder prompt ("put the rest
                back in any order") renders above TurnActionBar in DOM order; appears only
                for the choosing player when pendingReorderChoice is set. NOT a modal; normal
@@ -809,6 +828,7 @@ export default defineComponent({
             :has-pending-return-on-discard="hasPendingReturnOnDiscard"
             :has-pending-scry-ko-choice="hasPendingScryKoChoice"
             :has-pending-discard-choice="hasPendingDiscardChoice"
+            :has-pending-put-cards-on-deck-choice="hasPendingPutCardsOnDeckChoice"
             :has-pending-reorder-choice="hasPendingReorderChoice"
             :has-pending-defeat-choice="hasPendingDefeatChoice"
             :has-pending-give-hq-hero-choice="hasPendingGiveHqHeroChoice"

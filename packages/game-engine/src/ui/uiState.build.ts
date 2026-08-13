@@ -37,6 +37,7 @@ import type {
   UIPendingScryKoChoice,
   UIScryKoRevealedCard,
   UIPendingDiscardChoice,
+  UIPendingPutCardsOnDeckChoice,
   UIDiscardChoiceHandCard,
   UIPendingReorderChoice,
   UIReorderChoiceCard,
@@ -966,6 +967,35 @@ export function buildUIState(
     }
   }
 
+  // why: WP-538 / D-24347 — project the FRONT entry of G.pendingPutCardsOnDeckChoices with
+  // the chooser's CURRENT hand (recomputed fresh from G — the pending entry stores no
+  // snapshot; the block-all guard freezes the hand while pending) resolved to display data,
+  // in hand order, plus the count. The client requires exactly `count` selections in top
+  // order. resolveDisplay is spread fresh per entry so the projection holds no reference into
+  // G.cardDisplayData (aliasing defense, WP-111 D-11105). Redaction to the chooser-only
+  // audience is enforced by filterUIStateForAudience (the hand carries the chooser's private
+  // card identities and must not leak to opponents/spectators).
+  let pendingPutCardsOnDeckChoice: UIPendingPutCardsOnDeckChoice | undefined;
+  if (gameState.pendingPutCardsOnDeckChoices !== undefined && gameState.pendingPutCardsOnDeckChoices.length > 0) {
+    const frontChoice = gameState.pendingPutCardsOnDeckChoices[0]!;
+    const chooserZones = gameState.playerZones[frontChoice.playerID];
+    if (chooserZones !== undefined) {
+      const hand: UIDiscardChoiceHandCard[] = [];
+      for (const cardId of chooserZones.hand) {
+        hand.push({
+          cardId,
+          display: { ...resolveDisplay(cardId, gameState) },
+        });
+      }
+      pendingPutCardsOnDeckChoice = {
+        choiceType: frontChoice.choiceType,
+        playerID: frontChoice.playerID,
+        count: frontChoice.count,
+        hand,
+      };
+    }
+  }
+
   // why: WP-479 / D-24286 — project the FRONT entry of G.pendingReorderChoices with its
   // `cardIds` snapshot (the revealed remainder on top of the deck, captured at park time)
   // resolved to display data, in current deck-top order. Reads the SNAPSHOT, not the live
@@ -1440,6 +1470,7 @@ export function buildUIState(
     // why: WP-476 / D-24284 — conditional spread so an absent choice omits the field
     // (no `pendingDiscardChoice: undefined` literal under exactOptionalPropertyTypes).
     ...(pendingDiscardChoice !== undefined ? { pendingDiscardChoice } : {}),
+    ...(pendingPutCardsOnDeckChoice !== undefined ? { pendingPutCardsOnDeckChoice } : {}),
     // why: WP-479 / D-24286 — conditional spread so an absent choice omits the field
     // (no `pendingReorderChoice: undefined` literal under exactOptionalPropertyTypes).
     ...(pendingReorderChoice !== undefined ? { pendingReorderChoice } : {}),

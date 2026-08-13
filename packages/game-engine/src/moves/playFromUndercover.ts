@@ -20,6 +20,7 @@ import { applyCardPlay } from './coreMoves.impl.js';
 import { hasPendingKoHeroChoice } from './koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from './scryKoChoice.resolve.js';
 import { hasPendingDiscardChoice } from './discardChoice.resolve.js';
+import { hasPendingPutCardsOnDeckChoice } from './putCardsOnDeckChoice.resolve.js';
 import { hasPendingReorderChoice } from './reorderChoice.resolve.js';
 import { hasPendingDefeatChoice } from './defeatChoice.resolve.js';
 import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
@@ -85,6 +86,11 @@ export function playFromUndercover(
   // why: block-all guard (WP-476 / D-24284) — a pending discard-to-limit choice
   // freezes the board until the current player picks which cards to discard.
   if (hasPendingDiscardChoice(G)) {
+    return;
+  }
+  // why: block-all guard (WP-538 / D-24347) — a pending put-cards-on-deck choice
+  // freezes the board until the current player picks which cards to put on top.
+  if (hasPendingPutCardsOnDeckChoice(G)) {
     return;
   }
   // why: block-all guard (WP-479 / D-24286) — a pending reveal-remainder reorder

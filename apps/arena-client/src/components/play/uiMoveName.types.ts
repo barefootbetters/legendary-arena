@@ -59,6 +59,9 @@ export type UiMoveName =
   // why: WP-476 / D-24284 — unblocks the Magneto discard-to-limit prompt (pick which
   // cards to discard down to four).
   | 'resolveDiscardChoice'
+  // why: WP-538 / D-24347 — unblocks the core Dr. Doom put-cards-on-deck prompt (pick
+  // which 2 cards to put on top of the deck, in top order).
+  | 'resolvePutCardsOnDeckChoice'
   // why: WP-479 / D-24286 — unblocks the reveal-remainder reorder prompt (put the
   // non-drawn revealed cards back on top of the deck in any order).
   | 'resolveReorderChoice'

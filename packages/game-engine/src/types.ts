@@ -546,6 +546,35 @@ export interface PendingDiscardChoice {
 }
 
 /**
+ * Pending put-cards-on-deck player choice state (WP-538 / D-24347).
+ *
+ * Created when core Dr. Doom's Master Strike ("Each player with exactly 6 cards
+ * in hand reveals a [hc:tech] Hero or puts 2 cards from their hand on top of
+ * their deck") forces the CURRENT player — who holds no Tech Hero to reveal — to
+ * put cards on top of their deck. Appended to G.pendingPutCardsOnDeckChoices[]
+ * (FIFO queue). Removed (front-popped) by resolvePutCardsOnDeckChoice after the
+ * player picks which cards. Must be undefined or empty at every turn-end
+ * (enforced by the block-all guards).
+ *
+ * // why: D-24347 — only the current player parks an interactive choice; every
+ * non-current player who must put cards on deck is auto-picked synchronously
+ * inside the strike (cheapest-first), because the pending-choice architecture is
+ * single-current-player-scoped (mirrors PendingDiscardChoice, WP-476). Stores NO
+ * card snapshot — the choice is "which `count` of your hand cards to put on top",
+ * validated fresh against the current hand by the resolve move (the block-all
+ * guard freezes the hand while pending). Selection order = deck-top order
+ * (cardIds[0] ends up on top, drawn first).
+ */
+export interface PendingPutCardsOnDeckChoice {
+  /** Discriminant for future extensibility; always 'put-cards-on-deck'. */
+  choiceType: 'put-cards-on-deck';
+  /** The player who must choose which cards to put on top of their deck. */
+  playerID: string;
+  /** How many cards the player must put on top (DOOM_PUT_ON_DECK_COUNT = 2). */
+  count: number;
+}
+
+/**
  * Pending reveal-remainder reorder player choice state (WP-479 / D-24286).
  *
  * Created when a reveal marked `reorderRemainder` (The Amazing Spider-Man's
@@ -1047,6 +1076,19 @@ export interface LegendaryGameState {
   // `.length`).
   /** FIFO queue of pending discard-to-limit choices awaiting player resolution (WP-476). */
   pendingDiscardChoices?: PendingDiscardChoice[] | undefined;
+
+  // why: WP-538 / D-24347 — FIFO queue of pending put-cards-on-deck choices (at
+  // most one per core Dr. Doom Master Strike, parked ONLY for the current player
+  // who must put 2 cards on top and holds no Tech Hero to reveal). Entries are
+  // appended by resolveCoreDoomStrike's park branch; front-popped by
+  // resolvePutCardsOnDeckChoice after the player picks which cards. Must be
+  // undefined or empty at every turn-end. Runtime-only, never persisted
+  // (snapshots stay counts-only), mirroring pendingDiscardChoices; **lazily
+  // initialized at the park site, never in Game.setup**. Optional so existing
+  // test state literals need no update. Absent (undefined) or empty [] both mean
+  // "no pending choice" (guards test `.length`).
+  /** FIFO queue of pending put-cards-on-deck choices awaiting player resolution (WP-538). */
+  pendingPutCardsOnDeckChoices?: PendingPutCardsOnDeckChoice[] | undefined;
 
   // why: WP-479 / D-24286 — FIFO queue of pending reveal-remainder reorder choices
   // (at most one per reorder-marked reveal, parked ONLY for the current player when
