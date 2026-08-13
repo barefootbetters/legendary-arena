@@ -51,4 +51,15 @@ describe('SCHEME_TWIST_CONFIGS drift tests', () => {
       { '2': 8, '3': 8, '4': 5, '5': 5 },
     );
   });
+
+  // why: WP-539 / D-24348 — Portals to the Dark Dimension is a TRUE twist-loss
+  // (printed "Twist 7: Evil Wins!"): lossThreshold 7 with NO resourceLossCondition,
+  // so Evil Wins at exactly twist 7 by design (previously it lost at 7 only by the
+  // MVP-fallback coincidence). Routed to the `portals` resolver.
+  it('drift test D: Portals is a true twist-loss at 7 via the portals resolver (D-24348)', () => {
+    const portals = SCHEME_TWIST_CONFIGS.get('core/portals-to-the-dark-dimension');
+    assert.equal(portals?.resolverId, 'portals');
+    assert.equal(portals?.lossThreshold, 7);
+    assert.equal(portals?.resourceLossCondition, undefined);
+  });
 });

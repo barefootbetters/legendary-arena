@@ -11,6 +11,8 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { SCHEME_TWIST_RESOLVERS } from './schemeTwistResolvers.js';
 import type { LegendaryGameState } from '../types.js';
+import { DARK_PORTAL_COUNT } from '../types.js';
+import type { CardExtId } from '../state/zones.types.js';
 import type { RevealContext } from '../villainDeck/villainDeck.reveal.js';
 import type { ImplementationMap } from './ruleRuntime.execute.js';
 
@@ -749,5 +751,56 @@ describe('secret-invasion resolver', () => {
     if (event.type === 'schemeTwistResolved') {
       assert.equal(event.resolverKey, 'secretInvasion');
     }
+  });
+});
+
+// ===========================================================================
+// portals (WP-539 / D-24348)
+// ===========================================================================
+
+describe('portals resolver', () => {
+  const resolver = SCHEME_TWIST_RESOLVERS['portals'];
+  const PORTALS = 'core/portals-to-the-dark-dimension';
+
+  it('increments DARK_PORTAL_COUNT by 1 per twist (1..7)', () => {
+    const gameState = makeResolverState({ schemeId: PORTALS });
+    for (let portal = 1; portal <= 7; portal++) {
+      resolver(gameState, makeRevealContext(), emptyImplementationMap, {}, 'twist' as CardExtId);
+      assert.equal(gameState.counters[DARK_PORTAL_COUNT], portal);
+    }
+  });
+
+  it('logs the Mastermind portal on twist 1', () => {
+    const gameState = makeResolverState({ schemeId: PORTALS });
+    resolver(gameState, makeRevealContext(), emptyImplementationMap, {}, 'twist' as CardExtId);
+    assert.ok(
+      gameState.messages.some((message) => message.text.includes('above the Mastermind')),
+      'twist 1 places the Dark Portal above the Mastermind',
+    );
+  });
+
+  it('logs the leftmost city space (Bridge) on twist 2', () => {
+    const gameState = makeResolverState({ schemeId: PORTALS });
+    gameState.counters[DARK_PORTAL_COUNT] = 1; // twist 1 already resolved
+    resolver(gameState, makeRevealContext(), emptyImplementationMap, {}, 'twist' as CardExtId);
+    assert.ok(
+      gameState.messages.some((message) => message.text.includes('Bridge')),
+      'twist 2 fills the leftmost portal-less city space (Bridge)',
+    );
+  });
+
+  it('logs the entry space (Sewers) on twist 6', () => {
+    const gameState = makeResolverState({ schemeId: PORTALS });
+    gameState.counters[DARK_PORTAL_COUNT] = 5; // twists 1-5 already resolved
+    resolver(gameState, makeRevealContext(), emptyImplementationMap, {}, 'twist' as CardExtId);
+    assert.ok(gameState.messages.some((message) => message.text.includes('Sewers')));
+  });
+
+  it('pushes a schemeTwistResolved notable event with the portals key', () => {
+    const gameState = makeResolverState({ schemeId: PORTALS });
+    resolver(gameState, makeRevealContext(), emptyImplementationMap, {}, 'twist' as CardExtId);
+    const lastEvent = gameState.notableEvents[gameState.notableEvents.length - 1];
+    assert.equal(lastEvent?.type, 'schemeTwistResolved');
+    assert.equal((lastEvent as { resolverKey?: string })?.resolverKey, 'portals');
   });
 });

@@ -11,8 +11,8 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
-import { resolveFightCost } from './economy.resolve.js';
-import { KILLBOT_TWISTS_NEXT_TO_SCHEME } from '../types.js';
+import { resolveFightCost, resolveMastermindFightCost } from './economy.resolve.js';
+import { KILLBOT_TWISTS_NEXT_TO_SCHEME, DARK_PORTAL_COUNT } from '../types.js';
 
 /**
  * Builds a minimal G suitable for resolveFightCost tests.
@@ -232,5 +232,84 @@ describe('resolveFightCost — converted Skrull villain', () => {
     const G = makeSkrullG('hero-a', 3);
     // 'plain-villain' has no origin and no cardStats → the pre-existing 0 fallback.
     assert.equal(resolveFightCost(G, 'plain-villain' as CardExtId), 0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Portals Dark-Portal villain buff (WP-539 / D-24348)
+// ---------------------------------------------------------------------------
+
+describe('resolveFightCost — Portals Dark-Portal villain buff', () => {
+  const PORTALS = 'core/portals-to-the-dark-dimension';
+
+  /** A G under `schemeId` with `villainId` at `cityIndex` (-1 = not in city) and `count` Dark Portals. */
+  function makePortalsG(
+    schemeId: string,
+    villainId: string,
+    cityIndex: number,
+    count: number,
+    fightCost = 3,
+  ): LegendaryGameState {
+    const city: (string | null)[] = [null, null, null, null, null];
+    if (cityIndex >= 0) city[cityIndex] = villainId;
+    return {
+      cardStats: { [villainId]: { fightCost, fightCostMode: 'static', fightCostBase: 0 } },
+      villainAttachedHeroes: {},
+      selection: { schemeId },
+      city,
+      counters: { [DARK_PORTAL_COUNT]: count },
+    } as unknown as LegendaryGameState;
+  }
+
+  it("adds +1 to a villain in a portal'd city space (leftmost=Bridge=index 4 at count 2)", () => {
+    // space index 4 is portal'd once count >= 6 - 4 = 2.
+    assert.equal(resolveFightCost(makePortalsG(PORTALS, 'v', 4, 2), 'v' as CardExtId), 4);
+  });
+
+  it("no bonus for an unportal'd space (index 4 at count 1 = the Mastermind portal only)", () => {
+    assert.equal(resolveFightCost(makePortalsG(PORTALS, 'v', 4, 1), 'v' as CardExtId), 3);
+  });
+
+  it("the entry space (Sewers, index 0) is portal'd only at count 6", () => {
+    assert.equal(resolveFightCost(makePortalsG(PORTALS, 'v', 0, 5), 'v' as CardExtId), 3);
+    assert.equal(resolveFightCost(makePortalsG(PORTALS, 'v', 0, 6), 'v' as CardExtId), 4);
+  });
+
+  it('applies no bonus under a non-Portals scheme', () => {
+    assert.equal(resolveFightCost(makePortalsG('core/midtown-bank-robbery', 'v', 4, 2), 'v' as CardExtId), 3);
+  });
+
+  it('applies no bonus to a villain not in the city', () => {
+    assert.equal(resolveFightCost(makePortalsG(PORTALS, 'v', -1, 6), 'v' as CardExtId), 3);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// resolveMastermindFightCost (WP-539 / D-24348)
+// ---------------------------------------------------------------------------
+
+describe('resolveMastermindFightCost', () => {
+  const PORTALS = 'core/portals-to-the-dark-dimension';
+
+  function makeMastermindG(schemeId: string, count: number, baseFightCost = 7): LegendaryGameState {
+    return {
+      cardStats: { 'mm-base': { fightCost: baseFightCost, fightCostMode: 'static', fightCostBase: 0 } },
+      mastermind: { baseCardId: 'mm-base' },
+      selection: { schemeId },
+      counters: { [DARK_PORTAL_COUNT]: count },
+    } as unknown as LegendaryGameState;
+  }
+
+  it('returns the base fightCost when the scheme is not Portals', () => {
+    assert.equal(resolveMastermindFightCost(makeMastermindG('core/midtown-bank-robbery', 3)), 7);
+  });
+
+  it('returns base when Portals but no Dark Portal placed yet (count 0)', () => {
+    assert.equal(resolveMastermindFightCost(makeMastermindG(PORTALS, 0)), 7);
+  });
+
+  it('returns base + 1 once the twist-1 Mastermind portal is placed, not stacking', () => {
+    assert.equal(resolveMastermindFightCost(makeMastermindG(PORTALS, 1)), 8);
+    assert.equal(resolveMastermindFightCost(makeMastermindG(PORTALS, 6)), 8);
   });
 });

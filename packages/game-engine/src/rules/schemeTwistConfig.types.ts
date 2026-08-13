@@ -68,7 +68,8 @@ export type SchemeTwistResolverId =
   | 'ko-from-hq'
   | 'midtown-bank-robbery'
   | 'killbots'
-  | 'secret-invasion';
+  | 'secret-invasion'
+  | 'portals';
 
 /**
  * Configuration for a single scheme's twist behavior.

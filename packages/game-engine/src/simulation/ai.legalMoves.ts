@@ -14,7 +14,7 @@ import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { LegalMove } from './ai.types.js';
 import { getAvailableAttack, getAvailableRecruit } from '../economy/economy.logic.js';
-import { resolveFightCost } from '../economy/economy.resolve.js';
+import { resolveFightCost, resolveMastermindFightCost } from '../economy/economy.resolve.js';
 import { isGuardBlocking, getPatrolModifier } from '../board/boardKeywords.logic.js';
 import { hasPendingKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from '../moves/scryKoChoice.resolve.js';
@@ -533,8 +533,7 @@ export function getLegalMoves(
 
   // 4. fightMastermind — at most one entry (affordable + tactics remain).
   if (stage === 'main' && gameState.mastermind.tacticsDeck.length > 0) {
-    const mastermindFightCost =
-      gameState.cardStats[gameState.mastermind.baseCardId]?.fightCost ?? 0;
+    const mastermindFightCost = resolveMastermindFightCost(gameState);
     if (availableAttack >= mastermindFightCost) {
       legalMoves.push({ name: 'fightMastermind', args: {} });
     }

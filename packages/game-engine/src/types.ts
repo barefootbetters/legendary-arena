@@ -73,6 +73,14 @@ export type ConvertedVillainOrigin = 'killbot' | 'skrull';
 /** G.counters key for Killbots' "twists next to this Scheme" (drives Killbot attack). */
 export const KILLBOT_TWISTS_NEXT_TO_SCHEME = 'killbotTwistsNextToScheme';
 
+// why: WP-539 / D-24348 — Portals-specific counter, one per Dark Portal placed
+// (mirrors KILLBOT_TWISTS_NEXT_TO_SCHEME). Twist 1 places the Mastermind portal;
+// twists 2-6 place city-space portals; twist 7 is Evil Wins. Drives BOTH the
+// mastermind attack bonus (+1 once >= 1) and the positional villain bonus (+1 to a
+// villain whose city space has been portal'd). A plain G.counters key.
+/** G.counters key for Portals' Dark Portal count (drives the Dark-Portal attack buffs). */
+export const DARK_PORTAL_COUNT = 'darkPortalCount';
+
 // why: City and HQ zone types are defined canonically in
 // src/board/city.types.ts (WP-015). Re-exported here so that consumers
 // importing from './types.js' have access.

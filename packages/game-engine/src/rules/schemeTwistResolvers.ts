@@ -13,7 +13,9 @@
 import type { SchemeTwistResolver, SchemeTwistResolverId } from './schemeTwistConfig.types.js';
 import type { LegendaryGameState } from '../types.js';
 // why: WP-513 / D-24325 — value import for the Killbots per-scheme twist counter key.
-import { KILLBOT_TWISTS_NEXT_TO_SCHEME } from '../types.js';
+// why: WP-539 / D-24348 — DARK_PORTAL_COUNT is the Portals Dark Portal counter.
+import { KILLBOT_TWISTS_NEXT_TO_SCHEME, DARK_PORTAL_COUNT } from '../types.js';
+import { CITY_SPACE_NAMES } from '../board/citySpaceNames.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { RevealContext } from '../villainDeck/villainDeck.reveal.js';
 import type { ImplementationMap } from './ruleRuntime.execute.js';
@@ -686,6 +688,65 @@ function secretInvasion(
  *
  * Plain record — no factory, no class, no dynamic registration.
  */
+/**
+ * Portals to the Dark Dimension (WP-539 / D-24348). Each twist places a Dark
+ * Portal and raises attack: twist 1 above the Mastermind (+1 attack); twists 2-6
+ * in the leftmost portal-less city space (Villains there +1 attack); twist 7 is
+ * Evil Wins (handled by the config lossThreshold, not this resolver). The
+ * DARK_PORTAL_COUNT counter drives BOTH buffs — read at combat time by
+ * resolveFightCost (villains) and resolveMastermindFightCost (mastermind); this
+ * resolver only bumps the counter and logs the placement.
+ *
+ * @param gameState - The game state to mutate.
+ */
+function portals(
+  gameState: LegendaryGameState,
+  _context: RevealContext,
+  _implementationMap: ImplementationMap,
+  _params: Record<string, unknown>,
+  twistCardId?: CardExtId,
+): void {
+  const portalNumber = (gameState.counters[DARK_PORTAL_COUNT] ?? 0) + 1;
+  gameState.counters[DARK_PORTAL_COUNT] = portalNumber;
+
+  // why: twist 1 places the Dark Portal above the Mastermind; twists 2-6 fill the
+  // leftmost portal-less city space (leftmost = Bridge = index 4 first, per
+  // DESIGN-BOARD-LAYOUT.md §City row + WP-489/D-24295), so the space filled at
+  // portal N is index 6 - N (N=2 → Bridge/4 … N=6 → Sewers/0); twist 7 is the loss.
+  if (portalNumber === 1) {
+    pushLog(
+      gameState,
+      `[Portals to the Dark Dimension] A Dark Portal opens above the Mastermind — the Mastermind gets +1 attack.`,
+    );
+  } else if (portalNumber >= 2 && portalNumber <= 6) {
+    const citySpaceIndex = 6 - portalNumber;
+    // why: CITY_SPACE_NAMES are lowercase slugs; capitalize the first letter for the
+    // player-facing log ("in the Bridge").
+    const rawSpaceName = CITY_SPACE_NAMES[citySpaceIndex] ?? 'city space';
+    const spaceName = rawSpaceName.charAt(0).toUpperCase() + rawSpaceName.slice(1);
+    pushLog(
+      gameState,
+      `[Portals to the Dark Dimension] A Dark Portal opens in the ${spaceName} — Villains there get +1 attack.`,
+    );
+  } else {
+    pushLog(
+      gameState,
+      `[Portals to the Dark Dimension] The seventh Dark Portal tears open — the Dark Dimension breaks through.`,
+    );
+  }
+
+  const resolvedTwistCardId = twistCardId ?? UNKNOWN_TWIST_CARD_ID;
+  gameState.notableEvents.push({
+    type: 'schemeTwistResolved',
+    twistCardId: resolvedTwistCardId,
+    resolverKey: 'portals',
+    narrative: composeSchemeTwistNarrative(
+      resolveCardName(gameState, resolvedTwistCardId),
+      'portals',
+    ),
+  });
+}
+
 export const SCHEME_TWIST_RESOLVERS: Record<SchemeTwistResolverId, SchemeTwistResolver> = {
   'reveal-or-punish': revealOrPunish,
   'chained-reveals': chainedReveals,
@@ -694,4 +755,5 @@ export const SCHEME_TWIST_RESOLVERS: Record<SchemeTwistResolverId, SchemeTwistRe
   'midtown-bank-robbery': midtownBankRobbery,
   'killbots': killbots,
   'secret-invasion': secretInvasion,
+  'portals': portals,
 };

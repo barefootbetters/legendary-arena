@@ -86,7 +86,8 @@ export type SchemeTwistResolverKey =
   | 'koFromHq'
   | 'midtownBankRobbery'
   | 'killbots'
-  | 'secretInvasion';
+  | 'secretInvasion'
+  | 'portals';
 
 // why: drift-detection array — must match `SchemeTwistResolverKey` exactly.
 // The seven-entry canonical order tracks the resolver framework byte-for-byte.
@@ -103,6 +104,7 @@ export const SCHEME_TWIST_RESOLVER_KEYS: readonly SchemeTwistResolverKey[] = [
   'midtownBankRobbery',
   'killbots',
   'secretInvasion',
+  'portals',
 ] as const;
 
 // ---------------------------------------------------------------------------

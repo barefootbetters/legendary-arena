@@ -17,6 +17,9 @@
 import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState } from '../types.js';
 import { getAvailableAttack, spendAttack } from '../economy/economy.logic.js';
+// why: WP-539 / D-24348 — centralized mastermind fight requirement (base fightCost +
+// the Portals Dark-Portal mastermind bonus), so combat / UI / AI never disagree.
+import { resolveMastermindFightCost } from '../economy/economy.resolve.js';
 import { defeatTopTactic, areAllTacticsDefeated } from '../mastermind/mastermind.logic.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { composeMastermindDefeatedNarrative } from '../events/notableEvents.compose.js';
@@ -67,7 +70,7 @@ export function fightMastermind(
   // why: baseCardId is the canonical stats key; fightCost is the fight
   // requirement field per WP-018 D-1805; never use G.mastermind.id or
   // any tactic card ID for stat lookup
-  const requiredFightCost = G.cardStats[G.mastermind.baseCardId]?.fightCost ?? 0;
+  const requiredFightCost = resolveMastermindFightCost(G);
   const availableAttack = getAvailableAttack(G.turnEconomy);
 
   // why: silent failure preserves deterministic move contract —
