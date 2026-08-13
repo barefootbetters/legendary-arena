@@ -2055,18 +2055,29 @@ export function buildCopyPowersTargets(
     return [];
   }
   const targets: CardExtId[] = [];
-  const seen = new Set<CardExtId>();
+  const seenBaseIds = new Set<string>();
   for (const playedCardId of playerZones.inPlay) {
     const candidate = playedCardId as CardExtId;
-    if (candidate === COPY_POWERS_EXT_ID) {
+    // why: zones store INSTANCE ids (`<base>#<copyIndex>`, e.g. core/rogue/copy-powers#0),
+    // never the bare base — so strip the `#N` suffix to a base id for BOTH the copy-of-copy
+    // exclusion and the dedup. Without the strip the exclusion (bare COPY_POWERS_EXT_ID)
+    // never matched a real instance id, so Copy Powers counted ITSELF as an eligible target
+    // → the 1-eligible auto path re-fired executeHeroEffects on Copy Powers → unbounded
+    // recursion → stack overflow → the server crash Jeff saw as a ~30s "connection lost —
+    // reconnecting" whenever Copy Powers was the only Hero in play. The trait lookup below
+    // keeps the full instance id (cardTraits is instance-keyed); only exclusion + dedup use
+    // the base, and two instances of one Hero collapse to a single choice.
+    const hashIndex = candidate.indexOf('#');
+    const baseCandidate = hashIndex === -1 ? candidate : candidate.slice(0, hashIndex);
+    if (baseCandidate === COPY_POWERS_EXT_ID) {
       continue;
     }
-    if (seen.has(candidate)) {
+    if (seenBaseIds.has(baseCandidate)) {
       continue;
     }
     const traitEntry = G.cardTraits[candidate];
     if (traitEntry !== undefined && typeof traitEntry.heroClass === 'string' && traitEntry.heroClass.length > 0) {
-      seen.add(candidate);
+      seenBaseIds.add(baseCandidate);
       targets.push(candidate);
     }
   }
