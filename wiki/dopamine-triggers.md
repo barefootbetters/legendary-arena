@@ -19,6 +19,7 @@ related:
   - vision.md
   - monetization-model.md
   - gameplay-strategy.md
+  - par-simulation-calibration.md
 status: draft
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\dopamine-triggers.md (this page — https://ewiki.legendary-arena.com/dopamine-triggers/)
@@ -28,10 +29,39 @@ source:
   - ../packages/game-engine/src/endgame/endgame.types.ts
   - ../docs/ai/ARCHITECTURE.md
   - ../docs/01-VISION.md
-last-reviewed: 2026-07-29
+  - Design session 2026-08-13 — the "powerless to protector" north star, the "power reveals character" pillar, and the card-counting / anticipation coaching layer
+last-reviewed: 2026-08-13
 ---
 
 # Dopamine Trigger Framework
+
+## The heart — powerless to protector {#the-heart}
+
+Before any mechanic or metric, the feeling. Legendary Arena's reward loop
+exists to deliver one arc: **the scrawny kid with a big heart who couldn't
+protect his friends, gets the strength, and becomes the protector.** Steve
+Rogers before and after the serum — the underdog who rises and shields the
+people he loves from the bullies. Every cascade, every tension spike, every
+combo crescendo on this page is in service of that single transformation:
+*powerless to heroic, and the purpose of protecting others.*
+
+That makes the heart this page's **design filter.** Before tuning a knob or
+adding an effect, ask: *does this serve the scrawny-kid-to-hero feeling, or is
+it just noise?* If it doesn't move a player closer to feeling the
+transformation, it doesn't belong — however much dopamine it would technically
+produce. This is the felt core the [Vision](vision.md)'s *good-versus-evil
+power fantasy / heroic momentum* names (VISION §The Fantasy, D-24235); the
+reward psychology below is how the feel layer delivers it.
+
+**The second pillar — power reveals character; it does not create it.** The
+same serum, the same fame, the same strength hand two different hearts two
+different destinies: do you use the power to dominate, or to protect? Legendary
+Arena maps that fork onto real mechanics rather than leaving it as theme — the
+home-run hitter versus the team player, conquest versus rescue. That is the
+[builder / destroyer lens](narrative-psychology.md#playstyle-modes): the
+identical trigger spine, re-coloured by which heart the player brings to it.
+The reward framework serves *both* — the point is that the game reveals the
+choice, and celebrates whichever one the player authors.
 
 ## Summary
 
@@ -305,6 +335,50 @@ Arena is the kind the
 player *earns* through [Rank 0–2 decisions](gameplay-strategy.md) —
 construction, play order, and Mastermind timing — which supports flow and
 mastery, not compulsion.
+
+### Card counting — the honest skill beneath the luck {#card-counting}
+
+Variable ratio explains why *not knowing* is compelling; this is its skilled
+counterpart — **narrowing** what you don't know. It is the legitimate cousin of
+luck: a poker player can't see the next card, but by tracking what has already
+been played they can play the odds. Card counting is not clairvoyance; it is
+*tracking probabilities from known information* — and it is a genuine skill, the
+one that separates a thoughtful player from a button-masher.
+
+Legendary Arena is built for it because **the deck composition is known.** A
+hero contributes a fixed set of 14 cards, with fixed counts of each. So a sharp
+player reasons exactly the way a card-counter does: *the rare five-cost hasn't
+surfaced yet, this many cards are left, so it is statistically due — therefore I
+should bank recruit power now, so I can grab it the moment it appears in the
+[HQ](gameplay-strategy.md#rank-1).* That is not luck. That is preparation
+meeting probability — the deepest expression of "reward the skill, not the luck."
+
+This adds a dimension the reward loop can coach **honestly.** Call it
+**anticipation:** did the player keep recruit capacity in reserve when a
+high-value card was statistically likely to appear? The omniscient
+[PAR simulation](par-simulation-calibration.md) knows the card was literally
+next in the deck — but even without revealing that, it can coach from what the
+player *could already see:* "based on what had already been played, that rare
+was probably coming, and you were tapped out when it arrived." No hidden
+information is exposed; the lesson is only how to reason from the visible board.
+That honesty is the point — this teaches a real skill rather than spoiling the
+draw.
+
+**Four coachable layers** then stack into a genuinely deep analytical game —
+chess-and-poker deep:
+
+| Layer | The skill | Graded against |
+|---|---|---|
+| **Sequencing** | Play order within a turn — firing the chain in the right order | The [Rank 1](gameplay-strategy.md#rank-1) optimal line |
+| **Acquisition** | *What* to recruit, and *when* | Class focus + [thinning](gameplay-strategy.md#deck-thinning) value |
+| **Anticipation** | Tracking the known deck; banking capacity for the statistically-due card | The probability the player could infer from visible play |
+| **Efficiency** | The whole turn measured against the optimal line | [PAR](par-simulation-calibration.md) — the machine performance of the same decisions |
+
+Anticipation is the newest of the four and the most poker-like: it rewards a
+player for reasoning from public information, never from a rigged tease or a
+peek at hidden state — the same bright line the [variable-ratio guard](#variable-ratio)
+draws. Like the rest of this framework it serves mastery and flow, not
+compulsion.
 
 ### Flow channel dynamics {#flow-channel}
 
@@ -734,3 +808,16 @@ Out of scope for v1:
 - Companion feel-layer pages: [Design System Overview](design-system-overview.md),
   [Visual Effects](visual-effects.md), [Sound Effects](sound-effects.md),
   [Narrative Psychology](narrative-psychology.md)
+- [Vision](vision.md) §The Fantasy (emotional identity), D-24235 — the
+  good-versus-evil power fantasy / "heroic momentum" the
+  [powerless-to-protector heart](#the-heart) makes felt
+- [Gameplay Strategy](gameplay-strategy.md) and
+  [PAR Simulation Calibration](par-simulation-calibration.md) — the Rank 0–2
+  decision hierarchy and its machine performance, i.e. the skill the
+  [card-counting / anticipation layer](#card-counting) coaches against
+- Card counting as probability-tracking from public information (the poker
+  skill the [anticipation layer](#card-counting) is modelled on) — a
+  known-composition analogue, not hidden-information disclosure
+- Design session 2026-08-13 — origin of the
+  [powerless-to-protector heart](#the-heart), the "power reveals character"
+  pillar, and the [card-counting / anticipation](#card-counting) coaching layer
