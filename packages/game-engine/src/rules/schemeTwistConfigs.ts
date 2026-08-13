@@ -4,12 +4,13 @@
  * Maps scheme ext_ids to their SchemeTwistConfig entries. The dispatcher
  * looks up the active scheme's config to route to the correct resolver.
  *
- * Core-set coverage (v1): 7 of 8 schemes configured. The one remaining is:
- * - core/portals-to-the-dark-dimension (dark dimension pile) — a TRUE twist-loss
- *   scheme whose printed loss-twist is 7, which equals the unconfigured MVP
- *   fallback, so it loses at the right count today even without a config entry.
+ * Core-set coverage: all 8 core schemes configured. Portals to the Dark Dimension
+ * (WP-539 / D-24348) is a TRUE twist-loss scheme (printed "Twist 7: Evil Wins!") —
+ * its `portals` resolver bumps DARK_PORTAL_COUNT, which drives the Dark-Portal
+ * attack buffs (mastermind +1; Villains +1 in a portal'd city space); before this
+ * entry it lost at twist 7 only by coincidence (the MVP fallback equals 7).
  * Killbots (WP-513 / D-24325) and Secret Invasion (WP-514 / D-24327) are the two
- * conversion schemes, now configured with their escaped-converted-count losses.
+ * conversion schemes, configured with their escaped-converted-count losses.
  *
  * why (D-24178): each config's lossThreshold is the scheme's PRINTED twist-stack
  * size, so no scheme resolves a twist early. Only twist-loss schemes (printed
@@ -166,6 +167,21 @@ export const SCHEME_TWIST_CONFIGS: Map<string, SchemeTwistConfig> = new Map([
         origin: 'skrull',
         threshold: 6,
       },
+    },
+  ],
+  [
+    'core/portals-to-the-dark-dimension',
+    {
+      schemeId: 'core/portals-to-the-dark-dimension',
+      resolverId: 'portals',
+      params: {},
+      // why: TRUE twist-loss scheme — printed "Twist 7: Evil Wins!" (D-24178 /
+      // D-24348). No resourceLossCondition, so the twist-count IS the printed loss.
+      // Portals was previously UNCONFIGURED and lost at twist 7 only by coincidence
+      // (the MVP fallback threshold equals 7); this entry makes it correct-by-design.
+      // The `portals` resolver bumps DARK_PORTAL_COUNT, which drives the Dark-Portal
+      // attack buffs (mastermind +1 once >= 1; a Villain +1 in a portal'd city space).
+      lossThreshold: 7,
     },
   ],
 ]);
