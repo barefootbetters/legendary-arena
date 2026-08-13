@@ -41,6 +41,17 @@ other copy card) is a related follow-up, OUT of scope. Standard two-session lane
 (`EC-570:` + `SPEC:`). `User-Visible Surface = play.legendary-arena.com` — **D-24026 live-verify
 operator-pending**.
 
+**Fix-forward (2026-08-12, post-merge):** Jeff's live Secret Invasion game surfaced Copy Powers
+logging `[blocked] a play condition … was not met`. Root cause: the mid-sentence descriptive
+`[hc:covert]` in the card text ("This card is both covert and the color you copy") was being
+parsed as a `heroClassMatch: covert` **play condition**, gating the copy behind covert synergy.
+Fixed in `heroAbility.setup.ts` — a copy-powers line's `[hc:X]` is now suppressed at Step 1a
+(mirroring the size-changing exclusion), so the copy always fires. Added a real-card-data
+`buildHeroAbilityHooks` regression test (the hand-built-hook unit tests set no conditions and
+missed it); regenerated the ledger / effect-index / card-mechanics / runtime-observed feeds.
+Engine **2522 / 0**. (The original merged build was never wrong at runtime for un-gated copies,
+but any covert-less turn would have blocked the copy after deploy.)
+
 ### WP-534 — Preferences Foundation for the Registry Viewer — DONE (2026-08-12)
 
 Resurrected and landed the never-merged **WP-068** preferences foundation for `apps/registry-viewer`.

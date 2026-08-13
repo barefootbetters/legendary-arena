@@ -36465,6 +36465,22 @@ _Active — landed at WP-534 execution (EC-569). Hard-dep: none._
 
 **Surface.** New pending type `PendingCopyPowersChoice` + `G.pendingCopyPowersChoices` FIFO; new move `resolveCopyPowersChoice` (`client: false`, not in `CORE_MOVE_NAMES`; move count 28 → 29); `HERO_EFFECT_HANDLERS` 20 → 21; `HERO_KEYWORDS` 34 → 35. **Steal Abilities** (Rogue's other copy card) is a related follow-up, OUT of scope. `User-Visible Surface = play.legendary-arena.com` — **D-24026 live-verify operator-pending**.
 
-_Active 2026-08-12 — landed at WP-535 execution (EC-570). Move count 28→29 (`resolveCopyPowersChoice`, not a CORE_MOVE_NAME); `HERO_EFFECT_HANDLERS` 20→21; `HERO_KEYWORDS` 34→35. No new hashed-oracle re-pin (the new `pendingCopyPowersChoices` field is lazily created / undefined by default → `finalStateHash`/`PRE_WP080_HASH` byte-identical; the dual-class reuses the existing lazy `cardSizeChangingClasses` map). Hard-deps: WP-532/D-24343 (give-HQ-Hero pending-choice precedent) + WP-251/D-24022 (`HERO_EFFECT_HANDLERS`) + WP-290/D-24074 (size-changing dual-class map)._
+**Fix-forward (2026-08-12, post-merge, EC-570).** Copy Powers' card text carries a
+mid-sentence descriptive `[hc:covert]` ("This card is both `[hc:covert]` and the color you
+copy"). The ability parser's generic Step-1a `[hc:X]` extraction (`heroAbility.setup.ts`)
+turned it into a `heroClassMatch: covert` play **condition**, so the shipped hook gated the
+copy behind "another covert card played this turn" — Copy Powers fired only with covert
+synergy (surfaced from Jeff's live Secret Invasion game: `[blocked] a play condition … was
+not met` on the Copy Powers plays). Fix: a copy-powers line's `[hc:X]` is now **suppressed**
+at Step 1a (a new `lineHasCopyPowers` guard mirroring the D-24074 `lineHasSizeChanging`
+exclusion) — the token is the descriptive class the card *becomes*, not a gate; covert is
+already the printed `heroClass` (cardTraits) and the copied class is granted at runtime.
+Copy Powers now always offers the copy. Regression guard: a real-card-data
+`buildHeroAbilityHooks` test asserting the copy-powers hook carries **no** `heroClassMatch`
+condition (the hand-built-hook unit tests missed it because they set no conditions). The
+parser change reclassifies the copy-powers hook from condition-gated → executable, so the
+hero-mechanic-ledger / effect-index / card-mechanics / runtime-observed feeds regenerate.
+
+_Active 2026-08-12 — landed at WP-535 execution (EC-570). Move count 28→29 (`resolveCopyPowersChoice`, not a CORE_MOVE_NAME); `HERO_EFFECT_HANDLERS` 20→21; `HERO_KEYWORDS` 34→35. No new hashed-oracle re-pin (the new `pendingCopyPowersChoices` field is lazily created / undefined by default → `finalStateHash`/`PRE_WP080_HASH` byte-identical; the dual-class reuses the existing lazy `cardSizeChangingClasses` map). Hard-deps: WP-532/D-24343 (give-HQ-Hero pending-choice precedent) + WP-251/D-24022 (`HERO_EFFECT_HANDLERS`) + WP-290/D-24074 (size-changing dual-class map). Post-merge fix-forward (2026-08-12): the descriptive-`[hc:X]` parser exclusion above._
 
 Protect this file.
