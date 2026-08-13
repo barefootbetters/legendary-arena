@@ -395,6 +395,13 @@ const SPECTRUM_CLASS_THRESHOLD = 3;
 // (no lastIndex concern); case-insensitive to match the `[keyword:X]` lowercasing.
 const SIZE_CHANGING_MARKER_PATTERN = /\[keyword:size-changing\]/i;
 
+// why: WP-535 fix-forward — Rogue's Copy Powers text carries a MID-SENTENCE [hc:covert]
+// ("This card is both [hc:covert] and the color you copy") that describes the class the
+// card BECOMES, NOT a play gate. Like size-changing, a copy-powers line's [hc:X] must be
+// suppressed at Step 1a so no spurious heroClassMatch condition gates the copy behind
+// covert synergy. Non-global, stateless `.test`; case-insensitive.
+const COPY_POWERS_MARKER_PATTERN = /\[keyword:copy-powers\]/i;
+
 /**
  * Extracts structured hero ability metadata from a single ability text.
  *
@@ -428,6 +435,9 @@ function parseAbilityText(abilityText: string): {
   // tokens are the GRANTED classes, not heroClassMatch conditions. Computed once up front
   // so Step 1a routes every same-line [hc:...] to the grant list (guardrail #4: extract ALL).
   const lineHasSizeChanging = SIZE_CHANGING_MARKER_PATTERN.test(abilityText);
+  // why: WP-535 fix-forward — a copy-powers line's [hc:X] is the DESCRIPTIVE class the card
+  // gains, not a play gate; suppress its heroClassMatch condition (see Step 1a).
+  const lineHasCopyPowers = COPY_POWERS_MARKER_PATTERN.test(abilityText);
   const effects: HeroEffectDescriptor[] = [];
   // why: D-24031 — composition markers (Berserk) accumulate here as deep copies of their
   // registry AST, kept separate from `keywords`/`effects` (the open mechanic space).
@@ -459,6 +469,13 @@ function parseAbilityText(abilityText: string): {
       // [keyword:Size-Changing] token itself is a recognized HeroKeyword (Step 2), so no
       // unresolved marker is recorded either.
       sizeChangingClasses.push(normalizedClass);
+    } else if (lineHasCopyPowers) {
+      // why: WP-535 fix-forward — on a copy-powers line the [hc:X] is the DESCRIPTIVE class
+      // ("This card is both [hc:covert] and the color you copy"), NOT a play gate. Covert is
+      // already the card's printed heroClass (cardTraits), and the copied class is granted at
+      // runtime by heroEffectCopyPowers → cardSizeChangingClasses; emit NO heroClassMatch
+      // condition so the copy always fires (mirrors the size-changing exclusion above). Not
+      // pushed to the grant list either — covert is already printed, so a grant is redundant.
     } else {
       heroClassConditions.push({
         type: 'heroClassMatch',

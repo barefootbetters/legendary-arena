@@ -386,3 +386,35 @@ describe('buildHeroAbilityHooks — gain-wound-self / gain-wound-each (WP-364 / 
     assert.ok(!allUnresolved.includes('gain-wound-each'), 'gain-wound-each is resolved, not an unresolved marker');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Copy Powers — the descriptive [hc:covert] is NOT a play gate (WP-535 fix-forward)
+// ---------------------------------------------------------------------------
+
+describe('buildHeroAbilityHooks — copy-powers descriptive [hc:X] is not a condition', () => {
+  // why: Rogue's Copy Powers text carries a MID-SENTENCE [hc:covert] ("This card is both
+  // [hc:covert] and the color you copy") that describes what the card BECOMES, not a play
+  // gate. The generic Step-1a [hc:X] extraction would wrongly emit a heroClassMatch:covert
+  // condition, gating the copy behind "another covert card played this turn" — the live bug
+  // observed in Jeff's Secret Invasion game. On a copy-powers line the [hc:X] must be
+  // suppressed (mirroring the size-changing exclusion), so the copy always fires.
+  const COPY_POWERS_ABILITY =
+    'Play this card as a copy of another Hero you played this turn. This card is both [hc:covert] and the color you copy. [keyword:copy-powers]';
+
+  it('builds the copy-powers hook with NO heroClassMatch condition', () => {
+    const registry = makeRegistry('core', 'rogue', [
+      { slug: 'copy-powers', abilities: [COPY_POWERS_ABILITY] },
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('core/rogue'));
+    const copyHook = hooks.find((hook) => (hook.keywords ?? []).includes('copy-powers'));
+    assert.ok(copyHook !== undefined, 'the copy-powers hook is built');
+    const classConditions = (copyHook!.conditions ?? []).filter(
+      (condition) => condition.type === 'heroClassMatch',
+    );
+    assert.equal(
+      classConditions.length,
+      0,
+      'Copy Powers must not be gated by a hero-class condition — the [hc:covert] in its text is descriptive, not a play gate',
+    );
+  });
+});
