@@ -17,6 +17,18 @@ Added a `DARK_PORTAL_COUNT` counter + a `portals` resolver (twist 1 → Dark Por
 
 ---
 
+### WP-536 — Set Filter on the Debug Effects Viewer (`/debug/effects`) — DONE (2026-08-13)
+
+Added a **Set** dropdown to the WP-487 Effect Implementation Index viewer (`/debug/effects`) so an operator can scope the whole-game effect worklist to a single card set — the enabling step for driving **Core-set completion** off one filtered board (`set = core` + `status = unmarked|unsupported` renders the exact per-card Core hollow worklist). Pure additive UI over the CI-gated `effect-implementation-index.json` the page already reads: no engine / registry / server touch, no new import, no new dependency, no new D (applies D-24292).
+
+`useEffectIndex.ts` gains `SetFilter = string | 'all'` — a deliberately **OPEN** union (sets are registered card data, not a closed drift-tested engine vocabulary like `ScopeFilter`/`StatusFilter`; so **no** `SET_NAMES` array and **no** drift test) — a `set: SetFilter` field on `EffectIndexFilter`, one AND-guard on `filterEntries` mirroring the scope/status guards verbatim, and a data-driven `listSets(entries)` (distinct sets via `for...of` into a `Set`, then `.sort()`; no folding accumulator). `EffectsPage.vue` gains a `setFilter` ref (default `'all'` — the page renders identically until a set is picked), a `<select>` populated from `listSets(entries.value)` with a leading **All sets** option, and threads `set` into the existing `filterEntries` call. The WP/EC referenced a `DEFAULT_FILTER` object to extend; none exists in the codebase (inline refs on the page, a local `NO_FILTER` const in the test), so the `'all'` default is carried by the `setFilter` ref / `NO_FILTER` — the interface still gains the required `set` field. `/coverage` (hero-only board) stays out of scope.
+
+`apps/dashboard` only, 3 modified files (Lightweight Lane). Scaffold OBSERVED (dashboard `test:coverage` green, `useEffectIndex.ts` 100/100/100, all-files 99.44/90.72/94.99 vs thresholds 90/80/88, the 5 new set-filter + `listSets` cases pass). Dashboard `test` 447/0 + `build` green; `pnpm -r build` + `pnpm -r --no-bail test` exit 0; no file outside `apps/dashboard` (+ governance) touched, no `package.json`/`pnpm-lock.yaml` change. Two-commit topology `EC-571:` + `SPEC:`, one PR. §17 (read-only projection; determinism-preserving). §20 N/A. §21 N/A.
+
+**User-Visible Surface = dashboard `/debug/effects`** — the Set dropdown narrows the row table to one card set and composes with the existing Scope / Status / has-handler / search filters (logical AND). The local dashboard dev server sits behind the auth gate (sign-in unavailable in a worktree without an auth backend), so the visual narrow is confirmed via the deployed dashboard. D-24026 live-verification **operator-pending** (open the deployed `/debug/effects`, pick `Set = core`, confirm the table narrows and composes with `Status = unmarked`; `All sets` restores the full table).
+
+---
+
 ### WP-538 — Core Dr. Doom Master Strike (6-card gate + reveal-[hc:tech]-or-interactive-put-2-on-top) — DONE (2026-08-13)
 
 Implemented core Dr. Doom's Master Strike — *"Each player with exactly 6 cards in hand reveals a `[hc:tech]` Hero or puts 2 cards from their hand on top of their deck."* `core/dr-doom` previously took no branch in `mastermindStrikeHandler`; the Strike was inert (the second of the two hollow Core Master Strikes from the 2026-08-13 audit; Loki was WP-537).

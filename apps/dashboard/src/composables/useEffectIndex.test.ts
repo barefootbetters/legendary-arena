@@ -4,6 +4,7 @@ import {
   scopeLabel,
   statusLabel,
   filterEntries,
+  listSets,
   useEffectIndex,
   type EffectIndexFilter,
 } from './useEffectIndex.js';
@@ -62,6 +63,7 @@ const NO_FILTER: EffectIndexFilter = {
   scope: 'all',
   status: 'all',
   handlerOnly: false,
+  set: 'all',
 };
 
 test('scopeLabel covers every scope and throws on an unknown one', () => {
@@ -122,6 +124,49 @@ test('filterEntries handlerOnly keeps only entries with a non-empty handler', ()
   const result = filterEntries(entries, { ...NO_FILTER, handlerOnly: true });
   assert.equal(result.length, 1);
   assert.equal(result[0]?.extId, 'a');
+});
+
+test('filterEntries narrows by set (WP-536)', () => {
+  const entries = [
+    makeEntry({ extId: 'core/hulk', set: 'core' }),
+    makeEntry({ extId: 'co2e/nova', set: 'co2e' }),
+  ];
+  const result = filterEntries(entries, { ...NO_FILTER, set: 'core' });
+  assert.equal(result.length, 1);
+  assert.equal(result[0]?.set, 'core');
+});
+
+test('filterEntries set "all" is a no-op (WP-536)', () => {
+  const entries = [
+    makeEntry({ extId: 'core/hulk', set: 'core' }),
+    makeEntry({ extId: 'co2e/nova', set: 'co2e' }),
+  ];
+  assert.equal(filterEntries(entries, { ...NO_FILTER, set: 'all' }).length, 2);
+});
+
+test('filterEntries composes set with status as a logical AND (WP-536)', () => {
+  const entries = [
+    makeEntry({ extId: 'core/hulk', set: 'core', status: 'unmarked' }),
+    makeEntry({ extId: 'core/thor', set: 'core', status: 'executable' }),
+    makeEntry({ extId: 'co2e/nova', set: 'co2e', status: 'unmarked' }),
+  ];
+  const result = filterEntries(entries, { ...NO_FILTER, set: 'core', status: 'unmarked' });
+  assert.equal(result.length, 1);
+  assert.equal(result[0]?.extId, 'core/hulk');
+});
+
+test('listSets returns the distinct sets present, sorted ascending (WP-536)', () => {
+  const entries = [
+    makeEntry({ extId: 'co2e/nova', set: 'co2e' }),
+    makeEntry({ extId: 'core/hulk', set: 'core' }),
+    makeEntry({ extId: 'core/thor', set: 'core' }),
+    makeEntry({ extId: '2099/spider-man', set: '2099' }),
+  ];
+  assert.deepEqual(listSets(entries), ['2099', 'co2e', 'core']);
+});
+
+test('listSets returns an empty list for empty entries (WP-536)', () => {
+  assert.deepEqual(listSets([]), []);
 });
 
 test('filterEntries matches search over extId and name, case-insensitively', () => {
