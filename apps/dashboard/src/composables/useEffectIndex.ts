@@ -20,6 +20,12 @@ import {
 export type ScopeFilter = EffectIndexEntryScope | 'all';
 /** The status filter value: a concrete status or the "all" sentinel. */
 export type StatusFilter = EffectIndexStatus | 'all';
+/** The set filter value: any registered card-set string, or the "all" sentinel. */
+// why: SetFilter is an OPEN union (`string | 'all'`), deliberately unlike the closed
+// `ScopeFilter`/`StatusFilter` above. A card set is registered card DATA, not a closed
+// drift-tested engine vocabulary — new sets appear in the generated index without a code
+// change — so there is intentionally no `SET_NAMES` canonical array and no drift test.
+export type SetFilter = string | 'all';
 
 /** The empty-index fallback rendered when the bundle fails to validate. */
 const EMPTY_INDEX: EffectImplementationIndex = {
@@ -92,6 +98,8 @@ export interface EffectIndexFilter {
   status: StatusFilter;
   /** When true, keep only entries whose `handler` is non-empty (a handler ran). */
   handlerOnly: boolean;
+  /** Restrict to one card set (e.g. "core"), or "all". */
+  set: SetFilter;
 }
 
 /**
@@ -116,6 +124,9 @@ export function filterEntries(
     if (filter.status !== 'all' && entry.status !== filter.status) {
       continue;
     }
+    if (filter.set !== 'all' && entry.set !== filter.set) {
+      continue;
+    }
     if (filter.handlerOnly && entry.handler === '') {
       continue;
     }
@@ -132,6 +143,26 @@ export function filterEntries(
     result.push(entry);
   }
   return result;
+}
+
+/**
+ * Lists the distinct card sets present in the loaded index, de-duplicated and sorted
+ * ascending, for the Set-filter dropdown options.
+ *
+ * why: the options are derived from the loaded index at runtime rather than a static set
+ * list, so a newly-registered card set surfaces in the dropdown automatically when the
+ * regenerated index carries it — no code change. Accumulates with `for...of` into a `Set`
+ * rather than a folding accumulator (this codebase bars that style in zone/effect operations).
+ *
+ * @param entries - the index entries (rendered verbatim).
+ * @returns the distinct `set` values present, de-duplicated and sorted ascending.
+ */
+export function listSets(entries: readonly EffectImplementationEntry[]): readonly string[] {
+  const sets = new Set<string>();
+  for (const entry of entries) {
+    sets.add(entry.set);
+  }
+  return [...sets].sort();
 }
 
 /** Options for `useEffectIndex`. */

@@ -3,10 +3,12 @@ import { computed, ref } from 'vue';
 import {
   useEffectIndex,
   filterEntries,
+  listSets,
   scopeLabel,
   statusLabel,
   type ScopeFilter,
   type StatusFilter,
+  type SetFilter,
 } from '../../composables/useEffectIndex.js';
 import type { EffectDesign, EffectIndexStatus } from '@legendary-arena/registry/schema';
 
@@ -30,6 +32,12 @@ const search = ref('');
 const scopeFilter = ref<ScopeFilter>('all');
 const statusFilter = ref<StatusFilter>('all');
 const handlerOnly = ref(false);
+const setFilter = ref<SetFilter>('all');
+
+// why: the Set dropdown options are derived from the loaded index at runtime, not a
+// hardcoded set list, so a newly-registered card set appears automatically when the
+// regenerated index carries it — no code change.
+const setOptions = computed(() => listSets(entries.value));
 
 const filteredEntries = computed(() =>
   filterEntries(entries.value, {
@@ -37,6 +45,7 @@ const filteredEntries = computed(() =>
     scope: scopeFilter.value,
     status: statusFilter.value,
     handlerOnly: handlerOnly.value,
+    set: setFilter.value,
   }),
 );
 
@@ -127,6 +136,15 @@ function designLabel(designs: readonly EffectDesign[] | undefined): string {
               {{ filter === 'all' ? 'All' : statusLabel(filter) }}
             </button>
           </div>
+        </div>
+        <div class="filter-group">
+          <span class="filter-label">Set</span>
+          <select v-model="setFilter" class="set-select">
+            <option value="all">All sets</option>
+            <option v-for="setName in setOptions" :key="setName" :value="setName">
+              {{ setName }}
+            </option>
+          </select>
         </div>
         <button
           type="button"
@@ -342,6 +360,16 @@ function designLabel(designs: readonly EffectDesign[] | undefined): string {
   background: var(--p-primary-color);
   color: var(--p-primary-contrast-color);
   border-color: var(--p-primary-color);
+}
+
+.set-select {
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 4px;
+  background: var(--p-content-background);
+  color: var(--p-text-color);
+  font-size: 0.78rem;
+  cursor: pointer;
 }
 
 .search-input {
