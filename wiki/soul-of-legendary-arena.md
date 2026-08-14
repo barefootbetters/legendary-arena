@@ -292,13 +292,15 @@ competing ones.
   ships new sets, new mechanics, and new content constantly. The soul
   governs *how* new material relates to old (added alongside, never
   rewriting it), not *whether* new material ships.
-- **The examples are illustrative, not authoritative.** Star Wars, the
-  comics retcon habit, *Despicable Me*, and Captain America are cultural
-  touchstones used to name a pattern; reasonable people read any single
-  film or run differently, and the argument depends only on recognizing the
-  shape, not on agreeing about one work. The scriptural example is cited to
-  the text (1 Kings 12) and used as a narrative analogy for the
-  mentor-and-inheritance theme — not as a doctrinal claim.
+- **The examples are illustrative.** Star Wars, the comics retcon habit,
+  *Despicable Me*, and Captain America are cultural touchstones for the
+  pattern — reasonable people read any single film or run differently, and
+  the argument turns on the shape, not on one work. They are not leveled
+  with the scriptural account, which is the oldest of them and the source of
+  the "honour thy father and thy mother" commandment and the heed-the-elders
+  principle the whole page rests on; it is cited to the text (1 Kings 12,
+  KJV; parallel 2 Chronicles 10) and carries its own weight, not merely
+  analogical weight.
 - **IP boundary.** This page discusses *theme and framing* of licensed
   characters, not reproduction of copyrighted text. Faithful card
   reproduction is governed by the license ([IP Licensing](ip-licensing.md)),
@@ -337,5 +339,6 @@ competing ones.
 - [Monetization Model](monetization-model.md) — the commercial case for
   lineage as a loyalty and content moat
 - [SCHEMA.md](SCHEMA.md) — the wiki-page contract this page conforms to
-- 1 Kings 12 (KJV) — Rehoboam rejects the elders' counsel and the kingdom
-  divides (parallel account: 2 Chronicles 10). Cited as a narrative analogy.
+- 1 Kings 12 (KJV; parallel 2 Chronicles 10) — Rehoboam rejects the elders'
+  counsel and the kingdom divides; the root of the honour-thy-father theme
+  this page draws on.
