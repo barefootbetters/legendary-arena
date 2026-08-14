@@ -339,7 +339,7 @@
     "core": {
       "doombot-legion": { "fight": ["scry-ko-own-deck"] },
       "hand-ninjas": { "fight": ["gain-recruit-current:1"] },
-      "savage-land-mutates": { "fight": ["override-next-hand-size:7"] },
+      "savage-land-mutates": { "fight": ["add-next-hand-size:1"] },
       "sentinel": { "fight": ["koHeroCurrentPlayer"] }
     },
     "cvwr": {

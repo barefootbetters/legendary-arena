@@ -145,6 +145,9 @@ function isLockedEffectKeyword(keyword) {
 // by WP-541 (D-24350 — Hand Ninjas "+1 recruit" + HYDRA Kidnappers "gain a S.H.I.E.L.D.
 // Officer"; gain-recruit-current validates via its own `:<N>` branch below, gain-officer-current
 // via the terminal no-param `parts.length === 1` branch).
+// `add-next-hand-size` (`:<N>`) appended by WP-543 (D-24352 — Savage Land Mutates "draw an
+// extra card"; the ADDITIVE sibling of override-next-hand-size, validates via its own `:<N>`
+// branch below).
 const VILLAIN_EFFECT_PRIMITIVES = [
   'ko-hero',
   'gain-wound',
@@ -168,6 +171,7 @@ const VILLAIN_EFFECT_PRIMITIVES = [
   'give-hq-hero-each-player',
   'gain-recruit-current',
   'gain-officer-current',
+  'add-next-hand-size',
 ];
 
 // why: WP-489 / D-24295 — hand-synced local copy of the engine's CITY_SPACE_NAMES
@@ -272,6 +276,13 @@ function isValidParameterizedEffectToken(token) {
     // why: D-24307 — grammar override-next-hand-size:<N> (exactly 2 tokens); N is
     // the absolute next-hand target size (Doc Ock: 8). Mirrors the engine parser's
     // parsePositiveInteger branch so producer + consumer agree on the grammar.
+    return parts.length === 2 && /^[1-9][0-9]*$/.test(parts[1]);
+  }
+  if (primitive === 'add-next-hand-size') {
+    // why: D-24352 — grammar add-next-hand-size:<N> (exactly 2 tokens); N is the number
+    // of EXTRA cards added to the next-hand target (Savage Land Mutates: 1). Same strict
+    // positive-integer grammar as override-next-hand-size; the additive-vs-absolute
+    // distinction is a handler concern, not a grammar one.
     return parts.length === 2 && /^[1-9][0-9]*$/.test(parts[1]);
   }
   if (
