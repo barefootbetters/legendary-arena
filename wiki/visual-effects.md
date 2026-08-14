@@ -36,7 +36,7 @@ source:
   - ../apps/arena-client/src/components/play/NotableEventOverlay.vue
   - ../apps/arena-client/src/pages/PlayViewport.vue
   - ../docs/ai/ARCHITECTURE.md
-last-reviewed: 2026-08-06
+last-reviewed: 2026-08-13
 ---
 
 # Visual Effects Framework
@@ -82,7 +82,7 @@ a new signal — the word, the burst, and the sting all fire off the same
 `lastPlayEffectsFired` change and peak together. This page owns *that a
 label renders, keyed to the locked tier*; the wording, the apex rung, and
 the announcer voice live on the
-[Narrative Psychology Framework → synergy call-outs](narrative-psychology.md#synergy-callouts).
+[Design System Overview → narrative meaning](design-system-overview.md#narrative-meaning).
 
 **How to read this page.** It separates three document types on purpose:
 the [VFX Trigger Contract](#vfx-trigger-contract) below is the **fixed
@@ -426,14 +426,16 @@ It is a **second renderer on the one locked signal**, not a new one: the
 label reads the same `UIState.game.lastPlayEffectsFired` through the same
 `comboTierForCount` (D-24228) the flash and the sting already share, so
 the word, the burst, and the combo cue all fire off the one scalar change
-and **peak together**. The naming, the announcer persona, and the meaning
-rationale live on the
-[Narrative Psychology Framework → synergy call-outs](narrative-psychology.md#synergy-callouts)
-(which carries an [animated mock of the escalating ladder](narrative-psychology.md#synergy-callouts));
-this page owns only *that a label renders, keyed to the locked tier.*
+and **peak together**. The naming and the meaning rationale live on the
+[Design System Overview → narrative meaning](design-system-overview.md#narrative-meaning),
+and the announcer voice on [Sound Effects](sound-effects.md#arena-announcer)
+(the [animated mock of the escalating ladder](#synergy-callout) is shown in
+this section, below); this page owns only *that a label renders, keyed to the
+locked tier.*
 
 The proposed default ladder — the tier column is the locked contract; the
-words are a naming proposal owned by the narrative page:
+words are a naming proposal (the deeper rationale is on the
+[narrative-meaning reference](design-system-overview.md#narrative-meaning)):
 
 | `lastPlayEffectsFired` | Tier (`comboTierForCount`) | Call-out (proposal) | Feel |
 |---|---|---|---|
@@ -442,6 +444,10 @@ words are a naming proposal owned by the narrative page:
 | `2` | `medium` | **Team-Up!** | "oh — it *linked*" |
 | `3–4` | `big` | **Unstoppable!** | "I *built* this" |
 | `>= 5` | `legendary` | **LEGENDARY!** | the rare, brag-worthy crescendo |
+
+![Animated mock of the synergy call-out ladder: the words Combo!, then Team-Up!, then Unstoppable!, then a gold glowing LEGENDARY! each pop on-screen in turn as a hero-ability chain grows, then the sequence loops.](/visual-effects/synergy-callout-ladder.svg "width=62%")
+
+*Illustrative proposal mock of the heroic ladder escalating with the chain — a CSS-only animated SVG (no JavaScript, so it animates on the JS-free wiki) that loops and holds the apex **LEGENDARY!** as a static frame under `prefers-reduced-motion`. The word is the proposal; the tier boundaries are the locked [Combo Tier Contract](#combo-tier-contract). Alternates in the same register: Synergy!, Rally!, Blitz!, Crescendo! The deeper naming rationale lives on the [narrative-meaning reference](design-system-overview.md#narrative-meaning). Animation source: [synergy-callout.py](../ewiki/visual-effects/synergy-callout.py) — regenerate with `python synergy-callout.py`.*
 
 > **The apex rung is now a locked shared tier (WP-425 / D-24246).** *Candy
 > Crush*'s "Divine" is a fourth, rarer rung above the top cascade; the
@@ -458,21 +464,33 @@ words are a naming proposal owned by the narrative page:
 > former "combo-scaling-beyond-T3" open question; the apex label is where
 > that decision cashed out.
 
-**Faction battle cries (identity overlay).** The render is unchanged — a
-text label scaled by the combo tier — but the *words* can come from the
-**acting card's team / hero identity** instead of the generic ladder:
-**AVENGERS ASSEMBLE!** for an Avengers chain, **HULK SMASH!** when Hulk is
-the acting hero. The client already holds that identity (the same signal
-the [team motif](sound-effects.md#motif-cues) reads), so the overlay needs
-**no new engine field** — magnitude (the tier) drives presentation,
-identity drives the text, and the generic ladder is the fallback for any
-card without a cry. The phrase table, the character/team precedence, and
-the **IP / licensing gate** (these are verbatim, trademark-heavy Marvel
-catchphrases) all live on the
-[narrative page](narrative-psychology.md#faction-cries); the render just
-swaps the string. Faction cries work on the shipped tiers today — including
-the apex — and are independent of tier count; the gate on them is
-**licensing** (D-24259), not the engine.
+##### Faction battle cries — the identity overlay {#faction-cries}
+
+The render is unchanged — a text label scaled by the combo tier — but the *words* can come from the **acting card's team / hero identity** instead of the generic ladder: **AVENGERS ASSEMBLE!** for an Avengers chain, **HULK SMASH!** when Hulk is the acting hero. The client already holds that identity (the same signal the [team motif](sound-effects.md#motif-cues) reads), so the overlay needs **no new engine field** — **magnitude** (the combo tier, `comboTierForCount`) drives *presentation* (how big the flash, how loud the sting), and **identity** (the acting team/hero) drives the *words*. The two axes are orthogonal, so a cry rides whatever tier fires, from `small` up to the apex.
+
+**Precedence** (most specific wins; the generic ladder guarantees it is never silent):
+
+1. **Character cry** — the acting hero has a signature line of their own.
+2. **Team cry** — the acting card's team has one.
+3. **Generic ladder** — the [Combo! / Team-Up! / Unstoppable! / LEGENDARY!](#synergy-callout) fallback for any card whose team/hero has no signature cry yet.
+
+The seed set — the most universally recognizable Marvel cries:
+
+| Faction / hero | Battle cry | Granularity |
+|---|---|---|
+| Avengers | **Avengers Assemble!** | team |
+| X-Men | **To me, my X-Men!** | team |
+| Thing (Fantastic Four) | **It's Clobberin' Time!** | character |
+| Human Torch | **Flame On!** | character |
+| Hulk | **Hulk Smash!** | character |
+| Spider-Man | **With great power comes great responsibility** | character |
+| Thor | **For Asgard!** | character |
+| Namor | **Imperius Rex!** | character |
+| Luke Cage | **Sweet Christmas!** | character |
+
+The map is **extensible and sparse**: teams and heroes without a cry fall through to the generic ladder, so coverage grows one entry at a time without gaps. (Spider-Man's line is a full sentence, not a shout — at the `small`/`medium` tiers it likely needs a shortened on-screen form; a display-fit call flagged in [Decisions Pending](#decisions-pending).)
+
+> **These cries are licensing-gated — this *is* the IP pass, not a footnote.** Unlike the generic ladder (original superlatives), the battle cries are **verbatim, famous, and several are registered Marvel trademarks** ("Avengers Assemble," "It's Clobberin' Time," "Flame On," and "Hulk Smash" among them). Legendary Arena is a **licensed** Marvel product (royalties to Marvel and Upper Deck), so the cries live inside the same license as the characters — but *catchphrase* usage in on-screen text/VO can be scoped separately from card-likeness rights, so the seed set ships **only after the Marvel / Upper Deck license scope is confirmed to cover it.** The reconciliation framework plus the licensing gate is recorded as **D-24259**. The render is a no-op either way (same label, different string, no new engine field); the gate is **licensing**, not the engine. The voiced version of these cries is the [Arena Announcer](sound-effects.md#arena-announcer) on the audio side.
 
 **Rendering & accessibility.** The call-out is text, so it degrades
 better than any particle effect: under `prefers-reduced-motion` (or the
@@ -487,10 +505,10 @@ is unchanged) and, like every effect here, is absent from the determinism
 hash.
 
 Whether the label should announce at `small` (a single effect is arguably
-*not* a synergy — the [dopamine page](dopamine-triggers.md) reads `1` as
+*not* a synergy — the [reward-psychology reference](design-system-overview.md#reward-psychology) reads `1` as
 mere "that worked") or start at `medium` is a copy/restraint
 call flagged in [Decisions Pending](#decisions-pending); the
-[contrast-through-restraint pacing invariant](dopamine-triggers.md#dopamine-contract)
+[contrast-through-restraint pacing invariant](design-system-overview.md#pacing-invariants)
 argues for starting the *word* at `medium` even though the *flash* starts
 at `small`.
 
@@ -549,7 +567,7 @@ trigger semantics** — same events, same tier boundaries, same determinism
 posture. The builder-versus-destroyer "narrative lens" (some players want
 to *build* a rescued city; others want the villain power-fantasy of
 overrunning it) is the worked example, and its design rationale lives on
-the [Narrative Psychology Framework](narrative-psychology.md#playstyle-modes),
+the [Design System Overview → playstyle modes](design-system-overview.md#playstyle-modes),
 not here. It is explicitly **Tier 3 / out of scope for v1** (see
 [Priority tiers](#priority-tiers)); the v1 layer ships a single default
 theme.
@@ -655,12 +673,12 @@ priority order is fixed and non-negotiable:
   note (the signal now exists, D-24221 / D-24228). The
   [synergy call-out](#synergy-callout) label pairs with an optional
   **voiced Arena Announcer** (the *Candy Crush* Mr.-Toffee analog) on the
-  audio side — see the [announcer persona](narrative-psychology.md#arena-announcer).
-- **[Dopamine Trigger Framework](dopamine-triggers.md).** The *why and when*
+  audio side — see the [announcer persona](sound-effects.md#arena-announcer).
+- **[Design System Overview → reward psychology](design-system-overview.md#reward-psychology).** The *why and when*
   behind these effects; its
-  [visual–audio pairing table](dopamine-triggers.md#visual-audio-pairing) is
+  [visual–audio pairing table](design-system-overview.md#visual-audio-pairing) is
   the shared per-event signature this page and Sound Effects both implement,
-  and its [flow-channel map](dopamine-triggers.md#flow-channel) shows where
+  and its [flow-channel map](design-system-overview.md#flow-channel) shows where
   each moment sits across a match.
 - **[Master Strike](master-strike.md).** `mastermindStrikeResolved` is the
   highest-drama visual candidate — the Tier-1 screen-shake moment — and the
@@ -819,14 +837,14 @@ right owner.
 - **The synergy call-out label** — the named popup per tier
   ([synergy call-out](#synergy-callout)). Two open calls beyond the apex
   rung above: (a) does the word announce at `small` or start at `medium`
-  (the [contrast-through-restraint](dopamine-triggers.md#dopamine-contract)
+  (the [contrast-through-restraint](design-system-overview.md#pacing-invariants)
   question — the *flash* starts at `small` regardless); and (b) the
   label *wording* itself, which is owned by the
-  [narrative page](narrative-psychology.md#synergy-callouts) and gets an
+  [Design System Overview → narrative meaning](design-system-overview.md#narrative-meaning) and gets an
   IP pass with the rest of the narrative copy.
 - **Faction battle cries (identity overlay)** — swapping the generic word
   for the acting team/hero's signature shout
-  ([faction cries](narrative-psychology.md#faction-cries)). The render is a
+  ([faction cries](#faction-cries)). The render is a
   no-op (same label, different string, no new engine field); the open gate
   is **IP / licensing** — the cries are verbatim Marvel catchphrases, so
   the seed set ships only after the Marvel / Upper Deck license scope is
@@ -839,7 +857,7 @@ right owner.
 Explicitly out of scope for v1:
 
 - **Narrative-lens variants** (builder/destroyer re-theme) — Tier 3; design
-  rationale on the [Narrative Psychology Framework](narrative-psychology.md#playstyle-modes).
+  rationale on the [Design System Overview → playstyle modes](design-system-overview.md#playstyle-modes).
 - **Ambient menace layer** — a rising visual dread driven by
   `escapedVillains` / `scheme.twistCount` (the visual analog of the audio
   danger meter).
@@ -945,8 +963,8 @@ literally *looks* bigger.
 *T3 (`3–4`) — a full-screen ascending **flourish** + **Unstoppable!** — "I *built* this." The apex **`LEGENDARY!`** rung above it (`>= 5`) is the locked 4th tier (D-24246): WP-425 ships its audio sting; the visual finale follows — see the [call-out note](#synergy-callout).*
 
 *Source: [surface2-combo.py](../ewiki/visual-effects/surface2-combo.py). The
-words are the narrative page's proposal; the tier boundaries are the locked
-[Combo Tier Contract](#combo-tier-contract).*
+words are the [synergy call-out](#synergy-callout) naming proposal; the tier
+boundaries are the locked [Combo Tier Contract](#combo-tier-contract).*
 
 ### A.4 — Surface 3: action-move cues {#appendix-surface-3}
 
