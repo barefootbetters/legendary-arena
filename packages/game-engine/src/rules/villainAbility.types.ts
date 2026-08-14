@@ -259,6 +259,17 @@ export interface VillainEffectResult {
 // interactively (a new `pendingGiveHqHeroChoice` on the D-24284 current-parks /
 // others-auto split); every other player — and any bot/auto-driven player — auto-picks
 // the highest-cost HQ Hero (ties → rightmost). No-param; keyword-less, self-narrates.
+// why: D-24350 — `gain-recruit-current` (position 21) and `gain-officer-current`
+// (position 22): two auto-resolve Core villain/henchman Fight-REWARD primitives that
+// benefit the DEFEATING player (Hand Ninjas "Fight: You get +1 recruit." and HYDRA
+// Kidnappers "Fight: You may gain a S.H.I.E.L.D. Officer."). `gain-recruit-current`
+// adds `magnitude` (default 1, parsed from the `:N` token) to `G.turnEconomy.recruit`;
+// `gain-officer-current` moves one card from `G.piles.officers` to the current player's
+// discard (empty pile → logged no-op). HYDRA Kidnappers' beneficial "may" auto-takes (a
+// pure benefit with no downside, no interactive choice). Both mirror `draw-cards-current`
+// (keyword-less — no LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR entry, so they reverse-map to
+// `undefined` and self-narrate via pushLog). `gain-recruit-current` reuses the existing
+// `magnitude` field; `gain-officer-current` is no-param.
 export type VillainEffectPrimitive =
   | 'ko-hero'
   | 'gain-wound'
@@ -279,7 +290,9 @@ export type VillainEffectPrimitive =
   | 'capture-bystanders-plus-per-hq-hero-by-trait'
   | 'give-hq-hero-by-trait-to-current'
   | 'swap-two-city-villains'
-  | 'give-hq-hero-each-player';
+  | 'give-hq-hero-each-player'
+  | 'gain-recruit-current'
+  | 'gain-officer-current';
 
 // why: drift-detection array — must match VillainEffectPrimitive exactly
 // (villainAbility.types.test.ts asserts bidirectional parity). Adding a
@@ -322,6 +335,10 @@ export type VillainEffectPrimitive =
 // the second INTERACTIVE villain effect — the current player parks a new
 // `pendingGiveHqHeroChoice`, non-current + bot players auto-gain the highest-cost HQ
 // Hero; no-param, keyword-less auto-narrating).
+// why: `gain-recruit-current` + `gain-officer-current` appended at positions 21 + 22 by
+// WP-541 (D-24350 — the first slice of the Core villain/henchman Fight-reward batch: Hand
+// Ninjas "+1 recruit" and HYDRA Kidnappers "gain a S.H.I.E.L.D. Officer", both auto-resolve
+// rewards to the defeating player; keyword-less, self-narrating).
 /** All villain effect primitives in canonical order. Single source of truth. */
 export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'ko-hero',
@@ -344,6 +361,8 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'give-hq-hero-by-trait-to-current',
   'swap-two-city-villains',
   'give-hq-hero-each-player',
+  'gain-recruit-current',
+  'gain-officer-current',
 ] as const;
 
 /**
@@ -366,6 +385,9 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
  *   - `override-next-hand-size` (D-24307): `magnitude` is the ABSOLUTE next-hand
  *     target size (Doctor Octopus villain Fight: 8), written into the WP-497-owned
  *     `G.handSizeOverrides[currentPlayer]`; keyword-less, self-narrates.
+ *   - `gain-recruit-current` (D-24350): `magnitude` is the recruit-point count added
+ *     to `G.turnEconomy.recruit` (Hand Ninjas: 1), parsed from the `:N` token
+ *     (default 1); keyword-less, self-narrates. `gain-officer-current` is no-param.
  *   - Any effect: optional `requireCitySpaces` (D-24295) is a location gate —
  *     the effect fires only when the villain is fought on one of the listed City
  *     spaces (Abomination: Streets/Bridge, the Lizard: Sewers).

@@ -110,6 +110,7 @@
         "ymir-frost-giant-king": { "ambush": ["reveal-or-wound:hc:ranged"], "fight": ["ko-wounds-current-hand-and-discard"] }
       },
       "hydra": {
+        "hydra-kidnappers": { "fight": ["gain-officer-current"] },
         "viper": { "fight": ["gain-wound-unless-victory-villain-group:hydra"], "escape": ["gain-wound-unless-victory-villain-group:hydra"] }
       },
       "masters-of-evil": {
@@ -337,6 +338,8 @@
     },
     "core": {
       "doombot-legion": { "fight": ["scry-ko-own-deck"] },
+      "hand-ninjas": { "fight": ["gain-recruit-current:1"] },
+      "savage-land-mutates": { "fight": ["override-next-hand-size:7"] },
       "sentinel": { "fight": ["koHeroCurrentPlayer"] }
     },
     "cvwr": {

@@ -141,6 +141,10 @@ function isLockedEffectKeyword(keyword) {
 // `give-hq-hero-each-player` (no-param) appended by WP-532 (D-24343 — the core skrulls
 // Paibok the Power Skrull Fight: choose a Hero in the HQ for each player, each player gains
 // that Hero; validates via the terminal no-param `parts.length === 1` branch).
+// `gain-recruit-current` (`:<N>`, default 1) and `gain-officer-current` (no-param) appended
+// by WP-541 (D-24350 — Hand Ninjas "+1 recruit" + HYDRA Kidnappers "gain a S.H.I.E.L.D.
+// Officer"; gain-recruit-current validates via its own `:<N>` branch below, gain-officer-current
+// via the terminal no-param `parts.length === 1` branch).
 const VILLAIN_EFFECT_PRIMITIVES = [
   'ko-hero',
   'gain-wound',
@@ -162,6 +166,8 @@ const VILLAIN_EFFECT_PRIMITIVES = [
   'give-hq-hero-by-trait-to-current',
   'swap-two-city-villains',
   'give-hq-hero-each-player',
+  'gain-recruit-current',
+  'gain-officer-current',
 ];
 
 // why: WP-489 / D-24295 — hand-synced local copy of the engine's CITY_SPACE_NAMES
@@ -286,7 +292,15 @@ function isValidParameterizedEffectToken(token) {
     // hydra). Mirrors the engine parser's branch so producer + consumer agree.
     return parts.length === 2 && parts[1].length > 0;
   }
-  // why: hero-deck-top-to-escape and capture-bystander take no params.
+  if (primitive === 'gain-recruit-current') {
+    // why: D-24350 — grammar gain-recruit-current[:<N>] (Hand Ninjas: :1); the bare
+    // token defaults to 1, :<N> is a positive integer. Mirrors the engine parser's
+    // capture-bystander-style branch so producer + consumer agree on the grammar.
+    if (parts.length === 1) return true;
+    return parts.length === 2 && /^[1-9][0-9]*$/.test(parts[1]);
+  }
+  // why: hero-deck-top-to-escape, gain-officer-current, and the other no-param
+  // primitives take no params.
   return parts.length === 1;
 }
 

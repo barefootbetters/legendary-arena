@@ -10,11 +10,11 @@
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 365,
+      "executable": 368,
       "deferred": 0,
       "condition": 5,
       "unsupported": 367,
-      "unmarked": 1089
+      "unmarked": 1086
     }
   },
   "entries": [
@@ -6351,11 +6351,11 @@
       "name": "HYDRA Kidnappers",
       "set": "core",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "gain-officer-current",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-officer-current",
+      "wp": "WP-541",
+      "decision": "D-24350"
     },
     {
       "extId": "core-villain-hydra-supreme-hydra",
@@ -11487,11 +11487,11 @@
       "name": "Hand Ninjas",
       "set": "core",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "gain-recruit-current",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-recruit-current",
+      "wp": "WP-541",
+      "decision": "D-24350"
     },
     {
       "extId": "henchman-hellfire-cult",
@@ -11685,11 +11685,11 @@
       "name": "Savage Land Mutates",
       "set": "core",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "override-next-hand-size",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#override-next-hand-size",
+      "wp": "WP-503",
+      "decision": "D-24307"
     },
     {
       "extId": "henchman-sentinel",
@@ -27792,7 +27792,7 @@
     "core-villain-hydra-hydra-kidnappers": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "gain-officer-current"
       ]
     },
     "core-villain-hydra-supreme-hydra": {
@@ -29795,7 +29795,8 @@
     "henchman-hand-ninjas": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "(unmarked)",
+        "gain-recruit-current"
       ]
     },
     "henchman-hellfire-cult": {
@@ -29897,7 +29898,8 @@
     "henchman-savage-land-mutates": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "(unmarked)",
+        "override-next-hand-size"
       ]
     },
     "henchman-sentinel": {

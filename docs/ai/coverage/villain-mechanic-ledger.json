@@ -4,12 +4,12 @@
   "summary": {
     "totalRows": 719,
     "byStatus": {
-      "executable": 128,
+      "executable": 131,
       "deferred": 0,
       "unsupported": 1,
-      "unmarked": 590
+      "unmarked": 587
     },
-    "distinctMechanics": 26
+    "distinctMechanics": 28
   },
   "rows": [
     {
@@ -1821,22 +1821,22 @@
       "cardName": "HYDRA Kidnappers",
       "set": "core",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "gain-officer-current",
+      "status": "executable",
+      "wp": "WP-541",
+      "decision": "D-24350",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-officer-current"
     },
     {
       "extId": "henchman-hand-ninjas",
       "cardName": "Hand Ninjas",
       "set": "core",
       "cardType": "henchman",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "gain-recruit-current",
+      "status": "executable",
+      "wp": "WP-541",
+      "decision": "D-24350",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-recruit-current"
     },
     {
       "extId": "core-villain-brotherhood-juggernaut",
@@ -1909,11 +1909,11 @@
       "cardName": "Savage Land Mutates",
       "set": "core",
       "cardType": "henchman",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "override-next-hand-size",
+      "status": "executable",
+      "wp": "WP-503",
+      "decision": "D-24307",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#override-next-hand-size"
     },
     {
       "extId": "henchman-sentinel",

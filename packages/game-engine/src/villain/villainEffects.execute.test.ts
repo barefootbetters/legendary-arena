@@ -42,6 +42,10 @@ interface MakeGOptions {
   >;
   wounds?: CardExtId[];
   bystanders?: CardExtId[];
+  // why: WP-541 — gain-officer-current moves an Officer from G.piles.officers to the
+  // current player's discard; supplied only by its tests so other tests keep the
+  // prior empty-pile shape.
+  officers?: CardExtId[];
   heroDeck?: CardExtId[];
   escapedPile?: CardExtId[];
   attachedBystanders?: Record<CardExtId, CardExtId[]>;
@@ -77,7 +81,7 @@ function makeG(options: MakeGOptions): LegendaryGameState {
     piles: {
       bystanders: options.bystanders ?? [],
       wounds: options.wounds ?? [],
-      officers: [],
+      officers: options.officers ?? [],
       sidekicks: [],
       horrors: [],
     },
@@ -3791,5 +3795,94 @@ describe('executeVillainAbilities — give-hq-hero-each-player (WP-532 / D-24343
     assert.equal(G.pendingGiveHqHeroChoices?.length ?? 0, 0, 'no park on an empty HQ');
     assert.match(G.messages.at(-1)!.text, /no Hero in the HQ to gain/, 'self-narrates the blocked no-op');
     assert.equal(G.diagnostics?.hollowEffects?.length ?? 0, 0, 'handler ran — never a hollow');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-541 / D-24350: gain-recruit-current (Hand Ninjas Fight-reward)
+// ---------------------------------------------------------------------------
+
+describe('executeVillainAbilities — gain-recruit-current (WP-541 / D-24350)', () => {
+  function recruitHook(cardId: string, magnitude: number): VillainAbilityHook {
+    return {
+      cardId: cardId as CardExtId,
+      timing: 'onFight',
+      keywords: [],
+      effects: [{ primitive: 'gain-recruit-current', magnitude }],
+    };
+  }
+
+  it('adds the magnitude to the current player recruit economy, self-narrates, and records no hollow', () => {
+    const G = makeG({ hooks: [recruitHook('v-hand-ninjas', 1)], messages: [] });
+    G.turnEconomy.recruit = 2; // why: proves the gain ACCUMULATES onto existing recruit.
+    const results = executeVillainAbilities(G, CTX, 'v-hand-ninjas' as CardExtId, 'onFight');
+    assert.equal(G.turnEconomy.recruit, 3, 'gained +1 recruit on top of the existing 2');
+    assert.equal(G.messages!.length, 1, 'one self-narrated Fight-effect line');
+    assert.match(G.messages![0]!.text, /Fight effect: gained \+1 recruit\./);
+    assert.equal(G.messages![0]!.outcome, 'applied');
+    // why: gain-recruit-current is keyword-less → no VillainEffectResult recorded.
+    assert.deepStrictEqual(results, [], 'no keyword-typed result recorded');
+    assert.equal(G.diagnostics?.hollowEffects?.length ?? 0, 0, 'no hollow when the handler fires');
+  });
+
+  it('adds a larger magnitude (proves N is honored, not hardcoded 1)', () => {
+    const G = makeG({ hooks: [recruitHook('v-x', 3)], messages: [] });
+    executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onFight');
+    assert.equal(G.turnEconomy.recruit, 3, 'gained +3 recruit');
+    assert.match(G.messages![0]!.text, /gained \+3 recruit/);
+  });
+
+  it('defaults to +1 when a hand-built hook omits the magnitude (never adds NaN)', () => {
+    const G = makeG({
+      hooks: [{ cardId: 'v-bad' as CardExtId, timing: 'onFight', keywords: [], effects: [{ primitive: 'gain-recruit-current' }] }],
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-bad' as CardExtId, 'onFight');
+    assert.equal(G.turnEconomy.recruit, 1, 'absent magnitude defaults to +1');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-541 / D-24350: gain-officer-current (HYDRA Kidnappers Fight-reward)
+// ---------------------------------------------------------------------------
+
+describe('executeVillainAbilities — gain-officer-current (WP-541 / D-24350)', () => {
+  const OFFICER = 'pile-shield-officer' as CardExtId;
+
+  function officerHook(cardId: string): VillainAbilityHook {
+    return {
+      cardId: cardId as CardExtId,
+      timing: 'onFight',
+      keywords: [],
+      effects: [{ primitive: 'gain-officer-current' }],
+    };
+  }
+
+  it('moves one Officer from the supply pile to the current player discard, self-narrates, no hollow', () => {
+    const G = makeG({
+      hooks: [officerHook('v-hydra-kidnappers')],
+      officers: [OFFICER, OFFICER, OFFICER],
+      messages: [],
+    });
+    const results = executeVillainAbilities(G, CTX, 'v-hydra-kidnappers' as CardExtId, 'onFight');
+    assert.deepStrictEqual(G.playerZones['0']!.discard, [OFFICER], 'current player gained one Officer');
+    assert.equal(G.piles.officers.length, 2, 'exactly one Officer left the supply pile');
+    assert.equal(G.playerZones['1']!.discard.length, 0, 'only the current player gains');
+    assert.equal(G.messages!.length, 1, 'one self-narrated Fight-effect line');
+    assert.match(G.messages![0]!.text, /Fight effect: gained a S\.H\.I\.E\.L\.D\. Officer\./);
+    assert.equal(G.messages![0]!.outcome, 'applied');
+    // why: gain-officer-current is keyword-less → no VillainEffectResult recorded.
+    assert.deepStrictEqual(results, [], 'no keyword-typed result recorded');
+    assert.equal(G.diagnostics?.hollowEffects?.length ?? 0, 0, 'no hollow when the handler fires');
+  });
+
+  it('is a logged no-op (never a throw) when the Officer supply is empty', () => {
+    const G = makeG({ hooks: [officerHook('v-hydra-kidnappers')], officers: [], messages: [] });
+    assert.doesNotThrow(() => executeVillainAbilities(G, CTX, 'v-hydra-kidnappers' as CardExtId, 'onFight'));
+    assert.deepStrictEqual(G.playerZones['0']!.discard, [], 'nothing gained from an empty pile');
+    assert.equal(G.messages!.length, 1, 'the empty-pile no-op still narrates');
+    assert.match(G.messages![0]!.text, /Fight effect: no S\.H\.I\.E\.L\.D\. Officer to gain\./);
+    assert.equal(G.messages![0]!.outcome, 'blocked');
+    assert.equal(G.diagnostics?.hollowEffects?.length ?? 0, 0, 'a reachable no-op is not a hollow');
   });
 });
