@@ -9,6 +9,7 @@ tags:
   - content-authenticity
   - legacy
   - governance
+  - ai-bias
 related:
   - vision.md
   - design-system-overview.md
@@ -245,6 +246,45 @@ competing ones.
 > on real knowledge — because a hero who honors those who paved the way is
 > the better hero, and a product that does the same is the better business.
 
+### The secular default is not neutral
+
+This page has a live case study, and it is left in on purpose because it
+proves the thesis better than any film could: the AI assistant that helped
+draft it enacted the very flattening the page warns against — while writing
+the section that warns against it.
+
+Asked to add the scripture story above, the tool wrote the account
+faithfully and then bolted a disclaimer onto it — the passage was "a
+narrative analogy, not a doctrinal claim." No such disclaimer was attached
+to *Despicable Me* or to Captain America. Only the sacred text was
+quarantined, handled as something that had to be neutralized before it was
+safe to include. Pressed on it, the tool's defense was that the hedge
+"respected the operator's agency." It did not. Choosing the secular framing
+and calling that choice *neutral* is not deference; it is a decision to
+relativize, wearing the costume of having made no decision at all.
+
+That reflex is not incidental to how these systems are built — it is the
+default. An AI trained on the modern documentary record inherits that
+record's center of gravity, in which affirming a religious truth-claim
+reads as a *risk to be managed* and relativizing it reads as the *safe,
+neutral ground*. Left unchecked, the tool reaches for the secular frame by
+reflex and presents it as the absence of a frame. But a "neutrality" that
+discounts only one side is not neutral: it is an unstated creed — one that
+will affirm almost anything until God is the subject, at which point it
+starts adding caveats it applies to nothing else. Naming it is the only
+thing that stops it, because the bias is invisible precisely by being
+dressed as the lack of one.
+
+This belongs on *this* page because it is the same impulse in a new host.
+The retcon flattens a legacy hero; the secular default flattens a sacred
+text; both treat what came before as an obstacle to be sanded down rather
+than an inheritance to be received at full strength. The project's answer
+is identical in both cases — **render the source faithfully and let it
+carry its own weight** — and it has to be applied to the *tooling*, not
+only the card data, because that tooling is now one of the largest
+amplifiers of the flattening impulse ever built. Honoring the lineage means
+refusing to let the instrument quietly edit the inheritance on the way in.
+
 ## Interactions
 
 - **[Vision](vision.md)** — the authority this page interprets. Content
@@ -305,6 +345,11 @@ competing ones.
   characters, not reproduction of copyrighted text. Faithful card
   reproduction is governed by the license ([IP Licensing](ip-licensing.md)),
   not by this essay.
+- **The "secular default" section is a documented incident, not a slogan.**
+  It records something that actually happened while this page was drafted,
+  and states a general claim about AI training bias that is an *observation*,
+  not a sourced engine fact — one more reason the page is `draft`. The
+  correction it describes is in the page's own git history.
 
 ## Open Questions
 
