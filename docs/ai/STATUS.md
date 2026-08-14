@@ -7,6 +7,20 @@
 
 ## Current State
 
+### WP-543 — Savage Land Mutates Additive Next-Hand Draw (`add-next-hand-size`) — DONE (2026-08-14)
+
+Fixed the fidelity gap surfaced at WP-541's live-verify (Magneto / Cosmic Cube 2p match `hFm9cx7UJxr`, 2026-08-13). Savage Land Mutates prints *"Fight: When you draw a new hand of cards at the end of this turn, draw an extra card"* — an **additive** bonus, so defeating two in one turn should draw two extra cards (8-card next hand). WP-541 modeled it with the **absolute** `override-next-hand-size:7`, which caps two-per-turn at 7. (Latent in that match — each of the 9 defeats fell in a separate turn.)
+
+Added one **append-only** `VILLAIN_EFFECT_PRIMITIVES` (D-24034; union + array + handler + registry moved with the drift test, **22 → 23**): **`add-next-hand-size`** — the additive sibling of `override-next-hand-size`. `villainEffectAddNextHandSize` writes `G.handSizeOverrides[currentPlayer] = (G.handSizeOverrides[currentPlayer] ?? HAND_SIZE) + magnitude` (vs override's absolute `= magnitude`), so repeated defeats in one turn accumulate (two → 8). Parser arm `add-next-hand-size:<N>` mirrors override. Core Savage Land Mutates re-marked `override-next-hand-size:7` → `add-next-hand-size:1` (surgical `core.json` token replace, since `apply-effect-markers.mjs` is append-only; the idempotent re-apply reported **0 new markers**). `mechanic-provenance.json` + regenerated villain ledger + effect index; all three freshness `:check` gates green; Savage Land now resolves executable under `add-next-hand-size` → WP-543.
+
+The absolute `override-next-hand-size` is **left unchanged** — Doctor Octopus keeps `override-next-hand-size:8` (*"draw eight cards instead of six"* is a genuine replace). **No `game.ts` change** — the WP-497 `onBegin` fill reads the accumulated absolute value, fills, and clears, unchanged. Deterministic (reads/mutates `G.handSizeOverrides`, no `ctx.random`, no new persistent shape); no pending-choice/UIState/client; no fixture/hash re-pin (no committed fixture fights Savage Land). **+5 tests** (incl. the two-defeats-accumulate-to-8 case that pins the fix); engine **2580→2585/0**, `pnpm -r build` + `pnpm -r --no-bail test` exit 0. D-24352 Active.
+
+**Documented out-of-scope edge:** if a player triggers BOTH an absolute override (Doc Ock) AND the additive (Savage Land) in one turn, the result is write-order-dependent (absolute-then-additive → base+1; additive-then-absolute → the +1 is lost). An edge-of-an-edge; the additive-on-`handSizeOverrides` model is faithful for all realistic Savage Land cases (locked D-24352).
+
+**User-Visible Surface = play.legendary-arena.com** — defeating two Savage Land Mutates in a single turn now draws two extra cards next hand (8), not one (7); a single defeat is unchanged (7). D-24026 live-verification **operator-pending**: defeat two Savage Land Mutates in one turn and confirm the next hand draws 8 (the log self-narrates each `Fight effect: your next hand draws N cards (+1 extra).`).
+
+---
+
 ### WP-541 — Core Villain/Henchman Fight-Reward Effects (Hand Ninjas + HYDRA Kidnappers + Savage Land Mutates) — DONE (2026-08-13)
 
 Made three hollow Core villain/henchman **Fight** abilities that *reward the defeating player* faithful (2026-08-13 villain-effect audit) — the first, cleanest slice of the villain/henchman Fight batch (**Blob** was already handled by the `require-to-defeat` setup subsystem; the audit's "unmarked" flag was an index-provenance artifact). All three are unconditional, magnitude-1, single-target-current-player auto-resolve gains that fit the WP-185 v1 curation discipline.
