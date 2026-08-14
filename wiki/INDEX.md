@@ -1,7 +1,7 @@
 # Wiki Index
 
-> **59 / 76** entity pages.
-> Last regenerated: 2026-08-11.
+> **60 / 76** entity pages.
+> Last regenerated: 2026-08-14.
 > See [SCHEMA.md](SCHEMA.md) for the entity-page contract and
 > [README.md](README.md) for purpose, conventions, and authority —
 > including [§ Tradeoffs](README.md#tradeoffs) on what the LLM-wiki
@@ -124,6 +124,15 @@ Cross-cutting governance, methodology, and readiness assessments.
   framework (§20–26), the NG-1…NG-8 monetization bright lines and the
   open commercial space beside them, and the "no margin, no mission"
   funding model. Cites VISION; defines nothing.
+- [Soul of Legendary Arena](soul-of-legendary-arena.md) — *(draft)* the
+  thematic-soul essay: the game as *stewardship, not reinvention*. Names
+  the modern "tear down the mentor / retcon the classic hero" pattern and
+  the self-made-hero lie, draws the honoring-vs-flattening line (addition
+  vs overwrite), and shows the three mechanisms that carry a
+  lineage-honoring authorial voice to players — faithful reproduction
+  (Content Authenticity), the deck-builder as a humility engine, and the
+  character-history content loop. Interprets VISION and the Soul / Authorial
+  Voice principle; defines nothing.
 - [Legendary Arena — Tribe and Trust](legendary-arena-tribe-and-trust.md) —
   *(draft, research)* the "filtering is the product" growth thesis: the
   four-layer trust fence (gate → quarantine → community flag →
