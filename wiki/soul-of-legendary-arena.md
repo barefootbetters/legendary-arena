@@ -151,6 +151,12 @@ Erskine passes on more than a formula: a charge to remain a good man. Then
 he is gone, leaving Steve to *carry the wisdom forward* rather than to
 outgrow the teacher who saw him clearly.
 
+![Captain America #255 (1981) cover — Steve Rogers in costume, shield raised.](/soul-of-legendary-arena/captain-america-255-cover.jpg "width=40%")
+
+*Captain America #255 (Marvel, 1981) — "The Living Legend," the Stern/Byrne
+retelling of the World War II origin. © Marvel Comics; shown as editorial
+reference.*
+
 > **The serum doesn't make the hero — it reveals him.**
 
 That line is the whole case against the flawless, self-made protagonist in
@@ -342,9 +348,13 @@ refusing to let the instrument quietly edit the inheritance on the way in.
   KJV; parallel 2 Chronicles 10) and carries its own weight, not merely
   analogical weight.
 - **IP boundary.** This page discusses *theme and framing* of licensed
-  characters, not reproduction of copyrighted text. Faithful card
-  reproduction is governed by the license ([IP Licensing](ip-licensing.md)),
-  not by this essay.
+  characters. The one embedded image (the *Captain America* #255 cover) is a
+  low-resolution Marvel cover shown as editorial reference on the
+  access-gated internal ewiki, attributed to Marvel — not a licensed card
+  asset and not reproduction of card text. Faithful *card* reproduction is
+  governed by the license ([IP Licensing](ip-licensing.md)), not by this
+  essay; if the cover's use is ever in question, it is the single asset to
+  pull.
 - **The "secular default" section is a documented incident, not a slogan.**
   It records something that actually happened while this page was drafted,
   and states a general claim about AI training bias that is an *observation*,
