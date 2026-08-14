@@ -332,8 +332,13 @@ describe('VILLAIN_EFFECT_PRIMITIVES drift-detection', () => {
   // trait and give it to the current player's discard).
   // why: WP-523 (D-24336) appended a nineteenth, `swap-two-city-villains`, at position 19
   // (co2e Whirlwind Ambush — swap the lowest- and highest-index villain-occupied City
-  // spaces; the first City board-position manipulation).
-  it('contains exactly the 20 canonical primitives in order', () => {
+  // spaces; the first City board-position manipulation). WP-532 (D-24343) appended a
+  // twentieth, `give-hq-hero-each-player`, at position 20 (Paibok — each player gains an HQ
+  // Hero). WP-541 (D-24350) appended a twenty-first + twenty-second,
+  // `gain-recruit-current` + `gain-officer-current`, at positions 21 + 22 (Hand Ninjas +1
+  // recruit + HYDRA Kidnappers gain a S.H.I.E.L.D. Officer — the first Core villain/henchman
+  // Fight-reward slice).
+  it('contains exactly the 22 canonical primitives in order', () => {
     const expectedPrimitives: VillainEffectPrimitive[] = [
       'ko-hero',
       'gain-wound',
@@ -355,11 +360,13 @@ describe('VILLAIN_EFFECT_PRIMITIVES drift-detection', () => {
       'give-hq-hero-by-trait-to-current',
       'swap-two-city-villains',
       'give-hq-hero-each-player',
+      'gain-recruit-current',
+      'gain-officer-current',
     ];
     assert.equal(
       VILLAIN_EFFECT_PRIMITIVES.length,
-      20,
-      'VILLAIN_EFFECT_PRIMITIVES must have exactly 20 entries',
+      22,
+      'VILLAIN_EFFECT_PRIMITIVES must have exactly 22 entries',
     );
     assert.deepStrictEqual(
       [...VILLAIN_EFFECT_PRIMITIVES],

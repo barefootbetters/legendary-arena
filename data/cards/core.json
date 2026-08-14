@@ -2103,7 +2103,7 @@
           "vAttack": "3",
           "imageUrl": "https://images.legendary-arena.com/core/core-vi-hydra-hydra-kidnappers.webp",
           "abilities": [
-            "Fight: You may gain a S.H.I.E.L.D. Officer."
+            "Fight: You may gain a S.H.I.E.L.D. Officer. [effect:gain-officer-current]"
           ],
           "copies": 3
         },
@@ -2366,7 +2366,7 @@
       "slug": "hand-ninjas",
       "imageUrl": "https://images.legendary-arena.com/core/core-hm-hand-ninjas.webp",
       "abilities": [
-        "Fight: You get +1[icon:recruit]."
+        "Fight: You get +1[icon:recruit]. [effect:gain-recruit-current:1]"
       ],
       "vAttack": "3",
       "vp": "1"
@@ -2377,7 +2377,7 @@
       "slug": "savage-land-mutates",
       "imageUrl": "https://images.legendary-arena.com/core/core-hm-savage-land-mutates.webp",
       "abilities": [
-        "Fight: When you draw a new hand of cards at the end of this turn, draw an extra card."
+        "Fight: When you draw a new hand of cards at the end of this turn, draw an extra card. [effect:override-next-hand-size:7]"
       ],
       "vAttack": "3",
       "vp": "1"

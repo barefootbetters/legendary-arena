@@ -504,6 +504,87 @@ describe('buildVillainAbilityHooks — give-hq-hero-each-player grammar (WP-532 
   });
 });
 
+describe('buildVillainAbilityHooks — gain-recruit-current + gain-officer-current grammar (WP-541 / D-24350)', () => {
+  const registry = makeRegistry(
+    'core',
+    [
+      {
+        slug: 'hydra',
+        cards: [
+          {
+            slug: 'hydra-kidnappers',
+            abilities: ['Fight: You may gain a S.H.I.E.L.D. Officer. [effect:gain-officer-current]'],
+          },
+          // why: a no-param primitive rejects any trailing colon token.
+          { slug: 'officer-extra', abilities: ['Fight: nope. [effect:gain-officer-current:1]'] },
+        ],
+      },
+    ],
+    [
+      { slug: 'hand-ninjas', abilities: ['Fight: You get +1[icon:recruit]. [effect:gain-recruit-current:1]'] },
+      // why: the bare token (no :N) defaults to magnitude 1 in the parser.
+      { slug: 'hand-ninjas-bare', abilities: ['Fight: You get +1 recruit. [effect:gain-recruit-current]'] },
+      // why: a non-positive-integer count is rejected to unresolvedMarkers.
+      { slug: 'hand-ninjas-bad', abilities: ['Fight: nope. [effect:gain-recruit-current:x]'] },
+      // why: Savage Land Mutates REUSES override-next-hand-size at :7 (HAND_SIZE 6 + 1
+      // "draw an extra card"), NOT Doc Ock's :8 — the marker value is the whole point.
+      {
+        slug: 'savage-land-mutates',
+        abilities: [
+          'Fight: When you draw a new hand of cards at the end of this turn, draw an extra card. [effect:override-next-hand-size:7]',
+        ],
+      },
+    ],
+  );
+  const hooks = buildVillainAbilityHooks(
+    registry,
+    makeConfig(
+      ['core/hydra'],
+      ['core/hand-ninjas', 'core/hand-ninjas-bare', 'core/hand-ninjas-bad', 'core/savage-land-mutates'],
+    ),
+  );
+  const villainHook = (slug: string) =>
+    hooks.find((h) => h.cardId === `core-villain-hydra-${slug}-00` && h.timing === 'onFight')!;
+  const henchHook = (slug: string) =>
+    hooks.find((h) => h.cardId === `henchman-${slug}-00` && h.timing === 'onFight')!;
+
+  it('parses gain-officer-current (no-param) to a bare descriptor via the generic branch', () => {
+    assert.deepStrictEqual(villainHook('hydra-kidnappers').effects, [{ primitive: 'gain-officer-current' }]);
+    // why: keyword-less — must NOT reverse-map to a legacy keyword.
+    assert.deepStrictEqual(villainHook('hydra-kidnappers').keywords, []);
+  });
+
+  it('rejects a trailing param on gain-officer-current to unresolvedMarkers', () => {
+    assert.deepStrictEqual(villainHook('officer-extra').effects, []);
+    assert.deepStrictEqual(villainHook('officer-extra').unresolvedMarkers, ['gain-officer-current:1']);
+  });
+
+  it('parses gain-recruit-current:1 to a magnitude-1 descriptor', () => {
+    assert.deepStrictEqual(henchHook('hand-ninjas').effects, [
+      { primitive: 'gain-recruit-current', magnitude: 1 },
+    ]);
+    assert.deepStrictEqual(henchHook('hand-ninjas').keywords, []);
+  });
+
+  it('parses the bare gain-recruit-current to the default magnitude 1', () => {
+    assert.deepStrictEqual(henchHook('hand-ninjas-bare').effects, [
+      { primitive: 'gain-recruit-current', magnitude: 1 },
+    ]);
+  });
+
+  it('rejects a non-positive-integer gain-recruit-current count to unresolvedMarkers', () => {
+    assert.deepStrictEqual(henchHook('hand-ninjas-bad').effects, []);
+    assert.deepStrictEqual(henchHook('hand-ninjas-bad').unresolvedMarkers, ['gain-recruit-current:x']);
+  });
+
+  it('Savage Land Mutates reuses override-next-hand-size at :7 (HAND_SIZE + 1, not Doc Ock 8)', () => {
+    assert.deepStrictEqual(henchHook('savage-land-mutates').effects, [
+      { primitive: 'override-next-hand-size', magnitude: 7 },
+    ]);
+    assert.deepStrictEqual(henchHook('savage-land-mutates').keywords, []);
+  });
+});
+
 describe('buildVillainAbilityHooks — keywords/effects parity', () => {
   it('keywords and effects are distinct but parallel arrays (WP-252)', () => {
     const registry = makeRegistry(

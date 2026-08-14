@@ -1608,6 +1608,78 @@ function villainEffectOverrideNextHandSize(
 }
 
 /**
+ * gain-recruit-current primitive — the current (defeating) player gains `magnitude`
+ * recruit points this turn (Hand Ninjas "Fight: You get +1 recruit.", D-24350 /
+ * WP-541).
+ *
+ * Adds to `G.turnEconomy.recruit` (the per-turn recruit accumulator playCard also
+ * feeds and recruitHero spends). `magnitude` is the recruit count parsed from the
+ * `:N` token (default 1). Self-narrates via `pushLog`: like `draw-cards-current`,
+ * gain-recruit-current is keyword-less (`descriptorToLegacyKeyword` returns
+ * undefined), so the executor records no `VillainEffectResult` and the generic
+ * `<timing> effect:` line never fires — this push is the user-visible surface.
+ * Returns `{ targets: [] }` (a recruit gain touches no card).
+ */
+function villainEffectGainRecruitCurrent(
+  G: LegendaryGameState,
+  _currentPlayer: string,
+  _cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  // why: EC-576 — the parser always sets `magnitude` (default 1); a malformed
+  // hand-built test hook lacking it falls back to 1 rather than adding NaN to the
+  // recruit accumulator.
+  const recruitGain = descriptor.magnitude ?? 1;
+  G.turnEconomy.recruit += recruitGain;
+  // why: self-narrate (keyword-less). `G.messages` is hash-excluded (D-24081), so
+  // this adds no replay surface. The label is derived from the fired timing (Hand
+  // Ninjas is Fight-timed) for correctness at any fire site.
+  const label = villainEffectTimingLabel(timing);
+  pushLog(G, `${label} effect: gained +${String(recruitGain)} recruit.`, 'applied');
+  return { targets: [] };
+}
+
+/**
+ * gain-officer-current primitive — the current (defeating) player gains one
+ * S.H.I.E.L.D. Officer, moved from the shared Officer supply pile to their discard
+ * (HYDRA Kidnappers "Fight: You may gain a S.H.I.E.L.D. Officer.", D-24350 / WP-541).
+ *
+ * Auto-resolved: HYDRA Kidnappers' "may gain an Officer" is a pure benefit with no
+ * downside, so it auto-takes with no interactive choice (D-24350). Mirrors the
+ * `gainWound` supply-pile move (pile[0] is the top card, removed via `slice(1)`).
+ * Self-narrates via `pushLog`: keyword-less (`descriptorToLegacyKeyword` returns
+ * undefined), so the executor records no `VillainEffectResult` and the generic
+ * `<timing> effect:` line never fires — this push is the user-visible surface.
+ * Returns `{ targets: [] }` (the Officer is a generic supply token narrated by the
+ * log line, not a named card).
+ */
+function villainEffectGainOfficerCurrent(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  _cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  _descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  const label = villainEffectTimingLabel(timing);
+  const zones = G.playerZones[currentPlayer];
+  // why: an empty Officer pile (or a missing current-player zone in a narrow test
+  // mock) is a logged no-op, never a throw — the rule is a beneficial "may", so
+  // having nothing to gain simply does nothing.
+  if (!zones || G.piles.officers.length === 0) {
+    pushLog(G, `${label} effect: no S.H.I.E.L.D. Officer to gain.`, 'blocked');
+    return { targets: [] };
+  }
+  // why: pile[0] is the top card (the locked supply-pile convention gainWound uses);
+  // move it to the current player's discard. All Officers share SHIELD_OFFICER_EXT_ID.
+  const officerId = G.piles.officers[0]!;
+  G.piles.officers = G.piles.officers.slice(1);
+  zones.discard = [...zones.discard, officerId];
+  pushLog(G, `${label} effect: gained a S.H.I.E.L.D. Officer.`, 'applied');
+  return { targets: [] };
+}
+
+/**
  * ko-wounds-current-hand-and-discard primitive — the current (fighting) player KOs
  * every Wound from their own hand + discard pile (Ymir, Frost Giant King "Fight:
  * Choose a player. That player KOs any number of Wounds from their hand and discard
@@ -2562,6 +2634,10 @@ function villainEffectGainWoundUnlessVictoryVillainGroup(
 // why: `swap-two-city-villains` (auto-resolve — swap the lowest- and highest-index
 // villain-occupied City spaces, henchmen excluded, fewer than two is a no-op) appended by
 // WP-523 (D-24336 — co2e Whirlwind Ambush; the first City board-position manipulation).
+// why: `gain-recruit-current` (auto-resolve — the current player gains N recruit) and
+// `gain-officer-current` (auto-resolve — the current player gains one S.H.I.E.L.D. Officer
+// from the supply, empty pile → logged no-op) appended by WP-541 (D-24350 — Hand Ninjas +
+// HYDRA Kidnappers, the first slice of the Core villain/henchman Fight-reward batch).
 /** Villain effect handlers keyed by primitive. Single dispatch source. */
 const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandler> = {
   'ko-hero': villainEffectKoHero,
@@ -2584,6 +2660,8 @@ const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandl
   'give-hq-hero-by-trait-to-current': villainEffectGiveHqHeroByTraitToCurrent,
   'swap-two-city-villains': villainEffectSwapTwoCityVillains,
   'give-hq-hero-each-player': villainEffectGiveHqHeroEachPlayer,
+  'gain-recruit-current': villainEffectGainRecruitCurrent,
+  'gain-officer-current': villainEffectGainOfficerCurrent,
 };
 
 /**

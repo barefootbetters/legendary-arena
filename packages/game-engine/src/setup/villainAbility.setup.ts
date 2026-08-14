@@ -376,7 +376,8 @@ function parseParameterizedEffect(
  *   - `rescue-bystanders-current-by-trait-count:<kind>:<value>`  (D-24290)
  *   - `give-hq-hero-by-trait-to-current:<kind>:<value>`  (kind `team` | `hc`; D-24335)
  *   - `capture-bystander` | `capture-bystander:<N>`  (N a rescue count; D-24295)
- *   - `hero-deck-top-to-escape`  (no params)
+ *   - `gain-recruit-current` | `gain-recruit-current:<N>`  (N a recruit count, default 1; D-24350)
+ *   - `hero-deck-top-to-escape` | `gain-officer-current`  (no params)
  *
  * @param value - The ungated marker value (the text inside `[effect:…]` minus
  *   any `@<space>` suffix).
@@ -608,9 +609,26 @@ function parseUngatedEffect(
     }
     return { primitive: 'gain-wound-unless-victory-villain-group', victoryVillainGroup };
   }
-  // why: hero-deck-top-to-escape and capture-bystander take no params; reject
-  // any trailing colon-separated tokens so a malformed marker does not silently
-  // collapse to a param-less descriptor.
+  if (primitiveToken === 'gain-recruit-current') {
+    // why: D-24350 — grammar `gain-recruit-current[:<N>]` (Hand Ninjas: `:1`). The
+    // bare token defaults to 1; `:<N>` carries the recruit count as `magnitude` (the
+    // same strict positive-integer grammar as `capture-bystander:<N>`). A 3+-token
+    // form or a non-positive-integer count returns null (→ unresolvedMarkers).
+    if (parts.length === 1) {
+      return { primitive: 'gain-recruit-current', magnitude: 1 };
+    }
+    if (parts.length === 2) {
+      const magnitude = parsePositiveInteger(parts[1]!);
+      if (magnitude === null) {
+        return null;
+      }
+      return { primitive: 'gain-recruit-current', magnitude };
+    }
+    return null;
+  }
+  // why: hero-deck-top-to-escape, gain-officer-current, and the other no-param
+  // primitives take no params; reject any trailing colon-separated tokens so a
+  // malformed marker does not silently collapse to a param-less descriptor.
   if (parts.length === 1) {
     return { primitive: primitiveToken };
   }
