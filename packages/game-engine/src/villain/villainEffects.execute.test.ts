@@ -3264,6 +3264,79 @@ describe('executeVillainAbilities — override-next-hand-size (WP-503 / D-24307)
   });
 });
 
+// ---------------------------------------------------------------------------
+// add-next-hand-size (WP-543 / D-24352) — Savage Land Mutates "draw an extra card"
+// (ADDITIVE — stacks per defeat, unlike the absolute override-next-hand-size).
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a single onFight hook carrying the parameterized add-next-hand-size descriptor
+ * (the `hook` helper above only translates legacy keyword strings).
+ */
+function addHandSizeHook(cardId: string, magnitude: number): VillainAbilityHook {
+  return {
+    cardId: cardId as CardExtId,
+    timing: 'onFight',
+    keywords: [],
+    effects: [{ primitive: 'add-next-hand-size', magnitude }],
+  };
+}
+
+describe('executeVillainAbilities — add-next-hand-size (WP-543 / D-24352)', () => {
+  it('a single defeat adds magnitude to the base HAND_SIZE (6 + 1 = 7), self-narrates, no hollow', () => {
+    const G = makeG({ hooks: [addHandSizeHook('v-savage', 1)], messages: [] });
+    executeVillainAbilities(G, CTX, 'v-savage' as CardExtId, 'onFight');
+    // why: AC-2 — the additive writer sets HAND_SIZE (6) + 1 = 7 for the fighting player.
+    assert.deepEqual(G.handSizeOverrides, { '0': 7 });
+    assert.equal(G.playerZones['0']!.hand.length, 0, 'hand untouched at Fight time (consumed at onBegin)');
+    assert.equal(G.messages!.length, 1, 'one self-narrated Fight-effect line');
+    assert.match(G.messages![0]!.text, /your next hand draws 7 cards \(\+1 extra\)/);
+    assert.equal(G.diagnostics?.hollowEffects?.length ?? 0, 0, 'no hollow when the handler fires');
+  });
+
+  it('TWO defeats in one turn ACCUMULATE to 8 (the WP-541 fidelity gap this WP fixes)', () => {
+    // why: AC-2 — two Savage Land Mutates hooks fire in one executor pass on the same
+    // player; the additive writes stack (6 + 1 + 1 = 8), which the absolute
+    // override-next-hand-size:7 could NOT do (it would cap at 7). This is the whole point.
+    const G = makeG({
+      hooks: [addHandSizeHook('v-savage', 1)],
+      messages: [],
+    });
+    // first defeat
+    executeVillainAbilities(G, CTX, 'v-savage' as CardExtId, 'onFight');
+    assert.deepEqual(G.handSizeOverrides, { '0': 7 }, 'first defeat → 7');
+    // second defeat, same turn, same player (handSizeOverrides not yet consumed/cleared)
+    executeVillainAbilities(G, CTX, 'v-savage' as CardExtId, 'onFight');
+    assert.deepEqual(G.handSizeOverrides, { '0': 8 }, 'second defeat accumulates → 8, not capped at 7');
+    assert.match(G.messages!.at(-1)!.text, /your next hand draws 8 cards \(\+1 extra\)/);
+  });
+
+  it('stacks on top of a prior absolute override (Doc Ock 8 then Savage Land +1 = 9)', () => {
+    // why: coexistence — an absolute override-next-hand-size:8 already set 8; the additive
+    // reads the current value (8) and adds 1 → 9. (The reverse order is the documented
+    // out-of-scope edge; this asserts the additive-on-current behavior.)
+    const G = makeG({
+      hooks: [
+        { cardId: 'v-docock' as CardExtId, timing: 'onFight', keywords: [], effects: [{ primitive: 'override-next-hand-size', magnitude: 8 }] },
+        addHandSizeHook('v-savage', 1),
+      ],
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-docock' as CardExtId, 'onFight'); // absolute → 8
+    executeVillainAbilities(G, CTX, 'v-savage' as CardExtId, 'onFight'); // additive → 9
+    assert.deepEqual(G.handSizeOverrides, { '0': 9 }, 'additive stacks on the absolute base');
+  });
+
+  it('is a no-op (writes no override) when the descriptor lacks a magnitude', () => {
+    const G = makeG({
+      hooks: [{ cardId: 'v-bad' as CardExtId, timing: 'onFight', keywords: [], effects: [{ primitive: 'add-next-hand-size' }] }],
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-bad' as CardExtId, 'onFight');
+    assert.equal(G.handSizeOverrides, undefined, 'no bonus written without a magnitude (never NaN)');
+  });
+});
+
 describe('override-next-hand-size ⟂ Magneto discard-to-limit (WP-503 / D-24307, AC-5)', () => {
   // why: AC-5 — the two effects are ORTHOGONAL lifecycles with no shared merge
   // point. Doc Ock's override governs the play-phase onBegin fill (WP-497's field);

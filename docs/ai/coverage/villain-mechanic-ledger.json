@@ -9,7 +9,7 @@
       "unsupported": 1,
       "unmarked": 587
     },
-    "distinctMechanics": 28
+    "distinctMechanics": 29
   },
   "rows": [
     {
@@ -1909,11 +1909,11 @@
       "cardName": "Savage Land Mutates",
       "set": "core",
       "cardType": "henchman",
-      "mechanic": "override-next-hand-size",
+      "mechanic": "add-next-hand-size",
       "status": "executable",
-      "wp": "WP-503",
-      "decision": "D-24307",
-      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#override-next-hand-size"
+      "wp": "WP-543",
+      "decision": "D-24352",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#add-next-hand-size"
     },
     {
       "extId": "henchman-sentinel",

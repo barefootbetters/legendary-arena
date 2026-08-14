@@ -2377,7 +2377,7 @@
       "slug": "savage-land-mutates",
       "imageUrl": "https://images.legendary-arena.com/core/core-hm-savage-land-mutates.webp",
       "abilities": [
-        "Fight: When you draw a new hand of cards at the end of this turn, draw an extra card. [effect:override-next-hand-size:7]"
+        "Fight: When you draw a new hand of cards at the end of this turn, draw an extra card. [effect:add-next-hand-size:1]"
       ],
       "vAttack": "3",
       "vp": "1"

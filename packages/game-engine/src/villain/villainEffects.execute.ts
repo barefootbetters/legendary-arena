@@ -1608,6 +1608,62 @@ function villainEffectOverrideNextHandSize(
 }
 
 /**
+ * add-next-hand-size primitive — increase the current (defeating) player's next
+ * `onBegin` hand-fill target by `magnitude` EXTRA cards (Savage Land Mutates "Fight:
+ * When you draw a new hand of cards at the end of this turn, draw an extra card.",
+ * D-24352 / WP-543).
+ *
+ * The ADDITIVE sibling of `override-next-hand-size` (WP-503): it writes
+ * `(G.handSizeOverrides[currentPlayer] ?? HAND_SIZE) + magnitude` rather than the
+ * absolute `= magnitude`, so defeating two Savage Land Mutates in one turn stacks to a
+ * next hand of `HAND_SIZE + 2` (8). Reuses the WP-497-owned shared
+ * `G.handSizeOverrides[currentPlayer]`; the play-phase `onBegin` fill (game.ts) consumes
+ * and clears it on the fighting player's next turn, reading the accumulated absolute
+ * value unchanged — this handler adds NO new `G` field and NO second consumption point.
+ *
+ * Self-narrates via `pushLog`: like `override-next-hand-size`, add-next-hand-size is
+ * keyword-less (`descriptorToLegacyKeyword` returns undefined), so the executor records
+ * no `VillainEffectResult` and the generic `<timing> effect:` line never fires — this
+ * push is the user-visible surface. Returns `{ targets: [] }` (the bonus touches no card).
+ */
+function villainEffectAddNextHandSize(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  _cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  const extraCards = descriptor.magnitude;
+  // why: EC-578 — a malformed hook lacking `magnitude` (reachable only via a
+  // hand-built test hook — the parser always sets it) no-ops rather than adding an
+  // undefined bonus (which would poison the accumulator with NaN).
+  if (extraCards === undefined) {
+    return { targets: [] };
+  }
+  // why: D-24352 — lazy-init the WP-497-owned container with WP-497's exact idiom
+  // (never seeded in buildInitialGameState). This is the ADDITIVE writer: read the
+  // player's current next-hand target (or HAND_SIZE if none set yet this turn) and add
+  // `extraCards`, so multiple Savage Land defeats in one turn accumulate. Contrast
+  // villainEffectOverrideNextHandSize, which writes the absolute `= magnitude`. NO new
+  // `G` field, NO second consumption site (WP-497's game.ts onBegin owns consumption).
+  if (G.handSizeOverrides === undefined) {
+    G.handSizeOverrides = {};
+  }
+  const nextHandSize = (G.handSizeOverrides[currentPlayer] ?? HAND_SIZE) + extraCards;
+  G.handSizeOverrides[currentPlayer] = nextHandSize;
+  // why: self-narrate (keyword-less). `G.messages` is hash-excluded (D-24081), so this
+  // adds no replay surface. The label is derived from the fired timing (Savage Land is
+  // Fight-timed) for correctness at any fire site.
+  const label = villainEffectTimingLabel(timing);
+  pushLog(
+    G,
+    `${label} effect: your next hand draws ${String(nextHandSize)} cards (${extraCards > 0 ? '+' : ''}${String(extraCards)} extra).`,
+    'applied',
+  );
+  return { targets: [] };
+}
+
+/**
  * gain-recruit-current primitive — the current (defeating) player gains `magnitude`
  * recruit points this turn (Hand Ninjas "Fight: You get +1 recruit.", D-24350 /
  * WP-541).
@@ -2638,6 +2694,9 @@ function villainEffectGainWoundUnlessVictoryVillainGroup(
 // `gain-officer-current` (auto-resolve — the current player gains one S.H.I.E.L.D. Officer
 // from the supply, empty pile → logged no-op) appended by WP-541 (D-24350 — Hand Ninjas +
 // HYDRA Kidnappers, the first slice of the Core villain/henchman Fight-reward batch).
+// why: `add-next-hand-size` (auto-resolve — ADDITIVELY raises the current player's next-hand
+// fill target, accumulating across defeats) appended by WP-543 (D-24352 — Savage Land Mutates
+// "draw an extra card"; the additive sibling of the absolute override-next-hand-size).
 /** Villain effect handlers keyed by primitive. Single dispatch source. */
 const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandler> = {
   'ko-hero': villainEffectKoHero,
@@ -2662,6 +2721,7 @@ const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandl
   'give-hq-hero-each-player': villainEffectGiveHqHeroEachPlayer,
   'gain-recruit-current': villainEffectGainRecruitCurrent,
   'gain-officer-current': villainEffectGainOfficerCurrent,
+  'add-next-hand-size': villainEffectAddNextHandSize,
 };
 
 /**

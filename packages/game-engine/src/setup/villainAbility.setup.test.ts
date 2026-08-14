@@ -526,21 +526,24 @@ describe('buildVillainAbilityHooks — gain-recruit-current + gain-officer-curre
       { slug: 'hand-ninjas-bare', abilities: ['Fight: You get +1 recruit. [effect:gain-recruit-current]'] },
       // why: a non-positive-integer count is rejected to unresolvedMarkers.
       { slug: 'hand-ninjas-bad', abilities: ['Fight: nope. [effect:gain-recruit-current:x]'] },
-      // why: Savage Land Mutates REUSES override-next-hand-size at :7 (HAND_SIZE 6 + 1
-      // "draw an extra card"), NOT Doc Ock's :8 — the marker value is the whole point.
+      // why: WP-543 — Savage Land Mutates is now marked ADDITIVELY as add-next-hand-size:1
+      // ("draw an extra card"), NOT the absolute override-next-hand-size:7 it carried under
+      // WP-541 — so two defeats in one turn stack to +2. The marker value is the whole point.
       {
         slug: 'savage-land-mutates',
         abilities: [
-          'Fight: When you draw a new hand of cards at the end of this turn, draw an extra card. [effect:override-next-hand-size:7]',
+          'Fight: When you draw a new hand of cards at the end of this turn, draw an extra card. [effect:add-next-hand-size:1]',
         ],
       },
+      // why: a non-positive-integer add-next-hand-size count is rejected to unresolvedMarkers.
+      { slug: 'savage-bad', abilities: ['Fight: nope. [effect:add-next-hand-size:x]'] },
     ],
   );
   const hooks = buildVillainAbilityHooks(
     registry,
     makeConfig(
       ['core/hydra'],
-      ['core/hand-ninjas', 'core/hand-ninjas-bare', 'core/hand-ninjas-bad', 'core/savage-land-mutates'],
+      ['core/hand-ninjas', 'core/hand-ninjas-bare', 'core/hand-ninjas-bad', 'core/savage-land-mutates', 'core/savage-bad'],
     ),
   );
   const villainHook = (slug: string) =>
@@ -577,11 +580,16 @@ describe('buildVillainAbilityHooks — gain-recruit-current + gain-officer-curre
     assert.deepStrictEqual(henchHook('hand-ninjas-bad').unresolvedMarkers, ['gain-recruit-current:x']);
   });
 
-  it('Savage Land Mutates reuses override-next-hand-size at :7 (HAND_SIZE + 1, not Doc Ock 8)', () => {
+  it('Savage Land Mutates parses add-next-hand-size:1 (additive +1, WP-543), not the absolute override', () => {
     assert.deepStrictEqual(henchHook('savage-land-mutates').effects, [
-      { primitive: 'override-next-hand-size', magnitude: 7 },
+      { primitive: 'add-next-hand-size', magnitude: 1 },
     ]);
     assert.deepStrictEqual(henchHook('savage-land-mutates').keywords, []);
+  });
+
+  it('rejects a non-positive-integer add-next-hand-size count to unresolvedMarkers', () => {
+    assert.deepStrictEqual(henchHook('savage-bad').effects, []);
+    assert.deepStrictEqual(henchHook('savage-bad').unresolvedMarkers, ['add-next-hand-size:x']);
   });
 });
 

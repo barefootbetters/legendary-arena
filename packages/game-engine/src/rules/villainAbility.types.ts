@@ -270,6 +270,14 @@ export interface VillainEffectResult {
 // (keyword-less — no LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR entry, so they reverse-map to
 // `undefined` and self-narrate via pushLog). `gain-recruit-current` reuses the existing
 // `magnitude` field; `gain-officer-current` is no-param.
+// why: D-24352 — `add-next-hand-size` (position 23): the ADDITIVE sibling of
+// `override-next-hand-size` (D-24307). Savage Land Mutates ("Fight: … draw an extra card")
+// INCREASES the current player's next-hand fill target by `magnitude` rather than replacing
+// it: `G.handSizeOverrides[player] = (G.handSizeOverrides[player] ?? HAND_SIZE) + magnitude`,
+// so two defeats in one turn stack to +2 (an 8-card next hand). `override-next-hand-size`
+// stays ABSOLUTE for Doctor Octopus ("draw eight cards instead of six", a replace). Reuses
+// the existing `magnitude` field; keyword-less, self-narrates. WP-541 originally marked Savage
+// Land with `override-next-hand-size:7`; this re-marks it `add-next-hand-size:1`.
 export type VillainEffectPrimitive =
   | 'ko-hero'
   | 'gain-wound'
@@ -292,7 +300,8 @@ export type VillainEffectPrimitive =
   | 'swap-two-city-villains'
   | 'give-hq-hero-each-player'
   | 'gain-recruit-current'
-  | 'gain-officer-current';
+  | 'gain-officer-current'
+  | 'add-next-hand-size';
 
 // why: drift-detection array — must match VillainEffectPrimitive exactly
 // (villainAbility.types.test.ts asserts bidirectional parity). Adding a
@@ -339,6 +348,9 @@ export type VillainEffectPrimitive =
 // WP-541 (D-24350 — the first slice of the Core villain/henchman Fight-reward batch: Hand
 // Ninjas "+1 recruit" and HYDRA Kidnappers "gain a S.H.I.E.L.D. Officer", both auto-resolve
 // rewards to the defeating player; keyword-less, self-narrating).
+// why: `add-next-hand-size` appended at position 23 by WP-543 (D-24352 — the ADDITIVE
+// next-hand primitive for Savage Land Mutates "draw an extra card"; stacks per defeat, unlike
+// the absolute `override-next-hand-size`; keyword-less, self-narrating).
 /** All villain effect primitives in canonical order. Single source of truth. */
 export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'ko-hero',
@@ -363,6 +375,7 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'give-hq-hero-each-player',
   'gain-recruit-current',
   'gain-officer-current',
+  'add-next-hand-size',
 ] as const;
 
 /**
@@ -388,6 +401,11 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
  *   - `gain-recruit-current` (D-24350): `magnitude` is the recruit-point count added
  *     to `G.turnEconomy.recruit` (Hand Ninjas: 1), parsed from the `:N` token
  *     (default 1); keyword-less, self-narrates. `gain-officer-current` is no-param.
+ *   - `add-next-hand-size` (D-24352): `magnitude` is the number of EXTRA cards added
+ *     to the current player's next-hand fill target (Savage Land Mutates: 1), written
+ *     ADDITIVELY as `(G.handSizeOverrides[player] ?? HAND_SIZE) + magnitude` so multiple
+ *     defeats in one turn stack; keyword-less, self-narrates. Contrast
+ *     `override-next-hand-size`, whose `magnitude` is the ABSOLUTE next-hand size.
  *   - Any effect: optional `requireCitySpaces` (D-24295) is a location gate —
  *     the effect fires only when the villain is fought on one of the listed City
  *     spaces (Abomination: Streets/Bridge, the Lizard: Sewers).

@@ -11685,11 +11685,11 @@
       "name": "Savage Land Mutates",
       "set": "core",
       "scope": "villain",
-      "mechanic": "override-next-hand-size",
+      "mechanic": "add-next-hand-size",
       "status": "executable",
-      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#override-next-hand-size",
-      "wp": "WP-503",
-      "decision": "D-24307"
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#add-next-hand-size",
+      "wp": "WP-543",
+      "decision": "D-24352"
     },
     {
       "extId": "henchman-sentinel",
@@ -29899,7 +29899,7 @@
       "scope": "villain",
       "mechanics": [
         "(unmarked)",
-        "override-next-hand-size"
+        "add-next-hand-size"
       ]
     },
     "henchman-sentinel": {
