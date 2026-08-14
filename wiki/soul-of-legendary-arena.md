@@ -141,16 +141,34 @@ ennobled by it, not diminished. That is the same intergenerational bond
 Legendary Arena is built to create at the table
 ([Tribe & Trust](legendary-arena-tribe-and-trust.md)).
 
-**Captain America and the Red Skull — the serum reveals the man.** Dr.
-Erskine, the mentor, chooses Steve Rogers *because* he is weak and sickly
-and good — a man who knows the value of strength precisely because he has
-never had it. The serum only amplifies what is already there. Steve,
-already humble and compassionate, is amplified into a hero; Johann Schmidt,
-already cruel and hungry for power, was amplified by an earlier serum into
-the Red Skull. Same power, opposite men — the Skull is Rogers' mirror. And
-Erskine passes on more than a formula: a charge to remain a good man. Then
-he is gone, leaving Steve to *carry the wisdom forward* rather than to
-outgrow the teacher who saw him clearly.
+**Captain America and the Red Skull — the serum reveals the man.** The US
+Army recruited the frail, rejected Steve Rogers into **Operation: Rebirth**
+— General Chester Phillips's program to wipe out weakness and infirmity and
+forge the first of an army of super-soldiers. The biochemist **Abraham
+Erskine** treated Rogers with a tissue-building serum brought to life by a
+blast of invisible **vita-rays**, and in minutes the sickly volunteer became
+a physically perfect man. But moments later a Third Reich assassin, **Heinz
+Kruger**, gunned Erskine down; the scientist had committed the full formula
+to nothing but his own mind, and it died with him. There was to be an army;
+there was only ever the one man. The Army trained that one man —
+**Project: Super-Soldier**, under General Phillips — and gave him the
+uniform.
+
+![Captain America #255 (1981) — Steve Rogers as Captain America in the Operation: Rebirth uniform.](/soul-of-legendary-arena/captain-america-255-uniform.jpg "width=40%")
+
+*Captain America #255 (Marvel, 1981) — Steve Rogers after Operation:
+Rebirth, in the uniform. © Marvel Comics; shown as editorial reference.*
+
+And this is the beat the retelling keeps: the serum did not manufacture a
+hero out of nothing. Erskine chose Rogers *because* he was weak and good — a
+man who knew the value of strength precisely because he had never had it —
+and the serum only amplified what was already there. Johann Schmidt, already
+cruel and hungry for power, had been amplified by an earlier serum into the
+Red Skull: same power, opposite men, the Skull the mirror of Rogers. And the
+deepest thing Erskine passed on could never have been committed to paper — a
+charge to remain a good man — so that when the formula died with him, the
+inheritance did not. Steve carried it forward rather than outgrowing the
+teacher who saw him clearly.
 
 ![Captain America #255 (1981) cover — Steve Rogers in costume, shield raised.](/soul-of-legendary-arena/captain-america-255-cover.jpg "width=40%")
 
@@ -374,13 +392,14 @@ claim at a safe distance — it stands on it.
   [pattern in the mirror](#the-pattern-in-the-mirror-ais-secular-default)
   section names.
 - **IP boundary.** This page discusses *theme and framing* of licensed
-  characters. The one embedded image (the *Captain America* #255 cover) is a
-  low-resolution Marvel cover shown as editorial reference on the
-  access-gated internal ewiki, attributed to Marvel — not a licensed card
-  asset and not reproduction of card text. Faithful *card* reproduction is
-  governed by the license ([IP Licensing](ip-licensing.md)), not by this
-  essay; if the cover's use is ever in question, it is the single asset to
-  pull.
+  characters. The Captain America origin is retold in original prose, not
+  copied from the comic's caption text. The two embedded images (the
+  *Captain America* #255 cover and a uniform panel) are low-resolution
+  Marvel images shown as editorial reference on the access-gated internal
+  ewiki, attributed to Marvel — not licensed card assets and not
+  reproduction of card text. Faithful *card* reproduction is governed by the
+  license ([IP Licensing](ip-licensing.md)), not by this essay; if their use
+  is ever in question, those two images are the assets to pull.
 - **The "secular default" section is a documented incident, not a slogan.**
   It records something that actually happened while this page was drafted,
   and states a general claim about AI training bias that is an *observation*,
