@@ -11,6 +11,7 @@ tags:
   - arena-client
   - research
 related:
+  - design-system-overview.md
   - master-strike.md
   - scheme-twist.md
   - villain-deck.md
@@ -29,7 +30,7 @@ source:
   - ../packages/game-engine/src/ui/uiState.types.ts
   - ../packages/game-engine/src/turn/turnPhases.types.ts
   - ../docs/ai/ARCHITECTURE.md
-last-reviewed: 2026-07-27
+last-reviewed: 2026-08-13
 ---
 
 # Sound Effects
@@ -319,14 +320,14 @@ Audition the four shipped tiers:
 
 The four stings above are the *shipped* audio. The naming layer that rides
 the same scalar — the on-screen
-[synergy call-out ladder](narrative-psychology.md#synergy-callouts)
+[synergy call-out ladder](visual-effects.md#synergy-callout)
 (**Combo! → Team-Up! → Unstoppable! → LEGENDARY!**) and the
-[faction battle cries](narrative-psychology.md#faction-cries)
+[faction battle cries](visual-effects.md#faction-cries)
 (**AVENGERS ASSEMBLE!**, **HULK SMASH!** …) — has an **optional voiced
 enhancement** whose home is this page: a house **Arena Announcer** that
 speaks the ladder, layered over (or in place of) these stings. Two
 constraints carry straight through from the
-[narrative page's announcer spec](narrative-psychology.md#arena-announcer):
+[Arena Announcer spec below](#arena-announcer):
 
 - **The text label is v1; the voice is a later layer.** The on-screen word
   is buildable today on the live combo scalar; a recorded or synthesized
@@ -337,8 +338,19 @@ constraints carry straight through from the
   original announcer, but first-person character lines ("Hulk Smash!") stay
   **text-first** — an announcer impersonating a Marvel character is an
   IP / casting matter, gated by the same
-  [licensing pass](narrative-psychology.md#faction-cries) as the cries
+  [licensing pass](visual-effects.md#faction-cries) as the cries
   themselves (D-24259).
+
+##### The Arena Announcer — an original voice, not a borrowed one {#arena-announcer}
+
+*Candy Crush*'s call-outs are inseparable from **Mr. Toffee's** voice: the label and the vocal are one recognizable brand asset. The equivalent here is a house **Arena Announcer** — an original esports-caster / comic-splash narrator persona that voices the [synergy call-out ladder](visual-effects.md#synergy-callout) (**"Combo!" … "Team-Up!" … "LEGENDARY!"**). Two hard constraints:
+
+- **Original, not an impression.** The announcer is *not* a Marvel character and never imitates one — no character voice, catchphrase, or name. It is the arena's own host, which keeps it clear of the [IP boundary](design-system-overview.md#ip-boundary-mandatory) and lets it become *our* recognizable asset (the [Soul / Authorial Voice](design-system-overview.md#soul-authorial-voice) test: a signature a player learns to recognize as *this* game).
+- **v1 is the on-screen word; the voice is an enhancement.** The text call-out is buildable today on the live combo scalar (it rides the shipped [`useComboCue`](visual-effects.md#combo-signal) pattern). A *voiced* announcer is an added audio layer here — recorded VO or a synthesized voice, layered over (or in place of) the existing `combo-small` … `combo-legendary` stings — and can follow later without blocking the label.
+
+**Original team cries voice naturally; verbatim character cries stay text-first.** A team shout like "Avengers Assemble!" can be voiced by the original announcer, but first-person character lines ("Hulk Smash!") stay **text-first** — an announcer impersonating a Marvel character is an IP / casting matter, gated by the same [licensing pass](visual-effects.md#faction-cries) as the cries themselves (D-24259).
+
+Under the [Playstyle lens](design-system-overview.md#playstyle-modes) the ladder and the announcer re-theme with everything else: the **destroyer** skin swaps the heroic ladder for a conquest one (e.g. *Strike! → Havoc! → Domination! → CATACLYSM!*) in a harsher announcer register — same locked tiers, same scalar, pure re-skin. That variant is **Tier 3 / out of v1 scope**, like the rest of the lens.
 
 ### Adaptive background music — the danger meter
 
@@ -664,11 +676,11 @@ unusable on a revenue-generating site.
 
 ## Interactions
 
-- **[Dopamine Trigger Framework](dopamine-triggers.md).** The *why and when*
+- **[Design System Overview → reward psychology](design-system-overview.md#reward-psychology).** The *why and when*
   behind these cues; its
-  [visual–audio pairing table](dopamine-triggers.md#visual-audio-pairing) is
+  [visual–audio pairing table](design-system-overview.md#visual-audio-pairing) is
   the shared per-event signature this page and Visual Effects both implement,
-  and its [flow-channel map](dopamine-triggers.md#flow-channel) shows where
+  and its [flow-channel map](design-system-overview.md#flow-channel) shows where
   each moment sits across a match.
 - **[Master Strike](master-strike.md).** `mastermindStrikeResolved` is
   the highest-drama SFX candidate and a natural "spike the music"

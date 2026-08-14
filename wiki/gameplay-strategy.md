@@ -14,8 +14,7 @@ tags:
 related:
   - scoring.md
   - par-simulation-calibration.md
-  - narrative-psychology.md
-  - dopamine-triggers.md
+  - design-system-overview.md
   - turn-system.md
   - villain-deck.md
   - scheme.md
@@ -41,9 +40,10 @@ long-term-plus-in-the-moment impact. It is the missing companion the rest
 of the wiki assumes: [Scoring](scoring.md) measures skill (PAR is the
 score a *competent, rules-faithful* team should reach), the
 [PAR Simulation Calibration](par-simulation-calibration.md) heuristic AI
-*performs* competent play to compute that baseline, and the
-[Dopamine](dopamine-triggers.md) and [Narrative](narrative-psychology.md)
-frameworks promise to *reward the skill, not the luck* — but none of them
+*performs* competent play to compute that baseline, and the feel layer's
+[reward psychology](design-system-overview.md#reward-psychology) and
+[narrative meaning](design-system-overview.md#narrative-meaning) references
+promise to *reward the skill, not the luck* — but none of them
 spell out what the skilled decisions are. This page does.
 
 Legendary Arena follows the Marvel Legendary ruleset, so the decision
@@ -181,7 +181,7 @@ Which cards you play from hand, and in what order, is pure skill exercised
 every turn. Superpowers and class-gated effects only fire if their enabler
 was played earlier in the same turn, so the same hand can produce a small or
 a large turn depending entirely on sequencing. This is the moment-to-moment
-craft the [Dopamine framework](dopamine-triggers.md)'s escalating-combo
+craft the [reward psychology](design-system-overview.md#reward-psychology)'s escalating-combo
 reward pays off — a well-ordered hand is what makes `lastPlayEffectsFired`
 climb.
 
@@ -259,7 +259,7 @@ The [decision hierarchy](#decision-hierarchy) ranks *where skill lives*; this
 is the same skill viewed from the outside — the small set of **observable
 dimensions** an analytics or coaching layer could grade a played turn against.
 It is the companion of the
-[Dopamine framework's card-counting section](dopamine-triggers.md#card-counting),
+[reward-psychology card-counting section](design-system-overview.md#card-counting),
 which frames these four as the skills the reward loop honours; this page grounds
 each one in a rank above. Descriptive, as ever: these are the axes a coach
 *would measure*, not coaching advice this page hands out.
@@ -299,14 +299,14 @@ levers and efficiency as the aggregate they roll up into.
   hierarchy — it plays complete games making these choices, and its score
   distribution is the authoritative source for the
   [synergy consistency numbers](#synergy-math) this page only estimates.
-- **[Dopamine Trigger Framework](dopamine-triggers.md).** Its "reward the
-  skill, not the luck" invariant refers directly to the decisions here — the
-  escalating-combo payoff is attributed to the player's
+- **[Design System Overview → reward psychology](design-system-overview.md#reward-psychology).**
+  Its "reward the skill, not the luck" invariant refers directly to the
+  decisions here — the escalating-combo payoff is attributed to the player's
   [construction](#rank-0) and [play order](#rank-1), not to randomness. Its
-  [card-counting section](dopamine-triggers.md#card-counting) and the
+  [card-counting section](design-system-overview.md#card-counting) and the
   [four coachable layers](#coaching-layers) here are two views of the same
   skill axes — the reward-side framing and the decision-side grounding.
-- **[Narrative Psychology Framework](narrative-psychology.md).** Its
+- **[Design System Overview → narrative meaning](design-system-overview.md#narrative-meaning).** Its
   **Agency** hook ("I act on the world") and **Archetype** hook are the
   meaning-side of [Hero Deck construction](#rank-0) and thinning — the player
   authoring their team and their deck's quality.
@@ -363,9 +363,10 @@ levers and efficiency as the aggregate they roll up into.
   quality of these decisions becomes a Final Score
 - [Scoring](scoring.md), [PAR Simulation Calibration](par-simulation-calibration.md)
   — the measurement and the machine performance of this decision hierarchy
-- [Dopamine Trigger Framework](dopamine-triggers.md),
-  [Narrative Psychology Framework](narrative-psychology.md) — the feel layers
-  that reward this skill and give it meaning
+- [Design System Overview](design-system-overview.md) — the feel-layer hub whose
+  [reward psychology](design-system-overview.md#reward-psychology) and
+  [narrative meaning](design-system-overview.md#narrative-meaning) references
+  reward this skill and give it meaning
 - [Turn System](turn-system.md), [Villain Deck](villain-deck.md),
   [Scheme](scheme.md), [Master Strike](master-strike.md) — the mechanical
   frame the decisions operate within

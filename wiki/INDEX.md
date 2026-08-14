@@ -215,11 +215,17 @@ Cross-cutting governance, methodology, and readiness assessments.
   homepage needs.
 - [Design System Overview](design-system-overview.md) — *(draft,
   research)* the north-star hub for the sensory-and-feel layer of
-  `play.legendary-arena.com`. Defines the **shared trigger spine** — the
-  one canonical table of engine events (`notableEvents`,
-  `lastPlayEffectsFired`, endgame outcomes) that the visual, audio,
-  dopamine, and narrative frameworks all react to — so the framework pages
-  cross-link through the engine's own event names instead of siloing.
+  `play.legendary-arena.com`, and the **shared contract** the two sensory
+  frameworks implement. Defines the **shared trigger spine** — the one
+  canonical table of engine events (`notableEvents`, `lastPlayEffectsFired`,
+  endgame outcomes) the visual and audio layers react to — plus the reward
+  classification, pacing invariants, and the visual–audio pairing table. Now
+  also houses the **reward-psychology** (the seven reward drivers, the
+  variable-ratio schedule, card-counting / anticipation, the flow channel,
+  peak-end) and **narrative-meaning** (archetype / good-versus-evil /
+  nostalgia / agency hooks, the builder-versus-destroyer Playstyle lens)
+  references that were formerly the standalone Dopamine Trigger and Narrative
+  Psychology pages.
 - [Responsive Viewport Targets](responsive-viewport-targets.md) — *(draft)*
   the desktop-first responsive posture of `play.legendary-arena.com`: the
   one locked breakpoint (D-12909, `max-width: 767px`) splitting
@@ -249,18 +255,6 @@ Cross-cutting governance, methodology, and readiness assessments.
   wired through `themeSchemaVersion: 2` theme JSON (`musicAssets`).
   Covers the crop scripts, file-naming lock, and working-vs-tracked
   layout; companion to Sound Effects.
-- [Dopamine Trigger Framework](dopamine-triggers.md) — *(draft, research)*
-  the reward-psychology layer under the sensory frameworks: classifies each
-  shared-trigger-spine event as reward / threat / relief, and specs the
-  pacing discipline (variable reward, escalating combo reward, loss
-  aversion, peak-end) that times the visual + audio cues. Engagement craft
-  inside the Vision bright lines, never spend-pressure.
-- [Narrative Psychology Framework](narrative-psychology.md) — *(draft,
-  research)* the meaning-and-resonance layer: maps each spine event to a
-  good-versus-evil story beat via Marvel archetype, nostalgia, and agency
-  hooks. Houses the **Playstyle Modes** builder-versus-destroyer lens — a
-  preference toggle that re-frames the same engine events as heroic rescue
-  or villain conquest without building two games.
 - [Gameplay Strategy](gameplay-strategy.md) — *(draft, research)* the
   **skill model**: where skill actually lives in a Legendary Arena match,
   ranked by leverage — Rank 0 Hero Deck construction, Rank 1 play order and
