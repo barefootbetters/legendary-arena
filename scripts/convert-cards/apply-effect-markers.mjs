@@ -148,6 +148,9 @@ function isLockedEffectKeyword(keyword) {
 // `add-next-hand-size` (`:<N>`) appended by WP-543 (D-24352 — Savage Land Mutates "draw an
 // extra card"; the ADDITIVE sibling of override-next-hand-size, validates via its own `:<N>`
 // branch below).
+// `play-villain-deck-cards` (`:<N>`) appended by WP-542 (D-24351 — Endless Armies of HYDRA
+// Fight "play the top two Villain Deck cards" + The Leader Ambush "play the top card"; the
+// count N validates via its own `:<N>` branch below).
 const VILLAIN_EFFECT_PRIMITIVES = [
   'ko-hero',
   'gain-wound',
@@ -172,6 +175,7 @@ const VILLAIN_EFFECT_PRIMITIVES = [
   'gain-recruit-current',
   'gain-officer-current',
   'add-next-hand-size',
+  'play-villain-deck-cards',
 ];
 
 // why: WP-489 / D-24295 — hand-synced local copy of the engine's CITY_SPACE_NAMES
@@ -283,6 +287,13 @@ function isValidParameterizedEffectToken(token) {
     // of EXTRA cards added to the next-hand target (Savage Land Mutates: 1). Same strict
     // positive-integer grammar as override-next-hand-size; the additive-vs-absolute
     // distinction is a handler concern, not a grammar one.
+    return parts.length === 2 && /^[1-9][0-9]*$/.test(parts[1]);
+  }
+  if (primitive === 'play-villain-deck-cards') {
+    // why: D-24351 — grammar play-villain-deck-cards:<N> (exactly 2 tokens); N is the
+    // count of top Villain Deck cards to play (Endless Armies of HYDRA: 2; The Leader: 1).
+    // Same strict positive-integer grammar as draw-cards-current; mirrors the engine
+    // parser so producer + consumer agree on the grammar.
     return parts.length === 2 && /^[1-9][0-9]*$/.test(parts[1]);
   }
   if (

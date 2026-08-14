@@ -278,6 +278,16 @@ export interface VillainEffectResult {
 // stays ABSOLUTE for Doctor Octopus ("draw eight cards instead of six", a replace). Reuses
 // the existing `magnitude` field; keyword-less, self-narrates. WP-541 originally marked Savage
 // Land with `override-next-hand-size:7`; this re-marks it `add-next-hand-size:1`.
+// why: D-24351 — `play-villain-deck-cards` (position 24): the recursive villain-deck-play
+// primitive (Endless Armies of HYDRA "Fight: Play the top two cards of the Villain Deck.";
+// The Leader "Ambush: Play the top card of the Villain Deck."). Its executor handler is a
+// DELIBERATE NO-OP (the WP-481 `become-scheme-twist` secondary-fire-site pattern): the actual
+// reveal needs the `RevealContext` + `implementationMap` the executor does NOT receive, so the
+// real play fires from the two sites that own the reveal pipeline — `villainDeck.reveal.ts`
+// (The Leader's onAmbush) and `fightVillain.ts` (Endless Armies' onFight). `magnitude` carries
+// the count N of top villain-deck cards to play (parsed from the `:N` token). Keyword-less
+// (no LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR entry), so it reverse-maps to `undefined`; the fire
+// sites narrate the reveals, so the no-op handler adds no self-narration.
 export type VillainEffectPrimitive =
   | 'ko-hero'
   | 'gain-wound'
@@ -301,7 +311,8 @@ export type VillainEffectPrimitive =
   | 'give-hq-hero-each-player'
   | 'gain-recruit-current'
   | 'gain-officer-current'
-  | 'add-next-hand-size';
+  | 'add-next-hand-size'
+  | 'play-villain-deck-cards';
 
 // why: drift-detection array — must match VillainEffectPrimitive exactly
 // (villainAbility.types.test.ts asserts bidirectional parity). Adding a
@@ -351,6 +362,11 @@ export type VillainEffectPrimitive =
 // why: `add-next-hand-size` appended at position 23 by WP-543 (D-24352 — the ADDITIVE
 // next-hand primitive for Savage Land Mutates "draw an extra card"; stacks per defeat, unlike
 // the absolute `override-next-hand-size`; keyword-less, self-narrating).
+// why: `play-villain-deck-cards` appended at position 24 by WP-542 (D-24351 — the recursive
+// villain-deck-play primitive for Endless Armies of HYDRA (Fight, N=2) + The Leader (Ambush,
+// N=1); a DELIBERATE NO-OP in the executor (WP-481 secondary-fire-site pattern), the real
+// reveal fires from villainDeck.reveal.ts (onAmbush) + fightVillain.ts (onFight); `magnitude`
+// carries the play count; keyword-less, the fire sites narrate).
 /** All villain effect primitives in canonical order. Single source of truth. */
 export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'ko-hero',
@@ -376,6 +392,7 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'gain-recruit-current',
   'gain-officer-current',
   'add-next-hand-size',
+  'play-villain-deck-cards',
 ] as const;
 
 /**
@@ -406,6 +423,10 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
  *     ADDITIVELY as `(G.handSizeOverrides[player] ?? HAND_SIZE) + magnitude` so multiple
  *     defeats in one turn stack; keyword-less, self-narrates. Contrast
  *     `override-next-hand-size`, whose `magnitude` is the ABSOLUTE next-hand size.
+ *   - `play-villain-deck-cards` (D-24351): `magnitude` is the COUNT of top villain-deck
+ *     cards to play/reveal (Endless Armies of HYDRA: 2; The Leader: 1), parsed from the
+ *     `:N` token. A DELIBERATE NO-OP in the executor — the real reveal fires from the
+ *     onAmbush / onFight fire sites; keyword-less, the fire sites narrate.
  *   - Any effect: optional `requireCitySpaces` (D-24295) is a location gate —
  *     the effect fires only when the villain is fought on one of the listed City
  *     spaces (Abomination: Streets/Bridge, the Lizard: Sewers).

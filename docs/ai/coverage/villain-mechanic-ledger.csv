@@ -160,7 +160,7 @@ core-villain-enemies-of-asgard-destroyer,Destroyer,core,villain,koHeroEachPlayer
 core-villain-spider-foes-doctor-octopus,Doctor Octopus,core,villain,override-next-hand-size,executable,WP-503,D-24307,packages/game-engine/src/villain/villainEffects.execute.ts#override-next-hand-size
 henchman-doombot-legion,Doombot Legion,core,henchman,scry-ko-own-deck,executable,WP-447,D-24267,packages/game-engine/src/villain/villainEffects.execute.ts#scry-ko-own-deck
 core-villain-enemies-of-asgard-enchantress,Enchantress,core,villain,draw-cards-current,executable,WP-485,D-24290,packages/game-engine/src/villain/villainEffects.execute.ts#draw-cards-current
-core-villain-hydra-endless-armies-of-hydra,Endless Armies of HYDRA,core,villain,(unmarked),unmarked,,,
+core-villain-hydra-endless-armies-of-hydra,Endless Armies of HYDRA,core,villain,play-villain-deck-cards,executable,WP-542,D-24351,packages/game-engine/src/villain/villainEffects.execute.ts#play-villain-deck-cards
 core-villain-enemies-of-asgard-frost-giant,Frost Giant,core,villain,reveal-or-wound,executable,WP-469,D-24281,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
 core-villain-spider-foes-green-goblin,Green Goblin,core,villain,captureBystander,executable,WP-185,D-18506,packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander
 core-villain-hydra-hydra-kidnappers,HYDRA Kidnappers,core,villain,gain-officer-current,executable,WP-541,D-24350,packages/game-engine/src/villain/villainEffects.execute.ts#gain-officer-current
@@ -179,7 +179,7 @@ core-villain-skrulls-skrull-shapeshifters,Skrull Shapeshifters,core,villain,capt
 core-villain-skrulls-skrull-shapeshifters,Skrull Shapeshifters,core,villain,gain-attached-hero,executable,WP-450,D-24270,packages/game-engine/src/villain/villainEffects.execute.ts#gain-attached-hero
 core-villain-skrulls-super-skrull,Super-Skrull,core,villain,koHeroEachPlayer,executable,WP-189,D-18901,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 core-villain-hydra-supreme-hydra,Supreme HYDRA,core,villain,(unmarked),unmarked,,,
-core-villain-radiation-the-leader,The Leader,core,villain,(unmarked),unmarked,,,
+core-villain-radiation-the-leader,The Leader,core,villain,play-villain-deck-cards,executable,WP-542,D-24351,packages/game-engine/src/villain/villainEffects.execute.ts#play-villain-deck-cards
 core-villain-spider-foes-the-lizard,The Lizard,core,villain,gain-wound,executable,WP-252,D-24023,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
 core-villain-masters-of-evil-ultron,Ultron,core,villain,reveal-or-wound,executable,WP-469,D-24281,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
 core-villain-spider-foes-venom,Venom,core,villain,gainWoundEachPlayer,executable,WP-185,D-18502,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound

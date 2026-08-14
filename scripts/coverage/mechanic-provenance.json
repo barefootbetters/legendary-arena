@@ -47,6 +47,7 @@
     "gain-recruit-current": { "wp": "WP-541", "decision": "D-24350" },
     "gain-officer-current": { "wp": "WP-541", "decision": "D-24350" },
     "add-next-hand-size": { "wp": "WP-543", "decision": "D-24352" },
+    "play-villain-deck-cards": { "wp": "WP-542", "decision": "D-24351" },
     "draw": { "wp": "WP-022", "decision": "D-2201" },
     "rescue": { "wp": "WP-215", "decision": "D-21501" },
     "undercover": { "wp": "WP-282", "decision": "D-24060" },

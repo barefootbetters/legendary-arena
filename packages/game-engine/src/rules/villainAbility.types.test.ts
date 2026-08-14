@@ -339,8 +339,11 @@ describe('VILLAIN_EFFECT_PRIMITIVES drift-detection', () => {
   // recruit + HYDRA Kidnappers gain a S.H.I.E.L.D. Officer — the first Core villain/henchman
   // Fight-reward slice). WP-543 (D-24352) appended a twenty-third, `add-next-hand-size`, at
   // position 23 (the ADDITIVE next-hand primitive for Savage Land Mutates "draw an extra card"
-  // — stacks per defeat, unlike the absolute `override-next-hand-size`).
-  it('contains exactly the 23 canonical primitives in order', () => {
+  // — stacks per defeat, unlike the absolute `override-next-hand-size`). WP-542 (D-24351)
+  // appended a twenty-fourth, `play-villain-deck-cards`, at position 24 (the recursive
+  // villain-deck-play primitive for Endless Armies of HYDRA Fight + The Leader Ambush — a
+  // deliberate no-op in the executor; the real reveal fires from the onAmbush / onFight sites).
+  it('contains exactly the 24 canonical primitives in order', () => {
     const expectedPrimitives: VillainEffectPrimitive[] = [
       'ko-hero',
       'gain-wound',
@@ -365,11 +368,12 @@ describe('VILLAIN_EFFECT_PRIMITIVES drift-detection', () => {
       'gain-recruit-current',
       'gain-officer-current',
       'add-next-hand-size',
+      'play-villain-deck-cards',
     ];
     assert.equal(
       VILLAIN_EFFECT_PRIMITIVES.length,
-      23,
-      'VILLAIN_EFFECT_PRIMITIVES must have exactly 23 entries',
+      24,
+      'VILLAIN_EFFECT_PRIMITIVES must have exactly 24 entries',
     );
     assert.deepStrictEqual(
       [...VILLAIN_EFFECT_PRIMITIVES],
