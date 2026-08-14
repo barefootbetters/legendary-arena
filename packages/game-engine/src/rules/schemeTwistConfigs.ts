@@ -99,7 +99,18 @@ export const SCHEME_TWIST_CONFIGS: Map<string, SchemeTwistConfig> = new Map([
     {
       schemeId: 'core/unleash-the-power-of-the-cosmic-cube',
       resolverId: 'wound-all',
-      params: { woundCount: 1 },
+      // why: WP-540 / D-24349 — the printed escalation: nothing on twists 1-4,
+      // each player gains 1 Wound on twists 5-6, and 3 Wounds on twist 7 (twist 8
+      // = Evil Wins, below). Keyed on currentTwist = schemeTwistCount + 1; the
+      // resolver takes the MAX matching step (twist 7 matches both → 3 wounds),
+      // replacing the flat 1-per-twist that both over-punished early and
+      // under-punished the twist-7 spike.
+      params: {
+        escalation: [
+          { atOrAfterTwist: 5, woundCount: 1 },
+          { atOrAfterTwist: 7, woundCount: 3 },
+        ],
+      },
       // why: TRUE twist-loss scheme — printed "Twist 8: Evil Wins!" (D-24178).
       // This was losing a twist early at the fallback 7; the reported bug.
       lossThreshold: 8,
@@ -110,7 +121,10 @@ export const SCHEME_TWIST_CONFIGS: Map<string, SchemeTwistConfig> = new Map([
     {
       schemeId: 'core/super-hero-civil-war',
       resolverId: 'ko-from-hq',
-      params: { koCount: 2 },
+      // why: WP-540 / D-24349 — the printed Twist "KO all the Heroes in the HQ"
+      // (then refill each), not a fixed 2; koAll drives the KO-all path. The loss
+      // stays hero-deck-empty (WP-510), unchanged.
+      params: { koAll: true },
       // why: real Evil-Wins is a RESOURCE condition (D-24318) — "If the Hero
       // Deck runs out", modeled as the 'pile-depleted' kind on G.heroDeck.
       // Declaring resourceLossCondition SUPPRESSES the twist-count doom-clock
