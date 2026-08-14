@@ -60,6 +60,35 @@ The remaining sound mappings and library picks are proposals; the event
 vocabulary, the endgame outcomes, the projected `UIState` signals, and the
 architectural boundaries are sourced to code.
 
+## Architecture & runtime status
+
+Audio is a **pure client-side reaction to projected `UIState`** — it inherits
+the [Feel-Layer Contract](design-system-overview.md#feel-layer-contract) in
+full: client-side only; reads projected `UIState`, never `G` / `ctx` / the game
+log; zero determinism footprint; degrades cleanly to silence. When several cues
+want the same frame, the shared
+[Event priority & coalescing contract](design-system-overview.md#event-priority)
+governs the outcome — the audio layer MUST reach the **identical** decision as
+the [visual layer](visual-effects.md), so a suppressed sting is also a
+suppressed flash.
+
+**Shipped** (live on `play.legendary-arena.com`):
+
+- Client-only audio foundation — WP-412 / D-24224.
+- Tiered [combo cue](#tiered-combo) (`combo-small` … `combo-legendary`) —
+  WP-413 / WP-425 (D-24228 / D-24246); rides `lastPlayEffectsFired` (D-24221).
+- [Surface-2](#surface-2) player-action move cues (five of six moves) —
+  WP-421 / D-24241.
+
+**Approved design** (contracted, not yet built):
+
+- Surface-1 notable-event cues; Surface-4 endgame stingers.
+
+**Research** (proposal-level, no WP scoped):
+
+- [Motif playback](#motif-cues) wiring; the adaptive danger-meter score; the
+  voiced [Arena Announcer](#arena-announcer).
+
 ## Mechanics
 
 ### The trigger surface
@@ -443,105 +472,18 @@ music, then it returns — a standard "sidechain" polish move.
   (~$30/track) exists if you want it clean.
 - Avoid CC-BY-NC (non-commercial) music entirely — see licensing below.
 
-### Example sound picks per event/action
+### Sourcing candidates (CC0-first)
 
-Three concrete, commercially-safe starting points per event. The
-**Freesound** links are pre-filtered to CC0; the named **OpenGameArt**
-and **Kenney** entries point at specific CC0 packs (audition and
-confirm each asset's license on its page before use). These are
-starting points to audition, not final picks.
-
-**Master Strike (`mastermindStrikeResolved`)** — a big dramatic hit:
-- OpenGameArt CC0 Cinematic — "Sinister Boss Appears!" (short intro sting)
-- Kenney Impact Sounds — a heavy bell / metal impact
-- [Freesound CC0: "orchestral hit"](https://freesound.org/search/?q=orchestral+hit&f=license:%22Creative+Commons+0%22)
-
-**Scheme Twist (`schemeTwistResolved`)** — ominous, lower than a Strike:
-- OpenGameArt CC0 Cinematic — "Evil Approach" (opening bars)
-- [Freesound CC0: "ominous sting"](https://freesound.org/search/?q=ominous+sting&f=license:%22Creative+Commons+0%22)
-- [Freesound CC0: "dark whoosh"](https://freesound.org/search/?q=dark+whoosh&f=license:%22Creative+Commons+0%22)
-
-**Villain Ambush (`ambushResolved`)** — a menacing entrance:
-- OpenGameArt 80 CC0 RPG SFX — a creature roar
-- Kenney Impact Sounds — a sharp plate / punch impact
-- [Freesound CC0: "monster roar"](https://freesound.org/search/?q=monster+roar&f=license:%22Creative+Commons+0%22)
-
-**Villain defeated (`fightResolved`)** — a satisfying hit, coin flourish when a bystander is freed:
-- Kenney Impact Sounds — a solid punch / metal impact
-- OpenGameArt 80 CC0 RPG SFX — coins / gems (the bystander flourish)
-- [Freesound CC0: "sword impact"](https://freesound.org/search/?q=sword+impact&f=license:%22Creative+Commons+0%22)
-
-**Mastermind defeated / heroes win (`heroes-win`)** — the biggest positive cue, fanfare + a crowd cheer layered on top:
-- OpenGameArt CC0 Cinematic — "Victory Theme for RPG"
-- OpenGameArt CC0 Cinematic — "A Legend Will Rise (Orchestral)"
-- [Freesound CC0: "crowd cheer"](https://freesound.org/search/?q=crowd+cheer&f=license:%22Creative+Commons+0%22) (the cheer layer)
-- [Freesound CC0: "victory fanfare"](https://freesound.org/search/?q=victory+fanfare&f=license:%22Creative+Commons+0%22)
-
-**Wound gained** — a dull, painful thud:
-- OpenGameArt 80 CC0 RPG SFX — a creature "hurt"
-- Kenney Impact Sounds — a soft body impact
-- [Freesound CC0: "punch impact"](https://freesound.org/search/?q=punch+impact&f=license:%22Creative+Commons+0%22)
-
-**Hero KO'd** — a sharp negative loss cue:
-- Kenney Interface Sounds — an "error" / negative tone
-- [Freesound CC0: "power down"](https://freesound.org/search/?q=power+down&f=license:%22Creative+Commons+0%22)
-- [Freesound CC0: "defeat"](https://freesound.org/search/?q=defeat&f=license:%22Creative+Commons+0%22)
-
-**Bystander captured** — an ominous grab:
-- OpenGameArt 80 CC0 RPG SFX — chains
-- OpenGameArt CC0 Cinematic — "Bit Forest stinger"
-- [Freesound CC0: "chains"](https://freesound.org/search/?q=chains&f=license:%22Creative+Commons+0%22)
-
-**Bystander rescued** — a bright reward chime:
-- OpenGameArt 80 CC0 RPG SFX — coins / gems
-- Kenney Interface Sounds — a "confirmation" / positive tone
-- [Freesound CC0: "reward chime"](https://freesound.org/search/?q=reward+chime&f=license:%22Creative+Commons+0%22)
-
-**Play card (`playCard`)** — a card whoosh / place:
-- OpenGameArt Card Game Sounds — "Play card"
-- [Freesound CC0: "card place"](https://freesound.org/search/?q=card+place&f=license:%22Creative+Commons+0%22)
-- [Freesound CC0: "card flip"](https://freesound.org/search/?q=card+flip&f=license:%22Creative+Commons+0%22)
-
-**Recruit hero (`recruitHero`)** — a positive purchase chime:
-- Kenney Interface Sounds — a "confirmation" chime
-- OpenGameArt 80 CC0 RPG SFX — coins
-- [Freesound CC0: "cash register"](https://freesound.org/search/?q=cash+register&f=license:%22Creative+Commons+0%22)
-
-**Attack a villain (`fightVillain`)** — a sword swing:
-- OpenGameArt 80 CC0 RPG SFX — blade
-- Kenney RPG Audio — a metal / impact hit
-- [Freesound CC0: "sword swing"](https://freesound.org/search/?q=sword+swing&f=license:%22Creative+Commons+0%22)
-
-**Draw cards (`drawCards`)** — a card draw / short shuffle:
-- OpenGameArt Card Game Sounds — "Draw card"
-- OpenGameArt Card Game Sounds — "Shuffle"
-- [Freesound CC0: "card deal"](https://freesound.org/search/?q=card+deal&f=license:%22Creative+Commons+0%22)
-
-**Dodge (`dodgeCard`)** — a quick card flick:
-- OpenGameArt Card Game Sounds — "Tap" / "Untap"
-- Kenney Interface Sounds — a "tick" / switch
-- [Freesound CC0: "card swipe"](https://freesound.org/search/?q=card+swipe&f=license:%22Creative+Commons+0%22)
-
-**End turn (`endTurn` / `onTurnEnd`)** — a soft confirm / pass:
-- OpenGameArt Card Game Sounds — "Notification (pass turn)"
-- Kenney UI Audio — a soft switch / confirm
-- [Freesound CC0: "notification chime"](https://freesound.org/search/?q=notification+chime&f=license:%22Creative+Commons+0%22)
-
-**Your turn begins (`onTurnStart`)** — a gentle attention cue:
-- Kenney Interface Sounds — a "select" / bong tone
-- OpenGameArt Card Game Sounds — "Notification"
-- [Freesound CC0: "notification bell"](https://freesound.org/search/?q=notification+bell&f=license:%22Creative+Commons+0%22)
-
-**Scheme wins / heroes lose (`scheme-wins`)** — a somber, deflating sting + a crowd boo; the two reasons (city overrun via escape cap, or the scheme completing) can take distinct stings:
-- OpenGameArt CC0 Cinematic — "Laments of the War" (closing bars)
-- OpenGameArt CC0 Cinematic — "Epic Endgame Cinematic"
-- [Freesound CC0: "crowd boo"](https://freesound.org/search/?q=crowd+boo&f=license:%22Creative+Commons+0%22) (the boo layer)
-- [Freesound CC0: "game over"](https://freesound.org/search/?q=game+over&f=license:%22Creative+Commons+0%22)
-
-**Match tied (deck exhaustion — `finalTurnTie`)** — wry and unresolved, neither win nor loss:
-- OpenGameArt CC0 Cinematic — a neutral, suspended cadence (an unresolved chord, not a fanfare or dirge)
-- [Freesound CC0: "suspense sting"](https://freesound.org/search/?q=suspense+sting&f=license:%22Creative+Commons+0%22)
-- [Freesound CC0: "anticlimax"](https://freesound.org/search/?q=anticlimax&f=license:%22Creative+Commons+0%22)
+Per-event candidate picks are **not catalogued here** — a long list of
+Freesound / OpenGameArt / Kenney names drifts fast and just duplicates the
+Licensing posture source families below. To source a clip: take the **intent**
+from the `Suggested sound character` column of the Surface 1 / Surface 1b /
+[Surface 2](#surface-2) tables, then draw from a CC0 family in the
+[Licensing posture](#licensing-posture) (Kenney, the OpenGameArt CC0 packs, or a
+CC0-filtered Freesound search), auditioning against the
+[Audio previews](#audio-previews) below. For **bespoke** per-theme / per-hero
+music and stings, see [Music Authoring](music-authoring.md). Confirm each
+asset's license on its own page before use.
 
 ### Audio previews
 
@@ -649,7 +591,7 @@ play clips. They never write `G`, never influence an outcome, and add
 replays, and determinism proofs are unaffected because none of them
 render audio.
 
-### Licensing posture (commercial-safe first)
+### Licensing posture (commercial-safe first) {#licensing-posture}
 
 `legendary-arena.com` is a commercial site, so the default is **CC0**
 (public-domain dedication): no attribution, unrestricted commercial
@@ -737,11 +679,10 @@ unusable on a revenue-generating site.
   (first click/tap) before anything plays, plus persistent mute/volume
   controls (localStorage) — ideally separate SFX and music sliders — so
   returning players keep their preference.
-- **Determinism is untouched, and must stay that way.** Audio is pure
-  presentation: it must never read into or write out of `G`/`ctx`,
-  never affect move validation, and never branch engine logic. The
-  determinism invariant ([ARCHITECTURE.md](../docs/ai/ARCHITECTURE.md))
-  is a non-issue precisely because audio stays client-side.
+- **Determinism is untouched.** Restated from the
+  [Feel-Layer Contract](design-system-overview.md#feel-layer-contract): audio is
+  pure client-side presentation — it never reads or writes `G` / `ctx`, never
+  affects validation, and is absent from the state hash.
 - **Attribution obligations travel with the asset.** A CC0 clip is
   free-and-clear forever; a Zapsplat, Incompetech, or CC-BY asset
   carries a credit (and for Zapsplat, no-redistribution) obligation
@@ -822,11 +763,36 @@ unusable on a revenue-generating site.
   and which WP wires motif *selection* into the [audio layer](#motif-cues) and
   packs the SFX sprite. No new engine event is needed to pick a motif — only
   the data and the playback code.
-- **Music: re-sequencing now, stems later?** Ship horizontal
-  re-sequencing with CC0 loops for v1; revisit vertical layering only
-  if a custom stemmed score is commissioned.
+- **Music technique — decided (not open).** Horizontal re-sequencing with CC0
+  loops for v1 is locked (see [Decision Summary](#decision-summary)); vertical
+  stem layering is a future consideration only if a commissioned stemmed score
+  exists.
 - **Accessibility.** Respect a reduced-motion / reduced-audio
   preference and default volumes conservatively.
+
+## Decision Summary
+
+A 60-second read of where this page stands.
+
+**Locked**
+
+- Client-side audio only; `UIState`-driven; never reads `G` / `ctx` / the game
+  log; zero determinism footprint (inherits the
+  [Feel-Layer Contract](design-system-overview.md#feel-layer-contract)).
+- CC0-first licensing (commercial-safe); avoid CC-BY-NC entirely.
+- Combo tiers are shared with the
+  [visual layer](visual-effects.md#synergy-callout) — one `comboTierForCount`,
+  never a per-renderer copy.
+- Simultaneous cues obey the shared
+  [Event priority & coalescing contract](design-system-overview.md#event-priority).
+- Adaptive music ships **horizontal re-sequencing** for v1.
+
+**Shipped** — WP-412 foundation · WP-413 / WP-425 combo cue · WP-421 move cues.
+
+**Deferred** — the `escapeResolved` event (WP-186) · motif playback wiring · the
+voiced Arena Announcer VO · the adaptive-music implementation · a dodge UI
+affordance so `dodgeCard` can be dispatched and sounded · vertical stem layering
+(only if a commissioned stemmed score exists).
 
 ## References
 

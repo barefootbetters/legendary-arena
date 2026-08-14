@@ -254,6 +254,34 @@ treat them consistently:
   not a new constraint — it names why [competence](#competence) and
   [agency](#agency) sit among the reward drivers.)
 
+### Event priority & coalescing (shared) {#event-priority}
+
+Several spine events can resolve in one `UIState` update — a fight that fires a
+combo that rescues a bystander; a Master Strike landing on the same frame as a
+`>= 5` combo. Because both sensory layers react to the *same* frame, the
+resolution policy is a **shared contract**, not a per-layer choice — otherwise
+the flash and the sting disagree about what to show. This is the load-bearing
+rule every implementation is checked against; it is deliberately here (shared)
+rather than restated on each sensory page. Locked:
+
+- **Priority follows the [priority tiers](#priority-tiers)** — a Tier-1 peak
+  (the endgame finale, `mastermindDefeated`, a 3+ combo) outranks a Tier-2
+  reward, which outranks a Tier-3 / action cue. When treatments compete for the
+  same beat, the higher tier takes the foreground; lower-tier **full-screen**
+  treatments yield (a Master Strike outranks a draw cue).
+- **One crescendo per resolved move** — the [pacing invariant](#pacing-invariants)
+  applied here: merge or sequence simultaneous events into a single crescendo,
+  never a collision.
+- **Deterministic and identical across renderers.** Given the same frame, the
+  visual and audio layers MUST reach the same coalescing decision, so a
+  suppressed flash is also a suppressed sting.
+- **Never queue a backlog.** Overflow beats are dropped, not deferred into a
+  later storm — a burst of events must not desync the cues from the board.
+
+The exact merge/sequence **algorithm** (queue vs merge vs suppress vs replace)
+is a [Decisions Pending](#decisions-pending) a Work Packet owns; the four rules
+above are the contract that algorithm must satisfy.
+
 ### Framing invariants (MUST) {#framing-invariants}
 
 The [narrative meaning](#narrative-meaning) layer is a **framing contract** —
@@ -638,8 +666,10 @@ Open choices a Work Packet must resolve:
   out of scope).
 - **Build-up timing per tier** — how long the anticipation micro-beat is
   before a combo / reveal payoff (needs playtesting).
-- **Simultaneous-event sequencing rule** — the merge/sequence algorithm for
-  the "one crescendo per resolved move" invariant, shared by both layers.
+- **Event-storm coalescing algorithm** — the concrete queue / merge / suppress /
+  replace rule that satisfies the [Event priority & coalescing contract](#event-priority),
+  shared by both layers (the merge/sequence algorithm for the "one crescendo per
+  resolved move" invariant).
 - **Preference surface** — the reduced-motion / effect-intensity control and
   the builder/destroyer narrative-lens toggle both live in player
   preferences; decide whether that's one settings panel or split across the
