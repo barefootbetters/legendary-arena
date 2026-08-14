@@ -4,12 +4,12 @@
   "summary": {
     "totalRows": 719,
     "byStatus": {
-      "executable": 131,
+      "executable": 133,
       "deferred": 0,
       "unsupported": 1,
-      "unmarked": 587
+      "unmarked": 585
     },
-    "distinctMechanics": 29
+    "distinctMechanics": 30
   },
   "rows": [
     {
@@ -1788,11 +1788,11 @@
       "cardName": "Endless Armies of HYDRA",
       "set": "core",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "play-villain-deck-cards",
+      "status": "executable",
+      "wp": "WP-542",
+      "decision": "D-24351",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#play-villain-deck-cards"
     },
     {
       "extId": "core-villain-enemies-of-asgard-frost-giant",
@@ -1997,11 +1997,11 @@
       "cardName": "The Leader",
       "set": "core",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "play-villain-deck-cards",
+      "status": "executable",
+      "wp": "WP-542",
+      "decision": "D-24351",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#play-villain-deck-cards"
     },
     {
       "extId": "core-villain-spider-foes-the-lizard",

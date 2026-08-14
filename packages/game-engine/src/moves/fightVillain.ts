@@ -27,7 +27,17 @@ import {
 import {
   executeVillainAbilities,
   resolveEffectResultNames,
+  villainCardPlaysVillainDeckCards,
 } from '../villain/villainEffects.execute.js';
+// why: WP-542 / D-24351 — the onFight fire site for Endless Armies of HYDRA plays the top
+// two Villain Deck cards. The reveal machinery lives in villainDeck.reveal.ts; this move
+// imports the shared loop + the RevealContext shape (the move builds one — see below).
+import type { RevealContext } from '../villainDeck/villainDeck.reveal.js';
+import { playTopVillainDeckCards } from '../villainDeck/villainDeck.reveal.js';
+// why: WP-542 / D-24351 — the STATIC handler map performVillainReveal needs. The fight move
+// does not receive an implementationMap (only the reveal move + scheme resolvers thread one),
+// so it imports the module constant — the same one game.ts + villainDeck.reveal.ts import.
+import { DEFAULT_IMPLEMENTATION_MAP } from '../rules/ruleRuntime.impl.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
 import { hasPendingKoHeroChoice } from './koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from './scryKoChoice.resolve.js';
@@ -356,4 +366,22 @@ export function defeatCityVillainCore(
       skrullGained,
     ),
   });
+
+  // why: WP-542 / D-24351 — Endless Armies of HYDRA's "Fight: Play the top two cards of
+  // the Villain Deck." The executor's play-villain-deck-cards handler is a no-op (the move
+  // reaches the reveal pipeline, the executor does not), so the actual play fires HERE,
+  // AFTER the defeat is fully settled (victory pile, awards, fightResolved event) so the
+  // defeat is logged/emitted first and the played cards' reveals follow as its consequence.
+  // The move does not receive a RevealContext or an implementationMap, so build the narrow
+  // context performVillainReveal reads from the fought ctx + shuffle source and import the
+  // STATIC DEFAULT_IMPLEMENTATION_MAP. Each played card resolves as a normal reveal,
+  // recursing through the rule pipeline; the both-empty guard terminates the loop.
+  const fightPlayCount = villainCardPlaysVillainDeckCards(G, cardId, 'onFight');
+  if (fightPlayCount > 0) {
+    const revealContext: RevealContext = {
+      random: shuffleContext.random,
+      ctx: { currentPlayer },
+    };
+    playTopVillainDeckCards(G, revealContext, DEFAULT_IMPLEMENTATION_MAP, fightPlayCount);
+  }
 }

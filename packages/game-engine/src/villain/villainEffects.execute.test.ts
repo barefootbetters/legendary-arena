@@ -16,6 +16,7 @@ import {
   selectDefaultKoTarget,
   selectScryKoTarget,
   buildKoEligibleTargets,
+  villainCardPlaysVillainDeckCards,
 } from './villainEffects.execute.js';
 import { resolveKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { resolveDiscardChoice } from '../moves/discardChoice.resolve.js';
@@ -3956,6 +3957,71 @@ describe('executeVillainAbilities — gain-officer-current (WP-541 / D-24350)', 
     assert.equal(G.messages!.length, 1, 'the empty-pile no-op still narrates');
     assert.match(G.messages![0]!.text, /Fight effect: no S\.H\.I\.E\.L\.D\. Officer to gain\./);
     assert.equal(G.messages![0]!.outcome, 'blocked');
+    assert.equal(G.diagnostics?.hollowEffects?.length ?? 0, 0, 'a reachable no-op is not a hollow');
+  });
+});
+
+describe('play-villain-deck-cards detector + reachable no-op (WP-542 / D-24351)', () => {
+  // why: build the descriptor hook directly — the shared `hook` helper only takes
+  // legacy keyword strings, and play-villain-deck-cards is keyword-less.
+  function playHook(
+    cardId: string,
+    timing: 'onAmbush' | 'onFight' | 'onEscape',
+    magnitude: number,
+  ): VillainAbilityHook {
+    return {
+      cardId: cardId as CardExtId,
+      timing,
+      keywords: [],
+      effects: [{ primitive: 'play-villain-deck-cards', magnitude }],
+    };
+  }
+
+  it('returns the marked count for the matching timing', () => {
+    const G = makeG({ hooks: [playHook('endless-armies', 'onFight', 2)] });
+    assert.equal(villainCardPlaysVillainDeckCards(G, 'endless-armies' as CardExtId, 'onFight'), 2);
+  });
+
+  it('returns 0 for a non-matching timing on the same card', () => {
+    const G = makeG({ hooks: [playHook('the-leader', 'onAmbush', 1)] });
+    assert.equal(villainCardPlaysVillainDeckCards(G, 'the-leader' as CardExtId, 'onFight'), 0);
+    assert.equal(villainCardPlaysVillainDeckCards(G, 'the-leader' as CardExtId, 'onAmbush'), 1);
+  });
+
+  it('returns 0 for a card with no play-villain-deck-cards descriptor', () => {
+    const G = makeG({ hooks: [hook('v-other', 'onFight', ['gainWoundCurrentPlayer'])] });
+    assert.equal(villainCardPlaysVillainDeckCards(G, 'v-other' as CardExtId, 'onFight'), 0);
+  });
+
+  it('defaults to 1 when a hand-built descriptor omits magnitude', () => {
+    const G = makeG({
+      hooks: [
+        {
+          cardId: 'no-mag' as CardExtId,
+          timing: 'onAmbush',
+          keywords: [],
+          effects: [{ primitive: 'play-villain-deck-cards' }],
+        },
+      ],
+    });
+    assert.equal(villainCardPlaysVillainDeckCards(G, 'no-mag' as CardExtId, 'onAmbush'), 1);
+  });
+
+  it('guards a G with no villainAbilityHooks (returns 0, no throw)', () => {
+    const G = makeG({ hooks: [] });
+    assert.equal(villainCardPlaysVillainDeckCards(G, 'anything' as CardExtId, 'onFight'), 0);
+  });
+
+  it('the executor handler is a reachable no-op — mutates nothing, records no hollow', () => {
+    // why: AC-1 — the handler must be reachable (in VILLAIN_EFFECT_HANDLERS), so the
+    // executor records NO hollow for the marked line, and keyword-less, so it returns
+    // no VillainEffectResult and mutates nothing. The real reveal fires from the fire sites.
+    const G = makeG({
+      hooks: [playHook('endless-armies', 'onFight', 2)],
+      messages: [],
+    });
+    const results = executeVillainAbilities(G, CTX, 'endless-armies' as CardExtId, 'onFight');
+    assert.deepStrictEqual(results, [], 'keyword-less no-op returns no result');
     assert.equal(G.diagnostics?.hollowEffects?.length ?? 0, 0, 'a reachable no-op is not a hollow');
   });
 });

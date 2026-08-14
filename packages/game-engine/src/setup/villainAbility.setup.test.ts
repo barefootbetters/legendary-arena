@@ -593,6 +593,72 @@ describe('buildVillainAbilityHooks — gain-recruit-current + gain-officer-curre
   });
 });
 
+describe('buildVillainAbilityHooks — play-villain-deck-cards grammar (WP-542 / D-24351)', () => {
+  const registry = makeRegistry(
+    'core',
+    [
+      {
+        slug: 'hydra',
+        cards: [
+          // why: Endless Armies of HYDRA — "Fight: Play the top two cards of the Villain Deck."
+          {
+            slug: 'endless-armies-of-hydra',
+            abilities: ['Fight: Play the top two cards of the Villain Deck. [effect:play-villain-deck-cards:2]'],
+          },
+        ],
+      },
+      {
+        slug: 'radiation',
+        cards: [
+          // why: The Leader — "Ambush: Play the top card of the Villain Deck."
+          {
+            slug: 'the-leader',
+            abilities: ['Ambush: Play the top card of the Villain Deck. [effect:play-villain-deck-cards:1]'],
+          },
+          // why: the count is required — a no-param play-villain-deck-cards is malformed.
+          { slug: 'leader-noparam', abilities: ['Ambush: nope. [effect:play-villain-deck-cards]'] },
+          // why: a non-positive-integer count is rejected to unresolvedMarkers.
+          { slug: 'leader-bad', abilities: ['Ambush: nope. [effect:play-villain-deck-cards:x]'] },
+        ],
+      },
+    ],
+    [],
+  );
+  const hooks = buildVillainAbilityHooks(registry, makeConfig(['core/hydra', 'core/radiation'], []));
+  const villainHook = (slug: string, timing: 'onAmbush' | 'onFight') =>
+    hooks.find((h) => h.cardId === `core-villain-radiation-${slug}-00` && h.timing === timing)!;
+
+  it('parses Endless Armies of HYDRA Fight to play-villain-deck-cards:2', () => {
+    const hook = hooks.find(
+      (h) => h.cardId === 'core-villain-hydra-endless-armies-of-hydra-00' && h.timing === 'onFight',
+    )!;
+    assert.deepStrictEqual(hook.effects, [{ primitive: 'play-villain-deck-cards', magnitude: 2 }]);
+    // why: keyword-less — must NOT reverse-map to a legacy keyword.
+    assert.deepStrictEqual(hook.keywords, []);
+  });
+
+  it('parses The Leader Ambush to play-villain-deck-cards:1', () => {
+    assert.deepStrictEqual(villainHook('the-leader', 'onAmbush').effects, [
+      { primitive: 'play-villain-deck-cards', magnitude: 1 },
+    ]);
+    assert.deepStrictEqual(villainHook('the-leader', 'onAmbush').keywords, []);
+  });
+
+  it('rejects a no-param play-villain-deck-cards to unresolvedMarkers (count required)', () => {
+    assert.deepStrictEqual(villainHook('leader-noparam', 'onAmbush').effects, []);
+    assert.deepStrictEqual(villainHook('leader-noparam', 'onAmbush').unresolvedMarkers, [
+      'play-villain-deck-cards',
+    ]);
+  });
+
+  it('rejects a non-positive-integer play-villain-deck-cards count to unresolvedMarkers', () => {
+    assert.deepStrictEqual(villainHook('leader-bad', 'onAmbush').effects, []);
+    assert.deepStrictEqual(villainHook('leader-bad', 'onAmbush').unresolvedMarkers, [
+      'play-villain-deck-cards:x',
+    ]);
+  });
+});
+
 describe('buildVillainAbilityHooks — keywords/effects parity', () => {
   it('keywords and effects are distinct but parallel arrays (WP-252)', () => {
     const registry = makeRegistry(

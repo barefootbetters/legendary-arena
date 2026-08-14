@@ -10,11 +10,11 @@
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 368,
+      "executable": 370,
       "deferred": 0,
       "condition": 5,
       "unsupported": 367,
-      "unmarked": 1086
+      "unmarked": 1084
     }
   },
   "entries": [
@@ -6340,11 +6340,11 @@
       "name": "Endless Armies of HYDRA",
       "set": "core",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "play-villain-deck-cards",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#play-villain-deck-cards",
+      "wp": "WP-542",
+      "decision": "D-24351"
     },
     {
       "extId": "core-villain-hydra-hydra-kidnappers",
@@ -6450,11 +6450,11 @@
       "name": "The Leader",
       "set": "core",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "play-villain-deck-cards",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#play-villain-deck-cards",
+      "wp": "WP-542",
+      "decision": "D-24351"
     },
     {
       "extId": "core-villain-radiation-zzzax",
@@ -27786,7 +27786,7 @@
     "core-villain-hydra-endless-armies-of-hydra": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "play-villain-deck-cards"
       ]
     },
     "core-villain-hydra-hydra-kidnappers": {
@@ -27846,7 +27846,7 @@
     "core-villain-radiation-the-leader": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "play-villain-deck-cards"
       ]
     },
     "core-villain-radiation-zzzax": {

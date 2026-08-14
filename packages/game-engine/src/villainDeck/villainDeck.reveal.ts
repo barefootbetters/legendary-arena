@@ -33,6 +33,7 @@ import {
   executeVillainAbilities,
   resolveEffectResultNames,
   villainCardEscapeTriggersSchemeTwist,
+  villainCardPlaysVillainDeckCards,
 } from '../villain/villainEffects.execute.js';
 import { hasPendingKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from '../moves/scryKoChoice.resolve.js';
@@ -446,6 +447,18 @@ export function performVillainReveal(
         // the specific hero. `appliedEffects` stays the keyword array (badges).
         narrative: composeAmbushNarrative(ambushCardName, resolvedAmbushResults),
       });
+
+      // why: WP-542 / D-24351 — The Leader's "Ambush: Play the top card of the Villain
+      // Deck." The executor's play-villain-deck-cards handler is a no-op (it cannot reach
+      // the reveal pipeline); the actual play fires HERE, where the RevealContext + the
+      // implementationMap are in scope. Fired AFTER the ambush abilities resolve (the
+      // ambushResolved event above) — the Ambush plays the top N villain-deck cards, each
+      // resolving as a normal reveal (villain→city, henchman / bystander / scheme-twist /
+      // master-strike, recursing through the rule pipeline). N is the marked count.
+      const ambushPlayCount = villainCardPlaysVillainDeckCards(G, cardId, 'onAmbush');
+      if (ambushPlayCount > 0) {
+        playTopVillainDeckCards(G, context, implementationMap, ambushPlayCount);
+      }
     }
 
     // why: WP-432 (supersedes D-1701 / removes the WP-431 entry-capture log) —
@@ -567,5 +580,51 @@ export function performVillainReveal(
     // why: mastermind-strike cards route to G.mastermind.strikePile (not
     // discard) so the game tracks resolved strikes for UI projection
     G.mastermind.strikePile = [...G.mastermind.strikePile, cardId];
+  }
+}
+
+/**
+ * Plays (reveals + resolves) the top `count` cards of the Villain Deck via
+ * `performVillainReveal`, stopping early when the deck and discard are both empty
+ * (WP-542 / D-24351).
+ *
+ * The shared reveal loop behind the recursive villain-deck-play primitive — the
+ * `chainedReveals` scheme resolver's loop, extracted here so both fire sites use
+ * it: The Leader's onAmbush (in this file, count 1) and Endless Armies of HYDRA's
+ * onFight (in fightVillain.ts, count 2). Each play resolves exactly as a normal
+ * villain-deck reveal (villain → City, henchman / bystander / scheme-twist /
+ * master-strike as usual), recursing through the rule pipeline: a played card that
+ * itself plays more villain-deck cards, triggers a scheme twist, or fires a
+ * master-strike resolves in turn. Recursion terminates because each
+ * `performVillainReveal` consumes a deck card (the Villain Deck does not reshuffle,
+ * D-24160) and the both-empty guard stops the loop at exhaustion.
+ *
+ * @param G - The game state to mutate.
+ * @param context - Narrow reveal context (random + ctx.currentPlayer) threaded into
+ *   `performVillainReveal`.
+ * @param implementationMap - Handler map threaded into `performVillainReveal`.
+ * @param count - How many top villain-deck cards to play (>= 1).
+ */
+export function playTopVillainDeckCards(
+  G: LegendaryGameState,
+  context: RevealContext,
+  implementationMap: ImplementationMap,
+  count: number,
+): void {
+  for (let playIndex = 0; playIndex < count; playIndex++) {
+    // why: WP-542 / D-24351 — the both-empty guard: never call
+    // performVillainReveal past deck+discard exhaustion (recursion terminates on
+    // exhaustion). Mirrors the chainedReveals scheme resolver's empty-deck break.
+    if (
+      G.villainDeck.deck.length === 0 &&
+      G.villainDeck.discard.length === 0
+    ) {
+      pushLog(
+        G,
+        `Villain deck exhausted after playing ${playIndex} of ${count} card(s).`,
+      );
+      break;
+    }
+    performVillainReveal(G, context, implementationMap);
   }
 }

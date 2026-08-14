@@ -14,7 +14,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { revealVillainCard, performVillainReveal } from './villainDeck.reveal.js';
+import { revealVillainCard, performVillainReveal, playTopVillainDeckCards } from './villainDeck.reveal.js';
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { RevealedCardType, VillainDeckState } from './villainDeck.types.js';
@@ -2025,6 +2025,147 @@ describe('revealVillainCard — escaped-pile resource loss (Midtown, WP-508)', (
       moveContext.G.counters[ENDGAME_CONDITIONS.SCHEME_LOSS],
       undefined,
       'below the 8-bystander threshold: no scheme loss',
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-542 / D-24351 — recursive villain-deck play
+// ---------------------------------------------------------------------------
+
+describe('playTopVillainDeckCards — the shared reveal loop (WP-542 / D-24351)', () => {
+  it('plays exactly N top villain-deck cards (each enters the city)', () => {
+    const gameState = createMockGameState({
+      deck: ['v1', 'v2', 'v3'],
+      discard: [],
+      cardTypes: { v1: 'villain', v2: 'villain', v3: 'villain' },
+    });
+    gameState.playerZones['0'] = { deck: [], hand: [], discard: [], inPlay: [], victory: [] };
+    const moveContext = createMockMoveContext(gameState);
+
+    playTopVillainDeckCards(
+      gameState,
+      { random: moveContext.random, ctx: { currentPlayer: '0' } },
+      DEFAULT_IMPLEMENTATION_MAP,
+      2,
+    );
+
+    // why: pushVillainIntoCity inserts at index 0 and shifts occupants toward the
+    // escape edge, so assert membership (order-agnostic), not slot index.
+    const cityCards = gameState.city.filter((occupant) => occupant !== null);
+    assert.deepStrictEqual([...cityCards].sort(), ['v1', 'v2'], 'both played cards entered the city');
+    assert.deepStrictEqual(gameState.villainDeck.deck, ['v3'], 'only the top two were played');
+  });
+
+  it('the both-empty guard makes an exhausted deck+discard a logged no-op', () => {
+    const gameState = createMockGameState({ deck: [], discard: [], cardTypes: {} });
+    const moveContext = createMockMoveContext(gameState);
+
+    playTopVillainDeckCards(
+      gameState,
+      { random: moveContext.random, ctx: { currentPlayer: '0' } },
+      DEFAULT_IMPLEMENTATION_MAP,
+      2,
+    );
+
+    assert.deepStrictEqual(gameState.villainDeck.deck, [], 'no draw from an empty deck');
+    assert.ok(
+      gameState.messages.some((message) => message.text.includes('exhausted after playing 0 of 2')),
+      'the exhaustion is logged',
+    );
+  });
+
+  it('plays fewer than N when the deck runs out mid-loop (terminates, no infinite loop)', () => {
+    const gameState = createMockGameState({
+      deck: ['only-one'],
+      discard: [],
+      cardTypes: { 'only-one': 'villain' },
+    });
+    gameState.playerZones['0'] = { deck: [], hand: [], discard: [], inPlay: [], victory: [] };
+    const moveContext = createMockMoveContext(gameState);
+
+    playTopVillainDeckCards(
+      gameState,
+      { random: moveContext.random, ctx: { currentPlayer: '0' } },
+      DEFAULT_IMPLEMENTATION_MAP,
+      2,
+    );
+
+    assert.equal(gameState.city[0], 'only-one', 'the one available card was played');
+    assert.deepStrictEqual(gameState.villainDeck.deck, [], 'deck is empty; the loop stopped');
+    assert.ok(
+      gameState.messages.some((message) => message.text.includes('exhausted after playing 1 of 2')),
+      'the loop breaks on the both-empty guard after playing 1 of 2',
+    );
+  });
+});
+
+describe('The Leader onAmbush fire site — plays the top villain-deck card (WP-542 / D-24351)', () => {
+  it('reveals The Leader, then its Ambush plays the top villain-deck card', () => {
+    const theLeader = 'the-leader' as CardExtId;
+    const gameState = createMockGameState({
+      deck: [theLeader, 'played-by-leader'],
+      discard: [],
+      cardTypes: { [theLeader]: 'villain', 'played-by-leader': 'villain' },
+      cardKeywords: { [theLeader]: ['ambush'] },
+      villainAbilityHooks: [
+        {
+          cardId: theLeader,
+          timing: 'onAmbush',
+          keywords: [],
+          effects: [{ primitive: 'play-villain-deck-cards', magnitude: 1 }],
+        },
+      ],
+    });
+    gameState.playerZones['0'] = { deck: [], hand: [], discard: [], inPlay: [], victory: [] };
+    const moveContext = createMockMoveContext(gameState);
+
+    revealVillainCard(moveContext);
+
+    // why: pushVillainIntoCity inserts at index 0 and shifts occupants toward the
+    // escape edge, so both cards are in the city (order-agnostic).
+    const cityCards = gameState.city.filter((occupant) => occupant !== null);
+    assert.ok(cityCards.includes(theLeader), 'The Leader entered the city');
+    assert.ok(
+      cityCards.includes('played-by-leader' as CardExtId),
+      'the Ambush played the top villain-deck card into the city',
+    );
+    assert.deepStrictEqual(gameState.villainDeck.deck, [], 'both cards left the deck');
+    // why: the ambush still emits its one ambushResolved event for The Leader.
+    assert.ok(
+      gameState.notableEvents.some(
+        (event) => event.type === 'ambushResolved' && event.revealedCardId === theLeader,
+      ),
+      'The Leader emits an ambushResolved event',
+    );
+  });
+
+  it('does not play a villain-deck card when the revealed villain has no play hook', () => {
+    const plain = 'plain-ambush' as CardExtId;
+    const gameState = createMockGameState({
+      deck: [plain, 'should-stay'],
+      discard: [],
+      cardTypes: { [plain]: 'villain', 'should-stay': 'villain' },
+      cardKeywords: { [plain]: ['ambush'] },
+      villainAbilityHooks: [
+        {
+          cardId: plain,
+          timing: 'onAmbush',
+          keywords: ['gainWoundEachPlayer'],
+          effects: [{ primitive: 'gain-wound', target: 'each' }],
+        },
+      ],
+    });
+    gameState.playerZones['0'] = { deck: [], hand: [], discard: [], inPlay: [], victory: [] };
+    gameState.piles.wounds = ['w0' as CardExtId];
+    const moveContext = createMockMoveContext(gameState);
+
+    revealVillainCard(moveContext);
+
+    assert.deepStrictEqual(
+      gameState.villainDeck.deck,
+      ['should-stay'],
+      'a non-play Ambush leaves the rest of the deck untouched',
     );
   });
 });

@@ -373,6 +373,7 @@ function parseParameterizedEffect(
  *   - `draw-cards-current:<N>`  (N a positive integer; D-24290)
  *   - `override-next-hand-size:<N>`  (N the absolute next-hand target; D-24307)
  *   - `add-next-hand-size:<N>`  (N extra cards added to the next-hand target; D-24352)
+ *   - `play-villain-deck-cards:<N>`  (N top villain-deck cards to play; D-24351)
  *   - `ko-heroes-current-by-trait:<kind>:<value>`  (kind `team` | `hc`; D-24290)
  *   - `rescue-bystanders-current-by-trait-count:<kind>:<value>`  (D-24290)
  *   - `give-hq-hero-by-trait-to-current:<kind>:<value>`  (kind `team` | `hc`; D-24335)
@@ -543,6 +544,22 @@ function parseUngatedEffect(
       return null;
     }
     return { primitive: 'add-next-hand-size', magnitude };
+  }
+  if (primitiveToken === 'play-villain-deck-cards') {
+    // why: D-24351 — grammar `play-villain-deck-cards:<N>` (exactly 2 tokens); N is the
+    // COUNT of top villain-deck cards to play (Endless Armies of HYDRA: 2; The Leader: 1),
+    // carried as `magnitude` (the same strict positive-integer grammar as
+    // `draw-cards-current:<N>`). A missing or non-positive-integer count falls through to
+    // null (→ unresolvedMarkers) — a play with no count is malformed, never a no-param
+    // descriptor. The detector reads `magnitude` at the onAmbush / onFight fire sites.
+    if (parts.length !== 2) {
+      return null;
+    }
+    const magnitude = parsePositiveInteger(parts[1]!);
+    if (magnitude === null) {
+      return null;
+    }
+    return { primitive: 'play-villain-deck-cards', magnitude };
   }
   if (primitiveToken === 'ko-heroes-current-by-trait') {
     // why: D-24290 — grammar `ko-heroes-current-by-trait:<kind>:<value>` (the

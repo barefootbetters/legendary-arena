@@ -566,8 +566,17 @@ function formatCitySpaceList(spaces: readonly CitySpaceName[]): string {
 // rescue-bystanders-current, scry-ko-own-deck) legitimately return empty `targets` and
 // MUST read as `fired`. Adding a future deliberate-no-op handler requires adding it here,
 // or its trace mislabels as `fired`.
+// why: WP-542 / D-24351 — `play-villain-deck-cards` is the third deliberate no-op: its
+// executor handler mutates nothing (the real reveal fires from the onAmbush / onFight fire
+// sites, where the RevealContext + implementationMap are in scope). It MUST be listed here or
+// its trace would mislabel `fired` — the same reason become-scheme-twist / gain-attached-hero
+// are here.
 const DELIBERATE_NO_OP_VILLAIN_PRIMITIVES: ReadonlySet<VillainEffectPrimitive> =
-  new Set<VillainEffectPrimitive>(['become-scheme-twist', 'gain-attached-hero']);
+  new Set<VillainEffectPrimitive>([
+    'become-scheme-twist',
+    'gain-attached-hero',
+    'play-villain-deck-cards',
+  ]);
 
 /**
  * Builds the per-dispatch `EffectTrace` for one villain/henchman descriptor
@@ -1297,6 +1306,74 @@ export function villainCardEscapeTriggersSchemeTwist(
     }
   }
   return false;
+}
+
+/**
+ * play-villain-deck-cards primitive — a deliberate NO-OP in the executor (WP-542 /
+ * D-24351).
+ *
+ * Mirrors `villainEffectBecomeSchemeTwist` (WP-481): the handler exists ONLY so the
+ * printed "Fight/Ambush: Play the top N cards of the Villain Deck" line is a
+ * recognized, reachable effect (the D-24266 detector classifies it applied, the
+ * WP-257 hollow detector sees a handler was reached), and it deliberately performs
+ * no mutation. Playing villain-deck cards needs `performVillainReveal` +
+ * `implementationMap` + a `RevealContext`, which the executor does NOT receive — so
+ * the actual reveal fires from the two sites that own the reveal pipeline:
+ * `villainDeck.reveal.ts` (The Leader's onAmbush) via `villainCardPlaysVillainDeckCards`
+ * + `playTopVillainDeckCards`, and `fightVillain.ts` (Endless Armies' onFight) the
+ * same way. Reachable no-op, never hollow.
+ */
+function villainEffectPlayVillainDeckCards(
+  _G: LegendaryGameState,
+  _currentPlayer: string,
+  _cardId: CardExtId,
+  _timing: VillainAbilityTiming,
+  _descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  return { targets: [] };
+}
+
+/**
+ * Returns the count of top villain-deck cards a card plays at the given timing, or
+ * 0 when it carries no `play-villain-deck-cards` descriptor there (WP-542 /
+ * D-24351).
+ *
+ * Read at the two fire sites that own the reveal pipeline — the onAmbush site in
+ * villainDeck.reveal.ts (The Leader) and the onFight site in fightVillain.ts
+ * (Endless Armies of HYDRA) — to decide whether, and how many times, to call
+ * `playTopVillainDeckCards` after the card's abilities resolve. Mirrors
+ * `villainCardEscapeTriggersSchemeTwist` (the become-scheme-twist detector), but
+ * returns the marked count (from the descriptor's `magnitude`) instead of a
+ * boolean. Pure lookup over G.villainAbilityHooks; no mutation.
+ *
+ * @param G - Game state (read-only).
+ * @param cardId - The triggering card's zone-instance ext_id.
+ * @param timing - The timing to inspect ('onAmbush' | 'onFight' | 'onEscape').
+ * @returns The play count N (default 1 when a descriptor omits `magnitude`), or 0.
+ */
+export function villainCardPlaysVillainDeckCards(
+  G: LegendaryGameState,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+): number {
+  // why: guard against G states / test mocks lacking villainAbilityHooks (mirrors
+  // the executeVillainAbilities + villainCardEscapeTriggersSchemeTwist guard) —
+  // getVillainHooksForCard would throw on undefined. No hooks means no play.
+  if (!G.villainAbilityHooks || G.villainAbilityHooks.length === 0) {
+    return 0;
+  }
+  const hooks = getVillainHooksForCard(G.villainAbilityHooks, cardId, timing);
+  for (const hook of hooks) {
+    for (const descriptor of hook.effects ?? []) {
+      if (descriptor.primitive === 'play-villain-deck-cards') {
+        // why: the parser always sets `magnitude` (the `:N` count); a malformed
+        // hand-built test hook lacking it falls back to 1 rather than returning 0
+        // (a marked line always plays at least one card).
+        return descriptor.magnitude ?? 1;
+      }
+    }
+  }
+  return 0;
 }
 
 /**
@@ -2697,6 +2774,9 @@ function villainEffectGainWoundUnlessVictoryVillainGroup(
 // why: `add-next-hand-size` (auto-resolve — ADDITIVELY raises the current player's next-hand
 // fill target, accumulating across defeats) appended by WP-543 (D-24352 — Savage Land Mutates
 // "draw an extra card"; the additive sibling of the absolute override-next-hand-size).
+// why: `play-villain-deck-cards` (DELIBERATE NO-OP — the real reveal fires from the onAmbush /
+// onFight fire sites, the WP-481 secondary-fire-site pattern) appended by WP-542 (D-24351 —
+// Endless Armies of HYDRA Fight + The Leader Ambush "Play the top N cards of the Villain Deck").
 /** Villain effect handlers keyed by primitive. Single dispatch source. */
 const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandler> = {
   'ko-hero': villainEffectKoHero,
@@ -2722,6 +2802,7 @@ const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandl
   'gain-recruit-current': villainEffectGainRecruitCurrent,
   'gain-officer-current': villainEffectGainOfficerCurrent,
   'add-next-hand-size': villainEffectAddNextHandSize,
+  'play-villain-deck-cards': villainEffectPlayVillainDeckCards,
 };
 
 /**

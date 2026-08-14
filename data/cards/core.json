@@ -2092,7 +2092,7 @@
           "vAttack": "4",
           "imageUrl": "https://images.legendary-arena.com/core/core-vi-hydra-endless-armies-of-hydra.webp",
           "abilities": [
-            "Fight: Play the top two cards of the Villain Deck."
+            "Fight: Play the top two cards of the Villain Deck. [effect:play-villain-deck-cards:2]"
           ],
           "copies": 3
         },
@@ -2211,7 +2211,7 @@
           "vAttack": "4",
           "imageUrl": "https://images.legendary-arena.com/core/core-vi-radiation-the-leader.webp",
           "abilities": [
-            "Ambush: Play the top card of the Villain Deck."
+            "Ambush: Play the top card of the Villain Deck. [effect:play-villain-deck-cards:1]"
           ],
           "copies": 2
         },

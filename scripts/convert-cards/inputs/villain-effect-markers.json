@@ -110,6 +110,7 @@
         "ymir-frost-giant-king": { "ambush": ["reveal-or-wound:hc:ranged"], "fight": ["ko-wounds-current-hand-and-discard"] }
       },
       "hydra": {
+        "endless-armies-of-hydra": { "fight": ["play-villain-deck-cards:2"] },
         "hydra-kidnappers": { "fight": ["gain-officer-current"] },
         "viper": { "fight": ["gain-wound-unless-victory-villain-group:hydra"], "escape": ["gain-wound-unless-victory-villain-group:hydra"] }
       },
@@ -121,6 +122,7 @@
       },
       "radiation": {
         "abomination": { "fight": ["capture-bystander:3@streets+bridge"] },
+        "the-leader": { "ambush": ["play-villain-deck-cards:1"] },
         "zzzax": { "fight": ["reveal-or-wound:hc:strength"], "escape": ["reveal-or-wound:hc:strength"] }
       },
       "skrulls": {

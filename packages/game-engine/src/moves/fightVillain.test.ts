@@ -628,3 +628,64 @@ describe('defeatCityVillainCore — Skrull defeat-to-gain (WP-514 / D-24327)', (
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-542 / D-24351 — Endless Armies of HYDRA onFight fire site
+// ---------------------------------------------------------------------------
+
+describe('fightVillain — Endless Armies of HYDRA plays the top two Villain Deck cards (WP-542 / D-24351)', () => {
+  it('defeating the villain plays the top two villain-deck cards into the city', () => {
+    const endless = 'endless-armies' as CardExtId;
+    const gameState = createMockGameState({
+      city: [endless, null, null, null, null],
+      villainAbilityHooks: [
+        {
+          cardId: endless,
+          timing: 'onFight',
+          keywords: [],
+          effects: [{ primitive: 'play-villain-deck-cards', magnitude: 2 }],
+        },
+      ],
+    });
+    // why: the two cards the Fight plays, plus one that must remain on the deck.
+    gameState.villainDeck = { deck: ['play-1', 'play-2', 'extra'] as CardExtId[], discard: [] };
+    gameState.villainDeckCardTypes = { 'play-1': 'villain', 'play-2': 'villain', extra: 'villain' };
+    const moveContext = createMockMoveContext(gameState);
+
+    fightVillain(moveContext, { cityIndex: 0 });
+
+    assert.ok(
+      gameState.playerZones['0']!.victory.includes(endless),
+      'Endless Armies of HYDRA is defeated into the victory pile',
+    );
+    // why: pushVillainIntoCity inserts at index 0 and shifts occupants toward the
+    // escape edge, so assert membership (order-agnostic), not slot index.
+    const cityCards = gameState.city.filter((occupant) => occupant !== null);
+    assert.ok(cityCards.includes('play-1' as CardExtId), 'the first played card entered the city');
+    assert.ok(cityCards.includes('play-2' as CardExtId), 'the second played card entered the city');
+    assert.ok(!cityCards.includes(endless), 'Endless Armies left the city (it is in the victory pile)');
+    assert.deepStrictEqual(
+      gameState.villainDeck.deck,
+      ['extra'],
+      'exactly two cards were played from the deck',
+    );
+  });
+
+  it('a defeated villain with no play hook plays nothing from the villain deck', () => {
+    const plain = 'plain-villain' as CardExtId;
+    const gameState = createMockGameState({
+      city: [plain, null, null, null, null],
+    });
+    gameState.villainDeck = { deck: ['should-stay'] as CardExtId[], discard: [] };
+    gameState.villainDeckCardTypes = { 'should-stay': 'villain' };
+    const moveContext = createMockMoveContext(gameState);
+
+    fightVillain(moveContext, { cityIndex: 0 });
+
+    assert.deepStrictEqual(
+      gameState.villainDeck.deck,
+      ['should-stay'],
+      'an ordinary defeat leaves the villain deck untouched',
+    );
+  });
+});
