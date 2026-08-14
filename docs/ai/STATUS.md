@@ -7,6 +7,27 @@
 
 ## Current State
 
+### WP-541 — Core Villain/Henchman Fight-Reward Effects (Hand Ninjas + HYDRA Kidnappers + Savage Land Mutates) — DONE (2026-08-13)
+
+Made three hollow Core villain/henchman **Fight** abilities that *reward the defeating player* faithful (2026-08-13 villain-effect audit) — the first, cleanest slice of the villain/henchman Fight batch (**Blob** was already handled by the `require-to-defeat` setup subsystem; the audit's "unmarked" flag was an index-provenance artifact). All three are unconditional, magnitude-1, single-target-current-player auto-resolve gains that fit the WP-185 v1 curation discipline.
+
+Two **append-only** `VILLAIN_EFFECT_PRIMITIVES` (D-24034; union + array + handlers + registry moved with the drift test, **20 → 22**):
+- **`gain-recruit-current`** — Hand Ninjas *"Fight: You get +1 recruit."* → `G.turnEconomy.recruit += magnitude` (`magnitude` from the `:N` token, default 1). Marker `gain-recruit-current:1`.
+- **`gain-officer-current`** — HYDRA Kidnappers *"Fight: You may gain a S.H.I.E.L.D. Officer."* → move one `pile-shield-officer` from `G.piles.officers` to the current player's discard (`pile[0]` per the `gainWound` supply convention; **empty pile → a logged no-op, never a throw**). This is `G.piles.officers`' first consumer (previously only counted/scanned). The beneficial *"may"* **auto-takes** (a pure benefit with no downside; no interactive choice) per D-24350.
+
+**Savage Land Mutates** *"Fight: … draw an extra card."* **REUSES** the existing `override-next-hand-size:7` (`HAND_SIZE 6 + 1`) — no new primitive, card-data only.
+
+Both new primitives are keyword-less (no `LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR` entry → reverse-map `undefined`) and self-narrate via `pushLog`; `gain-recruit-current` reuses the descriptor `magnitude` field, `gain-officer-current` is no-param (parses via the terminal branch). 3 markers added to `villain-effect-markers.json`; `apply-effect-markers.mjs` (hand-synced primitives + a `gain-recruit-current[:N]` validation branch) regenerated `data/cards/core.json` (**real +3 diff**, byte-checked vs CRLF noise) + the `villain-mechanic-ledger.{json,csv}` + `effect-implementation-index.json` derived feeds; the three cards now resolve **executable** in the ledger (Hand Ninjas → WP-541, HYDRA Kidnappers → WP-541, Savage Land Mutates → WP-503). `mechanic-provenance.json` gains the two `WP-541`/`D-24350` rows. All three freshness `:check` gates green.
+
+Engine-only + card-data; deterministic (reads/mutates `G` recruit-econ / officers pile / `handSizeOverrides`, no `ctx.random`, no new persistent shape); no pending-choice / UIState / client change; no fixture/hash re-pin (no committed fixture fights these three). **+11 new tests** (5 handler + 6 parser/marker); engine **2569→2580/0**, `pnpm -r build` + `pnpm -r --no-bail test` exit 0. D-24350 Active. First slice of the batch; follow-ons remain (Maestro counted self-KO, Endless Armies of HYDRA + The Leader recursive villain-deck play, Supreme HYDRA dynamic piercing).
+
+**User-Visible Surface = play.legendary-arena.com** — defeating Hand Ninjas now grants +1 recruit, HYDRA Kidnappers grants a S.H.I.E.L.D. Officer, and Savage Land Mutates fills the next hand to 7, instead of those Fight abilities doing nothing; the game log self-narrates each. D-24026 live-verification **operator-pending**:
+- Defeat Hand Ninjas → +1 recruit ("Fight effect: gained +1 recruit.").
+- Defeat HYDRA Kidnappers → gain a S.H.I.E.L.D. Officer ("Fight effect: gained a S.H.I.E.L.D. Officer.").
+- Defeat Savage Land Mutates → next hand draws 7 ("Fight effect: your next hand draws 7 cards instead of 6.").
+
+---
+
 ### WP-540 — Partial Core Scheme-Twist Fidelity (Civil War KO-all + Cosmic Cube escalation) — DONE (2026-08-13)
 
 Made the two **partial** Core scheme twists faithful — the schemes that fire but diverge from print (2026-08-13 scheme-coverage audit). Both are param-driven fixes on the existing resolvers: no new resolverId, counter, or persistent shape.
