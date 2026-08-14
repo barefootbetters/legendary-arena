@@ -21,10 +21,10 @@ Both new primitives are keyword-less (no `LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR` 
 
 Engine-only + card-data; deterministic (reads/mutates `G` recruit-econ / officers pile / `handSizeOverrides`, no `ctx.random`, no new persistent shape); no pending-choice / UIState / client change; no fixture/hash re-pin (no committed fixture fights these three). **+11 new tests** (5 handler + 6 parser/marker); engine **2569→2580/0**, `pnpm -r build` + `pnpm -r --no-bail test` exit 0. D-24350 Active. First slice of the batch; follow-ons remain (Maestro counted self-KO, Endless Armies of HYDRA + The Leader recursive villain-deck play, Supreme HYDRA dynamic piercing).
 
-**User-Visible Surface = play.legendary-arena.com** — defeating Hand Ninjas now grants +1 recruit, HYDRA Kidnappers grants a S.H.I.E.L.D. Officer, and Savage Land Mutates fills the next hand to 7, instead of those Fight abilities doing nothing; the game log self-narrates each. D-24026 live-verification **operator-pending**:
-- Defeat Hand Ninjas → +1 recruit ("Fight effect: gained +1 recruit.").
-- Defeat HYDRA Kidnappers → gain a S.H.I.E.L.D. Officer ("Fight effect: gained a S.H.I.E.L.D. Officer.").
-- Defeat Savage Land Mutates → next hand draws 7 ("Fight effect: your next hand draws 7 cards instead of 6.").
+**User-Visible Surface = play.legendary-arena.com** — defeating Hand Ninjas now grants +1 recruit, HYDRA Kidnappers grants a S.H.I.E.L.D. Officer, and Savage Land Mutates fills the next hand to 7, instead of those Fight abilities doing nothing; the game log self-narrates each. D-24026 live-verification **2 of 3 CONFIRMED** (2026-08-13, Red Skull / Cosmic Cube 2p co-op match `e4310997`; Savage Land Mutates not in that setup — still pending):
+- ✅ **Hand Ninjas → +1 recruit** — CONFIRMED. Fired 9× across the match, each `[applied] Fight effect: gained +1 recruit.` immediately before the Hand Ninjas defeat (log 8.2.8, 15.2.6/15.2.11, 16.2.9, 17.2.13, 20.2.7, 28.2.17, 33.2.8/33.2.10).
+- ✅ **HYDRA Kidnappers → gain a S.H.I.E.L.D. Officer** — CONFIRMED. `[applied] Fight effect: gained a S.H.I.E.L.D. Officer.` (log 32.2.7) with the Officer supply decrementing 30 → 29 in the diagnostics `officersCount`; the beneficial "may" **auto-took** (no interactive prompt), per D-24350.
+- ⏳ **Savage Land Mutates → next hand draws 7** ("Fight effect: your next hand draws 7 cards instead of 6.") — **operator-pending** (needs a match whose henchman group includes Savage Land Mutates).
 
 ---
 
