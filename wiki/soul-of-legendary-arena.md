@@ -246,7 +246,7 @@ competing ones.
 > on real knowledge — because a hero who honors those who paved the way is
 > the better hero, and a product that does the same is the better business.
 
-### The secular default is not neutral
+### The pattern in the mirror: AI's secular default
 
 This page has a live case study, and it is left in on purpose because it
 proves the thesis better than any film could: the AI assistant that helped
