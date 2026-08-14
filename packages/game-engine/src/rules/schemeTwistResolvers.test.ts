@@ -332,6 +332,100 @@ describe('wound-all resolver', () => {
       'must push invalid-params message',
     );
   });
+
+  // why: WP-540 / D-24349 — Unleash the Cosmic Cube's printed escalation. The
+  // resolver runs BEFORE the schemeTwistCount +1 effect, so currentTwist =
+  // schemeTwistCount + 1: prior count 0-3 → twists 1-4 (0 wounds), 4-5 → twists
+  // 5-6 (1 wound), 6 → twist 7 (3 wounds, the MAX matching step).
+  const COSMIC_ESCALATION = [
+    { atOrAfterTwist: 5, woundCount: 1 },
+    { atOrAfterTwist: 7, woundCount: 3 },
+  ];
+
+  it('escalation deals the printed Cosmic Cube schedule (0 on twists 1-4, 1 on 5-6, 3 on 7)', () => {
+    const scenarios = [
+      { priorTwistCount: 0, currentTwist: 1, expectedWounds: 0 },
+      { priorTwistCount: 3, currentTwist: 4, expectedWounds: 0 },
+      { priorTwistCount: 4, currentTwist: 5, expectedWounds: 1 },
+      { priorTwistCount: 5, currentTwist: 6, expectedWounds: 1 },
+      { priorTwistCount: 6, currentTwist: 7, expectedWounds: 3 },
+    ];
+
+    for (const scenario of scenarios) {
+      const gameState = makeResolverState({
+        playerCount: 1,
+        wounds: ['w1', 'w2', 'w3', 'w4', 'w5'],
+      });
+      gameState.counters.schemeTwistCount = scenario.priorTwistCount;
+
+      resolver(gameState, makeRevealContext(), emptyImplementationMap, {
+        escalation: COSMIC_ESCALATION,
+      });
+
+      assert.equal(
+        gameState.playerZones['0']!.discard.length,
+        scenario.expectedWounds,
+        `twist ${scenario.currentTwist} deals ${scenario.expectedWounds} wound(s)`,
+      );
+    }
+  });
+
+  it('escalation at twist 7 takes the MAX matching step (3 wounds), not the first (1)', () => {
+    const gameState = makeResolverState({ playerCount: 1, wounds: ['w1', 'w2', 'w3', 'w4'] });
+    gameState.counters.schemeTwistCount = 6; // currentTwist 7 — matches both 5→1 and 7→3
+
+    resolver(gameState, makeRevealContext(), emptyImplementationMap, {
+      escalation: COSMIC_ESCALATION,
+    });
+
+    assert.equal(gameState.playerZones['0']!.discard.length, 3, 'twist 7 = 3 wounds (the MAX step)');
+  });
+
+  it('escalation deals to every player', () => {
+    const gameState = makeResolverState({
+      playerCount: 2,
+      wounds: ['w1', 'w2', 'w3', 'w4', 'w5', 'w6'],
+    });
+    gameState.counters.schemeTwistCount = 6; // currentTwist 7 → 3 wounds each
+
+    resolver(gameState, makeRevealContext(), emptyImplementationMap, {
+      escalation: COSMIC_ESCALATION,
+    });
+
+    assert.equal(gameState.playerZones['0']!.discard.length, 3, 'player 0 got 3 wounds');
+    assert.equal(gameState.playerZones['1']!.discard.length, 3, 'player 1 got 3 wounds');
+  });
+
+  it('escalation below the threshold is a logged no-op (no wounds, no throw)', () => {
+    const gameState = makeResolverState({ playerCount: 1, wounds: ['w1'] });
+    gameState.counters.schemeTwistCount = 0; // currentTwist 1 — below the first step
+
+    assert.doesNotThrow(() => {
+      resolver(gameState, makeRevealContext(), emptyImplementationMap, {
+        escalation: COSMIC_ESCALATION,
+      });
+    });
+
+    assert.equal(gameState.playerZones['0']!.discard.length, 0, 'no wounds dealt');
+    assert.equal(gameState.piles.wounds.length, 1, 'wound supply untouched');
+    assert.ok(
+      gameState.messages.some((message) => message.text.includes('below the escalation threshold')),
+      'must log the no-op',
+    );
+  });
+
+  it('flat woundCount path is unchanged when escalation is absent (ignores schemeTwistCount)', () => {
+    const gameState = makeResolverState({ playerCount: 1, wounds: ['w1', 'w2', 'w3'] });
+    gameState.counters.schemeTwistCount = 6; // would be twist 7 under escalation — must be ignored
+
+    resolver(gameState, makeRevealContext(), emptyImplementationMap, { woundCount: 2 });
+
+    assert.equal(
+      gameState.playerZones['0']!.discard.length,
+      2,
+      'flat woundCount: 2 dealt; the escalation path did not run',
+    );
+  });
 });
 
 // ===========================================================================
@@ -440,6 +534,62 @@ describe('ko-from-hq resolver', () => {
     assert.ok(
       gameState.messages.some((message) => message.text.includes('invalid params')),
       'must push invalid-params message',
+    );
+  });
+
+  // why: WP-540 / D-24349 — Super Hero Civil War's printed Twist KOs ALL the
+  // Heroes in the HQ (koAll), not a fixed koCount.
+  it('koAll KOs every eligible Hero in the HQ and refills each slot', () => {
+    const gameState = makeResolverState();
+    gameState.hq = ['hero-a', 'hero-b', 'hero-c', 'hero-d', 'hero-e'] as LegendaryGameState['hq'];
+    gameState.cardStats['hero-a'] = { attack: 0, recruit: 0, cost: 5, fightCost: 0 };
+    gameState.cardStats['hero-b'] = { attack: 0, recruit: 0, cost: 2, fightCost: 0 };
+    gameState.cardStats['hero-c'] = { attack: 0, recruit: 0, cost: 3, fightCost: 0 };
+    gameState.cardStats['hero-d'] = { attack: 0, recruit: 0, cost: 1, fightCost: 0 };
+    gameState.cardStats['hero-e'] = { attack: 0, recruit: 0, cost: 4, fightCost: 0 };
+    gameState.heroDeck = ['refill-1', 'refill-2', 'refill-3', 'refill-4', 'refill-5'];
+
+    resolver(gameState, makeRevealContext(), emptyImplementationMap, { koAll: true });
+
+    for (const heroId of ['hero-a', 'hero-b', 'hero-c', 'hero-d', 'hero-e']) {
+      assert.ok(gameState.ko.includes(heroId), `${heroId} KO'd`);
+    }
+    assert.equal(gameState.ko.length, 5, 'all five HQ Heroes KO\'d');
+    for (let slot = 0; slot < 5; slot++) {
+      assert.ok(gameState.hq[slot] !== null, `slot ${slot} refilled from the hero deck`);
+    }
+    assert.equal(gameState.heroDeck.length, 0, 'hero deck consumed for the five refills');
+  });
+
+  it('koAll KOs all eligible Heroes when the HQ is only partially filled', () => {
+    const gameState = makeResolverState();
+    gameState.hq = ['hero-a', null, 'hero-c', null, null] as LegendaryGameState['hq'];
+    gameState.cardStats['hero-a'] = { attack: 0, recruit: 0, cost: 5, fightCost: 0 };
+    gameState.cardStats['hero-c'] = { attack: 0, recruit: 0, cost: 3, fightCost: 0 };
+    // empty hero deck — the vacated slots simply stay null
+
+    resolver(gameState, makeRevealContext(), emptyImplementationMap, { koAll: true });
+
+    assert.equal(gameState.ko.length, 2, 'both eligible Heroes KO\'d');
+    assert.ok(gameState.ko.includes('hero-a'));
+    assert.ok(gameState.ko.includes('hero-c'));
+    assert.ok(
+      gameState.messages.some((message) => message.text.includes("KO'ing all 2 eligible")),
+      'logs the KO-all count',
+    );
+  });
+
+  it('koAll on an empty HQ logs no-eligible and does not throw', () => {
+    const gameState = makeResolverState();
+
+    assert.doesNotThrow(() => {
+      resolver(gameState, makeRevealContext(), emptyImplementationMap, { koAll: true });
+    });
+
+    assert.equal(gameState.ko.length, 0, 'no KOs on empty HQ');
+    assert.ok(
+      gameState.messages.some((message) => message.text.includes('No eligible heroes')),
+      'must log no-eligible message',
     );
   });
 });

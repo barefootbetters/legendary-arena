@@ -62,4 +62,29 @@ describe('SCHEME_TWIST_CONFIGS drift tests', () => {
     assert.equal(portals?.lossThreshold, 7);
     assert.equal(portals?.resourceLossCondition, undefined);
   });
+
+  // why: WP-540 / D-24349 — Super Hero Civil War KOs ALL the Heroes in the HQ
+  // (koAll), and Unleash the Cosmic Cube deals the printed escalation (1 Wound on
+  // twists 5-6, 3 on twist 7). Both fixes are param-only on the existing resolvers;
+  // both LOSS configs (Civil War hero-deck-empty; Cosmic Cube twist-8) are unchanged.
+  it('drift test E: Civil War uses koAll and Cosmic Cube uses the escalation schedule (WP-540)', () => {
+    const civilWar = SCHEME_TWIST_CONFIGS.get('core/super-hero-civil-war');
+    assert.equal(civilWar?.resolverId, 'ko-from-hq');
+    assert.deepEqual(civilWar?.params, { koAll: true });
+    // loss config unchanged (WP-510 hero-deck-empty, per-seat stack sizing)
+    assert.deepEqual(civilWar?.lossThresholdByPlayerCount, { '2': 8, '3': 8, '4': 5, '5': 5 });
+    assert.deepEqual(civilWar?.resourceLossCondition, { kind: 'pile-depleted', pile: 'heroDeck' });
+
+    const cosmicCube = SCHEME_TWIST_CONFIGS.get('core/unleash-the-power-of-the-cosmic-cube');
+    assert.equal(cosmicCube?.resolverId, 'wound-all');
+    assert.deepEqual(cosmicCube?.params, {
+      escalation: [
+        { atOrAfterTwist: 5, woundCount: 1 },
+        { atOrAfterTwist: 7, woundCount: 3 },
+      ],
+    });
+    // loss config unchanged (true twist-loss at 8, no resource condition)
+    assert.equal(cosmicCube?.lossThreshold, 8);
+    assert.equal(cosmicCube?.resourceLossCondition, undefined);
+  });
 });

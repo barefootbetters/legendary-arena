@@ -7,6 +7,24 @@
 
 ## Current State
 
+### WP-540 — Partial Core Scheme-Twist Fidelity (Civil War KO-all + Cosmic Cube escalation) — DONE (2026-08-13)
+
+Made the two **partial** Core scheme twists faithful — the schemes that fire but diverge from print (2026-08-13 scheme-coverage audit). Both are param-driven fixes on the existing resolvers: no new resolverId, counter, or persistent shape.
+
+**Super Hero Civil War** — printed *"KO all the Heroes in the HQ,"* but config `params: { koCount: 2 }` KO'd only two. `koFromHq` gains an additive `koAll?: boolean` param; when `koAll === true` it KOs **every** eligible HQ Hero (count = `eligible.length`, cheapest-first / slot-index tiebroken, each vacated slot refilled), and the config `params` is now `{ koAll: true }`. The flat `koCount` path is the default when `koAll` is absent — every other `ko-from-hq` scheme is unaffected.
+
+**Unleash the Cosmic Cube** — printed escalation (nothing on twists 1-4, 1 Wound each on 5-6, 3 on 7; twist 8 = Evil Wins), but config `params: { woundCount: 1 }` dealt a flat 1 Wound every twist. `woundAll` gains an additive `escalation?: { atOrAfterTwist, woundCount }[]` param; when present it reads `currentTwist = (schemeTwistCount ?? 0) + 1` — the pre-increment count, because the resolver runs BEFORE `schemeTwistHandler` returns the `+1` counter effect — and deals the **MAX** matching step's wounds (0 when none = a logged no-op; `for...of` max-tracking, no `.reduce()`). Config `params` is now `{ escalation: [{ atOrAfterTwist: 5, woundCount: 1 }, { atOrAfterTwist: 7, woundCount: 3 }] }`. The flat `woundCount` path is the default when `escalation` is absent.
+
+Both **loss** configs are unchanged (Civil War hero-deck-empty via WP-510/515; Cosmic Cube `lossThreshold: 8` via D-24178). Engine-only; deterministic (reads `G`/counters, no `ctx.random`, no new persistent shape); no `data/cards`/marker/ledger/index/client change; no fixture/hash re-pin (no committed fixture reaches a Civil-War or Cosmic-Cube twist). One `schemeTwistResolved` emission per resolver preserved. **+9 new tests**; engine **2560→2569/0**, `pnpm -r build` + `pnpm -r --no-bail test` exit 0. D-24349 Active. All 8 Core schemes are now faithful (the two partial twists closed).
+
+> **Verification note (spec drift surfaced, not a blocker).** The EC's After-Completing grep `grep -c "koCount: 2\|woundCount: 1" schemeTwistConfigs.ts → 0` cannot return 0 as written: the locked Cosmic Cube escalation value legitimately contains `woundCount: 1` (the `atOrAfterTwist: 5` step). The locked data value is authoritative (locked identically in both the WP and EC bodies); the grep's *intent* — both old FLAT params removed — is verified instead by `grep -c "params: { koCount: 2 }\|params: { woundCount: 1 }" → 0`. No locked value or scope changed.
+
+**User-Visible Surface = play.legendary-arena.com** — a Core Civil War match now KOs the **entire** HQ on a Scheme Twist (not just 2, then refills); a Core Cosmic Cube match now deals **no** wounds on twists 1-4, 1 each on 5-6, and 3 on twist 7 (Evil Wins at 8) instead of a flat 1 every twist. D-24026 live-verification **operator-pending**:
+- Core Super Hero Civil War match — a Scheme Twist KOs every HQ Hero.
+- Core Unleash the Cosmic Cube match — no wounds on twists 1-4, 1 each on 5-6, 3 on 7, Evil Wins at 8.
+
+---
+
 ### WP-539 — Portals to the Dark Dimension Scheme Twist (Dark-Portal attack buffs) — DONE (2026-08-13)
 
 Implemented the Core scheme "Portals to the Dark Dimension" — the **last truly-hollow Core scheme** (no `SCHEME_TWIST_CONFIGS` entry; lost at twist 7 only by MVP-fallback coincidence). Now a TRUE twist-loss (`lossThreshold: 7`, no `resourceLossCondition`) with the printed Dark-Portal attack buffs.

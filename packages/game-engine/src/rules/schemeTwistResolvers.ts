@@ -271,7 +271,7 @@ function chainedReveals(
  * @param gameState - Game state to mutate.
  * @param _context - RevealContext (unused by this resolver).
  * @param _implementationMap - Handler map (unused by this resolver).
- * @param params - Expected: woundCount (integer >= 1).
+ * @param params - Expected: woundCount (integer >= 1) OR escalation ({ atOrAfterTwist, woundCount }[]).
  */
 function woundAll(
   gameState: LegendaryGameState,
@@ -281,22 +281,58 @@ function woundAll(
   twistCardId?: CardExtId,
 ): void {
   const woundCount = params['woundCount'] as number | undefined;
+  // why: WP-540 / D-24349 — Unleash the Cosmic Cube deals its wounds on the
+  // printed escalation (nothing on twists 1-4, 1 each on 5-6, 3 on 7), so when
+  // `escalation` is present it drives the wound count off the current twist
+  // number. Other wound-all schemes keep the flat woundCount path.
+  const escalation = params['escalation'] as
+    | Array<{ atOrAfterTwist: number; woundCount: number }>
+    | undefined;
 
   // why: branch-then-emit; single terminal push — one schemeTwistResolved
-  // emission per resolver (six across this file after WP-513's killbots).
-  if (typeof woundCount !== 'number' || woundCount < 1) {
-    pushLog(gameState, 
-      '[Scheme Twist] wound-all resolver received invalid params — expected woundCount as a positive integer.',
+  // emission per resolver. The flat-woundCount path still requires a positive
+  // integer; the escalation path supplies its own count (0 is a logged no-op).
+  if (escalation === undefined && (typeof woundCount !== 'number' || woundCount < 1)) {
+    pushLog(gameState,
+      '[Scheme Twist] wound-all resolver received invalid params — expected woundCount as a positive integer (or an escalation schedule).',
     );
   } else {
+    let effectiveWoundCount: number;
+    if (escalation !== undefined) {
+      // why: the resolver runs BEFORE schemeHandlers applies the schemeTwistCount
+      // +1 modifyCounter effect (schemeHandlers.ts calls the resolver, then
+      // returns the increment for applyRuleEffects), so the pre-increment count
+      // + 1 is THIS twist's number.
+      const currentTwist = (gameState.counters.schemeTwistCount ?? 0) + 1;
+
+      // why: a twist can match more than one escalation step (twist 7 matches
+      // both the 5→1 and 7→3 steps), so take the MAX matching step's woundCount
+      // — the highest escalation reached — not the first or last. No .reduce().
+      let escalatedWoundCount = 0;
+      for (const step of escalation) {
+        if (step.atOrAfterTwist <= currentTwist && step.woundCount > escalatedWoundCount) {
+          escalatedWoundCount = step.woundCount;
+        }
+      }
+      effectiveWoundCount = escalatedWoundCount;
+
+      if (effectiveWoundCount === 0) {
+        pushLog(gameState,
+          `[Scheme Twist] No wounds this twist — twist ${currentTwist} is below the escalation threshold.`,
+        );
+      }
+    } else {
+      effectiveWoundCount = woundCount as number;
+    }
+
     const playerIds = Object.keys(gameState.playerZones);
 
     for (const playerId of playerIds) {
       let woundsGained = 0;
-      for (let woundIndex = 0; woundIndex < woundCount; woundIndex++) {
+      for (let woundIndex = 0; woundIndex < effectiveWoundCount; woundIndex++) {
         if (gameState.piles.wounds.length === 0) {
-          pushLog(gameState, 
-            `[Scheme Twist] Wound supply exhausted — player ${playerId} gained ${woundsGained} of ${woundCount} wounds.`,
+          pushLog(gameState,
+            `[Scheme Twist] Wound supply exhausted — player ${playerId} gained ${woundsGained} of ${effectiveWoundCount} wounds.`,
           );
           break;
         }
@@ -309,8 +345,8 @@ function woundAll(
         woundsGained = woundsGained + 1;
       }
 
-      if (woundsGained > 0 && woundsGained === woundCount) {
-        pushLog(gameState, 
+      if (woundsGained > 0 && woundsGained === effectiveWoundCount) {
+        pushLog(gameState,
           `[Scheme Twist] Player ${playerId} gained ${woundsGained} wound(s).`,
         );
       }
@@ -345,7 +381,7 @@ function woundAll(
  * @param gameState - Game state to mutate.
  * @param _context - RevealContext (unused by this resolver).
  * @param _implementationMap - Handler map (unused by this resolver).
- * @param params - Expected: koCount (integer >= 1), optional costThreshold.
+ * @param params - Expected: koCount (integer >= 1) OR koAll (boolean); optional costThreshold.
  */
 function koFromHq(
   gameState: LegendaryGameState,
@@ -356,12 +392,17 @@ function koFromHq(
 ): void {
   const koCount = params['koCount'] as number | undefined;
   const costThreshold = params['costThreshold'] as number | undefined;
+  // why: WP-540 / D-24349 — Super Hero Civil War's printed Twist is "KO all the
+  // Heroes in the HQ", so koAll KOs every eligible HQ slot (then refills each),
+  // distinct from the fixed koCount path other ko-from-hq schemes use. koCount is
+  // not required when koAll is true.
+  const koAll = params['koAll'] as boolean | undefined;
 
   // why: branch-then-emit; single terminal push at the end so the EC grep
-  // counts exactly 5 event-emission calls across the file.
-  if (typeof koCount !== 'number' || koCount < 1) {
-    pushLog(gameState, 
-      '[Scheme Twist] ko-from-hq resolver received invalid params — expected koCount as a positive integer.',
+  // counts exactly one event-emission call in this resolver.
+  if (koAll !== true && (typeof koCount !== 'number' || koCount < 1)) {
+    pushLog(gameState,
+      '[Scheme Twist] ko-from-hq resolver received invalid params — expected koCount as a positive integer (or koAll: true).',
     );
   } else {
     const eligible: Array<{ cardId: string; slotIndex: number; cost: number }> = [];
@@ -392,12 +433,22 @@ function koFromHq(
         '[Scheme Twist] No eligible heroes in the HQ to KO.',
       );
     } else {
-      const actualKoCount = Math.min(koCount, eligible.length);
-
-      if (eligible.length < koCount) {
-        pushLog(gameState, 
-          `[Scheme Twist] Only ${eligible.length} eligible hero(es) in HQ — KO'ing all of them instead of ${koCount}.`,
+      // why: WP-540 — koAll KOs every eligible HQ Hero (the printed "KO all the
+      // Heroes in the HQ"); the koCount path clamps to the requested count.
+      let actualKoCount: number;
+      if (koAll === true) {
+        actualKoCount = eligible.length;
+        pushLog(gameState,
+          `[Scheme Twist] KO'ing all ${eligible.length} eligible hero(es) from the HQ.`,
         );
+      } else {
+        const requestedKoCount = koCount as number;
+        actualKoCount = Math.min(requestedKoCount, eligible.length);
+        if (eligible.length < requestedKoCount) {
+          pushLog(gameState,
+            `[Scheme Twist] Only ${eligible.length} eligible hero(es) in HQ — KO'ing all of them instead of ${requestedKoCount}.`,
+          );
+        }
       }
 
       for (let koIndex = 0; koIndex < actualKoCount; koIndex++) {
