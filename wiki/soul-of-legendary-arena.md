@@ -123,9 +123,10 @@ later leads the breakaway northern tribes — the two names are easy to
 confuse, but Rehoboam is Solomon's heir.) The people asked him to lighten
 the heavy yoke his father had laid on them. Rehoboam first asked the
 **elders who had stood before Solomon**, and they counseled him to serve
-the people and speak kindly, and they would be his servants forever. He
-rejected them and took instead the advice of the young men he had grown up
-with, vowing to be harsher still — to "chastise you with scorpions"
+the people and speak kindly, and they would be his servants forever
+([1 Kings 12:6–14](https://www.churchofjesuschrist.org/study/scriptures/ot/1-kgs/12?lang=eng&id=p6#p6)).
+He rejected them and took instead the advice of the young men he had grown
+up with, vowing to be harsher still — to "chastise you with scorpions"
 (1 Kings 12:11, KJV). Ten tribes seceded — "To your tents, O Israel"
 (12:16) — and the kingdom tore in two, leaving Rehoboam only Judah. It is
 the oldest version of the pattern above: the young ruler who scorns the
@@ -167,6 +168,21 @@ shaped. Rehoboam held the inheritance and squandered it by scorning the old
 counsel; Steve Rogers had almost nothing and proved worthy of the gift
 because of who he already was. Both say what the retcon denies: what came
 before you is not an obstacle to greatness — it is its precondition.
+
+This page states that as a conviction, not a hypothesis. It is not merely
+that honoring those who came before makes the better story — it is that
+honoring them is *right*. "Honour thy father and thy mother" is a
+commandment given with a promise — "that thy days may be long" (Exodus
+20:12, KJV) — and the counsel of those who have gone before is a real good,
+so that scorning it brings real ruin, as it did for Rehoboam
+([1 Kings 12:6–14](https://www.churchofjesuschrist.org/study/scriptures/ot/1-kgs/12?lang=eng&id=p6#p6)).
+The modern impulse to tear down the father and crown the flawless,
+self-made self is therefore not a neutral matter of taste; it is a
+rebellion against a true and good order — the same order the secular
+default quietly edits out (below). Legendary Arena is built on the side of
+that order, without apology: it honors the fathers because they *ought* to
+be honored, and it expects to be the better game, and the better business,
+for standing there.
 
 ### Honoring is not ossifying — the real distinction
 
@@ -291,6 +307,12 @@ only the card data, because that tooling is now one of the largest
 amplifiers of the flattening impulse ever built. Honoring the lineage means
 refusing to let the instrument quietly edit the inheritance on the way in.
 
+And turning that reflex off is only half the correction. Where the source
+affirms something as true, the faithful reading affirms it too, rather than
+retreating to a studied neutrality that is itself a position taken. This
+page does exactly that with the account above: it does not hover over the
+claim at a safe distance — it stands on it.
+
 ## Interactions
 
 - **[Vision](vision.md)** — the authority this page interprets. Content
@@ -338,15 +360,19 @@ refusing to let the instrument quietly edit the inheritance on the way in.
   ships new sets, new mechanics, and new content constantly. The soul
   governs *how* new material relates to old (added alongside, never
   rewriting it), not *whether* new material ships.
-- **The examples are illustrative.** Star Wars, the comics retcon habit,
+- **The pop-culture examples are illustrative; the scriptural claim is
+  affirmed, not merely illustrated.** Star Wars, the comics retcon habit,
   *Despicable Me*, and Captain America are cultural touchstones for the
   pattern — reasonable people read any single film or run differently, and
-  the argument turns on the shape, not on one work. They are not leveled
-  with the scriptural account, which is the oldest of them and the source of
-  the "honour thy father and thy mother" commandment and the heed-the-elders
-  principle the whole page rests on; it is cited to the text (1 Kings 12,
-  KJV; parallel 2 Chronicles 10) and carries its own weight, not merely
-  analogical weight.
+  the argument turns on the shape, not on one work. The scriptural account
+  is treated differently on purpose: the page affirms as *true*, not as one
+  reading among many, that honoring one's fathers is right and scorning
+  their counsel brings ruin (Exodus 20:12; 1 Kings 12:6–14, KJV; parallel
+  2 Chronicles 10). That the essay states this conviction plainly is
+  deliberate and set by the operator who owns the page; the secular reflex
+  to relativize it is the very thing the
+  [pattern in the mirror](#the-pattern-in-the-mirror-ais-secular-default)
+  section names.
 - **IP boundary.** This page discusses *theme and framing* of licensed
   characters. The one embedded image (the *Captain America* #255 cover) is a
   low-resolution Marvel cover shown as editorial reference on the
@@ -394,6 +420,8 @@ refusing to let the instrument quietly edit the inheritance on the way in.
 - [Monetization Model](monetization-model.md) — the commercial case for
   lineage as a loyalty and content moat
 - [SCHEMA.md](SCHEMA.md) — the wiki-page contract this page conforms to
-- 1 Kings 12 (KJV; parallel 2 Chronicles 10) — Rehoboam rejects the elders'
-  counsel and the kingdom divides; the root of the honour-thy-father theme
-  this page draws on.
+- [1 Kings 12:6–14](https://www.churchofjesuschrist.org/study/scriptures/ot/1-kgs/12?lang=eng&id=p6#p6)
+  (KJV, Church of Jesus Christ of Latter-day Saints scripture text; parallel
+  2 Chronicles 10) — Rehoboam rejects the elders' counsel and the kingdom
+  divides; the root of the honour-thy-father theme this page affirms. See
+  also Exodus 20:12 — the commandment given with a promise.
