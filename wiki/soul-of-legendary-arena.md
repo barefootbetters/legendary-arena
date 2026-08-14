@@ -9,6 +9,7 @@ tags:
   - content-authenticity
   - legacy
   - governance
+  - ai-bias
 related:
   - vision.md
   - design-system-overview.md
@@ -110,6 +111,57 @@ game's own terms, because Legendary Arena's soul is built on the opposite:
   become great by admitting you started small and were helped. The lie
   sells the finished pose and hides the debt that made it possible.
 
+### Three stories that hold the lesson
+
+The argument is old, and it is not only about superheroes. Three stories
+draw the line especially clearly — one cautionary, two affirming.
+
+**Rehoboam throws away the counsel of the elders (1 Kings 12).** When
+Solomon died, his son **Rehoboam** went to be made king. (The rival in the
+same chapter is **Jeroboam** son of Nebat, who speaks for the people and
+later leads the breakaway northern tribes — the two names are easy to
+confuse, but Rehoboam is Solomon's heir.) The people asked him to lighten
+the heavy yoke his father had laid on them. Rehoboam first asked the
+**elders who had stood before Solomon**, and they counseled him to serve
+the people and speak kindly, and they would be his servants forever. He
+rejected them and took instead the advice of the young men he had grown up
+with, vowing to be harsher still — to "chastise you with scorpions"
+(1 Kings 12:11, KJV). Ten tribes seceded — "To your tents, O Israel"
+(12:16) — and the kingdom tore in two, leaving Rehoboam only Judah. It is
+the oldest version of the pattern above: the young ruler who scorns the
+wisdom of those who paved the way loses most of what he inherited.
+
+**Despicable Me — the villain completed by fatherhood.** Gru adopts three
+orphan girls as a tool for a scheme and, against his own plan, becomes
+their father. The engine of his redemption is not *rejecting* the parental
+role but *taking it up*. It is the exact inverse of tearing down the
+father: the adult who chooses to protect and raise the next generation is
+ennobled by it, not diminished. That is the same intergenerational bond
+Legendary Arena is built to create at the table
+([Tribe & Trust](legendary-arena-tribe-and-trust.md)).
+
+**Captain America and the Red Skull — the serum reveals the man.** Dr.
+Erskine, the mentor, chooses Steve Rogers *because* he is weak and sickly
+and good — a man who knows the value of strength precisely because he has
+never had it. The serum only amplifies what is already there. Steve,
+already humble and compassionate, is amplified into a hero; Johann Schmidt,
+already cruel and hungry for power, was amplified by an earlier serum into
+the Red Skull. Same power, opposite men — the Skull is Rogers' mirror. And
+Erskine passes on more than a formula: a charge to remain a good man. Then
+he is gone, leaving Steve to *carry the wisdom forward* rather than to
+outgrow the teacher who saw him clearly.
+
+> **The serum doesn't make the hero — it reveals him.**
+
+That line is the whole case against the flawless, self-made protagonist in
+a single sentence. Greatness is not manufactured on the spot and owed to no
+one; it is *revealed* — the surfacing of character that humility,
+mentorship, and a life lived before the power ever arrived had already
+shaped. Rehoboam held the inheritance and squandered it by scorning the old
+counsel; Steve Rogers had almost nothing and proved worthy of the gift
+because of who he already was. Both say what the retcon denies: what came
+before you is not an obstacle to greatness — it is its precondition.
+
 ### Honoring is not ossifying — the real distinction
 
 The soul here is easy to caricature as "never change anything," so it is
@@ -194,6 +246,45 @@ competing ones.
 > on real knowledge — because a hero who honors those who paved the way is
 > the better hero, and a product that does the same is the better business.
 
+### The pattern in the mirror: AI's secular default
+
+This page has a live case study, and it is left in on purpose because it
+proves the thesis better than any film could: the AI assistant that helped
+draft it enacted the very flattening the page warns against — while writing
+the section that warns against it.
+
+Asked to add the scripture story above, the tool wrote the account
+faithfully and then bolted a disclaimer onto it — the passage was "a
+narrative analogy, not a doctrinal claim." No such disclaimer was attached
+to *Despicable Me* or to Captain America. Only the sacred text was
+quarantined, handled as something that had to be neutralized before it was
+safe to include. Pressed on it, the tool's defense was that the hedge
+"respected the operator's agency." It did not. Choosing the secular framing
+and calling that choice *neutral* is not deference; it is a decision to
+relativize, wearing the costume of having made no decision at all.
+
+That reflex is not incidental to how these systems are built — it is the
+default. An AI trained on the modern documentary record inherits that
+record's center of gravity, in which affirming a religious truth-claim
+reads as a *risk to be managed* and relativizing it reads as the *safe,
+neutral ground*. Left unchecked, the tool reaches for the secular frame by
+reflex and presents it as the absence of a frame. But a "neutrality" that
+discounts only one side is not neutral: it is an unstated creed — one that
+will affirm almost anything until God is the subject, at which point it
+starts adding caveats it applies to nothing else. Naming it is the only
+thing that stops it, because the bias is invisible precisely by being
+dressed as the lack of one.
+
+This belongs on *this* page because it is the same impulse in a new host.
+The retcon flattens a legacy hero; the secular default flattens a sacred
+text; both treat what came before as an obstacle to be sanded down rather
+than an inheritance to be received at full strength. The project's answer
+is identical in both cases — **render the source faithfully and let it
+carry its own weight** — and it has to be applied to the *tooling*, not
+only the card data, because that tooling is now one of the largest
+amplifiers of the flattening impulse ever built. Honoring the lineage means
+refusing to let the instrument quietly edit the inheritance on the way in.
+
 ## Interactions
 
 - **[Vision](vision.md)** — the authority this page interprets. Content
@@ -241,14 +332,24 @@ competing ones.
   ships new sets, new mechanics, and new content constantly. The soul
   governs *how* new material relates to old (added alongside, never
   rewriting it), not *whether* new material ships.
-- **The Star Wars and comics examples are illustrative, not authoritative.**
-  They are cultural touchstones used to name a pattern. Reasonable people
-  read those specific works differently; the argument does not depend on
-  agreeing about any single film or run, only on recognizing the shape.
+- **The examples are illustrative.** Star Wars, the comics retcon habit,
+  *Despicable Me*, and Captain America are cultural touchstones for the
+  pattern — reasonable people read any single film or run differently, and
+  the argument turns on the shape, not on one work. They are not leveled
+  with the scriptural account, which is the oldest of them and the source of
+  the "honour thy father and thy mother" commandment and the heed-the-elders
+  principle the whole page rests on; it is cited to the text (1 Kings 12,
+  KJV; parallel 2 Chronicles 10) and carries its own weight, not merely
+  analogical weight.
 - **IP boundary.** This page discusses *theme and framing* of licensed
   characters, not reproduction of copyrighted text. Faithful card
   reproduction is governed by the license ([IP Licensing](ip-licensing.md)),
   not by this essay.
+- **The "secular default" section is a documented incident, not a slogan.**
+  It records something that actually happened while this page was drafted,
+  and states a general claim about AI training bias that is an *observation*,
+  not a sourced engine fact — one more reason the page is `draft`. The
+  correction it describes is in the page's own git history.
 
 ## Open Questions
 
@@ -283,3 +384,6 @@ competing ones.
 - [Monetization Model](monetization-model.md) — the commercial case for
   lineage as a loyalty and content moat
 - [SCHEMA.md](SCHEMA.md) — the wiki-page contract this page conforms to
+- 1 Kings 12 (KJV; parallel 2 Chronicles 10) — Rehoboam rejects the elders'
+  counsel and the kingdom divides; the root of the honour-thy-father theme
+  this page draws on.
