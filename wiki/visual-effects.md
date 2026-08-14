@@ -697,18 +697,18 @@ priority order is fixed and non-negotiable:
 
 ## Edge Cases
 
-- **Multiplayer event storms — a coalescing policy is required.** Several
+- **Multiplayer event storms — governed by the shared contract.** Several
   notable events can arrive in a single `UIState` update (e.g.
   `fightResolved` + `fightResolved` + `mastermindStrikeResolved` + a T4
-  combo, all at once). The VFX layer MUST define — **deterministically and
-  shared with the audio layer** ([Shared Renderer Contract](#shared-trigger-principle))
-  — whether simultaneous effects **queue, merge, suppress, or replace**;
-  otherwise they stack into an unreadable, budget-blowing pile-up.
-  Precedence follows the [priority tiers](#priority-tiers) (a Master Strike
-  outranks a draw); the exact coalescing rule is an open
-  [architecture decision](#decisions-pending). This is the multiplayer
-  corollary of the [Performance Invariant](#performance-budget)'s "never
-  queue a backlog."
+  combo, all at once); without a policy they stack into an unreadable,
+  budget-blowing pile-up. This is **not** a per-page edge case — it is the
+  shared [Event priority & coalescing contract](design-system-overview.md#event-priority)
+  on the hub (priority follows the tiers, one crescendo per resolved move,
+  the visual and audio layers reach the *identical* decision, and overflow is
+  dropped not queued). The VFX layer implements that contract; it is the
+  multiplayer corollary of the [Performance Invariant](#performance-budget)'s
+  "never queue a backlog." The concrete merge/sequence algorithm is the one
+  open piece — see [Decisions Pending](#decisions-pending).
 - **Villain escape has no client signal.** When a villain escapes the City
   it can carry a captured bystander away, but the escape path is
   **log-only** — it emits *no* notable event (deferred `escapeResolved`,
@@ -804,11 +804,12 @@ right owner.
 
 ### Architecture decisions pending
 
-- **Multiplayer event-storm coalescing** — the policy for simultaneous
-  events (**queue / merge / suppress / replace**), shared with the audio
-  layer and deterministic (see [Edge Cases](#edge-cases)). Precedence
-  follows the [priority tiers](#priority-tiers); the coalescing rule itself
-  is unpicked.
+- **Event-storm coalescing algorithm** — the concrete
+  **queue / merge / suppress / replace** rule that satisfies the shared
+  [Event priority & coalescing contract](design-system-overview.md#event-priority)
+  (the contract itself — priority, one-crescendo, cross-renderer determinism,
+  no backlog — is locked on the hub; only the algorithm is unpicked, and it is
+  shared with the audio layer).
 - **`escapeResolved` event** (WP-186) — required before escape effects
   (Tier 3) are possible.
 - **`heroRecruited` result event** — would replace client-side
