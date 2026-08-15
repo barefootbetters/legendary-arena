@@ -34530,7 +34530,7 @@ D-24263 after a landed collision with the gauntlet cards-consumer.)
 
 ---
 
-### D-24273 — Simulation setup deck shuffle uses the run-seeded mulberry32 Fisher–Yates, not the makeMockCtx reverse mock (Drafted 2026-07-29; not yet landed — WP-453)
+### D-24273 — Simulation setup deck shuffle uses the run-seeded mulberry32 Fisher–Yates, not the makeMockCtx reverse mock (Active 2026-08-15 — WP-453 / EC-488)
 
 **Context.** WP-452's execution note (D-24272 above) flagged that
 `core/midtown-bank-robbery` and `core/negative-zone-prison-breakout` trip a
@@ -34589,7 +34589,22 @@ twist mechanic. The scheme-twist doom-clock proxy (`schemeTwistHandler`,
 advance the scheme — and is out of scope. **Production is unaffected**: the live
 engine shuffles with boardgame.io's real seeded PRNG, which distributes twists.
 
-**Status:** Drafted 2026-07-29; lands at WP-453 execution.
+**Measured at execution (2026-08-15).** Twists landing in the top 8 of the villain deck, reverse mock vs seeded, per scheme:
+
+| Scheme | Reverse mock | Seeded (5 seeds) |
+|---|---|---|
+| `core/midtown-bank-robbery` | **8 / 8** | 1, 1, 3, 2, 0 |
+| `core/negative-zone-prison-breakout` | **8 / 8** | 1, 1, 2, 3, 2 |
+
+`evaluateEndgame` is `null` at the initial state for 5/5 seeds on both schemes — no turn-0 auto-loss — and full games now play out where they previously terminated instantly. The reverse mock's `8/8` is the clustering this entry describes, reproduced end-to-end.
+
+**Invariants held.** `makeMockCtx` is byte-unchanged and `PRE_WP080_HASH` / `replay.execute.test.ts` are byte-unchanged, so the ~190-importer unit-test surface and the determinism-forensic pin are untouched. The sentinel fixture was **re-recorded** via `scripts/record-game-fixture.mjs`, never hand-edited (new `finalStateHash` `62ba4e58…`); `replayFixtures.test.ts` reads the fixture's own fields, so no test code changed. The recorder (`simulateOneGameAndCaptureMoves`) and the replay harness (`runFixture`) moved in lockstep, preserving the capture→replay contract. `par.aggregator`'s `nextRandom` was hoisted above its setup site — a statement relocation only; no seed literal or PRNG algorithm changed anywhere.
+
+**The regression guard is non-vacuous by construction.** `simulation.setupShuffle.test.ts` drives the real exported `makeSeededSetupContext(...).random.Shuffle` with a controlled `nextRandom` stub and deliberately does **not** re-implement mulberry32 or Fisher–Yates — a test asserting against its own PRNG copy would pass even if a setup site reverted to the reverse mock. It also asserts that the reverse of the same deck **does** cluster, so the guard cannot silently invert.
+
+**Scope boundary.** `makeSeededSetupContext` is exported at module scope for that test but is **not** re-exported from `index.ts` — verified at execution: it is `undefined` on the package entry point, so it is not package-public API. Twist counting, `lossThreshold`, `schemeTwistHandler` and the D-24178 doom-clock proxy are untouched. Production is unaffected — it never used the reverse mock; boardgame.io supplies the real seeded shuffle.
+
+_Active 2026-08-15 — landed at WP-453 execution (EC-488). engine 2613 → 2621 tests / 0 fail; exactly the 5 allowlisted files. `User-Visible Surface = none — infrastructure`: no player, visitor, or operator observes any change, so D-24026 is N/A by surface. The payoff is a trustworthy simulation / PAR / co-op-yardstick surface._
 
 ---
 
