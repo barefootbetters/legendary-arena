@@ -65,7 +65,17 @@ Maestro's blocked Fight log line now says **why** nothing happened. It read `Fig
 
 **engine 2612 → 2613 tests / 0 fail**; `pnpm -r build` + `pnpm -r --no-bail test` exit 0. Exactly 2 non-governance files. One assertion now uses exact equality rather than `assert.match` — all three prior assertions were regex-based, so a loose retarget could have shipped wrong capitalization or a hyphen for the em dash and still passed every checklist item. D-24359 Active.
 
-**Live verification (D-24026) — operator-pending.** `User-Visible Surface = play.legendary-arena.com` (the game log). To confirm: fight Maestro holding **no** Strength Hero; the log must read `no strength Heroes — nothing to KO`.
+**Live verification (D-24026) — ✅ CONFIRMED 2026-08-15.** Match `IkPb2Lz5AQb` (gitSha `a9a6b2b`) exercised **both** branches in a single game:
+
+```
+[blocked] 18.2.11 Fight effect: no strength Heroes — nothing to KO.
+          18.2.12 Player 0 fought Maestro at city space 0.
+...
+          29.2.22 Fight effect: KO 1 of your Heroes (one per your strength Hero) — choose which.
+          29.2.23 Player 1 fought Maestro at city space 0.
+```
+
+Turn 18 is the replaced line, naming the trait so the player learns **why** nothing happened. Turn 29 is the `neutral` park on the other player — byte-identical to its WP-544 form, confirming the copy-only guarantee held and that the `applied` / `neutral` messages were untouched. Together they also corroborate the unreachability proof: the only `blocked` line in the match is the `owedFromTrait === 0` case, exactly as D-24359 predicts.
 
 ---
 

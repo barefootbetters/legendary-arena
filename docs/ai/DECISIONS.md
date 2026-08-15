@@ -36599,7 +36599,7 @@ _Active 2026-08-15 — landed at WP-549 execution (EC-584). registry-viewer 227 
 
 **Surface.** `villainEffects.execute.ts` (one `pushLog` argument + its `// why:` comment) and `villainEffects.execute.test.ts` (two retargeted assertions plus one new empty-zones case for the zones-exist-but-empty path; one assertion uses exact equality rather than `assert.match`, since all three prior assertions were regex-based and a loose retarget could ship wrong capitalization or a hyphen for the em dash). Two files.
 
-_Active 2026-08-15 — landed at WP-550 execution (EC-585). engine 2612 -> 2613 tests / 0 fail. `User-Visible Surface = play.legendary-arena.com` (the game log) — D-24026 live-verify operator-pending (fight Maestro holding no Strength Hero; the log must name the trait)._
+_Active 2026-08-15 — landed at WP-550 execution (EC-585). engine 2612 -> 2613 tests / 0 fail. `User-Visible Surface = play.legendary-arena.com` (the game log) — **D-24026 live-verify CONFIRMED 2026-08-15** — match `IkPb2Lz5AQb` (gitSha `a9a6b2b`) hit both branches in one game: `18.2.11 [blocked] Fight effect: no strength Heroes — nothing to KO.` (the replaced line, naming the trait) and `29.2.22 Fight effect: KO 1 of your Heroes (one per your strength Hero) — choose which.` (the `neutral` park, byte-identical to its WP-544 form). The only `blocked` line in the match is the `owedFromTrait === 0` case, corroborating the unreachability proof live._
 
 ### D-24361 — The Registry Viewer carries its own deploy-freshness signal, ported from WP-418 rather than extracted (Active 2026-08-15 — WP-552 / EC-587)
 
