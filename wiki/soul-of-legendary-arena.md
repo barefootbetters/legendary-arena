@@ -35,6 +35,11 @@ act of *stewardship*, not *reinvention*. It preserves and honors the
 decades-long legacy of the characters it renders, rather than flattening
 that legacy to fit whatever the current moment finds fashionable.
 
+Deeper still — and this is the center everything else serves — the reason
+any of it matters is the *relationship*: the friends and family who play it
+together. The characters and their lineage are the shared language; the
+connection between the people at the table is the soul.
+
 It exists because the surrounding culture has a strong, repeating impulse
 in the other direction — tear down the mentor, retcon the classic hero,
 and sell the flattering lie that greatness is self-made and owes nothing
@@ -404,6 +409,35 @@ competing ones.
 > the source faithfully, grows only by addition, and builds a player's love
 > on real knowledge — because a hero who honors those who paved the way is
 > the better hero, and a product that does the same is the better business.
+
+### The soul: the people across the table
+
+Everything above is the setting. This is the soul.
+
+Legendary Arena exists for the *relationship* — for the people you play it
+with. A father and a son. Two old friends. A grandfather who loved these
+comics in 1981, teaching a grandchild who will one day teach someone else.
+The heroes are the shared language; the connection between the players is the
+point. No one sits down to honor Captain America in the abstract — they sit
+down with someone they love, and honoring Captain America is one of the
+things they do together.
+
+That is why the Gru story above is not merely an example — it is the whole
+thesis in a single arc. Gru chased the moon, certain that conquest and
+possession would finally fill the hole in him. The moon was always a
+substitute. What actually filled his heart was three daughters — the
+connection that had been right in front of him the whole time. Legendary
+Arena is not the moon. It is not a trophy to win or a possession to hold. It
+is the table where the people you love sit down together, and it earns its
+place only if it fills that same kind of void — with connection, not
+conquest.
+
+So strip away the argument, the scripture, the comics history, and the design
+philosophy, and here is what remains: a game is worth building if it brings
+people closer to one another. Stewardship, lineage, and good-versus-evil
+clarity all exist to give people something worth gathering around. **The
+heroes we inherit are the shared language. The person across the table is the
+point.**
 
 ### The pattern in the mirror: AI's secular default
 
