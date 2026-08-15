@@ -18,7 +18,7 @@
  * .reduce(). No IO.
  */
 
-import type { LegendaryGameState } from '../types.js';
+import type { LegendaryGameState, SetupContext } from '../types.js';
 import { pushLog } from '../log/logPush.js';
 import type { CardRegistryReader } from '../matchSetup.validate.js';
 import type { FinalScoreSummary } from '../scoring/scoring.types.js';
@@ -38,7 +38,6 @@ import type { CoopGameRecord } from './coopWinRate.js';
 import type { HollowEffectRecord } from '../diagnostics/hollowEffect.types.js';
 
 import { buildInitialGameState } from '../setup/buildInitialGameState.js';
-import { makeMockCtx } from '../test/mockCtx.js';
 import { buildUIState } from '../ui/uiState.build.js';
 import { filterUIStateForAudience } from '../ui/uiState.filter.js';
 import { getLegalMoves } from './ai.legalMoves.js';
@@ -194,6 +193,44 @@ function shuffleWithPrng<T>(deck: T[], nextRandom: () => number): T[] {
     result[swap] = current;
   }
   return result;
+}
+
+/**
+ * Builds the `SetupContext` the simulation hands to `buildInitialGameState`,
+ * with a seeded shuffle.
+ *
+ * // why: D-24273 — the setup context previously came from the unit-test helper
+ * whose Shuffle simply reverses the array. That helper is a deliberate
+ * "shuffle ran" proof and stays exactly as it is, but reversing produced a
+ * badly unrepresentative SETUP deck: `buildVillainDeck` lexically sorts before
+ * shuffling, virtual `scheme-twist-…` ids sort last, so reversing stacked every
+ * twist on top of the villain deck. On the two core schemes whose twist
+ * resolver chains extra reveals, that cascaded through all eight clustered
+ * twists in a single turn-1 reveal and tripped the doom-clock loss threshold —
+ * an auto-loss at turn 0, before any move. Every other scheme was depressed
+ * more mildly by the same clustering. Using the seeded mulberry32 Fisher-Yates
+ * this module already uses for per-turn reveals distributes the twists the way
+ * a real shuffle does, so the co-op win-rate yardstick measures bot skill
+ * rather than a deterministic reverse-order artifact.
+ *
+ * Exported at module scope so the regression test can drive the real Shuffle
+ * with a controlled `nextRandom`. Deliberately NOT re-exported from `index.ts`
+ * — this is simulation-internal, not package-public API.
+ *
+ * @param numPlayers - Seat count for the simulated match.
+ * @param nextRandom - The run's seeded mulberry32 closure.
+ * @returns A SetupContext whose Shuffle is the seeded Fisher-Yates.
+ */
+export function makeSeededSetupContext(
+  numPlayers: number,
+  nextRandom: () => number,
+): SetupContext {
+  return {
+    ctx: { numPlayers },
+    random: {
+      Shuffle: <T>(deck: T[]): T[] => shuffleWithPrng(deck, nextRandom),
+    },
+  };
 }
 
 /**
@@ -607,7 +644,7 @@ function simulateOneGame(
   maxTurns: number = MAX_TURNS_PER_GAME,
 ): GameOutcome {
   const numPlayers = config.policies.length;
-  const setupContext = makeMockCtx({ numPlayers });
+  const setupContext = makeSeededSetupContext(numPlayers, nextRandom);
   const gameState = buildInitialGameState(config.setupConfig, registry, setupContext);
 
   // why: maxTurns sits after the optional onMoveDispatched? on runPerTurnLoop,
@@ -670,7 +707,7 @@ export function simulateOneCoopGame(
 
   const seedNumber = hashSeedString(seed);
   const nextRandom = createMulberry32(seedNumber);
-  const setupContext = makeMockCtx({ numPlayers });
+  const setupContext = makeSeededSetupContext(numPlayers, nextRandom);
   const gameState = buildInitialGameState(matchConfiguration, registry, setupContext);
 
   const loopResult = runPerTurnLoop(gameState, seatPolicies, numPlayers, 0, nextRandom);
@@ -1039,7 +1076,7 @@ export function simulateOneGameAndCaptureMoves(
   }
 
   const numPlayers = policies.length;
-  const setupContext = makeMockCtx({ numPlayers });
+  const setupContext = makeSeededSetupContext(numPlayers, nextRandom);
   const gameState = buildInitialGameState(setupConfig, registry, setupContext);
 
   const capturedMoves: ReplayMove[] = [];

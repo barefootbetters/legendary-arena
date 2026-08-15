@@ -1,6 +1,6 @@
 {
   "expected": {
-    "finalStateHash": "2ef3aa99b3542800a27881ceec926aa4dcf948e6004eecddfbf97bc495de67e7",
+    "finalStateHash": "62ba4e5816e784757a2f192718ef7eb6f8db916ce1b4bab27b9824479055abd7",
     "messages": [
       {
         "outcome": "neutral",
@@ -39,11 +39,6 @@
       {
         "outcome": "neutral",
         "text": "Player 1 put 2 card(s) on top of their deck."
-      },
-      {
-        "card": "starting-shield-trooper",
-        "outcome": "neutral",
-        "text": "Player 1 played S.H.I.E.L.D. Trooper (starting-shield-trooper) (+1 attack)."
       }
     ],
     "outcome": {
@@ -103,8 +98,7 @@
           "[Dr. Doom Master Strike] Player 0 does not have exactly 6 cards in hand — unaffected.",
           "[Dr. Doom Master Strike] Player 1 must put 2 cards on top of their deck — choose which cards.",
           "Mastermind strike revealed — strike count incremented.",
-          "Player 1 put 2 card(s) on top of their deck.",
-          "Player 1 played S.H.I.E.L.D. Trooper (starting-shield-trooper) (+1 attack)."
+          "Player 1 put 2 card(s) on top of their deck."
         ],
         "phase": "play",
         "players": [
