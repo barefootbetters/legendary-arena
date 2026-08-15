@@ -77,16 +77,34 @@ export function computeFinalScores(
     let bystanderCount = 0;
     let tacticCount = 0;
 
+    // why: end-of-game "all your cards" = every zone; some dynamic-VP villains
+    // (Ultron, D-24362) count Hero cards across the player's whole card pool, not
+    // just the victory pile. Built ONCE per player, hoisted out of the victory loop
+    // so it is not rebuilt for each victory card.
+    const allPlayerCardIds = [
+      ...zones.deck,
+      ...zones.hand,
+      ...zones.discard,
+      ...zones.inPlay,
+      ...zones.victory,
+    ];
+
     for (const cardId of zones.victory) {
       const cardType = gameState.villainDeckCardTypes[cardId];
 
       if (cardType === 'villain') {
         // why: a card-text dynamic-VP resolver overrides the printed-VP/fallback
-        // path for known modifier villains (Supreme HYDRA, D-24355); it returns
-        // null for ordinary villains, which then take the printed vp or VP_VILLAIN
-        // fallback. Folded into villainVP — it is villain VP — so no
+        // path for known modifier villains (Supreme HYDRA counts victory-pile HYDRA
+        // villains, D-24355; Ultron counts tech Heroes across all zones, D-24362); it
+        // returns null for ordinary villains, which then take the printed vp or
+        // VP_VILLAIN fallback. Folded into villainVP — it is villain VP — so no
         // PlayerScoreBreakdown field or breakdown-type change is needed.
-        const dynamicVp = computeDynamicVillainVictoryPoints(cardId, zones.victory);
+        const dynamicVp = computeDynamicVillainVictoryPoints(
+          cardId,
+          zones.victory,
+          allPlayerCardIds,
+          gameState.cardTraits,
+        );
         villainVP += dynamicVp ?? (gameState.cardVictoryPoints?.[cardId] ?? VP_VILLAIN);
       } else if (cardType === 'henchman') {
         henchmanVP += gameState.cardVictoryPoints?.[cardId] ?? VP_HENCHMAN;
