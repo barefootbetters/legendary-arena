@@ -132,14 +132,30 @@ up with, vowing to be harsher still — to "chastise you with scorpions"
 the oldest version of the pattern above: the young ruler who scorns the
 wisdom of those who paved the way loses most of what he inherited.
 
-**Despicable Me — the villain completed by fatherhood.** Gru adopts three
-orphan girls as a tool for a scheme and, against his own plan, becomes
-their father. The engine of his redemption is not *rejecting* the parental
-role but *taking it up*. It is the exact inverse of tearing down the
+**Despicable Me — the villain completed by fatherhood.** Gru's scheme is to
+steal the moon — a cold, distant thing he is certain will finally win him
+the recognition and love he has been starved for his whole life. But the
+moon is a substitute. The real thing is already in front of him: **Margo,
+Edith, and Agnes**, three orphan girls he first takes in only as tools for
+the heist. The whole arc of the film is his discovery that the void was
+never going to be filled by conquest or possession — it is filled by
+*relationship*, by becoming a father. The moon goes meaningless the instant
+he is holding one of the girls in his arms.
+
+That is the page's lie and truth in miniature. The lie says power and
+possession will make you whole; the truth is that connection does. Gru
+learns it the hard way, and the engine of his redemption is not *rejecting*
+the parental role but *taking it up* — the exact inverse of tearing down the
 father: the adult who chooses to protect and raise the next generation is
-ennobled by it, not diminished. That is the same intergenerational bond
+ennobled by it, not diminished. It is the same intergenerational bond
 Legendary Arena is built to create at the table
 ([Tribe & Trust](legendary-arena-tribe-and-trust.md)).
+
+![Despicable Me (2010) theatrical poster — Gru atop a platform with Margo, Edith, and Agnes, a vast moon behind them.](/soul-of-legendary-arena/despicable-me-cover.jpg "width=38%")
+
+*Despicable Me (Universal / Illumination, 2010) — the poster tells the arc
+in two words, "Superbad. Superdad.": the moon behind him, the girls in
+front. © Universal Pictures; shown as editorial reference.*
 
 **Captain America and the Red Skull — the serum reveals the man.** The US
 Army recruited the frail, rejected Steve Rogers into **Operation: Rebirth**
@@ -392,14 +408,15 @@ claim at a safe distance — it stands on it.
   [pattern in the mirror](#the-pattern-in-the-mirror-ais-secular-default)
   section names.
 - **IP boundary.** This page discusses *theme and framing* of licensed
-  characters. The Captain America origin is retold in original prose, not
-  copied from the comic's caption text. The two embedded images (the
-  *Captain America* #255 cover and a uniform panel) are low-resolution
-  Marvel images shown as editorial reference on the access-gated internal
-  ewiki, attributed to Marvel — not licensed card assets and not
-  reproduction of card text. Faithful *card* reproduction is governed by the
-  license ([IP Licensing](ip-licensing.md)), not by this essay; if their use
-  is ever in question, those two images are the assets to pull.
+  characters, retold in original prose, not copied from source caption text.
+  The three embedded images — the *Captain America* #255 cover and a uniform
+  panel (© Marvel), and the *Despicable Me* poster (© Universal /
+  Illumination) — are low-resolution, attributed, and shown as editorial
+  reference on the access-gated internal ewiki; none are licensed card
+  assets or reproductions of card text. Faithful *card* reproduction is
+  governed by the license ([IP Licensing](ip-licensing.md)), not by this
+  essay; if their use is ever in question, those three images are the assets
+  to pull.
 - **The "secular default" section is a documented incident, not a slogan.**
   It records something that actually happened while this page was drafted,
   and states a general claim about AI training bias that is an *observation*,
