@@ -128,9 +128,20 @@ the people and speak kindly, and they would be his servants forever
 He rejected them and took instead the advice of the young men he had grown
 up with, vowing to be harsher still — to "chastise you with scorpions"
 (1 Kings 12:11, KJV). Ten tribes seceded — "To your tents, O Israel"
-(12:16) — and the kingdom tore in two, leaving Rehoboam only Judah. It is
-the oldest version of the pattern above: the young ruler who scorns the
-wisdom of those who paved the way loses most of what he inherited.
+(12:16) — and the kingdom tore in two: ten tribes formed the Northern
+Kingdom of **Israel** under Jeroboam, and two (Judah with Benjamin) remained
+the Southern Kingdom of **Judah** under Rehoboam. It is the oldest version
+of the pattern above: the young ruler who scorns the wisdom of those who
+paved the way loses most of what he inherited.
+
+And the counsel he threw away was, at its heart, a call to *serve* — the
+elders told him that a king who serves his people will keep them. That is
+exactly the shape of leadership Christ later named as the only true one: the
+greatest is the servant, "even as the Son of man came not to be ministered
+unto, but to minister"
+([Matthew 20:25–28](https://www.churchofjesuschrist.org/study/scriptures/nt/matt/20?lang=eng&id=p25#p25)).
+Rehoboam chose mastery over ministry, and the house of Israel split under
+the choice.
 
 **Despicable Me — the villain completed by fatherhood.** Gru's scheme is to
 steal the moon — a cold, distant thing he is certain will finally win him
