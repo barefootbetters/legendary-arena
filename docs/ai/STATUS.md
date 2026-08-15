@@ -7,6 +7,26 @@
 
 ## Current State
 
+### WP-549 — Registry Viewer LAGN Result Round-Trip — DONE (2026-08-15)
+
+Stopped the Registry Viewer's Loadout tab **fabricating a match verdict** on LAGN re-export. Surfaced while live-verifying WP-544: a Loki / Secret Invasion 2p match that ended `gameOver.outcome === "scheme-wins"` — a co-op **loss** — exported as `"result": { "outcome": "victory" }`.
+
+An initial hypothesis that a producer derived the outcome from a highest-VP winner comparison (player 0 scored 9 to player 1's −2) was **investigated and refuted** — no code anywhere derives `result.outcome` from scores. The real mechanism was a **round-trip data loss** across two files: `loadoutLagnImport.ts` mapped only `setup` + `player_count` (+ `supportPools`) and dropped the incoming `result`, then `useLoadoutLagnExport.ts` rebuilt one from a ref defaulting to `"victory"` while stamping `loss_condition: "deck_exhausted"` on any defeat. The tell that the artifact was a *viewer* export, not a server one: it carried no `scoring_profile`, which the server producer always stamps.
+
+The export outcome is now **tri-state** (`"unset"` default | `"victory"` | `"loss"`), and an unset outcome **omits the `result` key entirely** — LAGN requires only `lagn_version / game_id / variant / player_count / setup`, so a Tier-1 setup document legitimately carries no verdict. `applyImportedResult` is **replace, never merge**: an import with no `result` resets to unset and clears the loss condition, and overrides a prior user choice. The importer **copies known keys explicitly, never spreads** — `parseLagnLoadout` returns the raw parsed object (zod's strip never runs) and the schema sets `additionalProperties: true`, so a spread would round-trip arbitrary keys out of an untrusted file. `loss_condition` is import-only; the derived `"deck_exhausted"` and the dead `lossReason` API are gone.
+
+The seeding channel needed `App.vue`: `useLagnFromUrl` runs there while `useLoadoutLagnExport` is a **separate instance** created inside `LoadoutBuilder.vue`, with no existing link. The verdict now flows `useLagnFromUrl` → `App.vue` state → the `importedLagnResult` prop → `applyImportedResult`, watched with `immediate: true` (App.vue's async registry loader completes *before* the registry-gated `LoadoutBuilder` mounts, so a non-immediate watcher would never fire). **Both** import channels seed — the deep link and the paste/file path.
+
+`apps/server` `toLagnResult` is untouched and remains the sole authority for a real match verdict. `packages/lagn-spec` is unchanged — `result` was already optional; its regenerated `lagn-v1.json` was CRLF-only churn at 0/0 and was reverted, exactly the failure smell EC-584 predicted.
+
+**Two mechanical EC deviations,** both recorded in the EC-584 commit: the EC's baseline command names the package `@legendary-arena/registry-viewer` but the real pnpm filter is `registry-viewer`; and the EC's AC-4 gate specifies `Object.hasOwn`, which needs an ES2022 lib this app does not enable, so the equivalent `Object.prototype.hasOwnProperty.call` was used rather than widening tsconfig out of scope.
+
+**registry-viewer 227 → 234 tests / 0 fail** (+8 new, −1 dead); `vue-tsc` clean; `pnpm -r build` + `pnpm -r --no-bail test` exit 0. Exactly 8 files, all under `apps/registry-viewer`. D-24358 Active.
+
+**Live verification (D-24026) — operator-pending.** `User-Visible Surface = the Registry Viewer Loadout tab (cards.legendary-arena.com)`. To confirm: import a real match LAGN whose `result.outcome` is `"defeat"`, re-export, and check the outcome survives; separately, build a loadout from scratch and confirm the downloaded file has no `result` key.
+
+---
+
 ### WP-544 — Core Maestro Counted Self-KO (`ko-heroes-current-count-by-trait`) — DONE (2026-08-14)
 
 Made the hollow Core **Maestro** Fight ability faithful (*"For each of your `[hc:strength]` Heroes, KO one of your Heroes."*, `villain core/radiation/maestro`) — the counted-self-KO slice of the Core villain/henchman Fight batch. Both halves of the ability already shipped, so this is a new **wiring**, not new mechanics: the **count** comes from `countPlayerHeroesMatchingTrait` (WP-485 / D-24290, hand + in-play), and the **interactive KO** is the existing `ko-hero` `target: 'current'` park (WP-242 / D-24007, generalized to magnitude-M by WP-492 / D-24298).
