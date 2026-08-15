@@ -13,8 +13,8 @@
       "executable": 371,
       "deferred": 0,
       "condition": 5,
-      "unsupported": 367,
-      "unmarked": 1083
+      "unsupported": 369,
+      "unmarked": 1081
     }
   },
   "entries": [
@@ -6958,11 +6958,17 @@
       "name": "Thor",
       "set": "core",
       "scope": "hero",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
+      "mechanic": "recruit-threshold",
+      "status": "unsupported",
       "handler": "",
       "wp": "",
-      "decision": ""
+      "decision": "",
+      "designs": [
+        {
+          "slug": "surge-of-power",
+          "name": "Surge of Power"
+        }
+      ]
     },
     {
       "extId": "core/wolverine",
@@ -14789,11 +14795,17 @@
       "name": "Thor",
       "set": "msp1",
       "scope": "hero",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
+      "mechanic": "recruit-threshold",
+      "status": "unsupported",
       "handler": "",
       "wp": "",
-      "decision": ""
+      "decision": "",
+      "designs": [
+        {
+          "slug": "surge-of-power",
+          "name": "Surge of Power"
+        }
+      ]
     },
     {
       "extId": "nmut-mastermind-belasco-demon-lord-of-limbo-a-demons-mercy",
@@ -27995,7 +28007,7 @@
     "core/thor": {
       "scope": "hero",
       "mechanics": [
-        "(unmarked)"
+        "recruit-threshold"
       ]
     },
     "core/wolverine": {
@@ -30968,7 +30980,7 @@
     "msp1/thor": {
       "scope": "hero",
       "mechanics": [
-        "(unmarked)"
+        "recruit-threshold"
       ]
     },
     "nmut-mastermind-belasco-demon-lord-of-limbo-a-demons-mercy": {

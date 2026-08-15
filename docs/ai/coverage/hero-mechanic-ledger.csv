@@ -185,7 +185,7 @@ core/spider-man,Spider-Man,core,reveal,executable,WP-253,D-24024,packages/game-e
 core/spider-man,Spider-Man,core,reveal-count,unsupported,,,,the-amazing-spider-man
 core/spider-man,Spider-Man,core,reveal-reorder,unsupported,,,,the-amazing-spider-man
 core/storm,Storm,core,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,gathering-stormclouds
-core/thor,Thor,core,(unmarked),unmarked,,,,
+core/thor,Thor,core,recruit-threshold,unsupported,,,,surge-of-power
 core/wolverine,Wolverine,core,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,berserker-rage|frenzied-slashing|keen-senses
 core/wolverine,Wolverine,core,ko-wound-reward,executable,WP-382,D-24183,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward,healing-factor
 cosm/adam-warlock,Adam Warlock,cosm,burn-shards,unsupported,,,,manifest-the-soul-gem|soulblast|transmute-matter
@@ -368,7 +368,7 @@ msp1/hulk,Hulk,msp1,gain-wound-each,executable,WP-364,D-24156,packages/game-engi
 msp1/hulk,Hulk,msp1,ko-wound-reward,executable,WP-382,D-24183,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward,unstoppable-hulk
 msp1/iron-man,Iron Man,msp1,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,endless-invention|quantum-breakthrough
 msp1/nick-fury,Nick Fury,msp1,(unmarked),unmarked,,,,
-msp1/thor,Thor,msp1,(unmarked),unmarked,,,,
+msp1/thor,Thor,msp1,recruit-threshold,unsupported,,,,surge-of-power
 nmut/karma,Karma,nmut,(unmarked),unmarked,,,,
 nmut/mirage,Mirage,nmut,moonlight,unsupported,,,,dreams-made-real|haunted-by-the-demon-bear
 nmut/mirage,Mirage,nmut,waking-nightmare,unsupported,,,,haunted-by-the-demon-bear|nightmare-wolves

@@ -153,6 +153,21 @@ export function evaluateCondition(
       return distinctClasses.size >= threshold;
     }
 
+    case 'recruitMadeThisTurnAtLeast': {
+      // why: WP-545 / D-24354 — reads G.turnEconomy.recruit, the GROSS
+      // recruit-MADE-this-turn accumulator (available = recruit − spentRecruit),
+      // NOT the net available, so spending recruit does not lower the gate. The
+      // printed condition ("If you made 8 or more Recruit this turn") counts
+      // recruit generated, not recruit remaining.
+      const threshold = parseInt(condition.value, 10);
+      // why: safe-skip malformed data (mirrors playedThisTurn's NaN guard).
+      if (Number.isNaN(threshold)) {
+        return false;
+      }
+
+      return G.turnEconomy.recruit >= threshold;
+    }
+
     default: {
       // why: unsupported condition types are safely skipped — same pattern
       // as WP-022 for unsupported keywords. Future WPs will add new

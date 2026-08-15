@@ -7,6 +7,20 @@
 
 ## Current State
 
+### WP-545 — Surge of Power Recruit-Threshold Conditional Attack — DONE (2026-08-15)
+
+Thor **Surge of Power** (`core/thor/surge-of-power`, also `msp1/thor/surge-of-power`) prints *"If you made 8 or more `[icon:recruit]` this turn, you get +3`[icon:attack]`."* — but the **+3 attack was applied unconditionally**; the "8 or more recruit this turn" gate was never parsed into a condition. Confirmed live at WP-542's Red Skull / Cosmic Cube match `uONsXu1WnDR` (turn 14: Surge played first, only 4 recruit made all turn, +3 attack still fired). Surge was strictly stronger than printed — a guaranteed +3 attack inflating every Thor deck.
+
+**One new open-typed condition + the second marker→condition (after Spectrum).** A new `HeroCondition` type **`recruitMadeThisTurnAtLeast`** (a `case` in `heroConditions.evaluate.ts`: `G.turnEconomy.recruit >= parseInt(value)`, NaN → false). `HeroCondition` is `{type,value}` open-typed, so this is a **switch-case add — no union / canonical-array / drift-test change** (contrast the villain-primitive WPs). The gate compares against **`turnEconomy.recruit` — GROSS recruit MADE this turn** (available = `recruit − spentRecruit`), NOT net available, so spending recruit does not lower the gate. A new `else if (normalizedKeyword === 'recruit-threshold')` arm in `heroAbility.setup.ts` — placed before the unresolved-marker fallback exactly as the D-24055 Spectrum arm — pushes `{ type: 'recruitMadeThisTurnAtLeast', value: keywordMatch[2] }` onto the same hook that carries the `+3[icon:attack]` effect, so `evaluateAllConditions` gates the existing attack grant. `ICON_MAGNITUDE_PATTERN` and the +3 attack effect are untouched — only the gating was missing.
+
+**Marker token `[keyword:recruit-threshold:8]`** (the WP's recommended parameterized form; the `:N` supplied by `KEYWORD_PATTERN`'s optional capture). Registered in the apply script's `VALID_TOKEN_PATTERN` (`[1-9]\d*`, else the apply pass loud-fails on an unlisted token). Surge is marked in **both** `core` and `msp1` in `hero-ability-markers.json`; `core.json` + `msp1.json` + `hero-mechanic-ledger.{json,csv}` + `card-mechanics.json` + `effect-implementation-index.json` all regenerated (real diffs; all three freshness `:check` gates green). The `[icon:recruit]` in the condition clause emits a **magnitude-less `{ type: 'recruit' }` effect that is a no-op** (fails `isValidMagnitude`) both before and after gating, so gating the hook changes **only** the +3 attack; the printed **+2 recruit stat** (`card.recruit: "2"`) is applied on the economy path outside the hook and is untouched.
+
+Deterministic (reads `G.turnEconomy.recruit` only; **no `ctx.random`, no `Math.random`, no new `G` field**); no committed fixture plays Surge, so `finalStateHash` / `PRE_WP080_HASH` byte-identical (no re-pin). **+9 tests** (condition true ≥8 / true >8 / false <8 / gross-not-net / false-NaN; parse arm attaches the condition + records no `parse-unrecognized`; runtime gate: +3 attack at recruit 8, none at recruit 4, recruit unaffected); engine **2627 → 2636 / 0**, `pnpm -r build` + `pnpm -r --no-bail test` exit 0. D-24354 Active.
+
+**D-24026 live-verify — OPERATOR-PENDING.** `User-Visible Surface = play.legendary-arena.com`. The two WP-542 playthroughs are the *reproduction*, not the post-fix verification. To confirm live: in a Thor match, play Surge of Power on a turn with <8 recruit made → NO +3 attack; on a turn with ≥8 recruit made → +3 attack.
+
+---
+
 ### WP-546 — Core Supreme HYDRA Dynamic Victory Points — DONE (2026-08-15)
 
 The **last** hollow Core villain card now scores faithfully. Supreme HYDRA (`villain core/hydra/supreme-hydra`) — *"worth +3`[icon:piercing]` for each other HYDRA Villain in your Victory Pile"* — was scoring a flat `VP_VILLAIN = 1`, because its printed `vp` is the string `"3*"` (the `*` marks a dynamic value), `Number("3*")` is `NaN`, and no `G.cardVictoryPoints` entry was written. `[icon:piercing]` renders **victory points** in this data (corroborated across amwp / 3dtc / Ultron), so this is the **first card-text dynamic-VP modifier** — the `scoring.types.ts` "future packet", delivered for this one card.

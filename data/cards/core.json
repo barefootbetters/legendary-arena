@@ -1453,7 +1453,7 @@
           "attack": "0+",
           "recruit": "2",
           "abilities": [
-            "If you made 8 or more [icon:recruit] this turn, you get +3[icon:attack]."
+            "If you made 8 or more [icon:recruit] this turn, you get +3[icon:attack]. [keyword:recruit-threshold:8]"
           ]
         },
         {
