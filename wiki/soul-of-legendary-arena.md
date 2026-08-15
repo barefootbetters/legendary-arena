@@ -276,7 +276,7 @@ Hitler's.
 
 Greg Pak framed the moral stakes of that history plainly:
 
-> During the Night of Long Knives, Hitler authorized the murder of scores of
+> During the Night of the Long Knives, Hitler authorized the murder of scores of
 > his rivals, establishing his total authority and the end of the rule of
 > law in Nazi Germany. Thousands of ordinary Germans opposed Hitler's
 > dictatorship and genocide. They paid with their lives. But thousands more
@@ -288,6 +288,18 @@ That last line is why the Red Skull belongs on a page about the *soul* of a
 game: he is the study of a man who followed evil to the end and paid with
 his soul — the anti-Rogers, and the reason the good-versus-evil fantasy
 Legendary Arena leans into carries real weight rather than cartoon stakes.
+
+Pak's afterword to the first issue casts the whole project as a struggle
+with "the question of how everyday people can so willingly embrace evil" —
+the question the good-versus-evil clarity of this game refuses to look away
+from:
+
+![Greg Pak's afterword to Red Skull: Incarnate (2011) #1.](/soul-of-legendary-arena/red-skull-2011-1-afterword.jpg "width=62%")
+
+*Greg Pak's afterword to* Red Skull: Incarnate *(2011) #1 —
+[on Marvel.com](https://www.marvel.com/comics/issue/34598/red_skull_2011_1).
+© Marvel; shown as editorial reference.* Pak has written more about the
+series on [his own blog](https://gregpak.com/category/comics/red-skull/).
 
 ### Honoring is not ossifying — the real distinction
 
@@ -480,16 +492,17 @@ claim at a safe distance — it stands on it.
   section names.
 - **IP boundary.** This page discusses *theme and framing* of licensed
   characters, retold in original prose, not copied from source caption text.
-  The three embedded images — the *Captain America* #255 cover and a uniform
-  panel (© Marvel), and the *Despicable Me* poster (© Universal /
-  Illumination) — are low-resolution, attributed, and shown as editorial
-  reference on the access-gated internal ewiki; none are licensed card
-  assets or reproductions of card text. Faithful *card* reproduction is
-  governed by the license ([IP Licensing](ip-licensing.md)), not by this
-  essay; if their use is ever in question, those three images are the assets
-  to pull. One longer quotation (Greg Pak, *Red Skull: Incarnate*) appears as
-  an attributed editorial excerpt — the single block quote to trim if the
-  page's quotation footprint is ever questioned.
+  Embedded images: the *Captain America* #255 cover and a uniform panel, and
+  the scanned **Greg Pak afterword** to *Red Skull: Incarnate* (2011) #1
+  (© Marvel); and the *Despicable Me* poster (© Universal / Illumination) —
+  all attributed, low-resolution, and shown as editorial reference on the
+  access-gated internal ewiki; none are licensed card assets or reproductions
+  of card text. The afterword scan and the one *Red Skull: Incarnate* block
+  quotation are the most substantial third-party reproductions on the page —
+  each attributed and linked to its official Marvel source, and the first
+  items to trim if the reproduction footprint is ever questioned. Faithful
+  *card* reproduction is governed by the license
+  ([IP Licensing](ip-licensing.md)), not by this essay.
 - **The "secular default" section is a documented incident, not a slogan.**
   It records something that actually happened while this page was drafted,
   and states a general claim about AI training bias that is an *observation*,
@@ -533,4 +546,9 @@ claim at a safe distance — it stands on it.
   (KJV, Church of Jesus Christ of Latter-day Saints scripture text; parallel
   2 Chronicles 10) — Rehoboam rejects the elders' counsel and the kingdom
   divides; the root of the honour-thy-father theme this page affirms. See
-  also Exodus 20:12 — the commandment given with a promise.
+  also Exodus 20:12 — the commandment given with a promise, and
+  Matthew 20:25–28 — Christlike servant leadership.
+- Greg Pak on the Red Skull — the
+  [*Red Skull: Incarnate* (2011) #1 issue page (afterword)](https://www.marvel.com/comics/issue/34598/red_skull_2011_1)
+  on Marvel.com, and [Pak's own blog on the series](https://gregpak.com/category/comics/red-skull/).
+  Attributed editorial references for the Red Skull reading section.
