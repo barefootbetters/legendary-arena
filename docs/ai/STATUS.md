@@ -23,7 +23,11 @@ Pasting a file into the wrong one of the Loadout tab's three adjacent JSON impor
 
 **registry-viewer 243 → 260 tests / 0 fail**; `vue-tsc` clean; `pnpm -r build` + `pnpm -r --no-bail test` exit 0. Exactly 3 files. Testing is pure-helper level — this app has no SFC harness, so box behaviour is gated by the live-verify, the same trade WP-549 and WP-552 made. D-24360 Active.
 
-**Live verification (D-24026) — operator-pending.** `User-Visible Surface = the Registry Viewer Loadout tab`. To confirm: paste a LAGN into `Load JSON` — one sentence, no schema dump, and the draft untouched.
+**Live verification (D-24026) — ✅ CONFIRMED 2026-08-15.** A real match LAGN (`loki-Secret-Invasion-GAME-2p.lagn.json`) pasted into `Load JSON` on the deployed viewer returned exactly one line:
+
+> `This looks like a LAGN file (it has a "lagn_version" field). Use the "Load LAGN" box below instead.`
+
+Four things confirmed at once: **(1)** the locked sentence renders verbatim; **(2)** none of the nine MATCH-SETUP schema errors appear — the redirect REPLACED the dump rather than decorating it; **(3)** there is **no leading colon**, so the template separator fix held (the `: ` sits outside the `error-field` span, and omitting only the span would have rendered `": This looks like…"`, one character from the `root:` prefix this WP exists to remove); and **(4)** the draft was **untouched** — the standing "Validation errors → Composition" panel still reported empty `schemeId` / `mastermindId` and empty `villainGroupIds` / `henchmanGroupIds` / `heroDeckIds`, which a silent auto-load would have populated with `core/loki`, `core/radiation` and the six heroes. That is the advisory-only guarantee (AC-6) verified live, and it is the guardrail that mattered most: all three importers replace the draft, so an auto-load would have destroyed work in progress.
 
 ---
 
