@@ -274,15 +274,24 @@ permanently scarred by his own "Dust of Death" chemical weapon. What makes
 him Rogers' mirror is mentorship, not chemistry: Erskine's protégé against
 Hitler's.
 
-Greg Pak framed the moral stakes of that history plainly:
+Greg Pak framed the moral stakes of that history plainly, on the back cover
+of the series' final issue (reproduced verbatim — "Night of Long Knives" is
+the printed wording):
 
-> During the Night of the Long Knives, Hitler authorized the murder of scores of
+> During the Night of Long Knives, Hitler authorized the murder of scores of
 > his rivals, establishing his total authority and the end of the rule of
 > law in Nazi Germany. Thousands of ordinary Germans opposed Hitler's
 > dictatorship and genocide. They paid with their lives. But thousands more
 > followed him to the end. They paid with their souls.
 >
-> — Greg Pak, *Red Skull: Incarnate* (2011)
+> — Greg Pak, [*Red Skull: Incarnate* (2011) #5, back cover](https://www.marvel.com/comics/issue/36265/red_skull_2011_5)
+
+![Back cover of Red Skull: Incarnate (2011) #5 — the passage set in white on black, the final line "They paid with their souls." in red.](/soul-of-legendary-arena/red-skull-2011-issue5-back-cover.jpg "width=44%")
+
+*The back cover of* Red Skull: Incarnate *(2011) #5, where the passage
+appears — the final line set in red —
+[on Marvel.com](https://www.marvel.com/comics/issue/36265/red_skull_2011_5).
+© Marvel; shown as editorial reference.*
 
 That last line is why the Red Skull belongs on a page about the *soul* of a
 game: he is the study of a man who followed evil to the end and paid with
@@ -492,16 +501,17 @@ claim at a safe distance — it stands on it.
   section names.
 - **IP boundary.** This page discusses *theme and framing* of licensed
   characters, retold in original prose, not copied from source caption text.
-  Embedded images: the *Captain America* #255 cover and a uniform panel, and
-  the scanned **Greg Pak afterword** to *Red Skull: Incarnate* (2011) #1
-  (© Marvel); and the *Despicable Me* poster (© Universal / Illumination) —
-  all attributed, low-resolution, and shown as editorial reference on the
+  Embedded images: the *Captain America* #255 cover and a uniform panel, the
+  scanned **Greg Pak afterword** to *Red Skull: Incarnate* (2011) #1, and the
+  **#5 back cover** carrying the "paid with their souls" passage (© Marvel);
+  and the *Despicable Me* poster (© Universal / Illumination) — all
+  attributed, low-resolution, and shown as editorial reference on the
   access-gated internal ewiki; none are licensed card assets or reproductions
-  of card text. The afterword scan and the one *Red Skull: Incarnate* block
-  quotation are the most substantial third-party reproductions on the page —
-  each attributed and linked to its official Marvel source, and the first
-  items to trim if the reproduction footprint is ever questioned. Faithful
-  *card* reproduction is governed by the license
+  of card text. The afterword scan and the #5 back cover (whose text is also
+  block-quoted) are the most substantial third-party reproductions on the
+  page — each attributed and linked to its official Marvel source, and the
+  first items to trim if the reproduction footprint is ever questioned.
+  Faithful *card* reproduction is governed by the license
   ([IP Licensing](ip-licensing.md)), not by this essay.
 - **The "secular default" section is a documented incident, not a slogan.**
   It records something that actually happened while this page was drafted,
@@ -550,5 +560,6 @@ claim at a safe distance — it stands on it.
   Matthew 20:25–28 — Christlike servant leadership.
 - Greg Pak on the Red Skull — the
   [*Red Skull: Incarnate* (2011) #1 issue page (afterword)](https://www.marvel.com/comics/issue/34598/red_skull_2011_1)
+  and the [#5 issue page (back-cover passage)](https://www.marvel.com/comics/issue/36265/red_skull_2011_5)
   on Marvel.com, and [Pak's own blog on the series](https://gregpak.com/category/comics/red-skull/).
   Attributed editorial references for the Red Skull reading section.
