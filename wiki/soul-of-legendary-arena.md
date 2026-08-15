@@ -189,9 +189,11 @@ Rebirth, in the uniform. © Marvel Comics; shown as editorial reference.*
 And this is the beat the retelling keeps: the serum did not manufacture a
 hero out of nothing. Erskine chose Rogers *because* he was weak and good — a
 man who knew the value of strength precisely because he had never had it —
-and the serum only amplified what was already there. Johann Schmidt, already
-cruel and hungry for power, had been amplified by an earlier serum into the
-Red Skull: same power, opposite men, the Skull the mirror of Rogers. And the
+and the serum only amplified what was already there. Johann Schmidt is his
+mirror — and in the comics the mirror is drawn by *mentorship*, not
+chemistry: it was Adolf Hitler who noticed the bitter orphan and personally
+trained him into the Red Skull, the anti-Erskine. Two men, two mentors,
+opposite ends. And the
 deepest thing Erskine passed on could never have been committed to paper — a
 charge to remain a good man — so that when the formula died with him, the
 inheritance did not. Steve carried it forward rather than outgrowing the
@@ -246,6 +248,46 @@ For the core origin on **Marvel Unlimited**, in priority order:
 | 3 | *Captain America* (1968) #109 | 1969 | Another Kirby / Lee retelling. Uses "Professor Reinstein," adds more Vita-Rays emphasis, shows the assassination clearly. | Good companion to #255. |
 | 4 | *Captain America Comics* #1 | 1941 | The original Golden Age origin by Joe Simon & Jack Kirby. Professor Reinstein administers the serum; Erskine dies. | Historical starting point. Red Skull also debuts here (different origin). |
 | 5 | *Adventures of Captain America* #1 (and the full 4-issue miniseries) | 1991 | Expanded, character-focused retelling by Fabian Nicieza & Kevin Maguire. Strong on Project: Rebirth, Erskine, and the transformation. | More page space for the mentor relationship. Some continuity differences from mainline 616, but excellent for the "chosen for character" angle. |
+
+### Where to read the Red Skull origin
+
+The Red Skull is Captain America's dark mirror, and worth reading in his own
+right. Start with **Tales of Suspense #66 (June 1965)** — Stan Lee and Jack
+Kirby's classic Silver Age origin, in which the Skull narrates his own
+backstory to Cap: abandoned as a baby, an abused childhood, a bitter orphan
+turned hotel bellhop, until Adolf Hitler personally noticed him, trained
+him, and gave him the red-skull mask and identity. It is the definitive
+early version most later stories build on. (On Marvel Unlimited, search
+*Tales of Suspense* (1959) #66, or simply *Tales of Suspense 66*.)
+
+| Issue | Year | Why read it |
+|---|:--:|---|
+| *Tales of Suspense* #66 | 1965 | **Start here.** Lee / Kirby Silver Age origin — the Skull narrates his own backstory; the version later stories build on. |
+| *Captain America Comics* #7 | 1941 | First appearance of the *real* Johann Schmidt as the Red Skull (the earlier one in #1 was an impostor). |
+| *Tales of Suspense* #65 | 1965 | Immediately before #66 — sets up the modern return of the Red Skull. |
+| *Red Skull: Incarnate* #1–5 | 2011 | Greg Pak's modern, detailed origin miniseries — young Johann Schmidt in 1920s–30s Germany. A very strong character study. |
+
+**A note on the movie difference.** In the comics, the Red Skull's face is
+*not* the result of an imperfect Super-Soldier Serum — that is a film
+change. In the comics the red skull begins as a mask; his face is only later
+permanently scarred by his own "Dust of Death" chemical weapon. What makes
+him Rogers' mirror is mentorship, not chemistry: Erskine's protégé against
+Hitler's.
+
+Greg Pak framed the moral stakes of that history plainly:
+
+> During the Night of Long Knives, Hitler authorized the murder of scores of
+> his rivals, establishing his total authority and the end of the rule of
+> law in Nazi Germany. Thousands of ordinary Germans opposed Hitler's
+> dictatorship and genocide. They paid with their lives. But thousands more
+> followed him to the end. They paid with their souls.
+>
+> — Greg Pak, *Red Skull: Incarnate* (2011)
+
+That last line is why the Red Skull belongs on a page about the *soul* of a
+game: he is the study of a man who followed evil to the end and paid with
+his soul — the anti-Rogers, and the reason the good-versus-evil fantasy
+Legendary Arena leans into carries real weight rather than cartoon stakes.
 
 ### Honoring is not ossifying — the real distinction
 
@@ -445,7 +487,9 @@ claim at a safe distance — it stands on it.
   assets or reproductions of card text. Faithful *card* reproduction is
   governed by the license ([IP Licensing](ip-licensing.md)), not by this
   essay; if their use is ever in question, those three images are the assets
-  to pull.
+  to pull. One longer quotation (Greg Pak, *Red Skull: Incarnate*) appears as
+  an attributed editorial excerpt — the single block quote to trim if the
+  page's quotation footprint is ever questioned.
 - **The "secular default" section is a documented incident, not a slogan.**
   It records something that actually happened while this page was drafted,
   and states a general claim about AI training bias that is an *observation*,
