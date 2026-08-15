@@ -7,6 +7,18 @@
 
 ## Current State
 
+### WP-546 — Core Supreme HYDRA Dynamic Victory Points — DONE (2026-08-15)
+
+The **last** hollow Core villain card now scores faithfully. Supreme HYDRA (`villain core/hydra/supreme-hydra`) — *"worth +3`[icon:piercing]` for each other HYDRA Villain in your Victory Pile"* — was scoring a flat `VP_VILLAIN = 1`, because its printed `vp` is the string `"3*"` (the `*` marks a dynamic value), `Number("3*")` is `NaN`, and no `G.cardVictoryPoints` entry was written. `[icon:piercing]` renders **victory points** in this data (corroborated across amwp / 3dtc / Ultron), so this is the **first card-text dynamic-VP modifier** — the `scoring.types.ts` "future packet", delivered for this one card.
+
+**Engine-scoring-only — no marker, no card-data, no ledger.** A passive scoring modifier is not a timed `[effect:X]` ability, so it stays `(unmarked)` in the timed-effect villain-mechanic-ledger by design (exactly like Blob's `require-to-defeat`). New `packages/game-engine/src/scoring/dynamicVictoryPoints.ts` holds `computeDynamicVillainVictoryPoints(cardId, victoryPile): number | null`, seeded with **exactly** Supreme HYDRA (`SUPREME_HYDRA_BASE_VP = 3` + `3 ×` other-HYDRA-villain-count; HYDRA-group membership from the `-villain-hydra-` ext_id segment; other-count = HYDRA villains in the pile − 1, excluding self, clamped ≥ 0). The `computeFinalScores` villain branch folds `villainVP += dyn ?? (cardVictoryPoints ?? VP_VILLAIN)` — **no new `PlayerScoreBreakdown` field** — and because `computeFinalScores` is the single scoring path, the HUD counter (`uiState.build`), par baselines, and final scoring all inherit it. Duplicate-first: Ultron / amwp / 3dtc dynamic-VP cards remain a future packet. `normalizePrintedVictoryPoints` / the `"3*"` parse is untouched (the resolver overrides Supreme HYDRA's value entirely).
+
+Deterministic (pure victory-pile string reads; **no `ctx.random`, no `Math.random`**); scoring is a derived view never stored in `G`, so no hashed-`G` field and no `finalStateHash` / `PRE_WP080_HASH` re-pin (no committed fixture fights Supreme HYDRA). **+14 tests** (new `dynamicVictoryPoints.test.ts` — 0/1/2 other HYDRA villains → 3/6/9 VP, non-HYDRA-only pile → base 3, non-modifier villain → null, empty-pile clamp; `scoring.logic.test.ts` integration + a winner-flip); engine **2613→2627/0**, `pnpm -r build` + `pnpm -r --no-bail test` exit 0. `git status` showed only `scoring/*` + governance (no `data/cards/`, no `docs/ai/coverage/`, no markers). This completes the Core villain/henchman batch (Master Strikes 4/4, scheme twists 8/8, every villain/henchman Fight ability). D-24355 Active.
+
+**D-24026 live-verify — OPERATOR-PENDING.** `User-Visible Surface = play.legendary-arena.com`. To confirm live: end a match with Supreme HYDRA + ≥ 1 other HYDRA villain in a player's victory pile; the final score and the live HUD should reflect base 3 + 3 per other HYDRA villain.
+
+---
+
 ### WP-531 — Re-anchor the Penalty Weights to the Rulebook 4:3:1 Ratio — DONE (2026-08-15)
 
 The three **rulebook** penalty weights — `bystanderLost` : `schemeTwistNegative` : `villainEscaped` — are now anchored to the community/rulebook **4:3:1** ratio: `400 / 300 / 100`, with the villain escape as the 1.00 unit. This completes the penalty arc's weight side after the producer side (WP-528 / WP-529).
