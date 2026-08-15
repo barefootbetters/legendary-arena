@@ -40,6 +40,7 @@ import type {
 import { useLoadoutLagnExport } from "../composables/useLoadoutLagnExport";
 import { serializeSetupToUrl } from "../lib/setupUrlParams";
 import { parseLagnLoadout, type LagnImportedResult } from "../lib/loadoutLagnImport";
+import { sniffLoadoutImportFormat, redirectSentenceFor } from "../lib/loadoutImportFormat";
 import {
   parseGauntletPack,
   resolveGauntletLegLoadout,
@@ -710,6 +711,16 @@ function onDownloadLagn(): void {
 function onPasteImport(): void {
   importErrors.value = [];
   importSuccessAt.value = null;
+  // why: D-24360 — if this is plainly one of the OTHER two formats, say which box
+  // to use instead of handing back nine MATCH-SETUP field errors. Advisory only:
+  // it returns before the parser, so nothing is routed and nothing is loaded.
+  // `field` is empty so the template omits the `field: ` prefix — the whole point
+  // is to not show a `root:`-style prefix on this sentence.
+  const redirect = redirectSentenceFor("match-setup", sniffLoadoutImportFormat(importText.value));
+  if (redirect !== null) {
+    importErrors.value = [{ field: "", message: redirect }];
+    return;
+  }
   const result = loadFromJson(importText.value);
   if (result.ok) {
     importSuccessAt.value = new Date().toISOString();
@@ -757,6 +768,14 @@ const lagnImportSuccessAt = ref<string | null>(null);
 function applyLagnImport(text: string): void {
   lagnImportErrors.value = [];
   lagnImportSuccessAt.value = null;
+  // why: D-24360 — same advisory redirect as the MATCH-SETUP box. Returns before
+  // the parser, so the draft is untouched. `lagnImportErrors` is a string list,
+  // so the sentence is its single element.
+  const redirect = redirectSentenceFor("lagn", sniffLoadoutImportFormat(text));
+  if (redirect !== null) {
+    lagnImportErrors.value = [redirect];
+    return;
+  }
   const result = parseLagnLoadout(text);
   if (!result.ok) {
     lagnImportErrors.value = result.errors;
@@ -900,6 +919,16 @@ function applyGauntletPackImport(text: string): void {
   gauntletPackError.value = null;
   gauntletLegMessage.value = null;
   gauntletImportSuccessAt.value = null;
+  // why: D-24360 — same advisory redirect. Note this does NOT clear
+  // `gauntletPack.value` the way the parse-failure branch below does: tearing
+  // down a loaded pack and its leg picker because the operator pasted into the
+  // wrong box is the same harm the advisory-only rule exists to prevent.
+  // `gauntletPackError` is a lone string, not a list.
+  const redirect = redirectSentenceFor("gauntlet-pack", sniffLoadoutImportFormat(text));
+  if (redirect !== null) {
+    gauntletPackError.value = redirect;
+    return;
+  }
   const result = parseGauntletPack(text);
   if (!result.ok) {
     gauntletPack.value = null;
@@ -1601,7 +1630,17 @@ function slotLabel(slot: PickerSlot): string {
             <p v-if="importSuccessAt" class="import-success">Loaded at {{ importSuccessAt }}.</p>
             <ul v-if="importErrors.length > 0" class="error-list">
               <li v-for="(entry, index) in importErrors" :key="index">
-                <span class="error-field">{{ entry.field }}</span>: {{ entry.message }}
+                <!--
+                  why: D-24360 — the `: ` separator sits OUTSIDE the span, so
+                  omitting only the span on an empty `field` would render a bare
+                  leading colon — one character from the `root:` prefix the
+                  redirect sentence exists to replace. Both go together. Every
+                  non-empty `field` renders exactly as before.
+                -->
+                <template v-if="entry.field !== ''"
+                  ><span class="error-field">{{ entry.field }}</span
+                  >: </template
+                >{{ entry.message }}
               </li>
             </ul>
           </div>

@@ -7,6 +7,26 @@
 
 ## Current State
 
+### WP-551 — Loadout Import Format Sniff — DONE (2026-08-15)
+
+Pasting a file into the wrong one of the Loadout tab's three adjacent JSON import boxes now says **which box it belongs in**, in one sentence, instead of dumping that validator's field-level errors.
+
+**The trigger.** Observed live 2026-08-15 during the WP-549 verification: a LAGN file pasted into `Load JSON` produced **nine** errors ending `root: The match setup document contains unknown field(s) (lagn_version, $schema, game_id, variant, player_count, setup, result) …`. Every line is correct — the MATCH-SETUP validator faithfully rejecting a non-MATCH-SETUP document — but none of it says *use the box below*. The operator who hit it built the application. The needed information was already sitting in the error (`lagn_version` is right there in the unknown-fields list), so this surfaces what the validator already knew, one step earlier.
+
+**Advisory only — never routes, never loads.** The obvious fix (detect and load into the right box) was rejected: all three importers **replace** the draft, and a wrong-format paste is usually a wrong-*file* paste, so auto-loading would destroy work in progress. Each handler consults the sniff and returns *before* its parser call. The gauntlet redirect deliberately does **not** clear `gauntletPack` the way that handler's parse-failure branch does — tearing down a loaded pack and its leg picker over a wrong-box paste is precisely the harm the rule prevents.
+
+**Positive-only pair detection**, verified against the real schemas rather than the importers' prose: MATCH-SETUP `schemaVersion` + `composition` (`additionalProperties: false`), LAGN `lagn_version` + `setup`, Gauntlet Pack `pack_version` + `gauntlet` (a `.strict()` two-key object). `setup` is genuinely absent from MATCH-SETUP — its envelope field is `setupId`. Single-key matching would misfire, since `schemaVersion` is also used by `gauntletConfigs.ts` for a different artifact. And because LAGN is `additionalProperties: true`, a document satisfying **two** pairs resolves to `unknown` rather than a precedence guess — a file that looks like two formats can't be confidently redirected, and the real errors beat a coin-flip.
+
+**Nothing was weakened.** Unknown, partial, malformed and non-JSON input all fall through to the existing validator or parser errors unchanged; no rejection path relaxed, zero new acceptance.
+
+**Template fix worth noting:** the `: ` separator in the `importErrors` list sits *outside* the `error-field` span, so omitting only the span on an empty `field` would have rendered a bare leading colon — one character from the `root:` prefix the sentence exists to replace. Both are omitted together; every non-empty `field` renders exactly as before.
+
+**registry-viewer 243 → 260 tests / 0 fail**; `vue-tsc` clean; `pnpm -r build` + `pnpm -r --no-bail test` exit 0. Exactly 3 files. Testing is pure-helper level — this app has no SFC harness, so box behaviour is gated by the live-verify, the same trade WP-549 and WP-552 made. D-24360 Active.
+
+**Live verification (D-24026) — operator-pending.** `User-Visible Surface = the Registry Viewer Loadout tab`. To confirm: paste a LAGN into `Load JSON` — one sentence, no schema dump, and the draft untouched.
+
+---
+
 ### WP-552 — Registry Viewer Deploy Version Check — DONE (2026-08-15)
 
 The Registry Viewer can now tell an operator their browser is running a stale bundle. Before this it could not: `cards.legendary-arena.com/version.json` returned the SPA fallback HTML, so a cached bundle silently showed old UI with no signal at all.
