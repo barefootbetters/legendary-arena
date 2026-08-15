@@ -718,6 +718,20 @@ function parseAbilityText(abilityText: string): {
         type: 'distinctHeroClassesAtLeast',
         value: String(SPECTRUM_CLASS_THRESHOLD),
       });
+    } else if (normalizedKeyword === 'recruit-threshold') {
+      // why: WP-545 / D-24354 — mirrors the D-24055 Spectrum marker→condition pattern:
+      // a [keyword:…] marker that pushes a game-state CONDITION (not a keyword/effect)
+      // onto the same hook that carries the line's printed effects, so Surge of Power's
+      // +3[icon:attack] gates on "you made N or more Recruit this turn". The parameterized
+      // threshold is KEYWORD_PATTERN's optional :N capture (keywordMatch[2]). Placed before
+      // the unresolved-marker fallback so it never records a parse-unrecognized hollow.
+      const recruitThreshold = keywordMatch[2];
+      if (recruitThreshold !== undefined) {
+        conditions.push({
+          type: 'recruitMadeThisTurnAtLeast',
+          value: recruitThreshold,
+        });
+      }
     } else if (!RECOGNIZED_NON_KEYWORD_MARKERS.has(normalizedKeyword)) {
       // why: WP-257 / D-24034 — a `[keyword:X]` token that is NOT a valid keyword,
       // NOT a composition marker, and NOT a recognized modifier (reveal-count) is a

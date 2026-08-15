@@ -418,3 +418,52 @@ describe('buildHeroAbilityHooks — copy-powers descriptive [hc:X] is not a cond
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// recruit-threshold marker → recruitMadeThisTurnAtLeast condition
+// (WP-545 / D-24354 — Thor Surge of Power). Mirrors the D-24055 Spectrum
+// marker→condition precedent: a [keyword:…] token that pushes a game-state
+// CONDITION onto the same hook that carries the line's printed effects.
+// ---------------------------------------------------------------------------
+
+describe('buildHeroAbilityHooks — recruit-threshold marker → condition (Surge of Power)', () => {
+  const SURGE_ABILITY =
+    'If you made 8 or more [icon:recruit] this turn, you get +3[icon:attack]. [keyword:recruit-threshold:8]';
+
+  it('attaches a recruitMadeThisTurnAtLeast:8 condition to Surge\'s +3 attack hook', () => {
+    const registry = makeRegistry('core', 'thor', [
+      { slug: 'surge-of-power', abilities: [SURGE_ABILITY] },
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('core/thor'));
+
+    const surgeHook = hooks.find((hook) =>
+      (hook.effects ?? []).some((effect) => effect.type === 'attack' && effect.magnitude === 3),
+    );
+    assert.ok(surgeHook !== undefined, 'the Surge of Power hook carrying the +3 attack effect is built');
+
+    const recruitConditions = (surgeHook!.conditions ?? []).filter(
+      (condition) => condition.type === 'recruitMadeThisTurnAtLeast',
+    );
+    assert.equal(recruitConditions.length, 1,
+      'exactly one recruitMadeThisTurnAtLeast condition is attached to the same hook as the +3 attack');
+    assert.equal(recruitConditions[0]!.value, '8',
+      'the parsed threshold is 8 (from [keyword:recruit-threshold:8])');
+  });
+
+  it('records NO unresolved marker for the recruit-threshold token (registered, never a parse-unrecognized hollow)', () => {
+    const registry = makeRegistry('core', 'thor', [
+      { slug: 'surge-of-power', abilities: [SURGE_ABILITY] },
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('core/thor'));
+
+    const surgeHook = hooks.find((hook) =>
+      (hook.effects ?? []).some((effect) => effect.type === 'attack' && effect.magnitude === 3),
+    );
+    assert.ok(surgeHook !== undefined, 'the Surge of Power hook is built');
+    const unresolved = surgeHook!.unresolvedMarkers ?? [];
+    assert.ok(
+      !unresolved.includes('recruit-threshold'),
+      'recruit-threshold must be recognized before the unresolved-marker fallback (no parse-unrecognized hollow)',
+    );
+  });
+});

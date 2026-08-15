@@ -989,6 +989,18 @@
       "hidden": true
     },
     {
+      "slug": "recruit-threshold",
+      "label": "Recruit Threshold",
+      "scope": "hero",
+      "source": "free-text",
+      "cardCount": 2,
+      "cardIds": [
+        "core/thor",
+        "msp1/thor"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "rescue",
       "label": "Rescue",
       "scope": "hero",
@@ -1612,7 +1624,7 @@
       "label": "Unmarked",
       "scope": "hero",
       "source": "free-text",
-      "cardCount": 45,
+      "cardCount": 43,
       "cardIds": [
         "3dtc/deadpool",
         "3dtc/howard-the-duck",
@@ -1627,7 +1639,6 @@
         "core/captain-america",
         "core/deadpool",
         "core/nick-fury",
-        "core/thor",
         "cosm/nebula",
         "cvwr/captain-america-secret-avenger",
         "cvwr/daredevil",
@@ -1641,7 +1652,6 @@
         "gotg/groot",
         "msp1/captain-america",
         "msp1/nick-fury",
-        "msp1/thor",
         "nmut/karma",
         "rvlt/hellcat",
         "shld/gw-bridge",
@@ -2388,7 +2398,7 @@
     },
     "core/thor": {
       "mechanics": [
-        "unmarked"
+        "recruit-threshold"
       ]
     },
     "core/wolverine": {
@@ -2987,7 +2997,7 @@
     },
     "msp1/thor": {
       "mechanics": [
-        "unmarked"
+        "recruit-threshold"
       ]
     },
     "nmut/karma": {

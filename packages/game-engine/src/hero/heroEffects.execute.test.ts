@@ -4279,3 +4279,56 @@ describe('defeat-with-bystander handler (WP-486 / D-24291)', () => {
     assert.equal(gameState.city[2], 'villain-c', 'nothing is defeated until the player resolves the choice');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Surge of Power recruit-threshold gate (WP-545 / D-24354)
+// ---------------------------------------------------------------------------
+
+describe('executeHeroEffects — Surge of Power recruit-threshold gate', () => {
+  // why: makeMockCtx provides ShuffleProvider-compatible context.
+  const surgeCtx = makeMockCtx();
+
+  // why: mirrors Surge of Power's real built hook (verified against
+  // buildHeroAbilityHooks): a phantom magnitude-less `recruit` effect (from the
+  // [icon:recruit] in the condition clause — a no-op, isValidMagnitude fails) plus
+  // the printed +3 attack, gated by the recruitMadeThisTurnAtLeast:8 condition.
+  const surgeHook: HeroAbilityHook = {
+    cardId: 'core/thor/surge-of-power#0' as string,
+    timing: 'onPlay',
+    keywords: ['recruit', 'attack', 'conditional'] as HeroKeyword[],
+    conditions: [{ type: 'recruitMadeThisTurnAtLeast', value: '8' }],
+    effects: [{ type: 'recruit' } as HeroEffectDescriptor, { type: 'attack', magnitude: 3 }],
+  };
+
+  it('grants +3 attack when 8+ recruit was made this turn', () => {
+    const gameState = makeTestState({
+      inPlay: ['core/thor/surge-of-power#0'],
+      turnEconomyAttack: 0,
+      turnEconomyRecruit: 8,
+      heroAbilityHooks: [surgeHook],
+    });
+
+    executeHeroEffects(gameState, surgeCtx, '0', 'core/thor/surge-of-power#0' as string);
+
+    assert.equal(gameState.turnEconomy.attack, 3,
+      'Surge grants +3 attack when 8 recruit was made this turn.');
+    assert.equal(gameState.turnEconomy.recruit, 8,
+      'the phantom magnitude-less recruit effect is a no-op — recruit is unchanged.');
+  });
+
+  it('does NOT grant +3 attack when fewer than 8 recruit was made this turn', () => {
+    const gameState = makeTestState({
+      inPlay: ['core/thor/surge-of-power#0'],
+      turnEconomyAttack: 0,
+      turnEconomyRecruit: 4,
+      heroAbilityHooks: [surgeHook],
+    });
+
+    executeHeroEffects(gameState, surgeCtx, '0', 'core/thor/surge-of-power#0' as string);
+
+    assert.equal(gameState.turnEconomy.attack, 0,
+      'Surge grants NO +3 attack when only 4 recruit was made (the live turn-14 bug fixed).');
+    assert.equal(gameState.turnEconomy.recruit, 4,
+      'recruit is unaffected — the +2 recruit is Surge\'s printed stat, applied outside the ability hook.');
+  });
+});

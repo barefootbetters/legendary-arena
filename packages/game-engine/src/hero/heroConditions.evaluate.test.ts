@@ -29,6 +29,7 @@ function makeTestState(overrides?: {
   heroAbilityHooks?: HeroAbilityHook[];
   cardTraits?: Record<string, { heroClass: string | null; team: string | null }>;
   cardSizeChangingClasses?: Record<string, string[]>;
+  turnEconomyRecruit?: number;
 }): LegendaryGameState {
   return {
     matchConfiguration: {
@@ -74,7 +75,7 @@ function makeTestState(overrides?: {
     attachedBystanders: {},
     turnEconomy: {
       attack: 0,
-      recruit: 0,
+      recruit: overrides?.turnEconomyRecruit ?? 0,
       spentAttack: 0,
       spentRecruit: 0,
     },
@@ -736,5 +737,74 @@ describe('distinctHeroClassesAtLeast honors the Size-Changing grant (WP-290 / D-
 
     assert.equal(result, true,
       'covert (printed) + instinct (granted-only) = 2 distinct effective classes');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// recruitMadeThisTurnAtLeast (WP-545 / D-24354 — Thor Surge of Power gate)
+// ---------------------------------------------------------------------------
+
+describe('evaluateCondition — recruitMadeThisTurnAtLeast', () => {
+  it('returns true when gross recruit made this turn meets the threshold', () => {
+    const gameState = makeTestState({ turnEconomyRecruit: 8 });
+
+    const result = evaluateCondition(gameState, '0', {
+      type: 'recruitMadeThisTurnAtLeast',
+      value: '8',
+    });
+
+    assert.equal(result, true,
+      'recruitMadeThisTurnAtLeast should be true when turnEconomy.recruit >= threshold.');
+  });
+
+  it('returns true when gross recruit made this turn exceeds the threshold', () => {
+    const gameState = makeTestState({ turnEconomyRecruit: 12 });
+
+    const result = evaluateCondition(gameState, '0', {
+      type: 'recruitMadeThisTurnAtLeast',
+      value: '8',
+    });
+
+    assert.equal(result, true,
+      'recruitMadeThisTurnAtLeast should be true when turnEconomy.recruit exceeds threshold.');
+  });
+
+  it('returns false when gross recruit made this turn is below the threshold', () => {
+    const gameState = makeTestState({ turnEconomyRecruit: 4 });
+
+    const result = evaluateCondition(gameState, '0', {
+      type: 'recruitMadeThisTurnAtLeast',
+      value: '8',
+    });
+
+    assert.equal(result, false,
+      'recruitMadeThisTurnAtLeast should be false when turnEconomy.recruit < threshold (the live turn-14 bug: 4 recruit made, no +3 attack).');
+  });
+
+  it('compares against gross recruit MADE, not net available (spentRecruit does not lower the gate)', () => {
+    // why: turnEconomy.recruit is the gross accumulator; a player who made 8
+    // recruit and spent all of it still satisfies the "made 8 or more" gate.
+    const gameState = makeTestState({ turnEconomyRecruit: 8 });
+    gameState.turnEconomy.spentRecruit = 8;
+
+    const result = evaluateCondition(gameState, '0', {
+      type: 'recruitMadeThisTurnAtLeast',
+      value: '8',
+    });
+
+    assert.equal(result, true,
+      'spending recruit must not lower the gate — the condition reads gross recruit made.');
+  });
+
+  it('returns false on a non-numeric (NaN) value', () => {
+    const gameState = makeTestState({ turnEconomyRecruit: 99 });
+
+    const result = evaluateCondition(gameState, '0', {
+      type: 'recruitMadeThisTurnAtLeast',
+      value: 'not-a-number',
+    });
+
+    assert.equal(result, false,
+      'recruitMadeThisTurnAtLeast should safe-skip (false) when the threshold value is NaN.');
   });
 });

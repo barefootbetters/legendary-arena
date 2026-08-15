@@ -7,10 +7,10 @@
       "executable": 235,
       "deferred": 0,
       "condition": 5,
-      "unsupported": 366,
-      "unmarked": 45
+      "unsupported": 368,
+      "unmarked": 43
     },
-    "distinctMechanics": 121
+    "distinctMechanics": 122
   },
   "rows": [
     {
@@ -3468,12 +3468,17 @@
       "extId": "core/thor",
       "heroName": "Thor",
       "set": "core",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
+      "mechanic": "recruit-threshold",
+      "status": "unsupported",
       "wp": "",
       "decision": "",
       "handler": "",
-      "designs": []
+      "designs": [
+        {
+          "slug": "surge-of-power",
+          "name": "Surge of Power"
+        }
+      ]
     },
     {
       "extId": "core/wolverine",
@@ -6906,12 +6911,17 @@
       "extId": "msp1/thor",
       "heroName": "Thor",
       "set": "msp1",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
+      "mechanic": "recruit-threshold",
+      "status": "unsupported",
       "wp": "",
       "decision": "",
       "handler": "",
-      "designs": []
+      "designs": [
+        {
+          "slug": "surge-of-power",
+          "name": "Surge of Power"
+        }
+      ]
     },
     {
       "extId": "nmut/karma",
