@@ -36585,7 +36585,7 @@ _Active 2026-08-14 — landed at WP-544 execution (EC-579). The counted-self-KO 
 
 **Explicitly out of scope and unchanged.** `apps/server/src/match/matchLagn.logic.ts` `toLagnResult` (`heroes-win -> victory` / `scheme-wins -> defeat` / tie -> omit the block) is **correct** and remains the sole authority for a real match verdict. `packages/lagn-spec` is untouched — `result` was already optional, so no contract widening was needed. LAGN still has no `tie`; whether it should model one is deferred.
 
-_Active 2026-08-15 — landed at WP-549 execution (EC-584). registry-viewer 227 -> 234 tests / 0 fail. `User-Visible Surface = the Registry Viewer Loadout tab (cards.legendary-arena.com)` — D-24026 live-verify operator-pending (import a real match LAGN whose `result.outcome` is `"defeat"`, re-export, confirm the outcome survives; and confirm a hand-built loadout exports with no `result` key)._
+_Active 2026-08-15 — landed at WP-549 execution (EC-584). registry-viewer 227 -> 234 tests / 0 fail. `User-Visible Surface = the Registry Viewer Loadout tab (cards.legendary-arena.com)` — **D-24026 live-verify CONFIRMED 2026-08-15 (unset path)** — a loadout built on the deployed viewer and exported via Download LAGN produced a document with **no `result` key at all**, where the pre-fix build stamped `"result": {"outcome": "victory"}`; the Outcome control showed the tri-state with `— not recorded —` default. The import half (a `"defeat"` LAGN round-tripping) remains unit-tested but unwitnessed in the browser._
 
 ### D-24359 — Maestro's blocked Fight line names the trait; `owedFromTrait === 0` is its sole reachable trigger (Active 2026-08-15 — WP-550 / EC-585)
 
