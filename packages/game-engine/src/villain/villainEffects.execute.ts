@@ -2208,7 +2208,15 @@ function villainEffectKoHeroesCurrentCountByTrait(
       'applied',
     );
   } else {
-    pushLog(G, `Fight effect: no Heroes to KO.`, 'blocked');
+    // why: D-24359 — this is the ONLY reachable blocked state: owedFromTrait === 0.
+    // Every Hero the trait counts is itself a legal KO target (the eligibility scan
+    // excludes only the wound token, which never carries a cardTraits entry), so an
+    // owed count of 1 or more always resolves to an auto-KO or a park. Naming the
+    // trait tells the player WHY nothing happened, per the D-24290 sibling's
+    // `KO'd 0 of your {trait} Hero(es).` precedent — the bare "no Heroes to KO" read
+    // as "you had nothing left to lose" when the truth was "you had no Strength
+    // Heroes" (live log, match NPyIIWIjd1Q, 2026-08-15).
+    pushLog(G, `Fight effect: no ${requireValue} Heroes — nothing to KO.`, 'blocked');
   }
 
   // why: WP-316 / D-24102 — pending: true marks a parked interactive KO (targets stays

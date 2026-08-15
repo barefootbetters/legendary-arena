@@ -1562,7 +1562,31 @@ describe('executeVillainAbilities — ko-heroes-current-count-by-trait (WP-544 /
     assert.deepStrictEqual(G.ko, [], 'owed 0 — nothing KO’d');
     assert.equal(G.pendingKoHeroChoices?.length ?? 0, 0, 'no park at owed 0');
     assert.deepStrictEqual(G.playerZones['0']!.hand, [RANGED, COVERT], 'hand untouched');
-    assert.match(G.messages.at(-1)!.text, /Fight effect: no Heroes to KO\./);
+    // why: D-24359 — EXACT equality, not a regex. The other two assertions on this
+    // string are `assert.match`, so a loose retarget could ship wrong capitalization
+    // or a hyphen in place of the em dash and still pass every checklist item.
+    assert.equal(
+      G.messages.at(-1)!.text,
+      'Fight effect: no strength Heroes — nothing to KO.',
+      'the blocked line names the trait so the player learns WHY nothing happened',
+    );
+    assert.equal(G.messages.at(-1)!.outcome, 'blocked');
+    assert.equal(G.diagnostics?.hollowEffects?.length ?? 0, 0, 'reachable no-op, not a hollow record');
+  });
+
+  it('AC-2 empty zones take the same owed-0 path (D-24359)', () => {
+    // why: D-24359 — the zones must EXIST but be empty. A G with no
+    // playerZones[currentPlayer] entry instead takes the handler's `if (!zones)`
+    // early return, which logs nothing at all and would fail for an unrelated reason.
+    const G = makeMaestroG([]);
+    executeVillainAbilities(G, CTX, 'v-maestro' as CardExtId, 'onFight');
+    assert.deepStrictEqual(G.ko, [], 'nothing to KO and nothing owed');
+    assert.equal(G.pendingKoHeroChoices?.length ?? 0, 0, 'no park');
+    assert.equal(
+      G.messages.at(-1)!.text,
+      'Fight effect: no strength Heroes — nothing to KO.',
+      'the owed-0 path is the sole reachable blocked state, empty zones included',
+    );
     assert.equal(G.messages.at(-1)!.outcome, 'blocked');
     assert.equal(G.diagnostics?.hollowEffects?.length ?? 0, 0, 'reachable no-op, not a hollow record');
   });
@@ -1591,7 +1615,7 @@ describe('executeVillainAbilities — ko-heroes-current-count-by-trait (WP-544 /
     });
     executeVillainAbilities(G, CTX, 'v-maestro' as CardExtId, 'onFight');
     assert.deepStrictEqual(G.ko, [], 'discard is not scanned — owed stays 0');
-    assert.match(G.messages.at(-1)!.text, /no Heroes to KO/);
+    assert.match(G.messages.at(-1)!.text, /no strength Heroes — nothing to KO/);
   });
 
   it('only the current player is affected', () => {
