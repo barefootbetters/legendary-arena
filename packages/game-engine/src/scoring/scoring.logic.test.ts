@@ -40,6 +40,7 @@ function createMockGameState(options: {
   tacticsDefeated?: string[];
   ko?: string[];
   cardVictoryPoints?: Record<string, number>;
+  cardTraits?: Record<string, { heroClass: string | null; team: string | null }>;
 }): LegendaryGameState {
   const config = {
     schemeId: 'test-scheme',
@@ -85,6 +86,9 @@ function createMockGameState(options: {
     },
     turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0 },
     cardStats: {},
+    // why: the dynamic-VP resolver reads gameState.cardTraits for Ultron (D-24362);
+    // default to an empty map so tests with no tech-Hero context exercise the base path.
+    cardTraits: (options.cardTraits ?? {}) as Record<CardExtId, { heroClass: string | null; team: string | null }>,
     // why: D-24157 — omit-when-empty (absent ≡ fallback), matching the setup
     // conditional-spread; existing tests pass no map and exercise the fallback path.
     ...(options.cardVictoryPoints
@@ -535,5 +539,81 @@ describe('computeFinalScores — Supreme HYDRA dynamic VP (D-24355)', () => {
     assert.equal(result.players[0]!.totalVP, 11);
     assert.equal(result.players[1]!.totalVP, 10);
     assert.equal(result.winner, '0');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Ultron dynamic VP (WP-553 / D-24362)
+// ---------------------------------------------------------------------------
+
+describe('computeFinalScores — Ultron dynamic VP (D-24362)', () => {
+  // Realistic ext_ids: villain {setAbbr}-villain-{groupSlug}-{cardSlug}-{copy}.
+  const ULTRON = 'core-villain-masters-of-evil-ultron-01';
+  const TECH_HERO_A = 'core-hero-iron-man-repulsor-blast-01';
+  const TECH_HERO_B = 'core-hero-iron-man-endless-intervention-01';
+  const TECH_HERO_C = 'core-hero-iron-man-mark-42-01';
+  const NON_TECH_HERO = 'core-hero-spider-man-the-amazing-spider-man-01';
+  const LOKI = 'core-villain-enemies-of-asgard-loki-01';
+
+  it('scores Ultron at base 2 when the player holds no tech Heroes', () => {
+    const gameState = createMockGameState({
+      playerZones: {
+        '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [ULTRON] },
+      },
+      villainDeckCardTypes: { [ULTRON]: 'villain' },
+      cardTraits: { [NON_TECH_HERO]: { heroClass: 'covert', team: 'spider-friends' } },
+    });
+
+    const result = computeFinalScores(gameState);
+    assert.equal(result.players[0]!.villainVP, 2);
+    assert.equal(result.players[0]!.totalVP, 2);
+  });
+
+  it('adds +1 per tech Hero counted across ALL zones, not just the victory pile', () => {
+    // Three tech Heroes spread across deck / hand / discard; Ultron itself is the only
+    // card in the victory pile. Ultron must count all three → 2 + 3 = 5.
+    const gameState = createMockGameState({
+      playerZones: {
+        '0': {
+          deck: [TECH_HERO_A],
+          hand: [TECH_HERO_B],
+          discard: [TECH_HERO_C],
+          inPlay: [NON_TECH_HERO],
+          victory: [ULTRON],
+        },
+      },
+      villainDeckCardTypes: { [ULTRON]: 'villain' },
+      cardTraits: {
+        [TECH_HERO_A]: { heroClass: 'tech', team: 'avengers' },
+        [TECH_HERO_B]: { heroClass: 'tech', team: 'avengers' },
+        [TECH_HERO_C]: { heroClass: 'tech', team: 'avengers' },
+        [NON_TECH_HERO]: { heroClass: 'covert', team: 'spider-friends' },
+      },
+    });
+
+    const result = computeFinalScores(gameState);
+    assert.equal(result.players[0]!.villainVP, 5);
+    assert.equal(result.players[0]!.totalVP, 5);
+  });
+
+  it('Ultron plus an ordinary villain: Ultron dynamic + the villain printed vp', () => {
+    // Ultron (2 + 1 tech Hero = 3) + Loki (printed 4) = 7 villain VP.
+    const gameState = createMockGameState({
+      playerZones: {
+        '0': {
+          deck: [TECH_HERO_A],
+          hand: [],
+          discard: [],
+          inPlay: [],
+          victory: [ULTRON, LOKI],
+        },
+      },
+      villainDeckCardTypes: { [ULTRON]: 'villain', [LOKI]: 'villain' },
+      cardVictoryPoints: { [LOKI]: 4 },
+      cardTraits: { [TECH_HERO_A]: { heroClass: 'tech', team: 'avengers' } },
+    });
+
+    const result = computeFinalScores(gameState);
+    assert.equal(result.players[0]!.villainVP, 7);
   });
 });
