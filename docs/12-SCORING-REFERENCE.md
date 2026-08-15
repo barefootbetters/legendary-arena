@@ -179,13 +179,20 @@ Weighted to reward strong play without making VP-grinding dominant.
 
 ### 4. Penalty Events (P)
 
-Each event type carries its own weight, reflecting the **moral hierarchy**:
+Each event type carries its own weight, reflecting the **moral hierarchy**.
+
+> **Rulebook anchor (D-24342).** The three rulebook penalties —
+> `bystanderLost` : `schemeTwistNegative` : `villainEscaped` — are anchored to the
+> community / rulebook **4:3:1** ratio, with `villainEscaped` as the 1.00 unit
+> (`400 / 300 / 100`). `mastermindTacticUntaken` and `scenarioSpecificPenalty` are
+> Legendary-Arena-specific penalties and are **not** part of that triple, so they
+> keep their own values.
 
 | Event Type               | Default Weight | Meaning                                    |
 |--------------------------|----------------|--------------------------------------------|
-| `villainEscaped`         | +200 (2.00)    | Loss of tactical control                   |
-| `bystanderLost`          | +500 (5.00)    | Heroic failure — civilian casualty          |
-| `schemeTwistNegative`    | +400 (4.00)    | Scheme pressure resolving against players   |
+| `villainEscaped`         | +100 (1.00)    | Loss of tactical control                   |
+| `bystanderLost`          | +400 (4.00)    | Heroic failure — civilian casualty          |
+| `schemeTwistNegative`    | +300 (3.00)    | Scheme pressure resolving against players   |
 | `mastermindTacticUntaken` | +100 (1.00)   | Missed opportunity — incomplete victory     |
 | `scenarioSpecificPenalty` | scenario-defined | Scenario-unique failure event             |
 
@@ -260,9 +267,9 @@ zero" bystander outcomes (save one, lose one) are always penalized, not neutral.
 ### Default Values Satisfy All Invariants
 
 ```
-W_BP (300) > villainEscaped (200)          Invariant 1
-bystanderLost (500) > villainEscaped (200) Invariant 2
-bystanderLost (500) > W_BP (300)           Invariant 3
+W_BP (300) > villainEscaped (100)          Invariant 1
+bystanderLost (400) > villainEscaped (100) Invariant 2
+bystanderLost (400) > W_BP (300)           Invariant 3
 ```
 
 Any scenario-specific tuning must preserve these invariants exactly.
@@ -274,9 +281,9 @@ Any scenario-specific tuning must preserve these invariants exactly.
 ```
 Raw Score =
   (R  x 100) +
-  (villainEscapes x 200) +
-  (bystandersLost x 500) +
-  (schemeTwistNegatives x 400) +
+  (villainEscapes x 100) +
+  (bystandersLost x 400) +
+  (schemeTwistNegatives x 300) +
   (mastermindTacticsUntaken x 100) +
   (scenarioSpecificPenalties x scenarioWeight) -
   (BP x 300) -
@@ -541,16 +548,16 @@ of Evil (5), 2 Players. **PAR = -1200** (simulation-calibrated, 55th percentile)
 | schemeTwistNegatives   | 1     |
 
 ```
-Raw Score = (10 x 100) + (2 x 200) + (0 x 500) + (1 x 400) - (6 x 300) - (32 x 50)
-          = 1000 + 400 + 0 + 400 - 1800 - 1600
-          = -1600
+Raw Score = (10 x 100) + (2 x 100) + (0 x 400) + (1 x 300) - (6 x 300) - (32 x 50)
+          = 1000 + 200 + 0 + 300 - 1800 - 1600
+          = -1900
 ```
 
 ```
-Final Score = -1600 - (-1200) = -400
+Final Score = -1900 - (-1200) = -700
 ```
 
-**Result: 4.00 under PAR** — strong, heroic performance.
+**Result: 7.00 under PAR** — strong, heroic performance.
 
 ### Player B — Conservative, Board-Control Focused
 
@@ -564,22 +571,24 @@ Final Score = -1600 - (-1200) = -400
 | schemeTwistNegatives   | 0     |
 
 ```
-Raw Score = (10 x 100) + (1 x 200) + (1 x 500) + (0 x 400) - (1 x 300) - (38 x 50)
-          = 1000 + 200 + 500 + 0 - 300 - 1900
-          = -500
+Raw Score = (10 x 100) + (1 x 100) + (1 x 400) + (0 x 300) - (1 x 300) - (38 x 50)
+          = 1000 + 100 + 400 + 0 - 300 - 1900
+          = -700
 ```
 
 ```
-Final Score = -500 - (-1200) = 700
+Final Score = -700 - (-1200) = 500
 ```
 
-**Result: 7.00 over PAR** — competent but unheroic.
+**Result: 5.00 over PAR** — competent but unheroic.
 
 ### Why Player A Wins Decisively
 
-Player A is **4.00 under PAR**; Player B is **7.00 over PAR** — an 11.00-point
+Player A is **7.00 under PAR**; Player B is **5.00 over PAR** — a 12.00-point
 gap. Player A let more villains escape but saved every civilian. Player B had
-better board control and higher VP, but lost a bystander. The simulation-
+better board control and higher VP, but lost a bystander — which under the
+rulebook 4:3:1 anchor now costs four times what an escape does, widening the gap
+from 11.00 to 12.00 and sharpening exactly the hierarchy the model exists to encode. The simulation-
 calibrated PAR places both results in a meaningful range: Player A clearly
 outperformed competent play, while Player B fell short.
 

@@ -226,13 +226,14 @@ hierarchy `penaltyEventWeights` encode (VISION §21): a lost bystander
 outweighs a scheme twist, which outweighs an escaped villain, **4 : 3 : 1**.
 All three of those terms are now produced — `bystanderLost` (WP-528 / D-24339),
 `schemeTwistNegative` (WP-529 / D-24340), and `villainEscaped` (already live) —
-so the 4 : 3 : 1 ratio is a ready-made **Phase-1 seed** for their relative weights
-rather than a number invented from scratch
-(at centesimal precision that reads as `400 / 300 / 100` before any
-simulation refinement). This is an anchor for the *ordering and rough
-magnitude*, not a replacement for calibration — the published weights remain
-whatever `validateScoringConfig` accepts under a pinned
-`scoringConfigVersion`. The full contrast between this absolute PAR model and
+so the 4 : 3 : 1 ratio was a ready-made seed for their relative weights rather
+than a number invented from scratch. **It is now the adopted reference default**
+(D-24342 / WP-531): the scoring reference and the test scenario config carry
+`bystanderLost 400 / schemeTwistNegative 300 / villainEscaped 100`, with the
+escape as the 1.00 unit. This remains an anchor for the *ordering and rough
+magnitude*, **not** a replacement for calibration — the published weights remain
+whatever `validateScoringConfig` accepts under a pinned `scoringConfigVersion`,
+and a simulation-calibrated production config supersedes the seed. The full contrast between this absolute PAR model and
 the ordinal league model — pros, cons, and other borrowings — lives on
 [PAR Simulation Calibration §Comparison](par-simulation-calibration.md#comparison-absolute-par-vs-ordinal-league-ranking).
 
