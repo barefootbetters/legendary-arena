@@ -439,6 +439,77 @@ clarity all exist to give people something worth gathering around. **The
 heroes we inherit are the shared language. The person across the table is the
 point.**
 
+### A creed
+
+Underneath the stewardship and the lineage is one recognition, and it is the
+reason for all of it:
+
+> Legendary Arena is a celebration of gratitude. Every card, every character,
+> every story begins with the truth that none of us arrive alone. Heroes
+> inherit. Teachers sacrifice. Parents serve. Friends stand beside us.
+> Greatness is received before it is achieved. The game exists to help
+> players remember that — and to give them a table where they can live it out
+> together.
+
+Gratitude is why we steward what we were given; stewardship is why we hand it
+on; and connection is what the whole cycle is for.
+
+### Four virtues the game cultivates
+
+Four virtues run through every part of this page. Naming them makes the soul
+easier to carry into a card, a screen, or a conversation:
+
+1. **Stewardship** — receive the inheritance faithfully.
+2. **Gratitude** — honor those who made your success possible.
+3. **Courage** — stand for good against evil.
+4. **Legacy** — leave something worthy for the next generation.
+
+They are less four separate things than one motion: you receive (stewardship)
+because you are grateful (gratitude), you defend what is worth defending
+(courage), and you pass it on (legacy) — and you do all of it beside other
+people, which is where the soul lives.
+
+### Wonder — why it still inspires
+
+A caution aimed at this very page: preservation is not an academic exercise,
+and stewardship is not archiving. Children do not love these heroes because
+they are analyzing lineage. They love them because Captain America is
+inspiring, Spider-Man is fun, Thor is awesome — because courage, sacrifice,
+loyalty, and hope are thrilling to witness. We preserve these characters
+because they still awaken those things. Without wonder, stewardship is a
+museum; with wonder, it is *guardianship* — keeping something alive because it
+deserves to stay alive.
+
+### The soul promise
+
+The [Vision](vision.md) makes the platform and product promises — exact
+rules, real cards, no pay-to-win. This is the *soul* promise underneath them,
+which the rest of this page is really about. When you spend time in Legendary
+Arena:
+
+- Your heroes will be treated with respect.
+- Their history will not be erased.
+- Good and evil will remain meaningful categories.
+- Greatness will be shown as earned and inherited, never manufactured.
+- And you will leave more connected to the stories — and the people — who came
+  before you.
+
+This restates commitments the [Vision](vision.md) already holds; it adds
+none. Where this list and the Vision differ, the Vision governs.
+
+### A motto
+
+If the essay needs one line to travel — a loading screen, a newsletter, a
+licensing deck — two candidates in the page's own voice, one for the lineage
+and one for the table:
+
+> **The heroes we inherit shape the heroes we become.**
+
+> **Honor the past. Play it together. Pass it on.**
+
+The first carries the inheritance; the second carries the connection. Pick
+one, or keep both for different surfaces.
+
 ### The pattern in the mirror: AI's secular default
 
 This page has a live case study, and it is left in on purpose because it
@@ -522,6 +593,13 @@ claim at a safe distance — it stands on it.
   *interprets* sourced principles. If it ever reads as inventing a
   constraint, the fix is to move that constraint into the vision and cite
   it, or delete the sentence — per [SCHEMA.md](SCHEMA.md) Scope Exclusion.
+- **The creed, four virtues, "soul promise," and motto are authored
+  identity, not new commitments.** They name feelings and values the essay
+  already carries; the promise in particular restates existing
+  [Vision](vision.md) commitments and adds none. Treat them as expressive
+  language (candidates for cross-surface use), not as governance the
+  Vision does not already hold. This block was added deliberately expansive
+  ("get the ideas in, prune later"); it is expected to be edited down.
 - **Do not overstate the cultural claim.** "Every subversion is bad" is the
   weak version and is wrong; the honest position is *addition versus
   overwrite* (see the table above). Faithful preservation is not the same
