@@ -218,6 +218,24 @@ that order, without apology: it honors the fathers because they *ought* to
 be honored, and it expects to be the better game, and the better business,
 for standing there.
 
+### Where to read the Captain America origin
+
+This is the character-history loop this page champions, put into practice —
+the reading that turns a player's knowledge into attachment. These issues
+cover Dr. Abraham Erskine (originally **Professor Reinstein** / Josef
+Reinstein), his choice of the weak-but-good Steve Rogers, the Super-Soldier
+Serum and Vita-Ray process, Erskine's assassination by the Nazi agent Heinz
+Kruger immediately afterward, and Steve carrying the responsibility forward.
+For the core origin on **Marvel Unlimited**, in priority order:
+
+| Priority | Title & Issue | Year | Why it fits | Notes |
+|:--:|---|:--:|---|---|
+| 1 | *Captain America* (1968) #255 | 1981 | Best single-issue modern comics origin. Roger Stern & John Byrne reconcile prior versions. Full Erskine process, choice of Steve, assassination, and Steve's immediate sense of duty. | Widely considered the definitive comics retelling (40th-anniversary issue). Strongest match for the mentor / stewardship theme. |
+| 2 | *Tales of Suspense* #63 | 1965 | Classic Silver Age retelling by Stan Lee & Jack Kirby. Explicitly names Dr. Erskine. Steve drinks the serum, transforms, Erskine is killed. | Clean, foundational version. Also introduces Bucky in this context. |
+| 3 | *Captain America* (1968) #109 | 1969 | Another Kirby / Lee retelling. Uses "Professor Reinstein," adds more Vita-Rays emphasis, shows the assassination clearly. | Good companion to #255. |
+| 4 | *Captain America Comics* #1 | 1941 | The original Golden Age origin by Joe Simon & Jack Kirby. Professor Reinstein administers the serum; Erskine dies. | Historical starting point. Red Skull also debuts here (different origin). |
+| 5 | *Adventures of Captain America* #1 (and the full 4-issue miniseries) | 1991 | Expanded, character-focused retelling by Fabian Nicieza & Kevin Maguire. Strong on Project: Rebirth, Erskine, and the transformation. | More page space for the mentor relationship. Some continuity differences from mainline 616, but excellent for the "chosen for character" angle. |
+
 ### Honoring is not ossifying — the real distinction
 
 The soul here is easy to caricature as "never change anything," so it is
