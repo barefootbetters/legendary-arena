@@ -499,16 +499,10 @@ none. Where this list and the Vision differ, the Vision governs.
 
 ### A motto
 
-If the essay needs one line to travel — a loading screen, a newsletter, a
-licensing deck — two candidates in the page's own voice, one for the lineage
-and one for the table:
+One line for the essay to travel on — a loading screen, a newsletter, a
+licensing deck:
 
 > **The heroes we inherit shape the heroes we become.**
-
-> **Honor the past. Play it together. Pass it on.**
-
-The first carries the inheritance; the second carries the connection. Pick
-one, or keep both for different surfaces.
 
 ### The pattern in the mirror: AI's secular default
 
