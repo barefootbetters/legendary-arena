@@ -101,8 +101,11 @@ test("variant/outcome selection required for validation", () => {
   const draft = ref(createValidDraft());
   const api = useLoadoutLagnExport(draft);
 
-  // Valid defaults: classic (solo) + victory + 1 player
-  assert(api.isValid.value, "isValid should be true with default variant/outcome");
+  // why: D-24358 — the default outcome is now "unset", which omits the optional
+  // result block entirely. The document is still valid: LAGN requires only
+  // lagn_version / game_id / variant / player_count / setup.
+  assert.equal(api.outcome.value, "unset", "the default outcome must be unset, never victory");
+  assert(api.isValid.value, "isValid should be true with the default unset outcome");
 
   // why: the variant is derived from the seat count (read-only), so a 2-player
   // draft is a cooperative export automatically — no variant control to set.
@@ -114,16 +117,84 @@ test("variant/outcome selection required for validation", () => {
   assert(api.isValid.value, "isValid should remain true when outcome changes to loss");
 });
 
-test("loss_condition set when outcome='loss'", () => {
+test("a user-chosen loss emits NO loss_condition (D-24358)", () => {
+  // why: the exporter used to stamp loss_condition="deck_exhausted" on every
+  // defeat, which is wrong for a scheme-completion or mastermind loss. It is now
+  // IMPORT-ONLY — a user pick carries no loss condition at all.
   const draft = ref(createValidDraft());
   const api = useLoadoutLagnExport(draft);
 
   api.outcome.value = "loss";
   const built = api.buildLagnFile();
-  assert(built, "buildLagnFile should return file when outcome is loss");
+  assert(built, "buildLagnFile should return a file when outcome is loss");
 
   const parsed = JSON.parse(built.file);
-  assert.equal(parsed.result.loss_condition, "deck_exhausted");
+  assert.equal(parsed.result.outcome, "defeat", "internal 'loss' maps to the LAGN 'defeat'");
+  assert.equal(
+    Object.prototype.hasOwnProperty.call(parsed.result, "loss_condition"),
+    false,
+    "no loss_condition may be synthesized for a user-chosen loss",
+  );
+});
+
+test("an unset outcome omits the result KEY entirely (AC-4, D-24358)", () => {
+  // why: a Loadout-tab export is a Tier-1 SETUP document and `result` is optional
+  // in LAGN, so an outcome that was never imported nor chosen asserts nothing.
+  // Asserted on BOTH the built object and the raw string: JSON.stringify drops
+  // `result: undefined`, so a parse-only check would pass on the forbidden shape.
+  const draft = ref(createValidDraft());
+  const api = useLoadoutLagnExport(draft);
+
+  assert.equal(api.outcome.value, "unset", "default is unset");
+  const built = api.buildLagnFile();
+  assert(built, "an unset outcome still produces a valid file");
+
+  assert.equal(built.file.includes('"result"'), false, "the serialized file has no result key");
+  assert.equal(
+    Object.prototype.hasOwnProperty.call(JSON.parse(built.file), "result"),
+    false,
+    "the parsed document has no result key",
+  );
+  const validated = validate(JSON.parse(built.file));
+  assert(validated.valid, `a result-less document must still validate: ${String(validated.errors)}`);
+});
+
+test("an imported verdict round-trips, including loss_condition (AC-1..AC-3)", () => {
+  const draft = ref(createValidDraft());
+  const api = useLoadoutLagnExport(draft);
+
+  api.applyImportedResult({ outcome: "defeat", lossCondition: "city_overrun" });
+  const built = api.buildLagnFile();
+  assert(built, "buildLagnFile should succeed after an imported defeat");
+
+  const parsed = JSON.parse(built.file);
+  assert.equal(parsed.result.outcome, "defeat", "an imported defeat re-exports as defeat");
+  assert.equal(
+    parsed.result.loss_condition,
+    "city_overrun",
+    "an imported loss_condition round-trips verbatim, not replaced by deck_exhausted",
+  );
+});
+
+test("applyImportedResult REPLACES, never merges (AC-6b, D-24358)", () => {
+  // why: the bug class D-24358 forbids — a second import carrying no verdict must
+  // not leave the first one standing. Replace also overrides a prior USER choice.
+  const draft = ref(createValidDraft());
+  const api = useLoadoutLagnExport(draft);
+
+  api.applyImportedResult({ outcome: "defeat", lossCondition: "city_overrun" });
+  assert.equal(api.outcome.value, "loss", "the imported defeat seeded the state");
+
+  api.applyImportedResult(undefined);
+  assert.equal(api.outcome.value, "unset", "a no-result import resets to unset");
+
+  const built = api.buildLagnFile();
+  assert(built);
+  assert.equal(built.file.includes('"result"'), false, "no stale verdict survives the second import");
+
+  api.outcome.value = "victory";
+  api.applyImportedResult(undefined);
+  assert.equal(api.outcome.value, "unset", "an import also overrides a prior user choice");
 });
 
 test("valid composition + outcome passes validation", () => {
@@ -227,16 +298,6 @@ test("variant/outcome changes trigger re-validation", () => {
   // Making draft invalid should invalidate
   draft.value.composition.mastermindId = "";
   assert(!api.isValid.value, "emptying mastermindId should invalidate");
-});
-
-test("lossReason computed property always returns 'unavailable'", () => {
-  const draft = ref(createValidDraft());
-  const api = useLoadoutLagnExport(draft);
-
-  assert.equal(api.lossReason.value, "unavailable", "lossReason should always be 'unavailable'");
-
-  api.outcome.value = "loss";
-  assert.equal(api.lossReason.value, "unavailable", "lossReason should remain 'unavailable'");
 });
 
 test("variant is derived read-only from the draft player count", () => {

@@ -159,3 +159,53 @@ describe("parseLagnLoadout support pools", () => {
     assert.equal(result.composition.supportPools, undefined);
   });
 });
+
+describe("parseLagnLoadout — result round-trip (WP-549 / D-24358)", () => {
+  it("surfaces the imported outcome instead of dropping it", () => {
+    // why: the importer used to map only setup + player_count (+ supportPools), so a
+    // shared match record's verdict was silently discarded and the re-export
+    // fabricated one from a dropdown defaulting to "victory".
+    const result = parseLagnLoadout(makeValidLagnText());
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.deepEqual(result.composition.result, { outcome: "victory" });
+  });
+
+  it("round-trips a defeat with its loss_condition", () => {
+    const lagn = JSON.parse(makeValidLagnText());
+    lagn.result = { outcome: "defeat", loss_condition: "city_overrun" };
+    const result = parseLagnLoadout(JSON.stringify(lagn));
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.deepEqual(result.composition.result, {
+      outcome: "defeat",
+      lossCondition: "city_overrun",
+    });
+  });
+
+  it("leaves result undefined when the record carries no result block", () => {
+    const lagn = JSON.parse(makeValidLagnText());
+    delete lagn.result;
+    const result = parseLagnLoadout(JSON.stringify(lagn));
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.equal(result.composition.result, undefined);
+    assert.equal(
+      Object.prototype.hasOwnProperty.call(result.composition, "result"),
+      false,
+      "the key is omitted, never set to undefined",
+    );
+  });
+
+  it("copies KNOWN keys only — unknown keys never round-trip", () => {
+    // why: parseLagnLoadout returns the RAW parsed object (zod's strip never runs)
+    // and the schema sets additionalProperties: true, so a spread would carry
+    // arbitrary keys out of an untrusted file back into a re-export.
+    const lagn = JSON.parse(makeValidLagnText());
+    lagn.result = { outcome: "victory", victory_points: 42, junk: "should not survive" };
+    const result = parseLagnLoadout(JSON.stringify(lagn));
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.deepEqual(result.composition.result, { outcome: "victory" });
+  });
+});

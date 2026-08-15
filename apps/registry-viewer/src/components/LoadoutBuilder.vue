@@ -39,7 +39,7 @@ import type {
 } from "@legendary-arena/registry/setupContract";
 import { useLoadoutLagnExport } from "../composables/useLoadoutLagnExport";
 import { serializeSetupToUrl } from "../lib/setupUrlParams";
-import { parseLagnLoadout } from "../lib/loadoutLagnImport";
+import { parseLagnLoadout, type LagnImportedResult } from "../lib/loadoutLagnImport";
 import {
   parseGauntletPack,
   resolveGauntletLegLoadout,
@@ -86,6 +86,14 @@ interface Props {
   // and this builder mutate the SAME draft. LoadoutBuilder no longer calls
   // useLoadoutDraft itself — it consumes the API as a prop.
   draftApi: UseLoadoutDraftApi;
+  /**
+   * The verdict a `?lagn=` deep-linked match record carried, relayed by App.vue.
+   *
+   * why: D-24358 — `useLagnFromUrl` runs in App.vue and this component owns its own
+   * `useLoadoutLagnExport` instance, so a prop is the only channel between them.
+   * Without it the deep-link half of the round trip re-exports a fabricated verdict.
+   */
+  importedLagnResult?: LagnImportedResult | undefined;
 }
 
 const props = defineProps<Props>();
@@ -126,6 +134,20 @@ const {
 } = draftApi;
 
 const lagnExportApi = useLoadoutLagnExport(draft);
+
+// why: D-24358 — seed the export verdict from a `?lagn=` deep link. IMMEDIATE is
+// load-bearing: useLagnFromUrl runs inside App.vue's async registry loader, which
+// completes BEFORE this registry-gated component mounts, so the prop is already
+// populated at mount and a non-immediate watcher would never fire — the deep-link
+// half would silently no-op. This is the deep-link channel; the paste/file channel
+// seeds separately inside applyLagnImport.
+watch(
+  () => props.importedLagnResult,
+  (importedResult) => {
+    lagnExportApi.applyImportedResult(importedResult);
+  },
+  { immediate: true },
+);
 
 // why: WP-288 — the loadout gallery has nothing to show on a blank draft, so
 // the "🖼 View as cards" button stays disabled until the composition has at
@@ -745,6 +767,11 @@ function applyLagnImport(text: string): void {
   // replace) — reset to a fresh blank, then overlay the imported composition
   // through the public draft API only (never by writing draft.composition.*).
   resetDraft();
+  // why: D-24358 — the paste/file import channel seeds the export verdict too, on
+  // the same total-replace contract as the draft itself: an imported record with no
+  // `result` block resets the outcome to "unset" rather than leaving a stale verdict
+  // from a previous import or a user pick.
+  lagnExportApi.applyImportedResult(composition.result);
   // why: WP-454 — a LAGN load replaces the draft with a non-pack composition,
   // so any pack-sourced adversary lock no longer applies.
   adversaryFieldsLocked.value = false;
@@ -1517,6 +1544,7 @@ function slotLabel(slot: PickerSlot): string {
             <label class="field">
               <span class="field-label">Outcome</span>
               <select v-model="lagnExportApi.outcome.value">
+                <option value="unset">— not recorded —</option>
                 <option value="victory">Victory</option>
                 <option value="loss">Loss</option>
               </select>

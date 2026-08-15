@@ -25,6 +25,7 @@ import { parseLagnUrlParam } from "../lib/lagnUrlParam";
 import {
   parseLagnLoadout,
   type LagnLoadoutComposition,
+  type LagnImportedResult,
 } from "../lib/loadoutLagnImport";
 import type { UseLoadoutDraftApi } from "./useLoadoutDraft";
 
@@ -34,6 +35,18 @@ export interface UseLagnFromUrlResult {
   hasLagnParam: boolean;
   /** Full-sentence errors when the parameter was present but unusable. */
   lagnUrlErrors: string[];
+  /**
+   * The match verdict the shared LAGN carried, when it carried one.
+   *
+   * why: D-24358 — the deep link is how a REAL match LAGN reaches the viewer, but
+   * this composable used to drop the `result` block, so the re-export rebuilt a
+   * fabricated verdict. `App.vue` holds this and passes it to `LoadoutBuilder`,
+   * which seeds the export composable it owns (the two composables are separate
+   * instances with no other channel). Conditionally omitted, so a record carrying
+   * no `result` leaves the key absent and the existing exact-shape assertions in
+   * this composable's tests keep passing untouched.
+   */
+  importedResult?: LagnImportedResult | undefined;
 }
 
 /**
@@ -117,5 +130,13 @@ export function useLagnFromUrl(
     return { hasLagnParam: true, lagnUrlErrors: result.errors };
   }
   applyComposition(draftApi, result.composition);
-  return { hasLagnParam: true, lagnUrlErrors: [] };
+  // why: D-24358 — surface the imported verdict for App.vue to relay to the export
+  // composable. Omit the key entirely when the record carried none — never
+  // `importedResult: undefined`, which is the same set-an-undefined-property shape
+  // the exporter is forbidden to emit.
+  const importedResult = result.composition.result;
+  if (importedResult === undefined) {
+    return { hasLagnParam: true, lagnUrlErrors: [] };
+  }
+  return { hasLagnParam: true, lagnUrlErrors: [], importedResult };
 }
