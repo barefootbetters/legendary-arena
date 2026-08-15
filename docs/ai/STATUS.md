@@ -7,6 +7,22 @@
 
 ## Current State
 
+### WP-550 — Maestro Zero-Count Narration Fidelity — DONE (2026-08-15)
+
+Maestro's blocked Fight log line now says **why** nothing happened. It read `Fight effect: no Heroes to KO.`, which sounds like "you had nothing left to lose" when the truth is always "you had no Strength Heroes, so Maestro asked for nothing" — surfaced by WP-544's own live verification (match `NPyIIWIjd1Q`). Replaced with `Fight effect: no {requireValue} Heroes — nothing to KO.`, following the WP-485 / D-24290 sibling precedent (`KO'd 0 of your shield Hero(es).`). Maestro's `applied` and `neutral` lines already named the trait; only the blocked branch dropped it, so the one case where the player most needs a reason was the one case that withheld it.
+
+**Replace, not split — the pre-flight finding that changed the design.** This was drafted as a two-branch split (`owed === 0` versus "owed but no eligible KO target"). Pre-flight proved the second state **unreachable**: `countPlayerHeroesMatchingTrait` counts only cards carrying a `G.cardTraits` entry, and `buildKoEligibleTargets` excludes only `WOUND_EXT_ID`, which never has one — so every counted Hero is itself a legal KO target, and `owedFromTrait === 0` is the sole reachable `blocked` trigger. Two further exits were checked and are likewise unreachable (the park-break and park condition are the same conjunction with no intervening mutation; the defensive `koSingleTarget === null` break cannot fire because the lookup searches the zone the id came from). The split would have shipped dead code, an untestable AC, and a `// why:` comment asserting a state that cannot occur.
+
+**Copy only.** The loop, park condition, omit-`remaining`-when-1 line, guards and return shape are untouched — the control-flow diff gate returns 0 on non-comment lines. The `applied` / `neutral` messages are byte-identical and their WP-544 tests passed unmodified. The byte-identical string at `villainEffects.execute.ts:890` (the Whirlwind magnitude path) **keeps its wording** and is out of scope: that handler's count comes from `descriptor.magnitude` rather than a trait scan, so it legitimately reaches `blocked` with `owed > 0` and the bare phrasing is correct there.
+
+**Hash position, stated precisely.** `messages` is excluded from `finalStateHash` (`hashGameState`) per D-24081 but **remains hashed** by `computeStateHash` — the shorthand "`G.messages` is hash-excluded" that appears in existing handler comments and in D-24353 is imprecise. No re-pin arises anyway: the `PRE_WP080` replay runs `moves: []` and no committed fixture fights Maestro. No hash-pin file appeared in `git status`.
+
+**engine 2612 → 2613 tests / 0 fail**; `pnpm -r build` + `pnpm -r --no-bail test` exit 0. Exactly 2 non-governance files. One assertion now uses exact equality rather than `assert.match` — all three prior assertions were regex-based, so a loose retarget could have shipped wrong capitalization or a hyphen for the em dash and still passed every checklist item. D-24359 Active.
+
+**Live verification (D-24026) — operator-pending.** `User-Visible Surface = play.legendary-arena.com` (the game log). To confirm: fight Maestro holding **no** Strength Hero; the log must read `no strength Heroes — nothing to KO`.
+
+---
+
 ### WP-549 — Registry Viewer LAGN Result Round-Trip — DONE (2026-08-15)
 
 Stopped the Registry Viewer's Loadout tab **fabricating a match verdict** on LAGN re-export. Surfaced while live-verifying WP-544: a Loki / Secret Invasion 2p match that ended `gameOver.outcome === "scheme-wins"` — a co-op **loss** — exported as `"result": { "outcome": "victory" }`.
