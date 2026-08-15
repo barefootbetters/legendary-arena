@@ -435,3 +435,105 @@ describe('computeFinalScores — printed VP (D-24157)', () => {
     assert.equal(result.players[0]!.villainVP, 3);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Supreme HYDRA dynamic VP (WP-546 / D-24355)
+// ---------------------------------------------------------------------------
+
+describe('computeFinalScores — Supreme HYDRA dynamic VP (D-24355)', () => {
+  // Realistic villain instance ext_ids: {setAbbr}-villain-{groupSlug}-{cardSlug}-{copy}.
+  const SUPREME_HYDRA = 'core-villain-hydra-supreme-hydra-01';
+  const HYDRA_AGENT = 'core-villain-hydra-hydra-agent-01';
+  const HYDRA_VIPER = 'core-villain-hydra-viper-01';
+  const LOKI = 'core-villain-enemies-of-asgard-loki-01';
+
+  it('scores Supreme HYDRA at base 3 when it is the only HYDRA villain in the pile', () => {
+    const gameState = createMockGameState({
+      playerZones: {
+        '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [SUPREME_HYDRA] },
+      },
+      villainDeckCardTypes: { [SUPREME_HYDRA]: 'villain' },
+    });
+
+    const result = computeFinalScores(gameState);
+    assert.equal(result.players[0]!.villainVP, 3);
+    assert.equal(result.players[0]!.totalVP, 3);
+  });
+
+  it('adds +3 per OTHER HYDRA villain: Supreme HYDRA + 2 other HYDRA = 9, plus their own fallback VP', () => {
+    const gameState = createMockGameState({
+      playerZones: {
+        '0': {
+          deck: [], hand: [], discard: [], inPlay: [],
+          victory: [SUPREME_HYDRA, HYDRA_AGENT, HYDRA_VIPER],
+        },
+      },
+      villainDeckCardTypes: {
+        [SUPREME_HYDRA]: 'villain',
+        [HYDRA_AGENT]: 'villain',
+        [HYDRA_VIPER]: 'villain',
+      },
+      // no cardVictoryPoints → the two ordinary HYDRA villains take the fallback 1 each
+    });
+
+    const result = computeFinalScores(gameState);
+    // Supreme HYDRA dynamic: 3 + 3×2 = 9; HYDRA agent + viper: 1 + 1 = 2 → 11 total villain VP
+    assert.equal(result.players[0]!.villainVP, 11);
+  });
+
+  it('non-HYDRA villains in the pile do not feed the bonus (Supreme HYDRA stays base 3)', () => {
+    const gameState = createMockGameState({
+      playerZones: {
+        '0': {
+          deck: [], hand: [], discard: [], inPlay: [],
+          victory: [SUPREME_HYDRA, LOKI],
+        },
+      },
+      villainDeckCardTypes: { [SUPREME_HYDRA]: 'villain', [LOKI]: 'villain' },
+      cardVictoryPoints: { [LOKI]: 4 },
+    });
+
+    const result = computeFinalScores(gameState);
+    // Supreme HYDRA base 3 (no other HYDRA) + Loki printed 4 = 7
+    assert.equal(result.players[0]!.villainVP, 7);
+  });
+
+  it('ordinary villains still score printed/fallback VP unchanged when no modifier is present', () => {
+    const gameState = createMockGameState({
+      playerZones: {
+        '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [LOKI, HYDRA_AGENT] },
+      },
+      villainDeckCardTypes: { [LOKI]: 'villain', [HYDRA_AGENT]: 'villain' },
+      cardVictoryPoints: { [LOKI]: 4 }, // HYDRA_AGENT absent → fallback 1
+    });
+
+    const result = computeFinalScores(gameState);
+    assert.equal(result.players[0]!.villainVP, 5); // 4 + 1, resolver returns null for both
+  });
+
+  it('the HYDRA bonus flips the winner', () => {
+    // Without the dynamic bonus, player 0 would score base 3 + 1 + 1 = 5 and LOSE to
+    // player 1's 10. With the +3-per-other-HYDRA bonus, player 0 scores 11 and WINS.
+    const gameState = createMockGameState({
+      playerZones: {
+        '0': {
+          deck: [], hand: [], discard: [], inPlay: [],
+          victory: [SUPREME_HYDRA, HYDRA_AGENT, HYDRA_VIPER],
+        },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [LOKI] },
+      },
+      villainDeckCardTypes: {
+        [SUPREME_HYDRA]: 'villain',
+        [HYDRA_AGENT]: 'villain',
+        [HYDRA_VIPER]: 'villain',
+        [LOKI]: 'villain',
+      },
+      cardVictoryPoints: { [LOKI]: 10 },
+    });
+
+    const result = computeFinalScores(gameState);
+    assert.equal(result.players[0]!.totalVP, 11);
+    assert.equal(result.players[1]!.totalVP, 10);
+    assert.equal(result.winner, '0');
+  });
+});

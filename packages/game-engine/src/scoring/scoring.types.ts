@@ -16,7 +16,9 @@
 // apply only when a card has no printed vp (null-vp cards must never score 0).
 // VP_BYSTANDER and VP_WOUND remain the authoritative values (bystanders are 1 VP
 // by rule; wounds are a fixed penalty). Card-text-specific VP modifiers ("this
-// card is worth +N VP") remain a future packet.
+// card is worth +N VP") are delivered for Supreme HYDRA (D-24355) in
+// scoring/dynamicVictoryPoints.ts; other N* / dynamic-VP cards (Ultron, amwp,
+// 3dtc) remain a future packet.
 
 /** Fallback VP per villain when the card has no printed vp (D-24157). */
 export const VP_VILLAIN = 1;
