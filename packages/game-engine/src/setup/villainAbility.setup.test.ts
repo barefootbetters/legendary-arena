@@ -1424,6 +1424,46 @@ describe('buildVillainAbilityHooks — Tier-A auto-resolve grammars (WP-485 / D-
     assert.deepStrictEqual(unresolvedFor('emptyval'), ['ko-heroes-current-by-trait:team:']);
   });
 
+  it('[effect:ko-heroes-current-count-by-trait:<kind>:<value>] parses + normalizes; malformed rejected', () => {
+    // why: D-24353 — core radiation Maestro. Same shared trait-predicate grammar as its
+    // `ko-heroes-current-by-trait` sibling, but the predicate sizes the COUNT, not the KO
+    // filter — the two primitives must stay separately parsed (a drift trap by name).
+    const registry = makeRegistry(
+      'core',
+      [
+        {
+          slug: 'maestro',
+          cards: [
+            { slug: 'strength', abilities: ['Fight: For each of your [hc:strength] Heroes, KO one of your Heroes. [effect:ko-heroes-current-count-by-trait:hc:strength]'] },
+            { slug: 'team', abilities: ['Fight: x [effect:ko-heroes-current-count-by-trait:team:Avengers]'] },
+            { slug: 'badkind', abilities: ['Fight: x [effect:ko-heroes-current-count-by-trait:bogus:x]'] },
+            { slug: 'emptyval', abilities: ['Fight: x [effect:ko-heroes-current-count-by-trait:hc:]'] },
+            { slug: 'twotoken', abilities: ['Fight: x [effect:ko-heroes-current-count-by-trait:hc]'] },
+          ],
+        },
+      ],
+      [],
+    );
+    const hooks = buildVillainAbilityHooks(registry, makeConfig(['core/maestro'], []));
+    const effectsFor = (slug: string) =>
+      hooks.find((h) => h.cardId === `core-villain-maestro-${slug}-00`)!.effects;
+    const unresolvedFor = (slug: string) =>
+      hooks.find((h) => h.cardId === `core-villain-maestro-${slug}-00`)!.unresolvedMarkers;
+    assert.deepStrictEqual(effectsFor('strength'), [
+      { primitive: 'ko-heroes-current-count-by-trait', requireKind: 'hero-class', requireValue: 'strength' },
+    ]);
+    // why: `team` is equally valid grammar; the value normalizes ('Avengers' → 'avengers').
+    assert.deepStrictEqual(effectsFor('team'), [
+      { primitive: 'ko-heroes-current-count-by-trait', requireKind: 'team', requireValue: 'avengers' },
+    ]);
+    assert.deepStrictEqual(effectsFor('badkind'), []);
+    assert.deepStrictEqual(unresolvedFor('badkind'), ['ko-heroes-current-count-by-trait:bogus:x']);
+    assert.deepStrictEqual(effectsFor('emptyval'), []);
+    assert.deepStrictEqual(unresolvedFor('emptyval'), ['ko-heroes-current-count-by-trait:hc:']);
+    assert.deepStrictEqual(effectsFor('twotoken'), []);
+    assert.deepStrictEqual(unresolvedFor('twotoken'), ['ko-heroes-current-count-by-trait:hc']);
+  });
+
   it('[effect:rescue-bystanders-current-by-trait-count:<kind>:<value>] parses + normalizes; malformed rejected', () => {
     const registry = makeRegistry(
       'core',

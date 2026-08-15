@@ -151,6 +151,10 @@ function isLockedEffectKeyword(keyword) {
 // `play-villain-deck-cards` (`:<N>`) appended by WP-542 (D-24351 — Endless Armies of HYDRA
 // Fight "play the top two Villain Deck cards" + The Leader Ambush "play the top card"; the
 // count N validates via its own `:<N>` branch below).
+// `ko-heroes-current-count-by-trait` (`:<kind>:<value>`) appended by WP-544 (D-24353 — core
+// radiation Maestro "For each of your [hc:strength] Heroes, KO one of your Heroes"; validates
+// via the shared trait-predicate branch below alongside its `ko-heroes-current-by-trait`
+// sibling, which KOs the MATCHING Heroes rather than counting them).
 const VILLAIN_EFFECT_PRIMITIVES = [
   'ko-hero',
   'gain-wound',
@@ -176,6 +180,7 @@ const VILLAIN_EFFECT_PRIMITIVES = [
   'gain-officer-current',
   'add-next-hand-size',
   'play-villain-deck-cards',
+  'ko-heroes-current-count-by-trait',
 ];
 
 // why: WP-489 / D-24295 — hand-synced local copy of the engine's CITY_SPACE_NAMES
@@ -298,15 +303,17 @@ function isValidParameterizedEffectToken(token) {
   }
   if (
     primitive === 'ko-heroes-current-by-trait' ||
+    primitive === 'ko-heroes-current-count-by-trait' ||
     primitive === 'rescue-bystanders-current-by-trait-count' ||
     primitive === 'capture-bystanders-plus-per-hq-hero-by-trait' ||
     primitive === 'give-hq-hero-by-trait-to-current'
   ) {
-    // why: D-24290 / D-24334 / D-24335 — all use the shared trait-predicate grammar
-    // <kind>:<value> (exactly 3 tokens; kind team | hc; non-empty value), mirroring the
-    // engine parser's parseTraitPredicateTokens so producer + consumer agree. co2e Baron
+    // why: D-24290 / D-24334 / D-24335 / D-24353 — all use the shared trait-predicate
+    // grammar <kind>:<value> (exactly 3 tokens; kind team | hc; non-empty value), mirroring
+    // the engine parser's parseTraitPredicateTokens so producer + consumer agree. co2e Baron
     // Zemo Ambush is `capture-bystanders-plus-per-hq-hero-by-trait:team:avengers`; co2e
-    // Ultron Fight is `give-hq-hero-by-trait-to-current:hc:tech`.
+    // Ultron Fight is `give-hq-hero-by-trait-to-current:hc:tech`; core Maestro Fight is
+    // `ko-heroes-current-count-by-trait:hc:strength`.
     return parts.length === 3 && (parts[1] === 'team' || parts[1] === 'hc') && parts[2].length > 0;
   }
   if (primitive === 'gain-wound-unless-victory-villain-group') {

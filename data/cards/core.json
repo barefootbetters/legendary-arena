@@ -2222,7 +2222,7 @@
           "vAttack": "6",
           "imageUrl": "https://images.legendary-arena.com/core/core-vi-radiation-maestro.webp",
           "abilities": [
-            "Fight: For each of your [hc:strength] Heroes, KO one of your Heroes."
+            "Fight: For each of your [hc:strength] Heroes, KO one of your Heroes. [effect:ko-heroes-current-count-by-trait:hc:strength]"
           ],
           "copies": 2
         },

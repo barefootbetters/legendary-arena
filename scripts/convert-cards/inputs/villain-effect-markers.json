@@ -122,6 +122,7 @@
       },
       "radiation": {
         "abomination": { "fight": ["capture-bystander:3@streets+bridge"] },
+        "maestro": { "fight": ["ko-heroes-current-count-by-trait:hc:strength"] },
         "the-leader": { "ambush": ["play-villain-deck-cards:1"] },
         "zzzax": { "fight": ["reveal-or-wound:hc:strength"], "escape": ["reveal-or-wound:hc:strength"] }
       },
