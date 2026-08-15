@@ -46,6 +46,7 @@ import type {
   SetupCompositionInput,
 } from "@legendary-arena/registry/setupContract";
 import type { SetupMatchedCount } from "./composables/useSetupFromUrl";
+import type { LagnImportedResult } from "./lib/loadoutLagnImport";
 
 // ── Glossary panel ───────────────────────────────────────────────────────────
 const glossary = useGlossary();
@@ -137,6 +138,12 @@ const hasAppliedUrlAutoSwitch = ref(false);
 // lagnUrlErrors rather than a blank builder.
 const hasLagnParam = ref(false);
 const lagnUrlErrors = ref<string[]>([]);
+// why: D-24358 — the `?lagn=` deep-link is how a real match LAGN reaches the
+// viewer, and its verdict must survive a re-export. `useLagnFromUrl` and
+// `useLoadoutLagnExport` are SEPARATE instances (this file vs LoadoutBuilder) with
+// no other channel, so App.vue holds the imported verdict and relays it down as a
+// prop. Snapshotted exactly like hasLagnParam / lagnUrlErrors above.
+const importedLagnResult = ref<LagnImportedResult | undefined>(undefined);
 
 // ── Shared loadout draft (WP-279 / D-24054) ──────────────────────────────────
 // why: ONE useLoadoutDraft instance per page, owned here and shared by both the
@@ -379,6 +386,7 @@ onMounted(async () => {
     const lagnFromUrl = useLagnFromUrl(loadoutDraftApi.value);
     hasLagnParam.value = lagnFromUrl.hasLagnParam;
     lagnUrlErrors.value = lagnFromUrl.lagnUrlErrors;
+    importedLagnResult.value = lagnFromUrl.importedResult;
 
     // WP-114: instantiate the URL-preview composable once with the real registry
     // and snapshot its outputs — ONLY when no `?lagn=` deep-link is present (which
@@ -1405,6 +1413,7 @@ const loadoutTraySummary = computed(() => {
               :registry="registry!"
               :themes="allThemes"
               :draft-api="loadoutDraftApi!"
+              :imported-lagn-result="importedLagnResult"
               @view-as-cards="navigateToLoadoutGallery"
             />
           </div>

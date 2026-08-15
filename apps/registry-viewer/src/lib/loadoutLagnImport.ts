@@ -53,6 +53,31 @@ export interface LagnLoadoutComposition {
    * sharing a frozen board. Reading them here closes the round trip.
    */
   supportPools?: SupportPools | undefined;
+  /**
+   * The match verdict the LAGN carried, or undefined when the record has none.
+   *
+   * why: D-24358 — this importer previously mapped only `setup` + `player_count`
+   * (+ `supportPools`) and DROPPED the `result` block, so a shared match link
+   * delivered the board but the re-export rebuilt a verdict from a dropdown that
+   * defaults to "victory" — a real co-op loss (`scheme-wins`) re-exported as a
+   * victory. Surfacing it here is the same remedy EC-429 / D-24195 applied to
+   * `supportPools` when the `?lagn=` round trip silently dropped the harness.
+   */
+  result?: LagnImportedResult | undefined;
+}
+
+/**
+ * The subset of a LAGN `result` block this app round-trips.
+ *
+ * why: D-24358 — the KNOWN keys only, copied explicitly rather than spread.
+ * `parseLagnLoadout` hands back the raw parsed object (`parsed as LAGN`), so
+ * zod's strip never runs; `result` additionally permits `victory_points` and
+ * `timestamp`, and the schema sets `additionalProperties: true`. A spread would
+ * therefore round-trip arbitrary unknown keys out of an untrusted file.
+ */
+export interface LagnImportedResult {
+  outcome: "victory" | "defeat";
+  lossCondition?: string | undefined;
 }
 
 /** The result of parsing a pasted/uploaded LAGN file. */
@@ -105,11 +130,37 @@ function lagnToSupportPools(setup: LAGN["setup"]): SupportPools | undefined {
   return Object.keys(out).length === 0 ? undefined : out;
 }
 
+/**
+ * Reverses the exporter's `result` emission: the validated block's KNOWN keys,
+ * copied one at a time.
+ *
+ * why: D-24358 — never spread the incoming block (see `LagnImportedResult`).
+ * This performs NO inference: it never derives an outcome from scores, players,
+ * or player count, and it never invents a `loss_condition`. A record with no
+ * `result` returns undefined, which the exporter treats as "unset".
+ *
+ * @param lagn - A LAGN object already accepted by the published validator.
+ * @returns The imported verdict, or undefined when the record carries none.
+ */
+function lagnToImportedResult(lagn: LAGN): LagnImportedResult | undefined {
+  const result = lagn.result;
+  if (result === undefined) {
+    return undefined;
+  }
+  const imported: LagnImportedResult = { outcome: result.outcome };
+  if (result.loss_condition !== undefined) {
+    imported.lossCondition = result.loss_condition;
+  }
+  return imported;
+}
+
 function lagnToComposition(lagn: LAGN): LagnLoadoutComposition {
   const setup = lagn.setup;
   const supportPools = lagnToSupportPools(setup);
+  const result = lagnToImportedResult(lagn);
   return {
     ...(supportPools === undefined ? {} : { supportPools }),
+    ...(result === undefined ? {} : { result }),
     schemeId: setup.scheme.id,
     mastermindId: setup.mastermind.id,
     // why: take only the `id` off each group entry — the LAGN stores `{ id, name }`

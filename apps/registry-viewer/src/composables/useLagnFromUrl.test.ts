@@ -92,6 +92,27 @@ describe("useLagnFromUrl", () => {
     assert.equal(calls.length, 0);
   });
 
+  test("a deep-linked record's verdict is surfaced as importedResult (D-24358)", () => {
+    // why: the deep link is how a REAL match LAGN reaches the viewer. This
+    // composable used to drop the result block, so the re-export fabricated a
+    // verdict. VALID_LAGN carries no result, so the two exact-shape assertions
+    // above stay untouched -- the key is conditionally omitted.
+    const withResult = {
+      ...VALID_LAGN,
+      result: { outcome: "defeat", loss_condition: "city_overrun" },
+    };
+    setSearch(`?lagn=${encodeLagn(JSON.stringify(withResult))}`);
+    const { api } = makeRecordingDraft();
+    const result = useLagnFromUrl(api);
+
+    assert.equal(result.hasLagnParam, true);
+    assert.deepEqual(result.lagnUrlErrors, []);
+    assert.deepEqual(result.importedResult, {
+      outcome: "defeat",
+      lossCondition: "city_overrun",
+    });
+  });
+
   test("valid ?lagn= → resetDraft then the WP-291 setters, no errors", () => {
     setSearch(`?lagn=${encodeLagn(JSON.stringify(VALID_LAGN))}`);
     const { api, calls } = makeRecordingDraft();

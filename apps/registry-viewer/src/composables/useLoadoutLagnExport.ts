@@ -4,12 +4,26 @@
  * Converts a MATCH-SETUP draft into LAGN Tier 1 JSON format, generates a UUID v4 game_id,
  * and validates the result via @legendary-arena/lagn. The variant is DERIVED from the
  * draft's seat count (read-only, not user-selected — see `variantForPlayerCount`); the
- * outcome stays user-selected. Exposes a download-ready Blob.
+ * outcome is TRI-state (D-24358): "unset" by default, replaced by a LAGN import or
+ * chosen by the user. An "unset" outcome omits the optional `result` block entirely.
+ * Exposes a download-ready Blob.
  */
 
 import { computed, ref, type ComputedRef, type Ref } from "vue";
 import { validate, LAGN_VERSION, type LAGN } from "@legendary-arena/lagn";
 import type { MatchSetupDocument, SupportPool } from "@legendary-arena/registry/setupContract";
+import type { LagnImportedResult } from "../lib/loadoutLagnImport";
+
+/**
+ * The export verdict state.
+ *
+ * why: D-24358 — a Loadout-tab export is a Tier-1 SETUP document, and LAGN makes
+ * `result` optional. "unset" is the default because asserting no verdict is legal
+ * and honest, whereas defaulting to "victory" claims an authority the loadout
+ * builder does not have: it silently turned a real co-op loss (`scheme-wins`)
+ * into an exported victory.
+ */
+export type LoadoutOutcomeState = "unset" | "victory" | "loss";
 
 /**
  * Mid-execution amendments (spec vs actual LAGN v1.0 validator):
@@ -23,7 +37,11 @@ import type { MatchSetupDocument, SupportPool } from "@legendary-arena/registry/
  *
  * 3. Loss condition enum (EC-276 vs validator):
  *    EC specifies "unavailable", validator expects "mastermind_defeated" | "city_overrun" | "deck_exhausted"
- *    Mapping: "loss" → "defeat" with loss_condition="deck_exhausted" (safest for setup-only exports)
+ *    SUPERSEDED by D-24358 (WP-549): the exporter no longer DERIVES a loss condition
+ *    at all. It is import-only — emitted solely when a round-tripped LAGN carried one.
+ *    why: "deck_exhausted" was stamped on every defeat, which is wrong for a
+ *    scheme-completion or mastermind loss; the server producer (matchLagn.logic.ts
+ *    toLagnResult), the sole authority for a real verdict, deliberately never emits it.
  */
 
 export interface UseLoadoutLagnExportApi {
@@ -31,8 +49,16 @@ export interface UseLoadoutLagnExportApi {
   variant: ComputedRef<"classic" | "custom">;
   /** Human-readable label for the derived variant, shown as read-only text in the UI. */
   variantLabel: ComputedRef<string>;
-  outcome: Ref<"victory" | "loss">;
-  lossReason: ComputedRef<"unavailable">;
+  outcome: Ref<LoadoutOutcomeState>;
+  /**
+   * Replaces the export verdict from a LAGN import (D-24358).
+   *
+   * REPLACE, never merge: `undefined` resets the outcome to "unset" and clears any
+   * imported loss condition, and an import also overrides a prior USER choice —
+   * matching `applyLagnImport`'s total-replace contract. Keeping a stale outcome
+   * because the incoming file carried none is the exact bug class D-24358 forbids.
+   */
+  applyImportedResult: (result: LagnImportedResult | undefined) => void;
   gameId: Ref<string>;
   buildLagnFile: () => { file: string; gameId: string } | null;
   exportToJsonBlob: () => Blob;
@@ -75,6 +101,16 @@ function variantForPlayerCount(playerCount: number): "classic" | "custom" {
  */
 function mapOutcomeToLagn(userOutcome: "victory" | "loss"): "victory" | "defeat" {
   return userOutcome === "victory" ? "victory" : "defeat";
+}
+
+/**
+ * Maps an imported LAGN verdict back onto the export's internal outcome state.
+ *
+ * why: D-24358 — the LAGN enum is `victory | defeat`; the internal state uses
+ * `victory | loss` (the UI's wording). "unset" never reaches `mapOutcomeToLagn`.
+ */
+function mapLagnOutcomeToState(lagnOutcome: "victory" | "defeat"): LoadoutOutcomeState {
+  return lagnOutcome === "victory" ? "victory" : "loss";
 }
 
 /**
@@ -144,7 +180,8 @@ function buildLagnObject(
   draft: MatchSetupDocument,
   gameId: string,
   variant: "classic" | "custom",
-  outcome: "victory" | "loss",
+  outcome: LoadoutOutcomeState,
+  importedLossCondition: string | undefined,
 ): LAGN | null {
   const composition = draft.composition;
 
@@ -161,20 +198,34 @@ function buildLagnObject(
 
   const setup = compositionToLagnSetup(composition, draft.supportPools);
   const lagnVariant = mapVariantToLagn(variant);
-  const lagnOutcome = mapOutcomeToLagn(outcome);
 
-  return {
+  const document: LAGN = {
     lagn_version: LAGN_VERSION,
     $schema: "https://legendary-arena.com/schemas/lagn/v1/lagn-v1.json",
     game_id: gameId,
     variant: lagnVariant,
     player_count: draft.playerCount,
     setup,
-    result: {
-      outcome: lagnOutcome,
-      loss_condition: lagnOutcome === "defeat" ? "deck_exhausted" : undefined,
-    },
   };
+
+  // why: D-24358 — build the `result` block CONDITIONALLY. An "unset" outcome must
+  // leave the KEY ABSENT, not set to undefined: `JSON.stringify` would drop an
+  // undefined value from the file while the in-memory object still carried the
+  // property, so a test asserting only on the parsed file would pass on a shape the
+  // contract forbids. `result` is optional in LAGN, so omitting it is valid.
+  if (outcome === "unset") {
+    return document;
+  }
+
+  const lagnOutcome = mapOutcomeToLagn(outcome);
+  const result: NonNullable<LAGN["result"]> = { outcome: lagnOutcome };
+  // why: D-24358 — `loss_condition` is IMPORT-ONLY; it is never derived from the
+  // outcome. Emit it only when a round-tripped LAGN actually carried one.
+  if (importedLossCondition !== undefined) {
+    result.loss_condition = importedLossCondition as NonNullable<LAGN["result"]>["loss_condition"];
+  }
+  document.result = result;
+  return document;
 }
 
 /**
@@ -194,13 +245,38 @@ export function useLoadoutLagnExport(draft: Ref<MatchSetupDocument>): UseLoadout
   const variantLabel = computed<string>(() =>
     variant.value === "classic" ? "Solo (1 player)" : "Cooperative (2–5 players)",
   );
-  const outcome = ref<"victory" | "loss">("victory");
+  // why: D-24358 — "unset" is the default, NOT "victory". See LoadoutOutcomeState.
+  const outcome = ref<LoadoutOutcomeState>("unset");
   const gameId = ref<string>(generateGameId());
 
-  const lossReason = computed<"unavailable">(() => "unavailable");
+  // why: D-24358 — import-only, never derived. Holds the `loss_condition` a
+  // round-tripped LAGN carried so it can be re-emitted verbatim; cleared on any
+  // import that carries none, and on a user-chosen outcome.
+  const importedLossCondition = ref<string | undefined>(undefined);
+
+  function applyImportedResult(result: LagnImportedResult | undefined): void {
+    // why: D-24358 — REPLACE, never merge. An import with no `result` resets to
+    // "unset" and clears the loss condition; keeping the previous verdict because
+    // the incoming file carried none is the bug class this WP exists to fix. This
+    // also overrides a prior USER choice, matching applyLagnImport's total-replace
+    // contract for every other field.
+    if (result === undefined) {
+      outcome.value = "unset";
+      importedLossCondition.value = undefined;
+      return;
+    }
+    outcome.value = mapLagnOutcomeToState(result.outcome);
+    importedLossCondition.value = result.lossCondition;
+  }
 
   const lagnObject = computed<LAGN | null>(() => {
-    return buildLagnObject(draft.value, gameId.value, variant.value, outcome.value);
+    return buildLagnObject(
+      draft.value,
+      gameId.value,
+      variant.value,
+      outcome.value,
+      importedLossCondition.value,
+    );
   });
 
   const validationErrors = computed<string[]>(() => {
@@ -291,7 +367,7 @@ export function useLoadoutLagnExport(draft: Ref<MatchSetupDocument>): UseLoadout
     variant,
     variantLabel,
     outcome,
-    lossReason,
+    applyImportedResult,
     gameId,
     buildLagnFile,
     exportToJsonBlob,
