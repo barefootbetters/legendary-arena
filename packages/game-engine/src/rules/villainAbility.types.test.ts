@@ -343,7 +343,10 @@ describe('VILLAIN_EFFECT_PRIMITIVES drift-detection', () => {
   // appended a twenty-fourth, `play-villain-deck-cards`, at position 24 (the recursive
   // villain-deck-play primitive for Endless Armies of HYDRA Fight + The Leader Ambush — a
   // deliberate no-op in the executor; the real reveal fires from the onAmbush / onFight sites).
-  it('contains exactly the 24 canonical primitives in order', () => {
+  // WP-544 (D-24353) appended a twenty-fifth, `ko-heroes-current-count-by-trait`, at
+  // position 25 (core radiation Maestro Fight — the trait supplies the COUNT of Heroes to
+  // KO; the targets are the player's free interactive choice, reusing the `ko-hero` park).
+  it('contains exactly the 25 canonical primitives in order', () => {
     const expectedPrimitives: VillainEffectPrimitive[] = [
       'ko-hero',
       'gain-wound',
@@ -369,11 +372,12 @@ describe('VILLAIN_EFFECT_PRIMITIVES drift-detection', () => {
       'gain-officer-current',
       'add-next-hand-size',
       'play-villain-deck-cards',
+      'ko-heroes-current-count-by-trait',
     ];
     assert.equal(
       VILLAIN_EFFECT_PRIMITIVES.length,
-      24,
-      'VILLAIN_EFFECT_PRIMITIVES must have exactly 24 entries',
+      25,
+      'VILLAIN_EFFECT_PRIMITIVES must have exactly 25 entries',
     );
     assert.deepStrictEqual(
       [...VILLAIN_EFFECT_PRIMITIVES],

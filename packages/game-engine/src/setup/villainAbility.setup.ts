@@ -375,6 +375,8 @@ function parseParameterizedEffect(
  *   - `add-next-hand-size:<N>`  (N extra cards added to the next-hand target; D-24352)
  *   - `play-villain-deck-cards:<N>`  (N top villain-deck cards to play; D-24351)
  *   - `ko-heroes-current-by-trait:<kind>:<value>`  (kind `team` | `hc`; D-24290)
+ *   - `ko-heroes-current-count-by-trait:<kind>:<value>`  (the trait sizes the COUNT, not
+ *     the KO filter; kind `team` | `hc`; D-24353)
  *   - `rescue-bystanders-current-by-trait-count:<kind>:<value>`  (D-24290)
  *   - `give-hq-hero-by-trait-to-current:<kind>:<value>`  (kind `team` | `hc`; D-24335)
  *   - `capture-bystander` | `capture-bystander:<N>`  (N a rescue count; D-24295)
@@ -571,6 +573,22 @@ function parseUngatedEffect(
     }
     return {
       primitive: 'ko-heroes-current-by-trait',
+      requireKind: predicate.requireKind,
+      requireValue: predicate.requireValue,
+    };
+  }
+  if (primitiveToken === 'ko-heroes-current-count-by-trait') {
+    // why: D-24353 — grammar `ko-heroes-current-count-by-trait:<kind>:<value>` (core
+    // radiation Maestro: `:hc:strength`). Reuses the shared trait-predicate parser, but
+    // the predicate sizes the COUNT of Heroes to KO, not the KO filter — contrast the
+    // `ko-heroes-current-by-trait` arm above, which KOs the MATCHING Heroes. A malformed
+    // tail returns null (an empty predicate would produce a meaningless count).
+    const predicate = parseTraitPredicateTokens(parts);
+    if (predicate === null) {
+      return null;
+    }
+    return {
+      primitive: 'ko-heroes-current-count-by-trait',
       requireKind: predicate.requireKind,
       requireValue: predicate.requireValue,
     };

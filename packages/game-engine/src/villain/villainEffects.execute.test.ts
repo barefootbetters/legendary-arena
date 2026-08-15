@@ -1470,6 +1470,171 @@ describe('executeVillainAbilities — ko-heroes-current-by-trait (WP-485 / D-242
   });
 });
 
+describe('executeVillainAbilities — ko-heroes-current-count-by-trait (WP-544 / D-24353)', () => {
+  // why: core radiation Maestro "Fight: For each of your [hc:strength] Heroes, KO one of
+  // your Heroes." The trait supplies the COUNT only — the KO targets are the player's FREE
+  // choice, so this reuses the WP-242 / WP-492 `ko-hero` current-player interactive park.
+  // Contrast the `ko-heroes-current-by-trait` suite above, which KOs the MATCHING Heroes.
+  const STRENGTH_A = 'core/hulk/a#0' as CardExtId;
+  const STRENGTH_B = 'core/hulk/b#0' as CardExtId;
+  const RANGED = 'core/x-men/cyclops#0' as CardExtId;
+  const COVERT = 'core/x-men/nightcrawler#0' as CardExtId;
+  const TRAITS: Record<string, { heroClass: string | null; team: string | null }> = {
+    [STRENGTH_A]: { heroClass: 'strength', team: 'avengers' },
+    [STRENGTH_B]: { heroClass: 'strength', team: 'avengers' },
+    [RANGED]: { heroClass: 'ranged', team: 'x-men' },
+    [COVERT]: { heroClass: 'covert', team: 'x-men' },
+  };
+
+  const maestroHook = (): VillainAbilityHook => ({
+    cardId: 'v-maestro' as CardExtId,
+    timing: 'onFight',
+    keywords: [],
+    effects: [
+      {
+        primitive: 'ko-heroes-current-count-by-trait',
+        requireKind: 'hero-class',
+        requireValue: 'strength',
+      },
+    ],
+  });
+
+  function makeMaestroG(hand: CardExtId[], inPlay: CardExtId[] = []): LegendaryGameState {
+    return makeG({
+      hooks: [maestroHook()],
+      playerZones: {
+        '0': { deck: [], hand, discard: [], inPlay, victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      cardTraits: TRAITS,
+      messages: [],
+    });
+  }
+
+  it('AC-1 the trait sizes the count and parks a free choice (2 Strength, 4 KO-able heroes)', () => {
+    const G = makeMaestroG([STRENGTH_A, STRENGTH_B, RANGED, COVERT]);
+    executeVillainAbilities(G, CTX, 'v-maestro' as CardExtId, 'onFight');
+    assert.deepStrictEqual(
+      G.pendingKoHeroChoices,
+      [{ choiceType: 'ko-hero', playerID: '0', remaining: 2 }],
+      'owed = 2 Strength Heroes; the player picks WHICH two die',
+    );
+    assert.deepStrictEqual(G.ko, [], 'nothing auto-KO’d — a genuine choice remains');
+    assert.match(
+      G.messages.at(-1)!.text,
+      /Fight effect: KO 2 of your Heroes \(one per your strength Hero\) — choose which\./,
+    );
+    assert.equal(G.messages.at(-1)!.outcome, 'neutral');
+  });
+
+  it('AC-1 the KO targets are NOT restricted to the Strength Heroes that produced the count', () => {
+    // why: the distinguishing behaviour vs `ko-heroes-current-by-trait` — 1 Strength Hero
+    // with 2 non-Strength heroes still parks, because ANY hero is a legal KO target.
+    const G = makeMaestroG([STRENGTH_A, RANGED, COVERT]);
+    executeVillainAbilities(G, CTX, 'v-maestro' as CardExtId, 'onFight');
+    assert.deepStrictEqual(
+      G.pendingKoHeroChoices,
+      [{ choiceType: 'ko-hero', playerID: '0' }],
+      'owed === 1 omits `remaining` (absent ≡ 1), mirroring the ko-hero magnitude park',
+    );
+    assert.deepStrictEqual(G.ko, [], 'the Strength Hero is not auto-KO’d — any hero may be chosen');
+  });
+
+  it('AC-2 auto-KOs without a prompt when every hero is forced to die', () => {
+    const G = makeMaestroG([STRENGTH_A, STRENGTH_B]);
+    executeVillainAbilities(G, CTX, 'v-maestro' as CardExtId, 'onFight');
+    assert.equal(G.pendingKoHeroChoices?.length ?? 0, 0, 'no park — both die, no meaningful choice');
+    assert.deepStrictEqual([...G.ko].sort(), [STRENGTH_A, STRENGTH_B].sort());
+    assert.match(G.messages.at(-1)!.text, /Fight effect: KO'd 2 of your Heroes \(.*\) — one per your strength Hero\./);
+    assert.equal(G.messages.at(-1)!.outcome, 'applied');
+  });
+
+  it('AC-2 KOs fewer than owed when the player runs out of heroes', () => {
+    const G = makeMaestroG([STRENGTH_A, STRENGTH_B, STRENGTH_B]);
+    executeVillainAbilities(G, CTX, 'v-maestro' as CardExtId, 'onFight');
+    assert.equal(G.ko.length, 3, 'owed 3, only 3 heroes exist — all die, nothing parked');
+    assert.equal(G.pendingKoHeroChoices?.length ?? 0, 0);
+  });
+
+  it('AC-3 zero matching Heroes is a reachable no-op (never hollow)', () => {
+    const G = makeMaestroG([RANGED, COVERT]);
+    executeVillainAbilities(G, CTX, 'v-maestro' as CardExtId, 'onFight');
+    assert.deepStrictEqual(G.ko, [], 'owed 0 — nothing KO’d');
+    assert.equal(G.pendingKoHeroChoices?.length ?? 0, 0, 'no park at owed 0');
+    assert.deepStrictEqual(G.playerZones['0']!.hand, [RANGED, COVERT], 'hand untouched');
+    assert.match(G.messages.at(-1)!.text, /Fight effect: no Heroes to KO\./);
+    assert.equal(G.messages.at(-1)!.outcome, 'blocked');
+    assert.equal(G.diagnostics?.hollowEffects?.length ?? 0, 0, 'reachable no-op, not a hollow record');
+  });
+
+  it('AC-4 the count scans hand AND in-play (Heroes played this turn sit in inPlay)', () => {
+    // why: D-24353 — the Fight effect resolves after the play phase, so a Strength Hero
+    // already played this turn still contributes to the count (the D-24281 precedent).
+    const G = makeMaestroG([RANGED, COVERT], [STRENGTH_A, STRENGTH_B]);
+    executeVillainAbilities(G, CTX, 'v-maestro' as CardExtId, 'onFight');
+    assert.deepStrictEqual(
+      G.pendingKoHeroChoices,
+      [{ choiceType: 'ko-hero', playerID: '0', remaining: 2 }],
+      'both in-play Strength Heroes counted',
+    );
+  });
+
+  it('AC-4 discard is out of scope — a discarded Strength Hero adds no count', () => {
+    const G = makeG({
+      hooks: [maestroHook()],
+      playerZones: {
+        '0': { deck: [], hand: [RANGED, COVERT], discard: [STRENGTH_A], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      cardTraits: TRAITS,
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-maestro' as CardExtId, 'onFight');
+    assert.deepStrictEqual(G.ko, [], 'discard is not scanned — owed stays 0');
+    assert.match(G.messages.at(-1)!.text, /no Heroes to KO/);
+  });
+
+  it('only the current player is affected', () => {
+    const G = makeG({
+      hooks: [maestroHook()],
+      playerZones: {
+        '0': { deck: [], hand: [STRENGTH_A, STRENGTH_B], discard: [], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [STRENGTH_A, RANGED, COVERT], discard: [], inPlay: [], victory: [] },
+      },
+      cardTraits: TRAITS,
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-maestro' as CardExtId, 'onFight');
+    assert.deepStrictEqual(
+      G.playerZones['1']!.hand,
+      [STRENGTH_A, RANGED, COVERT],
+      'the non-current player keeps every hero',
+    );
+  });
+
+  it('a hand-built descriptor missing the predicate no-ops (defensive guard)', () => {
+    const G = makeG({
+      hooks: [
+        {
+          cardId: 'v-maestro' as CardExtId,
+          timing: 'onFight',
+          keywords: [],
+          effects: [{ primitive: 'ko-heroes-current-count-by-trait' }],
+        },
+      ],
+      playerZones: {
+        '0': { deck: [], hand: [STRENGTH_A, RANGED, COVERT], discard: [], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      cardTraits: TRAITS,
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-maestro' as CardExtId, 'onFight');
+    assert.deepStrictEqual(G.ko, [], 'no predicate → nothing KO’d');
+    assert.equal(G.pendingKoHeroChoices?.length ?? 0, 0, 'no park on a malformed descriptor');
+  });
+});
+
 describe('executeVillainAbilities — ko-heroes-current-by-trait basic-S.H.I.E.L.D. widening (WP-490 / D-24296)', () => {
   // why: the three basic S.H.I.E.L.D. cards are synthetic game components with NO
   // G.cardTraits entry, so the generic team predicate misses them — the live

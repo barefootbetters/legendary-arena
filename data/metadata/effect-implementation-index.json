@@ -10,11 +10,11 @@
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 370,
+      "executable": 371,
       "deferred": 0,
       "condition": 5,
       "unsupported": 367,
-      "unmarked": 1084
+      "unmarked": 1083
     }
   },
   "entries": [
@@ -6439,11 +6439,11 @@
       "name": "Maestro",
       "set": "core",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "ko-heroes-current-count-by-trait",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-heroes-current-count-by-trait",
+      "wp": "WP-544",
+      "decision": "D-24353"
     },
     {
       "extId": "core-villain-radiation-the-leader",
@@ -27840,7 +27840,7 @@
     "core-villain-radiation-maestro": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "ko-heroes-current-count-by-trait"
       ]
     },
     "core-villain-radiation-the-leader": {

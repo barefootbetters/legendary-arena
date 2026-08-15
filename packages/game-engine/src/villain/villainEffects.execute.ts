@@ -2111,6 +2111,112 @@ function villainEffectKoHeroesCurrentByTrait(
 }
 
 /**
+ * ko-heroes-current-count-by-trait primitive — the current player KOs one of their own
+ * Heroes per Hero matching the trait predicate (hand + in-play), choosing WHICH Heroes
+ * die (core radiation Maestro "Fight: For each of your [hc:strength] Heroes, KO one of
+ * your Heroes.", D-24353 / WP-544).
+ *
+ * The trait supplies only the COUNT — contrast the sibling `ko-heroes-current-by-trait`
+ * (Destroyer), which KOs the Heroes that MATCH. Because the targets are the player's free
+ * choice, this reuses the WP-242 / WP-492 `ko-hero` current-player interactive park in
+ * full: forced steps auto-KO, a genuine choice parks ONE `PendingKoHeroChoice` resolved by
+ * the existing `resolveKoHeroChoice` move. Deterministic — no `ctx.random`; the choice
+ * defers to the player, not to RNG. Self-narrates via `pushLog` (keyword-less — no
+ * `VillainEffectResult`).
+ */
+function villainEffectKoHeroesCurrentCountByTrait(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  _cardId: CardExtId,
+  _timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  const requireKind = descriptor.requireKind;
+  const requireValue = descriptor.requireValue;
+  // why: defensive — same guard as ko-heroes-current-by-trait (a hand-built test hook
+  // could omit the predicate; the parser always sets both fields together).
+  if (requireKind === undefined || requireValue === undefined) {
+    return { targets: [] };
+  }
+  const zones = G.playerZones[currentPlayer];
+  if (!zones) {
+    return { targets: [] };
+  }
+  // why: D-24353 — the trait supplies the COUNT only; the KO targets are the player's
+  // free choice below (contrast `ko-heroes-current-by-trait`, which KOs the matching
+  // Heroes). The scan covers hand + in-play because "your Heroes" includes Heroes played
+  // this turn — they sit in `inPlay`, since the Fight effect resolves after the play
+  // phase (the operator ruling precedent from `villainEffectKoHeroesCurrentByTrait`).
+  const owedFromTrait = countPlayerHeroesMatchingTrait(
+    [...zones.hand, ...zones.inPlay],
+    G.cardTraits,
+    requireKind,
+    requireValue,
+  );
+
+  // why: D-24353 — this loop + park block is the `villainEffectKoHero` `target: 'current'`
+  // body DUPLICATED verbatim with a trait-derived count in place of `descriptor.magnitude`.
+  // Maestro is the SECOND count-source for the current-player KO park (magnitude is the
+  // first), so duplicate-first / abstract-on-third (`.claude/rules/code-style.md`
+  // §Abstraction) says duplicate: refactoring `villainEffectKoHero` into a shared helper
+  // would disturb the byte-pinned WP-242 / WP-492 park-shape tests for no benefit. Extract
+  // only when a THIRD count-source appears.
+  const targets: CardExtId[] = [];
+  let owed = owedFromTrait;
+  while (owed > 0) {
+    const eligible = buildKoEligibleTargets(zones);
+    if (eligible.length === 0) break; // why: no heroes left to KO.
+    // why: a genuine choice of WHICH heroes to KO exists only when the player has MORE
+    // KO-able heroes than the count owed (they get to spare some) AND ≥ 2 distinct options
+    // exist. Otherwise the KO is forced (every hero dies, or all copies are identical), so
+    // auto-resolve it with no prompt.
+    if (countKoableHeroes(zones) > owed && eligible.length >= 2) break;
+    const koedId = koSingleTarget(G, zones, eligible[0]!);
+    if (koedId === null) break; // why: defensive — an unexpected move miss stops progress.
+    targets.push(koedId);
+    owed -= 1;
+  }
+
+  let parked = false;
+  if (owed > 0 && countKoableHeroes(zones) > owed && buildKoEligibleTargets(zones).length >= 2) {
+    if (!G.pendingKoHeroChoices) G.pendingKoHeroChoices = [];
+    const entry: PendingKoHeroChoice = { choiceType: 'ko-hero', playerID: currentPlayer };
+    // why: WP-492 / D-24298 — OMIT `remaining` when owed === 1 (absent ≡ 1), mirroring the
+    // `ko-hero` magnitude path exactly so both count-sources park the identical shape.
+    if (owed >= 2) {
+      entry.remaining = owed;
+    }
+    G.pendingKoHeroChoices.push(entry);
+    parked = true;
+  }
+
+  // why: D-24353 — keyword-less (no LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR entry →
+  // `descriptorToLegacyKeyword` returns undefined → no `VillainEffectResult` and no generic
+  // Fight-effect line), so it MUST self-narrate. Zero matching Heroes is a reachable no-op
+  // (`blocked`), never a hollow record. `G.messages` is hash-excluded (D-24081).
+  if (parked) {
+    pushLog(
+      G,
+      `Fight effect: KO ${String(owed)} of your Heroes (one per your ${requireValue} Hero) — choose which.`,
+      'neutral',
+    );
+  } else if (targets.length > 0) {
+    const names = targets.map((koedId) => resolveCardDisplayName(G, koedId)).join(', ');
+    pushLog(
+      G,
+      `Fight effect: KO'd ${String(targets.length)} of your Heroes (${names}) — one per your ${requireValue} Hero.`,
+      'applied',
+    );
+  } else {
+    pushLog(G, `Fight effect: no Heroes to KO.`, 'blocked');
+  }
+
+  // why: WP-316 / D-24102 — pending: true marks a parked interactive KO (targets stays
+  // whatever was auto-KO'd before the park — none, since a park is immediate).
+  return parked ? { targets, pending: true } : { targets };
+}
+
+/**
  * rescue-bystanders-current-by-trait-count primitive — the current player rescues
  * one Bystander per Hero matching the trait predicate (hand + in-play), bounded by
  * the Bystander supply (Baron Zemo "Fight: For each of your [team:avengers] Heroes,
@@ -2777,6 +2883,10 @@ function villainEffectGainWoundUnlessVictoryVillainGroup(
 // why: `play-villain-deck-cards` (DELIBERATE NO-OP — the real reveal fires from the onAmbush /
 // onFight fire sites, the WP-481 secondary-fire-site pattern) appended by WP-542 (D-24351 —
 // Endless Armies of HYDRA Fight + The Leader Ambush "Play the top N cards of the Villain Deck").
+// why: `ko-heroes-current-count-by-trait` (INTERACTIVE — trait-sized count, free-choice KO
+// targets; reuses the `ko-hero` current-player park + `resolveKoHeroChoice`) appended by
+// WP-544 (D-24353 — core radiation Maestro "For each of your [hc:strength] Heroes, KO one of
+// your Heroes"). Distinct from `ko-heroes-current-by-trait`, which KOs the MATCHING Heroes.
 /** Villain effect handlers keyed by primitive. Single dispatch source. */
 const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandler> = {
   'ko-hero': villainEffectKoHero,
@@ -2803,6 +2913,7 @@ const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandl
   'gain-officer-current': villainEffectGainOfficerCurrent,
   'add-next-hand-size': villainEffectAddNextHandSize,
   'play-villain-deck-cards': villainEffectPlayVillainDeckCards,
+  'ko-heroes-current-count-by-trait': villainEffectKoHeroesCurrentCountByTrait,
 };
 
 /**

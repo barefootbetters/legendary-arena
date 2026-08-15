@@ -166,7 +166,7 @@ core-villain-spider-foes-green-goblin,Green Goblin,core,villain,captureBystander
 core-villain-hydra-hydra-kidnappers,HYDRA Kidnappers,core,villain,gain-officer-current,executable,WP-541,D-24350,packages/game-engine/src/villain/villainEffects.execute.ts#gain-officer-current
 henchman-hand-ninjas,Hand Ninjas,core,henchman,gain-recruit-current,executable,WP-541,D-24350,packages/game-engine/src/villain/villainEffects.execute.ts#gain-recruit-current
 core-villain-brotherhood-juggernaut,Juggernaut,core,villain,ko-hero,executable,WP-252,D-24023,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
-core-villain-radiation-maestro,Maestro,core,villain,(unmarked),unmarked,,,
+core-villain-radiation-maestro,Maestro,core,villain,ko-heroes-current-count-by-trait,executable,WP-544,D-24353,packages/game-engine/src/villain/villainEffects.execute.ts#ko-heroes-current-count-by-trait
 core-villain-masters-of-evil-melter,Melter,core,villain,ko-cullable-each-deck-top,executable,WP-519,D-24332,packages/game-engine/src/villain/villainEffects.execute.ts#ko-cullable-each-deck-top
 core-villain-brotherhood-mystique,Mystique,core,villain,become-scheme-twist,executable,WP-481,D-24287,packages/game-engine/src/villain/villainEffects.execute.ts#become-scheme-twist
 core-villain-skrulls-paibok-the-power-skrull,Paibok the Power Skrull,core,villain,give-hq-hero-each-player,executable,WP-532,D-24343,packages/game-engine/src/villain/villainEffects.execute.ts#give-hq-hero-each-player

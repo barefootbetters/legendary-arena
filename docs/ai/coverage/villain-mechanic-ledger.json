@@ -4,12 +4,12 @@
   "summary": {
     "totalRows": 719,
     "byStatus": {
-      "executable": 133,
+      "executable": 134,
       "deferred": 0,
       "unsupported": 1,
-      "unmarked": 585
+      "unmarked": 584
     },
-    "distinctMechanics": 30
+    "distinctMechanics": 31
   },
   "rows": [
     {
@@ -1854,11 +1854,11 @@
       "cardName": "Maestro",
       "set": "core",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "ko-heroes-current-count-by-trait",
+      "status": "executable",
+      "wp": "WP-544",
+      "decision": "D-24353",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-heroes-current-count-by-trait"
     },
     {
       "extId": "core-villain-masters-of-evil-melter",

@@ -312,7 +312,8 @@ export type VillainEffectPrimitive =
   | 'gain-recruit-current'
   | 'gain-officer-current'
   | 'add-next-hand-size'
-  | 'play-villain-deck-cards';
+  | 'play-villain-deck-cards'
+  | 'ko-heroes-current-count-by-trait';
 
 // why: drift-detection array — must match VillainEffectPrimitive exactly
 // (villainAbility.types.test.ts asserts bidirectional parity). Adding a
@@ -367,6 +368,13 @@ export type VillainEffectPrimitive =
 // N=1); a DELIBERATE NO-OP in the executor (WP-481 secondary-fire-site pattern), the real
 // reveal fires from villainDeck.reveal.ts (onAmbush) + fightVillain.ts (onFight); `magnitude`
 // carries the play count; keyword-less, the fire sites narrate).
+// why: `ko-heroes-current-count-by-trait` appended at position 25 by WP-544 (D-24353 —
+// core radiation Maestro Fight: "For each of your [hc:strength] Heroes, KO one of your
+// Heroes." The trait supplies only the COUNT; the KO targets are the player's FREE
+// interactive choice, so it reuses the `ko-hero` current-player park rather than KOing the
+// matching Heroes. Deliberately named `-count-by-trait` (count first) to stay visually
+// distinct from `ko-heroes-current-by-trait`, which KOs the MATCHING Heroes;
+// predicate-parameterized, keyword-less, self-narrating).
 /** All villain effect primitives in canonical order. Single source of truth. */
 export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'ko-hero',
@@ -393,6 +401,7 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'gain-officer-current',
   'add-next-hand-size',
   'play-villain-deck-cards',
+  'ko-heroes-current-count-by-trait',
 ] as const;
 
 /**
