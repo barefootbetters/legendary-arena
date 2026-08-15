@@ -21,6 +21,7 @@ import {
   VP_WOUND,
 } from './scoring.types.js';
 import { WOUND_EXT_ID, BYSTANDER_EXT_ID } from '../setup/buildInitialGameState.js';
+import { computeDynamicVillainVictoryPoints } from './dynamicVictoryPoints.js';
 
 /**
  * Computes final VP scores for all players.
@@ -80,7 +81,13 @@ export function computeFinalScores(
       const cardType = gameState.villainDeckCardTypes[cardId];
 
       if (cardType === 'villain') {
-        villainVP += gameState.cardVictoryPoints?.[cardId] ?? VP_VILLAIN;
+        // why: a card-text dynamic-VP resolver overrides the printed-VP/fallback
+        // path for known modifier villains (Supreme HYDRA, D-24355); it returns
+        // null for ordinary villains, which then take the printed vp or VP_VILLAIN
+        // fallback. Folded into villainVP — it is villain VP — so no
+        // PlayerScoreBreakdown field or breakdown-type change is needed.
+        const dynamicVp = computeDynamicVillainVictoryPoints(cardId, zones.victory);
+        villainVP += dynamicVp ?? (gameState.cardVictoryPoints?.[cardId] ?? VP_VILLAIN);
       } else if (cardType === 'henchman') {
         henchmanVP += gameState.cardVictoryPoints?.[cardId] ?? VP_HENCHMAN;
       } else if (cardType === 'bystander' || cardId === BYSTANDER_EXT_ID) {
