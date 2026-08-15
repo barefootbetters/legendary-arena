@@ -173,9 +173,23 @@ Legendary Arena is built to create at the table
 in two words, "Superbad. Superdad.": the moon behind him, the girls in
 front. © Universal Pictures; shown as editorial reference.*
 
-**Captain America and the Red Skull — the serum reveals the man.** The US
-Army recruited the frail, rejected Steve Rogers into **Operation: Rebirth**
-— General Chester Phillips's program to wipe out weakness and infirmity and
+**Captain America and the Red Skull — the serum reveals the man.** Before any
+serum, there was already a man. Steve Rogers was the sickly son of poor Irish
+immigrants on Manhattan's Lower East Side. His father, Joseph — a wounded
+veteran of the First World War — lost his work, turned to drink, and became
+abusive, and was gone by the time Steve was a boy. His mother, Sarah, a nurse
+in a tuberculosis ward, raised him alone and gave him the thing that lasted:
+her example — decency, endurance, and a refusal to let the strong prey on the
+weak — before that same disease took her and left him orphaned as a teenager.
+He was scrawny and often bedridden, and when bullies set on him it was a
+friend, Bucky Barnes, who stepped in. Poor, sick, and twice-bereaved, Steve
+Rogers was already formed — a good and stubborn man — before the Army ever
+found him. That is the whole difference from the boy in the Munich orphanage:
+not that Rogers escaped hardship, but that within it he was *given* something
+— a mother's love, a friend's loyalty — and he kept it.
+
+The US Army recruited the frail, rejected Steve Rogers into **Operation:
+Rebirth** — General Chester Phillips's program to wipe out weakness and infirmity and
 forge the first of an army of super-soldiers. The biochemist **Abraham
 Erskine** treated Rogers with a tissue-building serum brought to life by a
 blast of invisible **vita-rays**, and in minutes the sickly volunteer became
@@ -254,8 +268,9 @@ taught himself to kill.
 The turn is sealed by the exact negative of everything this page loves. To
 reach Adolf Hitler — the counterfeit father who fills the emptiness with
 hate — Johann betrays and murders his one friend, Dieter. Where Gru filled
-the hole in himself with three daughters, and Rogers was formed by a mentor
-who loved him, Schmidt had neither and chose the opposite: he emptied himself
+the hole in himself with three daughters, and Rogers was raised by a mother's
+love and formed by a mentor who saw him, Schmidt had neither and chose the
+opposite: he emptied himself
 of the last human bond he had, to stand beside a monster. That is what a soul
 looks like when nothing good is ever received and every good is finally
 refused — a soul, in the end, paid away.
