@@ -356,6 +356,50 @@ from:
 © Marvel; shown as editorial reference.* Pak has written more about the
 series on [his own blog](https://gregpak.com/category/comics/red-skull/).
 
+### The real evil behind the Red Skull
+
+The Red Skull is fiction, and it would be a kind of disrespect to leave him
+there. He is a single invented face compressing something real and far
+larger: the totalitarian regimes of the last century that murdered their own
+people by the millions. Pak's afterword asks how a cultured nation descends
+into barbarism and how ordinary people come to embrace evil. The sober answer
+is a body count, and it is worth setting down plainly — because it is the
+reason this game keeps *good* and *evil* as meaningful words rather than
+decoration.
+
+These are **excess-death / democide estimates**: deaths caused by a regime's
+own policies — killing, terror, and policy-driven famine — not battlefield
+casualties. The ranges are wide because methods differ (intentional-killing
+counts, Rummel-style "democide," and demographic excess-death all measure
+different things), and several figures — especially famine attributions and
+colonial demographic estimates — are genuinely contested. Ranked by absolute
+toll.
+
+| # | Ruler / Regime | Type | Est. deaths | Basis & notes |
+|:--:|---|---|---|---|
+| 1 | **Mao Zedong** — PRC (1949–76) | Communist | ~40–70M+ | Great Leap Forward famine alone ~30–45M (Banister ~30M; Yang Jisheng ~36M; Dikötter ~45M). Land reform + Anti-Rightist + Cultural Revolution push the total to 40–70M+. Largest absolute toll. |
+| 2 | **Joseph Stalin** — USSR (1924–53) | Communist | ~6–20M | Archival direct-killing ~6–9M (Snyder): Holodomor ~3.3–3.9M, Great Terror ~700k–1M executed, plus deportation/Gulag mortality. Conquest / Rummel reach 15–20M+ counting broader famine and camps. |
+| 3 | **Adolf Hitler** — Nazi Germany (1933–45) | Fascist / racial-totalitarian | ~11–17M | Targeted civilian killing, combat excluded: the Holocaust (~6M Jews), ~3M+ Soviet POWs, Roma, the disabled (Aktion T4), Poles and Soviet civilians, political prisoners. |
+| 4 | **Chiang Kai-shek** — KMT (1928–49) | Authoritarian nationalist | ~few M–10M *(highly debated)* | Rummel's ~10M folds in conscription deaths, the 1938 Yellow River flood, and the 1942–43 Henan famine; many historians assign large shares to the Japanese war and civil-war chaos, giving far lower *intentional* figures. Least secure of the tier. |
+| 5 | **King Leopold II** — Congo Free State (1885–1908) | Colonial personal rule | ~5–10M | Excess deaths from the rubber-terror system: forced labor, mutilation, hostage-taking, starvation, disease. Upper figures are demographic estimates and debated; the scale is not. |
+| 6 | **Imperial Japan** — Shōwa militarism (1931–45) | Militarist / imperial | ~3–10M+ | Democide across occupied Asia (Rummel ~6M): Nanjing, the "Three Alls" (Sankō Sakusen), forced labor, POW/internee mortality, Unit 731, occupation famine (e.g. the 1945 Vietnamese famine). |
+| 7 | **Pol Pot** — Khmer Rouge (1975–79) | Communist | ~1.5–2.2M | ~20–25% of Cambodia's population in under four years — the highest **per-capita intensity** on the list. |
+| 8 | **Young Turks (CUP)** — late Ottoman (1913–23) | Ultranationalist | ~1.5–3M+ | The Armenian Genocide (~1–1.5M) plus the Assyrian (Sayfo, ~250–500k) and Greek (~300–900k) genocides and deportations. |
+| 9 | **Kim dynasty** — North Korea (1948– ) | Communist | ~1M+ (cumulative) | The 1990s "Arduous March" famine (~600k–1M+, policy-worsened) plus decades of the *kwalliso* camp system. Lower absolute total; extreme, sustained repression. |
+| 10 | **Lenin** — early Soviet Russia (1917–24) | Communist | ~several M | Red Terror, decossackization, and War Communism culminating in the 1921–22 famine. Built the apparatus Stalin inherited. |
+| — | **Mengistu** — Derg, Ethiopia (1974–91) | Communist | ~0.5–2M | The Red Terror (1976–78) plus the 1983–85 famine, worsened by forced resettlement and villagization. |
+
+The pattern the list makes visible — and which a single Nazi villain
+necessarily flattens — is that the deadliest regimes of the century skewed
+**communist** by aggregate toll (Mao, Stalin, Pol Pot, Kim, Lenin,
+Mengistu), the point behind R. J. Rummel's *democide* research and *The Black
+Book of Communism*. But the common denominator across left, right, colonial,
+and imperial is not a party label; it is **concentrated, unaccountable state
+power** — the arm of the state turned against the people it claimed to serve.
+That is the real evil the Red Skull distills into one mask, and it is why a
+game that keeps the good-versus-evil line bright is not being childish. The
+real thing was worse than the fiction.
+
 ### Honoring is not ossifying — the real distinction
 
 The soul here is easy to caricature as "never change anything," so it is
@@ -661,7 +705,14 @@ claim at a safe distance — it stands on it.
   first items to trim if the reproduction footprint is ever questioned.
   Faithful *card* reproduction is governed by the license
   ([IP Licensing](ip-licensing.md)), not by this essay.
-- **The "secular default" section is a documented incident, not a slogan.**
+- **The "real evil behind the Red Skull" figures are contested scholarly
+  estimates, offered as sober historical context.** They are democide /
+  excess-death ranges drawn from named historians (Rummel, Snyder, Dikötter,
+  Yang Jisheng, Banister, Conquest, *The Black Book of Communism*), not
+  claims this page adjudicates; the wide ranges are the honest state of the
+  scholarship. The section is present to give the good-versus-evil fantasy
+  real-world weight, not to rank atrocities as spectacle. If a figure is
+  updated by better scholarship, update the cell and cite it.
   It records something that actually happened while this page was drafted,
   and states a general claim about AI training bias that is an *observation*,
   not a sourced engine fact — one more reason the page is `draft`. The
@@ -700,6 +751,12 @@ claim at a safe distance — it stands on it.
 - [Monetization Model](monetization-model.md) — the commercial case for
   lineage as a loyalty and content moat
 - [SCHEMA.md](SCHEMA.md) — the wiki-page contract this page conforms to
+- Democide / mass-atrocity scholarship behind the "real evil" table —
+  R. J. Rummel (*Death by Government*; the "democide" framework), Timothy
+  Snyder (*Bloodlands*), Frank Dikötter (*Mao's Great Famine*), Yang Jisheng
+  (*Tombstone*), Robert Conquest (*The Great Terror*, *The Harvest of
+  Sorrow*), and Courtois et al. (*The Black Book of Communism*). Contested
+  estimates cited as historical context, not adjudicated by this page.
 - [1 Kings 12:6–14](https://www.churchofjesuschrist.org/study/scriptures/ot/1-kgs/12?lang=eng&id=p6#p6)
   (KJV, Church of Jesus Christ of Latter-day Saints scripture text; parallel
   2 Chronicles 10) — Rehoboam rejects the elders' counsel and the kingdom
