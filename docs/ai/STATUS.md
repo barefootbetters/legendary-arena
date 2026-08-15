@@ -85,7 +85,9 @@ The seeding channel needed `App.vue`: `useLagnFromUrl` runs there while `useLoad
 
 **registry-viewer 227 → 234 tests / 0 fail** (+8 new, −1 dead); `vue-tsc` clean; `pnpm -r build` + `pnpm -r --no-bail test` exit 0. Exactly 8 files, all under `apps/registry-viewer`. D-24358 Active.
 
-**Live verification (D-24026) — operator-pending.** `User-Visible Surface = the Registry Viewer Loadout tab (cards.legendary-arena.com)`. To confirm: import a real match LAGN whose `result.outcome` is `"defeat"`, re-export, and check the outcome survives; separately, build a loadout from scratch and confirm the downloaded file has no `result` key.
+**Live verification (D-24026) — ✅ CONFIRMED 2026-08-15 (the unset path).** A loadout built from a `?schemeId=…&mastermindId=…` deep link on the deployed viewer and exported via Download LAGN produced a document ending at `sidekicks_count` with **no `result` key at all** (fresh `game_id b9136121…`, not the stale pre-fix artifact). That is AC-4 live: an outcome that was never imported nor chosen asserts nothing, where the pre-fix build would have stamped `"result": {"outcome": "victory"}` — the exact fabrication that started this thread. The Outcome control also shows the new tri-state with `— not recorded —` selected by default, confirming the operator was on a post-fix bundle.
+
+Still unobserved: the **import** half (AC-1 — a `"defeat"` LAGN imported and re-exported still reads `"defeat"`). It is covered by unit tests and by the D-24358 replace-never-merge contract; only the browser round-trip is unwitnessed.
 
 ---
 
