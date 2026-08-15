@@ -36601,4 +36601,27 @@ _Active 2026-08-15 — landed at WP-549 execution (EC-584). registry-viewer 227 
 
 _Active 2026-08-15 — landed at WP-550 execution (EC-585). engine 2612 -> 2613 tests / 0 fail. `User-Visible Surface = play.legendary-arena.com` (the game log) — D-24026 live-verify operator-pending (fight Maestro holding no Strength Hero; the log must name the trait)._
 
+### D-24361 — The Registry Viewer carries its own deploy-freshness signal, ported from WP-418 rather than extracted (Active 2026-08-15 — WP-552 / EC-587)
+
+**Decision.** `apps/registry-viewer` now emits a build-stamped `version.json` (`{ gitSha }`) and detects when the origin is serving a **different** build than the one baked into the running tab, offering a reload. Before this, the viewer had no staleness signal at all: `cards.legendary-arena.com/version.json` returned the SPA fallback HTML, so an operator on a cached bundle silently saw old UI.
+
+**Why.** On 2026-08-15 a correctly-deployed WP-549 change was invisible to the operator. The origin was serving the fix — `index.html` → the fixed bundle, `Cache-Control: max-age=0, must-revalidate`, `cf-cache-status: DYNAMIC`, so explicitly **not** the CDN edge-poisoning pattern of `reference_cdn_edge_cache_poisoning_blank_screen` — but the browser held a pre-fix bundle and the new control was simply absent. Two exchanges plus a `curl` of the deployed bundle were spent proving the deploy was live before the staleness was traced browser-side. `arena-client` has been able to say "you are looking at an old build" since WP-418; the viewer could not.
+
+**Ported, not extracted.** The four pieces are **duplicated** from `apps/arena-client` (WP-418 / EC-453 / D-24238), not lifted into a shared package. `registry-viewer` is only the **second** consumer, and `.claude/rules/code-style.md §Abstraction` is duplicate-first / abstract-on-third; a shared package would also have to straddle two apps' differing Vite configs and banner styling for no present benefit. **Extract at a third consumer.** `apps/arena-client` is untouched.
+
+**Deliberately narrower than the original.** Two of arena-client's four triggers cannot apply and were dropped rather than faked:
+- the **socket-reconnect watch** reads a `connection` store — `registry-viewer` has no `src/stores/`, no socket, and no boardgame.io connection;
+- the **`vite:preloadError` catch** handles a hashed lazy-chunk 404 — the viewer builds to a **single** JS chunk (no code-splitting), so that event cannot fire here.
+Kept: the tab-focus re-check and a `60_000` ms backstop poll (the literal copied from arena-client, not re-derived).
+
+**Fail-soft is the load-bearing property.** `fetchDeployedSha` resolves to no-signal on a network rejection, a non-200, a non-JSON body, or JSON lacking `gitSha` — never throws, never a spurious sha. A banner that cries wolf is worse than no banner. The non-JSON branch is not hypothetical: it is exactly the pre-fix symptom, since `/version.json` used to return `index.html` with HTTP 200. `isNewerBuildAvailable` is pure and takes `bakedSha` as a **required** parameter — a `__GIT_SHA__` default would throw `ReferenceError` under `node --import tsx --test`, where Vite's `define` does not apply.
+
+**Dismissal is in-tab presentation state only** — no `localStorage`, no `sessionStorage`, no `src/prefs/` wiring. `02-CODE-CATEGORIES.md` permits a `docs-app` localStorage "for view preferences only", which makes persisting it a defensible misreading; it is deliberately not persisted, because a dismissal outliving the tab would suppress the notice on a genuinely newer build in a later session. The reload is **user-initiated**, never automatic.
+
+**Category note.** `registry-viewer` is a `docs-app` (D-13807), whose named failure mode is "static-build determinism breaks (timestamps, git info embedded in output)" — literally what this emits. It is in-bounds: the viewer already shipped `__GIT_SHA__` and `__BUILD_TIMESTAMP__` via `vite.config.ts` and renders them in `VersionBadge.vue`, so this is an existing build-**identity** stamp, not content. The port crosses categories (arena-client is `client-app`), and `docs-app` additionally bans `Date.now()` / `performance.now()` in render paths — none of the ported files uses either.
+
+**Surface.** `apps/registry-viewer/vite.config.ts` (`emitVersionJsonPlugin` + registration, reusing the `gitSha` already captured there), `src/lib/deployVersion.ts` + its test, `src/composables/useDeployVersionCheck.ts`, `src/components/UpdateAvailableBanner.vue`, `src/App.vue` (mount + the `window.location.reload()` site). Six files, all under `apps/registry-viewer`. No engine, server, registry, or `lagn-spec` change; no deploy-config, cache-header, service-worker, or telemetry change; `scripts/wait-for-spa-deploy.mjs` untouched (it is parameterized by `--url`/`--sha`, so a second app emitting the same shape cannot confuse it).
+
+_Active 2026-08-15 — landed at WP-552 execution (EC-587). registry-viewer 234 → 243 tests / 0 fail; the built `dist/version.json` verified to parse as JSON with a `gitSha` matching HEAD. Testing is scoped to `deployVersion.ts`; the composable and banner are a live-verify-only gap by design (this app has no component-test harness), the same trade shipped WP-549 made. `User-Visible Surface = cards.legendary-arena.com` — D-24026 live-verify operator-pending (post-deploy `curl` returns JSON, not the SPA fallback; a deliberately-stale tab surfaces the banner)._
+
 Protect this file.

@@ -7,6 +7,28 @@
 
 ## Current State
 
+### WP-552 — Registry Viewer Deploy Version Check — DONE (2026-08-15)
+
+The Registry Viewer can now tell an operator their browser is running a stale bundle. Before this it could not: `cards.legendary-arena.com/version.json` returned the SPA fallback HTML, so a cached bundle silently showed old UI with no signal at all.
+
+**Why it mattered enough to fix.** On 2026-08-15 a correctly-deployed WP-549 change was invisible to the operator. The origin *was* serving the fix — `index.html` → the fixed bundle, `Cache-Control: max-age=0, must-revalidate`, `cf-cache-status: DYNAMIC`, so explicitly **not** the CDN edge-poisoning pattern — but the browser held a pre-fix bundle and the new control simply wasn't there. Two exchanges plus a `curl` of the deployed bundle went into proving the deploy was live before the staleness was traced browser-side. `arena-client` has been able to say "you're on an old build" since WP-418; the viewer couldn't.
+
+Ports that pattern: `emitVersionJsonPlugin` in `vite.config.ts` (reusing the `gitSha` the file **already** captured — only the plugin was new), a pure `isNewerBuildAvailable`, a fail-soft `fetchDeployedSha`, a poll composable, and a dismissible `UpdateAvailableBanner` mounted in `App.vue`.
+
+**Duplicated, not extracted.** registry-viewer is the *second* consumer, and §Abstraction is duplicate-first / abstract-on-third — extract at a third. `apps/arena-client` is untouched (verified 0 files).
+
+**Deliberately narrower than the original.** Two of arena-client's four triggers cannot apply here and were dropped rather than faked: the socket-reconnect watch needs a `connection` store the viewer has no equivalent of (no `src/stores/`, no socket, no boardgame.io), and the `vite:preloadError` catch handles a lazy-chunk 404 — but the viewer builds to a **single** JS chunk, so that event can never fire. Kept: the tab-focus re-check and a `60_000` ms backstop, the literal copied rather than re-derived.
+
+**Fail-soft is the load-bearing property.** A network rejection, non-200, non-JSON body, or missing `gitSha` all resolve to no-signal — a banner that cries wolf is worse than no banner. The non-JSON branch isn't hypothetical: it's exactly the pre-fix symptom, since `/version.json` used to return `index.html` with HTTP 200. `isNewerBuildAvailable` takes `bakedSha` as a **required** parameter, because a `__GIT_SHA__` default would throw `ReferenceError` under `node --import tsx --test` where Vite's `define` doesn't apply.
+
+Dismissal is in-tab presentation state only — no `localStorage`, no `sessionStorage`, no `src/prefs/`. The reload is user-initiated, never automatic.
+
+**AC-1 verified:** the built `dist/version.json` parses as JSON with `gitSha` matching HEAD, rather than being the SPA fallback. **registry-viewer 234 → 243 tests / 0 fail**; `vue-tsc` clean; `pnpm -r build` + `pnpm -r --no-bail test` exit 0. Exactly 6 files. Testing is scoped to `deployVersion.ts`; the composable and banner are a live-verify-only gap by design (this app has no component-test harness), the same trade WP-549 made. D-24361 Active.
+
+**Live verification (D-24026) — operator-pending.** `User-Visible Surface = cards.legendary-arena.com`. To confirm: after deploy, `curl -s https://cards.legendary-arena.com/version.json` returns JSON rather than HTML; then leave a tab open across a deploy and confirm the banner appears.
+
+---
+
 ### WP-550 — Maestro Zero-Count Narration Fidelity — DONE (2026-08-15)
 
 Maestro's blocked Fight log line now says **why** nothing happened. It read `Fight effect: no Heroes to KO.`, which sounds like "you had nothing left to lose" when the truth is always "you had no Strength Heroes, so Maestro asked for nothing" — surfaced by WP-544's own live verification (match `NPyIIWIjd1Q`). Replaced with `Fight effect: no {requireValue} Heroes — nothing to KO.`, following the WP-485 / D-24290 sibling precedent (`KO'd 0 of your shield Hero(es).`). Maestro's `applied` and `neutral` lines already named the trait; only the blocked branch dropped it, so the one case where the player most needs a reason was the one case that withheld it.
