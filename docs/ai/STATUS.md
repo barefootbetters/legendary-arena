@@ -7,6 +7,26 @@
 
 ## Current State
 
+### WP-531 — Re-anchor the Penalty Weights to the Rulebook 4:3:1 Ratio — DONE (2026-08-15)
+
+The three **rulebook** penalty weights — `bystanderLost` : `schemeTwistNegative` : `villainEscaped` — are now anchored to the community/rulebook **4:3:1** ratio: `400 / 300 / 100`, with the villain escape as the 1.00 unit. This completes the penalty arc's weight side after the producer side (WP-528 / WP-529).
+
+**Why now.** Until those producers went live, two of the three penalties counted `0` regardless of weight, so re-anchoring was moot. With all three producing real counts, the weights now determine what a lost civilian and an advancing scheme actually cost.
+
+**What it corrected.** Two surfaces disagreed with the ratio *and* with each other: the frozen reference was `200 / 500 / 400` (2:5:4), and the test config was `100 / 50 / 300` — the latter ranking a scheme twist (`50`) **below** a villain escape (`100`), the exact inverse of the rulebook.
+
+**Data and docs only.** `computeRawScore`, `validateScoringConfig` and `deriveScoringInputs` are untouched; AC-6 confirmed no non-test file under `packages/game-engine/src/scoring/` changed. All **four** weight-bearing reference surfaces moved together so the frozen doc cannot contradict itself — the table, the invariants block, the Full Formula, and the Worked Example, whose two players were recomputed and independently re-derived before applying (Player A raw `−1900` / final `−700`, "7.00 under PAR"; Player B raw `−700` / final `+500`, "5.00 over PAR"; the gap widening `11.00 → 12.00`, which sharpens exactly the hierarchy the model exists to encode).
+
+**Scaffold result — recorded, not reasoned.** The WP and EC both made the scaffold mandatory. Applying the weights produced **zero** failing assertions: engine 2613/0 and `pnpm -r --no-bail test` exit 0, before and after. The three test files WP-531 listed conditionally therefore stayed **out** of the diff. The reason is worth keeping, because it looks like missing coverage and isn't: `scoringConfigLoader.test.ts` writes its own configs into a `mkdtemp` temp dir, and `par.aggregator.test.ts` uses hand-built inline weights — neither reads the real `data/scoring-configs` file. That is deliberate test isolation.
+
+**The guard is still non-vacuous.** Verified directly against the built `validateScoringConfig`: the updated config returns `{valid: true}`, while a control dropping `bystanderLost` to `100` is rejected naming both violated invariants. One near-miss worth noting: the only surviving `x 500` in the reference is the **PAR_seed** difficulty heuristic (`12000 + rating × M_WEIGHT/S_WEIGHT/V_WEIGHT`), not a penalty coefficient — correctly left untouched rather than "fixed".
+
+`scoringConfigVersion` bumped `1 → 2` (VISION §22 — a weight change is a new version, never a retroactive edit). No production `ScenarioScoringConfig` and no `legendary.competitive_scores` row exists under the old weights, so no historical re-score is owed. No `G` state touched, so `finalStateHash` is unaffected and no fixture was re-recorded. `wiki/scoring.md` — the ewiki page this ratio was sourced from — moves from "Phase-1 seed" to adopted reference default while preserving the calibration-supremacy caveat; `wiki-viewer:project` + `check-links` green across 66 projected files. D-24342 Active.
+
+**Live verification (D-24026) — operator-pending, and deliberately deferred.** `User-Visible Surface = play.legendary-arena.com` (Final Score). This is **player-observable only once a production `ScenarioScoringConfig` ships** with these weights — none exists yet. The reference + test-config re-anchor is correct regardless; this WP establishes the authoring standard.
+
+---
+
 ### WP-551 — Loadout Import Format Sniff — DONE (2026-08-15)
 
 Pasting a file into the wrong one of the Loadout tab's three adjacent JSON import boxes now says **which box it belongs in**, in one sentence, instead of dumping that validator's field-level errors.
