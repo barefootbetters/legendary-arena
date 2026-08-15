@@ -32,6 +32,7 @@ import LoadoutTray from "./components/LoadoutTray.vue";
 import FilterDropdown from "./components/FilterDropdown.vue";
 import type { FilterDropdownItem } from "./components/FilterDropdown.vue";
 import AppShell from "./components/branding/AppShell.vue";
+import UpdateAvailableBanner from "./components/UpdateAvailableBanner.vue";
 import { useSetupFromUrl } from "./composables/useSetupFromUrl";
 import { parsePlayerCountFromUrl } from "./lib/setupUrlParams";
 import { applyPreviewToDraft } from "./lib/applyPreviewToDraft";
@@ -47,6 +48,17 @@ import type {
 } from "@legendary-arena/registry/setupContract";
 import type { SetupMatchedCount } from "./composables/useSetupFromUrl";
 import type { LagnImportedResult } from "./lib/loadoutLagnImport";
+import { useDeployVersionCheck } from "./composables/useDeployVersionCheck";
+
+// why: WP-552 / D-24361 — detect a newer deployed viewer build so an operator on
+// a cached bundle is told, instead of silently seeing stale UI. Instantiated at
+// setup() top level (not inside the async registry loader) because the composable
+// registers onMounted / onUnmounted hooks, which must bind to this component
+// instance synchronously. The reload site lives here so the banner stays pure.
+const deployVersionCheck = useDeployVersionCheck();
+function reloadForNewVersion(): void {
+  window.location.reload();
+}
 
 // ── Glossary panel ───────────────────────────────────────────────────────────
 const glossary = useGlossary();
@@ -1123,6 +1135,10 @@ const loadoutTraySummary = computed(() => {
 </script>
 
 <template>
+  <UpdateAvailableBanner
+    :update-available="deployVersionCheck.updateAvailable.value"
+    :refresh="reloadForNewVersion"
+  />
   <AppShell>
     <div class="app">
     <header class="header">
