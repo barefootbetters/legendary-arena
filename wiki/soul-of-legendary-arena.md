@@ -236,6 +236,36 @@ that order, without apology: it honors the fathers because they *ought* to
 be honored, and it expects to be the better game, and the better business,
 for standing there.
 
+### The Red Skull: the lie made flesh
+
+If Steve Rogers is what a received inheritance looks like, Johann Schmidt is
+what its total absence looks like — and Greg Pak titled the study of him
+*Incarnate*: the lie made flesh.
+
+The Red Skull is the product of a **void**. Schmidt had no formation to
+invert — his mother died bringing him into the world, his father was gone,
+and he was raised in an orphanage, a Munich home for wayward boys, with no
+family, no faith, no love to shape him. The modern lie would call that
+freedom: the unencumbered orphan, owing nothing to anyone, free to discover
+his own truth. Pak's *Red Skull: Incarnate* is the honest answer to that
+fantasy — what the boy discovered, left to himself, was violence, and he
+taught himself to kill.
+
+The turn is sealed by the exact negative of everything this page loves. To
+reach Adolf Hitler — the counterfeit father who fills the emptiness with
+hate — Johann betrays and murders his one friend, Dieter. Where Gru filled
+the hole in himself with three daughters, and Rogers was formed by a mentor
+who loved him, Schmidt had neither and chose the opposite: he emptied himself
+of the last human bond he had, to stand beside a monster. That is what a soul
+looks like when nothing good is ever received and every good is finally
+refused — a soul, in the end, paid away.
+
+And it is worth saying plainly, because the culture around us often argues
+the reverse: the child is not better off unencumbered. Family, faith,
+friendship, and love are not chains to escape on the way to greatness — they
+are the things that keep a person human. Their absence did not free Johann
+Schmidt. It made the Red Skull.
+
 ### Where to read the Captain America origin
 
 This is the character-history loop this page champions, put into practice —
