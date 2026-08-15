@@ -267,6 +267,17 @@ early version most later stories build on. (On Marvel Unlimited, search
 | *Tales of Suspense* #65 | 1965 | Immediately before #66 — sets up the modern return of the Red Skull. |
 | *Red Skull: Incarnate* #1–5 | 2011 | Greg Pak's modern, detailed origin miniseries — young Johann Schmidt in 1920s–30s Germany. A very strong character study. |
 
+That last one — **Red Skull: Incarnate** — is a five-issue 2011 limited
+series, and the deepest of the modern character studies: how the man was
+made, across the Weimar years and the rise of the Nazi Party.
+
+![Cover of Red Skull: Incarnate (2011) #2 of 5 — the Red Skull styled as a fascist propaganda-poster icon, arm raised before a red banner, ranks of soldiers marching below.](/soul-of-legendary-arena/red-skull-incarnate-issue2-cover.jpg "width=44%")
+
+*David Aja's cover to* Red Skull: Incarnate *(2011) #2 of 5 — the limited
+series styled deliberately as period propaganda art —
+[on Marvel.com](https://www.marvel.com/comics/issue/34620/red_skull_2011_2).
+© Marvel; shown as editorial reference.*
+
 **A note on the movie difference.** In the comics, the Red Skull's face is
 *not* the result of an imperfect Super-Soldier Serum — that is a film
 change. In the comics the red skull begins as a mask; his face is only later
@@ -502,9 +513,10 @@ claim at a safe distance — it stands on it.
 - **IP boundary.** This page discusses *theme and framing* of licensed
   characters, retold in original prose, not copied from source caption text.
   Embedded images: the *Captain America* #255 cover and a uniform panel, the
-  scanned **Greg Pak afterword** to *Red Skull: Incarnate* (2011) #1, and the
-  **#5 back cover** carrying the "paid with their souls" passage (© Marvel);
-  and the *Despicable Me* poster (© Universal / Illumination) — all
+  *Red Skull: Incarnate* (2011) #2 cover (David Aja), the scanned **Greg Pak
+  afterword** to *Red Skull: Incarnate* (2011) #1, and the **#5 back cover**
+  carrying the "paid with their souls" passage (© Marvel); and the
+  *Despicable Me* poster (© Universal / Illumination) — all
   attributed, low-resolution, and shown as editorial reference on the
   access-gated internal ewiki; none are licensed card assets or reproductions
   of card text. The afterword scan and the #5 back cover (whose text is also
