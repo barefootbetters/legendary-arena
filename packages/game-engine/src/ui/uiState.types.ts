@@ -23,6 +23,7 @@
 import type { FinalScoreSummary } from "../scoring/scoring.types.js";
 import type { NotableGameEvent } from "../events/notableEvents.types.js";
 import type { LogEntry } from "../log/logOutcome.types.js";
+import type { MenaceTier } from "../rules/schemeLossProgress.js";
 // why: WP-258 — reuse the engine's canonical HollowEffectRecord rather than
 // declaring a parallel UI type. The projection surfaces the WP-257 runtime
 // channel (G.diagnostics.hollowEffects) to the client unchanged.
@@ -599,6 +600,26 @@ export interface UIProgressCounters {
   bystandersRescued: number;
   /** Cumulative count of villains that escaped the City. */
   escapedVillains: number;
+  // why: WP-557 / D-24366 §6 — the four menace fields are OPTIONAL in the type
+  // but ALWAYS populated by buildUIState. The optionality exists solely so no
+  // hand-written UIState fixture needs a backfill: `bystandersRescued` and
+  // `escapedVillains` are required, so a required add here would fail
+  // `vue-tsc` on every arena-client fixture — a package WP-557 declares out of
+  // scope. This is the WP-410 `matchCardImageUrls` pattern. Consumers may treat
+  // these as present on any state built by this engine.
+  /** Normalized 0..1 progress toward the active scheme's Evil-Wins condition. */
+  menace?: number;
+  /** The coarse band `menace` falls in (D-24366 §3 shared tier contract). */
+  menaceTier?: MenaceTier;
+  /** Condition-aware numerator: twists, or matching escaped-pile entries. */
+  schemeLossProgress?: number;
+  /**
+   * The resolved denominator for the active scheme.
+   *
+   * Omitted for a `pile-depleted` scheme, whose loss has no fixed denominator
+   * (D-24366 §5) — `menace` still reports the twist-proxy reading.
+   */
+  schemeLossThreshold?: number;
 }
 
 // why: WP-367 / D-24159 — projected only while the deck-exhaustion final-turn

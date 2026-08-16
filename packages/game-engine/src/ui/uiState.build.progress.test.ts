@@ -191,3 +191,71 @@ describe('UIState progress counters (WP-067)', () => {
     assert.deepStrictEqual(first.progress, second.progress);
   });
 });
+
+describe('UIState.progress menace signal (WP-557 / D-24366)', () => {
+  const mockCtx = makeMockCtx();
+
+  it('populates all four menace fields on a real built state', () => {
+    // why: the fields are OPTIONAL in the type only so arena-client fixtures
+    // need no backfill (D-24366 §6). buildUIState must always populate them,
+    // or every consumer has to handle an absence that never legitimately
+    // occurs. `test-scheme-001` is unconfigured, so the denominator is the
+    // MVP fallback of 7 — NOT 8.
+    const gameState = createTestGameState();
+    gameState.counters.schemeTwistCount = 7;
+
+    const result = buildUIState(gameState, mockCtx);
+
+    assert.equal(result.progress.schemeLossProgress, 7);
+    assert.equal(result.progress.schemeLossThreshold, 7);
+    assert.equal(result.progress.menace, 1);
+    assert.equal(result.progress.menaceTier, 'critical');
+  });
+
+  it('projects a calm zero-menace state at match start', () => {
+    const gameState = createTestGameState();
+
+    const result = buildUIState(gameState, mockCtx);
+
+    assert.equal(result.progress.menace, 0);
+    assert.equal(result.progress.menaceTier, 'calm');
+    assert.equal(result.progress.schemeLossProgress, 0);
+  });
+
+  it('menaceTier agrees with the projected menace scalar', () => {
+    // why: the tier is derived from the same scalar in the same projection —
+    // if these two ever disagree the shared tier contract is broken and the
+    // meter and the score would render different truths.
+    const gameState = createTestGameState();
+    gameState.counters.schemeTwistCount = 3;
+
+    const result = buildUIState(gameState, mockCtx);
+
+    assert.equal(result.progress.menace, 3 / 7);
+    assert.equal(result.progress.menaceTier, 'rising');
+  });
+
+  it('the menace projection adds no G field', () => {
+    // why: D-24366 §2 — menace is derived at projection time and never stored.
+    // If a future change writes it to G, the sentinel hash oracles move and
+    // this assertion is the local tripwire that says why.
+    const gameState = createTestGameState();
+
+    buildUIState(gameState, mockCtx);
+
+    assert.equal('menace' in gameState, false);
+    assert.equal('menaceTier' in gameState, false);
+    assert.equal(gameState.counters.menace, undefined);
+  });
+
+  it('menace projection is deterministic for identical inputs', () => {
+    const gameState = createTestGameState();
+    gameState.counters.schemeTwistCount = 4;
+
+    const first = buildUIState(gameState, mockCtx);
+    const second = buildUIState(gameState, mockCtx);
+
+    assert.equal(first.progress.menace, second.progress.menace);
+    assert.equal(first.progress.menaceTier, second.progress.menaceTier);
+  });
+});

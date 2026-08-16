@@ -18,15 +18,11 @@ import type { RevealContext } from '../villainDeck/villainDeck.reveal.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { SCHEME_TWIST_RESOLVERS } from './schemeTwistResolvers.js';
 import { SCHEME_TWIST_CONFIGS } from './schemeTwistConfigs.js';
+import {
+  resolveTwistLossThreshold,
+  isTwistLossSuppressed,
+} from './schemeLossProgress.js';
 import { pushLog } from '../log/logPush.js';
-
-// why: fallback threshold ONLY — used when a scheme has no config or no
-// lossThreshold override. It is deliberately arbitrary (7): a scheme's real
-// twist-stack size comes from its SchemeTwistConfig.lossThreshold /
-// lossThresholdByPlayerCount (D-24178). Do NOT read this as "most schemes lose at
-// 7" — most core schemes have an 8-twist stack. Unconfigured schemes fall here
-// until they gain a config.
-const MVP_SCHEME_TWIST_THRESHOLD = 7;
 
 /**
  * Builds the shared counter-increment + scheme-loss effects that fire for
@@ -159,30 +155,13 @@ export function schemeTwistHandler(
     );
   }
 
-  // why: resolve the twist-loss threshold in priority order (D-24178):
-  //   1. a per-player-count override (schemes whose printed stack varies by
-  //      seat count, e.g. Super Hero Civil War: 8 at 2-3p, 5 at 4-5p) —
-  //      keyed by the seat count frozen at setup (G.lobby.requiredPlayers ===
-  //      ctx.numPlayers, buildInitialGameState.ts);
-  //   2. the scalar lossThreshold (a fixed twist-stack size);
-  //   3. the arbitrary MVP fallback (unconfigured schemes only).
-  // The threshold is the scheme's twist-stack size, so a scheme never resolves a
-  // twist early. NOTE: only twist-loss schemes (printed "Twist N: Evil Wins!" —
-  // Portals, Cosmic Cube) truly lose at this count; the resource-loss schemes
-  // (loss on bystanders/heroes/villains escaped, wound/hero deck empty) use it as
-  // a doom-clock proxy at the full stack length until their real loss conditions
-  // are modeled (a separate scheme-fidelity backlog item — D-24178).
-  const playerCountThreshold =
-    config?.lossThresholdByPlayerCount?.[String(gameState.lobby.requiredPlayers)];
-  const effectiveThreshold =
-    playerCountThreshold ?? config?.lossThreshold ?? MVP_SCHEME_TWIST_THRESHOLD;
-
-  // why: D-24315 — when the active scheme declares a real resourceLossCondition,
-  // its loss is governed by that condition (evaluated in the escape path via
-  // applyEscapedPileResourceLoss), so the twist-count doom-clock proxy must not
-  // also fire. `config` is in scope here in the dispatcher, so the suppression is
-  // resolved here and passed in — buildGenericTwistEffects never re-fetches config.
-  const suppressTwistLoss = config?.resourceLossCondition != null;
+  // why: the D-24178 threshold-resolution order and the D-24315
+  // resourceLossCondition suppression now live in schemeLossProgress.ts, so the
+  // UIState menace projection (D-24366) reads the same rule this dispatcher acts
+  // on instead of carrying a second copy that could drift from it. Behavior is
+  // unchanged — the helper is the same priority order that was inline here.
+  const effectiveThreshold = resolveTwistLossThreshold(gameState);
+  const suppressTwistLoss = isTwistLossSuppressed(gameState);
 
   return buildGenericTwistEffects(gameState, effectiveThreshold, suppressTwistLoss);
 }

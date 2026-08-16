@@ -224,7 +224,7 @@ stinger:
 | Outcome | Triggers (counter) | Stinger character |
 |---|---|---|
 | **`heroes-win`** | `mastermindDefeated` ≥ 1 (also Surface 1's notable event) | Triumphant **victory fanfare** + a **crowd cheer** — the biggest positive cue in the game |
-| **`scheme-wins`** | `escapedVillains` ≥ `ESCAPE_LIMIT` (8) — *the city is overrun*; **or** `schemeLoss` ≥ 1 — *the scheme completes* | Dark, **deflating** loss sting + a **crowd boo**; the two reasons can take distinct stings (an escape stampede vs. the scheme snapping shut) |
+| **`scheme-wins`** | `schemeLoss` ≥ 1 — *the scheme completes*. Since **D-24317** this is the **only** loss counter: the generic "8 villains escaped" condition was retired, and an escape-driven loss (Negative Zone, Midtown Bank Robbery) now latches `schemeLoss` through the scheme's own escaped-pile threshold | Dark, **deflating** loss sting + a **crowd boo**; the underlying reason (an escape stampede vs. the scheme snapping shut) can still take distinct stings — read it from the scheme's loss condition, not from a separate counter |
 | **`tie`** | `finalTurnTie` ≥ 1 — a deck emptied and the final turn ended with no win or loss (WP-367 / D-24159) | Something **wry and unresolved** — neither fanfare nor dirge; good and evil both walk away |
 
 Loss conditions checked before victory, so a simultaneous trigger resolves
@@ -384,33 +384,55 @@ Under the [Playstyle lens](design-system-overview.md#playstyle-modes) the ladder
 ### Adaptive background music — the danger meter
 
 The request: a background score that **intensifies as the villains get
-closer to winning.** The two loss conditions give a clean, already-
-projected progress signal, so this is buildable client-side today.
+closer to winning.** The engine now projects that progress directly, so
+the score reads one number instead of reconstructing the loss rules.
 
-#### The signal (confirmed projected)
+#### The signal (projected by the engine, WP-557)
 
-- `UIState.progress.escapedVillains` — running count of villains that
-  escaped the City (loss at `ESCAPE_LIMIT` = 8).
-- `UIState.scheme.twistCount` — running count of Scheme Twists resolved
-  (`twistPile.length`). The scheme flips `schemeLoss` to 1 when *its
-  own* twist limit is reached (scheme-specific), and `schemeLoss >= 1`
-  is terminal.
+`UIState.progress` carries the whole signal (D-24366):
 
-#### The formula
+| Field | Meaning |
+|---|---|
+| `menace` | Normalized **0..1** progress toward the active scheme's Evil-Wins condition |
+| `menaceTier` | The band `menace` falls in — `calm` / `rising` / `critical` |
+| `schemeLossProgress` | The condition-aware numerator (twists, or matching escaped-pile entries) |
+| `schemeLossThreshold` | The resolved denominator; **omitted** for a scheme with no fixed one |
 
-Compute a normalized 0..1 "menace" from whichever loss condition is
-furthest along:
+**Read `menace` — do not recompute it.** The denominator is not a
+constant: it comes from the active scheme's `lossThreshold` /
+`lossThresholdByPlayerCount` (Super Hero Civil War is 8 at 2–3 players
+but **5** at 4–5), and a scheme declaring a `resourceLossCondition` has
+the twist clock suppressed entirely in favour of its own threshold
+(D-24315). The engine resolves all of that in one place so the score and
+the [visual danger meter](visual-effects.md) can never disagree.
 
-```
-escapeProgress = escapedVillains / ESCAPE_LIMIT          // ESCAPE_LIMIT = 8
-schemeProgress = twistCount / activeSchemeTwistLimit     // scheme-specific limit
-menace         = clamp(max(escapeProgress, schemeProgress), 0, 1)
-```
+> **Correction (WP-557).** An earlier version of this page specified
+> `escapeProgress = escapedVillains / ESCAPE_LIMIT` with `ESCAPE_LIMIT = 8`.
+> That formula is **retired**. **D-24317** removed the generic
+> "8 villains escaped = evil wins" loss: escapes now end the game only for
+> a scheme that declares an escaped-pile condition of its own (Negative Zone
+> at 12 villains, Midtown Bank Robbery at 8 bystanders), and those are
+> already folded into `menace`. Driving music off `escapedVillains / 8`
+> would fill the meter toward a threshold that no longer ends anything.
+> `UIState.progress.escapedVillains` remains projected, but as a statistic —
+> not a loss clock.
 
-When the active scheme's twist limit isn't known to the client, treat
-each resolved twist as a discrete escalation step and any
-`schemeLoss >= 1` (or `escapedVillains >= 8`) as terminal — resolve
-straight to the win/loss sting and stop the loop.
+#### The tiers
+
+The band boundaries are a **shared contract** locked once for both the
+score and the visual meter, so "critical" means the same thing in both:
+
+| `menace` | `menaceTier` |
+|---|---|
+| `< 0.34` | `calm` |
+| `>= 0.34` and `< 0.67` | `rising` |
+| `>= 0.67` | `critical` |
+
+A scheme with no fixed denominator (Super Hero Civil War's hero deck,
+Legacy Virus's wound stack — both "the pile ran out" losses) omits
+`schemeLossThreshold` and reports `menace` against the twist-count doom
+clock those schemes already run on. `schemeLoss >= 1` remains terminal:
+resolve straight to the win/loss sting and stop the loop.
 
 #### Technique — start horizontal, upgrade to vertical later
 

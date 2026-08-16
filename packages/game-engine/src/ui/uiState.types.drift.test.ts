@@ -69,6 +69,78 @@ describe('UIState type drift (WP-067)', () => {
     ]);
   });
 
+  it('UIProgressCounters menace field names are pinned on a BUILT state (WP-557)', () => {
+    // why: the assertion above pins a hand-written literal, and the four
+    // WP-557 menace fields are OPTIONAL — an optional add satisfies both the
+    // `satisfies` check and that keyset, so the new names would ship with NO
+    // drift protection at all. This pin closes that gap by asserting the keys
+    // of a REAL built projection.
+    //
+    // why: it is deliberately a runtime assertion rather than a `satisfies`.
+    // `packages/game-engine/tsconfig.json` excludes `src/**/*.test.ts` and the
+    // package has no separate typecheck script, so NO `satisfies` in any engine
+    // test file is ever compiled — the type-level pins in this file are
+    // documentation, and only runtime assertions actually gate.
+    const setData = {
+      abbr: 'core',
+      schemes: [{ slug: 's' }],
+      masterminds: [{ slug: 'mm', cards: [{ slug: 'mm-base', tactic: false }] }],
+      henchmen: [{ slug: 'h' }],
+      villains: [{ slug: 'v', cards: [{ slug: 'v1', vAttack: '4' }] }],
+      heroes: [
+        {
+          slug: 'hero-x',
+          cards: [
+            { slug: 'card-c1', rarityLabel: 'Common 1' },
+            { slug: 'card-c2', rarityLabel: 'Common 2' },
+            { slug: 'card-uncommon', rarityLabel: 'Uncommon' },
+            { slug: 'card-rare', rarityLabel: 'Rare' },
+          ],
+        },
+      ],
+    };
+    const registry = {
+      listCards: () => [],
+      listSets: () => [{ abbr: 'core' }],
+      getSet: (abbr: string) => (abbr === 'core' ? setData : undefined),
+    };
+    const config: MatchSetupConfig = {
+      schemeId: 'core/s',
+      mastermindId: 'core/mm',
+      villainGroupIds: ['core/v'],
+      henchmanGroupIds: ['core/h'],
+      heroDeckIds: ['core/hero-x'],
+      bystandersCount: 1,
+      woundsCount: 1,
+      officersCount: 1,
+      sidekicksCount: 1,
+    };
+    const gameState = buildInitialGameState(
+      config,
+      registry,
+      makeMockCtx({ numPlayers: 1 }),
+    );
+
+    const result = buildUIState(gameState, {
+      phase: 'play' as string | null,
+      turn: 1,
+      currentPlayer: '0',
+    });
+
+    // why: `core/s` is unconfigured, so it takes the MVP twist fallback and
+    // DOES carry a denominator — all six keys are present. A `pile-depleted`
+    // scheme omits `schemeLossThreshold` by design (D-24366 §5), which is
+    // asserted in schemeLossProgress.test.ts instead.
+    assert.deepStrictEqual(Object.keys(result.progress).sort(), [
+      'bystandersRescued',
+      'escapedVillains',
+      'menace',
+      'menaceTier',
+      'schemeLossProgress',
+      'schemeLossThreshold',
+    ]);
+  });
+
   it('UIParBreakdown field names mirror WP-048 ScoreBreakdown verbatim', () => {
     // why: literal fixture spelled exactly as the contract requires. Any
     // rename of `rawScore`, `parScore`, `finalScore`, or
