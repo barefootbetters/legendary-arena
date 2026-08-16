@@ -90,6 +90,9 @@ const STATUS_FILTERS: readonly (LedgerStatus | 'all')[] = [
   'condition',
   'unmarked',
   'deferred',
+  // why (WP-559 / D-24368): implemented by a subsystem other than the [effect:X]
+  // pipeline — done, not a TODO. Sits beside `executable` at the resolved end.
+  'subsystem',
   'executable',
   'all',
 ];
@@ -141,6 +144,10 @@ const STATUS_FILTERS: readonly (LedgerStatus | 'all')[] = [
         <div class="count-chip cov-unmarked">
           <span class="count-num">{{ summary.byStatus.unmarked }}</span
           ><span>Unmarked</span>
+        </div>
+        <div class="count-chip cov-subsystem">
+          <span class="count-num">{{ summary.byStatus.subsystem ?? 0 }}</span
+          ><span>Subsystem</span>
         </div>
       </div>
     </section>
@@ -472,6 +479,12 @@ const STATUS_FILTERS: readonly (LedgerStatus | 'all')[] = [
 }
 .cov-unmarked {
   color: var(--p-amber-500, #f59e0b);
+}
+
+/* why (WP-559): subsystem is a RESOLVED state (implemented elsewhere), so it reads
+   green-adjacent like executable rather than amber/red like the TODO buckets. */
+.cov-subsystem {
+  color: var(--p-teal-500, #14b8a6);
 }
 .cov-deferred {
   color: var(--p-blue-500, #3b82f6);

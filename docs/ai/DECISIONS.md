@@ -36991,3 +36991,56 @@ Locked:
    D-24026 prerequisite alongside the deploy.
 
 _Drafted 2026-08-16; not yet landed. Flips to Active at WP-560 execution (EC-595)._
+
+### D-24368 — The `subsystem` coverage status is a two-ledger contract, with different key granularity per ledger
+
+**Context.** WP-548 / D-24357 introduced the `subsystem` coverage status —
+"implemented by something other than the `[effect:X]` pipeline; done, not a
+TODO" — and wired it into `scripts/villain-mechanic-ledger.mjs` only. The hero
+ledger kept classifying such mechanics as `unsupported`, so
+`dashboard.legendary-arena.com/coverage` reported shipped work as unbuilt.
+Observed live 2026-08-16: `core/spider-man` listed `reveal-reorder` as
+Unsupported with WP / Decision / Handler blank, eight weeks after WP-479 /
+D-24286 shipped it. `reveal-reorder` is a bare modifier marker with no
+`[effect:X]` tag, so `statusForMechanic` fell through every bucket to its
+terminal `return 'unsupported'`.
+
+**Decision 1 — the status spans both ledgers.** `subsystem` is not a villain
+concept. Any card implemented by a subsystem outside its type's effect pipeline
+carries it, and `EFFECT_INDEX_STATUSES` (already shared by both committed
+ledgers) needs no widening.
+
+**Decision 2 — granularity differs by ledger, deliberately.**
+
+| Ledger | Allowlist key | Replaces |
+|---|---|---|
+| villain | card ext_id | a whole-card would-be-`(unmarked)` row |
+| hero | (card ext_id × mechanic) | that pair's would-be-`unsupported` row |
+
+The villain ledger emits exactly one row for an unmarked card, so a card-level
+decision cannot misclassify anything. The hero ledger emits one row **per
+mechanic**, and a single card legitimately mixes both cases: `core/spider-man`
+carries `reveal-reorder` (implemented) and `reveal-count` (genuinely not). A
+card-keyed hero entry would clear both and **hide a real TODO** — the precise
+failure this status exists to prevent. Copying the villain shape was rejected.
+
+**Decision 3 — a hero subsystem row keeps its real mechanic name.** The villain
+row puts the subsystem label in its `mechanic` column; the hero row must not,
+because that name is the join key for the effect-implementation index and the
+`/coverage` by-mechanic table. The label goes in `handler` instead, which is
+honest: no `HERO_EFFECT_HANDLERS` key runs it. A card may hold a `subsystem` row
+and an `unsupported` row simultaneously; that is the correct representation.
+
+**Invariant.** `summary.totalRows` MUST equal the sum of `summary.byStatus`. The
+draft scaffold caught this breaking silently: the initializer literal lacked a
+`subsystem` key, so `byStatus[row.status] += 1` wrote to `undefined` and the JSON
+serialised `"subsystem": null` — **while `ledger:heroes:check` still passed**,
+because freshness only compares the regenerated file to the committed one. A
+status widening must extend the accumulator, not only the classifier.
+
+**Regeneration set.** A hero-ledger change stales
+`data/metadata/effect-implementation-index.json` (`effect-index:check` exit 1).
+Both writers run together or `main` reddens for every concurrent session.
+`ledger:villains` and `mechanics:metadata` are unaffected.
+
+_Active 2026-08-16 — landed at WP-559 execution (EC-594). Hero ledger: executable 235 / deferred 0 / condition 5 / unsupported 367 / unmarked 43 / **subsystem 1**; totalRows 651 = sum(byStatus). `villain-mechanic-ledger.mjs` byte-identical and the allowlist's `cards` block additions-only (6 insertions, 0 deletions). `User-Visible Surface = dashboard.legendary-arena.com/coverage` — **D-24026 live-verify operator-pending**._

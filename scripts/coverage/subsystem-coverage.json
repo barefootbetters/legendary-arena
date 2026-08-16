@@ -7,5 +7,11 @@
     "ssw1-villain-deadlands-the-zombie-venom": { "subsystem": "setup:require-to-defeat", "wp": "WP-292", "decision": "D-24076" },
     "core-villain-hydra-supreme-hydra":        { "subsystem": "scoring:dynamic-vp", "wp": "WP-546", "decision": "D-24355" },
     "core-villain-masters-of-evil-ultron":     { "subsystem": "scoring:dynamic-vp", "wp": "WP-553", "decision": "D-24362" }
+  },
+  "_heroesComment": "Hero cards implemented by a subsystem OTHER than the [effect:X] hero-ability pipeline. Keyed (card ext_id -> mechanic), UNLIKE the card-keyed `cards` block above: the villain ledger emits ONE would-be-'(unmarked)' row per card, so a card-level decision is sound there, but the hero ledger emits one row PER MECHANIC and a single card legitimately mixes both cases — core/spider-man's reveal-reorder is implemented (WP-479 / D-24286) while its reveal-count genuinely is not. A card-keyed hero entry would clear both and hide a real TODO. The hero row keeps its REAL mechanic name (the join key for the effect-implementation index and the /coverage by-mechanic table) and takes wp / decision / handler from the entry. Curated: a pair joins ONLY when its subsystem implementation is merged. See D-24368.",
+  "heroes": {
+    "core/spider-man": {
+      "reveal-reorder": { "subsystem": "setup:reveal-reorder-modifier", "wp": "WP-479", "decision": "D-24286" }
+    }
   }
 }

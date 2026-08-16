@@ -13,9 +13,9 @@
       "executable": 371,
       "deferred": 0,
       "condition": 5,
-      "unsupported": 369,
+      "unsupported": 368,
       "unmarked": 1079,
-      "subsystem": 2
+      "subsystem": 3
     }
   },
   "entries": [
@@ -6926,10 +6926,10 @@
       "set": "core",
       "scope": "hero",
       "mechanic": "reveal-reorder",
-      "status": "unsupported",
-      "handler": "",
-      "wp": "",
-      "decision": "",
+      "status": "subsystem",
+      "handler": "setup:reveal-reorder-modifier",
+      "wp": "WP-479",
+      "decision": "D-24286",
       "designs": [
         {
           "slug": "the-amazing-spider-man",
