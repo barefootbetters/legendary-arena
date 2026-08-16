@@ -93,7 +93,11 @@
   ],
   "progress": {
     "bystandersRescued": 9,
-    "escapedVillains": 2
+    "escapedVillains": 2,
+    "menace": 0.75,
+    "menaceTier": "critical",
+    "schemeLossProgress": 6,
+    "schemeLossThreshold": 8
   },
   "decks": {
     "villainDeckCount": 2,

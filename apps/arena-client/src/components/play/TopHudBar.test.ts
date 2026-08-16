@@ -71,7 +71,6 @@ describe('TopHudBar (WP-129)', () => {
       props: {
         snapshot: fixture(),
         mastermindTacticsTotal: 4,
-        schemeTwistThreshold: 8,
       },
     });
     assert.equal(wrapper.find('[data-testid="play-hud-turn"]').text(), 'Turn 4');
@@ -85,10 +84,12 @@ describe('TopHudBar (WP-129)', () => {
       props: {
         snapshot: fixture(),
         mastermindTacticsTotal: 4,
-        schemeTwistThreshold: 8,
       },
     });
-    assert.equal(wrapper.find('[data-testid="play-hud-twists"]').text(), 'Twists: 2/8');
+    // why: WP-558 — the twist readout is a BARE COUNT now. The old `/8` was a
+    // hardcoded prop that was wrong for most schemes; the scheme-aware ratio
+    // moved to <DangerMeter>, which labels what it actually counts.
+    assert.equal(wrapper.find('[data-testid="play-hud-twists"]').text(), 'Twists: 2');
     assert.equal(wrapper.find('[data-testid="play-hud-strikes"]').text(), 'Strikes: 1/4');
     assert.match(wrapper.find('[data-testid="play-hud-bystanders"]').text(), /Rescued: 1/);
     assert.equal(wrapper.find('[data-testid="play-hud-escaped"]').text(), 'Escaped: 3');
@@ -100,7 +101,6 @@ describe('TopHudBar (WP-129)', () => {
       props: {
         snapshot: fixture({ activePlayerId: '' }),
         mastermindTacticsTotal: 4,
-        schemeTwistThreshold: 8,
       },
     });
     assert.equal(wrapper.find('[data-testid="play-hud-active"]').text(), 'Active: pending');
@@ -112,7 +112,6 @@ describe('TopHudBar (WP-129)', () => {
       props: {
         snapshot: fixture(),
         mastermindTacticsTotal: 4,
-        schemeTwistThreshold: 8,
       },
     });
     const selectorButton = wrapper.find('[data-testid="play-hud-skin-selector-button"]');

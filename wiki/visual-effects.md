@@ -372,7 +372,7 @@ build in this order rather than attempting twenty effects at once:
 |---|---|---|
 | **1** | Required (the majority of player excitement) | Combo chains (`lastPlayEffectsFired`), `mastermindStrikeResolved`, `mastermindDefeated`, `fightResolved` |
 | **2** | Recommended | `ambushResolved`, `schemeTwistResolved`, `healResolved`, `recruitHero`, `drawCards` |
-| **3** | Future | Escape effects (blocked on `escapeResolved`; see [Edge Cases](#edge-cases)); narrative-lens variants (see [Future direction](#playstyle-lens)); ambient menace layer (`escapedVillains` / `scheme.twistCount` rising); per-target sub-effect visuals (blocked on richer `appliedEffects`) |
+| **3** | Future | Escape effects (blocked on `escapeResolved`; see [Edge Cases](#edge-cases)); narrative-lens variants (see [Future direction](#playstyle-lens)); per-target sub-effect visuals (blocked on richer `appliedEffects`) |
 
 ### The trigger surface
 
@@ -776,8 +776,9 @@ priority order is fixed and non-negotiable:
   highest-drama visual candidate — the Tier-1 screen-shake moment — and the
   overlay it drives already exists.
 - **[Scheme Twist](scheme-twist.md).** `schemeTwistResolved` is the
-  sibling darker flash; each twist also advances `scheme.twistCount`, a
-  candidate for the Tier-3 ambient-menace layer.
+  sibling darker flash; each twist also advances the engine's loss-progress
+  counter, which the shipped **Danger Meter** reads via
+  `UIState.progress.menace` (WP-558).
 - **[Villain Deck](villain-deck.md).** The reveal pipeline produces the
   Ambush, Scheme Twist, and Master Strike events and the escape count — the
   source of most visual triggers.
@@ -972,9 +973,14 @@ Explicitly out of scope for v1:
 
 - **Narrative-lens variants** (builder/destroyer re-theme) — Tier 3; design
   rationale on the [Design System Overview → playstyle modes](design-system-overview.md#playstyle-modes).
-- **Ambient menace layer** — a rising visual dread driven by
-  `escapedVillains` / `scheme.twistCount` (the visual analog of the audio
-  danger meter).
+> **Shipped (WP-558).** The ambient menace layer left this list: the
+> **Danger Meter** now renders on the play surface, driven by the engine's
+> projected `UIState.progress.menace` / `menaceTier` (WP-557 / D-24366) —
+> **not** by `escapedVillains` / `scheme.twistCount`, which were never a
+> correct loss signal and are wrong outright since **D-24317** retired the
+> generic escape loss. Unlike every other effect on this page, the meter is
+> **information, not decoration**: it always renders, and Effect-Intensity /
+> `prefers-reduced-motion` gate only its animation (D-24367 §1).
 - **Per-target sub-effect fidelity** — blocked on a richer `appliedEffects`
   payload (target / count).
 
