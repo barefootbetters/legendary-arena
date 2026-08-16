@@ -317,8 +317,20 @@ not the gameplay render path and not replay-bearing. Pure logic
 `functions/lib/**` (unit-tested); the middleware is thin fetch + rewrite
 wiring. It reads only already-public API responses over HTTP.
 
+**VFX presentation subsurface (D-24365):** `apps/arena-client/src/vfx/` (and
+`components/play/VfxOverlay.vue`) is the WP-556 visual-effects layer (combo
+flash + synergy call-out). It inherits all `client-app` import prohibitions but
+is **exempt from the browser-determinism constraints** — it MAY use
+`Math.random()` (via `canvas-confetti`) and `requestAnimationFrame` /
+time-based animation, because it is non-replay-bearing presentation off the
+gameplay render path: it reads only the projected combo signal
+(`UIState.game.lastPlayEffectsFired`), never `G`/`ctx`, and is absent from the
+determinism hash (replays / sims render no VFX). Mirrors the `functions/`
+edge-subsurface exemption above.
+
 **Directories:** `apps/arena-client/` (D-6511); `apps/arena-client/functions/`
-edge subsurface (D-24085)
+edge subsurface (D-24085); `apps/arena-client/src/vfx/` VFX presentation
+subsurface (D-24365)
 
 ---
 

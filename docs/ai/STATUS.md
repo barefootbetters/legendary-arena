@@ -7,6 +7,40 @@
 
 ## Current State
 
+### WP-556 — Arena-Client VFX Foundation + Combo Flash + Synergy Call-out — DONE (2026-08-16)
+
+The **first visual-effects WP** — the arena client's VFX foundation plus its
+first consumers, the flagship **combo flash** and the escalating **synergy
+call-out** (`Combo! → Team-Up! → Unstoppable! → LEGENDARY!`). Both ride WP-409's
+`UIState.game.lastPlayEffectsFired` scalar through the **shipped**
+`comboTierForCount` (D-24228 / D-24246) — one mapping, now three renderers
+(audio sting + visual flash + on-screen word), so the flash and the sting peak
+together. Mirrors the audio arc (WP-412 / 413 / 425).
+
+Delivered: a single full-bleed `VfxOverlay` (one canvas, `canvas-confetti@^1.9.3`
+MIT lazy-loaded off first-paint as its own chunk), a `useComboVfx` scalar-change
+consumer (mirror of `useComboCue`), and — the day-one accessibility gate the VFX
+Trigger Contract mandates — a persisted **unified Effect-Intensity** control
+(`off` / `low` / `full`) in `AudioControls.vue` whose "off" master silences the
+whole feel layer (blank visuals AND mute audio) plus OS `prefers-reduced-motion`
+honouring (`shouldRender('shake'|'particles'|'word')`; the word survives
+reduced-motion as a plain fade). Performance budget held (60 FPS / ≤200 particles
+/ ≤5 bursts / ≤500 ms impact / one canvas; `transform`/`opacity` only).
+
+**Pure client presentation** — reads `UIState` only, never writes `G`/`ctx`,
+**zero engine/determinism/replay footprint** (D-24365, with a determinism
+exemption for the non-replay-bearing `src/vfx/` layer mirroring the `functions/`
+precedent D-24085). `pnpm --filter arena-client typecheck` 0; arena-client suite
+**1279/0** (+16); `pnpm -r build` 0; App-only diff (no `packages/game-engine`
+file). The overlay mounts once at `PlayViewport` beside `AudioControls` (the
+fixed-overlay precedent). Follow-ups: Tier-1 notable-event effects, Surface-4
+endgame finales, faction battle cries (licensing-gated D-24259).
+
+**`User-Visible Surface = play.legendary-arena.com`** — **D-24026 live-verify
+PENDING** (post-deploy: drive a real synergy chain and confirm the flash scales
+small→legendary with the word at `medium`+, Effect-Intensity off blanks + mutes,
+reduced-motion keeps the word).
+
 ### WP-555 — `getLegalMoves` Discard-to-Play Payability — DONE (2026-08-15)
 
 The **third** instance of the `getLegalMoves` ↔ move-guard divergence class, and
