@@ -723,6 +723,7 @@ the range clearly separate from game-engine WP-backed ECs.
 | EC-591 | WP-556    | App (arena-client)             | VFX foundation + combo flash + synergy call-out       | Pending |
 | EC-592 | WP-557    | Game Engine                    | Menace signal: scheme loss progress → UIState         | Done    |
 | EC-593 | WP-558    | App (arena-client)             | Danger meter on the play surface + twist-denominator fix | Done    |
+| EC-595 | WP-560    | App (arena-client)             | Adaptive danger-meter music channel (separate music engine) | Pending |
 ---
 
 ## Rules
