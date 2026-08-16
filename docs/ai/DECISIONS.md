@@ -36900,3 +36900,49 @@ the same numbers. Locked:
    out of scope.
 
 _Active 2026-08-16 — landed at WP-557 execution (EC-592). game-engine 2667 → 2700 tests / 0 fail; the `schemeHandlers.ts` extraction proven behavior-identical (its suite untouched and green); both sentinel oracles byte-unchanged (`PRE_WP080_HASH` `ec64506a`, sentinel `finalStateHash` `62ba4e58…abd7`) with no re-pin, confirming §2; `apps/arena-client` diff empty, confirming §6. The §5 `pile-depleted` fallback and the §1 four-rung order are each pinned rung-by-rung in `schemeLossProgress.test.ts`._
+
+### D-24367 — The Danger Meter is information, not decoration: the play-surface menace readout always renders, and only its animation is effects-gated
+
+WP-558 renders WP-557's menace signal on `play.legendary-arena.com` and, in
+the same change, removes the hardcoded twist denominator that has been wrong
+in every match. Locked:
+
+1. **The meter always renders; only its ANIMATION is gated.** WP-556's
+   persisted Effect-Intensity control and `prefers-reduced-motion` suppress
+   the critical-tier pulse and the width/colour transition — never the bar,
+   the numbers, or the text. The `VfxKind` union
+   (`'shake' | 'particles' | 'word'`) is deliberately **not** extended and
+   `shouldRender(...)` is **not** consulted for the readout itself.
+   **Why:** loss progress is game state, not polish. Routing the meter's
+   presence through the effects toggle would mean a player who turns effects
+   down — most often for motion sensitivity — silently loses access to how
+   close the villains are to winning. The confetti may go; the scoreboard may
+   not.
+2. **No client-side re-derivation.** The component reads `menace`,
+   `menaceTier`, `schemeLossProgress` and `schemeLossThreshold` and computes
+   nothing beyond presentation (a clamped percentage and a class name). It
+   never re-bands a tier and never resolves a threshold — the D-24366
+   resolution order stays engine-side, which is the entire reason WP-557
+   existed. Enforced by an acceptance criterion that feeds a deliberately
+   inconsistent `menace: 0.9` / `menaceTier: 'calm'` pair and requires the
+   **calm** treatment to render.
+3. **The hardcoded `:scheme-twist-threshold="8"` prop is removed** from
+   `TopHudBar` and from **both** parents (`PlayDesktop.vue`,
+   `PlayMobile.vue`). It renders `Twists: N/8` in every match today, which is
+   wrong for the unconfigured fallback (**7**), for Super Hero Civil War
+   (8 at 2–3 players but **5** at 4–5), and for every scheme whose
+   `resourceLossCondition` suppresses the twist clock entirely (D-24315).
+   Removing it from only one parent would leave desktop and mobile rendering
+   different numbers, so a grep gate pins zero remaining references.
+4. **No-denominator rendering.** A `pile-depleted` scheme omits
+   `schemeLossThreshold` (D-24366 §5), so the readout shows the bare progress
+   count with **no** ratio and the meter renders from `menace` alone. It must
+   never default to `8`, `7`, or any other invented denominator — a defaulted
+   denominator is the defect this packet removes, reintroduced by the back
+   door.
+5. **An absent signal renders nothing.** When `menace` itself is missing (an
+   older fixture, a recorded replay), the meter does not render at all rather
+   than showing a zero-width "safe" bar. An absent measurement is not a claim
+   of safety, and a false calm is worse than no meter.
+
+_Drafted 2026-08-16; not yet landed. Flips to Active at WP-558 execution (EC-593)._
