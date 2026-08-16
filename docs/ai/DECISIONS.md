@@ -36946,3 +36946,48 @@ in every match. Locked:
    of safety, and a false calm is worse than no meter.
 
 _Active 2026-08-16 — landed at WP-558 execution (EC-593). arena-client 1279 → 1302 tests / 0 fail, typecheck 0. §1 was verified in a real browser, not only jsdom: at Effect-Intensity `off` the meter still rendered with its `2/8` ratio and no pulse. §3 confirmed by a grep gate returning zero `scheme-twist-threshold` matches. §4 and §5 are each pinned by a unit test (bare count; renders nothing when absent). One clarification from execution: the **"Twists:"** label became a bare count rather than being repointed at `schemeLossThreshold` — for a `resourceLossCondition` scheme that threshold counts a resource, not twists, so the scheme-aware ratio lives on the meter under a label that matches what it counts._
+
+### D-24369 — The adaptive danger score gets its own music engine, and is decoration where the meter is information
+
+WP-560 completes the danger-meter arc by making the menace signal audible.
+Locked:
+
+1. **A separate music engine, not a widened SFX engine.** The shipped
+   `audio/audioEngine.ts` is strictly fire-and-forget: its `HowlLike`
+   interface exposes exactly `play()` and `volume()`, and a grep of
+   `apps/arena-client/src/audio` for `loop`, `stop` or `fade` returns
+   nothing. Every cue shipped to date (WP-412 events, WP-413 / WP-425 combo
+   stings, WP-421 move SFX) is a one-shot. Music needs looping, crossfading
+   and stopping, so it gets `audio/musicEngine.ts` alongside — **not** three
+   new methods on `HowlLike` that every one-shot call site would carry
+   forever for no one-shot benefit.
+2. **Horizontal re-sequencing, not vertical layering.** The score crossfades
+   between three independently-composed loops rather than fading synchronized
+   stems. This is not a preference: stems must be recorded in sync, and three
+   independent CC0 tracks cannot be turned into stems. Vertical layering
+   stays available if a commissioned score with stems is ever produced.
+3. **Tier-driven, never re-banded.** The channel reads
+   `UIState.progress.menaceTier` and switches on tier **change**; it never
+   reads the `menace` scalar to derive a band and never re-declares
+   boundaries. This is **D-24367 §2 inherited** — with two consumers of the
+   same contract, a second band table is exactly how the meter and the score
+   would come to disagree about "critical".
+4. **Music is decoration; the meter is information.** D-24367 §1 locked the
+   Danger Meter as always-rendering because loss progress is game state a
+   player would lose by turning effects off. A soundtrack carries no such
+   state. So music takes the opposite disposition: it **defaults on**, at a
+   volume **below** the SFX default (a loop must not drown the cues), with
+   its **own** persisted toggle, and the **master mute silences it**. The two
+   rules read as contradictory side by side and are deliberately so — the
+   distinction is whether the channel carries information a player needs.
+5. **The loop stops at `gameOver`** rather than playing under the endgame
+   panel. The win / loss / tie resolution sting is a separate Surface-4
+   packet, so the correct behaviour today is silence, not a track that
+   outlives the match.
+6. **Assets live on R2, never in git.** Three CC0 loopable tracks under a new
+   `audio/music/` prefix, uploaded with the existing content-driven
+   `scripts/upload-move-sfx-to-r2.mjs`. Tests inject a mock music-Howl so the
+   suite is asset-independent, and the operator upload is a **second**
+   D-24026 prerequisite alongside the deploy.
+
+_Drafted 2026-08-16; not yet landed. Flips to Active at WP-560 execution (EC-595)._
