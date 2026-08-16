@@ -7,6 +7,49 @@
 
 ## Current State
 
+### WP-557 — Menace Signal: Scheme Loss Progress → UIState — DONE (2026-08-16)
+
+The engine half of the ewiki [Sound Effects](https://ewiki.legendary-arena.com/sound-effects/)
+**danger meter**. `UIState.progress` now carries `menace` (a normalized 0..1
+scalar), `menaceTier` (`calm` / `rising` / `critical`), `schemeLossProgress`,
+and `schemeLossThreshold`, so the two planned consumers — the danger-meter HUD
+and the adaptive music channel — read **one** engine-side derivation instead of
+each re-deriving the loss rules.
+
+**Why it was needed:** the client could not compute this. A grep of
+`packages/game-engine/src/ui/` for `twistLimit|schemeLoss|ESCAPE_LIMIT` returned
+zero matches — only the *numerators* were projected. Meanwhile
+`PlayDesktop.vue` / `PlayMobile.vue` hardcode `:scheme-twist-threshold="8"`, so
+every match renders `Twists: N/8`: wrong for the unconfigured fallback (**7**),
+for Super Hero Civil War (8 at 2–3p but **5** at 4–5p), and for every scheme
+whose `resourceLossCondition` suppresses the twist clock entirely.
+
+**What shipped:** a new `rules/schemeLossProgress.ts` owning the D-24366
+four-rung denominator order, **extracted** from its inline home in
+`schemeHandlers.ts` (which now calls it) so one copy of the loss rule exists.
+The numerator reuses the already-exported escaped-pile counters and reads
+`G.counters.schemeTwistCount` — the value the loss check actually compares —
+rather than `G.scheme.twistPile.length`.
+
+**Baselines:** game-engine **2667 → 2700 / 0** (+33 tests, 632 → 640 suites);
+`pnpm -r build` 0; `pnpm -r --no-bail test` no new failures;
+`pnpm --filter arena-client typecheck` 0 with an **empty** arena-client diff.
+Both sentinel oracles byte-unchanged (`PRE_WP080_HASH` `ec64506a`, sentinel
+`finalStateHash` `62ba4e58…abd7`) — projection-only, **no re-pin**.
+
+**`User-Visible Surface = none — infrastructure`, so the D-24026 gate inverts:
+there is no user-observable change to verify.** Nothing on
+`play.legendary-arena.com` looks or sounds different — this packet ships the
+signal, not a consumer. The observable change arrives with the danger-meter HUD
+packet, which will also fix the hardcoded `/8` readout.
+
+**Follow-ups named by the 01.6 post-mortem:** (1) engine test files are **never
+typechecked** (`tsconfig.json` excludes `src/**/*.test.ts`, no `typecheck`
+script), so every `satisfies`-based drift pin in the engine suite is
+documentation only — a small WP should add a test-inclusive typecheck to CI;
+(2) the hardcoded `/8` HUD fix; (3) the two coexisting twist-count sources
+deserve reconciliation.
+
 ### WP-556 — Arena-Client VFX Foundation + Combo Flash + Synergy Call-out — DONE (2026-08-16)
 
 The **first visual-effects WP** — the arena client's VFX foundation plus its
