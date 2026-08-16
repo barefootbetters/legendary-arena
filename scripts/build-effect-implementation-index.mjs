@@ -71,11 +71,13 @@ const INDEX_SCOPE = 'all';
 // published contract shape stable. See resolveGeneratedAt for the resolution chain.
 const GENERATED_AT_SENTINEL = '1970-01-01T00:00:00.000Z';
 
-// why: the byStatus summary emits these five keys in this fixed order, a zero-count
+// why: the byStatus summary emits these six keys in this fixed order, a zero-count
 // status included as 0, so the published shape is stable across card-data changes
 // (a status appearing or vanishing never adds or drops a key). This matches
-// the EffectIndexStatus closed union in packages/registry/src/schema.ts.
-const STATUS_ORDER = ['executable', 'deferred', 'condition', 'unsupported', 'unmarked'];
+// the EffectIndexStatus closed union in packages/registry/src/schema.ts. `subsystem`
+// (WP-548 / D-24357) is the villain ledger's "covered by a non-[effect:X] subsystem"
+// status, joined through verbatim like every other status.
+const STATUS_ORDER = ['executable', 'deferred', 'condition', 'unsupported', 'unmarked', 'subsystem'];
 
 // why: WP-507 — a tactic with no implemented resolver is honestly 'unmarked' with
 // blank handler/wp/decision (the "no handler ran" signal), never a fabricated

@@ -19,13 +19,14 @@
  *   cardName   — display name
  *   set        — set abbreviation
  *   cardType   — villain | henchman
- *   mechanic   — normalized [effect:X] token (or "(unmarked)" — see below)
- *   status     — executable | deferred | unsupported | unmarked
+ *   mechanic   — normalized [effect:X] token, "(unmarked)", or a subsystem label
+ *                (e.g. "setup:require-to-defeat") — see below
+ *   status     — executable | deferred | unsupported | unmarked | subsystem
  *   wp         — Work Packet that implemented the mechanic (from provenance map)
  *   decision   — DECISIONS.md id for it (from provenance map)
  *   handler    — where the code is (module#primitive) for executable mechanics
  *
- * Status meanings (the four kinds of state, not just done/not-done):
+ * Status meanings (the five kinds of state, not just done/not-done):
  *   executable   — the villain ability parser resolved this card's [effect:X]
  *                  marker into a keyword/descriptor (recognition ⇒ executability
  *                  for villains — every recognized effect is executor-handled;
@@ -40,6 +41,15 @@
  *                  henchman onAmbush hooks are intentionally not emitted in v1,
  *                  D-18507) — in play it does nothing
  *   unmarked     — the card has ability text but no [effect:X] tag (a DATA todo)
+ *   subsystem    — the card has ability text but no [effect:X] tag, yet it IS
+ *                  implemented by a subsystem OTHER than the villain-ability
+ *                  pipeline (setup:require-to-defeat, scoring:dynamic-vp) — DONE,
+ *                  not a TODO. Declared in the curated subsystem-coverage allowlist
+ *                  (scripts/coverage/subsystem-coverage.json); the honest "covered
+ *                  elsewhere" signal, distinct from `unmarked` (todo) and `deferred`
+ *                  (recognized-but-unexecuted). The subsystem status replaces a
+ *                  would-be-`unmarked` classification ONLY — a card that also carries
+ *                  an [effect:X] ability stays `executable` from that marker.
  *
  * Sources of truth (no duplicated vocabulary):
  *   - buildVillainAbilityHooks  — the villain ability parser; the ledger reads
@@ -48,6 +58,8 @@
  *     LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR — the effect vocabulary + the
  *     keyword→primitive map (for the handler anchor), imported from the dist
  *   - provenance map — scripts/coverage/mechanic-provenance.json (wp/decision)
+ *   - subsystem-coverage allowlist — scripts/coverage/subsystem-coverage.json
+ *     (curated: which would-be-`unmarked` cards are covered by another subsystem)
  *
  * Modes:
  *   (default)  regenerate docs/ai/coverage/villain-mechanic-ledger.{json,csv}
@@ -85,6 +97,7 @@ const REPO_ROOT = dirname(SCRIPT_DIRECTORY);
 const METADATA_DIRECTORY = join(REPO_ROOT, 'data', 'metadata');
 const CARDS_DIRECTORY = join(REPO_ROOT, 'data', 'cards');
 const PROVENANCE_PATH = join(REPO_ROOT, 'scripts', 'coverage', 'mechanic-provenance.json');
+const SUBSYSTEM_COVERAGE_PATH = join(REPO_ROOT, 'scripts', 'coverage', 'subsystem-coverage.json');
 const OUTPUT_DIRECTORY = join(REPO_ROOT, 'docs', 'ai', 'coverage');
 const LEDGER_JSON_PATH = join(OUTPUT_DIRECTORY, 'villain-mechanic-ledger.json');
 const LEDGER_CSV_PATH = join(OUTPUT_DIRECTORY, 'villain-mechanic-ledger.csv');
@@ -325,9 +338,41 @@ function buildRow(extId, cardName, setAbbr, cardType, mechanic, status, provenan
 }
 
 /**
+ * Builds the ledger row for a card whose implementation lives in a subsystem
+ * OTHER than the `[effect:X]` villain-ability pipeline (setup:require-to-defeat,
+ * scoring:dynamic-vp). Such a card has ability text but no `[effect:X]` marker,
+ * so it would otherwise fall to `(unmarked)` — a false TODO. The allowlist entry
+ * supplies the subsystem label (the row's `mechanic`) and its wp/decision
+ * provenance. `handler` stays blank: no villain-ability handler runs it (its code
+ * lives in the named subsystem, not the villain executor).
+ *
+ * @param {string} extId - the per-card engine id.
+ * @param {string} cardName - the card display name.
+ * @param {string} setAbbr - the set abbreviation.
+ * @param {'villain'|'henchman'} cardType - the card type for this row.
+ * @param {{subsystem: string, wp?: string, decision?: string}} entry - the allowlist entry.
+ * @returns {object} the ledger row.
+ */
+function buildSubsystemRow(extId, cardName, setAbbr, cardType, entry) {
+  return {
+    extId,
+    cardName,
+    set: setAbbr,
+    cardType,
+    mechanic: entry.subsystem,
+    status: 'subsystem',
+    wp: entry.wp ?? '',
+    decision: entry.decision ?? '',
+    handler: '',
+  };
+}
+
+/**
  * Produces the ledger rows for a single card from its raw effect tokens and its
  * by-hook resolution. A card with ability text but no `[effect:X]` token yields
- * a single `unmarked` row; otherwise one row per distinct mechanic name.
+ * a single `unmarked` row — or, when the card is in the subsystem-coverage
+ * allowlist, a single `subsystem` row instead; otherwise one row per distinct
+ * mechanic name.
  *
  * @param {string} extId - the per-card engine id.
  * @param {string} cardName - the card display name.
@@ -336,11 +381,22 @@ function buildRow(extId, cardName, setAbbr, cardType, mechanic, status, provenan
  * @param {string[]} abilities - the card's ability text lines.
  * @param {CardResolution|undefined} resolution - the card's by-hook resolution.
  * @param {Record<string, object>} provenance - the mechanic provenance map.
+ * @param {Record<string, object>} subsystemCoverage - the subsystem-coverage allowlist.
  * @returns {object[]} the card's ledger rows.
  */
-function buildCardRows(extId, cardName, setAbbr, cardType, abilities, resolution, provenance) {
+function buildCardRows(extId, cardName, setAbbr, cardType, abilities, resolution, provenance, subsystemCoverage) {
   const rawTokens = extractEffectTokens(abilities);
   if (rawTokens.length === 0) {
+    // why: a card with ability text but no `[effect:X]` marker is a would-be-`unmarked`
+    // row (a DATA todo). If it is in the subsystem-coverage allowlist, it is instead
+    // implemented by a non-`[effect:X]` subsystem (setup:require-to-defeat /
+    // scoring:dynamic-vp) — DONE, not a TODO — so it carries the honest `subsystem`
+    // status (contrast `unmarked`=todo / `deferred`=recognized-but-unexecuted). The
+    // allowlist reflects MERGED coverage only; a card joins it when its subsystem lands.
+    const subsystemEntry = subsystemCoverage[extId];
+    if (subsystemEntry !== undefined) {
+      return [buildSubsystemRow(extId, cardName, setAbbr, cardType, subsystemEntry)];
+    }
     return [buildRow(extId, cardName, setAbbr, cardType, UNMARKED_MECHANIC, 'unmarked', provenance)];
   }
   const mechanicNames = new Set();
@@ -372,9 +428,10 @@ function buildCardRows(extId, cardName, setAbbr, cardType, abilities, resolution
  *
  * @param {object} registry - a CardRegistry from createRegistryFromLocalFiles.
  * @param {Record<string, object>} provenance - the mechanic provenance map.
+ * @param {Record<string, object>} subsystemCoverage - the subsystem-coverage allowlist.
  * @returns {{rows: object[], summary: object}} sorted rows + counts.
  */
-function buildLedger(registry, provenance) {
+function buildLedger(registry, provenance, subsystemCoverage) {
   // Enumerate every villain + henchman group id (the matchConfig surface
   // buildVillainAbilityHooks consumes) so the resolution index covers the corpus.
   const villainGroupIds = [];
@@ -423,7 +480,7 @@ function buildLedger(registry, provenance) {
     // per villain card. card.extId is the GROUP-level composition id, shared by
     // every card in the group, so it cannot key a per-card row.
     const resolution = resolutionIndex.get(card.key);
-    for (const row of buildCardRows(card.key, card.name, card.setAbbr, 'villain', card.abilities, resolution, provenance)) {
+    for (const row of buildCardRows(card.key, card.name, card.setAbbr, 'villain', card.abilities, resolution, provenance, subsystemCoverage)) {
       rows.push(row);
     }
   }
@@ -434,7 +491,7 @@ function buildLedger(registry, provenance) {
     }
     const baseId = `henchman-${group.slug}`;
     const resolution = resolutionIndex.get(baseId);
-    for (const row of buildCardRows(baseId, group.name, group.setAbbr, 'henchman', group.abilities, resolution, provenance)) {
+    for (const row of buildCardRows(baseId, group.name, group.setAbbr, 'henchman', group.abilities, resolution, provenance, subsystemCoverage)) {
       rows.push(row);
     }
   }
@@ -452,7 +509,7 @@ function buildLedger(registry, provenance) {
 
   const summary = {
     totalRows: rows.length,
-    byStatus: { executable: 0, deferred: 0, unsupported: 0, unmarked: 0 },
+    byStatus: { executable: 0, deferred: 0, unsupported: 0, unmarked: 0, subsystem: 0 },
     distinctMechanics: 0,
   };
   const distinct = new Set();
@@ -553,6 +610,35 @@ function readProvenance() {
 }
 
 /**
+ * Reads the subsystem-coverage allowlist — the curated map of per-card ledger
+ * ext_id -> { subsystem, wp, decision } for cards implemented by a subsystem OTHER
+ * than the `[effect:X]` villain-ability pipeline. A missing file is a probe failure
+ * (the generator cannot classify subsystem-covered cards without it), mirroring
+ * readProvenance.
+ *
+ * @returns {Record<string, object>} the ext_id -> { subsystem, wp, decision } map.
+ */
+function readSubsystemCoverage() {
+  let text;
+  try {
+    text = readFileSync(SUBSYSTEM_COVERAGE_PATH, 'utf8');
+  } catch (error) {
+    throw new ProbeFailure(
+      `Cannot read the subsystem-coverage allowlist at ${SUBSYSTEM_COVERAGE_PATH}. It declares which would-be-unmarked cards are covered by another subsystem. Underlying error: ${error.message}`,
+    );
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch (error) {
+    throw new ProbeFailure(
+      `The subsystem-coverage allowlist at ${SUBSYSTEM_COVERAGE_PATH} is not valid JSON. Underlying error: ${error.message}`,
+    );
+  }
+  return parsed.cards ?? {};
+}
+
+/**
  * Loads the registry and dispatches the requested CLI mode.
  *
  * @returns {Promise<number>} the process exit code.
@@ -565,7 +651,8 @@ async function main() {
     cardsDir: CARDS_DIRECTORY,
   });
   const provenance = readProvenance();
-  const { rows, summary } = buildLedger(registry, provenance);
+  const subsystemCoverage = readSubsystemCoverage();
+  const { rows, summary } = buildLedger(registry, provenance, subsystemCoverage);
 
   if (rows.length === 0) {
     throw new ProbeFailure(
@@ -612,7 +699,8 @@ async function main() {
   console.log(`Villain mechanic ledger written (${summary.totalRows} rows):`);
   console.log(
     `  executable ${summary.byStatus.executable} · deferred ${summary.byStatus.deferred} · ` +
-      `unsupported ${summary.byStatus.unsupported} · unmarked ${summary.byStatus.unmarked}`,
+      `unsupported ${summary.byStatus.unsupported} · unmarked ${summary.byStatus.unmarked} · ` +
+      `subsystem ${summary.byStatus.subsystem}`,
   );
   console.log(`  ${summary.distinctMechanics} distinct mechanics`);
   console.log(`  ${LEDGER_JSON_PATH}`);

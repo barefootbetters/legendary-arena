@@ -8,6 +8,6 @@ import { LEDGER_STATUSES } from './coverage.js';
 test('LEDGER_STATUSES matches the LedgerStatus union exactly', () => {
   assert.deepEqual(
     [...LEDGER_STATUSES],
-    ['executable', 'deferred', 'condition', 'unsupported', 'unmarked'],
+    ['executable', 'deferred', 'condition', 'unsupported', 'unmarked', 'subsystem'],
   );
 });

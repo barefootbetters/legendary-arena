@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "_comment": "Cards implemented by a subsystem OTHER than the [effect:X] villain-ability pipeline (setup:require-to-defeat, scoring:dynamic-vp). The villain-mechanic-ledger emits status 'subsystem' (implemented, done — NOT a TODO) for a would-be-'(unmarked)' card listed here. The subsystem status ONLY replaces a would-be-'(unmarked)' classification: a card that also carries an [effect:X] ability (e.g. Venom / Zombie Venom carry [effect:gainWoundEachPlayer], core Ultron carries [effect:reveal-or-wound]) surfaces as 'executable' from that marker, and its entry here documents the additional subsystem coverage without overriding the effect-marker path. Curated: a card joins ONLY when its subsystem implementation is merged. Keyed by the per-card ledger ext_id {setAbbr}-villain-{groupSlug}-{cardSlug}.",
+  "cards": {
+    "core-villain-brotherhood-blob":           { "subsystem": "setup:require-to-defeat", "wp": "WP-292", "decision": "D-24076" },
+    "core-villain-spider-foes-venom":          { "subsystem": "setup:require-to-defeat", "wp": "WP-292", "decision": "D-24076" },
+    "ssw1-villain-deadlands-the-zombie-venom": { "subsystem": "setup:require-to-defeat", "wp": "WP-292", "decision": "D-24076" },
+    "core-villain-hydra-supreme-hydra":        { "subsystem": "scoring:dynamic-vp", "wp": "WP-546", "decision": "D-24355" },
+    "core-villain-masters-of-evil-ultron":     { "subsystem": "scoring:dynamic-vp", "wp": "WP-553", "decision": "D-24362" }
+  }
+}

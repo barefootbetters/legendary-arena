@@ -6,8 +6,18 @@
  * the generator in `scripts/hero-mechanic-ledger.mjs`.
  */
 
-/** The five kinds of coverage state (drift-pinned by `types/coverage.drift.test.ts`). */
-export type LedgerStatus = 'executable' | 'deferred' | 'condition' | 'unsupported' | 'unmarked';
+/**
+ * The six kinds of coverage state (drift-pinned by `types/coverage.drift.test.ts`).
+ * `subsystem` (WP-548 / D-24357) marks a card implemented by a subsystem OTHER than
+ * the `[effect:X]` pipeline (villain ledger only; no hero row carries it yet).
+ */
+export type LedgerStatus =
+  | 'executable'
+  | 'deferred'
+  | 'condition'
+  | 'unsupported'
+  | 'unmarked'
+  | 'subsystem';
 
 export const LEDGER_STATUSES: readonly LedgerStatus[] = [
   'executable',
@@ -15,6 +25,7 @@ export const LEDGER_STATUSES: readonly LedgerStatus[] = [
   'condition',
   'unsupported',
   'unmarked',
+  'subsystem',
 ];
 
 /** One card design that prints a mechanic — the WP-491 attribution unit. */

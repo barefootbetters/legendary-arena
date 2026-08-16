@@ -33,6 +33,8 @@ export function statusLabel(status: LedgerStatus): string {
       return 'Unsupported';
     case 'unmarked':
       return 'Unmarked';
+    case 'subsystem':
+      return 'Subsystem';
     default:
       return assertNever(status);
   }
@@ -44,21 +46,25 @@ function assertNever(value: never): never {
 }
 
 /**
- * Sort rank for the worklist: Executable (done) first, Unmarked (data TODO) last.
- * Lower sorts earlier. Order: Executable > Deferred > Condition > Unsupported > Unmarked.
+ * Sort rank for the worklist: done states first, Unmarked (data TODO) last. Lower
+ * sorts earlier. Order: Executable > Subsystem > Deferred > Condition > Unsupported
+ * > Unmarked. `subsystem` (done-elsewhere) ranks alongside Executable as a done
+ * state; no hero row carries it today, so the rank is inert for the hero ledger.
  */
 function statusRank(status: LedgerStatus): number {
   switch (status) {
     case 'executable':
       return 0;
-    case 'deferred':
+    case 'subsystem':
       return 1;
-    case 'condition':
+    case 'deferred':
       return 2;
-    case 'unsupported':
+    case 'condition':
       return 3;
-    case 'unmarked':
+    case 'unsupported':
       return 4;
+    case 'unmarked':
+      return 5;
     default:
       return assertNever(status);
   }
