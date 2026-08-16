@@ -36836,3 +36836,7 @@ refused. Sentinel fixture `finalStateHash` unchanged.
 _Active 2026-08-15 — landed at WP-555 execution (EC-590). game-engine 2656 → 2659 tests / 0 fail; non-vacuity proven by control-revert. With this fix the WP-453 sweep completes: **312 games, 31 distinct mechanics, 2219 observations, 13.0 s, zero non-terminating**. `User-Visible Surface = none directly — CI gate + bot-ally stall`._
 
 Protect this file.
+
+### D-24365 — Arena-client VFX foundation: pure client-side visual presentation (canvas-confetti bursts + synergy call-out) on the shared combo tiers, a unified Effect-Intensity control, day-one prefers-reduced-motion, and a determinism exemption for the non-replay-bearing `src/vfx/` layer (Drafted 2026-08-15; not yet landed — WP-556 / EC-591)
+
+Full clause in WP-556 §Reserved Decisions; lands Active at execution (with the `02-CODE-CATEGORIES.md §client-app` carve-out note). Mirrors the `functions/` determinism exemption (D-24085).
