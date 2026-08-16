@@ -36850,3 +36850,53 @@ The arena client gains its **VFX foundation** on `play.legendary-arena.com`, bui
 7. **Determinism exemption (mirrors D-24085's `functions/` precedent).** The `client-app` code-category ban on `Math.random()` / `Date.now()` / `performance.now()` does NOT apply to the `src/vfx/` presentation layer (and `VfxOverlay`): it is non-replay-bearing presentation off the gameplay render path, so it MAY depend on `canvas-confetti` (which uses `Math.random`) and MAY use `requestAnimationFrame` / time-based animation. Recorded in `02-CODE-CATEGORIES.md §client-app`. The gameplay engine's determinism is untouched.
 
 The overlay mounts once at the shared `PlayViewport.vue` root beside `<AudioControls>` (superseding the WP-556 draft's per-`PlayDesktop`/`PlayMobile` hosting — one fixed-overlay host covers both surfaces, the AudioControls precedent; see EC-591 §Execution Amendment).
+
+### D-24366 — Menace Signal: one engine-side derivation of scheme loss progress, projected to UIState for both the danger meter and the adaptive score
+
+The engine projects how close the villains are to winning as a single derived
+signal on `UIState.progress`, so the two planned consumers — the danger-meter
+HUD and the adaptive danger-meter music channel specified by the ewiki
+[Sound Effects](https://ewiki.legendary-arena.com/sound-effects/) page — read
+the same numbers. Locked:
+
+1. **Denominator resolution order**, in priority: (a) `resourceLossCondition.threshold`
+   when the scheme declares one carrying a numeric threshold (`escaped-pile-count`,
+   `escaped-converted-count`) — per **D-24315** such a scheme has the twist-count
+   proxy suppressed entirely, so its own threshold IS the denominator;
+   (b) `lossThresholdByPlayerCount[String(lobby.requiredPlayers)]`;
+   (c) `lossThreshold`; (d) `MVP_SCHEME_TWIST_THRESHOLD` (**7**). This is the
+   **D-24178** order, and it is **extracted** from its inline home in the twist
+   dispatcher (`schemeHandlers.ts:175-185`) into one shared pure helper that both
+   the dispatcher and the projection call — a second copy of the loss rule is the
+   specific defect this decision exists to prevent.
+2. **Derived projection, never state.** `menace` is computed in `uiState.build.ts`
+   from `G`; it is never a `G` field and never persisted. It therefore adds no
+   state-hash surface: both the sentinel `finalStateHash` and `PRE_WP080_HASH`
+   stay byte-unchanged and neither oracle is re-pinned. The WP-409 / WP-410
+   observability-projection precedent.
+3. **The `MenaceTier` bands are a shared contract, locked once** for BOTH
+   consumers — half-open on the lower bound: `< 0.34` → `calm`;
+   `>= 0.34 && < 0.67` → `rising`; `>= 0.67` → `critical`. This mirrors the
+   **D-24246** Combo Tier Contract precedent (one boundary set, inherited by an
+   audio and a visual renderer), so the meter and the score can never disagree
+   about what "critical" means.
+4. **`escapedVillains` is NOT a generic menace input.** **D-24317** retired the
+   generic `escapedVillains >= ESCAPE_LIMIT` loss, so escapes advance menace
+   ONLY through a scheme's own escaped-pile condition. The ewiki page's
+   `escapeProgress = escapedVillains / ESCAPE_LIMIT` formula predates that
+   decision and is corrected in lockstep — shipping it literally would fill a
+   meter toward a threshold that no longer ends the game.
+5. **The `pile-depleted` fallback.** A `pile-depleted` condition (Super Hero
+   Civil War's `heroDeck`, Legacy Virus's `wounds`) has no fixed denominator —
+   the loss is "the pile reached zero", whose starting size is not a scheme
+   constant. Such a scheme omits `schemeLossThreshold` and derives `menace` from
+   the twist count against the D-24178 proxy threshold, which is the doom clock
+   those schemes already run on. It MUST NOT invent a denominator.
+6. **Type-optional, always populated.** The four `UIProgressCounters` fields
+   (`menace`, `menaceTier`, `schemeLossProgress`, `schemeLossThreshold`) are
+   optional in the type and always populated by `buildUIState` — the WP-410
+   pattern, chosen so no hand-written `apps/arena-client` `UIState` fixture needs
+   a backfill. A required add would break `vue-tsc` in a package this WP declares
+   out of scope.
+
+_Drafted 2026-08-16; not yet landed. Flips to Active at WP-557 execution (EC-592)._
