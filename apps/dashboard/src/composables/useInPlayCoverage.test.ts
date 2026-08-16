@@ -222,8 +222,21 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // (above even the pre-WP-511 178), percentResolved 36.2 -> 31.4 (resolvedObs
   // unchanged at 59 over a LARGER, more honest denominator). The 140 high-water
   // baseline is still NOT rebuilt.
+  // 2026-08-15 (WP-453 / D-24273, re-pin): the setup shuffle became a real seeded
+  // Fisher-Yates instead of the unit-test reverse mock. buildVillainDeck sorts
+  // lexically before shuffling and virtual `scheme-twist-…` ids sort LAST, so
+  // reversing had stacked every twist on TOP of the villain deck and the backdrop
+  // lost at or near turn 0 — the sweep was measuring games that barely played. With
+  // a real shuffle the 312 games run to completion: 12 -> 31 distinct mechanics and
+  // totalObs 188 -> 2285. resolvedObs is unchanged, so percentResolved falls
+  // 31.4 -> 2.6 purely because the denominator is now honest. NOT a coverage
+  // regression: nothing became unimplemented. The prior figure was an artifact of
+  // the reverse-mock bug, and every earlier re-pin in this comment block (WP-511,
+  // WP-512) was measured under it. The 140 high-water baseline is still NOT rebuilt.
+  // Reaching this depth also required WP-554/D-24363 and WP-555/D-24364, which fixed
+  // the two getLegalMoves<->move-guard divergences the shallow sweep had hidden.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 188);
-  assert.equal(view.percentResolved.value, 31.4);
+  assert.equal(view.totalObs.value, 2285);
+  assert.equal(view.percentResolved.value, 2.6);
   assert.ok(view.remaining.value.length > 0);
 });
