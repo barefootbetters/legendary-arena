@@ -7,6 +7,48 @@
 
 ## Current State
 
+### WP-555 — `getLegalMoves` Discard-to-Play Payability — DONE (2026-08-15)
+
+The **third** instance of the `getLegalMoves` ↔ move-guard divergence class, and
+the second found in a single day once WP-554's bound made the class visible.
+
+`getLegalMoves` enumerated `playCard` for every hand card, but `playCard` refuses
+a card whose `[keyword:discard-to-play:N]` cost is unpayable (WP-383 / D-24185:
+`hand.length < cost + 1`, the `+ 1` because the played card is still in hand).
+Core Cyclops `Optic Blast` and `Determination` both carry
+`[keyword:discard-to-play:1]`, so once a hand held only that card the play was
+refused forever — the bot re-picked it, nothing mutated, the turn wedged.
+
+**The backdrop was not at fault.** This surfaced while unholding WP-453, as
+`5 of 312 swept game(s) did not reach endgame`. All five were the *same* `core`
+hero-deck board while the other 38 sets terminated, and a `MAX_TURNS` sweep of
+50/75/100/150/200 was identical — 4 CAP each at ~75–150 ms flat. Flat wall-clock
+across a 4× cap increase proves the games were wedging, not running long. So no
+backdrop swap, no relaxation of `assertAllGamesTerminated`, no `MAX_TURNS`
+change; all three would have greened the gate while leaving the defect live.
+
+The fix reads the cost from `getDiscardToPlayCost` — the single authority
+`playCard` itself uses — per the D-24363 part-1 rule. Not a new rule: the third
+application, after WP-214 (fight cost) and WP-554 (defeat requirement).
+
+game-engine **2656 → 2659 / 0 fail**; `pnpm -r build` 0; artifact current.
+Non-vacuity proven by control-revert. `coreMoves.impl.ts` and
+`scripts/runtime-observed-hollows.mjs` are both byte-identical.
+
+**`User-Visible Surface = none directly`**, so D-24026 is N/A. The live benefit
+is indirect: a bot ally whose hand came down to an unpayable discard-to-play card
+no longer re-attempts the refused play until `BOT_MAX_MOVE_STEPS_PER_TURN` faults
+the co-op turn.
+
+**Unblocks WP-453.** With this merged, that branch's sweep completes: **312
+games, 31 distinct mechanics, 2219 observations, 13.0 s, zero non-terminating**.
+
+D-24364 Active — including the standing implication that any future
+card-specific pre-commit precondition on a move must ship with its enumeration
+mirror in the same packet.
+
+---
+
 ### WP-548 — Coverage `subsystem`-Covered Status — DONE (2026-08-15)
 
 `/debug/effects` (and `/coverage`) flagged fully-implemented cards as `(unmarked)` — a false TODO — when a card is implemented by a subsystem OTHER than the `[effect:X]` villain-ability pipeline. A **new sixth coverage status `subsystem`** now marks them (done-elsewhere; distinct from `unmarked`=todo and `deferred`=recognized-but-unexecuted). Cards join via a curated allowlist `scripts/coverage/subsystem-coverage.json` (`{ "<ext_id>": { subsystem, wp, decision } }`, mirroring `mechanic-provenance.json`); `villain-mechanic-ledger.mjs` reads it and, in the would-be-`unmarked` branch only, emits a `subsystem` row instead. The status threads through `build-effect-implementation-index.mjs` `STATUS_ORDER`, the registry `EFFECT_INDEX_STATUSES` + `byStatus` Zod shape + `statusTally` (+ schema test), the dashboard `LedgerStatus` union/array (+ `coverage.drift.test.ts`), both `statusLabel` switches + `statusRank`, and `EffectsPage.vue` `STATUS_ORDER` + an `fx-subsystem` covered-state chip (teal).
