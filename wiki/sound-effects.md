@@ -29,8 +29,11 @@ source:
   - ../packages/game-engine/src/endgame/endgame.evaluate.ts
   - ../packages/game-engine/src/ui/uiState.types.ts
   - ../packages/game-engine/src/turn/turnPhases.types.ts
+  - ../apps/arena-client/src/composables/useComboCue.ts
+  - ../apps/arena-client/src/components/play/AudioControls.vue
+  - ../apps/arena-client/src/vfx/effectIntensity.ts
   - ../docs/ai/ARCHITECTURE.md
-last-reviewed: 2026-08-13
+last-reviewed: 2026-08-16
 ---
 
 # Sound Effects
@@ -87,7 +90,8 @@ suppressed flash.
 **Research** (proposal-level, no WP scoped):
 
 - [Motif playback](#motif-cues) wiring; the adaptive danger-meter score; the
-  voiced [Arena Announcer](#arena-announcer).
+  **voiced** [Arena Announcer](#arena-announcer) VO (its on-screen call-out
+  twin shipped with WP-556 — only the *voice* is still unscoped).
 
 ## Mechanics
 
@@ -326,9 +330,10 @@ play a combo cue can be written in the acting hero's team key so it
 harmonizes with the [motif](#motif-cues) that spawned it (a future layering
 pass, not part of the shipped cue). The apex `combo-legendary` sting is the
 audio half of the shared **`>= 5` LEGENDARY! tier** — the [visual call-out](visual-effects.md#synergy-callout)
-consumes the *identical* boundary, one `comboTierForCount`, two renderers
-(D-24246). The audio sting shipped with WP-425; the on-screen `LEGENDARY!`
-label is the future visual consumer of the same tier.
+consumes the *identical* boundary, one `comboTierForCount` (D-24246). The
+audio sting shipped with WP-425 **and the on-screen `LEGENDARY!` call-out
+shipped with WP-556** — so the apex boundary now drives **three** renderers
+(the sting, the flash, and the on-screen word), one mapping.
 
 Audition the four shipped tiers:
 
@@ -347,21 +352,23 @@ Audition the four shipped tiers:
 
 #### The voiced layer — announcer & faction cries (enhancement) {#combo-voice}
 
-The four stings above are the *shipped* audio. The naming layer that rides
-the same scalar — the on-screen
+The four stings above are the *shipped* audio, and the **on-screen naming
+layer that rides the same scalar now ships too** — the
 [synergy call-out ladder](visual-effects.md#synergy-callout)
-(**Combo! → Team-Up! → Unstoppable! → LEGENDARY!**) and the
-[faction battle cries](visual-effects.md#faction-cries)
-(**AVENGERS ASSEMBLE!**, **HULK SMASH!** …) — has an **optional voiced
-enhancement** whose home is this page: a house **Arena Announcer** that
-speaks the ladder, layered over (or in place of) these stings. Two
-constraints carry straight through from the
-[Arena Announcer spec below](#arena-announcer):
+(**Team-Up! → Unstoppable! → LEGENDARY!**) landed with WP-556 as on-screen
+text (the `small` tier flashes wordlessly, so the ladder's word starts at
+`medium`; the earlier **Combo!** label for `small` was retired). What is
+**not** yet built is the *voiced* layer over that text — a house **Arena
+Announcer** speaking the ladder, layered over (or in place of) these stings,
+plus the [faction battle cries](visual-effects.md#faction-cries)
+(**AVENGERS ASSEMBLE!**, **HULK SMASH!** …). Two constraints carry straight
+through from the [Arena Announcer spec below](#arena-announcer):
 
-- **The text label is v1; the voice is a later layer.** The on-screen word
-  is buildable today on the live combo scalar; a recorded or synthesized
-  announcer VO is an added audio pass on top of `combo-small … combo-legendary`
-  and never blocks the label.
+- **The on-screen text shipped; the voice is the remaining layer.** The
+  word is live on the combo scalar (WP-556, the on-screen twin of the
+  [`useComboCue`](visual-effects.md#combo-signal) pattern); a recorded or
+  synthesized announcer VO is an added audio pass on top of
+  `combo-small … combo-legendary` and never blocks the label.
 - **Original team cries voice naturally; verbatim character cries stay
   text-first.** A team shout like "Avengers Assemble!" can be voiced by the
   original announcer, but first-person character lines ("Hulk Smash!") stay
@@ -372,10 +379,10 @@ constraints carry straight through from the
 
 ##### The Arena Announcer — an original voice, not a borrowed one {#arena-announcer}
 
-*Candy Crush*'s call-outs are inseparable from **Mr. Toffee's** voice: the label and the vocal are one recognizable brand asset. The equivalent here is a house **Arena Announcer** — an original esports-caster / comic-splash narrator persona that voices the [synergy call-out ladder](visual-effects.md#synergy-callout) (**"Combo!" … "Team-Up!" … "LEGENDARY!"**). Two hard constraints:
+*Candy Crush*'s call-outs are inseparable from **Mr. Toffee's** voice: the label and the vocal are one recognizable brand asset. The equivalent here is a house **Arena Announcer** — an original esports-caster / comic-splash narrator persona that voices the now-shipped on-screen [synergy call-out ladder](visual-effects.md#synergy-callout) (**"Team-Up!" … "Unstoppable!" … "LEGENDARY!"**). Two hard constraints:
 
 - **Original, not an impression.** The announcer is *not* a Marvel character and never imitates one — no character voice, catchphrase, or name. It is the arena's own host, which keeps it clear of the [IP boundary](design-system-overview.md#ip-boundary-mandatory) and lets it become *our* recognizable asset (the [Soul / Authorial Voice](design-system-overview.md#soul-authorial-voice) test: a signature a player learns to recognize as *this* game).
-- **v1 is the on-screen word; the voice is an enhancement.** The text call-out is buildable today on the live combo scalar (it rides the shipped [`useComboCue`](visual-effects.md#combo-signal) pattern). A *voiced* announcer is an added audio layer here — recorded VO or a synthesized voice, layered over (or in place of) the existing `combo-small` … `combo-legendary` stings — and can follow later without blocking the label.
+- **The on-screen word shipped (WP-556); the voice is the enhancement.** The text call-out is **live** on the combo scalar — WP-556 shipped it as the on-screen twin of the [`useComboCue`](visual-effects.md#combo-signal) pattern, with the word starting at `medium` (the `small` tier flashes wordlessly). A *voiced* announcer is an added audio layer here — recorded VO or a synthesized voice, layered over (or in place of) the existing `combo-small` … `combo-legendary` stings — and can follow later without blocking the label. When voiced, it tracks the on-screen word: `medium` up (Team-Up! → Unstoppable! → LEGENDARY!), silent at `small` like the label.
 
 **Original team cries voice naturally; verbatim character cries stay text-first.** A team shout like "Avengers Assemble!" can be voiced by the original announcer, but first-person character lines ("Hulk Smash!") stay **text-first** — an announcer impersonating a Marvel character is an IP / casting matter, gated by the same [licensing pass](visual-effects.md#faction-cries) as the cries themselves (D-24259).
 
@@ -700,7 +707,12 @@ unusable on a revenue-generating site.
   user gesture. Both layers need an interaction-gated "audio unlock"
   (first click/tap) before anything plays, plus persistent mute/volume
   controls (localStorage) — ideally separate SFX and music sliders — so
-  returning players keep their preference.
+  returning players keep their preference. *(Shipped context: WP-556 added a
+  persisted, unified **Effect-Intensity** control in
+  [`AudioControls.vue`](../apps/arena-client/src/components/play/AudioControls.vue)
+  whose **`off`** setting also flips the audio master mute — one switch
+  silences the whole feel layer, audio and VFX together — so any new audio
+  control should compose with that unified off, not add a parallel one.)*
 - **Determinism is untouched.** Restated from the
   [Feel-Layer Contract](design-system-overview.md#feel-layer-contract): audio is
   pure client-side presentation — it never reads or writes `G` / `ctx`, never
@@ -812,7 +824,8 @@ A 60-second read of where this page stands.
 **Shipped** — WP-412 foundation · WP-413 / WP-425 combo cue · WP-421 move cues.
 
 **Deferred** — the `escapeResolved` event (WP-186) · motif playback wiring · the
-voiced Arena Announcer VO · the adaptive-music implementation · a dodge UI
+voiced Arena Announcer VO (the on-screen call-out twin shipped with WP-556; only
+the *voice* is deferred) · the adaptive-music implementation · a dodge UI
 affordance so `dodgeCard` can be dispatched and sounded · vertical stem layering
 (only if a commissioned stemmed score exists).
 
