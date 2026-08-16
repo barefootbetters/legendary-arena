@@ -107,6 +107,17 @@ export { executeRuleHooks } from "./rules/ruleRuntime.execute.js";
 export { applyRuleEffects } from "./rules/ruleRuntime.effects.js";
 export { buildDefaultHookDefinitions } from "./rules/ruleRuntime.impl.js";
 export { schemeTwistHandler } from "./rules/schemeHandlers.js";
+// why: WP-557 / D-24366 — the menace tier contract is exported so the planned
+// consumers (the danger-meter HUD and the adaptive score) bind to ONE tier
+// definition rather than each re-declaring the bands.
+export {
+  MENACE_TIERS,
+  computeMenace,
+  menaceTierFor,
+  resolveSchemeLossProgress,
+  resolveSchemeLossThreshold,
+} from "./rules/schemeLossProgress.js";
+export type { MenaceTier } from "./rules/schemeLossProgress.js";
 export { mastermindStrikeHandler } from "./rules/mastermindHandlers.js";
 export type { EndgameResult, EndgameOutcome } from "./endgame/endgame.types.js";
 export { ENDGAME_CONDITIONS, ESCAPE_LIMIT } from "./endgame/endgame.types.js";

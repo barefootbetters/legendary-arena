@@ -1365,3 +1365,60 @@ describe('filterUIStateForAudience — WP-505 city captured-card fields', () => 
     });
   }
 });
+
+describe('menace signal survives the audience filter (WP-557 / D-24366)', () => {
+  // why: the four menace fields ride the `progress: { ...uiState.progress }`
+  // spread in uiState.filter.ts, so today they pass through with no filter
+  // edit. THAT SPREAD IS EXACTLY WHAT THIS TEST PINS. The shipped EC-206
+  // failure was a field-by-field rebuild of a shared-board object silently
+  // dropping new fields (blank scheme tile in every match, PR #1165); if a
+  // future change rewrites `progress` the same way, these assertions fail
+  // instead of the danger meter going quietly dead on the play surface.
+  // Menace is public: it is derived from the twist count and the escaped
+  // pile, both already visible on the shared board, so no audience is redacted.
+  for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+    it(`preserves all four menace fields for ${audience.kind}`, () => {
+      const uiState = createTestUIState();
+
+      const result = filterUIStateForAudience(uiState, audience);
+
+      assert.equal(
+        result.progress.menace,
+        uiState.progress.menace,
+        `menace must survive for ${audience.kind}`,
+      );
+      assert.equal(
+        result.progress.menaceTier,
+        uiState.progress.menaceTier,
+        `menaceTier must survive for ${audience.kind}`,
+      );
+      assert.equal(
+        result.progress.schemeLossProgress,
+        uiState.progress.schemeLossProgress,
+        `schemeLossProgress must survive for ${audience.kind}`,
+      );
+      assert.equal(
+        result.progress.schemeLossThreshold,
+        uiState.progress.schemeLossThreshold,
+        `schemeLossThreshold must survive for ${audience.kind}`,
+      );
+    });
+  }
+
+  it('preserves a non-zero menace rather than defaulting it away', () => {
+    // why: an all-zero fixture would pass even if the filter dropped the
+    // fields and the reader defaulted to 0. Drive a real value through.
+    const config = createTestConfig();
+    const registry = createMockRegistry();
+    const gameState = buildInitialGameState(config, registry, makeMockCtx());
+    gameState.counters.schemeTwistCount = 5;
+    const uiState = buildUIState(gameState, makeMockCtx());
+
+    assert.notEqual(uiState.progress.menace, 0);
+
+    const result = filterUIStateForAudience(uiState, SPECTATOR);
+
+    assert.equal(result.progress.menace, uiState.progress.menace);
+    assert.equal(result.progress.menaceTier, 'critical');
+  });
+});

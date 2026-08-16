@@ -36899,4 +36899,4 @@ the same numbers. Locked:
    a backfill. A required add would break `vue-tsc` in a package this WP declares
    out of scope.
 
-_Drafted 2026-08-16; not yet landed. Flips to Active at WP-557 execution (EC-592)._
+_Active 2026-08-16 — landed at WP-557 execution (EC-592). game-engine 2667 → 2700 tests / 0 fail; the `schemeHandlers.ts` extraction proven behavior-identical (its suite untouched and green); both sentinel oracles byte-unchanged (`PRE_WP080_HASH` `ec64506a`, sentinel `finalStateHash` `62ba4e58…abd7`) with no re-pin, confirming §2; `apps/arena-client` diff empty, confirming §6. The §5 `pile-depleted` fallback and the §1 four-rung order are each pinned rung-by-rung in `schemeLossProgress.test.ts`._

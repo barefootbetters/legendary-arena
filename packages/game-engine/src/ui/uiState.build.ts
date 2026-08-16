@@ -17,6 +17,12 @@
  */
 
 import type { LegendaryGameState } from '../types.js';
+import {
+  computeMenace,
+  menaceTierFor,
+  resolveSchemeLossProgress,
+  resolveSchemeLossThreshold,
+} from '../rules/schemeLossProgress.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
 import type {
   UIState,
@@ -371,10 +377,32 @@ function buildProgressCounters(gameState: LegendaryGameState): UIProgressCounter
   // why: counter is lazily initialised on first escape; absence is
   // semantically zero.
   const escapedVillains = gameState.counters[ENDGAME_CONDITIONS.ESCAPED_VILLAINS] ?? 0;
-  return {
+
+  // why: WP-557 / D-24366 §2 — the menace signal is DERIVED here at projection
+  // time and never stored in G, so it adds no state-hash surface and neither
+  // sentinel oracle re-pins. The derivation itself lives in
+  // rules/schemeLossProgress.ts, shared with the twist dispatcher; re-deriving
+  // the threshold locally would create the second copy this packet removed.
+  const menace = computeMenace(gameState);
+  const schemeLossThreshold = resolveSchemeLossThreshold(gameState);
+
+  const progressCounters: UIProgressCounters = {
     bystandersRescued: countBystandersRescued(gameState),
     escapedVillains,
+    menace,
+    menaceTier: menaceTierFor(menace),
+    schemeLossProgress: resolveSchemeLossProgress(gameState),
   };
+
+  // why: omit the key entirely rather than emitting `undefined` for a
+  // `pile-depleted` scheme (D-24366 §5). An absent key and an explicit
+  // `undefined` read differently under `exactOptionalPropertyTypes`, and
+  // "this scheme has no denominator" is the assertion being made.
+  if (schemeLossThreshold !== undefined) {
+    progressCounters.schemeLossThreshold = schemeLossThreshold;
+  }
+
+  return progressCounters;
 }
 
 /**

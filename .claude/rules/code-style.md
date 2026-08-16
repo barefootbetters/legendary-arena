@@ -159,6 +159,8 @@ Source: 00.6 Rule 12
   - `RULE_EFFECT_TYPES`
   - `REVEALED_CARD_TYPES`
   - `LOG_OUTCOMES` (WP-434 — the `LogOutcome` game-log colour enum)
+  - `MENACE_TIERS` (WP-557 — the `MenaceTier` scheme-loss-progress bands,
+    a shared contract for the danger meter and the adaptive score, D-24366)
 - Drift-detection tests must assert arrays exactly match their union types
 - Never update a union type without updating its canonical array
 - Never update a canonical array without updating its union type
