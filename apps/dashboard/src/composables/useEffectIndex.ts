@@ -35,7 +35,14 @@ const EMPTY_INDEX: EffectImplementationIndex = {
   summary: {
     totalEntries: 0,
     byScope: { hero: 0, villain: 0, mastermind: 0 },
-    byStatus: { executable: 0, deferred: 0, condition: 0, unsupported: 0, unmarked: 0, subsystem: 0 },
+    byStatus: {
+      executable: 0,
+      deferred: 0,
+      condition: 0,
+      unsupported: 0,
+      unmarked: 0,
+      subsystem: 0,
+    },
   },
   entries: [],
   cards: {},
