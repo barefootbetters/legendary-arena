@@ -16,13 +16,14 @@ const { summary, entries, error } = useEffectIndex();
 
 const DISPLAY_CAP = 200;
 
-// The five ledger statuses in fixed order (drives the summary chips + the filter row).
+// The six ledger statuses in fixed order (drives the summary chips + the filter row).
 const STATUS_ORDER: readonly EffectIndexStatus[] = [
   'executable',
   'deferred',
   'condition',
   'unsupported',
   'unmarked',
+  'subsystem',
 ];
 
 const SCOPE_FILTERS: readonly ScopeFilter[] = ['all', 'hero', 'villain', 'mastermind'];
@@ -450,6 +451,12 @@ function designLabel(designs: readonly EffectDesign[] | undefined): string {
 }
 .fx-condition {
   color: var(--p-cyan-500, #06b6d4);
+}
+/* why (WP-548): `subsystem` is a COVERED/done state — a card implemented by a
+   non-[effect:X] subsystem — so it takes a distinct done colour (teal), separate
+   from executable's green and from the amber `unmarked` TODO. */
+.fx-subsystem {
+  color: var(--p-teal-500, #14b8a6);
 }
 
 /* Scope badges — a distinct channel from status color. */

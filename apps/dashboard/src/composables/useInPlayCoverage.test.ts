@@ -138,7 +138,7 @@ function makeRow(overrides: Partial<LedgerRow>): LedgerRow {
 }
 
 function makeLedger(rows: LedgerRow[]): CoverageLedger {
-  const byStatus = { executable: 0, deferred: 0, condition: 0, unsupported: 0, unmarked: 0 };
+  const byStatus = { executable: 0, deferred: 0, condition: 0, unsupported: 0, unmarked: 0, subsystem: 0 };
   const distinct = new Set<string>();
   for (const row of rows) {
     byStatus[row.status] += 1;

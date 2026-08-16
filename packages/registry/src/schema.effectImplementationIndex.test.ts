@@ -44,7 +44,7 @@ function validIndex() {
       // entry so the byScope.mastermind tally (and the mastermind entry/card join)
       // is exercised, not just declared.
       byScope: { hero: 1, villain: 1, mastermind: 1 },
-      byStatus: { executable: 2, deferred: 0, condition: 0, unsupported: 0, unmarked: 1 },
+      byStatus: { executable: 2, deferred: 0, condition: 0, unsupported: 0, unmarked: 1, subsystem: 0 },
     },
     entries: [
       {
@@ -137,6 +137,17 @@ describe("EffectImplementationIndexSchema — rejects malformed indexes (WP-484 
     const index = validIndex();
     index.entries[0].status = "made-up";
     assert.equal(EffectImplementationIndexSchema.safeParse(index).success, false);
+  });
+
+  it("accepts the subsystem status in the closed union (WP-548 / D-24357)", () => {
+    // why: WP-548 — `subsystem` (a card covered by a non-[effect:X] subsystem) is a
+    // valid closed-union status; flip the villain (unmarked) row to it and rebalance
+    // byStatus so the whole index still validates.
+    const index = validIndex();
+    index.entries[1].status = "subsystem";
+    index.summary.byStatus.unmarked = 0;
+    index.summary.byStatus.subsystem = 1;
+    assert.equal(EffectImplementationIndexSchema.safeParse(index).success, true);
   });
 
   it("rejects a summary.totalEntries that does not equal entries.length", () => {

@@ -768,6 +768,13 @@ export const EFFECT_INDEX_STATUSES = [
   "condition",
   "unsupported",
   "unmarked",
+  // why: WP-548 / D-24357 — `subsystem` is a closed-enum widening (a registry
+  // contract change) for a villain card implemented by a subsystem OTHER than the
+  // [effect:X] villain-ability pipeline (setup:require-to-defeat, scoring:dynamic-vp):
+  // done, not a TODO. It stays in lockstep with EffectImplementationSummarySchema.byStatus,
+  // the superRefine statusTally accumulator, and every dashboard consumer (statusLabel,
+  // the filter chip list, the badge CSS) — all widened together.
+  "subsystem",
 ] as const;
 
 export const EffectIndexEntryScopeSchema = z.enum(EFFECT_INDEX_ENTRY_SCOPES);
@@ -827,7 +834,7 @@ export const EffectImplementationSummarySchema = z
         mastermind: z.number().int().nonnegative(),
       })
       .strict(),
-    // why: byStatus emits all five status keys in the fixed union order, a
+    // why: byStatus emits all six status keys in the fixed union order, a
     // zero-count status included as 0, so the published shape stays stable across
     // card-data changes (a status appearing or vanishing never adds or drops a key).
     byStatus: z
@@ -837,6 +844,9 @@ export const EffectImplementationSummarySchema = z
         condition:   z.number().int().nonnegative(),
         unsupported: z.number().int().nonnegative(),
         unmarked:    z.number().int().nonnegative(),
+        // why: WP-548 / D-24357 — the villain ledger's "covered by a non-[effect:X]
+        // subsystem" status; seeded here so the strict byStatus shape carries the key.
+        subsystem:   z.number().int().nonnegative(),
       })
       .strict(),
   })
@@ -878,7 +888,11 @@ export const EffectImplementationIndexSchema = z
     // own `mastermind: 0` seed here, else a mastermind entry does
     // `scopeTally['mastermind'] += 1` on undefined → NaN and every regenerated index fails.
     const scopeTally = { hero: 0, villain: 0, mastermind: 0 };
-    const statusTally = { executable: 0, deferred: 0, condition: 0, unsupported: 0, unmarked: 0 };
+    // why: WP-548 / D-24357 — the statusTally accumulator is a hardcoded literal
+    // (like scopeTally above); the new `subsystem` status needs its own `subsystem: 0`
+    // seed here, else a subsystem entry does `statusTally['subsystem'] += 1` on
+    // undefined → NaN and every regenerated index fails the byStatus comparison.
+    const statusTally = { executable: 0, deferred: 0, condition: 0, unsupported: 0, unmarked: 0, subsystem: 0 };
     for (const entry of index.entries) {
       scopeTally[entry.scope] += 1;
       statusTally[entry.status] += 1;

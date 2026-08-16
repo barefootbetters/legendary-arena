@@ -479,6 +479,13 @@ const STATUS_FILTERS: readonly (LedgerStatus | 'all')[] = [
 .cov-condition {
   color: var(--p-cyan-500, #06b6d4);
 }
+/* why (WP-548): `subsystem` is a COVERED/done state (a card implemented by a
+   non-[effect:X] subsystem) — a distinct done colour (teal). No hero ledger row
+   carries it today (it is villain-only), so this badge is inert here; defined for
+   union completeness so a future subsystem-covered hero renders correctly. */
+.cov-subsystem {
+  color: var(--p-teal-500, #14b8a6);
+}
 .status-condition {
   color: var(--p-cyan-500, #06b6d4);
 }

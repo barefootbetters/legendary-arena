@@ -36,7 +36,7 @@ function makeEntry(overrides: Partial<EffectImplementationEntry>): EffectImpleme
  */
 function makeIndex(entries: EffectImplementationEntry[]): EffectImplementationIndex {
   const byScope = { hero: 0, villain: 0, mastermind: 0 };
-  const byStatus = { executable: 0, deferred: 0, condition: 0, unsupported: 0, unmarked: 0 };
+  const byStatus = { executable: 0, deferred: 0, condition: 0, unsupported: 0, unmarked: 0, subsystem: 0 };
   const cards: EffectImplementationIndex['cards'] = {};
   for (const entry of entries) {
     byScope[entry.scope] += 1;
@@ -219,7 +219,7 @@ test('useEffectIndex surfaces the raw stub error message when present', () => {
     summary: {
       totalEntries: 0,
       byScope: { hero: 0, villain: 0, mastermind: 0 },
-      byStatus: { executable: 0, deferred: 0, condition: 0, unsupported: 0, unmarked: 0 },
+      byStatus: { executable: 0, deferred: 0, condition: 0, unsupported: 0, unmarked: 0, subsystem: 0 },
     },
     entries: [],
     cards: {},

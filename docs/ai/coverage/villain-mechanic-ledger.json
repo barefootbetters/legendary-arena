@@ -7,9 +7,10 @@
       "executable": 134,
       "deferred": 0,
       "unsupported": 1,
-      "unmarked": 584
+      "unmarked": 582,
+      "subsystem": 2
     },
-    "distinctMechanics": 31
+    "distinctMechanics": 33
   },
   "rows": [
     {
@@ -1722,10 +1723,10 @@
       "cardName": "Blob",
       "set": "core",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
+      "mechanic": "setup:require-to-defeat",
+      "status": "subsystem",
+      "wp": "WP-292",
+      "decision": "D-24076",
       "handler": ""
     },
     {
@@ -1986,10 +1987,10 @@
       "cardName": "Supreme HYDRA",
       "set": "core",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
+      "mechanic": "scoring:dynamic-vp",
+      "status": "subsystem",
+      "wp": "WP-546",
+      "decision": "D-24355",
       "handler": ""
     },
     {

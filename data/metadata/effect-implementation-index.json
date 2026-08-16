@@ -14,7 +14,8 @@
       "deferred": 0,
       "condition": 5,
       "unsupported": 369,
-      "unmarked": 1081
+      "unmarked": 1079,
+      "subsystem": 2
     }
   },
   "entries": [
@@ -6230,11 +6231,11 @@
       "name": "Blob",
       "set": "core",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
+      "mechanic": "setup:require-to-defeat",
+      "status": "subsystem",
       "handler": "",
-      "wp": "",
-      "decision": ""
+      "wp": "WP-292",
+      "decision": "D-24076"
     },
     {
       "extId": "core-villain-brotherhood-juggernaut",
@@ -6362,11 +6363,11 @@
       "name": "Supreme HYDRA",
       "set": "core",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
+      "mechanic": "scoring:dynamic-vp",
+      "status": "subsystem",
       "handler": "",
-      "wp": "",
-      "decision": ""
+      "wp": "WP-546",
+      "decision": "D-24355"
     },
     {
       "extId": "core-villain-hydra-viper",
@@ -27748,7 +27749,7 @@
     "core-villain-brotherhood-blob": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "setup:require-to-defeat"
       ]
     },
     "core-villain-brotherhood-juggernaut": {
@@ -27810,7 +27811,7 @@
     "core-villain-hydra-supreme-hydra": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "scoring:dynamic-vp"
       ]
     },
     "core-villain-hydra-viper": {
