@@ -42,6 +42,7 @@ import {
 import {
   hasPendingDiscardToPlay,
   getEligibleDiscardToPlayCards,
+  getDiscardToPlayCost,
 } from '../moves/resolveDiscardToPlay.js';
 import {
   hasPendingReturnOnDiscard,
@@ -493,6 +494,20 @@ export function getLegalMoves(
   // select any, and the move dispatcher removes the first match from hand.
   if (stage === 'main') {
     for (const cardId of zones.hand) {
+      // why (WP-555 / D-24364): mirror playCard's card-specific PRE-COMMIT precondition
+      // (WP-383 / D-24185, coreMoves.impl.ts). A card printed "you must discard a card
+      // to play this" is refused when the hand cannot pay, and the refusal is a silent
+      // void return — so enumerating it wedged the turn: the bot re-picked the same
+      // unplayable card, nothing mutated, and the legal set never changed. The + 1 is
+      // load-bearing and matches the move exactly: the played card is STILL IN HAND
+      // here, so paying the cost needs that many OTHER cards. Reading the cost from
+      // getDiscardToPlayCost (the single authority playCard itself uses) rather than
+      // re-deriving it is the D-24363 part-1 rule — third application, after WP-214
+      // (fight cost) and WP-554 (defeat requirement).
+      const discardToPlayCost = getDiscardToPlayCost(gameState, cardId);
+      if (discardToPlayCost > 0 && zones.hand.length < discardToPlayCost + 1) {
+        continue;
+      }
       legalMoves.push({ name: 'playCard', args: { cardId } });
     }
   }

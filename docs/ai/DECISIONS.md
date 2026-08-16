@@ -36772,4 +36772,52 @@ the reducer already refused. The sentinel fixture `finalStateHash` is unchanged.
 
 _Active 2026-08-15 — landed at WP-554 execution (EC-589). game-engine 2648 → 2656 tests / 0 fail. Measured: the locked reproducer went from no completion in >500 s to **56 ms**, and the full runtime-observed sweep on the WP-453 branch from 35+ minutes to **8.3 s**. `User-Visible Surface = none directly — CI gate + bot-ally stall`._
 
+### D-24364 — Enumeration mirrors the move guard, third application: discard-to-play payability
+
+**Context.** With D-24363's within-turn bound in place, the `sim:runtime-observed`
+sweep stopped hanging and started failing fast: `5 of 312 swept game(s) did not
+reach endgame`. All five were the **same** `core` hero-deck board (seeds 0, 1, 2,
+4, 7) while the other 38 sets terminated, and a `MAX_TURNS` sweep of
+50/75/100/150/200 was identical (4 CAP each, ~75–150 ms flat). Flat wall-clock
+across a 4x cap increase proves the games were **wedging**, not running long.
+
+**Root cause.** `getLegalMoves` enumerated `playCard` for every hand card, but
+`playCard` refuses a card whose `[keyword:discard-to-play:N]` cost is unpayable
+(WP-383 / D-24185: `hand.length < cost + 1`, the `+ 1` because the played card is
+still in hand). Core Cyclops `Optic Blast` and `Determination` both carry
+`[keyword:discard-to-play:1]`, so once a hand held only that card the play was
+refused forever.
+
+**Decision.** Read the cost from `getDiscardToPlayCost` — the single authority
+`playCard` itself uses — and skip the enumeration when it is unpayable. This is
+**not a new rule**: it is the third application of D-24363 part 1, after WP-214
+(fight cost) and WP-554 (defeat requirement). The payability arithmetic is never
+re-derived at the enumeration site.
+
+**Explicitly rejected — all three would have turned the gate green while leaving
+the defect in production:**
+
+- **Swapping the sweep backdrop.** `core/portals-to-the-dark-dimension` is not the
+  cause (the failures are one hero board, not one scheme), and swapping it would
+  discard the coverage D-24323 chose it for.
+- **Relaxing `assertAllGamesTerminated`.** That guard is what surfaced this.
+- **Raising `MAX_TURNS`.** Measured irrelevant, and D-24363 already rejects
+  turn-cap tuning as a substitute for a root fix.
+
+**Production reach.** The live bot-ally driver and autoplay consume the same
+`getLegalMoves`, so a bot ally whose hand came down to an unpayable
+discard-to-play card re-attempted the refused play until
+`BOT_MAX_MOVE_STEPS_PER_TURN` faulted the co-op turn.
+
+**Standing implication.** Two independent instances of this class surfaced within
+one day of each other once the bound made them visible. Any future card-specific
+pre-commit precondition added to a move (D-24185 opened that door) MUST ship with
+the matching enumeration mirror in the same packet.
+
+**Determinism.** A pure integer comparison over existing state; no clock, timer,
+or `Math.random()`. Narrowing enumeration removes only moves the reducer already
+refused. Sentinel fixture `finalStateHash` unchanged.
+
+_Active 2026-08-15 — landed at WP-555 execution (EC-590). game-engine 2656 → 2659 tests / 0 fail; non-vacuity proven by control-revert. With this fix the WP-453 sweep completes: **312 games, 31 distinct mechanics, 2219 observations, 13.0 s, zero non-terminating**. `User-Visible Surface = none directly — CI gate + bot-ally stall`._
+
 Protect this file.
