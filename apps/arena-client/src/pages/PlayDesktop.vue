@@ -545,7 +545,6 @@ export default defineComponent({
       <TopHudBar
         :snapshot="snapshot"
         :mastermind-tactics-total="4"
-        :scheme-twist-threshold="8"
         :villain-group-ids="villainGroupIds"
         :henchman-group-ids="henchmanGroupIds"
         :hero-deck-ids="heroDeckIds"

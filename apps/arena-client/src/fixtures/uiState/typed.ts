@@ -10,7 +10,7 @@
  * mask drift — explicitly forbidden by EC-067.
  */
 
-import type { LogEntry, UIState } from '@legendary-arena/game-engine';
+import type { LogEntry, MenaceTier, UIProgressCounters, UIState } from '@legendary-arena/game-engine';
 import midTurnJson from './mid-turn.json';
 import endgameWinJson from './endgame-win.json';
 import endgameLossJson from './endgame-loss.json';
@@ -24,15 +24,43 @@ function narrowLog(log: ReadonlyArray<{ text: string; outcome: string }>): LogEn
   return log.map((entry) => ({ text: entry.text, outcome: entry.outcome as LogEntry['outcome'] }));
 }
 
+
+// why: WP-558 — same JSON-widening problem as `narrowLog` above, one field
+// along. A JSON import widens `progress.menaceTier` to `string`, which no
+// longer satisfies `MenaceTier`. Re-narrow it so the fixture still
+// `satisfies UIState` and keeps its drift-checking role. The value itself is
+// validated by the engine's own tier contract; here we only re-tag the
+// compile-time literal.
+function narrowProgress(progress: {
+  bystandersRescued: number;
+  escapedVillains: number;
+  menace: number;
+  menaceTier: string;
+  schemeLossProgress: number;
+  schemeLossThreshold: number;
+}): UIProgressCounters {
+  return {
+    bystandersRescued: progress.bystandersRescued,
+    escapedVillains: progress.escapedVillains,
+    menace: progress.menace,
+    menaceTier: progress.menaceTier as MenaceTier,
+    schemeLossProgress: progress.schemeLossProgress,
+    schemeLossThreshold: progress.schemeLossThreshold,
+  };
+}
+
 export const midTurn = {
   ...midTurnJson,
   log: narrowLog(midTurnJson.log),
+  progress: narrowProgress(midTurnJson.progress),
 } satisfies UIState;
 export const endgameWin = {
   ...endgameWinJson,
   log: narrowLog(endgameWinJson.log),
+  progress: narrowProgress(endgameWinJson.progress),
 } satisfies UIState;
 export const endgameLoss = {
   ...endgameLossJson,
   log: narrowLog(endgameLossJson.log),
+  progress: narrowProgress(endgameLossJson.progress),
 } satisfies UIState;

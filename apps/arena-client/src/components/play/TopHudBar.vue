@@ -2,6 +2,7 @@
 import { defineComponent, type PropType } from 'vue';
 import type { UIState } from '@legendary-arena/game-engine';
 import SkinSelector from './SkinSelector.vue';
+import DangerMeter from './DangerMeter.vue';
 
 /**
  * Top HUD bar for the WP-129 board layout.
@@ -26,7 +27,7 @@ import SkinSelector from './SkinSelector.vue';
  */
 export default defineComponent({
   name: 'TopHudBar',
-  components: { SkinSelector },
+  components: { SkinSelector, DangerMeter },
   props: {
     snapshot: {
       type: Object as PropType<UIState>,
@@ -38,14 +39,6 @@ export default defineComponent({
      * the parent which knows the active scenario.
      */
     mastermindTacticsTotal: {
-      type: Number,
-      required: true,
-    },
-    /**
-     * Scheme twist threshold (e.g., 8 in "Capture Five Bystanders" with
-     * 8 twist cards). Owned by the scenario; passed in by the parent.
-     */
-    schemeTwistThreshold: {
       type: Number,
       required: true,
     },
@@ -78,8 +71,16 @@ export default defineComponent({
       return id === '' ? 'pending' : id;
     }
 
+    // why: WP-558 — the twist readout is now a BARE COUNT. It used to print
+    // a hardcoded `/8`, which was wrong for the unconfigured fallback (7) and
+    // for Super Hero Civil War (5 at 4-5 players). It is NOT simply repointed
+    // at `progress.schemeLossThreshold`, because for a scheme with a
+    // resourceLossCondition (D-24315) that threshold counts a RESOURCE, not
+    // twists — Negative Zone's is 12 escaped villains, so `Twists: 3/12`
+    // would replace one wrong number with another. The scheme-aware ratio
+    // lives on <DangerMeter>, under a label that matches what it counts.
     function twistProgressLabel(): string {
-      return `${props.snapshot.scheme.twistCount}/${props.schemeTwistThreshold}`;
+      return `${props.snapshot.scheme.twistCount}`;
     }
 
     function mastermindProgressLabel(): string {
@@ -142,6 +143,7 @@ export default defineComponent({
     </div>
     <div class="top-hud-bar__row">
       <span data-testid="play-hud-twists">Twists: {{ twistProgressLabel() }}</span>
+      <DangerMeter :progress="snapshot.progress" />
       <span data-testid="play-hud-strikes">Strikes: {{ mastermindProgressLabel() }}</span>
       <span data-testid="play-hud-bystanders">
         Rescued: {{ snapshot.progress.bystandersRescued }}
