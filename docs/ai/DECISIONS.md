@@ -36711,5 +36711,65 @@ _Active 2026-08-15 — landed at WP-553 execution (EC-588). game-engine 2636 →
 **Scope.** Tooling / observability only — **no engine, `G`, gameplay, or determinism change, and no `data/cards/` edit** (the allowlist is a coverage artifact under `scripts/coverage/`). Every derived feed is regenerated in one commit (`docs/ai/coverage/villain-mechanic-ledger.{json,csv}`, `data/metadata/effect-implementation-index.json`, and the dashboard's gitignored bundled copy via prebuild) so the freshness `:check` gates stay green.
 
 _Active 2026-08-15 — landed at WP-548 execution (EC-583). Villain ledger 719 rows (subsystem 2: Blob + Supreme HYDRA); effect-index 1826 entries. registry 229 / 0, dashboard 447 / 0, effect-index generator 7 / 0; dashboard typechecks + builds; `ledger:villains:check` + `effect-index:check` green; no `packages/game-engine/` or `data/cards/` change. `User-Visible Surface = dashboard.legendary-arena.com/debug/effects` — **D-24026 live-verify operator-pending** (confirm the 5 declared cards read `subsystem`/covered, not `unmarked`; Venom / Zombie Venom / Ultron continue to read `executable`)._
+### D-24363 — Simulation non-termination: enumeration must mirror the move guard, and turns need a within-turn bound
+
+**Context.** Executing WP-453 (seeded setup shuffle) turned the per-PR
+`sim:runtime-observed:check` gate from ~50 s into 35+ minutes. Bisecting found a
+specific `(board, seed, turn-depth)` cell that never completed:
+`core/portals-to-the-dark-dimension` + `core/magneto`, competent policy, seed
+`t::1`, `maxTurns` 14 — no completion in >500 s, while `maxTurns` 13 finished in
+~87 ms and seeds `s::1`–`s::3` finished at 14 in 19–50 ms.
+
+**Root cause.** `getLegalMoves` gated `fightVillain` on Guard-blocking,
+`resolveFightCost` and `getPatrolModifier`, and never consulted the villain's
+`[require-to-defeat:…]` marker that `fightVillain` enforces (the WP-292 /
+D-24076 gate). Blob (`vAttack` 4, `[require-to-defeat:team:x-men]`) was offered
+to a player holding 4 attack and no X-Men Hero; the move returned `void` without
+mutating, and the next iteration enumerated the identical set. `turnsElapsed`
+advances **only** when an `endTurn` fires, so `maxTurns` never bounded it.
+
+**Decision (two parts).**
+
+1. **Enumeration mirrors the guard.** Every affordability/eligibility branch in
+   `getLegalMoves` MUST mirror the exact precondition the corresponding move
+   enforces, deriving the answer from that move's single-authority helper rather
+   than re-implementing it. `getDefeatRequirement` /
+   `playerMeetsDefeatRequirement` are that authority for defeat requirements.
+   This is the same rule WP-214 established for fight COST at the same line
+   after a live co-op freeze (matches `aifbXW04bA1` / `eAVZNdWE5C1`,
+   2026-07-27); this entry closes the defeat-requirement half.
+
+2. **Turn loops carry a within-turn bound.** `MAX_MOVE_STEPS_PER_TURN = 100` in
+   `simulation.runner.ts`, modelled on the existing endTurn-outside-cleanup
+   stuck-break (log, `turnsElapsed = maxTurns`, `break`). The value is **copied**
+   from the bot-ally driver's `BOT_MAX_MOVE_STEPS_PER_TURN` (D-24038), not
+   chosen: production has bounded exactly this spin for months, and a simulation
+   that tolerated a turn the driver would fault on is drift, not tuning. A
+   turn-count cap can never bound a within-turn spin, so the two are complements.
+
+**Why the structural bound and not an eleventh point-fix.** Ten prior packets —
+WP-286, WP-289 (D-24073), WP-427 (D-24248), WP-470 (D-24282), WP-476 (D-24284),
+WP-479 (D-24286), WP-486 (D-24291), WP-498 (D-24301), WP-532 (D-24343), WP-538
+(D-24347) — each fixed one instance of this class by naming one more move in the
+dispatch list, and each left the same comment that `maxTurns` bounds turns rather
+than within-turn move-steps. The bound converts the class from a hung process
+into one game recorded stuck.
+
+**Explicitly rejected.** Lowering `MAX_TURNS` (in the sweep or the runner) to
+make the CI gate green. That hides the defect while leaving the live bot-ally
+stall in place, and would silently reduce simulation depth — the opposite of
+what a PAR-calibration harness needs (Vision §22, §26).
+
+**Scope boundary.** Re-baselining the runtime-observed sweep and regenerating
+`docs/ai/coverage/runtime-observed-hollows.json` are **not** part of this
+decision. That artifact shifts only under WP-453's seeded shuffle; verified at
+execution that `sim:runtime-observed:check` reports the artifact current with
+this fix alone on `main`.
+
+**Determinism.** An integer counter compared against a compile-time constant —
+no clock, timer, or `Math.random()`. Narrowing enumeration removes only moves
+the reducer already refused. The sentinel fixture `finalStateHash` is unchanged.
+
+_Active 2026-08-15 — landed at WP-554 execution (EC-589). game-engine 2648 → 2656 tests / 0 fail. Measured: the locked reproducer went from no completion in >500 s to **56 ms**, and the full runtime-observed sweep on the WP-453 branch from 35+ minutes to **8.3 s**. `User-Visible Surface = none directly — CI gate + bot-ally stall`._
 
 Protect this file.

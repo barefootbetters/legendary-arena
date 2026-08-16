@@ -16,6 +16,56 @@
 **Tooling / observability only — no engine, `G`, gameplay, or determinism change, and no `data/cards/` edit.** Villain ledger 719 rows (`subsystem 2`); effect-index 1826 entries; all derived feeds regenerated in one commit (real diffs; `ledger:villains:check` + `effect-index:check` green). Tests: registry **229 / 0**, dashboard **447 / 0**, effect-index generator **7 / 0**; dashboard typechecks + builds; `git status` showed no `packages/game-engine/` or `data/cards/` change. D-24357 Active.
 
 **D-24026 live-verify — OPERATOR-PENDING.** `User-Visible Surface = dashboard.legendary-arena.com/debug/effects`. To confirm live: the 5 declared cards read `subsystem`/covered (Blob + Supreme HYDRA flipped from `unmarked`; Venom / Zombie Venom / Ultron continue to read `executable`), none as a false `unmarked` TODO.
+### WP-554 — Simulation Non-Termination at Turn Depth — DONE (2026-08-15)
+
+A simulated game could **run forever**. `getLegalMoves` offered a `fightVillain`
+the move reducer then silently refused; the bot re-picked it; and `turnsElapsed`
+advances **only** when an `endTurn` fires, so `maxTurns` never bounded it. Found
+while executing WP-453 (seeded setup shuffle), where the per-PR
+`sim:runtime-observed:check` gate went from ~50 s to **35+ minutes**.
+
+**Root cause, instrumented rather than inferred.** Logging the chosen intent
+every 20 000 iterations produced an unchanging line: `fightVillain {cityIndex:3}`
+at turn 13. Slot 3 held **Blob** — `vAttack` 4, `[require-to-defeat:team:x-men]`
+— against a player holding 4 attack and no X-Men Hero. `ai.legalMoves.ts` gated
+the fight on Guard-blocking + `resolveFightCost` + `getPatrolModifier` and never
+consulted the defeat requirement `fightVillain.ts` enforces. This is the
+**defeat-requirement half** of the divergence WP-214 fixed for fight **cost** at
+the same line after a live co-op freeze (2026-07-27).
+
+**Two fixes.** (1) The enumeration now mirrors the reducer, deriving the answer
+from the single-authority helpers `getDefeatRequirement` /
+`playerMeetsDefeatRequirement` rather than re-implementing the zone/trait scan.
+(2) `MAX_MOVE_STEPS_PER_TURN = 100` bounds move-steps **within** a turn, modelled
+on the existing endTurn-outside-cleanup stuck-break. The value is **copied** from
+the bot-ally driver's `BOT_MAX_MOVE_STEPS_PER_TURN` (D-24038), not chosen —
+production has bounded this spin for months and the simulation was the one
+`getLegalMoves` consumer without it. Ten prior packets each fixed one instance of
+this class by naming one more move; the bound covers the class.
+
+**Measured.** The locked reproducer went from **no completion in >500 s to
+56 ms**; the full runtime-observed sweep on the WP-453 branch from **35+ minutes
+to 8.3 s**. Both verified by applying the fix onto the WP-453 worktree, because
+the hanging cell is only *reachable* under the seeded shuffle — on `main` the
+same cell completes in 69 ms, which is exactly why the defect stayed invisible.
+
+game-engine **2648 → 2656 / 0 fail**; `pnpm -r --no-bail test` green across all
+12 packages; `pnpm -r build` 0. The two negative tests were written first and
+observed failing. `fightVillain.ts` is byte-identical.
+
+**`User-Visible Surface = none directly — CI gate + bot-ally stall`**, so the
+D-24026 live-verification gate is **N/A**: there is no user-facing surface to
+observe. The live benefit is indirect — a bot ally holding ≥4 attack against Blob
+with no X-Men Hero no longer re-attempts a refused fight until the driver's
+100-step cap faults the turn.
+
+**Unblocks WP-453 (PR #1440).** The sweep there now fails *fast* with an
+actionable diagnostic (5 of 312 games hit the 50-turn cap because the coverage
+backdrop no longer loses deterministically under the seeded shuffle) instead of
+hanging. Re-baselining that sweep is WP-453's unhold scope, deliberately excluded
+here so this WP carried no dependency on it.
+
+D-24363 Active.
 
 ---
 
