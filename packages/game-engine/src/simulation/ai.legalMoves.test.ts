@@ -440,6 +440,81 @@ describe('getLegalMoves — dynamic villain fight cost uses resolveFightCost (bo
   });
 });
 
+describe('getLegalMoves — discard-to-play payability mirrors the move guard (WP-555 / D-24364)', () => {
+  // why: WP-555. getLegalMoves enumerated playCard for EVERY hand card, but playCard
+  // refuses a card whose [keyword:discard-to-play:N] cost is unpayable (the WP-383 /
+  // D-24185 pre-commit precondition: hand.length < cost + 1, the +1 because the played
+  // card is still IN hand). Core Cyclops 'Optic Blast' and 'Determination' both carry
+  // discard-to-play:1, so once a hand held only that card the play was refused forever,
+  // the bot re-picked it, nothing mutated, and the turn wedged — 5 of 312 games in the
+  // runtime-observed sweep, all on the `core` hero board. Third application of the
+  // D-24363 part-1 rule, after WP-214 (fight cost) and WP-554 (defeat requirement).
+
+  /**
+   * Builds a state whose hand holds `handCardIds`, where 'costly-card' carries a
+   * discard-to-play cost of 1 and 'free-card' carries none.
+   */
+  function makeDiscardToPlayG(handCardIds: CardExtId[]): LegendaryGameState {
+    const gameState = makeG({ hand: handCardIds, currentStage: 'main' });
+    // why: getDiscardToPlayCost reads G.heroAbilityHooks and sums the MAGNITUDE of
+    // each `discard-to-play` EFFECT (the keyword alone carries no cost), so the hook
+    // needs both the keyword and the effect entry. Only 'costly-card' is marked.
+    gameState.heroAbilityHooks = [
+      {
+        cardId: 'costly-card',
+        keywords: ['discard-to-play'],
+        effects: [{ type: 'discard-to-play', magnitude: 1 }],
+      },
+    ] as unknown as LegendaryGameState['heroAbilityHooks'];
+    return gameState;
+  }
+
+  test('does NOT offer playCard for an UNPAYABLE discard-to-play card (alone in hand)', () => {
+    // The exact wedge: cost 1, hand length 1 → 1 < 2, the move refuses.
+    const gameState = makeDiscardToPlayG(['costly-card' as CardExtId]);
+
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+
+    assert.equal(
+      legalMoves.filter((move) => move.name === 'playCard').length,
+      0,
+      'an unpayable discard-to-play card must not be offered',
+    );
+    // why: the bot must retain a way out of the turn, or suppression relocates the wedge.
+    assert.ok(
+      legalMoves.some((move) => move.name === 'advanceStage'),
+      'advanceStage remains available so the turn can still end',
+    );
+  });
+
+  test('DOES offer it at exactly cost + 1 cards in hand (the boundary)', () => {
+    // why: the anti-over-filtering + off-by-one guard. Filtering on keyword PRESENCE,
+    // or writing `hand.length < cost`, both pass the test above and break this one.
+    const gameState = makeDiscardToPlayG(['costly-card' as CardExtId, 'free-card' as CardExtId]);
+
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+
+    const played = legalMoves.filter((move) => move.name === 'playCard');
+    assert.equal(played.length, 2, 'at cost + 1 both cards are playable');
+    assert.ok(
+      played.some((move) => (move.args as { cardId: string }).cardId === 'costly-card'),
+      'the costly card itself is offered once its cost is payable',
+    );
+  });
+
+  test('is unaffected for a card with NO discard-to-play cost (alone in hand)', () => {
+    const gameState = makeDiscardToPlayG(['free-card' as CardExtId]);
+
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+
+    assert.equal(
+      legalMoves.filter((move) => move.name === 'playCard').length,
+      1,
+      'an unmarked card is offered exactly as before',
+    );
+  });
+});
+
 describe('getLegalMoves — villain defeat requirement mirrors the move guard (WP-554 / D-24363)', () => {
   // why: WP-554. getLegalMoves gated fightVillain on Guard-blocking + resolveFightCost +
   // getPatrolModifier only, and never consulted the villain's [require-to-defeat:...]
