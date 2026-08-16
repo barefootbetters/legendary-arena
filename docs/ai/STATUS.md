@@ -136,6 +136,47 @@ Deterministic (reads `G.turnEconomy.recruit` only; **no `ctx.random`, no `Math.r
 **D-24026 live-verify — OPERATOR-PENDING.** `User-Visible Surface = play.legendary-arena.com`. The two WP-542 playthroughs are the *reproduction*, not the post-fix verification. To confirm live: in a Thor match, play Surge of Power on a turn with <8 recruit made → NO +3 attack; on a turn with ≥8 recruit made → +3 attack.
 
 ---
+### WP-453 — Simulation Setup Deck Shuffle Fidelity (Seeded, Not Reverse-Mock) — DONE (2026-08-15)
+
+**Unhold note (2026-08-15).** This branch sat in draft because
+`sim:runtime-observed:check` went from ~50 s to **35+ minutes** once the shuffle
+was real. The cause was not the shuffle: it exposed two
+`getLegalMoves` ↔ move-guard divergences that the reverse-mock had been hiding by
+killing games at or near turn 0 — the villain defeat requirement (WP-554 /
+D-24363, which also added the structural within-turn bound) and discard-to-play
+payability (WP-555 / D-24364).
+
+With both merged the sweep completes in **8.4 s** and the artifact is regenerated
+here: **312 games, 31 distinct mechanics, 2219 observations, 0 dropped, zero
+non-terminating** — against the **12** distinct mechanics documented under the
+reverse-mock Portals backdrop (D-24323). That coverage gain is what this WP was
+actually buying, and it was invisible while the setup shuffle was a reversal.
+
+The backdrop scheme was investigated and **exonerated** — all five originally
+failing games were the same `core` hero board, and a `MAX_TURNS` sweep of
+50/75/100/150/200 was identical — so `core/portals-to-the-dark-dimension` and
+`assertAllGamesTerminated` are both unchanged.
+
+**No user-observable change — infrastructure only.** Production gameplay never used the reverse mock; boardgame.io supplies the real seeded shuffle in the live engine. The payoff is a trustworthy simulation / PAR / co-op-yardstick surface.
+
+The simulation and fixture-replay setup paths built their `SetupContext` from the unit-test helper whose `Shuffle` merely reverses the array. `buildVillainDeck` lexically sorts before shuffling and virtual `scheme-twist-…` ids sort **last**, so reversing stacked every twist on **top** of the villain deck. On the two core schemes whose twist resolver chains extra reveals, that cascaded through all eight clustered twists in one turn-1 reveal and tripped the doom-clock threshold — an auto-loss at **turn 0**, before any move. WP-452 worked around it by swapping its pinned scheme and flagged the follow-up; this is that follow-up.
+
+**Measured at execution** — twists landing in the top 8 of the villain deck:
+
+| Scheme | Reverse mock | Seeded (5 seeds) |
+|---|---|---|
+| `core/midtown-bank-robbery` | **8 / 8** | 1, 1, 3, 2, 0 |
+| `core/negative-zone-prison-breakout` | **8 / 8** | 1, 1, 2, 3, 2 |
+
+`evaluateEndgame` is `null` at the initial state for 5/5 seeds on both schemes — no turn-0 auto-loss — and full games now play out where they previously terminated instantly. The `8/8` reproduces the clustering D-24273 describes, so the fix is measured against the bug rather than asserted.
+
+**Invariants held.** `makeMockCtx` is byte-unchanged (`git diff` empty) — it is a deliberate "shuffle ran" proof with ~190 importers, and editing it would have been a FAIL. `PRE_WP080_HASH` / `replay.execute.test.ts` are byte-unchanged, so the determinism-forensic pin still proves the mock was untouched. The sentinel fixture was **re-recorded** via `scripts/record-game-fixture.mjs`, never hand-edited (new `finalStateHash` `62ba4e58…`); `replayFixtures.test.ts` reads the fixture's own fields, so no test code changed. The recorder and the replay harness moved in **lockstep**, preserving the capture→replay contract. `par.aggregator`'s `nextRandom` was hoisted above its setup site — a statement relocation only; no seed literal or PRNG algorithm changed anywhere.
+
+**The regression guard is non-vacuous by construction.** `simulation.setupShuffle.test.ts` drives the *real* exported builder's `Shuffle` with a controlled `nextRandom` stub and deliberately does **not** re-implement mulberry32 or Fisher–Yates — a test asserting against its own PRNG copy would pass even if a setup site reverted to the reverse mock. It also asserts that the reverse of the same deck **does** cluster, so the guard cannot silently invert. `makeSeededSetupContext` is exported at module scope for that test but verified `undefined` on the package entry point — not public API.
+
+**engine 2613 → 2621 tests / 0 fail**; `pnpm -r build` + `pnpm -r --no-bail test` exit 0; exactly the 5 allowlisted files. Twist counting, `lossThreshold` and the D-24178 doom-clock proxy are untouched. D-24273 Active.
+
+**D-24026 is N/A by surface** — `User-Visible Surface = none — infrastructure`. Note the WP asked for a post-fix `sim:coop-winrate` baseline in STATUS; that harness pins a *substituted* scheme (WP-452's workaround) and a full 60-seed run now takes far longer than it did when games died at turn 0, so the direct per-scheme measurement above is recorded instead. Re-baselining `sim:coop-winrate` on the restored schemes is a natural follow-up, not part of this packet.
 
 ### WP-546 — Core Supreme HYDRA Dynamic Victory Points — DONE (2026-08-15)
 

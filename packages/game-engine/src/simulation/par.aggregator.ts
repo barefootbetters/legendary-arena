@@ -50,7 +50,6 @@ import { getLegalMoves } from './ai.legalMoves.js';
 import { createCompetentHeuristicPolicy } from './ai.competent.js';
 
 import { buildInitialGameState } from '../setup/buildInitialGameState.js';
-import { makeMockCtx } from '../test/mockCtx.js';
 import { buildUIState } from '../ui/uiState.build.js';
 import { filterUIStateForAudience } from '../ui/uiState.filter.js';
 import { evaluateEndgame } from '../endgame/endgame.evaluate.js';
@@ -543,10 +542,27 @@ function simulateOneGame(
   policy: AIPolicy,
 ): PerGameOutcome {
   const numPlayers = config.playerCount;
-  const setupContext = makeMockCtx({ numPlayers });
-  const gameState = buildInitialGameState(config.setupConfig, registry, setupContext);
-
+  // why: D-24273 — hoisted ABOVE the setup context, which now closes over it.
+  // The setup shuffle runs synchronously inside buildInitialGameState, so the
+  // seeded closure must already exist; previously this const sat below the
+  // setup site because only the per-turn reveal loop consumed it.
   const nextRandom = createMulberry32(hashSeedString(perGameSeed));
+
+  // why: D-24273 — a seeded Fisher-Yates setup shuffle, replacing the unit-test
+  // helper whose Shuffle merely reverses the array. Reversing a lexically
+  // sorted villain deck stacked every virtual `scheme-twist-…` id on top,
+  // which cascaded to a turn-0 doom-clock loss on the two chained-reveal core
+  // schemes and depressed every other scheme more mildly. Built INLINE with
+  // this module's own local shuffleWithPrng rather than importing the runner's
+  // helper — par.aggregator is deliberately isolated from simulation.runner
+  // (the WP-036 scope lock keeps their PRNG plumbing duplicated, not shared).
+  const setupContext = {
+    ctx: { numPlayers },
+    random: {
+      Shuffle: <T>(deck: T[]): T[] => shuffleWithPrng(deck, nextRandom),
+    },
+  };
+  const gameState = buildInitialGameState(config.setupConfig, registry, setupContext);
 
   let currentPlayer = '0';
   let turn = 1;

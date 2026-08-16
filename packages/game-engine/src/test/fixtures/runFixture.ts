@@ -31,7 +31,6 @@ import type {
 } from './fixtureSchema.js';
 
 import { buildInitialGameState } from '../../setup/buildInitialGameState.js';
-import { makeMockCtx } from '../mockCtx.js';
 import { createSnapshot } from '../../persistence/snapshot.create.js';
 import { evaluateEndgame } from '../../endgame/endgame.evaluate.js';
 import { resetTurnEconomy } from '../../economy/economy.logic.js';
@@ -365,7 +364,20 @@ function executeOnce(
   const seedInteger = hashSeedString(fixture.input.seed);
   const nextRandom = createMulberry32(seedInteger);
 
-  const setupContext = makeMockCtx({ numPlayers });
+  // why: D-24273 — the seeded setup shuffle, replacing the unit-test helper
+  // whose Shuffle merely reverses the array. This is the LOCKSTEP PARTNER of
+  // the recorder's setup site in simulation.runner.ts
+  // (simulateOneGameAndCaptureMoves): the capture->replay contract only holds
+  // if both build the setup deck identically, so the two move together and a
+  // change to one without the other breaks the round-trip. Built inline with
+  // this file's own local shuffleWithPrng — the test-fixture layer does not
+  // import the runner's helper. `nextRandom` is already in scope above.
+  const setupContext = {
+    ctx: { numPlayers },
+    random: {
+      Shuffle: <T>(deck: T[]): T[] => shuffleWithPrng(deck, nextRandom),
+    },
+  };
   const gameState = buildInitialGameState(
     fixture.input.setupConfig,
     registry,
