@@ -440,6 +440,136 @@ describe('getLegalMoves — dynamic villain fight cost uses resolveFightCost (bo
   });
 });
 
+describe('getLegalMoves — villain defeat requirement mirrors the move guard (WP-554 / D-24363)', () => {
+  // why: WP-554. getLegalMoves gated fightVillain on Guard-blocking + resolveFightCost +
+  // getPatrolModifier only, and never consulted the villain's [require-to-defeat:...]
+  // marker that fightVillain.ts enforces. Blob (vAttack 4, require-to-defeat team x-men)
+  // was therefore offered to a player holding 4 attack and no X-Men Hero; the move refused
+  // it, mutated nothing, and the enumeration returned the identical list on the next step —
+  // an unbounded within-turn spin (>500 s, no completion, on the WP-453 seeded-shuffle
+  // branch) and, in a live match, the same no-op re-pick the bot-ally driver's 100-step cap
+  // faults on. This is the defeat-requirement half of the same divergence WP-214 fixed for
+  // fight COST at this very line. These tests pin enumeration to the shared helper.
+
+  /**
+   * Builds a state with one Blob-like villain (static fightCost 4, requiring an
+   * [team:x-men] Hero) in city slot 0, 4 available attack, and caller-chosen
+   * hand / in-play / discard contents.
+   */
+  function makeDefeatRequirementG(overrides: {
+    hand?: CardExtId[];
+    inPlay?: CardExtId[];
+    discard?: CardExtId[];
+    withRequirement?: boolean;
+  }): LegendaryGameState {
+    const gameState = makeG({
+      hand: overrides.hand ?? [],
+      inPlay: overrides.inPlay ?? [],
+      discard: overrides.discard ?? [],
+      currentStage: 'main',
+    });
+    gameState.turnEconomy = {
+      attack: 4,
+      recruit: 0,
+      spentAttack: 0,
+      spentRecruit: 0,
+      piercing: 0,
+      woundsDrawn: 0,
+    } as LegendaryGameState['turnEconomy'];
+    gameState.city = ['blob-villain' as CardExtId, null, null, null, null];
+    gameState.cardStats = {
+      'blob-villain': { attack: 0, recruit: 0, cost: 0, fightCost: 4 },
+    } as unknown as LegendaryGameState['cardStats'];
+    gameState.cardTraits = {
+      'x-men-hero': { team: 'x-men' },
+      'avengers-hero': { team: 'avengers' },
+    } as unknown as LegendaryGameState['cardTraits'];
+    if (overrides.withRequirement !== false) {
+      gameState.villainDefeatRequirements = {
+        'blob-villain': { kind: 'team', value: 'x-men' },
+      } as unknown as LegendaryGameState['villainDefeatRequirements'];
+    }
+    return gameState;
+  }
+
+  test('does NOT offer fightVillain when the defeat requirement is UNMET', () => {
+    // The exact repro: 4 attack vs a 4-cost Blob, but the only Hero held is Avengers.
+    const gameState = makeDefeatRequirementG({ hand: ['avengers-hero' as CardExtId] });
+
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+
+    assert.equal(
+      legalMoves.filter((move) => move.name === 'fightVillain').length,
+      0,
+      'a villain whose defeat requirement is unmet must not be offered',
+    );
+    // why: the bot must retain a way OUT of the turn, or suppressing the fight would
+    // simply relocate the spin instead of ending it.
+    assert.ok(
+      legalMoves.some((move) => move.name === 'advanceStage'),
+      'advanceStage remains available so the turn can still end',
+    );
+  });
+
+  test('DOES offer fightVillain once the defeat requirement is MET from hand', () => {
+    // why: the anti-over-filtering guard. Dropping fightVillain whenever a requirement
+    // EXISTS (rather than when it is UNMET) would satisfy the test above and silently
+    // break every legitimate fight against Blob / Venom / Zombie Venom.
+    const gameState = makeDefeatRequirementG({
+      hand: ['avengers-hero' as CardExtId, 'x-men-hero' as CardExtId],
+    });
+
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+
+    const fightMoves = legalMoves.filter((move) => move.name === 'fightVillain');
+    assert.equal(fightMoves.length, 1, 'a satisfied requirement must still offer the fight');
+    assert.deepEqual(fightMoves[0]!.args, { cityIndex: 0 });
+  });
+
+  test('DOES offer fightVillain when the requirement is met from IN PLAY', () => {
+    const gameState = makeDefeatRequirementG({ inPlay: ['x-men-hero' as CardExtId] });
+
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+
+    assert.equal(
+      legalMoves.filter((move) => move.name === 'fightVillain').length,
+      1,
+      'in-play counts toward the requirement, same as hand',
+    );
+  });
+
+  test('does NOT count DISCARD toward the requirement (D-24076 zone scope)', () => {
+    // why: pins enumeration to playerMeetsDefeatRequirement rather than a looser
+    // re-implementation. D-24076 scopes "have" to hand OR in play only.
+    const gameState = makeDefeatRequirementG({ discard: ['x-men-hero' as CardExtId] });
+
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+
+    assert.equal(
+      legalMoves.filter((move) => move.name === 'fightVillain').length,
+      0,
+      'a qualifying Hero in the discard does not satisfy the requirement',
+    );
+  });
+
+  test('is unaffected for a villain carrying NO defeat requirement', () => {
+    // why: the overwhelming majority of villains are unmarked; the new check must be a
+    // pure no-op for them.
+    const gameState = makeDefeatRequirementG({
+      hand: ['avengers-hero' as CardExtId],
+      withRequirement: false,
+    });
+
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+
+    assert.equal(
+      legalMoves.filter((move) => move.name === 'fightVillain').length,
+      1,
+      'an unmarked villain is offered exactly as before',
+    );
+  });
+});
+
 describe('getLegalMoves — pending hero-reveal discard-or-return short-circuit (D-22001, bot-freeze gap)', () => {
   // why: pendingHeroChoice was the ONE block-all choice getLegalMoves did not short-circuit
   // (the WP-427 sibling). It blocks endTurn + the cleanup stage-advance, so without a resolve

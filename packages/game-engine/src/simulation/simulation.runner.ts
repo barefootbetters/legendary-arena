@@ -89,6 +89,19 @@ import { advanceTurnStage } from '../turn/turnLoop.js';
 // winRate contribution 0. Not a gameplay rule.
 const MAX_TURNS_PER_GAME = 200;
 
+// why (WP-554 / D-24363): `MAX_TURNS_PER_GAME` bounds whole TURNS, and
+// `turnsElapsed` only advances when an endTurn actually fires — so a move-step
+// that mutates nothing (getLegalMoves offering a move the reducer refuses)
+// spins inside a single turn forever and no turn cap can out-wait it. This is
+// the within-turn counterpart. The value 100 is COPIED from the bot-ally
+// driver's BOT_MAX_MOVE_STEPS_PER_TURN (apps/server/src/bot-ally/botAllyDriver.mjs,
+// D-24038), which has bounded exactly this spin in live matches since the
+// autoplay freeze class: a turn is a bounded sequence (reveal, <=hand-size
+// plays, a few spends, stage advances, endTurn), so 100 is generous headroom.
+// Keeping the two consumers on the SAME number is deliberate — a simulation
+// that tolerated a turn the driver would fault on is drift, not tuning.
+const MAX_MOVE_STEPS_PER_TURN = 100;
+
 // why: move functions destructure FnContext<LegendaryGameState> & { playerID }
 // from boardgame.io. Simulation cannot import boardgame.io (engine category
 // rule per D-3601), so a local structural interface provides the minimum
@@ -411,6 +424,7 @@ function runPerTurnLoop(
   let turnsElapsed = 0;
   let endgameReached = false;
   let endgameWinner: EndgameOutcome | null = null;
+  let moveStepsThisTurn = 0;
 
   // why (WP-266): the real onBegin runs at the start of every turn including
   // turn 1; mirror it before the first move-step so the opening hand is drawn
@@ -422,6 +436,23 @@ function runPerTurnLoop(
   });
 
   while (turnsElapsed < maxTurns) {
+    // why (WP-554 / D-24363): the structural within-turn bound. Ten prior packets
+    // (WP-286, WP-289, WP-427, WP-470, WP-476, WP-479, WP-486, WP-498, WP-532,
+    // WP-538) each fixed one instance of "getLegalMoves offers a move this loop
+    // cannot dispatch or the reducer refuses" by naming one more move, and each
+    // repeated that maxTurns bounds turns rather than within-turn move-steps.
+    // This bounds them all: an exhausted budget ends the game as stuck rather
+    // than hanging the process, exactly as the endTurn-outside-cleanup break below.
+    if (moveStepsThisTurn >= MAX_MOVE_STEPS_PER_TURN) {
+      pushLog(
+        gameState,
+        `Simulation warning: turn ${turn} exceeded ${MAX_MOVE_STEPS_PER_TURN} move-steps without ending — flagging game ${gameIndex} as stuck.`,
+      );
+      turnsElapsed = maxTurns;
+      break;
+    }
+    moveStepsThisTurn += 1;
+
     const endgameResult = evaluateEndgame(gameState);
     if (endgameResult !== null) {
       endgameReached = true;
@@ -536,6 +567,8 @@ function runPerTurnLoop(
       currentPlayer = String((policyIndex + 1) % numPlayers);
       turn += 1;
       turnsElapsed += 1;
+      // why (WP-554): the budget is PER TURN — a fresh turn starts a fresh count.
+      moveStepsThisTurn = 0;
       gameState.currentStage = 'start';
       gameState.turnEconomy = resetTurnEconomy();
       // why (WP-266): mirror the rest of onBegin for the incoming player —

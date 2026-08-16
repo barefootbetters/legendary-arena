@@ -16,6 +16,10 @@ import type { LegalMove } from './ai.types.js';
 import { getAvailableAttack, getAvailableRecruit } from '../economy/economy.logic.js';
 import { resolveFightCost, resolveMastermindFightCost } from '../economy/economy.resolve.js';
 import { isGuardBlocking, getPatrolModifier } from '../board/boardKeywords.logic.js';
+import {
+  getDefeatRequirement,
+  playerMeetsDefeatRequirement,
+} from '../moves/villainDefeatRequirement.logic.js';
 import { hasPendingKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from '../moves/scryKoChoice.resolve.js';
 import { hasPendingDiscardChoice } from '../moves/discardChoice.resolve.js';
@@ -522,6 +526,23 @@ export function getLegalMoves(
       // still bumps _stateID on a void-return move, the bot-ally driver could not detect
       // the no-op and re-picked the same fight every step until the 100-step per-turn cap
       // FAULTED the co-op match (prod freeze, matches aifbXW04bA1 / eAVZNdWE5C1, 2026-07-27).
+      // why (WP-554 / D-24363): mirror the fightVillain move's defeat-requirement
+      // precondition (fightVillain.ts, the WP-292 / D-24076 gate). Enumerating a fight
+      // the move will refuse is the same divergence class the resolveFightCost fix
+      // above closed for fight COST — Blob (vAttack 4, [require-to-defeat:team:x-men])
+      // was offered to a player holding 4 attack and no X-Men Hero, the move returned
+      // void without mutating, and the next enumeration produced the identical list, so
+      // the simulation loop spun inside one turn forever and a live bot-ally re-picked
+      // the refused fight until the 100-step cap faulted the turn. getDefeatRequirement /
+      // playerMeetsDefeatRequirement are the SINGLE authority for this test — never
+      // re-implement the zone/trait scan here.
+      const defeatRequirement = getDefeatRequirement(gameState, cityCard);
+      if (
+        defeatRequirement !== null &&
+        !playerMeetsDefeatRequirement(gameState, activePlayer, defeatRequirement)
+      ) {
+        continue;
+      }
       const baseFightCost = resolveFightCost(gameState, cityCard);
       const patrolModifier = getPatrolModifier(cityCard, cardKeywords);
       const requiredFightCost = baseFightCost + patrolModifier;
