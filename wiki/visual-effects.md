@@ -32,11 +32,16 @@ source:
   - ../packages/game-engine/src/moves/coreMoves.impl.ts
   - ../packages/game-engine/src/endgame/endgame.types.ts
   - ../apps/arena-client/src/composables/useComboCue.ts
+  - ../apps/arena-client/src/composables/useComboVfx.ts
   - ../apps/arena-client/src/composables/useNotableEventStream.ts
   - ../apps/arena-client/src/components/play/NotableEventOverlay.vue
+  - ../apps/arena-client/src/components/play/VfxOverlay.vue
+  - ../apps/arena-client/src/components/play/AudioControls.vue
+  - ../apps/arena-client/src/vfx/comboVfxManifest.ts
+  - ../apps/arena-client/src/vfx/effectIntensity.ts
   - ../apps/arena-client/src/pages/PlayViewport.vue
   - ../docs/ai/ARCHITECTURE.md
-last-reviewed: 2026-08-13
+last-reviewed: 2026-08-16
 ---
 
 # Visual Effects Framework
@@ -63,20 +68,22 @@ own vocabulary rather than through a hand-maintained index. That is what
 keeps this layer from siloing away from the audio, dopamine, and
 narrative work.
 
-**The chain-reaction "combo flash" is buildable today.** When
+**The chain-reaction "combo flash" now ships (WP-556 / D-24365).** When
 [Sound Effects](sound-effects.md#tiered-combo) was written it flagged the
 tiered combo cue as *"a proposal, not buildable"* — nothing projected a
-chain-depth count to the client. That gap is now **closed**: the engine
-projects `UIState.game.lastPlayEffectsFired` (D-24221, WP-409), and the
-audio combo cue already consumes it (D-24228, WP-413). The visual combo
-flash mirrors that shipped audio composable exactly — same scalar, same
-tier map, different output. That note on the Sound Effects page is
-superseded for the visual layer.
+chain-depth count to the client. That gap is closed: the engine projects
+`UIState.game.lastPlayEffectsFired` (D-24221, WP-409), the audio combo cue
+consumes it (D-24228, WP-413), and **the visual combo flash now consumes it
+too** — the first juice layer live on the play surface. It mirrors that
+shipped audio composable exactly — same scalar, same
+[`comboTierForCount`](#combo-tier-contract), different output. That note on
+the Sound Effects page is superseded for the visual layer. See the
+[shipped callout](#shipped-combo-vfx) below for exactly what landed.
 
-**And the chain gets a name.** On top of the flash, this page specs a
-*Candy-Crush*-style **synergy call-out** — an escalating word that pops
-on-screen as the chain grows (**Combo! → Team-Up! → Unstoppable!**), the
-way *Candy Crush* shouts "Sweet! → Tasty! → Delicious! → Divine!" at a
+**And the chain gets a name — also shipped.** On top of the flash, WP-556
+ships a *Candy-Crush*-style **synergy call-out** — an escalating word that
+pops on-screen as the chain grows (**Team-Up! → Unstoppable! → LEGENDARY!**),
+the way *Candy Crush* shouts "Sweet! → Tasty! → Delicious! → Divine!" at a
 cascade. It is a **second renderer on the one locked combo scalar**, not
 a new signal — the word, the burst, and the sting all fire off the same
 `lastPlayEffectsFired` change and peak together. This page owns *that a
@@ -86,14 +93,79 @@ the announcer voice live on the
 
 **How to read this page.** It separates three document types on purpose:
 the [VFX Trigger Contract](#vfx-trigger-contract) below is the **fixed
-governance layer** (a future Work Packet implements against it, and it is
-not free to drift); the [Mechanics](#mechanics) are **design detail** (the
-per-event *character* — which flash, which colour — is proposal-level and
-free to evolve); and [Decisions Pending](#decisions-pending) /
-[Deferred](#deferred) are the **roadmap**. No VFX ships today — this page
-is `draft` research. Only the event vocabulary, the projected `UIState`
-signals, the shipped audio precedent, and the architectural boundaries are
-sourced to code; the effect character and library picks are proposals.
+governance layer** (implemented against, and not free to drift); the
+[Mechanics](#mechanics) are **design detail** (the per-event *character* —
+which flash, which colour — is proposal-level and free to evolve); and
+[Decisions Pending](#decisions-pending) / [Deferred](#deferred) are the
+**roadmap**. **One surface has shipped** — the [combo VFX
+foundation](#shipped-combo-vfx) (flash + synergy call-out + the
+accessibility gate, WP-556); everything else here — notable-event effects,
+endgame finales, fight/ambush sub-effects, action-move cues, faction cries
+— is still `draft` design against the same contract. The event vocabulary,
+the projected `UIState` signals, the shipped audio precedent, the shipped
+combo layer, and the architectural boundaries are sourced to code; the
+effect character of the unbuilt surfaces is proposal.
+
+## Shipped: the combo VFX foundation (WP-556 / D-24365) {#shipped-combo-vfx}
+
+The first juice layer is **live on `play.legendary-arena.com`** (WP-556,
+verified on-surface 2026-08-16 under D-24026). It implements the
+[combo signal (Surface 2)](#combo-signal) and its
+[synergy call-out](#synergy-callout) against the contract below — and
+nothing else on this page yet. What landed:
+
+- **The combo flash** — a `canvas-confetti` burst whose particle count
+  scales by tier (`small 40 → medium 90 → big 140 → legendary 200`), off
+  the one [`comboTierForCount`](#combo-tier-contract) both renderers share.
+- **The synergy call-out word** — **Team-Up! (medium) → Unstoppable! (big)
+  → LEGENDARY! (`>= 5`)**. Deliberately **no word at `small`**: a single
+  effect flashes but is not named (the
+  [contrast-through-restraint](design-system-overview.md#pacing-invariants)
+  call, now resolved — the *flash* still starts at `small`, the *word*
+  starts at `medium`).
+- **An impact pulse (the screen-shake analog)** at the `big` and `legendary`
+  tiers only, bounded to the [performance budget](#performance-budget)'s
+  ≤ 500 ms.
+- **The [accessibility gate](#accessibility-requirements-mandatory), in
+  full** — a persisted, **unified Effect-Intensity control** (`full ✨ /
+  low ✦ / off ⊘`) in
+  [`AudioControls.vue`](../apps/arena-client/src/components/play/AudioControls.vue),
+  plus day-one `prefers-reduced-motion` handling. `shouldRender('shake' |
+  'particles' | 'word')` is the single gate: `off` renders nothing, `low`
+  keeps the word and particles but drops shake, reduced-motion drops shake
+  and particles but keeps the word. The **`off`** master also mutes audio,
+  so one control silences the whole feel layer.
+
+Where it lives (mirroring the shipped audio wiring):
+[`src/vfx/comboVfxManifest.ts`](../apps/arena-client/src/vfx/comboVfxManifest.ts)
+(the tier → burst/word/shake table; imports `comboTierForCount`, never
+re-derives it),
+[`src/vfx/effectIntensity.ts`](../apps/arena-client/src/vfx/effectIntensity.ts)
+(the persisted control + `shouldRender`),
+[`useComboVfx.ts`](../apps/arena-client/src/composables/useComboVfx.ts) (the
+scalar-change consumer, a mirror of `useComboCue`), and
+[`VfxOverlay.vue`](../apps/arena-client/src/components/play/VfxOverlay.vue)
+(one canvas + one word layer). The overlay and the control mount **once at
+[`PlayViewport.vue`](../apps/arena-client/src/pages/PlayViewport.vue)**
+beside `<AudioControls>` — a single fixed overlay for both desktop and
+mobile, not one per layout.
+
+**Locked by D-24365:** `canvas-confetti@^1.9.3` (MIT, lazy-loaded off the
+first-paint path) for bursts, hand-rolled CSS/WAAPI for the word and impact
+pulse (no `tsparticles`, no GSAP). The `src/vfx/` layer carries the same
+**determinism exemption** the Cloudflare `functions/` subsurface has
+(D-24085) — it may use `Math.random` / timers because it never bears on the
+replay hash; recorded in
+[`02-CODE-CATEGORIES.md §client-app`](../docs/ai/REFERENCE/02-CODE-CATEGORIES.md).
+
+**Not yet shipped** (still `draft` design against this same contract, each a
+follow-up WP): the [Surface 1](#surface-1) notable-event effects (Master
+Strike, mastermind-defeated, fight), the [Surface 1b](#surface-1b)
+fight/ambush sub-effects, the [Surface 3](#surface-3) action-move cues, the
+[Surface 4](#endgame) endgame finales, the [faction battle
+cries](#faction-cries) (licensing-gated, D-24259), and the
+[event-storm coalescing algorithm](#decisions-pending) (not needed until a
+second effect class ships).
 
 ## VFX Trigger Contract
 
@@ -215,8 +287,9 @@ apex tier by WP-425 / D-24246):
   one `comboTierForCount`, two renderers. This is what prevents future
   divergence between the flash and the sting.
 - The **apex T4** tier (`>= 5 → legendary`) is locked by **D-24246**: the
-  audio sting (`combo-legendary.mp3`) ships with WP-425; the visual
-  `LEGENDARY!` call-out consumes the same boundary when the VFX layer is built.
+  audio sting (`combo-legendary.mp3`) ships with WP-425, and the visual
+  **`LEGENDARY!`** call-out consumes the same boundary — **now shipped**
+  (WP-556). Three renderers, one mapping.
 
 ### Accessibility gate (mandatory — pass/fail) {#accessibility-requirements-mandatory}
 
@@ -229,9 +302,17 @@ verify each:
 - Disabled mode preserves full gameplay parity — the layer degrades to
   **no effects**, never a loss of game functionality.
 
-There is **no `prefers-reduced-motion` handling in the client today**
-(verified: zero matches under `apps/arena-client/src`), so this is a
-day-one requirement for the implementing Work Packet, not a retrofit.
+**Shipped (WP-556 / D-24365).** All four now hold for the live combo layer:
+`prefers-reduced-motion` is read in
+[`effectIntensity.ts`](../apps/arena-client/src/vfx/effectIntensity.ts), the
+persisted **unified Effect-Intensity control** (`full / low / off`) lives in
+[`AudioControls.vue`](../apps/arena-client/src/components/play/AudioControls.vue),
+and the single `shouldRender('shake' | 'particles' | 'word')` gate enforces
+the rest — `off` renders nothing (and mutes audio), reduced-motion drops
+shake and particles while keeping the word. When this page was first drafted
+there was **no `prefers-reduced-motion` handling anywhere in the client**;
+WP-556 built it as the day-one gate, so a future notable-event or endgame WP
+inherits the control rather than re-adding it.
 
 ### Shipped: game-log outcome colours (static, NOT part of the VFX layer) {#game-log-outcome-colours}
 
@@ -404,14 +485,16 @@ together — that synchrony is most of the "juice."
 in [Appendix A.3](#appendix-surface-2) — each tier drawn bigger than the
 last, so a bigger chain literally looks bigger.*
 
-> **Mirror the shipped composable, don't reinvent it.** The audio side is
+> **Mirrored the shipped composable, didn't reinvent it (WP-556).** The
+> audio side is
 > [`useComboCue.ts`](../apps/arena-client/src/composables/useComboCue.ts):
 > a scalar-change consumer that keeps its own `lastSeen` value, seeds it
 > on the first valid frame (so no effect fires for the pre-mount value),
-> and fires once per audible value-change. A `useComboVfx` composable is
+> and fires once per audible value-change. The shipped
+> [`useComboVfx.ts`](../apps/arena-client/src/composables/useComboVfx.ts) is
 > the same shape with a particle burst in place of the clip, mounted at
 > the same [`PlayViewport.vue`](../apps/arena-client/src/pages/PlayViewport.vue)
-> root beside `useComboCue`.
+> root beside `useComboCue` — same seed-on-first-frame, same fire-once-per-change.
 
 ##### The synergy call-out — a named label per tier {#synergy-callout}
 
@@ -433,17 +516,23 @@ and the announcer voice on [Sound Effects](sound-effects.md#arena-announcer)
 this section, below); this page owns only *that a label renders, keyed to the
 locked tier.*
 
-The proposed default ladder — the tier column is the locked contract; the
-words are a naming proposal (the deeper rationale is on the
+The **shipped** ladder (WP-556) — the tier column is the locked contract;
+the words are the shipped default (the deeper rationale is on the
 [narrative-meaning reference](design-system-overview.md#narrative-meaning)):
 
-| `lastPlayEffectsFired` | Tier (`comboTierForCount`) | Call-out (proposal) | Feel |
+| `lastPlayEffectsFired` | Tier (`comboTierForCount`) | Call-out (shipped) | Feel |
 |---|---|---|---|
 | `<= 0` | `none` | — (no label) | silent play |
-| `1` | `small` | **Combo!** | "that worked" |
+| `1` | `small` | — (flash only, **no word**) | "that worked" |
 | `2` | `medium` | **Team-Up!** | "oh — it *linked*" |
 | `3–4` | `big` | **Unstoppable!** | "I *built* this" |
 | `>= 5` | `legendary` | **LEGENDARY!** | the rare, brag-worthy crescendo |
+
+WP-556 resolved the "does the word announce at `small`?" question by
+**starting the word at `medium`**: a single effect flashes but is not named
+(the [contrast-through-restraint](design-system-overview.md#pacing-invariants)
+call), so the first *named* synergy is a genuine link, not a lone play. The
+earlier **Combo!** proposal for `small` was retired with that decision.
 
 ![Animated mock of the synergy call-out ladder: the words Combo!, then Team-Up!, then Unstoppable!, then a gold glowing LEGENDARY! each pop on-screen in turn as a hero-ability chain grows, then the sequence loops.](/visual-effects/synergy-callout-ladder.svg "width=62%")
 
@@ -457,12 +546,11 @@ words are a naming proposal (the deeper rationale is on the
 > requires the audio and visual renderers to consume the **identical**
 > tiers, the 4th rung landed as a `DECISIONS.md` change (D-24246) that adds
 > the tier for **both** layers at once — never a visual-only threshold that
-> silently diverges from the audio. **What shipped:** WP-425 ships the
-> **audio** side now — a `combo-legendary.mp3` sting on the `>= 5` tier. The
-> **visual** `LEGENDARY!` call-out is the future consumer of the same locked
-> boundary (it renders when the VFX layer is built). This resolved the
-> former "combo-scaling-beyond-T3" open question; the apex label is where
-> that decision cashed out.
+> silently diverges from the audio. **What shipped:** WP-425 shipped the
+> **audio** side — a `combo-legendary.mp3` sting on the `>= 5` tier — and
+> **WP-556 shipped the visual `LEGENDARY!` call-out** off the same locked
+> boundary. This resolved the former "combo-scaling-beyond-T3" open question;
+> the apex label is where that decision cashed out, now on both layers.
 
 ##### Faction battle cries — the identity overlay {#faction-cries}
 
@@ -506,11 +594,10 @@ hash.
 
 Whether the label should announce at `small` (a single effect is arguably
 *not* a synergy — the [reward-psychology reference](design-system-overview.md#reward-psychology) reads `1` as
-mere "that worked") or start at `medium` is a copy/restraint
-call flagged in [Decisions Pending](#decisions-pending); the
+mere "that worked") or start at `medium` was the last open copy/restraint
+call — **resolved by WP-556 in favour of `medium`**: the
 [contrast-through-restraint pacing invariant](design-system-overview.md#pacing-invariants)
-argues for starting the *word* at `medium` even though the *flash* starts
-at `small`.
+won, so the *flash* starts at `small` but the *word* starts at `medium`.
 
 #### Surface 3 — Player action moves (tactile local feedback) {#surface-3}
 
@@ -572,40 +659,45 @@ not here. It is explicitly **Tier 3 / out of scope for v1** (see
 [Priority tiers](#priority-tiers)); the v1 layer ships a single default
 theme.
 
-### Where a visual-effects layer would live
+### Where the visual-effects layer lives
 
 VFX belongs entirely in `arena-client` (the Vue app at
 `play.legendary-arena.com`). Per
 [ARCHITECTURE.md](../docs/ai/ARCHITECTURE.md), the engine owns truth and
 the UI consumes read-only projections — so the juice layer reads
 `UIState` and renders effects, within the [contract](#vfx-trigger-contract)
-above. Concretely, mirroring the shipped audio wiring:
+above. The shipped combo layer (WP-556) wires it this way:
 
-- A `useComboVfx` composable (mirror of
+- [`useComboVfx.ts`](../apps/arena-client/src/composables/useComboVfx.ts)
+  (mirror of
   [`useComboCue.ts`](../apps/arena-client/src/composables/useComboCue.ts))
-  watching `UIState.game.lastPlayEffectsFired`, plus a
-  `useNotableEventVfx` mirror of the notable-event stream, both mounted at
-  the shared [`PlayViewport.vue`](../apps/arena-client/src/pages/PlayViewport.vue)
-  root beside their audio siblings.
-- A full-bleed overlay layer in
-  [`PlayDesktop.vue`](../apps/arena-client/src/pages/PlayDesktop.vue) /
-  `PlayMobile.vue`, sitting over the mat the way
-  [`NotableEventOverlay.vue`](../apps/arena-client/src/components/play/NotableEventOverlay.vue)
-  already does, that hosts the bursts and full-screen finales (the single
-  overlay canvas of the [performance budget](#performance-budget)).
+  watches `UIState.game.lastPlayEffectsFired`, mounted at the shared
+  [`PlayViewport.vue`](../apps/arena-client/src/pages/PlayViewport.vue)
+  root beside its audio sibling. A future `useNotableEventVfx` mirror of the
+  notable-event stream joins it there.
+- **One** full-bleed overlay —
+  [`VfxOverlay.vue`](../apps/arena-client/src/components/play/VfxOverlay.vue)
+  (the single overlay canvas of the
+  [performance budget](#performance-budget)) — mounted **once at
+  `PlayViewport.vue`**, above both the desktop and mobile mats. WP-556's
+  execution corrected the original draft plan (a copy in each of
+  `PlayDesktop.vue` / `PlayMobile.vue`): a single fixed overlay at the shared
+  root, the same precedent `<AudioControls>` follows, is simpler and closes
+  the "no overlay on mobile" gap the per-layout plan risked.
 
 ### Library posture (commercial-safe, GPU-cheap first) {#library-posture}
 
-There is **no animation library installed today** — the only motion in
-the client is one CSS fade on `NotableEventOverlay.vue` and a few hover
-`transform` transitions. So the library choice is greenfield (and open —
-see [Decisions Pending](#decisions-pending)). Mirroring the audio layer's
-CC0-first licensing posture, the default lean is **permissively-licensed
-(MIT), code-first** VFX rather than heavyweight dependencies:
+**Resolved (WP-556 / D-24365): `canvas-confetti` for bursts, hand-rolled
+CSS/WAAPI for everything else.** Before WP-556 there was no animation
+library at all — just one CSS fade on `NotableEventOverlay.vue` and a few
+hover `transform` transitions. Mirroring the audio layer's CC0-first
+licensing posture, the pick is **permissively-licensed (MIT), code-first**
+VFX rather than heavyweight dependencies:
 
-- **[`canvas-confetti`](https://github.com/catdad/canvas-confetti)** (MIT)
-  — tiny, one-file, purpose-built for celebratory bursts and confetti.
-  The natural pick for combo bursts and the win finale.
+- **[`canvas-confetti`](https://github.com/catdad/canvas-confetti)** (MIT,
+  now installed at `^1.9.3`, lazy-loaded off the first-paint path) — tiny,
+  one-file, purpose-built for celebratory bursts and confetti. It drives the
+  shipped combo bursts and is the natural pick for the win finale.
 - **[`tsparticles`](https://github.com/tsparticles/tsparticles)** (MIT) —
   heavier but far more configurable if the particle work grows beyond
   bursts (ambient motes, trails).
@@ -735,12 +827,14 @@ priority order is fixed and non-negotiable:
   treat it as a monotonic counter or an append-only event list. This is why
   the [Acceptance Criteria](#acceptance-criteria) require correct behaviour
   across a reconnect / full `UIState` refresh.
-- **Accessibility is not optional — and does not exist yet.** There is
-  **no `prefers-reduced-motion` handling anywhere in the client today.**
-  The [contract](#accessibility-requirements-mandatory) makes it a day-one
-  requirement, not a retrofit. Juice that can't be turned down is an
-  accessibility bug and a nausea/photosensitivity complaint waiting to
-  happen.
+- **Accessibility is not optional — and now exists (WP-556).** The
+  [contract](#accessibility-requirements-mandatory) made it a day-one
+  requirement, and WP-556 built it: `prefers-reduced-motion` handling plus a
+  persisted unified Effect-Intensity control, gated through one
+  `shouldRender('shake' | 'particles' | 'word')` seam that every future
+  effect class inherits. Juice that can't be turned down is an accessibility
+  bug and a nausea/photosensitivity complaint waiting to happen — so the
+  gate ships *before* the effects that ride it.
 - **Determinism is untouched, and must stay that way.** Restated from the
   [contract](#determinism-requirements-mandatory): VFX is pure
   presentation; it never reads into or writes out of `G`/`ctx`, never
@@ -763,37 +857,52 @@ priority order is fixed and non-negotiable:
 - [`packages/game-engine/src/endgame/endgame.types.ts`](../packages/game-engine/src/endgame/endgame.types.ts)
   — `EndgameOutcome`, `ENDGAME_CONDITIONS`, `ESCAPE_LIMIT`
 - [`apps/arena-client/src/composables/useComboCue.ts`](../apps/arena-client/src/composables/useComboCue.ts)
-  — the shipped audio combo composable to mirror for `useComboVfx`
+  — the shipped audio combo composable that `useComboVfx` mirrors
+- [`apps/arena-client/src/composables/useComboVfx.ts`](../apps/arena-client/src/composables/useComboVfx.ts)
+  — **shipped (WP-556):** the visual combo consumer, scalar-change on
+  `lastPlayEffectsFired`
+- [`apps/arena-client/src/vfx/comboVfxManifest.ts`](../apps/arena-client/src/vfx/comboVfxManifest.ts)
+  — **shipped (WP-556):** the tier → burst/word/shake table; imports
+  `comboTierForCount`, never re-derives it
+- [`apps/arena-client/src/vfx/effectIntensity.ts`](../apps/arena-client/src/vfx/effectIntensity.ts)
+  — **shipped (WP-556):** the persisted unified Effect-Intensity control +
+  `prefers-reduced-motion` + `shouldRender`
+- [`apps/arena-client/src/components/play/VfxOverlay.vue`](../apps/arena-client/src/components/play/VfxOverlay.vue)
+  — **shipped (WP-556):** the single overlay canvas + call-out word layer
+- [`apps/arena-client/src/components/play/AudioControls.vue`](../apps/arena-client/src/components/play/AudioControls.vue)
+  — **shipped (WP-556):** hosts the unified Effect-Intensity control (its
+  `off` also mutes audio)
 - [`apps/arena-client/src/composables/useNotableEventStream.ts`](../apps/arena-client/src/composables/useNotableEventStream.ts)
   — existing client stream of notable events; the attach point for
-  event-driven effects
+  event-driven effects (the next WP)
 - [`apps/arena-client/src/components/play/NotableEventOverlay.vue`](../apps/arena-client/src/components/play/NotableEventOverlay.vue)
-  — the existing overlay (and only current effect); the model for the VFX
-  overlay layer
+  — the pre-existing overlay; the model the VFX overlay layer followed
 - [`apps/arena-client/src/pages/PlayViewport.vue`](../apps/arena-client/src/pages/PlayViewport.vue)
-  — the shared composable-mount host where the audio composables live and
-  the VFX ones would join
+  — the shared composable-mount host where the audio and (now) VFX
+  composables live and `VfxOverlay` mounts once
 
 ## Acceptance Criteria
 
-No Work Packet is scoped yet; when one is, a VFX **foundation** is complete
-when all of the following hold (each objectively checkable):
+**WP-556 shipped the combo-flash foundation** and met the combo-scoped,
+accessibility, and determinism criteria below (✅). The **notable-event
+Tier-1 set** (▫) is the next WP against this same bar:
 
-- Combo VFX triggers from `UIState.game.lastPlayEffectsFired`, using the
+- ✅ Combo VFX triggers from `UIState.game.lastPlayEffectsFired`, using the
   locked [Combo Tier Contract](#combo-tier-contract) mapping.
-- Event VFX triggers from `UIState.notableEvents` for the Tier-1 set
-  (`mastermindStrikeResolved`, `mastermindDefeated`, `fightResolved`).
-- Effects continue functioning after a reconnect and a full `UIState`
+- ▫ Event VFX triggers from `UIState.notableEvents` for the Tier-1 set
+  (`mastermindStrikeResolved`, `mastermindDefeated`, `fightResolved`) —
+  **not yet built; the next WP.**
+- ✅ Effects continue functioning after a reconnect and a full `UIState`
   refresh (no dependence on client history beyond the documented
   scalar-change tracking).
-- Effects do not alter game outcomes — verified by bot-vs-bot determinism
+- ✅ Effects do not alter game outcomes — verified by bot-vs-bot determinism
   proofs passing unchanged with the layer mounted.
-- Effects do not participate in determinism hashing.
-- Effects respect `prefers-reduced-motion` and the in-app intensity / off
+- ✅ Effects do not participate in determinism hashing.
+- ✅ Effects respect `prefers-reduced-motion` and the in-app intensity / off
   control.
-- Effects degrade cleanly to none when disabled — no loss of game
+- ✅ Effects degrade cleanly to none when disabled — no loss of game
   functionality.
-- Mobile and desktop clients render within the
+- ✅ Mobile and desktop clients render within the
   [performance budget](#performance-budget) with no functionality loss.
 
 ## Decisions Pending
@@ -817,32 +926,36 @@ right owner.
 
 ### Implementation decisions pending
 
-- **Library selection** — `canvas-confetti` vs `tsparticles` vs hand-rolled
-  CSS/WAAPI per effect class (the [posture](#library-posture)
-  leans MIT-first; the pick is not yet locked). Confirm GSAP's current
-  license if it is considered.
+- ~~**Library selection**~~ — **resolved (WP-556 / D-24365):**
+  `canvas-confetti@^1.9.3` (MIT) for bursts + hand-rolled CSS/WAAPI for the
+  word and impact pulse; no `tsparticles`, no GSAP (see
+  [library posture](#library-posture)). A later effect class that genuinely
+  needs a timeline engine would reopen this with a `DECISIONS.md` entry.
 - **Combo density scaling past T4** — `lastPlayEffectsFired` is unbounded
   above; decide whether the visual keeps scaling particle *density* past the
   apex `>= 5` tier or hard-caps at T4 for the performance budget. (Tier
   *boundaries* stay locked either way.) The **apex `LEGENDARY!` rung itself is
-  now resolved:** WP-425 / D-24246 added the fourth shared `comboTierForCount`
-  tier (`>= 5 → legendary`) and shipped its audio sting; the visual call-out
-  consumes the same locked boundary when the VFX layer is built (see
-  [synergy call-out](#synergy-callout)). A *fifth* tier would be a further
-  `DECISIONS.md` change adding it for both layers at once.
+  resolved and shipped:** WP-425 / D-24246 added the fourth shared
+  `comboTierForCount` tier (`>= 5 → legendary`) and shipped its audio sting,
+  and WP-556 shipped the visual call-out off the same boundary (see
+  [synergy call-out](#synergy-callout)). What stays open here is only whether
+  particle *density* keeps climbing past `>= 5` or the shipped `200`-particle
+  cap is the ceiling. A *fifth* tier would be a further `DECISIONS.md` change
+  adding it for both layers at once.
 - **Performance-budget figures** — ratify or retune the numbers above
   against real mobile hardware.
 
 ### Content decisions pending
 
 - **The synergy call-out label** — the named popup per tier
-  ([synergy call-out](#synergy-callout)). Two open calls beyond the apex
-  rung above: (a) does the word announce at `small` or start at `medium`
-  (the [contrast-through-restraint](design-system-overview.md#pacing-invariants)
-  question — the *flash* starts at `small` regardless); and (b) the
-  label *wording* itself, which is owned by the
+  ([synergy call-out](#synergy-callout)). The timing question is **resolved
+  (WP-556): the word starts at `medium`**, not `small` (the
+  [contrast-through-restraint](design-system-overview.md#pacing-invariants)
+  call — the *flash* still starts at `small`). What remains open is the
+  label *wording* itself: WP-556 shipped **Team-Up! / Unstoppable! /
+  LEGENDARY!** as the default, but the copy is owned by the
   [Design System Overview → narrative meaning](design-system-overview.md#narrative-meaning) and gets an
-  IP pass with the rest of the narrative copy.
+  IP pass with the rest of the narrative copy, which may re-word it.
 - **Faction battle cries (identity overlay)** — swapping the generic word
   for the acting team/hero's signature shout
   ([faction cries](#faction-cries)). The render is a
@@ -951,6 +1064,12 @@ word fire off the one `lastPlayEffectsFired` change and crest together.
 Card-less, and each tier is drawn bigger than the last, so a bigger chain
 literally *looks* bigger.
 
+> **These mocks pre-date the shipped ladder.** The T1 mock below pairs the
+> `small` burst with a **Combo!** word; WP-556 shipped the `small` tier as a
+> **flash with no word** (the word starts at `medium`), so treat the T1
+> caption as historical mood. The authoritative ladder is the [shipped
+> table](#synergy-callout).
+
 ![Animated mock of the tier-1 combo cue: a brief blue spark bursts as the word Combo! pops on-screen, then fades. Loops.](/visual-effects/surface2-combo-spark.svg "width=33%")
 
 *T1 (`1`) — a brief blue **spark** + **Combo!** — "that worked."*
@@ -961,7 +1080,7 @@ literally *looks* bigger.
 
 ![Animated mock of the tier-3 combo cue: a full-screen golden bloom with rotating rays and ascending streaks of light as the word Unstoppable! pops, then loops.](/visual-effects/surface2-combo-flourish.svg "width=72%")
 
-*T3 (`3–4`) — a full-screen ascending **flourish** + **Unstoppable!** — "I *built* this." The apex **`LEGENDARY!`** rung above it (`>= 5`) is the locked 4th tier (D-24246): WP-425 ships its audio sting; the visual finale follows — see the [call-out note](#synergy-callout).*
+*T3 (`3–4`) — a full-screen ascending **flourish** + **Unstoppable!** — "I *built* this." The apex **`LEGENDARY!`** rung above it (`>= 5`) is the locked 4th tier (D-24246): WP-425 shipped its audio sting and WP-556 shipped the visual `LEGENDARY!` call-out — see the [call-out note](#synergy-callout).*
 
 *Source: [surface2-combo.py](../ewiki/visual-effects/surface2-combo.py). The
 words are the [synergy call-out](#synergy-callout) naming proposal; the tier
@@ -1026,14 +1145,18 @@ finales (the `heroes-win` bloom is the finale-scale sibling of the A.1
   — `EndgameOutcome` (3 outcomes), `ESCAPE_LIMIT`
 - [ARCHITECTURE.md](../docs/ai/ARCHITECTURE.md) — engine owns truth / UI
   consumes read-only projections; determinism invariant
-- [DECISIONS.md](../docs/ai/DECISIONS.md) — D-24221 (`lastPlayEffectsFired`
-  as an observability-only, hash-excluded `UIState` signal — the combo
-  count), D-24228 (the shipped tiered combo cue: tiers
-  `0→none/1→small/2→medium/≥3→big`, scalar-change consumer — the audio
-  pattern this page mirrors), D-20001 (minimal notable-event payload;
-  deferred `escapeResolved`), D-20008 (`mastermindDefeated` added because
-  `G.messages` is not projected), D-24159 / WP-367 (the deck-exhaustion
-  final-turn **tie**)
+- [DECISIONS.md](../docs/ai/DECISIONS.md) — **D-24365 / WP-556 / EC-591 (the
+  shipped combo VFX foundation: `canvas-confetti` + hand-rolled CSS/WAAPI,
+  unified Effect-Intensity control, `src/vfx/` determinism exemption)**,
+  D-24221 (`lastPlayEffectsFired` as an observability-only, hash-excluded
+  `UIState` signal — the combo count), D-24228 (the shipped tiered combo cue:
+  tiers `0→none/1→small/2→medium/≥3→big`, scalar-change consumer — the audio
+  pattern this page mirrors), D-24246 (the apex `>= 5 → legendary` tier,
+  shared audio + visual), D-24085 (the `functions/` determinism exemption
+  D-24365 mirrors), D-20001 (minimal notable-event payload; deferred
+  `escapeResolved`), D-20008 (`mastermindDefeated` added because `G.messages`
+  is not projected), D-24159 / WP-367 (the deck-exhaustion final-turn
+  **tie**)
 - VFX / animation libraries (confirm each license at adoption):
   - [canvas-confetti](https://github.com/catdad/canvas-confetti) (MIT)
   - [tsparticles](https://github.com/tsparticles/tsparticles) (MIT)
