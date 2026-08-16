@@ -37,9 +37,16 @@ fixed-overlay precedent). Follow-ups: Tier-1 notable-event effects, Surface-4
 endgame finales, faction battle cries (licensing-gated D-24259).
 
 **`User-Visible Surface = play.legendary-arena.com`** — **D-24026 live-verify
-PENDING** (post-deploy: drive a real synergy chain and confirm the flash scales
-small→legendary with the word at `medium`+, Effect-Intensity off blanks + mutes,
-reduced-motion keeps the word).
+✅ VERIFIED 2026-08-16** (deployed bundle `gitSha a426b67`). Drove
+`lastPlayEffectsFired` via the `uiState` store on the live play surface: the
+combo flash escalates by tier — `small` = flash, no word; `medium` =
+**Team-Up!**; `big` = **Unstoppable!** + impact; `legendary` (>=5) =
+**LEGENDARY!** + impact (impact at the peaks only). The unified Effect-Intensity
+control cycles `full → low → off → full`, and **off** flips the mute to 🔇
+(silences audio too) and stops the impact — persisted to localStorage. A pixel
+screenshot of the particle burst + the OS-reduced-motion word-fade were not
+captured (the browser pane was not being displayed → compositing paused;
+reduced-motion is OS-level) — both are covered by the unit suite (1279/0).
 
 ### WP-555 — `getLegalMoves` Discard-to-Play Payability — DONE (2026-08-15)
 
