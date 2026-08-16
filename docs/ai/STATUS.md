@@ -7,6 +7,18 @@
 
 ## Current State
 
+### WP-548 — Coverage `subsystem`-Covered Status — DONE (2026-08-15)
+
+`/debug/effects` (and `/coverage`) flagged fully-implemented cards as `(unmarked)` — a false TODO — when a card is implemented by a subsystem OTHER than the `[effect:X]` villain-ability pipeline. A **new sixth coverage status `subsystem`** now marks them (done-elsewhere; distinct from `unmarked`=todo and `deferred`=recognized-but-unexecuted). Cards join via a curated allowlist `scripts/coverage/subsystem-coverage.json` (`{ "<ext_id>": { subsystem, wp, decision } }`, mirroring `mechanic-provenance.json`); `villain-mechanic-ledger.mjs` reads it and, in the would-be-`unmarked` branch only, emits a `subsystem` row instead. The status threads through `build-effect-implementation-index.mjs` `STATUS_ORDER`, the registry `EFFECT_INDEX_STATUSES` + `byStatus` Zod shape + `statusTally` (+ schema test), the dashboard `LedgerStatus` union/array (+ `coverage.drift.test.ts`), both `statusLabel` switches + `statusRank`, and `EffectsPage.vue` `STATUS_ORDER` + an `fx-subsystem` covered-state chip (teal).
+
+**Seed set — merged coverage only; the status replaces a would-be-`unmarked` classification only.** Five cards declared: Blob / Venom / Zombie Venom (`setup:require-to-defeat`, WP-292 / D-24076), Supreme HYDRA (`scoring:dynamic-vp`, WP-546 / D-24355), and core Ultron (`scoring:dynamic-vp`, WP-553 / D-24362 — added beyond EC-583's literal Supreme-HYDRA-only text because Ultron is now a merged `scoring:dynamic-vp` card passing the same gate). **Only Blob + Supreme HYDRA actually flip to `subsystem`** (they carry no `[effect:X]` ability). **Venom + Zombie Venom** carry `[effect:gainWoundEachPlayer]` and **core Ultron** carries `[effect:reveal-or-wound]`, so all three are already `executable` via the effect-marker path (the EC's "do not change the `[effect:X]`-marked paths" lock); their allowlist entries document the additional subsystem coverage without overriding that path.
+
+**Tooling / observability only — no engine, `G`, gameplay, or determinism change, and no `data/cards/` edit.** Villain ledger 719 rows (`subsystem 2`); effect-index 1826 entries; all derived feeds regenerated in one commit (real diffs; `ledger:villains:check` + `effect-index:check` green). Tests: registry **229 / 0**, dashboard **447 / 0**, effect-index generator **7 / 0**; dashboard typechecks + builds; `git status` showed no `packages/game-engine/` or `data/cards/` change. D-24357 Active.
+
+**D-24026 live-verify — OPERATOR-PENDING.** `User-Visible Surface = dashboard.legendary-arena.com/debug/effects`. To confirm live: the 5 declared cards read `subsystem`/covered (Blob + Supreme HYDRA flipped from `unmarked`; Venom / Zombie Venom / Ultron continue to read `executable`), none as a false `unmarked` TODO.
+
+---
+
 ### WP-553 — Core Ultron Dynamic Victory Points — DONE (2026-08-15)
 
 **Ultron** (`villain core/masters-of-evil/ultron`) — *"worth +1`[icon:piercing]` for each `[hc:tech]` Hero you have among all your cards at the end of the game"* (`vp "2+"`) — now scores faithfully. It was scoring the flat `VP_VILLAIN = 1` fallback because `Number("2+")` is `NaN`, so no `G.cardVictoryPoints` entry was written — understating even its **base 2** and missing the whole per-tech-Hero bonus. Caught live at WP-546's own verify (match `U6aE2N1IW0k`, where Ultron scored 1). This is the **second** card-text dynamic-VP modifier — the card D-24355 named as the one that earns the resolver's generalization (duplicate-first now satisfied). Ultron's separate Escape ability (`reveal-or-wound:hc:tech`) was already implemented at WP-469 and is untouched.
