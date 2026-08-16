@@ -7,6 +7,45 @@
 
 ## Current State
 
+### WP-559 — Hero Ledger `subsystem` Covered Status — DONE (2026-08-16)
+
+`/coverage` was reporting **shipped work as an unfinished TODO**. WP-548 created
+the `subsystem` status but wired it into the villain ledger only, so
+`core/spider-man`'s `reveal-reorder` rendered Unsupported with WP / Decision /
+Handler blank — eight weeks after WP-479 / D-24286 shipped it. It is a bare
+modifier marker with no `[effect:X]` tag, so `statusForMechanic` fell through
+every bucket to its terminal `return 'unsupported'`.
+
+**The design point (D-24368).** The villain allowlist is card-keyed and replaces
+a whole-card `(unmarked)` row — sound, because an unmarked villain emits one row
+per card. Heroes emit one row **per mechanic**, and `core/spider-man` mixes both
+cases: `reveal-reorder` is implemented, `reveal-count` is not. A card-keyed hero
+entry would clear both and hide a real TODO, so hero entries are
+`(card × mechanic)`-keyed. A hero subsystem row also keeps its real mechanic
+name — that name is the join key for the effect index and the by-mechanic table.
+
+**Two defects the draft scaffold caught**, neither in the reservation: a missing
+`subsystem` key in the `byStatus` initializer (writes to `undefined`, serialises
+`"subsystem": null`, breaks `totalRows == sum` — *while `ledger:heroes:check`
+still passes*), and the `effect-index` regeneration cascade (stale at exit 1;
+omitting it reddens `main` for every concurrent session).
+
+Hero ledger now reads **executable 235 / deferred 0 / condition 5 /
+unsupported 367 / unmarked 43 / subsystem 1**, `totalRows 651 = sum(byStatus)`.
+All six gates exit 0, `vue-tsc` clean, whole repo green.
+`villain-mechanic-ledger.mjs` is byte-identical and the allowlist's `cards`
+block is additions-only.
+
+**`User-Visible Surface = dashboard.legendary-arena.com/coverage` — D-24026
+live-verify operator-pending:** after deploy, `core/spider-man` ×
+`reveal-reorder` should read **Subsystem** (not Unsupported) with WP-479 /
+D-24286 / `setup:reveal-reorder-modifier` populated, and the summary should show
+a **Subsystem 1** tile with `Unsupported` at **367**.
+
+D-24368 Active.
+
+---
+
 ### WP-558 — Danger Meter on the Play Surface — DONE (code) 2026-08-16 · D-24026 live-verify PENDING DEPLOY
 
 Packet 2 of the danger-meter arc: the visual consumer of WP-557's menace
