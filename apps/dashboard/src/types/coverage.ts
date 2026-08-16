@@ -61,6 +61,10 @@ export interface LedgerByStatus {
   condition: number;
   unsupported: number;
   unmarked: number;
+  // why (WP-559 / D-24368): the hero ledger emits `subsystem` for a (card x mechanic)
+  // pair implemented outside the [effect:X] pipeline. Optional because a ledger
+  // regenerated before WP-559 has no such key; treat absent as 0 at the call site.
+  subsystem?: number;
 }
 
 export interface LedgerSummary {

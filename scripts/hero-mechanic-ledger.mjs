@@ -103,6 +103,28 @@ const MOVE_EXECUTED_HANDLER_MODULES = {
 };
 const UNMARKED_MECHANIC = '(unmarked)';
 
+// why (WP-559 / D-24368): the hero half of the WP-548 / D-24357 subsystem-coverage
+// allowlist. Keyed (card ext_id -> mechanic), NOT by card alone as the villain block is:
+// the villain ledger emits one would-be-'(unmarked)' row per card so a card-level
+// decision is sound there, but this ledger emits one row PER MECHANIC and a single card
+// legitimately mixes both cases (core/spider-man's reveal-reorder is implemented by
+// WP-479 / D-24286 while its reveal-count genuinely is not). A card-keyed entry would
+// clear both and hide a real TODO. Read once at module load; absent block => {}.
+const SUBSYSTEM_HERO_COVERAGE = JSON.parse(
+  readFileSync(join(REPO_ROOT, 'scripts', 'coverage', 'subsystem-coverage.json'), 'utf8'),
+).heroes ?? {};
+
+/**
+ * Returns the subsystem-coverage entry for a (card, mechanic) pair, or undefined.
+ *
+ * @param {string} extId - the hero card ext_id.
+ * @param {string} mechanic - a normalized mechanic name.
+ * @returns {{subsystem: string, wp?: string, decision?: string}|undefined} the entry.
+ */
+function subsystemEntryFor(extId, mechanic) {
+  return SUBSYSTEM_HERO_COVERAGE[extId]?.[mechanic];
+}
+
 const KNOWN_KEYWORDS = new Set(HERO_KEYWORDS);
 const COMPOSITION_MARKERS = new Set(HERO_COMPOSITION_MARKER_NAMES);
 // why: D-24045 — only the PARAMETERIZED composition markers (empowered) are classified
@@ -288,7 +310,15 @@ function extractMechanics(abilities) {
  * @param {Set<string>} cardResolvedMarkers - the composition markers THIS card's hooks resolved.
  * @returns {'executable'|'deferred'|'condition'|'unsupported'} the status.
  */
-function statusForMechanic(mechanic, cardResolvedMarkers) {
+function statusForMechanic(mechanic, cardResolvedMarkers, subsystemEntry) {
+  // why (WP-559 / D-24368): an allowlisted pair is IMPLEMENTED — by a subsystem other
+  // than the [effect:X] hero pipeline — so it is done, NOT a TODO. Checked FIRST because
+  // such a mechanic matches none of the buckets below (reveal-reorder is a bare modifier
+  // marker with no effect tag) and would otherwise fall to the terminal 'unsupported',
+  // rendering shipped work as unbuilt on /coverage.
+  if (subsystemEntry !== undefined) {
+    return 'subsystem';
+  }
   // why: D-24055 — conditions are recognized gate mechanics (spectrum requires ≥3 classes).
   // They are distinct mechanics worth tracking, but not keywords/effects themselves.
   if (KNOWN_CONDITIONS[mechanic] !== undefined) {
@@ -375,9 +405,29 @@ function toSortedDesigns(nameBySlug) {
  *   abilities print this mechanic (WP-491); an empty list for an `(unmarked)` row.
  * @returns {object} the ledger row.
  */
-function buildRow(extId, info, mechanic, status, provenance, designs) {
+function buildRow(extId, info, mechanic, status, provenance, designs, subsystemEntry) {
   const entry = provenance[mechanic] ?? {};
   const handler = handlerForMechanic(mechanic, status);
+  // why (WP-559 / D-24368): a subsystem row keeps its REAL mechanic name — that name is the
+  // join key for the effect-implementation index and the /coverage by-mechanic table, so
+  // substituting the subsystem label (as the villain ledger does, where the label occupies
+  // the mechanic column of a whole-card row) would drop the mechanic. Provenance and the
+  // handler come from the allowlist instead: handlerForMechanic returns '' for any
+  // non-executable status, and naming a HERO_EFFECT_HANDLERS key here would be false —
+  // the code lives in the named subsystem.
+  if (status === 'subsystem' && subsystemEntry !== undefined) {
+    return {
+      extId,
+      heroName: info.heroName,
+      set: info.setAbbr,
+      mechanic,
+      status,
+      wp: subsystemEntry.wp ?? '',
+      decision: subsystemEntry.decision ?? '',
+      handler: subsystemEntry.subsystem,
+      designs,
+    };
+  }
   return {
     extId,
     heroName: info.heroName,
@@ -471,7 +521,9 @@ function buildLedger(registry, provenance) {
     }
     for (const mechanic of [...designNamesByMechanic.keys()].sort()) {
       const designs = toSortedDesigns(designNamesByMechanic.get(mechanic));
-      rows.push(buildRow(extId, info, mechanic, statusForMechanic(mechanic, cardResolvedMarkers), provenance, designs));
+      const subsystemEntry = subsystemEntryFor(extId, mechanic);
+      const status = statusForMechanic(mechanic, cardResolvedMarkers, subsystemEntry);
+      rows.push(buildRow(extId, info, mechanic, status, provenance, designs, subsystemEntry));
     }
   }
 
@@ -485,7 +537,12 @@ function buildLedger(registry, provenance) {
 
   const summary = {
     totalRows: rows.length,
-    byStatus: { executable: 0, deferred: 0, condition: 0, unsupported: 0, unmarked: 0 },
+    // why (WP-559 / D-24368): `subsystem` MUST be initialized here. The accumulator does
+    // byStatus[row.status] += 1, so a missing key writes to undefined and serialises as
+    // "subsystem": null — while ledger:heroes:check still PASSES, because freshness only
+    // compares the regenerated file to the committed one. The visible break is totalRows
+    // no longer equalling the sum of the buckets.
+    byStatus: { executable: 0, deferred: 0, condition: 0, unsupported: 0, unmarked: 0, subsystem: 0 },
     distinctMechanics: 0,
   };
   const distinct = new Set();

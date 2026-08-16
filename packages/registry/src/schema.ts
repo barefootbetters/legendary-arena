@@ -769,9 +769,11 @@ export const EFFECT_INDEX_STATUSES = [
   "unsupported",
   "unmarked",
   // why: WP-548 / D-24357 — `subsystem` is a closed-enum widening (a registry
-  // contract change) for a villain card implemented by a subsystem OTHER than the
+  // contract change) for a card implemented by a subsystem OTHER than the
   // [effect:X] villain-ability pipeline (setup:require-to-defeat, scoring:dynamic-vp):
   // done, not a TODO. It stays in lockstep with EffectImplementationSummarySchema.byStatus,
+  // WP-559 / D-24368 extended it to the HERO ledger too, so this enum now spans BOTH
+  // committed ledgers; villain entries are card-keyed, hero entries (card x mechanic).
   // the superRefine statusTally accumulator, and every dashboard consumer (statusLabel,
   // the filter chip list, the badge CSS) — all widened together.
   "subsystem",
