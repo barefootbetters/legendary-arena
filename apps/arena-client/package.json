@@ -16,12 +16,14 @@
     "@legendary-arena/preplan": "workspace:*",
     "@teamhanko/hanko-elements": "^2.4.0",
     "boardgame.io": "^0.50.0",
+    "canvas-confetti": "^1.9.3",
     "howler": "^2.2.4",
     "pinia": "^2.1.7",
     "vue": "^3.4.27"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260701.1",
+    "@types/canvas-confetti": "^1.9.0",
     "@legendary-arena/game-engine": "workspace:*",
     "@legendary-arena/vue-sfc-loader": "workspace:*",
     "@types/howler": "^2.2.13",
