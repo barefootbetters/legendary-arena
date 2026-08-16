@@ -138,6 +138,25 @@ Deterministic (reads `G.turnEconomy.recruit` only; **no `ctx.random`, no `Math.r
 ---
 ### WP-453 — Simulation Setup Deck Shuffle Fidelity (Seeded, Not Reverse-Mock) — DONE (2026-08-15)
 
+**Unhold note (2026-08-15).** This branch sat in draft because
+`sim:runtime-observed:check` went from ~50 s to **35+ minutes** once the shuffle
+was real. The cause was not the shuffle: it exposed two
+`getLegalMoves` ↔ move-guard divergences that the reverse-mock had been hiding by
+killing games at or near turn 0 — the villain defeat requirement (WP-554 /
+D-24363, which also added the structural within-turn bound) and discard-to-play
+payability (WP-555 / D-24364).
+
+With both merged the sweep completes in **8.4 s** and the artifact is regenerated
+here: **312 games, 31 distinct mechanics, 2219 observations, 0 dropped, zero
+non-terminating** — against the **12** distinct mechanics documented under the
+reverse-mock Portals backdrop (D-24323). That coverage gain is what this WP was
+actually buying, and it was invisible while the setup shuffle was a reversal.
+
+The backdrop scheme was investigated and **exonerated** — all five originally
+failing games were the same `core` hero board, and a `MAX_TURNS` sweep of
+50/75/100/150/200 was identical — so `core/portals-to-the-dark-dimension` and
+`assertAllGamesTerminated` are both unchanged.
+
 **No user-observable change — infrastructure only.** Production gameplay never used the reverse mock; boardgame.io supplies the real seeded shuffle in the live engine. The payoff is a trustworthy simulation / PAR / co-op-yardstick surface.
 
 The simulation and fixture-replay setup paths built their `SetupContext` from the unit-test helper whose `Shuffle` merely reverses the array. `buildVillainDeck` lexically sorts before shuffling and virtual `scheme-twist-…` ids sort **last**, so reversing stacked every twist on **top** of the villain deck. On the two core schemes whose twist resolver chains extra reveals, that cascaded through all eight clustered twists in one turn-1 reveal and tripped the doom-clock threshold — an auto-loss at **turn 0**, before any move. WP-452 worked around it by swapping its pinned scheme and flagged the follow-up; this is that follow-up.
