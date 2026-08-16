@@ -68,6 +68,36 @@
 - [ ] `docs/ai/work-packets/WORK_INDEX.md` — WP-556 checked off with the date.
 - [ ] `docs/05-ROADMAP-MINDMAP.md` — WP-556 node glyph `📝 → ✅`, then `pnpm roadmap:counts:write`; `pnpm roadmap:counts:check` exits 0.
 
+## Execution Amendment (2026-08-16)
+
+Executed off `b1119667`; all changes scope-neutral simplifications within the App
+layer (fewer files than the allowlist, no new scope):
+
+- **Overlay host — one, not two.** `<VfxOverlay>` mounts **once at the shared
+  `PlayViewport.vue` root** beside `<AudioControls>` (the WP-412 fixed-overlay
+  precedent — a full-bleed `position: fixed` layer covers both surfaces from one
+  host), instead of separately in `PlayDesktop.vue` + `PlayMobile.vue`. This
+  resolves the draft's `PlayMobile`-has-no-`NotableEventOverlay` anchor gap and
+  drops two wiring files. `PlayDesktop.vue` / `PlayMobile.vue` are **not**
+  touched.
+- **`useAudioSettings.ts` unmodified (import-only).** Its `isMuted` ref is
+  directly settable, so the unified "off" coupling lives in `AudioControls.vue`
+  (`isMuted.value = next === 'off'`) — no master-mute setter was needed, so
+  `useAudioSettings.ts` and `useAudioSettings.test.ts` drop from the diff.
+- **`testing/jsdom-setup.ts` — added a canvas `getContext` → null stub.** jsdom
+  does not implement `HTMLCanvasElement.getContext` and throws a noisy
+  not-implemented error (forwarded to the console) on every probe; `VfxOverlay`
+  triggers it deciding whether to load `canvas-confetti`. The stub returns null
+  (headless behaviour) so the fail-soft path skips particles cleanly and the
+  suite is quiet. No test relies on a real 2D context (jsdom always threw).
+- **Net files:** the 4 new `src/vfx/` + `useComboVfx` + `VfxOverlay` modules
+  (+ their 4 tests), `AudioControls.vue`, `PlayViewport.vue`, `package.json` +
+  `pnpm-lock.yaml`, `testing/jsdom-setup.ts`, and the governance close
+  (`DECISIONS.md`, `02-CODE-CATEGORIES.md`, `WORK_INDEX.md`, this EC,
+  `05-ROADMAP-MINDMAP.md`, `STATUS.md`). Verified: `typecheck` 0, arena-client
+  suite **1279/0**, `pnpm -r build` 0, no `packages/game-engine/**` file, one
+  `comboTierForCount` definition.
+
 ## Common Failure Smells
 - A `packages/game-engine/**` file in the diff ⇒ you drifted into the engine; the VFX layer is App-only (the signal already shipped in WP-409).
 - A second `comboTierForCount` / a hand-copied tier map ⇒ you re-derived instead of importing the shipped helper.

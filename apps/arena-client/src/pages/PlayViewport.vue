@@ -9,6 +9,7 @@ import ViewLoadoutButton from '../components/ViewLoadoutButton.vue';
 import WaitingForPlayersPanel from '../components/WaitingForPlayersPanel.vue';
 import HollowEffectsPanel from '../components/play/HollowEffectsPanel.vue';
 import AudioControls from '../components/play/AudioControls.vue';
+import VfxOverlay from '../components/play/VfxOverlay.vue';
 import BotAllyStallBanner from '../components/BotAllyStallBanner.vue';
 import UpdateAvailableBanner from '../components/UpdateAvailableBanner.vue';
 import EndgameActions from '../components/play/EndgameActions.vue';
@@ -21,6 +22,7 @@ import {
 import { useCardImagePrefetch } from '../composables/useCardImagePrefetch';
 import { useSoundEffects } from '../composables/useSoundEffects';
 import { useComboCue } from '../composables/useComboCue';
+import { useComboVfx } from '../composables/useComboVfx';
 import { useBotAllyStatus } from '../composables/useBotAllyStatus';
 import { useDeployVersionCheck } from '../composables/useDeployVersionCheck';
 import { useUiStateStore } from '../stores/uiState';
@@ -82,7 +84,7 @@ const SUBMISSION_MESSAGES: Record<Exclude<SubmissionStatus, 'idle'>, string> = {
  */
 export default defineComponent({
   name: 'PlayViewport',
-  components: { PlayDesktop, PlayMobile, DiagnosticExportButton, ViewLoadoutButton, WaitingForPlayersPanel, HollowEffectsPanel, AudioControls, BotAllyStallBanner, UpdateAvailableBanner, EndgameActions },
+  components: { PlayDesktop, PlayMobile, DiagnosticExportButton, ViewLoadoutButton, WaitingForPlayersPanel, HollowEffectsPanel, AudioControls, VfxOverlay, BotAllyStallBanner, UpdateAvailableBanner, EndgameActions },
   props: {
     submitMove: {
       type: Function as PropType<SubmitMove>,
@@ -137,6 +139,15 @@ export default defineComponent({
     // inherits that engine's unlock/mute/volume gate. Pure presentation — reads
     // UIState only, never writes G/ctx; no new control (reuses AudioControls).
     useComboCue(audioSnapshot);
+
+    // why: WP-556 — the tiered combo FLASH (the visual twin of useComboCue),
+    // mounted at the SAME shared composable root beside useComboCue, reading the
+    // SAME useUiStateStore snapshot. It watches WP-409's
+    // UIState.game.lastPlayEffectsFired scalar through the SAME comboTierForCount
+    // and emits a combo-flash signal the <VfxOverlay> below renders, so the flash
+    // and the sting peak together. Pure presentation — reads UIState only, never
+    // writes G/ctx, absent from the determinism hash.
+    useComboVfx(audioSnapshot);
 
     // why: WP-339 — on gameover, submit this match's competitive score once (for
     // an authenticated player). toRef keeps matchId reactive so the composable
@@ -351,6 +362,15 @@ export default defineComponent({
       // layout prop chain and no second wiring host.
     -->
     <AudioControls />
+    <!--
+      // why: WP-556 — the single full-bleed VFX overlay, mounted ONCE here at the
+      // shared viewport root beside <AudioControls> (the same fixed-overlay
+      // precedent), so the combo flash + synergy call-out cover BOTH the
+      // <PlayMobile> and <PlayDesktop> surfaces from one host. pointer-events:none
+      // + position:fixed via its own scoped CSS, so no layout prop chain and no
+      // second wiring host. It renders the useComboVfx signal mounted above.
+    -->
+    <VfxOverlay />
     <!--
       // why: WP-415 — mounted ONCE here at the shared viewport root (the 01.5
       // wiring host), so the co-op stall banner covers BOTH the <PlayMobile> and

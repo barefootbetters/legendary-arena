@@ -80,3 +80,18 @@ installGlobal('sessionStorage', dom.window.sessionStorage);
 installGlobal('__APP_VERSION__', '0.0.0-test');
 installGlobal('__BUILD_TIMESTAMP__', new Date().toISOString());
 installGlobal('__GIT_SHA__', 'test');
+
+// why: jsdom does not implement HTMLCanvasElement.prototype.getContext — it
+// THROWS a "not implemented" error (forwarded to the console via the virtual
+// console) on every call. The WP-556 VfxOverlay probes for a 2D context to
+// decide whether to load canvas-confetti, so a mount would spray that noise
+// across the suite. Stub getContext to return null — exactly what a
+// headless / locked-down browser does — so the VfxOverlay fail-soft path skips
+// particles cleanly and no test relies on a real 2D context (none ever could:
+// jsdom always threw here). Added under WP-556 / EC-591 (see EC §Execution
+// Amendment).
+Object.defineProperty(dom.window.HTMLCanvasElement.prototype, 'getContext', {
+  value: () => null,
+  writable: true,
+  configurable: true,
+});

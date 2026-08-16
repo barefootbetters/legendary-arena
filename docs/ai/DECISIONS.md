@@ -36837,6 +36837,16 @@ _Active 2026-08-15 — landed at WP-555 execution (EC-590). game-engine 2656 →
 
 Protect this file.
 
-### D-24365 — Arena-client VFX foundation: pure client-side visual presentation (canvas-confetti bursts + synergy call-out) on the shared combo tiers, a unified Effect-Intensity control, day-one prefers-reduced-motion, and a determinism exemption for the non-replay-bearing `src/vfx/` layer (Drafted 2026-08-15; not yet landed — WP-556 / EC-591)
+### D-24365 — Arena-client VFX foundation: pure client-side visual presentation (canvas-confetti bursts + synergy call-out) on the shared combo tiers, a unified Effect-Intensity control, day-one prefers-reduced-motion, and a determinism exemption for the non-replay-bearing `src/vfx/` layer (Active 2026-08-16 — WP-556 / EC-591)
 
-Full clause in WP-556 §Reserved Decisions; lands Active at execution (with the `02-CODE-CATEGORIES.md §client-app` carve-out note). Mirrors the `functions/` determinism exemption (D-24085).
+The arena client gains its **VFX foundation** on `play.legendary-arena.com`, built around the combo moment and mirroring the shipped audio arc. Locked:
+
+1. **Pure client presentation.** The layer lives entirely in `apps/arena-client` (`src/vfx/`, `components/play/VfxOverlay.vue`, `composables/useComboVfx.ts`), reads only projected `UIState` (chiefly `game.lastPlayEffectsFired`, WP-409 / D-24221), never writes `G`/`ctx`, and is absent from the determinism hash (replays / bot-vs-bot sims render no VFX).
+2. **Shared tiers, not a copy.** The combo flash and the synergy call-out import the shipped `comboTierForCount` (D-24228 / D-24246) — one mapping, now three renderers (audio sting + visual flash + on-screen word).
+3. **Library:** `canvas-confetti@^1.9.3` (MIT) for bursts, lazy-loaded off the first-paint path (a separate `confetti.module-*.js` chunk); hand-rolled CSS/WAAPI for the word + impact; no tsparticles, no GSAP.
+4. **Unified Effect-Intensity control** (`off` / `low` / `full`), persisted to localStorage and surfaced in `components/play/AudioControls.vue` — the single "off" master silences the whole feel layer (blanks visuals AND mutes audio, via `useAudioSettings`' `isMuted`). Day-one OS `prefers-reduced-motion` honouring; `shouldRender(kind: 'shake' | 'particles' | 'word')` (a locked narrow union) is the gate. Off / reduced degrades to no effects with full gameplay parity; the call-out **word** survives reduced-motion (plain fade).
+5. **Performance budget:** 60 FPS; ≤ 200 particles; ≤ 5 bursts; ≤ 500 ms impact; ONE overlay canvas; `transform`/`opacity`-only animation; gameplay rendering always wins.
+6. **Call-out restraint:** the flash starts at `small`, the word at `medium` (`Team-Up!` / `Unstoppable!` / `LEGENDARY!`).
+7. **Determinism exemption (mirrors D-24085's `functions/` precedent).** The `client-app` code-category ban on `Math.random()` / `Date.now()` / `performance.now()` does NOT apply to the `src/vfx/` presentation layer (and `VfxOverlay`): it is non-replay-bearing presentation off the gameplay render path, so it MAY depend on `canvas-confetti` (which uses `Math.random`) and MAY use `requestAnimationFrame` / time-based animation. Recorded in `02-CODE-CATEGORIES.md §client-app`. The gameplay engine's determinism is untouched.
+
+The overlay mounts once at the shared `PlayViewport.vue` root beside `<AudioControls>` (superseding the WP-556 draft's per-`PlayDesktop`/`PlayMobile` hosting — one fixed-overlay host covers both surfaces, the AudioControls precedent; see EC-591 §Execution Amendment).

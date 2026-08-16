@@ -1,12 +1,15 @@
 <script lang="ts">
-import { defineComponent, onMounted, onUnmounted } from 'vue';
+import { computed, defineComponent, onMounted, onUnmounted } from 'vue';
 import { getAudioEngine } from '../../audio/audioEngine';
 import { useAudioSettings } from '../../composables/useAudioSettings';
+import { useEffectIntensity, type EffectIntensity } from '../../vfx/effectIntensity';
 
 /**
  * Fixed-position mute toggle + master-volume slider for the WP-412 audio
- * layer, bound to `useAudioSettings` (persisted to localStorage). Mounted once
- * at the shared viewport root (`PlayViewport.vue`).
+ * layer, bound to `useAudioSettings` (persisted to localStorage), plus the
+ * WP-556 UNIFIED **Effect Intensity** master (full / low / off) that governs
+ * the VFX layer AND, at `off`, mutes audio — one control for the whole feel
+ * layer (D-24365). Mounted once at the shared viewport root (`PlayViewport.vue`).
  *
  * The component also owns the mandatory autoplay-unlock arm: on mount it
  * registers one-shot `pointerdown` / `keydown` listeners on `window` that arm
@@ -27,6 +30,33 @@ export default defineComponent({
   setup() {
     const engine = getAudioEngine();
     const { isMuted, volume } = useAudioSettings(engine);
+    const { intensity, setIntensity } = useEffectIntensity();
+
+    // why: cycle order + per-level glyph for the unified Effect-Intensity
+    // master. full ⇒ everything; low ⇒ word + particles, no shake; off ⇒ the
+    // whole feel layer silent (visuals blank AND audio muted).
+    const INTENSITY_ORDER: readonly EffectIntensity[] = ['full', 'low', 'off'];
+    const INTENSITY_GLYPH: Readonly<Record<EffectIntensity, string>> = {
+      full: '✨',
+      low: '✦',
+      off: '⊘',
+    };
+    const intensityGlyph = computed<string>(() => INTENSITY_GLYPH[intensity.value]);
+
+    function onCycleIntensity(): void {
+      engine.arm();
+      const nextIndex =
+        (INTENSITY_ORDER.indexOf(intensity.value) + 1) % INTENSITY_ORDER.length;
+      // why: the modulo keeps nextIndex in range, but noUncheckedIndexedAccess
+      // types the lookup as possibly-undefined; the `?? 'full'` is an
+      // unreachable, type-satisfying fallback.
+      const next = INTENSITY_ORDER[nextIndex] ?? 'full';
+      setIntensity(next);
+      // why: the UNIFIED master (D-24365) — cycling to `off` silences the whole
+      // feel layer (blank visuals AND mute audio); cycling back on restores
+      // audio, so one control governs both sensory layers.
+      isMuted.value = next === 'off';
+    }
 
     function onToggleMute(): void {
       // why: a control interaction is itself a valid first user gesture, so arm
@@ -64,13 +94,31 @@ export default defineComponent({
       window.removeEventListener('keydown', armOnce);
     });
 
-    return { isMuted, volume, onToggleMute, onVolumeInput };
+    return {
+      isMuted,
+      volume,
+      intensity,
+      intensityGlyph,
+      onCycleIntensity,
+      onToggleMute,
+      onVolumeInput,
+    };
   },
 });
 </script>
 
 <template>
   <div class="audio-controls" data-testid="audio-controls">
+    <button
+      type="button"
+      class="audio-controls__intensity"
+      data-testid="vfx-intensity-toggle"
+      :data-intensity="intensity"
+      :title="`Effect intensity: ${intensity} (click to cycle)`"
+      @click="onCycleIntensity"
+    >
+      {{ intensityGlyph }}
+    </button>
     <button
       type="button"
       class="audio-controls__mute"
@@ -113,7 +161,8 @@ export default defineComponent({
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
 }
 
-.audio-controls__mute {
+.audio-controls__mute,
+.audio-controls__intensity {
   background: transparent;
   border: none;
   color: inherit;
@@ -121,6 +170,16 @@ export default defineComponent({
   font-size: 1.1rem;
   line-height: 1;
   padding: 0.1rem 0.2rem;
+}
+
+/* why: dim the intensity glyph as the level drops, so the current state reads
+   at a glance (full = bright, off = faint). */
+.audio-controls__intensity[data-intensity="low"] {
+  opacity: 0.7;
+}
+
+.audio-controls__intensity[data-intensity="off"] {
+  opacity: 0.45;
 }
 
 .audio-controls__volume {
