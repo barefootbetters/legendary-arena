@@ -36945,4 +36945,4 @@ in every match. Locked:
    than showing a zero-width "safe" bar. An absent measurement is not a claim
    of safety, and a false calm is worse than no meter.
 
-_Drafted 2026-08-16; not yet landed. Flips to Active at WP-558 execution (EC-593)._
+_Active 2026-08-16 — landed at WP-558 execution (EC-593). arena-client 1279 → 1302 tests / 0 fail, typecheck 0. §1 was verified in a real browser, not only jsdom: at Effect-Intensity `off` the meter still rendered with its `2/8` ratio and no pulse. §3 confirmed by a grep gate returning zero `scheme-twist-threshold` matches. §4 and §5 are each pinned by a unit test (bare count; renders nothing when absent). One clarification from execution: the **"Twists:"** label became a bare count rather than being repointed at `schemeLossThreshold` — for a `resourceLossCondition` scheme that threshold counts a resource, not twists, so the scheme-aware ratio lives on the meter under a label that matches what it counts._

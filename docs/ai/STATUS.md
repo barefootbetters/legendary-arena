@@ -7,6 +7,49 @@
 
 ## Current State
 
+### WP-558 — Danger Meter on the Play Surface — DONE (code) 2026-08-16 · D-24026 live-verify PENDING DEPLOY
+
+Packet 2 of the danger-meter arc: the visual consumer of WP-557's menace
+signal, and the packet that removes a number that was **wrong in every match**.
+
+A `DangerMeter` now sits in the shared `TopHudBar` — rendered by both
+`PlayDesktop` and `PlayMobile`, so one host covers both surfaces — showing the
+projected `menace` as a filling bar with a `menaceTier` treatment and the
+scheme-aware progress ratio. The hardcoded `:scheme-twist-threshold="8"` is
+gone from all three sites.
+
+**D-24367 §1 is the load-bearing call:** the meter is **information, not
+decoration**. It always renders; Effect-Intensity and `prefers-reduced-motion`
+gate only its animation. `shouldRender` is deliberately not consulted and
+`VfxKind` is not extended — routing a live loss-progress readout through the
+effects toggle would hide game state from any player who turns effects off,
+most often for motion sensitivity.
+
+**Baselines:** arena-client **1279 → 1302 / 0** (+23 tests, 184 → 192 suites);
+`typecheck` **0**; `pnpm -r build` 0; `pnpm -r --no-bail test` no new failures.
+AC-7 grep gate clean; AC-10 `packages` diff **empty** (client-only).
+
+**Dev-preview evidence (supporting, not a substitute for D-24026):** on
+`?fixture=mid-turn&play=1` the meter rendered with tier `calm`, 25% fill, aria
+"Scheme danger: low. 2 of 8 toward the scheme's goal.", ratio `2/8`, and
+`Twists: 2` with no `/8`. At Effect-Intensity `off` it still rendered with its
+ratio and no pulse.
+
+**⚠ AC-12 / D-24026 is OPEN and operator-gated.** Unlike WP-557 (which was
+infrastructure with nothing to see), this packet ships a visible change and is
+**not observably done until verified on the deployed bundle**: open a real
+match on `play.legendary-arena.com` and confirm (a) the meter tracks as twists
+resolve and (b) the twist denominator matches the active scheme rather than 8.
+
+**Two inline amendments** are recorded in the WORK_INDEX row and the post-mortem:
+a fixture-typing fix following WP-434's `narrowLog` precedent, and a correction
+to AC-2 — repointing the "Twists:" label at `schemeLossThreshold` would have
+rendered `Twists: 3/12` for Negative Zone, replacing one wrong number with
+another, so the twist readout became a bare count instead.
+
+**Remaining consumer:** packet 3, the adaptive danger-meter music channel
+(unreserved), which inherits the same D-24366 §3 tier bands.
+
 ### WP-557 — Menace Signal: Scheme Loss Progress → UIState — DONE (2026-08-16)
 
 The engine half of the ewiki [Sound Effects](https://ewiki.legendary-arena.com/sound-effects/)
