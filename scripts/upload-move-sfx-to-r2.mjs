@@ -16,6 +16,10 @@
  *   - ffmpeg on PATH
  *   - rclone installed + configured with an "r2:" remote (the same remote
  *     `upload-themes-to-r2.mjs` uses: `rclone lsd r2:legendary-images` succeeds)
+ *   - R2 credentials **in the environment** — the r2: remote is `env_auth = true`,
+ *     so it reads AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY rather than storing
+ *     keys in rclone.conf. They live in the repo's local `.env`; load them into
+ *     the shell before running or every upload fails on AccessDenied.
  *   - curl on PATH (for the post-upload verification GET)
  *   - Source clips in the source dir, named by their **target stem** (the R2
  *     filename without extension — hyphens, never underscores, per the repo
@@ -106,8 +110,19 @@ if (badNames.length > 0) {
   process.exit(1);
 }
 
+// why: AWS_EC2_METADATA_DISABLED turns a missing-credential run into an instant
+// error instead of a ~2 minute silent hang. The r2: remote is env_auth=true, so
+// when AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY are absent from the environment
+// the SDK falls back to the EC2 instance-metadata endpoint (169.254.169.254),
+// which black-holes on a workstation and retries before it ever reports failure.
+const childEnvironment = { ...process.env, AWS_EC2_METADATA_DISABLED: 'true' };
+
 function run(cmd, args) {
-  return execFileSync(cmd, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+  return execFileSync(cmd, args, {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+    env: childEnvironment,
+  });
 }
 
 // ── Step 1: encode ───────────────────────────────────────────────────────────
@@ -142,9 +157,15 @@ if (dryRun) {
 
 // ── Step 2: upload ───────────────────────────────────────────────────────────
 
+// why: --s3-no-check-bucket skips rclone's pre-upload bucket-existence probe,
+// which otherwise issues a CreateBucket call. R2 API tokens are scoped to object
+// read/write and cannot create buckets, so that probe fails the whole upload with
+// "CreateBucket ... 403 AccessDenied" even though the bucket plainly exists and
+// the token can write to it. This matches every other documented R2 upload in the
+// repo (docs/ops/RUNBOOK-r2-image-cache-control.md, wiki/card-image-acquisition.md).
 const stems = sources.map(({ parsed }) => parsed.name);
 for (const stem of stems) {
-  run('rclone', ['copyto', join(distDir, `${stem}.mp3`), `${r2Dest}/${stem}.mp3`]);
+  run('rclone', ['copyto', '--s3-no-check-bucket', join(distDir, `${stem}.mp3`), `${r2Dest}/${stem}.mp3`]);
   console.log(`uploaded ${stem}.mp3 -> ${r2Dest}/${stem}.mp3`);
 }
 
