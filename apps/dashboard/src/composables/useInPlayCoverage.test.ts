@@ -263,7 +263,10 @@ test('a mechanic flipped to executable MOVES its obs into resolvedObs, denominat
   // Before: alpha is unsupported and still firing in the live sweep.
   const before = computeInPlayCoverage(
     baseline,
-    { alpha: { hitCount: 100 } as RuntimeObservedEntry, beta: { hitCount: 50 } as RuntimeObservedEntry },
+    {
+      alpha: { hitCount: 100 } as RuntimeObservedEntry,
+      beta: { hitCount: 50 } as RuntimeObservedEntry,
+    },
     new Map<string, LedgerStatus>([
       ['alpha', 'unsupported'],
       ['beta', 'unsupported'],
