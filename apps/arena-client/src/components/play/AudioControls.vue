@@ -1,6 +1,7 @@
 <script lang="ts">
 import { computed, defineComponent, onMounted, onUnmounted } from 'vue';
 import { getAudioEngine } from '../../audio/audioEngine';
+import { getMusicEngine } from '../../audio/musicEngine';
 import { useAudioSettings } from '../../composables/useAudioSettings';
 import { useEffectIntensity, type EffectIntensity } from '../../vfx/effectIntensity';
 
@@ -29,8 +30,24 @@ export default defineComponent({
   name: 'AudioControls',
   setup() {
     const engine = getAudioEngine();
+    const musicEngine = getMusicEngine();
     const { isMuted, volume, isMusicEnabled, musicVolume } = useAudioSettings(engine);
     const { intensity, setIntensity } = useEffectIntensity();
+
+    /**
+     * Arms BOTH audio channels on a user gesture.
+     *
+     * why: the SFX engine and the WP-560 music engine keep SEPARATE arm state
+     * (D-24369 §1 — they are deliberately separate engines). A gesture that
+     * armed only the SFX engine left `musicEngine.isArmed()` false forever, so
+     * every `crossfadeTo` was a silent no-op and the music channel could never
+     * sound in production — no matter what reached R2. Every arm site must
+     * therefore reach both engines; arming one is always a bug.
+     */
+    function armAudioChannels(): void {
+      engine.arm();
+      musicEngine.arm();
+    }
 
     // why: cycle order + per-level glyph for the unified Effect-Intensity
     // master. full ⇒ everything; low ⇒ word + particles, no shake; off ⇒ the
@@ -44,7 +61,7 @@ export default defineComponent({
     const intensityGlyph = computed<string>(() => INTENSITY_GLYPH[intensity.value]);
 
     function onCycleIntensity(): void {
-      engine.arm();
+      armAudioChannels();
       const nextIndex =
         (INTENSITY_ORDER.indexOf(intensity.value) + 1) % INTENSITY_ORDER.length;
       // why: the modulo keeps nextIndex in range, but noUncheckedIndexedAccess
@@ -62,7 +79,7 @@ export default defineComponent({
       // why: a control interaction is itself a valid first user gesture, so arm
       // the audio context here too — a player who unmutes before touching the
       // board still hears the next event.
-      engine.arm();
+      armAudioChannels();
       isMuted.value = !isMuted.value;
     }
 
@@ -71,17 +88,23 @@ export default defineComponent({
     // which is never gated because loss progress is game state. The master
     // mute still silences music too; this only silences music.
     function onToggleMusic(): void {
+      // why: turning music ON is the one gesture most likely to be a player's
+      // FIRST interaction when they want a soundtrack, so it must arm as well —
+      // otherwise the toggle reports "on" and stays silent until some unrelated
+      // click happens to arm the context.
+      armAudioChannels();
       isMusicEnabled.value = !isMusicEnabled.value;
     }
 
     function onMusicVolumeInput(event: Event): void {
+      armAudioChannels();
       const target = event.target as HTMLInputElement | null;
       if (target === null) return;
       musicVolume.value = Number(target.value);
     }
 
     function onVolumeInput(event: Event): void {
-      engine.arm();
+      armAudioChannels();
       const target = event.target as HTMLInputElement;
       volume.value = Number(target.value);
     }
@@ -90,7 +113,7 @@ export default defineComponent({
     // user gesture. Arm on the first ANY interaction (pointerdown or keydown),
     // once; the `armOnce` handler removes both listeners so it never re-arms.
     function armOnce(): void {
-      engine.arm();
+      armAudioChannels();
       window.removeEventListener('pointerdown', armOnce);
       window.removeEventListener('keydown', armOnce);
     }

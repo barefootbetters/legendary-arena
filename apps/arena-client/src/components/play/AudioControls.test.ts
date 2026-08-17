@@ -12,7 +12,7 @@ import {
   type HowlFactory,
 } from '../../audio/audioEngine';
 import { AUDIO_MUTED_STORAGE_KEY } from '../../composables/useAudioSettings';
-import { __resetMusicEngineForTests } from '../../audio/musicEngine';
+import { __resetMusicEngineForTests, getMusicEngine } from '../../audio/musicEngine';
 
 // why: a no-op Howl factory so the seeded singleton constructs no real audio;
 // the component reaches it via getAudioEngine().
@@ -70,6 +70,43 @@ describe('AudioControls — music channel (WP-560)', () => {
     __resetAudioEngineForTests();
     __setAudioEngineForTests(createAudioEngine(mockFactory));
     __resetMusicEngineForTests();
+  });
+
+  // why: these four pin the ARM WIRING, not the engines. Both engines were
+  // individually correct and every unit test passed while the music channel was
+  // dead in production for a whole release: `AudioControls` armed only the SFX
+  // engine, so `musicEngine.isArmed()` stayed false forever and every
+  // `crossfadeTo` was a silent no-op. The engines keep SEPARATE arm state by
+  // design (D-24369 §1), so a test that arms an engine by hand can never catch
+  // this — only asserting on the real gesture path can.
+  test('a first window gesture arms the MUSIC engine too (autoplay unlock)', () => {
+    mount(AudioControls);
+    assert.equal(getMusicEngine().isArmed(), false);
+    window.dispatchEvent(new window.Event('pointerdown'));
+    assert.equal(getMusicEngine().isArmed(), true);
+  });
+
+  test('a first keydown arms BOTH channels', () => {
+    mount(AudioControls);
+    window.dispatchEvent(new window.Event('keydown'));
+    assert.equal(getAudioEngine().isArmed(), true);
+    assert.equal(getMusicEngine().isArmed(), true);
+  });
+
+  test('clicking the music toggle arms the music engine', async () => {
+    const wrapper = mount(AudioControls);
+    assert.equal(getMusicEngine().isArmed(), false);
+    await wrapper.find('[data-testid="audio-music-toggle"]').trigger('click');
+    assert.equal(getMusicEngine().isArmed(), true);
+  });
+
+  test('clicking the SFX mute toggle arms the music engine as well', async () => {
+    // why: EVERY arm site must reach both engines. Arming one channel is the
+    // exact defect this block exists to prevent, so each gesture is pinned
+    // separately rather than trusting one representative case.
+    const wrapper = mount(AudioControls);
+    await wrapper.find('[data-testid="audio-mute-toggle"]').trigger('click');
+    assert.equal(getMusicEngine().isArmed(), true);
   });
 
   test('renders the music toggle and the music volume slider', () => {
