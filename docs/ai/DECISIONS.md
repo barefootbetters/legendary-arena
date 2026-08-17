@@ -37161,3 +37161,82 @@ mechanic WITHOUT a baseline entry must be shown erased from both sides. A test
 title must not embed the figures - they move on every rebuild.
 
 _Active 2026-08-16 - landed at WP-561 execution (EC-596). Baseline 14 mechanics / 140 obs to 35 / 2285; writer byte-identical and its re-run a byte no-op; dashboard 447 to 449 / 0; headline unchanged at 2.6%. `User-Visible Surface = dashboard.legendary-arena.com/coverage` - **D-24026 CONFIRMED LIVE 2026-08-17** (the deployed page reads 2.6% / 59 / 2285 - unchanged, which is the pass condition, and both corrected subtitles render)._
+
+### D-24374 — Upstream icon 4 is a VICTORY POINT glyph, not piercing; and the fix is a targeted edit, never a regeneration
+
+**Drafted 2026-08-17; not yet landed. Flips to Active at WP-565 execution (EC-600).**
+
+`convert-cards-v15.mjs`'s `ICON_SLUG_MAP` mapped upstream `{ icon: 4 }` to
+`piercing`, putting the wrong resource in front of players on **35 ability texts
+across 12 sets**. Supreme HYDRA rendered *"is worth +3 ⟨piercing⟩ for each other
+HYDRA Villain in your Victory Pile"* where the printed card reads **+3 VP**.
+Found by reviewing a real match against printed card text, not by a sweep.
+
+Locked:
+
+1. **Icon 4 is a VP glyph.** The evidence standard is exhaustive, not sampled:
+   **all 22** upstream `{ icon: 4 }` occurrences were read individually with
+   surrounding context, and every one sits in a victory-point phrase (*"is worth
+   +N"*, *"worth N"*, *"printed [VP]"*, *"equal to its printed [VP]"*). Not one is
+   a combat-piercing use. The mapping is corrected at the map, not patched
+   per-card. `piercing` remains a legal slug — only its current card-text uses
+   were wrong.
+2. **Display-only; scoring was never affected.** No engine path consumes the
+   `icon:piercing` marker, and no `vp` field value changes. The variable-VP maths
+   was verified correct in a live match: Supreme HYDRA (`vp: "3*"`) scored **15
+   VP** = 3 + 3×4 other HYDRA Villains, reconciling that game's 23 `villainVP` and
+   52 `totalVP` exactly. This changes what a player **reads**, never what they
+   **score** — so no determinism surface moves and both hash oracles stay
+   byte-unchanged.
+3. **`data/cards/*.json` MUST NOT be regenerated to apply this fix.** An observed
+   scaffold run established that the pipeline does not reproduce the committed
+   data: `convert-cards-v15.mjs` alone **strips every `[keyword:…]` marker**
+   (+769/−389 across 33 files, because markers come from the later `apply-*.mjs`
+   passes), and the full five-stage run is **still** non-idempotent (+498/−118
+   across 14 files) while **deleting mastermind-strike card entries** in `ssw1` /
+   `xmen`. Regeneration is therefore data loss. The map fix is **forward-looking
+   only** — it exists so a future regeneration is correct.
+4. **No derived-feed ripple.** The icon marker is display text, not a keyword or
+   effect marker, so `mechanics:metadata`, `ledger:heroes`, `ledger:villains` and
+   `effect-index` all stay clean **without** regeneration. Recorded because the
+   reservation for this WP assumed the opposite, and the reflex to regenerate a
+   derived feed whenever card data changes is usually right — just not here.
+5. **The residual pipeline-vs-committed-data divergence is a separate defect.**
+   It is named, evidenced, and deliberately left unfixed rather than absorbed:
+   nobody can safely regenerate card data today, and reconciling that needs its
+   own audit.
+
+### D-24376 — A mastermind's Tactics can be fully inert with no signal, and that silence is itself the defect
+
+**Drafted 2026-08-17; not yet landed. Flips to Active at WP-567 execution (EC-602).**
+
+All four of Red Skull's Mastermind Tactics had no `onFight` resolver. WP-497 built
+the framework and WP-506 wired core Magneto's *Crushing Shockwave* into it; the
+engine still carried exactly **two** resolvers, so Red Skull's tactics did nothing.
+Confirmed live at `gitSha 47e5162`: a solo match defeated all four and received
+none of their printed effects, provable from that match's `economy.recruit` ending
+at **5** with no trace of *Endless Resources*' printed **+4**.
+
+Locked:
+
+1. **An unimplemented tactic's SILENCE is part of the defect.**
+   `dispatchTacticOnFight` returns without a log line for an unhandled ext_id, so
+   a player who defeats a Tactic and receives none of its effect gets no
+   indication anything was skipped. Every resolver logs its effect. The
+   fallthrough is nonetheless **not** hardened into a throw — other masterminds'
+   tactics stay deliberately inert until their own packets.
+2. **The framework's per-ext_id dispatch is the right shape and is EXTENDED, not
+   replaced.** Three resolvers are added beside the existing two: *Negablast
+   Grenades* (+3 attack), *Endless Resources* (+4 recruit), and *HYDRA Conspiracy*
+   (draw 2, then +1 per HYDRA Villain in the **defeating player's** Victory Pile,
+   counted through the shared counter rather than a second copy).
+3. **An interactive tactic line is gated on shipping its UX with it.** *Ruthless
+   Dictator*'s printed top-three KO/discard/replace parks a pending choice, and a
+   parked choice without its `UIState` projection and prompt **hard-freezes the
+   human player**. It is deferred to its own packet, which ships projection +
+   prompt + bot enumeration mirror together. Recorded because a dispatch covering
+   three of four reads as unfinished and invites exactly the wrong completion.
+4. **Evidence standard.** Found by reading four defeated Tactics in a real match
+   against their printed card text — effects sourced from `data/cards/core.json`
+   rather than the known-divergent keyword blurb — with the miss proven from the
+   diagnostics economy rather than asserted.
