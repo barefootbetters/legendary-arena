@@ -37,10 +37,15 @@ All six gates exit 0, `vue-tsc` clean, whole repo green.
 block is additions-only.
 
 **`User-Visible Surface = dashboard.legendary-arena.com/coverage` — D-24026
-live-verify operator-pending:** after deploy, `core/spider-man` ×
-`reveal-reorder` should read **Subsystem** (not Unsupported) with WP-479 /
-D-24286 / `setup:reveal-reorder-modifier` populated, and the summary should show
-a **Subsystem 1** tile with `Unsupported` at **367**.
+CONFIRMED LIVE 2026-08-16.** On the deployed page: the summary reads
+`235 Executable · 0 Deferred · 5 Condition · 367 Unsupported · 43 Unmarked ·
+1 Subsystem`, the Subsystem filter chip renders, and the by-mechanic row reads
+`reveal-reorder | Subsystem | WP-479 | D-24286 | setup:reveal-reorder-modifier`.
+
+The by-card table is the cleanest AC-2 evidence: under the default `Unsupported`
+filter a `core/spider` search returns **1 of 1** row — `reveal-count` alone.
+`reveal-reorder` has left the Unsupported bucket while `reveal-count` correctly
+stayed, which is exactly what a card-keyed allowlist would have broken.
 
 D-24368 Active.
 
