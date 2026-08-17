@@ -858,7 +858,7 @@
         {
           "abilities": [
             "Setup: 8 Twists. Include exactly 1 Hero with Wolverine or Logan in its name.",
-            "Twist 1,3,5: “Induce Violent Rage“: If you don't defeat an Enemy worth 2[icon:piercing] or more this turn, then after you draw a new hand at the end of this turn, each player discards down to four cards.",
+            "Twist 1,3,5: “Induce Violent Rage“: If you don't defeat an Enemy worth 2[icon:vp] or more this turn, then after you draw a new hand at the end of this turn, each player discards down to four cards.",
             "Twist 2,4,6“Test the Subject's Healing Factor“: Each player discards a [hc:strength] or [hc:instinct] Hero or gains a Wound.",
             "Twist 7“Unleash Weapon X“: For each Wolverine and/or Logan Hero in the HQ, each player gains a Wound.",
             "Twist 8: Evil Wins!"
@@ -973,7 +973,7 @@
         {
           "qtd": 1,
           "abilities": [
-            "Healing: When you defeat a Villain worth at least 2[icon:piercing] this turn, you may KO this Wound."
+            "Healing: When you defeat a Villain worth at least 2[icon:vp] this turn, you may KO this Wound."
           ]
         }
       ]

@@ -185,7 +185,7 @@
           "attack": "6",
           "recruit": null,
           "abilities": [
-            "Whenever you defeat a Villain on the Rooftops this turn, rescue Bystanders equal to that Villain's printed [icon:piercing].",
+            "Whenever you defeat a Villain on the Rooftops this turn, rescue Bystanders equal to that Villain's printed [icon:vp].",
             "[hc:tech]: You may move a Villain to the Rooftops. If another Villain is already there, swap them."
           ]
         }
@@ -641,7 +641,7 @@
           "imageUrl": "https://images.legendary-arena.com/pttr/pttr-mm-mysterio.webp",
           "abilities": [
             "Always Leads: Sinister Six",
-            "Master Strike: Shuffle this Master Strike into Mysterio's face down Mastermind Tactics. That card becomes a Mastermind Tactic worth 6[icon:piercing]."
+            "Master Strike: Shuffle this Master Strike into Mysterio's face down Mastermind Tactics. That card becomes a Mastermind Tactic worth 6[icon:vp]."
           ]
         },
         {

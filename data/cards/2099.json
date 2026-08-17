@@ -626,7 +626,7 @@
           "vAttack": "7+",
           "imageUrl": "https://images.legendary-arena.com/2099/2099-mt-sinister-six-2099-vulture-2099.webp",
           "abilities": [
-            "Vulture 2099 gets +[icon:attack] equal to the highest [icon:piercing] value of any Villain in the Escape Pile, Rooftops, or Bridge.",
+            "Vulture 2099 gets +[icon:attack] equal to the highest [icon:vp] value of any Villain in the Escape Pile, Rooftops, or Bridge.",
             "Master Strike: If there are any Villains on the Rooftops or Birdge, one of them escapes and each player gains a Wound. [rule:Adapt].",
             "Fight: You may move a Villain to another city space. If another Villain is already there, swap them. [rule:Adapt]."
           ]
@@ -638,7 +638,7 @@
           "vAttack": "9+",
           "imageUrl": "https://images.legendary-arena.com/2099/2099-mc-sinister-six-2099-vulture-2099.webp",
           "abilities": [
-            "Vulture 2099 gets +[icon:attack] equal to the highest two [icon:piercing] values among Villains in the Escape Pile, Rooftops, and Bridge.",
+            "Vulture 2099 gets +[icon:attack] equal to the highest two [icon:vp] values among Villains in the Escape Pile, Rooftops, and Bridge.",
             "Master Strike: If there are any Villains on the Rooftops or Birdge, each of them escapes and each player gains a Wound. [rule:Adapt].",
             "Fight: You may move a Villain to another city space. If another Villain is already there, swap them. [rule:Adapt]."
           ]

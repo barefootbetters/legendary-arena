@@ -2114,7 +2114,7 @@
           "vAttack": "6",
           "imageUrl": "https://images.legendary-arena.com/core/core-vi-hydra-supreme-hydra.webp",
           "abilities": [
-            "Supreme HYDRA is worth +3[icon:piercing] for each other HYDRA Villain in your Victory Pile."
+            "Supreme HYDRA is worth +3[icon:vp] for each other HYDRA Villain in your Victory Pile."
           ],
           "copies": 1
         },
@@ -2169,7 +2169,7 @@
           "vAttack": "6",
           "imageUrl": "https://images.legendary-arena.com/core/core-vi-masters-of-evil-ultron.webp",
           "abilities": [
-            "Ultron is worth +1[icon:piercing] for each [hc:tech] Hero you have among all your cards at the end of the game.",
+            "Ultron is worth +1[icon:vp] for each [hc:tech] Hero you have among all your cards at the end of the game.",
             "Escape: Each player reveals a [hc:tech] Hero or gains a Wound. [effect:reveal-or-wound:hc:tech]"
           ],
           "copies": 2
