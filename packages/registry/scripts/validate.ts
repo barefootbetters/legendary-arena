@@ -36,9 +36,17 @@
  *   SKIP_IMAGES     Set to "1" to skip Phase 4 image HEAD checks
  *   IMAGE_DELAY_MS  Milliseconds between image requests (default: 50)
  *
+ * Phase 4 probes the LIVE CDN, so its results are split by what they actually
+ * prove (see src/imageCheckStatus.ts):
+ *   - definitively not served (404/410/403/...) — a real data defect; FAILS
+ *   - unreachable (timeout, 5xx, 429) after 3 attempts — CDN unavailability;
+ *     reported as a warning and does NOT fail the build
+ * Retries apply only to the transient case, so a healthy run still costs one
+ * request per URL.
+ *
  * Exit codes:
- *   0 — validation passed (warnings do not cause failure)
- *   1 — one or more errors found, or any image returned non-200
+ *   0 — validation passed (warnings, incl. unreachable images, do not fail)
+ *   1 — one or more errors found, or an image is definitively not served
  */
 
 import { readFile, writeFile, mkdir } from "node:fs/promises";
@@ -49,6 +57,10 @@ import {
   SetIndexEntrySchema,
   SetDataSchema,
 } from "../src/schema.js";
+import {
+  classifyImageCheckStatus,
+  NO_RESPONSE_STATUS,
+} from "../src/imageCheckStatus.js";
 import type { SetData } from "../src/types/index.js";
 
 // ── Configuration ─────────────────────────────────────────────────────────────
@@ -67,6 +79,14 @@ const R2_BASE_URL    = (process.env["R2_BASE_URL"] ?? "").replace(/\/$/, "");
 const SKIP_IMAGES    = process.env["SKIP_IMAGES"] === "1";
 const IMAGE_DELAY_MS = parseInt(process.env["IMAGE_DELAY_MS"] ?? "50", 10);
 
+// why: a transient probe result is retried rather than failing the build. Three
+// attempts with a widening backoff absorbs the single-request CDN hiccup that
+// reddened CI on 2026-08-17 without meaningfully lengthening the check — only
+// URLs that actually stumble pay the cost, and a genuine 404 is classified as
+// `missing` and never retried at all.
+const IMAGE_RETRY_ATTEMPTS  = 3;
+const IMAGE_RETRY_BACKOFF_MS = 750;
+
 const IS_R2_MODE = R2_BASE_URL.length > 0;
 const R2_DOMAIN  = "images.legendary-arena.com";
 
@@ -82,7 +102,14 @@ interface Finding {
 
 interface ImageCheckResult {
   urlsChecked: number;
+  /** Images the CDN definitively does not serve. These FAIL the build. */
   failedUrls:  string[];
+  /**
+   * Images whose probe never got a trustworthy answer, even after retries.
+   * Reported as warnings and do NOT fail the build — a CDN that is down says
+   * nothing about whether the card data is correct.
+   */
+  unreachableUrls: string[];
 }
 
 interface ValidationReport {
@@ -93,8 +120,9 @@ interface ValidationReport {
   summary: {
     totalErrors:   number;
     totalWarnings: number;
-    imagesFailed:  number;
-    imagesChecked: number;
+    imagesFailed:      number;
+    imagesUnreachable: number;
+    imagesChecked:     number;
     setsIndexed:   number;
     setsLoaded:    number;
     totalHeroes:   number;
@@ -102,6 +130,8 @@ interface ValidationReport {
   };
   findings:      Finding[];
   imageFailures: string[];
+  /** Unreachable after retries — CDN unavailability, not a data defect. */
+  imageUnreachable: string[];
 }
 
 // ── Data access ───────────────────────────────────────────────────────────────
@@ -182,10 +212,42 @@ async function headRequest(imageUrl: string): Promise<number> {
     const response = await fetch(imageUrl, { method: "HEAD", signal: controller.signal });
     return response.status;
   } catch {
-    return 0;
+    return NO_RESPONSE_STATUS;
   } finally {
     clearTimeout(timeoutId);
   }
+}
+
+/**
+ * Probe one image, retrying only when the result is transient.
+ *
+ * A `missing` classification is returned on the first attempt — retrying a 404
+ * wastes time and cannot change the answer. Only `transient` results are
+ * retried, so a healthy run costs exactly one request per URL.
+ *
+ * @param imageUrl - The image URL to probe.
+ * @returns The final HTTP status and how many attempts it took.
+ */
+async function headRequestWithRetry(
+  imageUrl: string,
+): Promise<{ httpStatus: number; attemptsUsed: number }> {
+  let httpStatus = NO_RESPONSE_STATUS;
+
+  for (let attempt = 1; attempt <= IMAGE_RETRY_ATTEMPTS; attempt += 1) {
+    httpStatus = await headRequest(imageUrl);
+
+    if (classifyImageCheckStatus(httpStatus) !== "transient") {
+      return { httpStatus, attemptsUsed: attempt };
+    }
+
+    if (attempt < IMAGE_RETRY_ATTEMPTS) {
+      // why: widening backoff — a rate-limited or cold-starting edge needs time
+      // to recover, and hammering it immediately makes a 429 more likely.
+      await sleep(IMAGE_RETRY_BACKOFF_MS * attempt);
+    }
+  }
+
+  return { httpStatus, attemptsUsed: IMAGE_RETRY_ATTEMPTS };
 }
 
 function sleep(milliseconds: number): Promise<void> {
@@ -564,35 +626,56 @@ async function spotCheckImages(allSets: Map<string, SetData>): Promise<ImageChec
 
   if (SKIP_IMAGES) {
     console.log(`\n── ${phase} — SKIPPED (SKIP_IMAGES=1) ──`);
-    return { urlsChecked: 0, failedUrls: [] };
+    return { urlsChecked: 0, failedUrls: [], unreachableUrls: [] };
   }
 
   const imageUrls = collectSpotCheckUrls(allSets);
   console.log(`\n── ${phase} (${imageUrls.length} URLs, ~3 per set) ──`);
 
-  const failedUrls: string[] = [];
+  const failedUrls: string[]      = [];
+  const unreachableUrls: string[] = [];
 
   for (const imageUrl of imageUrls) {
-    const httpStatus = await headRequest(imageUrl);
+    const { httpStatus, attemptsUsed } = await headRequestWithRetry(imageUrl);
+    const checkStatus = classifyImageCheckStatus(httpStatus);
 
-    if (httpStatus !== 200) {
-      const statusLabel = httpStatus === 0 ? "network failure or timeout" : `HTTP ${httpStatus}`;
-      console.log(`  ✗ ${imageUrl} — ${statusLabel}`);
+    if (checkStatus === "missing") {
+      console.log(`  ✗ ${imageUrl} — HTTP ${httpStatus} (not served)`);
       failedUrls.push(imageUrl);
+    } else if (checkStatus === "transient") {
+      const statusLabel =
+        httpStatus === NO_RESPONSE_STATUS ? "network failure or timeout" : `HTTP ${httpStatus}`;
+      console.log(
+        `  ⚠ ${imageUrl} — ${statusLabel} after ${attemptsUsed} attempt(s); ` +
+        `treating as CDN unavailability, not a data defect`,
+      );
+      unreachableUrls.push(imageUrl);
+    } else if (attemptsUsed > 1) {
+      // why: a URL that needed a retry still passed, but the retry is worth
+      // surfacing — a rising count here is the early warning that the CDN,
+      // not the data, is degrading.
+      console.log(`  ✓ ${imageUrl} — recovered on attempt ${attemptsUsed}`);
     }
 
     // why: sequential delay prevents R2 rate-limiting during bulk spot-checks
     await sleep(IMAGE_DELAY_MS);
   }
 
-  const passedCount = imageUrls.length - failedUrls.length;
+  const passedCount = imageUrls.length - failedUrls.length - unreachableUrls.length;
   console.log(`  ✓ ${passedCount} of ${imageUrls.length} images returned HTTP 200`);
 
   if (failedUrls.length > 0) {
-    console.log(`  ✗ ${failedUrls.length} image(s) not reachable`);
+    console.log(`  ✗ ${failedUrls.length} image(s) definitively not served — these fail the build`);
   }
 
-  return { urlsChecked: imageUrls.length, failedUrls };
+  if (unreachableUrls.length > 0) {
+    console.log(
+      `  ⚠ ${unreachableUrls.length} image(s) unreachable after ${IMAGE_RETRY_ATTEMPTS} attempts — ` +
+      `reported as warnings, NOT build failures`,
+    );
+  }
+
+  return { urlsChecked: imageUrls.length, failedUrls, unreachableUrls };
 }
 
 // ── Reporting ─────────────────────────────────────────────────────────────────
@@ -623,6 +706,9 @@ function printFindingsSummary(findings: Finding[], imageResult: ImageCheckResult
 
   if (!SKIP_IMAGES) {
     console.log(`  Images:   ${imageResult.failedUrls.length} of ${imageResult.urlsChecked} failed`);
+    if (imageResult.unreachableUrls.length > 0) {
+      console.log(`            ${imageResult.unreachableUrls.length} unreachable (CDN, not data)`);
+    }
   }
 
   if (errorFindings.length > 0) {
@@ -642,9 +728,19 @@ function printFindingsSummary(findings: Finding[], imageResult: ImageCheckResult
   }
 
   if (imageResult.failedUrls.length > 0) {
-    console.log("\n  Image URLs that returned non-200:");
+    console.log("\n  Image URLs the CDN does not serve (these fail the build):");
     for (const failedUrl of imageResult.failedUrls) {
       console.log(`  ✗ ${failedUrl}`);
+    }
+  }
+
+  if (imageResult.unreachableUrls.length > 0) {
+    console.log(
+      `\n  Image URLs unreachable after ${IMAGE_RETRY_ATTEMPTS} attempts ` +
+      `(CDN unavailability — NOT a build failure):`,
+    );
+    for (const unreachableUrl of imageResult.unreachableUrls) {
+      console.log(`  ⚠ ${unreachableUrl}`);
     }
   }
 }
@@ -664,15 +760,17 @@ async function writeValidationReport(
     summary: {
       totalErrors:   findings.filter((f) => f.level === "error").length,
       totalWarnings: findings.filter((f) => f.level === "warning").length,
-      imagesFailed:  imageResult.failedUrls.length,
-      imagesChecked: imageResult.urlsChecked,
+      imagesFailed:      imageResult.failedUrls.length,
+      imagesUnreachable: imageResult.unreachableUrls.length,
+      imagesChecked:     imageResult.urlsChecked,
       setsIndexed:   allSets.size,
       setsLoaded:    allSets.size,
       totalHeroes:   heroCount,
       totalCards:    cardCount,
     },
     findings,
-    imageFailures: imageResult.failedUrls,
+    imageFailures:     imageResult.failedUrls,
+    imageUnreachable:  imageResult.unreachableUrls,
   };
 
   await mkdir(resolve("dist"), { recursive: true });
@@ -714,6 +812,11 @@ async function main(): Promise<void> {
   printFindingsSummary(allFindings, imageResult);
   await writeValidationReport(allFindings, imageResult, allSets);
 
+  // why: `unreachableUrls` is deliberately NOT part of this condition. A CDN
+  // that failed to answer tells us nothing about whether the card data is
+  // correct, and failing the build on it makes every PR hostage to a third
+  // party's uptime for the seconds the check runs. A definitively-missing
+  // image still fails, because that IS a data defect.
   const hasErrors =
     allFindings.some((f) => f.level === "error") ||
     imageResult.failedUrls.length > 0;
