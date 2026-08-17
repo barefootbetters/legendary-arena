@@ -151,7 +151,7 @@ never-rebuild-to-move-the-number non-goal.
 
 ---
 
-### WP-560 — Adaptive Danger-Meter Music Channel — DONE (code) 2026-08-16 · assets + deploy LANDED 2026-08-17 · AC-12 pending **live audition**
+### WP-560 — Adaptive Danger-Meter Music Channel — DONE 2026-08-16 · ✅ D-24026 CONFIRMED LIVE 2026-08-17
 
 **The danger-meter arc is complete** (packets 1–3: WP-557 signal → WP-558
 meter → WP-560 score). A separate music channel crossfades between three CC0
@@ -205,11 +205,29 @@ common LUFS target would undo the point of the packet. Durations are exact bar
 multiples at 100 BPM (9.6s = 16 beats), and head/tail RMS sits at body level
 with no fade-to-silence, so the loops are seamless at the source.
 
-**What AC-12 still needs: a human with ears.** Both machine-checkable
-prerequisites are green, but nobody has yet *heard* the tiers change in a live
-match. Two things can only be judged by audition: whether the calm bed is
-pleasant to sit under for twenty minutes of ordinary play, and whether
-`MUSIC_CROSSFADE_MS = 1500` is right against these specific loops.
+**✅ AC-12 / D-24026 CONFIRMED LIVE 2026-08-17.** Operator heard music in a 2p
+Red Skull / Super Hero Civil War match on deployed `gitSha 86b8436`; that
+match's diagnostics record `menaceTier: "critical"` / `menace: 1`, so the score
+played across a run that escalated to the top band. **The danger-meter arc
+(WP-557 → WP-558 → WP-560) is now closed end to end.**
+
+**⚠ It took a third prerequisite nobody wrote down: the channel had to be
+ARMED.** WP-560 shipped with `AudioControls.vue` arming only the SFX engine, so
+`musicEngine.isArmed()` was false for the life of the page and **every
+crossfade was a silent no-op through the entire first release** — assets live,
+projection healthy, not one note audible. Fixed in #1497 (one
+`armAudioChannels()` for every arm site, plus four tests that dispatch a real
+gesture). The two engines being separate is still correct (D-24369 §1); the
+lesson is that separate engines need separate arms, and that a suite of
+seam-injecting unit tests cannot see the seam. See
+`wiki/sound-effects.md` for the standing rule.
+
+**Still unassessed — these need deliberate listening, not just a match:**
+whether the calm bed wears on a player over twenty minutes of ordinary play,
+whether `MUSIC_CROSSFADE_MS = 1500` reads as a mood shift or a cut against
+these specific loops, and whether the mp3 loop seam clicks (predicted every
+9.6s on calm/rising; never observed). "It played music" answers the
+gate — it does not answer these.
 
 **Known risk — mp3 loop seam.** `menaceMusicManifest.ts` hardcodes `.mp3`, and
 mp3 carries encoder delay/padding that can click at each loop wrap (every 9.6s
