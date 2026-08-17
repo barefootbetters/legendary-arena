@@ -61,6 +61,17 @@ answers a different one:
 - *Did the declared effect reach a handler?* — the hollow-effect detector is a
   handler-**reachability** check: it records a mechanic a card *declared* that
   reached no executable handler during play.
+- *Is it actually unimplemented, or implemented somewhere the ledger does not
+  look?* — a card implemented by a subsystem OTHER than the `[effect:X]`
+  pipeline has no effect marker to find, so a status-only reading calls it
+  `unsupported` and it renders as a TODO that nobody will ever close. The
+  `subsystem` status (WP-548 / D-24357 for villains, WP-559 / D-24368 for
+  heroes) exists for exactly that case: it means **implemented, done**, with the
+  owning subsystem named in the handler column. Villain entries are card-keyed;
+  hero entries are keyed (card × mechanic), because one card can legitimately
+  mix an implemented mechanic and a genuinely unimplemented one. Both read from
+  the curated allowlist [`subsystem-coverage.json`](../scripts/coverage/subsystem-coverage.json),
+  which records MERGED coverage only.
 - *Did the parser choke on the marker?* — a villain hook can carry
   `unresolvedMarkers`: raw `[effect:X]` tokens the parser saw but resolved to
   neither a legacy keyword nor a descriptor.
@@ -81,7 +92,7 @@ static map. See [Card Effect System](card-effect-system.md#villain-effects-param
 
 | Surface | Answers | Where it lives |
 |---|---|---|
-| **Mechanic ledgers** (`pnpm ledger:heroes` / `ledger:villains`) | Per card × mechanic status: `executable` · `deferred` · `condition` · `unsupported` (code gap) · `unmarked` (data gap) | [`hero-mechanic-ledger.mjs`](../scripts/hero-mechanic-ledger.mjs), [`villain-mechanic-ledger.mjs`](../scripts/villain-mechanic-ledger.mjs) → `docs/ai/coverage/*.json` |
+| **Mechanic ledgers** (`pnpm ledger:heroes` / `ledger:villains`) | Per card × mechanic status: `executable` · `deferred` · `condition` · `unsupported` (code gap) · `unmarked` (data gap) · `subsystem` (implemented ELSEWHERE - done, not a TODO) | [`hero-mechanic-ledger.mjs`](../scripts/hero-mechanic-ledger.mjs), [`villain-mechanic-ledger.mjs`](../scripts/villain-mechanic-ledger.mjs) → `docs/ai/coverage/*.json` |
 | **Generated mechanic index** (`card-mechanics.json`) | A published, viewer-safe, per-card mechanic index — **derived** from the hero ledger, validated against a registry schema, CI-gated for freshness | [`build-card-mechanics-metadata.mjs`](../scripts/build-card-mechanics-metadata.mjs) (WP-269 / D-24046) → `data/metadata/card-mechanics.json` |
 | **Hollow-effect detector** | "declared but reached no handler" at runtime (reachability, not a state diff) | [`hollowEffect.record.ts`](../packages/game-engine/src/diagnostics/hollowEffect.record.ts) → `docs/ai/coverage/runtime-observed-hollows.json` |
 | **`unresolvedMarkers`** | A mis-authored `[effect:X]` marker, detectable at the fire site | [`villainAbility.types.ts`](../packages/game-engine/src/rules/villainAbility.types.ts) (WP-257 / D-24034) |
