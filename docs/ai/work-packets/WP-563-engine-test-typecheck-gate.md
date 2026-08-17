@@ -168,11 +168,11 @@ required-check wiring lands when the count reaches zero.
 
 ## Definition of Done
 
-- [ ] AC-1..AC-10 demonstrated with observed output.
-- [ ] D-24372 landed **Active**.
-- [ ] `WORK_INDEX.md` `[x]` + the follow-up inventory rows.
-- [ ] `EC_INDEX.md` `Done`; mindmap `✅`; counts 0.
-- [ ] `STATUS.md` — the before/after error count, and the explicit note that
+- [x] AC-1..AC-10 demonstrated with observed output.
+- [x] D-24372 landed **Active**.
+- [x] `WORK_INDEX.md` `[x]` + the follow-up inventory rows.
+- [x] `EC_INDEX.md` `Done`; mindmap `✅`; counts 0.
+- [x] `STATUS.md` — the before/after error count, and the explicit note that
       CI wiring is deferred **by design** so nobody reads its absence as an
       oversight.
 
