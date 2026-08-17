@@ -115,14 +115,22 @@ const STATUS_FILTERS: readonly (LedgerStatus | 'all')[] = [
       <div class="headline">
         <span class="headline-num">{{ percentExecutable }}%</span>
         <span class="headline-label">hero mechanics executable</span>
+        <!-- why (WP-561 / D-24370): the two headlines are NOT comparable percentages of
+             the same thing. This one is ROW-weighted (share of card x mechanic rows);
+             its neighbour is OBSERVATION-weighted (share of in-play hollow observations).
+             Saying so stops the pair reading as a before/after of one measure. -->
         <span class="headline-sub"
-          >{{ summary.distinctMechanics }} distinct mechanics · {{ summary.totalRows }} rows</span
+          >per card × mechanic row — {{ summary.distinctMechanics }} distinct mechanics ·
+          {{ summary.totalRows }} rows</span
         >
       </div>
       <div class="headline">
         <span class="headline-num">{{ percentResolved }}%</span>
         <span class="headline-label">in-play hollows resolved</span>
-        <span class="headline-sub">{{ resolvedObs }} / {{ totalObs }} observed in play</span>
+        <span class="headline-sub"
+          >weighted by how often it bites in play — {{ resolvedObs }} / {{ totalObs }}
+          observations</span
+        >
       </div>
       <div class="summary-chips">
         <div class="count-chip cov-executable">

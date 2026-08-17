@@ -37098,3 +37098,56 @@ Locked:
    correct for genuinely unconfigured schemes.
 
 _Drafted 2026-08-17; not yet landed. Flips to Active at WP-562 execution (EC-597)._
+### D-24370 - The in-play hollow baseline must be rebuilt whenever sweep fidelity changes (amends D-24050)
+
+**Amends D-24050 (WP-274).** That entry defined the `/coverage` in-play metric as
+obs-weighted and ledger-gated: each mechanic contributes
+`peakObs = max(committed baseline, live sweep count)`, and its obs count as
+resolved iff its hero-ledger status is exactly `executable`. The committed
+baseline exists so that a mechanic which gets implemented - and therefore stops
+producing hollows and vanishes from the live sweep - keeps its weight in the
+denominator instead of disappearing from both sides. That design is correct and
+is not changed here.
+
+**What went wrong.** The baseline is only sound while it is measured on the SAME
+instrument as the live sweep. WP-453 / D-24273 replaced the simulation setup
+shuffle with a real seeded one, taking the sweep from games dying at ~turn 0 to
+312 completing games. The committed baseline was never re-run. Measured
+2026-08-16: the numerator was three stale seed entries (`dodge` 37, `undercover`
+20, `size-changing` 2 = 59) while the denominator had grown to 2285 live
+observations. Numerator and denominator sat on different instruments.
+
+The consequence was not cosmetic. Shipping a top gap credited only whatever the
+stale seed happened to hold - `teleport` (live 178) credited **0**, `outwit`
+(157) credited **0** - so the percentage rose only by DELETING observations from
+the denominator. The metric rewarded a fix by erasing its evidence: precisely
+the failure the D-24050 baseline mechanism was designed to prevent.
+
+**Decision - the rebuild trigger.** A material change in sweep fidelity (the
+backdrop scheme, the setup shuffle, the turn depth, or anything else that changes
+which games the sweep actually plays) REQUIRES a baseline rebuild in the same
+packet or the immediately following one. Rebuilding is running the existing
+writer (`pnpm --filter dashboard build:in-play-baseline`), never a hand edit; it
+is deterministic and monotonic and throws rather than lower a peak.
+
+**Decision - the non-goal.** A rebuild MUST NEVER be used to move the headline.
+It did not move it here: 59 / 2285 = 2.6% before and after. An unchanged headline
+is the success condition, because it proves the denominator held. Any change that
+improves the percentage by lowering the denominator is the failure mode, not the
+goal.
+
+**Why the two headlines are labelled distinctly.** `hero mechanics executable` is
+ROW-weighted (share of card x mechanic rows) and answers *how much of the corpus
+is built*; `in-play hollows resolved` is OBSERVATION-weighted and answers *how
+often a player hits something unbuilt*. Presented side by side without that
+distinction they read as a before/after of one measure. The second is the harsher
+number and is kept prominent deliberately - it is the one that predicts player
+confusion.
+
+**Testing posture.** The invariant is asserted directly, not through a pinned
+snapshot constant: a mechanic flipped to `executable` with its live obs removed
+must retain its peak in `totalObs` and gain it in `resolvedObs`; and the same
+mechanic WITHOUT a baseline entry must be shown erased from both sides. A test
+title must not embed the figures - they move on every rebuild.
+
+_Active 2026-08-16 - landed at WP-561 execution (EC-596). Baseline 14 mechanics / 140 obs to 35 / 2285; writer byte-identical and its re-run a byte no-op; dashboard 447 to 449 / 0; headline unchanged at 2.6%. `User-Visible Surface = dashboard.legendary-arena.com/coverage` - **D-24026 live-verify operator-pending** (an UNCHANGED 2.6% with the corrected subtitles is the success condition)._

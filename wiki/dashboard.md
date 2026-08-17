@@ -247,7 +247,49 @@ can resolve the module. The `build` script runs both generators before
   `useCoverageLedger`.
 
 The in-play effect baseline (`src/data/in-play-hollow-baseline.json`) is, by
-contrast, **committed**.
+contrast, **committed** — and it is load-bearing, not incidental.
+
+#### Why the baseline is committed (and why it must be rebuilt)
+
+The `/coverage` page carries two headline percentages that look comparable and
+are not:
+
+- **hero mechanics executable** — **row-weighted**: the share of card × mechanic
+  ledger rows whose status is `executable`. It answers *how much of the card
+  corpus is built*.
+- **in-play hollows resolved** — **observation-weighted**: the share of observed
+  in-play hollow *observations* belonging to mechanics that are executable. It
+  answers *how often a player hits something unbuilt*. It is the harsher and
+  more commercially meaningful of the two, and it is meant to be.
+
+The second metric (WP-274 / D-24050) weights each mechanic by
+`peakObs = max(committed baseline, live sweep count)`, and counts it as resolved
+only once its ledger status is `executable`. That `max` is the whole point: a
+mechanic that gets implemented stops producing hollows and **vanishes from the
+live sweep**. Without a committed peak it would drop out of the numerator *and*
+the denominator — the metric would reward a fix by erasing its evidence, and the
+percentage would drift upward on deletions rather than on work. The committed
+baseline is the frozen high-water denominator that prevents that.
+
+It follows that the baseline is only sound while it is measured on the **same
+instrument** as the live sweep. A material change in sweep fidelity — the
+backdrop scheme, the setup shuffle, the turn depth — moves the denominator to a
+new instrument while the numerator stays pinned to the old one, and the metric
+quietly loses the ability to credit new work. So a fidelity change **requires** a
+baseline rebuild in the same packet or the next (D-24370).
+
+Rebuilding is running an existing script, never a hand edit:
+`pnpm --filter dashboard build:in-play-baseline`
+([`build-in-play-baseline.mjs`](../apps/dashboard/scripts/build-in-play-baseline.mjs)).
+It is deterministic (fixed `generatedAt` sentinel, stable key sort, byte no-op on
+unchanged input) and **monotonic** — it never lowers a peak and throws if asked
+to. It sits deliberately *outside* the auto-build chain so the rebuild is a
+decision rather than a side effect.
+
+> A rebuild must never be used to move the headline. Rebuilding does not improve
+> the current percentage — it restores the metric's ability to rise when work
+> lands. A change that improves the number by lowering the denominator is the
+> failure this design exists to prevent.
 
 ### Auth and deploy boundary
 
