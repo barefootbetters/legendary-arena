@@ -82,6 +82,10 @@ suppressed flash.
   WP-413 / WP-425 (D-24228 / D-24246); rides `lastPlayEffectsFired` (D-24221).
 - [Surface-2](#surface-2) player-action move cues (five of six moves) —
   WP-421 / D-24241.
+- [Adaptive danger-meter score](#adaptive-background-music--the-danger-meter)
+  — WP-560 / D-24369; three CC0 loops crossfading on
+  `UIState.progress.menaceTier`. Completes the danger-meter arc
+  (WP-557 signal → WP-558 meter → WP-560 score).
 
 **Approved design** (contracted, not yet built):
 
@@ -89,9 +93,10 @@ suppressed flash.
 
 **Research** (proposal-level, no WP scoped):
 
-- [Motif playback](#motif-cues) wiring; the adaptive danger-meter score; the
-  **voiced** [Arena Announcer](#arena-announcer) VO (its on-screen call-out
-  twin shipped with WP-556 — only the *voice* is still unscoped).
+- [Motif playback](#motif-cues) wiring; the **voiced**
+  [Arena Announcer](#arena-announcer) VO (its on-screen call-out twin shipped
+  with WP-556 — only the *voice* is still unscoped); music **ducking** under
+  one-shot stingers, which the shipped channel does not yet do.
 
 ## Mechanics
 
@@ -390,16 +395,26 @@ Under the [Playstyle lens](design-system-overview.md#playstyle-modes) the ladder
 
 ### Adaptive background music — the danger meter
 
-> **Shipped (WP-560).** The adaptive score is built. A separate music
-> channel crossfades between three CC0 loops as
-> `UIState.progress.menaceTier` moves `calm → rising → critical`, mounted
-> beside the SFX consumers at the shared play root. Two implementation
-> notes worth carrying forward: it runs on its **own** `musicEngine.ts`,
-> because the shipped SFX engine is strictly fire-and-forget and could not
-> loop or fade (D-24369 §1); and unlike the
+> **Shipped and live (WP-560).** The adaptive score is built *and* the
+> three loops are on R2. A separate music channel crossfades between them
+> as `UIState.progress.menaceTier` moves `calm → rising → critical`,
+> mounted beside the SFX consumers at the shared play root. Two
+> implementation notes worth carrying forward: it runs on its **own**
+> `musicEngine.ts`, because the shipped SFX engine is strictly
+> fire-and-forget and could not loop or fade (D-24369 §1); and unlike the
 > [Danger Meter](visual-effects.md), music is **decoration, not
 > information** — it defaults on below SFX volume with its own toggle, and
 > the master mute silences it (D-24369 §4).
+>
+> **The lesson that cost a release:** two separate engines means **two
+> separate autoplay-unlock arms.** The first cut armed only the SFX engine
+> on the unlock gesture, so the music engine's `canPlay()` was false for
+> the life of the page and every crossfade was a silent no-op — with the
+> assets live and the signal healthy, the channel simply never made a
+> sound. Every unit test passed, because each test either armed the engine
+> by hand or injected a mock. **Any future audio channel must be armed at
+> every gesture site, and pinned by a test that dispatches the real
+> gesture** rather than arming the engine itself.
 
 The request: a background score that **intensifies as the villains get
 closer to winning.** The engine now projects that progress directly, so
@@ -512,9 +527,16 @@ music, then it returns — a standard "sidechain" polish move.
   crossfades, per-track gain, and the autoplay-unlock gesture.
 - Keep two loops decoded at once (current tier + the tier being faded
   toward) to stay CPU-cheap; crossfade gain over ~1–2 seconds so tier
-  changes aren't jarring.
-- The music layer subscribes to `UIState`, recomputes `menace` on each
-  update, and only crossfades when the tier actually changes.
+  changes aren't jarring. Shipped value: `MUSIC_CROSSFADE_MS = 1500`.
+- The music layer subscribes to `UIState`, reads **`menaceTier` verbatim**,
+  and only crossfades when that tier actually changes. It does **not**
+  recompute `menace` or re-band it client-side — the bands live once,
+  engine-side (D-24369 §3), so the score and the visual meter cannot drift
+  apart. The consumer keeps its own last-seen tier, because the signal is a
+  scalar re-projected every frame, not an event stream; without that guard
+  the bed restarts on every snapshot push.
+- Both audio engines must be armed on the unlock gesture — see the shipped
+  note above.
 
 #### Sourcing the score (CC0-first)
 
@@ -523,6 +545,33 @@ music, then it returns — a standard "sidechain" polish move.
 > — the Suno pipeline that produces the `ambient-loop` / `main-theme`
 > tiers and event stings referenced from theme JSON. The CC0 options
 > below are the generic fallback.
+
+**What actually shipped.** The three live loops come from
+[Music loop variations](https://opengameart.org/content/music-loop-variations)
+by `obscure-music` on OpenGameArt — **CC0, no attribution required.**
+
+| Tier | Source track | Length | Loudness | R2 object |
+|---|---|---|---|---|
+| `calm` | `level1-step1-evil` | 9.6s | −18.5 LUFS | `audio/music/menace-calm.mp3` |
+| `rising` | `level1-step2-evil` | 9.6s | −16.9 LUFS | `audio/music/menace-rising.mp3` |
+| `critical` | `level1-step3-evil` | 19.2s | −10.8 LUFS | `audio/music/menace-critical.mp3` |
+
+That pack was chosen for **structure, not taste**: *"6 loops — 3 steps, 2
+variations each (good or evil), 100 BPM."* One composer, one tempo, one key,
+so the three tiers are tonally compatible **by construction** — which is the
+hard part of this sourcing job. Three unrelated CC0 tracks, however good
+individually, will not survive a crossfade between them. All three tiers use
+the **evil** variant family so a crossfade never crosses timbral worlds.
+
+Two decisions worth repeating for any replacement score:
+
+- **Do not loudness-normalise the set.** The −18.5 → −16.9 → −10.8 LUFS ladder
+  *is* the escalation; flattening it to a common target deletes the signal.
+- **Check the loop is bar-exact and unfaded.** These are 9.6s = 16 beats at
+  100 BPM with head/tail RMS at body level. A track that fades out at the end
+  will audibly dip once per loop.
+
+Other CC0 sources, as a fallback if the score is ever replaced:
 
 - **OpenGameArt CC0 music** — CC0, no attribution. Real tracks from the
   CC0 Cinematic Music pack map straight onto the tiers: calm —
