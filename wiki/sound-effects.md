@@ -550,11 +550,17 @@ music, then it returns — a standard "sidechain" polish move.
 [Music loop variations](https://opengameart.org/content/music-loop-variations)
 by `obscure-music` on OpenGameArt — **CC0, no attribution required.**
 
-| Tier | Source track | Bar loop | Shipped length | Loudness | R2 object |
+| Tier | Source track | Bar loop | Shipped length | Loudness | Preview |
 |---|---|---|---|---|---|
-| `calm` | `level1-step1-evil` | 9.6s | **38.4s** (4×) | −18.7 LUFS | `audio/music/menace-calm.mp3` |
-| `rising` | `level1-step2-evil` | 9.6s | **38.4s** (4×) | −17.1 LUFS | `audio/music/menace-rising.mp3` |
-| `critical` | `level1-step3-evil` | 19.2s | **76.8s** (4×) | −11.1 LUFS | `audio/music/menace-critical.mp3` |
+| `calm` | `level1-step1-evil` | 9.6s | **38.4s** (4×) | −18.7 LUFS | {{< audio-inline src="https://images.legendary-arena.com/audio/music/menace-calm.mp3" >}} |
+| `rising` | `level1-step2-evil` | 9.6s | **38.4s** (4×) | −17.1 LUFS | {{< audio-inline src="https://images.legendary-arena.com/audio/music/menace-rising.mp3" >}} |
+| `critical` | `level1-step3-evil` | 19.2s | **76.8s** (4×) | −11.1 LUFS | {{< audio-inline src="https://images.legendary-arena.com/audio/music/menace-critical.mp3" >}} |
+
+The R2 objects are `audio/music/menace-{calm,rising,critical}.mp3`. Play the
+three in order to hear the escalation the tier ladder is built on — the
+players stream the **live** objects, so this table doubles as a reachability
+check: a silent player means the asset is missing, which is exactly the
+failure that made the channel look broken on launch day.
 
 That pack was chosen for **structure, not taste**: *"6 loops — 3 steps, 2
 variations each (good or evil), 100 BPM."* One composer, one tempo, one key,
