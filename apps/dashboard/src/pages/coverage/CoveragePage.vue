@@ -128,8 +128,8 @@ const STATUS_FILTERS: readonly (LedgerStatus | 'all')[] = [
         <span class="headline-num">{{ percentResolved }}%</span>
         <span class="headline-label">in-play hollows resolved</span>
         <span class="headline-sub"
-          >weighted by how often it bites in play — {{ resolvedObs }} / {{ totalObs }}
-          observations</span
+          >weighted by how often it bites in play — {{ resolvedObs }} /
+          {{ totalObs }} observations</span
         >
       </div>
       <div class="summary-chips">
