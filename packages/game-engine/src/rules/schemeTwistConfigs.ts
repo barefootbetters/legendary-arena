@@ -132,7 +132,13 @@ export const SCHEME_TWIST_CONFIGS: Map<string, SchemeTwistConfig> = new Map([
       // stack) is retained but now INERT for loss (D-24178 / D-24318). The
       // per-player hero-deck SIZING ("4 Heroes at 2 players") is deferred to
       // WP-511; until then 2p full-deck may under-loss (reachable at 3-5p).
-      lossThresholdByPlayerCount: { '2': 8, '3': 8, '4': 5, '5': 5 },
+      // why: WP-562 / D-24371 §6 — the '1' key. Solo mirrors 2-player in
+      // Legendary, and its absence here did not fail loudly: a 1-player game fell
+      // through to MVP_SCHEME_TWIST_THRESHOLD (7), the arbitrary
+      // unconfigured-scheme fallback, and reported a 3/7 meter in a live match.
+      // The missing key is the bug; the fallback stays 7 because it remains
+      // correct for a genuinely unconfigured scheme.
+      lossThresholdByPlayerCount: { '1': 8, '2': 8, '3': 8, '4': 5, '5': 5 },
       resourceLossCondition: {
         kind: 'pile-depleted',
         pile: 'heroDeck',

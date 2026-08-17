@@ -169,7 +169,9 @@
     "menace": 1.0,
     "menaceTier": "critical",
     "schemeLossProgress": 8,
-    "schemeLossThreshold": 8
+    "schemeLossThreshold": 8,
+    "schemeLossKind": "escaped-pile",
+    "schemeTwistThreshold": 8
   },
   "decks": {
     "villainDeckCount": 0,

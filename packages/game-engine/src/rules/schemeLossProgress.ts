@@ -20,6 +20,7 @@ import { SCHEME_TWIST_CONFIGS } from './schemeTwistConfigs.js';
 import {
   countEscapedPileByType,
   countEscapedByConvertedOrigin,
+  remainingPileCount,
 } from './schemeResourceLoss.js';
 
 /**
@@ -38,6 +39,38 @@ export type MenaceTier = 'calm' | 'rising' | 'critical';
  * other (`.claude/rules/code-style.md` §Drift Detection).
  */
 export const MENACE_TIERS: readonly MenaceTier[] = ['calm', 'rising', 'critical'];
+
+/**
+ * What the active scheme's loss progress is actually counting.
+ *
+ * why (D-24371 §3): this is an ENUM, never a label. For a meter to read
+ * "Heroes 11/42" for one scheme and "Escaped 4/12" for another, something must
+ * know which noun applies — and a noun is presentation. The engine ships the
+ * kind; every player-facing word lives client-side in `menaceDisplay.ts`. Do
+ * NOT add a label/text field here: that would put copy in `packages/` and hand
+ * the client a string it must render blind, which is the boundary D-24367 §2
+ * exists to hold.
+ */
+export type SchemeLossKind =
+  | 'hero-deck'
+  | 'wound-stack'
+  | 'escaped-pile'
+  | 'escaped-converted'
+  | 'twists';
+
+/**
+ * Canonical ordered list of SchemeLossKind values.
+ *
+ * Drift-checked against the `SchemeLossKind` union — never update one without
+ * the other (`.claude/rules/code-style.md` §Drift Detection).
+ */
+export const SCHEME_LOSS_KINDS: readonly SchemeLossKind[] = [
+  'hero-deck',
+  'wound-stack',
+  'escaped-pile',
+  'escaped-converted',
+  'twists',
+];
 
 // why: fallback threshold ONLY — used when a scheme has no config or no
 // lossThreshold override. It is deliberately arbitrary (7): a scheme's real
@@ -95,11 +128,48 @@ export function isTwistLossSuppressed(gameState: LegendaryGameState): boolean {
 }
 
 /**
+ * Resolves the setup size of a scheme's depletion-loss pile, when it has one.
+ *
+ * Called once from `Game.setup()` with the two candidate pile sizes measured at
+ * their build sites, so this module stays pure and setup keeps its single
+ * authority over state construction.
+ *
+ * @param schemeId - The active scheme's ext_id.
+ * @param heroDeckSetupSize - Total hero cards BUILT at setup (before the HQ fill).
+ * @param woundStackSetupSize - Wound stack size at setup.
+ * @returns The setup size of the depletion pile, or undefined when the scheme
+ *   does not lose on one.
+ */
+export function resolveSchemeLossPileSetupSize(
+  schemeId: string,
+  heroDeckSetupSize: number,
+  woundStackSetupSize: number,
+): number | undefined {
+  const config = SCHEME_TWIST_CONFIGS.get(schemeId);
+  const condition = config?.resourceLossCondition;
+  if (condition?.kind !== 'pile-depleted') {
+    return undefined;
+  }
+
+  // why: an explicit switch (not dynamic indexing) mirrors remainingPileCount's
+  // shape, so the setup size and the live remaining count are read through two
+  // exhaustive maps over the same union — a new pile member fails to compile in
+  // both places rather than silently resolving to undefined in one.
+  switch (condition.pile) {
+    case 'heroDeck':
+      return heroDeckSetupSize;
+    case 'wounds':
+      return woundStackSetupSize;
+  }
+}
+
+/**
  * Resolves the denominator of the active scheme's loss progress, when one exists.
  *
- * Follows the D-24366 §1 order: a resourceLossCondition carrying a numeric
- * threshold wins outright (D-24315 suppresses the twist proxy for such schemes),
- * otherwise the D-24178 twist-threshold order applies.
+ * Follows the D-24371 §1 order: each condition supplies its own denominator —
+ * a numeric-threshold resourceLossCondition its threshold, a `pile-depleted`
+ * condition its captured setup size — and only a scheme declaring no condition
+ * at all falls through to the D-24178 twist-threshold order.
  *
  * @param gameState - The current game state (read-only).
  * @returns The loss denominator, or undefined when the scheme has none.
@@ -117,16 +187,66 @@ export function resolveSchemeLossThreshold(
     return condition.threshold;
   }
 
-  // why: D-24366 §5 — a 'pile-depleted' scheme (Super Hero Civil War's heroDeck,
-  // Legacy Virus's wounds) has NO fixed denominator. Its loss is "the pile
-  // reached zero", and the pile's starting size is a function of player count and
-  // setup, not a scheme constant. Reporting a denominator here would be inventing
-  // one, so the field is omitted and menace falls back to the twist proxy below.
+  // why: D-24371 §1 supersedes D-24366 §5. That clause reasoned a 'pile-depleted'
+  // scheme has no denominator because the pile's starting size "is not a scheme
+  // constant" — conflating "not in the config" with "unknowable". It IS knowable,
+  // at setup, and is captured there into G.schemeLossPileSetupSize. Falling back
+  // to the twist proxy shipped a Super Hero Civil War meter reading 3/7 twists
+  // while its printed Evil Wins ("If the Hero Deck runs out") sat at 11 cards.
+  // A state built before WP-562 carries no capture; undefined then routes both
+  // this and the numerator back to the twist proxy, which is the pre-WP-562
+  // reading — a coherent legacy pair, not a new invented denominator.
   if (condition?.kind === 'pile-depleted') {
-    return undefined;
+    // why: guarded through hasPileSetupSize — the SAME predicate the numerator
+    // and the kind resolver use. Returning the raw field here would let a 0 or
+    // absent capture split the three: a 0 denominator makes computeMenace read
+    // 0 (a false calm) while the numerator has already fallen back to twists.
+    return hasPileSetupSize(gameState) ? gameState.schemeLossPileSetupSize : undefined;
   }
 
   return resolveTwistLossThreshold(gameState);
+}
+
+/**
+ * Resolves what the active scheme's loss progress is counting.
+ *
+ * Describes the MEASUREMENT, not the config: a `pile-depleted` scheme whose
+ * setup size was never captured is measuring twists, and reports `'twists'` so
+ * the client never labels a twist count "Heroes".
+ *
+ * @param gameState - The current game state (read-only).
+ * @returns The kind of quantity `resolveSchemeLossProgress` is returning.
+ */
+export function resolveSchemeLossKind(
+  gameState: LegendaryGameState,
+): SchemeLossKind {
+  const config = SCHEME_TWIST_CONFIGS.get(gameState.selection.schemeId);
+  const condition = config?.resourceLossCondition;
+
+  if (condition?.kind === 'escaped-pile-count') {
+    return 'escaped-pile';
+  }
+  if (condition?.kind === 'escaped-converted-count') {
+    return 'escaped-converted';
+  }
+  if (condition?.kind === 'pile-depleted' && hasPileSetupSize(gameState)) {
+    return condition.pile === 'heroDeck' ? 'hero-deck' : 'wound-stack';
+  }
+  return 'twists';
+}
+
+/**
+ * Reports whether the depletion-pile setup size was captured into this state.
+ *
+ * @param gameState - The current game state (read-only).
+ * @returns True when a usable positive setup size is present.
+ */
+function hasPileSetupSize(gameState: LegendaryGameState): boolean {
+  // why: a non-positive capture is treated as absent. A zero-sized pile is
+  // already depleted at setup, so 0/0 expresses no progress — the honest
+  // reading is to fall back to the twist proxy rather than divide by zero.
+  const setupSize = gameState.schemeLossPileSetupSize;
+  return setupSize !== undefined && setupSize > 0;
 }
 
 /**
@@ -153,6 +273,19 @@ export function resolveSchemeLossProgress(gameState: LegendaryGameState): number
     return countEscapedByConvertedOrigin(gameState, condition.origin);
   }
 
+  // why: D-24371 §1 — a 'pile-depleted' scheme measures DEPLETION: how many
+  // cards are gone from the pile, against the size it started at. remainingPileCount
+  // is imported from schemeResourceLoss.ts — the same mapping applyPileDepletionResourceLoss
+  // uses to decide the loss — so the meter and the rule that ends the game read
+  // one pile map. Clamped at 0 because the hero deck can grow above its setup
+  // size (cards returning from a discard) and a negative numerator would read as
+  // the villains losing ground.
+  if (condition?.kind === 'pile-depleted' && hasPileSetupSize(gameState)) {
+    const setupSize = gameState.schemeLossPileSetupSize ?? 0;
+    const depleted = setupSize - remainingPileCount(gameState, condition.pile);
+    return depleted > 0 ? depleted : 0;
+  }
+
   // why: the twist numerator reads G.counters.schemeTwistCount, NOT
   // G.scheme.twistPile.length. The counter is the value buildGenericTwistEffects
   // compares against the threshold, so it is the one the loss actually turns on;
@@ -169,9 +302,10 @@ export function resolveSchemeLossProgress(gameState: LegendaryGameState): number
  * @returns A clamped 0..1 scalar; 0 when no usable denominator exists.
  */
 export function computeMenace(gameState: LegendaryGameState): number {
-  // why: a 'pile-depleted' scheme projects no threshold (above), but still needs
-  // a denominator to produce a meter reading — it falls back to the D-24178 twist
-  // proxy, which is the doom clock those schemes already run on.
+  // why: the fallback now applies ONLY to a state whose depletion capture is
+  // absent (a pre-WP-562 recorded state). Every scheme built by this engine
+  // resolves its own denominator, and resolveSchemeLossProgress takes the same
+  // branch, so numerator and denominator always describe the same quantity.
   const denominator =
     resolveSchemeLossThreshold(gameState) ?? resolveTwistLossThreshold(gameState);
 

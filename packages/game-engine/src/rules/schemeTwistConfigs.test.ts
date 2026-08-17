@@ -46,9 +46,13 @@ describe('SCHEME_TWIST_CONFIGS drift tests', () => {
     assert.equal(SCHEME_TWIST_CONFIGS.get('core/midtown-bank-robbery')?.lossThreshold, 8);
     assert.equal(SCHEME_TWIST_CONFIGS.get('core/legacy-virus-the')?.lossThreshold, 8);
     assert.equal(SCHEME_TWIST_CONFIGS.get('core/negative-zone-prison-breakout')?.lossThreshold, 8);
+    // why: WP-562 / D-24371 §6 — the '1' key. Solo mirrors 2-player; without it a
+    // 1-player game fell through to MVP_SCHEME_TWIST_THRESHOLD (7) and reported a
+    // 3/7 meter in a live match. Pinned here so the key cannot be dropped again
+    // silently — its absence produced a plausible-looking wrong number, not an error.
     assert.deepEqual(
       SCHEME_TWIST_CONFIGS.get('core/super-hero-civil-war')?.lossThresholdByPlayerCount,
-      { '2': 8, '3': 8, '4': 5, '5': 5 },
+      { '1': 8, '2': 8, '3': 8, '4': 5, '5': 5 },
     );
   });
 
@@ -72,7 +76,7 @@ describe('SCHEME_TWIST_CONFIGS drift tests', () => {
     assert.equal(civilWar?.resolverId, 'ko-from-hq');
     assert.deepEqual(civilWar?.params, { koAll: true });
     // loss config unchanged (WP-510 hero-deck-empty, per-seat stack sizing)
-    assert.deepEqual(civilWar?.lossThresholdByPlayerCount, { '2': 8, '3': 8, '4': 5, '5': 5 });
+    assert.deepEqual(civilWar?.lossThresholdByPlayerCount, { '1': 8, '2': 8, '3': 8, '4': 5, '5': 5 });
     assert.deepEqual(civilWar?.resourceLossCondition, { kind: 'pile-depleted', pile: 'heroDeck' });
 
     const cosmicCube = SCHEME_TWIST_CONFIGS.get('core/unleash-the-power-of-the-cosmic-cube');

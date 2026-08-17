@@ -110,14 +110,20 @@ export { schemeTwistHandler } from "./rules/schemeHandlers.js";
 // why: WP-557 / D-24366 — the menace tier contract is exported so the planned
 // consumers (the danger-meter HUD and the adaptive score) bind to ONE tier
 // definition rather than each re-declaring the bands.
+// why: WP-562 / D-24371 §3 — SchemeLossKind is exported for the same reason:
+// the client maps the kind to a player-facing noun, so it must bind to the
+// engine's union rather than re-typing the member names as free strings.
 export {
   MENACE_TIERS,
+  SCHEME_LOSS_KINDS,
   computeMenace,
   menaceTierFor,
+  resolveSchemeLossKind,
   resolveSchemeLossProgress,
   resolveSchemeLossThreshold,
+  resolveTwistLossThreshold,
 } from "./rules/schemeLossProgress.js";
-export type { MenaceTier } from "./rules/schemeLossProgress.js";
+export type { MenaceTier, SchemeLossKind } from "./rules/schemeLossProgress.js";
 export { mastermindStrikeHandler } from "./rules/mastermindHandlers.js";
 export type { EndgameResult, EndgameOutcome } from "./endgame/endgame.types.js";
 export { ENDGAME_CONDITIONS, ESCAPE_LIMIT } from "./endgame/endgame.types.js";

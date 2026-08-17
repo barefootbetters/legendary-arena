@@ -6,6 +6,7 @@ import {
   hasMenaceSignal,
   menaceAriaText,
   menaceBarPercent,
+  menaceKindLabel,
   menaceRatioLabel,
   menaceTierClass,
 } from '../../vfx/menaceDisplay';
@@ -71,6 +72,13 @@ export default defineComponent({
       ),
     );
 
+    // why: WP-562 / D-24371 §3 — the noun comes from the engine's kind ENUM via
+    // the menaceDisplay lookup, never from the component reading the scheme id
+    // or re-deriving the loss condition. That is the same D-24367 §2 boundary
+    // the tier already respects: the engine says what is measured, this file
+    // says what to call it.
+    const kindLabel = computed(() => menaceKindLabel(props.progress.schemeLossKind));
+
     const ariaText = computed(() =>
       props.progress.menaceTier === undefined
         ? ''
@@ -78,6 +86,7 @@ export default defineComponent({
             props.progress.menaceTier,
             props.progress.schemeLossProgress ?? 0,
             props.progress.schemeLossThreshold,
+            props.progress.schemeLossKind,
           ),
     );
 
@@ -101,6 +110,7 @@ export default defineComponent({
       barPercent,
       tierClass,
       ratioLabel,
+      kindLabel,
       ariaText,
       isPulsing,
       isAnimated,
@@ -122,7 +132,9 @@ export default defineComponent({
     aria-valuemax="100"
     :aria-label="ariaText"
   >
-    <span class="danger-meter__label">Scheme</span>
+    <span class="danger-meter__label" data-testid="play-hud-danger-label">
+      {{ kindLabel }}
+    </span>
     <span class="danger-meter__track">
       <span class="danger-meter__fill" :style="{ width: barPercent + '%' }"></span>
     </span>

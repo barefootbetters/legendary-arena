@@ -1356,6 +1356,21 @@ export interface LegendaryGameState {
   /** Converted-card villain identities (e.g. 'killbot'); absent unless a scheme converts. */
   convertedVillainOrigins?: Record<CardExtId, ConvertedVillainOrigin>;
 
+  // why: WP-562 / D-24371 §2 — the setup size of the pile whose depletion IS the
+  // active scheme's Evil-Wins condition (Super Hero Civil War's hero deck, Legacy
+  // Virus's wound stack). Captured at setup because the loss progress is
+  // "how much of the pile is gone", which needs the starting size, and the
+  // starting size is a function of setup rather than a scheme constant — the
+  // conflation D-24366 §5 made when it declared such a scheme denominator-less.
+  // Materialized LAZILY — written ONLY for a scheme declaring a 'pile-depleted'
+  // condition, absent otherwise — so every other game's state hash is unchanged
+  // (the convertedVillainOrigins pattern). It is NOT free of consequence here,
+  // though: the sentinel fixture sentinel-core-doom-2p uses core/legacy-virus-the,
+  // which IS pile-depleted, so its finalStateHash moves. That re-pin is expected
+  // and reasoned; PRE_WP080_HASH (the empty replay, no scheme) must NOT move.
+  /** Setup size of the depletion-loss pile; absent unless the scheme loses on one. */
+  schemeLossPileSetupSize?: number;
+
   // why: per-turn attack/recruit point accumulation and spend tracking.
   // Reset at start of each player turn. Values are integers >= 0.
   /** Per-turn economy tracking (attack/recruit points accumulated and spent). */

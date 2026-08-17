@@ -413,16 +413,34 @@ the score reads one number instead of reconstructing the loss rules.
 |---|---|
 | `menace` | Normalized **0..1** progress toward the active scheme's Evil-Wins condition |
 | `menaceTier` | The band `menace` falls in — `calm` / `rising` / `critical` |
-| `schemeLossProgress` | The condition-aware numerator (twists, or matching escaped-pile entries) |
-| `schemeLossThreshold` | The resolved denominator; **omitted** for a scheme with no fixed one |
+| `schemeLossProgress` | The condition-aware numerator — see the per-condition table below |
+| `schemeLossThreshold` | The resolved denominator for that same condition |
+| `schemeLossKind` | Which condition is being measured, as an enum the client turns into a noun |
+| `schemeTwistThreshold` | The twist-stack size, for the HUD's `Twists: N/M` readout only |
+
+Each scheme's progress measures **its own** printed Evil-Wins condition
+(WP-562 / D-24371 §1):
+
+| Condition | Numerator | Denominator | `schemeLossKind` |
+|---|---|---|---|
+| Hero Deck runs out (Super Hero Civil War) | cards drawn from the pool | total hero cards built at setup | `hero-deck` |
+| Wound stack runs out (Legacy Virus) | wounds taken from the stack | wound stack size at setup | `wound-stack` |
+| N escape (Negative Zone, Midtown) | matching escaped entries | the condition's threshold | `escaped-pile` |
+| N converted escape (Killbots, Secret Invasion) | matching converted entries | the condition's threshold | `escaped-converted` |
+| Printed "Twist N: Evil Wins!" (Portals, Cosmic Cube) | twist count | twist threshold | `twists` |
 
 **Read `menace` — do not recompute it.** The denominator is not a
-constant: it comes from the active scheme's `lossThreshold` /
-`lossThresholdByPlayerCount` (Super Hero Civil War is 8 at 2–3 players
-but **5** at 4–5), and a scheme declaring a `resourceLossCondition` has
-the twist clock suppressed entirely in favour of its own threshold
-(D-24315). The engine resolves all of that in one place so the score and
-the [visual danger meter](visual-effects.md) can never disagree.
+constant: it is the setup size of a depletion pile, a
+`resourceLossCondition` threshold, or the active scheme's `lossThreshold`
+/ `lossThresholdByPlayerCount` (Super Hero Civil War is 8 at 1–3 players
+but **5** at 4–5). The engine resolves all of that in one place so the
+score and the [visual danger meter](visual-effects.md) can never disagree.
+
+**`schemeTwistThreshold` is not `schemeLossThreshold`.** They are
+projected separately on purpose: for a scheme with a
+`resourceLossCondition` the loss threshold counts a *resource*, so
+reusing it for the twist readout renders `Twists: 3/12` for Negative
+Zone — whose twist stack is 8 (D-24371 §5).
 
 > **Correction (WP-557).** An earlier version of this page specified
 > `escapeProgress = escapedVillains / ESCAPE_LIMIT` with `ESCAPE_LIMIT = 8`.
@@ -446,11 +464,18 @@ score and the visual meter, so "critical" means the same thing in both:
 | `>= 0.34` and `< 0.67` | `rising` |
 | `>= 0.67` | `critical` |
 
-A scheme with no fixed denominator (Super Hero Civil War's hero deck,
-Legacy Virus's wound stack — both "the pile ran out" losses) omits
-`schemeLossThreshold` and reports `menace` against the twist-count doom
-clock those schemes already run on. `schemeLoss >= 1` remains terminal:
-resolve straight to the win/loss sting and stop the loop.
+> **Correction (WP-562).** An earlier version of this section said a
+> "pile ran out" scheme (Super Hero Civil War's hero deck, Legacy Virus's
+> wound stack) omits `schemeLossThreshold` and reports `menace` against
+> the twist-count doom clock. That is **retired** — it was the D-24366 §5
+> reasoning, and it shipped a Civil War match rendering `3/7 twists`
+> while the Hero Deck it actually loses on sat at 11 cards. **D-24371**
+> supersedes it: the pile's setup size is captured at setup, so these
+> schemes measure their own depletion (`31/42`) like every other
+> condition. Every scheme built by the engine now carries a denominator.
+
+`schemeLoss >= 1` remains terminal: resolve straight to the win/loss
+sting and stop the loop.
 
 #### Technique — horizontal now, vertical later (shipped horizontal)
 

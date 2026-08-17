@@ -23,7 +23,7 @@
 import type { FinalScoreSummary } from "../scoring/scoring.types.js";
 import type { NotableGameEvent } from "../events/notableEvents.types.js";
 import type { LogEntry } from "../log/logOutcome.types.js";
-import type { MenaceTier } from "../rules/schemeLossProgress.js";
+import type { MenaceTier, SchemeLossKind } from "../rules/schemeLossProgress.js";
 // why: WP-258 — reuse the engine's canonical HollowEffectRecord rather than
 // declaring a parallel UI type. The projection surfaces the WP-257 runtime
 // channel (G.diagnostics.hollowEffects) to the client unchanged.
@@ -616,10 +616,23 @@ export interface UIProgressCounters {
   /**
    * The resolved denominator for the active scheme.
    *
-   * Omitted for a `pile-depleted` scheme, whose loss has no fixed denominator
-   * (D-24366 §5) — `menace` still reports the twist-proxy reading.
+   * Present for every scheme built by this engine (D-24371 §1 — each condition
+   * supplies its own denominator). Omitted only for a pre-WP-562 recorded state
+   * whose depletion-pile setup size was never captured.
    */
   schemeLossThreshold?: number;
+  // why: WP-562 / D-24371 §3 — an ENUM, so the client can label the ratio
+  // ("Heroes 11/42" vs "Escaped 4/12") without re-deriving which condition the
+  // scheme loses on. Every player-facing noun lives in the client's
+  // `menaceDisplay.ts`; adding a label field here would put copy in `packages/`.
+  /** What `schemeLossProgress` / `schemeLossThreshold` are counting. */
+  schemeLossKind?: SchemeLossKind;
+  // why: WP-562 / D-24371 §5 — projected SEPARATELY from `schemeLossThreshold`.
+  // For a resourceLossCondition scheme that field counts a RESOURCE, so reusing
+  // it for the HUD's "Twists:" readout renders `Twists: 3/12` for Negative Zone —
+  // one wrong number swapped for another. This is always the twist-stack size.
+  /** The twist-count threshold, for the HUD's twist readout. */
+  schemeTwistThreshold?: number;
 }
 
 // why: WP-367 / D-24159 — projected only while the deck-exhaustion final-turn

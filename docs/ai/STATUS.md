@@ -7,6 +7,82 @@
 
 ## Current State
 
+### WP-562 - Scheme-Faithful Loss Progress - DONE (2026-08-17)
+
+The danger meter measured Scheme Twists for every scheme, including the ones
+that cannot lose on twists. A Red Skull / Super Hero Civil War solo match
+(`gitSha 8eb8b0c`) reported `menace 0.4286` - exactly 3/7 twists - while the
+Hero Deck its printed Evil Wins turns on ("If the Hero Deck runs out") sat at
+11 of 42 cards. Each condition now measures itself.
+
+**Root cause was D-24366 section 5.** It reasoned that a `pile-depleted` scheme
+has no denominator because the pile's starting size "is not a scheme constant".
+It is not in the scheme *config* - but it is knowable at setup, where the pile
+is built. "Not in the config" was conflated with "unknowable", and the fallback
+it prescribed shipped to players. D-24371 supersedes that clause, and the clause
+is **marked superseded in place** in DECISIONS.md rather than left standing as
+live guidance - the EC made that a Definition-of-Done item, not an intention.
+
+**Engine.** `Game.setup()` captures the depletion pile's setup size into
+`G.schemeLossPileSetupSize`, lazily - written only for a `pile-depleted` scheme,
+so every other match carries no new field. `schemeLossProgress.ts` gives each
+condition its own numerator and denominator; the twist proxy survives only for a
+scheme declaring no condition at all, or a state predating the capture. A
+`SchemeLossKind` enum is projected so the client can label the ratio without
+re-deriving the loss rule, and `schemeTwistThreshold` is projected **separately**
+from `schemeLossThreshold` - reusing the loss threshold would render
+`Twists: 3/12` for Negative Zone, one wrong number swapped for another. Super
+Hero Civil War gained its missing `'1'` player-count key; solo mirrors 2-player
+at 8, and `MVP_SCHEME_TWIST_THRESHOLD` stays 7 because the missing key was the
+defect, not the fallback.
+
+**Client.** `<DangerMeter>` renders a kind-driven noun (`Heroes 31/42`) with its
+aria text naming the same quantity; `<TopHudBar>` restores `Twists: N/M` from the
+twist threshold, still degrading to a bare count when none is projected. Every
+player-facing noun lives in `menaceDisplay.ts`; no copy entered `packages/`.
+
+**Determinism - one re-pin, predicted at draft time, and the oracle that must not
+move did not.** `PRE_WP080_HASH` is **byte-unchanged at `ec64506a`**: the empty
+replay declares no scheme, so the lazy field is absent and the packet's STOP
+condition never fired. The sentinel fixture `sentinel-core-doom-2p` uses
+`core/legacy-virus-the`, itself `pile-depleted`, so its `finalStateHash` moved as
+the WP predicted: **`62ba4e58...abd7` -> `813287eb...f143b8`**. Re-recorded via
+`scripts/record-game-fixture.mjs`, never hand-edited; the fixture diff is **one
+line** with no snapshot or message drift, which is itself the proof that the lazy
+field is the sole cause.
+
+**One execution-time correction, kept with its test.**
+`resolveSchemeLossThreshold` initially returned the raw capture for a
+`pile-depleted` scheme while the numerator and the kind resolver both guarded it.
+A zero capture would have split the three: a 0 denominator makes `computeMenace`
+read 0 - a false calm - over a numerator that had already fallen back to twists.
+All three now share one `hasPileSetupSize` predicate. A related clarification:
+`resolveSchemeLossKind` reports what is **measured**, not what the config
+declares, so a pre-WP-562 state counting twists reports `'twists'` and the client
+can never print "Heroes" over a twist count.
+
+**Gates.** `pnpm -r build` 0. game-engine **2700 -> 2734 / 0 fail**;
+arena-client **1335 -> 1351 / 0 fail**; `arena-client typecheck` 0;
+`pnpm -r --no-bail test` 0 failures in every package; wiki link-check passed
+across 66 projected files. `packages/lagn-spec/schemas/lagn-v1.json` showed
+line-ending-only churn after the build and was restored, not committed.
+
+**D-24026 - operator-pending.** AC-12 needs the deployed bundle: a live Civil War
+match showing `Heroes N/42` tracking the deck and `Twists: N/8`. Everything else
+(AC-1..AC-11) is demonstrated with observed output.
+
+**Deliberately not fixed** (both observed in the same match, both recorded in the
+WP's Notes): the `Surge of Power` block message, which logs "a play condition
+(such as Hero class or team synergy) was not met" when the real gate is "8+
+recruit this turn" - the message machinery is shared across every conditional
+hero ability; and the empty diagnostics `entries` buffer (`entryCount: 0` for a
+full 12-turn match, nothing dropped or truncated).
+
+Lands **D-24371 Active**; marks **D-24366 section 5 superseded**. 26 files
+(1 new engine test file + 25 modified source/test/fixture/wiki) + governance.
+
+---
+
 ### WP-561 - In-Play Hollow Baseline Rebuild - DONE (2026-08-16)
 
 The /coverage in-play metric could not credit the work it exists to prioritise.
