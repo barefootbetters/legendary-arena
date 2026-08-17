@@ -37358,3 +37358,43 @@ Locked:
    Corrected here rather than silently carried forward.
 8. **WP-566 sequences first.** Both packets edit the same emit site, and this state
    has no message vocabulary to extend until WP-566's lands.
+
+### D-24372 — The engine test-typecheck gate: fix the tests, never silence them
+
+`packages/game-engine` test files have never been compiled. `tsconfig.json`
+excludes `src/**/*.test.ts`, the package carries only `build` and `test`
+scripts, and `tsx` transpiles without typechecking. Every `satisfies`-based
+"compile-time drift pin" in the engine suite is therefore documentation rather
+than a gate — including pins whose own comments promise compile-time
+enforcement they never received. Discovered during WP-557, worked around
+locally with a runtime keyset assertion, and named as that packet's first
+post-mortem follow-up. Locked:
+
+1. **A separate `tsconfig.test.json`**, extending the base with the test
+   exclusion removed and `noEmit: true`. The shipped build's `rootDir` /
+   `outDir` / `declaration` output must remain byte-identical — the gate is
+   additive tooling, never a change to what ships.
+2. **A `typecheck:tests` script**, wired into CI **only when the error count
+   reaches zero**. A red required check on `main` with hundreds of known
+   pre-existing errors blocks every unrelated PR, so the wiring is the final
+   cleanup packet's job and its deferral is recorded in `STATUS.md` rather
+   than left to be rediscovered later as an apparent oversight.
+3. **Errors the gate surfaces are FIXED IN THE TEST FILES.** Never silenced
+   with `any`, `@ts-ignore`, or `@ts-expect-error`; never resolved by
+   loosening the base tsconfig's `strict`, `exactOptionalPropertyTypes`, or
+   `noUncheckedIndexedAccess`; and never by widening a **production** type to
+   make a test compile — a test that requires that is asserting something
+   false, which is a finding to record, not a fix to apply.
+4. **Overflow is split, not suppressed.** The scaffold observed **692 errors
+   across 110 files**, far beyond one packet. The response is to ship the
+   mechanism plus the highest-value slice and record the remainder as sized,
+   named follow-up packets. Attempting the full sweep in one pass is precisely
+   the pressure that produces the suppressions clause 3 forbids.
+
+The largest surfaced class is itself the strongest argument for the gate:
+**197 errors are tests constructing `LegendaryGameState` without required
+fields** (`horrors`, `faceDownCards`, `strikePile`, `attachedBystanders`).
+Those tests have been running against structurally invalid game states and
+passing, for as long as the fields have existed.
+
+_Drafted 2026-08-17; not yet landed. Flips to Active at WP-563 execution (EC-598)._

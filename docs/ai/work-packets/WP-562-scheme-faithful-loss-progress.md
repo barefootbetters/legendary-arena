@@ -205,6 +205,62 @@ player-facing noun lives in `menaceDisplay.ts`.
 - [x] `STATUS.md` records the re-pin explicitly (old → new hash).
 - [x] D-24366 §5 marked **superseded** by D-24371 in `DECISIONS.md`.
 
+## Gate Verdicts (Drafting Session, 2026-08-17)
+
+> **Backfilled 2026-08-17.** The original draft SPEC (#1478) merged **without**
+> this section or the lint-gate self-review below — Step 5 and Step 6 of
+> `01.0a` were skipped and the packet was reported as drafted anyway. That is
+> a Phase 1 DoD violation, recorded here rather than quietly corrected.
+
+**Pre-flight (`01.4`): READY TO EXECUTE.** Artifact:
+`docs/ai/invocations/preflight-wp562-scheme-faithful-loss.md`. All corrected
+dependencies (D-24366, D-24367, D-24315, D-24178) are Active on `main`; the
+packet supersedes one clause of a decision it depends on, which is why §Scope
+(Out) explicitly preserves D-24367 §1 and §2.
+
+**Empirical scaffold: NOT RUN, and the reason is recorded.** This WP tightens
+no existing input path and removes no prop. Its riskiest surface is the
+**determinism re-pin**, which cannot be scaffolded away — it is measured at
+execution by the canonical recorder. What *was* done in its place is the
+grounding that matters: the sentinel fixture's scheme was read from the
+fixture (`core/legacy-virus-the`) and confirmed to be `pile-depleted`, so the
+re-pin is **predicted before execution** rather than discovered during it.
+
+**Copilot check (`01.7`): PASS** (1 RISK, FIXed in-place). Artifact:
+`docs/ai/invocations/copilot-wp562-scheme-faithful-loss.md`. Issue **4**
+(contract drift between types, tests and runtime) fired — this packet
+*supersedes a clause of a live decision*, and a superseded-but-unmarked clause
+is the drift. FIXed by making "mark D-24366 §5 superseded in `DECISIONS.md`" a
+Definition-of-Done item rather than an intention.
+
+## Lint Gate Self-Review
+
+| § | Verdict | Note |
+|---|---|---|
+| 1 Goal user-visible | PASS | `play.legendary-arena.com`; D-24026 required (AC-12). |
+| 2 Scope closed | PASS | 8-item In; Out preserves D-24367 §1/§2 and names the two observed-but-deferred defects. |
+| 3 Assumes cite sources | PASS | Each cites a landed WP or D-entry. |
+| 4 Files allowlist | PASS | 15 rows, both layers. |
+| 5 Contract explicit | PASS | Per-condition table + the 42-over-37 operator decision + the re-pin warning. |
+| 6 AC testable | PASS | 12 ACs, each observable. |
+| 7 Layer boundary | PASS | Cross-layer by necessity, WP-410 precedent cited; engine ships an enum, never a label. |
+| 8 Determinism | **PASS (with a planned re-pin)** | `finalStateHash` moves — predicted, reasoned, canonical-recorder-only. `PRE_WP080_HASH` expected unchanged and is a STOP condition if it moves. |
+| 9 Persistence | PASS | One lazy `G` field; nothing else stored. |
+| 10 Move contract | N/A | No move. |
+| 11 Phase/turn | N/A | No transition. |
+| 12 Zone ops | N/A | No zone mutation. |
+| 13 Canonical arrays | PASS | `schemeLossKind` is a new closed union; AC-1/AC-3/AC-4/AC-5 cover every member. |
+| 14 Naming | PASS | Field names mirror the existing `schemeLoss*` vocabulary. |
+| 15 Error handling | PASS | Absent capture ⇒ the existing absent-signal path; no throw. |
+| 16 Test extension | PASS | Drift pin extended (an optional add passes the existing keyset silently). |
+| 17 Vision | PASS | §14 observability, §11 read-only. |
+| 18 Dependencies complete | PASS | All Active on `main`. |
+| 19 Lane eligibility | PASS | Two-session: 15 files, cross-layer, and a determinism re-pin — three separate disqualifiers for the lightweight lane. |
+| 20 Knobs | N/A | No `SAFE-KNOBS.md` surface. |
+| 21 API catalog | N/A | No HTTP endpoint. |
+
+**All 21 sections resolved.**
+
 ## Notes
 
 Two defects observed in the same match, deliberately **not** fixed here:
