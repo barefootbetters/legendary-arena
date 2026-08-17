@@ -192,18 +192,20 @@ compatible by construction rather than by luck — which was the hard part of
 the sourcing job this packet named. The **evil** variant family is used for
 all three tiers, so a crossfade never crosses timbral worlds:
 
-| Tier | Source | Duration | Loudness |
-|---|---|---|---|
-| `menace-calm` | `level1-step1-evil` | 9.6s | −18.5 LUFS |
-| `menace-rising` | `level1-step2-evil` | 9.6s | −16.9 LUFS |
-| `menace-critical` | `level1-step3-evil` | 19.2s | −10.8 LUFS |
+| Tier | Source | Bar loop | Shipped | Loudness |
+|---|---|---|---|---|
+| `menace-calm` | `level1-step1-evil` | 9.6s | 38.4s (4×) | −18.7 LUFS |
+| `menace-rising` | `level1-step2-evil` | 9.6s | 38.4s (4×) | −17.1 LUFS |
+| `menace-critical` | `level1-step3-evil` | 19.2s | 76.8s (4×) | −11.1 LUFS |
 
 Encoded 44.1 kHz stereo / 192 kbps via `scripts/upload-move-sfx-to-r2.mjs
 --max-seconds 0`. **Deliberately not loudness-normalised** — the composer's
-own −18.5 → −16.9 → −10.8 ladder *is* the escalation, and flattening it to a
-common LUFS target would undo the point of the packet. Durations are exact bar
-multiples at 100 BPM (9.6s = 16 beats), and head/tail RMS sits at body level
-with no fade-to-silence, so the loops are seamless at the source.
+own −18.7 → −17.1 → −11.1 ladder *is* the escalation, and flattening it to a
+common LUFS target would undo the point of the packet. The source loops are
+exact bar multiples at 100 BPM (9.6s = 16 beats) with head/tail RMS at body
+level and no fade-to-silence, so they are seamless **as audio** — the shipped
+4× repeat exists to space out the mp3 *container* seam, not to fix the music
+(see below).
 
 **✅ AC-12 / D-24026 CONFIRMED LIVE 2026-08-17.** Operator heard music in a 2p
 Red Skull / Super Hero Civil War match on deployed `gitSha 86b8436`; that
@@ -224,16 +226,27 @@ seam-injecting unit tests cannot see the seam. See
 
 **Still unassessed — these need deliberate listening, not just a match:**
 whether the calm bed wears on a player over twenty minutes of ordinary play,
-whether `MUSIC_CROSSFADE_MS = 1500` reads as a mood shift or a cut against
-these specific loops, and whether the mp3 loop seam clicks (predicted every
-9.6s on calm/rising; never observed). "It played music" answers the
-gate — it does not answer these.
+and whether `MUSIC_CROSSFADE_MS = 1500` reads as a mood shift or a cut against
+these specific loops. "It played music" answers the gate — it does not answer
+these.
 
-**Known risk — mp3 loop seam.** `menaceMusicManifest.ts` hardcodes `.mp3`, and
-mp3 carries encoder delay/padding that can click at each loop wrap (every 9.6s
-for calm/rising). Predicted, not yet observed. If audible, the fix is either a
-format change in the manifest (`.ogg`/`.opus` — a code change, so a new packet)
-or concatenating each loop 4× so the seam lands every ~38s instead.
+**⚠ mp3 loop seam — CONFIRMED BY EAR 2026-08-17, mitigated, NOT solved.** The
+predicted click is real: an audible tick every ~9.6s, exactly the source loop
+length. mp3 carries encoder delay/padding, so a browser looping an `.mp3`
+inserts a short silence at every wrap — the format cannot loop gaplessly.
+
+*Mitigation shipped:* each track is concatenated **4×** before encoding (the
+three internal repeats are joined as raw PCM, so they are sample-exact and
+silent; only the file's own wrap keeps the gap). Click moves from every 9.6s
+to every **38.4s** (76.8s for `critical`), at 4× the file size
+(~900 KB / ~900 KB / ~1.8 MB). Loudness ladder preserved at
+−18.7 / −17.1 / −11.1 LUFS.
+
+*The actual fix is still open:* stop using mp3 for loops. Ogg Vorbis and Opus
+both carry gapless metadata that browsers honour, but `menaceMusicManifest.ts`
+hardcodes `.mp3`, so that is a code change and needs its own packet. **Until
+then, any new looping music asset must ship pre-repeated.** One-shot SFX are
+unaffected — a sting never wraps.
 
 **Papercut noted:** the uploaded objects carry **no `Cache-Control`** header —
 `audio/*` is explicitly excluded from the immutable-cache rule in
