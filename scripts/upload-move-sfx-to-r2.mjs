@@ -36,6 +36,9 @@
  *                      Default 1.6 (short SFX). Pass 0 to DISABLE trimming/fade —
  *                      REQUIRED for music loops and any clip meant to play in full.
  *   --bitrate <k>      mp3 bitrate (default: 128k)
+ *   --cache-control <v> Cache-Control header set on every uploaded object
+ *                      (default: "public, max-age=300, must-revalidate").
+ *                      Pass "" to upload with no Cache-Control at all.
  *   --dry-run          Encode to <dist> only; skip the upload + verify.
  *
  * Examples:
@@ -44,10 +47,19 @@
  *
  *   # A music loop — do NOT trim, and let it be a bit heavier:
  *   node scripts/upload-move-sfx-to-r2.mjs --src ./music-src --max-seconds 0 --bitrate 192k
+ *
+ * Backfilling Cache-Control onto ALREADY-uploaded objects:
+ *   rclone skips a re-upload when size and modtime match, so simply re-running
+ *   this script will NOT rewrite the header on existing objects. Force it:
+ *     rclone copy <dist-dir> r2:legendary-images/audio/music/ \
+ *       --s3-no-check-bucket --ignore-times \
+ *       --header-upload "Cache-Control: public, max-age=300, must-revalidate"
+ *   Objects uploaded before this flag existed carry NO Cache-Control and are
+ *   cached at Cloudflare's default TTL, so they need this one-time backfill.
  */
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, readdirSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve, parse } from 'node:path';
 
 // ── Argument parsing (a tiny flag reader — no dependency) ────────────────────
@@ -66,12 +78,18 @@ const maxSeconds = Number(readFlag('--max-seconds', '1.6'));
 const bitrate = readFlag('--bitrate', '128k');
 const dryRun = process.argv.includes('--dry-run');
 
-// why: R2 audio is served via images.legendary-arena.com under the
-// audio/sound-effects/ prefix (the ewiki hosting rule); the public host is fixed
-// so verification can GET the uploaded clip. If --dest points elsewhere the
-// verify step is skipped (below) rather than guessing a public URL.
-const DEFAULT_R2_DEST = 'r2:legendary-images/audio/sound-effects';
-const PUBLIC_BASE = 'https://images.legendary-arena.com/audio/sound-effects';
+// why: these objects have FIXED filenames (menace-calm.mp3, play-card.mp3) that
+// get REPLACED in place, so the immutable long-max-age recipe used for
+// content-addressed card images is exactly wrong here — it would pin a stale
+// clip at the edge effectively forever. Uploaded without any Cache-Control they
+// inherit Cloudflare's default TTL, which is how the 4x music loops uploaded on
+// 2026-08-17 kept serving the previous 9.6s files to every listener until a
+// manual purge; the stale copy was invisible to a HEAD probe (HEAD is not
+// cached, GET is), so it read as a successful swap. A short TTL plus
+// revalidation makes a replacement land on its own within minutes, and the
+// revalidation itself is a cheap 304 against the object's ETag.
+const DEFAULT_CACHE_CONTROL = 'public, max-age=300, must-revalidate';
+const cacheControl = readFlag('--cache-control', DEFAULT_CACHE_CONTROL);
 
 // why: accept only real audio inputs; ignore a stray dist/ or dotfile so a
 // re-run that points --src at a dir already containing dist/ does not try to
@@ -163,32 +181,82 @@ if (dryRun) {
 // "CreateBucket ... 403 AccessDenied" even though the bucket plainly exists and
 // the token can write to it. This matches every other documented R2 upload in the
 // repo (docs/ops/RUNBOOK-r2-image-cache-control.md, wiki/card-image-acquisition.md).
+// why: an empty --cache-control is an explicit opt-out, so the flag is omitted
+// entirely rather than sending an empty header value that R2 would store.
+const cacheControlArgs =
+  cacheControl.length > 0 ? ['--header-upload', `Cache-Control: ${cacheControl}`] : [];
+
 const stems = sources.map(({ parsed }) => parsed.name);
 for (const stem of stems) {
-  run('rclone', ['copyto', '--s3-no-check-bucket', join(distDir, `${stem}.mp3`), `${r2Dest}/${stem}.mp3`]);
+  run('rclone', [
+    'copyto',
+    '--s3-no-check-bucket',
+    ...cacheControlArgs,
+    join(distDir, `${stem}.mp3`),
+    `${r2Dest}/${stem}.mp3`,
+  ]);
   console.log(`uploaded ${stem}.mp3 -> ${r2Dest}/${stem}.mp3`);
+}
+
+if (cacheControlArgs.length > 0) {
+  console.log(`\nCache-Control set on all ${stems.length} object(s): ${cacheControl}`);
+} else {
+  console.log(`\nNo Cache-Control set (--cache-control was empty).`);
 }
 
 // ── Step 3: verify (GET, not HEAD — mirrors the WP-412/413 assets-leg checks) ─
 
-// why: only the default images.legendary-arena.com prefix has a known public URL
-// to GET; a custom --dest is uploaded but not verified here (no way to derive its
-// public URL), so say so rather than silently skip.
-if (r2Dest !== DEFAULT_R2_DEST) {
-  console.log(`\nUploaded to ${r2Dest}. Skipping GET-verify (no known public URL for a non-default --dest).`);
+// why: the public URL is derivable for ANY dest inside the legendary-images
+// bucket — the bucket is served verbatim under images.legendary-arena.com — so
+// verification is no longer limited to the one hard-coded SFX prefix. It used to
+// be, and that gap is why the 2026-08-17 music uploads printed
+// "Skipping GET-verify" twice and nobody noticed the edge was serving the
+// previous files.
+const BUCKET_PREFIX = 'r2:legendary-images/';
+if (!r2Dest.startsWith(BUCKET_PREFIX)) {
+  console.log(`\nUploaded to ${r2Dest}. Skipping GET-verify (dest is outside ${BUCKET_PREFIX}).`);
   process.exit(0);
 }
+const publicBase = `https://images.legendary-arena.com/${r2Dest.slice(BUCKET_PREFIX.length)}`;
 
 const nullSink = process.platform === 'win32' ? 'NUL' : '/dev/null';
+const expectedBytesByStem = new Map(
+  stems.map((stem) => [stem, statSync(join(distDir, `${stem}.mp3`)).size]),
+);
+
 let failures = 0;
 for (const stem of stems) {
-  const url = `${PUBLIC_BASE}/${stem}.mp3`;
+  const url = `${publicBase}/${stem}.mp3`;
   try {
+    // why: a GET, never a HEAD. Cloudflare caches GET responses but answers HEAD
+    // from origin, so a HEAD probe reports the object you just uploaded while
+    // every real listener is still being served the previous one. Verifying with
+    // HEAD is how a stale swap passes review.
     const headers = run('curl', ['-sS', '-o', nullSink, '-D', '-', url]);
     const ok200 = /^HTTP\/[\d.]+ 200/m.test(headers);
     const isAudio = /content-type:\s*audio\/mpeg/i.test(headers);
-    if (ok200 && isAudio) {
-      console.log(`verified 200 audio/mpeg  ${url}`);
+
+    // why: the byte length is what proves the NEW file is being served. Status
+    // and content-type are equally true of the stale copy.
+    const servedBytes = Number(/content-length:\s*(\d+)/i.exec(headers)?.[1] ?? -1);
+    const expectedBytes = expectedBytesByStem.get(stem);
+    const isCurrent = servedBytes === expectedBytes;
+
+    const cacheControlHeader = /cache-control:\s*(.+)/i.exec(headers)?.[1]?.trim() ?? '';
+    const cacheStatus = /cf-cache-status:\s*(\S+)/i.exec(headers)?.[1] ?? 'unknown';
+
+    if (ok200 && isAudio && isCurrent) {
+      console.log(`verified 200 audio/mpeg ${servedBytes}B  cf=${cacheStatus}  ${url}`);
+      if (cacheControlHeader.length === 0) {
+        console.warn(`  WARNING: no Cache-Control on ${stem}.mp3 — a future replacement will serve stale until purged.`);
+      }
+    } else if (ok200 && isAudio && !isCurrent) {
+      failures += 1;
+      console.error(
+        `STALE   ${url}\n` +
+        `        served ${servedBytes} bytes but uploaded ${expectedBytes} (cf-cache-status: ${cacheStatus}).\n` +
+        `        The upload succeeded; Cloudflare is serving a cached copy. Purge this URL.`,
+      );
     } else {
       failures += 1;
       console.error(`FAILED  ${url}  (200=${ok200} audio/mpeg=${isAudio})`);
@@ -203,4 +271,4 @@ if (failures > 0) {
   console.error(`\n${failures} clip(s) not verified. Check the R2 upload + Cloudflare cache.`);
   process.exit(1);
 }
-console.log(`\nAll ${stems.length} clip(s) live on R2.`);
+console.log(`\nAll ${stems.length} clip(s) live on R2 and served current.`);
