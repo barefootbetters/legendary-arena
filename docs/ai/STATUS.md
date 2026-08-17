@@ -7,6 +7,45 @@
 
 ## Current State
 
+### WP-561 - In-Play Hollow Baseline Rebuild - DONE (2026-08-16)
+
+The /coverage in-play metric could not credit the work it exists to prioritise.
+D-24050 weights each mechanic by peakObs = max(committed baseline, live sweep)
+and counts it resolved only once its status is executable - but an executable
+mechanic logs no live hollows, so its peak falls back to the committed baseline.
+That baseline was a hand seed of 14 mechanics / 140 obs from when the sweep
+measured games dying at ~turn 0, while the denominator had moved to the
+post-WP-453 sweep. Numerator and denominator were on different instruments.
+
+**No mechanism was missing.** build-in-play-baseline.mjs already does this,
+deterministically and monotonically, and sits outside the auto-build chain by
+design. It had simply not been run since WP-453 changed the instrument.
+
+**The headline is deliberately unchanged: 2.6% before and after.** That is the
+success condition, not a null result - it proves the denominator held. What
+changed is the trajectory: shipping teleport previously credited 0 and moved the
+metric to 2.8% only by deleting 178 observations from the denominator; it now
+credits the full 178 and moves it to 10.4% with the denominator steady.
+
+Baseline 14/140 -> 35/2285. Writer byte-identical, its re-run a byte no-op,
+monotonic. Dashboard 447 -> 449 / 0; vue-tsc clean; whole repo green. The large
+snapshot test passed UNMODIFIED - the independent confirmation the denominator
+did not move. Two new tests assert the invariant directly, including one pinning
+the failure mode (a mechanic with no baseline entry is erased, not credited).
+
+Both /coverage subtitles now state what they weight by, so the row-weighted and
+observation-weighted headlines stop reading as comparable percentages of one
+measure. wiki/dashboard.md documents the mechanism with no figures.
+
+**User-Visible Surface = dashboard.legendary-arena.com/coverage - D-24026
+live-verify operator-pending:** /coverage should still read 2.6% with the
+corrected subtitles. An UNCHANGED number is the success condition here.
+
+D-24370 Active, amending D-24050 with the rebuild trigger and the
+never-rebuild-to-move-the-number non-goal.
+
+---
+
 ### WP-560 — Adaptive Danger-Meter Music Channel — DONE (code) 2026-08-16 · AC-12 PENDING DEPLOY **+ ASSETS**
 
 **The danger-meter arc is complete** (packets 1–3: WP-557 signal → WP-558
