@@ -18,6 +18,11 @@ import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { makeMockCtx } from '../test/mockCtx.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
 import type { CardRegistryReader } from '../matchSetup.validate.js';
+// why: both names were used as type annotations throughout this file without
+// ever being imported. Nothing compiled the engine's test files before WP-563,
+// so each `as CardExtId` / `as LegendaryGameState[...]` silently degraded to
+// `any` instead of pinning the projection contract it was written to pin.
+import type { CardExtId, LegendaryGameState } from '../types.js';
 import type { UIState } from './uiState.types.js';
 import type { UIAudience } from './uiAudience.types.js';
 import type { HollowEffectRecord } from '../diagnostics/hollowEffect.types.js';

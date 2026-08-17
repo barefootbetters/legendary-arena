@@ -24,7 +24,8 @@
   ],
   "scripts": {
     "build": "tsc",
-    "test": "node --import tsx --test \"src/**/*.test.ts\""
+    "test": "node --import tsx --test \"src/**/*.test.ts\"",
+    "typecheck:tests": "tsc -p tsconfig.test.json"
   },
   "dependencies": {
     "boardgame.io": "^0.50.0"

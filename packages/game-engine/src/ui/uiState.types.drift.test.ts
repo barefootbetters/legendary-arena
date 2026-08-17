@@ -55,7 +55,15 @@ describe('UIState type drift (WP-067)', () => {
   it('UIProgressCounters field names match the locked WP-048/WP-062 contract', () => {
     // why: literal fixture spelled exactly as the contract requires. Any
     // rename of `bystandersRescued` or `escapedVillains` fails this
-    // `satisfies` check at compile time.
+    // `satisfies` check at compile time — genuinely, as of WP-563: this file
+    // now compiles under `pnpm --filter @legendary-arena/game-engine
+    // typecheck:tests`, which it never did before (D-24372).
+    //
+    // why: that gate is NOT yet a required CI check — the engine suite still
+    // carries a large pre-existing error backlog, so the wiring waits for the
+    // cleanup packets. Until it is wired, write NEW engine drift pins as
+    // RUNTIME assertions; a `satisfies` alone is only checked by whoever
+    // remembers to run the script.
     const fixture = {
       bystandersRescued: 4,
       escapedVillains: 1,
@@ -77,10 +85,17 @@ describe('UIState type drift (WP-067)', () => {
     // of a REAL built projection.
     //
     // why: it is deliberately a runtime assertion rather than a `satisfies`.
-    // `packages/game-engine/tsconfig.json` excludes `src/**/*.test.ts` and the
-    // package has no separate typecheck script, so NO `satisfies` in any engine
-    // test file is ever compiled — the type-level pins in this file are
-    // documentation, and only runtime assertions actually gate.
+    // An OPTIONAL field addition satisfies a `satisfies` check by definition,
+    // so no type-level pin could ever have caught these four names — only a
+    // keyset assertion on a built projection can.
+    //
+    // why: WP-563 added `tsconfig.test.json` + the `typecheck:tests` script,
+    // so the `satisfies` pins in this file DO compile now (D-24372). The
+    // original rationale here — that the base tsconfig excludes
+    // `src/**/*.test.ts` and the package had no typecheck script, leaving every
+    // engine `satisfies` uncompiled — is the gap that packet closed. The gate
+    // is not yet a required CI check, so runtime assertions remain the
+    // recommended form for NEW engine drift pins.
     const setData = {
       abbr: 'core',
       schemes: [{ slug: 's' }],
@@ -148,7 +163,9 @@ describe('UIState type drift (WP-067)', () => {
   it('UIParBreakdown field names mirror WP-048 ScoreBreakdown verbatim', () => {
     // why: literal fixture spelled exactly as the contract requires. Any
     // rename of `rawScore`, `parScore`, `finalScore`, or
-    // `scoringConfigVersion` fails this `satisfies` check at compile time.
+    // `scoringConfigVersion` fails this `satisfies` check at compile time —
+    // genuinely, as of WP-563's `typecheck:tests` gate (D-24372). Not yet a
+    // required CI check, so NEW pins are still written as runtime assertions.
     const fixture = {
       rawScore: 100,
       parScore: 80,
@@ -761,7 +778,14 @@ describe('UIState — WP-135 heroDeckCount graduation', () => {
       officersCount: 1,
       sidekicksCount: 1,
     };
-    const registry: CardRegistryReader = { listCards: () => [] };
+    // why: CardRegistryReader grew listSets/getSet after this fixture was written.
+    // Nothing compiled the engine's test files before WP-563, so the stale mock
+    // never failed — the very drift this file exists to catch, in this file.
+    const registry: CardRegistryReader = {
+      listCards: () => [],
+      listSets: () => [],
+      getSet: () => undefined,
+    };
     const setupContext = makeMockCtx();
     const gameState = buildInitialGameState(config, registry, setupContext);
 
@@ -1024,7 +1048,14 @@ function buildEmptyMatchUIState() {
     officersCount: 20,
     sidekicksCount: 5,
   };
-  const registry: CardRegistryReader = { listCards: () => [] };
+  // why: CardRegistryReader grew listSets/getSet after this fixture was written.
+  // Nothing compiled the engine's test files before WP-563, so the stale mock
+  // never failed — the very drift this file exists to catch, in this file.
+  const registry: CardRegistryReader = {
+    listCards: () => [],
+    listSets: () => [],
+    getSet: () => undefined,
+  };
   const setupContext = makeMockCtx();
   const gameState = buildInitialGameState(config, registry, setupContext);
   const ctx = { phase: 'play' as string | null, turn: 1, currentPlayer: '0' };
