@@ -23,6 +23,7 @@ import { useCardImagePrefetch } from '../composables/useCardImagePrefetch';
 import { useSoundEffects } from '../composables/useSoundEffects';
 import { useComboCue } from '../composables/useComboCue';
 import { useComboVfx } from '../composables/useComboVfx';
+import { useAdaptiveMusic } from '../composables/useAdaptiveMusic';
 import { useBotAllyStatus } from '../composables/useBotAllyStatus';
 import { useDeployVersionCheck } from '../composables/useDeployVersionCheck';
 import { useUiStateStore } from '../stores/uiState';
@@ -148,6 +149,11 @@ export default defineComponent({
     // and the sting peak together. Pure presentation — reads UIState only, never
     // writes G/ctx, absent from the determinism hash.
     useComboVfx(audioSnapshot);
+
+    // why: WP-560 — the adaptive danger score, mounted at the SAME shared
+    // composable root beside useComboCue and reading the SAME snapshot. One
+    // host covers both the desktop and mobile play surfaces.
+    useAdaptiveMusic(audioSnapshot);
 
     // why: WP-339 — on gameover, submit this match's competitive score once (for
     // an authenticated player). toRef keeps matchId reactive so the composable

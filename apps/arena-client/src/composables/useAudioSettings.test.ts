@@ -7,8 +7,10 @@ import {
   useAudioSettings,
   AUDIO_MUTED_STORAGE_KEY,
   AUDIO_VOLUME_STORAGE_KEY,
+  MUSIC_VOLUME_KEY,
 } from './useAudioSettings';
 import { DEFAULT_SFX_VOLUME, type AudioEngine } from '../audio/audioEngine';
+import { DEFAULT_MUSIC_VOLUME, type MusicEngine } from '../audio/musicEngine';
 
 /** A recording engine stub that captures the last mute / volume pushed to it. */
 function makeRecordingEngine(): { engine: AudioEngine; muted: boolean[]; volumes: number[] } {
@@ -120,5 +122,114 @@ describe('useAudioSettings (WP-412 §E) — corruption-safe load', () => {
   test('storage keys match the WP-412 locked contract values', () => {
     assert.equal(AUDIO_MUTED_STORAGE_KEY, 'arenaClientAudioMuted');
     assert.equal(AUDIO_VOLUME_STORAGE_KEY, 'arenaClientAudioVolume');
+  });
+});
+
+/** A recording music-engine stub capturing the gates pushed to it. */
+function makeRecordingMusicEngine(): {
+  engine: MusicEngine;
+  muted: boolean[];
+  enabled: boolean[];
+  volumes: number[];
+} {
+  const muted: boolean[] = [];
+  const enabled: boolean[] = [];
+  const volumes: number[] = [];
+  const engine: MusicEngine = {
+    arm() {},
+    isArmed() {
+      return true;
+    },
+    setMuted(next: boolean) {
+      muted.push(next);
+    },
+    setEnabled(next: boolean) {
+      enabled.push(next);
+    },
+    setVolume(level: number) {
+      volumes.push(level);
+    },
+    crossfadeTo() {},
+    stop() {},
+    currentTrackUrl() {
+      return null;
+    },
+  };
+  return { engine, muted, enabled, volumes };
+}
+
+describe('useAudioSettings — music channel (WP-560)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  test('music defaults ON with a volume below the SFX default', () => {
+    // why: D-24369 §4 — music defaults on because a silent feature ships as no
+    // feature, and below SFX level because a bed at cue volume drowns the very
+    // stings it frames.
+    const sfx = makeRecordingEngine();
+    const music = makeRecordingMusicEngine();
+
+    const { isMusicEnabled, musicVolume } = useAudioSettings(sfx.engine, music.engine);
+
+    assert.equal(isMusicEnabled.value, true);
+    assert.equal(musicVolume.value < DEFAULT_SFX_VOLUME, true);
+    assert.equal(music.enabled.at(-1), true);
+  });
+
+  test('AC-6: the MASTER mute silences music as well as SFX', () => {
+    // why: a player who mutes expects silence from the whole client, not just
+    // the cues.
+    const sfx = makeRecordingEngine();
+    const music = makeRecordingMusicEngine();
+    const { isMuted } = useAudioSettings(sfx.engine, music.engine);
+
+    isMuted.value = true;
+
+    return nextTick().then(() => {
+      assert.equal(sfx.muted.at(-1), true);
+      assert.equal(music.muted.at(-1), true);
+    });
+  });
+
+  test('AC-6: the music toggle silences music WITHOUT silencing SFX', () => {
+    const sfx = makeRecordingEngine();
+    const music = makeRecordingMusicEngine();
+    const { isMusicEnabled } = useAudioSettings(sfx.engine, music.engine);
+    const sfxMutesBefore = sfx.muted.length;
+
+    isMusicEnabled.value = false;
+
+    return nextTick().then(() => {
+      assert.equal(music.enabled.at(-1), false);
+      assert.equal(
+        sfx.muted.length,
+        sfxMutesBefore,
+        'toggling music must not touch the SFX mute gate',
+      );
+    });
+  });
+
+  test('the music toggle and volume persist across a reload', () => {
+    const first = makeRecordingMusicEngine();
+    const settings = useAudioSettings(makeRecordingEngine().engine, first.engine);
+    settings.isMusicEnabled.value = false;
+    settings.musicVolume.value = 0.1;
+
+    return nextTick().then(() => {
+      const second = makeRecordingMusicEngine();
+      const rehydrated = useAudioSettings(makeRecordingEngine().engine, second.engine);
+      assert.equal(rehydrated.isMusicEnabled.value, false);
+      assert.equal(rehydrated.musicVolume.value, 0.1);
+    });
+  });
+
+  test('a corrupt persisted music volume falls back to the default', () => {
+    localStorage.setItem(MUSIC_VOLUME_KEY, 'not-a-number');
+    const music = makeRecordingMusicEngine();
+
+    const { musicVolume } = useAudioSettings(makeRecordingEngine().engine, music.engine);
+
+    assert.equal(musicVolume.value, DEFAULT_MUSIC_VOLUME);
   });
 });

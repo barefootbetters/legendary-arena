@@ -18,12 +18,22 @@
 
 import { ref, watch, type Ref } from 'vue';
 import { getAudioEngine, DEFAULT_SFX_VOLUME, type AudioEngine } from '../audio/audioEngine';
+import {
+  getMusicEngine,
+  DEFAULT_MUSIC_VOLUME,
+  type MusicEngine,
+} from '../audio/musicEngine';
 
 // why: flat camelCase, arenaClient-prefixed localStorage keys matching the
 // prefs/persistence.ts convention (`arenaClientPlaymatSkin`) — the prefix
 // avoids collisions with any future registry-viewer key sharing the dev origin.
 const MUTED_STORAGE_KEY = 'arenaClientAudioMuted';
 const VOLUME_STORAGE_KEY = 'arenaClientAudioVolume';
+// why: WP-560 — the music channel carries its OWN toggle and level, separate
+// from the master mute/volume. D-24369 §4: music is decoration, so it may be
+// silenced independently; the master mute still silences BOTH channels.
+const MUSIC_ENABLED_STORAGE_KEY = 'arenaClientMusicEnabled';
+const MUSIC_VOLUME_STORAGE_KEY = 'arenaClientMusicVolume';
 
 /** Reactive audio settings, both persisted to localStorage. */
 export interface AudioSettings {
@@ -31,6 +41,10 @@ export interface AudioSettings {
   isMuted: Ref<boolean>;
   /** Master volume, 0..1. Persisted. */
   volume: Ref<number>;
+  /** True ⇒ the background music channel plays. Defaults ON. Persisted. */
+  isMusicEnabled: Ref<boolean>;
+  /** Music volume, 0..1. Defaults below the SFX level. Persisted. */
+  musicVolume: Ref<number>;
 }
 
 /**
@@ -97,6 +111,57 @@ function readStoredRawSafely(key: string): string | null {
   return localStorage.getItem(key);
 }
 
+
+/**
+ * Reads the persisted music toggle; defaults to ENABLED when the key is absent.
+ *
+ * why: D-24369 §4 — music defaults ON. A silent feature ships as no feature,
+ * and unlike the Danger Meter a soundtrack carries no game state a player
+ * loses by turning it off, so an opt-out default is the right trade.
+ */
+function loadMusicEnabled(): boolean {
+  const raw = readStoredRawSafely(MUSIC_ENABLED_STORAGE_KEY);
+  if (raw === null) return true;
+  return raw !== 'false';
+}
+
+/**
+ * Reads the persisted music volume; defaults to `DEFAULT_MUSIC_VOLUME` when
+ * absent, non-numeric, or out of range (corruption-safe).
+ */
+function loadMusicVolume(): number {
+  const raw = readStoredRawSafely(MUSIC_VOLUME_STORAGE_KEY);
+  if (raw === null) return DEFAULT_MUSIC_VOLUME;
+  const parsed = Number(raw);
+  if (Number.isNaN(parsed) || parsed < 0 || parsed > 1) return DEFAULT_MUSIC_VOLUME;
+  return parsed;
+}
+
+/**
+ * Writes the music toggle synchronously, same Rule-11 posture as `saveMuted`.
+ */
+function saveMusicEnabled(enabled: boolean): void {
+  try {
+    localStorage.setItem(MUSIC_ENABLED_STORAGE_KEY, enabled ? 'true' : 'false');
+  } catch {
+    // why: same localStorage-write failure posture as saveMuted — the reactive
+    // ref already reflects the new value, so only cross-reload persistence is
+    // lost. Silent swallow per 00.6 Rule 11.
+  }
+}
+
+/**
+ * Writes the music volume synchronously, same Rule-11 posture as `saveVolume`.
+ */
+function saveMusicVolume(volume: number): void {
+  try {
+    localStorage.setItem(MUSIC_VOLUME_STORAGE_KEY, String(volume));
+  } catch {
+    // why: same localStorage-write failure posture as saveVolume — only
+    // cross-reload persistence is lost. Silent swallow per 00.6 Rule 11.
+  }
+}
+
 /**
  * Clamps a volume into 0..1 so a corrupt input never reaches the engine gate.
  */
@@ -115,16 +180,27 @@ function clampVolume(level: number): number {
  *   The parameter is an injectable seam for unit tests (a mock engine).
  * @returns The reactive `AudioSettings`.
  */
-export function useAudioSettings(engine: AudioEngine = getAudioEngine()): AudioSettings {
+export function useAudioSettings(
+  engine: AudioEngine = getAudioEngine(),
+  musicEngine: MusicEngine = getMusicEngine(),
+): AudioSettings {
   const isMuted = ref<boolean>(loadMuted());
   const volume = ref<number>(loadVolume());
+  const isMusicEnabled = ref<boolean>(loadMusicEnabled());
+  const musicVolume = ref<number>(loadMusicVolume());
 
-  // Apply the rehydrated settings to the engine immediately on setup.
+  // Apply the rehydrated settings to both engines immediately on setup.
   engine.setMuted(isMuted.value);
   engine.setVolume(volume.value);
+  musicEngine.setMuted(isMuted.value);
+  musicEngine.setEnabled(isMusicEnabled.value);
+  musicEngine.setVolume(musicVolume.value);
 
   watch(isMuted, (nextMuted) => {
     engine.setMuted(nextMuted);
+    // why: D-24369 §4 — the MASTER mute silences BOTH channels. A player who
+    // mutes expects silence from the whole client, not just the cues.
+    musicEngine.setMuted(nextMuted);
     saveMuted(nextMuted);
   });
 
@@ -134,7 +210,18 @@ export function useAudioSettings(engine: AudioEngine = getAudioEngine()): AudioS
     saveVolume(clamped);
   });
 
-  return { isMuted, volume };
+  watch(isMusicEnabled, (nextEnabled) => {
+    musicEngine.setEnabled(nextEnabled);
+    saveMusicEnabled(nextEnabled);
+  });
+
+  watch(musicVolume, (nextVolume) => {
+    const clamped = clampVolume(nextVolume);
+    musicEngine.setVolume(clamped);
+    saveMusicVolume(clamped);
+  });
+
+  return { isMuted, volume, isMusicEnabled, musicVolume };
 }
 
 /**
@@ -143,3 +230,5 @@ export function useAudioSettings(engine: AudioEngine = getAudioEngine()): AudioS
  */
 export const AUDIO_MUTED_STORAGE_KEY = MUTED_STORAGE_KEY;
 export const AUDIO_VOLUME_STORAGE_KEY = VOLUME_STORAGE_KEY;
+export const MUSIC_ENABLED_KEY = MUSIC_ENABLED_STORAGE_KEY;
+export const MUSIC_VOLUME_KEY = MUSIC_VOLUME_STORAGE_KEY;

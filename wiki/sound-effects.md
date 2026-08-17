@@ -390,6 +390,17 @@ Under the [Playstyle lens](design-system-overview.md#playstyle-modes) the ladder
 
 ### Adaptive background music — the danger meter
 
+> **Shipped (WP-560).** The adaptive score is built. A separate music
+> channel crossfades between three CC0 loops as
+> `UIState.progress.menaceTier` moves `calm → rising → critical`, mounted
+> beside the SFX consumers at the shared play root. Two implementation
+> notes worth carrying forward: it runs on its **own** `musicEngine.ts`,
+> because the shipped SFX engine is strictly fire-and-forget and could not
+> loop or fade (D-24369 §1); and unlike the
+> [Danger Meter](visual-effects.md), music is **decoration, not
+> information** — it defaults on below SFX volume with its own toggle, and
+> the master mute silences it (D-24369 §4).
+
 The request: a background score that **intensifies as the villains get
 closer to winning.** The engine now projects that progress directly, so
 the score reads one number instead of reconstructing the loss rules.
@@ -441,7 +452,7 @@ Legacy Virus's wound stack — both "the pile ran out" losses) omits
 clock those schemes already run on. `schemeLoss >= 1` remains terminal:
 resolve straight to the win/loss sting and stop the loop.
 
-#### Technique — start horizontal, upgrade to vertical later
+#### Technique — horizontal now, vertical later (shipped horizontal)
 
 There are two ways to make music adaptive:
 

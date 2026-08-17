@@ -36990,7 +36990,7 @@ Locked:
    suite is asset-independent, and the operator upload is a **second**
    D-24026 prerequisite alongside the deploy.
 
-_Drafted 2026-08-16; not yet landed. Flips to Active at WP-560 execution (EC-595)._
+_Active 2026-08-16 — landed at WP-560 execution (EC-595). arena-client 1302 → 1335 tests / 0 fail, typecheck 0. §1 is enforced by a DIFF assertion: `git diff --name-only -- apps/arena-client/src/audio/audioEngine.ts` is empty, so the SFX contract provably was not widened. §3 (never re-banded) is proven the same way WP-558 proved it — an inconsistent `menace: 0.9` / `menaceTier: 'calm'` pair must play the CALM track. §4 is covered in both directions: the master mute silences music, and the music toggle leaves SFX untouched. §5 and §6 each carry a test. Every test injects a mock Howl factory or mock engine, so the suite passes with zero assets on R2 — the asset upload gates only the D-24026 live verification._
 
 ### D-24368 — The `subsystem` coverage status is a two-ledger contract, with different key granularity per ledger
 
