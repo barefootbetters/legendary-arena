@@ -29,7 +29,7 @@ export default defineComponent({
   name: 'AudioControls',
   setup() {
     const engine = getAudioEngine();
-    const { isMuted, volume } = useAudioSettings(engine);
+    const { isMuted, volume, isMusicEnabled, musicVolume } = useAudioSettings(engine);
     const { intensity, setIntensity } = useEffectIntensity();
 
     // why: cycle order + per-level glyph for the unified Effect-Intensity
@@ -64,6 +64,20 @@ export default defineComponent({
       // board still hears the next event.
       engine.arm();
       isMuted.value = !isMuted.value;
+    }
+
+    // why: WP-560 / D-24369 §4 — music carries its OWN toggle because it is
+    // decoration, not information. Contrast the Danger Meter (D-24367 §1),
+    // which is never gated because loss progress is game state. The master
+    // mute still silences music too; this only silences music.
+    function onToggleMusic(): void {
+      isMusicEnabled.value = !isMusicEnabled.value;
+    }
+
+    function onMusicVolumeInput(event: Event): void {
+      const target = event.target as HTMLInputElement | null;
+      if (target === null) return;
+      musicVolume.value = Number(target.value);
     }
 
     function onVolumeInput(event: Event): void {
@@ -102,6 +116,10 @@ export default defineComponent({
       onCycleIntensity,
       onToggleMute,
       onVolumeInput,
+      isMusicEnabled,
+      musicVolume,
+      onToggleMusic,
+      onMusicVolumeInput,
     };
   },
 });
@@ -140,6 +158,28 @@ export default defineComponent({
       :disabled="isMuted"
       aria-label="Sound effects volume"
       @input="onVolumeInput"
+    />
+    <button
+      type="button"
+      class="audio-controls__music"
+      data-testid="audio-music-toggle"
+      :aria-pressed="isMusicEnabled"
+      :title="isMusicEnabled ? 'Turn background music off' : 'Turn background music on'"
+      @click="onToggleMusic"
+    >
+      {{ isMusicEnabled ? '🎵' : '🚫' }}
+    </button>
+    <input
+      type="range"
+      class="audio-controls__music-volume"
+      data-testid="audio-music-volume-slider"
+      min="0"
+      max="1"
+      step="0.05"
+      :value="musicVolume"
+      :disabled="isMuted || !isMusicEnabled"
+      aria-label="Background music volume"
+      @input="onMusicVolumeInput"
     />
   </div>
 </template>

@@ -442,12 +442,15 @@ the `audio` shortcode (see [Ewiki Authoring](ewiki-authoring.md)):
 
 ## Open Questions
 
-- **Client consumption.** Which WP wires `musicAssets.*Url` into the
-  arena-client playback layer — including the match-start **prefetch of a
-  theme's stings into decoded audio buffers** that keeps time-critical
-  cues off the R2 round-trip — and how it maps to the adaptive
-  danger-meter tiers on [Sound Effects](sound-effects.md) is not yet
-  documented here.
+- **Client consumption (partly answered).** The **danger-meter tier
+  mapping** half is settled: **WP-560** ships the adaptive score on its own
+  `musicEngine.ts`, crossfading three CC0 loops keyed to
+  `UIState.progress.menaceTier` (D-24369). What remains open is the
+  **per-theme** side — which WP wires `musicAssets.*Url` into the playback
+  layer, including the match-start **prefetch of a theme's stings into
+  decoded audio buffers** that keeps time-critical cues off the R2
+  round-trip. WP-560 deliberately did not touch that pipeline; it uses
+  generic CC0 beds under `audio/music/`, not theme masters.
 - **Production R2 domain.** When `music.barefootbetters.com` goes live,
   the demo above should be re-pointed at the canonical theme URL.
 - **Sting vs generic-clip reconciliation.** For a moment covered by both a
