@@ -7,6 +7,48 @@
 
 ## Current State
 
+### WP-560 — Adaptive Danger-Meter Music Channel — DONE (code) 2026-08-16 · AC-12 PENDING DEPLOY **+ ASSETS**
+
+**The danger-meter arc is complete** (packets 1–3: WP-557 signal → WP-558
+meter → WP-560 score). A separate music channel crossfades between three CC0
+loops as `UIState.progress.menaceTier` moves `calm → rising → critical`,
+mounted at the shared `PlayViewport` root beside the SFX consumers.
+
+**Why a second audio engine.** The shipped `audioEngine.ts` is strictly
+fire-and-forget — its `HowlLike` is `play` + `volume` only, and nothing in
+`src/audio` loops, stops or fades. Music got its own `musicEngine.ts` rather
+than three new methods on a contract every one-shot call site would carry.
+**AC-9 pins `audioEngine.ts` unchanged as a diff assertion.**
+
+**Music is the deliberate inverse of the meter.** D-24367 made the Danger
+Meter *information* that always renders. A soundtrack carries no such state,
+so music defaults **on** at 0.25 (below the 0.6 SFX default) with its own
+toggle, and the master mute silences both channels.
+
+**Baselines:** arena-client **1302 → 1335 / 0** (+33 tests, 192 → 200 suites);
+`typecheck` 0; `pnpm -r build` 0; `pnpm -r --no-bail test` no new failures.
+Every test injects a mock Howl factory or mock engine, so the suite passes
+with **zero** assets on R2.
+
+**⚠ AC-12 / D-24026 has TWO prerequisites, deliberately not conflated:**
+
+1. **The deploy** — the usual bundle gate.
+2. **The assets** — three CC0 loopable tracks at `audio/music/` on R2,
+   uploaded via the content-driven `scripts/upload-move-sfx-to-r2.mjs`.
+
+Until the assets land, the engine constructs a `Howl` for a 404 URL and plays
+silence. That is the correct fail-soft behaviour, but it is
+**indistinguishable from "the feature didn't ship"** — so confirm the files
+are reachable *before* drawing any conclusion from a live match.
+
+**Follow-ups named by the 01.6 post-mortem:** the assets; the **missing
+endgame sting** (the bed stops at `gameOver` by design, so a match currently
+ends into silence — worth sequencing the Surface-4 resolution sting sooner
+now that music exists); `MUSIC_CROSSFADE_MS = 1500` is an untuned guess that
+has never been heard against real loops; and the standing temptation to merge
+the two audio engines, which should go through a new D-entry rather than a
+quiet widening of `HowlLike`.
+
 ### WP-559 — Hero Ledger `subsystem` Covered Status — DONE (2026-08-16)
 
 `/coverage` was reporting **shipped work as an unfinished TODO**. WP-548 created
