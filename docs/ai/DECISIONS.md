@@ -37293,3 +37293,64 @@ Locked:
 7. **WP-566 sequences BEFORE WP-568.** WP-568's wait-and-see semantics introduce a
    *"not yet met"* state that must not reuse this wording; the two share the emit
    site and the evaluator module and must not execute concurrently.
+
+### D-24377 — "If you [did X] this turn" is a whole-turn wait-and-see window, for NUMERIC-THRESHOLD conditions only
+
+**Drafted 2026-08-17; not yet landed. Flips to Active at WP-568 execution (EC-603).**
+
+**Operator design decision.** A numeric-threshold hero condition is evaluated across
+the whole turn, not snapshotted when the card is played. Thor's Surge of Power
+therefore grants its +3 attack **retroactively** once the turn's recruit total
+reaches 8, even if the recruit arrives after the card is already in play.
+
+Locked:
+
+1. **Scope is NUMERIC THRESHOLDS ONLY:** `recruitMadeThisTurnAtLeast` and
+   `distinctHeroClassesAtLeast`. **`heroClassMatch` and `requiresTeam` keep on-play
+   evaluation.** This is a second, separate operator decision, made after drafting
+   established that **all four** live condition types are *"this turn"* scoped in
+   substance — the class gates read `playerZones.inPlay`, which clears every turn.
+   Converting all four would change **every `[hc:X]` card in the game** and remove
+   play-ordering skill from class synergy. **The seam is drawn at *"is it a numeric
+   threshold"*, not at *"does it read `inPlay`"*** — recorded because
+   `distinctHeroClassesAtLeast` reads `inPlay` like the class gates do, so a future
+   reader will ask, and the answer is that the boundary was chosen rather than fallen
+   into.
+2. **BOTH readings are recorded deliberately.** The drafting recommendation was
+   **on-play** evaluation, reasoning that Legendary resolves an ability when the card
+   is played, has no continuous re-check machinery anywhere, and that the rulebook's
+   freedom to choose play order exists *because* conditions are checked at
+   resolution — which makes build-recruit-then-play the card's intended skill. The
+   operator overruled it on the text of the card: *"this turn"* names a whole-turn
+   window and attack is turn-scoped, so a late grant is coherent. Preserved so a
+   future reader sees a decision that was **made**, not one that was missed, and does
+   not quietly revert it. The drafting analysis could cite no rulebook clause either
+   way — the repo carries no rulebook text and `keywords-full.json` is on the
+   known-divergent list — so this is settled as a design decision by the operator,
+   who is reading the physical card.
+3. **A condition that is NOT YET met is a distinct state from one that FAILED.** It
+   must not inherit WP-566 / D-24375's *"not met"* wording. Three states exist: *not
+   yet met* (deferred), *not met* (failed), *applied* (fired).
+4. **Fire at most once per play; clear at the turn boundary.** A threshold crossed,
+   dropped and re-crossed within one turn grants **once**; a threshold never reached
+   that turn never fires and nothing carries forward. Re-check order is insertion
+   order, stable and deterministic.
+5. **The `G` field MUST NOT be named `pending*`.** Every existing
+   `G.pending*Choices[]` field is an **interactive** choice with a resolve move, and
+   a parked `pending*` entry lacking a `UIState` projection and prompt
+   **hard-freezes the human player** — a shipped failure class in this repo. A
+   deferred grant takes no player input and needs no prompt. The name would invite an
+   unnecessary prompt, or a maintainer concluding the UX had been forgotten.
+6. **The field is LAZY, and that is what preserves determinism.** Written only when
+   an in-scope condition actually fails. The sentinel fixture's heroes are
+   `core/black-widow` + `core/captain-america` and the fixture contains **zero**
+   `surge-of-power` / `spectrum` occurrences, so the field never materialises there
+   and both oracles stay byte-unchanged. A moved oracle means the field is being
+   written unconditionally — a bug, not a re-pin.
+7. **Blast radius is 15 card lines, not 31.** Counted from the actual condition
+   markers: `[keyword:recruit-threshold]` ×2 (`core`, `msp1`) and
+   `[keyword:Spectrum]` ×13 (`ssw2`). The reservation's 31 came from a loose
+   *"if you … this turn"* text regex that also matched villain Fight effects.
+   Corrected here rather than silently carried forward.
+8. **WP-566 sequences first.** Both packets edit the same emit site, and this state
+   has no message vocabulary to extend until WP-566's lands.
