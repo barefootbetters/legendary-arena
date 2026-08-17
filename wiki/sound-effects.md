@@ -550,11 +550,11 @@ music, then it returns — a standard "sidechain" polish move.
 [Music loop variations](https://opengameart.org/content/music-loop-variations)
 by `obscure-music` on OpenGameArt — **CC0, no attribution required.**
 
-| Tier | Source track | Length | Loudness | R2 object |
-|---|---|---|---|---|
-| `calm` | `level1-step1-evil` | 9.6s | −18.5 LUFS | `audio/music/menace-calm.mp3` |
-| `rising` | `level1-step2-evil` | 9.6s | −16.9 LUFS | `audio/music/menace-rising.mp3` |
-| `critical` | `level1-step3-evil` | 19.2s | −10.8 LUFS | `audio/music/menace-critical.mp3` |
+| Tier | Source track | Bar loop | Shipped length | Loudness | R2 object |
+|---|---|---|---|---|---|
+| `calm` | `level1-step1-evil` | 9.6s | **38.4s** (4×) | −18.7 LUFS | `audio/music/menace-calm.mp3` |
+| `rising` | `level1-step2-evil` | 9.6s | **38.4s** (4×) | −17.1 LUFS | `audio/music/menace-rising.mp3` |
+| `critical` | `level1-step3-evil` | 19.2s | **76.8s** (4×) | −11.1 LUFS | `audio/music/menace-critical.mp3` |
 
 That pack was chosen for **structure, not taste**: *"6 loops — 3 steps, 2
 variations each (good or evil), 100 BPM."* One composer, one tempo, one key,
@@ -565,11 +565,33 @@ the **evil** variant family so a crossfade never crosses timbral worlds.
 
 Two decisions worth repeating for any replacement score:
 
-- **Do not loudness-normalise the set.** The −18.5 → −16.9 → −10.8 LUFS ladder
+- **Do not loudness-normalise the set.** The −18.7 → −17.1 → −11.1 LUFS ladder
   *is* the escalation; flattening it to a common target deletes the signal.
-- **Check the loop is bar-exact and unfaded.** These are 9.6s = 16 beats at
-  100 BPM with head/tail RMS at body level. A track that fades out at the end
-  will audibly dip once per loop.
+- **Check the loop is bar-exact and unfaded.** The source loops are 9.6s = 16
+  beats at 100 BPM with head/tail RMS at body level. A track that fades out at
+  the end will audibly dip once per loop.
+- **Ship the loop pre-repeated.** See the seam note below — this is why the
+  shipped files are 4× their musical loop length.
+
+##### The mp3 loop seam (observed, mitigated — not solved)
+
+**mp3 cannot loop gaplessly.** The encoder adds delay and padding, so a
+browser looping an `.mp3` inserts a short silence at every wrap. Confirmed by
+ear on the shipped score: an audible click every ~9.6s, exactly the source
+loop length.
+
+**Mitigation in place:** each track is concatenated **4×** before encoding.
+The three internal repeats are joined as raw PCM, so they are sample-exact
+and silent; only the file's own wrap keeps the gap. That moves the click from
+every 9.6s to every 38.4s (76.8s for `critical`) at 4× the file size
+(~900 KB / ~900 KB / ~1.8 MB).
+
+**This reduces the symptom, it does not remove it.** The real fix is to stop
+using mp3 for loops — Ogg Vorbis and Opus both carry gapless metadata that
+browsers honour. That means changing the extension in
+`menaceMusicManifest.ts`, so it is a code change and needs its own packet.
+Until then: **any new looping music asset must ship pre-repeated**, and the
+one-shot SFX are unaffected (a sting never wraps).
 
 Other CC0 sources, as a fallback if the score is ever replaced:
 
