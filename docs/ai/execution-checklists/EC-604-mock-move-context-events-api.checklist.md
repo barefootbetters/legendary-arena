@@ -13,14 +13,14 @@
 
 ## Before Starting
 
-- [ ] Clean tree off `origin/main`; `pnpm install`; `pnpm -r build` exits 0.
-- [ ] **Capture the engine `dist` state** (file list + sha256). AC-3 requires
+- [x] Clean tree off `origin/main`; `pnpm install`; `pnpm -r build` exits 0.
+- [x] **Capture the engine `dist` state** (file list + sha256). AC-3 requires
       proving the delta is EXACTLY the four `mockMoveContext.*` files.
-- [ ] Record the engine test baseline (2734 / 0 at `9b4a0e02`).
-- [ ] **Re-derive the error inventory.** Run
+- [x] Record the engine test baseline (2734 / 0 at `9b4a0e02`).
+- [x] **Re-derive the error inventory.** Run
       `pnpm --filter @legendary-arena/game-engine typecheck:tests` and record
       the total and the `TS2345` count. Draft-time numbers are orientation.
-- [ ] Read WP-563 / D-24372 §2–§4 — this packet inherits its rules verbatim.
+- [x] Read WP-563 / D-24372 §2–§4 — this packet inherits its rules verbatim.
 
 ## Locked Values
 
@@ -95,11 +95,11 @@
 
 ## After Completing
 
-- [ ] `WORK_INDEX.md` `[x]` **plus** refreshed backlog inventory counts (the
+- [x] `WORK_INDEX.md` `[x]` **plus** refreshed backlog inventory counts (the
       `TS2345` row closes; re-derive the others, never copy them forward).
-- [ ] `EC_INDEX.md` `Done`; mindmap `✅`; `roadmap:counts:check` 0.
-- [ ] **D-24378** Active, carrying the layered-failure finding.
-- [ ] `STATUS.md` — before/after totals, the `TS2345` count reaching zero, and
+- [x] `EC_INDEX.md` `Done`; mindmap `✅`; `roadmap:counts:check` 0.
+- [x] **D-24378** Active, carrying the layered-failure finding.
+- [x] `STATUS.md` — before/after totals, the `TS2345` count reaching zero, and
       the `dist` delta stated **explicitly** (NOT byte-identical this time, by
       design — say so, or a later reader will read it as a regression against
       WP-563's invariant). Restate that CI wiring stays deferred.
