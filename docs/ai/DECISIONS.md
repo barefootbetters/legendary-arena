@@ -37150,4 +37150,4 @@ must retain its peak in `totalObs` and gain it in `resolvedObs`; and the same
 mechanic WITHOUT a baseline entry must be shown erased from both sides. A test
 title must not embed the figures - they move on every rebuild.
 
-_Active 2026-08-16 - landed at WP-561 execution (EC-596). Baseline 14 mechanics / 140 obs to 35 / 2285; writer byte-identical and its re-run a byte no-op; dashboard 447 to 449 / 0; headline unchanged at 2.6%. `User-Visible Surface = dashboard.legendary-arena.com/coverage` - **D-24026 live-verify operator-pending** (an UNCHANGED 2.6% with the corrected subtitles is the success condition)._
+_Active 2026-08-16 - landed at WP-561 execution (EC-596). Baseline 14 mechanics / 140 obs to 35 / 2285; writer byte-identical and its re-run a byte no-op; dashboard 447 to 449 / 0; headline unchanged at 2.6%. `User-Visible Surface = dashboard.legendary-arena.com/coverage` - **D-24026 CONFIRMED LIVE 2026-08-17** (the deployed page reads 2.6% / 59 / 2285 - unchanged, which is the pass condition, and both corrected subtitles render)._

@@ -38,8 +38,13 @@ observation-weighted headlines stop reading as comparable percentages of one
 measure. wiki/dashboard.md documents the mechanism with no figures.
 
 **User-Visible Surface = dashboard.legendary-arena.com/coverage - D-24026
-live-verify operator-pending:** /coverage should still read 2.6% with the
-corrected subtitles. An UNCHANGED number is the success condition here.
+CONFIRMED LIVE 2026-08-17.** The deployed page reads **2.6% / 59 / 2285** -
+UNCHANGED, which is the pass condition: it proves the rebuild held the
+denominator rather than moving the optic. Both corrected subtitles render:
+`per card x mechanic row - 122 distinct mechanics / 651 rows` and
+`weighted by how often it bites in play - 59 / 2285 observations`, so the
+row-weighted and observation-weighted headlines no longer read as comparable
+percentages of one measure.
 
 D-24370 Active, amending D-24050 with the rebuild trigger and the
 never-rebuild-to-move-the-number non-goal.
