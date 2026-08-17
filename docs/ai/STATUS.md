@@ -7,6 +7,89 @@
 
 ## Current State
 
+### WP-563 - Engine Test-Typecheck Gate - DONE (2026-08-17)
+
+The engine's `packages/game-engine` test files had **never been compiled**.
+`tsconfig.json` excludes `src/**/*.test.ts`; `build` runs `tsc`, which honours
+that exclusion; `test` runs `tsx`, which transpiles without checking. So every
+`satisfies`-based drift pin in the engine suite was documentation - including
+pins whose own comments promised compile-time enforcement. WP-557 discovered
+this, shipped a runtime keyset assertion as a local workaround, and named the
+general fix as its first post-mortem follow-up. This is that follow-up.
+
+**Mechanism.** `packages/game-engine/tsconfig.test.json` extends the base
+config, drops the test-file exclusion, and sets `noEmit: true`; a
+`typecheck:tests` script runs it. The config is additive - only `tsconfig.json`
+feeds the `build` script - and the proof is AC-2: `pnpm -r build` output is
+**byte-identical**, 744 `dist` files hashed with sha256 before and after.
+
+**Error count: 703 across 75 files before, 674 across 74 after.** Two classes
+fixed, both in scope:
+
+- **The drift-pin file.** `uiState.types.drift.test.ts` carried two stale
+  `CardRegistryReader` fixtures - the interface grew `listSets` / `getSet` and
+  nothing ever compiled them. The file this project relies on to catch contract
+  drift was itself drifting, undetected.
+- **The whole `TS2304` class**, which the fresh run showed to be **27 errors in
+  one file**: `uiState.filter.test.ts` used `CardExtId` and
+  `LegendaryGameState` as annotations without importing either, so every one
+  silently degraded to `any` instead of pinning the projection contract it was
+  written to pin.
+
+**The gate is proven by mutation, not asserted.** Renaming
+`UIProgressCounters.bystandersRescued` made the gate report `TS2353` at the
+`satisfies` pin; restoring the field returned the drift file to clean. Before
+this packet, the same rename produced no test-side signal at all. That
+demonstration is the whole point: an undemonstrated gate is exactly what had
+been silently doing nothing for months.
+
+**CI wiring is DEFERRED BY DESIGN, not overlooked.** D-24372 section 2 locks
+it: 674 known pre-existing errors behind a required check would turn every
+unrelated PR red. The script exists and runs locally:
+
+```bash
+pnpm --filter @legendary-arena/game-engine typecheck:tests
+```
+
+The wiring lands with the final cleanup packet, when the count reaches zero.
+Its absence in CI today is the recorded decision - please do not read it later
+as an oversight and "fix" it ahead of the backlog.
+
+**What was NOT fixed is recorded, not truncated.** The remaining 674 errors are
+inventoried as a sized `WORK_INDEX.md` backlog: `TS2345` mock-ctx vs
+`DefaultPluginAPIs` (180 / 17 files, top file 48) - the best next packet;
+possibly-undefined indexing (209 / 13 files, 136 of them in one file); missing
+required state fields (195 / 55 files); a 90-error long tail; and the CI wiring
+itself. **One draft-time number was wrong and is corrected rather than carried:**
+the scaffold said 692 errors / 110 files and predicted the mock-ctx class was
+"159 errors in 2 files" - the execution re-derivation found 180 across 17. The
+EC required re-deriving for exactly this reason.
+
+The missing-state-fields class is the finding, not the chore: those tests
+construct structurally invalid `LegendaryGameState` values and pass, and have
+for as long as the fields have existed.
+
+`.claude/rules/code-style.md` gains a section recording that **new** engine
+drift pins stay **runtime** assertions until the backlog clears and the gate is
+wired - so nobody writes another `satisfies` believing it gates. It also notes
+the durable corollary: an optional field addition satisfies a `satisfies` check
+by definition, so only a keyset assertion on a built projection can pin one.
+
+**Verification.** AC-1 gate runs. AC-2 `dist` byte-identical. AC-3 mutation
+demonstrated. AC-4 zero `any` / `@ts-ignore` / `@ts-expect-error` in code - the
+single grep hit is the rules-doc prose that names the tokens in order to forbid
+them. AC-5 base `tsconfig.json` untouched. AC-6 zero non-test `src` files in the
+diff. AC-7 game-engine **2734 / 0 fail, unchanged**. AC-8 no determinism surface
+touched - no fixture or hash file in the diff. `pnpm -r --no-bail test`: **0
+failures across all 12 packages.** D-24372 **Active**.
+
+**User-Visible Surface: none - infrastructure.** The D-24026 gate **inverts**:
+there is nothing observable on a deployed surface to verify, and no live check
+is owed. Nothing ships to players in this packet - not a pixel, not a byte of
+`dist`.
+
+---
+
 ### WP-562 - Scheme-Faithful Loss Progress - DONE (2026-08-17)
 
 The danger meter measured Scheme Twists for every scheme, including the ones

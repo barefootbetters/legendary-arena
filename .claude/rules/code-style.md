@@ -166,6 +166,39 @@ Source: 00.6 Rule 12
 - Never update a canonical array without updating its union type
 - Adding a new phase, stage, move, trigger, effect, or card type requires updating BOTH
 
+### Engine drift pins must be RUNTIME assertions (WP-563 / D-24372)
+
+Until the engine's test-typecheck backlog clears, a **new** drift pin in
+`packages/game-engine/src/**/*.test.ts` must be written as a **runtime**
+assertion (a `Object.keys(...)` keyset check, a value comparison), not as a
+bare `satisfies`.
+
+**Why:** engine test files were never compiled. `tsconfig.json` excludes
+`src/**/*.test.ts`, `build` runs `tsc` (which honours that exclusion), and
+`test` runs `tsx` (which transpiles without checking). Every `satisfies`-based
+"compile-time" pin in that suite was documentation — including pins whose own
+comments promised compile-time enforcement.
+
+WP-563 added `packages/game-engine/tsconfig.test.json` and the
+`typecheck:tests` script, so those pins **do** compile now:
+
+```bash
+pnpm --filter @legendary-arena/game-engine typecheck:tests
+```
+
+That script is **deliberately not a required CI check yet** (D-24372 §2) — the
+suite still carries a large pre-existing error backlog, and a red required
+check would block every unrelated PR. Until the wiring lands, only a runtime
+assertion gates on every run. Two corollaries that outlive the wiring:
+
+- An **optional** field addition satisfies a `satisfies` check by definition,
+  so a type-level pin can never catch one. Pin optional fields with a keyset
+  assertion on a **built** projection.
+- Errors the gate surfaces are **fixed in the test file**. Never `any`, never
+  `@ts-ignore`, never `@ts-expect-error`, never a loosened base tsconfig, and
+  never a widened **production** type — a test that needs one is asserting
+  something false, which is a finding to record, not a fix to apply.
+
 ---
 
 ## Pure Helpers (No boardgame.io Imports)

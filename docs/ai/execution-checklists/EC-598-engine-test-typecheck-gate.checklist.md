@@ -13,15 +13,15 @@
 
 ## Before Starting
 
-- [ ] Clean tree on `origin/main`; `pnpm install`; `pnpm -r build` exits 0.
-- [ ] Record the engine test baseline count.
-- [ ] **Capture the `dist` state before any change** (a file listing +
+- [x] Clean tree on `origin/main`; `pnpm install`; `pnpm -r build` exits 0.
+- [x] Record the engine test baseline count.
+- [x] **Capture the `dist` state before any change** (a file listing +
       sizes, or a hash) — AC-2 requires proving the build output is
       byte-identical afterwards.
-- [ ] Read `packages/game-engine/tsconfig.json` — note the
+- [x] Read `packages/game-engine/tsconfig.json` — note the
       `src/**/*.test.ts` exclusion and the `rootDir` / `outDir` /
       `declaration` settings the new config must not disturb.
-- [ ] Read the WP-557 post-mortem §Notes item 1 — the origin of this packet.
+- [x] Read the WP-557 post-mortem §Notes item 1 — the origin of this packet.
 
 ## Locked Values
 
@@ -80,11 +80,11 @@
 
 ## After Completing
 
-- [ ] `WORK_INDEX.md` `[x]` **plus** the follow-up inventory (each remaining
+- [x] `WORK_INDEX.md` `[x]` **plus** the follow-up inventory (each remaining
       class, its count, its file concentration).
-- [ ] `EC_INDEX.md` `Done`; mindmap `✅`; counts 0.
-- [ ] **D-24372** Active.
-- [ ] `STATUS.md` — the before/after error count **and** an explicit line that
+- [x] `EC_INDEX.md` `Done`; mindmap `✅`; counts 0.
+- [x] **D-24372** Active.
+- [x] `STATUS.md` — the before/after error count **and** an explicit line that
       CI wiring is deferred **by design**, so its absence is not read later as
       an oversight. `User-Visible Surface = none — infrastructure`, so the
       D-24026 gate inverts.

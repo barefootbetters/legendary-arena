@@ -1,0 +1,22 @@
+// why: the base tsconfig.json excludes "src/**/*.test.ts", and the package's
+// only scripts are `build` (tsc, which honours that exclusion) and `test`
+// (tsx, which transpiles without typechecking). The consequence is that engine
+// test files have NEVER been compiled, so every `satisfies`-based drift pin in
+// the suite is documentation rather than a gate — including pins whose own
+// comments promise compile-time enforcement (WP-557 / WP-563, D-24372).
+//
+// why: this config sets "noEmit" precisely so the shipped build is unaffected.
+// It typechecks the test files and writes nothing; `pnpm -r build` output stays
+// byte-identical because only tsconfig.json feeds the `build` script.
+//
+// why: NOT wired into CI yet (D-24372 §2). A required check carrying hundreds
+// of known pre-existing errors would block every unrelated PR. Wiring lands
+// with the final cleanup packet, when the count reaches zero.
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
