@@ -92,9 +92,9 @@ Governance close: `WORK_INDEX.md`, `EC_INDEX.md`, `docs/05-ROADMAP-MINDMAP.md`,
 ## After Completing
 
 - [ ] Regenerate **all three** feeds — `mechanics:metadata`, `ledger:heroes`,
-      `effect-index` — then re-run every `:check`. A keyword-recognition change
-      flips a mechanic's `source` from `free-text` to `keyword`, so a partial
-      regeneration reddens `main` for every concurrent session.
+      `effect-index` — **in ONE commit**, then re-run every `:check`. A keyword
+      change flips a mechanic's `source`, so a partial regeneration — or the same
+      three split across commits — reddens `main` for every concurrent session.
 - [ ] `pnpm -r build && pnpm -r --no-bail test` green.
 - [ ] Confirm in the regenerated ledger that the ten lines left `unsupported`
       **and** that the deferred lines did not silently change status.
