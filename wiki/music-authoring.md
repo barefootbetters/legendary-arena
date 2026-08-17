@@ -383,8 +383,9 @@ the `audio` shortcode (see [Ewiki Authoring](ewiki-authoring.md)):
 ## Interactions
 
 - **[Sound Effects](sound-effects.md).** The companion page covers
-  client-side SFX and the adaptive-music *design* (the danger-meter
-  tiers that would crossfade `MT03` ambient loops). The four event
+  client-side SFX and the adaptive music channel, which **shipped** with
+  WP-560 against generic CC0 loops; the danger-meter tiers it crossfades
+  are the same slots a per-theme `MT03` ambient loop would fill. The four event
   stings here (`ES01` scheme-twist, `ES02` master-strike, `ES03`
   villain-ambush, `ES04` bystander) are the bespoke-music counterpart to
   the notable-event sounds catalogued there — same moments, different
