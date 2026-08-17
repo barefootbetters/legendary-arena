@@ -56,17 +56,31 @@ restoring it passes.
 **THE FINDING: four `TS2345` remain, deliberately unfixed.**
 `buildInitialGameState.loadout.test.ts` passes a deliberately narrow
 `{ listCards }` registry to prove the `buildVillainDeck skipped` diagnostic
-fires. Production code fully defends against `listSets` / `getSet` being absent
-- its diagnostic text literally advises *"or that the test mock implements the
-full reader interface"* - while `CardRegistryReader` declares **both required**.
-The declared type and the runtime contract disagree, and the four errors are the
-type system correctly refusing to express a state production explicitly handles.
-Reconciling them means widening a production type, which EC-604 guardrail 5
-forbids. It is the next packet's question: either the members become optional
-(matching reality, and the existing `playerCountSetup?` precedent) or the
-defensive branches are dead code. **This is recorded as a finding, not counted
-as a shortfall** - AC-1 asked for zero, and stopping at four with the reason
-written down is the correct outcome under the packet's own rules.
+fires, against a parameter declared `CardRegistryReader`. **This is recorded as
+a finding, not counted as a shortfall** - AC-1 asked for zero, and stopping at
+four with the reason written down is the correct outcome under the packet's own
+rules.
+
+**CORRECTED 2026-08-17 (same day, before any follow-up packet acted on it).**
+This entry first recorded the cause as "the declared type and the runtime
+contract disagree" and floated making `listSets` / `getSet` optional. That
+diagnosis was **wrong**, and the remedy would have been harmful. The six
+reader-completeness guards in the engine take **`registry: unknown`** and narrow
+to their own builder-specific interfaces (`CardKeywordsRegistryReader` and
+siblings) - they never receive a `CardRegistryReader` at all, so they are not
+evidence that the wider type lies. Both production registries (`localRegistry`,
+`httpRegistry`) do provide the members. And `matchSetup.validate.ts` calls
+`registry.listSets()` / `getSet(...)` **unguarded at four sites**, so optionality
+would turn working production validation into compile errors whose fixes invent
+semantics for a case that cannot occur.
+
+The four errors are therefore **a test reaching past its seam** - exercising a
+defense that lives two layers down in the per-builder `unknown` guards by lying
+to `buildInitialGameState`'s contract. The correct fix relocates those
+assertions to the builder seam, where a narrow object is the honest input: same
+coverage, no cast, no production widening. Until then the errors stand as
+documentation that the seam is tested from the wrong side. **Making
+`listSets` / `getSet` optional is now a locked non-goal (D-24378).**
 
 **`dist` is NOT byte-identical this time, and that is by design.** WP-563
 established the byte-identical invariant; this packet deliberately relaxes it by
