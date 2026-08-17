@@ -1244,7 +1244,7 @@
           "vAttack": "6",
           "imageUrl": "https://images.legendary-arena.com/msp1/msp1-vi-hydra-arnim-zola.webp",
           "abilities": [
-            "Arnim Zola is worth +3[icon:piercing] for each other HYDRA Villain in your Victory Pile."
+            "Arnim Zola is worth +3[icon:vp] for each other HYDRA Villain in your Victory Pile."
           ],
           "copies": 1
         },

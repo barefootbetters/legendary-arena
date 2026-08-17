@@ -1598,7 +1598,7 @@
           "attack": "6",
           "recruit": null,
           "abilities": [
-            "Whenever you defeat a Villain this turn, you may gain it. It becomes a grey Hero with no text that gives +[icon:attack] equal to its [icon:attack]. ( You still get its [icon:piercing].)"
+            "Whenever you defeat a Villain this turn, you may gain it. It becomes a grey Hero with no text that gives +[icon:attack] equal to its [icon:attack]. ( You still get its [icon:vp].)"
           ]
         }
       ],
@@ -1692,7 +1692,7 @@
           "attack": "2+",
           "recruit": null,
           "abilities": [
-            "Reveal the top card of the Villain Deck. If it's a Villain, you get +[icon:attack] equal to its printed [icon:piercing].",
+            "Reveal the top card of the Villain Deck. If it's a Villain, you get +[icon:attack] equal to its printed [icon:vp].",
             "[hc:tech][hc:tech]: You may defeat that Villain for free."
           ]
         },
@@ -2545,7 +2545,7 @@
           "abilities": [
             "Setup: 8 Twists. Put a token on this Scheme to represent the baby, Hope Summers.",
             "Twist: If a Villain has the baby, that Villain escapes. Otherwise, the baby is captured by the closest Villain to the Villain Deck. (If there are no Villains, do nothing.)",
-            "Special Rules: The Villain with the baby gets +4[icon:attack]. If you defeat that Villain, rescue the baby to your Victory Pile (until the next Twist). The baby is worth +6[icon:piercing] at the end of the game. If a Villain escapes with the baby, stack a Twist next to the Mastermind and return the baby to this Scheme card.",
+            "Special Rules: The Villain with the baby gets +4[icon:attack]. If you defeat that Villain, rescue the baby to your Victory Pile (until the next Twist). The baby is worth +6[icon:vp] at the end of the game. If a Villain escapes with the baby, stack a Twist next to the Mastermind and return the baby to this Scheme card.",
             "Evil Wins: When there are 3 Twists stacked next to the Mastermind."
           ]
         }
@@ -2640,7 +2640,7 @@
           "abilities": [
             "Setup: 8 Twists. Villain Deck includes 14 extra Jean Grey cards and no Bystanders.",
             "Twist: Stack 5 Bystanders face down next to the Scheme. Bystanders stacked here are “Demon Goblin“ Villains. They have 2[icon:attack]. Players can fight these Demon Goblins to rescue them as Bystanders.",
-            "Special Rules: Each Jean Grey card counts as a “Goblin Queen“ Villain. It's worth 4[icon:piercing] . It has [icon:attack] equal to its [icon:vp] plus the number of Demon Goblins stacked next to the Scheme.",
+            "Special Rules: Each Jean Grey card counts as a “Goblin Queen“ Villain. It's worth 4[icon:vp] . It has [icon:attack] equal to its [icon:vp] plus the number of Demon Goblins stacked next to the Scheme.",
             "Evil Wins: When 4 Goblin Queen cards escape."
           ]
         }

@@ -2140,7 +2140,7 @@
           "vAttack": "2",
           "imageUrl": "https://images.legendary-arena.com/vill/vill-vi-spider-friends-spider-man.webp",
           "abilities": [
-            "Fight: Reveal the top card of the Adversary Deck. If that card is worth 2[icon:piercing] or less, play it. If you play a card from the Adversary Deck this way, put Spider-Man back on top of the Adversary Deck.",
+            "Fight: Reveal the top card of the Adversary Deck. If that card is worth 2[icon:vp] or less, play it. If you play a card from the Adversary Deck this way, put Spider-Man back on top of the Adversary Deck.",
             "Overrun: Each player gains a Bindings."
           ],
           "copies": 2

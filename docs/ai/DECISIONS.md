@@ -37168,7 +37168,7 @@ _Active 2026-08-16 - landed at WP-561 execution (EC-596). Baseline 14 mechanics 
 
 ### D-24374 — Upstream icon 4 is a VICTORY POINT glyph, not piercing; and the fix is a targeted edit, never a regeneration
 
-**Drafted 2026-08-17; not yet landed. Flips to Active at WP-565 execution (EC-600).**
+_Active 2026-08-17 — landed at WP-565 execution (EC-600). Registry **236 -> 239 / 0 fail**; `pnpm -r build` 0; `pnpm -r --no-bail test` 0 failures in every package. **§3 (the regeneration ban) held in practice:** the pipeline was never run; the 12 files were edited in place and the diff is **marker-only line by line** — 34 changed lines, each removed line equal to its added line under the single substitution. **§4 confirmed empirically:** all four derived-feed `:check` scripts stayed green **without any regeneration**, so the reservation's "three feeds must regenerate together" assumption was indeed wrong for this change. **§2 confirmed on both oracles:** `PRE_WP080_HASH` `ec64506a` and the sentinel `813287eb...f143b8` are byte-unchanged, with an empty `packages/game-engine/` diff — display-only, as locked. §1's audit is now pinned by a drift guard carrying a NEGATIVE assertion (a synthetic offender driven through the same helper) plus a corpus-size floor and a positive VP-marker check, so the guard cannot pass vacuously or by emptying the data. §5's residual pipeline-vs-committed-data divergence remains **open and unfixed**, deliberately. `User-Visible Surface = play.legendary-arena.com` + the registry viewer — **D-24026 operator-pending**._
 
 `convert-cards-v15.mjs`'s `ICON_SLUG_MAP` mapped upstream `{ icon: 4 }` to
 `piercing`, putting the wrong resource in front of players on **35 ability texts

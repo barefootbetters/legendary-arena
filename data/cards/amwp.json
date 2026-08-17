@@ -501,7 +501,7 @@
           "recruit": "2",
           "abilities": [
             "[keyword:Size-Changing] [hc:tech]",
-            "To play this, you must discard a card. Then, if you have a Villain in your Victory Pile worth 2[icon:piercing] or less, draw a card."
+            "To play this, you must discard a card. Then, if you have a Villain in your Victory Pile worth 2[icon:vp] or less, draw a card."
           ]
         },
         {
@@ -533,7 +533,7 @@
           "recruit": null,
           "abilities": [
             "[keyword:Size-Changing] [hc:strength]",
-            "[hc:strength]: You may defeat a Villain worth 2[icon:piercing] or less."
+            "[hc:strength]: You may defeat a Villain worth 2[icon:vp] or less."
           ]
         },
         {
@@ -549,7 +549,7 @@
           "recruit": null,
           "abilities": [
             "[keyword:Microscopic Size-Changing] [hc:tech][hc:tech][hc:tech]",
-            "[hc:tech]: Reveal the top card of the Villain Deck. If it's a Bystander, rescue it. If it's a Vilain worth 2[icon:piercing] or less, you may fight it this turn. If you rescue or defeat that card, don't play a card from the Vilain Deck next turn."
+            "[hc:tech]: Reveal the top card of the Villain Deck. If it's a Bystander, rescue it. If it's a Vilain worth 2[icon:vp] or less, you may fight it this turn. If you rescue or defeat that card, don't play a card from the Vilain Deck next turn."
           ]
         },
         {
@@ -565,7 +565,7 @@
           "recruit": null,
           "abilities": [
             "[keyword:Microscopic Size-Changing] [hc:strength][hc:strength][hc:strength]",
-            "[hc:strength]: You may do the Fight effect of a Villain in your Victory Pile worth 2[icon:piercing] or less."
+            "[hc:strength]: You may do the Fight effect of a Villain in your Victory Pile worth 2[icon:vp] or less."
           ]
         },
         {
@@ -581,7 +581,7 @@
           "recruit": null,
           "abilities": [
             "[keyword:Microscopic Size-Changing] [hc:strength][hc:strength][hc:strength][hc:strength][hc:strength]",
-            "You get +1[icon:attack] for each Villain worth 2[icon:piercing] or less in your Victory Pile."
+            "You get +1[icon:attack] for each Villain worth 2[icon:vp] or less in your Victory Pile."
           ]
         }
       ],
@@ -1048,7 +1048,7 @@
           "recruit": null,
           "abilities": [
             "[keyword:Bridge Conqueror 1]",
-            "You get +1[icon:attack] for each Villain worth, 4[icon:piercing] or more and each Mastermind Tactic in your Victory Pile."
+            "You get +1[icon:attack] for each Villain worth, 4[icon:vp] or more and each Mastermind Tactic in your Victory Pile."
           ]
         }
       ],
@@ -1317,7 +1317,7 @@
           "vAttack": null,
           "imageUrl": "https://images.legendary-arena.com/amwp/amwp-mt-darren-cross-protect-my-investments.webp",
           "abilities": [
-            "Fight: If the Bank is empty, each other player chooses a Villain worth 2[icon:piercing] or more from their Victory Pile. You choose one of those Villains to enter the Bank.",
+            "Fight: If the Bank is empty, each other player chooses a Villain worth 2[icon:vp] or more from their Victory Pile. You choose one of those Villains to enter the Bank.",
             "This Mastermind [keyword:Transforms]."
           ]
         },
@@ -1712,7 +1712,7 @@
           "imageUrl": "https://images.legendary-arena.com/amwp/amwp-vi-armada-of-kang-troop-ships-of-kang.webp",
           "abilities": [
             "[keyword:Rooftops Conqueror 2]",
-            "Ambush: A Villain worth 2[icon:piercing] or 3[icon:piercing] from any player's Victory Pile enters the city."
+            "Ambush: A Villain worth 2[icon:vp] or 3[icon:vp] from any player's Victory Pile enters the city."
           ],
           "copies": 1
         },

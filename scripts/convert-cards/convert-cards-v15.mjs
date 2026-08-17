@@ -483,11 +483,26 @@ const TEAM_SLUG_MAP = {
 };
 
 // Maps icon number → icon name (matches card-info SVG filenames)
+// why: WP-565 / D-24374 — icon 4 is a VICTORY POINT glyph, not piercing. It was
+// mapped to 'piercing' and put the wrong resource in front of players on 35
+// ability texts across 12 sets (Supreme HYDRA read "is worth +3 <piercing> for
+// each other HYDRA Villain in your Victory Pile" where the card says +3 VP).
+// The correction is at the map rather than per-card because ALL 22 upstream
+// `{ icon: 4 }` uses were read individually and EVERY ONE sits in a
+// victory-point phrase ("is worth +N", "worth N", "printed [VP]", "equal to its
+// printed [VP]") — not one is a combat-piercing use, so icon 4 is a second VP
+// glyph. 'piercing' stays a legal slug below the map: only its card-text uses
+// were wrong, not the slug itself.
+// why: this fix is FORWARD-LOOKING ONLY. The committed data/cards/*.json were
+// corrected by a targeted edit in the same WP, NOT by re-running this converter —
+// the pipeline does not reproduce the committed data (running it strips every
+// [keyword:...] marker, and the full 5-stage run deletes mastermind-strike
+// entries in ssw1/xmen). Do not "apply" this change by regenerating.
 const ICON_SLUG_MAP = {
   1: 'attack',
   2: 'recruit',
   3: 'vp',
-  4: 'piercing',
+  4: 'vp',
 };
 
 // Rarity number → hero card slot number (used in image filename)

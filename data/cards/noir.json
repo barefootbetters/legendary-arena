@@ -273,7 +273,7 @@
           "attack": "3",
           "recruit": null,
           "abilities": [
-            "[hc:tech]: You may use the “Fight“ ability of a Villain worth 1[icon:piercing] in your Victory Pile."
+            "[hc:tech]: You may use the “Fight“ ability of a Villain worth 1[icon:vp] in your Victory Pile."
           ]
         },
         {
@@ -921,7 +921,7 @@
         {
           "qtd": 1,
           "abilities": [
-            "When you rescue this Bystander, [keyword:Investigate] the Villain Deck for a Villain worth 1[icon:piercing] and put it in your Victory Pile."
+            "When you rescue this Bystander, [keyword:Investigate] the Villain Deck for a Villain worth 1[icon:vp] and put it in your Victory Pile."
           ]
         }
       ]

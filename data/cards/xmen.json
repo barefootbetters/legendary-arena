@@ -1919,7 +1919,7 @@
           "abilities": [
             "Deathbird gets +1[icon:attack] for each Shi'ar Villain in the city and Escape Pile.",
             "Always Leads: Shi'ar Imperial Guard and a Shi'ar Henchmen Group.",
-            "Master Strike: If there are already any Shi'ar Villains in the city, each player gains a Wound. Then this strike enters the city as a “Shi'ar Battleship“ [icon:7] Villain with 7[icon:attack] worth 5 [icon:piercing]."
+            "Master Strike: If there are already any Shi'ar Villains in the city, each player gains a Wound. Then this strike enters the city as a “Shi'ar Battleship“ [icon:7] Villain with 7[icon:attack] worth 5 [icon:vp]."
           ]
         },
         {
@@ -1931,7 +1931,7 @@
           "abilities": [
             "Deathbird gets +2[icon:attack] for each Shi'ar Villain in the city and Escape Pile.",
             "Always Leads: Shi'ar Imperial Guard and a Shi'ar Henchmen Group.",
-            "Master Strike: If there are already any Shi'ar Villains in the city, play a random Horror. Then this strike enters the city as a “Shi'ar Battleship“ [icon:7] Villain with 9[icon:attack] worth 6 [icon:piercing]."
+            "Master Strike: If there are already any Shi'ar Villains in the city, play a random Horror. Then this strike enters the city as a “Shi'ar Battleship“ [icon:7] Villain with 9[icon:attack] worth 6 [icon:vp]."
           ]
         },
         {
@@ -1993,7 +1993,7 @@
           "imageUrl": "https://images.legendary-arena.com/xmen/xmen-mm-mojo.webp",
           "abilities": [
             "Start of Game: Mojo captures 3 [keyword:Human Shields].",
-            "All Bystanders in Victory Piles are worth 3 [icon:piercing].",
+            "All Bystanders in Victory Piles are worth 3 [icon:vp].",
             "Always Leads: Mojoverse",
             "Master Strike: Mojo captures a [keyword:Human Shield]. Each player reveals a [hc:tech] Hero or discards a card at random."
           ]
@@ -2006,7 +2006,7 @@
           "imageUrl": "https://images.legendary-arena.com/xmen/xmen-me-mojo.webp",
           "abilities": [
             "Start of Game: Mojo captures 6 [keyword:Human Shields]. Play a random Horror.",
-            "All Bystanders in Victory Piles are worth 4 [icon:piercing].",
+            "All Bystanders in Victory Piles are worth 4 [icon:vp].",
             "Always Leads: Mojoverse",
             "Master Strike: Mojo and each Mojoverse Villain capture a [keyword:Human Shield]. Each player reveals a [hc:tech] Hero or discards down to 4 cards."
           ]

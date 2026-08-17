@@ -404,7 +404,7 @@
           "attack": "0+",
           "recruit": null,
           "abilities": [
-            "Reveal the top five cards of the Villain Deck. You get +[icon:attack] equal to the printed [icon:piercing] of one of those cards. Put them back in any order.",
+            "Reveal the top five cards of the Villain Deck. You get +[icon:attack] equal to the printed [icon:vp] of one of those cards. Put them back in any order.",
             "[team:cabal]: Instead, you get +[icon:attack] for two of those cards."
           ]
         }
@@ -823,7 +823,7 @@
           "recruit": null,
           "abilities": [
             "Reveal the top card of the Villain Deck. If it's a Villain, you may fight it this turn.",
-            "[hc:ranged][hc:ranged]: You get +[icon:attack] equal to that Villain's printed [icon:piercing]."
+            "[hc:ranged][hc:ranged]: You get +[icon:attack] equal to that Villain's printed [icon:vp]."
           ]
         },
         {
@@ -2415,7 +2415,7 @@
         {
           "abilities": [
             "Setup: 8 Twists.",
-            "Twists 1-7: The Villain in the city or Escape Pile with the highest printed [icon:attack] ascends to become a [rule:new Mastermind]. It gets +2[icon:attack]. It gains the ability “Master Strike: Each Player discards a card with cost equal to this Mastermind's printed [icon:piercing].“ (Keep them separate from any Villains who ascend through Escape effects.)",
+            "Twists 1-7: The Villain in the city or Escape Pile with the highest printed [icon:attack] ascends to become a [rule:new Mastermind]. It gets +2[icon:attack]. It gains the ability “Master Strike: Each Player discards a card with cost equal to this Mastermind's printed [icon:vp].“ (Keep them separate from any Villains who ascend through Escape effects.)",
             "Twist 8: The Villain in each player's Victory Pile with the highest printed [icon:attack] ascends the same way.",
             "Evil Wins: When there are 6 Masterminds."
           ]
@@ -2447,7 +2447,7 @@
         {
           "abilities": [
             "Setup: 8 Twists.",
-            "Twist 1:This Scheme ascends to becomes a new 9[icon:attack] [rule:“God-Emperor“ Mastermind] worth 9[icon:piercing]. It has “Master Strike: Each player with exactly six cards in hand reveals a [hc:tech]Hero or puts two cards from their hand on top of their deck.“",
+            "Twist 1:This Scheme ascends to becomes a new 9[icon:attack] [rule:“God-Emperor“ Mastermind] worth 9[icon:vp]. It has “Master Strike: Each player with exactly six cards in hand reveals a [hc:tech]Hero or puts two cards from their hand on top of their deck.“",
             "Twist 2-6: Stack this Twist next to the Scheme. The God-Emperor gets another +2[icon:attack].",
             "Twist 7: If the God-Emperor lives, it KOs all other Masterminds.",
             "Twist 8: Evil wins! (If any Mastermind still lives.)"
@@ -2512,7 +2512,7 @@
         {
           "abilities": [
             "Setup: 6 Twists. Add 10 random Ambition cards to the Villain Deck.",
-            "Special Rules: Ambition cards are Villains with their printed [icon:attack]. Add +1[icon:attack] for each Twist stacked next to the Scheme. They are worth 4[icon:piercing]. Whenever an Ambition Villain escapes, do its Ambition effect.",
+            "Special Rules: Ambition cards are Villains with their printed [icon:attack]. Add +1[icon:attack] for each Twist stacked next to the Scheme. They are worth 4[icon:vp]. Whenever an Ambition Villain escapes, do its Ambition effect.",
             "Twist 1-5: Stack this Twist next to the Scheme. Play another card from the Villain Deck.",
             "Twist 6: Each Ambition Villain in the city escapes.",
             "Evil Wins: When 4 Ambition Villains escape."
