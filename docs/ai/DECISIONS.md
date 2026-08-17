@@ -37044,3 +37044,57 @@ Both writers run together or `main` reddens for every concurrent session.
 `ledger:villains` and `mechanics:metadata` are unaffected.
 
 _Active 2026-08-16 — landed at WP-559 execution (EC-594). Hero ledger: executable 235 / deferred 0 / condition 5 / unsupported 367 / unmarked 43 / **subsystem 1**; totalRows 651 = sum(byStatus). `villain-mechanic-ledger.mjs` byte-identical and the allowlist's `cards` block additions-only (6 insertions, 0 deletions). `User-Visible Surface = dashboard.legendary-arena.com/coverage` — **D-24026 CONFIRMED LIVE 2026-08-16** (deployed summary shows the Subsystem 1 tile and Unsupported 367; the by-card table under the default Unsupported filter returns `reveal-count` alone for `core/spider`, confirming the per-mechanic granularity this entry locks)._
+
+### D-24371 — Loss progress measures the scheme's own Evil-Wins condition (supersedes D-24366 §5)
+
+**This decision corrects D-24366 §5, which was wrong.** That clause reasoned
+that a `pile-depleted` scheme has no denominator "because the pile's starting
+size is not a scheme constant", and fell back to counting Scheme Twists. The
+starting size is not in the scheme *config* — but it **is** knowable at setup,
+where the hero deck is built. "Not in the config" was conflated with
+"unknowable", and the result shipped to players: a Super Hero Civil War match
+whose printed Evil Wins is *"If the Hero Deck runs out"* rendered a danger
+meter counting twists. Observed live at `gitSha 8eb8b0c` — `menace 0.4286`
+(exactly 3/7 twists) while the Hero Deck sat at 11 cards.
+
+Locked:
+
+1. **Each scheme's loss progress measures its own condition.** `pile-depleted`
+   measures the named pile's **depletion** against its setup size;
+   `escaped-pile-count` and `escaped-converted-count` measure matching escaped
+   entries against their thresholds; only a true twist-loss scheme measures
+   twists. The twist proxy remains the fallback **only** for a scheme that
+   declares no `resourceLossCondition` at all.
+2. **The setup size is captured into `G` lazily** — written only when the
+   active scheme declares a `pile-depleted` condition, so a match on any other
+   scheme carries no new field. **A re-pin is nonetheless expected and is not a
+   surprise:** the sentinel fixture uses `core/legacy-virus-the`, itself a
+   `pile-depleted` scheme, so `finalStateHash` moves and is re-recorded via the
+   canonical recorder. `PRE_WP080_HASH` (empty replay, no scheme) stays
+   unchanged; if it ever moves, the field is being written unconditionally.
+3. **The engine projects a `schemeLossKind` ENUM, never a label.** For a meter
+   to read "Heroes 11/42" for one scheme and "Escaped 4/12" for another,
+   something must know which noun applies — that is presentation. The engine
+   emits the kind; every player-facing word lives client-side in
+   `menaceDisplay.ts`. This keeps D-24367 §2 (no client re-derivation) intact
+   without leaking copy into `packages/`.
+4. **The hero-deck denominator is the TOTAL HERO CARDS BUILT at setup (42 in a
+   3-hero core game), not the post-HQ deck size (37).** **Operator decision,
+   2026-08-17**, overruling the drafting recommendation. The drafting case for
+   37 was that the loss fires on `heroDeck.length === 0`, making 37 the literal
+   runway. The operator's case for 42 wins: it is the number a player counts on
+   the table, and the 5 cards dealt to the HQ are **recruitable, not gone**.
+   Both readings are recorded here deliberately so a future reader sees a
+   decision that was made rather than one that was missed.
+5. **The twist readout's denominator is projected separately.** WP-558 dropped
+   it because `schemeLossThreshold` is *resource*-typed for a
+   `resourceLossCondition` scheme — reusing it would render `Twists: 3/12` for
+   Negative Zone, replacing one wrong number with another. A distinct
+   `schemeTwistThreshold` restores `Twists: N/M` truthfully for every scheme.
+6. **Solo mirrors 2-player.** `lossThresholdByPlayerCount` carried no `'1'`
+   key, so a 1-player game fell through to `MVP_SCHEME_TWIST_THRESHOLD` (7) —
+   the arbitrary unconfigured-scheme fallback — instead of Civil War's real 8.
+   The fix is the missing key, **not** a change to the fallback, which remains
+   correct for genuinely unconfigured schemes.
+
+_Drafted 2026-08-17; not yet landed. Flips to Active at WP-562 execution (EC-597)._
