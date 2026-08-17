@@ -7,6 +7,66 @@
 
 ## Current State
 
+### WP-565 - VP Icon Marker Mismap - DONE (2026-08-17)
+
+35 ability texts across 12 sets told players the wrong resource. Supreme HYDRA
+read "is worth +3<piercing> for each other HYDRA Villain in your Victory Pile"
+where the printed card says +3 VP. Found by reviewing a real match against
+printed card text, not by a sweep.
+
+**Root cause was one line.** `convert-cards-v15.mjs` `ICON_SLUG_MAP` mapped
+upstream `{ icon: 4 }` to `piercing`. All 22 upstream icon-4 uses were read
+individually at draft time and every one sits in a victory-point phrase - not one
+is a combat-piercing use, so icon 4 is a second VP glyph. `piercing` stays a legal
+slug; only its card-text uses were wrong.
+
+**Two separate acts, and the separation is the point.** The map fix is
+forward-looking only, so a FUTURE regeneration is correct - it was NOT applied by
+running the pipeline. The committed data was corrected by a targeted in-place
+edit, because regeneration would be **data loss**: the converter alone strips
+every `[keyword:...]` marker, and the full five-stage run deletes
+mastermind-strike entries in `ssw1`/`xmen`. That was established by an observed
+scaffold at draft time rather than reasoned, and it is why the WP forbade the
+obvious implementation.
+
+**Both scaffold predictions held at execution.** All four derived-feed `:check`
+scripts stayed green **with no regeneration run** - the icon marker is display
+text and feeds none of them, so the reservation's "three feeds must regenerate
+together" assumption was indeed wrong for this change. And **both hash oracles are
+byte-unchanged**: `PRE_WP080_HASH` `ec64506a`, sentinel `813287eb...f143b8`, with
+an empty `packages/game-engine/` diff.
+
+**Display-only; scoring was never affected.** No engine path consumes the marker
+and no `vp` field value changed. The variable-VP maths was already correct - a
+live match scored Supreme HYDRA at 15 VP = 3 + 3x4 other HYDRA Villains,
+reconciling 23 villainVP and 52 totalVP exactly.
+
+**The diff was proven marker-only line by line**, not spot-checked: 12 files, 34
+changed lines, every removed line equal to its added line under the single
+substitution. No card gained or lost an ability; no other field moved.
+
+**Drift guard.** A new registry suite pins zero forbidden markers in
+`data/cards/**`, with a NEGATIVE assertion driving a synthetic offender through
+the same helper so it cannot pass vacuously, a corpus-size floor so a mis-resolved
+path cannot pass by scanning nothing, and a positive VP-marker check so an emptied
+corpus cannot satisfy it either.
+
+**Gates.** `pnpm -r build` 0. Registry **236 -> 239 / 0 fail**. `pnpm -r --no-bail
+test` **0 failures in every package**. `grep -r "icon:piercing" data/cards/`
+returns 0.
+
+**D-24026 - operator-pending.** Needs the deployed bundle: a card whose text read
+`+N piercing` renders the VP glyph.
+
+**Still open, deliberately.** The pipeline-vs-committed-data divergence found by
+the scaffold is unfixed and unabsorbed: nobody can safely regenerate card data
+today, and reconciling that needs its own audit packet.
+
+Lands **D-24374 Active**. 14 files (1 new registry test + 12 card-data + 1 build
+script) + governance.
+
+---
+
 ### WP-563 - Engine Test-Typecheck Gate - DONE (2026-08-17)
 
 The engine's `packages/game-engine` test files had **never been compiled**.
