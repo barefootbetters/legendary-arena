@@ -36,6 +36,7 @@ import {
 } from './pilesInit.js';
 import { resolveEffectiveWoundsCount, resolveEffectiveHeroDeckIds } from './schemeSetupSizing.js';
 import { buildDefaultHookDefinitions } from '../rules/ruleRuntime.impl.js';
+import { resolveSchemeLossPileSetupSize } from '../rules/schemeLossProgress.js';
 import {
   buildVillainDeck,
   isVillainDeckRegistryReader,
@@ -503,6 +504,25 @@ export function buildInitialGameState(
   const hasConvertedVillains = Object.keys(convertedVillainOrigins).length > 0;
   const filledHqResult = fillHqFromDeck(skrullConversion.heroReservoir, HQ_SLOT_COUNT);
 
+  // why: WP-562 / D-24371 §2 — capture the depletion-loss pile's setup size so the
+  // meter can measure the scheme's OWN Evil-Wins condition. Written LAZILY: the
+  // resolver returns undefined for every scheme that does not declare a
+  // 'pile-depleted' condition, and the key is then omitted below, so those games'
+  // state hashes are unchanged. The sentinel fixture is NOT one of them — it uses
+  // core/legacy-virus-the, which IS pile-depleted, so this field is the cause of
+  // that fixture's expected finalStateHash re-pin. PRE_WP080_HASH replays an empty
+  // state with no scheme and must stay unchanged.
+  // why: the hero-deck size read here is shuffledHeroDeck.length — the TOTAL hero
+  // cards BUILT (42 in a 3-hero core game), NOT filledHqResult.remainingDeck.length
+  // (37, after 5 go to the HQ). Operator decision 2026-08-17, overruling the
+  // drafting recommendation of 37: 42 is the number a player counts on the table,
+  // and the 5 HQ cards are recruitable rather than gone. Do not "correct" this to 37.
+  const schemeLossPileSetupSize = resolveSchemeLossPileSetupSize(
+    config.schemeId,
+    shuffledHeroDeck.length,
+    piles.wounds.length,
+  );
+
   // why: build the base state first, then apply scheme setup instructions.
   // executeSchemeSetup returns updated state — pure function, no mutation.
   // At MVP, schemeSetupInstructions is always [], so this is a no-op passthrough.
@@ -549,6 +569,12 @@ export function buildInitialGameState(
     // overlay ONLY when a scheme converted cards (Killbots or Secret Invasion), so
     // non-converting games omit the key entirely and their state hash is unchanged (RS-1).
     ...(hasConvertedVillains ? { convertedVillainOrigins } : {}),
+    // why: WP-562 / D-24371 §2 — spread-in ONLY when the scheme declares a
+    // 'pile-depleted' loss, mirroring the convertedVillainOrigins lazy pattern
+    // above. An unconditional `schemeLossPileSetupSize: undefined` would still
+    // serialize a key into every game's state and move PRE_WP080_HASH, which the
+    // packet treats as a STOP condition rather than a re-pin.
+    ...(schemeLossPileSetupSize !== undefined ? { schemeLossPileSetupSize } : {}),
     // why: KO pile starts empty; cards enter via koCard helper (WP-017)
     ko: [],
     // why: no bystanders attached at game start; populated during reveals (WP-017)

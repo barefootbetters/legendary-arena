@@ -12,15 +12,34 @@
  * exact drift WP-557 existed to remove.
  */
 
-import type { MenaceTier } from '@legendary-arena/game-engine';
+import type { MenaceTier, SchemeLossKind } from '@legendary-arena/game-engine';
 
-/** The four projected fields the meter consumes, straight off `UIState.progress`. */
+/** The projected fields the meter consumes, straight off `UIState.progress`. */
 export interface MenaceSignal {
   menace?: number;
   menaceTier?: MenaceTier;
   schemeLossProgress?: number;
   schemeLossThreshold?: number;
+  schemeLossKind?: SchemeLossKind;
 }
+
+// why: WP-562 / D-24371 §3 — THIS is the file the engine's `schemeLossKind` enum
+// exists to feed. Every player-facing noun for a loss condition lives here and
+// nowhere in `packages/`: the engine reports which condition is being measured,
+// the client decides what to call it. A label field in the engine would put copy
+// behind the layer boundary and hand this file a string it must render blind.
+const SCHEME_LOSS_NOUNS: Record<SchemeLossKind, string> = {
+  'hero-deck': 'Heroes',
+  'wound-stack': 'Wounds',
+  'escaped-pile': 'Escaped',
+  'escaped-converted': 'Escaped',
+  twists: 'Twists',
+};
+
+// why: the pre-WP-562 label, kept as the fallback for a state that projects no
+// kind (an older fixture, a recorded replay). "Scheme" says only "this is the
+// scheme's loss progress", which is the most a labelless signal supports.
+const UNKNOWN_KIND_LABEL = 'Scheme';
 
 /**
  * Converts the 0..1 menace scalar to a bar width percentage.
@@ -61,6 +80,19 @@ export function menaceTierClass(tier: MenaceTier): string {
 }
 
 /**
+ * Names the quantity the meter is counting, for the player.
+ *
+ * @param kind - The projected loss kind, when the state carries one.
+ * @returns The noun to print beside the ratio.
+ */
+export function menaceKindLabel(kind: SchemeLossKind | undefined): string {
+  if (kind === undefined) {
+    return UNKNOWN_KIND_LABEL;
+  }
+  return SCHEME_LOSS_NOUNS[kind];
+}
+
+/**
  * Builds the progress readout label.
  *
  * @param progress - The condition-aware numerator.
@@ -71,10 +103,10 @@ export function menaceRatioLabel(
   progress: number,
   threshold: number | undefined,
 ): string {
-  // why: D-24366 §5 / D-24367 §4 — a `pile-depleted` scheme has NO fixed
-  // denominator (its loss is "the pile ran out", whose starting size is not a
-  // scheme constant). Show the bare count rather than inventing one. Defaulting
-  // to 8 or 7 here would reintroduce the very defect WP-558 removes.
+  // why: D-24367 §4 — never invent a denominator. Post-WP-562 every scheme built
+  // by the engine resolves its own (D-24371 §1), so this branch is reached only
+  // by a state that predates the depletion capture; it shows the bare count
+  // rather than defaulting to 8 or 7, which is the defect WP-558 removed.
   if (threshold === undefined) {
     return `${progress}`;
   }
@@ -87,18 +119,25 @@ export function menaceRatioLabel(
  * @param tier - The projected tier.
  * @param progress - The condition-aware numerator.
  * @param threshold - The resolved denominator, when one exists.
+ * @param kind - The projected loss kind, when the state carries one.
  * @returns A full-sentence description for `aria-label`.
  */
 export function menaceAriaText(
   tier: MenaceTier,
   progress: number,
   threshold: number | undefined,
+  kind: SchemeLossKind | undefined,
 ): string {
   const level = describeTier(tier);
+  // why: WP-562 — a sighted player reads "Heroes 31/42" off the bar, so the
+  // screen-reader text names the same quantity. Without the noun the audio
+  // reading is "31 of 42 toward the scheme's goal", which is the one place the
+  // two surfaces would describe the state differently.
+  const noun = menaceKindLabel(kind).toLowerCase();
   if (threshold === undefined) {
-    return `Scheme danger: ${level}. ${progress} toward the scheme's goal.`;
+    return `Scheme danger: ${level}. ${progress} ${noun} toward the scheme's goal.`;
   }
-  return `Scheme danger: ${level}. ${progress} of ${threshold} toward the scheme's goal.`;
+  return `Scheme danger: ${level}. ${progress} of ${threshold} ${noun} toward the scheme's goal.`;
 }
 
 /**

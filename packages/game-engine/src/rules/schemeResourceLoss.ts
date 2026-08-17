@@ -160,10 +160,15 @@ export function applyEscapedPileResourceLoss(
  * WP-510); `'wounds'` → `G.piles.wounds` (Legacy Virus, WP-511).
  *
  * @param gameState - The current game state (read-only).
+ * Exported so `schemeLossProgress.ts` reads the SAME pile mapping the loss
+ * itself turns on (WP-562). A second mapping there would be free to drift from
+ * this one, which is exactly the class of defect that module exists to prevent.
+ *
+ * @param gameState - The current game state (read-only).
  * @param pile - The pile name from the resourceLossCondition.
  * @returns The remaining card count in that pile.
  */
-function remainingPileCount(
+export function remainingPileCount(
   gameState: LegendaryGameState,
   pile: 'heroDeck' | 'wounds',
 ): number {

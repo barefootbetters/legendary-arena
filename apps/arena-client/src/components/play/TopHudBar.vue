@@ -71,16 +71,24 @@ export default defineComponent({
       return id === '' ? 'pending' : id;
     }
 
-    // why: WP-558 — the twist readout is now a BARE COUNT. It used to print
-    // a hardcoded `/8`, which was wrong for the unconfigured fallback (7) and
-    // for Super Hero Civil War (5 at 4-5 players). It is NOT simply repointed
-    // at `progress.schemeLossThreshold`, because for a scheme with a
-    // resourceLossCondition (D-24315) that threshold counts a RESOURCE, not
-    // twists — Negative Zone's is 12 escaped villains, so `Twists: 3/12`
-    // would replace one wrong number with another. The scheme-aware ratio
-    // lives on <DangerMeter>, under a label that matches what it counts.
+    // why: WP-562 / D-24371 §5 — the denominator is back, from
+    // `progress.schemeTwistThreshold`. Three readings were rejected on the way
+    // here and all three are still wrong: the WP-558-removed hardcoded `/8`
+    // (wrong for the unconfigured fallback 7 and for Civil War's 5 at 4-5
+    // players), `progress.schemeLossThreshold` (a RESOURCE count for a
+    // resourceLossCondition scheme — Negative Zone's is 12 escaped villains, so
+    // it renders `Twists: 3/12`), and the bare count WP-558 shipped as the safe
+    // interim. `schemeTwistThreshold` is projected separately for exactly this
+    // readout and is always the twist-stack size.
+    // why: the bare count remains the fallback for a state projecting no
+    // threshold — an older fixture or a recorded replay. Never default to a
+    // number; a defaulted denominator is the original defect.
     function twistProgressLabel(): string {
-      return `${props.snapshot.scheme.twistCount}`;
+      const twistThreshold = props.snapshot.progress.schemeTwistThreshold;
+      if (twistThreshold === undefined) {
+        return `${props.snapshot.scheme.twistCount}`;
+      }
+      return `${props.snapshot.scheme.twistCount}/${twistThreshold}`;
     }
 
     function mastermindProgressLabel(): string {

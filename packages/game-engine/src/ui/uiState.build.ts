@@ -20,8 +20,10 @@ import type { LegendaryGameState } from '../types.js';
 import {
   computeMenace,
   menaceTierFor,
+  resolveSchemeLossKind,
   resolveSchemeLossProgress,
   resolveSchemeLossThreshold,
+  resolveTwistLossThreshold,
 } from '../rules/schemeLossProgress.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
 import type {
@@ -392,12 +394,22 @@ function buildProgressCounters(gameState: LegendaryGameState): UIProgressCounter
     menace,
     menaceTier: menaceTierFor(menace),
     schemeLossProgress: resolveSchemeLossProgress(gameState),
+    // why: WP-562 / D-24371 §3 — the kind is what lets the client write
+    // "Heroes 11/42" without re-deriving the scheme's loss condition. It is
+    // resolved here from the same module as the numerator, so the label and
+    // the numbers can never describe different quantities.
+    schemeLossKind: resolveSchemeLossKind(gameState),
+    // why: WP-562 / D-24371 §5 — the twist readout's own denominator. Distinct
+    // from schemeLossThreshold above, which for a resourceLossCondition scheme
+    // counts a resource rather than twists.
+    schemeTwistThreshold: resolveTwistLossThreshold(gameState),
   };
 
-  // why: omit the key entirely rather than emitting `undefined` for a
-  // `pile-depleted` scheme (D-24366 §5). An absent key and an explicit
-  // `undefined` read differently under `exactOptionalPropertyTypes`, and
-  // "this scheme has no denominator" is the assertion being made.
+  // why: omit the key entirely rather than emitting `undefined`. An absent key
+  // and an explicit `undefined` read differently under
+  // `exactOptionalPropertyTypes`, and "this state carries no denominator" is
+  // the assertion being made. Post-WP-562 every scheme resolves one; only a
+  // pre-WP-562 recorded pile-depleted state reaches this branch.
   if (schemeLossThreshold !== undefined) {
     progressCounters.schemeLossThreshold = schemeLossThreshold;
   }

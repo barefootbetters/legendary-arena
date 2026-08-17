@@ -10,7 +10,13 @@
  * mask drift — explicitly forbidden by EC-067.
  */
 
-import type { LogEntry, MenaceTier, UIProgressCounters, UIState } from '@legendary-arena/game-engine';
+import type {
+  LogEntry,
+  MenaceTier,
+  SchemeLossKind,
+  UIProgressCounters,
+  UIState,
+} from '@legendary-arena/game-engine';
 import midTurnJson from './mid-turn.json';
 import endgameWinJson from './endgame-win.json';
 import endgameLossJson from './endgame-loss.json';
@@ -31,6 +37,12 @@ function narrowLog(log: ReadonlyArray<{ text: string; outcome: string }>): LogEn
 // `satisfies UIState` and keeps its drift-checking role. The value itself is
 // validated by the engine's own tier contract; here we only re-tag the
 // compile-time literal.
+// why: WP-562 — this function is a FIELD-BY-FIELD REBUILD, so a field added to
+// the fixture JSON but not listed here is silently dropped before any component
+// sees it — the same whitelist hazard as `filterUIStateForAudience`. Any future
+// `progress` field must be added in BOTH places or the fixture-driven surfaces
+// (the `?fixture=…&play=1` dev route, every component test) render as if the
+// engine never projected it.
 function narrowProgress(progress: {
   bystandersRescued: number;
   escapedVillains: number;
@@ -38,6 +50,8 @@ function narrowProgress(progress: {
   menaceTier: string;
   schemeLossProgress: number;
   schemeLossThreshold: number;
+  schemeLossKind: string;
+  schemeTwistThreshold: number;
 }): UIProgressCounters {
   return {
     bystandersRescued: progress.bystandersRescued,
@@ -46,6 +60,10 @@ function narrowProgress(progress: {
     menaceTier: progress.menaceTier as MenaceTier,
     schemeLossProgress: progress.schemeLossProgress,
     schemeLossThreshold: progress.schemeLossThreshold,
+    // why: the same JSON-widening re-tag as `menaceTier` — a JSON import widens
+    // the kind to `string`, which no longer satisfies `SchemeLossKind`.
+    schemeLossKind: progress.schemeLossKind as SchemeLossKind,
+    schemeTwistThreshold: progress.schemeTwistThreshold,
   };
 }
 

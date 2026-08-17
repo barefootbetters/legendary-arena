@@ -1422,3 +1422,51 @@ describe('menace signal survives the audience filter (WP-557 / D-24366)', () => 
     assert.equal(result.progress.menaceTier, 'critical');
   });
 });
+
+describe('scheme-faithful loss fields survive the audience filter (WP-562 / D-24371)', () => {
+  // why: the Board-Visible Field Rule's step 3/4 pair. Both new fields are
+  // OPTIONAL, which is precisely the shape that gets dropped silently at the
+  // filter — a field that reaches buildUIState but not the client renders as an
+  // unlabelled meter and a denominator-less twist readout, with nothing failing
+  // to compile. Public data: both are derived from the scheme config and the
+  // shared-board piles, so no audience is redacted.
+  for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+    it(`preserves schemeLossKind and schemeTwistThreshold for ${audience.kind}`, () => {
+      const uiState = createTestUIState();
+
+      const result = filterUIStateForAudience(uiState, audience);
+
+      assert.equal(
+        result.progress.schemeLossKind,
+        uiState.progress.schemeLossKind,
+        `schemeLossKind must survive for ${audience.kind}`,
+      );
+      assert.equal(
+        result.progress.schemeTwistThreshold,
+        uiState.progress.schemeTwistThreshold,
+        `schemeTwistThreshold must survive for ${audience.kind}`,
+      );
+    });
+  }
+
+  it('drives a real hero-deck kind through the filter, not an absent one', () => {
+    // why: an unconfigured fixture projects 'twists' and could pass even if the
+    // filter dropped the field and a reader defaulted. Repoint at a
+    // pile-depleted scheme with a real capture so the value is distinctive.
+    const config = createTestConfig();
+    const registry = createMockRegistry();
+    const gameState = buildInitialGameState(config, registry, makeMockCtx());
+    gameState.selection.schemeId = 'core/super-hero-civil-war';
+    gameState.schemeLossPileSetupSize = 42;
+    gameState.heroDeck = ['a', 'b', 'c'];
+    const uiState = buildUIState(gameState, makeMockCtx());
+
+    assert.equal(uiState.progress.schemeLossKind, 'hero-deck');
+
+    const result = filterUIStateForAudience(uiState, SPECTATOR);
+
+    assert.equal(result.progress.schemeLossKind, 'hero-deck');
+    assert.equal(result.progress.schemeLossThreshold, 42);
+    assert.equal(result.progress.schemeTwistThreshold, 8);
+  });
+});

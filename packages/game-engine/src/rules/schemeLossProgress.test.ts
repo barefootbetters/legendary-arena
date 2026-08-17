@@ -13,14 +13,17 @@ import assert from 'node:assert/strict';
 import {
   MENACE_TIERS,
   MVP_SCHEME_TWIST_THRESHOLD,
+  SCHEME_LOSS_KINDS,
   computeMenace,
   isTwistLossSuppressed,
   menaceTierFor,
+  resolveSchemeLossKind,
+  resolveSchemeLossPileSetupSize,
   resolveSchemeLossProgress,
   resolveSchemeLossThreshold,
   resolveTwistLossThreshold,
 } from './schemeLossProgress.js';
-import type { MenaceTier } from './schemeLossProgress.js';
+import type { MenaceTier, SchemeLossKind } from './schemeLossProgress.js';
 import type { LegendaryGameState } from '../types.js';
 
 // ---------------------------------------------------------------------------
@@ -34,6 +37,28 @@ interface TestStateOptions {
   escapedPile?: string[];
   villainDeckCardTypes?: Record<string, string>;
   convertedVillainOrigins?: Record<string, string>;
+  // why: WP-562 — the three fields the depletion derivation reads. Omitting
+  // schemeLossPileSetupSize models a pre-WP-562 recorded state, which is the
+  // legacy fallback path asserted further down.
+  schemeLossPileSetupSize?: number;
+  heroDeckRemaining?: number;
+  woundsRemaining?: number;
+}
+
+/**
+ * Builds an array of placeholder card ids of a given length.
+ *
+ * The derivation reads only `.length` on these piles, so the ids are filler.
+ *
+ * @param count - How many placeholder entries to produce.
+ * @returns An array of that many distinct id strings.
+ */
+function makeCardIds(count: number): string[] {
+  const ids: string[] = [];
+  for (let index = 0; index < count; index = index + 1) {
+    ids.push(`card-${index}`);
+  }
+  return ids;
 }
 
 /**
@@ -66,7 +91,12 @@ function makeTestState(options: TestStateOptions): LegendaryGameState {
     playerZones: {
       '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
     },
-    piles: { bystanders: [], wounds: [], officers: [], sidekicks: [] },
+    piles: {
+      bystanders: [],
+      wounds: makeCardIds(options.woundsRemaining ?? 0),
+      officers: [],
+      sidekicks: [],
+    },
     messages: [],
     notableEvents: [],
     counters: { schemeTwistCount: options.twistCount ?? 0 },
@@ -91,12 +121,20 @@ function makeTestState(options: TestStateOptions): LegendaryGameState {
     heroAbilityHooks: [],
     scheme: { twistPile: [] },
     escapedPile: options.escapedPile ?? [],
-    heroDeck: [],
+    heroDeck: makeCardIds(options.heroDeckRemaining ?? 0),
   } as unknown as LegendaryGameState;
 
   if (options.convertedVillainOrigins !== undefined) {
     (state as { convertedVillainOrigins?: Record<string, string> })
       .convertedVillainOrigins = options.convertedVillainOrigins;
+  }
+
+  // why: assigned conditionally so an omitted option leaves the key ABSENT
+  // rather than present-and-undefined — absence is what a pre-WP-562 recorded
+  // state carries, and the fallback branch keys on it.
+  if (options.schemeLossPileSetupSize !== undefined) {
+    (state as { schemeLossPileSetupSize?: number }).schemeLossPileSetupSize =
+      options.schemeLossPileSetupSize;
   }
 
   return state;
@@ -287,8 +325,90 @@ describe('computeMenace — normalized, clamped 0..1', () => {
   });
 });
 
-describe('pile-depleted schemes have no denominator (D-24366 §5) — AC-9', () => {
-  it('omits the threshold for Super Hero Civil War', () => {
+// ---------------------------------------------------------------------------
+// pile-depleted measures DEPLETION (WP-562 / D-24371 §1) — AC-1, AC-3
+// ---------------------------------------------------------------------------
+
+describe('pile-depleted schemes measure their own pile (WP-562 / D-24371 §1)', () => {
+  it('AC-1: Civil War measures the hero deck against its setup size', () => {
+    // why: THE reported defect. This exact state — 42 hero cards built, 11 left —
+    // rendered `3/7 twists` live at gitSha 8eb8b0c, for a scheme whose printed
+    // Evil Wins is "If the Hero Deck runs out". It must now read 31/42.
+    const gameState = makeTestState({
+      schemeId: 'core/super-hero-civil-war',
+      requiredPlayers: 1,
+      twistCount: 3,
+      schemeLossPileSetupSize: 42,
+      heroDeckRemaining: 11,
+    });
+    assert.equal(resolveSchemeLossProgress(gameState), 31);
+    assert.equal(resolveSchemeLossThreshold(gameState), 42);
+    assert.equal(computeMenace(gameState), 31 / 42);
+    // why: pins that the numerator is NOT the twist count. 3 is the value the
+    // superseded D-24366 §5 fallback returned for this state.
+    assert.notEqual(resolveSchemeLossProgress(gameState), 3);
+  });
+
+  it('AC-3: Legacy Virus measures the wound stack against its setup size', () => {
+    const gameState = makeTestState({
+      schemeId: 'core/legacy-virus-the',
+      twistCount: 2,
+      schemeLossPileSetupSize: 12,
+      woundsRemaining: 9,
+    });
+    assert.equal(resolveSchemeLossProgress(gameState), 3);
+    assert.equal(resolveSchemeLossThreshold(gameState), 12);
+    assert.equal(computeMenace(gameState), 0.25);
+  });
+
+  it('reads zero depletion at setup, when the pile is still full', () => {
+    const gameState = makeTestState({
+      schemeId: 'core/super-hero-civil-war',
+      schemeLossPileSetupSize: 42,
+      heroDeckRemaining: 42,
+    });
+    assert.equal(resolveSchemeLossProgress(gameState), 0);
+    assert.equal(computeMenace(gameState), 0);
+  });
+
+  it('reads full depletion — and menace 1 — when the pile is empty', () => {
+    // why: an empty pile IS the loss for these schemes, so the meter must be
+    // pegged rather than one short of it.
+    const gameState = makeTestState({
+      schemeId: 'core/super-hero-civil-war',
+      schemeLossPileSetupSize: 42,
+      heroDeckRemaining: 0,
+    });
+    assert.equal(resolveSchemeLossProgress(gameState), 42);
+    assert.equal(computeMenace(gameState), 1);
+  });
+
+  it('clamps at 0 when the pile grew above its setup size', () => {
+    // why: cards can return to the hero deck, and a negative numerator would
+    // render as the villains losing ground — a reading no rule supports.
+    const gameState = makeTestState({
+      schemeId: 'core/super-hero-civil-war',
+      schemeLossPileSetupSize: 42,
+      heroDeckRemaining: 45,
+    });
+    assert.equal(resolveSchemeLossProgress(gameState), 0);
+  });
+
+  it('measures the NAMED pile — a full wound stack does not mask a drained hero deck', () => {
+    // why: both piles are populated here. Civil War names heroDeck, so the
+    // untouched wound stack must not enter the reading at all.
+    const gameState = makeTestState({
+      schemeId: 'core/super-hero-civil-war',
+      schemeLossPileSetupSize: 42,
+      heroDeckRemaining: 11,
+      woundsRemaining: 30,
+    });
+    assert.equal(resolveSchemeLossProgress(gameState), 31);
+  });
+});
+
+describe('the absent-capture fallback (a pre-WP-562 recorded state)', () => {
+  it('omits the threshold when no setup size was captured', () => {
     const gameState = makeTestState({
       schemeId: 'core/super-hero-civil-war',
       requiredPlayers: 3,
@@ -296,29 +416,228 @@ describe('pile-depleted schemes have no denominator (D-24366 §5) — AC-9', () 
     assert.equal(resolveSchemeLossThreshold(gameState), undefined);
   });
 
-  it('omits the threshold for Legacy Virus', () => {
-    const gameState = makeTestState({ schemeId: 'core/legacy-virus-the' });
-    assert.equal(resolveSchemeLossThreshold(gameState), undefined);
-  });
-
-  it('still produces a finite menace from the twist proxy', () => {
-    // why: Civil War at 3p proxies against 8 twists; 4 twists is half way.
+  it('falls back to the twist proxy for BOTH numerator and denominator', () => {
+    // why: the fallback pair must stay coherent. Civil War at 3p proxies against
+    // 8 twists, so 4 twists is half way — the pre-WP-562 reading, preserved for
+    // states that predate the capture rather than reinvented.
     const gameState = makeTestState({
       schemeId: 'core/super-hero-civil-war',
       requiredPlayers: 3,
       twistCount: 4,
+      heroDeckRemaining: 11,
     });
+    assert.equal(resolveSchemeLossProgress(gameState), 4);
     assert.equal(computeMenace(gameState), 0.5);
   });
 
-  it('proxies against the player-count threshold, not a fixed one', () => {
-    // why: at 4p the Civil War stack is 5, so 4 twists is 0.8 — not 0.5.
+  it('treats a zero setup size as absent rather than dividing by zero', () => {
     const gameState = makeTestState({
       schemeId: 'core/super-hero-civil-war',
-      requiredPlayers: 4,
+      requiredPlayers: 3,
       twistCount: 4,
+      schemeLossPileSetupSize: 0,
     });
-    assert.equal(computeMenace(gameState), 0.8);
+    assert.equal(resolveSchemeLossKind(gameState), 'twists');
+    assert.equal(computeMenace(gameState), 0.5);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Unchanged conditions — AC-4, AC-5 regression guard
+// ---------------------------------------------------------------------------
+
+describe('the conditions WP-562 did NOT change (AC-4 / AC-5 regression guard)', () => {
+  it('AC-4: Negative Zone still counts escaped villains against 12', () => {
+    const gameState = makeTestState({
+      schemeId: 'core/negative-zone-prison-breakout',
+      twistCount: 3,
+      escapedPile: ['villain-a', 'villain-b', 'villain-c'],
+      villainDeckCardTypes: {
+        'villain-a': 'villain',
+        'villain-b': 'villain',
+        'villain-c': 'villain',
+      },
+    });
+    assert.equal(resolveSchemeLossProgress(gameState), 3);
+    assert.equal(resolveSchemeLossThreshold(gameState), 12);
+    assert.equal(resolveSchemeLossKind(gameState), 'escaped-pile');
+  });
+
+  it('AC-5: Portals still counts twists against its printed 7', () => {
+    const gameState = makeTestState({
+      schemeId: 'core/portals-to-the-dark-dimension',
+      twistCount: 3,
+    });
+    assert.equal(resolveSchemeLossProgress(gameState), 3);
+    assert.equal(resolveSchemeLossThreshold(gameState), 7);
+    assert.equal(resolveSchemeLossKind(gameState), 'twists');
+  });
+
+  it('Killbots still counts converted escapees against 5', () => {
+    const gameState = makeTestState({
+      schemeId: 'core/replace-earths-leaders-with-killbots',
+      escapedPile: ['bot-a', 'bot-b'],
+      villainDeckCardTypes: { 'bot-a': 'villain', 'bot-b': 'villain' },
+      convertedVillainOrigins: { 'bot-a': 'killbot', 'bot-b': 'killbot' },
+    });
+    assert.equal(resolveSchemeLossProgress(gameState), 2);
+    assert.equal(resolveSchemeLossThreshold(gameState), 5);
+    assert.equal(resolveSchemeLossKind(gameState), 'escaped-converted');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// SchemeLossKind (D-24371 §3)
+// ---------------------------------------------------------------------------
+
+describe('resolveSchemeLossKind — the enum the client labels from (D-24371 §3)', () => {
+  it('distinguishes the two pile-depleted piles', () => {
+    const civilWar = makeTestState({
+      schemeId: 'core/super-hero-civil-war',
+      schemeLossPileSetupSize: 42,
+      heroDeckRemaining: 42,
+    });
+    const legacyVirus = makeTestState({
+      schemeId: 'core/legacy-virus-the',
+      schemeLossPileSetupSize: 12,
+      woundsRemaining: 12,
+    });
+    assert.equal(resolveSchemeLossKind(civilWar), 'hero-deck');
+    assert.equal(resolveSchemeLossKind(legacyVirus), 'wound-stack');
+  });
+
+  it('reports what is MEASURED, not what the config declares', () => {
+    // why: without a capture the derivation is counting twists, so the kind must
+    // say 'twists'. If it reported 'hero-deck' here the client would print
+    // "Heroes 4" over a twist count — a label lying about its own numbers.
+    const gameState = makeTestState({ schemeId: 'core/super-hero-civil-war', twistCount: 4 });
+    assert.equal(resolveSchemeLossKind(gameState), 'twists');
+  });
+
+  it('falls back to twists for an unconfigured scheme', () => {
+    assert.equal(resolveSchemeLossKind(makeTestState({ schemeId: 'not-a-real-scheme' })), 'twists');
+  });
+
+  it('SCHEME_LOSS_KINDS matches the SchemeLossKind union exactly', () => {
+    // why: canonical-array drift pin per .claude/rules/code-style.md.
+    const everyKind = [
+      'hero-deck',
+      'wound-stack',
+      'escaped-pile',
+      'escaped-converted',
+      'twists',
+    ] satisfies SchemeLossKind[];
+    assert.deepStrictEqual([...SCHEME_LOSS_KINDS], everyKind);
+  });
+
+  it('every configured scheme resolves to a member of the canonical array', () => {
+    const schemeIds = [
+      'core/midtown-bank-robbery',
+      'core/legacy-virus-the',
+      'core/negative-zone-prison-breakout',
+      'core/unleash-the-power-of-the-cosmic-cube',
+      'core/super-hero-civil-war',
+      'core/replace-earths-leaders-with-killbots',
+      'core/secret-invasion-of-the-skrull-shapeshifters',
+      'core/portals-to-the-dark-dimension',
+      'not-a-real-scheme',
+    ];
+    for (const schemeId of schemeIds) {
+      const kind = resolveSchemeLossKind(
+        makeTestState({ schemeId, schemeLossPileSetupSize: 10 }),
+      );
+      assert.equal(SCHEME_LOSS_KINDS.includes(kind), true, `${schemeId} produced ${kind}`);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The lazy setup capture (D-24371 §2) — AC-8
+// ---------------------------------------------------------------------------
+
+describe('resolveSchemeLossPileSetupSize — the lazy capture (D-24371 §2) — AC-8', () => {
+  it('returns the hero-deck size for Civil War', () => {
+    assert.equal(resolveSchemeLossPileSetupSize('core/super-hero-civil-war', 42, 12), 42);
+  });
+
+  it('returns the wound-stack size for Legacy Virus', () => {
+    assert.equal(resolveSchemeLossPileSetupSize('core/legacy-virus-the', 42, 12), 12);
+  });
+
+  it('AC-8: returns undefined for every scheme that is NOT pile-depleted', () => {
+    // why: undefined is what makes the G field LAZY at the setup call site, and
+    // laziness is what keeps PRE_WP080_HASH and every non-pile-depleted game's
+    // hash unchanged. A scheme leaking into this list would re-pin oracles the
+    // packet declares must not move.
+    const notPileDepleted = [
+      'core/midtown-bank-robbery',
+      'core/negative-zone-prison-breakout',
+      'core/unleash-the-power-of-the-cosmic-cube',
+      'core/replace-earths-leaders-with-killbots',
+      'core/secret-invasion-of-the-skrull-shapeshifters',
+      'core/portals-to-the-dark-dimension',
+      'not-a-real-scheme',
+      '',
+    ];
+    for (const schemeId of notPileDepleted) {
+      assert.equal(
+        resolveSchemeLossPileSetupSize(schemeId, 42, 12),
+        undefined,
+        `${schemeId} unexpectedly captured a setup size`,
+      );
+    }
+  });
+
+  it('exactly two configured schemes capture a size', () => {
+    // why: a census rather than a spot check — the lazy field's blast radius is
+    // "which schemes re-pin", so the count is the thing worth pinning.
+    const everyConfiguredScheme = [
+      'core/midtown-bank-robbery',
+      'core/legacy-virus-the',
+      'core/negative-zone-prison-breakout',
+      'core/unleash-the-power-of-the-cosmic-cube',
+      'core/super-hero-civil-war',
+      'core/replace-earths-leaders-with-killbots',
+      'core/secret-invasion-of-the-skrull-shapeshifters',
+      'core/portals-to-the-dark-dimension',
+    ];
+    const capturing = everyConfiguredScheme.filter(
+      (schemeId) => resolveSchemeLossPileSetupSize(schemeId, 42, 12) !== undefined,
+    );
+    assert.deepStrictEqual(capturing, ['core/legacy-virus-the', 'core/super-hero-civil-war']);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Solo threshold gap (D-24371 §6) — AC-7
+// ---------------------------------------------------------------------------
+
+describe('the solo twist threshold (WP-562 / D-24371 §6) — AC-7', () => {
+  it('AC-7: solo Civil War resolves to 8, not the MVP fallback 7', () => {
+    // why: the '1' key was missing, so a 1-player game silently took
+    // MVP_SCHEME_TWIST_THRESHOLD — the arbitrary unconfigured default — and
+    // reported 3/7 in a real match. Solo mirrors 2-player.
+    const solo = makeTestState({ schemeId: 'core/super-hero-civil-war', requiredPlayers: 1 });
+    assert.equal(resolveTwistLossThreshold(solo), 8);
+    assert.notEqual(resolveTwistLossThreshold(solo), MVP_SCHEME_TWIST_THRESHOLD);
+  });
+
+  it('the MVP fallback itself is untouched at 7', () => {
+    // why: the fix is the missing key, NOT a change to the fallback, which stays
+    // correct for a genuinely unconfigured scheme.
+    assert.equal(MVP_SCHEME_TWIST_THRESHOLD, 7);
+    assert.equal(resolveTwistLossThreshold(makeTestState({ schemeId: 'not-a-real-scheme' })), 7);
+  });
+
+  it('every seat count 1-5 resolves Civil War to a printed stack size', () => {
+    const expectedBySeatCount = new Map([[1, 8], [2, 8], [3, 8], [4, 5], [5, 5]]);
+    for (const [seatCount, expected] of expectedBySeatCount) {
+      const gameState = makeTestState({
+        schemeId: 'core/super-hero-civil-war',
+        requiredPlayers: seatCount,
+      });
+      assert.equal(resolveTwistLossThreshold(gameState), expected, `at ${seatCount} players`);
+    }
   });
 });
 

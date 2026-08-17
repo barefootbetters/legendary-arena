@@ -259,3 +259,107 @@ describe('UIState.progress menace signal (WP-557 / D-24366)', () => {
     assert.equal(first.progress.menaceTier, second.progress.menaceTier);
   });
 });
+
+describe('UIState.progress scheme-faithful loss (WP-562 / D-24371)', () => {
+  const mockCtx = makeMockCtx();
+
+  /**
+   * Repoints a built state at a scheme and gives it a depletion capture.
+   *
+   * The base fixture's registry builds no hero cards, so the pile sizes are set
+   * directly — these tests exercise the PROJECTION, while the capture itself is
+   * proven end-to-end in `buildInitialGameState.lossPileCapture.test.ts`.
+   *
+   * @param schemeId - The scheme to project.
+   * @param setupSize - The depletion pile's setup size.
+   * @param remaining - How many cards are left in the hero deck.
+   * @returns The repointed game state.
+   */
+  function makeDepletionState(
+    schemeId: string,
+    setupSize: number,
+    remaining: number,
+  ): LegendaryGameState {
+    const gameState = createTestGameState();
+    gameState.selection.schemeId = schemeId;
+    gameState.schemeLossPileSetupSize = setupSize;
+    gameState.heroDeck = Array.from({ length: remaining }, (_, index) => `card-${index}`);
+    return gameState;
+  }
+
+  it('AC-1: Civil War projects hero-deck depletion against the cards built', () => {
+    // why: the live defect, projected end-to-end. 42 built / 11 left rendered
+    // `3/7 twists` at gitSha 8eb8b0c; it must now project 31/42 with the kind
+    // that lets the client write "Heroes".
+    const gameState = makeDepletionState('core/super-hero-civil-war', 42, 11);
+    gameState.counters.schemeTwistCount = 3;
+
+    const result = buildUIState(gameState, mockCtx);
+
+    assert.equal(result.progress.schemeLossKind, 'hero-deck');
+    assert.equal(result.progress.schemeLossProgress, 31);
+    assert.equal(result.progress.schemeLossThreshold, 42);
+    assert.equal(result.progress.menace, 31 / 42);
+    assert.equal(result.progress.menaceTier, 'critical');
+  });
+
+  it('AC-6: the twist threshold is projected SEPARATELY from the loss threshold', () => {
+    // why: D-24371 §5 — Negative Zone's loss threshold counts 12 escaped
+    // villains. Reusing it for the HUD's twist readout renders `Twists: 3/12`,
+    // one wrong number swapped for another. The twist stack is 8.
+    const gameState = createTestGameState();
+    gameState.selection.schemeId = 'core/negative-zone-prison-breakout';
+    gameState.counters.schemeTwistCount = 3;
+
+    const result = buildUIState(gameState, mockCtx);
+
+    assert.equal(result.progress.schemeLossThreshold, 12);
+    assert.equal(result.progress.schemeTwistThreshold, 8);
+    assert.notEqual(result.progress.schemeTwistThreshold, result.progress.schemeLossThreshold);
+  });
+
+  it('AC-7: solo Civil War projects a twist threshold of 8, not the MVP 7', () => {
+    const gameState = makeDepletionState('core/super-hero-civil-war', 42, 42);
+    gameState.lobby.requiredPlayers = 1;
+
+    const result = buildUIState(gameState, mockCtx);
+
+    assert.equal(result.progress.schemeTwistThreshold, 8);
+  });
+
+  it('projects a kind on every state, including an unconfigured scheme', () => {
+    // why: the client switches on the kind to pick its noun. An absent kind
+    // would leave the meter labelless on exactly the states that already take a
+    // fallback path.
+    const result = buildUIState(createTestGameState(), mockCtx);
+
+    assert.equal(result.progress.schemeLossKind, 'twists');
+    assert.equal(result.progress.schemeTwistThreshold, 7);
+  });
+
+  it('the kind and the numbers always describe the same quantity', () => {
+    // why: a pre-WP-562 state carries no capture, so the derivation counts
+    // twists — and the kind must say so. A 'hero-deck' kind over a twist count
+    // is a label lying about its own numbers.
+    const gameState = createTestGameState();
+    gameState.selection.schemeId = 'core/super-hero-civil-war';
+    gameState.counters.schemeTwistCount = 4;
+
+    const result = buildUIState(gameState, mockCtx);
+
+    assert.equal(result.progress.schemeLossKind, 'twists');
+    assert.equal(result.progress.schemeLossProgress, 4);
+  });
+
+  it('the loss-kind projection adds no G field', () => {
+    // why: the kind and the twist threshold are DERIVED at projection time. Only
+    // the setup capture lives in G, and only for a pile-depleted scheme.
+    const gameState = createTestGameState();
+
+    buildUIState(gameState, mockCtx);
+
+    assert.equal('schemeLossKind' in gameState, false);
+    assert.equal('schemeTwistThreshold' in gameState, false);
+    assert.equal('schemeLossPileSetupSize' in gameState, false);
+  });
+});

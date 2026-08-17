@@ -128,16 +128,20 @@ describe('UIState type drift (WP-067)', () => {
     });
 
     // why: `core/s` is unconfigured, so it takes the MVP twist fallback and
-    // DOES carry a denominator — all six keys are present. A `pile-depleted`
-    // scheme omits `schemeLossThreshold` by design (D-24366 §5), which is
-    // asserted in schemeLossProgress.test.ts instead.
+    // DOES carry a denominator — all eight keys are present.
+    // why: WP-562 extends this pin to `schemeLossKind` + `schemeTwistThreshold`.
+    // Both are OPTIONAL, so adding them satisfied the `satisfies` check and the
+    // hand-written keyset above without touching either — this built-state
+    // assertion is the only gate that would have caught them shipping unpinned.
     assert.deepStrictEqual(Object.keys(result.progress).sort(), [
       'bystandersRescued',
       'escapedVillains',
       'menace',
       'menaceTier',
+      'schemeLossKind',
       'schemeLossProgress',
       'schemeLossThreshold',
+      'schemeTwistThreshold',
     ]);
   });
 

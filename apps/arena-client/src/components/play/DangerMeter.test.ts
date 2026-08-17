@@ -28,6 +28,7 @@ function makeProgress(
 
 const METER = '[data-testid="play-hud-danger-meter"]';
 const RATIO = '[data-testid="play-hud-danger-ratio"]';
+const LABEL = '[data-testid="play-hud-danger-label"]';
 
 describe('DangerMeter (WP-558) — rendering the projected signal', () => {
   beforeEach(() => {
@@ -213,5 +214,113 @@ describe('DangerMeter (WP-558) — no client-side re-derivation (D-24367 §2)', 
     assert.equal(meter.classes().includes('danger-meter--critical'), false);
     // and the bar still reflects the scalar it was given
     assert.equal(meter.attributes('aria-valuenow'), '90');
+  });
+});
+
+describe('DangerMeter (WP-562) — the kind-driven label (D-24371 §3)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    __resetEffectIntensityForTests();
+  });
+
+  test('AC-2: a Civil War state renders "Heroes 31/42", not a twist count', () => {
+    // why: the reported defect end-to-end at the component. The live match
+    // projected 42 built / 11 left and the meter read `3` twists; it must now
+    // name the hero deck and show its real depletion.
+    const wrapper = mount(DangerMeter, {
+      props: {
+        progress: makeProgress({
+          menace: 31 / 42,
+          menaceTier: 'critical',
+          schemeLossProgress: 31,
+          schemeLossThreshold: 42,
+          schemeLossKind: 'hero-deck',
+        }),
+      },
+    });
+
+    assert.equal(wrapper.find(LABEL).text(), 'Heroes');
+    assert.equal(wrapper.find(RATIO).text(), '31/42');
+  });
+
+  test('an escaped-pile state renders "Escaped 4/12"', () => {
+    const wrapper = mount(DangerMeter, {
+      props: {
+        progress: makeProgress({
+          menace: 4 / 12,
+          menaceTier: 'calm',
+          schemeLossProgress: 4,
+          schemeLossThreshold: 12,
+          schemeLossKind: 'escaped-pile',
+        }),
+      },
+    });
+
+    assert.equal(wrapper.find(LABEL).text(), 'Escaped');
+    assert.equal(wrapper.find(RATIO).text(), '4/12');
+  });
+
+  test('a kindless projection keeps the generic label rather than guessing', () => {
+    // why: an older fixture or a recorded replay. The meter still renders
+    // (D-24367 §1); only the noun degrades to the generic one.
+    const wrapper = mount(DangerMeter, {
+      props: {
+        progress: makeProgress({
+          menace: 0.5,
+          menaceTier: 'rising',
+          schemeLossProgress: 4,
+          schemeLossThreshold: 8,
+        }),
+      },
+    });
+
+    assert.equal(wrapper.find(LABEL).text(), 'Scheme');
+  });
+
+  test('AC-10: the tier still comes from the projection, even beside a hero-deck kind', () => {
+    // why: re-proves D-24367 §2 against the NEW input. A 31/42 hero-deck state
+    // is `critical` under the engine's own bands, and the projection here
+    // deliberately says `calm`. If the component ever re-derived a tier from the
+    // kind and the ratio — the obvious shortcut once it has both — this is the
+    // test that catches it.
+    const wrapper = mount(DangerMeter, {
+      props: {
+        progress: makeProgress({
+          menace: 31 / 42,
+          menaceTier: 'calm',
+          schemeLossProgress: 31,
+          schemeLossThreshold: 42,
+          schemeLossKind: 'hero-deck',
+        }),
+      },
+    });
+
+    const meter = wrapper.find(METER);
+    assert.equal(meter.attributes('data-tier'), 'calm');
+    assert.equal(meter.classes().includes('danger-meter--calm'), true);
+    assert.equal(meter.classes().includes('danger-meter--critical'), false);
+    // the label and ratio still describe the state it was given
+    assert.equal(wrapper.find(LABEL).text(), 'Heroes');
+    assert.equal(wrapper.find(RATIO).text(), '31/42');
+  });
+
+  test('the accessible text names the same quantity as the visible label', () => {
+    const wrapper = mount(DangerMeter, {
+      props: {
+        progress: makeProgress({
+          menace: 0.25,
+          menaceTier: 'calm',
+          schemeLossProgress: 3,
+          schemeLossThreshold: 12,
+          schemeLossKind: 'wound-stack',
+        }),
+      },
+    });
+
+    assert.equal(wrapper.find(LABEL).text(), 'Wounds');
+    assert.equal(
+      wrapper.find(METER).attributes('aria-label')?.includes('3 of 12 wounds'),
+      true,
+    );
   });
 });
