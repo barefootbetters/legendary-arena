@@ -37398,3 +37398,48 @@ Those tests have been running against structurally invalid game states and
 passing, for as long as the fields have existed.
 
 _Active 2026-08-17 — landed at WP-563 execution (EC-598). `packages/game-engine/tsconfig.test.json` + the `typecheck:tests` script shipped; **703 errors / 75 files before, 674 / 74 after**. §1 held: `pnpm -r build` output byte-identical (744 dist files, sha256 before/after) and `tsconfig.json` untouched. §2 held: **CI wiring deferred**, recorded in `STATUS.md` so its absence is not later read as an oversight. §3 held: zero `any` / suppression pragmas / production-type widenings in the diff (AC-6 pins zero non-test `src` files). §4 held: two classes fixed (the drift-pin fixtures and the whole `TS2304` class, which proved to be **27 errors in one file** — `uiState.filter.test.ts` annotating with `CardExtId` / `LegendaryGameState` without importing either, so each silently degraded to `any`), the remaining four classes recorded as a sized `WORK_INDEX.md` backlog rather than swept. The drift-pin restoration was **mutation-proven**, not asserted: renaming `UIProgressCounters.bystandersRescued` drove `TS2353` at the `satisfies` pin and restoring it returned the file to clean — before this packet the same rename produced no signal. **One correction to the draft's own numbers, recorded rather than quietly carried:** the draft-time scaffold reported 692 errors / 110 files and predicted the `TS2345` mock-ctx class was "159 errors in 2 files"; the execution re-derivation found **180 errors across 17 files**. The EC required re-deriving for exactly this reason, and the next packet should scaffold its single-root-cause premise rather than inherit it._
+
+### D-24378 — A partial mock of a framework interface is not a smaller mock, it is an untyped one
+
+`packages/game-engine`'s mock move contexts implement boardgame.io's plugin
+APIs **partially**: `events` carries `{ endTurn, setPhase, endGame }` against an
+`EventsAPI` of eight members, and `random` carries `{ Shuffle }` against a
+`RandomAPI` of eight. Those literals have been structurally invalid for as long
+as the interfaces have had members the engine does not use, and nothing noticed,
+because engine test files were never compiled before WP-563 (D-24372). Locked:
+
+1. **The forbidden members THROW; they do not no-op.** Five `EventsAPI` members
+   (`endPhase`, `endStage`, `pass`, `setActivePlayers`, `setStage`) and seven
+   `RandomAPI` members (`D4`, `D6`, `D10`, `D12`, `D20`, `Die`, `Number`) are
+   exactly the calls `.claude/rules/architecture.md` forbids the engine from
+   making — verified by grep at draft time: non-test engine source uses only
+   `events.endTurn` (47), `events.setPhase` (9) and `random.Shuffle` (65).
+   Stubbing them to throw makes the completed type surface double as a **runtime
+   assertion** of the Phase & Turn Transitions and Determinism rules. A no-op
+   stub satisfies the compiler while leaving the violation silent, which is
+   precisely the failure D-24372 §3 exists to stop.
+2. **Typecheck failures against a framework interface are LAYERED, and an error
+   count is therefore not a progress signal mid-fix.** `tsc` reports only the
+   first incompatible property. Completing `events` across a file leaves the
+   total **unchanged** and merely re-points the message at `random`. This is
+   recorded because the natural reading of "I fixed it and nothing moved" is
+   "the premise was wrong" — and here that reading is false and would abandon a
+   correct fix one step from working.
+3. **Raw error counts are a misleading size signal; size by DEFECT SITE.**
+   Observed at draft time: completing `events` **and** `random` in two helper
+   literals in two files moved the gate **674 → 606**. Sixty-eight errors from
+   two edits, because the errors were *call sites* of per-file helpers. Future
+   backlog rows in this arc size by the number of defect sites, not by the
+   number of diagnostics.
+4. **`packages/game-engine/src/test/` is production-reachable and ships in
+   `dist`.** The base `tsconfig.json` excludes only `src/**/*.test.ts`, and
+   `src/replay/replay.execute.ts` and `src/replay/buildSnapshotSequence.ts`
+   import `makeMockCtx` **at runtime**, using its reverse-shuffle as the replay
+   pipeline's deterministic RNG. So `src/test/` may not be excluded from the
+   build without breaking replay, `mockCtx.ts` is edited only by a packet
+   willing to own a determinism surface, and a shared test-support module
+   belongs in a **sibling** file. The cost is accepted and stated rather than
+   hidden: `dist` gains exactly the four `mockMoveContext.*` files, enumerated
+   file-by-file, and any fifth changed file is a STOP condition.
+
+_Drafted 2026-08-17; not yet landed. Flips to Active at WP-569 execution (EC-604)._
