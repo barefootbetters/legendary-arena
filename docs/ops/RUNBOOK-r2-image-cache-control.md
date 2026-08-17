@@ -1,4 +1,10 @@
-# Operator Runbook — Immutable `Cache-Control` on R2 Card Images
+# Operator Runbook — `Cache-Control` on R2 Card Images and Audio
+
+> **Scope note (2026-08-17):** this runbook began as the card-image `immutable`
+> change (§1–§3) and now also covers the **audio** prefixes (§4), which take the
+> *opposite* value — a short revalidatable TTL, because audio filenames are fixed and
+> replaced in place. Read [§The immutable scope](#the-immutable-scope-read-before-running-anything)
+> before running any command: the two cases are not interchangeable.
 
 **Purpose:** Card images on `images.legendary-arena.com` (the Cloudflare R2
 `legendary-images` bucket) are served today with **no `Cache-Control` header** and
@@ -88,7 +94,8 @@ The `legendary-images` bucket holds several prefixes with **different mutability
 | `{setAbbr}/{setAbbr}-{ribbon}-{slug}.webp` | **Immutable** — filename is content-addressing; new art = new slug/set = new URL | **YES** — this runbook's target |
 | `avatars/{accountId}.webp` | **Mutable** — a user re-uploading their avatar overwrites the **same key** with new bytes | **NO** — `immutable` would serve the old avatar forever |
 | `metadata/{abbr}.json`, `metadata/sets.json`, … | **Mutable** — re-synced by hand when card data changes | **NO** — the Registry Viewer would read stale data |
-| `audio/…`, `themes/…`, `legends/…` | Out of scope here (own delivery story; audio per D-24219) | — leave as-is |
+| `audio/sound-effects/…`, `audio/music/…` | **Mutable** — fixed filenames (`play-card.mp3`, `menace-calm.mp3`) replaced in place when a clip is re-cut | **NO** — see §4; they need a *short revalidatable* TTL, not `immutable` |
+| `themes/…`, `legends/…` | Out of scope here (own delivery story) | — leave as-is |
 
 Every command below is **scoped to the per-set card-image prefixes** and explicitly
 excludes `avatars/`, `metadata/`, `audio/`, `themes/`, `legends/`. Do not run an
@@ -96,8 +103,13 @@ unscoped, whole-bucket metadata rewrite.
 
 > **Note:** avatars and metadata still deserve a *revalidatable* cache
 > (e.g. `public, max-age=300, must-revalidate`) rather than nothing — but that is a
-> **separate, out-of-scope** decision. This runbook only makes the safe, high-leverage
-> card-image change. Do not fold the mutable prefixes in.
+> **separate, out-of-scope** decision. Steps 1–3 only make the safe, high-leverage
+> card-image change. Do not fold the mutable prefixes into them.
+>
+> The **audio** prefixes are the one mutable case now handled here, in **§4** — added
+> 2026-08-17 after a replaced music loop served stale to every listener. Its command
+> is separately scoped and uses a short revalidatable TTL, never `immutable`. Avatars
+> and `metadata/` remain open and would follow the same §4 shape.
 
 ## Apply
 
@@ -234,6 +246,74 @@ curl -s -o /dev/null -D - https://images.legendary-arena.com/avatars/<someAccoun
 Then flip the `Status` lines in this runbook's companion records to fully applied:
 [`OUT-OF-BAND-SETTINGS.md`](./OUT-OF-BAND-SETTINGS.md) and the WP-410 AC-10 line in
 `docs/ai/STATUS.md`.
+
+### 4. Audio prefixes — a SHORT revalidatable TTL (one-time backfill)
+
+**Different problem, opposite answer.** Card images are content-addressed, so
+`immutable` is safe. Audio clips are the reverse: `audio/sound-effects/play-card.mp3`
+and `audio/music/menace-calm.mp3` are **fixed filenames whose bytes get replaced**
+when a clip is re-cut. `immutable` would pin a stale clip at the edge effectively
+forever. But leaving them with **no** `Cache-Control` — the state they shipped in — is
+also wrong: they inherit Cloudflare's default TTL, so a replacement serves the old
+audio for an unpredictable stretch with no signal that anything is wrong.
+
+> **This is not hypothetical.** On 2026-08-17 the adaptive-music loops were replaced
+> with longer 4× versions. The upload succeeded and origin held the new bytes, but
+> the edge served the previous files to every listener until a manual purge. It went
+> unnoticed because the check used was a **HEAD** request — see the Verify section
+> below: Cloudflare answers HEAD from origin while caching GET, so HEAD reported the
+> new object the whole time it was serving the old one.
+
+The target is `public, max-age=300, must-revalidate`: a replacement lands on its own
+within five minutes, and each revalidation is a cheap `304` against the object's
+ETag rather than a re-download.
+
+**New uploads already carry it.** `scripts/upload-move-sfx-to-r2.mjs` sets the header
+via `--header-upload` (default `--cache-control`), and its post-upload verification
+compares the **served byte length** against what was just uploaded, failing with an
+explicit `STALE` diagnosis when the edge is serving a cached copy. Nothing below is
+needed for anything uploaded through that script from 2026-08-17 onward.
+
+**What needs the backfill:** objects uploaded *before* that flag existed — the whole
+of `audio/sound-effects/` (WP-412 event cues, WP-413/425 combo stings, WP-421 move
+SFX). `audio/music/` was already backfilled on 2026-08-17.
+
+An in-place metadata rewrite is the right tool here — it needs **no local copy of the
+audio**, which matters because those source clips are not in the repo (D-24219) and
+may not exist on the operator's disk any more:
+
+```bash
+# why: --metadata-directive REPLACE rewrites metadata in place without re-uploading
+# bytes; --content-type is re-stated because REPLACE drops any header not restated,
+# and audio/mpeg is required for the browser to decode the clip at all.
+# SCOPED to the audio prefix — do not widen this to the bucket root.
+aws s3 cp s3://legendary-images/audio/sound-effects/ s3://legendary-images/audio/sound-effects/ \
+  --recursive \
+  --endpoint-url "https://<ACCOUNT_ID>.r2.cloudflarestorage.com" \
+  --metadata-directive REPLACE \
+  --content-type "audio/mpeg" \
+  --cache-control "public, max-age=300, must-revalidate"
+```
+
+Dry-run first with `--dryrun` and confirm the listing contains only `*.mp3` under
+`audio/sound-effects/`.
+
+**Order matters, and it is the opposite of the intuitive one.** Rewrite the metadata
+**first**, then purge. Purging first leaves a window in which the edge re-caches the
+headerless object, and you are back where you started.
+
+Then purge the affected URLs once (Caching → Configuration → Purge Cache → Custom
+Purge, full `https://` URLs — a bare path silently matches nothing). This is the last
+purge these objects should ever need: once the header is on them, future replacements
+expire on their own.
+
+Verify with a **GET**, never a HEAD, and check the byte length rather than just the
+status:
+
+```bash
+curl -s -o /dev/null -D - https://images.legendary-arena.com/audio/sound-effects/play-card.mp3 | grep -iE 'content-length|cache-control|cf-cache-status'
+# want: cache-control: public, max-age=300, must-revalidate
+```
 
 ## Verify
 
