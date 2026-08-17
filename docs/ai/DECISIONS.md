@@ -37240,3 +37240,56 @@ Locked:
    against their printed card text — effects sourced from `data/cards/core.json`
    rather than the known-divergent keyword blurb — with the miss proven from the
    diagnostics economy rather than asserted.
+
+### D-24375 — A blocked-ability log line names the condition that failed; an unrecognized condition reads as a defect, not as gameplay
+
+**Drafted 2026-08-17; not yet landed. Flips to Active at WP-566 execution (EC-601).**
+
+One generic line — *"a play condition (such as Hero class or team synergy) was not
+met"* — stood in for every hero-hook condition failure. Counted at source it is
+right for **2 of the 4** live condition types and wrong for the two
+numeric-threshold ones. Observed firing **8 times** on Surge of Power (printed
+gate: *"If you made 8 or more recruit this turn"* — no class or team gate at all)
+in the same match where it was simultaneously **correct** for three `[hc:*]`-gated
+cards.
+
+Locked:
+
+1. **A blocked-ability line NAMES THE CONDITION THAT FAILED.** The log is a
+   player's only window into why an ability did nothing, and a message that
+   confidently misattributes the cause is worse than a vague one — it sends the
+   reader to the wrong card property. For a multi-condition hook the named
+   condition is the **first failing** one, matching `evaluateAllConditions`'
+   existing short-circuit order so the two cannot drift.
+2. **It survived because it is right often enough to look right.** Two of four
+   types, and three correct firings in the very match that exposed it. Recorded
+   because that is the property that makes a misattributing message durable: no
+   single observation refutes it.
+3. **An UNRECOGNIZED condition type must not be reported as an unmet one.**
+   `evaluateCondition`'s `default` returns `false` and `HeroCondition` is a
+   stringly-typed `{ type: string; value: string }`, so a data or parse defect
+   currently renders identically to a working synergy gate. The unrecognized path
+   gets its own wording naming the offending `type`. **Behaviour is unchanged —
+   `default: false` stays**, because firing an effect whose gate cannot be
+   evaluated is strictly worse than blocking it. Only the log distinguishes them.
+   Since the describer cannot be compiler-exhaustive over a bare `string`, this
+   fallback is also the guarantee that a future condition type added without a
+   describer case surfaces **loudly** rather than as a plausible wrong sentence.
+4. **The public evaluators stay byte-unchanged.** `evaluateCondition` and
+   `evaluateAllConditions` are exported from `index.ts`, so the fix arrives as a
+   **sibling** function rather than a signature change.
+5. **No gate evaluation changes.** Nothing about *whether* an ability fires moves;
+   this is a log-fidelity decision only.
+6. **The two hash oracles treat `messages` OPPOSITELY, and both are safe.** The
+   sentinel `finalStateHash` uses `hashGameState`, which **excludes** `messages`
+   (D-24081). `PRE_WP080_HASH` uses `computeStateHash`, which **does** hash them —
+   but replays an empty move list, so no blocked message is emitted. Recorded
+   because a packet assuming a single shared disposition would have been right only
+   by luck. Related and deliberately **not** a blocker: message text therefore sits
+   inside the competitive anti-tamper hash, which is safe because
+   `competition.logic.ts` computes both sides of its only comparison at submission
+   time under the same code, and no stored `state_hash` is ever re-verified against
+   a fresh replay.
+7. **WP-566 sequences BEFORE WP-568.** WP-568's wait-and-see semantics introduce a
+   *"not yet met"* state that must not reuse this wording; the two share the emit
+   site and the evaluator module and must not execute concurrently.
