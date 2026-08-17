@@ -67,9 +67,33 @@ arena-client **1335 -> 1351 / 0 fail**; `arena-client typecheck` 0;
 across 66 projected files. `packages/lagn-spec/schemas/lagn-v1.json` showed
 line-ending-only churn after the build and was restored, not committed.
 
-**D-24026 - operator-pending.** AC-12 needs the deployed bundle: a live Civil War
-match showing `Heroes N/42` tracking the deck and `Twists: N/8`. Everything else
-(AC-1..AC-11) is demonstrated with observed output.
+**D-24026 - VERIFIED LIVE 2026-08-17.** AC-12 confirmed on the deployed bundle
+from a real solo Red Skull / Super Hero Civil War match at `gitSha 47e5162`
+(match `n6HimwWT4gH`), captured via Play Diagnostics. The projection read:
+
+```
+"menace":              0.9523809523809523
+"menaceTier":          "critical"
+"schemeLossKind":      "hero-deck"
+"schemeLossProgress":  40
+"schemeLossThreshold": 42
+"schemeTwistThreshold": 8
+"decks": { "heroDeckCount": 2 }
+```
+
+Every locked value held in production: the denominator is the **42** cards built
+(D-24371 section 4, not the post-HQ 37); the kind is `hero-deck`; and solo
+resolved the twist threshold to **8** rather than the MVP fallback 7 (D-24371
+section 6). 42 built minus 2 remaining = the 40 projected, exactly. The HUD
+rendered `Heroes 40/42` and `Twists: 4/8`.
+
+**The match is also the clearest demonstration of why the packet existed.** The
+player won on turn 19 with a **2-card Hero Deck** - one Scheme Twist from losing
+outright, since that twist's five HQ refills would have drained the deck to zero
+and fired Evil Wins. Under the superseded D-24366 section 5 behaviour the meter
+would have read 4 twists against the fallback 7 = `0.571`, banding as **rising**
+and displaying a bare `4`. It read **critical at 0.95**. The old meter would have
+shown a calm-ish reading to a player one card-flip from defeat.
 
 **Deliberately not fixed** (both observed in the same match, both recorded in the
 WP's Notes): the `Surge of Power` block message, which logs "a play condition
