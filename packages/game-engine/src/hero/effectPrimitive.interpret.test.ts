@@ -417,7 +417,12 @@ describe('interpretHeroPrimitiveEffect — WP-317 grant log', () => {
     const G = makeState({ hq: [] });
     G.playerZones['0']!.deck = ['berserk-fodder'] as unknown as typeof G.playerZones['0']['deck'];
     (G.cardStats as Record<string, { attack: number }>)['berserk-fodder'] = { attack: 4 };
-    interpretHeroPrimitiveEffect(G, CTX, '0', HERO_COMPOSITION_MARKERS.berserk, BERSERK);
+    // why: HERO_COMPOSITION_MARKERS is Record<string, EffectNode>, so an index
+    // lookup is EffectNode | undefined under noUncheckedIndexedAccess. Assert the
+    // row exists rather than assuming it — a renamed marker should fail loudly here.
+    const berserkMarker = HERO_COMPOSITION_MARKERS.berserk;
+    assert.ok(berserkMarker !== undefined, 'the berserk composition marker must exist');
+    interpretHeroPrimitiveEffect(G, CTX, '0', berserkMarker, BERSERK);
     assert.ok(
       G.messages.some((entry) => entry.text === `Player 0's ${BERSERK} (${BERSERK}) gained +4 attack.`),
       'the nested gain-resource in the sequence names the sequence source card',

@@ -18,6 +18,7 @@ import type { LegendaryGameState } from '../types.js';
 import { makeMockCtx } from '../test/mockCtx.js';
 import { buildInitialGameState } from '../setup/buildInitialGameState.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
+import type { CardRegistryReader } from '../matchSetup.validate.js';
 
 /**
  * Creates a minimal MatchSetupConfig for ordering tests.
@@ -39,8 +40,12 @@ function createTestConfig(): MatchSetupConfig {
 /**
  * Creates a minimal mock registry for ordering tests.
  */
-function createMockRegistry() {
-  return { listCards: () => [] };
+function createMockRegistry(): CardRegistryReader {
+  // why: implements the FULL reader interface. A partial mock is not a smaller
+  // mock, it is a structurally invalid one (WP-569 / D-24378) — and buildInitialGameState
+  // silently SKIPS builders for an incomplete reader, so a narrow mock here would
+  // quietly test a degraded setup path.
+  return { listCards: () => [], listSets: () => [], getSet: () => undefined };
 }
 
 /**

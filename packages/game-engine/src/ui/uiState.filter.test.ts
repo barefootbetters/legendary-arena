@@ -1417,7 +1417,10 @@ describe('menace signal survives the audience filter (WP-557 / D-24366)', () => 
     const registry = createMockRegistry();
     const gameState = buildInitialGameState(config, registry, makeMockCtx());
     gameState.counters.schemeTwistCount = 5;
-    const uiState = buildUIState(gameState, makeMockCtx());
+    // why: buildUIState takes a UIBuildContext (phase/turn/currentPlayer), NOT the
+    // setup context. Passing makeMockCtx() here fed it undefined for all three;
+    // the assertions only read progress, so it passed. Surfaced by the WP-563 gate.
+    const uiState = buildUIState(gameState, mockCtx);
 
     assert.notEqual(uiState.progress.menace, 0);
 
@@ -1464,7 +1467,10 @@ describe('scheme-faithful loss fields survive the audience filter (WP-562 / D-24
     gameState.selection.schemeId = 'core/super-hero-civil-war';
     gameState.schemeLossPileSetupSize = 42;
     gameState.heroDeck = ['a', 'b', 'c'];
-    const uiState = buildUIState(gameState, makeMockCtx());
+    // why: buildUIState takes a UIBuildContext (phase/turn/currentPlayer), NOT the
+    // setup context. Passing makeMockCtx() here fed it undefined for all three;
+    // the assertions only read progress, so it passed. Surfaced by the WP-563 gate.
+    const uiState = buildUIState(gameState, mockCtx);
 
     assert.equal(uiState.progress.schemeLossKind, 'hero-deck');
 
