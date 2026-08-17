@@ -32,6 +32,8 @@ import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
 import { initializeCity, initializeHq } from '../board/city.logic.js';
 import { buildInitialGameState } from '../setup/buildInitialGameState.js';
+import { makeMockMoveContext } from '../test/mockMoveContext.js';
+import type { MockMoveContext } from '../test/mockMoveContext.js';
 
 // ---------------------------------------------------------------------------
 // Test hook infrastructure
@@ -180,16 +182,12 @@ function createMockGameState(options: {
  * Uses makeMockCtx for the random provider and adds required boardgame.io
  * move context fields.
  */
-function createMockMoveContext(gameState: LegendaryGameState) {
-  const mockCtx = makeMockCtx({ numPlayers: 1 });
-  return {
-    G: gameState,
-    ctx: { ...mockCtx.ctx, currentPlayer: '0', phase: 'play', turn: 1, numMoves: 0, playOrder: ['0'], playOrderPos: 0, activePlayers: null },
-    random: mockCtx.random,
-    events: { endTurn: () => {}, setPhase: () => {}, endGame: () => {} },
-    playerID: '0' as string,
-    log: { setMetadata: () => {} },
-  };
+function createMockMoveContext(gameState: LegendaryGameState): MockMoveContext {
+  // why: delegates to the shared builder so this mock carries the COMPLETE
+  // boardgame.io plugin-API surface. The local literal it replaced implemented
+  // only the members the engine calls, which is a structurally invalid mock
+  // rather than a smaller one (WP-569 / D-24378).
+  return makeMockMoveContext(gameState);
 }
 
 // ---------------------------------------------------------------------------
@@ -1365,24 +1363,7 @@ describe('revealVillainCard — WP-200 ambushResolved emission', () => {
     };
     gameState.piles.wounds = ['w0' as CardExtId];
 
-    const setupCtx = makeMockCtx({ numPlayers: 1 });
-    const moveContext = {
-      G: gameState,
-      ctx: {
-        ...setupCtx.ctx,
-        currentPlayer: '0',
-        phase: 'play',
-        turn: 1,
-        numMoves: 0,
-        playOrder: ['0'],
-        playOrderPos: 0,
-        activePlayers: null,
-      },
-      random: setupCtx.random,
-      events: { endTurn: () => {}, setPhase: () => {}, endGame: () => {} },
-      playerID: '0' as string,
-      log: { setMetadata: () => {} },
-    };
+    const moveContext = makeMockMoveContext(gameState);
     revealVillainCard(moveContext);
 
     assert.equal(
@@ -1422,24 +1403,7 @@ describe('revealVillainCard — WP-200 ambushResolved emission', () => {
       victory: [],
     };
 
-    const setupCtx = makeMockCtx({ numPlayers: 1 });
-    const moveContext = {
-      G: gameState,
-      ctx: {
-        ...setupCtx.ctx,
-        currentPlayer: '0',
-        phase: 'play',
-        turn: 1,
-        numMoves: 0,
-        playOrder: ['0'],
-        playOrderPos: 0,
-        activePlayers: null,
-      },
-      random: setupCtx.random,
-      events: { endTurn: () => {}, setPhase: () => {}, endGame: () => {} },
-      playerID: '0' as string,
-      log: { setMetadata: () => {} },
-    };
+    const moveContext = makeMockMoveContext(gameState);
     revealVillainCard(moveContext);
 
     // why: WP-200 — Ambush emission is gated by `hasAmbush`; without the
@@ -1682,23 +1646,7 @@ describe('revealVillainCard — real-registry villain end-to-end (WP-186 §Files
     const p0DiscardBefore = gameState.playerZones['0']!.discard.length;
     const p1DiscardBefore = gameState.playerZones['1']!.discard.length;
 
-    const moveContext = {
-      G: gameState,
-      ctx: {
-        ...setupCtx.ctx,
-        currentPlayer: '0',
-        phase: 'play',
-        turn: 1,
-        numMoves: 0,
-        playOrder: ['0', '1'],
-        playOrderPos: 0,
-        activePlayers: null,
-      },
-      random: setupCtx.random,
-      events: { endTurn: () => {}, setPhase: () => {}, endGame: () => {} },
-      playerID: '0' as string,
-      log: { setMetadata: () => {} },
-    };
+    const moveContext = makeMockMoveContext(gameState, { numPlayers: 2 });
     revealVillainCard(moveContext);
 
     assert.ok(
@@ -1783,23 +1731,7 @@ describe('revealVillainCard — real-registry villain end-to-end (WP-186 §Files
     const p0DiscardBefore = gameState.playerZones['0']!.discard.length;
     const p1DiscardBefore = gameState.playerZones['1']!.discard.length;
 
-    const moveContext = {
-      G: gameState,
-      ctx: {
-        ...setupCtx.ctx,
-        currentPlayer: '0',
-        phase: 'play',
-        turn: 1,
-        numMoves: 0,
-        playOrder: ['0', '1'],
-        playOrderPos: 0,
-        activePlayers: null,
-      },
-      random: setupCtx.random,
-      events: { endTurn: () => {}, setPhase: () => {}, endGame: () => {} },
-      playerID: '0' as string,
-      log: { setMetadata: () => {} },
-    };
+    const moveContext = makeMockMoveContext(gameState, { numPlayers: 2 });
     revealVillainCard(moveContext);
 
     assert.equal(

@@ -19,6 +19,8 @@ import { makeMockCtx } from '../test/mockCtx.js';
 import { buildDefaultHookDefinitions } from '../rules/ruleRuntime.impl.js';
 import { initializeCity, initializeHq } from '../board/city.logic.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
+import { makeMockMoveContext } from '../test/mockMoveContext.js';
+import type { MockMoveContext } from '../test/mockMoveContext.js';
 
 // ---------------------------------------------------------------------------
 // Mock G factory
@@ -101,25 +103,12 @@ function createMockGameState(options?: {
 /**
  * Creates a mock MoveContext for fightMastermind.
  */
-function createMockMoveContext(gameState: LegendaryGameState) {
-  const mockCtx = makeMockCtx({ numPlayers: 1 });
-  return {
-    G: gameState,
-    ctx: {
-      ...mockCtx.ctx,
-      currentPlayer: '0',
-      phase: 'play',
-      turn: 1,
-      numMoves: 0,
-      playOrder: ['0'],
-      playOrderPos: 0,
-      activePlayers: null,
-    },
-    random: mockCtx.random,
-    events: { endTurn: () => {}, setPhase: () => {}, endGame: () => {} },
-    playerID: '0' as string,
-    log: { setMetadata: () => {} },
-  };
+function createMockMoveContext(gameState: LegendaryGameState): MockMoveContext {
+  // why: delegates to the shared builder so this mock carries the COMPLETE
+  // boardgame.io plugin-API surface. The local literal it replaced implemented
+  // only the members the engine calls, which is a structurally invalid mock
+  // rather than a smaller one (WP-569 / D-24378).
+  return makeMockMoveContext(gameState);
 }
 
 // ---------------------------------------------------------------------------

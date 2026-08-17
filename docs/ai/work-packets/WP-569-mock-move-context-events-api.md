@@ -198,11 +198,11 @@ do not apply the widening.
 
 ## Definition of Done
 
-- [ ] AC-1..AC-10 demonstrated with observed output.
-- [ ] D-24378 landed **Active**.
-- [ ] `WORK_INDEX.md` `[x]` + refreshed backlog inventory counts.
-- [ ] `EC_INDEX.md` `Done`; mindmap `✅`; `roadmap:counts:check` 0.
-- [ ] `STATUS.md` — before/after error counts, the `dist` delta stated
+- [x] AC-1..AC-10 demonstrated with observed output.
+- [x] D-24378 landed **Active**.
+- [x] `WORK_INDEX.md` `[x]` + refreshed backlog inventory counts.
+- [x] `EC_INDEX.md` `Done`; mindmap `✅`; `roadmap:counts:check` 0.
+- [x] `STATUS.md` — before/after error counts, the `dist` delta stated
       explicitly (it is NOT byte-identical this time, by design), and a
       restatement that CI wiring remains deferred.
 

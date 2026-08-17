@@ -193,7 +193,12 @@ describe('UIState progress counters (WP-067)', () => {
 });
 
 describe('UIState.progress menace signal (WP-557 / D-24366)', () => {
-  const mockCtx = makeMockCtx();
+  // why: this block deliberately has NO local mockCtx. Two describe blocks
+  // here previously declared `const mockCtx = makeMockCtx()`, which SHADOWED
+  // the module-level UIBuildContext mock above and fed buildUIState a setup
+  // context with no phase/turn/currentPlayer. The tests still passed because
+  // they assert only on result.progress. Surfaced by the WP-563 typecheck
+  // gate; see WP-569 / D-24378.
 
   it('populates all four menace fields on a real built state', () => {
     // why: the fields are OPTIONAL in the type only so arena-client fixtures
@@ -261,7 +266,6 @@ describe('UIState.progress menace signal (WP-557 / D-24366)', () => {
 });
 
 describe('UIState.progress scheme-faithful loss (WP-562 / D-24371)', () => {
-  const mockCtx = makeMockCtx();
 
   /**
    * Repoints a built state at a scheme and gives it a depletion capture.

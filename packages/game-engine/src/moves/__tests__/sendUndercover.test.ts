@@ -9,7 +9,8 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { sendUndercover } from '../sendUndercover.js';
 import type { LegendaryGameState } from '../../types.js';
-import { makeMockCtx } from '../../test/mockCtx.js';
+import { makeMockMoveContext } from '../../test/mockMoveContext.js';
+import type { MockMoveContext } from '../../test/mockMoveContext.js';
 
 interface SendUndercoverStateOptions {
   hand?: string[];
@@ -78,25 +79,12 @@ function createSendUndercoverState(options?: SendUndercoverStateOptions): Legend
 }
 
 /** Builds a sendUndercover move context bound to player 0. */
-function createMoveContext(gameState: LegendaryGameState) {
-  const mockCtx = makeMockCtx({ numPlayers: 1 });
-  return {
-    G: gameState,
-    ctx: {
-      ...mockCtx.ctx,
-      currentPlayer: '0',
-      phase: 'play',
-      turn: 1,
-      numMoves: 0,
-      playOrder: ['0'],
-      playOrderPos: 0,
-      activePlayers: null,
-    },
-    random: mockCtx.random,
-    events: { endTurn: () => {}, setPhase: () => {}, endGame: () => {} },
-    playerID: '0' as string,
-    log: { setMetadata: () => {} },
-  };
+function createMoveContext(gameState: LegendaryGameState): MockMoveContext {
+  // why: delegates to the shared builder so this mock carries the COMPLETE
+  // boardgame.io plugin-API surface. The local literal it replaced implemented
+  // only the members the engine calls, which is a structurally invalid mock
+  // rather than a smaller one (WP-569 / D-24378).
+  return makeMockMoveContext(gameState);
 }
 
 describe('sendUndercover move', () => {

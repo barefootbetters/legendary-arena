@@ -7,6 +7,94 @@
 
 ## Current State
 
+### WP-569 - Mock Move-Context EventsAPI / RandomAPI Completion - DONE (2026-08-17)
+
+Packet 2 of the WP-563 engine-test-typecheck arc. The engine's mock move
+contexts implemented boardgame.io's plugin APIs **partially** - `events` carried
+3 of 8 members, `random` 1 of 8. That is not a smaller mock; it is a
+structurally invalid one, and it went unnoticed for as long as the interfaces
+have had members the engine does not use, because engine test files were never
+compiled before WP-563.
+
+**Gate: 674 errors before, 498 after. `TS2345` 180 -> 4.**
+
+**The draft's two scaffold-derived predictions both held.** The eleven per-file
+helper edits alone cleared **153 errors** (674 -> 521), confirming the errors
+were call sites rather than defect sites. And the layered-failure warning was
+load-bearing: completing `events` alone moves the count by **zero**, because
+`tsc` reports only the first incompatible property and simply re-points the
+message at `random`. An executor without that warning would have read a correct
+fix as a dead end.
+
+**One new shared module.** `packages/game-engine/src/test/mockMoveContext.ts`
+builds the complete surface once; eleven per-file helpers and six inline
+literals delegate to it. It sits **beside** `mockCtx.ts` rather than inside it
+because `mockCtx.ts` is production-reachable - `replay.execute.ts` and
+`buildSnapshotSequence.ts` import it at runtime for its reverse-shuffle RNG.
+
+**The twelve forbidden members throw rather than no-op**, so the completed type
+surface doubles as a runtime assertion of the architecture: phase changes go
+through `setPhase`, turn changes through `endTurn`, the turn stage lives in
+`G.currentStage`, and all randomness goes through `Shuffle`. **AC-2 proves this
+rather than claiming it** - six tests exercise the stubs, and the suite was
+**mutation-verified**: reverting `events.pass` to a no-op fails the test, and
+restoring it passes.
+
+**Two real defects surfaced while fixing types, both kept with a `// why:`.**
+
+- `uiState.build.progress.test.ts` declared `const mockCtx = makeMockCtx()`
+  inside **two** describe blocks, **shadowing** the module-level
+  `UIBuildContext` mock. Twelve `buildUIState` calls were therefore running with
+  **undefined `phase`, `turn` and `currentPlayer`** - and passing, because they
+  assert only on `result.progress`. The same bug appeared twice more in
+  `uiState.filter.test.ts`, passing `makeMockCtx()` straight into `buildUIState`.
+- `heroAbility.setup.test.ts` asserts `!hook.keywords.includes('spectrum')`.
+  The assertion is semantically right - Spectrum is a condition, not a keyword -
+  but `'spectrum'` is not a `HeroKeyword`, so the type system would not let the
+  test ask the question it exists to ask.
+
+**THE FINDING: four `TS2345` remain, deliberately unfixed.**
+`buildInitialGameState.loadout.test.ts` passes a deliberately narrow
+`{ listCards }` registry to prove the `buildVillainDeck skipped` diagnostic
+fires. Production code fully defends against `listSets` / `getSet` being absent
+- its diagnostic text literally advises *"or that the test mock implements the
+full reader interface"* - while `CardRegistryReader` declares **both required**.
+The declared type and the runtime contract disagree, and the four errors are the
+type system correctly refusing to express a state production explicitly handles.
+Reconciling them means widening a production type, which EC-604 guardrail 5
+forbids. It is the next packet's question: either the members become optional
+(matching reality, and the existing `playerCountSetup?` precedent) or the
+defensive branches are dead code. **This is recorded as a finding, not counted
+as a shortfall** - AC-1 asked for zero, and stopping at four with the reason
+written down is the correct outcome under the packet's own rules.
+
+**`dist` is NOT byte-identical this time, and that is by design.** WP-563
+established the byte-identical invariant; this packet deliberately relaxes it by
+exactly one module. The engine `dist` goes **744 -> 748 files**, the delta
+enumerated as exactly `mockMoveContext.{js,d.ts,js.map,d.ts.map}`, with **no
+existing file changed**. Please do not read this later as a regression against
+WP-563 - a fifth changed file would have been the STOP condition, and none
+appeared.
+
+**Verification.** AC-1 gate re-run and recorded. AC-2 mutation-demonstrated.
+AC-3 `dist` delta enumerated. AC-4 zero `any` / `@ts-ignore` /
+`@ts-expect-error`, and zero `as unknown as` gymnastics on the overloaded
+`RandomAPI` members. AC-5 base `tsconfig.json` untouched. AC-6 the only non-test
+`src` file in the diff is the new builder; `mockCtx.ts` is absent. AC-7
+game-engine **2734 -> 2740 / 0 fail** (the six new AC-2 tests; nothing removed
+or weakened). AC-8 no determinism surface touched, both sentinel hashes hold.
+`pnpm -r --no-bail test`: **0 failures across all 12 packages.** D-24378
+**Active**.
+
+**CI wiring remains deferred** (D-24372 section 2). 498 errors still stand;
+the wiring lands when the count reaches zero. Its absence is the recorded
+decision, not an oversight.
+
+**User-Visible Surface: none - infrastructure.** The D-24026 gate **inverts**:
+nothing is observable on a deployed surface and no live check is owed.
+
+---
+
 ### WP-565 - VP Icon Marker Mismap - DONE (2026-08-17)
 
 35 ability texts across 12 sets told players the wrong resource. Supreme HYDRA

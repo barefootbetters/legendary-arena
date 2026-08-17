@@ -1665,7 +1665,12 @@ describe('buildHeroAbilityHooks Spectrum conditional keyword (WP-280 / D-24055)'
 
     // Spectrum is a condition, not a keyword
     assert.ok(hook.keywords !== undefined, 'keywords should be defined');
-    assert(!hook.keywords.includes('spectrum'), 'spectrum should NOT be in keywords');
+    // why: 'spectrum' is deliberately NOT a member of HeroKeyword, which makes it an
+    // illegal argument to HeroKeyword[].includes — the type system will not let this
+    // test ask the question it exists to ask. Widening to string[] (always safe, since
+    // HeroKeyword is a string union) lets the negative assertion stand without a cast.
+    const keywordsAsStrings: string[] = hook.keywords;
+    assert(!keywordsAsStrings.includes('spectrum'), 'spectrum should NOT be in keywords');
     // The 'conditional' keyword is added because conditions are present
     assert(hook.keywords.includes('conditional'), 'conditional keyword added when conditions present');
     assert(hook.keywords.includes('draw'), 'draw keyword added from effect markup');
