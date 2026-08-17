@@ -177,19 +177,26 @@ function makeRuntimeObserved(
   };
 }
 
-test('useInPlayCoverage credits a fixed mechanic from the committed seed (dodge 37 → 26.4%)', () => {
-  // The committed seed is the 14-mechanic / 140-obs denominator. With dodge flipped
-  // executable in the injected ledger (and absent from live — a "fixed" mechanic that
-  // vanished from the sweep), its baseline peak of 37 is credited: 37 / 140 = 26.4%.
+test('useInPlayCoverage credits a fixed mechanic from the committed seed', () => {
+  // why (WP-561 / D-24370): with dodge flipped executable in the injected ledger (and
+  // absent from live — a "fixed" mechanic that vanished from the sweep), its baseline
+  // peak of 37 is credited. The TITLE no longer embeds the figures: they move whenever
+  // the committed seed is rebuilt, and a title carrying stale numbers is a maintenance
+  // trap (it read "dodge 37 -> 26.4%" against the pre-WP-453 14-mechanic / 140-obs seed).
+  // 2026-08-16 (WP-561): the seed was rebuilt against the post-WP-453 sweep — 35
+  // mechanics / 2285 obs — so the denominator is now the honest one. resolvedObs is
+  // UNCHANGED at 37; percentResolved fell 26.4 -> 1.6 purely because the denominator
+  // grew. Nothing became less covered. D-24050 defines the metric; D-24370 adds the
+  // rebuild trigger that this staleness violated.
   const baseline = baselineSeed as unknown as InPlayHollowBaseline;
   const view = useInPlayCoverage({
     baseline,
     ledger: makeLedger([makeRow({ mechanic: 'dodge', status: 'executable' })]),
     runtimeObserved: makeRuntimeObserved({}),
   });
-  assert.equal(view.totalObs.value, 140);
+  assert.equal(view.totalObs.value, 2285);
   assert.equal(view.resolvedObs.value, 37);
-  assert.equal(view.percentResolved.value, 26.4);
+  assert.equal(view.percentResolved.value, 1.6);
 });
 
 test('useInPlayCoverage reads the real committed seed + ledger and computes the in-play coverage snapshot', () => {
@@ -239,4 +246,61 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   assert.equal(view.totalObs.value, 2285);
   assert.equal(view.percentResolved.value, 2.6);
   assert.ok(view.remaining.value.length > 0);
+});
+
+test('a mechanic flipped to executable MOVES its obs into resolvedObs, denominator held', () => {
+  // why (WP-561 / D-24370): THE invariant the baseline rebuild exists for, asserted
+  // directly rather than inferred from a pinned snapshot constant — so the re-pinned
+  // figures above cannot silently stop testing anything.
+  //
+  // A mechanic that gets implemented stops producing hollows and vanishes from the LIVE
+  // sweep. Without a baseline entry it would drop out of BOTH sides: the denominator
+  // shrinks and the work is credited nothing, so the metric would reward a fix by
+  // erasing its evidence. With a baseline entry, peakObs = max(baseline, live) holds the
+  // denominator steady and the obs move from unresolved into resolvedObs.
+  const baseline = makeBaseline({ alpha: 100, beta: 50 });
+
+  // Before: alpha is unsupported and still firing in the live sweep.
+  const before = computeInPlayCoverage(
+    baseline,
+    { alpha: { hitCount: 100 } as RuntimeObservedEntry, beta: { hitCount: 50 } as RuntimeObservedEntry },
+    new Map<string, LedgerStatus>([
+      ['alpha', 'unsupported'],
+      ['beta', 'unsupported'],
+    ]),
+  );
+  assert.equal(before.totalObs, 150, 'denominator is the summed peaks');
+  assert.equal(before.resolvedObs, 0, 'nothing executable yet');
+
+  // After: alpha ships. Status flips to executable AND its live obs disappear.
+  const after = computeInPlayCoverage(
+    baseline,
+    { beta: { hitCount: 50 } as RuntimeObservedEntry },
+    new Map<string, LedgerStatus>([
+      ['alpha', 'executable'],
+      ['beta', 'unsupported'],
+    ]),
+  );
+  assert.equal(after.totalObs, 150, 'the denominator MUST hold — alpha keeps its baseline peak');
+  assert.equal(after.resolvedObs, 100, "alpha's 100 obs MOVED into the numerator");
+  assert.ok(after.percentResolved > before.percentResolved, 'shipping work raises the metric');
+});
+
+test('without a baseline entry a fixed mechanic is ERASED instead of credited', () => {
+  // why (WP-561 / D-24370): the failure mode the rebuild prevents, pinned so a future
+  // change cannot quietly reintroduce it. Same scenario as above, but alpha has no
+  // baseline peak — exactly the pre-rebuild state for teleport / outwit (live 178 / 157,
+  // baseline 0). The denominator shrinks by alpha's obs and the numerator gains nothing.
+  const baselineWithoutAlpha = makeBaseline({ beta: 50 });
+
+  const after = computeInPlayCoverage(
+    baselineWithoutAlpha,
+    { beta: { hitCount: 50 } as RuntimeObservedEntry },
+    new Map<string, LedgerStatus>([
+      ['alpha', 'executable'],
+      ['beta', 'unsupported'],
+    ]),
+  );
+  assert.equal(after.totalObs, 50, 'alpha vanished from the denominator');
+  assert.equal(after.resolvedObs, 0, 'and was credited NOTHING — evidence erased, not rewarded');
 });

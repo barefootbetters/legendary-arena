@@ -2,32 +2,74 @@
   "schemaVersion": 1,
   "generatedAt": "seed",
   "byMechanic": {
+    "abomination": {
+      "peakObs": 29
+    },
     "ambush": {
-      "peakObs": 1
+      "peakObs": 94
+    },
+    "antics": {
+      "peakObs": 16
     },
     "artifact": {
-      "peakObs": 1
+      "peakObs": 169
     },
     "bridge": {
-      "peakObs": 9
+      "peakObs": 17
+    },
+    "clone": {
+      "peakObs": 73
     },
     "conqueror": {
       "peakObs": 12
     },
     "coordinate": {
-      "peakObs": 7
+      "peakObs": 212
     },
     "cyber-mod": {
-      "peakObs": 4
+      "peakObs": 12
+    },
+    "demolish": {
+      "peakObs": 22
     },
     "dodge": {
       "peakObs": 37
     },
+    "endgame": {
+      "peakObs": 29
+    },
+    "heist": {
+      "peakObs": 35
+    },
+    "indigestion": {
+      "peakObs": 32
+    },
     "investigate": {
-      "peakObs": 5
+      "peakObs": 293
+    },
+    "liberate": {
+      "peakObs": 2
+    },
+    "lightshow": {
+      "peakObs": 69
     },
     "moonlight": {
-      "peakObs": 18
+      "peakObs": 293
+    },
+    "outwit": {
+      "peakObs": 157
+    },
+    "phasing": {
+      "peakObs": 86
+    },
+    "rooftops": {
+      "peakObs": 4
+    },
+    "sacrifice": {
+      "peakObs": 7
+    },
+    "savior": {
+      "peakObs": 23
     },
     "shatter": {
       "peakObs": 10
@@ -35,14 +77,35 @@
     "size-changing": {
       "peakObs": 2
     },
-    "sunlight": {
+    "soulbind": {
+      "peakObs": 5
+    },
+    "streets": {
+      "peakObs": 51
+    },
+    "striker": {
       "peakObs": 10
+    },
+    "sunlight": {
+      "peakObs": 109
+    },
+    "teleport": {
+      "peakObs": 178
+    },
+    "transform": {
+      "peakObs": 98
     },
     "undercover": {
       "peakObs": 20
     },
     "unleash": {
       "peakObs": 4
+    },
+    "worthy": {
+      "peakObs": 59
+    },
+    "x-gene": {
+      "peakObs": 16
     }
   }
 }
