@@ -36886,12 +36886,22 @@ the same numbers. Locked:
    `escapeProgress = escapedVillains / ESCAPE_LIMIT` formula predates that
    decision and is corrected in lockstep — shipping it literally would fill a
    meter toward a threshold that no longer ends the game.
-5. **The `pile-depleted` fallback.** A `pile-depleted` condition (Super Hero
-   Civil War's `heroDeck`, Legacy Virus's `wounds`) has no fixed denominator —
-   the loss is "the pile reached zero", whose starting size is not a scheme
-   constant. Such a scheme omits `schemeLossThreshold` and derives `menace` from
-   the twist count against the D-24178 proxy threshold, which is the doom clock
-   those schemes already run on. It MUST NOT invent a denominator.
+5. **~~The `pile-depleted` fallback.~~ SUPERSEDED by D-24371 §1 (WP-562,
+   2026-08-17) — do not follow this clause.** It read: *a `pile-depleted`
+   condition (Super Hero Civil War's `heroDeck`, Legacy Virus's `wounds`) has no
+   fixed denominator — the loss is "the pile reached zero", whose starting size
+   is not a scheme constant. Such a scheme omits `schemeLossThreshold` and
+   derives `menace` from the twist count against the D-24178 proxy threshold.*
+   **Why it was wrong:** the starting size is not in the scheme *config*, but it
+   **is** knowable at setup, where the pile is built — "not in the config" was
+   conflated with "unknowable". The clause shipped to players: a Super Hero
+   Civil War match whose printed Evil Wins is *"If the Hero Deck runs out"*
+   rendered a meter counting twists (`menace 0.4286` = 3/7, observed live at
+   `gitSha 8eb8b0c` while the Hero Deck sat at 11 cards). D-24371 captures the
+   setup size into `G` lazily, so these schemes measure their own depletion.
+   The "MUST NOT invent a denominator" instinct survives and is honoured by the
+   replacement — a *captured* denominator is measured, not invented. §1, §2,
+   §3, §4 and §6 of this entry are **unaffected and still Active**.
 6. **Type-optional, always populated.** The four `UIProgressCounters` fields
    (`menace`, `menaceTier`, `schemeLossProgress`, `schemeLossThreshold`) are
    optional in the type and always populated by `buildUIState` — the WP-410
@@ -37097,7 +37107,7 @@ Locked:
    The fix is the missing key, **not** a change to the fallback, which remains
    correct for genuinely unconfigured schemes.
 
-_Drafted 2026-08-17; not yet landed. Flips to Active at WP-562 execution (EC-597)._
+_Active 2026-08-17 — landed at WP-562 execution (EC-597). game-engine **2700 → 2734 tests / 0 fail**; arena-client **1335 → 1351 / 0 fail**, `typecheck` 0; `pnpm -r build` 0; `pnpm -r --no-bail test` 0 failures in every package. **§2 confirmed on both oracles:** `PRE_WP080_HASH` **byte-unchanged at `ec64506a`** — the empty replay declares no scheme, so the lazy field is absent and the STOP condition never fired — while the sentinel `sentinel-core-doom-2p` `finalStateHash` moved **exactly as predicted at draft time** (`62ba4e58…abd7` → `813287eb…f143b8`), re-recorded via `scripts/record-game-fixture.mjs` with a **one-line, hash-only diff** (no snapshot or message drift), which is itself the confirmation that the lazy field is the sole cause. **§4 held:** the capture is `shuffledHeroDeck.length`, pinned against the post-HQ remainder in `buildInitialGameState.lossPileCapture.test.ts` so a future reader cannot quietly "correct" 42 to 37. **§6 held** by adding the `'1'` key alone; `MVP_SCHEME_TWIST_THRESHOLD` is unchanged at 7 and pinned as such. **One clarification from execution:** `resolveSchemeLossKind` reports what is **measured**, not what the config declares — a `pile-depleted` scheme whose capture is absent (a pre-WP-562 recorded state) is counting twists and reports `'twists'`, so the client can never print "Heroes" over a twist count. The threshold, the numerator and the kind share ONE `hasPileSetupSize` predicate; an earlier draft guarded only two of the three, which a zero capture would have split into a 0 denominator (menace 0 — a false calm) sitting over a twist-proxy numerator. **D-24366 §5 is marked superseded in place**, per the EC's Definition-of-Done item. `User-Visible Surface = play.legendary-arena.com` — **D-24026 operator-pending** (AC-12: a live Civil War match showing `Heroes N/42` and `Twists: N/8`)._
 ### D-24370 - The in-play hollow baseline must be rebuilt whenever sweep fidelity changes (amends D-24050)
 
 **Amends D-24050 (WP-274).** That entry defined the `/coverage` in-play metric as

@@ -13,13 +13,13 @@
 
 ## Before Starting
 
-- [ ] Clean tree on `origin/main`; `pnpm install`; `pnpm -r build` exits 0.
-- [ ] Record baselines: engine suite, arena-client suite, arena-client
+- [x] Clean tree on `origin/main`; `pnpm install`; `pnpm -r build` exits 0.
+- [x] Record baselines: engine suite, arena-client suite, arena-client
       `typecheck`, and **both** sentinel hash values as they stand now.
-- [ ] Read `schemeLossProgress.ts` (the module being corrected) and
+- [x] Read `schemeLossProgress.ts` (the module being corrected) and
       `buildInitialGameState.ts:478-495` (where `shuffledHeroDeck` exists
       **before** the HQ fill).
-- [ ] Read D-24366 §5 — the decision this packet supersedes.
+- [x] Read D-24366 §5 — the decision this packet supersedes.
 
 ## Locked Values
 
@@ -88,11 +88,11 @@
 
 ## After Completing
 
-- [ ] `WORK_INDEX.md` `[x]`; `EC_INDEX.md` `Done`; mindmap `✅`; counts 0.
-- [ ] **D-24371** Active, recording the 42-over-37 operator decision.
-- [ ] **D-24366 §5 marked superseded** in `DECISIONS.md` — leaving it
+- [x] `WORK_INDEX.md` `[x]`; `EC_INDEX.md` `Done`; mindmap `✅`; counts 0.
+- [x] **D-24371** Active, recording the 42-over-37 operator decision.
+- [x] **D-24366 §5 marked superseded** in `DECISIONS.md` — leaving it
       unmarked means the next reader follows the wrong rule.
-- [ ] `STATUS.md` — the re-pin stated explicitly (old → new hash) and
+- [x] `STATUS.md` — the re-pin stated explicitly (old → new hash) and
       D-24026 recorded.
 
 ## Common Failure Smells

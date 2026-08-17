@@ -198,12 +198,12 @@ player-facing noun lives in `menaceDisplay.ts`.
 
 ## Definition of Done
 
-- [ ] AC-1..AC-11 demonstrated with observed output; AC-12 verified or
+- [x] AC-1..AC-11 demonstrated with observed output; AC-12 verified or
       recorded operator-pending.
-- [ ] D-24371 landed **Active**, including the 42-over-37 operator decision.
-- [ ] `WORK_INDEX.md` `[x]`; `EC_INDEX.md` `Done`; mindmap `✅`; counts 0.
-- [ ] `STATUS.md` records the re-pin explicitly (old → new hash).
-- [ ] D-24366 §5 marked **superseded** by D-24371 in `DECISIONS.md`.
+- [x] D-24371 landed **Active**, including the 42-over-37 operator decision.
+- [x] `WORK_INDEX.md` `[x]`; `EC_INDEX.md` `Done`; mindmap `✅`; counts 0.
+- [x] `STATUS.md` records the re-pin explicitly (old → new hash).
+- [x] D-24366 §5 marked **superseded** by D-24371 in `DECISIONS.md`.
 
 ## Notes
 
