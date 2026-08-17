@@ -37453,3 +37453,42 @@ _Active 2026-08-17 - landed at WP-569 execution (EC-604). Gate **674 -> 498**; `
 **So the four errors are not a type/runtime disagreement. They are a test reaching past its seam**: it exercises a defense that lives two layers down, in the per-builder `unknown` guards, by lying to `buildInitialGameState`'s declared contract. TypeScript is right to refuse. The correct fix is to relocate those assertions to the builder seam they actually test, where a narrow object is the honest input - same coverage, no cast, no widening. Until then the four errors stand as documentation that the seam is tested from the wrong side; four known errors in a 498-error backlog cost nothing while CI wiring is still far off.
 
 **Do NOT make `listSets` / `getSet` optional on `CardRegistryReader`.** That is now a locked non-goal of this entry, recorded because the superseded wording actively invited it._
+
+### D-24379 — The non-null assertion is a narrowing, not a suppression
+
+WP-570 clears 209 `noUncheckedIndexedAccess` errors from the engine test suite,
+almost all by adding `!` to an index access. D-24372 §3 bans `any`,
+`@ts-ignore` and `@ts-expect-error`, and this entry settles that `!` is a
+different kind of thing rather than a loophole in that rule. Locked:
+
+1. **The distinction is structural, not stylistic.** `@ts-ignore` and
+   `@ts-expect-error` **delete a diagnostic** and leave the underlying claim
+   unexamined; `any` **deletes the type**. `!` makes a **specific, narrow,
+   checkable claim** — this index is populated — that the runtime continues to
+   enforce, because the expression is dereferenced either way and an undefined
+   value throws. Nothing is hidden; one fact is asserted.
+2. **In a test the claim is self-proving.** These sites already dereference
+   unguarded (`gameState.playerZones['0'].hand.length`). If the value were
+   undefined the test would already be failing with a TypeError. The passing
+   suite *is* the evidence.
+3. **`!` is erased at compile time** and `tsx` strips it, so a mechanical
+   rewrite of index accesses is **provably behavior-preserving**. That is what
+   licenses a regex sweep across test source here, and it explicitly does NOT
+   license one for any change that alters emitted code.
+4. **Two idioms, chosen by shape.** Inline `!` for a one-off access; a single
+   `assert.ok(value !== undefined, '<full sentence>')` after binding when an
+   indexed value is read repeatedly — it narrows once, covers every later use,
+   and fails with an actionable message rather than a bare TypeError. **Prefer
+   the assertion wherever a value is read repeatedly**: the point of the packet
+   is converting silent assumptions into stated ones, and only the assertion
+   actually states anything.
+5. **`noUncheckedIndexedAccess` is never relaxed to clear this class.** The
+   flag is precisely what surfaced 209 unexamined index assumptions; turning it
+   off would delete the finding rather than address it.
+
+Evidence standard: all 209 sites were classified by **source line** at draft
+time (154 `playerZones[…]`, 17 array-index, 38 other), and the dominant shape
+was mechanically rewritten in the largest file to measure real yield —
+**498 → 362** gate, **209 → 73** class, from one file.
+
+_Drafted 2026-08-17; not yet landed. Flips to Active at WP-570 execution (EC-605)._
