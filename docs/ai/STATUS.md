@@ -151,7 +151,7 @@ never-rebuild-to-move-the-number non-goal.
 
 ---
 
-### WP-560 — Adaptive Danger-Meter Music Channel — DONE (code) 2026-08-16 · AC-12 PENDING DEPLOY **+ ASSETS**
+### WP-560 — Adaptive Danger-Meter Music Channel — DONE (code) 2026-08-16 · assets + deploy LANDED 2026-08-17 · AC-12 pending **live audition**
 
 **The danger-meter arc is complete** (packets 1–3: WP-557 signal → WP-558
 meter → WP-560 score). A separate music channel crossfades between three CC0
@@ -174,18 +174,57 @@ toggle, and the master mute silences both channels.
 Every test injects a mock Howl factory or mock engine, so the suite passes
 with **zero** assets on R2.
 
-**⚠ AC-12 / D-24026 has TWO prerequisites, deliberately not conflated:**
+**⚠ AC-12 / D-24026 had TWO prerequisites, deliberately not conflated. Both
+are now met (2026-08-17):**
 
-1. **The deploy** — the usual bundle gate.
-2. **The assets** — three CC0 loopable tracks at `audio/music/` on R2,
-   uploaded via the content-driven `scripts/upload-move-sfx-to-r2.mjs`.
+1. **The deploy — ✅ LANDED.** `play.legendary-arena.com/version.json` reports
+   `gitSha 4305d90`, well past the WP-560 merge (`19b4fdb7`, 2026-08-16), so
+   the shipped bundle carries `musicEngine.ts`.
+2. **The assets — ✅ LANDED.** Three CC0 loops uploaded to `audio/music/` on
+   R2, serving `200 audio/mpeg`, byte-for-byte identical to the local encodes
+   (232,011 / 232,011 / 462,724 bytes).
 
-Until the assets land, the engine constructs a `Howl` for a 404 URL and plays
-silence. That is the correct fail-soft behaviour, but it is
-**indistinguishable from "the feature didn't ship"** — so confirm the files
-are reachable *before* drawing any conclusion from a live match.
+**The loops, for the record.** [Music loop variations](https://opengameart.org/content/music-loop-variations)
+by `obscure-music` on OpenGameArt — **CC0**, no attribution required. Chosen
+because the pack is *"6 loops — 3 steps, 2 variations each (good or evil),
+100 BPM"*: one composer, one tempo, one key, so the three tiers are tonally
+compatible by construction rather than by luck — which was the hard part of
+the sourcing job this packet named. The **evil** variant family is used for
+all three tiers, so a crossfade never crosses timbral worlds:
 
-**Follow-ups named by the 01.6 post-mortem:** the assets; the **missing
+| Tier | Source | Duration | Loudness |
+|---|---|---|---|
+| `menace-calm` | `level1-step1-evil` | 9.6s | −18.5 LUFS |
+| `menace-rising` | `level1-step2-evil` | 9.6s | −16.9 LUFS |
+| `menace-critical` | `level1-step3-evil` | 19.2s | −10.8 LUFS |
+
+Encoded 44.1 kHz stereo / 192 kbps via `scripts/upload-move-sfx-to-r2.mjs
+--max-seconds 0`. **Deliberately not loudness-normalised** — the composer's
+own −18.5 → −16.9 → −10.8 ladder *is* the escalation, and flattening it to a
+common LUFS target would undo the point of the packet. Durations are exact bar
+multiples at 100 BPM (9.6s = 16 beats), and head/tail RMS sits at body level
+with no fade-to-silence, so the loops are seamless at the source.
+
+**What AC-12 still needs: a human with ears.** Both machine-checkable
+prerequisites are green, but nobody has yet *heard* the tiers change in a live
+match. Two things can only be judged by audition: whether the calm bed is
+pleasant to sit under for twenty minutes of ordinary play, and whether
+`MUSIC_CROSSFADE_MS = 1500` is right against these specific loops.
+
+**Known risk — mp3 loop seam.** `menaceMusicManifest.ts` hardcodes `.mp3`, and
+mp3 carries encoder delay/padding that can click at each loop wrap (every 9.6s
+for calm/rising). Predicted, not yet observed. If audible, the fix is either a
+format change in the manifest (`.ogg`/`.opus` — a code change, so a new packet)
+or concatenating each loop 4× so the seam lands every ~38s instead.
+
+**Papercut noted:** the uploaded objects carry **no `Cache-Control`** header —
+`audio/*` is explicitly excluded from the immutable-cache rule in
+`docs/ops/RUNBOOK-r2-image-cache-control.md`. Consistent with the existing SFX
+prefix, so not a regression, but music beds are far larger than stings and
+would benefit from a long max-age. Worth folding into a future cache pass.
+
+**Follow-ups named by the 01.6 post-mortem:** ~~the assets~~ (landed
+2026-08-17, above); the **missing
 endgame sting** (the bed stops at `gameOver` by design, so a match currently
 ends into silence — worth sequencing the Surface-4 resolution sting sooner
 now that music exists); `MUSIC_CROSSFADE_MS = 1500` is an untuned guess that
