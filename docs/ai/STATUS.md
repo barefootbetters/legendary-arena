@@ -36,9 +36,20 @@ the load-bearing form, since an optional add satisfies any `satisfies` check (WP
 lesson). Engine 2781→**2789** (+8), arena-client 1355→**1358** (+3), 0 fail;
 `pnpm -r build` 0; `pnpm -r --no-bail test` no new failures.
 
-**AC-9 (D-24026) live-verify: operator-pending.** After deploy, a real match's
-exported diagnostics report must contain `effectTraces` entries naming what specific
-played cards dispatched.
+**AC-9 (D-24026) live-verify: VERIFIED (2026-08-18).** A 2-player Red Skull / Super
+Hero Civil War match (`match ydkSq67fWAp`) exported on the deployed WP-575 bundle
+(`gitSha dbc4eb7` = the #1530 merge commit). The report carries **61 effect-trace
+records** naming exactly what each played card dispatched — e.g.
+`core/black-widow/mission-accomplished#0 → draw (fired)`, `whirlwind → ko-hero (fired,
+target current, magnitude 2)`, `henchman-doombot-legion → scry-ko-own-deck (fired)`,
+`determination → discard-to-play (fired)`. All three scopes (hero 45 / villain 10 /
+henchman 6), statuses `fired` 58 / `no-op` 2 / `no-handler` 1, 11 distinct effects,
+the exact 9-field `EffectTrace` keyset. The traces appear in **both** the top-level
+`report.effectTraces` **and** the engine `uiStateSnapshot.effectTraces` projection, and
+the two arrays are **deep-equal** — proving the full path (engine projection → audience
+filter → client structural extraction) works end-to-end. Meanwhile `entryCount: 0`
+(console buffer) held — the buffer was never the defect, exactly as the WP argued.
+**WP-575 fully done.**
 
 ### WP-574 — Master Strike Bystander Capture Log (EC-609 / D-24383) shipped (2026-08-18)
 
