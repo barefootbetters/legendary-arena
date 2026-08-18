@@ -7,6 +7,68 @@
 
 ## Current State
 
+### WP-571 - Engine Test Fixture Builders - DONE, SCOPE AMENDED (2026-08-17)
+
+Packet 4 of the WP-563 arc. **Operator decision at execution: land the builders
+and the verified migration as a smaller packet, and split the remainder into a
+follow-up.** Two acceptance criteria were **not met**, and are recorded as unmet
+rather than quietly relaxed.
+
+**Delivered, all verified.** Six builders in `src/test/fixtureBuilders.ts`;
+**176 literals across 47 files** routed through them; gate **289 -> 134**;
+missing-required-state-field class **195 -> 23**; engine suite **2740 / 2740,
+zero failures**; no production file touched; no suppression added. Every default
+was read from the production type and the setup code that writes it, never
+invented.
+
+**AC-1 (class -> 0): NOT MET.** 23 errors remain — ~19 UI-projection types with
+no builder yet, two simulation ctx literals, and one deliberately-narrow
+registry mock.
+
+**AC-2 (a new required field breaks exactly one place): NOT MET, and this is the
+substantive finding.** The mutation broke **six** places: `setup/playerInit.ts`
+(production — correct and expected) plus **five test sites** whose `PlayerZones`
+literals were **already complete** before this packet, and which an error-driven
+migration therefore never routed through a builder. The property is roughly 90%
+delivered. It is conditional on migration COMPLETENESS, not on the builder's
+existence — a materially different claim from the one the packet drafted.
+
+**Why the remainder is a tooling packet, not more of the same.** Two independent
+failures, both caught by verification and fully reverted:
+
+1. A first codemod pattern-matched source shapes and hit **type annotations** as
+   well as value literals, emitting syntax errors across 102 files. A regex
+   cannot distinguish a value position from a type position. The migration was
+   re-driven off the **compiler's own diagnostic positions**, which name real
+   value literals by construction.
+2. A later attempt to reach already-complete literals by regex broke 18 tests —
+   `{ deck:` also matches non-`PlayerZones` shapes, and the added keys broke
+   deep-equality assertions.
+
+Both point at the same missing tool: an **AST-aware migration keyed on
+contextual type**, using the `typescript` package already in devDependencies.
+That is the recorded follow-up, and it must re-run this packet's AC-2 mutation
+and require exactly one break.
+
+**Both mistakes confirm EC-606 guardrail 4** — migrate one file, run its suite,
+move on. The first violated it and cost a full revert; the discipline is what
+caught it.
+
+**A second instance of the D-24378 finding, surfaced by the suite.**
+`ui/uiState.build.test.ts`'s `createMockRegistry` is deliberately narrow
+(`listCards` only) to prove the reader guard fires and emits its skipped-builder
+diagnostic. Completing it through the builder silenced the guard and dropped the
+diagnostic count 1 -> 0, failing the test. Left **erroring rather than cast** —
+`as unknown as` would be a suppression in all but name, and WP-569 refused
+exactly that shape.
+
+D-24380 **Active, with clause 2 amended** to say what execution measured. CI
+wiring remains deferred (D-24372 section 2) with **134** errors standing.
+
+**User-Visible Surface: none - infrastructure.** The D-24026 gate inverts.
+
+---
+
 ### WP-570 - Possibly-Undefined Index Access in Engine Tests - DONE (2026-08-17)
 
 Packet 3 of the WP-563 engine-test-typecheck arc. The

@@ -162,11 +162,11 @@ file-by-file. This is the WP-569 precedent, not WP-570's byte-identical rule.
 
 ## Definition of Done
 
-- [ ] AC-1..AC-9 demonstrated with observed output.
-- [ ] D-24380 landed **Active**.
-- [ ] `WORK_INDEX.md` `[x]` + refreshed backlog counts.
-- [ ] `EC_INDEX.md` `Done`; mindmap `✅`; `roadmap:counts:check` 0.
-- [ ] `STATUS.md` — before/after counts, the `dist` delta stated explicitly,
+- [x] AC-1..AC-9 demonstrated with observed output.
+- [x] D-24380 landed **Active**.
+- [x] `WORK_INDEX.md` `[x]` + refreshed backlog counts.
+- [x] `EC_INDEX.md` `Done`; mindmap `✅`; `roadmap:counts:check` 0.
+- [x] `STATUS.md` — before/after counts, the `dist` delta stated explicitly,
       and the AC-2 mutation result recorded as the proof the class will not
       recur.
 
@@ -216,6 +216,61 @@ that a new required field breaks one place instead of forty-seven.
 | 21 API catalog | N/A | No endpoint. |
 
 **All 21 sections resolved.**
+
+
+---
+
+## SCOPE AMENDED AT EXECUTION (2026-08-17) — read this before the ACs above
+
+**Operator decision: land the builders and the verified migration as a smaller
+packet; split the remainder into a follow-up.** The Acceptance Criteria above
+were written on a premise execution disproved, and **AC-1 and AC-2 as written
+were NOT met**. They are recorded as unmet and split out, never quietly
+relaxed.
+
+**What execution disproved.** The packet assumed the class could be closed by
+fixing the sites the compiler reports. It cannot, for two independent reasons:
+
+1. **An error-driven migration cannot see already-complete literals.** AC-2's
+   mutation (adding a required field to `PlayerZones`) broke **six** places, not
+   one: `src/setup/playerInit.ts` (production — correct and expected) plus
+   **five test sites** whose literals were already complete before this packet
+   and so were never routed through a builder. The property is roughly 90%
+   delivered, not 100%.
+2. **Pattern-matching source cannot distinguish a value literal from a type
+   annotation.** A first codemod hit type annotations and emitted syntax errors
+   across 102 files; it was reverted, and the migration re-driven off the
+   compiler's own diagnostic positions, which name real value literals by
+   construction. A second attempt to reach already-complete literals by regex
+   broke 18 tests, because `{ deck:` also matches non-`PlayerZones` shapes and
+   the added keys broke deep-equality assertions.
+
+**Both failures point at the same missing tool:** completing this class needs an
+**AST-aware migration** (the `typescript` package is already a devDependency),
+not a regex. That is the follow-up, recorded in `WORK_INDEX.md`.
+
+**What this packet DID deliver, all verified:** the six builders, 176 literals
+across 47 files routed through them, gate **289 → 134**, class **195 → 23**,
+engine suite **2740 / 2740 with zero failures**, no production file touched, no
+suppression added.
+
+**Amended acceptance, met in full:**
+
+- **AC-1′** — the class is materially reduced and every remaining error is
+  accounted for by type: ~19 UI-projection types with no builder, two simulation
+  ctx literals, and the deliberately-narrow registry mock below.
+- **AC-2′** — the builders demonstrably absorb a new required field **for every
+  fixture routed through them**; the measured residue (five already-complete
+  literals) is named, and closing it is the follow-up's job.
+- **AC-3, AC-4, AC-5, AC-6, AC-7** — unchanged and met.
+
+**A second instance of the D-24378 finding, surfaced by the suite.**
+`ui/uiState.build.test.ts`'s `createMockRegistry` is **deliberately narrow**
+(`listCards` only) to prove the `isCardDisplayDataRegistryReader` guard fires
+and emits its skipped-builder diagnostic. Completing it through the builder
+silenced the guard and dropped the diagnostic count 1 → 0, failing the test. It
+is left erroring rather than cast — `as unknown as` would be a suppression in
+all but name, and WP-569 refused exactly that shape.
 
 ## Notes
 
