@@ -23,7 +23,7 @@ import { discardFromHand } from '../moves/discardFromHand.js';
 import { koCard } from '../board/ko.logic.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
 import { gainWound } from '../board/wounds.logic.js';
-import { formatCardRef } from '../log/logDisplay.js';
+import { formatCardRef, resolveCardName } from '../log/logDisplay.js';
 
 // why: mastermind ext_id constants — matching against
 // G.selection.mastermindId for per-mastermind dispatch. Strings come from
@@ -165,6 +165,20 @@ function captureBystanderOntoMastermind(gameState: LegendaryGameState): void {
       ...gameState.mastermind.attachedBystanders,
       captured!,
     ];
+    // why: WP-574 — ADDITIVE success-path log line. D-15401 is Immutable and
+    // specified a message ONLY for the empty-supply case, so a successful capture
+    // was silent: Bystanders arrived in the victory pile after a mastermind fight
+    // with no log trail. This is observability only — when and whether a Bystander
+    // is captured is unchanged. The line names the capturing mastermind (all supply
+    // Bystanders are identical tokens, so there is nothing to name on the captured
+    // card; baseCardId is the {setAbbr}-mastermind-{slug}-{cardSlug} display key).
+    // WP-434 — a completed capture is `applied`. No LogEntry.card: the generic
+    // strike path carries no per-card context.
+    pushLog(
+      gameState,
+      `[Master Strike] ${resolveCardName(gameState.cardDisplayData, gameState.mastermind.baseCardId)} captured a Bystander.`,
+      'applied',
+    );
   } else {
     // why: bystander supply exhausted, no capture per D-15401. WP-434 — a
     // supply-empty no-op is `blocked` (the effect tried and nothing happened) per

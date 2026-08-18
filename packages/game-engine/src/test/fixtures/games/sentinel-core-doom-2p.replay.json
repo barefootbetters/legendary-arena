@@ -3,6 +3,10 @@
     "finalStateHash": "813287eb27810036f70c2da2b3d3c4596b3dc3a396392f61188e8cdc63f143b8",
     "messages": [
       {
+        "outcome": "applied",
+        "text": "[Master Strike] core/dr-doom captured a Bystander."
+      },
+      {
         "outcome": "neutral",
         "text": "[Dr. Doom Master Strike] Player 0 does not have exactly 6 cards in hand — unaffected."
       },
@@ -23,6 +27,10 @@
         "card": "starting-shield-agent",
         "outcome": "neutral",
         "text": "Player 0 played S.H.I.E.L.D. Agent (starting-shield-agent) (+1 recruit)."
+      },
+      {
+        "outcome": "applied",
+        "text": "[Master Strike] core/dr-doom captured a Bystander."
       },
       {
         "outcome": "neutral",
@@ -55,6 +63,7 @@
         },
         "matchId": "sentinel-core-doom-2p",
         "messages": [
+          "[Master Strike] core/dr-doom captured a Bystander.",
           "[Dr. Doom Master Strike] Player 0 does not have exactly 6 cards in hand — unaffected.",
           "[Dr. Doom Master Strike] Player 1 does not have exactly 6 cards in hand — unaffected.",
           "Mastermind strike revealed — strike count incremented.",
@@ -90,11 +99,13 @@
         },
         "matchId": "sentinel-core-doom-2p",
         "messages": [
+          "[Master Strike] core/dr-doom captured a Bystander.",
           "[Dr. Doom Master Strike] Player 0 does not have exactly 6 cards in hand — unaffected.",
           "[Dr. Doom Master Strike] Player 1 does not have exactly 6 cards in hand — unaffected.",
           "Mastermind strike revealed — strike count incremented.",
           "Player 0 played S.H.I.E.L.D. Trooper (starting-shield-trooper) (+1 attack).",
           "Player 0 played S.H.I.E.L.D. Agent (starting-shield-agent) (+1 recruit).",
+          "[Master Strike] core/dr-doom captured a Bystander.",
           "[Dr. Doom Master Strike] Player 0 does not have exactly 6 cards in hand — unaffected.",
           "[Dr. Doom Master Strike] Player 1 must put 2 cards on top of their deck — choose which cards.",
           "Mastermind strike revealed — strike count incremented.",
