@@ -22,7 +22,7 @@ import { buildDefaultHookDefinitions } from '../rules/ruleRuntime.impl.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
 import { makeMockMoveContext } from '../test/mockMoveContext.js';
 import type { MockMoveContext } from '../test/mockMoveContext.js';
-import { makeGlobalPiles, makeMastermindState, makePlayerZones } from '../test/fixtureBuilders.js';
+import { makeGlobalPiles, makeMastermindState, makePlayerZones, makeTurnEconomy } from '../test/fixtureBuilders.js';
 
 /**
  * Creates a mock LegendaryGameState for integration testing.
@@ -86,7 +86,7 @@ function createMockGameState(options?: {
     villainDeckCardTypes: options?.cardTypes ?? {},
     ko: [],
     attachedBystanders: options?.attachedBystanders ?? {},
-    turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 },
+    turnEconomy: { ...makeTurnEconomy(), attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 },
     cardStats: {},
     mastermind: { ...makeMastermindState(),
       id: 'test-mastermind',

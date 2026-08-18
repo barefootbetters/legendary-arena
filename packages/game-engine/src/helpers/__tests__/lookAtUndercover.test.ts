@@ -9,6 +9,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { lookAtUndercover } from '../lookAtUndercover.js';
 import type { LegendaryGameState } from '../../types.js';
+import { makeGlobalPiles, makeMastermindState, makePlayerZones, makeTurnEconomy } from '../../test/fixtureBuilders.js';
 
 /** Minimal game state for lookAtUndercover tests. */
 function createTestState(): LegendaryGameState {
@@ -33,7 +34,7 @@ function createTestState(): LegendaryGameState {
     },
     currentStage: 'main',
     playerZones: {
-      '0': {
+      '0': { ...makePlayerZones(),
         deck: [],
         hand: [],
         discard: [],
@@ -42,7 +43,7 @@ function createTestState(): LegendaryGameState {
         faceDownCards: [{ instanceId: 'hero-1', cardId: 'hero-1', ownerPlayerId: '0' }],
       },
     },
-    piles: { bystanders: [], wounds: [], officers: [], sidekicks: [] },
+    piles: { ...makeGlobalPiles(), bystanders: [], wounds: [], officers: [], sidekicks: [] },
     messages: [],
     counters: {},
     hookRegistry: [],
@@ -51,13 +52,13 @@ function createTestState(): LegendaryGameState {
     ko: [],
     attachedBystanders: {},
     villainAttachedHeroes: {},
-    turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0 },
+    turnEconomy: { ...makeTurnEconomy(), attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0 },
     cardStats: {},
     cardTraits: {},
     cardKeywords: {},
     cardDisplayData: {},
     schemeSetupInstructions: [],
-    mastermind: { id: 'test', baseCardId: 'test', tacticsDeck: [], tacticsDefeated: [] },
+    mastermind: { ...makeMastermindState(), id: 'test', baseCardId: 'test', tacticsDeck: [], tacticsDefeated: [] },
     city: [null, null, null, null, null],
     hq: [null, null, null, null, null],
     heroDeck: [],
@@ -89,7 +90,7 @@ describe('lookAtUndercover helper', () => {
 
   it('returns empty string if player has no face-down cards', () => {
     const G = createTestState();
-    G.playerZones['1'] = {
+    G.playerZones['1'] = { ...makePlayerZones(),
       deck: [],
       hand: [],
       discard: [],

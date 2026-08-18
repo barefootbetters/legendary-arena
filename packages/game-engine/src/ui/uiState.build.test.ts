@@ -21,6 +21,7 @@ import type { LegendaryGameState, CardExtId, PendingHeroChoice } from '../types.
 import type { UICardDisplay } from './uiState.types.js';
 import type { HollowEffectRecord } from '../diagnostics/hollowEffect.types.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
+import { makeCardStatEntry } from '../test/fixtureBuilders.js';
 
 /**
  * Creates a valid test MatchSetupConfig. Same pattern used in
@@ -1805,8 +1806,8 @@ describe('buildUIState — pendingReturnZeroCostDiscard projection (D-24139)', (
     const gameState = makeGameStateWithDisplayData();
     gameState.playerZones['0']!.discard = [zeroHero, 'costly-x' as CardExtId, 'pile-wound' as CardExtId];
     gameState.cardStats = {
-      [zeroHero]: { attack: 0, recruit: 0, cost: 0, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 },
-      ['costly-x' as CardExtId]: { attack: 0, recruit: 0, cost: 4, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 },
+      [zeroHero]: { ...makeCardStatEntry(), attack: 0, recruit: 0, cost: 0, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 },
+      ['costly-x' as CardExtId]: { ...makeCardStatEntry(), attack: 0, recruit: 0, cost: 4, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 },
     } as LegendaryGameState['cardStats'];
     gameState.pendingReturnZeroCostDiscard = [{ playerID: '0', sourceCardId: 'src' as CardExtId }];
     return gameState;

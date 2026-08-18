@@ -11,7 +11,7 @@ import { sendUndercover } from '../sendUndercover.js';
 import type { LegendaryGameState } from '../../types.js';
 import { makeMockMoveContext } from '../../test/mockMoveContext.js';
 import type { MockMoveContext } from '../../test/mockMoveContext.js';
-import { makeGlobalPiles, makeMastermindState, makeTurnEconomy } from '../../test/fixtureBuilders.js';
+import { makeGlobalPiles, makeMastermindState, makePlayerZones, makeTurnEconomy } from '../../test/fixtureBuilders.js';
 
 interface SendUndercoverStateOptions {
   hand?: string[];
@@ -41,7 +41,7 @@ function createSendUndercoverState(options?: SendUndercoverStateOptions): Legend
     },
     currentStage: 'main',
     playerZones: {
-      '0': {
+      '0': { ...makePlayerZones(),
         deck: [],
         hand: options?.hand ?? [],
         discard: [],

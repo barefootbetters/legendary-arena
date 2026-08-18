@@ -50,6 +50,7 @@ import { buildInitialGameState } from '../setup/buildInitialGameState.js';
 import { makeMockCtx } from '../test/mockCtx.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
 import type { CardRegistryReader } from '../matchSetup.validate.js';
+import { makeCardRegistryReader } from '../test/fixtureBuilders.js';
 
 describe('UIState type drift (WP-067)', () => {
   it('UIProgressCounters field names match the locked WP-048/WP-062 contract', () => {
@@ -781,7 +782,7 @@ describe('UIState — WP-135 heroDeckCount graduation', () => {
     // why: CardRegistryReader grew listSets/getSet after this fixture was written.
     // Nothing compiled the engine's test files before WP-563, so the stale mock
     // never failed — the very drift this file exists to catch, in this file.
-    const registry: CardRegistryReader = {
+    const registry: CardRegistryReader = { ...makeCardRegistryReader(),
       listCards: () => [],
       listSets: () => [],
       getSet: () => undefined,
@@ -1051,7 +1052,7 @@ function buildEmptyMatchUIState() {
   // why: CardRegistryReader grew listSets/getSet after this fixture was written.
   // Nothing compiled the engine's test files before WP-563, so the stale mock
   // never failed — the very drift this file exists to catch, in this file.
-  const registry: CardRegistryReader = {
+  const registry: CardRegistryReader = { ...makeCardRegistryReader(),
     listCards: () => [],
     listSets: () => [],
     getSet: () => undefined,

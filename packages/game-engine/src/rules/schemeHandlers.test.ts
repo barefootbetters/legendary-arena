@@ -19,7 +19,7 @@ import {
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import type { LegendaryGameState } from '../types.js';
 import type { HookDefinition } from './ruleHooks.types.js';
-import { makeGlobalPiles, makePlayerZones, makeTurnEconomy } from '../test/fixtureBuilders.js';
+import { makeGlobalPiles, makeMastermindState, makePlayerZones, makeTurnEconomy } from '../test/fixtureBuilders.js';
 
 // ---------------------------------------------------------------------------
 // Test helper
@@ -84,7 +84,7 @@ function makeTestState(counterOverrides?: Record<string, number>): LegendaryGame
       spentRecruit: 0,
     },
     cardStats: {},
-    mastermind: {
+    mastermind: { ...makeMastermindState(),
       id: 'test-mastermind',
       baseCardId: 'test-mastermind-base',
       tacticsDeck: [],

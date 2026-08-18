@@ -19,6 +19,7 @@ import { makeMockCtx } from '../test/mockCtx.js';
 import { buildInitialGameState } from '../setup/buildInitialGameState.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
 import type { CardRegistryReader } from '../matchSetup.validate.js';
+import { makeCardRegistryReader } from '../test/fixtureBuilders.js';
 
 /**
  * Creates a minimal MatchSetupConfig for ordering tests.
@@ -45,7 +46,7 @@ function createMockRegistry(): CardRegistryReader {
   // mock, it is a structurally invalid one (WP-569 / D-24378) — and buildInitialGameState
   // silently SKIPS builders for an incomplete reader, so a narrow mock here would
   // quietly test a degraded setup path.
-  return { listCards: () => [], listSets: () => [], getSet: () => undefined };
+  return { ...makeCardRegistryReader(), listCards: () => [], listSets: () => [], getSet: () => undefined };
 }
 
 /**

@@ -24,6 +24,7 @@ import { fileURLToPath } from 'node:url';
 import type { CardRegistryReader } from '../../matchSetup.validate.js';
 import { validateFixture, type FixtureFile, type FixtureRunResult } from './fixtureSchema.js';
 import { runFixture } from './runFixture.js';
+import { makeCardRegistryReader } from '../../test/fixtureBuilders.js';
 
 // why: __dirname is unavailable in ESM; reconstruct via import.meta.url
 // to anchor the fixtures directory relative to this test file
@@ -38,7 +39,7 @@ const FIXTURES_GAMES_DIRECTORY = join(TEST_DIRECTORY, 'games');
  * structural interface so `buildInitialGameState` runs setup-time
  * builders without registry queries.
  */
-const EMPTY_REGISTRY: CardRegistryReader = {
+const EMPTY_REGISTRY: CardRegistryReader = { ...makeCardRegistryReader(),
   listCards: () => [],
   listSets: () => [],
   getSet: () => undefined,

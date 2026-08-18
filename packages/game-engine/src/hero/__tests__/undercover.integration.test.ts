@@ -28,7 +28,7 @@ import type { HeroAbilityHook } from '../../rules/heroAbility.types.js';
 import { makeMockCtx } from '../../test/mockCtx.js';
 import { makeMockMoveContext } from '../../test/mockMoveContext.js';
 import type { MockMoveContext } from '../../test/mockMoveContext.js';
-import { makeGlobalPiles, makeMastermindState, makeTurnEconomy } from '../../test/fixtureBuilders.js';
+import { makeGlobalPiles, makeMastermindState, makePlayerZones, makeTurnEconomy } from '../../test/fixtureBuilders.js';
 
 // ---------------------------------------------------------------------------
 // Mock registry — a single hero whose cards carry [keyword:Undercover] text,
@@ -115,7 +115,7 @@ function makeState(options?: StateOptions): LegendaryGameState {
     },
     currentStage: 'main',
     playerZones: {
-      '0': {
+      '0': { ...makePlayerZones(),
         deck: [],
         hand: options?.hand ?? [],
         discard: [],

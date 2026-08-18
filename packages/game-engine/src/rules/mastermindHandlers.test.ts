@@ -14,7 +14,7 @@ import { mastermindStrikeHandler, selectDiscardToLimitCards } from './mastermind
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
-import { makeGlobalPiles, makePlayerZones, makeTurnEconomy } from '../test/fixtureBuilders.js';
+import { makeGlobalPiles, makeMastermindState, makePlayerZones, makeTurnEconomy } from '../test/fixtureBuilders.js';
 
 // ---------------------------------------------------------------------------
 // Test helper
@@ -75,7 +75,7 @@ function makeTestState(): LegendaryGameState {
       spentRecruit: 0,
     },
     cardStats: {},
-    mastermind: {
+    mastermind: { ...makeMastermindState(),
       id: 'test-mastermind',
       baseCardId: 'test-mastermind-base',
       tacticsDeck: [],

@@ -22,6 +22,7 @@ import { selectDefaultKoTarget } from '../villain/villainEffects.execute.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
 import type { CardRegistryReader } from '../matchSetup.validate.js';
 import type { LegendaryGameState, CardExtId } from '../types.js';
+import { makeTurnEconomy } from '../test/fixtureBuilders.js';
 
 const SET_ABBR = 'core';
 
@@ -133,7 +134,7 @@ describe('henchman Sentinel Fight: koHeroCurrentPlayer fires end-to-end', () => 
 
     gameState.city[0] = sentinelId!;
     gameState.currentStage = 'main';
-    gameState.turnEconomy = {
+    gameState.turnEconomy = { ...makeTurnEconomy(),
       attack: 10,
       recruit: 0,
       spentAttack: 0,
@@ -207,7 +208,7 @@ describe('henchman Sentinel Fight: koHeroCurrentPlayer fires end-to-end', () => 
 
     gameState.city[0] = sentinelId!;
     gameState.currentStage = 'main';
-    gameState.turnEconomy = {
+    gameState.turnEconomy = { ...makeTurnEconomy(),
       attack: 10,
       recruit: 0,
       spentAttack: 0,
@@ -295,7 +296,7 @@ describe('henchman Sentinel Fight: koHeroCurrentPlayer fires end-to-end', () => 
 
     gameState.city[0] = sentinelId!;
     gameState.currentStage = 'main';
-    gameState.turnEconomy = {
+    gameState.turnEconomy = { ...makeTurnEconomy(),
       attack: 10,
       recruit: 0,
       spentAttack: 0,
@@ -359,7 +360,7 @@ describe('henchman Sentinel Fight: koHeroCurrentPlayer fires end-to-end', () => 
 
     gameState.city[0] = sentinelId!;
     gameState.currentStage = 'main';
-    gameState.turnEconomy = {
+    gameState.turnEconomy = { ...makeTurnEconomy(),
       attack: 10,
       recruit: 0,
       spentAttack: 0,

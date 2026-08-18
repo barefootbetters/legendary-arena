@@ -262,7 +262,7 @@ describe('WP-137 — checkNoCardInMultipleZones holds across 100 RNG orderings f
       masterminds: [],
       schemes: [],
     };
-    const registry: CardRegistryReader = {
+    const registry: CardRegistryReader = { ...makeCardRegistryReader(),
       listCards: () => [],
       listSets: () => [{ abbr: 'core' }],
       getSet: (abbr: string) => (abbr === 'core' ? setData : undefined),

@@ -34,7 +34,7 @@ import { initializeCity, initializeHq } from '../board/city.logic.js';
 import { buildInitialGameState } from '../setup/buildInitialGameState.js';
 import { makeMockMoveContext } from '../test/mockMoveContext.js';
 import type { MockMoveContext } from '../test/mockMoveContext.js';
-import { makeGlobalPiles, makeMastermindState, makePlayerZones } from '../test/fixtureBuilders.js';
+import { makeGlobalPiles, makeMastermindState, makePlayerZones, makeTurnEconomy } from '../test/fixtureBuilders.js';
 
 // ---------------------------------------------------------------------------
 // Test hook infrastructure
@@ -151,7 +151,7 @@ function createMockGameState(options: {
     ko: [],
     attachedBystanders: {},
     villainAttachedHeroes: {},
-    turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 },
+    turnEconomy: { ...makeTurnEconomy(), attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 },
     city: initializeCity(),
     hq: initializeHq(),
     mastermind: { ...makeMastermindState(),

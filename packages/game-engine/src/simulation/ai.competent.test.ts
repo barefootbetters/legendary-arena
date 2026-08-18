@@ -29,6 +29,11 @@ function buildSyntheticUIState(citySpaces: (UICityCard | null)[]): UIState {
       turn: 1,
       activePlayerId: '0',
       currentStage: 'main',
+      // why: three required UIState.game flags, omitted while nothing compiled
+      // these fixtures (WP-572).
+      hasActedThisTurn: false,
+      hasHealedThisTurn: false,
+      lastPlayEffectsFired: 0,
     },
     players: [
       {

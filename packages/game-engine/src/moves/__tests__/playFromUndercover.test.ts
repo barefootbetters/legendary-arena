@@ -12,7 +12,7 @@ import { playFromUndercover } from '../playFromUndercover.js';
 import type { LegendaryGameState } from '../../types.js';
 import { makeMockMoveContext } from '../../test/mockMoveContext.js';
 import type { MockMoveContext } from '../../test/mockMoveContext.js';
-import { makeGlobalPiles, makeMastermindState, makeTurnEconomy } from '../../test/fixtureBuilders.js';
+import { makeGlobalPiles, makeMastermindState, makePlayerZones, makeTurnEconomy } from '../../test/fixtureBuilders.js';
 
 interface PlayFromUndercoverStateOptions {
   faceDownCards?: Array<{ instanceId: string; cardId: string; ownerPlayerId: string }>;
@@ -42,7 +42,7 @@ function createPlayFromUndercoverState(options?: PlayFromUndercoverStateOptions)
     },
     currentStage: 'main',
     playerZones: {
-      '0': {
+      '0': { ...makePlayerZones(),
         deck: [],
         hand: [],
         discard: [],
