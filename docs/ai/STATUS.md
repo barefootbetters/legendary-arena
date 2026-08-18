@@ -7,6 +7,7 @@
 
 ## Current State
 
+<<<<<<< HEAD
 ### WP-573 - UI-Projection Fixture Builders - DONE (2026-08-17)
 
 The **last fixture family in the WP-563 arc is closed.** Gate **126 -> 109**;
@@ -58,6 +59,58 @@ and then the **CI wiring** every packet since D-24372 §2 has been deferring by
 design — the thing the whole arc exists to enable. **109** errors stand.
 
 **User-Visible Surface: none - infrastructure.** The D-24026 gate inverts.
+=======
+### WP-567 - Red Skull Tactic onFight Resolvers - DONE (2026-08-17)
+
+All four of Red Skull's Mastermind Tactics had no onFight resolver, so defeating
+one did nothing - and logged nothing, because dispatchTacticOnFight falls
+unhandled ext_ids through to a silent no-op. Confirmed live at gitSha 47e5162: a
+solo match defeated all four and received none of their printed effects, provable
+from that match's economy.recruit ending at 5 with no trace of Endless Resources'
+printed +4.
+
+**Three implemented, each logging its effect.** Negablast Grenades +3 attack;
+Endless Resources +4 recruit; HYDRA Conspiracy draws 2 then one more per HYDRA
+Villain in the DEFEATING player's Victory Pile. The silence was half the defect,
+so a resolver that mutates without a log line would have been a FAIL.
+
+**Ruthless Dictator stays undispatched, and is pinned by a test.** Its printed
+top-three KO/discard/replace is interactive - it parks a pending choice, and a
+parked choice without its UIState projection and prompt hard-freezes the human
+player. Three of four is deliberate; the test makes a later packet's arrival a
+decision rather than an accident.
+
+**EC allowlist amendment - recorded, not absorbed.** Three files beyond the two
+EC-602 listed, all one concern. HYDRA Conspiracy DRAWS, and drawCardsIntoHand
+needs a ShuffleProvider that the bare boardgame.io ctx does not carry - the
+D-24051 hazard dodgeCard.ts already documents, which the pre-flight did not
+recognise applies to a drawing resolver. random is threaded properly:
+defeatMastermindTacticCore gained the parameter and both production callers pass
+it (defeatChoice.resolve already had one in hand), and two existing test call
+sites were updated so no site silently passes undefined. The alternative - a
+defensively-null provider - would have looked wired while never working, which is
+the WP-560 dead-code class this repo has already paid for once.
+
+**Both load-bearing tests were mutation-verified, not merely run.** Making the
+HYDRA count span all players breaks the per-player assertion; dropping the
+threaded provider breaks the reshuffle assertion. AC-3 asserts the scaled draw at
+0 AND N, because a single-value test passes against a hardcoded 2, and AC-4's
+per-player scoping is reachable only at 2+ seats.
+
+**Gates.** pnpm -r build 0. Engine **2740 -> 2751 / 0 fail** (+11). pnpm -r
+--no-bail test **0 failures in every package**. Both hash oracles byte-unchanged -
+PRE_WP080_HASH ec64506a, sentinel 813287eb...f143b8 - as the core/dr-doom fixture
+predicted.
+
+**D-24026 - operator-pending.** A live match defeating Endless Resources should
+show +4 recruit in the HUD economy and a log line naming the effect.
+
+**Still deferred** (both named in the WP's Notes): Ruthless Dictator's interactive
+resolver, and the silent Master Strike bystander capture (D-15401 specified a log
+line only for the empty-supply case).
+
+Lands **D-24376 Active**. 5 files + governance.
+>>>>>>> 07c9b943 (SPEC: WP-567 governance close + D-24376 Active)
 
 ---
 
