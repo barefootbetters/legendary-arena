@@ -27,7 +27,7 @@ import type { MenaceTier, SchemeLossKind } from "../rules/schemeLossProgress.js"
 // why: WP-258 — reuse the engine's canonical HollowEffectRecord rather than
 // declaring a parallel UI type. The projection surfaces the WP-257 runtime
 // channel (G.diagnostics.hollowEffects) to the client unchanged.
-import type { HollowEffectRecord } from "../diagnostics/hollowEffect.types.js";
+import type { HollowEffectRecord, EffectTrace } from "../diagnostics/hollowEffect.types.js";
 
 // why: UIState is the only data the UI sees. All items in the canonical
 // forbidden internals list (hookRegistry, ImplementationMap, cardStats,
@@ -222,6 +222,17 @@ export interface UIState {
   // state) and pass through the audience filter value-unchanged for every
   // audience (D-12803 public-projection posture — like `log`/`piles`).
   hollowEffects?: HollowEffectRecord[];
+  // why: WP-575 / D-24384 — projects the WP-488 runtime effect-trace channel
+  // (G.diagnostics.traces) so the Play Diagnostics export carries a per-dispatch
+  // record of what each played card actually dispatched (the console buffer is a
+  // FAILURE-path channel and reads entryCount: 0 on a clean match — correct, not
+  // broken). Follows the hollowEffects projection pattern EXACTLY (WP-258): OPTIONAL
+  // and omit-when-absent, so existing UIState fixtures need no backfill (the absent
+  // channel is the trace-less snapshot). The records are PUBLIC (card/mechanic
+  // dispatch identities, never hidden state) and pass through the audience filter
+  // value-unchanged for every audience (D-12803 public-projection posture). Traces
+  // stay INERT (D-24294): this projection is read-only and never a gameplay input.
+  effectTraces?: EffectTrace[];
 }
 
 /**

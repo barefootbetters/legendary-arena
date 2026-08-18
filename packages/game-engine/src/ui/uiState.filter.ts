@@ -32,7 +32,7 @@ import type {
 import type { UIAudience } from './uiAudience.types.js';
 // why: WP-258 — the filtered hollow-effect records are the engine's canonical
 // HollowEffectRecord (WP-257); the public pass-through copies them value-for-value.
-import type { HollowEffectRecord } from '../diagnostics/hollowEffect.types.js';
+import type { HollowEffectRecord, EffectTrace } from '../diagnostics/hollowEffect.types.js';
 
 // why: non-active players and spectators must not see the active player's
 // remaining resources (attack/recruit/piercing/woundsDrawn). Zeroed
@@ -946,6 +946,35 @@ export function filterUIStateForAudience(
       });
     }
     result.hollowEffects = hollowEffectsCopy;
+  }
+
+  // why: WP-575 / D-12803 — effectTraces is PUBLIC card/mechanic dispatch data, not
+  // hidden info. The filter passes it through value-unchanged for EVERY audience
+  // (own-player AND other-player AND spectator) — it redacts / reorders / rewrites /
+  // drops NOTHING, exactly like hollowEffects above. A per-record fresh-object copy
+  // (aliasing defense, D-11105) — including a fresh `params` object, since `params`
+  // is a nested map — prevents the audience-filtered UIState from aliasing the input,
+  // while every field value is preserved so every audience deep-equals the source.
+  // Conditional assignment (never an `effectTraces: undefined` literal) keeps the
+  // absent-channel case omitting the field under exactOptionalPropertyTypes. Without
+  // this pass-through the field would reach buildUIState but be dropped at the filter
+  // whitelist — the shipped EC-206 failure mode.
+  if (uiState.effectTraces !== undefined) {
+    const effectTracesCopy: EffectTrace[] = [];
+    for (const trace of uiState.effectTraces) {
+      effectTracesCopy.push({
+        cardId: trace.cardId,
+        scope: trace.scope,
+        timing: trace.timing,
+        effect: trace.effect,
+        handler: trace.handler,
+        status: trace.status,
+        fireSite: trace.fireSite,
+        params: { ...trace.params },
+        turn: trace.turn,
+      });
+    }
+    result.effectTraces = effectTracesCopy;
   }
 
   return result;
