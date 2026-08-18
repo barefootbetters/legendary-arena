@@ -37559,3 +37559,25 @@ deliver the property its builders existed for. WP-572 finishes it. Locked:
    every diagnostic is a defect.
 
 _Active 2026-08-17 - landed at WP-572 execution (EC-607), scope amended at execution by operator decision (close on AC-1; the UI-projection family is split out). **All four clauses held, and clause 3 was VINDICATED:** the mutation on two types broke EXACTLY ONE place each - `setup/playerInit.ts` and `economy/economy.logic.ts`, both production, zero test sites - where WP-571's equivalent broke six. The checker-driven approach of clause 2 reproduced the draft census exactly (230 / 173 routed / 1 skip-listed / 56 migrated) and produced **zero syntax errors**, against the regex approach's 102 broken files. Clause 4's skip-list worked as specified: the deliberately-narrow registry mock was excluded and stays erroring. **One operational lesson worth carrying:** when verifying a mutation, grep the type name EXACTLY - a case-insensitive `TurnEconomy` also matches `UITurnEconomyState`, which briefly misread two pre-existing residuals as new breaks. A prefix-collision in a verification grep is the same class of self-inflicted false signal as WP-570's documentation tripping its own suppression grep._
+
+### D-24382 — The fixture pattern is settled; UI projections join it on the same terms
+
+WP-573 closes the last fixture family in the WP-563 arc. This entry records that
+the pattern is now **settled** rather than re-litigated per packet. Locked:
+
+1. **UI-projection fixtures are BUILT, not literal**, on the same terms as the
+   six engine state types — a builder per type with canonical defaults **read
+   from the production type**, so the next required field is added in one place.
+2. **The acceptance is the MUTATION, never the error count** (D-24381 §3).
+   WP-571 cut its class 88% while delivering no property at all; WP-572's
+   mutation is what proved the difference. No future fixture packet may
+   substitute a count.
+3. **The checker-driven migration is the settled mechanism.** WP-572 ran it with
+   zero syntax errors where a regex produced 102 broken files and, separately,
+   18 tests broken on deep-equality assertions. No future fixture packet
+   re-opens that choice.
+4. **The deliberately-narrow skip-list posture carries forward unchanged.** A
+   fixture that proves a guard FIRES must stay incomplete and erroring — **not
+   every diagnostic is a defect** (D-24378 and its second instance).
+
+_Drafted 2026-08-17; not yet landed. Flips to Active at WP-573 execution (EC-608)._
