@@ -31,9 +31,19 @@ so it was re-recorded via `scripts/record-game-fixture.mjs`: **+2 `applied` capt
 lines, its own `finalStateHash` byte-unchanged (`813287eb…`)** — proving no
 hashed-state drift. Documented mid-execution amendment, not a scope change.
 
-**AC-6 (D-24026) live-verify: operator-pending.** After deploy, confirm in a live
-match that every Master Strike capturing a Bystander shows a log line and that the
-capture-line count matches the Bystanders later rescued from the mastermind.
+**AC-6 (D-24026) live-verify: VERIFIED (2026-08-18).** A 2-player Red Skull /
+Super Hero Civil War match (`game_id 566d58a6…`) on the deployed bundle. Exactly
+one Master Strike fired (turn 13) and it logged `[applied] 13.1.1 [Master Strike]
+Red Skull captured a Bystander.` — naming the mastermind by its **pretty display
+name** ("Red Skull", so `resolveCardName(cardDisplayData, mastermind.baseCardId)`
+resolves live, not the raw-id fallback), rendered `applied`, and placed BEFORE the
+strike's KO lines (13.1.2/13.1.3 — correct capture-before-strike order). The one
+capture matches the one mastermind rescue at turn 14 (`14.2.13 Player 0 rescued 1
+bystander(s) from the mastermind into their victory pile`), after defeating Red
+Skull's HYDRA Conspiracy tactic — a clean 1:1. The villain-path captures (Endless
+Armies of HYDRA, Ultron) and the hero-ability rescue stayed on their own lines,
+un-conflated — the exact asymmetry the packet fixed, now symmetric. **WP-574 fully
+done.**
 
 ### D-24026 live-verify - WP-566 / WP-567 / WP-568 VERIFIED (2026-08-18)
 
