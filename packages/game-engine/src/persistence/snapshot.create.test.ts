@@ -103,6 +103,7 @@ describe('createSnapshot', () => {
     assert.strictEqual(snapshot.players.length, 2);
 
     const player0 = snapshot.players[0];
+    assert.ok(player0 !== undefined, 'The snapshot must contain a record for player 0.');
     assert.strictEqual(player0.playerId, '0');
     assert.strictEqual(player0.deckCount, 3);
     assert.strictEqual(player0.handCount, 2);
@@ -111,6 +112,7 @@ describe('createSnapshot', () => {
     assert.strictEqual(player0.victoryCount, 2);
 
     const player1 = snapshot.players[1];
+    assert.ok(player1 !== undefined, 'The snapshot must contain a record for player 1.');
     assert.strictEqual(player1.playerId, '1');
     assert.strictEqual(player1.deckCount, 2);
     assert.strictEqual(player1.handCount, 1);
@@ -185,6 +187,7 @@ describe('createSnapshot', () => {
 
     for (const playerSnapshot of snapshot.players) {
       const zones = gameState.playerZones[playerSnapshot.playerId];
+      assert.ok(zones !== undefined, `Game state must carry zones for player ${playerSnapshot.playerId}.`);
       assert.strictEqual(playerSnapshot.deckCount, zones.deck.length);
       assert.strictEqual(playerSnapshot.handCount, zones.hand.length);
       assert.strictEqual(playerSnapshot.discardCount, zones.discard.length);

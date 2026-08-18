@@ -266,18 +266,23 @@ describe('undercover integration — send + play end-to-end (WP-282 / EC-314)', 
 
     // Play the undercover hero (no crash, no auto-send — the player chooses).
     executeHeroEffects(gameState, makeMockCtx({ numPlayers: 1 }), '0', 'hero-undercover');
-    assert.equal(gameState.playerZones['0'].faceDownCards.length, 0, 'playing the hero sends nothing automatically (IC-282-10)');
+    // why: the `!` on these index accesses is a type-level narrowing, not a
+    // suppression: the expression is dereferenced either way, so an undefined
+    // value would already throw here. `!` is erased at compile time and carries
+    // no runtime semantics. See D-24379 for the idiom and why it is permitted
+    // where the suppression pragmas that decision bans are not.
+    assert.equal(gameState.playerZones['0']!.faceDownCards.length, 0, 'playing the hero sends nothing automatically (IC-282-10)');
 
     // Player sends a hand card face-down.
     sendUndercover(makeMoveContext(gameState), { instanceId: 'target-card', sourceZone: 'hand' });
-    assert.deepStrictEqual(gameState.playerZones['0'].hand, [], 'the card left hand');
-    assert.equal(gameState.playerZones['0'].faceDownCards.length, 1, 'the card is face-down');
-    assert.equal(gameState.playerZones['0'].faceDownCards[0].instanceId, 'target-card', 'stored by instanceId');
+    assert.deepStrictEqual(gameState.playerZones['0']!.hand, [], 'the card left hand');
+    assert.equal(gameState.playerZones['0']!.faceDownCards.length, 1, 'the card is face-down');
+    assert.equal(gameState.playerZones['0']!.faceDownCards[0]!.instanceId, 'target-card', 'stored by instanceId');
 
     // Player plays it back from face-down — routed through the shared playCard core.
     playFromUndercover(makeMoveContext(gameState), { instanceId: 'target-card' });
-    assert.equal(gameState.playerZones['0'].faceDownCards.length, 0, 'the card left the face-down store');
-    assert.ok(gameState.playerZones['0'].inPlay.includes('target-card'), 'the card is now in play (shared play pathway)');
+    assert.equal(gameState.playerZones['0']!.faceDownCards.length, 0, 'the card left the face-down store');
+    assert.ok(gameState.playerZones['0']!.inPlay.includes('target-card'), 'the card is now in play (shared play pathway)');
     assert.equal(gameState.turnEconomy.attack, 2, 'its base attack was added (identical to hand play, IC-282-02)');
     assert.equal(gameState.turnEconomy.recruit, 1, 'its base recruit was added (identical to hand play, IC-282-02)');
   });
@@ -300,7 +305,7 @@ describe('undercover integration — send + play end-to-end (WP-282 / EC-314)', 
     // A send with no eligible card returns silently (Move Validation Contract).
     sendUndercover(makeMoveContext(gameState), { instanceId: 'nonexistent', sourceZone: 'hand' });
 
-    assert.equal(gameState.playerZones['0'].faceDownCards.length, 0, 'nothing sent face-down');
+    assert.equal(gameState.playerZones['0']!.faceDownCards.length, 0, 'nothing sent face-down');
   });
 
   it('two undercover heroes each independently send a card (no hook duplication)', () => {
@@ -319,9 +324,9 @@ describe('undercover integration — send + play end-to-end (WP-282 / EC-314)', 
     sendUndercover(makeMoveContext(gameState), { instanceId: 'card-a', sourceZone: 'hand' });
     sendUndercover(makeMoveContext(gameState), { instanceId: 'card-b', sourceZone: 'hand' });
 
-    assert.equal(gameState.playerZones['0'].faceDownCards.length, 2, 'both cards sent face-down independently');
+    assert.equal(gameState.playerZones['0']!.faceDownCards.length, 2, 'both cards sent face-down independently');
     assert.deepStrictEqual(
-      gameState.playerZones['0'].faceDownCards.map((card) => card.instanceId),
+      gameState.playerZones['0']!.faceDownCards.map((card) => card.instanceId),
       ['card-a', 'card-b'],
       'insertion order preserved deterministically (IC-282-08)',
     );

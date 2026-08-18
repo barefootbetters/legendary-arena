@@ -124,6 +124,7 @@ describe('buildInitialGameState — shape', () => {
 
     for (const playerId of playerIds) {
       const zones = gameState.playerZones[playerId];
+      assert.ok(zones !== undefined, `Game state must carry zones for player ${playerId}.`);
       assert.ok(Array.isArray(zones.deck), `Player ${playerId} must have a deck array`);
       assert.ok(Array.isArray(zones.hand), `Player ${playerId} must have a hand array`);
       assert.ok(Array.isArray(zones.discard), `Player ${playerId} must have a discard array`);
@@ -141,6 +142,7 @@ describe('buildInitialGameState — shape', () => {
 
     for (const playerId of Object.keys(gameState.playerZones)) {
       const zones = gameState.playerZones[playerId];
+      assert.ok(zones !== undefined, `Game state must carry zones for player ${playerId}.`);
       assert.ok(zones.deck.length > 0, `Player ${playerId} deck must be non-empty`);
       assert.equal(zones.hand.length, 0, `Player ${playerId} hand must be empty`);
       assert.equal(zones.discard.length, 0, `Player ${playerId} discard must be empty`);
@@ -158,7 +160,12 @@ describe('buildInitialGameState — shape', () => {
 
     for (const playerId of Object.keys(gameState.playerZones)) {
       assert.equal(
-        gameState.playerZones[playerId].deck.length,
+        // why: the `!` on these index accesses is a type-level narrowing, not a
+        // suppression: the expression is dereferenced either way, so an undefined
+        // value would already throw here. `!` is erased at compile time and carries
+        // no runtime semantics. See D-24379 for the idiom and why it is permitted
+        // where the suppression pragmas that decision bans are not.
+        gameState.playerZones[playerId]!.deck.length,
         12,
         `Player ${playerId} starting deck must have 12 cards`,
       );
@@ -231,6 +238,7 @@ describe('buildInitialGameState — shape', () => {
     // Check player zones
     for (const playerId of Object.keys(gameState.playerZones)) {
       const zones = gameState.playerZones[playerId];
+      assert.ok(zones !== undefined, `Game state must carry zones for player ${playerId}.`);
       for (const card of zones.deck) {
         assert.equal(typeof card, 'string', `Player ${playerId} deck entry must be a string`);
       }
@@ -321,7 +329,7 @@ describe('buildInitialGameState — shape', () => {
     const gameState = buildInitialGameState(config, registry, context);
 
     for (const playerId of Object.keys(gameState.playerZones)) {
-      const deck = gameState.playerZones[playerId].deck;
+      const deck = gameState.playerZones[playerId]!.deck;
       let agentCount = 0;
       let trooperCount = 0;
 

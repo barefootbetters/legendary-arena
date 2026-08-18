@@ -95,9 +95,14 @@ describe('sendUndercover move', () => {
     const zones = gameState.playerZones['0']!;
     assert.deepStrictEqual(zones.hand, [], 'card removed from hand');
     assert.equal(zones.faceDownCards.length, 1, 'one card in faceDownCards');
-    assert.equal(zones.faceDownCards[0].instanceId, 'hero-1', 'instanceId matches');
-    assert.equal(zones.faceDownCards[0].cardId, 'hero-1', 'cardId matches instanceId');
-    assert.equal(zones.faceDownCards[0].ownerPlayerId, '0', 'ownerPlayerId set correctly');
+    // why: the `!` on these index accesses is a type-level narrowing, not a
+    // suppression: the expression is dereferenced either way, so an undefined
+    // value would already throw here. `!` is erased at compile time and carries
+    // no runtime semantics. See D-24379 for the idiom and why it is permitted
+    // where the suppression pragmas that decision bans are not.
+    assert.equal(zones.faceDownCards[0]!.instanceId, 'hero-1', 'instanceId matches');
+    assert.equal(zones.faceDownCards[0]!.cardId, 'hero-1', 'cardId matches instanceId');
+    assert.equal(zones.faceDownCards[0]!.ownerPlayerId, '0', 'ownerPlayerId set correctly');
   });
 
   it('returns silently if card not in hand (Move Validation Contract)', () => {
@@ -127,9 +132,14 @@ describe('sendUndercover move', () => {
     sendUndercover(createMoveContext(gameState), { instanceId: 'hero-1', sourceZone: 'hand' });
 
     // Card should still be in hand (send failed)
-    assert.deepStrictEqual(gameState.playerZones['0'].hand, ['hero-1'], 'card remains in hand on double-send');
+    // why: the `!` on these index accesses is a type-level narrowing, not a
+    // suppression: the expression is dereferenced either way, so an undefined
+    // value would already throw here. `!` is erased at compile time and carries
+    // no runtime semantics. See D-24379 for the idiom and why it is permitted
+    // where the suppression pragmas that decision bans are not.
+    assert.deepStrictEqual(gameState.playerZones['0']!.hand, ['hero-1'], 'card remains in hand on double-send');
     // faceDownCards should still have only 1
-    assert.equal(gameState.playerZones['0'].faceDownCards.length, 1, 'no duplicate added');
+    assert.equal(gameState.playerZones['0']!.faceDownCards.length, 1, 'no duplicate added');
   });
 
   it('maintains deterministic ordering (IC-282-08)', () => {
@@ -139,7 +149,7 @@ describe('sendUndercover move', () => {
     sendUndercover(createMoveContext(gameState), { instanceId: 'b', sourceZone: 'hand' });
     sendUndercover(createMoveContext(gameState), { instanceId: 'c', sourceZone: 'hand' });
 
-    const instanceIds = gameState.playerZones['0'].faceDownCards.map((c) => c.instanceId);
+    const instanceIds = gameState.playerZones['0']!.faceDownCards.map((c) => c.instanceId);
     assert.deepStrictEqual(instanceIds, ['a', 'b', 'c'], 'insertion order preserved');
   });
 

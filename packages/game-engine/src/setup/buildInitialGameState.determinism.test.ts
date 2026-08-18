@@ -115,14 +115,21 @@ describe('buildInitialGameState — determinism', () => {
     const context = makeMockCtx({ numPlayers: 1 });
 
     const gameState = buildInitialGameState(config, registry, context);
-    const deck = gameState.playerZones['0'].deck;
+    // why: the `!` on these index accesses is a type-level narrowing, not a
+    // suppression: the expression is dereferenced either way, so an undefined
+    // value would already throw here. `!` is erased at compile time and carries
+    // no runtime semantics. See D-24379 for the idiom and why it is permitted
+    // where the suppression pragmas that decision bans are not.
+    const deck = gameState.playerZones['0']!.deck;
 
     // why: makeMockCtx reverses arrays during shuffle. The unshuffled starting
     // deck is [agent x8, trooper x4]. After reversal, the deck should start
     // with troopers and end with agents. If the deck matches the unshuffled
     // order, the shuffle was skipped.
     const firstCard = deck[0];
+    assert.ok(firstCard !== undefined, 'The shuffled deck must not be empty.');
     const lastCard = deck[deck.length - 1];
+    assert.ok(lastCard !== undefined, 'The shuffled deck must not be empty.');
 
     // After reversal: troopers at front, agents at back
     assert.ok(
