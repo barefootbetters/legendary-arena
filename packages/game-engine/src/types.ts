@@ -961,6 +961,20 @@ export interface MatchSelection {
 }
 
 /**
+ * A hero ability whose numeric-threshold gate failed at play time and is
+ * waiting for the threshold to be reached later in the same turn (WP-568).
+ */
+export interface DeferredConditionalGrant {
+  /** The player whose card is waiting. */
+  playerId: string;
+  /** The played card whose ability is waiting. */
+  cardId: CardExtId;
+  // why: an index into G.heroAbilityHooks, which is built once at setup and never
+  // mutated at runtime — so the index is stable for the whole match.
+  /** Index of the waiting hook in `G.heroAbilityHooks`. */
+  hookIndex: number;
+}
+/**
  * The shape of boardgame.io game state (G).
  *
  * Invariant: G must be JSON-serializable at all times. No functions, classes,
@@ -1370,6 +1384,18 @@ export interface LegendaryGameState {
   // and reasoned; PRE_WP080_HASH (the empty replay, no scheme) must NOT move.
   /** Setup size of the depletion-loss pile; absent unless the scheme loses on one. */
   schemeLossPileSetupSize?: number;
+
+  // why: WP-568 / D-24377 — hero abilities whose NUMERIC-THRESHOLD gate failed at
+  // play time and are waiting for the threshold to be reached later in the SAME
+  // turn (Surge of Power's "if you made 8 or more recruit this turn"). Materialized
+  // LAZILY — present only once something actually defers — so a game that never
+  // defers carries no new field and both sentinel oracles stay byte-unchanged.
+  // why: deliberately NOT named `pending*`. Every G.pending*Choices[] above is an
+  // INTERACTIVE choice with a resolve move, and a parked one lacking a UIState
+  // projection and prompt HARD-FREEZES the human player. A deferred grant takes no
+  // player input and needs no prompt — it re-checks itself at the per-move hook.
+  /** Numeric-threshold hero gates awaiting their threshold this turn; absent when none. */
+  deferredConditionalGrants?: DeferredConditionalGrant[];
 
   // why: per-turn attack/recruit point accumulation and spend tracking.
   // Reset at start of each player turn. Values are integers >= 0.

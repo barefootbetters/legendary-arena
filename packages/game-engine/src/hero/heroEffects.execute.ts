@@ -32,6 +32,11 @@ import {
   findFailedCondition,
   describeFailedCondition,
 } from './heroConditions.evaluate.js';
+import {
+  isWaitAndSeeCondition,
+  recordDeferredConditionalGrant,
+  resolveDeferredConditionalGrants,
+} from './deferredConditionalGrants.js';
 import type { HeroEffectResult } from './heroEffects.types.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
 import { shuffleDeck } from '../setup/shuffle.js';
@@ -340,6 +345,76 @@ function drawFromPlayerDeck(
 // ---------------------------------------------------------------------------
 
 /**
+ * Applies one hook's effects and records its traces + hollow classification.
+ *
+ * why: WP-568 — extracted from executeHeroEffects' loop body so the DEFERRED
+ * re-check fires a hook through exactly the same path the immediate play does. A
+ * second dispatch copy would be free to drift, which is the class of defect the
+ * hero-effect arc has already paid for. Callers must have confirmed the hook's
+ * conditions pass; this function does not re-gate.
+ *
+ * @param G - The game state, mutated in place.
+ * @param ctx - Move context (carries `random` for draws/reveals).
+ * @param playerID - The acting player.
+ * @param cardId - The played card that owns the hook.
+ * @param hook - The hook whose effects to apply.
+ * @param turn - Turn number stamped into each emitted EffectTrace.
+ * @returns How many effects reached a handler.
+ */
+function runHookEffects(
+  G: LegendaryGameState,
+  ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  hook: HeroAbilityHook,
+  turn: number,
+): number {
+  let firedEffectCount = 0;
+  if (hook.effects !== undefined) {
+    for (const effect of hook.effects) {
+      const fired = executeSingleEffect(G, ctx, playerID, cardId, effect);
+      if (fired) {
+        firedEffectCount++;
+      }
+      // why: WP-488 / D-24294 — emit a trace per legacy hero effect dispatch from THIS
+      // caller loop (it carries turn + hook.timing + cardId + the descriptor + the
+      // dispatch boolean together). `fired` maps to `fired`/`no-handler`. Inert +
+      // hash-excluded.
+      recordEffectTrace(G, buildHeroLegacyEffectTrace(cardId, hook.timing, effect, fired, turn));
+    }
+  }
+
+  // why: D-24031 / RISK-2 — primitiveEffects run AFTER the legacy `effects` loop, in
+  // array order, inside the same conditions-passed gate. The legacy-then-primitive
+  // order is locked for determinism: a line carrying both a legacy effect (e.g. an
+  // [icon:recruit]) and the Berserk composition applies them in a fixed order. Each
+  // top-level node gets its own fresh, never-persisted execution context.
+  if (hook.primitiveEffects !== undefined) {
+    for (const primitiveEffect of hook.primitiveEffects) {
+      // why: WP-317 — pass the hook's source card so a composable gain-resource grant
+      // (Empowered / Berserk) logs which card granted, mirroring the card-named
+      // `did not activate` line above.
+      const fired = interpretHeroPrimitiveEffect(G, ctx, playerID, primitiveEffect, cardId);
+      if (fired) {
+        firedEffectCount++;
+      }
+      // why: WP-488 / D-24294 — emit a trace per primitive-composition hero effect
+      // dispatch (hero-primitive), so composed hero effects are not untraced. `fired`
+      // maps to `fired`/`no-handler` by interpretHeroPrimitiveEffect's boolean.
+      recordEffectTrace(G, buildHeroPrimitiveEffectTrace(cardId, hook.timing, primitiveEffect, fired, turn));
+    }
+  }
+
+  // why: WP-257 / D-24033 — AFTER the hook ran, classify whether the whole hook was
+  // hollow (per-hook rule, NOT state-diff): the detector asks "did any declared
+  // mechanic on this line reach an executable handler?" — never whether G changed.
+  // recordHollowEffect fires only when NO declared effect was reachable AND ≥1 was a
+  // hollow reason (mixed-hook lines with ≥1 reachable effect never flag).
+  detectHollowHeroHook(G, ctx, cardId, hook);
+  return firedEffectCount;
+}
+
+/**
  * Executes hero ability effects for a played card.
  *
  * Called from playCard after the card is placed in inPlay and base stats
@@ -414,6 +489,25 @@ export function executeHeroEffects(
       const reason = failedCondition === undefined
         ? 'a play condition was not met'
         : describeFailedCondition(G, playerID, failedCondition);
+      // why: WP-568 / D-24377 — a NUMERIC-THRESHOLD gate is a whole-turn window,
+      // not a snapshot. Record it and say so; the per-move re-check fires it if the
+      // threshold is reached later this turn. This is a THIRD log state and must not
+      // reuse the "did not activate" wording above: not-yet-met is not the same as
+      // failed, and a player who reads "did not activate" stops trying.
+      // why: `neutral`, not `blocked`. LOG_OUTCOMES has no waiting member and adding
+      // one is a canonical-array change out of scope here; `blocked` means the effect
+      // was suppressed and nothing happened, which is wrong for an ability that may
+      // still fire this turn.
+      if (failedCondition !== undefined && isWaitAndSeeCondition(failedCondition)) {
+        recordDeferredConditionalGrant(G, playerID, cardId, G.heroAbilityHooks.indexOf(hook));
+        pushLog(G,
+          `Player ${playerID}'s ${formatCardRef(G.cardDisplayData, cardId)} ability is waiting — ${reason}. It will apply if you reach it this turn.`,
+          'neutral',
+          cardId,
+        );
+        continue;
+      }
+
       pushLog(G,
         `Player ${playerID}'s ${formatCardRef(G.cardDisplayData, cardId)} ability did not activate — ${reason}.`,
         'blocked',
@@ -426,47 +520,8 @@ export function executeHeroEffects(
     // composition `primitiveEffects`, or both — run whichever are present. (The former
     // early-`continue` on absent `effects` is gone because it would skip a Berserk hook,
     // which carries only primitiveEffects.)
-    if (hook.effects !== undefined) {
-      for (const effect of hook.effects) {
-        const fired = executeSingleEffect(G, ctx, playerID, cardId, effect);
-        if (fired) {
-          firedEffectCount++;
-        }
-        // why: WP-488 / D-24294 — emit a trace per legacy hero effect dispatch from THIS
-        // caller loop (it carries turn + hook.timing + cardId + the descriptor + the
-        // dispatch boolean together). `fired` maps to `fired`/`no-handler`. Inert +
-        // hash-excluded.
-        recordEffectTrace(G, buildHeroLegacyEffectTrace(cardId, hook.timing, effect, fired, turn));
-      }
-    }
-
-    // why: D-24031 / RISK-2 — primitiveEffects run AFTER the legacy `effects` loop, in
-    // array order, inside the same conditions-passed gate. The legacy-then-primitive
-    // order is locked for determinism: a line carrying both a legacy effect (e.g. an
-    // [icon:recruit]) and the Berserk composition applies them in a fixed order. Each
-    // top-level node gets its own fresh, never-persisted execution context.
-    if (hook.primitiveEffects !== undefined) {
-      for (const primitiveEffect of hook.primitiveEffects) {
-        // why: WP-317 — pass the hook's source card so a composable gain-resource grant
-        // (Empowered / Berserk) logs which card granted, mirroring the card-named
-        // `did not activate` line above.
-        const fired = interpretHeroPrimitiveEffect(G, ctx, playerID, primitiveEffect, cardId);
-        if (fired) {
-          firedEffectCount++;
-        }
-        // why: WP-488 / D-24294 — emit a trace per primitive-composition hero effect
-        // dispatch (hero-primitive), so composed hero effects are not untraced. `fired`
-        // maps to `fired`/`no-handler` by interpretHeroPrimitiveEffect's boolean.
-        recordEffectTrace(G, buildHeroPrimitiveEffectTrace(cardId, hook.timing, primitiveEffect, fired, turn));
-      }
-    }
-
-    // why: WP-257 / D-24033 — AFTER the hook ran, classify whether the whole hook was
-    // hollow (per-hook rule, NOT state-diff): the detector asks "did any declared
-    // mechanic on this line reach an executable handler?" — never whether G changed.
-    // recordHollowEffect fires only when NO declared effect was reachable AND ≥1 was a
-    // hollow reason (mixed-hook lines with ≥1 reachable effect never flag).
-    detectHollowHeroHook(G, ctx, cardId, hook);
+    // why: WP-568 — same dispatch path the deferred re-check uses (runHookEffects).
+    firedEffectCount += runHookEffects(G, ctx, playerID, cardId, hook, turn);
   }
 
   return firedEffectCount;
@@ -2391,4 +2446,58 @@ export function selectDefaultOptionalKoTarget(
     return null;
   }
   return { zone: bestZone, cardId: bestCardId };
+}
+
+/**
+ * Re-checks every deferred conditional grant and fires those now satisfied.
+ *
+ * why: WP-568 / D-24377 — invoked from the play-phase `turn.onMove` hook, the same
+ * per-move cadence `latchFinalTurnIfDeckExhausted` and
+ * `applyPileDepletionResourceLoss` already use: it observes the state each move
+ * leaves behind, which is exactly when a recruit total can cross a threshold.
+ *
+ * An entry fires through `runHookEffects` — the same dispatch path the immediate
+ * play uses — and is removed as it fires, so a threshold crossed, dropped and
+ * re-crossed within one turn grants EXACTLY ONCE.
+ *
+ * @param G - The game state, mutated in place.
+ * @param ctx - Move context (carries `random` for draws/reveals).
+ */
+export function resolveDeferredHeroGrants(
+  G: LegendaryGameState,
+  ctx: unknown,
+): void {
+  // why: derive the turn through readTurnNumber, the same narrowing
+  // executeHeroEffects uses - it returns 0 rather than throwing when a
+  // hand-built context omits the nested ctx, keeping the never-throw contract.
+  const turn = readTurnNumber(ctx);
+  if (!G.heroAbilityHooks) {
+    return;
+  }
+
+  resolveDeferredConditionalGrants(
+    G,
+    (entry) => {
+      const hook = G.heroAbilityHooks[entry.hookIndex];
+      if (hook === undefined) {
+        return false;
+      }
+      // why: re-evaluate ALL of the hook's conditions, not just the deferred one —
+      // a hook can carry an out-of-scope gate too, and it must still hold at the
+      // moment the effect actually applies.
+      return evaluateAllConditions(G, entry.playerId, hook.conditions, entry.cardId);
+    },
+    (entry) => {
+      const hook = G.heroAbilityHooks[entry.hookIndex];
+      if (hook === undefined) {
+        return;
+      }
+      runHookEffects(G, ctx, entry.playerId, entry.cardId, hook, turn);
+      pushLog(G,
+        `Player ${entry.playerId}'s ${formatCardRef(G.cardDisplayData, entry.cardId)} ability applied — its condition was met later this turn.`,
+        'applied',
+        entry.cardId,
+      );
+    },
+  );
 }

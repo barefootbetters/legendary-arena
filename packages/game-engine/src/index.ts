@@ -124,6 +124,9 @@ export {
   resolveTwistLossThreshold,
 } from "./rules/schemeLossProgress.js";
 export type { MenaceTier, SchemeLossKind } from "./rules/schemeLossProgress.js";
+// why: WP-568 / D-24377 — the deferred-grant entry type is exported so a consumer
+// can read the lazy G field without re-declaring its shape.
+export type { DeferredConditionalGrant } from "./types.js";
 export { mastermindStrikeHandler } from "./rules/mastermindHandlers.js";
 export type { EndgameResult, EndgameOutcome } from "./endgame/endgame.types.js";
 export { ENDGAME_CONDITIONS, ESCAPE_LIMIT } from "./endgame/endgame.types.js";
