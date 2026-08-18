@@ -37492,3 +37492,43 @@ was mechanically rewritten in the largest file to measure real yield —
 **498 → 362** gate, **209 → 73** class, from one file.
 
 _Active 2026-08-17 - landed at WP-570 execution (EC-605). Class CLOSED: `TS2532` 178 -> 0, `TS18048` 31 -> 0; gate **498 -> 289**. All five clauses held. Section 3's behavior-preservation claim was borne out at scale: 177 mechanical rewrites across 12 files produced **zero** test failures at any point, and every file's suite was run as it was swept. Section 4's two-idiom split proved load-bearing rather than decorative - 177 sites took the inline form and **8** took the assertion form, and those 8 are exactly the bound variables read repeatedly, where a `!` per use would have stated nothing. **One clause is EXTENDED by what execution found:** the *last* error in the class was not an index access at all - `versioning.test.ts` dereferences `contentVersion`, which is genuinely OPTIONAL on its type. That case takes the assertion form for a different and stronger reason: the artifact under test is stamped WITH a content version, so asserting presence converts a compiler complaint into a real check that the JSON roundtrip did not drop the field. **Generalizable:** when clearing a `noUncheckedIndexedAccess` sweep, the residue is where the genuinely-optional properties hide, and they deserve an assertion that says something rather than a narrowing that assumes it. **One execution-time bug, recorded because the shape recurs:** a sweep's idempotence guard ("skip lines already carrying `!`") is wrong when a line can carry MORE THAN ONE index - a line narrowed on its first index was skipped while its second still needed narrowing. Guard on the specific expression, never on the line._
+
+### D-24380 — Engine test fixtures for required-field types are built, not literal
+
+WP-571 closes the missing-required-state-field class: 195 errors across 49
+files, all of them engine tests constructing structurally invalid
+`LegendaryGameState` values and passing. Locked:
+
+1. **The failure is RECURRING, not incidental.** `git log -S` at draft time
+   dates `faceDownCards` to **WP-282** and `horrors` to **WP-156** — separate
+   packets, months apart — and at least **six** required-field additions each
+   left the test fixtures structurally invalid. Nothing compiled them, so
+   nothing said so. Fixing the 195 sites inline would make today's errors
+   disappear and **restore the exact preconditions for a seventh**.
+2. **A builder supplies the canonical default for every required field and
+   accepts a partial override**, so the next required field is added in **one
+   place** and every fixture inherits it. That property — not tidiness — is the
+   justification, and it is why the builder must be **proven by mutation**: add
+   a required field, confirm exactly one place breaks. An unproven property is
+   a preference, and a fixture builder is precisely the abstraction that gets
+   added because it looks cleaner and then delivers nothing.
+3. **Defaults are READ from the production type and the setup code that
+   populates it, never invented.** A wrong default silently changes what dozens
+   of tests assert; a builder that lies is worse than the literals it replaced.
+4. **The FIXTURES are wrong, never the types.** No production type is widened,
+   relaxed, or made optional to accept a partial fixture — the same boundary
+   D-24378 defends for `CardRegistryReader`. **This boundary has already been
+   breached twice**, which is why it needed writing down: two production fields
+   carry the comment *"Optional on the G type so existing test fixtures compile
+   without modification"* (`MastermindState.gameText` and a field in
+   `scheme/schemeState.types.ts`). In both cases a production type was bent to
+   fit invalid fixtures because fixing the fixtures was expensive and nothing
+   forced the issue. Those two are already shipped and re-tightening them is a
+   separate packet; they are recorded here so the pressure reads as real rather
+   than hypothetical.
+
+Extends the WP-569 precedent (D-24378 §4): shared engine test-support lives in a
+`src/test/` sibling module, and its presence in `dist` is an accepted, enumerated
+cost rather than a surprise.
+
+_Drafted 2026-08-17; not yet landed. Flips to Active at WP-571 execution (EC-606)._
