@@ -60,8 +60,24 @@
   failures.
 - AC-6: D-24026 live verify.
 
+## Execution Amendment (2026-08-18)
+
+- **Target file set expanded by one forced, additive fixture re-record.** The WP
+  determinism analysis reasoned only about the two HASH oracles (both
+  message-excluding) and did not anticipate the complete-game regression suite's
+  `messages` oracle. The committed sentinel fixture
+  `packages/game-engine/src/test/fixtures/games/sentinel-core-doom-2p.replay.json`
+  fires two core Dr. Doom Master Strikes and records their log lines, so the new
+  `applied` capture line diverged its pinned `messages` / `snapshotPerTurn[].messages`
+  blocks. Re-recorded via `scripts/record-game-fixture.mjs` (never hand-edited):
+  **+2 `applied` capture lines, `finalStateHash` byte-unchanged (`813287eb…`)** — an
+  additive re-record proving no hashed-state drift. This is the "EC missed a file"
+  mid-execution amendment (01.0b §deviations), documented under D-24383 §5. It does
+  NOT relax any guardrail: both hash oracles remain byte-unchanged; the empty-supply
+  line is byte-unchanged; `LogEntry.card` was not added; D-15401 stays unamended.
+
 ## Completion
 
-- [ ] Two-commit topology: `EC-609:` implementation, `SPEC:` governance close.
-- [ ] D-24383 landed **Active** in `DECISIONS.md`.
-- [ ] `WORK_INDEX.md` `[x]`; `EC_INDEX.md` `Done`; mindmap `✅`; counts 0.
+- [x] Two-commit topology: `EC-609:` implementation, `SPEC:` governance close.
+- [x] D-24383 landed **Active** in `DECISIONS.md`.
+- [x] `WORK_INDEX.md` `[x]`; `EC_INDEX.md` `Done`; mindmap `✅`; counts 0.

@@ -7,6 +7,34 @@
 
 ## Current State
 
+### WP-574 — Master Strike Bystander Capture Log (EC-609 / D-24383) shipped (2026-08-18)
+
+`captureBystanderOntoMastermind` (`rules/mastermindHandlers.ts`) now logs one
+`applied` line on the success path — `[Master Strike] {mastermind} captured a
+Bystander.` — naming the capturing mastermind via `resolveCardName(cardDisplayData,
+mastermind.baseCardId)`. Previously only the empty-supply branch logged, so a
+mastermind fight's victory-pile Bystanders appeared with no trail (found by
+reconciling a real match: 3 rescued, 1 capture logged). Observability only —
+D-15401 stays Immutable and unamended; the empty-supply `blocked` line is
+byte-unchanged; no `LogEntry.card` on the generic strike path.
+
+**Both hash oracles byte-unchanged.** Sentinel `finalStateHash` (hashGameState,
+messages-excluded per D-24081) and `PRE_WP080_HASH = ec64506a` (computeStateHash,
+messages-included but replays an empty move list → no strike fires) both unchanged.
+Engine suite 2779 → **2781** pass / 0 fail (+2 new tests: success-line + two-wording
+assertions); `pnpm -r build` 0; `pnpm -r --no-bail test` no new failures.
+
+**One forced additive fixture re-record (D-24383 §5 / EC-609 §Execution Amendment).**
+The WP determinism analysis omitted the complete-game regression suite's `messages`
+oracle. `sentinel-core-doom-2p.replay.json` fires two core Dr. Doom Master Strikes,
+so it was re-recorded via `scripts/record-game-fixture.mjs`: **+2 `applied` capture
+lines, its own `finalStateHash` byte-unchanged (`813287eb…`)** — proving no
+hashed-state drift. Documented mid-execution amendment, not a scope change.
+
+**AC-6 (D-24026) live-verify: operator-pending.** After deploy, confirm in a live
+match that every Master Strike capturing a Bystander shows a log line and that the
+capture-line count matches the Bystanders later rescued from the mastermind.
+
 ### D-24026 live-verify - WP-566 / WP-567 / WP-568 VERIFIED (2026-08-18)
 
 One 2-player Red Skull / Super Hero Civil War match (`SIu2mFpBYMY`, `gitSha

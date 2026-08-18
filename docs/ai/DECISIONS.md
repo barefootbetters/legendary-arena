@@ -37604,8 +37604,20 @@ Locked:
    reading the code — which is why it survived: nothing in the source looks wrong,
    and the asymmetry is only visible once the RESCUE line is compared against the
    missing CAPTURE lines.
+5. **The complete-game fixture messages oracle re-records additively (execution
+   amendment).** The WP determinism analysis reasoned only about the two HASH
+   oracles and concluded "no re-pin expected." It did not anticipate that a
+   committed sentinel fixture (`sentinel-core-doom-2p.replay.json`) records the
+   Master Strike log lines in its `messages` / `snapshotPerTurn[].messages` oracle,
+   which is NOT hash-based. That fixture fires two core Dr. Doom Master Strikes, so
+   the re-record ADDS exactly the two new `applied` capture lines and nothing else —
+   `finalStateHash` is **byte-unchanged** (`813287eb…`), confirming no hashed-state
+   drift. Re-recorded via `scripts/record-game-fixture.mjs` (never hand-edited); the
+   EC-609 target file set expanded by this one forced, additive fixture. This is the
+   "EC missed a file" mid-execution amendment (01.0b §deviations), not a scope
+   change — the capture line SHOULD now appear, and the fixture oracle records it.
 
-**Drafted 2026-08-18; not yet landed. Flips to Active at WP-574 execution (EC-609).**
+**Active 2026-08-18 (WP-574 / EC-609).**
 
 ### D-24384 — Diagnostics Report Carries No Effect Trace (Channel Mismatch)
 

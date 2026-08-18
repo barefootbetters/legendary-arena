@@ -124,11 +124,23 @@ is captured is unchanged. D-15401 stays Immutable and unamended.
 
 ## Definition of Done
 
-- [ ] AC-1..AC-5 demonstrated with observed output; AC-6 verified or recorded
-      operator-pending.
-- [ ] D-24383 landed **Active**.
-- [ ] `WORK_INDEX.md` `[x]`; `EC_INDEX.md` `Done`; mindmap `📝`→`✅`; counts 0.
-- [ ] `STATUS.md` records both oracles byte-unchanged.
+- [x] AC-1..AC-5 demonstrated with observed output (engine suite 2779→2781, +2 new
+      tests, 0 fail; `pnpm -r --no-bail test` no new failures); AC-6 recorded
+      operator-pending (post-deploy live verify).
+- [x] D-24383 landed **Active**.
+- [x] `WORK_INDEX.md` `[x]`; `EC_INDEX.md` `Done`; mindmap `📝`→`✅`; counts 0.
+- [x] `STATUS.md` records both oracles byte-unchanged.
+
+## Execution Note (2026-08-18)
+
+The determinism analysis above held for the two hash oracles (both byte-unchanged:
+sentinel `finalStateHash`, `PRE_WP080_HASH = ec64506a`), but it omitted the
+complete-game regression suite's **`messages` oracle**. The committed sentinel
+fixture `sentinel-core-doom-2p.replay.json` fires two core Dr. Doom Master Strikes
+and records their log lines, so it was re-recorded additively (+2 `applied` capture
+lines; its own `finalStateHash` byte-unchanged at `813287eb…`). This one forced,
+additive fixture was added to the EC-609 target set as a documented mid-execution
+amendment (D-24383 §5; EC-609 §Execution Amendment) — not a scope change.
 
 ## Notes
 
