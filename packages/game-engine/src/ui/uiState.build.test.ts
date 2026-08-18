@@ -45,6 +45,12 @@ function createTestConfig(): MatchSetupConfig {
  * UIState tests do not require card validation.
  */
 function createMockRegistry(): CardRegistryReader {
+  // why: DELIBERATELY narrow - listCards only. These tests prove the
+  // isCardDisplayDataRegistryReader guard FIRES and emits its skipped-builder
+  // diagnostic, which a complete reader would silence. Completing this mock
+  // through the WP-571 builder made the diagnostic count drop 1 -> 0 and broke
+  // the test; it is excluded for the same reason as the loadout narrow-registry
+  // sites (D-24378), and is a SECOND instance of that finding.
   return { listCards: () => [] };
 }
 

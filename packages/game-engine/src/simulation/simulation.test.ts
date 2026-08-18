@@ -24,6 +24,7 @@ import { filterUIStateForAudience } from '../ui/uiState.filter.js';
 import { createRandomPolicy } from './ai.random.js';
 import { getLegalMoves } from './ai.legalMoves.js';
 import { runSimulation } from './simulation.runner.js';
+import { makeCardRegistryReader } from '../test/fixtureBuilders.js';
 
 /**
  * Builds a valid 9-field MatchSetupConfig fixture for simulation tests.
@@ -54,7 +55,7 @@ function createTestConfig(): MatchSetupConfig {
  * empty records when the registry lacks listSets/getSet.
  */
 function createMockRegistry(): CardRegistryReader {
-  return {
+  return { ...makeCardRegistryReader(),
     listCards: () => [],
   };
 }

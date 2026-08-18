@@ -21,6 +21,7 @@ import { makeMockCtx } from '../test/mockCtx.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
 import type { CardRegistryReader } from '../matchSetup.validate.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
+import { makeCardRegistryReader } from '../test/fixtureBuilders.js';
 
 /**
  * Builds a valid 9-field MatchSetupConfig fixture (mirrors simulation.test.ts).
@@ -48,7 +49,7 @@ function createTestConfig(): MatchSetupConfig {
  * @returns A registry reader exposing an empty listCards.
  */
 function createMockRegistry(): CardRegistryReader {
-  return { listCards: () => [] };
+  return { ...makeCardRegistryReader(), listCards: () => [] };
 }
 
 // why: the reverse-shuffle proves the reshuffle path actually ran on deck

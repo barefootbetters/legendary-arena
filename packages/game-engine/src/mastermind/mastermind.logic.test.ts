@@ -9,10 +9,11 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { defeatTopTactic, areAllTacticsDefeated } from './mastermind.logic.js';
 import type { MastermindState } from './mastermind.types.js';
+import { makeMastermindState } from '../test/fixtureBuilders.js';
 
 describe('defeatTopTactic', () => {
   it('removes first card from tacticsDeck and appends to tacticsDefeated', () => {
-    const state: MastermindState = {
+    const state: MastermindState = { ...makeMastermindState(),
       id: 'mm-a',
       baseCardId: 'mm-a-base',
       tacticsDeck: ['tactic-1', 'tactic-2', 'tactic-3'],
@@ -26,7 +27,7 @@ describe('defeatTopTactic', () => {
   });
 
   it('on empty tacticsDeck: returns unchanged', () => {
-    const state: MastermindState = {
+    const state: MastermindState = { ...makeMastermindState(),
       id: 'mm-b',
       baseCardId: 'mm-b-base',
       tacticsDeck: [],
@@ -71,7 +72,7 @@ describe('defeatTopTactic', () => {
   });
 
   it('returns new object (input not mutated)', () => {
-    const state: MastermindState = {
+    const state: MastermindState = { ...makeMastermindState(),
       id: 'mm-c',
       baseCardId: 'mm-c-base',
       tacticsDeck: ['tactic-x', 'tactic-y'],
@@ -96,7 +97,7 @@ describe('defeatTopTactic', () => {
 
 describe('areAllTacticsDefeated', () => {
   it('returns true when deck empty and defeated non-empty', () => {
-    const state: MastermindState = {
+    const state: MastermindState = { ...makeMastermindState(),
       id: 'mm-d',
       baseCardId: 'mm-d-base',
       tacticsDeck: [],
@@ -107,7 +108,7 @@ describe('areAllTacticsDefeated', () => {
   });
 
   it('returns false when deck has cards', () => {
-    const state: MastermindState = {
+    const state: MastermindState = { ...makeMastermindState(),
       id: 'mm-e',
       baseCardId: 'mm-e-base',
       tacticsDeck: ['remaining'],

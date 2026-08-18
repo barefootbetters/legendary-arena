@@ -19,6 +19,7 @@ import type { HeroAbilityHook } from '../rules/heroAbility.types.js';
 import { makeMockCtx } from '../test/mockCtx.js';
 import { makeMockMoveContext } from '../test/mockMoveContext.js';
 import type { MockMoveContext } from '../test/mockMoveContext.js';
+import { makeGlobalPiles, makeMastermindState, makePlayerZones, makeTurnEconomy } from '../test/fixtureBuilders.js';
 
 // ---------------------------------------------------------------------------
 // Mock G factory + move context
@@ -68,7 +69,7 @@ function createDodgeState(options?: DodgeStateOptions): LegendaryGameState {
     },
     currentStage: options?.currentStage ?? 'main',
     playerZones: {
-      '0': {
+      '0': { ...makePlayerZones(),
         deck: options?.deck ?? [],
         hand: options?.hand ?? [],
         discard: options?.discard ?? [],
@@ -76,7 +77,7 @@ function createDodgeState(options?: DodgeStateOptions): LegendaryGameState {
         victory: [],
       },
     },
-    piles: { bystanders: [], wounds: [], officers: [], sidekicks: [] },
+    piles: { ...makeGlobalPiles(), bystanders: [], wounds: [], officers: [], sidekicks: [] },
     messages: [],
     counters: {},
     hookRegistry: [],
@@ -84,9 +85,9 @@ function createDodgeState(options?: DodgeStateOptions): LegendaryGameState {
     villainDeckCardTypes: {},
     ko: [],
     attachedBystanders: {},
-    turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0 },
+    turnEconomy: { ...makeTurnEconomy(), attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0 },
     cardStats: {},
-    mastermind: {
+    mastermind: { ...makeMastermindState(),
       id: 'test-mastermind',
       baseCardId: 'test-mastermind-base',
       tacticsDeck: [],

@@ -40,7 +40,7 @@ function makeResolverState(overrides?: {
   const playerCount = overrides?.playerCount ?? 1;
   const playerZones: Record<string, LegendaryGameState['playerZones'][string]> = {};
   for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
-    playerZones[String(playerIndex)] = {
+    playerZones[String(playerIndex)] = { ...makePlayerZones(),
       deck: [],
       hand: [],
       discard: [],
@@ -438,9 +438,9 @@ describe('ko-from-hq resolver', () => {
   it('KOs the two cheapest heroes from HQ', () => {
     const gameState = makeResolverState();
     gameState.hq = ['hero-a', 'hero-b', 'hero-c', null, null] as LegendaryGameState['hq'];
-    gameState.cardStats['hero-a'] = { attack: 0, recruit: 0, cost: 5, fightCost: 0 };
-    gameState.cardStats['hero-b'] = { attack: 0, recruit: 0, cost: 2, fightCost: 0 };
-    gameState.cardStats['hero-c'] = { attack: 0, recruit: 0, cost: 3, fightCost: 0 };
+    gameState.cardStats['hero-a'] = { ...makeCardStatEntry(), attack: 0, recruit: 0, cost: 5, fightCost: 0 };
+    gameState.cardStats['hero-b'] = { ...makeCardStatEntry(), attack: 0, recruit: 0, cost: 2, fightCost: 0 };
+    gameState.cardStats['hero-c'] = { ...makeCardStatEntry(), attack: 0, recruit: 0, cost: 3, fightCost: 0 };
     gameState.heroDeck = ['hero-d', 'hero-e'];
 
     resolver(gameState, makeRevealContext(), emptyImplementationMap, {
@@ -455,8 +455,8 @@ describe('ko-from-hq resolver', () => {
   it('tie-breaks by slot index (lower index first)', () => {
     const gameState = makeResolverState();
     gameState.hq = ['hero-a', 'hero-b', null, null, null] as LegendaryGameState['hq'];
-    gameState.cardStats['hero-a'] = { attack: 0, recruit: 0, cost: 3, fightCost: 0 };
-    gameState.cardStats['hero-b'] = { attack: 0, recruit: 0, cost: 3, fightCost: 0 };
+    gameState.cardStats['hero-a'] = { ...makeCardStatEntry(), attack: 0, recruit: 0, cost: 3, fightCost: 0 };
+    gameState.cardStats['hero-b'] = { ...makeCardStatEntry(), attack: 0, recruit: 0, cost: 3, fightCost: 0 };
 
     resolver(gameState, makeRevealContext(), emptyImplementationMap, {
       koCount: 1,
@@ -469,7 +469,7 @@ describe('ko-from-hq resolver', () => {
   it('refills vacated HQ slots from hero deck', () => {
     const gameState = makeResolverState();
     gameState.hq = ['hero-a', null, null, null, null] as LegendaryGameState['hq'];
-    gameState.cardStats['hero-a'] = { attack: 0, recruit: 0, cost: 1, fightCost: 0 };
+    gameState.cardStats['hero-a'] = { ...makeCardStatEntry(), attack: 0, recruit: 0, cost: 1, fightCost: 0 };
     gameState.heroDeck = ['hero-refill'];
 
     resolver(gameState, makeRevealContext(), emptyImplementationMap, {
@@ -484,8 +484,8 @@ describe('ko-from-hq resolver', () => {
   it('respects costThreshold filter', () => {
     const gameState = makeResolverState();
     gameState.hq = ['hero-cheap', 'hero-expensive', null, null, null] as LegendaryGameState['hq'];
-    gameState.cardStats['hero-cheap'] = { attack: 0, recruit: 0, cost: 2, fightCost: 0 };
-    gameState.cardStats['hero-expensive'] = { attack: 0, recruit: 0, cost: 6, fightCost: 0 };
+    gameState.cardStats['hero-cheap'] = { ...makeCardStatEntry(), attack: 0, recruit: 0, cost: 2, fightCost: 0 };
+    gameState.cardStats['hero-expensive'] = { ...makeCardStatEntry(), attack: 0, recruit: 0, cost: 6, fightCost: 0 };
 
     resolver(gameState, makeRevealContext(), emptyImplementationMap, {
       koCount: 2,
@@ -499,7 +499,7 @@ describe('ko-from-hq resolver', () => {
   it('handles fewer eligible heroes than koCount gracefully', () => {
     const gameState = makeResolverState();
     gameState.hq = ['hero-a', null, null, null, null] as LegendaryGameState['hq'];
-    gameState.cardStats['hero-a'] = { attack: 0, recruit: 0, cost: 1, fightCost: 0 };
+    gameState.cardStats['hero-a'] = { ...makeCardStatEntry(), attack: 0, recruit: 0, cost: 1, fightCost: 0 };
 
     resolver(gameState, makeRevealContext(), emptyImplementationMap, {
       koCount: 3,
@@ -542,11 +542,11 @@ describe('ko-from-hq resolver', () => {
   it('koAll KOs every eligible Hero in the HQ and refills each slot', () => {
     const gameState = makeResolverState();
     gameState.hq = ['hero-a', 'hero-b', 'hero-c', 'hero-d', 'hero-e'] as LegendaryGameState['hq'];
-    gameState.cardStats['hero-a'] = { attack: 0, recruit: 0, cost: 5, fightCost: 0 };
-    gameState.cardStats['hero-b'] = { attack: 0, recruit: 0, cost: 2, fightCost: 0 };
-    gameState.cardStats['hero-c'] = { attack: 0, recruit: 0, cost: 3, fightCost: 0 };
-    gameState.cardStats['hero-d'] = { attack: 0, recruit: 0, cost: 1, fightCost: 0 };
-    gameState.cardStats['hero-e'] = { attack: 0, recruit: 0, cost: 4, fightCost: 0 };
+    gameState.cardStats['hero-a'] = { ...makeCardStatEntry(), attack: 0, recruit: 0, cost: 5, fightCost: 0 };
+    gameState.cardStats['hero-b'] = { ...makeCardStatEntry(), attack: 0, recruit: 0, cost: 2, fightCost: 0 };
+    gameState.cardStats['hero-c'] = { ...makeCardStatEntry(), attack: 0, recruit: 0, cost: 3, fightCost: 0 };
+    gameState.cardStats['hero-d'] = { ...makeCardStatEntry(), attack: 0, recruit: 0, cost: 1, fightCost: 0 };
+    gameState.cardStats['hero-e'] = { ...makeCardStatEntry(), attack: 0, recruit: 0, cost: 4, fightCost: 0 };
     gameState.heroDeck = ['refill-1', 'refill-2', 'refill-3', 'refill-4', 'refill-5'];
 
     resolver(gameState, makeRevealContext(), emptyImplementationMap, { koAll: true });
@@ -564,8 +564,8 @@ describe('ko-from-hq resolver', () => {
   it('koAll KOs all eligible Heroes when the HQ is only partially filled', () => {
     const gameState = makeResolverState();
     gameState.hq = ['hero-a', null, 'hero-c', null, null] as LegendaryGameState['hq'];
-    gameState.cardStats['hero-a'] = { attack: 0, recruit: 0, cost: 5, fightCost: 0 };
-    gameState.cardStats['hero-c'] = { attack: 0, recruit: 0, cost: 3, fightCost: 0 };
+    gameState.cardStats['hero-a'] = { ...makeCardStatEntry(), attack: 0, recruit: 0, cost: 5, fightCost: 0 };
+    gameState.cardStats['hero-c'] = { ...makeCardStatEntry(), attack: 0, recruit: 0, cost: 3, fightCost: 0 };
     // empty hero deck — the vacated slots simply stay null
 
     resolver(gameState, makeRevealContext(), emptyImplementationMap, { koAll: true });
@@ -669,6 +669,7 @@ import type { CardExtId as CardExtIdAlias } from '../state/zones.types.js';
 
 const TWIST_CARD_ID = 'core-scheme-twist-test' as CardExtIdAlias;
 import { KILLBOT_TWISTS_NEXT_TO_SCHEME } from '../types.js';
+import { makeCardStatEntry, makePlayerZones } from '../test/fixtureBuilders.js';
 
 describe('WP-200 — schemeTwistResolved emission per resolver', () => {
   it('revealOrPunish emits exactly one event with resolverKey "revealOrPunish"', () => {
@@ -741,7 +742,7 @@ describe('WP-200 — schemeTwistResolved emission per resolver', () => {
   it('koFromHq emits exactly one event with resolverKey "koFromHq"', () => {
     const gameState = makeResolverState();
     gameState.hq = ['hero-a', null, null, null, null] as LegendaryGameState['hq'];
-    gameState.cardStats['hero-a'] = { attack: 0, recruit: 0, cost: 1, fightCost: 0 };
+    gameState.cardStats['hero-a'] = { ...makeCardStatEntry(), attack: 0, recruit: 0, cost: 1, fightCost: 0 };
 
     SCHEME_TWIST_RESOLVERS['ko-from-hq'](
       gameState,
@@ -842,9 +843,9 @@ describe('secret-invasion resolver', () => {
   it('moves the highest-cost HQ Hero into the Sewers as a Skrull and refills the slot', () => {
     const gameState = makeResolverState({ schemeId: SECRET_INVASION });
     gameState.hq = ['hero-cheap', 'hero-mid', 'hero-expensive', null, null] as LegendaryGameState['hq'];
-    gameState.cardStats['hero-cheap'] = { attack: 0, recruit: 0, cost: 2, fightCost: 0 };
-    gameState.cardStats['hero-mid'] = { attack: 0, recruit: 0, cost: 4, fightCost: 0 };
-    gameState.cardStats['hero-expensive'] = { attack: 0, recruit: 0, cost: 6, fightCost: 0 };
+    gameState.cardStats['hero-cheap'] = { ...makeCardStatEntry(), attack: 0, recruit: 0, cost: 2, fightCost: 0 };
+    gameState.cardStats['hero-mid'] = { ...makeCardStatEntry(), attack: 0, recruit: 0, cost: 4, fightCost: 0 };
+    gameState.cardStats['hero-expensive'] = { ...makeCardStatEntry(), attack: 0, recruit: 0, cost: 6, fightCost: 0 };
     gameState.heroDeck = ['hero-refill'];
 
     resolver(gameState, makeRevealContext(), emptyImplementationMap, {});
@@ -864,8 +865,8 @@ describe('secret-invasion resolver', () => {
   it('tie-breaks by lowest slot index (the flip of ko-from-hq keeps low-slot ties)', () => {
     const gameState = makeResolverState({ schemeId: SECRET_INVASION });
     gameState.hq = ['hero-a', 'hero-b', null, null, null] as LegendaryGameState['hq'];
-    gameState.cardStats['hero-a'] = { attack: 0, recruit: 0, cost: 5, fightCost: 0 };
-    gameState.cardStats['hero-b'] = { attack: 0, recruit: 0, cost: 5, fightCost: 0 };
+    gameState.cardStats['hero-a'] = { ...makeCardStatEntry(), attack: 0, recruit: 0, cost: 5, fightCost: 0 };
+    gameState.cardStats['hero-b'] = { ...makeCardStatEntry(), attack: 0, recruit: 0, cost: 5, fightCost: 0 };
 
     resolver(gameState, makeRevealContext(), emptyImplementationMap, {});
 
@@ -876,7 +877,7 @@ describe('secret-invasion resolver', () => {
   it('routes the displaced card to the escaped pile when the city is full', () => {
     const gameState = makeResolverState({ schemeId: SECRET_INVASION });
     gameState.hq = ['hero-x', null, null, null, null] as LegendaryGameState['hq'];
-    gameState.cardStats['hero-x'] = { attack: 0, recruit: 0, cost: 3, fightCost: 0 };
+    gameState.cardStats['hero-x'] = { ...makeCardStatEntry(), attack: 0, recruit: 0, cost: 3, fightCost: 0 };
     gameState.city = ['v0', 'v1', 'v2', 'v3', 'v4'] as LegendaryGameState['city'];
 
     resolver(gameState, makeRevealContext(), emptyImplementationMap, {});

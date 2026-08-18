@@ -19,6 +19,7 @@ import { recruitHero } from './recruitHero.js';
 import { fightMastermind } from './fightMastermind.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
 import type { LegendaryGameState } from '../types.js';
+import { makeGlobalPiles, makeMastermindState, makePlayerZones } from '../test/fixtureBuilders.js';
 
 // ---------------------------------------------------------------------------
 // Mock G factory + move context
@@ -67,7 +68,7 @@ function createHealState(options?: HealStateOptions): LegendaryGameState {
     },
     currentStage: options?.currentStage ?? 'main',
     playerZones: {
-      '0': {
+      '0': { ...makePlayerZones(),
         deck: [],
         hand: options?.hand ?? [],
         discard: [],
@@ -75,7 +76,7 @@ function createHealState(options?: HealStateOptions): LegendaryGameState {
         victory: [],
       },
     },
-    piles: { bystanders: [], wounds: [], officers: [], sidekicks: [] },
+    piles: { ...makeGlobalPiles(), bystanders: [], wounds: [], officers: [], sidekicks: [] },
     messages: [],
     counters: {},
     hookRegistry: [],
@@ -98,7 +99,7 @@ function createHealState(options?: HealStateOptions): LegendaryGameState {
       woundsDrawn: 0,
     },
     cardStats: options?.cardStats ?? {},
-    mastermind: {
+    mastermind: { ...makeMastermindState(),
       id: 'test-mastermind',
       baseCardId: 'test-mastermind-base',
       tacticsDeck: options?.tacticsDeck ?? [],

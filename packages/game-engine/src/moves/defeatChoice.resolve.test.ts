@@ -21,6 +21,7 @@ import { LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR } from '../rules/villainAbility.ty
 import { makeMockCtx } from '../test/mockCtx.js';
 import { buildDefaultHookDefinitions } from '../rules/ruleRuntime.impl.js';
 import { initializeCity, initializeHq } from '../board/city.logic.js';
+import { makeGlobalPiles, makeMastermindState, makePlayerZones, makeTurnEconomy } from '../test/fixtureBuilders.js';
 
 // ---------------------------------------------------------------------------
 // Mock G factory
@@ -64,18 +65,18 @@ function makeG(options?: MockGOptions): LegendaryGameState {
     },
     currentStage: 'main',
     playerZones: {
-      '0': {
+      '0': { ...makePlayerZones(),
         deck: [],
         hand: (options?.hand ?? []) as LegendaryGameState['playerZones']['0']['hand'],
         discard: [],
         inPlay: (options?.inPlay ?? []) as LegendaryGameState['playerZones']['0']['inPlay'],
         victory: [],
       },
-      '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      '1': { ...makePlayerZones(), deck: [], hand: [], discard: [], inPlay: [], victory: [] },
     },
     cardTraits: {},
     villainAbilityHooks: options?.villainAbilityHooks ?? [],
-    piles: {
+    piles: { ...makeGlobalPiles(),
       bystanders: (options?.bystandersSupply ?? []) as CardExtId[],
       wounds: [],
       officers: [],
@@ -89,9 +90,9 @@ function makeG(options?: MockGOptions): LegendaryGameState {
     ko: [],
     attachedBystanders: options?.attachedBystanders ?? {},
     villainAttachedHeroes: {},
-    turnEconomy: { attack: options?.attack ?? 0, recruit: 0, spentAttack: 0, spentRecruit: 0 },
+    turnEconomy: { ...makeTurnEconomy(), attack: options?.attack ?? 0, recruit: 0, spentAttack: 0, spentRecruit: 0 },
     cardStats: {},
-    mastermind: {
+    mastermind: { ...makeMastermindState(),
       id: 'test-mastermind',
       baseCardId: 'test-mastermind-base',
       tacticsDeck: (options?.mastermindTacticsDeck ?? []) as CardExtId[],

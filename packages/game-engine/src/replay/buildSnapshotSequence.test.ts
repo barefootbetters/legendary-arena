@@ -29,13 +29,14 @@ import type { ReplayMove } from './replay.types.js';
 import type { CardRegistryReader } from '../matchSetup.validate.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
 import { buildSnapshotSequence } from './buildSnapshotSequence.js';
+import { makeCardRegistryReader } from '../test/fixtureBuilders.js';
 
 /**
  * Minimal mock registry for replay tests. Mirrors replay.verify.test.ts +
  * replay.execute.test.ts so the WP-063 helper-side fixtures stay anchored
  * to the same shape WP-027 / WP-080 exercise.
  */
-const mockRegistry: CardRegistryReader = { listCards: () => [] };
+const mockRegistry: CardRegistryReader = { ...makeCardRegistryReader(), listCards: () => [] };
 
 /**
  * Standard test setup config. Mirrors replay.execute.test.ts verbatim so

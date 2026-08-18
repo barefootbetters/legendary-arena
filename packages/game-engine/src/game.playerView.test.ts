@@ -18,6 +18,7 @@ import { buildInitialGameState } from './setup/buildInitialGameState.js';
 import { makeMockCtx } from './test/mockCtx.js';
 import type { MatchSetupConfig } from './matchSetup.types.js';
 import type { CardRegistryReader } from './matchSetup.validate.js';
+import { makeCardRegistryReader } from './test/fixtureBuilders.js';
 
 /**
  * Valid test MatchSetupConfig. Mirrors uiState.build.test.ts:27-38.
@@ -40,7 +41,7 @@ function createTestConfig(): MatchSetupConfig {
  * Minimal mock registry — UIState tests do not require card validation.
  */
 function createMockRegistry(): CardRegistryReader {
-  return { listCards: () => [] };
+  return { ...makeCardRegistryReader(), listCards: () => [] };
 }
 
 // why: ctxLike is a test-only inline literal matching the boardgame.io Ctx

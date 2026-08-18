@@ -18,6 +18,7 @@ import type { MatchSetupConfig } from '../matchSetup.types.js';
 import type { CardRegistryReader } from '../matchSetup.validate.js';
 import type { LegendaryGameState } from '../types.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
+import { makeCardRegistryReader } from '../test/fixtureBuilders.js';
 
 function createTestConfig(): MatchSetupConfig {
   return {
@@ -34,7 +35,7 @@ function createTestConfig(): MatchSetupConfig {
 }
 
 function createMockRegistry(): CardRegistryReader {
-  return { listCards: () => [] };
+  return { ...makeCardRegistryReader(), listCards: () => [] };
 }
 
 const mockCtx = {

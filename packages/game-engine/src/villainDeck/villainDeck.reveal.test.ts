@@ -34,6 +34,7 @@ import { initializeCity, initializeHq } from '../board/city.logic.js';
 import { buildInitialGameState } from '../setup/buildInitialGameState.js';
 import { makeMockMoveContext } from '../test/mockMoveContext.js';
 import type { MockMoveContext } from '../test/mockMoveContext.js';
+import { makeGlobalPiles, makeMastermindState, makePlayerZones } from '../test/fixtureBuilders.js';
 
 // ---------------------------------------------------------------------------
 // Test hook infrastructure
@@ -133,7 +134,7 @@ function createMockGameState(options: {
     },
     currentStage: TURN_STAGES[0]!,
     playerZones: {},
-    piles: {
+    piles: { ...makeGlobalPiles(),
       bystanders: [],
       wounds: [],
       officers: [],
@@ -153,7 +154,7 @@ function createMockGameState(options: {
     turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 },
     city: initializeCity(),
     hq: initializeHq(),
-    mastermind: {
+    mastermind: { ...makeMastermindState(),
       id: 'test-mastermind' as CardExtId,
       baseCardId: 'test-mastermind-base' as CardExtId,
       tacticsDeck: [],
@@ -637,7 +638,7 @@ describe('revealVillainCard — destination pile routing (WP-153)', () => {
       'city-3' as CardExtId,
       'city-4' as CardExtId,
     ];
-    gameState.playerZones = { '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] } };
+    gameState.playerZones = { '0': { ...makePlayerZones(), deck: [], hand: [], discard: [], inPlay: [], victory: [] } };
     gameState.piles.wounds = ['wound-1' as CardExtId];
 
     const moveContext = createMockMoveContext(gameState);
@@ -655,7 +656,7 @@ describe('revealVillainCard — destination pile routing (WP-153)', () => {
       discard: [],
       cardTypes: { 'new-villain': 'villain' },
     });
-    gameState.playerZones = { '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] } };
+    gameState.playerZones = { '0': { ...makePlayerZones(), deck: [], hand: [], discard: [], inPlay: [], victory: [] } };
 
     const moveContext = createMockMoveContext(gameState);
     revealVillainCard(moveContext);
@@ -880,8 +881,8 @@ describe('revealVillainCard — onEscape fire site (WP-186 §Files #7a)', () => 
       escapedCardId,
     ];
     gameState.playerZones = {
-      '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
-      '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      '0': { ...makePlayerZones(), deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      '1': { ...makePlayerZones(), deck: [], hand: [], discard: [], inPlay: [], victory: [] },
     };
     gameState.piles.wounds = [
       'w0',
@@ -997,7 +998,7 @@ describe('revealVillainCard — onEscape fire site (WP-186 §Files #7a)', () => 
       escapedCardId,
     ];
     gameState.playerZones = {
-      '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      '0': { ...makePlayerZones(), deck: [], hand: [], discard: [], inPlay: [], victory: [] },
     };
     gameState.piles.wounds = ['w0'] as CardExtId[];
 
@@ -1072,7 +1073,7 @@ describe('revealVillainCard — onEscape fire site (WP-186 §Files #7a)', () => 
       escapedCardId,
     ];
     gameState.playerZones = {
-      '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      '0': { ...makePlayerZones(), deck: [], hand: [], discard: [], inPlay: [], victory: [] },
     };
     gameState.piles.wounds = ['w0'] as CardExtId[];
 
@@ -1120,8 +1121,8 @@ describe('revealVillainCard — onEscape fire site (WP-186 §Files #7a)', () => 
       escapedCardId,
     ];
     gameState.playerZones = {
-      '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
-      '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      '0': { ...makePlayerZones(), deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      '1': { ...makePlayerZones(), deck: [], hand: [], discard: [], inPlay: [], victory: [] },
     };
     gameState.piles.wounds = ['w0', 'w1'] as CardExtId[];
 
@@ -1203,8 +1204,8 @@ describe('revealVillainCard — escape-before-Ambush ordering lock (WP-186 §Fil
       escapedCardId,
     ];
     gameState.playerZones = {
-      '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
-      '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      '0': { ...makePlayerZones(), deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      '1': { ...makePlayerZones(), deck: [], hand: [], discard: [], inPlay: [], victory: [] },
     };
     gameState.piles.wounds = ['w0', 'w1', 'w2'] as CardExtId[];
 
@@ -1354,7 +1355,7 @@ describe('revealVillainCard — WP-200 ambushResolved emission', () => {
         },
       ],
     });
-    gameState.playerZones['0'] = {
+    gameState.playerZones['0'] = { ...makePlayerZones(),
       deck: [],
       hand: [],
       discard: [],
@@ -1395,7 +1396,7 @@ describe('revealVillainCard — WP-200 ambushResolved emission', () => {
       cardTypes: { [villainExtId]: 'villain' },
       cardKeywords: {},
     });
-    gameState.playerZones['0'] = {
+    gameState.playerZones['0'] = { ...makePlayerZones(),
       deck: [],
       hand: [],
       discard: [],
@@ -1434,7 +1435,7 @@ describe('revealVillainCard — WP-316 Ambush effect log narration', () => {
         },
       ],
     });
-    gameState.playerZones['0'] = { deck: [], hand: [], discard: [], inPlay: [], victory: [] };
+    gameState.playerZones['0'] = { ...makePlayerZones(), deck: [], hand: [], discard: [], inPlay: [], victory: [] };
     gameState.hq = [null, null, null, null, 'core-hero-ironman' as CardExtId];
     gameState.heroDeck = [];
     (gameState as { cardDisplayData?: unknown }).cardDisplayData = {
@@ -1475,7 +1476,7 @@ describe('revealVillainCard — WP-316 Ambush effect log narration', () => {
       cardKeywords: { [villainExtId]: ['ambush'] },
       villainAbilityHooks: [],
     });
-    gameState.playerZones['0'] = { deck: [], hand: [], discard: [], inPlay: [], victory: [] };
+    gameState.playerZones['0'] = { ...makePlayerZones(), deck: [], hand: [], discard: [], inPlay: [], victory: [] };
 
     const moveContext = createMockMoveContext(gameState);
     revealVillainCard(moveContext);
@@ -1512,7 +1513,7 @@ describe('revealVillainCard — WP-316 Escape effect log narration (log-only)', 
       escapedCardId,
     ];
     gameState.playerZones = {
-      '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      '0': { ...makePlayerZones(), deck: [], hand: [], discard: [], inPlay: [], victory: [] },
     };
     gameState.piles.wounds = ['w0'] as CardExtId[];
     gameState.heroDeck = ['core-hero-thor'] as CardExtId[];
@@ -1559,7 +1560,7 @@ describe('revealVillainCard — WP-316 Escape effect log narration (log-only)', 
       escapedCardId,
     ];
     gameState.playerZones = {
-      '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      '0': { ...makePlayerZones(), deck: [], hand: [], discard: [], inPlay: [], victory: [] },
     };
     gameState.piles.wounds = ['w0'] as CardExtId[];
 
@@ -1905,7 +1906,7 @@ describe('revealVillainCard — escaped-pile resource loss (Midtown, WP-508)', (
     });
     gameState.selection.schemeId = 'core/midtown-bank-robbery';
     gameState.playerZones = {
-      '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      '0': { ...makePlayerZones(), deck: [], hand: [], discard: [], inPlay: [], victory: [] },
     };
     gameState.piles.wounds = ['w0'] as CardExtId[];
     // why: a full city means the space-4 card escapes when the new villain
@@ -1972,7 +1973,7 @@ describe('playTopVillainDeckCards — the shared reveal loop (WP-542 / D-24351)'
       discard: [],
       cardTypes: { v1: 'villain', v2: 'villain', v3: 'villain' },
     });
-    gameState.playerZones['0'] = { deck: [], hand: [], discard: [], inPlay: [], victory: [] };
+    gameState.playerZones['0'] = { ...makePlayerZones(), deck: [], hand: [], discard: [], inPlay: [], victory: [] };
     const moveContext = createMockMoveContext(gameState);
 
     playTopVillainDeckCards(
@@ -2013,7 +2014,7 @@ describe('playTopVillainDeckCards — the shared reveal loop (WP-542 / D-24351)'
       discard: [],
       cardTypes: { 'only-one': 'villain' },
     });
-    gameState.playerZones['0'] = { deck: [], hand: [], discard: [], inPlay: [], victory: [] };
+    gameState.playerZones['0'] = { ...makePlayerZones(), deck: [], hand: [], discard: [], inPlay: [], victory: [] };
     const moveContext = createMockMoveContext(gameState);
 
     playTopVillainDeckCards(
@@ -2049,7 +2050,7 @@ describe('The Leader onAmbush fire site — plays the top villain-deck card (WP-
         },
       ],
     });
-    gameState.playerZones['0'] = { deck: [], hand: [], discard: [], inPlay: [], victory: [] };
+    gameState.playerZones['0'] = { ...makePlayerZones(), deck: [], hand: [], discard: [], inPlay: [], victory: [] };
     const moveContext = createMockMoveContext(gameState);
 
     revealVillainCard(moveContext);
@@ -2088,7 +2089,7 @@ describe('The Leader onAmbush fire site — plays the top villain-deck card (WP-
         },
       ],
     });
-    gameState.playerZones['0'] = { deck: [], hand: [], discard: [], inPlay: [], victory: [] };
+    gameState.playerZones['0'] = { ...makePlayerZones(), deck: [], hand: [], discard: [], inPlay: [], victory: [] };
     gameState.piles.wounds = ['w0' as CardExtId];
     const moveContext = createMockMoveContext(gameState);
 

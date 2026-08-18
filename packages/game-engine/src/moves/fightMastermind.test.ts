@@ -21,6 +21,7 @@ import { initializeCity, initializeHq } from '../board/city.logic.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { makeMockMoveContext } from '../test/mockMoveContext.js';
 import type { MockMoveContext } from '../test/mockMoveContext.js';
+import { makeGlobalPiles, makeMastermindState, makePlayerZones, makeTurnEconomy } from '../test/fixtureBuilders.js';
 
 // ---------------------------------------------------------------------------
 // Mock G factory
@@ -58,7 +59,7 @@ function createMockGameState(options?: {
     },
     currentStage: options?.currentStage ?? 'main',
     playerZones: {
-      '0': {
+      '0': { ...makePlayerZones(),
         deck: [],
         hand: [],
         discard: [],
@@ -66,7 +67,7 @@ function createMockGameState(options?: {
         victory: [],
       },
     },
-    piles: {
+    piles: { ...makeGlobalPiles(),
       bystanders: [],
       wounds: [],
       officers: [],
@@ -118,7 +119,7 @@ function createMockMoveContext(gameState: LegendaryGameState): MockMoveContext {
 describe('fightMastermind', () => {
   it('successful fight defeats top tactic and spends attack', () => {
     const gameState = createMockGameState({
-      turnEconomy: { attack: 10, recruit: 0, spentAttack: 0, spentRecruit: 0 },
+      turnEconomy: { ...makeTurnEconomy(), attack: 10, recruit: 0, spentAttack: 0, spentRecruit: 0 },
     });
 
     const moveContext = createMockMoveContext(gameState);
@@ -143,7 +144,7 @@ describe('fightMastermind', () => {
 
   it('insufficient attack: no G mutation', () => {
     const gameState = createMockGameState({
-      turnEconomy: { attack: 5, recruit: 0, spentAttack: 0, spentRecruit: 0 },
+      turnEconomy: { ...makeTurnEconomy(), attack: 5, recruit: 0, spentAttack: 0, spentRecruit: 0 },
     });
 
     const mastermindBefore = { ...gameState.mastermind };
@@ -166,8 +167,8 @@ describe('fightMastermind', () => {
 
   it('no tactics remaining: no G mutation', () => {
     const gameState = createMockGameState({
-      turnEconomy: { attack: 10, recruit: 0, spentAttack: 0, spentRecruit: 0 },
-      mastermind: {
+      turnEconomy: { ...makeTurnEconomy(), attack: 10, recruit: 0, spentAttack: 0, spentRecruit: 0 },
+      mastermind: { ...makeMastermindState(),
         id: 'test-mastermind' as CardExtId,
         baseCardId: 'test-mastermind-base' as CardExtId,
         tacticsDeck: [],
@@ -195,7 +196,7 @@ describe('fightMastermind', () => {
   it('wrong stage (cleanup): no G mutation', () => {
     const gameState = createMockGameState({
       currentStage: 'cleanup',
-      turnEconomy: { attack: 10, recruit: 0, spentAttack: 0, spentRecruit: 0 },
+      turnEconomy: { ...makeTurnEconomy(), attack: 10, recruit: 0, spentAttack: 0, spentRecruit: 0 },
     });
 
     const tacticsDeckBefore = [...gameState.mastermind.tacticsDeck];
@@ -218,8 +219,8 @@ describe('fightMastermind', () => {
 
   it('all tactics defeated: MASTERMIND_DEFEATED counter set to 1', () => {
     const gameState = createMockGameState({
-      turnEconomy: { attack: 10, recruit: 0, spentAttack: 0, spentRecruit: 0 },
-      mastermind: {
+      turnEconomy: { ...makeTurnEconomy(), attack: 10, recruit: 0, spentAttack: 0, spentRecruit: 0 },
+      mastermind: { ...makeMastermindState(),
         id: 'test-mastermind' as CardExtId,
         baseCardId: 'test-mastermind-base' as CardExtId,
         tacticsDeck: ['last-tactic'] as CardExtId[],
@@ -249,7 +250,7 @@ describe('fightMastermind', () => {
 
   it('all tactics defeated: captured bystanders awarded to victory and store cleared', () => {
     const gameState = createMockGameState({
-      turnEconomy: { attack: 10, recruit: 0, spentAttack: 0, spentRecruit: 0 },
+      turnEconomy: { ...makeTurnEconomy(), attack: 10, recruit: 0, spentAttack: 0, spentRecruit: 0 },
       mastermind: {
         id: 'test-mastermind' as CardExtId,
         baseCardId: 'test-mastermind-base' as CardExtId,
@@ -292,7 +293,7 @@ describe('fightMastermind', () => {
 
   it('all tactics defeated: city-empty bystander mirror is awarded once and cleared', () => {
     const gameState = createMockGameState({
-      turnEconomy: { attack: 10, recruit: 0, spentAttack: 0, spentRecruit: 0 },
+      turnEconomy: { ...makeTurnEconomy(), attack: 10, recruit: 0, spentAttack: 0, spentRecruit: 0 },
       mastermind: {
         id: 'test-mastermind' as CardExtId,
         baseCardId: 'test-mastermind-base' as CardExtId,
@@ -331,7 +332,7 @@ describe('fightMastermind', () => {
     // the mastermind is NOT vanquished, yet both held bystanders must move
     // to the victory pile.
     const gameState = createMockGameState({
-      turnEconomy: { attack: 10, recruit: 0, spentAttack: 0, spentRecruit: 0 },
+      turnEconomy: { ...makeTurnEconomy(), attack: 10, recruit: 0, spentAttack: 0, spentRecruit: 0 },
       mastermind: {
         id: 'test-mastermind' as CardExtId,
         baseCardId: 'test-mastermind-base' as CardExtId,
@@ -369,7 +370,7 @@ describe('fightMastermind', () => {
 
   it('JSON.stringify(G) succeeds after fight', () => {
     const gameState = createMockGameState({
-      turnEconomy: { attack: 10, recruit: 0, spentAttack: 0, spentRecruit: 0 },
+      turnEconomy: { ...makeTurnEconomy(), attack: 10, recruit: 0, spentAttack: 0, spentRecruit: 0 },
     });
 
     const moveContext = createMockMoveContext(gameState);
@@ -533,7 +534,7 @@ const OCTET_TACTIC_ID =
 describe('defeatMastermindTacticCore — tactic onFight dispatch (WP-497 / D-24300)', () => {
   it('AC-1: defeating the Octet tactic sets the defeating player next-hand override to 8', () => {
     const gameState = createMockGameState({
-      mastermind: {
+      mastermind: { ...makeMastermindState(),
         id: 'co2e/doctor-octopus' as CardExtId,
         baseCardId: 'co2e-mastermind-doctor-octopus-doctor-octopus' as CardExtId,
         tacticsDeck: [OCTET_TACTIC_ID, 'tactic-2' as CardExtId],
@@ -549,7 +550,7 @@ describe('defeatMastermindTacticCore — tactic onFight dispatch (WP-497 / D-243
 
   it('AC-5: defeating a non-Octet tactic leaves handSizeOverrides absent (silent no-op)', () => {
     const gameState = createMockGameState({
-      mastermind: {
+      mastermind: { ...makeMastermindState(),
         id: 'test-mastermind' as CardExtId,
         baseCardId: 'test-mastermind-base' as CardExtId,
         tacticsDeck: ['tactic-1', 'tactic-2', 'tactic-3'] as CardExtId[],

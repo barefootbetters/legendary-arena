@@ -18,6 +18,7 @@ import type { HeroKeyword } from '../rules/heroKeywords.js';
 import { revealRulesForLegacyKeyword } from '../rules/revealRule.js';
 import { HERO_COMPOSITION_MARKERS, buildEmpoweredComposition } from '../rules/heroCompositions.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
+import { makeGlobalPiles, makeMastermindState, makePlayerZones, makeTurnEconomy } from '../test/fixtureBuilders.js';
 
 // why: WP-253 Amendment-A — the pre-existing reveal fixtures hand-built legacy
 // `{ type: 'reveal-ko' }` descriptors; once those keywords lose their handlers
@@ -157,7 +158,7 @@ function makeTestState(overrides?: {
     },
     currentStage: 'main' as LegendaryGameState['currentStage'],
     playerZones: {
-      '0': {
+      '0': { ...makePlayerZones(),
         deck: overrides?.deck ?? [],
         hand: overrides?.hand ?? [],
         discard: overrides?.discard ?? [],
@@ -165,7 +166,7 @@ function makeTestState(overrides?: {
         victory: overrides?.victory ?? [],
       },
     },
-    piles: {
+    piles: { ...makeGlobalPiles(),
       bystanders: overrides?.bystanders ?? [],
       wounds: [],
       officers: [],
@@ -178,7 +179,7 @@ function makeTestState(overrides?: {
     villainDeckCardTypes: {},
     ko: overrides?.ko ?? [],
     attachedBystanders: {},
-    turnEconomy: {
+    turnEconomy: { ...makeTurnEconomy(),
       attack: overrides?.turnEconomyAttack ?? 0,
       recruit: overrides?.turnEconomyRecruit ?? 0,
       spentAttack: 0,
@@ -189,7 +190,7 @@ function makeTestState(overrides?: {
       woundsDrawn: 0,
     },
     cardStats: overrides?.cardStats ?? {},
-    mastermind: {
+    mastermind: { ...makeMastermindState(),
       id: 'test-mastermind',
       baseCardId: 'test-mastermind-base',
       tacticsDeck: [],
@@ -3919,7 +3920,7 @@ describe('executeHeroEffects — gain-wound-self / gain-wound-each (WP-364 / D-2
       ],
     });
     gameState.piles.wounds = ['pile-wound', 'pile-wound'];
-    gameState.playerZones['1'] = { deck: [], hand: [], discard: [], inPlay: [], victory: [] };
+    gameState.playerZones['1'] = { ...makePlayerZones(), deck: [], hand: [], discard: [], inPlay: [], victory: [] };
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x');
 

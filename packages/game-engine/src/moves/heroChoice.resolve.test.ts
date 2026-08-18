@@ -15,6 +15,7 @@ import { endTurn } from './coreMoves.impl.js';
 import { LegendaryGame } from '../game.js';
 import type { LegendaryGameState, PendingHeroChoice } from '../types.js';
 import type { ResolveHeroChoiceArgs } from './heroChoice.resolve.js';
+import { makeGlobalPiles, makeMastermindState, makePlayerZones, makeTurnEconomy } from '../test/fixtureBuilders.js';
 
 /**
  * Creates a minimal LegendaryGameState for testing.
@@ -53,7 +54,7 @@ function makeTestGameState(
     },
     currentStage,
     playerZones: {
-      '0': {
+      '0': { ...makePlayerZones(),
         deck: overrides.deck ?? [],
         hand: overrides.hand ?? [],
         discard: overrides.discard ?? [],
@@ -61,7 +62,7 @@ function makeTestGameState(
         victory: [],
       },
     },
-    piles: { bystanders: [], wounds: [], officers: [], sidekicks: [] },
+    piles: { ...makeGlobalPiles(), bystanders: [], wounds: [], officers: [], sidekicks: [] },
     messages: [],
     counters: {},
     hookRegistry: [],
@@ -69,9 +70,9 @@ function makeTestGameState(
     villainDeckCardTypes: {},
     ko: [],
     attachedBystanders: {},
-    turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0 },
+    turnEconomy: { ...makeTurnEconomy(), attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0 },
     cardStats: {},
-    mastermind: {
+    mastermind: { ...makeMastermindState(),
       id: 'test-mastermind',
       baseCardId: 'test-mastermind-base',
       tacticsDeck: [],

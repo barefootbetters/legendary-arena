@@ -11,6 +11,7 @@ import assert from 'node:assert/strict';
 import { HAND_SIZE, drawCardsIntoHand, reshuffleDiscardIntoDeck } from './drawCards.logic.js';
 import type { PlayerZones } from '../state/zones.types.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
+import { makePlayerZones } from '../test/fixtureBuilders.js';
 
 /**
  * Builds a minimal PlayerZones literal with the supplied zone overrides.
@@ -19,7 +20,7 @@ import type { ShuffleProvider } from '../setup/shuffle.js';
  * @returns A complete PlayerZones object.
  */
 function makeZones(partial: Partial<PlayerZones>): PlayerZones {
-  return {
+  return { ...makePlayerZones(),
     deck: partial.deck ?? [],
     hand: partial.hand ?? [],
     discard: partial.discard ?? [],

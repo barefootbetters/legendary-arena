@@ -15,12 +15,13 @@ import type { CardRegistryReader } from '../matchSetup.validate.js';
 import { replayGame } from './replay.execute.js';
 import { computeStateHash } from './replay.hash.js';
 import { verifyDeterminism } from './replay.verify.js';
+import { makeCardRegistryReader } from '../test/fixtureBuilders.js';
 
 /**
  * Minimal mock registry for replay tests. Returns empty card list since
  * replay tests do not require card validation.
  */
-const mockRegistry: CardRegistryReader = { listCards: () => [] };
+const mockRegistry: CardRegistryReader = { ...makeCardRegistryReader(), listCards: () => [] };
 
 /**
  * Standard test ReplayInput with all 9 MatchSetupConfig fields.

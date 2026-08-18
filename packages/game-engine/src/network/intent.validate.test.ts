@@ -19,6 +19,7 @@ import { buildInitialGameState } from '../setup/buildInitialGameState.js';
 import { makeMockCtx } from '../test/mockCtx.js';
 import { computeStateHash } from '../replay/replay.hash.js';
 import { validateIntent } from './intent.validate.js';
+import { makeCardRegistryReader } from '../test/fixtureBuilders.js';
 import type {
   ClientTurnIntent,
   IntentValidationContext,
@@ -46,7 +47,7 @@ function buildValidConfig(): MatchConfiguration {
 /**
  * Empty registry — same shape as game.ts EMPTY_REGISTRY.
  */
-const EMPTY_REGISTRY: CardRegistryReader = {
+const EMPTY_REGISTRY: CardRegistryReader = { ...makeCardRegistryReader(),
   listCards: () => [],
 };
 

@@ -18,6 +18,7 @@ import {
 import { makeMockCtx } from '../test/mockCtx.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
 import type { CardRegistryReader } from '../matchSetup.validate.js';
+import { makeCardRegistryReader } from '../test/fixtureBuilders.js';
 
 /**
  * Creates a valid mock MatchSetupConfig for integration tests.
@@ -40,7 +41,7 @@ function createTestConfig(): MatchSetupConfig {
  * Creates a minimal mock registry that satisfies CardRegistryReader.
  */
 function createMockRegistry(): CardRegistryReader {
-  return {
+  return { ...makeCardRegistryReader(),
     listCards: () => [],
   };
 }

@@ -34,6 +34,7 @@ import type { ClientTurnIntent } from '../network/intent.types.js';
 import type { AIPolicy, LegalMove } from './ai.types.js';
 
 import { simulateOneGameAndCaptureMoves } from './simulation.runner.js';
+import { makeCardRegistryReader } from '../test/fixtureBuilders.js';
 
 /** The maximum decisions one wedged turn may consume, per the runner's constant. */
 const EXPECTED_BUDGET = 100;
@@ -63,7 +64,7 @@ function createTestConfig(): MatchSetupConfig {
  * `simulation.captureMoves.test.ts` and `simulation.test.ts`.
  */
 function createMockRegistry(): CardRegistryReader {
-  return {
+  return { ...makeCardRegistryReader(),
     listCards: () => [],
   };
 }

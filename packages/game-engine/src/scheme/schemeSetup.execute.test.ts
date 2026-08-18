@@ -17,6 +17,7 @@ import type { LegendaryGameState } from '../types.js';
 import type { CityZone } from '../board/city.types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { BoardKeyword } from '../board/boardKeywords.types.js';
+import { makeTurnEconomy } from '../test/fixtureBuilders.js';
 
 /**
  * Builds a minimal LegendaryGameState mock with the fields that
@@ -44,7 +45,7 @@ function buildMinimalGameState(): LegendaryGameState {
     hq: [null, null, null, null, null],
     mastermind: {} as LegendaryGameState['mastermind'],
     cardStats: {},
-    turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0 },
+    turnEconomy: { ...makeTurnEconomy(), attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0 },
     heroAbilityHooks: [],
     lobby: { requiredPlayers: 2, ready: {}, started: false },
   };

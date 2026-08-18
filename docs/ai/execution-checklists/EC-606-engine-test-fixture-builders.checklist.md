@@ -13,17 +13,17 @@
 
 ## Before Starting
 
-- [ ] Clean tree off `origin/main`; `pnpm install`; `pnpm -r build` exits 0.
-- [ ] **Capture the engine `dist` hashes.** AC-4 requires the delta be exactly
+- [x] Clean tree off `origin/main`; `pnpm install`; `pnpm -r build` exits 0.
+- [x] **Capture the engine `dist` hashes.** AC-4 requires the delta be exactly
       the new modules.
-- [ ] Record the engine test baseline (**2740 / 0** at `9fac4060`).
-- [ ] **Re-derive the inventory.** Draft-time: **289 total, 195 in class
+- [x] Record the engine test baseline (**2740 / 0** at `9fac4060`).
+- [x] **Re-derive the inventory.** Draft-time: **289 total, 195 in class
       (`TS2739` 113 + `TS2741` 82) across 49 files.**
-- [ ] Read the six production types before writing a single default —
+- [x] Read the six production types before writing a single default —
       `PlayerZones`, `CardStatEntry`, `MastermindState`, `TurnEconomy`,
       `GlobalPiles` (`types.ts` / `state/zones.types.ts`) and
       `CardRegistryReader` (`matchSetup.validate.ts`).
-- [ ] Read D-24372 §3, D-24378 and D-24379 — all three are inherited.
+- [x] Read D-24372 §3, D-24378 and D-24379 — all three are inherited.
 
 ## Locked Values
 
@@ -87,11 +87,11 @@
 
 ## After Completing
 
-- [ ] `WORK_INDEX.md` `[x]` **plus** refreshed backlog counts (this class
+- [x] `WORK_INDEX.md` `[x]` **plus** refreshed backlog counts (this class
       closes; re-derive the tail — counts have moved four times).
-- [ ] `EC_INDEX.md` `Done`; mindmap `✅`; `roadmap:counts:check` 0.
-- [ ] **D-24380** Active.
-- [ ] `STATUS.md` — before/after counts, the `dist` delta enumerated, and **the
+- [x] `EC_INDEX.md` `Done`; mindmap `✅`; `roadmap:counts:check` 0.
+- [x] **D-24380** Active.
+- [x] `STATUS.md` — before/after counts, the `dist` delta enumerated, and **the
       AC-2 mutation result recorded as the proof the class will not recur**.
       `User-Visible Surface = none — infrastructure`, so D-24026 inverts.
 

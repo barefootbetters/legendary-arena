@@ -12,6 +12,7 @@ import { playFromUndercover } from '../playFromUndercover.js';
 import type { LegendaryGameState } from '../../types.js';
 import { makeMockMoveContext } from '../../test/mockMoveContext.js';
 import type { MockMoveContext } from '../../test/mockMoveContext.js';
+import { makeGlobalPiles, makeMastermindState, makeTurnEconomy } from '../../test/fixtureBuilders.js';
 
 interface PlayFromUndercoverStateOptions {
   faceDownCards?: Array<{ instanceId: string; cardId: string; ownerPlayerId: string }>;
@@ -50,7 +51,7 @@ function createPlayFromUndercoverState(options?: PlayFromUndercoverStateOptions)
         faceDownCards: options?.faceDownCards ?? [],
       },
     },
-    piles: { bystanders: [], wounds: [], officers: [], sidekicks: [] },
+    piles: { ...makeGlobalPiles(), bystanders: [], wounds: [], officers: [], sidekicks: [] },
     messages: [],
     counters: {},
     hookRegistry: [],
@@ -59,13 +60,13 @@ function createPlayFromUndercoverState(options?: PlayFromUndercoverStateOptions)
     ko: [],
     attachedBystanders: {},
     villainAttachedHeroes: {},
-    turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0 },
+    turnEconomy: { ...makeTurnEconomy(), attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0 },
     cardStats: options?.cardStats ?? {},
     cardTraits: {},
     cardKeywords: {},
     cardDisplayData: {},
     schemeSetupInstructions: [],
-    mastermind: { id: 'test-mastermind', baseCardId: 'test-mastermind-base', tacticsDeck: [], tacticsDefeated: [] },
+    mastermind: { ...makeMastermindState(), id: 'test-mastermind', baseCardId: 'test-mastermind-base', tacticsDeck: [], tacticsDefeated: [] },
     city: [null, null, null, null, null],
     hq: [null, null, null, null, null],
     heroDeck: [],

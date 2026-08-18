@@ -26,6 +26,7 @@ import type { CardExtId, LegendaryGameState } from '../types.js';
 import type { UIState } from './uiState.types.js';
 import type { UIAudience } from './uiAudience.types.js';
 import type { HollowEffectRecord } from '../diagnostics/hollowEffect.types.js';
+import { makeCardRegistryReader } from '../test/fixtureBuilders.js';
 
 /** Audience constants for test readability. */
 const PLAYER_0: UIAudience = { kind: 'player', playerId: '0' };
@@ -53,7 +54,7 @@ function createTestConfig(): MatchSetupConfig {
  * Minimal mock registry for tests.
  */
 function createMockRegistry(): CardRegistryReader {
-  return { listCards: () => [] };
+  return { ...makeCardRegistryReader(), listCards: () => [] };
 }
 
 /**

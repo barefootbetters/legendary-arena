@@ -15,6 +15,7 @@ import { drawCards, playCard, endTurn } from './coreMoves.impl.js';
 import { HAND_SIZE } from './drawCards.logic.js';
 import { TURN_STAGES } from '../turn/turnPhases.types.js';
 import type { LegendaryGameState } from '../types.js';
+import { makeGlobalPiles, makeMastermindState, makePlayerZones, makeTurnEconomy } from '../test/fixtureBuilders.js';
 
 /**
  * Creates a minimal LegendaryGameState for testing a single player.
@@ -54,7 +55,7 @@ function makeTestGameState(
     },
     currentStage: currentStage as LegendaryGameState['currentStage'],
     playerZones: {
-      '0': {
+      '0': { ...makePlayerZones(),
         deck: zones.deck ?? [],
         hand: zones.hand ?? [],
         discard: zones.discard ?? [],
@@ -62,7 +63,7 @@ function makeTestGameState(
         victory: zones.victory ?? [],
       },
     },
-    piles: {
+    piles: { ...makeGlobalPiles(),
       bystanders: [],
       wounds: [],
       officers: [],
@@ -75,9 +76,9 @@ function makeTestGameState(
     villainDeckCardTypes: {},
     ko: [],
     attachedBystanders: {},
-    turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0 },
+    turnEconomy: { ...makeTurnEconomy(), attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0 },
     cardStats: {},
-    mastermind: {
+    mastermind: { ...makeMastermindState(),
       id: 'test-mastermind',
       baseCardId: 'test-mastermind-base',
       tacticsDeck: [],

@@ -40,6 +40,7 @@ import {
 } from './simulation.runner.js';
 import { runFixture } from '../test/fixtures/runFixture.js';
 import { validateFixture } from '../test/fixtures/fixtureSchema.js';
+import { makeCardRegistryReader } from '../test/fixtureBuilders.js';
 
 /**
  * Builds a valid 9-field MatchSetupConfig fixture for capture tests.
@@ -70,7 +71,7 @@ function createTestConfig(): MatchSetupConfig {
  * throwing.
  */
 function createMockRegistry(): CardRegistryReader {
-  return {
+  return { ...makeCardRegistryReader(),
     listCards: () => [],
   };
 }

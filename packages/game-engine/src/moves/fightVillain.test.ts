@@ -22,6 +22,7 @@ import { buildDefaultHookDefinitions } from '../rules/ruleRuntime.impl.js';
 import { initializeCity, initializeHq } from '../board/city.logic.js';
 import { makeMockMoveContext } from '../test/mockMoveContext.js';
 import type { MockMoveContext } from '../test/mockMoveContext.js';
+import { makeGlobalPiles, makeMastermindState, makePlayerZones, makeTurnEconomy } from '../test/fixtureBuilders.js';
 
 // ---------------------------------------------------------------------------
 // Mock G factory
@@ -66,7 +67,7 @@ function createMockGameState(options?: {
     },
     currentStage: options?.currentStage ?? 'main',
     playerZones: {
-      '0': {
+      '0': { ...makePlayerZones(),
         deck: [],
         hand: (options?.hand ?? []) as LegendaryGameState['playerZones']['0']['hand'],
         discard: (options?.discard ?? []) as LegendaryGameState['playerZones']['0']['discard'],
@@ -83,7 +84,7 @@ function createMockGameState(options?: {
     ...(options?.villainDefeatRequirements
       ? { villainDefeatRequirements: options.villainDefeatRequirements }
       : {}),
-    piles: {
+    piles: { ...makeGlobalPiles(),
       bystanders: [],
       wounds: [],
       officers: [],
@@ -97,9 +98,9 @@ function createMockGameState(options?: {
     ko: [],
     attachedBystanders: {},
     villainAttachedHeroes: options?.villainAttachedHeroes ?? {},
-    turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0 },
+    turnEconomy: { ...makeTurnEconomy(), attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0 },
     cardStats: {},
-    mastermind: {
+    mastermind: { ...makeMastermindState(),
       id: 'test-mastermind',
       baseCardId: 'test-mastermind-base',
       tacticsDeck: [],
