@@ -181,9 +181,76 @@ describe('mastermindStrikeHandler', () => {
       messagesBefore + 1,
       'exactly one message appended on empty supply',
     );
+    const emptyLine = gameState.messages[gameState.messages.length - 1]!;
     assert.ok(
-      gameState.messages[gameState.messages.length - 1]!.text.startsWith('[Master Strike]'),
+      emptyLine.text.startsWith('[Master Strike]'),
       'empty-supply message must begin with [Master Strike] prefix',
+    );
+    // why: WP-574 AC-2 — the empty-supply wording is BYTE-UNCHANGED (D-15401
+    // specified this exact message). `.endsWith` tolerates the pushLog address
+    // prefix; this fixture omits logMeta so the text is the bare sentence.
+    assert.ok(
+      emptyLine.text.endsWith('Bystander supply is empty — no bystander captured.'),
+      'empty-supply line wording is byte-unchanged',
+    );
+    assert.equal(emptyLine.outcome, 'blocked', 'a supply-empty no-op is blocked (WP-434)');
+  });
+
+  // -------------------------------------------------------------------------
+  // Test 4b (WP-574): success path logs an applied capture line naming the mastermind
+  // -------------------------------------------------------------------------
+  it('logs an applied [Master Strike] capture line naming the mastermind on a successful capture (AC-1)', () => {
+    const gameState = makeTestState();
+    const messagesBefore = gameState.messages.length;
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'test-strike' });
+
+    assert.equal(
+      gameState.messages.length,
+      messagesBefore + 1,
+      'exactly one capture message appended on a successful capture',
+    );
+    const captureLine = gameState.messages[gameState.messages.length - 1]!;
+    assert.ok(
+      captureLine.text.startsWith('[Master Strike]'),
+      'capture line uses the [Master Strike] prefix',
+    );
+    assert.ok(
+      captureLine.text.endsWith('captured a Bystander.'),
+      'capture line records the capture',
+    );
+    // why: no cardDisplayData in this fixture, so resolveCardName falls back to
+    // the mastermind baseCardId — the line still names the capturing mastermind.
+    assert.ok(
+      captureLine.text.includes('test-mastermind-base'),
+      'capture line names the capturing mastermind',
+    );
+    assert.equal(captureLine.outcome, 'applied', 'a completed capture is applied (WP-434)');
+  });
+
+  // -------------------------------------------------------------------------
+  // Test 4c (WP-574): the two branches keep distinguishable wordings (AC-2)
+  // -------------------------------------------------------------------------
+  it('produces distinguishable success and empty-supply wordings — both survive independently (AC-2)', () => {
+    const successState = makeTestState();
+    mastermindStrikeHandler(successState, {}, { cardId: 'test-strike' });
+    const successText = successState.messages[successState.messages.length - 1]!.text;
+
+    const emptyState = makeTestState();
+    emptyState.piles.bystanders = [];
+    mastermindStrikeHandler(emptyState, {}, { cardId: 'test-strike' });
+    const emptyText = emptyState.messages[emptyState.messages.length - 1]!.text;
+
+    // why: the success and empty-supply branches must not collapse into one
+    // wording — a reader must tell a capture from a supply-exhausted no-op.
+    assert.notEqual(successText, emptyText, 'the two branch wordings must differ');
+    assert.ok(
+      emptyText.endsWith('Bystander supply is empty — no bystander captured.'),
+      'empty-supply line is byte-unchanged (D-15401)',
+    );
+    assert.ok(
+      successText.endsWith('captured a Bystander.'),
+      'success line is the new additive capture wording',
     );
   });
 
