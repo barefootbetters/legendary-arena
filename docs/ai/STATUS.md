@@ -7,6 +7,60 @@
 
 ## Current State
 
+### WP-573 - UI-Projection Fixture Builders - DONE (2026-08-17)
+
+The **last fixture family in the WP-563 arc is closed.** Gate **126 -> 109**;
+the missing-required-field class **18 -> 1**, and that 1 is the intentional
+skip-list entry. Engine suite **2740 / 2740**.
+
+**AC-1 is met, and stronger than the AC asked.** The mutation (`UICityCard` +
+`quarantined`) breaks **zero test fixtures**. The only breaks are the builder
+itself and two production files, `ui/uiState.build.ts` and
+`ui/uiState.filter.ts`. The AC required exactly one; the fixtures are fully
+absorbed.
+
+**A verification trap that nearly misread that result.** An exact grep for
+`type 'UICityCard'` among `TS2739` / `TS2741` returned **zero** — which looked
+like the mutation had done nothing. It had: the builder's own error is
+**`TS2322`** (assignability), a different code entirely. Checked rather than
+reporting a convenient zero. This is the **second verification-grep trap in the
+arc**, after the `TurnEconomy` / `UITurnEconomyState` prefix collision in
+WP-572, and D-24382 now records the general form: **when proving a mutation, do
+not filter by a single expected error code either.**
+
+**The notable catch.** The checker-driven census wanted to route **five literals
+in `ui/uiState.types.drift.test.ts`** — the drift pins **WP-563 restored**,
+which spell out every field *on purpose* so a rename fails the `satisfies`
+check. Routing them through a builder would have **silently destroyed the
+protection WP-563 exists to provide**, and they were **not erroring in the first
+place**. Skip-listed with the reason. The packet's own principle biting
+correctly: **not every literal wants a builder — and one that is not erroring is
+the least likely to.**
+
+**Scope note: eight builders shipped, not five.** The five scoped UI-projection
+types plus `UIDecksState`, `UISharedPilesState` and `UIKoPileState`, which the
+two top-level `UIState` fixtures required. Every default was **read from
+production** — notably `display`, which uses `UNKNOWN_DISPLAY_PLACEHOLDER`, the
+constant `uiState.build.ts` already exports and `resolveDisplay` already
+spreads, so no second answer to "what is an unknown display" was invented.
+Optional fields (`gameText`, `UISchemeState.display`) are deliberately left
+unset: a builder that fills them asserts a presence the type does not require.
+The `SeedParArtifact` site was completed from its own surrounding code —
+`createSeedArtifact` already receives `scoringConfig` and the literal simply
+omitted it.
+
+**Verification.** `dist` gains **exactly** the four `uiFixtureBuilders.*` files
+(**752 -> 756**), enumerated. **Zero** production files edited. **Zero**
+suppressions. Both sentinel hashes untouched. D-24382 **Active**.
+
+**The arc's fixture work is complete.** What remains is the ~90-error long tail
+and then the **CI wiring** every packet since D-24372 §2 has been deferring by
+design — the thing the whole arc exists to enable. **109** errors stand.
+
+**User-Visible Surface: none - infrastructure.** The D-24026 gate inverts.
+
+---
+
 ### WP-572 - AST-Aware Fixture Migration - DONE on AC-1, UI family split out (2026-08-17)
 
 Packet 5 of the WP-563 arc. **Operator decision: close on AC-1 and spin the

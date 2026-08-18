@@ -118,11 +118,11 @@ wrong default silently changes what the simulation tests assert.
 
 ## Definition of Done
 
-- [ ] AC-1..AC-8 demonstrated with observed output.
-- [ ] D-24382 landed **Active**.
-- [ ] `WORK_INDEX.md` `[x]` + refreshed backlog counts.
-- [ ] `EC_INDEX.md` `Done`; mindmap `✅`; `roadmap:counts:check` 0.
-- [ ] `STATUS.md` — before/after counts and **the AC-1 mutation result**.
+- [x] AC-1..AC-8 demonstrated with observed output.
+- [x] D-24382 landed **Active**.
+- [x] `WORK_INDEX.md` `[x]` + refreshed backlog counts.
+- [x] `EC_INDEX.md` `Done`; mindmap `✅`; `roadmap:counts:check` 0.
+- [x] `STATUS.md` — before/after counts and **the AC-1 mutation result**.
 
 ## Gate Verdicts (Drafting Session, 2026-08-17)
 
