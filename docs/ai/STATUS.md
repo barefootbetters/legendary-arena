@@ -7,6 +7,75 @@
 
 ## Current State
 
+### WP-570 - Possibly-Undefined Index Access in Engine Tests - DONE (2026-08-17)
+
+Packet 3 of the WP-563 engine-test-typecheck arc. The
+`noUncheckedIndexedAccess` class is **closed at zero**: `TS2532` **178 -> 0**,
+`TS18048` **31 -> 0**, gate total **498 -> 289**.
+
+Each of the 209 sites was a place a test assumed an index was populated without
+saying so. Most assumptions were correct - the passing suite proves it - but
+none were written down, which is the drift the gate exists to surface.
+
+**Three passes, by shape, each verified before the next.**
+
+1. `playerZones[...]` quoted-key index - **151** sites, mechanical regex.
+2. Remaining index shapes - array index (`errors[0]`, `faceDownCards[0]`),
+   record index (`result['key']`), and the dynamic-key `playerZones[playerId]`
+   the first pattern did not cover - **26** sites.
+3. Bound variables read repeatedly (`player0`, `player1`, `zones`, `firstCard`,
+   `lastCard`) - **8** sites, taking a single
+   `assert.ok(x !== undefined, '<sentence>')` after the binding. That narrows
+   once, covers every later read, and fails with an actionable message rather
+   than a bare TypeError.
+
+**Each file's suite was run immediately after sweeping it**, not once at the
+end, so a bad regex would have been caught while the blast radius was one file.
+
+**The last error was not an index at all.** `versioning.test.ts` reads
+`roundtripped.contentVersion.version`, and `contentVersion` is genuinely
+**optional** on `VersionedArtifact`. The artifact under test is stamped *with*
+one, so asserting its presence is a real strengthening: an absent value there
+means the JSON roundtrip dropped the field, which is precisely what that test
+exists to catch. The residue of a `noUncheckedIndexedAccess` sweep is where the
+genuinely-optional properties hide.
+
+**One execution-time bug, caught by the gate.** Pass 2's idempotence guard
+skipped any line already containing `]!.` - which wrongly skipped a line
+narrowed on a *different* index in pass 1
+(`playerZones['0']!.faceDownCards[0].instanceId`). Fixed in pass 3 and recorded
+in D-24379: guard on the specific expression, never on the line, because one
+line can carry more than one index.
+
+**One grep-gate self-trip worth knowing.** The per-file `// why:` comments
+originally spelled out the banned pragma names, which made **AC-4's own grep**
+fire on this packet's documentation. Paraphrased so the gate reads clean - the
+comments still say what they need to, without quoting the tokens a gate greps
+for.
+
+**AC-8 demonstrated rather than claimed.** Filtering the diff shows **zero**
+removed lines without a narrowed counterpart, and every added line is a
+narrowing, an assertion or a comment. No assertion's subject or expected value
+changed anywhere in 12 files.
+
+**Verification.** AC-1 class at zero. AC-2 engine **2740 / 0, unchanged**, with
+no test removed, renamed, skipped or weakened. AC-3 `dist` **byte-identical**
+(748 files, sha256) - WP-569's one-time relaxation did not persist, as designed.
+AC-5 base `tsconfig.json` untouched and `noUncheckedIndexedAccess` still **on** -
+relaxing the flag would have deleted the finding rather than addressed it.
+AC-6 **zero** non-test files. AC-7 no determinism surface touched.
+`pnpm -r --no-bail test`: **0 failures across all 12 packages.** D-24379
+**Active**.
+
+**CI wiring remains deferred** (D-24372 section 2). 289 errors still stand -
+the missing-required-state-field class and the long tail. The wiring lands when
+the count reaches zero.
+
+**User-Visible Surface: none - infrastructure.** The D-24026 gate **inverts**:
+nothing observable ships and no live check is owed.
+
+---
+
 ### WP-569 - Mock Move-Context EventsAPI / RandomAPI Completion - DONE (2026-08-17)
 
 Packet 2 of the WP-563 engine-test-typecheck arc. The engine's mock move
