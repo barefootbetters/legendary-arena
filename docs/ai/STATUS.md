@@ -7,6 +7,55 @@
 
 ## Current State
 
+### D-24026 live-verify - WP-566 / WP-567 / WP-568 VERIFIED (2026-08-18)
+
+One 2-player Red Skull / Super Hero Civil War match (`SIu2mFpBYMY`, `gitSha
+3c5afd3`) closes the live-verification for three packets at once. The operator
+played it; the log and diagnostics were read against each packet's AC.
+
+**WP-568 - wait-and-see (the headline).** Turn 20: three Surge of Power copies
+played at 2, 4 and 6 recruit each logged "is waiting"; Odinson then took the turn
+to 8; all three fired retroactively for +3 attack each (+9 total), in INSERTION
+ORDER (#1, #4, #2). Turn 24 proves both paths coexist in one turn - Surge#1 waited
+from 2 recruit while Surge#2, played once the total was already 8, fired
+immediately, and the waiting #1 then fired via the per-move re-check. Turn 14 is
+the negative case: two copies waited, the turn reached only 6 recruit, neither
+fired, and neither leaked into turn 15.
+
+**WP-566 - the named-condition message.** Turn 20 shows both reasons side by side:
+Odinson's class gate reads "did not activate - it needs another strength Hero
+played this turn" while Surge of Power's numeric gate reads "it needs 8 or more
+recruit this turn - you have made 2". Two differently-gated abilities, two
+different reasons, neither blaming the other's card property. That is exactly the
+misattribution the packet removed.
+
+**WP-567 - Red Skull's tactics.** All three implemented tactics fired and logged:
+Negablast Grenades +3 attack (19.2.15), Endless Resources +4 recruit (20.2.19 -
+the exact effect that was MISSING in the originally reported 1p match), and HYDRA
+Conspiracy drew 5 = 2 + 3 HYDRA Villains in THEIR Victory Pile (23.2.11). That
+last line verifies the count-scaled draw at N and the per-player scoping (AC-4) in
+a real 2-seat game - a scoping bug a solo match could never surface. Ruthless
+Dictator was defeated at 24.2.20 and produced NO Fight-effect line, confirming the
+deliberate omission holds.
+
+**WP-562 re-confirmed at a second player count, unprompted.** The diagnostics read
+`schemeLossKind: hero-deck`, `schemeLossProgress: 50`, `schemeLossThreshold: 56`,
+`heroDeckCount: 6`, `menace 0.893 / critical`. **56 is the 2-player Civil War
+4-group sizing** (D-24328), not the 42 of the 3-hero solo game and not a hardcoded
+constant - so the setup capture tracks the per-seat sizing override, exactly as
+`buildInitialGameState.lossPileCapture.test.ts` predicted. 56 - 6 = the 50
+projected.
+
+**Still operator-pending: WP-565.** The VP-glyph fix is not observable in a game
+log, and no card carrying that marker appeared in this match's snapshot (zero
+`icon:piercing` AND zero `icon:vp` in the diagnostics). It needs a card whose text
+carries the marker - Supreme HYDRA in a victory pile, or the deployed registry
+viewer.
+
+Governance only - no code change.
+
+---
+
 ### WP-568 - Wait-and-See Conditional Semantics - DONE (2026-08-17)
 
 Operator decision: a hero condition of the form "If you [did X] this turn" is a
