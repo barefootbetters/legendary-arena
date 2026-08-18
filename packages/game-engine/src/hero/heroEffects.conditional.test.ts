@@ -265,4 +265,79 @@ describe('executeHeroEffects — conditional execution (WP-023)', () => {
     assert.ok(serialized.length > 0,
       'JSON.stringify(G) should succeed after conditional execution.');
   });
+
+  // -------------------------------------------------------------------------
+  // WP-566 / D-24375 - the emitted line names the condition that failed
+  // -------------------------------------------------------------------------
+  it("AC-1/AC-6: a recruit-threshold block names the recruit gate, stays blocked, keeps the card", () => {
+    // why: end-to-end at the emit site. Surge of Power shape: a recruit threshold
+    // with NO class or team component. The old single string blamed "Hero class or
+    // team synergy" here, 8 times in one observed match.
+    const gameState = makeTestState({
+      inPlay: ["hero-x"],
+      heroAbilityHooks: [
+        {
+          cardId: "hero-x" as string,
+          timing: "onPlay",
+          keywords: ["attack"],
+          conditions: [{ type: "recruitMadeThisTurnAtLeast", value: "8" }],
+          effects: [{ type: "attack", magnitude: 3 }],
+        },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, "0", "hero-x" as string);
+
+    const line = gameState.messages[gameState.messages.length - 1]!;
+    assert.match(line.text, /did not activate/);
+    assert.match(line.text, /8 or more recruit/);
+    assert.equal(/Hero class/i.test(line.text), false,
+      "the message must not blame Hero class for a recruit-threshold gate.");
+    assert.equal(/team synergy/i.test(line.text), false);
+    // why: AC-6 - the LOG_OUTCOMES colour and the structured card reference are
+    // untouched by this WP; only the prose changed.
+    assert.equal(line.outcome, "blocked");
+    assert.equal(line.card, "hero-x");
+  });
+
+  it("AC-8: the gate still BLOCKS - no effect fired", () => {
+    const gameState = makeTestState({
+      inPlay: ["hero-x"],
+      heroAbilityHooks: [
+        {
+          cardId: "hero-x" as string,
+          timing: "onPlay",
+          keywords: ["attack"],
+          conditions: [{ type: "recruitMadeThisTurnAtLeast", value: "8" }],
+          effects: [{ type: "attack", magnitude: 3 }],
+        },
+      ],
+    });
+    const attackBefore = gameState.turnEconomy.attack;
+    executeHeroEffects(gameState, mockCtx, "0", "hero-x" as string);
+    assert.equal(gameState.turnEconomy.attack, attackBefore,
+      "WP-566 changes the MESSAGE only - no gate evaluation may move.");
+  });
+
+  it("AC-8: a gate that PASSED still fires", () => {
+    // why: the other direction of AC-8. Uses playedThisTurn because this file's
+    // makeTestState carries NO cardTraits override, so a class gate can never be
+    // satisfied here — a class-gated "passing" case would silently assert nothing.
+    const gameState = makeTestState({
+      inPlay: ["hero-x", "other-card"],
+      heroAbilityHooks: [
+        {
+          cardId: "hero-x" as string,
+          timing: "onPlay",
+          keywords: ["attack"],
+          conditions: [{ type: "playedThisTurn", value: "2" }],
+          effects: [{ type: "attack", magnitude: 5 }],
+        },
+      ],
+    });
+    const attackBefore = gameState.turnEconomy.attack;
+    executeHeroEffects(gameState, mockCtx, "0", "hero-x" as string);
+    assert.equal(gameState.turnEconomy.attack, attackBefore + 5,
+      "a satisfied gate must still fire - AC-8 pins both directions.");
+  });
 });

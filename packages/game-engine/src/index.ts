@@ -257,6 +257,8 @@ export type { HeroEffectResult } from "./hero/heroEffects.types.js";
 export { executeHeroEffects } from "./hero/heroEffects.execute.js";
 export {
   evaluateCondition,
+  findFailedCondition,
+  describeFailedCondition,
   evaluateAllConditions,
 } from "./hero/heroConditions.evaluate.js";
 export {

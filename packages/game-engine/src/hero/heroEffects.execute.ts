@@ -27,7 +27,11 @@ import { recordHollowEffect } from '../diagnostics/hollowEffect.record.js';
 import { recordEffectTrace } from '../diagnostics/effectTrace.record.js';
 import type { EffectNode } from '../rules/effectPrimitive.types.js';
 import type { RevealRule, RevealAction, RevealPredicate, RevealActionKind } from '../rules/revealRule.js';
-import { evaluateAllConditions } from './heroConditions.evaluate.js';
+import {
+  evaluateAllConditions,
+  findFailedCondition,
+  describeFailedCondition,
+} from './heroConditions.evaluate.js';
 import type { HeroEffectResult } from './heroEffects.types.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
 import { shuffleDeck } from '../setup/shuffle.js';
@@ -395,8 +399,23 @@ export function executeHeroEffects(
       // exact "the effect did nothing" confusion from the live diagnostic.
       // why: WP-434 — a class/synergy-gated ability that did not fire is `blocked`
       // (the effect was suppressed and nothing happened) per the LOG_OUTCOMES taxonomy.
+      // why: WP-566 / D-24375 — name the condition that ACTUALLY failed. The
+      // previous single string claimed "Hero class or team synergy" for every
+      // failure; it was right for 2 of 4 constructed types and wrong for both
+      // numeric-threshold ones, so it fired 8 times on Surge of Power (a recruit
+      // gate with no class or team component) in one observed match while being
+      // simultaneously correct for three class-gated cards.
+      // why: findFailedCondition is a SIBLING of evaluateAllConditions and walks
+      // the same short-circuit order, so the reported condition is the one that
+      // stopped the ability. The guard covers the unreachable case where the
+      // conditions pass on the second walk; the generic clause keeps the line
+      // present, because D-24082 requires a gated ability to stay observable.
+      const failedCondition = findFailedCondition(G, playerID, hook.conditions, cardId);
+      const reason = failedCondition === undefined
+        ? 'a play condition was not met'
+        : describeFailedCondition(G, playerID, failedCondition);
       pushLog(G,
-        `Player ${playerID}'s ${formatCardRef(G.cardDisplayData, cardId)} ability did not activate — a play condition (such as Hero class or team synergy) was not met.`,
+        `Player ${playerID}'s ${formatCardRef(G.cardDisplayData, cardId)} ability did not activate — ${reason}.`,
         'blocked',
         cardId, // why: WP-438 — the played card whose ability was gated (drives the diagnostic's conditionNotMet association).
       );

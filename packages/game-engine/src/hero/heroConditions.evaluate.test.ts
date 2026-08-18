@@ -10,7 +10,12 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { evaluateCondition, evaluateAllConditions } from './heroConditions.evaluate.js';
+import {
+  evaluateCondition,
+  evaluateAllConditions,
+  findFailedCondition,
+  describeFailedCondition,
+} from './heroConditions.evaluate.js';
 import type { LegendaryGameState } from '../types.js';
 import type { HeroAbilityHook } from '../rules/heroAbility.types.js';
 import { makeGlobalPiles, makeMastermindState, makePlayerZones, makeTurnEconomy } from '../test/fixtureBuilders.js';
@@ -807,5 +812,154 @@ describe('evaluateCondition — recruitMadeThisTurnAtLeast', () => {
 
     assert.equal(result, false,
       'recruitMadeThisTurnAtLeast should safe-skip (false) when the threshold value is NaN.');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-566 / D-24375 — the blocked-ability message names the FAILED condition
+// ---------------------------------------------------------------------------
+
+describe('findFailedCondition (WP-566 / D-24375)', () => {
+  it('returns undefined when every condition passes', () => {
+    const G = makeTestState({
+      inPlay: ['other-card'],
+      cardTraits: { 'other-card': { heroClass: 'instinct', team: null } },
+    });
+    const conditions = [{ type: 'heroClassMatch', value: 'instinct' }];
+    assert.equal(findFailedCondition(G, '0', conditions, 'self-card'), undefined);
+  });
+
+  it('returns undefined for empty / undefined conditions', () => {
+    const G = makeTestState();
+    assert.equal(findFailedCondition(G, '0', []), undefined);
+    assert.equal(findFailedCondition(G, '0', undefined), undefined);
+  });
+
+  it('AC-5: names the FIRST failing condition, matching the short-circuit order', () => {
+    // why: the reported condition must be the one that actually stopped the
+    // ability. Reporting the LAST failure would silently disagree with the order
+    // evaluateAllConditions uses everywhere else in the engine.
+    const G = makeTestState();
+    const conditions = [
+      { type: 'recruitMadeThisTurnAtLeast', value: '8' },
+      { type: 'heroClassMatch', value: 'instinct' },
+    ];
+    const failed = findFailedCondition(G, '0', conditions, 'self-card');
+    assert.equal(failed?.type, 'recruitMadeThisTurnAtLeast');
+  });
+
+  it('agrees with evaluateAllConditions in both directions', () => {
+    // why: AC-8 in miniature — the sibling must never disagree with the gate it
+    // shadows, or the log would explain a block that did not happen (or stay
+    // silent about one that did).
+    const passing = makeTestState({
+      inPlay: ['other-card'],
+      cardTraits: { 'other-card': { heroClass: 'instinct', team: null } },
+    });
+    const failing = makeTestState();
+    const conditions = [{ type: 'heroClassMatch', value: 'instinct' }];
+
+    assert.equal(evaluateAllConditions(passing, '0', conditions, 'self-card'), true);
+    assert.equal(findFailedCondition(passing, '0', conditions, 'self-card'), undefined);
+
+    assert.equal(evaluateAllConditions(failing, '0', conditions, 'self-card'), false);
+    assert.notEqual(findFailedCondition(failing, '0', conditions, 'self-card'), undefined);
+  });
+});
+
+describe('describeFailedCondition (WP-566 / D-24375)', () => {
+  it('AC-1: a recruit threshold names the requirement AND the actual, with no class/team words', () => {
+    // why: THE reported defect. Surge of Power's printed gate is "If you made 8 or
+    // more recruit this turn" — no class or team component at all — yet the old
+    // single string blamed "Hero class or team synergy" 8 times in one match.
+    const G = makeTestState({ turnEconomyRecruit: 5 });
+    const text = describeFailedCondition(G, '0', {
+      type: 'recruitMadeThisTurnAtLeast',
+      value: '8',
+    });
+    assert.match(text, /8 or more recruit/);
+    assert.match(text, /made 5/);
+    // why: assert the ABSENCE of the old misattribution — a positive-only check
+    // would pass even if the wrong clause were still appended.
+    assert.equal(/Hero class/i.test(text), false);
+    assert.equal(/team synergy/i.test(text), false);
+  });
+
+  it('AC-2: a distinct-class threshold names required and actual', () => {
+    const G = makeTestState({
+      inPlay: ['a', 'b'],
+      cardTraits: {
+        a: { heroClass: 'instinct', team: null },
+        b: { heroClass: 'strength', team: null },
+      },
+    });
+    const text = describeFailedCondition(G, '0', {
+      type: 'distinctHeroClassesAtLeast',
+      value: '3',
+    });
+    assert.match(text, /3 different Hero classes/);
+    assert.match(text, /you have 2/);
+    assert.equal(/team synergy/i.test(text), false);
+  });
+
+  it('AC-3: the two the old message got RIGHT stay right', () => {
+    const G = makeTestState();
+    const classText = describeFailedCondition(G, '0', { type: 'heroClassMatch', value: 'instinct' });
+    assert.match(classText, /another instinct Hero/);
+
+    const teamText = describeFailedCondition(G, '0', { type: 'requiresTeam', value: 'x-men' });
+    assert.match(teamText, /another x-men Hero/);
+  });
+
+  it('describes the two types handled but never constructed from card data', () => {
+    const G = makeTestState({ inPlay: ['a', 'b'] });
+    assert.match(
+      describeFailedCondition(G, '0', { type: 'playedThisTurn', value: '5' }),
+      /5 cards played this turn/,
+    );
+    assert.match(
+      describeFailedCondition(G, '0', { type: 'requiresKeyword', value: 'patrol' }),
+      /another patrol card/,
+    );
+  });
+
+  it('AC-4: an UNRECOGNIZED type reads as un-evaluable and names the type', () => {
+    // why: D-24375 section 3 — evaluateCondition's default returns false, so a data
+    // or parse defect currently renders identically to a working synergy gate. The
+    // loud fallback is also the only guarantee available: HeroCondition.type is a
+    // bare string, so this describer cannot be compiler-exhaustive.
+    const G = makeTestState();
+    const text = describeFailedCondition(G, '0', {
+      type: 'someFutureConditionType',
+      value: '3',
+    });
+    assert.match(text, /could not be evaluated/);
+    assert.match(text, /someFutureConditionType/);
+    assert.equal(/was not met/i.test(text), false);
+  });
+
+  it('AC-4: behaviour is UNCHANGED — an unrecognized condition still blocks', () => {
+    // why: fail-closed stays. Firing an effect whose gate cannot be evaluated is
+    // strictly worse than blocking it; only the LOG distinguishes the two.
+    const G = makeTestState();
+    const unknown = { type: 'someFutureConditionType', value: '3' };
+    assert.equal(evaluateCondition(G, '0', unknown), false);
+    assert.equal(evaluateAllConditions(G, '0', [unknown]), false);
+  });
+
+  it('every constructed condition type yields a distinct, non-empty clause', () => {
+    // why: guards against two types collapsing onto the same sentence, which would
+    // re-create the defect in miniature.
+    const G = makeTestState({ turnEconomyRecruit: 1, inPlay: ['a'] });
+    const clauses = [
+      describeFailedCondition(G, '0', { type: 'heroClassMatch', value: 'instinct' }),
+      describeFailedCondition(G, '0', { type: 'requiresTeam', value: 'x-men' }),
+      describeFailedCondition(G, '0', { type: 'distinctHeroClassesAtLeast', value: '3' }),
+      describeFailedCondition(G, '0', { type: 'recruitMadeThisTurnAtLeast', value: '8' }),
+    ];
+    for (const clause of clauses) {
+      assert.equal(clause.length > 0, true);
+    }
+    assert.equal(new Set(clauses).size, clauses.length);
   });
 });
