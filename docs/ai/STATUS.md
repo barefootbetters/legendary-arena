@@ -7,6 +7,64 @@
 
 ## Current State
 
+### WP-572 - AST-Aware Fixture Migration - DONE on AC-1, UI family split out (2026-08-17)
+
+Packet 5 of the WP-563 arc. **Operator decision: close on AC-1 and spin the
+UI-projection family into its own packet.**
+
+**AC-1 — the packet's reason to exist — IS MET, on both required types.** Adding
+a new required field now breaks **exactly one place**:
+
+| Mutation | Breaks |
+|---|---|
+| `PlayerZones` + `quarantine` | `src/setup/playerInit.ts` (production) |
+| `TurnEconomy` + `overkill` | `src/economy/economy.logic.ts` (production) |
+
+**Zero test sites in either case.** WP-571's equivalent mutation broke six. The
+property the whole builder arc exists for now holds for the six-type family —
+and it is **proven by mutation**, not inferred from a falling error count, which
+D-24381 §3 explicitly rejects as evidence. That distinction is the difference
+between this packet and WP-571, which cut its class 88% while delivering no
+property at all.
+
+**AC-2 (class → zero except the skip-list): NOT MET, recorded as unmet.** 18
+remain: **16 UI-projection literals** across five types (`UICityCard` 8;
+`UITurnEconomyState` / `UISchemeState` / `UIMastermindState` / `UICityState` 2
+each), 1 `SeedParArtifact`, and the 1 intentional skip-list entry. The UI family
+is genuinely a **different family** — different types, different module, its own
+builder set — so it is split out rather than absorbed, and is recorded as a
+backlog row carrying the same mutation-based acceptance.
+
+**The checker-driven approach worked exactly as D-24381 specified.** The census
+reproduced the draft figure precisely — 230 literals, 173 already routed, 1
+skip-listed, **56 migrated** — and produced **zero syntax errors**, against the
+regex approach's 102 broken files in WP-571.
+
+**The skip-list worked as designed.** `ui/uiState.build.test.ts`'s
+deliberately-narrow registry mock was excluded and **stays erroring**, because
+completing it silences the reader guard the test exists to prove fires. Not
+every diagnostic is a defect.
+
+**Verified.** Gate **134 → 126**; class **23 → 18**; engine suite **2740 /
+2740**; `dist` **byte-identical** (752 files); **zero** non-test files in the
+diff; **zero** suppressions. Two `UIState.game` fixtures were completed inline
+rather than via a builder — one-off view shapes, which the WP permits.
+
+**One measurement error, recorded because the shape recurs.** A case-insensitive
+grep for `TurnEconomy` also matched `UITurnEconomyState`, briefly making
+mutation 2 look like it broke two test sites. It had not — those were
+pre-existing UI residuals. Re-measured with an exact type match before anything
+was claimed. **When a type name is a prefix of another, grep exactly** — the
+same class of self-inflicted false signal as WP-570's documentation tripping its
+own suppression grep.
+
+D-24381 **Active**. CI wiring remains deferred (D-24372 §2) with **126**
+standing — the UI family and the long tail.
+
+**User-Visible Surface: none - infrastructure.** The D-24026 gate inverts.
+
+---
+
 ### WP-571 - Engine Test Fixture Builders - DONE, SCOPE AMENDED (2026-08-17)
 
 Packet 4 of the WP-563 arc. **Operator decision at execution: land the builders

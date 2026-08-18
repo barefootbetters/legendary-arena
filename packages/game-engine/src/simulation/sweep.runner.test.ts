@@ -21,6 +21,7 @@ import type { CardRegistryReader } from '../matchSetup.validate.js';
 import type { AIPolicy } from './ai.types.js';
 
 import { createRandomPolicy } from './ai.random.js';
+import { makeCardRegistryReader } from '../test/fixtureBuilders.js';
 import {
   CELL_SEED_SEPARATOR,
   cartesianProduct,
@@ -58,7 +59,7 @@ function createBaseSetupConfig(): MatchSetupConfig {
  * narrow mocks gracefully.
  */
 function createMockRegistry(): CardRegistryReader {
-  return {
+  return { ...makeCardRegistryReader(),
     listCards: () => [],
   } as CardRegistryReader;
 }

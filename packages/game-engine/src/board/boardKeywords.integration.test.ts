@@ -16,7 +16,7 @@ import type { BoardKeyword } from './boardKeywords.types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { CityZone } from './city.types.js';
 import type { VillainAbilityHook } from '../rules/villainAbility.types.js';
-import { makeGlobalPiles, makeMastermindState } from '../test/fixtureBuilders.js';
+import { makeGlobalPiles, makeMastermindState, makeTurnEconomy } from '../test/fixtureBuilders.js';
 
 /**
  * Creates a minimal LegendaryGameState for board keyword integration testing.
@@ -94,7 +94,7 @@ function makeTestGameState(overrides?: {
     villainDeckCardTypes: (overrides?.villainDeckCardTypes ?? {}) as Record<CardExtId, never>,
     ko: [],
     attachedBystanders: {},
-    turnEconomy: {
+    turnEconomy: { ...makeTurnEconomy(),
       attack: overrides?.attackPoints ?? 0,
       recruit: 0,
       spentAttack: 0,

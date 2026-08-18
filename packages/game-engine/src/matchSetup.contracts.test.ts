@@ -19,6 +19,7 @@ import { validateMatchSetup, parseQualifiedId } from './matchSetup.validate.js';
 import type { CardRegistryReader } from './matchSetup.validate.js';
 import type { MatchSetupConfig } from './matchSetup.types.js';
 import type { MatchConfiguration } from './types.js';
+import { makeCardRegistryReader } from './test/fixtureBuilders.js';
 
 /**
  * Mock set-data shape produced by `getSet()`. Only the fields the
@@ -65,7 +66,7 @@ function createMockRegistry(): CardRegistryReader {
     villains: [{ slug: 'shared-villain-group' }],
   };
 
-  return {
+  return { ...makeCardRegistryReader(),
     listCards() {
       return [
         // why: hero flat-card keys feed buildKnownHeroQualifiedIds via
@@ -511,7 +512,7 @@ describe('MatchConfiguration / MatchSetupConfig compatibility', () => {
 
 describe('validateMatchSetup — CardRegistryReader boundary', () => {
   it('works with a minimal in-memory CardRegistryReader (no registry import)', () => {
-    const fakeRegistry: CardRegistryReader = {
+    const fakeRegistry: CardRegistryReader = { ...makeCardRegistryReader(),
       listCards() {
         return [];
       },

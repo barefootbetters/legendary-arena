@@ -175,7 +175,12 @@ describe('simulation framework (WP-036)', () => {
     }
 
     const minimalView: UIState = {
-      game: { phase: 'play', turn: 1, activePlayerId: '0', currentStage: 'main' },
+      // why: UIState.game carries three required flags beyond the four view
+      // fields; a fixture omitting them is structurally invalid (WP-572).
+      game: {
+        phase: 'play', turn: 1, activePlayerId: '0', currentStage: 'main',
+        hasActedThisTurn: false, hasHealedThisTurn: false, lastPlayEffectsFired: 0,
+      },
       players: [
         {
           playerId: '0',

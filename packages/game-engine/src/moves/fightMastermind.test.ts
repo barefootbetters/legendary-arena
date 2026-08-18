@@ -21,7 +21,7 @@ import { initializeCity, initializeHq } from '../board/city.logic.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { makeMockMoveContext } from '../test/mockMoveContext.js';
 import type { MockMoveContext } from '../test/mockMoveContext.js';
-import { makeGlobalPiles, makeMastermindState, makePlayerZones, makeTurnEconomy } from '../test/fixtureBuilders.js';
+import { makeCardStatEntry, makeGlobalPiles, makeMastermindState, makePlayerZones, makeTurnEconomy } from '../test/fixtureBuilders.js';
 
 // ---------------------------------------------------------------------------
 // Mock G factory
@@ -80,15 +80,15 @@ function createMockGameState(options?: {
     villainDeckCardTypes: {},
     ko: [],
     attachedBystanders: {},
-    mastermind: options?.mastermind ?? {
+    mastermind: options?.mastermind ?? { ...makeMastermindState(),
       id: 'test-mastermind' as CardExtId,
       baseCardId: 'test-mastermind-base' as CardExtId,
       tacticsDeck: ['tactic-1', 'tactic-2', 'tactic-3'] as CardExtId[],
       tacticsDefeated: [] as CardExtId[],
     },
-    turnEconomy: options?.turnEconomy ?? { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0 },
+    turnEconomy: options?.turnEconomy ?? { ...makeTurnEconomy(), attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0 },
     cardStats: options?.cardStats ?? {
-      'test-mastermind-base': { attack: 0, recruit: 0, cost: 0, fightCost: 8 },
+      'test-mastermind-base': { ...makeCardStatEntry(), attack: 0, recruit: 0, cost: 0, fightCost: 8 },
     },
     city: initializeCity(),
     hq: initializeHq(),
@@ -251,7 +251,7 @@ describe('fightMastermind', () => {
   it('all tactics defeated: captured bystanders awarded to victory and store cleared', () => {
     const gameState = createMockGameState({
       turnEconomy: { ...makeTurnEconomy(), attack: 10, recruit: 0, spentAttack: 0, spentRecruit: 0 },
-      mastermind: {
+      mastermind: { ...makeMastermindState(),
         id: 'test-mastermind' as CardExtId,
         baseCardId: 'test-mastermind-base' as CardExtId,
         tacticsDeck: ['last-tactic'] as CardExtId[],
@@ -294,7 +294,7 @@ describe('fightMastermind', () => {
   it('all tactics defeated: city-empty bystander mirror is awarded once and cleared', () => {
     const gameState = createMockGameState({
       turnEconomy: { ...makeTurnEconomy(), attack: 10, recruit: 0, spentAttack: 0, spentRecruit: 0 },
-      mastermind: {
+      mastermind: { ...makeMastermindState(),
         id: 'test-mastermind' as CardExtId,
         baseCardId: 'test-mastermind-base' as CardExtId,
         tacticsDeck: ['last-tactic'] as CardExtId[],
@@ -333,7 +333,7 @@ describe('fightMastermind', () => {
     // to the victory pile.
     const gameState = createMockGameState({
       turnEconomy: { ...makeTurnEconomy(), attack: 10, recruit: 0, spentAttack: 0, spentRecruit: 0 },
-      mastermind: {
+      mastermind: { ...makeMastermindState(),
         id: 'test-mastermind' as CardExtId,
         baseCardId: 'test-mastermind-base' as CardExtId,
         tacticsDeck: ['tactic-1', 'tactic-2', 'tactic-3'] as CardExtId[],

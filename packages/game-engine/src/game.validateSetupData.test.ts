@@ -16,6 +16,7 @@ import assert from 'node:assert/strict';
 import { LegendaryGame, setRegistryForSetup, clearRegistryForSetup } from './game.js';
 import type { CardRegistryReader } from './matchSetup.validate.js';
 import type { MatchConfiguration } from './types.js';
+import { makeCardRegistryReader } from './test/fixtureBuilders.js';
 
 /**
  * Registry mock satisfying the widened CardRegistryReader interface
@@ -35,7 +36,7 @@ function createMockRegistry(): CardRegistryReader {
       { slug: 'test-villain-group-002' },
     ],
   };
-  return {
+  return { ...makeCardRegistryReader(),
     listCards() {
       return [
         { key: 'test-hero-test-hero-001-1', cardType: 'hero', slug: '1', setAbbr: 'test', abilities: [] },

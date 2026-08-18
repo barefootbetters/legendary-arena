@@ -42,7 +42,7 @@ describe('defeatTopTactic', () => {
   });
 
   it('preserves strikePile, attachedBystanders, and gameText through a defeat', () => {
-    const state: MastermindState = {
+    const state: MastermindState = { ...makeMastermindState(),
       id: 'mm-f',
       baseCardId: 'mm-f-base',
       tacticsDeck: ['tactic-1'],

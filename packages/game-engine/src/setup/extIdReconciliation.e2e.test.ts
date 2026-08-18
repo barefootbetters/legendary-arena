@@ -36,6 +36,7 @@ import { getHooksForCard } from '../rules/heroAbility.types.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
 import type { CardRegistryReader } from '../matchSetup.validate.js';
 import type { LegendaryGameState, CardExtId } from '../types.js';
+import { makeTurnEconomy } from '../test/fixtureBuilders.js';
 
 // ---------------------------------------------------------------------------
 // Populated mock registry
@@ -297,7 +298,7 @@ describe('ext_id grammar reconciliation — end-to-end effect resolution (WP-191
 
     gameState.city[0] = mystiqueId!;
     gameState.currentStage = 'main';
-    gameState.turnEconomy = {
+    gameState.turnEconomy = { ...makeTurnEconomy(),
       attack: 10,
       recruit: 0,
       spentAttack: 0,

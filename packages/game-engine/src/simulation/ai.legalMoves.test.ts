@@ -16,6 +16,7 @@ import { selectDefaultKoTarget } from '../villain/villainEffects.execute.js';
 import { selectDefaultOptionalKoTarget } from '../hero/heroEffects.execute.js';
 import type { LegendaryGameState, PendingKoHeroChoice, PendingOptionalKoReward } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
+import { makeTurnEconomy } from '../test/fixtureBuilders.js';
 
 const CONTEXT = { phase: 'play', turn: 1, currentPlayer: '0', numPlayers: 1 };
 
@@ -380,7 +381,7 @@ describe('getLegalMoves — dynamic villain fight cost uses resolveFightCost (bo
    */
   function makeDynamicVillainG(availableAttack: number): LegendaryGameState {
     const gameState = makeG({ hand: [], currentStage: 'main' });
-    gameState.turnEconomy = {
+    gameState.turnEconomy = { ...makeTurnEconomy(),
       attack: availableAttack,
       recruit: 0,
       spentAttack: 0,
@@ -543,7 +544,7 @@ describe('getLegalMoves — villain defeat requirement mirrors the move guard (W
       discard: overrides.discard ?? [],
       currentStage: 'main',
     });
-    gameState.turnEconomy = {
+    gameState.turnEconomy = { ...makeTurnEconomy(),
       attack: 4,
       recruit: 0,
       spentAttack: 0,

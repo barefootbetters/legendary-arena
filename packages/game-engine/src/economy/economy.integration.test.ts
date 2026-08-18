@@ -20,7 +20,7 @@ import { initializeCity, initializeHq } from '../board/city.logic.js';
 import { DEFAULT_IMPLEMENTATION_MAP } from '../rules/ruleRuntime.impl.js';
 import { makeMockMoveContext } from '../test/mockMoveContext.js';
 import type { MockMoveContext } from '../test/mockMoveContext.js';
-import { makeCardStatEntry, makeGlobalPiles, makePlayerZones } from '../test/fixtureBuilders.js';
+import { makeCardStatEntry, makeGlobalPiles, makeMastermindState, makePlayerZones, makeTurnEconomy } from '../test/fixtureBuilders.js';
 
 // ---------------------------------------------------------------------------
 // Mock G factory
@@ -90,7 +90,7 @@ function createMockGameState(options?: {
     attachedBystanders: {},
     turnEconomy: options?.turnEconomy ?? resetTurnEconomy(),
     cardStats: options?.cardStats ?? {},
-    mastermind: {
+    mastermind: { ...makeMastermindState(),
       id: 'test-mastermind',
       baseCardId: 'test-mastermind-base',
       tacticsDeck: [],
@@ -149,7 +149,7 @@ describe('economy integration', () => {
   it('fight with sufficient attack succeeds and increments spentAttack', () => {
     const gameState = createMockGameState({
       city: ['villain-x', null, null, null, null],
-      turnEconomy: { attack: 5, recruit: 0, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 },
+      turnEconomy: { ...makeTurnEconomy(), attack: 5, recruit: 0, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 },
       cardStats: {
         'villain-x': { ...makeCardStatEntry(), attack: 0, recruit: 0, cost: 0, fightCost: 3 },
       },
@@ -177,7 +177,7 @@ describe('economy integration', () => {
   it('fight with insufficient attack: no G mutation', () => {
     const gameState = createMockGameState({
       city: ['villain-y', null, null, null, null],
-      turnEconomy: { attack: 2, recruit: 0, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 },
+      turnEconomy: { ...makeTurnEconomy(), attack: 2, recruit: 0, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 },
       cardStats: {
         'villain-y': { ...makeCardStatEntry(), attack: 0, recruit: 0, cost: 0, fightCost: 5 },
       },
@@ -212,7 +212,7 @@ describe('economy integration', () => {
   it('recruit with sufficient recruit succeeds and increments spentRecruit', () => {
     const gameState = createMockGameState({
       hq: ['hero-b', null, null, null, null],
-      turnEconomy: { attack: 0, recruit: 6, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 },
+      turnEconomy: { ...makeTurnEconomy(), attack: 0, recruit: 6, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 },
       cardStats: {
         'hero-b': { ...makeCardStatEntry(), attack: 2, recruit: 1, cost: 4, fightCost: 0 },
       },
@@ -240,7 +240,7 @@ describe('economy integration', () => {
   it('recruit with insufficient recruit: no G mutation', () => {
     const gameState = createMockGameState({
       hq: ['hero-c', null, null, null, null],
-      turnEconomy: { attack: 0, recruit: 1, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 },
+      turnEconomy: { ...makeTurnEconomy(), attack: 0, recruit: 1, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 },
       cardStats: {
         'hero-c': { ...makeCardStatEntry(), attack: 1, recruit: 0, cost: 5, fightCost: 0 },
       },
@@ -296,7 +296,7 @@ describe('economy integration', () => {
       hand: ['hero-d'],
       city: ['villain-z', null, null, null, null],
       hq: ['hero-e', null, null, null, null],
-      turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 },
+      turnEconomy: { ...makeTurnEconomy(), attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 },
       cardStats: {
         'hero-d': { ...makeCardStatEntry(), attack: 5, recruit: 4, cost: 3, fightCost: 0 },
         'villain-z': { ...makeCardStatEntry(), attack: 0, recruit: 0, cost: 0, fightCost: 3 },
@@ -320,7 +320,7 @@ describe('economy integration', () => {
 
   it('reveal does not mutate economy', () => {
     const gameState = createMockGameState({
-      turnEconomy: { attack: 7, recruit: 3, spentAttack: 2, spentRecruit: 1, piercing: 0, woundsDrawn: 0 },
+      turnEconomy: { ...makeTurnEconomy(), attack: 7, recruit: 3, spentAttack: 2, spentRecruit: 1, piercing: 0, woundsDrawn: 0 },
       villainDeck: { deck: ['reveal-villain-a'], discard: [] },
       villainDeckCardTypes: { 'reveal-villain-a': 'villain' },
     });

@@ -17,6 +17,7 @@ import { applyReplayStep, replayGame } from './replay.execute.js';
 import { computeStateHash } from './replay.hash.js';
 import { buildInitialGameState } from '../setup/buildInitialGameState.js';
 import { makeMockCtx } from '../test/mockCtx.js';
+import { makeCardRegistryReader } from '../test/fixtureBuilders.js';
 
 // why: one-shot capture helper. Filled in by running the regression test
 // ONCE against pre-refactor replayGame, then replaced with the literal
@@ -136,7 +137,7 @@ const PRE_WP080_HASH = 'ec64506a';
  *   realigned to `listSets`/`getSet` in the WP-113 follow-up alignment
  *   fix; per D-10014.)
  */
-const mockRegistry: CardRegistryReader = {
+const mockRegistry: CardRegistryReader = { ...makeCardRegistryReader(),
   listCards: () => [],
   listSets: () => [],
   getSet: (_abbr: string) => undefined,

@@ -19,7 +19,7 @@ import { recruitHero } from './recruitHero.js';
 import { fightMastermind } from './fightMastermind.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
 import type { LegendaryGameState } from '../types.js';
-import { makeGlobalPiles, makeMastermindState, makePlayerZones } from '../test/fixtureBuilders.js';
+import { makeCardStatEntry, makeGlobalPiles, makeMastermindState, makePlayerZones, makeTurnEconomy } from '../test/fixtureBuilders.js';
 
 // ---------------------------------------------------------------------------
 // Mock G factory + move context
@@ -90,7 +90,7 @@ function createHealState(options?: HealStateOptions): LegendaryGameState {
     notableEvents: [],
     heroDeck: [],
     heroAbilityHooks: [],
-    turnEconomy: options?.turnEconomy ?? {
+    turnEconomy: options?.turnEconomy ?? { ...makeTurnEconomy(),
       attack: 0,
       recruit: 0,
       spentAttack: 0,
@@ -259,7 +259,7 @@ describe('healWounds — acted-this-turn gate', () => {
     const state = createHealState({
       hand: [WOUND_EXT_ID],
       hq: ['hero-x', null, null, null, null],
-      cardStats: { 'hero-x': { attack: 0, recruit: 0, cost: 0, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 } },
+      cardStats: { 'hero-x': { ...makeCardStatEntry(), attack: 0, recruit: 0, cost: 0, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 } },
     });
     recruitHero(createMoveContext(state), { hqIndex: 0 });
     assert.strictEqual(state.hasActedThisTurn, true);
@@ -271,7 +271,7 @@ describe('healWounds — acted-this-turn gate', () => {
   it('a real villain fight sets hasActedThisTurn', () => {
     const state = createHealState({
       city: ['villain-x', null, null, null, null],
-      cardStats: { 'villain-x': { attack: 0, recruit: 0, cost: 0, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 } },
+      cardStats: { 'villain-x': { ...makeCardStatEntry(), attack: 0, recruit: 0, cost: 0, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 } },
     });
     fightVillain(createMoveContext(state), { cityIndex: 0 });
     assert.strictEqual(state.hasActedThisTurn, true);
@@ -280,7 +280,7 @@ describe('healWounds — acted-this-turn gate', () => {
   it('a real mastermind fight sets hasActedThisTurn', () => {
     const state = createHealState({
       tacticsDeck: ['tactic-1', 'tactic-2'],
-      cardStats: { 'test-mastermind-base': { attack: 0, recruit: 0, cost: 0, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 } },
+      cardStats: { 'test-mastermind-base': { ...makeCardStatEntry(), attack: 0, recruit: 0, cost: 0, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 } },
     });
     fightMastermind(createMoveContext(state));
     assert.strictEqual(state.hasActedThisTurn, true);
@@ -301,7 +301,7 @@ describe('healWounds — reverse lock after Healing', () => {
     const state = createHealState({
       hasHealedThisTurn: true,
       city: ['villain-x', null, null, null, null],
-      cardStats: { 'villain-x': { attack: 0, recruit: 0, cost: 0, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 } },
+      cardStats: { 'villain-x': { ...makeCardStatEntry(), attack: 0, recruit: 0, cost: 0, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 } },
     });
     fightVillain(createMoveContext(state), { cityIndex: 0 });
 
@@ -313,7 +313,7 @@ describe('healWounds — reverse lock after Healing', () => {
     const state = createHealState({
       hasHealedThisTurn: true,
       hq: ['hero-x', null, null, null, null],
-      cardStats: { 'hero-x': { attack: 0, recruit: 0, cost: 0, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 } },
+      cardStats: { 'hero-x': { ...makeCardStatEntry(), attack: 0, recruit: 0, cost: 0, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 } },
     });
     recruitHero(createMoveContext(state), { hqIndex: 0 });
 
@@ -325,7 +325,7 @@ describe('healWounds — reverse lock after Healing', () => {
     const state = createHealState({
       hasHealedThisTurn: true,
       tacticsDeck: ['tactic-1', 'tactic-2'],
-      cardStats: { 'test-mastermind-base': { attack: 0, recruit: 0, cost: 0, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 } },
+      cardStats: { 'test-mastermind-base': { ...makeCardStatEntry(), attack: 0, recruit: 0, cost: 0, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 } },
     });
     fightMastermind(createMoveContext(state));
 

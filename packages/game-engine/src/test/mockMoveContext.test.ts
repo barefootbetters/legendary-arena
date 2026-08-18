@@ -17,10 +17,11 @@ import { buildInitialGameState } from '../setup/buildInitialGameState.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
 import type { CardRegistryReader } from '../matchSetup.validate.js';
 import type { LegendaryGameState } from '../types.js';
+import { makeCardRegistryReader } from '../test/fixtureBuilders.js';
 
 /** Minimal but COMPLETE registry reader — a partial one silently skips builders. */
 function createMockRegistry(): CardRegistryReader {
-  return { listCards: () => [], listSets: () => [], getSet: () => undefined };
+  return { ...makeCardRegistryReader(), listCards: () => [], listSets: () => [], getSet: () => undefined };
 }
 
 /** Minimal valid match configuration for a built state. */

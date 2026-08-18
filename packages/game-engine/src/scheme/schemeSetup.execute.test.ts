@@ -17,7 +17,7 @@ import type { LegendaryGameState } from '../types.js';
 import type { CityZone } from '../board/city.types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { BoardKeyword } from '../board/boardKeywords.types.js';
-import { makeTurnEconomy } from '../test/fixtureBuilders.js';
+import { makeGlobalPiles, makeMastermindState, makeTurnEconomy } from '../test/fixtureBuilders.js';
 
 /**
  * Builds a minimal LegendaryGameState mock with the fields that
@@ -36,14 +36,14 @@ function buildMinimalGameState(): LegendaryGameState {
     selection: {} as LegendaryGameState['selection'],
     currentStage: 'start',
     playerZones: {},
-    piles: {} as LegendaryGameState['piles'],
+    piles: { ...makeGlobalPiles(),} as LegendaryGameState['piles'],
     hookRegistry: [],
     villainDeck: { deck: [], discard: [] },
     villainDeckCardTypes: {},
     ko: [],
     attachedBystanders: {},
     hq: [null, null, null, null, null],
-    mastermind: {} as LegendaryGameState['mastermind'],
+    mastermind: { ...makeMastermindState(),} as LegendaryGameState['mastermind'],
     cardStats: {},
     turnEconomy: { ...makeTurnEconomy(), attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0 },
     heroAbilityHooks: [],
