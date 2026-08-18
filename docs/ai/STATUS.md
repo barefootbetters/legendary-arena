@@ -7,6 +7,72 @@
 
 ## Current State
 
+### WP-568 - Wait-and-See Conditional Semantics - DONE (2026-08-17)
+
+Operator decision: a hero condition of the form "If you [did X] this turn" is a
+WHOLE-TURN window, not a snapshot taken when the card is played. Thor's Surge of
+Power now grants its +3 attack retroactively once the turn's recruit reaches 8,
+even if that recruit arrives after the card is already in play. The drafting
+recommendation was the opposite and is preserved in D-24377 section 2, so the
+decision reads as made rather than drifted into.
+
+**Scope is deliberately two condition types.** recruitMadeThisTurnAtLeast and
+distinctHeroClassesAtLeast get the window; heroClassMatch and requiresTeam keep
+on-play evaluation. All four are "this turn" scoped in substance - the class gates
+read playerZones.inPlay, which clears each turn - so the boundary is drawn at "is
+it a NUMERIC THRESHOLD", not at "does it read inPlay". Converting the class gates
+would change every [hc:X] card in the game and remove play-ordering skill from
+class synergy.
+
+**Mechanism.** A lazily-materialized G field records a hook whose numeric gate
+failed; the play-phase turn.onMove hook re-checks it each move - the same cadence
+the final-turn latch and the pile-depletion check already use - and turn.onBegin
+clears it at the boundary. The entry is removed as it fires, so a threshold
+crossed, dropped and re-crossed within one turn grants exactly once.
+
+**The field is deliberately NOT named pending*.** Every G.pending*Choices[] in
+this engine is an interactive choice with a resolve move, and a parked one lacking
+a UIState projection and prompt hard-freezes the human player. A deferred grant
+takes no player input and needs no prompt - naming it pending* would have invited
+either an unnecessary prompt or a phantom "missing UX" bug report.
+
+**Three log states now exist:** "is waiting" (deferred, neutral), "did not
+activate" (failed, blocked - WP-566), and "applied" when a waiting gate later
+fires. neutral rather than blocked for the waiting line, because LOG_OUTCOMES has
+no waiting member and blocked means the effect was suppressed - wrong for an
+ability that may still fire this turn.
+
+**runHookEffects was extracted** from executeHeroEffects so the deferred re-check
+fires through exactly the same dispatch path as the immediate play. A second
+dispatch copy would be free to drift.
+
+**The mutation pass found a real gap.** Four tests were mutation-verified rather
+than merely run, and that exercise revealed the game.ts wiring was pinned by
+NOTHING: the helper suite alone would have stayed green with the feature shipped
+100% dead - the WP-560 failure mode this repo has already paid for. Two wiring
+tests were added and both mutation-confirmed: removing the onMove re-check or the
+onBegin clear each fails one.
+
+**One WP-566 test was amended, not deleted.** Its AC-1 case asserted that a
+recruit-threshold gate produces the "did not activate" line, which this WP
+deliberately changes to the waiting line. It now asserts the waiting state while
+still pinning WP-566's substance - the message names the RECRUIT gate and never
+blames Hero class or team synergy. A new sibling case keeps the failed path
+covered via an out-of-scope class gate, which would otherwise have lost coverage.
+
+**Gates.** pnpm -r build 0. Engine **2765 -> 2779 / 0 fail**. pnpm -r --no-bail
+test **0 failures in every package**. Both hash oracles byte-unchanged -
+PRE_WP080_HASH ec64506a, sentinel 813287eb...f143b8 - the lazy field never
+materializes in the fixture, whose heroes carry no in-scope condition.
+
+**D-24026 - operator-pending.** A live turn where recruit crosses 8 AFTER Surge of
+Power is in play should grant the +3 attack, visible in the HUD and the game log.
+
+Lands **D-24377 Active**. 8 files (2 new) + governance. This completes the
+match-review arc: WP-565, 566, 567 and 568 all shipped.
+
+---
+
 ### WP-566 - Blocked-Ability Message Misattribution - DONE (2026-08-17)
 
 One generic line - "a play condition (such as Hero class or team synergy) was not
