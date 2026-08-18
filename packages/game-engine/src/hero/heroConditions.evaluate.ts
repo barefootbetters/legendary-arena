@@ -211,3 +211,132 @@ export function evaluateAllConditions(
 
   return true;
 }
+
+// ---------------------------------------------------------------------------
+// findFailedCondition + describeFailedCondition (WP-566 / D-24375)
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns the FIRST condition on a hook that fails, or undefined if all pass.
+ *
+ * why: a SIBLING of `evaluateAllConditions`, not a change to it. That function
+ * is exported from `index.ts`, so widening its return type would be a public
+ * contract change; this pair leaves it byte-identical. The iteration order is
+ * deliberately the SAME short-circuit order, so the condition reported to the
+ * player is always the one that actually stopped the ability.
+ *
+ * @param G - Current game state (read-only).
+ * @param playerID - Active player ID.
+ * @param conditions - Array of conditions to evaluate (may be undefined).
+ * @param triggeringCardId - Optional CardExtId forwarded to each evaluateCondition call.
+ * @returns The first failing condition, or undefined when every condition passes.
+ */
+export function findFailedCondition(
+  G: LegendaryGameState,
+  playerID: string,
+  conditions: HeroCondition[] | undefined,
+  triggeringCardId?: CardExtId,
+): HeroCondition | undefined {
+  if (conditions === undefined || conditions.length === 0) {
+    return undefined;
+  }
+
+  // why: explicit for...of, no .reduce() (.claude/rules/code-style.md).
+  for (const condition of conditions) {
+    if (!evaluateCondition(G, playerID, condition, triggeringCardId)) {
+      return condition;
+    }
+  }
+
+  return undefined;
+}
+
+/**
+ * Counts the distinct hero classes a player currently has in play.
+ *
+ * Mirrors the `distinctHeroClassesAtLeast` case's own counting so the message
+ * quotes the same number the gate compared.
+ *
+ * @param G - Current game state (read-only).
+ * @param playerID - Active player ID.
+ * @returns How many distinct hero classes are in play for that player.
+ */
+function countDistinctHeroClassesInPlay(
+  G: LegendaryGameState,
+  playerID: string,
+): number {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones || !G.cardTraits) {
+    return 0;
+  }
+  const distinctClasses = new Set<string>();
+  for (const playedCardId of playerZones.inPlay) {
+    const traitEntry = G.cardTraits[playedCardId as CardExtId];
+    if (traitEntry !== undefined && typeof traitEntry.heroClass === 'string' && traitEntry.heroClass.length > 0) {
+      distinctClasses.add(traitEntry.heroClass);
+    }
+    for (const grantedClass of getGrantedClasses(G, playedCardId as CardExtId)) {
+      distinctClasses.add(grantedClass);
+    }
+  }
+  return distinctClasses.size;
+}
+
+/**
+ * Describes, in player-facing English, why a condition failed.
+ *
+ * why: WP-566 / D-24375 section 1 — ONE generic line ("a play condition (such as
+ * Hero class or team synergy) was not met") used to stand in for every failure.
+ * Counted at source it was right for 2 of the 4 constructed condition types and
+ * wrong for the two NUMERIC-THRESHOLD ones — which are also the two whose failure
+ * a player could act on. A message that confidently misattributes the cause is
+ * worse than a vague one: it sends the reader to the wrong card property.
+ *
+ * why: section 3 — the fallback names the offending `type` and says the condition
+ * could not be EVALUATED, deliberately distinct from every "not met" line.
+ * `HeroCondition.type` is a bare `string`, so this describer cannot be made
+ * compiler-exhaustive; the loud fallback is therefore also the guarantee that a
+ * future condition type added without a case here surfaces as a visible defect
+ * signal rather than as a plausible-looking wrong sentence.
+ *
+ * @param G - Current game state (read-only).
+ * @param playerID - Active player ID.
+ * @param condition - The condition that failed.
+ * @returns A clause naming what was required and, where useful, what was actual.
+ */
+export function describeFailedCondition(
+  G: LegendaryGameState,
+  playerID: string,
+  condition: HeroCondition,
+): string {
+  switch (condition.type) {
+    case 'heroClassMatch':
+      return `it needs another ${condition.value} Hero played this turn`;
+
+    case 'requiresTeam':
+      return `it needs another ${condition.value} Hero played this turn`;
+
+    case 'requiresKeyword':
+      return `it needs another ${condition.value} card played this turn`;
+
+    case 'playedThisTurn': {
+      const playerZones = G.playerZones[playerID];
+      const played = playerZones ? playerZones.inPlay.length : 0;
+      return `it needs ${condition.value} cards played this turn — you have played ${played}`;
+    }
+
+    case 'distinctHeroClassesAtLeast': {
+      const distinct = countDistinctHeroClassesInPlay(G, playerID);
+      return `it needs ${condition.value} different Hero classes in play — you have ${distinct}`;
+    }
+
+    case 'recruitMadeThisTurnAtLeast':
+      // why: quotes G.turnEconomy.recruit, the GROSS recruit MADE this turn (the
+      // value the gate compares), not the net available — spending recruit does
+      // not lower the gate, and a message quoting the remainder would mislead.
+      return `it needs ${condition.value} or more recruit this turn — you have made ${G.turnEconomy.recruit}`;
+
+    default:
+      return `its play condition could not be evaluated (unrecognized condition type "${condition.type}")`;
+  }
+}
