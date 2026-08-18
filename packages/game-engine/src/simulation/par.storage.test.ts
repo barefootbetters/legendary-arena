@@ -128,6 +128,9 @@ function createSeedArtifact(
     source: 'seed',
     parBaseline,
     parValue,
+    // why: the helper already receives scoringConfig; the artifact type requires
+    // it and the literal simply omitted it while nothing compiled this file.
+    scoringConfig,
     scoring: {
       scoringConfigVersion: scoringConfig.scoringConfigVersion,
       rawScoreSemanticsVersion: 1,
