@@ -13,13 +13,13 @@
 
 ## Before Starting
 
-- [ ] Clean tree off `origin/main`; `pnpm install`; `pnpm -r build` exits 0.
-- [ ] **Capture the engine `dist` hashes.** AC-3 requires byte-identical —
+- [x] Clean tree off `origin/main`; `pnpm install`; `pnpm -r build` exits 0.
+- [x] **Capture the engine `dist` hashes.** AC-3 requires byte-identical —
       unlike WP-569, this packet adds no module.
-- [ ] Record the engine test baseline (**2740 / 0** at `a7c3f2b8`).
-- [ ] **Re-derive the inventory.** Draft-time: **498 total, 209 in class
+- [x] Record the engine test baseline (**2740 / 0** at `a7c3f2b8`).
+- [x] **Re-derive the inventory.** Draft-time: **498 total, 209 in class
       (`TS2532` 178 + `TS18048` 31) across 12 files.** Orientation, not truth.
-- [ ] Read D-24372 §2–§3 and D-24379 — this packet inherits both.
+- [x] Read D-24372 §2–§3 and D-24379 — this packet inherits both.
 
 ## Locked Values
 
@@ -83,12 +83,12 @@
 
 ## After Completing
 
-- [ ] `WORK_INDEX.md` `[x]` **plus** refreshed backlog counts (this class
+- [x] `WORK_INDEX.md` `[x]` **plus** refreshed backlog counts (this class
       closes; re-derive the others, never copy them forward — they have now
       moved three times).
-- [ ] `EC_INDEX.md` `Done`; mindmap `✅`; `roadmap:counts:check` 0.
-- [ ] **D-24379** Active.
-- [ ] `STATUS.md` — before/after counts, `TS2532`/`TS18048` at zero, and an
+- [x] `EC_INDEX.md` `Done`; mindmap `✅`; `roadmap:counts:check` 0.
+- [x] **D-24379** Active.
+- [x] `STATUS.md` — before/after counts, `TS2532`/`TS18048` at zero, and an
       explicit note that **`dist` is byte-identical again** (WP-569's
       relaxation was one-time), plus the standing CI-wiring deferral.
       `User-Visible Surface = none — infrastructure`, so D-24026 inverts.

@@ -147,13 +147,18 @@ describe('executeHeroEffects — conditional execution (WP-023)', () => {
     });
 
     const economyBefore = { ...gameState.turnEconomy };
-    const inPlayBefore = [...gameState.playerZones['0'].inPlay];
+    // why: the `!` on these index accesses is a type-level narrowing, not a
+    // suppression: the expression is dereferenced either way, so an undefined
+    // value would already throw here. `!` is erased at compile time and carries
+    // no runtime semantics. See D-24379 for the idiom and why it is permitted
+    // where the suppression pragmas that decision bans are not.
+    const inPlayBefore = [...gameState.playerZones['0']!.inPlay];
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
     assert.deepEqual(gameState.turnEconomy, economyBefore,
       'turnEconomy should not change when conditions are not met.');
-    assert.deepEqual(gameState.playerZones['0'].inPlay, inPlayBefore,
+    assert.deepEqual(gameState.playerZones['0']!.inPlay, inPlayBefore,
       'inPlay should not change when conditions are not met.');
   });
 

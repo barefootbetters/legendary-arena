@@ -221,6 +221,15 @@ describe('versioning (WP-034)', () => {
     assert.equal(typeof roundtripped.savedAt, 'string');
     assert.equal(typeof roundtripped.engineVersion.major, 'number');
     assert.equal(typeof roundtripped.dataVersion.version, 'number');
+    // why: contentVersion is genuinely OPTIONAL on VersionedArtifact, so this is
+    // not an index-narrowing like the rest of WP-570 — asserting its presence is
+    // a real strengthening. This artifact was stamped WITH a content version, so
+    // an absent one here means the roundtrip dropped it, which is exactly what
+    // this test exists to catch.
+    assert.ok(
+      roundtripped.contentVersion !== undefined,
+      'The stamped contentVersion must survive the JSON stringify/parse roundtrip.',
+    );
     assert.equal(typeof roundtripped.contentVersion.version, 'number');
   });
 

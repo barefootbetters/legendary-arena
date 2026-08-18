@@ -284,14 +284,19 @@ describe('validateContent / validateContentBatch (WP-033)', () => {
     assert.equal(resultB.valid, false);
     if (!resultB.valid) {
       assert.equal(resultB.errors.length, 1);
-      assert.equal(resultB.errors[0].field, 'contentType');
-      assert.equal(resultB.errors[0].contentType, 'Hero');
+      // why: the `!` on these index accesses is a type-level narrowing, not a
+      // suppression: the expression is dereferenced either way, so an undefined
+      // value would already throw here. `!` is erased at compile time and carries
+      // no runtime semantics. See D-24379 for the idiom and why it is permitted
+      // where the suppression pragmas that decision bans are not.
+      assert.equal(resultB.errors[0]!.field, 'contentType');
+      assert.equal(resultB.errors[0]!.contentType, 'Hero');
       assert.ok(
-        resultB.errors[0].message.startsWith('The contentType'),
+        resultB.errors[0]!.message.startsWith('The contentType'),
         'Unknown-contentType error message must start with "The contentType".',
       );
       assert.ok(
-        resultB.errors[0].message.endsWith('.'),
+        resultB.errors[0]!.message.endsWith('.'),
         'Unknown-contentType error message must end with a period.',
       );
     }
@@ -302,15 +307,15 @@ describe('validateContent / validateContentBatch (WP-033)', () => {
     assert.equal(resultEmpty.valid, false);
     if (!resultEmpty.valid) {
       assert.equal(resultEmpty.errors.length, 1);
-      assert.equal(resultEmpty.errors[0].field, 'contentType');
-      assert.equal(resultEmpty.errors[0].contentType, '');
+      assert.equal(resultEmpty.errors[0]!.field, 'contentType');
+      assert.equal(resultEmpty.errors[0]!.contentType, '');
     }
     const resultPlural = validateContent({}, 'heroes');
     assert.equal(resultPlural.valid, false);
     if (!resultPlural.valid) {
       assert.equal(resultPlural.errors.length, 1);
-      assert.equal(resultPlural.errors[0].field, 'contentType');
-      assert.equal(resultPlural.errors[0].contentType, 'heroes');
+      assert.equal(resultPlural.errors[0]!.field, 'contentType');
+      assert.equal(resultPlural.errors[0]!.contentType, 'heroes');
     }
   });
 });

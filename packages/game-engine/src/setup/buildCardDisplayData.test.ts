@@ -1203,15 +1203,20 @@ describe('buildCardDisplayData — WP-172 villain per-copy fan-out (D-16802)', (
       string,
       { extId: string; name: string; imageUrl: string; cost: number | null }
     >;
-    result['core-villain-brotherhood-blob-00'].name = 'Mutated';
+    // why: the `!` on these index accesses is a type-level narrowing, not a
+    // suppression: the expression is dereferenced either way, so an undefined
+    // value would already throw here. `!` is erased at compile time and carries
+    // no runtime semantics. See D-24379 for the idiom and why it is permitted
+    // where the suppression pragmas that decision bans are not.
+    result['core-villain-brotherhood-blob-00']!.name = 'Mutated';
 
     assert.equal(
-      result['core-villain-brotherhood-blob-01'].name,
+      result['core-villain-brotherhood-blob-01']!.name,
       'Blob',
       'mutation to copy-00 must not leak to copy-01',
     );
     assert.equal(
-      result['core-villain-brotherhood-blob-02'].name,
+      result['core-villain-brotherhood-blob-02']!.name,
       'Blob',
       'mutation to copy-00 must not leak to copy-02',
     );
@@ -1870,11 +1875,11 @@ describe('buildCardDisplayData — WP-173 well-known ext_id coverage (D-17301)',
       string,
       { extId: string; name: string; imageUrl: string; cost: number | null }
     >;
-    result['pile-bystander'].name = 'Mutated';
+    result['pile-bystander']!.name = 'Mutated';
 
-    assert.equal(result['pile-wound'].name, 'Wound', 'mutation to pile-bystander must not leak to pile-wound');
-    assert.equal(result['pile-sidekick'].name, 'Sidekick', 'mutation to pile-bystander must not leak to pile-sidekick');
-    assert.equal(result['starting-shield-agent'].name, 'S.H.I.E.L.D. Agent', 'mutation must not leak to starting-shield-agent');
+    assert.equal(result['pile-wound']!.name, 'Wound', 'mutation to pile-bystander must not leak to pile-wound');
+    assert.equal(result['pile-sidekick']!.name, 'Sidekick', 'mutation to pile-bystander must not leak to pile-sidekick');
+    assert.equal(result['starting-shield-agent']!.name, 'S.H.I.E.L.D. Agent', 'mutation must not leak to starting-shield-agent');
   });
 
   it('Well-Known Coverage Invariant (D-17301): all six entries defined with non-empty name', () => {

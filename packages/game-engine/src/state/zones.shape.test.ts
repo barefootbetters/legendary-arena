@@ -54,7 +54,12 @@ describe('validateGameStateShape', () => {
     strictEqual(result.ok, false);
     if (!result.ok) {
       strictEqual(result.errors.length > 0, true);
-      strictEqual(result.errors[0].field, 'playerZones');
+      // why: the `!` on these index accesses is a type-level narrowing, not a
+      // suppression: the expression is dereferenced either way, so an undefined
+      // value would already throw here. `!` is erased at compile time and carries
+      // no runtime semantics. See D-24379 for the idiom and why it is permitted
+      // where the suppression pragmas that decision bans are not.
+      strictEqual(result.errors[0]!.field, 'playerZones');
     }
   });
 
@@ -76,7 +81,7 @@ describe('validateGameStateShape', () => {
     strictEqual(result.ok, false);
     if (!result.ok) {
       strictEqual(result.errors.length > 0, true);
-      strictEqual(result.errors[0].field, 'piles');
+      strictEqual(result.errors[0]!.field, 'piles');
     }
   });
 });
@@ -116,7 +121,7 @@ describe('validatePlayerStateShape', () => {
     strictEqual(result.ok, false);
     if (!result.ok) {
       strictEqual(result.errors.length > 0, true);
-      strictEqual(result.errors[0].field, 'zones.deck[0]');
+      strictEqual(result.errors[0]!.field, 'zones.deck[0]');
     }
   });
 
@@ -130,7 +135,7 @@ describe('validatePlayerStateShape', () => {
     strictEqual(result.ok, false);
     if (!result.ok) {
       strictEqual(result.errors.length > 0, true);
-      strictEqual(result.errors[0].field, 'zones');
+      strictEqual(result.errors[0]!.field, 'zones');
     }
   });
 });

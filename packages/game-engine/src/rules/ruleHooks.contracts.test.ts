@@ -90,7 +90,12 @@ describe('validateTriggerPayload', () => {
     assert.strictEqual(result.ok, false);
     if (!result.ok) {
       assert.ok(result.errors.length > 0);
-      assert.strictEqual(result.errors[0].code, 'MISSING_CARD_TYPE_SLUG');
+      // why: the `!` on these index accesses is a type-level narrowing, not a
+      // suppression: the expression is dereferenced either way, so an undefined
+      // value would already throw here. `!` is erased at compile time and carries
+      // no runtime semantics. See D-24379 for the idiom and why it is permitted
+      // where the suppression pragmas that decision bans are not.
+      assert.strictEqual(result.errors[0]!.code, 'MISSING_CARD_TYPE_SLUG');
     }
   });
 });
@@ -111,7 +116,7 @@ describe('validateRuleEffect', () => {
     assert.strictEqual(result.ok, false);
     if (!result.ok) {
       assert.ok(result.errors.length > 0);
-      assert.strictEqual(result.errors[0].code, 'UNKNOWN_EFFECT_TYPE');
+      assert.strictEqual(result.errors[0]!.code, 'UNKNOWN_EFFECT_TYPE');
     }
   });
 });

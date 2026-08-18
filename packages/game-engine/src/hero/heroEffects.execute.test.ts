@@ -344,9 +344,14 @@ describe('executeHeroEffects', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.equal(gameState.playerZones['0'].hand.length, 2,
+    // why: the `!` on these index accesses is a type-level narrowing, not a
+    // suppression: the expression is dereferenced either way, so an undefined
+    // value would already throw here. `!` is erased at compile time and carries
+    // no runtime semantics. See D-24379 for the idiom and why it is permitted
+    // where the suppression pragmas that decision bans are not.
+    assert.equal(gameState.playerZones['0']!.hand.length, 2,
       'Player should have drawn 2 cards into hand.');
-    assert.equal(gameState.playerZones['0'].deck.length, 1,
+    assert.equal(gameState.playerZones['0']!.deck.length, 1,
       'Deck should have 1 card remaining after drawing 2.');
     // why: WP-417 / D-24237 — the draw handler now names the realized amount.
     assert.ok(
@@ -375,7 +380,7 @@ describe('executeHeroEffects', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.equal(gameState.playerZones['0'].hand.length, 1,
+    assert.equal(gameState.playerZones['0']!.hand.length, 1,
       'Only one card was available to draw.');
     assert.ok(
       gameState.messages.some((line) =>
@@ -461,7 +466,7 @@ describe('executeHeroEffects', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.deepEqual(gameState.playerZones['0'].inPlay, ['hero-y'],
+    assert.deepEqual(gameState.playerZones['0']!.inPlay, ['hero-y'],
       'hero-x should be removed from inPlay.');
     assert.deepEqual(gameState.ko, ['hero-x'],
       'hero-x should be added to the KO pile.');
@@ -491,13 +496,13 @@ describe('executeHeroEffects', () => {
 
     // Snapshot relevant subtrees before execution
     const economyBefore = { ...gameState.turnEconomy };
-    const inPlayBefore = [...gameState.playerZones['0'].inPlay];
+    const inPlayBefore = [...gameState.playerZones['0']!.inPlay];
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
     assert.deepEqual(gameState.turnEconomy, economyBefore,
       'turnEconomy should not change when conditions are present.');
-    assert.deepEqual(gameState.playerZones['0'].inPlay, inPlayBefore,
+    assert.deepEqual(gameState.playerZones['0']!.inPlay, inPlayBefore,
       'inPlay should not change when conditions are present.');
   });
 
@@ -547,7 +552,7 @@ describe('executeHeroEffects', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.deepEqual(gameState.playerZones['0'].victory, ['b-1'],
+    assert.deepEqual(gameState.playerZones['0']!.victory, ['b-1'],
       'b-1 should be moved to the victory zone.');
     assert.deepEqual(gameState.piles.bystanders, ['b-2'],
       'bystander pile should have b-2 remaining.');
@@ -573,7 +578,7 @@ describe('executeHeroEffects', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.deepEqual(gameState.playerZones['0'].victory, [],
+    assert.deepEqual(gameState.playerZones['0']!.victory, [],
       'victory zone should remain empty when no bystanders available.');
     assert.deepEqual(gameState.piles.bystanders, [],
       'bystander pile should remain empty.');
@@ -598,7 +603,7 @@ describe('executeHeroEffects', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.equal(gameState.playerZones['0'].victory.length, 1,
+    assert.equal(gameState.playerZones['0']!.victory.length, 1,
       'exactly 1 bystander should be rescued when magnitude is undefined.');
     assert.equal(gameState.piles.bystanders.length, 2,
       'bystander pile should have 2 remaining.');
@@ -626,9 +631,9 @@ describe('executeHeroEffects', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.deepEqual(gameState.playerZones['0'].hand, ['hero-y'],
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['hero-y'],
       'hero-y should move to hand when its cost is within threshold.');
-    assert.deepEqual(gameState.playerZones['0'].deck, [],
+    assert.deepEqual(gameState.playerZones['0']!.deck, [],
       'deck should be empty after the card is drawn.');
   });
 
@@ -654,9 +659,9 @@ describe('executeHeroEffects', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.deepEqual(gameState.playerZones['0'].deck, ['hero-y'],
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['hero-y'],
       'hero-y should remain on top of deck when cost exceeds threshold.');
-    assert.deepEqual(gameState.playerZones['0'].hand, [],
+    assert.deepEqual(gameState.playerZones['0']!.hand, [],
       'hand should remain empty when card is not drawn.');
   });
 
@@ -679,9 +684,9 @@ describe('executeHeroEffects', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.deepEqual(gameState.playerZones['0'].deck, [],
+    assert.deepEqual(gameState.playerZones['0']!.deck, [],
       'deck should remain empty.');
-    assert.deepEqual(gameState.playerZones['0'].hand, [],
+    assert.deepEqual(gameState.playerZones['0']!.hand, [],
       'hand should remain empty when deck is empty.');
     // why: WP-478 — this is now the BOTH-empty case (deck AND discard empty). With a
     // non-empty discard the reveal reshuffles instead (Test 17b below).
@@ -710,11 +715,11 @@ describe('executeHeroEffects', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.deepEqual(gameState.playerZones['0'].hand, ['hero-y'],
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['hero-y'],
       'the reshuffled card is revealed and drawn (was a silent no-op pre-WP-478).');
-    assert.deepEqual(gameState.playerZones['0'].deck, [],
+    assert.deepEqual(gameState.playerZones['0']!.deck, [],
       'the card left the reshuffled deck when drawn.');
-    assert.deepEqual(gameState.playerZones['0'].discard, [],
+    assert.deepEqual(gameState.playerZones['0']!.discard, [],
       'the discard was reshuffled into the deck.');
   });
 
@@ -744,9 +749,9 @@ describe('executeHeroEffects', () => {
 
     // why: mockCtx.Shuffle reverses, so [disc-b, disc-c, disc-d] → [disc-d, disc-c, disc-b];
     // three reveals total draw deck-a, then disc-d, then disc-c; disc-b stays on the deck.
-    assert.deepEqual(gameState.playerZones['0'].hand, ['deck-a', 'disc-d', 'disc-c'],
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['deck-a', 'disc-d', 'disc-c'],
       'three cards revealed-and-drawn across the mid-loop reshuffle.');
-    assert.deepEqual(gameState.playerZones['0'].deck, ['disc-b'],
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['disc-b'],
       'the fourth reshuffled card stays on the deck (only three were owed).');
   });
 
@@ -773,7 +778,7 @@ describe('executeHeroEffects', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.deepEqual(gameState.playerZones['0'].hand, ['draw-c'], 'the cost-0 card was drawn.');
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['draw-c'], 'the cost-0 card was drawn.');
     assert.equal(gameState.pendingReorderChoices?.length, 1, 'a reorder choice is parked for the ≥2 remainder.');
     const front = gameState.pendingReorderChoices![0]!;
     assert.equal(front.choiceType, 'reorder-deck-top');
@@ -798,7 +803,7 @@ describe('executeHeroEffects', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.deepEqual(gameState.playerZones['0'].hand, ['draw-c'], 'the cost-0 card was drawn.');
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['draw-c'], 'the cost-0 card was drawn.');
     assert.equal(gameState.pendingReorderChoices?.length ?? 0, 0, 'a single-card remainder auto-skips (no park).');
   });
 
@@ -821,7 +826,7 @@ describe('executeHeroEffects', () => {
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
     assert.equal(gameState.pendingReorderChoices?.length ?? 0, 0, 'no marker ⇒ no reorder park (behavior-neutral).');
-    assert.deepEqual(gameState.playerZones['0'].deck, ['keep-a', 'keep-b'], 'the expensive cards stay on top in place.');
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['keep-a', 'keep-b'], 'the expensive cards stay on top in place.');
   });
 
   // -------------------------------------------------------------------------
@@ -844,9 +849,9 @@ describe('executeHeroEffects', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.deepEqual(gameState.playerZones['0'].deck, ['starter-agent'],
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['starter-agent'],
       'starter-agent should remain on deck when its stats are unknown.');
-    assert.deepEqual(gameState.playerZones['0'].hand, [],
+    assert.deepEqual(gameState.playerZones['0']!.hand, [],
       'hand should remain empty when stats entry is missing.');
   });
 
@@ -872,9 +877,9 @@ describe('executeHeroEffects', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.deepEqual(gameState.playerZones['0'].deck, ['hero-y'],
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['hero-y'],
       'deck should be unchanged when reveal magnitude is undefined.');
-    assert.deepEqual(gameState.playerZones['0'].hand, [],
+    assert.deepEqual(gameState.playerZones['0']!.hand, [],
       'hand should be unchanged when reveal magnitude is undefined.');
   });
 
@@ -1025,9 +1030,9 @@ describe('executeHeroEffects', () => {
 
     assert.deepEqual(gameState.ko, ['starter-agent'],
       'starter-agent should be added to the KO pile when its cost is 0.');
-    assert.deepEqual(gameState.playerZones['0'].deck, [],
+    assert.deepEqual(gameState.playerZones['0']!.deck, [],
       'starter-agent should be removed from deck after reveal-ko fires (AC-23).');
-    assert.equal(gameState.playerZones['0'].deck.length, 0,
+    assert.equal(gameState.playerZones['0']!.deck.length, 0,
       'deck should shrink by 1 after reveal-ko fires on a cost-0 card (AC-23).');
     assert.equal(gameState.ko.length, 1,
       'KO pile should grow by 1 after reveal-ko fires on a cost-0 card (AC-23).');
@@ -1057,7 +1062,7 @@ describe('executeHeroEffects', () => {
 
     assert.deepEqual(gameState.ko, [],
       'KO pile should remain empty when cost is greater than 0.');
-    assert.deepEqual(gameState.playerZones['0'].deck, ['hero-y'],
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['hero-y'],
       'deck should be unchanged when cost is greater than 0.');
   });
 
@@ -1082,7 +1087,7 @@ describe('executeHeroEffects', () => {
 
     assert.deepEqual(gameState.ko, [],
       'KO pile should remain empty when deck is empty.');
-    assert.deepEqual(gameState.playerZones['0'].deck, [],
+    assert.deepEqual(gameState.playerZones['0']!.deck, [],
       'deck should remain empty.');
   });
 
@@ -1108,7 +1113,7 @@ describe('executeHeroEffects', () => {
 
     assert.deepEqual(gameState.ko, [],
       'KO pile should remain empty when stats entry is missing.');
-    assert.deepEqual(gameState.playerZones['0'].deck, ['unknown-card'],
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['unknown-card'],
       'deck should remain unchanged when stats entry is missing.');
   });
 
@@ -1134,9 +1139,9 @@ describe('executeHeroEffects', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.deepEqual(gameState.playerZones['0'].hand, ['hero-y'],
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['hero-y'],
       'hero-y should move to hand when cost equals the threshold.');
-    assert.deepEqual(gameState.playerZones['0'].deck, [],
+    assert.deepEqual(gameState.playerZones['0']!.deck, [],
       'deck should be empty after the card is drawn.');
   });
 
@@ -1162,9 +1167,9 @@ describe('executeHeroEffects', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.deepEqual(gameState.playerZones['0'].deck, ['hero-y'],
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['hero-y'],
       'hero-y should remain on deck when cost is below the threshold.');
-    assert.deepEqual(gameState.playerZones['0'].hand, [],
+    assert.deepEqual(gameState.playerZones['0']!.hand, [],
       'hand should remain empty when cost is below the threshold.');
   });
 
@@ -1187,9 +1192,9 @@ describe('executeHeroEffects', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.deepEqual(gameState.playerZones['0'].deck, [],
+    assert.deepEqual(gameState.playerZones['0']!.deck, [],
       'deck should remain empty.');
-    assert.deepEqual(gameState.playerZones['0'].hand, [],
+    assert.deepEqual(gameState.playerZones['0']!.hand, [],
       'hand should remain empty when deck is empty.');
   });
 
@@ -1213,9 +1218,9 @@ describe('executeHeroEffects', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.deepEqual(gameState.playerZones['0'].deck, ['unknown-card'],
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['unknown-card'],
       'deck should remain unchanged when stats entry is missing.');
-    assert.deepEqual(gameState.playerZones['0'].hand, [],
+    assert.deepEqual(gameState.playerZones['0']!.hand, [],
       'hand should remain empty when stats entry is missing.');
   });
 
@@ -1241,9 +1246,9 @@ describe('executeHeroEffects', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.deepEqual(gameState.playerZones['0'].deck, ['hero-y'],
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['hero-y'],
       'deck should be unchanged when reveal-min magnitude is undefined.');
-    assert.deepEqual(gameState.playerZones['0'].hand, [],
+    assert.deepEqual(gameState.playerZones['0']!.hand, [],
       'hand should be unchanged when reveal-min magnitude is undefined.');
   });
 
@@ -1270,15 +1275,15 @@ describe('executeHeroEffects', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.deepEqual(gameState.playerZones['0'].deck, [],
+    assert.deepEqual(gameState.playerZones['0']!.deck, [],
       'deck should be empty after cost-0 card is KO\'d (AC-23).');
-    assert.equal(gameState.playerZones['0'].deck.length, 0,
+    assert.equal(gameState.playerZones['0']!.deck.length, 0,
       'deck should shrink by 1 after reveal-ko-or-draw fires on a cost-0 card.');
     assert.deepEqual(gameState.ko, ['starter-agent'],
       'starter-agent should be in the KO pile.');
     assert.equal(gameState.ko.length, 1,
       'KO pile should grow by 1 after reveal-ko-or-draw fires on a cost-0 card.');
-    assert.deepEqual(gameState.playerZones['0'].hand, [],
+    assert.deepEqual(gameState.playerZones['0']!.hand, [],
       'hand should remain empty — KO branch takes precedence over draw branch (AC-7).');
   });
 
@@ -1305,11 +1310,11 @@ describe('executeHeroEffects', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.deepEqual(gameState.playerZones['0'].hand, ['hero-y'],
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['hero-y'],
       'hero-y should move to hand when cost is within the draw range (AC-8).');
-    assert.equal(gameState.playerZones['0'].deck.length, 0,
+    assert.equal(gameState.playerZones['0']!.deck.length, 0,
       'deck should shrink by 1 after draw fires.');
-    assert.equal(gameState.playerZones['0'].hand.length, 1,
+    assert.equal(gameState.playerZones['0']!.hand.length, 1,
       'hand should grow by 1 after draw fires.');
     assert.deepEqual(gameState.ko, [],
       'KO pile should remain empty when card is drawn.');
@@ -1338,9 +1343,9 @@ describe('executeHeroEffects', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.deepEqual(gameState.playerZones['0'].hand, ['hero-y'],
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['hero-y'],
       'hero-y should be drawn when cost equals magnitude (boundary case AC-9).');
-    assert.deepEqual(gameState.playerZones['0'].deck, [],
+    assert.deepEqual(gameState.playerZones['0']!.deck, [],
       'deck should be empty after draw.');
     assert.deepEqual(gameState.ko, [],
       'KO pile should remain empty when card is drawn.');
@@ -1369,9 +1374,9 @@ describe('executeHeroEffects', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.deepEqual(gameState.playerZones['0'].deck, ['hero-y'],
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['hero-y'],
       'deck should be unchanged when cost exceeds magnitude (AC-10).');
-    assert.deepEqual(gameState.playerZones['0'].hand, [],
+    assert.deepEqual(gameState.playerZones['0']!.hand, [],
       'hand should remain empty when cost exceeds magnitude.');
     assert.deepEqual(gameState.ko, [],
       'KO pile should remain empty when cost exceeds magnitude.');
@@ -1399,9 +1404,9 @@ describe('executeHeroEffects', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.deepEqual(gameState.playerZones['0'].deck, ['hero-y'],
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['hero-y'],
       'deck should be unchanged when magnitude is undefined (AC-11).');
-    assert.deepEqual(gameState.playerZones['0'].hand, [],
+    assert.deepEqual(gameState.playerZones['0']!.hand, [],
       'hand should be unchanged when magnitude is undefined.');
     assert.deepEqual(gameState.ko, [],
       'KO pile should be unchanged when magnitude is undefined.');
@@ -1429,9 +1434,9 @@ describe('executeHeroEffects', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.deepEqual(gameState.playerZones['0'].deck, ['hero-y'],
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['hero-y'],
       'deck should be unchanged when magnitude is 0 (AC-12).');
-    assert.deepEqual(gameState.playerZones['0'].hand, [],
+    assert.deepEqual(gameState.playerZones['0']!.hand, [],
       'hand should be unchanged when magnitude is 0.');
     assert.deepEqual(gameState.ko, [],
       'KO pile should be unchanged when magnitude is 0.');
@@ -1456,11 +1461,11 @@ describe('executeHeroEffects', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.deepEqual(gameState.playerZones['0'].deck, [],
+    assert.deepEqual(gameState.playerZones['0']!.deck, [],
       'deck should remain empty when reveal-ko-or-draw fires on empty deck (AC-13).');
     assert.deepEqual(gameState.ko, [],
       'KO pile should remain empty when deck is empty.');
-    assert.deepEqual(gameState.playerZones['0'].hand, [],
+    assert.deepEqual(gameState.playerZones['0']!.hand, [],
       'hand should remain empty when deck is empty.');
   });
 
@@ -1484,9 +1489,9 @@ describe('executeHeroEffects', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.deepEqual(gameState.playerZones['0'].deck, ['unknown-card'],
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['unknown-card'],
       'deck should remain unchanged when cardStats entry is missing (AC-14).');
-    assert.deepEqual(gameState.playerZones['0'].hand, [],
+    assert.deepEqual(gameState.playerZones['0']!.hand, [],
       'hand should remain empty when cardStats entry is missing.');
     assert.deepEqual(gameState.ko, [],
       'KO pile should remain empty when cardStats entry is missing.');
@@ -1518,9 +1523,9 @@ describe('executeHeroEffects', () => {
 
     assert.equal(gameState.turnEconomy.attack, 3,
       'attack should increase by 3 when top card cost is 3 (AC-4).');
-    assert.equal(gameState.playerZones['0'].deck.length, 1,
+    assert.equal(gameState.playerZones['0']!.deck.length, 1,
       'deck length should be unchanged after reveal-cost-attack (AC-25).');
-    assert.equal(gameState.playerZones['0'].deck[0], 'hero-y',
+    assert.equal(gameState.playerZones['0']!.deck[0], 'hero-y',
       'deck[0] must still be hero-y — no zone mutation allowed (AC-25).');
   });
 
@@ -1552,7 +1557,7 @@ describe('executeHeroEffects', () => {
 
     assert.equal(gameState.turnEconomy.attack, attackBefore,
       'attack should equal attackBefore when cost is 0 (AC-5); executor fires but +0 means no change.');
-    assert.deepEqual(gameState.playerZones['0'].deck, ['starter-agent'],
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['starter-agent'],
       'deck should be unchanged after reveal-cost-attack on cost-0 card.');
   });
 
@@ -1603,7 +1608,7 @@ describe('executeHeroEffects', () => {
 
     assert.equal(gameState.turnEconomy.attack, 1,
       'attack should remain unchanged when cardStats entry is missing (AC-7).');
-    assert.deepEqual(gameState.playerZones['0'].deck, ['unknown-card'],
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['unknown-card'],
       'deck should remain unchanged when cardStats entry is missing.');
   });
 
@@ -1634,7 +1639,7 @@ describe('executeHeroEffects', () => {
 
     assert.strictEqual((gameState as unknown as { turnEconomy: unknown }).turnEconomy, undefined,
       'G.turnEconomy should remain undefined after guard fires (AC-8).');
-    assert.deepEqual(gameState.playerZones['0'].deck, ['hero-y'],
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['hero-y'],
       'deck should be unchanged when G.turnEconomy guard fires.');
   });
 
@@ -1661,11 +1666,11 @@ describe('executeHeroEffects', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.equal(gameState.playerZones['0'].deck.length, 0,
+    assert.equal(gameState.playerZones['0']!.deck.length, 0,
       'deck should shrink by 1 when cost is odd (AC-9).');
-    assert.equal(gameState.playerZones['0'].hand.length, 1,
+    assert.equal(gameState.playerZones['0']!.hand.length, 1,
       'hand should grow by 1 when cost is odd (AC-9).');
-    assert.ok(gameState.playerZones['0'].hand.includes('hero-y'),
+    assert.ok(gameState.playerZones['0']!.hand.includes('hero-y'),
       'the exact topCardId (hero-y) must be in hand after odd-draw fires (AC-26).');
   });
 
@@ -1692,9 +1697,9 @@ describe('executeHeroEffects', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.ok(gameState.playerZones['0'].hand.includes('hero-y'),
+    assert.ok(gameState.playerZones['0']!.hand.includes('hero-y'),
       'hero-y should be drawn when cost is 3 (odd) (AC-10).');
-    assert.equal(gameState.playerZones['0'].deck.length, 0,
+    assert.equal(gameState.playerZones['0']!.deck.length, 0,
       'deck should be empty after draw.');
   });
 
@@ -1721,9 +1726,9 @@ describe('executeHeroEffects', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.deepEqual(gameState.playerZones['0'].deck, ['starter-agent'],
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['starter-agent'],
       'deck should be unchanged when cost is 0 (even) (AC-11).');
-    assert.deepEqual(gameState.playerZones['0'].hand, [],
+    assert.deepEqual(gameState.playerZones['0']!.hand, [],
       'hand should remain empty when cost is 0 (even) (AC-11).');
   });
 
@@ -1750,9 +1755,9 @@ describe('executeHeroEffects', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.deepEqual(gameState.playerZones['0'].deck, ['hero-y'],
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['hero-y'],
       'deck should be unchanged when cost is 2 (even) (AC-12).');
-    assert.deepEqual(gameState.playerZones['0'].hand, [],
+    assert.deepEqual(gameState.playerZones['0']!.hand, [],
       'hand should remain empty when cost is 2 (even) (AC-12).');
   });
 
@@ -1776,9 +1781,9 @@ describe('executeHeroEffects', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.deepEqual(gameState.playerZones['0'].deck, [],
+    assert.deepEqual(gameState.playerZones['0']!.deck, [],
       'deck should remain empty (AC-13).');
-    assert.deepEqual(gameState.playerZones['0'].hand, [],
+    assert.deepEqual(gameState.playerZones['0']!.hand, [],
       'hand should remain empty when deck is empty (AC-13).');
   });
 
@@ -1803,9 +1808,9 @@ describe('executeHeroEffects', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.deepEqual(gameState.playerZones['0'].deck, ['unknown-card'],
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['unknown-card'],
       'deck should remain unchanged when cardStats entry is missing (AC-14).');
-    assert.deepEqual(gameState.playerZones['0'].hand, [],
+    assert.deepEqual(gameState.playerZones['0']!.hand, [],
       'hand should remain empty when cardStats entry is missing (AC-14).');
   });
 
@@ -2144,9 +2149,9 @@ describe('executeHeroEffects', () => {
 
     assert.deepEqual(gameState.ko, ['cost-zero-card'],
       'cost-zero-card must be moved to the KO pile when cost is 0.');
-    assert.equal(gameState.playerZones['0'].deck.length, 1,
+    assert.equal(gameState.playerZones['0']!.deck.length, 1,
       'Deck must shrink by 1 after KO fires.');
-    assert.equal(gameState.playerZones['0'].deck[0], 'second-card',
+    assert.equal(gameState.playerZones['0']!.deck[0], 'second-card',
       'second-card must remain at deck[0] after cost-zero-card is KO\'d.');
     assert.equal(gameState.turnEconomy.attack, 3,
       'Attack must increase by magnitude (1) when cost is 0.');
@@ -2173,7 +2178,7 @@ describe('executeHeroEffects', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.deepEqual(gameState.playerZones['0'].deck, ['costly-card'],
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['costly-card'],
       'Deck must be unchanged when cost is greater than 0.');
     assert.deepEqual(gameState.ko, [],
       'KO pile must remain empty when cost is greater than 0.');
@@ -2204,7 +2209,7 @@ describe('executeHeroEffects', () => {
     // deck[0] and deck.length remain valid (guards pass), but indexOf returns -1
     // so moveCardFromZone sees the card as absent — simulating a KO failure.
     // This state is unreachable in production but validates the atomicity invariant.
-    const deckRef = gameState.playerZones['0'].deck;
+    const deckRef = gameState.playerZones['0']!.deck;
     (deckRef as unknown as { indexOf: (item: string) => number }).indexOf = () => -1;
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
@@ -2260,7 +2265,7 @@ describe('executeHeroEffects', () => {
 
     assert.equal(gameState.turnEconomy.attack, 4,
       'Attack must remain unchanged when cardStats entry is missing.');
-    assert.deepEqual(gameState.playerZones['0'].deck, ['unknown-card'],
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['unknown-card'],
       'Deck must be unchanged when cardStats entry is missing.');
     assert.deepEqual(gameState.ko, [],
       'KO pile must remain empty when cardStats entry is missing.');
@@ -2291,7 +2296,7 @@ describe('executeHeroEffects', () => {
 
     assert.strictEqual((gameState as unknown as { turnEconomy: unknown }).turnEconomy, undefined,
       'G.turnEconomy must remain undefined; executor must not crash when it is missing.');
-    assert.deepEqual(gameState.playerZones['0'].deck, ['cost-zero-card'],
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['cost-zero-card'],
       'Deck must be unchanged when G.turnEconomy guard fires — no zone mutation before the guard.');
     assert.deepEqual(gameState.ko, [],
       'KO pile must remain empty when G.turnEconomy guard fires.');
@@ -2323,7 +2328,7 @@ describe('executeHeroEffects', () => {
 
       assert.equal(gameState.turnEconomy.attack, 7,
         `Attack must remain unchanged for invalid magnitude: ${String(magnitude)}.`);
-      assert.deepEqual(gameState.playerZones['0'].deck, ['cost-zero-card'],
+      assert.deepEqual(gameState.playerZones['0']!.deck, ['cost-zero-card'],
         `Deck must be unchanged for invalid magnitude: ${String(magnitude)}.`);
       assert.deepEqual(gameState.ko, [],
         `KO pile must remain empty for invalid magnitude: ${String(magnitude)}.`);
@@ -2362,9 +2367,9 @@ describe('executeHeroEffects reveal collapse (WP-253 / D-24024)', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.deepEqual(gameState.playerZones['0'].hand, ['cost-zero-card'],
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['cost-zero-card'],
       'reveal M=0 must draw the cost-0 card (cost-lte 0 matches a cost-0 top).');
-    assert.deepEqual(gameState.playerZones['0'].deck, [],
+    assert.deepEqual(gameState.playerZones['0']!.deck, [],
       'deck should be empty after the cost-0 card is drawn.');
     // why: WP-325 — the reveal now logs its outcome (revealed card + cost + matched predicate + action).
     assert.ok(
@@ -2395,9 +2400,9 @@ describe('executeHeroEffects reveal collapse (WP-253 / D-24024)', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.deepEqual(gameState.playerZones['0'].deck, ['cost-one-card'],
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['cost-one-card'],
       'reveal M=0 must leave a cost-1 card on deck (cost-lte 0 fails for cost 1).');
-    assert.deepEqual(gameState.playerZones['0'].hand, [],
+    assert.deepEqual(gameState.playerZones['0']!.hand, [],
       'hand should remain empty when the top card cost exceeds 0.');
     // why: WP-325 — a reveal whose predicate does not match logs the no-branch-matched outcome.
     assert.ok(
@@ -2428,9 +2433,9 @@ describe('executeHeroEffects reveal collapse (WP-253 / D-24024)', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.deepEqual(gameState.playerZones['0'].hand, ['pricey-card'],
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['pricey-card'],
       'reveal-min M=0 must draw any card (cost-gte 0 matches every non-negative cost).');
-    assert.deepEqual(gameState.playerZones['0'].deck, [],
+    assert.deepEqual(gameState.playerZones['0']!.deck, [],
       'deck should be empty after the card is drawn.');
   });
 
@@ -2454,7 +2459,7 @@ describe('executeHeroEffects reveal collapse (WP-253 / D-24024)', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.deepEqual(gameState.playerZones['0'].deck, ['cost-zero-card'],
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['cost-zero-card'],
       'reveal-ko-or-draw M=0 must NOT KO the cost-0 card (positive tier — empty rules).');
     assert.deepEqual(gameState.ko, [],
       'KO pile must remain empty at reveal-ko-or-draw M=0.');
@@ -2487,9 +2492,9 @@ describe('executeHeroEffects reveal collapse (WP-253 / D-24024)', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.deepEqual(gameState.playerZones['0'].hand, ['top-card', 'next-card'],
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['top-card', 'next-card'],
       'both top cards must be drawn in deck order (loop re-reads deck[0] after each draw).');
-    assert.deepEqual(gameState.playerZones['0'].deck, ['bottom-card'],
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['bottom-card'],
       'only the third card remains on deck after two peeks.');
   });
 
@@ -2513,9 +2518,9 @@ describe('executeHeroEffects reveal collapse (WP-253 / D-24024)', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.deepEqual(gameState.playerZones['0'].hand, ['only-card'],
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['only-card'],
       'the single card is drawn on the first peek; the second peek finds an empty deck and stops.');
-    assert.deepEqual(gameState.playerZones['0'].deck, [],
+    assert.deepEqual(gameState.playerZones['0']!.deck, [],
       'deck is empty after the only card is drawn.');
   });
 
@@ -2549,9 +2554,9 @@ describe('executeHeroEffects reveal collapse (WP-253 / D-24024)', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.deepEqual(gameState.playerZones['0'].hand, ['cost-1', 'cost-2'],
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['cost-1', 'cost-2'],
       'reveal-top-3 draws the two cost-≤-2 cards (cost-1, then cost-2) in reveal order.');
-    assert.deepEqual(gameState.playerZones['0'].deck, ['cost-5', 'cost-9'],
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['cost-5', 'cost-9'],
       'cost-5 (peeked, over threshold → offset advanced past it) and cost-9 (never reached — only 3 peeks) stay on deck in exact order.');
     assert.ok(JSON.stringify(gameState).length > 0,
       'JSON.stringify(G) must succeed after a reveal-top-N effect (the descriptor is plain data).');
@@ -2582,9 +2587,9 @@ describe('executeHeroEffects reveal collapse (WP-253 / D-24024)', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.deepEqual(gameState.playerZones['0'].hand, ['cost-1', 'cost-2'],
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['cost-1', 'cost-2'],
       'the eligible cards around the unstatted starter are still drawn — the missing-stats peek did not abort the reveal.');
-    assert.deepEqual(gameState.playerZones['0'].deck, ['shield-starter', 'cost-9'],
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['shield-starter', 'cost-9'],
       'the unstatted shield-starter is left in place (skipped, not drawn, not KOd); cost-9 was never reached.');
   });
 
@@ -2612,9 +2617,9 @@ describe('executeHeroEffects reveal collapse (WP-253 / D-24024)', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.deepEqual(gameState.playerZones['0'].hand, ['cost-1'],
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['cost-1'],
       'the single cost-≤-2 card is drawn; the short deck does not loop forever or throw.');
-    assert.deepEqual(gameState.playerZones['0'].deck, ['cost-5'],
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['cost-5'],
       'cost-5 (over threshold) stays on deck; the loop stops once the offset overruns the deck end.');
   });
 });
@@ -2743,7 +2748,7 @@ describe('executeHeroEffects rescue logging (D-24017)', () => {
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
     // The rescue still happens (behavior unchanged) ...
-    assert.deepEqual(gameState.playerZones['0'].victory, ['b-1'],
+    assert.deepEqual(gameState.playerZones['0']!.victory, ['b-1'],
       'b-1 should be rescued to the victory zone.');
     // ... and is now observable in the game log.
     assert.ok(
@@ -2770,7 +2775,7 @@ describe('executeHeroEffects rescue logging (D-24017)', () => {
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
     // The no-op behavior is unchanged ...
-    assert.deepEqual(gameState.playerZones['0'].victory, [],
+    assert.deepEqual(gameState.playerZones['0']!.victory, [],
       'victory zone stays empty when the supply is empty.');
     // ... but the player now sees WHY nothing was rescued.
     assert.ok(
@@ -2813,7 +2818,7 @@ describe('executeHeroEffects optional-ko-reward park (WP-248)', () => {
     );
     // No KO and no reward at play time.
     assert.deepStrictEqual(gameState.ko, [], 'no card KOd at play time');
-    assert.deepStrictEqual(gameState.playerZones['0'].victory, [], 'no bystander rescued at play time');
+    assert.deepStrictEqual(gameState.playerZones['0']!.victory, [], 'no bystander rescued at play time');
     assert.deepStrictEqual(gameState.piles.bystanders, ['bystander-0'], 'bystander supply untouched at play time');
     // The park is SILENT (mirrors WP-242).
     assert.equal(gameState.messages.length, 0, 'the park appends no game-log line');
@@ -2941,8 +2946,8 @@ describe('executeHeroEffects primitiveEffects path (WP-256 / D-24031)', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.deepEqual(gameState.playerZones['0'].discard, ['top'], 'top card discarded by Berserk');
-    assert.deepEqual(gameState.playerZones['0'].deck, ['b', 'c'], 'top card left the deck');
+    assert.deepEqual(gameState.playerZones['0']!.discard, ['top'], 'top card discarded by Berserk');
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['b', 'c'], 'top card left the deck');
     assert.equal(gameState.turnEconomy.attack, 4, '+Attack equals the discarded card printed attack');
   });
 
@@ -2964,8 +2969,8 @@ describe('executeHeroEffects primitiveEffects path (WP-256 / D-24031)', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.deepEqual(gameState.playerZones['0'].deck, ['top', 'b'], 'deck unchanged when conditions fail');
-    assert.deepEqual(gameState.playerZones['0'].discard, [], 'nothing discarded when conditions fail');
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['top', 'b'], 'deck unchanged when conditions fail');
+    assert.deepEqual(gameState.playerZones['0']!.discard, [], 'nothing discarded when conditions fail');
     assert.equal(gameState.turnEconomy.attack, 0, 'no attack granted when conditions fail');
   });
 
@@ -2991,7 +2996,7 @@ describe('executeHeroEffects primitiveEffects path (WP-256 / D-24031)', () => {
 
     assert.equal(gameState.turnEconomy.recruit, 2, 'the legacy recruit effect fired');
     assert.equal(gameState.turnEconomy.attack, 4, 'the Berserk composition also fired');
-    assert.deepEqual(gameState.playerZones['0'].discard, ['top'], 'Berserk discarded the deck-top card');
+    assert.deepEqual(gameState.playerZones['0']!.discard, ['top'], 'Berserk discarded the deck-top card');
   });
 
   it('a hook with the Empowered composition grants +Attack equal to the HQ class count (WP-267)', () => {
@@ -3251,7 +3256,7 @@ describe('executeHeroEffects — hollow-effect detection (WP-257)', () => {
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
     assert.equal(records(gameState).length, 0, 'a mixed hook with ≥1 reachable effect is not hollow');
-    assert.equal(gameState.playerZones['0'].hand.length, 1, 'the reachable draw still fired');
+    assert.equal(gameState.playerZones['0']!.hand.length, 1, 'the reachable draw still fired');
   });
 
   it('unresolved marker on the hook records a parse-unrecognized hollow event', () => {
@@ -3354,8 +3359,8 @@ describe('executeHeroEffects — Wall-Crawl onRecruit keyword at play time (WP-2
     executeHeroEffects(gameState, mockCtx, '0', 'wc-hero' as string);
     assert.equal(gameState.turnEconomy.attack, 0, 'no attack granted at play time');
     assert.equal(gameState.turnEconomy.recruit, 0, 'no recruit granted at play time');
-    assert.deepStrictEqual(gameState.playerZones['0'].deck, ['deck-card'], 'deck is unchanged');
-    assert.deepStrictEqual(gameState.playerZones['0'].hand, [], 'hand is unchanged');
+    assert.deepStrictEqual(gameState.playerZones['0']!.deck, ['deck-card'], 'deck is unchanged');
+    assert.deepStrictEqual(gameState.playerZones['0']!.hand, [], 'hand is unchanged');
   });
 
   it('playing a wall-crawl Hero records NO hollow event (neither parse-unrecognized nor no-handler)', () => {
@@ -3421,8 +3426,8 @@ describe('executeHeroEffects — Size-Changing class-grant keyword at play time 
     executeHeroEffects(gameState, mockCtx, '0', 'sc-hero' as string);
     assert.equal(gameState.turnEconomy.attack, 0, 'no attack granted at play time');
     assert.equal(gameState.turnEconomy.recruit, 0, 'no recruit granted at play time');
-    assert.deepStrictEqual(gameState.playerZones['0'].deck, ['deck-card'], 'deck is unchanged');
-    assert.deepStrictEqual(gameState.playerZones['0'].hand, ['other-card'], 'hand is unchanged');
+    assert.deepStrictEqual(gameState.playerZones['0']!.deck, ['deck-card'], 'deck is unchanged');
+    assert.deepStrictEqual(gameState.playerZones['0']!.hand, ['other-card'], 'hand is unchanged');
   });
 
   it('playing a Size-Changing Hero records NO hollow event (neither parse-unrecognized nor no-handler)', () => {
@@ -3486,9 +3491,9 @@ describe('executeHeroEffects — Dodge keyword at play time (WP-275 / D-24051)',
     executeHeroEffects(gameState, mockCtx, '0', 'dodge-hero' as string);
     assert.equal(gameState.turnEconomy.attack, 0, 'no attack granted at play time');
     assert.equal(gameState.turnEconomy.recruit, 0, 'no recruit granted at play time');
-    assert.deepStrictEqual(gameState.playerZones['0'].deck, ['deck-card'], 'deck is unchanged (no draw fired)');
-    assert.deepStrictEqual(gameState.playerZones['0'].hand, ['other-card'], 'hand is unchanged (the card is not dodged at play time)');
-    assert.deepStrictEqual(gameState.playerZones['0'].discard, [], 'discard is unchanged');
+    assert.deepStrictEqual(gameState.playerZones['0']!.deck, ['deck-card'], 'deck is unchanged (no draw fired)');
+    assert.deepStrictEqual(gameState.playerZones['0']!.hand, ['other-card'], 'hand is unchanged (the card is not dodged at play time)');
+    assert.deepStrictEqual(gameState.playerZones['0']!.discard, [], 'discard is unchanged');
   });
 
   it('playing a dodge Hero records NO hollow event (neither parse-unrecognized nor no-handler)', () => {
@@ -3902,7 +3907,7 @@ describe('executeHeroEffects — gain-wound-self / gain-wound-each (WP-364 / D-2
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x');
 
     assert.equal(gameState.piles.wounds.length, 1, 'one Wound leaves the supply');
-    assert.deepEqual(gameState.playerZones['0'].discard, ['pile-wound'], 'the Wound enters the active player discard');
+    assert.deepEqual(gameState.playerZones['0']!.discard, ['pile-wound'], 'the Wound enters the active player discard');
     assert.equal(gameState.turnEconomy.woundsDrawn, 1, 'woundsDrawn bumps for the active player');
   });
 
@@ -3919,8 +3924,8 @@ describe('executeHeroEffects — gain-wound-self / gain-wound-each (WP-364 / D-2
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x');
 
     assert.equal(gameState.piles.wounds.length, 0, 'two Wounds leave the supply');
-    assert.equal(gameState.playerZones['0'].discard.length, 1, 'player 0 gains a Wound');
-    assert.equal(gameState.playerZones['1'].discard.length, 1, 'player 1 gains a Wound');
+    assert.equal(gameState.playerZones['0']!.discard.length, 1, 'player 0 gains a Wound');
+    assert.equal(gameState.playerZones['1']!.discard.length, 1, 'player 1 gains a Wound');
     assert.equal(gameState.turnEconomy.woundsDrawn, 1, 'woundsDrawn bumps only for the active player');
   });
 
@@ -3934,7 +3939,7 @@ describe('executeHeroEffects — gain-wound-self / gain-wound-each (WP-364 / D-2
     gameState.piles.wounds = [];
 
     assert.doesNotThrow(() => executeHeroEffects(gameState, mockCtx, '0', 'hero-x'));
-    assert.equal(gameState.playerZones['0'].discard.length, 0, 'no Wound gained from an empty supply');
+    assert.equal(gameState.playerZones['0']!.discard.length, 0, 'no Wound gained from an empty supply');
     assert.ok(
       gameState.messages.some((line) => line.text.includes('Wound supply is empty')),
       'an empty-supply line is logged so the no-op is observable',
@@ -4004,8 +4009,8 @@ describe('heroEffectShuffleDiscardEmptyReward (WP-356)', () => {
 
     assert.equal(gameState.turnEconomy.recruit, 2, 'recruit must rise by the magnitude');
     assert.equal(gameState.turnEconomy.attack, 0, 'attack must be unchanged');
-    assert.deepStrictEqual(gameState.playerZones['0'].deck, ['deck-1'], 'deck must be unchanged');
-    assert.deepStrictEqual(gameState.playerZones['0'].discard, [], 'discard must stay empty');
+    assert.deepStrictEqual(gameState.playerZones['0']!.deck, ['deck-1'], 'deck must be unchanged');
+    assert.deepStrictEqual(gameState.playerZones['0']!.discard, [], 'discard must stay empty');
   });
 
   it('empty discard + attack variant grants +2 attack', () => {
@@ -4026,12 +4031,12 @@ describe('heroEffectShuffleDiscardEmptyReward (WP-356)', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-reprocess' as string);
 
-    assert.deepStrictEqual(gameState.playerZones['0'].discard, [], 'discard must be emptied');
+    assert.deepStrictEqual(gameState.playerZones['0']!.discard, [], 'discard must be emptied');
     // why: makeMockCtx Shuffle reverses its input — the reversed combined
     // (deck-then-discard) order proves the shuffle ran over BOTH zones as one
     // pile, not just the discard.
     assert.deepStrictEqual(
-      gameState.playerZones['0'].deck,
+      gameState.playerZones['0']!.deck,
       ['disc-3', 'disc-2', 'disc-1', 'deck-2', 'deck-1'],
       'deck must be the reversed combined deck+discard pile',
     );
@@ -4064,8 +4069,8 @@ describe('heroEffectShuffleDiscardEmptyReward (WP-356)', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-reprocess' as string);
 
-    assert.deepStrictEqual(gameState.playerZones['0'].deck, ['deck-1'], 'deck must be unchanged');
-    assert.deepStrictEqual(gameState.playerZones['0'].discard, ['disc-1'], 'discard must be unchanged');
+    assert.deepStrictEqual(gameState.playerZones['0']!.deck, ['deck-1'], 'deck must be unchanged');
+    assert.deepStrictEqual(gameState.playerZones['0']!.discard, ['disc-1'], 'discard must be unchanged');
     assert.equal(gameState.turnEconomy.recruit, 0, 'no reward is granted');
   });
 
@@ -4119,7 +4124,7 @@ describe('heroEffectKoWoundReward (WP-382 / D-24183)', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-healing-factor' as string);
 
-    assert.deepStrictEqual(gameState.playerZones['0'].hand, ['card-x'], 'the Wound must leave the hand, other cards untouched');
+    assert.deepStrictEqual(gameState.playerZones['0']!.hand, ['card-x'], 'the Wound must leave the hand, other cards untouched');
     assert.deepStrictEqual(gameState.ko, [WOUND_EXT_ID], 'the Wound must be in the KO pile');
     assert.equal(gameState.turnEconomy.attack, 2, 'the attack reward must be granted');
   });
@@ -4135,10 +4140,10 @@ describe('heroEffectKoWoundReward (WP-382 / D-24183)', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-healing-factor' as string);
 
-    assert.deepStrictEqual(gameState.playerZones['0'].discard, [], 'the Wound must leave the discard pile');
+    assert.deepStrictEqual(gameState.playerZones['0']!.discard, [], 'the Wound must leave the discard pile');
     assert.deepStrictEqual(gameState.ko, [WOUND_EXT_ID], 'the Wound must be in the KO pile');
-    assert.deepStrictEqual(gameState.playerZones['0'].hand, ['deck-1'], 'the draw reward must pull a card into hand');
-    assert.deepStrictEqual(gameState.playerZones['0'].deck, [], 'the drawn card must leave the deck');
+    assert.deepStrictEqual(gameState.playerZones['0']!.hand, ['deck-1'], 'the draw reward must pull a card into hand');
+    assert.deepStrictEqual(gameState.playerZones['0']!.deck, [], 'the drawn card must leave the deck');
   });
 
   it('prefers the hand Wound when a Wound sits in both hand and discard', () => {
@@ -4151,8 +4156,8 @@ describe('heroEffectKoWoundReward (WP-382 / D-24183)', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-healing-factor' as string);
 
-    assert.deepStrictEqual(gameState.playerZones['0'].hand, [], 'the hand Wound must be the one KO\'d');
-    assert.deepStrictEqual(gameState.playerZones['0'].discard, [WOUND_EXT_ID], 'the discard Wound must stay put');
+    assert.deepStrictEqual(gameState.playerZones['0']!.hand, [], 'the hand Wound must be the one KO\'d');
+    assert.deepStrictEqual(gameState.playerZones['0']!.discard, [WOUND_EXT_ID], 'the discard Wound must stay put');
   });
 
   it('is a logged no-op when there is no Wound to KO', () => {
@@ -4181,7 +4186,7 @@ describe('heroEffectKoWoundReward (WP-382 / D-24183)', () => {
     executeHeroEffects(gameState, mockCtx, '0', 'hero-healing-factor' as string);
 
     assert.deepStrictEqual(gameState.ko, [WOUND_EXT_ID], 'only the Wound may be KO\'d');
-    assert.ok(gameState.playerZones['0'].hand.includes('hero-valuable'), 'the valuable Hero must stay in hand');
+    assert.ok(gameState.playerZones['0']!.hand.includes('hero-valuable'), 'the valuable Hero must stay in hand');
   });
 
   it('skips an unseeded reward without KOing the Wound', () => {
@@ -4194,7 +4199,7 @@ describe('heroEffectKoWoundReward (WP-382 / D-24183)', () => {
     executeHeroEffects(gameState, mockCtx, '0', 'hero-healing-factor' as string);
 
     assert.deepStrictEqual(gameState.ko, [], 'no KO happens for an unsupported reward');
-    assert.deepStrictEqual(gameState.playerZones['0'].hand, [WOUND_EXT_ID], 'the Wound stays in hand');
+    assert.deepStrictEqual(gameState.playerZones['0']!.hand, [WOUND_EXT_ID], 'the Wound stays in hand');
     const skipLine = gameState.messages.find((message) => message.text.includes('not yet supported'));
     assert.ok(skipLine !== undefined, 'the skip must be logged');
   });

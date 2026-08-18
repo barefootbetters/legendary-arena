@@ -166,11 +166,11 @@ this packet adds no module, so WP-563's invariant is back in force. A changed
 
 ## Definition of Done
 
-- [ ] AC-1..AC-9 demonstrated with observed output.
-- [ ] D-24379 landed **Active**.
-- [ ] `WORK_INDEX.md` `[x]` + refreshed backlog counts.
-- [ ] `EC_INDEX.md` `Done`; mindmap `✅`; `roadmap:counts:check` 0.
-- [ ] `STATUS.md` — before/after counts, and an explicit note that `dist` is
+- [x] AC-1..AC-9 demonstrated with observed output.
+- [x] D-24379 landed **Active**.
+- [x] `WORK_INDEX.md` `[x]` + refreshed backlog counts.
+- [x] `EC_INDEX.md` `Done`; mindmap `✅`; `roadmap:counts:check` 0.
+- [x] `STATUS.md` — before/after counts, and an explicit note that `dist` is
       byte-identical again (WP-569's relaxation was one-time and specific).
 
 ## Gate Verdicts (Drafting Session, 2026-08-17)
