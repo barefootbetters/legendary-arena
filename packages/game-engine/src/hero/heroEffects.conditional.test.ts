@@ -15,6 +15,7 @@ import { executeHeroEffects } from './heroEffects.execute.js';
 import { makeMockCtx } from '../test/mockCtx.js';
 import type { LegendaryGameState } from '../types.js';
 import type { HeroAbilityHook } from '../rules/heroAbility.types.js';
+import { makeGlobalPiles, makeMastermindState, makePlayerZones, makeTurnEconomy } from '../test/fixtureBuilders.js';
 
 // ---------------------------------------------------------------------------
 // Test helper
@@ -57,7 +58,7 @@ function makeTestState(overrides?: {
     },
     currentStage: 'main' as LegendaryGameState['currentStage'],
     playerZones: {
-      '0': {
+      '0': { ...makePlayerZones(),
         deck: overrides?.deck ?? [],
         hand: overrides?.hand ?? [],
         discard: overrides?.discard ?? [],
@@ -65,7 +66,7 @@ function makeTestState(overrides?: {
         victory: [],
       },
     },
-    piles: {
+    piles: { ...makeGlobalPiles(),
       bystanders: [],
       wounds: [],
       officers: [],
@@ -78,14 +79,14 @@ function makeTestState(overrides?: {
     villainDeckCardTypes: {},
     ko: overrides?.ko ?? [],
     attachedBystanders: {},
-    turnEconomy: {
+    turnEconomy: { ...makeTurnEconomy(),
       attack: overrides?.turnEconomyAttack ?? 0,
       recruit: overrides?.turnEconomyRecruit ?? 0,
       spentAttack: 0,
       spentRecruit: 0,
     },
     cardStats: {},
-    mastermind: {
+    mastermind: { ...makeMastermindState(),
       id: 'test-mastermind',
       baseCardId: 'test-mastermind-base',
       tacticsDeck: [],

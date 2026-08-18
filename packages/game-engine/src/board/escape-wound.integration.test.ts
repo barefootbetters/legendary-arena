@@ -22,6 +22,7 @@ import { buildDefaultHookDefinitions } from '../rules/ruleRuntime.impl.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
 import { makeMockMoveContext } from '../test/mockMoveContext.js';
 import type { MockMoveContext } from '../test/mockMoveContext.js';
+import { makeGlobalPiles, makeMastermindState, makePlayerZones } from '../test/fixtureBuilders.js';
 
 /**
  * Creates a mock LegendaryGameState for integration testing.
@@ -58,7 +59,7 @@ function createMockGameState(options?: {
     },
     currentStage: options?.currentStage ?? 'start',
     playerZones: {
-      '0': {
+      '0': { ...makePlayerZones(),
         deck: [],
         hand: [],
         discard: [],
@@ -66,7 +67,7 @@ function createMockGameState(options?: {
         victory: [],
       },
     },
-    piles: {
+    piles: { ...makeGlobalPiles(),
       bystanders: options?.bystandersPile ?? ['bystander-1', 'bystander-2', 'bystander-3'],
       wounds: options?.woundsPile ?? ['wound-1', 'wound-2', 'wound-3'],
       officers: ['officer-1'],
@@ -87,7 +88,7 @@ function createMockGameState(options?: {
     attachedBystanders: options?.attachedBystanders ?? {},
     turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 },
     cardStats: {},
-    mastermind: {
+    mastermind: { ...makeMastermindState(),
       id: 'test-mastermind',
       baseCardId: 'test-mastermind-base',
       tacticsDeck: [],

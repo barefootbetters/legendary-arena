@@ -13,6 +13,7 @@ import { createSnapshot } from './snapshot.create.js';
 import { validateSnapshotShape } from './snapshot.validate.js';
 import type { LegendaryGameState } from '../types.js';
 import type { SnapshotContext } from './snapshot.create.js';
+import { makeGlobalPiles, makePlayerZones } from '../test/fixtureBuilders.js';
 
 /**
  * Build a minimal mock LegendaryGameState for snapshot testing.
@@ -42,14 +43,14 @@ function buildMockGameState(): LegendaryGameState {
     },
     currentStage: 'main',
     playerZones: {
-      '0': {
+      '0': { ...makePlayerZones(),
         deck: ['card-a', 'card-b', 'card-c'],
         hand: ['card-d', 'card-e'],
         discard: ['card-f'],
         inPlay: [],
         victory: ['card-g', 'card-h'],
       },
-      '1': {
+      '1': { ...makePlayerZones(),
         deck: ['card-i', 'card-j'],
         hand: ['card-k'],
         discard: [],
@@ -57,7 +58,7 @@ function buildMockGameState(): LegendaryGameState {
         victory: [],
       },
     },
-    piles: {
+    piles: { ...makeGlobalPiles(),
       bystanders: ['bystander-1', 'bystander-2'],
       wounds: ['wound-1'],
       officers: ['officer-1', 'officer-2', 'officer-3'],

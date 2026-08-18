@@ -43,6 +43,7 @@ import {
   PAR_MIN_SAMPLE_SIZE,
 } from './par.aggregator.js';
 import type { LegendaryGameState } from '../types.js';
+import { makeCardRegistryReader } from '../test/fixtureBuilders.js';
 import {
   AI_POLICY_TIERS,
   AI_POLICY_TIER_DEFINITIONS,
@@ -56,7 +57,7 @@ import {
  * the registry lacks detailed set data.
  */
 function createMockRegistry(): CardRegistryReader {
-  return {
+  return { ...makeCardRegistryReader(),
     listCards: () => [],
   };
 }

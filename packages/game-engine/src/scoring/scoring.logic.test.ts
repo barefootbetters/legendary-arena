@@ -19,6 +19,7 @@ import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import { buildDefaultHookDefinitions } from '../rules/ruleRuntime.impl.js';
 import { initializeCity, initializeHq } from '../board/city.logic.js';
+import { makeGlobalPiles, makeMastermindState, makeTurnEconomy } from '../test/fixtureBuilders.js';
 
 // ---------------------------------------------------------------------------
 // Mock G factory
@@ -65,7 +66,7 @@ function createMockGameState(options: {
     },
     currentStage: 'main',
     playerZones: options.playerZones,
-    piles: {
+    piles: { ...makeGlobalPiles(),
       bystanders: [],
       wounds: [],
       officers: [],
@@ -78,13 +79,13 @@ function createMockGameState(options: {
     villainDeckCardTypes: (options.villainDeckCardTypes ?? {}) as Record<CardExtId, any>,
     ko: (options.ko ?? []) as CardExtId[],
     attachedBystanders: {},
-    mastermind: {
+    mastermind: { ...makeMastermindState(),
       id: 'test-mastermind' as CardExtId,
       baseCardId: 'test-mastermind-base' as CardExtId,
       tacticsDeck: [],
       tacticsDefeated: (options.tacticsDefeated ?? []) as CardExtId[],
     },
-    turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0 },
+    turnEconomy: { ...makeTurnEconomy(), attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0 },
     cardStats: {},
     // why: the dynamic-VP resolver reads gameState.cardTraits for Ultron (D-24362);
     // default to an empty map so tests with no tech-Hero context exercise the base path.

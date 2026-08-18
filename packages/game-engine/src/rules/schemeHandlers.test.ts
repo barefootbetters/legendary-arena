@@ -19,6 +19,7 @@ import {
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import type { LegendaryGameState } from '../types.js';
 import type { HookDefinition } from './ruleHooks.types.js';
+import { makeGlobalPiles, makePlayerZones, makeTurnEconomy } from '../test/fixtureBuilders.js';
 
 // ---------------------------------------------------------------------------
 // Test helper
@@ -52,7 +53,7 @@ function makeTestState(counterOverrides?: Record<string, number>): LegendaryGame
     },
     currentStage: 'main' as LegendaryGameState['currentStage'],
     playerZones: {
-      '0': {
+      '0': { ...makePlayerZones(),
         deck: [],
         hand: [],
         discard: [],
@@ -60,7 +61,7 @@ function makeTestState(counterOverrides?: Record<string, number>): LegendaryGame
         victory: [],
       },
     },
-    piles: {
+    piles: { ...makeGlobalPiles(),
       bystanders: [],
       wounds: [],
       officers: [],
@@ -76,7 +77,7 @@ function makeTestState(counterOverrides?: Record<string, number>): LegendaryGame
     villainDeckCardTypes: {},
     ko: [],
     attachedBystanders: {},
-    turnEconomy: {
+    turnEconomy: { ...makeTurnEconomy(),
       attack: 0,
       recruit: 0,
       spentAttack: 0,

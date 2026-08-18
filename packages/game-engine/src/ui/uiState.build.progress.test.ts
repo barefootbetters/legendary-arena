@@ -25,6 +25,7 @@ import type { CardRegistryReader } from '../matchSetup.validate.js';
 import type { LegendaryGameState } from '../types.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { BYSTANDER_EXT_ID } from '../setup/buildInitialGameState.js';
+import { makeCardRegistryReader } from '../test/fixtureBuilders.js';
 
 /**
  * Creates a valid test MatchSetupConfig.
@@ -48,7 +49,7 @@ function createTestConfig(): MatchSetupConfig {
  * bystander entries manually via G.villainDeckCardTypes overrides.
  */
 function createMockRegistry(): CardRegistryReader {
-  return { listCards: () => [] };
+  return { ...makeCardRegistryReader(), listCards: () => [] };
 }
 
 /**

@@ -19,6 +19,7 @@ import type { CardRegistryReader } from '../matchSetup.validate.js';
 import { runCoopWinRate } from './coopWinRate.js';
 import type { CoopHarnessConfig, CoopWinRateReport } from './coopWinRate.js';
 import { COOP_OUTCOME_CATEGORIES } from './coopOutcome.js';
+import { makeCardRegistryReader } from '../test/fixtureBuilders.js';
 
 /**
  * Builds a valid 9-field MatchSetupConfig fixture for harness tests.
@@ -48,7 +49,7 @@ function createTestConfig(): MatchSetupConfig {
  * listSets/getSet, so games run deterministically to a terminal or the cap.
  */
 function createMockRegistry(): CardRegistryReader {
-  return {
+  return { ...makeCardRegistryReader(),
     listCards: () => [],
   };
 }

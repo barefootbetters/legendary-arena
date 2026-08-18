@@ -23,6 +23,7 @@ import { initializeCity, initializeHq } from '../board/city.logic.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { makeMockMoveContext } from '../test/mockMoveContext.js';
 import type { MockMoveContext } from '../test/mockMoveContext.js';
+import { makeGlobalPiles, makeMastermindState, makePlayerZones } from '../test/fixtureBuilders.js';
 
 // ---------------------------------------------------------------------------
 // Mock G factory
@@ -65,7 +66,7 @@ function createMockGameState(options: {
     },
     currentStage: TURN_STAGES[0]!,
     playerZones: {
-      '0': {
+      '0': { ...makePlayerZones(),
         deck: [],
         hand: [],
         discard: [],
@@ -73,7 +74,7 @@ function createMockGameState(options: {
         victory: [],
       },
     },
-    piles: {
+    piles: { ...makeGlobalPiles(),
       bystanders: [],
       wounds: [],
       officers: [],
@@ -92,7 +93,7 @@ function createMockGameState(options: {
     villainDeckCardTypes: options.cardTypes,
     ko: [],
     attachedBystanders: {},
-    mastermind: {
+    mastermind: { ...makeMastermindState(),
       id: 'test-mastermind' as CardExtId,
       baseCardId: 'test-mastermind-base' as CardExtId,
       tacticsDeck: [],

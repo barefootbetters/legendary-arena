@@ -16,6 +16,7 @@ import type { BoardKeyword } from './boardKeywords.types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { CityZone } from './city.types.js';
 import type { VillainAbilityHook } from '../rules/villainAbility.types.js';
+import { makeGlobalPiles, makeMastermindState } from '../test/fixtureBuilders.js';
 
 /**
  * Creates a minimal LegendaryGameState for board keyword integration testing.
@@ -75,7 +76,7 @@ function makeTestGameState(overrides?: {
     },
     currentStage: overrides?.currentStage ?? 'main' as LegendaryGameState['currentStage'],
     playerZones,
-    piles: {
+    piles: { ...makeGlobalPiles(),
       bystanders: [],
       wounds,
       officers: [],
@@ -103,7 +104,7 @@ function makeTestGameState(overrides?: {
     },
     cardStats: (overrides?.cardStats ?? {}) as Record<CardExtId, never>,
     cardKeywords: overrides?.cardKeywords ?? {},
-    mastermind: {
+    mastermind: { ...makeMastermindState(),
       id: 'test-mastermind' as CardExtId,
       baseCardId: 'test-mastermind-base' as CardExtId,
       tacticsDeck: [],

@@ -14,6 +14,7 @@ import { mastermindStrikeHandler, selectDiscardToLimitCards } from './mastermind
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
+import { makeGlobalPiles, makePlayerZones, makeTurnEconomy } from '../test/fixtureBuilders.js';
 
 // ---------------------------------------------------------------------------
 // Test helper
@@ -46,7 +47,7 @@ function makeTestState(): LegendaryGameState {
     },
     currentStage: 'main' as LegendaryGameState['currentStage'],
     playerZones: {
-      '0': {
+      '0': { ...makePlayerZones(),
         deck: [],
         hand: [],
         discard: [],
@@ -54,7 +55,7 @@ function makeTestState(): LegendaryGameState {
         victory: [],
       },
     },
-    piles: {
+    piles: { ...makeGlobalPiles(),
       bystanders: ['bystander-001', 'bystander-002', 'bystander-003'],
       wounds: [],
       officers: [],
@@ -67,7 +68,7 @@ function makeTestState(): LegendaryGameState {
     villainDeckCardTypes: {},
     ko: [],
     attachedBystanders: {},
-    turnEconomy: {
+    turnEconomy: { ...makeTurnEconomy(),
       attack: 0,
       recruit: 0,
       spentAttack: 0,
@@ -248,7 +249,7 @@ describe('mastermindStrikeHandler — Magneto Master Strike', () => {
     };
     gameState.playerZones = {};
     for (const [playerId, hand] of Object.entries(hands)) {
-      gameState.playerZones[playerId] = {
+      gameState.playerZones[playerId] = { ...makePlayerZones(),
         deck: [],
         hand: [...hand],
         discard: [],
@@ -584,7 +585,7 @@ describe('mastermindStrikeHandler — Red Skull Master Strike', () => {
     gameState.cardStats = cardStats as LegendaryGameState['cardStats'];
     gameState.playerZones = {};
     for (const [playerId, hand] of Object.entries(hands)) {
-      gameState.playerZones[playerId] = {
+      gameState.playerZones[playerId] = { ...makePlayerZones(),
         deck: [],
         hand: [...hand],
         discard: [],
@@ -853,7 +854,7 @@ function makeCo2eState(
   gameState.cardTraits = cardTraits as LegendaryGameState['cardTraits'];
   gameState.playerZones = {};
   for (const [playerId, hand] of Object.entries(hands)) {
-    gameState.playerZones[playerId] = {
+    gameState.playerZones[playerId] = { ...makePlayerZones(),
       deck: [],
       hand: [...hand],
       discard: [],

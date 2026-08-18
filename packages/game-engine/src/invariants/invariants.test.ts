@@ -26,6 +26,7 @@ import {
 import { runAllInvariantChecks } from './runAllChecks.js';
 import { checkTurnCounterMonotonic } from './lifecycle.checks.js';
 import { checkNoCardInMultipleZones } from './gameRules.checks.js';
+import { makeCardRegistryReader, makeCardStatEntry } from '../test/fixtureBuilders.js';
 
 /**
  * Builds a valid MatchConfiguration for invariant testing. Mirrors
@@ -51,7 +52,7 @@ function buildValidConfig(): MatchConfiguration {
  * narrow-mock branch of buildVillainDeck produces an empty deck and
  * the test does not depend on real registry data.
  */
-const EMPTY_REGISTRY: CardRegistryReader = {
+const EMPTY_REGISTRY: CardRegistryReader = { ...makeCardRegistryReader(),
   listCards: () => [],
 };
 
@@ -196,7 +197,7 @@ test('insufficient attack points does NOT trigger any invariant', () => {
   // Inject a synthetic villain into city space 0 with a positive
   // fight cost. This is a normal mid-play state, not corruption.
   G.city[0] = 'test-injection-unique-villain-fight-001';
-  G.cardStats['test-injection-unique-villain-fight-001'] = {
+  G.cardStats['test-injection-unique-villain-fight-001'] = { ...makeCardStatEntry(),
     attack: 0,
     recruit: 0,
     cost: 0,

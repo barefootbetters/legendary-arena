@@ -20,6 +20,7 @@ import { initializeCity, initializeHq } from '../board/city.logic.js';
 import { DEFAULT_IMPLEMENTATION_MAP } from '../rules/ruleRuntime.impl.js';
 import { makeMockMoveContext } from '../test/mockMoveContext.js';
 import type { MockMoveContext } from '../test/mockMoveContext.js';
+import { makeCardStatEntry, makeGlobalPiles, makePlayerZones } from '../test/fixtureBuilders.js';
 
 // ---------------------------------------------------------------------------
 // Mock G factory
@@ -61,7 +62,7 @@ function createMockGameState(options?: {
     },
     currentStage: 'main',
     playerZones: {
-      '0': {
+      '0': { ...makePlayerZones(),
         deck: [],
         hand: options?.hand ?? [],
         discard: [],
@@ -69,7 +70,7 @@ function createMockGameState(options?: {
         victory: [],
       },
     },
-    piles: {
+    piles: { ...makeGlobalPiles(),
       bystanders: [],
       wounds: ['wound-01'],
       officers: [],
@@ -132,7 +133,7 @@ describe('economy integration', () => {
     const gameState = createMockGameState({
       hand: ['hero-card-a'],
       cardStats: {
-        'hero-card-a': { attack: 3, recruit: 2, cost: 4, fightCost: 0 },
+        'hero-card-a': { ...makeCardStatEntry(), attack: 3, recruit: 2, cost: 4, fightCost: 0 },
       },
     });
 
@@ -150,7 +151,7 @@ describe('economy integration', () => {
       city: ['villain-x', null, null, null, null],
       turnEconomy: { attack: 5, recruit: 0, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 },
       cardStats: {
-        'villain-x': { attack: 0, recruit: 0, cost: 0, fightCost: 3 },
+        'villain-x': { ...makeCardStatEntry(), attack: 0, recruit: 0, cost: 0, fightCost: 3 },
       },
     });
 
@@ -178,7 +179,7 @@ describe('economy integration', () => {
       city: ['villain-y', null, null, null, null],
       turnEconomy: { attack: 2, recruit: 0, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 },
       cardStats: {
-        'villain-y': { attack: 0, recruit: 0, cost: 0, fightCost: 5 },
+        'villain-y': { ...makeCardStatEntry(), attack: 0, recruit: 0, cost: 0, fightCost: 5 },
       },
     });
 
@@ -213,7 +214,7 @@ describe('economy integration', () => {
       hq: ['hero-b', null, null, null, null],
       turnEconomy: { attack: 0, recruit: 6, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 },
       cardStats: {
-        'hero-b': { attack: 2, recruit: 1, cost: 4, fightCost: 0 },
+        'hero-b': { ...makeCardStatEntry(), attack: 2, recruit: 1, cost: 4, fightCost: 0 },
       },
     });
 
@@ -241,7 +242,7 @@ describe('economy integration', () => {
       hq: ['hero-c', null, null, null, null],
       turnEconomy: { attack: 0, recruit: 1, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 },
       cardStats: {
-        'hero-c': { attack: 1, recruit: 0, cost: 5, fightCost: 0 },
+        'hero-c': { ...makeCardStatEntry(), attack: 1, recruit: 0, cost: 5, fightCost: 0 },
       },
     });
 
@@ -297,9 +298,9 @@ describe('economy integration', () => {
       hq: ['hero-e', null, null, null, null],
       turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 },
       cardStats: {
-        'hero-d': { attack: 5, recruit: 4, cost: 3, fightCost: 0 },
-        'villain-z': { attack: 0, recruit: 0, cost: 0, fightCost: 3 },
-        'hero-e': { attack: 1, recruit: 1, cost: 2, fightCost: 0 },
+        'hero-d': { ...makeCardStatEntry(), attack: 5, recruit: 4, cost: 3, fightCost: 0 },
+        'villain-z': { ...makeCardStatEntry(), attack: 0, recruit: 0, cost: 0, fightCost: 3 },
+        'hero-e': { ...makeCardStatEntry(), attack: 1, recruit: 1, cost: 2, fightCost: 0 },
       },
     });
 
@@ -366,7 +367,7 @@ describe('economy integration', () => {
     });
     gameState.currentStage = 'start';
     gameState.piles.wounds = ['wound-01', 'wound-02', 'wound-03', 'wound-04'];
-    gameState.playerZones['1'] = { deck: [], hand: [], discard: [], inPlay: [], victory: [] };
+    gameState.playerZones['1'] = { ...makePlayerZones(), deck: [], hand: [], discard: [], inPlay: [], victory: [] };
     (gameState as Record<string, unknown>).cardKeywords = { 'ambush-villain': ['ambush'] };
     // why: WP-185 deleted the hardcoded Ambush wound loop (D-18504). Each-player
     // wounding now arrives via a parsed gainWoundEachPlayer hook dispatched

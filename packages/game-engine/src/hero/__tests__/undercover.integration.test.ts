@@ -28,6 +28,7 @@ import type { HeroAbilityHook } from '../../rules/heroAbility.types.js';
 import { makeMockCtx } from '../../test/mockCtx.js';
 import { makeMockMoveContext } from '../../test/mockMoveContext.js';
 import type { MockMoveContext } from '../../test/mockMoveContext.js';
+import { makeGlobalPiles, makeMastermindState, makeTurnEconomy } from '../../test/fixtureBuilders.js';
 
 // ---------------------------------------------------------------------------
 // Mock registry — a single hero whose cards carry [keyword:Undercover] text,
@@ -123,7 +124,7 @@ function makeState(options?: StateOptions): LegendaryGameState {
         faceDownCards: [],
       },
     },
-    piles: { bystanders: [], wounds: [], officers: [], sidekicks: [] },
+    piles: { ...makeGlobalPiles(), bystanders: [], wounds: [], officers: [], sidekicks: [] },
     messages: [],
     counters: {},
     hookRegistry: [],
@@ -132,13 +133,13 @@ function makeState(options?: StateOptions): LegendaryGameState {
     ko: [],
     attachedBystanders: {},
     villainAttachedHeroes: {},
-    turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0 },
+    turnEconomy: { ...makeTurnEconomy(), attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0 },
     cardStats: options?.cardStats ?? {},
     cardTraits: {},
     cardKeywords: {},
     cardDisplayData: {},
     schemeSetupInstructions: [],
-    mastermind: { id: 'test-mastermind', baseCardId: 'test-mastermind-base', tacticsDeck: [], tacticsDefeated: [] },
+    mastermind: { ...makeMastermindState(), id: 'test-mastermind', baseCardId: 'test-mastermind-base', tacticsDeck: [], tacticsDefeated: [] },
     city: [null, null, null, null, null],
     hq: [null, null, null, null, null],
     heroDeck: [],
