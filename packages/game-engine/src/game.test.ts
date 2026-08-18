@@ -369,6 +369,112 @@ describe('LegendaryGame', () => {
     );
   });
 
+  it('play-phase onMove wires the deferred-grant re-check — a waiting numeric-threshold ability fires once the threshold is reached (WP-568 / D-24377)', () => {
+    // why: pins the WIRE, not the helper. The helper has its own suite; this test
+    // exists because removing the resolveDeferredHeroGrants(G, ...) call from
+    // game.ts turn.onMove would otherwise leave every test green while the feature
+    // shipped 100% dead — the WP-560 failure mode. Reverting that call MUST fail
+    // this test (verified by mutation at execution).
+    const playPhase = (
+      LegendaryGame.phases as Record<
+        string,
+        { turn?: { onMove?: (context: unknown) => void } }
+      >
+    ).play;
+    const onMove = playPhase?.turn?.onMove;
+    assert.notEqual(onMove, undefined, 'play phase must define a turn.onMove hook');
+
+    const gameState = {
+      messages: [],
+      turnEconomy: { attack: 0, recruit: 9, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 },
+      playerZones: { '0': { deck: [], hand: [], discard: [], inPlay: ['hero-x'], victory: [] } },
+      cardTraits: {},
+      cardDisplayData: {},
+      villainDeck: { deck: ['v-1'], discard: [] },
+      heroDeck: ['h-1'],
+      counters: {},
+      selection: {
+        schemeId: 'core/portals-to-the-dark-dimension',
+        mastermindId: 'test-mastermind',
+        villainGroupIds: [],
+        henchmanGroupIds: [],
+        heroDeckIds: [],
+      },
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-x',
+          timing: 'onPlay',
+          keywords: ['attack'],
+          conditions: [{ type: 'recruitMadeThisTurnAtLeast', value: '8' }],
+          effects: [{ type: 'attack', magnitude: 3 }],
+        },
+      ],
+      // why: a grant recorded at play time, when recruit was below 8. The turn's
+      // recruit has since reached 9, so the per-move re-check must fire it.
+      deferredConditionalGrants: [{ playerId: '0', cardId: 'hero-x', hookIndex: 0 }],
+    } as unknown as LegendaryGameState;
+
+    onMove!({ G: gameState, ctx: { turn: 1, currentPlayer: '0' }, random: { Shuffle: (items: unknown[]) => items } });
+
+    assert.equal(
+      gameState.turnEconomy.attack,
+      3,
+      'onMove must run the deferred-grant re-check and apply the waiting +3 attack',
+    );
+    assert.equal(
+      gameState.deferredConditionalGrants,
+      undefined,
+      'the fired entry must be consumed, so it cannot grant twice',
+    );
+  });
+
+  it('play-phase onBegin wires the deferred-grant turn-boundary clear (WP-568 / D-24377)', () => {
+    // why: also pins a WIRE. A grant surviving into the next turn would re-evaluate
+    // against a fresh G.turnEconomy and could fire for the wrong turn; removing the
+    // clearDeferredConditionalGrants(G) call from onBegin must fail this test.
+    const playPhase = (
+      LegendaryGame.phases as Record<
+        string,
+        { turn?: { onBegin?: (context: unknown) => void } }
+      >
+    ).play;
+    const onBegin = playPhase?.turn?.onBegin;
+    assert.notEqual(onBegin, undefined, 'play phase must define a turn.onBegin hook');
+
+    const gameState = {
+      messages: [],
+      turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 },
+      playerZones: { '0': { deck: ['a', 'b', 'c', 'd', 'e', 'f'], hand: [], discard: [], inPlay: [], victory: [] } },
+      villainDeck: { deck: ['v-1'], discard: [] },
+      heroDeck: ['h-1'],
+      counters: {},
+      hq: [null, null, null, null, null],
+      city: [null, null, null, null, null],
+      scheme: { twistPile: [] },
+      mastermind: { id: 'm', baseCardId: 'm-base', tacticsDeck: [], tacticsDefeated: [], strikePile: [], attachedBystanders: [] },
+      hookRegistry: [],
+      heroAbilityHooks: [],
+      villainDeckCardTypes: {},
+      attachedBystanders: {},
+      escapedPile: [],
+      cardStats: {},
+      deferredConditionalGrants: [{ playerId: '0', cardId: 'hero-x', hookIndex: 0 }],
+    } as unknown as LegendaryGameState;
+
+    onBegin!({
+      G: gameState,
+      ctx: { turn: 2, currentPlayer: '0', numPlayers: 1 },
+      random: { Shuffle: (items: unknown[]) => items },
+      events: { setPhase: () => {}, endTurn: () => {} },
+    });
+
+    assert.equal(
+      gameState.deferredConditionalGrants,
+      undefined,
+      'onBegin must clear deferred grants at the turn boundary',
+    );
+  });
+
   it('defines a TOP-LEVEL endIf that returns the evaluateEndgame result for a terminal G and undefined for a mid-game G (WP-411 / D-24223 — AC-1)', () => {
     // why: AC-1 — the fix is a TOP-LEVEL LegendaryGame.endIf (sibling of
     // moves/phases), NOT a phase endIf. Only a top-level endIf sets

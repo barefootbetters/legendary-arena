@@ -269,7 +269,7 @@ describe('executeHeroEffects — conditional execution (WP-023)', () => {
   // -------------------------------------------------------------------------
   // WP-566 / D-24375 - the emitted line names the condition that failed
   // -------------------------------------------------------------------------
-  it("AC-1/AC-6: a recruit-threshold block names the recruit gate, stays blocked, keeps the card", () => {
+  it("AC-1/AC-6 (amended by WP-568): a recruit-threshold gate now WAITS, still naming the recruit gate", () => {
     // why: end-to-end at the emit site. Surge of Power shape: a recruit threshold
     // with NO class or team component. The old single string blamed "Hero class or
     // team synergy" here, 8 times in one observed match.
@@ -288,16 +288,49 @@ describe('executeHeroEffects — conditional execution (WP-023)', () => {
 
     executeHeroEffects(gameState, mockCtx, "0", "hero-x" as string);
 
+    // why: AMENDED BY WP-568. A recruit threshold is now a whole-turn wait-and-see
+    // gate, so this scenario produces the WAITING line rather than "did not
+    // activate". WP-566's substance is unchanged and still asserted here: the
+    // message names the RECRUIT gate and never blames Hero class or team synergy -
+    // describeFailedCondition feeds both states, so the misattribution fix holds.
     const line = gameState.messages[gameState.messages.length - 1]!;
-    assert.match(line.text, /did not activate/);
+    assert.match(line.text, /is waiting/);
+    assert.equal(/did not activate/.test(line.text), false,
+      "a not-yet-met gate must not reuse the failed wording (D-24377).");
     assert.match(line.text, /8 or more recruit/);
     assert.equal(/Hero class/i.test(line.text), false,
       "the message must not blame Hero class for a recruit-threshold gate.");
     assert.equal(/team synergy/i.test(line.text), false);
-    // why: AC-6 - the LOG_OUTCOMES colour and the structured card reference are
-    // untouched by this WP; only the prose changed.
-    assert.equal(line.outcome, "blocked");
+    assert.equal(line.outcome, "neutral");
     assert.equal(line.card, "hero-x");
+  });
+
+  it("WP-568: an OUT-OF-SCOPE gate still reads as failed, not waiting", () => {
+    // why: heroClassMatch keeps ON-PLAY evaluation (D-24377 section 1), so it must
+    // still produce WP-566's "did not activate" line at `blocked`. Without this the
+    // suite would stop covering the failed path once recruit gates moved to waiting.
+    const gameState = makeTestState({
+      inPlay: ["hero-x"],
+      heroAbilityHooks: [
+        {
+          cardId: "hero-x" as string,
+          timing: "onPlay",
+          keywords: ["attack"],
+          conditions: [{ type: "heroClassMatch", value: "tech" }],
+          effects: [{ type: "attack", magnitude: 5 }],
+        },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, "0", "hero-x" as string);
+
+    const line = gameState.messages[gameState.messages.length - 1]!;
+    assert.match(line.text, /did not activate/);
+    assert.match(line.text, /another tech Hero/);
+    assert.equal(/is waiting/.test(line.text), false);
+    assert.equal(line.outcome, "blocked");
+    assert.equal(gameState.deferredConditionalGrants, undefined,
+      "an out-of-scope gate must NOT defer.");
   });
 
   it("AC-8: the gate still BLOCKS - no effect fired", () => {

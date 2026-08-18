@@ -32,6 +32,8 @@ import {
   resolveFinalTurnTieIfUnresolved,
 } from './endgame/finalTurn.logic.js';
 import { applyPileDepletionResourceLoss } from './rules/schemeResourceLoss.js';
+import { resolveDeferredHeroGrants } from './hero/heroEffects.execute.js';
+import { clearDeferredConditionalGrants } from './hero/deferredConditionalGrants.js';
 import { setPlayerReady, startMatchIfReady } from './lobby/lobby.moves.js';
 import { revealVillainCard } from './villainDeck/villainDeck.reveal.js';
 import { fightVillain } from './moves/fightVillain.js';
@@ -600,7 +602,7 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
         // and is sticky — a later card effect that refills the deck does NOT
         // cancel the final turn (the exact rulebook edge Jeff reported). See
         // finalTurn.logic.ts.
-        onMove: ({ G }) => {
+        onMove: ({ G, ctx, random }) => {
           latchFinalTurnIfDeckExhausted(G);
           // why: same cadence as the final-turn latch above — a pile-depletion
           // scheme (Super Hero Civil War: hero deck) can empty on any move, incl.
@@ -609,6 +611,12 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
           // via evaluateEndgame precedence (SCHEME_LOSS before FINAL_TURN_TIE) and
           // the tie-resolution guard — no finalTurn.logic change needed (D-24319).
           applyPileDepletionResourceLoss(G);
+          // why: WP-568 / D-24377 — same per-move cadence as the two checks above,
+          // and for the same reason: it observes the state the move leaves behind,
+          // which is exactly when a turn's recruit total can cross a numeric
+          // threshold a hero ability is waiting on. `{ random }` is passed because a
+          // deferred effect may DRAW, and the bare ctx carries no random (D-24051).
+          resolveDeferredHeroGrants(G, { G, ctx, random });
         },
         // why: Each new turn must begin at the first canonical turn stage.
         // TURN_STAGES[0] is used instead of a hardcoded string to prevent
@@ -618,6 +626,12 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
           // non-null assertion is safe because TURN_STAGES always has at
           // least one element (enforced by drift-detection tests in WP-007A).
           G.currentStage = TURN_STAGES[0]!;
+
+          // why: WP-568 / D-24377 — the wait-and-see window is THIS turn. A threshold
+          // never reached during the turn never fires, and an entry surviving into the
+          // next turn would re-evaluate against a fresh G.turnEconomy and could grant
+          // for the wrong turn. Cleared here, beside the other per-turn resets.
+          clearDeferredConditionalGrants(G);
 
           // why: WP-328 — stamp the turn number into G (ctx.turn lives only in ctx, and
           // helper push sites have no ctx) and reset the per-step action counter, so
