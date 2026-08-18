@@ -14,6 +14,7 @@ import type { LegalMove } from './ai.types.js';
 import type { UIState, UICityCard } from '../ui/uiState.types.js';
 
 import { createCompetentHeuristicPolicy } from './ai.competent.js';
+import { makeUICityCard, makeUICityState, makeUIDecksState, makeUIKoPileState, makeUIMastermindState, makeUISchemeState, makeUISharedPilesState, makeUITurnEconomyState } from '../test/uiFixtureBuilders.js';
 
 /**
  * Minimal UIState fixture for policy tests.
@@ -24,6 +25,14 @@ import { createCompetentHeuristicPolicy } from './ai.competent.js';
  */
 function buildSyntheticUIState(citySpaces: (UICityCard | null)[]): UIState {
   return {
+    // why: five required UIState fields, omitted while nothing compiled these
+    // fixtures. decks/piles/koPile go through builders so a new required field
+    // on any of them lands in one place (D-24382).
+    notableEvents: [],
+    villainAttachedHeroes: {},
+    decks: makeUIDecksState(),
+    piles: makeUISharedPilesState(),
+    koPile: makeUIKoPileState(),
     game: {
       phase: 'play',
       turn: 1,
@@ -47,11 +56,11 @@ function buildSyntheticUIState(citySpaces: (UICityCard | null)[]): UIState {
         handCards: [],
       },
     ],
-    city: { spaces: citySpaces },
+    city: { ...makeUICityState(), spaces: citySpaces },
     hq: { slots: [null, null, null, null, null] },
-    mastermind: { id: 'test-mm', tacticsRemaining: 2, tacticsDefeated: 0 },
-    scheme: { id: 'test-scheme', twistCount: 0 },
-    economy: { attack: 0, recruit: 0, availableAttack: 0, availableRecruit: 0 },
+    mastermind: { ...makeUIMastermindState(), id: 'test-mm', tacticsRemaining: 2, tacticsDefeated: 0 },
+    scheme: { ...makeUISchemeState(), id: 'test-scheme', twistCount: 0 },
+    economy: { ...makeUITurnEconomyState(), attack: 0, recruit: 0, availableAttack: 0, availableRecruit: 0 },
     log: [],
     progress: { bystandersRescued: 0, escapedVillains: 0 },
   };
@@ -116,12 +125,12 @@ describe('T2 Competent Heuristic policy (WP-049)', () => {
   });
 
   test('prefers fighting villain with bystander over villain without (heroism bias)', () => {
-    const villainNoBystander: UICityCard = {
+    const villainNoBystander: UICityCard = { ...makeUICityCard(),
       extId: 'villain-plain',
       type: 'villain',
       keywords: [],
     };
-    const villainWithBystander: UICityCard = {
+    const villainWithBystander: UICityCard = { ...makeUICityCard(),
       extId: 'villain-carrier',
       type: 'villain',
       keywords: ['bystander'],
@@ -153,7 +162,7 @@ describe('T2 Competent Heuristic policy (WP-049)', () => {
   test('prefers preventing imminent escape over recruiting (threat prioritization)', () => {
     // why: slot 4 is the escape edge — fighting there prevents escape on
     // the next reveal, which outranks every non-escape action.
-    const villainAtEscape: UICityCard = {
+    const villainAtEscape: UICityCard = { ...makeUICityCard(),
       extId: 'villain-at-escape',
       type: 'villain',
       keywords: [],
@@ -183,7 +192,7 @@ describe('T2 Competent Heuristic policy (WP-049)', () => {
   });
 
   test('does not stall when fighting is available (economy awareness)', () => {
-    const villain: UICityCard = {
+    const villain: UICityCard = { ...makeUICityCard(),
       extId: 'villain-mid',
       type: 'villain',
       keywords: [],
@@ -303,7 +312,7 @@ describe('T2 Competent Heuristic policy (WP-049)', () => {
   });
 
   test('prefers fighting mastermind over fighting a non-escape villain (victory path)', () => {
-    const villainMid: UICityCard = {
+    const villainMid: UICityCard = { ...makeUICityCard(),
       extId: 'villain-mid',
       type: 'villain',
       keywords: [],
@@ -361,7 +370,7 @@ describe('Bot decision logging (WP-181)', () => {
   });
 
   test('every decisionLog line starts with [Bot] prefix', () => {
-    const villainWithBystander: UICityCard = {
+    const villainWithBystander: UICityCard = { ...makeUICityCard(),
       extId: 'v-carrier',
       type: 'villain',
       keywords: ['bystander'],
@@ -404,7 +413,7 @@ describe('Bot decision logging (WP-181)', () => {
   });
 
   test('decisionLog includes alternative scores when alternatives exist', () => {
-    const villain: UICityCard = {
+    const villain: UICityCard = { ...makeUICityCard(),
       extId: 'v-mid',
       type: 'villain',
       keywords: [],
@@ -500,7 +509,7 @@ describe('Bot tuning: skip Wounds + prioritize the clock (2026-07-28)', () => {
   test('the bot fights the mastermind over the strongest possible villain (win-clock priority)', () => {
     // slot-4 (imminent escape, +800) villain carrying a bystander (+500) is the highest
     // villain score possible (1400). The mastermind (1500) must still win — the clock.
-    const strongestVillain: UICityCard = {
+    const strongestVillain: UICityCard = { ...makeUICityCard(),
       extId: 'villain-escape-bystander',
       type: 'villain',
       keywords: ['bystander'],

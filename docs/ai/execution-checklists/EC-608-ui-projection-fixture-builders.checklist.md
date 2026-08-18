@@ -13,13 +13,13 @@
 
 ## Before Starting
 
-- [ ] Clean tree off `origin/main`; `pnpm install`; `pnpm -r build` exits 0.
-- [ ] Capture engine `dist` hashes and the test baseline.
-- [ ] **Re-derive the residual.** Draft-time: **17 errors / 3 files** —
+- [x] Clean tree off `origin/main`; `pnpm install`; `pnpm -r build` exits 0.
+- [x] Capture engine `dist` hashes and the test baseline.
+- [x] **Re-derive the residual.** Draft-time: **17 errors / 3 files** —
       `ai.competent.test.ts` 12, `simulation.test.ts` 4, `par.storage.test.ts` 1.
-- [ ] **Read the UI-projection types before writing a single default** —
+- [x] **Read the UI-projection types before writing a single default** —
       `ui/uiState.types.ts` and the `buildUIState` code that populates them.
-- [ ] Read D-24380, D-24381, and WP-572's SCOPE AMENDED section.
+- [x] Read D-24380, D-24381, and WP-572's SCOPE AMENDED section.
 
 ## Locked Values
 
@@ -67,12 +67,12 @@
 
 ## After Completing
 
-- [ ] `WORK_INDEX.md` `[x]` + refreshed backlog counts — and note that **the
+- [x] `WORK_INDEX.md` `[x]` + refreshed backlog counts — and note that **the
       arc's fixture work is complete**, leaving only the long tail before CI
       wiring.
-- [ ] `EC_INDEX.md` `Done`; mindmap `✅`; `roadmap:counts:check` 0.
-- [ ] **D-24382** Active.
-- [ ] `STATUS.md` — before/after counts and **the AC-1 mutation result**.
+- [x] `EC_INDEX.md` `Done`; mindmap `✅`; `roadmap:counts:check` 0.
+- [x] **D-24382** Active.
+- [x] `STATUS.md` — before/after counts and **the AC-1 mutation result**.
       `User-Visible Surface = none — infrastructure`; D-24026 inverts.
 
 ## Common Failure Smells

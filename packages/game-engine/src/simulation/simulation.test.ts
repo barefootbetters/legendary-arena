@@ -25,6 +25,7 @@ import { createRandomPolicy } from './ai.random.js';
 import { getLegalMoves } from './ai.legalMoves.js';
 import { runSimulation } from './simulation.runner.js';
 import { makeCardRegistryReader } from '../test/fixtureBuilders.js';
+import { makeUICityState, makeUIDecksState, makeUIKoPileState, makeUIMastermindState, makeUISchemeState, makeUISharedPilesState, makeUITurnEconomyState } from '../test/uiFixtureBuilders.js';
 
 /**
  * Builds a valid 9-field MatchSetupConfig fixture for simulation tests.
@@ -175,6 +176,14 @@ describe('simulation framework (WP-036)', () => {
     }
 
     const minimalView: UIState = {
+      // why: five required UIState fields, omitted while nothing compiled these
+      // fixtures. decks/piles/koPile go through builders so a new required field
+      // on any of them lands in one place (D-24382).
+      notableEvents: [],
+      villainAttachedHeroes: {},
+      decks: makeUIDecksState(),
+      piles: makeUISharedPilesState(),
+      koPile: makeUIKoPileState(),
       // why: UIState.game carries three required flags beyond the four view
       // fields; a fixture omitting them is structurally invalid (WP-572).
       game: {
@@ -193,11 +202,11 @@ describe('simulation framework (WP-036)', () => {
           handCards: [],
         },
       ],
-      city: { spaces: [null, null, null, null, null] },
+      city: { ...makeUICityState(), spaces: [null, null, null, null, null] },
       hq: { slots: [null, null, null, null, null] },
-      mastermind: { id: 'test', tacticsRemaining: 0, tacticsDefeated: 0 },
-      scheme: { id: 'test', twistCount: 0 },
-      economy: { attack: 0, recruit: 0, availableAttack: 0, availableRecruit: 0 },
+      mastermind: { ...makeUIMastermindState(), id: 'test', tacticsRemaining: 0, tacticsDefeated: 0 },
+      scheme: { ...makeUISchemeState(), id: 'test', twistCount: 0 },
+      economy: { ...makeUITurnEconomyState(), attack: 0, recruit: 0, availableAttack: 0, availableRecruit: 0 },
       log: [],
       progress: { bystandersRescued: 0, escapedVillains: 0 },
     };
