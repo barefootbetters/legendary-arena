@@ -24,6 +24,7 @@ import { defeatTopTactic, areAllTacticsDefeated } from '../mastermind/mastermind
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { composeMastermindDefeatedNarrative } from '../events/notableEvents.compose.js';
 import { dispatchTacticOnFight } from '../rules/tacticHandlers.js';
+import type { ShuffleProvider } from '../setup/shuffle.js';
 import { hasPendingKoHeroChoice } from './koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from './scryKoChoice.resolve.js';
 import { hasPendingDiscardChoice } from './discardChoice.resolve.js';
@@ -60,7 +61,7 @@ type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
 // text effects are WP-024" note was stale (WP-024 did scheme + mastermind STRIKE
 // execution; tactic Fight was scoped out of WP-316/386/388 and had no owner).
 export function fightMastermind(
-  { G, ctx }: MoveContext,
+  { G, ctx, random }: MoveContext,
 ): void {
   // Step 1: Validate
   if (G.mastermind.tacticsDeck.length === 0) {
@@ -126,7 +127,7 @@ export function fightMastermind(
   // ability (unlike a villain), so nothing between reads G.turnEconomy or
   // G.hasActedThisTurn — running them after the core is byte-identical to the
   // prior inline order (the unmodified fightMastermind tests are the oracle).
-  defeatMastermindTacticCore(G, ctx);
+  defeatMastermindTacticCore(G, ctx, { random });
   G.turnEconomy = spendAttack(G.turnEconomy, requiredFightCost);
   // why: D-24180 — this successful mastermind fight marks the player as having
   // acted this turn, which bars the Wound Healing ability for the rest of the turn.
@@ -157,6 +158,7 @@ export function fightMastermind(
 export function defeatMastermindTacticCore(
   G: LegendaryGameState,
   ctx: unknown,
+  shuffleContext: ShuffleProvider,
 ): void {
   // why: narrow the unknown ctx to the one field this core reads (the defeating
   // player), mirroring executeVillainAbilities — no framework import.
@@ -271,5 +273,9 @@ export function defeatMastermindTacticCore(
   // player, whether or not this was the vanquishing tactic (Universal Rules v23:
   // tactic Fight effects resolve on defeat). Placed last so it observes fully-
   // settled state.
-  dispatchTacticOnFight(G, ctx, defeatedTacticId);
+  // why: WP-567 - pass a ShuffleProvider alongside ctx. HYDRA Conspiracy DRAWS,
+  // and the bare boardgame.io ctx carries no random (the D-24051 hazard recorded
+  // in dodgeCard.ts), so the reshuffle path needs random.Shuffle threaded from
+  // the move context or an empty-deck draw would silently stop short.
+  dispatchTacticOnFight(G, ctx, defeatedTacticId, shuffleContext);
 }
