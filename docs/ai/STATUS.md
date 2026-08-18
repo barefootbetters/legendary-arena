@@ -7,6 +7,39 @@
 
 ## Current State
 
+### WP-575 — Diagnostics Report Carries No Effect Trace (EC-610 / D-24384) shipped (2026-08-18)
+
+The Play Diagnostics export now carries the engine's per-dispatch effect traces.
+`UIState.effectTraces?: EffectTrace[]` projects `G.diagnostics.traces` in
+`buildUIState` (per-record fresh copy, incl. a fresh nested `params` object,
+omit-when-absent) and passes through `filterUIStateForAudience` for every audience
+(public disposition, D-12803) — following the WP-258 hollowEffects pattern exactly.
+The arena-client `diagnostics.ts` lifts the field structurally from the opaque
+`uiStateSnapshot` (runtime guard, array-or-empty, **no engine import** — EC-260),
+surfacing it as a top-level `DiagnosticReport.effectTraces`.
+
+**The console buffer was never the defect.** `entryCount: 0` on a clean match is
+CORRECT — its ~57 call sites are failure paths an error-free session never hits.
+`installDiagnosticCapture`, `DIAGNOSTIC_BUFFER_CAP`, `DiagnosticEntry`, `truncated`,
+and `effectProvenance` are all **byte-unchanged**. The gap was the absent trace
+channel, now projected.
+
+**Traces stay INERT (D-24294).** The AC-6 grep confirms the only readers of
+`G.diagnostics.traces` are the recorder, the hash-EXCLUSION in `replay.hash.ts`, and
+the new read-only `buildUIState` projection — no move/rule/endIf/bot/scoring path
+consumes them.
+
+**Both hash oracles byte-unchanged.** Traces are already hash-excluded from both
+(`PRE_WP080_HASH = ec64506a`; sentinel `finalStateHash` green in-suite). The drift
+pin was added as a **runtime** assertion on the built projection (9-field keyset) —
+the load-bearing form, since an optional add satisfies any `satisfies` check (WP-562
+lesson). Engine 2781→**2789** (+8), arena-client 1355→**1358** (+3), 0 fail;
+`pnpm -r build` 0; `pnpm -r --no-bail test` no new failures.
+
+**AC-9 (D-24026) live-verify: operator-pending.** After deploy, a real match's
+exported diagnostics report must contain `effectTraces` entries naming what specific
+played cards dispatched.
+
 ### WP-574 — Master Strike Bystander Capture Log (EC-609 / D-24383) shipped (2026-08-18)
 
 `captureBystanderOntoMastermind` (`rules/mastermindHandlers.ts`) now logs one
