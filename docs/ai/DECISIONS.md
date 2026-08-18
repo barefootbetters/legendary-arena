@@ -37532,3 +37532,30 @@ Extends the WP-569 precedent (D-24378 §4): shared engine test-support lives in 
 cost rather than a surprise.
 
 _Active 2026-08-17 - landed at WP-571 execution (EC-606), with **scope amended at execution by operator decision**. Delivered: six builders, 176 literals across 47 files, gate **289 -> 134**, class **195 -> 23**, suite 2740 / 2740. Clauses 1, 3 and 4 held as written. **Clause 2 is AMENDED by what execution measured:** a builder absorbs a new required field only for fixtures ROUTED THROUGH IT, and an error-driven migration **cannot see literals that were already complete** - AC-2's mutation broke six places (one production, five such test sites), not one. The property is therefore conditional on migration COMPLETENESS, not on the builder's existence, which is a materially different claim from the one drafted. **A second lesson, recorded because it generalises:** pattern-matching source cannot distinguish a value literal from a type annotation - a regex codemod emitted syntax errors across 102 files, and a later regex broke 18 tests by adding keys that failed deep-equality assertions. Completing this class needs an AST-aware migration keyed on CONTEXTUAL TYPE; both mistakes were caught by verification and fully reverted. **Clause 4 gains a second instance:** `ui/uiState.build.test.ts`'s deliberately-narrow registry mock proves a reader-guard diagnostic fires, and completing it silenced the guard - left erroring rather than cast, since `as unknown as` is a suppression in all but name._
+
+### D-24381 — A fixture migration is driven by the type checker, and proven by mutation
+
+WP-571 reduced the missing-required-state-field class by 88% and still did not
+deliver the property its builders existed for. WP-572 finishes it. Locked:
+
+1. **Source pattern-matching is not a valid migration oracle.** WP-571 measured
+   this twice: a regex codemod hit **type annotations** and emitted syntax
+   errors across 102 files, and a second regex broke 18 tests by adding keys
+   that failed deep-equality assertions. Separately, an **error-driven** pass
+   structurally cannot see literals that are already complete — which is why
+   WP-571's mutation broke six places instead of one.
+2. **The correct oracle is `checker.getContextualType`** on each
+   `ObjectLiteralExpression`. Verified by probe before drafting: it resolves all
+   six target types and distinguishes `Record<string, T>` from `T`. Census at
+   draft time: 230 literals across 59 files, 173 routed, **57 not**.
+3. **A builder's guarantee is conditional on migration COMPLETENESS, not on the
+   builder existing** — the clause D-24380 was amended to say. Therefore the
+   acceptance is a **mutation requiring exactly one break**, and **a falling
+   error count is explicitly rejected as evidence**: an 88% reduction was
+   compatible with zero property delivered.
+4. **Some fixtures must stay incomplete and erroring.** The deliberately-narrow
+   registry mocks prove reader guards fire; completing them silences the
+   behaviour under test. The migration carries an explicit **skip-list** — not
+   every diagnostic is a defect.
+
+_Drafted 2026-08-17; not yet landed. Flips to Active at WP-572 execution (EC-607)._
