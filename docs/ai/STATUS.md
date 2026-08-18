@@ -7,6 +7,65 @@
 
 ## Current State
 
+### WP-566 - Blocked-Ability Message Misattribution - DONE (2026-08-17)
+
+One generic line - "a play condition (such as Hero class or team synergy) was not
+met" - was emitted for EVERY hero-hook condition failure. Counted at source it is
+right for 2 of the 4 constructed condition types and wrong for the two
+numeric-threshold ones: recruitMadeThisTurnAtLeast (Surge of Power's recruit gate)
+and distinctHeroClassesAtLeast (Spectrum) - which are also the two whose failure a
+player could act on.
+
+**It survived because it is right often enough to look right.** It fired 8 times
+on Surge of Power in one observed match, whose printed gate has no class or team
+component at all, while being simultaneously CORRECT for three class-gated cards
+in that same match.
+
+**The worse half was the silent-failure amplifier.** evaluateCondition's default
+returns false and HeroCondition is a stringly-typed { type, value } pair, so an
+UNRECOGNIZED type permanently blocked the ability AND emitted the same class/team
+wording - a data or parse defect was indistinguishable in the log from a working
+synergy gate. The unrecognized path now reads as un-evaluable and names the
+offending type. Behaviour is unchanged: default: false stays, because firing an
+effect whose gate cannot be evaluated is strictly worse than blocking it.
+
+**The public contract never moved, and that is proven mechanically.** The fix
+arrives as a SIBLING resolver walking the same short-circuit order, so the diff on
+heroConditions.evaluate.ts is 129 additions / 0 deletions - a pure append - and
+neither evaluateCondition nor evaluateAllConditions appears in it. Both are
+exported from index.ts, so a signature change would have been a public break.
+
+**Tests: +14, with the two failure modes that matter closed.** AC-8 pins that no
+gate evaluation changed, in BOTH directions - a blocked gate still blocks and a
+satisfied gate still fires. The emit-site assertion was mutation-verified:
+reverting the line to the old generic string fails it. AC-1 asserts the ABSENCE of
+"Hero class" / "team synergy" from a recruit-gate message, which a positive-only
+check would have passed with the wrong clause still appended.
+
+**One test-setup correction during execution.** The first "gate that PASSED" case
+used a class gate, but that file's makeTestState carries no cardTraits override,
+so the gate could never be satisfied and the case asserted nothing. Switched to
+playedThisTurn, which that helper can satisfy, with the reason recorded inline.
+
+**Gates.** pnpm -r build 0. Engine **2751 -> 2765 / 0 fail**. pnpm -r --no-bail
+test **0 failures in every package**. Both hash oracles byte-unchanged -
+PRE_WP080_HASH ec64506a, sentinel 813287eb...f143b8 - each for its own reason, as
+the draft predicted: the sentinel excludes messages (D-24081), and the empty
+replay emits none. Message text does sit inside computeStateHash, the competitive
+anti-tamper hash, which is safe because both sides of its only comparison are
+computed at submission time and no stored state_hash is ever re-verified.
+
+**D-24026 - operator-pending.** In a live match, a Surge of Power blocked at <8
+recruit and a class-gated ability blocked with no matching class should show
+DIFFERENT reasons in the game log.
+
+**WP-568 is now unblocked.** It adds a third state ("not yet met") to the message
+vocabulary this WP establishes.
+
+Lands **D-24375 Active**. 5 files + governance.
+
+---
+
 <<<<<<< HEAD
 ### WP-573 - UI-Projection Fixture Builders - DONE (2026-08-17)
 
