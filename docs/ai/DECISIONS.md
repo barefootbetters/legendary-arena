@@ -37581,3 +37581,64 @@ the pattern is now **settled** rather than re-litigated per packet. Locked:
    every diagnostic is a defect** (D-24378 and its second instance).
 
 _Active 2026-08-17 - landed at WP-573 execution (EC-608). **All four clauses held.** Clause 2's mutation-not-count rule proved itself twice over: the `UICityCard` mutation breaks **zero test fixtures** (only the builder and two production files), which is stronger than the AC's "exactly one" - **and an exact grep for the type among `TS2739`/`TS2741` returned ZERO, which looked like no effect at all**. The builder's own error is `TS2322`, a different code. **Recorded as a second instance of the verification-grep trap** after the `TurnEconomy` / `UITurnEconomyState` prefix collision in WP-572: when proving a mutation, do not filter by a single expected error CODE either - a mutation surfaces through whichever diagnostic the construction site happens to produce. Clause 4's skip-list posture earned its keep in the sharpest possible way: the census wanted to route five literals in `ui/uiState.types.drift.test.ts`, the drift pins WP-563 restored, which enumerate every field deliberately so a rename fails the `satisfies` check. Routing them would have silently destroyed that protection, and they were not erroring at all. **Not every literal wants a builder, and a literal that is not erroring is the least likely to.**_
+### D-24383 — Master Strike Bystander Capture is Logged on Success (Additive to D-15401)
+
+A deliberately-specified log line can still leave a state change invisible. D-15401
+(Immutable) specified a message only for the empty-supply case; the success path was
+silent by omission, not by design. The fix is additive and contradicts nothing in
+D-15401.
+
+Locked:
+
+1. **A Master Strike's Bystander capture is LOGGED on success**, not only on the
+   empty-supply skip. Outcome `applied` per WP-434. The line names the capturing
+   mastermind; the captured card is a generic `pile-bystander` supply token.
+2. **D-15401 stays Immutable and unamended.** The silence was a gap in what the
+   decision COVERED, not a violation. This decision records the additive fix; it
+   does not reopen the Immutable mechanic.
+3. **Observability only — no change to when or whether a Bystander is captured.**
+   Both hash oracles stay byte-unchanged: the sentinel excludes messages (D-24081)
+   and the empty replay fires no strike.
+4. **Evidence standard.** The gap was found by reconciling a real match's victory
+   pile against its log (3 Bystanders rescued, 1 capture logged) rather than by
+   reading the code — which is why it survived: nothing in the source looks wrong,
+   and the asymmetry is only visible once the RESCUE line is compared against the
+   missing CAPTURE lines.
+
+**Drafted 2026-08-18; not yet landed. Flips to Active at WP-574 execution (EC-609).**
+
+### D-24384 — Diagnostics Report Carries No Effect Trace (Channel Mismatch)
+
+A diagnostic surface can be fully wired, fully working, and still answer none of
+the questions it was built for. The Play Diagnostics report carries the CONSOLE
+channel (failure-path events), while the channel that records what each played card
+dispatched — `G.diagnostics.traces[]` (WP-488 / D-24294) — is never projected to
+`UIState` and so never reaches the report.
+
+Locked:
+
+1. **`entryCount: 0` on a clean match is CORRECT** and is NOT the defect. The
+   capture installs at boot, wraps console plus window errors, and its ~57 call
+   sites are failure paths — an error-free session legitimately produces zero
+   entries. Recording this explicitly because the obvious reading ("the buffer is
+   broken") would send an executing session to fix working code.
+2. **The defect is the ABSENT effect-trace channel.** `G.diagnostics.traces[]` is
+   projected to a new optional `UIState.effectTraces` field following the WP-258
+   hollowEffects pattern: per-record fresh-object copy, omit-when-absent, public
+   audience disposition, `filterUIStateForAudience` pass-through. The client reads
+   traces from `uiStateSnapshot` structurally (no engine import, EC-260 boundary).
+3. **Traces stay READ-ONLY and INERT** — D-24294's rule that no move / rule /
+   endIf / bot / scoring path consumes traces survives. The projection may never
+   become a gameplay input.
+4. **The UIState drift pin MUST be extended.** An optional field addition passes the
+   existing keyset assertion silently (the WP-562 lesson). Any new field MUST be
+   threaded through `filterUIStateForAudience` with an explicit audience disposition
+   and an audience test, or it is silently dropped at the whitelist (the shipped
+   EC-206 failure mode).
+5. **Both hash oracles stay byte-unchanged.** Traces are already hash-excluded from
+   both oracles (D-24081 sentinel exclusion + D-24294 `computeStateHash` exclusion).
+   The UIState field is a projection, not a `G` field.
+6. **The existing console buffer, `effectProvenance`, `DIAGNOSTIC_BUFFER_CAP`, and
+   `DiagnosticEntry` are byte-unchanged.**
+
+**Drafted 2026-08-18; not yet landed. Flips to Active at WP-575 execution (EC-610).**
