@@ -11,12 +11,40 @@ import {
   dispatchTacticOnFight,
   resolveOctetOfValenceElectrons,
   resolveCrushingShockwave,
+  resolveNegablastGrenades,
+  resolveEndlessResources,
+  resolveHydraConspiracy,
   OCTET_HAND_SIZE,
   SHOCKWAVE_WOUND_COUNT,
+  NEGABLAST_GRENADES_ATTACK,
+  ENDLESS_RESOURCES_RECRUIT,
+  HYDRA_CONSPIRACY_BASE_DRAW,
 } from './tacticHandlers.js';
 
 const OCTET_TACTIC_ID =
   'co2e-mastermind-doctor-octopus-octet-of-valence-electrons';
+
+// why: WP-567 - a real ShuffleProvider, not a stub. dispatchTacticOnFight now
+// takes one because HYDRA Conspiracy DRAWS, and the bare boardgame.io ctx has no
+// random (D-24051). Reversing is the makeMockCtx idiom: it proves the shuffle ran.
+const SHUFFLE = { random: { Shuffle: <T,>(items: T[]): T[] => [...items].reverse() } };
+
+const NEGABLAST_TACTIC_ID = 'core-mastermind-red-skull-negablast-grenades';
+const ENDLESS_RESOURCES_TACTIC_ID = 'core-mastermind-red-skull-endless-resources';
+const HYDRA_CONSPIRACY_TACTIC_ID = 'core-mastermind-red-skull-hydra-conspiracy';
+const RUTHLESS_DICTATOR_TACTIC_ID = 'core-mastermind-red-skull-ruthless-dictator';
+
+/** Economy-and-zones state for the Red Skull resolvers. */
+function makeEconomyState(victory: string[] = [], deck: string[] = []): LegendaryGameState {
+  return {
+    messages: [],
+    turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 },
+    playerZones: {
+      '0': { deck: [...deck], hand: [], discard: [], inPlay: [], victory: [...victory] },
+      '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+    },
+  } as unknown as LegendaryGameState;
+}
 
 /** Minimal game state: the Octet handlers touch only handSizeOverrides + messages. */
 function makeState(): LegendaryGameState {
@@ -43,13 +71,13 @@ describe('resolveOctetOfValenceElectrons (WP-497 / D-24300)', () => {
 describe('dispatchTacticOnFight (WP-497 / D-24300)', () => {
   it('routes the Octet tactic id to the resolver (sets the override for ctx.currentPlayer)', () => {
     const G = makeState();
-    dispatchTacticOnFight(G, { currentPlayer: '0' }, OCTET_TACTIC_ID);
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, OCTET_TACTIC_ID, SHUFFLE);
     assert.deepEqual(G.handSizeOverrides, { '0': 8 });
   });
 
   it('is a silent no-op for an unknown/unimplemented tactic id (never throws, no state change)', () => {
     const G = makeState();
-    dispatchTacticOnFight(G, { currentPlayer: '0' }, 'core-mastermind-magneto-electromagnetic-bubble');
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, 'core-mastermind-magneto-electromagnetic-bubble', SHUFFLE);
     assert.equal(G.handSizeOverrides, undefined);
     assert.equal(G.messages.length, 0);
   });
@@ -153,8 +181,133 @@ describe('resolveCrushingShockwave (WP-506 / D-24312)', () => {
 describe('dispatchTacticOnFight — Crushing Shockwave branch (WP-506 / D-24312)', () => {
   it('routes the Crushing Shockwave tactic id to the resolver (skips ctx.currentPlayer)', () => {
     const G = makeShockwaveState({ '0': [], '1': [NON_X_MEN_CARD] }, 5);
-    dispatchTacticOnFight(G, { currentPlayer: '0' }, CRUSHING_SHOCKWAVE_TACTIC_ID);
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, CRUSHING_SHOCKWAVE_TACTIC_ID, SHUFFLE);
     assert.equal(G.playerZones['1']!.discard.length, 2);
     assert.equal(G.playerZones['0']!.discard.length, 0);
+  });
+});
+
+describe('Red Skull tactic onFight resolvers (WP-567 / D-24376)', () => {
+  it('AC-1: Negablast Grenades grants exactly +3 attack and logs it', () => {
+    const G = makeEconomyState();
+    resolveNegablastGrenades(G, '0');
+    assert.equal(NEGABLAST_GRENADES_ATTACK, 3);
+    assert.equal(G.turnEconomy.attack, 3);
+    assert.equal(G.turnEconomy.recruit, 0);
+    // why: the silence WAS half the defect - a resolver that mutates without a
+    // log line reproduces the original complaint (the player sees nothing happen).
+    assert.equal(G.messages.length, 1);
+    assert.match(G.messages[0]!.text, /Negablast Grenades/);
+    assert.equal(G.messages[0]!.outcome, 'applied');
+  });
+
+  it('AC-2: Endless Resources grants exactly +4 recruit and logs it', () => {
+    const G = makeEconomyState();
+    resolveEndlessResources(G, '0');
+    assert.equal(ENDLESS_RESOURCES_RECRUIT, 4);
+    assert.equal(G.turnEconomy.recruit, 4);
+    assert.equal(G.turnEconomy.attack, 0);
+    assert.equal(G.messages.length, 1);
+    assert.equal(G.messages[0]!.outcome, 'applied');
+  });
+
+  it('AC-3: HYDRA Conspiracy draws exactly 2 with ZERO HYDRA villains', () => {
+    const G = makeEconomyState([], ['a', 'b', 'c', 'd', 'e']);
+    resolveHydraConspiracy(G, '0', HYDRA_CONSPIRACY_TACTIC_ID, SHUFFLE);
+    assert.equal(HYDRA_CONSPIRACY_BASE_DRAW, 2);
+    assert.equal(G.playerZones['0']!.hand.length, 2);
+  });
+
+  it('AC-3: HYDRA Conspiracy draws 5 with THREE HYDRA villains (2 + 3)', () => {
+    // why: 0-and-N both asserted - a single-value test passes against a hardcoded 2.
+    const victory = [
+      'core-villain-hydra-viper-00',
+      'core-villain-hydra-supreme-hydra-00',
+      'core-villain-hydra-hydra-kidnappers-01',
+    ];
+    const G = makeEconomyState(victory, ['a', 'b', 'c', 'd', 'e', 'f', 'g']);
+    resolveHydraConspiracy(G, '0', HYDRA_CONSPIRACY_TACTIC_ID, SHUFFLE);
+    assert.equal(G.playerZones['0']!.hand.length, 5);
+    assert.match(G.messages[0]!.text, /drew 5 card\(s\)/);
+  });
+
+  it('AC-4: the HYDRA count reads the DEFEATING player victory pile only', () => {
+    // why: reachable only at 2+ seats - a solo-only suite would never surface a
+    // count that spans all players, and the draw would silently inflate.
+    const G = makeEconomyState([], ['a', 'b', 'c', 'd', 'e']);
+    G.playerZones['1']!.victory = [
+      'core-villain-hydra-viper-00',
+      'core-villain-hydra-supreme-hydra-00',
+    ];
+    resolveHydraConspiracy(G, '0', HYDRA_CONSPIRACY_TACTIC_ID, SHUFFLE);
+    assert.equal(G.playerZones['0']!.hand.length, 2);
+  });
+
+  it('counts only HYDRA villains - other groups and villain-deck bystanders do not', () => {
+    const victory = [
+      'core-villain-hydra-viper-00',
+      'core-villain-brotherhood-magneto-00',
+      'bystander-villain-deck-00',
+      'henchman-doombot-legion-03',
+      'core-mastermind-red-skull-hydra-conspiracy',
+    ];
+    const G = makeEconomyState(victory, ['a', 'b', 'c', 'd', 'e']);
+    resolveHydraConspiracy(G, '0', HYDRA_CONSPIRACY_TACTIC_ID, SHUFFLE);
+    // why: 2 base + exactly 1 HYDRA villain. The anchored prefix is what keeps
+    // `bystander-villain-deck-NN` and the tactic's own id out of the count.
+    assert.equal(G.playerZones['0']!.hand.length, 3);
+  });
+
+  it('reports what was actually DRAWN when the deck runs short', () => {
+    const G = makeEconomyState([], ['only-one']);
+    resolveHydraConspiracy(G, '0', HYDRA_CONSPIRACY_TACTIC_ID, SHUFFLE);
+    assert.equal(G.playerZones['0']!.hand.length, 1);
+    assert.match(G.messages[0]!.text, /drew 1 card\(s\)/);
+  });
+
+  it('reshuffles the discard when the deck empties mid-draw (the threaded provider)', () => {
+    // why: pins the WIRE, not a mock. dispatchTacticOnFight gained a
+    // ShuffleProvider precisely because the bare ctx has no random (D-24051); if
+    // the provider were not threaded, this reshuffle path would throw.
+    const G = makeEconomyState([], ['deck-1']);
+    G.playerZones['0']!.discard = ['discard-1', 'discard-2'];
+    resolveHydraConspiracy(G, '0', HYDRA_CONSPIRACY_TACTIC_ID, SHUFFLE);
+    assert.equal(G.playerZones['0']!.hand.length, 2);
+  });
+});
+
+describe('dispatchTacticOnFight - Red Skull routing + the deliberate omission (WP-567)', () => {
+  it('routes all three implemented Red Skull tactics', () => {
+    const attackState = makeEconomyState();
+    dispatchTacticOnFight(attackState, { currentPlayer: '0' }, NEGABLAST_TACTIC_ID, SHUFFLE);
+    assert.equal(attackState.turnEconomy.attack, 3);
+
+    const recruitState = makeEconomyState();
+    dispatchTacticOnFight(recruitState, { currentPlayer: '0' }, ENDLESS_RESOURCES_TACTIC_ID, SHUFFLE);
+    assert.equal(recruitState.turnEconomy.recruit, 4);
+
+    const drawState = makeEconomyState([], ['a', 'b', 'c']);
+    dispatchTacticOnFight(drawState, { currentPlayer: '0' }, HYDRA_CONSPIRACY_TACTIC_ID, SHUFFLE);
+    assert.equal(drawState.playerZones['0']!.hand.length, 2);
+  });
+
+  it('AC-5: Ruthless Dictator stays UNDISPATCHED - no mutation, no log', () => {
+    // why: deliberate omission, not an oversight. Its printed top-three
+    // KO/discard/replace is INTERACTIVE and parks a pending choice; shipped
+    // without its UIState projection and prompt it HARD-FREEZES the human player.
+    // Pinned so a later packet's arrival is a decision, not an accident.
+    const G = makeEconomyState([], ['a', 'b', 'c']);
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, RUTHLESS_DICTATOR_TACTIC_ID, SHUFFLE);
+    assert.equal(G.turnEconomy.attack, 0);
+    assert.equal(G.turnEconomy.recruit, 0);
+    assert.equal(G.playerZones['0']!.hand.length, 0);
+    assert.equal(G.messages.length, 0);
+  });
+
+  it('AC-7: an unhandled tactic id is still a silent no-op and does not throw', () => {
+    const G = makeEconomyState([], ['a', 'b', 'c']);
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, 'core-mastermind-loki-some-unimplemented-tactic', SHUFFLE);
+    assert.equal(G.messages.length, 0);
+    assert.equal(G.turnEconomy.attack, 0);
   });
 });

@@ -542,7 +542,7 @@ describe('defeatMastermindTacticCore — tactic onFight dispatch (WP-497 / D-243
       },
     });
 
-    defeatMastermindTacticCore(gameState, { currentPlayer: '0' });
+    defeatMastermindTacticCore(gameState, { currentPlayer: '0' }, { random: { Shuffle: <T,>(items: T[]): T[] => [...items].reverse() } });
 
     assert.deepEqual(gameState.handSizeOverrides, { '0': 8 },
       'defeating Octet records the +8 next-hand override for the current player');
@@ -558,7 +558,7 @@ describe('defeatMastermindTacticCore — tactic onFight dispatch (WP-497 / D-243
       },
     });
 
-    defeatMastermindTacticCore(gameState, { currentPlayer: '0' });
+    defeatMastermindTacticCore(gameState, { currentPlayer: '0' }, { random: { Shuffle: <T,>(items: T[]): T[] => [...items].reverse() } });
 
     assert.equal(gameState.handSizeOverrides, undefined,
       'an unimplemented tactic id fires no onFight effect (stays inert)');

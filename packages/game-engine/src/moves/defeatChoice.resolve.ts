@@ -128,7 +128,7 @@ export function dispatchDefeatWithBystanderTarget(
   shuffleContext: ShuffleProvider,
 ): void {
   if (target.kind === 'mastermind') {
-    defeatMastermindTacticCore(G, ctx);
+    defeatMastermindTacticCore(G, ctx, shuffleContext);
     return;
   }
   // why: a villain target always carries its City space index; guard defensively

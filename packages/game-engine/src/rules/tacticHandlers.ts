@@ -26,6 +26,9 @@ import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import { pushLog } from '../log/logPush.js';
 import { gainWound } from '../board/wounds.logic.js';
+import { addResources } from '../economy/economy.logic.js';
+import { drawCardsIntoHand } from '../moves/drawCards.logic.js';
+import type { ShuffleProvider } from '../setup/shuffle.js';
 
 // why: OCTET_HAND_SIZE = 8 is the printed draw count of Doctor Octopus's "Octet
 // of Valence Electrons" tactic (co2e, corrected 9→8 in #1214) — distinct from
@@ -53,6 +56,40 @@ export const SHOCKWAVE_WOUND_COUNT = 2;
 // why: the normalized lowercase team slug stored on `G.cardTraits[extId].team`
 // (WP-179), matching mastermindHandlers.ts verbatim. Only Heroes carry a team.
 const TEAM_X_MEN = 'x-men';
+
+// why: WP-567 / D-24376 - core Red Skull's three non-interactive tactic ext_ids,
+// same grammar as the two constants above. Each names the PRINTED Fight text the
+// resolver below implements, read from data/cards/core.json rather than the
+// keyword blurb (which is on the known-divergent list):
+//   Negablast Grenades  "Fight: You get +3[icon:attack]."
+//   Endless Resources   "Fight: You get +4[icon:recruit]."
+//   HYDRA Conspiracy    "Fight: Draw two cards. Then draw another card for each
+//                        HYDRA Villain in your Victory Pile."
+const RED_SKULL_NEGABLAST_GRENADES_TACTIC_ID: CardExtId =
+  'core-mastermind-red-skull-negablast-grenades';
+const RED_SKULL_ENDLESS_RESOURCES_TACTIC_ID: CardExtId =
+  'core-mastermind-red-skull-endless-resources';
+const RED_SKULL_HYDRA_CONSPIRACY_TACTIC_ID: CardExtId =
+  'core-mastermind-red-skull-hydra-conspiracy';
+
+// why: WP-567 - Red Skull's FOURTH tactic, "Ruthless Dictator", is deliberately
+// NOT dispatched. Its printed text ("Look at the top three cards of your deck.
+// KO one, discard one and put one back on top") is INTERACTIVE: it parks a
+// pending choice, and a parked choice shipped without its UIState projection and
+// prompt HARD-FREEZES the human player. It ships in its own packet together with
+// the projection, the prompt and the bot legalMoves enumeration mirror. Three of
+// four is intentional - do not "complete" this switch.
+
+// why: the printed magnitudes, named rather than inlined so the dispatch reads as
+// the card text and a future audit can grep the numbers.
+export const NEGABLAST_GRENADES_ATTACK = 3;
+export const ENDLESS_RESOURCES_RECRUIT = 4;
+export const HYDRA_CONSPIRACY_BASE_DRAW = 2;
+
+// why: Red Skull "Always Leads: HYDRA", so HYDRA Conspiracy's per-villain bonus
+// counts the hydra villain group. Normalized lowercase-kebab, matching the group
+// segment inside a villain ext_id (`${setAbbr}-villain-${group}-${cardSlug}`).
+const HYDRA_VILLAIN_GROUP = 'hydra';
 
 /**
  * Resolves Doctor Octopus's "Octet of Valence Electrons" tactic Fight effect:
@@ -193,14 +230,134 @@ export function resolveCrushingShockwave(
  * @param ctx - The bare boardgame.io ctx (only `currentPlayer` is read), typed
  *   `unknown` to avoid a framework import.
  * @param defeatedTacticId - The ext_id of the tactic just defeated.
+ * @param shuffleContext - Carries `random.Shuffle` for any resolver that draws
+ *   (HYDRA Conspiracy). The bare `ctx` has no `random` (the D-24051 hazard the
+ *   dodgeCard comment records), so the caller passes its full move context.
  */
+/**
+ * Counts villains of one group in a player's Victory Pile.
+ *
+ * Matches on the anchored ext_id prefix `${setAbbr}-villain-${group}-`, the same
+ * convention `victoryPileHasOtherGroupVillain` uses for Viper's
+ * gain-wound-unless-victory-villain-group predicate (D-24299 Path B) - derived
+ * from the id grammar rather than a villain-group `G` map, because a new hashed
+ * setup field would re-pin every committed fixture. The anchored full prefix
+ * avoids false-matching villain-deck bystanders (`bystander-villain-deck-NN`).
+ *
+ * @param victory - The player's victory pile (read-only).
+ * @param groupPrefix - The anchored `${setAbbr}-villain-${group}-` prefix.
+ * @returns How many victory-pile cards belong to that villain group.
+ */
+function countVictoryPileGroupVillains(
+  victory: readonly CardExtId[],
+  groupPrefix: string,
+): number {
+  // why: explicit loop, not .reduce() - effect application counts as rule work
+  // (.claude/rules/code-style.md Patterns to Avoid).
+  let total = 0;
+  for (const victoryId of victory) {
+    if (victoryId.startsWith(groupPrefix)) {
+      total = total + 1;
+    }
+  }
+  return total;
+}
+
+/**
+ * Resolves Red Skull's "Negablast Grenades": the defeating player gets +3 Attack.
+ *
+ * @param G - The game state, mutated in place.
+ * @param currentPlayer - The defeating player id.
+ */
+export function resolveNegablastGrenades(
+  G: LegendaryGameState,
+  currentPlayer: string,
+): void {
+  G.turnEconomy = addResources(G.turnEconomy, NEGABLAST_GRENADES_ATTACK, 0);
+  // why: WP-567 / D-24376 section 1 - a resolver that mutates SILENTLY is the
+  // other half of this packet's defect: before it, defeating a Red Skull tactic
+  // changed the economy nowhere the player could see. `applied` is the
+  // LOG_OUTCOMES colour for a realized effect (WP-434).
+  pushLog(G,
+    `Fight effect: Player ${currentPlayer} gained +${NEGABLAST_GRENADES_ATTACK} attack (Negablast Grenades).`,
+    'applied',
+  );
+}
+
+/**
+ * Resolves Red Skull's "Endless Resources": the defeating player gets +4 Recruit.
+ *
+ * @param G - The game state, mutated in place.
+ * @param currentPlayer - The defeating player id.
+ */
+export function resolveEndlessResources(
+  G: LegendaryGameState,
+  currentPlayer: string,
+): void {
+  G.turnEconomy = addResources(G.turnEconomy, 0, ENDLESS_RESOURCES_RECRUIT);
+  pushLog(G,
+    `Fight effect: Player ${currentPlayer} gained +${ENDLESS_RESOURCES_RECRUIT} recruit (Endless Resources).`,
+    'applied',
+  );
+}
+
+/**
+ * Resolves Red Skull's "HYDRA Conspiracy": draw two cards, then one more for each
+ * HYDRA Villain in the defeating player's Victory Pile.
+ *
+ * @param G - The game state, mutated in place.
+ * @param currentPlayer - The defeating player id.
+ * @param defeatedTacticId - The tactic's ext_id, used to derive the set prefix.
+ * @param shuffleContext - Carries `random.Shuffle` for the empty-deck reshuffle.
+ */
+export function resolveHydraConspiracy(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  defeatedTacticId: CardExtId,
+  shuffleContext: ShuffleProvider,
+): void {
+  const playerZones = G.playerZones[currentPlayer];
+  if (!playerZones) {
+    return;
+  }
+
+  // why: the group prefix is derived from the TACTIC's own ext_id so the set
+  // segment travels with the card rather than being hardcoded - a reprint of Red
+  // Skull in another set resolves against that set's HYDRA villains.
+  // `-mastermind-` is the unambiguous infix (setAbbr contains no hyphen).
+  const mastermindInfix = '-mastermind-';
+  const infixIndex = defeatedTacticId.indexOf(mastermindInfix);
+  const setAbbr = infixIndex < 0 ? '' : defeatedTacticId.slice(0, infixIndex);
+  const groupPrefix = `${setAbbr}-villain-${HYDRA_VILLAIN_GROUP}-`;
+
+  // why: the count is scoped to the DEFEATING player's victory pile only - the
+  // printed text reads "in your Victory Pile". Counting every player's would
+  // inflate the draw at 2+ seats, which a solo-only test would never surface.
+  const hydraVillains = countVictoryPileGroupVillains(playerZones.victory, groupPrefix);
+  const cardsToDraw = HYDRA_CONSPIRACY_BASE_DRAW + hydraVillains;
+  const handBefore = playerZones.hand.length;
+
+  drawCardsIntoHand(playerZones, cardsToDraw, shuffleContext);
+
+  // why: report what was actually DRAWN, not what was requested -
+  // drawCardsIntoHand stops early when deck AND discard are both empty, and a log
+  // line claiming an undelivered draw is the misattribution class this arc exists
+  // to remove.
+  const drawn = playerZones.hand.length - handBefore;
+  pushLog(G,
+    `Fight effect: Player ${currentPlayer} drew ${drawn} card(s) - ${HYDRA_CONSPIRACY_BASE_DRAW} plus ${hydraVillains} HYDRA Villain(s) in their Victory Pile (HYDRA Conspiracy).`,
+    'applied',
+  );
+}
+
 export function dispatchTacticOnFight(
   G: LegendaryGameState,
   ctx: unknown,
   defeatedTacticId: CardExtId,
+  shuffleContext: ShuffleProvider,
 ): void {
   // why: narrow the unknown ctx to the one field this dispatch reads (the
-  // defeating player), mirroring defeatMastermindTacticCore — no framework import.
+  // defeating player), mirroring defeatMastermindTacticCore - no framework import.
   const currentPlayer = (ctx as { currentPlayer: string }).currentPlayer;
 
   // why: per-tactic resolver dispatch keyed by ext_id (mirrors
@@ -212,6 +369,18 @@ export function dispatchTacticOnFight(
   }
   if (defeatedTacticId === MAGNETO_CRUSHING_SHOCKWAVE_TACTIC_ID) {
     resolveCrushingShockwave(G, currentPlayer);
+    return;
+  }
+  if (defeatedTacticId === RED_SKULL_NEGABLAST_GRENADES_TACTIC_ID) {
+    resolveNegablastGrenades(G, currentPlayer);
+    return;
+  }
+  if (defeatedTacticId === RED_SKULL_ENDLESS_RESOURCES_TACTIC_ID) {
+    resolveEndlessResources(G, currentPlayer);
+    return;
+  }
+  if (defeatedTacticId === RED_SKULL_HYDRA_CONSPIRACY_TACTIC_ID) {
+    resolveHydraConspiracy(G, currentPlayer, defeatedTacticId, shuffleContext);
     return;
   }
 }
