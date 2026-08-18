@@ -91,6 +91,23 @@
 
 ## Completion
 
-- [ ] Two-commit topology: `EC-610:` implementation, `SPEC:` governance close.
-- [ ] D-24384 landed **Active** in `DECISIONS.md`.
-- [ ] `WORK_INDEX.md` `[x]`; `EC_INDEX.md` `Done`; mindmap `✅`; counts 0.
+- [x] Two-commit topology: `EC-610:` implementation, `SPEC:` governance close.
+- [x] D-24384 landed **Active** in `DECISIONS.md`.
+- [x] `WORK_INDEX.md` `[x]`; `EC_INDEX.md` `Done`; mindmap `✅`; counts 0.
+
+## Execution Notes (2026-08-18)
+
+- Target file set shipped exactly as scoped (7 files) — no allowlist expansion.
+  Unlike WP-574, no complete-game fixture was touched: this WP adds no game-log
+  line, so the fixture `messages` oracle is unaffected.
+- The drift pin was added as a **runtime** assertion on a built projection (inject
+  `G.diagnostics.traces`, build UIState, assert the 9-key record shape) — the
+  load-bearing form per D-24372, since an optional add satisfies any `satisfies`
+  check by definition (WP-562 lesson). A compile-time `Pick<UIState>` pin rides
+  alongside for the name/type.
+- AC-6 inertness grep: the only readers of `G.diagnostics.traces` are the recorder
+  (`effectTrace.record.ts`), the hash-EXCLUSION (`replay.hash.ts`), and the new
+  read-only `buildUIState` projection. No move/rule/endIf/bot/scoring path reads it.
+- Both hash oracles byte-unchanged (`PRE_WP080_HASH=ec64506a`; sentinel
+  `finalStateHash` green in-suite). Engine 2781→2789 (+8), arena-client 1355→1358
+  (+3), 0 fail; `pnpm -r build` 0; `pnpm -r --no-bail test` no new failures.

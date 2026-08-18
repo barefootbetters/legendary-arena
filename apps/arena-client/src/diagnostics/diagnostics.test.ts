@@ -231,6 +231,63 @@ describe('diagnostics — pure redaction + report builders', () => {
     assert.deepEqual(roundTripped.uiStateSnapshot.hollowEffects, hollowEffects);
   });
 
+  test('should_surface_effectTraces_as_a_top_level_report_field_when_the_snapshot_carries_them', () => {
+    // why: WP-575 / D-24384 — the engine projects G.diagnostics.traces onto
+    // UIState.effectTraces; the report builder lifts them from the opaque snapshot
+    // to a top-level report field (structural read, no engine import) so a "froze
+    // after I played X" export names what each played card dispatched. AC-4.
+    const effectTraces = [
+      {
+        cardId: 'core/thor/surge-of-power#1',
+        scope: 'hero',
+        timing: 'onPlay',
+        effect: 'conditional-attack',
+        handler: 'interpretHeroPrimitiveEffect',
+        status: 'fired',
+        fireSite: 'hero-primitive',
+        params: { threshold: 8, grant: 3 },
+        turn: 10,
+      },
+      {
+        cardId: 'core-villain-masters-of-evil-ultron-00',
+        scope: 'villain',
+        timing: 'onEscape',
+        effect: 'capture-bystander',
+        handler: '',
+        status: 'no-handler',
+        fireSite: 'villain-executor',
+        params: {},
+        turn: 16,
+      },
+    ];
+    const snapshot = { currentStage: 'main', effectTraces };
+    const report = buildDiagnosticReport(
+      [],
+      sampleContext({ uiStateSnapshot: snapshot }),
+    );
+    assert.deepEqual(report.effectTraces, effectTraces);
+    const roundTripped = JSON.parse(serializeDiagnosticReport(report));
+    assert.deepEqual(roundTripped.effectTraces, effectTraces);
+  });
+
+  test('should_default_effectTraces_to_an_empty_array_when_snapshot_is_null', () => {
+    // why: the report always carries a defined array — never undefined — so a
+    // consumer never has to null-check. No match active → empty.
+    const report = buildDiagnosticReport([], sampleContext({ uiStateSnapshot: null }));
+    assert.deepEqual(report.effectTraces, []);
+  });
+
+  test('should_default_effectTraces_to_an_empty_array_when_snapshot_carries_no_traces', () => {
+    // why: a clean match's snapshot omits the trace channel (omit-when-absent); the
+    // report still carries a defined empty array, not undefined.
+    const snapshot = { currentStage: 'main', zones: { hq: 5 } };
+    const report = buildDiagnosticReport(
+      [],
+      sampleContext({ uiStateSnapshot: snapshot }),
+    );
+    assert.deepEqual(report.effectTraces, []);
+  });
+
   test('should_serialize_uiStateSnapshot_null_when_no_match_active', () => {
     const report = buildDiagnosticReport(
       [],

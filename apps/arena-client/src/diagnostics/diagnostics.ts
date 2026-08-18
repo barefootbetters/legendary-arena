@@ -144,6 +144,18 @@ export interface DiagnosticReport {
    * snapshot); never throws.
    */
   effectProvenance: EffectProvenance;
+  // why: WP-575 / D-24384 — the engine's per-dispatch effect traces
+  // (G.diagnostics.traces, projected onto UIState.effectTraces by WP-488/WP-575).
+  // Extracted STRUCTURALLY from the opaque `uiStateSnapshot` this report already
+  // carries — NOT via an engine import (EC-260 boundary; the arena-client imports
+  // nothing from the engine). Typed `unknown[]` and carried through opaque like
+  // `uiStateSnapshot` itself: the builder serializes the records for the export, it
+  // never inspects their fields. Always an ARRAY (empty when no snapshot or no
+  // traces), never undefined — a report always has an answer for "what did my cards
+  // dispatch?" This is the channel the console buffer never was: `entryCount: 0` on
+  // a clean match is CORRECT (its call sites are failure paths); the traces are where
+  // a normal match's behavioural record actually lives.
+  effectTraces: unknown[];
   entries: DiagnosticEntry[];
 }
 
@@ -525,6 +537,31 @@ export function buildTransportDiagnostics(
   };
 }
 
+/**
+ * Extracts the engine's per-dispatch effect traces from the opaque
+ * `uiStateSnapshot` (WP-575). Read STRUCTURALLY with runtime guards — no engine
+ * import, no type assertion into the engine `UIState`/`EffectTrace` (EC-260
+ * boundary). The projected field is `UIState.effectTraces` (WP-488 / D-24384);
+ * when the snapshot is null, not an object, or carries no `effectTraces` array,
+ * the result is an empty array so the report always carries a defined array.
+ *
+ * @param uiStateSnapshot The opaque audience-filtered snapshot the caller supplied.
+ * @returns The effect-trace records as an array, empty when none are present.
+ */
+function extractEffectTraces(uiStateSnapshot: unknown): unknown[] {
+  if (uiStateSnapshot === null || typeof uiStateSnapshot !== 'object') {
+    return [];
+  }
+  const candidate = (uiStateSnapshot as { effectTraces?: unknown }).effectTraces;
+  if (!Array.isArray(candidate)) {
+    return [];
+  }
+  // why: return a shallow copy so the report does not alias the snapshot's own
+  // array; the records themselves are carried through opaque (serialized, never
+  // inspected here), matching the module's uiStateSnapshot pass-through posture.
+  return candidate.slice();
+}
+
 export function buildDiagnosticReport(
   entries: DiagnosticEntry[],
   context: DiagnosticContext,
@@ -554,6 +591,11 @@ export function buildDiagnosticReport(
     // resolver is passed: the arena-client has no client-side card-text source, so
     // abilityText degrades to null (fail-soft) per D-24100.
     effectProvenance: buildEffectProvenance(context.uiStateSnapshot),
+    // why: WP-575 — surface the engine's per-dispatch effect traces from the same
+    // snapshot the report already carries (no new context field, so the impure
+    // exporter is unchanged). Structural read via extractEffectTraces — no engine
+    // import (EC-260). Always an array so the report never carries `undefined`.
+    effectTraces: extractEffectTraces(context.uiStateSnapshot),
     entries,
   };
 }

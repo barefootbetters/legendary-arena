@@ -90,7 +90,7 @@ import { getEligibleGiveHqHeroCards } from '../moves/giveHqHeroChoice.resolve.js
 import { getEligibleCopyPowersCards } from '../moves/copyPowersChoice.resolve.js';
 // why: WP-258 — the projected hollow-effect record type is the engine's
 // canonical HollowEffectRecord (WP-257), reused directly, not a parallel UI type.
-import type { HollowEffectRecord } from '../diagnostics/hollowEffect.types.js';
+import type { HollowEffectRecord, EffectTrace } from '../diagnostics/hollowEffect.types.js';
 import { getAvailableAttack, getAvailableRecruit } from '../economy/economy.logic.js';
 import { resolveFightCost } from '../economy/economy.resolve.js';
 import { evaluateEndgame } from '../endgame/endgame.evaluate.js';
@@ -1419,6 +1419,43 @@ export function buildUIState(
     hollowEffects = projectedHollowEffects;
   }
 
+  // --- 13e. Project per-dispatch effect traces (read-only) ---
+  // why: WP-575 / D-24384 — surface the WP-488 runtime channel G.diagnostics.traces
+  // onto UIState, following the section-13d hollowEffects pattern EXACTLY. Read-only
+  // over G (buildUIState NEVER mutates G); per-record fresh objects — and a fresh
+  // `params` object too, since `params` is a nested map — so the projection holds no
+  // reference into G.diagnostics (aliasing defense, WP-111 D-11105). The channel is
+  // optional AND lazily seeded (recordHollowEffect inits G.diagnostics without
+  // `traces`), so BOTH the channel and its `traces` list may be absent; either way
+  // the field is OMITTED (no empty-array injection that would dirty optional-field
+  // fixtures — the omit-when-absent posture). The traces are public card/mechanic
+  // dispatch data, not hidden info, so the audience filter passes them through
+  // value-unchanged (D-12803). Traces stay INERT (D-24294) — this is read-only.
+  let effectTraces: EffectTrace[] | undefined;
+  if (
+    gameState.diagnostics !== undefined &&
+    gameState.diagnostics.traces !== undefined &&
+    gameState.diagnostics.traces.length > 0
+  ) {
+    const projectedEffectTraces: EffectTrace[] = [];
+    for (const trace of gameState.diagnostics.traces) {
+      projectedEffectTraces.push({
+        cardId: trace.cardId,
+        scope: trace.scope,
+        timing: trace.timing,
+        effect: trace.effect,
+        handler: trace.handler,
+        status: trace.status,
+        fireSite: trace.fireSite,
+        // why: `params` is a nested scalar map — copy it into a fresh object so
+        // the projection never aliases into G.diagnostics.traces[*].params.
+        params: { ...trace.params },
+        turn: trace.turn,
+      });
+    }
+    effectTraces = projectedEffectTraces;
+  }
+
   // --- 14. Project game over ---
   // why: endgame state derived from G counters via evaluateEndgame
   // (pure); scores reuse the finalScores already computed for victoryVP
@@ -1542,5 +1579,9 @@ export function buildUIState(
     // (no `hollowEffects: undefined` literal under exactOptionalPropertyTypes,
     // and no empty-array injection that would dirty optional-field fixtures).
     ...(hollowEffects !== undefined ? { hollowEffects } : {}),
+    // why: WP-575 — same conditional spread as hollowEffects so an absent /
+    // empty trace channel omits the field (no `effectTraces: undefined` literal
+    // under exactOptionalPropertyTypes, no empty-array injection).
+    ...(effectTraces !== undefined ? { effectTraces } : {}),
   };
 }

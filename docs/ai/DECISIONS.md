@@ -37653,4 +37653,10 @@ Locked:
 6. **The existing console buffer, `effectProvenance`, `DIAGNOSTIC_BUFFER_CAP`, and
    `DiagnosticEntry` are byte-unchanged.**
 
-**Drafted 2026-08-18; not yet landed. Flips to Active at WP-575 execution (EC-610).**
+**Active 2026-08-18 (WP-575 / EC-610).** Shipped exactly as locked: `effectTraces?:
+EffectTrace[]` on `UIState`, projected in `buildUIState` (per-record fresh copy incl.
+a fresh nested `params` object) and passed through `filterUIStateForAudience` for every
+audience; `diagnostics.ts` lifts it structurally from `uiStateSnapshot` (no engine
+import). A runtime drift pin on the built projection guards the 9-field shape. Inertness
+grep-confirmed (only new reader is the read-only projection). Both hash oracles
+byte-unchanged; engine 2781→2789, arena-client 1355→1358, 0 fail.

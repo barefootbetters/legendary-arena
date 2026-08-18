@@ -45,6 +45,7 @@ import type {
   UIEligibleKoHeroCard,
 } from './uiState.types.js';
 import type { NotableGameEvent } from '../events/notableEvents.types.js';
+import type { EffectTrace } from '../diagnostics/hollowEffect.types.js';
 import { buildUIState } from './uiState.build.js';
 import { buildInitialGameState } from '../setup/buildInitialGameState.js';
 import { makeMockCtx } from '../test/mockCtx.js';
@@ -1033,6 +1034,109 @@ describe('UIState type drift (WP-410 / D-24222) — matchCardImageUrls', () => {
       urls.every((imageUrl) => imageUrl !== ''),
       'no empty-string URLs',
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-575 / D-24384 — effectTraces projection drift pin
+// ---------------------------------------------------------------------------
+
+describe('UIState type drift (WP-575 / D-24384) — effectTraces', () => {
+  it('effectTraces is pinned as an optional EffectTrace[] via Pick<UIState>', () => {
+    // why: compile-time name+type pin (a rename trips this satisfies check under
+    // typecheck:tests). Paired below with a RUNTIME keyset assertion on a BUILT
+    // projection — the load-bearing pin, because typecheck:tests is not yet a
+    // required CI check (D-24372) AND because an OPTIONAL field addition satisfies
+    // any `satisfies` check by definition, so a type-level pin alone can never
+    // catch a dropped optional field (the WP-562 lesson).
+    const sample: EffectTrace[] = [
+      {
+        cardId: 'core/thor/surge-of-power#1',
+        scope: 'hero',
+        timing: 'onPlay',
+        effect: 'conditional-attack',
+        handler: 'interpretHeroPrimitiveEffect',
+        status: 'fired',
+        fireSite: 'hero-primitive',
+        params: { threshold: 8 },
+        turn: 10,
+      },
+    ];
+    const fixture = { effectTraces: sample } satisfies Pick<UIState, 'effectTraces'>;
+    assert.equal(fixture.effectTraces.length, 1);
+  });
+
+  it('buildUIState projects G.diagnostics.traces with the exact 9-field record shape', () => {
+    // why: RUNTIME pin on a built projection — this is what actually catches a
+    // dropped or renamed field (an optional add passes the existing top-level
+    // keyset checks silently, the WP-562 lesson). Inject a traces channel, build
+    // the UIState, and assert the projected record carries EXACTLY the nine
+    // EffectTrace keys — so widening/renaming the field set trips here.
+    const config: MatchSetupConfig = {
+      schemeId: 'test-scheme-001',
+      mastermindId: 'test-mastermind-001',
+      villainGroupIds: ['test-villain-group-001'],
+      henchmanGroupIds: ['test-henchman-group-001'],
+      heroDeckIds: ['test-hero-deck-001', 'test-hero-deck-002'],
+      bystandersCount: 10,
+      woundsCount: 15,
+      officersCount: 20,
+      sidekicksCount: 5,
+    };
+    const registry: CardRegistryReader = { ...makeCardRegistryReader(),
+      listCards: () => [],
+      listSets: () => [],
+      getSet: () => undefined,
+    };
+    const gameState = buildInitialGameState(config, registry, makeMockCtx());
+    // why: seed the runtime-only trace channel the same shape recordEffectTrace
+    // leaves it — hollowEffects may be empty while traces carries the records.
+    gameState.diagnostics = {
+      hollowEffects: [],
+      hollowEffectsDropped: 0,
+      traces: [
+        {
+          cardId: 'core/thor/surge-of-power#1',
+          scope: 'hero',
+          timing: 'onPlay',
+          effect: 'conditional-attack',
+          handler: 'interpretHeroPrimitiveEffect',
+          status: 'fired',
+          fireSite: 'hero-primitive',
+          params: { threshold: 8, grant: 3 },
+          turn: 10,
+        },
+      ],
+      tracesDropped: 0,
+    };
+    const ctx = { phase: 'play' as string | null, turn: 1, currentPlayer: '0' };
+    const ui = buildUIState(gameState, ctx);
+
+    assert.ok(Array.isArray(ui.effectTraces), 'effectTraces present as an array');
+    assert.equal(ui.effectTraces!.length, 1, 'exactly the one seeded trace projected');
+    assert.deepStrictEqual(
+      Object.keys(ui.effectTraces![0]!).sort(),
+      [
+        'cardId',
+        'effect',
+        'fireSite',
+        'handler',
+        'params',
+        'scope',
+        'status',
+        'timing',
+        'turn',
+      ],
+      'projected EffectTrace record must carry exactly the nine locked fields',
+    );
+  });
+
+  it('buildUIState omits effectTraces when the trace channel is absent', () => {
+    // why: omit-when-absent posture — no empty-array injection when there is no
+    // trace channel (existing optional-field fixtures need no backfill).
+    const ui = buildEmptyMatchUIState();
+    assert.equal(ui.effectTraces, undefined, 'absent channel omits the field entirely');
+    assert.equal('effectTraces' in ui, false);
   });
 });
 

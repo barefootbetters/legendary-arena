@@ -25,7 +25,7 @@ import type { CardRegistryReader } from '../matchSetup.validate.js';
 import type { CardExtId, LegendaryGameState } from '../types.js';
 import type { UIState } from './uiState.types.js';
 import type { UIAudience } from './uiAudience.types.js';
-import type { HollowEffectRecord } from '../diagnostics/hollowEffect.types.js';
+import type { HollowEffectRecord, EffectTrace } from '../diagnostics/hollowEffect.types.js';
 import { makeCardRegistryReader } from '../test/fixtureBuilders.js';
 
 /** Audience constants for test readability. */
@@ -1161,6 +1161,150 @@ describe('filterUIStateForAudience — hollowEffects public pass-through (D-1280
       const result = filterUIStateForAudience(uiState, audience);
       assert.equal(result.hollowEffects, undefined);
       assert.equal('hollowEffects' in result, false);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-575 / EC-610 — effectTraces public value-preserving pass-through (D-12803)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds two sample EffectTrace values for the pass-through tests. `params` is a
+ * nested map on purpose so the per-record copy's fresh-`params` clone is exercised.
+ */
+function sampleEffectTraces(): EffectTrace[] {
+  return [
+    {
+      cardId: 'core/thor/surge-of-power#1',
+      scope: 'hero',
+      timing: 'onPlay',
+      effect: 'conditional-attack',
+      handler: 'interpretHeroPrimitiveEffect',
+      status: 'fired',
+      fireSite: 'hero-primitive',
+      params: { threshold: 8, grant: 3 },
+      turn: 10,
+    },
+    {
+      cardId: 'core-villain-masters-of-evil-ultron-00',
+      scope: 'villain',
+      timing: 'onEscape',
+      effect: 'capture-bystander',
+      handler: '',
+      status: 'no-handler',
+      fireSite: 'villain-executor',
+      params: {},
+      turn: 16,
+    },
+  ];
+}
+
+/**
+ * Builds a UIState carrying a populated G.diagnostics.traces channel.
+ */
+function createEffectTracesUIState(): UIState {
+  const config = createTestConfig();
+  const registry = createMockRegistry();
+  const setupContext = makeMockCtx();
+  const gameState = buildInitialGameState(config, registry, setupContext);
+  // why: recordHollowEffect lazily seeds G.diagnostics WITHOUT `traces`, so the
+  // channel here mirrors the shape after a first recordEffectTrace call — the
+  // hollowEffects list may be empty while traces carries the per-dispatch records.
+  gameState.diagnostics = {
+    hollowEffects: [],
+    hollowEffectsDropped: 0,
+    traces: sampleEffectTraces(),
+    tracesDropped: 0,
+  };
+  return buildUIState(gameState, mockCtx);
+}
+
+describe('filterUIStateForAudience — effectTraces public pass-through (WP-575 / D-12803)', () => {
+  it('own-player filtered effectTraces deep-equals the source records', () => {
+    // why: D-12803 — effectTraces is public card/mechanic dispatch data; the filter
+    // must pass it through value-unchanged for the own-player audience.
+    const uiState = createEffectTracesUIState();
+    const source = uiState.effectTraces;
+
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+
+    assert.ok(result.effectTraces !== undefined, 'own-player must see effectTraces');
+    assert.deepStrictEqual(
+      result.effectTraces,
+      source,
+      'own-player effectTraces must deep-equal the source records',
+    );
+  });
+
+  it('other-player filtered effectTraces deep-equals the SAME source records', () => {
+    // why: D-12803 — the filter redacts NOTHING for effectTraces; an opponent sees
+    // the identical record values (no redact / reorder / rewrite / drop).
+    const uiState = createEffectTracesUIState();
+    const source = uiState.effectTraces;
+
+    const result = filterUIStateForAudience(uiState, PLAYER_1);
+
+    assert.ok(result.effectTraces !== undefined, 'other-player must see effectTraces');
+    assert.deepStrictEqual(
+      result.effectTraces,
+      source,
+      'other-player effectTraces must deep-equal the same source records',
+    );
+  });
+
+  it('spectator filtered effectTraces deep-equals the SAME source records', () => {
+    // why: D-12803 — spectators are a non-owner public audience; same value-
+    // preserving pass-through as the other-player case.
+    const uiState = createEffectTracesUIState();
+    const source = uiState.effectTraces;
+
+    const result = filterUIStateForAudience(uiState, SPECTATOR);
+
+    assert.ok(result.effectTraces !== undefined, 'spectator must see effectTraces');
+    assert.deepStrictEqual(result.effectTraces, source);
+  });
+
+  it('passes through value-equal but NOT array-identical, and the nested params is a fresh object', () => {
+    // why: aliasing defense (D-11105) — value equality is required, array identity
+    // is NOT; and because `params` is a nested map, mutating a filtered record's
+    // params must not touch the source record's params.
+    const uiState = createEffectTracesUIState();
+
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+
+    assert.notStrictEqual(
+      result.effectTraces,
+      uiState.effectTraces,
+      'filtered effectTraces must be a fresh array, not the same reference',
+    );
+    assert.notStrictEqual(
+      result.effectTraces![0]!.params,
+      uiState.effectTraces![0]!.params,
+      'each record must carry a fresh params object, not an alias into the source',
+    );
+    result.effectTraces![0]!.params.threshold = 999;
+    assert.notEqual(
+      uiState.effectTraces![0]!.params.threshold,
+      999,
+      'source effectTraces params untouched by mutating the filtered copy',
+    );
+  });
+
+  it('omits effectTraces for all audiences when the source has none', () => {
+    // why: optional field — an absent channel omits it for every audience (no
+    // empty-array injection).
+    const config = createTestConfig();
+    const registry = createMockRegistry();
+    const setupContext = makeMockCtx();
+    const gameState = buildInitialGameState(config, registry, setupContext);
+    const uiState = buildUIState(gameState, mockCtx);
+    assert.equal(uiState.effectTraces, undefined);
+
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      const result = filterUIStateForAudience(uiState, audience);
+      assert.equal(result.effectTraces, undefined);
+      assert.equal('effectTraces' in result, false);
     }
   });
 });
