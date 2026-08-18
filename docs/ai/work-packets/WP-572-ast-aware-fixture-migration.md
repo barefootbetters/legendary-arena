@@ -138,11 +138,11 @@ diagnostic is a defect.
 
 ## Definition of Done
 
-- [ ] AC-1..AC-8 demonstrated with observed output.
-- [ ] D-24381 landed **Active**.
-- [ ] `WORK_INDEX.md` `[x]` + refreshed backlog counts.
-- [ ] `EC_INDEX.md` `Done`; mindmap `✅`; `roadmap:counts:check` 0.
-- [ ] `STATUS.md` — before/after counts, **the AC-1 mutation result** as the
+- [x] AC-1..AC-8 demonstrated with observed output.
+- [x] D-24381 landed **Active**.
+- [x] `WORK_INDEX.md` `[x]` + refreshed backlog counts.
+- [x] `EC_INDEX.md` `Done`; mindmap `✅`; `roadmap:counts:check` 0.
+- [x] `STATUS.md` — before/after counts, **the AC-1 mutation result** as the
       proof the class cannot recur, and the enumerated skip-list.
 
 ## Gate Verdicts (Drafting Session, 2026-08-17)
@@ -188,6 +188,50 @@ explicitly rejects a count as evidence.
 | 21 API catalog | N/A | No endpoint. |
 
 **All 21 sections resolved.**
+
+
+---
+
+## SCOPE AMENDED AT EXECUTION (2026-08-17) — read before the ACs above
+
+**Operator decision: close this packet on AC-1 and spin the UI-projection family
+into its own packet.** **AC-2 as written was NOT met** and is recorded as unmet,
+never quietly relaxed.
+
+**AC-1 — the packet's reason to exist — IS MET, on both required types.** Adding
+a new required field now breaks **exactly one place**:
+
+| Mutation | Breaks |
+|---|---|
+| `PlayerZones` + `quarantine` | `src/setup/playerInit.ts` (production) |
+| `TurnEconomy` + `overkill` | `src/economy/economy.logic.ts` (production) |
+
+**Zero test sites in either case.** WP-571's equivalent mutation broke six. The
+property the builder arc exists for now holds for the six-type family, and it is
+proven by mutation rather than inferred from a falling error count — which
+D-24381 §3 explicitly rejects as evidence.
+
+**AC-2 (class → zero except the skip-list): NOT MET.** 18 errors remain — **16
+UI-projection literals** across five types (`UICityCard` 8,
+`UITurnEconomyState` / `UISchemeState` / `UIMastermindState` / `UICityState` at
+2 each), 1 `SeedParArtifact`, and the 1 intentional skip-list entry. The UI
+family is a **different family** from the six this packet targeted: different
+types, different module, and its own builder set. It is split into its own
+packet rather than absorbed here.
+
+**Delivered and verified:** census reproduced the draft figure exactly (230
+literals / 173 already routed / 1 skip-listed / **56 migrated**); gate
+**134 → 126**; class **23 → 18**; engine suite **2740 / 2740**; `dist`
+**byte-identical** (752 files); **zero** non-test files in the diff; **zero**
+suppressions. The skip-list worked as designed — `ui/uiState.build.test.ts`'s
+deliberately-narrow registry mock stays erroring, because completing it silences
+the reader guard the test exists to prove fires.
+
+**One measurement error, recorded because the shape recurs:** a case-insensitive
+grep for `TurnEconomy` also matched `UITurnEconomyState`, briefly making
+mutation 2 look like it broke two test sites. It had not — those were
+pre-existing UI residuals. Re-measured with an exact type match before anything
+was claimed. **When a type name is a prefix of another, grep exactly.**
 
 ## Notes
 

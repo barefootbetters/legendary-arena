@@ -13,12 +13,12 @@
 
 ## Before Starting
 
-- [ ] Clean tree off `origin/main`; `pnpm install`; `pnpm -r build` exits 0.
-- [ ] Capture engine `dist` hashes and the test baseline.
-- [ ] **Run the census probe FIRST** and record its numbers. Draft-time:
+- [x] Clean tree off `origin/main`; `pnpm install`; `pnpm -r build` exits 0.
+- [x] Capture engine `dist` hashes and the test baseline.
+- [x] **Run the census probe FIRST** and record its numbers. Draft-time:
       **230 literals / 59 files / 173 routed / 57 to route.**
-- [ ] Read WP-571's SCOPE AMENDED section — it explains why this packet exists.
-- [ ] Read D-24378, D-24380 and D-24381.
+- [x] Read WP-571's SCOPE AMENDED section — it explains why this packet exists.
+- [x] Read D-24378, D-24380 and D-24381.
 
 ## Locked Values
 
@@ -70,11 +70,11 @@
 
 ## After Completing
 
-- [ ] `WORK_INDEX.md` `[x]` + refreshed counts (re-derive; they have moved five
+- [x] `WORK_INDEX.md` `[x]` + refreshed counts (re-derive; they have moved five
       times).
-- [ ] `EC_INDEX.md` `Done`; mindmap `✅`; `roadmap:counts:check` 0.
-- [ ] **D-24381** Active.
-- [ ] `STATUS.md` — before/after counts, **the AC-1 mutation result** as the
+- [x] `EC_INDEX.md` `Done`; mindmap `✅`; `roadmap:counts:check` 0.
+- [x] **D-24381** Active.
+- [x] `STATUS.md` — before/after counts, **the AC-1 mutation result** as the
       proof the class cannot recur, and the enumerated skip-list with reasons.
       `User-Visible Surface = none — infrastructure`; D-24026 inverts.
 
