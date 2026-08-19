@@ -7,6 +7,53 @@
 
 ## Current State
 
+### WP-422 — Seed PAR Publication: competitive surface turned ON (EC-457 / D-24242) shipped (2026-08-19)
+
+The whole competitive surface was dark for one reason: the PAR index was never generated
+or delivered, so the server gate fail-closed `par_not_published` and every board stayed
+empty. WP-422 publishes the **content-driven Phase-1 seed PAR** for the active gauntlet
+season (core-2026), turning submissions on.
+
+**Scope (locked at execution).** The competitive scenario set is the gauntlet **season**
+configs (`data/gauntlet-configs.json`), not the full registry cross-product: 4 masterminds
+× 8 schemes × 4 distinct villain-slices = **128 `ScenarioKey`s** (`scheme::mastermind::
+sorted-villains`, the exact key `matchCapture.logic.ts` records), over **19 rated entities**.
+Player count is inferred from villain count (3p/4p collapse to the 3-villain key).
+
+**Ratings — a new registry surface, not the theme schema.** `theme.schema.ts` describes
+theme *bundles*, with no per-entity object, so `difficultyRating` lives on a standalone
+surface: `data/difficulty-ratings/seed-difficulty-v1.json` (the calibration wiki's record
+shape, keyed by set-qualified ext_id), validated by `packages/registry/src/difficultyRatings.schema.ts`
+(zod; the rating MUST equal `clamp(1,10,ceil(sum(subscores)/2))`). This is the D-5508
+reversal, realized standalone. Existing card data untouched (AC-1). Ratings reviewed by the
+operator: masterminds 5–7 (**loki 7**), schemes 3–8 (**legacy-virus 8**), villains 5–6
+(VP-anchored). Henchman groups are not rated — the formula has no henchman term.
+
+**The scale finding.** `docs/12 §Phase 1`'s `PAR_seed = 12000 + M×1200 + …` scalar is a
+difficulty **index** on a different scale from the engine's Raw Score (its own calibration
+example shows a `26800` seed resolving to `−1200`). Publishing `12000+` as the `parValue`
+would make every real `finalScore = raw − PAR` nonsensical. So the seed `parValue =
+computeParScore(baseline)` on the **Raw Score scale** — a documented difficulty→`ParBaseline`
+template (rounds/escapes up, rescues/VP down with difficulty; varies by player count) fed
+through the adopted D-24342 4:3:1 default weights (round 50 / bystander 200 / VP 10; penalties
+400/300/100/25/40). Recorded as a `docs/12 §Phase 1` note + D-24242 §2.
+
+**Delivery + determinism.** `scripts/generate-seed-par.mjs` (Shared Tooling) writes write-once
+`data/par/seed/v1/**` (128 artifacts + index) + `data/scoring-configs/**`, committed (the
+`loadRegistry('data/cards')` local-fs model). Fixed authoring timestamps + sorted canonical
+JSON make re-generation byte-identical; the index's live `generatedAt` is pinned by the
+generator. Seed provenance stamps (`calibrationStatus:'uncalibrated'` + `difficultyRatingVersion`)
+were added to `SeedParArtifact` — artifact-shape only, never in the runtime `ParIndex`, so the
+WP's "no runtime engine/server change" holds.
+
+**Verified.** Registry + engine + full `pnpm -r build` + `pnpm -r --no-bail test` green;
+`pnpm par:seed:test` (determinism byte-identical + `resolveParForScenario`, the gate's own
+resolver, non-null `source:'seed'`) passes; both hash oracles untouched; no
+`data/cards`/metadata/coverage change. docs/12 + ewiki (`scoring.md`, `par-simulation-calibration.md`)
+revised. **D-24026 live-verify operator-pending on deploy:** a completed competitive match
+records a `competitive_scores` row and the relevant board fills (`User-Visible Surface =
+legends.legendary-arena.com + gauntlet boards + submission`). **WP-422 code done; live-verify pending.**
+
 ### WP-576 — Super Hero Civil War 2-Player Hero-Count Requirement (EC-611 / D-24385) shipped (2026-08-18)
 
 Super Hero Civil War now requires **exactly 4** heroes at 2 players end-to-end —

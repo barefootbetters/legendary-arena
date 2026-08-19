@@ -90,6 +90,17 @@ const CURRENT_RAW_SCORE_SEMANTICS_VERSION = 1;
 export interface SeedParArtifact {
   readonly scenarioKey: ScenarioKey;
   readonly source: 'seed';
+  // why: WP-422 / D-24242 — a seed baseline is by definition uncalibrated; the
+  // literal is carried explicitly (mirroring the simulation artifact's
+  // 'calibrated' status) so the seed→simulation supersession is self-describing
+  // in the artifact, not only inferable from `source`.
+  readonly calibrationStatus: 'uncalibrated';
+  // why: WP-422 / D-24242 — the version of the difficulty-ratings input
+  // (`entityDifficultyVersion`, e.g. "seed-difficulty-v1") this seed was
+  // generated from, so a later ratings revision (`seed-difficulty-v2`) that
+  // shifts a PAR is traceable to its rating source. Artifact-level provenance
+  // only — not carried into the ParIndex the runtime gate reads.
+  readonly difficultyRatingVersion: string;
   readonly parBaseline: ParBaseline;
   readonly parValue: number;
   readonly scoring: {
@@ -630,6 +641,8 @@ export async function writeSeedParArtifact(
   const withoutHash: Omit<SeedParArtifact, 'artifactHash'> = {
     scenarioKey: artifact.scenarioKey,
     source: 'seed',
+    calibrationStatus: 'uncalibrated',
+    difficultyRatingVersion: artifact.difficultyRatingVersion,
     parBaseline: artifact.parBaseline,
     parValue: artifact.parValue,
     scoring: artifact.scoring,

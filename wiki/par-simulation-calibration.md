@@ -39,7 +39,8 @@ source:
   - ../docs/ai/work-packets/WP-048-par-scenario-scoring-leaderboards.md
   - ../docs/ai/work-packets/WP-250-hero-effect-coverage-gate.md
   - ../docs/ai/work-packets/WP-257-hollow-effect-detector.md
-last-reviewed: 2026-08-11
+  - ../docs/ai/work-packets/WP-422-seed-par-publication.md
+last-reviewed: 2026-08-19
 ---
 
 # PAR Simulation Calibration
@@ -73,8 +74,20 @@ ships — every scenario needs a **seed PAR**: a content-authored *prior*, not a
 truth. Seed difficulty ratings are the input to that prior. Their whole job is to
 produce a reasonable **uncalibrated** baseline that simulation later **supersedes**
 with the 55th-percentile T2 result. This section defines how those 1–10 ratings are
-assigned. (Implementation: **WP-422 / D-24242**; the scalar formula + weights live in
-[12-SCORING-REFERENCE §Phase 1](../docs/12-SCORING-REFERENCE.md).)
+assigned.
+
+**Shipped (WP-422 / D-24242, Active 2026-08-19).** Seed PAR is published for the
+active gauntlet **season** (`data/gauntlet-configs.json`): every (mastermind,
+scheme) leg × player-count villain-slice — the core-2026 season is **128 scenario
+keys** over 19 rated entities — committed under `data/par/seed/v1/` and read by the
+server gate, which turns competitive submissions on for those scenarios. Ratings
+live on a standalone registry surface, `data/difficulty-ratings/seed-difficulty-v1.json`
+(validated by `packages/registry/src/difficultyRatings.schema.ts`) — **not** the
+theme schema, which has no per-entity object. The stored `parValue` is
+`computeParScore(baseline)` on the **Raw Score scale** (see [§Phase 1 implementation
+note](../docs/12-SCORING-REFERENCE.md)); the `12000 + M×1200 + …` scalar there is a
+difficulty *index*, not the literal PAR. Delivery is committed-to-repo, the same
+local-fs model as `data/cards`.
 
 ### The question a rating answers
 
@@ -178,17 +191,23 @@ seed**).
 {
   "entityDifficultyVersion": "seed-difficulty-v1",
   "masterminds": {
-    "<mastermind extId>": {
-      "difficultyRating": 8,
+    "core/loki": {
+      "difficultyRating": 7,
       "subscores": {
-        "attackThresholdPressure": 3, "masterStrikeSeverity": 4,
+        "attackThresholdPressure": 2, "masterStrikeSeverity": 3,
         "tacticSeverity": 3, "protectionOrAccessRestriction": 3,
-        "scalingOrAlternateLossPressure": 4
+        "scalingOrAlternateLossPressure": 3
       }
     }
   }
 }
 ```
+
+The rating MUST equal its basis: `clamp(1, 10, ceil((2+3+3+3+3) / 2)) = ceil(14/2) = 7`.
+The schema (`difficultyRatings.schema.ts`) rejects any entry whose `difficultyRating`
+disagrees with its sub-score sum — the rating is never a free number beside the basis.
+Keys are set-qualified ext_ids; a `schemes` and `villainGroups` map sit alongside
+`masterminds`. Henchman groups are not rated (the Seed PAR formula has no henchman term).
 
 Community difficulty research (BGG threads, "hardest masterminds/schemes" articles)
 and the v23 rules are used only as **anchor validation** for a first pass — sanity
@@ -250,20 +269,29 @@ rather than a publishable-PAR capability:
    list — reasons 1–3 are no longer "why calibration is not worth running
    yet" but **the sole remaining blocker on the whole competitive surface.**
 
-   Concretely, with PAR unpublished the server logs at startup:
+   **Resolved for the seed tier — WP-422 / D-24242 (2026-08-19).** The Phase-1
+   **seed** PAR index is now generated and committed for the active gauntlet
+   season (`data/par/seed/v1/index.json`, 128 core-2026 scenarios), so the gate
+   finds an index and the server logs `PAR index loaded: N scenarios` instead of
+   the unavailable message below. Competitive submissions for those scenarios now
+   score against a published (uncalibrated) seed, and their boards can fill. What
+   remains blocked is the **simulation-calibrated** tier: reasons 1–3 still gate
+   publishing a *simulation* PAR (a trustworthy `T2` distribution needs a
+   rules-faithful engine), so today's published values are seeds, explicitly
+   `calibrationStatus: "uncalibrated"`, that simulation supersedes later.
+
+   Before WP-422, with no index at all, the server logged at startup:
 
    ```
    [server] PAR index unavailable at both data/par/sim/v1/index.json
      and data/par/seed/v1/index.json; competitive submissions disabled.
    ```
 
-   and every submission fail-closes to `par_not_published`
-   (`competition.logic.ts`) before any replay reduction. Downstream,
-   `legendary.competitive_scores` stays empty, so the Legends board, all
-   **110** gauntlet boards (Open and Fixed-Pool alike), and any editorial
-   built on them cannot fill — regardless of play volume. An empty board is
-   therefore **not** evidence of low traffic; it is the expected state while
-   this gate is closed.
+   and every submission fail-closed to `par_not_published`
+   (`competition.logic.ts`) before any replay reduction — so
+   `legendary.competitive_scores` stayed empty and the Legends board + the
+   **110** gauntlet boards could not fill regardless of play volume. That
+   empty-index state is now lifted for the seeded season scope.
 
 The consequence, by design: a scenario with incomplete ability coverage
 falls back to its Phase 1 content seed, explicitly marked `uncalibrated`

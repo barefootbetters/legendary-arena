@@ -72,6 +72,8 @@
     "effect-index":             "node scripts/build-effect-implementation-index.mjs",
     "effect-index:check":       "node scripts/build-effect-implementation-index.mjs --check",
     "effect-index:test":        "node --import tsx --test scripts/build-effect-implementation-index.test.ts",
+    "par:seed:generate":        "node scripts/generate-seed-par.mjs",
+    "par:seed:test":            "node --import tsx --test scripts/generate-seed-par.test.ts",
     "gauntlet:loadouts":        "node scripts/generate-gauntlet-loadouts.mjs",
     "gauntlet:loadouts:check":  "node scripts/generate-gauntlet-loadouts.mjs --check",
     "gauntlet:configs":         "node scripts/generate-gauntlet-configs.mjs",
@@ -86,6 +88,7 @@
   ],
   "devDependencies": {
     "@legendary-arena/game-engine": "workspace:*",
+    "@legendary-arena/registry": "workspace:*",
     "pagefind": "1.5.2",
     "tsx": "^4.15.7",
     "typescript": "^5.4.5"

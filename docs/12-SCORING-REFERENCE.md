@@ -372,6 +372,25 @@ at launch. Players know PAR before building their hero team — just like golfer
 know course PAR before tee-off. However, seed PAR alone targets ~60-70% accuracy.
 Simulation calibration raises this to 80-90%.
 
+#### Implementation note — the `PAR_seed` scalar is a difficulty INDEX, not the stored `parValue` (WP-422 / D-24242)
+
+The `PAR_seed` scalar above (`12000 + Mastermind×1200 + …`) is a **difficulty
+index** on its own scale — useful for ranking scenarios, but **not** the literal
+`parValue` stored in a seed artifact. The engine's `computeParScore` derives PAR
+from a scenario's four-field `ParBaseline` (rounds / bystanders / VP / escapes) on
+the **Raw Score scale** — the same scale live `finalScore = rawScore − PAR` and
+simulation (Phase 2) use. Those two scales do not coincide: the calibration
+example below shows a `26800` content-scalar seed resolving to a `−1200`
+simulation PAR. Publishing the `12000+` scalar as `parValue` would make every real
+player's `finalScore` nonsensical until simulation replaced it.
+
+So the shipped Seed PAR generator (`scripts/generate-seed-par.mjs`, WP-422) maps a
+scenario's composed difficulty → a documented `ParBaseline` template and sets
+`parValue = computeParScore(baseline)` on the Raw Score scale, using the adopted
+default weights (D-24342: round 50 / bystander-reward 200 / VP 10; penalties
+400/300/100/25/40). The `12000+` scalar is retained here only as the difficulty
+index it always was. Full mapping + default-weight rationale: **D-24242**.
+
 ### Phase 2: Simulation Calibration (Pre-Release Accuracy)
 
 Before release of any new content set, the simulation pipeline runs to validate

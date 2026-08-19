@@ -45,8 +45,9 @@ source:
   - ../docs/ai/work-packets/WP-050-par-artifact-storage.md
   - ../docs/ai/work-packets/WP-051-par-publication-server-gate.md
   - ../docs/ai/work-packets/WP-053a-par-artifact-scoring-config.md
+  - ../docs/ai/work-packets/WP-422-seed-par-publication.md
   - ../docs/10-GLOSSARY.md
-last-reviewed: 2026-08-11
+last-reviewed: 2026-08-19
 ---
 
 # Scoring
@@ -73,9 +74,13 @@ metaphor in [VISION §20](../docs/01-VISION.md):
 - **Layer A — PAR (course rating).** Static per-scenario expected
   outcome for a competent team. Encoded as `ParBaseline` (rounds,
   bystanders, victory points, escapes). Never adapts to the team
-  that played. The baseline itself is *derived by simulation* — see
-  [PAR Simulation Calibration](par-simulation-calibration.md) for the
-  Monte-Carlo pipeline that produces it.
+  that played. Day-one it is the **content-driven seed** (WP-422 /
+  D-24242 — a difficulty-mapped `ParBaseline`, `parValue =
+  computeParScore(baseline)`, published per gauntlet season and stamped
+  `calibrationStatus: "uncalibrated"`); simulation later **supersedes**
+  the seed with a Monte-Carlo baseline — see
+  [PAR Simulation Calibration](par-simulation-calibration.md) for both
+  the seed ratings and the pipeline that recalibrates them.
 - **Layer B — Final Score (execution quality).** Computed per
   match: `finalScore = rawScore - parScore`. Lower is better;
   negative is under PAR. Driven by the same formula applied to the
