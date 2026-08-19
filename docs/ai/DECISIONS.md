@@ -37705,5 +37705,7 @@ decision stays Active.
 `resolveEffectiveHeroCount` after the Secret Invasion branch; the engine
 `schemeSetupSizing` comment reconciled (code byte-unchanged). Registry 241/0,
 engine 2789→2791/0, preview 5/5, full `pnpm -r build` + `--no-bail test` exit 0;
-both hash oracles byte-unchanged. D-24026 live-verify operator-pending
-(`User-Visible Surface = cards.legendary-arena.com`).
+both hash oracles byte-unchanged. **D-24026 live-verify VERIFIED 2026-08-19**
+(`User-Visible Surface = cards.legendary-arena.com`; deployed `gitSha 2ae679e`: the loadout
+builder at 2p with scheme `core/super-hero-civil-war` requires exactly 4 heroes and flags a
+6-hero deck, while the Epic variant `cvwr/epic-super-hero-civil-war` correctly stays at 5).

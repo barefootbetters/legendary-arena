@@ -39,10 +39,15 @@ tests), preview **5/5**; `pnpm -r build` + `--no-bail test` exit 0. The 3 former
 registry-viewer failures (`useLagnFromUrl`/`useLoadoutLagnExport`/`loadoutLagnImport`) **pass
 on a clean build** — they were stale-`dist` false-reds, untouched here.
 
-**AC-6 (D-24026) live-verify: operator-pending.** `User-Visible Surface =
-cards.legendary-arena.com`. After deploy: a 2p Super Hero Civil War loadout with **4** heroes
-should clear the readiness warning and enable both downloads; a 5-hero one should be flagged.
-Record here once confirmed on the deployed builder. **WP-576 code done; live-verify pending.**
+**AC-6 (D-24026) live-verify: VERIFIED (2026-08-19).** On the deployed builder
+(`cards.legendary-arena.com`, `version.json gitSha 2ae679e` — the #1535 tip, which carries
+WP-576 #1534), the Loadout builder at PLAYER COUNT 2 with scheme `core/super-hero-civil-war`
+reads **"For a 2-player match: 2 villain groups, 1 henchmen groups, 4 heroes, 2 villain-deck
+bystanders."** and flags a non-4 deck: **"A 2-player match needs 4 heroes — this loadout has
+6."** — the requirement, readiness warning, and download-gate all resolve to **4** at 2p Civil
+War. Correctly scoped: the same builder with the Epic variant `cvwr/epic-super-hero-civil-war`
+at 2p still reads **needs 5 heroes**, so the override touches only the Core scheme WP-576
+targets. **WP-576 fully done.**
 
 ### WP-575 — Diagnostics Report Carries No Effect Trace (EC-610 / D-24384) shipped (2026-08-18)
 
