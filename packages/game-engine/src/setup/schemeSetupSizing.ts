@@ -66,10 +66,12 @@ export function resolveEffectiveWoundsCount(
  * other scheme and player count uses the requested ids unchanged.
  *
  * This is a POST-VALIDATION override (the second sizing case, a sibling to
- * `resolveEffectiveWoundsCount`): the loadout still provides and validates its normal
- * 5 hero-deck ids (matchSetup.validate requires exactly 5 at 2p), and this rule sizes
- * the BUILT deck below that — the same config-floor / built-pile split as D-24321's
- * wound sizing.
+ * `resolveEffectiveWoundsCount`): validation now requires exactly 4 at 2p (WP-576 /
+ * D-24385 — the requirement-side resolveEffectiveHeroCount override), so the loadout
+ * already supplies 4 ids and this `slice(0, 4)` is a retained defensive no-op on a
+ * 4-id loadout, not the sizing mechanism. (It stayed the sizing mechanism only while
+ * the requirement side still demanded 5; the D-24385 requirement override closed that
+ * gap — displays-5/plays-4 is gone.)
  *
  * @param schemeId - The selected scheme ext_id (`config.schemeId`).
  * @param numPlayers - The match player count (`ctx.numPlayers`).

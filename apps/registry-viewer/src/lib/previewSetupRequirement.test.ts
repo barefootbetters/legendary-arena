@@ -49,9 +49,10 @@ describe("resolveSetupRequirement", () => {
     }
   });
 
-  it("uses the base hero count for a non-Secret-Invasion scheme", () => {
-    // 2-player base is 5 heroes; 5-player base is 6.
-    assert.equal(resolveSetupRequirement(makePreviewDocument("core/super-hero-civil-war", 2))?.row.heroCount, 5);
+  it("requires 4 heroes for Super Hero Civil War at 2 players (D-24385), base otherwise", () => {
+    // Civil War lowers the 2-player requirement to 4 (its "4 Heroes at 2p" clause);
+    // a non-override scheme uses the base table (5-player base is 6).
+    assert.equal(resolveSetupRequirement(makePreviewDocument("core/super-hero-civil-war", 2))?.row.heroCount, 4);
     assert.equal(resolveSetupRequirement(makePreviewDocument("core/midtown-bank-robbery", 5))?.row.heroCount, 6);
   });
 

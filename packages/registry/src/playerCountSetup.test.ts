@@ -19,6 +19,9 @@ import {
 /** The scheme whose printed setup requires 6 heroes (D-24337). */
 const SECRET_INVASION = 'core/secret-invasion-of-the-skrull-shapeshifters';
 
+/** The scheme whose printed setup requires only 4 heroes at 2 players (D-24385). */
+const CIVIL_WAR = 'core/super-hero-civil-war';
+
 describe('PLAYER_COUNT_SETUP table', () => {
   it('locks the exact rules values for player counts 1–5', () => {
     // why: literal drift-lock — the numbers here ARE the rules table. If the
@@ -121,6 +124,32 @@ describe('checkPlayerCountComposition', () => {
     assert.deepEqual(mismatches, []);
   });
 
+  it('requires only 4 heroes for Super Hero Civil War at 2p — a 5-hero loadout is a mismatch', () => {
+    // why: D-24385 — the scheme's "4 Heroes at 2p" clause lowers the base 5 to 4. A
+    // standard 5-hero 2p loadout is correct for every OTHER scheme but wrong here.
+    const mismatchAt5 = checkPlayerCountComposition({
+      playerCount: 2,
+      schemeId: CIVIL_WAR,
+      villainGroupIds: ['a', 'b'],
+      henchmanGroupIds: ['h'],
+      heroDeckIds: ['1', '2', '3', '4', '5'], // requires 4 for this scheme at 2p
+    });
+    const byField = Object.fromEntries(mismatchAt5.map((each) => [each.field, each]));
+    assert.deepEqual(
+      { required: byField.heroDeckIds.required, actual: byField.heroDeckIds.actual },
+      { required: 4, actual: 5 },
+    );
+    // A 4-hero 2p Civil War loadout has no mismatch.
+    const cleanAt4 = checkPlayerCountComposition({
+      playerCount: 2,
+      schemeId: CIVIL_WAR,
+      villainGroupIds: ['a', 'b'],
+      henchmanGroupIds: ['h'],
+      heroDeckIds: ['1', '2', '3', '4'],
+    });
+    assert.deepEqual(cleanAt4, []);
+  });
+
   it('leaves the 5-hero requirement intact for a non-Secret-Invasion scheme (and when no schemeId is given)', () => {
     const withOtherScheme = checkPlayerCountComposition({
       playerCount: 2,
@@ -148,6 +177,17 @@ describe('resolveEffectiveHeroCount', () => {
     assert.equal(resolveEffectiveHeroCount(SECRET_INVASION, 3, 5), 6);
     assert.equal(resolveEffectiveHeroCount(SECRET_INVASION, 4, 5), 6);
     assert.equal(resolveEffectiveHeroCount(SECRET_INVASION, 5, 6), 6);
+  });
+
+  it('returns 4 for Super Hero Civil War at exactly 2 players only (its "4 Heroes at 2p")', () => {
+    // why: D-24385 — the printed "If only 2 players, use only 4 Heroes". A per-count
+    // override: exactly 4 at 2p (base 5 → 4), but the base is unchanged at every other
+    // count (1p 3; 3p/4p 5; 5p 6). Exactly 4, not a range — a 5-hero 2p loadout is invalid.
+    assert.equal(resolveEffectiveHeroCount(CIVIL_WAR, 2, 5), 4);
+    assert.equal(resolveEffectiveHeroCount(CIVIL_WAR, 1, 3), 3);
+    assert.equal(resolveEffectiveHeroCount(CIVIL_WAR, 3, 5), 5);
+    assert.equal(resolveEffectiveHeroCount(CIVIL_WAR, 4, 5), 5);
+    assert.equal(resolveEffectiveHeroCount(CIVIL_WAR, 5, 6), 6);
   });
 
   it('returns the base count unchanged for any other scheme', () => {

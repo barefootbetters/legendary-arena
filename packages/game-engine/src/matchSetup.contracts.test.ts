@@ -437,6 +437,51 @@ describe('validateMatchSetup — scheme-aware hero-count gate (D-24337)', () => 
   });
 });
 
+/**
+ * A registry mock whose resolveEffectiveHeroCount LOWERS the test scheme's hero
+ * requirement to 4 at exactly 2 players — mimicking Super Hero Civil War's printed
+ * "If only 2 players, use only 4 Heroes" (WP-576 / D-24385). This is the OPPOSITE
+ * direction from Secret Invasion's raise: it proves the engine enforces a
+ * requirement BELOW the base 5, not only above it. Keyed to the existing test
+ * scheme so the config passes existence and the gate runs.
+ */
+function createMockRegistryWithCivilWar2pOverride() {
+  return {
+    ...createMockRegistryWithTable(),
+    resolveEffectiveHeroCount(schemeId: string, numPlayers: number, baseHeroCount: number): number {
+      return schemeId === 'test/test-scheme-001' && numPlayers === 2 ? 4 : baseHeroCount;
+    },
+  };
+}
+
+describe('validateMatchSetup — scheme-aware hero-count gate lowers to 4 at 2p (WP-576 / D-24385)', () => {
+  it('accepts a 4-hero loadout for a scheme that requires 4 at 2p (Civil War)', () => {
+    const registry = createMockRegistryWithCivilWar2pOverride();
+    const input = { ...createValidInput(), heroDeckIds: testHeroIds(4) };
+    const result = validateMatchSetup(input, registry, 2);
+
+    assert.equal(result.ok, true, 'A 4-hero loadout must pass the lowered 2p requirement.');
+  });
+
+  it('rejects a 5-hero loadout for the same scheme at 2p (the base 5 no longer applies)', () => {
+    const registry = createMockRegistryWithCivilWar2pOverride();
+    // why: base@2p is 5 (would pass every other scheme), but Civil War lowers it to 4 —
+    // proving the engine forwards schemeId + numPlayers and enforces the LOWERED count.
+    const input = { ...createValidInput(), heroDeckIds: testHeroIds(5) };
+    const result = validateMatchSetup(input, registry, 2);
+
+    assert.equal(result.ok, false);
+    if (!result.ok) {
+      const error = result.errors.find((each) => each.field === 'heroDeckIds');
+      assert.ok(error, 'Expected a heroDeckIds error for the lowered hero count.');
+      assert.ok(
+        error.message.includes('requires 4') && error.message.includes('provides 5'),
+        'Message should name the lowered required count and the actual count.',
+      );
+    }
+  });
+});
+
 describe('validateMatchSetup — no-throw contract', () => {
   it('never throws, even with null input', () => {
     const registry = createMockRegistry();
