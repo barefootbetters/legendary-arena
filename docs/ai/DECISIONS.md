@@ -32337,7 +32337,7 @@ live-verify operator-pending only on the deploy (eyeball the cue in a real match
 
 ### D-24242 — Turn on competitive PAR via content-driven Seed PAR (Phase 1), committed to the repo
 
-**Status:** Drafted 2026-07-24; not yet landed (WP-422 / EC-457 execution).
+**Status:** **Active 2026-08-19 (WP-422 / EC-457).** See §Execution outcome below for the decisions locked at execution.
 
 **Context.** Investigation (2026-07-25) found the entire competitive surface dark for one
 reason: the PAR index was **never generated or delivered.** The server gate
@@ -32391,7 +32391,72 @@ at pre-flight; the Assumes chain makes a 422a/422b split mechanical.
 committed data artifacts; no runtime engine/server code; §21 N/A (no HTTP change); PAR artifacts
 immutable/write-once (new `parVersion` to re-publish).
 
-**Packet:** WP-422 + EC-457. **Drafted:** 2026-07-24; lands at execution.
+**Packet:** WP-422 + EC-457. **Drafted:** 2026-07-24; **Active** 2026-08-19.
+
+**Execution outcome (Active 2026-08-19, WP-422 / EC-457).** Shipped with these
+decisions locked (several refine or correct the draft after reading the shipped
+types + both ewiki scoring pages):
+
+1. **Scope = the gauntlet SEASON configs**, not the full registry cross-product.
+   The competitive scenario set is enumerated from `data/gauntlet-configs.json`
+   (the active year): for each (mastermind, scheme) leg, each player-count
+   villain-slice yields a `ScenarioKey` (`scheme::mastermind::sorted-villains`,
+   the exact key `matchCapture.logic.ts` records). Core-2026 = 4 masterminds × 8
+   schemes × 4 distinct villain-slices (3p/4p collapse to the 3-villain key) =
+   **128 scenario keys** over **19 rated entities** (4 MM + 8 schemes + 7 villain
+   groups). Player count is inferred from villain count ({1,2,3,4}→{1p,2p,3p,5p});
+   the 3-villain key serves both 3p and 4p (a documented seed approximation
+   inherent to the player-count-free key format).
+
+2. **`parValue` is `computeParScore(baseline)` on the Raw Score scale** — the
+   `docs/12 §Phase 1` `12000 + M×1200 + …` scalar is a difficulty INDEX on a
+   different scale (its own calibration example shows a `26800` seed resolving to
+   `−1200`), **not** the literal PAR. Recorded as a `docs/12 §Phase 1`
+   implementation note. This supersedes the draft's "constants locked to docs/12
+   12000/1200/…" for the stored value; the scalar is retained only as an index.
+
+3. **Difficulty→`ParBaseline` template** (deterministic, monotonic in difficulty,
+   varies by player count): `roundsPar = 12 + d + (p−2)`; `escapesPar =
+   floor(d/4) + max(0, p−3)`; `bystandersPar = clamp(2, 8, 8 − ceil(d/2))`;
+   `victoryPointsPar = clamp(8, 50, 30 − d + (p−2)×3)`, where `d` is the composed
+   scenario difficulty and `p` the representative player count. Harder scenario →
+   more rounds/escapes, fewer rescues, less VP surplus → higher (worse) expected
+   Raw Score. Scenario difficulty = `0.40·MM + 0.40·scheme + 0.20·avg(villains)`,
+   `clamp(1,10,round(...))`; `synergyAdjustment = 0` for the v1 seed (no authored
+   per-scenario synergy yet).
+
+4. **Global default `ScenarioScoringConfig` = the adopted reference weights**
+   (D-24342 / WP-531, the rulebook 4:3:1 ratio): `weights {roundCost 50,
+   bystanderReward 200, victoryPointReward 10}`, `caps {null, null}`,
+   `penaltyEventWeights {villainEscaped 100, bystanderLost 400, schemeTwistNegative
+   300, mastermindTacticUntaken 25, scenarioSpecificPenalty 40}`,
+   `scoringConfigVersion 2`. Passes every `validateScoringConfig` invariant.
+
+5. **`difficultyRating` lives on a NEW per-entity ratings surface**, not the theme
+   schema (which has no per-entity object): `data/difficulty-ratings/seed-difficulty-v1.json`
+   (the calibration wiki's record shape, keyed by set-qualified ext_id) validated
+   by `packages/registry/src/difficultyRatings.schema.ts` (zod; the rating must
+   equal its sub-score basis). Existing card data is untouched, so it still
+   validates (AC-1). This is the D-5508 reversal, realized as a standalone surface.
+
+6. **Henchman groups are NOT rated** — the Seed PAR formula has no henchman term,
+   and the rubric defines no henchman dimensions.
+
+7. **Seed provenance stamps added to `SeedParArtifact`** (`calibrationStatus:
+   'uncalibrated'` + `difficultyRatingVersion`) — an artifact-type extension
+   (`simulation/par.storage.ts`) that never reaches the `ParIndex` the runtime gate
+   reads, so runtime behavior is unchanged (the WP's "no runtime engine/server
+   change" holds; the touch is to the authoring-time artifact shape only).
+
+8. **Delivery + determinism.** `scripts/generate-seed-par.mjs` (Shared Tooling)
+   writes write-once artifacts + configs + index, committed. Fixed authoring
+   timestamps (no `Date.now()`) and sorted canonical JSON make re-generation
+   byte-identical; the index's `generatedAt` (which `buildParIndex` stamps live) is
+   pinned by the generator. Lightweight lane / single WP (no 422a/422b split).
+   Verified: 128 scenarios, registry+engine+full `pnpm -r` green, determinism +
+   `resolveParForScenario` (the gate's own resolver) tests pass. **D-24026
+   live-verify (a competitive match records a score; a board fills) operator-pending
+   on deploy.**
 
 Protect this file.
 
