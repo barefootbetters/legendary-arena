@@ -7,6 +7,43 @@
 
 ## Current State
 
+### WP-576 — Super Hero Civil War 2-Player Hero-Count Requirement (EC-611 / D-24385) shipped (2026-08-18)
+
+Super Hero Civil War now requires **exactly 4** heroes at 2 players end-to-end —
+closing the requirement half WP-515/D-24328 deliberately deferred. `resolveEffectiveHeroCount`
+(`packages/registry/src/playerCountSetup.ts`) gains one branch after the Secret Invasion
+branch — `if (schemeId === CIVIL_WAR_SCHEME_ID && numPlayers === 2) return CIVIL_WAR_2P_HERO_COUNT;`
+(named consts `'core/super-hero-civil-war'` / `4`, mirroring the Secret Invasion pair).
+Because that resolver is the single hero-count authority the registry composition checker,
+the engine `matchSetup.validate` gate, and the registry-viewer builder + preview all read,
+the builder instruction, the readiness gate, the LAGN/MATCH-SETUP download, and `Game.setup`
+validation now agree on 4.
+
+**Exactly 4, not a range.** A 5-hero 2p Civil War loadout is now invalid (rejected by
+validation, gated in the builder), matching the printed card and the already-shipped
+4-hero built deck. Every other `(scheme, count)` is unchanged — 1/3/4/5p Civil War,
+Secret Invasion (still 6), and every other scheme return the base count.
+
+**The engine downsize was reconciled, not changed.** `resolveEffectiveHeroDeckIds`'
+`slice(0, 4)` (WP-515/D-24328) is **code byte-identical**; only its stale "matchSetup.validate
+requires exactly 5 at 2p" comment was corrected — with validation now guaranteeing 4 ids at
+2p, the slice is a retained defensive no-op, not the sizing mechanism. The "displays 5,
+plays 4" gap is gone.
+
+**Determinism / hashes.** Pure registry data/lookup — no `ctx.random`, no I/O, no new
+persistent shape; the engine build path is byte-identical. No committed fixture reaches
+Civil War at 2p (sole complete-game fixture is `core/dr-doom` / Legacy Virus), so both hash
+oracles are **byte-unchanged** (verified green in the engine suite — no re-pin). No
+`data/cards`/marker/ledger/index change. Registry **241/0**, engine **2789→2791/0** (+2 new
+tests), preview **5/5**; `pnpm -r build` + `--no-bail test` exit 0. The 3 formerly-flagged
+registry-viewer failures (`useLagnFromUrl`/`useLoadoutLagnExport`/`loadoutLagnImport`) **pass
+on a clean build** — they were stale-`dist` false-reds, untouched here.
+
+**AC-6 (D-24026) live-verify: operator-pending.** `User-Visible Surface =
+cards.legendary-arena.com`. After deploy: a 2p Super Hero Civil War loadout with **4** heroes
+should clear the readiness warning and enable both downloads; a 5-hero one should be flagged.
+Record here once confirmed on the deployed builder. **WP-576 code done; live-verify pending.**
+
 ### WP-575 — Diagnostics Report Carries No Effect Trace (EC-610 / D-24384) shipped (2026-08-18)
 
 The Play Diagnostics export now carries the engine's per-dispatch effect traces.

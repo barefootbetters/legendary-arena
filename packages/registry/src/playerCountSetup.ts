@@ -81,28 +81,43 @@ const SECRET_INVASION_SCHEME_ID = 'core/secret-invasion-of-the-skrull-shapeshift
 /** Secret Invasion's printed hero-group count (its "6 Heroes" setup clause). */
 const SECRET_INVASION_HERO_COUNT = 6;
 
+/** The scheme whose printed setup lowers the hero-group count at 2 players. */
+const CIVIL_WAR_SCHEME_ID = 'core/super-hero-civil-war';
+
+// why: the card prints "If only 2 players, use only 4 Heroes in the Hero Deck" —
+// a per-count requirement override (only at exactly 2 players), the sibling to
+// Secret Invasion's flat "6 Heroes". A fixed count from the physical card (WP-576 /
+// D-24385), not a configurable param. The engine's resolveEffectiveHeroDeckIds
+// already slices the BUILT deck to the same 4 at 2p (D-24328); this makes the
+// requirement side agree so the operator must SUPPLY exactly 4.
+/** Super Hero Civil War's printed 2-player hero-group count (its "4 Heroes at 2p" clause). */
+const CIVIL_WAR_2P_HERO_COUNT = 4;
+
 /**
  * Returns the effective hero-group count a match must supply, applying any
- * scheme-specific setup override (D-24337).
+ * scheme-specific setup override (D-24337 Secret Invasion; D-24385 Civil War).
  *
- * For Secret Invasion of the Skrull Shapeshifters the count is `Math.max(base, 6)`
- * — the printed "6 Heroes" clause, flat at every player count (2/3/4p 5→6; 5p is
- * already 6; solo-1p 3→6). Every other scheme returns the base count unchanged.
+ * Two overrides today, both requirement-side (never a build-time downsize):
+ * - Secret Invasion of the Skrull Shapeshifters — `Math.max(base, 6)`, its printed
+ *   "6 Heroes" clause, flat at every player count (2/3/4p 5→6; 5p already 6;
+ *   solo-1p 3→6).
+ * - Super Hero Civil War — exactly `4` at 2 players only (its printed "If only 2
+ *   players, use only 4 Heroes"); a per-count override, unchanged at 1/3/4/5p.
  *
- * why: this is a REQUIREMENT increase, not a build-time downsize. Unlike the two
+ * Every other `(scheme, count)` returns the base count unchanged.
+ *
+ * why: these are REQUIREMENT overrides, not build-time downsizes. Unlike the two
  * engine `schemeSetupSizing` overrides (Legacy Virus wounds, Civil War hero deck)
- * — which post-validation size a BUILT pile below the validated config — "6 Heroes"
- * means the operator must actually SUPPLY 6 hero groups, so the override lives on
- * the requirement side (this resolver) and every hero-count enforcement site reaches
- * this one definition: `checkPlayerCountComposition` (below), the game engine's
- * `validatePlayerCountComposition` (via the registry object it reads structurally),
- * and the loadout builder. The base `PLAYER_COUNT_SETUP` table is never mutated.
- *
- * `numPlayers` is accepted for symmetry with the per-player-count table and for a
- * future per-count scheme override; the Secret Invasion branch is count-independent.
+ * — which post-validation size a BUILT pile below the validated config — a
+ * requirement override means the operator must actually SUPPLY that many hero
+ * groups, so it lives on the requirement side (this resolver) and every hero-count
+ * enforcement site reaches this one definition: `checkPlayerCountComposition`
+ * (below), the game engine's `validatePlayerCountComposition` (via the registry
+ * object it reads structurally), and the loadout builder. The base
+ * `PLAYER_COUNT_SETUP` table is never mutated.
  *
  * @param schemeId - The selected scheme ext_id (`MatchSetupConfig.schemeId`).
- * @param numPlayers - The match player count (reserved; unused by the flat override).
+ * @param numPlayers - The match player count (used by the per-count Civil War override).
  * @param baseHeroCount - The standard `PLAYER_COUNT_SETUP[numPlayers].heroCount`.
  * @returns The hero-group count the match must supply for this scheme.
  */
@@ -113,6 +128,14 @@ export function resolveEffectiveHeroCount(
 ): number {
   if (schemeId === SECRET_INVASION_SCHEME_ID) {
     return Math.max(baseHeroCount, SECRET_INVASION_HERO_COUNT);
+  }
+  // why: the printed "If only 2 players, use only 4 Heroes in the Hero Deck"
+  // (WP-576) — a per-count requirement override at exactly 2 players, the sibling
+  // to Secret Invasion's flat "6 Heroes". Requires EXACTLY 4 (not a range): a
+  // 5-hero 2p Civil War loadout is now invalid, matching the printed card and the
+  // 4-hero deck the engine already builds (D-24328 slice).
+  if (schemeId === CIVIL_WAR_SCHEME_ID && numPlayers === 2) {
+    return CIVIL_WAR_2P_HERO_COUNT;
   }
   return baseHeroCount;
 }
