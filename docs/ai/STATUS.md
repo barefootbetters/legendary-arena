@@ -263,7 +263,6 @@ Lands **D-24375 Active**. 5 files + governance.
 
 ---
 
-<<<<<<< HEAD
 ### WP-573 - UI-Projection Fixture Builders - DONE (2026-08-17)
 
 The **last fixture family in the WP-563 arc is closed.** Gate **126 -> 109**;
@@ -315,7 +314,9 @@ and then the **CI wiring** every packet since D-24372 §2 has been deferring by
 design — the thing the whole arc exists to enable. **109** errors stand.
 
 **User-Visible Surface: none - infrastructure.** The D-24026 gate inverts.
-=======
+
+---
+
 ### WP-567 - Red Skull Tactic onFight Resolvers - DONE (2026-08-17)
 
 All four of Red Skull's Mastermind Tactics had no onFight resolver, so defeating
@@ -366,7 +367,6 @@ resolver, and the silent Master Strike bystander capture (D-15401 specified a lo
 line only for the empty-supply case).
 
 Lands **D-24376 Active**. 5 files + governance.
->>>>>>> 07c9b943 (SPEC: WP-567 governance close + D-24376 Active)
 
 ---
 
