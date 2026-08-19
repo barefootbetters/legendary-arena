@@ -37660,3 +37660,50 @@ audience; `diagnostics.ts` lifts it structurally from `uiStateSnapshot` (no engi
 import). A runtime drift pin on the built projection guards the 9-field shape. Inertness
 grep-confirmed (only new reader is the read-only projection). Both hash oracles
 byte-unchanged; engine 2781→2789, arena-client 1355→1358, 0 fail.
+
+---
+
+### D-24385 — Super Hero Civil War Requires Exactly 4 Heroes at 2 Players (Requirement Side)
+
+Super Hero Civil War prints "If only 2 players, use only 4 Heroes in the Hero
+Deck." WP-515 / D-24328 shipped only the ENGINE build downsize
+(`resolveEffectiveHeroDeckIds` slices the built deck 5→4 at 2p) and deliberately
+left the requirement / validation / builder side at 5, naming a "displays 5,
+plays 4" caveat as out of scope. That gap became a live UX defect: the cards
+builder demanded 5 hero decks at 2p Civil War and grayed out the LAGN /
+MATCH-SETUP download at the card-correct 4.
+
+Locked:
+
+1. **`resolveEffectiveHeroCount('core/super-hero-civil-war', 2, base)` returns 4** —
+   the single hero-count source the registry composition checker
+   (`checkPlayerCountComposition`), the game-engine `matchSetup.validate` gate
+   (`validatePlayerCountComposition`), and the registry-viewer builder / preview
+   all read, so requirement / validation / UI agree on 4. A per-count requirement
+   OVERRIDE (like Secret Invasion's flat "6 Heroes", D-24337), the OPPOSITE class
+   from a post-validation downsize.
+2. **Exactly 4, not a 4-or-5 range** — a 5-hero 2p Civil War loadout is now
+   invalid (rejected by validation, gated in the builder), matching the printed
+   card and the already-shipped 4-hero built deck. Every other `(scheme,
+   numPlayers)` is unchanged: 1/3/4/5p Civil War, Secret Invasion, and every other
+   scheme return the base count.
+3. **The WP-515 / D-24328 engine downsize is RETAINED as a defensive no-op** now
+   that validation guarantees 4 ids at 2p — `resolveEffectiveHeroDeckIds`'
+   `slice(0, 4)` is not removed (a non-validated build path stays safe), and its
+   stale "matchSetup.validate requires exactly 5 at 2p" comment is corrected. The
+   engine build path is byte-identical.
+4. **Determinism preserved.** Pure registry data/lookup; no `ctx.random`, no I/O,
+   no new persistent shape. No committed fixture reaches Civil War at 2p (the sole
+   complete-game fixture is `core/dr-doom` / Legacy Virus), so `finalStateHash` /
+   `PRE_WP080` are byte-unchanged.
+
+Supersedes the requirement-side half of D-24328's deferral; D-24328's downsize
+decision stays Active.
+
+**Active 2026-08-18 (WP-576 / EC-611).** Shipped exactly as locked: one
+`CIVIL_WAR_SCHEME_ID` + `CIVIL_WAR_2P_HERO_COUNT` (=4) branch in
+`resolveEffectiveHeroCount` after the Secret Invasion branch; the engine
+`schemeSetupSizing` comment reconciled (code byte-unchanged). Registry 241/0,
+engine 2789→2791/0, preview 5/5, full `pnpm -r build` + `--no-bail test` exit 0;
+both hash oracles byte-unchanged. D-24026 live-verify operator-pending
+(`User-Visible Surface = cards.legendary-arena.com`).
