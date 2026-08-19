@@ -126,6 +126,8 @@ function createSeedArtifact(
   return {
     scenarioKey,
     source: 'seed',
+    calibrationStatus: 'uncalibrated',
+    difficultyRatingVersion: 'seed-difficulty-v1',
     parBaseline,
     parValue,
     // why: the helper already receives scoringConfig; the artifact type requires

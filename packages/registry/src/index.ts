@@ -132,6 +132,22 @@ export {
 // Theme validators
 export { validateTheme, validateThemeFile } from "./theme.validate.js";
 
+// why: WP-422 / D-24242 — the Phase-1 seed difficulty-ratings surface + validator
+// (the input the Seed PAR generator composes into per-scenario PAR). A standalone
+// registry data surface keyed by set-qualified ext_id, reversing the D-5508
+// deferral. See ./difficultyRatings.schema.js.
+export type {
+  DifficultyRatingEntry,
+  DifficultyRatingsFile,
+} from "./difficultyRatings.schema.js";
+export {
+  validateDifficultyRatings,
+  difficultyRatingFromSubscoreTotal,
+  MASTERMIND_DIFFICULTY_DIMENSIONS,
+  SCHEME_DIFFICULTY_DIMENSIONS,
+  VILLAIN_GROUP_DIFFICULTY_DIMENSIONS,
+} from "./difficultyRatings.schema.js";
+
 // why: Browser-safe MATCH-SETUP document contract (WP-091). Consumed by
 // apps/registry-viewer (loadout builder) and any future tooling that needs
 // to validate a MATCH-SETUP envelope + composition without crossing the

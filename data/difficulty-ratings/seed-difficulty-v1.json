@@ -1,0 +1,200 @@
+{
+  "entityDifficultyVersion": "seed-difficulty-v1",
+  "description": "Phase-1 content-authored seed difficulty ratings (WP-422 / D-24242). Each entity is rated 1-10 from five type-specific 0-4 sub-scores via difficultyRating = clamp(1, 10, ceil(sum(subscores) / 2)); 5 is the competent-game center. Ratings are priors that simulation (Phase 2) supersedes; they are content metadata, never scoring logic. Authored 2026-08-19, reviewed by the operator (Jeff). Anchor validation only: base-set masterminds sit low-to-mid; villain groups start from card VP + attack (the v23 signal). Community/rulebook research is a sanity check, never a canonical score. Refine only via a new entityDifficultyVersion (seed-difficulty-v2, supersedes v1) - never edit a published rating in place.",
+  "masterminds": {
+    "core/dr-doom": {
+      "difficultyRating": 5,
+      "subscores": {
+        "attackThresholdPressure": 2,
+        "masterStrikeSeverity": 2,
+        "tacticSeverity": 2,
+        "protectionOrAccessRestriction": 2,
+        "scalingOrAlternateLossPressure": 2
+      }
+    },
+    "core/magneto": {
+      "difficultyRating": 6,
+      "subscores": {
+        "attackThresholdPressure": 3,
+        "masterStrikeSeverity": 2,
+        "tacticSeverity": 3,
+        "protectionOrAccessRestriction": 2,
+        "scalingOrAlternateLossPressure": 2
+      }
+    },
+    "core/red-skull": {
+      "difficultyRating": 6,
+      "subscores": {
+        "attackThresholdPressure": 3,
+        "masterStrikeSeverity": 3,
+        "tacticSeverity": 2,
+        "protectionOrAccessRestriction": 2,
+        "scalingOrAlternateLossPressure": 2
+      }
+    },
+    "core/loki": {
+      "difficultyRating": 7,
+      "subscores": {
+        "attackThresholdPressure": 2,
+        "masterStrikeSeverity": 3,
+        "tacticSeverity": 3,
+        "protectionOrAccessRestriction": 3,
+        "scalingOrAlternateLossPressure": 3
+      }
+    }
+  },
+  "schemes": {
+    "core/midtown-bank-robbery": {
+      "difficultyRating": 3,
+      "subscores": {
+        "clockTightness": 1,
+        "lossConditionSeverity": 2,
+        "irreversibleDamage": 1,
+        "resourceDenial": 1,
+        "setupConstraintOrScaling": 1
+      }
+    },
+    "core/replace-earths-leaders-with-killbots": {
+      "difficultyRating": 4,
+      "subscores": {
+        "clockTightness": 2,
+        "lossConditionSeverity": 2,
+        "irreversibleDamage": 2,
+        "resourceDenial": 1,
+        "setupConstraintOrScaling": 1
+      }
+    },
+    "core/negative-zone-prison-breakout": {
+      "difficultyRating": 5,
+      "subscores": {
+        "clockTightness": 2,
+        "lossConditionSeverity": 3,
+        "irreversibleDamage": 2,
+        "resourceDenial": 2,
+        "setupConstraintOrScaling": 1
+      }
+    },
+    "core/secret-invasion-of-the-skrull-shapeshifters": {
+      "difficultyRating": 6,
+      "subscores": {
+        "clockTightness": 3,
+        "lossConditionSeverity": 2,
+        "irreversibleDamage": 2,
+        "resourceDenial": 2,
+        "setupConstraintOrScaling": 2
+      }
+    },
+    "core/portals-to-the-dark-dimension": {
+      "difficultyRating": 6,
+      "subscores": {
+        "clockTightness": 3,
+        "lossConditionSeverity": 2,
+        "irreversibleDamage": 3,
+        "resourceDenial": 2,
+        "setupConstraintOrScaling": 2
+      }
+    },
+    "core/super-hero-civil-war": {
+      "difficultyRating": 6,
+      "subscores": {
+        "clockTightness": 3,
+        "lossConditionSeverity": 3,
+        "irreversibleDamage": 2,
+        "resourceDenial": 2,
+        "setupConstraintOrScaling": 2
+      }
+    },
+    "core/unleash-the-power-of-the-cosmic-cube": {
+      "difficultyRating": 7,
+      "subscores": {
+        "clockTightness": 3,
+        "lossConditionSeverity": 3,
+        "irreversibleDamage": 3,
+        "resourceDenial": 2,
+        "setupConstraintOrScaling": 2
+      }
+    },
+    "core/legacy-virus-the": {
+      "difficultyRating": 8,
+      "subscores": {
+        "clockTightness": 4,
+        "lossConditionSeverity": 4,
+        "irreversibleDamage": 3,
+        "resourceDenial": 2,
+        "setupConstraintOrScaling": 3
+      }
+    }
+  },
+  "villainGroups": {
+    "core/enemies-of-asgard": {
+      "difficultyRating": 6,
+      "subscores": {
+        "attackAndVpPressure": 3,
+        "ambushPressure": 3,
+        "fightPunishmentOrDenial": 2,
+        "escapePressure": 2,
+        "synergyOrKeywordComplexity": 2
+      }
+    },
+    "core/brotherhood": {
+      "difficultyRating": 6,
+      "subscores": {
+        "attackAndVpPressure": 3,
+        "ambushPressure": 2,
+        "fightPunishmentOrDenial": 3,
+        "escapePressure": 2,
+        "synergyOrKeywordComplexity": 1
+      }
+    },
+    "core/skrulls": {
+      "difficultyRating": 6,
+      "subscores": {
+        "attackAndVpPressure": 2,
+        "ambushPressure": 3,
+        "fightPunishmentOrDenial": 2,
+        "escapePressure": 2,
+        "synergyOrKeywordComplexity": 3
+      }
+    },
+    "core/hydra": {
+      "difficultyRating": 5,
+      "subscores": {
+        "attackAndVpPressure": 2,
+        "ambushPressure": 2,
+        "fightPunishmentOrDenial": 2,
+        "escapePressure": 2,
+        "synergyOrKeywordComplexity": 2
+      }
+    },
+    "core/masters-of-evil": {
+      "difficultyRating": 5,
+      "subscores": {
+        "attackAndVpPressure": 2,
+        "ambushPressure": 2,
+        "fightPunishmentOrDenial": 2,
+        "escapePressure": 2,
+        "synergyOrKeywordComplexity": 2
+      }
+    },
+    "core/radiation": {
+      "difficultyRating": 5,
+      "subscores": {
+        "attackAndVpPressure": 3,
+        "ambushPressure": 2,
+        "fightPunishmentOrDenial": 2,
+        "escapePressure": 2,
+        "synergyOrKeywordComplexity": 1
+      }
+    },
+    "core/spider-foes": {
+      "difficultyRating": 5,
+      "subscores": {
+        "attackAndVpPressure": 2,
+        "ambushPressure": 2,
+        "fightPunishmentOrDenial": 2,
+        "escapePressure": 3,
+        "synergyOrKeywordComplexity": 1
+      }
+    }
+  }
+}
