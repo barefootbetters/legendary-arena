@@ -37820,5 +37820,7 @@ multi-entry projection. A later WP.
 **Active 2026-08-19 (WP-577 / EC-612).** Shipped exactly as locked across 6 engine
 files + the reused prompt. Engine 2791→2798/0 (+7 tests), arena-client prompt
 11→12/0; full `pnpm -r build` + `--no-bail test` green; both hash oracles
-byte-unchanged; no `data/cards` change. D-24026 live-verify operator-pending
-(`User-Visible Surface = play.legendary-arena.com`).
+byte-unchanged; no `data/cards` change. **D-24026 live-verify VERIFIED 2026-08-19**
+(`User-Visible Surface = play.legendary-arena.com`; a real 2p Red Skull / Super Hero Civil
+War log shows the interactive "must KO a Hero from their hand — choose which" prompt on four
+strikes — the active player choosing each time, the non-active ally auto-resolving).
