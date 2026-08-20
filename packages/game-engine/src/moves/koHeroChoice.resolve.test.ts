@@ -604,3 +604,45 @@ describe('resolvers are NOT blocked while a KO choice is pending', () => {
     assert.deepStrictEqual(gameState.playerZones['0']!.discard, ['rev'], 'revealed card discarded');
   });
 });
+
+describe('resolveKoHeroChoice — hand-scoped entry (WP-577 / D-24386, Red Skull)', () => {
+  /** A hand-scoped ko-hero entry, as Red Skull's strike parks it. */
+  const handChoice = (playerID = '0'): PendingKoHeroChoice => ({
+    choiceType: 'ko-hero',
+    playerID,
+    zones: ['hand'],
+  });
+
+  it('KOs the chosen HAND Hero and front-pops', () => {
+    const gameState = makeTestGameState({
+      hand: ['hero-a' as CardExtId, 'hero-b' as CardExtId],
+      pendingKoHeroChoices: [handChoice()],
+    });
+    const { context } = makeMoveContext(gameState);
+
+    resolveKoHeroChoice(context, { zone: 'hand', cardId: 'hero-b' as CardExtId });
+
+    assert.deepStrictEqual(gameState.ko, ['hero-b'], 'the chosen hand hero is KO\'d');
+    assert.deepStrictEqual(gameState.playerZones['0']!.hand, ['hero-a']);
+    assert.equal(gameState.pendingKoHeroChoices!.length, 0, 'queue front-popped');
+  });
+
+  it('rejects a non-hand zone (discard/inPlay) as a silent no-op leaving the queue intact', () => {
+    const gameState = makeTestGameState({
+      hand: ['hero-a' as CardExtId, 'hero-b' as CardExtId],
+      discard: ['hero-d' as CardExtId],
+      inPlay: ['hero-p' as CardExtId],
+      pendingKoHeroChoices: [handChoice()],
+    });
+    const { context } = makeMoveContext(gameState);
+
+    resolveKoHeroChoice(context, { zone: 'discard', cardId: 'hero-d' as CardExtId });
+    resolveKoHeroChoice(context, { zone: 'inPlay', cardId: 'hero-p' as CardExtId });
+
+    // A hand-scoped entry may only KO from hand — both non-hand resolves no-op.
+    assert.deepStrictEqual(gameState.ko, [], 'no card KO\'d from a disallowed zone');
+    assert.deepStrictEqual(gameState.playerZones['0']!.discard, ['hero-d']);
+    assert.deepStrictEqual(gameState.playerZones['0']!.inPlay, ['hero-p']);
+    assert.equal(gameState.pendingKoHeroChoices!.length, 1, 'queue intact — the player resubmits a hand target');
+  });
+});

@@ -26,8 +26,9 @@ import { hasPendingDiscardChoice } from '../moves/discardChoice.resolve.js';
 import { hasPendingPutCardsOnDeckChoice } from '../moves/putCardsOnDeckChoice.resolve.js';
 import { hasPendingReorderChoice } from '../moves/reorderChoice.resolve.js';
 import { hasPendingDefeatChoice } from '../moves/defeatChoice.resolve.js';
-import { selectDiscardToLimitCards } from '../rules/mastermindHandlers.js';
+import { selectDiscardToLimitCards, selectRedSkullKoTarget } from '../rules/mastermindHandlers.js';
 import { selectDefaultKoTarget, selectScryKoTarget } from '../villain/villainEffects.execute.js';
+import type { KoHeroTarget } from '../villain/villainEffects.execute.js';
 import { hasPendingOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
 import { selectDefaultOptionalKoTarget } from '../hero/heroEffects.execute.js';
 import {
@@ -353,7 +354,20 @@ export function getLegalMoves(
   // the board is frozen. Returns a list of length EXACTLY 1 — no other move
   // is appended or merged.
   if (hasPendingKoHeroChoice(gameState)) {
-    const defaultTarget = selectDefaultKoTarget(zones);
+    // why: WP-577 / D-24386 — a hand-scoped entry (Red Skull's strike parks
+    // `zones: ['hand']`) resolves to the lowest-cost HAND Hero, byte-identical to
+    // the old resolveRedSkullStrike auto-pick (selectRedSkullKoTarget), so an all-bot
+    // sim + both hash oracles are unchanged. A generic (all-zone) entry keeps the
+    // legacy discard→hand→inPlay default. The bot MUST offer a zone the resolve
+    // accepts, or the block-all guard never lifts (the legalMoves↔guard divergence).
+    const front = gameState.pendingKoHeroChoices![0]!;
+    let defaultTarget: KoHeroTarget | null;
+    if (front.zones !== undefined) {
+      const handTarget = selectRedSkullKoTarget(gameState, zones.hand);
+      defaultTarget = handTarget === null ? null : { zone: 'hand', cardId: handTarget };
+    } else {
+      defaultTarget = selectDefaultKoTarget(zones);
+    }
     if (defaultTarget !== null) {
       return [{ name: 'resolveKoHeroChoice', args: defaultTarget }];
     }

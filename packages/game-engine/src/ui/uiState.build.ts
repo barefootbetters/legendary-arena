@@ -925,7 +925,10 @@ export function buildUIState(
     const frontChoice = gameState.pendingKoHeroChoices[0]!;
     const chooserZones = gameState.playerZones[frontChoice.playerID];
     if (chooserZones !== undefined) {
-      const eligibleTargets = buildKoEligibleTargets(chooserZones);
+      // why: WP-577 — a hand-scoped entry (Red Skull) projects hand Heroes only, so
+      // the prompt offers exactly the printed "from their hand" targets. Absent
+      // `zones` ⇒ all zones (villain ko-hero unchanged).
+      const eligibleTargets = buildKoEligibleTargets(chooserZones, frontChoice.zones);
       const eligible: UIEligibleKoHeroCard[] = [];
       for (const target of eligibleTargets) {
         eligible.push({

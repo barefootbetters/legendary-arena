@@ -24,6 +24,10 @@ import { koCard } from '../board/ko.logic.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
 import { gainWound } from '../board/wounds.logic.js';
 import { formatCardRef, resolveCardName } from '../log/logDisplay.js';
+// why: WP-577 / D-24386 — Red Skull's strike parks a hand-scoped interactive
+// ko-hero choice for the current player, reusing the same eligibility helpers the
+// villain ko-hero effect + the UIState projection use (one source, D-24007).
+import { buildKoEligibleTargets, countKoableHeroes } from '../villain/villainEffects.execute.js';
 
 // why: mastermind ext_id constants — matching against
 // G.selection.mastermindId for per-mastermind dispatch. Strings come from
@@ -503,16 +507,25 @@ function resolveCoreDoomStrike(
   }
 }
 
+// why: WP-577 / D-24386 — Red Skull's Master Strike is "KO a Hero from their
+// hand," so the interactive choice, the resolve move, and the bot default are all
+// hand-scoped. A module const keeps the one zone allowlist in a single place.
+const RED_SKULL_KO_ZONES: readonly ('hand' | 'discard' | 'inPlay')[] = ['hand'];
+
 /**
  * Selects the Hero a player KOs for a Red Skull Master Strike: the eligible
  * hand card with the lowest recruit cost, ties broken by lowest hand index.
  * A hand card is a Hero iff it is not a Wound.
  *
+ * Exported (WP-577) so the bot's resolution of the current-player interactive
+ * choice is byte-identical to this auto-pick — the ally auto-KO and the bot
+ * current-player KO share one selection rule.
+ *
  * @param gameState - The game state (read-only here; supplies cardStats).
  * @param hand - The player's hand, in order.
  * @returns The ext_id to KO, or null when the hand holds no Hero.
  */
-function selectRedSkullKoTarget(
+export function selectRedSkullKoTarget(
   gameState: LegendaryGameState,
   hand: readonly CardExtId[],
 ): CardExtId | null {
@@ -643,11 +656,45 @@ function gainWoundToDiscard(
  *
  * @param gameState - The game state to mutate.
  */
-function resolveRedSkullStrike(gameState: LegendaryGameState): void {
+function resolveRedSkullStrike(
+  gameState: LegendaryGameState,
+  currentPlayer: string | null,
+): void {
   const playerIds = Object.keys(gameState.playerZones).sort();
 
   for (const playerId of playerIds) {
     const playerZones = gameState.playerZones[playerId]!;
+
+    // why: WP-577 / D-24386 — the printed "KO a Hero from their hand" is an
+    // owning-player CHOICE, so the CURRENT player picks interactively. Park a
+    // hand-scoped ko-hero choice when a genuine choice exists (≥ 2 physical hand
+    // Heroes AND ≥ 2 distinct options — the same park condition as the villain
+    // ko-hero effect, hand-scoped); exactly one eligible Hero is FORCED (auto-KO,
+    // no prompt) and zero is a no-op, both handled by the auto-pick fall-through
+    // below. Non-current allies always auto-pick (the pending-choice architecture
+    // is single-current-player-scoped, D-24284). currentPlayer is null only for
+    // legacy harnesses passing no ctx; they fall through to the auto-pick so the
+    // strike never blocks on an unknown chooser. Supersedes the D-24188 auto-pick.
+    if (currentPlayer !== null && playerId === currentPlayer) {
+      const handEligible = buildKoEligibleTargets(playerZones, RED_SKULL_KO_ZONES);
+      if (countKoableHeroes(playerZones, RED_SKULL_KO_ZONES) > 1 && handEligible.length >= 2) {
+        if (!gameState.pendingKoHeroChoices) {
+          gameState.pendingKoHeroChoices = [];
+        }
+        gameState.pendingKoHeroChoices.push({
+          choiceType: 'ko-hero',
+          playerID: playerId,
+          zones: RED_SKULL_KO_ZONES,
+        });
+        pushLog(gameState,
+          `[Red Skull Master Strike] Player ${playerId} must KO a Hero from their hand — choose which.`,
+        );
+        continue;
+      }
+      // why: exactly one eligible Hero (forced) or none — fall through to the
+      // deterministic auto-pick, so a single-option pick is never prompted.
+    }
+
     const targetExtId = selectRedSkullKoTarget(gameState, playerZones.hand);
 
     if (targetExtId === null) {
@@ -1024,7 +1071,10 @@ export function mastermindStrikeHandler(
     // RevealContext, mirroring resolveShuffleFunction for Doctor Octopus).
     resolveMagnetoStrike(gameState, resolveCurrentPlayer(strikeContext));
   } else if (MASTERMINDS_RED_SKULL.includes(mastermindId)) {
-    resolveRedSkullStrike(gameState);
+    // why: WP-577 / D-24386 — pass the active player so the strike can park an
+    // interactive hand-scoped KO choice for the current player (mirroring the
+    // resolveMagnetoStrike current-parks / allies-auto pattern, D-24284).
+    resolveRedSkullStrike(gameState, resolveCurrentPlayer(strikeContext));
   } else if (mastermindId === MASTERMIND_CORE_LOKI) {
     resolveCoreLokiStrike(gameState);
   } else if (mastermindId === MASTERMIND_CORE_DR_DOOM) {
