@@ -3,7 +3,8 @@
  *
  * Pure unit tests — no database, no network. `buildMatchLagn` is exercised
  * directly with a stub name resolver; `buildNameResolver` with a fake registry
- * exposing only `listCards()`; `readMatchConfigurationForLagn` with a fake
+ * exposing the `listSets()` + `getSet()` group-level surface it reads;
+ * `readMatchConfigurationForLagn` with a fake
  * `DatabaseClient` whose `query` returns canned rows.
  *
  * Authority: WP-361 §Scope (In) §F; EC-391; D-24153.
@@ -46,11 +47,52 @@ const VALID_COMPOSITION: MatchLagnComposition = {
 /** An identity resolver (name === id) for mapping-shape assertions. */
 const identityResolver = (extId: string): string => extId;
 
-/** A fake registry exposing only the `listCards()` the resolver uses. */
+/** A group-level entity as the resolver reads it via `getSet()`. */
+interface FakeEntity {
+  readonly name: string;
+  readonly slug: string;
+}
+
+/** One set's group-level entities, as `getSet()` exposes them. */
+interface FakeSet {
+  readonly abbr: string;
+  readonly heroes?: readonly FakeEntity[];
+  readonly masterminds?: readonly FakeEntity[];
+  readonly villains?: readonly FakeEntity[];
+  readonly henchmen?: readonly unknown[];
+  readonly schemes?: readonly FakeEntity[];
+}
+
+/**
+ * A fake registry exposing the `listSets()` + `getSet()` surface the name
+ * resolver reads (one entry per group-level entity). An optional
+ * `listCardsOverride` supplies a hand-authored flattened card list so a test can
+ * encode the multi-card-per-ext_id collision the resolver must NOT fall back to
+ * (a regression to `listCards()` keying would then flip the assertion red).
+ */
 function fakeRegistry(
-  cards: { extId: string; name: string }[],
+  sets: readonly FakeSet[],
+  listCardsOverride?: { extId: string; name: string }[],
 ): CardRegistry {
-  return { listCards: () => cards } as unknown as CardRegistry;
+  const setsByAbbr = new Map(sets.map((set) => [set.abbr, set]));
+  return {
+    listSets: () => sets.map((set) => ({ abbr: set.abbr })),
+    getSet: (abbr: string) => {
+      const set = setsByAbbr.get(abbr);
+      if (set === undefined) {
+        return undefined;
+      }
+      return {
+        abbr: set.abbr,
+        heroes: set.heroes ?? [],
+        masterminds: set.masterminds ?? [],
+        villains: set.villains ?? [],
+        henchmen: set.henchmen ?? [],
+        schemes: set.schemes ?? [],
+      };
+    },
+    listCards: () => listCardsOverride ?? [],
+  } as unknown as CardRegistry;
 }
 
 /** A fake `DatabaseClient` whose `query` returns the supplied rows. */
@@ -118,7 +160,10 @@ describe('buildMatchLagn — mapping', () => {
   test('resolves names via the resolver (canonical name, else ext_id verbatim)', () => {
     const resolveName = buildNameResolver(
       fakeRegistry([
-        { extId: 'core/loki-god-of-mischief', name: 'Loki, God of Mischief' },
+        {
+          abbr: 'core',
+          masterminds: [{ name: 'Loki, God of Mischief', slug: 'loki-god-of-mischief' }],
+        },
       ]),
     );
     const lagn = buildMatchLagn('m', VALID_COMPOSITION, 2, resolveName);
@@ -133,11 +178,64 @@ describe('buildMatchLagn — mapping', () => {
 describe('buildNameResolver — no synthesis, id fallback', () => {
   test('returns the display name for a known ext_id and the ext_id verbatim otherwise', () => {
     const resolveName = buildNameResolver(
-      fakeRegistry([{ extId: 'core/thanos', name: 'Thanos' }]),
+      fakeRegistry([{ abbr: 'core', masterminds: [{ name: 'Thanos', slug: 'thanos' }] }]),
     );
     assert.equal(resolveName('core/thanos'), 'Thanos');
     assert.equal(resolveName('core/unknown-entity'), 'core/unknown-entity');
     assert.equal(resolveName('bad/id-format'), 'bad/id-format');
+  });
+
+  test('resolves each composition entity kind to its group-level name', () => {
+    const resolveName = buildNameResolver(
+      fakeRegistry([
+        {
+          abbr: 'core',
+          heroes: [{ name: 'Spider-Man', slug: 'spider-man' }],
+          masterminds: [{ name: 'Red Skull', slug: 'red-skull' }],
+          villains: [{ name: 'HYDRA', slug: 'hydra' }],
+          henchmen: [{ name: 'Doombot Legion', slug: 'doombot-legion' }],
+          schemes: [{ name: 'The Legacy Virus', slug: 'the-legacy-virus' }],
+        },
+      ]),
+    );
+    assert.equal(resolveName('core/spider-man'), 'Spider-Man');
+    assert.equal(resolveName('core/red-skull'), 'Red Skull');
+    assert.equal(resolveName('core/hydra'), 'HYDRA');
+    assert.equal(resolveName('core/doombot-legion'), 'Doombot Legion');
+    assert.equal(resolveName('core/the-legacy-virus'), 'The Legacy Virus');
+  });
+
+  // why: regression for the D-24169 dashboard match-summary mislabel — a Red
+  // Skull mastermind (base face + four Tactics, all sharing ext_id
+  // `core/red-skull`) was resolved to its "Ruthless Dictator" Tactic card
+  // because the resolver keyed a flattened card list by ext_id (last write wins).
+  // The `listCardsOverride` here mirrors that exact real collision from
+  // data/cards/core.json (base face first, tactics after, "Ruthless Dictator"
+  // last); the resolver must return the base-face name "Red Skull" regardless.
+  test('a Red Skull match resolves the mastermind to the base face, not a Tactic', () => {
+    const redSkullCardCollision = [
+      { extId: 'core/red-skull', name: 'Red Skull' }, // base face (tactic: false)
+      { extId: 'core/red-skull', name: 'Endless Resources' }, // tactic
+      { extId: 'core/red-skull', name: 'HYDRA Conspiracy' }, // tactic
+      { extId: 'core/red-skull', name: 'Negablast Grenades' }, // tactic
+      { extId: 'core/red-skull', name: 'Ruthless Dictator' }, // tactic (last)
+    ];
+    const resolveName = buildNameResolver(
+      fakeRegistry(
+        [{ abbr: 'core', masterminds: [{ name: 'Red Skull', slug: 'red-skull' }] }],
+        redSkullCardCollision,
+      ),
+    );
+
+    const composition: MatchLagnComposition = {
+      ...VALID_COMPOSITION,
+      mastermindId: 'core/red-skull',
+    };
+    const lagn = buildMatchLagn('m', composition, 2, resolveName);
+
+    assert.equal(resolveName('core/red-skull'), 'Red Skull');
+    assert.equal(lagn.setup.mastermind.name, 'Red Skull');
+    assert.notEqual(lagn.setup.mastermind.name, 'Ruthless Dictator');
   });
 });
 

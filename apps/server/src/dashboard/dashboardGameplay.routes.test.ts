@@ -23,7 +23,13 @@ interface RecordedContext {
   body: unknown;
 }
 
-const FAKE_REGISTRY = { listCards: () => [] } as unknown as CardRegistry;
+// why: buildNameResolver reads the group-level `listSets()` + `getSet()` surface;
+// these routes never assert on resolved names, so an empty set index suffices.
+const FAKE_REGISTRY = {
+  listSets: () => [],
+  getSet: () => undefined,
+  listCards: () => [],
+} as unknown as CardRegistry;
 
 function makeHarness(
   adminResult: Awaited<ReturnType<DashboardGameplayRouteDependencies['requireAdminSession']>>,
