@@ -42,9 +42,20 @@ bot fallback; D-24188 stays Active as that record).
 **Verified.** Engine **2791→2798/0** (+7 tests: strike parks/forced/no-op/ally-auto,
 resolve hand-scope accept+reject, bot byte-identical), arena-client prompt **11→12/0**
 (hand-only render + dispatch); full `pnpm -r build` + `--no-bail test` green; both hash
-oracles byte-unchanged; no `data/cards` change. **D-24026 live-verify operator-pending:** on
-`play.legendary-arena.com`, a Red Skull strike on your turn with ≥2 hand Heroes prompts you
-to pick which Hero is KO'd; an ally is auto-KO'd. **WP-577 code done; live-verify pending.**
+oracles byte-unchanged; no `data/cards` change.
+
+**D-24026 live-verify: VERIFIED (2026-08-19).** Observed in a real 2-player Red Skull /
+Super Hero Civil War match (operator-supplied log). Red Skull's Master Strike fired the new
+interactive prompt on four strikes, and the **active player chose each time** while the
+non-active ally auto-resolved — the D-24284 split exactly:
+- Turn 10 (P0 active): `Player 0 must KO a Hero from their hand — choose which.` → P1 `has no
+  Hero in hand` (auto) → `Player 0 KO'd S.H.I.E.L.D. Trooper` (P0's pick). Same at turns 12, 18.
+- Turn 21 (P1 active): P0 `has no Hero in hand` (auto) → `Player 1 must KO a Hero from their
+  hand — choose which.` → `Player 1 KO'd S.H.I.E.L.D. Trooper` (P1's pick).
+The `"must KO a Hero from their hand — choose which"` string is the WP-577 prompt, so the game
+ran on a WP-577-inclusive build. (The match also confirmed the reused magnitude-2 interactive
+KO — Whirlwind "KO 2 of your Heroes — choose which" — and ended in a hero win, Red Skull
+vanquished.) **WP-577 fully done.**
 
 ### WP-422 — Seed PAR Publication: competitive surface turned ON (EC-457 / D-24242) shipped (2026-08-19)
 
