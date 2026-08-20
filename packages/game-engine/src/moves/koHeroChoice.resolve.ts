@@ -84,6 +84,11 @@ export function resolveKoHeroChoice({ G, playerID }: MoveContext, args: ResolveK
   const front = queue[0]!;
   if (front.playerID !== playerID) { return; }
   if (front.choiceType !== 'ko-hero') { return; }
+  // why: WP-577 — a hand-scoped entry (Red Skull's strike parks `zones: ['hand']`)
+  // may only KO from an allowed zone; a client or bot submitting another zone is a
+  // silent no-op leaving the queue intact (resubmit). Absent `zones` ⇒ all zones
+  // (the WP-242 villain ko-hero, byte-identical).
+  if (front.zones !== undefined && !front.zones.includes(args.zone)) { return; }
 
   // Step 3: Resolve against CURRENT G — the chosen cardId must be present in
   // the named zone right now (no eligible snapshot is stored; eligibility is
@@ -129,12 +134,14 @@ export function resolveKoHeroChoice({ G, playerID }: MoveContext, args: ResolveK
   // picks again. A KO never grows the option count, so this terminates.
   let owed = owedAfterPick;
   while (owed > 0) {
-    const eligible = buildKoEligibleTargets(playerZones);
+    // why: WP-577 — honour the entry's zone allowlist (a hand-scoped Red Skull entry
+    // stays hand-only through the forced remainder too). Absent ⇒ all zones.
+    const eligible = buildKoEligibleTargets(playerZones, front.zones);
     if (eligible.length === 0) break; // why: nothing left to KO (fewer heroes than owed).
     // why: a genuine choice still remains only when the player has MORE KO-able
     // heroes than the count owed AND ≥ 2 distinct options — mirror the parker. Once
     // the KO is forced (physical ≤ owed, or all copies identical) auto-resolve it.
-    if (countKoableHeroes(playerZones) > owed && eligible.length >= 2) break;
+    if (countKoableHeroes(playerZones, front.zones) > owed && eligible.length >= 2) break;
     const forced = eligible[0]!;
     const forcedMove = moveCardFromZone(playerZones[forced.zone], [], forced.cardId);
     if (!forcedMove.found) break; // why: defensive — an unexpected move miss stops progress.

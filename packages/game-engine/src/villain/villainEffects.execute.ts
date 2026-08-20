@@ -3179,7 +3179,10 @@ function selectKoHeroTarget(zone: CardExtId[]): CardExtId | null {
  * @param zones - The player's card zones.
  * @returns The eligible KO targets in deterministic scan order.
  */
-export function buildKoEligibleTargets(zones: PlayerZones): KoHeroTarget[] {
+export function buildKoEligibleTargets(
+  zones: PlayerZones,
+  allowedZones?: readonly KoHeroTarget['zone'][],
+): KoHeroTarget[] {
   // why: per-zone (zone, cardId) dedupe — the same ext_id can legitimately
   // appear twice within one zone (e.g., two starting-shield-agent in discard);
   // KOing any copy of that ext_id in that zone is outcome-identical, so one
@@ -3189,6 +3192,9 @@ export function buildKoEligibleTargets(zones: PlayerZones): KoHeroTarget[] {
   const seen = new Set<string>();
   const orderedZones: KoHeroTarget['zone'][] = ['discard', 'hand', 'inPlay'];
   for (const zoneName of orderedZones) {
+    // why: WP-577 — an optional zone allowlist restricts eligibility (Red Skull's
+    // strike is hand-only). Absent ⇒ all zones (byte-identical to WP-242).
+    if (allowedZones !== undefined && !allowedZones.includes(zoneName)) continue;
     for (const cardId of zones[zoneName]) {
       // why: a wound is never a "hero" for KO purposes (D-18503 carries
       // forward); wounds are excluded even when sitting in an otherwise-valid zone.
@@ -3216,10 +3222,16 @@ export function buildKoEligibleTargets(zones: PlayerZones): KoHeroTarget[] {
  * @param zones - The player's card zones.
  * @returns The number of non-wound cards across discard + hand + inPlay.
  */
-export function countKoableHeroes(zones: PlayerZones): number {
+export function countKoableHeroes(
+  zones: PlayerZones,
+  allowedZones?: readonly KoHeroTarget['zone'][],
+): number {
   let count = 0;
   const orderedZones: KoHeroTarget['zone'][] = ['discard', 'hand', 'inPlay'];
   for (const zoneName of orderedZones) {
+    // why: WP-577 — an optional zone allowlist restricts the count to the KO's
+    // allowed zones (Red Skull is hand-only). Absent ⇒ all zones (WP-492 unchanged).
+    if (allowedZones !== undefined && !allowedZones.includes(zoneName)) continue;
     for (const cardId of zones[zoneName]) {
       // why: a wound is never a "hero" for KO purposes (D-18503) — excluded here too.
       if (cardId === WOUND_EXT_ID) continue;

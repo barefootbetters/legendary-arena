@@ -103,6 +103,31 @@ describe('PendingKoHeroChoicePrompt (WP-243 / EC-274)', () => {
     assert.ok(wrapper.find('[data-testid="pending-ko-hero-choice-card-hand-test-hero-2"]').exists());
   });
 
+  test('Red Skull (WP-577): a hand-only eligible list renders only hand options and dispatches { zone: hand }', async () => {
+    // why: Red Skull's strike parks a hand-scoped choice, so the engine projects a
+    // hand-only eligible list. The prompt is eligible-driven (unchanged) — it renders
+    // exactly those hand options and dispatches a hand target the resolve accepts.
+    const handOnlyChoice: UIPendingKoHeroChoice = {
+      choiceType: 'ko-hero',
+      playerID: 'player-0',
+      remaining: 1,
+      eligible: [
+        { zone: 'hand', cardId: 'core/black-widow/covert-operation', display: { extId: 'core/black-widow/covert-operation', name: 'Covert Operation', imageUrl: 'https://example.com/co.jpg', cost: 4 } },
+        { zone: 'hand', cardId: 'core/cyclops/optic-blast', display: { extId: 'core/cyclops/optic-blast', name: 'Optic Blast', imageUrl: 'https://example.com/ob.jpg', cost: 3 } },
+      ],
+    };
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(PendingKoHeroChoicePrompt, {
+      props: { pendingKoHeroChoice: handOnlyChoice, viewerPlayerId: 'player-0', submitMove },
+    });
+    const buttons = wrapper.findAll('[data-testid^="pending-ko-hero-choice-card-"]');
+    assert.equal(buttons.length, 2, 'exactly the two hand options render');
+    assert.ok(!wrapper.find('[data-testid^="pending-ko-hero-choice-card-discard-"]').exists(), 'no discard option');
+    await wrapper.find('[data-testid="pending-ko-hero-choice-card-hand-core/cyclops/optic-blast"]').trigger('click');
+    assert.equal(calls.length, 1);
+    assert.deepEqual(calls[0]!.args, { zone: 'hand', cardId: 'core/cyclops/optic-blast' });
+  });
+
   test('clicking an eligible card fires resolveKoHeroChoice with that zone + cardId', async () => {
     const { calls, submitMove } = recorder();
     const wrapper = mount(PendingKoHeroChoicePrompt, {

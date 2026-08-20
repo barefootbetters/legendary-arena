@@ -7,6 +7,45 @@
 
 ## Current State
 
+### WP-577 — Red Skull Master Strike: interactive KO choice for the active player (EC-612 / D-24386) shipped (2026-08-19)
+
+Red Skull's Master Strike prints *"Each player KOs a Hero from their hand"* — an
+owning-player choice — but WP-386/D-24188 shipped a deterministic auto-pick MVP. Found
+live in a 2p Red Skull / Super Hero Civil War match review (the engine auto-KO'd each
+player's cheapest hand Hero with no prompt). This upgrades it to the **D-24284 split**
+the engine already uses for every "each player" effect.
+
+**The active player chooses; allies auto-pick.** The strike parks a **hand-scoped**
+`ko-hero` pending choice for the current player when ≥2 Heroes are in hand (exactly 1 is
+forced → auto-KO, no prompt; 0 is a no-op); the current player picks via the shipped
+`PendingKoHeroChoicePrompt`. Non-active allies auto-KO the lowest-cost hand Hero
+(unchanged). Full non-active-player interactivity stays **deferred** — it would be the
+first non-active-player interactive choice in the engine and needs the play phase's
+`activePlayers` restructured (boardgame.io rejects a non-active seat's move today) plus a
+multi-entry projection.
+
+**Reuse, don't fork.** Reuses the shipped `ko-hero` cluster end-to-end via an **additive
+optional `PendingKoHeroChoice.zones` allowlist** (absent = all zones, villain `ko-hero`
+byte-identical; Red Skull parks `['hand']`); `buildKoEligibleTargets` / `countKoableHeroes`
+gained an optional zone param; `resolveRedSkullStrike` threads the current player (mirroring
+`resolveMagnetoStrike`). **No new move** (the existing `resolveKoHeroChoice` is reused —
+`game.test.ts` move-count unchanged), pending kind, UIState field, or prompt component. A
+**bot** current player auto-resolves the hand-scoped choice byte-identical to
+`selectRedSkullKoTarget` (lowest-cost hand, tie → lowest index) — the same card the old
+auto-pick chose — so all-bot sims and both hash oracles are byte-unchanged (no committed
+fixture reaches Red Skull; the sentinel is `core/dr-doom`). The bot must offer a hand target
+the hand-scoped resolve accepts, or the block-all guard never lifts (the legalMoves↔guard
+divergence). Red Skull bookkeeping (capture D-15401/WP-574, `masterStrikeCount`, WP-200)
+byte-unchanged. Supersedes the interactive half of **D-24188** (its auto-pick stays the ally +
+bot fallback; D-24188 stays Active as that record).
+
+**Verified.** Engine **2791→2798/0** (+7 tests: strike parks/forced/no-op/ally-auto,
+resolve hand-scope accept+reject, bot byte-identical), arena-client prompt **11→12/0**
+(hand-only render + dispatch); full `pnpm -r build` + `--no-bail test` green; both hash
+oracles byte-unchanged; no `data/cards` change. **D-24026 live-verify operator-pending:** on
+`play.legendary-arena.com`, a Red Skull strike on your turn with ≥2 hand Heroes prompts you
+to pick which Hero is KO'd; an ally is auto-KO'd. **WP-577 code done; live-verify pending.**
+
 ### WP-422 — Seed PAR Publication: competitive surface turned ON (EC-457 / D-24242) shipped (2026-08-19)
 
 The whole competitive surface was dark for one reason: the PAR index was never generated

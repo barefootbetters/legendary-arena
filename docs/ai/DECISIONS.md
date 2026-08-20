@@ -29388,7 +29388,7 @@ Protect this file.
 
 ### D-24188 — Red Skull Master Strike MVP: deterministic auto-KO of the lowest-cost Hero
 
-**Status:** **Active** (executed 2026-07-17, WP-386 / EC-415).
+**Status:** **Active** (executed 2026-07-17, WP-386 / EC-415). **Interactive half superseded by D-24386 (WP-577, 2026-08-19):** the ACTIVE player now chooses their KO'd Hero via an interactive prompt; this auto-pick remains the fallback for non-active allies and for bot players (byte-identical).
 
 **User-Visible Surface:** `play.legendary-arena.com` — a Red Skull Master
 Strike now KOs a Hero from each player's hand (previously the printed strike
@@ -37774,3 +37774,51 @@ both hash oracles byte-unchanged. **D-24026 live-verify VERIFIED 2026-08-19**
 (`User-Visible Surface = cards.legendary-arena.com`; deployed `gitSha 2ae679e`: the loadout
 builder at 2p with scheme `core/super-hero-civil-war` requires exactly 4 heroes and flags a
 6-hero deck, while the Epic variant `cvwr/epic-super-hero-civil-war` correctly stays at 5).
+
+---
+
+### D-24386 — Red Skull Master Strike: the Active Player Chooses the KO'd Hero (D-24284 Split)
+
+Red Skull's Master Strike prints "Each player KOs a Hero from their hand" — an
+owning-player choice. WP-386 / D-24188 shipped a deterministic auto-pick MVP "to
+avoid a blocking multi-player pending-choice," and named this upgrade as the
+follow-up. Found live in a 2p Red Skull / Super Hero Civil War match review.
+
+Locked:
+
+1. **The active player chooses; allies auto-pick (the D-24284 split).** The strike
+   parks a hand-scoped `ko-hero` pending choice for the CURRENT player when ≥ 2
+   Heroes are in hand (exactly 1 is forced → auto-KO, no prompt; 0 is a no-op); the
+   current player then picks via the shipped `PendingKoHeroChoicePrompt`. Non-active
+   allies auto-KO the lowest-cost hand Hero, unchanged (`selectRedSkullKoTarget`).
+   Supersedes the interactive half of D-24188 (its auto-pick remains the ally + bot
+   fallback; D-24188 stays Active as that fallback record).
+2. **Hand-only.** Red Skull's printed zone is the hand, enforced by an ADDITIVE
+   optional `zones` allowlist on `PendingKoHeroChoice` (`['hand']`); absent ⇒ the
+   unchanged all-zone villain `ko-hero`. The eligible projection, the resolve move,
+   and the bot default all honour it.
+3. **Reuse, don't fork.** No new move (the existing `resolveKoHeroChoice` is reused
+   → the `game.test.ts` move-count is unchanged), no new pending-choice kind, no new
+   `UIState` field, no new prompt component. `buildKoEligibleTargets` /
+   `countKoableHeroes` gained an additive optional zone allowlist.
+4. **Byte-identical bot pick.** A bot current player auto-resolves the hand-scoped
+   choice to the lowest-cost hand Hero via `selectRedSkullKoTarget` (tie → lowest
+   hand index) — the same card the old auto-pick chose — so all-bot sims and both
+   hash oracles (`finalStateHash` / `PRE_WP080`) are byte-unchanged (no committed
+   fixture reaches Red Skull; the sentinel is `core/dr-doom`). The bot must offer a
+   zone the hand-scoped resolve accepts, or the block-all guard never lifts (the
+   legalMoves↔move-guard divergence).
+5. **Bookkeeping preserved.** Red Skull's bystander capture (D-15401 / WP-574),
+   `masterStrikeCount`, and the WP-200 emission are byte-unchanged.
+
+**Out of scope (deferred).** Full non-active-player interactivity — every player,
+including the one whose turn it is not, choosing — is the first non-active-player
+interactive choice in the engine and needs the play phase's `activePlayers`
+restructured (boardgame.io rejects a non-active seat's move today) plus a
+multi-entry projection. A later WP.
+
+**Active 2026-08-19 (WP-577 / EC-612).** Shipped exactly as locked across 6 engine
+files + the reused prompt. Engine 2791→2798/0 (+7 tests), arena-client prompt
+11→12/0; full `pnpm -r build` + `--no-bail test` green; both hash oracles
+byte-unchanged; no `data/cards` change. D-24026 live-verify operator-pending
+(`User-Visible Surface = play.legendary-arena.com`).

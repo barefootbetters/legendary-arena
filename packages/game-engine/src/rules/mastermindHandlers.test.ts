@@ -845,6 +845,74 @@ describe('mastermindStrikeHandler — Red Skull Master Strike', () => {
     // And the KO still happened.
     assert.deepStrictEqual(gameState.ko, ['hero-a']);
   });
+
+  // -------------------------------------------------------------------------
+  // WP-577 / D-24386 — the ACTIVE player chooses interactively (D-24284 split);
+  // allies auto-pick. A real ctx.currentPlayer triggers the park.
+  // -------------------------------------------------------------------------
+
+  it('parks a hand-scoped ko-hero choice for the active player with >=2 hand Heroes (no immediate KO)', () => {
+    const gameState = makeRedSkullState(
+      { '0': ['hero-a', 'hero-b'], '1': ['hero-c', 'hero-d'] },
+      { 'hero-a': stat(2), 'hero-b': stat(5), 'hero-c': stat(3), 'hero-d': stat(4) },
+    );
+
+    mastermindStrikeHandler(gameState, { ctx: { currentPlayer: '0' } }, { cardId: 'strike-card' }, {});
+
+    // Active player 0 parks — hand untouched, a hand-scoped ko-hero choice queued.
+    assert.deepStrictEqual(gameState.playerZones['0']!.hand, ['hero-a', 'hero-b']);
+    assert.equal(gameState.pendingKoHeroChoices?.length, 1);
+    const entry = gameState.pendingKoHeroChoices![0]!;
+    assert.equal(entry.choiceType, 'ko-hero');
+    assert.equal(entry.playerID, '0');
+    assert.deepStrictEqual(entry.zones, ['hand']);
+    // Non-active ally 1 auto-KOs its lowest-cost Hero (hero-c, cost 3) — unchanged.
+    assert.deepStrictEqual(gameState.playerZones['1']!.hand, ['hero-d']);
+    assert.deepStrictEqual(gameState.ko, ['hero-c']);
+  });
+
+  it('auto-KOs (no park) when the active player has exactly one eligible hand Hero', () => {
+    const gameState = makeRedSkullState(
+      { '0': [WOUND_EXT_ID, 'hero-only'] },
+      { 'hero-only': stat(2) },
+    );
+
+    mastermindStrikeHandler(gameState, { ctx: { currentPlayer: '0' } }, { cardId: 'strike-card' }, {});
+
+    // One eligible Hero is forced — auto-KO'd, no choice parked.
+    assert.equal(gameState.pendingKoHeroChoices?.length ?? 0, 0);
+    assert.deepStrictEqual(gameState.playerZones['0']!.hand, [WOUND_EXT_ID]);
+    assert.deepStrictEqual(gameState.ko, ['hero-only']);
+  });
+
+  it('auto-KOs (no park) when the active player holds two identical Heroes (one distinct option is forced)', () => {
+    const gameState = makeRedSkullState(
+      { '0': ['hero-dup', 'hero-dup'] },
+      { 'hero-dup': stat(2) },
+    );
+
+    mastermindStrikeHandler(gameState, { ctx: { currentPlayer: '0' } }, { cardId: 'strike-card' }, {});
+
+    // Two physical copies but one distinct option — KOing either is identical, so
+    // it is forced (auto-KO), not a genuine choice.
+    assert.equal(gameState.pendingKoHeroChoices?.length ?? 0, 0);
+    assert.deepStrictEqual(gameState.ko, ['hero-dup']);
+    assert.deepStrictEqual(gameState.playerZones['0']!.hand, ['hero-dup']);
+  });
+
+  it('falls through to the auto-pick when the strike context carries no current player (legacy stub)', () => {
+    const gameState = makeRedSkullState(
+      { '0': ['hero-a', 'hero-b'] },
+      { 'hero-a': stat(2), 'hero-b': stat(5) },
+    );
+
+    // A stub context ({}) yields a null current player — the strike auto-picks for
+    // every player (byte-identical to the pre-WP-577 behaviour), never parking.
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike-card' }, {});
+
+    assert.equal(gameState.pendingKoHeroChoices?.length ?? 0, 0);
+    assert.deepStrictEqual(gameState.ko, ['hero-a']);
+  });
 });
 
 // ---------------------------------------------------------------------------

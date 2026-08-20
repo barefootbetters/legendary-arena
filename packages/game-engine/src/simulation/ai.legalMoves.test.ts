@@ -13,6 +13,7 @@ import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { getLegalMoves } from './ai.legalMoves.js';
 import { selectDefaultKoTarget } from '../villain/villainEffects.execute.js';
+import { selectRedSkullKoTarget } from '../rules/mastermindHandlers.js';
 import { selectDefaultOptionalKoTarget } from '../hero/heroEffects.execute.js';
 import type { LegendaryGameState, PendingKoHeroChoice, PendingOptionalKoReward } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
@@ -76,6 +77,27 @@ describe('getLegalMoves — pending-KO short-circuit (WP-242 / D-24009)', () => 
     );
     // The default target is the starter SHIELD card in discard (D-20602).
     assert.deepStrictEqual(only.args, { zone: 'discard', cardId: 'starting-shield-agent' });
+  });
+
+  test('a HAND-scoped entry (Red Skull, WP-577) resolves to the lowest-cost HAND Hero — byte-identical to the auto-pick, ignoring discard/inPlay', () => {
+    const gameState = makeG({
+      hand: ['hero-a' as CardExtId, 'hero-b' as CardExtId],
+      discard: ['starting-shield-agent' as CardExtId], // would win the generic default; must be ignored
+      inPlay: ['hero-p' as CardExtId],
+      currentStage: 'main',
+      pendingKoHeroChoices: [{ choiceType: 'ko-hero', playerID: '0', zones: ['hand'] }],
+    });
+
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+
+    assert.equal(legalMoves.length, 1, 'exactly one legal move while pending');
+    const only = legalMoves[0]!;
+    assert.equal(only.name, 'resolveKoHeroChoice');
+    // why: the bot MUST pick from hand (a discard/inPlay target would be rejected by
+    // the hand-scoped resolve → freeze) AND byte-identical to selectRedSkullKoTarget.
+    const expectedCardId = selectRedSkullKoTarget(gameState, gameState.playerZones['0']!.hand);
+    assert.deepStrictEqual(only.args, { zone: 'hand', cardId: expectedCardId });
+    assert.equal((only.args as { zone: string }).zone, 'hand', 'never a discard/inPlay target');
   });
 
   test('short-circuit fires regardless of stage (board frozen)', () => {

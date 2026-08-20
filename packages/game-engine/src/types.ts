@@ -494,6 +494,12 @@ export interface PendingKoHeroChoice {
   // `remaining ?? 1`). Present only on a magnitude ≥ 2 park (the parker writes the
   // owed count); the resolve move decrements it and front-pops when it reaches 0.
   remaining?: number;
+  // why: WP-577 / D-24386 — an OPTIONAL zone allowlist restricting which zones the
+  // KO may come from. ABSENT means all zones (the WP-242 villain ko-hero is
+  // byte-identical: discard/hand/inPlay). Red Skull's Master Strike ("KO a Hero from
+  // their hand") parks `zones: ['hand']` so the prompt, the resolve move, and the bot
+  // default are hand-only. Additive + append-only (D-24034); a bare entry omits it.
+  zones?: readonly ('hand' | 'discard' | 'inPlay')[];
 }
 
 /**
