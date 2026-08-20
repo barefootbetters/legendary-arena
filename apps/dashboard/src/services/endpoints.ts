@@ -85,10 +85,19 @@ export async function fetchDauHistory(range: DateRange): Promise<ServiceResponse
     await simulateLatency();
     return mockDauHistory(DATE_RANGE_DAYS[range]);
   }
-  const response = await apiClient.get<ServiceResponse<DailyMetric[]>>('/api/dash/metrics/dau', {
-    params: { range },
-  });
-  return response.data;
+  // why: there is NO server-side DAU endpoint. `/api/dash/metrics/dau` was
+  // never registered — DAU is deliberately omitted from the `/api/dash/*`
+  // surface per D-19802 / WP-374 ("DAU and any activity-derived KPI are
+  // OMITTED — no activity signal exists — not fabricated"; see the `/api/dash/kpis`
+  // row in docs/ai/REFERENCE/api-endpoints.md). The client used to GET that
+  // absent path, so in LIVE mode every load surfaced a raw "Request failed
+  // with status 404" in the tile. Return the empty-LIVE sentinel instead —
+  // the same posture the analytics live fetchers use for an unavailable feed
+  // (`makeLiveEmptySentinel`, D-20601) — so the widget renders its honest
+  // "No DAU data available" empty state rather than an error. `range` is
+  // intentionally unused: with no feed to query there is nothing to scope.
+  void range;
+  return { data: [], updatedAt: Date.now(), source: 'LIVE' };
 }
 
 export async function fetchRevenueHistory(
