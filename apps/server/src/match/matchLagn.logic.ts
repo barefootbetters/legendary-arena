@@ -119,15 +119,25 @@ export async function readMatchConfigurationForLagn(
 }
 
 /**
- * Build a name resolver over the startup registry: a lookup from each entity's
- * set-qualified ext_id (`setAbbr/slug`) to its canonical display name, closed
- * over so the resolver is a plain `Map.get` with ext_id fallback.
+ * Build a name resolver over the startup registry: a lookup from each
+ * composition entity's set-qualified ext_id (`setAbbr/slug`) to its canonical
+ * **group-level** display name, closed over so the resolver is a plain `Map.get`
+ * with ext_id fallback.
  *
- * The lookup is built from `registry.listCards()` — each scheme, mastermind,
- * villain, and hero card is a `FlatCard` carrying its `extId` + `name`. Group- or
- * deck-level composition ids that are not a single card fall back to the ext_id
- * unchanged (the LAGN `name` is cosmetic — the viewer resolves ids, not names —
- * so an unresolved name is a labelling nicety, never a correctness issue).
+ * The lookup is built from the group-level entities exposed by
+ * `registry.getSet(abbr)` — one entry per hero, mastermind, villain group,
+ * henchman group, and scheme — NOT from `registry.listCards()`. A mastermind,
+ * villain group, and hero each own several cards that all share one ext_id
+ * (`setAbbr/slug`): a mastermind's base face plus its four Tactics, a villain
+ * group's members, a hero's card set. Keying the flattened card list by ext_id
+ * therefore lets the LAST card written win — resolving `core/red-skull` to its
+ * "Ruthless Dictator" Tactic card instead of the "Red Skull" base face (the
+ * D-24169 dashboard match-summary mislabel this fixes). Reading the entity name
+ * (`mastermind.name`, `villainGroup.name`, `hero.name`, …) yields exactly one
+ * order-independent entry per ext_id — the base-face name for a mastermind by
+ * data invariant. An ext_id with no entity (a deck-level id, a malformed row)
+ * falls back to the ext_id unchanged (the `name` is cosmetic — the viewer
+ * resolves ids, not names).
  *
  * @param registry The startup CardRegistry (read-only).
  * @returns A resolver returning the display name, or the ext_id when absent.
@@ -137,10 +147,52 @@ export function buildNameResolver(registry: CardRegistry): ResolveName {
   // it; the resolver never mutates the registry, caches nothing else, and
   // persists nothing.
   const nameByExtId = new Map<string, string>();
-  for (const card of registry.listCards()) {
-    nameByExtId.set(card.extId, card.name);
+  for (const setEntry of registry.listSets()) {
+    const setData = registry.getSet(setEntry.abbr);
+    if (setData === undefined) {
+      continue;
+    }
+    // why: use setData.abbr (not setEntry.abbr) for the ext_id prefix so the key
+    // is byte-identical to the `${abbr}/${slug}` ext_id flattenSet derives.
+    const setAbbr = setData.abbr;
+    for (const hero of setData.heroes) {
+      nameByExtId.set(`${setAbbr}/${hero.slug}`, hero.name);
+    }
+    for (const mastermind of setData.masterminds) {
+      nameByExtId.set(`${setAbbr}/${mastermind.slug}`, mastermind.name);
+    }
+    for (const villainGroup of setData.villains) {
+      nameByExtId.set(`${setAbbr}/${villainGroup.slug}`, villainGroup.name);
+    }
+    for (const scheme of setData.schemes) {
+      nameByExtId.set(`${setAbbr}/${scheme.slug}`, scheme.name);
+    }
+    // why: SetDataSchema types `henchmen` as unknown[] (it carries no gameplay
+    // schema), so narrow each entry to the { name, slug } shape the data holds
+    // before mapping; a malformed entry is skipped rather than throwing.
+    for (const henchmanGroup of setData.henchmen) {
+      if (isNamedEntity(henchmanGroup)) {
+        nameByExtId.set(`${setAbbr}/${henchmanGroup.slug}`, henchmanGroup.name);
+      }
+    }
   }
   return (extId) => nameByExtId.get(extId) ?? extId;
+}
+
+/**
+ * Narrow an untyped set entity (a henchman group, typed `unknown` by
+ * SetDataSchema) to the `{ name, slug }` shape the name resolver maps. Returns
+ * `false` for any value missing a string `name` or `slug`.
+ *
+ * @param value The candidate entity.
+ * @returns True when the value has string `name` and `slug` fields.
+ */
+function isNamedEntity(value: unknown): value is { name: string; slug: string } {
+  if (value === null || typeof value !== 'object') {
+    return false;
+  }
+  const candidate = value as { name?: unknown; slug?: unknown };
+  return typeof candidate.name === 'string' && typeof candidate.slug === 'string';
 }
 
 /**

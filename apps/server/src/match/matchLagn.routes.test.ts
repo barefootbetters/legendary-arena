@@ -78,7 +78,14 @@ const VALID_COMPOSITION: MatchLagnComposition = {
 const CALLER: AccountId = 'account-caller' as AccountId;
 
 /** A fake registry exposing only the `listCards()` the resolver uses. */
-const EMPTY_REGISTRY = { listCards: () => [] } as unknown as CardRegistry;
+// why: buildNameResolver reads the group-level `listSets()` + `getSet()` surface;
+// these route tests assert on ids (names resolve to the ext_id fallback), so an
+// empty set index is sufficient.
+const EMPTY_REGISTRY = {
+  listSets: () => [],
+  getSet: () => undefined,
+  listCards: () => [],
+} as unknown as CardRegistry;
 
 /** Deps with a session that authenticates as `CALLER` unless overridden. */
 function authedDeps(): MatchLagnRouteDependencies {
