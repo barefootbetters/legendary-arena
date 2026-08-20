@@ -84,10 +84,46 @@ const OUTPUT_PATH = join(DASHBOARD_DIR, 'src/data/governance-snapshot.json');
 // still parses).
 const WORK_INDEX_ROW_PATTERN = /^- \[(x| )\] WP-(\d{3}) — (.+?)\s+\*\*(Draft|Done|Ready|Blocked)(?:\*\* | )(\d{4}-\d{2}-\d{2})?/;
 const DECISIONS_HEADING_PATTERN = /^### D-(\d{5}) — (.+?)$/;
-// why: WP-199 §Locked Contract Values — anchored to start-of-line; closed
-// match shape for the STATUS heading per D-19901. ecNumber captures the
-// optional letter suffix verbatim (e.g. `224a`).
-const STATUS_HEADING_PATTERN = /^### (WP-\d{3}) \/ (EC-\d{3}[a-z]?) Executed — (.+?) \((\d{4}-\d{2}-\d{2})\)$/;
+// why: WP-199 originally locked ONE rigid STATUS heading shape (D-19901):
+// `### WP-NNN / EC-NNN Executed — Title (YYYY-MM-DD)`. Operators have since
+// authored STATUS entries in many forms — `— DONE (date)`, `- DONE (date)`,
+// `… shipped (date)`, the EC moved into a `(EC-NNN / D-NNNNN)` title
+// parenthetical, or no EC token at all. The rigid regex silently dropped every
+// entry authored after 2026-07-17 (WP-387 was its last match), freezing the
+// "Recent STATUS Entries" widget ~a month behind while the DECISIONS and
+// WORK_INDEX-derived feeds kept flowing. This is the same drift the
+// WORK_INDEX_ROW_PATTERN widening above already absorbed, so the STATUS parser
+// now uses the same posture: a LOOSE `### WP-NNN` detector, then separate
+// date / EC extraction, with the descriptive title derived by
+// `deriveStatusTitle`. A heading with no calendar date is not a dated status
+// entry and is skipped. Covered by statusHeadingPattern.test.ts.
+//
+// A candidate STATUS heading starts with `### WP-NNN` (three digits, optional
+// single-letter suffix for the ancient `WP-005A` era). Capture group 1 is the
+// three-digit number.
+const STATUS_HEADING_LOOSE_PATTERN = /^### WP-(\d{3})[A-Za-z]?\b/;
+// The first calendar date in the heading is the entry's date (the done/ship
+// date; entries that carry a second date — e.g. a later "CONFIRMED LIVE" date —
+// keep the first as the canonical one).
+const STATUS_DATE_PATTERN = /\d{4}-\d{2}-\d{2}/;
+// The first EC token anywhere in the heading (optional — many recent entries
+// carry no EC in the heading at all).
+const STATUS_EC_PATTERN = /EC-(\d{3}[a-z]?)/;
+// Strips the leading `WP-NNN [/ EC-NNN] [Executed] <connector>` prefix so the
+// derived title begins at the human-written description. The connector is any
+// run of em-dash / colon / hyphen plus surrounding whitespace.
+const STATUS_TITLE_LEADING_PATTERN = /^WP-\d{3}[A-Za-z]?(?:\s*\/\s*EC-\d{3}[a-z]?)?\s*(?:Executed\b)?\s*[—:-]*\s*/;
+// Cuts the trailing status + date decoration from the title: everything from
+// the first calendar date (optionally paren-wrapped) to end of line.
+const STATUS_TITLE_DATE_TAIL_PATTERN = /\s*\(?\d{4}-\d{2}-\d{2}[\s\S]*$/;
+// A dangling status word left before the (removed) date — `— DONE`, `- DONE`,
+// `shipped`, `Executed`, `VERIFIED`, `COMPLETE`.
+const STATUS_TITLE_STATUS_WORD_PATTERN = /\s*[—-]?\s*(?:DONE|Executed|shipped|VERIFIED|COMPLETE)\s*$/i;
+// A trailing pure-metadata parenthetical — `(EC-…)`, `(D-… …)`, `(EC-… / D-…)`.
+// Anchored so a meaningful in-title parenthetical (e.g. a `(code-token)` or
+// `(leaderboard → loadout builder)`) that does NOT begin with `EC-`/`D-` is
+// preserved.
+const STATUS_TITLE_META_PAREN_PATTERN = /\s*\((?:EC-|D-)[^)]*\)\s*$/;
 
 // why: D-19806 — literal case-sensitive token; segment terminates at the
 // first `.` after the token; dependency WPs extracted via /WP-\d{3}/g
@@ -485,9 +521,35 @@ function resolveWpFilePath(wpNumber, workPacketFilenames) {
 }
 
 /**
- * Parse STATUS.md entries. Each entry pairs a
- * `### WP-NNN / EC-NNN[a-z]? Executed — Title (YYYY-MM-DD)` heading with its
- * first contiguous paragraph.
+ * Derive the human-written descriptive title from a STATUS heading line.
+ *
+ * Strips the leading `WP-NNN [/ EC-NNN] [Executed] <connector>` prefix, then
+ * removes the trailing status/date decoration: the first calendar date onward,
+ * a dangling status word (`— DONE` / `shipped` / …), and a trailing
+ * pure-metadata `(EC-… / D-…)` parenthetical. Runs the status-word and
+ * meta-paren strips twice because a heading can end `… (EC-… / D-…) shipped
+ * (date)` — after the date is cut, the status word sits before the metadata
+ * paren, and after the paren is cut a second status word can surface.
+ * Meaningful in-title parentheticals (a code token, a descriptive aside) are
+ * left intact because they do not begin with `EC-` / `D-`.
+ *
+ * @param {string} headingText The raw `### …` heading line.
+ * @returns {string} The trimmed descriptive title.
+ */
+function deriveStatusTitle(headingText) {
+  let title = headingText.replace(/^### /, '');
+  title = title.replace(STATUS_TITLE_LEADING_PATTERN, '');
+  title = title.replace(STATUS_TITLE_DATE_TAIL_PATTERN, '');
+  title = title.replace(STATUS_TITLE_STATUS_WORD_PATTERN, '');
+  title = title.replace(STATUS_TITLE_META_PAREN_PATTERN, '');
+  title = title.replace(STATUS_TITLE_STATUS_WORD_PATTERN, '');
+  return title.trim();
+}
+
+/**
+ * Parse STATUS.md entries. Each entry pairs a `### WP-NNN …` heading carrying a
+ * calendar date with its first contiguous paragraph. Heading shapes vary (see
+ * the STATUS_* pattern comments above); the parser tolerates them all.
  *
  * Mirrors the DECISIONS.md parser structure per D-19907 — same `for...of`
  * over heading matches, same per-entry try/catch, same skip-capture body
@@ -523,20 +585,28 @@ function readStatus(content, workPacketFilenames) {
   let cursor = 0;
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
     const line = lines[lineIndex];
-    const headingMatch = STATUS_HEADING_PATTERN.exec(line);
-    if (headingMatch !== null) {
+    const looseMatch = STATUS_HEADING_LOOSE_PATTERN.exec(line);
+    const dateMatch = looseMatch === null ? null : STATUS_DATE_PATTERN.exec(line);
+    // why: a candidate heading is `### WP-NNN …` AND carries a calendar date.
+    // A `### WP-NNN` heading with no date is not a dated status entry (e.g. a
+    // section divider) and is skipped rather than emitted with an empty date.
+    if (looseMatch !== null && dateMatch !== null) {
       // why: D-19905 hardening i — `rawText.indexOf(line, cursor)` returns the
       // JS string index (UTF-16 code-unit) of this heading's first character.
       // The `cursor` argument advances past prior matches so duplicate-line
       // text (rare but possible) cannot resolve to an earlier offset.
       const rawIndex = rawText.indexOf(line, cursor);
+      const ecMatch = STATUS_EC_PATTERN.exec(line);
       headingMatches.push({
         lineIndex,
         rawIndex,
-        wpNumberStr: headingMatch[1].slice(3),
-        ecToken: headingMatch[2],
-        title: headingMatch[3],
-        date: headingMatch[4],
+        wpNumberStr: looseMatch[1],
+        // why: ecToken keeps the full `EC-NNN` shape (or empty string) so the
+        // downstream `.slice(3)` and duplicate-triplet key are unchanged from
+        // the pre-widening code. Many recent headings carry no EC token.
+        ecToken: ecMatch === null ? '' : `EC-${ecMatch[1]}`,
+        title: deriveStatusTitle(line),
+        date: dateMatch[0],
       });
       cursor = rawIndex + line.length;
     } else {

@@ -73,7 +73,11 @@ function toggleShowMore(): void {
 
 function formatHeader(entry: StatusEntry): string {
   const paddedWp = String(entry.wpNumber).padStart(3, '0');
-  return `WP-${paddedWp} / EC-${entry.ecNumber} — ${entry.title}`;
+  // why: many recent STATUS headings carry no EC token, so the snapshot emits
+  // an empty `ecNumber`. Omit the `/ EC-NNN` segment entirely in that case
+  // rather than render a dangling `WP-422 / EC- — …`.
+  const ecSegment = entry.ecNumber === '' ? '' : ` / EC-${entry.ecNumber}`;
+  return `WP-${paddedWp}${ecSegment} — ${entry.title}`;
 }
 </script>
 
