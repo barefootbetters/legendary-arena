@@ -38,6 +38,7 @@ import type {
   SupportPoolKind,
 } from "@legendary-arena/registry/setupContract";
 import { useLoadoutLagnExport } from "../composables/useLoadoutLagnExport";
+import { buildEntityNameResolver } from "../lib/entityNameResolver";
 import { serializeSetupToUrl } from "../lib/setupUrlParams";
 import { parseLagnLoadout, type LagnImportedResult } from "../lib/loadoutLagnImport";
 import { sniffLoadoutImportFormat, redirectSentenceFor } from "../lib/loadoutImportFormat";
@@ -134,7 +135,12 @@ const {
   applySupportPreset,
 } = draftApi;
 
-const lagnExportApi = useLoadoutLagnExport(draft);
+// why: resolve each composition ext_id to its group-level display name from the
+// loaded registry so the exported LAGN carries real entity names (Red Skull,
+// Super Hero Civil War, …), not blank strings. Built once — the registry is
+// frozen for the component lifetime.
+const resolveEntityName = buildEntityNameResolver(props.registry);
+const lagnExportApi = useLoadoutLagnExport(draft, resolveEntityName);
 
 // why: D-24358 — seed the export verdict from a `?lagn=` deep link. IMMEDIATE is
 // load-bearing: useLagnFromUrl runs inside App.vue's async registry loader, which

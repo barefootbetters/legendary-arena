@@ -88,13 +88,49 @@ test("composition maps to LAGN setup correctly", () => {
   const parsed = JSON.parse(built.file);
   assert.equal(parsed.setup.mastermind.id, "mastermind-loki");
   assert.equal(parsed.setup.scheme.id, "scheme-plot");
-  assert.deepEqual(parsed.setup.villain_groups, [{ id: "villain-brotherhood", name: "" }]);
-  assert.deepEqual(parsed.setup.henchmen_groups, [{ id: "henchman-dark-minions", name: "" }]);
-  assert.deepEqual(parsed.setup.heroes, [{ id: "hero-iron-man", name: "" }]);
+  // why: with no resolver supplied, the export falls back to the ext_id as the
+  // name (never a blank string) — the safe default this composable ships.
+  assert.deepEqual(parsed.setup.villain_groups, [
+    { id: "villain-brotherhood", name: "villain-brotherhood" },
+  ]);
+  assert.deepEqual(parsed.setup.henchmen_groups, [
+    { id: "henchman-dark-minions", name: "henchman-dark-minions" },
+  ]);
+  assert.deepEqual(parsed.setup.heroes, [{ id: "hero-iron-man", name: "hero-iron-man" }]);
   assert.equal(parsed.setup.bystanders_count, 30);
   assert.equal(parsed.setup.wounds_count, 30);
   assert.equal(parsed.setup.shield_officers_count, 30);
   assert.equal(parsed.setup.sidekicks_count, 0);
+});
+
+test("a supplied resolver populates real entity names (never blank)", () => {
+  const draft = ref(createValidDraft());
+  // why: regression for the blank-name loadout export (a Red Skull / Super Hero
+  // Civil War export shipped every entity name as ""). A resolver maps each
+  // composition ext_id to its display name; every setup entity must carry it.
+  const names: Record<string, string> = {
+    "mastermind-loki": "Loki",
+    "scheme-plot": "The Grand Plot",
+    "villain-brotherhood": "Brotherhood",
+    "henchman-dark-minions": "Dark Minions",
+    "hero-iron-man": "Iron Man",
+  };
+  const api = useLoadoutLagnExport(draft, (extId) => names[extId] ?? extId);
+
+  const built = api.buildLagnFile();
+  assert(built, "buildLagnFile should return a file for valid composition");
+  const parsed = JSON.parse(built.file);
+
+  assert.equal(parsed.setup.mastermind.name, "Loki");
+  assert.equal(parsed.setup.scheme.name, "The Grand Plot");
+  assert.deepEqual(parsed.setup.villain_groups, [
+    { id: "villain-brotherhood", name: "Brotherhood" },
+  ]);
+  assert.deepEqual(parsed.setup.henchmen_groups, [
+    { id: "henchman-dark-minions", name: "Dark Minions" },
+  ]);
+  assert.deepEqual(parsed.setup.heroes, [{ id: "hero-iron-man", name: "Iron Man" }]);
+  assert.notEqual(parsed.setup.mastermind.name, "");
 });
 
 test("variant/outcome selection required for validation", () => {
