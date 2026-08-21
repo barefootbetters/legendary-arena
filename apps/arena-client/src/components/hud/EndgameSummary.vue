@@ -1,6 +1,7 @@
 <script lang="ts">
 import { defineComponent, computed, type PropType } from 'vue';
 import type { UIGameOverState } from '@legendary-arena/game-engine';
+import type { MyCompetitiveScore } from '../../lib/api/competitionApi';
 
 // why: the four literal leaf-name `aria-label`s on the PAR breakdown
 // (`rawScore`, `parScore`, `finalScore`, `scoringConfigVersion`) bind the
@@ -21,6 +22,14 @@ export default defineComponent({
     gameOver: {
       type: Object as PropType<UIGameOverState>,
       required: true,
+    },
+    // why: WP-578 — the server-computed competitive score for this match,
+    // threaded from `useCompetitiveSubmitOnGameover` (PlayViewport). Optional:
+    // `null` for guests, pending/failed submits, and non-scoring matches, in
+    // which case the panel renders the outcome + VP summary unchanged.
+    competitiveScore: {
+      type: Object as PropType<MyCompetitiveScore | null>,
+      default: null,
     },
   },
   setup(props) {
@@ -47,6 +56,27 @@ export default defineComponent({
         {{ gameOver.reason }}
       </span>
     </header>
+
+    <!-- why: WP-578 — the competitive score the server computed for this match,
+         shown to the player who earned it. `finalScore` is the ranked, PAR-
+         relative, lower-is-better value; `rawScore` is supporting detail. Both
+         are rendered verbatim (never recomputed client-side). Absent for guests,
+         pending/failed submits, and non-scoring matches (prop is null). -->
+    <section
+      v-if="competitiveScore"
+      class="competitive-score"
+      data-testid="arena-hud-competitive-score"
+      aria-label="competitive score"
+    >
+      <p class="competitive-score-headline">
+        Competitive score:
+        <strong aria-label="competitiveFinalScore">{{ competitiveScore.finalScore }}</strong>
+        <span class="competitive-score-hint">(lower is better)</span>
+      </p>
+      <p class="competitive-score-detail">
+        Raw score <span aria-label="competitiveRawScore">{{ competitiveScore.rawScore }}</span>
+      </p>
+    </section>
 
     <dl v-if="hasPar && gameOver.par" class="par-breakdown">
       <div class="par-field">
@@ -95,6 +125,33 @@ header {
 .outcome {
   font-weight: 700;
   font-size: 1.2rem;
+}
+
+.competitive-score {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.competitive-score-headline {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.competitive-score-headline strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.competitive-score-hint {
+  font-size: 0.8rem;
+  opacity: 0.75;
+}
+
+.competitive-score-detail {
+  margin: 0;
+  font-size: 0.85rem;
+  opacity: 0.85;
+  font-variant-numeric: tabular-nums;
 }
 
 .par-breakdown {

@@ -158,7 +158,7 @@ export default defineComponent({
     // why: WP-339 — on gameover, submit this match's competitive score once (for
     // an authenticated player). toRef keeps matchId reactive so the composable
     // re-arms if a new live match reuses this viewport instance.
-    const { submissionStatus } = useCompetitiveSubmitOnGameover(
+    const { submissionStatus, submittedScore } = useCompetitiveSubmitOnGameover(
       toRef(props, 'matchId'),
     );
     const submissionMessage = computed<string>(() => {
@@ -298,6 +298,7 @@ export default defineComponent({
       henchmanGroupIds: props.henchmanGroupIds,
       heroDeckIds: props.heroDeckIds,
       submissionStatus,
+      submittedScore,
       submissionMessage,
       isBotAllyStopped,
       botAllyMessage,
@@ -323,6 +324,7 @@ export default defineComponent({
       :villain-group-ids="villainGroupIds"
       :henchman-group-ids="henchmanGroupIds"
       :hero-deck-ids="heroDeckIds"
+      :competitive-score="submittedScore"
     />
     <PlayDesktop
       v-else
@@ -331,6 +333,7 @@ export default defineComponent({
       :villain-group-ids="villainGroupIds"
       :henchman-group-ids="henchmanGroupIds"
       :hero-deck-ids="heroDeckIds"
+      :competitive-score="submittedScore"
     />
     <DiagnosticExportButton />
     <!--

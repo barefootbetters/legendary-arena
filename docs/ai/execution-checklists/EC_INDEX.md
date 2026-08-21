@@ -735,7 +735,7 @@ the range clearly separate from game-engine WP-backed ECs.
 | EC-610 | WP-575    | Game Engine + Arena Client     | Diagnostics report carries no effect trace (WP-258 projection pattern) | Done |
 | EC-611 | WP-576    | Registry + Game Engine + registry-viewer | Civil War 2p hero-count requirement (`resolveEffectiveHeroCount` → 4; require exactly 4, builder + validation) | Done |
 | EC-612 | WP-577    | Game Engine + Arena Client | Red Skull Master Strike interactive KO choice for the active player (D-24284 split; reuse hand-scoped `ko-hero` cluster; allies + bots auto byte-identical; supersedes D-24188) | Done |
-| EC-613 | WP-578    | App (arena-client)             | Surface the competitive score (server-derived submit record) on the endgame panel; D-6701 premise intact | Pending |
+| EC-613 | WP-578    | App (arena-client)             | Surface the competitive score (server-derived submit record) on the endgame panel; D-6701 premise intact | Done |
 | EC-614 | WP-579    | Server + legends-board         | Legends leaderboard shows the claimed handle as a profile link; unclaimed fallback (no email-local-part); versioned snapshot | Pending |
 | EC-615 | WP-580    | Game Engine + card data        | "Use recruit as attack" (God of Thunder); turn-scoped economy flag + attack-first spend order; first resource-conversion primitive | Done |
 | EC-616 | WP-581    | Game Engine + arena-client     | Visible cue for the recruit-as-attack conversion; project the WP-580 flag onto UITurnEconomyState (active-player-only) + an accessible EconomyBar cue; display-only | Done |

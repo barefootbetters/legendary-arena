@@ -22,7 +22,7 @@ import { ref, watch, type Ref } from 'vue';
 
 import { useUiStateStore } from '../stores/uiState';
 import { useAuthStore } from '../stores/auth';
-import { submitCompetitiveScore } from '../lib/api/competitionApi';
+import { submitCompetitiveScore, type MyCompetitiveScore } from '../lib/api/competitionApi';
 
 /**
  * The lifecycle of a post-match submission, surfaced to the UI:
@@ -48,15 +48,23 @@ export type SubmissionStatus =
  * Watch for gameover and submit the match's competitive score once.
  *
  * @param matchId A ref to the current live match id (`''` when no live match).
- * @returns `{ submissionStatus }` — a reactive status the play surface renders.
+ * @returns `{ submissionStatus, submittedScore }` — a reactive status plus the
+ *   server-returned competitive score record (WP-578), which the endgame panel
+ *   renders. `submittedScore` is `null` until a successful submit and for every
+ *   non-scoring path (guest / failed / ineligible / early-end).
  */
 export function useCompetitiveSubmitOnGameover(matchId: Ref<string>): {
   submissionStatus: Ref<SubmissionStatus>;
+  submittedScore: Ref<MyCompetitiveScore | null>;
 } {
   const uiStateStore = useUiStateStore();
   const authStore = useAuthStore();
 
   const submissionStatus: Ref<SubmissionStatus> = ref('idle');
+  // why: WP-578 — the server already returns the scored record on a successful
+  // submit, so the endgame panel reads it from here rather than re-fetching. It
+  // stays null for guests, failures, and non-scoring matches.
+  const submittedScore: Ref<MyCompetitiveScore | null> = ref(null);
   // why: the gameover snapshot recurs on every server frame, so a guard fires
   // the submit at most once per match. `submittedForMatch` records which match
   // it fired for, so the matchId watch below can re-arm for a new match.
@@ -106,6 +114,9 @@ export function useCompetitiveSubmitOnGameover(matchId: Ref<string>): {
     const result = await submitCompetitiveScore(token, currentMatchId);
     if (result.status === 200) {
       submissionStatus.value = result.wasExisting === true ? 'already' : 'submitted';
+      // why: WP-578 — surface the scored record (rawScore / finalScore) so the
+      // endgame panel can show the competitive score the server just computed.
+      submittedScore.value = result.record;
     } else if (result.error === 'par_not_published') {
       // why: WP-465 — `par_not_published` means the finished match is not a
       // ranked-gauntlet loadout, so it is PERMANENTLY not eligible to be scored —
@@ -140,8 +151,11 @@ export function useCompetitiveSubmitOnGameover(matchId: Ref<string>): {
       hasSubmitted = false;
       submittedForMatch = null;
       submissionStatus.value = 'idle';
+      // why: WP-578 — clear the previous match's score when re-arming for a new
+      // match on the same viewport instance.
+      submittedScore.value = null;
     }
   });
 
-  return { submissionStatus };
+  return { submissionStatus, submittedScore };
 }

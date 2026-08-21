@@ -37928,3 +37928,38 @@ arena-client 1359→1361/0 (+2: cue render/absent); both hash oracles byte-uncha
 `pnpm -r build` + `--no-bail test` green across all packages. **D-24026 live-verify:
 operator-pending** (`User-Visible Surface = play.legendary-arena.com`; play God of Thunder and
 see the cue in the Economy bar for the rest of the turn).
+
+### D-24387 — The Competitive Score Is Server-Derived and Surfaced Client-Side (Endgame Panel)
+
+A real match review surfaced "where is my score": the competitive score is computed
+server-side on replay ingest (`parScoring.logic.ts`) and stored in
+`legendary.competitive_scores`, but never shown — `buildParBreakdown` hard-returns
+`undefined` under D-6701, so `UIGameOverState.par` is always omitted and `EndgameSummary`
+rendered only the outcome + in-game VP total.
+
+Locked:
+
+1. **D-6701's premise stands — the fix is client-side.** The engine has no `ReplayResult`
+   at gameover, so `buildParBreakdown` STAYS returning `undefined` and `UIGameOverState.par`
+   is NOT populated. The score reaches the player from the SERVER: `submitCompetitiveScore`
+   (the one-shot gameover submit, `useCompetitiveSubmitOnGameover`) already returns
+   `record: MyCompetitiveScore` (carrying `rawScore` + `finalScore`) on HTTP 200 — the
+   composable surfaces that record and `EndgameSummary` renders it. No new fetch.
+2. **Read-only display.** The endgame score is a presentation of what the server already
+   computed and stored; the client renders `finalScore` (the ranked, PAR-relative,
+   lower-is-better headline) + `rawScore` VERBATIM and never recomputes them.
+3. **Graceful absence.** `submittedScore` (and the `EndgameSummary` prop) is `null` for
+   guests (no submit), network failures, non-200s, `par_not_published` (a non-ranked
+   loadout), and early-ended matches; the panel then renders the existing outcome + VP
+   summary with no score and no error. A casual/unranked match that still submits still
+   shows its score (`is_ranked_eligible` is orthogonal to display).
+4. **App-only.** No engine, persistence, or hash surface change; the additive
+   `EndgameSummary` prop is optional and prop-drilled `PlayViewport` → `PlayDesktop` /
+   `PlayMobile` (the live-route path; the dev `fixture`-route `ArenaHud` is untouched).
+
+**Active 2026-08-21 (WP-578 / EC-613).** Shipped across the composable + `EndgameSummary.vue`
++ the `PlayViewport`/`PlayDesktop`/`PlayMobile` wiring + tests. arena-client 1359→1364/0 (+5);
+`vue-tsc` clean; no `packages/game-engine` change (`buildParBreakdown` still returns
+`undefined`); `pnpm -r build` + `--no-bail test` green across all packages. **D-24026
+live-verify: operator-pending** (`User-Visible Surface = play.legendary-arena.com`; finish a
+ranked match signed in and read the competitive score on the endgame panel).
