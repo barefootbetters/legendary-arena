@@ -7,6 +7,38 @@
 
 ## Current State
 
+### WP-580 — "Use Recruit as Attack" conversion, God of Thunder (EC-615 / D-24389) shipped (2026-08-21)
+
+The engine's **first resource-conversion primitive**. God of Thunder's "You can use
+Recruit as Attack this turn." was completely and silently unimplemented — the ability
+line carried no `[keyword:]` marker, so it parsed to two undefined-magnitude no-op grants
+the hollow detector did not flag. Found live in a real Red Skull / Midtown Bank Robbery 2p
+match: the winner played God of Thunder twice and was never offered the conversion
+(end-state `availableRecruit: 6` was spendable as attack).
+
+Shipped exactly as locked (D-24389): a `[keyword:recruit-as-attack]` marker added via the
+upstream `hero-ability-markers` pass (+ `VALID_TOKEN_PATTERN`) and regenerated into
+`data/cards/core.json`; the keyword registered in the `HeroKeyword` union, `HERO_KEYWORDS`,
+and `HANDLED_KEYWORDS` (with its `HERO_EFFECT_HANDLERS` entry); a **lazily-materialized**,
+turn-scoped `G.turnEconomy.recruitSpendableAsAttack` flag (absent when unset → hash-stable),
+carried through every `TurnEconomy` rebuild by conditional spread and cleared by
+`resetTurnEconomy`; and `getSpendableAttack` (attack + convertible recruit) +
+`spendFightCost` (attack first, then recruit) used **identically** by `fightVillain`,
+`fightMastermind`, the bot affordability projection (`simulation/ai.legalMoves`), and the
+UIState economy projection — the legalMoves↔move-guard mirror preserved.
+
+Scope: core God of Thunder only, one-directional, whole-turn; msp1/cvwr/co2e/xmen variants
+deferred. Engine **2798→2816/0** (+18 tests: economy, fight, bot, parse, drift/count pins);
+**both hash oracles byte-unchanged** (the lazy flag needed no dual re-pin — the sentinel
+fixture never plays God of Thunder); the `hero-mechanic-ledger`, `card-mechanics`, and
+`effect-implementation-index` feeds regenerated with all four `:check` gates passing;
+`pnpm -r build` + `pnpm -r --no-bail test` green across all packages (0 fail). The
+`card-mechanics.json` feed (`mechanics:metadata`) was an EC-615 file-allowlist addition
+surfaced at execution — a new hero keyword stales that feed too. The `lagn-v1.json`
+line-ending churn from the build was reverted (no real diff). **D-24026 live-verify:
+operator-pending** (`User-Visible Surface = play.legendary-arena.com`; play God of Thunder
+and fund a fight from unspent recruit).
+
 ### WP-577 — Red Skull Master Strike: interactive KO choice for the active player (EC-612 / D-24386) shipped (2026-08-19)
 
 Red Skull's Master Strike prints *"Each player KOs a Hero from their hand"* — an
