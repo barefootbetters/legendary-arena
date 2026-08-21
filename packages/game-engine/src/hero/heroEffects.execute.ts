@@ -255,6 +255,10 @@ const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   // the eligible-Hero set is computed from inPlay at play time, so the magnitude pre-gate
   // must not drop it.
   'copy-powers',
+  // why: WP-580 / D-24389 — recruit-as-attack carries no magnitude (it sets a turn-scoped
+  // conversion flag, grants no resource total); the magnitude pre-gate must not drop it,
+  // or the handler never fires and the flag is never set (the live-verify defect).
+  'recruit-as-attack',
 ]);
 
 // ---------------------------------------------------------------------------

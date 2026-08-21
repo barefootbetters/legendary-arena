@@ -256,6 +256,28 @@ describe('executeHeroEffects fired-effect count (WP-409 / D-24221)', () => {
       'A safe-skipped effect must not be counted.');
   });
 
+  // why: WP-580 / D-24389 — regression. recruit-as-attack (God of Thunder) carries NO
+  // magnitude, so it MUST be in NO_MAGNITUDE_KEYWORDS or the magnitude pre-gate in
+  // executeSingleEffect drops it BEFORE the handler runs — the exact live-verify defect
+  // (the effect traced as `no-handler` and the turn flag was never set). This test drives
+  // the FULL dispatch path (not the handler in isolation), which is what makes it catch it.
+  it('recruit-as-attack FIRES through the dispatch and sets the turn-scoped conversion flag', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-x'],
+      heroAbilityHooks: [
+        { cardId: 'hero-x' as string, timing: 'onPlay', keywords: ['recruit-as-attack'], effects: [{ type: 'recruit-as-attack' }] },
+      ],
+    });
+    assert.equal(
+      executeHeroEffects(gameState, countCtx, '0', 'hero-x' as string), 1,
+      'the no-magnitude recruit-as-attack effect must reach its handler and count as fired',
+    );
+    assert.equal(
+      gameState.turnEconomy.recruitSpendableAsAttack, true,
+      'playing God of Thunder must set the turn-scoped recruit-as-attack conversion flag',
+    );
+  });
+
   it('counts only the firing effect in a mixed hook (fires + safe-skip)', () => {
     const gameState = makeTestState({
       deck: ['c1', 'c2'],

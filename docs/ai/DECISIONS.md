@@ -37880,3 +37880,16 @@ packages; both hash oracles byte-unchanged; all four card-data `:check` gates pa
 new hero keyword stales that feed too). **D-24026 live-verify: operator-pending**
 (`User-Visible Surface = play.legendary-arena.com`; play God of Thunder and fund a fight
 from unspent recruit).
+
+**Post-ship correction 2026-08-21 (EC-615 follow-up).** The live-verify caught a defect:
+a no-magnitude onPlay keyword MUST be enrolled in `NO_MAGNITUDE_KEYWORDS`, or
+`executeSingleEffect`'s magnitude pre-gate (`isValidMagnitude`) drops the effect BEFORE the
+handler is looked up — the effect traced as `no-handler` and the conversion flag was never
+set (a real match on gitSha `64bc959` showed God of Thunder's `recruit-as-attack` effect as
+`no-handler`). Root cause: the original tests exercised the handler in isolation + the
+economy helpers, never the full `executeHeroEffects` dispatch path, so the pre-gate skip was
+invisible. Fixed by adding `recruit-as-attack` to `NO_MAGNITUDE_KEYWORDS` plus a regression
+test that plays the effect through `executeHeroEffects` and asserts the flag sets (proven
+non-vacuous by mutation — it fails without the enrollment). This is the same enrollment every
+other no-magnitude onPlay keyword (`defeat-with-bystander`, `copy-powers`, `gain-wound-*`,
+`victory-villain-attack`, `draw-or-empowered`) already carries.
