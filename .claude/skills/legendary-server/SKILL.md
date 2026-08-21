@@ -164,6 +164,37 @@ All gameplay authority lives in `packages/game-engine`.
 
 ---
 
+## HTTP Route Body Parsing [Invariant]
+
+boardgame.io installs `koa-body` **only** on its own `/games/*` routes — there
+is **no global body parser**. Every custom `/api/*` route that reads
+`koaContext.request.body` MUST parse its own JSON body first, or `request.body`
+is `undefined` in production and every body-carrying request fails (a structural
+`400`, or the handler acts on an empty body).
+
+Rules for any POST / PATCH / PUT handler that consumes a body:
+
+- Call the per-file `ensureJsonBodyParsed(koaContext)` helper (a module-level
+  `koaBody()` invoked only when a real Node request stream is present —
+  `typeof koaContext.req.on === 'function'` — and a no-op under a fake test
+  context) as the first step inside the handler's `try`, before the first
+  body read. Copy the helper from an existing route file
+  (`team.routes.ts`, `gauntletRun.routes.ts`, `ownerProfile.routes.ts`); do
+  not reach for a global middleware.
+- Ship a route-level test that drives a **real `node:stream` Readable** and
+  asserts `request.body` was parsed off it. An injected-`request.body` test
+  CANNOT catch a missing parser — that blind spot shipped a 100% production
+  failure on `POST /api/competition/scores` (empty leaderboard 2026-07-09 →
+  2026-08-21). See any `*.routes.test.ts` `makeStreamContext` helper.
+- Update the endpoint's row in
+  [`docs/ai/REFERENCE/api-endpoints.md`](../../../docs/ai/REFERENCE/api-endpoints.md)
+  to note the body parsing, per its §Body-Parsing Convention (D-11804
+  catalog-update obligation).
+
+Reference: PR #1545 / #1546 (fix), #1547 / #1549 (route-test harnesses).
+
+---
+
 ## Prohibited Server Behaviors [Guardrail]
 
 Claude must never:
