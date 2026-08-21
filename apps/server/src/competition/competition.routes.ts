@@ -49,6 +49,8 @@ import {
   listPlayerCompetitiveScores,
 } from './competition.logic.js';
 
+import koaBody from 'koa-body';
+
 import { findPlayerByAccountId } from '../identity/identity.logic.js';
 
 import { requireUnsuspendedAccount as requireUnsuspendedAccountDefault } from '../auth/requireUnsuspendedAccount.js';
@@ -155,6 +157,39 @@ interface KoaRouter {
     path: string,
     handler: (koaContext: KoaCompetitionContext) => Promise<void> | void,
   ): unknown;
+}
+
+// why: boardgame.io installs koa-body ONLY on its own /games/* routes — there is
+// no global body parser (same note as billing/sweep/handoff/matchGate) — so this
+// guarded /api route must parse its own JSON body. Without it, in production
+// koaContext.request.body is undefined, extractMatchId returns null, and EVERY
+// competitive submission fails with 400 invalid_request. The gap was latent: the
+// unit tests inject request.body directly, so they never exercised the missing
+// parser — a shipped 100% competitive-submission failure (solo and multiplayer).
+const competitionRouteJsonBodyParser = koaBody();
+
+/**
+ * Parse the JSON request body into `koaContext.request.body` when a real Node
+ * request stream is present. A no-op for the unit-test fake context (which
+ * injects `request.body` directly and exposes no stream), so the same handler
+ * works in production and under `node:test` — mirroring matchGate's
+ * `ensureJsonBodyParsed` test-friendly short-circuit.
+ *
+ * @param koaContext The competition-route request context.
+ */
+async function ensureJsonBodyParsed(
+  koaContext: KoaCompetitionContext,
+): Promise<void> {
+  const nodeRequest = koaContext.req as { on?: unknown };
+  if (typeof nodeRequest.on !== 'function') {
+    return;
+  }
+  await (
+    competitionRouteJsonBodyParser as unknown as (
+      koaContext: KoaCompetitionContext,
+      next: () => Promise<void>,
+    ) => Promise<void>
+  )(koaContext, async () => {});
 }
 
 /**
@@ -274,6 +309,12 @@ export function registerCompetitionRoutes(
       }
       return;
     }
+
+    // why: parse the JSON body before reading it — boardgame.io's koa-body is
+    // scoped to /games/*, so without this the production request.body is
+    // undefined and extractMatchId below fails every submission (see the
+    // helper's note). No-op under node:test, which injects request.body.
+    await ensureJsonBodyParsed(koaContext);
 
     // Gate 3 — request body shape.
     const matchId = extractMatchId(koaContext.request.body);
