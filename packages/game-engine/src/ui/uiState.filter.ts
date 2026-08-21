@@ -386,6 +386,14 @@ export function filterUIStateForAudience(
       availableRecruit: uiState.economy.availableRecruit,
       piercing: uiState.economy.piercing,
       woundsDrawn: uiState.economy.woundsDrawn,
+      // why: WP-581 / D-24390 — pass the recruit-as-attack cue flag through for
+      // the ACTIVE player only, omit-when-absent (conditional, never a
+      // `recruitSpendableAsAttack: undefined` literal). A field that reaches
+      // buildUIState but not this whitelist is silently dropped (the EC-206
+      // failure). REDACTED_ECONOMY (non-active players + spectators) never carries it.
+      ...(uiState.economy.recruitSpendableAsAttack === true
+        ? { recruitSpendableAsAttack: true as const }
+        : {}),
     };
   } else {
     // why: non-active players and spectators do not see economy details

@@ -37893,3 +37893,38 @@ test that plays the effect through `executeHeroEffects` and asserts the flag set
 non-vacuous by mutation — it fails without the enrollment). This is the same enrollment every
 other no-magnitude onPlay keyword (`defeat-with-bystander`, `copy-powers`, `gain-wound-*`,
 `victory-villain-attack`, `draw-or-empowered`) already carries.
+
+### D-24390 — A Visible, Accessible Cue for the Recruit-as-Attack Conversion (God of Thunder)
+
+WP-580 shipped the recruit-as-attack conversion, and its live-verify surfaced that a
+passive economy change is undiscoverable ("no option provided") even when working — the
+`EconomyBar` Attack readout silently folds in convertible recruit (`getSpendableAttack`),
+but nothing tells the player *why* their Attack rose or that Recruit is spendable on fights.
+
+Locked:
+
+1. **Project the existing flag; display-only.** The client-visible
+   `UITurnEconomyState.recruitSpendableAsAttack` is a read-only projection of the WP-580
+   `G.turnEconomy.recruitSpendableAsAttack` flag — NO new `G` field, NO hash surface (UIState
+   is a projection of `G`, never hashed; both oracles verified byte-unchanged). The
+   conversion math and all WP-580 / D-24389 behaviour are byte-identical.
+2. **Omit-when-absent, active-player-only.** The field is populated in `buildUIState` and
+   passed through `filterUIStateForAudience` only when the flag is set, so a non-conversion
+   turn's economy block is byte-identical to pre-WP-581. It rides the active-player-only
+   economy block (WP-128 / D-12803) — `REDACTED_ECONOMY` (non-active players + spectators)
+   never carries it, enforced by an audience test.
+3. **Built-projection drift pin.** The pin is a RUNTIME keyset assertion on a built economy
+   projection (build with the flag set → `buildUIState` → assert the keyset contains the
+   field), not a hand-written-literal append — because an optional field satisfies both a
+   `satisfies` check and the literal keyset without being projected (the WP-562 / WP-575
+   silent-optional-drop lesson; mirrors the WP-557 menace built-state pin).
+4. **Accessible cue.** `EconomyBar.vue` renders the cue on the Attack line when the flag is
+   present, with the meaning in the text + glyph (not colour alone), an explicit
+   `aria-label`, and no animation (reduced-motion safe), per Vision §17.
+
+**Active 2026-08-21 (WP-581 / EC-616).** Shipped across 5 engine `ui/` files + `EconomyBar.vue`
++ its test. Engine 2817→2821/0 (+4: audience test + built-projection drift pin),
+arena-client 1359→1361/0 (+2: cue render/absent); both hash oracles byte-unchanged;
+`pnpm -r build` + `--no-bail test` green across all packages. **D-24026 live-verify:
+operator-pending** (`User-Visible Surface = play.legendary-arena.com`; play God of Thunder and
+see the cue in the Economy bar for the rest of the turn).

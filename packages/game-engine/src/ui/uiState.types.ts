@@ -530,6 +530,14 @@ export interface UITurnEconomyState {
   availableRecruit: number;
   piercing: number;
   woundsDrawn: number;
+  /**
+   * WP-581 / D-24390 — true while the recruit-as-attack conversion (God of
+   * Thunder, WP-580) is active this turn, so the client can render a cue that
+   * Recruit is spendable as Attack. A read-only projection of
+   * `G.turnEconomy.recruitSpendableAsAttack`; omit-when-absent (present only
+   * when the flag is set) and active-player-only (absent from `REDACTED_ECONOMY`).
+   */
+  recruitSpendableAsAttack?: boolean;
 }
 
 /**

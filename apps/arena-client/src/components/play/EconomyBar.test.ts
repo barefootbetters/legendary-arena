@@ -57,4 +57,26 @@ describe('EconomyBar (WP-129)', () => {
     assert.equal(wrapper.find('[data-testid="play-economy-piercing"]').text(), 'Pierce: 2');
     assert.equal(wrapper.find('[data-testid="play-economy-wounds-drawn"]').text(), 'Wounds drawn: 1');
   });
+
+  // why: WP-581 / D-24390 — the recruit-as-attack conversion cue.
+  test('shows the recruit-as-attack cue with an accessible name when the flag is set', () => {
+    const wrapper = mount(EconomyBar, {
+      props: { economy: economy({ recruitSpendableAsAttack: true }) },
+    });
+    const cue = wrapper.find('[data-testid="play-economy-recruit-as-attack-cue"]');
+    assert.ok(cue.exists(), 'the cue renders when recruitSpendableAsAttack is true');
+    // why: accessible name is present and the meaning is in the text, not colour alone.
+    assert.equal(cue.attributes('aria-label'), 'Recruit can be spent as Attack this turn');
+    assert.ok(cue.text().includes('Recruit'), 'the cue text conveys the meaning without colour');
+  });
+
+  test('hides the recruit-as-attack cue when the flag is unset or absent', () => {
+    for (const eco of [economy(), economy({ recruitSpendableAsAttack: false })]) {
+      const wrapper = mount(EconomyBar, { props: { economy: eco } });
+      assert.ok(
+        !wrapper.find('[data-testid="play-economy-recruit-as-attack-cue"]').exists(),
+        'no cue when the conversion is not active',
+      );
+    }
+  });
 });
