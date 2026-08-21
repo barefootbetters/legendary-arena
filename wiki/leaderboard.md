@@ -76,7 +76,7 @@ source:
   - ../docs/ai/work-packets/WP-446-gauntlet-run-derived-progression.md
   - ../docs/ai/work-packets/WP-448-composition-to-match-launch-primitive.md
   - ../docs/ai/work-packets/WP-449-profile-gauntlet-tracker-ui.md
-last-reviewed: 2026-07-29
+last-reviewed: 2026-08-21
 ---
 
 # Leaderboard
@@ -113,6 +113,18 @@ scale. See [From a finished match to a ranked row](#from-a-finished-match-to-a-r
 The board will fill on its ~5-minute publish cycle once authenticated players
 finish real matches (the remaining precondition is match volume + the
 arena-client's own Cloudflare Pages deploy, not any missing code).
+
+> **Correction (2026-08-21) — the "not any missing code" clause was wrong.**
+> The score-submission HTTP route silently rejected **100%** of submissions
+> with `400 invalid_request` from 2026-07-09 until 2026-08-21 because it never
+> parsed its own JSON request body (boardgame.io installs `koa-body` only on
+> `/games/*`; there is no global body parser). So `legendary.competitive_scores`
+> stayed empty because of a **shipped bug**, not low match volume — the write
+> *logic* was complete, but nothing reached it. Fixed in **PR #1545** and
+> **D-24026 live-verified the same day**: a signed-in solo Red Skull / Super
+> Hero Civil War win returned "Score submitted to the leaderboard" and wrote the
+> **first-ever `competitive_scores` row** (gitSha `a8ddf78`). Full diagnosis
+> under [Edge Cases](#edge-cases).
 
 ## Mechanics
 
@@ -566,7 +578,9 @@ The end-to-end chain, in order:
    string }` (`apps/server/src/competition/competition.types.ts`, WP-338 /
    D-24126) — the client **cannot** compute `computeStateHash`, so it never
    sends a `replayHash` and never a score. `POST /api/competition/scores`
-   (`authenticated-session-required`) runs
+   (`authenticated-session-required`; the route handler first **parses its own
+   JSON request body** — the per-route step that was missing until 2026-08-21
+   and silently `400`-ed every submission, see [Edge Cases](#edge-cases)) runs
    `submitCompetitiveScoreByMatchIdForRequest`
    ([`competition.logic.ts`](../apps/server/src/competition/competition.logic.ts)):
    guest guard → **gameover gate** (unfinished → `409 match_not_finished`) →
@@ -912,6 +926,41 @@ precondition the public boards have.
   ships five panel components (overall, weekly, by-scheme, recent-achievements,
   now-playing), but only the boards the publisher actually emits are rendered
   — until per-scenario scores accumulate, that is just `global-top`.
+- **The write path was 100%-broken in production for ~6 weeks — the
+  "data-supply state" above was masking a shipped bug (fixed 2026-08-21,
+  PR #1545, D-24026 live-verified).** The bullet above ("an empty board is now
+  genuinely a data-supply state … not a missing endpoint") was true of the
+  capture / verify / score *logic* but false of the HTTP transport in front of
+  it. `POST /api/competition/scores` read `koaContext.request.body` **without
+  parsing it first**. boardgame.io installs `koa-body` only on its own
+  `/games/*` routes and there is **no global body parser** (the app-level
+  middleware is the WP-308 native-lobby guard, which explicitly passes every
+  `/api/*` route through untouched), so in production `request.body` was
+  `undefined`, `extractMatchId` returned null, and the handler returned
+  **`400 invalid_request`** at its body-shape gate — before the guest /
+  gameover / ownership / PAR pipeline in
+  [step 3](#from-a-finished-match-to-a-ranked-row-the-write-path) ever ran. The
+  **diagnosis tell**: the failing request returned **400**, a status *no*
+  submission-rejection reason maps to (`match_not_finished` → 409, `not_owner`
+  → 403, `par_not_published` / `replay_verification_failed` → 422,
+  `replay_not_found` → 404), so a 400 could only be the route's own
+  input-validation reject. The bug stayed latent because every route unit test
+  injects `request.body` directly into a fake context that exposes no request
+  stream, so the missing parser was never exercised — the same trap that bit
+  WP-307 (match gate → "Missing setupData") and WP-501 (handle →
+  `invalid_handle`). Confirmed against production data: `bgio.replay_artifacts`
+  and `legendary.replay_ownership` **were** populated (the background harvester
+  assigns ownership on its ~5-minute scan, stamped at `:05`), while
+  `legendary.competitive_scores` was **empty** — ownership was being assigned
+  server-side while every *user-initiated* submission bounced at the front gate.
+  Fixed by adding the per-route `ensureJsonBodyParsed` helper (runs `koa-body`
+  only when a real Node request stream is present; a no-op under `node:test`),
+  mirroring the match-gate / billing / sweep / handoff routes that already parse
+  their own body. **D-24026 live-verified 2026-08-21** on gitSha `a8ddf78`. The
+  identical missing-parser defect on `POST /api/teams` (create / members /
+  status), `/api/me/loadouts`, and `/api/me/gauntlet-runs` (same code-level
+  gap — those writes failed in production too) was fixed alongside in
+  **PR #1546**.
 - **~~Three of the five panels render a header-only table when empty~~
   (board review, 2026-07-09 — FIXED by WP-343 / D-24135 the same day).**
   `OverallPanel`, `WeeklyPanel`, and `BySchemePanel` now render the shared
