@@ -43,6 +43,21 @@ export default defineComponent({
     <span data-testid="play-economy-attack">
       Attack: {{ economy.availableAttack }}/{{ economy.attack }}
     </span>
+    <!-- why: WP-581 / D-24390 — cue that God of Thunder's recruit-as-attack
+         conversion is active this turn, so the Attack figure (which already
+         folds in convertible recruit, WP-580) is explained. Accessible: the
+         meaning is in the TEXT + glyph (not colour alone), it carries an
+         explicit accessible name, and it has no animation (reduced-motion safe).
+         Rendered only when the active-player-only flag is present. -->
+    <span
+      v-if="economy.recruitSpendableAsAttack"
+      class="economy-convert-cue"
+      data-testid="play-economy-recruit-as-attack-cue"
+      role="note"
+      aria-label="Recruit can be spent as Attack this turn"
+    >
+      ⚡ Recruit → Attack this turn
+    </span>
     <span data-testid="play-economy-recruit">
       Recruit: {{ economy.availableRecruit }}/{{ economy.recruit }}
     </span>
@@ -63,5 +78,14 @@ export default defineComponent({
   padding: 0.5rem 0.75rem;
   font-variant-numeric: tabular-nums;
   border: 1px solid var(--color-foreground, #999);
+}
+
+/* why: WP-581 — a subtle badge, distinguished by a border + weight (not colour
+   alone), and deliberately without any animation (reduced-motion safe). */
+.economy-convert-cue {
+  font-weight: 600;
+  padding: 0.05rem 0.4rem;
+  border: 1px solid var(--color-foreground, #999);
+  border-radius: 0.75rem;
 }
 </style>

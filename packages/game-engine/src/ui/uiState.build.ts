@@ -819,6 +819,13 @@ export function buildUIState(
     availableRecruit: getAvailableRecruit(gameState.turnEconomy),
     piercing,
     woundsDrawn,
+    // why: WP-581 / D-24390 — project the recruit-as-attack conversion flag
+    // omit-when-absent (present only when set), so a non-conversion turn's
+    // economy block is byte-identical to pre-WP-581 and the client can render a
+    // cue only while God of Thunder's conversion is active this turn.
+    ...(gameState.turnEconomy.recruitSpendableAsAttack === true
+      ? { recruitSpendableAsAttack: true as const }
+      : {}),
   };
 
   // --- 8. Project log ---

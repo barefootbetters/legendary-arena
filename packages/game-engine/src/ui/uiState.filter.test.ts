@@ -1626,3 +1626,35 @@ describe('scheme-faithful loss fields survive the audience filter (WP-562 / D-24
     assert.equal(result.progress.schemeTwistThreshold, 8);
   });
 });
+
+describe('filterUIStateForAudience — recruit-as-attack cue flag (WP-581 / D-24390)', () => {
+  // why: the cue flag rides the active-player-only economy block. It must survive
+  // the whitelist for the active player, be omitted when unset, and NEVER reach a
+  // non-active player or a spectator (REDACTED_ECONOMY).
+  it('passes recruitSpendableAsAttack through for the active player when set', () => {
+    const uiState = createTestUIState();
+    uiState.economy.recruitSpendableAsAttack = true;
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+    assert.equal(result.economy.recruitSpendableAsAttack, true);
+  });
+
+  it('omits recruitSpendableAsAttack for the active player when unset (omit-when-absent)', () => {
+    const uiState = createTestUIState();
+    // why: a fresh economy never sets the flag; the field must be absent, not false.
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+    assert.equal(result.economy.recruitSpendableAsAttack, undefined);
+    assert.ok(!('recruitSpendableAsAttack' in result.economy));
+  });
+
+  it('never exposes recruitSpendableAsAttack to a non-active player or a spectator', () => {
+    const uiState = createTestUIState();
+    uiState.economy.recruitSpendableAsAttack = true;
+    for (const audience of [PLAYER_1, SPECTATOR]) {
+      const result = filterUIStateForAudience(uiState, audience);
+      assert.equal(
+        result.economy.recruitSpendableAsAttack, undefined,
+        'non-active audiences see REDACTED_ECONOMY without the cue flag',
+      );
+    }
+  });
+});

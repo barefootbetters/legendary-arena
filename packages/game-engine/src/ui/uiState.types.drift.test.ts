@@ -560,6 +560,72 @@ describe('UIState type drift (WP-128 / EC-131) — type pinning', () => {
     ]);
   });
 
+  it('UITurnEconomyState.recruitSpendableAsAttack is pinned on a BUILT projection (WP-581)', () => {
+    // why: the literal pin above and any `satisfies` check pass whether or not
+    // the OPTIONAL recruitSpendableAsAttack is projected, so they give it NO
+    // drift protection. Only a keyset assertion on a REAL built projection (with
+    // the WP-580 conversion flag set) catches buildUIState / the filter silently
+    // dropping it — the WP-562 / WP-575 lesson, mirroring the menace pin above.
+    const setData = {
+      abbr: 'core',
+      schemes: [{ slug: 's' }],
+      masterminds: [{ slug: 'mm', cards: [{ slug: 'mm-base', tactic: false }] }],
+      henchmen: [{ slug: 'h' }],
+      villains: [{ slug: 'v', cards: [{ slug: 'v1', vAttack: '4' }] }],
+      heroes: [
+        {
+          slug: 'hero-x',
+          cards: [
+            { slug: 'card-c1', rarityLabel: 'Common 1' },
+            { slug: 'card-c2', rarityLabel: 'Common 2' },
+            { slug: 'card-uncommon', rarityLabel: 'Uncommon' },
+            { slug: 'card-rare', rarityLabel: 'Rare' },
+          ],
+        },
+      ],
+    };
+    const registry = {
+      listCards: () => [],
+      listSets: () => [{ abbr: 'core' }],
+      getSet: (abbr: string) => (abbr === 'core' ? setData : undefined),
+    };
+    const config: MatchSetupConfig = {
+      schemeId: 'core/s',
+      mastermindId: 'core/mm',
+      villainGroupIds: ['core/v'],
+      henchmanGroupIds: ['core/h'],
+      heroDeckIds: ['core/hero-x'],
+      bystandersCount: 1,
+      woundsCount: 1,
+      officersCount: 1,
+      sidekicksCount: 1,
+    };
+    const gameState = buildInitialGameState(
+      config,
+      registry,
+      makeMockCtx({ numPlayers: 1 }),
+    );
+    // why: materialize the WP-580 recruit-as-attack conversion flag so the
+    // projection carries it (it is lazily absent otherwise).
+    gameState.turnEconomy.recruitSpendableAsAttack = true;
+
+    const result = buildUIState(gameState, {
+      phase: 'play' as string | null,
+      turn: 1,
+      currentPlayer: '0',
+    });
+
+    assert.deepStrictEqual(Object.keys(result.economy).sort(), [
+      'attack',
+      'availableAttack',
+      'availableRecruit',
+      'piercing',
+      'recruit',
+      'recruitSpendableAsAttack',
+      'woundsDrawn',
+    ]);
+  });
+
   it('UIState.game retains phase/turn/activePlayerId/currentStage + hasActedThisTurn/hasHealedThisTurn AND adds lastPlayEffectsFired (WP-409)', () => {
     // why: WP-380 — additive extension of the inline game shape; hasActedThisTurn /
     // hasHealedThisTurn are the WP-379 per-turn flags projected as public booleans so
