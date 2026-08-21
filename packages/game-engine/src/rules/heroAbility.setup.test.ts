@@ -233,7 +233,7 @@ describe('buildHeroAbilityHooks', () => {
 describe('HERO_KEYWORDS drift-detection', () => {
   // why: prevents union/array divergence — same pattern as
   // REVEALED_CARD_TYPES drift detection
-  it('contains exactly the 35 canonical keyword values', () => {
+  it('contains exactly the 36 canonical keyword values', () => {
     const expectedKeywords = [
       'draw',
       'attack',
@@ -270,12 +270,13 @@ describe('HERO_KEYWORDS drift-detection', () => {
       'defeat-with-bystander', // why: WP-486 / D-24291 — Silent Sniper "Defeat a Villain or Mastermind that has a Bystander."
       'copy-powers', // why: WP-535 / D-24345 — Rogue's Copy Powers "Play this card as a copy of another Hero you played this turn."
       'return-on-discard', // why: WP-498 / D-24301 — Cyclops Unending Energy "If a card effect makes you discard this card, you may return this card to your hand."
+      'recruit-as-attack', // why: WP-580 / D-24389 — God of Thunder "You can use Recruit as Attack this turn."
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      35,
-      'HERO_KEYWORDS must have exactly 35 entries',
+      36,
+      'HERO_KEYWORDS must have exactly 36 entries',
     );
 
     assert.deepStrictEqual(
@@ -1865,5 +1866,29 @@ describe('buildHeroAbilityHooks shuffle-discard-empty-reward (WP-356)', () => {
       0,
       'a zero-magnitude token must not emit an effect',
     );
+  });
+});
+
+describe('recruit-as-attack keyword parse (WP-580 / D-24389)', () => {
+  it('[keyword:recruit-as-attack] on God of Thunder\'s line produces a recruit-as-attack effect (no magnitude)', () => {
+    const registry = makeHeroRegistry('core', 'thor', [
+      {
+        slug: 'god-of-thunder',
+        rarityLabel: 'Rare',
+        abilities: ['You can use [icon:recruit] as [icon:attack] this turn. [keyword:recruit-as-attack]'],
+      },
+    ]);
+    const config: MatchSetupConfig = { ...createTestConfig(), heroDeckIds: ['core/thor'] };
+
+    const hooks = buildHeroAbilityHooks(registry, config);
+    const hook = hooks[0];
+    assert.ok(hook !== undefined, 'hook must be built');
+    assert.ok(Array.isArray(hook.effects) && hook.effects!.length > 0, 'effects must be present');
+    const conversionEffect = hook.effects!.find((e) => e.type === 'recruit-as-attack');
+    assert.ok(conversionEffect !== undefined, 'recruit-as-attack effect must be present (the ability is no longer a silent no-op)');
+    assert.equal(conversionEffect!.magnitude, undefined, 'recruit-as-attack carries no magnitude');
+    // why: the keyword is recognized, so it is enrolled in MVP_KEYWORDS and the hook
+    // is not mis-flagged as an unresolved marker.
+    assert.ok((hook.keywords ?? []).includes('recruit-as-attack'), 'the keyword is registered on the hook');
   });
 });

@@ -757,3 +757,36 @@ describe('getLegalMoves — pending Copy Powers short-circuit (WP-535 / D-24345)
     assert.deepStrictEqual(only.args, { cardId: WOLVERINE });
   });
 });
+
+describe('getLegalMoves — recruit-as-attack conversion mirrors the fight guard (WP-580 / D-24389)', () => {
+  // why: the bot affordability projection MUST fold in convertible recruit exactly
+  // as the fightVillain move guard does, or the bot enumerates a fight the reducer
+  // refuses (or skips one it allows) — the recurring legalMoves↔move-guard divergence.
+  function makeConversionG(recruitSpendableAsAttack: boolean): LegendaryGameState {
+    const gameState = makeG({ currentStage: 'main' });
+    gameState.city = ['god-villain' as CardExtId, null, null, null, null];
+    gameState.cardStats = {
+      'god-villain': { attack: 0, recruit: 0, cost: 0, fightCost: 5, fightCostMode: 'static', fightCostBase: 0 },
+    } as unknown as LegendaryGameState['cardStats'];
+    // 3 attack + 5 recruit → the 5-cost fight is affordable ONLY when recruit converts.
+    gameState.turnEconomy = { ...makeTurnEconomy(), attack: 3, recruit: 5,
+      ...(recruitSpendableAsAttack ? { recruitSpendableAsAttack: true } : {}) } as LegendaryGameState['turnEconomy'];
+    return gameState;
+  }
+
+  test('OFFERS fightVillain when unspent recruit covers the shortfall (flag set)', () => {
+    const legalMoves = getLegalMoves(makeConversionG(true), CONTEXT);
+    const fightMoves = legalMoves.filter((move) => move.name === 'fightVillain');
+    assert.equal(fightMoves.length, 1, 'the fight is offered — recruit converts to cover the cost');
+    assert.deepEqual(fightMoves[0]!.args, { cityIndex: 0 });
+  });
+
+  test('does NOT offer fightVillain when the conversion flag is unset (recruit not convertible)', () => {
+    const legalMoves = getLegalMoves(makeConversionG(false), CONTEXT);
+    assert.equal(
+      legalMoves.filter((move) => move.name === 'fightVillain').length,
+      0,
+      'without the flag only 3 attack is spendable — the 5-cost fight is not offered, mirroring the move guard',
+    );
+  });
+});

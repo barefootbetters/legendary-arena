@@ -989,6 +989,17 @@
       "hidden": true
     },
     {
+      "slug": "recruit-as-attack",
+      "label": "Recruit As Attack",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "core/thor"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "recruit-threshold",
       "label": "Recruit Threshold",
       "scope": "hero",
@@ -2398,6 +2409,7 @@
     },
     "core/thor": {
       "mechanics": [
+        "recruit-as-attack",
         "recruit-threshold"
       ]
     },

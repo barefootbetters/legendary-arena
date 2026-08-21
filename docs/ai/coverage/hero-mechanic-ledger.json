@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 651,
+    "totalRows": 652,
     "byStatus": {
-      "executable": 235,
+      "executable": 236,
       "deferred": 0,
       "condition": 5,
       "unsupported": 367,
       "unmarked": 43,
       "subsystem": 1
     },
-    "distinctMechanics": 122
+    "distinctMechanics": 123
   },
   "rows": [
     {
@@ -3462,6 +3462,22 @@
         {
           "slug": "gathering-stormclouds",
           "name": "Gathering Stormclouds"
+        }
+      ]
+    },
+    {
+      "extId": "core/thor",
+      "heroName": "Thor",
+      "set": "core",
+      "mechanic": "recruit-as-attack",
+      "status": "executable",
+      "wp": "WP-580",
+      "decision": "D-24389",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#recruit-as-attack",
+      "designs": [
+        {
+          "slug": "god-of-thunder",
+          "name": "God of Thunder"
         }
       ]
     },

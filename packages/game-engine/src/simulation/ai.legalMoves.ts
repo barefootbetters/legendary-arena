@@ -13,7 +13,7 @@
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { LegalMove } from './ai.types.js';
-import { getAvailableAttack, getAvailableRecruit } from '../economy/economy.logic.js';
+import { getAvailableRecruit, getSpendableAttack } from '../economy/economy.logic.js';
 import { resolveFightCost, resolveMastermindFightCost } from '../economy/economy.resolve.js';
 import { isGuardBlocking, getPatrolModifier } from '../board/boardKeywords.logic.js';
 import {
@@ -498,7 +498,12 @@ export function getLegalMoves(
   }
 
   const stage = gameState.currentStage;
-  const availableAttack = getAvailableAttack(gameState.turnEconomy);
+  // why: WP-580 / D-24389 — getSpendableAttack folds unspent recruit into the
+  // fight-affordability figure when the recruit-as-attack conversion is active,
+  // exactly mirroring the fightVillain / fightMastermind move guard so the bot
+  // never enumerates a fight the reducer would refuse (or skips one it allows).
+  // Equal to getAvailableAttack on every non-conversion turn.
+  const spendableAttack = getSpendableAttack(gameState.turnEconomy);
   const availableRecruit = getAvailableRecruit(gameState.turnEconomy);
 
   // 1. playCard intents — one entry per hand card, in hand order.
@@ -575,7 +580,7 @@ export function getLegalMoves(
       const baseFightCost = resolveFightCost(gameState, cityCard);
       const patrolModifier = getPatrolModifier(cityCard, cardKeywords);
       const requiredFightCost = baseFightCost + patrolModifier;
-      if (availableAttack >= requiredFightCost) {
+      if (spendableAttack >= requiredFightCost) {
         legalMoves.push({ name: 'fightVillain', args: { cityIndex } });
       }
     }
@@ -584,7 +589,7 @@ export function getLegalMoves(
   // 4. fightMastermind — at most one entry (affordable + tactics remain).
   if (stage === 'main' && gameState.mastermind.tacticsDeck.length > 0) {
     const mastermindFightCost = resolveMastermindFightCost(gameState);
-    if (availableAttack >= mastermindFightCost) {
+    if (spendableAttack >= mastermindFightCost) {
       legalMoves.push({ name: 'fightMastermind', args: {} });
     }
   }

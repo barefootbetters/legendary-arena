@@ -17,7 +17,7 @@ import type { LegendaryGameState } from '../types.js';
 import { formatCardRef } from '../log/logDisplay.js';
 import { awardAttachedBystanders } from '../board/bystanders.logic.js';
 import { awardAttachedHeroes } from '../board/heroCapture.logic.js';
-import { getAvailableAttack, spendAttack } from '../economy/economy.logic.js';
+import { getSpendableAttack, spendFightCost } from '../economy/economy.logic.js';
 import { resolveFightCost } from '../economy/economy.resolve.js';
 import { isGuardBlocking, getPatrolModifier } from '../board/boardKeywords.logic.js';
 import {
@@ -114,8 +114,11 @@ export function fightVillain(
   const baseFightCost = resolveFightCost(G, cardId);
   const patrolModifier = getPatrolModifier(cardId, cardKeywords);
   const requiredFightCost = baseFightCost + patrolModifier;
-  const availableAttack = getAvailableAttack(G.turnEconomy);
-  if (availableAttack < requiredFightCost) {
+  // why: WP-580 / D-24389 — getSpendableAttack folds in unspent recruit when the
+  // recruit-as-attack conversion is active this turn (God of Thunder); equal to
+  // getAvailableAttack on every non-conversion turn, so the gate is unchanged there.
+  const spendableAttack = getSpendableAttack(G.turnEconomy);
+  if (spendableAttack < requiredFightCost) {
     return;
   }
 
@@ -184,7 +187,9 @@ export function fightVillain(
   // byte-identical to the prior inline order — the unmodified fightVillain tests
   // are the oracle.
   defeatCityVillainCore(G, ctx, cityIndex, { random });
-  G.turnEconomy = spendAttack(G.turnEconomy, requiredFightCost);
+  // why: WP-580 / D-24389 — spendFightCost debits attack first, then unspent
+  // recruit when the conversion is active; identical to spendAttack when unset.
+  G.turnEconomy = spendFightCost(G.turnEconomy, requiredFightCost);
   // why: D-24180 — this successful fight marks the player as having acted this
   // turn, which bars the Wound Healing ability for the rest of the turn.
   G.hasActedThisTurn = true;

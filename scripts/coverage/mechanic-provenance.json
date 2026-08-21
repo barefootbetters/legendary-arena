@@ -58,6 +58,7 @@
     "ko-wound-reward": { "wp": "WP-382", "decision": "D-24183" },
     "discard-to-play": { "wp": "WP-383", "decision": "D-24184" },
     "return-on-discard": { "wp": "WP-498", "decision": "D-24301" },
+    "recruit-as-attack": { "wp": "WP-580", "decision": "D-24389" },
     "victory-villain-attack": { "wp": "WP-285", "decision": "D-24099" },
     "put-any-number-bottom-hq": { "wp": "", "decision": "D-24132" },
     "put-bottom-hq-icon-reward": { "wp": "", "decision": "D-24133" },

@@ -678,4 +678,51 @@ describe('fightVillain — Endless Armies of HYDRA plays the top two Villain Dec
       'an ordinary defeat leaves the villain deck untouched',
     );
   });
+
+  describe('recruit-as-attack conversion funds fights (WP-580 / D-24389)', () => {
+    // why: God of Thunder sets turnEconomy.recruitSpendableAsAttack; a fight whose
+    // cost exceeds attack alone is then funded from unspent recruit (attack first).
+    it('funds a fight from unspent recruit when the conversion flag is set', () => {
+      const gameState = createMockGameState({
+        city: ['villain-a', null, null, null, null],
+      });
+      gameState.cardStats['villain-a' as CardExtId] = {
+        attack: 0, recruit: 0, cost: 0, fightCost: 5, fightCostMode: 'static', fightCostBase: 0,
+      };
+      // 3 attack + 5 recruit, conversion active → 5-cost fight is affordable
+      gameState.turnEconomy = makeTurnEconomy({ attack: 3, recruit: 5, recruitSpendableAsAttack: true });
+
+      const moveContext = createMockMoveContext(gameState);
+      fightVillain(moveContext, { cityIndex: 0 });
+
+      assert.ok(
+        moveContext.G.playerZones['0']!.victory.includes('villain-a'),
+        'villain defeated — the fight was funded from attack + recruit',
+      );
+      // attack-first-then-recruit: 3 from attack, 2 from recruit
+      assert.equal(moveContext.G.turnEconomy.spentAttack, 3, 'attack spent first');
+      assert.equal(moveContext.G.turnEconomy.spentRecruit, 2, 'remainder from recruit');
+    });
+
+    it('refuses the same fight when the conversion flag is NOT set (recruit stays recruit)', () => {
+      const gameState = createMockGameState({
+        city: ['villain-a', null, null, null, null],
+      });
+      gameState.cardStats['villain-a' as CardExtId] = {
+        attack: 0, recruit: 0, cost: 0, fightCost: 5, fightCostMode: 'static', fightCostBase: 0,
+      };
+      // 3 attack + 5 recruit, but NO conversion → only 3 spendable, 5-cost fight refused
+      gameState.turnEconomy = makeTurnEconomy({ attack: 3, recruit: 5 });
+
+      const moveContext = createMockMoveContext(gameState);
+      fightVillain(moveContext, { cityIndex: 0 });
+
+      assert.equal(
+        moveContext.G.playerZones['0']!.victory.length,
+        0,
+        'fight refused — recruit is not convertible without the conversion flag',
+      );
+      assert.equal(moveContext.G.turnEconomy.spentAttack, 0, 'no attack spent on a refused fight');
+    });
+  });
 });

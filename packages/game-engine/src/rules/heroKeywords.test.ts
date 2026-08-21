@@ -62,11 +62,11 @@ describe('size-changing keyword (WP-290 / EC-322 / D-24074)', () => {
     );
   });
 
-  it('HERO_KEYWORDS array has exactly 35 entries after the copy-powers addition', () => {
+  it('HERO_KEYWORDS array has exactly 36 entries after the recruit-as-attack addition', () => {
     assert.equal(
       HERO_KEYWORDS.length,
-      35,
-      'HERO_KEYWORDS must have exactly 35 entries (34 + copy-powers, D-24345)',
+      36,
+      'HERO_KEYWORDS must have exactly 36 entries (35 + recruit-as-attack, WP-580 / D-24389)',
     );
   });
 });

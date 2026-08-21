@@ -134,6 +134,12 @@
       "markupToken": "[keyword:recruit-threshold:8]"
     },
     {
+      "heroSlug": "thor",
+      "cardSlug": "god-of-thunder",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:recruit-as-attack]"
+    },
+    {
       "heroSlug": "rogue",
       "cardSlug": "copy-powers",
       "abilityIndex": 0,

@@ -16,7 +16,7 @@
 
 import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState } from '../types.js';
-import { getAvailableAttack, spendAttack } from '../economy/economy.logic.js';
+import { getSpendableAttack, spendFightCost } from '../economy/economy.logic.js';
 // why: WP-539 / D-24348 — centralized mastermind fight requirement (base fightCost +
 // the Portals Dark-Portal mastermind bonus), so combat / UI / AI never disagree.
 import { resolveMastermindFightCost } from '../economy/economy.resolve.js';
@@ -72,11 +72,14 @@ export function fightMastermind(
   // requirement field per WP-018 D-1805; never use G.mastermind.id or
   // any tactic card ID for stat lookup
   const requiredFightCost = resolveMastermindFightCost(G);
-  const availableAttack = getAvailableAttack(G.turnEconomy);
+  // why: WP-580 / D-24389 — getSpendableAttack folds in unspent recruit when the
+  // recruit-as-attack conversion is active this turn; equal to getAvailableAttack
+  // otherwise, so the gate is unchanged on every non-conversion turn.
+  const spendableAttack = getSpendableAttack(G.turnEconomy);
 
   // why: silent failure preserves deterministic move contract —
   // insufficient attack points means the mastermind fight cannot proceed
-  if (availableAttack < requiredFightCost) {
+  if (spendableAttack < requiredFightCost) {
     return;
   }
 
@@ -128,7 +131,9 @@ export function fightMastermind(
   // G.hasActedThisTurn — running them after the core is byte-identical to the
   // prior inline order (the unmodified fightMastermind tests are the oracle).
   defeatMastermindTacticCore(G, ctx, { random });
-  G.turnEconomy = spendAttack(G.turnEconomy, requiredFightCost);
+  // why: WP-580 / D-24389 — spendFightCost debits attack first, then unspent
+  // recruit when the conversion is active; identical to spendAttack when unset.
+  G.turnEconomy = spendFightCost(G.turnEconomy, requiredFightCost);
   // why: D-24180 — this successful mastermind fight marks the player as having
   // acted this turn, which bars the Wound Healing ability for the rest of the turn.
   G.hasActedThisTurn = true;
