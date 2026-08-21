@@ -14,6 +14,7 @@
 
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
+import { Readable } from 'node:stream';
 
 import { registerCompetitionRoutes } from './competition.routes.js';
 import type {
@@ -73,7 +74,10 @@ function makeMockRouter(): {
 }
 
 /** Builds a fresh mock context; records `set()`/status/body ordering. */
-function makeMockContext(body: unknown = { matchId: 'match-abc' }): MockKoaContext {
+function makeMockContext(
+  body: unknown = { matchId: 'match-abc' },
+  reqOverride?: unknown,
+): MockKoaContext {
   const headerCalls: { field: string; value: string }[] = [];
   const callOrder: string[] = [];
   let statusValue = 0;
@@ -81,8 +85,9 @@ function makeMockContext(body: unknown = { matchId: 'match-abc' }): MockKoaConte
   const proxied: MockKoaContext = {
     // why: the handler only reads `koaContext.req` (forwarded to the
     // fake session resolver) and `koaContext.request.body` — the
-    // sentinel `req` is never dereferenced by the fakes.
-    req: {} as SessionTokenRequest,
+    // sentinel `req` is never dereferenced by the fakes. A `reqOverride`
+    // supplies a real Node stream for the production body-parsing path.
+    req: (reqOverride ?? {}) as SessionTokenRequest,
     request: { body },
     get status(): number {
       return statusValue;
@@ -106,6 +111,36 @@ function makeMockContext(body: unknown = { matchId: 'match-abc' }): MockKoaConte
     callOrder,
   };
   return proxied;
+}
+
+/**
+ * Build a context whose `req` is a REAL Node request stream carrying `payload`,
+ * plus the minimal koa surface koa-body@5 reads to select the JSON parser
+ * (`method` + `is`). `request.body` starts undefined — exactly the production
+ * shape the `request.body`-injecting `makeMockContext` cannot reproduce. Uses
+ * `Object.assign` (not object spread) so `makeMockContext`'s status/body
+ * accessors survive.
+ */
+function makeStreamContext(payload: string): MockKoaContext {
+  const stream = Readable.from([Buffer.from(payload)]) as Readable & {
+    headers: Record<string, string>;
+  };
+  stream.headers = {
+    'content-type': 'application/json',
+    'content-length': String(Buffer.byteLength(payload)),
+  };
+  const context = makeMockContext(undefined, stream);
+  return Object.assign(context, {
+    method: 'POST',
+    is(type: string | string[]): string | false {
+      const types = Array.isArray(type) ? type : [type];
+      // why: this route only ever receives JSON; report a json match so
+      // koa-body@5 routes the stream through its JSON parser.
+      return types.some((candidate) => candidate.includes('json'))
+        ? 'application/json'
+        : false;
+    },
+  });
 }
 
 const SENTINEL_ACCOUNT_ID = 'account-123' as AccountId;
@@ -297,6 +332,38 @@ describe('competition routes (WP-332)', () => {
       assert.deepEqual(context.body, { error: 'invalid_request' });
     }
     assert.equal(calls.submit, 0);
+  });
+
+  test('7b — parses the JSON body from the request stream (production path)', async () => {
+    // why: reproduces the production condition that shipped a 100% competitive-
+    // submission failure — boardgame.io installs koa-body only on /games/*, so
+    // this route must parse its own body. Before the fix, request.body was
+    // undefined in prod, extractMatchId returned null, and every submit 400'd
+    // invalid_request. The other tests inject request.body directly (no stream),
+    // so they never caught it. Here `req` is a real Node stream carrying the JSON
+    // and request.body starts undefined — the handler must parse it and reach the
+    // submission logic. Run against the unfixed handler this asserts a 400/no-submit.
+    const payload = JSON.stringify({ matchId: 'match-from-stream' });
+    const context = makeStreamContext(payload);
+
+    let submittedMatchId: string | null = null;
+    const { logic } = makeLogic({
+      submitCompetitiveScoreByMatchIdForRequest: async (
+        _account,
+        matchId,
+      ): Promise<SubmissionResult> => {
+        submittedMatchId = matchId;
+        return { ok: true, record: SAMPLE_RECORD, wasExisting: false };
+      },
+    });
+    const handler = buildHandler(makeDeps(), logic);
+
+    await handler(context as unknown as MockKoaContext);
+
+    // why: the body must have been parsed off the stream and forwarded to the
+    // submission logic — proving the koa-body parser is wired on this route.
+    assert.equal(submittedMatchId, 'match-from-stream');
+    assert.equal(context.status, 200);
   });
 
   test('8 — 200 with the record and wasExisting:false on a fresh insert', async () => {
