@@ -7,6 +7,41 @@
 
 ## Current State
 
+### WP-579 — Legends leaderboard shows the claimed handle as a profile link (EC-614 / D-24388) shipped (2026-08-21)
+
+Closes the "player name should be the profile handle + a link" gap from the match review, on the
+recommended defaults: **Path A (snapshot-only)** + a **neutral non-PII unclaimed fallback**.
+
+The leaderboard rendered each row as plain-text `display_name` (no link), which falls back to the
+email local-part — a PII leak on a public board. Path A carries the claimed handle to the legends
+snapshot via a snapshot-internal `fetchClaimedHandlesByReplayHash`, WITHOUT touching
+`PublicLeaderboardEntry` (the D-5201 9-field lock) or the four `Wired` HTTP leaderboard endpoints
+(byte-identical → §21 N/A, D-5201 intact). A real correctness trap was handled: a co-op match both
+teammates submitted appears as two board rows sharing a `replay_hash`, so the handle fetch includes
+only UNAMBIGUOUS single-claimed hashes — a shared hash is dropped so a row never links to the wrong
+teammate's profile (it falls back to the neutral label). The snapshot entry types + the
+`snapshotClient.ts` client mirror gained an optional `handleCanonical?` (omit-when-absent, NO
+schemaVersion bump); the builders emit the claimed handle (linked) or the neutral label `Anonymous`
+— the email-local-part `display_name` is **never emitted**, closing the leak. Overall/Weekly/BySchemePanel
+render `<a>?profile=<handle_canonical>` (percent-encoded, underlined — not colour-only) via a shared
+`profileHref` helper.
+
+Scope held: Gauntlet (team roster, different source), the latent NowPlaying/RecentAchievements panels,
+and the separate MatchResult pipeline are untouched; no score/ranking/eligibility/cadence change; no
+`competitive_scores` migration. Server legends+leaderboard tests green (DB-backed skip without
+`TEST_DATABASE_URL`), legends-board **129→131/0**; `pnpm -r --no-bail test` green across all packages;
+`lagn-v1.json` line-ending churn reverted. Allowlist additions surfaced at execution: `leaderboard.types.ts`
+(the `ClaimedHandle` type), `legends.publisher.ts` (Path A wiring), `profileLink.ts`/`.test.ts` (the
+3rd-copy shared helper); `api-endpoints.md` unchanged (Path A). Panel render is covered by typecheck +
+the dev-server smoke (legends-board convention); `profileHref` is unit-tested. **D-24026 live-verify:
+operator-pending** — on `legends.legendary-arena.com`, a claimed-handle row links to `/?profile=<handle>`
+and an unclaimed row shows `Anonymous`.
+
+**Also this session:** WP-580's **D-24026 live-verify is now VERIFIED** — a real match on a post-fix
+build shows the game log `[applied] can spend Recruit as Attack this turn (God of Thunder)` and the
+effect trace `recruit-as-attack` `status: "fired"` (was `no-handler` before the magnitude-gate fix).
+The recruit-as-attack conversion works end-to-end.
+
 ### WP-578 — Surface the competitive score on the endgame screen (EC-613 / D-24387) shipped (2026-08-21)
 
 Closes the "where is my score" gap from a real Red Skull / Midtown Bank Robbery 2p match
@@ -66,9 +101,11 @@ Fixed by adding `recruit-as-attack` to `NO_MAGNITUDE_KEYWORDS` + a regression te
 the effect through `executeHeroEffects` and asserts the flag sets (mutation-verified — it
 fails without the enrollment). Engine 2816→**2817/0**; `pnpm -r build` + `--no-bail test`
 green across all packages; both hash oracles byte-unchanged (the sentinel fixture still never
-plays God of Thunder). D-24389 carries a **Post-ship correction** note. **D-24026 re-verify
-still operator-pending** — play God of Thunder on a build ≥ this fix and confirm the log shows
-"can spend Recruit as Attack this turn" and a fight can be funded from unspent recruit.
+plays God of Thunder). D-24389 carries a **Post-ship correction** note. **D-24026 re-verify:
+VERIFIED 2026-08-21** — a real 2p Red Skull / Midtown Bank Robbery match on a post-fix build:
+the game log shows `[applied] Player 0 can spend Recruit as Attack this turn (God of Thunder)`
+(turn 28) and the diagnostics effect trace records the `recruit-as-attack` effect with
+`status: "fired"` (was `no-handler` pre-fix). The conversion works end-to-end.
 
 ### WP-580 — "Use Recruit as Attack" conversion, God of Thunder (EC-615 / D-24389) shipped (2026-08-21)
 
@@ -99,8 +136,8 @@ fixture never plays God of Thunder); the `hero-mechanic-ledger`, `card-mechanics
 `card-mechanics.json` feed (`mechanics:metadata`) was an EC-615 file-allowlist addition
 surfaced at execution — a new hero keyword stales that feed too. The `lagn-v1.json`
 line-ending churn from the build was reverted (no real diff). **D-24026 live-verify:
-operator-pending** (`User-Visible Surface = play.legendary-arena.com`; play God of Thunder
-and fund a fight from unspent recruit).
+VERIFIED 2026-08-21** (see the WP-580 magnitude-gate-fix entry above; the conversion fires
+live — log `[applied] can spend Recruit as Attack this turn` + effect trace `status: "fired"`).
 
 ### WP-577 — Red Skull Master Strike: interactive KO choice for the active player (EC-612 / D-24386) shipped (2026-08-19)
 
