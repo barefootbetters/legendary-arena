@@ -18,6 +18,7 @@ import {
 
 import AutoplayControls from '../components/AutoplayControls.vue';
 import EndgameSummary from '../components/hud/EndgameSummary.vue';
+import type { MyCompetitiveScore } from '../lib/api/competitionApi';
 import TopHudBar from '../components/play/TopHudBar.vue';
 import OpponentPanel from '../components/play/OpponentPanel.vue';
 import MastermindTile from '../components/play/MastermindTile.vue';
@@ -154,6 +155,13 @@ export default defineComponent({
     heroDeckIds: {
       type: Array as PropType<string[]>,
       default: () => [],
+    },
+    // why: WP-578 — prop-drilled PlayViewport → here → EndgameSummary so the
+    // endgame panel shows the server-computed competitive score. Null for
+    // guests / pending / non-scoring matches.
+    competitiveScore: {
+      type: Object as PropType<MyCompetitiveScore | null>,
+      default: null,
     },
   },
   setup(props) {
@@ -552,6 +560,7 @@ export default defineComponent({
       <EndgameSummary
         v-if="isGameOver && snapshot.gameOver"
         :game-over="snapshot.gameOver"
+        :competitive-score="competitiveScore"
       />
       <LobbyControls v-if="isLobbyPhase" :submit-move="submitMove" />
       <!-- why: the shared board renders for the whole play phase regardless of

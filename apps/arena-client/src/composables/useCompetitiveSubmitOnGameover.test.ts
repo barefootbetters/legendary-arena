@@ -91,6 +91,65 @@ test('an authenticated player submits once on gameover → submitted', async () 
   }
 });
 
+// why: WP-578 — the composable surfaces the server-returned score record so the
+// endgame panel can show the competitive score. It is set on a successful submit
+// and stays null for every non-scoring path.
+test('submittedScore carries the server record on a successful submit', async () => {
+  setActivePinia(createPinia());
+  const record = {
+    submissionId: 7,
+    replayHash: 'hash-1',
+    scenarioKey: 'scenario-1',
+    rawScore: 100,
+    finalScore: -42,
+    parVersion: 'par-v1',
+    scoringConfigVersion: 1,
+    stateHash: 'state-1',
+    createdAt: '2026-08-21T00:00:00.000Z',
+  };
+  const stub = installFetchStub(200, { record, wasExisting: false });
+  try {
+    useAuthStore().setSession('token-abc', null);
+    useUiStateStore().setSnapshot(loadUiStateFixture('endgame-win'));
+
+    const { submittedScore } = useCompetitiveSubmitOnGameover(ref('match-1'));
+    await flush();
+
+    assert.equal(submittedScore.value?.finalScore, -42, 'finalScore surfaced verbatim');
+    assert.equal(submittedScore.value?.rawScore, 100, 'rawScore surfaced verbatim');
+  } finally {
+    stub.restore();
+  }
+});
+
+test('submittedScore stays null for a guest and for a failed submit', async () => {
+  // Guest: never POSTs, no record.
+  setActivePinia(createPinia());
+  const guestStub = installFetchStub(200, { record: {}, wasExisting: false });
+  try {
+    useUiStateStore().setSnapshot(loadUiStateFixture('endgame-win'));
+    const { submittedScore } = useCompetitiveSubmitOnGameover(ref('match-1'));
+    await flush();
+    assert.equal(submittedScore.value, null, 'a guest surfaces no score');
+  } finally {
+    guestStub.restore();
+  }
+
+  // Non-200: the record is not surfaced.
+  setActivePinia(createPinia());
+  const failStub = installFetchStub(409, { error: 'match_not_finished' });
+  try {
+    useAuthStore().setSession('token-abc', null);
+    useUiStateStore().setSnapshot(loadUiStateFixture('endgame-win'));
+    const { submissionStatus, submittedScore } = useCompetitiveSubmitOnGameover(ref('match-1'));
+    await flush();
+    assert.equal(submissionStatus.value, 'failed');
+    assert.equal(submittedScore.value, null, 'a failed submit surfaces no score');
+  } finally {
+    failStub.restore();
+  }
+});
+
 // why: WP-502 / D-24306 — a match the players ended early (the endedEarly gameover
 // marker) is never a ranked result, so an authenticated player is NOT submitted:
 // the POST is skipped entirely and the status is the permanent, non-error
