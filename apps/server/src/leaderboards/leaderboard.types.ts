@@ -166,6 +166,17 @@ export interface GlobalTopLeaderboard {
   readonly totalEligibleEntries: number;
 }
 
+// why: WP-579 / D-24388 — a claimed, URL-safe player handle for the legends
+// snapshot ONLY. This is snapshot-internal (Path A): it never joins
+// PublicLeaderboardEntry (the D-5201 9-field lock) and never reaches an HTTP
+// leaderboard endpoint.
+export interface ClaimedHandle {
+  /** The case-preserved claimed handle (the display form). */
+  readonly handle: string;
+  /** The canonicalized handle used as the profile URL key. */
+  readonly handleCanonical: string;
+}
+
 // why: ThemeLeaderboardQueryOptions carries `themeId` instead of
 // `scenarioKey` (the dep-injection seam translates themeId →
 // scenarioKey[] at request time per D-15001). Pagination bounds

@@ -26,6 +26,7 @@ import assert from 'node:assert/strict';
 
 import {
   PRODUCTION_DEPENDENCIES,
+  fetchClaimedHandlesByReplayHash,
   getGlobalTopLeaderboard,
   getPublicScoreByReplayHash,
   getScenarioLeaderboard,
@@ -1066,5 +1067,41 @@ describe('leaderboard logic (WP-054)', () => {
     assert.strictEqual(fn('any-theme'), null);
     assert.strictEqual(fn(''), null);
     assert.strictEqual(fn('dark-reign'), null);
+  });
+});
+
+describe('fetchClaimedHandlesByReplayHash (WP-579 / D-24388)', () => {
+  test('includes single-claimed hashes, drops ambiguous co-op hashes, skips unclaimed', async () => {
+    // why: the SQL filters handle_canonical IS NOT NULL (unclaimed absent); the JS
+    // resolves ambiguity — a replay hash claimed by two players (co-op) is dropped
+    // so a row never links to the wrong teammate's profile.
+    const rows = [
+      { replay_hash: 'solo', display_handle: 'Solo', handle_canonical: 'solo' },
+      { replay_hash: 'coop', display_handle: 'PlayerA', handle_canonical: 'playera' },
+      { replay_hash: 'coop', display_handle: 'PlayerB', handle_canonical: 'playerb' },
+    ];
+    const database = {
+      query: async () => ({ rows }),
+    } as unknown as DatabaseClient;
+
+    const map = await fetchClaimedHandlesByReplayHash(['solo', 'coop', 'unclaimed'], database);
+
+    assert.deepStrictEqual(map.get('solo'), { handle: 'Solo', handleCanonical: 'solo' });
+    assert.equal(map.has('coop'), false, 'an ambiguous co-op replay hash is dropped');
+    assert.equal(map.has('unclaimed'), false, 'an unclaimed player is absent');
+  });
+
+  test('returns an empty map for no replay hashes without touching the database', async () => {
+    let queried = false;
+    const database = {
+      query: async () => {
+        queried = true;
+        return { rows: [] };
+      },
+    } as unknown as DatabaseClient;
+
+    const map = await fetchClaimedHandlesByReplayHash([], database);
+    assert.equal(map.size, 0);
+    assert.equal(queried, false, 'no query on an empty input');
   });
 });

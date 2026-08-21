@@ -18,23 +18,47 @@ import {
   extractSnapshotFields,
   serializeSnapshot,
   buildBoardList,
+  UNCLAIMED_HANDLE_LABEL,
 } from './legends.logic.js';
 
 import type {
+  ClaimedHandle,
   GlobalTopLeaderboard,
   PublicLeaderboardEntry,
   ScenarioLeaderboard,
 } from '../leaderboards/leaderboard.types.js';
+
+/**
+ * A claimed-handle map that labels each entry with its playerDisplayName (WP-579
+ * builder tests keep their handle assertions this way). Requires distinct
+ * replayHashes per entry (makeEntry derives one from the name by default).
+ */
+function claimedHandles(entries: PublicLeaderboardEntry[]): Map<string, ClaimedHandle> {
+  const handles = new Map<string, ClaimedHandle>();
+  for (const entry of entries) {
+    handles.set(entry.replayHash, {
+      handle: entry.playerDisplayName,
+      handleCanonical: entry.playerDisplayName.toLowerCase(),
+    });
+  }
+  return handles;
+}
+
+/** No claimed handles — every row falls back to the neutral label. */
+const NO_HANDLES: ReadonlyMap<string, ClaimedHandle> = new Map();
 
 // ---------------------------------------------------------------------------
 // Fixtures
 // ---------------------------------------------------------------------------
 
 function makeEntry(overrides: Partial<PublicLeaderboardEntry> = {}): PublicLeaderboardEntry {
+  // why: WP-579 — the snapshot handle now comes from a replayHash-keyed map, so
+  // each distinctly-named entry needs a distinct replayHash by default (an
+  // explicit replayHash override still wins via the spread).
+  const playerDisplayName = overrides.playerDisplayName ?? 'Alice';
   return {
     rank: 1,
-    replayHash: 'abc123',
-    playerDisplayName: 'Alice',
+    replayHash: `hash-${playerDisplayName}`,
     scenarioKey: 'scheme-mastermind-villains',
     finalScore: 42,
     rawScore: 40,
@@ -42,6 +66,7 @@ function makeEntry(overrides: Partial<PublicLeaderboardEntry> = {}): PublicLeade
     scoringConfigVersion: 1,
     createdAt: '2026-01-01T00:00:00.000Z',
     ...overrides,
+    playerDisplayName,
   };
 }
 
@@ -77,8 +102,9 @@ describe('legends logic (WP-142)', () => {
     ];
     const leaderboard = makeGlobalLeaderboard(entries);
 
-    const snapshot1 = buildGlobalTopSnapshot(leaderboard);
-    const snapshot2 = buildGlobalTopSnapshot(leaderboard);
+    const handles = claimedHandles(entries);
+    const snapshot1 = buildGlobalTopSnapshot(leaderboard, handles);
+    const snapshot2 = buildGlobalTopSnapshot(leaderboard, handles);
 
     const json1 = serializeSnapshot(snapshot1);
     const json2 = serializeSnapshot(snapshot2);
@@ -93,8 +119,9 @@ describe('legends logic (WP-142)', () => {
     ];
     const leaderboard = makeScenarioLeaderboard('my-scenario', entries);
 
-    const snapshot1 = buildScenarioSnapshot(leaderboard);
-    const snapshot2 = buildScenarioSnapshot(leaderboard);
+    const handles = claimedHandles(entries);
+    const snapshot1 = buildScenarioSnapshot(leaderboard, handles);
+    const snapshot2 = buildScenarioSnapshot(leaderboard, handles);
 
     const json1 = serializeSnapshot(snapshot1);
     const json2 = serializeSnapshot(snapshot2);
@@ -110,7 +137,7 @@ describe('legends logic (WP-142)', () => {
       makeEntry({ rank: 2, playerDisplayName: 'Bob', finalScore: 50 }),
     ];
     const leaderboard = makeScenarioLeaderboard('test-scenario', entries);
-    const snapshot = buildScenarioSnapshot(leaderboard);
+    const snapshot = buildScenarioSnapshot(leaderboard, claimedHandles(entries));
 
     assert.equal(snapshot.entries.length, 4);
     assert.equal(snapshot.entries[0].handle, 'Alice');
@@ -130,7 +157,7 @@ describe('legends logic (WP-142)', () => {
       makeEntry({ rank: 1, playerDisplayName: 'Alpha', finalScore: 30, scenarioKey: 'sc-a' }),
     ];
     const leaderboard = makeGlobalLeaderboard(entries);
-    const snapshot = buildGlobalTopSnapshot(leaderboard);
+    const snapshot = buildGlobalTopSnapshot(leaderboard, claimedHandles(entries));
 
     assert.equal(snapshot.entries[0].handle, 'Alpha');
     assert.equal(snapshot.entries[1].handle, 'Zeta');
@@ -160,12 +187,18 @@ describe('legends logic (WP-142)', () => {
 
     const scenarioSnapshot = buildScenarioSnapshot(
       makeScenarioLeaderboard('test', [entry]),
+      NO_HANDLES,
     );
     const scenarioEntryKeys = Object.keys(scenarioSnapshot.entries[0]).sort();
     assert.deepEqual(scenarioEntryKeys, ['handle', 'rank', 'score']);
+    // why: WP-579 — an unclaimed row shows the neutral label, NOT the
+    // display_name (which can be an email local-part). No PII leaks.
+    assert.equal(scenarioSnapshot.entries[0].handle, UNCLAIMED_HANDLE_LABEL);
+    assert.equal(serializeSnapshot(scenarioSnapshot).includes('Visible Handle'), false);
 
     const globalSnapshot = buildGlobalTopSnapshot(
       makeGlobalLeaderboard([entry]),
+      NO_HANDLES,
     );
     const globalEntryKeys = Object.keys(globalSnapshot.entries[0]).sort();
     assert.deepEqual(globalEntryKeys, ['handle', 'rank', 'scenarioKey', 'score']);
@@ -174,7 +207,7 @@ describe('legends logic (WP-142)', () => {
   test('builders do not call Date.now or new Date — no clock dependency', () => {
     const entries = [makeEntry()];
     const leaderboard = makeScenarioLeaderboard('test', entries);
-    const snapshot = buildScenarioSnapshot(leaderboard);
+    const snapshot = buildScenarioSnapshot(leaderboard, NO_HANDLES);
 
     const json = serializeSnapshot(snapshot);
     assert.equal(json.includes('generatedAt'), false);
@@ -202,7 +235,7 @@ describe('legends logic (WP-142)', () => {
 
   test('empty leaderboard produces zero-row snapshot', () => {
     const leaderboard = makeScenarioLeaderboard('empty-test', []);
-    const snapshot = buildScenarioSnapshot(leaderboard);
+    const snapshot = buildScenarioSnapshot(leaderboard, NO_HANDLES);
 
     assert.equal(snapshot.entries.length, 0);
     assert.equal(snapshot.rowCount, 0);
@@ -217,9 +250,44 @@ describe('legends logic (WP-142)', () => {
       makeEntry({ rank: 3, playerDisplayName: 'C' }),
     ];
     const leaderboard = makeScenarioLeaderboard('count-test', entries);
-    const snapshot = buildScenarioSnapshot(leaderboard);
+    const snapshot = buildScenarioSnapshot(leaderboard, claimedHandles(entries));
 
     assert.equal(snapshot.rowCount, snapshot.entries.length);
     assert.equal(snapshot.rowCount, 3);
+  });
+});
+
+describe('legends handle → profile link (WP-579 / D-24388)', () => {
+  test('a claimed handle sets the snapshot handle + handleCanonical (drives the profile link)', () => {
+    const entries = [makeEntry({ rank: 1, playerDisplayName: 'ignored-display-name', replayHash: 'rh-claimed' })];
+    const handles = new Map<string, ClaimedHandle>([
+      ['rh-claimed', { handle: 'AliceTheGreat', handleCanonical: 'alicethegreat' }],
+    ]);
+    const snapshot = buildScenarioSnapshot(makeScenarioLeaderboard('sc', entries), handles);
+    assert.equal(snapshot.entries[0].handle, 'AliceTheGreat', 'claimed handle, not the display_name');
+    assert.equal(snapshot.entries[0].handleCanonical, 'alicethegreat', 'canonical drives the URL');
+  });
+
+  test('an unclaimed row uses the neutral label and OMITS handleCanonical (no link, no PII)', () => {
+    const entries = [makeEntry({ rank: 1, replayHash: 'rh-unclaimed' })];
+    const snapshot = buildScenarioSnapshot(makeScenarioLeaderboard('sc', entries), NO_HANDLES);
+    assert.equal(snapshot.entries[0].handle, UNCLAIMED_HANDLE_LABEL);
+    assert.equal('handleCanonical' in snapshot.entries[0], false, 'omit-when-absent → no link');
+  });
+
+  test('global-top: claimed and unclaimed rows are handled per row', () => {
+    const entries = [
+      makeEntry({ rank: 1, playerDisplayName: 'claimed', replayHash: 'g-1' }),
+      makeEntry({ rank: 2, playerDisplayName: 'unclaimed', replayHash: 'g-2' }),
+    ];
+    const handles = new Map<string, ClaimedHandle>([
+      ['g-1', { handle: 'Claimed', handleCanonical: 'claimed' }],
+    ]);
+    const snapshot = buildGlobalTopSnapshot(makeGlobalLeaderboard(entries), handles);
+    const byRank = [...snapshot.entries].sort((a, b) => a.rank - b.rank);
+    assert.equal(byRank[0].handle, 'Claimed');
+    assert.equal(byRank[0].handleCanonical, 'claimed');
+    assert.equal(byRank[1].handle, UNCLAIMED_HANDLE_LABEL);
+    assert.equal('handleCanonical' in byRank[1], false);
   });
 });

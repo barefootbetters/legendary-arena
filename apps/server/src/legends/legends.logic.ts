@@ -18,10 +18,19 @@ import type {
 } from './legends.types.js';
 
 import type {
+  ClaimedHandle,
   GlobalTopLeaderboard,
   PublicLeaderboardEntry,
   ScenarioLeaderboard,
 } from '../leaderboards/leaderboard.types.js';
+
+// why: WP-579 / D-24388 — the neutral, non-PII label shown for a leaderboard
+// row whose player has not claimed a handle (or, for a co-op match both
+// teammates submitted, an ambiguous shared replay hash). The pre-WP-579 board
+// showed `display_name`, which falls back to the email local-part; this label
+// closes that leak. A row with this label carries no `handleCanonical` and
+// renders as plain text (no profile link).
+export const UNCLAIMED_HANDLE_LABEL = 'Anonymous';
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -60,17 +69,23 @@ function compareByRankThenHandle(
 // given identical input.
 export function buildGlobalTopSnapshot(
   leaderboard: GlobalTopLeaderboard,
+  handlesByReplayHash: ReadonlyMap<string, ClaimedHandle>,
 ): LegendsSnapshotBoard<GlobalTopSnapshotEntry> {
   const entries: GlobalTopSnapshotEntry[] = [];
 
   for (const entry of leaderboard.entries) {
-    // why: explicit object literal construction — no spread from
-    // source objects per EC-157 §Forbidden Patterns.
+    // why: WP-579 / D-24388 — the board shows the CLAIMED handle when the
+    // player has one (linked via handleCanonical), else the neutral label; the
+    // email-local-part display_name is never emitted. handleCanonical is
+    // appended only for a claimed handle (omit-when-absent — a fresh literal, not
+    // a spread from a source object, per EC-157 §Forbidden Patterns).
+    const claimed = handlesByReplayHash.get(entry.replayHash);
     const snapshotEntry: GlobalTopSnapshotEntry = {
-      handle: entry.playerDisplayName,
+      handle: claimed !== undefined ? claimed.handle : UNCLAIMED_HANDLE_LABEL,
       rank: entry.rank,
       scenarioKey: entry.scenarioKey,
       score: entry.finalScore,
+      ...(claimed !== undefined ? { handleCanonical: claimed.handleCanonical } : {}),
     };
     entries.push(snapshotEntry);
   }
@@ -101,15 +116,19 @@ export function buildGlobalTopSnapshot(
 // byte-identical output given identical input.
 export function buildScenarioSnapshot(
   leaderboard: ScenarioLeaderboard,
+  handlesByReplayHash: ReadonlyMap<string, ClaimedHandle>,
 ): LegendsSnapshotBoard<ScenarioSnapshotEntry> {
   const entries: ScenarioSnapshotEntry[] = [];
 
   for (const entry of leaderboard.entries) {
-    // why: explicit object literal construction — no spread.
+    // why: WP-579 / D-24388 — claimed handle (linked) or the neutral label; see
+    // buildGlobalTopSnapshot. handleCanonical appended only when claimed.
+    const claimed = handlesByReplayHash.get(entry.replayHash);
     const snapshotEntry: ScenarioSnapshotEntry = {
-      handle: entry.playerDisplayName,
+      handle: claimed !== undefined ? claimed.handle : UNCLAIMED_HANDLE_LABEL,
       rank: entry.rank,
       score: entry.finalScore,
+      ...(claimed !== undefined ? { handleCanonical: claimed.handleCanonical } : {}),
     };
     entries.push(snapshotEntry);
   }
