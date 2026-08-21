@@ -7,6 +7,30 @@
 
 ## Current State
 
+### WP-581 — Visible cue for the recruit-as-attack conversion (EC-616 / D-24390) shipped (2026-08-21)
+
+The WP-580 live-verify's "no option provided" was two things: a magnitude-gate bug (fixed in
+the WP-580 follow-up) AND that the conversion is *passive* — the `EconomyBar` Attack readout
+silently folds in convertible recruit, with nothing telling the player Recruit is spendable as
+Attack. This WP adds the visible cue.
+
+Shipped exactly as locked (D-24390): projected the EXISTING `G.turnEconomy.recruitSpendableAsAttack`
+flag onto `UITurnEconomyState` (omit-when-absent) via the 5-step Board-Visible Field contract —
+populated in `buildUIState`, threaded through `filterUIStateForAudience` for the ACTIVE PLAYER
+ONLY (`REDACTED_ECONOMY` omits it for non-active players + spectators), an audience-filter test,
+and a BUILT-PROJECTION drift pin (a runtime keyset assertion on `buildUIState` with the flag set —
+the WP-575 effectTraces precedent, not a literal append). `EconomyBar.vue` renders an accessible
+cue on the Attack line when the flag is present (meaning in the text + glyph, not colour alone; an
+explicit `aria-label`; no animation, reduced-motion safe).
+
+Display-only: NO new `G` field, NO hash surface (UIState is a projection of `G`, never hashed);
+no `src/economy`/`src/moves`/`src/hero` change; `getSpendableAttack` and all WP-580 behaviour
+byte-unchanged. Engine **2817→2821/0** (+4), arena-client **1359→1361/0** (+2); both hash oracles
+byte-unchanged; `pnpm -r build` + `--no-bail test` green across all packages (0 fail); the
+`lagn-v1.json` line-ending build churn was reverted. **D-24026 live-verify: operator-pending** —
+play God of Thunder and confirm the Economy bar shows the cue for the rest of the turn and clears
+next turn.
+
 ### WP-580 follow-up — recruit-as-attack magnitude-gate fix (EC-615) shipped (2026-08-21)
 
 The first live-verify of WP-580 (a real match on gitSha `64bc959`) caught a defect: God of
