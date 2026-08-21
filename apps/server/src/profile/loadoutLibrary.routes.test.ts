@@ -19,6 +19,7 @@
 
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
+import { Readable } from 'node:stream';
 
 import { registerLoadoutLibraryRoutes } from './loadoutLibrary.routes.js';
 import type {
@@ -75,6 +76,36 @@ function makeContext(options: {
     },
     headers,
   };
+}
+
+/**
+ * Build a context whose `req` is a REAL Node request stream carrying `payload`,
+ * with `request.body` starting undefined — the production shape the
+ * `request.body`-injecting `makeContext` cannot reproduce. Adds the minimal koa
+ * surface koa-body@5 reads (`method` + `is`). Used to prove the route parses its
+ * own body (the missing-parser defect fixed alongside the competition route).
+ */
+function makeStreamContext(payload: string): FakeContext {
+  const stream = Readable.from([Buffer.from(payload)]) as Readable & {
+    headers: Record<string, string>;
+  };
+  stream.headers = {
+    'content-type': 'application/json',
+    'content-length': String(Buffer.byteLength(payload)),
+  };
+  const base = makeContext({});
+  return Object.assign(base, {
+    req: stream,
+    method: 'POST',
+    is(type: string | string[]): string | false {
+      const types = Array.isArray(type) ? type : [type];
+      // why: this route only ever receives JSON; report a json match so
+      // koa-body@5 routes the stream through its JSON parser.
+      return types.some((candidate) => candidate.includes('json'))
+        ? 'application/json'
+        : false;
+    },
+  }) as unknown as FakeContext;
 }
 
 function makeDeps(
@@ -162,6 +193,23 @@ describe('profile loadout library routes (WP-301)', () => {
     await handlers.get('POST /api/me/loadouts')!(koaContext);
     assert.equal(koaContext.status, 400);
     assert.deepEqual(koaContext.body, { error: 'invalid_lagn' });
+  });
+
+  test('POST parses the JSON body off the request stream (production path)', async () => {
+    // why: reproduces the production condition — boardgame.io installs koa-body
+    // only on /games/*, so this route must parse its own body. Before the fix,
+    // request.body was undefined in prod and createLoadout acted on an empty body.
+    // Here req is a real Node stream and request.body starts undefined; the handler
+    // must parse the stream into request.body. Asserted independently of the
+    // validation outcome; against the unfixed handler request.body stays undefined.
+    const handlers = registerAndGet(makeDeps(authorizedSession), throwingDatabase);
+    const create = handlers.get('POST /api/me/loadouts');
+    assert.ok(create !== undefined);
+    const context = makeStreamContext(JSON.stringify({ name: '', lagn: {} }));
+
+    await create(context);
+
+    assert.deepEqual(context.request.body, { name: '', lagn: {} });
   });
 
   test('create with empty name → 400 invalid_name (before DB)', async () => {

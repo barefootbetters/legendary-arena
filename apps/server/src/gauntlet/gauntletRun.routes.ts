@@ -58,6 +58,7 @@ import {
 // time via the derived-progression module, instead of the raw stored run
 // `listGauntletRuns` returned. POST/PATCH/DELETE are unchanged.
 import { listGauntletRunProgress } from './gauntletRunProgress.logic.js';
+import koaBody from 'koa-body';
 
 /**
  * Minimal structural shape of the Koa context surface this module touches.
@@ -120,6 +121,38 @@ export function statusForGauntletRunErrorCode(
   // why: invalid_pack and invalid_leg_picks are both client-request faults → 400
   // Bad Request.
   return 400;
+}
+
+// why: boardgame.io installs koa-body ONLY on its own /games/* routes — there is
+// no global body parser — so these guarded /api routes must parse their own JSON
+// body. Without it, in production koaContext.request.body is undefined and the
+// import/update handlers below act on an undefined body — a shipped 100% failure
+// for importing/updating gauntlet runs. The gap stayed latent because these route
+// handlers have no unit coverage exercising a real request stream. Mirrors
+// matchGate/competition's test-friendly short-circuit.
+const gauntletRunRouteJsonBodyParser = koaBody();
+
+/**
+ * Parse the JSON request body into `koaContext.request.body` when a real Node
+ * request stream is present. A no-op when no stream is exposed (a unit-test fake
+ * context injects `request.body` directly), so the same handler works in
+ * production and under `node:test`.
+ *
+ * @param koaContext The gauntlet-run-route request context.
+ */
+async function ensureJsonBodyParsed(
+  koaContext: KoaGauntletRunContext,
+): Promise<void> {
+  const nodeRequest = koaContext.req as { on?: unknown };
+  if (typeof nodeRequest.on !== 'function') {
+    return;
+  }
+  await (
+    gauntletRunRouteJsonBodyParser as unknown as (
+      koaContext: KoaGauntletRunContext,
+      next: () => Promise<void>,
+    ) => Promise<void>
+  )(koaContext, async () => {});
 }
 
 /**
@@ -206,6 +239,7 @@ export function registerGauntletRunRoutes(
       }
       // why: the entire request body IS the untrusted WP-440 pack; the logic
       // layer validates its shape with validateGauntletPack.
+      await ensureJsonBodyParsed(koaContext);
       const input: ImportGauntletRunInput = { pack: koaContext.request.body };
       const result = await importGauntletRun(
         accountId,
@@ -267,6 +301,7 @@ export function registerGauntletRunRoutes(
       if (accountId === null) {
         return;
       }
+      await ensureJsonBodyParsed(koaContext);
       const rawBody = koaContext.request.body;
       const body =
         rawBody !== null && typeof rawBody === 'object'

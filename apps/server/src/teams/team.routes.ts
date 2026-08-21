@@ -59,6 +59,7 @@ import type {
   TeamErrorCode,
   TeamId,
 } from './team.types.js';
+import koaBody from 'koa-body';
 import {
   createTeam,
   getTeam,
@@ -216,6 +217,39 @@ function statusForTeamErrorCode(code: TeamErrorCode): number {
 // fakes without touching the orchestrator's broker seam. Per
 // D-11202 the auth carrier is the bearer header only — no cookie
 // path, no CSRF middleware, no WebSocket carrier in this WP.
+
+// why: boardgame.io installs koa-body ONLY on its own /games/* routes — there is
+// no global body parser — so these guarded /api routes must parse their own JSON
+// body. Without it, in production koaContext.request.body is undefined and every
+// body-carrying handler below rejects the request (400 invalid_request) or acts
+// on an empty body — a shipped 100% failure for team create/manage. The gap
+// stayed latent because these route handlers have no unit coverage exercising a
+// real request stream. Mirrors matchGate/competition's test-friendly short-circuit.
+const teamRouteJsonBodyParser = koaBody();
+
+/**
+ * Parse the JSON request body into `koaContext.request.body` when a real Node
+ * request stream is present. A no-op when no stream is exposed (a unit-test fake
+ * context injects `request.body` directly), so the same handler works in
+ * production and under `node:test`.
+ *
+ * @param koaContext The team-route request context.
+ */
+async function ensureJsonBodyParsed(
+  koaContext: KoaTeamContext,
+): Promise<void> {
+  const nodeRequest = koaContext.req as { on?: unknown };
+  if (typeof nodeRequest.on !== 'function') {
+    return;
+  }
+  await (
+    teamRouteJsonBodyParser as unknown as (
+      koaContext: KoaTeamContext,
+      next: () => Promise<void>,
+    ) => Promise<void>
+  )(koaContext, async () => {});
+}
+
 /**
  * Register the eight team-affiliation routes on the supplied Koa
  * router. The router is mutated in place; the function returns
@@ -279,6 +313,7 @@ export function registerTeamRoutes(
       if (accountId === null) {
         return;
       }
+      await ensureJsonBodyParsed(koaContext);
       const rawBody = koaContext.request.body;
       if (rawBody === undefined || rawBody === null || typeof rawBody !== 'object') {
         koaContext.status = 400;
@@ -392,6 +427,7 @@ export function registerTeamRoutes(
       if (teamId === null) {
         return;
       }
+      await ensureJsonBodyParsed(koaContext);
       const rawBody = koaContext.request.body;
       if (rawBody === undefined || rawBody === null || typeof rawBody !== 'object') {
         koaContext.status = 400;
@@ -438,6 +474,7 @@ export function registerTeamRoutes(
       if (teamId === null) {
         return;
       }
+      await ensureJsonBodyParsed(koaContext);
       const rawBody = koaContext.request.body;
       if (rawBody === undefined || rawBody === null || typeof rawBody !== 'object') {
         koaContext.status = 400;
@@ -613,6 +650,7 @@ export function registerTeamRoutes(
       if (teamId === null) {
         return;
       }
+      await ensureJsonBodyParsed(koaContext);
       const rawBody = koaContext.request.body;
       if (rawBody === undefined || rawBody === null || typeof rawBody !== 'object') {
         koaContext.status = 400;
@@ -665,6 +703,7 @@ export function registerTeamRoutes(
       if (teamId === null) {
         return;
       }
+      await ensureJsonBodyParsed(koaContext);
       const rawBody = koaContext.request.body;
       if (rawBody === undefined || rawBody === null || typeof rawBody !== 'object') {
         koaContext.status = 400;

@@ -41,6 +41,7 @@ import type {
   SessionTokenRequest,
   UpdateLoadoutPatch,
 } from './loadoutLibrary.types.js';
+import koaBody from 'koa-body';
 import {
   createLoadout,
   deleteLoadout,
@@ -107,6 +108,37 @@ function statusForLoadoutErrorCode(code: LoadoutLibraryErrorCode): number {
   return 400;
 }
 
+// why: boardgame.io installs koa-body ONLY on its own /games/* routes — there is
+// no global body parser — so these guarded /api routes must parse their own JSON
+// body. Without it, in production koaContext.request.body is undefined and the
+// create/update handlers below act on an empty body — a shipped 100% failure for
+// saving/updating loadouts. The gap stayed latent because the route tests inject
+// request.body directly. Mirrors matchGate/competition's test-friendly short-circuit.
+const loadoutRouteJsonBodyParser = koaBody();
+
+/**
+ * Parse the JSON request body into `koaContext.request.body` when a real Node
+ * request stream is present. A no-op when no stream is exposed (a unit-test fake
+ * context injects `request.body` directly), so the same handler works in
+ * production and under `node:test`.
+ *
+ * @param koaContext The loadout-route request context.
+ */
+async function ensureJsonBodyParsed(
+  koaContext: KoaLoadoutContext,
+): Promise<void> {
+  const nodeRequest = koaContext.req as { on?: unknown };
+  if (typeof nodeRequest.on !== 'function') {
+    return;
+  }
+  await (
+    loadoutRouteJsonBodyParser as unknown as (
+      koaContext: KoaLoadoutContext,
+      next: () => Promise<void>,
+    ) => Promise<void>
+  )(koaContext, async () => {});
+}
+
 /**
  * Register the five loadout-library routes on the supplied Koa router.
  * The router is mutated in place; the function returns `void`.
@@ -165,6 +197,7 @@ export function registerLoadoutLibraryRoutes(
       if (accountId === null) {
         return;
       }
+      await ensureJsonBodyParsed(koaContext);
       const rawBody = koaContext.request.body;
       const body =
         rawBody !== null && typeof rawBody === 'object'
@@ -219,6 +252,7 @@ export function registerLoadoutLibraryRoutes(
       if (accountId === null) {
         return;
       }
+      await ensureJsonBodyParsed(koaContext);
       const rawBody = koaContext.request.body;
       const body =
         rawBody !== null && typeof rawBody === 'object'
