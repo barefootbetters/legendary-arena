@@ -7,6 +7,29 @@
 
 ## Current State
 
+### WP-578 — Surface the competitive score on the endgame screen (EC-613 / D-24387) shipped (2026-08-21)
+
+Closes the "where is my score" gap from a real Red Skull / Midtown Bank Robbery 2p match
+review. The competitive score is computed server-side on replay ingest and stored, but was
+never shown — `buildParBreakdown` hard-returns `undefined` under D-6701, so `UIGameOverState.par`
+is always omitted and `EndgameSummary` rendered only outcome + in-game VP.
+
+Shipped exactly as locked (D-24387): the submit path already hands the client the answer
+(`submitCompetitiveScore` returns `record: MyCompetitiveScore` with `rawScore` + `finalScore`),
+so `useCompetitiveSubmitOnGameover` now exposes `submittedScore` from that record on HTTP 200
+(null for guest / non-200 / network / `par_not_published` / early-end); `EndgameSummary.vue`
+gained an optional `competitiveScore` prop that renders `finalScore` (the ranked, lower-is-better
+headline) + `rawScore` verbatim, and the unchanged outcome+VP summary when null. Prop-drilled
+`PlayViewport` (composable host) → `PlayDesktop` / `PlayMobile` → `EndgameSummary` (the live
+route; the dev `fixture`-route `ArenaHud` untouched).
+
+App-only: NO `packages/game-engine` change, `buildParBreakdown` still returns `undefined`
+(D-6701 intact), no new fetch, no hash surface. arena-client **1359→1364/0** (+5: composable +
+EndgameSummary); `vue-tsc` clean; `pnpm -r build` + `--no-bail test` green across all packages;
+the `lagn-v1.json` line-ending build churn was reverted. The EndgameSummary test file was NEW
+(the EC listed it as "modified" — a minor allowlist note). **D-24026 live-verify: operator-pending**
+— finish a ranked match signed in and read the competitive score on the endgame panel.
+
 ### WP-581 — Visible cue for the recruit-as-attack conversion (EC-616 / D-24390) shipped (2026-08-21)
 
 The WP-580 live-verify's "no option provided" was two things: a magnitude-gate bug (fixed in
