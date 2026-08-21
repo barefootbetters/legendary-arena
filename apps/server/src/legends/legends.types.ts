@@ -24,6 +24,12 @@ export interface GlobalTopSnapshotEntry {
   readonly rank: number;
   readonly scenarioKey: string;
   readonly score: number;
+  // why: WP-579 / D-24388 — the canonical (URL) form of a CLAIMED handle,
+  // driving the profile link `?profile=<handleCanonical>`. Omit-when-absent
+  // (present only when the player claimed a handle), appended last so an
+  // unclaimed entry serializes byte-identically to the pre-WP-579 shape (no
+  // schemaVersion bump, per the additive-optional convention).
+  readonly handleCanonical?: string;
 }
 
 /**
@@ -34,6 +40,9 @@ export interface ScenarioSnapshotEntry {
   readonly handle: string;
   readonly rank: number;
   readonly score: number;
+  // why: WP-579 / D-24388 — see GlobalTopSnapshotEntry.handleCanonical.
+  // Omit-when-absent, appended last, no schemaVersion bump.
+  readonly handleCanonical?: string;
 }
 
 /**

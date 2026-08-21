@@ -37877,9 +37877,12 @@ data + the derived feeds (`hero-mechanic-ledger`, `card-mechanics`,
 fight, bot, parse, drift/count pins); `pnpm -r build` + `--no-bail test` green across all
 packages; both hash oracles byte-unchanged; all four card-data `:check` gates pass. The
 `card-mechanics.json` feed was an EC-615 file-allowlist addition surfaced at execution (a
-new hero keyword stales that feed too). **D-24026 live-verify: operator-pending**
-(`User-Visible Surface = play.legendary-arena.com`; play God of Thunder and fund a fight
-from unspent recruit).
+new hero keyword stales that feed too). **D-24026 live-verify: VERIFIED 2026-08-21**
+(`User-Visible Surface = play.legendary-arena.com`; a real Red Skull / Midtown Bank Robbery
+2p match on a post-fix build — the game log shows `[applied] Player 0 can spend Recruit as
+Attack this turn (God of Thunder)` on turn 28, and the diagnostics effect trace records the
+`recruit-as-attack` effect with `status: "fired"` (was `no-handler` before the magnitude-gate
+fix). The conversion primitive works end-to-end.
 
 **Post-ship correction 2026-08-21 (EC-615 follow-up).** The live-verify caught a defect:
 a no-magnitude onPlay keyword MUST be enrolled in `NO_MAGNITUDE_KEYWORDS`, or
@@ -37963,3 +37966,45 @@ Locked:
 `undefined`); `pnpm -r build` + `--no-bail test` green across all packages. **D-24026
 live-verify: operator-pending** (`User-Visible Surface = play.legendary-arena.com`; finish a
 ranked match signed in and read the competitive score on the endgame panel).
+
+### D-24388 — Legends Leaderboard Shows the Claimed Handle as a Profile Link (Snapshot-Only)
+
+The legends leaderboard rendered each row's player as plain-text `legendary.players.display_name`
+(no link) — which falls back to the email local-part, so a public board could print an email
+prefix. A public profile page already exists at `play.legendary-arena.com/?profile=<handle>`
+keyed on the claimed handle (`display_handle` / `handle_canonical`, migration 008).
+
+Locked (executed on the recommended defaults):
+
+1. **Path A — snapshot-only.** The claimed handle is carried to the legends snapshot via a
+   snapshot-internal fetch (`fetchClaimedHandlesByReplayHash`), NEVER through
+   `PublicLeaderboardEntry` (the D-5201 9-field lock) or any of the four `Wired` HTTP
+   leaderboard endpoints — which stay **byte-identical**, so §21 is N/A and D-5201 is intact.
+   (The alternative Path B — widening `PublicLeaderboardEntry` + a D-5201 amendment + a §21
+   four-row update — was rejected in favour of the minimal snapshot-only change.)
+2. **Co-op ambiguity is resolved safely.** The board query returns one row per
+   competitive_scores row, so a co-op replay both teammates submitted appears as two rows
+   sharing a `replay_hash`. The handle fetch includes only UNAMBIGUOUS single-claimed replay
+   hashes — a hash claimed by more than one player is dropped, so a row NEVER links to the
+   wrong teammate's profile (that row falls back to the neutral label instead).
+3. **Unclaimed-handle fallback (recommended default).** A ranked player with no claimed handle
+   is never dropped; the row shows the neutral, non-PII label `Anonymous` as plain text (no
+   link), and the email-local-part `display_name` is **never emitted** to these boards — closing
+   the PII leak. (A claimed handle links to `?profile=<handle_canonical>`, percent-encoded.)
+4. **Additive snapshot, no version bump.** The snapshot entry types gain an optional
+   `handleCanonical?` (omit-when-absent, appended last), and the `legends-board` client mirror
+   (`snapshotClient.ts`) gains the same field in lockstep; `schemaVersion` stays the literal `1`.
+   The board's `handle` field now holds the claimed handle or `Anonymous`, not `display_name`.
+5. **Scope held.** The Gauntlet board (a team roster, different source), the latent
+   NowPlaying / RecentAchievements panels, and the separate MatchResult pipeline are untouched.
+   Score computation, ranking, eligibility, and the 5-minute publish cadence are unchanged; no
+   `competitive_scores` migration.
+
+**Active 2026-08-21 (WP-579 / EC-614).** Shipped across the server leaderboard/legends layer + the
+three legends-board single-player panels + a shared `profileHref` helper. Server legends+leaderboard
+tests green (DB-backed skip without `TEST_DATABASE_URL`), legends-board 129→131/0; `pnpm -r --no-bail
+test` green across all packages. Allowlist additions surfaced at execution: `leaderboard.types.ts`
+(the `ClaimedHandle` type), `legends.publisher.ts` (the Path A wiring), `profileLink.ts`/`.test.ts`
+(the 3rd-copy shared helper); `api-endpoints.md` unchanged (Path A). **D-24026 live-verify:
+operator-pending** (`User-Visible Surface = legends.legendary-arena.com`; a claimed-handle row links
+to `/?profile=<handle>` and an unclaimed row shows `Anonymous`).

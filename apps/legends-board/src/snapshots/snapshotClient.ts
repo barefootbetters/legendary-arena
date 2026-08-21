@@ -15,6 +15,11 @@ export interface GlobalTopSnapshotEntry {
   readonly rank: number;
   readonly scenarioKey: string;
   readonly score: number;
+  // why: WP-579 / D-24388 — the canonical (URL) form of a CLAIMED handle,
+  // present only when the player claimed a handle (omit-when-absent); drives the
+  // profile link `?profile=<handleCanonical>`. Mirrored from
+  // apps/server/src/legends/legends.types.ts (never imported cross-package).
+  readonly handleCanonical?: string;
 }
 
 /** A single row in a per-scenario snapshot board. */
@@ -22,6 +27,8 @@ export interface ScenarioSnapshotEntry {
   readonly handle: string;
   readonly rank: number;
   readonly score: number;
+  // why: WP-579 / D-24388 — see GlobalTopSnapshotEntry.handleCanonical.
+  readonly handleCanonical?: string;
 }
 
 /** A single board snapshot written to R2 at `legends/v1/<board>.json`. */

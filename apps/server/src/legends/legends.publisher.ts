@@ -45,6 +45,7 @@ import {
 } from './legends.logic.js';
 
 import {
+  fetchClaimedHandlesByReplayHash,
   getGlobalTopLeaderboard,
   getScenarioLeaderboard,
   listScenarioKeys,
@@ -169,7 +170,14 @@ export async function publishAllBoards(
         client,
         leaderboardDeps,
       );
-      const globalSnapshot = buildGlobalTopSnapshot(globalLeaderboard);
+      // why: WP-579 / D-24388 — fetch the claimed handles for this board's rows
+      // (snapshot-internal, Path A) so the builder can link claimed players and
+      // fall back to the neutral label otherwise.
+      const globalHandles = await fetchClaimedHandlesByReplayHash(
+        globalLeaderboard.entries.map((entry) => entry.replayHash),
+        client,
+      );
+      const globalSnapshot = buildGlobalTopSnapshot(globalLeaderboard, globalHandles);
       const globalJson = serializeSnapshot(globalSnapshot);
 
       boardPayloads.push({
@@ -209,7 +217,12 @@ export async function publishAllBoards(
           client,
           leaderboardDeps,
         );
-        const scenarioSnapshot = buildScenarioSnapshot(scenarioLeaderboard);
+        // why: WP-579 / D-24388 — claimed handles for this scenario board's rows.
+        const scenarioHandles = await fetchClaimedHandlesByReplayHash(
+          scenarioLeaderboard.entries.map((entry) => entry.replayHash),
+          client,
+        );
+        const scenarioSnapshot = buildScenarioSnapshot(scenarioLeaderboard, scenarioHandles);
         const scenarioJson = serializeSnapshot(scenarioSnapshot);
 
         boardPayloads.push({

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { LegendsSnapshotBoard } from "../snapshots/snapshotClient";
+import { profileHref } from "../snapshots/profileLink";
 import EmptyBoardCta from "../components/EmptyBoardCta.vue";
 
 const props = defineProps<{
@@ -38,7 +39,17 @@ const props = defineProps<{
           class="leaderboard-row"
         >
           <td class="col-rank">{{ entry.rank }}</td>
-          <td class="col-handle">{{ entry.handle }}</td>
+          <!-- why: WP-579 / D-24388 — claimed handle links to the profile; an
+               unclaimed row (the neutral label) renders plain text. -->
+          <td class="col-handle">
+            <a
+              v-if="entry.handleCanonical"
+              :href="profileHref(entry.handleCanonical)"
+              class="profile-link"
+              >{{ entry.handle }}</a
+            >
+            <span v-else>{{ entry.handle }}</span>
+          </td>
           <td class="col-score">{{ entry.score.toLocaleString() }}</td>
         </tr>
       </tbody>
@@ -111,5 +122,11 @@ const props = defineProps<{
   text-align: right;
   font-variant-numeric: tabular-nums;
   color: var(--la-color-gold-bright);
+}
+
+/* why: WP-579 — underlined (not colour-only) so it reads as a link. */
+.profile-link {
+  color: var(--la-color-gold-bright);
+  text-decoration: underline;
 }
 </style>

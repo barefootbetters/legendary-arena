@@ -39,6 +39,7 @@
  */
 
 import type {
+  ClaimedHandle,
   DatabaseClient,
   GlobalTopLeaderboard,
   GlobalTopLeaderboardQueryOptions,
@@ -560,4 +561,70 @@ export async function getGlobalTopLeaderboard(
     entries,
     totalEligibleEntries,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Claimed-handle fetch for the legends snapshot (WP-579 / D-24388)
+// ---------------------------------------------------------------------------
+
+/** Row shape for the claimed-handle fetch. */
+interface ClaimedHandleRow {
+  readonly replay_hash: string;
+  readonly display_handle: string;
+  readonly handle_canonical: string;
+}
+
+/**
+ * Fetches the claimed handle for each of the given replay hashes, for the
+ * legends snapshot (WP-579 / D-24388). Returns a map keyed by replay hash;
+ * players who have not claimed a handle are absent (`handle_canonical IS NULL`).
+ *
+ * Only UNAMBIGUOUS single-claimed replay hashes are included: a replay hash
+ * claimed by more than one player (a co-op match both teammates submitted, so
+ * their board rows share the replay hash) is OMITTED, so the snapshot falls
+ * back to the neutral label rather than risk labelling a row with the wrong
+ * teammate's handle + profile link.
+ *
+ * Snapshot-internal only (Path A): this does NOT touch `PublicLeaderboardEntry`
+ * or any HTTP leaderboard endpoint, so the D-5201 9-field lock stays intact.
+ *
+ * @param replayHashes The board rows' replay hashes.
+ * @param database A read-only database client.
+ * @returns A map of replay hash → claimed handle (single-claimed only).
+ */
+export async function fetchClaimedHandlesByReplayHash(
+  replayHashes: readonly string[],
+  database: LeaderboardReadClient,
+): Promise<Map<string, ClaimedHandle>> {
+  const result = new Map<string, ClaimedHandle>();
+  if (replayHashes.length === 0) {
+    return result;
+  }
+  const queryResult = await database.query(
+    'SELECT cs.replay_hash, p.display_handle, p.handle_canonical ' +
+      'FROM legendary.competitive_scores cs ' +
+      'INNER JOIN legendary.players p ON cs.player_id = p.player_id ' +
+      'WHERE cs.replay_hash = ANY($1) AND p.handle_canonical IS NOT NULL',
+    [replayHashes],
+  );
+  // why: WP-579 / D-24388 — a replay hash claimed by more than one player is
+  // AMBIGUOUS; track it and drop it so a co-op row never links to the wrong
+  // teammate's profile. for...of per .claude/rules/code-style.md (no reduce).
+  const ambiguousReplayHashes = new Set<string>();
+  for (const row of queryResult.rows as ClaimedHandleRow[]) {
+    const replayHash = row.replay_hash;
+    if (ambiguousReplayHashes.has(replayHash)) {
+      continue;
+    }
+    if (result.has(replayHash)) {
+      result.delete(replayHash);
+      ambiguousReplayHashes.add(replayHash);
+      continue;
+    }
+    result.set(replayHash, {
+      handle: row.display_handle,
+      handleCanonical: row.handle_canonical,
+    });
+  }
+  return result;
 }
