@@ -42,7 +42,7 @@ import type { ShuffleProvider } from '../setup/shuffle.js';
 import { shuffleDeck } from '../setup/shuffle.js';
 import { moveCardFromZone, moveAllCards } from '../moves/zoneOps.js';
 import { reshuffleDiscardIntoDeck } from '../moves/drawCards.logic.js';
-import { addResources } from '../economy/economy.logic.js';
+import { addResources, enableRecruitSpendableAsAttack } from '../economy/economy.logic.js';
 import { koCard } from '../board/ko.logic.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
 import { gainWound } from '../board/wounds.logic.js';
@@ -100,6 +100,8 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   'defeat-with-bystander',
   // why: WP-535 / D-24345 — Rogue's Copy Powers "Play this card as a copy of another Hero you played this turn."; has a HERO_EFFECT_HANDLERS entry (heroEffectCopyPowers) that re-fires the chosen Hero's ability via the reentrant executeHeroEffects (or parks a PendingCopyPowersChoice when ≥2 qualify), so it belongs here.
   'copy-powers',
+  // why: WP-580 / D-24389 — God of Thunder's "You can use Recruit as Attack this turn."; has a HERO_EFFECT_HANDLERS entry (heroEffectRecruitAsAttack) that sets the turn-scoped conversion flag, so it belongs here.
+  'recruit-as-attack',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -2283,6 +2285,32 @@ function heroEffectCopyPowers(
   );
 }
 
+/**
+ * Hero handler for the `recruit-as-attack` keyword (WP-580 / D-24389).
+ *
+ * God of Thunder's "You can use Recruit as Attack this turn." Sets the
+ * turn-scoped conversion flag on `G.turnEconomy`; the fight moves, the bot
+ * affordability projection (`ai.legalMoves.ts`), and the UIState economy
+ * projection then fund fight costs from unspent recruit (attack first). No
+ * magnitude, no pending choice, no resource total moved at play time.
+ */
+function heroEffectRecruitAsAttack(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  G.turnEconomy = enableRecruitSpendableAsAttack(G.turnEconomy);
+  // why: WP-434 — the conversion is `applied` (green): it changed turn state
+  // (recruit may now fund fights) even though no resource total moved yet.
+  pushLog(G,
+    `Player ${playerID} can spend Recruit as Attack this turn (${formatCardRef(G.cardDisplayData, cardId)}).`,
+    'applied',
+    cardId, // why: WP-438.
+  );
+}
+
 export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler>> = {
   draw: heroEffectDraw,
   attack: heroEffectAttack,
@@ -2313,6 +2341,9 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   // Hero you played this turn." (re-fires the chosen Hero's ability + grants the copied
   // class, or parks a PendingCopyPowersChoice when ≥2 Heroes qualify).
   'copy-powers': heroEffectCopyPowers,
+  // why: WP-580 / D-24389 — God of Thunder's "You can use Recruit as Attack this turn."
+  // (sets the turn-scoped conversion flag; fights then draw on unspent recruit).
+  'recruit-as-attack': heroEffectRecruitAsAttack,
 };
 
 // ---------------------------------------------------------------------------

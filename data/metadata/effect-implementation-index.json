@@ -3,14 +3,14 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1826,
+    "totalEntries": 1827,
     "byScope": {
-      "hero": 651,
+      "hero": 652,
       "villain": 719,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 371,
+      "executable": 372,
       "deferred": 0,
       "condition": 5,
       "unsupported": 368,
@@ -6951,6 +6951,23 @@
         {
           "slug": "gathering-stormclouds",
           "name": "Gathering Stormclouds"
+        }
+      ]
+    },
+    {
+      "extId": "core/thor",
+      "name": "Thor",
+      "set": "core",
+      "scope": "hero",
+      "mechanic": "recruit-as-attack",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#recruit-as-attack",
+      "wp": "WP-580",
+      "decision": "D-24389",
+      "designs": [
+        {
+          "slug": "god-of-thunder",
+          "name": "God of Thunder"
         }
       ]
     },
@@ -28008,6 +28025,7 @@
     "core/thor": {
       "scope": "hero",
       "mechanics": [
+        "recruit-as-attack",
         "recruit-threshold"
       ]
     },

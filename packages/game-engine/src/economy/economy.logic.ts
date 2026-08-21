@@ -432,6 +432,27 @@ function parseQualifiedIdForSetup(input: string): { setAbbr: string; slug: strin
 // Economy helpers — pure functions, return new objects
 // ---------------------------------------------------------------------------
 
+// why: WP-580 / D-24389 — the recruit-as-attack conversion flag must SURVIVE
+// every TurnEconomy rebuild. addResources/spendAttack/spendRecruit reconstruct
+// the object from an explicit literal (not a spread), so without this a later
+// same-turn spend would silently drop a flag set earlier by God of Thunder.
+// Conditional spread (not `recruitSpendableAsAttack: economy.recruitSpendableAsAttack`)
+// keeps the field ABSENT when unset under exactOptionalPropertyTypes, preserving
+// the lazy-materialization guarantee that both hash oracles stay byte-stable.
+/**
+ * Carries the WP-580 conversion flag forward across a TurnEconomy rebuild.
+ *
+ * @param economy - Current turn economy state.
+ * @returns `{ recruitSpendableAsAttack }` when the flag is set, else `{}`.
+ */
+function carryConversionFlag(
+  economy: TurnEconomy,
+): Pick<TurnEconomy, 'recruitSpendableAsAttack'> | Record<string, never> {
+  return economy.recruitSpendableAsAttack !== undefined
+    ? { recruitSpendableAsAttack: economy.recruitSpendableAsAttack }
+    : {};
+}
+
 /**
  * Returns available (unspent) attack points.
  *
@@ -440,6 +461,23 @@ function parseQualifiedIdForSetup(input: string): { setAbbr: string; slug: strin
  */
 export function getAvailableAttack(economy: TurnEconomy): number {
   return economy.attack - economy.spentAttack;
+}
+
+/**
+ * Returns the attack a fight can be funded with — available attack, plus
+ * unspent recruit when the WP-580 recruit-as-attack conversion is active
+ * this turn (God of Thunder). Equal to `getAvailableAttack` when the flag
+ * is unset, so every non-conversion turn is byte-identical to pre-WP-580.
+ *
+ * @param economy - Current turn economy state.
+ * @returns Attack points spendable toward fight costs this turn.
+ */
+export function getSpendableAttack(economy: TurnEconomy): number {
+  const availableAttack = economy.attack - economy.spentAttack;
+  if (economy.recruitSpendableAsAttack === true) {
+    return availableAttack + (economy.recruit - economy.spentRecruit);
+  }
+  return availableAttack;
 }
 
 /**
@@ -472,6 +510,7 @@ export function addResources(
     spentRecruit: economy.spentRecruit,
     piercing: economy.piercing,
     woundsDrawn: economy.woundsDrawn,
+    ...carryConversionFlag(economy),
   };
 }
 
@@ -493,6 +532,7 @@ export function spendAttack(
     spentRecruit: economy.spentRecruit,
     piercing: economy.piercing,
     woundsDrawn: economy.woundsDrawn,
+    ...carryConversionFlag(economy),
   };
 }
 
@@ -514,13 +554,64 @@ export function spendRecruit(
     spentRecruit: economy.spentRecruit + amount,
     piercing: economy.piercing,
     woundsDrawn: economy.woundsDrawn,
+    ...carryConversionFlag(economy),
   };
+}
+
+/**
+ * Enables the WP-580 recruit-as-attack conversion for the current turn.
+ *
+ * Called by the `recruit-as-attack` hero effect (God of Thunder). Sets the
+ * flag; every other field is carried unchanged. `resetTurnEconomy` clears it
+ * at the next turn start.
+ *
+ * @param economy - Current turn economy state.
+ * @returns New TurnEconomy with `recruitSpendableAsAttack` set true.
+ */
+export function enableRecruitSpendableAsAttack(economy: TurnEconomy): TurnEconomy {
+  return {
+    attack: economy.attack,
+    recruit: economy.recruit,
+    spentAttack: economy.spentAttack,
+    spentRecruit: economy.spentRecruit,
+    piercing: economy.piercing,
+    woundsDrawn: economy.woundsDrawn,
+    recruitSpendableAsAttack: true,
+  };
+}
+
+/**
+ * Records a fight-cost spend, debiting attack first and — when the WP-580
+ * conversion is active this turn — funding any remainder from unspent recruit.
+ *
+ * The caller gates affordability on `getSpendableAttack`, so `cost` is never
+ * larger than what attack + convertible recruit can cover. When the flag is
+ * unset the remainder is always 0, so the result is byte-identical to a plain
+ * `spendAttack(economy, cost)`.
+ *
+ * @param economy - Current turn economy state.
+ * @param cost - The fight cost to pay.
+ * @returns New TurnEconomy with the cost debited (attack first, then recruit).
+ */
+export function spendFightCost(economy: TurnEconomy, cost: number): TurnEconomy {
+  const availableAttack = economy.attack - economy.spentAttack;
+  // why: WP-580 / D-24389 — attack-first-then-recruit spend order. Attack is
+  // the native fight resource; recruit converts only to cover the shortfall.
+  const fromAttack = cost < availableAttack ? cost : availableAttack;
+  const fromRecruit = cost - fromAttack;
+  let next = spendAttack(economy, fromAttack);
+  if (fromRecruit > 0) {
+    next = spendRecruit(next, fromRecruit);
+  }
+  return next;
 }
 
 /**
  * Returns a fresh TurnEconomy with all values at zero.
  *
- * Called at the start of each player turn and during initial setup.
+ * Called at the start of each player turn and during initial setup. Returns
+ * the base six-field shape with NO conversion flag, so the WP-580 lazy field
+ * is dropped at every turn boundary (never persisted across turns).
  *
  * @returns TurnEconomy with all fields set to 0.
  */

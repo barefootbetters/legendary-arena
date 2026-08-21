@@ -91,7 +91,7 @@ import { getEligibleCopyPowersCards } from '../moves/copyPowersChoice.resolve.js
 // why: WP-258 — the projected hollow-effect record type is the engine's
 // canonical HollowEffectRecord (WP-257), reused directly, not a parallel UI type.
 import type { HollowEffectRecord, EffectTrace } from '../diagnostics/hollowEffect.types.js';
-import { getAvailableAttack, getAvailableRecruit } from '../economy/economy.logic.js';
+import { getAvailableRecruit, getSpendableAttack } from '../economy/economy.logic.js';
 import { resolveFightCost } from '../economy/economy.resolve.js';
 import { evaluateEndgame } from '../endgame/endgame.evaluate.js';
 import { computeFinalScores } from '../scoring/scoring.logic.js';
@@ -811,7 +811,11 @@ export function buildUIState(
   const economy = {
     attack: gameState.turnEconomy.attack,
     recruit: gameState.turnEconomy.recruit,
-    availableAttack: getAvailableAttack(gameState.turnEconomy),
+    // why: WP-580 / D-24389 — availableAttack reflects the combined spendable
+    // figure (attack + unspent recruit) while the recruit-as-attack conversion
+    // is active this turn, so the play surface shows what a fight can actually be
+    // funded with. Equal to getAvailableAttack on every non-conversion turn.
+    availableAttack: getSpendableAttack(gameState.turnEconomy),
     availableRecruit: getAvailableRecruit(gameState.turnEconomy),
     piercing,
     woundsDrawn,

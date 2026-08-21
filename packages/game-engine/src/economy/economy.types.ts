@@ -26,6 +26,19 @@ export interface TurnEconomy {
   piercing: number;
   /** Number of wound cards drawn by the current player this turn. */
   woundsDrawn: number;
+  /**
+   * WP-580 / D-24389 — whether unspent recruit may be spent as attack this turn
+   * ("You can use Recruit as Attack this turn", God of Thunder).
+   *
+   * LAZILY MATERIALIZED: absent (undefined) until a `recruit-as-attack` hero
+   * effect sets it, and dropped again by `resetTurnEconomy` at turn start. An
+   * absent field is omitted by `JSON.stringify`, so a turn that never triggers
+   * the conversion serializes byte-identically to the pre-WP-580 shape and
+   * neither state-hash oracle moves. Carried forward by every `TurnEconomy`
+   * rebuild (`addResources` / `spendAttack` / `spendRecruit`) via a conditional
+   * spread, so a later same-turn spend cannot silently drop it.
+   */
+  recruitSpendableAsAttack?: boolean;
 }
 
 // why: stats resolved at setup time from registry so moves never query

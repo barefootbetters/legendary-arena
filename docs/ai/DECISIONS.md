@@ -37824,3 +37824,59 @@ byte-unchanged; no `data/cards` change. **D-24026 live-verify VERIFIED 2026-08-1
 (`User-Visible Surface = play.legendary-arena.com`; a real 2p Red Skull / Super Hero Civil
 War log shows the interactive "must KO a Hero from their hand — choose which" prompt on four
 strikes — the active player choosing each time, the non-active ally auto-resolving).
+
+### D-24389 — "Use Recruit as Attack": the Engine's First Resource-Conversion Primitive (God of Thunder)
+
+God of Thunder (`core/thor/god-of-thunder`) prints "You can use Recruit as Attack
+this turn." — a whole-turn resource conversion. It was completely and silently
+unimplemented: the ability line carried NO `[keyword:]` marker (only decorative
+`[icon:recruit]` / `[icon:attack]` tokens), so `parseAbilityText` resolved it to two
+undefined-magnitude no-op grant descriptors, and `detectHollowHeroHook` did not flag
+it (attack/recruit are `MVP_KEYWORDS` with handlers). Found live: a winner played God
+of Thunder twice and was never offered the conversion; the end-state economy showed
+`availableRecruit: 6` the player could have spent as Attack.
+
+Locked:
+
+1. **The marker and the keyword.** God of Thunder's ability carries
+   `[keyword:recruit-as-attack]`, added in the UPSTREAM `hero-ability-markers` pass
+   (+ `VALID_TOKEN_PATTERN`) and regenerated into `data/cards/core.json` — never a
+   hand-edit of the generated JSON. The engine registers `recruit-as-attack` as a hero
+   keyword in the `HeroKeyword` union, the `HERO_KEYWORDS` array, AND `HANDLED_KEYWORDS`
+   (with its `HERO_EFFECT_HANDLERS` entry, the bidirectional handler-completeness pair),
+   so the ability is recognized, executes, and is no longer a silent no-op.
+2. **Turn-scoped, lazily-materialized flag.** An `onPlay` handler sets
+   `G.turnEconomy.recruitSpendableAsAttack`; `resetTurnEconomy` clears it at turn start
+   (never persisted across turns; not a snapshot field). The field is LAZILY
+   materialized — ABSENT (undefined) until set — so `JSON.stringify` omits it and a turn
+   that never triggers the conversion serializes byte-identically to the pre-WP-580
+   shape. It is carried through every `TurnEconomy` rebuild (`addResources` /
+   `spendAttack` / `spendRecruit`) by a conditional spread, so a later same-turn spend
+   cannot silently drop it.
+3. **Attack-first-then-recruit spend order, one combined figure everywhere.**
+   `getSpendableAttack` = available attack + unspent recruit (only when the flag is set),
+   and `spendFightCost` debits attack first, then recruit. The Fight move guard + spend
+   (`fightVillain`, `fightMastermind`), the bot affordability projection
+   (`simulation/ai.legalMoves.ts`), and the UIState economy projection (`availableAttack`)
+   ALL use the combined figure, so bot, player, and move-guard never disagree (the
+   legalMoves↔move-guard mirror). Every one is byte-identical to pre-WP-580 on any
+   non-conversion turn, because `getSpendableAttack` equals `getAvailableAttack` and
+   `spendFightCost` equals `spendAttack` when the flag is unset. Moves never throw — an
+   unaffordable fight (even with conversion) is a silent no-op.
+4. **Scope: core God of Thunder only.** One-directional (Recruit→Attack), whole-turn.
+   The msp1 (second Thor printing), cvwr (Fight-gated "spend Recruit as Attack"), co2e
+   ("any amount"), and xmen (`[keyword:X-Gene]` bidirectional; X-Gene itself
+   unimplemented) variants are DEFERRED, each its own follow-up.
+5. **Determinism.** The lazy flag keeps both hash oracles byte-unchanged — no dual re-pin
+   was needed (the sentinel fixture never plays God of Thunder). Verified: sentinel
+   `finalStateHash` and `PRE_WP080_HASH` regression tests green.
+
+**Active 2026-08-21 (WP-580 / EC-615).** Shipped across 8 engine source files + the card
+data + the derived feeds (`hero-mechanic-ledger`, `card-mechanics`,
+`effect-implementation-index`, provenance). Engine 2798→2816/0 (+18 tests: economy,
+fight, bot, parse, drift/count pins); `pnpm -r build` + `--no-bail test` green across all
+packages; both hash oracles byte-unchanged; all four card-data `:check` gates pass. The
+`card-mechanics.json` feed was an EC-615 file-allowlist addition surfaced at execution (a
+new hero keyword stales that feed too). **D-24026 live-verify: operator-pending**
+(`User-Visible Surface = play.legendary-arena.com`; play God of Thunder and fund a fight
+from unspent recruit).

@@ -185,6 +185,7 @@ core/spider-man,Spider-Man,core,reveal,executable,WP-253,D-24024,packages/game-e
 core/spider-man,Spider-Man,core,reveal-count,unsupported,,,,the-amazing-spider-man
 core/spider-man,Spider-Man,core,reveal-reorder,subsystem,WP-479,D-24286,setup:reveal-reorder-modifier,the-amazing-spider-man
 core/storm,Storm,core,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,gathering-stormclouds
+core/thor,Thor,core,recruit-as-attack,executable,WP-580,D-24389,packages/game-engine/src/hero/heroEffects.execute.ts#recruit-as-attack,god-of-thunder
 core/thor,Thor,core,recruit-threshold,unsupported,,,,surge-of-power
 core/wolverine,Wolverine,core,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,berserker-rage|frenzied-slashing|keen-senses
 core/wolverine,Wolverine,core,ko-wound-reward,executable,WP-382,D-24183,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward,healing-factor

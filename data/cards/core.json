@@ -1483,7 +1483,7 @@
           "attack": "0+",
           "recruit": "5",
           "abilities": [
-            "You can use [icon:recruit] as [icon:attack] this turn."
+            "You can use [icon:recruit] as [icon:attack] this turn. [keyword:recruit-as-attack]"
           ]
         }
       ],

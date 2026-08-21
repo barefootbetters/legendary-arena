@@ -54,7 +54,7 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     );
   });
 
-  it('has exactly 21 handlers and none for the deferred keywords', () => {
+  it('has exactly 22 handlers and none for the deferred keywords', () => {
     // why: WP-286 / D-24069 added the draw-or-empowered park handler (9 → 10); the
     // Ionic Energy optional-put-bottom-hq fix added its park handler (10 → 11); D-24132
     // added the put-any-number-bottom-hq park handler (11 → 12); D-24133 added the
@@ -65,8 +65,9 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     // WP-382 / D-24183 added the ko-wound-reward immediate handler (17 → 18);
     // WP-383 / D-24184 added the discard-to-play park handler (18 → 19);
     // WP-486 / D-24291 added the defeat-with-bystander handler (19 → 20);
-    // WP-535 / D-24345 added the copy-powers handler (20 → 21).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 21);
+    // WP-535 / D-24345 added the copy-powers handler (20 → 21);
+    // WP-580 / D-24389 added the recruit-as-attack handler (21 → 22).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 22);
     // why: the generic 'wound' keyword stays deferred — the un-defer is two NEW narrow
     // keywords (gain-wound-*), never a handler for the generic form.
     assert.equal(HERO_EFFECT_HANDLERS['wound'], undefined);
