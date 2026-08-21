@@ -7,6 +7,22 @@
 
 ## Current State
 
+### WP-580 follow-up — recruit-as-attack magnitude-gate fix (EC-615) shipped (2026-08-21)
+
+The first live-verify of WP-580 (a real match on gitSha `64bc959`) caught a defect: God of
+Thunder's `recruit-as-attack` effect traced as **`no-handler`** and the conversion flag was
+never set, so no option appeared. Root cause: a no-magnitude onPlay keyword must be enrolled
+in `NO_MAGNITUDE_KEYWORDS`, or `executeSingleEffect`'s magnitude pre-gate drops it BEFORE the
+handler lookup — and the original WP-580 tests exercised the handler + economy helpers in
+isolation, never the full `executeHeroEffects` dispatch path, so the skip was invisible.
+Fixed by adding `recruit-as-attack` to `NO_MAGNITUDE_KEYWORDS` + a regression test that plays
+the effect through `executeHeroEffects` and asserts the flag sets (mutation-verified — it
+fails without the enrollment). Engine 2816→**2817/0**; `pnpm -r build` + `--no-bail test`
+green across all packages; both hash oracles byte-unchanged (the sentinel fixture still never
+plays God of Thunder). D-24389 carries a **Post-ship correction** note. **D-24026 re-verify
+still operator-pending** — play God of Thunder on a build ≥ this fix and confirm the log shows
+"can spend Recruit as Attack this turn" and a fight can be funded from unspent recruit.
+
 ### WP-580 — "Use Recruit as Attack" conversion, God of Thunder (EC-615 / D-24389) shipped (2026-08-21)
 
 The engine's **first resource-conversion primitive**. God of Thunder's "You can use
