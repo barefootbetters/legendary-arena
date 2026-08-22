@@ -1,7 +1,7 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { SCORE_GRADES, type ScoreGrade } from '@legendary-arena/game-engine';
-import { gradeLabel, gradeClass, gradeAriaText } from './gradeDisplay';
+import { SCORE_GRADES, SCORE_GRADE_BANDS, type ScoreGrade } from '@legendary-arena/game-engine';
+import { gradeLabel, gradeClass, gradeAriaText, buildGradeScale } from './gradeDisplay';
 
 describe('gradeDisplay (WP-583)', () => {
   test('every ScoreGrade maps to a non-empty label and class', () => {
@@ -27,5 +27,36 @@ describe('gradeDisplay (WP-583)', () => {
     for (const [grade, expected] of letters) {
       assert.equal(gradeLabel(grade), expected);
     }
+  });
+});
+
+describe('buildGradeScale (WP-587)', () => {
+  test('one entry per band, in SCORE_GRADES order, exactly one marked current', () => {
+    const scale = buildGradeScale('a');
+    assert.equal(scale.length, SCORE_GRADE_BANDS.length);
+    assert.deepEqual(
+      scale.map((entry) => entry.grade),
+      [...SCORE_GRADES],
+    );
+    const current = scale.filter((entry) => entry.isCurrent);
+    assert.equal(current.length, 1);
+    assert.equal(current[0]?.grade, 'a');
+  });
+
+  test('ranges read best-to-worst: bounded ends, a middle band, and an unbounded tail', () => {
+    const scale = buildGradeScale('legendary');
+    const byGrade = Object.fromEntries(scale.map((entry) => [entry.grade, entry.range]));
+    // Best band: at or below its ceiling (true minus sign, centesimal integer).
+    assert.equal(byGrade['legendary'], '≤ −1000');
+    // A middle band spans the previous ceiling to its own.
+    assert.equal(byGrade['a'], '−1000…−300');
+    // Worst band is unbounded above the previous ceiling.
+    assert.equal(byGrade['f'], '> 1800');
+  });
+
+  test('every band label is the player-facing word', () => {
+    const scale = buildGradeScale('c');
+    assert.equal(scale.find((entry) => entry.grade === 'legendary')?.label, 'Legendary');
+    assert.equal(scale.find((entry) => entry.grade === 'c')?.label, 'C');
   });
 });

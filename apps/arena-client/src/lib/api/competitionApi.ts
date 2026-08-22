@@ -73,6 +73,17 @@ export interface CompetitiveScoringInputs {
 }
 
 /**
+ * The scenario baseline a `parScore` was derived from (structural mirror of the
+ * engine `ParBaseline`). Lets the endgame screen show PAR's derivation, not just
+ * the final PAR value.
+ */
+export interface CompetitiveParBaseline {
+  readonly bystandersPar: number;
+  readonly victoryPointsPar: number;
+  readonly escapesPar: number;
+}
+
+/**
  * The full competitive score component breakdown, a local structural mirror of
  * the engine `ScoreBreakdown` (the server returns it verbatim inside a record).
  * The client never recomputes these — it renders them.
@@ -87,6 +98,11 @@ export interface CompetitiveScoreBreakdown {
   readonly weightedVictoryPointReward: number;
   readonly rawScore: number;
   readonly parScore: number;
+  // why: WP-587 / D-24396 — the baseline parScore was derived from, for the endgame
+  // PAR-derivation display. Optional: rows persisted before WP-587 have no parBaseline
+  // in their stored breakdown, so the derivation degrades gracefully to just the PAR
+  // value on those older records.
+  readonly parBaseline?: CompetitiveParBaseline;
   readonly finalScore: number;
   readonly scoringConfigVersion: number;
 }

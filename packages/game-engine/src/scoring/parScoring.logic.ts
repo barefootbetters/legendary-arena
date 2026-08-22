@@ -23,6 +23,7 @@ import type { ReplayResult } from '../replay/replay.types.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { computeFinalScores, isBystanderCard } from './scoring.logic.js';
 import type {
+  ParBaseline,
   PenaltyEventType,
   ScenarioScoringConfig,
   ScoreBreakdown,
@@ -328,6 +329,16 @@ export function buildScoreBreakdown(
     penaltyEventCounts: copiedPenaltyEventCounts,
   };
 
+  // why: WP-587 / D-24396 — surface the baseline parScore was derived from so the
+  // endgame screen can render PAR's derivation, not just its final value. Field-copied
+  // (not aliased) to keep the JSON-serializable, no-shared-reference invariant (D-2801 /
+  // D-4806); it is display data, never re-entered into scoring.
+  const copiedParBaseline: ParBaseline = {
+    bystandersPar: config.parBaseline.bystandersPar,
+    victoryPointsPar: config.parBaseline.victoryPointsPar,
+    escapesPar: config.parBaseline.escapesPar,
+  };
+
   return {
     inputs: copiedInputs,
     weightedPenaltyTotal,
@@ -336,6 +347,7 @@ export function buildScoreBreakdown(
     weightedVictoryPointReward,
     rawScore,
     parScore,
+    parBaseline: copiedParBaseline,
     finalScore,
     scoringConfigVersion: config.scoringConfigVersion,
   };

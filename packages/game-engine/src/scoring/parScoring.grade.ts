@@ -32,15 +32,40 @@ export type ScoreGrade = 'legendary' | 'a' | 'b' | 'c' | 'd' | 'f';
  */
 export const SCORE_GRADES: readonly ScoreGrade[] = ['legendary', 'a', 'b', 'c', 'd', 'f'];
 
+/**
+ * One grade band: a ScoreGrade and the inclusive upper bound of the finalScore
+ * that earns it.
+ *
+ * why (WP-587 / D-24396): the endgame screen renders the whole scale — every
+ * band with its threshold and a "you are here" marker — so the boundaries can no
+ * longer live only inside `gradeForFinalScore`'s if-ladder. SCORE_GRADE_BANDS is
+ * the single source of truth for both the classification and the displayed scale;
+ * the client renders the words (`gradeDisplay.ts`) and the numbers, keeping the
+ * D-24392 / D-24367 no-copy-in-`packages/` boundary.
+ */
+export interface ScoreGradeBand {
+  readonly grade: ScoreGrade;
+  /**
+   * Inclusive upper bound of finalScore for this grade (centesimal integer;
+   * lower is better; 0 = PAR). `null` on the worst band, which is unbounded
+   * above (everything past the previous ceiling is F).
+   */
+  readonly maxFinalScore: number | null;
+}
+
 // why: grade band ceilings on the PAR-relative finalScore (centesimal integer,
-// lower is better, 0 = PAR). A finalScore at or below a ceiling earns that grade;
-// the bands are tunable config — a display-legibility choice, NOT a scoring-formula
-// change (WP-583 / D-24392). Legendary is well under PAR; anything past D_MAX is F.
-const LEGENDARY_MAX = -1000; // <= -10.00 under PAR
-const A_MAX = -300; // <= -3.00 under PAR
-const B_MAX = 300; // around PAR (0)
-const C_MAX = 800; // <= +8.00 over PAR
-const D_MAX = 1800; // <= +18.00 over PAR (higher is F)
+// lower is better, 0 = PAR). A finalScore at or below a band's ceiling earns that
+// grade, tried best-to-worst; the bands are tunable config — a display-legibility
+// choice, NOT a scoring-formula change (WP-583 / D-24392). Legendary is well under
+// PAR; the final band (`null` ceiling) catches everything worse than D.
+export const SCORE_GRADE_BANDS: readonly ScoreGradeBand[] = [
+  { grade: 'legendary', maxFinalScore: -1000 }, // <= -10.00 under PAR
+  { grade: 'a', maxFinalScore: -300 }, // <= -3.00 under PAR
+  { grade: 'b', maxFinalScore: 300 }, // around PAR (0)
+  { grade: 'c', maxFinalScore: 800 }, // <= +8.00 over PAR
+  { grade: 'd', maxFinalScore: 1800 }, // <= +18.00 over PAR (higher is F)
+  { grade: 'f', maxFinalScore: null }, // everything worse than D
+];
 
 /**
  * Maps a PAR-relative final score to its coarse grade band.
@@ -50,20 +75,15 @@ const D_MAX = 1800; // <= +18.00 over PAR (higher is F)
  * @returns The ScoreGrade for that final score.
  */
 export function gradeForFinalScore(finalScore: number): ScoreGrade {
-  if (finalScore <= LEGENDARY_MAX) {
-    return 'legendary';
+  // why: iterate the single-source-of-truth bands best-to-worst so the classifier
+  // and the displayed scale can never disagree (WP-587). The `null`-ceiling final
+  // band is the catch-all and always matches.
+  for (const band of SCORE_GRADE_BANDS) {
+    if (band.maxFinalScore === null || finalScore <= band.maxFinalScore) {
+      return band.grade;
+    }
   }
-  if (finalScore <= A_MAX) {
-    return 'a';
-  }
-  if (finalScore <= B_MAX) {
-    return 'b';
-  }
-  if (finalScore <= C_MAX) {
-    return 'c';
-  }
-  if (finalScore <= D_MAX) {
-    return 'd';
-  }
+  // why: unreachable — the last band's ceiling is null (always matches) — but a
+  // defined return keeps the function total without a non-null assertion.
   return 'f';
 }

@@ -118,7 +118,7 @@ describe('EndgameSummary (WP-584 worked calculation)', () => {
     // Substituted line — penalties expanded to nonzero types, then rewards.
     const substituted = wrapper.find('[aria-label="rawSubstituted"]').text();
     assert.ok(!substituted.includes('× 50'), 'no round substitution');
-    assert.ok(substituted.includes('(6 × 300)'), 'scheme twists expanded (6 × 300)');
+    assert.ok(substituted.includes('(6 scheme twists × 300)'), 'scheme twists named + expanded (WP-587)');
     assert.ok(substituted.includes('(11 × 200)'), 'bystanders substituted');
     assert.ok(substituted.includes('(103 × 10)'), 'VP substituted');
 
@@ -164,6 +164,67 @@ describe('EndgameSummary (WP-584 worked calculation)', () => {
       props: { gameOver: gameOver(), competitiveScore: null },
     });
     assert.ok(!wrapper.find('[data-testid="arena-hud-grade-badge"]').exists());
+    assert.ok(!wrapper.find('[data-testid="arena-hud-score-breakdown"]').exists());
+  });
+});
+
+describe('EndgameSummary (WP-587 PAR derivation + grade scale)', () => {
+  test('renders PAR derivation when the breakdown carries a parBaseline', () => {
+    const wrapper = mount(EndgameSummary, {
+      props: {
+        gameOver: gameOver(),
+        competitiveScore: score({
+          finalScore: -1130,
+          scoreBreakdown: breakdown({
+            parScore: -1150,
+            parBaseline: { bystandersPar: 5, victoryPointsPar: 25, escapesPar: 1 },
+          }),
+        }),
+      },
+    });
+    const par = wrapper.find('[data-testid="arena-hud-par-derivation"]');
+    assert.ok(par.exists(), 'PAR derivation block renders');
+    // The reward weights are derived (200/10); the escape term is symbolic here
+    // (the match had 0 escapes) — never a fabricated number.
+    assert.ok(wrapper.find('[aria-label="parFormula"]').text().includes('(Bystanders × 200)'));
+    const parSub = wrapper.find('[aria-label="parSubstituted"]').text();
+    assert.ok(parSub.includes('(5 × 200) − (25 × 10)'), parSub);
+    assert.ok(parSub.includes('escape penalty'), 'escape weight symbolic when not derivable');
+    // The PAR value is shown verbatim.
+    assert.ok(wrapper.find('[aria-label="parResult"]').text().includes('-1150'), 'PAR value verbatim');
+  });
+
+  test('omits PAR derivation when the breakdown has no parBaseline (older record)', () => {
+    const wrapper = mount(EndgameSummary, {
+      props: { gameOver: gameOver(), competitiveScore: score({ finalScore: -1130, scoreBreakdown: breakdown() }) },
+    });
+    // The worked calc still renders; only the PAR-derivation block is absent.
+    assert.ok(wrapper.find('[data-testid="arena-hud-score-breakdown"]').exists());
+    assert.ok(!wrapper.find('[data-testid="arena-hud-par-derivation"]').exists());
+  });
+
+  test('renders the full grade scale with the earned grade marked', () => {
+    const wrapper = mount(EndgameSummary, {
+      props: { gameOver: gameOver(), competitiveScore: score({ finalScore: -1500, scoreBreakdown: breakdown({ finalScore: -1500 }) }) },
+    });
+    const scale = wrapper.find('[data-testid="arena-hud-grade-scale"]');
+    assert.ok(scale.exists(), 'grade scale renders');
+    const rows = scale.findAll('.grade-scale-row');
+    assert.equal(rows.length, 6, 'one row per grade band');
+    // finalScore -1500 → legendary; exactly that row is current + names it.
+    const current = scale.findAll('.grade-scale-row--current');
+    assert.equal(current.length, 1, 'exactly one current row');
+    assert.ok(current[0]?.text().includes('Legendary'), 'the Legendary row is marked current');
+    assert.ok(current[0]?.text().includes('your score'), 'current row carries the text marker');
+    assert.equal(current[0]?.attributes('aria-current'), 'true');
+  });
+
+  test('grade scale shows even without a breakdown (needs only finalScore)', () => {
+    const wrapper = mount(EndgameSummary, {
+      props: { gameOver: gameOver(), competitiveScore: score({ finalScore: -1500 }) },
+    });
+    assert.ok(wrapper.find('[data-testid="arena-hud-grade-scale"]').exists());
+    // No breakdown → no worked calc, but the scale (finalScore-only) still renders.
     assert.ok(!wrapper.find('[data-testid="arena-hud-score-breakdown"]').exists());
   });
 });
