@@ -499,10 +499,10 @@ waste the fix on the wrong phase.
   problem (this phase)
 - Both down → start upstream (audience)
 
-**Exists today?** Partially — RevenueTodayWidget on Overview,
-RevenueChartWidget + NetRevenueChartWidget on Monetization show total
-revenue. Missing: explicit free-to-paid conversion rate, ARPPU, and the
-diagnostic split between audience problem vs conversion problem.
+**Exists today?** Partially — RevenueChartWidget (Overview + Monetization)
+and NetRevenueChartWidget (Monetization) show total revenue. Missing:
+explicit free-to-paid conversion rate, ARPPU, and the diagnostic split
+between audience problem vs conversion problem.
 
 ---
 
@@ -537,9 +537,12 @@ new one.
 | Active players delta | < 0 for 3 consecutive days | 3 days | Warning |
 | Active players delta | < 0 for 7 consecutive days | 7 days | Critical |
 
-**Exists today?** Partially — ActivePlayersWidget, MatchesRunningWidget
-exist as separate cards. Missing: match completion rate (requires
-server-side tracking), unified health summary with single status color.
+**Exists today?** No dedicated tile. The Overview KPI strip shows
+cumulative Total players and Total matches, not the live active-players
+trend or matches-running count this habit calls for. Missing: live
+active-players signal (deliberately absent server-side per D-19802),
+matches-running count, match completion rate (requires server-side
+tracking), unified health summary with single status color.
 
 ---
 
@@ -604,9 +607,9 @@ is the fastest way to lose players and revenue. Most days this is a
 | Error rate | > +50% vs 7-day rolling avg | Daily | Warning |
 | Error rate | > +100% vs 7-day rolling avg | Daily | Critical |
 
-**Exists today?** Yes — ServerStatusWidget, ErrorRateMonitorWidget,
-OpsAtAGlanceStripWidget. Covered. May benefit from unified status
-color on Overview.
+**Exists today?** Yes — RuntimeHealthWidget + ErrorRateMonitorWidget on
+the System Health page, OpsAtAGlanceStripWidget on Overview. Covered. May
+benefit from unified status color on Overview.
 
 ---
 

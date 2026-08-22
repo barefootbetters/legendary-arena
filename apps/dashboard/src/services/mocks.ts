@@ -125,50 +125,55 @@ function wrapMock<T>(data: T): ServiceResponse<T> {
   };
 }
 
+// why: the mock mirrors the LIVE server contract from GET /api/dash/kpis
+// (getKpiSnapshots in apps/server/src/dashboard/dashboardGameplay.logic.ts)
+// exactly — same five ids, labels, and units — so mock mode and live mode
+// render identically and a client/server id drift like the retired
+// active-players/matches-running/revenue-today/server-health placeholder set
+// (which had no server source) cannot hide behind mock mode again. The server
+// sets no target/tolerance/direction on these KPIs (no operator threshold is
+// defined yet), so no status chip renders here either — faithful to live.
 export function mockKpiSnapshots(): ServiceResponse<KpiSnapshot[]> {
   return wrapMock([
     {
-      id: 'active-players',
-      label: 'Active Players',
-      value: randomBetween(1200, 3500),
-      previousValue: 2800,
-      unit: 'players',
-      trend: 'up',
-      // why: EC-224a §B — locked example KPI with thresholds so the status
-      // chip is visible in dev without further wiring. Target / tolerance
-      // / direction are illustrative; a follow-up WP curates real operator
-      // targets per D-19802's "target-setting discipline" rationale.
-      target: 2500,
-      tolerance: 300,
-      direction: 'higher-is-better',
-    },
-    {
-      id: 'matches-running',
-      label: 'Matches Running',
-      value: randomBetween(45, 180),
-      previousValue: 120,
-      unit: 'matches',
+      id: 'total_players',
+      label: 'Total players',
+      value: randomBetween(400, 900),
+      previousValue: 500,
+      unit: '',
       trend: 'up',
     },
     {
-      id: 'revenue-today',
-      label: 'Revenue Today',
-      value: randomBetween(800, 4500),
-      previousValue: 2100,
+      id: 'new_players_30d',
+      label: 'New players (30d)',
+      value: randomBetween(30, 120),
+      previousValue: 80,
+      unit: '',
+      trend: 'up',
+    },
+    {
+      id: 'total_matches',
+      label: 'Total matches',
+      value: randomBetween(1500, 4000),
+      previousValue: 3000,
+      unit: '',
+      trend: 'up',
+    },
+    {
+      id: 'revenue_30d',
+      label: 'Revenue (30d)',
+      value: randomBetween(2000, 9000),
+      previousValue: 6000,
       unit: 'USD',
       trend: 'up',
-      // why: EC-224a §B — second locked example KPI with thresholds.
-      // `lower-is-better` would be inappropriate for revenue; this is the
-      // higher-is-better case mirroring active-players.
-      target: 2000,
-      tolerance: 400,
-      direction: 'higher-is-better',
     },
     {
-      id: 'server-health',
-      label: 'Server Health',
-      value: randomBetween(92, 100),
-      previousValue: 98,
+      // why: win rate as a whole percentage (0-100), matching the server's
+      // `Math.round(rate * 100)` and unit '%' in getKpiSnapshots.
+      id: 'hero_win_rate_30d',
+      label: 'Hero win rate (30d)',
+      value: randomBetween(38, 62),
+      previousValue: 50,
       unit: '%',
       trend: 'flat',
     },

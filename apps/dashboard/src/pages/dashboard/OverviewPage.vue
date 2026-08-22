@@ -94,15 +94,18 @@ onMounted(() => {
   }
 });
 
+// why: routes each top-strip KPI to the page that owns its detail. The ids are
+// the live server contract from GET /api/dash/kpis (getKpiSnapshots in
+// apps/server/src/dashboard/dashboardGameplay.logic.ts) — the previous
+// placeholder ids (active-players/matches-running/revenue-today/server-health)
+// had no server source, so every card rendered "No data available" in live mode.
 function handleKpiClick(kpi: KpiSnapshot): void {
-  if (kpi.id === 'active-players') {
+  if (kpi.id === 'total_players' || kpi.id === 'new_players_30d') {
     router.push({ name: 'players' });
-  } else if (kpi.id === 'revenue-today') {
+  } else if (kpi.id === 'revenue_30d') {
     router.push({ name: 'monetization' });
-  } else if (kpi.id === 'matches-running') {
+  } else if (kpi.id === 'total_matches' || kpi.id === 'hero_win_rate_30d') {
     router.push({ name: 'gameplay' });
-  } else if (kpi.id === 'server-health') {
-    router.push({ name: 'system' });
   }
 }
 </script>
@@ -130,10 +133,11 @@ function handleKpiClick(kpi: KpiSnapshot): void {
     <p class="since-you-last-looked">{{ sinceYouLastLookedLine }}</p>
 
     <div class="kpi-grid">
-      <KpiCard kpi-id="active-players" @click="handleKpiClick" />
-      <KpiCard kpi-id="matches-running" @click="handleKpiClick" />
-      <KpiCard kpi-id="revenue-today" @click="handleKpiClick" />
-      <KpiCard kpi-id="server-health" @click="handleKpiClick" />
+      <KpiCard kpi-id="total_players" @click="handleKpiClick" />
+      <KpiCard kpi-id="new_players_30d" @click="handleKpiClick" />
+      <KpiCard kpi-id="total_matches" @click="handleKpiClick" />
+      <KpiCard kpi-id="revenue_30d" @click="handleKpiClick" />
+      <KpiCard kpi-id="hero_win_rate_30d" @click="handleKpiClick" />
     </div>
 
     <DailyExecutionPanel />
@@ -218,7 +222,7 @@ function handleKpiClick(kpi: KpiSnapshot): void {
 
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 1rem;
 }
 
