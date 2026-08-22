@@ -70,6 +70,13 @@
   first; this runbook starts from a hardened host.
 - [ ] **Docker + Compose v2** installed (`apt install docker.io docker-compose-v2`,
   or Docker's official repo).
+- [ ] **A corpus census (prerequisite zero)** — the inventory of *what knowledge
+  exists and where*, before anything is ingested or routed. Use
+  [`KNOWLEDGE_INVENTORY.template.md`](./KNOWLEDGE_INVENTORY.template.md) as the
+  schema; fill the populated `KNOWLEDGE_INVENTORY.md` **on the owned host, not in
+  this repo** — it carries real client-project and formulation paths that stay off
+  any published or committed surface (same boundary as the ewiki page and `.env`
+  secrets). Nothing below can be classified without it.
 - [ ] **The knowledge corpus reachable on the host** — the Git repos to be
   navigated (this engine repo for the Legendary Arena governance corpus; others as
   they are organized) cloned read-only under `/data/knowledge/<domain>/`.
