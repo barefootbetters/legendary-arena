@@ -49,9 +49,11 @@ function makeG(options: {
   hand0?: CardExtId[];
   pending?: PendingCopyPowersChoice[];
   cardTraits?: Record<string, { heroClass: string | null; team: string | null }>;
-  cardStats?: Record<string, { cost: number }>;
+  cardStats?: Record<string, { cost?: number; attack?: number; recruit?: number }>;
   heroAbilityHooks?: HeroAbilityHook[];
   cardSizeChangingClasses?: Record<string, string[]>;
+  cardCopiedTeams?: Record<string, string[]>;
+  turnEconomy?: { attack: number; recruit: number; spentAttack: number; spentRecruit: number; piercing: number; woundsDrawn: number };
 }): LegendaryGameState {
   return {
     playerZones: {
@@ -60,6 +62,7 @@ function makeG(options: {
     },
     ...(options.pending !== undefined ? { pendingCopyPowersChoices: options.pending } : {}),
     ...(options.cardSizeChangingClasses !== undefined ? { cardSizeChangingClasses: options.cardSizeChangingClasses } : {}),
+    ...(options.cardCopiedTeams !== undefined ? { cardCopiedTeams: options.cardCopiedTeams } : {}),
     cardTraits: (options.cardTraits ?? {
       [COPY]: { heroClass: 'covert', team: null },
       [GAMBIT]: { heroClass: 'instinct', team: 'x-men' },
@@ -67,6 +70,7 @@ function makeG(options: {
       [SHIELD_AGENT]: { heroClass: null, team: null },
     }) as LegendaryGameState['cardTraits'],
     cardStats: (options.cardStats ?? {}) as LegendaryGameState['cardStats'],
+    turnEconomy: options.turnEconomy ?? { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 },
     heroAbilityHooks: options.heroAbilityHooks ?? [],
     cardDisplayData: {},
     messages: [],
@@ -214,6 +218,82 @@ describe('resolveCopyPowersChoice', () => {
     const G = makeG({ inPlay0: [COPY, GAMBIT], pending: [PENDING] });
     resolveCopyPowersChoice(makeContext(G, '0'), { cardId: '' as CardExtId });
     assert.equal(G.pendingCopyPowersChoices?.length, 1, 'empty cardId → no-op, queue intact');
+  });
+});
+
+describe('Copy Powers full duplicate — economy + team (WP-582 / D-24391)', () => {
+  const ctx = makeMockCtx();
+
+  it('applyCopyPowers adds the copied Hero’s printed attack + recruit to turnEconomy', () => {
+    const G = makeG({
+      inPlay0: [COPY, GAMBIT],
+      cardStats: { [GAMBIT]: { cost: 4, attack: 3, recruit: 2 } },
+    });
+    applyCopyPowers(G, ctx, '0', COPY, GAMBIT);
+    assert.equal(G.turnEconomy.attack, 3, 'copied attack added');
+    assert.equal(G.turnEconomy.recruit, 2, 'copied recruit added');
+  });
+
+  it('a duplicate DOUBLES an already-played Hero’s stat (a second instance)', () => {
+    // why: Copy Powers copies "a Hero you played this turn", so the copied Hero already
+    // contributed its own stat when it was played. Seed turnEconomy with that first
+    // contribution; the copy adds a genuine second instance.
+    const G = makeG({
+      inPlay0: [COPY, GAMBIT],
+      cardStats: { [GAMBIT]: { cost: 4, attack: 3, recruit: 2 } },
+      turnEconomy: { attack: 3, recruit: 2, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 },
+    });
+    applyCopyPowers(G, ctx, '0', COPY, GAMBIT);
+    assert.equal(G.turnEconomy.attack, 6, 'the duplicate adds a second copy of the attack');
+    assert.equal(G.turnEconomy.recruit, 4, 'the duplicate adds a second copy of the recruit');
+  });
+
+  it('a copied Hero with no cardStats adds 0/0 and never throws', () => {
+    const G = makeG({ inPlay0: [COPY, GAMBIT] }); // no cardStats entry for GAMBIT
+    assert.doesNotThrow(() => applyCopyPowers(G, ctx, '0', COPY, GAMBIT));
+    assert.equal(G.turnEconomy.attack, 0, 'no stats → no attack added');
+    assert.equal(G.turnEconomy.recruit, 0, 'no stats → no recruit added');
+  });
+
+  it('grants the copied Hero’s team into the lazy cardCopiedTeams map', () => {
+    const G = makeG({ inPlay0: [COPY, GAMBIT] }); // GAMBIT team = x-men
+    assert.equal(G.cardCopiedTeams, undefined, 'lazy: absent before any copy');
+    applyCopyPowers(G, ctx, '0', COPY, GAMBIT);
+    assert.deepStrictEqual(G.cardCopiedTeams?.[COPY], ['x-men'], 'Copy Powers gains Gambit’s x-men team');
+  });
+
+  it('a teamless copied Hero grants no team', () => {
+    const G = makeG({
+      inPlay0: [COPY, WOLVERINE],
+      cardTraits: {
+        [COPY]: { heroClass: 'covert', team: null },
+        [WOLVERINE]: { heroClass: 'instinct', team: null }, // teamless copy target
+      },
+    });
+    applyCopyPowers(G, ctx, '0', COPY, WOLVERINE);
+    assert.equal(G.cardCopiedTeams?.[COPY], undefined, 'no team granted for a teamless copy');
+  });
+
+  it('unions a second copied team without duplicating', () => {
+    const G = makeG({ inPlay0: [COPY, GAMBIT], cardCopiedTeams: { [COPY]: ['avengers'] } });
+    applyCopyPowers(G, ctx, '0', COPY, GAMBIT); // adds x-men
+    assert.deepStrictEqual(G.cardCopiedTeams?.[COPY], ['avengers', 'x-men'], 'unions, no duplicates');
+    applyCopyPowers(G, ctx, '0', COPY, GAMBIT); // x-men already present
+    assert.deepStrictEqual(G.cardCopiedTeams?.[COPY], ['avengers', 'x-men'], 'x-men already present, not re-added');
+  });
+
+  it('the resolve path (≥2 eligible) also grants the copied economy + team', () => {
+    const mock = makeMockCtx();
+    const G = makeG({
+      inPlay0: [COPY, GAMBIT, WOLVERINE],
+      pending: [PENDING],
+      cardStats: { [GAMBIT]: { cost: 4, attack: 3, recruit: 2 } },
+    });
+    resolveCopyPowersChoice({ G, playerID: '0', ctx: mock.ctx, random: mock.random } as never, { cardId: GAMBIT });
+    assert.equal(G.turnEconomy.attack, 3, 'resolve path added the copied attack');
+    assert.equal(G.turnEconomy.recruit, 2, 'resolve path added the copied recruit');
+    assert.deepStrictEqual(G.cardCopiedTeams?.[COPY], ['x-men'], 'resolve path granted the copied team');
+    assert.equal(G.pendingCopyPowersChoices?.length, 0, 'front-popped on success');
   });
 });
 

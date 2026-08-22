@@ -35,6 +35,7 @@ function makeTestState(overrides?: {
   heroAbilityHooks?: HeroAbilityHook[];
   cardTraits?: Record<string, { heroClass: string | null; team: string | null }>;
   cardSizeChangingClasses?: Record<string, string[]>;
+  cardCopiedTeams?: Record<string, string[]>;
   turnEconomyRecruit?: number;
 }): LegendaryGameState {
   return {
@@ -88,6 +89,7 @@ function makeTestState(overrides?: {
     cardStats: {},
     cardTraits: overrides?.cardTraits ?? {},
     cardSizeChangingClasses: overrides?.cardSizeChangingClasses ?? {},
+    cardCopiedTeams: overrides?.cardCopiedTeams ?? {},
     mastermind: { ...makeMastermindState(),
       id: 'test-mastermind',
       baseCardId: 'test-mastermind-base',
@@ -457,6 +459,28 @@ describe('evaluateCondition requiresTeam (WP-179)', () => {
     }, 'trigger-card#0' as unknown as import('../state/zones.types.js').CardExtId);
 
     assert.equal(result, false, 'should return false when other card has no trait entry');
+  });
+
+  // WP-582 / D-24391 — a Copy Powers card that copied an avengers Hero counts as avengers
+  // via the runtime cardCopiedTeams grant, routed through cardHasTeamWhenPlayed.
+  it('copy-powers grant: a Copy Powers card with a granted team satisfies requiresTeam', () => {
+    const gameState = makeTestState({
+      inPlay: ['core/rogue/copy-powers#0', 'trigger-card#0'],
+      cardTraits: {
+        'core/rogue/copy-powers#0': { heroClass: 'covert', team: null }, // printed teamless
+        'trigger-card#0': { heroClass: 'tech', team: 'avengers' },
+      },
+      cardCopiedTeams: {
+        'core/rogue/copy-powers#0': ['avengers'], // copied an avengers Hero
+      },
+    });
+
+    const result = evaluateCondition(gameState, '0', {
+      type: 'requiresTeam',
+      value: 'avengers',
+    }, 'trigger-card#0' as unknown as import('../state/zones.types.js').CardExtId);
+
+    assert.equal(result, true, 'a Copy Powers card granted the avengers team satisfies the synergy');
   });
 });
 

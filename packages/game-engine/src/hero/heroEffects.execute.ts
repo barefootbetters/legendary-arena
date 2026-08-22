@@ -2219,6 +2219,40 @@ export function applyCopyPowers(
     }
   }
 
+  // why: D-24391 — Copy Powers is a full duplicate of the copied Hero, so it adds the
+  // copied card's PRINTED attack + recruit. The copied Hero was already played this turn
+  // (Copy Powers copies "a Hero you played this turn"), so this is a SECOND instance — a
+  // genuine duplicate legitimately DOUBLES the stat. A null-stat copied Hero adds 0/0.
+  // G.cardStats is keyed by the same copy-suffixed instance ext_id as chosenHeroId.
+  const copiedStats = G.cardStats[chosenHeroId];
+  if (copiedStats) {
+    G.turnEconomy = addResources(G.turnEconomy, copiedStats.attack, copiedStats.recruit);
+    if (copiedStats.attack > 0 || copiedStats.recruit > 0) {
+      pushLog(G,
+        `Player ${playerID} gained +${copiedStats.attack} attack and +${copiedStats.recruit} recruit from copying ${formatCardRef(G.cardDisplayData, chosenHeroId)}.`,
+        'applied',
+        sourceCardId, // why: WP-582 — the Copy Powers card that produced the duplicated economy.
+      );
+    }
+  }
+
+  // why: D-24391 — Copy Powers counts as the copied Hero's TEAM, the runtime team-grant
+  // sibling to the class grant above, via the lazy cardCopiedTeams map read by the
+  // effectiveTeams.logic.ts helper. cardTraits.team is string|null — a teamless copied
+  // Hero grants nothing. cardTraits is never mutated.
+  const copiedTeam = G.cardTraits[chosenHeroId]?.team;
+  if (typeof copiedTeam === 'string' && copiedTeam.length > 0) {
+    if (!G.cardCopiedTeams) {
+      G.cardCopiedTeams = {};
+    }
+    const existingTeams = G.cardCopiedTeams[sourceCardId];
+    if (existingTeams === undefined) {
+      G.cardCopiedTeams[sourceCardId] = [copiedTeam];
+    } else if (!existingTeams.includes(copiedTeam)) {
+      existingTeams.push(copiedTeam);
+    }
+  }
+
   // Re-fire the copied Hero's on-play ability. The count return is observability only.
   executeHeroEffects(G, ctx, playerID, chosenHeroId);
 }
