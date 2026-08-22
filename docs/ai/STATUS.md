@@ -7,6 +7,30 @@
 
 ## Current State
 
+### WP-583 — Endgame score breakdown + grade badge (EC-618 / D-24392) shipped (2026-08-22)
+
+Follow-up to WP-578: the endgame screen showed only two opaque numbers (`Competitive score: 1220`,
+`Raw score 920`). Now it also shows the full component breakdown (rounds, bystanders rescued, VP,
+per-event penalties, PAR) and a grade badge (**Legendary** / A / B / C / D / F).
+
+The breakdown was **already on the wire** — the server builds (`buildScoreBreakdown`), persists
+(`score_breakdown` jsonb), and returns the full `ScoreBreakdown` in `record.scoreBreakdown` from both
+score endpoints; the client `MyCompetitiveScore` type just omitted it. So this is **client-only** display
+(extend the local type + render verbatim, never recomputed) plus one pure additive engine helper —
+**no server / persistence / migration / hash change**. The grade is a shared engine `gradeForFinalScore`
++ `ScoreGrade` + `SCORE_GRADES` (`scoring/parScoring.grade.ts`), barrel-exported, mirroring
+`menaceTierFor` / `MENACE_TIERS`: the engine ships the **enum**, the client owns the **word** "Legendary"
+(operator renamed the elite tier from the conventional "S") in `vfx/gradeDisplay.ts` — the D-24367 copy
+boundary. Bands on `finalScore` (centesimal, lower=better, 0=par): legendary ≤ −1000, a ≤ −300, b ≤ 300,
+c ≤ 800, d ≤ 1800, else f (tunable; the live example 1220 → **D**). Accessible: the badge conveys meaning
+by text + aria-label, not colour alone.
+
+Engine **2837→2852/0** (+15 grade tests incl. a runtime drift pin; replay/sentinel green → both hash
+oracles byte-unchanged); arena-client **1372/0**; `vue-tsc` clean; `pnpm -r build` + `--no-bail test` green;
+`lagn-v1.json` CRLF-only build churn reverted. An adversarial gate-review subagent verified the
+"breakdown already on the wire" premise against the real server code before drafting. **D-24026 live-verify:
+operator-pending** — on `play.legendary-arena.com`, finish a ranked match and read the breakdown + grade.
+
 ### WP-582 — Rogue "Copy Powers" is a full duplicate (attack + recruit + team) (EC-617 / D-24391) shipped (2026-08-22)
 
 Closes the "Copy Powers cloned Cyclops' Unending Energy but didn't mimic the attack" defect from the
