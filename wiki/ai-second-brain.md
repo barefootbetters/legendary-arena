@@ -75,6 +75,16 @@ architecture drift at different rates and answer to different concerns.
 
 ## Mechanics
 
+### Non-goals
+
+Naming the boundaries first, so scope is clear before the design detail. This
+platform is **not** a CRM, a project manager, a social-media scheduler, an
+autonomous agent swarm, a replacement for Git, a replacement for the source
+systems it reads, or an automatic knowledge vacuum. Its job is **durable
+knowledge retrieval and decision support** — nothing more. The reasoning behind
+each boundary is in
+[Scope boundaries](#scope-boundaries-what-this-deliberately-is-not).
+
 ### Design principles
 
 Ten principles shape the platform. They are deliberately short, durable, and
@@ -123,16 +133,38 @@ to the knowledge layer.
     stays reviewable, replaceable, and overridable. *Rule: the operator remains
     accountable.*
 
-**The primary agent is the second brain's *active surface*.** Principle 4 is
-usually read as "the data outlives the tool," but it has a second, sharper
-reading: the tool is the *disposable half of a working pair*. The knowledge base
-is long-term memory; the agent in front of it — Claude Code today, another
-framework tomorrow — is the working mind that navigates, extracts, cites, and
-improves that memory under operator authority. Swapping that surface must never
-migrate a single fact: the store remains the system of record, the agent remains
-replaceable. Naming the agent as the *active surface* rather than an outside
-consumer is what keeps *Model Independence* honest — the mind is interchangeable
-precisely because the memory it works over never moves.
+**The knowledge base is long-term memory; the agent is the current reasoning
+surface.** That is Principle 4 read from the agent's side — the store holds the
+facts, and the agent in front of it (Claude Code today, another framework
+tomorrow) navigates, cites, and improves them under operator authority. Swapping
+that surface must never move a single fact.
+
+### Locked architecture decisions
+
+The page interleaves settled architecture with still-open implementation choices;
+this table separates them. **Locked** decisions are fixed by
+[D-24341](../docs/ai/DECISIONS.md#d-24341) or the navigation-first retrieval
+decision, and change only through a new `DECISIONS.md` entry. **Preferred** are
+recommended defaults, swappable without re-deciding the architecture. **Open**
+are genuine choices deferred to the build (see [Open Questions](#open-questions)).
+
+| Decision | Status |
+|---|---|
+| Knowledge stays operator-owned; AI is never the system of record | **Locked** |
+| Governance docs navigated exactly, never vectorized | **Locked** |
+| Navigation-first retrieval (~90% Markdown / 10% vector) | **Locked** |
+| Human review is the authority boundary over AI output | **Locked** |
+| Recovery rebuilds from source repos, never from an AI system | **Locked** |
+| Dedicated host is the end-state (co-location OK to bootstrap) | **Locked** |
+| PostgreSQL + `pgvector` (HNSW) as the single store | **Preferred** |
+| LiteLLM gateway + Open WebUI chat surface | **Preferred** |
+| `nomic-embed-text` embeddings (BGE-M3 the alternative) | **Preferred** |
+| Ingestion: retrieval framework vs pure-custom | **Open** |
+| Model roster and local/hosted mix | **Open** |
+
+Everything marked **Preferred** or **Open** is an agent-side or implementation
+detail — replaceable without touching the **Locked** rows, which *are* the
+architecture.
 
 ### Proposed stack
 
@@ -214,19 +246,30 @@ Two tiers, chosen per corpus:
   earns its keep; these are *reference*, never governance or decision records.
 
 > **Do not vectorize governance.** `DECISIONS.md`, Work Packets, Execution
-> Contracts, and runbooks are retrieved exactly, never chunk-embedded. This is
-> the same instinct as the rest of the corpus: deterministic, auditable,
-> grepable, binary. Chunk → embed → retrieve is the wrong tool for a record whose
-> value is its exact, whole-context wording.
+> Contracts, and runbooks are retrieved exactly, never chunk-embedded — their
+> value is the exact, whole-context wording (a **Locked** decision, above).
 
-**Retrieval order — simplest method that answers, first.** A query walks the
-tiers in ascending cost/uncertainty and stops at the first that answers:
+**Query resolution flow — simplest method that answers, first.** A query walks
+the tiers in ascending cost/uncertainty and stops at the first that answers:
 
-1. **Direct reference** — the exact file/heading is known (a cited `D-####`, a WP id).
-2. **INDEX navigation** — route to a domain, follow its `INDEX.md` links.
-3. **Full-text search** — grep / Postgres full-text over the corpus.
-4. **Vector search** — semantic recall over the reference layer, when the wording is unknown.
-5. **Web search** — only when the answer is not in the corpus at all.
+```
+Question
+   │
+   ▼
+Known document?  ──yes──►  open it directly       (1. direct reference)
+   │ no
+   ▼
+In an INDEX.md?  ──yes──►  follow its links        (2. index navigation)
+   │ no
+   ▼
+Full-text hit?   ──yes──►  return sources          (3. grep / Postgres FTS)
+   │ no
+   ▼
+Vector hit?      ──yes──►  return sources          (4. semantic recall)
+   │ no
+   ▼
+Web search                                         (5. last resort)
+```
 
 Escalating past a tier is a signal the earlier tier is thin (a missing index
 entry, an unrecorded decision) — worth fixing, not just routing around.
@@ -267,12 +310,11 @@ splitter) is lighter and fully under operator control. Either satisfies the
 principles; the choice is convenience vs minimalism, and it is recorded in
 [Open Questions](#open-questions).
 
-> **The executable pieces are not on this page.** The ingestion script, the
-> Postgres schema DDL, a `docker-compose` for the stack, and the
-> provision-and-deploy runbook are *execution instruction* — which the wiki
-> [SCHEMA](SCHEMA.md) keeps off entity pages. They live in the operator runbook,
-> [`docs/ops/AI_SECOND_BRAIN_RUNBOOK.md`](../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md);
-> this page stays the descriptive design record it realizes.
+> **The executable pieces live in the runbook, not here.** Ingestion script,
+> schema DDL, `docker-compose`, and provisioning are execution instruction the
+> wiki [SCHEMA](SCHEMA.md) keeps off entity pages; they live in
+> [`AI_SECOND_BRAIN_RUNBOOK.md`](../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md). This
+> page stays the design record.
 
 ### Knowledge extraction (operator-triggered)
 
