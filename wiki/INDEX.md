@@ -435,6 +435,8 @@ following are useful entry points:
   [Hugo Web System](hugo-web-system.md),
   [Hugo Onboarding](hugo-onboarding.md),
   [Ewiki Authoring](ewiki-authoring.md)
+- **`git`** — Git / GitHub workflow and parallel-session pain points:
+  [GitHub Parallel-Session Workflow](github-parallel-session-workflow.md).
 - **`layer-marketing`** — Pages anchored in the marketing layer:
   [Homepage Marketing Scorecard](homepage-marketing-scorecard.md),
   [Homepage Spec](homepage-spec.md),
