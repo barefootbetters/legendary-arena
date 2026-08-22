@@ -134,6 +134,25 @@ behaviour — and they are not all the same:
 > it can merge. `WORK_INDEX.md` gets no union driver at all — it is
 > prose, and prose merges conflict.
 
+### Why not just `merge=union` everything?
+
+The built-in union driver keeps lines from both sides and drops conflict
+markers. It provides no ordering guarantee and retains duplicates. We have
+observed it structurally duplicate entire sections of `NUMBER-LEDGER.md`
+under concurrent writes, which broke the ledger checker
+(`check-number-ledger.mjs` reads only the first matching section — see
+*Edge Cases*).
+
+Consequently `merge=union` is only safe for genuinely append-only,
+deduplication-tolerant lists. It is never appropriate for prose indexes
+(`WORK_INDEX.md`, `EC_INDEX.md`, `DECISIONS.md`, etc.), where duplicate or
+reordered rows produce silently incorrect content. Extending it further is
+the wrong direction — and a *custom* driver that sorts+uniques would not
+rescue it either: custom drivers are not self-installing (each clone must
+define them in its own `.git/config`), are still local-only and ignored by
+GitHub's server-side merge, and so would not remove the reserve-first rule
+that is doing the real work.
+
 ### Best practices (the playbook)
 
 **Isolation — beat Problem #1:**
