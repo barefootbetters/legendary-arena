@@ -35,9 +35,15 @@ runtime" type comment was corrected in passing (D-24345 already writes it at run
 Engine **2821→2837/0** (+16 tests); both hash oracles **byte-unchanged** (no committed fixture plays
 Copy Powers → no re-pin); `pnpm -r build` + `--no-bail test` green; `lagn-v1.json` CRLF-only build churn
 reverted. **Mutation-verified:** reverting the economy add + `requiresTeam` routing fails the new
-economy / team / requiresTeam tests (actual attack 0 vs expected 3). **D-24026 live-verify:
-operator-pending** — on `play.legendary-arena.com`, play a Hero with printed attack, then Copy Powers
-copying it: your available attack rises by that amount and a fight can be funded from it.
+economy / team / requiresTeam tests (actual attack 0 vs expected 3).
+
+**D-24026 live-verify: VERIFIED 2026-08-22.** A real 2p Red Skull / Midtown Bank Robbery match on the
+deployed build (diagnostics `gitSha 4f81132` = the PR #1560 merge commit) played Copy Powers copying
+God of Thunder (printed +5 recruit): the game log shows `[applied] Player 0 gained +0 attack and +5
+recruit from copying God of Thunder` (the new `applyCopyPowers` economy add — the printed stat is
+duplicated) immediately followed by `[applied] can spend Recruit as Attack this turn` (the ability
+re-fire). Full duplicate confirmed end-to-end — printed economy plus ability. (The mastermind was
+vanquished that same turn.)
 
 ### WP-579 — Legends leaderboard shows the claimed handle as a profile link (EC-614 / D-24388) shipped (2026-08-21)
 
