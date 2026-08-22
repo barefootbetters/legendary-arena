@@ -7,6 +7,35 @@
 
 ## Current State
 
+### WP-585 — Rulebook-faithful scoring: remove the per-round cost (EC-620 / D-24394) shipped (2026-08-22)
+
+The operator questioned the Scheme-Twist penalty as "luck of the draw" and noted rounds already
+penalize length. Checking the printed rulebook (`docs/Marvel Legendary Universal Rules v23.txt`,
+Scoring section) found the reverse: the rulebook subtracts only **−4/Bystander-lost, −3/Scheme-Twist,
+−1/Villain-escaped** (the 4:3:1 anchor) and has **no round/turn penalty** — twists are its length
+proxy. So the redundant, non-canonical term was the LA-invented per-round cost. Operator chose
+"option 1, rulebook-purist": remove it.
+
+`roundCost` / `roundsPar` / `weightedRoundCost` are **fully removed**; `RawScore = Penalties − (BP ×
+bystanderReward) − (VP × vpReward)`. Bystander/VP rewards + penalty weights are **unchanged** (the
+deliberate LA moral-hierarchy stays); `ScoringInputs.rounds` is kept as an informational given (shown,
+not scored). Both version pins bumped — `scoringConfigVersion 2→3`, `rawScoreSemanticsVersion 1→2` —
+so existing `competitive_scores` rows (which pin their own version + stored breakdown) are **never
+retroactively invalidated**; the semantics bump is the designed old-vs-new filter. The **128 seed PAR
+artifacts + 128 scoring-configs were regenerated** in place (write-once guard required `rm` first; every
+`parValue` dropped by its old `roundsPar × 50`; the server's `computeParScore === parValue` fail-close
+holds because both recompute from the regenerated artifact). The endgame worked calc drops the
+round-cost line.
+
+Scoring is server-side, so **no game-state-hash re-pin** (replay/sentinel suites green). Engine
+**2852→2851/0** (the round-monotonicity test was replaced by a rounds-invariance test asserting rounds
+no longer affect RawScore); arena-client `vue-tsc` + tests green; server tests green; `pnpm -r --no-bail
+test` green. `docs/12-SCORING-REFERENCE.md` + two wiki pages updated. An adversarial gate-review
+subagent hand-verified a regenerated `parValue` (−1110) against the new formula and confirmed all four
+high-risk modes clean (no stale artifact, no orphaned ref, invariance test present, no hash re-pin).
+**D-24026 live-verify: operator-pending** — finish a ranked match; the endgame has no round-cost line
+and the score reflects the rulebook penalties.
+
 ### WP-584 — Endgame score as a worked calculation (EC-619 / D-24393) shipped (2026-08-22)
 
 Follow-up to WP-583: the endgame listed the score components but didn't show the arithmetic. The
