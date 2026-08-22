@@ -61,7 +61,10 @@ import { validateGauntletConfigs } from "@legendary-arena/registry/gauntletConfi
  * `scoringConfigVersion` and stay comparable. Satisfies every
  * `validateScoringConfig` structural invariant.
  */
-const DEFAULT_WEIGHTS = { roundCost: 50, bystanderReward: 200, victoryPointReward: 10 };
+// why: WP-585 / D-24394 — no roundCost. The rulebook's scoring has no round/turn
+// penalty; Scheme Twists are its length proxy (schemeTwistNegative 300), so a
+// separate per-round cost double-counted length and was removed.
+const DEFAULT_WEIGHTS = { bystanderReward: 200, victoryPointReward: 10 };
 const DEFAULT_CAPS = { bystanderCap: null, victoryPointCap: null };
 const DEFAULT_PENALTY_EVENT_WEIGHTS = {
   villainEscaped: 100,
@@ -70,8 +73,13 @@ const DEFAULT_PENALTY_EVENT_WEIGHTS = {
   mastermindTacticUntaken: 25,
   scenarioSpecificPenalty: 40,
 };
-const SCORING_CONFIG_VERSION = 2;
-const RAW_SCORE_SEMANTICS_VERSION = 1;
+// why: WP-585 / D-24394 — bumped on the roundCost removal. scoringConfigVersion
+// 2->3 per the docs/12 calibration invariant (any weight/config change bumps it);
+// rawScoreSemanticsVersion 1->2 because removing a whole term is a formula-SHAPE
+// change (lets leaderboard entries be filtered to a semantically compatible set,
+// so pre-WP-585 rows stay valid and are never retroactively invalidated).
+const SCORING_CONFIG_VERSION = 3;
+const RAW_SCORE_SEMANTICS_VERSION = 2;
 
 // why: class-2 metadata timestamps must be FIXED, never Date.now(), so the
 // generator is deterministic — re-running produces byte-identical artifacts
@@ -144,11 +152,12 @@ function composeScenarioDifficulty(mastermindRating, schemeRating, villainGroupR
  *
  * @param scenarioDifficulty the composed 1-10 scenario difficulty.
  * @param playerCount the representative player count (1-5).
- * @returns the `ParBaseline` (roundsPar / bystandersPar / victoryPointsPar / escapesPar).
+ * @returns the `ParBaseline` (bystandersPar / victoryPointsPar / escapesPar).
  */
 function baselineFromDifficulty(scenarioDifficulty, playerCount) {
+  // why: WP-585 / D-24394 — no roundsPar. RawScore has no round-cost term, so PAR
+  // needs no expected-rounds baseline.
   return {
-    roundsPar: 12 + scenarioDifficulty + (playerCount - 2),
     escapesPar: Math.floor(scenarioDifficulty / 4) + Math.max(0, playerCount - 3),
     bystandersPar: clampRange(2, 8, 8 - Math.ceil(scenarioDifficulty / 2)),
     victoryPointsPar: clampRange(8, 50, 30 - scenarioDifficulty + (playerCount - 2) * 3),

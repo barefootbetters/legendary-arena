@@ -82,7 +82,6 @@ function createTestScoringConfig(): ScenarioScoringConfig {
   return {
     scenarioKey: 'test-scheme-par::test-mastermind-par::test-villain-group-par',
     weights: {
-      roundCost: 50,
       bystanderReward: 200,
       victoryPointReward: 10,
     },
@@ -98,7 +97,6 @@ function createTestScoringConfig(): ScenarioScoringConfig {
       scenarioSpecificPenalty: 40,
     },
     parBaseline: {
-      roundsPar: 20,
       bystandersPar: 5,
       victoryPointsPar: 30,
       escapesPar: 1,

@@ -61,7 +61,6 @@ function createTestScoringConfig(): ScenarioScoringConfig {
   return {
     scenarioKey: 'test-scenario-001',
     weights: {
-      roundCost: 100,
       bystanderReward: 200,
       victoryPointReward: 50,
     },
@@ -77,7 +76,6 @@ function createTestScoringConfig(): ScenarioScoringConfig {
       scenarioSpecificPenalty: 10,
     },
     parBaseline: {
-      roundsPar: 10,
       bystandersPar: 5,
       victoryPointsPar: 30,
       escapesPar: 1,

@@ -79,7 +79,8 @@ export interface CompetitiveScoringInputs {
  */
 export interface CompetitiveScoreBreakdown {
   readonly inputs: CompetitiveScoringInputs;
-  readonly weightedRoundCost: number;
+  // why: WP-585 / D-24394 — no weightedRoundCost; the round-cost term was removed
+  // from the scoring formula (the rulebook has no round penalty).
   readonly weightedPenaltyTotal: number;
   readonly penaltyBreakdown: CompetitivePenaltyCounts;
   readonly weightedBystanderReward: number;

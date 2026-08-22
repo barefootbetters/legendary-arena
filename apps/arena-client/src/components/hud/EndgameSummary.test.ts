@@ -87,15 +87,15 @@ function breakdown(over: Partial<CompetitiveScoreBreakdown> = {}): CompetitiveSc
       escapes: 0,
       penaltyEventCounts: counts,
     },
-    weightedRoundCost: 1450,
     weightedPenaltyTotal: 1800,
     penaltyBreakdown: products,
     weightedBystanderReward: 2200,
     weightedVictoryPointReward: 1030,
-    rawScore: 20,
+    // why: WP-585 — no round-cost term: raw = 1800 − 2200 − 1030 = −1430; final = raw − par.
+    rawScore: -1430,
     parScore: -300,
-    finalScore: 320,
-    scoringConfigVersion: 1,
+    finalScore: -1130,
+    scoringConfigVersion: 3,
     ...over,
   };
 }
@@ -103,29 +103,33 @@ function breakdown(over: Partial<CompetitiveScoreBreakdown> = {}): CompetitiveSc
 describe('EndgameSummary (WP-584 worked calculation)', () => {
   test('renders the formula-first worked calculation with derived weights', () => {
     const wrapper = mount(EndgameSummary, {
-      props: { gameOver: gameOver(), competitiveScore: score({ finalScore: 320, scoreBreakdown: breakdown() }) },
+      props: { gameOver: gameOver(), competitiveScore: score({ finalScore: -1130, scoreBreakdown: breakdown() }) },
     });
     assert.ok(wrapper.find('[data-testid="arena-hud-score-breakdown"]').exists(), 'worked calc renders');
 
-    // Symbolic formula line — weights DERIVED (50/200/10), not hardcoded.
+    // Symbolic formula line — weights DERIVED (200/10), not hardcoded. No round term
+    // (WP-585: the rulebook has no round penalty; twists carry length via Penalties).
     const formula = wrapper.find('[aria-label="rawFormula"]').text();
-    assert.ok(formula.includes('(Rounds × 50)'), 'round weight derived to 50');
+    assert.ok(!formula.includes('Rounds'), 'no round term in the formula');
     assert.ok(formula.includes('Penalties'), 'penalties named symbolically');
     assert.ok(formula.includes('(Bystanders × 200)'), 'bystander weight derived to 200');
     assert.ok(formula.includes('(VP × 10)'), 'VP weight derived to 10');
 
-    // Substituted line — match values plugged in; penalties expanded to nonzero types.
+    // Substituted line — penalties expanded to nonzero types, then rewards.
     const substituted = wrapper.find('[aria-label="rawSubstituted"]').text();
-    assert.ok(substituted.includes('(29 × 50)'), 'rounds substituted');
+    assert.ok(!substituted.includes('× 50'), 'no round substitution');
     assert.ok(substituted.includes('(6 × 300)'), 'scheme twists expanded (6 × 300)');
     assert.ok(substituted.includes('(11 × 200)'), 'bystanders substituted');
     assert.ok(substituted.includes('(103 × 10)'), 'VP substituted');
 
     // Products, raw result, final.
-    assert.ok(wrapper.find('[aria-label="rawProducts"]').text().includes('1450 + 1800 − 2200 − 1030'));
-    assert.ok(wrapper.find('[aria-label="rawResult"]').text().includes('20'), 'raw = 20');
-    assert.ok(wrapper.find('[aria-label="finalSubstituted"]').text().includes('20 − (−300)'), 'final = raw − par');
-    assert.ok(wrapper.find('[aria-label="finalResult"]').text().includes('320'), 'final = 320');
+    assert.ok(wrapper.find('[aria-label="rawProducts"]').text().includes('1800 − 2200 − 1030'));
+    assert.ok(wrapper.find('[aria-label="rawResult"]').text().includes('-1430'), 'raw = -1430');
+    assert.ok(wrapper.find('[aria-label="finalSubstituted"]').text().includes('-1430 − (−300)'), 'final = raw − par');
+    assert.ok(wrapper.find('[aria-label="finalResult"]').text().includes('-1130'), 'final = -1130');
+
+    // "Rounds" still appears as an informational given (just not scored).
+    assert.ok(wrapper.find('[aria-label="score inputs"]').text().includes('Rounds'), 'Rounds shown as a given');
   });
 
   test('shows the grade badge matching gradeForFinalScore for representative bands', () => {

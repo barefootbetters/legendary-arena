@@ -253,11 +253,12 @@ ReplayHash ───────────────────────
 ```
 
 `ScoreBreakdown` is the immutable result the engine returns:
-`weightedRoundCost`, `weightedPenaltyTotal`, `penaltyBreakdown`,
+`weightedPenaltyTotal`, `penaltyBreakdown`,
 `weightedBystanderReward`, `weightedVictoryPointReward`, `rawScore`,
 `parScore`, `finalScore`, plus the inputs and version pin. Every
 intermediate component is exposed so leaderboard UIs and
-post-match summaries never recompute.
+post-match summaries never recompute. (There is no per-round cost — the
+rulebook has no round penalty; Scheme Twists carry game length. WP-585.)
 
 `LeaderboardEntry` (defined in the engine, instantiated in the
 server) wraps a `ScoreBreakdown` with `replayHash` (WP-027

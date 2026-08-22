@@ -38,7 +38,6 @@ function buildValidScoringConfig(scenarioKey: string): ScenarioScoringConfig {
   return {
     scenarioKey,
     weights: {
-      roundCost: 50,
       bystanderReward: 200,
       victoryPointReward: 10,
     },
@@ -54,7 +53,6 @@ function buildValidScoringConfig(scenarioKey: string): ScenarioScoringConfig {
       scenarioSpecificPenalty: 40,
     },
     parBaseline: {
-      roundsPar: 20,
       bystandersPar: 5,
       victoryPointsPar: 30,
       escapesPar: 1,
