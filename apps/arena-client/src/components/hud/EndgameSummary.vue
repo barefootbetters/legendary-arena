@@ -6,6 +6,7 @@ import type { UIGameOverState } from '@legendary-arena/game-engine';
 // the player-facing word comes from the client `gradeDisplay` helper (D-24392).
 import { gradeForFinalScore } from '@legendary-arena/game-engine';
 import { gradeLabel, gradeClass, gradeAriaText } from '../../vfx/gradeDisplay';
+import { buildWorkedScoreCalc } from '../../vfx/scoreCalcDisplay';
 import type { MyCompetitiveScore } from '../../lib/api/competitionApi';
 
 // why: the four literal leaf-name `aria-label`s on the PAR breakdown
@@ -58,13 +59,21 @@ export default defineComponent({
     // older record that carries no breakdown; the headline still renders.
     const breakdown = computed(() => props.competitiveScore?.scoreBreakdown ?? null);
 
+    // why: WP-584 — render the score as a worked solution (formula → substituted
+    // → products → result), not a flat list. The per-term weights are DERIVED
+    // from the breakdown (product ÷ count) inside the helper, never hardcoded, so
+    // the shown formula cannot drift from the engine's real weights (D-24393).
+    const workedCalc = computed(() =>
+      breakdown.value ? buildWorkedScoreCalc(breakdown.value) : null,
+    );
+
     return {
       hasPar,
       hasScores,
       gradeBadgeLabel,
       gradeBadgeClass,
       gradeBadgeAria,
-      breakdown,
+      workedCalc,
     };
   },
 });
@@ -114,60 +123,38 @@ export default defineComponent({
         Raw score <span aria-label="competitiveRawScore">{{ competitiveScore.rawScore }}</span>
       </p>
 
-      <!-- why: WP-583 — the full component breakdown the server already returned,
-           rendered verbatim (never recomputed client-side). Gated on the optional
-           scoreBreakdown so an older record without one still shows the headline. -->
-      <dl
-        v-if="breakdown"
-        class="score-breakdown"
+      <!-- why: WP-584 — the score rendered as a worked solution (formula-first:
+           symbolic formula → values substituted → products → result; then
+           Final = Raw − PAR). All values are from the server-returned breakdown,
+           rendered verbatim (never recomputed); the per-term weights are derived
+           in `scoreCalcDisplay` (D-24393). Gated on the optional breakdown so an
+           older record without one still shows the headline. -->
+      <div
+        v-if="workedCalc"
+        class="score-worked"
         data-testid="arena-hud-score-breakdown"
-        aria-label="score breakdown"
+        aria-label="score calculation"
       >
-        <div class="breakdown-field">
-          <dt>Rounds</dt>
-          <dd aria-label="breakdownRounds">{{ breakdown.inputs.rounds }}</dd>
+        <div class="worked-givens" aria-label="score inputs">
+          <span v-for="given in workedCalc.givens" :key="given.label" class="worked-given">
+            {{ given.label }} <strong>{{ given.value }}</strong>
+          </span>
         </div>
-        <div class="breakdown-field">
-          <dt>Bystanders rescued</dt>
-          <dd aria-label="breakdownBystandersRescued">{{ breakdown.inputs.bystandersRescued }}</dd>
+
+        <div class="worked-block">
+          <div class="worked-heading">Raw score</div>
+          <div class="worked-line" aria-label="rawFormula">Raw = {{ workedCalc.formula }}</div>
+          <div class="worked-line worked-indent" aria-label="rawSubstituted">= {{ workedCalc.substituted }}</div>
+          <div class="worked-line worked-indent" aria-label="rawProducts">= {{ workedCalc.products }}</div>
+          <div class="worked-line worked-indent worked-result" aria-label="rawResult">= {{ workedCalc.rawScore }}</div>
         </div>
-        <div class="breakdown-field">
-          <dt>Victory points</dt>
-          <dd aria-label="breakdownVictoryPoints">{{ breakdown.inputs.victoryPoints }}</dd>
+
+        <div class="worked-block">
+          <div class="worked-heading">Final score</div>
+          <div class="worked-line" aria-label="finalSubstituted">Final = Raw − PAR = {{ workedCalc.finalSubstituted }}</div>
+          <div class="worked-line worked-indent worked-result" aria-label="finalResult">= {{ workedCalc.finalScore }}</div>
         </div>
-        <div class="breakdown-field">
-          <dt>Villain escapes</dt>
-          <dd aria-label="breakdownVillainEscapes">{{ breakdown.inputs.penaltyEventCounts.villainEscaped }}</dd>
-        </div>
-        <div class="breakdown-field">
-          <dt>Bystanders lost</dt>
-          <dd aria-label="breakdownBystandersLost">{{ breakdown.inputs.penaltyEventCounts.bystanderLost }}</dd>
-        </div>
-        <div class="breakdown-field">
-          <dt>Scheme twists</dt>
-          <dd aria-label="breakdownSchemeTwists">{{ breakdown.inputs.penaltyEventCounts.schemeTwistNegative }}</dd>
-        </div>
-        <div class="breakdown-field">
-          <dt>Round cost</dt>
-          <dd aria-label="breakdownRoundCost">{{ breakdown.weightedRoundCost }}</dd>
-        </div>
-        <div class="breakdown-field">
-          <dt>Penalties</dt>
-          <dd aria-label="breakdownPenaltyTotal">{{ breakdown.weightedPenaltyTotal }}</dd>
-        </div>
-        <div class="breakdown-field">
-          <dt>Bystander bonus</dt>
-          <dd aria-label="breakdownBystanderReward">−{{ breakdown.weightedBystanderReward }}</dd>
-        </div>
-        <div class="breakdown-field">
-          <dt>Victory-point bonus</dt>
-          <dd aria-label="breakdownVictoryPointReward">−{{ breakdown.weightedVictoryPointReward }}</dd>
-        </div>
-        <div class="breakdown-field">
-          <dt>PAR</dt>
-          <dd aria-label="breakdownParScore">{{ breakdown.parScore }}</dd>
-        </div>
-      </dl>
+      </div>
     </section>
 
     <dl v-if="hasPar && gameOver.par" class="par-breakdown">
@@ -246,16 +233,14 @@ header {
   font-variant-numeric: tabular-nums;
 }
 
-.par-breakdown,
-.score-breakdown {
+.par-breakdown {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.25rem 1rem;
   margin: 0.25rem 0 0;
 }
 
-.par-field,
-.breakdown-field {
+.par-field {
   display: flex;
   justify-content: space-between;
 }
@@ -264,6 +249,54 @@ dt,
 dd {
   margin: 0;
   font-variant-numeric: tabular-nums;
+}
+
+/* why: WP-584 — the score rendered as a worked solution. The formula lines use a
+   monospace face + tabular numerals so the arithmetic columns line up, the way a
+   marked-up calculation reads. */
+.score-worked {
+  margin: 0.25rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.worked-givens {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.9rem;
+  font-size: 0.8rem;
+  color: var(--color-foreground);
+  opacity: 0.85;
+}
+
+.worked-given strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.worked-heading {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.6;
+  margin-bottom: 0.15rem;
+}
+
+.worked-line {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85rem;
+  line-height: 1.7;
+  font-variant-numeric: tabular-nums;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.worked-indent {
+  padding-left: 1.6rem;
+}
+
+.worked-result {
+  font-weight: 700;
 }
 
 /* why: WP-583 — the grade badge. Meaning is carried by the text label; the

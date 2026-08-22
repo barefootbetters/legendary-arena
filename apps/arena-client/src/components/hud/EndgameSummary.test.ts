@@ -59,48 +59,73 @@ describe('EndgameSummary (WP-578 competitive score)', () => {
   });
 });
 
-/** A full component breakdown, mirroring the server's ScoreBreakdown. */
+/**
+ * A full component breakdown, mirroring the server's ScoreBreakdown — the real
+ * 2p Red Skull / Midtown game-2 figures (Raw 20, Final 320). penaltyBreakdown
+ * holds per-type PRODUCTS (count × weight), as the engine produces.
+ */
 function breakdown(over: Partial<CompetitiveScoreBreakdown> = {}): CompetitiveScoreBreakdown {
-  const penalties = {
-    villainEscaped: 1,
+  const counts = {
+    villainEscaped: 0,
     bystanderLost: 0,
-    schemeTwistNegative: 7,
+    schemeTwistNegative: 6,
+    mastermindTacticUntaken: 0,
+    scenarioSpecificPenalty: 0,
+  };
+  const products = {
+    villainEscaped: 0,
+    bystanderLost: 0,
+    schemeTwistNegative: 1800,
     mastermindTacticUntaken: 0,
     scenarioSpecificPenalty: 0,
   };
   return {
     inputs: {
-      rounds: 32,
+      rounds: 29,
       victoryPoints: 103,
-      bystandersRescued: 30,
-      escapes: 1,
-      penaltyEventCounts: penalties,
+      bystandersRescued: 11,
+      escapes: 0,
+      penaltyEventCounts: counts,
     },
-    weightedRoundCost: 1600,
-    weightedPenaltyTotal: 2200,
-    penaltyBreakdown: penalties,
-    weightedBystanderReward: 6000,
+    weightedRoundCost: 1450,
+    weightedPenaltyTotal: 1800,
+    penaltyBreakdown: products,
+    weightedBystanderReward: 2200,
     weightedVictoryPointReward: 1030,
-    rawScore: 920,
+    rawScore: 20,
     parScore: -300,
-    finalScore: 1220,
+    finalScore: 320,
     scoringConfigVersion: 1,
     ...over,
   };
 }
 
-describe('EndgameSummary (WP-583 breakdown + grade)', () => {
-  test('renders the component breakdown verbatim from scoreBreakdown', () => {
+describe('EndgameSummary (WP-584 worked calculation)', () => {
+  test('renders the formula-first worked calculation with derived weights', () => {
     const wrapper = mount(EndgameSummary, {
-      props: { gameOver: gameOver(), competitiveScore: score({ finalScore: 1220, scoreBreakdown: breakdown() }) },
+      props: { gameOver: gameOver(), competitiveScore: score({ finalScore: 320, scoreBreakdown: breakdown() }) },
     });
-    assert.ok(wrapper.find('[data-testid="arena-hud-score-breakdown"]').exists(), 'breakdown renders');
-    assert.equal(wrapper.find('[aria-label="breakdownRounds"]').text(), '32');
-    assert.equal(wrapper.find('[aria-label="breakdownBystandersRescued"]').text(), '30');
-    assert.equal(wrapper.find('[aria-label="breakdownVictoryPoints"]').text(), '103');
-    assert.equal(wrapper.find('[aria-label="breakdownSchemeTwists"]').text(), '7');
-    assert.equal(wrapper.find('[aria-label="breakdownVillainEscapes"]').text(), '1');
-    assert.equal(wrapper.find('[aria-label="breakdownParScore"]').text(), '-300');
+    assert.ok(wrapper.find('[data-testid="arena-hud-score-breakdown"]').exists(), 'worked calc renders');
+
+    // Symbolic formula line — weights DERIVED (50/200/10), not hardcoded.
+    const formula = wrapper.find('[aria-label="rawFormula"]').text();
+    assert.ok(formula.includes('(Rounds × 50)'), 'round weight derived to 50');
+    assert.ok(formula.includes('Penalties'), 'penalties named symbolically');
+    assert.ok(formula.includes('(Bystanders × 200)'), 'bystander weight derived to 200');
+    assert.ok(formula.includes('(VP × 10)'), 'VP weight derived to 10');
+
+    // Substituted line — match values plugged in; penalties expanded to nonzero types.
+    const substituted = wrapper.find('[aria-label="rawSubstituted"]').text();
+    assert.ok(substituted.includes('(29 × 50)'), 'rounds substituted');
+    assert.ok(substituted.includes('(6 × 300)'), 'scheme twists expanded (6 × 300)');
+    assert.ok(substituted.includes('(11 × 200)'), 'bystanders substituted');
+    assert.ok(substituted.includes('(103 × 10)'), 'VP substituted');
+
+    // Products, raw result, final.
+    assert.ok(wrapper.find('[aria-label="rawProducts"]').text().includes('1450 + 1800 − 2200 − 1030'));
+    assert.ok(wrapper.find('[aria-label="rawResult"]').text().includes('20'), 'raw = 20');
+    assert.ok(wrapper.find('[aria-label="finalSubstituted"]').text().includes('20 − (−300)'), 'final = raw − par');
+    assert.ok(wrapper.find('[aria-label="finalResult"]').text().includes('320'), 'final = 320');
   });
 
   test('shows the grade badge matching gradeForFinalScore for representative bands', () => {
