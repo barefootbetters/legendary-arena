@@ -21,7 +21,7 @@ source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\ai-second-brain.md (this page — https://ewiki.legendary-arena.com/ai-second-brain/)
   - ../docs/ai/DECISIONS.md#d-24341
   - ../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md
-last-reviewed: 2026-08-11
+last-reviewed: 2026-08-22
 ---
 
 # AI Second Brain
@@ -122,6 +122,17 @@ to the knowledge layer.
 10. **Human Authority.** AI may recommend; humans decide. AI-generated output
     stays reviewable, replaceable, and overridable. *Rule: the operator remains
     accountable.*
+
+**The primary agent is the second brain's *active surface*.** Principle 4 is
+usually read as "the data outlives the tool," but it has a second, sharper
+reading: the tool is the *disposable half of a working pair*. The knowledge base
+is long-term memory; the agent in front of it — Claude Code today, another
+framework tomorrow — is the working mind that navigates, extracts, cites, and
+improves that memory under operator authority. Swapping that surface must never
+migrate a single fact: the store remains the system of record, the agent remains
+replaceable. Naming the agent as the *active surface* rather than an outside
+consumer is what keeps *Model Independence* honest — the mind is interchangeable
+precisely because the memory it works over never moves.
 
 ### Proposed stack
 
@@ -262,6 +273,33 @@ principles; the choice is convenience vs minimalism, and it is recorded in
 > [SCHEMA](SCHEMA.md) keeps off entity pages. They live in the operator runbook,
 > [`docs/ops/AI_SECOND_BRAIN_RUNBOOK.md`](../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md);
 > this page stays the descriptive design record it realizes.
+
+### Knowledge extraction (operator-triggered)
+
+Alongside the deterministic vector-ingestion pipeline sits an explicit,
+**operator-triggered** extraction loop — the practical mechanism for turning raw
+source material into structured knowledge, and the thing usually meant by "have
+the AI read this and file it." Where the ingestion pipeline feeds the vector
+layer in bulk, this loop produces *authored* notes one source at a time:
+
+1. The operator supplies source material — a transcript, meeting notes, a
+   research PDF, a video summary.
+2. A purpose-specific skill produces clean, cited, linked Markdown that preserves
+   provenance (source, date, domain), in the domain's own voice profile.
+3. The output is written as **Transient or Reference** class only — never
+   Authoritative.
+4. Optionally, the relevant domain `INDEX.md` gains a link and a one-line
+   description, so the note is reachable by navigation.
+5. **No automatic promotion to Authoritative ever occurs** — promotion stays a
+   deliberate human act (see
+   [Promotion](#knowledge-governance-how-knowledge-enters-moves-and-earns-authority)).
+
+It is never an always-on daemon: it runs only when invoked, and its output is
+subject to the same quality gates and promotion rules as any other artifact. This
+is the sanctioned *manual* way knowledge enters — the mirror image of
+[No always-on autonomous ingestion](#scope-boundaries-what-this-deliberately-is-not),
+which rules out the *automatic* way for exactly the same reason: the operator,
+not a background process, decides what earns a place in the corpus.
 
 ### Knowledge-query MCP surface
 
@@ -538,6 +576,32 @@ design intends a lightweight, reviewable record — query logs, citation failure
 outcomes — that the operator periodically reads to spot missing rules, checks, or
 templates. It is an operator-reviewed log, not an auto-applied learning loop; the
 capture format is build detail for the Work Packet.
+
+### Persistent context files
+
+Every substantial agent session loads a small, version-controlled set of
+high-signal Markdown files that give the agent its *operating context* — identity
+and non-negotiable rules, current priorities, routing guidance, and how knowledge
+earns authority. They are the working analogue of the per-domain `INDEX.md` files
+one level up: where an index routes to *documents*, these route the *agent's own
+posture*. Typical contents:
+
+- Root identity and non-negotiable operating rules
+- Current active Work Packets / priorities
+- Domain routing guidance (which domain owns a question)
+- The promotion discipline — how knowledge moves Transient → Reference →
+  Authoritative (see
+  [Knowledge governance](#knowledge-governance-how-knowledge-enters-moves-and-earns-authority))
+
+They are emphatically **not the system of record for facts** — they are operating
+context, not knowledge, and never a competing truth store (*Single Source of
+Truth*). Because they are ordinary Markdown under operator control, they inherit
+the same ownership, auditability, and recovery properties as the rest of the
+corpus, and the agent may update them only under the same review discipline that
+governs any other change. This repo already runs this layer: `.claude/CLAUDE.md`,
+the `.claude/rules/*.md` enforcement files, and the memory index are exactly
+these files — high-signal, version-controlled, loaded every session, and edited
+under review like any other governed artifact.
 
 ### Backup and recovery
 
