@@ -144,6 +144,12 @@ to alert the operator. Only `docs/ai/NUMBER-LEDGER.md` carries the driver
 ignores `.gitattributes`, so a concurrent ledger commit still shows a
 reserve-only PR as `DIRTY / CONFLICTING` until you rebase locally.
 
+Nor would a *custom* driver that sorts+uniques rescue it: custom drivers
+are not self-installing (each clone must define them in its own
+`.git/config`), are still local-only and ignored by GitHub's server-side
+merge, and so would not remove the reserve-first rule that is doing the
+real work.
+
 ### Recommended workflow (happy path)
 
 The canonical end-to-end sequence for drafting a packet while other
