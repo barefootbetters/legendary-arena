@@ -1,7 +1,7 @@
 # Wiki Index
 
-> **60 / 76** entity pages.
-> Last regenerated: 2026-08-14.
+> **61 / 76** entity pages.
+> Last regenerated: 2026-08-22.
 > See [SCHEMA.md](SCHEMA.md) for the entity-page contract and
 > [README.md](README.md) for purpose, conventions, and authority —
 > including [§ Tradeoffs](README.md#tradeoffs) on what the LLM-wiki
@@ -174,6 +174,15 @@ Cross-cutting governance, methodology, and readiness assessments.
   Claude Code sessions on WP/EC contracts → GitHub → auto-deploy via
   Render + Cloudflare on merge to `main`; a nightly CI triage agent
   turns sweep results into new work packets.
+- [GitHub Parallel-Session Workflow](github-parallel-session-workflow.md) —
+  *(draft)* best practices and pain points for running two or more Claude
+  Code sessions against GitHub at once. Separates the **working-tree race**
+  (shared HEAD/index — solved completely by worktrees) from the
+  **shared-file merge collision** (`WORK_INDEX.md`, `EC_INDEX.md`,
+  `DECISIONS.md`, the roadmap mindmap — *not* solved by worktrees; needs
+  reserve-first, `merge=union`, and table regeneration). Answers the
+  worktree question directly and catalogs the pCloud silent-revert /
+  `[conflicted N]` / squash-merge-audit gotchas.
 - [Disaster Recovery](disaster-recovery.md) — Operator playbook (mirror
   of `docs/ops/DISASTER_RECOVERY.md`) for restoring **service** after
   infrastructure loss: the two backup layers (Render managed + the WP-416
