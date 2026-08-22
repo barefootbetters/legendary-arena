@@ -39,6 +39,55 @@ export interface MyCompetitiveScore {
   readonly scoringConfigVersion: number;
   readonly stateHash: string;
   readonly createdAt: string;
+  // why: WP-583 — the server already returns the full component breakdown inside
+  // `record.scoreBreakdown` (built + persisted server-side); the endgame screen
+  // renders it verbatim. Declared as a local structural shape (mirroring the engine
+  // `ScoreBreakdown`) because this file must not import engine/server types.
+  // Optional: a record without a breakdown still typechecks and renders the headline.
+  readonly scoreBreakdown?: CompetitiveScoreBreakdown;
+}
+
+/**
+ * Per-penalty-event counts, keyed by the engine's PenaltyEventType members.
+ * Declared locally (no engine import) — mirrors the engine `PenaltyEventType`
+ * union; the server is authoritative on the keys.
+ */
+export interface CompetitivePenaltyCounts {
+  readonly villainEscaped: number;
+  readonly bystanderLost: number;
+  readonly schemeTwistNegative: number;
+  readonly mastermindTacticUntaken: number;
+  readonly scenarioSpecificPenalty: number;
+}
+
+/**
+ * The derived inputs a breakdown was computed from (structural mirror of the
+ * engine `ScoringInputs`).
+ */
+export interface CompetitiveScoringInputs {
+  readonly rounds: number;
+  readonly victoryPoints: number;
+  readonly bystandersRescued: number;
+  readonly escapes: number;
+  readonly penaltyEventCounts: CompetitivePenaltyCounts;
+}
+
+/**
+ * The full competitive score component breakdown, a local structural mirror of
+ * the engine `ScoreBreakdown` (the server returns it verbatim inside a record).
+ * The client never recomputes these — it renders them.
+ */
+export interface CompetitiveScoreBreakdown {
+  readonly inputs: CompetitiveScoringInputs;
+  readonly weightedRoundCost: number;
+  readonly weightedPenaltyTotal: number;
+  readonly penaltyBreakdown: CompetitivePenaltyCounts;
+  readonly weightedBystanderReward: number;
+  readonly weightedVictoryPointReward: number;
+  readonly rawScore: number;
+  readonly parScore: number;
+  readonly finalScore: number;
+  readonly scoringConfigVersion: number;
 }
 
 /**

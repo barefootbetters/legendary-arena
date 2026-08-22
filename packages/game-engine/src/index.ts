@@ -230,6 +230,12 @@ export {
   buildScoreBreakdown,
   validateScoringConfig,
 } from "./scoring/parScoring.logic.js";
+// why: WP-583 / D-24392 — the grade band contract is exported so the endgame
+// badge (and any future leaderboard grade) bind to ONE band definition, mirroring
+// the D-24366 menace-tier export rationale. The engine ships the enum; the client
+// owns the player-facing word ("Legendary"), so no display copy crosses the boundary.
+export { SCORE_GRADES, gradeForFinalScore } from "./scoring/parScoring.grade.js";
+export type { ScoreGrade } from "./scoring/parScoring.grade.js";
 
 // why: scoringConfigLoader value exports were moved to the Setup-Tooling
 // Surface under WP-144 / D-14401 (subpath `./setup` = src/setup-tooling/index.ts).
