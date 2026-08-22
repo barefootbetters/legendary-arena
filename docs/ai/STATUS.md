@@ -7,6 +7,29 @@
 
 ## Current State
 
+### WP-584 — Endgame score as a worked calculation (EC-619 / D-24393) shipped (2026-08-22)
+
+Follow-up to WP-583: the endgame listed the score components but didn't show the arithmetic. The
+operator asked for it "like a math teacher grading a student's work". The flat `.score-breakdown`
+`<dl>` is now a worked solution: the givens, then `Raw = (Rounds × 50) + Penalties − (Bystanders ×
+200) − (VP × 10)`, the same line with the match values substituted, the weighted products summed, and
+`= Raw`; then `Final = Raw − PAR = … = Final` with the grade. **Operator choices (confirmed at draft
+via an inline mockup): formula-first and whole numbers** (centesimal integers, no ÷100).
+
+The per-term weights are **derived** from the breakdown (`product ÷ count`, guarded) inside a new pure
+`vfx/scoreCalcDisplay.ts` — never hardcoded client-side, so the shown formula can't drift from the
+engine's real weights (the same no-duplication discipline as the D-24367 grade/menace boundary); a
+zero-count term shows its `0` product with no invented weight. Values are rendered verbatim from
+`record.scoreBreakdown` (WP-578/D-24387). `competitionApi.ts` is unchanged (WP-583's shape already
+carries every field), and there's **no engine / server / persistence / hash change** — a pure client
+reformat. arena-client **1372→1378/0** (worked-calc + helper tests replace the WP-583 flat-list test);
+`vue-tsc` clean; `pnpm -r --no-bail test` green. **D-24026 live-verify: operator-pending** — finish a
+ranked match on `play.legendary-arena.com` and read the worked calculation.
+
+**Also this session:** answered the operator's design question on the scheme-twist penalty — the count
+is largely tempo (win faster → fewer twists surface), the 3.00 weight is the printed rulebook's own
+4:3:1 anchor (D-24342), and it's tunable if a future WP wants to reduce it.
+
 ### WP-583 — Endgame score breakdown + grade badge (EC-618 / D-24392) shipped (2026-08-22)
 
 Follow-up to WP-578: the endgame screen showed only two opaque numbers (`Competitive score: 1220`,
