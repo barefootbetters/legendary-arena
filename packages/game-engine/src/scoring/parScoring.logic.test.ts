@@ -322,6 +322,26 @@ describe('parScoring logic (WP-048)', () => {
     assert.strictEqual(matchedFinal, 0);
   });
 
+  // Test 9b — buildScoreBreakdown surfaces parBaseline for the PAR derivation (WP-587)
+  it('buildScoreBreakdown includes a copied parBaseline (not aliased) so the endgame can show PAR derivation', () => {
+    const config = makeReferenceConfig();
+    const inputs = makeInputs({ victoryPoints: 15, bystandersRescued: 3 });
+    const breakdown = buildScoreBreakdown(inputs, config);
+
+    // The baseline is surfaced verbatim so the client can render
+    // "(escapesPar × 100) − (bystandersPar × 200) − (victoryPointsPar × 10) = parScore".
+    assert.deepStrictEqual(breakdown.parBaseline, {
+      bystandersPar: 3,
+      victoryPointsPar: 15,
+      escapesPar: 2,
+    });
+    // why: JSON-serializable, no-shared-reference invariant (D-2801 / D-4806) — the
+    // breakdown must not alias the config's parBaseline object.
+    assert.notStrictEqual(breakdown.parBaseline, config.parBaseline);
+    // parScore must be computeParScore of exactly this baseline (the derivation is faithful).
+    assert.strictEqual(breakdown.parScore, computeParScore(config));
+  });
+
   // Test 10 — reject zero or negative weights
   it('validateScoringConfig rejects configs with zero or negative component weights', () => {
     const baseConfig = makeReferenceConfig();

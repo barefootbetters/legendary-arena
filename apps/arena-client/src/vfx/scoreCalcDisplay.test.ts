@@ -47,7 +47,7 @@ describe('buildWorkedScoreCalc (WP-584)', () => {
     );
     assert.equal(
       calc.substituted,
-      '(6 × 300) − (11 × 200) − (103 × 10)',
+      '(6 scheme twists × 300) − (11 × 200) − (103 × 10)',
     );
     assert.equal(calc.products, '1800 − 2200 − 1030');
     assert.equal(calc.rawScore, -1430);
@@ -91,8 +91,14 @@ describe('buildWorkedScoreCalc (WP-584)', () => {
         },
       }),
     );
-    // villainEscaped (2×100) + bystanderLost (1×400) + schemeTwistNegative (4×300)
-    assert.ok(calc.substituted.includes('(2 × 100) + (1 × 400) + (4 × 300)'), calc.substituted);
+    // villainEscaped (2×100) + bystanderLost (1×400) + schemeTwistNegative (4×300),
+    // each named per WP-587 (singular/plural correct).
+    assert.ok(
+      calc.substituted.includes(
+        '(2 villains escaped × 100) + (1 bystander lost × 400) + (4 scheme twists × 300)',
+      ),
+      calc.substituted,
+    );
   });
 
   test('no penalties substitutes to 0', () => {
@@ -163,5 +169,120 @@ describe('buildWorkedScoreCalc (WP-584)', () => {
     const calc = buildWorkedScoreCalc(breakdown({ parScore: 150, rawScore: 20, finalScore: -130 }));
     assert.equal(calc.finalSubstituted, '20 − 150');
     assert.equal(calc.finalScore, -130);
+  });
+
+  test('single-count penalty uses the singular label', () => {
+    const calc = buildWorkedScoreCalc(
+      breakdown({
+        inputs: {
+          rounds: 10,
+          victoryPoints: 20,
+          bystandersRescued: 3,
+          escapes: 1,
+          penaltyEventCounts: {
+            villainEscaped: 1,
+            bystanderLost: 0,
+            schemeTwistNegative: 1,
+            mastermindTacticUntaken: 0,
+            scenarioSpecificPenalty: 0,
+          },
+        },
+        penaltyBreakdown: {
+          villainEscaped: 100,
+          bystanderLost: 0,
+          schemeTwistNegative: 300,
+          mastermindTacticUntaken: 0,
+          scenarioSpecificPenalty: 0,
+        },
+      }),
+    );
+    assert.ok(calc.substituted.includes('(1 villain escaped × 100)'), calc.substituted);
+    assert.ok(calc.substituted.includes('(1 scheme twist × 300)'), calc.substituted);
+  });
+});
+
+describe('PAR derivation (WP-587)', () => {
+  test('undefined when the breakdown carries no parBaseline (records predating WP-587)', () => {
+    const calc = buildWorkedScoreCalc(breakdown());
+    assert.equal(calc.parDerivation, undefined);
+    // The PAR value itself is still available for the "= PAR" line.
+    assert.equal(calc.parScore, -300);
+  });
+
+  test('derives PAR from the baseline, reusing the match weights (escape weight derivable)', () => {
+    const calc = buildWorkedScoreCalc(
+      breakdown({
+        parScore: -1150,
+        parBaseline: { bystandersPar: 5, victoryPointsPar: 25, escapesPar: 1 },
+        inputs: {
+          rounds: 20,
+          victoryPoints: 60,
+          bystandersRescued: 18,
+          escapes: 1,
+          penaltyEventCounts: {
+            villainEscaped: 1,
+            bystanderLost: 0,
+            schemeTwistNegative: 7,
+            mastermindTacticUntaken: 0,
+            scenarioSpecificPenalty: 0,
+          },
+        },
+        penaltyBreakdown: {
+          villainEscaped: 100,
+          bystanderLost: 0,
+          schemeTwistNegative: 2100,
+          mastermindTacticUntaken: 0,
+          scenarioSpecificPenalty: 0,
+        },
+        weightedBystanderReward: 3600,
+        weightedVictoryPointReward: 600,
+      }),
+    );
+    assert.ok(calc.parDerivation);
+    assert.equal(
+      calc.parDerivation?.formula,
+      '(Escapes × 100) − (Bystanders × 200) − (VP × 10)',
+    );
+    assert.equal(
+      calc.parDerivation?.substituted,
+      '(1 × 100) − (5 × 200) − (25 × 10)',
+    );
+    assert.deepEqual(calc.parDerivation?.baseline, {
+      escapes: 1,
+      bystanders: 5,
+      victoryPoints: 25,
+    });
+    // The PAR value shown is verbatim, never recomputed from the substituted line.
+    assert.equal(calc.parScore, -1150);
+  });
+
+  test('escape weight shows symbolically when the match had no escape (not fabricated)', () => {
+    const calc = buildWorkedScoreCalc(
+      breakdown({
+        parScore: -1150,
+        parBaseline: { bystandersPar: 5, victoryPointsPar: 25, escapesPar: 1 },
+        // default fixture has escapes: 0 → villainEscaped weight not derivable.
+        weightedBystanderReward: 3600,
+        weightedVictoryPointReward: 600,
+        inputs: {
+          rounds: 20,
+          victoryPoints: 60,
+          bystandersRescued: 18,
+          escapes: 0,
+          penaltyEventCounts: {
+            villainEscaped: 0,
+            bystanderLost: 0,
+            schemeTwistNegative: 7,
+            mastermindTacticUntaken: 0,
+            scenarioSpecificPenalty: 0,
+          },
+        },
+      }),
+    );
+    // Never invents a number: the escape term names the weight symbolically.
+    assert.ok(calc.parDerivation?.substituted.includes('(1 × escape penalty)'), calc.parDerivation?.substituted);
+    assert.ok(calc.parDerivation?.formula.includes('Escapes −') || calc.parDerivation?.formula.startsWith('Escapes'), calc.parDerivation?.formula);
+    // The reward terms still show their derived weights.
+    assert.ok(calc.parDerivation?.substituted.includes('(5 × 200) − (25 × 10)'), calc.parDerivation?.substituted);
   });
 });

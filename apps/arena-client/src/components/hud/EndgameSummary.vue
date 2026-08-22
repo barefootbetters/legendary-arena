@@ -5,7 +5,7 @@ import type { UIGameOverState } from '@legendary-arena/game-engine';
 // import; the `import type` above cannot carry it. The engine bands the number;
 // the player-facing word comes from the client `gradeDisplay` helper (D-24392).
 import { gradeForFinalScore } from '@legendary-arena/game-engine';
-import { gradeLabel, gradeClass, gradeAriaText } from '../../vfx/gradeDisplay';
+import { gradeLabel, gradeClass, gradeAriaText, buildGradeScale } from '../../vfx/gradeDisplay';
 import { buildWorkedScoreCalc } from '../../vfx/scoreCalcDisplay';
 import type { MyCompetitiveScore } from '../../lib/api/competitionApi';
 
@@ -67,6 +67,12 @@ export default defineComponent({
       breakdown.value ? buildWorkedScoreCalc(breakdown.value) : null,
     );
 
+    // why: WP-587 — the full grade scale (every band, its final-score range, and a
+    // "you are here" marker) so the player sees what a B / A / Legendary needs, not
+    // just their own grade. The engine ships the numeric bands (SCORE_GRADE_BANDS);
+    // buildGradeScale owns the words + range formatting (D-24396 / D-24392 boundary).
+    const gradeScale = computed(() => (grade.value ? buildGradeScale(grade.value) : null));
+
     return {
       hasPar,
       hasScores,
@@ -74,6 +80,7 @@ export default defineComponent({
       gradeBadgeClass,
       gradeBadgeAria,
       workedCalc,
+      gradeScale,
     };
   },
 });
@@ -149,11 +156,55 @@ export default defineComponent({
           <div class="worked-line worked-indent worked-result" aria-label="rawResult">= {{ workedCalc.rawScore }}</div>
         </div>
 
+        <!-- why: WP-587 — show where PAR came from (the same formula applied to the
+             scenario's expected baseline), not just the final PAR value. Absent for
+             records persisted before WP-587 (no parBaseline in the stored breakdown);
+             the Final block below then still shows the verbatim PAR value. -->
+        <div v-if="workedCalc.parDerivation" class="worked-block" data-testid="arena-hud-par-derivation">
+          <div class="worked-heading">PAR for this scenario</div>
+          <div class="worked-givens" aria-label="par baseline">
+            <span class="worked-given">Expected escapes <strong>{{ workedCalc.parDerivation.baseline.escapes }}</strong></span>
+            <span class="worked-given">Expected bystanders <strong>{{ workedCalc.parDerivation.baseline.bystanders }}</strong></span>
+            <span class="worked-given">Expected VP <strong>{{ workedCalc.parDerivation.baseline.victoryPoints }}</strong></span>
+          </div>
+          <div class="worked-line" aria-label="parFormula">PAR = {{ workedCalc.parDerivation.formula }}</div>
+          <div class="worked-line worked-indent" aria-label="parSubstituted">= {{ workedCalc.parDerivation.substituted }}</div>
+          <div class="worked-line worked-indent worked-result" aria-label="parResult">= {{ workedCalc.parScore }}</div>
+        </div>
+
         <div class="worked-block">
           <div class="worked-heading">Final score</div>
           <div class="worked-line" aria-label="finalSubstituted">Final = Raw − PAR = {{ workedCalc.finalSubstituted }}</div>
           <div class="worked-line worked-indent worked-result" aria-label="finalResult">= {{ workedCalc.finalScore }}</div>
         </div>
+      </div>
+
+      <!-- why: WP-587 — the grade scale: every band with its final-score range and a
+           marker for the grade the player earned, so "Grade A" is legible in context
+           (what a B / A / Legendary needs). Shown whenever a competitive score exists
+           (grade needs only finalScore); independent of the optional breakdown. The
+           current row is marked by TEXT ("← your score") + aria-current, not colour
+           alone. -->
+      <div
+        v-if="gradeScale"
+        class="grade-scale"
+        data-testid="arena-hud-grade-scale"
+        aria-label="grade scale"
+      >
+        <div class="worked-heading">Grade scale (final score vs PAR — lower is better)</div>
+        <ul class="grade-scale-list">
+          <li
+            v-for="entry in gradeScale"
+            :key="entry.grade"
+            class="grade-scale-row"
+            :class="{ 'grade-scale-row--current': entry.isCurrent }"
+            :aria-current="entry.isCurrent ? 'true' : undefined"
+          >
+            <span class="grade-scale-label">{{ entry.label }}</span>
+            <span class="grade-scale-range">{{ entry.range }}</span>
+            <span v-if="entry.isCurrent" class="grade-scale-marker">← your score</span>
+          </li>
+        </ul>
       </div>
     </section>
 
@@ -297,6 +348,51 @@ dd {
 
 .worked-result {
   font-weight: 700;
+}
+
+/* why: WP-587 — the grade scale. The current row is marked by TEXT ("← your
+   score") + a left border, not colour alone, so it is legible with colours
+   disabled or to a screen reader. */
+.grade-scale {
+  margin: 0.25rem 0 0;
+}
+
+.grade-scale-list {
+  list-style: none;
+  margin: 0.15rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.grade-scale-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+  padding: 0.1rem 0.3rem;
+  border-left: 3px solid transparent;
+  font-variant-numeric: tabular-nums;
+}
+
+.grade-scale-row--current {
+  border-left-color: var(--color-foreground);
+  font-weight: 700;
+  background: rgba(128, 128, 128, 0.12);
+}
+
+.grade-scale-label {
+  min-width: 5.5rem;
+}
+
+.grade-scale-range {
+  opacity: 0.8;
+}
+
+.grade-scale-marker {
+  font-size: 0.8rem;
+  opacity: 0.9;
 }
 
 /* why: WP-583 — the grade badge. Meaning is carried by the text label; the

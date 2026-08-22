@@ -21,13 +21,41 @@ import type { CompetitiveScoreBreakdown } from '../lib/api/competitionApi';
 // the arithmetic reads cleanly rather than with a hyphen.
 const MINUS = '−';
 
+// why: WP-587 — the substituted penalty term names the penalty ("7 scheme twists"),
+// not a bare "(7 × 300)", per the operator ("just say 7 scheme twists, not 7
+// penalties"). Singular/plural so "1 villain escaped" reads correctly.
+const PENALTY_LABELS: Record<
+  'villainEscaped' | 'bystanderLost' | 'schemeTwistNegative' | 'mastermindTacticUntaken' | 'scenarioSpecificPenalty',
+  { readonly one: string; readonly many: string }
+> = {
+  villainEscaped: { one: 'villain escaped', many: 'villains escaped' },
+  bystanderLost: { one: 'bystander lost', many: 'bystanders lost' },
+  schemeTwistNegative: { one: 'scheme twist', many: 'scheme twists' },
+  mastermindTacticUntaken: { one: 'tactic untaken', many: 'tactics untaken' },
+  scenarioSpecificPenalty: { one: 'scenario penalty', many: 'scenario penalties' },
+};
+
+/** The PAR-derivation strings the endgame screen shows below the raw score. */
+export interface ParDerivation {
+  /** Symbolic formula, e.g. "(Escapes × 100) − (Bystanders × 200) − (VP × 10)". */
+  readonly formula: string;
+  /** The formula with baseline counts substituted, e.g. "(1 × 100) − (5 × 200) − (25 × 10)". */
+  readonly substituted: string;
+  /** The scenario baseline counts, for the "expected" givens row. */
+  readonly baseline: {
+    readonly escapes: number;
+    readonly bystanders: number;
+    readonly victoryPoints: number;
+  };
+}
+
 /** The worked-calculation strings + values the endgame screen renders. */
 export interface WorkedScoreCalc {
   /** "What happened" inputs, in display order. */
   readonly givens: ReadonlyArray<{ readonly label: string; readonly value: number }>;
   /** Symbolic formula, e.g. "Penalties − (Bystanders × 200) − (VP × 10)". */
   readonly formula: string;
-  /** The same formula with match values substituted, e.g. "(6 × 300) − (11 × 200) − (103 × 10)". */
+  /** The same formula with match values substituted, e.g. "(6 scheme twists × 300) − (11 × 200) − (103 × 10)". */
   readonly substituted: string;
   /** The weighted products summed, e.g. "1800 − 2200 − 1030". */
   readonly products: string;
@@ -35,6 +63,14 @@ export interface WorkedScoreCalc {
   readonly rawScore: number;
   /** PAR score (verbatim). */
   readonly parScore: number;
+  /**
+   * How PAR was derived from the scenario baseline (WP-587). Absent when the
+   * breakdown carries no `parBaseline` (records persisted before WP-587) — the
+   * screen then shows just the PAR value, not its derivation. Explicit `undefined`
+   * in the union so `buildWorkedScoreCalc` may set it from a maybe-undefined value
+   * under `exactOptionalPropertyTypes`.
+   */
+  readonly parDerivation?: ParDerivation | undefined;
   /** "Raw − PAR" with values substituted, e.g. "20 − (−300)". */
   readonly finalSubstituted: string;
   /** Final score (verbatim). */
@@ -70,14 +106,24 @@ function substitutedTerm(count: number, weight: number | null, product: number):
 }
 
 /**
+ * Names a penalty count, e.g. "7 scheme twists" or "1 villain escaped".
+ * Singular below 2 so "1 villain escaped" reads correctly.
+ */
+function penaltyLabel(type: keyof typeof PENALTY_LABELS, count: number): string {
+  const labels = PENALTY_LABELS[type];
+  return `${count} ${count === 1 ? labels.one : labels.many}`;
+}
+
+/**
  * Builds the substituted-penalty expression from the nonzero penalty events,
- * e.g. "(6 × 300)" or "(6 × 300) + (1 × 100)"; "0" when no penalty fired.
+ * naming each penalty per WP-587, e.g. "(7 scheme twists × 300)" or
+ * "(7 scheme twists × 300) + (1 villain escaped × 100)"; "0" when none fired.
  */
 function penaltiesSubstituted(breakdown: CompetitiveScoreBreakdown): string {
   const counts = breakdown.inputs.penaltyEventCounts;
   const contributions = breakdown.penaltyBreakdown;
   // why: fixed order so the expansion reads the same across matches.
-  const order: ReadonlyArray<keyof typeof counts> = [
+  const order: ReadonlyArray<keyof typeof PENALTY_LABELS> = [
     'villainEscaped',
     'bystanderLost',
     'schemeTwistNegative',
@@ -89,13 +135,78 @@ function penaltiesSubstituted(breakdown: CompetitiveScoreBreakdown): string {
     const count = counts[type];
     if (count > 0) {
       const weight = perUnitWeight(contributions[type], count);
-      parts.push(substitutedTerm(count, weight, contributions[type]));
+      // why: name the penalty in the count position ("7 scheme twists × 300"); when
+      // the per-unit weight is not derivable (should not happen for a nonzero count)
+      // fall back to the bare product so a number always shows.
+      parts.push(
+        weight === null
+          ? `${contributions[type]}`
+          : `(${penaltyLabel(type, count)} × ${weight})`,
+      );
     }
   }
   if (parts.length === 0) {
     return '0';
   }
   return parts.join(' + ');
+}
+
+/**
+ * Formats one PAR term: `(count × weight)` when the weight is derivable from the
+ * match, else `(count × <label>)` naming the weight symbolically — the PAR line
+ * never fabricates a weight number that was not part of the real computation.
+ */
+function parTerm(count: number, weight: number | null, weightLabel: string): string {
+  return weight === null ? `(${count} × ${weightLabel})` : `(${count} × ${weight})`;
+}
+
+/**
+ * Builds the PAR-derivation strings from the scenario baseline, reusing the same
+ * per-unit weights the raw-score formula derives (PAR uses the same config
+ * weights). Returns undefined when the breakdown carries no `parBaseline`
+ * (records persisted before WP-587).
+ *
+ * @param breakdown - The server-returned breakdown.
+ * @param bystanderWeight - Per-bystander reward derived from the match (or null).
+ * @param vpWeight - Per-VP reward derived from the match (or null).
+ * @returns The PAR-derivation strings, or undefined when no baseline is present.
+ */
+function buildParDerivation(
+  breakdown: CompetitiveScoreBreakdown,
+  bystanderWeight: number | null,
+  vpWeight: number | null,
+): ParDerivation | undefined {
+  const baseline = breakdown.parBaseline;
+  if (baseline === undefined) {
+    return undefined;
+  }
+  // why: PAR and the raw score share the config weights, so the escape penalty
+  // weight is the same one the match's villainEscaped term used; derivable only
+  // when the match itself had an escape, else shown symbolically.
+  const escapeWeight = perUnitWeight(
+    breakdown.penaltyBreakdown.villainEscaped,
+    breakdown.inputs.penaltyEventCounts.villainEscaped,
+  );
+
+  const formula =
+    `${formulaTerm('Escapes', escapeWeight)} ` +
+    `${MINUS} ${formulaTerm('Bystanders', bystanderWeight)} ` +
+    `${MINUS} ${formulaTerm('VP', vpWeight)}`;
+
+  const substituted =
+    `${parTerm(baseline.escapesPar, escapeWeight, 'escape penalty')} ` +
+    `${MINUS} ${parTerm(baseline.bystandersPar, bystanderWeight, 'bystander reward')} ` +
+    `${MINUS} ${parTerm(baseline.victoryPointsPar, vpWeight, 'VP reward')}`;
+
+  return {
+    formula,
+    substituted,
+    baseline: {
+      escapes: baseline.escapesPar,
+      bystanders: baseline.bystandersPar,
+      victoryPoints: baseline.victoryPointsPar,
+    },
+  };
 }
 
 /**
@@ -154,6 +265,7 @@ export function buildWorkedScoreCalc(breakdown: CompetitiveScoreBreakdown): Work
     products,
     rawScore: breakdown.rawScore,
     parScore: breakdown.parScore,
+    parDerivation: buildParDerivation(breakdown, bystanderWeight, vpWeight),
     finalSubstituted: `${breakdown.rawScore} ${MINUS} ${subtrahend(breakdown.parScore)}`,
     finalScore: breakdown.finalScore,
   };

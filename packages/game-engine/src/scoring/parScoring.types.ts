@@ -215,6 +215,15 @@ export interface ScoreBreakdown {
   readonly rawScore: number;
   /** PAR value under the same formula applied to the scenario baseline. */
   readonly parScore: number;
+  /**
+   * The scenario baseline `parScore` was computed from (spread-copied per D-2801).
+   *
+   * why (WP-587 / D-24396): the endgame screen shows PAR's DERIVATION — the same
+   * formula applied to these baseline counts — so the player can see where the PAR
+   * number came from, not just the final value. A derived, display-only projection
+   * of the config's `parBaseline`; it never re-enters scoring.
+   */
+  readonly parBaseline: ParBaseline;
   /** `rawScore - parScore`. Lower is better; negative is under PAR. */
   readonly finalScore: number;
   /** Config version that produced this breakdown. */
