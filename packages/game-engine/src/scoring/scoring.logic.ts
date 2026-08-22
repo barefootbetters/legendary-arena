@@ -24,6 +24,33 @@ import { WOUND_EXT_ID, BYSTANDER_EXT_ID } from '../setup/buildInitialGameState.j
 import { computeDynamicVillainVictoryPoints } from './dynamicVictoryPoints.js';
 
 /**
+ * Whether a card sitting in a victory pile (or escaped pile) is a Bystander.
+ *
+ * why (WP-586 / D-24395): a Bystander reaches a pile from TWO sources with
+ * different ext-ids — villain-deck bystanders (`bystander-villain-deck-NN`,
+ * registered in `G.villainDeckCardTypes` as 'bystander') AND supply-pile
+ * bystanders (`BYSTANDER_EXT_ID` = 'pile-bystander', attached to villains and
+ * awarded on defeat, NEVER entered in `villainDeckCardTypes`). This is the single
+ * source of truth for "is this a Bystander" so the final-score VP count, the HUD
+ * rescue count, and the competitive-score inputs (bystandersRescued /
+ * bystanderLost) can never disagree again. A single-source predicate that omitted
+ * the `pile-bystander` arm is exactly what undercounted the competitive score.
+ *
+ * @param gameState - Current game state (read-only).
+ * @param cardExtId - The card ext-id in the pile.
+ * @returns Whether the card is a Bystander from either source.
+ */
+export function isBystanderCard(
+  gameState: LegendaryGameState,
+  cardExtId: string,
+): boolean {
+  return (
+    gameState.villainDeckCardTypes[cardExtId] === 'bystander' ||
+    cardExtId === BYSTANDER_EXT_ID
+  );
+}
+
+/**
  * Computes final VP scores for all players.
  *
  * Pure function — reads G, returns FinalScoreSummary, never mutates.
@@ -108,11 +135,12 @@ export function computeFinalScores(
         villainVP += dynamicVp ?? (gameState.cardVictoryPoints?.[cardId] ?? VP_VILLAIN);
       } else if (cardType === 'henchman') {
         henchmanVP += gameState.cardVictoryPoints?.[cardId] ?? VP_HENCHMAN;
-      } else if (cardType === 'bystander' || cardId === BYSTANDER_EXT_ID) {
+      } else if (isBystanderCard(gameState, cardId)) {
         // why: bystanders in victory come from two sources — villain-deck
         // bystanders (tracked in G.villainDeckCardTypes) and rescued
-        // supply-pile bystanders (using BYSTANDER_EXT_ID from WP-017).
-        // Both contribute a flat VP_BYSTANDER.
+        // supply-pile bystanders (BYSTANDER_EXT_ID). isBystanderCard is the
+        // single source of truth for both (WP-586). Both contribute a flat
+        // VP_BYSTANDER.
         bystanderCount++;
       } else if (gameState.mastermind.tacticsDefeated.includes(cardId)) {
         // why: a victory-pile card whose id is in mastermind.tacticsDefeated is a

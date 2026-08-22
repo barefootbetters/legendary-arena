@@ -21,7 +21,7 @@
 import type { LegendaryGameState } from '../types.js';
 import type { ReplayResult } from '../replay/replay.types.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
-import { computeFinalScores } from './scoring.logic.js';
+import { computeFinalScores, isBystanderCard } from './scoring.logic.js';
 import type {
   PenaltyEventType,
   ScenarioScoringConfig,
@@ -71,10 +71,15 @@ export function deriveScoringInputs(
   // Bystanders in hand, deck, discard, or inPlay are not "rescued". This
   // mirrors the aggregation primitive used by buildUIState when WP-067
   // introduces countBystandersRescued.
+  // why: WP-586 / D-24395 — count BOTH bystander sources via the shared
+  // isBystanderCard predicate. The old test (villainDeckCardTypes only) silently
+  // dropped every supply-pile bystander (BYSTANDER_EXT_ID), undercounting rescues
+  // and under-crediting the competitive score — matching computeFinalScores' VP
+  // count and the HUD rescue count now.
   let bystandersRescued = 0;
   for (const zones of Object.values(gameState.playerZones)) {
     for (const cardExtId of zones.victory) {
-      if (gameState.villainDeckCardTypes[cardExtId] === 'bystander') {
+      if (isBystanderCard(gameState, cardExtId)) {
         bystandersRescued = bystandersRescued + 1;
       }
     }
@@ -94,7 +99,7 @@ export function deriveScoringInputs(
   // field (finalStateHash / PRE_WP080_HASH byte-identical; no BYSTANDERS_LOST counter).
   let bystanderLostCount = 0;
   for (const cardExtId of gameState.escapedPile) {
-    if (gameState.villainDeckCardTypes[cardExtId] === 'bystander') {
+    if (isBystanderCard(gameState, cardExtId)) {
       bystanderLostCount = bystanderLostCount + 1;
     }
   }

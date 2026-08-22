@@ -33,6 +33,7 @@ import {
 } from './parScoring.types.js';
 import type { LegendaryGameState } from '../types.js';
 import type { ReplayResult } from '../replay/replay.types.js';
+import { BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -653,5 +654,66 @@ describe('deriveScoringInputs bystanderLost producer (WP-528 / D-24339)', () => 
     const breakdown = buildScoreBreakdown(inputs, config);
     assert.equal(breakdown.penaltyBreakdown.bystanderLost, 2 * 500);
     assert.equal(breakdown.weightedPenaltyTotal, 1000);
+  });
+});
+
+/**
+ * Builds a terminal state with one player's victory pile populated. All other
+ * zones are empty arrays so computeFinalScores (called inside deriveScoringInputs
+ * to sum VP) can spread every zone without throwing.
+ */
+function makeTerminalStateWithVictoryPile(
+  victory: string[],
+  villainDeckCardTypes: Record<string, string>,
+): LegendaryGameState {
+  return {
+    playerZones: {
+      '0': { deck: [], hand: [], discard: [], inPlay: [], victory },
+    },
+    mastermind: { baseCardId: 'test-mastermind', tacticsDefeated: [] },
+    villainDeckCardTypes,
+    cardVictoryPoints: {},
+    escapedPile: [],
+    counters: {},
+  } as unknown as LegendaryGameState;
+}
+
+describe('deriveScoringInputs bystander count counts BOTH sources (WP-586 / D-24395)', () => {
+  it('AC-1: bystandersRescued counts supply-pile bystanders (BYSTANDER_EXT_ID) alongside villain-deck bystanders', () => {
+    // why: THE REGRESSION. A victory pile holds one villain-deck bystander
+    // ('bys-1') and two rescued supply-pile bystanders (BYSTANDER_EXT_ID). The
+    // pre-WP-586 test (villainDeckCardTypes only) saw just 1 — undercounting the
+    // reward and inflating the competitive score. The fix must see all 3.
+    const state = makeTerminalStateWithVictoryPile(
+      ['bys-1', BYSTANDER_EXT_ID, BYSTANDER_EXT_ID],
+      { 'bys-1': 'bystander' },
+    );
+    const inputs = deriveScoringInputs(makeReplayResult(10), state);
+    assert.equal(inputs.bystandersRescued, 3);
+    // why: control-revert — narrowing isBystanderCard back to villainDeckCardTypes
+    // only makes this fail (it would read 1), so the fix is non-vacuously tested.
+    assert.notEqual(inputs.bystandersRescued, 1);
+  });
+
+  it('AC-2: a victory pile of only supply-pile bystanders is fully counted', () => {
+    const state = makeTerminalStateWithVictoryPile(
+      [BYSTANDER_EXT_ID, BYSTANDER_EXT_ID, BYSTANDER_EXT_ID, BYSTANDER_EXT_ID],
+      {},
+    );
+    const inputs = deriveScoringInputs(makeReplayResult(10), state);
+    assert.equal(inputs.bystandersRescued, 4);
+  });
+
+  it('AC-3: bystanderLost counts supply-pile bystanders carried into G.escapedPile', () => {
+    // why: the escaped-pile mirror of the same bug — a Villain can carry a
+    // supply-pile bystander (BYSTANDER_EXT_ID) into escapedPile; the pre-fix
+    // narrow test missed it, undercounting the bystanderLost penalty.
+    const state = makeTerminalStateWithEscapedPile(
+      [BYSTANDER_EXT_ID, 'bys-1', 'vil-1'],
+      { 'bys-1': 'bystander', 'vil-1': 'villain' },
+    );
+    const inputs = deriveScoringInputs(makeReplayResult(10), state);
+    assert.equal(inputs.penaltyEventCounts.bystanderLost, 2);
+    assert.notEqual(inputs.penaltyEventCounts.bystanderLost, 1);
   });
 });

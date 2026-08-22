@@ -54,7 +54,7 @@ import { buildUIState } from '../ui/uiState.build.js';
 import { filterUIStateForAudience } from '../ui/uiState.filter.js';
 import { evaluateEndgame } from '../endgame/endgame.evaluate.js';
 import { applyPileDepletionResourceLoss } from '../rules/schemeResourceLoss.js';
-import { computeFinalScores } from '../scoring/scoring.logic.js';
+import { computeFinalScores, isBystanderCard } from '../scoring/scoring.logic.js';
 import { computeRawScore, computeParScore } from '../scoring/parScoring.logic.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { resetTurnEconomy } from '../economy/economy.logic.js';
@@ -725,10 +725,15 @@ export function deriveScoringInputsFromFinalState(
     victoryPoints = victoryPoints + playerBreakdown.totalVP;
   }
 
+  // why: WP-586 / D-24395 — count BOTH bystander sources via the shared
+  // isBystanderCard predicate (villain-deck bystanders AND supply-pile
+  // BYSTANDER_EXT_ID). The old villainDeckCardTypes-only test dropped every
+  // supply-pile bystander, so the PAR baseline undercounted rescues exactly
+  // as the live deriveScoringInputs did — kept symmetric by sharing one helper.
   let bystandersRescued = 0;
   for (const zones of Object.values(finalState.playerZones)) {
     for (const cardExtId of zones.victory) {
-      if (finalState.villainDeckCardTypes[cardExtId] === 'bystander') {
+      if (isBystanderCard(finalState, cardExtId)) {
         bystandersRescued = bystandersRescued + 1;
       }
     }
@@ -754,7 +759,7 @@ export function deriveScoringInputsFromFinalState(
   // so they are not double-counted. Derives from existing terminal state — no G field.
   let bystanderLostCount = 0;
   for (const cardExtId of finalState.escapedPile) {
-    if (finalState.villainDeckCardTypes[cardExtId] === 'bystander') {
+    if (isBystanderCard(finalState, cardExtId)) {
       bystanderLostCount = bystanderLostCount + 1;
     }
   }
