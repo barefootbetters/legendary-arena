@@ -47,7 +47,7 @@ source:
   - ../docs/ai/work-packets/WP-053a-par-artifact-scoring-config.md
   - ../docs/ai/work-packets/WP-422-seed-par-publication.md
   - ../docs/10-GLOSSARY.md
-last-reviewed: 2026-08-19
+last-reviewed: 2026-08-22
 ---
 
 # Scoring
@@ -194,15 +194,17 @@ the pipeline is pure.
 
 **Three of the five `PenaltyEventType` values have an engine producer today —
 `villainEscaped`, `schemeTwistNegative`, and `bystanderLost`.** The first two are
-pure end-of-match counter reads; `bystanderLost` counts the `bystander`-typed
-entries of `G.escapedPile`. The remaining two are hardcoded to `0` in
+pure end-of-match counter reads; `bystanderLost` counts the Bystander
+entries of `G.escapedPile` — where "Bystander" means **either** a villain-deck
+Bystander **or** a supply-pile Bystander (`BYSTANDER_EXT_ID`), resolved through the
+shared `isBystanderCard` predicate (WP-586 / D-24395). The remaining two are hardcoded to `0` in
 `deriveScoringInputs` as D-4801 safe-skips, each with a `// why:` comment naming
 its deferred follow-up:
 
 | Penalty event | Producer | Status |
 |---|---|---|
 | `villainEscaped` | `ENDGAME_CONDITIONS.ESCAPED_VILLAINS` counter | **live** |
-| `bystanderLost` | `G.escapedPile` (`bystander`-typed entries) | **live** — counts civilians carried away by escaping Villains (WP-528 / D-24339) |
+| `bystanderLost` | `G.escapedPile` (via `isBystanderCard`) | **live** — counts civilians carried away by escaping Villains, from **both** villain-deck and supply-pile Bystander sources (WP-528 / D-24339; two-source count corrected WP-586 / D-24395) |
 | `schemeTwistNegative` | `G.counters.schemeTwistCount` counter | **live** — counts every scheme twist (WP-529 / D-24340; no polarity classification) |
 | `mastermindTacticUntaken` | none | safe-skip `0` — derivable at endgame, but the semantics need per-turn history |
 | `scenarioSpecificPenalty` | none | safe-skip `0` — no generic producer; awaits structured scenario events |
@@ -215,6 +217,11 @@ invariants rank above both `villainEscaped` and the rescue reward — is
 **now produced** (from the escaped pile), so a match that lets civilians
 be carried away *is* scored on that loss; the rescue side
 (`bystanderReward`) is likewise live, derived from the victory pile.
+Both the loss and the rescue count **both** Bystander sources — villain-deck
+and supply-pile — through the shared `isBystanderCard` predicate, so the
+competitive score, the per-player VP tally, and the HUD rescue count always
+agree on what a Bystander is (WP-586 / D-24395; before that fix the scoring
+derivation counted only villain-deck Bystanders and undercounted rescues).
 
 Do not describe a still-safe-skipped penalty as "counted from" anything until
 its producer lands. Player-facing guidance written against the
@@ -307,9 +314,10 @@ future WPs per the source `// why:` comment.
     **every** scheme twist via `G.counters.schemeTwistCount` — no
     polarity/qualification (every Legendary twist advances the villain's
     scheme; the rulebook subtracts 3 × every twist)
-  - `bystanderLost` — **live** (WP-528 / D-24339); counts the
-    `bystander`-typed entries of `G.escapedPile` (civilians an escaping
-    Villain carried away, D-24314) — mirrors the `bystandersRescued`
+  - `bystanderLost` — **live** (WP-528 / D-24339); counts the Bystander
+    entries of `G.escapedPile` — both villain-deck and supply-pile Bystanders, via
+    the shared `isBystanderCard` predicate (civilians an escaping Villain carried
+    away, D-24314; two-source count corrected WP-586) — mirrors the `bystandersRescued`
     victory-zone count
 - **[Scheme Twist](scheme-twist.md).** The `schemeTwistNegative`
   penalty event ties scoring to twist outcomes. The Scheme Twist
@@ -413,6 +421,8 @@ future WPs per the source `// why:` comment.
 - WP-053a: `ScenarioScoringConfig` extension landed; PAR config authoring origin moved to `data/scoring-configs/` (D-5306a)
 - WP-332 + D-24119 arc (WP-333 → WP-340): score-submission transport went live (submit-by-`matchId`, faithful-replay verification, server-side scoring); `rounds` re-based from move count to completed play-turn count (D-24123 / D-24125)
 - INFRA PR #630 (2026-07-09): DB-gated server test baseline repaired — 11 pre-existing failures (invisible to CI, which never sets `TEST_DATABASE_URL`) fixed across the leaderboard read-layer and profile suites; the full DB-wired `apps/server` suite is 848/848 green serialized, so scoring/leaderboard test failures against a live test DB are regressions from here on
+- WP-585 + D-24394 (2026-08-22): rulebook-faithful scoring — the per-round cost (`roundCost` / `roundsPar` / `weightedRoundCost`) was **fully removed** (the printed rulebook has no round/turn penalty; Scheme Twists are its length proxy), so `RawScore = Penalties − (BP × bystanderReward) − (VP × vpReward)`; `scoringConfigVersion 2→3`, `rawScoreSemanticsVersion 1→2`; 128 seed PAR artifacts regenerated with no retroactive invalidation of existing rows
+- WP-586 + D-24395 (2026-08-22): the competitive-score derivation **undercounted rescued Bystanders** — it counted only villain-deck Bystanders and dropped supply-pile Bystanders (`BYSTANDER_EXT_ID`) from both `bystandersRescued` and `bystanderLost`; a single shared `isBystanderCard` predicate now backs the VP tally, the HUD rescue count, and both scoring-input paths (live + PAR), so all surfaces agree. Server-side derivation, no game-state-hash re-pin
 
 ## References
 
