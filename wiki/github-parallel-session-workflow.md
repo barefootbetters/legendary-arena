@@ -270,6 +270,18 @@ the contract landed some other way before deleting.
   (turning `main`'s `ledger:numbers:check` red repo-wide), **you yield** —
   retract your reservation in a one-line SPEC to un-break `main`, then
   re-reserve fresh.
+- **A reservation left unmerged still collides.** Reserve-first only closes
+  the contention window once the reserve PR is *on `main`* — a reservation
+  that sits open (unreviewed, or blocked behind a red check) is not yet
+  "owned," and a faster parallel session can claim the same number and merge
+  ahead of it. The mitigation is latency, not cleverness: keep reserve PRs
+  tiny and merge them promptly.
+- **Editing the ledger or an index directly on `main` reintroduces the
+  race.** The whole scheme assumes every claim flows through the
+  reserve-then-body path. A number or row hand-added straight to `main`
+  outside that path is invisible to a session that already read the ledger,
+  so both can end up on the same identifier. Route every reservation through
+  a PR, even a one-line one.
 
 ## Open Questions
 
