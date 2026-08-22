@@ -44,13 +44,32 @@ function simulateLatency(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, delay));
 }
 
+/**
+ * Stamp a successful live `/api/dash/*` fetch with LIVE provenance. Every server
+ * handler returns a bare `{ data }` envelope (`koaContext.body = { data }`) that
+ * carries no `source` or `updatedAt`, so a widget's freshness badge rendered
+ * blank in live mode. The client adds the provenance here — mirroring the
+ * analytics live fetchers (D-20601) and the DAU empty-LIVE sentinel — so the
+ * badge reads `LIVE · <time> ago`, matching how the analytics widgets present.
+ *
+ * A non-2xx response rejects inside `apiClient` BEFORE this stamp runs, so an
+ * unimplemented or failing endpoint still surfaces its error (never a false LIVE
+ * badge); only a genuine 2xx payload is stamped.
+ *
+ * @param data The payload unwrapped from the server's `{ data }` envelope.
+ * @returns A `ServiceResponse` carrying the payload plus LIVE provenance.
+ */
+export function liveEnvelope<T>(data: T): ServiceResponse<T> {
+  return { data, updatedAt: Date.now(), source: 'LIVE' };
+}
+
 export async function fetchKpiSnapshots(): Promise<ServiceResponse<KpiSnapshot[]>> {
   if (isMockMode()) {
     await simulateLatency();
     return mockKpiSnapshots();
   }
   const response = await apiClient.get<ServiceResponse<KpiSnapshot[]>>('/api/dash/kpis');
-  return response.data;
+  return liveEnvelope(response.data.data);
 }
 
 export async function fetchPlayerRecords(): Promise<ServiceResponse<PlayerRecord[]>> {
@@ -59,7 +78,7 @@ export async function fetchPlayerRecords(): Promise<ServiceResponse<PlayerRecord
     return mockPlayerRecords();
   }
   const response = await apiClient.get<ServiceResponse<PlayerRecord[]>>('/api/dash/players');
-  return response.data;
+  return liveEnvelope(response.data.data);
 }
 
 export async function fetchMatchRecords(): Promise<ServiceResponse<MatchRecord[]>> {
@@ -68,7 +87,7 @@ export async function fetchMatchRecords(): Promise<ServiceResponse<MatchRecord[]
     return mockMatchRecords();
   }
   const response = await apiClient.get<ServiceResponse<MatchRecord[]>>('/api/dash/matches');
-  return response.data;
+  return liveEnvelope(response.data.data);
 }
 
 export async function fetchRevenueRecords(): Promise<ServiceResponse<RevenueRecord[]>> {
@@ -77,7 +96,7 @@ export async function fetchRevenueRecords(): Promise<ServiceResponse<RevenueReco
     return mockRevenueRecords();
   }
   const response = await apiClient.get<ServiceResponse<RevenueRecord[]>>('/api/dash/revenue');
-  return response.data;
+  return liveEnvelope(response.data.data);
 }
 
 export async function fetchDauHistory(range: DateRange): Promise<ServiceResponse<DailyMetric[]>> {
@@ -113,7 +132,7 @@ export async function fetchRevenueHistory(
       params: { range },
     },
   );
-  return response.data;
+  return liveEnvelope(response.data.data);
 }
 
 export async function fetchAlerts(): Promise<ServiceResponse<AlertItem[]>> {
@@ -122,7 +141,7 @@ export async function fetchAlerts(): Promise<ServiceResponse<AlertItem[]>> {
     return mockAlerts();
   }
   const response = await apiClient.get<ServiceResponse<AlertItem[]>>('/api/dash/alerts');
-  return response.data;
+  return liveEnvelope(response.data.data);
 }
 
 export async function fetchServerNodes(): Promise<ServiceResponse<ServerNode[]>> {
@@ -131,7 +150,7 @@ export async function fetchServerNodes(): Promise<ServiceResponse<ServerNode[]>>
     return mockServerNodes();
   }
   const response = await apiClient.get<ServiceResponse<ServerNode[]>>('/api/dash/system/nodes');
-  return response.data;
+  return liveEnvelope(response.data.data);
 }
 
 export async function fetchRuntimeHealth(): Promise<ServiceResponse<RuntimeHealthSnapshot>> {
@@ -142,7 +161,7 @@ export async function fetchRuntimeHealth(): Promise<ServiceResponse<RuntimeHealt
   const response = await apiClient.get<ServiceResponse<RuntimeHealthSnapshot>>(
     '/api/dash/system/runtime',
   );
-  return response.data;
+  return liveEnvelope(response.data.data);
 }
 
 // why: D-19603 (Paid-Action Error Union + Forward Server Contract) —
@@ -177,7 +196,7 @@ export async function fetchBillingHealth(
       params: { range },
     },
   );
-  return response.data;
+  return liveEnvelope(response.data.data);
 }
 
 // why: D-19603 ext. (Billing Health Window Definition) — the forward
@@ -203,5 +222,5 @@ export async function fetchBillingHealthSparklines(
       params: { range },
     },
   );
-  return response.data;
+  return liveEnvelope(response.data.data);
 }
