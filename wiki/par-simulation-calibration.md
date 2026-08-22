@@ -578,7 +578,7 @@ full early field cannot out-bank a thin later one.
    should be prioritised, and their Phase-1 seed weights can start from the
    4 : 3 : 1 anchor rather than being invented from scratch.
 2. **Expose the score components as category sub-boards.** `ScoreBreakdown`
-   already carries `weightedRoundCost`, `weightedBystanderReward`,
+   already carries `weightedBystanderReward`,
    `weightedVictoryPointReward`, and the penalty total as separate fields.
    Surfacing "fewest turns", "most VP", "cleanest (fewest escapes)" as their
    own leaderboards — the way Legendary Leagues ranks each category — is a
@@ -586,7 +586,7 @@ full early field cannot out-bank a thin later one.
    to be the best at something.
 3. **A Points-Per-Turn view.** PPT's insight — that raw VP over-rewards slow,
    exhaustive play — is worth a derived `VP / turns` board alongside the PAR
-   board. PAR already prices turns via `weightedRoundCost`, but a *ratio*
+   board. PAR prices game length via the Scheme-Twist penalty (the rulebook's length proxy; no per-round cost — WP-585), but a *ratio*
    board reads differently and directly discourages stalling. Also a
    no-engine-change derived view.
 4. **An ordinal league layer on top of Seed Challenges.** The ordinal model's

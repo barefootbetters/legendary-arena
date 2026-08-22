@@ -19,7 +19,6 @@ function breakdown(over: Partial<CompetitiveScoreBreakdown> = {}): CompetitiveSc
         scenarioSpecificPenalty: 0,
       },
     },
-    weightedRoundCost: 1450,
     weightedPenaltyTotal: 1800,
     penaltyBreakdown: {
       villainEscaped: 0,
@@ -30,10 +29,11 @@ function breakdown(over: Partial<CompetitiveScoreBreakdown> = {}): CompetitiveSc
     },
     weightedBystanderReward: 2200,
     weightedVictoryPointReward: 1030,
-    rawScore: 20,
+    // why: WP-585 — no round-cost term: raw = 1800 − 2200 − 1030 = −1430.
+    rawScore: -1430,
     parScore: -300,
-    finalScore: 320,
-    scoringConfigVersion: 1,
+    finalScore: -1130,
+    scoringConfigVersion: 3,
     ...over,
   };
 }
@@ -43,16 +43,16 @@ describe('buildWorkedScoreCalc (WP-584)', () => {
     const calc = buildWorkedScoreCalc(breakdown());
     assert.equal(
       calc.formula,
-      '(Rounds × 50) + Penalties − (Bystanders × 200) − (VP × 10)',
+      'Penalties − (Bystanders × 200) − (VP × 10)',
     );
     assert.equal(
       calc.substituted,
-      '(29 × 50) + (6 × 300) − (11 × 200) − (103 × 10)',
+      '(6 × 300) − (11 × 200) − (103 × 10)',
     );
-    assert.equal(calc.products, '1450 + 1800 − 2200 − 1030');
-    assert.equal(calc.rawScore, 20);
-    assert.equal(calc.finalSubstituted, '20 − (−300)');
-    assert.equal(calc.finalScore, 320);
+    assert.equal(calc.products, '1800 − 2200 − 1030');
+    assert.equal(calc.rawScore, -1430);
+    assert.equal(calc.finalSubstituted, '-1430 − (−300)');
+    assert.equal(calc.finalScore, -1130);
   });
 
   test('givens list the six inputs verbatim', () => {
@@ -121,7 +121,9 @@ describe('buildWorkedScoreCalc (WP-584)', () => {
         },
       }),
     );
-    assert.ok(calc.substituted.includes('+ 0 −'), calc.substituted);
+    // why: WP-585 — penalties are now the FIRST term (no round cost before them),
+    // so a zero penalty total leads the substituted line.
+    assert.ok(calc.substituted.startsWith('0 −'), calc.substituted);
   });
 
   test('a zero-count reward term shows its 0 product, no bogus weight', () => {

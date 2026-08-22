@@ -118,9 +118,16 @@ score inflation across scenarios.
 
 ## Raw Score Composition
 
+> **Updated by WP-585 / D-24394 (2026-08-22): no per-round cost.** The Marvel
+> Legendary v23 rulebook's "Scoring" section subtracts only −4/Bystander-lost,
+> −3/Scheme-Twist, −1/Villain-escaped and has **no round/turn penalty** — Scheme
+> Twists are its length proxy. The former `(R × W_R)` round-cost term was an LA
+> addition that double-counted length; it has been **removed**. `R` (rounds) is
+> retained only as informational context, never scored. Historical worked examples
+> below that still show a `(R × …)` term predate this change and are illustrative.
+
 ```
 Raw Score =
-  (R  x W_R)  +
   P            -
   (BP x W_BP)  -
   (VP x W_VP)
@@ -145,12 +152,13 @@ internally) for perfect precision and deterministic integer arithmetic.
 
 ## Component Definitions
 
-### 1. Rounds Played (R) — Efficiency and Tempo
+### 1. Rounds Played (R) — Informational Only (no longer scored)
 
-Counts full player-turn cycles until victory or loss. Strongly penalizes slow
-play or stalling.
+Counts full player-turn cycles until victory or loss.
 
-**Default weight:** `W_R = +100` (1.00 per round)
+**No weight (WP-585 / D-24394).** `R` carries no score contribution — the rulebook
+has no round penalty, and game length is captured by the Scheme-Twist penalty (twists
+accumulate the longer the villains operate). `R` is still shown to players as context.
 
 ---
 
@@ -280,15 +288,19 @@ Any scenario-specific tuning must preserve these invariants exactly.
 
 ```
 Raw Score =
-  (R  x 100) +
   (villainEscapes x 100) +
   (bystandersLost x 400) +
   (schemeTwistNegatives x 300) +
-  (mastermindTacticsUntaken x 100) +
+  (mastermindTacticsUntaken x 25) +
   (scenarioSpecificPenalties x scenarioWeight) -
-  (BP x 300) -
-  (VP x 50)
+  (BP x bystanderReward) -
+  (VP x vpReward)
 ```
+
+> WP-585 / D-24394: no `(R × …)` round-cost term. The penalty weights above are the
+> rulebook 4:3:1 anchor (`bystanderLost 400 / schemeTwistNegative 300 / villainEscaped
+> 100`, D-24342). BP/VP reward weights are scenario-config values (seed defaults
+> `bystanderReward 200 / vpReward 10`).
 
 ```
 Final Score = Raw Score - PAR
@@ -674,13 +686,13 @@ Vision goal 24 (Replay-Verified Competitive Integrity)
 **Bystander Farming:** Enforced by scenario-specific cap. Rescues beyond the cap
 contribute zero additional score benefit.
 
-**VP Grinding:** Sub-linear VP reward (`W_VP = 50`) vs round cost (`W_R = 100`)
-makes stalling mathematically unprofitable — VP gained must exceed round penalty
-by 2:1.
+**VP Grinding:** Sub-linear VP reward keeps VP-farming unprofitable relative to the
+penalties a longer game accrues.
 
-**Round Stalling:** Every additional round increases Raw Score by `W_R`. Combined
-with sub-linear VP reward, stalling is always punished unless the player achieves
-significant VP or rescue gains.
+**Round Stalling (WP-585 / D-24394):** There is no direct round penalty. Stalling is
+punished indirectly: the longer the game runs, the more Scheme/Plot Twists are revealed,
+and each twist adds `+300` to Raw Score (the rulebook's own length proxy). A team that
+drags the game out reveals more twists and scores worse.
 
 **Conservative Play:** Moral hierarchy prevents "ignore civilians for board
 control" from dominating. Players who take risks to save bystanders outscore

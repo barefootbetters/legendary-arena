@@ -121,7 +121,6 @@ const TEST_SCORING_CONFIG: ScenarioScoringConfig = {
     scenarioSpecificPenalty: 25,
   },
   parBaseline: {
-    roundsPar: 10,
     bystandersPar: 1,
     victoryPointsPar: 5,
     escapesPar: 1,

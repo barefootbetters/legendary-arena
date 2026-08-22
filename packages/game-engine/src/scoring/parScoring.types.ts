@@ -36,16 +36,18 @@ export type TeamKey = string;
 // ---------------------------------------------------------------------------
 
 /**
- * Integer (centesimal) weights for the three core Raw Score components.
+ * Integer (centesimal) weights for the core Raw Score reward components.
  *
  * Display layers divide by 100 to render decimal point values. The engine
  * never sees fractional weights.
  */
 // why: integer weights avoid floating-point determinism issues; display
 // divides by 100 to render decimal point values.
+// why: WP-585 / D-24394 — there is no roundCost. The Marvel Legendary rulebook's
+// scoring has no round/turn penalty; Scheme Twists are its length proxy, so game
+// length is already penalized via the schemeTwistNegative penalty weight. A
+// separate per-round cost double-counted length and was removed.
 export interface ScoringWeights {
-  /** Weight per round played (higher R = worse). */
-  readonly roundCost: number;
   /** Weight per bystander rescued (higher BP = better). */
   readonly bystanderReward: number;
   /** Weight per victory point earned (higher VP = better). */
@@ -122,8 +124,9 @@ export type PenaltyEventWeights = Readonly<Record<PenaltyEventType, number>>;
  * difficulty ratings is a future WP — this packet consumes PAR as input.
  */
 export interface ParBaseline {
-  /** Expected rounds for a par-performing team. */
-  readonly roundsPar: number;
+  // why: WP-585 / D-24394 — there is no roundsPar. The rulebook's scoring has no
+  // round/turn penalty (Scheme Twists are its length proxy), so RawScore carries
+  // no round-cost term and PAR needs no expected-rounds baseline.
   /** Expected bystander rescues for a par-performing team. */
   readonly bystandersPar: number;
   /** Expected victory points for a par-performing team. */
@@ -145,7 +148,7 @@ export interface ParBaseline {
 export interface ScenarioScoringConfig {
   /** Canonical scenario identity. */
   readonly scenarioKey: ScenarioKey;
-  /** Core component weights (roundCost, bystanderReward, victoryPointReward). */
+  /** Core reward weights (bystanderReward, victoryPointReward). */
   readonly weights: ScoringWeights;
   /** Anti-exploit caps on BP and VP (null for no cap). */
   readonly caps: ScoringCaps;
@@ -200,8 +203,6 @@ export interface ScoringInputs {
 export interface ScoreBreakdown {
   /** Inputs used to compute this breakdown (spread-copied from caller per D-2801). */
   readonly inputs: ScoringInputs;
-  /** `rounds * roundCost`. */
-  readonly weightedRoundCost: number;
   /** Sum of `penaltyEventCounts[type] * penaltyEventWeights[type]` across all types. */
   readonly weightedPenaltyTotal: number;
   /** Per-type contribution to weightedPenaltyTotal. */
@@ -210,7 +211,7 @@ export interface ScoreBreakdown {
   readonly weightedBystanderReward: number;
   /** `effectiveVictoryPoints * victoryPointReward` (effective = min(VP, cap)). */
   readonly weightedVictoryPointReward: number;
-  /** `weightedRoundCost + weightedPenaltyTotal - weightedBystanderReward - weightedVictoryPointReward`. */
+  /** `weightedPenaltyTotal - weightedBystanderReward - weightedVictoryPointReward`. */
   readonly rawScore: number;
   /** PAR value under the same formula applied to the scenario baseline. */
   readonly parScore: number;

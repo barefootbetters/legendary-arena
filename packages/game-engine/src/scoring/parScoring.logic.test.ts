@@ -43,7 +43,6 @@ import type { ReplayResult } from '../replay/replay.types.js';
  * Integer centesimal units.
  */
 const REFERENCE_WEIGHTS = {
-  roundCost: 100,
   bystanderReward: 300,
   victoryPointReward: 50,
 } as const;
@@ -70,7 +69,6 @@ function makeReferenceConfig(): ScenarioScoringConfig {
     caps: { bystanderCap: null, victoryPointCap: null },
     penaltyEventWeights: { ...REFERENCE_PENALTY_WEIGHTS },
     parBaseline: {
-      roundsPar: 12,
       bystandersPar: 3,
       victoryPointsPar: 15,
       escapesPar: 2,
@@ -136,25 +134,26 @@ describe('parScoring logic (WP-048)', () => {
       },
     });
 
-    // (10 × 100) + (2×200 + 1×500 + 1×400 + 1×100 + 0×100)
-    //   - (5 × 300) - (20 × 50)
-    // = 1000 + 1400 - 1500 - 1000
-    // = -100
+    // why: WP-585 / D-24394 — no round-cost term. Penalties − rewards:
+    // (2×200 + 1×500 + 1×400 + 1×100 + 0×100) - (5 × 300) - (20 × 50)
+    // = 1400 - 1500 - 1000
+    // = -1100
     const rawScore = computeRawScore(inputs, config);
-    assert.strictEqual(rawScore, -100);
+    assert.strictEqual(rawScore, -1100);
   });
 
-  // Test 2 — monotonicity: extra round increases score (worse)
-  it('computeRawScore monotonicity: one extra round increases Raw Score by roundCost', () => {
+  // why: WP-585 / D-24394 — the round-cost monotonicity test was DELETED and replaced
+  // by this rounds-INVARIANCE assertion: rounds no longer affect RawScore (the rulebook
+  // has no round penalty; Scheme Twists are the length proxy). The remaining monotonicity
+  // tests (escape / bystander-lost / rescue) still hold and are the meaningful invariants.
+  it('computeRawScore is INVARIANT to rounds (WP-585: no round-cost term)', () => {
     const config = makeReferenceConfig();
-    const baseline = makeInputs({ rounds: 10 });
-    const extraRound = makeInputs({ rounds: 11 });
-
-    const baselineScore = computeRawScore(baseline, config);
-    const extraScore = computeRawScore(extraRound, config);
-
-    assert.ok(extraScore > baselineScore);
-    assert.strictEqual(extraScore - baselineScore, config.weights.roundCost);
+    const fewRounds = makeInputs({ rounds: 5 });
+    const manyRounds = makeInputs({ rounds: 500 });
+    assert.strictEqual(
+      computeRawScore(fewRounds, config),
+      computeRawScore(manyRounds, config),
+    );
   });
 
   // Test 3 — monotonicity: extra villain escape increases score
@@ -310,7 +309,8 @@ describe('parScoring logic (WP-048)', () => {
     // With inputs equal to PAR baseline (and villainEscaped = escapesPar),
     // Final should be zero. Confirm with a matched-PAR scenario:
     const matchedPar = makeInputs({
-      rounds: config.parBaseline.roundsPar,
+      // why: WP-585 — rounds no longer affects the score; computeParScore uses 0.
+      rounds: 0,
       victoryPoints: config.parBaseline.victoryPointsPar,
       bystandersRescued: config.parBaseline.bystandersPar,
       escapes: config.parBaseline.escapesPar,
@@ -325,10 +325,6 @@ describe('parScoring logic (WP-048)', () => {
   it('validateScoringConfig rejects configs with zero or negative component weights', () => {
     const baseConfig = makeReferenceConfig();
 
-    const zeroRoundCost: ScenarioScoringConfig = {
-      ...baseConfig,
-      weights: { ...baseConfig.weights, roundCost: 0 },
-    };
     const negativeBystanderReward: ScenarioScoringConfig = {
       ...baseConfig,
       weights: { ...baseConfig.weights, bystanderReward: -1 },
@@ -346,7 +342,6 @@ describe('parScoring logic (WP-048)', () => {
     };
 
     for (const badConfig of [
-      zeroRoundCost,
       negativeBystanderReward,
       zeroVictoryPointReward,
       zeroPenaltyWeight,
@@ -363,7 +358,6 @@ describe('parScoring logic (WP-048)', () => {
       ...makeReferenceConfig(),
       // bystanderReward (150) no longer exceeds villainEscaped (200).
       weights: {
-        roundCost: 100,
         bystanderReward: 150,
         victoryPointReward: 50,
       },
@@ -388,7 +382,6 @@ describe('parScoring logic (WP-048)', () => {
       // bystanderReward (600) now exceeds bystanderLost (500) — invariant 3
       // violated. Invariants 1 and 2 remain satisfied.
       weights: {
-        roundCost: 100,
         bystanderReward: 600,
         victoryPointReward: 50,
       },

@@ -25,11 +25,11 @@ const MINUS = '−';
 export interface WorkedScoreCalc {
   /** "What happened" inputs, in display order. */
   readonly givens: ReadonlyArray<{ readonly label: string; readonly value: number }>;
-  /** Symbolic formula, e.g. "(Rounds × 50) + Penalties − (Bystanders × 200) − (VP × 10)". */
+  /** Symbolic formula, e.g. "Penalties − (Bystanders × 200) − (VP × 10)". */
   readonly formula: string;
-  /** The same formula with match values substituted, e.g. "(29 × 50) + (6 × 300) − (11 × 200) − (103 × 10)". */
+  /** The same formula with match values substituted, e.g. "(6 × 300) − (11 × 200) − (103 × 10)". */
   readonly substituted: string;
-  /** The weighted products summed, e.g. "1450 + 1800 − 2200 − 1030". */
+  /** The weighted products summed, e.g. "1800 − 2200 − 1030". */
   readonly products: string;
   /** Raw score (verbatim from the breakdown). */
   readonly rawScore: number;
@@ -117,7 +117,9 @@ function subtrahend(value: number): string {
 export function buildWorkedScoreCalc(breakdown: CompetitiveScoreBreakdown): WorkedScoreCalc {
   const inputs = breakdown.inputs;
 
-  const roundWeight = perUnitWeight(breakdown.weightedRoundCost, inputs.rounds);
+  // why: WP-585 / D-24394 — no round-cost term (the rulebook has no round penalty;
+  // Scheme Twists are its length proxy). RawScore = Penalties − rewards. "Rounds"
+  // stays below as an informational given, but no longer appears in the formula.
   const bystanderWeight = perUnitWeight(
     breakdown.weightedBystanderReward,
     inputs.bystandersRescued,
@@ -125,18 +127,17 @@ export function buildWorkedScoreCalc(breakdown: CompetitiveScoreBreakdown): Work
   const vpWeight = perUnitWeight(breakdown.weightedVictoryPointReward, inputs.victoryPoints);
 
   const formula =
-    `${formulaTerm('Rounds', roundWeight)} + Penalties ` +
+    `Penalties ` +
     `${MINUS} ${formulaTerm('Bystanders', bystanderWeight)} ` +
     `${MINUS} ${formulaTerm('VP', vpWeight)}`;
 
   const substituted =
-    `${substitutedTerm(inputs.rounds, roundWeight, breakdown.weightedRoundCost)} ` +
-    `+ ${penaltiesSubstituted(breakdown)} ` +
+    `${penaltiesSubstituted(breakdown)} ` +
     `${MINUS} ${substitutedTerm(inputs.bystandersRescued, bystanderWeight, breakdown.weightedBystanderReward)} ` +
     `${MINUS} ${substitutedTerm(inputs.victoryPoints, vpWeight, breakdown.weightedVictoryPointReward)}`;
 
   const products =
-    `${breakdown.weightedRoundCost} + ${breakdown.weightedPenaltyTotal} ` +
+    `${breakdown.weightedPenaltyTotal} ` +
     `${MINUS} ${breakdown.weightedBystanderReward} ${MINUS} ${breakdown.weightedVictoryPointReward}`;
 
   return {

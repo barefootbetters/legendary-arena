@@ -69,11 +69,11 @@ export const PAR_ARTIFACT_SOURCES: readonly ParArtifactSource[] = [
   'simulation',
 ] as const;
 
-// why: the raw-score formula generation is pinned at 1 until a future WP
-// deliberately bumps it. Stored inside each simulation artifact so that
-// leaderboard entries can be filtered to a semantically compatible set
-// after any future formula change.
-const CURRENT_RAW_SCORE_SEMANTICS_VERSION = 1;
+// why: the raw-score formula generation version. Stored inside each simulation
+// artifact so leaderboard entries can be filtered to a semantically compatible
+// set after a formula change. Bumped 1->2 by WP-585 / D-24394 (removing the
+// round-cost term is a formula-SHAPE change).
+const CURRENT_RAW_SCORE_SEMANTICS_VERSION = 2;
 
 // ---------------------------------------------------------------------------
 // Artifact shapes
@@ -1075,7 +1075,6 @@ export async function validateParStore(
 
     if (source === 'seed' && isSeedArtifactShape(parsed)) {
       const baselineFields: readonly (keyof ParBaseline)[] = [
-        'roundsPar',
         'bystandersPar',
         'victoryPointsPar',
         'escapesPar',
@@ -1148,7 +1147,6 @@ export async function validateParStore(
           const baselineEqual =
             configBaseline !== null
             && typeof configBaseline === 'object'
-            && configBaseline.roundsPar === artifactBaseline.roundsPar
             && configBaseline.bystandersPar === artifactBaseline.bystandersPar
             && configBaseline.victoryPointsPar === artifactBaseline.victoryPointsPar
             && configBaseline.escapesPar === artifactBaseline.escapesPar;
@@ -1405,7 +1403,6 @@ function isSeedArtifactShape(value: unknown): value is SeedParArtifact {
   const baseline = record.parBaseline;
   if (baseline === null || typeof baseline !== 'object') return false;
   const baselineRecord = baseline as Record<string, unknown>;
-  if (typeof baselineRecord.roundsPar !== 'number') return false;
   if (typeof baselineRecord.bystandersPar !== 'number') return false;
   if (typeof baselineRecord.victoryPointsPar !== 'number') return false;
   if (typeof baselineRecord.escapesPar !== 'number') return false;

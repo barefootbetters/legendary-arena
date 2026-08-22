@@ -74,7 +74,6 @@ async function removeWorkspace(workspace: string): Promise<void> {
 
 function createTestParBaseline(): ParBaseline {
   return {
-    roundsPar: 5,
     bystandersPar: 3,
     victoryPointsPar: 10,
     escapesPar: 1,
@@ -95,7 +94,6 @@ function createTestScoringConfig(
   return {
     scenarioKey,
     weights: {
-      roundCost: 100,
       bystanderReward: 400,
       victoryPointReward: 10,
     },
@@ -520,7 +518,6 @@ describe('PAR artifact storage (WP-050)', () => {
       const readBack = await readSeedParArtifact(scenarioKey, workspace, PAR_VERSION);
       assert.notEqual(readBack, null);
       assert.equal(readBack?.source, 'seed');
-      assert.equal(readBack?.parBaseline.roundsPar, parBaseline.roundsPar);
       assert.equal(readBack?.parBaseline.bystandersPar, parBaseline.bystandersPar);
       assert.equal(readBack?.parBaseline.victoryPointsPar, parBaseline.victoryPointsPar);
       assert.equal(readBack?.parBaseline.escapesPar, parBaseline.escapesPar);
@@ -1123,13 +1120,14 @@ describe('PAR artifact storage (WP-050)', () => {
         shard,
       );
       await mkdir(scenarioDir, { recursive: true });
-      // why: seed artifact carries parBaseline.roundsPar = 5 but the
-      // embedded scoringConfig.parBaseline.roundsPar = 99 — the D-5306c
-      // one-cycle audit invariant requires field-wise equality.
+      // why: seed artifact carries parBaseline.bystandersPar = 3 but the
+      // embedded scoringConfig.parBaseline.bystandersPar = 99 — the D-5306c
+      // one-cycle audit invariant requires field-wise equality. (roundsPar was
+      // removed by WP-585, so the mismatch is now expressed on bystandersPar.)
       const artifactBaseline = createTestParBaseline();
       const driftedConfigBaseline = {
         ...artifactBaseline,
-        roundsPar: 99,
+        bystandersPar: 99,
       };
       const driftedConfig: ScenarioScoringConfig = {
         ...createTestScoringConfig(scenarioKey, driftedConfigBaseline),

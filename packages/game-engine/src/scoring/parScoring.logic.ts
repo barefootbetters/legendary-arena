@@ -146,8 +146,12 @@ export function deriveScoringInputs(
  * Computes the Raw Score from scoring inputs and a scenario config.
  *
  * Formula:
- *   RawScore = (R × roundCost) + P - (BP × bystanderReward) - (VP × vpReward)
+ *   RawScore = P - (BP × bystanderReward) - (VP × vpReward)
  *   P        = sum(eventCount[type] × penaltyWeight[type])
+ *
+ * why (WP-585 / D-24394): there is no round-cost term. The Marvel Legendary
+ * rulebook's scoring has no round/turn penalty — Scheme Twists are its length
+ * proxy — so game length is already captured by the schemeTwistNegative penalty.
  *
  * Lower is better. Caps are applied before the subtractive terms when set.
  *
@@ -155,11 +159,11 @@ export function deriveScoringInputs(
  * @param config - ScenarioScoringConfig providing weights, caps, penalty weights.
  * @returns Raw Score as an integer (centesimal units).
  */
-// why: monotonicity invariant — higher R and penalty events always
-// increase RawScore (worse outcome); higher BP and VP always decrease it
-// (better outcome). Per-event penalty weights (no shared escape
-// multiplier) are what encode the moral hierarchy: bystanderLost is the
-// heaviest penalty, and bystanderReward always exceeds villainEscaped.
+// why: monotonicity invariant — more penalty events always increase RawScore
+// (worse outcome); higher BP and VP always decrease it (better outcome). Per-event
+// penalty weights (no shared escape multiplier) are what encode the moral
+// hierarchy: bystanderLost is the heaviest penalty, and bystanderReward always
+// exceeds villainEscaped.
 export function computeRawScore(
   inputs: ScoringInputs,
   config: ScenarioScoringConfig,
@@ -172,8 +176,6 @@ export function computeRawScore(
     inputs.victoryPoints,
     config.caps.victoryPointCap,
   );
-
-  const weightedRoundCost = inputs.rounds * config.weights.roundCost;
 
   let weightedPenaltyTotal = 0;
   for (const penaltyType of PENALTY_EVENT_TYPES) {
@@ -188,7 +190,6 @@ export function computeRawScore(
     effectiveVictoryPoints * config.weights.victoryPointReward;
 
   return (
-    weightedRoundCost +
     weightedPenaltyTotal -
     weightedBystanderReward -
     weightedVictoryPointReward
@@ -209,7 +210,9 @@ export function computeRawScore(
  */
 export function computeParScore(config: ScenarioScoringConfig): number {
   const parInputs: ScoringInputs = {
-    rounds: config.parBaseline.roundsPar,
+    // why: WP-585 / D-24394 — rounds no longer affects RawScore (no round-cost
+    // term), so PAR carries no roundsPar; this informational input is 0.
+    rounds: 0,
     victoryPoints: config.parBaseline.victoryPointsPar,
     bystandersRescued: config.parBaseline.bystandersPar,
     escapes: config.parBaseline.escapesPar,
@@ -276,8 +279,6 @@ export function buildScoreBreakdown(
     config.caps.victoryPointCap,
   );
 
-  const weightedRoundCost = inputs.rounds * config.weights.roundCost;
-
   const penaltyBreakdown: Record<PenaltyEventType, number> = {
     villainEscaped: 0,
     bystanderLost: 0,
@@ -300,7 +301,6 @@ export function buildScoreBreakdown(
     effectiveVictoryPoints * config.weights.victoryPointReward;
 
   const rawScore =
-    weightedRoundCost +
     weightedPenaltyTotal -
     weightedBystanderReward -
     weightedVictoryPointReward;
@@ -325,7 +325,6 @@ export function buildScoreBreakdown(
 
   return {
     inputs: copiedInputs,
-    weightedRoundCost,
     weightedPenaltyTotal,
     penaltyBreakdown,
     weightedBystanderReward,
@@ -348,7 +347,7 @@ export function buildScoreBreakdown(
  * Rule 11).
  *
  * Checks:
- *   - roundCost, bystanderReward, victoryPointReward all > 0
+ *   - bystanderReward, victoryPointReward all > 0 (no roundCost — WP-585)
  *   - Every PenaltyEventType key exists in penaltyEventWeights (D-4805)
  *   - Every penalty weight > 0
  *   - Structural invariants:
@@ -356,7 +355,7 @@ export function buildScoreBreakdown(
  *       2. bystanderLostWeight > villainEscapedWeight
  *       3. bystanderLostWeight > bystanderReward
  *   - bystanderCap and victoryPointCap non-negative when set
- *   - roundsPar, bystandersPar, victoryPointsPar, escapesPar all >= 0
+ *   - bystandersPar, victoryPointsPar, escapesPar all >= 0 (no roundsPar — WP-585)
  *   - scoringConfigVersion > 0
  *
  * @param config - ScenarioScoringConfig to validate.
@@ -370,11 +369,6 @@ export function validateScoringConfig(
 ): ScoringConfigValidationResult {
   const errors: string[] = [];
 
-  if (!(config.weights.roundCost > 0)) {
-    errors.push(
-      `ScoringWeights.roundCost must be a positive integer; got ${config.weights.roundCost}.`,
-    );
-  }
   if (!(config.weights.bystanderReward > 0)) {
     errors.push(
       `ScoringWeights.bystanderReward must be a positive integer; got ${config.weights.bystanderReward}.`,
@@ -435,11 +429,6 @@ export function validateScoringConfig(
     );
   }
 
-  if (config.parBaseline.roundsPar < 0) {
-    errors.push(
-      `ParBaseline.roundsPar must be a non-negative integer; got ${config.parBaseline.roundsPar}.`,
-    );
-  }
   if (config.parBaseline.bystandersPar < 0) {
     errors.push(
       `ParBaseline.bystandersPar must be a non-negative integer; got ${config.parBaseline.bystandersPar}.`,
