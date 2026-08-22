@@ -94,8 +94,8 @@ import type { HollowEffectRecord, EffectTrace } from '../diagnostics/hollowEffec
 import { getAvailableRecruit, getSpendableAttack } from '../economy/economy.logic.js';
 import { resolveFightCost } from '../economy/economy.resolve.js';
 import { evaluateEndgame } from '../endgame/endgame.evaluate.js';
-import { computeFinalScores } from '../scoring/scoring.logic.js';
-import { BYSTANDER_EXT_ID, WOUND_EXT_ID } from '../setup/buildInitialGameState.js';
+import { computeFinalScores, isBystanderCard } from '../scoring/scoring.logic.js';
+import { WOUND_EXT_ID } from '../setup/buildInitialGameState.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { buildKoEligibleTargets } from '../villain/villainEffects.execute.js';
 
@@ -346,18 +346,15 @@ function countBystandersRescued(gameState: LegendaryGameState): number {
   // .reduce() with branching per code-style Rule 8.
   //
   // why: bystanders in victory come from two sources — villain-deck
-  // bystanders (tracked in G.villainDeckCardTypes with type='bystander',
-  // ext_id `bystander-villain-deck-NN`) and rescued / awarded supply-pile
-  // bystanders (using BYSTANDER_EXT_ID = 'pile-bystander', NOT registered
-  // in villainDeckCardTypes). Mirrors the same dual condition in
-  // scoring.logic.ts:computeFinalScores so the HUD counter and the VP
-  // calculation agree on what a "bystander in the victory pile" is.
+  // bystanders (tracked in G.villainDeckCardTypes with type='bystander')
+  // and rescued / awarded supply-pile bystanders (BYSTANDER_EXT_ID, NOT
+  // registered in villainDeckCardTypes). isBystanderCard (scoring.logic.ts)
+  // is the single source of truth for that dual condition (WP-586), so the
+  // HUD counter, the VP calculation, and the competitive-score inputs can
+  // never disagree on what a "bystander in the victory pile" is.
   for (const playerZones of Object.values(gameState.playerZones)) {
     for (const cardExtId of playerZones.victory) {
-      if (
-        gameState.villainDeckCardTypes[cardExtId] === 'bystander' ||
-        cardExtId === BYSTANDER_EXT_ID
-      ) {
+      if (isBystanderCard(gameState, cardExtId)) {
         bystanderCount += 1;
       }
     }
