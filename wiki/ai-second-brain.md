@@ -705,8 +705,22 @@ requirement creep.
 ### Pilot scope (recommended first vertical)
 
 Start narrow — this names *what* to build first, not *how* (the build steps live
-in the [operator runbook](../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md)). The first
-useful slice:
+in the [operator runbook](../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md)).
+
+> **The gating prerequisite is a corpus census.** The architecture assumes the
+> corpus exists; the first real deliverable is *discovering* it. Before any
+> ingestion, the build needs to know **where every source actually lives** and
+> how each is classified — domain, authority class (Authoritative / Reference /
+> Transient), ingestion disposition (navigated / vectorized / not ingested), and
+> backup class. Without that census, embeddings, routing, and ingestion are all
+> guessing. **This inventory lives on the owned host, not this page** — it lists
+> real client-project and formulation paths that the publishing rule in
+> [Edge Cases](#edge-cases) keeps off any hosted surface. The Legendary Arena
+> slice already exists as [Data & File Locations](data-file-locations.md); the
+> census (a `KNOWLEDGE_INVENTORY` on the owned host) extends that same discipline
+> to the Engineering, Barefoot Betters, and Research domains.
+
+The first useful slice:
 
 - **Navigation only** over the Legendary Arena governance corpus — `DECISIONS.md`,
   a small working set of Work Packets and Execution Contracts, and this wiki —
