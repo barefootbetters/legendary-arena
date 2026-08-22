@@ -175,7 +175,7 @@ Cross-cutting governance, methodology, and readiness assessments.
   Render + Cloudflare on merge to `main`; a nightly CI triage agent
   turns sweep results into new work packets.
 - [GitHub Parallel-Session Workflow](github-parallel-session-workflow.md) —
-  *(draft)* best practices and pain points for running two or more Claude
+  best practices and pain points for running two or more Claude
   Code sessions against GitHub at once. Separates the **working-tree race**
   (shared HEAD/index — solved completely by worktrees) from the
   **shared-file merge collision** (`WORK_INDEX.md`, `EC_INDEX.md`,

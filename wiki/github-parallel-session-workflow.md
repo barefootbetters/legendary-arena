@@ -12,7 +12,7 @@ related:
   - development-workflow.md
   - workspace-map.md
   - wiki-viewer.md
-status: draft
+status: canonical
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\github-parallel-session-workflow.md (this page — https://ewiki.legendary-arena.com/github-parallel-session-workflow/)
   - ../.gitattributes
@@ -33,13 +33,15 @@ answer is **partly** — worktrees fully solve one class of collision
 collisions on shared coordination files). The two problems need two
 different fixes.
 
-> **Status: draft.** Much of the pain-point catalog below is distilled
-> from accumulated operator/session experience, which the wiki
-> [SCHEMA.md](SCHEMA.md) does not count as a citable source. The
-> *mechanics* it references (`.gitattributes merge=union`, the number
+> **Sourcing note.** This page is `canonical` but deliberately mixes two
+> kinds of claim. The *mechanics* (`.gitattributes merge=union`, the number
 > ledger, roadmap regeneration, the branch/PR policy) are cited and
-> verified; the *incident patterns* are field notes, not contract. Treat
-> this as a working playbook, not a governance doc.
+> verified against current code and docs. The *incident patterns* (the
+> pCloud reverts, HEAD-yank races, ledger duplication) are operator field
+> notes rather than citable artifacts — an accepted looser-sourcing
+> exception to the usual `canonical` bar, because the lessons are
+> load-bearing and have no other written home. Treat it as a working
+> playbook that cites its mechanics.
 
 ## Mechanics
 
