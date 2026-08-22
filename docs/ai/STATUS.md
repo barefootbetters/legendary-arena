@@ -7,6 +7,38 @@
 
 ## Current State
 
+### WP-582 — Rogue "Copy Powers" is a full duplicate (attack + recruit + team) (EC-617 / D-24391) shipped (2026-08-22)
+
+Closes the "Copy Powers cloned Cyclops' Unending Energy but didn't mimic the attack" defect from the
+match review. D-24345 shipped Copy Powers as an ability re-fire + dual-class grant, and **Fork 2**
+deliberately scoped it to "ability only, NOT printed stats." The operator confirmed from the physical
+Marvel Legendary card that the copy is a **full duplicate**, so D-24391 supersedes Fork 2 (every other
+D-24345 clause stays Active).
+
+All the change lives in the single `applyCopyPowers` (`hero/heroEffects.execute.ts`) that both the
+1-eligible auto path and the ≥2 `resolveCopyPowersChoice` path funnel through: (1) it now adds the
+copied instance's printed **attack + recruit** from `G.cardStats[chosenHeroId]` via `addResources` —
+an **intended double-count** (the copied Hero was already played this turn, so a duplicate legitimately
+doubles the stat; a null-stat copy adds 0/0, never throws); (2) it grants the copied **team** into a new
+lazy `G.cardCopiedTeams` map read by a new pure helper `hero/effectiveTeams.logic.ts`
+(`getGrantedTeams`/`cardHasTeamWhenPlayed`, the exact mirror of `sizeChanging.logic.ts`), and the
+`requiresTeam` hero-synergy read routes through it (self-exclusion preserved). Class + ability copy were
+already faithful — verified, not re-implemented.
+
+Team-copy reaches only the hero-synergy `requiresTeam` read, matching the existing class grant (which
+also does not reach the 6 non-hero read sites) — team and class stay symmetric; full parity across all
+read sites is a deferred consistency follow-up. **No new move / keyword** (the `copy-powers` handler was
+already registered — `HERO_EFFECT_HANDLERS` / `HERO_KEYWORDS` / move counts unchanged); no
+`data/cards` / marker / ledger / effect-index change. The stale `cardSizeChangingClasses` "read-only at
+runtime" type comment was corrected in passing (D-24345 already writes it at runtime).
+
+Engine **2821→2837/0** (+16 tests); both hash oracles **byte-unchanged** (no committed fixture plays
+Copy Powers → no re-pin); `pnpm -r build` + `--no-bail test` green; `lagn-v1.json` CRLF-only build churn
+reverted. **Mutation-verified:** reverting the economy add + `requiresTeam` routing fails the new
+economy / team / requiresTeam tests (actual attack 0 vs expected 3). **D-24026 live-verify:
+operator-pending** — on `play.legendary-arena.com`, play a Hero with printed attack, then Copy Powers
+copying it: your available attack rises by that amount and a fight can be funded from it.
+
 ### WP-579 — Legends leaderboard shows the claimed handle as a profile link (EC-614 / D-24388) shipped (2026-08-21)
 
 Closes the "player name should be the profile handle + a link" gap from the match review, on the

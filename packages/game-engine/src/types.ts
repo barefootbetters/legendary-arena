@@ -1426,10 +1426,25 @@ export interface LegendaryGameState {
   // to cardTraits.heroClass — NOT a mutation of it. A card in inPlay is treated as
   // having class C iff C is its printed cardTraits[id].heroClass OR C ∈
   // cardSizeChangingClasses[id]; the grant expires naturally when inPlay clears (no
-  // cleanup). Built once at setup from the parsed hooks; read-only at runtime via the
-  // sizeChanging.logic.ts helper. Additive optional: absent means no card grants a class.
-  /** Per-card Size-Changing granted Hero Classes. Built at setup, read-only at runtime. */
+  // cleanup). Built from the parsed Size-Changing hooks AND written at runtime by
+  // Rogue's Copy Powers (D-24345 — the copy counts as the copied Hero's class); read
+  // via the sizeChanging.logic.ts helper, never mutated in place elsewhere. Additive
+  // optional / lazy: absent means no card grants a class.
+  /** Per-card Size-Changing / Copy-Powers granted Hero Classes. Setup + runtime-written; read via sizeChanging.logic.ts. */
   cardSizeChangingClasses?: Record<CardExtId, string[]>;
+
+  // why: D-24391 / WP-582 — per-card Copy-Powers granted teams. Rogue's Copy Powers
+  // is a full duplicate of the copied Hero, so the Copy Powers card counts as the
+  // copied Hero's TEAM (in addition to its class, above). The runtime team-grant
+  // sibling to cardTraits.team — NOT a mutation of it. A card in inPlay is treated as
+  // having team T iff T is its printed cardTraits[id].team OR T ∈ cardCopiedTeams[id];
+  // read via the effectiveTeams.logic.ts helper. Lazy-materialized (undefined by
+  // default, created at the grant site in applyCopyPowers, never in Game.setup) and
+  // omit-when-empty — mirroring cardSizeChangingClasses — so non-Copy-Powers games
+  // keep byte-identical finalStateHash / PRE_WP080_HASH. Additive optional: absent
+  // means no card grants a team.
+  /** Per-card Copy-Powers granted teams. Runtime-written by applyCopyPowers; read via effectiveTeams.logic.ts. */
+  cardCopiedTeams?: Record<CardExtId, string[]>;
 
   // why: D-24157 / WP-365 — printed victory points for VP-bearing cards (villains,
   // henchmen, the mastermind base card) resolved at setup from registry so

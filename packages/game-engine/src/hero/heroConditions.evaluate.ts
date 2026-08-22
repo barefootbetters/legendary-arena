@@ -16,6 +16,7 @@ import type { CardExtId } from '../state/zones.types.js';
 import type { HeroCondition } from '../rules/heroAbility.types.js';
 import { getHooksForCard } from '../rules/heroAbility.types.js';
 import { cardHasClassWhenPlayed, getGrantedClasses } from './sizeChanging.logic.js';
+import { cardHasTeamWhenPlayed } from './effectiveTeams.logic.js';
 
 // ---------------------------------------------------------------------------
 // evaluateCondition — single condition evaluator
@@ -79,8 +80,8 @@ export function evaluateCondition(
         if (triggeringCardId !== undefined && playedCardId === triggeringCardId) {
           continue;
         }
-        const traitEntry = G.cardTraits[playedCardId as CardExtId];
-        if (traitEntry !== undefined && traitEntry.team === condition.value) {
+        // why: D-24391 — an in-play card counts as its printed team OR any team granted by Copy Powers (cardCopiedTeams), via the shared cardHasTeamWhenPlayed helper. Mirrors heroClassMatch routing through cardHasClassWhenPlayed; the self-exclusion loop above is preserved.
+        if (cardHasTeamWhenPlayed(G, playedCardId as CardExtId, condition.value)) {
           return true;
         }
       }
