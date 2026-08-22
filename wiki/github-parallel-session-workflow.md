@@ -126,13 +126,92 @@ behaviour — and they are not all the same:
 | `docs/ai/DECISIONS.md` | **prose — plain 3-way merge** | Everyone appends before the trailing `Protect this file.` sentinel → conflicts there. Anchor appends on a unique prior-entry tail. |
 | roadmap mindmap + count table | **generated** | The count table + "open/blocked WPs" summary are **generated** — never hand-merge the numbers. Resolve to either side, then `pnpm roadmap:counts:write`. |
 
-> **`merge=union` is local-only and covers exactly one file.** Only
-> `docs/ai/NUMBER-LEDGER.md` carries the driver, and even there it applies
-> only to *local* git merges — GitHub's **server-side** PR merge ignores
-> `.gitattributes`, so any concurrent ledger commit on `main` still shows a
-> reserve-only PR as `DIRTY / CONFLICTING` and forces a local rebase before
-> it can merge. `WORK_INDEX.md` gets no union driver at all — it is
-> prose, and prose merges conflict.
+### Why not just `merge=union` everything?
+
+The built-in `union` driver keeps lines from both sides and suppresses
+conflict markers. It provides no ordering guarantee and retains
+duplicates. We have observed it structurally duplicate entire sections of
+`NUMBER-LEDGER.md` under concurrent writes; `check-number-ledger.mjs` only
+reads the first matching section, so a reservation can land in the stale
+copy and be treated as unreserved (see *Edge Cases*).
+
+Consequently `merge=union` is safe only for genuinely append-only,
+deduplication-tolerant lists. It is never appropriate for prose indexes
+(`WORK_INDEX.md`, `EC_INDEX.md`, `DECISIONS.md`), where duplicate or
+reordered rows produce silently incorrect content with no conflict markers
+to alert the operator. Only `docs/ai/NUMBER-LEDGER.md` carries the driver
+(D-24242), and even there it is local-only — GitHub's server-side merge
+ignores `.gitattributes`, so a concurrent ledger commit still shows a
+reserve-only PR as `DIRTY / CONFLICTING` until you rebase locally.
+
+Nor would a *custom* driver that sorts+uniques rescue it: custom drivers
+are not self-installing (each clone must define them in its own
+`.git/config`), are still local-only and ignored by GitHub's server-side
+merge, and so would not remove the reserve-first rule that is doing the
+real work.
+
+### Recommended workflow (happy path)
+
+The canonical end-to-end sequence for drafting a packet while other
+sessions may be live. The executable, authoritative version lives in
+[01.0a §Step 2](../docs/ai/REFERENCE/01.0a-wp-drafting-phase.md); this is
+the descriptive summary. Steps 1–2 beat Problem #1 (isolation); steps 3–4
+beat Problem #2 (contention) — detailed in *Reserve-first procedure* below.
+
+1. **Fetch latest `main`** — a stale local `main` makes the number
+   frontier under-count.
+2. **Create a worktree** off fresh `main` (off pCloud) — its own
+   HEAD/index/working tree, so a concurrent session cannot revert your
+   edits or steal your commit.
+3. **Reserve the number(s)** — append only the reservation line(s) to
+   `NUMBER-LEDGER.md`.
+4. **Merge the reserve-only PR first** — let it land on `main` before
+   authoring the body.
+5. **Author the packet** on a branch that references the already-reserved
+   numbers.
+6. **Rebase frequently** — the hot governance files change under every
+   concurrent packet.
+7. **Resolve index conflicts** by keeping both rows (lower number first);
+   regenerate generated tables, never hand-merge them.
+8. **Merge the packet PR** (squash) once CI is green.
+9. **Delete the worktree** — the branch persists on the remote.
+
+### Reserve-first procedure
+
+When any other `claude/*` branch or worktree is live, claim scarce shared
+resources *before* beginning the body of work:
+
+1. Sync to current `main`:
+
+   ```bash
+   git fetch origin main --prune && git pull --ff-only origin main
+   ```
+
+2. Read the authoritative next values — do not trust a stale local
+   frontier:
+
+   ```bash
+   pnpm ledger:numbers:next
+   ```
+
+3. Create a tiny, docs-only branch that *only* claims the numbers /
+   minimal placeholder rows.
+4. Open a reserve-only PR and merge it to `main` as quickly as possible. A
+   reserve-only PR wins the race a body PR structurally cannot — the body
+   PR's long CI window is repeatedly restarted by rebases, while a small
+   reserve PR can land during that window.
+5. Only after the reservation is on `main`, begin (or continue) the real
+   body of work on a branch that references the already-reserved
+   identifiers.
+
+After any later rebase, treat `origin/main`'s ledger as authoritative — a
+parallel reconciliation may have courtesy-bumped a previously merged
+reservation. On hot-file rebases, keep both rows (lower number first) and
+confirm the commit touches neither the other session's files nor
+`NUMBER-LEDGER.md` (the numbers are already on `main`).
+
+Regenerate generated tables; never hand-merge them
+(`pnpm roadmap:counts:write`).
 
 ### Best practices (the playbook)
 
@@ -149,25 +228,8 @@ behaviour — and they are not all the same:
   (HEAD-agnostic, touches no working tree). Delete a merged branch **in
   place** with `git branch -D`, never by checking out `main` first.
 
-**Coordination — beat Problem #2:**
-
-- **Reserve numbers first, to `main`, before the body.** When any live
-  `claude/*` branch exists, land a tiny standalone reserve-only PR (docs
-  only, clears CI in ~1 min) and let it **merge** before authoring the
-  bulky WP/EC. A reserve-only PR wins the race a body PR structurally
-  cannot — a body PR's long test window restarts on every rebase, and a
-  fast reserve PR grabs the number during it.
-- **Sync before reserving.** `git fetch origin main --prune && git pull
-  --ff-only origin main`, *then* read `pnpm ledger:numbers:next` — the
-  `--next` frontier lies when local `main` is stale.
-- **After any rebase, trust `origin/main`'s ledger as the authoritative
-  number**, not the number your local reserve chose — a parallel
-  reconciliation can courtesy-bump your merged reserve.
-- **Regenerate, never hand-merge, generated tables.** Resolve the roadmap
-  conflict to either side, then `pnpm roadmap:counts:write`.
-- **On a hot-file rebase, keep both rows** (theirs first by lower number,
-  then yours) and confirm `git show --name-only HEAD` touches neither the
-  other session's files nor `NUMBER-LEDGER.md` (numbers already on `main`).
+*(Coordination — beating Problem #2 — is its own section above:
+[Reserve-first procedure](#reserve-first-procedure).)*
 
 **Hygiene — general GitHub discipline on this repo:**
 
@@ -251,6 +313,18 @@ the contract landed some other way before deleting.
   (turning `main`'s `ledger:numbers:check` red repo-wide), **you yield** —
   retract your reservation in a one-line SPEC to un-break `main`, then
   re-reserve fresh.
+- **A reservation left unmerged still collides.** Reserve-first only closes
+  the contention window once the reserve PR is *on `main`* — a reservation
+  that sits open (unreviewed, or blocked behind a red check) is not yet
+  "owned," and a faster parallel session can claim the same number and merge
+  ahead of it. The mitigation is latency, not cleverness: keep reserve PRs
+  tiny and merge them promptly.
+- **Editing the ledger or an index directly on `main` reintroduces the
+  race.** The whole scheme assumes every claim flows through the
+  reserve-then-body path. A number or row hand-added straight to `main`
+  outside that path is invisible to a session that already read the ledger,
+  so both can end up on the same identifier. Route every reservation through
+  a PR, even a one-line one.
 
 ## Open Questions
 
