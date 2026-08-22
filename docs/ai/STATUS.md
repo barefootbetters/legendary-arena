@@ -7,6 +7,15 @@
 
 ## Current State
 
+### WP-586 — Fix the bystander-rescued undercount in competitive scoring (EC-621 / D-24395) shipped (2026-08-22)
+
+The operator reported an endgame score that credited only ~8 Bystanders rescued while the victory pile / HUD showed 18–26 (across three real Red Skull / Midtown Bank Robbery matches — one Legendary-caliber run was mis-graded **C**). Root cause: a rescued Bystander reaches a victory pile from **two** ext-id sources — villain-deck bystanders (`bystander-villain-deck-NN`, registered in `G.villainDeckCardTypes` as `bystander`) and supply-pile bystanders (`BYSTANDER_EXT_ID` = `pile-bystander`, attached to Villains and awarded on defeat, **never** in `villainDeckCardTypes`). The competitive-score derivations `deriveScoringInputs` and `deriveScoringInputsFromFinalState` tested only the first, so they dropped every supply-pile Bystander from both `bystandersRescued` (a reward that lowers RawScore) and `bystanderLost` (a penalty). `computeFinalScores` (VP) and `countBystandersRescued` (HUD) already used the correct **dual** test, so three surfaces disagreed on what a Bystander is.
+
+Fix: one exported predicate `isBystanderCard(gameState, cardExtId)` in `scoring/scoring.logic.ts` (`villainDeckCardTypes[id] === 'bystander' || id === BYSTANDER_EXT_ID`) is now the **sole** definition, routed through all six count sites — the four buggy (`parScoring.logic.ts` rescued + lost, `par.aggregator.ts` rescued + lost) and the two already-correct (`computeFinalScores`, `countBystandersRescued`). The **live** and **PAR-calibration** paths share it, so they stay symmetric. No weight / formula / PAR-artifact change and no new `G` field, so both hash oracles (`finalStateHash` / `PRE_WP080_HASH`) are byte-unchanged (replay/sentinel green) and existing `competitive_scores` rows are not retroactively recomputed.
+
+Engine **2852→2855/0** (+3 regression tests with non-vacuous `notEqual` guards, using a supply-pile `BYSTANDER_EXT_ID` in a victory pile and in the escaped pile); `pnpm -r --no-bail test` green. **D-24026 live-verify: operator-pending** (`User-Visible Surface = play.legendary-arena.com`; the endgame "Bystanders rescued" and competitive score now match the HUD / victory pile). D-24395 Active.
+
+
 ### WP-585 — Rulebook-faithful scoring: remove the per-round cost (EC-620 / D-24394) shipped (2026-08-22)
 
 The operator questioned the Scheme-Twist penalty as "luck of the draw" and noted rounds already
