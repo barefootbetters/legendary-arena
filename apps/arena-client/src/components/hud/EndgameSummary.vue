@@ -179,6 +179,7 @@ export default defineComponent({
           <div class="worked-heading">PAR for this scenario</div>
           <div class="worked-givens" aria-label="par baseline">
             <span class="worked-given">Expected escapes <strong>{{ workedCalc.parDerivation.baseline.escapes }}</strong></span>
+            <span v-if="workedCalc.parDerivation.baseline.twists > 0" class="worked-given">Expected twists <strong>{{ workedCalc.parDerivation.baseline.twists }}</strong></span>
             <span class="worked-given">Expected bystanders <strong>{{ workedCalc.parDerivation.baseline.bystanders }}</strong></span>
             <span class="worked-given">Expected VP <strong>{{ workedCalc.parDerivation.baseline.victoryPoints }}</strong></span>
           </div>

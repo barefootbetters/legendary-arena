@@ -775,12 +775,19 @@ export function deriveScoringInputsFromFinalState(
     scenarioSpecificPenalty: 0,
   };
 
+  // why: WP-591 / D-24400 — mirror the live deriveScoringInputs: a simulated match
+  // that the scheme won is LOST, so its raw score carries the loss penalty. Kept
+  // symmetric with the live path (else calibrated PAR would ignore losses that the
+  // live score penalizes).
+  const matchLost = evaluateEndgame(finalState)?.outcome === 'scheme-wins';
+
   return {
     rounds,
     victoryPoints,
     bystandersRescued,
     escapes,
     penaltyEventCounts,
+    matchLost,
   };
 }
 

@@ -78,8 +78,12 @@ const DEFAULT_PENALTY_EVENT_WEIGHTS = {
 // rawScoreSemanticsVersion 1->2 because removing a whole term is a formula-SHAPE
 // change (lets leaderboard entries be filtered to a semantically compatible set,
 // so pre-WP-585 rows stay valid and are never retroactively invalidated).
-const SCORING_CONFIG_VERSION = 3;
-const RAW_SCORE_SEMANTICS_VERSION = 2;
+// why: WP-591 / D-24400 — scoringConfigVersion 3->4 (any PAR/weight/baseline change
+// bumps it) and rawScoreSemanticsVersion 2->3 (a formula-SHAPE change: PAR now models
+// the twist + bystander-lost penalties, and RawScore gains the loss penalty). Existing
+// competitive_scores rows keep their pinned versions — no retroactive invalidation.
+const SCORING_CONFIG_VERSION = 4;
+const RAW_SCORE_SEMANTICS_VERSION = 3;
 
 // why: class-2 metadata timestamps must be FIXED, never Date.now(), so the
 // generator is deterministic — re-running produces byte-identical artifacts
@@ -120,7 +124,7 @@ function stripSetAbbreviation(id) {
   return id.slice(id.indexOf("/") + 1);
 }
 
-export { composeScenarioDifficulty, baselineFromDifficulty, enumerateScenarios, generate };
+export { composeScenarioDifficulty, baselineForScenario, enumerateScenarios, generate };
 
 /**
  * Composes a scenario difficulty (1-10) from its entity ratings:
@@ -154,13 +158,57 @@ function composeScenarioDifficulty(mastermindRating, schemeRating, villainGroupR
  * @param playerCount the representative player count (1-5).
  * @returns the `ParBaseline` (bystandersPar / victoryPointsPar / escapesPar).
  */
-function baselineFromDifficulty(scenarioDifficulty, playerCount) {
-  // why: WP-585 / D-24394 — no roundsPar. RawScore has no round-cost term, so PAR
-  // needs no expected-rounds baseline.
+// why: WP-591 / D-24400 — bystander rescues are a SCHEME property, not a difficulty
+// one (validated from 13 real-game diagnostics: Midtown 24-37 vs Cosmic Cube 3-4).
+// The old flat difficulty->baseline template was scheme-BLIND, so it made Midtown
+// trivially Legendary AND Cosmic Cube wins grade F. These per-scheme profiles are
+// the observed competent-WIN medians at 1 and 2 players (structural estimates for the
+// schemes with no game yet: Killbots = flood like Midtown; Portals/Legacy/NegZone =
+// light). Twists are the scheme's own villain-deck twist count. INTERIM: simulation
+// calibration (VISION §26 Phase-2) supersedes this once the competent AI is strong.
+const SCHEME_PROFILES = {
+  'midtown-bank-robbery':                        { 1: { bys: 14, vp: 46, esc: 1, tw: 6, bLost: 2 }, 2: { bys: 22, vp: 74, esc: 1, tw: 6, bLost: 2 } },
+  'replace-earths-leaders-with-killbots':        { 1: { bys: 15, vp: 45, esc: 1, tw: 5, bLost: 2 }, 2: { bys: 24, vp: 72, esc: 1, tw: 5, bLost: 2 } },
+  'secret-invasion-of-the-skrull-shapeshifters': { 1: { bys: 9,  vp: 40, esc: 3, tw: 5, bLost: 0 }, 2: { bys: 15, vp: 62, esc: 5, tw: 5, bLost: 0 } },
+  'portals-to-the-dark-dimension':               { 1: { bys: 5,  vp: 34, esc: 1, tw: 7, bLost: 0 }, 2: { bys: 8,  vp: 55, esc: 2, tw: 7, bLost: 0 } },
+  'super-hero-civil-war':                        { 1: { bys: 4,  vp: 35, esc: 0, tw: 3, bLost: 0 }, 2: { bys: 6,  vp: 39, esc: 1, tw: 4, bLost: 0 } },
+  'unleash-the-power-of-the-cosmic-cube':        { 1: { bys: 4,  vp: 41, esc: 0, tw: 5, bLost: 0 }, 2: { bys: 7,  vp: 50, esc: 0, tw: 7, bLost: 0 } },
+  'legacy-virus-the':                            { 1: { bys: 4,  vp: 33, esc: 1, tw: 5, bLost: 0 }, 2: { bys: 6,  vp: 52, esc: 2, tw: 5, bLost: 0 } },
+  'negative-zone-prison-breakout':               { 1: { bys: 4,  vp: 33, esc: 2, tw: 5, bLost: 0 }, 2: { bys: 6,  vp: 52, esc: 3, tw: 5, bLost: 0 } },
+};
+// why: a light default for any scheme not yet profiled (keeps the generator total).
+const DEFAULT_SCHEME_PROFILE = { 1: { bys: 5, vp: 35, esc: 1, tw: 5, bLost: 0 }, 2: { bys: 8, vp: 52, esc: 2, tw: 5, bLost: 0 } };
+// why: 3p/4p/5p have no observed games; extrapolate reward totals from the 2p anchor.
+const HIGH_PLAYER_FACTOR = { 3: 1.28, 4: 1.5, 5: 1.7 };
+
+/**
+ * Scheme-aware, physical ParBaseline for a scenario (WP-591 / D-24400).
+ *
+ * The scheme sets the bystander + twist expectations; player count scales the
+ * reward totals; difficulty mildly modulates VP + escapes (a harder scenario earns
+ * a slightly more lenient PAR so it stays fairly gradable). All fields are
+ * non-negative integers.
+ *
+ * @param schemeSlug the scheme's slug (e.g. 'midtown-bank-robbery').
+ * @param scenarioDifficulty the composed 1-10 scenario difficulty.
+ * @param playerCount the representative player count (1-5).
+ * @returns the physical ParBaseline (bystanders / VP / escapes / twists / bystandersLost).
+ */
+function baselineForScenario(schemeSlug, scenarioDifficulty, playerCount) {
+  const profile = SCHEME_PROFILES[schemeSlug] ?? DEFAULT_SCHEME_PROFILE;
+  const anchor = profile[playerCount] ?? profile[2];
+  const factor = playerCount >= 3 ? (HIGH_PLAYER_FACTOR[playerCount] ?? 1.5) : 1;
+  // why: mild difficulty modulation centered at difficulty 5 (the anchor games'
+  // rough level) so harder scenarios expect slightly fewer rewards + more escapes —
+  // keeping a hard scenario fairly gradable rather than punishing its difficulty.
+  const difficultyDelta = scenarioDifficulty - 5;
+  const rewardDifficultyScale = Math.max(0.7, 1 - difficultyDelta * 0.03);
   return {
-    escapesPar: Math.floor(scenarioDifficulty / 4) + Math.max(0, playerCount - 3),
-    bystandersPar: clampRange(2, 8, 8 - Math.ceil(scenarioDifficulty / 2)),
-    victoryPointsPar: clampRange(8, 50, 30 - scenarioDifficulty + (playerCount - 2) * 3),
+    bystandersPar: Math.max(0, Math.round(anchor.bys * factor * rewardDifficultyScale)),
+    victoryPointsPar: Math.max(0, Math.round(anchor.vp * factor * rewardDifficultyScale)),
+    escapesPar: Math.max(0, Math.round(anchor.esc * factor) + Math.max(0, difficultyDelta > 0 ? Math.floor(difficultyDelta / 3) : 0) + Math.max(0, playerCount - 3)),
+    schemeTwistsPar: anchor.tw,
+    bystandersLostPar: Math.max(0, Math.round(anchor.bLost * (playerCount >= 2 ? 1 : 0.5))),
   };
 }
 
@@ -272,7 +320,10 @@ function buildScoringConfig(scenario, ratings) {
     requireRating(ratings.villainGroups, extId, "villain group"),
   );
   const scenarioDifficulty = composeScenarioDifficulty(mastermindRating, schemeRating, villainRatings);
-  const parBaseline = baselineFromDifficulty(scenarioDifficulty, scenario.playerCount);
+  // why: WP-591 — the scheme slug (e.g. 'midtown-bank-robbery') keys the per-scheme
+  // profile; scenario.schemeExtId is set-qualified ('core/midtown-bank-robbery').
+  const schemeSlug = stripSetAbbreviation(scenario.schemeExtId);
+  const parBaseline = baselineForScenario(schemeSlug, scenarioDifficulty, scenario.playerCount);
   return {
     scenarioKey: scenario.scenarioKey,
     weights: DEFAULT_WEIGHTS,

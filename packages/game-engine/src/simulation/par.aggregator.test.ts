@@ -100,6 +100,8 @@ function createTestScoringConfig(): ScenarioScoringConfig {
       bystandersPar: 5,
       victoryPointsPar: 30,
       escapesPar: 1,
+      schemeTwistsPar: 0,
+      bystandersLostPar: 0,
     },
     scoringConfigVersion: 1,
     createdAt: '2026-04-23T00:00:00.000Z',

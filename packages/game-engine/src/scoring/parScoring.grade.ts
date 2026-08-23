@@ -58,13 +58,19 @@ export interface ScoreGradeBand {
 // grade, tried best-to-worst; the bands are tunable config — a display-legibility
 // choice, NOT a scoring-formula change (WP-583 / D-24392). Legendary is well under
 // PAR; the final band (`null` ceiling) catches everything worse than D.
+// why: WP-591 / D-24400 — retuned for the scheme-aware, twist-aware PAR (which now
+// centers on competent play per scheme). Each bystander is worth 200 points, so the
+// old ±300-wide bands meant ~1.5 bystanders flipped a grade — everything pinned at
+// the extremes. These wider bands, validated against the 13 real anchor games, make
+// a solid win land B, an exceptional game A/Legendary, and a loss (via the loss
+// penalty) D/F. Tunable; a display-legibility choice, NOT a scoring-formula change.
 export const SCORE_GRADE_BANDS: readonly ScoreGradeBand[] = [
-  { grade: 'legendary', maxFinalScore: -1000 }, // <= -10.00 under PAR
-  { grade: 'a', maxFinalScore: -300 }, // <= -3.00 under PAR
-  { grade: 'b', maxFinalScore: 300 }, // around PAR (0)
-  { grade: 'c', maxFinalScore: 800 }, // <= +8.00 over PAR
-  { grade: 'd', maxFinalScore: 1800 }, // <= +18.00 over PAR (higher is F)
-  { grade: 'f', maxFinalScore: null }, // everything worse than D
+  { grade: 'legendary', maxFinalScore: -2000 }, // well under a competent-play PAR
+  { grade: 'a', maxFinalScore: -700 }, // clearly above competent
+  { grade: 'b', maxFinalScore: 700 }, // a solid win sits around PAR (0)
+  { grade: 'c', maxFinalScore: 2000 }, // a weak win
+  { grade: 'd', maxFinalScore: 4000 }, // a near-miss loss (loss penalty applied)
+  { grade: 'f', maxFinalScore: null }, // a poor loss
 ];
 
 /**

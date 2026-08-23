@@ -21,6 +21,7 @@ import {
   computeRawScore,
   deriveScoringInputs,
   validateScoringConfig,
+  LOSS_PENALTY,
 } from './parScoring.logic.js';
 import {
   PENALTY_EVENT_TYPES,
@@ -73,6 +74,8 @@ function makeReferenceConfig(): ScenarioScoringConfig {
       bystandersPar: 3,
       victoryPointsPar: 15,
       escapesPar: 2,
+      schemeTwistsPar: 0,
+      bystandersLostPar: 0,
     },
     scoringConfigVersion: 1,
     createdAt: '2026-04-17T00:00:00.000Z',
@@ -334,6 +337,8 @@ describe('parScoring logic (WP-048)', () => {
       bystandersPar: 3,
       victoryPointsPar: 15,
       escapesPar: 2,
+      schemeTwistsPar: 0,
+      bystandersLostPar: 0,
     });
     // why: JSON-serializable, no-shared-reference invariant (D-2801 / D-4806) — the
     // breakdown must not alias the config's parBaseline object.
@@ -816,5 +821,44 @@ describe('deriveScoringInputs per-player split (WP-588 / D-24397)', () => {
     assert.notStrictEqual(breakdown.inputs.perPlayer, inputs.perPlayer);
     assert.notStrictEqual(breakdown.inputs.perPlayer?.[0], inputs.perPlayer?.[0]);
     assert.deepEqual(breakdown.inputs.perPlayer, inputs.perPlayer);
+  });
+});
+
+describe('WP-591 — twist-aware PAR + loss penalty (D-24400)', () => {
+  it('computeParScore subtracts the scheme-twist and bystander-lost penalties from the baseline', () => {
+    const base = makeReferenceConfig();
+    const withTwists: ScenarioScoringConfig = {
+      ...base,
+      parBaseline: { ...base.parBaseline, schemeTwistsPar: 6, bystandersLostPar: 2 },
+    };
+    // The twist + bystander-lost penalties raise PAR (less negative) vs a baseline
+    // that omits them — PAR now models the same penalties the raw score carries.
+    const parWith = computeParScore(withTwists);
+    const parWithout = computeParScore(base); // schemeTwistsPar/bystandersLostPar = 0
+    const twistWeight = base.penaltyEventWeights.schemeTwistNegative;
+    const lostWeight = base.penaltyEventWeights.bystanderLost;
+    assert.equal(parWith, parWithout + 6 * twistWeight + 2 * lostWeight);
+  });
+
+  it('computeRawScore adds the loss penalty only when the match was lost', () => {
+    const config = makeReferenceConfig();
+    const won = makeInputs({ victoryPoints: 20, bystandersRescued: 5 });
+    const lost = makeInputs({ victoryPoints: 20, bystandersRescued: 5 });
+    const rawWon = computeRawScore({ ...won, matchLost: false }, config);
+    const rawLost = computeRawScore({ ...lost, matchLost: true }, config);
+    assert.equal(rawLost, rawWon + LOSS_PENALTY);
+    // Absent matchLost defaults to a win (no penalty).
+    assert.equal(computeRawScore(won, config), rawWon);
+  });
+
+  it('buildScoreBreakdown exposes weightedLossPenalty and folds it into rawScore', () => {
+    const config = makeReferenceConfig();
+    const lostInputs = makeInputs({ victoryPoints: 20, bystandersRescued: 5 });
+    const breakdown = buildScoreBreakdown({ ...lostInputs, matchLost: true }, config);
+    assert.equal(breakdown.weightedLossPenalty, LOSS_PENALTY);
+    // The loss penalty makes a loss score strictly worse (higher) than the same win.
+    const winBreakdown = buildScoreBreakdown({ ...lostInputs, matchLost: false }, config);
+    assert.equal(winBreakdown.weightedLossPenalty, 0);
+    assert.equal(breakdown.rawScore, winBreakdown.rawScore + LOSS_PENALTY);
   });
 });

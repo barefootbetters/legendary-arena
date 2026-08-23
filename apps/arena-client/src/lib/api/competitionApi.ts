@@ -85,6 +85,9 @@ export interface CompetitiveScoringInputs {
   // endgame report card. Optional: records persisted before WP-588 carry none, and
   // the endgame then shows only the team totals.
   readonly perPlayer?: readonly CompetitivePlayerContribution[];
+  // why: WP-591 / D-24400 — whether the match was lost (adds the loss penalty).
+  // Optional: absent on rows persisted before WP-591 (treated as a win).
+  readonly matchLost?: boolean;
 }
 
 /**
@@ -96,6 +99,11 @@ export interface CompetitiveParBaseline {
   readonly bystandersPar: number;
   readonly victoryPointsPar: number;
   readonly escapesPar: number;
+  // why: WP-591 / D-24400 — PAR now models the expected twists + bystanders-lost too.
+  // Optional: rows persisted before WP-591 have a 3-field baseline in their stored
+  // breakdown, so the derivation shows those terms only when present.
+  readonly schemeTwistsPar?: number;
+  readonly bystandersLostPar?: number;
 }
 
 /**
@@ -109,6 +117,9 @@ export interface CompetitiveScoreBreakdown {
   // from the scoring formula (the rulebook has no round penalty).
   readonly weightedPenaltyTotal: number;
   readonly penaltyBreakdown: CompetitivePenaltyCounts;
+  // why: WP-591 / D-24400 — the flat loss penalty added to rawScore when the match
+  // was lost (0 for a win). Optional: absent on rows persisted before WP-591.
+  readonly weightedLossPenalty?: number;
   readonly weightedBystanderReward: number;
   readonly weightedVictoryPointReward: number;
   readonly rawScore: number;
