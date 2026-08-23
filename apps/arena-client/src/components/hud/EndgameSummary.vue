@@ -6,7 +6,7 @@ import type { UIGameOverState } from '@legendary-arena/game-engine';
 // the player-facing word comes from the client `gradeDisplay` helper (D-24392).
 import { gradeForFinalScore } from '@legendary-arena/game-engine';
 import { gradeLabel, gradeClass, gradeAriaText, buildGradeScale } from '../../vfx/gradeDisplay';
-import { buildWorkedScoreCalc } from '../../vfx/scoreCalcDisplay';
+import { buildWorkedScoreCalc, buildLuckRead } from '../../vfx/scoreCalcDisplay';
 import type { MyCompetitiveScore } from '../../lib/api/competitionApi';
 
 // why: the four literal leaf-name `aria-label`s on the PAR breakdown
@@ -64,7 +64,18 @@ export default defineComponent({
     // from the breakdown (product ÷ count) inside the helper, never hardcoded, so
     // the shown formula cannot drift from the engine's real weights (D-24393).
     const workedCalc = computed(() =>
-      breakdown.value ? buildWorkedScoreCalc(breakdown.value) : null,
+      breakdown.value
+        ? buildWorkedScoreCalc(breakdown.value, props.competitiveScore?.seatIdentities)
+        : null,
+    );
+
+    // why: WP-593 — the objective luck-of-the-draw read (favorable / even /
+    // difficult shuffle), computed deterministically from the breakdown's actual
+    // adversity vs the scenario's PAR expectation. Absent for older records with no
+    // WP-591 adversity baseline; the opinionated hero/purchase coaching is a
+    // separate Pass-gated LLM feature (WP-B), not built here.
+    const luckRead = computed(() =>
+      breakdown.value ? buildLuckRead(breakdown.value) ?? null : null,
     );
 
     // why: WP-587 — the full grade scale (every band, its final-score range, and a
@@ -80,6 +91,7 @@ export default defineComponent({
       gradeBadgeClass,
       gradeBadgeAria,
       workedCalc,
+      luckRead,
       gradeScale,
     };
   },
@@ -126,7 +138,53 @@ export default defineComponent({
           data-testid="arena-hud-grade-badge"
         >{{ gradeBadgeLabel }}</span>
       </p>
-      <p class="competitive-score-detail">
+      <!-- why: WP-593 — the raw score as a two-sided ledger: penalties that raised
+           it (worse) and rewards that lowered it (better), netting to the raw score.
+           A restyle of the same values the worked formula below shows (never
+           recomputed). Falls back to the plain figure for a record with no
+           breakdown (rawLedger comes from the breakdown). -->
+      <div
+        v-if="workedCalc"
+        class="raw-ledger"
+        data-testid="arena-hud-raw-ledger"
+        aria-label="raw score ledger"
+      >
+        <div class="raw-ledger-side raw-ledger-penalties">
+          <div class="raw-ledger-heading">Penalties <span class="raw-ledger-sign">(raise score)</span></div>
+          <div v-if="workedCalc.rawLedger.penalties.length === 0" class="raw-ledger-row raw-ledger-none">
+            <span class="raw-ledger-label">None</span>
+            <span class="raw-ledger-amount">0</span>
+          </div>
+          <div v-for="line in workedCalc.rawLedger.penalties" :key="line.label" class="raw-ledger-row">
+            <span class="raw-ledger-label">{{ line.label }}</span>
+            <span class="raw-ledger-amount">+{{ line.amount }}</span>
+          </div>
+          <div class="raw-ledger-row raw-ledger-subtotal">
+            <span class="raw-ledger-label">Subtotal</span>
+            <span class="raw-ledger-amount">+{{ workedCalc.rawLedger.penaltyTotal }}</span>
+          </div>
+        </div>
+        <div class="raw-ledger-side raw-ledger-earned">
+          <div class="raw-ledger-heading">Earned <span class="raw-ledger-sign">(lower score)</span></div>
+          <div v-if="workedCalc.rawLedger.earned.length === 0" class="raw-ledger-row raw-ledger-none">
+            <span class="raw-ledger-label">None</span>
+            <span class="raw-ledger-amount">0</span>
+          </div>
+          <div v-for="line in workedCalc.rawLedger.earned" :key="line.label" class="raw-ledger-row">
+            <span class="raw-ledger-label">{{ line.label }}</span>
+            <span class="raw-ledger-amount">−{{ line.amount }}</span>
+          </div>
+          <div class="raw-ledger-row raw-ledger-subtotal">
+            <span class="raw-ledger-label">Subtotal</span>
+            <span class="raw-ledger-amount">−{{ workedCalc.rawLedger.earnedTotal }}</span>
+          </div>
+        </div>
+        <div class="raw-ledger-net">
+          <span class="raw-ledger-net-label">Raw score</span>
+          <span class="raw-ledger-net-value" aria-label="competitiveRawScore">{{ workedCalc.rawLedger.total }}</span>
+        </div>
+      </div>
+      <p v-else class="competitive-score-detail">
         Raw score <span aria-label="competitiveRawScore">{{ competitiveScore.rawScore }}</span>
       </p>
 
@@ -232,6 +290,30 @@ export default defineComponent({
           </li>
         </ol>
       </div>
+
+      <!-- why: WP-593 — the objective "luck of the draw" read: how much adversity
+           the match dealt (scheme twists / villain escapes / bystanders lost) versus
+           what this scenario's PAR expects, banded into favorable / even / difficult
+           and framed encouragingly. Deterministic from the breakdown (never from deck
+           order, which the engine never projects). Absent for older records with no
+           WP-591 adversity baseline. The opinionated hero/purchase coaching is a
+           separate Pass-gated LLM feature (WP-B), not shown here. -->
+      <div
+        v-if="luckRead"
+        class="luck-read"
+        :class="'luck-read--' + luckRead.verdict"
+        data-testid="arena-hud-luck-read"
+        aria-label="luck of the draw"
+      >
+        <div class="worked-heading">Luck of the draw</div>
+        <p class="luck-headline" aria-label="luckHeadline">{{ luckRead.headline }}</p>
+        <p class="luck-detail">{{ luckRead.detail }}</p>
+        <div class="luck-deltas" aria-label="luck adversity">
+          <span v-for="delta in luckRead.deltas" :key="delta.label" class="luck-delta">
+            {{ delta.label }}: <strong>{{ delta.actual }}</strong> vs {{ delta.expected }} expected
+          </span>
+        </div>
+      </div>
     </section>
 
     <dl v-if="hasPar && gameOver.par" class="par-breakdown">
@@ -308,6 +390,109 @@ header {
   font-size: 0.85rem;
   opacity: 0.85;
   font-variant-numeric: tabular-nums;
+}
+
+/* why: WP-593 — the raw score as a two-sided ledger. Two columns (penalties |
+   earned) on a shared grid so the amounts align, with a full-width net row below.
+   Colour reinforces sign (penalties warm, earned cool) but each side is also
+   labelled, so the meaning survives with colours disabled. */
+.raw-ledger {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.4rem 0.8rem;
+  margin: 0.35rem 0 0.1rem;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid color-mix(in srgb, var(--color-foreground) 18%, transparent);
+  border-radius: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.raw-ledger-side {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.raw-ledger-heading {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.7;
+  margin-bottom: 0.1rem;
+}
+
+.raw-ledger-sign {
+  text-transform: none;
+  letter-spacing: 0;
+  opacity: 0.75;
+  font-size: 0.68rem;
+}
+
+.raw-ledger-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.raw-ledger-label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  opacity: 0.9;
+}
+
+.raw-ledger-amount {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.raw-ledger-none .raw-ledger-label,
+.raw-ledger-none .raw-ledger-amount {
+  opacity: 0.55;
+  font-weight: 400;
+}
+
+.raw-ledger-penalties .raw-ledger-amount {
+  color: #bc4c00;
+}
+
+.raw-ledger-earned .raw-ledger-amount {
+  color: #1a7f37;
+}
+
+.raw-ledger-subtotal {
+  margin-top: 0.1rem;
+  padding-top: 0.15rem;
+  border-top: 1px solid color-mix(in srgb, var(--color-foreground) 14%, transparent);
+  font-weight: 700;
+}
+
+.raw-ledger-subtotal .raw-ledger-label {
+  opacity: 0.75;
+  font-weight: 600;
+}
+
+.raw-ledger-net {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding-top: 0.35rem;
+  border-top: 2px solid color-mix(in srgb, var(--color-foreground) 22%, transparent);
+}
+
+.raw-ledger-net-label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.7;
+}
+
+.raw-ledger-net-value {
+  font-size: 1.15rem;
+  font-weight: 700;
 }
 
 .par-breakdown {
@@ -481,6 +666,50 @@ dd {
   letter-spacing: 0.03em;
   font-weight: 700;
   color: var(--grade-color, var(--color-foreground));
+}
+
+/* why: WP-593 — the luck-of-the-draw read. A tinted card whose accent conveys the
+   verdict (favorable cool-green, difficult warm-orange, even neutral), reinforced
+   by the headline text so it reads without colour. */
+.luck-read {
+  margin: 0.5rem 0 0;
+  padding: 0.5rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid var(--luck-color, #888);
+  border-left: 4px solid var(--luck-color, #888);
+  background: color-mix(in srgb, var(--luck-color, #888) 10%, transparent);
+}
+
+.luck-read--favorable { --luck-color: #1a7f37; }
+.luck-read--average { --luck-color: #6b7280; }
+.luck-read--difficult { --luck-color: #bc4c00; }
+
+.luck-headline {
+  margin: 0.1rem 0 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--luck-color, var(--color-foreground));
+}
+
+.luck-detail {
+  margin: 0.15rem 0 0;
+  font-size: 0.82rem;
+  opacity: 0.9;
+  line-height: 1.45;
+}
+
+.luck-deltas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.9rem;
+  margin-top: 0.3rem;
+  font-size: 0.75rem;
+  opacity: 0.85;
+  font-variant-numeric: tabular-nums;
+}
+
+.luck-delta strong {
+  font-variant-numeric: tabular-nums;
 }
 
 /* why: WP-583 — the grade badge. Meaning is carried by the text label; the

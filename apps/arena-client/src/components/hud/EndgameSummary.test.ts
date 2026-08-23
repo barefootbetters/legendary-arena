@@ -4,7 +4,7 @@ import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mount } from '@vue/test-utils';
 import type { UIGameOverState } from '@legendary-arena/game-engine';
-import type { MyCompetitiveScore, CompetitiveScoreBreakdown } from '../../lib/api/competitionApi';
+import type { MyCompetitiveScore, CompetitiveScoreBreakdown, CompetitiveSeatIdentity } from '../../lib/api/competitionApi';
 import EndgameSummary from './EndgameSummary.vue';
 
 /** A minimal natural gameover (no par/scores — the runtime shape under D-6701). */
@@ -299,5 +299,64 @@ describe('EndgameSummary (WP-588 per-player split + PAR basis)', () => {
       basis.text().includes('scheme, mastermind, and villain groups'),
       'names the scenario inputs (not henchmen)',
     );
+  });
+});
+
+describe('EndgameSummary (WP-593 report-card v2)', () => {
+  function withPerPlayer(over = {}) {
+    return breakdown({
+      inputs: {
+        rounds: 29, victoryPoints: 103, bystandersRescued: 11, escapes: 0,
+        penaltyEventCounts: { villainEscaped: 0, bystanderLost: 0, schemeTwistNegative: 6, mastermindTacticUntaken: 0, scenarioSpecificPenalty: 0 },
+        perPlayer: [
+          { playerId: '0', victoryPoints: 60, bystandersRescued: 7 },
+          { playerId: '1', victoryPoints: 43, bystandersRescued: 4 },
+        ],
+      },
+      ...over,
+    });
+  }
+
+  test('renders the raw-score ledger (penalties + earned) netting to raw', () => {
+    const wrapper = mount(EndgameSummary, {
+      props: { gameOver: gameOver(), competitiveScore: score({ rawScore: -1430, scoreBreakdown: breakdown() }) },
+    });
+    const ledger = wrapper.find('[data-testid="arena-hud-raw-ledger"]');
+    assert.ok(ledger.exists(), 'raw ledger renders');
+    assert.ok(ledger.text().includes('6 scheme twists'), 'penalty line named');
+    assert.equal(wrapper.find('[aria-label="competitiveRawScore"]').text(), '-1430');
+  });
+
+  test('names players with (Bot) and (@handle) from seat identities', () => {
+    const seatIdentities: CompetitiveSeatIdentity[] = [
+      { playerId: '0', isBot: false, handle: 'jeff' },
+      { playerId: '1', isBot: true, handle: null },
+    ];
+    const wrapper = mount(EndgameSummary, {
+      props: { gameOver: gameOver(), competitiveScore: score({ scoreBreakdown: withPerPlayer(), seatIdentities }) },
+    });
+    const perPlayer = wrapper.find('[data-testid="arena-hud-per-player"]');
+    assert.ok(perPlayer.exists(), 'per-player block renders');
+    assert.ok(perPlayer.text().includes('Player 1 (@jeff)'), perPlayer.text());
+    assert.ok(perPlayer.text().includes('Player 2 (Bot)'), perPlayer.text());
+  });
+
+  test('renders the luck-of-the-draw read from the adversity baseline', () => {
+    const wrapper = mount(EndgameSummary, {
+      props: { gameOver: gameOver(), competitiveScore: score({ scoreBreakdown: breakdown({
+        inputs: { rounds: 20, victoryPoints: 40, bystandersRescued: 5, escapes: 2, penaltyEventCounts: { villainEscaped: 2, bystanderLost: 6, schemeTwistNegative: 8, mastermindTacticUntaken: 0, scenarioSpecificPenalty: 0 } },
+        parBaseline: { bystandersPar: 6, victoryPointsPar: 40, escapesPar: 1, schemeTwistsPar: 2, bystandersLostPar: 3 },
+      }) }) },
+    });
+    const luck = wrapper.find('[data-testid="arena-hud-luck-read"]');
+    assert.ok(luck.exists(), 'luck read renders');
+    assert.equal(wrapper.find('[aria-label="luckHeadline"]').text(), 'Difficult shuffle');
+  });
+
+  test('omits the luck read for a record with no WP-591 adversity baseline', () => {
+    const wrapper = mount(EndgameSummary, {
+      props: { gameOver: gameOver(), competitiveScore: score({ scoreBreakdown: breakdown() }) },
+    });
+    assert.ok(!wrapper.find('[data-testid="arena-hud-luck-read"]').exists());
   });
 });

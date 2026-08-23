@@ -291,6 +291,37 @@ to Layer A's victory-point category — not the Final Score
 formula directly. Card-text-specific VP modifiers are deferred to
 future WPs per the source `// why:` comment.
 
+## Your report card
+
+When a match ends, the endgame screen shows your **competitive score** — lower is
+better, PAR-relative — with a letter grade (Legendary / A / B / C / D / F). The card
+breaks the number down so you can see exactly where it came from:
+
+- **By player.** Each seat is named — `Player 1 (Bot)` for a bot ally,
+  `Player 2 (@yourhandle)` for a signed-in human — with that seat's victory points
+  and rescued bystanders. The competitive score is a shared-team score; this split is
+  a display-only reconciliation that sums to the team totals.
+- **Raw-score ledger.** Your raw score is shown as two columns: the **penalties** that
+  raised it (scheme twists, villain escapes, bystanders lost, and a match-lost penalty
+  on a loss) beside what you **earned** that lowered it (rescued bystanders, victory
+  points). The two sides net to your raw score.
+- **PAR for this scenario.** The same formula applied to what this scenario is expected
+  to yield — set by its scheme, mastermind, and villain groups (not the henchmen). Your
+  final score is Raw − PAR.
+- **Grade scale.** The full ladder (what a B / A / Legendary needs) with your grade
+  marked in place.
+- **Luck of the draw.** An honest read of how the shuffle treated you: it compares the
+  adversity you actually faced (scheme twists, villain escapes, bystanders lost) with
+  what this scenario usually deals. A **favorable** shuffle means the deck broke your
+  way; a **difficult** shuffle credits you for holding the line with a bad draw; an
+  **even** shuffle is a fair test. It is a deterministic read from your score breakdown
+  — the same match always reads the same way, and it never sees your deck order.
+
+The seat identities behind the names are derived at score-submission time and are never
+stored on your score row — they are display metadata only. (An opinionated AI coach that
+recommends heroes and purchases is a planned Legendary-Pass feature, separate from this
+objective card.)
+
 ## Interactions
 
 - **[Gameplay Strategy](gameplay-strategy.md).** Scoring is the
@@ -423,6 +454,9 @@ future WPs per the source `// why:` comment.
 - INFRA PR #630 (2026-07-09): DB-gated server test baseline repaired — 11 pre-existing failures (invisible to CI, which never sets `TEST_DATABASE_URL`) fixed across the leaderboard read-layer and profile suites; the full DB-wired `apps/server` suite is 848/848 green serialized, so scoring/leaderboard test failures against a live test DB are regressions from here on
 - WP-585 + D-24394 (2026-08-22): rulebook-faithful scoring — the per-round cost (`roundCost` / `roundsPar` / `weightedRoundCost`) was **fully removed** (the printed rulebook has no round/turn penalty; Scheme Twists are its length proxy), so `RawScore = Penalties − (BP × bystanderReward) − (VP × vpReward)`; `scoringConfigVersion 2→3`, `rawScoreSemanticsVersion 1→2`; 128 seed PAR artifacts regenerated with no retroactive invalidation of existing rows
 - WP-586 + D-24395 (2026-08-22): the competitive-score derivation **undercounted rescued Bystanders** — it counted only villain-deck Bystanders and dropped supply-pile Bystanders (`BYSTANDER_EXT_ID`) from both `bystandersRescued` and `bystanderLost`; a single shared `isBystanderCard` predicate now backs the VP tally, the HUD rescue count, and both scoring-input paths (live + PAR), so all surfaces agree. Server-side derivation, no game-state-hash re-pin
+- WP-587/588 + D-24396/24397 (2026-08-22): the endgame report card gained the PAR **derivation** (the same formula on the scenario baseline), a colour-coded **grade scale**, a **per-player** VP/bystander split, and named penalties ("7 scheme twists", not "7 penalties") — all rendered verbatim from the returned breakdown, no server change
+- WP-591 + D-24400 (2026-08-23): interim **scheme-aware PAR** — PAR was scheme-blind and mis-graded both ways (flood schemes pinned Legendary, light schemes graded wins F); per-scheme baselines from 13 real-game anchors, PAR now models expected twists + bystanders-lost, a loss penalty grades a loss by margin, retuned grade bands; `scoringConfigVersion 3→4`
+- WP-593 + D-24402 (2026-08-23): report card v2 — **named players** (`Player N (Bot)` / `Player N (@handle)`) via a derived, non-persisted `seatIdentities` projection on the submit response, a **raw-score ledger** (penalties vs earned), and an objective, deterministic **luck-of-the-draw** read (actual adversity vs the scenario's PAR expectation). Display + read-path only; no game-state-hash re-pin
 
 ## References
 

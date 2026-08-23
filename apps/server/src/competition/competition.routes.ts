@@ -355,6 +355,13 @@ export function registerCompetitionRoutes(
         koaContext.body = {
           record: result.record,
           wasExisting: result.wasExisting,
+          // why: WP-593 / D-24402 — the derived per-seat identity roster for the
+          // endgame report card. Omitted (not null) when the submit path built
+          // none, so the client's exactOptionalPropertyTypes shape stays clean and
+          // the card degrades to plain "Player N".
+          ...(result.seatIdentities === undefined
+            ? {}
+            : { seatIdentities: result.seatIdentities }),
         };
         return;
       }

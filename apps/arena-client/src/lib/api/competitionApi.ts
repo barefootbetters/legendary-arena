@@ -45,6 +45,25 @@ export interface MyCompetitiveScore {
   // `ScoreBreakdown`) because this file must not import engine/server types.
   // Optional: a record without a breakdown still typechecks and renders the headline.
   readonly scoreBreakdown?: CompetitiveScoreBreakdown;
+  // why: WP-593 — the derived per-seat identity roster for the endgame report card
+  // ("Player N (Bot)" / "Player N (@handle)"). NOT a field of the server's locked
+  // CompetitiveScoreRecord: it is match metadata the submit response returns
+  // alongside the record, merged into this shape by `submitCompetitiveScore`.
+  // Optional: absent for guests, the GET /api/me/scores history read, and older
+  // records — the card then shows plain "Player N".
+  readonly seatIdentities?: readonly CompetitiveSeatIdentity[];
+}
+
+/**
+ * One seat's display identity on the endgame report card (WP-593), a structural
+ * mirror of the server's `MatchSeatIdentity` (derived match metadata, never a
+ * persisted score-row column). `handle` is `null` for a bot seat, a guest seat,
+ * and an account with no display handle — all rendered as a plain "Player N".
+ */
+export interface CompetitiveSeatIdentity {
+  readonly playerId: string;
+  readonly isBot: boolean;
+  readonly handle: string | null;
 }
 
 /**
@@ -209,11 +228,20 @@ export async function submitCompetitiveScore(
     const body = (await response.json()) as {
       record: MyCompetitiveScore;
       wasExisting: boolean;
+      // why: WP-593 — the derived per-seat roster the server returns beside the
+      // record; merged into the record so the endgame panel reads one shape.
+      seatIdentities?: readonly CompetitiveSeatIdentity[];
     };
     return {
       status: 200,
       wasExisting: body.wasExisting,
-      record: body.record,
+      // why: WP-593 — fold seatIdentities into the record (the server keeps it a
+      // sibling field so the record stays the locked score-row shape). Omitted
+      // rather than set to undefined so the exactOptionalPropertyTypes shape holds.
+      record:
+        body.seatIdentities === undefined
+          ? body.record
+          : { ...body.record, seatIdentities: body.seatIdentities },
       error: null,
     };
   }

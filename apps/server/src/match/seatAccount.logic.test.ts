@@ -13,7 +13,11 @@
 import { describe, test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { recordSeatAccount, readSeatAccounts } from './seatAccount.logic.js';
+import {
+  recordSeatAccount,
+  readSeatAccounts,
+  readSeatIdentities,
+} from './seatAccount.logic.js';
 import type {
   AccountId,
   DatabaseClient,
@@ -166,4 +170,75 @@ describe('recordSeatAccount (WP-333)', () => {
       assert.deepEqual(await readSeatAccounts('wp335-no-such-match', database), []);
     },
   );
+});
+
+describe('readSeatIdentities (WP-593)', () => {
+  // A stub that routes each query by the table it hits, so the seat-enumeration
+  // + handle-merge logic is exercised without a real database.
+  interface SeatIdentitiesStubConfig {
+    seatAccounts: { playerId: string; accountId: string }[];
+    botSeats: string[];
+    handles: Record<string, string>;
+  }
+  function stubDatabase(config: SeatIdentitiesStubConfig): DatabaseClient {
+    return {
+      query: async (sql: string, params: unknown[]) => {
+        if (/match_seat_accounts/.test(sql)) {
+          return {
+            rows: config.seatAccounts.map((seat) => ({
+              player_id: seat.playerId,
+              account_id: seat.accountId,
+            })),
+          };
+        }
+        if (/match_bot_ally/.test(sql)) {
+          return config.botSeats.length === 0
+            ? { rows: [] }
+            : { rows: [{ bot_seats: config.botSeats }] };
+        }
+        if (/legendary\.players/.test(sql)) {
+          const requested = params[0] as string[];
+          const rows = Object.entries(config.handles)
+            .filter(([extId]) => requested.includes(extId))
+            .map(([extId, handle]) => ({ ext_id: extId, display_handle: handle }));
+          return { rows };
+        }
+        throw new Error('unexpected query: ' + sql);
+      },
+    } as unknown as DatabaseClient;
+  }
+
+  test('builds a full roster: human handle, bot seat, and guest fallback', async () => {
+    const database = stubDatabase({
+      seatAccounts: [{ playerId: '0', accountId: 'acct-jeff' }, { playerId: '2', accountId: 'acct-guest-no-handle' }],
+      botSeats: ['1'],
+      handles: { 'acct-jeff': 'jeff' },
+    });
+    const identities = await readSeatIdentities('match-1', 3, database);
+    assert.deepEqual(identities, [
+      { playerId: '0', isBot: false, handle: 'jeff' },
+      { playerId: '1', isBot: true, handle: null },
+      { playerId: '2', isBot: false, handle: null },
+    ]);
+  });
+
+  test('a solo human match yields one named seat', async () => {
+    const database = stubDatabase({
+      seatAccounts: [{ playerId: '0', accountId: 'acct-jeff' }],
+      botSeats: [],
+      handles: { 'acct-jeff': 'jeff' },
+    });
+    const identities = await readSeatIdentities('match-2', 1, database);
+    assert.deepEqual(identities, [{ playerId: '0', isBot: false, handle: 'jeff' }]);
+  });
+
+  test('an empty display handle resolves to null (plain Player N)', async () => {
+    const database = stubDatabase({
+      seatAccounts: [{ playerId: '0', accountId: 'acct-blank' }],
+      botSeats: [],
+      handles: { 'acct-blank': '' },
+    });
+    const identities = await readSeatIdentities('match-3', 1, database);
+    assert.equal(identities[0].handle, null);
+  });
 });

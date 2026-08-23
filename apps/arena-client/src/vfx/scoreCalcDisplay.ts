@@ -15,7 +15,10 @@
  * integers the rest of the panel already shows (no ÷100 — operator choice).
  */
 
-import type { CompetitiveScoreBreakdown } from '../lib/api/competitionApi';
+import type {
+  CompetitiveScoreBreakdown,
+  CompetitiveSeatIdentity,
+} from '../lib/api/competitionApi';
 
 // why: the true minus sign (U+2212), matching the rest of the endgame panel, so
 // the arithmetic reads cleanly rather than with a hyphen.
@@ -51,10 +54,62 @@ export interface ParDerivation {
   };
 }
 
+/**
+ * One line of the raw-score ledger (WP-593): a named amount. Penalty amounts are
+ * positive (they raise the score — worse); earned amounts are the reward totals
+ * shown as a subtraction (they lower the score — better).
+ */
+export interface RawLedgerLine {
+  readonly label: string;
+  readonly amount: number;
+}
+
+/**
+ * The raw score presented as a two-sided ledger (WP-593): the penalties that
+ * raised it and the rewards that lowered it, netting to `total` (= rawScore).
+ * A restyle of the same values the worked formula shows — never recomputed.
+ */
+export interface RawLedger {
+  /** Penalty lines (positive amounts), most-impactful reading top-down by fixed order. */
+  readonly penalties: readonly RawLedgerLine[];
+  /** Sum of the penalty amounts (the weighted penalty total, incl. any loss penalty). */
+  readonly penaltyTotal: number;
+  /** Earned-reward lines (the amounts subtracted: bystanders, victory points). */
+  readonly earned: readonly RawLedgerLine[];
+  /** Sum of the earned amounts (the total subtracted). */
+  readonly earnedTotal: number;
+  /** Net raw score (penaltyTotal − earnedTotal), verbatim from the breakdown. */
+  readonly total: number;
+}
+
+/**
+ * The luck-of-the-draw read (WP-593): an OBJECTIVE, deterministic verdict on how
+ * much adversity the match dealt versus what this scenario's PAR expects. Higher
+ * actual adversity than expected reads as a difficult shuffle; lower reads as
+ * favorable. Computed purely from the breakdown (never from deck order, which the
+ * engine never projects) — same inputs always give the same verdict.
+ */
+export interface LuckRead {
+  /** The verdict band. */
+  readonly verdict: 'favorable' | 'average' | 'difficult';
+  /** Short heading, e.g. "Difficult shuffle". */
+  readonly headline: string;
+  /** One-line encouraging framing of the verdict. */
+  readonly detail: string;
+  /** Per-dimension actual-vs-expected adversity, for the "how we read it" row. */
+  readonly deltas: ReadonlyArray<{
+    readonly label: string;
+    readonly actual: number;
+    readonly expected: number;
+  }>;
+}
+
 /** The worked-calculation strings + values the endgame screen renders. */
 export interface WorkedScoreCalc {
   /** "What happened" inputs, in display order. */
   readonly givens: ReadonlyArray<{ readonly label: string; readonly value: number }>;
+  /** The raw score as a penalties/earned ledger (WP-593 restyle). */
+  readonly rawLedger: RawLedger;
   /** Symbolic formula, e.g. "Penalties − (Bystanders × 200) − (VP × 10)". */
   readonly formula: string;
   /** The same formula with match values substituted, e.g. "(6 scheme twists × 300) − (11 × 200) − (103 × 10)". */
@@ -244,34 +299,196 @@ function subtrahend(value: number): string {
 
 /**
  * Builds the per-player reward split for the report card (WP-588): each player's
- * VP and bystanders, labelled "Player N" (1-based). Returns undefined when the
+ * VP and bystanders, labelled "Player N" (1-based) and, when seat identities are
+ * known (WP-593), suffixed "(Bot)" or "(@handle)". Returns undefined when the
  * breakdown carries no per-player data (records predating WP-588).
  *
  * @param breakdown - The server-returned breakdown.
+ * @param seatIdentities - The per-seat identities, or undefined when unknown.
  * @returns One row per player, or undefined when no per-player data is present.
  */
 function buildPerPlayerSplit(
   breakdown: CompetitiveScoreBreakdown,
+  seatIdentities: readonly CompetitiveSeatIdentity[] | undefined,
 ): WorkedScoreCalc['perPlayer'] {
   const perPlayer = breakdown.inputs.perPlayer;
   if (perPlayer === undefined || perPlayer.length === 0) {
     return undefined;
   }
+  const identityByPlayer = new Map<string, CompetitiveSeatIdentity>();
+  for (const identity of seatIdentities ?? []) {
+    identityByPlayer.set(identity.playerId, identity);
+  }
   return perPlayer.map((contribution) => ({
-    // why: boardgame.io player ids are 0-based ("0", "1"); players read "Player 1",
-    // "Player 2". A non-numeric id falls back to itself rather than "Player NaN".
-    label: playerLabel(contribution.playerId),
+    label: playerLabel(
+      contribution.playerId,
+      identityByPlayer.get(contribution.playerId),
+    ),
     victoryPoints: contribution.victoryPoints,
     bystandersRescued: contribution.bystandersRescued,
   }));
 }
 
 /**
- * Turns a boardgame.io player id into a 1-based "Player N" label.
+ * Turns a boardgame.io player id into a 1-based "Player N" label, adding the
+ * seat's identity suffix when known (WP-593): "(Bot)" for a server-driven bot
+ * ally, "(@handle)" for a human seat with a display handle. A seat with neither
+ * (a guest, or no handle set) stays a plain "Player N".
+ *
+ * @param playerId - The boardgame.io seat id ("0", "1", ...).
+ * @param identity - The seat's identity, or undefined when unknown.
+ * @returns The player label.
  */
-function playerLabel(playerId: string): string {
+function playerLabel(
+  playerId: string,
+  identity: CompetitiveSeatIdentity | undefined,
+): string {
   const index = Number(playerId);
-  return Number.isInteger(index) ? `Player ${index + 1}` : `Player ${playerId}`;
+  // why: player ids are 0-based; a non-numeric id falls back to itself rather
+  // than "Player NaN".
+  const base = Number.isInteger(index) ? `Player ${index + 1}` : `Player ${playerId}`;
+  if (identity === undefined) {
+    return base;
+  }
+  if (identity.isBot) {
+    return `${base} (Bot)`;
+  }
+  if (identity.handle !== null && identity.handle !== '') {
+    // why: display handles are stored bare; render one leading "@" whether or not
+    // the stored value already carries it, so it always reads "(@name)".
+    const handle = identity.handle.startsWith('@')
+      ? identity.handle
+      : `@${identity.handle}`;
+    return `${base} (${handle})`;
+  }
+  return base;
+}
+
+/**
+ * Builds the raw-score ledger (WP-593): the penalties that raised the score and
+ * the rewards that lowered it, netting to the verbatim rawScore. A restyle of the
+ * same weighted values the worked formula shows — never recomputed.
+ *
+ * @param breakdown - The server-returned breakdown.
+ * @returns The two-sided ledger.
+ */
+function buildRawLedger(breakdown: CompetitiveScoreBreakdown): RawLedger {
+  const counts = breakdown.inputs.penaltyEventCounts;
+  const contributions = breakdown.penaltyBreakdown;
+  // why: fixed order so the ledger reads the same across matches.
+  const order: ReadonlyArray<keyof typeof PENALTY_LABELS> = [
+    'schemeTwistNegative',
+    'villainEscaped',
+    'bystanderLost',
+    'mastermindTacticUntaken',
+    'scenarioSpecificPenalty',
+  ];
+  const penalties: RawLedgerLine[] = [];
+  for (const type of order) {
+    const count = counts[type];
+    if (count > 0) {
+      penalties.push({ label: penaltyLabel(type, count), amount: contributions[type] });
+    }
+  }
+  // why: WP-591 — a lost match adds a flat loss penalty; show it as its own line.
+  const lossPenalty = breakdown.weightedLossPenalty ?? 0;
+  if (lossPenalty > 0) {
+    penalties.push({ label: 'match lost', amount: lossPenalty });
+  }
+
+  const earned: RawLedgerLine[] = [];
+  if (breakdown.weightedBystanderReward > 0) {
+    earned.push({
+      label: `${breakdown.inputs.bystandersRescued} bystanders rescued`,
+      amount: breakdown.weightedBystanderReward,
+    });
+  }
+  if (breakdown.weightedVictoryPointReward > 0) {
+    earned.push({
+      label: `${breakdown.inputs.victoryPoints} victory points`,
+      amount: breakdown.weightedVictoryPointReward,
+    });
+  }
+
+  return {
+    penalties,
+    penaltyTotal: breakdown.weightedPenaltyTotal + lossPenalty,
+    earned,
+    earnedTotal: breakdown.weightedBystanderReward + breakdown.weightedVictoryPointReward,
+    total: breakdown.rawScore,
+  };
+}
+
+/**
+ * Builds the luck-of-the-draw read (WP-593): an objective, deterministic verdict
+ * comparing the match's actual adversity (scheme twists, villain escapes,
+ * bystanders lost) against what this scenario's PAR expects. Returns undefined
+ * when the breakdown carries no WP-591 adversity baseline (older records) — the
+ * read needs the expected twists + bystanders-lost, not just escapes.
+ *
+ * The verdict bands the actual/expected ratio: ≤0.75 favorable, ≥1.35 difficult,
+ * else average. Framed encouragingly — a difficult shuffle credits the player for
+ * holding the line with a bad draw.
+ *
+ * @param breakdown - The server-returned breakdown.
+ * @returns The luck read, or undefined when no adversity baseline is present.
+ */
+export function buildLuckRead(
+  breakdown: CompetitiveScoreBreakdown,
+): LuckRead | undefined {
+  const baseline = breakdown.parBaseline;
+  if (
+    baseline === undefined ||
+    baseline.schemeTwistsPar === undefined ||
+    baseline.bystandersLostPar === undefined
+  ) {
+    return undefined;
+  }
+  const counts = breakdown.inputs.penaltyEventCounts;
+  const deltas = [
+    { label: 'Scheme twists', actual: counts.schemeTwistNegative, expected: baseline.schemeTwistsPar },
+    { label: 'Villain escapes', actual: counts.villainEscaped, expected: baseline.escapesPar },
+    { label: 'Bystanders lost', actual: counts.bystanderLost, expected: baseline.bystandersLostPar },
+  ];
+  const actualTotal = deltas.reduce((sum, delta) => sum + delta.actual, 0);
+  const expectedTotal = deltas.reduce((sum, delta) => sum + delta.expected, 0);
+  // why: guard the divide — a scenario whose baseline expects zero adversity makes
+  // any actual adversity read "difficult" (ratio 2) and zero actual read "average"
+  // (ratio 1). No nested ternary (code-style): explicit branches.
+  let ratio: number;
+  if (expectedTotal > 0) {
+    ratio = actualTotal / expectedTotal;
+  } else if (actualTotal > 0) {
+    ratio = 2;
+  } else {
+    ratio = 1;
+  }
+
+  if (ratio <= 0.75) {
+    return {
+      verdict: 'favorable',
+      headline: 'Favorable shuffle',
+      detail:
+        'The deck broke your way — less adversity than this scenario usually deals. You made the most of a good draw.',
+      deltas,
+    };
+  }
+  if (ratio >= 1.35) {
+    return {
+      verdict: 'difficult',
+      headline: 'Difficult shuffle',
+      detail:
+        'The deck dealt more adversity than this scenario expects. You did well to hold the line with what you were dealt.',
+      deltas,
+    };
+  }
+  return {
+    verdict: 'average',
+    headline: 'An even shuffle',
+    detail:
+      'The draw played out about as this scenario expects — a fair test, neither stacked for you nor against you.',
+    deltas,
+  };
 }
 
 /**
@@ -280,9 +497,14 @@ function playerLabel(playerId: string): string {
  * then the result; then Final = Raw − PAR.
  *
  * @param breakdown - The server-returned score breakdown (rendered verbatim).
+ * @param seatIdentities - The per-seat identities (WP-593) for the per-player
+ *   labels, or undefined when unknown (labels stay plain "Player N").
  * @returns The worked-calculation strings and values for the endgame screen.
  */
-export function buildWorkedScoreCalc(breakdown: CompetitiveScoreBreakdown): WorkedScoreCalc {
+export function buildWorkedScoreCalc(
+  breakdown: CompetitiveScoreBreakdown,
+  seatIdentities?: readonly CompetitiveSeatIdentity[],
+): WorkedScoreCalc {
   const inputs = breakdown.inputs;
 
   // why: WP-585 / D-24394 — no round-cost term (the rulebook has no round penalty;
@@ -327,12 +549,13 @@ export function buildWorkedScoreCalc(breakdown: CompetitiveScoreBreakdown): Work
       { label: 'Bystanders lost', value: inputs.penaltyEventCounts.bystanderLost },
       { label: 'Scheme twists', value: inputs.penaltyEventCounts.schemeTwistNegative },
     ],
+    rawLedger: buildRawLedger(breakdown),
     formula,
     substituted,
     products,
     rawScore: breakdown.rawScore,
     parScore: breakdown.parScore,
-    perPlayer: buildPerPlayerSplit(breakdown),
+    perPlayer: buildPerPlayerSplit(breakdown, seatIdentities),
     parDerivation: buildParDerivation(breakdown, bystanderWeight, vpWeight),
     finalSubstituted: `${breakdown.rawScore} ${MINUS} ${subtrahend(breakdown.parScore)}`,
     finalScore: breakdown.finalScore,
