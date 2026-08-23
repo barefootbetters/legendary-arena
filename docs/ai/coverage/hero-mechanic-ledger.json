@@ -2,13 +2,13 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 652,
+    "totalRows": 655,
     "byStatus": {
-      "executable": 236,
+      "executable": 242,
       "deferred": 0,
       "condition": 5,
       "unsupported": 367,
-      "unmarked": 43,
+      "unmarked": 40,
       "subsystem": 1
     },
     "distinctMechanics": 123
@@ -3370,6 +3370,22 @@
         {
           "slug": "copy-powers",
           "name": "Copy Powers"
+        }
+      ]
+    },
+    {
+      "extId": "core/rogue",
+      "heroName": "Rogue",
+      "set": "core",
+      "mechanic": "optional-ko-reward",
+      "status": "executable",
+      "wp": "WP-248",
+      "decision": "D-24019",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward",
+      "designs": [
+        {
+          "slug": "energy-drain",
+          "name": "Energy Drain"
         }
       ]
     },
@@ -8591,12 +8607,17 @@
       "extId": "ssw1/apocalyptic-kitty-pryde",
       "heroName": "Apocalyptic Kitty Pryde",
       "set": "ssw1",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": "",
-      "designs": []
+      "mechanic": "optional-ko-reward",
+      "status": "executable",
+      "wp": "WP-248",
+      "decision": "D-24019",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward",
+      "designs": [
+        {
+          "slug": "phase-out",
+          "name": "Phase Out"
+        }
+      ]
     },
     {
       "extId": "ssw1/black-bolt",
@@ -8638,6 +8659,22 @@
         {
           "slug": "supersonic-flight",
           "name": "Supersonic Flight"
+        }
+      ]
+    },
+    {
+      "extId": "ssw1/dr-strange",
+      "heroName": "Dr. Strange",
+      "set": "ssw1",
+      "mechanic": "optional-ko-reward",
+      "status": "executable",
+      "wp": "WP-248",
+      "decision": "D-24019",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward",
+      "designs": [
+        {
+          "slug": "trust-me-im-a-doctor",
+          "name": "Trust Me, I'm a Doctor"
         }
       ]
     },
@@ -8711,12 +8748,17 @@
       "extId": "ssw1/namor-the-sub-mariner",
       "heroName": "Namor, the Sub-Mariner",
       "set": "ssw1",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": "",
-      "designs": []
+      "mechanic": "optional-ko-reward",
+      "status": "executable",
+      "wp": "WP-248",
+      "decision": "D-24019",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward",
+      "designs": [
+        {
+          "slug": "feed-the-sharks",
+          "name": "Feed the Sharks"
+        }
+      ]
     },
     {
       "extId": "ssw1/old-man-logan",
@@ -8969,12 +9011,17 @@
       "extId": "ssw2/black-swan",
       "heroName": "Black Swan",
       "set": "ssw2",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": "",
-      "designs": []
+      "mechanic": "optional-ko-reward",
+      "status": "executable",
+      "wp": "WP-248",
+      "decision": "D-24019",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward",
+      "designs": [
+        {
+          "slug": "witness-the-end",
+          "name": "Witness the End"
+        }
+      ]
     },
     {
       "extId": "ssw2/captain-britain",
@@ -9077,6 +9124,22 @@
         {
           "slug": "youre-a-slow-learner",
           "name": "You're a Slow Learner"
+        }
+      ]
+    },
+    {
+      "extId": "ssw2/elsa-bloodstone",
+      "heroName": "Elsa Bloodstone",
+      "set": "ssw2",
+      "mechanic": "optional-ko-reward",
+      "status": "executable",
+      "wp": "WP-248",
+      "decision": "D-24019",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward",
+      "designs": [
+        {
+          "slug": "bloodstone-pendant",
+          "name": "Bloodstone Pendant"
         }
       ]
     },

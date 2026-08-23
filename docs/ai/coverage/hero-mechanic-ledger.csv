@@ -180,6 +180,7 @@ core/hulk,Hulk,core,ko-wound-reward,executable,WP-382,D-24183,packages/game-engi
 core/iron-man,Iron Man,core,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,endless-invention|quantum-breakthrough
 core/nick-fury,Nick Fury,core,(unmarked),unmarked,,,,
 core/rogue,Rogue,core,copy-powers,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#copy-powers,copy-powers
+core/rogue,Rogue,core,optional-ko-reward,executable,WP-248,D-24019,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward,energy-drain
 core/spider-man,Spider-Man,core,rescue,executable,WP-215,D-21501,packages/game-engine/src/hero/heroEffects.execute.ts#rescue,web-shooters
 core/spider-man,Spider-Man,core,reveal,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal,astonishing-strength|great-responsibility|the-amazing-spider-man|web-shooters
 core/spider-man,Spider-Man,core,reveal-count,unsupported,,,,the-amazing-spider-man
@@ -456,15 +457,16 @@ smhc/peter-parker-homecoming,"Peter Parker, Homecoming",smhc,wall-crawl,executab
 smhc/peters-allies,Peter's Allies,smhc,coordinate,unsupported,,,,liz|may-parker|ned
 smhc/tony-stark,Tony Stark,smhc,coordinate,unsupported,,,,as-usual-i-did-all-the-work|genius-billionaire|stay-out-of-trouble
 smhc/tony-stark,Tony Stark,smhc,danger-sense,unsupported,,,,little-grey-area|stay-out-of-trouble
-ssw1/apocalyptic-kitty-pryde,Apocalyptic Kitty Pryde,ssw1,(unmarked),unmarked,,,,
+ssw1/apocalyptic-kitty-pryde,Apocalyptic Kitty Pryde,ssw1,optional-ko-reward,executable,WP-248,D-24019,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward,phase-out
 ssw1/black-bolt,Black Bolt,ssw1,(unmarked),unmarked,,,,
 ssw1/black-panther,Black Panther,ssw1,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,catlike-reflexes
 ssw1/captain-marvel,Captain Marvel,ssw1,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,supersonic-flight
+ssw1/dr-strange,Dr. Strange,ssw1,optional-ko-reward,executable,WP-248,D-24019,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward,trust-me-im-a-doctor
 ssw1/dr-strange,Dr. Strange,ssw1,teleport,unsupported,,,,cloak-of-levitation|sorcerer-supreme
 ssw1/lady-thor,Lady Thor,ssw1,(unmarked),unmarked,,,,
 ssw1/magik,Magik,ssw1,teleport,unsupported,,,,dimensional-portal|travel-through-limbo|wield-the-soulsword
 ssw1/maximus,Maximus,ssw1,(unmarked),unmarked,,,,
-ssw1/namor-the-sub-mariner,"Namor, the Sub-Mariner",ssw1,(unmarked),unmarked,,,,
+ssw1/namor-the-sub-mariner,"Namor, the Sub-Mariner",ssw1,optional-ko-reward,executable,WP-248,D-24019,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward,feed-the-sharks
 ssw1/old-man-logan,Old Man Logan,ssw1,cross-dimensional-rampage,unsupported,,,,rage-out
 ssw1/proxima-midnight,Proxima Midnight,ssw1,(unmarked),unmarked,,,,
 ssw1/superior-iron-man,Superior Iron Man,ssw1,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,optimized-technology
@@ -479,13 +481,14 @@ ssw2/arkon-the-magnificent,Arkon the Magnificent,ssw2,spectrum,condition,,,,quiv
 ssw2/arkon-the-magnificent,Arkon the Magnificent,ssw2,wall-crawl,executable,WP-273,D-24049,packages/game-engine/src/moves/recruitHero.ts,all-terrain-barbarian
 ssw2/beast,Beast,ssw2,patrol,unsupported,,,,upside-down-thinking
 ssw2/beast,Beast,ssw2,wall-crawl,executable,WP-273,D-24049,packages/game-engine/src/moves/recruitHero.ts,upside-down-thinking
-ssw2/black-swan,Black Swan,ssw2,(unmarked),unmarked,,,,
+ssw2/black-swan,Black Swan,ssw2,optional-ko-reward,executable,WP-248,D-24019,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward,witness-the-end
 ssw2/captain-britain,Captain Britain,ssw2,patrol,unsupported,,,,raise-the-union-jack
 ssw2/captain-and-the-devil-the,"Captain and the Devil, The",ssw2,patrol,unsupported,,,,feeding-grounds
 ssw2/captain-and-the-devil-the,"Captain and the Devil, The",ssw2,spectrum,condition,,,,jurassic-america|patriotic-chomp
 ssw2/corvus-glaive,Corvus Glaive,ssw2,patrol,unsupported,,,,let-none-escape-you
 ssw2/dr-punisher-soldier-supreme,"Dr. Punisher, Soldier Supreme",ssw2,patrol,unsupported,,,,calm-before-the-storm|sweep-the-streets-of-trash
 ssw2/dr-punisher-soldier-supreme,"Dr. Punisher, Soldier Supreme",ssw2,reveal-ko-attack,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-ko-attack,youre-a-slow-learner
+ssw2/elsa-bloodstone,Elsa Bloodstone,ssw2,optional-ko-reward,executable,WP-248,D-24019,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward,bloodstone-pendant
 ssw2/elsa-bloodstone,Elsa Bloodstone,ssw2,patrol,unsupported,,,,monster-hunter
 ssw2/elsa-bloodstone,Elsa Bloodstone,ssw2,spectrum,condition,,,,bloodstone-pendant|prodigy-of-ulysses-bloodstone
 ssw2/elsa-bloodstone,Elsa Bloodstone,ssw2,wall-crawl,executable,WP-273,D-24049,packages/game-engine/src/moves/recruitHero.ts,defend-the-shield-wall

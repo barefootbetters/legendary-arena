@@ -1111,7 +1111,7 @@
           "attack": null,
           "recruit": "2+",
           "abilities": [
-            "[hc:covert]: You may KO a card from your hand or discard pile. If you do, you get +1[icon:recruit]."
+            "[hc:covert]: You may KO a card from your hand or discard pile. If you do, you get +1[icon:recruit]. [keyword:optional-ko-reward:recruit:1]"
           ]
         },
         {

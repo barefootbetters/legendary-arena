@@ -989,6 +989,29 @@ function parseAbilityText(abilityText: string): {
     magnitudes.delete(shuffleDiscardRewardType);
   }
 
+  // Icon-suppression (sibling): an optional-ko-reward effect whose reward is an
+  // icon resource (attack/recruit) subsumes the printed reward icon on the same
+  // line. Without this, "You may KO a card...; if you do, you get +N[icon:recruit]"
+  // emits BOTH a plain 'recruit' effect (from the icon, Steps 2b/3 — granted
+  // UNCONDITIONALLY once the gate passes) AND the KO-gated optional-ko-reward — a
+  // free grant plus a double-grant. Drop the plain keyword matching the seeded
+  // rewardType and its magnitude so only the KO-gated reward remains. A no-op for
+  // draw/rescue rewards (their prose emits no plain icon keyword), so a marked
+  // rescue/draw card (Dangerous Rescue) is byte-identical.
+  // why: D-24398 — the KO-gated reward subsumes the printed reward icon (mirrors
+  // the D-24148 shuffle-discard-empty-reward and D-24016 count-scaled suppression).
+  const optionalKoRewardType = rewardTypes.get('optional-ko-reward');
+  if (optionalKoRewardType !== undefined) {
+    const keywordsWithoutRewardIcon: HeroKeyword[] = [];
+    for (const keyword of uniqueKeywords) {
+      if (keyword !== optionalKoRewardType) {
+        keywordsWithoutRewardIcon.push(keyword);
+      }
+    }
+    uniqueKeywords = keywordsWithoutRewardIcon;
+    magnitudes.delete(optionalKoRewardType);
+  }
+
   // If conditions were found, add 'conditional' keyword
   if (conditions.length > 0) {
     let hasConditional = false;

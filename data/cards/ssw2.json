@@ -374,7 +374,7 @@
           "attack": null,
           "recruit": "2",
           "abilities": [
-            "[hc:instinct]: You may KO a card from your hand or discard pile. If you do, draw a card."
+            "[hc:instinct]: You may KO a card from your hand or discard pile. If you do, draw a card. [keyword:optional-ko-reward:draw:1]"
           ]
         },
         {
@@ -916,7 +916,7 @@
           "attack": null,
           "recruit": "2+",
           "abilities": [
-            "[keyword:Spectrum]: You may KO a card from your hand or discard pile. If you do, you get +1[icon:recruit]."
+            "[keyword:Spectrum]: You may KO a card from your hand or discard pile. If you do, you get +1[icon:recruit]. [keyword:optional-ko-reward:recruit:1]"
           ]
         },
         {
