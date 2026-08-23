@@ -38144,7 +38144,7 @@ The Covert / team / Spectrum class-synergy gates on these lines are faithful and
 
 _Active 2026-08-23 — landed at WP-589 execution (EC-624). Parser icon-suppression added (mirrors D-24148/D-24016); 6 markers backfilled (core Energy Drain + ssw1×3 + ssw2×2); data + card-derived feeds regenerated (bounded). Engine 2860→2863/0 (+3 suppression pins); effect-index/ledger:heroes/mechanics:metadata :check green; pnpm -r --no-bail test green; finalStateHash + replay/sentinel byte-unchanged (no new G field); co2e double-grant corrected by the parser fix (no co2e data change); Covert/team/Spectrum gate untouched. Hard-deps WP-248 / D-24019 + WP-249. D-24026 live-verify operator-pending (`User-Visible Surface = play.legendary-arena.com`; core Rogue Energy Drain prompts the KO choice with the Covert synergy active)._
 
-### D-24399 — Log the Silent KO in `resolveOptionalKoReward` (Drafted 2026-08-23; not yet landed — WP-590 / EC-625)
+### D-24399 — Log the Silent KO in `resolveOptionalKoReward` (Active 2026-08-23 — WP-590 / EC-625)
 
 **Problem.** `resolveOptionalKoReward` (WP-248 / D-24019) resolves the "you may KO a card from your hand or discard pile; if you do, <reward>" choice by KO'ing the player's chosen card (Step 5, `G.ko = koCard(...)`) and then dispatching the reward (Step 6). The reward logs itself (rescue / draw / attack / recruit), but the KO does not — so the game log records the payoff with no line naming the card that was spent to earn it. A player (or a diagnostics reviewer) reading the log sees a card leave their hand/discard with no explanation.
 
@@ -38154,4 +38154,4 @@ _Active 2026-08-23 — landed at WP-589 execution (EC-624). Parser icon-suppress
 
 **Surface.** `packages/game-engine/src/moves/optionalKoReward.resolve.ts` (two imports + one Step-5 `pushLog`) + `optionalKoReward.resolve.test.ts` (KO-line + decline-no-line assertions); conditionally the pinned replay/sentinel hash constant. No client/server/registry change.
 
-_Drafted 2026-08-23; flips to Active at WP-590 execution (EC-625). Hard-dep WP-248 / D-24019. D-24026 live-verify required (`User-Visible Surface = play.legendary-arena.com`; the KO line appears before the reward line in a real match log)._
+_Active 2026-08-23 — landed at WP-590 execution (EC-625). One Step-5 `pushLog` (imports `pushLog` + `formatCardRef`) names the KO'd card + zone + source ability, outcome `neutral`, before the Step-6 reward dispatch; decline logs none. Engine 2860→2863/0 (+3 pins); no mechanics/ordering change; no new `G` field; `finalStateHash` byte-unchanged (messages excluded from `hashGameState`); replay/sentinel byte-unchanged — the sole pinned replay records no `resolveOptionalKoReward` move, so no re-pin. Hard-dep WP-248 / D-24019. D-24026 live-verify operator-pending (`User-Visible Surface = play.legendary-arena.com`; the KO line appears before the reward line in a real match log)._

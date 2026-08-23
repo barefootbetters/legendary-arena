@@ -527,3 +527,54 @@ describe('resolvers are NOT blocked while an optional-KO-reward is pending', () 
     assert.equal(gameState.pendingOptionalKoRewards!.length, 1, 'optional-KO-reward queue untouched');
   });
 });
+
+describe('resolveOptionalKoReward — logs the KO cost (WP-590 / D-24399)', () => {
+  it('logs one neutral KO line naming the card + hand zone + source, before the reward line', () => {
+    const gameState = makeTestGameState({
+      hand: ['real-card' as CardExtId, 'other' as CardExtId],
+      bystanders: ['by-0' as CardExtId],
+      pendingOptionalKoRewards: [rescuePending()],
+    });
+    const { context } = makeMoveContext(gameState);
+
+    resolveOptionalKoReward(context, { zone: 'hand', cardId: 'real-card' as CardExtId });
+
+    // why: the KO line is emitted in Step 5, BEFORE the Step-6 reward dispatch, so
+    // it is messages[0]; the reward's own line ("rescued …") follows.
+    assert.ok(gameState.messages.length >= 1, 'a KO line was logged');
+    const koLine = gameState.messages[0]!;
+    assert.equal(koLine.outcome, 'neutral', 'the KO cost is a neutral line, not the payoff');
+    assert.match(koLine.text, /KO'd/, 'names the KO action');
+    assert.match(koLine.text, /real-card/, 'names the KOd card (formatCardRef always includes the ext-id)');
+    assert.match(koLine.text, /their hand/, 'names the hand source zone');
+    assert.match(koLine.text, /hero-x/, 'names the source ability card');
+    assert.ok(gameState.messages.some(message => /rescued/.test(message.text)), 'the reward still logs after the KO');
+  });
+
+  it('a KO from the discard pile names the discard pile zone', () => {
+    const gameState = makeTestGameState({
+      discard: ['disc-card' as CardExtId],
+      bystanders: ['by-0' as CardExtId],
+      pendingOptionalKoRewards: [rescuePending()],
+    });
+    const { context } = makeMoveContext(gameState);
+
+    resolveOptionalKoReward(context, { zone: 'discard', cardId: 'disc-card' as CardExtId });
+
+    assert.match(gameState.messages[0]!.text, /their discard pile/, 'names the discard-pile source zone');
+    assert.match(gameState.messages[0]!.text, /disc-card/, 'names the KOd discard card');
+  });
+
+  it('decline logs no KO line (still silent)', () => {
+    const gameState = makeTestGameState({
+      hand: ['keep-me' as CardExtId],
+      bystanders: ['by-0' as CardExtId],
+      pendingOptionalKoRewards: [rescuePending()],
+    });
+    const { context } = makeMoveContext(gameState);
+
+    resolveOptionalKoReward(context, { decline: true });
+
+    assert.deepStrictEqual(gameState.messages, [], 'decline is silent — no KO line');
+  });
+});

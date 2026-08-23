@@ -27,6 +27,8 @@ import type { CardExtId } from '../state/zones.types.js';
 import { moveCardFromZone } from './zoneOps.js';
 import { koCard } from '../board/ko.logic.js';
 import { executeSingleEffect } from '../hero/heroEffects.execute.js';
+import { pushLog } from '../log/logPush.js';
+import { formatCardRef } from '../log/logDisplay.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -126,6 +128,17 @@ export function resolveOptionalKoReward(
   // Step 5: Mutate — shorten the source zone and KO the chosen card.
   playerZones[targetZone] = moveResult.from;
   G.ko = koCard(G.ko, targetCardId);
+
+  // why: D-24399 — the KO is the paid cost of the optional-KO-reward; log it here
+  // (before the Step-6 reward line) so the spent card is observable in the game
+  // log instead of silently vanishing, mirroring the Master Strike KO / heroEffectKo
+  // phrasing. Outcome 'neutral' because it is a cost, not the payoff.
+  const koSourceZoneLabel = targetZone === 'hand' ? 'their hand' : 'their discard pile';
+  pushLog(
+    G,
+    `Player ${playerID} KO'd ${formatCardRef(G.cardDisplayData, targetCardId)} from ${koSourceZoneLabel} for ${formatCardRef(G.cardDisplayData, front.sourceCardId)}'s ability.`,
+    'neutral',
+  );
 
   // Step 6: THEN dispatch the reward by REUSING the existing executor — no
   // re-implementation. The reward's own logging (e.g. D-24017 for rescue) is the
