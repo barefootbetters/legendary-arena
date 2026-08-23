@@ -305,6 +305,14 @@ Start from the [Play Diagnostics](play-diagnostics.md) bundle and read its
 One question — "is the field in the snapshot?" — routes every missing-data
 report to exactly one of the three layers.
 
+> **A missing *prompt* is a different question.** The triage above finds a
+> missing projection **field**. A pending-choice **prompt** that never appears
+> (e.g. the optional-KO-reward "KO a card, or decline" choice) is not in the
+> snapshot to find at all — the engine never *parked* the choice, because an
+> upstream ability marker was missing, so there was nothing to project. That
+> routes to the card's `abilities[]` markup + the ability parser, not
+> `buildUIState` / the filter. See [Edge Cases](#edge-cases).
+
 ## Edge Cases {#edge-cases}
 
 - **The audience filter silently drops new optional projection fields.**
@@ -346,6 +354,30 @@ report to exactly one of the three layers.
   filter-drop bug** above — the render path and the filter are both correct;
   the *data* was never baked. The blob is frozen (snapshots are not
   save-games), so the only remedy is a new match.
+- **An interactive board prompt only appears if the card's ability carries
+  the marker that parks it.** The play surface renders a pending player
+  choice — e.g. the optional-KO-reward *"KO a card from your hand or discard
+  pile, or decline"* — only because the engine **parked** that choice, and it
+  parks one only when the card's ability text carries the marker that models
+  it (`[keyword:optional-ko-reward:<reward>:N]`). If the marker is missing,
+  `heroAbility.setup.ts` silently emits the plain printed effect instead and
+  the board **never prompts** — a class **distinct** from the projection-drop
+  (#1165) and never-baked cases above: here the pending choice *never existed
+  to project*, so no amount of filter / `buildUIState` triage will find it.
+  Shipped bug (WP-589, 2026-08-23): a family of *"You may KO a card…; if you
+  do, +N[resource]"* Heroes — core Rogue **Energy Drain** the reported case —
+  carried the KO prose and the reward icon but **not** the marker, so the
+  parser dropped the KO clause and granted the resource unconditionally; the
+  player was never offered the KO. Fix: backfill the marker (+ a parser
+  icon-suppression so the printed reward icon does not *also* grant). Its
+  companion WP-590 named the KO in the game log — `Player 0 KO'd Wound
+  (pile-wound) from their discard pile for Energy Drain's ability` — so the
+  spent card is no longer invisible. Live-verified on
+  `play.legendary-arena.com` at gitSha `6e99f0b` (a 2p Red Skull / Midtown
+  Bank Robbery match): Energy Drain now prompts the KO and logs it. **Triage
+  a prompt-that-never-appears at the card's `abilities[]` markup + the
+  ability parser — NOT `buildUIState` / the filter**; it is an upstream
+  ability-data gap, not a projection bug.
 
 ## Code Touchpoints
 
