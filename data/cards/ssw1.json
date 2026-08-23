@@ -27,7 +27,7 @@
           "attack": "2+",
           "recruit": null,
           "abilities": [
-            "[hc:covert]: You may KO a card from your hand or discard pile. If you do, you get +1[icon:attack]."
+            "[hc:covert]: You may KO a card from your hand or discard pile. If you do, you get +1[icon:attack]. [keyword:optional-ko-reward:attack:1]"
           ]
         },
         {
@@ -473,7 +473,7 @@
           "attack": null,
           "recruit": "1+",
           "abilities": [
-            "[team:illuminati]: You may KO a card from your hand or discard pile. If you do, you get +1[icon:recruit]."
+            "[team:illuminati]: You may KO a card from your hand or discard pile. If you do, you get +1[icon:recruit]. [keyword:optional-ko-reward:recruit:1]"
           ]
         },
         {
@@ -925,7 +925,7 @@
           "attack": "2",
           "recruit": null,
           "abilities": [
-            "You may KO a card from your hand or discard pile. If you do, draw a card."
+            "You may KO a card from your hand or discard pile. If you do, draw a card. [keyword:optional-ko-reward:draw:1]"
           ]
         },
         {

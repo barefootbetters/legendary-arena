@@ -1892,3 +1892,60 @@ describe('recruit-as-attack keyword parse (WP-580 / D-24389)', () => {
     assert.ok((hook.keywords ?? []).includes('recruit-as-attack'), 'the keyword is registered on the hook');
   });
 });
+
+describe('buildHeroAbilityHooks optional-ko-reward icon-suppression (WP-589 / D-24398)', () => {
+  // why: WP-589 — an icon-reward optional-ko-reward line ("You may KO a card...;
+  // if you do, you get +N[icon:recruit]") must emit ONLY the KO-gated
+  // optional-ko-reward effect, never ALSO a plain unconditional recruit/attack
+  // grant from the printed icon (Steps 2b/3). Without the suppression the icon
+  // grants for free AND the KO reward grants again — a double-grant. These are
+  // the double-grant regression pins; the reported core Rogue Energy Drain bug.
+  function koRewardRegistry(slug: string, ability: string) {
+    return makeHeroRegistry('test', 'ko-reward-hero', [
+      { slug, rarityLabel: 'Common 1', abilities: [ability] },
+    ]);
+  }
+  function koRewardConfig(): MatchSetupConfig {
+    return { ...createTestConfig(), heroDeckIds: ['test/ko-reward-hero'] };
+  }
+
+  it('recruit-reward line emits one optional-ko-reward effect and NO plain recruit effect', () => {
+    const registry = koRewardRegistry(
+      'recruit-ko-card',
+      '[hc:covert]: You may KO a card from your hand or discard pile. If you do, you get +1[icon:recruit]. [keyword:optional-ko-reward:recruit:1]',
+    );
+    const hooks = buildHeroAbilityHooks(registry, koRewardConfig());
+    const hook = hooks[0]!;
+    const effects = hook.effects ?? [];
+    const optional = effects.filter(e => e.type === 'optional-ko-reward');
+    assert.equal(optional.length, 1, 'exactly one optional-ko-reward effect');
+    assert.equal(optional[0]!.rewardType, 'recruit', 'reward is recruit');
+    assert.equal(
+      effects.filter(e => e.type === 'recruit').length,
+      0,
+      'the printed recruit icon is suppressed — no free unconditional grant',
+    );
+  });
+
+  it('attack-reward line emits one optional-ko-reward effect and NO plain attack effect', () => {
+    const registry = koRewardRegistry(
+      'attack-ko-card',
+      '[hc:covert]: You may KO a card from your hand or discard pile. If you do, you get +1[icon:attack]. [keyword:optional-ko-reward:attack:1]',
+    );
+    const hooks = buildHeroAbilityHooks(registry, koRewardConfig());
+    const effects = hooks[0]!.effects ?? [];
+    assert.equal(effects.filter(e => e.type === 'optional-ko-reward').length, 1, 'one optional-ko-reward effect');
+    assert.equal(effects.filter(e => e.type === 'attack').length, 0, 'the printed attack icon is suppressed');
+  });
+
+  it('rescue-reward line (no reward icon) is unchanged — suppression is a no-op', () => {
+    const registry = koRewardRegistry(
+      'rescue-ko-card',
+      '[hc:covert]: You may KO a card from your hand or discard pile. If you do, rescue a Bystander. [keyword:optional-ko-reward:rescue:1]',
+    );
+    const hooks = buildHeroAbilityHooks(registry, koRewardConfig());
+    const optional = (hooks[0]!.effects ?? []).filter(e => e.type === 'optional-ko-reward');
+    assert.equal(optional.length, 1, 'the rescue optional-ko-reward survives');
+    assert.equal(optional[0]!.rewardType, 'rescue', 'reward is rescue — never dropped');
+  });
+});

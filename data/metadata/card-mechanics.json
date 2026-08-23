@@ -858,11 +858,17 @@
       "label": "Optional Ko Reward",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 3,
+      "cardCount": 9,
       "cardIds": [
         "co2e/black-widow",
         "co2e/rogue",
-        "core/black-widow"
+        "core/black-widow",
+        "core/rogue",
+        "ssw1/apocalyptic-kitty-pryde",
+        "ssw1/dr-strange",
+        "ssw1/namor-the-sub-mariner",
+        "ssw2/black-swan",
+        "ssw2/elsa-bloodstone"
       ],
       "hidden": true
     },
@@ -1635,7 +1641,7 @@
       "label": "Unmarked",
       "scope": "hero",
       "source": "free-text",
-      "cardCount": 43,
+      "cardCount": 40,
       "cardIds": [
         "3dtc/deadpool",
         "3dtc/howard-the-duck",
@@ -1668,13 +1674,10 @@
         "shld/gw-bridge",
         "shld/leo-fitz-and-jemma-simmons",
         "shld/melinda-may",
-        "ssw1/apocalyptic-kitty-pryde",
         "ssw1/black-bolt",
         "ssw1/lady-thor",
         "ssw1/maximus",
-        "ssw1/namor-the-sub-mariner",
         "ssw1/proxima-midnight",
-        "ssw2/black-swan",
         "ssw2/phoenix-force-cyclops",
         "vill/kingpin",
         "vill/loki",
@@ -2391,7 +2394,8 @@
     },
     "core/rogue": {
       "mechanics": [
-        "copy-powers"
+        "copy-powers",
+        "optional-ko-reward"
       ]
     },
     "core/spider-man": {
@@ -3284,7 +3288,7 @@
     },
     "ssw1/apocalyptic-kitty-pryde": {
       "mechanics": [
-        "unmarked"
+        "optional-ko-reward"
       ]
     },
     "ssw1/black-bolt": {
@@ -3304,6 +3308,7 @@
     },
     "ssw1/dr-strange": {
       "mechanics": [
+        "optional-ko-reward",
         "teleport"
       ]
     },
@@ -3324,7 +3329,7 @@
     },
     "ssw1/namor-the-sub-mariner": {
       "mechanics": [
-        "unmarked"
+        "optional-ko-reward"
       ]
     },
     "ssw1/old-man-logan": {
@@ -3375,7 +3380,7 @@
     },
     "ssw2/black-swan": {
       "mechanics": [
-        "unmarked"
+        "optional-ko-reward"
       ]
     },
     "ssw2/captain-and-the-devil-the": {
@@ -3402,6 +3407,7 @@
     },
     "ssw2/elsa-bloodstone": {
       "mechanics": [
+        "optional-ko-reward",
         "patrol",
         "spectrum",
         "wall-crawl"

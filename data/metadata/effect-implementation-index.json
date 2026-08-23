@@ -3,18 +3,18 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1827,
+    "totalEntries": 1830,
     "byScope": {
-      "hero": 652,
+      "hero": 655,
       "villain": 719,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 372,
+      "executable": 378,
       "deferred": 0,
       "condition": 5,
       "unsupported": 368,
-      "unmarked": 1079,
+      "unmarked": 1076,
       "subsystem": 3
     }
   },
@@ -6854,6 +6854,23 @@
         {
           "slug": "copy-powers",
           "name": "Copy Powers"
+        }
+      ]
+    },
+    {
+      "extId": "core/rogue",
+      "name": "Rogue",
+      "set": "core",
+      "scope": "hero",
+      "mechanic": "optional-ko-reward",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward",
+      "wp": "WP-248",
+      "decision": "D-24019",
+      "designs": [
+        {
+          "slug": "energy-drain",
+          "name": "Energy Drain"
         }
       ]
     },
@@ -18626,11 +18643,17 @@
       "name": "Apocalyptic Kitty Pryde",
       "set": "ssw1",
       "scope": "hero",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "optional-ko-reward",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward",
+      "wp": "WP-248",
+      "decision": "D-24019",
+      "designs": [
+        {
+          "slug": "phase-out",
+          "name": "Phase Out"
+        }
+      ]
     },
     {
       "extId": "ssw1/black-bolt",
@@ -18674,6 +18697,23 @@
         {
           "slug": "supersonic-flight",
           "name": "Supersonic Flight"
+        }
+      ]
+    },
+    {
+      "extId": "ssw1/dr-strange",
+      "name": "Dr. Strange",
+      "set": "ssw1",
+      "scope": "hero",
+      "mechanic": "optional-ko-reward",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward",
+      "wp": "WP-248",
+      "decision": "D-24019",
+      "designs": [
+        {
+          "slug": "trust-me-im-a-doctor",
+          "name": "Trust Me, I'm a Doctor"
         }
       ]
     },
@@ -18750,11 +18790,17 @@
       "name": "Namor, the Sub-Mariner",
       "set": "ssw1",
       "scope": "hero",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "optional-ko-reward",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward",
+      "wp": "WP-248",
+      "decision": "D-24019",
+      "designs": [
+        {
+          "slug": "feed-the-sharks",
+          "name": "Feed the Sharks"
+        }
+      ]
     },
     {
       "extId": "ssw1/old-man-logan",
@@ -19472,11 +19518,17 @@
       "name": "Black Swan",
       "set": "ssw2",
       "scope": "hero",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "optional-ko-reward",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward",
+      "wp": "WP-248",
+      "decision": "D-24019",
+      "designs": [
+        {
+          "slug": "witness-the-end",
+          "name": "Witness the End"
+        }
+      ]
     },
     {
       "extId": "ssw2/captain-and-the-devil-the",
@@ -19585,6 +19637,23 @@
         {
           "slug": "youre-a-slow-learner",
           "name": "You're a Slow Learner"
+        }
+      ]
+    },
+    {
+      "extId": "ssw2/elsa-bloodstone",
+      "name": "Elsa Bloodstone",
+      "set": "ssw2",
+      "scope": "hero",
+      "mechanic": "optional-ko-reward",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward",
+      "wp": "WP-248",
+      "decision": "D-24019",
+      "designs": [
+        {
+          "slug": "bloodstone-pendant",
+          "name": "Bloodstone Pendant"
         }
       ]
     },
@@ -28004,7 +28073,8 @@
     "core/rogue": {
       "scope": "hero",
       "mechanics": [
-        "copy-powers"
+        "copy-powers",
+        "optional-ko-reward"
       ]
     },
     "core/spider-man": {
@@ -32449,7 +32519,7 @@
     "ssw1/apocalyptic-kitty-pryde": {
       "scope": "hero",
       "mechanics": [
-        "(unmarked)"
+        "optional-ko-reward"
       ]
     },
     "ssw1/black-bolt": {
@@ -32473,6 +32543,7 @@
     "ssw1/dr-strange": {
       "scope": "hero",
       "mechanics": [
+        "optional-ko-reward",
         "teleport"
       ]
     },
@@ -32497,7 +32568,7 @@
     "ssw1/namor-the-sub-mariner": {
       "scope": "hero",
       "mechanics": [
-        "(unmarked)"
+        "optional-ko-reward"
       ]
     },
     "ssw1/old-man-logan": {
@@ -32803,7 +32874,7 @@
     "ssw2/black-swan": {
       "scope": "hero",
       "mechanics": [
-        "(unmarked)"
+        "optional-ko-reward"
       ]
     },
     "ssw2/captain-and-the-devil-the": {
@@ -32835,6 +32906,7 @@
     "ssw2/elsa-bloodstone": {
       "scope": "hero",
       "mechanics": [
+        "optional-ko-reward",
         "patrol",
         "spectrum",
         "wall-crawl"

@@ -200,6 +200,12 @@
       "markupToken": "[keyword:optional-ko-reward:rescue:1]"
     },
     {
+      "heroSlug": "rogue",
+      "cardSlug": "energy-drain",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:optional-ko-reward:recruit:1]"
+    },
+    {
       "heroSlug": "gambit",
       "cardSlug": "high-stakes-jackpot",
       "abilityIndex": 0,
@@ -592,6 +598,18 @@
   ],
   "ssw2": [
     {
+      "heroSlug": "black-swan",
+      "cardSlug": "witness-the-end",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:optional-ko-reward:draw:1]"
+    },
+    {
+      "heroSlug": "elsa-bloodstone",
+      "cardSlug": "bloodstone-pendant",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:optional-ko-reward:recruit:1]"
+    },
+    {
       "heroSlug": "ruby-summers",
       "cardSlug": "heir-to-legends",
       "abilityIndex": 0,
@@ -611,6 +629,24 @@
     }
   ],
   "ssw1": [
+    {
+      "heroSlug": "apocalyptic-kitty-pryde",
+      "cardSlug": "phase-out",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:optional-ko-reward:attack:1]"
+    },
+    {
+      "heroSlug": "dr-strange",
+      "cardSlug": "trust-me-im-a-doctor",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:optional-ko-reward:recruit:1]"
+    },
+    {
+      "heroSlug": "namor-the-sub-mariner",
+      "cardSlug": "feed-the-sharks",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:optional-ko-reward:draw:1]"
+    },
     {
       "heroSlug": "ultimate-spider-man",
       "cardSlug": "leaping-spider",
