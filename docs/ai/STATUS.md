@@ -7,6 +7,15 @@
 
 ## Current State
 
+### WP-590 — Log the silent KO in resolveOptionalKoReward (EC-625 / D-24399) shipped (2026-08-23)
+
+Spun out of the WP-589 review: `resolveOptionalKoReward` KO'd the player's chosen hand/discard card (Step 5) then dispatched the reward (Step 6), but only the reward logged itself — the KO of the spent card was silent, so a match log showed the payoff with no record of which card was spent (the operator noticed the card vanishing).
+
+Fix: one Step-5 `pushLog` (imports `pushLog` + `formatCardRef`) names the KO'd card, its source zone (`their hand` / `their discard pile`), and the source ability (`front.sourceCardId`), outcome `neutral` (a paid cost, mirroring the Master Strike KO), emitted **before** the Step-6 reward dispatch; the decline path logs nothing. No mechanics / ordering / atomicity change; no new `G` field.
+
+Determinism: `finalStateHash` is byte-unchanged (`messages` are excluded from `hashGameState`, D-24081). The replay hash (`computeStateHash` / `PRE_WP080_HASH`) DOES hash `messages`, but the sole pinned replay (`sentinel-core-doom-2p`) records no `resolveOptionalKoReward` move, so it never hits the new line — **no re-pin needed**, exactly as the draft-time audit predicted. Engine **2860→2863/0** (+3: KO-line from hand, from discard, decline-no-line); `pnpm -r --no-bail test` green. **D-24026 live-verify: operator-pending** (`User-Visible Surface = play.legendary-arena.com`; the KO line appears before the reward line in a real match log). D-24399 Active.
+
+
 ### WP-589 — Optional-KO-reward icon-reward fidelity (EC-624 / D-24398) shipped (2026-08-23)
 
 The operator reported that core Rogue **Energy Drain** never offered the "KO a card from your hand or discard pile" choice — it silently granted +1 Recruit. Root cause: a family of "You may KO a card...; if you do, you get +N[resource]" heroes carried the KO prose and the reward icon but **not** the `[keyword:optional-ko-reward:<reward>:N]` marker, so `heroAbility.setup.ts` (Steps 2b/3) emitted a plain **unconditional** resource grant and dropped the whole KO clause.
