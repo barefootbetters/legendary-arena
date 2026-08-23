@@ -44,6 +44,8 @@ export interface ParDerivation {
   /** The scenario baseline counts, for the "expected" givens row. */
   readonly baseline: {
     readonly escapes: number;
+    /** Expected scheme twists (WP-591); 0 when the baseline predates WP-591. */
+    readonly twists: number;
     readonly bystanders: number;
     readonly victoryPoints: number;
   };
@@ -190,21 +192,33 @@ function buildParDerivation(
   if (baseline === undefined) {
     return undefined;
   }
-  // why: PAR and the raw score share the config weights, so the escape penalty
-  // weight is the same one the match's villainEscaped term used; derivable only
-  // when the match itself had an escape, else shown symbolically.
+  // why: PAR and the raw score share the config weights, so each penalty weight is
+  // the same one the match's own term used; derivable only when the match itself had
+  // that event, else shown symbolically.
   const escapeWeight = perUnitWeight(
     breakdown.penaltyBreakdown.villainEscaped,
     breakdown.inputs.penaltyEventCounts.villainEscaped,
   );
+  // why: WP-591 / D-24400 — PAR now models the scheme-twist penalty too, so the
+  // derivation shows the twist term when the baseline expects twists (older rows
+  // have no schemeTwistsPar → the term is omitted, matching their 3-field PAR).
+  const twistWeight = perUnitWeight(
+    breakdown.penaltyBreakdown.schemeTwistNegative,
+    breakdown.inputs.penaltyEventCounts.schemeTwistNegative,
+  );
+  const twistsPar = baseline.schemeTwistsPar ?? 0;
+  const twistFormula = twistsPar > 0 ? `+ ${formulaTerm('Twists', twistWeight)} ` : '';
+  const twistSub = twistsPar > 0 ? `+ ${parTerm(twistsPar, twistWeight, 'twist penalty')} ` : '';
 
   const formula =
     `${formulaTerm('Escapes', escapeWeight)} ` +
+    twistFormula +
     `${MINUS} ${formulaTerm('Bystanders', bystanderWeight)} ` +
     `${MINUS} ${formulaTerm('VP', vpWeight)}`;
 
   const substituted =
     `${parTerm(baseline.escapesPar, escapeWeight, 'escape penalty')} ` +
+    twistSub +
     `${MINUS} ${parTerm(baseline.bystandersPar, bystanderWeight, 'bystander reward')} ` +
     `${MINUS} ${parTerm(baseline.victoryPointsPar, vpWeight, 'VP reward')}`;
 
@@ -213,6 +227,7 @@ function buildParDerivation(
     substituted,
     baseline: {
       escapes: baseline.escapesPar,
+      twists: twistsPar,
       bystanders: baseline.bystandersPar,
       victoryPoints: baseline.victoryPointsPar,
     },
@@ -279,19 +294,29 @@ export function buildWorkedScoreCalc(breakdown: CompetitiveScoreBreakdown): Work
   );
   const vpWeight = perUnitWeight(breakdown.weightedVictoryPointReward, inputs.victoryPoints);
 
+  // why: WP-591 / D-24400 — a lost match adds a flat loss penalty term to the raw
+  // score; shown only when present (a win has none). weightedLossPenalty is absent
+  // on rows persisted before WP-591.
+  const lossPenalty = breakdown.weightedLossPenalty ?? 0;
+  const lossFormula = lossPenalty > 0 ? ` + loss penalty` : '';
+  const lossProduct = lossPenalty > 0 ? ` + ${lossPenalty}` : '';
+
   const formula =
     `Penalties ` +
     `${MINUS} ${formulaTerm('Bystanders', bystanderWeight)} ` +
-    `${MINUS} ${formulaTerm('VP', vpWeight)}`;
+    `${MINUS} ${formulaTerm('VP', vpWeight)}` +
+    lossFormula;
 
   const substituted =
     `${penaltiesSubstituted(breakdown)} ` +
     `${MINUS} ${substitutedTerm(inputs.bystandersRescued, bystanderWeight, breakdown.weightedBystanderReward)} ` +
-    `${MINUS} ${substitutedTerm(inputs.victoryPoints, vpWeight, breakdown.weightedVictoryPointReward)}`;
+    `${MINUS} ${substitutedTerm(inputs.victoryPoints, vpWeight, breakdown.weightedVictoryPointReward)}` +
+    lossProduct;
 
   const products =
     `${breakdown.weightedPenaltyTotal} ` +
-    `${MINUS} ${breakdown.weightedBystanderReward} ${MINUS} ${breakdown.weightedVictoryPointReward}`;
+    `${MINUS} ${breakdown.weightedBystanderReward} ${MINUS} ${breakdown.weightedVictoryPointReward}` +
+    lossProduct;
 
   return {
     givens: [

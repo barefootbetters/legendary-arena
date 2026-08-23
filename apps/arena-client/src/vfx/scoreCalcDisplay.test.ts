@@ -247,8 +247,11 @@ describe('PAR derivation (WP-587)', () => {
       calc.parDerivation?.substituted,
       '(1 × 100) − (5 × 200) − (25 × 10)',
     );
+    // twists is 0 here (this fixture's baseline predates WP-591's schemeTwistsPar),
+    // so no twist term appears in the formula/substituted above.
     assert.deepEqual(calc.parDerivation?.baseline, {
       escapes: 1,
+      twists: 0,
       bystanders: 5,
       victoryPoints: 25,
     });
@@ -324,5 +327,36 @@ describe('per-player split (WP-588)', () => {
     const summedBystanders = (calc.perPlayer ?? []).reduce((total, row) => total + row.bystandersRescued, 0);
     assert.equal(summedVp, 61);
     assert.equal(summedBystanders, 20);
+  });
+});
+
+describe('WP-591 — twist-aware PAR derivation + loss penalty display', () => {
+  test('PAR derivation shows the twist term when the baseline expects twists', () => {
+    const calc = buildWorkedScoreCalc(
+      breakdown({
+        parScore: -2440,
+        parBaseline: { bystandersPar: 22, victoryPointsPar: 74, escapesPar: 1, schemeTwistsPar: 6, bystandersLostPar: 2 },
+        // the match had escapes + twists so both weights are derivable.
+        inputs: {
+          rounds: 20, victoryPoints: 74, bystandersRescued: 22, escapes: 1,
+          penaltyEventCounts: { villainEscaped: 1, bystanderLost: 0, schemeTwistNegative: 6, mastermindTacticUntaken: 0, scenarioSpecificPenalty: 0 },
+        },
+        penaltyBreakdown: { villainEscaped: 100, bystanderLost: 0, schemeTwistNegative: 1800, mastermindTacticUntaken: 0, scenarioSpecificPenalty: 0 },
+        weightedBystanderReward: 4400,
+        weightedVictoryPointReward: 740,
+      }),
+    );
+    assert.ok(calc.parDerivation?.formula.includes('+ (Twists × 300)'), calc.parDerivation?.formula);
+    assert.ok(calc.parDerivation?.substituted.includes('+ (6 × 300)'), calc.parDerivation?.substituted);
+    assert.equal(calc.parDerivation?.baseline.twists, 6);
+  });
+
+  test('raw calc shows the loss-penalty term only when the match was lost', () => {
+    const lost = buildWorkedScoreCalc(breakdown({ weightedLossPenalty: 6000 }));
+    assert.ok(lost.formula.includes('+ loss penalty'), lost.formula);
+    assert.ok(lost.products.includes('+ 6000'), lost.products);
+    const won = buildWorkedScoreCalc(breakdown());
+    assert.ok(!won.formula.includes('loss penalty'), won.formula);
+    assert.ok(!won.products.includes('+ 6000'), won.products);
   });
 });

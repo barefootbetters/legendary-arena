@@ -82,20 +82,23 @@ describe('gradeForFinalScore band boundaries', () => {
   // why: the bands are inclusive-upper (`finalScore <= ceiling`), so each ceiling
   // earns its own band and ceiling+1 falls to the next. These cases pin both sides
   // of every boundary — the exact table locked in WP-583 AC-1.
+  // why: WP-591 / D-24400 — retuned bands (Legendary <= -2000, A <= -700, B <= 700,
+  // C <= 2000, D <= 4000, F). Wider than WP-583's so a bystander's worth (200) no
+  // longer flips a grade; validated against the 13 real anchor games.
   const cases: ReadonlyArray<readonly [number, ScoreGrade]> = [
     [-5000, 'legendary'],
-    [-1000, 'legendary'], // ceiling
-    [-999, 'a'],
-    [-300, 'a'], // ceiling
-    [-299, 'b'],
+    [-2000, 'legendary'], // ceiling
+    [-1999, 'a'],
+    [-700, 'a'], // ceiling
+    [-699, 'b'],
     [0, 'b'], // PAR sits in B
-    [300, 'b'], // ceiling
-    [301, 'c'],
-    [800, 'c'], // ceiling
-    [801, 'd'],
-    [1220, 'd'], // the live example (Red Skull / Midtown)
-    [1800, 'd'], // ceiling
-    [1801, 'f'],
+    [700, 'b'], // ceiling
+    [701, 'c'],
+    [2000, 'c'], // ceiling
+    [2001, 'd'],
+    [3000, 'd'], // a near-miss loss (loss penalty applied)
+    [4000, 'd'], // ceiling
+    [4001, 'f'],
     [9999, 'f'],
   ];
 

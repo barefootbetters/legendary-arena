@@ -73,7 +73,9 @@ export const PAR_ARTIFACT_SOURCES: readonly ParArtifactSource[] = [
 // artifact so leaderboard entries can be filtered to a semantically compatible
 // set after a formula change. Bumped 1->2 by WP-585 / D-24394 (removing the
 // round-cost term is a formula-SHAPE change).
-const CURRENT_RAW_SCORE_SEMANTICS_VERSION = 2;
+// why: WP-591 / D-24400 — bumped 2->3 (PAR now models twist + bystander-lost
+// penalties; RawScore gains a loss penalty — a formula-shape change).
+const CURRENT_RAW_SCORE_SEMANTICS_VERSION = 3;
 
 // ---------------------------------------------------------------------------
 // Artifact shapes
@@ -1078,6 +1080,8 @@ export async function validateParStore(
         'bystandersPar',
         'victoryPointsPar',
         'escapesPar',
+        'schemeTwistsPar',
+        'bystandersLostPar',
       ];
       for (const field of baselineFields) {
         const fieldValue = parsed.parBaseline[field];
@@ -1149,7 +1153,9 @@ export async function validateParStore(
             && typeof configBaseline === 'object'
             && configBaseline.bystandersPar === artifactBaseline.bystandersPar
             && configBaseline.victoryPointsPar === artifactBaseline.victoryPointsPar
-            && configBaseline.escapesPar === artifactBaseline.escapesPar;
+            && configBaseline.escapesPar === artifactBaseline.escapesPar
+            && configBaseline.schemeTwistsPar === artifactBaseline.schemeTwistsPar
+            && configBaseline.bystandersLostPar === artifactBaseline.bystandersLostPar;
           if (!baselineEqual) {
             errors.push({
               scenarioKey,
@@ -1406,6 +1412,8 @@ function isSeedArtifactShape(value: unknown): value is SeedParArtifact {
   if (typeof baselineRecord.bystandersPar !== 'number') return false;
   if (typeof baselineRecord.victoryPointsPar !== 'number') return false;
   if (typeof baselineRecord.escapesPar !== 'number') return false;
+  if (typeof baselineRecord.schemeTwistsPar !== 'number') return false;
+  if (typeof baselineRecord.bystandersLostPar !== 'number') return false;
   const scoring = record.scoring;
   if (scoring === null || typeof scoring !== 'object') return false;
   const scoringRecord = scoring as Record<string, unknown>;

@@ -118,6 +118,21 @@ score inflation across scenarios.
 
 ## Raw Score Composition
 
+> **Updated by WP-591 / D-24400 (2026-08-23): scheme-aware PAR, physical baselines,
+> loss penalty, retuned grade bands.** The seed PAR was scheme-BLIND (a flat
+> difficulty→baseline template) but bystander rescues are scheme-DRIVEN (validated
+> from 13 real-game diagnostics: Midtown Bank Robbery 24-37 vs Cosmic Cube 3-4), so a
+> single PAR mis-graded both ways. The generator is now scheme-aware
+> (`baselineForScenario`), `ParBaseline` gains `schemeTwistsPar` + `bystandersLostPar`
+> and `computeParScore` subtracts those penalties (so PAR shares the raw score's full
+> penalty footing — physical baselines), a lost match adds a flat `LOSS_PENALTY`
+> (6000) to `RawScore` (so a bystander-heavy loss can't out-grade a competent win),
+> and `SCORE_GRADE_BANDS` is retuned (Legendary ≤ −2000, A ≤ −700, B ≤ 700, C ≤ 2000,
+> D ≤ 4000, F). `scoringConfigVersion 3→4` / `rawScoreSemanticsVersion 2→3`; existing
+> rows keep their pinned versions. This is an **INTERIM** calibration — VISION §26
+> Phase-2 simulation calibration supersedes it once the competent AI is strong enough
+> to be a valid reference (a spike showed today's AI too weak). See D-24400.
+
 > **Updated by WP-585 / D-24394 (2026-08-22): no per-round cost.** The Marvel
 > Legendary v23 rulebook's "Scoring" section subtracts only −4/Bystander-lost,
 > −3/Scheme-Twist, −1/Villain-escaped and has **no round/turn penalty** — Scheme

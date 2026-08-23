@@ -133,8 +133,8 @@ describe('EndgameSummary (WP-584 worked calculation)', () => {
   });
 
   test('shows the grade badge matching gradeForFinalScore for representative bands', () => {
-    // 1220 → d (the live example); -1500 → legendary; -1 → b.
-    for (const [finalScore, label] of [[1220, 'D'], [-1500, 'Legendary'], [-1, 'B']] as const) {
+    // WP-591 bands: 3000 → d (loss); -2500 → legendary; -1 → b.
+    for (const [finalScore, label] of [[3000, 'D'], [-2500, 'Legendary'], [-1, 'B']] as const) {
       const wrapper = mount(EndgameSummary, {
         props: { gameOver: gameOver(), competitiveScore: score({ finalScore, scoreBreakdown: breakdown({ finalScore }) }) },
       });
@@ -148,7 +148,7 @@ describe('EndgameSummary (WP-584 worked calculation)', () => {
 
   test('grade badge shows but breakdown is omitted when a record carries no scoreBreakdown', () => {
     const wrapper = mount(EndgameSummary, {
-      props: { gameOver: gameOver(), competitiveScore: score({ finalScore: -1500 }) },
+      props: { gameOver: gameOver(), competitiveScore: score({ finalScore: -2500 }) },
     });
     // The grade needs only finalScore, so the badge still shows.
     assert.equal(wrapper.find('[data-testid="arena-hud-grade-badge"]').text(), 'Legendary');
@@ -205,7 +205,7 @@ describe('EndgameSummary (WP-587 PAR derivation + grade scale)', () => {
 
   test('renders the full grade scale with the earned grade marked', () => {
     const wrapper = mount(EndgameSummary, {
-      props: { gameOver: gameOver(), competitiveScore: score({ finalScore: -1500, scoreBreakdown: breakdown({ finalScore: -1500 }) }) },
+      props: { gameOver: gameOver(), competitiveScore: score({ finalScore: -2500, scoreBreakdown: breakdown({ finalScore: -2500 }) }) },
     });
     const scale = wrapper.find('[data-testid="arena-hud-grade-scale"]');
     assert.ok(scale.exists(), 'grade scale renders');
@@ -215,7 +215,7 @@ describe('EndgameSummary (WP-587 PAR derivation + grade scale)', () => {
     // Each cell carries its grade colour class (colour = reinforcement).
     assert.ok(scale.find('.grade-scale-cell--legendary').exists(), 'legendary cell is colour-coded');
     assert.ok(scale.find('.grade-scale-cell--f').exists(), 'F cell is colour-coded');
-    // finalScore -1500 → legendary; exactly that cell is current + names it (text, not colour alone).
+    // finalScore -2500 → legendary; exactly that cell is current + names it (text, not colour alone).
     const current = scale.findAll('.grade-scale-cell--current');
     assert.equal(current.length, 1, 'exactly one current cell');
     assert.ok(current[0]?.text().includes('Legendary'), 'the Legendary cell is marked current');
@@ -225,7 +225,7 @@ describe('EndgameSummary (WP-587 PAR derivation + grade scale)', () => {
 
   test('grade scale shows even without a breakdown (needs only finalScore)', () => {
     const wrapper = mount(EndgameSummary, {
-      props: { gameOver: gameOver(), competitiveScore: score({ finalScore: -1500 }) },
+      props: { gameOver: gameOver(), competitiveScore: score({ finalScore: -2500 }) },
     });
     assert.ok(wrapper.find('[data-testid="arena-hud-grade-scale"]').exists());
     // No breakdown → no worked calc, but the scale (finalScore-only) still renders.

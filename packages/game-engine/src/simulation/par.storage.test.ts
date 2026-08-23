@@ -77,6 +77,8 @@ function createTestParBaseline(): ParBaseline {
     bystandersPar: 3,
     victoryPointsPar: 10,
     escapesPar: 1,
+    schemeTwistsPar: 0,
+    bystandersLostPar: 0,
   };
 }
 
@@ -507,7 +509,7 @@ describe('PAR artifact storage (WP-050)', () => {
     }
   });
 
-  test('written seed artifact carries source: "seed" and all four parBaseline fields round-trip unchanged', async () => {
+  test('written seed artifact carries source: "seed" and all five parBaseline fields round-trip unchanged', async () => {
     const workspace = await createTempWorkspace();
     try {
       const scenarioKey = 'alpha-scheme::baseline-round-trip::group';
@@ -521,6 +523,8 @@ describe('PAR artifact storage (WP-050)', () => {
       assert.equal(readBack?.parBaseline.bystandersPar, parBaseline.bystandersPar);
       assert.equal(readBack?.parBaseline.victoryPointsPar, parBaseline.victoryPointsPar);
       assert.equal(readBack?.parBaseline.escapesPar, parBaseline.escapesPar);
+      assert.equal(readBack?.parBaseline.schemeTwistsPar, parBaseline.schemeTwistsPar);
+      assert.equal(readBack?.parBaseline.bystandersLostPar, parBaseline.bystandersLostPar);
     } finally {
       await removeWorkspace(workspace);
     }

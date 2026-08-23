@@ -133,6 +133,22 @@ export interface ParBaseline {
   readonly victoryPointsPar: number;
   /** Expected escape count for a par-performing team. */
   readonly escapesPar: number;
+  /**
+   * Expected scheme twists for a par-performing team (WP-591 / D-24400).
+   *
+   * why: `computeParScore` now subtracts the scheme-twist penalty too, so PAR
+   * models the same penalties as the raw score. Without this, PAR omitted the
+   * −300/twist penalty the raw score carries (schemes throw 4-8 twists), so a
+   * physical baseline mapped to a PAR ~2000 too negative. Twist count is a
+   * scheme property (each scheme has a fixed villain-deck twist count).
+   */
+  readonly schemeTwistsPar: number;
+  /**
+   * Expected bystanders lost (carried away by escaping Villains) for a
+   * par-performing team (WP-591 / D-24400). Small for most schemes; included so
+   * PAR and the raw score share the full penalty footing (physical baselines).
+   */
+  readonly bystandersLostPar: number;
 }
 
 /**
@@ -215,6 +231,13 @@ export interface ScoringInputs {
    * carry none — the endgame then shows only the team totals.
    */
   readonly perPlayer?: readonly PlayerScoringContribution[];
+  /**
+   * Whether the match was LOST (the mastermind was not defeated — the scheme won)
+   * (WP-591 / D-24400). Optional; absent/false means a win. When true, `computeRawScore`
+   * adds a flat loss penalty so a bystander-heavy loss can never out-grade a competent
+   * win. The synthetic inputs `computeParScore` builds are always a par WIN (no penalty).
+   */
+  readonly matchLost?: boolean;
 }
 
 /**
@@ -235,7 +258,13 @@ export interface ScoreBreakdown {
   readonly weightedBystanderReward: number;
   /** `effectiveVictoryPoints * victoryPointReward` (effective = min(VP, cap)). */
   readonly weightedVictoryPointReward: number;
-  /** `weightedPenaltyTotal - weightedBystanderReward - weightedVictoryPointReward`. */
+  /**
+   * The flat loss penalty added to `rawScore` when the match was lost (WP-591 /
+   * D-24400); 0 for a win. Exposed so the endgame worked calculation can show the
+   * "+ loss penalty" term.
+   */
+  readonly weightedLossPenalty: number;
+  /** `weightedPenaltyTotal - weightedBystanderReward - weightedVictoryPointReward + weightedLossPenalty`. */
   readonly rawScore: number;
   /** PAR value under the same formula applied to the scenario baseline. */
   readonly parScore: number;

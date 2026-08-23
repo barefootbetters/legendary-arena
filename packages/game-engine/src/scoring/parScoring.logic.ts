@@ -21,6 +21,7 @@
 import type { LegendaryGameState } from '../types.js';
 import type { ReplayResult } from '../replay/replay.types.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
+import { evaluateEndgame } from '../endgame/endgame.evaluate.js';
 import { computeFinalScores, isBystanderCard } from './scoring.logic.js';
 import type {
   ParBaseline,
@@ -160,6 +161,12 @@ export function deriveScoringInputs(
     scenarioSpecificPenalty: scenarioSpecificPenaltyCount,
   };
 
+  // why: WP-591 / D-24400 — a match is LOST when the scheme wins (the mastermind
+  // was not defeated). Losses are competitively scored, so the raw score adds a
+  // flat loss penalty (computeRawScore). Read from the same pure endgame evaluator
+  // the live endIf uses (a 'tie' or an unfinished null is NOT a decisive loss).
+  const matchLost = evaluateEndgame(gameState)?.outcome === 'scheme-wins';
+
   return {
     rounds,
     victoryPoints,
@@ -167,6 +174,7 @@ export function deriveScoringInputs(
     escapes,
     penaltyEventCounts,
     perPlayer,
+    matchLost,
   };
 }
 
@@ -175,11 +183,25 @@ export function deriveScoringInputs(
 // ---------------------------------------------------------------------------
 
 /**
+ * Flat loss penalty (centesimal units) added to the Raw Score when a match is lost
+ * (WP-591 / D-24400).
+ *
+ * why: losses (outcome 'scheme-wins') are competitively scored, and rewards
+ * (bystanders/VP) accrue regardless of the win. Without a penalty a team that loses
+ * but rescues many bystanders would out-grade a clean win. 6000 (= 60.00) is large
+ * enough that even the best-scoring loss lands below every competent win — validated
+ * against the observed anchor games (a 34-bystander Midtown loss grades D, not
+ * Legendary). Operator decision: grade a loss by margin, not a flat auto-F.
+ */
+export const LOSS_PENALTY = 6000;
+
+/**
  * Computes the Raw Score from scoring inputs and a scenario config.
  *
  * Formula:
- *   RawScore = P - (BP × bystanderReward) - (VP × vpReward)
+ *   RawScore = P - (BP × bystanderReward) - (VP × vpReward) + lossPenalty
  *   P        = sum(eventCount[type] × penaltyWeight[type])
+ *   lossPenalty = LOSS_PENALTY when the match was lost, else 0 (WP-591)
  *
  * why (WP-585 / D-24394): there is no round-cost term. The Marvel Legendary
  * rulebook's scoring has no round/turn penalty — Scheme Twists are its length
@@ -221,10 +243,17 @@ export function computeRawScore(
   const weightedVictoryPointReward =
     effectiveVictoryPoints * config.weights.victoryPointReward;
 
+  // why: WP-591 / D-24400 — a LOST match (the mastermind was not defeated) adds a
+  // flat penalty so a bystander-heavy loss can never out-grade a competent win.
+  // Losses are competitively scored (outcome 'scheme-wins'); without this a team
+  // that racks up rewards but loses would beat a clean win. Absent/false = a win.
+  const weightedLossPenalty = inputs.matchLost === true ? LOSS_PENALTY : 0;
+
   return (
     weightedPenaltyTotal -
     weightedBystanderReward -
-    weightedVictoryPointReward
+    weightedVictoryPointReward +
+    weightedLossPenalty
   );
 }
 
@@ -248,13 +277,20 @@ export function computeParScore(config: ScenarioScoringConfig): number {
     victoryPoints: config.parBaseline.victoryPointsPar,
     bystandersRescued: config.parBaseline.bystandersPar,
     escapes: config.parBaseline.escapesPar,
+    // why: WP-591 / D-24400 — PAR now models the scheme-twist and bystander-lost
+    // penalties too (from the baseline's expected counts), so PAR shares the full
+    // penalty footing with the raw score and the baseline stays physically
+    // meaningful. Before this, PAR omitted these penalties, so a physical baseline
+    // mapped to a PAR ~2000 too negative on twist-heavy schemes.
     penaltyEventCounts: {
       villainEscaped: config.parBaseline.escapesPar,
-      bystanderLost: 0,
-      schemeTwistNegative: 0,
+      bystanderLost: config.parBaseline.bystandersLostPar,
+      schemeTwistNegative: config.parBaseline.schemeTwistsPar,
       mastermindTacticUntaken: 0,
       scenarioSpecificPenalty: 0,
     },
+    // why: PAR is by definition a competent WIN — never the loss penalty.
+    matchLost: false,
   };
 
   return computeRawScore(parInputs, config);
@@ -332,10 +368,16 @@ export function buildScoreBreakdown(
   const weightedVictoryPointReward =
     effectiveVictoryPoints * config.weights.victoryPointReward;
 
+  // why: WP-591 / D-24400 — a lost match adds the flat loss penalty (same value
+  // computeRawScore applies), so the breakdown's rawScore and the worked-calc term
+  // agree. 0 for a win.
+  const weightedLossPenalty = inputs.matchLost === true ? LOSS_PENALTY : 0;
+
   const rawScore =
     weightedPenaltyTotal -
     weightedBystanderReward -
-    weightedVictoryPointReward;
+    weightedVictoryPointReward +
+    weightedLossPenalty;
   const parScore = computeParScore(config);
   const finalScore = rawScore - parScore;
 
@@ -365,6 +407,7 @@ export function buildScoreBreakdown(
     escapes: inputs.escapes,
     penaltyEventCounts: copiedPenaltyEventCounts,
     ...(copiedPerPlayer ? { perPlayer: copiedPerPlayer } : {}),
+    ...(inputs.matchLost === undefined ? {} : { matchLost: inputs.matchLost }),
   };
 
   // why: WP-587 / D-24396 — surface the baseline parScore was derived from so the
@@ -375,6 +418,8 @@ export function buildScoreBreakdown(
     bystandersPar: config.parBaseline.bystandersPar,
     victoryPointsPar: config.parBaseline.victoryPointsPar,
     escapesPar: config.parBaseline.escapesPar,
+    schemeTwistsPar: config.parBaseline.schemeTwistsPar,
+    bystandersLostPar: config.parBaseline.bystandersLostPar,
   };
 
   return {
@@ -383,6 +428,7 @@ export function buildScoreBreakdown(
     penaltyBreakdown,
     weightedBystanderReward,
     weightedVictoryPointReward,
+    weightedLossPenalty,
     rawScore,
     parScore,
     parBaseline: copiedParBaseline,
@@ -497,6 +543,19 @@ export function validateScoringConfig(
   if (config.parBaseline.escapesPar < 0) {
     errors.push(
       `ParBaseline.escapesPar must be a non-negative integer; got ${config.parBaseline.escapesPar}.`,
+    );
+  }
+
+  // why: WP-591 / D-24400 — PAR now models the twist + bystander-lost penalties, so
+  // their expected counts must be present and non-negative like the other baseline fields.
+  if (config.parBaseline.schemeTwistsPar < 0) {
+    errors.push(
+      `ParBaseline.schemeTwistsPar must be a non-negative integer; got ${config.parBaseline.schemeTwistsPar}.`,
+    );
+  }
+  if (config.parBaseline.bystandersLostPar < 0) {
+    errors.push(
+      `ParBaseline.bystandersLostPar must be a non-negative integer; got ${config.parBaseline.bystandersLostPar}.`,
     );
   }
 
