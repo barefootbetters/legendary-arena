@@ -7,6 +7,14 @@
 
 ## Current State
 
+### WP-591 — Interim scheme-aware PAR recalibration (EC-626 / D-24400) shipped (2026-08-23)
+
+The competitive PAR was uncalibrated and scheme-BLIND, so it mis-graded in both directions: bystander-flood schemes (Midtown Bank Robbery) pinned at Legendary, while bystander-light schemes (Cosmic Cube) graded legitimate WINS as F. Validated from 13 real-game diagnostics (extracted via the new `scripts/extract-par-anchors.mjs`), bystander rescues are a SCHEME property (Midtown 24-37, Cosmic Cube 3-4), not a difficulty one.
+
+Simulation calibration (VISION §26 Phase-2) is the real fix but was deferred this cycle: an empirical spike showed the competent AI is too weak to be a valid competent-play reference (its 55th-percentile game is near break-even vs a competent human's −5170) — strengthening it is a separate parallel arc. This is the INTERIM: `baselineForScenario(scheme, difficulty, playerCount)` replaces the flat template with per-scheme profiles anchored to the observed competent-win medians (structural estimates for the schemes with no game yet). Operator decisions: option A (PAR models twists — `ParBaseline` gains `schemeTwistsPar` + `bystandersLostPar`, `computeParScore` subtracts them, keeping baselines physical and the WP-587 derivation display honest); solid win = B, exceptional = A/Legendary; a loss penalty by margin (`LOSS_PENALTY` 6000 added to the raw score when the match was lost, from `evaluateEndgame(...) === scheme-wins`, so a bystander-heavy loss can never out-grade a competent win). `SCORE_GRADE_BANDS` retuned (Legendary ≤ −2000, A ≤ −700, B ≤ 700, C ≤ 2000, D ≤ 4000, F). The model was validated against all 13 real anchor games (solid wins B, exceptional A/Legendary, weak win C, losses D/F; Cosmic Cube wins no longer F).
+
+Versions bumped `scoringConfigVersion 3→4` + `rawScoreSemanticsVersion 2→3`; 128 seed artifacts + 128 configs regenerated (`computeParScore === parValue` holds). **No game-state-hash re-pin** (scoring is server-side, no `G` field; replay/sentinel green); **no server route change** (`deriveScoringInputs` sets `matchLost` internally); existing `competitive_scores` rows keep their pinned versions (no retroactive invalidation). Engine **2860→2863/0**; arena-client **1394→1396/0** (`vue-tsc` clean); `pnpm -r --no-bail test` green; `docs/12-SCORING-REFERENCE.md` updated. **D-24026 live-verify: operator-pending** (`play.legendary-arena.com`). D-24400 Active.
+
 ### WP-590 — Log the silent KO in resolveOptionalKoReward (EC-625 / D-24399) shipped (2026-08-23)
 
 Spun out of the WP-589 review: `resolveOptionalKoReward` KO'd the player's chosen hand/discard card (Step 5) then dispatched the reward (Step 6), but only the reward logged itself — the KO of the spent card was silent, so a match log showed the payoff with no record of which card was spent (the operator noticed the card vanishing).
