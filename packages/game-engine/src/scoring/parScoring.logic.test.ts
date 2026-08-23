@@ -737,3 +737,84 @@ describe('deriveScoringInputs bystander count counts BOTH sources (WP-586 / D-24
     assert.notEqual(inputs.penaltyEventCounts.bystanderLost, 1);
   });
 });
+
+/**
+ * Builds a two-player terminal state, each player with an independent victory
+ * pile, so the WP-588 per-player split can be exercised. Bystanders count via
+ * isBystanderCard (villain-deck OR supply-pile); villains contribute printed VP
+ * (or the flat fallback), so per-player totalVP is nonzero and splittable.
+ */
+function makeTwoPlayerTerminalState(
+  victoryByPlayer: Record<string, string[]>,
+  villainDeckCardTypes: Record<string, string>,
+): LegendaryGameState {
+  const playerZones: Record<string, unknown> = {};
+  for (const [playerId, victory] of Object.entries(victoryByPlayer)) {
+    playerZones[playerId] = { deck: [], hand: [], discard: [], inPlay: [], victory };
+  }
+  return {
+    playerZones,
+    mastermind: { baseCardId: 'test-mastermind', tacticsDefeated: [] },
+    villainDeckCardTypes,
+    cardVictoryPoints: {},
+    escapedPile: [],
+    counters: {},
+  } as unknown as LegendaryGameState;
+}
+
+describe('deriveScoringInputs per-player split (WP-588 / D-24397)', () => {
+  it('splits bystanders and VP by player, sorted by playerId, summing to the team totals', () => {
+    // Player 0: 2 bystanders (a villain-deck one + a supply-pile one) + a villain.
+    // Player 1: 1 supply-pile bystander + a villain.
+    const state = makeTwoPlayerTerminalState(
+      {
+        '0': ['bys-0', BYSTANDER_EXT_ID, 'vil-0'],
+        '1': [BYSTANDER_EXT_ID, 'vil-1'],
+      },
+      { 'bys-0': 'bystander', 'vil-0': 'villain', 'vil-1': 'villain' },
+    );
+    const inputs = deriveScoringInputs(makeReplayResult(12), state);
+
+    assert.ok(inputs.perPlayer, 'perPlayer is populated');
+    assert.equal(inputs.perPlayer?.length, 2);
+    // Sorted by playerId.
+    assert.deepEqual(
+      inputs.perPlayer?.map((contribution) => contribution.playerId),
+      ['0', '1'],
+    );
+    // Per-player bystanders: player 0 rescued 2, player 1 rescued 1.
+    const byPlayer = Object.fromEntries(
+      (inputs.perPlayer ?? []).map((contribution) => [contribution.playerId, contribution]),
+    );
+    assert.equal(byPlayer['0']?.bystandersRescued, 2);
+    assert.equal(byPlayer['1']?.bystandersRescued, 1);
+
+    // Invariants: the per-player split sums to the team aggregates (no double-count,
+    // no drop) — the report card must reconcile with the raw-score reward terms.
+    const summedBystanders = (inputs.perPlayer ?? []).reduce(
+      (total, contribution) => total + contribution.bystandersRescued,
+      0,
+    );
+    const summedVictoryPoints = (inputs.perPlayer ?? []).reduce(
+      (total, contribution) => total + contribution.victoryPoints,
+      0,
+    );
+    assert.equal(summedBystanders, inputs.bystandersRescued);
+    assert.equal(summedVictoryPoints, inputs.victoryPoints);
+  });
+
+  it('buildScoreBreakdown carries a copied (non-aliased) perPlayer split', () => {
+    const state = makeTwoPlayerTerminalState(
+      { '0': ['bys-0'], '1': [BYSTANDER_EXT_ID] },
+      { 'bys-0': 'bystander' },
+    );
+    const inputs = deriveScoringInputs(makeReplayResult(10), state);
+    const breakdown = buildScoreBreakdown(inputs, makeReferenceConfig());
+
+    assert.equal(breakdown.inputs.perPlayer?.length, 2);
+    // why: JSON-serializable, no-shared-reference invariant (D-2801 / D-4806).
+    assert.notStrictEqual(breakdown.inputs.perPlayer, inputs.perPlayer);
+    assert.notStrictEqual(breakdown.inputs.perPlayer?.[0], inputs.perPlayer?.[0]);
+    assert.deepEqual(breakdown.inputs.perPlayer, inputs.perPlayer);
+  });
+});

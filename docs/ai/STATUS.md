@@ -7,6 +7,13 @@
 
 ## Current State
 
+### WP-588 — Endgame report card: per-player split, PAR basis, colour-coded grade scale (EC-623 / D-24397) shipped (2026-08-22)
+
+Three operator-requested refinements to the WP-587 endgame report card. (1) Per-player split: the raw-score reward terms (Bystanders, VP) now break down by player — engine `ScoringInputs` gains an optional `perPlayer` (`{playerId, victoryPoints, bystandersRescued}`, populated in `deriveScoringInputs`: VP = each player's `totalVP` from `computeFinalScores`, bystanders via the shared `isBystanderCard` on that player's victory pile; deep-copied through `buildScoreBreakdown`). This is a display-only split that **sums to the team totals** — the competitive score stays a shared-team score (D-4803). (2) PAR basis: a line under the PAR derivation names what sets PAR. Verified against the code — PAR is keyed on the `ScenarioKey` (`scheme::mastermind::villain-groups`, `parScoring.keys.ts`) and calibrated by `composeScenarioDifficulty` (`0.40·mastermind + 0.40·scheme + 0.20·avg(villains)`, `generate-seed-par.mjs`), i.e. **scheme + mastermind + villain groups, not henchmen** (the operator's premise, corrected). (3) Grade scale: the WP-587 vertical list becomes a horizontal colour-coded strip (wider, not longer); colour is reinforcement — the earned cell also carries a text marker + `aria-current` (the D-24392 not-colour-alone rule).
+
+The server returns the breakdown jsonb verbatim → **no server change**; `perPlayer` is derived from terminal `G` with no new `G` field → **no game-state-hash re-pin** (replay/sentinel green); no `scoringConfigVersion` bump (additive display data); `perPlayer` is optional so records persisted before WP-588 degrade gracefully to team totals. Engine **2858→2860/0** (+2 per-player tests); arena-client **1389→1394/0** (`vue-tsc` clean); `pnpm -r --no-bail test` green. Verified against the real 2p Red Skull / Midtown Legendary run (−1660; 20 bystanders / 61 VP split across the two seats). **D-24026 live-verify: operator-pending** (`User-Visible Surface = play.legendary-arena.com`). D-24397 Active.
+
+
 ### WP-587 — Endgame PAR derivation, grade scale, and named penalties (EC-622 / D-24396) shipped (2026-08-22)
 
 Follow-up to the endgame score surface (WP-578/583/584): the screen showed the competitive score, its worked raw-score calculation, and a grade badge, but not (a) HOW PAR was derived (the operator asked "where did −1150 come from?"), (b) the grade SCALE (what a B / A / Legendary needs), or (c) named penalties (the operator: "just say 7 scheme twists, not 7 penalties"). The layout was approved via a `show_widget` mockup before build.

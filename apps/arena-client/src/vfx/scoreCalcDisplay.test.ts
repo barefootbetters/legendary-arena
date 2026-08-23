@@ -286,3 +286,43 @@ describe('PAR derivation (WP-587)', () => {
     assert.ok(calc.parDerivation?.substituted.includes('(5 × 200) − (25 × 10)'), calc.parDerivation?.substituted);
   });
 });
+
+describe('per-player split (WP-588)', () => {
+  test('undefined when the breakdown carries no perPlayer (records predating WP-588)', () => {
+    const calc = buildWorkedScoreCalc(breakdown());
+    assert.equal(calc.perPlayer, undefined);
+  });
+
+  test('labels 0-based player ids as "Player N" (1-based) and carries each split', () => {
+    const calc = buildWorkedScoreCalc(
+      breakdown({
+        inputs: {
+          rounds: 22,
+          victoryPoints: 61,
+          bystandersRescued: 20,
+          escapes: 0,
+          penaltyEventCounts: {
+            villainEscaped: 0,
+            bystanderLost: 0,
+            schemeTwistNegative: 6,
+            mastermindTacticUntaken: 0,
+            scenarioSpecificPenalty: 0,
+          },
+          perPlayer: [
+            { playerId: '0', victoryPoints: 34, bystandersRescued: 11 },
+            { playerId: '1', victoryPoints: 27, bystandersRescued: 9 },
+          ],
+        },
+      }),
+    );
+    assert.ok(calc.perPlayer);
+    assert.equal(calc.perPlayer?.length, 2);
+    assert.deepEqual(calc.perPlayer?.[0], { label: 'Player 1', victoryPoints: 34, bystandersRescued: 11 });
+    assert.deepEqual(calc.perPlayer?.[1], { label: 'Player 2', victoryPoints: 27, bystandersRescued: 9 });
+    // The per-player VP + bystanders reconcile with the team totals shown in the raw calc.
+    const summedVp = (calc.perPlayer ?? []).reduce((total, row) => total + row.victoryPoints, 0);
+    const summedBystanders = (calc.perPlayer ?? []).reduce((total, row) => total + row.bystandersRescued, 0);
+    assert.equal(summedVp, 61);
+    assert.equal(summedBystanders, 20);
+  });
+});

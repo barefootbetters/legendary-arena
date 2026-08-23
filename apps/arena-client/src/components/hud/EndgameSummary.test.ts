@@ -209,13 +209,17 @@ describe('EndgameSummary (WP-587 PAR derivation + grade scale)', () => {
     });
     const scale = wrapper.find('[data-testid="arena-hud-grade-scale"]');
     assert.ok(scale.exists(), 'grade scale renders');
-    const rows = scale.findAll('.grade-scale-row');
-    assert.equal(rows.length, 6, 'one row per grade band');
-    // finalScore -1500 → legendary; exactly that row is current + names it.
-    const current = scale.findAll('.grade-scale-row--current');
-    assert.equal(current.length, 1, 'exactly one current row');
-    assert.ok(current[0]?.text().includes('Legendary'), 'the Legendary row is marked current');
-    assert.ok(current[0]?.text().includes('your score'), 'current row carries the text marker');
+    // WP-588 — a horizontal colour-coded strip of cells (wider, not a tall list).
+    const cells = scale.findAll('.grade-scale-cell');
+    assert.equal(cells.length, 6, 'one cell per grade band');
+    // Each cell carries its grade colour class (colour = reinforcement).
+    assert.ok(scale.find('.grade-scale-cell--legendary').exists(), 'legendary cell is colour-coded');
+    assert.ok(scale.find('.grade-scale-cell--f').exists(), 'F cell is colour-coded');
+    // finalScore -1500 → legendary; exactly that cell is current + names it (text, not colour alone).
+    const current = scale.findAll('.grade-scale-cell--current');
+    assert.equal(current.length, 1, 'exactly one current cell');
+    assert.ok(current[0]?.text().includes('Legendary'), 'the Legendary cell is marked current');
+    assert.ok(current[0]?.text().includes('your score'), 'current cell carries the text marker');
     assert.equal(current[0]?.attributes('aria-current'), 'true');
   });
 
@@ -226,5 +230,74 @@ describe('EndgameSummary (WP-587 PAR derivation + grade scale)', () => {
     assert.ok(wrapper.find('[data-testid="arena-hud-grade-scale"]').exists());
     // No breakdown → no worked calc, but the scale (finalScore-only) still renders.
     assert.ok(!wrapper.find('[data-testid="arena-hud-score-breakdown"]').exists());
+  });
+});
+
+describe('EndgameSummary (WP-588 per-player split + PAR basis)', () => {
+  test('renders the per-player VP + bystander split when the breakdown carries perPlayer', () => {
+    const wrapper = mount(EndgameSummary, {
+      props: {
+        gameOver: gameOver(),
+        competitiveScore: score({
+          finalScore: -1660,
+          scoreBreakdown: breakdown({
+            inputs: {
+              rounds: 22,
+              victoryPoints: 61,
+              bystandersRescued: 20,
+              escapes: 0,
+              penaltyEventCounts: {
+                villainEscaped: 0,
+                bystanderLost: 0,
+                schemeTwistNegative: 6,
+                mastermindTacticUntaken: 0,
+                scenarioSpecificPenalty: 0,
+              },
+              perPlayer: [
+                { playerId: '0', victoryPoints: 34, bystandersRescued: 11 },
+                { playerId: '1', victoryPoints: 27, bystandersRescued: 9 },
+              ],
+            },
+          }),
+        }),
+      },
+    });
+    const perPlayer = wrapper.find('[data-testid="arena-hud-per-player"]');
+    assert.ok(perPlayer.exists(), 'per-player block renders');
+    const text = perPlayer.text();
+    // 0-based playerId renders as 1-based "Player N".
+    assert.ok(text.includes('Player 1'), 'player 0 renders as Player 1');
+    assert.ok(text.includes('Player 2'), 'player 1 renders as Player 2');
+    assert.ok(text.includes('34') && text.includes('11 bystanders'), 'player 1 stats');
+    assert.ok(text.includes('27') && text.includes('9 bystanders'), 'player 2 stats');
+  });
+
+  test('omits the per-player block when the breakdown has no perPlayer (older record)', () => {
+    const wrapper = mount(EndgameSummary, {
+      props: { gameOver: gameOver(), competitiveScore: score({ finalScore: -1130, scoreBreakdown: breakdown() }) },
+    });
+    assert.ok(wrapper.find('[data-testid="arena-hud-score-breakdown"]').exists());
+    assert.ok(!wrapper.find('[data-testid="arena-hud-per-player"]').exists());
+  });
+
+  test('shows the PAR basis copy (scheme, mastermind, villain groups) under the PAR derivation', () => {
+    const wrapper = mount(EndgameSummary, {
+      props: {
+        gameOver: gameOver(),
+        competitiveScore: score({
+          finalScore: -1130,
+          scoreBreakdown: breakdown({
+            parScore: -1150,
+            parBaseline: { bystandersPar: 5, victoryPointsPar: 25, escapesPar: 1 },
+          }),
+        }),
+      },
+    });
+    const basis = wrapper.find('[aria-label="parBasis"]');
+    assert.ok(basis.exists(), 'PAR basis copy renders');
+    assert.ok(
+      basis.text().includes('scheme, mastermind, and villain groups'),
+      'names the scenario inputs (not henchmen)',
+    );
   });
 });
