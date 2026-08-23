@@ -40,7 +40,7 @@ source:
   - ../docs/ai/work-packets/WP-250-hero-effect-coverage-gate.md
   - ../docs/ai/work-packets/WP-257-hollow-effect-detector.md
   - ../docs/ai/work-packets/WP-422-seed-par-publication.md
-last-reviewed: 2026-08-19
+last-reviewed: 2026-08-23
 ---
 
 # PAR Simulation Calibration
@@ -317,6 +317,44 @@ nowhere near the actual distribution of competent play. Simulation is the
 empirical correction: it plays the scenario many times and reads the answer
 off the outcome distribution rather than guessing it from difficulty
 ratings.
+
+**Intellectual lineage.** PAR is a very old idea in new dress. Christiaan
+Huygens' *De ratiociniis in ludo aleæ* (1657) — the first printed treatise on
+probability — defined the *value* of an uncertain game as the equitable price
+to enter it: the [fair value of a gamble](https://en.wikipedia.org/wiki/Expected_value),
+a benchmark against which any result is a gain or a loss. `finalScore =
+rawScore − PAR` is precisely that — PAR is the fair value of the scenario, and
+a score is how far competent play beat or missed it. Two things separate our
+PAR from Huygens' expectation, and both are deliberate:
+
+- **No closed form, so Monte-Carlo.** Huygens could *compute* a game's value
+  because his dice-and-coin problems had a small set of enumerable,
+  equiprobable outcomes to weight. A Legendary scenario's state space is not
+  enumerable, so no closed form exists — simulation is the modern substitute
+  for his enumerate-and-weight method, sampling the outcome distribution
+  rather than summing over it. That is the empirical version of the argument
+  this section opens with.
+- **Percentile, not the mean.** Huygens' value *is* the arithmetic mean
+  (expectation). PAR deliberately refuses the mean — the Raw Score
+  distribution is heavy-tailed, and a handful of blow-out games would drag an
+  expectation arbitrarily (see [§The 55th-percentile selection
+  rule](#the-55th-percentile-selection-rule) and
+  [§Edge Cases — "PAR is never the mean"](#edge-cases)). The robust 55th
+  percentile is the intentional departure: the same fair-value *purpose*, a
+  better statistic for a fat-tailed game.
+
+**A second Huygens echo — the tautochrone.** The same years Huygens spent on
+games of chance he also spent on curves, and his other famous result rhymes
+with what PAR does *across* scenarios. A bead sliding on a
+[tautochrone (a cycloid)](https://en.wikipedia.org/wiki/Tautochrone_curve)
+reaches the bottom in the *same time* regardless of where it starts — he shaped
+the track so the starting point stopped mattering. PAR does the equivalent to
+the *scoring*: it reshapes each scenario's scale so a result means the same
+thing no matter which starting board — a gentle scheme or a brutal one — a
+player drew. Huygens made descent time independent of start position; PAR makes
+score independent of scenario difficulty. This one is metaphor, not mechanism —
+there is no cycloid in the code — but it names the goal cleanly: PAR is the
+tautochrone of scenario difficulty.
 
 ### The five-tier policy taxonomy — only T2 defines PAR
 
@@ -746,6 +784,13 @@ commits us to. The borrowings above take the parts of the ordinal model that
   Phase 2 (Simulation Calibration), the heuristic-AI description, the
   55th-percentile selection rule, the calibration example, and the
   calibration invariants
+- Christiaan Huygens, *De ratiociniis in ludo aleæ* (1657) — the first printed
+  treatise on probability and the origin of
+  [expected value / the fair value of a game](https://en.wikipedia.org/wiki/Expected_value),
+  the idea `finalScore = rawScore − PAR` operationalises; and his
+  [tautochrone](https://en.wikipedia.org/wiki/Tautochrone_curve) (cycloid,
+  1659) as the normalisation metaphor — both in
+  [§Why simulation, not a formula](#why-simulation-not-a-formula)
 - [`docs/12.1-PAR-ARTIFACT-INTEGRITY.md`](../docs/12.1-PAR-ARTIFACT-INTEGRITY.md)
   — why PAR artifacts are hashed (tamper-evident immutability; PAR as
   precedent, not state)
