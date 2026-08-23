@@ -1,7 +1,10 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildWorkedScoreCalc } from './scoreCalcDisplay';
-import type { CompetitiveScoreBreakdown } from '../lib/api/competitionApi';
+import { buildWorkedScoreCalc, buildLuckRead } from './scoreCalcDisplay';
+import type {
+  CompetitiveScoreBreakdown,
+  CompetitiveSeatIdentity,
+} from '../lib/api/competitionApi';
 
 /** The real 2p Red Skull / Midtown game-2 breakdown (Raw 20, Final 320). */
 function breakdown(over: Partial<CompetitiveScoreBreakdown> = {}): CompetitiveScoreBreakdown {
@@ -358,5 +361,133 @@ describe('WP-591 — twist-aware PAR derivation + loss penalty display', () => {
     const won = buildWorkedScoreCalc(breakdown());
     assert.ok(!won.formula.includes('loss penalty'), won.formula);
     assert.ok(!won.products.includes('+ 6000'), won.products);
+  });
+});
+
+describe('raw-score ledger (WP-593)', () => {
+  test('splits penalties (positive) from earned rewards (subtracted), netting to rawScore', () => {
+    const ledger = buildWorkedScoreCalc(breakdown()).rawLedger;
+    // one penalty line (6 scheme twists = 1800), no others
+    assert.equal(ledger.penalties.length, 1);
+    assert.equal(ledger.penalties[0]?.label, '6 scheme twists');
+    assert.equal(ledger.penalties[0]?.amount, 1800);
+    assert.equal(ledger.penaltyTotal, 1800);
+    // two earned lines: bystanders (2200) + VP (1030)
+    assert.equal(ledger.earned.length, 2);
+    assert.equal(ledger.earnedTotal, 3230);
+    assert.equal(ledger.total, -1430);
+  });
+
+  test('a lost match adds a match-lost penalty line', () => {
+    const ledger = buildWorkedScoreCalc(breakdown({ weightedLossPenalty: 6000, rawScore: 4570 })).rawLedger;
+    const lossLine = ledger.penalties.find((line) => line.label === 'match lost');
+    assert.ok(lossLine, 'match-lost penalty line present');
+    assert.equal(lossLine?.amount, 6000);
+    assert.equal(ledger.penaltyTotal, 7800);
+  });
+
+  test('no penalties yields an empty penalties list (client renders "None")', () => {
+    const clean = breakdown({
+      weightedPenaltyTotal: 0,
+      penaltyBreakdown: { villainEscaped: 0, bystanderLost: 0, schemeTwistNegative: 0, mastermindTacticUntaken: 0, scenarioSpecificPenalty: 0 },
+      inputs: { rounds: 5, victoryPoints: 40, bystandersRescued: 4, escapes: 0, penaltyEventCounts: { villainEscaped: 0, bystanderLost: 0, schemeTwistNegative: 0, mastermindTacticUntaken: 0, scenarioSpecificPenalty: 0 } },
+    });
+    const ledger = buildWorkedScoreCalc(clean).rawLedger;
+    assert.equal(ledger.penalties.length, 0);
+    assert.equal(ledger.penaltyTotal, 0);
+  });
+});
+
+describe('named players (WP-593 seat identities)', () => {
+  const withPerPlayer = breakdown({
+    inputs: {
+      rounds: 29, victoryPoints: 103, bystandersRescued: 11, escapes: 0,
+      penaltyEventCounts: { villainEscaped: 0, bystanderLost: 0, schemeTwistNegative: 6, mastermindTacticUntaken: 0, scenarioSpecificPenalty: 0 },
+      perPlayer: [
+        { playerId: '0', victoryPoints: 60, bystandersRescued: 7 },
+        { playerId: '1', victoryPoints: 43, bystandersRescued: 4 },
+      ],
+    },
+  });
+
+  test('suffixes (Bot) and (@handle) from seat identities', () => {
+    const seats: CompetitiveSeatIdentity[] = [
+      { playerId: '0', isBot: false, handle: 'jeff' },
+      { playerId: '1', isBot: true, handle: null },
+    ];
+    const rows = buildWorkedScoreCalc(withPerPlayer, seats).perPlayer;
+    assert.equal(rows?.[0]?.label, 'Player 1 (@jeff)');
+    assert.equal(rows?.[1]?.label, 'Player 2 (Bot)');
+  });
+
+  test('does not double the @ when the stored handle already carries one', () => {
+    const seats: CompetitiveSeatIdentity[] = [{ playerId: '0', isBot: false, handle: '@jeff' }];
+    const rows = buildWorkedScoreCalc(withPerPlayer, seats).perPlayer;
+    assert.equal(rows?.[0]?.label, 'Player 1 (@jeff)');
+  });
+
+  test('falls back to plain "Player N" when seat identities are absent', () => {
+    const rows = buildWorkedScoreCalc(withPerPlayer).perPlayer;
+    assert.equal(rows?.[0]?.label, 'Player 1');
+    assert.equal(rows?.[1]?.label, 'Player 2');
+  });
+
+  test('a guest seat (no bot, no handle) stays a plain "Player N"', () => {
+    const seats: CompetitiveSeatIdentity[] = [
+      { playerId: '0', isBot: false, handle: null },
+      { playerId: '1', isBot: false, handle: 'rival' },
+    ];
+    const rows = buildWorkedScoreCalc(withPerPlayer, seats).perPlayer;
+    assert.equal(rows?.[0]?.label, 'Player 1');
+    assert.equal(rows?.[1]?.label, 'Player 2 (@rival)');
+  });
+});
+
+describe('luck of the draw (WP-593)', () => {
+  function withBaseline(
+    schemeTwistsPar: number,
+    escapesPar: number,
+    bystandersLostPar: number,
+    counts: { schemeTwistNegative: number; villainEscaped: number; bystanderLost: number },
+  ): CompetitiveScoreBreakdown {
+    return breakdown({
+      inputs: {
+        rounds: 20, victoryPoints: 40, bystandersRescued: 5, escapes: counts.villainEscaped,
+        penaltyEventCounts: { mastermindTacticUntaken: 0, scenarioSpecificPenalty: 0, ...counts },
+      },
+      parBaseline: { bystandersPar: 6, victoryPointsPar: 40, escapesPar, schemeTwistsPar, bystandersLostPar },
+    });
+  }
+
+  test('undefined for a record with no WP-591 adversity baseline', () => {
+    assert.equal(buildLuckRead(breakdown()), undefined);
+    // a 3-field baseline (pre-WP-591) is also insufficient
+    const threeField = breakdown({ parBaseline: { bystandersPar: 6, victoryPointsPar: 40, escapesPar: 1 } });
+    assert.equal(buildLuckRead(threeField), undefined);
+  });
+
+  test('far more adversity than expected reads difficult', () => {
+    // expected 2+1+3 = 6; actual 8+2+6 = 16 -> ratio 2.67
+    const luck = buildLuckRead(withBaseline(2, 1, 3, { schemeTwistNegative: 8, villainEscaped: 2, bystanderLost: 6 }));
+    assert.equal(luck?.verdict, 'difficult');
+    assert.equal(luck?.headline, 'Difficult shuffle');
+    assert.equal(luck?.deltas.length, 3);
+  });
+
+  test('far less adversity than expected reads favorable', () => {
+    // expected 6+3+4 = 13; actual 1+0+1 = 2 -> ratio 0.15
+    const luck = buildLuckRead(withBaseline(6, 3, 4, { schemeTwistNegative: 1, villainEscaped: 0, bystanderLost: 1 }));
+    assert.equal(luck?.verdict, 'favorable');
+  });
+
+  test('about-as-expected reads average', () => {
+    // expected 5+1+2 = 8; actual 5+1+2 = 8 -> ratio 1.0
+    const luck = buildLuckRead(withBaseline(5, 1, 2, { schemeTwistNegative: 5, villainEscaped: 1, bystanderLost: 2 }));
+    assert.equal(luck?.verdict, 'average');
+  });
+
+  test('a zero-adversity baseline with any adversity reads difficult', () => {
+    const luck = buildLuckRead(withBaseline(0, 0, 0, { schemeTwistNegative: 3, villainEscaped: 0, bystanderLost: 0 }));
+    assert.equal(luck?.verdict, 'difficult');
   });
 });

@@ -7,6 +7,12 @@
 
 ## Current State
 
+### WP-593 — Endgame report card v2: named players, raw-score ledger, luck of the draw (EC-628 / D-24402) shipped (2026-08-23)
+
+Three operator-requested upgrades to the endgame report card. **(1) Named players:** the per-player split labelled seats "Player 1 / Player 2" only — now it shows a bot marker and the human handle (`Player 1 (Bot)` / `Player 2 (@jeff)`). A DERIVED, non-persisted `seatIdentities` roster (`{ playerId, isBot, handle }`) is built server-side from `readSeatAccounts` (WP-333) + `readMatchBotSeats` (WP-375) + `legendary.players.display_handle` and attached to the `POST /api/competition/scores` 200 envelope BESIDE the record — never a `CompetitiveScoreRecord` key (the 16-key lock stays 16) and never persisted; a roster-read failure is fail-safe. **(2) Raw-score ledger:** the raw score is now a compact two-sided penalties/earned ledger netting to the verbatim `rawScore`. **(3) Luck of the draw:** an OBJECTIVE, deterministic read comparing actual adversity (scheme twists / villain escapes / bystanders lost) against the WP-591 `parBaseline` expectation (ratio ≤ 0.75 favorable, ≥ 1.35 difficult, else average), framed encouragingly — computed from the breakdown only (never deck order), `undefined` for pre-WP-591 rows.
+
+**Renumbered** from WP-592/EC-627/D-24401 (that reservation collided with `rogue-steal-abilities`, which landed on `main` mid-build). The opinionated hero/purchase LLM coach is DEFERRED to WP-B — a separate Pass-gated feature (operator sign-off required before any paid LLM call). **Determinism:** no engine / `G` / move / scoring change → `finalStateHash` / `PRE_WP080_HASH` byte-unchanged (no re-pin). Server competition + seat tests green; arena-client `vue-tsc` clean + score/endgame/api tests green (+15 new); `pnpm -r --no-bail test` green (12 packages, 0 fail). `docs/ai/REFERENCE/api-endpoints.md` submit row updated (D-11804); `docs/12` + ewiki `/scoring/` updated. **D-24026 live-verify: operator-pending** (`play.legendary-arena.com`). D-24402 Active.
+
 ### WP-591 — Interim scheme-aware PAR recalibration (EC-626 / D-24400) shipped (2026-08-23)
 
 The competitive PAR was uncalibrated and scheme-BLIND, so it mis-graded in both directions: bystander-flood schemes (Midtown Bank Robbery) pinned at Legendary, while bystander-light schemes (Cosmic Cube) graded legitimate WINS as F. Validated from 13 real-game diagnostics (extracted via the new `scripts/extract-par-anchors.mjs`), bystander rescues are a SCHEME property (Midtown 24-37, Cosmic Cube 3-4), not a difficulty one.

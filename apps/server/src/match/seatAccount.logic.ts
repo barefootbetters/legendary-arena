@@ -116,3 +116,105 @@ export async function readMatchBotSeats(
   // malformed/NULL value from throwing out of the fail-safe ranked read.
   return (result.rows[0].bot_seats as string[] | null) ?? [];
 }
+
+/**
+ * One seat's display identity for the endgame report card (WP-593 / D-24402):
+ * which boardgame.io seat it is, whether the server drove it as a bot ally, and
+ * the human's chosen handle when the seat maps to an authenticated account.
+ *
+ * `handle` is `null` for a bot seat, a guest seat (no account row), and an
+ * account with no display handle set — every case the client renders as a plain
+ * "Player N". This is DERIVED match metadata, never persisted onto the score row.
+ */
+export interface MatchSeatIdentity {
+  readonly playerId: string;
+  readonly isBot: boolean;
+  readonly handle: string | null;
+}
+
+/**
+ * Resolve the display handles for a set of accounts in one query, returned as an
+ * `accountId → handle` map. An account with no `display_handle` (or an empty one)
+ * is simply absent from the map, so the caller reads `null` for it.
+ *
+ * @param accountIds The accounts to resolve (may be empty).
+ * @param database The caller-injected `pg` pool.
+ * @returns A map from AccountId to the non-empty display handle.
+ */
+async function readHandlesByAccountIds(
+  accountIds: readonly AccountId[],
+  database: DatabaseClient,
+): Promise<Map<AccountId, string>> {
+  const handleByAccount = new Map<AccountId, string>();
+  if (accountIds.length === 0) {
+    return handleByAccount;
+  }
+  // why: ANY($1) resolves every seat's handle in a single round trip rather than
+  // one query per seat; display_handle is the player's chosen public name
+  // (legendary.players), the same column the friendships surfaces read.
+  const result = await database.query(
+    'SELECT ext_id, display_handle FROM legendary.players ' +
+      'WHERE ext_id = ANY($1)',
+    [accountIds],
+  );
+  for (const row of result.rows as {
+    ext_id: string;
+    display_handle: string | null;
+  }[]) {
+    if (typeof row.display_handle === 'string' && row.display_handle !== '') {
+      handleByAccount.set(row.ext_id as AccountId, row.display_handle);
+    }
+  }
+  return handleByAccount;
+}
+
+/**
+ * Build the per-seat display identities for a finished match (WP-593 / D-24402):
+ * for each of the `seatCount` seats, whether it was a bot ally and the human
+ * handle behind it when the seat maps to an authenticated account. Combines the
+ * WP-333 seat→account mapping, the WP-375 bot-ally tag, and the handle lookup.
+ *
+ * The result is a full 0..seatCount-1 roster (never sparse): a seat with neither
+ * an account row nor a bot tag (a guest) comes back `{ isBot: false, handle: null }`,
+ * which the client renders as a plain "Player N". This is derived, read-time
+ * match metadata for the endgame report card — never written to the score row.
+ *
+ * @param matchId The boardgame.io match id.
+ * @param seatCount The number of seats the match was played with (1-5).
+ * @param database The caller-injected `pg` pool.
+ * @returns One identity per seat, ordered by seat index ("0", "1", ...).
+ */
+export async function readSeatIdentities(
+  matchId: string,
+  seatCount: number,
+  database: DatabaseClient,
+): Promise<MatchSeatIdentity[]> {
+  const roster = await readSeatAccounts(matchId, database);
+  const botSeats = await readMatchBotSeats(matchId, database);
+  const accountByPlayer = new Map<string, AccountId>();
+  for (const seat of roster) {
+    accountByPlayer.set(seat.playerId, seat.accountId);
+  }
+  const botSeatSet = new Set(botSeats);
+  const handleByAccount = await readHandlesByAccountIds(
+    roster.map((seat) => seat.accountId),
+    database,
+  );
+
+  const identities: MatchSeatIdentity[] = [];
+  // why: enumerate every seat 0..seatCount-1 so the client can label all players,
+  // including a guest seat that has neither an account row (readSeatAccounts) nor a
+  // bot tag (readMatchBotSeats) — it comes back as a plain, unnamed "Player N".
+  for (let seatIndex = 0; seatIndex < seatCount; seatIndex += 1) {
+    const playerId = String(seatIndex);
+    const accountId = accountByPlayer.get(playerId) ?? null;
+    const handle =
+      accountId === null ? null : handleByAccount.get(accountId) ?? null;
+    identities.push({
+      playerId,
+      isBot: botSeatSet.has(playerId),
+      handle,
+    });
+  }
+  return identities;
+}

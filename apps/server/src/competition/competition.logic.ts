@@ -113,7 +113,11 @@ import type {
 // absent) and runs WP-350's pure mutual-friend-clique predicate over it.
 // Both are same-layer server modules — no engine/registry/boardgame.io
 // import is introduced.
-import { readSeatAccounts, readMatchBotSeats } from '../match/seatAccount.logic.js';
+import {
+  readSeatAccounts,
+  readMatchBotSeats,
+  readSeatIdentities,
+} from '../match/seatAccount.logic.js';
 import { areAllMutualFriends } from '../friendships/friendships.logic.js';
 
 import type {
@@ -464,13 +468,43 @@ export async function submitCompetitiveScoreByMatchIdForRequest(
 
   // step 6 — delegate to the unchanged verify+score pipeline (ownership / visibility
   // (now public) / idempotency / PAR / reduce / hash-verify / score).
-  return submitCompetitiveScoreForRequest(
+  const result = await submitCompetitiveScoreForRequest(
     identity,
     replayHash,
     database,
     productionDeps,
     isRankedEligible,
   );
+
+  // why: step 7 (WP-593 / D-24402) — attach the derived per-seat identity roster
+  // for the endgame report card ("Player N (Bot)" / "Player N (@handle)"). Built
+  // here because it is keyed on matchId, which only this by-matchId entry holds.
+  // Fail-safe: any seat/handle read error leaves the result unchanged (the card
+  // degrades to plain "Player N") — a display-metadata read must never break a
+  // score submission. Runs on a fresh insert AND an idempotent retry so the card
+  // is named either way.
+  if (result.ok === true) {
+    try {
+      const seatCount = await readMatchSeatCount(matchId, database);
+      const seatIdentities = await readSeatIdentities(
+        matchId,
+        seatCount,
+        database,
+      );
+      return { ...result, seatIdentities };
+    } catch (caughtError) {
+      console.warn(
+        '[seat-identities] Failed to build the endgame seat roster for match ' +
+          matchId +
+          '; the report card will show plain "Player N" labels. The score submission is unaffected. Underlying error: ' +
+          (caughtError instanceof Error
+            ? caughtError.message
+            : String(caughtError)),
+      );
+      return result;
+    }
+  }
+  return result;
 }
 
 /**

@@ -746,6 +746,35 @@ Source: Vision goal 25 (Skill Over Repetition)
 
 ---
 
+## Endgame Report Card (Display Surface)
+
+The endgame report card (`apps/arena-client/src/components/hud/EndgameSummary.vue`)
+renders the server-returned `ScoreBreakdown` **verbatim** — it never recomputes a
+score client-side. Three presentation layers sit on top of that breakdown (WP-593 /
+D-24402):
+
+- **Named players.** The per-player VP/bystander split labels each seat
+  `Player 1 (Bot)` / `Player 2 (@handle)` from a DERIVED, non-persisted
+  `seatIdentities` roster (`{ playerId, isBot, handle }`) the server attaches to the
+  `POST /api/competition/scores` response beside the record. It is built from the
+  seat→account map (WP-333), the bot-ally tag (WP-375), and `legendary.players.display_handle`;
+  it is **never** a `CompetitiveScoreRecord` column and is **never** persisted. A
+  seat that maps to neither a bot nor a handled account renders as plain `Player N`.
+- **Raw-score ledger.** The raw score is shown as a two-sided ledger — penalty lines
+  (positive; they raise the score) beside earned-reward lines (bystanders + VP; shown
+  subtracted) — netting to the verbatim `rawScore`. A lost match shows its
+  `weightedLossPenalty` as its own penalty line.
+- **Luck of the draw.** An OBJECTIVE, deterministic read of how favorable the shuffle
+  was: the match's actual adversity (`schemeTwistNegative` + `villainEscaped` +
+  `bystanderLost` counts) versus the scenario's PAR expectation (`schemeTwistsPar` +
+  `escapesPar` + `bystandersLostPar`). The actual/expected ratio bands to
+  `favorable` (≤ 0.75), `difficult` (≥ 1.35), or `average`, framed encouragingly.
+  It is computed from the breakdown only — never from deck order, which the engine
+  never projects — and is absent for records with no WP-591 adversity baseline.
+
+The opinionated hero/purchase coaching (a Legendary-Pass-gated LLM feature) is a
+separate future arc (WP-B), not part of this display surface.
+
 ## Relationship to Other Documents
 
 | Document | Relationship |

@@ -28,6 +28,7 @@
 import type { ScoreBreakdown } from '@legendary-arena/game-engine';
 
 import type { AccountId } from '../identity/identity.types.js';
+import type { MatchSeatIdentity } from '../match/seatAccount.logic.js';
 
 // why: type-only re-export so callers in this directory and any
 // future competition.* siblings can reference the database alias
@@ -245,7 +246,19 @@ export interface CompetitiveScoreRecord {
 // a rejection. Callers can surface "already submitted" UX without a
 // failure path. Per D-5304: retries never produce duplicates and
 // never re-execute the replay. EC-053 §Required `// why:`.
+// why: WP-593 / D-24402 — the `ok` branch may carry a derived, non-persisted
+// per-seat identity roster (`Player N (Bot)` / `Player N (@handle)` on the
+// endgame report card). Optional: only the by-matchId submit path can build it
+// (it holds the matchId the identities are keyed on); the inner replayHash-keyed
+// impl and older callers omit it, and the card degrades to plain "Player N".
+// It is never part of the locked 16-key CompetitiveScoreRecord (it is match
+// metadata, not a score-row column).
 export type SubmissionResult =
-  | { ok: true; record: CompetitiveScoreRecord; wasExisting: boolean }
+  | {
+      ok: true;
+      record: CompetitiveScoreRecord;
+      wasExisting: boolean;
+      seatIdentities?: readonly MatchSeatIdentity[];
+    }
   | { ok: false; reason: SubmissionRejectionReason };
 
