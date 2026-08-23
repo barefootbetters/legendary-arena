@@ -180,6 +180,23 @@ export interface ScenarioScoringConfig {
  * End-of-match only (D-4804) — callers must not invoke the derivation
  * mid-match.
  */
+/**
+ * One player's contribution to the team-aggregate reward inputs (WP-588).
+ *
+ * The competitive score is a shared-team score (D-4803: VP and bystanders are
+ * summed across players), but the endgame report card breaks the raw-score
+ * reward terms down per player so each seat can see what they contributed. A
+ * derived, display-only split of the same totals — it never changes the score.
+ */
+export interface PlayerScoringContribution {
+  /** The player's boardgame.io id (e.g. "0", "1"). */
+  readonly playerId: string;
+  /** This player's victory points (their `PlayerScoreBreakdown.totalVP`). */
+  readonly victoryPoints: number;
+  /** Bystanders rescued into this player's own victory pile. */
+  readonly bystandersRescued: number;
+}
+
 export interface ScoringInputs {
   /** Completed play-turn count (`replayResult.turnCount`; D-24123, resolves D-4801). */
   readonly rounds: number;
@@ -191,6 +208,13 @@ export interface ScoringInputs {
   readonly escapes: number;
   /** Count of each penalty event type observed in the match. */
   readonly penaltyEventCounts: Readonly<Record<PenaltyEventType, number>>;
+  /**
+   * Per-player split of `victoryPoints` and `bystandersRescued`, sorted by
+   * playerId (WP-588). Optional: the synthetic inputs `computeParScore` builds
+   * for the PAR baseline have no players, and records persisted before WP-588
+   * carry none — the endgame then shows only the team totals.
+   */
+  readonly perPlayer?: readonly PlayerScoringContribution[];
 }
 
 /**

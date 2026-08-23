@@ -25,6 +25,7 @@ import { computeFinalScores, isBystanderCard } from './scoring.logic.js';
 import type {
   ParBaseline,
   PenaltyEventType,
+  PlayerScoringContribution,
   ScenarioScoringConfig,
   ScoreBreakdown,
   ScoringConfigValidationResult,
@@ -86,6 +87,30 @@ export function deriveScoringInputs(
     }
   }
 
+  // why: WP-588 / D-24397 — a per-player split of the reward inputs for the endgame
+  // report card. VP is each player's own totalVP (computeFinalScores, already sorted
+  // by playerId); bystanders are counted from that player's own victory pile via the
+  // same isBystanderCard predicate as the aggregate above (single source of truth). A
+  // display-only split of the same totals — derived from terminal G, adds no G field
+  // (finalStateHash / PRE_WP080_HASH byte-identical).
+  const perPlayer: PlayerScoringContribution[] = [];
+  for (const playerBreakdown of finalScoreSummary.players) {
+    const playerZones = gameState.playerZones[playerBreakdown.playerId];
+    let playerBystandersRescued = 0;
+    if (playerZones) {
+      for (const cardExtId of playerZones.victory) {
+        if (isBystanderCard(gameState, cardExtId)) {
+          playerBystandersRescued = playerBystandersRescued + 1;
+        }
+      }
+    }
+    perPlayer.push({
+      playerId: playerBreakdown.playerId,
+      victoryPoints: playerBreakdown.totalVP,
+      bystandersRescued: playerBystandersRescued,
+    });
+  }
+
   // why: the ESCAPED_VILLAINS counter is lazily initialised — it does not
   // exist in G.counters until the first escape. Absence is semantically
   // zero. Same `?? 0` pattern used by EC-068 buildProgressCounters.
@@ -141,6 +166,7 @@ export function deriveScoringInputs(
     bystandersRescued,
     escapes,
     penaltyEventCounts,
+    perPlayer,
   };
 }
 
@@ -321,12 +347,24 @@ export function buildScoreBreakdown(
     scenarioSpecificPenalty: inputs.penaltyEventCounts.scenarioSpecificPenalty,
   };
 
+  // why: WP-588 — deep-copy the per-player split (new object per player) so the
+  // breakdown shares no reference with the caller's inputs (D-2801 / D-4806); absent
+  // on the synthetic PAR inputs and on pre-WP-588 records, so it stays optional.
+  const copiedPerPlayer: PlayerScoringContribution[] | undefined = inputs.perPlayer
+    ? inputs.perPlayer.map((contribution) => ({
+        playerId: contribution.playerId,
+        victoryPoints: contribution.victoryPoints,
+        bystandersRescued: contribution.bystandersRescued,
+      }))
+    : undefined;
+
   const copiedInputs: ScoringInputs = {
     rounds: inputs.rounds,
     victoryPoints: inputs.victoryPoints,
     bystandersRescued: inputs.bystandersRescued,
     escapes: inputs.escapes,
     penaltyEventCounts: copiedPenaltyEventCounts,
+    ...(copiedPerPlayer ? { perPlayer: copiedPerPlayer } : {}),
   };
 
   // why: WP-587 / D-24396 — surface the baseline parScore was derived from so the

@@ -61,6 +61,17 @@ export interface CompetitivePenaltyCounts {
 }
 
 /**
+ * One player's contribution to the team-aggregate reward inputs (structural
+ * mirror of the engine `PlayerScoringContribution`, WP-588). The competitive
+ * score is a shared-team score; this is a display-only split of the same totals.
+ */
+export interface CompetitivePlayerContribution {
+  readonly playerId: string;
+  readonly victoryPoints: number;
+  readonly bystandersRescued: number;
+}
+
+/**
  * The derived inputs a breakdown was computed from (structural mirror of the
  * engine `ScoringInputs`).
  */
@@ -70,6 +81,10 @@ export interface CompetitiveScoringInputs {
   readonly bystandersRescued: number;
   readonly escapes: number;
   readonly penaltyEventCounts: CompetitivePenaltyCounts;
+  // why: WP-588 — per-player split of victoryPoints + bystandersRescued for the
+  // endgame report card. Optional: records persisted before WP-588 carry none, and
+  // the endgame then shows only the team totals.
+  readonly perPlayer?: readonly CompetitivePlayerContribution[];
 }
 
 /**

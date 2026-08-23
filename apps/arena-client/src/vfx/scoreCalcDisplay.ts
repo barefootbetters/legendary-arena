@@ -64,6 +64,16 @@ export interface WorkedScoreCalc {
   /** PAR score (verbatim). */
   readonly parScore: number;
   /**
+   * Per-player split of the raw-score reward terms (WP-588): each player's own
+   * victory points and rescued bystanders, summing to the team totals. Absent
+   * when the breakdown carries no per-player data (records predating WP-588).
+   */
+  readonly perPlayer?: ReadonlyArray<{
+    readonly label: string;
+    readonly victoryPoints: number;
+    readonly bystandersRescued: number;
+  }> | undefined;
+  /**
    * How PAR was derived from the scenario baseline (WP-587). Absent when the
    * breakdown carries no `parBaseline` (records persisted before WP-587) — the
    * screen then shows just the PAR value, not its derivation. Explicit `undefined`
@@ -218,6 +228,38 @@ function subtrahend(value: number): string {
 }
 
 /**
+ * Builds the per-player reward split for the report card (WP-588): each player's
+ * VP and bystanders, labelled "Player N" (1-based). Returns undefined when the
+ * breakdown carries no per-player data (records predating WP-588).
+ *
+ * @param breakdown - The server-returned breakdown.
+ * @returns One row per player, or undefined when no per-player data is present.
+ */
+function buildPerPlayerSplit(
+  breakdown: CompetitiveScoreBreakdown,
+): WorkedScoreCalc['perPlayer'] {
+  const perPlayer = breakdown.inputs.perPlayer;
+  if (perPlayer === undefined || perPlayer.length === 0) {
+    return undefined;
+  }
+  return perPlayer.map((contribution) => ({
+    // why: boardgame.io player ids are 0-based ("0", "1"); players read "Player 1",
+    // "Player 2". A non-numeric id falls back to itself rather than "Player NaN".
+    label: playerLabel(contribution.playerId),
+    victoryPoints: contribution.victoryPoints,
+    bystandersRescued: contribution.bystandersRescued,
+  }));
+}
+
+/**
+ * Turns a boardgame.io player id into a 1-based "Player N" label.
+ */
+function playerLabel(playerId: string): string {
+  const index = Number(playerId);
+  return Number.isInteger(index) ? `Player ${index + 1}` : `Player ${playerId}`;
+}
+
+/**
  * Builds the full worked-calculation view model from a competitive score
  * breakdown. Formula-first: symbolic line, then substituted, then products,
  * then the result; then Final = Raw − PAR.
@@ -265,6 +307,7 @@ export function buildWorkedScoreCalc(breakdown: CompetitiveScoreBreakdown): Work
     products,
     rawScore: breakdown.rawScore,
     parScore: breakdown.parScore,
+    perPlayer: buildPerPlayerSplit(breakdown),
     parDerivation: buildParDerivation(breakdown, bystanderWeight, vpWeight),
     finalSubstituted: `${breakdown.rawScore} ${MINUS} ${subtrahend(breakdown.parScore)}`,
     finalScore: breakdown.finalScore,

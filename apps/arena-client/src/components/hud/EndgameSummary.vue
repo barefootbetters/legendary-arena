@@ -156,6 +156,21 @@ export default defineComponent({
           <div class="worked-line worked-indent worked-result" aria-label="rawResult">= {{ workedCalc.rawScore }}</div>
         </div>
 
+        <!-- why: WP-588 — break the team-total reward terms (Bystanders, VP) down by
+             player so each seat sees their own contribution. A display-only split of
+             the same totals — the per-player VP and bystanders sum to the team figures
+             used in the raw calc above. Absent for records persisted before WP-588. -->
+        <div v-if="workedCalc.perPlayer" class="worked-block" data-testid="arena-hud-per-player">
+          <div class="worked-heading">By player</div>
+          <div class="per-player-grid" aria-label="per-player scoring">
+            <div v-for="row in workedCalc.perPlayer" :key="row.label" class="per-player-row">
+              <span class="per-player-name">{{ row.label }}</span>
+              <span class="per-player-stat"><strong>{{ row.victoryPoints }}</strong> VP</span>
+              <span class="per-player-stat"><strong>{{ row.bystandersRescued }}</strong> bystanders</span>
+            </div>
+          </div>
+        </div>
+
         <!-- why: WP-587 — show where PAR came from (the same formula applied to the
              scenario's expected baseline), not just the final PAR value. Absent for
              records persisted before WP-587 (no parBaseline in the stored breakdown);
@@ -170,6 +185,12 @@ export default defineComponent({
           <div class="worked-line" aria-label="parFormula">PAR = {{ workedCalc.parDerivation.formula }}</div>
           <div class="worked-line worked-indent" aria-label="parSubstituted">= {{ workedCalc.parDerivation.substituted }}</div>
           <div class="worked-line worked-indent worked-result" aria-label="parResult">= {{ workedCalc.parScore }}</div>
+          <!-- why: WP-588 — name what sets PAR. It is keyed on the scenario identity
+               (ScenarioKey = scheme::mastermind::villain-groups) and calibrated from the
+               scheme, mastermind, and villain-group difficulties — NOT the henchmen. -->
+          <p class="par-basis" aria-label="parBasis">
+            Set by this scenario — its scheme, mastermind, and villain groups.
+          </p>
         </div>
 
         <div class="worked-block">
@@ -192,19 +213,23 @@ export default defineComponent({
         aria-label="grade scale"
       >
         <div class="worked-heading">Grade scale (final score vs PAR — lower is better)</div>
-        <ul class="grade-scale-list">
+        <!-- why: WP-588 — a horizontal, colour-coded scale (wider, not a tall list) so
+             the whole ladder reads at a glance and the earned band stands out. Colour is
+             REINFORCEMENT: the current cell also carries a text marker ("your score") +
+             aria-current, so it is legible with colours disabled or to a screen reader. -->
+        <ol class="grade-scale-strip">
           <li
             v-for="entry in gradeScale"
             :key="entry.grade"
-            class="grade-scale-row"
-            :class="{ 'grade-scale-row--current': entry.isCurrent }"
+            class="grade-scale-cell"
+            :class="['grade-scale-cell--' + entry.grade, { 'grade-scale-cell--current': entry.isCurrent }]"
             :aria-current="entry.isCurrent ? 'true' : undefined"
           >
             <span class="grade-scale-label">{{ entry.label }}</span>
             <span class="grade-scale-range">{{ entry.range }}</span>
-            <span v-if="entry.isCurrent" class="grade-scale-marker">← your score</span>
+            <span v-if="entry.isCurrent" class="grade-scale-you">your score</span>
           </li>
-        </ul>
+        </ol>
       </div>
     </section>
 
@@ -350,49 +375,111 @@ dd {
   font-weight: 700;
 }
 
-/* why: WP-587 — the grade scale. The current row is marked by TEXT ("← your
-   score") + a left border, not colour alone, so it is legible with colours
-   disabled or to a screen reader. */
-.grade-scale {
-  margin: 0.25rem 0 0;
-}
-
-.grade-scale-list {
-  list-style: none;
-  margin: 0.15rem 0 0;
-  padding: 0;
+/* why: WP-588 — the per-player split of the reward terms. A display-only
+   reconciliation of the team totals (VP + bystanders sum to the raw calc). */
+.per-player-grid {
   display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
+  flex-wrap: wrap;
+  gap: 0.3rem 1.2rem;
+  margin-top: 0.15rem;
 }
 
-.grade-scale-row {
+.per-player-row {
   display: flex;
   align-items: baseline;
-  gap: 0.6rem;
+  gap: 0.5rem;
   font-size: 0.85rem;
-  padding: 0.1rem 0.3rem;
-  border-left: 3px solid transparent;
+}
+
+.per-player-name {
+  font-weight: 700;
+  min-width: 4.5rem;
+}
+
+.per-player-stat {
+  opacity: 0.9;
   font-variant-numeric: tabular-nums;
 }
 
-.grade-scale-row--current {
-  border-left-color: var(--color-foreground);
+.per-player-stat strong {
+  font-variant-numeric: tabular-nums;
+}
+
+/* why: WP-588 — names what sets PAR (the scenario's scheme, mastermind, and
+   villain groups). Quiet supporting copy under the PAR derivation. */
+.par-basis {
+  margin: 0.25rem 0 0;
+  font-size: 0.78rem;
+  opacity: 0.75;
+  font-style: italic;
+}
+
+/* why: WP-588 — the grade scale as a horizontal, colour-coded strip (wider, not a
+   tall list). Each cell's colour is its grade; the earned cell is emphasised by a
+   thicker border + a heavier tint AND a text marker ("your score") + aria-current,
+   so colour is reinforcement, never the sole signal. */
+.grade-scale {
+  margin: 0.4rem 0 0;
+}
+
+.grade-scale-strip {
+  list-style: none;
+  margin: 0.3rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.grade-scale-cell {
+  flex: 1 1 4.5rem;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.08rem;
+  padding: 0.35rem 0.2rem 0.3rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  border-top: 4px solid var(--grade-color, #888);
+  background: color-mix(in srgb, var(--grade-color, #888) 12%, transparent);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.grade-scale-cell--legendary { --grade-color: #b8860b; }
+.grade-scale-cell--a { --grade-color: #1a7f37; }
+.grade-scale-cell--b { --grade-color: #0a6bcb; }
+.grade-scale-cell--c { --grade-color: #6b7280; }
+.grade-scale-cell--d { --grade-color: #bc4c00; }
+.grade-scale-cell--f { --grade-color: #cf222e; }
+
+.grade-scale-cell--current {
+  border-color: var(--grade-color, #888);
+  border-width: 2px;
+  border-top-width: 4px;
+  background: color-mix(in srgb, var(--grade-color, #888) 26%, transparent);
   font-weight: 700;
-  background: rgba(128, 128, 128, 0.12);
 }
 
 .grade-scale-label {
-  min-width: 5.5rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--grade-color, var(--color-foreground));
 }
 
 .grade-scale-range {
-  opacity: 0.8;
+  font-size: 0.72rem;
+  opacity: 0.85;
+  white-space: nowrap;
 }
 
-.grade-scale-marker {
-  font-size: 0.8rem;
-  opacity: 0.9;
+.grade-scale-you {
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-weight: 700;
+  color: var(--grade-color, var(--color-foreground));
 }
 
 /* why: WP-583 — the grade badge. Meaning is carried by the text label; the

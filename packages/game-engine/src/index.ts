@@ -214,6 +214,7 @@ export type {
   PenaltyEventType,
   PenaltyEventWeights,
   ParBaseline,
+  PlayerScoringContribution,
   ScenarioScoringConfig,
   ScoringInputs,
   ScoreBreakdown,
