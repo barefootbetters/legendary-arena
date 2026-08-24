@@ -389,6 +389,31 @@ curl -sSI "https://play.legendary-arena.com/assets/does-not-exist-guard-probe.js
 (verified in production 2026-08-23). A `200 text/html` means Functions have stopped
 executing again — re-check the project's Root directory first.
 
+*Systemic note — every Pages project needs its Root directory set.* All Cloudflare
+Pages projects in this monorepo are created from the one `barefootbetters/legendary-arena`
+repo with **Root directory blank by default**, which makes Cloudflare look for
+`functions/` at the repo root (absent) — so any project that ships a `functions/`
+directory runs it **only** if its Root directory is set to its app dir (with Build
+output `dist`). This is the invariant behind the 2026-08-23 recurrence. When adding
+Functions to any Pages surface, set the project's Root directory in the same change,
+and **verify with the bogus-asset probe above — not the unit tests**, which mock
+`context.next()` and pass whether or not Cloudflare ever invokes the Function.
+Corollary gotcha: adding the `@cloudflare/workers-types` devDep to an app's
+`package.json` without regenerating `pnpm-lock.yaml` (`pnpm install --lockfile-only`)
+turns every CI job and every Pages build red under `--frozen-lockfile` — commit the
+lockfile in the same change.
+
+The poisoning applies to any public SPA that serves hashed `/assets/*` with the
+immutable header and falls back to `index.html` for a miss. Guard-protection status
+of the repo's Pages SPAs (2026-08-23):
+
+| Surface | Project | Guard | Notes |
+|---|---|---|---|
+| `play.legendary-arena.com` | `legendary-arena-play` | ✅ live | arena-client; also carries profile-meta |
+| `legends.legendary-arena.com` | `legendary-arena-legends` | ✅ live | legends-board; guard-only |
+| `cards.legendary-arena.com` | `legendary-arena` | ⏳ pending | registry-viewer; public + vulnerable, guard being added |
+| `dashboard.legendary-arena.com` | `legendary-arena-dashboard` | ➖ n/a | behind Cloudflare Access (single operator); the gate intercepts `/assets/*`, so the shared-cache poisoning vector does not apply — a guard would be defense-in-depth only |
+
 ### Latest run snapshot — 2026-05-19
 
 Both scripts were run from
