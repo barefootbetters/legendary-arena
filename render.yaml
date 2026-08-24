@@ -125,6 +125,16 @@ services:
       # (D-13305 startup-fatal allowlist).
       - key: STRIPE_PRICE_ALLOWLIST
         sync: false
+      # ANTHROPIC_API_KEY (WP-594 / D-24403) — the Legendary-Pass endgame AI
+      # coach's server-side model key (Anthropic Messages API, Sonnet 5, called
+      # over Node fetch). sync: false because it is a secret set in the Render
+      # dashboard. OPTIONAL by design: when unset or empty, server.mjs wires a
+      # DISABLED fail-soft coach client (the GET /api/me/scores/:replayHash/coach
+      # endpoint returns coach_unavailable), so startup never fails on a missing
+      # key — the coach simply stays dark until this is set. Distinct from the
+      # CI-only nightly-triage ANTHROPIC_API_KEY GitHub Actions secret noted below.
+      - key: ANTHROPIC_API_KEY
+        sync: false
       # PUBLIC_BASE_URL is the deployed application origin (no trailing slash);
       # used to server-derive Stripe Checkout success_url and cancel_url per
       # D-13309 — accepting either from request input would permit redirect
@@ -173,9 +183,10 @@ services:
       # node --input-type=module -e "import { randomBytes } from 'node:crypto'; console.log(randomBytes(32).toString('hex'))"
       # The same value must be set as the `INSPECTION_SUBMIT_TOKEN` GitHub
       # Actions secret so the nightly inspection workflow can authenticate to
-      # this endpoint. (The triage agent's `ANTHROPIC_API_KEY` is a CI-only
-      # GitHub Actions secret — it is NOT a server env var and is not declared
-      # here.)
+      # this endpoint. (The nightly triage agent uses an `ANTHROPIC_API_KEY`
+      # GitHub Actions secret in CI; the SERVER's own `ANTHROPIC_API_KEY` — the
+      # WP-594 endgame AI coach — is a distinct runtime secret declared in the
+      # Stripe/coach block above.)
       - key: INSPECTION_SUBMIT_TOKEN
         sync: false
       # Handoff submission shared-secret token (WP-232 / D-23203). The token
