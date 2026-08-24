@@ -38255,7 +38255,7 @@ _Active 2026-08-23 — landed at WP-595 execution (EC-630). Client coach panel: 
 
 _Active 2026-08-23 — landed at WP-596 execution (EC-631). Shipped exactly as locked: `generateScenarioParSamples` + `PerGameSample` reuse the WP-049 `simulateOneGame` loop; `generateScenarioPar` routes through it with `parValue` regression-pinned byte-identical (literal 0 / seedParDelta 1200 / all-zero distribution for the mock-registry test config). `aggregateTurnDistributionProfile` (`par.profile.ts`, pure) → per-turn median/p25/p75 rawScore + winRate + median VP + `minWinningTurn` + `monotoneImproving` (vacuous-true for <2 qualifying bins). `writeParProfileArtifact` / `readParProfileArtifact` persist to a SEPARATE `profile/<version>/` tree (derived:true / authoritative:false), OVERWRITING (regenerable) — never the immutable hashed PAR artifact/index. Profile writers exported on the `/setup` IO surface (D-14401), an inline file-allowlist amendment beyond the WP's `index.ts` entry. Engine 2898/2898; no new G field, `finalStateHash` / `PRE_WP080_HASH` byte-unchanged. Render surface + cross-scenario sweep remain a deferred follow-up. Hard-deps WP-049 / WP-050 / WP-048._
 
-### D-24406 — PAR Profile Sweep + Too-Easy Fidelity Report + Scoring-Wiki Render (Drafted 2026-08-23; not yet landed — WP-597 / EC-632)
+### D-24406 — PAR Profile Sweep + Too-Easy Fidelity Report + Scoring-Wiki Render (Active 2026-08-23 — WP-597 / EC-632)
 
 **Context.** WP-596 shipped the per-scenario turn-distribution profile but persisted none and rendered nothing (deferred). This decision locks the follow-up: a cross-scenario sweep that turns the profile into an operator-facing prioritization list — which scenarios the current under-built engine makes too easy — plus a scoring-ewiki render.
 
@@ -38269,4 +38269,4 @@ _Active 2026-08-23 — landed at WP-596 execution (EC-631). Shipped exactly as l
 
 **Surface.** `scripts/generate-par-profiles.mjs` (+ its `.test.ts`); `data/par/profile/v1/**`; `wiki/par-simulation-calibration.md`.
 
-_Drafted 2026-08-23; not yet landed. Flips to Active at WP-597 execution (EC-632). Hard-dep WP-596._
+_Active 2026-08-23 — landed at WP-597 execution (EC-632). First sweep: 128 scenarios × 200 games, 0 skipped, 122/128 winnable. Top too-easy `midtown-bank-robbery::red-skull::hydra` (100% win, first win turn 7); 6 zero-win outliers (Legacy Virus ×5 + one Portals leg). Honest finding: `monotoneImproving` fired 0/128 under real per-scenario scoring (the strict non-increasing test is too sensitive) — win-rate + first-winning-turn carry the ranking; a tolerance-based flag is a future refinement, and the raw per-turn curve remains ground truth. Determinism verified (re-run byte-identical). Committed footprint ~968K (128 profiles + report). Diagnostic only — no engine/runtime change; the `/coverage` dashboard render is the deferred follow-up. Hard-dep WP-596._
