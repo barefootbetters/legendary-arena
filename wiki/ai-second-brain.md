@@ -647,8 +647,34 @@ feature reaching across the network.
 
 > **This does not change the Locked architecture.** The platform's gateway choice
 > (LiteLLM) stays a **Preferred** row; this sketch is about *one app surface's*
-> routing, deferred to a code Work Packet. The proof-point claim holds under every
-> option B–D — the coach's model becomes swappable without an engine edit.
+> routing, shipped as an `INFRA:` code change (Option B, PR #1619). The proof-point
+> claim holds under every option B–D — the coach's model becomes swappable without
+> an engine edit.
+
+> **Shipped — Option B is live (2026-08-24, PR #1619, `INFRA:`).** The in-server
+> shim landed with no behaviour change at defaults. The routing layer is
+> `apps/server/src/coach/coachModelConfig.ts`; the coach's model and its per-model
+> quirks are now config, not hardcoded in the feature client. Operating notes for
+> the `COACH_MODEL` knob:
+>
+> - **It is optional, and unset is the intended state.** With `COACH_MODEL` unset
+>   the coach runs the default `claude-sonnet-5` with its disabled-thinking quirk —
+>   identical to before the shim. That is the *finished* state, **not a stopgap
+>   "until LiteLLM."** The shim *is* the model-independence mechanism; a real
+>   gateway (C/D) stays deferred until a second LLM surface or the brain platform
+>   (above), so the coach is not waiting on anything.
+> - **Setting it to the default is a no-op.** `COACH_MODEL=claude-sonnet-5` resolves
+>   to exactly what unset does — do not set it merely to "pin" the current model.
+> - **Swapping = set `COACH_MODEL` in the Render dashboard** to the exact Anthropic
+>   model id (e.g. `claude-opus-5`); Render then redeploys the server. The value is
+>   the API id, never a friendly name like "Sonnet 5" — an unrecognized string is
+>   sent verbatim as the model and fails the call.
+> - **A thinking-by-default model needs its quirk row first.** Every Claude 4.6+/5
+>   model runs adaptive extended thinking by default, which drains the bounded
+>   output budget and re-triggers the empty-response failure (the EC-629 bug — see
+>   [Edge Cases](#edge-cases)). Before pointing `COACH_MODEL` at such a model, add
+>   its `{ thinking: { type: 'disabled' }, … }` row to `COACH_MODEL_QUIRKS_BY_MODEL`
+>   in the shim; a non-thinking model needs only the env var.
 
 ### Operating discipline
 
@@ -951,14 +977,30 @@ This is the summary index; the individual gotchas and their nuances live in
   develop-from-anywhere agent is the concrete, shipping instance of the
   "replaceable agent" layer described here.
 - **The endgame AI coach (post-game analysis)** — the platform's first *product*
-  LLM surface (WP-594/WP-595, shipped 2026-08-23/24), and the first test of
-  **Model Independence** against live traffic. It ships wired direct to the
-  Anthropic Messages API with the model hardcoded; routing it through the
-  LiteLLM gateway (see the [Proposed stack](#proposed-stack) callout) is the
-  model-independence proof point, deferred to a code Work Packet.
+  LLM surface (WP-594/WP-595, shipped 2026-08-23/24), and the first proof of
+  **Model Independence** on live traffic. The in-server routing shim shipped
+  2026-08-24 (Option B, PR #1619): the coach's model and its per-model quirks are
+  now config (`COACH_MODEL` + the shim's quirk registry), swappable without a code
+  edit. A real gateway (LiteLLM) stays deferred until a second LLM surface or the
+  brain platform — see [Gateway routing for the endgame coach](#gateway-routing-for-the-endgame-coach-decision-sketch).
 
 ## Edge Cases
 
+- **Swapping the coach model to a thinking-by-default model without its quirk row
+  reintroduces the empty-response bug.** The shipped coach shim (see
+  [Gateway routing for the endgame coach](#gateway-routing-for-the-endgame-coach-decision-sketch))
+  makes `COACH_MODEL` a config swap, but the safety is *per model*. Every Claude
+  4.6+/5 model runs adaptive extended thinking by default, and those thinking
+  tokens draw from the bounded `max_tokens`; on a full match-analysis prompt the
+  thinking exhausts the budget before any answer text, so the response caps
+  mid-thinking with an empty text block and every real call fails
+  `coach_unavailable` (the EC-629 production bug). A model absent from the shim's
+  quirk registry gets the *default* quirks — **no** disabled-thinking directive —
+  so pointing `COACH_MODEL` at a new thinking-default model *without first adding
+  its `{ thinking: { type: 'disabled' } }` row* silently reintroduces exactly that
+  failure. Non-thinking models are safe with the env var alone. (The value must
+  also be the exact API id — a friendly name like "Sonnet 5" is sent verbatim and
+  fails the call.)
 - **Co-hosting during bootstrap needs real isolation.** Running a model gateway,
   a chat surface, and a vector DB on the live game-server box adds attack surface
   and resource contention to a host whose job is serving matches. It is an
@@ -1081,6 +1123,15 @@ This is the summary index; the individual gotchas and their nuances live in
   Provisional path: the in-server shim now, a real gateway when a second LLM
   surface or the brain platform justifies one. Still deferred to a code Work
   Packet — no code changed.
+- **2026-08-24 — coach model-independence shim SHIPPED (Option B, PR #1619,
+  `INFRA:`).** The in-server routing shim landed with no behaviour change at
+  defaults: `apps/server/src/coach/coachModelConfig.ts` now owns the coach's model
+  (`COACH_MODEL`, default `claude-sonnet-5`) and a per-model quirk registry
+  (Sonnet 5's disabled-thinking / EC-629 hotfix is one row, not hardcoded).
+  Swapping the coach's model is now setting `COACH_MODEL` in the Render dashboard;
+  a thinking-by-default model needs its `thinking:disabled` quirk row added first
+  (see [Edge Cases](#edge-cases)). This is the first live proof of Model
+  Independence; a real gateway (C/D) stays deferred (Open Questions 5).
 - **2026-08-24 — Failure modes section + review polish.** Added a
   [Failure modes](#failure-modes) index (failure → the on-page mitigation that
   guards it) so a drift can be traced back to the guard meant to catch it. Review
@@ -1163,18 +1214,17 @@ is built.
    [Scope boundaries](#scope-boundaries-what-this-deliberately-is-not)). *Gate:*
    do not consider it until the navigation + vector base has been used for real
    work and the recovery path has been rehearsed.
-5. **Give the endgame coach model-independence (first proof point) — by which
-   route?** The coach ships wired direct to the Anthropic Messages API with
-   `claude-sonnet-5` hardcoded and a Sonnet-5 `thinking:disabled` workaround baked
-   into `coachClient.ts` (see [Proposed stack](#proposed-stack) and History). The
-   options and tradeoffs — status quo / in-server shim / hosted gateway /
-   self-hosted LiteLLM (Render-co-located or on the brain host) — are laid out in
-   [Gateway routing for the endgame coach](#gateway-routing-for-the-endgame-coach-decision-sketch).
-   *Provisional path:* a code Work Packet takes the **in-server routing shim**
-   first (model + per-model quirks become config, no new infra), promoting to a
-   real gateway (hosted, or self-hosted LiteLLM co-located on Render) only when a
-   second LLM surface or the built brain platform justifies one. Deferred, not
-   gated; blocks nothing earlier.
+5. **A real gateway for the coach — when, if ever? (near-term route RESOLVED —
+   the in-server shim shipped.)** The first route decision is settled and built:
+   the **in-server routing shim** shipped 2026-08-24 (Option B, PR #1619), so the
+   coach's model + per-model quirks are config (`COACH_MODEL` + the shim registry)
+   with no new infra — see [Gateway routing for the endgame coach](#gateway-routing-for-the-endgame-coach-decision-sketch).
+   *Still open:* whether/when to promote to a **real gateway** (hosted like
+   OpenRouter, or self-hosted LiteLLM co-located on Render, D1) instead of the
+   shim. *Gate:* only when a **second LLM surface** needs routing/quirk handling,
+   or the brain platform is running and wants a shared gateway. Never LiteLLM on
+   the brain host for this coach (D2) — it couples the live game server to the
+   brain host for no gain. Deferred, not gated; blocks nothing.
 
 ## References
 
