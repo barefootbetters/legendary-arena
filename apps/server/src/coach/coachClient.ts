@@ -31,7 +31,7 @@ const ANTHROPIC_MESSAGES_URL = 'https://api.anthropic.com/v1/messages';
 // why: the pinned Messages API version header the endpoint requires.
 const ANTHROPIC_VERSION = '2023-06-01';
 /** Output cap — the bounded report (headline + two paragraphs + 2-3 tips) fits well under this. */
-const MAX_OUTPUT_TOKENS = 1024;
+const MAX_OUTPUT_TOKENS = 2048;
 
 /**
  * The system prompt: who the coach is and the exact JSON shape it must return.
@@ -152,6 +152,14 @@ export function createAnthropicCoachClient(
           body: JSON.stringify({
             model,
             max_tokens: MAX_OUTPUT_TOKENS,
+            // why: Sonnet 5 runs adaptive extended thinking BY DEFAULT, and the
+            // thinking blocks draw from max_tokens. On a full match-analysis prompt
+            // that thinking exhausted the budget before any answer text was
+            // emitted — the response capped mid-thinking with an empty text block,
+            // so every real coach call failed as coach_unavailable while a trivial
+            // smoke test passed. Disable thinking for this bounded structured-JSON
+            // task (accepted on Sonnet 5) so the full budget goes to the report.
+            thinking: { type: 'disabled' },
             system: COACH_SYSTEM_PROMPT,
             messages: [{ role: 'user', content: buildUserMessage(summary) }],
           }),
