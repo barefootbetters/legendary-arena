@@ -1156,7 +1156,7 @@
           "attack": "4",
           "recruit": null,
           "abilities": [
-            "Each player discards the top card of their deck. Play a copy of each of those cards."
+            "Each player discards the top card of their deck. Play a copy of each of those cards. [keyword:steal-abilities]"
           ]
         }
       ],

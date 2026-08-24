@@ -146,6 +146,12 @@
       "markupToken": "[keyword:copy-powers]"
     },
     {
+      "heroSlug": "rogue",
+      "cardSlug": "steal-abilities",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:steal-abilities]"
+    },
+    {
       "heroSlug": "black-widow",
       "cardSlug": "silent-sniper",
       "abilityIndex": 0,

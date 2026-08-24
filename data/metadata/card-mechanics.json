@@ -1415,6 +1415,17 @@
       "hidden": true
     },
     {
+      "slug": "steal-abilities",
+      "label": "Steal Abilities",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "core/rogue"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "streets",
       "label": "Streets",
       "scope": "hero",
@@ -2395,7 +2406,8 @@
     "core/rogue": {
       "mechanics": [
         "copy-powers",
-        "optional-ko-reward"
+        "optional-ko-reward",
+        "steal-abilities"
       ]
     },
     "core/spider-man": {

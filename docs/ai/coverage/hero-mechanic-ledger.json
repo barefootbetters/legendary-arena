@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 655,
+    "totalRows": 656,
     "byStatus": {
-      "executable": 242,
+      "executable": 243,
       "deferred": 0,
       "condition": 5,
       "unsupported": 367,
       "unmarked": 40,
       "subsystem": 1
     },
-    "distinctMechanics": 123
+    "distinctMechanics": 124
   },
   "rows": [
     {
@@ -3386,6 +3386,22 @@
         {
           "slug": "energy-drain",
           "name": "Energy Drain"
+        }
+      ]
+    },
+    {
+      "extId": "core/rogue",
+      "heroName": "Rogue",
+      "set": "core",
+      "mechanic": "steal-abilities",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#steal-abilities",
+      "designs": [
+        {
+          "slug": "steal-abilities",
+          "name": "Steal Abilities"
         }
       ]
     },

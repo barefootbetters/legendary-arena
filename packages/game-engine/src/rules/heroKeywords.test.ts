@@ -62,11 +62,20 @@ describe('size-changing keyword (WP-290 / EC-322 / D-24074)', () => {
     );
   });
 
-  it('HERO_KEYWORDS array has exactly 36 entries after the recruit-as-attack addition', () => {
+  it('HERO_KEYWORDS array has exactly 37 entries after the steal-abilities addition', () => {
     assert.equal(
       HERO_KEYWORDS.length,
-      36,
-      'HERO_KEYWORDS must have exactly 36 entries (35 + recruit-as-attack, WP-580 / D-24389)',
+      37,
+      'HERO_KEYWORDS must have exactly 37 entries (36 + steal-abilities, WP-592 / D-24401)',
+    );
+  });
+});
+
+describe('steal-abilities keyword (WP-592 / D-24401)', () => {
+  it('is registered in HERO_KEYWORDS', () => {
+    assert.ok(
+      HERO_KEYWORDS.includes('steal-abilities'),
+      'steal-abilities must be in HERO_KEYWORDS array',
     );
   });
 });

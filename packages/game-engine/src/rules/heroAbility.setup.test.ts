@@ -233,7 +233,7 @@ describe('buildHeroAbilityHooks', () => {
 describe('HERO_KEYWORDS drift-detection', () => {
   // why: prevents union/array divergence — same pattern as
   // REVEALED_CARD_TYPES drift detection
-  it('contains exactly the 36 canonical keyword values', () => {
+  it('contains exactly the 37 canonical keyword values', () => {
     const expectedKeywords = [
       'draw',
       'attack',
@@ -271,12 +271,13 @@ describe('HERO_KEYWORDS drift-detection', () => {
       'copy-powers', // why: WP-535 / D-24345 — Rogue's Copy Powers "Play this card as a copy of another Hero you played this turn."
       'return-on-discard', // why: WP-498 / D-24301 — Cyclops Unending Energy "If a card effect makes you discard this card, you may return this card to your hand."
       'recruit-as-attack', // why: WP-580 / D-24389 — God of Thunder "You can use Recruit as Attack this turn."
+      'steal-abilities', // why: WP-592 / D-24401 — Rogue's Steal Abilities "Each player discards the top card of their deck. Play a copy of each of those cards."
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      36,
-      'HERO_KEYWORDS must have exactly 36 entries',
+      37,
+      'HERO_KEYWORDS must have exactly 37 entries',
     );
 
     assert.deepStrictEqual(
@@ -291,6 +292,10 @@ describe('HERO_KEYWORDS drift-detection', () => {
 
     // why: D-24060 / WP-282 — explicit assertion for undercover keyword
     assert.ok(HERO_KEYWORDS.includes('undercover'), 'HERO_KEYWORDS must contain undercover');
+
+    // why: WP-592 / D-24401 — explicit membership assertion so steal-abilities cannot
+    // silently drop out of the union/array while the count stays correct via a swap.
+    assert.ok(HERO_KEYWORDS.includes('steal-abilities'), 'HERO_KEYWORDS must contain steal-abilities');
 
     // Verify no duplicates
     const uniqueKeywords = new Set(HERO_KEYWORDS);
