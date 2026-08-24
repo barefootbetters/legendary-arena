@@ -4,7 +4,8 @@
  * The coach's model-routing layer. It owns the two things that were previously
  * hardcoded in the feature client and the server wiring: WHICH model the coach
  * calls, and the PER-MODEL request quirks that model needs (its extended-thinking
- * directive and output-token cap). Pulling them here is the coach's realization of
+ * directive, reasoning-effort level, and output-token cap). Pulling them here is
+ * the coach's realization of
  * the AI Second Brain "Model Independence" rule — replace the model with a config
  * change, not a code edit, and keep model-specific behaviour at the routing layer
  * instead of baked into `coachClient.ts`.
@@ -29,12 +30,21 @@
 export type CoachThinkingDirective = { type: 'disabled' } | { type: 'adaptive' };
 
 /**
+ * The Messages-API `output_config.effort` level. Used for a model that tunes
+ * reasoning depth via effort rather than a thinking toggle (e.g. Opus 5, where
+ * disabling thinking is discouraged — low effort with thinking on is preferred).
+ */
+export type CoachEffort = 'low' | 'medium' | 'high' | 'xhigh' | 'max';
+
+/**
  * The per-model request quirks the coach applies. These are model-specific
  * Messages-API knobs, kept here so `coachClient.ts` stays model-agnostic.
  */
 export interface CoachModelQuirks {
   /** The `thinking` param for this model, or undefined to send none. */
   readonly thinking?: CoachThinkingDirective;
+  /** The `output_config.effort` level, or undefined to use the API default (`high`). */
+  readonly effort?: CoachEffort;
   /** The `max_tokens` cap for the bounded coach report. */
   readonly maxOutputTokens: number;
 }
@@ -55,9 +65,15 @@ export const DEFAULT_COACH_MODEL = 'claude-sonnet-5';
 // this cap; it is the same value the coach shipped with, now owned per-model here.
 const BOUNDED_REPORT_MAX_OUTPUT_TOKENS = 2048;
 
+// why: a model that keeps thinking ON for the bounded call (Opus 5, at low effort)
+// must budget for minimal thinking PLUS the short JSON report, so it gets a roomier
+// cap than the disabled-thinking models — double the bounded report cap.
+const THINKING_ON_MAX_OUTPUT_TOKENS = 4096;
+
 /**
  * Per-model quirk registry. One row per model that needs model-specific request
- * config; a model absent from this map uses `DEFAULT_COACH_MODEL_QUIRKS`.
+ * config; a model absent from this map uses `DEFAULT_COACH_MODEL_QUIRKS`. Model
+ * ids and their thinking behaviour are per the `claude-api` skill (2026-08).
  */
 const COACH_MODEL_QUIRKS_BY_MODEL: Record<string, CoachModelQuirks> = {
   // why: Sonnet 5 runs adaptive extended thinking BY DEFAULT and those thinking
@@ -71,6 +87,28 @@ const COACH_MODEL_QUIRKS_BY_MODEL: Record<string, CoachModelQuirks> = {
     thinking: { type: 'disabled' },
     maxOutputTokens: BOUNDED_REPORT_MAX_OUTPUT_TOKENS,
   },
+  // why: Opus 5 also runs thinking by default, but — unlike Sonnet 5 — DISABLING
+  // it is discouraged: with thinking off Opus 5 can leak reasoning into the visible
+  // text, and `{type:'disabled'}` even 400s at `xhigh`/`max` effort. The documented
+  // fix for a bounded call is to keep thinking ON (omit the directive → adaptive)
+  // and drop the effort to `low`, so minimal thinking plus the short JSON report
+  // both fit under a roomier cap. (The client already ignores thinking blocks and
+  // reads only the text blocks, so a thinking-on response parses fine.)
+  'claude-opus-5': {
+    effort: 'low',
+    maxOutputTokens: THINKING_ON_MAX_OUTPUT_TOKENS,
+  },
+  // why: Sonnet 4.6 does NOT run thinking unless asked — omitting the directive
+  // leaves it off — so a bounded call needs no thinking directive at all. Pinned
+  // here (identical to the safe default) so the model is a known, env-only swap
+  // target rather than relying on the fallback.
+  'claude-sonnet-4-6': {
+    maxOutputTokens: BOUNDED_REPORT_MAX_OUTPUT_TOKENS,
+  },
+  // NOTE: Claude Fable 5 is deliberately NOT seeded — thinking is ALWAYS on and
+  // `{type:'disabled'}` returns 400, so it cannot use the disabled-thinking trick,
+  // and it is priced well above the Opus tier — a poor fit for a cheap bounded
+  // coach call. Seed it only with a deliberate `effort` + roomy cap if ever wanted.
 };
 
 /**

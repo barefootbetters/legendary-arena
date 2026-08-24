@@ -119,6 +119,30 @@ test('a model whose config has no thinking quirk sends no thinking directive', a
   }
 });
 
+test('sends output_config.effort when the model config sets an effort quirk (Opus 5 shape)', async () => {
+  const stub = installFetch(() => ({
+    status: 200,
+    body: { content: [{ type: 'text', text: REPORT_JSON }] },
+  }));
+  try {
+    // Opus 5's pre-seeded shape: thinking left on (no directive) + low effort.
+    const opus5Config: CoachModelConfig = {
+      model: 'claude-opus-5',
+      quirks: { effort: 'low', maxOutputTokens: 4096 },
+    };
+    const client = createAnthropicCoachClient('sk-test', opus5Config);
+    await client.generate(SUMMARY);
+    const sent = JSON.parse(String(stub.captured[0]!.init.body));
+    assert.equal(sent.model, 'claude-opus-5');
+    assert.equal(sent.max_tokens, 4096);
+    assert.deepEqual(sent.output_config, { effort: 'low' });
+    // thinking stays on (no directive sent) — the client omits it
+    assert.equal('thinking' in sent, false);
+  } finally {
+    stub.restore();
+  }
+});
+
 test('throws when the response has only a thinking block and no text (the prod bug)', async () => {
   const stub = installFetch(() => ({
     status: 200,
