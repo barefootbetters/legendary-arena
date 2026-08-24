@@ -447,20 +447,21 @@ existing `tsvector` facilities.
   the end-state, though the bootstrap build may co-locate on the existing box with
   isolation (see the deployment callout above). The architecture locks **ownership
   and open formats, never a provider** — so the vendor is a shopping decision, not
-  an architectural one. As of 2026-08, candidates in this class include **NameHero**
-  (US-centric, ~$7/mo for the 8 GB tier, familiar support), **Hetzner Cloud**
-  (often the best price/performance for a self-hosted Postgres + Docker stack, US
-  and EU regions), and **DigitalOcean / Vultr / Linode** (pricier but strong
-  snapshot/networking ecosystems and low friction when leaving a PaaS like
-  Render). Compare current plans before committing rather than treating any one as
-  the default; and because a durable knowledge store inherits the Disaster
-  Recovery posture, weight **reliability and your own rehearsed backups over the
-  cheapest promo price** — several budget VPS lines bundle no backups and show
-  clusters of short outages, so the recovery story stays the operator's to own
-  (which this architecture already requires). A roughly **8 GB RAM / 2 vCPU** box
-  comfortably runs Postgres + LiteLLM + Open WebUI + CPU embeddings; step up to
-  the 16 GB class if a small local model is kept resident or more agents run
-  concurrently.
+  an architectural one. As of 2026-08, candidates in this class:
+  - **NameHero** — US-centric, ~$7/mo for the 8 GB tier, familiar support.
+  - **Hetzner Cloud** — often the best price/performance for a self-hosted
+    Postgres + Docker stack; US and EU regions.
+  - **DigitalOcean / Vultr / Linode** — pricier, but strong snapshot/networking
+    ecosystems and low friction when leaving a PaaS like Render.
+
+  Compare current plans before committing rather than treating any one as the
+  default; and because a durable knowledge store inherits the Disaster Recovery
+  posture, weight **reliability and your own rehearsed backups over the cheapest
+  promo price** — several budget VPS lines bundle no backups and show clusters of
+  short outages, so the recovery story stays the operator's to own (which this
+  architecture already requires). A roughly **8 GB RAM / 2 vCPU** box comfortably
+  runs Postgres + LiteLLM + Open WebUI + CPU embeddings; step up to the 16 GB
+  class if a small local model is kept resident or more agents run concurrently.
 - **Local vs hosted models — two host classes.** A plain VPS line has no GPU, so
   on that class treat **local LLMs as optional and CPU-only (small models)** and
   lean on **hosted models via LiteLLM** for reasoning quality. But the dedicated
@@ -854,8 +855,10 @@ The first useful slice:
   That is the *only* material chunked and embedded in the pilot.
 - **One agentic task with teeth** — a coding or **security / code / firmware
   review** task (config review, log-anomaly flagging, dependency audit) that must
-  produce *citable* output grounded in the navigated corpus and a *verification
-  report*. It is the first end-to-end exercise of the agent layer, and security
+  produce *citable* output grounded in the navigated governance corpus (answer
+  from retrieved sources before generating — *Retrieval Before Generation*) and a
+  *verification report*. It is the first end-to-end exercise of the agent layer,
+  and security
   review in particular is a high-value, low-risk fit: it reasons over material
   that must stay on owned hardware, which is exactly why such queries route to a
   local model (see [Hosting and security posture](#hosting-and-security-posture)).
@@ -883,6 +886,27 @@ doing its job. The platform is successful when the operator can:
   `INDEX.md`, and (if it has a reference corpus) an ingestion run; nothing else.
 
 Each is observable, so "is the brain working?" is a check, not an opinion.
+
+### Failure modes
+
+A governance page is stronger when it names how it can fail. Each failure below
+is *already* answered by a principle or mechanism defined on this page — the table
+is the index that ties the two together, so a drift can be traced back to the
+guard that was supposed to catch it. If a failure has no row here, that is itself
+a finding: add the row and the mitigation.
+
+| Failure mode | Mitigation (defined on this page) |
+|---|---|
+| **Corpus not indexed** — a document exists but nothing links to it, so navigation never finds it | `INDEX.md` discipline ([Knowledge repositories](#knowledge-repositories)) |
+| **Knowledge duplication** — the same fact lives in two places and they drift apart | *Single Source of Truth* ([Design principles](#design-principles) #6) |
+| **Agent lock-in** — the platform can no longer function if one model/vendor goes away | *Model Independence* via the LiteLLM gateway ([Design principles](#design-principles) #2; [The agent layer is replaceable](#the-agent-layer-is-replaceable)) |
+| **Hallucinated authority** — a temporary finding is treated as policy | Promotion workflow ([Knowledge governance](#knowledge-governance-how-knowledge-enters-moves-and-earns-authority)) |
+| **Vendor lock-in** — a proprietary format quietly makes the store unportable | *Open Standards First* ([Design principles](#design-principles) #3; open-formats-only store) |
+| **Backup drift** — backups exist but have never been proven to restore | Rehearsed restore drills ([Backup and recovery](#backup-and-recovery)) |
+| **Autonomous pollution** — an unattended process floods the corpus with noise | Operator-triggered ingestion only ([Knowledge extraction](#knowledge-extraction-operator-triggered); [no always-on ingestion](#scope-boundaries-what-this-deliberately-is-not)) |
+
+This is the summary index; the individual gotchas and their nuances live in
+[Edge Cases](#edge-cases).
 
 ## Interactions
 
@@ -1024,6 +1048,15 @@ Each is observable, so "is the brain working?" is a check, not an opinion.
   Provisional path: the in-server shim now, a real gateway when a second LLM
   surface or the brain platform justifies one. Still deferred to a code Work
   Packet — no code changed.
+- **2026-08-24 — Failure modes section + review polish.** Added a
+  [Failure modes](#failure-modes) index (failure → the on-page mitigation that
+  guards it) so a drift can be traced back to the guard meant to catch it. Review
+  polish alongside it: broke the dense Host paragraph into a scannable candidate
+  list, gated the accelerated-box purchase on a proven sensitive-domain workload
+  (*Incremental Automation*), and tightened the pilot security task to require
+  citable output grounded in the navigated governance corpus (*Retrieval Before
+  Generation*). Presentation and cross-referencing only — no **Locked**,
+  **Preferred**, or **Open** decision changed.
 
 ## Open Questions
 
@@ -1064,7 +1097,10 @@ is built.
    a navigation-plus-vector brain that leans on hosted inference; the upper tier,
    if local reasoning quality on sensitive domains is wanted, is a unified-memory
    accelerated box (Spark / GB10 class — order $8–10k as of 2026-08 for a
-   dual-unit setup) that keeps inference on the box. *Still open:* the vendor and
+   dual-unit setup) that keeps inference on the box. Buying the accelerated box is
+   gated on a **real sensitive-domain workload that measurably benefits from local
+   reasoning quality** — not bought on spec (*Incremental Automation:* prove the
+   need before institutionalizing the hardware). *Still open:* the vendor and
    cost ceiling, which tier to buy, and the **trigger to move off the shared host
    to its own** — resource contention with the game server, a resident local
    model, concurrent load, or a larger vector corpus.
