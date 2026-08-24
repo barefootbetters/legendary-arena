@@ -17,7 +17,10 @@
  * `@legendary-arena/game-engine`, the registry, or any UI package — only the
  * coach types and Node built-ins.
  *
- * Authority: WP-594 §Contract (model = Sonnet 5); EC-629; D-24403.
+ * Authority: WP-594 §Contract; EC-629; D-24403. The model and its per-model
+ * quirks are no longer hardcoded here — they come from the injected
+ * `CoachModelConfig` (see `coachModelConfig.ts`), the coach model-independence
+ * shim.
  */
 
 import type {
@@ -25,13 +28,12 @@ import type {
   CoachModelClient,
   CoachReport,
 } from './coach.types.js';
+import type { CoachModelConfig } from './coachModelConfig.js';
 
 /** The Anthropic Messages API endpoint. */
 const ANTHROPIC_MESSAGES_URL = 'https://api.anthropic.com/v1/messages';
 // why: the pinned Messages API version header the endpoint requires.
 const ANTHROPIC_VERSION = '2023-06-01';
-/** Output cap — the bounded report (headline + two paragraphs + 2-3 tips) fits well under this. */
-const MAX_OUTPUT_TOKENS = 2048;
 
 /**
  * The system prompt: who the coach is and the exact JSON shape it must return.
@@ -131,20 +133,39 @@ function validateCoachReport(value: unknown): CoachReport {
 
 /**
  * Create the production Anthropic-backed coach client. The returned client's
- * `generate` calls the Messages API and returns a validated report, or throws on
- * any failure (the orchestrator maps a throw to `coach_unavailable`).
+ * `generate` calls the Messages API with the injected model + per-model quirks and
+ * returns a validated report, or throws on any failure (the orchestrator maps a
+ * throw to `coach_unavailable`). The model and its quirks come from the caller's
+ * resolved `config` (see `coachModelConfig.ts`), so a model swap is a config
+ * change with no edit here.
  *
  * @param apiKey The Anthropic API key (from `ANTHROPIC_API_KEY`).
- * @param model The model id to call (e.g. `claude-sonnet-5`).
+ * @param config The resolved coach model + per-model request quirks to apply.
  * @returns A `CoachModelClient` backed by the Anthropic Messages API.
  */
 export function createAnthropicCoachClient(
   apiKey: string,
-  model: string,
+  config: CoachModelConfig,
 ): CoachModelClient {
   return {
-    model,
+    model: config.model,
     async generate(summary: CoachMatchSummary): Promise<CoachReport> {
+      // why: build the request from the injected model config so no model id or
+      // per-model quirk (thinking directive, output cap) is hardcoded here — the
+      // routing layer (coachModelConfig.ts) owns model-specific behaviour.
+      const requestBody: Record<string, unknown> = {
+        model: config.model,
+        max_tokens: config.quirks.maxOutputTokens,
+        system: COACH_SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: buildUserMessage(summary) }],
+      };
+      // why: send a `thinking` directive only when this model has one configured
+      // (e.g. Sonnet 5's disabled-thinking quirk, the EC-629 hotfix). A model with
+      // no quirk row sends none and uses its own default — it never re-inherits the
+      // previous model's workaround.
+      if (config.quirks.thinking !== undefined) {
+        requestBody.thinking = config.quirks.thinking;
+      }
       let response: Response;
       try {
         response = await fetch(ANTHROPIC_MESSAGES_URL, {
@@ -154,20 +175,7 @@ export function createAnthropicCoachClient(
             'anthropic-version': ANTHROPIC_VERSION,
             'content-type': 'application/json',
           },
-          body: JSON.stringify({
-            model,
-            max_tokens: MAX_OUTPUT_TOKENS,
-            // why: Sonnet 5 runs adaptive extended thinking BY DEFAULT, and the
-            // thinking blocks draw from max_tokens. On a full match-analysis prompt
-            // that thinking exhausted the budget before any answer text was
-            // emitted — the response capped mid-thinking with an empty text block,
-            // so every real coach call failed as coach_unavailable while a trivial
-            // smoke test passed. Disable thinking for this bounded structured-JSON
-            // task (accepted on Sonnet 5) so the full budget goes to the report.
-            thinking: { type: 'disabled' },
-            system: COACH_SYSTEM_PROMPT,
-            messages: [{ role: 'user', content: buildUserMessage(summary) }],
-          }),
+          body: JSON.stringify(requestBody),
         });
       } catch (caughtError) {
         // why: a transport failure is a fail-soft signal, not a crash — re-throw

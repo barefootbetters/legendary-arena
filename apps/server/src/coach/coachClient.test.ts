@@ -1,12 +1,14 @@
 /**
- * Tests for the Anthropic-backed coach client (coach hotfix).
+ * Tests for the Anthropic-backed coach client.
  *
- * Stubs `globalThis.fetch` — no real network, no paid call. Pins the two things
- * that broke in production: (1) the request DISABLES extended thinking (Sonnet 5
- * runs it by default and it drained max_tokens, capping the response before any
- * JSON was emitted), and (2) a thinking-only / no-text response THROWS (the
- * orchestrator maps that to coach_unavailable) rather than silently returning a
- * malformed report.
+ * Stubs `globalThis.fetch` — no real network, no paid call. Pins: (1) the request
+ * faithfully sends the injected config's model + quirks — for Sonnet 5 that means
+ * DISABLING extended thinking (it runs it by default and it drained max_tokens,
+ * capping the response before any JSON was emitted); (2) a model whose config has
+ * no thinking quirk sends NO thinking directive (the model-independence claim at
+ * the client layer — a swapped model never re-inherits Sonnet 5's workaround); and
+ * (3) a thinking-only / no-text response THROWS (the orchestrator maps that to
+ * coach_unavailable) rather than silently returning a malformed report.
  */
 
 import { test } from 'node:test';
@@ -14,6 +16,14 @@ import assert from 'node:assert/strict';
 
 import { createAnthropicCoachClient } from './coachClient.js';
 import type { CoachMatchSummary } from './coach.types.js';
+import type { CoachModelConfig } from './coachModelConfig.js';
+
+// The shipped Sonnet 5 config: disabled thinking (the EC-629 quirk) + the bounded
+// report cap. Mirrors what resolveCoachModelConfig returns for the default model.
+const SONNET5_CONFIG: CoachModelConfig = {
+  model: 'claude-sonnet-5',
+  quirks: { thinking: { type: 'disabled' }, maxOutputTokens: 2048 },
+};
 
 // why: generate() only JSON-stringifies the summary, so a minimal cast suffices.
 const SUMMARY = {
@@ -70,14 +80,40 @@ test('disables extended thinking in the request and parses the text-block JSON',
     },
   }));
   try {
-    const client = createAnthropicCoachClient('sk-test', 'claude-sonnet-5');
+    const client = createAnthropicCoachClient('sk-test', SONNET5_CONFIG);
     const report = await client.generate(SUMMARY);
     assert.equal(report.headline, 'Sharp win.');
     assert.equal(report.suggestions.length, 2);
-    // the request must disable thinking (the fix) and name the model
+    // the request must carry the config's model, output cap, and disabled-thinking
     const sent = JSON.parse(String(stub.captured[0]!.init.body));
     assert.deepEqual(sent.thinking, { type: 'disabled' });
     assert.equal(sent.model, 'claude-sonnet-5');
+    assert.equal(sent.max_tokens, 2048);
+  } finally {
+    stub.restore();
+  }
+});
+
+test('a model whose config has no thinking quirk sends no thinking directive', async () => {
+  const stub = installFetch(() => ({
+    status: 200,
+    body: { content: [{ type: 'text', text: REPORT_JSON }] },
+  }));
+  try {
+    // a swapped-in model selected by config alone, with its own (default) quirks:
+    // no thinking directive, its own output cap — driven by config, not code.
+    const swappedConfig: CoachModelConfig = {
+      model: 'some-other-model-5',
+      quirks: { maxOutputTokens: 1500 },
+    };
+    const client = createAnthropicCoachClient('sk-test', swappedConfig);
+    const report = await client.generate(SUMMARY);
+    assert.equal(report.headline, 'Sharp win.');
+    const sent = JSON.parse(String(stub.captured[0]!.init.body));
+    assert.equal(sent.model, 'some-other-model-5');
+    assert.equal(sent.max_tokens, 1500);
+    // the swapped model must NOT re-inherit Sonnet 5's disabled-thinking workaround
+    assert.equal('thinking' in sent, false);
   } finally {
     stub.restore();
   }
@@ -89,7 +125,7 @@ test('throws when the response has only a thinking block and no text (the prod b
     body: { content: [{ type: 'thinking', thinking: 'lots of reasoning', signature: 'x' }] },
   }));
   try {
-    const client = createAnthropicCoachClient('sk-test', 'claude-sonnet-5');
+    const client = createAnthropicCoachClient('sk-test', SONNET5_CONFIG);
     await assert.rejects(client.generate(SUMMARY));
   } finally {
     stub.restore();
@@ -99,7 +135,7 @@ test('throws when the response has only a thinking block and no text (the prod b
 test('throws on a non-2xx status', async () => {
   const stub = installFetch(() => ({ status: 429, body: { error: 'rate_limited' } }));
   try {
-    const client = createAnthropicCoachClient('sk-test', 'claude-sonnet-5');
+    const client = createAnthropicCoachClient('sk-test', SONNET5_CONFIG);
     await assert.rejects(client.generate(SUMMARY));
   } finally {
     stub.restore();
