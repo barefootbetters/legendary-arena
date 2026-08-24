@@ -7,6 +7,14 @@
 
 ## Current State
 
+### WP-596 — PAR turn-distribution profile / the empirical sweet-spot curve (EC-631 / D-24405) shipped (2026-08-23)
+
+**No user-observable change — infrastructure only.** The payoff is a derived per-scenario turns-vs-score distribution artifact + the engine seam that produces it, which a later follow-up WP renders (`/coverage` or the scoring wiki) and a cross-scenario sweep uses to rank degenerate ("too-easy") scenarios.
+
+Productionizes the 2026-08-23 empirical-PAR-curve prototype (which plotted turns-vs-score from the real PAR simulation for `core/magneto + midtown-bank-robbery`: 777 wins / 800, no interior peak, min-win turn 9 — a monotone curve that made the calibration wiki's "a baseline for a different, easier game" caveat measurable). `generateScenarioParSamples` + `PerGameSample` reuse the WP-049 `simulateOneGame` loop; `generateScenarioPar` now routes through it with `parValue` **regression-pinned byte-identical** (the refactor adds observability, never changes calibration). `aggregateTurnDistributionProfile` (new pure `par.profile.ts`) reduces the rows to a per-turn profile — median/p25/p75 rawScore, win rate, median VP, `minWinningTurn`, and a `monotoneImproving` difficulty-fidelity flag (a monotone-improving curve at ~100% win rate flags a scenario the engine currently makes too easy — a diagnostic, not a strategy guide). `writeParProfileArtifact` / `readParProfileArtifact` persist it to a SEPARATE `profile/<version>/` tree (derived / non-authoritative, OVERWRITES since it is regenerable) — never inside the immutable hashed PAR artifact or index.
+
+**Boundary / determinism:** engine simulation + the D-5001 filesystem carve-out only; no new `G` field → `finalStateHash` / `PRE_WP080_HASH` byte-unchanged; no `boardgame.io` import in the aggregation files, no `Math.random()`. Profile writers exported on the `/setup` IO surface (D-14401) — one inline file-allowlist amendment beyond the drafted `index.ts` entry. Engine **2882→2898/0** (+16); whole-repo green. D-24405 Active. The render surface + cross-scenario sweep remain a deferred follow-up WP.
+
 ### WP-595 — Endgame coach client panel (EC-630 / D-24404) shipped (2026-08-23)
 
 WP-B2, the CLIENT half of the Legendary-Pass endgame AI coach (server = WP-594). Surfaces the coach on the endgame report card. **Pass holders** get an on-demand "Get AI coaching" button that fetches and renders the coaching report (hero fit / purchases / 2-3 tips); **non-Pass holders and guests** get a locked-teaser upsell — "Unlock AI coaching with the Legendary Pass" → the billing surface (`?route=me`) — the conversion hook.
