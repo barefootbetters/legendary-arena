@@ -524,6 +524,68 @@ submitted to a scenario leaderboard if a PAR artifact exists for that
 `ScenarioKey`. Simulation calibration is therefore the gate that turns a
 newly-added scenario from "playable" into "competitively rankable".
 
+## Empirical turn-distribution profiles & the too-easy diagnostic
+
+The PAR pipeline collapses each simulated game to a single Raw Score and then
+to one percentile. WP-596 added a second, **derived** view over the *same*
+games: for one scenario, `generateScenarioParSamples` emits one row per game
+(`turnCount`, `rawScore`, `victoryPoints`, `bystandersRescued`,
+`schemeTwistCount`, `escapes`, `outcome`), and `aggregateTurnDistributionProfile`
+bins them by the turn the game ended on — the **empirical "sweet-spot" curve**:
+per turn, the median / p25 / p75 Raw Score, the win rate, and the median victory
+points, plus scenario totals (`winCount` / `lossCount` / `stuckAtCapCount`,
+`minWinningTurn`, and a `monotoneImproving` flag). This profile is a **derived,
+non-authoritative diagnostic** (`derived: true` / `authoritative: false`),
+persisted under `data/par/profile/<version>/` — never inside the immutable hashed
+PAR artifact, never a competitive input, never read by the server gate (D-24405).
+
+### The cross-scenario sweep (WP-597)
+
+`scripts/generate-par-profiles.mjs` runs that pipeline across every active-season
+scenario (reusing the WP-422 enumeration), persists each profile, and emits a
+committed ranked **fidelity report** (`data/par/profile/v1/fidelity-report.json`
++ `.md`). It ranks scenarios by a **too-easy** signal so the ability-coverage
+work has a prioritization list: which scenarios the current engine makes too
+easy, and which it cannot yet win at all. This is a **fidelity diagnostic**, not
+a calibrated PAR — it operationalizes this page's own caveat that PAR on today's
+under-built engine measures *"a baseline for a different, easier game."*
+
+**First sweep — 2026-08-23, 128 scenarios × 200 games, 0 skipped:**
+
+| | Scenario | Win rate | First win (turn) |
+|---|---|---:|---:|
+| **Too easy** | `midtown-bank-robbery :: red-skull :: hydra` | 100% | 7 |
+| | `negative-zone-prison-breakout :: red-skull :: hydra` | 100% | 8 |
+| | `replace-earths-leaders-with-killbots :: red-skull :: hydra` | 100% | 8 |
+| | `midtown-bank-robbery :: magneto :: brotherhood` | 100% | 9 |
+| **Hardest** | `legacy-virus-the :: magneto :: brotherhood+enemies-of-asgard` | 0% | — |
+| | `portals-to-the-dark-dimension :: loki :: brotherhood+hydra+masters-of-evil+radiation` | 0% | — |
+
+122 of 128 scenarios are winnable by the competent AI; the 6 zero-win outliers
+are all Legacy Virus (a resource-loss scheme, WP-508..514) plus one Portals leg,
+which the current AI cannot beat. Two scenarios hit the turn/move safety cap in
+≥ 40 of 200 games — the AI can neither win nor lose them promptly.
+
+### How to read the ranking (and one honest caveat)
+
+The too-easy comparator is a locked multi-key sort: `monotoneImproving` first,
+then higher win rate, then earlier `minWinningTurn`, then `scenarioKey`. In
+practice the **`monotoneImproving` flag fired for 0 of 128 scenarios** — with the
+real per-scenario scoring config (and the loss penalty), the strict
+"median Raw Score never ticks up across turn bins" test is too sensitive to
+survive real-score noise, so it is effectively inert as a ranking key. The
+operative signals are **win rate** and **first-winning-turn**: a scenario the AI
+wins 100% of the time, often by turn 7–9, is the clearest too-easy pattern; a
+0%-win scenario is the engine's hardest (or an unwinnable content gap). A future
+refinement is a tolerance-based "mostly-improving" flag; the raw curve in each
+profile remains the ground truth regardless.
+
+**Coverage note:** the representative player count per scenario is `{1, 2, 3, 5}`
+(no 4-player run; a 3-villain leg is measured only at 3p), mirroring the seed-PAR
+approximation (WP-422) — stated here, not silently dropped. The render is
+committed data + this page; an interactive `/coverage` dashboard view is a
+deferred follow-up.
+
 ## Comparison: absolute PAR vs. ordinal league ranking
 
 [Legendary Leagues](https://www.legendaryleagues.com/about/ranking) is a
