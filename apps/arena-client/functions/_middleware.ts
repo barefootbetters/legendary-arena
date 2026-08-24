@@ -18,6 +18,19 @@
  * because `public/_headers` marks `/assets/*` immutable for a year — was
  * cached by Cloudflare against the asset URL and poisoned every visitor.
  *
+ * ROUTING DEPENDENCY (why `public/_routes.json` exists): this guard only
+ * protects `/assets/*` if the Function actually RUNS on those paths. Without
+ * an explicit `_routes.json`, Cloudflare Pages auto-generates one whose
+ * optimizer excludes the physical `/assets/` build directory from Function
+ * invocation — so the middleware ran on `/` and SPA routes (profile-meta
+ * worked) but was silently bypassed for `/assets/*`, leaving the poisoning
+ * guard shipped-but-dead and letting the 2026-08-10 incident recur on
+ * 2026-08-23. `public/_routes.json` pins `include: ["/*"]` so the Function is
+ * the entry point for every path, including `/assets/*`. Real, cached assets
+ * are still served from the edge cache without invoking the Function (a HIT
+ * never reaches Pages), so the guard only runs on the cache MISS that is the
+ * exact deploy-race window it must catch. Do NOT remove `_routes.json`.
+ *
  * Every other request — no `?profile=`, non-HTML response, non-GET method,
  * malformed handle, and any API non-200 / timeout / error — passes the
  * unmodified asset response straight through (fail-soft). The middleware
@@ -160,7 +173,15 @@ function serveAssetNotFoundIfHtmlShell(
  * Cloudflare Pages Functions middleware entry point.
  */
 export const onRequest: PagesFunction<Env> = async (context) => {
-  const response = await context.next();
+  const requestPathname = new URL(context.request.url).pathname;
+  let response = await context.next();
+
+  // DIAGNOSTIC (preview-only, remove before merge): stamp every response the
+  // middleware actually touches, so a probe can see WHICH paths invoke the
+  // Function. A /assets/* response that lacks this header proves the Function is
+  // bypassed there (Pages serving the static/SPA layer ahead of the Function).
+  response = new Response(response.body, response);
+  response.headers.set('x-mw-ran', requestPathname);
 
   const contentType = response.headers.get('content-type') ?? '';
   const isHtml = contentType.includes('text/html');
@@ -169,9 +190,9 @@ export const onRequest: PagesFunction<Env> = async (context) => {
   // missing chunk — return a clean, uncacheable 404 instead of the poisoning
   // 200-HTML (see serveAssetNotFoundIfHtmlShell). Runs before the profile-meta
   // path because that path only ever acts on the root/SPA HTML document.
-  const requestPathname = new URL(context.request.url).pathname;
   const assetNotFound = serveAssetNotFoundIfHtmlShell(requestPathname, isHtml);
   if (assetNotFound !== null) {
+    assetNotFound.headers.set('x-mw-ran', requestPathname + ':guard404');
     return assetNotFound;
   }
 
