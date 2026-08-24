@@ -21,7 +21,7 @@ source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\ai-second-brain.md (this page — https://ewiki.legendary-arena.com/ai-second-brain/)
   - ../docs/ai/DECISIONS.md#d-24341
   - ../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md
-last-reviewed: 2026-08-22
+last-reviewed: 2026-08-24
 ---
 
 # AI Second Brain
@@ -217,6 +217,32 @@ Ubuntu 24.04 LTS  (dedicated host is the end-state; co-located w/ prod OK to boo
 > credentials, independent backups, clear service boundaries. Physical separation
 > is a scaling/risk decision (v1 = one host; v2 = split), not a prerequisite for
 > first deployment. Locked by [D-24341](../docs/ai/DECISIONS.md#d-24341).
+
+> **The endgame AI coach is the first real LLM surface — and the migration
+> proof point.** The post-game analysis on the endgame report card (the
+> "coach" that grades hero selection, purchases, and luck-of-the-draw) shipped
+> 2026-08-23/24 as WP-594 (server, [D-24403](../docs/ai/DECISIONS.md#d-24403))
+> + WP-595 (client, [D-24404](../docs/ai/DECISIONS.md#d-24404)) — the platform's
+> first production LLM-powered feature. It is exactly the kind of surface this
+> gateway exists for, but today it **bypasses the gateway**: the server calls the
+> Anthropic Messages API directly over `fetch`, with the model id (`claude-sonnet-5`)
+> hardcoded at the wiring and a per-model workaround (`thinking: { type: 'disabled' }`
+> plus a fixed output budget) baked into `apps/server/src/coach/coachClient.ts`.
+> That coupling runs against **Model Independence** (*replace the model without
+> migrating the knowledge*): swapping the coach's model today means editing engine
+> code, not routing config. Routing the coach through **LiteLLM** fixes both halves
+> — the model becomes a gateway config change, and per-model quirks (disable
+> extended thinking / cap the output for a bounded structured-JSON response) live
+> at the routing layer that owns model-specific behaviour, not hardcoded in a
+> feature's client. The concrete quirk is instructive: Sonnet 5 runs adaptive
+> extended thinking by default and those thinking tokens drew down `max_tokens`,
+> so every real coach call returned `coach_unavailable` until the EC-629 hotfix
+> (PR #1599, 2026-08-24) disabled thinking — precisely the kind of model-specific
+> config the gateway should absorb, so a future model swap does not re-inherit
+> the last model's workaround. Migrating this call behind the gateway is the
+> first end-to-end demonstration of the replaceable-agent claim on live traffic.
+> A code Work Packet would carry the actual move (route `coachClient.ts` through
+> a LiteLLM endpoint, drop the hardcoded model id); this page records the intent.
 
 ### Retrieval strategy: navigation first, vector where it earns its keep
 
@@ -779,6 +805,12 @@ Each is observable, so "is the brain working?" is a check, not an opinion.
 - **[Development Workflow](development-workflow.md)** — Claude Code as the
   develop-from-anywhere agent is the concrete, shipping instance of the
   "replaceable agent" layer described here.
+- **The endgame AI coach (post-game analysis)** — the platform's first *product*
+  LLM surface (WP-594/WP-595, shipped 2026-08-23/24), and the first test of
+  **Model Independence** against live traffic. It ships wired direct to the
+  Anthropic Messages API with the model hardcoded; routing it through the
+  LiteLLM gateway (see the [Proposed stack](#proposed-stack) callout) is the
+  model-independence proof point, deferred to a code Work Packet.
 
 ## Edge Cases
 
@@ -837,6 +869,15 @@ Each is observable, so "is the brain working?" is a check, not an opinion.
   [`docs/ops/AI_SECOND_BRAIN_RUNBOOK.md`](../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md),
   realizing the D-24341 deferral of the executable steps into an operator runbook
   (not an engine Work Packet). Drafted, not yet run.
+- **2026-08-23/24 — first real LLM surface shipped: the endgame AI coach**
+  (WP-594 server / [D-24403](../docs/ai/DECISIONS.md#d-24403), WP-595 client /
+  [D-24404](../docs/ai/DECISIONS.md#d-24404)). It calls the Anthropic Messages
+  API directly with `claude-sonnet-5` hardcoded and a Sonnet-5 `thinking:disabled`
+  workaround (EC-629 hotfix, PR #1599, 2026-08-24) baked into `coachClient.ts` —
+  so it does not yet honour **Model Independence**. Migrating it behind the
+  LiteLLM gateway (model as config, per-model quirks owned by the routing layer)
+  is named as the first live proof point of the replaceable-agent architecture
+  (see the [Proposed stack](#proposed-stack) callout and Open Questions).
 
 ## Open Questions
 
@@ -875,6 +916,16 @@ is built.
    [Scope boundaries](#scope-boundaries-what-this-deliberately-is-not)). *Gate:*
    do not consider it until the navigation + vector base has been used for real
    work and the recovery path has been rehearsed.
+5. **Route the endgame AI coach through the gateway (model-independence proof
+   point).** The coach ships wired direct to the Anthropic Messages API with
+   `claude-sonnet-5` hardcoded and a Sonnet-5 `thinking:disabled` workaround baked
+   into `coachClient.ts` (see [Proposed stack](#proposed-stack) and History).
+   *Decision:* a code Work Packet to route `coachClient.ts` through a LiteLLM
+   endpoint — model becomes routing config, and per-model quirks (disable extended
+   thinking / bounded output for structured JSON) move to the gateway that owns
+   model-specific behaviour. This is the first end-to-end demonstration of the
+   replaceable-agent claim on live traffic; it is deferred, not gated, and does
+   not block any earlier item.
 
 ## References
 
