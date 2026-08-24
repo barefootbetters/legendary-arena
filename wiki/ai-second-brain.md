@@ -409,6 +409,13 @@ see [Retrieval strategy](#retrieval-strategy-navigation-first-vector-where-it-ea
 - **Open formats only in the store.** Never persist a proprietary,
   single-vendor-readable embedding format into the knowledge base — that would
   quietly break *Model Independence* (see Edge Cases).
+- **Multimodal is a later addition, not a v1 concern.** High-volume reference that
+  is *visual* — diagrams, scanned standards PDFs, figure-heavy studies — can later
+  be served by a vision-capable model (efficient 2026 multimodal models such as
+  Nemotron Nano Omni run on the same unified-memory host class) and/or multimodal
+  embeddings, all against the *same* single Postgres store. It changes neither the
+  navigation-first core nor the one-store rule, so it stays out of the pilot until
+  a real visual-reference corpus justifies it.
 
 The vector store is a single Postgres table (or one per domain if growth later
 demands it). The columns below are the **design invariant** the eventual DDL must
@@ -435,14 +442,38 @@ existing `tsvector` facilities.
 
 - **Host.** An **unmanaged Ubuntu 24.04 VPS** with full root — a dedicated one is
   the end-state, though the bootstrap build may co-locate on the existing box with
-  isolation (see the deployment callout above). As of 2026-08, a NameHero
-  unmanaged Cloud VPS is a candidate for the eventual dedicated box; the point is
-  the *class* of host, not the vendor. A roughly **8 GB RAM / 2 vCPU** box
-  comfortably runs Postgres + LiteLLM + Open WebUI + CPU embeddings; step up if a
-  small local model is kept resident.
-- **Local vs hosted models.** Standard VPS lines have no GPU, so treat **local
-  LLMs as optional and CPU-only (small models)** and lean on **hosted models via
-  LiteLLM** for reasoning quality. Embeddings run fine on CPU.
+  isolation (see the deployment callout above). The architecture locks **ownership
+  and open formats, never a provider** — so the vendor is a shopping decision, not
+  an architectural one. As of 2026-08, candidates in this class include **NameHero**
+  (US-centric, ~$7/mo for the 8 GB tier, familiar support), **Hetzner Cloud**
+  (often the best price/performance for a self-hosted Postgres + Docker stack, US
+  and EU regions), and **DigitalOcean / Vultr / Linode** (pricier but strong
+  snapshot/networking ecosystems and low friction when leaving a PaaS like
+  Render). Compare current plans before committing rather than treating any one as
+  the default; and because a durable knowledge store inherits the Disaster
+  Recovery posture, weight **reliability and your own rehearsed backups over the
+  cheapest promo price** — several budget VPS lines bundle no backups and show
+  clusters of short outages, so the recovery story stays the operator's to own
+  (which this architecture already requires). A roughly **8 GB RAM / 2 vCPU** box
+  comfortably runs Postgres + LiteLLM + Open WebUI + CPU embeddings; step up to
+  the 16 GB class if a small local model is kept resident or more agents run
+  concurrently.
+- **Local vs hosted models — two host classes.** A plain VPS line has no GPU, so
+  on that class treat **local LLMs as optional and CPU-only (small models)** and
+  lean on **hosted models via LiteLLM** for reasoning quality. But the dedicated
+  end-state need not be a plain VPS: a **unified-memory accelerated box** — the
+  2026 NVIDIA DGX Spark / GB10 class, ~128–256 GB of LPDDR5 shared between CPU and
+  GPU over a fast interconnect — now runs large quantized mixture-of-experts models
+  (DeepSeek-class) *locally* at usable speed (order tens of tokens/second, still
+  usable at 100k-plus context) for a fraction of a discrete multi-GPU cluster's
+  cost. That is what makes the "route sensitive queries to a local model"
+  guidance (Edge Cases) a real quality option, not just CPU-scale fallback.
+  **NVFP4** (and similar high-quality 4-bit schemes) is the practical
+  quantization sweet spot — it holds model coherence far better than lower-bit
+  quants. Either way, embeddings stay `nomic-embed-text` / BGE-M3 on CPU; the
+  *inference* model is the variable, and swapping it stays a LiteLLM config
+  change, not a data migration (*Model Independence*). External confirmation of
+  this price/quality shift is in [References](#references) (Level1Techs, 2026-08).
 - **Exposure.** A Caddy or Nginx reverse proxy with automatic HTTPS; Open WebUI's
   own auth, or Cloudflare Access / Authelia in front of it. The same host
   hardening the lab already documents — UFW, Fail2Ban, SSH-key-only
@@ -637,6 +668,23 @@ concrete templates, hook scripts, and skill definitions are build detail — the
 live in the [operator runbook](../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md), not on
 this descriptive page.
 
+**A local-first orchestration harness is a principle-compatible agent surface.**
+Where a single skill is one capability, a self-hosted, MCP-native harness (the
+open Turnstone project is a 2026 example) is the *supervisor* surface: it turns a
+long structured specification into planned subtasks, runs them under a supervisor
+model with tool use, and gates each result through risk/judge checks before
+accepting it. That shape maps directly onto *Plan → Build → Verify → Improve*,
+*Skills Over Monoliths*, and *Context Must Be Routed* — and because it is
+self-hosted, speaks MCP (already in the [proposed stack](#proposed-stack)), and
+enforces its gates in code rather than in a prompt, it satisfies *Permissions
+Beat Prompts* while staying a fully replaceable front-end over the permanent
+knowledge base. It does not relax the conservative stance above: the harness
+still runs under *Human Authority* and *Verification Is Required*, and its
+subagents stay limited to research and adversarial review, never authorities over
+source-of-truth docs. This is the same replaceable-surface story the endgame
+coach migration tells (see [Proposed stack](#proposed-stack)) — one level up,
+at the orchestration layer.
+
 **A minimal feedback surface makes the improvement loop real.** *Every Failure
 Upgrades the System* only works if failures are captured somewhere durable. The
 design intends a lightweight, reviewable record — query logs, citation failures
@@ -755,6 +803,13 @@ The first useful slice:
 - **One reference corpus** for the first vector layer — a single high-volume,
   unstructured archive (a research-PDF collection or a meeting-transcript set).
   That is the *only* material chunked and embedded in the pilot.
+- **One agentic task with teeth** — a coding or **security / code / firmware
+  review** task (config review, log-anomaly flagging, dependency audit) that must
+  produce *citable* output grounded in the navigated corpus and a *verification
+  report*. It is the first end-to-end exercise of the agent layer, and security
+  review in particular is a high-value, low-risk fit: it reasons over material
+  that must stay on owned hardware, which is exactly why such queries route to a
+  local model (see [Hosting and security posture](#hosting-and-security-posture)).
 
 Everything else waits until the pilot has been used for real work, failures have
 been captured (the feedback surface above), and the recovery path has been
@@ -830,6 +885,15 @@ Each is observable, so "is the brain working?" is a check, not an opinion.
   game engine, this platform has no determinism invariant. Approximate-nearest-
   neighbour recall varying between runs is acceptable for a knowledge assistant;
   do not import the engine's determinism rules onto it.
+- **Hardware and math-kernel differences cause small numerical variance — and
+  cross-checks turn that into a feature.** The same model on different accelerators
+  (differing GPU architectures/kernels, or CPU vs GPU) can produce subtly
+  different token-level output. This platform has no determinism invariant, so
+  that is acceptable; where an answer must be trusted, the mitigation is the one
+  *Verification Is Required* already implies — run it through more than one model
+  (or the same model on more than one backend) via the LiteLLM gateway and
+  compare. That makes multi-model cross-checking a gateway-native verification
+  technique, not a reason to chase bit-exactness.
 - **Secrets management is the operator's now.** Model API keys, the Postgres
   credentials, and MCP tokens all live on the owned host. That is the point of
   ownership, but it means key rotation and least-privilege scoping become
@@ -878,6 +942,31 @@ Each is observable, so "is the brain working?" is a check, not an opinion.
   LiteLLM gateway (model as config, per-model quirks owned by the routing layer)
   is named as the first live proof point of the replaceable-agent architecture
   (see the [Proposed stack](#proposed-stack) callout and Open Questions).
+- **2026-08-24 — video review (confirmatory, no re-lock).** Reviewed Level1Techs'
+  *"Getting the Same Results with Smaller 'Cheaper' Dual Sparks AI as the More
+  Expensive Clusters"* (uploaded 2026-08-21; see [References](#references)). It
+  demonstrates a dual DGX Spark / GB10-class unified-memory box (~$8–10k, ~256 GB
+  unified LPDDR5) running a DeepSeek-class model in NVFP4 quantization producing
+  results *largely comparable* to a ~7× more expensive quad RTX Pro 6000 cluster
+  on agentic coding and specification tasks — the pricier cluster was ~7× faster
+  but the cheaper box was sometimes preferred for documentation quality. This is
+  confirmatory evidence for the core bet (*knowledge is permanent, agents are
+  replaceable*) and for **Model Independence** (same model, different hardware,
+  comparable outcomes), and it makes owned-hardware local reasoning economically
+  attractive. It prompted design-record refinements only, all **Preferred** /
+  **Open**: the accelerated unified-memory host option + NVFP4 note (Hosting;
+  Open Questions 2–3), a local-first orchestration-harness example (agent layer),
+  a security / firmware review use-case (Pilot scope), a multimodal-later note
+  (vector layer), and a hardware-variance / multi-model cross-check note (Edge
+  Cases). No **Locked** decision changed.
+- **2026-08-24 — host-vendor survey (Preferred, vendor stays unlocked).** Made
+  the VPS vendor an explicit shopping decision rather than an implied NameHero
+  default: added Hetzner Cloud and DigitalOcean / Vultr / Linode as equal-class
+  candidates, and the guidance to compare current plans and weight reliability +
+  self-owned rehearsed backups over the cheapest promo price (Hosting; Open
+  Questions 3). The architecture locks ownership and open formats, never a
+  provider — so this is a **Preferred**-level refinement, not an architecture
+  change.
 
 ## Open Questions
 
@@ -900,16 +989,28 @@ is built.
    lighter and fully operator-controlled. Record the choice in the Work Packet.
 2. **Default model roster and local/hosted mix.** *Provisional default:* hosted
    models via LiteLLM for reasoning quality, `nomic-embed-text` local for
-   embeddings, an optional small CPU-resident model for sensitive domains. The
-   exact roster (which hosted models, whether a local model is kept warm) is open
-   and host-size-dependent.
+   embeddings, an optional small CPU-resident model for sensitive domains. *Now
+   also open:* whether the dedicated host is a unified-memory accelerated box
+   (Spark / GB10 class — see [Hosting and security posture](#hosting-and-security-posture))
+   running a large quantized model (NVFP4-class 4-bit) locally at reasoning
+   quality, which would keep sensitive-domain queries on the box without a quality
+   penalty at the cost of a pricier host. The exact roster (which hosted models,
+   whether a local model is kept warm, CPU-only vs accelerated) is open and
+   host-size-dependent; LiteLLM stays the single routing surface so any of these
+   is a config change, not a migration.
 3. **Host sizing, vendor, and when to split off production.** A dedicated host is
-   the end-state; v1 co-locates on the existing box (D-24341). The starting
-   recommendation for the eventual dedicated box is an ~8 GB / 2 vCPU class
-   unmanaged Ubuntu 24.04 (NameHero unmanaged is a 2026-08 candidate). *Still
-   open:* the cost ceiling, and the **trigger to move off the shared host to its
-   own** — resource contention with the game server, a resident local model,
-   concurrent load, or a larger vector corpus.
+   the end-state; v1 co-locates on the existing box (D-24341). The lower tier for
+   the eventual dedicated box is an ~8 GB / 2 vCPU class unmanaged Ubuntu 24.04
+   (NameHero, Hetzner, or DigitalOcean / Vultr / Linode are 2026-08 candidates —
+   vendor is unlocked; compare current plans and weight reliability + owned
+   backups, see [Hosting and security posture](#hosting-and-security-posture)) for
+   a navigation-plus-vector brain that leans on hosted inference; the upper tier,
+   if local reasoning quality on sensitive domains is wanted, is a unified-memory
+   accelerated box (Spark / GB10 class — order $8–10k as of 2026-08 for a
+   dual-unit setup) that keeps inference on the box. *Still open:* the vendor and
+   cost ceiling, which tier to buy, and the **trigger to move off the shared host
+   to its own** — resource contention with the game server, a resident local
+   model, concurrent load, or a larger vector corpus.
 4. **A governance-chain graph — later, if ever.** The Work Packet → Execution
    Contract → Decision → Change → Release chain is the one relationship graph with
    real payoff; a general knowledge graph is ruled out (see
@@ -944,3 +1045,10 @@ is built.
   knowledge base reads across.
 - [Development Workflow](development-workflow.md) — Claude Code as the shipping
   instance of the replaceable agent layer.
+- [Level1Techs — *Getting the Same Results with Smaller "Cheaper" Dual Sparks AI
+  as the More Expensive Clusters*](https://www.youtube.com/watch?v=tmcn1-jFLWY)
+  (2026-08-21) — external confirmatory evidence that owned, unified-memory
+  hardware (DGX Spark / GB10 class) can run large NVFP4-quantized models at
+  reasoning quality, comparable to a ~7× costlier GPU cluster — making the
+  *knowledge-permanent / agents-replaceable* bet cheaper to realize on owned
+  hardware in 2026.
