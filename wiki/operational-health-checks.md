@@ -411,7 +411,7 @@ of the repo's Pages SPAs (2026-08-23):
 |---|---|---|---|
 | `play.legendary-arena.com` | `legendary-arena-play` | ✅ live | arena-client; also carries profile-meta |
 | `legends.legendary-arena.com` | `legendary-arena-legends` | ✅ live | legends-board; guard-only |
-| `cards.legendary-arena.com` | `legendary-arena` | ⏳ pending | registry-viewer; public + vulnerable, guard being added |
+| `cards.legendary-arena.com` | `legendary-arena` | ✅ live | registry-viewer; guard-only. Root set to `apps/registry-viewer` + Build command changed from the root script `pnpm viewer:build` to `pnpm install --frozen-lockfile && pnpm --filter "registry-viewer..." build` (the root script won't resolve from the app dir) |
 | `dashboard.legendary-arena.com` | `legendary-arena-dashboard` | ➖ n/a | behind Cloudflare Access (single operator); the gate intercepts `/assets/*`, so the shared-cache poisoning vector does not apply — a guard would be defense-in-depth only |
 
 ### Latest run snapshot — 2026-05-19
