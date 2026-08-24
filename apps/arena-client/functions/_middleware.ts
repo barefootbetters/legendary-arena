@@ -173,7 +173,15 @@ function serveAssetNotFoundIfHtmlShell(
  * Cloudflare Pages Functions middleware entry point.
  */
 export const onRequest: PagesFunction<Env> = async (context) => {
-  const response = await context.next();
+  const requestPathname = new URL(context.request.url).pathname;
+  let response = await context.next();
+
+  // DIAGNOSTIC (preview-only, remove before merge): stamp every response the
+  // middleware actually touches, so a probe can see WHICH paths invoke the
+  // Function. A /assets/* response that lacks this header proves the Function is
+  // bypassed there (Pages serving the static/SPA layer ahead of the Function).
+  response = new Response(response.body, response);
+  response.headers.set('x-mw-ran', requestPathname);
 
   const contentType = response.headers.get('content-type') ?? '';
   const isHtml = contentType.includes('text/html');
@@ -182,9 +190,9 @@ export const onRequest: PagesFunction<Env> = async (context) => {
   // missing chunk — return a clean, uncacheable 404 instead of the poisoning
   // 200-HTML (see serveAssetNotFoundIfHtmlShell). Runs before the profile-meta
   // path because that path only ever acts on the root/SPA HTML document.
-  const requestPathname = new URL(context.request.url).pathname;
   const assetNotFound = serveAssetNotFoundIfHtmlShell(requestPathname, isHtml);
   if (assetNotFound !== null) {
+    assetNotFound.headers.set('x-mw-ran', requestPathname + ':guard404');
     return assetNotFound;
   }
 
