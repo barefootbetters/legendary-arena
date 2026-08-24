@@ -27,7 +27,7 @@ source:
   - ../docs/ops/domains.json
   - ../docs/ops/DOMAINS.md
   - ../package.json
-last-reviewed: 2026-08-10
+last-reviewed: 2026-08-23
 ---
 
 ## Summary
@@ -350,21 +350,36 @@ where origin genuinely lacks the asset so **both** fetches return HTML; and the
 *cold-deploy stylesheet abort*, where the asset is fine and the failure is a
 browser-side `net::ERR_ABORTED`.
 
-*Immediate remediation (operator).* Purge the Cloudflare cache for the
-`legendary-arena.com` zone — Caching → Configuration → **Purge Everything**
-(safer than a single-URL purge, since more than one hash can be poisoned). The
-site recovers within seconds because origin is already correct.
+*Immediate remediation (operator) — currently the ONLY fix.* Purge the
+Cloudflare cache for the `legendary-arena.com` zone — Caching → Configuration →
+**Purge Everything** (safer than a single-URL purge, since more than one hash can
+be poisoned). The site recovers within seconds because origin is already correct.
+As of 2026-08-23 no automated guard actually prevents this (see below), so a purge
+is the front-line remediation, not a stopgap.
 
-*Prevention (shipped 2026-08-10, `INFRA:`).* The arena-client Pages-Functions
-middleware [`apps/arena-client/functions/_middleware.ts`](../apps/arena-client/functions/_middleware.ts)
-now returns a real, uncacheable `404` whenever a request under `/assets/`
-resolves to the HTML shell (a missing hashed chunk). The poisoning entry is never
-created — a `404 no-store` is not cached against the asset URL — and the clean
-miss feeds the same WP-418 `vite:preloadError` update-available path as a genuine
-stale-bundle. Real assets are untouched: an existing chunk comes back as
-`javascript`/`css`, so the guard's HTML condition is false and it passes straight
-through. Note this makes the arena-client middleware do more than inject profile
-link-preview meta — it is also the asset-shell guard.
+*Prevention — the shipped guard does NOT run, so it does NOT yet prevent this.*
+The arena-client Pages-Functions middleware
+[`apps/arena-client/functions/_middleware.ts`](../apps/arena-client/functions/_middleware.ts)
+carries an asset-shell guard (`serveAssetNotFoundIfHtmlShell`) that returns an
+uncacheable `404` when a `/assets/` request resolves to the HTML shell. It shipped
+2026-08-10 as the fix for this failure mode — but it never executes for `/assets/*`
+in production. Cloudflare Pages auto-generates a `_routes.json` that **excludes the
+static `/assets/` directory from Function invocation**, and `exclude` beats
+`include`, so the middleware runs on `/` and SPA routes but is bypassed on the exact
+path it guards. The guard's unit test mocks `context.next()`, proving the logic
+while never exercising the wiring — so the gap shipped silently and the incident
+**recurred 2026-08-23** (blank `play.`, cleared by a purge). Verify whether the
+guard is live at any time by requesting a bogus hashed asset:
+
+```bash
+curl -sSI "https://play.legendary-arena.com/assets/does-not-exist-guard-probe.js"
+```
+
+`404` + `content-type: text/plain` + `cache-control: no-store` means the guard
+runs. `200 text/html` means it is still bypassed and you are exposed. A durable fix
+that forces the middleware onto `/assets/*` is in progress (PR #1596) and is **not
+yet verified** — do not rely on it until this note is updated to say the probe
+above returns `404`.
 
 ### Latest run snapshot — 2026-05-19
 
