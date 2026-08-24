@@ -1,11 +1,34 @@
 import '../../testing/jsdom-setup';
 
-import { describe, test } from 'node:test';
+import { describe, test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { mount } from '@vue/test-utils';
+import { createPinia, setActivePinia } from 'pinia';
 import type { UIGameOverState } from '@legendary-arena/game-engine';
 import type { MyCompetitiveScore, CompetitiveScoreBreakdown, CompetitiveSeatIdentity } from '../../lib/api/competitionApi';
 import EndgameSummary from './EndgameSummary.vue';
+
+// why: WP-595 — EndgameSummary now renders the child EndgameCoachPanel, which
+// reads the auth store (needs an active Pinia) and, on mount, calls the
+// entitlements endpoint. A benign fetch stub (empty entitlements) keeps these
+// presentational tests isolated: the panel resolves to the locked-teaser state
+// asynchronously, after each synchronous assertion here has already run.
+let restoreFetch: (() => void) | null = null;
+beforeEach(() => {
+  setActivePinia(createPinia());
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async () =>
+    ({ status: 200, json: async () => ({ entitlements: [] }) }) as Response) as typeof globalThis.fetch;
+  restoreFetch = () => {
+    globalThis.fetch = originalFetch;
+  };
+});
+afterEach(() => {
+  if (restoreFetch) {
+    restoreFetch();
+    restoreFetch = null;
+  }
+});
 
 /** A minimal natural gameover (no par/scores — the runtime shape under D-6701). */
 function gameOver(over: Partial<UIGameOverState> = {}): UIGameOverState {
