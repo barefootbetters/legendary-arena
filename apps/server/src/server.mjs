@@ -46,6 +46,8 @@ import { registerProfileRoutes } from './profile/profile.routes.js';
 import { registerTeamRoutes } from './teams/team.routes.js';
 import { registerMatchGateRoutes } from './match/matchGate.routes.js';
 import { registerMatchLagnRoutes } from './match/matchLagn.routes.js';
+import { registerCoachRoutes } from './coach/coach.routes.js';
+import { createAnthropicCoachClient } from './coach/coachClient.js';
 import {
   createNativeLobbyGuard,
   generateInternalDelegationSecret,
@@ -1009,6 +1011,35 @@ export async function startServer() {
     verifier,
     accountResolver: verifier === undefined ? undefined : accountResolver,
     registry,
+  });
+
+  // why: WP-594 / D-24403 — register the Legendary-Pass endgame AI coach
+  // (GET /api/me/scores/:replayHash/coach). Lazy + cached (the paid model runs at
+  // most once per match). The model client is Anthropic-backed (Sonnet 5) when
+  // ANTHROPIC_API_KEY is set, else a DISABLED fail-soft client whose generate
+  // throws — the orchestrator maps that to coach_unavailable, so the server
+  // starts and the feature stays dark (no card blocked) until the key is set in
+  // the Render environment. Same caller-injected auth deps as the routes above;
+  // the startup registry resolves composition ext_ids to display names.
+  const coachApiKey = process.env.ANTHROPIC_API_KEY;
+  const coachModelClient =
+    coachApiKey === undefined || coachApiKey === ''
+      ? {
+          model: 'claude-sonnet-5',
+          async generate() {
+            throw new Error(
+              'The endgame coach is not configured: set ANTHROPIC_API_KEY in the environment to enable it.',
+            );
+          },
+        }
+      : createAnthropicCoachClient(coachApiKey, 'claude-sonnet-5');
+  registerCoachRoutes(server.router, pool, {
+    requireAuthenticatedSession,
+    verifier,
+    accountResolver: verifier === undefined ? undefined : accountResolver,
+    requireUnsuspendedAccount,
+    registry,
+    modelClient: coachModelClient,
   });
 
   // why: WP-106 / D-10602 — register the avatar upload route

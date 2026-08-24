@@ -80,6 +80,12 @@ export type { AccountId, DatabaseClient };
  */
 export type EntitlementKey =
   | 'supporter_tier_basic_2026'
+  // why: WP-594 / D-24403 — the Legendary Pass, a DISTINCT product from the
+  // supporter tier (operator decision 2026-08-23). Year-suffixed because the Pass
+  // is time-boxed (a renewal ships a new key like _2027), matching the supporter
+  // SKU convention. Gates the endgame AI coach. Adding it is the drift triple:
+  // this union, the array below, AND the migration-040 CHECK, in one change.
+  | 'legendary_pass_2026'
   | 'cosmetic_playmat_classic'
   | 'cosmetic_playmat_comic'
   | 'cosmetic_playmat_minimal'
@@ -95,6 +101,8 @@ export type EntitlementKey =
  */
 export const ENTITLEMENT_KEYS: readonly EntitlementKey[] = [
   'supporter_tier_basic_2026',
+  // why: WP-594 / D-24403 — the Legendary Pass (see the union member above).
+  'legendary_pass_2026',
   'cosmetic_playmat_classic',
   'cosmetic_playmat_comic',
   'cosmetic_playmat_minimal',

@@ -248,6 +248,8 @@ describe('entitlements logic (WP-132)', () => {
       switch (key) {
         case 'supporter_tier_basic_2026':
           return;
+        case 'legendary_pass_2026':
+          return;
         case 'cosmetic_playmat_classic':
           return;
         case 'cosmetic_playmat_comic':
@@ -265,6 +267,7 @@ describe('entitlements logic (WP-132)', () => {
       }
     }
     ENTITLEMENT_KEYS.forEach(assertExhaustive);
-    assert.equal(ENTITLEMENT_KEYS.length, 6);
+    // why: WP-594 — 7 keys after adding legendary_pass_2026 (the Legendary Pass).
+    assert.equal(ENTITLEMENT_KEYS.length, 7);
   });
 });
