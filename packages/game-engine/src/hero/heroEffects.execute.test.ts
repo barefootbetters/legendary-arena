@@ -54,7 +54,7 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     );
   });
 
-  it('has exactly 22 handlers and none for the deferred keywords', () => {
+  it('has exactly 23 handlers and none for the deferred keywords', () => {
     // why: WP-286 / D-24069 added the draw-or-empowered park handler (9 → 10); the
     // Ionic Energy optional-put-bottom-hq fix added its park handler (10 → 11); D-24132
     // added the put-any-number-bottom-hq park handler (11 → 12); D-24133 added the
@@ -66,8 +66,9 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     // WP-383 / D-24184 added the discard-to-play park handler (18 → 19);
     // WP-486 / D-24291 added the defeat-with-bystander handler (19 → 20);
     // WP-535 / D-24345 added the copy-powers handler (20 → 21);
-    // WP-580 / D-24389 added the recruit-as-attack handler (21 → 22).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 22);
+    // WP-580 / D-24389 added the recruit-as-attack handler (21 → 22);
+    // WP-592 / D-24401 added the steal-abilities handler (22 → 23).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 23);
     // why: the generic 'wound' keyword stays deferred — the un-defer is two NEW narrow
     // keywords (gain-wound-*), never a handler for the generic form.
     assert.equal(HERO_EFFECT_HANDLERS['wound'], undefined);
@@ -2871,6 +2872,317 @@ describe('executeHeroEffects optional-ko-reward park (WP-248)', () => {
       gameState.messages.some((line) => line.text.includes('both hand and discard pile are empty')),
       'a 0-eligible optional-KO-reward must append a game-log line explaining the no-op',
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-592 / D-24401 — steal-abilities (Rogue's Steal Abilities)
+// ---------------------------------------------------------------------------
+
+describe('executeHeroEffects steal-abilities discard phase (WP-592 / D-24401)', () => {
+  const mockCtx = makeMockCtx();
+
+  // why: the steal hook that drives every test below — a bare no-magnitude
+  // steal-abilities effect, exactly what the parser emits for [keyword:steal-abilities].
+  function stealHook(cardId: string): HeroAbilityHook {
+    return { cardId, timing: 'onPlay', keywords: ['steal-abilities'], effects: [{ type: 'steal-abilities' }] };
+  }
+
+  it('each player discards the top of their deck to their OWN discard, in sorted seat order', () => {
+    const gameState = makeTestState({
+      inPlay: ['steal'],
+      deck: ['p0-top', 'p0-bottom'],
+      cardStats: {
+        'p0-top': { attack: 2, recruit: 0, cost: 0, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 },
+        'p1-top': { attack: 0, recruit: 3, cost: 0, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 },
+      },
+      heroAbilityHooks: [stealHook('steal')],
+    });
+    // why: makeTestState builds only player '0'; add a second seat to exercise the
+    // "each player" iteration. Its top card carries only economy (no hook).
+    gameState.playerZones['1'] = { ...makePlayerZones(), deck: ['p1-top', 'p1-bottom'] };
+
+    executeHeroEffects(gameState, mockCtx, '0', 'steal' as string);
+
+    assert.deepStrictEqual(gameState.playerZones['0']!.deck, ['p0-bottom'], 'player 0 deck loses its top card');
+    assert.deepStrictEqual(gameState.playerZones['0']!.discard, ['p0-top'], 'player 0 top card goes to player 0 discard');
+    assert.deepStrictEqual(gameState.playerZones['1']!.deck, ['p1-bottom'], 'player 1 deck loses its top card');
+    assert.deepStrictEqual(gameState.playerZones['1']!.discard, ['p1-top'], 'player 1 top card goes to player 1 discard');
+    // why: both discarded cards' printed economy accrues to the Steal Abilities player.
+    assert.equal(gameState.turnEconomy.attack, 2, 'player 0 discarded card grants +2 attack to the steal player');
+    assert.equal(gameState.turnEconomy.recruit, 3, 'player 1 discarded card grants +3 recruit to the steal player');
+  });
+
+  it('reshuffles an empty deck before taking the top card (mock shuffle reverses)', () => {
+    const gameState = makeTestState({
+      inPlay: ['steal'],
+      deck: [],
+      discard: ['a', 'b', 'c'],
+      heroAbilityHooks: [stealHook('steal')],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'steal' as string);
+
+    // why: reshuffleDiscardIntoDeck appends reverse(['a','b','c']) = ['c','b','a'] to the
+    // empty deck, then the top card 'c' moves to discard — the reversed order proves the
+    // reshuffle ran through ctx.random.Shuffle (never Math.random()).
+    assert.deepStrictEqual(gameState.playerZones['0']!.deck, ['b', 'a'], 'discard reshuffled into deck (reversed), top taken');
+    assert.deepStrictEqual(gameState.playerZones['0']!.discard, ['c'], 'the reshuffled top card is the only discard');
+  });
+
+  it('a player with no cards anywhere discards nothing (logged no-op, no throw)', () => {
+    const gameState = makeTestState({
+      inPlay: ['steal'],
+      deck: [],
+      discard: [],
+      heroAbilityHooks: [stealHook('steal')],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'steal' as string);
+
+    assert.deepStrictEqual(gameState.playerZones['0']!.deck, [], 'deck stays empty');
+    assert.deepStrictEqual(gameState.playerZones['0']!.discard, [], 'discard stays empty');
+    assert.equal(gameState.turnEconomy.attack, 0, 'no economy accrues');
+    assert.equal(gameState.turnEconomy.recruit, 0, 'no economy accrues');
+    assert.ok(
+      gameState.messages.some((line) => line.text.includes('no card to discard')),
+      'the empty-everywhere player is logged as discarding nothing',
+    );
+  });
+});
+
+describe('executeHeroEffects steal-abilities copy phase (WP-592 / D-24401)', () => {
+  const mockCtx = makeMockCtx();
+
+  function stealHook(cardId: string): HeroAbilityHook {
+    return { cardId, timing: 'onPlay', keywords: ['steal-abilities'], effects: [{ type: 'steal-abilities' }] };
+  }
+
+  it('a copied starter adds its printed economy (S.H.I.E.L.D. Agent → +1 recruit)', () => {
+    const gameState = makeTestState({
+      inPlay: ['steal'],
+      deck: ['shield-agent'],
+      cardStats: {
+        'shield-agent': { attack: 0, recruit: 1, cost: 0, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 },
+      },
+      heroAbilityHooks: [stealHook('steal')],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'steal' as string);
+
+    assert.equal(gameState.turnEconomy.recruit, 1, 'a copied Agent grants +1 recruit');
+    assert.deepStrictEqual(gameState.playerZones['0']!.discard, ['shield-agent'], 'the real Agent stays in the owner discard');
+  });
+
+  it('a copied hero re-fires its on-play ability (a copied draw actually draws via the threaded ctx.random)', () => {
+    const gameState = makeTestState({
+      inPlay: ['steal'],
+      deck: ['draw-hero', 'card-x', 'card-y'],
+      hand: [],
+      heroAbilityHooks: [
+        stealHook('steal'),
+        { cardId: 'draw-hero', timing: 'onPlay', keywords: ['draw'], effects: [{ type: 'draw', magnitude: 2 }] },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'steal' as string);
+
+    // why: discard phase moves 'draw-hero' to discard, leaving deck = ['card-x','card-y'];
+    // the copy phase re-fires draw-hero's draw-2 for the steal player, pulling both.
+    assert.deepStrictEqual(gameState.playerZones['0']!.hand, ['card-x', 'card-y'], 'the copied draw drew two cards into the steal player hand');
+    assert.deepStrictEqual(gameState.playerZones['0']!.deck, [], 'both cards left the deck');
+    assert.deepStrictEqual(gameState.playerZones['0']!.discard, ['draw-hero'], 'the real draw hero stays in discard');
+  });
+
+  it('a copied purchased hero (a #N-instanced deck card) re-fires via its reservoir-wide hook', () => {
+    const gameState = makeTestState({
+      inPlay: ['steal'],
+      deck: ['some/hero#3', 'card-x'],
+      hand: [],
+      heroAbilityHooks: [
+        stealHook('steal'),
+        // why: RS-2 — a purchased hero carries a copy-suffixed instance id; its hook is keyed
+        // by that same instance id (heroCardInstanceExtIds), so a discarded purchased hero re-fires.
+        { cardId: 'some/hero#3', timing: 'onPlay', keywords: ['draw'], effects: [{ type: 'draw', magnitude: 1 }] },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'steal' as string);
+
+    assert.deepStrictEqual(gameState.playerZones['0']!.hand, ['card-x'], 'the copied purchased hero drew one card');
+  });
+
+  it('a copied Wound adds 0/0 and re-fires nothing (no hooks)', () => {
+    const gameState = makeTestState({
+      inPlay: ['steal'],
+      deck: [WOUND_EXT_ID],
+      turnEconomyAttack: 5,
+      turnEconomyRecruit: 5,
+      heroAbilityHooks: [stealHook('steal')],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'steal' as string);
+
+    assert.equal(gameState.turnEconomy.attack, 5, 'a copied Wound adds no attack');
+    assert.equal(gameState.turnEconomy.recruit, 5, 'a copied Wound adds no recruit');
+    assert.deepStrictEqual(gameState.playerZones['0']!.discard, [WOUND_EXT_ID], 'the Wound is discarded, not re-fired into any zone');
+  });
+
+  it('leaves G JSON-serializable after the handler', () => {
+    const gameState = makeTestState({
+      inPlay: ['steal'],
+      deck: ['draw-hero', 'card-x'],
+      heroAbilityHooks: [
+        stealHook('steal'),
+        { cardId: 'draw-hero', timing: 'onPlay', keywords: ['draw'], effects: [{ type: 'draw', magnitude: 1 }] },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'steal' as string);
+
+    const serialized = JSON.stringify(gameState);
+    assert.ok(typeof serialized === 'string' && serialized.length > 0, 'G remains JSON-serializable after steal-abilities');
+  });
+});
+
+describe('executeHeroEffects steal-abilities recursion guard (WP-592 / D-24401)', () => {
+  const mockCtx = makeMockCtx();
+
+  function stealHook(cardId: string): HeroAbilityHook {
+    return { cardId, timing: 'onPlay', keywords: ['steal-abilities'], effects: [{ type: 'steal-abilities' }] };
+  }
+
+  // why: termination test (a) — a discarded Steal Abilities is economy-only. If it were
+  // re-fired, heroEffectStealAbilities would run again, reshuffle-recycle the same card, and
+  // recurse forever. The guard makes it economy-only, so this completes; a passing run IS the
+  // termination proof, and the economy assertion confirms the copy still counted.
+  it('a discarded Steal Abilities is economy-only and does NOT recurse', () => {
+    const gameState = makeTestState({
+      inPlay: ['core/rogue/steal-abilities#0'],
+      deck: ['core/rogue/steal-abilities#1'],
+      cardStats: {
+        'core/rogue/steal-abilities#1': { attack: 4, recruit: 0, cost: 8, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 },
+      },
+      heroAbilityHooks: [
+        stealHook('core/rogue/steal-abilities#0'),
+        // why: give the DISCARDED steal card a live hook too — if the guard failed and it were
+        // re-fired, this hook would drive the unbounded recursion the test proves is bounded.
+        stealHook('core/rogue/steal-abilities#1'),
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'core/rogue/steal-abilities#0' as string);
+
+    assert.equal(gameState.turnEconomy.attack, 4, 'the discarded Steal Abilities still grants its printed economy');
+    assert.deepStrictEqual(gameState.playerZones['0']!.deck, [], 'the deck was discarded exactly once (no recursive re-discard)');
+    assert.ok(
+      gameState.messages.some((line) => line.text.includes('copy-of-copy guard')),
+      'the economy-only skip is logged with the recursion-guard note',
+    );
+  });
+
+  // why: termination test (b) — the Steal-Abilities ↔ Copy-Powers MUTUAL re-fire. A discarded
+  // Copy Powers, if re-fired, auto-copies the in-play Steal Abilities card (the sole eligible
+  // Rogue Hero via buildCopyPowersTargets) and re-fires it → back into heroEffectStealAbilities
+  // → the COPY_POWERS_EXT_ID stack-overflow class. The guard excludes copy-powers from re-fire,
+  // so this terminates. cardTraits gives the in-play steal card a heroClass so the recursion
+  // vector is LIVE (buildCopyPowersTargets would return it) — the test is non-vacuous.
+  it('a discarded Copy Powers (Steal Abilities the only in-play Hero) is economy-only and does NOT recurse', () => {
+    const gameState = makeTestState({
+      inPlay: ['core/rogue/steal-abilities#0'],
+      deck: ['core/rogue/copy-powers#0'],
+      cardStats: {
+        'core/rogue/copy-powers#0': { attack: 0, recruit: 0, cost: 5, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 },
+      },
+      heroAbilityHooks: [
+        stealHook('core/rogue/steal-abilities#0'),
+        // why: a live copy-powers hook on the discarded card — the mutual-recursion vector if unguarded.
+        { cardId: 'core/rogue/copy-powers#0', timing: 'onPlay', keywords: ['copy-powers'], effects: [{ type: 'copy-powers' }] },
+      ],
+    });
+    // why: make the recursion vector live — buildCopyPowersTargets needs cardTraits.heroClass
+    // on the in-play steal card to count it as an eligible copy target.
+    gameState.cardTraits = {
+      'core/rogue/steal-abilities#0': { heroClass: 'strength', team: null } as LegendaryGameState['cardTraits'][string],
+    };
+
+    executeHeroEffects(gameState, mockCtx, '0', 'core/rogue/steal-abilities#0' as string);
+
+    assert.deepStrictEqual(gameState.playerZones['0']!.deck, [], 'the Copy Powers card was discarded once (no recursive re-discard)');
+    assert.ok(
+      gameState.messages.some((line) => line.text.includes('copy-of-copy guard')),
+      'the discarded Copy Powers is economy-only, logged with the recursion-guard note',
+    );
+  });
+});
+
+describe('executeHeroEffects steal-abilities cascade (Fork A FIFO, WP-592 / D-24401)', () => {
+  const mockCtx = makeMockCtx();
+
+  function stealHook(cardId: string): HeroAbilityHook {
+    return { cardId, timing: 'onPlay', keywords: ['steal-abilities'], effects: [{ type: 'steal-abilities' }] };
+  }
+
+  it('a copied optional-KO-reward parks its existing pending type', () => {
+    const gameState = makeTestState({
+      inPlay: ['steal'],
+      deck: ['ko-hero'],
+      hand: ['card-h'],
+      bystanders: ['bystander-0'],
+      heroAbilityHooks: [
+        stealHook('steal'),
+        { cardId: 'ko-hero', timing: 'onPlay', keywords: ['optional-ko-reward'], effects: [{ type: 'optional-ko-reward', magnitude: 1, rewardType: 'rescue' }] },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'steal' as string);
+
+    assert.equal(gameState.pendingOptionalKoRewards?.length, 1, 'the copied optional-KO-reward parks one choice in its existing queue');
+    assert.equal(gameState.pendingOptionalKoRewards![0]!.sourceCardId, 'ko-hero', 'the parked choice sources the copied card');
+  });
+
+  it('a copied discard-to-play parks its array-queue directly (bypassing the playCard precondition)', () => {
+    const gameState = makeTestState({
+      inPlay: ['steal'],
+      deck: ['dtp-hero'],
+      hand: ['spare-card'],
+      heroAbilityHooks: [
+        stealHook('steal'),
+        { cardId: 'dtp-hero', timing: 'onPlay', keywords: ['discard-to-play'], effects: [{ type: 'discard-to-play', magnitude: 1 }] },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'steal' as string);
+
+    assert.equal(gameState.pendingDiscardToPlay?.length, 1, 'the copied discard-to-play parks one entry in its FIFO array-queue');
+    assert.equal(gameState.pendingDiscardToPlay![0]!.sourceCardId, 'dtp-hero', 'the parked cost sources the copied card');
+  });
+
+  it('two copies parking reveal-attack-choose do NOT corrupt the single-slot pendingHeroChoice', () => {
+    const gameState = makeTestState({
+      inPlay: ['steal'],
+      deck: ['rev-hero-a', 'target-a'],
+      turnEconomyAttack: 0,
+      cardStats: {
+        'target-a': { attack: 0, recruit: 0, cost: 2, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 },
+        'target-b': { attack: 0, recruit: 0, cost: 2, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 },
+      },
+      heroAbilityHooks: [
+        stealHook('steal'),
+        { cardId: 'rev-hero-a', timing: 'onPlay', keywords: ['reveal-attack-choose'], effects: [legacyRevealEffect('reveal-attack-choose', 4)] },
+        { cardId: 'rev-hero-b', timing: 'onPlay', keywords: ['reveal-attack-choose'], effects: [legacyRevealEffect('reveal-attack-choose', 4)] },
+      ],
+    });
+    gameState.playerZones['1'] = { ...makePlayerZones(), deck: ['rev-hero-b', 'target-b'] };
+
+    executeHeroEffects(gameState, mockCtx, '0', 'steal' as string);
+
+    // why: the copy phase re-fires rev-hero-a (parks pendingHeroChoice for 'target-a'), then
+    // rev-hero-b — whose reveal handler's reject-second guard (D-22001) sees the slot already
+    // taken and ABORTS its whole effect, so the single slot keeps the FIRST choice. Fork A is
+    // safe: the existing guard protects the only single-slot pending type from a two-copy park.
+    assert.notEqual(gameState.pendingHeroChoice, undefined, 'the first copied reveal-attack-choose parked a choice');
+    assert.equal(gameState.pendingHeroChoice?.cardId, 'target-a', 'the single slot holds the FIRST park, not corrupted/overwritten by the second');
   });
 });
 

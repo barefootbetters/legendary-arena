@@ -3,14 +3,14 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1830,
+    "totalEntries": 1831,
     "byScope": {
-      "hero": 655,
+      "hero": 656,
       "villain": 719,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 378,
+      "executable": 379,
       "deferred": 0,
       "condition": 5,
       "unsupported": 368,
@@ -6871,6 +6871,23 @@
         {
           "slug": "energy-drain",
           "name": "Energy Drain"
+        }
+      ]
+    },
+    {
+      "extId": "core/rogue",
+      "name": "Rogue",
+      "set": "core",
+      "scope": "hero",
+      "mechanic": "steal-abilities",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#steal-abilities",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "steal-abilities",
+          "name": "Steal Abilities"
         }
       ]
     },
@@ -28074,7 +28091,8 @@
       "scope": "hero",
       "mechanics": [
         "copy-powers",
-        "optional-ko-reward"
+        "optional-ko-reward",
+        "steal-abilities"
       ]
     },
     "core/spider-man": {

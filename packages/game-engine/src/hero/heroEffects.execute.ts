@@ -102,6 +102,8 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   'copy-powers',
   // why: WP-580 / D-24389 — God of Thunder's "You can use Recruit as Attack this turn."; has a HERO_EFFECT_HANDLERS entry (heroEffectRecruitAsAttack) that sets the turn-scoped conversion flag, so it belongs here.
   'recruit-as-attack',
+  // why: WP-592 / D-24401 — Rogue's Steal Abilities "Each player discards the top card of their deck. Play a copy of each of those cards."; has a HERO_EFFECT_HANDLERS entry (heroEffectStealAbilities) that runs the deterministic discard-then-copy phases, so it belongs here.
+  'steal-abilities',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -259,6 +261,10 @@ const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   // conversion flag, grants no resource total); the magnitude pre-gate must not drop it,
   // or the handler never fires and the flag is never set (the live-verify defect).
   'recruit-as-attack',
+  // why: WP-592 / D-24401 — steal-abilities carries no magnitude (it discards each deck top
+  // and copies each discarded card); the target set is computed from G at play time, so the
+  // magnitude pre-gate must not drop it, or the handler never fires (the silent-no-op defect).
+  'steal-abilities',
 ]);
 
 // ---------------------------------------------------------------------------
@@ -2108,6 +2114,14 @@ function heroEffectDefeatWithBystander(
 // recursion when two Copy Powers are played the same turn (Finding 5).
 export const COPY_POWERS_EXT_ID = 'core/rogue/copy-powers' as CardExtId;
 
+// why: WP-592 / D-24401 — the base ext_id of Rogue's Steal Abilities card. The copy phase
+// re-fires each discarded card's ability EXCEPT a discarded Steal Abilities or Copy Powers,
+// which are economy-only (the recursion guard in heroEffectStealAbilities): both are
+// reentrant-copy keywords that can re-target the in-play Steal Abilities card and recurse to
+// a stack overflow. Zones store INSTANCE ids (`<base>#<copyIndex>`), so strip the `#N` suffix
+// before comparing to this base — exactly as buildCopyPowersTargets does for COPY_POWERS_EXT_ID.
+export const STEAL_ABILITIES_EXT_ID = 'core/rogue/steal-abilities' as CardExtId;
+
 /**
  * The Heroes the given player may copy for a Copy Powers play — the real Heroes in that
  * player's `inPlay` (deduplicated, in play order), excluding the Copy Powers ext_id.
@@ -2324,6 +2338,124 @@ function heroEffectCopyPowers(
 }
 
 /**
+ * Hero handler for the `steal-abilities` keyword (WP-592 / D-24401).
+ *
+ * Rogue's "Steal Abilities": "Each player discards the top card of their deck. Play a
+ * copy of each of those cards." Two deterministic, synchronous phases:
+ *
+ * 1. Discard phase — for each player in `Object.keys(G.playerZones).sort()` seat order,
+ *    discard the top card of their deck to their own discard pile (reshuffling their
+ *    discard into their deck first when the deck is empty, D-24285); a player with no
+ *    cards anywhere discards nothing.
+ * 2. Copy phase — the Steal Abilities player plays a copy of each discarded card in that
+ *    order: add the card's printed `G.cardStats` attack/recruit to `G.turnEconomy`, then
+ *    re-fire its on-play ability via the reentrant `executeHeroEffects`.
+ *
+ * A copy is EPHEMERAL — it feeds economy + re-fires the ability only. It enters no zone,
+ * never calls `applyCardPlay`, never mutates `cardTraits`, and grants Steal Abilities NO
+ * class/team (the deliberate D-24401 bounding — unlike Copy Powers' full-duplicate merge,
+ * "a copy of each card" is not a merge into the source). The real discarded cards stay in
+ * their owners' discard piles.
+ *
+ * Recursion guard — a discarded card whose base ext_id is `STEAL_ABILITIES_EXT_ID` OR
+ * `COPY_POWERS_EXT_ID` is economy-only (NOT re-fired). Both are reentrant-copy keywords: a
+ * re-fired Copy Powers auto-copies the in-play Steal Abilities card (the sole eligible Rogue
+ * Hero) and re-fires it, recursing to the `COPY_POWERS_EXT_ID` stack-overflow class.
+ *
+ * // why (ctx): `executeHeroEffects` is called with the move-context WRAPPER, so this handler
+ * received that same wrapper and threads it unchanged into every re-fire AND the reshuffle —
+ * a copied draw / an empty-deck reshuffle needs `ctx.random`. Passing `{ G, playerID }` alone
+ * would crash a copied draw / reshuffle.
+ */
+function heroEffectStealAbilities(
+  G: LegendaryGameState,
+  ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  // why: WP-592 / D-24401 — iterate a SORTED key order (matching gain-wound-each /
+  // scoring.logic.ts) so the "each player discards" distribution replays identically, and so
+  // ALL players are targeted, not just the active one. Deterministic — the only randomness is
+  // an empty-deck reshuffle via the threaded ctx.random.
+  const seatOrder = Object.keys(G.playerZones).sort();
+
+  // Phase 1 — each player discards the top card of their deck.
+  const discardedCardIds: CardExtId[] = [];
+  for (const ownerPlayerId of seatOrder) {
+    const ownerZones = G.playerZones[ownerPlayerId];
+    if (!ownerZones) {
+      continue;
+    }
+    if (ownerZones.deck.length === 0) {
+      // why: D-24285 — the standard empty-deck reshuffle: when a player must discard the top
+      // of an empty deck, shuffle their discard into a fresh deck first, via the threaded
+      // ctx.random (ctx as ShuffleProvider, exactly as heroEffectReveal does) — never
+      // Math.random(). A player whose discard is also empty stays empty (no-op).
+      reshuffleDiscardIntoDeck(ownerZones, ctx as ShuffleProvider);
+    }
+    const topCardId = ownerZones.deck[0];
+    if (!topCardId) {
+      // why: D-24017 — no cards anywhere for this player is a legitimate no-op, but a silent
+      // skip reads as "the card did nothing"; log it so the reason is observable.
+      pushLog(G,
+        `Player ${ownerPlayerId} had no card to discard for ${formatCardRef(G.cardDisplayData, cardId)}.`,
+      );
+      continue;
+    }
+    const moveResult = moveCardFromZone(ownerZones.deck, ownerZones.discard, topCardId);
+    ownerZones.deck = moveResult.from;
+    ownerZones.discard = moveResult.to;
+    discardedCardIds.push(topCardId as CardExtId);
+    pushLog(G,
+      `Player ${ownerPlayerId} discarded ${formatCardRef(G.cardDisplayData, topCardId as CardExtId)} for ${formatCardRef(G.cardDisplayData, cardId)}.`,
+    );
+  }
+
+  // Phase 2 — the Steal Abilities player plays a copy of each discarded card.
+  for (const discardedCardId of discardedCardIds) {
+    // why: D-24391 economy pattern reused WITHOUT the class/team grant — a Steal Abilities
+    // copy feeds economy + re-fires the ability only (the D-24401 bounding). A null-stat
+    // copied card (a Wound) adds 0/0. Written inline rather than extracted (duplicate-first,
+    // code-style Rule 1 — this is only the second copy of the economy block).
+    const copiedStats = G.cardStats[discardedCardId];
+    if (copiedStats) {
+      G.turnEconomy = addResources(G.turnEconomy, copiedStats.attack, copiedStats.recruit);
+      if (copiedStats.attack > 0 || copiedStats.recruit > 0) {
+        pushLog(G,
+          `Player ${playerID} gained +${copiedStats.attack} attack and +${copiedStats.recruit} recruit from copying ${formatCardRef(G.cardDisplayData, discardedCardId)}.`,
+          'applied',
+          cardId, // why: WP-438 — the Steal Abilities card that produced the copy.
+        );
+      }
+    }
+
+    // why: WP-592 / D-24401 — the recursion guard. Zones store INSTANCE ids
+    // (`<base>#<copyIndex>`), so strip the `#N` suffix before comparing to the base ext_ids
+    // (mirrors buildCopyPowersTargets). A discarded Steal Abilities OR Copy Powers is
+    // economy-only, NOT re-fired: both are reentrant-copy keywords that can re-target the
+    // just-played, in-play Steal Abilities card, and re-firing them recurses to the
+    // COPY_POWERS_EXT_ID stack-overflow class (the ~30s "connection lost" crash). Nothing
+    // decreases monotonically (reshuffle-on-empty recycles the discards back to deck-top),
+    // so excluding BOTH — not just steal-abilities — is what bounds the mutual re-fire.
+    const hashIndex = discardedCardId.indexOf('#');
+    const baseDiscardedId = hashIndex === -1 ? discardedCardId : discardedCardId.slice(0, hashIndex);
+    if (baseDiscardedId === STEAL_ABILITIES_EXT_ID || baseDiscardedId === COPY_POWERS_EXT_ID) {
+      pushLog(G,
+        `Player ${playerID}'s ${formatCardRef(G.cardDisplayData, cardId)} copied the economy of ${formatCardRef(G.cardDisplayData, discardedCardId)} but did not re-fire its ability (copy-of-copy guard).`,
+        'neutral',
+        cardId, // why: WP-438 — the Steal Abilities card whose copy was economy-only.
+      );
+      continue;
+    }
+
+    // Re-fire the discarded card's on-play ability for the Steal Abilities player. The count
+    // return is observability only; the wrapper is threaded so a copied draw/reshuffle replays.
+    executeHeroEffects(G, ctx, playerID, discardedCardId);
+  }
+}
+
+/**
  * Hero handler for the `recruit-as-attack` keyword (WP-580 / D-24389).
  *
  * God of Thunder's "You can use Recruit as Attack this turn." Sets the
@@ -2382,6 +2514,11 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   // why: WP-580 / D-24389 — God of Thunder's "You can use Recruit as Attack this turn."
   // (sets the turn-scoped conversion flag; fights then draw on unspent recruit).
   'recruit-as-attack': heroEffectRecruitAsAttack,
+  // why: WP-592 / D-24401 — Rogue's Steal Abilities "Each player discards the top card of
+  // their deck. Play a copy of each of those cards." (each player discards their deck top,
+  // then the Steal Abilities player copies each = economy + reentrant executeHeroEffects
+  // re-fire; recursion guard excludes a discarded steal-abilities OR copy-powers).
+  'steal-abilities': heroEffectStealAbilities,
 };
 
 // ---------------------------------------------------------------------------
