@@ -350,36 +350,44 @@ where origin genuinely lacks the asset so **both** fetches return HTML; and the
 *cold-deploy stylesheet abort*, where the asset is fine and the failure is a
 browser-side `net::ERR_ABORTED`.
 
-*Immediate remediation (operator) — currently the ONLY fix.* Purge the
-Cloudflare cache for the `legendary-arena.com` zone — Caching → Configuration →
-**Purge Everything** (safer than a single-URL purge, since more than one hash can
-be poisoned). The site recovers within seconds because origin is already correct.
-As of 2026-08-23 no automated guard actually prevents this (see below), so a purge
-is the front-line remediation, not a stopgap.
+*Immediate remediation (operator).* Purge the Cloudflare cache for the
+`legendary-arena.com` zone — Caching → Configuration → **Purge Everything**
+(safer than a single-URL purge, since more than one hash can be poisoned). The
+site recovers within seconds because origin is already correct. This remains the
+emergency remedy for an active poisoning even though the automated guard below is
+now live — a purge clears an already-cached bad entry immediately.
 
-*Prevention — the shipped guard does NOT run, so it does NOT yet prevent this.*
-The arena-client Pages-Functions middleware
+*Prevention (guard LIVE since 2026-08-23).* The arena-client Pages-Functions
+middleware
 [`apps/arena-client/functions/_middleware.ts`](../apps/arena-client/functions/_middleware.ts)
-carries an asset-shell guard (`serveAssetNotFoundIfHtmlShell`) that returns an
-uncacheable `404` when a `/assets/` request resolves to the HTML shell. It shipped
-2026-08-10 as the fix for this failure mode — but it never executes for `/assets/*`
-in production. Cloudflare Pages auto-generates a `_routes.json` that **excludes the
-static `/assets/` directory from Function invocation**, and `exclude` beats
-`include`, so the middleware runs on `/` and SPA routes but is bypassed on the exact
-path it guards. The guard's unit test mocks `context.next()`, proving the logic
-while never exercising the wiring — so the gap shipped silently and the incident
-**recurred 2026-08-23** (blank `play.`, cleared by a purge). Verify whether the
-guard is live at any time by requesting a bogus hashed asset:
+`serveAssetNotFoundIfHtmlShell` returns an uncacheable `404` when a `/assets/`
+request resolves to the HTML shell, so the poisoning entry is never created and
+the miss feeds the WP-418 `vite:preloadError` update path. Real assets pass
+through (they come back `javascript`/`css`, so the HTML condition is false).
+
+This guard **shipped 2026-08-10 but was inert until 2026-08-23**, and the incident
+recurred in between (blank `play.`, cleared by a purge). The reason was NOT a
+routing subtlety — Cloudflare Pages Functions were **not executing at all** for the
+`legendary-arena-play` project: its **Root directory was blank**, so Pages looked
+for `functions/` at the repo root (absent) instead of `apps/arena-client/functions/`,
+and deployed the static bundle with no Functions. Both this guard and the WP-300
+profile-meta middleware were dead in production; the unit tests passed because they
+mock `context.next()` and never exercise the deployed wiring. **Fix (Pages project
+Settings → Build):** Root directory = `apps/arena-client` **and** Build output =
+`dist` (the output path is relative to Root, so both change together); the build
+command is unchanged. All four Pages projects build from this one repo with Root
+blank, so Functions must be scoped by setting each project's Root to its app dir —
+**`legendary-arena-legends` should be checked for the same dead-Functions gap.**
+
+Verify the guard is live at any time by requesting a bogus hashed asset:
 
 ```bash
 curl -sSI "https://play.legendary-arena.com/assets/does-not-exist-guard-probe.js"
 ```
 
-`404` + `content-type: text/plain` + `cache-control: no-store` means the guard
-runs. `200 text/html` means it is still bypassed and you are exposed. A durable fix
-that forces the middleware onto `/assets/*` is in progress (PR #1596) and is **not
-yet verified** — do not rely on it until this note is updated to say the probe
-above returns `404`.
+`404` + `content-type: text/plain` + `cache-control: no-store` means the guard runs
+(verified in production 2026-08-23). A `200 text/html` means Functions have stopped
+executing again — re-check the project's Root directory first.
 
 ### Latest run snapshot — 2026-05-19
 
