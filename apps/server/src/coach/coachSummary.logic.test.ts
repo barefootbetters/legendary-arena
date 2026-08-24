@@ -98,39 +98,38 @@ describe('buildCoachMatchSummary (WP-594)', () => {
         victory: ['core/villain/hydra-agent', 'core/bystander/hostage'],
       },
     });
-    const summary = buildCoachMatchSummary(state, makeBreakdown(), resolveName);
+    const summary = buildCoachMatchSummary(state, makeBreakdown(), 'heroes-win', resolveName);
     const line = summary.perPlayer[0];
     assert.ok(line);
     // acquired = 2× Spider Man, 1× Rogue, 1× Gambit; starters + wound + victory excluded.
     assert.deepEqual(line.acquiredCards, ['Spider Man ×2', 'Gambit', 'Rogue']);
   });
 
-  test('resolves the loadout to display names and reads outcome from matchLost', () => {
+  test('resolves the loadout to display names and carries the caller-supplied outcome (incl. tie)', () => {
     const state = makeState({
       '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
     });
-    const won = buildCoachMatchSummary(state, makeBreakdown(), resolveName);
+    const won = buildCoachMatchSummary(state, makeBreakdown(), 'heroes-win', resolveName);
     assert.equal(won.outcome, 'heroes-win');
     assert.equal(won.scheme, 'Midtown Bank Robbery');
     assert.equal(won.mastermind, 'Red Skull');
     assert.deepEqual(won.heroes, ['Spider Man', 'Rogue']);
     assert.deepEqual(won.villainGroups, ['Hydra']);
 
-    const lost = buildCoachMatchSummary(
-      state,
-      makeBreakdown({
-        inputs: { ...makeBreakdown().inputs, matchLost: true },
-      }),
-      resolveName,
-    );
+    const lost = buildCoachMatchSummary(state, makeBreakdown(), 'scheme-wins', resolveName);
     assert.equal(lost.outcome, 'scheme-wins');
+
+    // why: a tie (a deck ran out with no winner) is carried through, no longer
+    // mislabeled as a heroes-win.
+    const tied = buildCoachMatchSummary(state, makeBreakdown(), 'tie', resolveName);
+    assert.equal(tied.outcome, 'tie');
   });
 
   test('carries actual adversity always and expected adversity only with a WP-591 baseline', () => {
     const state = makeState({
       '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
     });
-    const noBaseline = buildCoachMatchSummary(state, makeBreakdown(), resolveName);
+    const noBaseline = buildCoachMatchSummary(state, makeBreakdown(), 'heroes-win', resolveName);
     assert.deepEqual(noBaseline.adversity, {
       schemeTwists: 6,
       villainsEscaped: 1,
@@ -149,6 +148,7 @@ describe('buildCoachMatchSummary (WP-594)', () => {
           bystandersLostPar: 2,
         },
       }),
+      'heroes-win',
       resolveName,
     );
     assert.deepEqual(withBaseline.adversityExpected, {

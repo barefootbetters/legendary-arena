@@ -168,27 +168,31 @@ function resolveNames(extIds: readonly string[], resolveCardName: ResolveCardNam
 
 /**
  * Assemble the coach match summary from the reduced final state + the stored
- * score breakdown. The outcome comes from the breakdown's `matchLost` flag
- * (WP-591); the grade from the breakdown's final score.
+ * score breakdown. The `outcome` is supplied by the caller (the orchestrator
+ * evaluates it from the reduced state via `evaluateEndgame`, the only source that
+ * distinguishes a `tie` from a win/loss); the grade from the breakdown's final
+ * score.
  *
  * @param finalState The reduced final game state (loadout + zones).
  * @param breakdown The stored competitive score breakdown.
+ * @param outcome The match outcome (heroes-win / scheme-wins / tie).
  * @param resolveCardName Resolver from ext_id to display name.
  * @returns The compact, name-resolved summary for the model.
  */
 export function buildCoachMatchSummary(
   finalState: LegendaryGameState,
   breakdown: ScoreBreakdown,
+  outcome: CoachMatchSummary['outcome'],
   resolveCardName: ResolveCardName,
 ): CoachMatchSummary {
   const configuration = finalState.matchConfiguration;
   const counts = breakdown.inputs.penaltyEventCounts;
 
   const summary: CoachMatchSummary = {
-    // why: the outcome is the breakdown's matchLost flag (WP-591 sets it from the
-    // live endgame verdict at scoring time) — a lost match is scheme-wins, else a
-    // heroes-win. No need to re-run evaluateEndgame over the full reduced state.
-    outcome: breakdown.inputs.matchLost === true ? 'scheme-wins' : 'heroes-win',
+    // why: the true outcome — including a `tie` (a deck ran out with no winner),
+    // which the breakdown's boolean matchLost flag cannot express. A tie was
+    // previously mislabeled as a heroes-win to the model.
+    outcome,
     playerCount: Object.keys(finalState.playerZones).length,
     rounds: breakdown.inputs.rounds,
     scheme: resolveCardName(configuration.schemeId),
