@@ -7,6 +7,14 @@
 
 ## Current State
 
+### WP-595 — Endgame coach client panel (EC-630 / D-24404) shipped (2026-08-23)
+
+WP-B2, the CLIENT half of the Legendary-Pass endgame AI coach (server = WP-594). Surfaces the coach on the endgame report card. **Pass holders** get an on-demand "Get AI coaching" button that fetches and renders the coaching report (hero fit / purchases / 2-3 tips); **non-Pass holders and guests** get a locked-teaser upsell — "Unlock AI coaching with the Legendary Pass" → the billing surface (`?route=me`) — the conversion hook.
+
+New `lib/api/coachApi.ts` (never-throw fetch wrapper for `GET /api/me/scores/:replayHash/coach`, `status: 0` on network failure, a structural mirror of the WP-594 response — no server-type import), a **store-free** `useEndgameCoach` composable (injected deps: resolves Pass status via `fetchEntitlements` checking `legendary_pass_2026` → guest/none/has, fail closed to none; drives the lazy coach fetch state machine — 200 → ready, `503`/`coach_unavailable` → retriable `unavailable`, defensive `not_entitled` → back to locked), and `EndgameCoachPanel.vue` rendered inside `EndgameSummary.vue` when a scored record carries a `replayHash`.
+
+**Boundary:** client-only — no server/engine/`G`/scoring change; the panel degrades gracefully when WP-594 is undeployed/unconfigured (every non-200 → a graceful state, never blocks the card). `vue-tsc` clean; arena-client **1412→1430/0** (+18: coachApi/composable/panel + an EndgameSummary Pinia regression fix — the child now reads the auth store); `pnpm -r --no-bail test` green. **D-24026 live-verify: operator-pending** (needs WP-594 deployed + `ANTHROPIC_API_KEY` set + the Pass granted). D-24404 Active.
+
 ### WP-594 — Endgame AI coach, server (EC-629 / D-24403) shipped (2026-08-23)
 
 WP-B1, the SERVER half of the Legendary-Pass endgame AI coach (WP-B2 = the client panel + non-Pass locked-teaser upsell, separate). A Pass-gated, lazy-on-open, cached Claude call (Sonnet 5) at `GET /api/me/scores/:replayHash/coach` returns opinionated coaching — hero-fit vs the scheme/mastermind, a critique of the acquired cards, and 2-3 concrete next-time tips — complementing the free WP-593 report card.
