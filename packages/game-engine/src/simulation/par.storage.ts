@@ -37,6 +37,7 @@ import type {
 import { computeParScore, validateScoringConfig } from '../scoring/parScoring.logic.js';
 import { AI_POLICY_TIER_DEFINITIONS } from './ai.tiers.js';
 import type { ParSimulationResult } from './par.aggregator.js';
+import type { ParTurnDistributionProfile } from './par.profile.js';
 
 // ---------------------------------------------------------------------------
 // Canonical source-class taxonomy
@@ -703,6 +704,85 @@ export async function readSeedParArtifact(
   if (!isSeedArtifactShape(parsed)) {
     throw new ParStoreReadError(
       `Seed PAR artifact at ${fullPath} is missing required fields or has an unexpected shape; file may be truncated or from a different artifact version.`,
+    );
+  }
+  return parsed;
+}
+
+// ---------------------------------------------------------------------------
+// Turn-distribution profile (WP-596) — DERIVED, non-authoritative diagnostic.
+// ---------------------------------------------------------------------------
+
+/**
+ * On-disk shape of a persisted turn-distribution profile. The
+ * ParTurnDistributionProfile plus two explicit markers so no future reader
+ * ever mistakes it for a PAR baseline.
+ */
+export interface ParProfileArtifact extends ParTurnDistributionProfile {
+  readonly derived: true;
+  readonly authoritative: false;
+}
+
+/**
+ * Writes a turn-distribution profile to
+ * `{basePath}/profile/{parVersion}/{filename}.json`, a tree deliberately
+ * separate from the seed/ and sim/ PAR trees and never referenced by the PAR
+ * index.
+ *
+ * Unlike PAR artifacts, the profile is a REGENERABLE derived diagnostic, so
+ * this writer OVERWRITES an existing file — it does NOT lock-on-exist. Serializes
+ * with canonical sorted-key JSON for byte-identical reproducibility.
+ *
+ * @returns Relative path of the written file under `basePath`.
+ */
+// why: D-24405 — the profile is a derived, non-authoritative record persisted
+// separately from the immutable hashed PAR artifact (never in its body, never
+// in the index, never a competitive input). Filesystem IO here is covered by
+// the same D-5001 carve-out as the PAR writers. Overwrite is intentional: a
+// profile is regenerated whenever the simulation re-runs, unlike the
+// write-once PAR baseline.
+export async function writeParProfileArtifact(
+  profile: ParTurnDistributionProfile,
+  basePath: string,
+  parVersion: string,
+): Promise<string> {
+  const artifact: ParProfileArtifact = {
+    ...profile,
+    derived: true,
+    authoritative: false,
+  };
+  const directory = posix.join(basePath, 'profile', parVersion);
+  await ensureDirectoryExists(directory);
+  const filename = scenarioKeyToFilename(profile.scenarioKey);
+  const fullPath = posix.join(directory, filename);
+  await writeFile(fullPath, canonicalJsonStringify(artifact), 'utf8');
+  return posix.join('profile', parVersion, filename);
+}
+
+/**
+ * Reads a turn-distribution profile by `ScenarioKey`. Returns `null` when the
+ * file does not exist. Throws `ParStoreReadError` on malformed JSON or an
+ * unexpected shape.
+ */
+export async function readParProfileArtifact(
+  scenarioKey: ScenarioKey,
+  basePath: string,
+  parVersion: string,
+): Promise<ParProfileArtifact | null> {
+  const fullPath = posix.join(
+    basePath,
+    'profile',
+    parVersion,
+    scenarioKeyToFilename(scenarioKey),
+  );
+  const raw = await tryReadFile(fullPath);
+  if (raw === null) {
+    return null;
+  }
+  const parsed = parseJsonOrThrow(raw, fullPath);
+  if (!isParProfileArtifactShape(parsed)) {
+    throw new ParStoreReadError(
+      `PAR profile artifact at ${fullPath} is missing required fields or has an unexpected shape; the file may be truncated or from a different profile version.`,
     );
   }
   return parsed;
@@ -1420,6 +1500,21 @@ function isSeedArtifactShape(value: unknown): value is SeedParArtifact {
   if (typeof scoringRecord.scoringConfigVersion !== 'number') return false;
   if (typeof scoringRecord.rawScoreSemanticsVersion !== 'number') return false;
   if (record.scoringConfig === null || typeof record.scoringConfig !== 'object') return false;
+  return true;
+}
+
+function isParProfileArtifactShape(value: unknown): value is ParProfileArtifact {
+  if (value === null || typeof value !== 'object') return false;
+  const record = value as Record<string, unknown>;
+  if (typeof record.scenarioKey !== 'string') return false;
+  if (record.derived !== true) return false;
+  if (record.authoritative !== false) return false;
+  if (typeof record.sampleSize !== 'number') return false;
+  if (typeof record.monotoneImproving !== 'boolean') return false;
+  if (!(record.minWinningTurn === null || typeof record.minWinningTurn === 'number')) return false;
+  if (!Array.isArray(record.bins)) return false;
+  if (typeof record.scoringConfigVersion !== 'number') return false;
+  if (typeof record.simulationPolicyVersion !== 'string') return false;
   return true;
 }
 

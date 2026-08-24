@@ -35,6 +35,7 @@ import {
   aggregateParFromSimulation,
   deriveScoringInputsFromFinalState,
   generateScenarioPar,
+  generateScenarioParSamples,
   validateParResult,
   validateTierOrdering,
   generateSeedSet,
@@ -626,5 +627,60 @@ describe('deriveScoringInputsFromFinalState bystanderLost producer (WP-528 / D-2
     } as unknown as LegendaryGameState;
     const inputs = deriveScoringInputsFromFinalState(state, 10);
     assert.equal(inputs.penaltyEventCounts.bystanderLost, 0);
+  });
+});
+
+describe('generateScenarioParSamples + parValue regression pin (WP-596)', () => {
+  test('generateScenarioParSamples returns exactly simulationCount rows', () => {
+    const config = createTestParConfig({ simulationCount: 10 });
+    const registry = createMockRegistry();
+    const samples = generateScenarioParSamples(config, registry);
+    assert.equal(samples.length, 10);
+    for (const sample of samples) {
+      // why: every field is a plain number / small string union — the array
+      // must be JSON-serializable for the profile artifact.
+      assert.equal(typeof sample.turnCount, 'number');
+      assert.equal(typeof sample.rawScore, 'number');
+      assert.equal(typeof sample.schemeTwistCount, 'number');
+      assert.ok(
+        ['heroes-win', 'scheme-wins', 'tie', 'unresolved'].includes(sample.outcome),
+      );
+    }
+  });
+
+  test('refactored generateScenarioPar rawScores equal the samples rawScores', () => {
+    // why: proves generateScenarioPar consumes exactly the same games the
+    // samples seam produces (same seeds, order, and scoring) — the two can
+    // never diverge on which games ran.
+    const config = createTestParConfig({ simulationCount: 10 });
+    const registry = createMockRegistry();
+    const samples = generateScenarioParSamples(config, registry);
+    const sampleRawScores = samples.map((sample) => sample.rawScore);
+    const par = aggregateParFromSimulation(sampleRawScores, config.percentile);
+    assert.equal(par, generateScenarioPar(config, registry).parValue);
+  });
+
+  test('parValue is byte-identical to the pre-refactor literal (regression pin)', () => {
+    // why: WP-596 is observability-only — the refactor routing
+    // generateScenarioPar through generateScenarioParSamples must NOT change
+    // calibration. These are HARDCODED literals captured from main before the
+    // refactor (mock registry → empty card lists → zero-score games); a
+    // self-comparison would not catch drift, so the oracle is the literal.
+    const config = createTestParConfig({ simulationCount: 10 });
+    const registry = createMockRegistry();
+    const result = generateScenarioPar(config, registry);
+    assert.equal(result.parValue, 0, 'pre-refactor parValue literal');
+    assert.equal(result.seedParDelta, 1200, 'pre-refactor seedParDelta literal');
+    assert.equal(result.sampleSize, 10);
+    assert.deepStrictEqual(result.rawScoreDistribution, {
+      min: 0,
+      p25: 0,
+      median: 0,
+      p55: 0,
+      p75: 0,
+      max: 0,
+      standardDeviation: 0,
+      interquartileRange: 0,
+    });
   });
 });

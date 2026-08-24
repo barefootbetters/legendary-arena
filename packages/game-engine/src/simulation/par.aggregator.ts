@@ -925,13 +925,15 @@ export function generateScenarioPar(
   const seeds = generateSeedSet(config.baseSeed, config.simulationCount);
   const seedSetHash = computeSeedSetHash(seeds);
 
+  // why: WP-596 — the per-seed games are now produced by
+  // generateScenarioParSamples so the same games can also be observed as a
+  // per-turn distribution profile. generateScenarioPar consumes only the
+  // rawScore field, so parValue is byte-identical to the pre-refactor loop
+  // (same seeds, policies, simulateOneGame, and computeRawScore, in order).
+  const samples = generateScenarioParSamples(config, registry);
   const rawScores: number[] = [];
-  for (const seed of seeds) {
-    const policy = createCompetentHeuristicPolicy(seed);
-    const { finalState, turnCount } = simulateOneGame(config, registry, seed, policy);
-    const inputs = deriveScoringInputsFromFinalState(finalState, turnCount);
-    const score = computeRawScore(inputs, config.scoringConfig);
-    rawScores.push(score);
+  for (const sample of samples) {
+    rawScores.push(sample.rawScore);
   }
 
   if (rawScores.length !== config.simulationCount) {
@@ -992,6 +994,75 @@ export function generateScenarioPar(
     generatedAt,
   };
   return result;
+}
+
+// ---------------------------------------------------------------------------
+// Per-game samples (WP-596) — the observability seam behind generateScenarioPar.
+// ---------------------------------------------------------------------------
+
+/**
+ * One simulated game's terminal facts, for the empirical turns-vs-score
+ * profile (WP-596). Every field is a plain number or a small string union so
+ * the array is JSON-serializable.
+ */
+export interface PerGameSample {
+  /** Turns elapsed when the game ended (or the safety cap). */
+  readonly turnCount: number;
+  /** Raw Score for this game via computeRawScore (lower is better). */
+  readonly rawScore: number;
+  /** Team-aggregate victory points at the terminal state. */
+  readonly victoryPoints: number;
+  /** Bystanders in victory piles at the terminal state. */
+  readonly bystandersRescued: number;
+  /** Scheme twists revealed (canonical G.counters.schemeTwistCount). */
+  readonly schemeTwistCount: number;
+  /** Villains that escaped (ESCAPED_VILLAINS counter). */
+  readonly escapes: number;
+  /** Terminal outcome; 'unresolved' when the game hit the safety cap. */
+  readonly outcome: 'heroes-win' | 'scheme-wins' | 'tie' | 'unresolved';
+}
+
+/**
+ * Runs the same per-seed games generateScenarioPar runs, but returns one
+ * PerGameSample per game instead of collapsing to a single PAR value.
+ *
+ * @param config - Full PAR simulation config.
+ * @param registry - Card registry reader (setup-time only).
+ * @returns One sample per seed, in seed order (length === simulationCount).
+ */
+// why: WP-596 — reuses the WP-049 per-seed simulateOneGame loop verbatim so
+// the emitted rows are the exact games generateScenarioPar scores; the two
+// functions cannot diverge on which games ran. Adds only the outcome read
+// (evaluateEndgame is pure — already called once per game inside
+// deriveScoringInputsFromFinalState for matchLost, so this adds no
+// randomness and no G mutation).
+export function generateScenarioParSamples(
+  config: ParSimulationConfig,
+  registry: CardRegistryReader,
+): PerGameSample[] {
+  const seeds = generateSeedSet(config.baseSeed, config.simulationCount);
+  const samples: PerGameSample[] = [];
+  for (const seed of seeds) {
+    const policy = createCompetentHeuristicPolicy(seed);
+    const { finalState, turnCount } = simulateOneGame(config, registry, seed, policy);
+    const inputs = deriveScoringInputsFromFinalState(finalState, turnCount);
+    const rawScore = computeRawScore(inputs, config.scoringConfig);
+    const endgameResult = evaluateEndgame(finalState);
+    // why: schemeTwistCount reads the canonical G.counters field directly —
+    // the same counter deriveScoringInputsFromFinalState maps to
+    // penaltyEventCounts.schemeTwistNegative (D-24340), so the sample stays
+    // symmetric with the live score.
+    samples.push({
+      turnCount,
+      rawScore,
+      victoryPoints: inputs.victoryPoints,
+      bystandersRescued: inputs.bystandersRescued,
+      schemeTwistCount: finalState.counters.schemeTwistCount ?? 0,
+      escapes: inputs.escapes,
+      outcome: endgameResult === null ? 'unresolved' : endgameResult.outcome,
+    });
+  }
+  return samples;
 }
 
 // ---------------------------------------------------------------------------
