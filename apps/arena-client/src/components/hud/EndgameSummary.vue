@@ -8,6 +8,7 @@ import { gradeForFinalScore } from '@legendary-arena/game-engine';
 import { gradeLabel, gradeClass, gradeAriaText, buildGradeScale } from '../../vfx/gradeDisplay';
 import { buildWorkedScoreCalc, buildLuckRead } from '../../vfx/scoreCalcDisplay';
 import type { MyCompetitiveScore } from '../../lib/api/competitionApi';
+import EndgameCoachPanel from './EndgameCoachPanel.vue';
 
 // why: the four literal leaf-name `aria-label`s on the PAR breakdown
 // (`rawScore`, `parScore`, `finalScore`, `scoringConfigVersion`) bind the
@@ -24,6 +25,9 @@ import type { MyCompetitiveScore } from '../../lib/api/competitionApi';
 // separate-compile pipeline (D-6512 / P6-30).
 export default defineComponent({
   name: 'EndgameSummary',
+  // why: WP-595 — the Legendary-Pass AI coach panel, rendered inside the
+  // competitive-score section when a scored record with a replay hash exists.
+  components: { EndgameCoachPanel },
   props: {
     gameOver: {
       type: Object as PropType<UIGameOverState>,
@@ -314,6 +318,15 @@ export default defineComponent({
           </span>
         </div>
       </div>
+
+      <!-- why: WP-595 — the Legendary-Pass AI coach. Pass holders get on-demand
+           coaching (hero fit / purchases / tips); non-Pass holders get a locked-
+           teaser upsell. Rendered only when the scored record carries a replay
+           hash (the coach endpoint's key); the panel resolves Pass status itself. -->
+      <EndgameCoachPanel
+        v-if="competitiveScore && competitiveScore.replayHash"
+        :replay-hash="competitiveScore.replayHash"
+      />
     </section>
 
     <dl v-if="hasPar && gameOver.par" class="par-breakdown">

@@ -38206,3 +38206,17 @@ _Active 2026-08-23 — landed at WP-593 execution (EC-628). Seat identities deri
 **Surface.** `apps/server/src/entitlements/entitlements.types.ts`; `data/migrations/040_*.sql` + `041_*.sql`; `apps/server/src/coach/{coach.types,coachSummary.logic,coachReport.persistence,coachClient,coach.logic,coach.routes}.ts`; `apps/server/src/server.mjs`; `docs/ai/REFERENCE/api-endpoints.md`.
 
 _Active 2026-08-23 — landed at WP-594 execution (EC-629). Pass-gated lazy+cached endgame coach; new `legendary_pass_2026` entitlement (drift triple); injected model client (ZERO paid calls in CI; ships dark until `ANTHROPIC_API_KEY` is set); derived non-persisted cache; fail-soft. No game-state-hash re-pin; no engine/`G`/move/scoring change. Client panel + non-Pass locked-teaser upsell = WP-B2 (separate). Hard-deps WP-132/333/336/338/361/591/593. D-24026 live-verify operator-pending._
+
+### D-24404 — Endgame Coach Client Panel (Legendary Pass) (Active 2026-08-23 — WP-595 / EC-630)
+
+**Context.** WP-594 shipped the server endgame AI coach (Pass-gated, lazy, cached). This decision locks the CLIENT half (WP-B2): surfacing it on the endgame report card, with a non-Pass locked-teaser upsell (the operator-chosen conversion hook, 2026-08-23).
+
+**Decision.**
+1. **`coachApi.ts`** — a never-throw typed `fetch` wrapper for `GET /api/me/scores/:replayHash/coach` (`status: 0` on network failure), a structural mirror of the WP-594 response. The client imports no server type.
+2. **`useEndgameCoach` composable (store-free).** Dependencies (token getter + `fetchEntitlements` + `fetchCoachReport`) are injected so it is unit-testable without Pinia/network. `initialize()` resolves Pass status via `fetchEntitlements` (checking `legendary_pass_2026`) into `guest`/`none`/`has` (fail closed to `none`). `requestCoaching()` drives the lazy fetch state machine: 200 → `ready`; `503`/`coach_unavailable` → `unavailable` (retriable); a defensive `not_entitled` → back to `none`; other non-200 → `error`; a no-op without the Pass or a replay hash.
+3. **`EndgameCoachPanel.vue`** — Pass holders get a "Get AI coaching" button → the rendered report (hero fit / purchases / tips), or a retry on unavailable/error. Non-Pass holders + guests get the locked-teaser upsell with a CTA to the Pass (`?route=me`). Rendered inside `EndgameSummary.vue` only when a scored record carries a `replayHash`. The panel wires the production deps (auth store token + the real API wrappers) into the store-free composable.
+4. **Boundary / determinism.** Client-only — no server/engine/`G`/scoring change. The panel resolves its own Pass status and fetches on demand; it degrades gracefully (every non-200 → a graceful state) and never blocks the rest of the card, including when WP-594 is not yet deployed or `ANTHROPIC_API_KEY` is unset.
+
+**Surface.** `apps/arena-client/src/lib/api/coachApi.ts`; `apps/arena-client/src/composables/useEndgameCoach.ts`; `apps/arena-client/src/components/hud/EndgameCoachPanel.vue`; `apps/arena-client/src/components/hud/EndgameSummary.vue`.
+
+_Active 2026-08-23 — landed at WP-595 execution (EC-630). Client coach panel: Pass-gated on-demand coaching + non-Pass locked-teaser upsell; store-free composable (unit-testable without Pinia); fail-soft graceful degradation. Client-only — no server/engine/`G`/scoring change. Hard-deps WP-594/108/160/593. D-24026 live-verify operator-pending (needs WP-594 deployed + `ANTHROPIC_API_KEY` + a granted Pass)._
