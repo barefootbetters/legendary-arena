@@ -135,6 +135,15 @@ services:
       # CI-only nightly-triage ANTHROPIC_API_KEY GitHub Actions secret noted below.
       - key: ANTHROPIC_API_KEY
         sync: false
+      # COACH_MODEL (coach model-independence shim) — the model id the endgame
+      # coach calls. Optional: absence uses the default 'claude-sonnet-5'. Set this
+      # in the Render dashboard to swap the coach's model WITHOUT a code change.
+      # Per-model request quirks (e.g. Sonnet 5's disabled extended thinking, the
+      # EC-629 hotfix) live in apps/server/src/coach/coachModelConfig.ts, so a
+      # swapped model uses its own quirk row (or the safe default) and never
+      # re-inherits the previous model's workaround. sync: false — dashboard-owned.
+      - key: COACH_MODEL
+        sync: false
       # PUBLIC_BASE_URL is the deployed application origin (no trailing slash);
       # used to server-derive Stripe Checkout success_url and cancel_url per
       # D-13309 — accepting either from request input would permit redirect

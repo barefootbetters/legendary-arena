@@ -48,6 +48,7 @@ import { registerMatchGateRoutes } from './match/matchGate.routes.js';
 import { registerMatchLagnRoutes } from './match/matchLagn.routes.js';
 import { registerCoachRoutes } from './coach/coach.routes.js';
 import { createAnthropicCoachClient } from './coach/coachClient.js';
+import { resolveCoachModelConfig } from './coach/coachModelConfig.js';
 import {
   createNativeLobbyGuard,
   generateInternalDelegationSecret,
@@ -1015,24 +1016,30 @@ export async function startServer() {
 
   // why: WP-594 / D-24403 — register the Legendary-Pass endgame AI coach
   // (GET /api/me/scores/:replayHash/coach). Lazy + cached (the paid model runs at
-  // most once per match). The model client is Anthropic-backed (Sonnet 5) when
-  // ANTHROPIC_API_KEY is set, else a DISABLED fail-soft client whose generate
-  // throws — the orchestrator maps that to coach_unavailable, so the server
-  // starts and the feature stays dark (no card blocked) until the key is set in
-  // the Render environment. Same caller-injected auth deps as the routes above;
-  // the startup registry resolves composition ext_ids to display names.
+  // most once per match). The model client is Anthropic-backed (model per
+  // COACH_MODEL, default Sonnet 5) when ANTHROPIC_API_KEY is set, else a DISABLED
+  // fail-soft client whose generate throws — the orchestrator maps that to
+  // coach_unavailable, so the server starts and the feature stays dark (no card
+  // blocked) until the key is set in the Render environment. Same caller-injected
+  // auth deps as the routes above; the startup registry resolves composition
+  // ext_ids to display names.
   const coachApiKey = process.env.ANTHROPIC_API_KEY;
+  // why: the coach's model + per-model quirks come from the routing shim
+  // (coachModelConfig.ts), resolved from COACH_MODEL — so swapping the coach's
+  // model is a config change, not a code edit. The disabled fail-soft client still
+  // reports the resolved model, so a swap is reflected even while the coach is dark.
+  const coachModelConfig = resolveCoachModelConfig(process.env);
   const coachModelClient =
     coachApiKey === undefined || coachApiKey === ''
       ? {
-          model: 'claude-sonnet-5',
+          model: coachModelConfig.model,
           async generate() {
             throw new Error(
               'The endgame coach is not configured: set ANTHROPIC_API_KEY in the environment to enable it.',
             );
           },
         }
-      : createAnthropicCoachClient(coachApiKey, 'claude-sonnet-5');
+      : createAnthropicCoachClient(coachApiKey, coachModelConfig);
   registerCoachRoutes(server.router, pool, {
     requireAuthenticatedSession,
     verifier,
