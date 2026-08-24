@@ -8,13 +8,15 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --import tsx --test \"src/**/*.test.ts\"",
-    "typecheck": "vue-tsc --noEmit"
+    "test": "node --import tsx --test \"src/**/*.test.ts\" \"functions/**/*.test.ts\"",
+    "typecheck": "vue-tsc --noEmit",
+    "typecheck:functions": "tsc -p functions/tsconfig.json --noEmit"
   },
   "dependencies": {
     "vue": "^3.4.27"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260701.1",
     "@legendary-arena/lagn": "workspace:*",
     "@legendary-arena/registry": "workspace:*",
     "@types/node": "^22.19.17",
