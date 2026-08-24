@@ -285,6 +285,13 @@ jobs:
       - name: Generate effect index
         run: pnpm --filter @legendary-arena/dashboard prebuild:effect-index
 
+      # why (WP-598): src/data/par-fidelity.json is a build-time copy of the
+      # committed WP-597 PAR profile artifacts (gitignored) imported statically by
+      # useParFidelity — it must exist before typecheck / test / build can resolve
+      # the module (the same reason as the coverage ledger + effect index above).
+      - name: Generate PAR fidelity bundle
+        run: pnpm --filter @legendary-arena/dashboard prebuild:par
+
       # why (WP-487): the dashboard now imports @legendary-arena/registry/schema
       # (the /schema subpath resolves to the registry dist) — its first workspace
       # dependency. Build the registry dist so typecheck / test / build can resolve

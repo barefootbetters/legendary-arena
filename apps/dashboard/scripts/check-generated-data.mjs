@@ -48,6 +48,10 @@ const GENERATED_DATA_FILES = [
     relativePath: join("src", "data", "effect-implementation-index.json"),
     remedy: "pnpm --filter @legendary-arena/dashboard prebuild:effect-index",
   },
+  {
+    relativePath: join("src", "data", "par-fidelity.json"),
+    remedy: "pnpm --filter @legendary-arena/dashboard prebuild:par",
+  },
 ];
 
 const missingFiles = [];
