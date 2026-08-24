@@ -166,6 +166,13 @@ export function createAnthropicCoachClient(
       if (config.quirks.thinking !== undefined) {
         requestBody.thinking = config.quirks.thinking;
       }
+      // why: some models tune reasoning depth via effort rather than a thinking
+      // toggle (e.g. Opus 5, which keeps thinking on at low effort for a bounded
+      // call). Send `output_config.effort` only when the model's config sets one;
+      // otherwise the API uses its default effort.
+      if (config.quirks.effort !== undefined) {
+        requestBody.output_config = { effort: config.quirks.effort };
+      }
       let response: Response;
       try {
         response = await fetch(ANTHROPIC_MESSAGES_URL, {

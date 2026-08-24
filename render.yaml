@@ -141,7 +141,10 @@ services:
       # Per-model request quirks (e.g. Sonnet 5's disabled extended thinking, the
       # EC-629 hotfix) live in apps/server/src/coach/coachModelConfig.ts, so a
       # swapped model uses its own quirk row (or the safe default) and never
-      # re-inherits the previous model's workaround. sync: false — dashboard-owned.
+      # re-inherits the previous model's workaround. Quirk rows ship for
+      # claude-sonnet-5, claude-opus-5, and claude-sonnet-4-6 — those are safe
+      # env-only swaps; any other thinking-by-default model needs its row added in
+      # coachModelConfig.ts first. sync: false — dashboard-owned.
       - key: COACH_MODEL
         sync: false
       # PUBLIC_BASE_URL is the deployed application origin (no trailing slash);

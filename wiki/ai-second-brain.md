@@ -669,12 +669,17 @@ feature reaching across the network.
 >   model id (e.g. `claude-opus-5`); Render then redeploys the server. The value is
 >   the API id, never a friendly name like "Sonnet 5" — an unrecognized string is
 >   sent verbatim as the model and fails the call.
-> - **A thinking-by-default model needs its quirk row first.** Every Claude 4.6+/5
+> - **Pre-seeded swap targets are env-only; other thinking-default models need a
+>   quirk row first.** The registry ships rows for `claude-sonnet-5` (disabled
+>   thinking), `claude-opus-5` (thinking on at `effort: low` — Opus 5 discourages
+>   disabling thinking), and `claude-sonnet-4-6` (thinking off by default) — those
+>   three are safe to select with `COACH_MODEL` alone. Any *other* Claude 4.6+/5
 >   model runs adaptive extended thinking by default, which drains the bounded
 >   output budget and re-triggers the empty-response failure (the EC-629 bug — see
->   [Edge Cases](#edge-cases)). Before pointing `COACH_MODEL` at such a model, add
->   its `{ thinking: { type: 'disabled' }, … }` row to `COACH_MODEL_QUIRKS_BY_MODEL`
->   in the shim; a non-thinking model needs only the env var.
+>   [Edge Cases](#edge-cases)); before pointing `COACH_MODEL` at one, add its row
+>   to `COACH_MODEL_QUIRKS_BY_MODEL` in the shim (disabled thinking where the model
+>   allows it, or `effort: low` where it does not). A non-thinking model needs only
+>   the env var.
 
 ### Operating discipline
 
@@ -997,10 +1002,14 @@ This is the summary index; the individual gotchas and their nuances live in
   `coach_unavailable` (the EC-629 production bug). A model absent from the shim's
   quirk registry gets the *default* quirks — **no** disabled-thinking directive —
   so pointing `COACH_MODEL` at a new thinking-default model *without first adding
-  its `{ thinking: { type: 'disabled' } }` row* silently reintroduces exactly that
-  failure. Non-thinking models are safe with the env var alone. (The value must
-  also be the exact API id — a friendly name like "Sonnet 5" is sent verbatim and
-  fails the call.)
+  its quirk row* silently reintroduces exactly that failure. The registry ships
+  safe rows for `claude-sonnet-5`, `claude-opus-5`, and `claude-sonnet-4-6`, so
+  those three are env-only swaps; note the fix is not always "disable thinking" —
+  **Opus 5 discourages disabling thinking** (it can leak reasoning into the visible
+  text and 400s at high effort levels), so its row keeps thinking on at `effort:
+  low` instead. Non-thinking models are safe with the env var alone. (The value
+  must also be the exact API id — a friendly name like "Sonnet 5" is sent verbatim
+  and fails the call.)
 - **Co-hosting during bootstrap needs real isolation.** Running a model gateway,
   a chat surface, and a vector DB on the live game-server box adds attack surface
   and resource contention to a host whose job is serving matches. It is an
@@ -1132,6 +1141,12 @@ This is the summary index; the individual gotchas and their nuances live in
   a thinking-by-default model needs its `thinking:disabled` quirk row added first
   (see [Edge Cases](#edge-cases)). This is the first live proof of Model
   Independence; a real gateway (C/D) stays deferred (Open Questions 5).
+- **2026-08-24 — coach quirk registry pre-seeded (Opus 5 + Sonnet 4.6).** Added
+  quirk rows so `claude-opus-5` and `claude-sonnet-4-6` join `claude-sonnet-5` as
+  safe, env-only `COACH_MODEL` swaps. The shim gained an `effort` quirk for this:
+  Opus 5 keeps thinking on at `effort: low` (disabling it is discouraged and 400s
+  at high effort) rather than the disabled-thinking row Sonnet 5 uses; Sonnet 4.6
+  runs no thinking by default. Model ids/behaviour per the `claude-api` skill.
 - **2026-08-24 — Failure modes section + review polish.** Added a
   [Failure modes](#failure-modes) index (failure → the on-page mitigation that
   guards it) so a drift can be traced back to the guard meant to catch it. Review
