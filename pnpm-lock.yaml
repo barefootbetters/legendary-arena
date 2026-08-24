@@ -186,6 +186,9 @@ importers:
         specifier: ^3.4.27
         version: 3.5.30(typescript@5.9.3)
     devDependencies:
+      '@cloudflare/workers-types':
+        specifier: ^4.20260701.1
+        version: 4.20260701.1
       '@legendary-arena/lagn':
         specifier: workspace:*
         version: link:../../packages/lagn-spec
