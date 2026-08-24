@@ -8,8 +8,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --import tsx --test \"src/**/*.test.ts\"",
+    "test": "node --import tsx --test \"src/**/*.test.ts\" \"functions/**/*.test.ts\"",
     "typecheck": "vue-tsc --noEmit",
+    "typecheck:functions": "tsc -p functions/tsconfig.json --noEmit",
     "lint": "eslint \"src/**/*.{ts,vue}\""
   },
   "dependencies": {
@@ -20,6 +21,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260701.1",
     "@types/node": "^22.19.17",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
