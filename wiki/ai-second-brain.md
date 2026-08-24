@@ -447,20 +447,21 @@ existing `tsvector` facilities.
   the end-state, though the bootstrap build may co-locate on the existing box with
   isolation (see the deployment callout above). The architecture locks **ownership
   and open formats, never a provider** — so the vendor is a shopping decision, not
-  an architectural one. As of 2026-08, candidates in this class include **NameHero**
-  (US-centric, ~$7/mo for the 8 GB tier, familiar support), **Hetzner Cloud**
-  (often the best price/performance for a self-hosted Postgres + Docker stack, US
-  and EU regions), and **DigitalOcean / Vultr / Linode** (pricier but strong
-  snapshot/networking ecosystems and low friction when leaving a PaaS like
-  Render). Compare current plans before committing rather than treating any one as
-  the default; and because a durable knowledge store inherits the Disaster
-  Recovery posture, weight **reliability and your own rehearsed backups over the
-  cheapest promo price** — several budget VPS lines bundle no backups and show
-  clusters of short outages, so the recovery story stays the operator's to own
-  (which this architecture already requires). A roughly **8 GB RAM / 2 vCPU** box
-  comfortably runs Postgres + LiteLLM + Open WebUI + CPU embeddings; step up to
-  the 16 GB class if a small local model is kept resident or more agents run
-  concurrently.
+  an architectural one. As of 2026-08, candidates in this class:
+  - **NameHero** — US-centric, ~$7/mo for the 8 GB tier, familiar support.
+  - **Hetzner Cloud** — often the best price/performance for a self-hosted
+    Postgres + Docker stack; US and EU regions.
+  - **DigitalOcean / Vultr / Linode** — pricier, but strong snapshot/networking
+    ecosystems and low friction when leaving a PaaS like Render.
+
+  Compare current plans before committing rather than treating any one as the
+  default; and because a durable knowledge store inherits the Disaster Recovery
+  posture, weight **reliability and your own rehearsed backups over the cheapest
+  promo price** — several budget VPS lines bundle no backups and show clusters of
+  short outages, so the recovery story stays the operator's to own (which this
+  architecture already requires). A roughly **8 GB RAM / 2 vCPU** box comfortably
+  runs Postgres + LiteLLM + Open WebUI + CPU embeddings; step up to the 16 GB
+  class if a small local model is kept resident or more agents run concurrently.
 - **Local vs hosted models — two host classes.** A plain VPS line has no GPU, so
   on that class treat **local LLMs as optional and CPU-only (small models)** and
   lean on **hosted models via LiteLLM** for reasoning quality. But the dedicated
@@ -593,6 +594,16 @@ the knowledge base is not:
 Because the models reach the knowledge only through MCP and the gateway, a model
 swap is a configuration change, not a data migration. The corpus never moves.
 
+**Three replaceable layers, one permanent one.** A clean way to hold that boundary
+is to separate an AI lab into **hardware** (where inference runs — see
+[Hosting](#hosting-and-security-posture)), **model** (the probabilistic engine,
+reached through LiteLLM), and **harness** (the software that turns a chat model
+into an agent: tools, memory, planning, guardrails, the agent loop — skills or a
+Turnstone-style supervisor). All three are swappable; only the knowledge base
+underneath them is not. The motto *knowledge is permanent, agents are replaceable*
+is exactly this split — "agents" is hardware + model + harness, and any of the
+three can change without moving a single fact.
+
 ### Gateway routing for the endgame coach (decision sketch)
 
 The [endgame coach](#proposed-stack) is named as the first proof point of the
@@ -721,8 +732,12 @@ this descriptive page.
 Where a single skill is one capability, a self-hosted, MCP-native harness (the
 open Turnstone project is a 2026 example) is the *supervisor* surface: it turns a
 long structured specification into planned subtasks, runs them under a supervisor
-model with tool use, and gates each result through risk/judge checks before
-accepting it. That shape maps directly onto *Plan → Build → Verify → Improve*,
+model with tool use, and gates each step through a **separate, smaller judge
+model** that runs a risk-and-evidence check *before* a tool call is allowed to
+execute. Its skills are self-contained bundles — description, scripts, and their
+own verification logic in one unit — which is *Skills Over Monoliths* and "a skill
+without verification is incomplete" made literal. That shape maps directly onto
+*Plan → Build → Verify → Improve*,
 *Skills Over Monoliths*, and *Context Must Be Routed* — and because it is
 self-hosted, speaks MCP (already in the [proposed stack](#proposed-stack)), and
 enforces its gates in code rather than in a prompt, it satisfies *Permissions
@@ -854,11 +869,16 @@ The first useful slice:
   That is the *only* material chunked and embedded in the pilot.
 - **One agentic task with teeth** — a coding or **security / code / firmware
   review** task (config review, log-anomaly flagging, dependency audit) that must
-  produce *citable* output grounded in the navigated corpus and a *verification
-  report*. It is the first end-to-end exercise of the agent layer, and security
+  produce *citable* output grounded in the navigated governance corpus (answer
+  from retrieved sources before generating — *Retrieval Before Generation*) and a
+  *verification report*. It is the first end-to-end exercise of the agent layer,
+  and security
   review in particular is a high-value, low-risk fit: it reasons over material
   that must stay on owned hardware, which is exactly why such queries route to a
   local model (see [Hosting and security posture](#hosting-and-security-posture)).
+  A concrete first instance: an **MCP-mediated system-inventory or config-review**
+  task, where the agent reaches the target only through least-privilege MCP servers
+  (*Read-Only Connectors First*) and every finding cites the navigated source.
 
 Everything else waits until the pilot has been used for real work, failures have
 been captured (the feedback surface above), and the recovery path has been
@@ -883,6 +903,27 @@ doing its job. The platform is successful when the operator can:
   `INDEX.md`, and (if it has a reference corpus) an ingestion run; nothing else.
 
 Each is observable, so "is the brain working?" is a check, not an opinion.
+
+### Failure modes
+
+A governance page is stronger when it names how it can fail. Each failure below
+is *already* answered by a principle or mechanism defined on this page — the table
+is the index that ties the two together, so a drift can be traced back to the
+guard that was supposed to catch it. If a failure has no row here, that is itself
+a finding: add the row and the mitigation.
+
+| Failure mode | Mitigation (defined on this page) |
+|---|---|
+| **Corpus not indexed** — a document exists but nothing links to it, so navigation never finds it | `INDEX.md` discipline ([Knowledge repositories](#knowledge-repositories)) |
+| **Knowledge duplication** — the same fact lives in two places and they drift apart | *Single Source of Truth* ([Design principles](#design-principles) #6) |
+| **Agent lock-in** — the platform can no longer function if one model/vendor goes away | *Model Independence* via the LiteLLM gateway ([Design principles](#design-principles) #2; [The agent layer is replaceable](#the-agent-layer-is-replaceable)) |
+| **Hallucinated authority** — a temporary finding is treated as policy | Promotion workflow ([Knowledge governance](#knowledge-governance-how-knowledge-enters-moves-and-earns-authority)) |
+| **Vendor lock-in** — a proprietary format quietly makes the store unportable | *Open Standards First* ([Design principles](#design-principles) #3; open-formats-only store) |
+| **Backup drift** — backups exist but have never been proven to restore | Rehearsed restore drills ([Backup and recovery](#backup-and-recovery)) |
+| **Autonomous pollution** — an unattended process floods the corpus with noise | Operator-triggered ingestion only ([Knowledge extraction](#knowledge-extraction-operator-triggered); [no always-on ingestion](#scope-boundaries-what-this-deliberately-is-not)) |
+
+This is the summary index; the individual gotchas and their nuances live in
+[Edge Cases](#edge-cases).
 
 ## Interactions
 
@@ -925,6 +966,17 @@ Each is observable, so "is the brain working?" is a check, not an opinion.
   isolation — process/user isolation, separate credentials, independent backups,
   resource limits — never a casual co-tenant. A dedicated host remains the
   end-state; co-location is the temporary, deliberately-fenced start.
+- **"Owned" means control, not a box on residential broadband.** Ownership is
+  control of the data, credentials, and recovery path — not necessarily a machine
+  in the operator's home. Do **not** run the production knowledge store, gateway,
+  or any always-on service on a residential ISP line: consumer AUPs (Cox's, for
+  one) explicitly ban operating servers, block inbound port 80, and hand out
+  dynamic IPs often behind CGNAT — so a service meant to be durable and recoverable
+  is there both a ToS violation and operationally fragile. The unmanaged-VPS /
+  dedicated-host path (Hosting, above) is the correct home. Local hardware is fine
+  as a **client or secondary node** for development or offline sensitive work —
+  reached over Tailscale / WireGuard / a Cloudflare Tunnel for private access —
+  but never the system of record.
 - **Publishing knowledge-domain detail on a gated-but-hosted surface.** This
   page names real consulting and product domains. The ewiki is behind
   Cloudflare Access, not fully public, but it is still hosted off-box. Keep
@@ -942,7 +994,12 @@ Each is observable, so "is the brain working?" is a check, not an opinion.
   *Verification Is Required* already implies — run it through more than one model
   (or the same model on more than one backend) via the LiteLLM gateway and
   compare. That makes multi-model cross-checking a gateway-native verification
-  technique, not a reason to chase bit-exactness.
+  technique, not a reason to chase bit-exactness. The same instinct shows up
+  *inside* a single task: a **planner / judge / executor** split (a small judge
+  model gating the executor's tool calls) and a **re-ranking** pass that keeps only
+  the most relevant retrieved chunks in context are cheap reliability wins — direct
+  applications of *Verification Is Required* and *Context Must Be Routed* that need
+  no new machinery.
 - **Secrets management is the operator's now.** Model API keys, the Postgres
   credentials, and MCP tokens all live on the owned host. That is the point of
   ownership, but it means key rotation and least-privilege scoping become
@@ -1024,6 +1081,29 @@ Each is observable, so "is the brain working?" is a check, not an opinion.
   Provisional path: the in-server shim now, a real gateway when a second LLM
   surface or the brain platform justifies one. Still deferred to a code Work
   Packet — no code changed.
+- **2026-08-24 — Failure modes section + review polish.** Added a
+  [Failure modes](#failure-modes) index (failure → the on-page mitigation that
+  guards it) so a drift can be traced back to the guard meant to catch it. Review
+  polish alongside it: broke the dense Host paragraph into a scannable candidate
+  list, gated the accelerated-box purchase on a proven sensitive-domain workload
+  (*Incremental Automation*), and tightened the pilot security task to require
+  citable output grounded in the navigated governance corpus (*Retrieval Before
+  Generation*). Presentation and cross-referencing only — no **Locked**,
+  **Preferred**, or **Open** decision changed.
+- **2026-08-24 — further local-AI video review (confirmatory / framing).** Two
+  more 2026 sources reinforced the direction without changing it: Level1Techs'
+  *"KEEP AI LOCAL! Explaining Agentic AI and The Loop"* (2026-07-09) — a hands-on
+  Turnstone-on-Spark walkthrough (Docker install, role-based agents, native MCP, a
+  judge model gating tool calls, skills as verified bundles) — and Manolo Remiddi's
+  *"What You Actually Need for a Home AI Lab"* (2026-08-21), whose **hardware +
+  model + harness** mental model maps onto *knowledge permanent, agents
+  replaceable* (see [References](#references)). Added at **Preferred / Open** level:
+  the judge-gate + skill-as-bundle detail and the three-layer framing (agent
+  layer), an MCP-mediated system-inventory / config-review pilot instance (Pilot
+  scope), a planner / judge / executor + re-ranking note (Edge Cases), MoE /
+  quantization / reasoning-effort roster factors (Open Question 2), and a
+  residential-hosting (Cox AUP) caution (Edge Cases). No **Locked** decision
+  changed.
 
 ## Open Questions
 
@@ -1054,7 +1134,13 @@ is built.
    penalty at the cost of a pricier host. The exact roster (which hosted models,
    whether a local model is kept warm, CPU-only vs accelerated) is open and
    host-size-dependent; LiteLLM stays the single routing surface so any of these
-   is a config change, not a migration.
+   is a config change, not a migration. Practical roster factors from the 2026
+   local-AI field: prefer **mixture-of-experts** models for more capability per
+   active parameter (and per watt) than a dense model of the same footprint; use
+   **quantization** (NVFP4-class 4-bit) to fit larger weights in unified memory
+   without wrecking coherence; and tune the per-call **reasoning-effort / thinking
+   budget**, which lifts quality on the *same* model. All three are tuned at the
+   gateway and reopen no Locked row.
 3. **Host sizing, vendor, and when to split off production.** A dedicated host is
    the end-state; v1 co-locates on the existing box (D-24341). The lower tier for
    the eventual dedicated box is an ~8 GB / 2 vCPU class unmanaged Ubuntu 24.04
@@ -1064,7 +1150,10 @@ is built.
    a navigation-plus-vector brain that leans on hosted inference; the upper tier,
    if local reasoning quality on sensitive domains is wanted, is a unified-memory
    accelerated box (Spark / GB10 class — order $8–10k as of 2026-08 for a
-   dual-unit setup) that keeps inference on the box. *Still open:* the vendor and
+   dual-unit setup) that keeps inference on the box. Buying the accelerated box is
+   gated on a **real sensitive-domain workload that measurably benefits from local
+   reasoning quality** — not bought on spec (*Incremental Automation:* prove the
+   need before institutionalizing the hardware). *Still open:* the vendor and
    cost ceiling, which tier to buy, and the **trigger to move off the shared host
    to its own** — resource contention with the game server, a resident local
    model, concurrent load, or a larger vector corpus.
@@ -1111,3 +1200,13 @@ is built.
   reasoning quality, comparable to a ~7× costlier GPU cluster — making the
   *knowledge-permanent / agents-replaceable* bet cheaper to realize on owned
   hardware in 2026.
+- [Level1Techs — *KEEP AI LOCAL! Explaining Agentic AI and The Loop*](https://www.youtube.com/watch?v=QPT4qqoze2U)
+  (2026-07-09) — earlier operational confirmation of the local harness + MCP +
+  judge-gate pattern: a hands-on Turnstone-on-Spark walkthrough (Docker install,
+  role-based agents, native MCP, a judge model gating tool calls, skills as
+  verified bundles). The 2026-08-21 Dual Sparks video remains the primary
+  hardware/economics reference.
+- [Manolo Remiddi — *What You Actually Need for a Home AI Lab*](https://www.youtube.com/watch?v=sUEdvHxPKN0)
+  (2026-08-21) — framing source for the **hardware + model + harness** mental
+  model, plus practical texture on memory economics, MoE vs dense, quantization,
+  and reasoning-effort that informs the model-roster Open Question.
