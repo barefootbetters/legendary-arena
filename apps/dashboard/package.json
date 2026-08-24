@@ -6,10 +6,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/build-governance-snapshot.mjs && node scripts/build-coverage-ledger.mjs && node scripts/build-effect-index.mjs && vite build",
+    "build": "node scripts/build-governance-snapshot.mjs && node scripts/build-coverage-ledger.mjs && node scripts/build-effect-index.mjs && node scripts/build-par-fidelity.mjs && vite build",
     "prebuild:snapshot": "node scripts/build-governance-snapshot.mjs",
     "prebuild:coverage": "node scripts/build-coverage-ledger.mjs",
     "prebuild:effect-index": "node scripts/build-effect-index.mjs",
+    "prebuild:par": "node scripts/build-par-fidelity.mjs",
     "build:in-play-baseline": "node scripts/build-in-play-baseline.mjs",
     "roadmap:schedule": "node --import tsx scripts/roadmap-schedule-check.mjs",
     "preview": "vite preview",
