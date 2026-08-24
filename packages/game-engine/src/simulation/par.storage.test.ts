@@ -57,10 +57,14 @@ import {
   validateParStoreCoverage,
   writeSeedParArtifact,
   writeSimulationParArtifact,
+  writeParProfileArtifact,
+  readParProfileArtifact,
   type ParArtifactSource,
   type SeedParArtifact,
   type SimulationParArtifact,
 } from './par.storage.js';
+import { aggregateTurnDistributionProfile } from './par.profile.js';
+import type { PerGameSample } from './par.aggregator.js';
 
 const PAR_VERSION = 'v1';
 
@@ -1170,6 +1174,90 @@ describe('PAR artifact storage (WP-050)', () => {
       );
       assert.equal(driftErrors.length, 1);
       assert.equal(driftErrors[0]?.scenarioKey, scenarioKey);
+    } finally {
+      await removeWorkspace(workspace);
+    }
+  });
+});
+
+describe('PAR profile artifact (WP-596)', () => {
+  function makeProfileSamples(rawScore: number): PerGameSample[] {
+    const samples: PerGameSample[] = [];
+    for (let index = 0; index < 5; index++) {
+      samples.push({
+        turnCount: 15,
+        rawScore,
+        victoryPoints: 40,
+        bystandersRescued: 4,
+        schemeTwistCount: 3,
+        escapes: 0,
+        outcome: 'heroes-win',
+      });
+    }
+    return samples;
+  }
+
+  test('writes to a separate profile/<version>/ tree and round-trips', async () => {
+    const workspace = await createTempWorkspace();
+    try {
+      const scenarioKey = 'midtown-bank-robbery::magneto::brotherhood';
+      const profile = aggregateTurnDistributionProfile(
+        scenarioKey,
+        makeProfileSamples(-1200),
+        'CompetentHeuristic/v1',
+        4,
+      );
+      const relativePath = await writeParProfileArtifact(profile, workspace, PAR_VERSION);
+      // why: the profile lives in its own tree, never the seed/ or sim/ PAR trees.
+      assert.ok(
+        relativePath.startsWith(`profile/${PAR_VERSION}/`),
+        `expected a profile/${PAR_VERSION}/ path; got ${relativePath}`,
+      );
+
+      const readBack = await readParProfileArtifact(scenarioKey, workspace, PAR_VERSION);
+      assert.notEqual(readBack, null);
+      assert.equal(readBack!.derived, true);
+      assert.equal(readBack!.authoritative, false);
+      assert.deepEqual(readBack, { ...profile, derived: true, authoritative: false });
+    } finally {
+      await removeWorkspace(workspace);
+    }
+  });
+
+  test('overwrites an existing profile (regenerable — no lock-on-exist)', async () => {
+    const workspace = await createTempWorkspace();
+    try {
+      const scenarioKey = 'scheme::mm::vg';
+      const first = aggregateTurnDistributionProfile(
+        scenarioKey,
+        makeProfileSamples(0),
+        'p/v1',
+        1,
+      );
+      await writeParProfileArtifact(first, workspace, PAR_VERSION);
+
+      const second = aggregateTurnDistributionProfile(
+        scenarioKey,
+        makeProfileSamples(-2000),
+        'p/v1',
+        1,
+      );
+      // why: unlike the immutable PAR artifact, a second write must succeed
+      // (the profile is a regenerable derived diagnostic, D-24405).
+      await writeParProfileArtifact(second, workspace, PAR_VERSION);
+
+      const readBack = await readParProfileArtifact(scenarioKey, workspace, PAR_VERSION);
+      assert.equal(readBack!.bins[0]!.medianRawScore, -2000, 'read the overwritten profile');
+    } finally {
+      await removeWorkspace(workspace);
+    }
+  });
+
+  test('readParProfileArtifact returns null when the profile does not exist', async () => {
+    const workspace = await createTempWorkspace();
+    try {
+      const readBack = await readParProfileArtifact('no::such::scenario', workspace, PAR_VERSION);
+      assert.equal(readBack, null);
     } finally {
       await removeWorkspace(workspace);
     }

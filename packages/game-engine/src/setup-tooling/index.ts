@@ -37,6 +37,8 @@ export {
   resolveParForScenario,
   validateParStore,
   validateParStoreCoverage,
+  writeParProfileArtifact,
+  readParProfileArtifact,
   ParStoreReadError,
   PAR_ARTIFACT_SOURCES,
 } from '../simulation/par.storage.js';

@@ -524,6 +524,7 @@ export { createCompetentHeuristicPolicy } from "./simulation/ai.competent.js";
 export {
   aggregateParFromSimulation,
   generateScenarioPar,
+  generateScenarioParSamples,
   validateParResult,
   validateTierOrdering,
   generateSeedSet,
@@ -538,12 +539,25 @@ export {
 export type {
   ParSimulationConfig,
   ParSimulationResult,
+  PerGameSample,
   ParValidationIssue,
   ParValidationSeverity,
   ParValidationResult,
   TierOrderingResult,
   ParAggregationErrorCode,
 } from "./simulation/par.aggregator.js";
+
+// PAR turn-distribution profile (WP-596 / D-24405) — pure aggregation of
+// PerGameSample rows into the empirical sweet-spot curve; derived diagnostic,
+// no IO, runtime-safe.
+export {
+  aggregateTurnDistributionProfile,
+  PROFILE_MIN_BIN_SIZE,
+} from "./simulation/par.profile.js";
+export type {
+  ParTurnBin,
+  ParTurnDistributionProfile,
+} from "./simulation/par.profile.js";
 export {
   AI_POLICY_TIERS,
   AI_POLICY_TIER_DEFINITIONS,
@@ -608,4 +622,5 @@ export type {
   ParStoreValidationResult,
   ParStoreValidationError,
   ParCoverageResult,
+  ParProfileArtifact,
 } from "./simulation/par.storage.js";
