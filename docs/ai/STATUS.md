@@ -7,6 +7,14 @@
 
 ## Current State
 
+### WP-597 — PAR profile sweep + too-easy fidelity report + scoring-wiki render (EC-632 / D-24406) shipped (2026-08-23)
+
+The WP-596 follow-up. A new Shared-Tooling sweep, `scripts/generate-par-profiles.mjs`, runs the WP-596 turn-distribution pipeline across the whole active gauntlet season and emits a committed, ranked **fidelity report** (`data/par/profile/v1/fidelity-report.{json,md}`, alongside 128 per-scenario profiles) — the prioritization list for the ability-coverage work: which scenarios the current engine makes too easy, and which it cannot yet win.
+
+**First sweep (128 scenarios × 200 games, 0 skipped):** 122/128 are winnable by the competent AI. Most too-easy: `midtown-bank-robbery::red-skull::hydra` (100% win, first win by turn 7); several negative-zone / killbots / midtown legs also 100%-win by turn 8–9. The 6 zero-win outliers are all Legacy Virus (a resource-loss scheme) plus one Portals leg — content the current AI can't beat. **Honest finding:** the `monotoneImproving` flag fired for **0 of 128** scenarios under real per-scenario scoring (the strict non-increasing test is too sensitive), so **win rate + first-winning-turn** carry the ranking; a tolerance-based flag is a noted future refinement and the raw per-turn curve remains ground truth.
+
+**Surface = wiki:** `wiki/par-simulation-calibration.md` gains a section documenting the profile, the sweep, the real ranking, and the mono-flag caveat. Diagnostic only — never competitive PAR, no engine/runtime change, deterministic (re-run byte-identical). The interactive `/coverage` dashboard render is the deferred next step. D-24406 Active.
+
 ### WP-596 — PAR turn-distribution profile / the empirical sweet-spot curve (EC-631 / D-24405) shipped (2026-08-23)
 
 **No user-observable change — infrastructure only.** The payoff is a derived per-scenario turns-vs-score distribution artifact + the engine seam that produces it, which a later follow-up WP renders (`/coverage` or the scoring wiki) and a cross-scenario sweep uses to rank degenerate ("too-easy") scenarios.
