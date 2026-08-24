@@ -38270,3 +38270,19 @@ _Active 2026-08-23 — landed at WP-596 execution (EC-631). Shipped exactly as l
 **Surface.** `scripts/generate-par-profiles.mjs` (+ its `.test.ts`); `data/par/profile/v1/**`; `wiki/par-simulation-calibration.md`.
 
 _Active 2026-08-23 — landed at WP-597 execution (EC-632). First sweep: 128 scenarios × 200 games, 0 skipped, 122/128 winnable. Top too-easy `midtown-bank-robbery::red-skull::hydra` (100% win, first win turn 7); 6 zero-win outliers (Legacy Virus ×5 + one Portals leg). Honest finding: `monotoneImproving` fired 0/128 under real per-scenario scoring (the strict non-increasing test is too sensitive) — win-rate + first-winning-turn carry the ranking; a tolerance-based flag is a future refinement, and the raw per-turn curve remains ground truth. Determinism verified (re-run byte-identical). Committed footprint ~968K (128 profiles + report). Diagnostic only — no engine/runtime change; the `/coverage` dashboard render is the deferred follow-up. Hard-dep WP-596._
+
+### D-24407 — /coverage PAR Fidelity Panel (Drafted 2026-08-23; not yet landed — WP-598 / EC-633)
+
+**Context.** WP-597 committed the PAR sweep artifacts and rendered them only on the ewiki, deferring the interactive dashboard render. This decision locks that render: a PAR Fidelity panel on the operator `/coverage` page.
+
+**Decision.**
+1. **Panel.** A new `PAR Fidelity` section on `apps/dashboard/src/pages/coverage/CoveragePage.vue`: summary stat tiles (scenarios swept, % winnable, too-easy vs unwinnable counts) + a ranked **too-easy** table (win rate, first-winning turn, `monotoneImproving`, stuck-at-cap) + a **click-to-expand per-scenario turns-vs-score sweet-spot curve** (median Raw Score + a p25/p75 band). Appended to the existing page (no new route/nav), reusing its scoped `.summary`/`.headline`/`.count-chip`/`.cov-table` classes.
+2. **Data path.** The committed `data/par/profile/v1/fidelity-report.json` + the 128 per-scenario profiles are bundled into the dashboard at build time via a new `scripts/build-par-fidelity.mjs` writing a single combined `src/data/par-fidelity.json` keyed by scenarioKey (the WP-487/WP-259 effect-index/coverage precedent — gitignored generated data, never committed), read by a new `useParFidelity` cast composable (a plain TS interface, **no `zod`** added to the dashboard). NOT R2, NOT a runtime fetch, NOT mock-toggled.
+3. **Chart.** `ParSweetSpotChart.vue` renders via the existing `echarts` + `vue-echarts` `BaseChart.vue`, mirroring `SweepTrendChart.vue` (theme-color reading + `dashboard-theme-change`). The y-axis admits negative values (`medianRawScore` is a golf score; lower is better).
+4. **Diagnostic framing.** The panel is labeled a fidelity diagnostic, never competitive PAR — consistent with D-24405/D-24406 and the calibration wiki.
+5. **Gates.** `vue-tsc` typecheck + `test:coverage` (lines 90 / branches 80 / functions 88) + `check-generated-data` guard on the new bundle + a `prebuild:par` step added to the `ci.yml` Dashboard Gates job before typecheck. The build script never throws (empty stub with an `error` field on a missing source).
+6. **Boundary.** App-layer only — read-only render of committed data; no engine/scoring/G/server/API change, no new route/nav.
+
+**Surface.** `apps/dashboard/scripts/build-par-fidelity.mjs`; `apps/dashboard/src/types/parFidelity.ts`; `apps/dashboard/src/composables/useParFidelity.ts`; `apps/dashboard/src/components/charts/ParSweetSpotChart.vue`; `apps/dashboard/src/pages/coverage/CoveragePage.vue`; the dashboard wiring + `.github/workflows/ci.yml`.
+
+_Drafted 2026-08-23; not yet landed. Flips to Active at WP-598 execution (EC-633). Hard-dep WP-597._
