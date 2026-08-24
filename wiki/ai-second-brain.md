@@ -239,10 +239,13 @@ Ubuntu 24.04 LTS  (dedicated host is the end-state; co-located w/ prod OK to boo
 > so every real coach call returned `coach_unavailable` until the EC-629 hotfix
 > (PR #1599, 2026-08-24) disabled thinking — precisely the kind of model-specific
 > config the gateway should absorb, so a future model swap does not re-inherit
-> the last model's workaround. Migrating this call behind the gateway is the
-> first end-to-end demonstration of the replaceable-agent claim on live traffic.
-> A code Work Packet would carry the actual move (route `coachClient.ts` through
-> a LiteLLM endpoint, drop the hardcoded model id); this page records the intent.
+> the last model's workaround. Migrating this call behind a model-routing layer
+> is the first end-to-end demonstration of the replaceable-agent claim on live
+> traffic. A code Work Packet carries the actual move; the options and tradeoffs
+> — an in-server routing shim now vs. a hosted or self-hosted LiteLLM gateway
+> later — are laid out in
+> [Gateway routing for the endgame coach](#gateway-routing-for-the-endgame-coach-decision-sketch).
+> This page records the intent, not the mechanism.
 
 ### Retrieval strategy: navigation first, vector where it earns its keep
 
@@ -589,6 +592,52 @@ the knowledge base is not:
 
 Because the models reach the knowledge only through MCP and the gateway, a model
 swap is a configuration change, not a data migration. The corpus never moves.
+
+### Gateway routing for the endgame coach (decision sketch)
+
+The [endgame coach](#proposed-stack) is named as the first proof point of the
+replaceable-agent claim — but "route it through LiteLLM" is not a single option,
+it is a small decision, because the coach runs on the **Render game server**
+(`apps/server`, `api.legendary-arena.com`), *not* on the brain host. Two facts
+set the shape of the choice:
+
+- **The call is fail-soft and post-game.** Any error returns `coach_unavailable`
+  and the endgame card renders without the coaching ([D-24403](../docs/ai/DECISIONS.md#d-24403));
+  it fires after the match, never inside it. So the reliability/latency bar is
+  **low** — a slow or down gateway degrades one optional panel, it never breaks a
+  match. That *widens* the option set rather than narrowing it.
+- **The server is Node/TypeScript; LiteLLM's in-process library is Python.** The
+  Node server can therefore consume LiteLLM only as a **proxy** (an HTTP
+  endpoint) or lean on a **hosted** gateway — never the library in-process. An
+  in-server "shim" is hand-written Node, *not* LiteLLM.
+
+The options, cheapest first:
+
+| Option | New infra to run | Model swap w/o code change? | Per-model quirks out of `coachClient.ts`? | Best when |
+|---|---|---|---|---|
+| **A. Status quo** — direct Anthropic, model hardcoded | none | ❌ | ❌ | never the end-state; it is the thing being replaced |
+| **B. In-server routing shim** — a small Node module owns the model id + per-model config (thinking / output budget), read from env | none | ✅ (env / config) | ✅ | *now* — one LLM surface; lowest cost; delivers the principle with no infra |
+| **C. Hosted gateway** (e.g. OpenRouter) | none (external dependency) | ✅ | ✅ | you want a real gateway with zero ops and accept a third party in the path |
+| **D1. Self-hosted LiteLLM on Render**, beside `apps/server` | one small service, co-located | ✅ | ✅ | a second LLM surface appears and you want ownership + cost control near the server |
+| **D2. Self-hosted LiteLLM on the brain host** (NameHero) | one service, cross-host | ✅ | ✅ | the AI Second Brain platform is built and already runs the gateway |
+
+**Recommendation.** Take **B now.** It is the model-independence *principle*
+(model as config; quirks off the feature client) at the cost of a small, testable
+Node module and no new infrastructure — the right size for a single LLM surface.
+Promote to a **real gateway (C or D)** only when a *second* LLM surface appears,
+or the brain platform is built and already runs one; that is when a shared
+gateway earns its operating cost. If self-hosting LiteLLM for the coach, prefer
+**D1 (co-located on Render)** over **D2 (the brain host)**: even fail-soft,
+pointing the live game server at the brain host couples two things the
+architecture deliberately keeps separate (see
+[Co-hosting during bootstrap](#edge-cases)), for no benefit the coach needs.
+LiteLLM on the brain host is for the *brain's* agents, not for a game-server
+feature reaching across the network.
+
+> **This does not change the Locked architecture.** The platform's gateway choice
+> (LiteLLM) stays a **Preferred** row; this sketch is about *one app surface's*
+> routing, deferred to a code Work Packet. The proof-point claim holds under every
+> option B–D — the coach's model becomes swappable without an engine edit.
 
 ### Operating discipline
 
@@ -967,6 +1016,14 @@ Each is observable, so "is the brain working?" is a check, not an opinion.
   Questions 3). The architecture locks ownership and open formats, never a
   provider — so this is a **Preferred**-level refinement, not an architecture
   change.
+- **2026-08-24 — coach gateway-routing decision sketched.** The options for
+  giving the coach model-independence (status quo / in-server shim / hosted
+  gateway / self-hosted LiteLLM, Render-co-located or on the brain host) and their
+  tradeoffs are recorded in
+  [Gateway routing for the endgame coach](#gateway-routing-for-the-endgame-coach-decision-sketch).
+  Provisional path: the in-server shim now, a real gateway when a second LLM
+  surface or the brain platform justifies one. Still deferred to a code Work
+  Packet — no code changed.
 
 ## Open Questions
 
@@ -1017,16 +1074,18 @@ is built.
    [Scope boundaries](#scope-boundaries-what-this-deliberately-is-not)). *Gate:*
    do not consider it until the navigation + vector base has been used for real
    work and the recovery path has been rehearsed.
-5. **Route the endgame AI coach through the gateway (model-independence proof
-   point).** The coach ships wired direct to the Anthropic Messages API with
+5. **Give the endgame coach model-independence (first proof point) — by which
+   route?** The coach ships wired direct to the Anthropic Messages API with
    `claude-sonnet-5` hardcoded and a Sonnet-5 `thinking:disabled` workaround baked
-   into `coachClient.ts` (see [Proposed stack](#proposed-stack) and History).
-   *Decision:* a code Work Packet to route `coachClient.ts` through a LiteLLM
-   endpoint — model becomes routing config, and per-model quirks (disable extended
-   thinking / bounded output for structured JSON) move to the gateway that owns
-   model-specific behaviour. This is the first end-to-end demonstration of the
-   replaceable-agent claim on live traffic; it is deferred, not gated, and does
-   not block any earlier item.
+   into `coachClient.ts` (see [Proposed stack](#proposed-stack) and History). The
+   options and tradeoffs — status quo / in-server shim / hosted gateway /
+   self-hosted LiteLLM (Render-co-located or on the brain host) — are laid out in
+   [Gateway routing for the endgame coach](#gateway-routing-for-the-endgame-coach-decision-sketch).
+   *Provisional path:* a code Work Packet takes the **in-server routing shim**
+   first (model + per-model quirks become config, no new infra), promoting to a
+   real gateway (hosted, or self-hosted LiteLLM co-located on Render) only when a
+   second LLM surface or the built brain platform justifies one. Deferred, not
+   gated; blocks nothing earlier.
 
 ## References
 
