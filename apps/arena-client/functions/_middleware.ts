@@ -18,6 +18,19 @@
  * because `public/_headers` marks `/assets/*` immutable for a year — was
  * cached by Cloudflare against the asset URL and poisoned every visitor.
  *
+ * ROUTING DEPENDENCY (why `public/_routes.json` exists): this guard only
+ * protects `/assets/*` if the Function actually RUNS on those paths. Without
+ * an explicit `_routes.json`, Cloudflare Pages auto-generates one whose
+ * optimizer excludes the physical `/assets/` build directory from Function
+ * invocation — so the middleware ran on `/` and SPA routes (profile-meta
+ * worked) but was silently bypassed for `/assets/*`, leaving the poisoning
+ * guard shipped-but-dead and letting the 2026-08-10 incident recur on
+ * 2026-08-23. `public/_routes.json` pins `include: ["/*"]` so the Function is
+ * the entry point for every path, including `/assets/*`. Real, cached assets
+ * are still served from the edge cache without invoking the Function (a HIT
+ * never reaches Pages), so the guard only runs on the cache MISS that is the
+ * exact deploy-race window it must catch. Do NOT remove `_routes.json`.
+ *
  * Every other request — no `?profile=`, non-HTML response, non-GET method,
  * malformed handle, and any API non-200 / timeout / error — passes the
  * unmodified asset response straight through (fail-soft). The middleware
