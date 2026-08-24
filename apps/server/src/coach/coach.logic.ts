@@ -20,6 +20,8 @@
  * Authority: WP-594 §Contract; EC-629; D-24403.
  */
 
+import { evaluateEndgame } from '@legendary-arena/game-engine';
+
 import { getEntitlementsForAccount } from '../entitlements/entitlements.logic.js';
 import { findReplayOwnershipForAccount } from '../identity/replayOwnership.logic.js';
 import { findCompetitiveScore } from '../competition/competition.logic.js';
@@ -114,9 +116,25 @@ export async function generateOrGetCoachReport(
     return { ok: false, reason: 'not_found' };
   }
 
+  // why: the true match outcome comes from evaluateEndgame over the reduced state
+  // — the only source that distinguishes a `tie` (a deck ran out with no winner)
+  // from a win/loss. Wrapped so a malformed/partial reduced state can never break
+  // the coach: on any evaluation miss we fall back to the breakdown's matchLost
+  // flag (scheme-wins vs heroes-win), which is what the summary used before.
+  let outcome: Parameters<typeof buildCoachMatchSummary>[2];
+  try {
+    outcome =
+      evaluateEndgame(reduced.finalState)?.outcome ??
+      (scoreRecord.scoreBreakdown.inputs.matchLost === true ? 'scheme-wins' : 'heroes-win');
+  } catch {
+    outcome =
+      scoreRecord.scoreBreakdown.inputs.matchLost === true ? 'scheme-wins' : 'heroes-win';
+  }
+
   const summary = buildCoachMatchSummary(
     reduced.finalState,
     scoreRecord.scoreBreakdown,
+    outcome,
     deps.resolveCardName,
   );
 
