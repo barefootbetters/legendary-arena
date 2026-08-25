@@ -65,7 +65,7 @@ export interface ScoreGradeBand {
 // scale a competent win lands near PAR (0), and Final is driven by how far the team's
 // VP beats the scheme's expected VP (roughly ±10 per net VP). These narrower bands put
 // a solid win at B, a strong game at A, an exceptional one at Legendary, a weak win at
-// C, and a loss (via the +600 LOSS_PENALTY) at D/F. INTERIM / operator-tunable — a
+// C, and a loss (via the +800 LOSS_PENALTY) at D/F. INTERIM / operator-tunable — a
 // display-legibility choice, NOT a scoring-formula change; validated against the 13
 // real anchor games (Final = raw − scheme-PAR): a 34-bystander Midtown win lands A, a
 // competent win sits near PAR (B), a bystander-heavy loss (via the +800 LOSS_PENALTY)
