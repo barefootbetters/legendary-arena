@@ -7,6 +7,16 @@
 
 ## Current State
 
+### WP-607 — Deck Probability Panel MVP: Phase-1 card counter (EC-642 / D-24418) shipped (2026-08-25)
+
+The first client consumer of WP-606 — the Phase-1 MVP of the [Deck Probability Panel](../../wiki/deck-probability-panel.md) (the plain card counter, per the ewiki page's MVP-first phasing). A new collapsible panel now appears on the play surface showing the villain deck's remaining make-up and the viewer's own draw-pool count.
+
+**Component (`apps/arena-client`):** a new `DeckProbabilityPanel.vue` mounted once in `PlayViewport.vue` (the `HollowEffectsPanel` fixed-overlay idiom + a local `isExpanded` toggle), reading the WP-606 projection from the `useUiStateStore` snapshot. Collapsed it is a "Deck odds" toggle; expanded it shows (1) the **villain deck upcoming-risk breakdown** — `decks.villainDeckComposition` categorized client-side by ext_id prefix into the five `RevealedCardType` buckets, each with a remaining count + next-draw odds (`count / villainDeckSize`); and (2) the viewer's **own draw pool** total + a best-effort by-name tally (`deckComposition`, owner selected via the `handCards` redaction marker; names harvested from the viewer's own display arrays, un-resolvable → "Unknown"). All math is the pure, unit-tested `deckProbability.ts`.
+
+**Guardrails held:** client-side advisory only — the panel imports engine **types only** (no runtime `@legendary-arena/game-engine`/`boardgame.io`/registry import), never `ctx.random`, never writes game state; it self-hides (`v-if hasData`) when the WP-606 fields are absent (spectator / pre-populate frame). Villain categorization is by ext_id prefix (villain-last fallback); the **Killbots `bystander→villain` override** (`G.convertedOrigins`, unprojected) is a **documented Phase-1 miscount**, pinned by test. No engine change (WP-606 types already client-reachable via the barrel).
+
+**Boundary / verification:** arena-client only — no engine/`G`/`ctx`/scoring/`boardgame.io`/registry-runtime touch, no hash surface. arena-client `typecheck` (vue-tsc) 0; arena-client suite **1455/1455** (+8: util + component); `pnpm -r build` 0. Diff = exactly the 5-file allowlist. **D-24418 flipped Drafted → Active.** **D-24026 live-verify: operator-pending** — verify on deployed `play.legendary-arena.com`, in a real match, that the panel shows the villain remaining-per-type + odds + own draw-pool count and collapses/expands. Later phases (hand projection / Monte Carlo, pace/outlook, deck health) are follow-on WPs.
+
 ### WP-606 — UIState draw-pool composition projection (EC-641 / D-24417) shipped (2026-08-25)
 
 **No user-observable change — infrastructure only.** The payoff is the read-only data the follow-on Deck Probability Panel UI WP consumes; no player sees any difference after this deploys. The two new fields are dark until that panel wires them.
