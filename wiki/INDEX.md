@@ -1,7 +1,7 @@
 # Wiki Index
 
-> **62 / 76** entity pages.
-> Last regenerated: 2026-08-24.
+> **64 / 76** entity pages.
+> Last regenerated: 2026-08-25.
 > See [SCHEMA.md](SCHEMA.md) for the entity-page contract and
 > [README.md](README.md) for purpose, conventions, and authority —
 > including [§ Tradeoffs](README.md#tradeoffs) on what the LLM-wiki
@@ -291,6 +291,26 @@ Cross-cutting governance, methodology, and readiness assessments.
   [PAR simulation](par-simulation-calibration.md) performs it, and the
   dopamine / narrative frameworks promise to reward it. Verified against the
   v23 rules; the synergy math is illustrative, not calibrated.
+- [Deck Probability Panel](deck-probability-panel.md) — *(draft)* proposed
+  collapsible side panel for deck inventory and draw odds on
+  `play.legendary-arena.com`: per-player pools + one shared villain panel
+  (cooperative table talk removes the hidden-info objection), a bystanders
+  line (rescue points vs blockers), whole-**hand** projection as expected
+  value + range (Monte Carlo in a worker), reshuffle "pool-not-sequence"
+  honesty, and a **pace indicator** projecting on-pace / falling-behind
+  against the wound/twist clock. Layers a little probability history
+  (Pascal–Fermat, Huygens, Franklin). Client-side read-only advisory —
+  never authoritative, never `ctx.random`. Proposes a feature; a WP owns the
+  build.
+- [Awards and Badges](awards-and-badges.md) — *(draft)* the design point of
+  view for achievements: **reward cooperation, not selfish scoring.**
+  Grounded in the psychology of achievement (Napoleon's ribbon, Franklin's
+  "infallible rule," Deci & Ryan's Self-Determination Theory, the
+  overjustification effect → reward the goose, not the eggs) and the
+  cooperative-badge shapes it implies — team-only plays, un-farmable
+  **shared/table** badges, **retroactive** awards, **tiered** 5/4/3/2 team
+  badges, and a solo mastery lane. States a point of view; a WP + DECISIONS
+  owns any real system.
 
 ## Tutorial
 

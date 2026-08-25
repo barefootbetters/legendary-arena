@@ -18,12 +18,14 @@ related:
   - newsletter-authoring.md
   - legendary-arena-tribe-and-trust.md
   - monetization-model.md
+  - deck-probability-panel.md
+  - awards-and-badges.md
 status: draft
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\soul-of-legendary-arena.md (this page — https://ewiki.legendary-arena.com/soul-of-legendary-arena/)
   - ../docs/01-VISION.md
   - ../docs/ai/DECISIONS.md
-last-reviewed: 2026-08-14
+last-reviewed: 2026-08-25
 ---
 
 # Soul of Legendary Arena
@@ -444,6 +446,43 @@ set, not as a mutation of first-edition cards. Growth by addition is a
 [primary vision goal](vision.md#primary-goals-non-negotiable-15) (Longevity
 & Expandability), and it is the technical expression of "honor, don't
 overwrite."
+
+### Soul, not candy — content that carries its weight
+
+There is a second axis to soul, beside lineage. A scheme or a mastermind can
+be *candy* — flavor with no weight, a themed skin over a stat block, the
+Disneyland version where nothing is really at stake — or it can have *soul*,
+which is what happens when the content is anchored to something real enough
+to be researched, measured, and told honestly. The test is a shape, not a
+subject: **a promise was made, the promise can be measured, and the
+consequences get shown** — the good and the ugly alike.
+
+Real history supplies that shape with receipts. Rome's is the cleanest: an
+economy built on conquest cannot stop conquering, because the plunder of each
+campaign funds the next. It is a promise of perpetual growth, and when
+expansion finally stalls in the second century the whole model strains under
+its own arithmetic. Prohibition is the same shape in miniature — a promise of
+public virtue that delivered organized crime instead. Neither is a contested
+talking point dressed as history; the fiscal mechanics and the body of
+consequence are documented, which is exactly what lets them carry weight
+rather than merely decorate. That documentation *is* the discipline — the
+line between soul and a political axe is whether the receipts are real.
+
+Content like that can *alienate* — weight always can, where candy never does
+— and that risk is taken on deliberately. A game that only ever reaches for
+the frictionless version has chosen Disneyland; a game willing to let its
+antagonists mean something accepts that meaning has an edge. This page comes
+down on the side of weight, for the same reason it comes down on the side of
+lineage: soul is what is left when you refuse the flattering, frictionless
+option.
+
+This is the same "soul with receipts" instinct the wiki now applies to
+*features*, not just antagonists — the probability history layered into the
+[Deck Probability Panel](deck-probability-panel.md) (Pascal, Fermat,
+Huygens) and Franklin's "infallible rule" behind
+[Awards and Badges](awards-and-badges.md) are small, sourced anchors of the
+identical kind. Honor the past by rendering it faithfully; give content
+weight by grounding it in a real arc. They are one instinct.
 
 ### How the soul actually reaches a player
 
