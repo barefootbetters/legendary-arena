@@ -209,26 +209,31 @@ a deck via `gainWound` (→ discard) or a draw (→ hand) and are never played i
 in-play. It self-narrates via `pushLog` (keyword-less → no reverse-map, no
 `VillainEffectResult`).
 
-**Thinning weak cards off every deck top is a beneficial villain Fight
-(D-24332).** The `ko-cullable-each-deck-top` primitive — Melter's (Masters of
-Evil) *"Fight: Each player reveals the top card of their deck. For each card,
-you choose to KO it or put it back."* — is the sixteenth primitive: keyword-less,
-no-param, auto-resolve. Each player (sorted, for replay determinism) reveals the
-top card of their deck, reshuffling their discard into the deck first when it is
-empty (the standard reveal-reshuffle rule, shared with `scry-ko-own-deck`,
-D-24285). The printed per-card **KO-or-keep** choice collapses to a rational
-cooperative chooser: KO the revealed card only when it is **cullable** — a Wound
-or a basic starting S.H.I.E.L.D. card (Agent / Trooper) — and **keep** every real
-Hero and the recruited S.H.I.E.L.D. Officer on top. "Cullable" is the same
-worst-worthy set the interactive `scry-ko-own-deck` auto-pick uses (D-24267,
-tiers 1–2); the tier-3 lexical fallback is deliberately excluded, because
-Melter's keep-option means an un-cullable top is simply left in place rather than
-force-KO'd. Because a real Hero is **never** force-KO'd, this auto-resolve carries
-no agency loss — the failure mode that made `scry-ko-own-deck` an *interactive*
-pending choice (WP-470/D-24282: its must-KO-one rule could destroy a real Hero
-when both revealed cards were Heroes) cannot arise here — so there is no pending
-choice, no player-selection UI, and no client change. It self-narrates via
-`pushLog` (keyword-less → no reverse-map, no `VillainEffectResult`).
+**Choosing to KO or keep every deck top is an interactive villain Fight
+(D-24413, supersedes D-24332).** The `ko-cullable-each-deck-top` primitive —
+Melter's (Masters of Evil) *"Fight: Each player reveals the top card of their
+deck. For each card, you choose to KO it or put it back."* — is the sixteenth
+primitive: keyword-less, no-param. Each player (sorted, for replay determinism)
+reveals the top card of their deck, reshuffling their discard into the deck first
+when it is empty (the standard reveal-reshuffle rule, shared with
+`scry-ko-own-deck`, D-24285). It then **parks a pending choice** for the fighting
+(active) player — a snapshot of every revealed `{ ownerPlayerID, cardId }`, KOing
+nothing yet — and the player resolves each card **KO-or-keep** via
+`resolveMelterKoChoice`: KO removes the card from its owner's deck top, keep leaves
+it face-up on top (a no-op — the reveal never removed it). This mirrors the WP-470
+interactive `scry-ko-own-deck` machinery end-to-end: a `PendingMelterKoChoice` on
+`G`, a block-all guard that freezes every deck top while pending (so the snapshot
+cannot drift), a `pendingMelterKoChoice` UIState projection redacted to the chooser,
+and a `PendingMelterKoChoicePrompt.vue` client prompt — the three ship together (a
+pending choice without a projection + prompt would hard-freeze the match). The
+original WP-519 auto-resolve (D-24332) collapsed the choice deterministically to
+"KO only cullable cards" (Wounds / basic S.H.I.E.L.D. starters, the `selectScryKoTarget`
+tiers-1–2 worst-worthy set, D-24267); that judgment now survives **only** as the
+`getLegalMoves` bot/sim default-pick (`keep = !isCullableDeckTopCard(cardId)`), so
+bot / replay / PAR runs reproduce the WP-519 outcome byte-identically and only live
+human play gains the prompt. The park self-narrates via `pushLog` (keyword-less →
+no reverse-map, no `VillainEffectResult`); each KO/keep decision narrates its own
+line.
 
 **Counting the HQ by trait (D-24334).** The
 `capture-bystanders-plus-per-hq-hero-by-trait` primitive — co2e Baron Zemo's
@@ -533,7 +538,8 @@ handler reads as *applied* while the real Scheme Twist fires elsewhere.
 - WP-481 (D-24287) — the `become-scheme-twist` villain primitive (ninth primitive; an escaping villain fires a Scheme Twist)
 - WP-485 (D-24290) / WP-494 (D-24299) / WP-503 (D-24307) — the auto-resolve `draw-cards-current`, `ko-heroes-current-by-trait`, `rescue-bystanders-current-by-trait-count`, `gain-wound-unless-victory-villain-group`, and `override-next-hand-size` villain primitives (tenth–fourteenth)
 - WP-516 (D-24329) — the `ko-wounds-current-hand-and-discard` villain primitive (fifteenth; Ymir's Fight KOs the current player's Wounds from hand + discard)
-- WP-519 (D-24332) — the `ko-cullable-each-deck-top` villain primitive (sixteenth; Melter's Fight reveals every player's deck top and KOs the cullable ones — Wounds / basic S.H.I.E.L.D. starters — keeping real Heroes)
+- WP-519 (D-24332) — the `ko-cullable-each-deck-top` villain primitive (sixteenth; Melter's Fight reveals every player's deck top and KOs the cullable ones — Wounds / basic S.H.I.E.L.D. starters — keeping real Heroes) — **superseded by WP-603/D-24413** (below)
+- WP-603 (D-24413) — Melter's Fight upgraded from the D-24332 auto-resolve to the **interactive** per-card KO/keep choice (`PendingMelterKoChoice` + `resolveMelterKoChoice` + `pendingMelterKoChoice` UIState + `PendingMelterKoChoicePrompt.vue`, the WP-470 scry-ko machinery); `isCullableDeckTopCard` survives only as the bot/sim default-pick so bot/replay/PAR stay byte-identical
 - WP-521 (D-24334) — the `capture-bystanders-plus-per-hq-hero-by-trait` villain primitive (seventeenth; co2e Baron Zemo's Ambush captures 1 Bystander + 1 per HQ Hero matching a trait — the first HQ-by-trait count; attach-only at Ambush, award on defeat)
 - WP-522 (D-24335) — the `give-hq-hero-by-trait-to-current` villain primitive (eighteenth; co2e Ultron's Fight removes the highest-cost `[hc:tech]` HQ Hero and gives it to the current player's discard, refilling the slot — the KO-or-gift choice auto-resolves to the dominant gift)
 - WP-523 (D-24336) — the `swap-two-city-villains` villain primitive (nineteenth; co2e Whirlwind's Ambush swaps the lowest-index and highest-index villain-occupied City spaces — the first City board-position manipulation; henchmen excluded, fewer than two Villains is a no-op)

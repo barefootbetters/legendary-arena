@@ -531,6 +531,49 @@ export interface PendingScryKoChoice {
 }
 
 /**
+ * One revealed deck-top card in a pending Melter KO/keep choice (WP-603 / D-24413):
+ * which player owns the deck it sits on top of, and its ext_id.
+ *
+ * // why: the pair `{ ownerPlayerID, cardId }` is the unit of choice. `ownerPlayerID`
+ * is load-bearing (not decorative): starter ext_ids like `starting-shield-agent` are
+ * SHARED across every player's deck, so `cardId` alone cannot say WHICH player's deck
+ * top a decision targets. The resolve move keys on both.
+ */
+export interface MelterRevealedTop {
+  /** The player whose deck top this card is. */
+  ownerPlayerID: string;
+  /** The revealed deck-top card's ext_id (snapshotted at park time). */
+  cardId: CardExtId;
+}
+
+/**
+ * Pending Melter Fight KO/keep player choice state (WP-603 / D-24413; supersedes the
+ * WP-519 / D-24332 auto-resolve).
+ *
+ * Created when the core Melter villain's Fight ("Each player reveals the top card of
+ * their deck. For each card, you choose to KO it or put it back.") is fought: the
+ * handler reveals every player's deck top and appends ONE entry for the FIGHTING
+ * (active) player, carrying the snapshot of every revealed `{ ownerPlayerID, cardId }`.
+ * Front-popped by resolveMelterKoChoice once every revealed card has been resolved
+ * (each KO/keep decision removes one entry from `revealedTops`). Must be undefined or
+ * empty at every turn-end (enforced by the block-all guards).
+ *
+ * // why: D-24413 mirrors the WP-470 / D-24282 scry-ko SNAPSHOT discipline (not the
+ * ko-hero recompute): the block-all guard freezes every player's deck top while the
+ * choice is pending, so the snapshot cannot drift, and a KO removes the card by its
+ * owner+ext_id (outcome-identical). "Keep" is a no-op — the reveal never removed the
+ * card, so putting it back is leaving it on top.
+ */
+export interface PendingMelterKoChoice {
+  /** Discriminant; always 'melter-ko'. */
+  choiceType: 'melter-ko';
+  /** The fighting (active) player who chooses KO-or-keep for every revealed card. */
+  playerID: string;
+  /** Each player's revealed deck top, still awaiting a KO/keep decision (snapshot). */
+  revealedTops: MelterRevealedTop[];
+}
+
+/**
  * Pending discard-to-limit player choice state (WP-476 / D-24284).
  *
  * Created when Magneto's Master Strike ("Each player reveals an [team:x-men]
@@ -1091,6 +1134,18 @@ export interface LegendaryGameState {
   // both mean "no pending choice" (guards test `.length`).
   /** FIFO queue of pending Doombot scry-KO choices awaiting player resolution (WP-470). */
   pendingScryKoChoices?: PendingScryKoChoice[] | undefined;
+
+  // why: WP-603 / D-24413 — FIFO queue of pending Melter Fight KO/keep choices (at
+  // most one, parked for the fighting player when Melter's Fight reveals ≥1 deck
+  // top). Entries are appended by villainEffectKoCullableEachDeckTop's park branch;
+  // front-popped by resolveMelterKoChoice once every revealed card has been resolved.
+  // Must be undefined or empty at every turn-end. Runtime-only, never persisted
+  // (snapshots stay counts-only), mirroring pendingScryKoChoices; **lazily
+  // initialized at the park site, never in Game.setup**. Optional so existing test
+  // state literals need no update. Absent (undefined) or empty [] both mean "no
+  // pending choice" (guards test `.length`).
+  /** FIFO queue of pending Melter Fight KO/keep choices awaiting player resolution (WP-603). */
+  pendingMelterKoChoices?: PendingMelterKoChoice[] | undefined;
 
   // why: WP-476 / D-24284 — FIFO queue of pending discard-to-limit choices (at
   // most one per Magneto Master Strike, parked ONLY for the current player who

@@ -9,6 +9,7 @@ import { HAND_SIZE, drawCardsIntoHand } from './moves/drawCards.logic.js';
 import { resolveHeroChoice } from './moves/heroChoice.resolve.js';
 import { resolveKoHeroChoice, hasPendingKoHeroChoice } from './moves/koHeroChoice.resolve.js';
 import { resolveScryKoChoice, hasPendingScryKoChoice } from './moves/scryKoChoice.resolve.js';
+import { resolveMelterKoChoice, hasPendingMelterKoChoice } from './moves/melterKoChoice.resolve.js';
 import { resolveDiscardChoice, hasPendingDiscardChoice } from './moves/discardChoice.resolve.js';
 import { resolvePutCardsOnDeckChoice, hasPendingPutCardsOnDeckChoice } from './moves/putCardsOnDeckChoice.resolve.js';
 import { resolveReorderChoice, hasPendingReorderChoice } from './moves/reorderChoice.resolve.js';
@@ -116,6 +117,11 @@ function advanceStage({ G, events }: MoveContext): void {
   // so the player picks which revealed card to KO before any other action. Mirrors
   // the D-24008 KO-hero check above (both freeze the cleanup turn-end too).
   if (hasPendingScryKoChoice(G)) { return; }
+  // why: block-all guard (WP-603 / D-24413) — while a Melter Fight KO/keep choice is
+  // pending the board is frozen; advanceStage (at any stage) returns with no side
+  // effects so the fighting player resolves every revealed deck top before any other
+  // action. Mirrors the scry-ko check above (also freezes the cleanup turn-end).
+  if (hasPendingMelterKoChoice(G)) { return; }
   // why: block-all guard (WP-476 / D-24284) — while a discard-to-limit choice is
   // pending the board is frozen; advanceStage (at any stage) returns with no side
   // effects so the current player picks which cards to discard. A choice parked at
@@ -458,6 +464,12 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     // (client: false) per D-10008 — it mutates real G (playerZones.deck / G.ko),
     // absent on UIState. NOT in CORE_MOVE_NAMES (mirrors resolveKoHeroChoice).
     resolveScryKoChoice: { move: resolveScryKoChoice, client: false },
+    // why: WP-603 / D-24413 — resolveMelterKoChoice resolves the interactive Melter
+    // Fight KO/keep choice (the fighting player KOs or keeps each player's revealed
+    // deck top). Server-only (client: false) per D-10008 — it mutates real G
+    // (playerZones.deck / G.ko), absent on UIState. NOT in CORE_MOVE_NAMES (mirrors
+    // resolveScryKoChoice).
+    resolveMelterKoChoice: { move: resolveMelterKoChoice, client: false },
     // why: WP-476 / D-24284 — resolveDiscardChoice resolves the interactive
     // Magneto discard-to-limit choice (the current player picks which cards to
     // discard down to four). Server-only (client: false) per D-10008 — it mutates

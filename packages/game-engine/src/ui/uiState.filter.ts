@@ -571,6 +571,33 @@ export function filterUIStateForAudience(
     };
   }
 
+  // why: WP-603 / D-24413 — the pending Melter Fight KO/keep choice is redacted for
+  // EVERY audience except the fighting (choosing) player. Its revealedTops are the
+  // tops of players' OWN decks (hidden next-draw information) — leaking them to
+  // opponents or spectators would reveal deck-order. Present only when the audience is
+  // a player whose playerId equals the chooser's playerID; omitted (conditional
+  // assignment, never an `undefined` literal) for opponents AND spectators. Rebuilt
+  // field-by-field; per-entry display spread prevents aliasing with the input UIState.
+  if (
+    uiState.pendingMelterKoChoice !== undefined &&
+    audience.kind === 'player' &&
+    audience.playerId === uiState.pendingMelterKoChoice.playerID
+  ) {
+    const revealedTopsCopy = [];
+    for (const entry of uiState.pendingMelterKoChoice.revealedTops) {
+      revealedTopsCopy.push({
+        ownerPlayerID: entry.ownerPlayerID,
+        cardId: entry.cardId,
+        display: { ...entry.display },
+      });
+    }
+    result.pendingMelterKoChoice = {
+      choiceType: uiState.pendingMelterKoChoice.choiceType,
+      playerID: uiState.pendingMelterKoChoice.playerID,
+      revealedTops: revealedTopsCopy,
+    };
+  }
+
   // why: WP-476 / D-24284 — the pending discard-to-limit choice is redacted for EVERY
   // audience except the choosing player. Its `hand` carries the chooser's PRIVATE hand
   // identities — the very cards they must choose among — so passing it through to

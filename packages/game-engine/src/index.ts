@@ -353,6 +353,8 @@ export type {
   UIPendingKoHeroChoice,
   UIPendingScryKoChoice,
   UIScryKoRevealedCard,
+  UIPendingMelterKoChoice,
+  UIMelterRevealedTop,
   UIPendingDiscardChoice,
   UIPendingPutCardsOnDeckChoice,
   UIDiscardChoiceHandCard,

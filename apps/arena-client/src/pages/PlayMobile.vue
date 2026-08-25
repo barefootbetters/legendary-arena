@@ -33,6 +33,7 @@ import CardReaderModal from '../components/play/CardReaderModal.vue';
 import PendingHeroChoicePrompt from '../components/play/PendingHeroChoicePrompt.vue';
 import PendingKoHeroChoicePrompt from '../components/play/PendingKoHeroChoicePrompt.vue';
 import PendingScryKoChoicePrompt from '../components/play/PendingScryKoChoicePrompt.vue';
+import PendingMelterKoChoicePrompt from '../components/play/PendingMelterKoChoicePrompt.vue';
 import PendingDiscardChoicePrompt from '../components/play/PendingDiscardChoicePrompt.vue';
 import PendingPutCardsOnDeckChoicePrompt from '../components/play/PendingPutCardsOnDeckChoicePrompt.vue';
 import PendingReorderChoicePrompt from '../components/play/PendingReorderChoicePrompt.vue';
@@ -104,6 +105,7 @@ export default defineComponent({
     PendingHeroChoicePrompt,
     PendingKoHeroChoicePrompt,
     PendingScryKoChoicePrompt,
+    PendingMelterKoChoicePrompt,
     PendingDiscardChoicePrompt,
     PendingPutCardsOnDeckChoicePrompt,
     PendingReorderChoicePrompt,
@@ -290,6 +292,12 @@ export default defineComponent({
     const hasPendingScryKoChoice = computed<boolean>(
       () => snapshot.value?.pendingScryKoChoice !== undefined,
     );
+    // why: WP-603 / D-24413 — derived from UIState.pendingMelterKoChoice !== undefined.
+    // Passed to TurnActionBar to block end-turn and pass-priority at EVERY stage while a
+    // Melter Fight KO/keep choice is pending (board frozen, mirrors hasPendingScryKoChoice).
+    const hasPendingMelterKoChoice = computed<boolean>(
+      () => snapshot.value?.pendingMelterKoChoice !== undefined,
+    );
     // why: WP-477 / WP-476 — derived from UIState.pendingDiscardChoice !== undefined. Passed to
     // TurnActionBar to block end-turn and pass-priority at EVERY stage while a Magneto
     // discard-to-limit choice is pending (board frozen, mirrors hasPendingScryKoChoice).
@@ -357,6 +365,7 @@ export default defineComponent({
       hasPendingDiscardToPlay,
       hasPendingReturnOnDiscard,
       hasPendingScryKoChoice,
+      hasPendingMelterKoChoice,
       hasPendingDiscardChoice,
       hasPendingPutCardsOnDeckChoice,
       hasPendingReorderChoice,
@@ -521,6 +530,15 @@ export default defineComponent({
             :viewer-player-id="viewer.playerId"
             :submit-move="submitMove"
           />
+          <!-- why: WP-603 / D-24413 — the Melter Fight KO/keep prompt renders above
+               TurnActionBar; appears only for the fighting player when
+               pendingMelterKoChoice is set. The block-all guard guarantees at most one
+               pending-choice type is set. -->
+          <PendingMelterKoChoicePrompt
+            :pending-melter-ko-choice="snapshot.pendingMelterKoChoice"
+            :viewer-player-id="viewer.playerId"
+            :submit-move="submitMove"
+          />
           <!-- why: WP-476 / D-24284 — the Magneto discard-to-limit prompt renders above
                TurnActionBar; appears only for the choosing player when
                pendingDiscardChoice is set. The block-all guard guarantees at most one
@@ -657,6 +675,7 @@ export default defineComponent({
             :has-pending-discard-to-play="hasPendingDiscardToPlay"
             :has-pending-return-on-discard="hasPendingReturnOnDiscard"
             :has-pending-scry-ko-choice="hasPendingScryKoChoice"
+            :has-pending-melter-ko-choice="hasPendingMelterKoChoice"
             :has-pending-discard-choice="hasPendingDiscardChoice"
             :has-pending-put-cards-on-deck-choice="hasPendingPutCardsOnDeckChoice"
             :has-pending-reorder-choice="hasPendingReorderChoice"

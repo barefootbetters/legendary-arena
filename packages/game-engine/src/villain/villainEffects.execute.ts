@@ -16,7 +16,7 @@
  * attachBystanderToVillain, awardAttachedBystanders.
  */
 
-import type { LegendaryGameState, PendingKoHeroChoice, PendingGiveHqHeroChoice } from '../types.js';
+import type { LegendaryGameState, PendingKoHeroChoice, PendingGiveHqHeroChoice, PendingMelterKoChoice, MelterRevealedTop } from '../types.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
 import type {
   VillainAbilityTiming,
@@ -1890,6 +1890,12 @@ function villainEffectKoWoundsCurrentHandAndDiscard(
  * cooperative chooser (D-24332 / WP-519). True iff the card is a Wound or a basic
  * STARTING S.H.I.E.L.D. card (Agent / Trooper).
  *
+ * // why: WP-603 / D-24413 — the Melter handler no longer calls this (it now parks an
+ * interactive choice); this predicate is now the BOT/SIM default-pick in
+ * ai.legalMoves (`keep = !isCullableDeckTopCard(cardId)`), reproducing the WP-519
+ * auto-resolve outcome byte-identically so bot/replay/par runs are unchanged. Hence
+ * the `export`.
+ *
  * This is the `selectScryKoTarget` tiers-1–2 "worst-worthy" set (D-24267): thinning
  * a Wound or a weak starter from any deck is pure deck-building upside. It
  * deliberately EXCLUDES the recruited S.H.I.E.L.D. Officer and every real Hero — a
@@ -1902,7 +1908,7 @@ function villainEffectKoWoundsCurrentHandAndDiscard(
  * @param cardId - The revealed deck-top card's ext_id.
  * @returns True when the card is a Wound or a basic starting S.H.I.E.L.D. card.
  */
-function isCullableDeckTopCard(cardId: CardExtId): boolean {
+export function isCullableDeckTopCard(cardId: CardExtId): boolean {
   return (
     cardId === WOUND_EXT_ID ||
     cardId === SHIELD_AGENT_EXT_ID ||
@@ -1912,30 +1918,35 @@ function isCullableDeckTopCard(cardId: CardExtId): boolean {
 
 /**
  * ko-cullable-each-deck-top primitive — each player reveals the top card of their
- * deck and the fighting player KOs the cullable ones (Wounds / basic S.H.I.E.L.D.
- * starters), keeping every real Hero + Officer (Melter, Masters of Evil — "Fight:
- * Each player reveals the top card of their deck. For each card, you choose to KO it
- * or put it back.", D-24332 / WP-519).
+ * deck and the FIGHTING player is prompted to KO or keep each one (Melter, Masters of
+ * Evil — "Fight: Each player reveals the top card of their deck. For each card, you
+ * choose to KO it or put it back.", D-24413 / WP-603).
  *
- * Auto-resolved and deterministic. The printed per-card KO/keep choice collapses to a
- * rational cooperative chooser: thin weak starters/Wounds (pure upside), keep real
- * cards. Because a real Hero is never force-KO'd, the WP-470 scry-ko agency bug
- * (which arose only because scry-ko must KO one of two cards) cannot occur — so there
- * is no pending choice, no player-selection UI, no client change. Self-narrates via
- * `pushLog` (keyword-less — `descriptorToLegacyKeyword` returns undefined, so no
- * `VillainEffectResult` is recorded and the generic `<timing> effect:` line never
- * fires). Returns the KO'd card ext_ids as `targets` for parity with the other
- * handlers (dropped by the recording path).
+ * // why: D-24413 supersedes D-24332 — Melter's Fight is no longer a deterministic
+ * cullable auto-resolve. It reveals every player's deck top (sorted, reshuffle-on-empty
+ * per D-24285), snapshots each `{ ownerPlayerID, cardId }`, and parks ONE
+ * PendingMelterKoChoice for the fighting (active) player carrying the whole snapshot —
+ * KOing nothing at park time. The player then resolves each card KO-or-keep via
+ * resolveMelterKoChoice. The `ko-cullable-each-deck-top` primitive token is RETAINED
+ * (renaming would churn the marker + card-data); `isCullableDeckTopCard` is now the
+ * bot/sim default-pick in ai.legalMoves (keep = !cullable), so bot/replay/par runs
+ * reproduce the WP-519 outcome byte-identically — only live human play gets the prompt.
+ * Follows the WP-470 / D-24282 scry-ko SNAPSHOT discipline: the reveal never removes a
+ * card, so "keep" is a no-op and the block-all guard freezes every deck top. Keyword-
+ * less — `descriptorToLegacyKeyword` returns undefined, so no `VillainEffectResult` is
+ * recorded and the generic `<timing> effect:` line never fires; it self-narrates.
+ * Returns `{ targets: [], pending: true }` when it parks, `{ targets: [] }` on the
+ * reachable no-op (no player had a revealable deck top).
  */
 function villainEffectKoCullableEachDeckTop(
   G: LegendaryGameState,
-  _currentPlayer: string,
+  currentPlayer: string,
   _cardId: CardExtId,
   timing: VillainAbilityTiming,
   _descriptor: VillainEffectDescriptor,
   shuffleContext?: ShuffleProvider,
 ): VillainEffectApplication {
-  const koedCardIds: CardExtId[] = [];
+  const revealedTops: MelterRevealedTop[] = [];
   // why: D-18902 — sorted player-id iteration for replay determinism, matching the
   // each-player wound / reveal-or-wound paths. "Each player" is faithful: every
   // player's deck top is revealed, not only the fighting player's.
@@ -1947,56 +1958,48 @@ function villainEffectKoCullableEachDeckTop(
     // why: D-24285 — "reveals the top card" is a reveal, so an empty deck reshuffles
     // the player's discard into the deck first (the Legendary reveal-reshuffle rule,
     // the scry-ko precedent). reshuffleDiscardIntoDeck no-ops on an empty discard or
-    // an absent shuffleContext, so a genuinely exhausted deck + discard falls through
-    // to the reachable no-op below (no reveal, no KO — never a hollow).
+    // an absent shuffleContext, so a genuinely exhausted deck + discard contributes no
+    // revealed card (no reveal, no choice for that player — never a hollow).
     if (zones.deck.length === 0) {
       reshuffleDiscardIntoDeck(zones, shuffleContext);
     }
     if (zones.deck.length === 0) {
       continue;
     }
-    const topCard = zones.deck[0]!;
-    // why: D-24332 — the printed "you choose to KO it or put it back" collapses to a
-    // rational cooperative chooser: KO the revealed top ONLY when it is cullable (a
-    // Wound or a basic starter), otherwise keep it on top. A real Hero / Officer is
-    // never force-KO'd.
-    if (!isCullableDeckTopCard(topCard)) {
-      continue;
-    }
-    const moveResult = moveCardFromZone(zones.deck, [], topCard);
-    if (!moveResult.found) {
-      // why: defensive — an unexpected move miss stops this player without a throw.
-      continue;
-    }
-    zones.deck = moveResult.from;
-    // why: the culled card goes to the general KO pile (`G.ko`), not back to the
-    // player's discard or any supply — a KO removes it from play (koCard appends;
-    // the deck removal is the moveCardFromZone above). Same as the scry-ko handler.
-    G.ko = koCard(G.ko, topCard);
-    koedCardIds.push(topCard);
+    // why: SNAPSHOT only — the card is NOT removed. The block-all guard freezes every
+    // deck top while the choice is pending, so this snapshot cannot drift; the resolve
+    // move KOs by owner+ext_id (a "keep" then leaves the card exactly where it is).
+    revealedTops.push({ ownerPlayerID: playerId, cardId: zones.deck[0]! });
   }
-  // why: self-narrate (keyword-less — descriptorToLegacyKeyword returns undefined, so
-  // no VillainEffectResult is recorded and the generic "<timing> effect:" line never
-  // fires; the D-24266 unmarked-ability breadcrumb is removed by marking the card).
-  // G.messages is hash-excluded (D-24081). Honest colour per the WP-434 contract:
-  // ≥1 card KO'd → applied; nothing cullable revealed → blocked. Label from the fired
-  // timing (Melter is Fight).
+
   const label = villainEffectTimingLabel(timing);
-  if (koedCardIds.length > 0) {
-    const names = koedCardIds.map((koedId) => resolveCardDisplayName(G, koedId)).join(', ');
-    pushLog(
-      G,
-      `${label} effect: KO'd ${String(koedCardIds.length)} card(s) from the top of players' decks (${names}).`,
-      'applied',
-    );
-  } else {
-    pushLog(
-      G,
-      `${label} effect: revealed each player's deck top; nothing worth KO'ing.`,
-      'blocked',
-    );
+  if (revealedTops.length === 0) {
+    // why: reachable no-op — every deck (and discard) was exhausted, so nothing was
+    // revealed and no choice is parked. Self-narrate (keyword-less); G.messages is
+    // hash-excluded (D-24081). `blocked` per the WP-434 contract (nothing landed).
+    pushLog(G, `${label} effect: no player had a card to reveal.`, 'blocked');
+    return { targets: [] };
   }
-  return { targets: koedCardIds };
+
+  // why: WP-603 / D-24413 — park ONE choice for the fighting player carrying the whole
+  // snapshot; lazily initialize the queue at the park site (never in Game.setup).
+  if (!G.pendingMelterKoChoices) G.pendingMelterKoChoices = [];
+  G.pendingMelterKoChoices.push({
+    choiceType: 'melter-ko',
+    playerID: currentPlayer,
+    revealedTops,
+  } satisfies PendingMelterKoChoice);
+  // why: self-narrate the park so the log records the choice opened; the resolve move
+  // narrates each KO/keep. Outcome `neutral` — nothing has landed yet.
+  pushLog(
+    G,
+    `${label} effect: revealed ${String(revealedTops.length)} deck top(s) — choose to KO or keep each.`,
+    'neutral',
+  );
+  // why: WP-316 / D-24102 — pending: true marks the parked interactive choice; no card
+  // is KO'd yet, so targets stays []. (Dropped by the recording path anyway — the
+  // primitive is keyword-less — but the shape is kept parallel to the other parkers.)
+  return { targets: [], pending: true };
 }
 
 // why: D-24296 — the basic S.H.I.E.L.D. cards (starting Agents + Troopers, and the

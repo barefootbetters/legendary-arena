@@ -22,12 +22,13 @@ import {
 } from '../moves/villainDefeatRequirement.logic.js';
 import { hasPendingKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from '../moves/scryKoChoice.resolve.js';
+import { hasPendingMelterKoChoice } from '../moves/melterKoChoice.resolve.js';
 import { hasPendingDiscardChoice } from '../moves/discardChoice.resolve.js';
 import { hasPendingPutCardsOnDeckChoice } from '../moves/putCardsOnDeckChoice.resolve.js';
 import { hasPendingReorderChoice } from '../moves/reorderChoice.resolve.js';
 import { hasPendingDefeatChoice } from '../moves/defeatChoice.resolve.js';
 import { selectDiscardToLimitCards, selectRedSkullKoTarget } from '../rules/mastermindHandlers.js';
-import { selectDefaultKoTarget, selectScryKoTarget } from '../villain/villainEffects.execute.js';
+import { selectDefaultKoTarget, selectScryKoTarget, isCullableDeckTopCard } from '../villain/villainEffects.execute.js';
 import type { KoHeroTarget } from '../villain/villainEffects.execute.js';
 import { hasPendingOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
 import { selectDefaultOptionalKoTarget } from '../hero/heroEffects.execute.js';
@@ -83,6 +84,11 @@ export const SIMULATION_MOVE_NAMES = [
   // or the per-turn loop hangs (maxTurns bounds turns, not within-turn move-steps —
   // the WP-289 One-Hit-Wonder hang). Asserted by simulation.moveDispatch.drift.test.ts.
   'resolveScryKoChoice',
+  // why: WP-603 / D-24413 — getLegalMoves short-circuits to resolveMelterKoChoice when a
+  // Melter Fight KO/keep choice is parked; it MUST be dispatchable in the sim (both
+  // MOVE_MAPs) or the per-turn loop hangs (the WP-289 within-turn hang). Asserted by
+  // simulation.moveDispatch.drift.test.ts.
+  'resolveMelterKoChoice',
   // why: WP-476 / D-24284 — getLegalMoves short-circuits to resolveDiscardChoice when a
   // Magneto discard-to-limit choice is parked for the active player; it MUST be
   // dispatchable in the sim (both MOVE_MAPs) or the per-turn loop hangs (maxTurns bounds
@@ -393,6 +399,36 @@ export function getLegalMoves(
     }
     // why: defensive — an empty revealed snapshot is an engine-invariant violation;
     // fail closed rather than emit an unresolvable move.
+    return legalMoves;
+  }
+
+  // why: WP-603 / D-24413 — pending Melter Fight KO/keep short-circuit, placed beside
+  // the scry-ko one (same precedence tier). When the choice is parked the block-all
+  // guard freezes every other move, so the bot resolves it first. The single legal
+  // move resolves the FRONT entry's first revealed card with the deterministic default
+  // `keep = !isCullableDeckTopCard(cardId)` — KO cullable cards (Wounds / basic
+  // starters), keep the rest — reproducing the WP-519 auto-resolve outcome byte-
+  // identically (only live human play gets the interactive prompt). One card resolves
+  // per call; getLegalMoves re-enters until revealedTops empties. Returns a list of
+  // length EXACTLY 1 — omitting this path (or the MOVE_MAP entries) hangs the per-turn
+  // loop.
+  if (hasPendingMelterKoChoice(gameState)) {
+    const front = gameState.pendingMelterKoChoices![0]!;
+    const next = front.revealedTops[0];
+    if (next !== undefined) {
+      return [
+        {
+          name: 'resolveMelterKoChoice',
+          args: {
+            ownerPlayerID: next.ownerPlayerID,
+            cardId: next.cardId,
+            keep: !isCullableDeckTopCard(next.cardId),
+          },
+        },
+      ];
+    }
+    // why: defensive — an empty revealedTops is an engine-invariant violation (the park
+    // requires ≥1 revealed card); fail closed rather than emit an unresolvable move.
     return legalMoves;
   }
 

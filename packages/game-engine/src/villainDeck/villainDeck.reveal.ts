@@ -37,6 +37,7 @@ import {
 } from '../villain/villainEffects.execute.js';
 import { hasPendingKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from '../moves/scryKoChoice.resolve.js';
+import { hasPendingMelterKoChoice } from '../moves/melterKoChoice.resolve.js';
 import { hasPendingDiscardChoice } from '../moves/discardChoice.resolve.js';
 import { hasPendingPutCardsOnDeckChoice } from '../moves/putCardsOnDeckChoice.resolve.js';
 import { hasPendingReorderChoice } from '../moves/reorderChoice.resolve.js';
@@ -111,6 +112,11 @@ export function revealVillainCard({ G, ctx, ...context }: MoveContext): void {
   // why: block-all guard (D-24282) — a pending Doombot scry-KO choice freezes the
   // board until the player picks which revealed card to KO.
   if (hasPendingScryKoChoice(G)) return;
+  // why: WP-603 / D-24413 — block-all guard parity: a pending Melter Fight KO/keep
+  // choice freezes the board. Practically unreachable here (a parked choice already
+  // blocks advanceStage, so no next-turn reveal fires mid-choice), but guarded
+  // alongside scry-ko so the "every site or none" invariant holds.
+  if (hasPendingMelterKoChoice(G)) return;
   // why: block-all guard (WP-476 / D-24284) — a pending discard-to-limit choice
   // (parked by a Magneto strike at THIS start stage) freezes the board until the
   // current player picks which cards to discard; blocks re-reveal until resolved.

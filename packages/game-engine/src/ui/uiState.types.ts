@@ -125,6 +125,12 @@ export interface UIState {
   // (private information; opponents must not learn the chooser's next draws). Absent
   // (undefined) means no pending scry-KO choice.
   pendingScryKoChoice?: UIPendingScryKoChoice;
+  // why: WP-603 / D-24413 — projects the FRONT of G.pendingMelterKoChoices with each
+  // player's revealed deck top so the fighting player can render the "KO or keep each
+  // revealed card" prompt. Redacted (omitted) for every audience except the chooser —
+  // the revealed cards are the tops of players' own decks (hidden next-draw
+  // information). Absent (undefined) means no pending Melter KO/keep choice.
+  pendingMelterKoChoice?: UIPendingMelterKoChoice;
   // why: WP-476 / D-24284 — projects the FRONT of G.pendingDiscardChoices with the
   // choosing player's current hand (the cards they may discard) and the limit, so
   // the current player can render the "Choose which cards to discard down to four"
@@ -772,6 +778,42 @@ export interface UIPendingScryKoChoice {
   choiceType: "scry-ko";
   playerID: string;
   revealedCards: UIScryKoRevealedCard[];
+}
+
+/**
+ * One revealed deck-top card in a pending Melter KO/keep choice (WP-603 / D-24413):
+ * which player owns the deck it sits on top of, its ext_id, and its display data.
+ *
+ * The client renders each entry (owner-labelled) with a KO and a Keep button, and on
+ * click submits `resolveMelterKoChoice({ ownerPlayerID, cardId, keep })`. Both
+ * `ownerPlayerID` and `cardId` are required to identify the card — starter ext_ids are
+ * shared across every player's deck (the round-trip rule matches on both).
+ */
+export interface UIMelterRevealedTop {
+  ownerPlayerID: string;
+  cardId: string;
+  display: UICardDisplay;
+}
+
+/**
+ * UI contract for resolving a pending Melter Fight KO/keep choice (WP-603 / D-24413;
+ * supersedes the WP-519 / D-24332 auto-resolve). Only visible to the fighting
+ * (choosing) player; redacted for opponents and spectators (the revealed cards are the
+ * tops of players' own decks — hidden next-draw information).
+ *
+ * `revealedTops` is the FRONT pending entry's snapshot resolved to display data, in
+ * reveal (sorted player-id) order. Each still-unresolved deck top the fighting player
+ * must KO or keep. The client submits `{ ownerPlayerID, cardId, keep }` per card; the
+ * engine KOs it from its owner's deck (keep leaves it on top).
+ *
+ * @see WP-603 §Scope (In)
+ * @see EC-638 Locked Values
+ * @see DECISIONS.md D-24413
+ */
+export interface UIPendingMelterKoChoice {
+  choiceType: "melter-ko";
+  playerID: string;
+  revealedTops: UIMelterRevealedTop[];
 }
 
 /**
