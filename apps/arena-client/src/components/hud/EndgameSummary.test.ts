@@ -385,3 +385,39 @@ describe('EndgameSummary (WP-593 report-card v2)', () => {
     assert.ok(!wrapper.find('[data-testid="arena-hud-luck-read"]').exists());
   });
 });
+
+describe('EndgameSummary (WP-600 scoring key + terminology)', () => {
+  test('renders the penalties/awards scoring key whenever a competitive score exists', () => {
+    const wrapper = mount(EndgameSummary, {
+      props: { gameOver: gameOver(), competitiveScore: score({ finalScore: -100 }) },
+    });
+    const key = wrapper.find('[data-testid="arena-hud-scoring-key"]');
+    assert.ok(key.exists(), 'scoring key renders');
+    const awards = key.find('[aria-label="awards"]').text();
+    const penalties = key.find('[aria-label="penalties"]').text();
+    assert.ok(awards.includes('Victory Point') && awards.includes('−10'), awards);
+    // WP-599 — no separate bystander-rescue award on the awards side.
+    assert.ok(!awards.includes('Bystander lost'), awards);
+    assert.ok(penalties.includes('Villain escaped') && penalties.includes('+10'), penalties);
+    assert.ok(penalties.includes('Scheme twist') && penalties.includes('+30'), penalties);
+    assert.ok(penalties.includes('Bystander lost') && penalties.includes('+40'), penalties);
+  });
+
+  test('the per-player split says "bystanders rescued", never a bare "bystanders"', () => {
+    const wrapper = mount(EndgameSummary, {
+      props: { gameOver: gameOver(), competitiveScore: score({ scoreBreakdown: breakdown({
+        inputs: {
+          rounds: 29, victoryPoints: 103, bystandersRescued: 11, escapes: 0,
+          penaltyEventCounts: { villainEscaped: 0, bystanderLost: 0, schemeTwistNegative: 6, mastermindTacticUntaken: 0, scenarioSpecificPenalty: 0 },
+          perPlayer: [
+            { playerId: '0', victoryPoints: 60, bystandersRescued: 7 },
+            { playerId: '1', victoryPoints: 43, bystandersRescued: 4 },
+          ],
+        },
+      }) }) },
+    });
+    const perPlayer = wrapper.find('[data-testid="arena-hud-per-player"]');
+    assert.ok(perPlayer.exists(), 'per-player block renders');
+    assert.ok(perPlayer.text().includes('bystanders rescued'), perPlayer.text());
+  });
+});

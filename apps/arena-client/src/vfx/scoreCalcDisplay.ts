@@ -554,3 +554,69 @@ export function buildWorkedScoreCalc(
     finalScore: breakdown.finalScore,
   };
 }
+
+/** One row of the scoring key: a named event, its point value, and a plain-language note. */
+export interface ScoringKeyLine {
+  /** The event name, e.g. "Bystander lost". */
+  readonly label: string;
+  /** Signed points as shown on the card, e.g. "−10" (lowers your score) or "+30" (raises it). */
+  readonly points: string;
+  /** A one-line plain-language note on where the points come from. */
+  readonly note: string;
+}
+
+/** The scoring key (WP-600): what every event is worth, grouped into awards vs penalties. */
+export interface ScoringKey {
+  /** Events that LOWER your score (better). */
+  readonly awards: readonly ScoringKeyLine[];
+  /** Events that RAISE your score (worse). */
+  readonly penalties: readonly ScoringKeyLine[];
+}
+
+// why: WP-600 / D-24410 — the canonical rulebook-faithful weights locked by WP-599 /
+// D-24409 (true VP-units): a documented client constant (like the grade words in
+// gradeDisplay), NOT this match's derived numbers — an explanatory legend must show
+// every event, including ones that didn't happen this game. Every shipped
+// ScenarioScoringConfig carries exactly these weights (data/scoring-configs/*.json);
+// a test pins this key to that intent so it cannot drift silently from the engine.
+const VICTORY_POINT_WEIGHT = 10;
+const VILLAIN_ESCAPED_WEIGHT = 10;
+const SCHEME_TWIST_WEIGHT = 30;
+const BYSTANDER_LOST_WEIGHT = 40;
+
+/**
+ * Builds the scoring key — the "what is each thing worth" legend for the report card,
+ * grouped into awards (lower your score) and penalties (raise it). Rulebook-faithful:
+ * a rescued bystander appears only inside Victory Points (1 VP each), never as its own
+ * award, and the moral weight sits on the Bystander-lost penalty (WP-599 / D-24409).
+ *
+ * @returns The awards + penalties legend, in fixed display order.
+ */
+export function buildScoringKey(): ScoringKey {
+  return {
+    awards: [
+      {
+        label: 'Victory Point',
+        points: `${MINUS}${VICTORY_POINT_WEIGHT}`,
+        note: 'each printed VP — from every defeated villain, henchman & mastermind tactic, plus every rescued bystander (worth 1 VP)',
+      },
+    ],
+    penalties: [
+      {
+        label: 'Villain escaped',
+        points: `+${VILLAIN_ESCAPED_WEIGHT}`,
+        note: 'a villain left the city into the escape pile',
+      },
+      {
+        label: 'Scheme twist',
+        points: `+${SCHEME_TWIST_WEIGHT}`,
+        note: 'each Scheme Twist revealed — the villain’s clock',
+      },
+      {
+        label: 'Bystander lost',
+        points: `+${BYSTANDER_LOST_WEIGHT}`,
+        note: 'a civilian carried away by an escaping villain — the heaviest penalty',
+      },
+    ],
+  };
+}
