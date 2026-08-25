@@ -28,6 +28,7 @@ const NAV_ITEMS: readonly NavItem[] = [
   { to: '/coverage', label: 'Coverage', abbreviation: 'Co' },
   { to: '/players', label: 'Players', abbreviation: 'Pl' },
   { to: '/monetization', label: 'Monetization', abbreviation: 'Mo' },
+  { to: '/feedback', label: 'Feedback', abbreviation: 'Fb' },
   { to: '/gameplay', label: 'Gameplay', abbreviation: 'Ga' },
   { to: '/system', label: 'System Health', abbreviation: 'Sy' },
   { to: '/debug', label: 'Debug', abbreviation: 'De' },

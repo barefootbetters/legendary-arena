@@ -25,11 +25,13 @@ import {
   addVote,
   countVotesForItem,
   insertFeedbackItem,
+  listAllFeedbackItems,
   listPublicEnhancements,
   removeVote,
+  updateFeedbackItemStatus,
 } from './feedback.persistence.js';
 import type { DatabaseClient } from '../identity/identity.types.js';
-import type { PublicFeedbackItem } from './feedback.types.js';
+import type { OperatorFeedbackItem, PublicFeedbackItem } from './feedback.types.js';
 
 import pg from 'pg';
 
@@ -204,6 +206,120 @@ describe('feedback persistence (WP-604)', () => {
         [record.id],
       );
       assert.equal(check.rows[0]?.status, 'under_review');
+    },
+  );
+});
+
+/** Find a specific item by id in an operator list (other runs' rows are present). */
+function findOperatorById(
+  items: readonly OperatorFeedbackItem[],
+  id: number,
+): OperatorFeedbackItem | undefined {
+  return items.find((item) => item.id === id);
+}
+
+const TRIAGE_AUTHOR = `${RUN_ID}-triage-author`;
+
+describe('feedback triage persistence (WP-605)', () => {
+  let testPool: pg.Pool | null = null;
+
+  before(() => {
+    if (hasTestDatabase) {
+      testPool = new Pool({ connectionString: process.env.TEST_DATABASE_URL });
+    }
+  });
+
+  after(async () => {
+    if (testPool !== null) {
+      await testPool.end();
+      testPool = null;
+    }
+  });
+
+  test(
+    'listAllFeedbackItems returns every type + status with a projected voteCount',
+    hasTestDatabase ? {} : { skip: 'requires test database' },
+    async () => {
+      assert.ok(testPool !== null);
+      const database = testPool as unknown as DatabaseClient;
+      const bug = await insertFeedbackItem(
+        database,
+        { type: 'bug', title: `${RUN_ID} triage bug`, description: 'x' },
+        TRIAGE_AUTHOR,
+      );
+      const enhancement = await insertFeedbackItem(
+        database,
+        { type: 'enhancement', title: `${RUN_ID} triage enh`, description: 'x' },
+        TRIAGE_AUTHOR,
+      );
+      await addVote(database, enhancement.id, `${RUN_ID}-tv-a`);
+      await addVote(database, enhancement.id, `${RUN_ID}-tv-b`);
+
+      const items = await listAllFeedbackItems(database);
+      // why: bug rows never surface on the PUBLIC list, but the operator list must
+      // include every type — that is the whole point of the triage read.
+      const foundBug = findOperatorById(items, bug.id);
+      const foundEnhancement = findOperatorById(items, enhancement.id);
+      assert.ok(foundBug, 'a bug row is present on the operator list');
+      assert.equal(foundBug?.feedbackType, 'bug');
+      assert.equal(foundBug?.authorExtId, TRIAGE_AUTHOR);
+      assert.equal(foundBug?.voteCount, 0);
+      assert.equal(foundEnhancement?.voteCount, 2);
+    },
+  );
+
+  test(
+    'updateFeedbackItemStatus writes status, sets/clears resolution_reason, advances updated_at',
+    hasTestDatabase ? {} : { skip: 'requires test database' },
+    async () => {
+      assert.ok(testPool !== null);
+      const database = testPool as unknown as DatabaseClient;
+      const item = await insertFeedbackItem(
+        database,
+        { type: 'enhancement', title: `${RUN_ID} triage status`, description: 'x' },
+        TRIAGE_AUTHOR,
+      );
+      assert.equal(item.status, 'under_review');
+      assert.equal(item.resolutionReason, null);
+
+      const planned = await updateFeedbackItemStatus(database, item.id, 'planned', null);
+      assert.ok(planned);
+      assert.equal(planned?.status, 'planned');
+      assert.equal(planned?.resolutionReason, null);
+      assert.ok(
+        new Date(planned!.updatedAt).getTime() >= new Date(item.createdAt).getTime(),
+        'updated_at advances',
+      );
+
+      const declined = await updateFeedbackItemStatus(
+        database,
+        item.id,
+        'declined',
+        'out of scope',
+      );
+      assert.equal(declined?.status, 'declined');
+      assert.equal(declined?.resolutionReason, 'out of scope');
+
+      // A move off Declined clears the stored reason (the route passes null).
+      const shipped = await updateFeedbackItemStatus(database, item.id, 'shipped', null);
+      assert.equal(shipped?.status, 'shipped');
+      assert.equal(shipped?.resolutionReason, null);
+    },
+  );
+
+  test(
+    'updateFeedbackItemStatus returns null for an unknown id',
+    hasTestDatabase ? {} : { skip: 'requires test database' },
+    async () => {
+      assert.ok(testPool !== null);
+      const database = testPool as unknown as DatabaseClient;
+      const result = await updateFeedbackItemStatus(
+        database,
+        Number.MAX_SAFE_INTEGER,
+        'planned',
+        null,
+      );
+      assert.equal(result, null);
     },
   );
 });

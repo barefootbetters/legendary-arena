@@ -134,5 +134,44 @@ export type FeedbackErrorCode =
   | 'invalid_type'
   | 'invalid_title'
   | 'invalid_description'
+  | 'invalid_status'
+  | 'resolution_reason_required'
   | 'not_found'
   | 'internal_error';
+
+/**
+ * The operator triage projection of a feedback item (WP-605 / D-24416), returned
+ * by the admin-only `GET /api/dash/feedback` + `PATCH /api/dash/feedback/:id/status`.
+ * Unlike the public `PublicFeedbackItem`, this is operator-only and retains the
+ * full record — including `authorExtId` and `resolutionReason` — plus the projected
+ * `voteCount`. It never reaches a player surface (the dashboard is Hanko + Access
+ * gated).
+ *
+ * MIRROR PIN: the dashboard hand-mirrors this shape in
+ * `apps/dashboard/src/types/feedbackTriage.ts` (`FeedbackTriageItem`); the two apps
+ * share no import. Any change to this shape MUST update that mirror (and its
+ * field-name keyset test), and vice-versa.
+ */
+export interface OperatorFeedbackItem {
+  readonly id: number;
+  readonly feedbackType: FeedbackType;
+  readonly title: string;
+  readonly description: string;
+  readonly authorExtId: string;
+  readonly status: FeedbackStatus;
+  readonly resolutionReason: string | null;
+  readonly voteCount: number;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
+/**
+ * The validated input for `PATCH /api/dash/feedback/:id/status`. `status` is a
+ * closed-set `FeedbackStatus`; `resolutionReason` is the trimmed non-empty reason
+ * when `status === 'declined'`, and `null` for every other status (a move off
+ * Declined clears any prior reason).
+ */
+export interface UpdateFeedbackStatusInput {
+  readonly status: FeedbackStatus;
+  readonly resolutionReason: string | null;
+}
