@@ -464,6 +464,21 @@ describe('filterUIStateForAudience — villainDeckComposition public pass-throug
   });
 });
 
+describe('filterUIStateForAudience — deckCardStats redaction (WP-608)', () => {
+  it('owner sees own deckCardStats; opponent + spectator do not', () => {
+    const uiState = createKoChoiceUIState();
+
+    const owner = filterUIStateForAudience(uiState, PLAYER_0).players.find((p) => p.playerId === '0')!;
+    assert.ok(owner.deckCardStats !== undefined, 'owner sees deckCardStats');
+
+    const opponentView = filterUIStateForAudience(uiState, PLAYER_1).players.find((p) => p.playerId === '0')!;
+    assert.equal(opponentView.deckCardStats, undefined, 'opponent does NOT see deckCardStats');
+
+    const spectatorView = filterUIStateForAudience(uiState, SPECTATOR).players.find((p) => p.playerId === '0')!;
+    assert.equal(spectatorView.deckCardStats, undefined, 'spectator does NOT see deckCardStats');
+  });
+});
+
 describe('filterUIStateForAudience — pendingKoHeroChoice redaction (D-24011)', () => {
   it('the chooser sees pendingKoHeroChoice with the full eligible list', () => {
     const uiState = createKoChoiceUIState();

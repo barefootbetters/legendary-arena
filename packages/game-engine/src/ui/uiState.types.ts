@@ -300,6 +300,21 @@ export interface UIDisplayEntry {
 }
 
 /**
+ * Recruit / attack / cost of a single draw-pool card, projected owner-only for
+ * the client hand-projection Monte Carlo.
+ *
+ * // why: WP-608 / D-24419 — a gameplay-stats value sourced from the internal
+ * `G.cardStats`, deliberately NOT `UICardDisplay` (locked to 7 presentation
+ * fields; `cardDisplayData` is the presentation channel, recruit/attack are
+ * gameplay values).
+ */
+export interface UIDeckCardStat {
+  recruit: number;
+  attack: number;
+  cost: number;
+}
+
+/**
  * Per-player state projection. Zones projected as counts — not card arrays.
  *
  * // why: zone counts prevent the UI from accessing card identities it
@@ -405,6 +420,22 @@ export interface UIPlayerState {
    * for the own player; filterUIStateForAudience redacts it based on audience.
    */
   deckComposition?: string[];
+  /**
+   * Owner-only recruit/attack/cost of this player's draw-pool cards, keyed by
+   * ext_id (the sorted-unique union of deck + discard), for the client
+   * hand-projection Monte Carlo (D-24418).
+   *
+   * // why: WP-608 / D-24419 — a SEPARATE ext_id → stats map (not enriching the
+   * order-stripped `deckComposition`; not on `UICardDisplay`, which is locked to
+   * 7 presentation fields). Sourced from the internal `G.cardStats` — recruit/
+   * attack are gameplay values. Keys are SORTED (a `Record` serializes in
+   * insertion order; sorted keys strip draw order so no next-draw sequence
+   * leaks — the `deckComposition` rationale). Non-hero cards (no `cardStats`
+   * entry) are omitted (the client defaults them to 0/0). Redacted owner-only
+   * (the keys reveal the owner's pool composition — the `deckComposition`
+   * posture). Projection-only: never a `G` field, no state-hash surface.
+   */
+  deckCardStats?: Record<string, UIDeckCardStat>;
   /**
    * Full victory-pile contents for this player.
    *

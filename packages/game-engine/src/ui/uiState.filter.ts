@@ -28,6 +28,7 @@ import type {
   UIHQCard,
   UIDisplayEntry,
   UIKoPileState,
+  UIDeckCardStat,
 } from './uiState.types.js';
 import type { UIAudience } from './uiAudience.types.js';
 // why: WP-258 — the filtered hollow-effect records are the engine's canonical
@@ -204,6 +205,9 @@ function redactHandCards(player: UIPlayerState): UIPlayerState {
     // why: WP-606 / D-24417 — deckComposition (own draw-pool composition)
     // redacted for non-self / spectator (same posture): opponents see
     // deckCount only. Omit-don't-assign.
+    // why: WP-608 / D-24419 — deckCardStats (own draw-pool card stats) redacted
+    // for non-self / spectator (same posture): the map keys reveal the owner's
+    // pool composition. Omit-don't-assign.
   };
 
   // why: WP-128 / D-12803 — discardTopCard is public information (face-up
@@ -313,6 +317,20 @@ function preserveHandCards(player: UIPlayerState): UIPlayerState {
   // is already order-stripped at build time; the draw sequence never leaks.
   if (player.deckComposition !== undefined) {
     base.deckComposition = [...player.deckComposition];
+  }
+
+  // why: WP-608 / D-24419 — active player sees their own draw-pool card stats
+  // (recruit/attack/cost per pool card) for the hand-projection Monte Carlo;
+  // redacted for non-self / spectator (the deckComposition posture — the keys
+  // reveal the owner's pool). Fresh DEEP copy (new object + per-entry
+  // `{ ...stat }`) prevents aliasing with the input UIState; conditional
+  // assignment (never a literal `undefined`) satisfies exactOptionalPropertyTypes.
+  if (player.deckCardStats !== undefined) {
+    const copiedDeckCardStats: Record<string, UIDeckCardStat> = {};
+    for (const [poolCardExtId, cardStat] of Object.entries(player.deckCardStats)) {
+      copiedDeckCardStats[poolCardExtId] = { ...cardStat };
+    }
+    base.deckCardStats = copiedDeckCardStats;
   }
 
   // why: WP-128 / D-12803 — discardTopCard is public information; same
