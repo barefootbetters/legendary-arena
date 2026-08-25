@@ -39,6 +39,8 @@ The endgame card double-counted rescued bystanders (a −200 reward **and** thei
 
 **D-24026 live-verify: operator-pending** (`play.legendary-arena.com`; a ranked match's card shows a VP-only earned side, no double-count, a sensible grade). D-24409 Active.
 
+**Follow-up (2026-08-25, INFRA #1630, `b22378af`):** a STATUS backfill review surfaced a stale `LOSS_PENALTY 600` against the shipped `800`. Confirmed ground truth in shipped code — `LOSS_PENALTY = 800` (`parScoring.logic.ts`) with no two-step 600→800 change — matching WORK_INDEX / EC_INDEX / D-24409 §4 and this entry. The `600` was two draft-era leftovers, now corrected: the `parScoring.grade.ts` band comment (`+600`, contradicted by `+800` in the same block) and the NUMBER-LEDGER EC-634 reservation line. Comment/ledger text only — no scoring behavior change; the 128 seed configs never embed `LOSS_PENALTY` (flat engine constant applied at score time), so they were consistent by construction.
+
 ### WP-598 — /coverage PAR Fidelity panel (EC-633 / D-24407) shipped (2026-08-23)
 
 The WP-597 render follow-up — the interactive `/coverage` dashboard view. A new **PAR Fidelity** panel on `dashboard.legendary-arena.com/coverage` visualizes the WP-597 sweep: summary tiles (% winnable, too-easy vs unwinnable counts), a ranked **too-easy** table (win rate, first-winning turn, monotone, stuck), and a **click-to-expand per-scenario turns-vs-score sweet-spot curve** (median Raw Score + a p25/p75 band, via echarts). It reads the committed `data/par/profile/v1/` artifacts bundled into the dashboard at build time (`build-par-fidelity.mjs` → gitignored `src/data/par-fidelity.json` → `useParFidelity` cast composable, the WP-487/WP-259 pattern).
