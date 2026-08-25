@@ -9,6 +9,7 @@ import type {
   RuntimeHealthSnapshot,
   ServiceResponse,
 } from '../types/index.js';
+import type { FeedbackTriageItem } from '../types/feedbackTriage.js';
 
 export { mockBillingHealth, mockBillingHealthSparklines } from './billingHealthMocks.js';
 export type { BillingHealthSparklines, BillingHealthSparklinePoint } from './billingHealthMocks.js';
@@ -235,6 +236,75 @@ export function mockMatchRecords(): ServiceResponse<MatchRecord[]> {
     });
   }
   return wrapMock(matches);
+}
+
+// why: WP-605 — the operator feedback triage queue for offline/mock dev. Covers
+// every type and a spread of statuses (incl. a Declined item carrying a reason) so
+// the panel's filters + status editor + reason field all render without a server.
+export function mockFeedbackItems(): ServiceResponse<FeedbackTriageItem[]> {
+  const items: FeedbackTriageItem[] = [
+    {
+      id: 1,
+      feedbackType: 'enhancement',
+      title: 'Add a dark mode',
+      description: 'A dark theme would be easier on the eyes at night.',
+      authorExtId: 'mock-account-a',
+      status: 'under_review',
+      resolutionReason: null,
+      voteCount: 12,
+      createdAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+      updatedAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+    },
+    {
+      id: 2,
+      feedbackType: 'enhancement',
+      title: 'Spectator mode for ranked matches',
+      description: 'Let friends watch a live ranked match.',
+      authorExtId: 'mock-account-b',
+      status: 'planned',
+      resolutionReason: null,
+      voteCount: 34,
+      createdAt: new Date(Date.now() - 5 * 86400000).toISOString(),
+      updatedAt: new Date(Date.now() - 1 * 86400000).toISOString(),
+    },
+    {
+      id: 3,
+      feedbackType: 'bug',
+      title: 'Client froze on reconnect',
+      description: 'The board went blank after a dropped connection mid-match.',
+      authorExtId: 'mock-account-c',
+      status: 'in_progress',
+      resolutionReason: null,
+      voteCount: 0,
+      createdAt: new Date(Date.now() - 3 * 86400000).toISOString(),
+      updatedAt: new Date(Date.now() - 3 * 86400000).toISOString(),
+    },
+    {
+      id: 4,
+      feedbackType: 'review',
+      title: 'Best deck-builder on the web',
+      description: 'Five stars — the endgame report card is a great touch.',
+      authorExtId: 'mock-account-d',
+      status: 'shipped',
+      resolutionReason: null,
+      voteCount: 0,
+      createdAt: new Date(Date.now() - 8 * 86400000).toISOString(),
+      updatedAt: new Date(Date.now() - 6 * 86400000).toISOString(),
+    },
+    {
+      id: 5,
+      feedbackType: 'enhancement',
+      title: 'Trade cards between accounts',
+      description: 'Allow players to trade their collected cards.',
+      authorExtId: 'mock-account-e',
+      status: 'declined',
+      resolutionReason: 'Out of scope — trading conflicts with the fairness bright lines.',
+      voteCount: 7,
+      createdAt: new Date(Date.now() - 12 * 86400000).toISOString(),
+      updatedAt: new Date(Date.now() - 4 * 86400000).toISOString(),
+    },
+  ];
+  return wrapMock(items);
 }
 
 export function mockRevenueRecords(): ServiceResponse<RevenueRecord[]> {

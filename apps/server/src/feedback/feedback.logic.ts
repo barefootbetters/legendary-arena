@@ -16,12 +16,16 @@
  */
 
 import {
+  FEEDBACK_STATUSES,
   FEEDBACK_TYPES,
   type FeedbackErrorCode,
   type FeedbackItemRecord,
+  type FeedbackStatus,
   type FeedbackType,
+  type OperatorFeedbackItem,
   type PublicFeedbackItem,
   type SubmitFeedbackInput,
+  type UpdateFeedbackStatusInput,
 } from './feedback.types.js';
 
 // why: bound the free-text fields so a submission cannot store an unbounded blob.
@@ -128,5 +132,109 @@ export function toPublicFeedbackItem(
     voteCount,
     viewerHasVoted,
     createdAt: record.createdAt,
+  };
+}
+
+// why: bound the operator's Declined reason so a single edit cannot store an
+// unbounded blob; a one-paragraph "no, because…" fits comfortably. An over-long
+// reason is reported as `resolution_reason_required` (the reason field is
+// malformed) to keep the FeedbackErrorCode set closed.
+const MAX_RESOLUTION_REASON_LENGTH = 2000;
+
+/**
+ * The result of validating a status-update body: either the typed input, or a
+ * closed-set error code identifying the failure. Never throws.
+ */
+export type ValidateUpdateFeedbackStatusResult =
+  | { readonly ok: true; readonly value: UpdateFeedbackStatusInput }
+  | { readonly ok: false; readonly code: FeedbackErrorCode };
+
+/**
+ * Narrow an unknown value to a FeedbackStatus, or return null when it is not one
+ * of the closed-set statuses.
+ *
+ * @param candidate The raw `status` value from the request body.
+ * @returns The FeedbackStatus when it matches the closed set, otherwise null.
+ */
+function asFeedbackStatus(candidate: unknown): FeedbackStatus | null {
+  for (const feedbackStatus of FEEDBACK_STATUSES) {
+    if (candidate === feedbackStatus) {
+      return feedbackStatus;
+    }
+  }
+  return null;
+}
+
+/**
+ * Validate a raw request body into an UpdateFeedbackStatusInput. Checks that
+ * `status` is one of the closed-set statuses and enforces the Declined rule: when
+ * `status === 'declined'` a non-empty, length-bounded `resolutionReason` is
+ * required; for every other status the reason is normalized to `null` (a move off
+ * Declined clears any prior reason). Never throws — a malformed body returns a
+ * typed error code the route maps to 400.
+ *
+ * @param body The parsed JSON request body (unknown shape until validated).
+ * @returns `{ ok: true, value }` with the typed input, or `{ ok: false, code }`.
+ */
+export function validateUpdateFeedbackStatusInput(
+  body: unknown,
+): ValidateUpdateFeedbackStatusResult {
+  if (typeof body !== 'object' || body === null || Array.isArray(body)) {
+    return { ok: false, code: 'invalid_request' };
+  }
+
+  const candidate = body as { status?: unknown; resolutionReason?: unknown };
+
+  const status = asFeedbackStatus(candidate.status);
+  if (status === null) {
+    return { ok: false, code: 'invalid_status' };
+  }
+
+  // why: a reason is required (and stored) ONLY on Declined; for every other status
+  // it is forced to null so a stale reason never lingers when an item leaves the
+  // Declined state (D-24416).
+  if (status !== 'declined') {
+    return { ok: true, value: { status, resolutionReason: null } };
+  }
+
+  if (typeof candidate.resolutionReason !== 'string') {
+    return { ok: false, code: 'resolution_reason_required' };
+  }
+  const resolutionReason = candidate.resolutionReason.trim();
+  if (
+    resolutionReason === '' ||
+    resolutionReason.length > MAX_RESOLUTION_REASON_LENGTH
+  ) {
+    return { ok: false, code: 'resolution_reason_required' };
+  }
+
+  return { ok: true, value: { status, resolutionReason } };
+}
+
+/**
+ * Shape a persisted feedback record plus its vote tally into the operator triage
+ * projection. Unlike `toPublicFeedbackItem`, this is operator-only and retains the
+ * full record (`authorExtId`, `resolutionReason`, `updatedAt`) — it never reaches a
+ * player surface.
+ *
+ * @param record The persisted feedback item row.
+ * @param voteCount The COUNT projection over legendary.feedback_vote for this item.
+ * @returns The operator projection.
+ */
+export function toOperatorFeedbackItem(
+  record: FeedbackItemRecord,
+  voteCount: number,
+): OperatorFeedbackItem {
+  return {
+    id: record.id,
+    feedbackType: record.feedbackType,
+    title: record.title,
+    description: record.description,
+    authorExtId: record.authorExtId,
+    status: record.status,
+    resolutionReason: record.resolutionReason,
+    voteCount,
+    createdAt: record.createdAt,
+    updatedAt: record.updatedAt,
   };
 }

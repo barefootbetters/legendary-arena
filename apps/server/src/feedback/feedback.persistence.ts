@@ -26,11 +26,12 @@
  */
 
 import type { DatabaseClient } from '../identity/identity.types.js';
-import { toPublicFeedbackItem } from './feedback.logic.js';
+import { toOperatorFeedbackItem, toPublicFeedbackItem } from './feedback.logic.js';
 import {
   PUBLIC_ROADMAP_STATUSES,
   type FeedbackItemRecord,
   type FeedbackStatus,
+  type OperatorFeedbackItem,
   type PublicFeedbackItem,
   type SubmitFeedbackInput,
 } from './feedback.types.js';
@@ -249,4 +250,74 @@ export async function removeVote(
     [itemId, accountExtId],
   );
   return result.rows.length > 0 ? 'removed' : 'not_voted';
+}
+
+/**
+ * List EVERY feedback item for the operator triage queue — all types (bug /
+ * enhancement / review) and all statuses, each with its projected `voteCount`,
+ * newest first. This is the operator-only read (WP-605 / D-24416): it applies no
+ * type filter and no PII strip, so it must only ever be reached behind the admin
+ * gate; it is NOT the public `listPublicEnhancements`.
+ *
+ * @param database The caller-injected `pg` pool.
+ * @returns Every feedback item as an operator projection, newest first.
+ */
+export async function listAllFeedbackItems(
+  database: DatabaseClient,
+): Promise<OperatorFeedbackItem[]> {
+  const result = await database.query(
+    'SELECT ' +
+      'fi.id, fi.feedback_type, fi.title, fi.description, fi.author_ext_id, ' +
+      'fi.status, fi.resolution_reason, fi.created_at, fi.updated_at, ' +
+      'COUNT(fv.id) AS vote_count ' +
+      'FROM legendary.feedback_item fi ' +
+      'LEFT JOIN legendary.feedback_vote fv ON fv.feedback_item_id = fi.id ' +
+      'GROUP BY fi.id ' +
+      'ORDER BY fi.created_at DESC',
+    [],
+  );
+
+  const items: OperatorFeedbackItem[] = [];
+  for (const rawRow of result.rows) {
+    const row = rawRow as FeedbackItemRow & { vote_count: string | number };
+    const record = mapFeedbackItemRow(row);
+    const voteCount =
+      typeof row.vote_count === 'string' ? Number(row.vote_count) : row.vote_count;
+    items.push(toOperatorFeedbackItem(record, voteCount));
+  }
+  return items;
+}
+
+/**
+ * Author an item's status — the ONLY code path in the codebase that writes
+ * `feedback_item.status` / `resolution_reason` / advances `updated_at` (WP-605 /
+ * D-24416; WP-604 / EC-639 deferred all status authoring to this writer). The
+ * caller (the pure validator) has already enforced the closed status set and the
+ * Declined-requires-a-reason rule, so `status` and `resolutionReason` are trusted
+ * here. Returns the updated record, or `null` when no item matches the id.
+ *
+ * @param database The caller-injected `pg` pool.
+ * @param itemId The feedback item to update.
+ * @param status The new status (a validated FeedbackStatus).
+ * @param resolutionReason The reason (non-empty on Declined; `null` otherwise).
+ * @returns The updated record, or `null` when the id does not exist.
+ */
+export async function updateFeedbackItemStatus(
+  database: DatabaseClient,
+  itemId: number,
+  status: FeedbackStatus,
+  resolutionReason: string | null,
+): Promise<FeedbackItemRecord | null> {
+  const result = await database.query(
+    'UPDATE legendary.feedback_item ' +
+      'SET status = $2, resolution_reason = $3, updated_at = now() ' +
+      'WHERE id = $1 ' +
+      'RETURNING id, feedback_type, title, description, author_ext_id, ' +
+      'status, resolution_reason, created_at, updated_at',
+    [itemId, status, resolutionReason],
+  );
+  if (result.rows.length === 0) {
+    return null;
+  }
+  return mapFeedbackItemRow(result.rows[0] as FeedbackItemRow);
 }

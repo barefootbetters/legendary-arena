@@ -63,6 +63,7 @@ import { registerDashboardBillingRoutes } from './dashboard/dashboardBilling.rou
 import { registerDashboardGameplayRoutes } from './dashboard/dashboardGameplay.routes.js';
 import { registerDashboardRuntimeRoutes } from './dashboard/dashboardRuntime.routes.js';
 import { registerDashboardDrReadinessRoutes } from './dashboard/dashboardDrReadiness.routes.js';
+import { registerDashboardFeedbackRoutes } from './dashboard/dashboardFeedback.routes.js';
 import { getAnalyticsUserIdSalt } from './analytics/userIdHash.js';
 import { registerSweepRoutes } from './sweep/sweep.routes.js';
 import { registerInspectionRoutes } from './inspection/inspection.routes.js';
@@ -1419,6 +1420,17 @@ export async function startServer() {
   // the same WP-159 requireAdminSession bundle as adminBilling (D-19603's
   // finance/admin gate resolves to admin — no finance role exists).
   registerDashboardBillingRoutes(server.router, pool, {
+    requireAdminSession,
+    verifier,
+    accountResolver: verifier === undefined ? undefined : accountResolver,
+  });
+
+  // why: WP-605 / D-24416 — the operator feedback-triage slice: GET
+  // /api/dash/feedback (the whole queue — every type/status + projected voteCount,
+  // operator-only) + PATCH /api/dash/feedback/:id/status (the SOLE writer of
+  // feedback_item.status/resolution_reason, the status authoring WP-604 deferred).
+  // Same admin gate as billing; the PATCH parses its own body (no global /api parser).
+  registerDashboardFeedbackRoutes(server.router, pool, {
     requireAdminSession,
     verifier,
     accountResolver: verifier === undefined ? undefined : accountResolver,

@@ -11,7 +11,9 @@ import {
   mockRuntimeHealth,
   mockBillingHealth,
   mockBillingHealthSparklines,
+  mockFeedbackItems,
 } from './mocks.js';
+import type { FeedbackTriageItem, UpdateFeedbackStatusBody } from '../types/feedbackTriage.js';
 import type { BillingHealthSparklines } from './billingHealthMocks.js';
 import { normalizeRange } from './normalizeRange.js';
 import type {
@@ -206,6 +208,34 @@ export async function fetchBillingHealth(
 // function share the same hash-of-range seed, so the aggregate rates
 // in `BillingHealth` and the per-day rates in the sparkline are
 // consistent within mock-determinism guarantees.
+// why: WP-605 / D-24416 — the operator feedback triage queue. Admin-gated on the
+// server (`GET /api/dash/feedback`); the apiClient attaches the operator bearer.
+// The server wraps the list as `{ data: { items } }`, so the payload is unwrapped
+// as `response.data.data.items` before the LIVE provenance stamp.
+export async function fetchFeedbackItems(): Promise<ServiceResponse<FeedbackTriageItem[]>> {
+  if (isMockMode()) {
+    await simulateLatency();
+    return mockFeedbackItems();
+  }
+  const response =
+    await apiClient.get<ServiceResponse<{ items: FeedbackTriageItem[] }>>('/api/dash/feedback');
+  return liveEnvelope(response.data.data.items);
+}
+
+// why: WP-605 / D-24416 — the ONLY mutation in the dashboard service layer (every
+// other endpoint is a GET). PATCHes an item's status; the panel refreshes the list
+// on success, so the return is void. In mock mode it resolves without a write.
+export async function updateFeedbackStatus(
+  itemId: number,
+  body: UpdateFeedbackStatusBody,
+): Promise<void> {
+  if (isMockMode()) {
+    await simulateLatency();
+    return;
+  }
+  await apiClient.patch(`/api/dash/feedback/${itemId}/status`, body);
+}
+
 export async function fetchBillingHealthSparklines(
   range: DateRange,
 ): Promise<ServiceResponse<BillingHealthSparklines>> {

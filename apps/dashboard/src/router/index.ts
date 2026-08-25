@@ -51,6 +51,11 @@ export const router = createRouter({
           component: () => import('../pages/monetization/MonetizationPage.vue'),
         },
         {
+          path: 'feedback',
+          name: 'feedback',
+          component: () => import('../pages/feedback/FeedbackTriagePage.vue'),
+        },
+        {
           path: 'gameplay',
           name: 'gameplay',
           component: () => import('../pages/gameplay/GameplayPage.vue'),
