@@ -201,6 +201,9 @@ function redactHandCards(player: UIPlayerState): UIPlayerState {
     // full discard list carries card identities the owning player may act on
     // (KO-a-Hero); opponents and spectators see discardCount + discardTopCard
     // only. Omit-don't-assign, both fields together.
+    // why: WP-606 / D-24417 — deckComposition (own draw-pool composition)
+    // redacted for non-self / spectator (same posture): opponents see
+    // deckCount only. Omit-don't-assign.
   };
 
   // why: WP-128 / D-12803 — discardTopCard is public information (face-up
@@ -300,6 +303,16 @@ function preserveHandCards(player: UIPlayerState): UIPlayerState {
       copiedDiscardDisplay.push({ ...display });
     }
     base.discardDisplay = copiedDiscardDisplay;
+  }
+
+  // why: WP-606 / D-24417 — active player sees their own draw-pool composition
+  // (so the Deck Probability Panel can compute draw odds); redacted for
+  // non-self / spectator (the discardCards privacy posture). Conditional
+  // assignment + fresh array copy (never a literal `undefined`) satisfies
+  // exactOptionalPropertyTypes and prevents aliasing with the input UIState. It
+  // is already order-stripped at build time; the draw sequence never leaks.
+  if (player.deckComposition !== undefined) {
+    base.deckComposition = [...player.deckComposition];
   }
 
   // why: WP-128 / D-12803 — discardTopCard is public information; same
@@ -482,7 +495,18 @@ export function filterUIStateForAudience(
     // unchanged via fresh object copy to avoid aliasing with the input UIState.
     // Forced cascade from WP-067 making `progress` a required UIState field.
     progress: { ...uiState.progress },
-    decks: { ...uiState.decks },
+    // why: WP-606 / D-24417 — the decks object is public and villainDeckComposition
+    // rides it. A bare `{ ...uiState.decks }` would shallow-ALIAS the composition
+    // array, so it is fresh-copied via a conditional spread (never a
+    // `villainDeckComposition: undefined` literal, never a bare `[...maybe-undefined]`)
+    // — exactOptionalPropertyTypes-safe, the matchCardImageUrls precedent. The
+    // count fields spread as before; the composition is already order-stripped.
+    decks: {
+      ...uiState.decks,
+      ...(uiState.decks.villainDeckComposition !== undefined
+        ? { villainDeckComposition: [...uiState.decks.villainDeckComposition] }
+        : {}),
+    },
     piles: { ...uiState.piles },
     koPile: deepCopyKoPile(uiState.koPile),
   };

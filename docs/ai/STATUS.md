@@ -7,6 +7,21 @@
 
 ## Current State
 
+### WP-606 — UIState draw-pool composition projection (EC-641 / D-24417) shipped (2026-08-25)
+
+**No user-observable change — infrastructure only.** The payoff is the read-only data the follow-on Deck Probability Panel UI WP consumes; no player sees any difference after this deploys. The two new fields are dark until that panel wires them.
+
+Lands the Phase-1 engine/data foundation for the [Deck Probability Panel](../../wiki/deck-probability-panel.md) (per its MVP-first phasing). Two optional, projection-only `UIState` fields, game-engine only:
+
+- **`UIPlayerState.deckComposition?`** — owner-only, the order-stripped (sorted) multiset of the player's own draw deck. Populated for every player in `buildUIState`; preserved for the owner in `preserveHandCards`, omitted in `redactHandCards` — the `discardCards` / D-24010 posture. Opponents + spectators see `deckCount` only.
+- **`UIDecksState.villainDeckComposition?`** — public, the order-stripped (sorted) multiset of the villain deck's undrawn cards. Passed through public with a conditional fresh-copy inside the `decks` spread (`exactOptionalPropertyTypes`-safe) — the `matchCardImageUrls` / D-24222 posture; value-identical for every audience.
+
+Both are **order-stripped** by the sort at the build site, so composition ships but the next-draw sequence never leaks (the WP-470 scry-KO secret); `[...zone].sort()` copies before sorting so `G` is never mutated. Both are **derived at projection time from existing `G` zones** — `G` gains nothing, so both hash oracles (`finalStateHash`, `PRE_WP080`) are byte-identical (no re-pin). Both optional → no arena-client fixture backfill.
+
+**Guardrails held:** owner-only redaction (a filter test asserts owner-sees / opponent+spectator-redacted); public pass-through as independent copies; a **built-projection** drift keyset pin for both fields (not the vacuous hand-written-fixture keyset — the WP-563/D-24372 optional-field trap) + an **order-independence** guard (permuted zone → identical projection) with the negative (sorted ≠ raw order). One **inline amendment** (same allowlist file `uiState.filter.test.ts`): the WP-603 Melter opponent redaction test — under D-24417 a player now sees their OWN order-stripped composition, so their own revealed card legitimately appears there (the sort hides which is the TOP, and `pendingMelterKoChoice` stays redacted, so the Melter next-draw secret is preserved; the OTHER player's card + the choice stay fully redacted) — updated to assert that real invariant.
+
+**Boundary / determinism:** game-engine projection only — no `G`/`ctx`/move/phase/RNG/scoring change, no hash re-pin, no client change. Engine suite **2919/2919**; `pnpm -r build` 0; diff = exactly the 5-file allowlist. **D-24417 flipped Drafted → Active.** **D-24026 live-verify: N/A** — surface is `none — infrastructure`.
+
 ### WP-605 — Feedback triage panel: operator status authoring (EC-640 / D-24416) shipped (2026-08-25)
 
 The first D-24414 follow-on to WP-604 — the **operator triage** half of the *Surfaces and authority* split (*players author demand; the operator authors status; the codebase authors "done"*). Adds the status-authoring backend WP-604 deliberately deferred plus the dashboard surface that drives it, so an operator can now review the whole feedback queue and move items through `Under review → Planned → In progress → Shipped → Declined`.

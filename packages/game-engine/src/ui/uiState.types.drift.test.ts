@@ -162,6 +162,106 @@ describe('UIState type drift (WP-067)', () => {
     ]);
   });
 
+  it('WP-606 — deckComposition (owner) + villainDeckComposition (decks) are pinned on a BUILT projection and order-stripped', () => {
+    // why: WP-606 / D-24417 — both new fields are OPTIONAL, so neither a
+    // `satisfies` nor a hand-written-fixture keyset can catch a dropped field
+    // (WP-563 / D-24372). Pin them on a REAL buildUIState result, and prove the
+    // sort strips ORDER (composition, not sequence — the scry-KO secret).
+    const setData = {
+      abbr: 'core',
+      schemes: [{ slug: 's' }],
+      masterminds: [{ slug: 'mm', cards: [{ slug: 'mm-base', tactic: false }] }],
+      henchmen: [{ slug: 'h' }],
+      villains: [{ slug: 'v', cards: [{ slug: 'v1', vAttack: '4' }] }],
+      heroes: [
+        {
+          slug: 'hero-x',
+          cards: [
+            { slug: 'card-c1', rarityLabel: 'Common 1' },
+            { slug: 'card-c2', rarityLabel: 'Common 2' },
+            { slug: 'card-uncommon', rarityLabel: 'Uncommon' },
+            { slug: 'card-rare', rarityLabel: 'Rare' },
+          ],
+        },
+      ],
+    };
+    const registry = {
+      listCards: () => [],
+      listSets: () => [{ abbr: 'core' }],
+      getSet: (abbr: string) => (abbr === 'core' ? setData : undefined),
+    };
+    const config: MatchSetupConfig = {
+      schemeId: 'core/s',
+      mastermindId: 'core/mm',
+      villainGroupIds: ['core/v'],
+      henchmanGroupIds: ['core/h'],
+      heroDeckIds: ['core/hero-x'],
+      bystandersCount: 1,
+      woundsCount: 1,
+      officersCount: 1,
+      sidekicksCount: 1,
+    };
+    const gameState = buildInitialGameState(
+      config,
+      registry,
+      makeMockCtx({ numPlayers: 1 }),
+    );
+
+    // Known UNSORTED multisets so the sort is observable (the negatives below).
+    gameState.playerZones['0']!.deck = ['c-zeta', 'a-alpha', 'b-mike'];
+    gameState.villainDeck.deck = ['y-yankee', 'b-bravo', 'o-oscar'];
+
+    const uiCtx = { phase: 'play' as string | null, turn: 1, currentPlayer: '0' };
+    const result = buildUIState(gameState, uiCtx);
+    const player = result.players.find((p) => p.playerId === '0')!;
+
+    // built-projection keyset pins — catch a dropped OPTIONAL field (a
+    // hand-written-fixture keyset or `satisfies` would not).
+    assert.ok(
+      Object.keys(player).includes('deckComposition'),
+      'built player projection includes deckComposition',
+    );
+    assert.deepStrictEqual(
+      Object.keys(result.decks).sort(),
+      ['heroDeckCount', 'villainDeckComposition', 'villainDeckCount'],
+      'built decks projection keyset includes villainDeckComposition',
+    );
+
+    // order-stripped: the sorted multiset, NOT the raw order.
+    assert.deepStrictEqual(player.deckComposition, ['a-alpha', 'b-mike', 'c-zeta']);
+    assert.notDeepStrictEqual(
+      player.deckComposition,
+      ['c-zeta', 'a-alpha', 'b-mike'],
+      'deckComposition is sorted, not raw deck order',
+    );
+    assert.deepStrictEqual(result.decks.villainDeckComposition, [
+      'b-bravo',
+      'o-oscar',
+      'y-yankee',
+    ]);
+    assert.notDeepStrictEqual(
+      result.decks.villainDeckComposition,
+      ['y-yankee', 'b-bravo', 'o-oscar'],
+      'villainDeckComposition is sorted, not raw villain-deck order',
+    );
+
+    // order-independence: permuting the source zones yields the identical projection.
+    gameState.playerZones['0']!.deck = ['b-mike', 'c-zeta', 'a-alpha'];
+    gameState.villainDeck.deck = ['o-oscar', 'y-yankee', 'b-bravo'];
+    const permuted = buildUIState(gameState, uiCtx);
+    const permutedPlayer = permuted.players.find((p) => p.playerId === '0')!;
+    assert.deepStrictEqual(
+      permutedPlayer.deckComposition,
+      player.deckComposition,
+      'deckComposition is order-independent (permuted deck -> identical projection)',
+    );
+    assert.deepStrictEqual(
+      permuted.decks.villainDeckComposition,
+      result.decks.villainDeckComposition,
+      'villainDeckComposition is order-independent',
+    );
+  });
+
   it('UIParBreakdown field names mirror WP-048 ScoreBreakdown verbatim', () => {
     // why: literal fixture spelled exactly as the contract requires. Any
     // rename of `rawScore`, `parScore`, `finalScore`, or

@@ -427,6 +427,43 @@ describe('filterUIStateForAudience — discard redaction (WP-243)', () => {
   });
 });
 
+describe('filterUIStateForAudience — deckComposition redaction (WP-606)', () => {
+  it('owner sees own deckComposition; opponent + spectator do not', () => {
+    const uiState = createKoChoiceUIState();
+
+    const owner = filterUIStateForAudience(uiState, PLAYER_0).players.find((p) => p.playerId === '0')!;
+    assert.ok(owner.deckComposition !== undefined, 'owner sees deckComposition');
+
+    const opponentView = filterUIStateForAudience(uiState, PLAYER_1).players.find((p) => p.playerId === '0')!;
+    assert.equal(opponentView.deckComposition, undefined, 'opponent does NOT see deckComposition');
+
+    const spectatorView = filterUIStateForAudience(uiState, SPECTATOR).players.find((p) => p.playerId === '0')!;
+    assert.equal(spectatorView.deckComposition, undefined, 'spectator does NOT see deckComposition');
+  });
+});
+
+describe('filterUIStateForAudience — villainDeckComposition public pass-through (WP-606)', () => {
+  it('every audience sees villainDeckComposition as an independent, value-identical copy', () => {
+    const uiState = createKoChoiceUIState();
+    const expected = uiState.decks.villainDeckComposition;
+    assert.ok(expected !== undefined, 'precondition: buildUIState populated villainDeckComposition');
+
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      const filtered = filterUIStateForAudience(uiState, audience);
+      assert.deepStrictEqual(
+        filtered.decks.villainDeckComposition,
+        expected,
+        'audience sees the value-identical villain composition',
+      );
+      assert.notStrictEqual(
+        filtered.decks.villainDeckComposition,
+        expected,
+        'it is a fresh (non-aliased) array copy',
+      );
+    }
+  });
+});
+
 describe('filterUIStateForAudience — pendingKoHeroChoice redaction (D-24011)', () => {
   it('the chooser sees pendingKoHeroChoice with the full eligible list', () => {
     const uiState = createKoChoiceUIState();
@@ -533,8 +570,9 @@ describe('filterUIStateForAudience — pendingScryKoChoice redaction (D-24282)',
 /**
  * Builds a UIState where the fighting player '0' owes a Melter Fight KO/keep choice
  * over EVERY player's revealed deck top. The revealed ext_ids are the tops of players'
- * own decks — hidden next-draw information that must not appear in a non-chooser's
- * UIState.
+ * own decks — hidden next-draw ORDER that must not leak as a top-reveal to a
+ * non-chooser (WP-606: a player's own order-stripped deckComposition may list their
+ * own card, but never flags which is the revealed top).
  */
 function createMelterChoiceUIState(): UIState {
   const config = createTestConfig();
@@ -572,13 +610,26 @@ describe('filterUIStateForAudience — pendingMelterKoChoice redaction (D-24413)
     );
   });
 
-  it('an opponent does NOT see pendingMelterKoChoice and no revealed deck ext_id leaks', () => {
+  it('an opponent does NOT see pendingMelterKoChoice, nor another player revealed deck ext_id', () => {
     const uiState = createMelterChoiceUIState();
     const result = filterUIStateForAudience(uiState, PLAYER_1);
     assert.equal(result.pendingMelterKoChoice, undefined, 'opponent must not see the Melter choice');
     const serialized = JSON.stringify(result);
-    assert.equal(serialized.includes('melter-secret-p0'), false, 'no revealed deck ext_id leaks');
-    assert.equal(serialized.includes('melter-secret-p1'), false, 'no revealed deck ext_id leaks');
+    // why: player 0's revealed deck-top (and the rest of player 0's deck) must
+    // not leak to player 1 — player 0's deckComposition is owner-redacted for
+    // player 1 (WP-606 / D-24417) and the Melter choice itself is redacted.
+    assert.equal(serialized.includes('melter-secret-p0'), false, "another player's revealed deck ext_id does not leak");
+    assert.equal(serialized.includes('melter-deep-p0'), false, "another player's deck ext_id does not leak");
+    // why: WP-606 / D-24417 — player 1's OWN revealed card appears ONLY in their
+    // own order-stripped deckComposition (they own that deck). The sort hides
+    // which card is the revealed TOP, and pendingMelterKoChoice is redacted, so
+    // the Melter next-draw secret still does not leak to the opponent.
+    const ownView = result.players.find((p) => p.playerId === '1')!;
+    assert.ok(ownView.deckComposition !== undefined, 'player 1 sees their own deckComposition');
+    assert.ok(
+      ownView.deckComposition!.includes('melter-secret-p1'),
+      "player 1's own card appears only in their own composition, never flagged as the top",
+    );
   });
 
   it('a spectator does NOT see pendingMelterKoChoice and no revealed deck ext_id leaks', () => {
