@@ -233,6 +233,42 @@ model, where the Dashboard `/pipeline` is the private source of truth and the
 public surface is a curated view of it — stated plainly so a public board can
 never quietly become the thing engineering is steered by.
 
+### Surfaces and authority
+
+A feedback system spans three surfaces, and the failure mode is letting the
+wrong one own a piece of the truth. The split:
+
+| Surface | Role | Writes | Reads |
+|---|---|---|---|
+| **Public intake + roadmap board** (`www` / `roadmap.`, JS-capable) | Where players submit and vote | Players (identity-gated) | Everyone |
+| **`dashboard.legendary-arena.com`** ([Dashboard](dashboard.md)) | Operator triage: review the queue, assign status, move items to terminal states, watch vote trends | Operator only | Operator only |
+| **WP / EC / [DECISIONS.md](../docs/ai/DECISIONS.md) / git** | The build record — what actually shipped | The engineering loop | — |
+
+The authority rule in one line: **players author demand; the operator authors
+status; the codebase authors "done."** Each surface owns exactly one thing and
+is a viewer of the rest:
+
+- **Raw feedback and vote counts** are owned by the intake store (Postgres) —
+  the public board writes into it, the dashboard reads and annotates it. Neither
+  surface "owns" a vote count; the database does.
+- **Status** (Planned / In progress / Shipped / Declined) is an editorial
+  judgment, so exactly one surface may set it: the **dashboard**. The public
+  board only *displays* status; players never set it.
+- **"Shipped"** still derives from the WP/git spine — it flips when the Work
+  Packet merges to `main` ([Development Workflow](development-workflow.md)); the
+  dashboard *reflects* that rather than declaring it.
+
+This keeps a brigaded vote or a stray dashboard edit from ever becoming the
+thing engineering is steered by — it is the *Surfaces* corollary of the *System
+of record* rule above.
+
+**No role tiers.** This proposal keeps the dashboard a **single Hanko +
+Cloudflare Access gate**, exactly as it is today — the operator is the only
+writer, and there is no community-moderator tier that can triage without full
+access. A tiered-trust moderation model is out of scope here: if queue volume
+ever justifies delegated triage, that is a separate change to the dashboard auth
+model, raised then — not assumed now.
+
 ### Operational ownership
 
 A feedback board is a **standing commitment, not a launch-and-forget feature** —
@@ -297,9 +333,11 @@ a player "no."
 - **[Changelog](changelog.md)** — the existing backward-looking record
   (projected from `docs/09-CHANGELOG.md`). The proposed player-facing changelog
   is a plain-language sibling of this, not a replacement.
-- **[Dashboard](dashboard.md)** — the internal `/pipeline` and roadmap views are
-  the *private* system of record; the public roadmap board is a curated
-  projection of the same underlying work.
+- **[Dashboard](dashboard.md)** — the operator's private triage surface (behind
+  the existing single Hanko + Cloudflare Access gate): where feedback is reviewed
+  and status is assigned. It is the only surface that may set an item's public
+  status, and it reflects "Shipped" from the WP/git spine rather than declaring
+  it. See *Surfaces and authority* above.
 - **[Development Workflow](development-workflow.md)** — the WP → GitHub →
   auto-deploy loop that a "Shipped" status hangs off; a public item flips to
   Shipped when its WP merges to `main`.
