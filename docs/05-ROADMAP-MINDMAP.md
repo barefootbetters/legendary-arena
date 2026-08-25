@@ -344,6 +344,7 @@ mindmap
         ["WP-201 ✅ Notable event overlays (arena client)"]
         ["WP-207a ✅ notableEvents fixture backfill (client)"]
         ["WP-207b ✅ notableEvents test backfill (client)"]
+        ["WP-602 📝 Bystander-reveal notableEvent overlay — bystanderRevealed center-screen announcement (the operator-reported gap; revealing a Bystander from the villain deck was the only villain-deck reveal outcome with NO overlay while Scheme Twist / Master Strike / Ambush all raise one. Adds a 7th notableEvent variant bystanderRevealed mirroring the WP-381 healResolved sixth-variant precedent; performVillainReveal emits it LAST in the cardType bystander capture branch — minimal-payload type+revealedCardId+captorCardId+engine-composed narrative no eventId/seq/timestamp D-20001, unconditional G.notableEvents.push like the ambushResolved site, additive to the preserved revealed-and-captured-by log line; PUBLIC not audience-redacted, rides the existing wholesale UIState.notableEvents spread with NO UIState projection or audience-filter change; arena-client NotableEventOverlay renders a Bystander chip + verbatim narrative D-20002 via one CHIP_LABELS entry + a CSS accent, and eventCardId resolves the variant to revealedCardId; composeBystanderRevealedNarrative pure golden-tested + NOTABLE_EVENT_TYPES drift 6 to 7; presentation parity ONLY not a new mechanic or reward, explicitly distinct from D-24409 removed bystander scoring reward; NO competitive-hash re-pin expected — PRE_WP080_HASH replays an empty move list and the sole sentinel fixture reveals no bystander so finalStateHash + PRE_WP080_HASH stay byte-identical, any move is a same-value re-pin; 11 files 6 engine incl tests + 3 client + 2 wiki; out of scope Surface-1b effect-capture + VfxOverlay juice + any new mechanic/counter/scoring; renumbered from WP-601 after PR #1625 took 601/636/24411; User-Visible Surface play.legendary-arena.com D-24026 live-verify; reserves EC-637 + D-24412; hard-dep WP-200 + WP-432; drafted 2026-08-24)"]
 
       Simulation Sweep & Analytics Pipeline
         ["WP-181 ✅ Bot decision logging"]
@@ -763,7 +764,7 @@ mindmap
 | Villain Deck Pipeline | 5/5 | — |
 | Villain & Henchman Effects | 16/19 | 3 open |
 | Hero Ability Coverage & Markup Pipeline | 52/52 | — |
-| Notable Events & Overlays | 4/4 | — |
+| Notable Events & Overlays | 4/5 | 1 open |
 | Simulation Sweep & Analytics Pipeline | 8/8 | — |
 | Dashboard & Operator Analytics | 53/54 | 1 open |
 | Agent Triage Pipeline | 7/8 | 1 open |
@@ -781,9 +782,9 @@ mindmap
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **584/595 WP ✅** (+ 4/4 Foundation Prompts) | 3 ⏸, 8 open |
+| **Total** | **584/596 WP ✅** (+ 4/4 Foundation Prompts) | 3 ⏸, 9 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 11):** WP-042.1 ⏸ blocked; WP-349 open; WP-391 open; WP-396 open; WP-398 open; WP-399 open; WP-368 open; WP-403 ⏸ blocked; WP-404 ⏸ blocked; WP-429 open; WP-564 open.
+**Open / blocked WPs (derived from WORK_INDEX, 12):** WP-602 open; WP-042.1 ⏸ blocked; WP-349 open; WP-391 open; WP-396 open; WP-398 open; WP-399 open; WP-368 open; WP-403 ⏸ blocked; WP-404 ⏸ blocked; WP-429 open; WP-564 open.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.
