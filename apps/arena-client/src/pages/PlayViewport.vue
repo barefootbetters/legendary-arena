@@ -8,6 +8,7 @@ import DiagnosticExportButton from '../components/DiagnosticExportButton.vue';
 import ViewLoadoutButton from '../components/ViewLoadoutButton.vue';
 import WaitingForPlayersPanel from '../components/WaitingForPlayersPanel.vue';
 import HollowEffectsPanel from '../components/play/HollowEffectsPanel.vue';
+import DeckProbabilityPanel from '../components/play/DeckProbabilityPanel.vue';
 import AudioControls from '../components/play/AudioControls.vue';
 import VfxOverlay from '../components/play/VfxOverlay.vue';
 import BotAllyStallBanner from '../components/BotAllyStallBanner.vue';
@@ -85,7 +86,7 @@ const SUBMISSION_MESSAGES: Record<Exclude<SubmissionStatus, 'idle'>, string> = {
  */
 export default defineComponent({
   name: 'PlayViewport',
-  components: { PlayDesktop, PlayMobile, DiagnosticExportButton, ViewLoadoutButton, WaitingForPlayersPanel, HollowEffectsPanel, AudioControls, VfxOverlay, BotAllyStallBanner, UpdateAvailableBanner, EndgameActions },
+  components: { PlayDesktop, PlayMobile, DiagnosticExportButton, ViewLoadoutButton, WaitingForPlayersPanel, HollowEffectsPanel, DeckProbabilityPanel, AudioControls, VfxOverlay, BotAllyStallBanner, UpdateAvailableBanner, EndgameActions },
   props: {
     submitMove: {
       type: Function as PropType<SubmitMove>,
@@ -363,6 +364,15 @@ export default defineComponent({
       // match.
     -->
     <HollowEffectsPanel />
+    <!--
+      // why: WP-607 — mounted ONCE here at the shared viewport root (the single
+      // 01.5 wiring host), so the collapsible Deck Probability Panel (the plain
+      // card counter) covers BOTH the <PlayMobile> and <PlayDesktop> surfaces.
+      // Self-hides (v-if hasData) so it adds no DOM when the WP-606 projection
+      // fields are absent; presentational only (reads the UIState store, no
+      // engine runtime import).
+    -->
+    <DeckProbabilityPanel />
     <!--
       // why: WP-412 — mounted ONCE here at the shared viewport root (the single
       // 01.5 wiring host), so the fixed-position mute/volume control + the
