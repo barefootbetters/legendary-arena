@@ -47,7 +47,7 @@ source:
   - ../docs/ai/work-packets/WP-053a-par-artifact-scoring-config.md
   - ../docs/ai/work-packets/WP-422-seed-par-publication.md
   - ../docs/10-GLOSSARY.md
-last-reviewed: 2026-08-24
+last-reviewed: 2026-08-25
 ---
 
 # Scoring
@@ -266,6 +266,81 @@ and a simulation-calibrated production config supersedes the seed. The full cont
 the ordinal league model — pros, cons, and other borrowings — lives on
 [PAR Simulation Calibration §Comparison](par-simulation-calibration.md#comparison-absolute-par-vs-ordinal-league-ranking).
 
+### Luck of the draw is a read, not a score adjustment
+
+The [report card](#your-report-card)'s **luck-of-the-draw** verdict —
+*Favorable / Even / Difficult shuffle* — is deliberately an **informational
+read**, never a term in the score. A proposal to promote it into an actual
+adjustment (e.g. `+2` when favorable, `−2` when adverse, to "reward skill over
+luck") was **considered and declined on 2026-08-25**. The reasoning is
+load-bearing enough to record, because the surface intuition ("luck leaks in,
+so subtract it out") is right on its first half and wrong on its second.
+
+**Per-match luck does leak into Final Score.** `finalScore = rawScore −
+parScore`, and `parScore` is a **fixed per-scenario constant**. So a match's
+adversity enters Final only as the *delta from expectation*:
+
+```
+finalScore = (actualAdversity − expectedAdversity) − (VP − VP_par)
+```
+
+A kind, low-twist draw produces fewer twist penalties → lower Raw → better
+Final, and the constant PAR never claws it back. So the concern that a lucky
+shuffle flatters the score is real, not imagined.
+
+**But the only luck signal available is not pure luck.** The read is computed
+from *actual adversity vs the PAR baseline's expected adversity*
+(`buildLuckRead`,
+[`scoreCalcDisplay.ts`](../apps/arena-client/src/vfx/scoreCalcDisplay.ts)) — it
+never sees deck order (the engine never projects it; `G` is not persisted). And
+those adversity terms are a **blend of luck and skill**:
+
+- **Scheme-twist count tracks game length.** Each turn flips a villain-deck
+  card; win faster → fewer twists surface. The count is a tempo signal — only
+  the twist *order* is luck (see [Penalty producer
+  status](#penalty-producer-status) and the D-24342 note that twists are the
+  game's length proxy).
+- **Villain escapes are preventable** by clearing the City on tempo — a
+  positioning skill, not a dice roll.
+
+A flat penalty keyed on the adversity delta cannot separate *"I drew a kind
+shuffle"* from *"I played efficiently and ended the game early."* It would
+neutralize the **skill** component alongside the luck, driving the competitive
+number toward pure VP-efficiency — the **opposite** of the "more skill, less
+luck" intent. Concretely, it would flag a tight, fast game as a *favorable
+shuffle* and penalize the player for their own efficiency.
+
+**Two mechanical snags compound the design objection:**
+
+- **No unit for it.** WP-585 removed turns/rounds from the score entirely (the
+  rulebook has no round cost; twists are its length proxy), so a "±N turns"
+  adjustment has no home in the formula and would have to be re-expressed in
+  centesimal penalty units.
+- **Comparability cost.** Any change to the scoring math bumps
+  `scoringConfigVersion`, regenerates every seed PAR artifact, and makes prior
+  scores non-comparable to new ones (VISION §22 immutability) — real cost for a
+  change that works against its own goal.
+
+**The principled levers for reducing luck's influence live elsewhere** and are
+already designed, so the read does not need to carry that load:
+
+- **Keep the read (chosen).** It gives the player an honest, deterministic
+  colour on their draw without punishing efficiency.
+- **[Seed Challenges](seed-challenges.md)** hold the *shuffle constant across
+  the entire leaderboard* — luck becomes a constant, not a variable, and skill
+  is the only differentiator. This is the real "remove luck" mechanism; it
+  removes it completely rather than approximating it with a heuristic.
+- **Simulation-calibrated per-match PAR** ([PAR Simulation
+  Calibration](par-simulation-calibration.md)) supplies a true counterfactual —
+  what a competent team would have faced *with this exact draw* — which
+  isolates luck properly. This is the deferred "right fix," not a ±N fudge.
+
+Bottom line: PAR normalizes *expected* luck by construction; the residual
+per-match luck is entangled with tempo skill in the only signal available, so
+it is **surfaced** (the read) rather than **scored**. Removing luck as a
+*competitive* variable is the job of seed challenges and sim-calibrated PAR, not
+of a penalty on the report card.
+
 ### Pipeline shape
 
 ```
@@ -339,7 +414,10 @@ breaks the number down so you can see exactly where it came from:
   what this scenario usually deals. A **favorable** shuffle means the deck broke your
   way; a **difficult** shuffle credits you for holding the line with a bad draw; an
   **even** shuffle is a fair test. It is a deterministic read from your score breakdown
-  — the same match always reads the same way, and it never sees your deck order.
+  — the same match always reads the same way, and it never sees your deck order. By
+  design this stays a *read* and never adjusts your competitive score; see
+  [Luck of the draw is a read, not a score adjustment](#luck-of-the-draw-is-a-read-not-a-score-adjustment)
+  for why a scored luck penalty was considered and declined.
 
 The seat identities behind the names are derived at score-submission time and are never
 stored on your score row — they are display metadata only. (An opinionated AI coach that
@@ -482,6 +560,7 @@ objective card.)
 - WP-591 + D-24400 (2026-08-23): interim **scheme-aware PAR** — PAR was scheme-blind and mis-graded both ways (flood schemes pinned Legendary, light schemes graded wins F); per-scheme baselines from 13 real-game anchors, PAR now models expected twists + bystanders-lost, a loss penalty grades a loss by margin, retuned grade bands; `scoringConfigVersion 3→4`
 - WP-593 + D-24402 (2026-08-23): report card v2 — **named players** (`Player N (Bot)` / `Player N (@handle)`) via a derived, non-persisted `seatIdentities` projection on the submit response, a **raw-score ledger** (penalties vs earned), and an objective, deterministic **luck-of-the-draw** read (actual adversity vs the scenario's PAR expectation). Display + read-path only; no game-state-hash re-pin
 - WP-599 + D-24409 (2026-08-24): rulebook-faithful scoring — removed the invented −200 bystander-rescue reward (a rescued bystander now scores only its 1 VP, ending the double-count) and rescaled penalties to true VP-units (escape 10 / twist 30 / bystander-lost 40, the rulebook 4:3:1); dropped structural invariants 1 & 3, LOSS_PENALTY 6000→800, re-derived grade bands; scoringConfigVersion 4→5 / rawScoreSemanticsVersion 3→4, 128 configs + seed artifacts regenerated, no retroactive invalidation. Supersedes D-24408.
+- Design decision (2026-08-25): a proposal to promote the luck-of-the-draw **read** into a **scored** ±N adjustment ("reward skill over luck") was **declined**. The only available luck signal (actual vs expected adversity) is entangled with tempo/positioning skill — scheme-twist count tracks game length, villain escapes are preventable — so a flat penalty would neutralize skill alongside luck and drive the score toward pure VP-efficiency; turns are no longer a scoring unit (WP-585) and the change would break cross-version comparability (VISION §22) for negative net value. Luck is instead held constant competitively by [Seed Challenges](seed-challenges.md) and isolated properly by simulation-calibrated per-match PAR. Rationale recorded under [Luck of the draw is a read, not a score adjustment](#luck-of-the-draw-is-a-read-not-a-score-adjustment).
 
 ## References
 
