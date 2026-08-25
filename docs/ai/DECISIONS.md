@@ -38336,3 +38336,13 @@ _Active 2026-08-24 — supersedes D-24408. Related: D-24408 (the superseded domi
 **Constraint.** Display-only — no engine, scoring, server, or `G` change; no hash re-pin; every match value still rendered verbatim from the server-returned breakdown. A rescued bystander is never a separate award (it scores inside VP, WP-599).
 
 _Active 2026-08-24 — WP-600 / EC-635. Related: D-24409 (the rulebook-faithful model this displays), D-24402 (report card v2), D-24392 (client owns display copy/weights)._
+
+### D-24411 — Endgame PAR Derivation Shows the Bystander-Lost Term (Active 2026-08-24 — WP-601 / EC-636)
+
+**Context.** A real 2p Midtown / Red Skull live match (D-24026 verify) surfaced that the endgame PAR-derivation display did not reconcile: it printed `(1 × 10) + (6 × 30) − (74 × 10) = −470`, but that expansion is −550. The **−470 is correct** — `computeParScore` also adds `bystandersLostPar × 40` (WP-591 / D-24400) — but `buildParDerivation` never rendered that penalty term. WP-591 added the field to the PAR math and to the raw-score givens but not to the derivation display; WP-599 then removed the large bystander-reward term that had masked the shortfall.
+
+**Decision.** Display-only fix: `buildParDerivation` renders the expected-bystander-lost penalty term (`+ (bystandersLostPar × 40)`) in the formula + substituted lines and adds an "Expected bystanders lost" given, mirroring how the twist term already works. The weight is derived from the breakdown (symbolic when the match had no bystander loss — never fabricated), gated on `bystandersLostPar > 0`.
+
+**Constraint.** No engine/scoring/server/`G` change; the PAR value itself is unchanged (rendered verbatim). Only its shown derivation gains the missing term, so the on-card arithmetic now reconciles to the printed PAR.
+
+_Active 2026-08-24 — WP-601 / EC-636. Related: D-24400 (bystandersLostPar in computeParScore), D-24409 (removed the bystander-reward term from the derivation), D-24396 (the PAR-derivation display)._

@@ -231,11 +231,12 @@ describe('PAR derivation (WP-587)', () => {
       calc.parDerivation?.substituted,
       '(1 × 100) − (25 × 10)',
     );
-    // twists is 0 here (this fixture's baseline predates WP-591's schemeTwistsPar),
-    // so no twist term appears in the formula/substituted above.
+    // twists + bystandersLost are 0 here (this fixture's baseline predates WP-591's
+    // schemeTwistsPar/bystandersLostPar), so neither term appears in the formula above.
     assert.deepEqual(calc.parDerivation?.baseline, {
       escapes: 1,
       twists: 0,
+      bystandersLost: 0,
       bystanders: 5,
       victoryPoints: 25,
     });
@@ -335,6 +336,29 @@ describe('WP-591 — twist-aware PAR derivation + loss penalty display', () => {
     assert.ok(calc.parDerivation?.formula.includes('+ (Twists × 300)'), calc.parDerivation?.formula);
     assert.ok(calc.parDerivation?.substituted.includes('+ (6 × 300)'), calc.parDerivation?.substituted);
     assert.equal(calc.parDerivation?.baseline.twists, 6);
+  });
+
+  test('PAR derivation shows the bystander-lost term and reconciles to the printed PAR (WP-601)', () => {
+    // Mirrors a real 2p Midtown / Red Skull match: printed PAR −470 must equal the shown
+    // expansion (1×10)+(6×30)+(2×40)−(74×10). Before WP-601 the derivation omitted the
+    // "+ (2 × 40)" bystander-lost term, so the expansion read −550 while the line printed −470.
+    const calc = buildWorkedScoreCalc(
+      breakdown({
+        parScore: -470,
+        parBaseline: { bystandersPar: 22, victoryPointsPar: 74, escapesPar: 1, schemeTwistsPar: 6, bystandersLostPar: 2 },
+        inputs: {
+          rounds: 26, victoryPoints: 59, bystandersRescued: 13, escapes: 1,
+          penaltyEventCounts: { villainEscaped: 1, bystanderLost: 1, schemeTwistNegative: 4, mastermindTacticUntaken: 0, scenarioSpecificPenalty: 0 },
+        },
+        penaltyBreakdown: { villainEscaped: 10, bystanderLost: 40, schemeTwistNegative: 120, mastermindTacticUntaken: 0, scenarioSpecificPenalty: 0 },
+        weightedVictoryPointReward: 590,
+      }),
+    );
+    assert.equal(calc.parDerivation?.formula, '(Escapes × 10) + (Twists × 30) + (Bystanders lost × 40) − (VP × 10)');
+    assert.equal(calc.parDerivation?.substituted, '(1 × 10) + (6 × 30) + (2 × 40) − (74 × 10)');
+    assert.equal(calc.parDerivation?.baseline.bystandersLost, 2);
+    // The shown expansion now reconciles to the printed PAR: 10 + 180 + 80 − 740 = −470.
+    assert.equal(10 + 180 + 80 - 740, calc.parScore);
   });
 
   test('raw calc shows the loss-penalty term only when the match was lost', () => {

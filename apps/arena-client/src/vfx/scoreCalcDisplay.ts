@@ -49,6 +49,8 @@ export interface ParDerivation {
     readonly escapes: number;
     /** Expected scheme twists (WP-591); 0 when the baseline predates WP-591. */
     readonly twists: number;
+    /** Expected bystanders lost (WP-601); 0 when the baseline predates WP-591 (or none expected). */
+    readonly bystandersLost: number;
     readonly bystanders: number;
     readonly victoryPoints: number;
   };
@@ -264,17 +266,34 @@ function buildParDerivation(
   const twistFormula = twistsPar > 0 ? `+ ${formulaTerm('Twists', twistWeight)} ` : '';
   const twistSub = twistsPar > 0 ? `+ ${parTerm(twistsPar, twistWeight, 'twist penalty')} ` : '';
 
-  // why: WP-599 / D-24409 — PAR no longer carries a bystander-reward term (rescued
-  // bystanders score only as their 1 VP, inside VP). The derivation shows the penalty
-  // terms (escapes, twists) minus the VP reward, mirroring the live raw-score formula.
+  // why: WP-601 — PAR also models the expected bystander-lost penalty (WP-591 /
+  // D-24400 put it in computeParScore but the derivation display omitted it, so the
+  // shown arithmetic did not reconcile to the printed PAR — e.g. a 2p Midtown PAR
+  // read "(1 × 10) + (6 × 30) − (74 × 10) = −470" where the expansion is −550, missing
+  // the "+ (2 × 40)" lost term). Shown when the baseline expects any (older rows have
+  // no bystandersLostPar → omitted, matching their PAR).
+  const lostWeight = perUnitWeight(
+    breakdown.penaltyBreakdown.bystanderLost,
+    breakdown.inputs.penaltyEventCounts.bystanderLost,
+  );
+  const bystandersLostPar = baseline.bystandersLostPar ?? 0;
+  const lostFormula = bystandersLostPar > 0 ? `+ ${formulaTerm('Bystanders lost', lostWeight)} ` : '';
+  const lostSub = bystandersLostPar > 0 ? `+ ${parTerm(bystandersLostPar, lostWeight, 'bystander-lost penalty')} ` : '';
+
+  // why: WP-599 / D-24409 — PAR carries no bystander-REWARD term (rescued bystanders
+  // score only as their 1 VP, inside VP). The derivation shows the penalty terms
+  // (escapes, twists, bystanders lost) minus the VP reward, mirroring the live raw-score
+  // formula and reconciling to the printed PAR value.
   const formula =
     `${formulaTerm('Escapes', escapeWeight)} ` +
     twistFormula +
+    lostFormula +
     `${MINUS} ${formulaTerm('VP', vpWeight)}`;
 
   const substituted =
     `${parTerm(baseline.escapesPar, escapeWeight, 'escape penalty')} ` +
     twistSub +
+    lostSub +
     `${MINUS} ${parTerm(baseline.victoryPointsPar, vpWeight, 'VP reward')}`;
 
   return {
@@ -283,6 +302,7 @@ function buildParDerivation(
     baseline: {
       escapes: baseline.escapesPar,
       twists: twistsPar,
+      bystandersLost: bystandersLostPar,
       bystanders: baseline.bystandersPar,
       victoryPoints: baseline.victoryPointsPar,
     },
