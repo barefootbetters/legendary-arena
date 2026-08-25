@@ -45,6 +45,27 @@ build in a Work Packet — not here.
 
 ## Mechanics
 
+### Core principles
+
+Six principles summarize the whole proposal and are the governance lens for
+every implementation decision that follows. If a later design choice violates
+one of these, the choice is wrong — not the principle.
+
+1. **Feedback is signal, not authority.** It informs the work; it does not
+   direct it.
+2. **Voting influences priorities but does not determine them.** The board
+   surfaces demand; the operator still owns sequencing.
+3. **The public roadmap is informational, not contractual.** A listed item is a
+   direction, never a promise.
+4. **Internal governance remains the system of record.** Work Packets,
+   Execution Checklists, [DECISIONS.md](../docs/ai/DECISIONS.md), and git history
+   are authoritative; the public board is a projection of them.
+5. **Every public item eventually receives a terminal outcome** — Shipped, or
+   Declined with a reason. Nothing is left to rot in limbo.
+6. **Trust is maintained through transparency, not through promising
+   everything.** Saying "no, because…" builds more trust than a roadmap that
+   never says no.
+
 ### The three feedback types are not one system
 
 Treating "feedback" as a single inbox is the most common mistake. The three
@@ -90,10 +111,23 @@ home when we already own identity, storage, and an admin UI — that's the
 institutional-dependency trap. Buy it only as a two-week experiment to prove
 players will actually vote before we build.
 
-### Stage 2 — Reviews (a different animal)
+The specific vendors in the table above are a point-in-time survey and will age;
+the durable filter is the criteria, not the names. Whatever board is adopted
+should:
 
-Reviews are not backlog items; they are **social proof** and belong on the
-marketing surface, not the roadmap board. Options: a star-rating + prose field
+- **Export all its data on demand** — no hostage situation at migration time.
+- **Support identity-gated voting** — one real account, one vote.
+- **Expose public status** — Planned / In progress / Shipped, visibly.
+- **Avoid mandatory lock-in** — no proprietary format we can't leave.
+- **Allow eventual migration to a self-hosted surface** — buying is a runway to
+  owning, not a destination.
+
+### Reviews — a parallel track (not a numbered stage)
+
+Reviews sit **outside** the numbered enhancement pipeline. They are not backlog
+items and do not flow into tracking or voting — they are **social proof** and
+belong on the marketing surface, not the roadmap board. Options: a
+star-rating + prose field
 gated behind a real (logged-in, match-having) account to keep them authentic;
 app-store and marketplace reviews once distributed there; and curated
 testimonials on the homepage. Authenticity is the whole game — a review from an
@@ -102,7 +136,7 @@ astroturf. This ties directly into the trust posture in
 [Legendary Arena — Tribe and Trust](legendary-arena-tribe-and-trust.md): the same
 identity fence that filters the community also authenticates a review.
 
-### Stage 3 — Tracking (public status ↔ internal work spine)
+### Stage 2 — Tracking (public status ↔ internal work spine)
 
 The project already has a rigorous **internal** tracking spine — Work Packets and
 Execution Checklists in
@@ -134,7 +168,7 @@ internal WP/EC/D numbering never leaks to players. **Declined with a reason** is
 as important as Shipped — an ignored request is worse than a declined one,
 because silence reads as "they don't listen."
 
-### Stage 4 — Voting (rank what's most wanted)
+### Stage 3 — Voting (rank what's most wanted)
 
 Voting turns a wishlist into a **priority signal**. The design questions are
 identity, weight, and abuse.
@@ -162,7 +196,7 @@ load-bearing infrastructure; some high-vote items conflict with the
 [Vision](vision.md) bright lines). The board promises *"we see the demand,"* not
 *"the top vote ships next."*
 
-### Stage 5 — Public visibility (changelog + roadmap)
+### Stage 4 — Public visibility (changelog + roadmap)
 
 This is the "so anyone can see what we've done, what's being worked on, and
 what's coming" surface. Three sub-surfaces, each with a job:
@@ -187,10 +221,38 @@ JavaScript (live vote counts, filtering) — which the **ewiki cannot do** (its
 zero-`<script>` JS-free gate). This page (an ewiki design doc) describes the
 system; the system itself renders on the JS-capable marketing surface.
 
+### System of record
+
+The public board is **informative only**. The authoritative record of what was
+built, and why, remains the internal spine — Work Packets, Execution Checklists,
+[DECISIONS.md](../docs/ai/DECISIONS.md), git history, and the private
+[Dashboard](dashboard.md) views. Where the public board and the internal records
+disagree, the internal records win. The roadmap is a **projection of the work,
+not the work itself**. This is not a new authority — it restates the existing
+model, where the Dashboard `/pipeline` is the private source of truth and the
+public surface is a curated view of it — stated plainly so a public board can
+never quietly become the thing engineering is steered by.
+
+### Operational ownership
+
+A feedback board is a **standing commitment, not a launch-and-forget feature** —
+community systems die from neglected queues, and an abandoned board advertises
+inattention louder than no board at all. The proposal therefore treats a **named
+operator as a launch precondition**: without someone accountable for the queue,
+the board should not go live. The minimum recurring duties:
+
+- **Weekly** — review new feedback; acknowledge bugs.
+- **Monthly** — sweep stale items; move every one to a terminal state; publish
+  the recap post.
+- **Quarterly** — refresh the roadmap themes.
+
+The point is not bureaucracy — it is that the maintenance cost is the real cost
+of the system, and it must be owned before it is launched.
+
 ### Cadence — monthly vs quarterly (the recommendation)
 
-Jeff asked for a direct opinion. **Run a two-tier cadence: quarterly themes over
-a monthly changelog.**
+The recommendation is direct: **run a two-tier cadence — quarterly themes over a
+monthly changelog.**
 
 - **Monthly changelog + recap** is the heartbeat. It answers "what did you do
   *this* month, and what are you doing *now*." Given this project's throughput —
@@ -209,8 +271,26 @@ a monthly changelog.**
 
 Concretely: each monthly changelog names **what was planned for that month** and
 stamps the **date each item was accomplished** — exactly the "planned vs
-delivered, with dates" shape Jeff described. The quarterly theme sits above it as
-the "why these, in this order" framing.
+delivered, with dates" shape requested. The quarterly theme sits above it as the
+"why these, in this order" framing.
+
+### Success metrics
+
+Without a definition of "working," a feedback system drifts into decoration. The
+proposed system is succeeding when:
+
+- **Every feedback item carries a status** — nothing is silently swallowed.
+- **No item sits in "Under review" past one monthly cycle** — the queue is
+  actually triaged, not just collected.
+- **Every shipped roadmap item appears in the changelog** — the forward and
+  backward views reconcile.
+- **Monthly recaps ship consistently** — the heartbeat doesn't skip.
+- **A player can see their request accepted, declined, or completed** — the loop
+  visibly closes for the person who opened it.
+
+The goal is **visibility and trust — not democratic control of development
+priorities.** A board that hits these metrics is doing its job even when it tells
+a player "no."
 
 ## Interactions
 
@@ -275,8 +355,9 @@ the "why these, in this order" framing.
 - **Vote weighting** — start unweighted; revisit only if raw counts get gamed or
   if weighting becomes a deliberate Legendary Pass perk (a Vision-fairness
   question, not just an engineering one).
-- **Moderation ownership** — who triages the board monthly, and against what
-  SLA? A board is a standing commitment, not a launch-and-forget feature.
+- **Who is the named operator?** The *Operational ownership* section makes an
+  owner a launch precondition; it does not yet name one or set an SLA. That
+  assignment is the open decision.
 - **No `WP-` / `D-` reserved yet.** This page is a proposal. Reserve numbers and
   draft the Work Packet(s) when a direction is chosen — do not treat this page as
   authorization to build.
