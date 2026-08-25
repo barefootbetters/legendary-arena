@@ -58,18 +58,24 @@ export interface ScoreGradeBand {
 // grade, tried best-to-worst; the bands are tunable config — a display-legibility
 // choice, NOT a scoring-formula change (WP-583 / D-24392). Legendary is well under
 // PAR; the final band (`null` ceiling) catches everything worse than D.
-// why: WP-591 / D-24400 — retuned for the scheme-aware, twist-aware PAR (which now
-// centers on competent play per scheme). Each bystander is worth 200 points, so the
-// old ±300-wide bands meant ~1.5 bystanders flipped a grade — everything pinned at
-// the extremes. These wider bands, validated against the 13 real anchor games, make
-// a solid win land B, an exceptional game A/Legendary, and a loss (via the loss
-// penalty) D/F. Tunable; a display-legibility choice, NOT a scoring-formula change.
+// why: WP-599 / D-24409 — re-derived for the rulebook-fidelity scale. Removing the
+// −200 bystander reward and rescaling penalties to true VP-units (10/30/40) collapsed
+// the raw-score magnitude ~10× (the score is now VP-dominated: `Raw = penalties −
+// VP×10`), so the old ±2000/±700 bands would pin almost every win at B. On the new
+// scale a competent win lands near PAR (0), and Final is driven by how far the team's
+// VP beats the scheme's expected VP (roughly ±10 per net VP). These narrower bands put
+// a solid win at B, a strong game at A, an exceptional one at Legendary, a weak win at
+// C, and a loss (via the +600 LOSS_PENALTY) at D/F. INTERIM / operator-tunable — a
+// display-legibility choice, NOT a scoring-formula change; validated against the 13
+// real anchor games (Final = raw − scheme-PAR): a 34-bystander Midtown win lands A, a
+// competent win sits near PAR (B), a bystander-heavy loss (via the +800 LOSS_PENALTY)
+// lands D and a low-VP loss F. Interim / operator-tunable (the WP-591 precedent).
 export const SCORE_GRADE_BANDS: readonly ScoreGradeBand[] = [
-  { grade: 'legendary', maxFinalScore: -2000 }, // well under a competent-play PAR
-  { grade: 'a', maxFinalScore: -700 }, // clearly above competent
-  { grade: 'b', maxFinalScore: 700 }, // a solid win sits around PAR (0)
-  { grade: 'c', maxFinalScore: 2000 }, // a weak win
-  { grade: 'd', maxFinalScore: 4000 }, // a near-miss loss (loss penalty applied)
+  { grade: 'legendary', maxFinalScore: -500 }, // well under a competent-play PAR
+  { grade: 'a', maxFinalScore: -250 }, // clearly above competent
+  { grade: 'b', maxFinalScore: 150 }, // a solid win sits around PAR (0)
+  { grade: 'c', maxFinalScore: 500 }, // a weak win
+  { grade: 'd', maxFinalScore: 1100 }, // a near-miss loss (loss penalty applied)
   { grade: 'f', maxFinalScore: null }, // a poor loss
 ];
 

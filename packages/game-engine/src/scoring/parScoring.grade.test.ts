@@ -82,23 +82,25 @@ describe('gradeForFinalScore band boundaries', () => {
   // why: the bands are inclusive-upper (`finalScore <= ceiling`), so each ceiling
   // earns its own band and ceiling+1 falls to the next. These cases pin both sides
   // of every boundary — the exact table locked in WP-583 AC-1.
-  // why: WP-591 / D-24400 — retuned bands (Legendary <= -2000, A <= -700, B <= 700,
-  // C <= 2000, D <= 4000, F). Wider than WP-583's so a bystander's worth (200) no
-  // longer flips a grade; validated against the 13 real anchor games.
+  // why: WP-599 / D-24409 — re-derived bands for the rulebook-fidelity scale
+  // (Legendary <= -500, A <= -250, B <= 150, C <= 500, D <= 1100, F). Narrower than
+  // WP-591's because removing the -200 bystander reward and rescaling penalties to
+  // true VP-units collapsed the raw-score magnitude ~10×; validated against the 13 real
+  // anchor games. Interim / operator-tunable.
   const cases: ReadonlyArray<readonly [number, ScoreGrade]> = [
     [-5000, 'legendary'],
-    [-2000, 'legendary'], // ceiling
-    [-1999, 'a'],
-    [-700, 'a'], // ceiling
-    [-699, 'b'],
+    [-500, 'legendary'], // ceiling
+    [-499, 'a'],
+    [-250, 'a'], // ceiling
+    [-249, 'b'],
     [0, 'b'], // PAR sits in B
-    [700, 'b'], // ceiling
-    [701, 'c'],
-    [2000, 'c'], // ceiling
-    [2001, 'd'],
-    [3000, 'd'], // a near-miss loss (loss penalty applied)
-    [4000, 'd'], // ceiling
-    [4001, 'f'],
+    [150, 'b'], // ceiling
+    [151, 'c'],
+    [500, 'c'], // ceiling
+    [501, 'd'],
+    [800, 'd'], // a near-miss loss (loss penalty applied)
+    [1100, 'd'], // ceiling
+    [1101, 'f'],
     [9999, 'f'],
   ];
 

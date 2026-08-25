@@ -45,7 +45,6 @@ import { BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
  * Integer centesimal units.
  */
 const REFERENCE_WEIGHTS = {
-  bystanderReward: 300,
   victoryPointReward: 50,
 } as const;
 
@@ -138,12 +137,13 @@ describe('parScoring logic (WP-048)', () => {
       },
     });
 
-    // why: WP-585 / D-24394 — no round-cost term. Penalties − rewards:
-    // (2×200 + 1×500 + 1×400 + 1×100 + 0×100) - (5 × 300) - (20 × 50)
-    // = 1400 - 1500 - 1000
-    // = -1100
+    // why: WP-585 — no round-cost term. WP-599 / D-24409 — no bystander-reward term.
+    // Penalties − VP reward (rescued bystanders score only inside VP, not counted here):
+    // (2×200 + 1×500 + 1×400 + 1×100 + 0×100) - (20 × 50)
+    // = 1400 - 1000
+    // = 400
     const rawScore = computeRawScore(inputs, config);
-    assert.strictEqual(rawScore, -1100);
+    assert.strictEqual(rawScore, 400);
   });
 
   // why: WP-585 / D-24394 — the round-cost monotonicity test was DELETED and replaced
@@ -209,19 +209,20 @@ describe('parScoring logic (WP-048)', () => {
     );
   });
 
-  // Test 5 — monotonicity: extra bystander rescue decreases score (better)
-  it('computeRawScore monotonicity: one extra bystander rescue decreases Raw Score by bystanderReward', () => {
+  // Test 5 — WP-599 / D-24409: bystandersRescued is now INVARIANT to Raw Score.
+  // why: the dedicated −200 bystander reward was removed (full rulebook fidelity); a
+  // rescued bystander scores only as its 1 VP, which reaches the formula through the
+  // separate `victoryPoints` input, NOT via `bystandersRescued`. So varying
+  // bystandersRescued alone (VP held fixed) must not move the Raw Score. This replaces
+  // the old "decreases by bystanderReward" monotonicity test, which encoded the
+  // now-deleted invented reward.
+  it('computeRawScore is INVARIANT to bystandersRescued (WP-599: no bystander-reward term)', () => {
     const config = makeReferenceConfig();
-    const baseline = makeInputs({ bystandersRescued: 2 });
-    const extra = makeInputs({ bystandersRescued: 3 });
-
-    const baselineScore = computeRawScore(baseline, config);
-    const extraScore = computeRawScore(extra, config);
-
-    assert.ok(extraScore < baselineScore);
+    const fewRescues = makeInputs({ bystandersRescued: 2 });
+    const manyRescues = makeInputs({ bystandersRescued: 30 });
     assert.strictEqual(
-      baselineScore - extraScore,
-      config.weights.bystanderReward,
+      computeRawScore(fewRescues, config),
+      computeRawScore(manyRescues, config),
     );
   });
 
@@ -351,10 +352,6 @@ describe('parScoring logic (WP-048)', () => {
   it('validateScoringConfig rejects configs with zero or negative component weights', () => {
     const baseConfig = makeReferenceConfig();
 
-    const negativeBystanderReward: ScenarioScoringConfig = {
-      ...baseConfig,
-      weights: { ...baseConfig.weights, bystanderReward: -1 },
-    };
     const zeroVictoryPointReward: ScenarioScoringConfig = {
       ...baseConfig,
       weights: { ...baseConfig.weights, victoryPointReward: 0 },
@@ -368,7 +365,6 @@ describe('parScoring logic (WP-048)', () => {
     };
 
     for (const badConfig of [
-      negativeBystanderReward,
       zeroVictoryPointReward,
       zeroPenaltyWeight,
     ]) {
@@ -378,50 +374,31 @@ describe('parScoring logic (WP-048)', () => {
     }
   });
 
-  // Test 11 — reject violation of structural invariant 1
-  it('validateScoringConfig rejects configs violating invariant 1 (bystanderReward > villainEscaped)', () => {
+  // Test 11 — WP-599 / D-24409: structural invariants 1 (bystanderReward >
+  // villainEscaped) and 3 (bystanderLost > bystanderReward) were REMOVED with the
+  // bystanderReward. Invariant 2 (bystanderLost > villainEscaped) is the sole
+  // surviving moral-hierarchy invariant; validate must still reject a config that
+  // violates it (a lost civilian must always cost more than a villain escape).
+  it('validateScoringConfig rejects configs violating invariant 2 (bystanderLost > villainEscaped)', () => {
     const config: ScenarioScoringConfig = {
       ...makeReferenceConfig(),
-      // bystanderReward (150) no longer exceeds villainEscaped (200).
-      weights: {
-        bystanderReward: 150,
-        victoryPointReward: 50,
+      penaltyEventWeights: {
+        ...makeReferenceConfig().penaltyEventWeights,
+        // bystanderLost (100) no longer exceeds villainEscaped (200) — invariant 2 broken.
+        villainEscaped: 200,
+        bystanderLost: 100,
       },
     };
 
     const result = validateScoringConfig(config);
 
     assert.strictEqual(result.valid, false);
-    const mentionsInvariant1 = result.errors.some((message) =>
-      message.includes('bystanderReward') && message.includes('villainEscaped'),
+    const mentionsInvariant2 = result.errors.some((message) =>
+      message.includes('bystanderLost') && message.includes('villainEscaped'),
     );
     assert.ok(
-      mentionsInvariant1,
-      'Error list must name the bystanderReward > villainEscaped invariant.',
-    );
-  });
-
-  // Test 12 — reject violation of structural invariant 3
-  it('validateScoringConfig rejects configs violating invariant 3 (bystanderLost > bystanderReward)', () => {
-    const config: ScenarioScoringConfig = {
-      ...makeReferenceConfig(),
-      // bystanderReward (600) now exceeds bystanderLost (500) — invariant 3
-      // violated. Invariants 1 and 2 remain satisfied.
-      weights: {
-        bystanderReward: 600,
-        victoryPointReward: 50,
-      },
-    };
-
-    const result = validateScoringConfig(config);
-
-    assert.strictEqual(result.valid, false);
-    const mentionsInvariant3 = result.errors.some((message) =>
-      message.includes('bystanderLost') && message.includes('bystanderReward'),
-    );
-    assert.ok(
-      mentionsInvariant3,
-      'Error list must name the bystanderLost > bystanderReward invariant.',
+      mentionsInvariant2,
+      'Error list must name the bystanderLost > villainEscaped invariant.',
     );
   });
 

@@ -142,6 +142,11 @@ to avoid floating-point determinism issues; display layers divide by
 weights. This is one of the determinism invariants and is non-
 negotiable across all platforms (Windows / Linux / Render hosts).
 
+As of **WP-599 / D-24409**, `ScoringWeights` no longer carries a
+`bystanderReward` field — the invented per-bystander rescue reward was
+removed, and a rescued bystander now scores only its printed 1 VP through
+the `victoryPointReward` term. Victory points are the sole reward.
+
 ### `scoringConfigVersion` pin
 
 Every `ScoreBreakdown` and `LeaderboardEntry` carries the integer
@@ -212,16 +217,20 @@ its deferred follow-up:
 This is load-bearing for anyone reasoning about live scores. The
 weights and their structural invariants are fully specified and
 validated, but a penalty with no producer contributes nothing to
-`weightedPenaltyTotal`. `bystanderLost` — which the structural
-invariants rank above both `villainEscaped` and the rescue reward — is
-**now produced** (from the escaped pile), so a match that lets civilians
-be carried away *is* scored on that loss; the rescue side
-(`bystanderReward`) is likewise live, derived from the victory pile.
-Both the loss and the rescue count **both** Bystander sources — villain-deck
-and supply-pile — through the shared `isBystanderCard` predicate, so the
-competitive score, the per-player VP tally, and the HUD rescue count always
-agree on what a Bystander is (WP-586 / D-24395; before that fix the scoring
-derivation counted only villain-deck Bystanders and undercounted rescues).
+`weightedPenaltyTotal`. `bystanderLost` — which the sole surviving
+structural invariant ranks above `villainEscaped` (WP-599 removed the two
+invariants that referenced the deleted rescue reward) — is **now produced**
+(from the escaped pile), so a match that lets civilians be carried away *is*
+scored on that loss. There is no longer a separate rescue reward: as of
+WP-599 / D-24409 a rescued bystander scores only its printed 1 VP through the
+victory-point term (the bystander count is still derived from the victory pile,
+but as a VP contributor and an informational stat, not a standalone reward).
+Both the loss count and the rescued-bystander count use **both** Bystander
+sources — villain-deck and supply-pile — through the shared `isBystanderCard`
+predicate, so the competitive score, the per-player VP tally, and the HUD
+rescue count always agree on what a Bystander is (WP-586 / D-24395; before that
+fix the scoring derivation counted only villain-deck Bystanders and
+undercounted rescues).
 
 Do not describe a still-safe-skipped penalty as "counted from" anything until
 its producer lands. Player-facing guidance written against the
@@ -240,9 +249,15 @@ All three of those terms are now produced — `bystanderLost` (WP-528 / D-24339)
 `schemeTwistNegative` (WP-529 / D-24340), and `villainEscaped` (already live) —
 so the 4 : 3 : 1 ratio was a ready-made seed for their relative weights rather
 than a number invented from scratch. **It is now the adopted reference default**
-(D-24342 / WP-531): the scoring reference and the test scenario config carry
-`bystanderLost 400 / schemeTwistNegative 300 / villainEscaped 100`, with the
-escape as the 1.00 unit. This remains an anchor for the *ordering and rough
+(D-24342 / WP-531, rescaled by WP-599 / D-24409): the scoring reference and the
+test scenario config carry `bystanderLost 40 / schemeTwistNegative 30 /
+villainEscaped 10`, with the escape as the 1-VP unit (was `400 / 300 / 100`
+before WP-599 put the penalties on true VP-units — 1 VP = 10 centesimal, the same
+scale as the VP reward). WP-599 also **removed the separate bystander-rescue
+reward**: the rulebook gives no positive rescue bonus (only the −4 penalty for a
+lost civilian), so a rescued bystander now scores only its printed 1 VP and the
+moral hierarchy rests entirely on the heavy `bystanderLost` penalty — faithful to
+the rulebook. This remains an anchor for the *ordering and rough
 magnitude*, **not** a replacement for calibration — the published weights remain
 whatever `validateScoringConfig` accepts under a pinned `scoringConfigVersion`,
 and a simulation-calibrated production config supersedes the seed. The full contrast between this absolute PAR model and
@@ -261,11 +276,14 @@ ReplayHash ───────────────────────
 
 `ScoreBreakdown` is the immutable result the engine returns:
 `weightedPenaltyTotal`, `penaltyBreakdown`,
-`weightedBystanderReward`, `weightedVictoryPointReward`, `rawScore`,
+`weightedVictoryPointReward`, `rawScore`,
 `parScore`, `finalScore`, plus the inputs and version pin. Every
 intermediate component is exposed so leaderboard UIs and
-post-match summaries never recompute. (There is no per-round cost — the
-rulebook has no round penalty; Scheme Twists carry game length. WP-585.)
+post-match summaries never recompute. (WP-599 / D-24409 removed
+`weightedBystanderReward` — victory points are the sole reward term, and
+rescued bystanders score as 1 VP inside `weightedVictoryPointReward`. There is
+also no per-round cost — the rulebook has no round penalty; Scheme Twists carry
+game length. WP-585.)
 
 `LeaderboardEntry` (defined in the engine, instantiated in the
 server) wraps a `ScoreBreakdown` with `replayHash` (WP-027
@@ -303,8 +321,12 @@ breaks the number down so you can see exactly where it came from:
   a display-only reconciliation that sums to the team totals.
 - **Raw-score ledger.** Your raw score is shown as two columns: the **penalties** that
   raised it (scheme twists, villain escapes, bystanders lost, and a match-lost penalty
-  on a loss) beside what you **earned** that lowered it (rescued bystanders, victory
-  points). The two sides net to your raw score.
+  on a loss) beside what you **earned** that lowered it — **victory points** (the sole
+  reward, which already counts each rescued bystander as 1 VP). The two sides net to
+  your raw score. Your rescued-bystander count is shown alongside as an informational
+  stat, not a separate scored line (WP-599 removed the standalone rescue reward — a
+  rescue is worth its 1 VP, and heroism is enforced by the heavy penalty for *losing*
+  a civilian).
 - **PAR for this scenario.** The same formula applied to what this scenario is expected
   to yield — set by its scheme, mastermind, and villain groups (not the henchmen). Your
   final score is Raw − PAR.
@@ -457,6 +479,7 @@ objective card.)
 - WP-587/588 + D-24396/24397 (2026-08-22): the endgame report card gained the PAR **derivation** (the same formula on the scenario baseline), a colour-coded **grade scale**, a **per-player** VP/bystander split, and named penalties ("7 scheme twists", not "7 penalties") — all rendered verbatim from the returned breakdown, no server change
 - WP-591 + D-24400 (2026-08-23): interim **scheme-aware PAR** — PAR was scheme-blind and mis-graded both ways (flood schemes pinned Legendary, light schemes graded wins F); per-scheme baselines from 13 real-game anchors, PAR now models expected twists + bystanders-lost, a loss penalty grades a loss by margin, retuned grade bands; `scoringConfigVersion 3→4`
 - WP-593 + D-24402 (2026-08-23): report card v2 — **named players** (`Player N (Bot)` / `Player N (@handle)`) via a derived, non-persisted `seatIdentities` projection on the submit response, a **raw-score ledger** (penalties vs earned), and an objective, deterministic **luck-of-the-draw** read (actual adversity vs the scenario's PAR expectation). Display + read-path only; no game-state-hash re-pin
+- WP-599 + D-24409 (2026-08-24): rulebook-faithful scoring — removed the invented −200 bystander-rescue reward (a rescued bystander now scores only its 1 VP, ending the double-count) and rescaled penalties to true VP-units (escape 10 / twist 30 / bystander-lost 40, the rulebook 4:3:1); dropped structural invariants 1 & 3, LOSS_PENALTY 6000→800, re-derived grade bands; scoringConfigVersion 4→5 / rawScoreSemanticsVersion 3→4, 128 configs + seed artifacts regenerated, no retroactive invalidation. Supersedes D-24408.
 
 ## References
 

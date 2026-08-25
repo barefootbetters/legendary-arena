@@ -56,22 +56,30 @@ import { validateGauntletConfigs } from "@legendary-arena/registry/gauntletConfi
 /**
  * The one global default scoring config (v1) applied to every seed scenario —
  * the adopted reference weights (D-24342 / WP-531: the rulebook 4:3:1 penalty
- * ratio, `bystanderLost 400 / schemeTwistNegative 300 / villainEscaped 100`).
+ * ratio; WP-599 / D-24409 rescaled it to true VP-units `bystanderLost 40 /
+ * schemeTwistNegative 30 / villainEscaped 10`, with no separate bystander reward).
  * Matches the committed reference config so all seed scenarios share one
  * `scoringConfigVersion` and stay comparable. Satisfies every
  * `validateScoringConfig` structural invariant.
  */
 // why: WP-585 / D-24394 — no roundCost. The rulebook's scoring has no round/turn
-// penalty; Scheme Twists are its length proxy (schemeTwistNegative 300), so a
-// separate per-round cost double-counted length and was removed.
-const DEFAULT_WEIGHTS = { bystanderReward: 200, victoryPointReward: 10 };
+// penalty; Scheme Twists are its length proxy (schemeTwistNegative), so a separate
+// per-round cost double-counted length and was removed.
+// why: WP-599 / D-24409 (supersedes D-24408) — full rulebook fidelity. No
+// bystanderReward: a rescued bystander scores only as its 1 VP (folded into VP). The
+// penalty weights are the true rulebook VP-unit values on the ×10 scale (1 VP = 10):
+// villainEscaped 10, schemeTwistNegative 30, bystanderLost 40 — the rulebook 4:3:1 and
+// the community Total Score `VP − 4·lost − 3·twists − 1·escapes`. The LA-only penalties
+// (mastermindTacticUntaken, scenarioSpecificPenalty) are inert today (no producer) and
+// carry a minor in-scale value.
+const DEFAULT_WEIGHTS = { victoryPointReward: 10 };
 const DEFAULT_CAPS = { bystanderCap: null, victoryPointCap: null };
 const DEFAULT_PENALTY_EVENT_WEIGHTS = {
-  villainEscaped: 100,
-  bystanderLost: 400,
-  schemeTwistNegative: 300,
-  mastermindTacticUntaken: 25,
-  scenarioSpecificPenalty: 40,
+  villainEscaped: 10,
+  bystanderLost: 40,
+  schemeTwistNegative: 30,
+  mastermindTacticUntaken: 10,
+  scenarioSpecificPenalty: 10,
 };
 // why: WP-585 / D-24394 — bumped on the roundCost removal. scoringConfigVersion
 // 2->3 per the docs/12 calibration invariant (any weight/config change bumps it);
@@ -82,8 +90,12 @@ const DEFAULT_PENALTY_EVENT_WEIGHTS = {
 // bumps it) and rawScoreSemanticsVersion 2->3 (a formula-SHAPE change: PAR now models
 // the twist + bystander-lost penalties, and RawScore gains the loss penalty). Existing
 // competitive_scores rows keep their pinned versions — no retroactive invalidation.
-const SCORING_CONFIG_VERSION = 4;
-const RAW_SCORE_SEMANTICS_VERSION = 3;
+// why: WP-599 / D-24409 — scoringConfigVersion 4->5 (weight change) and
+// rawScoreSemanticsVersion 3->4 (a formula-SHAPE change: the bystander-reward term is
+// removed and the penalty weights are rescaled). Existing rows keep their pinned
+// versions — no retroactive invalidation.
+const SCORING_CONFIG_VERSION = 5;
+const RAW_SCORE_SEMANTICS_VERSION = 4;
 
 // why: class-2 metadata timestamps must be FIXED, never Date.now(), so the
 // generator is deterministic — re-running produces byte-identical artifacts

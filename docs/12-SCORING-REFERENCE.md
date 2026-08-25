@@ -118,6 +118,31 @@ score inflation across scenarios.
 
 ## Raw Score Composition
 
+> **Updated by WP-599 / D-24409 (2026-08-24): full rulebook fidelity — one reward
+> term, penalties in true VP-units.** The invented per-bystander rescue reward is
+> **removed**. A rescued bystander now scores **only** its printed 1 VP, folded into
+> the Victory Points total — so a bystander is counted exactly once, ending the prior
+> double-count. **Victory Points is the sole reward term.** Penalty weights are
+> rescaled to true VP-units (1 VP = 10 centesimal, the same scale as the VP reward):
+> `villainEscaped 100→10`, `schemeTwistNegative 300→30`, `bystanderLost 400→40` (the
+> rulebook 4:3:1, now on the VP scale); the LA-only inert penalties
+> `mastermindTacticUntaken 25→10` and `scenarioSpecificPenalty 40→10` take a minor
+> in-scale value. New Raw Score formula: `RawScore = P − (VP × 10) + lossPenalty`,
+> mirroring the rulebook / community Total Score `VP − 4·bystandersLost − 3·twists −
+> 1·escapes`. Structural invariants 1 (`W_BP > villainEscaped`) and 3
+> (`bystanderLost > W_BP`) are **removed** with the reward they referenced; invariant
+> 2 (`bystanderLost > villainEscaped`, now `40 > 10`) survives as the sole
+> moral-hierarchy invariant — the "rescue is the point" hierarchy now lives entirely
+> on the heavy `bystanderLost` penalty, exactly as the rulebook encodes it (it
+> penalizes losing civilians −4 but gives no positive rescue reward). `LOSS_PENALTY
+> 6000→800`; `SCORE_GRADE_BANDS` re-derived against 13 real anchor games (Legendary ≤
+> −500, A ≤ −250, B ≤ 150, C ≤ 500, D ≤ 1100, F). `scoringConfigVersion 4→5` /
+> `rawScoreSemanticsVersion 3→4`; 128 scoring-configs + 128 seed PAR artifacts + index
+> regenerated; existing rows keep their pinned versions (no retroactive invalidation).
+> The game-**winner** VP (rulebook table result) still counts bystanders at 1 VP each;
+> only the competitive score changed. **INTERIM / tunable.** Supersedes D-24408. See
+> D-24409.
+
 > **Updated by WP-591 / D-24400 (2026-08-23): scheme-aware PAR, physical baselines,
 > loss penalty, retuned grade bands.** The seed PAR was scheme-BLIND (a flat
 > difficulty→baseline template) but bystander rescues are scheme-DRIVEN (validated
@@ -143,12 +168,15 @@ score inflation across scenarios.
 
 ```
 Raw Score =
-  P            -
-  (BP x W_BP)  -
+  P             +
+  lossPenalty   -
   (VP x W_VP)
 ```
 
-Where `P` is the weighted sum of all penalty event contributions.
+Where `P` is the weighted sum of all penalty event contributions, `lossPenalty` is a
+flat `LOSS_PENALTY` added only when the match is lost, and `VP` is the sole reward
+term (WP-599 / D-24409 removed the separate bystander-rescue reward — rescued
+bystanders now score as their printed 1 VP inside `VP`).
 
 All values are stored and computed as **centesimal integers** (multiplied by 100
 internally) for perfect precision and deterministic integer arithmetic.
@@ -157,9 +185,9 @@ internally) for perfect precision and deterministic integer arithmetic.
 
 | Symbol | Name                  | Direction       | Description                                    |
 |--------|-----------------------|-----------------|------------------------------------------------|
-| R      | Rounds played         | Higher = worse  | Full player turn cycles                        |
-| BP     | Bystanders rescued    | Higher = better | Bystanders saved through defeat or effects     |
-| VP     | Victory Points earned | Higher = better | Total VP per official rules                    |
+| R      | Rounds played         | Higher = worse  | Full player turn cycles (informational only)   |
+| BP     | Bystanders rescued    | Informational   | Bystanders saved (score as 1 VP each inside VP; no separate reward — WP-599) |
+| VP     | Victory Points earned | Higher = better | Total VP per official rules — **sole reward term**, includes rescued bystanders at 1 VP each |
 | P      | Penalty total         | Higher = worse  | Weighted sum of all penalty events             |
 | W_*    | Weights               | --              | Scenario-defined per component                 |
 
@@ -179,24 +207,32 @@ accumulate the longer the villains operate). `R` is still shown to players as co
 
 ### 2. Bystanders Rescued (BP) — Heroism
 
-Counts bystanders saved via defeat, effects, or special rules. **Strongest
-positive reward** — saving civilians is the moral core of the game.
+Counts bystanders saved via defeat, effects, or special rules. Saving civilians is
+the moral core of the game — but as of **WP-599 / D-24409 there is no separate BP
+reward weight.** A rescued bystander scores **only** its printed **1 VP**, folded
+into the Victory Points total (§3). `~~W_BP = +300~~` is **removed**.
 
-**Default weight:** `W_BP = +300` (3.00 per bystander)
+The heroism incentive is now carried entirely by the penalty side: losing a
+civilian to an escaping villain costs the heavy `bystanderLost` penalty (+40),
+exactly as the Marvel Legendary rulebook encodes it — the rulebook penalizes losing
+civilians −4 but gives **no** positive rescue bonus. Rescue is "the point" because
+failing to rescue is expensive, not because rescue pays a bonus on top of its VP.
 
-**Optional scenario cap:** `BP_effective = min(BP, ScenarioCap)`
-
-The scenario may define a cap beyond which additional rescues yield no further
-score benefit. This prevents bystander-farming strategies from dominating.
+`BP` is retained as an **informational** stat (shown on the report card and used by
+PAR's `bystandersLostPar` adversity read), never as a separate scored line.
 
 ---
 
-### 3. Victory Points (VP) — Combat Effectiveness
+### 3. Victory Points (VP) — The Sole Reward
 
-Total VP earned per official rules (villains, tactics, bystanders, etc.).
-Weighted to reward strong play without making VP-grinding dominant.
+Total VP earned per official rules. VP is the **only reward term** in the Raw Score
+and explicitly **counts rescued bystanders at 1 VP each** (alongside defeated
+villains, henchmen, and mastermind tactics) — so a bystander is counted **exactly
+once**, ending the prior double-count in which a rescue paid both its VP and a
+separate bonus.
 
-**Default weight:** `W_VP = +50` (0.50 per VP)
+**Default weight:** `W_VP = +10` (0.10 per VP) — the true VP-unit that the rescaled
+penalties (§4) share.
 
 ---
 
@@ -204,20 +240,22 @@ Weighted to reward strong play without making VP-grinding dominant.
 
 Each event type carries its own weight, reflecting the **moral hierarchy**.
 
-> **Rulebook anchor (D-24342).** The three rulebook penalties —
-> `bystanderLost` : `schemeTwistNegative` : `villainEscaped` — are anchored to the
-> community / rulebook **4:3:1** ratio, with `villainEscaped` as the 1.00 unit
-> (`400 / 300 / 100`). `mastermindTacticUntaken` and `scenarioSpecificPenalty` are
-> Legendary-Arena-specific penalties and are **not** part of that triple, so they
-> keep their own values.
+> **Rulebook anchor (D-24342, rescaled by WP-599 / D-24409).** The three rulebook
+> penalties — `bystanderLost` : `schemeTwistNegative` : `villainEscaped` — are
+> anchored to the community / rulebook **4:3:1** ratio. WP-599 rescaled them to true
+> VP-units (1 VP = 10 centesimal, the same scale as the VP reward), so the triple is
+> now `40 / 30 / 10` with `villainEscaped` as the 1-VP unit (was `400 / 300 / 100`).
+> `mastermindTacticUntaken` and `scenarioSpecificPenalty` are
+> Legendary-Arena-specific penalties, **not** part of that triple; they take a minor
+> in-scale value (+10).
 
 | Event Type               | Default Weight | Meaning                                    |
 |--------------------------|----------------|--------------------------------------------|
-| `villainEscaped`         | +100 (1.00)    | Loss of tactical control                   |
-| `bystanderLost`          | +400 (4.00)    | Heroic failure — civilian casualty          |
-| `schemeTwistNegative`    | +300 (3.00)    | Scheme pressure resolving against players   |
-| `mastermindTacticUntaken` | +100 (1.00)   | Missed opportunity — incomplete victory     |
-| `scenarioSpecificPenalty` | scenario-defined | Scenario-unique failure event             |
+| `villainEscaped`         | +10 (1.00)     | Loss of tactical control                   |
+| `bystanderLost`          | +40 (4.00)     | Heroic failure — civilian casualty          |
+| `schemeTwistNegative`    | +30 (3.00)     | Scheme pressure resolving against players   |
+| `mastermindTacticUntaken` | +10 (1.00)    | Missed opportunity — incomplete victory     |
+| `scenarioSpecificPenalty` | +10 / scenario-defined | Scenario-unique failure event         |
 
 The penalty total `P` is:
 
@@ -237,18 +275,22 @@ encodes a moral hierarchy:
 
 - Letting a villain escape is bad
 - Letting a villain escape **with a captured bystander** is worse
-- The penalty for losing a bystander must exceed the reward for saving one
+- Losing a bystander (+40) costs four times what letting a villain escape (+10)
+  does — the rulebook 4:1 spread
 
 This ensures players cannot adopt a "cold, conservative" strategy — ignoring
 civilians in favor of perfect board control — and outscore a player who takes
-risks to save lives.
+risks to save lives. Note (WP-599 / D-24409): the incentive is entirely
+penalty-side now — there is no positive rescue bonus to weigh against; a rescued
+bystander scores only its 1 VP, and the moral pressure comes from the heavy cost of
+*losing* one.
 
 #### Why Untaken Tactics Are Penalized
 
 Mastermind tactics already contribute to VP when defeated (VP_TACTIC = +5 per
 WP-020). The `mastermindTacticUntaken` penalty is a separate signal: it measures
 **completeness of victory**, not combat value. A team that wins without fully
-defeating the mastermind has left the job unfinished. The modest weight (+100)
+defeating the mastermind has left the job unfinished. The modest weight (+10)
 reflects that this is a minor penalty — a tiebreaker-level signal, not a
 dominant scoring factor.
 
@@ -260,42 +302,29 @@ These relationships **must hold for every scenario configuration**. They are har
 rules that prevent future rebalancing from eroding the moral structure of the
 system.
 
-### Invariant 1: Rescue Bonus Exceeds Villain Escape Penalty
+> **WP-599 / D-24409 removed invariants 1 and 3.** Both referenced the deleted
+> bystander-rescue reward (`W_BP`), which no longer exists — a rescued bystander now
+> scores only its 1 VP. The sole surviving moral-hierarchy invariant is invariant 2
+> below: with no positive rescue bonus, the entire hierarchy rests on the heavy
+> `bystanderLost` penalty, exactly as the rulebook encodes it.
 
-```
-W_BP > villainEscapedWeight
-```
-
-Saving a bystander must always be worth more than the cost of a villain escaping.
-Heroic, rescue-oriented play is always rewarded over conservative containment.
-
-### Invariant 2: Bystander Loss Exceeds Villain Escape
+### Invariant: Bystander Loss Exceeds Villain Escape
 
 ```
 bystanderLostWeight > villainEscapedWeight
 ```
 
 Losing a civilian is always worse than losing a villain. Prevents strategies that
-sacrifice civilians to maintain board position.
+sacrifice civilians to maintain board position. This is the single non-negotiable
+moral-hierarchy relationship the scoring model must preserve.
 
-### Invariant 3: Bystander Loss Exceeds Rescue Bonus
-
-```
-bystanderLostWeight > W_BP
-```
-
-The penalty for losing a bystander must exceed the reward for saving one. "Net
-zero" bystander outcomes (save one, lose one) are always penalized, not neutral.
-
-### Default Values Satisfy All Invariants
+### Default Values Satisfy the Invariant
 
 ```
-W_BP (300) > villainEscaped (100)          Invariant 1
-bystanderLost (400) > villainEscaped (100) Invariant 2
-bystanderLost (400) > W_BP (300)           Invariant 3
+bystanderLost (40) > villainEscaped (10)   (rulebook 4:1)
 ```
 
-Any scenario-specific tuning must preserve these invariants exactly.
+Any scenario-specific tuning must preserve this invariant exactly.
 
 ---
 
@@ -303,19 +332,23 @@ Any scenario-specific tuning must preserve these invariants exactly.
 
 ```
 Raw Score =
-  (villainEscapes x 100) +
-  (bystandersLost x 400) +
-  (schemeTwistNegatives x 300) +
-  (mastermindTacticsUntaken x 25) +
-  (scenarioSpecificPenalties x scenarioWeight) -
-  (BP x bystanderReward) -
+  (villainEscapes x 10) +
+  (bystandersLost x 40) +
+  (schemeTwistNegatives x 30) +
+  (mastermindTacticsUntaken x 10) +
+  (scenarioSpecificPenalties x scenarioWeight) +
+  lossPenalty -
   (VP x vpReward)
 ```
 
-> WP-585 / D-24394: no `(R × …)` round-cost term. The penalty weights above are the
-> rulebook 4:3:1 anchor (`bystanderLost 400 / schemeTwistNegative 300 / villainEscaped
-> 100`, D-24342). BP/VP reward weights are scenario-config values (seed defaults
-> `bystanderReward 200 / vpReward 10`).
+> WP-599 / D-24409: **VP is the sole reward term** — the `(BP × bystanderReward)`
+> term is removed (rescued bystanders score as 1 VP inside `VP`). Penalty weights are
+> the rulebook 4:3:1 anchor rescaled to true VP-units (`bystanderLost 40 /
+> schemeTwistNegative 30 / villainEscaped 10`, D-24409, was `400 / 300 / 100`);
+> `mastermindTacticUntaken` and `scenarioSpecificPenalty` take a minor in-scale value
+> (+10). `lossPenalty` is a flat `LOSS_PENALTY` (800) added only on a lost match. The
+> VP reward weight is a scenario-config value (seed default `vpReward 10`).
+> WP-585 / D-24394 already removed the `(R × …)` round-cost term.
 
 ```
 Final Score = Raw Score - PAR
@@ -414,8 +447,10 @@ player's `finalScore` nonsensical until simulation replaced it.
 So the shipped Seed PAR generator (`scripts/generate-seed-par.mjs`, WP-422) maps a
 scenario's composed difficulty → a documented `ParBaseline` template and sets
 `parValue = computeParScore(baseline)` on the Raw Score scale, using the adopted
-default weights (D-24342: round 50 / bystander-reward 200 / VP 10; penalties
-400/300/100/25/40). The `12000+` scalar is retained here only as the difficulty
+default weights (originally D-24342: round 50 / bystander-reward 200 / VP 10;
+penalties 400/300/100/25/40 — **rescaled by WP-599 / D-24409** to VP 10, no
+bystander reward, penalties 40/30/10/10/10; the 128 seed artifacts were regenerated
+under the new weights). The `12000+` scalar is retained here only as the difficulty
 index it always was. Full mapping + default-weight rationale: **D-24242**.
 
 ### Phase 2: Simulation Calibration (Pre-Release Accuracy)
@@ -577,6 +612,15 @@ new `scoringConfigVersion` published.
 
 ## Worked Example (Illustrative Only)
 
+> **Pre-WP-599 scale.** The two worked examples below still use the superseded weights
+> (round term, `bystanderReward 300`, `vpReward 50`, penalties `100 / 400 / 300`) and
+> the old PAR magnitude, so their arithmetic **does not** match the current formula
+> (`RawScore = P − (VP × 10) + lossPenalty`, penalties `10 / 40 / 30`, no round term,
+> no bystander reward). They are retained only to illustrate *why Player A beats
+> Player B* — the moral hierarchy the model encodes — not the exact numbers. The
+> ordering (heroic play wins) is unchanged under the new scale; the magnitudes are
+> not. Recomputing them requires a regenerated scenario PAR on the WP-599 scale.
+
 Using the same scenario from the PAR Calibration Example above:
 
 **Scenario:** Red Skull (5) + Midtown Bank Robbery (4) + Hydra (3) + Masters
@@ -706,7 +750,7 @@ penalties a longer game accrues.
 
 **Round Stalling (WP-585 / D-24394):** There is no direct round penalty. Stalling is
 punished indirectly: the longer the game runs, the more Scheme/Plot Twists are revealed,
-and each twist adds `+300` to Raw Score (the rulebook's own length proxy). A team that
+and each twist adds `+30` to Raw Score (the rulebook's own length proxy). A team that
 drags the game out reveals more twists and scores worse.
 
 **Conservative Play:** Moral hierarchy prevents "ignore civilians for board
@@ -761,9 +805,11 @@ D-24402):
   it is **never** a `CompetitiveScoreRecord` column and is **never** persisted. A
   seat that maps to neither a bot nor a handled account renders as plain `Player N`.
 - **Raw-score ledger.** The raw score is shown as a two-sided ledger — penalty lines
-  (positive; they raise the score) beside earned-reward lines (bystanders + VP; shown
-  subtracted) — netting to the verbatim `rawScore`. A lost match shows its
-  `weightedLossPenalty` as its own penalty line.
+  (positive; they raise the score) beside the earned-reward line (VP; shown
+  subtracted) — netting to the verbatim `rawScore`. As of WP-599 / D-24409 VP is the
+  sole earned line (rescued bystanders score as 1 VP inside it); the rescued-bystander
+  count is shown as an informational stat, not a separate scored line. A lost match
+  shows its `weightedLossPenalty` as its own penalty line.
 - **Luck of the draw.** An OBJECTIVE, deterministic read of how favorable the shuffle
   was: the match's actual adversity (`schemeTwistNegative` + `villainEscaped` +
   `bystanderLost` counts) versus the scenario's PAR expectation (`schemeTwistsPar` +

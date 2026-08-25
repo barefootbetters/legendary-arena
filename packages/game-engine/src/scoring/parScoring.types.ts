@@ -47,10 +47,22 @@ export type TeamKey = string;
 // scoring has no round/turn penalty; Scheme Twists are its length proxy, so game
 // length is already penalized via the schemeTwistNegative penalty weight. A
 // separate per-round cost double-counted length and was removed.
+// why: WP-599 / D-24409 (supersedes D-24408) — full rulebook fidelity. There is no
+// bystanderReward either. The Marvel Legendary rulebook (and the community Total
+// Score `VP − 4·lost − 3·twists − 1·escapes`) gives a rescued bystander no separate
+// reward — it scores only as its printed 1 VP, folded into `victoryPointReward`. The
+// former dedicated −200 rescue reward was a non-rulebook LA invention (it double-
+// counted the bystander's own VP and let one bystander outweigh ~20 VP); it and the
+// structural invariants that propped it up (1: reward > escape; 3: loss > reward)
+// were removed here. VISION §21's "rescue is the point" now lives entirely on the
+// heavy bystanderLost penalty, exactly as the rulebook encodes it.
 export interface ScoringWeights {
-  /** Weight per bystander rescued (higher BP = better). */
-  readonly bystanderReward: number;
-  /** Weight per victory point earned (higher VP = better). */
+  /**
+   * Weight per victory point earned (higher VP = better). VP is the sole reward
+   * channel: it counts printed VP on every defeated villain / henchman / mastermind
+   * tactic AND rescued bystanders at their printed 1 VP each — so a bystander is
+   * scored exactly once, as its VP (WP-599 / D-24409).
+   */
   readonly victoryPointReward: number;
 }
 
@@ -254,9 +266,9 @@ export interface ScoreBreakdown {
   readonly weightedPenaltyTotal: number;
   /** Per-type contribution to weightedPenaltyTotal. */
   readonly penaltyBreakdown: Readonly<Record<PenaltyEventType, number>>;
-  /** `effectiveBystanders * bystanderReward` (effective = min(BP, cap)). */
-  readonly weightedBystanderReward: number;
-  /** `effectiveVictoryPoints * victoryPointReward` (effective = min(VP, cap)). */
+  /** `effectiveVictoryPoints * victoryPointReward` (effective = min(VP, cap)). The
+   * sole reward term (WP-599 / D-24409 removed the separate bystander reward — VP
+   * already counts rescued bystanders at 1 VP each). */
   readonly weightedVictoryPointReward: number;
   /**
    * The flat loss penalty added to `rawScore` when the match was lost (WP-591 /
@@ -264,7 +276,7 @@ export interface ScoreBreakdown {
    * "+ loss penalty" term.
    */
   readonly weightedLossPenalty: number;
-  /** `weightedPenaltyTotal - weightedBystanderReward - weightedVictoryPointReward + weightedLossPenalty`. */
+  /** `weightedPenaltyTotal - weightedVictoryPointReward + weightedLossPenalty`. */
   readonly rawScore: number;
   /** PAR value under the same formula applied to the scenario baseline. */
   readonly parScore: number;

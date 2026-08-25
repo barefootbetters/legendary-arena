@@ -47,11 +47,12 @@ describe('buildGradeScale (WP-587)', () => {
     const scale = buildGradeScale('legendary');
     const byGrade = Object.fromEntries(scale.map((entry) => [entry.grade, entry.range]));
     // Best band: at or below its ceiling (true minus sign, centesimal integer).
-    assert.equal(byGrade['legendary'], '≤ −2000');
+    // WP-599 / D-24409 — re-derived bands for the rulebook-fidelity scale.
+    assert.equal(byGrade['legendary'], '≤ −500');
     // A middle band spans the previous ceiling to its own.
-    assert.equal(byGrade['a'], '−2000…−700');
+    assert.equal(byGrade['a'], '−500…−250');
     // Worst band is unbounded above the previous ceiling.
-    assert.equal(byGrade['f'], '> 4000');
+    assert.equal(byGrade['f'], '> 1100');
   });
 
   test('every band label is the player-facing word', () => {

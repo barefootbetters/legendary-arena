@@ -240,7 +240,6 @@ function parTerm(count: number, weight: number | null, weightLabel: string): str
  */
 function buildParDerivation(
   breakdown: CompetitiveScoreBreakdown,
-  bystanderWeight: number | null,
   vpWeight: number | null,
 ): ParDerivation | undefined {
   const baseline = breakdown.parBaseline;
@@ -265,16 +264,17 @@ function buildParDerivation(
   const twistFormula = twistsPar > 0 ? `+ ${formulaTerm('Twists', twistWeight)} ` : '';
   const twistSub = twistsPar > 0 ? `+ ${parTerm(twistsPar, twistWeight, 'twist penalty')} ` : '';
 
+  // why: WP-599 / D-24409 — PAR no longer carries a bystander-reward term (rescued
+  // bystanders score only as their 1 VP, inside VP). The derivation shows the penalty
+  // terms (escapes, twists) minus the VP reward, mirroring the live raw-score formula.
   const formula =
     `${formulaTerm('Escapes', escapeWeight)} ` +
     twistFormula +
-    `${MINUS} ${formulaTerm('Bystanders', bystanderWeight)} ` +
     `${MINUS} ${formulaTerm('VP', vpWeight)}`;
 
   const substituted =
     `${parTerm(baseline.escapesPar, escapeWeight, 'escape penalty')} ` +
     twistSub +
-    `${MINUS} ${parTerm(baseline.bystandersPar, bystanderWeight, 'bystander reward')} ` +
     `${MINUS} ${parTerm(baseline.victoryPointsPar, vpWeight, 'VP reward')}`;
 
   return {
@@ -396,13 +396,11 @@ function buildRawLedger(breakdown: CompetitiveScoreBreakdown): RawLedger {
     penalties.push({ label: 'match lost', amount: lossPenalty });
   }
 
+  // why: WP-599 / D-24409 — VP is the sole earned term now; rescued bystanders score
+  // inside it (1 VP each), not as a separate line. A legacy row may still carry
+  // weightedBystanderReward; it is intentionally NOT rendered — the new model counts
+  // bystanders once, through VP.
   const earned: RawLedgerLine[] = [];
-  if (breakdown.weightedBystanderReward > 0) {
-    earned.push({
-      label: `${breakdown.inputs.bystandersRescued} bystanders rescued`,
-      amount: breakdown.weightedBystanderReward,
-    });
-  }
   if (breakdown.weightedVictoryPointReward > 0) {
     earned.push({
       label: `${breakdown.inputs.victoryPoints} victory points`,
@@ -414,7 +412,7 @@ function buildRawLedger(breakdown: CompetitiveScoreBreakdown): RawLedger {
     penalties,
     penaltyTotal: breakdown.weightedPenaltyTotal + lossPenalty,
     earned,
-    earnedTotal: breakdown.weightedBystanderReward + breakdown.weightedVictoryPointReward,
+    earnedTotal: breakdown.weightedVictoryPointReward,
     total: breakdown.rawScore,
   };
 }
@@ -507,13 +505,10 @@ export function buildWorkedScoreCalc(
 ): WorkedScoreCalc {
   const inputs = breakdown.inputs;
 
-  // why: WP-585 / D-24394 — no round-cost term (the rulebook has no round penalty;
-  // Scheme Twists are its length proxy). RawScore = Penalties − rewards. "Rounds"
-  // stays below as an informational given, but no longer appears in the formula.
-  const bystanderWeight = perUnitWeight(
-    breakdown.weightedBystanderReward,
-    inputs.bystandersRescued,
-  );
+  // why: WP-585 / D-24394 — no round-cost term. WP-599 / D-24409 — no bystander-
+  // reward term either (rescued bystanders score only as their 1 VP, inside the VP
+  // term). RawScore = Penalties − (VP × vpWeight). "Rounds" and "Bystanders rescued"
+  // stay below as informational givens, but no longer appear in the formula.
   const vpWeight = perUnitWeight(breakdown.weightedVictoryPointReward, inputs.victoryPoints);
 
   // why: WP-591 / D-24400 — a lost match adds a flat loss penalty term to the raw
@@ -525,19 +520,17 @@ export function buildWorkedScoreCalc(
 
   const formula =
     `Penalties ` +
-    `${MINUS} ${formulaTerm('Bystanders', bystanderWeight)} ` +
     `${MINUS} ${formulaTerm('VP', vpWeight)}` +
     lossFormula;
 
   const substituted =
     `${penaltiesSubstituted(breakdown)} ` +
-    `${MINUS} ${substitutedTerm(inputs.bystandersRescued, bystanderWeight, breakdown.weightedBystanderReward)} ` +
     `${MINUS} ${substitutedTerm(inputs.victoryPoints, vpWeight, breakdown.weightedVictoryPointReward)}` +
     lossProduct;
 
   const products =
     `${breakdown.weightedPenaltyTotal} ` +
-    `${MINUS} ${breakdown.weightedBystanderReward} ${MINUS} ${breakdown.weightedVictoryPointReward}` +
+    `${MINUS} ${breakdown.weightedVictoryPointReward}` +
     lossProduct;
 
   return {
@@ -556,7 +549,7 @@ export function buildWorkedScoreCalc(
     rawScore: breakdown.rawScore,
     parScore: breakdown.parScore,
     perPlayer: buildPerPlayerSplit(breakdown, seatIdentities),
-    parDerivation: buildParDerivation(breakdown, bystanderWeight, vpWeight),
+    parDerivation: buildParDerivation(breakdown, vpWeight),
     finalSubstituted: `${breakdown.rawScore} ${MINUS} ${subtrahend(breakdown.parScore)}`,
     finalScore: breakdown.finalScore,
   };
