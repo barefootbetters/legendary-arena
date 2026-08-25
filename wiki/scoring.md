@@ -47,7 +47,7 @@ source:
   - ../docs/ai/work-packets/WP-053a-par-artifact-scoring-config.md
   - ../docs/ai/work-packets/WP-422-seed-par-publication.md
   - ../docs/10-GLOSSARY.md
-last-reviewed: 2026-08-22
+last-reviewed: 2026-08-24
 ---
 
 # Scoring
@@ -72,8 +72,10 @@ The system has two distinct measurement layers, mirroring the golf
 metaphor in [VISION §20](../docs/01-VISION.md):
 
 - **Layer A — PAR (course rating).** Static per-scenario expected
-  outcome for a competent team. Encoded as `ParBaseline` (rounds,
-  bystanders, victory points, escapes). Never adapts to the team
+  outcome for a competent team. Encoded as `ParBaseline` (bystanders
+  rescued, victory points, escapes, scheme twists, bystanders lost —
+  `roundsPar` was removed by WP-585; `schemeTwistsPar` + `bystandersLostPar`
+  added by WP-591). Never adapts to the team
   that played. Day-one it is the **content-driven seed** (WP-422 /
   D-24242 — a difficulty-mapped `ParBaseline`, `parValue =
   computeParScore(baseline)`, published per gauntlet season and stamped
