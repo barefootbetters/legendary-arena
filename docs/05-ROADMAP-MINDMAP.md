@@ -782,14 +782,14 @@ mindmap
 | Hero/Villain Effects & Diagnostics (2026-07) | 5/5 | — |
 | Live-Play HUD & Pending-Choice UX (2026-07) | 20/20 | — |
 | Competitive Score Submission & Verification (2026-07) | 10/10 | — |
-| Gauntlet Leaderboards (Legends) (2026-07) | 164/168 | 2 ⏸, 2 open |
+| Gauntlet Leaderboards (Legends) (2026-07) | 165/168 | 2 ⏸, 1 open |
 | Friends & Ranked Trust (2026-07) | 18/18 | — |
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **586/598 WP ✅** (+ 4/4 Foundation Prompts) | 3 ⏸, 9 open |
+| **Total** | **587/598 WP ✅** (+ 4/4 Foundation Prompts) | 3 ⏸, 8 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 12):** WP-604 open; WP-042.1 ⏸ blocked; WP-349 open; WP-391 open; WP-396 open; WP-398 open; WP-399 open; WP-368 open; WP-403 ⏸ blocked; WP-404 ⏸ blocked; WP-429 open; WP-564 open.
+**Open / blocked WPs (derived from WORK_INDEX, 11):** WP-604 open; WP-042.1 ⏸ blocked; WP-349 open; WP-391 open; WP-398 open; WP-399 open; WP-368 open; WP-403 ⏸ blocked; WP-404 ⏸ blocked; WP-429 open; WP-564 open.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.
