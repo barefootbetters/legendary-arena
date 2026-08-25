@@ -209,6 +209,7 @@ mindmap
 
       Phase 8 — Interactive Board Layout
         ["WP-128 ✅ UIState board projections"]
+        ["WP-606 📝 UIState draw-pool composition projection (game engine; the Phase-1 data foundation for the Deck Probability Panel — projects each player's own draw-pool composition deck multiset order-stripped audience-filtered owner-only mirroring discardCards + the public villain-deck composition mirroring matchCardImageUrls, so the client computes draw odds without ctx.random. Projection-only no new G no hash change finalStateHash + PRE_WP080 byte-identical; both fields optional so no arena-client fixture backfill game-engine only. 5 engine files; order-independence guard test. User-Visible Surface none infrastructure the dark data the panel UI follow-on consumes. Reserves EC-641 + D-24417; drafted 2026-08-25)"]
         ["WP-129 ✅ Board layout (desktop/mobile)"]
         ["WP-130 ✅ Playmat / reskin selector"]
 
@@ -758,7 +759,7 @@ mindmap
 | Auth Stack & Profile Surface | 15/15 | — |
 | Engine + Server Wiring & Leaderboard HTTP | 3/3 | — |
 | Registry Viewer Enhancements | 27/27 | — |
-| Phase 8 — Interactive Board Layout | 3/3 | — |
+| Phase 8 — Interactive Board Layout | 3/4 | 1 open |
 | G-State Extensions | 4/4 | — |
 | Monetization Stack | 3/3 | — |
 | Engine & Test-Harness Cleanup | 5/5 | — |
@@ -788,9 +789,9 @@ mindmap
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **589/599 WP ✅** (+ 4/4 Foundation Prompts) | 3 ⏸, 7 open |
+| **Total** | **589/600 WP ✅** (+ 4/4 Foundation Prompts) | 3 ⏸, 8 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 10):** WP-042.1 ⏸ blocked; WP-349 open; WP-391 open; WP-398 open; WP-399 open; WP-368 open; WP-403 ⏸ blocked; WP-404 ⏸ blocked; WP-429 open; WP-564 open.
+**Open / blocked WPs (derived from WORK_INDEX, 11):** WP-606 open; WP-042.1 ⏸ blocked; WP-349 open; WP-391 open; WP-398 open; WP-399 open; WP-368 open; WP-403 ⏸ blocked; WP-404 ⏸ blocked; WP-429 open; WP-564 open.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.
