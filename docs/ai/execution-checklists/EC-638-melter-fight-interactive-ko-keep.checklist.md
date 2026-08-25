@@ -1,0 +1,64 @@
+# EC-638 — Melter (Villain) Fight: Interactive Per-Card KO / Keep Choice (Execution Checklist)
+
+**Source:** docs/ai/work-packets/WP-603-melter-fight-interactive-ko-keep.md
+**Layer:** Game Engine + arena-client (interactive pending choice — ships as one unit)
+
+## Before Starting
+- [ ] `ko-cullable-each-deck-top` primitive present in `VILLAIN_EFFECT_PRIMITIVES` (position 16) with `villainEffectKoCullableEachDeckTop` in `VILLAIN_EFFECT_HANDLERS`; Melter still marked in `data/cards/core.json`. **Do NOT touch the union/array/marker/`core.json`.**
+- [ ] Read the scry-ko pipeline end-to-end as the template: `PendingScryKoChoice` (`types.ts`), `villainEffectScryKoOwnDeck` (`villain/villainEffects.execute.ts`), `resolveScryKoChoice`/`hasPendingScryKoChoice` (`moves/scryKoChoice.resolve.ts`), registration + guards (`game.ts`, `coreMoves.impl.ts`, the fight/recruit/heal/dodge/undercover moves), `SIMULATION_MOVE_NAMES` + short-circuit (`simulation/ai.legalMoves.ts` + sim MOVE_MAPs), `UIPendingScryKoChoice` (`ui/uiState.types.ts`), the build block + filter pass-through (`ui/uiState.build.ts`, `ui/uiState.filter.ts`), `PendingScryKoChoicePrompt.vue` + `PlayDesktop.vue`/`PlayMobile.vue`/`useTurnActions.ts` wiring.
+- [ ] **Re-verify the ~10 block-all guard sites and the sim MOVE_MAP location against the LIVE tree** — the WP line anchors are approximate. `grep -rn "hasPendingScryKoChoice" packages/game-engine/src` is the authoritative site list; every hit gets a `hasPendingMelterKoChoice` sibling.
+- [ ] `pnpm -r build` 0; engine + arena-client suites green on baseline.
+
+## Locked Values (do not re-derive)
+- **State** (`types.ts`): `PendingMelterKoChoice { choiceType: 'melter-ko'; playerID: string; revealedTops: readonly { ownerPlayerID: string; cardId: CardExtId }[] }`; queue `pendingMelterKoChoices?: PendingMelterKoChoice[]` on `LegendaryGameState`. Lazily init at the park site (never in `Game.setup`); runtime-only (never persisted). `undefined` and `[]` both mean "no pending" (guards test `.length`).
+- **Park** — rewrite `villainEffectKoCullableEachDeckTop(G, currentPlayer, cardId, timing, descriptor, shuffleContext?)`: for each `playerId` in `Object.keys(G.playerZones).sort()` (D-18902): `if (zones.deck.length === 0) reshuffleDiscardIntoDeck(zones, shuffleContext)`; skip if still empty; else snapshot `{ ownerPlayerID: playerId, cardId: zones.deck[0] }`. **Do NOT remove the card** (snapshot discipline — the block-all guard freezes it). If ≥1 top revealed → lazily init `G.pendingMelterKoChoices` and push ONE `{ choiceType: 'melter-ko', playerID: currentPlayer, revealedTops }`; `pushLog` a keyword-less park narration (`neutral`); return `{ targets: [], pending: true }`. Zero revealed → `pushLog` a `blocked` no-op line; return `{ targets: [] }`.
+- **Resolve** (`moves/melterKoChoice.resolve.ts`, NEW): `resolveMelterKoChoice(G, ctx, { cardId, keep })` + `hasPendingMelterKoChoice(G)`. Front entry only (`queue[0]`; `choiceType === 'melter-ko'`, `playerID === ctx.currentPlayer`). `cardId` MUST be in `front.revealedTops` (round-trip rule) — else silent no-op. `keep === false` → find that entry's `ownerPlayerID`, `moveCardFromZone(ownerZones.deck, [], cardId)` (reassign `ownerZones.deck = moveResult.from`; bail no-op if `!found`), `G.ko = koCard(G.ko, cardId)`, `pushLog` a KO line. `keep === true` → NO mutation, `pushLog` a keep line. Both: remove that entry from `front.revealedTops`; if now empty, `queue.shift()`. Moves never throw.
+- **Registration** (`game.ts`): add to the `moves` map long-form `resolveMelterKoChoice: { move: resolveMelterKoChoice, client: false }` (D-10008); NOT in `CORE_MOVE_NAMES`.
+- **Block-all guards** (11 sites): add `if (hasPendingMelterKoChoice(G)) return;` (matching each site's early-return shape) at EVERY site where `hasPendingScryKoChoice` already guards — `grep -rn "hasPendingScryKoChoice" packages/game-engine/src` (non-test) is the authoritative list: `game.ts:118` (advanceStage — **single** site; it also freezes the cleanup→endTurn transition, so there is NO separate `game.ts` endTurn guard); `coreMoves.impl.ts` 80/270/409 (drawCards/playCard/endTurn — the endTurn guard is HERE); `fightVillain.ts:151`, `fightMastermind.ts:97`, `recruitHero.ts:101`, `healWounds.ts:79`, `dodgeCard.ts:83`, `playFromUndercover.ts:83`, **and `villainDeck/villainDeck.reveal.ts:113`** (`revealVillainCard` — the eleventh site; practically unreachable for Melter since a parked choice already blocks `advanceStage`, but guarded for parity — scry-ko, itself a main-stage Fight choice, guards it too). `ai.legalMoves.ts:388` is the sim short-circuit (below), not a block guard.
+- **Sim/bot** (`simulation/ai.legalMoves.ts`): add `resolveMelterKoChoice` to `SIMULATION_MOVE_NAMES` AND to each `MOVE_MAP` in **both** `simulation/simulation.runner.ts` and `simulation/par.aggregator.ts` (the two tables `simulation.moveDispatch.drift.test.ts` pins). Short-circuit: place it **beside** the scry-ko one (`~:388`, same precedence tier — block-all guarantees one pending choice at a time so ordering is not a correctness risk, but keep the tier consistent); when `hasPendingMelterKoChoice`, take the front entry's first `revealedTops` element and return exactly `[{ name: 'resolveMelterKoChoice', args: { cardId, keep: !isCullableDeckTopCard(cardId) } }]` (KO cullable, keep the rest — the WP-519 outcome).
+- **UIState**: `UIPendingMelterKoChoice { choiceType: 'melter-ko'; playerID: string; revealedTops: { ownerPlayerID: string; cardId: CardExtId; display: <same shape as UIScryKoRevealedCard.display> }[] }` + `pendingMelterKoChoice?` on `UIState` (`ui/uiState.types.ts`). Build from the FRONT entry (`ui/uiState.build.ts`), each `revealedTops` card resolved to its display via the same helper the scry-ko block uses; conditional spread (never an `undefined` literal). Filter (`ui/uiState.filter.ts`): field-by-field rebuild, pass through ONLY when `audience.kind === 'player' && audience.playerId === choice.playerID` (D-24011 chooser-only).
+- **`isCullableDeckTopCard`** unchanged (`WOUND_EXT_ID || SHIELD_AGENT_EXT_ID || SHIELD_TROOPER_EXT_ID`); now the bot/sim default only — the handler no longer calls it.
+- **Client** (`PendingMelterKoChoicePrompt.vue`): props `pendingMelterKoChoice`, `viewerPlayerId`, `submitMove`; render ONLY when defined AND `viewerPlayerId === playerID`; one row per `revealedTops` entry (owner-labelled) with two buttons → `submitMove('resolveMelterKoChoice', { cardId, keep: true|false })`; `isSubmitting` debounce reset on each new server frame (mirror `PendingScryKoChoicePrompt.vue`).
+
+## Guardrails
+- **Snapshot discipline**: the reveal NEVER removes a card; "keep" is a no-op. Do NOT add a return-to-deck mutation. The block-all guard is what keeps the snapshot from drifting — a missed guard site is a correctness bug (a deck top could change mid-choice).
+- **Every guard site or none**: use the `hasPendingScryKoChoice` grep as the authoritative site list; a Melter guard MUST sit beside each one. A missed action-move site lets the player act mid-choice; a missed advanceStage/endTurn site lets the turn end mid-choice.
+- **Sim registration is load-bearing**: `resolveMelterKoChoice` absent from `SIMULATION_MOVE_NAMES`/MOVE_MAPs → the per-turn loop hangs (`simulation.moveDispatch.drift` catches it). The bot default MUST return args the resolve accepts (a `cardId` in `revealedTops`), or the guard never lifts.
+- **Bot/sim byte-identity**: the bot default (`keep = !isCullableDeckTopCard(cardId)`) reproduces the WP-519 auto-resolve outcome. Do NOT let the interactive path change bot/replay results — only live human play differs.
+- **UIState five-step contract**: declare → build → **filter pass-through** → filter test → Play-Diagnostics `uiStateSnapshot`. A field built but not filtered is silently dropped. Redact to the chooser only (D-24011).
+- **Determinism**: randomness only via the seeded `reshuffleDiscardIntoDeck`; no `Math.random()`. Pending queue never persisted; snapshots stay counts-only.
+- **No primitive/marker/card-data/provenance churn**; no scoring/PAR change; `types.ts`/`uiState.types.ts` are shared type modules, not locked contract files (no contract-file review gate).
+
+## Required `// why:` Comments
+- The interactive park (rewritten handler): D-24413 supersedes D-24332 — Melter's printed "you choose to KO it or put it back" is now a real active-player pending choice, not the auto-cull; the `ko-cullable-each-deck-top` token is retained to avoid marker/card-data churn.
+- The snapshot-without-removal + keep-is-no-op: scry-ko discipline (D-24282) — the block-all guard freezes each deck top so the snapshot cannot drift; "put it back" needs no mutation.
+- The sorted per-player iteration: D-18902 determinism.
+- The reshuffle-on-empty: D-24285 reveal-reshuffle rule.
+- The bot/sim default `keep = !isCullableDeckTopCard(cardId)`: preserves the WP-519 outcome byte-identically so par/replay/bot runs are unchanged (`ai.legalMoves.ts`).
+- Each new block-all guard site: mirrors `hasPendingScryKoChoice` — freeze all seams so no deck top mutates mid-choice.
+- The filter chooser-only pass-through: D-24011 — pending choices are redacted to the chooser.
+
+## Files to Produce
+- Engine (modified unless NEW): `types.ts`; `villain/villainEffects.execute.ts` (+ `.test.ts`); `moves/melterKoChoice.resolve.ts` (**NEW**) + `moves/melterKoChoice.resolve.test.ts` (**NEW**); `game.ts`; `moves/coreMoves.impl.ts`; `moves/{fightVillain,fightMastermind,recruitHero,healWounds,dodgeCard,playFromUndercover}.ts`; `villainDeck/villainDeck.reveal.ts`; `simulation/ai.legalMoves.ts` (+ `.test.ts`) + `simulation/simulation.runner.ts` + `simulation/par.aggregator.ts` + `simulation/simulation.moveDispatch.drift.test.ts`; `ui/uiState.types.ts`; `ui/uiState.build.ts` (+ `.test.ts`); `ui/uiState.filter.ts` (+ `.test.ts`); `ui/uiState.types.drift.test.ts`; block-all guard fixtures (`fightVillain.test.ts` etc.)
+- Client: `components/play/PendingMelterKoChoicePrompt.vue` (**NEW**) + `.test.ts` (**NEW**); `pages/PlayDesktop.vue` (+ `.test.ts`); `pages/PlayMobile.vue` (+ `.test.ts`); `composables/useTurnActions.ts`
+- ewiki: `wiki/card-effect-system.md`
+- Governance: DECISIONS — land **D-24413 Active** AND flip **D-24332's own entry to `Superseded by D-24413`** (both rows move); NUMBER-LEDGER (reserved), STATUS, WORK_INDEX, EC_INDEX, mindmap
+
+## After Completing
+- [ ] `pnpm -r build` 0; `pnpm --filter @legendary-arena/game-engine test` + `pnpm --filter @legendary-arena/arena-client test` green; `vue-tsc` clean
+- [ ] `roadmap:counts:check` + the ewiki gates (`check:wiki`/`check-links`) 0
+- [ ] `git diff --name-only` = §Files allowlist (01.5 wiring: `game.ts` + the ~8 guard-site files + the two Play pages named in the WP)
+- [ ] Fighting Melter (human) parks the choice + renders the prompt; `{keep:false}` KOs to `G.ko`, `{keep:true}` leaves on top; last resolve lifts the freeze; no hollow, no hang
+- [ ] `pendingMelterKoChoice` survives the audience filter for the chooser, redacted otherwise (filter + types-drift tests)
+- [ ] **Hash verification:** re-confirm no committed hashed oracle (`finalStateHash`/`PRE_WP080_HASH`/sentinel) FIGHTS Masters-of-Evil/Melter (draft grep returned empty). If one does → the auto-resolve→park move-log change re-pins it: re-record via `record-game-fixture.mjs` (never hand-edit), note in D-24413. A new OPTIONAL G field absent from a fixture does not shift its initial hash.
+- [ ] D-24413 Active AND D-24332 flipped to `Superseded by D-24413` (both rows); §11/§21 N/A; STATUS/WORK_INDEX `[x]`/EC_INDEX Done/mindmap ✅ + counts
+- [ ] Live-verify (D-24026, operator, post-deploy): 2p Melter fight → KO/Keep prompt over both revealed tops; KO removes, Keep leaves; log records each decision
+
+## Common Failure Smells
+- Match freezes when Melter is fought → the pending choice parked but a UIState projection / client prompt / a block-all guard site is missing (the no-UX-freeze trap). Ship state + projection + prompt together.
+- Sim/replay loop hangs → `resolveMelterKoChoice` not in `SIMULATION_MOVE_NAMES`/MOVE_MAPs, or the bot default offers a `cardId` not in `revealedTops`.
+- Prompt never renders → `pendingMelterKoChoice` built but dropped at the audience filter (missing field-by-field pass-through), or the chooser gate rejected the viewer.
+- Bot/replay results changed → the interactive path leaked into bot/sim (the default-pick isn't `!isCullableDeckTopCard`), or the park KO'd at park time instead of deferring.
+- A card KO'd from the wrong player's deck → resolve used `currentPlayer`'s zones instead of the entry's `ownerPlayerID`.
+- `vue-tsc` red in arena-client → a UIState fixture needs the new optional field, or the prompt props are mistyped (see `project_arena_client_uistate_backfill_recurrence`).
+- Deck top changed mid-choice → a block-all guard site was missed; grep `hasPendingScryKoChoice` and pair every hit.
