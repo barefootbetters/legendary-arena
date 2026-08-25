@@ -82,6 +82,18 @@ function healEvent(woundsHealed: number): NotableGameEvent {
   };
 }
 
+function bystanderRevealedEvent(
+  revealedCardId: string,
+  captorCardId = 'core/magneto',
+): NotableGameEvent {
+  return {
+    type: 'bystanderRevealed',
+    revealedCardId,
+    captorCardId,
+    narrative: `Bystander "${revealedCardId}" was revealed and captured by "${captorCardId}".`,
+  };
+}
+
 describe('NotableEventOverlay — null event renders nothing (WP-201)', () => {
   test('omits the overlay element when event prop is null', () => {
     const wrapper = mount(NotableEventOverlay, { props: { event: null } });
@@ -153,6 +165,35 @@ describe('NotableEventOverlay — locked chip labels (WP-201 §Locked Values)', 
     // why: WP-381 — a heal carries no card, so cardId → null and the card-name
     // row renders empty.
     assert.equal(wrapper.find('.notable-event-overlay__card-name').text(), '');
+  });
+
+  test('bystanderRevealed → "Bystander!" chip + narrative + bystander card-name row, no effect badges (WP-602)', () => {
+    const cardDisplayData: NotableEventCardLookup = {
+      'core-bystander-00': display('core-bystander-00', 'Hostage'),
+    };
+    const wrapper = mount(NotableEventOverlay, {
+      props: {
+        event: bystanderRevealedEvent('core-bystander-00'),
+        cardDisplayData,
+      },
+    });
+    const overlay = wrapper.find('[data-testid="play-notable-event-overlay"]');
+    assert.equal(overlay.attributes('data-event-type'), 'bystanderRevealed');
+    assert.match(wrapper.text(), /Bystander!/);
+    // why: WP-602 — eventCardId resolves the variant to revealedCardId, so the
+    // card-name row shows the bystander's display name (NOT empty like healResolved).
+    assert.equal(
+      wrapper.find('.notable-event-overlay__card-name').text(),
+      'Hostage',
+    );
+    assert.match(wrapper.text(), /was revealed and captured by/);
+    // a bystander reveal carries no appliedEffects, so no badge row renders
+    assert.equal(
+      wrapper
+        .find('[data-testid="play-notable-event-overlay-effects"]')
+        .exists(),
+      false,
+    );
   });
 });
 

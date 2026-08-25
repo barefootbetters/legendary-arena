@@ -60,10 +60,10 @@ const EFFECT_LABELS: Readonly<Record<string, string>> = {
   captureBystander: 'Captures a Bystander',
 };
 
-// why: locked chip labels — six entries matching `NotableGameEventType`
+// why: locked chip labels — seven entries matching `NotableGameEventType`
 // exactly (D-20008 added `mastermindDefeated`; WP-381 / D-24182 added
-// `healResolved`). The labels are user-facing English (engine-side type names
-// use camelCase suffixes).
+// `healResolved`; WP-602 / D-24412 added `bystanderRevealed`). The labels are
+// user-facing English (engine-side type names use camelCase suffixes).
 const CHIP_LABELS: Readonly<Record<string, string>> = {
   fightResolved: 'Fought',
   ambushResolved: 'Ambush!',
@@ -71,6 +71,7 @@ const CHIP_LABELS: Readonly<Record<string, string>> = {
   mastermindStrikeResolved: 'Master Strike!',
   mastermindDefeated: 'Mastermind Defeated!',
   healResolved: 'Healed',
+  bystanderRevealed: 'Bystander!',
 };
 
 function chipLabel(type: string): string {
@@ -241,6 +242,12 @@ export default defineComponent({
    the mastermind-defeat victory green. */
 .notable-event-overlay[data-event-type="healResolved"] {
   border-color: var(--color-heal, #2e9e8f);
+}
+
+/* why: WP-602 — a friendly civilian blue for the Bystander reveal overlay,
+   distinct from the gold scheme-twist / red master-strike / teal heal accents. */
+.notable-event-overlay[data-event-type="bystanderRevealed"] {
+  border-color: var(--color-bystander, #4a90d9);
 }
 
 .notable-event-overlay__chip {

@@ -47,6 +47,7 @@ import { hasPendingDrawOrEmpowered } from '../moves/drawOrEmpowered.resolve.js';
 import { hasPendingReturnZeroCostDiscard } from '../moves/resolveReturnZeroCostDiscard.js';
 import {
   composeAmbushNarrative,
+  composeBystanderRevealedNarrative,
   composeEffectResultLogLine,
 } from '../events/notableEvents.compose.js';
 import { pushLog } from '../log/logPush.js';
@@ -568,9 +569,33 @@ export function performVillainReveal(
         attachedBystanders: [...existing, cardId],
       };
     }
-    pushLog(G, 
+    pushLog(G,
       `${formatCardRef(G.cardDisplayData, cardId)} revealed and captured by ${formatCardRef(G.cardDisplayData, captorCardId)}.`,
     );
+    // why: WP-602 / D-24412 — emit a bystanderRevealed notableEvent as the final
+    // step of the capture branch (ADDITIVE to the log line above, not a
+    // replacement), so the arena-client NotableEventOverlay announces a revealed
+    // Bystander like it does a Scheme Twist / Master Strike — the only villain-deck
+    // reveal outcome that previously raised no overlay. Unconditional push (setup
+    // guarantees G.notableEvents), mirroring the ambushResolved site in this file.
+    // Names resolve HERE via G.cardDisplayData (the composer stays pure); defensive
+    // raw-ext_id fallback when display data is absent (legacy test states may omit it).
+    const bystanderDisplay = G.cardDisplayData?.[cardId];
+    const bystanderName =
+      bystanderDisplay && typeof bystanderDisplay.name === 'string' && bystanderDisplay.name.length > 0
+        ? bystanderDisplay.name
+        : cardId;
+    const captorDisplay = G.cardDisplayData?.[captorCardId];
+    const captorName =
+      captorDisplay && typeof captorDisplay.name === 'string' && captorDisplay.name.length > 0
+        ? captorDisplay.name
+        : captorCardId;
+    G.notableEvents.push({
+      type: 'bystanderRevealed',
+      revealedCardId: cardId,
+      captorCardId,
+      narrative: composeBystanderRevealedNarrative(bystanderName, captorName),
+    });
   } else if (cardType === 'scheme-twist') {
     // why: scheme-twist cards route to G.scheme.twistPile (not discard)
     // so the game tracks resolved twists for UI projection and future

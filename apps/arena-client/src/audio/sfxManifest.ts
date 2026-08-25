@@ -1,7 +1,7 @@
 /**
  * sfxManifest.ts
  *
- * Maps each of the six notable game event types to the CC0 sound-effect clip
+ * Maps each of the seven notable game event types to the CC0 sound-effect clip
  * played when that event resolves (WP-412 Surface 1 coverage). The keys are
  * the `NotableGameEventType` discriminators the center-screen overlay already
  * keys on (`NotableEventOverlay.vue`); the values are absolute clip URLs.
@@ -48,4 +48,10 @@ export const sfxManifest: Record<SfxEventKey, string> = {
   // load-latency at the victory moment.
   mastermindDefeated: `${SFX_BASE_URL}mastermind-defeated-win.mp3`,
   healResolved: `${SFX_BASE_URL}heal.mp3`,
+  // why: WP-602 — the exhaustive Record forces the 7th variant (bystanderRevealed)
+  // to carry a clip. The CC0 byte is operator-pending on R2 (same posture as every
+  // clip here — WP-412/413/425 all shipped their URLs before the upload); a
+  // not-yet-uploaded clip 404s on preload and no-ops, so the overlay ships complete
+  // and the sting starts playing once the byte lands. Hyphenated filename per convention.
+  bystanderRevealed: `${SFX_BASE_URL}bystander-revealed.mp3`,
 };

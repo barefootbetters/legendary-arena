@@ -291,3 +291,25 @@ export function composeMastermindDefeatedNarrative(
 export function composeHealNarrative(woundsHealed: number): string {
   return `Used Healing, KO'ing ${String(woundsHealed)} Wound(s) from hand.`;
 }
+
+// ---------------------------------------------------------------------------
+// Bystander reveal narrative
+// ---------------------------------------------------------------------------
+
+/**
+ * Composes the single-sentence narrative for a `bystanderRevealed` event (WP-602).
+ *
+ * Pure + byte-stable: given the same two names, returns identical output. Both
+ * inputs are resolved display names (or the raw ext_id when `cardDisplayData`
+ * had no entry) supplied by the fire site, so the composer keeps its no-`G` purity.
+ *
+ * @param bystanderName - Human-facing name of the revealed Bystander card.
+ * @param captorName - Human-facing name of the captor (frontmost City villain, or the Mastermind).
+ * @returns A single English sentence for the notable-event overlay.
+ */
+export function composeBystanderRevealedNarrative(
+  bystanderName: string,
+  captorName: string,
+): string {
+  return `Bystander "${bystanderName}" was revealed and captured by "${captorName}".`;
+}

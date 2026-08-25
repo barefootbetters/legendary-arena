@@ -232,7 +232,7 @@ row by row:
 
 | Surface | Authority | VFX may read |
 |---|---|---|
-| `UIState.notableEvents` (six locked variants) | Engine (projected) | ✅ — [Surface 1](#surface-1) |
+| `UIState.notableEvents` (seven locked variants) | Engine (projected) | ✅ — [Surface 1](#surface-1) |
 | `UIState.game.lastPlayEffectsFired` (combo count) | Engine (projected) | ✅ — [Surface 2](#combo-signal) |
 | `UIState` outcome / progress (`EndgameOutcome`, `progress.escapedVillains`, `scheme.twistCount`, `players[].woundCount`) | Engine (projected) | ✅ — [Surface 4](#endgame) |
 | `UIState` captured-card display (`city.spaces[].attachedHeroDisplay` / `attachedBystanderCount`, `mastermind.attachedBystanders`) | Engine (projected, WP-505 / D-24311) | ✅ — a persistent **board anchor** for the capture / rescue sub-effects ([Surface 1b](#surface-1b)); board state, not VFX |
@@ -385,7 +385,7 @@ candidate signals, in decreasing order of readiness:
 #### Surface 1 — Notable events (the primary, ready-made hook) {#surface-1}
 
 `NotableGameEvent` is the engine's append-only record of high-level
-player-visible outcomes. Six variants are locked, and — unlike the game
+player-visible outcomes. Seven variants are locked, and — unlike the game
 log — they **are** projected as `UIState.notableEvents`. The arena client
 already streams them through
 [`useNotableEventStream.ts`](../apps/arena-client/src/composables/useNotableEventStream.ts)
@@ -403,9 +403,12 @@ stream — one effect per event type — with zero new engine work.
 | `ambushResolved` | T2 | A villain with an `Ambush:` marker enters the City | Menacing **edge-glow** + a hard card-slam settle as the villain drops into its City space |
 | `schemeTwistResolved` | T2 | A Scheme Twist is revealed and resolved | A darker, subtler **desaturation ripple** radiating from the scheme tile; less violent than a Strike |
 | `healResolved` | T2 | A player uses the Wound Healing ability | Soft green **restorative shimmer** rising off the hand |
+| `bystanderRevealed` | T2 | A Bystander card is revealed from the villain deck and captured (by the frontmost City villain, or the Mastermind when the City is empty) | A brief **civilian-blue glint** on the captured bystander as it lands on the captor's stack — the "someone's in danger" beat |
 
-*Animated mocks of all six rows — CSS-only, non-normative — are in
-[Appendix A.1](#appendix-surface-1).*
+*Animated mocks of the six earlier rows — CSS-only, non-normative — are in
+[Appendix A.1](#appendix-surface-1).* The `bystanderRevealed` overlay ships
+its chip + narrative today (WP-602); its juice-layer character above is a
+proposal like the rest.
 
 #### Surface 1b — Sub-effects inside a fight or ambush (`appliedEffects`) {#surface-1b}
 

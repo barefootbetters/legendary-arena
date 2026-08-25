@@ -20,6 +20,7 @@ import {
   composeMastermindStrikeNarrative,
   composeEffectResultLogLine,
   composeHealNarrative,
+  composeBystanderRevealedNarrative,
 } from './notableEvents.compose.js';
 
 describe('composeFightNarrative (WP-319 — names the effect targets)', () => {
@@ -284,6 +285,22 @@ describe('composeHealNarrative (WP-381)', () => {
     assert.equal(
       composeHealNarrative(2),
       "Used Healing, KO'ing 2 Wound(s) from hand.",
+    );
+  });
+});
+
+describe('composeBystanderRevealedNarrative (WP-602)', () => {
+  it('emits the locked sentence with the resolved names', () => {
+    assert.equal(
+      composeBystanderRevealedNarrative('Hostage', 'Magneto'),
+      'Bystander "Hostage" was revealed and captured by "Magneto".',
+    );
+  });
+
+  it('falls back to the raw ext_ids when display data was missing', () => {
+    assert.equal(
+      composeBystanderRevealedNarrative('core-bystander-00', 'test-mastermind-base'),
+      'Bystander "core-bystander-00" was revealed and captured by "test-mastermind-base".',
     );
   });
 });
