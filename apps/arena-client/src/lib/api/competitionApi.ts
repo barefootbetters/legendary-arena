@@ -139,7 +139,11 @@ export interface CompetitiveScoreBreakdown {
   // why: WP-591 / D-24400 — the flat loss penalty added to rawScore when the match
   // was lost (0 for a win). Optional: absent on rows persisted before WP-591.
   readonly weightedLossPenalty?: number;
-  readonly weightedBystanderReward: number;
+  // why: WP-599 / D-24409 — the dedicated bystander reward was removed from the
+  // scoring model (rescued bystanders score only as their 1 VP). New records (config
+  // v5+) omit this field; it stays optional so older persisted rows (which carry it)
+  // still parse. The display no longer reads it.
+  readonly weightedBystanderReward?: number;
   readonly weightedVictoryPointReward: number;
   readonly rawScore: number;
   readonly parScore: number;

@@ -98,7 +98,7 @@ function breakdown(over: Partial<CompetitiveScoreBreakdown> = {}): CompetitiveSc
   const products = {
     villainEscaped: 0,
     bystanderLost: 0,
-    schemeTwistNegative: 1800,
+    schemeTwistNegative: 180,
     mastermindTacticUntaken: 0,
     scenarioSpecificPenalty: 0,
   };
@@ -110,15 +110,15 @@ function breakdown(over: Partial<CompetitiveScoreBreakdown> = {}): CompetitiveSc
       escapes: 0,
       penaltyEventCounts: counts,
     },
-    weightedPenaltyTotal: 1800,
+    weightedPenaltyTotal: 180,
     penaltyBreakdown: products,
-    weightedBystanderReward: 2200,
     weightedVictoryPointReward: 1030,
-    // why: WP-585 — no round-cost term: raw = 1800 − 2200 − 1030 = −1430; final = raw − par.
-    rawScore: -1430,
+    // why: WP-599 / D-24409 — no bystander-reward term; twist weight is 30 (true
+    // VP-units): 6 twists → 180, 103 VP → 1030, raw = 180 − 1030 = −850; final = raw − par.
+    rawScore: -850,
     parScore: -300,
-    finalScore: -1130,
-    scoringConfigVersion: 3,
+    finalScore: -550,
+    scoringConfigVersion: 5,
     ...over,
   };
 }
@@ -126,38 +126,37 @@ function breakdown(over: Partial<CompetitiveScoreBreakdown> = {}): CompetitiveSc
 describe('EndgameSummary (WP-584 worked calculation)', () => {
   test('renders the formula-first worked calculation with derived weights', () => {
     const wrapper = mount(EndgameSummary, {
-      props: { gameOver: gameOver(), competitiveScore: score({ finalScore: -1130, scoreBreakdown: breakdown() }) },
+      props: { gameOver: gameOver(), competitiveScore: score({ finalScore: -550, scoreBreakdown: breakdown() }) },
     });
     assert.ok(wrapper.find('[data-testid="arena-hud-score-breakdown"]').exists(), 'worked calc renders');
 
-    // Symbolic formula line — weights DERIVED (200/10), not hardcoded. No round term
-    // (WP-585: the rulebook has no round penalty; twists carry length via Penalties).
+    // Symbolic formula line — VP weight DERIVED (10), not hardcoded. No round term
+    // (WP-585) and no bystander-reward term (WP-599: bystanders score inside VP).
     const formula = wrapper.find('[aria-label="rawFormula"]').text();
     assert.ok(!formula.includes('Rounds'), 'no round term in the formula');
     assert.ok(formula.includes('Penalties'), 'penalties named symbolically');
-    assert.ok(formula.includes('(Bystanders × 200)'), 'bystander weight derived to 200');
+    assert.ok(!formula.includes('Bystander'), 'no bystander-reward term (WP-599)');
     assert.ok(formula.includes('(VP × 10)'), 'VP weight derived to 10');
 
-    // Substituted line — penalties expanded to nonzero types, then rewards.
+    // Substituted line — penalties expanded to nonzero types, then the VP reward.
     const substituted = wrapper.find('[aria-label="rawSubstituted"]').text();
-    assert.ok(!substituted.includes('× 50'), 'no round substitution');
-    assert.ok(substituted.includes('(6 scheme twists × 300)'), 'scheme twists named + expanded (WP-587)');
-    assert.ok(substituted.includes('(11 × 200)'), 'bystanders substituted');
+    assert.ok(!substituted.includes('× 200'), 'no bystander substitution (WP-599)');
+    assert.ok(substituted.includes('(6 scheme twists × 30)'), 'scheme twists named + expanded (true VP-units)');
     assert.ok(substituted.includes('(103 × 10)'), 'VP substituted');
 
     // Products, raw result, final.
-    assert.ok(wrapper.find('[aria-label="rawProducts"]').text().includes('1800 − 2200 − 1030'));
-    assert.ok(wrapper.find('[aria-label="rawResult"]').text().includes('-1430'), 'raw = -1430');
-    assert.ok(wrapper.find('[aria-label="finalSubstituted"]').text().includes('-1430 − (−300)'), 'final = raw − par');
-    assert.ok(wrapper.find('[aria-label="finalResult"]').text().includes('-1130'), 'final = -1130');
+    assert.ok(wrapper.find('[aria-label="rawProducts"]').text().includes('180 − 1030'));
+    assert.ok(wrapper.find('[aria-label="rawResult"]').text().includes('-850'), 'raw = -850');
+    assert.ok(wrapper.find('[aria-label="finalSubstituted"]').text().includes('-850 − (−300)'), 'final = raw − par');
+    assert.ok(wrapper.find('[aria-label="finalResult"]').text().includes('-550'), 'final = -550');
 
     // "Rounds" still appears as an informational given (just not scored).
     assert.ok(wrapper.find('[aria-label="score inputs"]').text().includes('Rounds'), 'Rounds shown as a given');
   });
 
   test('shows the grade badge matching gradeForFinalScore for representative bands', () => {
-    // WP-591 bands: 3000 → d (loss); -2500 → legendary; -1 → b.
-    for (const [finalScore, label] of [[3000, 'D'], [-2500, 'Legendary'], [-1, 'B']] as const) {
+    // WP-599 bands: 800 → d (loss); -2500 → legendary; -1 → b.
+    for (const [finalScore, label] of [[800, 'D'], [-2500, 'Legendary'], [-1, 'B']] as const) {
       const wrapper = mount(EndgameSummary, {
         props: { gameOver: gameOver(), competitiveScore: score({ finalScore, scoreBreakdown: breakdown({ finalScore }) }) },
       });
@@ -207,11 +206,14 @@ describe('EndgameSummary (WP-587 PAR derivation + grade scale)', () => {
     });
     const par = wrapper.find('[data-testid="arena-hud-par-derivation"]');
     assert.ok(par.exists(), 'PAR derivation block renders');
-    // The reward weights are derived (200/10); the escape term is symbolic here
-    // (the match had 0 escapes) — never a fabricated number.
-    assert.ok(wrapper.find('[aria-label="parFormula"]').text().includes('(Bystanders × 200)'));
+    // WP-599 / D-24409 — the PAR derivation has no bystander-reward term; the VP weight
+    // is derived (10) and the escape term is symbolic here (the match had 0 escapes).
+    const parFormula = wrapper.find('[aria-label="parFormula"]').text();
+    assert.ok(!parFormula.includes('Bystander'), parFormula);
+    assert.ok(parFormula.includes('(VP × 10)'), parFormula);
     const parSub = wrapper.find('[aria-label="parSubstituted"]').text();
-    assert.ok(parSub.includes('(5 × 200) − (25 × 10)'), parSub);
+    assert.ok(!parSub.includes('× 200'), parSub);
+    assert.ok(parSub.includes('(25 × 10)'), parSub);
     assert.ok(parSub.includes('escape penalty'), 'escape weight symbolic when not derivable');
     // The PAR value is shown verbatim.
     assert.ok(wrapper.find('[aria-label="parResult"]').text().includes('-1150'), 'PAR value verbatim');
@@ -342,12 +344,12 @@ describe('EndgameSummary (WP-593 report-card v2)', () => {
 
   test('renders the raw-score ledger (penalties + earned) netting to raw', () => {
     const wrapper = mount(EndgameSummary, {
-      props: { gameOver: gameOver(), competitiveScore: score({ rawScore: -1430, scoreBreakdown: breakdown() }) },
+      props: { gameOver: gameOver(), competitiveScore: score({ rawScore: -850, scoreBreakdown: breakdown() }) },
     });
     const ledger = wrapper.find('[data-testid="arena-hud-raw-ledger"]');
     assert.ok(ledger.exists(), 'raw ledger renders');
     assert.ok(ledger.text().includes('6 scheme twists'), 'penalty line named');
-    assert.equal(wrapper.find('[aria-label="competitiveRawScore"]').text(), '-1430');
+    assert.equal(wrapper.find('[aria-label="competitiveRawScore"]').text(), '-850');
   });
 
   test('names players with (Bot) and (@handle) from seat identities', () => {

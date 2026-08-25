@@ -6,7 +6,11 @@ import type {
   CompetitiveSeatIdentity,
 } from '../lib/api/competitionApi';
 
-/** The real 2p Red Skull / Midtown game-2 breakdown (Raw 20, Final 320). */
+/**
+ * The real 2p Red Skull / Midtown game-2 breakdown, on the WP-599 / D-24409
+ * rulebook-fidelity scale: no bystander reward, penalties in true VP-units (twist =
+ * 30). 6 twists → penalties 180; 103 VP → reward 1030; raw = 180 − 1030 = −850.
+ */
 function breakdown(over: Partial<CompetitiveScoreBreakdown> = {}): CompetitiveScoreBreakdown {
   return {
     inputs: {
@@ -22,21 +26,20 @@ function breakdown(over: Partial<CompetitiveScoreBreakdown> = {}): CompetitiveSc
         scenarioSpecificPenalty: 0,
       },
     },
-    weightedPenaltyTotal: 1800,
+    weightedPenaltyTotal: 180,
     penaltyBreakdown: {
       villainEscaped: 0,
       bystanderLost: 0,
-      schemeTwistNegative: 1800,
+      schemeTwistNegative: 180,
       mastermindTacticUntaken: 0,
       scenarioSpecificPenalty: 0,
     },
-    weightedBystanderReward: 2200,
     weightedVictoryPointReward: 1030,
-    // why: WP-585 — no round-cost term: raw = 1800 − 2200 − 1030 = −1430.
-    rawScore: -1430,
+    // why: WP-599 / D-24409 — no bystander-reward term: raw = 180 − 1030 = −850.
+    rawScore: -850,
     parScore: -300,
-    finalScore: -1130,
-    scoringConfigVersion: 3,
+    finalScore: -550,
+    scoringConfigVersion: 5,
     ...over,
   };
 }
@@ -46,16 +49,16 @@ describe('buildWorkedScoreCalc (WP-584)', () => {
     const calc = buildWorkedScoreCalc(breakdown());
     assert.equal(
       calc.formula,
-      'Penalties − (Bystanders × 200) − (VP × 10)',
+      'Penalties − (VP × 10)',
     );
     assert.equal(
       calc.substituted,
-      '(6 scheme twists × 300) − (11 × 200) − (103 × 10)',
+      '(6 scheme twists × 30) − (103 × 10)',
     );
-    assert.equal(calc.products, '1800 − 2200 − 1030');
-    assert.equal(calc.rawScore, -1430);
-    assert.equal(calc.finalSubstituted, '-1430 − (−300)');
-    assert.equal(calc.finalScore, -1130);
+    assert.equal(calc.products, '180 − 1030');
+    assert.equal(calc.rawScore, -850);
+    assert.equal(calc.finalSubstituted, '-850 − (−300)');
+    assert.equal(calc.finalScore, -550);
   });
 
   test('givens list the six inputs verbatim', () => {
@@ -135,37 +138,15 @@ describe('buildWorkedScoreCalc (WP-584)', () => {
     assert.ok(calc.substituted.startsWith('0 −'), calc.substituted);
   });
 
-  test('a zero-count reward term shows its 0 product, no bogus weight', () => {
-    // No bystanders rescued → the weight (200) is not derivable from the data.
-    const calc = buildWorkedScoreCalc(
-      breakdown({
-        weightedBystanderReward: 0,
-        inputs: {
-          rounds: 12,
-          victoryPoints: 40,
-          bystandersRescued: 0,
-          escapes: 0,
-          penaltyEventCounts: {
-            villainEscaped: 0,
-            bystanderLost: 0,
-            schemeTwistNegative: 2,
-            mastermindTacticUntaken: 0,
-            scenarioSpecificPenalty: 0,
-          },
-        },
-        penaltyBreakdown: {
-          villainEscaped: 0,
-          bystanderLost: 0,
-          schemeTwistNegative: 600,
-          mastermindTacticUntaken: 0,
-          scenarioSpecificPenalty: 0,
-        },
-      }),
-    );
-    // Formula falls back to the bare label (no invented weight); substituted shows 0.
-    assert.ok(calc.formula.includes('− Bystanders '), calc.formula);
-    assert.ok(!calc.formula.includes('(Bystanders ×'), 'no bogus bystander weight');
-    assert.ok(calc.substituted.includes('− 0 −'), calc.substituted);
+  test('the worked formula carries no bystander term (WP-599: bystanders score via VP)', () => {
+    // why: WP-599 / D-24409 removed the dedicated bystander reward. VP is the sole
+    // reward term, and it already counts rescued bystanders (1 VP each). The worked
+    // formula must show only Penalties and VP — never a Bystanders term or a ×200.
+    const calc = buildWorkedScoreCalc(breakdown());
+    assert.ok(!calc.formula.includes('Bystander'), calc.formula);
+    assert.ok(!calc.substituted.includes('× 200'), calc.substituted);
+    assert.ok(!calc.products.includes('2200'), calc.products);
+    assert.equal(calc.formula, 'Penalties − (VP × 10)');
   });
 
   test('a positive PAR is not parenthesized in the final line', () => {
@@ -244,11 +225,11 @@ describe('PAR derivation (WP-587)', () => {
     assert.ok(calc.parDerivation);
     assert.equal(
       calc.parDerivation?.formula,
-      '(Escapes × 100) − (Bystanders × 200) − (VP × 10)',
+      '(Escapes × 100) − (VP × 10)',
     );
     assert.equal(
       calc.parDerivation?.substituted,
-      '(1 × 100) − (5 × 200) − (25 × 10)',
+      '(1 × 100) − (25 × 10)',
     );
     // twists is 0 here (this fixture's baseline predates WP-591's schemeTwistsPar),
     // so no twist term appears in the formula/substituted above.
@@ -288,8 +269,10 @@ describe('PAR derivation (WP-587)', () => {
     // Never invents a number: the escape term names the weight symbolically.
     assert.ok(calc.parDerivation?.substituted.includes('(1 × escape penalty)'), calc.parDerivation?.substituted);
     assert.ok(calc.parDerivation?.formula.includes('Escapes −') || calc.parDerivation?.formula.startsWith('Escapes'), calc.parDerivation?.formula);
-    // The reward terms still show their derived weights.
-    assert.ok(calc.parDerivation?.substituted.includes('(5 × 200) − (25 × 10)'), calc.parDerivation?.substituted);
+    // WP-599 / D-24409 — the VP reward term still shows its derived weight; there is no
+    // longer a bystander-reward term in the PAR derivation.
+    assert.ok(calc.parDerivation?.substituted.includes('(25 × 10)'), calc.parDerivation?.substituted);
+    assert.ok(!calc.parDerivation?.substituted.includes('× 200'), calc.parDerivation?.substituted);
   });
 });
 
@@ -367,23 +350,25 @@ describe('WP-591 — twist-aware PAR derivation + loss penalty display', () => {
 describe('raw-score ledger (WP-593)', () => {
   test('splits penalties (positive) from earned rewards (subtracted), netting to rawScore', () => {
     const ledger = buildWorkedScoreCalc(breakdown()).rawLedger;
-    // one penalty line (6 scheme twists = 1800), no others
+    // one penalty line (6 scheme twists = 180), no others
     assert.equal(ledger.penalties.length, 1);
     assert.equal(ledger.penalties[0]?.label, '6 scheme twists');
-    assert.equal(ledger.penalties[0]?.amount, 1800);
-    assert.equal(ledger.penaltyTotal, 1800);
-    // two earned lines: bystanders (2200) + VP (1030)
-    assert.equal(ledger.earned.length, 2);
-    assert.equal(ledger.earnedTotal, 3230);
-    assert.equal(ledger.total, -1430);
+    assert.equal(ledger.penalties[0]?.amount, 180);
+    assert.equal(ledger.penaltyTotal, 180);
+    // WP-599 / D-24409 — one earned line: VP (1030). Rescued bystanders score inside VP
+    // now, not as a separate line.
+    assert.equal(ledger.earned.length, 1);
+    assert.equal(ledger.earnedTotal, 1030);
+    assert.equal(ledger.total, -850);
   });
 
   test('a lost match adds a match-lost penalty line', () => {
-    const ledger = buildWorkedScoreCalc(breakdown({ weightedLossPenalty: 6000, rawScore: 4570 })).rawLedger;
+    const ledger = buildWorkedScoreCalc(breakdown({ weightedLossPenalty: 800, rawScore: -50 })).rawLedger;
     const lossLine = ledger.penalties.find((line) => line.label === 'match lost');
     assert.ok(lossLine, 'match-lost penalty line present');
-    assert.equal(lossLine?.amount, 6000);
-    assert.equal(ledger.penaltyTotal, 7800);
+    assert.equal(lossLine?.amount, 800);
+    // WP-599 / D-24409 — LOSS_PENALTY is 800 now; base twists 180 + 800 = 980.
+    assert.equal(ledger.penaltyTotal, 980);
   });
 
   test('no penalties yields an empty penalties list (client renders "None")', () => {

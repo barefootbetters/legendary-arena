@@ -83,7 +83,6 @@ function createTestScoringConfig(): ScenarioScoringConfig {
   return {
     scenarioKey: 'test-scheme-par::test-mastermind-par::test-villain-group-par',
     weights: {
-      bystanderReward: 200,
       victoryPointReward: 10,
     },
     caps: {
@@ -670,7 +669,12 @@ describe('generateScenarioParSamples + parValue regression pin (WP-596)', () => 
     const registry = createMockRegistry();
     const result = generateScenarioPar(config, registry);
     assert.equal(result.parValue, 0, 'pre-refactor parValue literal');
-    assert.equal(result.seedParDelta, 1200, 'pre-refactor seedParDelta literal');
+    // why: WP-599 / D-24409 — seedParDelta = parValue − seedPar = 0 − (−200) = 200.
+    // The seed par shifted 1200→200 because the bystander-reward term (5×200) left the
+    // formula; the config's escapesPar (1×100) and victoryPointsPar (30×10) now give
+    // seedPar = 100 − 300 = −200. The sim parValue stays 0 (empty mock cards → 0-score
+    // games), so only this delta moves.
+    assert.equal(result.seedParDelta, 200, 'seedParDelta after WP-599 (0 − (−200))');
     assert.equal(result.sampleSize, 10);
     assert.deepStrictEqual(result.rawScoreDistribution, {
       min: 0,

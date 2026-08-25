@@ -186,20 +186,24 @@ export function deriveScoringInputs(
  * Flat loss penalty (centesimal units) added to the Raw Score when a match is lost
  * (WP-591 / D-24400).
  *
- * why: losses (outcome 'scheme-wins') are competitively scored, and rewards
- * (bystanders/VP) accrue regardless of the win. Without a penalty a team that loses
- * but rescues many bystanders would out-grade a clean win. 6000 (= 60.00) is large
- * enough that even the best-scoring loss lands below every competent win — validated
- * against the observed anchor games (a 34-bystander Midtown loss grades D, not
- * Legendary). Operator decision: grade a loss by margin, not a flat auto-F.
+ * why: losses (outcome 'scheme-wins') are competitively scored, and the VP reward
+ * accrues regardless of the win. Without a penalty a team that loses but banks many
+ * VP would out-grade a clean win. 800 (= 8.00) lifts every loss above every competent
+ * win on the rulebook-fidelity scale — validated against the 13 real anchor games: the
+ * best-scoring loss (a 34-bystander, 88-VP Midtown loss) lands at D, a low-VP loss at F.
+ * why: WP-599 / D-24409 — retuned 6000→800 alongside the penalty rescale to true
+ * VP-units (×10). The whole raw-score magnitude dropped ~10× when the −200 bystander
+ * reward was removed and penalties went to 10/30/40. At 600 that Midtown loss still
+ * graded C (too lenient); 800 grades a loss by margin (near-miss D, blowout F) as the
+ * operator intends. Interim / tunable, like the grade bands.
  */
-export const LOSS_PENALTY = 6000;
+export const LOSS_PENALTY = 800;
 
 /**
  * Computes the Raw Score from scoring inputs and a scenario config.
  *
  * Formula:
- *   RawScore = P - (BP × bystanderReward) - (VP × vpReward) + lossPenalty
+ *   RawScore = P - (VP × vpReward) + lossPenalty
  *   P        = sum(eventCount[type] × penaltyWeight[type])
  *   lossPenalty = LOSS_PENALTY when the match was lost, else 0 (WP-591)
  *
@@ -207,25 +211,28 @@ export const LOSS_PENALTY = 6000;
  * rulebook's scoring has no round/turn penalty — Scheme Twists are its length
  * proxy — so game length is already captured by the schemeTwistNegative penalty.
  *
- * Lower is better. Caps are applied before the subtractive terms when set.
+ * why (WP-599 / D-24409, supersedes D-24408): there is no bystander-reward term
+ * either. Full rulebook fidelity — the rulebook Total Score is
+ * `VP − 4·bystandersLost − 3·twists − 1·escapes`, so a rescued bystander scores only
+ * as its printed 1 VP (folded into VP), never a separate reward. VP is now the sole
+ * reward; the penalty weights are the true rulebook VP-unit values (escape 10, twist
+ * 30, bystanderLost 40 on the ×10 scale). This removed the invented −200 rescue
+ * reward (which also double-counted the bystander's own VP).
+ *
+ * Lower is better. The victory-point cap is applied before the subtractive term.
  *
  * @param inputs - ScoringInputs derived from a completed match.
  * @param config - ScenarioScoringConfig providing weights, caps, penalty weights.
  * @returns Raw Score as an integer (centesimal units).
  */
 // why: monotonicity invariant — more penalty events always increase RawScore
-// (worse outcome); higher BP and VP always decrease it (better outcome). Per-event
-// penalty weights (no shared escape multiplier) are what encode the moral
-// hierarchy: bystanderLost is the heaviest penalty, and bystanderReward always
-// exceeds villainEscaped.
+// (worse outcome); higher VP always decreases it (better outcome). Per-event penalty
+// weights (no shared escape multiplier) encode the moral hierarchy: bystanderLost is
+// the heaviest penalty and always exceeds villainEscaped (the retained invariant 2).
 export function computeRawScore(
   inputs: ScoringInputs,
   config: ScenarioScoringConfig,
 ): number {
-  const effectiveBystanders = applyCap(
-    inputs.bystandersRescued,
-    config.caps.bystanderCap,
-  );
   const effectiveVictoryPoints = applyCap(
     inputs.victoryPoints,
     config.caps.victoryPointCap,
@@ -238,22 +245,17 @@ export function computeRawScore(
     weightedPenaltyTotal = weightedPenaltyTotal + count * weight;
   }
 
-  const weightedBystanderReward =
-    effectiveBystanders * config.weights.bystanderReward;
   const weightedVictoryPointReward =
     effectiveVictoryPoints * config.weights.victoryPointReward;
 
   // why: WP-591 / D-24400 — a LOST match (the mastermind was not defeated) adds a
-  // flat penalty so a bystander-heavy loss can never out-grade a competent win.
-  // Losses are competitively scored (outcome 'scheme-wins'); without this a team
-  // that racks up rewards but loses would beat a clean win. Absent/false = a win.
+  // flat penalty so a VP-heavy loss can never out-grade a competent win. Losses are
+  // competitively scored (outcome 'scheme-wins'); without this a team that banks VP
+  // but loses would beat a clean win. Absent/false = a win.
   const weightedLossPenalty = inputs.matchLost === true ? LOSS_PENALTY : 0;
 
   return (
-    weightedPenaltyTotal -
-    weightedBystanderReward -
-    weightedVictoryPointReward +
-    weightedLossPenalty
+    weightedPenaltyTotal - weightedVictoryPointReward + weightedLossPenalty
   );
 }
 
@@ -275,6 +277,9 @@ export function computeParScore(config: ScenarioScoringConfig): number {
     // term), so PAR carries no roundsPar; this informational input is 0.
     rounds: 0,
     victoryPoints: config.parBaseline.victoryPointsPar,
+    // why: WP-599 / D-24409 — bystandersRescued no longer feeds a reward (rescued
+    // bystanders score only as their 1 VP, already inside victoryPointsPar). This is
+    // now informational only; kept because it is a required ScoringInputs field.
     bystandersRescued: config.parBaseline.bystandersPar,
     escapes: config.parBaseline.escapesPar,
     // why: WP-591 / D-24400 — PAR now models the scheme-twist and bystander-lost
@@ -338,10 +343,6 @@ export function buildScoreBreakdown(
   inputs: ScoringInputs,
   config: ScenarioScoringConfig,
 ): ScoreBreakdown {
-  const effectiveBystanders = applyCap(
-    inputs.bystandersRescued,
-    config.caps.bystanderCap,
-  );
   const effectiveVictoryPoints = applyCap(
     inputs.victoryPoints,
     config.caps.victoryPointCap,
@@ -363,8 +364,6 @@ export function buildScoreBreakdown(
     weightedPenaltyTotal = weightedPenaltyTotal + contribution;
   }
 
-  const weightedBystanderReward =
-    effectiveBystanders * config.weights.bystanderReward;
   const weightedVictoryPointReward =
     effectiveVictoryPoints * config.weights.victoryPointReward;
 
@@ -374,10 +373,7 @@ export function buildScoreBreakdown(
   const weightedLossPenalty = inputs.matchLost === true ? LOSS_PENALTY : 0;
 
   const rawScore =
-    weightedPenaltyTotal -
-    weightedBystanderReward -
-    weightedVictoryPointReward +
-    weightedLossPenalty;
+    weightedPenaltyTotal - weightedVictoryPointReward + weightedLossPenalty;
   const parScore = computeParScore(config);
   const finalScore = rawScore - parScore;
 
@@ -426,7 +422,6 @@ export function buildScoreBreakdown(
     inputs: copiedInputs,
     weightedPenaltyTotal,
     penaltyBreakdown,
-    weightedBystanderReward,
     weightedVictoryPointReward,
     weightedLossPenalty,
     rawScore,
@@ -448,13 +443,12 @@ export function buildScoreBreakdown(
  * Rule 11).
  *
  * Checks:
- *   - bystanderReward, victoryPointReward all > 0 (no roundCost — WP-585)
+ *   - victoryPointReward > 0 (no roundCost — WP-585; no bystanderReward — WP-599)
  *   - Every PenaltyEventType key exists in penaltyEventWeights (D-4805)
  *   - Every penalty weight > 0
- *   - Structural invariants:
- *       1. bystanderReward > villainEscapedWeight
+ *   - Structural invariant (WP-599 / D-24409 — invariants 1 & 3 removed with the
+ *     bystanderReward; only 2 survives):
  *       2. bystanderLostWeight > villainEscapedWeight
- *       3. bystanderLostWeight > bystanderReward
  *   - bystanderCap and victoryPointCap non-negative when set
  *   - bystandersPar, victoryPointsPar, escapesPar all >= 0 (no roundsPar — WP-585)
  *   - scoringConfigVersion > 0
@@ -470,11 +464,6 @@ export function validateScoringConfig(
 ): ScoringConfigValidationResult {
   const errors: string[] = [];
 
-  if (!(config.weights.bystanderReward > 0)) {
-    errors.push(
-      `ScoringWeights.bystanderReward must be a positive integer; got ${config.weights.bystanderReward}.`,
-    );
-  }
   if (!(config.weights.victoryPointReward > 0)) {
     errors.push(
       `ScoringWeights.victoryPointReward must be a positive integer; got ${config.weights.victoryPointReward}.`,
@@ -496,25 +485,21 @@ export function validateScoringConfig(
     }
   }
 
+  // why: WP-599 / D-24409 — full rulebook fidelity removed structural invariants 1
+  // (bystanderReward > villainEscaped) and 3 (bystanderLost > bystanderReward): both
+  // referenced the deleted bystanderReward. Invariant 2 (bystanderLost >
+  // villainEscaped — losing a civilian is always worse than letting a villain escape)
+  // is the sole surviving moral-hierarchy invariant and holds on the rulebook 4:3:1
+  // ratio (40 > 10).
   const villainEscapedWeight = config.penaltyEventWeights.villainEscaped;
   const bystanderLostWeight = config.penaltyEventWeights.bystanderLost;
   if (
     villainEscapedWeight !== undefined &&
     bystanderLostWeight !== undefined
   ) {
-    if (!(config.weights.bystanderReward > villainEscapedWeight)) {
-      errors.push(
-        `Structural invariant violated: ScoringWeights.bystanderReward (${config.weights.bystanderReward}) must exceed penaltyEventWeights.villainEscaped (${villainEscapedWeight}) so rescuing a bystander is always worth more than losing tactical control over a villain.`,
-      );
-    }
     if (!(bystanderLostWeight > villainEscapedWeight)) {
       errors.push(
         `Structural invariant violated: penaltyEventWeights.bystanderLost (${bystanderLostWeight}) must exceed penaltyEventWeights.villainEscaped (${villainEscapedWeight}) so losing a civilian is always worse than letting a villain escape.`,
-      );
-    }
-    if (!(bystanderLostWeight > config.weights.bystanderReward)) {
-      errors.push(
-        `Structural invariant violated: penaltyEventWeights.bystanderLost (${bystanderLostWeight}) must exceed ScoringWeights.bystanderReward (${config.weights.bystanderReward}) so the moral cost of a lost civilian always outweighs the credit for rescuing one.`,
       );
     }
   }

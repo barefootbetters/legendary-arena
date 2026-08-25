@@ -9,8 +9,11 @@ import { join } from 'node:path';
 
 // Shipped scoring weights (centesimal), from parScoring — kept in sync manually
 // for this analysis tool (it never writes artifacts, only reports).
-const W = { villainEscaped: 100, bystanderLost: 400, schemeTwist: 300, bystanderReward: 200, vpReward: 10 };
-const SEED_PAR = -1150; // the Red Skull / Midtown / Hydra+Masters 2p seed PAR, for contrast
+// why: WP-599 / D-24409 — rulebook-fidelity weights (true VP-units): no bystander
+// reward (rescued bystanders score only as their 1 VP, inside `vp`); penalties
+// 10/30/40. rawScore = penalties − vp × vpReward.
+const W = { villainEscaped: 10, bystanderLost: 40, schemeTwist: 30, vpReward: 10 };
+const SEED_PAR = -470; // approx new Midtown / Red Skull 2p seed PAR, for contrast (WP-599)
 
 const dir = process.argv[2] ?? 'C:/pcloud/matches';
 
@@ -49,7 +52,9 @@ for (const file of files) {
     : 0;
 
   const penalties = escapes * W.villainEscaped + bystandersLost * W.bystanderLost + twists * W.schemeTwist;
-  const rawScore = penalties - bystanders * W.bystanderReward - vp * W.vpReward;
+  // why: WP-599 / D-24409 — no bystander-reward term; rescued bystanders are already
+  // inside `vp` (1 VP each), so the reward is purely vp × vpReward.
+  const rawScore = penalties - vp * W.vpReward;
   const finalVsSeed = rawScore - SEED_PAR;
 
   rows.push({ file: file.split(/[\\/]/).pop(), scheme, mastermind, players, finished, won, bystanders, vp, escapes, twists, bystandersLost, rawScore, finalVsSeed });
