@@ -479,16 +479,15 @@ PAR exists to establish:
 Player performance is evaluated using a **composite, scenario-aware scoring model** derived from the complete game record.
 
 **Positive Performance Factors**
-- Total Victory Points earned
-- Number of bystanders rescued
-- Efficient resolution (fewer rounds / hands played)
+- Total Victory Points earned — **including rescued bystanders**, which score as their printed 1 Victory Point each, exactly as the official *Marvel Legendary* rules count them (there is no separate rescue bonus — WP-599 / D-24409)
 
 **Penalty Factors**
+- **Bystanders lost to escaping villains — the heaviest penalty** (saving civilians is the point; losing them is the worst outcome)
+- Scheme twists drawn (the villain's clock, and the game's length proxy)
 - Villains escaped
-- Scheme twists resolving negatively
 - Other scenario-defined failure or pressure events
 
-Each scenario defines explicit weightings for these factors, producing a **normalized score relative to PAR**.
+Each scenario applies fixed weightings to these factors, producing a **normalized score relative to PAR**. Faithful to the rulebook, the moral hierarchy of heroism (see *Heroic Values in Scoring*) is encoded on the **penalty side** — the game punishes abandoning civilians far more than it rewards saving them, rather than paying a positive rescue bonus.
 
 Scoring is objective, transparent, and scenario-specific — never generic or one-size-fits-all.
 
@@ -705,12 +704,10 @@ Each completed game produces a **Raw Score** derived from four outcomes in the
 authoritative replay:
 
 **Rewarded (better play = lower score):**
-- Victory Points earned (defeating villains and masterminds)
-- Bystanders rescued (saving civilians — the strongest positive action)
+- Victory Points earned — defeating villains, henchmen, and masterminds, **and rescuing bystanders** (each saved civilian is 1 Victory Point, per the official rules)
 
 **Penalized (worse play = higher score):**
-- Rounds played (efficiency)
-- Escapes and penalties (loss of board control, scheme pressure, civilian casualties)
+- Scheme twists (the villain's clock, which also carries game length), villain escapes, and — **most heavily** — civilians lost to escaping villains
 
 The Raw Score is then normalized against PAR:
 
@@ -779,18 +776,24 @@ PAR provides a shared performance language:
 Legendary Arena judges heroes not by how quietly they contain threats, but by how
 many lives they save.
 
-The scoring model encodes a **moral hierarchy** drawn from the source material:
+The scoring model encodes a **moral hierarchy** drawn from the source material — and,
+faithful to the official rules, it does so on the **penalty side**, not through a
+rescue bonus:
 
-- Saving civilians is the **strongest positive action** a player can take
-- Letting a villain escape is failure — but letting civilians suffer is worse
-- A bystander lost to an escaping villain is penalized **more heavily** than a
-  normal villain escape
+- Losing a civilian to an escaping villain is the single **worst** outcome —
+  penalized more heavily than any other event, and more than letting a villain
+  escape empty-handed
+- Rescued civilians still count for you, as the **Victory Points** the rules award
+  them (1 each) — heroism is rewarded, just not with an invented bonus on top of the VP
+- The reward for caution (board control, VP-grinding) can never outrun the cost of
+  abandoning the people you were there to protect
 
 This means a player who takes risks to rescue bystanders — even at the cost of
 letting some villains escape — will outscore a player who plays conservatively and
 maintains perfect board control but ignores civilians.
 
-The system rewards **heroism**, not caution.
+The system rewards **heroism**, not caution — the same way the rulebook does: it
+punishes abandoning civilians far more than it rewards saving them.
 
 Legendary Arena becomes not only a place to play, but a **training ground for mastery** — where excellence is measurable, replayable, and earned.
 
