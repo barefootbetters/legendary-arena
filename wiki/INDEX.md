@@ -1,7 +1,7 @@
 # Wiki Index
 
-> **61 / 76** entity pages.
-> Last regenerated: 2026-08-22.
+> **62 / 76** entity pages.
+> Last regenerated: 2026-08-24.
 > See [SCHEMA.md](SCHEMA.md) for the entity-page contract and
 > [README.md](README.md) for purpose, conventions, and authority —
 > including [§ Tradeoffs](README.md#tradeoffs) on what the LLM-wiki
@@ -158,6 +158,15 @@ Cross-cutting governance, methodology, and readiness assessments.
 - [Changelog](changelog.md) — Milestone history of significant changes,
   newest first (projected from `docs/09-CHANGELOG.md`; the exhaustive
   per-packet record lives in WORK_INDEX + git log).
+- [User Feedback and Public Roadmap](user-feedback-and-public-roadmap.md) —
+  *(draft, planning)* proposes a four-stage feedback pipeline — intake →
+  tracking → voting → public roadmap — for bug reports, enhancement
+  requests, and reviews. Weighs build-vs-buy for each stage (custom on
+  Postgres+Hanko, self-hosted Fider, SaaS boards, GitHub Issues), gates
+  voting on the existing Hanko login, and recommends a **monthly public
+  changelog nested under quarterly roadmap themes** so anyone can see what
+  shipped, what's in progress this month, and what's next. Proposes a
+  design; reserves no `WP-` / `D-` yet.
 - [Data & File Locations](data-file-locations.md) — Locator map for
   where data and files live: card JSON + the convert pipeline,
   metadata, the Postgres `legendary.*` tables, R2 key prefixes,
