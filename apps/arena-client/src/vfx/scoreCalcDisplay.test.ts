@@ -1,6 +1,6 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildWorkedScoreCalc, buildLuckRead } from './scoreCalcDisplay';
+import { buildWorkedScoreCalc, buildLuckRead, buildScoringKey } from './scoreCalcDisplay';
 import type {
   CompetitiveScoreBreakdown,
   CompetitiveSeatIdentity,
@@ -474,5 +474,27 @@ describe('luck of the draw (WP-593)', () => {
   test('a zero-adversity baseline with any adversity reads difficult', () => {
     const luck = buildLuckRead(withBaseline(0, 0, 0, { schemeTwistNegative: 3, villainEscaped: 0, bystanderLost: 0 }));
     assert.equal(luck?.verdict, 'difficult');
+  });
+});
+
+describe('scoring key (WP-600)', () => {
+  test('awards is VP only (rescued bystanders fold into VP, no separate award)', () => {
+    const key = buildScoringKey();
+    assert.equal(key.awards.length, 1);
+    assert.equal(key.awards[0]?.label, 'Victory Point');
+    assert.equal(key.awards[0]?.points, '−10');
+    // The whole point of WP-599: no dedicated bystander-rescue award line.
+    assert.ok(!key.awards.some((line) => line.label.toLowerCase().includes('bystander')));
+    // …but the VP note names rescued bystanders as a VP source.
+    assert.ok(key.awards[0]?.note.includes('rescued bystander'), key.awards[0]?.note);
+  });
+
+  test('penalties are the rulebook 4:3:1 on the true VP-unit scale', () => {
+    const key = buildScoringKey();
+    const byLabel = Object.fromEntries(key.penalties.map((line) => [line.label, line.points]));
+    assert.equal(byLabel['Villain escaped'], '+10');
+    assert.equal(byLabel['Scheme twist'], '+30');
+    assert.equal(byLabel['Bystander lost'], '+40');
+    assert.equal(key.penalties.length, 3);
   });
 });

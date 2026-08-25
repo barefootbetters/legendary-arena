@@ -38323,3 +38323,16 @@ _Active 2026-08-24 — a watch-and-reserved-lever policy, not an implementation.
 **Deferred (not gating).** `data/par/profile/v1` diagnostic profiles (WP-597, not server-read, no CI gate) carry stale rawScore bins under the old formula; regeneration (a simulation sweep) is a follow-up. The report-card display *polish* (rescued/lost terminology, penalties/awards legend, RAW SCORE / BY PLAYER styling) is a separate follow-up PR; this WP does the minimal display-correctness edits the contract change forced.
 
 _Active 2026-08-24 — supersedes D-24408. Related: D-24408 (the superseded dominance policy), D-24400 (scheme-aware PAR + interim bands), D-24394 (rulebook-faithful weights, roundCost removal), D-24342 (4:3:1 penalty anchor)._
+
+### D-24410 — Endgame Report Card: Rulebook-Faithful Display Polish (Active 2026-08-24 — WP-600 / EC-635)
+
+**Context.** The endgame report-card refinements the operator asked for, on top of the WP-599 model: (1) rescued/lost terminology, (2) a penalties/awards scoring-key legend, (3) RAW SCORE + BY PLAYER restyling. Display-only, stacked on WP-599.
+
+**Decision.**
+1. **Terminology.** The card never shows a bare "bystanders" — it says **bystanders rescued** (an award, via VP) or **bystanders lost** (the heaviest penalty). Fixes the per-player stat and the PAR-derivation "expected bystanders" given.
+2. **Scoring key.** A penalties/awards legend (`buildScoringKey`, `vfx/scoreCalcDisplay.ts`) renders beside the grade scale: **Awards** — Victory Point −10 (each defeated villain/henchman/tactic + each rescued bystander at 1 VP); **Penalties** — villain escaped +10, scheme twist +30, bystander lost +40. The weights are a **documented client constant** (the `gradeDisplay` precedent, D-24392) — an explanatory legend must show events that didn't occur this match, so it can't be derived from the breakdown; it is cross-referenced to D-24409 and pinned by a test so it cannot drift from the engine's shipped configs.
+3. **Styling.** The raw-score ledger sides are tinted to their sign (penalties warm / earned cool, matching the key); the per-player split renders as seat chips.
+
+**Constraint.** Display-only — no engine, scoring, server, or `G` change; no hash re-pin; every match value still rendered verbatim from the server-returned breakdown. A rescued bystander is never a separate award (it scores inside VP, WP-599).
+
+_Active 2026-08-24 — WP-600 / EC-635. Related: D-24409 (the rulebook-faithful model this displays), D-24402 (report card v2), D-24392 (client owns display copy/weights)._

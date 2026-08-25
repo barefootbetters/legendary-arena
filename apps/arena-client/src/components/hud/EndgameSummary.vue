@@ -6,7 +6,7 @@ import type { UIGameOverState } from '@legendary-arena/game-engine';
 // the player-facing word comes from the client `gradeDisplay` helper (D-24392).
 import { gradeForFinalScore } from '@legendary-arena/game-engine';
 import { gradeLabel, gradeClass, gradeAriaText, buildGradeScale } from '../../vfx/gradeDisplay';
-import { buildWorkedScoreCalc, buildLuckRead } from '../../vfx/scoreCalcDisplay';
+import { buildWorkedScoreCalc, buildLuckRead, buildScoringKey } from '../../vfx/scoreCalcDisplay';
 import type { MyCompetitiveScore } from '../../lib/api/competitionApi';
 import EndgameCoachPanel from './EndgameCoachPanel.vue';
 
@@ -88,6 +88,12 @@ export default defineComponent({
     // buildGradeScale owns the words + range formatting (D-24396 / D-24392 boundary).
     const gradeScale = computed(() => (grade.value ? buildGradeScale(grade.value) : null));
 
+    // why: WP-600 / D-24410 — the scoring key (what every event is worth), grouped into
+    // awards vs penalties, shown beside the grade scale so a player can read the whole
+    // scoring system at a glance. Static rulebook-faithful weights (buildScoringKey owns
+    // them); rendered whenever a competitive score exists.
+    const scoringKey = buildScoringKey();
+
     return {
       hasPar,
       hasScores,
@@ -97,6 +103,7 @@ export default defineComponent({
       workedCalc,
       luckRead,
       gradeScale,
+      scoringKey,
     };
   },
 });
@@ -228,7 +235,7 @@ export default defineComponent({
             <div v-for="row in workedCalc.perPlayer" :key="row.label" class="per-player-row">
               <span class="per-player-name">{{ row.label }}</span>
               <span class="per-player-stat"><strong>{{ row.victoryPoints }}</strong> VP</span>
-              <span class="per-player-stat"><strong>{{ row.bystandersRescued }}</strong> bystanders</span>
+              <span class="per-player-stat"><strong>{{ row.bystandersRescued }}</strong> bystanders rescued</span>
             </div>
           </div>
         </div>
@@ -242,7 +249,7 @@ export default defineComponent({
           <div class="worked-givens" aria-label="par baseline">
             <span class="worked-given">Expected escapes <strong>{{ workedCalc.parDerivation.baseline.escapes }}</strong></span>
             <span v-if="workedCalc.parDerivation.baseline.twists > 0" class="worked-given">Expected twists <strong>{{ workedCalc.parDerivation.baseline.twists }}</strong></span>
-            <span class="worked-given">Expected bystanders <strong>{{ workedCalc.parDerivation.baseline.bystanders }}</strong></span>
+            <span class="worked-given">Expected bystanders rescued <strong>{{ workedCalc.parDerivation.baseline.bystanders }}</strong></span>
             <span class="worked-given">Expected VP <strong>{{ workedCalc.parDerivation.baseline.victoryPoints }}</strong></span>
           </div>
           <div class="worked-line" aria-label="parFormula">PAR = {{ workedCalc.parDerivation.formula }}</div>
@@ -293,6 +300,42 @@ export default defineComponent({
             <span v-if="entry.isCurrent" class="grade-scale-you">your score</span>
           </li>
         </ol>
+      </div>
+
+      <!-- why: WP-600 / D-24410 — the scoring key: what every event is worth, grouped
+           into awards (lower your score) and penalties (raise it), so a player can read
+           the whole scoring system at a glance beside their grade. Rulebook-faithful —
+           a rescued bystander scores inside Victory Points (1 VP each), never as its own
+           award; the moral weight is the Bystander-lost penalty. Colour reinforces the
+           group (awards cool, penalties warm); each side is also labelled in text. -->
+      <div
+        class="scoring-key"
+        data-testid="arena-hud-scoring-key"
+        aria-label="scoring key"
+      >
+        <div class="worked-heading">Scoring key — what each event is worth</div>
+        <div class="scoring-key-cols">
+          <div class="scoring-key-col scoring-key-col--awards" aria-label="awards">
+            <div class="scoring-key-col-heading">Awards <span class="scoring-key-sign">(lower your score)</span></div>
+            <div v-for="line in scoringKey.awards" :key="line.label" class="scoring-key-row">
+              <span class="scoring-key-points">{{ line.points }}</span>
+              <span class="scoring-key-body">
+                <span class="scoring-key-label">{{ line.label }}</span>
+                <span class="scoring-key-note">{{ line.note }}</span>
+              </span>
+            </div>
+          </div>
+          <div class="scoring-key-col scoring-key-col--penalties" aria-label="penalties">
+            <div class="scoring-key-col-heading">Penalties <span class="scoring-key-sign">(raise your score)</span></div>
+            <div v-for="line in scoringKey.penalties" :key="line.label" class="scoring-key-row">
+              <span class="scoring-key-points">{{ line.points }}</span>
+              <span class="scoring-key-body">
+                <span class="scoring-key-label">{{ line.label }}</span>
+                <span class="scoring-key-note">{{ line.note }}</span>
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- why: WP-593 — the objective "luck of the draw" read: how much adversity
@@ -425,13 +468,23 @@ header {
   flex-direction: column;
   gap: 0.15rem;
   min-width: 0;
+  padding: 0.4rem 0.5rem;
+  border-radius: 8px;
+  border-top: 3px solid var(--ledger-color, #888);
+  background: color-mix(in srgb, var(--ledger-color, #888) 8%, transparent);
 }
+
+/* why: WP-600 — tint each side of the ledger to its sign (penalties warm, earned
+   cool), matching the scoring key, so the two-sided math reads at a glance. */
+.raw-ledger-penalties { --ledger-color: #bc4c00; }
+.raw-ledger-earned { --ledger-color: #1a7f37; }
 
 .raw-ledger-heading {
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  opacity: 0.7;
+  opacity: 0.85;
+  color: var(--ledger-color, var(--color-foreground));
   margin-bottom: 0.1rem;
 }
 
@@ -576,28 +629,38 @@ dd {
 
 /* why: WP-588 — the per-player split of the reward terms. A display-only
    reconciliation of the team totals (VP + bystanders sum to the raw calc). */
+/* why: WP-600 — each seat is its own chip (name on top, VP + rescues below) so the
+   per-player split reads as distinct cards rather than an inline run of numbers. */
 .per-player-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.3rem 1.2rem;
-  margin-top: 0.15rem;
+  gap: 0.4rem;
+  margin-top: 0.2rem;
 }
 
 .per-player-row {
   display: flex;
-  align-items: baseline;
-  gap: 0.5rem;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--color-foreground) 14%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-foreground) 4%, transparent);
   font-size: 0.85rem;
+  min-width: 8rem;
 }
 
 .per-player-name {
   font-weight: 700;
-  min-width: 4.5rem;
 }
 
 .per-player-stat {
   opacity: 0.9;
   font-variant-numeric: tabular-nums;
+}
+
+.per-player-stat + .per-player-stat {
+  margin-top: 0.05rem;
 }
 
 .per-player-stat strong {
@@ -679,6 +742,96 @@ dd {
   letter-spacing: 0.03em;
   font-weight: 700;
   color: var(--grade-color, var(--color-foreground));
+}
+
+/* why: WP-600 — the scoring key. Two colour-coded columns (awards cool-green |
+   penalties warm-orange) matching the raw-ledger palette, so "what things are worth"
+   reads at a glance. Colour is reinforcement — each column is also labelled and each
+   row leads with its signed points, legible with colours disabled. */
+.scoring-key {
+  margin: 0.5rem 0 0;
+}
+
+.scoring-key-cols {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.3rem;
+}
+
+.scoring-key-col {
+  border: 1px solid var(--key-color, #888);
+  border-top: 3px solid var(--key-color, #888);
+  border-radius: 8px;
+  padding: 0.4rem 0.55rem 0.5rem;
+  background: color-mix(in srgb, var(--key-color, #888) 8%, transparent);
+  min-width: 0;
+}
+
+.scoring-key-col--awards { --key-color: #1a7f37; }
+.scoring-key-col--penalties { --key-color: #bc4c00; }
+
+.scoring-key-col-heading {
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--key-color, var(--color-foreground));
+  margin-bottom: 0.3rem;
+}
+
+.scoring-key-sign {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+  font-size: 0.68rem;
+  opacity: 0.8;
+}
+
+.scoring-key-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  padding: 0.2rem 0;
+}
+
+.scoring-key-row + .scoring-key-row {
+  border-top: 1px solid color-mix(in srgb, var(--key-color, #888) 16%, transparent);
+}
+
+.scoring-key-points {
+  flex: 0 0 auto;
+  min-width: 2.4rem;
+  text-align: right;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--key-color, var(--color-foreground));
+}
+
+.scoring-key-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  min-width: 0;
+}
+
+.scoring-key-label {
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.scoring-key-note {
+  font-size: 0.72rem;
+  opacity: 0.8;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+/* why: WP-600 — narrow screens stack the two key columns so the notes stay readable. */
+@media (max-width: 30rem) {
+  .scoring-key-cols {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* why: WP-593 — the luck-of-the-draw read. A tinted card whose accent conveys the
