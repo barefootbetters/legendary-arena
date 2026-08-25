@@ -48,6 +48,7 @@ import { registerMatchGateRoutes } from './match/matchGate.routes.js';
 import { registerMatchLagnRoutes } from './match/matchLagn.routes.js';
 import { registerCoachRoutes } from './coach/coach.routes.js';
 import { createAnthropicCoachClient } from './coach/coachClient.js';
+import { registerFeedbackRoutes } from './feedback/feedback.routes.js';
 import { resolveCoachModelConfig } from './coach/coachModelConfig.js';
 import {
   createNativeLobbyGuard,
@@ -1047,6 +1048,22 @@ export async function startServer() {
     requireUnsuspendedAccount,
     registry,
     modelClient: coachModelClient,
+  });
+
+  // why: WP-604 / D-24414 — register the player-feedback + voting API
+  // (POST /api/feedback submit, GET /api/feedback public enhancement roadmap,
+  // POST + DELETE /api/feedback/:id/vote one-vote-per-account toggle) on the same
+  // long-lived pool. Submission and voting are identity-gated via the same
+  // caller-injected { requireAuthenticatedSession, verifier, accountResolver } trio
+  // used by every other authenticated route; GET is guest (the viewer is resolved
+  // opportunistically for viewerHasVoted). Each write route owns its koaBody() — there
+  // is no global /api parser. This packet ships the intake/voting backbone only: no
+  // status mutation (the DB owns vote_count as a COUNT projection; status triage is a
+  // follow-on dashboard WP) and no UI.
+  registerFeedbackRoutes(server.router, pool, {
+    requireAuthenticatedSession,
+    verifier,
+    accountResolver: verifier === undefined ? undefined : accountResolver,
   });
 
   // why: WP-106 / D-10602 — register the avatar upload route
