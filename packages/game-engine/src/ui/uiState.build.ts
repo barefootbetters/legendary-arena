@@ -656,6 +656,14 @@ export function buildUIState(
       // time (length-matched).
       discardCards,
       discardDisplay,
+      // why: WP-606 / D-24417 — own draw-pool composition: the order-stripped
+      // (sorted) multiset of this player's deck. `[...zones.deck]` copies before
+      // sorting so G is never mutated; the sort strips draw ORDER so the
+      // next-draw sequence never leaks (composition, not sequence — the WP-470
+      // scry-KO secret). filterUIStateForAudience redacts it for non-self /
+      // spectator (the discardCards posture). Projection-only: derived here,
+      // never stored on G, no state-hash surface.
+      deckComposition: [...zones.deck].sort(),
       victoryCards,
       victoryVP,
     });
@@ -858,6 +866,13 @@ export function buildUIState(
   const decks: UIDecksState = {
     villainDeckCount: gameState.villainDeck.deck.length,
     heroDeckCount,
+    // why: WP-606 / D-24417 — villain-deck composition: the order-stripped
+    // (sorted) multiset of the undrawn villain cards. `[...deck]` copies before
+    // sorting so G is never mutated; the sort strips ORDER so the next reveal
+    // stays unpredictable. PUBLIC — the remaining composition is derivable from
+    // the public setup minus the public revealed discard. Projection-only:
+    // never stored on G, no state-hash surface.
+    villainDeckComposition: [...gameState.villainDeck.deck].sort(),
   };
 
   // --- 11. Project shared piles (counts only) ---

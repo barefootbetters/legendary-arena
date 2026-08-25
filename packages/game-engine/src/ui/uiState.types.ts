@@ -390,6 +390,22 @@ export interface UIPlayerState {
    */
   discardDisplay?: UICardDisplay[];
   /**
+   * Order-stripped composition of this player's own draw deck — the sorted
+   * (ascending) multiset of the deck's CardExtIds: WHAT remains to draw, never
+   * the ORDER.
+   *
+   * // why: WP-606 / D-24417 — present for the viewing player's own deck (so
+   * the Deck Probability Panel can compute draw odds client-side without the
+   * engine running probability math); undefined (redacted) for other players
+   * and spectators — the exact `discardCards` privacy posture. Unlike
+   * `discardCards` (order-preserving, because the discard is face-up), the
+   * deck is face-down, so the sort strips draw ORDER and the next-draw
+   * sequence never leaks (the WP-470 scry-KO secret). Projection-only: never a
+   * `G` field, so no state-hash surface. buildUIState always populates this
+   * for the own player; filterUIStateForAudience redacts it based on audience.
+   */
+  deckComposition?: string[];
+  /**
    * Full victory-pile contents for this player.
    *
    * // why: WP-128 / D-12803 — VP cards are public knowledge by design
@@ -547,17 +563,23 @@ export interface UITurnEconomyState {
 }
 
 /**
- * Shared deck reservoirs surfaced as counts only.
+ * Shared deck reservoirs surfaced as counts — plus, per WP-606 / D-24417,
+ * the villain deck's order-stripped composition.
  *
- * // why: WP-128 / WP-014A determinism contract — counts only; the
- * next-card identity is NEVER projected. Revealing future villain or
- * hero cards would break replay determinism. `heroDeckCount` ships as
- * `0` per D-12806 safe-skip until a future WP adds a hero-deck
- * reservoir on `G` (today HQ is static post-setup).
+ * // why: WP-128 / WP-014A determinism contract — the next-card ORDER is
+ * NEVER projected; revealing the draw SEQUENCE would let a client predict
+ * reveals. `heroDeckCount` ships `length` (D-12806 safe-skip → WP-135). WP-606
+ * adds `villainDeckComposition`: the SORTED multiset of the remaining
+ * villain-deck cards — composition WITHOUT order. It is information-safe (the
+ * remaining villain composition is public from the match setup minus the
+ * public revealed discard) and projection-only (never a `G` field, no
+ * state-hash surface), so it leaks no order and cannot affect replay
+ * determinism. The hero deck stays count-only.
  */
 export interface UIDecksState {
   villainDeckCount: number;
   heroDeckCount: number;
+  villainDeckComposition?: string[];
 }
 
 /**
