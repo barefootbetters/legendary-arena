@@ -38369,7 +38369,7 @@ _Active 2026-08-24 — WP-602 / EC-637. Related: D-24182 (the `healResolved` six
 
 _Active 2026-08-24 — WP-603 / EC-638. Supersedes D-24332 (the auto-resolve fidelity this reverses). Related: D-24282 (interactive scry-ko pending choice, the structural template), D-24006 / D-24007 (ko-hero interactive + block-all guard), D-24284 (active-player-scoped choices), D-24285 (reveal-reshuffle), D-24011 (pending choices redacted to the chooser), D-24102 (the pending-choice result shape)._
 
-### D-24414 — Feedback & Public Roadmap: Build Custom on the Existing Stack (Drafted 2026-08-25 — WP-604 / EC-639; not yet landed — flips to Active when WP-604 executes)
+### D-24414 — Feedback & Public Roadmap: Build Custom on the Existing Stack (Active 2026-08-25 — WP-604 / EC-639; landed with the WP-604 execution)
 
 **Context.** The ewiki design page [User Feedback and Public Roadmap](../../wiki/user-feedback-and-public-roadmap.md) surveyed how Legendary Arena should collect player feedback (bug reports, enhancement requests, reviews), track it, let players vote on enhancements, and publish a monthly changelog under quarterly roadmap themes. It left three decisions open, the load-bearing one being **build vs buy**: a custom board on the existing stack, a self-hosted Fider instance, or a SaaS board (Canny / Featurebase / Frill / Nolt) — as a permanent home or a validation experiment.
 
@@ -38385,7 +38385,7 @@ _Active 2026-08-24 — WP-603 / EC-638. Supersedes D-24332 (the auto-resolve fid
 
 **Scope of WP-604 (the first packet).** WP-604 lands only the persistence + intake/voting **backbone**: the two tables and the `POST /api/feedback` (submit), `GET /api/feedback` (public enhancement list with projected `vote_count`), and `POST`/`DELETE /api/feedback/:id/vote` endpoints. It authors no UI and never mutates status. The **operator triage panel** (dashboard), the **public roadmap board** (marketing / arena-client), and the **changelog / monthly-recap** surfaces are follow-on WPs, each citing this decision. The two still-open questions from the wiki page — where the public roadmap renders (`www` section vs a `roadmap.` subdomain) and who the named operator is — are deferred to those follow-on WPs.
 
-_Drafted 2026-08-25 — WP-604 / EC-639. Flips to Active when WP-604 executes. Related: the ewiki design page (`wiki/user-feedback-and-public-roadmap.md`), D-9905 (the closed auth set), D-11804 (the API-catalog update obligation), D-11504 (`Cache-Control` first), the persistence-boundary rule (feedback tables are ordinary domain storage, not a carve-out)._
+_Active 2026-08-25 — WP-604 / EC-639 (landed with the WP-604 execution: the two `legendary.*` tables + four `/api/feedback` endpoints). Related: the ewiki design page (`wiki/user-feedback-and-public-roadmap.md`), D-9905 (the closed auth set), D-11804 (the API-catalog update obligation), D-11504 (`Cache-Control` first), the persistence-boundary rule (feedback tables are ordinary domain storage, not a carve-out)._
 
 ### D-24415 — Luck of the Draw Stays a Read, Not a Score Adjustment (Active 2026-08-25 — standalone scoring-policy decision, no WP/EC/code)
 
