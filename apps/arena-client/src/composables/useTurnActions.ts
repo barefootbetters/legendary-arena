@@ -197,6 +197,11 @@ export function useTurnActions(
   // True while a core Dr. Doom put-cards-on-deck choice is pending; blocks End Turn / Pass
   // Priority at ANY stage (the engine's full block-all guard set freezes the board).
   hasPendingPutCardsOnDeckChoice: boolean = false,
+  // why: WP-603 / D-24413 — appended LAST (after hasPendingPutCardsOnDeckChoice) so existing
+  // positional callers stay valid without edits; degrades gracefully (no gate) when omitted.
+  // True while a Melter Fight KO/keep choice is pending; blocks End Turn / Pass Priority at
+  // ANY stage (the engine's full block-all guard set freezes the board).
+  hasPendingMelterKoChoice: boolean = false,
 ): {
   activeStep: TurnStep;
   canRevealVillain: () => GatingResult;
@@ -333,6 +338,15 @@ export function useTurnActions(
         return {
           allowed: false,
           reason: 'Choose one of the top two cards to KO before taking another action.',
+        };
+      }
+      // why: WP-603 / D-24413 — End Turn / Pass Priority blocked at any stage while a
+      // Melter Fight KO/keep choice is pending (the engine's full block-all guard set
+      // freezes the board, mirroring hasPendingScryKoChoice). The choice is mandatory.
+      if (hasPendingMelterKoChoice) {
+        return {
+          allowed: false,
+          reason: 'Resolve Melter — KO or keep each revealed deck top before taking another action.',
         };
       }
       // why: WP-476 / D-24284 — End Turn / Pass Priority blocked at any stage while a
@@ -493,6 +507,15 @@ export function useTurnActions(
           reason: 'Choose one of the top two cards to KO before taking another action.',
         };
       }
+      if (hasPendingMelterKoChoice) {
+        // why: WP-603 / D-24413 — the engine's block-all guards block endTurn while
+        // pendingMelterKoChoices is non-empty; this client-side gate surfaces the reason
+        // so the player sees a tooltip instead of a silent rejection.
+        return {
+          allowed: false,
+          reason: 'Resolve Melter — KO or keep each revealed deck top before taking another action.',
+        };
+      }
       if (hasPendingDiscardChoice) {
         // why: WP-476 / D-24284 — the engine's block-all guards block endTurn while
         // pendingDiscardChoices is non-empty; this client-side gate surfaces the reason
@@ -578,6 +601,7 @@ export function useTurnActions(
       if (
         hasPendingKoChoice ||
         hasPendingScryKoChoice ||
+        hasPendingMelterKoChoice ||
         hasPendingOptionalKoReward ||
         hasPendingVictoryPileCardPick ||
         hasPendingDrawOrEmpowered ||

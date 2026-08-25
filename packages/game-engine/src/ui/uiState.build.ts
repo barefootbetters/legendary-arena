@@ -44,6 +44,8 @@ import type {
   UIPendingKoHeroChoice,
   UIPendingScryKoChoice,
   UIScryKoRevealedCard,
+  UIPendingMelterKoChoice,
+  UIMelterRevealedTop,
   UIPendingDiscardChoice,
   UIPendingPutCardsOnDeckChoice,
   UIDiscardChoiceHandCard,
@@ -987,6 +989,35 @@ export function buildUIState(
     };
   }
 
+  // --- 13b.3 Project pending Melter Fight KO/keep choice (front of queue) ---
+  // why: WP-603 / D-24413 — project the FRONT entry of G.pendingMelterKoChoices with
+  // each player's revealed deck top (the snapshot captured at park time) resolved to
+  // display data, in reveal (sorted player-id) order. Like the scry-ko projection this
+  // reads the SNAPSHOT, not the live zone: the block-all guard freezes every deck top
+  // while pending, so it cannot drift, and it is exactly what resolveMelterKoChoice
+  // validates the client's { ownerPlayerID, cardId } against (the round-trip rule).
+  // resolveDisplay is spread fresh per entry so the projection holds no reference into
+  // G.cardDisplayData (aliasing defense, WP-111 D-11105). Redaction to the chooser-only
+  // audience is enforced by filterUIStateForAudience (the revealed cards are the tops
+  // of players' own decks — hidden next-draw information).
+  let pendingMelterKoChoice: UIPendingMelterKoChoice | undefined;
+  if (gameState.pendingMelterKoChoices !== undefined && gameState.pendingMelterKoChoices.length > 0) {
+    const frontChoice = gameState.pendingMelterKoChoices[0]!;
+    const revealedTops: UIMelterRevealedTop[] = [];
+    for (const entry of frontChoice.revealedTops) {
+      revealedTops.push({
+        ownerPlayerID: entry.ownerPlayerID,
+        cardId: entry.cardId,
+        display: { ...resolveDisplay(entry.cardId, gameState) },
+      });
+    }
+    pendingMelterKoChoice = {
+      choiceType: frontChoice.choiceType,
+      playerID: frontChoice.playerID,
+      revealedTops,
+    };
+  }
+
   // --- 13b.3 Project pending discard-to-limit choice (front of queue) ---
   // why: WP-476 / D-24284 — project the FRONT entry of G.pendingDiscardChoices with
   // the chooser's CURRENT hand (recomputed fresh from G — the pending entry stores no
@@ -1555,6 +1586,9 @@ export function buildUIState(
     // why: WP-470 / D-24282 — conditional spread so an absent choice omits the field
     // (no `pendingScryKoChoice: undefined` literal under exactOptionalPropertyTypes).
     ...(pendingScryKoChoice !== undefined ? { pendingScryKoChoice } : {}),
+    // why: WP-603 / D-24413 — conditional spread so an absent choice omits the field
+    // (no `pendingMelterKoChoice: undefined` literal under exactOptionalPropertyTypes).
+    ...(pendingMelterKoChoice !== undefined ? { pendingMelterKoChoice } : {}),
     // why: WP-476 / D-24284 — conditional spread so an absent choice omits the field
     // (no `pendingDiscardChoice: undefined` literal under exactOptionalPropertyTypes).
     ...(pendingDiscardChoice !== undefined ? { pendingDiscardChoice } : {}),

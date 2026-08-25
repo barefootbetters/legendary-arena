@@ -527,6 +527,77 @@ describe('filterUIStateForAudience — pendingScryKoChoice redaction (D-24282)',
 });
 
 // ---------------------------------------------------------------------------
+// WP-603 / EC-638 — pendingMelterKoChoice redaction (D-24413)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a UIState where the fighting player '0' owes a Melter Fight KO/keep choice
+ * over EVERY player's revealed deck top. The revealed ext_ids are the tops of players'
+ * own decks — hidden next-draw information that must not appear in a non-chooser's
+ * UIState.
+ */
+function createMelterChoiceUIState(): UIState {
+  const config = createTestConfig();
+  const registry = createMockRegistry();
+  const setupContext = makeMockCtx();
+  const gameState = buildInitialGameState(config, registry, setupContext);
+
+  gameState.playerZones['0']!.deck = ['melter-secret-p0' as CardExtId, 'melter-deep-p0' as CardExtId];
+  gameState.playerZones['1']!.deck = ['melter-secret-p1' as CardExtId, 'melter-deep-p1' as CardExtId];
+  gameState.pendingMelterKoChoices = [
+    {
+      choiceType: 'melter-ko',
+      playerID: '0',
+      revealedTops: [
+        { ownerPlayerID: '0', cardId: 'melter-secret-p0' as CardExtId },
+        { ownerPlayerID: '1', cardId: 'melter-secret-p1' as CardExtId },
+      ],
+    },
+  ];
+
+  return buildUIState(gameState, mockCtx);
+}
+
+describe('filterUIStateForAudience — pendingMelterKoChoice redaction (D-24413)', () => {
+  it('the fighting player sees pendingMelterKoChoice with every revealed top', () => {
+    const uiState = createMelterChoiceUIState();
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+    assert.ok(result.pendingMelterKoChoice !== undefined, 'chooser sees the Melter choice');
+    assert.equal(result.pendingMelterKoChoice!.playerID, '0');
+    assert.equal(result.pendingMelterKoChoice!.revealedTops.length, 2, 'both players tops present');
+    assert.deepStrictEqual(
+      result.pendingMelterKoChoice!.revealedTops.map((t) => t.ownerPlayerID),
+      ['0', '1'],
+      'owners carried through for disambiguation + labelling',
+    );
+  });
+
+  it('an opponent does NOT see pendingMelterKoChoice and no revealed deck ext_id leaks', () => {
+    const uiState = createMelterChoiceUIState();
+    const result = filterUIStateForAudience(uiState, PLAYER_1);
+    assert.equal(result.pendingMelterKoChoice, undefined, 'opponent must not see the Melter choice');
+    const serialized = JSON.stringify(result);
+    assert.equal(serialized.includes('melter-secret-p0'), false, 'no revealed deck ext_id leaks');
+    assert.equal(serialized.includes('melter-secret-p1'), false, 'no revealed deck ext_id leaks');
+  });
+
+  it('a spectator does NOT see pendingMelterKoChoice and no revealed deck ext_id leaks', () => {
+    const uiState = createMelterChoiceUIState();
+    const result = filterUIStateForAudience(uiState, SPECTATOR);
+    assert.equal(result.pendingMelterKoChoice, undefined, 'spectator must not see the Melter choice');
+    const serialized = JSON.stringify(result);
+    assert.equal(serialized.includes('melter-secret-p0'), false, 'no revealed deck ext_id leaks');
+    assert.equal(serialized.includes('melter-secret-p1'), false, 'no revealed deck ext_id leaks');
+  });
+
+  it('does not mutate the input UIState (pendingMelterKoChoice still present on the source)', () => {
+    const uiState = createMelterChoiceUIState();
+    filterUIStateForAudience(uiState, PLAYER_1);
+    assert.ok(uiState.pendingMelterKoChoice !== undefined, 'source UIState unchanged');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // WP-476 / EC-511 — pendingDiscardChoice redaction (D-24284, D-24011 analog)
 // ---------------------------------------------------------------------------
 

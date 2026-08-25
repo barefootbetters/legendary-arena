@@ -18,6 +18,7 @@ import { getAvailableRecruit, spendRecruit } from '../economy/economy.logic.js';
 import { refillHqSlot } from '../board/city.logic.js';
 import { hasPendingKoHeroChoice } from './koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from './scryKoChoice.resolve.js';
+import { hasPendingMelterKoChoice } from './melterKoChoice.resolve.js';
 import { hasPendingDiscardChoice } from './discardChoice.resolve.js';
 import { hasPendingPutCardsOnDeckChoice } from './putCardsOnDeckChoice.resolve.js';
 import { hasPendingReorderChoice } from './reorderChoice.resolve.js';
@@ -99,6 +100,9 @@ export function recruitHero(
   // why: block-all guard (D-24282) — a pending Doombot scry-KO choice freezes the
   // board until the player picks which revealed card to KO.
   if (hasPendingScryKoChoice(G)) return;
+  // why: WP-603 / D-24413 — block-all guard: a pending Melter Fight KO/keep choice
+  // freezes the board until the fighting player resolves every revealed deck top.
+  if (hasPendingMelterKoChoice(G)) return;
   // why: block-all guard (WP-476 / D-24284) — a pending discard-to-limit choice
   // freezes the board until the current player picks which cards to discard.
   if (hasPendingDiscardChoice(G)) return;

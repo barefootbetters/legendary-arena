@@ -79,6 +79,7 @@ import { resolveDrawOrEmpowered } from '../moves/drawOrEmpowered.resolve.js';
 // per-turn loop (same class as the WP-286 resolveDrawOrEmpowered fix). Pinned by the drift guard.
 import { resolveKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { resolveScryKoChoice } from '../moves/scryKoChoice.resolve.js';
+import { resolveMelterKoChoice } from '../moves/melterKoChoice.resolve.js';
 import { resolveDiscardChoice } from '../moves/discardChoice.resolve.js';
 import { resolvePutCardsOnDeckChoice } from '../moves/putCardsOnDeckChoice.resolve.js';
 import { resolveReorderChoice } from '../moves/reorderChoice.resolve.js';
@@ -435,6 +436,8 @@ const MOVE_MAP: Record<string, MoveFn> = {
   resolveKoHeroChoice: (context, args) => resolveKoHeroChoice(context as never, args as never),
   // why: WP-470 / D-24282 — same dispatch-completeness rule as the runner MOVE_MAP (pinned by the drift guard).
   resolveScryKoChoice: (context, args) => resolveScryKoChoice(context as never, args as never),
+  // why: WP-603 / D-24413 — same dispatch-completeness rule as the runner MOVE_MAP (pinned by the drift guard).
+  resolveMelterKoChoice: (context, args) => resolveMelterKoChoice(context as never, args as never),
   // why: WP-476 / D-24284 — same dispatch-completeness rule as the runner MOVE_MAP (pinned by the drift guard).
   resolveDiscardChoice: (context, args) => resolveDiscardChoice(context as never, args as never),
   resolvePutCardsOnDeckChoice: (context, args) => resolvePutCardsOnDeckChoice(context as never, args as never),

@@ -1019,7 +1019,7 @@ describe('executeVillainAbilities — scry-ko-own-deck (WP-447 / D-24267)', () =
   });
 });
 
-describe('executeVillainAbilities — ko-cullable-each-deck-top (WP-519 / D-24332)', () => {
+describe('executeVillainAbilities — ko-cullable-each-deck-top interactive park (WP-603 / D-24413)', () => {
   const WOUND_TOP = 'pile-wound' as CardExtId;
   const AGENT = 'starting-shield-agent' as CardExtId;
   const TROOPER = 'starting-shield-trooper' as CardExtId;
@@ -1045,7 +1045,7 @@ describe('executeVillainAbilities — ko-cullable-each-deck-top (WP-519 / D-2433
     random: { Shuffle: <T>(deck: T[]): T[] => [...deck].reverse() },
   };
 
-  it("KOs each player's cullable deck top (Wound / basic starter) and keeps real Heroes (AC-1/AC-2)", () => {
+  it('parks ONE choice snapshotting every player top and KOs nothing at park time (AC-1)', () => {
     const G = makeG({
       hooks: [melterHook('v-melter')],
       playerZones: {
@@ -1055,32 +1055,48 @@ describe('executeVillainAbilities — ko-cullable-each-deck-top (WP-519 / D-2433
       },
     });
     executeVillainAbilities(G, CTX, 'v-melter' as CardExtId, 'onFight');
-    // P0: Wound top culled, Hero kept beneath. P1: real-Hero top kept — only the TOP
-    // card is revealed, so the buried Trooper is untouched. P2: basic Agent culled.
-    assert.deepStrictEqual(G.playerZones['0']!.deck, [HERO_A], 'P0 Wound culled, Hero kept');
+    // why: the reveal SNAPSHOTS the tops but removes nothing — every deck is unchanged
+    // (the block-all guard freezes them; a KO happens only when the player resolves).
+    assert.deepStrictEqual(G.playerZones['0']!.deck, [WOUND_TOP, HERO_A], 'P0 deck unchanged (snapshot only)');
+    assert.deepStrictEqual(G.playerZones['1']!.deck, [HERO_B, TROOPER], 'P1 deck unchanged');
+    assert.deepStrictEqual(G.playerZones['2']!.deck, [AGENT], 'P2 deck unchanged');
+    assert.deepStrictEqual(G.ko, [], 'nothing KO at park time');
+    const queue = G.pendingMelterKoChoices!;
+    assert.equal(queue.length, 1, 'exactly one parked choice');
+    assert.equal(queue[0]!.choiceType, 'melter-ko');
+    assert.equal(queue[0]!.playerID, '0', 'parked for the fighting (active) player');
     assert.deepStrictEqual(
-      G.playerZones['1']!.deck,
-      [HERO_B, TROOPER],
-      'P1 real-Hero top kept; only the top card is revealed',
+      queue[0]!.revealedTops,
+      [
+        { ownerPlayerID: '0', cardId: WOUND_TOP },
+        { ownerPlayerID: '1', cardId: HERO_B },
+        { ownerPlayerID: '2', cardId: AGENT },
+      ],
+      'every player top snapshotted in sorted-player order; only the TOP card',
     );
-    assert.deepStrictEqual(G.playerZones['2']!.deck, [], 'P2 basic Agent culled');
-    assert.deepStrictEqual(G.ko, [WOUND_TOP, AGENT], 'culled cards go to G.ko in sorted-player order');
   });
 
-  it('keeps the recruited S.H.I.E.L.D. Officer (not a basic starter)', () => {
+  it('offers every top including Officer/Hero — filtering is the bot default, not the handler', () => {
     const G = makeG({
       hooks: [melterHook('v-melter')],
       playerZones: {
         '0': { deck: [OFFICER], hand: [], discard: [], inPlay: [], victory: [] },
-        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+        '1': { deck: [HERO_A], hand: [], discard: [], inPlay: [], victory: [] },
       },
     });
     executeVillainAbilities(G, CTX, 'v-melter' as CardExtId, 'onFight');
-    assert.deepStrictEqual(G.playerZones['0']!.deck, [OFFICER], 'the Officer is kept, never culled');
-    assert.deepStrictEqual(G.ko, [], 'nothing culled');
+    assert.deepStrictEqual(
+      G.pendingMelterKoChoices![0]!.revealedTops,
+      [
+        { ownerPlayerID: '0', cardId: OFFICER },
+        { ownerPlayerID: '1', cardId: HERO_A },
+      ],
+      'a real Hero and the Officer are OFFERED as choices, not auto-kept by the handler',
+    );
+    assert.deepStrictEqual(G.ko, [], 'nothing KO at park time');
   });
 
-  it('reveals every player deck top and reshuffles an empty deck first (AC-3)', () => {
+  it('reshuffles an empty deck first, snapshots the reshuffled top, removes nothing (AC-3)', () => {
     const G = makeG({
       hooks: [melterHook('v-melter')],
       playerZones: {
@@ -1090,26 +1106,34 @@ describe('executeVillainAbilities — ko-cullable-each-deck-top (WP-519 / D-2433
       },
     });
     executeVillainAbilities(G, CTX, 'v-melter' as CardExtId, 'onFight', reverseShuffle);
-    // reverseShuffle([WOUND]) === [WOUND] appended under the empty deck → top = Wound → culled.
-    assert.deepStrictEqual(G.ko, [WOUND_TOP], 'the reshuffled Wound is revealed and culled');
-    assert.deepStrictEqual(G.playerZones['0']!.deck, [], 'deck empty after culling the sole reshuffled card');
+    assert.deepStrictEqual(G.playerZones['0']!.deck, [WOUND_TOP], 'reshuffled card on top, NOT removed');
     assert.deepStrictEqual(G.playerZones['0']!.discard, [], 'discard consumed by the reshuffle');
+    assert.deepStrictEqual(
+      G.pendingMelterKoChoices![0]!.revealedTops,
+      [{ ownerPlayerID: '0', cardId: WOUND_TOP }],
+      'only P0 (with a reshuffled top) contributes a revealed card',
+    );
+    assert.deepStrictEqual(G.ko, [], 'park KOs nothing');
   });
 
-  it('no-ops for a player with empty deck AND empty discard — no crash, no hollow (AC-3)', () => {
+  it('all decks + discards empty → no park, blocked no-op, no hollow (AC-3)', () => {
     const G = makeG({
       hooks: [melterHook('v-melter')],
       playerZones: {
         '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
         '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
       },
+      messages: [],
     });
     executeVillainAbilities(G, CTX, 'v-melter' as CardExtId, 'onFight', reverseShuffle);
-    assert.deepStrictEqual(G.ko, [], 'nothing to reveal or cull');
+    assert.equal(G.pendingMelterKoChoices?.length ?? 0, 0, 'nothing revealed → no park');
     assert.equal(G.diagnostics?.hollowEffects?.length ?? 0, 0, 'reachable no-op, not a hollow');
+    const last = G.messages![G.messages!.length - 1]!;
+    assert.match(last.text, /no player had a card to reveal/);
+    assert.equal(last.outcome, 'blocked');
   });
 
-  it('self-narrates an applied line naming the culled cards and records NO hollow (AC-1/AC-6)', () => {
+  it('self-narrates the park (neutral) naming the revealed count and records NO hollow (AC-1)', () => {
     const G = makeG({
       hooks: [melterHook('v-melter')],
       playerZones: {
@@ -1121,30 +1145,11 @@ describe('executeVillainAbilities — ko-cullable-each-deck-top (WP-519 / D-2433
     });
     executeVillainAbilities(G, CTX, 'v-melter' as CardExtId, 'onFight');
     const last = G.messages![G.messages!.length - 1]!;
-    assert.match(last.text, /Fight effect: KO'd 1 card\(s\)/, 'names the culled count');
-    assert.match(last.text, /Wound/, 'names the culled card');
-    assert.equal(last.outcome, 'applied');
+    assert.match(last.text, /revealed 1 deck top\(s\)/, 'names the revealed count');
+    assert.equal(last.outcome, 'neutral', 'park narrates neutral — nothing landed yet');
     // why: the marked line now carries a descriptor, so the D-24266 unmarked-ability
     // detector records NO `no-handler` hollow — the live-surfaced breadcrumb is gone.
     assert.equal(G.diagnostics?.hollowEffects?.length ?? 0, 0, 'marked line → no unmarked-ability hollow');
-  });
-
-  it('self-narrates a blocked no-op when no deck top is cullable (real Heroes only)', () => {
-    const G = makeG({
-      hooks: [melterHook('v-melter')],
-      playerZones: {
-        '0': { deck: [HERO_A], hand: [], discard: [], inPlay: [], victory: [] },
-        '1': { deck: [HERO_B], hand: [], discard: [], inPlay: [], victory: [] },
-      },
-      messages: [],
-    });
-    executeVillainAbilities(G, CTX, 'v-melter' as CardExtId, 'onFight');
-    assert.deepStrictEqual(G.ko, [], 'no real Hero is ever culled');
-    assert.deepStrictEqual(G.playerZones['0']!.deck, [HERO_A], 'P0 Hero kept on top');
-    assert.deepStrictEqual(G.playerZones['1']!.deck, [HERO_B], 'P1 Hero kept on top');
-    const last = G.messages![G.messages!.length - 1]!;
-    assert.match(last.text, /nothing worth KO/);
-    assert.equal(last.outcome, 'blocked');
   });
 });
 
