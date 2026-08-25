@@ -25,7 +25,7 @@ source:
   - ../docs/01-VISION.md
   - ../docs/09-CHANGELOG.md
   - ../docs/ai/REFERENCE/development-workflow.md
-last-reviewed: 2026-08-24
+last-reviewed: 2026-08-25
 ---
 
 # User Feedback and Public Roadmap
@@ -34,14 +34,20 @@ last-reviewed: 2026-08-24
 
 *(Draft, planning.)* This page surveys the options for collecting player
 feedback — **bug reports, enhancement requests, and reviews** — and proposes a
-four-stage pipeline: **intake → tracking → voting → public roadmap**. It weighs
-build-vs-buy for each stage, recommends identity-gated voting on the existing
-Hanko login, and recommends a **monthly public changelog nested under quarterly
-roadmap themes** so anyone can see what shipped, what's in progress *this month*,
-and what's coming. It proposes a design and records a recommendation; it defines
-nothing and reserves no `WP-` / `D-` yet. Once a direction is chosen, the
-concrete decision belongs in [DECISIONS.md](../docs/ai/DECISIONS.md) and the
-build in a Work Packet — not here.
+**four-stage enhancement pipeline: intake → tracking → voting → public
+visibility**. Reviews follow a **parallel, marketing-oriented track** and do not
+participate in tracking or voting. It weighs build-vs-buy for each stage,
+recommends identity-gated voting on the existing Hanko login, and recommends a
+**monthly public changelog nested under quarterly roadmap themes** so anyone can
+see what shipped, what's in progress *this month*, and what's coming. Six core
+principles and one authority rule — *players author demand; the operator authors
+status; the codebase authors "done"* — govern every implementation choice; the
+public board is informational only, while the internal Work Packet / DECISIONS /
+git spine remains the system of record. It proposes a design and records a
+recommendation; it defines nothing and reserves no `WP-` / `D-` yet. Once a
+direction is chosen, the concrete decision belongs in
+[DECISIONS.md](../docs/ai/DECISIONS.md) and the build in a Work Packet — not
+here.
 
 ## Mechanics
 
@@ -65,6 +71,12 @@ one of these, the choice is wrong — not the principle.
 6. **Trust is maintained through transparency, not through promising
    everything.** Saying "no, because…" builds more trust than a roadmap that
    never says no.
+
+> **"Operator" in this document** means the **product owner / governing
+> steward** — the person responsible for roadmap curation, feedback triage,
+> priority decisions, and public roadmap maintenance. It is *not* an
+> infrastructure or system administrator. In the current operating model the
+> operator is the product owner.
 
 ### The three feedback types are not one system
 
@@ -180,12 +192,15 @@ identity, weight, and abuse.
 - **Simple upvote, not up/down.** Enhancement boards rank by demand; a downvote
   mostly discourages posting. Keep it a one-directional "I want this too," with a
   running count and a "you voted" state.
-- **Weighting (optional, later).** Votes *could* be weighted by engagement
-  (matches played) or by paid tier — a
-  [Legendary Pass](monetization-model.md) holder's vote counting for more is a
-  defensible perk and a monetization hook. Start unweighted (one account, one
-  vote) for trust; revisit weighting only if raw counts get gamed or if it
-  becomes a deliberate Pass benefit.
+- **Unweighted to start (governance-gated).** This proposal recommends
+  **unweighted** voting initially — one account, one vote — because it is the
+  trust-preserving default. Votes *could* later be weighted by engagement
+  (matches played) or by paid tier (a [Legendary Pass](monetization-model.md)
+  holder's vote counting for more), but any such weighting **requires its own
+  decision record**: it alters the trust model of the roadmap system and
+  intersects the [Vision](vision.md) fairness bright lines, so it must not be
+  introduced as an implementation detail. Revisit only if raw counts get gamed
+  or if weighting becomes a deliberate, separately-decided Pass benefit.
 - **Sort by demand, show the tail.** Default the board to most-voted, but keep
   newer and "planned" items reachable so the board doesn't ossify around its
   first popular entries.
@@ -221,6 +236,34 @@ JavaScript (live vote counts, filtering) — which the **ewiki cannot do** (its
 zero-`<script>` JS-free gate). This page (an ewiki design doc) describes the
 system; the system itself renders on the JS-capable marketing surface.
 
+### The feedback item (illustrative shape)
+
+All four surfaces — intake form, roadmap board, dashboard triage, and the
+changelog projection — derive from one underlying record. Sketching it makes the
+governance→implementation bridge concrete for a future Work Packet. This is
+**illustrative, not a schema**: the canonical field names would be locked in the
+WP against
+[00.2-data-requirements](../docs/ai/REFERENCE/00.2-data-requirements.md), not
+here.
+
+```
+feedback_item
+  id                 unique identifier
+  type               bug | enhancement | review
+  title              short summary
+  description        body text (may hold PII — see Edge Cases)
+  author             the submitting player account (Hanko identity)
+  vote_count         derived from the votes table; players author, DB owns
+  status             Under review | Planned | In progress | Shipped | Declined
+  resolution_reason  required when status = Declined; the "no, because…"
+  created_at         submission time
+  updated_at         last status/edit time
+```
+
+Only the **operator** writes `status` and `resolution_reason`; only **players**
+write votes; `vote_count` is a projection, never a hand-set field. That mirrors
+the *Surfaces and authority* split in data terms.
+
 ### System of record
 
 The public board is **informative only**. The authoritative record of what was
@@ -244,9 +287,12 @@ wrong one own a piece of the truth. The split:
 | **`dashboard.legendary-arena.com`** ([Dashboard](dashboard.md)) | Operator triage: review the queue, assign status, move items to terminal states, watch vote trends | Operator only | Operator only |
 | **WP / EC / [DECISIONS.md](../docs/ai/DECISIONS.md) / git** | The build record — what actually shipped | The engineering loop | — |
 
-The authority rule in one line: **players author demand; the operator authors
-status; the codebase authors "done."** Each surface owns exactly one thing and
-is a viewer of the rest:
+The authority rule, in one line:
+
+> **Authority rule.** Players author demand. The operator authors status. The
+> codebase authors "done."
+
+Each surface owns exactly one thing and is a viewer of the rest:
 
 - **Raw feedback and vote counts** are owned by the intake store (Postgres) —
   the public board writes into it, the dashboard reads and annotates it. Neither
@@ -320,13 +366,18 @@ proposed system is succeeding when:
   actually triaged, not just collected.
 - **Every shipped roadmap item appears in the changelog** — the forward and
   backward views reconcile.
+- **Every "Planned" item is promoted to Shipped or moved to Declined within a
+  documented review cycle** — *Planned is not a permanent parking lot.* This is
+  the specific failure a public roadmap is most prone to: two-year-old "Planned"
+  items that quietly became "never."
 - **Monthly recaps ship consistently** — the heartbeat doesn't skip.
 - **A player can see their request accepted, declined, or completed** — the loop
   visibly closes for the person who opened it.
 
-The goal is **visibility and trust — not democratic control of development
-priorities.** A board that hits these metrics is doing its job even when it tells
-a player "no."
+The goal is to improve **visibility, trust, and prioritization signal** — it is
+**not** a mechanism for transferring product authority from the operator to the
+crowd. A board that hits these metrics is doing its job even when it tells a
+player "no."
 
 ## Interactions
 
