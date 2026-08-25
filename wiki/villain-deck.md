@@ -81,7 +81,7 @@ O(1) at runtime — moves never query the registry. See
 |---|---|
 | `villain` | Pushed into the City |
 | `henchman` | Pushed into the City |
-| `bystander` | **Captured** — attached under the frontmost City villain (or the Mastermind if the City is empty); **never** discarded |
+| `bystander` | **Captured** — attached under the frontmost City villain (or the Mastermind if the City is empty); emits a `bystanderRevealed` notable event (WP-602); **never** discarded |
 | `scheme-twist` | Fires `onSchemeTwistRevealed`; card goes to `G.scheme.twistPile` |
 | `mastermind-strike` | Fires `onMastermindStrikeRevealed`; card goes to `G.mastermind.strikePile` |
 
@@ -157,9 +157,13 @@ happens before triggers fire:
 - **Step 7 — Final destination.** `villain` and `henchman` are already
   in the City. A `bystander` is attached under its captor (frontmost City
   villain, or the Mastermind if the City is empty — also mirrored onto
-  `G.mastermind.attachedBystanders` for the UI projection, D-12805).
-  `scheme-twist` goes to `G.scheme.twistPile`; `mastermind-strike` goes to
-  `G.mastermind.strikePile`. Nothing routes to `G.villainDeck.discard`.
+  `G.mastermind.attachedBystanders` for the UI projection, D-12805), and the
+  reveal emits a `bystanderRevealed` notable event (WP-602 / D-24412) so the
+  arena-client `NotableEventOverlay` announces the capture like it does a
+  Scheme Twist / Master Strike — additive to the "revealed and captured by"
+  log line, presentation only. `scheme-twist` goes to `G.scheme.twistPile`;
+  `mastermind-strike` goes to `G.mastermind.strikePile`. Nothing routes to
+  `G.villainDeck.discard`.
 
 **Move wrapper vs. inner pipeline.** `revealVillainCard` (the boardgame.io
 move) is a thin wrapper that owns three gates, then delegates the draw →

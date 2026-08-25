@@ -843,6 +843,78 @@ describe('revealVillainCard — bystander capture routing', () => {
       'G.messages must contain an entry naming both the bystander and captor',
     );
   });
+
+  it('appends exactly one bystanderRevealed notableEvent naming the bystander and frontmost-villain captor (WP-602)', () => {
+    const gameState = createMockGameState({
+      deck: ['bystander-001'],
+      discard: [],
+      cardTypes: { 'bystander-001': 'bystander' },
+    });
+    gameState.city = [null, null, null, null, 'villain-frontmost' as CardExtId];
+
+    const moveContext = createMockMoveContext(gameState);
+    revealVillainCard(moveContext);
+
+    const events = moveContext.G.notableEvents.filter(
+      (event) => event.type === 'bystanderRevealed',
+    );
+    assert.equal(
+      events.length,
+      1,
+      'exactly one bystanderRevealed must be appended for a bystander reveal',
+    );
+    const [event] = events;
+    if (event && event.type === 'bystanderRevealed') {
+      assert.equal(event.revealedCardId, 'bystander-001');
+      assert.equal(event.captorCardId, 'villain-frontmost');
+      assert.ok(event.narrative.length > 0, 'the narrative must be composed');
+    }
+    assert.doesNotThrow(
+      () => JSON.stringify(moveContext.G),
+      'G must stay JSON-serializable after the emission',
+    );
+  });
+
+  it('appends bystanderRevealed with the Mastermind as captor when the city is empty (WP-602)', () => {
+    const gameState = createMockGameState({
+      deck: ['bystander-001'],
+      discard: [],
+      cardTypes: { 'bystander-001': 'bystander' },
+    });
+    // City stays empty — the Mastermind captures.
+
+    const moveContext = createMockMoveContext(gameState);
+    revealVillainCard(moveContext);
+
+    const event = moveContext.G.notableEvents.find(
+      (candidate) => candidate.type === 'bystanderRevealed',
+    );
+    assert.ok(event, 'a bystanderRevealed event must be appended');
+    if (event && event.type === 'bystanderRevealed') {
+      assert.equal(event.revealedCardId, 'bystander-001');
+      assert.equal(event.captorCardId, 'test-mastermind-base');
+    }
+  });
+
+  it('appends NO bystanderRevealed event when a non-bystander card is revealed (WP-602)', () => {
+    const gameState = createMockGameState({
+      deck: ['villain-x'],
+      discard: [],
+      cardTypes: { 'villain-x': 'villain' },
+    });
+
+    const moveContext = createMockMoveContext(gameState);
+    revealVillainCard(moveContext);
+
+    const bystanderEvents = moveContext.G.notableEvents.filter(
+      (event) => event.type === 'bystanderRevealed',
+    );
+    assert.equal(
+      bystanderEvents.length,
+      0,
+      'a villain reveal must append no bystanderRevealed event',
+    );
+  });
 });
 
 // ---------------------------------------------------------------------------

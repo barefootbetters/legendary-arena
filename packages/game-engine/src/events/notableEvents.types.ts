@@ -3,10 +3,10 @@
  *
  * `NotableGameEvent` is the engine-emitted, JSON-serialisable, append-only
  * record of high-level player-visible outcomes. The discriminated union
- * carries six locked variants — `fightResolved`, `ambushResolved`,
+ * carries seven locked variants — `fightResolved`, `ambushResolved`,
  * `schemeTwistResolved`, `mastermindStrikeResolved`, `mastermindDefeated`,
- * `healResolved` — each composed at its fire site via a pure narrative
- * helper from `notableEvents.compose.ts`.
+ * `healResolved`, `bystanderRevealed` — each composed at its fire site via a
+ * pure narrative helper from `notableEvents.compose.ts`.
  *
  * Consumed by `UIState.notableEvents` for descriptive "what happened"
  * overlays in the arena client. WP-200 ships the engine half; WP-201
@@ -26,14 +26,15 @@ import type { VillainEffectKeyword } from '../rules/villainAbility.types.js';
 /**
  * Closed canonical union of notable game event types.
  *
- * Six variants in fixed canonical order: a Fight resolution, an Ambush
+ * Seven variants in fixed canonical order: a Fight resolution, an Ambush
  * resolution at city entry, a Scheme Twist resolution, a Mastermind
- * Strike resolution, a Mastermind defeat, and a Wound heal.
- * `'mastermindDefeated'` was added per D-20008 (citing D-20001) and
- * `'healResolved'` per WP-381 / D-24182 so the arena-client overlay can
- * report those outcomes — G.messages is not projected to clients. Adding
- * a seventh variant requires a new `DECISIONS.md` entry (e.g., WP-186's
- * eventual `'escapeResolved'` per D-20001).
+ * Strike resolution, a Mastermind defeat, a Wound heal, and a Bystander
+ * reveal-and-capture. `'mastermindDefeated'` was added per D-20008 (citing
+ * D-20001), `'healResolved'` per WP-381 / D-24182, and `'bystanderRevealed'`
+ * per WP-602 / D-24412 so the arena-client overlay can report those outcomes
+ * — G.messages is not projected to clients. Adding an eighth variant requires
+ * a new `DECISIONS.md` entry (e.g., WP-186's eventual `'escapeResolved'` per
+ * D-20001).
  */
 export type NotableGameEventType =
   | 'fightResolved'
@@ -41,16 +42,19 @@ export type NotableGameEventType =
   | 'schemeTwistResolved'
   | 'mastermindStrikeResolved'
   | 'mastermindDefeated'
-  | 'healResolved';
+  | 'healResolved'
+  | 'bystanderRevealed';
 
 // why: drift-detection array — must match `NotableGameEventType` exactly
 // (the `notableEvents.types.test.ts` drift test asserts bidirectional
-// parity + length + uniqueness). The six-entry canonical order is locked:
+// parity + length + uniqueness). The seven-entry canonical order is locked:
 // `fightResolved` (Fight fire site), `ambushResolved` (Ambush fire site),
 // `schemeTwistResolved` (Scheme Twist resolver terminal),
 // `mastermindStrikeResolved` (Mastermind Strike handler terminal),
-// `mastermindDefeated` (fightMastermind vanquish fire site, D-20008), and
-// `healResolved` (healWounds fire site, WP-381 / D-24182).
+// `mastermindDefeated` (fightMastermind vanquish fire site, D-20008),
+// `healResolved` (healWounds fire site, WP-381 / D-24182), and
+// `bystanderRevealed` (villainDeck.reveal bystander-capture fire site,
+// WP-602 / D-24412).
 // Adding `'escapeResolved'` for WP-186's onEscape fire site requires a
 // new DECISIONS entry per D-20001.
 /**
@@ -63,6 +67,7 @@ export const NOTABLE_EVENT_TYPES: readonly NotableGameEventType[] = [
   'mastermindStrikeResolved',
   'mastermindDefeated',
   'healResolved',
+  'bystanderRevealed',
 ] as const;
 
 // ---------------------------------------------------------------------------
@@ -230,6 +235,27 @@ export interface HealResolvedEvent {
 }
 
 /**
+ * Emitted by `villainDeck/villainDeck.reveal.ts` when a Bystander card is
+ * revealed from the villain deck and captured (WP-602 / D-24412). Fires as the
+ * final step of the `cardType === 'bystander'` capture branch, after the
+ * "revealed and captured by" `G.messages` line and after the attach settles —
+ * additive to that log line, not a replacement. The captor is the frontmost
+ * City villain, or the Mastermind (`G.mastermind.baseCardId`) when the City is
+ * empty. Presentation parity with `schemeTwistResolved` / `mastermindStrikeResolved`
+ * so the overlay announces a revealed Bystander; not a new mechanic or reward.
+ */
+export interface BystanderRevealedEvent {
+  /** Discriminator. */
+  type: 'bystanderRevealed';
+  /** Zone-instance ext_id of the Bystander card revealed from the villain deck. */
+  revealedCardId: CardExtId;
+  /** Ext_id of the captor — the frontmost City villain, or the Mastermind when the City is empty. */
+  captorCardId: CardExtId;
+  /** Engine-composed single-sentence English narrative. */
+  narrative: string;
+}
+
+/**
  * Closed discriminated union of every notable game event variant.
  *
  * Append-only on `G.notableEvents` at runtime. JSON-serialisable. Event
@@ -242,4 +268,5 @@ export type NotableGameEvent =
   | SchemeTwistResolvedEvent
   | MastermindStrikeResolvedEvent
   | MastermindDefeatedEvent
-  | HealResolvedEvent;
+  | HealResolvedEvent
+  | BystanderRevealedEvent;
