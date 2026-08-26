@@ -7,6 +7,14 @@
 
 ## Current State
 
+### WP-611 — Hide Deck Probability Panel at game-over (EC-646 / D-24422) shipped (2026-08-26)
+
+Follow-on to WP-610: with the panel now visible, it also lingered on the **victory / game-over screen**, where expanding "Deck odds" showed only the villain-deck rows (the draw pool is empty; the Next-hand section already self-hid). The panel is a **live-play aid** — once the match is over there's no next hand and no more draws to advise, and the endgame report card owns that surface.
+
+**Fix:** an `isMatchOver` computed (`snapshot.gameOver !== undefined` — the same signal `EndgameActions.vue` uses) guards the panel's `hasData`, so the whole panel adds no DOM at game-over. Mid-match rendering is unchanged. Client-only read of the already-projected `gameOver` — no engine / `G` / `ctx` / audience-filter change.
+
+**Verification (jsdom-testable this time):** a committed panel test asserts that would-render data (villain + own-deck) **plus** `gameOver` present → the panel root is absent. `pnpm -r build` 0; arena-client `vue-tsc` 0; suite **1468/1468** (+1 test). Diff = 2 code files. **D-24422 Active.** **D-24026 live-verify: operator-pending** — on deployed `play.legendary-arena.com`, confirm the panel is present mid-match and gone on the game-over screen.
+
 ### WP-610 — Deck Probability Panel placement fix (EC-645 / D-24421) shipped (2026-08-26)
 
 Operator-reported bug: the collapsed **"Deck odds"** toggle was invisible in a live match — it rendered **behind** the "Download diagnostics" and "View loadout in Registry Viewer" buttons. WP-607 had pinned `DeckProbabilityPanel.vue` to `bottom: 8px; left: 8px; z-index: 9997` — the **same** bottom-left slot as `DiagnosticExportButton` (`bottom: 8px`) but a **lower** z-index than its `9999`, so both utility buttons painted over it.
