@@ -7,6 +7,14 @@
 
 ## Current State
 
+### WP-610 — Deck Probability Panel placement fix (EC-645 / D-24421) shipped (2026-08-26)
+
+Operator-reported bug: the collapsed **"Deck odds"** toggle was invisible in a live match — it rendered **behind** the "Download diagnostics" and "View loadout in Registry Viewer" buttons. WP-607 had pinned `DeckProbabilityPanel.vue` to `bottom: 8px; left: 8px; z-index: 9997` — the **same** bottom-left slot as `DiagnosticExportButton` (`bottom: 8px`) but a **lower** z-index than its `9999`, so both utility buttons painted over it.
+
+**Fix:** one scoped-CSS property — `.deck-probability-panel { bottom: 8px }` → `bottom: 72px`, continuing the corner's established 8 → 40 **32px stride** (`DiagnosticExportButton` 8px, `ViewLoadoutButton` 40px) into the next free slot. The toggle now clears both buttons and the panel expands upward into open space; no z-index change needed once it no longer shares a slot.
+
+**Verification:** fixed-position layout is not jsdom-observable, so there's no committed layout test — correctness was proven by a **live dev-server bounding-box measurement**: the toggle box sits at 72–101px from the bottom, `panelOverlapsDiag: false` both collapsed and expanded, and the expanded panel rendered its villain rows **and** the WP-609 "Next hand" section (recruit/attack EV matching the closed form exactly). `pnpm -r build` 0; arena-client `vue-tsc` 0; suite green; diff = 1 code file. **D-24421 Active.** **D-24026 live-verify: operator-pending** — on deployed `play.legendary-arena.com`, in a real match, confirm the "Deck odds" toggle is visible bottom-left, clear of the two utility buttons, and expands.
+
 ### WP-609 — Deck Probability Panel: "Next hand" projection (EC-644 / D-24420) shipped (2026-08-26)
 
 The Phase-2 payoff of the [Deck Probability Panel](../../wiki/deck-probability-panel.md) — the panel now turns the WP-606/WP-608 owner-only projection into a forward read. Expanded, it shows a **"Next hand"** section: the viewer's next hand's **expected recruit/attack** and a **p10/p90 range** for each.

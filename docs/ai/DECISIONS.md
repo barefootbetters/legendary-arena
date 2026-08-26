@@ -38487,3 +38487,16 @@ _Active 2026-08-25 — WP-608 / EC-643 (landed with the WP-608 execution). Relat
 6. **Client-side advisory.** No `ctx.random`, no `boardgame.io`/engine-LOGIC runtime import, no game-state write — the projection is a read-only aid over already-projected fields.
 
 _Active 2026-08-26 — WP-609 / EC-644. Related: D-24417 / WP-606 (`deckComposition` + `discardCards`), D-24419 / WP-608 (`deckCardStats`, the stats this consumes), D-24418 / WP-607 (the Phase-1 panel this extends), D-24026 (user-visible-surface live-verify)._
+
+### D-24421 — Bottom-Left Play-Surface Overlay Stack (32px stride; the Deck Probability Panel takes the 72px slot) (Active 2026-08-26 — WP-610 / EC-645)
+
+**Context.** Operator-reported: the collapsed "Deck odds" toggle was invisible in a live match — it rendered behind the "Download diagnostics" and "View loadout in Registry Viewer" buttons. WP-607 had pinned `DeckProbabilityPanel.vue` to `bottom: 8px; left: 8px; z-index: 9997` — the **same** corner slot as `DiagnosticExportButton` (`bottom: 8px`, `z-index: 9999`) but a **lower** z-index, so both utility buttons painted over it.
+
+**Decision.** The bottom-left corner is a **vertical stack of fixed play-surface overlays on a shared 32px stride**: `DiagnosticExportButton` at `bottom: 8px`, `ViewLoadoutButton` at `bottom: 40px`, and now `DeckProbabilityPanel` at `bottom: 72px`. Moving the panel to the next free slot clears both buttons (collapsed and expanded — it grows upward into open space); no z-index change is needed once it no longer shares a slot.
+
+**Corollaries.**
+1. **Next slot = 104px.** Any future bottom-left fixed overlay takes the next 32px slot (104px), not an occupied one; do not re-pin an existing overlay's slot.
+2. **Client CSS only.** One scoped-CSS property (`bottom: 8px` → `72px`); no engine / `G` / `ctx` / projection / hash surface, no logic, no z-index change.
+3. **Layout not jsdom-observable.** `@vue/test-utils` (jsdom) does not lay out `position: fixed`, so no committed test asserts the offset; correctness was verified by a **live dev-server bounding-box measurement** (toggle box 72–101px; `panelOverlapsDiag: false` collapsed and expanded).
+
+_Active 2026-08-26 — WP-610 / EC-645. Related: D-24418 / WP-607 (the panel this repositions), D-24026 (user-visible-surface live-verify)._

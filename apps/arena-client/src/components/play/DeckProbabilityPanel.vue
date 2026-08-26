@@ -289,7 +289,14 @@ export default defineComponent({
 <style scoped>
 .deck-probability-panel {
   position: fixed;
-  bottom: 8px;
+  /* why: WP-610 — the bottom-left corner already stacks two fixed utility
+     overlays: DiagnosticExportButton (bottom: 8px) and ViewLoadoutButton
+     (bottom: 40px), both z-index 9999. WP-607 pinned this panel to bottom: 8px
+     too — the SAME slot as the diagnostics button but a lower z-index — so the
+     collapsed toggle rendered hidden behind it. Continue the buttons' 32px
+     stride into the next free slot (8 → 40 → 72) so the toggle clears both and
+     the panel expands upward into open space. */
+  bottom: 72px;
   left: 8px;
   max-width: 20rem;
   max-height: 18rem;
