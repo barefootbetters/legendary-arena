@@ -142,10 +142,20 @@ export default defineComponent({
       return rows;
     });
 
-    // why: render nothing at all when neither field is present — the panel is a
-    // read-only aid, so it must add no DOM when there is nothing to show.
+    // why: WP-611 — once the match is over, the panel is a live-play aid with
+    // nothing left to advise (no next hand, no more draws), and the endgame
+    // report card is the surface that matters — so hide the whole panel. The
+    // match-over signal is `UIState.gameOver` being present, the same test
+    // `EndgameActions.vue` uses to show its post-match controls.
+    const isMatchOver = computed(() => snapshot.value?.gameOver !== undefined);
+
+    // why: render nothing at all when the match is over, or when neither field is
+    // present — the panel is a read-only aid, so it must add no DOM when there is
+    // nothing to show.
     const hasData = computed(
-      () => villainSummary.value !== null || ownDeckComposition.value !== undefined,
+      () =>
+        !isMatchOver.value &&
+        (villainSummary.value !== null || ownDeckComposition.value !== undefined),
     );
 
     /**
