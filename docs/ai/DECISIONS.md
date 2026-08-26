@@ -38500,3 +38500,16 @@ _Active 2026-08-26 — WP-609 / EC-644. Related: D-24417 / WP-606 (`deckComposit
 3. **Layout not jsdom-observable.** `@vue/test-utils` (jsdom) does not lay out `position: fixed`, so no committed test asserts the offset; correctness was verified by a **live dev-server bounding-box measurement** (toggle box 72–101px; `panelOverlapsDiag: false` collapsed and expanded).
 
 _Active 2026-08-26 — WP-610 / EC-645. Related: D-24418 / WP-607 (the panel this repositions), D-24026 (user-visible-surface live-verify)._
+
+### D-24422 — Deck Probability Panel Hides at Game-Over (a live-play aid) (Active 2026-08-26 — WP-611 / EC-646)
+
+**Context.** Follow-on to WP-610: with the panel finally visible, it also lingered on the **victory / game-over screen**, where expanding "Deck odds" showed only the villain-deck rows (the viewer's draw pool is empty; the Next-hand section already self-hid).
+
+**Decision.** The Deck Probability Panel is a **live-play aid** and hides entirely once the match is over. The match-over signal is `UIState.gameOver` being present — the same test `EndgameActions.vue` uses to show its post-match controls. An `isMatchOver` computed guards the panel's `hasData`, so the whole panel adds no DOM at game-over; mid-match rendering is unchanged.
+
+**Corollaries.**
+1. **No new state or heuristic.** `gameOver` is already projected and barrel-exported (`UIGameOverState`); the guard is a client-only read.
+2. **The endgame report card owns that surface.** There is no next hand or draw to advise once the match ends, so the panel adds only clutter there.
+3. **jsdom-observable.** Unlike the WP-610 layout fix, this is testable in `@vue/test-utils`: a would-render snapshot + `gameOver` present → the panel root is absent (a committed test pins it).
+
+_Active 2026-08-26 — WP-611 / EC-646. Related: D-24418 / WP-607 (the panel), D-24421 / WP-610 (the placement fix that surfaced the lingering), D-24026 (user-visible-surface live-verify)._

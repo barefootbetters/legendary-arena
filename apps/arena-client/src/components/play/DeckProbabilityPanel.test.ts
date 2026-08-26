@@ -7,6 +7,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import type {
   UIDecksState,
   UIDeckCardStat,
+  UIGameOverState,
   UIState,
 } from '@legendary-arena/game-engine';
 import DeckProbabilityPanel from './DeckProbabilityPanel.vue';
@@ -25,6 +26,7 @@ function snapshotWith(overrides: {
   ownDeck?: string[];
   ownDiscard?: string[];
   ownStats?: Record<string, UIDeckCardStat>;
+  gameOver?: UIGameOverState;
 }): UIState {
   const base = loadUiStateFixture('mid-turn');
   const decks: UIDecksState = {
@@ -57,7 +59,11 @@ function snapshotWith(overrides: {
       return next;
     });
   }
-  return { ...base, decks, players };
+  const snapshot: UIState = { ...base, decks, players };
+  if (overrides.gameOver !== undefined) {
+    snapshot.gameOver = overrides.gameOver;
+  }
+  return snapshot;
 }
 
 test('DeckProbabilityPanel shows the villain upcoming-risk rows when expanded', async () => {
@@ -176,6 +182,25 @@ test('DeckProbabilityPanel hides Next hand when deckCardStats is absent', async 
   assert.equal(wrapper.find('[data-testid="own-deck-total"]').text(), '3');
   assert.equal(
     wrapper.find('[data-testid="hand-projection-section"]').exists(),
+    false,
+  );
+});
+
+test('DeckProbabilityPanel hides the whole panel once the match is over', () => {
+  setActivePinia(createPinia());
+  // Same data that renders mid-match — but with `gameOver` present, the panel is
+  // a live-play aid with nothing left to advise, so it adds no DOM (the endgame
+  // report card is the surface that matters). WP-611.
+  useUiStateStore().setSnapshot(
+    snapshotWith({
+      villain: ['master-strike-00', 'core-villain-z-a-00'],
+      ownDeck: ['a', 'b'],
+      gameOver: { outcome: 'heroes-win', reason: 'The mastermind has been defeated.' },
+    }),
+  );
+  const wrapper = mount(DeckProbabilityPanel);
+  assert.equal(
+    wrapper.find('[data-testid="deck-probability-panel"]').exists(),
     false,
   );
 });
