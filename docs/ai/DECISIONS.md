@@ -38471,3 +38471,19 @@ _Active 2026-08-25 — WP-607 / EC-642 (landed with the WP-607 execution: `DeckP
 6. **Projection-only.** Never a `G` field, no state-hash surface; `finalStateHash` + `PRE_WP080_HASH` byte-identical.
 
 _Active 2026-08-25 — WP-608 / EC-643 (landed with the WP-608 execution). Related: D-24417 / WP-606 (the `deckComposition` projection this mirrors + extends), D-24418 (the client-side advisory Deck Probability Panel this feeds), WP-609 (the follow-on client hand-projection Monte Carlo consumer)._
+
+### D-24420 — Deck Probability Panel: "Next hand" Projection (exact two-stage EV + stable-seeded Monte Carlo range) (Active 2026-08-26 — WP-609 / EC-644)
+
+**Context.** WP-607 shipped the Deck Probability Panel's Phase-1 counter; WP-606/WP-608 project the owner-only draw pool (`deckComposition` + `discardCards`) and its per-card `deckCardStats`. Phase-2 turns those into a forward-looking read: what the viewer's next hand is likely to produce.
+
+**Decision.** Add a **client-side advisory** "Next hand" section to `DeckProbabilityPanel.vue`, backed by a pure `apps/arena-client/src/components/play/handProjection.ts`. It shows the next hand's **expected recruit/attack** and a **p10/p90 range**. No engine logic crosses the boundary — the only new engine touch is two additive barrel re-exports (`HAND_SIZE` const, `UIDeckCardStat` type) on the Runtime-Safe Engine Surface (WP-090).
+
+**Corollaries.**
+1. **Exact two-stage EV, not a single combined pool.** The engine draws the deck top first and only reshuffles the discard into a fresh deck on exhaustion (`drawCards.logic`), so the mean is `fromDeck·meanDeck + fromDiscard·meanDiscard` with `fromDeck = min(HAND_SIZE, |deck|)`, `fromDiscard = min(HAND_SIZE − fromDeck, |discard|)`. A single-pool draw runs materially low on a short deck (deck=[10,10]/discard=5×0 projects **20**, not ~17.1) — a runtime test pins it.
+2. **Only the range samples; the EV is closed-form.** The p10/p90 band is an **injectable-rng Monte Carlo** mirroring the two stages (sampling without replacement); the expected value is computed exactly, never as the sampled mean.
+3. **Stable display seed — no jitter.** The component seeds `createSpeculativePrng` from a **deterministic** function of the current pool (`seedFromPool`), so the range does not re-roll between recomputes of the same state, yet shifts as the pool changes. Tests inject their own seed and assert presence + EV + range ORDERING, never exact percentiles.
+4. **`HAND_SIZE` via the barrel — never a hardcoded 6.** The client imports the engine SSOT const (the engine forbids re-encoding the hand size).
+5. **Self-hide, never throw.** The section renders only for the `handCards`-redaction-marker viewer when the stats map is present and the pool is non-empty; a missing `deckCardStats` key defaults that card to 0/0.
+6. **Client-side advisory.** No `ctx.random`, no `boardgame.io`/engine-LOGIC runtime import, no game-state write — the projection is a read-only aid over already-projected fields.
+
+_Active 2026-08-26 — WP-609 / EC-644. Related: D-24417 / WP-606 (`deckComposition` + `discardCards`), D-24419 / WP-608 (`deckCardStats`, the stats this consumes), D-24418 / WP-607 (the Phase-1 panel this extends), D-24026 (user-visible-surface live-verify)._

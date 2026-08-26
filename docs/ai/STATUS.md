@@ -7,6 +7,18 @@
 
 ## Current State
 
+### WP-609 — Deck Probability Panel: "Next hand" projection (EC-644 / D-24420) shipped (2026-08-26)
+
+The Phase-2 payoff of the [Deck Probability Panel](../../wiki/deck-probability-panel.md) — the panel now turns the WP-606/WP-608 owner-only projection into a forward read. Expanded, it shows a **"Next hand"** section: the viewer's next hand's **expected recruit/attack** and a **p10/p90 range** for each.
+
+**Math (`handProjection.ts`, pure):** the expected value is the **exact two-stage mean**, not a single combined-pool draw — the engine takes the deck top first and only reshuffles the discard into a fresh deck on exhaustion (`drawCards.logic`), so `E = fromDeck·meanDeck + fromDiscard·meanDiscard`, `fromDeck = min(HAND_SIZE, |deck|)`. A single-pool approximation runs materially low on a short deck (a copilot catch: deck=[10,10]/discard=5×0 projects **20**, not ~17.1) — a runtime test pins it. The **range** is an injectable-rng Monte Carlo mirroring the two stages (sampling without replacement); only the range samples, the EV is closed-form.
+
+**Component (`apps/arena-client`):** the new section reads owner-only `deckComposition` + `discardCards` + `deckCardStats` off the `handCards`-redaction-marker viewer, and seeds `createSpeculativePrng` from a **stable** function of the current pool (`seedFromPool`) so the displayed range does not jitter between recomputes yet moves as the pool changes (a second copilot catch — raw `Math.random` would re-roll every frame). It self-hides when the stats map is absent or the pool is empty; a missing stats key defaults 0/0.
+
+**Guardrails held:** client-side advisory only — no `ctx.random`, no `boardgame.io`/engine-LOGIC runtime import, no game-state write. The only engine touch is two additive barrel re-exports on the Runtime-Safe Engine Surface (WP-090): the `HAND_SIZE` SSOT const (so the client never hardcodes 6) and the `UIDeckCardStat` type WP-608 left un-exported. `vue-tsc` gated.
+
+**Boundary / verification:** arena-client + a 2-line engine barrel re-export — no `G`/`ctx`/move/scoring change, no hash surface. arena-client `vue-tsc` 0; whole-repo suite **1467/1467** (+7: 5 util + 2 panel); `pnpm -r build` 0. Diff = the 5-file allowlist. **D-24420 flipped Drafted → Active.** **D-24026 live-verify: operator-pending** — on deployed `play.legendary-arena.com`, in a real match, confirm the expanded panel shows a "Next hand" section with expected recruit/attack + a range.
+
 ### WP-608 — UIState deck-card-stats projection (EC-643 / D-24419) shipped (2026-08-25)
 
 **No user-observable change — infrastructure only.** The payoff is the owner-only per-card recruit/attack/cost data the follow-on client hand-projection Monte Carlo (**WP-609**) consumes; the field is dark until that lands.
