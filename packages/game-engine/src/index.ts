@@ -69,6 +69,12 @@ export {
   MOVE_ALLOWED_STAGES,
   isMoveAllowedInStage,
 } from "./moves/coreMoves.gating.js";
+// why: WP-609 / D-24420 — the arena-client Deck Probability Panel sizes its
+// next-hand projection off the engine's canonical hand size, so HAND_SIZE is
+// published on the Runtime-Safe Engine Surface. The client MUST import this const
+// rather than hardcode 6 (the engine SSOT rule); it is a pure numeric constant,
+// safe on the runtime barrel.
+export { HAND_SIZE } from "./moves/drawCards.logic.js";
 export {
   validateDrawCardsArgs,
   validatePlayCardArgs,
@@ -344,6 +350,7 @@ export type {
   UIFinalTurnState,
   UIParBreakdown,
   UICardDisplay,
+  UIDeckCardStat,
   UIHQCard,
   UIDisplayEntry,
   UIDecksState,

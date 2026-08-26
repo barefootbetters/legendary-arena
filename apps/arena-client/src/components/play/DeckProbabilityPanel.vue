@@ -1,6 +1,8 @@
 <script lang="ts">
 import { defineComponent, computed, ref } from 'vue';
 import { storeToRefs } from 'pinia';
+import { createSpeculativePrng } from '@legendary-arena/preplan';
+import type { UIDeckCardStat } from '@legendary-arena/game-engine';
 import { useUiStateStore } from '../../stores/uiState';
 import {
   summarizeVillainDeck,
@@ -11,6 +13,11 @@ import {
   VILLAIN_DECK_TYPE_LABELS,
   type OwnDeckTallyEntry,
 } from './deckProbability';
+import {
+  projectNextHand,
+  seedFromPool,
+  type HandProjection,
+} from './handProjection';
 
 /**
  * Collapsible play-surface panel — Phase-1 MVP of the Deck Probability Panel
@@ -21,7 +28,11 @@ import {
  *   categorized by ext_id prefix into an "upcoming risk" breakdown with each
  *   type's next-draw odds; and
  * - the viewer's OWN draw-pool count + a best-effort by-name tally (owner-only
- *   `deckComposition`).
+ *   `deckComposition`); and
+ * - (WP-609 / D-24420) a "Next hand" projection — the expected recruit/attack of
+ *   the next hand (exact two-stage mean) plus a p10/p90 range (a Monte Carlo
+ *   seeded STABLY from the pool so it does not jitter), from the owner-only
+ *   `deckCardStats` (WP-608) over `deckComposition` + `discardCards`.
  *
  * It is CLIENT-SIDE ADVISORY and purely presentational: engine TYPES only (no
  * runtime import), no `ctx.random`, no game-state write. All math lives in the
@@ -30,7 +41,8 @@ import {
  * `defineComponent({ setup })` per the vue-sfc-loader separate-compile pipeline
  * (D-6512).
  *
- * @see WP-607 / EC-642; D-24418; wiki/deck-probability-panel.md
+ * @see WP-607 / EC-642 (Phase-1); WP-609 / EC-644 (Next hand); D-24418; D-24420;
+ * wiki/deck-probability-panel.md
  */
 interface VillainRow {
   type: string;
@@ -78,6 +90,38 @@ export default defineComponent({
       return tallyOwnDeck(ownDeckComposition.value, harvestCardNames(viewer.value));
     });
 
+    // why: the viewer's discard pile (owner-only, WP-243) + the owner-only
+    // per-card recruit/attack/cost map (WP-608). Both are needed for the next-hand
+    // projection; either being absent (a pre-populate frame, or a spectator) drops
+    // the projection to null so the section self-hides.
+    const ownDiscard = computed<string[] | undefined>(
+      () => viewer.value?.discardCards,
+    );
+
+    const deckCardStats = computed<Record<string, UIDeckCardStat> | undefined>(
+      () => viewer.value?.deckCardStats,
+    );
+
+    // why: the next hand's expected recruit/attack (exact two-stage mean) + a
+    // p10/p90 range. The range's Monte Carlo is seeded from a STABLE function of
+    // the current pool (seedFromPool) so it does not jitter between recomputes of
+    // the same state, yet moves as the pool changes each draw. Null (→ self-hide)
+    // whenever the owner-only stats are absent or the whole draw pool is empty.
+    const handProjection = computed<HandProjection | null>(() => {
+      const deck = ownDeckComposition.value;
+      const discard = ownDiscard.value;
+      const stats = deckCardStats.value;
+      if (stats === undefined || deck === undefined) {
+        return null;
+      }
+      const discardPile = discard ?? [];
+      if (deck.length === 0 && discardPile.length === 0) {
+        return null;
+      }
+      const rng = createSpeculativePrng(seedFromPool(deck, discardPile));
+      return projectNextHand({ deck, discard: discardPile, stats }, rng);
+    });
+
     const villainRows = computed<VillainRow[]>(() => {
       const summary = villainSummary.value;
       if (summary === null) {
@@ -111,6 +155,14 @@ export default defineComponent({
       return `${Math.round(odds * 100)}%`;
     }
 
+    /**
+     * Formats an expected (fractional) stat value to one decimal place for the
+     * projection rows — e.g. an expected 5.33 recruit renders as "5.3".
+     */
+    function formatExpected(value: number): string {
+      return value.toFixed(1);
+    }
+
     return {
       isExpanded,
       hasData,
@@ -118,7 +170,9 @@ export default defineComponent({
       villainSummary,
       ownDeckTotal,
       ownDeckTally,
+      handProjection,
       formatPercent,
+      formatExpected,
     };
   },
 });
@@ -182,6 +236,48 @@ export default defineComponent({
             >
               <td class="deck-probability-label">{{ entry.name }}</td>
               <td class="deck-probability-count">{{ entry.count }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div
+        v-if="handProjection !== null"
+        class="deck-probability-section"
+        data-testid="hand-projection-section"
+      >
+        <h3 class="deck-probability-heading">Next hand</h3>
+        <table class="deck-probability-table">
+          <tbody>
+            <tr data-testid="hand-projection-recruit">
+              <td class="deck-probability-label">Recruit</td>
+              <td
+                class="deck-probability-count"
+                data-testid="hand-projection-recruit-ev"
+              >
+                ~{{ formatExpected(handProjection.expectedRecruit) }}
+              </td>
+              <td
+                class="deck-probability-odds"
+                data-testid="hand-projection-recruit-range"
+              >
+                {{ handProjection.recruitRange.low }}–{{ handProjection.recruitRange.high }}
+              </td>
+            </tr>
+            <tr data-testid="hand-projection-attack">
+              <td class="deck-probability-label">Attack</td>
+              <td
+                class="deck-probability-count"
+                data-testid="hand-projection-attack-ev"
+              >
+                ~{{ formatExpected(handProjection.expectedAttack) }}
+              </td>
+              <td
+                class="deck-probability-odds"
+                data-testid="hand-projection-attack-range"
+              >
+                {{ handProjection.attackRange.low }}–{{ handProjection.attackRange.high }}
+              </td>
             </tr>
           </tbody>
         </table>
