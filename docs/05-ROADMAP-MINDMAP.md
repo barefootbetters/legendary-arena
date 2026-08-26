@@ -211,7 +211,7 @@ mindmap
         ["WP-128 ✅ UIState board projections"]
         ["WP-606 ✅ UIState draw-pool composition projection (game engine; the Phase-1 data foundation for the Deck Probability Panel — projects each player's own draw-pool composition deck multiset order-stripped audience-filtered owner-only mirroring discardCards + the public villain-deck composition mirroring matchCardImageUrls, so the client computes draw odds without ctx.random. Projection-only no new G no hash change finalStateHash + PRE_WP080 byte-identical; both fields optional so no arena-client fixture backfill game-engine only. 5 engine files; order-independence guard test. User-Visible Surface none infrastructure the dark data the panel UI follow-on consumes. Reserves EC-641 + D-24417; drafted 2026-08-25)"]
         ["WP-607 ✅ Deck Probability Panel MVP Phase-1 card counter (arena-client; the client consumer of WP-606 — a collapsible DeckProbabilityPanel.vue mounted once in PlayViewport reading the public villainDeckComposition categorized client-side by ext_id prefix into an upcoming-risk breakdown + per-type next-draw odds, and the viewer's own deckComposition as a count inventory; a pure tested deckProbability.ts. Client-side advisory never ctx.random; no engine change types already client-reachable via the barrel no runtime engine import. Killbots bystander to villain override unprojected is a documented Phase-1 miscount pinned by test. Later phases hand projection Monte Carlo + pace outlook + deck health are follow-on WPs. User-Visible Surface play.legendary-arena.com. Reserves EC-642 + D-24418; drafted 2026-08-25)"]
-        ["WP-608 📝 UIState deck-card-stats projection (game engine; the Phase-2 engine/data foundation for hand projection — the client Monte Carlo consumer is follow-on WP-609. Adds an owner-only projection-only UIPlayerState.deckCardStats Record extId to recruit/attack/cost derived from the internal G.cardStats, a separate ext_id-stats map not enriching deckComposition not on the 7-field-locked UICardDisplay. Keys sorted order-stripped so no next-draw sequence leaks; covers the sorted-unique union of the owner's deck+discard ext_ids with a cardStats entry non-hero cards e.g. Wounds omitted client defaults 0/0. Derived from existing G no new G state hash-neutral; optional so no arena-client fixture backfill. 5 engine files dedupe + non-hero-omission + key-order-independence guard tests. User-Visible Surface none infrastructure. Reserves EC-643 + D-24419; drafted 2026-08-25)"]
+        ["WP-608 ✅ UIState deck-card-stats projection (game engine; the Phase-2 engine/data foundation for hand projection — the client Monte Carlo consumer is follow-on WP-609. Adds an owner-only projection-only UIPlayerState.deckCardStats Record extId to recruit/attack/cost derived from the internal G.cardStats, a separate ext_id-stats map not enriching deckComposition not on the 7-field-locked UICardDisplay. Keys sorted order-stripped so no next-draw sequence leaks; covers the sorted-unique union of the owner's deck+discard ext_ids with a cardStats entry non-hero cards e.g. Wounds omitted client defaults 0/0. Derived from existing G no new G state hash-neutral; optional so no arena-client fixture backfill. 5 engine files dedupe + non-hero-omission + key-order-independence guard tests. User-Visible Surface none infrastructure. Reserves EC-643 + D-24419; drafted 2026-08-25)"]
         ["WP-129 ✅ Board layout (desktop/mobile)"]
         ["WP-130 ✅ Playmat / reskin selector"]
 
@@ -761,7 +761,7 @@ mindmap
 | Auth Stack & Profile Surface | 15/15 | — |
 | Engine + Server Wiring & Leaderboard HTTP | 3/3 | — |
 | Registry Viewer Enhancements | 27/27 | — |
-| Phase 8 — Interactive Board Layout | 5/6 | 1 open |
+| Phase 8 — Interactive Board Layout | 6/6 | — |
 | G-State Extensions | 4/4 | — |
 | Monetization Stack | 3/3 | — |
 | Engine & Test-Harness Cleanup | 5/5 | — |
@@ -791,9 +791,9 @@ mindmap
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **591/602 WP ✅** (+ 4/4 Foundation Prompts) | 3 ⏸, 8 open |
+| **Total** | **592/602 WP ✅** (+ 4/4 Foundation Prompts) | 3 ⏸, 7 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 11):** WP-608 open; WP-042.1 ⏸ blocked; WP-349 open; WP-391 open; WP-398 open; WP-399 open; WP-368 open; WP-403 ⏸ blocked; WP-404 ⏸ blocked; WP-429 open; WP-564 open.
+**Open / blocked WPs (derived from WORK_INDEX, 10):** WP-042.1 ⏸ blocked; WP-349 open; WP-391 open; WP-398 open; WP-399 open; WP-368 open; WP-403 ⏸ blocked; WP-404 ⏸ blocked; WP-429 open; WP-564 open.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.

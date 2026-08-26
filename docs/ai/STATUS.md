@@ -7,6 +7,16 @@
 
 ## Current State
 
+### WP-608 — UIState deck-card-stats projection (EC-643 / D-24419) shipped (2026-08-25)
+
+**No user-observable change — infrastructure only.** The payoff is the owner-only per-card recruit/attack/cost data the follow-on client hand-projection Monte Carlo (**WP-609**) consumes; the field is dark until that lands.
+
+The Phase-2 engine/data foundation for hand projection. Adds an owner-only, projection-only `UIPlayerState.deckCardStats?` (`Record<extId, UIDeckCardStat>`, `UIDeckCardStat = {recruit, attack, cost}`) derived from the internal `G.cardStats` — a **separate ext_id→stats map** (not enriching the order-stripped `deckComposition`; not on the 7-field-locked `UICardDisplay`, since recruit/attack are gameplay values). `buildUIState` builds it from the **sorted unique** ext_ids of the deck∪discard union — a `Record` serializes in insertion order, so sorted keys strip draw order (no next-draw leak, even to the owner; a copilot catch); it copies the three fields (not the `CardStatEntry`, no `G` alias); non-hero cards (no `cardStats` entry, e.g. Wounds) are omitted → the client defaults 0/0. `preserveHandCards` passes it through owner-only with a fresh deep copy; `redactHandCards` omits it (the keys reveal the owner's pool — the `deckComposition` posture).
+
+**Guardrails held:** owner-only redaction (filter test: owner sees / opponent+spectator redacted); a **built-projection** drift pin proving sorted keys + cross-zone dedupe + non-hero omission + key-order-independence; projection-only (derived from existing `G`, no new `G` state → `finalStateHash` + `PRE_WP080_HASH` byte-identical); optional so no arena-client fixture backfill.
+
+**Boundary / determinism:** game-engine only — no `G`/`ctx`/move/scoring change, no hash re-pin, no client change. Engine typecheck 0 + suite **2921/2921**; `pnpm -r build` 0; diff = the 5-file allowlist. **D-24419 flipped Drafted → Active.** **D-24026 live-verify: N/A** — surface is `none — infrastructure`. The client hand-projection Monte Carlo that consumes this is follow-on **WP-609**.
+
 ### WP-607 — Deck Probability Panel MVP: Phase-1 card counter (EC-642 / D-24418) shipped (2026-08-25)
 
 The first client consumer of WP-606 — the Phase-1 MVP of the [Deck Probability Panel](../../wiki/deck-probability-panel.md) (the plain card counter, per the ewiki page's MVP-first phasing). A new collapsible panel now appears on the play surface showing the villain deck's remaining make-up and the viewer's own draw-pool count.

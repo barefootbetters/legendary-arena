@@ -38455,3 +38455,19 @@ _Active 2026-08-25 — WP-606 / EC-641 (landed with the WP-606 execution: `deckC
 5. **Phase-1 scope.** The MVP is the plain counter + upcoming-risk odds; hand projection (Monte Carlo), pace/outlook, and deck health are follow-on phases (the ewiki panel page's phasing).
 
 _Active 2026-08-25 — WP-607 / EC-642 (landed with the WP-607 execution: `DeckProbabilityPanel.vue` + the pure `deckProbability.ts`, arena-client only). Related: D-24417 / WP-606 (the projection this consumes), the ewiki [Deck Probability Panel](../../wiki/deck-probability-panel.md) design page, WP-090 (the arena-client runtime-safe engine surface)._
+
+### D-24419 — Owner-Only Draw-Pool Card Stats Projection (`deckCardStats`), Sorted Keys (Active 2026-08-25 — WP-608 / EC-643; landed with the WP-608 execution)
+
+**Context.** WP-606 projected the viewer's own draw-pool composition (`deckComposition`, owner-only) but not each card's recruit/attack — which the Phase-2 client hand-projection Monte Carlo needs. Those live only in the internal `G.cardStats` (never projected; the client ships no registry), and `UICardDisplay` is locked to 7 presentation fields (recruit/attack forbidden). WP-608 projects them.
+
+**Decision.** Add an **owner-only, projection-only** `UIPlayerState.deckCardStats?: Record<string, UIDeckCardStat>` (`UIDeckCardStat = {recruit, attack, cost}`), derived from `G.cardStats` in `buildUIState`, redacted for non-owners like `deckComposition`. It is a **separate ext_id→stats map** — not enriching `deckComposition` (DRY, order-free), not on `UICardDisplay` (recruit/attack are gameplay values, distinct from the `cardDisplayData` presentation channel).
+
+**Corollaries.**
+1. **Sorted keys — no order leak.** A `Record`'s serialized key order is its insertion order, so the map is built from the **sorted** unique ext_ids of the deck∪discard union; raw-array order would leak partial next-draw sequence even to the owner (the `deckComposition` order-strip rationale, WP-470). A drift test pins key-order-independence.
+2. **Deck∪discard union, deduped.** The draw pool is the owner's deck plus discard; a cross-zone duplicate yields a single key.
+3. **Non-hero cards omitted.** Cards with no `G.cardStats` entry (e.g. Wounds) are omitted; the client defaults them to 0 recruit / 0 attack.
+4. **No `G` aliasing.** The projection copies the three fields (`{recruit, attack, cost}`), not the `CardStatEntry`; the filter deep-copies per audience.
+5. **Owner-only.** The stat values are public card data, but the map keys reveal the owner's pool composition (already redacted via `deckComposition` / `discardCards`); owner-only mirrors `deckComposition`.
+6. **Projection-only.** Never a `G` field, no state-hash surface; `finalStateHash` + `PRE_WP080_HASH` byte-identical.
+
+_Active 2026-08-25 — WP-608 / EC-643 (landed with the WP-608 execution). Related: D-24417 / WP-606 (the `deckComposition` projection this mirrors + extends), D-24418 (the client-side advisory Deck Probability Panel this feeds), WP-609 (the follow-on client hand-projection Monte Carlo consumer)._

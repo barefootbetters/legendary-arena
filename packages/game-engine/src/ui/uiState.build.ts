@@ -67,6 +67,7 @@ import type {
   UICopyHeroChoice,
   UIHqCardChoice,
   UIEligibleKoHeroCard,
+  UIDeckCardStat,
 } from './uiState.types.js';
 // why: WP-313 — reuse the engine's authoritative victory-pile eligibility helper
 // (victory pile ∩ villainDeckCardTypes === 'villain') so the projected list is
@@ -631,6 +632,30 @@ export function buildUIState(
     // `PlayerScoreBreakdown.totalVP` engine convention (`00.6` Rule 14).
     const victoryVP = totalVPByPlayer[playerId] ?? 0;
 
+    // why: WP-608 / D-24419 — own draw-pool card stats: a SEPARATE extId ->
+    // { recruit, attack, cost } map from the internal G.cardStats (not enriching
+    // deckComposition; not on the 7-field-locked UICardDisplay — recruit/attack
+    // are gameplay values). Keys are the SORTED unique ext_ids of deck ∪ discard:
+    // a Record serializes in insertion order, so raw-array order would leak the
+    // next-draw sequence even to the owner; the sort strips it (the
+    // deckComposition rationale). Copy the three fields (not the CardStatEntry)
+    // so the projection never aliases G.cardStats. Non-hero cards (no cardStats
+    // entry, e.g. Wounds) are omitted -> the client defaults 0/0. Owner-only:
+    // filterUIStateForAudience redacts it (the keys reveal the pool).
+    // Projection-only: no G write, no state-hash surface.
+    const sortedPoolCards = [...new Set([...zones.deck, ...zones.discard])].sort();
+    const deckCardStats: Record<string, UIDeckCardStat> = {};
+    for (const poolCardExtId of sortedPoolCards) {
+      const cardStat = gameState.cardStats[poolCardExtId];
+      if (cardStat !== undefined) {
+        deckCardStats[poolCardExtId] = {
+          recruit: cardStat.recruit,
+          attack: cardStat.attack,
+          cost: cardStat.cost,
+        };
+      }
+    }
+
     players.push({
       playerId,
       deckCount: zones.deck.length,
@@ -664,6 +689,7 @@ export function buildUIState(
       // spectator (the discardCards posture). Projection-only: derived here,
       // never stored on G, no state-hash surface.
       deckComposition: [...zones.deck].sort(),
+      deckCardStats,
       victoryCards,
       victoryVP,
     });
