@@ -551,7 +551,12 @@ export async function withRegisteredController(matchId, baseDelay, body) {
     if (!controller.isAborted()) {
       controller.markGameOver();
     }
-    setTimeout(() => autoplayControllers.delete(matchId), REVIEW_WINDOW_MS);
+    // why: unref the review-window cleanup timer so it never keeps the process
+    // alive on its own. The live server stays up on its listening socket, so the
+    // timer still fires after REVIEW_WINDOW_MS there; but a finished bot match in
+    // a short-lived process (a test runner, a one-shot script) can exit at once
+    // instead of blocking for the full 5-minute window on the pending timer.
+    setTimeout(() => autoplayControllers.delete(matchId), REVIEW_WINDOW_MS).unref();
   } catch (error) {
     // why: D-24037 — no silent immediate delete on an abnormal exit. Mark the
     // controller aborted with a PUBLIC-SAFE reason (the raw fault stays in the
@@ -561,7 +566,10 @@ export async function withRegisteredController(matchId, baseDelay, body) {
     // error half of D-16308 (eventual removal preserved). Rethrow is safe — the
     // runBotMatch launcher already catches it, so no new unhandled rejection.
     controller.markAborted(buildAbortReason('unexpected-error'));
-    setTimeout(() => autoplayControllers.delete(matchId), REVIEW_WINDOW_MS);
+    // why: unref for the same reason as the normal-exit path above — the aborted
+    // controller is still removed after the review window on a live server, but
+    // the pending timer must not hold a short-lived process open.
+    setTimeout(() => autoplayControllers.delete(matchId), REVIEW_WINDOW_MS).unref();
     throw error;
   }
 }
