@@ -38560,3 +38560,18 @@ _Active 2026-08-26 — WP-613 / EC-648. Related: D-1004 (the Tier-1 badge system
 5. **Still deferred.** The design's "player A **enabled** player B's finish" flavor needs turn-level contribution attribution scoring does not capture (an engine-projection effort); tiered team badges (5/4/3/2-player) wait until this single shared badge validates the grouping model.
 
 _Active 2026-08-26 — WP-614 / EC-649. Related: D-1004 (Tier-1 issuer model), D-24424 (the solo lane this sits beside), D-24134 (`playerCount`), WP-338 (submit-by-`matchId` → server-derived `replay_hash`), D-5302 (immutable competitive rows), D-24026 (user-visible-surface live-verify)._
+
+### D-24426 — Tiered Team Badges (exact-size shared cooperative badges) (Active 2026-08-26 — WP-615 / EC-650)
+
+**Context.** The `wiki/awards-and-badges.md` design names **tiered team badges** — *"a five-player badge, four-, three-, and two-player badges — recognition scaled to the size of the cooperation."* WP-614 shipped the base shared badge (`united-front`, any 2+ table) and deferred the tiers.
+
+**Decision.** A qualifying shared table (complete `replay_hash` group, `playerCount ≥ 2`, every player sub-PAR — the D-24425 conditions) earns `united-front` **plus** an exact-size tier badge keyed on `playerCount`: `gameplay.shared.trio` (3), `gameplay.shared.quartet` (4), `gameplay.shared.quintet` (5). The two-player base is `united-front` (no separate "duo"); player count maxes at 5 (D-24134). The tiers are added to `issueSharedMatchBadges` (WP-614) — no new issuer.
+
+**Corollaries.**
+1. **Additive, same qualification.** The tier is awarded only when the table already qualifies for `united-front`; it never fires alone. Keyed on `playerCount`, which equals `rows.length` past the completeness gate, so the size is exact.
+2. **Stacks on `united-front`.** A 5-player table earns `united-front` AND `quintet` — recognition of both "cleared as a team" and "cleared as a full five."
+3. **No migration.** Reuses `source_kind 'competitive_history'` (`source_ref NULL`), awarded to every player via the existing multi-row INSERT + `ON CONFLICT DO NOTHING`.
+4. **D-1004-compliant.** Quality-gated (never volume, §25 / D-0005), cooperative-model-safe framing (table-size, never head-to-head, §23b), projection over immutable `competitive_scores` rows (D-5302 — no state-hash surface), append-only.
+5. **Still deferred.** The turn-level "player A enabled player B's finish" flavor needs per-turn contribution attribution scoring does not capture.
+
+_Active 2026-08-26 — WP-615 / EC-650. Related: D-24425 (the shared `united-front` badge this extends), D-1004 (Tier-1 issuer model), D-24134 (`playerCount` 1..5), D-5302 (immutable rows), D-24026 (user-visible-surface live-verify)._

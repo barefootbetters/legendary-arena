@@ -49,8 +49,8 @@ function makeBreakdown(overrides: Partial<{
 
 describe('badge.predicates', () => {
   describe('TIER_1_BADGE_KEYS drift detection', () => {
-    test('contains exactly 10 entries', () => {
-      assert.equal(TIER_1_BADGE_KEYS.length, 10);
+    test('contains exactly 13 entries', () => {
+      assert.equal(TIER_1_BADGE_KEYS.length, 13);
     });
 
     test('every key has a BADGE_DEFINITIONS entry', () => {
