@@ -38645,3 +38645,17 @@ _Active 2026-08-27 — WP-619 / EC-654. Related: D-24425 / WP-614 (the shared ba
 4. **No new surface.** Read-only over the immutable rows; append-only; no migration, no hash surface.
 
 _Active 2026-08-27 — WP-620 / EC-655. Related: D-24426 / WP-615 (the tiers), D-24430 / WP-619 (human+bot completeness; §3 superseded here), D-24026 (user-visible-surface live-verify)._
+
+### D-24432 — Endgame Report Card Shows Per-Seat Team Contribution (Active 2026-08-27 — WP-621 / EC-656)
+
+**Context.** WP-616 added per-seat team-contribution counts — `mastermindTacticsDefeated`, `villainsDefeated`, `henchmenDefeated` — to the engine `PlayerScoringContribution`, and the engine `deriveScoringInputs` + the server's jsonb `scoreBreakdown.inputs.perPlayer` already carry them to the client (WP-617 Vanguard reads them server-side). But the endgame report card's "By player" block (WP-588) surfaced only each seat's VP and bystanders rescued — the defeat counts were on the wire but never rendered.
+
+**Decision.** The report card's per-seat "By player" row surfaces each seat's WP-616 contribution counts as a dimmed line beneath its VP + bystanders — "defeated 3 villains, 1 henchman, 2 mastermind tactics" — singularised, and **omitted** when the seat defeated nothing or the record predates WP-616. Implemented purely client-side: the client mirror `CompetitivePlayerContribution` gains the three counts as **optional** fields, `buildPerPlayerSplit` maps them (`?? null`), and `EndgameSummary.vue` renders the line via a `contributionPhrases` helper.
+
+**Corollaries.**
+1. **Display of data already on the wire.** No new server, engine, or wire-shape field — the counts already reach the client in the stored jsonb `scoreBreakdown`. No hash surface, no migration, no route.
+2. **Backward-compatible by construction.** The mirror fields are optional; a pre-WP-616 record maps them to `null` and the line is omitted — never a misleading "0 villains".
+3. **Not part of the score.** The counts are display-only; the team totals and the raw/PAR/final calc are unchanged.
+4. **No PvP framing.** The counts describe hero-vs-villain defeats per seat (§23b), a recognition of contribution (§24), not a player-vs-player comparison.
+
+_Active 2026-08-27 — WP-621 / EC-656. Related: D-24427 / WP-616 (the per-seat counts this surfaces), D-24393 / WP-588 (the per-player report-card split extended), D-24428 / WP-617 (Vanguard — the first server-side reader), D-24026 (user-visible-surface live-verify)._
