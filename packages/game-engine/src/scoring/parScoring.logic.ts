@@ -98,10 +98,24 @@ export function deriveScoringInputs(
   for (const playerBreakdown of finalScoreSummary.players) {
     const playerZones = gameState.playerZones[playerBreakdown.playerId];
     let playerBystandersRescued = 0;
+    let playerVillainsDefeated = 0;
+    let playerHenchmenDefeated = 0;
+    let playerMastermindTacticsDefeated = 0;
     if (playerZones) {
+      // why: WP-616 — classify each victory-pile card with the SAME else-if order
+      // computeFinalScores uses (villainDeckCardTypes → isBystanderCard →
+      // mastermind.tacticsDefeated), so these per-seat counts never drift from the
+      // VP computation. The bystander branch is unchanged from WP-588.
       for (const cardExtId of playerZones.victory) {
-        if (isBystanderCard(gameState, cardExtId)) {
+        const cardType = gameState.villainDeckCardTypes[cardExtId];
+        if (cardType === 'villain') {
+          playerVillainsDefeated = playerVillainsDefeated + 1;
+        } else if (cardType === 'henchman') {
+          playerHenchmenDefeated = playerHenchmenDefeated + 1;
+        } else if (isBystanderCard(gameState, cardExtId)) {
           playerBystandersRescued = playerBystandersRescued + 1;
+        } else if (gameState.mastermind.tacticsDefeated.includes(cardExtId)) {
+          playerMastermindTacticsDefeated = playerMastermindTacticsDefeated + 1;
         }
       }
     }
@@ -109,6 +123,9 @@ export function deriveScoringInputs(
       playerId: playerBreakdown.playerId,
       victoryPoints: playerBreakdown.totalVP,
       bystandersRescued: playerBystandersRescued,
+      mastermindTacticsDefeated: playerMastermindTacticsDefeated,
+      villainsDefeated: playerVillainsDefeated,
+      henchmenDefeated: playerHenchmenDefeated,
     });
   }
 
@@ -393,6 +410,11 @@ export function buildScoreBreakdown(
         playerId: contribution.playerId,
         victoryPoints: contribution.victoryPoints,
         bystandersRescued: contribution.bystandersRescued,
+        // why: WP-616 — carry the per-seat team-contribution counts through the
+        // deep copy so a copied breakdown reads them, not 0.
+        mastermindTacticsDefeated: contribution.mastermindTacticsDefeated,
+        villainsDefeated: contribution.villainsDefeated,
+        henchmenDefeated: contribution.henchmenDefeated,
       }))
     : undefined;
 
