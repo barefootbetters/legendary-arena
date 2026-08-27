@@ -105,6 +105,62 @@ describe('buildCoachMatchSummary (WP-594)', () => {
     assert.deepEqual(line.acquiredCards, ['Spider Man ×2', 'Gambit', 'Rogue']);
   });
 
+  test('carries each seat\'s WP-616 defeat counts into the coach line', () => {
+    const emptyZone = { deck: [], hand: [], discard: [], inPlay: [], victory: [] };
+    const state = makeState({ '0': { ...emptyZone }, '1': { ...emptyZone } });
+    const breakdown = makeBreakdown({
+      inputs: {
+        rounds: 12,
+        victoryPoints: 56,
+        bystandersRescued: 17,
+        escapes: 2,
+        penaltyEventCounts: {
+          villainEscaped: 2,
+          bystanderLost: 2,
+          schemeTwistNegative: 5,
+          mastermindTacticUntaken: 0,
+          scenarioSpecificPenalty: 0,
+        },
+        perPlayer: [
+          {
+            playerId: '0',
+            victoryPoints: 36,
+            bystandersRescued: 13,
+            villainsDefeated: 3,
+            henchmenDefeated: 1,
+            mastermindTacticsDefeated: 2,
+          },
+          {
+            playerId: '1',
+            victoryPoints: 20,
+            bystandersRescued: 4,
+            villainsDefeated: 2,
+            henchmenDefeated: 1,
+            mastermindTacticsDefeated: 2,
+          },
+        ],
+        matchLost: false,
+      },
+    } as unknown as Partial<ScoreBreakdown>);
+    const summary = buildCoachMatchSummary(state, breakdown, 'heroes-win', resolveName);
+    assert.equal(summary.perPlayer[0]?.villainsDefeated, 3);
+    assert.equal(summary.perPlayer[0]?.henchmenDefeated, 1);
+    assert.equal(summary.perPlayer[0]?.mastermindTacticsDefeated, 2);
+    assert.equal(summary.perPlayer[1]?.villainsDefeated, 2);
+    assert.equal(summary.perPlayer[1]?.mastermindTacticsDefeated, 2);
+  });
+
+  test('defaults the defeat counts to 0 for a record predating WP-616', () => {
+    const state = makeState({
+      '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+    });
+    // The default makeBreakdown() perPlayer carries no WP-616 defeat counts.
+    const summary = buildCoachMatchSummary(state, makeBreakdown(), 'heroes-win', resolveName);
+    assert.equal(summary.perPlayer[0]?.villainsDefeated, 0);
+    assert.equal(summary.perPlayer[0]?.henchmenDefeated, 0);
+    assert.equal(summary.perPlayer[0]?.mastermindTacticsDefeated, 0);
+  });
+
   test('resolves the loadout to display names and carries the caller-supplied outcome (incl. tie)', () => {
     const state = makeState({
       '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },

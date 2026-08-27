@@ -29,6 +29,7 @@ import {
 } from '@legendary-arena/game-engine';
 import type {
   LegendaryGameState,
+  PlayerScoringContribution,
   ScoreBreakdown,
 } from '@legendary-arena/game-engine';
 
@@ -133,12 +134,9 @@ function buildPerPlayerLines(
   breakdown: ScoreBreakdown,
   resolveCardName: ResolveCardName,
 ): CoachPlayerLine[] {
-  const contributionByPlayer = new Map<string, { victoryPoints: number; bystandersRescued: number }>();
+  const contributionByPlayer = new Map<string, PlayerScoringContribution>();
   for (const contribution of breakdown.inputs.perPlayer ?? []) {
-    contributionByPlayer.set(contribution.playerId, {
-      victoryPoints: contribution.victoryPoints,
-      bystandersRescued: contribution.bystandersRescued,
-    });
+    contributionByPlayer.set(contribution.playerId, contribution);
   }
   const playerIds = Object.keys(finalState.playerZones).sort();
   const lines: CoachPlayerLine[] = [];
@@ -150,6 +148,12 @@ function buildPerPlayerLines(
       label,
       victoryPoints: contribution?.victoryPoints ?? 0,
       bystandersRescued: contribution?.bystandersRescued ?? 0,
+      // why: WP-622 — default 0 when the record predates WP-616 (no per-seat
+      // defeat counts); the coach then reads a seat as having defeated none,
+      // which is truthful for a record that never carried the counts.
+      villainsDefeated: contribution?.villainsDefeated ?? 0,
+      henchmenDefeated: contribution?.henchmenDefeated ?? 0,
+      mastermindTacticsDefeated: contribution?.mastermindTacticsDefeated ?? 0,
       acquiredCards: formatAcquiredCards(
         countAcquiredCards(finalState.playerZones[playerId]),
         resolveCardName,
