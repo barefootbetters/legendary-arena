@@ -7,6 +7,16 @@
 
 ## Current State
 
+### WP-619 — Human+bot matches earn shared badges (EC-654 / D-24430) shipped (2026-08-27)
+
+Operator-reported: a 2-player human+bot co-op sub-PAR win earned no United Front. `issueSharedMatchBadges` gated completeness on `rows.length === playerCount` — every seat must submit a competitive score. A **bot/guest seat never submits**, so a human+bot match never completed the `replay_hash` group; the shared / tiered badges were unreachable in the common bot-ally co-op mode.
+
+**Fix:** the gate awaits every **human** seat — `humanSeatCount = readSeatAccounts(matchId).length` (authenticated seats, **reusing WP-617's roster read**), threaded via `SubmissionDependencies`; the gate becomes `rows.length === (humanSeatCount ?? playerCount)`. The `playerCount >= 2` table-size guard (bots included) and the `playerCount`-keyed tiers are unchanged; the by-hash path falls back to `playerCount`; fail-safe null. Read-only / append-only, **no migration**, no hash surface.
+
+**Accepted consequences** (per the ask to let bot-ally co-op count): a lone human + bot(s) earns United Front, and the size tier reflects the full table (`playerCount`), so a 1-human+4-bot match would earn Quintet — a human-count tier is deferred.
+
+**Verification:** `pnpm -r build` 0; server suite **1207/0** (195 DB-gated skip); shared-badge tests cover human+bot completes / 2-human still needs both / solo blocked. Diff = 3 files. **D-24430 Active.** **D-24026 live-verify: operator-pending** — a human+bot co-op sub-PAR win shows United Front (+ size tier) on the human's profile.
+
 ### WP-618 — HUD "Strikes" → "Tactics" label fix (EC-653 / D-24429) shipped (2026-08-27)
 
 Operator-reported: the top HUD showed **"Strikes: 4/4"** while the game-over panel showed **"Master Strikes: 3"**. Traced: `TopHudBar.vue`'s `mastermindProgressLabel()` reads `mastermind.tacticsDefeated` (of `mastermindTacticsTotal`) — the mastermind's **tactics** defeated, i.e. defeat-progress — but labeled it **"Strikes"**, colliding with the real Master Strike count on `MasterStrikePile.vue`.

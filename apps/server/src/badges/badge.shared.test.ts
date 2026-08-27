@@ -49,7 +49,7 @@ describe('badge.shared — issueSharedMatchBadges (WP-614)', () => {
       { player_id: 20, final_score: -1 },
     ]);
 
-    await issueSharedMatchBadges('replay-abc', 2, 7, database as any);
+    await issueSharedMatchBadges('replay-abc', 2, 7, database as any, null);
 
     const insert = findInsert(database);
     assert.ok(insert, 'Expected an INSERT for the whole table.');
@@ -71,7 +71,7 @@ describe('badge.shared — issueSharedMatchBadges (WP-614)', () => {
     // Only one of two players has submitted so far — an earlier submitter's hook.
     const database = makeMockDatabase([{ player_id: 10, final_score: -3 }]);
 
-    await issueSharedMatchBadges('replay-abc', 2, 7, database as any);
+    await issueSharedMatchBadges('replay-abc', 2, 7, database as any, null);
 
     assert.equal(findInsert(database), undefined, 'No award until the group is complete.');
   });
@@ -82,7 +82,7 @@ describe('badge.shared — issueSharedMatchBadges (WP-614)', () => {
       { player_id: 20, final_score: 4 },
     ]);
 
-    await issueSharedMatchBadges('replay-abc', 2, 7, database as any);
+    await issueSharedMatchBadges('replay-abc', 2, 7, database as any, null);
 
     assert.equal(findInsert(database), undefined, 'One non-sub-PAR player disqualifies the table.');
   });
@@ -90,7 +90,7 @@ describe('badge.shared — issueSharedMatchBadges (WP-614)', () => {
   test('does NOT award for a solo match (playerCount 1)', async () => {
     const database = makeMockDatabase([{ player_id: 10, final_score: -3 }]);
 
-    await issueSharedMatchBadges('replay-abc', 1, 7, database as any);
+    await issueSharedMatchBadges('replay-abc', 1, 7, database as any, null);
 
     // why: short-circuits before the group query — a solo run is not a table.
     assert.equal(database.calls.length, 0, 'A solo match must not even query the group.');
@@ -100,7 +100,7 @@ describe('badge.shared — issueSharedMatchBadges (WP-614)', () => {
   test('does NOT award when playerCount is null (unknown seat count)', async () => {
     const database = makeMockDatabase([{ player_id: 10, final_score: -3 }]);
 
-    await issueSharedMatchBadges('replay-abc', null, 7, database as any);
+    await issueSharedMatchBadges('replay-abc', null, 7, database as any, null);
 
     assert.equal(database.calls.length, 0, 'A null-count match must not query or award.');
   });
@@ -112,7 +112,7 @@ describe('badge.shared — issueSharedMatchBadges (WP-614)', () => {
       { player_id: 30, final_score: -50 },
     ]);
 
-    await issueSharedMatchBadges('replay-xyz', 3, 7, database as any);
+    await issueSharedMatchBadges('replay-xyz', 3, 7, database as any, null);
 
     const insert = findInsert(database);
     assert.ok(insert, 'Expected an INSERT for the 3-player table.');
@@ -129,7 +129,7 @@ describe('badge.shared — issueSharedMatchBadges (WP-614)', () => {
       { player_id: 20, final_score: -1 },
     ]);
 
-    await issueSharedMatchBadges('replay-2p', 2, 7, database as any);
+    await issueSharedMatchBadges('replay-2p', 2, 7, database as any, null);
 
     const insert = findInsert(database);
     assert.ok(insert);
@@ -146,7 +146,7 @@ describe('badge.shared — issueSharedMatchBadges (WP-614)', () => {
       { player_id: 30, final_score: -2 },
     ]);
 
-    await issueSharedMatchBadges('replay-3p', 3, 7, database as any);
+    await issueSharedMatchBadges('replay-3p', 3, 7, database as any, null);
 
     const insert = findInsert(database);
     assert.ok(insert);
@@ -164,7 +164,7 @@ describe('badge.shared — issueSharedMatchBadges (WP-614)', () => {
       { player_id: 40, final_score: -5 },
     ]);
 
-    await issueSharedMatchBadges('replay-4p', 4, 7, database as any);
+    await issueSharedMatchBadges('replay-4p', 4, 7, database as any, null);
 
     const insert = findInsert(database);
     assert.ok(insert);
@@ -177,7 +177,7 @@ describe('badge.shared — issueSharedMatchBadges (WP-614)', () => {
     const rows = [10, 20, 30, 40, 50].map((player_id) => ({ player_id, final_score: -3 }));
     const database = makeMockDatabase(rows);
 
-    await issueSharedMatchBadges('replay-5p', 5, 7, database as any);
+    await issueSharedMatchBadges('replay-5p', 5, 7, database as any, null);
 
     const insert = findInsert(database);
     assert.ok(insert);
@@ -187,5 +187,40 @@ describe('badge.shared — issueSharedMatchBadges (WP-614)', () => {
     assert.equal(quintetAwards, 5, 'Expected quintet awarded to all five players.');
     const unitedFrontAwards = insert.params.filter((p) => p === 'gameplay.shared.united-front').length;
     assert.equal(unitedFrontAwards, 5, 'Expected united-front awarded to all five players.');
+  });
+
+  // --- WP-619: human+bot completeness (bots never submit) ---
+
+  test('WP-619: a human+bot table completes when the humans submit (humanSeatCount < playerCount)', async () => {
+    // A 2-seat table: 1 human + 1 bot. The bot never submits, so only the human's
+    // row is in the group. With humanSeatCount=1, the human's submission completes
+    // the group → united-front is awarded to the human.
+    const database = makeMockDatabase([{ player_id: 10, final_score: -3 }]);
+
+    await issueSharedMatchBadges('replay-hb', 2, 7, database as any, 1);
+
+    const insert = findInsert(database);
+    assert.ok(insert, 'Expected an INSERT — the human+bot table completed.');
+    assert.ok(insert.params.includes('gameplay.shared.united-front'));
+    assert.ok(insert.params.includes(10), 'Awarded to the human seat.');
+  });
+
+  test('WP-619: a 2-human table still needs BOTH humans (humanSeatCount 2, only 1 submitted)', async () => {
+    // humanSeatCount=2 but only one human row so far → incomplete → no award yet.
+    const database = makeMockDatabase([{ player_id: 10, final_score: -3 }]);
+
+    await issueSharedMatchBadges('replay-2h', 2, 7, database as any, 2);
+
+    assert.equal(findInsert(database), undefined, 'No award until both humans submit.');
+  });
+
+  test('WP-619: a solo human + bot (playerCount 2) still requires the sub-2 TABLE gate to pass', async () => {
+    // A 1-human solo match (playerCount 1) is not a table — the sub-2 guard blocks
+    // it even though humanSeatCount would be 1.
+    const database = makeMockDatabase([{ player_id: 10, final_score: -3 }]);
+
+    await issueSharedMatchBadges('replay-solo', 1, 7, database as any, 1);
+
+    assert.equal(findInsert(database), undefined, 'A solo (playerCount 1) match is not a table.');
   });
 });

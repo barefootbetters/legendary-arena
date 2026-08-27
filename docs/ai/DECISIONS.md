@@ -38617,3 +38617,17 @@ _Active 2026-08-26 — WP-617 / EC-652. Related: D-24427 / WP-616 (the `perPlaye
 3. **Same class as D-24423.** A HUD label that both mislabeled its quantity and collided with a sibling count (there: Escaped → Bystanders).
 
 _Active 2026-08-27 — WP-618 / EC-653. Related: D-24423 / WP-612 (the sibling Escaped/Bystanders label fix), D-24026 (user-visible-surface live-verify)._
+
+### D-24430 — Shared Badges Complete on All-Humans-Submitted (human+bot co-op qualifies) (Active 2026-08-27 — WP-619 / EC-654)
+
+**Context.** Operator-reported: a 2-player human+bot co-op sub-PAR win earned no United Front. `issueSharedMatchBadges` gated completeness on `rows.length === playerCount` — every seat must submit a competitive score. A **bot/guest seat has no account and never submits**, so a human+bot match never completed the `replay_hash` group, making the shared / tiered badges unreachable in the common bot-ally co-op mode.
+
+**Decision.** The completeness gate awaits every **human** seat, not every `playerCount` seat: `rows.length === (humanSeatCount ?? playerCount)`, where `humanSeatCount = readSeatAccounts(matchId).length` (authenticated seats — the same human-vs-total-seat distinction `computeRankedEligibility` uses). WP-617's by-matchId caller already reads that roster, so `humanSeatCount = roster.length` is threaded via `SubmissionDependencies` at no extra read. The `playerCount >= 2` table-size guard (bots included) and the `playerCount`-keyed tiers are unchanged.
+
+**Corollaries.**
+1. **Bot-ally co-op qualifies.** A human+bot match where the humans finish sub-PAR now earns United Front (and the size tier).
+2. **Fail-safe fallback.** `humanSeatCount = null` (a roster read error, or the by-hash path) → the gate falls back to `playerCount` (the old behaviour). Runs inside the existing fire-and-forget badge try/catch.
+3. **Consequences accepted (per the operator's request to let bot-ally co-op count):** a lone human + bot(s) earns United Front; the tier reflects the **full table size** (`playerCount`, bots included), so a 1-human+4-bot match earns Quintet — a human-count-based tier is a possible later refinement.
+4. **No new surface.** Read-only over the immutable `competitive_scores` rows; append-only INSERT; no migration, no new `source_kind`, no hash surface.
+
+_Active 2026-08-27 — WP-619 / EC-654. Related: D-24425 / WP-614 (the shared badge), D-24426 / WP-615 (the tiers), D-24428 / WP-617 (the roster read reused), WP-354 (`computeRankedEligibility` human-vs-total-seat precedent), D-24026 (user-visible-surface live-verify)._

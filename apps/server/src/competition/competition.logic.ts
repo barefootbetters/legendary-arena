@@ -185,6 +185,11 @@ interface SubmissionDependencies {
   // the by-matchId caller (which has the matchId) and threaded in for the Vanguard
   // badge. Optional: the by-hash path (no matchId) leaves it undefined → no Vanguard.
   readonly submitterSeatId?: string | null;
+  // why: WP-619 — the number of authenticated (human) seats at the table, from the
+  // same roster read. Threaded so the shared-badge completeness gate awaits every
+  // HUMAN seat (bots never submit) rather than every `playerCount` seat. Optional:
+  // the by-hash path leaves it undefined → the gate falls back to `playerCount`.
+  readonly humanSeatCount?: number | null;
 }
 
 // why: production defaults wire the real faithful-reducer lookup. The
@@ -383,12 +388,17 @@ export async function submitCompetitiveScoreForRequest(
   // has the matchId + roster). Defaulted null so the by-hash path and existing
   // tests stay Vanguard-inert.
   submitterSeatId: string | null = null,
+  // why: WP-619 — the authenticated-human seat count, from the same roster read.
+  // Defaulted null so the by-hash path and existing tests keep the full-playerCount
+  // completeness gate.
+  humanSeatCount: number | null = null,
 ): Promise<SubmissionResult> {
   return submitCompetitiveScoreImpl(identity, replayHash, database, {
     reduceReplay: reduceReplayByHash,
     checkParPublished: productionDeps.checkParPublished,
     isRankedEligible,
     submitterSeatId,
+    humanSeatCount,
   });
 }
 
@@ -476,24 +486,29 @@ export async function submitCompetitiveScoreByMatchIdForRequest(
   // never rewrites a stored decision (FR-7).
   const isRankedEligible = await computeRankedEligibility(matchId, database);
 
-  // why: step 5c (WP-617) — resolve the CALLER's bgio seat from the match roster,
-  // keyed by matchId (which only this by-matchId entry holds), so the Vanguard
-  // badge can read this seat's per-player tactic contribution. Fail-safe: any
-  // roster read error, or a caller not on the authenticated roster, leaves it null
-  // (no Vanguard) — it never fails the submission.
+  // why: step 5c (WP-617 + WP-619) — read the match roster ONCE (keyed by matchId,
+  // which only this by-matchId entry holds) to derive both the CALLER's bgio seat
+  // (for the Vanguard badge's per-seat tactic read) and the authenticated-human seat
+  // COUNT (for the shared-badge completeness gate — bots never submit, so the group
+  // is complete once every human seat has). Fail-safe: any roster read error, or a
+  // caller not on the authenticated roster, leaves both null (no Vanguard, and the
+  // shared gate falls back to playerCount) — it never fails the submission.
   let submitterSeatId: string | null = null;
+  let humanSeatCount: number | null = null;
   try {
     const roster = await readSeatAccounts(matchId, database);
     const callerSeat = roster.find((entry) => entry.accountId === account.accountId);
     submitterSeatId = callerSeat?.playerId ?? null;
+    humanSeatCount = roster.length;
   } catch (rosterError) {
     console.warn(
-      '[vanguard] Failed to resolve the submitter seat for match ' +
+      '[badges] Failed to resolve the match roster for match ' +
         matchId +
-        '; Vanguard evaluation is skipped for this submission.',
+        '; Vanguard + shared-badge completeness use their fallbacks for this submission.',
       rosterError,
     );
     submitterSeatId = null;
+    humanSeatCount = null;
   }
 
   // step 6 — delegate to the unchanged verify+score pipeline (ownership / visibility
@@ -505,6 +520,7 @@ export async function submitCompetitiveScoreByMatchIdForRequest(
     productionDeps,
     isRankedEligible,
     submitterSeatId,
+    humanSeatCount,
   );
 
   // why: step 7 (WP-593 / D-24402) — attach the derived per-seat identity roster
@@ -1032,6 +1048,10 @@ export async function submitCompetitiveScoreImpl(
       record.playerCount,
       record.scoringConfigVersion,
       database,
+      // why: WP-619 — the human seat count (threaded from the by-matchId caller)
+      // makes the completeness gate await every HUMAN seat, so human+bot co-op
+      // tables can earn the shared badge; null on the by-hash path → playerCount.
+      deps.humanSeatCount ?? null,
     );
   } catch (badgeError) {
     console.warn(
