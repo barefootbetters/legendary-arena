@@ -118,7 +118,15 @@ describe('menaceDisplay (WP-562) — the kind label', () => {
       `${menaceKindLabel('escaped-bystander')} ${menaceRatioLabel(5, 8)}`,
       'Bystanders 5/8',
     );
-    assert.equal(menaceKindLabel('escaped-converted'), 'Escaped');
+    // why: WP-623 — a converted-villain escape scheme names the enemy it counts
+    // (Killbots / Skrulls), not the generic "Escaped" that both mislabeled the
+    // subset count and collided with the raw escaped-villain count.
+    assert.equal(menaceKindLabel('escaped-killbot'), 'Killbots');
+    assert.equal(menaceKindLabel('escaped-skrull'), 'Skrulls');
+    assert.equal(
+      `${menaceKindLabel('escaped-killbot')} ${menaceRatioLabel(3, 5)}`,
+      'Killbots 3/5',
+    );
     assert.equal(menaceKindLabel('twists'), 'Twists');
   });
 

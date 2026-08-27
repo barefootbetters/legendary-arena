@@ -37,7 +37,14 @@ const SCHEME_LOSS_NOUNS: Record<SchemeLossKind, string> = {
   // not "Escaped" — which mislabels the quantity and collides with the separate
   // raw escaped-villain count shown by EscapedPile / the HUD.
   'escaped-bystander': 'Bystanders',
-  'escaped-converted': 'Escaped',
+  // why: WP-623 — a converted-villain escape scheme counts only escapees of one
+  // origin (Killbots on "Replace Earth's Leaders with Killbots", Skrulls on
+  // "Secret Invasion"), a subset of the escaped pile. Naming the enemy reads
+  // "Killbots N/5" / "Skrulls N/5", where the generic "Escaped" both mislabeled
+  // the quantity and collided with the raw escaped-villain count (WP-612 fixed
+  // the same collision for bystanders).
+  'escaped-killbot': 'Killbots',
+  'escaped-skrull': 'Skrulls',
   twists: 'Twists',
 };
 

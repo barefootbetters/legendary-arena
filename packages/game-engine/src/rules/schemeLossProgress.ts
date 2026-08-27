@@ -15,7 +15,7 @@
  * registry import. No `.reduce()`.
  */
 
-import type { LegendaryGameState } from '../types.js';
+import type { ConvertedVillainOrigin, LegendaryGameState } from '../types.js';
 import { SCHEME_TWIST_CONFIGS } from './schemeTwistConfigs.js';
 import {
   countEscapedPileByType,
@@ -56,7 +56,8 @@ export type SchemeLossKind =
   | 'wound-stack'
   | 'escaped-pile'
   | 'escaped-bystander'
-  | 'escaped-converted'
+  | 'escaped-killbot'
+  | 'escaped-skrull'
   | 'twists';
 
 /**
@@ -70,7 +71,8 @@ export const SCHEME_LOSS_KINDS: readonly SchemeLossKind[] = [
   'wound-stack',
   'escaped-pile',
   'escaped-bystander',
-  'escaped-converted',
+  'escaped-killbot',
+  'escaped-skrull',
   'twists',
 ];
 
@@ -219,6 +221,23 @@ export function resolveSchemeLossThreshold(
  * @param gameState - The current game state (read-only).
  * @returns The kind of quantity `resolveSchemeLossProgress` is returning.
  */
+/**
+ * Maps a converted-villain origin to its scheme-loss kind (WP-623). An explicit
+ * switch, so a future `ConvertedVillainOrigin` fails to compile here rather than
+ * silently mislabelling the danger meter as the wrong enemy.
+ *
+ * @param origin - The converted-villain origin the scheme counts against its loss.
+ * @returns The origin-specific scheme-loss kind the client labels from.
+ */
+function escapedConvertedKind(origin: ConvertedVillainOrigin): SchemeLossKind {
+  switch (origin) {
+    case 'killbot':
+      return 'escaped-killbot';
+    case 'skrull':
+      return 'escaped-skrull';
+  }
+}
+
 export function resolveSchemeLossKind(
   gameState: LegendaryGameState,
 ): SchemeLossKind {
@@ -235,8 +254,14 @@ export function resolveSchemeLossKind(
   if (condition?.kind === 'escaped-pile-count') {
     return condition.cardType === 'bystander' ? 'escaped-bystander' : 'escaped-pile';
   }
+  // why: WP-623 / D-24434 — a converted-villain escape scheme counts only
+  // escapees of one origin (Killbots, or Skrulls) — a subset of the escaped
+  // pile, since converted cards are typed 'villain' for routing. Labeling that
+  // "Escaped" both mislabels the quantity and collides with the raw
+  // escaped-villain count (the same problem WP-612 fixed for bystanders). Name
+  // the origin so the meter reads "Killbots N/5" / "Skrulls N/5".
   if (condition?.kind === 'escaped-converted-count') {
-    return 'escaped-converted';
+    return escapedConvertedKind(condition.origin);
   }
   if (condition?.kind === 'pile-depleted' && hasPileSetupSize(gameState)) {
     return condition.pile === 'heroDeck' ? 'hero-deck' : 'wound-stack';
