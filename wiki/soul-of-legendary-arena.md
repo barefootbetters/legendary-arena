@@ -25,7 +25,7 @@ source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\soul-of-legendary-arena.md (this page — https://ewiki.legendary-arena.com/soul-of-legendary-arena/)
   - ../docs/01-VISION.md
   - ../docs/ai/DECISIONS.md
-last-reviewed: 2026-08-25
+last-reviewed: 2026-08-26
 ---
 
 # Soul of Legendary Arena
@@ -36,6 +36,12 @@ This page names the **thematic soul** of Legendary Arena: the game is an
 act of *stewardship*, not *reinvention*. It preserves and honors the
 decades-long legacy of the characters it renders, rather than flattening
 that legacy to fit whatever the current moment finds fashionable.
+
+The single word for the orientation underneath all of it is **upward**.
+Some stories pull their audience toward something higher to aim at; others
+only tear down what came before. Legendary Arena stands, without apology, on
+the side of the upward pull — it is defined less by what it refuses than by
+what it reaches toward (see [The Upward Pull](#the-upward-pull--what-the-game-is-for)).
 
 Deeper still — and this is the center everything else serves — the reason
 any of it matters is the *relationship*: the friends and family who play it
@@ -66,6 +72,69 @@ player.
 > cited to authoritative docs.
 
 ## Mechanics
+
+### The Upward Pull — what the game is for
+
+The rest of this page describes a current the game swims *against*. This
+section names the current it swims *with* — and that is the truer statement
+of the soul, because Legendary Arena is defined less by what it refuses than
+by what it reaches toward.
+
+Every story pulls its audience somewhere.
+
+Some stories pull **upward**. They invite the audience to become more
+courageous, more disciplined, more loyal, more grateful, more willing to
+sacrifice for something beyond themselves. They present heroes worth
+admiring, mentors worth listening to, and ideals worth pursuing. They do not
+pretend away flaw, failure, tragedy, or evil — but they do not leave the
+audience there. They point beyond them.
+
+Other stories pull **downward**. They treat heroism as naïveté, wisdom as
+hypocrisy, mentorship as manipulation, and virtue as a mask for power. Their
+central instinct is deconstruction: expose, unravel, demystify, tear down.
+Deconstruction can reveal a genuine truth — but when it becomes an end rather
+than a tool, it leaves nothing standing. The audience is taught what to
+distrust, but never what to aspire to.
+
+Legendary Arena stands, unapologetically, on the side of the upward pull.
+
+This does not mean heroes are flawless, or mentors perfect, or that stories
+must be simple, sentimental, and free of tragedy. The source material itself
+is full of failure, betrayal, corruption, sacrifice, redemption, and loss.
+**Difficulty is not the enemy.** The dividing line is whether a story
+ultimately *builds* or merely *dismantles*. A hero should emerge more heroic,
+not reduced to a punchline. A mentor may stumble, but wisdom itself should
+remain worthy of respect. A legacy may be expanded, challenged, or deepened
+— but not flattened into disposable raw material. The goal is not cynicism
+but understanding; not demolition but construction.
+
+This is why the game preserves character history, honors lineage, and treats
+the source material as an inheritance rather than a quarry. It cultivates
+wonder, gratitude, courage, stewardship, and legacy because those virtues
+*point upward* — they remind players that greatness is not self-created, that
+wisdom can be received, and that the good is worth defending.
+
+The test is simple:
+
+> **Does this content leave the player with something higher to aim at?**
+
+If it does, it belongs naturally within the soul of Legendary Arena. If it
+merely tears down what came before without offering anything worthy in its
+place, it moves against the current of the game's design philosophy. (This is
+the companion of the [soul-not-candy test](#soul-not-candy--content-that-carries-its-weight)
+further down: that test asks whether content carries *weight*; this one asks
+whether it points somewhere *higher*. Both are ways of refusing the
+frictionless, flattering option.)
+
+Legendary Arena is not a celebration of deconstruction. It is a celebration
+of aspiration. The heroes point upward; the game intends to do the same.
+
+> Legendary Arena rejects stories that merely tear down. Its heroes,
+> mentors, and legacies are meant to point upward — giving players something
+> worthy to admire, inherit, and become.
+>
+> *Shorter still:* **Build upward. Honor the inheritance. Give the next
+> generation something worthy to become.**
 
 ### The pattern: tearing down the one who paved the way
 
@@ -715,10 +784,13 @@ claim at a safe distance — it stands on it.
   *interprets* sourced principles. If it ever reads as inventing a
   constraint, the fix is to move that constraint into the vision and cite
   it, or delete the sentence — per [SCHEMA.md](SCHEMA.md) Scope Exclusion.
-- **The creed, four virtues, "soul promise," and motto are authored
-  identity, not new commitments.** They name feelings and values the essay
-  already carries; the promise in particular restates existing
-  [Vision](vision.md) commitments and adds none. Treat them as expressive
+- **The Upward Pull creed, the creed, four virtues, "soul promise," and
+  motto are authored identity, not new commitments.** They name feelings and
+  values the essay already carries; the promise in particular restates
+  existing [Vision](vision.md) commitments and adds none. The
+  [Upward Pull test](#the-upward-pull--what-the-game-is-for) ("does this
+  leave the player with something higher to aim at?") is likewise a stated
+  editorial point of view, not a gate on any Work Packet. Treat them as expressive
   language (candidates for cross-surface use), not as governance the
   Vision does not already hold. This block was added deliberately expansive
   ("get the ideas in, prune later"); it is expected to be edited down.
