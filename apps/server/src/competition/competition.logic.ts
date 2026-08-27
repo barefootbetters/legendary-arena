@@ -985,6 +985,9 @@ export async function submitCompetitiveScoreImpl(
       record.scenarioKey,
       record.scoringConfigVersion,
       database,
+      // why: WP-613 — the run's player count drives the Solo Mastery lane
+      // (`playerCount === 1` → `gameplay.solo.lone-defender`).
+      record.playerCount,
     );
   } catch (badgeError) {
     console.warn(

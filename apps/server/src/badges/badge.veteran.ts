@@ -34,6 +34,11 @@ const DECADE_LEGEND_THRESHOLD = 25;
 const HALL_OF_SUSTAINED_MASTERY_THRESHOLD = 50;
 const CROSSROADS_OF_MULTIVERSE_THRESHOLD = 100;
 
+// why: WP-613 Solo Mastery lane — breadth-gated on distinct SOLO sub-PAR
+// scenarios (mirrors MULTIVERSE_MASTERY_THRESHOLD's 5). Still breadth, not
+// volume (D-0005): 100 solo sub-PAR runs of one scenario do not advance it.
+const SOLITAIRE_MASTER_THRESHOLD = 5;
+
 /**
  * Evaluate which history-based Tier 1 badges a player qualifies for.
  * Queries `legendary.competitive_scores` for the count of distinct
@@ -84,6 +89,25 @@ export async function evaluateHistoryBadges(
 
   if (distinctCount >= CROSSROADS_OF_MULTIVERSE_THRESHOLD) {
     earned.push('gameplay.veteran.crossroads-of-multiverse');
+  }
+
+  // why: WP-613 Solo Mastery lane — a separate distinct-scenario count
+  // restricted to SOLO runs (`player_count = 1`). A full-table sub-PAR run
+  // never advances this badge; only solo clears on distinct scenarios do.
+  const soloResult = await database.query(
+    'SELECT COUNT(DISTINCT scenario_key) AS distinct_count ' +
+      'FROM legendary.competitive_scores ' +
+      'WHERE player_id = $1 AND final_score < 0 AND player_count = 1',
+    [playerId],
+  );
+
+  const soloDistinctCount =
+    soloResult.rows.length > 0
+      ? Number(soloResult.rows[0].distinct_count)
+      : 0;
+
+  if (soloDistinctCount >= SOLITAIRE_MASTER_THRESHOLD) {
+    earned.push('gameplay.solo.solitaire-master');
   }
 
   return earned;

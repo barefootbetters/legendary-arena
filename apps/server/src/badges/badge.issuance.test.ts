@@ -46,12 +46,21 @@ interface MockQueryCall {
  * Minimal mock DatabaseClient that records queries. The history badge
  * query (COUNT(DISTINCT scenario_key)) returns a configurable count.
  */
-function makeMockDatabase(distinctScenarioCount: number = 0) {
+function makeMockDatabase(
+  distinctScenarioCount: number = 0,
+  soloDistinctScenarioCount: number = 0,
+) {
   const calls: MockQueryCall[] = [];
   return {
     calls,
     query: async (sql: string, params?: unknown[]) => {
       calls.push({ sql, params: params ?? [] });
+      // why: WP-613 — the solo breadth query filters `player_count = 1`; route
+      // it to its own count so it does not share the veteran query's count
+      // (both queries match the `COUNT(DISTINCT scenario_key)` substring).
+      if (sql.includes('player_count = 1')) {
+        return { rows: [{ distinct_count: soloDistinctScenarioCount }] };
+      }
       if (sql.includes('COUNT(DISTINCT scenario_key)')) {
         return { rows: [{ distinct_count: distinctScenarioCount }] };
       }
@@ -65,7 +74,7 @@ describe('badge.issuance', () => {
     const database = makeMockDatabase(0);
     const breakdown = makeBreakdown({ finalScore: -3, villainEscaped: 0 });
 
-    await issueTier1BadgesForSubmission(42, 100, breakdown, 'scenario-1', 1, database as any);
+    await issueTier1BadgesForSubmission(42, 100, breakdown, 'scenario-1', 1, database as any, 2);
 
     const insertCall = database.calls.find((c) => c.sql.includes('INSERT INTO legendary.player_badges'));
     assert.ok(insertCall, 'Expected an INSERT INTO legendary.player_badges query.');
@@ -83,7 +92,7 @@ describe('badge.issuance', () => {
     const database = makeMockDatabase(0);
     const breakdown = makeBreakdown({ finalScore: 5, villainEscaped: 2 });
 
-    await issueTier1BadgesForSubmission(42, 100, breakdown, 'scenario-1', 1, database as any);
+    await issueTier1BadgesForSubmission(42, 100, breakdown, 'scenario-1', 1, database as any, 2);
 
     const insertCall = database.calls.find((c) => c.sql.includes('INSERT INTO legendary.player_badges'));
     assert.equal(insertCall, undefined, 'No INSERT should fire when no badges qualify.');
@@ -93,7 +102,7 @@ describe('badge.issuance', () => {
     const database = makeMockDatabase(5);
     const breakdown = makeBreakdown({ finalScore: -3, villainEscaped: 0 });
 
-    await issueTier1BadgesForSubmission(42, 100, breakdown, 'scenario-1', 1, database as any);
+    await issueTier1BadgesForSubmission(42, 100, breakdown, 'scenario-1', 1, database as any, 2);
 
     const insertCall = database.calls.find((c) => c.sql.includes('INSERT INTO legendary.player_badges'));
     assert.ok(insertCall, 'Expected an INSERT query.');
@@ -111,7 +120,7 @@ describe('badge.issuance', () => {
     const database = makeMockDatabase(10);
     const breakdown = makeBreakdown({ finalScore: 5, villainEscaped: 2 });
 
-    await issueTier1BadgesForSubmission(42, 100, breakdown, 'scenario-1', 1, database as any);
+    await issueTier1BadgesForSubmission(42, 100, breakdown, 'scenario-1', 1, database as any, 2);
 
     const insertCall = database.calls.find((c) => c.sql.includes('INSERT INTO legendary.player_badges'));
     assert.ok(insertCall, 'Expected an INSERT for history badges.');
@@ -124,7 +133,7 @@ describe('badge.issuance', () => {
     const badBreakdown = { finalScore: 'not-a-number' } as unknown as ScoreBreakdown;
 
     await assert.rejects(
-      () => issueTier1BadgesForSubmission(42, 100, badBreakdown, 'scenario-1', 1, database as any),
+      () => issueTier1BadgesForSubmission(42, 100, badBreakdown, 'scenario-1', 1, database as any, 2),
       /ScoreBreakdown deserialization failed/,
     );
   });
@@ -133,10 +142,48 @@ describe('badge.issuance', () => {
     const database = makeMockDatabase(10);
     const breakdown = makeBreakdown({ finalScore: -1, villainEscaped: 0 });
 
-    await issueTier1BadgesForSubmission(42, 100, breakdown, 'scenario-1', 1, database as any);
+    await issueTier1BadgesForSubmission(42, 100, breakdown, 'scenario-1', 1, database as any, 2);
 
     const insertCall = database.calls.find((c) => c.sql.includes('INSERT INTO legendary.player_badges'));
     assert.ok(insertCall);
     assert.ok(insertCall.params.includes('gameplay.veteran.seasoned-defender'));
+  });
+
+  test('WP-613: issues the solo lane for a solo sub-PAR run at breadth 5', async () => {
+    // Solo run (playerCount 1), sub-PAR, with 5 distinct SOLO sub-PAR scenarios
+    // in history but 0 general breadth → both solo badges, no multiverse-mastery.
+    const database = makeMockDatabase(0, 5);
+    const breakdown = makeBreakdown({ finalScore: -3, villainEscaped: 0 });
+
+    await issueTier1BadgesForSubmission(42, 100, breakdown, 'scenario-1', 1, database as any, 1);
+
+    const insertCall = database.calls.find((c) => c.sql.includes('INSERT INTO legendary.player_badges'));
+    assert.ok(insertCall, 'Expected an INSERT for the solo lane.');
+    assert.ok(insertCall.params.includes('gameplay.solo.lone-defender'), 'Expected lone-defender (solo sub-PAR).');
+    assert.ok(insertCall.params.includes('gameplay.solo.solitaire-master'), 'Expected solitaire-master at 5 distinct solo scenarios.');
+    assert.equal(
+      insertCall.params.includes('gameplay.multiverse-mastery'),
+      false,
+      'General breadth was 0 → multiverse-mastery must NOT fire.',
+    );
+  });
+
+  test('WP-613: a multi-player sub-PAR run earns no solo badge even at solo breadth 5', async () => {
+    // playerCount 3 → lone-defender must not fire; the solo history query still
+    // filters player_count=1, so a full-table run never advances solitaire-master.
+    const database = makeMockDatabase(0, 5);
+    const breakdown = makeBreakdown({ finalScore: -3, villainEscaped: 0 });
+
+    await issueTier1BadgesForSubmission(42, 100, breakdown, 'scenario-1', 1, database as any, 3);
+
+    const insertCall = database.calls.find((c) => c.sql.includes('INSERT INTO legendary.player_badges'));
+    // solitaire-master is history-gated on solo breadth (5 here) so it DOES fire
+    // for this player; lone-defender (per-run) must NOT (the run was multi-player).
+    assert.ok(insertCall, 'Expected an INSERT (solo history breadth met).');
+    assert.equal(
+      insertCall.params.includes('gameplay.solo.lone-defender'),
+      false,
+      'A multi-player run must not earn the per-run solo badge.',
+    );
   });
 });

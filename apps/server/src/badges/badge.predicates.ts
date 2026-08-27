@@ -100,6 +100,22 @@ export function isEligiblePristineDefense(breakdown: ScoreBreakdown): boolean {
   return breakdown.penaltyBreakdown.villainEscaped === 0;
 }
 
+/**
+ * Lone Defender (WP-613 Solo Mastery lane): a sub-PAR clear achieved SOLO —
+ * one player facing the whole mastermind alone, strictly harder than a full
+ * table. Gated on `playerCount === 1` AND the sub-PAR quality bar.
+ *
+ * // why: `playerCount` is `number | null` — a `null` count is UNKNOWN, never
+ * treated as solo, so an unknown-count submission can never earn a solo badge.
+ * The quality bar reuses `isEligibleSubParRun` so the two lanes stay in lockstep.
+ */
+export function isEligibleLoneDefender(
+  breakdown: ScoreBreakdown,
+  playerCount: number | null,
+): boolean {
+  return playerCount === 1 && isEligibleSubParRun(breakdown);
+}
+
 // -----------------------------------------------------------------------
 // Deferred badge predicates (not shipped — comment-only stubs)
 // -----------------------------------------------------------------------
@@ -125,11 +141,18 @@ export function isEligiblePristineDefense(breakdown: ScoreBreakdown): boolean {
  * Evaluate which per-run Tier 1 badges a single competitive submission
  * qualifies for. Returns an array of badge key strings.
  *
- * Returns ONLY `gameplay.sub-par-run` and `gameplay.pristine-defense`.
- * NEVER returns `gameplay.multiverse-mastery` — that badge is
- * history-evaluated and belongs in `evaluateHistoryBadges`.
+ * Returns `gameplay.sub-par-run`, `gameplay.pristine-defense`, and — when the
+ * run was solo (WP-613) — `gameplay.solo.lone-defender`. NEVER returns a
+ * history-evaluated badge (`gameplay.multiverse-mastery`,
+ * `gameplay.solo.solitaire-master`) — those belong in `evaluateHistoryBadges`.
+ *
+ * `playerCount` is the submitting run's player count (`number | null`, on the
+ * competitive record per D-24134); only `=== 1` is solo.
  */
-export function evaluatePerRunBadges(breakdown: ScoreBreakdown): string[] {
+export function evaluatePerRunBadges(
+  breakdown: ScoreBreakdown,
+  playerCount: number | null,
+): string[] {
   const earned: string[] = [];
 
   if (isEligibleSubParRun(breakdown)) {
@@ -138,6 +161,10 @@ export function evaluatePerRunBadges(breakdown: ScoreBreakdown): string[] {
 
   if (isEligiblePristineDefense(breakdown)) {
     earned.push('gameplay.pristine-defense');
+  }
+
+  if (isEligibleLoneDefender(breakdown, playerCount)) {
+    earned.push('gameplay.solo.lone-defender');
   }
 
   return earned;
