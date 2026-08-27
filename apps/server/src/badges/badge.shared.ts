@@ -115,10 +115,14 @@ export async function issueSharedMatchBadges(
   }
 
   // why: WP-615 — every qualifying table earns `united-front`; a table of exactly
-  // 3/4/5 ALSO earns its size tier. `playerCount === rows.length` here (the
-  // completeness gate above), so keying the tier off `playerCount` is exact.
+  // 3/4/5 ALSO earns its size tier. WP-620 — the tier reflects the HUMAN count, not
+  // the full table size: it keys off `rows.length` (the number of humans who
+  // submitted, since bots never do — a 1-human+4-bot match must not earn Quintet).
+  // Past the completeness gate above, `rows.length === (humanSeatCount ?? playerCount)`,
+  // so this is exact. `united-front` itself still gates on `playerCount >= 2` (the
+  // table-size guard) so a human+bot table earns the base.
   const badgeKeys = [UNITED_FRONT_KEY];
-  const sizeTierKey = SIZE_TIER_KEYS[playerCount];
+  const sizeTierKey = SIZE_TIER_KEYS[rows.length];
   if (sizeTierKey !== undefined) {
     badgeKeys.push(sizeTierKey);
   }
