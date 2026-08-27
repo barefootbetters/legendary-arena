@@ -74,6 +74,7 @@ export const TIER_1_BADGE_KEYS: readonly string[] = [
   'gameplay.shared.trio',
   'gameplay.shared.quartet',
   'gameplay.shared.quintet',
+  'gameplay.team.vanguard',
 ] as const;
 
 /** Type alias for badge key strings. */
@@ -214,6 +215,16 @@ export const BADGE_DEFINITIONS: ReadonlyMap<string, BadgeDefinition> = new Map<s
       sourceKind: 'competitive_history',
       label: 'Quintet',
       description: 'Every player at a five-player co-op table finished a scenario below the published PAR baseline.',
+    },
+  ],
+  [
+    'gameplay.team.vanguard',
+    {
+      badgeKey: 'gameplay.team.vanguard',
+      tier: 1,
+      sourceKind: 'competitive_score',
+      label: 'Vanguard',
+      description: 'Defeated more of the mastermind’s tactics than anyone else at a co-op table — led the team’s fight to vanquish the mastermind.',
     },
   ],
 ]);

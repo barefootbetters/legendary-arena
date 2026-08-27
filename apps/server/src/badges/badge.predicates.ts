@@ -18,6 +18,7 @@
 
 import type {
   PenaltyEventType,
+  PlayerScoringContribution,
   ScoreBreakdown,
 } from '@legendary-arena/game-engine';
 
@@ -152,6 +153,10 @@ export function isEligibleLoneDefender(
 export function evaluatePerRunBadges(
   breakdown: ScoreBreakdown,
   playerCount: number | null,
+  // why: WP-617 — the submitter's bgio seat id, resolved from the match roster by
+  // the caller. Needed to find THIS player's entry in the per-player split for the
+  // Vanguard badge; `null` when it could not be resolved (→ no Vanguard).
+  submitterSeatId: string | null,
 ): string[] {
   const earned: string[] = [];
 
@@ -167,5 +172,57 @@ export function evaluatePerRunBadges(
     earned.push('gameplay.solo.lone-defender');
   }
 
+  if (isEligibleVanguard(breakdown.inputs?.perPlayer, submitterSeatId, playerCount)) {
+    earned.push('gameplay.team.vanguard');
+  }
+
   return earned;
+}
+
+/**
+ * Vanguard (WP-617): the submitting player led the table's mastermind fight —
+ * their own seat defeated the STRICT-maximum mastermind tactics of a co-op table.
+ * "Strict maximum" means their count is the table's highest AND at least one other
+ * seat defeated fewer, so an even split (no standout) earns no one.
+ *
+ * // why: reads only the submitter's own entry against the per-seat split — a
+ * self-award, so a player only ever earns their own badge. `perPlayer` is
+ * `undefined` on pre-WP-588 records; `submitterSeatId` is `null` when the caller
+ * could not resolve the seat — either yields no award.
+ */
+export function isEligibleVanguard(
+  perPlayer: readonly PlayerScoringContribution[] | undefined,
+  submitterSeatId: string | null,
+  playerCount: number | null,
+): boolean {
+  // why: a shared/team recognition needs an actual table (≥ 2 seats) and the
+  // per-seat split; a solo run or a missing split can never qualify.
+  if (playerCount === null || playerCount < 2) {
+    return false;
+  }
+  if (submitterSeatId === null || perPlayer === undefined || perPlayer.length < 2) {
+    return false;
+  }
+  const submitter = perPlayer.find(
+    (contribution) => contribution.playerId === submitterSeatId,
+  );
+  if (submitter === undefined) {
+    return false;
+  }
+  let maxTactics = Number.NEGATIVE_INFINITY;
+  let minTactics = Number.POSITIVE_INFINITY;
+  for (const contribution of perPlayer) {
+    if (contribution.mastermindTacticsDefeated > maxTactics) {
+      maxTactics = contribution.mastermindTacticsDefeated;
+    }
+    if (contribution.mastermindTacticsDefeated < minTactics) {
+      minTactics = contribution.mastermindTacticsDefeated;
+    }
+  }
+  // why: max ≥ 1 (someone actually defeated a tactic) AND max > min (a real
+  // standout — an even split, where every seat tied, awards no Vanguard).
+  if (maxTactics < 1 || maxTactics === minTactics) {
+    return false;
+  }
+  return submitter.mastermindTacticsDefeated === maxTactics;
 }

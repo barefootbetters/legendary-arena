@@ -51,10 +51,14 @@ export async function issueTier1BadgesForSubmission(
   // record (D-24134). Threaded to the per-run predicate so the Solo Mastery
   // lane can gate `gameplay.solo.lone-defender` on `playerCount === 1`.
   playerCount: number | null,
+  // why: WP-617 — the submitter's bgio seat id, resolved from the match roster by
+  // the caller, so the Vanguard badge can read this seat's per-player tactic
+  // contribution. `null` when unresolved → no Vanguard.
+  submitterSeatId: string | null,
 ): Promise<void> {
   validateScoreBreakdownShape(breakdown);
 
-  const perRunKeys = evaluatePerRunBadges(breakdown, playerCount);
+  const perRunKeys = evaluatePerRunBadges(breakdown, playerCount, submitterSeatId);
   const historyKeys = await evaluateHistoryBadges(playerId, database);
 
   const allKeys = [...perRunKeys, ...historyKeys];
