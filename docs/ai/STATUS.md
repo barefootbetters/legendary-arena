@@ -7,6 +7,16 @@
 
 ## Current State
 
+### WP-616 — Per-player team-contribution attribution (EC-651 / D-24427) shipped (2026-08-26)
+
+**No user-observable change — infrastructure only.** The foundation for the `wiki/awards-and-badges.md` design's "enabled an ally" recognition. **Honest scope call recorded:** the *literal causal* "player A enabled player B's finish" is **not buildable** — `LogEntry` carries no structured `playerId`, there's no cross-player causal event stream, and base Legendary's direct cross-player mechanics are too sparse to define it. So this WP builds the buildable interpretation: per-player **team-contribution** attribution.
+
+Extends WP-588's `PlayerScoringContribution` with three per-seat defeat counts — `mastermindTacticsDefeated` / `villainsDefeated` / `henchmenDefeated` — populated in the existing `deriveScoringInputs` victory-pile walk, reusing `computeFinalScores`' own else-if classification (`villainDeckCardTypes` → `isBystanderCard` → `mastermind.tacticsDefeated`) so the counts never drift from VP; carried through the deep-copy site.
+
+**Boundary / determinism:** display-only projection over terminal `G` — no new `G` field, no `ctx` change, no score/PAR/grade change. Both hash oracles (`finalStateHash` + `PRE_WP080_HASH`) **byte-identical** (no re-pin — the WP-588 precedent). `perPlayer` rides `score_breakdown` jsonb → **no migration**. `parScoring.types.ts` contract change landed with **D-24427**. `pnpm -r build` 0; engine suite **2923/0**. Diff = 3 files. **User-Visible Surface = none — infrastructure.**
+
+A future "who carried the team" / "Vanguard" recognition badge (and optionally the endgame report card) consumes these counts. The literal causal attribution stays deferred as infeasible.
+
 ### WP-615 — Tiered Team badges: Trio / Quartet / Quintet (EC-650 / D-24426) shipped (2026-08-26)
 
 Completes the `wiki/awards-and-badges.md` design's **tiered team badges** — *"a five-player badge, four-, three-, and two-player badges — recognition scaled to the size of the cooperation."* Extends WP-614's `issueSharedMatchBadges`: a qualifying shared table (complete `replay_hash` group, `playerCount ≥ 2`, every player sub-PAR) now earns `united-front` **plus** an exact-size tier — **Trio** (3), **Quartet** (4), **Quintet** (5), keyed on `playerCount` (which equals `rows.length` past the completeness gate). The 2-player base stays `united-front`; player count maxes at 5.

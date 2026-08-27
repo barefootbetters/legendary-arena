@@ -729,6 +729,10 @@ describe('deriveScoringInputs bystander count counts BOTH sources (WP-586 / D-24
 function makeTwoPlayerTerminalState(
   victoryByPlayer: Record<string, string[]>,
   villainDeckCardTypes: Record<string, string>,
+  // why: WP-616 — optional so the existing WP-588 callers are unchanged; the
+  // defeat-count test supplies the mastermind's defeated-tactic ids so tactics in
+  // a player's victory pile classify as mastermind tactics.
+  tacticsDefeated: string[] = [],
 ): LegendaryGameState {
   const playerZones: Record<string, unknown> = {};
   for (const [playerId, victory] of Object.entries(victoryByPlayer)) {
@@ -736,7 +740,7 @@ function makeTwoPlayerTerminalState(
   }
   return {
     playerZones,
-    mastermind: { baseCardId: 'test-mastermind', tacticsDefeated: [] },
+    mastermind: { baseCardId: 'test-mastermind', tacticsDefeated },
     villainDeckCardTypes,
     cardVictoryPoints: {},
     escapedPile: [],
@@ -798,6 +802,38 @@ describe('deriveScoringInputs per-player split (WP-588 / D-24397)', () => {
     assert.notStrictEqual(breakdown.inputs.perPlayer, inputs.perPlayer);
     assert.notStrictEqual(breakdown.inputs.perPlayer?.[0], inputs.perPlayer?.[0]);
     assert.deepEqual(breakdown.inputs.perPlayer, inputs.perPlayer);
+  });
+
+  it('WP-616: splits mastermind-tactic / villain / henchman defeats per player', () => {
+    // Player 0: 2 villains + 1 henchman + 1 defeated tactic.
+    // Player 1: 1 villain + 2 defeated tactics (+ a bystander, unrelated).
+    const state = makeTwoPlayerTerminalState(
+      {
+        '0': ['vil-a', 'vil-b', 'hen-a', 'tac-1'],
+        '1': ['vil-c', 'tac-2', 'tac-3', BYSTANDER_EXT_ID],
+      },
+      { 'vil-a': 'villain', 'vil-b': 'villain', 'vil-c': 'villain', 'hen-a': 'henchman' },
+      ['tac-1', 'tac-2', 'tac-3'],
+    );
+    const inputs = deriveScoringInputs(makeReplayResult(12), state);
+
+    const byPlayer = Object.fromEntries(
+      (inputs.perPlayer ?? []).map((contribution) => [contribution.playerId, contribution]),
+    );
+    assert.equal(byPlayer['0']?.villainsDefeated, 2);
+    assert.equal(byPlayer['0']?.henchmenDefeated, 1);
+    assert.equal(byPlayer['0']?.mastermindTacticsDefeated, 1);
+    assert.equal(byPlayer['1']?.villainsDefeated, 1);
+    assert.equal(byPlayer['1']?.henchmenDefeated, 0);
+    assert.equal(byPlayer['1']?.mastermindTacticsDefeated, 2);
+    assert.equal(byPlayer['1']?.bystandersRescued, 1);
+    // why: the counts survive the deep copy (not reset to 0).
+    const breakdown = buildScoreBreakdown(inputs, makeReferenceConfig());
+    const copied = Object.fromEntries(
+      (breakdown.inputs.perPlayer ?? []).map((contribution) => [contribution.playerId, contribution]),
+    );
+    assert.equal(copied['0']?.mastermindTacticsDefeated, 1);
+    assert.equal(copied['1']?.villainsDefeated, 1);
   });
 });
 

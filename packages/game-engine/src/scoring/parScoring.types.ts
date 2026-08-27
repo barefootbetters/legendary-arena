@@ -223,6 +223,16 @@ export interface PlayerScoringContribution {
   readonly victoryPoints: number;
   /** Bystanders rescued into this player's own victory pile. */
   readonly bystandersRescued: number;
+  // why: WP-616 / D-24427 — per-seat team-contribution counts (the tractable
+  // foundation for the "enabled an ally" recognition; a future badge reads them).
+  // Counted from this player's victory pile with the SAME classification
+  // computeFinalScores uses for VP, so they never drift from it. Display-only.
+  /** Mastermind tactics this player defeated (in their victory pile). */
+  readonly mastermindTacticsDefeated: number;
+  /** Villains this player defeated (in their victory pile). */
+  readonly villainsDefeated: number;
+  /** Henchmen this player defeated (in their victory pile). */
+  readonly henchmenDefeated: number;
 }
 
 export interface ScoringInputs {

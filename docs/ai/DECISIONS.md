@@ -38575,3 +38575,17 @@ _Active 2026-08-26 — WP-614 / EC-649. Related: D-1004 (Tier-1 issuer model), D
 5. **Still deferred.** The turn-level "player A enabled player B's finish" flavor needs per-turn contribution attribution scoring does not capture.
 
 _Active 2026-08-26 — WP-615 / EC-650. Related: D-24425 (the shared `united-front` badge this extends), D-1004 (Tier-1 issuer model), D-24134 (`playerCount` 1..5), D-5302 (immutable rows), D-24026 (user-visible-surface live-verify)._
+
+### D-24427 — Per-Player Team-Contribution Attribution (scoring foundation) (Active 2026-08-26 — WP-616 / EC-651)
+
+**Context.** The `wiki/awards-and-badges.md` design's last idea is recognizing *"the player who… let someone else land the killing blow"* — an "enabled an ally" attribution. **The literal causal form is not buildable:** `LogEntry` carries no structured `playerId`, there is no cross-player causal event stream, and base Legendary's *direct* cross-player mechanics are too sparse to define it robustly. The buildable interpretation is per-player **team-contribution** attribution.
+
+**Decision.** Extend `PlayerScoringContribution` (the WP-588 / D-24397 per-player split) with three per-seat defeat counts — `mastermindTacticsDefeated`, `villainsDefeated`, `henchmenDefeated` — populated in the existing `deriveScoringInputs` victory-pile walk, using `computeFinalScores`' own else-if classification (`villainDeckCardTypes` → `isBystanderCard` → `mastermind.tacticsDefeated`) so the counts never drift from the VP computation.
+
+**Corollaries.**
+1. **Display-only projection.** Derived from terminal `G` in the existing scoring pass — no new `G` field, no `ctx` change; both hash oracles (`finalStateHash`, `PRE_WP080_HASH`) stay byte-identical (the WP-588 precedent). Score / PAR / grade unchanged.
+2. **No migration.** `perPlayer` rides `competitive_scores.score_breakdown` (jsonb) — additive; the deep-copy site carries the new fields.
+3. **Single source of truth.** The counts reuse the score's classification, not a parallel classifier that could diverge from VP.
+4. **Foundation, not a badge.** A future consumer (a "who carried the team" / "Vanguard" recognition badge, and optionally the endgame report card) reads these counts. The **literal causal** "A enabled B" attribution is recorded as **deferred / infeasible** for the reasons above.
+
+_Active 2026-08-26 — WP-616 / EC-651. Related: D-24397 / WP-588 (the per-player split this extends), WP-613/614/615 (the badge lanes a future consumer would join), D-24026 (surface = none — infrastructure)._
