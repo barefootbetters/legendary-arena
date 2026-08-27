@@ -129,6 +129,12 @@ const TEST_FINAL_STATE = {
     '0': { hand: [], deck: [], discard: [], inPlay: [], victory: [] },
   },
   piles: { bystanders: [], wounds: [], officers: [], sidekicks: [] },
+  // why: WP-528 / D-24339 made escapedPile a terminal-state field that
+  // deriveScoringInputs iterates with no null guard (parScoring.logic.ts).
+  // This fixture predates that field; omitting it throws "escapedPile is not
+  // iterable" the moment the engine derives scoring inputs. Empty = no
+  // Bystanders carried off by escaping Villains in this canonical replay.
+  escapedPile: [],
   messages: [],
   counters: {},
   hookRegistry: [],
@@ -228,6 +234,12 @@ const TEST_SCORING_CONFIG: ScenarioScoringConfig = {
     bystandersPar: 1,
     victoryPointsPar: 5,
     escapesPar: 1,
+    // why: WP-591 / D-24400 made these two ParBaseline fields REQUIRED, and
+    // computeParScore reads them with no `?? 0` fallback. Omitting them made
+    // computeParScore return NaN, so TEST_PAR_VALUE was NaN and every
+    // DB-gated submit test failed replay verification (NaN !== NaN → true).
+    schemeTwistsPar: 3,
+    bystandersLostPar: 1,
   },
   scoringConfigVersion: 1,
   createdAt: '2026-04-26T00:00:00.000Z',
@@ -939,8 +951,13 @@ describe('competition logic (WP-053)', () => {
       assert.deepEqual(result, { ok: false, reason: 'ended_early' });
 
       // No competitive_scores row was written for the abandoned match.
+      // why: competitive_scores stores player_id (bigint FK), not account_id —
+      // the impl only ever surfaces account_id as a `p.ext_id AS account_id`
+      // join alias. account.accountId is the player's ext_id, so resolve it to
+      // player_id the same way the impl does (SELECT player_id ... WHERE ext_id).
       const rows = await testPool.query(
-        'SELECT 1 FROM legendary.competitive_scores WHERE account_id = $1',
+        'SELECT 1 FROM legendary.competitive_scores WHERE player_id = ' +
+          '(SELECT player_id FROM legendary.players WHERE ext_id = $1)',
         [account.accountId],
       );
       assert.strictEqual(rows.rowCount, 0);
