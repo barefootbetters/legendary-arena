@@ -486,6 +486,58 @@ That is the real evil the Red Skull distills into one mask, and it is why a
 game that keeps the good-versus-evil line bright is not being childish. The
 real thing was worse than the fiction.
 
+### The flawed hero — failure that teaches, not failure that dismisses
+
+Legendary Arena does not require flawless heroes, and it is worth saying so
+plainly, because the upward pull is easy to misread as a demand for spotless
+saints. The great stories rarely give us flawless men. This is where
+[the Upward Pull's](#the-upward-pull--what-the-game-is-for) "difficulty is
+not the enemy" earns its keep.
+
+The scriptural record is the clearest proof. **David** is the archetypal
+king — he kills Goliath, unites Israel, composes many of the Psalms — and he
+also commits adultery with Bathsheba and arranges the death of her husband
+Uriah to cover it
+([2 Samuel 11](https://www.churchofjesuschrist.org/study/scriptures/ot/2-sam/11?lang=eng)).
+The text neither celebrates the act nor quietly normalizes it: the prophet
+**Nathan** is sent to confront David to his face — "Thou art the man"
+([2 Samuel 12:7](https://www.churchofjesuschrist.org/study/scriptures/ot/2-sam/12?lang=eng&id=p7#p7),
+KJV) — and the consequences fall hard and stay. **Moses** strikes the rock in
+anger and is barred from the land he spent his life walking toward
+([Numbers 20:7–12](https://www.churchofjesuschrist.org/study/scriptures/ot/num/20?lang=eng&id=p7-p12#p7)).
+**Peter** denies Christ three times before the cock crows
+([Matthew 26:69–75](https://www.churchofjesuschrist.org/study/scriptures/nt/matt/26?lang=eng&id=p69-p75#p69)).
+None of these men is flattened by his failure, and none is excused by his
+greatness.
+
+The scripture does the more difficult thing: it preserves **both** the
+greatness and the failure. The lesson is not "David was never heroic," and it
+is not "David's sin doesn't matter." It is harder and truer — *a great man
+can do evil, and the evil remains evil.* The failure is recorded as warning
+and instruction, not as a behavior to celebrate and not as proof that virtue
+was always a mask.
+
+That is the whole distinction, and it is a distinction of *destination*. Two
+stories can reveal the very same flaw and end in opposite places:
+
+| Failure that teaches (the older tradition) | Failure that dismisses (deconstruction) |
+|---|---|
+| Reveals a flaw to teach humility, repentance, consequence, redemption, the danger of pride | Reveals a flaw to teach that there are no heroes, that ideals are fraudulent, that admiration is naïve |
+| The flaw *illuminates* the path upward | The flaw is the demolition charge |
+| The hero is deepened; what made him worth admiring survives | The hero is exposed, then discarded |
+
+That is the same **addition versus overwrite** line the next section draws,
+applied to a single character's flaws. David's sin is *added* to the record;
+it does not *overwrite* David. Luke Skywalker's failures could just as easily
+*deepen* Luke — a fall told with reverence for what was lost — rather than
+*erase* him. A hero's flaw should make him more understandable and more human
+while preserving what made him worth admiring in the first place.
+
+So: heroes may be flawed, mentors may stumble, legacies may be complicated.
+The purpose of revealing a flaw is to **illuminate the path upward, not to
+extinguish it** — revelation, warning, consequence, repentance, redemption,
+rather than exposure, deconstruction, dismissal, replacement.
+
 ### Honoring is not ossifying — the real distinction
 
 The soul here is easy to caricature as "never change anything," so it is
@@ -811,7 +863,10 @@ claim at a safe distance — it stands on it.
   is treated differently on purpose: the page affirms as *true*, not as one
   reading among many, that honoring one's fathers is right and scorning
   their counsel brings ruin (Exodus 20:12; 1 Kings 12:6–14, KJV; parallel
-  2 Chronicles 10). That the essay states this conviction plainly is
+  2 Chronicles 10). The flawed-hero accounts (2 Samuel 11–12; Numbers
+  20:7–12; Matthew 26:69–75) are handled the same way — recorded faithfully,
+  greatness and failure both, as warning and instruction rather than as
+  proof that virtue is a mask. That the essay states this conviction plainly is
   deliberate and set by the operator who owns the page; the secular reflex
   to relativize it is the very thing the
   [pattern in the mirror](#the-pattern-in-the-mirror-ais-secular-default)
@@ -889,6 +944,17 @@ claim at a safe distance — it stands on it.
   divides; the root of the honour-thy-father theme this page affirms. See
   also Exodus 20:12 — the commandment given with a promise, and
   Matthew 20:25–28 — Christlike servant leadership.
+- Flawed-hero scriptures behind
+  [The flawed hero](#the-flawed-hero--failure-that-teaches-not-failure-that-dismisses)
+  (KJV) —
+  [2 Samuel 11](https://www.churchofjesuschrist.org/study/scriptures/ot/2-sam/11?lang=eng)
+  and [2 Samuel 12:7](https://www.churchofjesuschrist.org/study/scriptures/ot/2-sam/12?lang=eng&id=p7#p7)
+  (David, Bathsheba, Uriah, and Nathan's "Thou art the man"),
+  [Numbers 20:7–12](https://www.churchofjesuschrist.org/study/scriptures/ot/num/20?lang=eng&id=p7-p12#p7)
+  (Moses strikes the rock and is barred from the land), and
+  [Matthew 26:69–75](https://www.churchofjesuschrist.org/study/scriptures/nt/matt/26?lang=eng&id=p69-p75#p69)
+  (Peter's denial). Preserved as recorded — greatness and failure both — to
+  show failure that teaches rather than failure that dismisses.
 - Greg Pak on the Red Skull — the
   [*Red Skull: Incarnate* (2011) #1 issue page (afterword)](https://www.marvel.com/comics/issue/34598/red_skull_2011_1)
   and the [#5 issue page (back-cover passage)](https://www.marvel.com/comics/issue/36265/red_skull_2011_5)
