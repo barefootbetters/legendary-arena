@@ -7,6 +7,20 @@
 
 ## Current State
 
+### WP-625 — CI Postgres job: the server DB-gated suite now runs in CI (EC-660 / D-24435) shipped (2026-08-27)
+
+The `ci.yml` "Workspace Unit Tests" job runs `pnpm -r test` with **no database**, so every `apps/server` test that self-skips when `TEST_DATABASE_URL` is unset (competition, profile, friendships, badges, replay/capture, seat-account, …) never ran in CI — a DB-only failure merged silently. The WP-591 `parBaseline` NaN (reded the whole competition DB suite on a live DB, repaired in #1684) and the WP-624 injected-seam class were both invisible; `apps/server` has no typecheck lane either.
+
+**Added (advisory):** a self-describing **Server DB Tests** job — an ephemeral `postgres:16` service (health-checked), `pnpm -r build`, `node scripts/migrate.mjs` against the service, then `pnpm --filter @legendary-arena/server test:db` (`--test-concurrency=1 --test-force-exit`) with `TEST_DATABASE_URL` set so the DB-gated tests execute. The service is ephemeral per run — never the dev DB, never a secret/shared/prod DB. It ships **advisory (non-required)** during a burn-in (D-24435 §1): it runs and reports on every PR but is deliberately NOT in the branch-protection required checks, so a DB flake can't block unrelated PRs; promotion to required is a tracked follow-up once stably green.
+
+**Baseline (against an ephemeral `legendary_arena_test` DB): 1415 tests / 1414 pass / 0 skipped.** Establishing it surfaced **10 pre-existing DB-only failures the DB-less CI never saw — all repaired in-scope** (the exact drift class this WP exists to catch): (1) **8 leaderboard** — `buildState` fixture missing `escapedPile` (WP-528) + `parBaseline` missing `schemeTwistsPar`/`bystandersLostPar` (WP-591, the #1684 class); (2) **1 WP-336 replay** — the DB describe manufactured its artifact without re-wiring `setRegistryForSetup(FAT_TEST_REGISTRY)` (the WP-334 describe clears it), so the match ended after one turn (`turnCount 1 !== 3`); (3) **1 matchGate integration** — passed `{}` as the DB, so the fire-and-forget `recordSeatAccount` logged a `database.query is not a function` TypeError (now a query stub). **0 quarantines.**
+
+The one remaining local "fail" is a **Windows-only** libuv `win/async.c` assertion crash from `--test-force-exit` racing the koa server close — its 3 tests pass cleanly without force-exit, and that assertion cannot occur on the Linux CI runner (the advisory job's Linux run is the ground truth). `--test-force-exit` is required because a DB file leaks a `pg` pool handle (a separate test-hygiene follow-up, noted below).
+
+**No product/runtime change; `scripts/migrate.mjs` unchanged** (its `\i`-inliner is fragile only on a CRLF working tree — a Windows-local concern the documented `psql -f` local flow sidesteps). Files: `ci.yml`, `apps/server/package.json`, the 3 test-file repairs, `DECISIONS.md`. **D-24435 Active.**
+
+**Follow-ups (not done here):** (a) promote the gate to a required branch-protection check once it's proven stably green across the burn-in; (b) find + close the leaked `pg` pool handle so `--test-force-exit` is no longer needed (and the Windows-local crash disappears); (c) a general `apps/server` typecheck lane.
+
 ### WP-624 — Vanguard seat-wire end-to-end coverage (EC-659, test-only) shipped (2026-08-27)
 
 WP-617's Vanguard badge and WP-619's shared-badge completeness gate both derive from **one** roster read in `submitCompetitiveScoreByMatchIdForRequest`: `submitterSeatId = roster.find(e => e.accountId === account.accountId)?.playerId` and `humanSeatCount = roster.length`. The issuance→INSERT step was only unit-tested with an **injected** `submitterSeatId` + `perPlayer` (`badge.issuance.test.ts`); nothing drove the real by-matchId caller's roster read end-to-end (the WP-338 DB tests seed a roster over a no-tactic replay, so Vanguard never actually fired). That is the **injected-seam-hides-missing-wiring** trap (the WP-560 shipped-dead-music precedent): a drift in `readSeatAccounts`'s shape or the `.find()` silently nulls `submitterSeatId` and Vanguard stops firing with no failure.
