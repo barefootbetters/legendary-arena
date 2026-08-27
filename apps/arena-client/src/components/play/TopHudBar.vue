@@ -34,9 +34,11 @@ export default defineComponent({
       required: true,
     },
     /**
-     * Mastermind tactic threshold (e.g., 4 strike cards = 4 tactics
-     * remaining at match start). Owned by the scenario; passed in by
-     * the parent which knows the active scenario.
+     * Total Mastermind tactics (e.g., 4 tactics remaining at match start —
+     * defeating all of them vanquishes the Mastermind). Owned by the scenario;
+     * passed in by the parent which knows the active scenario. NOTE: these are
+     * the Mastermind's TACTICS, not its Master Strikes (a separate ability count
+     * shown elsewhere) — the HUD labels this counter "Tactics" (WP-618).
      */
     mastermindTacticsTotal: {
       type: Number,
@@ -152,7 +154,7 @@ export default defineComponent({
     <div class="top-hud-bar__row">
       <span data-testid="play-hud-twists">Twists: {{ twistProgressLabel() }}</span>
       <DangerMeter :progress="snapshot.progress" />
-      <span data-testid="play-hud-strikes">Strikes: {{ mastermindProgressLabel() }}</span>
+      <span data-testid="play-hud-tactics">Tactics: {{ mastermindProgressLabel() }}</span>
       <span data-testid="play-hud-bystanders">
         Rescued: {{ snapshot.progress.bystandersRescued }}
       </span>
