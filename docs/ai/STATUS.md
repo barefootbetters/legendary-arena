@@ -7,6 +7,14 @@
 
 ## Current State
 
+### WP-620 — Shared-badge tiers reflect human count (EC-655 / D-24431) shipped (2026-08-27)
+
+Operator-requested follow-up to WP-619, which keyed the shared-badge size tier on `playerCount` (full seat count, bots included) — so a 1-human+4-bot match would earn Quintet (the D-24430 §3 flagged consequence).
+
+**Fix:** the tier reflects the **human** count — it keys off `rows.length` (the number of humans who submitted; bots never do, and `rows.length === (humanSeatCount ?? playerCount)` past the completeness gate) instead of `playerCount`. A 3-human+2-bot table earns **Trio** (not Quintet); a 1-human+4-bot match earns **no tier**. `united-front` is unchanged — still gated on `playerCount >= 2`, so a human+bot table earns the base badge. **Supersedes D-24430 §3.** One-line change + a stale-comment fix; no migration, no hash surface.
+
+**Verification:** `pnpm -r build` 0; server suite **1209/0** (195 DB-gated skip); WP-615's all-human tier tests unchanged, new human-count cases (5-seat/3-human → Trio; 2-human+3-bot → no tier) pass. Diff = 2 files. **D-24431 Active.** **D-24026 live-verify: operator-pending** — a 3-human + bot(s) sub-PAR win earns Trio; a 1-human + bots earns no tier.
+
 ### WP-619 — Human+bot matches earn shared badges (EC-654 / D-24430) shipped (2026-08-27)
 
 Operator-reported: a 2-player human+bot co-op sub-PAR win earned no United Front. `issueSharedMatchBadges` gated completeness on `rows.length === playerCount` — every seat must submit a competitive score. A **bot/guest seat never submits**, so a human+bot match never completed the `replay_hash` group; the shared / tiered badges were unreachable in the common bot-ally co-op mode.

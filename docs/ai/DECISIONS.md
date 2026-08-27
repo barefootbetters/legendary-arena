@@ -38630,4 +38630,18 @@ _Active 2026-08-27 — WP-618 / EC-653. Related: D-24423 / WP-612 (the sibling E
 3. **Consequences accepted (per the operator's request to let bot-ally co-op count):** a lone human + bot(s) earns United Front; the tier reflects the **full table size** (`playerCount`, bots included), so a 1-human+4-bot match earns Quintet — a human-count-based tier is a possible later refinement.
 4. **No new surface.** Read-only over the immutable `competitive_scores` rows; append-only INSERT; no migration, no new `source_kind`, no hash surface.
 
-_Active 2026-08-27 — WP-619 / EC-654. Related: D-24425 / WP-614 (the shared badge), D-24426 / WP-615 (the tiers), D-24428 / WP-617 (the roster read reused), WP-354 (`computeRankedEligibility` human-vs-total-seat precedent), D-24026 (user-visible-surface live-verify)._
+_Active 2026-08-27 — WP-619 / EC-654. Related: D-24425 / WP-614 (the shared badge), D-24426 / WP-615 (the tiers), D-24428 / WP-617 (the roster read reused), WP-354 (`computeRankedEligibility` human-vs-total-seat precedent), D-24026 (user-visible-surface live-verify). **Superseded in part:** corollary 3's "the tier reflects full table size" is replaced by D-24431 (the tier reflects the human count)._
+
+### D-24431 — Shared-Badge Tiers Reflect Human Count (Active 2026-08-27 — WP-620 / EC-655)
+
+**Context.** WP-619 let human+bot co-op matches earn the shared / tiered badges, but keyed the size tier on `playerCount` (the full seat count, bots included) — a flagged consequence (D-24430 §3): a 1-human + 4-bot match would earn Quintet. The operator's call: the tier should reflect how many **humans** cooperated.
+
+**Decision.** The shared-badge **size tier** (trio/quartet/quintet) keys off `rows.length` — the number of humans who submitted a competitive score — not `playerCount`. Bots never submit, and past the completeness gate `rows.length === (humanSeatCount ?? playerCount)`, so `rows.length` is exactly the human count. A 3-human+2-bot table earns Trio (not Quintet); a 1-human+4-bot match earns no tier. **This supersedes D-24430 §3's "the tier reflects full table size."**
+
+**Corollaries.**
+1. **`united-front` is unchanged.** It still gates on `playerCount >= 2` (the table-size guard, bots included), so a human+bot table still earns the base badge — only the *tier* reflects human count.
+2. **No new state.** `rows.length` is the human submitter count at award time; no new field or read.
+3. **All-human tables unaffected.** There `rows.length === playerCount`, so the tier is identical to WP-615's behaviour.
+4. **No new surface.** Read-only over the immutable rows; append-only; no migration, no hash surface.
+
+_Active 2026-08-27 — WP-620 / EC-655. Related: D-24426 / WP-615 (the tiers), D-24430 / WP-619 (human+bot completeness; §3 superseded here), D-24026 (user-visible-surface live-verify)._

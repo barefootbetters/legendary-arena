@@ -223,4 +223,41 @@ describe('badge.shared — issueSharedMatchBadges (WP-614)', () => {
 
     assert.equal(findInsert(database), undefined, 'A solo (playerCount 1) match is not a table.');
   });
+
+  // --- WP-620: the size tier reflects HUMAN count, not the full table ---
+
+  test('WP-620: a 5-seat table with 3 humans earns Trio (the human count), not Quintet', async () => {
+    // 5 seats (3 humans + 2 bots): only the 3 humans submit. The tier must reflect
+    // the 3 humans (Trio), not the 5-seat table (Quintet).
+    const database = makeMockDatabase([
+      { player_id: 10, final_score: -3 },
+      { player_id: 20, final_score: -1 },
+      { player_id: 30, final_score: -2 },
+    ]);
+
+    await issueSharedMatchBadges('replay-3h2b', 5, 7, database as any, 3);
+
+    const insert = findInsert(database);
+    assert.ok(insert, 'Expected an INSERT — the 3 humans completed the group.');
+    assert.ok(insert.params.includes('gameplay.shared.united-front'), 'The base is earned (table >= 2).');
+    assert.ok(insert.params.includes('gameplay.shared.trio'), 'The tier reflects the 3 humans.');
+    assert.equal(insert.params.includes('gameplay.shared.quintet'), false, 'The full-table Quintet must NOT be earned.');
+    assert.equal(insert.params.includes('gameplay.shared.quartet'), false);
+  });
+
+  test('WP-620: a 2-human + 3-bot table earns united-front but NO tier (2 is the base)', async () => {
+    const database = makeMockDatabase([
+      { player_id: 10, final_score: -3 },
+      { player_id: 20, final_score: -1 },
+    ]);
+
+    await issueSharedMatchBadges('replay-2h3b', 5, 7, database as any, 2);
+
+    const insert = findInsert(database);
+    assert.ok(insert);
+    assert.ok(insert.params.includes('gameplay.shared.united-front'));
+    for (const tier of ['gameplay.shared.trio', 'gameplay.shared.quartet', 'gameplay.shared.quintet']) {
+      assert.equal(insert.params.includes(tier), false, `2 humans must not earn ${tier}.`);
+    }
+  });
 });
