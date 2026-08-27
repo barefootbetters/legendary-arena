@@ -7,6 +7,18 @@
 
 ## Current State
 
+### WP-613 — Solo Mastery badges (EC-648 / D-24424) shipped (2026-08-26)
+
+Extends the WP-105 / D-1004 Tier-1 gameplay badge system with a **Solo Mastery lane** — the `wiki/awards-and-badges.md` design's explicit "solo gets its own category, not nothing" gap (badges already existed; this is an extension, not a new system). Two `playerCount`-gated badges: **Lone Defender** (per-run — `playerCount === 1 && finalScore < 0`, a solo sub-PAR clear) and **Solitaire Master** (breadth — ≥ 5 distinct `scenario_key` with `final_score < 0 AND player_count = 1`).
+
+`playerCount` (on the competitive record, D-24134) is threaded through `issueTier1BadgesForSubmission` → `evaluatePerRunBadges`; `badge.veteran.ts` gains a second `COUNT(DISTINCT scenario_key)` query filtered by `player_count = 1`. `TIER_1_BADGE_KEYS` 7 → 9 with `BADGE_DEFINITIONS` in lockstep; drift pin updated.
+
+**D-1004-compliant:** quality-/breadth-gated (never volume, §25/D-0005), cooperative-model-safe framing (§23b), per-player projection over the immutable `competitive_scores` row, append-only (reuses the existing INSERT + `ON CONFLICT DO NOTHING`; no new table, no `/badges/*` route, no state-hash surface). A `null` player_count is not solo.
+
+**Verification:** `pnpm -r build` 0; server suite **1186/0** (195 DB-gated tests skip without a local pg); the badge predicate + issuance tests are **32/0**, covering the solo per-run / breadth / `null`-count / multi-player cases via the mock DatabaseClient. Diff = 7 files. **Scope note:** the 7th file is `badge.issuance.test.ts` (the history badges are mock-DB-tested there), not the WP-named `badge.veteran.test.ts` (which does not exist) — same file count. **D-24424 Active.** **D-24026 live-verify: operator-pending** — a solo sub-PAR run's profile shows "Lone Defender"; 5 distinct solo sub-PAR scenarios shows "Solitaire Master".
+
+**Deferred (the design's centerpiece):** cooperative / shared "table" / retroactive badges need cross-player, table-level data the per-player record doesn't carry — a follow-on that begins with a data-plumbing WP.
+
 ### WP-612 — Danger Meter: "Bystanders" label for bystander escaped-pile schemes (EC-647 / D-24423) shipped (2026-08-26)
 
 Operator-reported from a Midtown Bank Robbery match: the danger meter read **"Escaped 5/8"** right beside the HUD's **"Escaped: 7"** — two different metrics under one word. Traced: the `5/8` is the scheme's `escaped-pile-count` loss condition with `cardType: 'bystander'` (5 **bystanders** carried into the escaped pile — the player's bystanders lost), while the `7` is the raw count of villains + henchmen that fled. `resolveSchemeLossKind` collapsed every `escaped-pile-count` scheme to `SchemeLossKind: 'escaped-pile'`, discarding the `cardType`; the client mapped that to "Escaped" — mislabeling the bystander case and colliding with the raw escaped-villain count.

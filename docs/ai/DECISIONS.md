@@ -38527,3 +38527,21 @@ _Active 2026-08-26 — WP-611 / EC-646. Related: D-24418 / WP-607 (the panel), D
 4. **Distinct from the raw count.** The `EscapedPile` / HUD "Escaped: N" (raw villains fled) is unchanged; only the danger-meter track's label is corrected.
 
 _Active 2026-08-26 — WP-612 / EC-647. Related: D-24366 / WP-557 (the menace/danger-meter contract), D-24371 §3 / WP-562 (the `SchemeLossKind` client noun mapping), D-24367 §2 (engine keeps no display copy), D-24026 (user-visible-surface live-verify)._
+
+### D-24424 — Solo Mastery Badge Lane (playerCount-gated Tier-1 gameplay badges) (Active 2026-08-26 — WP-613 / EC-648)
+
+**Context.** The WP-105 / D-1004 Tier-1 gameplay badges are player-count-agnostic, so a player who beats a scenario **solo** — alone against the whole mastermind, strictly harder — earns the same badges as a full table. The `wiki/awards-and-badges.md` design page names the gap: *"solo gets its own category, not nothing."*
+
+**Decision.** Add a **Solo Mastery lane** to Tier-1 (extends D-1004) — two `playerCount`-gated badges, mirroring the shipped `sub-par-run` (per-run) + `multiverse-mastery` (breadth) pair:
+- `gameplay.solo.lone-defender` (per-run, `competitive_score`): `playerCount === 1 && finalScore < 0`.
+- `gameplay.solo.solitaire-master` (breadth, `competitive_history`): ≥ 5 distinct `scenario_key` with `final_score < 0 AND player_count = 1`.
+
+`playerCount` (on the competitive record, D-24134) is threaded through `issueTier1BadgesForSubmission` → `evaluatePerRunBadges`; the breadth badge adds a `COUNT(DISTINCT scenario_key) … WHERE player_count = 1` query.
+
+**Corollaries.**
+1. **D-1004-compliant.** Quality-gated (`lone-defender`) + breadth-gated (`solitaire-master`, distinct scenarios) — never a volume count (§25 / D-0005). Cooperative-model-safe framing (solo = alone vs the mastermind, §23b). Per-player projection over the immutable `competitive_scores` row; append-only via the existing INSERT + `ON CONFLICT DO NOTHING` — no new table, no `/badges/*` route, no Tier 2/3, no state-hash surface.
+2. **`null` player_count is NOT solo.** An unknown count never earns a solo badge (the per-run predicate returns false; the history query filters `player_count = 1`).
+3. **Additive, not exclusive.** `lone-defender` co-fires with the general `sub-par-run` for a solo player — the solo lane is additional recognition, not a replacement.
+4. **Cooperative / shared-table / retroactive badges remain DEFERRED.** The design page's centerpiece needs cross-player, table-level data the per-player record does not carry (the same gap the deferred `bystander-guardian` / `steady-crew` badges hit) — a follow-on that begins with a data-plumbing WP.
+
+_Active 2026-08-26 — WP-613 / EC-648. Related: D-1004 (the Tier-1 badge system + tiered issuer model), D-0005 (§25 anti-volume), D-24134 (`playerCount` on the competitive record), D-24026 (user-visible-surface live-verify)._
