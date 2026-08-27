@@ -227,6 +227,39 @@ game's own terms, because Legendary Arena's soul is built on the opposite:
   become great by admitting you started small and were helped. The lie
   sells the finished pose and hides the debt that made it possible.
 
+### The Redwood Principle
+
+The tallest redwood in the forest is not the most independent thing in the
+forest. It stands only because it *receives* — sunlight from above, water from
+the earth, nutrients from the soil, and the seed and the generations of trees
+that came before it. It made none of those things. Its height is not evidence
+that it needed nothing; it is evidence that it faithfully received what was
+given. Remove the sunlight and it dies. Remove the soil and it dies. Remove
+the water and it dies. Remove the generations before it and it never existed
+at all. The redwood is the self-made myth's own refutation, grown three
+hundred feet tall.
+
+Human beings are no different. The myth of the self-made hero declares
+independence the highest virtue. The truth is that every great person inherits
+something they did not create — parents, teachers, mentors, traditions,
+communities, sacrifices, wisdom, faith, gifts. Greatness is not the rejection
+of those gifts; it is *becoming worthy of them and passing them on* — the same
+[receive, become, pass on](#the-upward-pull--what-the-game-is-for) motion,
+told as a tree.
+
+And there is a second half the biology insists on. Giant redwoods do not sink
+deep taproots; they spread wide, shallow roots that **interlock with their
+neighbors**, and it is that mesh of joined roots — not solitary depth — that
+holds a three-hundred-foot tree upright through the storms. The strongest tree
+in the forest is not the one that stands alone. It is the one that stays
+connected to what nourishes it, reaches upward toward the light, and leaves
+seeds for the generation that follows. That is the whole page in one organism:
+inheritance, formation, stewardship, legacy — and, in the interlaced roots,
+[the people across the table](#the-soul-the-people-across-the-table) who hold
+one another up.
+
+> **The redwood is tall because it receives. So are we.**
+
 ### Three stories that hold the lesson
 
 The argument is old, and it is not only about superheroes. Three stories
