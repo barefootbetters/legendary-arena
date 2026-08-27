@@ -7,6 +7,16 @@
 
 ## Current State
 
+### WP-615 — Tiered Team badges: Trio / Quartet / Quintet (EC-650 / D-24426) shipped (2026-08-26)
+
+Completes the `wiki/awards-and-badges.md` design's **tiered team badges** — *"a five-player badge, four-, three-, and two-player badges — recognition scaled to the size of the cooperation."* Extends WP-614's `issueSharedMatchBadges`: a qualifying shared table (complete `replay_hash` group, `playerCount ≥ 2`, every player sub-PAR) now earns `united-front` **plus** an exact-size tier — **Trio** (3), **Quartet** (4), **Quintet** (5), keyed on `playerCount` (which equals `rows.length` past the completeness gate). The 2-player base stays `united-front`; player count maxes at 5.
+
+All three tiers are `sourceKind 'competitive_history'` / `source_ref` NULL, awarded to every player via the existing multi-row INSERT + `ON CONFLICT DO NOTHING` — **no migration**, additive to WP-614's qualification. `TIER_1_BADGE_KEYS` 10 → 13, drift-pinned. D-1004-compliant (quality-gated, cooperative framing, projection over immutable rows — no state-hash surface, append-only).
+
+**Verification:** `pnpm -r build` 0; server suite **1196/0** (195 DB-gated skip without a local pg); badge shared/drift tests **34/0** (2p → no tier; 3p → +trio; 4p → +quartet; 5p → +quintet awarded to all five, via the mock DatabaseClient). Diff = 4 files. **D-24426 Active.** **D-24026 live-verify: operator-pending** — a 3-player all-sub-PAR match shows "United Front" + "Trio" on all three profiles.
+
+With this, the full **awards/badges** arc the design page called for is built: solo lane (WP-613), shared table badge (WP-614), tiered team badges (WP-615). Only the turn-level "enabled an ally" flavor remains deferred (needs per-turn contribution attribution scoring doesn't capture).
+
 ### WP-614 — Shared Cooperative badge: "United Front" (EC-649 / D-24425) shipped (2026-08-26)
 
 The `wiki/awards-and-badges.md` design's **centerpiece** — the shared / table badge, *"awarded to the whole table, not a person… nobody can farm it alone."* WP-613 left it deferred as needing cross-player data; the investigation found the data path exists **without a migration**: competitive submission is by `matchId` (WP-338), so every co-op player of one match derives the **same `replay_hash`** — grouping `competitive_scores` on it is that match's player set.
