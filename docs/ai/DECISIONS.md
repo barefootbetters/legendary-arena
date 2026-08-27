@@ -38604,3 +38604,16 @@ _Active 2026-08-26 — WP-616 / EC-651. Related: D-24397 / WP-588 (the per-playe
 5. **Deferred.** The match-level "award the objective top seat's account" variant (needs ext_id → player_id resolution), win-gating, and villain/henchman-metric variants.
 
 _Active 2026-08-26 — WP-617 / EC-652. Related: D-24427 / WP-616 (the `perPlayer[].mastermindTacticsDefeated` this consumes), D-24402 / WP-593 (the seat roster), D-1004 (Tier-1 issuer model), D-24026 (user-visible-surface live-verify)._
+
+### D-24429 — HUD Mastermind Counter Is "Tactics", Not "Strikes" (Active 2026-08-27 — WP-618 / EC-653)
+
+**Context.** Operator-reported: the top HUD showed **"Strikes: 4/4"** while the game-over panel showed **"Master Strikes: 3"**. Traced: `TopHudBar.vue`'s `mastermindProgressLabel()` reads `mastermind.tacticsDefeated` (of `mastermindTacticsTotal`) — the mastermind's **tactics** defeated, i.e. defeat-progress toward vanquishing it — but the HUD labeled it **"Strikes"**. The *actual* Master Strike count lives on `MasterStrikePile.vue` as "Master Strikes: N" (`strikePile.length`).
+
+**Decision.** The HUD counter is labeled **"Tactics: N/M"** (tactics defeated / total), its true quantity — not "Strikes", which both mislabeled it and collided with the separate "Master Strikes" ability count. A client-only label + testid rename (`Strikes:` → `Tactics:`; `play-hud-strikes` → `play-hud-tactics`); the counter's data (`mastermindProgressLabel()` → `tacticsDefeated`) is unchanged, and `MasterStrikePile.vue` is untouched.
+
+**Corollaries.**
+1. **Tactics ≠ Master Strikes.** A mastermind is vanquished by defeating its tactics (the HUD counter); a Master Strike is a separate ability that fires on Master Strike reveals (the strike-pile count). Two distinct quantities, no longer sharing the word "Strikes".
+2. **No engine / projection surface.** The counter reads the existing `UIMastermindState.tacticsDefeated`; only the client label changes. No hash surface.
+3. **Same class as D-24423.** A HUD label that both mislabeled its quantity and collided with a sibling count (there: Escaped → Bystanders).
+
+_Active 2026-08-27 — WP-618 / EC-653. Related: D-24423 / WP-612 (the sibling Escaped/Bystanders label fix), D-24026 (user-visible-surface live-verify)._
