@@ -305,6 +305,93 @@ describe('EndgameSummary (WP-588 per-player split + PAR basis)', () => {
     assert.ok(!wrapper.find('[data-testid="arena-hud-per-player"]').exists());
   });
 
+  test('renders each seat\'s team-contribution line when the breakdown carries WP-616 counts', () => {
+    const wrapper = mount(EndgameSummary, {
+      props: {
+        gameOver: gameOver(),
+        competitiveScore: score({
+          finalScore: -1660,
+          scoreBreakdown: breakdown({
+            inputs: {
+              rounds: 20,
+              victoryPoints: 56,
+              bystandersRescued: 17,
+              escapes: 2,
+              penaltyEventCounts: {
+                villainEscaped: 2,
+                bystanderLost: 2,
+                schemeTwistNegative: 5,
+                mastermindTacticUntaken: 0,
+                scenarioSpecificPenalty: 0,
+              },
+              perPlayer: [
+                {
+                  playerId: '0',
+                  victoryPoints: 36,
+                  bystandersRescued: 13,
+                  villainsDefeated: 3,
+                  henchmenDefeated: 1,
+                  mastermindTacticsDefeated: 2,
+                },
+                {
+                  playerId: '1',
+                  victoryPoints: 20,
+                  bystandersRescued: 4,
+                  villainsDefeated: 1,
+                  henchmenDefeated: 0,
+                  mastermindTacticsDefeated: 2,
+                },
+              ],
+            },
+          }),
+        }),
+      },
+    });
+    const lines = wrapper.findAll('[data-testid="arena-hud-per-player-contrib"]');
+    assert.equal(lines.length, 2, 'one contribution line per seat');
+    // Seat 0: all three present, plural villains + singular henchman.
+    assert.ok(lines[0]?.text().includes('3 villains'), 'seat 0 villains');
+    assert.ok(lines[0]?.text().includes('1 henchman'), 'seat 0 singular henchman');
+    assert.ok(lines[0]?.text().includes('2 mastermind tactics'), 'seat 0 tactics');
+    // Seat 1: 0 henchmen is omitted (never a "0 henchmen" phrase), 1 villain singular.
+    assert.ok(lines[1]?.text().includes('1 villain'), 'seat 1 singular villain');
+    assert.ok(!lines[1]?.text().includes('henchman') && !lines[1]?.text().includes('henchmen'), 'seat 1 omits zero henchmen');
+    assert.ok(lines[1]?.text().includes('2 mastermind tactics'), 'seat 1 tactics');
+  });
+
+  test('omits the contribution line for a seat that carries no WP-616 counts (pre-WP-616 record)', () => {
+    const wrapper = mount(EndgameSummary, {
+      props: {
+        gameOver: gameOver(),
+        competitiveScore: score({
+          finalScore: -1660,
+          scoreBreakdown: breakdown({
+            inputs: {
+              rounds: 22,
+              victoryPoints: 61,
+              bystandersRescued: 20,
+              escapes: 0,
+              penaltyEventCounts: {
+                villainEscaped: 0,
+                bystanderLost: 0,
+                schemeTwistNegative: 6,
+                mastermindTacticUntaken: 0,
+                scenarioSpecificPenalty: 0,
+              },
+              perPlayer: [
+                { playerId: '0', victoryPoints: 34, bystandersRescued: 11 },
+                { playerId: '1', victoryPoints: 27, bystandersRescued: 9 },
+              ],
+            },
+          }),
+        }),
+      },
+    });
+    // The per-player block still renders (VP + bystanders); the contribution line does not.
+    assert.ok(wrapper.find('[data-testid="arena-hud-per-player"]').exists(), 'per-player block still renders');
+    assert.equal(wrapper.findAll('[data-testid="arena-hud-per-player-contrib"]').length, 0);
+  });
+
   test('shows the PAR basis copy (scheme, mastermind, villain groups) under the PAR derivation', () => {
     const wrapper = mount(EndgameSummary, {
       props: {

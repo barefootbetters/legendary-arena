@@ -131,6 +131,13 @@ export interface WorkedScoreCalc {
     readonly label: string;
     readonly victoryPoints: number;
     readonly bystandersRescued: number;
+    // why: WP-621 / D-24432 — this seat's team-contribution counts (villains,
+    // henchmen, mastermind tactics it defeated), surfaced beneath its VP line.
+    // Null when the record predates WP-616 and carries no per-seat counts — the
+    // report card then shows only VP + bystanders rescued for that seat.
+    readonly villainsDefeated: number | null;
+    readonly henchmenDefeated: number | null;
+    readonly mastermindTacticsDefeated: number | null;
   }> | undefined;
   /**
    * How PAR was derived from the scenario baseline (WP-587). Absent when the
@@ -346,6 +353,12 @@ function buildPerPlayerSplit(
     ),
     victoryPoints: contribution.victoryPoints,
     bystandersRescued: contribution.bystandersRescued,
+    // why: WP-621 — pre-WP-616 records carry no per-seat counts; map absent
+    // fields to null so the report card omits the line rather than showing a
+    // misleading "0 defeated" for a seat that was simply never counted.
+    villainsDefeated: contribution.villainsDefeated ?? null,
+    henchmenDefeated: contribution.henchmenDefeated ?? null,
+    mastermindTacticsDefeated: contribution.mastermindTacticsDefeated ?? null,
   }));
 }
 

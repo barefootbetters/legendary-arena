@@ -7,6 +7,14 @@
 
 ## Current State
 
+### WP-621 — Endgame report card shows per-seat team contribution (EC-656 / D-24432) shipped (2026-08-27)
+
+WP-616 put per-seat `mastermindTacticsDefeated`/`villainsDefeated`/`henchmenDefeated` on `PlayerScoringContribution`, and the engine `deriveScoringInputs` + the server's jsonb `scoreBreakdown` already carry them to the client (Vanguard, WP-617, reads them server-side) — but the endgame report card's **"By player"** block dropped them, showing only VP + bystanders rescued.
+
+**Fix:** surface them as a dimmed per-seat line beneath the VP — "defeated 3 villains, 1 henchman, 2 mastermind tactics" — singularised, and omitted when the seat defeated nothing or the record predates WP-616 (never a row of zeros). Purely client-side: widen the client mirror `CompetitivePlayerContribution` (3 optional counts), map through `buildPerPlayerSplit` (`?? null`), render via a `contributionPhrases` helper in `EndgameSummary.vue`. The counts are display-only — the team totals and raw/PAR/final calc are unchanged. No server/engine/wire/hash change; no migration.
+
+**Verification:** `pnpm -r build` 0; arena-client suite **1471/0**; `vue-tsc` green. New cases: mapping null-when-absent / carries-when-present; the report card renders the line with plural/singular + zero-omission + omits it for a pre-WP-616 record. Diff = 5 files. **D-24432 Active.** **D-24026 live-verify: operator-pending** — a co-op match report card shows each seat's defeated villains/henchmen/tactics (the component mount tests stand in for a staged server-scored game-over the dev fixture route cannot produce).
+
 ### WP-620 — Shared-badge tiers reflect human count (EC-655 / D-24431) shipped (2026-08-27)
 
 Operator-requested follow-up to WP-619, which keyed the shared-badge size tier on `playerCount` (full seat count, bots included) — so a 1-human+4-bot match would earn Quintet (the D-24430 §3 flagged consequence).

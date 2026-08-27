@@ -10,6 +10,37 @@ import { buildWorkedScoreCalc, buildLuckRead, buildScoringKey } from '../../vfx/
 import type { MyCompetitiveScore } from '../../lib/api/competitionApi';
 import EndgameCoachPanel from './EndgameCoachPanel.vue';
 
+/**
+ * Builds the human-readable "defeated" phrases for one seat's contribution row
+ * (WP-621) — one phrase per non-null, positive count, correctly singularised.
+ * Returns an empty array when the record predates WP-616 (all counts null) or
+ * the seat defeated nothing, so the report card omits the line entirely rather
+ * than printing a row of zeros for a seat that was simply never counted.
+ *
+ * @param row - One per-player row from `workedCalc.perPlayer`.
+ * @returns Zero to three phrases like "3 villains", "1 henchman".
+ */
+function contributionPhrases(row: {
+  readonly villainsDefeated: number | null;
+  readonly henchmenDefeated: number | null;
+  readonly mastermindTacticsDefeated: number | null;
+}): string[] {
+  const phrases: string[] = [];
+  if (row.villainsDefeated !== null && row.villainsDefeated > 0) {
+    const noun = row.villainsDefeated === 1 ? 'villain' : 'villains';
+    phrases.push(`${row.villainsDefeated} ${noun}`);
+  }
+  if (row.henchmenDefeated !== null && row.henchmenDefeated > 0) {
+    const noun = row.henchmenDefeated === 1 ? 'henchman' : 'henchmen';
+    phrases.push(`${row.henchmenDefeated} ${noun}`);
+  }
+  if (row.mastermindTacticsDefeated !== null && row.mastermindTacticsDefeated > 0) {
+    const noun = row.mastermindTacticsDefeated === 1 ? 'tactic' : 'tactics';
+    phrases.push(`${row.mastermindTacticsDefeated} mastermind ${noun}`);
+  }
+  return phrases;
+}
+
 // why: the four literal leaf-name `aria-label`s on the PAR breakdown
 // (`rawScore`, `parScore`, `finalScore`, `scoringConfigVersion`) bind the
 // HUD directly to the WP-067 drift test at
@@ -104,6 +135,7 @@ export default defineComponent({
       luckRead,
       gradeScale,
       scoringKey,
+      contributionPhrases,
     };
   },
 });
@@ -236,6 +268,16 @@ export default defineComponent({
               <span class="per-player-name">{{ row.label }}</span>
               <span class="per-player-stat"><strong>{{ row.victoryPoints }}</strong> VP</span>
               <span class="per-player-stat"><strong>{{ row.bystandersRescued }}</strong> bystanders rescued</span>
+              <!-- why: WP-621 — this seat's team-contribution split (villains,
+                   henchmen, mastermind tactics it defeated). Omitted entirely
+                   when the seat defeated nothing or the record predates WP-616
+                   (no per-seat counts) — never a misleading row of zeros. -->
+              <span
+                v-if="contributionPhrases(row).length > 0"
+                class="per-player-stat per-player-contrib"
+                data-testid="arena-hud-per-player-contrib"
+                aria-label="defeated"
+              >defeated {{ contributionPhrases(row).join(', ') }}</span>
             </div>
           </div>
         </div>
@@ -666,6 +708,15 @@ dd {
 
 .per-player-stat strong {
   font-variant-numeric: tabular-nums;
+}
+
+/* why: WP-621 — the team-contribution line (villains/henchmen/tactics defeated)
+   is supporting detail beneath the seat's VP + bystanders, so it reads dimmer
+   and smaller than the reward stats above it. */
+.per-player-contrib {
+  margin-top: 0.2rem;
+  opacity: 0.7;
+  font-size: 0.78rem;
 }
 
 /* why: WP-588 — names what sets PAR (the scenario's scheme, mastermind, and
