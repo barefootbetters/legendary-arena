@@ -462,6 +462,14 @@ describe('readReplayArtifactByHash / reduceReplayByHash (WP-336)', () => {
   let expectedHash: string;
 
   before(async () => {
+    // why: setRegistryForSetup is module-global and the WP-334 describe above
+    // clears it in its `after`, so without re-wiring the reservoir registry here
+    // `manufactureMatchWithTurns(3)` sets up from an empty registry, the villain
+    // deck runs dry, and the match ends after ONE play turn — which makes
+    // `turnCount` reconcile to 1 instead of 3 (the exact break the line-66 comment
+    // warns about). This describe never ran in CI (DB-gated), so the missing wiring
+    // was invisible until WP-625 ran the suite against a live DB.
+    setRegistryForSetup(FAT_TEST_REGISTRY as never);
     // A real short match's { initialState, log } — the durable artifact shape.
     const manufactured = manufactureMatchWithTurns(3);
     artifact = { initialState: manufactured.initialState, log: manufactured.log };
@@ -486,6 +494,9 @@ describe('readReplayArtifactByHash / reduceReplayByHash (WP-336)', () => {
   });
 
   after(async () => {
+    // why: mirror the WP-334 describe — leave the module-global setup registry
+    // cleared so a later test in the same process is not silently affected.
+    clearRegistryForSetup();
     if (pool === undefined) {
       return;
     }

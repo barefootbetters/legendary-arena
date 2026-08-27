@@ -124,6 +124,14 @@ const TEST_SCORING_CONFIG: ScenarioScoringConfig = {
     bystandersPar: 1,
     victoryPointsPar: 5,
     escapesPar: 1,
+    // why: WP-591 / D-24400 made these required ParBaseline fields; without them
+    // computeParScore returns NaN and every submission rejects at the step-12
+    // anti-corruption check (NaN !== NaN) as replay_verification_failed. Matches the
+    // #1684 competition-fixture repair. Constant across records, so the ordering /
+    // tie-break / pagination assertions (which key on the per-record `escapes` delta)
+    // are unaffected.
+    schemeTwistsPar: 3,
+    bystandersLostPar: 1,
   },
   scoringConfigVersion: 1,
   createdAt: '2026-04-26T00:00:00.000Z',
@@ -178,6 +186,12 @@ function buildState(escapes: number): LegendaryGameState {
     city: [null, null, null, null, null],
     hq: [null, null, null, null, null],
     ko: [],
+    // why: WP-528 / D-24339 — deriveScoringInputs iterates gameState.escapedPile
+    // (the civilian-lost count), so an empty array is required or the submission
+    // throws `escapedPile is not iterable` before any score is computed. (This
+    // fixture predates that field; the DB-gated leaderboard suite never ran in CI
+    // to catch it — the exact drift class WP-625 exists to surface.)
+    escapedPile: [],
     attachedBystanders: {},
     mastermind: {
       extId: 'core-test-mm',
