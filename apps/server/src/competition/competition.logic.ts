@@ -63,6 +63,7 @@ import type {
 } from '@legendary-arena/game-engine';
 
 import { issueTier1BadgesForSubmission } from '../badges/badge.issuance.js';
+import { issueSharedMatchBadges } from '../badges/badge.shared.js';
 
 // why: WP-336 repoints the verifier onto the faithful reducer path. The single
 // `reduceReplayByHash` (WP-334/WP-335/WP-336) reads the durable
@@ -988,6 +989,16 @@ export async function submitCompetitiveScoreImpl(
       // why: WP-613 — the run's player count drives the Solo Mastery lane
       // (`playerCount === 1` → `gameplay.solo.lone-defender`).
       record.playerCount,
+    );
+    // why: WP-614 — shared cooperative badges group this match's per-player rows
+    // by `replay_hash` (identical across the table) and award the whole table
+    // once every player has submitted. Same fire-and-forget try/catch as the
+    // per-player issuer — a failure never fails the competitive submission.
+    await issueSharedMatchBadges(
+      record.replayHash,
+      record.playerCount,
+      record.scoringConfigVersion,
+      database,
     );
   } catch (badgeError) {
     console.warn(

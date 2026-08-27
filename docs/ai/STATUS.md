@@ -7,6 +7,18 @@
 
 ## Current State
 
+### WP-614 — Shared Cooperative badge: "United Front" (EC-649 / D-24425) shipped (2026-08-26)
+
+The `wiki/awards-and-badges.md` design's **centerpiece** — the shared / table badge, *"awarded to the whole table, not a person… nobody can farm it alone."* WP-613 left it deferred as needing cross-player data; the investigation found the data path exists **without a migration**: competitive submission is by `matchId` (WP-338), so every co-op player of one match derives the **same `replay_hash`** — grouping `competitive_scores` on it is that match's player set.
+
+**What shipped:** `gameplay.shared.united-front`, awarded to **every** player of a match when the `replay_hash` group is complete (`rows.length === playerCount`), `playerCount ≥ 2`, and **every** player finished sub-PAR (`final_score < 0`). A new `badge.shared.ts` `issueSharedMatchBadges` is called fire-and-forget from the competition submission hook (a failure never fails the submission). **Last-submitter-awards-all:** earlier submitters see an incomplete group and no-op; the completing submission awards the whole table via one multi-row INSERT + `ON CONFLICT DO NOTHING` (idempotent). Reuses `source_kind 'competitive_history'` (`source_ref` NULL) → **no migration**. `TIER_1_BADGE_KEYS` 9 → 10, drift-pinned.
+
+**D-1004-compliant:** quality-gated (never volume, §25/D-0005), cooperative-model-safe framing (§23b), projection over immutable `competitive_scores` rows (D-5302 — no state-hash surface), append-only.
+
+**Verification:** `pnpm -r build` 0; server suite **1192/0** (195 DB-gated skip without a local pg); shared-badge + drift tests **30/0** (complete / incomplete / non-sub-PAR / solo / `null`-count / 3-player cases via the mock DatabaseClient). Diff = 5 files (2 new + 3 mod). **D-24425 Active.** **D-24026 live-verify: operator-pending** — a 2-player match where both players finished sub-PAR shows "United Front" on both profiles.
+
+**Still deferred:** the "player A *enabled* player B's finish" flavor (needs turn-level contribution attribution scoring doesn't capture) + tiered team badges (5/4/3/2-player).
+
 ### WP-613 — Solo Mastery badges (EC-648 / D-24424) shipped (2026-08-26)
 
 Extends the WP-105 / D-1004 Tier-1 gameplay badge system with a **Solo Mastery lane** — the `wiki/awards-and-badges.md` design's explicit "solo gets its own category, not nothing" gap (badges already existed; this is an extension, not a new system). Two `playerCount`-gated badges: **Lone Defender** (per-run — `playerCount === 1 && finalScore < 0`, a solo sub-PAR clear) and **Solitaire Master** (breadth — ≥ 5 distinct `scenario_key` with `final_score < 0 AND player_count = 1`).
