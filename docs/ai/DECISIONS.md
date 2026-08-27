@@ -38545,3 +38545,18 @@ _Active 2026-08-26 — WP-612 / EC-647. Related: D-24366 / WP-557 (the menace/da
 4. **Cooperative / shared-table / retroactive badges remain DEFERRED.** The design page's centerpiece needs cross-player, table-level data the per-player record does not carry (the same gap the deferred `bystander-guardian` / `steady-crew` badges hit) — a follow-on that begins with a data-plumbing WP.
 
 _Active 2026-08-26 — WP-613 / EC-648. Related: D-1004 (the Tier-1 badge system + tiered issuer model), D-0005 (§25 anti-volume), D-24134 (`playerCount` on the competitive record), D-24026 (user-visible-surface live-verify)._
+
+### D-24425 — Shared Cooperative Badge (whole-table, grouped by `replay_hash`) (Active 2026-08-26 — WP-614 / EC-649)
+
+**Context.** The `wiki/awards-and-badges.md` design's centerpiece is the **shared / table badge** — *"awarded to the whole table, not a person… nobody can farm it alone."* WP-613 left it deferred as needing cross-player data. It doesn't need a new column: competitive submission is by `matchId` (WP-338), so the server derives `replay_hash` from the **shared** replay artifact — every co-op player of one match has the **same** `replay_hash` (`UNIQUE (player_id, replay_hash)`), and grouping `competitive_scores` on it is exactly that match's player set.
+
+**Decision.** Add the first shared cooperative badge (extends D-1004 / D-24424): `gameplay.shared.united-front` (`sourceKind 'competitive_history'`, `source_ref NULL`), awarded to **every** player of a match when the `replay_hash` group is **complete** (`rows.length === playerCount`), `playerCount ≥ 2`, and **every** player finished sub-PAR (`final_score < 0`). Issued by a new `issueSharedMatchBadges(replayHash, playerCount, configVersion, database)` called fire-and-forget from the competition submission hook.
+
+**Corollaries.**
+1. **Last-submitter-awards-all.** The group is evaluated on every submission; earlier submitters see an incomplete group and no-op. Only the submission that completes the group awards the whole table, via one multi-row INSERT + `ON CONFLICT DO NOTHING` — idempotent across the table's submitters.
+2. **No migration.** Reuses the migration-013 `source_kind` value `'competitive_history'` (the badge is a group projection, not a single score) — no schema change, no new `source_kind`, no new table, no `/badges/*` route.
+3. **Shared / ungameable.** `playerCount ≥ 2` and every player sub-PAR — no single strong run earns it; a solo / `null`-count match short-circuits before the group query.
+4. **D-1004-compliant.** Quality-gated (never volume, §25 / D-0005), cooperative-model-safe framing (§23b), projection over immutable `competitive_scores` rows (D-5302) — no `G` / hash surface — append-only.
+5. **Still deferred.** The design's "player A **enabled** player B's finish" flavor needs turn-level contribution attribution scoring does not capture (an engine-projection effort); tiered team badges (5/4/3/2-player) wait until this single shared badge validates the grouping model.
+
+_Active 2026-08-26 — WP-614 / EC-649. Related: D-1004 (Tier-1 issuer model), D-24424 (the solo lane this sits beside), D-24134 (`playerCount`), WP-338 (submit-by-`matchId` → server-derived `replay_hash`), D-5302 (immutable competitive rows), D-24026 (user-visible-surface live-verify)._
