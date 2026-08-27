@@ -524,10 +524,27 @@ describe('resolveSchemeLossKind — the enum the client labels from (D-24371 §3
       'hero-deck',
       'wound-stack',
       'escaped-pile',
+      'escaped-bystander',
       'escaped-converted',
       'twists',
     ] satisfies SchemeLossKind[];
     assert.deepStrictEqual([...SCHEME_LOSS_KINDS], everyKind);
+  });
+
+  it('splits the escaped-pile kind by counted card type (WP-612)', () => {
+    // why: a bystander-counting escaped-pile scheme (Midtown Bank Robbery) must
+    // resolve to 'escaped-bystander' so the client labels it "Bystanders", not
+    // "Escaped"; a villain-counting one (Negative Zone) stays 'escaped-pile'.
+    assert.equal(
+      resolveSchemeLossKind(makeTestState({ schemeId: 'core/midtown-bank-robbery' })),
+      'escaped-bystander',
+    );
+    assert.equal(
+      resolveSchemeLossKind(
+        makeTestState({ schemeId: 'core/negative-zone-prison-breakout' }),
+      ),
+      'escaped-pile',
+    );
   });
 
   it('every configured scheme resolves to a member of the canonical array', () => {

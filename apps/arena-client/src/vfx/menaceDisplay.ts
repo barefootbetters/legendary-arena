@@ -32,6 +32,11 @@ const SCHEME_LOSS_NOUNS: Record<SchemeLossKind, string> = {
   'hero-deck': 'Heroes',
   'wound-stack': 'Wounds',
   'escaped-pile': 'Escaped',
+  // why: WP-612 — a bystander-counting escaped-pile scheme (Midtown Bank Robbery)
+  // tracks BYSTANDERS carried into the escaped pile, so it reads "Bystanders N/8",
+  // not "Escaped" — which mislabels the quantity and collides with the separate
+  // raw escaped-villain count shown by EscapedPile / the HUD.
+  'escaped-bystander': 'Bystanders',
   'escaped-converted': 'Escaped',
   twists: 'Twists',
 };
