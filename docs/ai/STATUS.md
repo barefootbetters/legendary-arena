@@ -7,6 +7,14 @@
 
 ## Current State
 
+### WP-612 — Danger Meter: "Bystanders" label for bystander escaped-pile schemes (EC-647 / D-24423) shipped (2026-08-26)
+
+Operator-reported from a Midtown Bank Robbery match: the danger meter read **"Escaped 5/8"** right beside the HUD's **"Escaped: 7"** — two different metrics under one word. Traced: the `5/8` is the scheme's `escaped-pile-count` loss condition with `cardType: 'bystander'` (5 **bystanders** carried into the escaped pile — the player's bystanders lost), while the `7` is the raw count of villains + henchmen that fled. `resolveSchemeLossKind` collapsed every `escaped-pile-count` scheme to `SchemeLossKind: 'escaped-pile'`, discarding the `cardType`; the client mapped that to "Escaped" — mislabeling the bystander case and colliding with the raw escaped-villain count.
+
+**Fix (mirrors the existing `pile-depleted → hero-deck | wound-stack` split):** the engine adds a `SchemeLossKind` `escaped-bystander`; `resolveSchemeLossKind` returns it when `condition.cardType === 'bystander'` (Midtown Bank Robbery), while villain-counting escaped-pile schemes (Negative Zone, threshold 12) stay `escaped-pile`. The client's `menaceDisplay` noun map gains `'escaped-bystander' → 'Bystanders'`, so the meter reads **"Bystanders 5/8"**. The engine keeps no display copy (D-24367 §2); the client owns the noun.
+
+**Boundary / determinism:** `resolveSchemeLossKind` is **projection-only** — the endgame loss uses `countEscapedPileByType` directly, so there's no `G` / `ctx` / hash surface. Engine **2922/2922** (both hash oracles `finalStateHash` + `PRE_WP080_HASH` byte-identical) + arena-client `vue-tsc` 0 + suite **1468/1468**; `pnpm -r build` 0. Drift-pinned in both packages (runtime `deepStrictEqual` + the exhaustive client `Record<SchemeLossKind>`). Diff = 4 code files. **D-24423 Active.** **D-24026 live-verify: operator-pending** — in a deployed Midtown Bank Robbery match, the danger meter reads "Bystanders N/8".
+
 ### WP-611 — Hide Deck Probability Panel at game-over (EC-646 / D-24422) shipped (2026-08-26)
 
 Follow-on to WP-610: with the panel now visible, it also lingered on the **victory / game-over screen**, where expanding "Deck odds" showed only the villain-deck rows (the draw pool is empty; the Next-hand section already self-hid). The panel is a **live-play aid** — once the match is over there's no next hand and no more draws to advise, and the endgame report card owns that surface.
