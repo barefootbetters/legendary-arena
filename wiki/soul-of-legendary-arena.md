@@ -78,10 +78,10 @@ player.
 
 ### The Upward Pull — what the game is for
 
-The rest of this page describes a current the game swims *against*. This
-section names the current it swims *with* — and that is the truer statement
-of the soul, because Legendary Arena is defined less by what it refuses than
-by what it reaches toward.
+The rest of this page describes the current Legendary Arena swims *against*.
+This section names the current it swims *with* — and that is the truer
+statement of the soul, because the game is defined less by what it refuses
+than by what it reaches toward.
 
 Every story pulls its audience somewhere.
 
@@ -185,9 +185,8 @@ Luke had to grow into. The sequels re-drew the grown Luke as a bitter,
 defeated hermit who at his lowest considered murdering his own nephew in
 his sleep, then exiled himself. (Rey is the sequels' protagonist; Kylo Ren
 is the fallen nephew — worth naming precisely, because the *point* is that
-the mentor lineage itself was the thing broken down.) Whatever one thinks of
-it as drama, the structural move is unmistakable — and it is worth stating
-precisely, because it is *not* the David pattern of a grave failure recorded
+the mentor lineage itself was the thing broken down.) The structural move is
+unmistakable, and it is *not* the David pattern of a grave failure recorded
 as warning, confrontation, consequence, and repentance
 ([the flawed hero](#the-flawed-hero--failure-that-teaches-not-failure-that-dismisses)).
 The hopeful student who received an inheritance, redeemed his father, and was
@@ -250,16 +249,16 @@ of those gifts; it is *becoming worthy of them and passing them on* — the same
 [receive, become, pass on](#the-upward-pull--what-the-game-is-for) motion,
 told as a tree.
 
-And there is a second half the biology insists on. Giant redwoods do not sink
-deep taproots; they spread wide, shallow roots that **interlock with their
-neighbors**, and it is that mesh of joined roots — not solitary depth — that
-holds a three-hundred-foot tree upright through the storms. The strongest tree
-in the forest is not the one that stands alone. It is the one that stays
-connected to what nourishes it, reaches upward toward the light, and leaves
-seeds for the generation that follows. That is the whole page in one organism:
-inheritance, formation, stewardship, legacy — and, in the interlaced roots,
-[the people across the table](#the-soul-the-people-across-the-table) who hold
-one another up.
+And there is a second half the image insists on. Giant redwoods do not rely
+on a single deep taproot; their roots spread wide and shallow through the
+surrounding soil, among the roots of neighboring trees. Even the tallest
+organism in the forest stays embedded in a living community and dependent on
+conditions it did not create — reaching upward toward the light while rooted
+among its neighbors, and leaving seeds for the generation that follows. That
+is the whole page in one organism: inheritance, formation, stewardship,
+legacy — and, among those shared roots,
+[the people across the table](#the-soul-the-people-across-the-table) who
+steady one another.
 
 > **The redwood is tall because it receives. So are we.**
 
@@ -282,9 +281,9 @@ up with, vowing to be harsher still — to "chastise you with scorpions"
 (1 Kings 12:11, KJV). Ten tribes seceded — "To your tents, O Israel"
 (12:16) — and the kingdom tore in two: ten tribes formed the Northern
 Kingdom of **Israel** under Jeroboam, and two (Judah with Benjamin) remained
-the Southern Kingdom of **Judah** under Rehoboam. It is the oldest version
-of the pattern above: the young ruler who scorns the wisdom of those who
-paved the way loses most of what he inherited.
+the Southern Kingdom of **Judah** under Rehoboam. It is an ancient and
+especially clear version of the pattern above: the young ruler who scorns the
+wisdom of those who paved the way loses most of what he inherited.
 
 And the counsel he threw away was, at its heart, a call to *serve* — the
 elders told him that a king who serves his people will keep them. That is
@@ -334,6 +333,17 @@ Rogers was already formed — a good and stubborn man — before the Army ever
 found him. That is the whole difference from the boy in the Munich orphanage:
 not that Rogers escaped hardship, but that within it he was *given* something
 — a mother's love, a friend's loyalty — and he kept it.
+
+(A note on sourcing, since this page holds itself to
+[content authenticity](vision.md#primary-goals-non-negotiable-15): these
+pre-serum details — the Lower East Side immigrant childhood, Joseph's decline,
+Sarah's nursing and early death, Steve orphaned young — are synthesized from
+*later* Earth-616 retellings and Marvel's character handbooks, not from the
+sparse 1941 Golden Age origin, which established little of Rogers's early life.
+The reading list below is where the *serum* origin is told faithfully; the
+fuller childhood is drawn from decades of subsequent stories and is the more
+continuity-dependent of the two. Treat the biography as the mainstream
+synthesis it is, not as a single-issue fact.)
 
 The US Army recruited the frail, rejected Steve Rogers into **Operation:
 Rebirth** — General Chester Phillips's program to wipe out weakness and infirmity and
@@ -409,8 +419,12 @@ and he was raised in an orphanage, a Munich home for wayward boys, with no
 family, no faith, no love to shape him. The modern lie would call that
 freedom: the unencumbered orphan, owing nothing to anyone, free to discover
 his own truth. Pak's *Red Skull: Incarnate* is the honest answer to that
-fantasy — what the boy discovered, left to himself, was violence, and he
-taught himself to kill.
+fantasy. Deprived of faithful formation and increasingly consumed by
+resentment, Schmidt chose violence and trained himself to kill. His suffering
+did not compel that choice, and it did not excuse it — the void left him
+vulnerable, and he answered it by embracing evil. Many endure abandonment
+without becoming monsters; the difference is never the wound alone but the
+answer given to it.
 
 The turn is sealed by the exact negative of everything this page loves. To
 reach Adolf Hitler — the counterfeit father who fills the emptiness with
@@ -578,8 +592,9 @@ Uriah to cover it
 The text neither celebrates the act nor quietly normalizes it: the prophet
 **Nathan** is sent to confront David to his face — "Thou art the man"
 ([2 Samuel 12:7](https://www.churchofjesuschrist.org/study/scriptures/ot/2-sam/12?lang=eng&id=p7#p7),
-KJV) — and the consequences fall hard and stay. **Moses** strikes the rock in
-anger and is barred from the land he spent his life walking toward
+KJV) — and the consequences fall hard and stay. **Moses** speaks rashly before
+Israel and strikes the rock twice rather than honoring God as commanded, and
+is barred from the land he spent his life leading the people toward
 ([Numbers 20:7–12](https://www.churchofjesuschrist.org/study/scriptures/ot/num/20?lang=eng&id=p7-p12#p7)).
 **Peter** denies Christ three times before the cock crows
 ([Matthew 26:69–75](https://www.churchofjesuschrist.org/study/scriptures/nt/matt/26?lang=eng&id=p69-p75#p69)).
@@ -848,11 +863,13 @@ safe to include. Pressed on it, the tool's defense was that the hedge
 and calling that choice *neutral* is not deference; it is a decision to
 relativize, wearing the costume of having made no decision at all.
 
-That reflex is not incidental to how these systems are built — it is the
-default. An AI trained on the modern documentary record inherits that
-record's center of gravity, in which affirming a religious truth-claim
-reads as a *risk to be managed* and relativizing it reads as the *safe,
-neutral ground*. Left unchecked, the tool reaches for the secular frame by
+That reflex was not a one-off. Whether it comes from training data, alignment
+choices, or the documentary culture behind both — this page does not claim to
+know the internal cause — the asymmetry is consistent enough to name as a
+default rather than an accident: the tool treated affirming a religious
+truth-claim as a *risk to be managed* and relativizing it as the *safe,
+neutral ground*, while a secular claim of equal weight passed without a second
+glance. Left unchecked, the tool reaches for the secular frame by
 reflex and presents it as the absence of a frame. But a "neutrality" that
 discounts only one side is not neutral: it is an unstated creed — one that
 will affirm almost anything until God is the subject, at which point it
