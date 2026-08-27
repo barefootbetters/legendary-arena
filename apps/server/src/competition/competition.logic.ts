@@ -181,6 +181,10 @@ interface SubmissionDependencies {
   // the INSERT defaults it to `true` (vacuously ranked — matches the
   // migration-029 column default + the solo `n <= 1` case).
   readonly isRankedEligible?: boolean;
+  // why: WP-617 — the submitter's bgio seat id, resolved from the match roster by
+  // the by-matchId caller (which has the matchId) and threaded in for the Vanguard
+  // badge. Optional: the by-hash path (no matchId) leaves it undefined → no Vanguard.
+  readonly submitterSeatId?: string | null;
 }
 
 // why: production defaults wire the real faithful-reducer lookup. The
@@ -375,11 +379,16 @@ export async function submitCompetitiveScoreForRequest(
   // without it) stay vacuously ranked; the INSERT applies the same
   // `?? true` default independently.
   isRankedEligible: boolean = true,
+  // why: WP-617 — the submitter's seat, resolved by the by-matchId caller (which
+  // has the matchId + roster). Defaulted null so the by-hash path and existing
+  // tests stay Vanguard-inert.
+  submitterSeatId: string | null = null,
 ): Promise<SubmissionResult> {
   return submitCompetitiveScoreImpl(identity, replayHash, database, {
     reduceReplay: reduceReplayByHash,
     checkParPublished: productionDeps.checkParPublished,
     isRankedEligible,
+    submitterSeatId,
   });
 }
 
@@ -467,6 +476,26 @@ export async function submitCompetitiveScoreByMatchIdForRequest(
   // never rewrites a stored decision (FR-7).
   const isRankedEligible = await computeRankedEligibility(matchId, database);
 
+  // why: step 5c (WP-617) — resolve the CALLER's bgio seat from the match roster,
+  // keyed by matchId (which only this by-matchId entry holds), so the Vanguard
+  // badge can read this seat's per-player tactic contribution. Fail-safe: any
+  // roster read error, or a caller not on the authenticated roster, leaves it null
+  // (no Vanguard) — it never fails the submission.
+  let submitterSeatId: string | null = null;
+  try {
+    const roster = await readSeatAccounts(matchId, database);
+    const callerSeat = roster.find((entry) => entry.accountId === account.accountId);
+    submitterSeatId = callerSeat?.playerId ?? null;
+  } catch (rosterError) {
+    console.warn(
+      '[vanguard] Failed to resolve the submitter seat for match ' +
+        matchId +
+        '; Vanguard evaluation is skipped for this submission.',
+      rosterError,
+    );
+    submitterSeatId = null;
+  }
+
   // step 6 — delegate to the unchanged verify+score pipeline (ownership / visibility
   // (now public) / idempotency / PAR / reduce / hash-verify / score).
   const result = await submitCompetitiveScoreForRequest(
@@ -475,6 +504,7 @@ export async function submitCompetitiveScoreByMatchIdForRequest(
     database,
     productionDeps,
     isRankedEligible,
+    submitterSeatId,
   );
 
   // why: step 7 (WP-593 / D-24402) — attach the derived per-seat identity roster
@@ -989,6 +1019,9 @@ export async function submitCompetitiveScoreImpl(
       // why: WP-613 — the run's player count drives the Solo Mastery lane
       // (`playerCount === 1` → `gameplay.solo.lone-defender`).
       record.playerCount,
+      // why: WP-617 — the submitter's seat (threaded from the by-matchId caller)
+      // drives the Vanguard badge; null on the by-hash path → no Vanguard.
+      deps.submitterSeatId ?? null,
     );
     // why: WP-614 — shared cooperative badges group this match's per-player rows
     // by `replay_hash` (identical across the table) and award the whole table

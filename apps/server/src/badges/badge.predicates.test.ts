@@ -13,6 +13,7 @@ import {
   isEligibleSubParRun,
   isEligiblePristineDefense,
   isEligibleLoneDefender,
+  isEligibleVanguard,
   evaluatePerRunBadges,
 } from './badge.predicates.js';
 import { TIER_1_BADGE_KEYS, BADGE_DEFINITIONS } from './badge.types.js';
@@ -49,8 +50,8 @@ function makeBreakdown(overrides: Partial<{
 
 describe('badge.predicates', () => {
   describe('TIER_1_BADGE_KEYS drift detection', () => {
-    test('contains exactly 13 entries', () => {
-      assert.equal(TIER_1_BADGE_KEYS.length, 13);
+    test('contains exactly 14 entries', () => {
+      assert.equal(TIER_1_BADGE_KEYS.length, 14);
     });
 
     test('every key has a BADGE_DEFINITIONS entry', () => {
@@ -152,7 +153,7 @@ describe('badge.predicates', () => {
   describe('evaluatePerRunBadges', () => {
     test('returns both badges when eligible for both', () => {
       const breakdown = makeBreakdown({ finalScore: -3, villainEscaped: 0 });
-      const result = evaluatePerRunBadges(breakdown, 2);
+      const result = evaluatePerRunBadges(breakdown, 2, null);
       assert.deepStrictEqual(result, [
         'gameplay.sub-par-run',
         'gameplay.pristine-defense',
@@ -161,31 +162,31 @@ describe('badge.predicates', () => {
 
     test('returns only sub-par-run when villain escaped', () => {
       const breakdown = makeBreakdown({ finalScore: -3, villainEscaped: 1 });
-      const result = evaluatePerRunBadges(breakdown, 2);
+      const result = evaluatePerRunBadges(breakdown, 2, null);
       assert.deepStrictEqual(result, ['gameplay.sub-par-run']);
     });
 
     test('returns only pristine-defense when score >= 0', () => {
       const breakdown = makeBreakdown({ finalScore: 0, villainEscaped: 0 });
-      const result = evaluatePerRunBadges(breakdown, 2);
+      const result = evaluatePerRunBadges(breakdown, 2, null);
       assert.deepStrictEqual(result, ['gameplay.pristine-defense']);
     });
 
     test('returns empty array when neither eligible', () => {
       const breakdown = makeBreakdown({ finalScore: 5, villainEscaped: 2 });
-      const result = evaluatePerRunBadges(breakdown, 2);
+      const result = evaluatePerRunBadges(breakdown, 2, null);
       assert.deepStrictEqual(result, []);
     });
 
     test('never returns multiverse-mastery', () => {
       const breakdown = makeBreakdown({ finalScore: -100, villainEscaped: 0 });
-      const result = evaluatePerRunBadges(breakdown, 2);
+      const result = evaluatePerRunBadges(breakdown, 2, null);
       assert.equal(result.includes('gameplay.multiverse-mastery'), false);
     });
 
     test('adds lone-defender for a solo (playerCount 1) sub-PAR run', () => {
       const breakdown = makeBreakdown({ finalScore: -3, villainEscaped: 0 });
-      const result = evaluatePerRunBadges(breakdown, 1);
+      const result = evaluatePerRunBadges(breakdown, 1, null);
       assert.deepStrictEqual(result, [
         'gameplay.sub-par-run',
         'gameplay.pristine-defense',
@@ -195,7 +196,7 @@ describe('badge.predicates', () => {
 
     test('does not add lone-defender for a multi-player sub-PAR run', () => {
       const breakdown = makeBreakdown({ finalScore: -3, villainEscaped: 0 });
-      const result = evaluatePerRunBadges(breakdown, 3);
+      const result = evaluatePerRunBadges(breakdown, 3, null);
       assert.equal(result.includes('gameplay.solo.lone-defender'), false);
     });
   });
@@ -227,6 +228,56 @@ describe('badge.predicates', () => {
         isEligibleLoneDefender(makeBreakdown({ finalScore: -3 }), null),
         false,
       );
+    });
+  });
+
+  describe('isEligibleVanguard (WP-617)', () => {
+    // Builds a per-seat contribution with a given tactic-defeat count.
+    const seat = (playerId: string, tactics: number) => ({
+      playerId,
+      victoryPoints: 0,
+      bystandersRescued: 0,
+      mastermindTacticsDefeated: tactics,
+      villainsDefeated: 0,
+      henchmenDefeated: 0,
+    });
+
+    test('true when the submitter is the sole tactic standout', () => {
+      const perPlayer = [seat('0', 3), seat('1', 1)];
+      assert.equal(isEligibleVanguard(perPlayer, '0', 2), true);
+    });
+
+    test('false for the non-standout seat at the same table', () => {
+      const perPlayer = [seat('0', 3), seat('1', 1)];
+      assert.equal(isEligibleVanguard(perPlayer, '1', 2), false);
+    });
+
+    test('true for BOTH seats tied at the max above a third', () => {
+      const perPlayer = [seat('0', 2), seat('1', 2), seat('2', 0)];
+      assert.equal(isEligibleVanguard(perPlayer, '0', 3), true);
+      assert.equal(isEligibleVanguard(perPlayer, '1', 3), true);
+      assert.equal(isEligibleVanguard(perPlayer, '2', 3), false);
+    });
+
+    test('false on an even split (no standout — max === min)', () => {
+      const perPlayer = [seat('0', 2), seat('1', 2)];
+      assert.equal(isEligibleVanguard(perPlayer, '0', 2), false);
+    });
+
+    test('false when the max is 0 (no tactics defeated by anyone)', () => {
+      const perPlayer = [seat('0', 0), seat('1', 0)];
+      assert.equal(isEligibleVanguard(perPlayer, '0', 2), false);
+    });
+
+    test('false for a solo match (playerCount < 2)', () => {
+      const perPlayer = [seat('0', 4)];
+      assert.equal(isEligibleVanguard(perPlayer, '0', 1), false);
+    });
+
+    test('false when perPlayer is undefined or the submitter seat is null/missing', () => {
+      assert.equal(isEligibleVanguard(undefined, '0', 2), false);
+      assert.equal(isEligibleVanguard([seat('0', 3), seat('1', 1)], null, 2), false);
+      assert.equal(isEligibleVanguard([seat('0', 3), seat('1', 1)], '9', 2), false);
     });
   });
 });

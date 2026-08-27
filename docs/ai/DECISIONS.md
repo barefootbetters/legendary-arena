@@ -38589,3 +38589,18 @@ _Active 2026-08-26 — WP-615 / EC-650. Related: D-24425 (the shared `united-fro
 4. **Foundation, not a badge.** A future consumer (a "who carried the team" / "Vanguard" recognition badge, and optionally the endgame report card) reads these counts. The **literal causal** "A enabled B" attribution is recorded as **deferred / infeasible** for the reasons above.
 
 _Active 2026-08-26 — WP-616 / EC-651. Related: D-24397 / WP-588 (the per-player split this extends), WP-613/614/615 (the badge lanes a future consumer would join), D-24026 (surface = none — infrastructure)._
+
+### D-24428 — Vanguard Badge (led the table's mastermind fight) (Active 2026-08-26 — WP-617 / EC-652)
+
+**Context.** WP-616 exposed per-seat `mastermindTacticsDefeated` on `ScoreBreakdown.inputs.perPlayer[]` but left it dark (no consumer). This is its first consumer — a recognition badge for the player who led the table's mastermind fight, the tractable form of the design's "enabled an ally."
+
+**Decision.** Add `gameplay.team.vanguard` (`sourceKind 'competitive_score'`). **Self-award, per-run:** a submitter earns it when, in a co-op match (`playerCount ≥ 2`), **their own seat** is the **strict tactic-defeat standout** of the table — their `mastermindTacticsDefeated` equals the table maximum, that maximum is ≥ 1, and it strictly exceeds the table minimum (`max > min`, so an even split awards no one). The badge is issued to the submitter's own `player_id` via the existing per-run INSERT.
+
+**Corollaries.**
+1. **Self-award sidesteps the id join.** `perPlayer[]` is keyed by bgio seat id; badges target accounts. Self-award needs only the submitter's own seat — resolved in the by-matchId caller from the match roster (`readSeatAccounts`, D-24402, keyed by `matchId`, matched by `account.accountId`) and threaded to the impl via `SubmissionDependencies`. No cross-account award; no ext_id → player_id resolution.
+2. **Fail-safe.** A roster read error or a caller not on the authenticated roster → `submitterSeatId = null` → no Vanguard, inside the existing fire-and-forget badge try/catch (never fails the submission). The by-hash path (no `matchId`) is likewise Vanguard-inert.
+3. **Ties.** Two seats tied at the max above the rest are both Vanguards; every seat equal (no standout) yields none.
+4. **D-1004-compliant.** Skill-gated (led the mastermind fight, never a volume count); cooperative-model-safe framing; read-only over the immutable `ScoreBreakdown` (no state-hash surface); append-only; no migration (reuses `competitive_score`).
+5. **Deferred.** The match-level "award the objective top seat's account" variant (needs ext_id → player_id resolution), win-gating, and villain/henchman-metric variants.
+
+_Active 2026-08-26 — WP-617 / EC-652. Related: D-24427 / WP-616 (the `perPlayer[].mastermindTacticsDefeated` this consumes), D-24402 / WP-593 (the seat roster), D-1004 (Tier-1 issuer model), D-24026 (user-visible-surface live-verify)._

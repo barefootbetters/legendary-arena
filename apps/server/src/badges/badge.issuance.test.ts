@@ -74,7 +74,7 @@ describe('badge.issuance', () => {
     const database = makeMockDatabase(0);
     const breakdown = makeBreakdown({ finalScore: -3, villainEscaped: 0 });
 
-    await issueTier1BadgesForSubmission(42, 100, breakdown, 'scenario-1', 1, database as any, 2);
+    await issueTier1BadgesForSubmission(42, 100, breakdown, 'scenario-1', 1, database as any, 2, null);
 
     const insertCall = database.calls.find((c) => c.sql.includes('INSERT INTO legendary.player_badges'));
     assert.ok(insertCall, 'Expected an INSERT INTO legendary.player_badges query.');
@@ -92,7 +92,7 @@ describe('badge.issuance', () => {
     const database = makeMockDatabase(0);
     const breakdown = makeBreakdown({ finalScore: 5, villainEscaped: 2 });
 
-    await issueTier1BadgesForSubmission(42, 100, breakdown, 'scenario-1', 1, database as any, 2);
+    await issueTier1BadgesForSubmission(42, 100, breakdown, 'scenario-1', 1, database as any, 2, null);
 
     const insertCall = database.calls.find((c) => c.sql.includes('INSERT INTO legendary.player_badges'));
     assert.equal(insertCall, undefined, 'No INSERT should fire when no badges qualify.');
@@ -102,7 +102,7 @@ describe('badge.issuance', () => {
     const database = makeMockDatabase(5);
     const breakdown = makeBreakdown({ finalScore: -3, villainEscaped: 0 });
 
-    await issueTier1BadgesForSubmission(42, 100, breakdown, 'scenario-1', 1, database as any, 2);
+    await issueTier1BadgesForSubmission(42, 100, breakdown, 'scenario-1', 1, database as any, 2, null);
 
     const insertCall = database.calls.find((c) => c.sql.includes('INSERT INTO legendary.player_badges'));
     assert.ok(insertCall, 'Expected an INSERT query.');
@@ -120,7 +120,7 @@ describe('badge.issuance', () => {
     const database = makeMockDatabase(10);
     const breakdown = makeBreakdown({ finalScore: 5, villainEscaped: 2 });
 
-    await issueTier1BadgesForSubmission(42, 100, breakdown, 'scenario-1', 1, database as any, 2);
+    await issueTier1BadgesForSubmission(42, 100, breakdown, 'scenario-1', 1, database as any, 2, null);
 
     const insertCall = database.calls.find((c) => c.sql.includes('INSERT INTO legendary.player_badges'));
     assert.ok(insertCall, 'Expected an INSERT for history badges.');
@@ -133,7 +133,7 @@ describe('badge.issuance', () => {
     const badBreakdown = { finalScore: 'not-a-number' } as unknown as ScoreBreakdown;
 
     await assert.rejects(
-      () => issueTier1BadgesForSubmission(42, 100, badBreakdown, 'scenario-1', 1, database as any, 2),
+      () => issueTier1BadgesForSubmission(42, 100, badBreakdown, 'scenario-1', 1, database as any, 2, null),
       /ScoreBreakdown deserialization failed/,
     );
   });
@@ -142,7 +142,7 @@ describe('badge.issuance', () => {
     const database = makeMockDatabase(10);
     const breakdown = makeBreakdown({ finalScore: -1, villainEscaped: 0 });
 
-    await issueTier1BadgesForSubmission(42, 100, breakdown, 'scenario-1', 1, database as any, 2);
+    await issueTier1BadgesForSubmission(42, 100, breakdown, 'scenario-1', 1, database as any, 2, null);
 
     const insertCall = database.calls.find((c) => c.sql.includes('INSERT INTO legendary.player_badges'));
     assert.ok(insertCall);
@@ -155,7 +155,7 @@ describe('badge.issuance', () => {
     const database = makeMockDatabase(0, 5);
     const breakdown = makeBreakdown({ finalScore: -3, villainEscaped: 0 });
 
-    await issueTier1BadgesForSubmission(42, 100, breakdown, 'scenario-1', 1, database as any, 1);
+    await issueTier1BadgesForSubmission(42, 100, breakdown, 'scenario-1', 1, database as any, 1, null);
 
     const insertCall = database.calls.find((c) => c.sql.includes('INSERT INTO legendary.player_badges'));
     assert.ok(insertCall, 'Expected an INSERT for the solo lane.');
@@ -174,7 +174,7 @@ describe('badge.issuance', () => {
     const database = makeMockDatabase(0, 5);
     const breakdown = makeBreakdown({ finalScore: -3, villainEscaped: 0 });
 
-    await issueTier1BadgesForSubmission(42, 100, breakdown, 'scenario-1', 1, database as any, 3);
+    await issueTier1BadgesForSubmission(42, 100, breakdown, 'scenario-1', 1, database as any, 3, null);
 
     const insertCall = database.calls.find((c) => c.sql.includes('INSERT INTO legendary.player_badges'));
     // solitaire-master is history-gated on solo breadth (5 here) so it DOES fire
@@ -184,6 +184,47 @@ describe('badge.issuance', () => {
       insertCall.params.includes('gameplay.solo.lone-defender'),
       false,
       'A multi-player run must not earn the per-run solo badge.',
+    );
+  });
+
+  test('WP-617: the tactic-standout submitter earns Vanguard; a non-standout seat does not', async () => {
+    // A 2-player co-op table: seat "0" defeated 3 mastermind tactics, seat "1" one.
+    const breakdown = {
+      finalScore: -3,
+      penaltyBreakdown: {
+        villainEscaped: 0,
+        bystanderLost: 0,
+        schemeTwistNegative: 0,
+        mastermindTacticUntaken: 0,
+        scenarioSpecificPenalty: 0,
+      },
+      inputs: {
+        bystandersRescued: 0,
+        escapes: 0,
+        perPlayer: [
+          { playerId: '0', victoryPoints: 0, bystandersRescued: 0, mastermindTacticsDefeated: 3, villainsDefeated: 0, henchmenDefeated: 0 },
+          { playerId: '1', victoryPoints: 0, bystandersRescued: 0, mastermindTacticsDefeated: 1, villainsDefeated: 0, henchmenDefeated: 0 },
+        ],
+      },
+      scoringConfigVersion: 1,
+    } as unknown as ScoreBreakdown;
+
+    // The submitter is seat "0" (the standout) → Vanguard is awarded.
+    const standoutDb = makeMockDatabase(0);
+    await issueTier1BadgesForSubmission(42, 100, breakdown, 'scenario-1', 1, standoutDb as any, 2, '0');
+    const standoutInsert = standoutDb.calls.find((c) => c.sql.includes('INSERT INTO legendary.player_badges'));
+    assert.ok(standoutInsert, 'Expected an INSERT for the standout submitter.');
+    assert.ok(standoutInsert.params.includes('gameplay.team.vanguard'), 'The standout seat earns Vanguard.');
+
+    // The submitter is seat "1" (not the standout) → no Vanguard.
+    const otherDb = makeMockDatabase(0);
+    await issueTier1BadgesForSubmission(42, 100, breakdown, 'scenario-1', 1, otherDb as any, 2, '1');
+    const otherInsert = otherDb.calls.find((c) => c.sql.includes('INSERT INTO legendary.player_badges'));
+    // seat "1" still earns the shared per-run badges (sub-par), but NOT Vanguard.
+    assert.equal(
+      (otherInsert?.params ?? []).includes('gameplay.team.vanguard'),
+      false,
+      'A non-standout seat must not earn Vanguard.',
     );
   });
 });

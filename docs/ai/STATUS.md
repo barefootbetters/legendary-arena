@@ -7,6 +7,18 @@
 
 ## Current State
 
+### WP-617 — Vanguard badge (EC-652 / D-24428) shipped (2026-08-26)
+
+The first **consumer** of WP-616's per-seat tactic counts — the piece that finally surfaces the team-contribution data to players. A recognition badge, **Vanguard**, for the player who **led the table's mastermind fight**. **Self-award, per-run:** a submitter earns `gameplay.team.vanguard` when, in a co-op match (`playerCount ≥ 2`), their own seat is the **strict tactic-defeat standout** (`submitterCount === max(perPlayer counts) && max ≥ 1 && max > min` — an even split awards no one).
+
+**The id join, solved cleanly:** `perPlayer[]` is keyed by bgio seat id; badges target accounts. Self-award needs only the submitter's own seat — resolved in the by-matchId caller from the match roster (`readSeatAccounts`, WP-593, keyed by `matchId`, matched by `account.accountId`) and threaded to the impl via `SubmissionDependencies`. Fail-safe: an unresolved seat → null → no Vanguard, inside the existing fire-and-forget badge try/catch. Issued to the submitter's own `player_id` via the existing per-run INSERT (`competitive_score`, `source_ref` = scoreId). `TIER_1_BADGE_KEYS` 13 → 14, drift-pinned.
+
+**D-1004-compliant:** skill-gated (never volume), cooperative-model-safe framing, read-only over the immutable `ScoreBreakdown` (no state-hash surface), append-only, **no migration**.
+
+**Verification:** `pnpm -r build` 0; server suite **1204/0** (195 DB-gated skip); badge tests **40/0** (Vanguard predicate: sole/tied-standout / even-split / zero-max / solo / missing-seat; issuance: standout-vs-non-standout). Diff = 6 files. **D-24428 Active.** **D-24026 live-verify: operator-pending** — in a co-op match, the top tactic-defeater's profile shows "Vanguard"; the others' do not.
+
+With this, the recognition arc surfaces end to end: WP-616 builds the per-seat data → WP-617 turns it into a player-facing badge. **Deferred:** the match-level top-seat-account variant (needs ext_id → player_id), win-gating, and villain/henchman variants.
+
 ### WP-616 — Per-player team-contribution attribution (EC-651 / D-24427) shipped (2026-08-26)
 
 **No user-observable change — infrastructure only.** The foundation for the `wiki/awards-and-badges.md` design's "enabled an ally" recognition. **Honest scope call recorded:** the *literal causal* "player A enabled player B's finish" is **not buildable** — `LogEntry` carries no structured `playerId`, there's no cross-player causal event stream, and base Legendary's direct cross-player mechanics are too sparse to define it. So this WP builds the buildable interpretation: per-player **team-contribution** attribution.
