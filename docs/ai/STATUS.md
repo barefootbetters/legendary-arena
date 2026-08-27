@@ -7,6 +7,14 @@
 
 ## Current State
 
+### WP-623 — Danger meter names the converted enemy (EC-658 / D-24434) shipped (2026-08-27)
+
+The `escaped-converted` scheme-loss kind counts only converted villains of one origin (Killbots on "Replace Earth's Leaders with Killbots", Skrulls on "Secret Invasion") that escape — a **subset** of the escaped pile, since converted cards are typed `'villain'` for routing — but the client labeled it the generic **"Escaped"**, mislabeling the subset count and colliding with the raw escaped-villain count in the HUD (the WP-612 defect, now for converted villains).
+
+**Fix:** split `escaped-converted` → `escaped-killbot` + `escaped-skrull` in the `SchemeLossKind` union + `SCHEME_LOSS_KINDS` (lockstep runtime drift pin); `resolveSchemeLossKind` maps `condition.origin` via an exhaustive `escapedConvertedKind()` switch (a future `ConvertedVillainOrigin` fails to compile); `menaceDisplay` nouns "Killbots"/"Skrulls". Label fidelity only — the loss threshold, counted quantity, and projection pipeline are unchanged. Projection-only (the kind is derived from `G`, not stored) — no hash surface, no `G`-field, no migration.
+
+**Verification:** `pnpm -r build` 0; engine suite **2924/0**; arena-client **1471/0**; `vue-tsc` green. New cases: Killbots → `escaped-killbot` → "Killbots", Secret Invasion → `escaped-skrull` → "Skrulls", runtime drift pin updated. Diff = 4 files. **D-24434 Active.** **D-24026 live-verify: operator-pending** — a Killbots / Secret Invasion match's danger meter reads "Killbots N/5" / "Skrulls N/5".
+
 ### WP-622 — AI coach reads per-seat team contribution (EC-657 / D-24433) shipped (2026-08-27)
 
 WP-616 put per-seat `mastermindTacticsDefeated`/`villainsDefeated`/`henchmenDefeated` on `PlayerScoringContribution` and the server's jsonb `scoreBreakdown` carries them (WP-617 Vanguard + WP-621 report card read them) — but the endgame AI coach's per-player summary line (`buildPerPlayerLines`) read only VP + bystanders, blind to who took down the villains/henchmen/tactics. The summary is `JSON.stringify`'d to the model, so the coach couldn't reason about combat contribution it never received.
