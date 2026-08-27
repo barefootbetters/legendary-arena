@@ -123,9 +123,18 @@ describe('matchGate.routes integration (real request stream)', () => {
       origins: ['http://localhost:1'],
     });
     installDelegationCapturingFetch();
+    // why: a minimal query-capable database stub. The create route records the
+    // seat→account mapping fire-and-forget (recordSeatAccount → database.query);
+    // the prior `{}` had no `query`, so every run logged a scary "database.query
+    // is not a function" TypeError. This test is about body parsing + delegation,
+    // not seat persistence, so a no-op INSERT stub keeps that path quiet without
+    // asserting on it.
+    const stubDatabase = {
+      query: async () => ({ rows: [], rowCount: 0 }),
+    };
     registerMatchGateRoutes(
       server.router as never,
-      {} as never,
+      stubDatabase as never,
       acceptingDeps,
     );
     const running = await server.run({ port: 0 });

@@ -443,6 +443,82 @@ jobs:
       - name: Run root effect-index generator suite
         run: pnpm effect-index:test
 
+  # ── 3g. Server DB-gated tests (WP-625) ───────────────────────────────────────
+  # why: the `unit-tests` job above runs the whole suite with NO database, so every
+  # apps/server test that self-skips when TEST_DATABASE_URL is unset (competition,
+  # profile, friendships, badges, replay/capture, seat-account, …) never actually
+  # runs in CI — a DB-only failure merges silently. The WP-591 parBaseline NaN (reded
+  # the entire competition DB suite on a live DB, repaired in #1684) and the WP-624
+  # injected-seam class (a readSeatAccounts shape / .find() drift silently nulling
+  # submitterSeatId) were both invisible here; apps/server has no typecheck lane
+  # either. This job provisions an ephemeral Postgres, migrates it, and runs the
+  # server suite WITH the database so those tests execute.
+  #
+  # why: ADVISORY (non-required) during a burn-in — this job is intentionally NOT in
+  # the branch's required status checks, so a DB-suite flake or a not-yet-known
+  # pre-existing failure cannot block unrelated PRs while the suite proves out. It
+  # still runs and reports on every PR, so a DB-only regression is SEEN immediately.
+  # Promotion to a required check is a tracked follow-up once the suite is stably
+  # green (mirrors the engine typecheck:tests D-24372 §2 real-but-not-yet-required
+  # precedent). It is NOT `continue-on-error` — a failure shows red, just non-blocking.
+  server-db-tests:
+    name: Server DB Tests
+    runs-on: ubuntu-latest
+    # why: the server suite runs ~5 min against a DB; cap it so a leaked handle turns
+    # into a quick red X instead of inheriting GitHub's 6-hour default (the unit-tests
+    # 20-min-cap rationale).
+    timeout-minutes: 20
+    # why: an EPHEMERAL Postgres created and torn down per run — never the local dev
+    # DB, never a secret/shared/prod connection string. Health-checked so the steps
+    # only start once the server accepts connections.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: legendary_arena_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    # why: both point at the ephemeral service. DATABASE_URL is what scripts/migrate.mjs
+    # reads; TEST_DATABASE_URL is what the DB-gated tests read to STOP self-skipping.
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/legendary_arena_test
+      TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/legendary_arena_test
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with: { node-version-file: .node-version, cache: pnpm }
+
+      - run: pnpm install --frozen-lockfile
+
+      # why: the server suite imports its dependencies' built dist (game-engine,
+      # registry, lagn); a stale/missing dist reds at import, not on logic.
+      - name: Build workspace
+        run: pnpm -r build
+
+      # why: MIGRATE BEFORE TEST — a schema-less DB fails every DB-gated test. The
+      # migrator is idempotent and exits non-zero on failure, so a broken migration
+      # fails the job here rather than surfacing as a wall of confusing test errors.
+      - name: Apply database migrations
+        run: node scripts/migrate.mjs
+
+      # why: SERIALIZED (--test-concurrency=1, via the test:db script) — the DB-gated
+      # test files share the one database, so running them concurrently races their
+      # seed/cleanup and produces flaky cross-file failures. node:test still isolates
+      # each file in its own process (glob invocation), so serialization here means
+      # one file at a time against the shared DB.
+      - name: Run server DB-gated test suite (serialized)
+        run: pnpm --filter @legendary-arena/server test:db
+
   # ── 4. Upload to R2 (tags only) ────────────────────────────────────────────
   upload-r2:
     name: Upload to Cloudflare R2
