@@ -38513,3 +38513,17 @@ _Active 2026-08-26 — WP-610 / EC-645. Related: D-24418 / WP-607 (the panel thi
 3. **jsdom-observable.** Unlike the WP-610 layout fix, this is testable in `@vue/test-utils`: a would-render snapshot + `gameOver` present → the panel root is absent (a committed test pins it).
 
 _Active 2026-08-26 — WP-611 / EC-646. Related: D-24418 / WP-607 (the panel), D-24421 / WP-610 (the placement fix that surfaced the lingering), D-24026 (user-visible-surface live-verify)._
+
+### D-24423 — Danger Meter names the scheme's counted card type (escaped-bystander) (Active 2026-08-26 — WP-612 / EC-647)
+
+**Context.** Operator-reported: a Midtown Bank Robbery danger meter read **"Escaped 5/8"** beside the HUD's raw **"Escaped: 7"**. The `5/8` is the scheme's `escaped-pile-count` loss with `cardType: 'bystander'` — 5 **bystanders** carried into the escaped pile — while the `7` is villains + henchmen that fled. `resolveSchemeLossKind` collapsed every `escaped-pile-count` scheme to `SchemeLossKind: 'escaped-pile'`, discarding the `cardType`; the client mapped that to the noun **"Escaped"**, mislabeling the bystander case and colliding with the raw escaped-villain count.
+
+**Decision.** The DangerMeter must name the quantity the scheme actually counts. Split the escaped-pile kind by counted card type — mirroring the existing `pile-depleted → hero-deck | wound-stack` split by pile: `cardType: 'bystander'` → a new `SchemeLossKind` **`escaped-bystander`** (client noun "Bystanders"); every other cardType (villain — Negative Zone, 12) stays `escaped-pile` ("Escaped"). The engine keeps **no display copy** (D-24367 §2); the client's `SCHEME_LOSS_NOUNS` owns the noun.
+
+**Corollaries.**
+1. **Projection-only.** `resolveSchemeLossKind` is a projection; the endgame loss uses `countEscapedPileByType` directly, so the split has no `G` / `ctx` / hash surface — both oracles stay byte-identical.
+2. **Drift-pinned.** `escaped-bystander` is added to both the `SchemeLossKind` union and the `SCHEME_LOSS_KINDS` canonical array; the runtime `deepStrictEqual` pin and the client's exhaustive `Record<SchemeLossKind, string>` (vue-tsc) both enforce the pair.
+3. **Degrades safely.** Any future non-bystander `escaped-pile-count` cardType reads "Escaped", which is correct for villains/henchmen fleeing.
+4. **Distinct from the raw count.** The `EscapedPile` / HUD "Escaped: N" (raw villains fled) is unchanged; only the danger-meter track's label is corrected.
+
+_Active 2026-08-26 — WP-612 / EC-647. Related: D-24366 / WP-557 (the menace/danger-meter contract), D-24371 §3 / WP-562 (the `SchemeLossKind` client noun mapping), D-24367 §2 (engine keeps no display copy), D-24026 (user-visible-surface live-verify)._

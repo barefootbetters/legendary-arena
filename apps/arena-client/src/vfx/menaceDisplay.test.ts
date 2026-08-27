@@ -109,6 +109,15 @@ describe('menaceDisplay (WP-562) — the kind label', () => {
   test('names every loss kind the engine can project', () => {
     assert.equal(menaceKindLabel('wound-stack'), 'Wounds');
     assert.equal(menaceKindLabel('escaped-pile'), 'Escaped');
+    // why: WP-612 — a bystander-counting escaped-pile scheme reads "Bystanders",
+    // not "Escaped": it counts bystanders carried into the escaped pile, and the
+    // "Escaped" word both mislabels that and collides with the raw escaped-villain
+    // count (Midtown Bank Robbery showed "Escaped 5/8" beside "Escaped: 7").
+    assert.equal(menaceKindLabel('escaped-bystander'), 'Bystanders');
+    assert.equal(
+      `${menaceKindLabel('escaped-bystander')} ${menaceRatioLabel(5, 8)}`,
+      'Bystanders 5/8',
+    );
     assert.equal(menaceKindLabel('escaped-converted'), 'Escaped');
     assert.equal(menaceKindLabel('twists'), 'Twists');
   });

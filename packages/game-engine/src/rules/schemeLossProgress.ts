@@ -55,6 +55,7 @@ export type SchemeLossKind =
   | 'hero-deck'
   | 'wound-stack'
   | 'escaped-pile'
+  | 'escaped-bystander'
   | 'escaped-converted'
   | 'twists';
 
@@ -68,6 +69,7 @@ export const SCHEME_LOSS_KINDS: readonly SchemeLossKind[] = [
   'hero-deck',
   'wound-stack',
   'escaped-pile',
+  'escaped-bystander',
   'escaped-converted',
   'twists',
 ];
@@ -223,8 +225,15 @@ export function resolveSchemeLossKind(
   const config = SCHEME_TWIST_CONFIGS.get(gameState.selection.schemeId);
   const condition = config?.resourceLossCondition;
 
+  // why: WP-612 / D-24423 — split the escaped-pile kind by the counted card
+  // type, mirroring the pile-depleted → hero-deck/wound-stack split below. A
+  // bystander-counting escaped-pile scheme (Midtown Bank Robbery, cardType
+  // 'bystander') tracks BYSTANDERS carried into the escaped pile, not villains
+  // fleeing — so the client must not label it "Escaped", which both mislabels
+  // the quantity and collides with the separate raw escaped-villain count. A
+  // villain-counting one (Negative Zone, cardType 'villain') stays 'escaped-pile'.
   if (condition?.kind === 'escaped-pile-count') {
-    return 'escaped-pile';
+    return condition.cardType === 'bystander' ? 'escaped-bystander' : 'escaped-pile';
   }
   if (condition?.kind === 'escaped-converted-count') {
     return 'escaped-converted';
