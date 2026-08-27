@@ -39,13 +39,21 @@ set (serialized), so the DB-gated tests actually execute on every PR.
 
 ## Goal
 
-Add a required CI job ("Server DB Tests") to `.github/workflows/ci.yml` that:
-spins an ephemeral `postgres` service (Actions `services:`), builds the workspace,
-runs `node scripts/migrate.mjs` against the service, then runs the `apps/server`
-test suite **serialized** (`--test-concurrency=1`) with `TEST_DATABASE_URL`
-pointed at the service — so a DB-only failure (a stale fixture, an unwired seam, a
-missing migration column) turns into a fast, honest red X instead of merging
-silently.
+Add a CI job ("Server DB Tests") to `.github/workflows/ci.yml` that: spins an
+ephemeral `postgres` service (Actions `services:`), builds the workspace, runs
+`node scripts/migrate.mjs` against the service, then runs the `apps/server` test
+suite **serialized** (`--test-concurrency=1`) with `TEST_DATABASE_URL` pointed at
+the service — so a DB-only failure (a stale fixture, an unwired seam, a missing
+migration column) surfaces as a visible red X instead of being invisible.
+
+**Advisory (non-required) first.** The job is added to the workflow and runs on
+every PR, but it is **not** added to the branch's required status checks during a
+burn-in period — so a DB-suite flake or a not-yet-known pre-existing failure does
+not block unrelated PRs. Once the suite is demonstrably green and stable across a
+burn-in, a **tracked follow-up** promotes it to a required check (a
+branch-protection setting, an operator action — not a file in this WP). Advisory
+is the *temporary* posture, not the destination: the promotion follow-up is part
+of the plan so the gate does not sit forever ignorable.
 
 ---
 
@@ -83,13 +91,19 @@ None. A CI gate only.
   corrections the full server DB suite needs to go green beyond #1684. Any
   pre-existing DB-only failure that is *not* a quick fixture repair is quarantined
   with a documented `skip` + a follow-up WP note, so this packet is not an open-ended
-  rot hunt.
+  rot hunt. Because the job is advisory (below), a not-yet-repaired failure does not
+  block merge — but the WP's Definition of Done still requires the suite green so the
+  advisory signal starts clean and the promotion follow-up has a green baseline.
 - `docs/ai/DECISIONS.md` — land D-24435 at execution.
 
 ## Scope (Out)
 
 - No product/runtime code change; no new migration (unless the baseline repair
   reveals a genuinely missing column, which would be its own decision).
+- **Not the promotion to a required check.** Adding "Server DB Tests" to the
+  branch-protection required-status-checks list is a repo *setting*, not a file in
+  this WP, and is deferred to a tracked follow-up after the burn-in proves the suite
+  stably green. This WP only adds the (advisory) job.
 - Not the nightly/heavier sweeps; this is the per-PR gate only.
 - Not a general `apps/server` typecheck lane (a separate, larger concern — noted as
   a natural follow-up, not done here).
@@ -108,9 +122,12 @@ None. A CI gate only.
 
 ## Contract
 
-The new required check **Server DB Tests** must pass for a PR to merge. The check
-provisions its own ephemeral Postgres — it never touches the local dev DB or any
-shared/production database.
+The **Server DB Tests** check runs on every PR and reports pass/fail. It is
+**advisory (non-required)** during the burn-in — visible but not blocking — so a
+DB-only regression is *seen* immediately even before the check is promoted. The
+check provisions its own ephemeral Postgres; it never touches the local dev DB or
+any shared/production database. Promotion to a required branch-protection check is
+a separate, tracked follow-up once the suite is stably green.
 
 ---
 
@@ -126,6 +143,9 @@ shared/production database.
       actually gates. (Recorded in the execution notes, then reverted.)
 - [ ] The job runs its own ephemeral service; no secret/real-DB connection string
       is used.
+- [ ] The job is **advisory** — it is NOT added to the branch's required status
+      checks in this WP; a promotion-to-required follow-up is recorded (a note in
+      STATUS/WORK_INDEX or a follow-up WP row).
 - [ ] `timeout-minutes` is set; CI-minute cost is noted in the execution summary.
 
 ---
@@ -144,7 +164,8 @@ shared/production database.
 
 ## Definition of Done
 
-- [ ] The job is on `main`, green, and required.
+- [ ] The job is on `main`, green, and **advisory (non-required)**; the
+      promotion-to-required follow-up is recorded.
 - [ ] The DB-gated server tests run in CI (no longer self-skip on the green path).
 - [ ] Mutation-checked that the job actually fails on a DB-only regression.
 - [ ] D-24435 Active; WORK_INDEX WP-625 `[x]`; EC_INDEX EC-660 Done; mindmap
@@ -167,9 +188,11 @@ Drafting-time pass; all 21 sections resolve. Highlights:
 - **§ API catalog (§21)** — N/A: no endpoint/library-surface change.
 
 **Pre-flight (draft):** READY TO EXECUTE — no blocking dependency; scope is a single
-additive CI job plus a bounded baseline repair; the forcing function (the job's own
-PR must be green) makes the baseline requirement self-enforcing. **Copilot
-self-review:** PASS — additive infra; the one real risk (a large pre-existing DB-rot
-backlog making the baseline hard to green) is handled by the explicit
-quarantine-with-follow-up clause, mirroring the engine `typecheck:tests` D-24372 §2
-precedent (start bounded, don't block the world on a backlog).
+additive CI job plus a bounded baseline repair. **Copilot self-review:** PASS —
+additive infra. The one real risk (a large pre-existing DB-rot backlog making the
+baseline hard to green, or DB-suite flake) is handled two ways: the
+quarantine-with-follow-up clause bounds the repair, and the job ships **advisory
+(non-required)** during a burn-in so it cannot block unrelated PRs while the suite
+proves out — directly mirroring the engine `typecheck:tests` D-24372 §2 precedent
+(a real check that is deliberately not required yet). The promotion-to-required
+follow-up keeps advisory from becoming a permanent ignore.

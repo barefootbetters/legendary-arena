@@ -23,6 +23,8 @@
   `127.0.0.1`, the mapped port). NEVER a secret / real / shared DB connection string.
 - `timeout-minutes` set (a hang → fast red, mirroring the `unit-tests` 20-min cap).
 - Job display name self-describing: **Server DB Tests** (the repo's named-gate norm).
+- Posture: **advisory / non-required** — add the job to the workflow only; do NOT
+  add it to the branch's required-status-checks list in this WP (promotion deferred).
 
 ## Guardrails
 - **Ephemeral only** — the service is created and torn down per run; the job must not
@@ -33,9 +35,13 @@
   fail the job if it exits non-zero.
 - **Serialized** — omit `--test-concurrency=1` and DB files race → flaky cross-file
   failures that look like real regressions.
-- **Baseline discipline** — the job's own PR cannot merge unless the suite is green,
-  so the green baseline is enforced by construction; do not `continue-on-error` it
-  to sneak a red suite onto `main`.
+- **Advisory-first** — the job runs and reports on every PR but is NOT added to the
+  branch-protection required checks in this WP, so it does not block unrelated PRs
+  during burn-in. Do NOT `continue-on-error` the DB step — that masks the advisory
+  signal too; a failure must show red, just non-blocking. The executor still proves
+  the baseline green locally AND confirms the advisory job green on the PR (records
+  the tally) so the burn-in starts clean. Promotion to a required check is a tracked
+  follow-up, not this WP.
 - **Bounded repair** — fixture corrections only; a genuine missing-migration finding
   is escalated (its own decision), not silently patched.
 - **`// (YAML) why:`** comments on the service block, the migrate-before-test order,
@@ -50,6 +56,8 @@
 
 ## After Completing
 - [ ] The new check runs on the PR, the DB-gated tests execute (DB lane 0-skipped), suite green.
+- [ ] The check is advisory — confirm it is NOT in the branch's required list; record the
+      promotion-to-required follow-up (STATUS note or a follow-up WP row).
 - [ ] Mutation evidence recorded: a throwaway DB-only break reds the job; reverted.
 - [ ] CI-minute cost noted (build + migrate + serialized server suite).
 - [ ] STATUS.md updated; WORK_INDEX WP-625 `[x]`; EC_INDEX EC-660 Done; D-24435 Active;
