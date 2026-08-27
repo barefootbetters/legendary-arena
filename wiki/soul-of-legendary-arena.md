@@ -30,6 +30,9 @@ last-reviewed: 2026-08-26
 
 # Soul of Legendary Arena
 
+> **The hero is not self-created. He receives an inheritance, becomes worthy
+> of it, and passes it on.**
+
 ## Summary
 
 This page names the **thematic soul** of Legendary Arena: the game is an
