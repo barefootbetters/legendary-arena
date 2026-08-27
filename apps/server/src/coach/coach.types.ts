@@ -29,6 +29,13 @@ export interface CoachPlayerLine {
   readonly label: string;
   readonly victoryPoints: number;
   readonly bystandersRescued: number;
+  // why: WP-622 / D-24433 — this seat's team-contribution counts (WP-616), so
+  // the coach can read who carried the combat: which villains, henchmen, and
+  // mastermind tactics each seat defeated, not just their VP total. Default 0
+  // for records persisted before WP-616 (no per-seat counts).
+  readonly villainsDefeated: number;
+  readonly henchmenDefeated: number;
+  readonly mastermindTacticsDefeated: number;
   /** Acquired hero cards as "Display Name ×N" strings, most-acquired first. */
   readonly acquiredCards: readonly string[];
 }
