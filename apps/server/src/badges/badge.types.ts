@@ -55,6 +55,10 @@ export interface BadgeDefinition {
  * - gameplay.master-strike-ironwall — no PenaltyEventType for Master Strike resolution
  * - gameplay.bystander-guardian — no per-scenario bystander count in ScoreBreakdown
  * - gameplay.steady-crew — no registered-party concept on platform
+ *
+ * WP-613 added the two `gameplay.solo.*` keys (the Solo Mastery lane — the
+ * awards/badges design's "solo gets its own category" gap): a per-run solo
+ * sub-PAR clear + a breadth badge for distinct solo sub-PAR scenarios.
  */
 export const TIER_1_BADGE_KEYS: readonly string[] = [
   'gameplay.sub-par-run',
@@ -64,6 +68,8 @@ export const TIER_1_BADGE_KEYS: readonly string[] = [
   'gameplay.veteran.decade-legend',
   'gameplay.veteran.hall-of-sustained-mastery',
   'gameplay.veteran.crossroads-of-multiverse',
+  'gameplay.solo.lone-defender',
+  'gameplay.solo.solitaire-master',
 ] as const;
 
 /** Type alias for badge key strings. */
@@ -144,6 +150,26 @@ export const BADGE_DEFINITIONS: ReadonlyMap<string, BadgeDefinition> = new Map<s
       sourceKind: 'competitive_history',
       label: 'Crossroads of the Multiverse',
       description: 'Achieved sub-PAR completions on at least 100 distinct scenarios.',
+    },
+  ],
+  [
+    'gameplay.solo.lone-defender',
+    {
+      badgeKey: 'gameplay.solo.lone-defender',
+      tier: 1,
+      sourceKind: 'competitive_score',
+      label: 'Lone Defender',
+      description: 'Completed a scenario solo (one player) with a final score below the published PAR baseline.',
+    },
+  ],
+  [
+    'gameplay.solo.solitaire-master',
+    {
+      badgeKey: 'gameplay.solo.solitaire-master',
+      tier: 1,
+      sourceKind: 'competitive_history',
+      label: 'Solitaire Master',
+      description: 'Achieved sub-PAR solo completions on at least 5 distinct scenarios.',
     },
   ],
 ]);

@@ -12,6 +12,7 @@ import {
   validateScoreBreakdownShape,
   isEligibleSubParRun,
   isEligiblePristineDefense,
+  isEligibleLoneDefender,
   evaluatePerRunBadges,
 } from './badge.predicates.js';
 import { TIER_1_BADGE_KEYS, BADGE_DEFINITIONS } from './badge.types.js';
@@ -48,8 +49,8 @@ function makeBreakdown(overrides: Partial<{
 
 describe('badge.predicates', () => {
   describe('TIER_1_BADGE_KEYS drift detection', () => {
-    test('contains exactly 7 entries', () => {
-      assert.equal(TIER_1_BADGE_KEYS.length, 7);
+    test('contains exactly 9 entries', () => {
+      assert.equal(TIER_1_BADGE_KEYS.length, 9);
     });
 
     test('every key has a BADGE_DEFINITIONS entry', () => {
@@ -151,7 +152,7 @@ describe('badge.predicates', () => {
   describe('evaluatePerRunBadges', () => {
     test('returns both badges when eligible for both', () => {
       const breakdown = makeBreakdown({ finalScore: -3, villainEscaped: 0 });
-      const result = evaluatePerRunBadges(breakdown);
+      const result = evaluatePerRunBadges(breakdown, 2);
       assert.deepStrictEqual(result, [
         'gameplay.sub-par-run',
         'gameplay.pristine-defense',
@@ -160,26 +161,72 @@ describe('badge.predicates', () => {
 
     test('returns only sub-par-run when villain escaped', () => {
       const breakdown = makeBreakdown({ finalScore: -3, villainEscaped: 1 });
-      const result = evaluatePerRunBadges(breakdown);
+      const result = evaluatePerRunBadges(breakdown, 2);
       assert.deepStrictEqual(result, ['gameplay.sub-par-run']);
     });
 
     test('returns only pristine-defense when score >= 0', () => {
       const breakdown = makeBreakdown({ finalScore: 0, villainEscaped: 0 });
-      const result = evaluatePerRunBadges(breakdown);
+      const result = evaluatePerRunBadges(breakdown, 2);
       assert.deepStrictEqual(result, ['gameplay.pristine-defense']);
     });
 
     test('returns empty array when neither eligible', () => {
       const breakdown = makeBreakdown({ finalScore: 5, villainEscaped: 2 });
-      const result = evaluatePerRunBadges(breakdown);
+      const result = evaluatePerRunBadges(breakdown, 2);
       assert.deepStrictEqual(result, []);
     });
 
     test('never returns multiverse-mastery', () => {
       const breakdown = makeBreakdown({ finalScore: -100, villainEscaped: 0 });
-      const result = evaluatePerRunBadges(breakdown);
+      const result = evaluatePerRunBadges(breakdown, 2);
       assert.equal(result.includes('gameplay.multiverse-mastery'), false);
+    });
+
+    test('adds lone-defender for a solo (playerCount 1) sub-PAR run', () => {
+      const breakdown = makeBreakdown({ finalScore: -3, villainEscaped: 0 });
+      const result = evaluatePerRunBadges(breakdown, 1);
+      assert.deepStrictEqual(result, [
+        'gameplay.sub-par-run',
+        'gameplay.pristine-defense',
+        'gameplay.solo.lone-defender',
+      ]);
+    });
+
+    test('does not add lone-defender for a multi-player sub-PAR run', () => {
+      const breakdown = makeBreakdown({ finalScore: -3, villainEscaped: 0 });
+      const result = evaluatePerRunBadges(breakdown, 3);
+      assert.equal(result.includes('gameplay.solo.lone-defender'), false);
+    });
+  });
+
+  describe('isEligibleLoneDefender (WP-613 Solo Mastery)', () => {
+    test('true only for a solo sub-PAR run', () => {
+      assert.equal(
+        isEligibleLoneDefender(makeBreakdown({ finalScore: -3 }), 1),
+        true,
+      );
+    });
+
+    test('false when the run is not solo', () => {
+      assert.equal(
+        isEligibleLoneDefender(makeBreakdown({ finalScore: -3 }), 2),
+        false,
+      );
+    });
+
+    test('false when solo but not sub-PAR', () => {
+      assert.equal(
+        isEligibleLoneDefender(makeBreakdown({ finalScore: 0 }), 1),
+        false,
+      );
+    });
+
+    test('false when playerCount is null (unknown is never solo)', () => {
+      assert.equal(
+        isEligibleLoneDefender(makeBreakdown({ finalScore: -3 }), null),
+        false,
+      );
     });
   });
 });

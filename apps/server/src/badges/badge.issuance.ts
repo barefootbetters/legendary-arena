@@ -47,10 +47,14 @@ export async function issueTier1BadgesForSubmission(
   scenarioKey: string,
   configVersion: number,
   database: DatabaseClient,
+  // why: WP-613 — the submitting run's player count, off the competitive
+  // record (D-24134). Threaded to the per-run predicate so the Solo Mastery
+  // lane can gate `gameplay.solo.lone-defender` on `playerCount === 1`.
+  playerCount: number | null,
 ): Promise<void> {
   validateScoreBreakdownShape(breakdown);
 
-  const perRunKeys = evaluatePerRunBadges(breakdown);
+  const perRunKeys = evaluatePerRunBadges(breakdown, playerCount);
   const historyKeys = await evaluateHistoryBadges(playerId, database);
 
   const allKeys = [...perRunKeys, ...historyKeys];
