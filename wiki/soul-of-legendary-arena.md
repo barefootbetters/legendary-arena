@@ -20,7 +20,7 @@ related:
   - monetization-model.md
   - deck-probability-panel.md
   - awards-and-badges.md
-status: draft
+status: canonical
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\soul-of-legendary-arena.md (this page — https://ewiki.legendary-arena.com/soul-of-legendary-arena/)
   - ../docs/01-VISION.md
@@ -65,14 +65,16 @@ reproduction, a deck-builder that is literally about inheritance, and a
 character-history content pipeline — through which that soul reaches a
 player.
 
-> This page is `draft` and **descriptive**, per
+> This page is `canonical` and **descriptive**, per
 > [SCHEMA.md](SCHEMA.md) — it interprets and connects principles the
 > [Vision](vision.md) and [Design System Overview](design-system-overview.md)
 > already own. It introduces no new governance and makes no design
-> decision. The cultural argument below is a stated point of view, not a
-> sourced fact about engine behavior; only its ties to Content
-> Authenticity, the Soul principle, and the good-versus-evil fantasy are
-> cited to authoritative docs.
+> decision. Its engine and rules claims are cited to authoritative docs
+> (Content Authenticity, the Soul principle, the good-versus-evil fantasy);
+> the cultural, scriptural, and historical material is a stated point of view
+> or attributed to its named sources, never presented as a sourced fact about
+> engine behavior. That is what keeps it `canonical` as a descriptive essay
+> rather than `draft`.
 
 ## Mechanics
 
@@ -927,8 +929,8 @@ claim at a safe distance — it stands on it.
 ## Edge Cases
 
 - **This is a point of view, not a rule.** Nothing here overrides the
-  [Vision](vision.md) or gates a Work Packet. It is a `draft` essay that
-  *interprets* sourced principles. If it ever reads as inventing a
+  [Vision](vision.md) or gates a Work Packet. It is a **descriptive** essay
+  that *interprets* sourced principles. If it ever reads as inventing a
   constraint, the fix is to move that constraint into the vision and cite
   it, or delete the sentence — per [SCHEMA.md](SCHEMA.md) Scope Exclusion.
 - **The Upward Pull creed, the creed, four virtues, "soul promise," and
@@ -939,8 +941,8 @@ claim at a safe distance — it stands on it.
   leave the player with something higher to aim at?") is likewise a stated
   editorial point of view, not a gate on any Work Packet. Treat them as expressive
   language (candidates for cross-surface use), not as governance the
-  Vision does not already hold. This block was added deliberately expansive
-  ("get the ideas in, prune later"); it is expected to be edited down.
+  Vision does not already hold. These lines are the page's settled authored
+  identity — suitable for cross-surface use as they stand.
 - **Do not overstate the cultural claim.** "Every subversion is bad" is the
   weak version and is wrong; the honest position is *addition versus
   overwrite* (see the table above). Faithful preservation is not the same
@@ -989,12 +991,17 @@ claim at a safe distance — it stands on it.
   scholarship. The section is present to give the good-versus-evil fantasy
   real-world weight, not to rank atrocities as spectacle. If a figure is
   updated by better scholarship, update the cell and cite it.
-  It records something that actually happened while this page was drafted,
-  and states a general claim about AI training bias that is an *observation*,
-  not a sourced engine fact — one more reason the page is `draft`. The
-  correction it describes is in the page's own git history.
+  It records something that actually happened during this page's own
+  authoring, and frames the AI-bias claim explicitly as an *observation*
+  about a documented interaction — not a sourced fact about engine behavior,
+  and never presented as one. The correction it describes is preserved in the
+  page's own git history.
 
 ## Open Questions
+
+> These are non-blocking follow-ups for *other* surfaces, not gaps that hold
+> this page in `draft`. The essay is `canonical` as it stands; the items below
+> are tracked design questions the page raises but does not itself answer.
 
 - Should the character-history content loop be formalized as a content
   standard (a template for "what a legacy write-up must cover"), or stay an
