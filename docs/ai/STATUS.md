@@ -7,6 +7,14 @@
 
 ## Current State
 
+### WP-622 — AI coach reads per-seat team contribution (EC-657 / D-24433) shipped (2026-08-27)
+
+WP-616 put per-seat `mastermindTacticsDefeated`/`villainsDefeated`/`henchmenDefeated` on `PlayerScoringContribution` and the server's jsonb `scoreBreakdown` carries them (WP-617 Vanguard + WP-621 report card read them) — but the endgame AI coach's per-player summary line (`buildPerPlayerLines`) read only VP + bystanders, blind to who took down the villains/henchmen/tactics. The summary is `JSON.stringify`'d to the model, so the coach couldn't reason about combat contribution it never received.
+
+**Fix:** `CoachPlayerLine` gains the 3 counts (default 0 for pre-WP-616 records); `buildPerPlayerLines` keeps the whole `PlayerScoringContribution` in its map and populates them (`?? 0`); `COACH_SYSTEM_PROMPT` gains a block explaining the fields for per-player coaching (constant prompt, no match-specific text). The counts are already in the stored breakdown — no score/hash/wire/persistence change; the coach endpoint's request+response shapes are unchanged; no migration.
+
+**Verification:** `pnpm -r build` 0; server suite **1211/0** (195 DB-gated skip); new cases — the counts flow through for a 2-seat WP-616 record, default 0 for a pre-WP-616 record. Diff = 4 files. **D-24433 Active.** **D-24026 live-verify: operator-pending** — the AI Coach panel for a co-op match reads each seat's contribution (the model's narration is non-deterministic, so the field-presence tests are the gate).
+
 ### WP-621 — Endgame report card shows per-seat team contribution (EC-656 / D-24432) shipped (2026-08-27)
 
 WP-616 put per-seat `mastermindTacticsDefeated`/`villainsDefeated`/`henchmenDefeated` on `PlayerScoringContribution`, and the engine `deriveScoringInputs` + the server's jsonb `scoreBreakdown` already carry them to the client (Vanguard, WP-617, reads them server-side) — but the endgame report card's **"By player"** block dropped them, showing only VP + bystanders rescued.

@@ -38659,3 +38659,18 @@ _Active 2026-08-27 — WP-620 / EC-655. Related: D-24426 / WP-615 (the tiers), D
 4. **No PvP framing.** The counts describe hero-vs-villain defeats per seat (§23b), a recognition of contribution (§24), not a player-vs-player comparison.
 
 _Active 2026-08-27 — WP-621 / EC-656. Related: D-24427 / WP-616 (the per-seat counts this surfaces), D-24393 / WP-588 (the per-player report-card split extended), D-24428 / WP-617 (Vanguard — the first server-side reader), D-24026 (user-visible-surface live-verify)._
+
+### D-24433 — AI Coach Reads Per-Seat Team Contribution (Active 2026-08-27 — WP-622 / EC-657)
+
+**Context.** WP-616 added per-seat team-contribution counts — `mastermindTacticsDefeated`, `villainsDefeated`, `henchmenDefeated` — to the engine `PlayerScoringContribution`, and the server's stored jsonb `scoreBreakdown.inputs.perPlayer` carries them (WP-617 Vanguard + WP-621 report card read them). But the endgame AI coach's per-player summary line (`buildPerPlayerLines`) read only each seat's VP and bystanders rescued. Since the coach summary is `JSON.stringify`'d verbatim to the model, the coach could not reason about combat contribution it never received — it could not tell a human "your bot ally carried the villains while you chased bystanders."
+
+**Decision.** The coach summary's `CoachPlayerLine` carries each seat's three WP-616 defeat counts (default 0 for records persisted before WP-616), and `COACH_SYSTEM_PROMPT` gains a block describing them and how to use them for per-player coaching. `buildPerPlayerLines` keeps the whole `PlayerScoringContribution` in its map and populates the counts (`?? 0`).
+
+**Corollaries.**
+1. **Summary-surfacing of data already on the server.** The counts are already in the stored jsonb `scoreBreakdown` the coach reads; no score, hash, wire-shape, or persistence change, no new route, no migration. The coach endpoint's request and response shapes are unchanged — the fields ride inside the internal summary the server builds.
+2. **Default 0 for older records.** A `contribution` missing the counts maps to 0, truthful for a record that never carried them; matches the existing `?? 0` for VP.
+3. **Constant system prompt.** The new prompt block is per-request-free (a prompt-cache target), describing the fields generically with no match-specific text.
+4. **Not part of the score, and no PvP framing.** The counts describe hero-vs-villain defeats per seat (§23b) for contribution-aware coaching (§24); scoring is unchanged.
+5. **Model narration is non-deterministic** — the field-presence unit tests are the gate, not the coach's prose.
+
+_Active 2026-08-27 — WP-622 / EC-657. Related: D-24427 / WP-616 (the per-seat counts), D-24405 / WP-594 (the coach summary extended), D-24432 / WP-621 (the report-card surfacing of the same counts), D-24428 / WP-617 (Vanguard — the first server-side reader), D-24026 (user-visible-surface live-verify)._
