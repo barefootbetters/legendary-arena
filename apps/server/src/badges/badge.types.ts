@@ -70,6 +70,7 @@ export const TIER_1_BADGE_KEYS: readonly string[] = [
   'gameplay.veteran.crossroads-of-multiverse',
   'gameplay.solo.lone-defender',
   'gameplay.solo.solitaire-master',
+  'gameplay.shared.united-front',
 ] as const;
 
 /** Type alias for badge key strings. */
@@ -170,6 +171,16 @@ export const BADGE_DEFINITIONS: ReadonlyMap<string, BadgeDefinition> = new Map<s
       sourceKind: 'competitive_history',
       label: 'Solitaire Master',
       description: 'Achieved sub-PAR solo completions on at least 5 distinct scenarios.',
+    },
+  ],
+  [
+    'gameplay.shared.united-front',
+    {
+      badgeKey: 'gameplay.shared.united-front',
+      tier: 1,
+      sourceKind: 'competitive_history',
+      label: 'United Front',
+      description: 'Every player at a co-op table (two or more) finished a scenario with a final score below the published PAR baseline.',
     },
   ],
 ]);
