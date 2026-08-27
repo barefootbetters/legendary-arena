@@ -69,9 +69,16 @@ export async function issueSharedMatchBadges(
   playerCount: number | null,
   configVersion: number,
   database: DatabaseClient,
+  // why: WP-619 — the number of AUTHENTICATED (human) seats at the table, resolved
+  // from the match roster by the caller. A bot / guest seat has no competitive_scores
+  // row and can never submit, so the group is complete once every HUMAN seat has
+  // submitted — not every `playerCount` seat. `null` (the by-hash path, or an
+  // unresolved roster) falls back to the full `playerCount` gate.
+  humanSeatCount: number | null,
 ): Promise<void> {
-  // why: NULL player_count is unknown and a sub-2 count is not a table — neither
-  // can earn a shared badge, so short-circuit before the group query.
+  // why: NULL player_count is unknown and a sub-2 TABLE (bots included) is not a
+  // table — neither can earn a shared badge, so short-circuit before the group
+  // query. (playerCount is the full seat count; a 2-seat human+bot table qualifies.)
   if (playerCount === null || playerCount < MINIMUM_TABLE_SIZE) {
     return;
   }
@@ -84,10 +91,13 @@ export async function issueSharedMatchBadges(
   );
   const rows = result.rows;
 
-  // why: the completeness gate — award only once every player at the table has
-  // recorded their score. An incomplete group (an earlier submitter's hook) is a
-  // no-op; the completing submission is the one that awards the whole table.
-  if (rows.length !== playerCount) {
+  // why: the completeness gate — award only once every HUMAN seat at the table has
+  // recorded their score (WP-619). Bots never submit, so a human+bot match completes
+  // when the humans have submitted (`humanSeatCount` rows), not `playerCount` rows;
+  // `humanSeatCount` is null on the by-hash path, where it falls back to playerCount.
+  // An incomplete group (an earlier submitter's hook) is a no-op.
+  const expectedSubmitters = humanSeatCount ?? playerCount;
+  if (rows.length !== expectedSubmitters) {
     return;
   }
 
