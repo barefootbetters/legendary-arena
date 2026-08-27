@@ -88,6 +88,13 @@ export interface CompetitivePlayerContribution {
   readonly playerId: string;
   readonly victoryPoints: number;
   readonly bystandersRescued: number;
+  // why: WP-621 / D-24432 — per-seat team-contribution counts (the engine
+  // populates them since WP-616 / D-24427; the endgame report card surfaces
+  // them). Optional: records persisted before WP-616 carry none, and the
+  // report card then shows only that seat's VP + bystanders rescued.
+  readonly mastermindTacticsDefeated?: number;
+  readonly villainsDefeated?: number;
+  readonly henchmenDefeated?: number;
 }
 
 /**

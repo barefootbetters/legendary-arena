@@ -307,13 +307,75 @@ describe('per-player split (WP-588)', () => {
     );
     assert.ok(calc.perPlayer);
     assert.equal(calc.perPlayer?.length, 2);
-    assert.deepEqual(calc.perPlayer?.[0], { label: 'Player 1', victoryPoints: 34, bystandersRescued: 11 });
-    assert.deepEqual(calc.perPlayer?.[1], { label: 'Player 2', victoryPoints: 27, bystandersRescued: 9 });
+    // why: WP-621 — a record predating WP-616 carries no per-seat defeat counts,
+    // so the three contribution fields map to null (the report card then omits
+    // the "defeated" line for that seat).
+    assert.deepEqual(calc.perPlayer?.[0], {
+      label: 'Player 1',
+      victoryPoints: 34,
+      bystandersRescued: 11,
+      villainsDefeated: null,
+      henchmenDefeated: null,
+      mastermindTacticsDefeated: null,
+    });
+    assert.deepEqual(calc.perPlayer?.[1], {
+      label: 'Player 2',
+      victoryPoints: 27,
+      bystandersRescued: 9,
+      villainsDefeated: null,
+      henchmenDefeated: null,
+      mastermindTacticsDefeated: null,
+    });
     // The per-player VP + bystanders reconcile with the team totals shown in the raw calc.
     const summedVp = (calc.perPlayer ?? []).reduce((total, row) => total + row.victoryPoints, 0);
     const summedBystanders = (calc.perPlayer ?? []).reduce((total, row) => total + row.bystandersRescued, 0);
     assert.equal(summedVp, 61);
     assert.equal(summedBystanders, 20);
+  });
+});
+
+describe('per-player team-contribution split (WP-621)', () => {
+  test('carries the WP-616 defeat counts through to each row when present', () => {
+    const calc = buildWorkedScoreCalc(
+      breakdown({
+        inputs: {
+          rounds: 20,
+          victoryPoints: 56,
+          bystandersRescued: 17,
+          escapes: 2,
+          penaltyEventCounts: {
+            villainEscaped: 2,
+            bystanderLost: 2,
+            schemeTwistNegative: 5,
+            mastermindTacticUntaken: 0,
+            scenarioSpecificPenalty: 0,
+          },
+          perPlayer: [
+            {
+              playerId: '0',
+              victoryPoints: 36,
+              bystandersRescued: 13,
+              villainsDefeated: 3,
+              henchmenDefeated: 1,
+              mastermindTacticsDefeated: 2,
+            },
+            {
+              playerId: '1',
+              victoryPoints: 20,
+              bystandersRescued: 4,
+              villainsDefeated: 2,
+              henchmenDefeated: 1,
+              mastermindTacticsDefeated: 2,
+            },
+          ],
+        },
+      }),
+    );
+    assert.equal(calc.perPlayer?.[0]?.villainsDefeated, 3);
+    assert.equal(calc.perPlayer?.[0]?.henchmenDefeated, 1);
+    assert.equal(calc.perPlayer?.[0]?.mastermindTacticsDefeated, 2);
+    assert.equal(calc.perPlayer?.[1]?.villainsDefeated, 2);
+    assert.equal(calc.perPlayer?.[1]?.mastermindTacticsDefeated, 2);
   });
 });
 
