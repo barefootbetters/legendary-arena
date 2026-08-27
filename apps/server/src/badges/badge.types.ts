@@ -71,6 +71,9 @@ export const TIER_1_BADGE_KEYS: readonly string[] = [
   'gameplay.solo.lone-defender',
   'gameplay.solo.solitaire-master',
   'gameplay.shared.united-front',
+  'gameplay.shared.trio',
+  'gameplay.shared.quartet',
+  'gameplay.shared.quintet',
 ] as const;
 
 /** Type alias for badge key strings. */
@@ -181,6 +184,36 @@ export const BADGE_DEFINITIONS: ReadonlyMap<string, BadgeDefinition> = new Map<s
       sourceKind: 'competitive_history',
       label: 'United Front',
       description: 'Every player at a co-op table (two or more) finished a scenario with a final score below the published PAR baseline.',
+    },
+  ],
+  [
+    'gameplay.shared.trio',
+    {
+      badgeKey: 'gameplay.shared.trio',
+      tier: 1,
+      sourceKind: 'competitive_history',
+      label: 'Trio',
+      description: 'Every player at a three-player co-op table finished a scenario below the published PAR baseline.',
+    },
+  ],
+  [
+    'gameplay.shared.quartet',
+    {
+      badgeKey: 'gameplay.shared.quartet',
+      tier: 1,
+      sourceKind: 'competitive_history',
+      label: 'Quartet',
+      description: 'Every player at a four-player co-op table finished a scenario below the published PAR baseline.',
+    },
+  ],
+  [
+    'gameplay.shared.quintet',
+    {
+      badgeKey: 'gameplay.shared.quintet',
+      tier: 1,
+      sourceKind: 'competitive_history',
+      label: 'Quintet',
+      description: 'Every player at a five-player co-op table finished a scenario below the published PAR baseline.',
     },
   ],
 ]);

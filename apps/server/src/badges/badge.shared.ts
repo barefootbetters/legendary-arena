@@ -17,6 +17,8 @@
  *
  * Authority: WP-614 §Scope (In) §B; EC-649 §Locked Values + §Guardrails;
  * D-24425; D-1004 (append-only, anti-volume, no-PvP); D-5302 (immutable rows).
+ * WP-615 / D-24426 added the exact-size tier badges (trio / quartet / quintet)
+ * awarded alongside `united-front` when the table is exactly 3 / 4 / 5 players.
  */
 
 import type { DatabaseClient } from '../identity/identity.types.js';
@@ -28,6 +30,18 @@ const MINIMUM_TABLE_SIZE = 2;
 
 /** The badge key awarded when a whole co-op table finishes sub-PAR. */
 const UNITED_FRONT_KEY = 'gameplay.shared.united-front';
+
+// why: WP-615 — tiered team badges scale recognition to the size of the
+// cooperation (the design page's "a five-player badge, four-, three-, and
+// two-player badges"). `united-front` already covers the two-player base, so the
+// EXACT-size tiers here start at three: a qualifying table earns `united-front`
+// PLUS the badge matching its exact seat count. Player count maxes at 5 (D-24134),
+// so there is no tier above `quintet`.
+const SIZE_TIER_KEYS: Readonly<Record<number, string>> = {
+  3: 'gameplay.shared.trio',
+  4: 'gameplay.shared.quartet',
+  5: 'gameplay.shared.quintet',
+};
 
 /**
  * Evaluate and (if the whole table qualifies) issue the shared cooperative
@@ -90,22 +104,33 @@ export async function issueSharedMatchBadges(
     return;
   }
 
+  // why: WP-615 — every qualifying table earns `united-front`; a table of exactly
+  // 3/4/5 ALSO earns its size tier. `playerCount === rows.length` here (the
+  // completeness gate above), so keying the tier off `playerCount` is exact.
+  const badgeKeys = [UNITED_FRONT_KEY];
+  const sizeTierKey = SIZE_TIER_KEYS[playerCount];
+  if (sizeTierKey !== undefined) {
+    badgeKeys.push(sizeTierKey);
+  }
+
   const valueClauses: string[] = [];
   const params: unknown[] = [];
   let paramIndex = 1;
 
-  // why: award the badge to EVERY player in the group in one multi-row INSERT.
-  // ON CONFLICT DO NOTHING (constraint inference) suppresses duplicates so the
-  // repeated full-group evaluation from each of the table's submitters is a
-  // no-op after the first complete pass.
+  // why: award every applicable badge to EVERY player in the group in one
+  // multi-row INSERT. ON CONFLICT DO NOTHING (constraint inference) suppresses
+  // duplicates so the repeated full-group evaluation from each of the table's
+  // submitters is a no-op after the first complete pass.
   for (const row of rows) {
     const playerId =
       typeof row.player_id === 'string' ? Number(row.player_id) : row.player_id;
-    valueClauses.push(
-      `($${paramIndex}, $${paramIndex + 1}, $${paramIndex + 2}, $${paramIndex + 3}, $${paramIndex + 4}, $${paramIndex + 5})`,
-    );
-    params.push(playerId, UNITED_FRONT_KEY, 1, 'competitive_history', null, configVersion);
-    paramIndex += 6;
+    for (const badgeKey of badgeKeys) {
+      valueClauses.push(
+        `($${paramIndex}, $${paramIndex + 1}, $${paramIndex + 2}, $${paramIndex + 3}, $${paramIndex + 4}, $${paramIndex + 5})`,
+      );
+      params.push(playerId, badgeKey, 1, 'competitive_history', null, configVersion);
+      paramIndex += 6;
+    }
   }
 
   const sql =
