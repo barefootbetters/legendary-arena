@@ -82,6 +82,7 @@ import {
 } from '../identity/replayOwnership.logic.js';
 
 import type {
+  AccountId,
   DatabaseClient,
   GuestIdentity,
   PlayerAccount,
@@ -1914,6 +1915,395 @@ describe('submitCompetitiveScoreByMatchIdForRequest (WP-338)', () => {
       assert.strictEqual(result.record.isRankedEligible, false);
 
       await cleanupMatch(testPool, matchId, expectedHash, [owner.accountId, friend.accountId]);
+    },
+  );
+});
+
+// ---------------------------------------------------------------------------
+// WP-624 — the REAL by-matchId caller's seat resolution drives the Vanguard
+// badge (WP-617) and shared-badge completeness (WP-619), end-to-end over a
+// genuine per-seat mastermind-tactic split.
+//
+// The issuance→INSERT step is already unit-tested with an INJECTED
+// submitterSeatId / perPlayer (badge.issuance.test.ts). What nothing else
+// exercised is the wire the by-matchId orchestrator owns: it reads the match
+// roster (readSeatAccounts), resolves the caller's own bgio seat via
+// `roster.find(entry => entry.accountId === account.accountId)?.playerId`, and
+// threads that seat (Vanguard) plus `roster.length` (the WP-619 human seat
+// count) into badge issuance. If that read's shape or the `.find()` drifts,
+// `submitterSeatId` silently nulls out and Vanguard stops firing on the real
+// path with NO test failure (the "injected seam hides missing wiring" trap).
+//
+// These tests seed a genuine 2-seat terminal replay whose reduced final state
+// carries a real victory-pile tactic split (seat 0 defeats 2 mastermind
+// tactics, seat 1 defeats 1), submit through the unmodified
+// `submitCompetitiveScoreByMatchIdForRequest`, and assert the badge rows that
+// actually land in `legendary.player_badges` — nothing about the seat split or
+// the roster read is injected.
+// ---------------------------------------------------------------------------
+
+describe('submitCompetitiveScoreByMatchIdForRequest — Vanguard + shared seat wire (WP-624)', () => {
+  const hasTestDatabase = process.env.TEST_DATABASE_URL !== undefined;
+
+  // why: capture derives the scenarioKey from the reduced final state's
+  // `selection`, which comes from WP338_SETUP_DATA (the fixture these tests
+  // reuse to build a real, fully-populated engine state). Strip the set-abbr
+  // prefixes exactly as capture does so the PAR stub publishes for this key.
+  const VANGUARD_SCENARIO_KEY = buildScenarioKey(
+    'test-scheme-001',
+    'test-mastermind-001',
+    ['test-villain-group-001', 'test-villain-group-002'],
+  ) as ScenarioKey;
+
+  // why: a COMPLETE ScenarioScoringConfig — every ParBaseline field present,
+  // including `schemeTwistsPar` + `bystandersLostPar` (required since WP-591 /
+  // D-24400). The shared TEST_SCORING_CONFIG above predates those fields, so
+  // `computeParScore` over it yields NaN and the step-12 anti-corruption
+  // equality check (`computeParScore(config) !== parValue`, NaN !== NaN) rejects
+  // every submission as replay_verification_failed. This config keeps parScore a
+  // real number (90) so the submissions this file's Vanguard assertions depend
+  // on actually reach the badge-issuance step. Weights reuse the obfuscated
+  // round/bystander keys so the round-cost / bystander-reward terms (dropped
+  // from the raw-score formula by WP-585 / WP-599) satisfy the type shape
+  // without their values affecting the score.
+  const VANGUARD_SCORING_CONFIG: ScenarioScoringConfig = {
+    scenarioKey: VANGUARD_SCENARIO_KEY,
+    weights: {
+      [WEIGHT_KEY_ROUND]: 100,
+      [WEIGHT_KEY_BYSTANDER]: 200,
+      victoryPointReward: 10,
+    } as unknown as ScenarioScoringConfig['weights'],
+    caps: {
+      bystanderCap: null,
+      victoryPointCap: null,
+    },
+    penaltyEventWeights: {
+      villainEscaped: 10,
+      bystanderLost: 40,
+      schemeTwistNegative: 30,
+      mastermindTacticUntaken: 0,
+      scenarioSpecificPenalty: 0,
+    },
+    parBaseline: {
+      bystandersPar: 1,
+      victoryPointsPar: 5,
+      escapesPar: 1,
+      bystandersLostPar: 1,
+      schemeTwistsPar: 3,
+    },
+    scoringConfigVersion: 1,
+    createdAt: '2026-08-27T00:00:00.000Z',
+    updatedAt: '2026-08-27T00:00:00.000Z',
+  };
+
+  const VANGUARD_PROD_DEPS = {
+    checkParPublished: (scenarioKey: ScenarioKey) =>
+      scenarioKey === VANGUARD_SCENARIO_KEY
+        ? {
+            parValue: computeParScore(VANGUARD_SCORING_CONFIG),
+            parVersion: 'v1-wp624-test',
+            source: 'simulation' as const,
+            scoringConfig: VANGUARD_SCORING_CONFIG,
+          }
+        : null,
+  };
+
+  let pool: pg.Pool | undefined;
+
+  before(async () => {
+    if (!hasTestDatabase) {
+      return;
+    }
+    pool = new Pool({ connectionString: process.env.TEST_DATABASE_URL });
+  });
+
+  after(async () => {
+    if (pool !== undefined) {
+      await pool.end();
+    }
+  });
+
+  /**
+   * Build a real 2-seat terminal replay artifact carrying a genuine per-seat
+   * mastermind-tactic split. Starts from a fully-populated engine state
+   * (`InitializeGame` runs `Game.setup()`, so every field the scoring pipeline
+   * reads — playerZones, escapedPile, mastermind, counters — is present), then
+   * injects the split into the victory piles + `mastermind.tacticsDefeated`.
+   * The log is empty, so `reduceMatchToFinalState` returns this exact G verbatim
+   * and `deriveScoringInputs` computes the per-seat contribution from it — the
+   * split is derived by the real engine, never injected into the badge layer.
+   *
+   * Seat 0 defeats 2 tactics (tac-1, tac-2); seat 1 defeats 1 (tac-3) → the
+   * table has a real standout (max 2 > min 1) and seat 0 is the Vanguard. Both
+   * seats' shared score is sub-PAR (no penalties, 15 team VP → raw −150 vs par
+   * 90 → final −240), so the whole table also qualifies for united-front.
+   */
+  function buildVanguardArtifact(): { initialState: unknown; log: unknown[] } {
+    const built = InitializeGame({
+      game: LegendaryGame,
+      numPlayers: 2,
+      setupData: WP338_SETUP_DATA,
+    });
+    // why: boardgame.io deep-freezes its state, so the injected split is written
+    // into a mutable deep clone rather than the frozen original.
+    const initialState = structuredClone(built) as { G: LegendaryGameState };
+    const gameState = initialState.G;
+    // why: a real victory-pile tactic split — the ids are also recorded in
+    // mastermind.tacticsDefeated, which is exactly how the engine credits a
+    // defeated tactic to the seat that fought it (scoring.logic.ts D-24176), so
+    // deriveScoringInputs counts 2 for seat 0 and 1 for seat 1.
+    gameState.playerZones['0']!.victory = ['tac-1', 'tac-2'];
+    gameState.playerZones['1']!.victory = ['tac-3'];
+    gameState.mastermind.tacticsDefeated = ['tac-1', 'tac-2', 'tac-3'];
+    // why: MASTERMIND_DEFEATED makes the endgame evaluation a decisive
+    // 'heroes-win' (never endedEarly), so the submission scores rather than
+    // rejecting — a coherent "heroes won; here are the tactics they defeated".
+    gameState.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED] = 1;
+    return { initialState, log: [] };
+  }
+
+  /** The badge keys currently recorded for an account, by ext_id. */
+  async function playerBadgeKeys(
+    testPool: pg.Pool,
+    accountId: AccountId,
+  ): Promise<string[]> {
+    const result = await testPool.query(
+      'SELECT pb.badge_key FROM legendary.player_badges pb ' +
+        'JOIN legendary.players p ON pb.player_id = p.player_id ' +
+        'WHERE p.ext_id = $1',
+      [accountId],
+    );
+    return result.rows.map((row: { badge_key: string }) => row.badge_key);
+  }
+
+  /**
+   * Seed a finished 2-seat match: the owner at seat 0, optionally a human
+   * co-player at seat 1 (else seat 1 is a bot — a metadata slot with no
+   * account row, so the roster stays 1 while the seat count is 2). Both
+   * fixtures share the same terminal artifact, so the reduced tactic split is
+   * identical; only the seat-1 account row differs.
+   */
+  async function seedVanguardMatch(
+    testPool: pg.Pool,
+    matchId: string,
+    options: { seat1Human: boolean },
+  ): Promise<{
+    owner: PlayerAccount;
+    coplayer: PlayerAccount | undefined;
+    expectedHash: string;
+  }> {
+    // why: idempotent account pre-purge — if a prior run crashed mid-seed the
+    // deterministic wp624 accounts would linger and fail the unique-auth INSERT
+    // below. Delete any leftover for this match (dependents first) so a rerun
+    // starts clean. Scoped to the two deterministic emails — never a broad wipe.
+    const seedEmails = [
+      `wp624-owner-${matchId}@example.test`,
+      `wp624-coplayer-${matchId}@example.test`,
+    ];
+    const leftoverPlayerIds =
+      'SELECT player_id FROM legendary.players WHERE email = ANY($1)';
+    const leftoverExtIds =
+      'SELECT ext_id FROM legendary.players WHERE email = ANY($1)';
+    await testPool.query(`DELETE FROM legendary.player_badges WHERE player_id IN (${leftoverPlayerIds})`, [seedEmails]);
+    await testPool.query(`DELETE FROM legendary.competitive_scores WHERE player_id IN (${leftoverPlayerIds})`, [seedEmails]);
+    await testPool.query(`DELETE FROM legendary.replay_ownership WHERE player_id IN (${leftoverPlayerIds})`, [seedEmails]);
+    await testPool.query(`DELETE FROM legendary.match_seat_accounts WHERE account_id IN (${leftoverExtIds})`, [seedEmails]);
+    await testPool.query('DELETE FROM legendary.players WHERE email = ANY($1)', [seedEmails]);
+
+    const ownerResult = await createPlayerAccount(
+      {
+        email: `wp624-owner-${matchId}@example.test`,
+        displayName: 'WP624 Owner',
+        authProvider: 'email',
+        authProviderId: `wp624-owner-${matchId}`,
+      },
+      testPool,
+    );
+    assert.ok(ownerResult.ok === true);
+
+    const artifact = buildVanguardArtifact();
+    // why: the independent expected hash — the on-demand capture must reduce to
+    // exactly this, and the anti-tamper step-9 compare pins the stored hash to it.
+    const { reduceMatchToFinalState } = await import(
+      '../replay/matchReplay.logic.js'
+    );
+    const expectedHash = reduceMatchToFinalState(artifact).stateHash;
+
+    // Idempotent pre-clean (scoped to this match / hash only).
+    await testPool.query('DELETE FROM legendary.replay_ownership WHERE replay_hash = $1', [expectedHash]);
+    await testPool.query('DELETE FROM legendary.competitive_scores WHERE replay_hash = $1', [expectedHash]);
+    await testPool.query('DELETE FROM bgio.replay_artifacts WHERE match_id = $1', [matchId]);
+    await testPool.query('DELETE FROM legendary.match_seat_accounts WHERE match_id = $1', [matchId]);
+    await testPool.query('DELETE FROM bgio.matches WHERE match_id = $1', [matchId]);
+
+    await testPool.query(
+      'INSERT INTO legendary.match_seat_accounts (match_id, player_id, account_id) VALUES ($1, $2, $3)',
+      [matchId, '0', ownerResult.value.accountId],
+    );
+
+    let coplayer: PlayerAccount | undefined;
+    if (options.seat1Human) {
+      const coplayerResult = await createPlayerAccount(
+        {
+          email: `wp624-coplayer-${matchId}@example.test`,
+          displayName: 'WP624 Coplayer',
+          authProvider: 'email',
+          authProviderId: `wp624-coplayer-${matchId}`,
+        },
+        testPool,
+      );
+      assert.ok(coplayerResult.ok === true);
+      coplayer = coplayerResult.value;
+      await testPool.query(
+        'INSERT INTO legendary.match_seat_accounts (match_id, player_id, account_id) VALUES ($1, $2, $3)',
+        [matchId, '1', coplayer.accountId],
+      );
+    }
+
+    // why: two seat slots in metadata (so seatCount / playerCount are 2 for both
+    // fixtures) plus a gameover so isMatchFinished passes. In the human+bot
+    // fixture seat 1 has a metadata slot but no match_seat_accounts row — a
+    // rowless bot seat — so the roster (humanSeatCount) is 1 while the seat count
+    // is 2, which is exactly the WP-619 case.
+    const metadata = '{"gameover":{"winner":"0"},"players":{"0":{},"1":{}}}';
+    await testPool.query(
+      'INSERT INTO bgio.matches (match_id, state, initial_state, metadata, log) ' +
+        "VALUES ($1, '{}'::jsonb, $2::jsonb, $3::jsonb, $4::jsonb)",
+      [matchId, JSON.stringify(artifact.initialState), metadata, JSON.stringify(artifact.log)],
+    );
+
+    return { owner: ownerResult.value, coplayer, expectedHash };
+  }
+
+  /** Fully-scoped teardown — never an unscoped players wipe (protects real rows). */
+  async function cleanupVanguardMatch(
+    testPool: pg.Pool,
+    matchId: string,
+    expectedHash: string,
+    accountIds: AccountId[],
+  ): Promise<void> {
+    await testPool.query('DELETE FROM legendary.competitive_scores WHERE replay_hash = $1', [expectedHash]);
+    await testPool.query('DELETE FROM legendary.replay_ownership WHERE replay_hash = $1', [expectedHash]);
+    await testPool.query('DELETE FROM bgio.replay_artifacts WHERE match_id = $1', [matchId]);
+    await testPool.query('DELETE FROM legendary.match_seat_accounts WHERE match_id = $1', [matchId]);
+    await testPool.query('DELETE FROM bgio.matches WHERE match_id = $1', [matchId]);
+    // why: a successful submission issues Tier-1 badges (player_badges rows) that
+    // FK-reference legendary.players; delete them before the scoped players wipe.
+    await testPool.query(
+      'DELETE FROM legendary.player_badges WHERE player_id IN ' +
+        '(SELECT player_id FROM legendary.players WHERE ext_id = ANY($1))',
+      [accountIds],
+    );
+    await testPool.query('DELETE FROM legendary.players WHERE ext_id = ANY($1)', [accountIds]);
+  }
+
+  test(
+    'the tactic-standout submitter earns Vanguard and the co-op partner does not — resolved from the real match roster (WP-617)',
+    { skip: hasTestDatabase ? false : 'requires test database' },
+    async () => {
+      const testPool = pool as pg.Pool;
+      const matchId = 'wp624-vanguard-duo';
+      const { owner, coplayer, expectedHash } = await seedVanguardMatch(
+        testPool,
+        matchId,
+        { seat1Human: true },
+      );
+      assert.ok(coplayer !== undefined);
+
+      // Seat 0 (the standout) submits first. The orchestrator resolves its own
+      // seat from the roster and threads it into Vanguard.
+      const first = await submitCompetitiveScoreByMatchIdForRequest(
+        owner,
+        matchId,
+        testPool as unknown as DatabaseClient,
+        VANGUARD_PROD_DEPS,
+      );
+      assert.ok(first.ok === true, `expected ok, got ${JSON.stringify(first)}`);
+
+      const ownerBadgesAfterFirst = await playerBadgeKeys(testPool, owner.accountId);
+      assert.ok(
+        ownerBadgesAfterFirst.includes('gameplay.team.vanguard'),
+        `the seat-0 standout must earn Vanguard; got [${ownerBadgesAfterFirst.join(', ')}]`,
+      );
+      // Only one of the two humans has submitted, so the shared group is
+      // incomplete — united-front must not have landed yet.
+      assert.ok(
+        !ownerBadgesAfterFirst.includes('gameplay.shared.united-front'),
+        'united-front must wait until the whole table has submitted',
+      );
+
+      // Seat 1 (the non-standout) submits. Its resolved seat is '1', which
+      // defeated fewer tactics — no Vanguard.
+      const second = await submitCompetitiveScoreByMatchIdForRequest(
+        coplayer,
+        matchId,
+        testPool as unknown as DatabaseClient,
+        VANGUARD_PROD_DEPS,
+      );
+      assert.ok(second.ok === true, `expected ok, got ${JSON.stringify(second)}`);
+
+      const coplayerBadges = await playerBadgeKeys(testPool, coplayer.accountId);
+      assert.ok(
+        !coplayerBadges.includes('gameplay.team.vanguard'),
+        `the seat-1 non-standout must NOT earn Vanguard; got [${coplayerBadges.join(', ')}]`,
+      );
+
+      // With both humans submitted (humanSeatCount 2 === playerCount 2) and both
+      // sub-PAR, the whole table earns united-front.
+      const ownerBadgesAfterSecond = await playerBadgeKeys(testPool, owner.accountId);
+      assert.ok(
+        ownerBadgesAfterSecond.includes('gameplay.shared.united-front'),
+        `the owner must earn united-front once the table completes; got [${ownerBadgesAfterSecond.join(', ')}]`,
+      );
+      assert.ok(
+        coplayerBadges.includes('gameplay.shared.united-front'),
+        `the co-player must earn united-front once the table completes; got [${coplayerBadges.join(', ')}]`,
+      );
+
+      await cleanupVanguardMatch(testPool, matchId, expectedHash, [
+        owner.accountId,
+        coplayer.accountId,
+      ]);
+    },
+  );
+
+  test(
+    'a 1-human + 1-bot table earns united-front at a single human submission — humanSeatCount, not playerCount, gates completeness (WP-619)',
+    { skip: hasTestDatabase ? false : 'requires test database' },
+    async () => {
+      const testPool = pool as pg.Pool;
+      const matchId = 'wp624-human-bot';
+      const { owner, expectedHash } = await seedVanguardMatch(testPool, matchId, {
+        seat1Human: false,
+      });
+
+      const result = await submitCompetitiveScoreByMatchIdForRequest(
+        owner,
+        matchId,
+        testPool as unknown as DatabaseClient,
+        VANGUARD_PROD_DEPS,
+      );
+      assert.ok(result.ok === true, `expected ok, got ${JSON.stringify(result)}`);
+
+      const ownerBadges = await playerBadgeKeys(testPool, owner.accountId);
+      // The human out-fought the bot seat (2 tactics vs 1), so the human is the
+      // table standout and earns Vanguard.
+      assert.ok(
+        ownerBadges.includes('gameplay.team.vanguard'),
+        `the human standout must earn Vanguard; got [${ownerBadges.join(', ')}]`,
+      );
+      // The WP-619 pin: the completeness gate awaits every HUMAN seat
+      // (humanSeatCount 1), not every metadata seat (playerCount 2). The bot can
+      // never submit, so if humanSeatCount drifted to null / playerCount the group
+      // would need 2 rows and never complete → no united-front. Its presence after
+      // a single human submission proves the human count threaded through the
+      // same roster read that feeds submitterSeatId.
+      assert.ok(
+        ownerBadges.includes('gameplay.shared.united-front'),
+        `united-front must land at one human row when humanSeatCount is 1; got [${ownerBadges.join(', ')}]`,
+      );
+
+      await cleanupVanguardMatch(testPool, matchId, expectedHash, [owner.accountId]);
     },
   );
 });
