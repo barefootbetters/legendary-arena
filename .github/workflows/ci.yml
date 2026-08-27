@@ -454,13 +454,14 @@ jobs:
   # either. This job provisions an ephemeral Postgres, migrates it, and runs the
   # server suite WITH the database so those tests execute.
   #
-  # why: ADVISORY (non-required) during a burn-in — this job is intentionally NOT in
-  # the branch's required status checks, so a DB-suite flake or a not-yet-known
-  # pre-existing failure cannot block unrelated PRs while the suite proves out. It
-  # still runs and reports on every PR, so a DB-only regression is SEEN immediately.
-  # Promotion to a required check is a tracked follow-up once the suite is stably
-  # green (mirrors the engine typecheck:tests D-24372 §2 real-but-not-yet-required
-  # precedent). It is NOT `continue-on-error` — a failure shows red, just non-blocking.
+  # why: this job shipped ADVISORY (non-required) for a burn-in — running and
+  # reporting on every PR but kept out of the branch's required status checks so a
+  # DB-suite flake or a not-yet-known pre-existing failure could not block unrelated
+  # PRs while it proved out (mirroring the engine typecheck:tests D-24372 §2
+  # real-but-not-yet-required precedent). It is NOT `continue-on-error` — a failure
+  # shows red. PROMOTED to a REQUIRED check on 2026-08-27 (operator decision, D-24435
+  # §1) after the initial green run: "Server DB Tests" is now in the `main`
+  # branch-protection required-status-checks list, so a red DB suite now blocks merge.
   server-db-tests:
     name: Server DB Tests
     runs-on: ubuntu-latest
