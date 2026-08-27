@@ -7,6 +7,14 @@
 
 ## Current State
 
+### WP-618 — HUD "Strikes" → "Tactics" label fix (EC-653 / D-24429) shipped (2026-08-27)
+
+Operator-reported: the top HUD showed **"Strikes: 4/4"** while the game-over panel showed **"Master Strikes: 3"**. Traced: `TopHudBar.vue`'s `mastermindProgressLabel()` reads `mastermind.tacticsDefeated` (of `mastermindTacticsTotal`) — the mastermind's **tactics** defeated, i.e. defeat-progress — but labeled it **"Strikes"**, colliding with the real Master Strike count on `MasterStrikePile.vue`.
+
+**Fix:** rename the HUD label + testid — `Strikes:` → `Tactics:`, `play-hud-strikes` → `play-hud-tactics`. The counter's data is unchanged (still `tacticsDefeated/total`); `MasterStrikePile.vue`'s "Master Strikes: N" is untouched. Same class as WP-612's Escaped/Bystanders collision. No engine / projection / hash surface.
+
+**Verification:** `pnpm -r build` 0; arena-client `vue-tsc` 0; suite **1468/1468**. Diff = 2 files. **D-24429 Active.** **D-24026 live-verify: operator-pending** — the HUD reads "Tactics: N/M"; "Master Strikes: N" is separate and correct.
+
 ### WP-617 — Vanguard badge (EC-652 / D-24428) shipped (2026-08-26)
 
 The first **consumer** of WP-616's per-seat tactic counts — the piece that finally surfaces the team-contribution data to players. A recognition badge, **Vanguard**, for the player who **led the table's mastermind fight**. **Self-award, per-run:** a submitter earns `gameplay.team.vanguard` when, in a co-op match (`playerCount ≥ 2`), their own seat is the **strict tactic-defeat standout** (`submitterCount === max(perPlayer counts) && max ≥ 1 && max > min` — an even split awards no one).

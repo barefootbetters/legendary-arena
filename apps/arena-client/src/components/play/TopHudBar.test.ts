@@ -90,7 +90,10 @@ describe('TopHudBar (WP-129)', () => {
     // readout degrades to the bare count rather than inventing a denominator.
     // The threshold-present case is asserted in the WP-562 block below.
     assert.equal(wrapper.find('[data-testid="play-hud-twists"]').text(), 'Twists: 2');
-    assert.equal(wrapper.find('[data-testid="play-hud-strikes"]').text(), 'Strikes: 1/4');
+    // why: WP-618 — this counter is tactics defeated / total tactics (mastermind-
+    // defeat progress), NOT master strikes; the HUD label is "Tactics", not the
+    // colliding "Strikes" (which is a separate ability count).
+    assert.equal(wrapper.find('[data-testid="play-hud-tactics"]').text(), 'Tactics: 1/4');
     assert.match(wrapper.find('[data-testid="play-hud-bystanders"]').text(), /Rescued: 1/);
     assert.equal(wrapper.find('[data-testid="play-hud-escaped"]').text(), 'Escaped: 3');
   });
