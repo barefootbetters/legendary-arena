@@ -482,7 +482,9 @@ describe('the conditions WP-562 did NOT change (AC-4 / AC-5 regression guard)', 
     });
     assert.equal(resolveSchemeLossProgress(gameState), 2);
     assert.equal(resolveSchemeLossThreshold(gameState), 5);
-    assert.equal(resolveSchemeLossKind(gameState), 'escaped-converted');
+    // why: WP-623 — a converted-escape scheme resolves to its origin-specific
+    // kind so the client labels the actual enemy ("Killbots"), not "Escaped".
+    assert.equal(resolveSchemeLossKind(gameState), 'escaped-killbot');
   });
 });
 
@@ -525,7 +527,8 @@ describe('resolveSchemeLossKind — the enum the client labels from (D-24371 §3
       'wound-stack',
       'escaped-pile',
       'escaped-bystander',
-      'escaped-converted',
+      'escaped-killbot',
+      'escaped-skrull',
       'twists',
     ] satisfies SchemeLossKind[];
     assert.deepStrictEqual([...SCHEME_LOSS_KINDS], everyKind);
@@ -544,6 +547,27 @@ describe('resolveSchemeLossKind — the enum the client labels from (D-24371 §3
         makeTestState({ schemeId: 'core/negative-zone-prison-breakout' }),
       ),
       'escaped-pile',
+    );
+  });
+
+  it('splits the converted-escape kind by origin (WP-623)', () => {
+    // why: a converted-villain escape scheme counts only escapees of one origin
+    // (Killbots, or Skrulls), so the client must label the enemy ("Killbots" /
+    // "Skrulls"), not the generic "Escaped" that collides with the raw
+    // escaped-villain count.
+    assert.equal(
+      resolveSchemeLossKind(
+        makeTestState({ schemeId: 'core/replace-earths-leaders-with-killbots' }),
+      ),
+      'escaped-killbot',
+    );
+    assert.equal(
+      resolveSchemeLossKind(
+        makeTestState({
+          schemeId: 'core/secret-invasion-of-the-skrull-shapeshifters',
+        }),
+      ),
+      'escaped-skrull',
     );
   });
 

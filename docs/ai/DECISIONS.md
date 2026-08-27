@@ -38674,3 +38674,17 @@ _Active 2026-08-27 — WP-621 / EC-656. Related: D-24427 / WP-616 (the per-seat 
 5. **Model narration is non-deterministic** — the field-presence unit tests are the gate, not the coach's prose.
 
 _Active 2026-08-27 — WP-622 / EC-657. Related: D-24427 / WP-616 (the per-seat counts), D-24405 / WP-594 (the coach summary extended), D-24432 / WP-621 (the report-card surfacing of the same counts), D-24428 / WP-617 (Vanguard — the first server-side reader), D-24026 (user-visible-surface live-verify)._
+
+### D-24434 — Danger Meter Names the Converted Enemy (Killbots / Skrulls) (Active 2026-08-27 — WP-623 / EC-658)
+
+**Context.** WP-612 split `escaped-pile` into `escaped-bystander` because a bystander-counting scheme tracks *bystanders* carried into the escaped pile, so the generic "Escaped" both mislabeled the quantity and collided with the raw escaped-villain count. The `escaped-converted` kind has the identical defect: two schemes — Replace Earth's Leaders with Killbots (origin `killbot`) and Secret Invasion of the Skrull Shapeshifters (origin `skrull`) — lose when a threshold of *converted* villains of one origin escapes. Converted cards are typed `'villain'` for routing, so the meter counts a **subset** of the escaped pile, yet the client labeled it "Escaped" — a Killbots player saw "Escaped 3/5" while non-Killbot escapees sat uncounted in the same pile.
+
+**Decision.** The `escaped-converted` scheme-loss kind is split by origin: `escaped-killbot` (labelled **"Killbots"**) and `escaped-skrull` (labelled **"Skrulls"**), so the danger meter names the enemy it actually counts. `resolveSchemeLossKind` maps `condition.origin` through an exhaustive `escapedConvertedKind()` switch; the `SchemeLossKind` union and the `SCHEME_LOSS_KINDS` runtime drift pin move in lockstep. This extends D-24423 (WP-612) from bystanders to converted villains.
+
+**Corollaries.**
+1. **Projection-only.** `SchemeLossKind` is derived from `G` at projection time (D-24367 §2), not a stored `G` field — no `finalStateHash` / `PRE_WP080_HASH` re-pin, no `G`-field, no migration.
+2. **Label fidelity only.** The loss threshold, the counted quantity (`countEscapedByConvertedOrigin`), and the projection pipeline are unchanged — only the kind the client labels from and its noun.
+3. **Origin-exhaustive.** The origin→kind map is an explicit `switch`, so a future `ConvertedVillainOrigin` fails to compile rather than silently mislabelling the meter.
+4. **Other kinds unchanged.** `hero-deck`, `wound-stack`, `escaped-pile`, `escaped-bystander`, `twists` keep their labels.
+
+_Active 2026-08-27 — WP-623 / EC-658. Related: D-24423 / WP-612 (the `escaped-bystander` split this mirrors), D-24367 / WP-562 (the danger-meter projection + label boundary), D-24325 / WP-513 (converted-villain origins), D-24026 (user-visible-surface live-verify)._
