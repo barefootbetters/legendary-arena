@@ -129,12 +129,43 @@ frictionless, flattering option.)
 Legendary Arena is not a celebration of deconstruction. It is a celebration
 of aspiration. The heroes point upward; the game intends to do the same.
 
-> Legendary Arena rejects stories that merely tear down. Its heroes,
-> mentors, and legacies are meant to point upward — giving players something
-> worthy to admire, inherit, and become.
+**Receive, become, pass on.** The upward pull is not innocence without trial,
+perfection without growth, or nostalgia without judgment — it is *formation
+toward the good*, and it runs in a definite direction:
+
+1. Receive what is good.
+2. Learn from those who came before.
+3. Confront weakness and evil honestly.
+4. Grow through discipline, sacrifice, correction, and repentance.
+5. Become capable of carrying the inheritance.
+6. Pass it forward without erasing its source.
+
+A worthy mentor does not manufacture a copy of himself; he prepares another
+person to stand, choose, serve, and eventually teach. A worthy student does
+not stay permanently dependent, nor does he pretend to be self-made — he
+receives what is true, makes it his own through faithful action, surpasses
+what he was, and hands the inheritance on. **Receiving is not the opposite of
+agency; it is what forms agency in the first place.**
+
+The original **Luke Skywalker** is this motion in full. He begins
+inexperienced, not contemptibly defective. Obi-Wan calls him toward a larger
+life and hands him an inheritance; Yoda trains, corrects, and disciplines him.
+Luke does not become smaller by receiving their wisdom — he becomes capable of
+carrying it forward. His mistakes come when he *resists* counsel, acts
+prematurely, or gives fear too much authority; his triumph comes through
+growth, faith, courage, love, and his refusal to surrender his father to evil.
+**Receiving guidance is not one of Luke's failures; it is one of his
+virtues.** The mentors are not obstacles he must destroy to "become himself" —
+they are gifts, and acting on his own at the end is the *fruit* of their
+formation, not proof that the formation was unnecessary. (The sequel trilogy's
+inversion of exactly this arc is the case study in
+[the pattern below](#the-pattern-tearing-down-the-one-who-paved-the-way).)
+
+> **Legendary Arena preserves the upward pull: heroes receive wisdom,
+> confront evil and their own weakness, grow through courage and correction,
+> and pass a worthy inheritance to the next generation.**
 >
-> *Shorter still:* **Build upward. Honor the inheritance. Give the next
-> generation something worthy to become.**
+> *Shorter still:* **Receive the good. Become worthy of it. Pass it on.**
 
 ### The pattern: tearing down the one who paved the way
 
@@ -151,9 +182,18 @@ Luke had to grow into. The sequels re-drew the grown Luke as a bitter,
 defeated hermit who at his lowest considered murdering his own nephew in
 his sleep, then exiled himself. (Rey is the sequels' protagonist; Kylo Ren
 is the fallen nephew — worth naming precisely, because the *point* is that
-the mentor lineage itself was the thing broken down.) Whatever one thinks
-of it as drama, the structural move is unmistakable: the teacher is
-diminished so the successor can stand alone.
+the mentor lineage itself was the thing broken down.) Whatever one thinks of
+it as drama, the structural move is unmistakable — and it is worth stating
+precisely, because it is *not* the David pattern of a grave failure recorded
+as warning, confrontation, consequence, and repentance
+([the flawed hero](#the-flawed-hero--failure-that-teaches-not-failure-that-dismisses)).
+The hopeful student who received an inheritance, redeemed his father, and was
+ready to pass wisdom forward is rewritten into its opposite: a broken recluse
+who abandons both the responsibility and the inheritance entrusted to him. That is the
+mature fruit of his original journey ([drawn out above](#the-upward-pull--what-the-game-is-for))
+turned into a *repudiation* of that journey: character deconstruction used to
+break the lineage and clear the ground for a replacement. The teacher is not
+merely diminished — he is unmade, so the successor can stand on the ruins.
 
 Comics run the same move constantly, through the **retcon**. Take an
 established character with decades of accumulated history — an origin, a
@@ -528,10 +568,12 @@ stories can reveal the very same flaw and end in opposite places:
 
 That is the same **addition versus overwrite** line the next section draws,
 applied to a single character's flaws. David's sin is *added* to the record;
-it does not *overwrite* David. Luke Skywalker's failures could just as easily
-*deepen* Luke — a fall told with reverence for what was lost — rather than
-*erase* him. A hero's flaw should make him more understandable and more human
-while preserving what made him worth admiring in the first place.
+it does not *overwrite* David. A hero's flaw, handled this way, makes him more
+understandable and more human while preserving what made him worth admiring —
+*deepening* the character rather than *erasing* him. (That is exactly the
+difference between the original Luke Skywalker and the sequels' version of
+him, drawn out under [the Upward Pull](#the-upward-pull--what-the-game-is-for)
+and [the pattern](#the-pattern-tearing-down-the-one-who-paved-the-way).)
 
 So: heroes may be flawed, mentors may stumble, legacies may be complicated.
 The purpose of revealing a flaw is to **illuminate the path upward, not to
