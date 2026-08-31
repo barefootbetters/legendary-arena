@@ -73,6 +73,7 @@ import { loadBillingConfig, createStripeClient } from './billing/billing.config.
 import { registerLegendsPublisherRoutes } from './legends/legends.routes.js';
 import { registerAutoplayRoutes } from './autoplay/autoplay.mjs';
 import { registerBotAllyRoutes, rehydrateBotAllyDrivers } from './bot-ally/botAllyRoutes.mjs';
+import { registerAddGuestRoutes } from './match/addGuestRoutes.mjs';
 import { requireAuthenticatedSession } from './auth/sessionToken.logic.js';
 import { requireUnsuspendedAccount } from './auth/requireUnsuspendedAccount.js';
 import { createHankoSessionVerifier } from './auth/hanko/hankoVerifier.logic.js';
@@ -1309,6 +1310,14 @@ export async function startServer() {
     accountResolver: verifier === undefined ? undefined : accountResolver,
   };
   registerBotAllyRoutes(server.router, botAllyContext);
+
+  // why: WP-627 / D-24437 — the host-initiated add-guest endpoint (POST
+  // /api/match/add-guest). Reuses the bot-ally context bundle (it needs the same
+  // db + serverUrl + internal-delegation secret + pg pool + authenticated-session
+  // deps): it secret-joins ONE anonymous seat exactly as create-with-bot does,
+  // writes no match_seat_accounts row (D-24120), and drives nothing — a guest is a
+  // human who plays the seat. Candidate B of the ewiki Guest Accounts page.
+  registerAddGuestRoutes(server.router, botAllyContext);
 
   // why: WP-375 / D-24170 restart policy — in-memory bot-ally drivers are lost
   // on restart; re-register a driver for every still-active bot-ally match so a
