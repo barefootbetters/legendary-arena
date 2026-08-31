@@ -263,6 +263,58 @@ export async function joinMatch(
 }
 
 /**
+ * Adds an anonymous guest seat to a match the signed-in host is already in
+ * (WP-628 / D-24438 — the client half of guest play). Calls the WP-627
+ * host-gated `POST /api/match/add-guest`, which secret-joins one non-account
+ * seat and returns its bgio `credentials` so the host can hand off a guest play
+ * link. Mirrors {@link joinMatch}.
+ *
+ * @param matchId    ID of the match to add the guest to.
+ * @param authToken  Bearer token for the host's authenticated session.
+ * @returns The minted seat id and its bgio credential.
+ * @throws Error (with the numeric HTTP `status` attached) on a non-2xx response.
+ */
+export async function addGuest(
+  matchId: string,
+  authToken: string,
+): Promise<{ matchId: string; seat: string; credentials: string }> {
+  const endpoint = `${serverUrl}/api/match/add-guest`;
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${authToken}`,
+    },
+    body: JSON.stringify({ matchId }),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    // why: attach the HTTP status so the caller can map 409 (no open seat — the
+    // cap or a full match) to a specific message while every other non-2xx
+    // falls through to a generic one. joinMatch does not need this; the guest
+    // button does, to give the host an actionable "match is full" line.
+    throw Object.assign(
+      new Error(
+        `Failed to add a guest to match ${matchId} at ${endpoint}: server returned HTTP ${response.status}. ${errorBody}`,
+      ),
+      { status: response.status },
+    );
+  }
+
+  const body = (await response.json()) as {
+    matchId: string;
+    seat: string;
+    credentials: string;
+  };
+  return {
+    matchId: body.matchId,
+    seat: body.seat,
+    credentials: body.credentials,
+  };
+}
+
+/**
  * Fetches a single match by ID from the boardgame.io lobby's per-match route
  * (`GET /games/legendary-arena/:id`). This is a public read like
  * {@link listMatches} (no Authorization header) and, unlike the list route,

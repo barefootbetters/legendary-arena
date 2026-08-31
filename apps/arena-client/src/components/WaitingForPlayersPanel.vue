@@ -4,6 +4,7 @@ import { computed, defineComponent, ref } from 'vue';
 import { useMatchInvites } from '../composables/useMatchInvites';
 import { useMatchSeatStatus } from '../composables/useMatchSeatStatus';
 import { useAuthStore } from '../stores/auth';
+import { addGuest } from '../lobby/lobbyApi';
 import type { MatchInviteApiErrorCode } from '../lib/api/matchInvitesApi';
 
 /**
@@ -83,6 +84,13 @@ export default defineComponent({
     const confirmation = ref<string | null>(null);
     const linkCopied = ref<boolean>(false);
     const isSubmitting = ref<boolean>(false);
+    // why: WP-628 — guest-seat hand-off state. `guestLink` holds the built
+    // ?match&player&credentials URL after a successful add; the rest drive the
+    // button's disabled/copied/error states.
+    const isAddingGuest = ref<boolean>(false);
+    const guestLink = ref<string | null>(null);
+    const guestLinkCopied = ref<boolean>(false);
+    const addGuestError = ref<string | null>(null);
 
     /**
      * Send the invite for the typed handle. A leading `@` is stripped; an empty
@@ -129,6 +137,82 @@ export default defineComponent({
       }
     }
 
+    /**
+     * Add an anonymous guest seat to this match (WP-628 / D-24438). Calls the
+     * host-gated WP-627 endpoint, then builds the guest play link. On failure a
+     * co-op-framed message is shown; the handler never throws.
+     */
+    async function onAddGuest(): Promise<void> {
+      const token = authStore.token;
+      // why: RS-1 — authStore.token is `string | null`. The isVisible gate implies
+      // a token at render, but narrow it explicitly here so vue-tsc is satisfied
+      // without a non-null assertion.
+      if (isAddingGuest.value || !hasMatch || token === null) {
+        return;
+      }
+      addGuestError.value = null;
+      guestLink.value = null;
+      guestLinkCopied.value = false;
+      isAddingGuest.value = true;
+      try {
+        const { seat, credentials } = await addGuest(matchId, token);
+        // why: the guest occupies the seat through the same ?match&player&credentials
+        // URL App.vue's UNGUARDED live route already consumes (createLiveClient
+        // connects with credentials only, no Hanko session). Hot-seat / physical
+        // hand-off only — the remote device-bound seat-bind link is deferred (D-24438).
+        guestLink.value =
+          `${window.location.origin}/?match=${encodeURIComponent(matchId)}` +
+          `&player=${encodeURIComponent(seat)}` +
+          `&credentials=${encodeURIComponent(credentials)}`;
+      } catch (addError) {
+        // why: map the wrapper's attached HTTP status to a co-op message — 409 is
+        // "no open seat" (the cap or a full match), everything else a generic retry.
+        // Never re-throw: a failed add must not break the panel.
+        const status = (addError as { status?: number }).status;
+        addGuestError.value =
+          status === 409
+            ? 'This match is full — there’s no open seat for a guest.'
+            : 'Couldn’t add a guest — please try again.';
+      } finally {
+        isAddingGuest.value = false;
+      }
+    }
+
+    /**
+     * Open the guest seat in a new tab (same-device hot-seat: hand over the
+     * keyboard) once a guest link exists.
+     */
+    function onOpenGuestSeat(): void {
+      if (guestLink.value === null) {
+        return;
+      }
+      // why: RS-2 — window.open is absent/blocked in some contexts; guard it so a
+      // failed open never throws out of the handler (mirrors the clipboard guard).
+      if (typeof window === 'undefined' || typeof window.open !== 'function') {
+        return;
+      }
+      window.open(guestLink.value, '_blank', 'noopener');
+    }
+
+    /**
+     * Copy the guest play link so the host can hand it to a walk-up player on a
+     * second local device. Guarded like {@link onCopyLink}.
+     */
+    async function onCopyGuestLink(): Promise<void> {
+      if (guestLink.value === null) {
+        return;
+      }
+      if (typeof navigator === 'undefined' || navigator.clipboard === undefined) {
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(guestLink.value);
+        guestLinkCopied.value = true;
+      } catch {
+        guestLinkCopied.value = false;
+      }
+    }
+
     return {
       isVisible,
       totalSeats,
@@ -142,6 +226,13 @@ export default defineComponent({
       onInvite,
       onCopyLink,
       inviteErrorMessage,
+      isAddingGuest,
+      guestLink,
+      guestLinkCopied,
+      addGuestError,
+      onAddGuest,
+      onOpenGuestSeat,
+      onCopyGuestLink,
     };
   },
 });
@@ -205,6 +296,57 @@ export default defineComponent({
       role="status"
     >
       {{ inviteErrorMessage(errorCode) }}
+    </span>
+    <button
+      type="button"
+      class="waiting-room-button"
+      data-testid="waiting-room-add-guest"
+      :disabled="isAddingGuest"
+      @click="onAddGuest"
+    >
+      Add guest
+    </button>
+    <div
+      v-if="guestLink !== null"
+      class="waiting-room-guest"
+      data-testid="waiting-room-guest"
+    >
+      <p class="waiting-room-seats">
+        Guest seat ready — open it here (hand over the keyboard) or copy the
+        link to a nearby device.
+      </p>
+      <button
+        type="button"
+        class="waiting-room-link"
+        data-testid="waiting-room-open-guest"
+        @click="onOpenGuestSeat"
+      >
+        Open guest seat
+      </button>
+      <button
+        type="button"
+        class="waiting-room-link"
+        data-testid="waiting-room-copy-guest"
+        @click="onCopyGuestLink"
+      >
+        Copy guest link
+      </button>
+      <span
+        v-if="guestLinkCopied"
+        class="waiting-room-note"
+        data-testid="waiting-room-guest-copied"
+        role="status"
+      >
+        Guest link copied.
+      </span>
+    </div>
+    <span
+      v-if="addGuestError !== null"
+      class="waiting-room-error"
+      data-testid="waiting-room-add-guest-error"
+      role="status"
+    >
+      {{ addGuestError }}
     </span>
   </div>
 </template>

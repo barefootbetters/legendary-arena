@@ -1,7 +1,7 @@
 import { test, describe, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createMatch, createMatchWithBot, fetchMatch, joinMatch, listMatches, serverUrl } from './lobbyApi';
+import { addGuest, createMatch, createMatchWithBot, fetchMatch, joinMatch, listMatches, serverUrl } from './lobbyApi';
 import type { LobbyMatchSummary } from './lobbyApi';
 import type { MatchSetupConfig } from '@legendary-arena/game-engine';
 import { parseLoadoutJson } from './parseLoadoutJson';
@@ -209,6 +209,48 @@ describe('lobbyApi (WP-090)', () => {
     assert.equal(parsed.matchID, 'match-abc');
     assert.equal(parsed.playerID, '0');
     assert.equal(parsed.playerName, 'Tester');
+  });
+
+  test('addGuest POSTs { matchId } with the bearer token and returns { matchId, seat, credentials }', async () => {
+    installFetchStub(() =>
+      jsonResponse(200, {
+        matchId: 'match-abc',
+        seat: '1',
+        credentials: 'guest-secret',
+      }),
+    );
+
+    const result = await addGuest('match-abc', 'host-token');
+    assert.deepEqual(result, {
+      matchId: 'match-abc',
+      seat: '1',
+      credentials: 'guest-secret',
+    });
+    assert.equal(calls[0]!.url, `${serverUrl}/api/match/add-guest`);
+    assert.equal(calls[0]!.init?.method, 'POST');
+    assert.equal(
+      (calls[0]!.init?.headers as Record<string, string>).Authorization,
+      'Bearer host-token',
+    );
+    const parsed = JSON.parse(String(calls[0]!.init?.body)) as { matchId: string };
+    assert.equal(parsed.matchId, 'match-abc');
+  });
+
+  test('addGuest throws a full-sentence Error with the numeric HTTP status attached on a non-2xx', async () => {
+    installFetchStub(() => textResponse(409, 'the match is full'));
+
+    await assert.rejects(
+      () => addGuest('match-abc', 'host-token'),
+      (error: unknown) => {
+        assert.ok(error instanceof Error);
+        assert.match(error.message, /Failed to add a guest/);
+        assert.match(error.message, /HTTP 409/);
+        assert.match(error.message, /\/api\/match\/add-guest/);
+        // the panel maps this status to the "match is full" copy
+        assert.equal((error as { status?: number }).status, 409);
+        return true;
+      },
+    );
   });
 
   test('each helper throws a full-sentence Error on HTTP 500 including endpoint and status', async () => {
