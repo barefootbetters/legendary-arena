@@ -82,6 +82,38 @@ describe('EndgameSummary (WP-578 competitive score)', () => {
   });
 });
 
+describe('EndgameSummary — guest sign-in prompt', () => {
+  test('shows the sign-in prompt for a guest (no score, showGuestSignIn) with a login CTA', () => {
+    const wrapper = mount(EndgameSummary, {
+      props: { gameOver: gameOver(), competitiveScore: null, showGuestSignIn: true },
+    });
+    const prompt = wrapper.find('[data-testid="arena-hud-guest-sign-in"]');
+    assert.ok(prompt.exists(), 'the guest sign-in prompt renders');
+    // why: the CTA must point at the app's sign-in surface (?route=login), or the
+    // conversion prompt is a dead end.
+    assert.equal(wrapper.find('.guest-score-prompt-cta').attributes('href'), '?route=login');
+  });
+
+  test('never shows the guest prompt when a competitive score is present', () => {
+    // why: a signed-in player who was scored must never see the guest CTA, even if
+    // the flag were somehow set — the score presence wins.
+    const wrapper = mount(EndgameSummary, {
+      props: { gameOver: gameOver(), competitiveScore: score(), showGuestSignIn: true },
+    });
+    assert.ok(!wrapper.find('[data-testid="arena-hud-guest-sign-in"]').exists());
+    assert.ok(wrapper.find('[data-testid="arena-hud-competitive-score"]').exists());
+  });
+
+  test('does not show the guest prompt for a non-guest with no score (default false)', () => {
+    // why: a signed-in player whose submit is pending/failed/ineligible has no score
+    // but is NOT a guest — the prompt must stay hidden (no false sign-in nudge).
+    const wrapper = mount(EndgameSummary, {
+      props: { gameOver: gameOver(), competitiveScore: null },
+    });
+    assert.ok(!wrapper.find('[data-testid="arena-hud-guest-sign-in"]').exists());
+  });
+});
+
 /**
  * A full component breakdown, mirroring the server's ScoreBreakdown — the real
  * 2p Red Skull / Midtown game-2 figures (Raw 20, Final 320). penaltyBreakdown

@@ -171,6 +171,11 @@ export default defineComponent({
       return status === 'idle' ? '' : SUBMISSION_MESSAGES[status];
     });
 
+    // why: a guest (no account) is never submitted, so submissionStatus latches to
+    // 'guest'. EndgameSummary uses this to render a sign-in conversion prompt in the
+    // otherwise-empty competitive-score slot, instead of leaving dead space.
+    const isGuestResult = computed<boolean>(() => submissionStatus.value === 'guest');
+
     // why: WP-415 — mounted ONCE at this 01.5 play-root host (the WP-410/412
     // precedent), so the bot-ally stall banner covers BOTH the <PlayMobile> and
     // <PlayDesktop> surfaces. Probes WP-414's status surface once; a non-bot-ally
@@ -301,6 +306,7 @@ export default defineComponent({
       submissionStatus,
       submittedScore,
       submissionMessage,
+      isGuestResult,
       isBotAllyStopped,
       botAllyMessage,
       returnToLobby,
@@ -326,6 +332,7 @@ export default defineComponent({
       :henchman-group-ids="henchmanGroupIds"
       :hero-deck-ids="heroDeckIds"
       :competitive-score="submittedScore"
+      :show-guest-sign-in="isGuestResult"
     />
     <PlayDesktop
       v-else
@@ -335,6 +342,7 @@ export default defineComponent({
       :henchman-group-ids="henchmanGroupIds"
       :hero-deck-ids="heroDeckIds"
       :competitive-score="submittedScore"
+      :show-guest-sign-in="isGuestResult"
     />
     <DiagnosticExportButton />
     <!--
@@ -430,13 +438,15 @@ export default defineComponent({
       :on-return-to-lobby="returnToLobby"
     />
     <!--
-      // why: WP-339 — a small, non-blocking post-match submission status. Shown
-      // only once a submission is in flight or resolved (submissionStatus !== 'idle'),
-      // so it never appears during play and never covers the endgame summary. A
-      // guest sees the sign-in prompt; a signed-in player sees submitted/already/failed.
+      // why: WP-339 — a small, non-blocking post-match submission status for
+      // SIGNED-IN players (submitting/submitted/already/failed/ineligible). Shown
+      // only once a submission is in flight or resolved, so it never appears during
+      // play. The 'guest' case is intentionally excluded here: guests get the richer
+      // in-card sign-in prompt (EndgameSummary showGuestSignIn) instead, so this
+      // toast would be a redundant second sign-in message.
     -->
     <div
-      v-if="submissionStatus !== 'idle'"
+      v-if="submissionStatus !== 'idle' && submissionStatus !== 'guest'"
       class="score-submission-status"
       :class="`score-submission-status--${submissionStatus}`"
       role="status"

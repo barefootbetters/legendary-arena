@@ -72,6 +72,17 @@ export default defineComponent({
       type: Object as PropType<MyCompetitiveScore | null>,
       default: null,
     },
+    // why: when the viewer played this match as a GUEST (no account), the
+    // competitive-score section is absent (competitiveScore is null). Rather than
+    // leave that slot empty, show a sign-in conversion prompt. Forward-looking on
+    // purpose: a guest cannot retroactively save THIS match (seat→account
+    // ownership is fixed at join time, D-24119), so the CTA sells ranking future
+    // matches, not saving this one. Threaded from PlayViewport (submissionStatus
+    // === 'guest').
+    showGuestSignIn: {
+      type: Boolean,
+      default: false,
+    },
   },
   setup(props) {
     // Guarded accessors for optional fields — fail-soft-for-optional per
@@ -415,6 +426,29 @@ export default defineComponent({
       />
     </section>
 
+    <!-- why: guest conversion prompt shown in the (otherwise empty) competitive-
+         score slot — only when the viewer has NO competitive score AND played as a
+         guest. Forward-looking copy on purpose: a guest cannot save THIS match
+         (seat→account ownership is fixed at join time, D-24119), so the CTA sells
+         ranking future matches rather than promising a retroactive save. -->
+    <section
+      v-if="showGuestSignIn && !competitiveScore"
+      class="guest-score-prompt"
+      data-testid="arena-hud-guest-sign-in"
+      aria-label="sign in to save your score"
+    >
+      <p class="guest-score-prompt-headline">Sign in to save your score</p>
+      <p class="guest-score-prompt-detail">
+        You played this match as a guest, so it wasn’t ranked. Sign in to earn a
+        competitive grade and track your results on the leaderboard.
+      </p>
+      <!-- why: `?route=login` is the app's sign-in surface (App.vue, D-16008); an
+           explicit route=login always wins the route resolution, so the link works
+           from the play surface even with `?match=` still in the URL. A plain
+           anchor (full navigation) is fine here — the match is already over. -->
+      <a class="guest-score-prompt-cta" href="?route=login">Sign in</a>
+    </section>
+
     <dl v-if="hasPar && gameOver.par" class="par-breakdown">
       <div class="par-field">
         <dt>Raw score</dt>
@@ -489,6 +523,50 @@ header {
   font-size: 0.85rem;
   opacity: 0.85;
   font-variant-numeric: tabular-nums;
+}
+
+/* why: the guest sign-in prompt occupies the competitive-score slot for a guest.
+   A bordered card (accent tint) so it reads as a real panel rather than dead
+   space, with a clear CTA button. */
+.guest-score-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--color-foreground) 20%, transparent);
+  border-left: 4px solid #0a6bcb;
+  border-radius: 8px;
+  background: color-mix(in srgb, #0a6bcb 8%, transparent);
+}
+
+.guest-score-prompt-headline {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.guest-score-prompt-detail {
+  margin: 0;
+  font-size: 0.85rem;
+  opacity: 0.85;
+  line-height: 1.45;
+}
+
+.guest-score-prompt-cta {
+  display: inline-block;
+  margin-top: 0.15rem;
+  padding: 0.35rem 0.9rem;
+  border-radius: 0.4rem;
+  background: #0a6bcb;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.guest-score-prompt-cta:hover {
+  background: #0959a8;
 }
 
 /* why: WP-593 — the raw score as a two-sided ledger. Two columns (penalties |

@@ -165,6 +165,13 @@ export default defineComponent({
       type: Object as PropType<MyCompetitiveScore | null>,
       default: null,
     },
+    // why: prop-drilled PlayViewport → here → EndgameSummary so the endgame panel
+    // shows a sign-in conversion prompt in the (empty) competitive-score slot when
+    // the viewer played as a guest.
+    showGuestSignIn: {
+      type: Boolean,
+      default: false,
+    },
   },
   setup(props) {
     const store = useUiStateStore();
@@ -570,6 +577,7 @@ export default defineComponent({
         v-if="isGameOver && snapshot.gameOver"
         :game-over="snapshot.gameOver"
         :competitive-score="competitiveScore"
+        :show-guest-sign-in="showGuestSignIn"
       />
       <LobbyControls v-if="isLobbyPhase" :submit-move="submitMove" />
       <!-- why: the shared board renders for the whole play phase regardless of
