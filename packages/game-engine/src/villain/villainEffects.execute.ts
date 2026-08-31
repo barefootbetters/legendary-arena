@@ -1309,6 +1309,42 @@ export function villainCardEscapeTriggersSchemeTwist(
 }
 
 /**
+ * Whether the given card carries ANY onEscape ability of its own — i.e. its
+ * escape is governed by card text (Ultron's `reveal-or-wound`, Mystique's
+ * `become-scheme-twist`, a captured-bystander escape, …) rather than a plain
+ * villain that just slides out of the City.
+ *
+ * Read at the escape fire site (`villainDeck.reveal.ts`) to gate the WP-015
+ * generic per-escape wound (D-24439): a villain whose card text defines its
+ * escape resolves THAT ability instead, so the generic baseline wound must not
+ * stack on top — that stacking double-wounded the active player whenever an
+ * ability-bearing villain (e.g. Ultron) escaped. A plain villain (no onEscape
+ * hook) still takes the generic wound as its baseline escape penalty.
+ *
+ * Pure lookup over `G.villainAbilityHooks`; no mutation. Guards against a G /
+ * test mock without hooks (mirrors `villainCardEscapeTriggersSchemeTwist`).
+ *
+ * @param G - Game state (read-only).
+ * @param cardId - The escaped card's zone-instance ext_id.
+ * @returns true when the card has at least one onEscape hook carrying an effect.
+ */
+export function villainCardHasEscapeAbility(
+  G: LegendaryGameState,
+  cardId: CardExtId,
+): boolean {
+  if (!G.villainAbilityHooks || G.villainAbilityHooks.length === 0) {
+    return false;
+  }
+  const hooks = getVillainHooksForCard(G.villainAbilityHooks, cardId, 'onEscape');
+  for (const hook of hooks) {
+    if ((hook.effects ?? []).length > 0) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * play-villain-deck-cards primitive — a deliberate NO-OP in the executor (WP-542 /
  * D-24351).
  *
