@@ -284,4 +284,23 @@ describe('WaitingForPlayersPanel', () => {
     assert.ok(error.exists());
     assert.ok(error.text().includes('try again'));
   });
+
+  test('WP-629: Done dismisses the guest hand-off (which persists until then)', async () => {
+    setSearch('?match=m1');
+    routeHandler = (url, init) => {
+      if (url.endsWith('/api/match/add-guest') && init.method === 'POST') {
+        return { status: 200, body: { matchId: 'm1', seat: '1', credentials: 'guest-secret' } };
+      }
+      return { status: 200, body: lobbyBody('m1', ['host', undefined]) };
+    };
+    installStubs();
+    const wrapper = mountPanel('tok');
+    await flushPromises();
+    await wrapper.find('[data-testid="waiting-room-add-guest"]').trigger('click');
+    await flushPromises();
+    assert.ok(wrapper.find('[data-testid="waiting-room-guest"]').exists());
+    await wrapper.find('[data-testid="waiting-room-guest-done"]').trigger('click');
+    await flushPromises();
+    assert.equal(wrapper.find('[data-testid="waiting-room-guest"]').exists(), false);
+  });
 });

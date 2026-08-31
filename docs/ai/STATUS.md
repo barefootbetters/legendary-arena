@@ -7,6 +7,15 @@
 
 ## Current State
 
+### WP-629 — "Add guest" in the lobby + persistent hand-off link (EC-664) shipped (2026-08-31)
+
+Two follow-up fixes to WP-628, surfaced by live use:
+
+1. **"Add guest" now lives in the lobby.** WP-628 put the button only on the in-match play surface (`WaitingForPlayersPanel`), so a host managing seats from the **lobby** never saw it. `LobbyView` now shows an **"Add guest"** button on each match with an open seat (for a signed-in host; it is simply hidden when signed out — it **never** redirects to login, unlike "Join"). On click it calls the shipped `addGuest` and shows the guest play link **inline in that match row** (Open guest seat / Copy guest link / Done).
+2. **The hand-off link no longer vanishes.** Adding a guest **fills the seat**, which flipped the panel's open-seat visibility gate false and auto-hid the guest link before the host could copy it. The link now **persists until "Done"** on both surfaces (the panel's `isVisible` stays true while a guest link is set; the lobby tracks the active match's link).
+
+Also extracted a shared `buildGuestPlayUrl` helper in `lobbyApi.ts` (used by both surfaces). Client-only (arena-client), 5 files, additive; realizes D-24438 (no new decision). Arena-client suite **1485 / 1485 pass / 0 fail** + `vue-tsc` 0. Guest play is now reachable from where hosts actually look, and the hand-off link is reliable.
+
 ### WP-628 — "Add guest" lobby button (EC-663 / D-24438) shipped (2026-08-31)
 
 The **client half of guest play** — the arena-client button that realizes WP-627's `POST /api/match/add-guest`. A signed-in host in a live match with an open seat now sees an **"Add guest"** control in `WaitingForPlayersPanel`. On click it calls the endpoint and builds the guest play link `?match=<id>&player=<seat>&credentials=<cred>` — the exact shape the arena-client's **unguarded** `live` route consumes (`createLiveClient` connects with credentials only, no Hanko) — surfaced as **"Open guest seat"** (new tab, same-device hot-seat) and **"Copy guest link"** (a second local device). Failures map to a co-op line (`409` → "match full"; else → generic retry) and never throw.

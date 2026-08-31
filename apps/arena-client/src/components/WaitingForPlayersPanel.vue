@@ -4,7 +4,7 @@ import { computed, defineComponent, ref } from 'vue';
 import { useMatchInvites } from '../composables/useMatchInvites';
 import { useMatchSeatStatus } from '../composables/useMatchSeatStatus';
 import { useAuthStore } from '../stores/auth';
-import { addGuest } from '../lobby/lobbyApi';
+import { addGuest, buildGuestPlayUrl } from '../lobby/lobbyApi';
 import type { MatchInviteApiErrorCode } from '../lib/api/matchInvitesApi';
 
 /**
@@ -74,8 +74,11 @@ export default defineComponent({
       () =>
         hasMatch &&
         authStore.isAuthenticated &&
-        !isFull.value &&
-        openSeats.value > 0,
+        // why: WP-629 — stay visible while a guest link is pending. Adding a guest
+        // FILLS the seat, which flips openSeats to 0 and would otherwise auto-hide
+        // the panel before the host can copy the hand-off link. Keep it up (even
+        // when full) until the host dismisses the guest link.
+        ((!isFull.value && openSeats.value > 0) || guestLink.value !== null),
     );
     const filledSeats = computed(() => totalSeats.value - openSeats.value);
 
@@ -160,10 +163,7 @@ export default defineComponent({
         // URL App.vue's UNGUARDED live route already consumes (createLiveClient
         // connects with credentials only, no Hanko session). Hot-seat / physical
         // hand-off only — the remote device-bound seat-bind link is deferred (D-24438).
-        guestLink.value =
-          `${window.location.origin}/?match=${encodeURIComponent(matchId)}` +
-          `&player=${encodeURIComponent(seat)}` +
-          `&credentials=${encodeURIComponent(credentials)}`;
+        guestLink.value = buildGuestPlayUrl(matchId, seat, credentials);
       } catch (addError) {
         // why: map the wrapper's attached HTTP status to a co-op message — 409 is
         // "no open seat" (the cap or a full match), everything else a generic retry.
@@ -213,6 +213,16 @@ export default defineComponent({
       }
     }
 
+    /**
+     * Dismiss the guest hand-off once the host has copied or opened the link, so
+     * the panel can hide (the seat the guest took is now filled).
+     */
+    function onDismissGuest(): void {
+      guestLink.value = null;
+      guestLinkCopied.value = false;
+      addGuestError.value = null;
+    }
+
     return {
       isVisible,
       totalSeats,
@@ -233,6 +243,7 @@ export default defineComponent({
       onAddGuest,
       onOpenGuestSeat,
       onCopyGuestLink,
+      onDismissGuest,
     };
   },
 });
@@ -339,6 +350,14 @@ export default defineComponent({
       >
         Guest link copied.
       </span>
+      <button
+        type="button"
+        class="waiting-room-link"
+        data-testid="waiting-room-guest-done"
+        @click="onDismissGuest"
+      >
+        Done
+      </button>
     </div>
     <span
       v-if="addGuestError !== null"

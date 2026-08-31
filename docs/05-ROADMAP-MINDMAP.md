@@ -490,6 +490,7 @@ mindmap
         ["WP-327 ✅ Server-side reaper for stale bgio matches — in-process reaper DELETEs finished (1 h grace) / non-gameover (24 h) rows from the bgio schema; 15 min setInterval, SIGTERM stop; EC-357; D-24113"]
         ["WP-627 ✅ Host-initiated add-guest match seat (server; anonymous non-account seat via the create-with-bot secret-join — no match_seat_accounts row, non-ranked, never competitive; per-match cap; EC-662; D-24437)"]
         ["WP-628 ✅ Add-guest lobby button (arena-client; the client half — WaitingForPlayersPanel button calls POST /api/match/add-guest, builds the ?match&player&credentials guest URL the unguarded live route consumes, hot-seat hand-off; EC-663; D-24438)"]
+        ["WP-629 ✅ Add-guest in the lobby + persistent hand-off link (arena-client; follow-up fixes to WP-628 — Add guest in the LOBBY seat list + the hand-off link no longer auto-hides when the guest fills the seat; EC-664; realizes D-24438)"]
 
       Hero/Villain Effects & Diagnostics (2026-07)
         ["WP-310 ✅ Empowered multi-class form (by [hc:X] and [hc:Y]) — per-class composition sum on the WP-256 substrate; clears the 8th-wonder empowered hollow; EC-342; D-24098"]
@@ -802,7 +803,7 @@ mindmap
 | Architecture & API Governance | 4/4 | — |
 | Complete-Game Testing | 1/1 | — |
 | Cross-App Infrastructure | 2/2 | — |
-| Multiplayer Play & Match Durability (2026-07) | 10/10 | — |
+| Multiplayer Play & Match Durability (2026-07) | 11/11 | — |
 | Hero/Villain Effects & Diagnostics (2026-07) | 5/5 | — |
 | Live-Play HUD & Pending-Choice UX (2026-07) | 20/20 | — |
 | Competitive Score Submission & Verification (2026-07) | 10/10 | — |
@@ -811,7 +812,7 @@ mindmap
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **612/622 WP ✅** (+ 4/4 Foundation Prompts) | 3 ⏸, 7 open |
+| **Total** | **613/623 WP ✅** (+ 4/4 Foundation Prompts) | 3 ⏸, 7 open |
 
 **Open / blocked WPs (derived from WORK_INDEX, 10):** WP-042.1 ⏸ blocked; WP-349 open; WP-391 open; WP-398 open; WP-399 open; WP-368 open; WP-403 ⏸ blocked; WP-404 ⏸ blocked; WP-429 open; WP-564 open.
 <!-- ROADMAP-COUNTS:END -->

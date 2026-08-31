@@ -2,6 +2,8 @@
 import { defineComponent, ref, computed, onMounted, watch, nextTick } from 'vue';
 import type { MatchSetupConfig } from '@legendary-arena/game-engine';
 import {
+  addGuest,
+  buildGuestPlayUrl,
   createMatchWithBot,
   fetchMatch,
   joinMatch,
@@ -519,6 +521,91 @@ export default defineComponent({
       return typeof seat.name !== 'string';
     }
 
+    // ── WP-629: host-side "Add guest" in the lobby seat list ──────────────────
+    // why: the "Add guest" affordance lives here (not only the in-match panel) so
+    // a host managing seats from the lobby can seat a walk-up player without
+    // hunting for the play-surface panel. Shown only when signed in; the WP-627
+    // endpoint is the real host/participant gate. Unlike Join, this never
+    // redirects to login — the button is simply hidden when signed out.
+    const isSignedIn = computed(() => authStore.token !== null);
+    const activeGuestMatchId = ref<string | null>(null);
+    const guestSeatLink = ref<{ matchId: string; url: string } | null>(null);
+    const guestSeatError = ref<string | null>(null);
+    const isAddingGuest = ref<boolean>(false);
+    const guestSeatCopied = ref<boolean>(false);
+
+    /**
+     * Add an anonymous guest seat to a match the signed-in host is in (WP-627
+     * `POST /api/match/add-guest`). On success the guest play link shows inline
+     * and persists until dismissed, so the host can copy it after the seat fills.
+     */
+    async function onAddGuest(matchID: string): Promise<void> {
+      const token = authStore.token;
+      if (isAddingGuest.value || token === null) {
+        return;
+      }
+      activeGuestMatchId.value = matchID;
+      guestSeatError.value = null;
+      guestSeatLink.value = null;
+      guestSeatCopied.value = false;
+      isAddingGuest.value = true;
+      try {
+        const { seat, credentials } = await addGuest(matchID, token);
+        guestSeatLink.value = {
+          matchId: matchID,
+          url: buildGuestPlayUrl(matchID, seat, credentials),
+        };
+      } catch (addError) {
+        // why: map the wrapper's attached HTTP status — 409 is "no open seat"
+        // (cap or full); everything else a generic retry. Never re-throw.
+        const status = (addError as { status?: number }).status;
+        guestSeatError.value =
+          status === 409
+            ? 'This match is full — there’s no open seat for a guest.'
+            : 'Couldn’t add a guest — please try again.';
+      } finally {
+        isAddingGuest.value = false;
+      }
+    }
+
+    /** Copy the active guest play link so the host can hand it to a walk-up player. */
+    async function onCopyGuestLink(): Promise<void> {
+      if (guestSeatLink.value === null) {
+        return;
+      }
+      // why: navigator.clipboard is absent in some contexts; guard so a copy
+      // attempt never throws (mirrors the panel idiom).
+      if (typeof navigator === 'undefined' || navigator.clipboard === undefined) {
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(guestSeatLink.value.url);
+        guestSeatCopied.value = true;
+      } catch {
+        guestSeatCopied.value = false;
+      }
+    }
+
+    /** Open the guest seat in a new tab (same-device hot-seat: hand over the keyboard). */
+    function onOpenGuestSeat(): void {
+      if (guestSeatLink.value === null) {
+        return;
+      }
+      // why: window.open may be blocked/absent; guard so a failed open never throws.
+      if (typeof window === 'undefined' || typeof window.open !== 'function') {
+        return;
+      }
+      window.open(guestSeatLink.value.url, '_blank', 'noopener');
+    }
+
+    /** Dismiss the guest hand-off once the host has handed off the link. */
+    function onDismissGuest(): void {
+      activeGuestMatchId.value = null;
+      guestSeatLink.value = null;
+      guestSeatError.value = null;
+      guestSeatCopied.value = false;
+    }
+
     async function joinByReference(): Promise<void> {
       if (isSubmitting.value) {
         return;
@@ -798,6 +885,16 @@ export default defineComponent({
       botAllyBotCount,
       botAllyPolicy,
       createWithBotAlly,
+      isSignedIn,
+      activeGuestMatchId,
+      guestSeatLink,
+      guestSeatError,
+      isAddingGuest,
+      guestSeatCopied,
+      onAddGuest,
+      onCopyGuestLink,
+      onOpenGuestSeat,
+      onDismissGuest,
     };
   },
 });
@@ -1215,6 +1312,64 @@ export default defineComponent({
               </button>
             </li>
           </ul>
+          <div
+            v-if="isSignedIn && match.players.some(isOpenSeat)"
+            class="match-guest"
+          >
+            <button
+              type="button"
+              :disabled="isAddingGuest"
+              :data-testid="'lobby-add-guest-' + match.matchID"
+              @click="onAddGuest(match.matchID)"
+            >
+              Add guest
+            </button>
+            <div
+              v-if="activeGuestMatchId === match.matchID && guestSeatLink !== null"
+              class="match-guest-link"
+              :data-testid="'lobby-guest-ready-' + match.matchID"
+            >
+              <p>
+                Guest seat ready — send this link to your guest (they open it,
+                no sign-in needed):
+              </p>
+              <button
+                type="button"
+                :data-testid="'lobby-guest-open-' + match.matchID"
+                @click="onOpenGuestSeat"
+              >
+                Open guest seat
+              </button>
+              <button
+                type="button"
+                :data-testid="'lobby-guest-copy-' + match.matchID"
+                @click="onCopyGuestLink"
+              >
+                Copy guest link
+              </button>
+              <button
+                type="button"
+                :data-testid="'lobby-guest-done-' + match.matchID"
+                @click="onDismissGuest"
+              >
+                Done
+              </button>
+              <span
+                v-if="guestSeatCopied"
+                role="status"
+                :data-testid="'lobby-guest-copied-' + match.matchID"
+              >
+                Guest link copied.
+              </span>
+            </div>
+            <span
+              v-else-if="activeGuestMatchId === match.matchID && guestSeatError !== null"
+              role="status"
+              :data-testid="'lobby-guest-error-' + match.matchID"
+            >
+              {{ guestSeatError }}
+            </span>
+          </div>
         </li>
       </ul>
     </section>

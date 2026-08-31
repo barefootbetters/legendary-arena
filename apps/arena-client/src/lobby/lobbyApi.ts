@@ -315,6 +315,30 @@ export async function addGuest(
 }
 
 /**
+ * Builds the guest play URL for a minted guest seat (WP-628 / WP-629). Opening it
+ * lands the guest directly in the seat via the arena-client's unguarded `live`
+ * route (`createLiveClient` connects with `credentials` only — no Hanko session).
+ * Same `?match&player&credentials` shape every join path builds. Hot-seat /
+ * physical hand-off only (D-24438).
+ *
+ * @param matchId      The match id.
+ * @param seat         The minted guest seat id.
+ * @param credentials  The seat's bgio playerCredentials.
+ * @returns An absolute play URL the host hands to the guest.
+ */
+export function buildGuestPlayUrl(
+  matchId: string,
+  seat: string,
+  credentials: string,
+): string {
+  return (
+    `${window.location.origin}/?match=${encodeURIComponent(matchId)}` +
+    `&player=${encodeURIComponent(seat)}` +
+    `&credentials=${encodeURIComponent(credentials)}`
+  );
+}
+
+/**
  * Fetches a single match by ID from the boardgame.io lobby's per-match route
  * (`GET /games/legendary-arena/:id`). This is a public read like
  * {@link listMatches} (no Authorization header) and, unlike the list route,
