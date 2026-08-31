@@ -7,6 +7,12 @@
 
 ## Current State
 
+### WP-628 — "Add guest" lobby button (EC-663 / D-24438) shipped (2026-08-31)
+
+The **client half of guest play** — the arena-client button that realizes WP-627's `POST /api/match/add-guest`. A signed-in host in a live match with an open seat now sees an **"Add guest"** control in `WaitingForPlayersPanel`. On click it calls the endpoint and builds the guest play link `?match=<id>&player=<seat>&credentials=<cred>` — the exact shape the arena-client's **unguarded** `live` route consumes (`createLiveClient` connects with credentials only, no Hanko) — surfaced as **"Open guest seat"** (new tab, same-device hot-seat) and **"Copy guest link"** (a second local device). Failures map to a co-op line (`409` → "match full"; else → generic retry) and never throw.
+
+`addGuest(matchId, authToken)` in `lobbyApi.ts` mirrors `joinMatch` (attaching the HTTP status to the thrown error so the panel maps `409`). **Hot-seat / physical hand-off only** — the remote device-bound seat-bind link stays deferred (D-24438). Files (4): `lobbyApi.ts` + `.test.ts`, `WaitingForPlayersPanel.vue` + `.test.ts`. Arena-client suite **1480 / 1480 pass / 0 fail** + `vue-tsc` 0. Client-only — no server/engine/contract change. **D-24438 Active.** Guest play is now reachable end-to-end from the lobby (pending the post-deploy D-24026 live check).
+
 ### WP-627 — Host-initiated "Add Guest" match seat (EC-662 / D-24437) shipped (2026-08-31)
 
 Account-free walk-up co-op play — a group at one table plays without everyone making an account — now has a server endpoint. `POST /api/match/add-guest` lets a signed-in host who is already in a match add ONE anonymous, **non-account** guest seat, modeled on the bot-ally `create-with-bot` secret-join (ewiki Guest Accounts, **Candidate B**, chosen over the shared `guest01`…`guest05` credential pool).
