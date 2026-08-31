@@ -40,13 +40,34 @@ last-reviewed: 2026-08-31
 "Guest access" means letting a person occupy a match seat **without
 creating an account** — so a group at one table can just play. No such
 path exists today: every seat requires a Hanko sign-in, and the word
-"guest" already names three unrelated, mostly-unwired things in the code.
-This page maps that reality and lays out two **proposed** designs for real
-guest play — a shared guest-account pool and a host-side "Add guest" seat —
-and records the tradeoffs. It proposes options; it reserves no `WP-` / `D-`
-and makes no decision — a future Work Packet owns any build.
+"guest" already names several unrelated, mostly-unwired things in the code.
+This page documents that current reality and records two **candidate
+designs** — a shared guest-account pool and a host-created guest seat —
+without choosing between them. It is intentionally **non-prescriptive**: it
+describes current behaviour and records candidate approaches; it does not
+authorize implementation, reserve a `WP-` / `D-`, or establish
+architectural direction.
 
 ## Mechanics
+
+### Current state vs proposed
+
+**Implemented today:**
+
+- Guest accounts do not exist; every match seat requires an authenticated
+  (Hanko) account.
+- `GuestIdentity` is defined but **unwired** — nothing mints one at runtime.
+- Anonymous **"Player N"** seat *rendering* exists, but no production path
+  creates such a seat.
+- Competitive submission already **excludes** non-authenticated players.
+
+**Under consideration (not implemented):**
+
+- Candidate A — a shared guest-account pool.
+- Candidate B — a host-created guest seat.
+
+**No design decision has been made and no Work Packet has been authorized.**
+The rest of this section is the detail behind those lines.
 
 ### "Guest" today — three disconnected forms
 
@@ -68,6 +89,21 @@ There is **no `is_guest` database column anywhere** — the analytics-hygiene
 flag that would separate guest activity from real players does not exist
 yet; it would be net-new.
 
+Counting the two candidate designs below, the single word **"guest"** would
+carry five distinct meanings:
+
+| Term | Meaning | Status |
+|---|---|---|
+| `GuestIdentity` | Ephemeral, no-row anonymous identity type | Implemented (unwired) |
+| Guest traffic | Unauthenticated analytics events | Implemented |
+| Guest submission status | Client-side no-token gameover state | Implemented |
+| Guest seat | A non-account match participant | Proposed (Candidate B) |
+| Shared pool account | A reusable shared-credential account | Proposed (Candidate A) |
+
+The naming overload — and why a new feature under the bare name "guest"
+would collide with the shipped `isGuest` / `guest_not_eligible` vocabulary —
+is discussed under Edge Cases.
+
 ### Why there is no guest play today — the auth gate
 
 To occupy a seat you must have a real account. `POST /api/match/create`
@@ -83,25 +119,31 @@ sit down at all. Join-by-match-ID (WP-499,
 lets any *account holder* join by pasting an ID or link, but it still runs
 through the same authenticated `POST /api/match/join`.
 
-### The ready-made template — the bot-ally seat
+### Existing precedent — bot-ally seats
 
-The engine already secret-joins a **non-account seat**: the "Add bot"
-flow. `POST /api/match/create-with-bot`
-([botAllyRoutes.mjs](../apps/server/src/bot-ally/botAllyRoutes.mjs))
-authenticates the human host, then joins the bot seats using an internal
-delegation secret rather than a player session. A bot seat deliberately
-gets **no `match_seat_accounts` row** (per `DECISIONS.md` D-24120), which
-is exactly the "Player N" shape above, and the match is tagged non-ranked
-by the presence of a
-[match_bot_ally](../data/migrations/033_create_match_bot_ally.sql) row.
-Both proposals below lean on this machinery.
+The engine **already** secret-joins a non-account seat — the "Add bot"
+flow, `POST /api/match/create-with-bot`
+([botAllyRoutes.mjs](../apps/server/src/bot-ally/botAllyRoutes.mjs)). Its
+characteristics:
 
-### Two proposals for real guest play
+- An authenticated **host** initiates creation.
+- An internal delegation secret joins the extra seats (no player session).
+- **No `match_seat_accounts` row** is written for those seats (per
+  `DECISIONS.md` D-24120) — exactly the "Player N" shape above.
+- The match is tagged **non-ranked** by a
+  [match_bot_ally](../data/migrations/033_create_match_bot_ally.sql) row.
+- The seat renders without a player account.
+
+This demonstrates that the platform already supports occupancy of a match
+seat without creating a user account. Both candidate designs below build on
+this precedent.
+
+### Candidate designs
 
 Two shapes solve "let people play without accounts." They differ mainly in
 whether a **shared credential** exists.
 
-#### Proposal A — a shared guest-account pool (`guest01`…`guest05`)
+#### Candidate A — a shared guest-account pool (`guest01`…`guest05`)
 
 A small fixed pool of real accounts — five is the practical ceiling
 (five-player max table). Each is an ordinary
@@ -109,7 +151,7 @@ A small fixed pool of real accounts — five is the practical ceiling
 as the `email` auth provider (e.g. `guest01@legendary-arena.com`), so it
 reuses the entire session / seat stack unchanged. A host hands out (or the
 kiosk auto-fills) a shared guest password; the guest signs in and plays.
-This is the model that motivates the operational controls Jeff sketched:
+This shape is what motivates the operational controls below:
 
 - **A lean server-side usage log** — one row per guest sign-in / seat use:
   slot (`guest03`), timestamp, and IP or derived country. Its purpose is
@@ -132,7 +174,7 @@ This is the model that motivates the operational controls Jeff sketched:
   geo-IP is reliable at country and sloppy at state, so an "Idaho-only" rule
   would lock out the operator's own family on mobile data.
 
-#### Proposal B — a host-side "Add guest" seat (bot-ally clone)
+#### Candidate B — a host-side "Add guest" seat (bot-ally clone)
 
 The host, already signed in, clicks **Add guest**; the server secret-joins
 an anonymous seat exactly as `create-with-bot` does, writes **no**
@@ -153,11 +195,13 @@ path, so there is nothing to leave switched on and nothing to leak.
 | Reuses shipped machinery | Session/seat stack | Session/seat stack **and** the bot-ally secret-join |
 
 The geo-block and usage log exist to *contain* the risk that a shared
-public credential creates. Proposal B removes the credential, so it removes
-that risk rather than containing it — which is why the existing
-architecture favours it.
+public credential creates. Candidate B eliminates that shared-credential
+risk entirely, because no guest login exists to attack; Candidate A retains
+the credential and adds controls to contain it. Whether B's simplicity
+outweighs A's flexibility (dedicated, namable accounts and a reusable kiosk
+login) remains an open design decision — recorded below, not resolved here.
 
-### The lockdown and non-ranked gate (shared by both)
+### Shared constraints (any guest design)
 
 Whichever shape is chosen, a guest seat must be walled off from anything
 that assumes a durable identity:
@@ -172,8 +216,8 @@ that assumes a durable identity:
 - **Nothing durable to reset.** If a guest seat cannot edit a profile, add
   friends, or save loadouts, it accumulates no state, so "reset between
   uses" becomes a non-issue by construction rather than a cleanup job. For
-  Proposal A's shared accounts this means locking those surfaces down; for
-  Proposal B there is no account to carry state at all.
+  Candidate A's shared accounts this means locking those surfaces down; for
+  Candidate B there is no account to carry state at all.
 
 ## Interactions
 
@@ -201,9 +245,9 @@ that assumes a durable identity:
   no-row anonymous identity* — the opposite of a persistent shared pool
   account. A pool built under the bare name "guest account" would collide
   with that vocabulary and the `is_guest` analytics intent. A distinct name
-  for Proposal A (house / kiosk / shared-pool seat) avoids conflating the
+  for Candidate A (house / kiosk / shared-pool seat) avoids conflating the
   two.
-- **Shared credential left on or leaked (Proposal A).** The scenario the
+- **Shared credential left on or leaked (Candidate A).** The scenario the
   usage log exists to catch: a guest slot signing in at an implausible hour
   from an unexpected country signals the enable switch was left on or the
   password escaped. The geo-block narrows the window; the log makes it
@@ -222,22 +266,28 @@ that assumes a durable identity:
 
 ## Open Questions
 
-- **Which proposal** — the lower-risk host-side add-guest seat (B), the
-  shared pool Jeff sketched (A), or both for different contexts (kiosk /
-  in-person vs. remote handoff)? No decision is recorded; a Work Packet
-  should own it.
-- **If Proposal A: real Hanko rows or a bypass?** Provisioning five
-  `email` accounts reuses everything but means shared passwords inside the
-  Hanko model; the alternative is a dedicated non-Hanko guest sign-in path
-  (more surface, more control). Undecided.
-- **The `is_guest` marker.** If pool accounts ship, how are they marked out
-  of real analytics and hard-gated from ranked — a new `players` column, or
-  a small allowlist of the five `ext_id`s checked at the gates? Undecided.
-- **Exact geo-block path scope.** Which route(s) the WAF expression pins to
-  (`play.` guest-login path only) so real players elsewhere are unaffected.
-- **Governance.** No `WP-` / `D-` is reserved for guest play yet. This page
-  is descriptive of today plus a recorded proposal; the design decision
-  belongs in `DECISIONS.md` and a Work Packet before any of it is built.
+The load-bearing decision is first; the rest apply only if a shape that
+needs them is chosen. This page records these questions; it decides none.
+Each would be settled in `DECISIONS.md` and a Work Packet, not here.
+
+- **Which shape — if any?** Candidate A (shared pool), Candidate B
+  (host-created seat), both (e.g. in-person kiosk vs. remote handoff), or
+  neither. Every question below is conditional on this.
+- **If Candidate A — real Hanko rows or a dedicated path?** Five `email`
+  accounts reuse the whole stack but mean shared passwords inside the Hanko
+  model; a dedicated guest sign-in path trades that reuse for tighter
+  control.
+- **If Candidate A — how are pool accounts marked?** A new `players` column
+  versus a small allowlist of the five `ext_id`s checked at the analytics
+  and ranked gates (there is no `is_guest` column today).
+- **If Candidate A — exact geo-block scope.** Which route(s) the single
+  Cloudflare WAF rule pins to, so only the guest-login path is affected.
+- **What governance artifacts are required before any build?** A
+  `DECISIONS.md` record, a Work Packet, and whether shared credentials
+  (Candidate A) warrant a security review.
+
+No `WP-` / `D-` is reserved for guest play. This page is descriptive of
+today plus recorded candidates; it establishes no direction.
 
 ## References
 
