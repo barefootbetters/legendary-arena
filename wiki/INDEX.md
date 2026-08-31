@@ -1,7 +1,7 @@
 # Wiki Index
 
-> **64 / 76** entity pages.
-> Last regenerated: 2026-08-25.
+> **65 / 76** entity pages.
+> Last regenerated: 2026-08-31.
 > See [SCHEMA.md](SCHEMA.md) for the entity-page contract and
 > [README.md](README.md) for purpose, conventions, and authority —
 > including [§ Tradeoffs](README.md#tradeoffs) on what the LLM-wiki
@@ -70,6 +70,15 @@ Coordinated subsystems spanning multiple files / phases.
   surface (Hanko broker); the whole auth stack ships into arena-client
   (`play.legendary-arena.com`); the marketing site (`www.`) has no
   sign-in surface of its own.
+- [Guest Accounts](guest-accounts.md) — *(draft, planning)* letting a
+  person play a seat **without an account**. Maps the three disconnected
+  things "guest" means today (an unwired `GuestIdentity` type, the client
+  no-token `'guest'` status, the derived "Player N" seat) and the
+  account-required play gate, then proposes two shapes: a shared
+  `guest01`…`guest05` pool (with the usage log + Cloudflare geo-block that
+  shared credentials require) versus a host-side "Add guest" seat that
+  clones the bot-ally secret-join and needs neither. Proposes options;
+  reserves no `WP-` / `D-` yet.
 - [Play Board](play-board.md) — The rendered game mat on
   `play.legendary-arena.com`: which board zone reads which `UIState`
   field, and the two-stage projection→render contract (`buildUIState` →
@@ -477,6 +486,7 @@ following are useful entry points:
   [R2 Image Naming Convention](r2-image-naming-convention.md).
 - **`auth`** — Player sign-in and identity:
   [Profile Login](profile-login.md),
+  [Guest Accounts](guest-accounts.md) (account-free seat proposals),
   [Dashboard](dashboard.md) (Hanko login + Cloudflare Access gate),
   [Operational Health Checks](operational-health-checks.md)
   (Hanko JWKS / CORS probes).
