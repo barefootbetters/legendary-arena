@@ -7,6 +7,16 @@
 
 ## Current State
 
+### WP-627 — Host-initiated "Add Guest" match seat (EC-662 / D-24437) shipped (2026-08-31)
+
+Account-free walk-up co-op play — a group at one table plays without everyone making an account — now has a server endpoint. `POST /api/match/add-guest` lets a signed-in host who is already in a match add ONE anonymous, **non-account** guest seat, modeled on the bot-ally `create-with-bot` secret-join (ewiki Guest Accounts, **Candidate B**, chosen over the shared `guest01`…`guest05` credential pool).
+
+The handler authenticates the host, confirms the host is a participant (`readSeatAccounts` contains the session `accountId`), reads occupancy from the bgio match metadata (`db.fetch(matchId, { metadata: true })` — the D-24095/D-24119 framework-store metadata surface, never a `G`/`ctx` read), finds the lowest free seat, enforces a per-match `MAX_GUEST_SEATS_PER_MATCH` (=4) cap, then **secret-joins** that seat via the WP-308 internal-delegation header — writing **NO `match_seat_accounts` row** (D-24120). The rowless seat renders "Player N" and shortens the account roster below the seat count, so `computeRankedEligibility` **rule 2** (`roster.length !== seatCount`) already demotes the match to Casual — **no `match_bot_ally` row, no marker, no migration** (a pre-flight code-trace resolved this; it was originally scoped as a conditional migration). There is **no driver and no auto-ready** — a guest is a human who plays the seat; the endpoint returns `{ matchId, seat, credentials }` for the host to hand off.
+
+Scope is **host hot-seat / physical hand-off only**. The no-auth device-bound seat-bind handoff link and the arena-client "Add guest" button are explicit outs — a future **client** WP.
+
+Files (4): `apps/server/src/match/addGuestRoutes.mjs` (new) + its `.test.ts` (new, 8 unit tests: auth / validation / participant / cap / full / happy-path-rowless), `apps/server/src/server.mjs` (register the route, reusing `botAllyContext`), `docs/ai/REFERENCE/api-endpoints.md` (new `Wired` row, §21 / D-11804). Server suite `pnpm --filter @legendary-arena/server test` = **1416 / 1219 pass / 0 fail / 197 DB-skipped**. No production behavior change outside the new endpoint. **D-24437 Active.**
+
 ### WP-625 — CI Postgres job: the server DB-gated suite now runs in CI (EC-660 / D-24435) shipped (2026-08-27)
 
 The `ci.yml` "Workspace Unit Tests" job runs `pnpm -r test` with **no database**, so every `apps/server` test that self-skips when `TEST_DATABASE_URL` is unset (competition, profile, friendships, badges, replay/capture, seat-account, …) never ran in CI — a DB-only failure merged silently. The WP-591 `parBaseline` NaN (reded the whole competition DB suite on a live DB, repaired in #1684) and the WP-624 injected-seam class were both invisible; `apps/server` has no typecheck lane either.

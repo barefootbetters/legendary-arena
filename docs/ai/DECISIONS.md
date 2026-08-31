@@ -38720,9 +38720,9 @@ _Active 2026-08-27 — WP-625 / EC-660. Related: D-24372 §2 (engine `typecheck:
 
 _Active 2026-08-27 — WP-626 / EC-661. Supersedes the "leaked `pg` pool handle" note in the WP-625 WORK_INDEX / EC-660 rows. Related: WP-625 / D-24435 (the `Server DB Tests` job + `test:db` script this cleans up), D-24037 + D-16308 (the deferred review-window cleanup the unref'd timers implement), the auto-memory `project_db_backed_server_tests_local` (serialize + migrate-first local flow)._
 
-### D-24437 — Host-Initiated "Add Guest" Match Seat: Candidate B over the shared credential pool (Drafted 2026-08-31 — WP-627 / EC-662)
+### D-24437 — Host-Initiated "Add Guest" Match Seat: Candidate B over the shared credential pool (Active 2026-08-31 — WP-627 / EC-662)
 
-**Status:** Drafted 2026-08-31; not yet landed (lands Active at WP-627 execution).
+**Status:** Active 2026-08-31 — landed with the WP-627 execution (EC-662). The shipped mechanism confirmed the pre-flight finding: the match is demoted to Casual by `computeRankedEligibility` rule 2 (`roster.length !== seatCount`) from the guest seat's absent `match_seat_accounts` row — **no `match_bot_ally` row, no marker, no migration**.
 
 **Context.** Account-free "walk-up" co-op play — a group at one table plays without everyone creating an account — has two viable shapes, catalogued on the ewiki Guest Accounts page: **Candidate A**, a small pool of shared `guest01`…`guest05` accounts (real `email`-provider `players` rows with a shared password a host hands out), and **Candidate B**, a host-initiated anonymous match seat modeled on the existing bot-ally `create-with-bot` secret-join. The word "guest" is already overloaded in the codebase (the ephemeral `GuestIdentity` type, unauthenticated analytics traffic, the client no-token submission status), and there is no anonymous seat path today — every match seat requires a Hanko account.
 
@@ -38737,4 +38737,4 @@ _Active 2026-08-27 — WP-626 / EC-661. Supersedes the "leaked `pg` pool handle"
 4. **Identity-consistent (Vision §3/§11).** A guest seat cannot own a replay (`assignReplayOwnership` requires an `AccountId`) nor submit a competitive score; competitive standing stays replay-verified and identity-anchored. Guest play is a free casual convenience — no NG bright-line touched.
 5. **Determinism / persistence.** Server-layer wiring only; no engine or move code, no `G`/`ctx` persistence. Any durable non-ranked marker needed for a guest-only match stays in the `match_*` side-table family (like `match_bot_ally`), never storing `G`.
 
-_Drafted 2026-08-31; not yet landed (lands Active at WP-627 execution). Records the Candidate-A-vs-B choice catalogued on the ewiki Guest Accounts page. Related: D-24120 (bot seat carries no `match_seat_accounts` row; seat 0 never a bot — the mechanism this reuses), WP-354 (the ranked human-clique a guest seat must demote), WP-338 (`guest_not_eligible` competitive submission)._
+_Active 2026-08-31 — WP-627 / EC-662. Records the Candidate-A-vs-B choice catalogued on the ewiki Guest Accounts page. Endpoint: `POST /api/match/add-guest` (`apps/server/src/match/addGuestRoutes.mjs`, registered in `server.mjs` on the bot-ally context). Related: D-24120 (bot seat carries no `match_seat_accounts` row; seat 0 never a bot — the mechanism this reuses), WP-354 / D-24172 (the ranked human-clique + rule 2 a guest seat demotes through), WP-338 (`guest_not_eligible` competitive submission), D-24094 (the WP-308 internal-delegation secret-join), D-24095/D-24119 (the bgio-metadata occupancy read)._
