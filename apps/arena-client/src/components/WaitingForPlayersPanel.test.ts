@@ -50,6 +50,10 @@ function installStubs(): void {
       status,
       ok: status >= 200 && status < 300,
       json: async () => body,
+      // why: the WP-628 addGuest wrapper reads response.text() on a non-2xx to
+      // build its error message; provide it so a stubbed failure surfaces the
+      // real status (not a "text is not a function" TypeError).
+      text: async () => (typeof body === 'string' ? body : JSON.stringify(body)),
     } as Response;
   }) as typeof globalThis.fetch;
 
@@ -182,5 +186,102 @@ describe('WaitingForPlayersPanel', () => {
     assert.ok(clipboardWrites[0]!.includes('/?route=lobby&match=m1'));
     assert.ok(!clipboardWrites[0]!.includes('credentials'));
     assert.ok(wrapper.find('[data-testid="waiting-room-link-copied"]').exists());
+  });
+
+  test('renders an Add guest button while a seat is open (WP-628)', async () => {
+    setSearch('?match=m1');
+    routeHandler = () => ({ status: 200, body: lobbyBody('m1', ['host', undefined]) });
+    installStubs();
+    const wrapper = mountPanel('tok');
+    await flushPromises();
+    assert.ok(wrapper.find('[data-testid="waiting-room-add-guest"]').exists());
+  });
+
+  test('Add guest calls /api/match/add-guest and builds a ?match&player&credentials guest link', async () => {
+    setSearch('?match=m1');
+    routeHandler = (url, init) => {
+      if (url.endsWith('/api/match/add-guest') && init.method === 'POST') {
+        return { status: 200, body: { matchId: 'm1', seat: '1', credentials: 'guest-secret' } };
+      }
+      return { status: 200, body: lobbyBody('m1', ['host', undefined]) };
+    };
+    installStubs();
+    const wrapper = mountPanel('tok');
+    await flushPromises();
+    await wrapper.find('[data-testid="waiting-room-add-guest"]').trigger('click');
+    await flushPromises();
+    assert.ok(wrapper.find('[data-testid="waiting-room-guest"]').exists());
+    await wrapper.find('[data-testid="waiting-room-copy-guest"]').trigger('click');
+    await flushPromises();
+    const guestUrl = clipboardWrites[clipboardWrites.length - 1]!;
+    assert.ok(guestUrl.includes('?match=m1'));
+    assert.ok(guestUrl.includes('player=1'));
+    assert.ok(guestUrl.includes('credentials=guest-secret'));
+  });
+
+  test('Open guest seat opens the guest link in a new tab', async () => {
+    setSearch('?match=m1');
+    routeHandler = (url, init) => {
+      if (url.endsWith('/api/match/add-guest') && init.method === 'POST') {
+        return { status: 200, body: { matchId: 'm1', seat: '1', credentials: 'guest-secret' } };
+      }
+      return { status: 200, body: lobbyBody('m1', ['host', undefined]) };
+    };
+    installStubs();
+    const opened: string[] = [];
+    const originalOpen = window.open;
+    window.open = ((url?: string | URL) => {
+      opened.push(String(url));
+      return null;
+    }) as typeof window.open;
+    try {
+      const wrapper = mountPanel('tok');
+      await flushPromises();
+      await wrapper.find('[data-testid="waiting-room-add-guest"]').trigger('click');
+      await flushPromises();
+      await wrapper.find('[data-testid="waiting-room-open-guest"]').trigger('click');
+      assert.equal(opened.length, 1);
+      assert.ok(opened[0]!.includes('?match=m1'));
+      assert.ok(opened[0]!.includes('player=1'));
+      assert.ok(opened[0]!.includes('credentials=guest-secret'));
+    } finally {
+      window.open = originalOpen;
+    }
+  });
+
+  test('a full match (409) shows the match-full copy', async () => {
+    setSearch('?match=m1');
+    routeHandler = (url, init) => {
+      if (url.endsWith('/api/match/add-guest') && init.method === 'POST') {
+        return { status: 409, body: { error: 'the match is full' } };
+      }
+      return { status: 200, body: lobbyBody('m1', ['host', undefined]) };
+    };
+    installStubs();
+    const wrapper = mountPanel('tok');
+    await flushPromises();
+    await wrapper.find('[data-testid="waiting-room-add-guest"]').trigger('click');
+    await flushPromises();
+    const error = wrapper.find('[data-testid="waiting-room-add-guest-error"]');
+    assert.ok(error.exists());
+    assert.ok(error.text().includes('full'));
+  });
+
+  test('a non-409 add-guest failure shows the generic retry copy', async () => {
+    setSearch('?match=m1');
+    routeHandler = (url, init) => {
+      if (url.endsWith('/api/match/add-guest') && init.method === 'POST') {
+        return { status: 500, body: { error: 'boom' } };
+      }
+      return { status: 200, body: lobbyBody('m1', ['host', undefined]) };
+    };
+    installStubs();
+    const wrapper = mountPanel('tok');
+    await flushPromises();
+    await wrapper.find('[data-testid="waiting-room-add-guest"]').trigger('click');
+    await flushPromises();
+    const error = wrapper.find('[data-testid="waiting-room-add-guest-error"]');
+    assert.ok(error.exists());
+    assert.ok(error.text().includes('try again'));
   });
 });
