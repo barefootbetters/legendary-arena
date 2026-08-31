@@ -501,6 +501,57 @@ describe('createLiveClient spectator-staleness watchdog', () => {
     mock.timers.tick(SPECTATOR_STALE_TIMEOUT_MS + 1);
     assert.deepEqual(stub._ops, ['stop']);
   });
+
+  test('the spectator watchdog RE-ARMS after firing — it keeps retrying while no frame arrives', () => {
+    // why: the terminal-frame safety net. A non-acting seat that silently missed
+    // the gameover broadcast must keep attempting recovery, not give up after one
+    // shot. With no frame arriving to re-arm it (the whole failure mode), the
+    // watchdog must re-arm itself so a second window fires a second resync.
+    const { stub } = startAsPlayer0();
+    stub._subscribers[0]!.callback(frameOnTurn('1', 5));
+
+    mock.timers.tick(SPECTATOR_STALE_TIMEOUT_MS + 1); // window 1 → resync #1
+    assert.deepEqual(stub._ops, ['stop', 'start']);
+
+    // why: past the resync cooldown, the re-armed watchdog fires again — recovery
+    // is retried, not abandoned after the first attempt.
+    mock.timers.tick(SPECTATOR_STALE_TIMEOUT_MS + 1); // window 2 → resync #2
+    assert.deepEqual(stub._ops, ['stop', 'start', 'stop', 'start']);
+  });
+
+  test('a spectator fire SWALLOWED by an open resync cooldown is retried, not lost (freeze fix)', () => {
+    // why: the exact permanent-freeze race. Before the self-re-arm, a spectator
+    // watchdog fire that landed inside an open resync cooldown (opened here by an
+    // unrelated move-ack resync) was swallowed AND never retried — nothing
+    // re-armed it, because no further frame arrives. The seat sat on the
+    // pre-gameover board forever. Now the swallowed fire re-arms and recovers on
+    // the next window.
+    const { handle, stub } = startAsPlayer0();
+
+    // it is seat 1's turn → spectator watchdog armed (deadline at t=15s).
+    stub._subscribers[0]!.callback(frameOnTurn('1', 5));
+
+    // at t=8s the viewer submits a move that goes unacknowledged; its move-ack
+    // watchdog fires at t=12s, opening a resync cooldown (12s → 20s).
+    mock.timers.tick(8000);
+    handle.submitMove('drawCards');
+    mock.timers.tick(4001); // now t=12.001s → move-ack resync fires
+    assert.deepEqual(stub._ops, ['stop', 'start'], 'move-ack resync opened the cooldown');
+
+    // at t=15s the spectator watchdog fires INSIDE that cooldown → swallowed.
+    // Pre-fix this was terminal (no re-arm, no future frame). Post-fix it re-arms.
+    mock.timers.tick(3000); // now t=15.001s → swallowed fire
+    assert.deepEqual(stub._ops, ['stop', 'start'], 'the fire was swallowed by the open cooldown');
+
+    // the re-armed watchdog fires again a full window later, past the cooldown,
+    // and this time performs the recovering resync.
+    mock.timers.tick(SPECTATOR_STALE_TIMEOUT_MS + 1);
+    assert.deepEqual(
+      stub._ops,
+      ['stop', 'start', 'stop', 'start'],
+      'the swallowed fire was retried and recovered instead of freezing',
+    );
+  });
 });
 
 // why: jsdom's default document URL is `about:blank` and its `location`

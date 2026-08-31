@@ -371,8 +371,9 @@ export function createLiveClient(
 
   /**
    * Forces a resync, gated by the shared cooldown and clearing the move-ack
-   * watchdog (we are re-anchoring now). Shared by the spectator-staleness
-   * watchdog fire and the tab-focus handler.
+   * watchdog (we are re-anchoring now). Used by the tab-focus handler (a
+   * one-shot, event-driven recovery). The spectator-staleness watchdog uses the
+   * self-re-arming {@link onSpectatorWatchdogFire} instead.
    */
   function forceCooldownGatedResync(): void {
     if (resyncCoolingDown) {
@@ -381,6 +382,35 @@ export function createLiveClient(
     clearWatchdog();
     performResync();
     beginResyncCooldown();
+  }
+
+  /**
+   * The spectator-staleness watchdog fire: attempt a cooldown-gated resync, then
+   * RE-ARM so recovery keeps being retried until a frame lands or the client
+   * stops. Without the re-arm a single fire that is swallowed by an open resync
+   * cooldown (some other resync fired within the preceding RESYNC_COOLDOWN_MS)
+   * is never retried — nothing re-arms the watchdog because the whole failure
+   * mode is that NO further frame arrives. That is the terminal-frame freeze: a
+   * non-acting seat that silently missed the gameover broadcast would sit on the
+   * pre-gameover board forever. Re-arming turns "one missed recovery = permanent
+   * freeze" into "retry every window until the end screen (or any frame) lands."
+   *
+   * The re-arm is harmless while frames flow: the next frame's
+   * {@link updateSpectatorWatchdog} clears and re-arms this timer (so never a
+   * duplicate), and the recovering gameover frame clears it outright (that frame
+   * is not "spectating another seat", so the watchdog is not re-armed). `stop()`
+   * clears it too.
+   */
+  function onSpectatorWatchdogFire(): void {
+    if (!resyncCoolingDown) {
+      clearWatchdog();
+      performResync();
+      beginResyncCooldown();
+    }
+    spectatorWatchdogTimer = setTimeout(
+      onSpectatorWatchdogFire,
+      SPECTATOR_STALE_TIMEOUT_MS,
+    );
   }
 
   /**
@@ -410,7 +440,7 @@ export function createLiveClient(
     }
     clearSpectatorWatchdog();
     spectatorWatchdogTimer = setTimeout(
-      forceCooldownGatedResync,
+      onSpectatorWatchdogFire,
       SPECTATOR_STALE_TIMEOUT_MS,
     );
   }
