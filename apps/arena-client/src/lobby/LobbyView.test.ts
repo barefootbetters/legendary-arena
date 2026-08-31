@@ -87,6 +87,101 @@ test('with no ?match= param no row is highlighted and order is preserved', async
   assert.ok(!rows[1]!.classes().includes('match-row--highlight'));
 });
 
+// --- WP-629: host-side "Add guest" in the lobby seat list ---
+
+function mountLobbySignedIn(token = 'host-token') {
+  setActivePinia(createPinia());
+  useAuthStore().token = token;
+  return mount(LobbyView);
+}
+
+/** Route fetch by URL: the add-guest POST vs. the lobby list poll. */
+function stubLobbyRoutes(
+  addGuestResponse: { status: number; body: unknown },
+  matches: unknown[],
+): void {
+  globalThis.fetch = (async (url: string | URL, init?: RequestInit) => {
+    const u = String(url);
+    if (u.endsWith('/api/match/add-guest') && init?.method === 'POST') {
+      const { status, body } = addGuestResponse;
+      return {
+        status,
+        ok: status >= 200 && status < 300,
+        json: async () => body,
+        text: async () => (typeof body === 'string' ? body : JSON.stringify(body)),
+      } as Response;
+    }
+    return { ok: true, status: 200, json: async () => ({ matches }) } as Response;
+  }) as typeof globalThis.fetch;
+}
+
+test('WP-629: Add guest button shows for a signed-in host on a match with an open seat', async () => {
+  setSearch('?route=lobby');
+  stubMatches([rawMatch('m1', ['host', undefined])]);
+  const wrapper = mountLobbySignedIn();
+  await flushPromises();
+  assert.ok(wrapper.find('[data-testid="lobby-add-guest-m1"]').exists());
+});
+
+test('WP-629: Add guest button is hidden when signed out', async () => {
+  setSearch('?route=lobby');
+  stubMatches([rawMatch('m1', ['host', undefined])]);
+  const wrapper = mountLobby();
+  await flushPromises();
+  assert.equal(wrapper.find('[data-testid="lobby-add-guest-m1"]').exists(), false);
+});
+
+test('WP-629: clicking Add guest calls the endpoint, shows a persistent guest link, and Done dismisses it', async () => {
+  setSearch('?route=lobby');
+  stubLobbyRoutes(
+    { status: 200, body: { matchId: 'm1', seat: '1', credentials: 'guest-secret' } },
+    [rawMatch('m1', ['host', undefined])],
+  );
+  const clipboardWrites: string[] = [];
+  const originalClipboard = globalThis.navigator?.clipboard;
+  Object.defineProperty(globalThis.navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText: async (t: string) => { clipboardWrites.push(t); } },
+  });
+  try {
+    const wrapper = mountLobbySignedIn();
+    await flushPromises();
+    await wrapper.find('[data-testid="lobby-add-guest-m1"]').trigger('click');
+    await flushPromises();
+    assert.ok(wrapper.find('[data-testid="lobby-guest-ready-m1"]').exists());
+    await wrapper.find('[data-testid="lobby-guest-copy-m1"]').trigger('click');
+    await flushPromises();
+    const url = clipboardWrites[clipboardWrites.length - 1]!;
+    assert.ok(url.includes('?match=m1'));
+    assert.ok(url.includes('player=1'));
+    assert.ok(url.includes('credentials=guest-secret'));
+    // the link persists until dismissed
+    await wrapper.find('[data-testid="lobby-guest-done-m1"]').trigger('click');
+    await flushPromises();
+    assert.equal(wrapper.find('[data-testid="lobby-guest-ready-m1"]').exists(), false);
+  } finally {
+    Object.defineProperty(globalThis.navigator, 'clipboard', {
+      configurable: true,
+      value: originalClipboard,
+    });
+  }
+});
+
+test('WP-629: a full match (409) shows the match-full copy in the lobby', async () => {
+  setSearch('?route=lobby');
+  stubLobbyRoutes(
+    { status: 409, body: { error: 'the match is full' } },
+    [rawMatch('m1', ['host', undefined])],
+  );
+  const wrapper = mountLobbySignedIn();
+  await flushPromises();
+  await wrapper.find('[data-testid="lobby-add-guest-m1"]').trigger('click');
+  await flushPromises();
+  const err = wrapper.find('[data-testid="lobby-guest-error-m1"]');
+  assert.ok(err.exists());
+  assert.ok(err.text().includes('full'));
+});
+
 // --- WP-371: player-count pre-submit check on the manual create form ---
 
 const SETUP_REQUIREMENTS = {
