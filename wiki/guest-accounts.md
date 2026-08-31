@@ -50,6 +50,17 @@ architectural direction.
 
 ## Mechanics
 
+### At a glance
+
+| Question | Answer today |
+|---|---|
+| Can a person sit without an account? | **No** — create and join both require a Hanko session. |
+| Does `GuestIdentity` do anything in production? | **No** — defined, unwired, never minted. |
+| Can a seat render as "Player N"? | Yes, as a rendering path; nothing creates that seat for a human. |
+| Can a guest submit competitively? | **No** — refused on server, client, and (for bot-shaped seats) the match tag. |
+| Closest shipped precedent | Bot-ally: host-initiated secret-join, no `match_seat_accounts` row, match tagged non-ranked. |
+| Decision | **Open** — Candidate A (shared pool) vs Candidate B (host-created seat) vs both vs neither. |
+
 ### Current state vs proposed
 
 **Implemented today:**
@@ -193,6 +204,9 @@ path, so there is nothing to leave switched on and nothing to leak.
 | Usage log needed | Yes — to detect leak / left-on | Optional (host is already identified) |
 | Build cost | New accounts + login lockdown + log + WAF rule | Clone `create-with-bot` with a human driver |
 | Reuses shipped machinery | Session/seat stack | Session/seat stack **and** the bot-ally secret-join |
+| Concurrent tables | Pool of 5 is a **deployment-wide** cap unless the pool grows | Limited only by match size and host action |
+| Durable identity | Yes — a real `players` row, so surfaces must be locked down | No account, so no profile / friends / loadout state |
+| Typical UX | Kiosk, or "here is the guest password" | Host adds a seat; guest uses the host screen or a handoff link |
 
 The geo-block and usage log exist to *contain* the risk that a shared
 public credential creates. Candidate B eliminates that shared-credential
@@ -263,6 +277,19 @@ that assumes a durable identity:
   for ranked eligibility must count a guest the way it counts a bot: a seat
   that keeps the match Casual. Silently letting a guest seat satisfy the
   clique would be an exploit.
+- **One pool slot, two tables (Candidate A).** If Hanko / session / seat
+  binding assumes one live occupant per account, two tables cannot both be
+  `guest03` — so a pool of five is a **deployment-wide** cap, not a
+  per-match one. Kick-previous-session vs. reject-the-second-login vs.
+  grow-the-pool is undecided.
+- **Candidate B's handoff client is not one thing.** "Plays on the host's
+  screen" and "a handed-off join link" are different products. A join link
+  that still requires Hanko is not guest play; a link that binds a seat to a
+  device with no account is **new protocol work on top of the bot-ally
+  clone**, not a free part of it.
+- **How many guest seats per match.** One extra human vs. filling the table.
+  The guest analogue of bot-fill needs an **explicit cap** so a host cannot
+  launder a ranked lobby by seating guests.
 
 ## Open Questions
 
@@ -282,6 +309,12 @@ Each would be settled in `DECISIONS.md` and a Work Packet, not here.
   and ranked gates (there is no `is_guest` column today).
 - **If Candidate A — exact geo-block scope.** Which route(s) the single
   Cloudflare WAF rule pins to, so only the guest-login path is affected.
+- **If Candidate A — concurrency policy.** One live session per pool slot?
+  What happens when a sixth table wants a guest? Is five still the right
+  pool size once two matches run at once?
+- **If Candidate B — what is the guest's client?** Host hot-seat only, or a
+  no-auth seat-bind link? The second is not a free clone of
+  `create-with-bot`.
 - **What governance artifacts are required before any build?** A
   `DECISIONS.md` record, a Work Packet, and whether shared credentials
   (Candidate A) warrant a security review.
