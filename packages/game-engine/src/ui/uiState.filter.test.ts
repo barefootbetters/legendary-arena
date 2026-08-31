@@ -1795,3 +1795,112 @@ describe('filterUIStateForAudience — recruit-as-attack cue flag (WP-581 / D-24
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// gameOver survives the audience filter for EVERY seat (report-card delivery)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a UIState whose game has ended, by latching a terminal endgame
+ * counter before projection so `buildUIState` populates `gameOver`
+ * (uiState.build.ts §14). `condition` picks which terminal branch fires;
+ * `activePlayer` sets the projecting ctx's current player so the fixture can
+ * model "the seat that landed the final move" independently of the audience.
+ */
+function createGameOverUIState(
+  condition: (typeof ENDGAME_CONDITIONS)[keyof typeof ENDGAME_CONDITIONS],
+  activePlayer: string,
+): UIState {
+  const config = createTestConfig();
+  const registry = createMockRegistry();
+  const setupContext = makeMockCtx();
+  const gameState = buildInitialGameState(config, registry, setupContext);
+
+  // why: latch the terminal condition so evaluateEndgame returns non-null and
+  // buildUIState projects a gameOver block. A single count is enough for every
+  // branch (evaluateEndgame reads `>= 1`).
+  gameState.counters[condition] = 1;
+
+  return buildUIState(gameState, { phase: 'play', turn: 4, currentPlayer: activePlayer });
+}
+
+describe('filterUIStateForAudience — gameOver reaches every seat', () => {
+  // why: the reported bug was "the end-of-match report card only shows for the
+  // player who started the session." The projection is seat-independent
+  // (buildUIState §14 reads shared G.counters; uiState.filter.ts passes gameOver
+  // through with no audience gate — unlike the pending*Choice fields). These
+  // tests pin that contract: a terminal frame projected while player '0' is the
+  // active seat must still carry the identical gameOver for player '1' and a
+  // spectator. If this ever regresses, non-acting seats would silently lose the
+  // end screen at the filter whitelist — the exact drop mode documented for
+  // scheme.display/gameText in ARCHITECTURE.md's Board-Visible Field Rule.
+  it('active player (the seat that ended the match) sees gameOver', () => {
+    const uiState = createGameOverUIState(ENDGAME_CONDITIONS.MASTERMIND_DEFEATED, '0');
+    assert.ok(uiState.gameOver !== undefined, 'buildUIState must populate gameOver for a terminal state');
+
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+    assert.ok(result.gameOver !== undefined, 'the active seat must see gameOver');
+    assert.equal(result.gameOver.outcome, 'heroes-win');
+    assert.equal(result.gameOver.reason, 'The mastermind has been defeated.');
+  });
+
+  it('a NON-active seat sees the identical gameOver (the report-card bug regression guard)', () => {
+    // why: player '0' is active (the seat that landed the killing blow); player
+    // '1' is passive. Before this guard, nothing pinned that '1' still receives
+    // gameOver — the whole point of the bug report.
+    const uiState = createGameOverUIState(ENDGAME_CONDITIONS.MASTERMIND_DEFEATED, '0');
+
+    const result = filterUIStateForAudience(uiState, PLAYER_1);
+    assert.ok(result.gameOver !== undefined, 'a non-active seat must ALSO see gameOver');
+    assert.equal(result.gameOver.outcome, 'heroes-win');
+    assert.equal(result.gameOver.reason, 'The mastermind has been defeated.');
+    // why: gameOver is public board state — a non-active seat sees the SAME
+    // block the active seat does, byte-for-byte (no per-audience redaction).
+    assert.deepEqual(result.gameOver, uiState.gameOver);
+  });
+
+  it('a spectator sees the identical gameOver', () => {
+    const uiState = createGameOverUIState(ENDGAME_CONDITIONS.MASTERMIND_DEFEATED, '0');
+
+    const result = filterUIStateForAudience(uiState, SPECTATOR);
+    assert.ok(result.gameOver !== undefined, 'a spectator must see gameOver');
+    assert.deepEqual(result.gameOver, uiState.gameOver);
+  });
+
+  it('gameOver reaches every audience for every terminal outcome', () => {
+    // why: exercise each evaluateEndgame branch so the passthrough is pinned for
+    // the full EndgameOutcome union, not just a heroes-win — a future filter
+    // edit that redacted one outcome would be caught here.
+    const cases: ReadonlyArray<{
+      condition: (typeof ENDGAME_CONDITIONS)[keyof typeof ENDGAME_CONDITIONS];
+      outcome: string;
+    }> = [
+      { condition: ENDGAME_CONDITIONS.MASTERMIND_DEFEATED, outcome: 'heroes-win' },
+      { condition: ENDGAME_CONDITIONS.SCHEME_LOSS, outcome: 'scheme-wins' },
+      { condition: ENDGAME_CONDITIONS.FINAL_TURN_TIE, outcome: 'tie' },
+      { condition: ENDGAME_CONDITIONS.MATCH_ENDED_EARLY, outcome: 'tie' },
+    ];
+    for (const testCase of cases) {
+      const uiState = createGameOverUIState(testCase.condition, '0');
+      for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+        const result = filterUIStateForAudience(uiState, audience);
+        assert.ok(
+          result.gameOver !== undefined,
+          `gameOver must survive the filter for ${audience.kind} ${audience.kind === 'player' ? audience.playerId : ''} on a ${testCase.outcome} outcome`,
+        );
+        assert.equal(result.gameOver.outcome, testCase.outcome);
+      }
+    }
+  });
+
+  it('the early-end marker survives the filter for a non-active seat', () => {
+    // why: WP-502 / D-24306 — the endedEarly flag drives the client's
+    // "ended early, not scored" labelling. A non-active seat must receive it
+    // too, or its endgame panel would mislabel the match.
+    const uiState = createGameOverUIState(ENDGAME_CONDITIONS.MATCH_ENDED_EARLY, '0');
+    assert.equal(uiState.gameOver?.endedEarly, true);
+
+    const result = filterUIStateForAudience(uiState, PLAYER_1);
+    assert.equal(result.gameOver?.endedEarly, true, 'endedEarly must reach the non-active seat');
+  });
+});
