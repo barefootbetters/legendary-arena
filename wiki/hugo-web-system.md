@@ -390,6 +390,171 @@ state, it belongs on `play`/the engine, not shoehorned into either stack.
 - UnfoldCMS — "Hugo vs WordPress in 2026" (editor UX as the deciding
   dimension)
 
+## Hugo — strengths, limits, and what would make it better {#hugo-strengths-and-limits}
+
+The [previous section](#hugo-vs-wordpress) argues Hugo *against WordPress*.
+This one is the fair scorecard of Hugo *on its own terms* — what it is
+genuinely good at, where it hurts, and the handful of product upgrades that
+would keep it competitive with Astro without turning it into Node. It is here
+so a future author picking a stack for an LA property knows the tax as well
+as the win.
+
+Hugo is a fast static site generator written in Go. It is excellent at
+turning Markdown and templates into HTML files. It is **not** a CMS, not a
+component framework, and not an application runtime. Most "Hugo is bad"
+complaints are that last sentence in disguise.
+
+### Pros
+
+- **Build speed.** A single Go binary rebuilds thousands of pages in seconds.
+  At tens of thousands of pages the gap versus Astro/Eleventy is real (often
+  5–10×). For a wiki, catalog, or card registry that is the point.
+- **Operational simplicity.** One binary, no `node_modules` for the core
+  build, no PHP, no database. Install is `hugo`, deploy is "sync `public/` to
+  a CDN." CI stays small.
+- **Zero JS by default.** Output is HTML; interactivity is opt-in. Lighthouse
+  scores in the mid-to-high 90s are normal if you do not drag in a theme's
+  leftover jQuery.
+- **Security surface.** No `wp-admin`, no plugin PHP, no request-time
+  renderer. Attackers hit a CDN cache of files.
+- **Content model.** Sections, archetypes, taxonomies, page bundles,
+  multilingual sites, and multiple output formats (HTML, RSS, JSON, AMP) are
+  first-class. Content adapters can generate pages from JSON/YAML/remote APIs
+  at build time — which is how a card registry or shop catalog *should* work.
+- **Asset pipeline is better than its reputation.** Hugo Pipes already do
+  Sass, Tailwind, PostCSS, image resize/WebP, JS bundling via esbuild
+  (`js.Build` / `js.Batch`), minify, and SRI fingerprinting. You do not need
+  Webpack for a marketing site.
+- **Git-native.** Pages are files. Diffs, PRs, preview deploys, rollbacks,
+  and AI agents all work on the same tree. That is why it fits an engineering
+  wiki.
+- **Stability.** Sites from years ago still build. The v0.146 template-system
+  rewrite was a real break for some themes, but the project's default is
+  compatibility, not a yearly framework rewrite.
+- **Cost.** Cloudflare Pages / GitHub Pages / object storage + CDN is often
+  $0–$20. Commerce and forms sit at the edge (Snipcart, Stripe, Brevo — see
+  [Commerce](#commerce-snipcart)), not inside the generator.
+
+### Cons
+
+- **Go templates.** This is the tax. `{{ range .Pages }}` is not JSX, not
+  Nunjucks, not Liquid. Logic in templates gets ugly fast. Partial
+  composition exists; a real component model does not. Hiring and onboarding
+  hurt if the team is JS-native.
+- **No islands / no first-class interactivity.** A filterable card browser,
+  live search UI, or quiz is hand-rolled JS or an embed. Astro's islands are
+  cleaner when a page is "mostly static plus one widget."
+- **Editor experience.** There is no `wp-admin`. Non-technical publishing
+  needs Decap, Front Matter CMS, Tina, or "open a PR." Preview is a branch
+  deploy, not a button next to the draft. For daily non-dev publishing, this
+  is still WordPress's win.
+- **Theme ecosystem is stale.** Many popular themes (including older
+  PaperMod-era stacks — the marketing site's own base) predate modern CSS,
+  the v0.146 layout rules, and current image pipelines. You inherit CSS and
+  JS you did not choose.
+- **DX vs Vite.** Live reload works; it is not Vite HMR. Front matter is not
+  type-checked unless you add a schema yourself. Astro Content Collections
+  catch bad YAML at build time; Hugo will often render the bad page anyway.
+- **Dynamic features are out of scope.** Auth, per-user HTML, carts with
+  server state, comments with moderation, scheduled server-side jobs — those
+  are APIs or a real app (`play`/the engine), not Hugo plugins. See [what
+  Hugo will not replace](#what-hugo-will-not-replace).
+- **MDX / component-in-Markdown is weak.** You get shortcodes and render
+  hooks, not "drop a typed React component in the article body."
+- **Plugin/module culture is thinner.** Hugo Modules exist, but the JS
+  integration catalog (analytics, CMS widgets, image CDNs as npm packages) is
+  thicker around Astro.
+- **Some upgrades are footguns.** Extended vs standard binary (Sass/WebP live
+  in extended — this repo pins Extended, see [Hugo version pin
+  topology](#local-development)). The `resources/` cache must be kept or image
+  builds reprocess from scratch. Cloudflare Pages' `_redirects` cap (2,000
+  rules) is a host limit, not Hugo's, but Hugo users hit it on migrations.
+
+### What would actually improve Hugo (the product)
+
+Core upgrades, in rough priority order, for a 2026 SSG that wants to stay
+relevant against Astro without becoming Node. These are opinions about the
+*upstream project*, not LA work items.
+
+1. **A real component model on top of Go templates.** Named, scoped,
+   slot-based partials with required params and default slots. Today you pass
+   `dict` bags and hope. This is the #1 DX complaint and the reason people
+   leave for `.astro` files.
+2. **Typed content schemas.** Front matter and adapter-generated pages
+   validated at build (required fields, enums, relations). Fail the build on a
+   shop SKU missing `price`. Astro already does this with Zod; Hugo should do
+   it in the binary.
+3. **Incremental, content-aware rebuilds that stay correct.** Partial
+   rebuilds exist in spirit; large image-heavy sites still feel like "warm
+   cache or wait." Fine-grained invalidation (this Markdown file + these
+   templates + these images) would close most of the remaining speed
+   conversation for mid-size sites.
+4. **Islands as a first-class output, not a convention.** Mark a partial
+   `client:load` / `client:visible`, hash and ship only that JS, keep default
+   zero-JS. This is how Hugo stops losing every "one interactive widget" site
+   without becoming React.
+5. **Modern default asset story.** First-class CSS modules or scoped CSS, a
+   built-in View Transitions option, current image defaults (AVIF/WebP,
+   `srcset`, width/height to kill CLS) without a custom render hook on every
+   project.
+6. **Stable template API after v0.146.** The new lookup system is the right
+   idea; the theme upgrade path needs a compatibility linter ("this
+   `_internal/opengraph.html` call dies in 0.146; here is the patch"). Theme
+   rot is an ecosystem problem caused by silent template-API drift.
+7. **Better data → pages story.** Content adapters are the start. Official
+   patterns for pagination, incremental remote fetch, and draft/preview of
+   adapter pages would make catalogs and registries less custom.
+8. **Preview and editor protocol.** A small documented API that
+   Decap/Tina/VS Code/any agent can use: list collections, validate front
+   matter, request a preview URL. Hugo should not *become* a CMS — it should
+   be a good citizen of Git-backed editors.
+9. **MDX-or-equivalent without Node as a hard requirement.** Shortcodes cover
+   80%. The other 20% is "embed a typed widget in Markdown." A sanctioned,
+   Go-side path beats every site inventing shortcode soup.
+10. **First-class search index output.** Official Pagefind-like index
+    generation in the binary, so search is not a third-party afterthought for
+    docs and wikis. (LA already bolts Pagefind on at build; this would fold
+    that step into Hugo itself.)
+
+None of those require turning Hugo into Next.js. They require making the
+template and content layer as strict and composable as the build engine
+already is.
+
+### What to upgrade *around* Hugo (without replacing it) {#upgrade-around-hugo}
+
+If the question is "how do we make *our* Hugo stack better," change the
+edges, not the generator. Most of these LA already does — the table doubles
+as a self-audit:
+
+| Gap | Upgrade |
+| --- | --- |
+| Theme rot | Freeze a thin layout layer; stop tracking a fat theme as the design system |
+| Editor | Decap or Front Matter, only for the collections non-devs must touch |
+| Search | Pagefind at build (already live on ewiki) |
+| Images | `assets/` + Hugo image pipeline; ban raw `static/` heroes (see [Image handling](#image-handling--optimization)) |
+| CSS | Tokens in one place; Tailwind or Sass through Pipes; drop leftover theme CSS |
+| JS | One esbuild bundle via `js.Build`; no theme jQuery |
+| Commerce / forms | Stay at the edge (Snipcart, Stripe, Brevo) |
+| Preview | Branch deploys on Cloudflare Pages |
+| Content quality | Front-matter CI check (even a small Go/Python validator) until Hugo schemas exist |
+| Per-request state | Do not put it in Hugo. That is `play`/the engine |
+
+### Practical rule
+
+- **Keep Hugo** when the site is pages, docs, wiki, catalog, or brand —
+  content identical for every visitor until someone edits source.
+- **Do not "upgrade Hugo into an app."** If you need islands everywhere,
+  typed UI components, and JS hiring density, that is Astro (or the existing
+  game client), not a Hugo plugin.
+- **The highest-leverage Hugo-the-product upgrades** are components, schemas,
+  and official islands. Everything else is already good enough that switching
+  generators is usually fashion.
+
+For Legendary Arena specifically: Hugo is already the right factory for `www`
+and `ewiki`. The upgrades that pay off are a frozen layout system, validated
+front matter for shop/wiki pages, Pagefind (done), and keeping
+`play`/registry off this stack — not a migration to Astro for its own sake.
+
 ## Mechanics
 
 ### Build pipeline
