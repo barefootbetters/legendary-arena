@@ -13,7 +13,7 @@ related:
   - development-workflow.md
   - debug-effects.md
   - dashboard.md
-status: draft
+status: canonical
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\testing.md (this page — https://ewiki.legendary-arena.com/testing/)
   - ../docs/06-TESTING.md
@@ -23,7 +23,7 @@ source:
   - ../docs/ai/execution-checklists/EC-598-engine-test-typecheck-gate.checklist.md
   - ../apps/dashboard/docs/jarvis-command-center.md
   - ../docs/ai/DECISIONS.md
-last-reviewed: 2026-08-31
+last-reviewed: 2026-09-01
 ---
 
 # Testing
@@ -157,24 +157,39 @@ Naming the boundaries, so a gap is not mistaken for an oversight:
     `typecheck:tests` script, but it is **not a required CI check yet**: the
     suite still carries a large pre-existing error backlog, and a red required
     gate would block every unrelated PR.
+  - *When it becomes required:* the gate is wired into CI **only once the engine
+    suite's typecheck error count reaches zero** — that is the deferral
+    condition, deferred to a final cleanup packet, not a date (D-24372 §2). Until
+    then only runtime assertions gate on every run.
   - *Consequence:* type-level pins are unenforced. New drift pins and
     optional-field guards must be **runtime** assertions — see the Runtime
-    Assertion Rule above.
+    Assertion Rule above. Errors the local gate surfaces are fixed **in the test
+    file** — never with `any`, `@ts-ignore`, `@ts-expect-error`, a loosened base
+    `tsconfig`, or a widened production type (a test that needs one is asserting
+    something false).
   - *References:*
     [EC-598](../docs/ai/execution-checklists/EC-598-engine-test-typecheck-gate.checklist.md),
     [DECISIONS.md](../docs/ai/DECISIONS.md) D-24372.
-- **DB-backed server tests run locally and serialized — not in the default unit
-  sweep.** Tests that exercise the Postgres-backed server share one local
-  database, so `node:test`'s file-level concurrency races them; they must run
-  with `--test-concurrency=1`, against a `TEST_DATABASE_URL` the operator
-  provisions. They are not part of the pure, no-I/O unit tier.
+- **DB-backed server tests run in a dedicated CI lane, not the default unit
+  sweep.** Tests that exercise the Postgres-backed server share one database, so
+  `node:test`'s file-level concurrency races them; they run serialized
+  (`--test-concurrency=1`, via the `apps/server` `test:db` script) against a
+  `TEST_DATABASE_URL` — locally one the operator provisions, and in CI an
+  **ephemeral** Postgres a dedicated **Server DB Tests** job spins up (GitHub
+  Actions `services:`), migrates, and tears down per run. That job is a
+  **required** branch-protection check as of 2026-08-27, so a red DB suite blocks
+  merge ([DECISIONS.md](../docs/ai/DECISIONS.md) D-24435). They are still not part
+  of the pure, no-I/O unit tier or the default `pnpm -r test` sweep — which is
+  why a DB-only failure used to merge invisibly, back when these tests self-skipped
+  with `TEST_DATABASE_URL` unset.
 - **The simulation harness bypasses boardgame.io — a known gap.** The headless
-  `simulation/` bot-vs-bot harness (and `apps/engine-runner`) reimplements the
-  turn loop directly and does **not** run inside the framework, so it cannot
-  exercise framework-owned surfaces such as `ctx.gameover` wiring; a genuine
-  framework-level test uses boardgame.io's own `InitializeGame` instead. Treat
-  simulation output as a determinism / coverage instrument, not a replacement for
-  framework tests.
+  `simulation/` bot-vs-bot harness (and `apps/engine-runner`,
+  [DECISIONS.md](../docs/ai/DECISIONS.md) D-24088) reimplements the turn loop
+  directly and does **not** run inside the framework, so it cannot exercise
+  framework-owned surfaces such as the top-level `endIf` that sets `ctx.gameover`
+  (D-24223); a genuine framework-level test uses boardgame.io's own
+  `InitializeGame` instead. Treat simulation output as a determinism / coverage
+  instrument, not a replacement for framework tests.
 
 ### Running the suite locally
 
@@ -260,9 +275,10 @@ or explained:
 - **First-failure bail hides later packages.** `pnpm -r test` stops at the first
   broken package; use `pnpm -r --no-bail test` when you need honest whole-repo
   totals.
-- **DB suites race unless serialized.** They share one local Postgres; without
+- **DB suites race unless serialized.** They share one Postgres; without
   `--test-concurrency=1` the files interleave and fail nondeterministically —
-  which looks like a flaky test but is a concurrency artifact.
+  which looks like a flaky test but is a concurrency artifact. Both the local
+  flow and the CI **Server DB Tests** job run them serialized (D-24435).
 - **Engine `src/test/` ships in `dist`.** The engine test-support helpers under
   `src/test/` are compiled into the published `dist` — they are not stripped as
   a test-only tree, so treat them as shipped code, not throwaway fixtures.
@@ -270,17 +286,6 @@ or explained:
   generated file; judge drift by `git diff --numstat`, not by a ` M` in
   `git status` (generated artifacts often show a modified flag for line-ending
   churn alone).
-
-## Open Questions
-
-- **When does `typecheck:tests` become a required CI gate?** The engine test
-  suite's pre-existing typecheck backlog must clear first; until then only
-  runtime assertions gate on every run (D-24372). Errors the local gate surfaces
-  are fixed **in the test file** — never with `any`, `@ts-ignore`,
-  `@ts-expect-error`, a loosened base tsconfig, or a widened production type.
-- **Where do the Jarvis QA-framework docs ultimately live?** Today they sit under
-  `apps/dashboard/docs/`; this page links them, but whether they graduate into a
-  dedicated wiki entity page is unsettled.
 
 ## References
 
@@ -298,6 +303,12 @@ or explained:
   [EC-598](../docs/ai/execution-checklists/EC-598-engine-test-typecheck-gate.checklist.md),
   [DECISIONS.md](../docs/ai/DECISIONS.md) (D-24372, `typecheck:tests` not yet a
   required check)
+- Server DB Tests CI gate —
+  [DECISIONS.md](../docs/ai/DECISIONS.md) (D-24435, ephemeral Postgres, serialized,
+  required branch-protection check)
+- Simulation harness / framework boundary —
+  [DECISIONS.md](../docs/ai/DECISIONS.md) (D-24088 `apps/engine-runner`, D-24223
+  the top-level `endIf` that sets `ctx.gameover`)
 - Overnight simulation / QA framework —
   [`apps/dashboard/docs/jarvis-command-center.md`](../apps/dashboard/docs/jarvis-command-center.md),
   [Dashboard](dashboard.md)
