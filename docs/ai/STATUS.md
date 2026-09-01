@@ -20,7 +20,7 @@ Fixes an operator-reported gap: playing **Rogue Energy Drain** / **Black Widow D
 
 **Papercuts flagged (out of scope):** (1) the card-data pipeline is not reproducible from the current scripts — a clean `convert-cards-v15 → apply-*` regen churns ~13 sets and appends 116 effect markers absent from committed `data/cards`; the `data/cards/*.json` are not regenerate-and-diff CI-gated, so this drift is latent. Worth a dedicated regen/reconcile WP. (2) The "a card you played this turn still counts for class synergy after being KO'd" rulebook nuance (p.62) is not modeled — the engine counts synergy by scanning `inPlay`, so KO'ing an in-play card drops it from later same-turn synergy counts; pre-existing (affects self-KO / `heroEffectKo` too), not introduced here.
 
-Post-deploy D-24026 live-verify (play Energy Drain with a played Agent in front of you → KO it → reward fires, log names the in-play source, reworded text on the card) pending.
+**D-24026 live-verified 2026-09-01** on `play.legendary-arena.com` — a 2p Red Skull / Midtown Bank Robbery match: Energy Drain KO'd a played S.H.I.E.L.D. Agent from in-play and banked the +1 recruit (log `16.2.11`/`24.2.8` "KO'd S.H.I.E.L.D. Agent from the cards they played this turn"), the reworded card text shows, heroes won at grade B. ewiki updated (card-effect-system, gameplay-strategy deck-thinning, play-board).
 
 ### WP-631 — Per-match guest password, client half (EC-666 / D-24441) shipped (2026-08-31)
 

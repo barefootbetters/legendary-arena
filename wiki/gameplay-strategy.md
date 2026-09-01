@@ -227,6 +227,15 @@ The recurring pattern skilled players follow:
 4. Protect the **enablers and the KO-engine cards themselves** — don't thin
    away the machinery that does the thinning, or your key class enablers.
 
+The **purest thin** KOs from *in play*: the covert-KO Heroes **Energy Drain**
+(Rogue) and **Dangerous Rescue** (Black Widow) may KO a card you have **already
+played this turn**, so you collect its Recruit/Attack first and *then* remove it
+— banking the card's value and the thin in the same turn (rulebook p.62; the KO
+source is hand, discard, **or a card played this turn**). Sequence matters:
+because a card KO'd from in play stops counting toward any *later* same-class
+Superpower you play afterward, fire the synergy payoff **before** you thin the
+enabler — the same play-order skill that [Rank 1](#rank-1) rewards.
+
 The failure modes are symmetrical: thinning too slowly leaves a diluted deck
 all game; over-thinning (especially in multiplayer) can run you out of cards
 into awkward reshuffles or dead turns.
