@@ -20,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
 
       - uses: actions/setup-node@v5
         with:
@@ -32,7 +32,7 @@ jobs:
       - name: Run registry validation
         run: pnpm registry:validate
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: registry-health
           path: packages/registry/dist/registry-health.json
@@ -45,7 +45,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
 
       - uses: actions/setup-node@v5
         with: { node-version-file: .node-version, cache: pnpm }
@@ -55,7 +55,7 @@ jobs:
       - name: Build TypeScript types
         run: pnpm registry:build
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: registry-dist
           path: packages/registry/dist/
@@ -68,7 +68,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
 
       - uses: actions/setup-node@v5
         with: { node-version-file: .node-version, cache: pnpm }
@@ -76,7 +76,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - name: Download registry dist
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with: { name: registry-dist, path: packages/registry/dist }
 
       # why: registry-viewer imports @legendary-arena/lagn (WP-245 loadout
@@ -97,7 +97,7 @@ jobs:
       - name: Build viewer
         run: pnpm viewer:build
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: viewer-dist
           path: apps/registry-viewer/dist/
@@ -116,7 +116,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
 
       - uses: actions/setup-node@v5
         with: { node-version-file: .node-version, cache: pnpm }
@@ -154,7 +154,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
 
       - uses: actions/setup-node@v5
         with: { node-version-file: .node-version, cache: pnpm }
@@ -270,7 +270,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
 
       - uses: actions/setup-node@v5
         with: { node-version-file: .node-version, cache: pnpm }
@@ -341,7 +341,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
 
       - uses: actions/setup-node@v5
         with: { node-version-file: .node-version, cache: pnpm }
@@ -394,7 +394,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
 
       - uses: actions/setup-node@v5
         with: { node-version-file: .node-version, cache: pnpm }
@@ -423,7 +423,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
 
       - uses: actions/setup-node@v5
         with: { node-version-file: .node-version, cache: pnpm }
@@ -505,7 +505,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
 
       - uses: actions/setup-node@v5
         with: { node-version-file: .node-version, cache: pnpm }
@@ -540,7 +540,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
 
       - uses: actions/setup-node@v5
         with: { node-version-file: .node-version, cache: pnpm }
@@ -548,7 +548,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - name: Download registry dist
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with: { name: registry-dist, path: packages/registry/dist }
 
       - name: Upload data + images to R2
@@ -570,7 +570,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
 
       - uses: actions/setup-node@v5
         with:
@@ -581,7 +581,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - name: Download registry dist
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with: { name: registry-dist, path: packages/registry/dist }
 
       - name: Publish @legendary-arena/registry

@@ -29,7 +29,7 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v5
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
@@ -62,7 +62,7 @@ jobs:
 
       - name: Open PR on diff
         if: steps.diff.outputs.changed == 'true'
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v8
         with:
           # why: scope the commit to ONLY the generated roadmap file so the PR
           # is exactly the regenerated marker-bounded section, never anything
