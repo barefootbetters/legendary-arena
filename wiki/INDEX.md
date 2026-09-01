@@ -1,7 +1,7 @@
 # Wiki Index
 
 > **66 / 76** entity pages.
-> Last regenerated: 2026-08-31.
+> Last regenerated: 2026-09-01.
 > See [SCHEMA.md](SCHEMA.md) for the entity-page contract and
 > [README.md](README.md) for purpose, conventions, and authority —
 > including [§ Tradeoffs](README.md#tradeoffs) on what the LLM-wiki
@@ -192,14 +192,15 @@ Cross-cutting governance, methodology, and readiness assessments.
   Claude Code sessions on WP/EC contracts → GitHub → auto-deploy via
   Render + Cloudflare on merge to `main`; a nightly CI triage agent
   turns sweep results into new work packets.
-- [Testing](testing.md) — The testing map: the `node:test`
-  determinism-first runner and conventions, what each test type covers
-  (unit → contract → move → rule → endgame → persistence → complete-game
-  replay), the drift-detection pins, and — explicitly — what is *deliberately*
-  not tested or not CI-gated (engine test files not typechecked yet, DB suites
-  local+serialized, the simulation harness bypassing boardgame.io). Includes the
-  build-before-test rule and the local run commands, and routes to the Jarvis
-  overnight-QA framework docs.
+- [Testing](testing.md) — The testing map: the four-layer testing model
+  (unit/contract → integration/framework → complete-game replay →
+  operational-validation QA), the `node:test` determinism-first runner and
+  conventions, the drift-detection pins and Runtime Assertion Rule, and —
+  explicitly — the boundaries (engine test files not typechecked yet, DB suites
+  in a dedicated serialized CI lane, the simulation harness bypassing
+  boardgame.io). Includes the build-before-test rule, a healthy-environment
+  checklist, and the local run commands, and routes to the Jarvis overnight-QA
+  framework docs.
 - [GitHub Parallel-Session Workflow](github-parallel-session-workflow.md) —
   best practices and pain points for running two or more Claude
   Code sessions against GitHub at once. Separates the **working-tree race**
