@@ -166,6 +166,37 @@ export default defineComponent({
         </button>
       </div>
     </div>
+    <div
+      v-if="pendingOptionalKoReward!.eligibleInPlay.length > 0"
+      class="optional-ko-reward-prompt__zone"
+    >
+      <h4 class="optional-ko-reward-prompt__zone-label">
+        From cards you played this turn
+      </h4>
+      <div class="optional-ko-reward-prompt__cards">
+        <button
+          v-for="entry in pendingOptionalKoReward!.eligibleInPlay"
+          :key="`${entry.zone}:${entry.cardId}`"
+          type="button"
+          class="optional-ko-reward-prompt__card-btn"
+          :data-testid="`optional-ko-reward-card-${entry.zone}-${entry.cardId}`"
+          :disabled="isSubmitting"
+          :aria-disabled="isSubmitting ? 'true' : undefined"
+          :title="entry.display.name"
+          @click="onSelectCard(entry.zone, entry.cardId)"
+        >
+          <span class="optional-ko-reward-prompt__card-name">{{
+            entry.display.name
+          }}</span>
+          <img
+            v-if="entry.display.imageUrl"
+            :src="entry.display.imageUrl"
+            :alt="entry.display.name"
+            class="optional-ko-reward-prompt__card-image"
+          />
+        </button>
+      </div>
+    </div>
     <button
       type="button"
       class="optional-ko-reward-prompt__decline-btn"

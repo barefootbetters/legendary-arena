@@ -1210,6 +1210,18 @@ export function buildUIState(
           display: { ...resolveDisplay(cardId, gameState) },
         });
       }
+      // why: D-24442 — cards the chooser played this turn (inPlay) are a valid KO
+      // source; project them in zone+index order with a fresh display spread,
+      // exactly like the hand/discard lists above (round-trip rule + aliasing
+      // defense). Redacted to the chooser only by filterUIStateForAudience.
+      const eligibleInPlay: UIEligibleKoHeroCard[] = [];
+      for (const cardId of chooserZones.inPlay) {
+        eligibleInPlay.push({
+          zone: 'inPlay',
+          cardId,
+          display: { ...resolveDisplay(cardId, gameState) },
+        });
+      }
       pendingOptionalKoReward = {
         playerID: frontReward.playerID,
         rewardLabel: deriveOptionalKoRewardLabel(
@@ -1218,6 +1230,7 @@ export function buildUIState(
         ),
         eligibleHand,
         eligibleDiscard,
+        eligibleInPlay,
       };
     }
   }
