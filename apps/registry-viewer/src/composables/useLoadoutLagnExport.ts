@@ -150,21 +150,27 @@ function supportPoolsToLagn(
 function compositionToLagnSetup(
   composition: MatchSetupDocument["composition"],
   supportPools: MatchSetupDocument["supportPools"],
+  resolveName: (extId: string) => string,
 ): LAGN["setup"] {
   const pools = supportPoolsToLagn(supportPools);
+  // why: resolve each composition ext_id to its group-level display name via the
+  // caller's resolver. The old code hardcoded `name: ""` on the false premise
+  // that "the viewer only stores IDs" — the viewer loads the full registry, and
+  // a blank name shipped every exported loadout with no human-readable entity
+  // names (a Red Skull / Super Hero Civil War export showed only bare ext_ids).
   return {
     ...(pools === undefined ? {} : { support_pools: pools }),
     mastermind: {
       id: composition.mastermindId,
-      name: "", // LAGN requires name field; registry viewer only stores ID. Validator handles optional resolution.
+      name: resolveName(composition.mastermindId),
     },
     scheme: {
       id: composition.schemeId,
-      name: "",
+      name: resolveName(composition.schemeId),
     },
-    villain_groups: composition.villainGroupIds.map((id) => ({ id, name: "" })),
-    henchmen_groups: composition.henchmanGroupIds.map((id) => ({ id, name: "" })),
-    heroes: composition.heroDeckIds.map((id) => ({ id, name: "" })),
+    villain_groups: composition.villainGroupIds.map((id) => ({ id, name: resolveName(id) })),
+    henchmen_groups: composition.henchmanGroupIds.map((id) => ({ id, name: resolveName(id) })),
+    heroes: composition.heroDeckIds.map((id) => ({ id, name: resolveName(id) })),
     bystanders_count: composition.bystandersCount,
     wounds_count: composition.woundsCount,
     shield_officers_count: composition.officersCount,
@@ -182,6 +188,7 @@ function buildLagnObject(
   variant: "classic" | "custom",
   outcome: LoadoutOutcomeState,
   importedLossCondition: string | undefined,
+  resolveName: (extId: string) => string,
 ): LAGN | null {
   const composition = draft.composition;
 
@@ -196,7 +203,7 @@ function buildLagnObject(
     return null;
   }
 
-  const setup = compositionToLagnSetup(composition, draft.supportPools);
+  const setup = compositionToLagnSetup(composition, draft.supportPools, resolveName);
   const lagnVariant = mapVariantToLagn(variant);
 
   const document: LAGN = {
@@ -231,8 +238,17 @@ function buildLagnObject(
 /**
  * Builds a loadout-LAGN-export composable for a given draft.
  * Each invocation returns an independent composable (no module-level state).
+ *
+ * @param draft The MATCH-SETUP draft to export.
+ * @param resolveName Resolves a composition ext_id to its display name (build one
+ *   from the loaded registry via `buildEntityNameResolver`). Defaults to
+ *   id-fallback (name === ext_id) so a caller without a registry never emits a
+ *   blank name.
  */
-export function useLoadoutLagnExport(draft: Ref<MatchSetupDocument>): UseLoadoutLagnExportApi {
+export function useLoadoutLagnExport(
+  draft: Ref<MatchSetupDocument>,
+  resolveName: (extId: string) => string = (extId) => extId,
+): UseLoadoutLagnExportApi {
   // why: the variant is DERIVED from the draft's seat count, not chosen — the
   // engine has no competitive variant, so variant and player_count are one axis
   // (1 → solo, 2+ → cooperative), mirroring the server's variantForSeatCount. A
@@ -276,6 +292,7 @@ export function useLoadoutLagnExport(draft: Ref<MatchSetupDocument>): UseLoadout
       variant.value,
       outcome.value,
       importedLossCondition.value,
+      resolveName,
     );
   });
 
