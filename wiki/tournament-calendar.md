@@ -69,10 +69,10 @@ Discord, YouTube description).
 | --- | --- | --- | --- | --- | --- |
 | `OPEN` | Open table | 90 min | Play | No | Anyone; bot fills empty seats |
 | `TEACH` | First session | 90 min | Play + learn | No | Operator or designated guide |
-| `WEEKLY` | Weekly scenario | 90 min | Standing | No | Operator publishes loadout 48h prior |
+| `WEEKLY` | Weekly scenario | 90 min | Standing | No | Operator publishes loadout the prior Monday |
 | `CUP` | Cup match | 90 min | Standing | No | Swiss or group, published pairing |
 | `FINAL` | Championship table | 120 min | Standing | No | Featured loadout, spectate on |
-| `HOST` | Rules / strategy hour | 45 min | Teaching | Optional Stripe | Operator only |
+| `HOST` | Rules / strategy hour | 45 min | Coaching | Optional Stripe | Operator only |
 
 `HOST` is the **only** event type that may attach a paid gate, and it is
 office-hours teaching — never a scored session. This is the fairness line the
@@ -162,11 +162,11 @@ Loadout names stay scenario-first when available; until then they are listed as
 | Sat Dec 12 | Season 1 Championship | 11:00 Europe + 18:00 Americas (120 min `FINAL`) |
 | Sun Dec 13 | Rest / OPEN only | Standard Sunday grid |
 
-Qualification for Dec 5 is the top standing from weeks 3–10 `WEEKLY` + Cup
-points. The **exact formula lives with the scoring / standing system**
-([Scoring](scoring.md), [Leaderboard](leaderboard.md)), not on this page — this
-page only says standing comes from *sessions played well*, never buy-in and never
-hours.
+Qualification for Dec 5 draws on standing accumulated across the weeks 3–10
+`WEEKLY` slots plus Cup points. The **standing calculation itself is owned by the
+scoring / standing system** ([Scoring](scoring.md), [Leaderboard](leaderboard.md))
+— this page names the qualifying inputs but defines no formula. Standing comes
+from *sessions played well*, never buy-in and never hours.
 
 **Season 2** opens Mon Jan 4, 2027 (13 weeks). Dec 14 – Jan 3 is off-season
 `OPEN` only.
@@ -259,6 +259,14 @@ Calendly-style booking + Stripe step.
   of scope unless a later design decision adds one. Nothing here presumes it.
 - **`HOST` booking surface.** Whether to build (or clone) a Calendly-style
   booking + Stripe step for office hours is deferred; it would serve only `HOST`.
+- **Cancellation semantics.** What happens when a scheduled event is cancelled
+  (platform outage, operator unavailable, announced maintenance) — whether it
+  affects standing, counts as missed participation, or is simply marked
+  `cancelled` — is undefined here. It is an operations decision (a DECISIONS
+  entry / the source plan), not a rule this descriptive page may set.
+- **Region-expansion threshold.** "A fourth window is not added until two of the
+  three regularly fill" is qualitative; the numeric participation trigger that
+  would make it enforceable is undefined and would live with Operations.
 
 ## References
 
