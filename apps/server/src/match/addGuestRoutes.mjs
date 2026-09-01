@@ -131,6 +131,87 @@ function findFreeSeat(players, seatCount) {
 }
 
 /**
+ * Mints ONE anonymous, non-account guest seat in an existing match and returns a
+ * discriminated outcome. This is the single place the rowless-seat invariant
+ * (D-24120) lives: it reads occupancy from the bgio match metadata, enforces the
+ * per-match guest cap, finds the lowest free seat, and secret-joins it via the
+ * WP-308 internal-delegation header — writing NO `match_seat_accounts` row, so
+ * `computeRankedEligibility` rule 2 demotes the match to Casual.
+ *
+ * Extracted from the `add-guest` handler (WP-630) so BOTH the host-gated
+ * `POST /api/match/add-guest` and the public password `POST /api/match/join-as-guest`
+ * mint a seat through one helper — neither may write a seat-account row, and the
+ * cap is enforced identically on both.
+ *
+ * The caller owns authorization (the host participant gate, or the guest password
+ * check) BEFORE calling this; `mintGuestSeat` performs no authentication.
+ *
+ * @param {object} context - The bot-ally context bundle.
+ * @param {object} context.db - boardgame.io storage backend (for the metadata read).
+ * @param {string} context.serverUrl - Loopback origin for the native-lobby join.
+ * @param {string} context.internalDelegationSecret - The WP-308 native-lobby secret.
+ * @param {object} context.database - The long-lived pg pool.
+ * @param {string} matchId - The match to add the guest seat to.
+ * @returns {Promise<object>} A discriminated outcome:
+ *   `{ outcome: 'match-not-found' }`,
+ *   `{ outcome: 'cap-reached' }`,
+ *   `{ outcome: 'match-full' }`,
+ *   `{ outcome: 'join-failed', status, detail }`, or
+ *   `{ outcome: 'joined', seat, credentials }`.
+ */
+export async function mintGuestSeat(context, matchId) {
+  const { db, serverUrl, internalDelegationSecret, database } = context;
+
+  // why: read occupancy from the bgio match metadata (the framework store's own
+  // metadata surface, D-24095/D-24119 carve-out — never a raw G/ctx read),
+  // mirroring readBotSeatCredentials. players is keyed "0".."N-1".
+  const { metadata } = await db.fetch(matchId, { metadata: true });
+  if (metadata === null || metadata === undefined || metadata.players === undefined) {
+    return { outcome: 'match-not-found' };
+  }
+  const players = metadata.players;
+  const seatCount = Object.keys(players).length;
+
+  // why: enforce the per-match guest cap. A guest seat is an occupied seat that
+  // is neither an account seat nor a bot seat; count them and reject once the cap
+  // is reached (a full match is also rejected below). Both callers share this cap.
+  const accountSeats = await readSeatAccounts(matchId, database);
+  const botSeats = await readMatchBotSeats(matchId, database);
+  const accountSeatIds = accountSeats.map((seat) => seat.playerId);
+  if (countGuestSeats(players, accountSeatIds, botSeats) >= MAX_GUEST_SEATS_PER_MATCH) {
+    return { outcome: 'cap-reached' };
+  }
+
+  const freeSeat = findFreeSeat(players, seatCount);
+  if (freeSeat === null) {
+    return { outcome: 'match-full' };
+  }
+
+  // why: secret-join the free seat exactly as create-with-bot joins a bot seat —
+  // the WP-308 internal-delegation secret admits the loopback join, and the seat
+  // is NEVER written to match_seat_accounts (D-24120). A rowless seat renders
+  // "Player N" and shortens the account roster below the seat count, which is what
+  // makes computeRankedEligibility rule 2 demote the match to Casual.
+  const joinResponse = await fetch(
+    `${serverUrl}/games/legendary-arena/${matchId}/join`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        [INTERNAL_DELEGATION_HEADER]: internalDelegationSecret,
+      },
+      body: JSON.stringify({ playerID: freeSeat, playerName: 'Guest' }),
+    },
+  );
+  if (!joinResponse.ok) {
+    const nativeErrorBody = await joinResponse.text();
+    return { outcome: 'join-failed', status: joinResponse.status, detail: nativeErrorBody };
+  }
+  const joinResult = await joinResponse.json();
+  return { outcome: 'joined', seat: freeSeat, credentials: joinResult.playerCredentials };
+}
+
+/**
  * Registers `POST /api/match/add-guest` on the boardgame.io Koa router.
  *
  * @param {import('@koa/router')} router - The boardgame.io server's koa router.
@@ -144,10 +225,11 @@ function findFreeSeat(players, seatCount) {
  * @param {object} [context.accountResolver] - Account resolver.
  */
 export function registerAddGuestRoutes(router, context) {
+  // why: serverUrl + internalDelegationSecret are read by mintGuestSeat straight
+  // from `context`; the handler itself needs only db (the not-found precheck),
+  // database (the participant gate), and the session-check trio.
   const {
     db,
-    serverUrl,
-    internalDelegationSecret,
     database,
     requireAuthenticatedSession,
     verifier,
@@ -193,7 +275,8 @@ export function registerAddGuestRoutes(router, context) {
     try {
       // why: read occupancy from the bgio match metadata (the framework store's
       // own metadata surface, D-24095/D-24119 carve-out — never a raw G/ctx
-      // read), mirroring readBotSeatCredentials. players is keyed "0".."N-1".
+      // read), mirroring readBotSeatCredentials, so the host participant check
+      // below sees the same roster mintGuestSeat will. players is keyed "0".."N-1".
       const { metadata } = await db.fetch(matchId, { metadata: true });
       if (metadata === null || metadata === undefined || metadata.players === undefined) {
         koaContext.status = 404;
@@ -204,12 +287,11 @@ export function registerAddGuestRoutes(router, context) {
         };
         return;
       }
-      const players = metadata.players;
-      const seatCount = Object.keys(players).length;
 
       // why: the host must be a participant in this match (has a seat-account
       // row), so a signed-in stranger cannot seed guests into someone else's
-      // match. readSeatAccounts returns only authenticated account seats.
+      // match. readSeatAccounts returns only authenticated account seats. This
+      // is the add-guest-only authorization; mintGuestSeat performs no auth.
       const accountSeats = await readSeatAccounts(matchId, database);
       const isHostParticipant = accountSeats.some((seat) => seat.accountId === hostAccountId);
       if (!isHostParticipant) {
@@ -222,12 +304,11 @@ export function registerAddGuestRoutes(router, context) {
         return;
       }
 
-      // why: enforce the per-match guest cap. A guest seat is an occupied seat
-      // that is neither an account seat nor a bot seat; count them and reject a
-      // new guest once the cap is reached (a full match is also rejected below).
-      const botSeats = await readMatchBotSeats(matchId, database);
-      const accountSeatIds = accountSeats.map((seat) => seat.playerId);
-      if (countGuestSeats(players, accountSeatIds, botSeats) >= MAX_GUEST_SEATS_PER_MATCH) {
+      // why: mint the seat through the shared helper (occupancy read → per-match
+      // cap → free seat → rowless secret-join, D-24120), then map its discriminated
+      // outcome to the same HTTP statuses this endpoint has always returned.
+      const mintResult = await mintGuestSeat(context, matchId);
+      if (mintResult.outcome === 'cap-reached') {
         koaContext.status = 409;
         koaContext.body = {
           error:
@@ -236,9 +317,7 @@ export function registerAddGuestRoutes(router, context) {
         };
         return;
       }
-
-      const freeSeat = findFreeSeat(players, seatCount);
-      if (freeSeat === null) {
+      if (mintResult.outcome === 'match-full') {
         koaContext.status = 409;
         koaContext.body = {
           error:
@@ -247,42 +326,31 @@ export function registerAddGuestRoutes(router, context) {
         };
         return;
       }
-
-      // why: secret-join the free seat exactly as create-with-bot joins a bot
-      // seat — the WP-308 internal-delegation secret admits the loopback join,
-      // and the seat is NEVER written to match_seat_accounts (D-24120). A rowless
-      // seat renders "Player N" and shortens the account roster below the seat
-      // count, which is what makes computeRankedEligibility rule 2 demote the
-      // match to Casual (competition.logic.ts) — no marker, no migration needed.
-      const joinResponse = await fetch(
-        `${serverUrl}/games/legendary-arena/${matchId}/join`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            [INTERNAL_DELEGATION_HEADER]: internalDelegationSecret,
-          },
-          body: JSON.stringify({ playerID: freeSeat, playerName: 'Guest' }),
-        },
-      );
-      if (!joinResponse.ok) {
-        const nativeErrorBody = await joinResponse.text();
-        koaContext.status = joinResponse.status;
+      if (mintResult.outcome === 'match-not-found') {
+        koaContext.status = 404;
+        koaContext.body = {
+          error:
+            `No match with id "${matchId}" was found, so a guest seat could ` +
+            'not be added. Check the match id and try again.',
+        };
+        return;
+      }
+      if (mintResult.outcome === 'join-failed') {
+        koaContext.status = mintResult.status;
         koaContext.body = {
           error:
             `The guest seat could not be joined on the game server ` +
-            `(it responded HTTP ${joinResponse.status}: ${nativeErrorBody}). ` +
+            `(it responded HTTP ${mintResult.status}: ${mintResult.detail}). ` +
             'The match may be full or no longer exist.',
         };
         return;
       }
-      const joinResult = await joinResponse.json();
 
       koaContext.status = 200;
       koaContext.body = {
         matchId,
-        seat: freeSeat,
-        credentials: joinResult.playerCredentials,
+        seat: mintResult.seat,
+        credentials: mintResult.credentials,
       };
     } catch (faultError) {
       koaContext.status = 500;

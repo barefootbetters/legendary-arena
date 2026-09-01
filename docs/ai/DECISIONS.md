@@ -38785,9 +38785,9 @@ Related: WP-015 (the original generic wound), WP-186 / D-18508 (onEscape fire si
 
 **Determinism / blast radius.** Simulation-only — no engine rule, `G` field, phase/turn hook, hash surface (`finalStateHash` / `PRE_WP080_HASH` untouched), persistence, card data, or migration. Full engine suite green (2932/0, +1 for the new drift test). Related: D-24439 (the escape-wound gate + the non-termination it surfaced), D-22001 (the `pendingHeroChoice` `getLegalMoves` short-circuit), D-24073 / WP-289 (the move-dispatch drift guard this extends), WP-554 / D-24363 (`MAX_MOVE_STEPS_PER_TURN`, the within-turn cap that flags stuck games).
 
-### D-24441 — Per-match host-set guest password (+ game name): a third guest-join model (Drafted 2026-08-31 — WP-630 / EC-665, WP-631 / EC-666)
+### D-24441 — Per-match host-set guest password (+ game name): a third guest-join model (Active 2026-08-31 — WP-630 / EC-665 landed; WP-631 / EC-666 client half pending)
 
-**Status:** Drafted 2026-08-31; not yet landed (lands Active at WP-630 execution). **DRAFT for operator review before implementation.**
+**Status:** **Active** — the server half (WP-630 / EC-665) landed 2026-08-31. The client half (WP-631 / EC-666) is still pending.
 
 **Context.** Guest play shipped two host-side hand-off models: WP-627 (the server anonymous seat) + WP-628/WP-629 (the client "Add guest" button → a `?match&player&credentials` link/QR the host hands over). Live use surfaced that handing a **long credentialed URL** to a child on their own device (no email) is awkward. The operator asked for a friendlier path: a **password the host sets**, that a guest **types** to join. This is a variant of the rejected Candidate A (shared credentials) but scoped **per match**, not a standing account pool.
 
@@ -38796,7 +38796,7 @@ Related: WP-015 (the original generic wound), WP-186 / D-18508 (onEscape fire si
 **Security posture (why this is safe where Candidate A was not).**
 
 1. **Per-match & ephemeral.** The password is attached to ONE match and dies with it — not a standing credential to a durable account (the Candidate-A risk, D-24437). A leak grants a Casual seat in one game, nothing more.
-2. **Hashed, never plaintext.** Stored salted-hashed (`node:crypto` SHA-256 + per-record salt), compared with `timingSafeEqual`. The server never stores or returns the plaintext.
+2. **Hashed, never plaintext.** Stored as a `node:crypto` **scrypt** derived key with a random per-record salt embedded in the stored string (WP-630 strengthened the drafted salted-SHA-256 to a purpose-built password KDF — no new dep), compared with `timingSafeEqual`. The server never stores, logs, or returns the plaintext, and the derived key never leaves the logic module (the meta read exposes only `hasGuestPassword`).
 3. **Public but rate-limited.** `POST /api/match/join-as-guest` is unauthenticated by necessity (guests have no account), so it is **per-IP rate-limited** (reusing the analytics-endpoint token-bucket pattern) to defeat password guessing.
 4. **Casual-only, always.** It mints the seat via the WP-627 add-guest secret-join — no `match_seat_accounts` row (D-24120) — so `computeRankedEligibility` rule 2 keeps the match Casual. A guest seat can never touch ranked/competitive/economic surfaces.
 
@@ -38805,4 +38805,6 @@ Related: WP-015 (the original generic wound), WP-186 / D-18508 (onEscape fire si
 2. **Split across two WPs.** WP-630 (server: migration + hashed password + set-guest-access + the public rate-limited join endpoint + list projection) and WP-631 (client: host name/password fields + the guest pick-from-list→password join). WP-631 assumes WP-630.
 3. **No new auth provider / no shared account.** This adds no `auth_provider` value and no standing account — it is a per-match join secret, not an identity.
 
-_Drafted 2026-08-31; not yet landed (lands Active at WP-630 execution). A DRAFT for operator review. Related: D-24437 (Candidate A/B; the standing-pool rejection this stays clear of), D-24438 (the WP-628 link/QR this complements), D-24120 (the rowless Casual seat it reuses), WP-627 (the add-guest secret-join), WP-205/D-20502 (the per-IP rate-limit + salted-hash precedents)._
+**Landed (WP-630, 2026-08-31).** Server half shipped: migration `044_create_match_guest_access.sql` (`match_guest_access`: `match_id` PK, `game_name`, `password_kdf`); `guestAccess.logic.ts` (scrypt + `timingSafeEqual`; discriminated `verifyGuestPassword` → `no-access | mismatch | match`; per-field merge — absent leaves, empty-string clears); the shared `mintGuestSeat` helper extracted from `addGuestRoutes.mjs` (one place mints the rowless seat, called by both add-guest and join-as-guest); `guestAccessRoutes.mjs` with `set-guest-access` (host-gated), the public `join-as-guest` (per-IP token bucket **copied** from the analytics pattern, consumed before any DB/hash read; `no-access`→409 / `mismatch`→401 distinct), and the public `guest-access` meta read; api-endpoints.md rows; 24 new unit tests + the 8 add-guest tests still green.
+
+_Active 2026-08-31 (server half landed; client half WP-631 pending). Related: D-24437 (Candidate A/B; the standing-pool rejection this stays clear of), D-24438 (the WP-628 link/QR this complements), D-24120 (the rowless Casual seat it reuses), WP-627 (the add-guest secret-join), WP-205/D-20502 (the per-IP rate-limit + salted-hash precedents)._

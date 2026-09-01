@@ -7,6 +7,17 @@
 
 ## Current State
 
+### WP-630 — Per-match guest password + game name, server half (EC-665 / D-24441) shipped (2026-08-31)
+
+A **third guest-join model** — the friendlier alternative to the WP-628 credential link for a walk-up player (a grandchild on a tablet, no email). A host sets an optional **game name** and a **guest password** on a match they own; a guest **types the password** to take an anonymous **Casual** seat. Server half only here (the host/guest UI is WP-631).
+
+- **Migration `044_create_match_guest_access.sql`** — `legendary.match_guest_access` (`match_id` PK, `game_name`, `password_kdf`). Ordinary server-layer domain table; never `G`/`ctx`, never a snapshot.
+- **`guestAccess.logic.ts`** — the password is stored ONLY as a `node:crypto` **scrypt** derived key (random per-record salt embedded; the drafted salted-SHA-256 was strengthened to a purpose-built KDF, no new dep), verified with `timingSafeEqual`. `verifyGuestPassword` returns a **discriminated** `no-access | mismatch | match` so the route maps **409 (no password set) vs 401 (wrong password)** distinctly. `setGuestAccess` does a **per-field merge** — an absent field is left unchanged, an empty string clears it, so a rename never wipes the password.
+- **Shared `mintGuestSeat`** — extracted from `addGuestRoutes.mjs` so the rowless secret-join (no `match_seat_accounts` row, D-24120 → rule-2 Casual) lives in **one** place, called by both `add-guest` and `join-as-guest`. The 8 add-guest tests stay green (behavior unchanged).
+- **`guestAccessRoutes.mjs`** — `POST /api/match/set-guest-access` (host-gated, participant check), the **public** `POST /api/match/join-as-guest` (per-IP token bucket **copied** from the analytics pattern — that one isn't exported — and consumed **before** any DB/hash read, so a brute-force guess is a cheap reject), and the public `GET /api/match/:matchId/guest-access` meta read (`{ gameName, hasGuestPassword }`, never the key).
+
+Files (7): the migration, `guestAccess.logic.ts` + `.test.ts` (24 tests: scrypt round-trip, discriminated verdict, per-field merge, meta-never-leaks-key), `guestAccessRoutes.mjs` + `.test.ts` (401≠409, rate-limit-before-hash ordering, 429, happy rowless mint, host-gate, no-plaintext-log), the `mintGuestSeat` extraction in `addGuestRoutes.mjs`, `server.mjs` (register), `api-endpoints.md` (3 §21 rows). Server suite (tsx-run, no build step) **1176 pass / 0 fail / 197 DB-skipped**. **D-24441 Active.** Client half = WP-631 (now unblocked). Post-deploy D-24026 live-verify still pending.
+
 ### WP-629 — "Add guest" in the lobby + persistent hand-off link (EC-664) shipped (2026-08-31)
 
 Two follow-up fixes to WP-628, surfaced by live use:

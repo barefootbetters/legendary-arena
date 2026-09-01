@@ -74,6 +74,7 @@ import { registerLegendsPublisherRoutes } from './legends/legends.routes.js';
 import { registerAutoplayRoutes } from './autoplay/autoplay.mjs';
 import { registerBotAllyRoutes, rehydrateBotAllyDrivers } from './bot-ally/botAllyRoutes.mjs';
 import { registerAddGuestRoutes } from './match/addGuestRoutes.mjs';
+import { registerGuestAccessRoutes } from './match/guestAccessRoutes.mjs';
 import { requireAuthenticatedSession } from './auth/sessionToken.logic.js';
 import { requireUnsuspendedAccount } from './auth/requireUnsuspendedAccount.js';
 import { createHankoSessionVerifier } from './auth/hanko/hankoVerifier.logic.js';
@@ -1318,6 +1319,14 @@ export async function startServer() {
   // writes no match_seat_accounts row (D-24120), and drives nothing — a guest is a
   // human who plays the seat. Candidate B of the ewiki Guest Accounts page.
   registerAddGuestRoutes(server.router, botAllyContext);
+
+  // why: WP-630 / D-24441 — the per-match guest password endpoints
+  // (set-guest-access [host-gated], join-as-guest [public, rate-limited],
+  // guest-access [public meta]). Reuses the same bot-ally context bundle: the
+  // public join mints the anonymous seat through the shared mintGuestSeat helper
+  // (the same rowless secret-join as add-guest, D-24120 → Casual). The friendlier
+  // password alternative to the WP-628 credential link for a walk-up guest.
+  registerGuestAccessRoutes(server.router, botAllyContext);
 
   // why: WP-375 / D-24170 restart policy — in-memory bot-ally drivers are lost
   // on restart; re-register a driver for every still-active bot-ally match so a
