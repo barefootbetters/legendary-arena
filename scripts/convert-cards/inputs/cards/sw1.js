@@ -708,7 +708,7 @@ exports.SecretWars1 = {
                     abilities: [
                         [
                             { hc: 2 },
-                            { keyword: 17, text: ": Cross-Dimensional Wolverine Rampage." },
+                            { keyword: 17, text: "Cross-Dimensional Wolverine Rampage" },
                             " For each other player who gained a Wound this way, you get ",
                             { bold: "+1" },
                             { icon: 1 },

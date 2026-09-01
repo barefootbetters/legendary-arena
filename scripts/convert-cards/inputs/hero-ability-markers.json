@@ -128,6 +128,18 @@
   ],
   "core": [
     {
+      "heroSlug": "spider-man",
+      "cardSlug": "web-shooters",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:rescue:1]"
+    },
+    {
+      "heroSlug": "spider-man",
+      "cardSlug": "web-shooters",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:reveal]"
+    },
+    {
       "heroSlug": "thor",
       "cardSlug": "surge-of-power",
       "abilityIndex": 0,
@@ -603,6 +615,24 @@
     }
   ],
   "ssw2": [
+    {
+      "heroSlug": "arkon-the-magnificent",
+      "cardSlug": "quiver-of-thunderbolts",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "silk",
+      "cardSlug": "long-range-spider-sense",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:reveal:2]"
+    },
+    {
+      "heroSlug": "silk",
+      "cardSlug": "cascading-maneuver",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:draw:1]"
+    },
     {
       "heroSlug": "black-swan",
       "cardSlug": "witness-the-end",

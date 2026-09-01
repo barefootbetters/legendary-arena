@@ -978,7 +978,7 @@ exports.SecretWars2 = {
                         { keyword: 7 },
                         [
                             { keyword: 18 },
-                            ": Reveal the top four cards of your deck. Put any combination of those cards with a total cost of 2 or less into your hand. But the rest back in any order."
+                            ": Reveal the top four cards of your deck. Put any combination of those cards with a total cost of 2 or less into your hand. But the rest back in any order. [keyword:reveal-multi-take:2]"
                         ]
                     ]
                 }
@@ -2477,7 +2477,7 @@ exports.SecretWars2 = {
                     abilities: [
                         [
                             "When you rescue this Bystander, ",
-                            { keyword: 19, text: "Patrol the Sewers:" },
+                            { keyword: 19, text: "Patrol the Sewers" },
                             " If it's empty, you get ",
                             { bold: "+2" },
                             { icon: 2 },

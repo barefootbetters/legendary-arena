@@ -173,14 +173,42 @@ const registry = await createRegistryFromLocalFiles({
 
 ### 1. Generate card JSON
 
-Run the converter against the upstream source data:
+Card generation is a **five-stage pipeline**, not a single script. Build the
+workspace first (`convert-cards` imports `packages/registry/dist`), then run the
+stages in order:
 
 ```pwsh
-node convert-cards-v15.mjs
+pnpm -r build
+node scripts/convert-cards/convert-cards-v15.mjs
+node scripts/convert-cards/apply-card-counts.mjs
+node scripts/convert-cards/apply-hero-ability-markers.mjs
+node scripts/convert-cards/apply-effect-markers.mjs
+node scripts/convert-cards/apply-defeat-requirement-markers.mjs
 ```
 
-This reads from `modern-master-strike/src/data/cards/` and writes
-updated JSON to `data/cards/{abbr}.json`.
+`convert-cards-v15.mjs` reads the npm-derived source under
+`scripts/convert-cards/inputs/cards/*.js` (plus per-set patches) and writes the
+36 source-backed sets to `data/cards/{abbr}.json`; the four `apply-*` passes then
+overlay counts and `[keyword:]` / `[effect:]` / `[require-to-defeat:]` markers in
+place. The four outlier sets (`2099`, `amwp`, `wpnx`, `wtif`) are produced by
+`apply-card-counts.mjs` from their committed bases, and `co2e` is hand-authored
+(no converter source). All five stages read and write through the single shared
+`scripts/convert-cards/card-output-dir.mjs` constant (`CARD_OUTPUT_DIR`, overridable
+via `CARD_DATA_OUT_DIR`).
+
+**Reproducible + gated (WP-633 / D-24443).** The committed `data/cards` corpus is
+canonical, and a clean run of the pipeline now re-derives it **semantically** (object
+keys reordered, arrays order-sensitive, whitespace/EOL ignored). CI enforces this via
+the `Card-data regen reproducibility` gate:
+
+```pwsh
+pnpm cards:check
+```
+
+which regenerates the whole corpus into a throwaway scratch dir and semantic-diffs it
+against committed, failing on any divergence. It is **non-destructive** (never touches
+committed `data/cards`). When the pipeline drifts, fix the **scripts/inputs** so a regen
+matches — never edit the generated corpus to match the scripts.
 
 ### 2. Validate locally
 

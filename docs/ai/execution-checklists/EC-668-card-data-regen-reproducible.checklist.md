@@ -42,7 +42,9 @@
 ## Files to Produce
 - `scripts/convert-cards/convert-cards-v15.mjs` — **modified** — A icon:vp suppression, D filterName, WP-565 comment fix, import `CARD_OUTPUT_DIR`
 - `scripts/convert-cards/apply-card-counts.mjs` — **modified** — E outlier hero image URL (use patch-declared value), import `CARD_OUTPUT_DIR`
-- `scripts/convert-cards/apply-hero-ability-markers.mjs` — **modified** — C malformed tokens, B matcher hardening, import `CARD_OUTPUT_DIR`
+- `scripts/convert-cards/apply-hero-ability-markers.mjs` — **modified** — import `CARD_OUTPUT_DIR` only (see Execution Amendment: C is a source-`.js` typo, not a token-emission bug here; B-valid coverage lands in `hero-ability-markers.json`)
+- `scripts/convert-cards/inputs/cards/{sw1,sw2,wwhulk}.js` — **modified** — C source typos (Execution Amendment)
+- `scripts/convert-cards/inputs/cards/{antman,coreset,sw2}.js` — **modified** — B non-valid free-text markers (Execution Amendment)
 - `scripts/convert-cards/apply-effect-markers.mjs` — **modified** — import `CARD_OUTPUT_DIR` (read+write)
 - `scripts/convert-cards/apply-defeat-requirement-markers.mjs` — **modified** — import `CARD_OUTPUT_DIR` (read+write)
 - `scripts/convert-cards/card-output-dir.mjs` — **new** — shared `CARD_OUTPUT_DIR` (`CARD_DATA_OUT_DIR ?? data/cards`)
@@ -64,6 +66,28 @@
 - [ ] CI runs `cards:check` in the Coverage & Ledger Gates job; WP-565 comment + `docs/03-DATA-PIPELINE.md` corrected.
 - [ ] `docs/ai/DECISIONS.md` D-24443 → Active; `docs/ai/STATUS.md` names WP-633.
 - [ ] `WORK_INDEX.md` `[x]` with date; `EC_INDEX.md` Done; mindmap `📝`→`✅`, then `pnpm roadmap:counts:write`; `pnpm roadmap:counts:check` exits 0.
+
+## Execution Amendment (2026-09-01 — operator-approved)
+
+Baseline reproduction attributed all 53 leaves to their producing stage and found
+the draft's bucket-C / part-of-B loci wrong (same mis-attribution class the pre-flight
+already fixed for bucket E):
+
+- **Bucket C** is emitted by `convert-cards` from malformed `{ keyword, text }`
+  source overrides — fixed in `inputs/cards/{sw1,sw2,wwhulk}.js`, NOT in
+  `apply-hero-ability-markers.mjs` (which only ever appends `VALID_TOKEN_PATTERN`
+  tokens and cannot produce these free-text labels).
+- **Bucket B** splits: structured markers (`rescue:1`/`reveal`/`reveal:2`/`draw:1`)
+  are `hero-ability-markers.json` coverage gaps (5 entries added, all engine-recognized);
+  the non-valid / positional markers (`victory-villain-attack` leading;
+  `reveal:cost-lte-2:draw`+`reveal-count:3`+`reveal-reorder`; `reveal-multi-take:2`)
+  have no in-allowlist path (pattern-rejected, append-only-at-end) and are restored at
+  source (`inputs/cards/{antman,coreset,sw2}.js`).
+- `apply-hero-ability-markers.mjs` therefore needed only the `CARD_OUTPUT_DIR` import.
+
+Allowlist extended (operator-approved) with the five `inputs/cards/*.js` files; each
+edit makes the source match what committed already carries. Committed `data/cards`
+byte-unchanged; no residual-leaf exception fired. `pnpm cards:check` exits 0.
 
 ## Common Failure Smells
 - `ledger:heroes:check` red after a regen → a committed `[keyword:…]` marker was dropped (bucket B coverage or matcher gap) — the ledger lost a mechanic row. Restore the marker, don't edit the ledger.
