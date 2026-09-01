@@ -1,7 +1,7 @@
 import { test, describe, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { addGuest, createMatch, createMatchWithBot, fetchMatch, joinMatch, listMatches, serverUrl } from './lobbyApi';
+import { addGuest, createMatch, createMatchWithBot, fetchMatch, joinMatch, listMatches, serverUrl, setGuestAccess, joinAsGuest, readGuestAccessMeta } from './lobbyApi';
 import type { LobbyMatchSummary } from './lobbyApi';
 import type { MatchSetupConfig } from '@legendary-arena/game-engine';
 import { parseLoadoutJson } from './parseLoadoutJson';
@@ -251,6 +251,100 @@ describe('lobbyApi (WP-090)', () => {
         return true;
       },
     );
+  });
+
+  test('setGuestAccess POSTs { matchId, gameName, password } with the bearer and returns lobby-safe meta (WP-631)', async () => {
+    installFetchStub(() =>
+      jsonResponse(200, { matchId: 'm1', gameName: 'Grandkids', hasGuestPassword: true }),
+    );
+
+    const result = await setGuestAccess('m1', { gameName: 'Grandkids', password: 'apple' }, 'host-token');
+    assert.deepEqual(result, { matchId: 'm1', gameName: 'Grandkids', hasGuestPassword: true });
+    assert.equal(calls[0]!.url, `${serverUrl}/api/match/set-guest-access`);
+    assert.equal(calls[0]!.init?.method, 'POST');
+    assert.equal(
+      (calls[0]!.init?.headers as Record<string, string>).Authorization,
+      'Bearer host-token',
+    );
+    const parsed = JSON.parse(String(calls[0]!.init?.body)) as { matchId: string; gameName: string; password: string };
+    // why: the body uses lowercase-d matchId (server contract); the plaintext
+    // password is in the POST body, never a URL.
+    assert.equal(parsed.matchId, 'm1');
+    assert.equal(parsed.gameName, 'Grandkids');
+    assert.equal(parsed.password, 'apple');
+    assert.equal(calls[0]!.url.includes('apple'), false);
+  });
+
+  test('setGuestAccess omits an undefined password from the body (rename keeps it) (WP-631)', async () => {
+    installFetchStub(() =>
+      jsonResponse(200, { matchId: 'm1', gameName: 'Renamed', hasGuestPassword: true }),
+    );
+    await setGuestAccess('m1', { gameName: 'Renamed' }, 'host-token');
+    const parsed = JSON.parse(String(calls[0]!.init?.body)) as Record<string, unknown>;
+    assert.equal('password' in parsed, false);
+    assert.equal(parsed.gameName, 'Renamed');
+  });
+
+  test('setGuestAccess throws with the numeric HTTP status attached on a non-2xx (403 → not a participant) (WP-631)', async () => {
+    installFetchStub(() => textResponse(403, 'not a participant'));
+    await assert.rejects(
+      () => setGuestAccess('m1', { password: 'x' }, 'host-token'),
+      (error: unknown) => {
+        assert.ok(error instanceof Error);
+        assert.match(error.message, /Failed to set guest access/);
+        assert.equal((error as { status?: number }).status, 403);
+        return true;
+      },
+    );
+  });
+
+  test('joinAsGuest POSTs { matchId, password } with NO auth and returns { matchId, seat, credentials } (WP-631)', async () => {
+    installFetchStub(() =>
+      jsonResponse(200, { matchId: 'm1', seat: '2', credentials: 'guest-cred' }),
+    );
+
+    const result = await joinAsGuest('m1', 'apple');
+    assert.deepEqual(result, { matchId: 'm1', seat: '2', credentials: 'guest-cred' });
+    assert.equal(calls[0]!.url, `${serverUrl}/api/match/join-as-guest`);
+    assert.equal(calls[0]!.init?.method, 'POST');
+    // why: a guest has no account — NO Authorization header is sent.
+    assert.equal((calls[0]!.init?.headers as Record<string, string>).Authorization, undefined);
+    const parsed = JSON.parse(String(calls[0]!.init?.body)) as { matchId: string; password: string };
+    assert.equal(parsed.matchId, 'm1');
+    assert.equal(parsed.password, 'apple');
+  });
+
+  test('joinAsGuest throws with the numeric HTTP status attached (401 wrong password) (WP-631)', async () => {
+    installFetchStub(() => textResponse(401, 'wrong password'));
+    await assert.rejects(
+      () => joinAsGuest('m1', 'nope'),
+      (error: unknown) => {
+        assert.ok(error instanceof Error);
+        assert.match(error.message, /Failed to join match m1 as a guest/);
+        assert.equal((error as { status?: number }).status, 401);
+        return true;
+      },
+    );
+  });
+
+  test('readGuestAccessMeta GETs the meta with no auth and returns { gameName, hasGuestPassword } (WP-631)', async () => {
+    installFetchStub(() => jsonResponse(200, { matchId: 'm1', gameName: 'Table', hasGuestPassword: true }));
+    const meta = await readGuestAccessMeta('m1');
+    assert.deepEqual(meta, { gameName: 'Table', hasGuestPassword: true });
+    assert.equal(calls[0]!.url, `${serverUrl}/api/match/m1/guest-access`);
+    assert.equal(calls[0]!.init, undefined);
+  });
+
+  test('readGuestAccessMeta swallows a non-2xx and returns the safe empty default (WP-631)', async () => {
+    installFetchStub(() => textResponse(500, 'boom'));
+    const meta = await readGuestAccessMeta('m1');
+    assert.deepEqual(meta, { gameName: null, hasGuestPassword: false });
+  });
+
+  test('readGuestAccessMeta coerces a malformed body to the safe default (WP-631)', async () => {
+    installFetchStub(() => jsonResponse(200, { gameName: 42, hasGuestPassword: 'yes' }));
+    const meta = await readGuestAccessMeta('m1');
+    assert.deepEqual(meta, { gameName: null, hasGuestPassword: false });
   });
 
   test('each helper throws a full-sentence Error on HTTP 500 including endpoint and status', async () => {

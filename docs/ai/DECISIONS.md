@@ -38787,7 +38787,7 @@ Related: WP-015 (the original generic wound), WP-186 / D-18508 (onEscape fire si
 
 ### D-24441 — Per-match host-set guest password (+ game name): a third guest-join model (Active 2026-08-31 — WP-630 / EC-665 landed; WP-631 / EC-666 client half pending)
 
-**Status:** **Active** — the server half (WP-630 / EC-665) landed 2026-08-31. The client half (WP-631 / EC-666) is still pending.
+**Status:** **Active (end-to-end)** — the server half (WP-630 / EC-665) and the client half (WP-631 / EC-666) both landed 2026-08-31. Post-deploy D-24026 live-verify pending.
 
 **Context.** Guest play shipped two host-side hand-off models: WP-627 (the server anonymous seat) + WP-628/WP-629 (the client "Add guest" button → a `?match&player&credentials` link/QR the host hands over). Live use surfaced that handing a **long credentialed URL** to a child on their own device (no email) is awkward. The operator asked for a friendlier path: a **password the host sets**, that a guest **types** to join. This is a variant of the rejected Candidate A (shared credentials) but scoped **per match**, not a standing account pool.
 

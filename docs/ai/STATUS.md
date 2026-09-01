@@ -7,6 +7,16 @@
 
 ## Current State
 
+### WP-631 — Per-match guest password, client half (EC-666 / D-24441) shipped (2026-08-31)
+
+The **UI** for the third guest-join model — completing D-24441 end-to-end. A host sets a **game name** + **guest password** on a match they're seated in; a walk-up guest **picks the game by name from the lobby and types the password** to land in a Casual seat (no account, no link).
+
+- **`lobbyApi.ts` — three wrappers:** `setGuestAccess(matchId, {gameName, password}, authToken)` (host bearer; the `password` key is omitted when blank so a rename never wipes it), `joinAsGuest(matchId, password)` (NO auth — the password + server rate limit are the gate; status attached on error), `readGuestAccessMeta(matchId)` (public; **failure-tolerant** → `{null, false}`, so a meta hiccup never blanks the list). All use lowercase-`matchId` (the server contract).
+- **`LobbyView.vue`:** each match row now shows the host-set **game name** (falls back to the match id), read per-match via `readGuestAccessMeta` (the bgio list's `gameName` is the game-*type* "legendary-arena", not usable). A signed-in host gets a **"Set guest password"** editor in the row (game name + **write-only** password field — a stored password is never rendered; 403 → "you must be in this game"). A guest sees **"Join as guest"** only where `hasGuestPassword` **and an open seat** (mirrors WP-629 "Add guest"); the password prompt calls `joinAsGuest` and navigates via **`window.location.href`** (buildGuestPlayUrl returns a full URL) to the unguarded `live` route. 401/429/409/404 map to distinct co-op copy; never throws; the password only ever travels in the POST body.
+- **Pre-flight (two independent gate agents) caught three real defects before code:** "set at create" wasn't buildable in the 4-file allowlist (create navigates away + `set-guest-access` 403s until seated) → narrowed to **edit-control-only**; the guest-join nav had to use `window.location.href` not `.search`; and the open-seat gate was added so a full match doesn't offer a doomed join. A fourth flagged item (use the list's `gameName`) was **rejected** — that field is the game-type name, constant across rows.
+
+Files (4, allowlist): `lobbyApi.ts` + `.test.ts` (11 wrapper cases), `LobbyView.vue` + `.test.ts` (8 UI cases). Arena-client suite **1504 pass / 0 fail**, `vue-tsc` 0, build 0. Client-only — no server/contract/`G` change. **D-24441 now Active end-to-end.** Post-deploy D-24026 live-verify (pick game → password → seated) pending.
+
 ### WP-630 — Per-match guest password + game name, server half (EC-665 / D-24441) shipped (2026-08-31)
 
 A **third guest-join model** — the friendlier alternative to the WP-628 credential link for a walk-up player (a grandchild on a tablet, no email). A host sets an optional **game name** and a **guest password** on a match they own; a guest **types the password** to take an anonymous **Casual** seat. Server half only here (the host/guest UI is WP-631).

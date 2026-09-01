@@ -10,8 +10,11 @@ import {
   listMatches,
   serverUrl,
   fetchSetupRequirements,
+  setGuestAccess,
+  joinAsGuest,
+  readGuestAccessMeta,
 } from './lobbyApi';
-import type { LobbyMatchSummary } from './lobbyApi';
+import type { LobbyMatchSummary, GuestAccessMeta } from './lobbyApi';
 import { parseMatchReference } from './matchReference';
 import {
   computePlayerCountMismatches,
@@ -316,6 +319,12 @@ export default defineComponent({
         const summaries = await listMatches();
         matches.value = summaries;
         errorMessage.value = null;
+        // why: WP-631 — the host-set game name + hasGuestPassword live in the
+        // WP-630 match_guest_access table, not the bgio list (whose `gameName`
+        // is the game-TYPE "legendary-arena", same on every row). So read the
+        // per-match meta here; readGuestAccessMeta swallows failures, so one bad
+        // read never blanks the list (only that row's guest affordance hides).
+        await refreshGuestMeta(summaries);
       } catch (fetchError) {
         const cause =
           fetchError instanceof Error ? fetchError.message : String(fetchError);
@@ -604,6 +613,177 @@ export default defineComponent({
       guestSeatLink.value = null;
       guestSeatError.value = null;
       guestSeatCopied.value = false;
+    }
+
+    // ── WP-631: per-match guest password + game name (D-24441) ────────────────
+    // The host sets a game NAME + a guest PASSWORD on a match they are seated in
+    // (edit control below); a walk-up guest picks that game by name and types the
+    // password to take a Casual seat. Two independent per-row surfaces: the host
+    // "Set guest password" editor and the guest "Join as guest" prompt.
+
+    // why: per-match guest meta (name + hasGuestPassword) keyed by matchID,
+    // populated by refreshGuestMeta after each list. A row with no entry shows
+    // its matchID and no guest affordance.
+    const guestMeta = ref<Record<string, GuestAccessMeta>>({});
+
+    /**
+     * Reads the WP-630 guest-access meta for each listed match and stores it by
+     * id. readGuestAccessMeta is failure-tolerant (returns null/false), so a meta
+     * hiccup on one match never blocks the list — that row simply shows no name
+     * and no guest control.
+     */
+    async function refreshGuestMeta(summaries: LobbyMatchSummary[]): Promise<void> {
+      const nextMeta: Record<string, GuestAccessMeta> = {};
+      for (const summary of summaries) {
+        nextMeta[summary.matchID] = await readGuestAccessMeta(summary.matchID);
+      }
+      guestMeta.value = nextMeta;
+    }
+
+    /**
+     * The display name for a match row: the host-set game name when present,
+     * else the match id (so an un-named game still lists identifiably).
+     */
+    function guestDisplayName(matchID: string): string {
+      const name = guestMeta.value[matchID]?.gameName ?? null;
+      return name !== null && name !== '' ? name : matchID;
+    }
+
+    /** True when a match accepts a password guest join AND still has an open seat. */
+    function canJoinAsGuest(match: LobbyMatchSummary): boolean {
+      const meta = guestMeta.value[match.matchID];
+      return meta !== undefined && meta.hasGuestPassword && match.players.some(isOpenSeat);
+    }
+
+    // ── Host "Set guest password" editor (one open row at a time) ─────────────
+    const guestSetMatchId = ref<string | null>(null);
+    const guestSetName = ref<string>('');
+    const guestSetPassword = ref<string>('');
+    const guestSetBusy = ref<boolean>(false);
+    const guestSetStatus = ref<string | null>(null);
+
+    /** Open the set-guest-password editor for a match, seeding the current name. */
+    function onOpenGuestSet(matchID: string): void {
+      guestSetMatchId.value = matchID;
+      // why: the name is safe to prefill (it is public meta); the password field
+      // is left BLANK and never seeded — it is write-only, so a stored password
+      // is never rendered back to the host.
+      guestSetName.value = guestMeta.value[matchID]?.gameName ?? '';
+      guestSetPassword.value = '';
+      guestSetStatus.value = null;
+    }
+
+    /** Close the set editor without saving. */
+    function onCancelGuestSet(): void {
+      guestSetMatchId.value = null;
+      guestSetName.value = '';
+      guestSetPassword.value = '';
+      guestSetStatus.value = null;
+    }
+
+    /**
+     * Save the game name + guest password to a match the host is seated in
+     * (WP-630 `set-guest-access`). An empty password field is sent as an empty
+     * string only when the host explicitly clears it; here we send the password
+     * only when non-empty so opening the editor to rename does not wipe it.
+     */
+    async function onSubmitGuestSet(matchID: string): Promise<void> {
+      const token = authStore.token;
+      if (guestSetBusy.value || token === null) {
+        return;
+      }
+      guestSetBusy.value = true;
+      guestSetStatus.value = null;
+      try {
+        // why: send password only when the host typed one — an untouched (empty)
+        // field means "leave the password as-is", matching the server's
+        // absent-leaves-unchanged merge, so a rename never clears the password.
+        // The `password` key is OMITTED (not set to undefined) when blank, so the
+        // wrapper's JSON body carries no password field at all.
+        const update: { gameName?: string; password?: string } = {
+          gameName: guestSetName.value.trim(),
+        };
+        if (guestSetPassword.value !== '') {
+          update.password = guestSetPassword.value;
+        }
+        await setGuestAccess(matchID, update, token);
+        await refreshMatches();
+        guestSetStatus.value = 'Saved — guests can now join this game with the password.';
+        guestSetPassword.value = '';
+      } catch (setError) {
+        // why: 403 means the host is not seated in this match (the server gate);
+        // everything else a generic retry. Never re-throw.
+        const status = (setError as { status?: number }).status;
+        guestSetStatus.value =
+          status === 403
+            ? 'You must be in this game to set its guest password.'
+            : 'Couldn’t save the guest password — please try again.';
+      } finally {
+        guestSetBusy.value = false;
+      }
+    }
+
+    // ── Guest "Join as guest" password prompt (one open row at a time) ────────
+    const guestJoinMatchId = ref<string | null>(null);
+    const guestJoinPassword = ref<string>('');
+    const guestJoinBusy = ref<boolean>(false);
+    const guestJoinError = ref<string | null>(null);
+
+    /** Open the password prompt for a password-enabled match. */
+    function onOpenGuestJoin(matchID: string): void {
+      guestJoinMatchId.value = matchID;
+      guestJoinPassword.value = '';
+      guestJoinError.value = null;
+    }
+
+    /** Close the password prompt without joining. */
+    function onCancelGuestJoin(): void {
+      guestJoinMatchId.value = null;
+      guestJoinPassword.value = '';
+      guestJoinError.value = null;
+    }
+
+    /**
+     * Join a match as a guest by password (WP-630 `join-as-guest`). On success,
+     * navigate the current tab to the guest play URL — the guest lands in the
+     * Casual seat via the unguarded `live` route (creds-only connect, no Hanko).
+     */
+    async function onSubmitGuestJoin(matchID: string): Promise<void> {
+      if (guestJoinBusy.value) {
+        return;
+      }
+      if (guestJoinPassword.value === '') {
+        guestJoinError.value = 'Type the game’s password to join.';
+        return;
+      }
+      guestJoinBusy.value = true;
+      guestJoinError.value = null;
+      try {
+        const { seat, credentials } = await joinAsGuest(matchID, guestJoinPassword.value);
+        // why: buildGuestPlayUrl returns a FULL absolute URL, so navigate via
+        // window.location.href (NOT .search, which expects a relative query) — the
+        // unguarded live route seats the guest from ?match&player&credentials with
+        // no account/Hanko. The password is never placed in the URL.
+        window.location.href = buildGuestPlayUrl(matchID, seat, credentials);
+      } catch (joinError) {
+        // why: map the attached HTTP status to co-op copy; never re-throw. With
+        // the open-seat gate a 409 is a race (just filled / password removed),
+        // not "full". 404 = the game ended.
+        const status = (joinError as { status?: number }).status;
+        if (status === 401) {
+          guestJoinError.value = 'That password isn’t right for this game — check it and try again.';
+        } else if (status === 429) {
+          guestJoinError.value = 'Too many tries just now — wait a moment and try again.';
+        } else if (status === 409) {
+          guestJoinError.value = 'Couldn’t join — the game may have just filled or the password was removed.';
+        } else if (status === 404) {
+          guestJoinError.value = 'That game has ended.';
+        } else {
+          guestJoinError.value = 'Couldn’t join as a guest — please try again.';
+        }
+      } finally {
+        guestJoinBusy.value = false;
+      }
     }
 
     async function joinByReference(): Promise<void> {
@@ -895,6 +1075,23 @@ export default defineComponent({
       onCopyGuestLink,
       onOpenGuestSeat,
       onDismissGuest,
+      guestDisplayName,
+      canJoinAsGuest,
+      guestSetMatchId,
+      guestSetName,
+      guestSetPassword,
+      guestSetBusy,
+      guestSetStatus,
+      onOpenGuestSet,
+      onCancelGuestSet,
+      onSubmitGuestSet,
+      guestJoinMatchId,
+      guestJoinPassword,
+      guestJoinBusy,
+      guestJoinError,
+      onOpenGuestJoin,
+      onCancelGuestJoin,
+      onSubmitGuestJoin,
     };
   },
 });
@@ -1287,6 +1484,12 @@ export default defineComponent({
           class="match-row"
           :class="{ 'match-row--highlight': match.matchID === highlightMatchId }"
         >
+          <span
+            class="match-name"
+            :data-testid="'lobby-match-name-' + match.matchID"
+          >
+            {{ guestDisplayName(match.matchID) }}
+          </span>
           <span class="match-id" :data-match-id="match.matchID">
             {{ match.matchID }}
           </span>
@@ -1369,6 +1572,119 @@ export default defineComponent({
             >
               {{ guestSeatError }}
             </span>
+          </div>
+
+          <!-- why: WP-631 — the host sets a game name + guest password on a match
+               they are seated in. Shown when signed in; the server's participant
+               gate (403) is the real authority, surfaced as a status line. -->
+          <div v-if="isSignedIn" class="match-guest-set">
+            <button
+              v-if="guestSetMatchId !== match.matchID"
+              type="button"
+              :data-testid="'lobby-set-guest-open-' + match.matchID"
+              @click="onOpenGuestSet(match.matchID)"
+            >
+              Set guest password
+            </button>
+            <form
+              v-else
+              class="guest-set-form"
+              :data-testid="'lobby-set-guest-form-' + match.matchID"
+              @submit.prevent="onSubmitGuestSet(match.matchID)"
+            >
+              <label :for="'guest-set-name-' + match.matchID">Game name</label>
+              <input
+                :id="'guest-set-name-' + match.matchID"
+                v-model="guestSetName"
+                type="text"
+                placeholder="e.g. Grandkids game"
+                :data-testid="'lobby-set-guest-name-' + match.matchID"
+              />
+              <label :for="'guest-set-password-' + match.matchID">Guest password</label>
+              <!-- why: write-only — the field is always blank on open and the
+                   stored password is never rendered back. Leaving it blank on save
+                   keeps the existing password (rename without wiping). -->
+              <input
+                :id="'guest-set-password-' + match.matchID"
+                v-model="guestSetPassword"
+                type="password"
+                autocomplete="new-password"
+                placeholder="Leave blank to keep the current password"
+                :data-testid="'lobby-set-guest-password-' + match.matchID"
+              />
+              <button
+                type="submit"
+                :disabled="guestSetBusy"
+                :data-testid="'lobby-set-guest-save-' + match.matchID"
+              >
+                Save
+              </button>
+              <button
+                type="button"
+                :data-testid="'lobby-set-guest-cancel-' + match.matchID"
+                @click="onCancelGuestSet"
+              >
+                Cancel
+              </button>
+              <span
+                v-if="guestSetStatus !== null"
+                role="status"
+                :data-testid="'lobby-set-guest-status-' + match.matchID"
+              >
+                {{ guestSetStatus }}
+              </span>
+            </form>
+          </div>
+
+          <!-- why: WP-631 — a walk-up guest joins by password. Shown ONLY where the
+               match accepts a password AND has an open seat (mirrors "Add guest").
+               This is NOT the login-gated account-holder "Join". -->
+          <div v-if="canJoinAsGuest(match)" class="match-guest-join">
+            <button
+              v-if="guestJoinMatchId !== match.matchID"
+              type="button"
+              :data-testid="'lobby-join-guest-open-' + match.matchID"
+              @click="onOpenGuestJoin(match.matchID)"
+            >
+              Join as guest
+            </button>
+            <form
+              v-else
+              class="guest-join-form"
+              :data-testid="'lobby-join-guest-form-' + match.matchID"
+              @submit.prevent="onSubmitGuestJoin(match.matchID)"
+            >
+              <label :for="'guest-join-password-' + match.matchID">Game password</label>
+              <input
+                :id="'guest-join-password-' + match.matchID"
+                v-model="guestJoinPassword"
+                type="password"
+                autocomplete="off"
+                placeholder="Type the password the host gave you"
+                :data-testid="'lobby-join-guest-password-' + match.matchID"
+              />
+              <button
+                type="submit"
+                :disabled="guestJoinBusy"
+                :data-testid="'lobby-join-guest-submit-' + match.matchID"
+              >
+                Join
+              </button>
+              <button
+                type="button"
+                :data-testid="'lobby-join-guest-cancel-' + match.matchID"
+                @click="onCancelGuestJoin"
+              >
+                Cancel
+              </button>
+              <span
+                v-if="guestJoinError !== null"
+                role="status"
+                :data-testid="'lobby-join-guest-error-' + match.matchID"
+              >
+                {{ guestJoinError }}
+              </span>
+            </form>
           </div>
         </li>
       </ul>
@@ -1477,5 +1793,32 @@ export default defineComponent({
 .match-list-empty {
   padding: 0.5rem 0;
   opacity: 0.75;
+}
+
+/* why: WP-631 — the host-set game name is the primary label of a row; the raw
+   match id stays visible but secondary. */
+.match-name {
+  font-weight: 600;
+}
+
+.match-id {
+  font-size: 0.85em;
+  opacity: 0.7;
+}
+
+.match-guest-set,
+.match-guest-join {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding-top: 0.25rem;
+}
+
+.guest-set-form,
+.guest-join-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
 }
 </style>

@@ -7,6 +7,7 @@ import { mount, flushPromises, enableAutoUnmount } from '@vue/test-utils';
 
 import LobbyView from './LobbyView.vue';
 import { useAuthStore } from '../stores/auth';
+import { buildGuestPlayUrl } from './lobbyApi';
 
 /**
  * Tests for the WP-369 / EC-398 addition to the lobby: the copy-join-link deep
@@ -674,4 +675,217 @@ test('WP-499: a match with no open seat shows an error and does not join', async
     /has no open seats/,
   );
   assert.ok(!calls.some((call) => call.url.includes('/api/match/join')), 'no join on a full match');
+});
+
+// --- WP-631: per-match guest password + game name (D-24441) ---
+
+/**
+ * Route fetch for the WP-631 surfaces: the lobby list, the per-match guest-access
+ * meta GET, and the set/join POSTs. `meta` maps matchID → the guest-access body.
+ * Records every call in `guestCalls` so a test can assert what was sent (and what
+ * was NOT — e.g. the password never in a URL).
+ */
+let guestCalls: { url: string; init: RequestInit | undefined }[] = [];
+function stubGuestRoutes(options: {
+  matches: unknown[];
+  meta: Record<string, { gameName: string | null; hasGuestPassword: boolean }>;
+  joinResponse?: { status: number; body: unknown };
+  setResponse?: { status: number; body: unknown };
+}): void {
+  guestCalls = [];
+  globalThis.fetch = (async (url: string | URL, init?: RequestInit) => {
+    const u = String(url);
+    guestCalls.push({ url: u, init });
+    if (u.includes('/guest-access')) {
+      const rawId = u.split('/api/match/')[1]!.split('/guest-access')[0]!;
+      const body = options.meta[decodeURIComponent(rawId)] ?? { gameName: null, hasGuestPassword: false };
+      return { ok: true, status: 200, json: async () => ({ matchId: rawId, ...body }) } as Response;
+    }
+    if (u.endsWith('/api/match/join-as-guest') && init?.method === 'POST') {
+      const { status, body } = options.joinResponse ?? { status: 200, body: {} };
+      return {
+        status, ok: status >= 200 && status < 300,
+        json: async () => body,
+        text: async () => (typeof body === 'string' ? body : JSON.stringify(body)),
+      } as Response;
+    }
+    if (u.endsWith('/api/match/set-guest-access') && init?.method === 'POST') {
+      const { status, body } = options.setResponse ?? { status: 200, body: {} };
+      return {
+        status, ok: status >= 200 && status < 300,
+        json: async () => body,
+        text: async () => (typeof body === 'string' ? body : JSON.stringify(body)),
+      } as Response;
+    }
+    return { ok: true, status: 200, json: async () => ({ matches: options.matches }) } as Response;
+  }) as typeof globalThis.fetch;
+}
+
+test('WP-631: the lobby row shows the host-set game name (falls back to matchID when unnamed)', async () => {
+  setSearch('?route=lobby');
+  stubGuestRoutes({
+    matches: [rawMatch('m1', ['host', undefined]), rawMatch('m2', ['host', undefined])],
+    meta: { m1: { gameName: 'Grandkids game', hasGuestPassword: true } },
+  });
+  const wrapper = mountLobby();
+  await flushPromises();
+  assert.equal(wrapper.find('[data-testid="lobby-match-name-m1"]').text(), 'Grandkids game');
+  assert.equal(wrapper.find('[data-testid="lobby-match-name-m2"]').text(), 'm2');
+});
+
+test('WP-631: "Join as guest" shows only where hasGuestPassword AND an open seat', async () => {
+  setSearch('?route=lobby');
+  stubGuestRoutes({
+    matches: [
+      rawMatch('m1', ['host', undefined]),
+      rawMatch('m2', ['host', undefined]),
+      rawMatch('m3', ['host', 'guest2']),
+    ],
+    meta: {
+      m1: { gameName: 'Open', hasGuestPassword: true },
+      m2: { gameName: 'Named only', hasGuestPassword: false },
+      m3: { gameName: 'Full', hasGuestPassword: true },
+    },
+  });
+  const wrapper = mountLobby();
+  await flushPromises();
+  assert.ok(wrapper.find('[data-testid="lobby-join-guest-open-m1"]').exists());
+  assert.equal(wrapper.find('[data-testid="lobby-join-guest-open-m2"]').exists(), false);
+  assert.equal(wrapper.find('[data-testid="lobby-match-name-m2"]').text(), 'Named only');
+  assert.equal(wrapper.find('[data-testid="lobby-join-guest-open-m3"]').exists(), false);
+});
+
+test('WP-631: correct password posts to join-as-guest (password in the body) and the play URL never carries the password', async () => {
+  // why: jsdom's window.location is non-configurable, so the actual
+  // `window.location.href = ...` navigation cannot be intercepted here (see the
+  // bgioClient App-routing note). Instead assert the observable effects: the
+  // join POST carried the password in its BODY, the happy path showed no error,
+  // and the play URL builder (buildGuestPlayUrl — which has no password param, so
+  // it structurally cannot leak it) produces the ?match&player&credentials shape
+  // without the password. The full navigation is covered by the App-routing +
+  // useCreateMatchFromComposition suites.
+  setSearch('?route=lobby');
+  stubGuestRoutes({
+    matches: [rawMatch('m1', ['host', undefined])],
+    meta: { m1: { gameName: 'Open', hasGuestPassword: true } },
+    joinResponse: { status: 200, body: { matchId: 'm1', seat: '1', credentials: 'guest-cred' } },
+  });
+  const wrapper = mountLobby();
+  await flushPromises();
+  await wrapper.find('[data-testid="lobby-join-guest-open-m1"]').trigger('click');
+  await flushPromises();
+  await wrapper.find('[data-testid="lobby-join-guest-password-m1"]').setValue('apple');
+  await wrapper.find('[data-testid="lobby-join-guest-form-m1"]').trigger('submit');
+  await flushPromises();
+  // the password went in the POST body, not a URL
+  const joinCall = guestCalls.find((call) => call.url.endsWith('/api/match/join-as-guest'));
+  assert.ok(joinCall !== undefined);
+  const joinBody = JSON.parse(String(joinCall!.init!.body)) as { matchId: string; password: string };
+  assert.equal(joinBody.matchId, 'm1');
+  assert.equal(joinBody.password, 'apple');
+  // the happy path did not surface an error line
+  assert.equal(wrapper.find('[data-testid="lobby-join-guest-error-m1"]').exists(), false);
+  // the play URL the handler navigates to carries only match/player/credentials
+  const playUrl = buildGuestPlayUrl('m1', '1', 'guest-cred');
+  assert.ok(playUrl.includes('match=m1'));
+  assert.ok(playUrl.includes('player=1'));
+  assert.ok(playUrl.includes('credentials=guest-cred'));
+  assert.equal(playUrl.includes('apple'), false, 'the password never appears in the play URL');
+});
+
+test('WP-631: a wrong password (401) shows co-op copy and does not navigate', async () => {
+  setSearch('?route=lobby');
+  stubGuestRoutes({
+    matches: [rawMatch('m1', ['host', undefined])],
+    meta: { m1: { gameName: 'Open', hasGuestPassword: true } },
+    joinResponse: { status: 401, body: { error: 'wrong' } },
+  });
+  const wrapper = mountLobby();
+  await flushPromises();
+  await wrapper.find('[data-testid="lobby-join-guest-open-m1"]').trigger('click');
+  await flushPromises();
+  await wrapper.find('[data-testid="lobby-join-guest-password-m1"]').setValue('nope');
+  await wrapper.find('[data-testid="lobby-join-guest-form-m1"]').trigger('submit');
+  await flushPromises();
+  const err = wrapper.find('[data-testid="lobby-join-guest-error-m1"]');
+  assert.ok(err.exists());
+  assert.match(err.text(), /password isn.t right/i);
+});
+
+test('WP-631: rate-limited (429) and ended (404) map to distinct copy', async () => {
+  for (const trial of [
+    { status: 429, pattern: /too many tries/i },
+    { status: 404, pattern: /has ended/i },
+  ]) {
+    setSearch('?route=lobby');
+    stubGuestRoutes({
+      matches: [rawMatch('m1', ['host', undefined])],
+      meta: { m1: { gameName: 'Open', hasGuestPassword: true } },
+      joinResponse: { status: trial.status, body: { error: 'x' } },
+    });
+    const wrapper = mountLobby();
+    await flushPromises();
+    await wrapper.find('[data-testid="lobby-join-guest-open-m1"]').trigger('click');
+    await flushPromises();
+    await wrapper.find('[data-testid="lobby-join-guest-password-m1"]').setValue('apple');
+    await wrapper.find('[data-testid="lobby-join-guest-form-m1"]').trigger('submit');
+    await flushPromises();
+    assert.match(wrapper.find('[data-testid="lobby-join-guest-error-m1"]').text(), trial.pattern);
+  }
+});
+
+test('WP-631: host set-guest-password field is write-only and never renders a stored password', async () => {
+  setSearch('?route=lobby');
+  stubGuestRoutes({
+    matches: [rawMatch('m1', ['host', undefined])],
+    meta: { m1: { gameName: 'Grandkids', hasGuestPassword: true } },
+    setResponse: { status: 200, body: { matchId: 'm1', gameName: 'Grandkids', hasGuestPassword: true } },
+  });
+  const wrapper = mountLobbySignedIn();
+  await flushPromises();
+  await wrapper.find('[data-testid="lobby-set-guest-open-m1"]').trigger('click');
+  await flushPromises();
+  const nameInput = wrapper.find('[data-testid="lobby-set-guest-name-m1"]').element as HTMLInputElement;
+  const passwordInput = wrapper.find('[data-testid="lobby-set-guest-password-m1"]').element as HTMLInputElement;
+  assert.equal(nameInput.value, 'Grandkids');
+  assert.equal(passwordInput.value, '');
+  assert.equal(passwordInput.type, 'password');
+});
+
+test('WP-631: host set submit posts to set-guest-access; a rename omits the password from the body', async () => {
+  setSearch('?route=lobby');
+  stubGuestRoutes({
+    matches: [rawMatch('m1', ['host', undefined])],
+    meta: { m1: { gameName: 'Old name', hasGuestPassword: true } },
+    setResponse: { status: 200, body: { matchId: 'm1', gameName: 'New name', hasGuestPassword: true } },
+  });
+  const wrapper = mountLobbySignedIn();
+  await flushPromises();
+  await wrapper.find('[data-testid="lobby-set-guest-open-m1"]').trigger('click');
+  await flushPromises();
+  await wrapper.find('[data-testid="lobby-set-guest-name-m1"]').setValue('New name');
+  await wrapper.find('[data-testid="lobby-set-guest-form-m1"]').trigger('submit');
+  await flushPromises();
+  const setCall = guestCalls.find((call) => call.url.endsWith('/api/match/set-guest-access'));
+  assert.ok(setCall !== undefined);
+  const body = JSON.parse(String(setCall!.init!.body)) as Record<string, unknown>;
+  assert.equal(body.gameName, 'New name');
+  assert.equal('password' in body, false, 'an untouched password field is omitted (kept as-is)');
+});
+
+test('WP-631: host set 403 (not a participant) shows the "must be in this game" line', async () => {
+  setSearch('?route=lobby');
+  stubGuestRoutes({
+    matches: [rawMatch('m1', ['host', undefined])],
+    meta: { m1: { gameName: 'Grandkids', hasGuestPassword: false } },
+    setResponse: { status: 403, body: { error: 'not a participant' } },
+  });
+  const wrapper = mountLobbySignedIn();
+  await flushPromises();
+  await wrapper.find('[data-testid="lobby-set-guest-open-m1"]').trigger('click');
+  await flushPromises();
+  await wrapper.find('[data-testid="lobby-set-guest-password-m1"]').setValue('apple');
+  await wrapper.find('[data-testid="lobby-set-guest-form-m1"]').trigger('submit');
+  await flushPromises();
+  assert.match(wrapper.find('[data-testid="lobby-set-guest-status-m1"]').text(), /must be in this game/i);
 });

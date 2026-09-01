@@ -315,6 +315,157 @@ export async function addGuest(
 }
 
 /**
+ * The lobby-safe guest-access metadata for one match (WP-631 / D-24441): the
+ * host-set display name (or null) and whether the match accepts a password
+ * guest join. NEVER carries the stored password / derived key.
+ */
+export interface GuestAccessMeta {
+  gameName: string | null;
+  hasGuestPassword: boolean;
+}
+
+/**
+ * Sets (or updates) a match's guest **game name** and/or guest **password** via
+ * the WP-630 host-gated `POST /api/match/set-guest-access` (D-24441). The host's
+ * bearer token authorizes it; the server confirms the host is a participant.
+ * Per-field: an `undefined` field is left unchanged server-side; an empty string
+ * clears it (so a rename never wipes the password) — `JSON.stringify` drops the
+ * `undefined` fields, and empty strings are sent through. Mirrors {@link addGuest}.
+ *
+ * @param matchId    ID of the match to set guest access on.
+ * @param update     `{ gameName?, password? }` — omit a field to leave it as-is.
+ * @param authToken  Bearer token for the host's authenticated session.
+ * @returns The lobby-safe meta the server echoes (never the password).
+ * @throws Error (with the numeric HTTP `status` attached) on a non-2xx response.
+ */
+export async function setGuestAccess(
+  matchId: string,
+  update: { gameName?: string; password?: string },
+  authToken: string,
+): Promise<{ matchId: string } & GuestAccessMeta> {
+  const endpoint = `${serverUrl}/api/match/set-guest-access`;
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${authToken}`,
+    },
+    body: JSON.stringify({
+      matchId,
+      gameName: update.gameName,
+      password: update.password,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    // why: attach the HTTP status so the caller can map 403 (not a participant)
+    // to a specific line and every other non-2xx to a generic one.
+    throw Object.assign(
+      new Error(
+        `Failed to set guest access on match ${matchId} at ${endpoint}: server returned HTTP ${response.status}. ${errorBody}`,
+      ),
+      { status: response.status },
+    );
+  }
+
+  const body = (await response.json()) as {
+    matchId: string;
+    gameName: string | null;
+    hasGuestPassword: boolean;
+  };
+  return {
+    matchId: body.matchId,
+    gameName: body.gameName,
+    hasGuestPassword: body.hasGuestPassword,
+  };
+}
+
+/**
+ * Joins a match as an anonymous guest by typing the host-set password, via the
+ * WP-630 **public** `POST /api/match/join-as-guest` (D-24441). No account, no
+ * bearer token — the password + the server's per-IP rate limit are the gate. On
+ * a match the server mints a rowless Casual seat and returns its bgio credential,
+ * which the caller turns into a play URL via {@link buildGuestPlayUrl}.
+ *
+ * @param matchId   ID of the match to join.
+ * @param password  The guest password the host shared.
+ * @returns The minted seat id + its bgio credential.
+ * @throws Error (with the numeric HTTP `status` attached) on a non-2xx response —
+ *   401 wrong password, 409 no password set / match full, 429 rate-limited.
+ */
+export async function joinAsGuest(
+  matchId: string,
+  password: string,
+): Promise<{ matchId: string; seat: string; credentials: string }> {
+  const endpoint = `${serverUrl}/api/match/join-as-guest`;
+  // why: no Authorization header — a guest has no account; this endpoint is
+  // public by necessity and defended by the password + server rate limit.
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ matchId, password }),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    // why: attach the HTTP status so the caller can map 401 (wrong password),
+    // 429 (too many tries), and 409 (no password set / full) to co-op copy.
+    throw Object.assign(
+      new Error(
+        `Failed to join match ${matchId} as a guest at ${endpoint}: server returned HTTP ${response.status}. ${errorBody}`,
+      ),
+      { status: response.status },
+    );
+  }
+
+  const body = (await response.json()) as {
+    matchId: string;
+    seat: string;
+    credentials: string;
+  };
+  return {
+    matchId: body.matchId,
+    seat: body.seat,
+    credentials: body.credentials,
+  };
+}
+
+/**
+ * Reads a match's lobby-safe guest-access metadata via the WP-630 **public**
+ * `GET /api/match/:matchId/guest-access` (D-24441): the game name + whether it
+ * accepts a password guest join. Public read (no auth), like {@link listMatches}.
+ * A failure is treated as "no guest access" (null name, no password) rather than
+ * thrown, so a meta hiccup never blocks the match list from rendering.
+ *
+ * @param matchId  ID of the match to read.
+ * @returns The `{ gameName, hasGuestPassword }` meta; a safe empty default on failure.
+ */
+export async function readGuestAccessMeta(matchId: string): Promise<GuestAccessMeta> {
+  const endpoint = `${serverUrl}/api/match/${encodeURIComponent(matchId)}/guest-access`;
+  try {
+    const response = await fetch(endpoint);
+    if (!response.ok) {
+      return { gameName: null, hasGuestPassword: false };
+    }
+    const body = (await response.json()) as {
+      gameName?: unknown;
+      hasGuestPassword?: unknown;
+    };
+    // why: defensively coerce — a malformed/absent field must not crash the
+    // list; only a real string name and a real boolean flag are surfaced.
+    return {
+      gameName: typeof body.gameName === 'string' ? body.gameName : null,
+      hasGuestPassword: body.hasGuestPassword === true,
+    };
+  } catch {
+    // why: a transport failure on the meta read is non-fatal — the match still
+    // lists and joins for account holders; only the guest affordance is hidden.
+    return { gameName: null, hasGuestPassword: false };
+  }
+}
+
+/**
  * Builds the guest play URL for a minted guest seat (WP-628 / WP-629). Opening it
  * lands the guest directly in the seat via the arena-client's unguarded `live`
  * route (`createLiveClient` connects with `credentials` only — no Hanko session).
