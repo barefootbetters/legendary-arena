@@ -39,7 +39,35 @@ tested, what is *deliberately* not tested or not CI-gated, and how to run the
 suite locally. It cites the authoritative testing doc and rules; it does not
 redefine them.
 
+> **Authority** — This page is informational. The authoritative requirements
+> live in [06-TESTING.md](../docs/06-TESTING.md), [CLAUDE.md](../.claude/CLAUDE.md),
+> [code-style.md](../.claude/rules/code-style.md), and the cited decisions and
+> execution checklists. If anything here conflicts with those, **they win** and
+> this page is the thing to fix.
+
 ## Mechanics
+
+### Testing model
+
+Four layers, lowest to highest. Higher layers **supplement** lower ones; they
+never replace them — a finding from a higher layer should, where possible, be
+reproduced as a deterministic test in a lower one.
+
+| Layer | What it is | Deterministic? | Part of the test suite? |
+|---|---|---|---|
+| **1 · Unit + Contract** | Pure logic — zone ops, parsers, validators, type/field shapes. No I/O, no framework. | Yes | Yes |
+| **2 · Integration + Framework** | Multiple engine surfaces together; framework-owned surfaces (e.g. `ctx.gameover`) via boardgame.io's own `InitializeGame`. | Yes | Yes |
+| **3 · Replay / Complete-Game** | Recorded matches replayed through three oracle layers; detects gameplay drift and behavioral regressions. | Yes | Yes |
+| **4 · Operational Validation (QA)** | Simulation sweeps, dashboard anomaly detection, nightly triage. | Reproducible, not a pass/fail gate | **No — QA, not the formal suite** |
+
+> **Tests vs QA.** Layers 1–3 are the deterministic, CI-gated test suite. Layer
+> 4 (the [Simulation Loop](dashboard.md) and dashboard anomaly detection) is a
+> **QA instrument** — it surfaces candidates, but does not pass or fail a build.
+> A simulation finding earns its keep only once it is reproduced as a
+> deterministic test at Layer 1–3.
+
+The rest of this section expands Layers 1–3 in detail: the runner, the per-type
+table, drift detection, and the deliberate boundaries.
 
 ### Runner and conventions
 
@@ -95,6 +123,25 @@ arrays include `MATCH_PHASES`, `TURN_STAGES`, `CORE_MOVE_NAMES`,
 `RULE_TRIGGER_NAMES`, `RULE_EFFECT_TYPES`, `REVEALED_CARD_TYPES`, `LOG_OUTCOMES`,
 and `MENACE_TIERS`.
 
+The design rule: **every architecture-controlled union type has exactly one
+matching canonical array and exactly one drift-detection test.** New engine
+drift pins must be **runtime** assertions — see the callout below.
+
+> **Runtime Assertion Rule** — Because engine test files are **not**
+> CI-typechecked (see the boundary below):
+>
+> - A **new** engine drift pin MUST be a **runtime** assertion (a `Object.keys`
+>   keyset check or a value comparison) — never a bare `satisfies`, because
+>   nothing compiles it on every run.
+> - An **optional-field** addition can never be caught by a type-level pin (an
+>   optional field satisfies `satisfies` by definition); pin it with a keyset
+>   assertion on a **built** projection.
+> - Type-only safeguards are documentation, not enforcement, until the
+>   `typecheck:tests` gate is required.
+>
+> See [EC-598](../docs/ai/execution-checklists/EC-598-engine-test-typecheck-gate.checklist.md)
+> and [DECISIONS.md](../docs/ai/DECISIONS.md) D-24372.
+
 ### What's deliberately NOT tested (or not CI-gated)
 
 Naming the boundaries, so a gap is not mistaken for an oversight:
@@ -103,19 +150,19 @@ Naming the boundaries, so a gap is not mistaken for an oversight:
   database, or a live boardgame.io server, and never use `Math.random()` or real
   time. A test that needs any of those is testing the wrong thing
   ([06-TESTING.md § Test Rules](../docs/06-TESTING.md)).
-- **Engine test files are not typechecked in CI — deliberately, for now.** The
-  engine's `tsconfig.json` excludes `src/**/*.test.ts`; `build` (`tsc`) honours
-  that exclusion and `test` (`tsx`) transpiles without checking, so engine test
-  files historically never compiled. WP-563 added a
-  `typecheck:tests` script, but it is **deliberately not a required CI check
-  yet** — the suite still carries a large pre-existing error backlog, and a red
-  required gate would block every unrelated PR
-  ([EC-598](../docs/ai/execution-checklists/EC-598-engine-test-typecheck-gate.checklist.md),
-  [DECISIONS.md](../docs/ai/DECISIONS.md) D-24372). Two corollaries outlive the
-  wiring: a **new** engine drift pin must be a **runtime** assertion (a keyset or
-  value check), never a bare `satisfies`, because nothing compiles it on every
-  run; and an optional-field addition can never be caught by a type-level pin —
-  pin it with a keyset assertion on a **built** projection.
+- **Engine test files are not typechecked in CI — deliberately, for now.**
+  - *Current state:* the engine's `tsconfig.json` excludes `src/**/*.test.ts`;
+    `build` (`tsc`) honours that exclusion and `test` (`tsx`) transpiles without
+    checking — so engine test files historically never compiled. WP-563 added a
+    `typecheck:tests` script, but it is **not a required CI check yet**: the
+    suite still carries a large pre-existing error backlog, and a red required
+    gate would block every unrelated PR.
+  - *Consequence:* type-level pins are unenforced. New drift pins and
+    optional-field guards must be **runtime** assertions — see the Runtime
+    Assertion Rule above.
+  - *References:*
+    [EC-598](../docs/ai/execution-checklists/EC-598-engine-test-typecheck-gate.checklist.md),
+    [DECISIONS.md](../docs/ai/DECISIONS.md) D-24372.
 - **DB-backed server tests run locally and serialized — not in the default unit
   sweep.** Tests that exercise the Postgres-backed server share one local
   database, so `node:test`'s file-level concurrency races them; they must run
@@ -162,6 +209,22 @@ To run the engine test typecheck locally (not a CI gate — see above):
 ```bash
 pnpm --filter @legendary-arena/game-engine typecheck:tests
 ```
+
+### Healthy test environment
+
+Binary acceptance criteria. A repo test environment is healthy when **all** of
+these hold — if any fails, treat the environment as suspect until it is resolved
+or explained:
+
+- [ ] `pnpm -r build` succeeds.
+- [ ] `pnpm -r test` succeeds (and `pnpm -r --no-bail test` for whole-repo totals).
+- [ ] Drift-detection tests pass.
+- [ ] Test totals are stable and expected — a **shrinking** total signals a
+  stale `dist` import-crash, not a real pass.
+- [ ] No import-crash failures (a stale/missing `dist` reported as a false red).
+- [ ] Generated artifacts are unchanged or intentionally updated — judged by
+  `git diff --numstat`, not a bare ` M` in `git status`.
+- [ ] Replay / complete-game fixtures reproduce their recorded outcomes.
 
 ## Interactions
 
