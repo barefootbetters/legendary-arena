@@ -659,6 +659,16 @@ describe('fightVillain — Endless Armies of HYDRA plays the top two Villain Dec
       ['extra'],
       'exactly two cards were played from the deck',
     );
+    // why: the fight-triggered plays are narrated BEFORE the reveals so the log
+    // attributes them (the played cards' consequences would otherwise appear with
+    // no cause). Assert the stable suffix — the mock card carries no display data.
+    assert.ok(
+      gameState.messages.some((message) =>
+        message.text.startsWith('Fight effect:') &&
+        message.text.endsWith('plays the top 2 card(s) of the Villain Deck.'),
+      ),
+      'a Fight-effect line narrates the two villain-deck plays',
+    );
   });
 
   it('a defeated villain with no play hook plays nothing from the villain deck', () => {
