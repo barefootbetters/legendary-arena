@@ -356,8 +356,9 @@ report to exactly one of the three layers.
   save-games), so the only remedy is a new match.
 - **An interactive board prompt only appears if the card's ability carries
   the marker that parks it.** The play surface renders a pending player
-  choice — e.g. the optional-KO-reward *"KO a card from your hand or discard
-  pile, or decline"* — only because the engine **parked** that choice, and it
+  choice — e.g. the optional-KO-reward *"KO a card from your hand, discard
+  pile, or one you played this turn, or decline"* — only because the engine
+  **parked** that choice, and it
   parks one only when the card's ability text carries the marker that models
   it (`[keyword:optional-ko-reward:<reward>:N]`). If the marker is missing,
   `heroAbility.setup.ts` silently emits the plain printed effect instead and
@@ -374,8 +375,14 @@ report to exactly one of the three layers.
   (pile-wound) from their discard pile for Energy Drain's ability` — so the
   spent card is no longer invisible. Live-verified on
   `play.legendary-arena.com` at gitSha `6e99f0b` (a 2p Red Skull / Midtown
-  Bank Robbery match): Energy Drain now prompts the KO and logs it. **Triage
-  a prompt-that-never-appears at the card's `abilities[]` markup + the
+  Bank Robbery match): Energy Drain now prompts the KO and logs it. WP-632
+  (D-24442, 2026-09-01) later widened the same keyword's KO source to include
+  a card **you played this turn** (in-play) — so the prompt now offers hand,
+  discard, and in-play cards, and KO-ing a played S.H.I.E.L.D. Agent keeps its
+  Recruit — also live-verified on `play.legendary-arena.com` in the same 2p
+  Red Skull / Midtown Bank Robbery scenario (log: `Player 0 KO'd S.H.I.E.L.D.
+  Agent from the cards they played this turn for Energy Drain's ability`).
+  **Triage a prompt-that-never-appears at the card's `abilities[]` markup + the
   ability parser — NOT `buildUIState` / the filter**; it is an upstream
   ability-data gap, not a projection bug.
 

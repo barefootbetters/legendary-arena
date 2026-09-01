@@ -30,6 +30,7 @@ source:
   - ../packages/game-engine/src/rules/heroKeywords.ts
   - ../packages/game-engine/src/setup/heroAbility.setup.ts
   - ../packages/game-engine/src/hero/heroEffects.execute.ts
+  - ../packages/game-engine/src/moves/optionalKoReward.resolve.ts
   - ../packages/game-engine/src/rules/mastermindHandlers.ts
   - ../packages/game-engine/src/diagnostics/hollowEffect.record.ts
   - ../scripts/convert-cards/apply-effect-markers.mjs
@@ -43,7 +44,7 @@ source:
   - ../docs/ai/DESIGN-MASTERMIND-STRIKE-MIGRATION.md
   - ../docs/ai/ARCHITECTURE.md
   - ../docs/10-GLOSSARY.md
-last-reviewed: 2026-08-03
+last-reviewed: 2026-09-01
 ---
 
 # Card Effect System
@@ -480,6 +481,28 @@ handler reads as *applied* while the real Scheme Twist fires elsewhere.
 - **Determinism of the primitive interpreter.** The `bind`/`ref` execution
   context is a transient `Map`, never persisted to `G`/`ctx`; bound values
   are re-derived identically on replay (D-24029 §9 / D-24030).
+- **"Played this turn" is `inPlay`, and a mid-turn KO removes a card from
+  later scans (D-24442).** Effects whose text says *a card you played this
+  turn* — the `optional-ko-reward` in-play KO source (Rogue **Energy Drain**,
+  Black Widow **Dangerous Rescue** and family; KO source widened to hand ∪
+  discard ∪ **in-play**, so you may KO a card you already played this turn and
+  keep the Recruit/Attack it produced) and the self-KO `heroEffectKo` — read
+  and mutate `G.playerZones[pid].inPlay`, the same zone the class-synergy gates
+  and the villain hand-plus-in-play scans (`reveal-or-wound` D-24281,
+  `ko-heroes-current-by-trait`) treat as "played this turn." Class synergy is
+  evaluated **on-play** and banked to `G.turnEconomy`, and the D-24377 deferred
+  grants only ever *add*, so KO-ing an in-play card **never** claws back a bonus
+  already granted (play A → play same-class B → KO A leaves B's bonus intact).
+  But because "played this turn" is modeled as *currently in `inPlay`* rather
+  than a persistent per-turn ledger, the **reverse** order — KO A **before**
+  playing a later same-class B — drops A from B's synergy count, a deliberate
+  simplification that diverges from the tabletop rule (a card played this turn
+  still counts after it moves elsewhere). Narrow (reverse play order only) and
+  pre-existing (self-KO had it before D-24442). The just-played source card is
+  itself a legal in-play KO target — Legendary's "a card" (no "other") includes
+  it, and the `CardExtId` zone model cannot exclude a single instance — so the
+  "nothing eligible" no-op is now defensive (the played card is always in
+  `inPlay` at the choice).
 - **Drift hazard on every closed set.** Adding a hero keyword, effect node
   type, value expression, or villain primitive requires updating the union,
   its canonical readonly array, the dispatch/handler map, and a DECISIONS.md
@@ -544,6 +567,7 @@ handler reads as *applied* while the real Scheme Twist fires elsewhere.
 - WP-522 (D-24335) — the `give-hq-hero-by-trait-to-current` villain primitive (eighteenth; co2e Ultron's Fight removes the highest-cost `[hc:tech]` HQ Hero and gives it to the current player's discard, refilling the slot — the KO-or-gift choice auto-resolves to the dominant gift)
 - WP-523 (D-24336) — the `swap-two-city-villains` villain primitive (nineteenth; co2e Whirlwind's Ambush swaps the lowest-index and highest-index villain-occupied City spaces — the first City board-position manipulation; henchmen excluded, fewer than two Villains is a no-op)
 - WP-532 (D-24343) — the `give-hq-hero-each-player` villain primitive (twentieth; the second interactive villain effect — Paibok the Power Skrull's Fight gives every player one HQ Hero into their discard; the current player picks interactively via `pendingGiveHqHeroChoice`, non-current + bot players auto-gain the highest-cost Hero; refills the HQ, gains route to discard)
+- WP-632 (D-24442) — the `optional-ko-reward` hero keyword's KO source widened from hand ∪ discard to **hand ∪ discard ∪ in-play** (a player may KO a card they played this turn, keeping the Recruit/Attack it produced — the deck-thinning play, rulebook p.62; the 9 affected card texts across core/co2e/ssw1/ssw2 reworded, keyword marker unchanged). `selectDefaultOptionalKoTarget` scans in-play **only** as an empty-hand+discard fallback, so every recorded bot pick and pinned `finalStateHash`/replay/sentinel stays byte-identical; the broad sim sweep does shift (the reachable reshuffle-empty in-play park), so `runtime-observed-hollows.json` regenerates. Supersedes D-24019's "KOs from hand or discard, never inPlay" scope clause. See the "Played this turn is `inPlay`" edge case above.
 - The hollow-effect detection and coverage-ledger spine (DESIGN-HOLLOW-EFFECT-DETECTION.md, DESIGN-EFFECT-AUTHORING-SCALE.md)
 
 ## Scaling and Open Directions
