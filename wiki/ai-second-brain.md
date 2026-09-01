@@ -21,7 +21,7 @@ source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\ai-second-brain.md (this page — https://ewiki.legendary-arena.com/ai-second-brain/)
   - ../docs/ai/DECISIONS.md#d-24341
   - ../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md
-last-reviewed: 2026-08-24
+last-reviewed: 2026-08-31
 ---
 
 # AI Second Brain
@@ -584,7 +584,7 @@ the knowledge base is not:
 
 | Component | Role | Replaceable? |
 |---|---|---|
-| Claude Code | Primary coding / reasoning agent | ✅ Yes |
+| Coding agent (Claude Code / Codex / Copilot) | Primary coding / reasoning agent | ✅ Yes |
 | Open-weights model (local) | Offline / private inference | ✅ Yes |
 | Hosted model (GPT / Gemini / Grok) | Alternate reasoning provider | ✅ Yes |
 | LiteLLM gateway | Model routing | ✅ Yes |
@@ -593,6 +593,18 @@ the knowledge base is not:
 
 Because the models reach the knowledge only through MCP and the gateway, a model
 swap is a configuration change, not a data migration. The corpus never moves.
+
+**The coding-agent row is a field, not a single product.** The primary
+coding/reasoning agent is exactly the layer this architecture treats as
+disposable, and the 2026 field of terminal-and-editor coding agents makes the
+point concretely: **Claude Code** (Anthropic), **Codex** (OpenAI's coding
+agent, the "ChatGPT" family), and **GitHub Copilot** (the editor-integrated
+assistant) are interchangeable front-ends over the same owned knowledge base.
+Which one is best this quarter is a workflow preference, not an architectural
+commitment — each reaches the corpus through the same MCP surface and gateway,
+so moving between them (or running more than one) never migrates a fact. Naming
+them is illustrative, not an endorsement or a usage policy; the durable claim is
+that *any* of them can be swapped out while the knowledge base stays put.
 
 **Three replaceable layers, one permanent one.** A clean way to hold that boundary
 is to separate an AI lab into **hardware** (where inference runs — see

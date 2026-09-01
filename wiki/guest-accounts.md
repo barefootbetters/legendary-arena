@@ -6,7 +6,6 @@ tags:
   - guest
   - layer-server
   - arena-client
-  - planning
 related:
   - profile-login.md
   - play-board.md
@@ -20,6 +19,7 @@ source:
   - ../apps/server/src/match/matchGate.routes.ts
   - ../apps/server/src/match/seatAccount.logic.ts
   - ../apps/server/src/bot-ally/botAllyRoutes.mjs
+  - ../apps/server/src/match/addGuestRoutes.mjs
   - ../apps/server/src/competition/competition.logic.ts
   - ../apps/server/src/auth/sessionToken.logic.ts
   - ../apps/arena-client/src/auth/routeAuthPolicy.ts
@@ -29,6 +29,10 @@ source:
   - ../data/migrations/024_create_match_seat_accounts.sql
   - ../data/migrations/033_create_match_bot_ally.sql
   - ../docs/ai/work-packets/WP-499-join-by-match-id.md
+  - ../docs/ai/work-packets/WP-627-guest-seat-host-add.md
+  - ../docs/ai/work-packets/WP-628-add-guest-lobby-button.md
+  - ../docs/ai/work-packets/WP-629-guest-lobby-button-and-persistent-link.md
+  - ../docs/ai/REFERENCE/api-endpoints.md
   - ../docs/ai/DECISIONS.md
 last-reviewed: 2026-08-31
 ---
@@ -38,15 +42,21 @@ last-reviewed: 2026-08-31
 ## Summary
 
 "Guest access" means letting a person occupy a match seat **without
-creating an account** — so a group at one table can just play. No such
-path exists today: every seat requires a Hanko sign-in, and the word
-"guest" already names several unrelated, mostly-unwired things in the code.
-This page documents that current reality and records two **candidate
-designs** — a shared guest-account pool and a host-created guest seat —
-without choosing between them. It is intentionally **non-prescriptive**: it
-describes current behaviour and records candidate approaches; it does not
-authorize implementation, reserve a `WP-` / `D-`, or establish
-architectural direction.
+creating an account** — so a group at one table can just play. Two candidate
+designs were weighed — a shared guest-account pool (**Candidate A**) and a
+host-created guest seat (**Candidate B**) — and the platform **chose and shipped
+Candidate B** on 2026-08-31 ([D-24437](../docs/ai/DECISIONS.md), WP-627 / 628 /
+629). A signed-in host clicks **Add guest**, the server secret-joins one
+anonymous "Player N" seat exactly as the bot-ally flow does (no
+`match_seat_accounts` row, match demoted to Casual), and the host hands the
+seat's credential URL to the guest for same-device / local hand-off. Candidate A
+was **rejected** — a shared public credential is an attack surface the
+geo-block and usage log existed only to *contain*, and Candidate B removes the
+credential rather than policing it ([D-24437](../docs/ai/DECISIONS.md)).
+This page documents the current reality, the shipped mechanism, and the one
+piece deliberately left deferred (a remote, device-bound seat-bind link). It is
+**descriptive**: it cites the decisions and Work Packets that govern guest play;
+it does not itself establish direction.
 
 ## Mechanics
 
@@ -54,31 +64,42 @@ architectural direction.
 
 | Question | Answer today |
 |---|---|
-| Can a person sit without an account? | **No** — create and join both require a Hanko session. |
-| Does `GuestIdentity` do anything in production? | **No** — defined, unwired, never minted. |
-| Can a seat render as "Player N"? | Yes, as a rendering path; nothing creates that seat for a human. |
-| Can a guest submit competitively? | **No** — refused on server, client, and (for bot-shaped seats) the match tag. |
-| Closest shipped precedent | Bot-ally: host-initiated secret-join, no `match_seat_accounts` row, match tagged non-ranked. |
-| Decision | **Open** — Candidate A (shared pool) vs Candidate B (host-created seat) vs both vs neither. |
+| Can a person sit without an account? | **Yes** — a signed-in host adds a guest seat via `POST /api/match/add-guest` (WP-627). Self-serve sign-up-free create/join still requires a Hanko session. |
+| Does `GuestIdentity` do anything in production? | **No** — defined, unwired, never minted. The shipped guest seat does **not** use it (it is a rowless bot-ally-style seat, not a `GuestIdentity`). |
+| Can a seat render as "Player N"? | Yes — and the shipped add-guest seat is exactly this: no `match_seat_accounts` row, so it renders "Player N". |
+| Can a guest submit competitively? | **No** — refused on server, client, and via the Casual match tag; a guest seat is `guest_not_eligible`. |
+| Closest shipped precedent | Bot-ally: host-initiated secret-join, no `match_seat_accounts` row, match tagged non-ranked — the mechanism add-guest reuses. |
+| Decision | **Settled — Candidate B** ([D-24437](../docs/ai/DECISIONS.md)); shipped as WP-627 (server) + WP-628 / WP-629 (client hand-off). Candidate A rejected. |
 
 ### Current state vs proposed
 
 **Implemented today:**
 
-- Guest accounts do not exist; every match seat requires an authenticated
-  (Hanko) account.
-- `GuestIdentity` is defined but **unwired** — nothing mints one at runtime.
-- Anonymous **"Player N"** seat *rendering* exists, but no production path
-  creates such a seat.
-- Competitive submission already **excludes** non-authenticated players.
+- **Host-created guest seats ship (Candidate B).** A signed-in host calls
+  `POST /api/match/add-guest` (WP-627), which secret-joins one anonymous seat
+  and returns its `{ seat, credentials }`; the client (WP-628 / WP-629) builds
+  a `?match&player&credentials` hand-off URL and offers "Open guest seat" /
+  "Copy guest link" from the lobby.
+- A guest seat writes **no `match_seat_accounts` row**, so it renders
+  **"Player N"** and demotes the match to Casual via
+  `computeRankedEligibility` rule 2 (`roster.length !== seatCount`) — no
+  `match_bot_ally` row, no marker, **no migration**.
+- `GuestIdentity` is defined but **unwired** — nothing mints one at runtime,
+  and the shipped guest seat does not use it.
+- Competitive submission **excludes** guest seats three ways
+  (`guest_not_eligible`, client no-token status, Casual match tag).
 
-**Under consideration (not implemented):**
+**Rejected / deferred:**
 
-- Candidate A — a shared guest-account pool.
-- Candidate B — a host-created guest seat.
+- Candidate A (shared guest-account pool) was **rejected** — see
+  [D-24437](../docs/ai/DECISIONS.md) and the comparison below.
+- A remote, **device-bound seat-bind link** (a guest joining from their own
+  distant device without the raw credential in a shareable URL) is **deferred**
+  as new protocol work — see [Open Questions](#open-questions).
 
-**No design decision has been made and no Work Packet has been authorized.**
-The rest of this section is the detail behind those lines.
+The decision is recorded in [D-24437](../docs/ai/DECISIONS.md) (server) and
+[D-24438](../docs/ai/DECISIONS.md) (client hand-off). The rest of this section
+is the detail behind those lines.
 
 ### "Guest" today — three disconnected forms
 
@@ -115,17 +136,27 @@ The naming overload — and why a new feature under the bare name "guest"
 would collide with the shipped `isGuest` / `guest_not_eligible` vocabulary —
 is discussed under Edge Cases.
 
-### Why there is no guest play today — the auth gate
+### The self-serve auth gate — and the one exception
 
-To occupy a seat you must have a real account. `POST /api/match/create`
-and `POST /api/match/join`
+To occupy a seat **on your own** you must have a real account.
+`POST /api/match/create` and `POST /api/match/join`
 ([matchGate.routes.ts](../apps/server/src/match/matchGate.routes.ts)) both
 resolve an authenticated `AccountId` as their first business step; no valid
 Hanko session returns `401`. On the client,
 [routeAuthPolicy.ts](../apps/arena-client/src/auth/routeAuthPolicy.ts)
 lets anyone *spectate* the lobby, but bounces a signed-out user to
 `?route=login` the moment they try to create or join. So a guest cannot
-sit down at all. Join-by-match-ID (WP-499,
+sit down *unaided*.
+
+**The shipped exception is host-initiated.** `POST /api/match/add-guest`
+(WP-627) is the one path that seats a person without an account — but it is
+gated on an **authenticated host** who is already a participant in the match
+(a `readSeatAccounts` participant check), not on the guest. The guest never
+authenticates; the host vouches for the seat and hands off its credential. So
+the gate still holds for self-serve play — the guest is admitted only through
+a signed-in host's action, never on their own.
+
+Join-by-match-ID (WP-499,
 [WP-499-join-by-match-id.md](../docs/ai/work-packets/WP-499-join-by-match-id.md))
 lets any *account holder* join by pasting an ID or link, but it still runs
 through the same authenticated `POST /api/match/join`.
@@ -154,7 +185,7 @@ this precedent.
 Two shapes solve "let people play without accounts." They differ mainly in
 whether a **shared credential** exists.
 
-#### Candidate A — a shared guest-account pool (`guest01`…`guest05`)
+#### Candidate A — a shared guest-account pool (`guest01`…`guest05`) — **rejected**
 
 A small fixed pool of real accounts — five is the practical ceiling
 (five-player max table). Each is an ordinary
@@ -185,14 +216,26 @@ This shape is what motivates the operational controls below:
   geo-IP is reliable at country and sloppy at state, so an "Idaho-only" rule
   would lock out the operator's own family on mobile data.
 
-#### Candidate B — a host-side "Add guest" seat (bot-ally clone)
+#### Candidate B — a host-side "Add guest" seat (bot-ally clone) — **shipped**
 
-The host, already signed in, clicks **Add guest**; the server secret-joins
-an anonymous seat exactly as `create-with-bot` does, writes **no**
-`match_seat_accounts` row (so it already renders "Player N"), and tags the
-match non-ranked. The guest plays on the host's screen or a handed-off
-join link. **No shared password is ever minted** — there is no guest login
-path, so there is nothing to leave switched on and nothing to leak.
+This is the design the platform chose and shipped ([D-24437](../docs/ai/DECISIONS.md);
+server WP-627, client WP-628 / WP-629). The host, already signed in, clicks
+**Add guest**; the server (`POST /api/match/add-guest`,
+[addGuestRoutes.mjs](../apps/server/src/match/addGuestRoutes.mjs)) runs a
+participant gate, reads occupancy from the bgio **metadata** (never a raw
+`G` / `ctx` read), finds the lowest free seat, enforces a per-match
+`MAX_GUEST_SEATS_PER_MATCH` (= 4) cap, then secret-joins that seat via the
+WP-308 internal-delegation header exactly as `create-with-bot` does — writing
+**no** `match_seat_accounts` row (so it renders "Player N") and demoting the
+match to Casual. **No shared password is ever minted** — there is no guest login
+path, so there is nothing to leave switched on and nothing to leak. The endpoint
+returns the seat's `{ seat, credentials }`; the client (WP-628 / WP-629,
+[D-24438](../docs/ai/DECISIONS.md)) turns that into a
+`?match&player&credentials` hand-off URL surfaced from the lobby seat list as
+"Open guest seat" (new-tab hot-seat) and "Copy guest link" (a second local
+device), plus a persistent link for the seat. **Scope is host hot-seat /
+physical hand-off only** — a guest joining from a distant device of their own is
+outside this scope (see [Open Questions](#open-questions)).
 
 #### Comparison
 
@@ -211,9 +254,13 @@ path, so there is nothing to leave switched on and nothing to leak.
 The geo-block and usage log exist to *contain* the risk that a shared
 public credential creates. Candidate B eliminates that shared-credential
 risk entirely, because no guest login exists to attack; Candidate A retains
-the credential and adds controls to contain it. Whether B's simplicity
-outweighs A's flexibility (dedicated, namable accounts and a reusable kiosk
-login) remains an open design decision — recorded below, not resolved here.
+the credential and adds controls to contain it. **This is why B was chosen**
+([D-24437](../docs/ai/DECISIONS.md)): removing the credential removes the risk
+rather than policing it, and B's seats are minted per match on demand instead
+of drawing from a deployment-wide pool of five. Candidate A's flexibility
+(dedicated, namable accounts and a reusable kiosk login) did not outweigh that
+simplicity. Candidate A is retained here as the rejected alternative for the
+record, not as a live option.
 
 ### Shared constraints (any guest design)
 
@@ -293,37 +340,57 @@ that assumes a durable identity:
 
 ## Open Questions
 
-The load-bearing decision is first; the rest apply only if a shape that
-needs them is chosen. This page records these questions; it decides none.
-Each would be settled in `DECISIONS.md` and a Work Packet, not here.
+The load-bearing decision — *which shape* — is settled: Candidate B, shipped
+([D-24437](../docs/ai/DECISIONS.md); WP-627 / 628 / 629). What remains open is
+one deliberately-deferred extension and a couple of second-order questions. Each
+would be settled in `DECISIONS.md` and a Work Packet, not here.
 
-- **Which shape — if any?** Candidate A (shared pool), Candidate B
-  (host-created seat), both (e.g. in-person kiosk vs. remote handoff), or
-  neither. Every question below is conditional on this.
-- **If Candidate A — real Hanko rows or a dedicated path?** Five `email`
-  accounts reuse the whole stack but mean shared passwords inside the Hanko
-  model; a dedicated guest sign-in path trades that reuse for tighter
-  control.
-- **If Candidate A — how are pool accounts marked?** A new `players` column
-  versus a small allowlist of the five `ext_id`s checked at the analytics
-  and ranked gates (there is no `is_guest` column today).
-- **If Candidate A — exact geo-block scope.** Which route(s) the single
-  Cloudflare WAF rule pins to, so only the guest-login path is affected.
-- **If Candidate A — concurrency policy.** One live session per pool slot?
-  What happens when a sixth table wants a guest? Is five still the right
-  pool size once two matches run at once?
-- **If Candidate B — what is the guest's client?** Host hot-seat only, or a
-  no-auth seat-bind link? The second is not a free clone of
-  `create-with-bot`.
-- **What governance artifacts are required before any build?** A
-  `DECISIONS.md` record, a Work Packet, and whether shared credentials
-  (Candidate A) warrant a security review.
+- **Remote, device-bound seat-bind link (deferred).** Today's hand-off puts the
+  seat credential in a `?match&player&credentials` URL — sound for same-device /
+  local hand-off, which is all WP-627 scoped ([D-24438](../docs/ai/DECISIONS.md)).
+  A guest joining from their own *distant* device would want a link that binds a
+  seat to a device without exposing the raw credential in a shareable URL. That
+  is genuinely new protocol on top of the bot-ally clone, not a free part of it,
+  and stays deferred to a future client WP.
+- **Per-match guest cap value.** The shipped cap is
+  `MAX_GUEST_SEATS_PER_MATCH = 4`; whether that is the right ceiling for every
+  table size is a tuning question the endpoint centralizes.
+- **`is_guest` analytics hygiene.** There is still no `is_guest` database column;
+  separating guest-seat activity from real-player analytics remains net-new work
+  if it is ever wanted (the shipped guest seat has no `players` row at all, so it
+  does not pollute the accounts table).
 
-No `WP-` / `D-` is reserved for guest play. This page is descriptive of
-today plus recorded candidates; it establishes no direction.
+Candidate A (shared pool) is **not** an open question — it was rejected. The
+questions that were conditional on choosing it (Hanko rows vs dedicated path,
+pool marking, geo-block scope, concurrency policy) no longer apply.
+
+## History
+
+- **D-24437 / WP-627 / EC-662** (Active 2026-08-31) — chose Candidate B over
+  Candidate A and shipped the server endpoint `POST /api/match/add-guest`: a
+  host-initiated, rowless, non-ranked anonymous seat cloning the bot-ally
+  secret-join, with a `MAX_GUEST_SEATS_PER_MATCH` cap. Candidate A (shared pool)
+  rejected.
+- **D-24438 / WP-628 / EC-663** (Active 2026-08-31) — the client hand-off: an
+  `addGuest` wrapper in `lobbyApi.ts` plus an "Add guest" control in
+  `WaitingForPlayersPanel.vue` that builds the `?match&player&credentials` URL
+  and offers "Open guest seat" / "Copy guest link". Client-only; no new endpoint
+  or auth mechanism.
+- **WP-629** (2026-08-31) — moved "Add guest" into the lobby seat list and added
+  a persistent hand-off link (a guest filling the seat had been auto-hiding the
+  link).
+- **D-24120** — the prior art this reuses: a bot seat carries no
+  `match_seat_accounts` row and seat 0 is never a bot.
 
 ## References
 
+- Guest-seat endpoint and hand-off —
+  [addGuestRoutes.mjs](../apps/server/src/match/addGuestRoutes.mjs),
+  [api-endpoints.md](../docs/ai/REFERENCE/api-endpoints.md)
+  (`POST /api/match/add-guest` row),
+  [WP-627](../docs/ai/work-packets/WP-627-guest-seat-host-add.md),
+  [WP-628](../docs/ai/work-packets/WP-628-add-guest-lobby-button.md),
+  [WP-629](../docs/ai/work-packets/WP-629-guest-lobby-button-and-persistent-link.md)
 - Identity types and the ephemeral guest skeleton —
   [identity.types.ts](../apps/server/src/identity/identity.types.ts),
   [identity.logic.ts](../apps/server/src/identity/identity.logic.ts)
@@ -344,7 +411,8 @@ today plus recorded candidates; it establishes no direction.
   [017_create_analytics_events.sql](../data/migrations/017_create_analytics_events.sql)
 - Identity-agnostic join —
   [WP-499-join-by-match-id.md](../docs/ai/work-packets/WP-499-join-by-match-id.md)
-- Decisions referenced — [DECISIONS.md](../docs/ai/DECISIONS.md) (D-24120,
+- Decisions referenced — [DECISIONS.md](../docs/ai/DECISIONS.md) (D-24437
+  Candidate B choice + `add-guest` endpoint; D-24438 client hand-off; D-24120
   the bot seat carrying no `match_seat_accounts` row)
 - Related surfaces — [Profile Login](profile-login.md),
   [Play Board](play-board.md), [Leaderboard](leaderboard.md),

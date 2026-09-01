@@ -1,6 +1,6 @@
 # Wiki Index
 
-> **65 / 76** entity pages.
+> **66 / 76** entity pages.
 > Last regenerated: 2026-08-31.
 > See [SCHEMA.md](SCHEMA.md) for the entity-page contract and
 > [README.md](README.md) for purpose, conventions, and authority —
@@ -70,15 +70,15 @@ Coordinated subsystems spanning multiple files / phases.
   surface (Hanko broker); the whole auth stack ships into arena-client
   (`play.legendary-arena.com`); the marketing site (`www.`) has no
   sign-in surface of its own.
-- [Guest Accounts](guest-accounts.md) — *(draft, planning)* letting a
-  person play a seat **without an account**. Maps the three disconnected
-  things "guest" means today (an unwired `GuestIdentity` type, the client
-  no-token `'guest'` status, the derived "Player N" seat) and the
-  account-required play gate, then proposes two shapes: a shared
-  `guest01`…`guest05` pool (with the usage log + Cloudflare geo-block that
-  shared credentials require) versus a host-side "Add guest" seat that
-  clones the bot-ally secret-join and needs neither. Proposes options;
-  reserves no `WP-` / `D-` yet.
+- [Guest Accounts](guest-accounts.md) — *(draft)* letting a person play a
+  seat **without an account**. Maps the disconnected things "guest" means in
+  the code (an unwired `GuestIdentity` type, the client no-token `'guest'`
+  status, the derived "Player N" seat), then records the **shipped** design:
+  Candidate B (a host-side "Add guest" seat cloning the bot-ally secret-join,
+  `POST /api/match/add-guest`, rowless + Casual + capped) chosen over
+  Candidate A (a shared `guest01`…`guest05` pool) — D-24437 / D-24438,
+  WP-627 / 628 / 629. Scope is host hot-seat / local hand-off; a remote
+  device-bound seat-bind link stays deferred.
 - [Play Board](play-board.md) — The rendered game mat on
   `play.legendary-arena.com`: which board zone reads which `UIState`
   field, and the two-stage projection→render contract (`buildUIState` →
@@ -192,6 +192,14 @@ Cross-cutting governance, methodology, and readiness assessments.
   Claude Code sessions on WP/EC contracts → GitHub → auto-deploy via
   Render + Cloudflare on merge to `main`; a nightly CI triage agent
   turns sweep results into new work packets.
+- [Testing](testing.md) — The testing map: the `node:test`
+  determinism-first runner and conventions, what each test type covers
+  (unit → contract → move → rule → endgame → persistence → complete-game
+  replay), the drift-detection pins, and — explicitly — what is *deliberately*
+  not tested or not CI-gated (engine test files not typechecked yet, DB suites
+  local+serialized, the simulation harness bypassing boardgame.io). Includes the
+  build-before-test rule and the local run commands, and routes to the Jarvis
+  overnight-QA framework docs.
 - [GitHub Parallel-Session Workflow](github-parallel-session-workflow.md) —
   best practices and pain points for running two or more Claude
   Code sessions against GitHub at once. Separates the **working-tree race**
@@ -451,7 +459,8 @@ following are useful entry points:
   [Board Keywords](board-keywords.md),
   [Scoring](scoring.md),
   [PAR Simulation Calibration](par-simulation-calibration.md),
-  [Complete-Game Fixtures](complete-game-fixtures.md)
+  [Complete-Game Fixtures](complete-game-fixtures.md),
+  [Testing](testing.md)
 - **`determinism`** — Pages where the engine's determinism invariant
   is the load-bearing concern:
   [Rule Execution Pipeline](rule-execution-pipeline.md),
@@ -486,7 +495,7 @@ following are useful entry points:
   [R2 Image Naming Convention](r2-image-naming-convention.md).
 - **`auth`** — Player sign-in and identity:
   [Profile Login](profile-login.md),
-  [Guest Accounts](guest-accounts.md) (account-free seat proposals),
+  [Guest Accounts](guest-accounts.md) (account-free host-added seats),
   [Dashboard](dashboard.md) (Hanko login + Cloudflare Access gate),
   [Operational Health Checks](operational-health-checks.md)
   (Hanko JWKS / CORS probes).
