@@ -36,6 +36,9 @@ source:
   - ../scripts/convert-cards/apply-effect-markers.mjs
   - ../scripts/convert-cards/apply-hero-ability-markers.mjs
   - ../scripts/convert-cards/apply-defeat-requirement-markers.mjs
+  - ../scripts/convert-cards/convert-cards-v15.mjs
+  - ../scripts/convert-cards/card-output-dir.mjs
+  - ../scripts/check-card-data-regen.mjs
   - ../scripts/hero-mechanic-ledger.mjs
   - ../scripts/hero-effect-coverage.mjs
   - ../docs/ai/DESIGN-EFFECT-AUTHORING-SCALE.md
@@ -353,6 +356,49 @@ engine's canonical union: an ops `.mjs` script must not import from
 exit) until the mirror is updated by hand. Drift is intentional and never
 silent.
 
+**Two marker sources — a subtle trap.** Not every `[keyword:…]` in the card
+data comes from these overlay scripts. There are two distinct producers:
+
+- **Structured tokens** — `[keyword:rescue:N]` / `[keyword:reveal]` /
+  `[keyword:draw:N]`, `[effect:…]`, `[require-to-defeat:…]` — are appended at
+  **end-of-line** by the `apply-*` scripts from the curated `inputs/*.json`
+  maps, and are validated against the mirrored vocabulary (`VALID_TOKEN_PATTERN`
+  and friends).
+- **Free-text `[keyword:Label]` markers** — card-name-style references such as
+  `[keyword:Cross-Dimensional Hulk Rampage]` or `[keyword:Patrol the Sewers]`,
+  and any engine marker hand-placed at a non-terminal position (e.g. a *leading*
+  `[keyword:victory-villain-attack]`) — are emitted by
+  [`convert-cards-v15.mjs`](../scripts/convert-cards/convert-cards-v15.mjs) from
+  `{ keyword, text }` overrides in the source `inputs/cards/*.js`. The apply
+  scripts cannot produce these (the pattern rejects free text and they only
+  append at end-of-line).
+
+The trap: a `[keyword:…]` malformation or omission that *looks* like an
+apply-script bug — a `[keyword:: … .]` double-colon, a captured trailing
+`.`/`:`, a dropped leading marker — is usually a source-`.js` typo the
+converter faithfully reproduces. Fix it in `inputs/cards/*.js`, not in
+`apply-hero-ability-markers.mjs`. Mis-reading this cost WP-633 an execution
+amendment (buckets C + the non-valid part of B), the same class of
+mis-attribution the pre-flight had already caught for the `wtif` image URLs.
+
+**Reproducibility gate (WP-633 / D-24443).** The committed `data/cards/*.json`
+is canonical, and a clean full run of the five-stage pipeline
+(`convert-cards-v15` → the four `apply-*` passes) now re-derives it
+**semantically** — object keys reordered, arrays order-sensitive, whitespace/EOL
+ignored. CI enforces it with `pnpm cards:check`
+([`scripts/check-card-data-regen.mjs`](../scripts/check-card-data-regen.mjs)):
+it seeds a throwaway scratch dir from committed, regenerates all five stages into
+it through one shared `CARD_OUTPUT_DIR`
+([`card-output-dir.mjs`](../scripts/convert-cards/card-output-dir.mjs), env
+override `CARD_DATA_OUT_DIR`), semantic-diffs the 40 pipeline sets (`co2e` is
+hand-authored → excluded), and fails on any divergence — **non-destructive**
+(never touches committed `data/cards`) and **fail-fast**. Consequence: a
+card-text or marker edit can once again be produced by editing the
+source/inputs and re-running the pipeline; the older "edit the source **and**
+surgically mirror the change into the generated JSON" workaround is retired.
+When a regen drifts, fix the scripts/inputs so it matches committed — never edit
+the generated corpus to match the scripts.
+
 ### Coverage tracking
 
 Which printed effects actually execute is measured by tooling driven off
@@ -568,6 +614,7 @@ handler reads as *applied* while the real Scheme Twist fires elsewhere.
 - WP-523 (D-24336) — the `swap-two-city-villains` villain primitive (nineteenth; co2e Whirlwind's Ambush swaps the lowest-index and highest-index villain-occupied City spaces — the first City board-position manipulation; henchmen excluded, fewer than two Villains is a no-op)
 - WP-532 (D-24343) — the `give-hq-hero-each-player` villain primitive (twentieth; the second interactive villain effect — Paibok the Power Skrull's Fight gives every player one HQ Hero into their discard; the current player picks interactively via `pendingGiveHqHeroChoice`, non-current + bot players auto-gain the highest-cost Hero; refills the HQ, gains route to discard)
 - WP-632 (D-24442) — the `optional-ko-reward` hero keyword's KO source widened from hand ∪ discard to **hand ∪ discard ∪ in-play** (a player may KO a card they played this turn, keeping the Recruit/Attack it produced — the deck-thinning play, rulebook p.62; the 9 affected card texts across core/co2e/ssw1/ssw2 reworded, keyword marker unchanged). `selectDefaultOptionalKoTarget` scans in-play **only** as an empty-hand+discard fallback, so every recorded bot pick and pinned `finalStateHash`/replay/sentinel stays byte-identical; the broad sim sweep does shift (the reachable reshuffle-empty in-play park), so `runtime-observed-hollows.json` regenerates. Supersedes D-24019's "KOs from hand or discard, never inPlay" scope clause. See the "Played this turn is `inPlay`" edge case above.
+- WP-633 (D-24443) — the five-stage card-data pipeline now **semantically reproduces** the committed `data/cards`, CI-gated by `pnpm cards:check` (regenerate-into-a-scratch-dir semantic diff, non-destructive + fail-fast, wired into the Coverage & Ledger Gates job). Fixed five buckets of latent, un-gated script/input drift — spurious `[icon:vp]` on recruit-cost thresholds, dropped/malformed `[keyword:…]` markers, a dropped `filterName`, and mangled `wtif` hero image URLs — every fix in the scripts/inputs; committed corpus byte-unchanged. Established the free-text-`[keyword:Label]`-vs-structured-token distinction (see [Marker authoring](#marker-authoring-the-overlay-scripts)) and retired the "surgically mirror card-text edits into the generated JSON" workaround. No engine/hash surface — card display text is unhashed.
 - The hollow-effect detection and coverage-ledger spine (DESIGN-HOLLOW-EFFECT-DETECTION.md, DESIGN-EFFECT-AUTHORING-SCALE.md)
 
 ## Scaling and Open Directions
