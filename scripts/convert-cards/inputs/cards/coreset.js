@@ -21,7 +21,7 @@ exports.CoreSet = {
                     abilities: [
                         [
                             { hc: 1 },
-                            ": You may KO a card from your hand or discard pile. If you do, rescue a Bystander."
+                            ": You may KO a card from your hand, discard pile, or a card you played this turn. If you do, rescue a Bystander."
                         ]
                     ]
                 },
@@ -723,7 +723,7 @@ exports.CoreSet = {
                     abilities: [
                         [
                             { hc: 1 },
-                            ": You may KO a card from your hand or discard pile. If you do, you get ",
+                            ": You may KO a card from your hand, discard pile, or a card you played this turn. If you do, you get ",
                             { bold: "+1" },
                             { icon: 2 },
                             "."

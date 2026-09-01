@@ -211,6 +211,26 @@ describe('resolveOptionalKoReward — KO then reward', () => {
     assert.equal(gameState.pendingOptionalKoRewards!.length, 0);
   });
 
+  it('D-24442: KOs the chosen in-play card (played this turn) and grants the reward', () => {
+    const gameState = makeTestGameState({
+      inPlay: ['played-agent' as CardExtId],
+      bystanders: ['by-0' as CardExtId],
+      pendingOptionalKoRewards: [rescuePending()],
+    });
+    const { context } = makeMoveContext(gameState);
+
+    resolveOptionalKoReward(context, { zone: 'inPlay', cardId: 'played-agent' as CardExtId });
+
+    assert.deepStrictEqual(gameState.ko, ['played-agent'], 'the in-play card was KOd');
+    assert.deepStrictEqual(gameState.playerZones['0']!.inPlay, [], 'the card was removed from inPlay');
+    assert.deepStrictEqual(gameState.playerZones['0']!.victory, ['by-0'], 'the reward still fired (rescued the bystander)');
+    assert.equal(gameState.pendingOptionalKoRewards!.length, 0, 'queue front-popped');
+    assert.ok(
+      gameState.messages.some((line) => line.text.includes('the cards they played this turn')),
+      'the KO log names the in-play source zone',
+    );
+  });
+
   it('dispatches a draw reward via the existing executor (deck top → hand)', () => {
     const gameState = makeTestGameState({
       hand: ['ko-me' as CardExtId],

@@ -56,6 +56,14 @@ const mockPending: UIPendingOptionalKoReward = {
       display: { extId: 'disc-card-1', name: 'Discard Card 1', imageUrl: 'https://example.com/d1.jpg', cost: 1 },
     },
   ],
+  // why: D-24442 — cards played this turn are a KO source; one in-play entry.
+  eligibleInPlay: [
+    {
+      zone: 'inPlay',
+      cardId: 'inplay-card-1',
+      display: { extId: 'inplay-card-1', name: 'In-Play Card 1', imageUrl: 'https://example.com/p1.jpg', cost: 0 },
+    },
+  ],
 };
 
 describe('OptionalKoRewardPrompt (WP-249 / EC-280)', () => {
@@ -100,7 +108,7 @@ describe('OptionalKoRewardPrompt (WP-249 / EC-280)', () => {
     assert.ok(reward.exists() && reward.text().includes('+3 Attack'));
   });
 
-  test('renders exactly the projected eligible hand + discard entries in projection order', () => {
+  test('renders exactly the projected eligible hand + discard + in-play entries in projection order', () => {
     const { submitMove } = recorder();
     const wrapper = mount(OptionalKoRewardPrompt, {
       props: { pendingOptionalKoReward: mockPending, viewerPlayerId: 'player-0', submitMove },
@@ -108,13 +116,14 @@ describe('OptionalKoRewardPrompt (WP-249 / EC-280)', () => {
     const cardButtons = wrapper.findAll('[data-testid^="optional-ko-reward-card-"]');
     assert.equal(
       cardButtons.length,
-      mockPending.eligibleHand.length + mockPending.eligibleDiscard.length,
-      'one button per eligible hand + discard entry',
+      mockPending.eligibleHand.length + mockPending.eligibleDiscard.length + mockPending.eligibleInPlay.length,
+      'one button per eligible hand + discard + in-play entry',
     );
-    // projection order: eligibleHand first (hand-card-1, hand-card-2), then eligibleDiscard.
+    // projection order: eligibleHand, then eligibleDiscard, then eligibleInPlay (D-24442).
     assert.equal(cardButtons[0]!.attributes('data-testid'), 'optional-ko-reward-card-hand-hand-card-1');
     assert.equal(cardButtons[1]!.attributes('data-testid'), 'optional-ko-reward-card-hand-hand-card-2');
     assert.equal(cardButtons[2]!.attributes('data-testid'), 'optional-ko-reward-card-discard-disc-card-1');
+    assert.equal(cardButtons[3]!.attributes('data-testid'), 'optional-ko-reward-card-inPlay-inplay-card-1');
   });
 
   test('clicking an eligible card fires resolveOptionalKoReward with that zone + cardId (round-trip)', async () => {
@@ -126,6 +135,17 @@ describe('OptionalKoRewardPrompt (WP-249 / EC-280)', () => {
     assert.equal(calls.length, 1);
     assert.equal(calls[0]!.name, 'resolveOptionalKoReward');
     assert.deepEqual(calls[0]!.args, { zone: 'discard', cardId: 'disc-card-1' });
+  });
+
+  test('D-24442: clicking an in-play card fires resolveOptionalKoReward with { zone: "inPlay", cardId }', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(OptionalKoRewardPrompt, {
+      props: { pendingOptionalKoReward: mockPending, viewerPlayerId: 'player-0', submitMove },
+    });
+    await wrapper.find('[data-testid="optional-ko-reward-card-inPlay-inplay-card-1"]').trigger('click');
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0]!.name, 'resolveOptionalKoReward');
+    assert.deepEqual(calls[0]!.args, { zone: 'inPlay', cardId: 'inplay-card-1' });
   });
 
   test('clicking Decline fires resolveOptionalKoReward with { decline: true }', async () => {
@@ -145,7 +165,11 @@ describe('OptionalKoRewardPrompt (WP-249 / EC-280)', () => {
       props: { pendingOptionalKoReward: mockPending, viewerPlayerId: 'player-0', submitMove },
     });
     const allButtons = wrapper.findAll('button');
-    const expected = mockPending.eligibleHand.length + mockPending.eligibleDiscard.length + 1; // + Decline
+    const expected =
+      mockPending.eligibleHand.length +
+      mockPending.eligibleDiscard.length +
+      mockPending.eligibleInPlay.length +
+      1; // + Decline
     assert.equal(allButtons.length, expected, 'no dismiss/close button beyond the KO cards + Decline');
   });
 
@@ -193,6 +217,7 @@ describe('OptionalKoRewardPrompt (WP-249 / EC-280)', () => {
           display: { extId: 'disc-card-2', name: 'Discard Card 2', imageUrl: 'https://example.com/d2.jpg', cost: 0 },
         },
       ],
+      eligibleInPlay: [],
     };
     await wrapper.setProps({ pendingOptionalKoReward: secondChoice });
 

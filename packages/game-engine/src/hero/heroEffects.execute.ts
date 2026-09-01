@@ -1567,10 +1567,19 @@ function heroEffectOptionalKoReward(
   // eligible (both zones empty) → skipped no-op + a G.messages line (mirrors
   // the D-24017 empty-supply rescue logging), so the player can see why the
   // ability did nothing.
-  const eligibleCount = playerZones.discard.length + playerZones.hand.length;
+  // why: D-24442 — the KO source is hand ∪ discard ∪ inPlay (cards played this
+  // turn), so the ability parks whenever ANY of the three has a card. Counting
+  // inPlay is what lets a player who has emptied hand+discard (e.g. after a
+  // within-turn reshuffle) still KO a card they played this turn. NOTE: at this
+  // onPlay dispatch the triggering card itself is already in inPlay, so
+  // eligibleCount is ≥ 1 in normal play — the zero-branch below is now a
+  // defensive no-op (reachable only via a direct/unit dispatch with an empty
+  // inPlay), kept so a genuinely empty state parks nothing rather than dangling.
+  const eligibleCount =
+    playerZones.discard.length + playerZones.hand.length + playerZones.inPlay.length;
   if (eligibleCount === 0) {
-    pushLog(G, 
-      `Player ${playerID} could not KO a card for a hero ability — both hand and discard pile are empty, so no reward was granted.`,
+    pushLog(G,
+      `Player ${playerID} could not KO a card for a hero ability — hand, discard pile, and in-play cards are all empty, so no reward was granted.`,
     );
     return;
   }
@@ -2596,11 +2605,12 @@ export function executeSingleEffect(
 /**
  * A single optional-KO-reward default target: the zone and the card ext_id.
  *
- * Unlike WP-242's KoHeroTarget, the zone union is only discard | hand — the
- * optional-ko-reward effect KOs from hand or discard, never inPlay.
+ * The zone union is discard | hand | inPlay (D-24442 widened the KO source to
+ * include cards played this turn). The bot reaches an `inPlay` target ONLY via
+ * the empty-hand+discard fallback in selectDefaultOptionalKoTarget below.
  */
 export interface OptionalKoTarget {
-  zone: 'discard' | 'hand';
+  zone: 'discard' | 'hand' | 'inPlay';
   cardId: CardExtId;
 }
 
@@ -2608,20 +2618,30 @@ export interface OptionalKoTarget {
  * Selects the card the deterministic bot/sim KOs when an optional-KO-reward
  * choice is pending.
  *
- * Tie-break ORDER (D-24019, locked — its OWN policy, NOT a reuse of WP-242's
- * selectDefaultKoTarget; it does not exclude wounds and does not prefer
+ * Tie-break ORDER (D-24019, extended by D-24442 — its OWN policy, NOT a reuse of
+ * WP-242's selectDefaultKoTarget; it does not exclude wounds and does not prefer
  * S.H.I.E.L.D. cards): (1) lowest cost; then (2) discard-zone before hand-zone;
  * then (3) lowest array index within the chosen zone. ANY card is eligible
  * (the printed text says "a card", not "a Hero").
  *
- * The bot ALWAYS returns a target and NEVER declines — decline is a human-only
- * option. Returns null only when both zones are empty (an engine-invariant
- * violation while a choice is pending, since the park requires ≥1 eligible
- * card and the block-all guard freezes the board).
+ * why: D-24442 — `inPlay` (cards played this turn) is a valid KO source, but the
+ * bot scans it ONLY as a last-resort fallback when hand AND discard are both
+ * empty. This is the determinism keystone: every choice that parked under the
+ * pre-D-24442 code did so because hand ∪ discard was non-empty, so the discard→
+ * hand scan below returns the identical card for every recorded choice — pinned
+ * hashes stay byte-stable. The inPlay branch only fires in the new empty-hand+
+ * discard park (e.g. after a within-turn reshuffle), which no pre-D-24442 game
+ * reached.
  *
- * @param zones - The player's card zones (only discard + hand are scanned).
+ * The bot ALWAYS returns a target and NEVER declines — decline is a human-only
+ * option. Returns null only when all three zones are empty (an engine-invariant
+ * violation while a choice is pending, since the park requires ≥1 eligible card
+ * and the block-all guard freezes the board).
+ *
+ * @param zones - The player's card zones (discard + hand first; inPlay only as
+ *   the empty-hand+discard fallback).
  * @param cardStats - Card stat lookup for the cost tie-break (?.cost ?? 0).
- * @returns The default KO target, or null when both zones are empty.
+ * @returns The default KO target, or null when all three zones are empty.
  */
 export function selectDefaultOptionalKoTarget(
   zones: PlayerZones,
@@ -2632,6 +2652,7 @@ export function selectDefaultOptionalKoTarget(
   // order is discard-before-hand and lowest-index-first, the retained candidate
   // for the minimum cost is automatically the discard-before-hand, lowest-index
   // one — exactly the locked tie-break, without an explicit rank comparison.
+  // This block is byte-identical to the pre-D-24442 scan (pick preservation).
   let bestZone: 'discard' | 'hand' | null = null;
   let bestCardId: CardExtId | null = null;
   let bestCost = Number.POSITIVE_INFINITY;
@@ -2648,10 +2669,27 @@ export function selectDefaultOptionalKoTarget(
       }
     }
   }
-  if (bestZone === null || bestCardId === null) {
-    return null;
+  if (bestZone !== null && bestCardId !== null) {
+    return { zone: bestZone, cardId: bestCardId };
   }
-  return { zone: bestZone, cardId: bestCardId };
+
+  // why: D-24442 fallback — hand AND discard are both empty, so scan inPlay
+  // (lowest cost, then lowest index). Reached only in the new empty-hand+discard
+  // park, so it never perturbs a pre-D-24442 recorded pick.
+  let fallbackCardId: CardExtId | null = null;
+  let fallbackCost = Number.POSITIVE_INFINITY;
+  for (let cardIndex = 0; cardIndex < zones.inPlay.length; cardIndex++) {
+    const cardId = zones.inPlay[cardIndex]!;
+    const cost = cardStats[cardId]?.cost ?? 0;
+    if (cost < fallbackCost) {
+      fallbackCost = cost;
+      fallbackCardId = cardId;
+    }
+  }
+  if (fallbackCardId !== null) {
+    return { zone: 'inPlay', cardId: fallbackCardId };
+  }
+  return null;
 }
 
 /**

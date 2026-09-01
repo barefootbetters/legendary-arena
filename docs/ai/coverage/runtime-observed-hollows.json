@@ -7,12 +7,12 @@
   },
   "summary": {
     "distinctMechanics": 31,
-    "totalObservations": 2230,
+    "totalObservations": 2227,
     "hollowEffectsDropped": 0,
     "byReason": {
       "no-handler": 0,
       "unsupported-keyword": 0,
-      "parse-unrecognized": 2230
+      "parse-unrecognized": 2227
     }
   },
   "byMechanic": {
@@ -1100,12 +1100,12 @@
       ]
     },
     "teleport": {
-      "hitCount": 174,
+      "hitCount": 171,
       "lastSeenTurn": 29,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 174
+        "parse-unrecognized": 171
       },
       "examples": [
         {

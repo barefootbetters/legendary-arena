@@ -7,6 +7,21 @@
 
 ## Current State
 
+### WP-632 — `optional-ko-reward` KO source widened to include in-play (EC-667 / D-24442) shipped (2026-08-31)
+
+Fixes an operator-reported gap: playing **Rogue Energy Drain** / **Black Widow Dangerous Rescue** (and the family) offered a KO from hand and discard but **not** from cards you already played this turn — so the Legendary deck-thinning play (KO a played S.H.I.E.L.D. Agent, keep the +1 Recruit it already gave you; rulebook p.62) was unavailable. Not a wiring bug — D-24019 deliberately scoped the keyword to hand ∪ discard, faithful to the printed "from your hand or discard pile." Operator elected the more-permissive **union** + a card-text reword.
+
+- **Engine** — the `optional-ko-reward` KO source is now **hand ∪ discard ∪ inPlay**: `resolveOptionalKoReward` accepts `zone:'inPlay'` (+ an if/else in-play log label), `heroEffectOptionalKoReward` counts `inPlay` in its eligibility, `UIPendingOptionalKoReward.eligibleInPlay` is projected and redacted to the chooser, and `selectDefaultOptionalKoTarget` scans `inPlay` **only** as an empty-hand+discard fallback (the determinism keystone — every recorded bot pick stays byte-identical).
+- **Determinism** — the empty-hand+empty-discard+inPlay park is genuinely reachable (a within-turn full-discard reshuffle, WP-478), so a moved hash there would be *correct* D-24442 behavior; empirically **no pinned hash moved** — `finalStateHash`/replay/sentinel byte-unchanged, **no re-pin**. Engine 2937/0 (+5), full `pnpm -r --no-bail test` exit 0.
+- **Card text** — the 9 affected ability lines (core/co2e/ssw1/ssw2) reworded to "…from your hand, discard pile, or a card you played this turn"; keyword marker grammar unchanged; all card-data `:check` gates green.
+- **Client** — `OptionalKoRewardPrompt.vue` adds a "From cards you played this turn" block; arena-client 1505/0 + `vue-tsc` 0.
+- **Gate value** — the drafting gates (pre-flight + copilot, independent subagents) caught a real determinism defect: the first draft claimed the reshuffle-empty park was "unreachable" and forbade any re-pin. Corrected before execution.
+- **Amendments (D-24442 §Execution):** the just-played source card is itself a legal in-play KO target (so the zero-eligible guard is now defensive); the reword was applied to the converter sources AND surgically to the generated set files because a full regen surfaces **pre-existing, unrelated pipeline drift** (~13 sets, 116 effect markers) — flagged below for a separate cleanup.
+
+**Papercuts flagged (out of scope):** (1) the card-data pipeline is not reproducible from the current scripts — a clean `convert-cards-v15 → apply-*` regen churns ~13 sets and appends 116 effect markers absent from committed `data/cards`; the `data/cards/*.json` are not regenerate-and-diff CI-gated, so this drift is latent. Worth a dedicated regen/reconcile WP. (2) The "a card you played this turn still counts for class synergy after being KO'd" rulebook nuance (p.62) is not modeled — the engine counts synergy by scanning `inPlay`, so KO'ing an in-play card drops it from later same-turn synergy counts; pre-existing (affects self-KO / `heroEffectKo` too), not introduced here.
+
+Post-deploy D-24026 live-verify (play Energy Drain with a played Agent in front of you → KO it → reward fires, log names the in-play source, reworded text on the card) pending.
+
 ### WP-631 — Per-match guest password, client half (EC-666 / D-24441) shipped (2026-08-31)
 
 The **UI** for the third guest-join model — completing D-24441 end-to-end. A host sets a **game name** + **guest password** on a match they're seated in; a walk-up guest **picks the game by name from the lobby and types the password** to land in a Casual seat (no account, no link).

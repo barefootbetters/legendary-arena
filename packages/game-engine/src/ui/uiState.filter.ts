@@ -771,11 +771,25 @@ export function filterUIStateForAudience(
         display: { ...entry.display },
       });
     }
+    // why: D-24442 — the in-play eligible list carries the chooser's private
+    // played-this-turn cards; pass it through with a per-entry display spread on
+    // the SAME owner-only branch as hand/discard. Missing this drops the field at
+    // the whitelist and the client renders no in-play KO options (the recurring
+    // filter-drop failure mode).
+    const eligibleInPlayCopy = [];
+    for (const entry of uiState.pendingOptionalKoReward.eligibleInPlay) {
+      eligibleInPlayCopy.push({
+        zone: entry.zone,
+        cardId: entry.cardId,
+        display: { ...entry.display },
+      });
+    }
     result.pendingOptionalKoReward = {
       playerID: uiState.pendingOptionalKoReward.playerID,
       rewardLabel: uiState.pendingOptionalKoReward.rewardLabel,
       eligibleHand: eligibleHandCopy,
       eligibleDiscard: eligibleDiscardCopy,
+      eligibleInPlay: eligibleInPlayCopy,
     };
   }
 

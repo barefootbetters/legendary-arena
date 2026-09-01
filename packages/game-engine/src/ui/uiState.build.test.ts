@@ -1312,6 +1312,9 @@ describe('buildUIState — pendingOptionalKoReward projection (WP-249 / D-24020)
     // (the round-trip rule — unlike the KO-hero projection which excludes wounds).
     gameState.playerZones['0']!.hand = ['hero-h1' as CardExtId, 'hero-h2' as CardExtId];
     gameState.playerZones['0']!.discard = ['hero-d1' as CardExtId, WOUND, 'hero-d2' as CardExtId];
+    // why: D-24442 — cards played this turn (inPlay) are a KO source; include two
+    // so eligibleInPlay order can be asserted.
+    gameState.playerZones['0']!.inPlay = ['hero-p1' as CardExtId, 'hero-p2' as CardExtId];
     gameState.pendingOptionalKoRewards = [
       {
         playerID: '0',
@@ -1350,6 +1353,14 @@ describe('buildUIState — pendingOptionalKoReward projection (WP-249 / D-24020)
         { zone: 'discard', cardId: 'hero-d2' },
       ],
       'eligibleDiscard mirrors G discard in index order INCLUDING the wound (no pre-filter)',
+    );
+    assert.deepStrictEqual(
+      ui.pendingOptionalKoReward!.eligibleInPlay.map((e) => ({ zone: e.zone, cardId: e.cardId })),
+      [
+        { zone: 'inPlay', cardId: 'hero-p1' },
+        { zone: 'inPlay', cardId: 'hero-p2' },
+      ],
+      'D-24442: eligibleInPlay mirrors G inPlay in index order, every entry zone:"inPlay"',
     );
   });
 

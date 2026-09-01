@@ -2849,11 +2849,14 @@ describe('executeHeroEffects optional-ko-reward park (WP-248)', () => {
     assert.equal(gameState.messages.length, 0, 'the park appends no game-log line');
   });
 
-  it('with 0 eligible cards (hand + discard both empty) it is a no-op plus a game-log line', () => {
+  it('with 0 eligible cards (hand + discard + inPlay all empty) it is a no-op plus a game-log line', () => {
+    // why: D-24442 — the zero-eligible guard now requires ALL THREE zones empty.
+    // In normal onPlay play the triggering card is in inPlay so this cannot fire;
+    // a direct dispatch with an empty inPlay exercises the defensive branch.
     const gameState = makeTestState({
       hand: [],
       discard: [],
-      inPlay: ['hero-x'],
+      inPlay: [],
       bystanders: ['bystander-0'],
       heroAbilityHooks: [
         {
@@ -2869,9 +2872,33 @@ describe('executeHeroEffects optional-ko-reward park (WP-248)', () => {
 
     assert.equal(gameState.pendingOptionalKoRewards?.length ?? 0, 0, 'no choice parked when nothing is eligible');
     assert.ok(
-      gameState.messages.some((line) => line.text.includes('both hand and discard pile are empty')),
+      gameState.messages.some((line) => line.text.includes('hand, discard pile, and in-play cards are all empty')),
       'a 0-eligible optional-KO-reward must append a game-log line explaining the no-op',
     );
+  });
+
+  it('D-24442: with hand + discard empty but a card in inPlay, it PARKS (inPlay is a valid KO source)', () => {
+    // why: D-24442 — cards played this turn (inPlay) are a KO source, so the
+    // ability parks even when hand and discard are both empty.
+    const gameState = makeTestState({
+      hand: [],
+      discard: [],
+      inPlay: ['hero-x', 'played-agent'],
+      bystanders: ['bystander-0'],
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-x' as string,
+          timing: 'onPlay',
+          keywords: ['optional-ko-reward'],
+          effects: [{ type: 'optional-ko-reward', magnitude: 1, rewardType: 'rescue' }],
+        },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+
+    assert.equal(gameState.pendingOptionalKoRewards?.length, 1, 'a choice parks because inPlay is non-empty');
+    assert.equal(gameState.messages.length, 0, 'the park is silent (no no-op log line)');
   });
 });
 
@@ -3246,6 +3273,35 @@ describe('selectDefaultOptionalKoTarget tie-break (WP-248)', () => {
   it('returns null when both zones are empty', () => {
     const target = selectDefaultOptionalKoTarget(zonesOf([], []), statsOf({}));
     assert.equal(target, null);
+  });
+
+  /** Zones with an explicit inPlay list (D-24442 fallback tests). */
+  function zonesOf3(hand: string[], discard: string[], inPlay: string[]) {
+    return {
+      deck: [], hand, discard, inPlay, victory: [],
+    } as unknown as Parameters<typeof selectDefaultOptionalKoTarget>[0];
+  }
+
+  it('D-24442: does NOT scan inPlay while hand/discard has a card, even if an inPlay card is strictly cheaper (pick preservation)', () => {
+    const target = selectDefaultOptionalKoTarget(
+      zonesOf3(['hand-card'], [], ['dirt-cheap-inplay']),
+      statsOf({ 'hand-card': 5, 'dirt-cheap-inplay': 0 }),
+    );
+    // why: the fallback-only rule is the determinism keystone — a cheaper inPlay
+    // card must NOT displace the recorded discard/hand pick.
+    assert.deepStrictEqual(target, { zone: 'hand', cardId: 'hand-card' });
+  });
+
+  it('D-24442: falls back to inPlay ONLY when hand and discard are both empty (lowest cost, then index)', () => {
+    const target = selectDefaultOptionalKoTarget(
+      zonesOf3([], [], ['pricey', 'cheap', 'cheap-2']),
+      statsOf({ pricey: 3, cheap: 1, 'cheap-2': 1 }),
+    );
+    assert.deepStrictEqual(target, { zone: 'inPlay', cardId: 'cheap' });
+  });
+
+  it('D-24442: returns null only when all three zones (hand, discard, inPlay) are empty', () => {
+    assert.equal(selectDefaultOptionalKoTarget(zonesOf3([], [], []), statsOf({})), null);
   });
 });
 

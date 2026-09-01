@@ -1003,15 +1003,19 @@ export interface UIPendingDefeatChoice {
  *
  * `playerID` is REQUIRED — `uiState.filter.ts` keys the chooser-only redaction
  * on it (`audience.playerId === playerID`), exactly as the KO-hero filter does.
- * `eligibleHand` / `eligibleDiscard` REUSE `UIEligibleKoHeroCard` so each entry
- * carries its instance `cardId` separately from `display`: the client submits
- * `{ zone, cardId }` and the zone instance id (NOT `display.extId`) is what the
- * engine resolve matches (the round-trip rule). `eligibleHand` entries carry
- * `zone:"hand"`, `eligibleDiscard` entries `zone:"discard"`.
+ * `eligibleHand` / `eligibleDiscard` / `eligibleInPlay` REUSE `UIEligibleKoHeroCard`
+ * so each entry carries its instance `cardId` separately from `display`: the
+ * client submits `{ zone, cardId }` and the zone instance id (NOT `display.extId`)
+ * is what the engine resolve matches (the round-trip rule). `eligibleHand` entries
+ * carry `zone:"hand"`, `eligibleDiscard` entries `zone:"discard"`, `eligibleInPlay`
+ * entries `zone:"inPlay"`.
+ *
+ * // why: D-24442 — `eligibleInPlay` lists the chooser's cards played this turn
+ * (the widened KO source). Chooser-private like the other two lists.
  *
  * @see WP-249 §Locked Contract Values
  * @see EC-280 Locked Values
- * @see DECISIONS.md D-24020
+ * @see DECISIONS.md D-24020, D-24442
  */
 export interface UIPendingOptionalKoReward {
   // why: D-24020 — the redaction key; the chooser-only filter compares
@@ -1022,6 +1026,8 @@ export interface UIPendingOptionalKoReward {
   rewardLabel: string;
   eligibleHand: UIEligibleKoHeroCard[];
   eligibleDiscard: UIEligibleKoHeroCard[];
+  // why: D-24442 — cards the chooser played this turn (inPlay); a valid KO source.
+  eligibleInPlay: UIEligibleKoHeroCard[];
 }
 
 /**

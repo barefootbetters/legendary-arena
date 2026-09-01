@@ -38,11 +38,14 @@ type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
  *
  * Exactly one shape is valid per call:
  * - { decline: true } — decline the choice (no KO, no reward).
- * - { zone, cardId } — KO the named hand/discard card, then take the reward.
+ * - { zone, cardId } — KO the named hand / discard / in-play card, then take the
+ *   reward. `inPlay` = a card the player already played this turn (D-24442);
+ *   KO'ing it keeps the Recruit/Attack it already produced (turn economy was
+ *   applied at play time; the KO does not claw it back).
  */
 export type ResolveOptionalKoRewardArgs =
   | { decline: true }
-  | { zone: 'hand' | 'discard'; cardId: CardExtId };
+  | { zone: 'hand' | 'discard' | 'inPlay'; cardId: CardExtId };
 
 /**
  * Whether any optional-KO-reward choice is currently pending.
@@ -92,7 +95,7 @@ export function resolveOptionalKoReward(
   const zone = (args as { zone?: unknown }).zone;
   const cardId = (args as { cardId?: unknown }).cardId;
   const isKoRequest =
-    (zone === 'hand' || zone === 'discard') &&
+    (zone === 'hand' || zone === 'discard' || zone === 'inPlay') &&
     typeof cardId === 'string' &&
     cardId.length > 0;
   // why: exactly-one-shape — both present (decline AND zone/cardId) or neither
@@ -116,7 +119,7 @@ export function resolveOptionalKoReward(
   // now (no eligible snapshot is stored; eligibility is recomputed fresh).
   const playerZones = G.playerZones[playerID];
   if (!playerZones) { return; }
-  const targetZone = zone as 'hand' | 'discard';
+  const targetZone = zone as 'hand' | 'discard' | 'inPlay';
   const targetCardId = cardId as CardExtId;
   const moveResult = moveCardFromZone(playerZones[targetZone], [], targetCardId);
   if (!moveResult.found) {
@@ -133,7 +136,17 @@ export function resolveOptionalKoReward(
   // (before the Step-6 reward line) so the spent card is observable in the game
   // log instead of silently vanishing, mirroring the Master Strike KO / heroEffectKo
   // phrasing. Outcome 'neutral' because it is a cost, not the payoff.
-  const koSourceZoneLabel = targetZone === 'hand' ? 'their hand' : 'their discard pile';
+  // why: code-style forbids chained ternaries; the third zone (D-24442 in-play)
+  // makes this an if/else if/else. 'the cards they played this turn' names the
+  // in-play source so a KO'd played card reads clearly in the log.
+  let koSourceZoneLabel: string;
+  if (targetZone === 'hand') {
+    koSourceZoneLabel = 'their hand';
+  } else if (targetZone === 'discard') {
+    koSourceZoneLabel = 'their discard pile';
+  } else {
+    koSourceZoneLabel = 'the cards they played this turn';
+  }
   pushLog(
     G,
     `Player ${playerID} KO'd ${formatCardRef(G.cardDisplayData, targetCardId)} from ${koSourceZoneLabel} for ${formatCardRef(G.cardDisplayData, front.sourceCardId)}'s ability.`,

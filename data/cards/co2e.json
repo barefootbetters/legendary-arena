@@ -57,7 +57,7 @@
           "attack": "2",
           "recruit": null,
           "abilities": [
-            "[hc:tech]: You may KO a card from your hand or discard pile. If you do, rescue a Bystander. [keyword:optional-ko-reward:rescue:1]"
+            "[hc:tech]: You may KO a card from your hand, discard pile, or a card you played this turn. If you do, rescue a Bystander. [keyword:optional-ko-reward:rescue:1]"
           ]
         },
         {
@@ -1008,7 +1008,7 @@
           "attack": null,
           "recruit": "1+",
           "abilities": [
-            "[hc:covert]: You may KO a card from your hand or discard pile. If you do, you get +2[icon:recruit]. [keyword:optional-ko-reward:recruit:2]"
+            "[hc:covert]: You may KO a card from your hand, discard pile, or a card you played this turn. If you do, you get +2[icon:recruit]. [keyword:optional-ko-reward:recruit:2]"
           ]
         },
         {

@@ -810,6 +810,9 @@ function createOptionalRewardUIState(): UIState {
   // and the chooser-only eligible list). Hand identities are fully private.
   gameState.playerZones['0']!.hand = ['okr-hand-secret-a', 'okr-hand-secret-b'];
   gameState.playerZones['0']!.discard = ['okr-disc-secret-bottom', 'okr-disc-public-top'];
+  // why: D-24442 — an in-play card (played this turn) is a KO source and, like the
+  // hand, private to non-owners (inPlayCards is redacted for opponents/spectators).
+  gameState.playerZones['0']!.inPlay = ['okr-inplay-secret'];
   gameState.playerZones['1']!.hand = ['p1-card'];
   gameState.pendingOptionalKoRewards = [
     { playerID: '0', rewardType: 'rescue', rewardMagnitude: 1, sourceCardId: 'okr-src' },
@@ -827,9 +830,11 @@ describe('filterUIStateForAudience — pendingOptionalKoReward redaction (D-2402
     assert.equal(result.pendingOptionalKoReward!.rewardLabel, 'Rescue a Bystander');
     assert.equal(result.pendingOptionalKoReward!.eligibleHand.length, 2, 'eligibleHand projected for the chooser');
     assert.equal(result.pendingOptionalKoReward!.eligibleDiscard.length, 2, 'eligibleDiscard projected for the chooser');
+    assert.equal(result.pendingOptionalKoReward!.eligibleInPlay.length, 1, 'D-24442: eligibleInPlay projected for the chooser');
+    assert.equal(result.pendingOptionalKoReward!.eligibleInPlay[0]!.cardId, 'okr-inplay-secret', 'the chooser sees the in-play KO target');
   });
 
-  it('an opponent does NOT see pendingOptionalKoReward and none of the chooser private hand/discard ext_ids leak', () => {
+  it('an opponent does NOT see pendingOptionalKoReward and none of the chooser private hand/discard/in-play ext_ids leak', () => {
     const uiState = createOptionalRewardUIState();
     const result = filterUIStateForAudience(uiState, PLAYER_1);
     assert.equal(result.pendingOptionalKoReward, undefined, 'opponent must not see the optional-KO-reward choice');
@@ -837,9 +842,10 @@ describe('filterUIStateForAudience — pendingOptionalKoReward redaction (D-2402
     assert.equal(serialized.includes('okr-hand-secret-a'), false, 'no chooser hand ext_id leaks');
     assert.equal(serialized.includes('okr-hand-secret-b'), false, 'no chooser hand ext_id leaks');
     assert.equal(serialized.includes('okr-disc-secret-bottom'), false, 'no chooser non-top discard ext_id leaks');
+    assert.equal(serialized.includes('okr-inplay-secret'), false, 'D-24442: no chooser in-play ext_id leaks');
   });
 
-  it('a spectator does NOT see pendingOptionalKoReward and none of the chooser private hand/discard ext_ids leak', () => {
+  it('a spectator does NOT see pendingOptionalKoReward and none of the chooser private hand/discard/in-play ext_ids leak', () => {
     const uiState = createOptionalRewardUIState();
     const result = filterUIStateForAudience(uiState, SPECTATOR);
     assert.equal(result.pendingOptionalKoReward, undefined, 'spectator must not see the optional-KO-reward choice');
@@ -847,6 +853,7 @@ describe('filterUIStateForAudience — pendingOptionalKoReward redaction (D-2402
     assert.equal(serialized.includes('okr-hand-secret-a'), false, 'no chooser hand ext_id leaks');
     assert.equal(serialized.includes('okr-hand-secret-b'), false, 'no chooser hand ext_id leaks');
     assert.equal(serialized.includes('okr-disc-secret-bottom'), false, 'no chooser non-top discard ext_id leaks');
+    assert.equal(serialized.includes('okr-inplay-secret'), false, 'D-24442: no chooser in-play ext_id leaks');
   });
 
   it('per-entry display is a defensive copy — mutating the chooser result does not affect the source', () => {
