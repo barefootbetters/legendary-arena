@@ -62,7 +62,7 @@ New ewiki page — [Tournament Calendar](https://ewiki.legendary-arena.com/tourn
 
 ---
 
-> **Catch-up reconstruction (2026-07-14 → 2026-08-31).** The per-WP throughput
+> **Catch-up reconstruction (2026-07-14 → 2026-09-01).** The per-WP throughput
 > again outran this file — ~160 Work Packets shipped in the seven weeks after the
 > 2026-07-13 entry. The arcs below are reconstructed after the fact from the
 > squash-merge history on `main` + `WORK_INDEX.md`, **grouped by milestone arc**
@@ -70,13 +70,25 @@ New ewiki page — [Tournament Calendar](https://ewiki.legendary-arena.com/tourn
 > 2026-04-15 → 2026-07-13 reconstruction. `WORK_INDEX.md`, `DECISIONS.md`, and
 > `git log` remain the exhaustive per-packet record.
 
-## 2026-08-31 — Guest play + CI / autoplay hardening
+## 2026-09-01 — Card-data regen reproducibility + optional-KO in-play source
 
-**Work Packets:** WP-624 / WP-625 / WP-626 / WP-627 / WP-628 / WP-629 · **Decisions:** D-24437
+**Work Packets:** WP-632 / WP-633 · **Decisions:** D-24442 / D-24443
+
+The generated card corpus became reproducible under a CI gate, and a KO-source fidelity fix landed.
+
+- A clean 5-stage card-data regen now semantically reproduces the committed `data/cards/*.json`, gated non-destructively by `pnpm cards:check` (the committed corpus stays byte-unchanged) (WP-633 / D-24443).
+- The `optional-ko-reward` KO source widened to the in-play zone (hand ∪ discard ∪ in-play), a swept-card behaviour change re-verified against the runtime-observed ledger (WP-632 / D-24442).
+
+---
+
+## 2026-09-01 — Guest play (account-free match seats) + CI / autoplay hardening
+
+**Work Packets:** WP-624 / WP-625 / WP-626 / WP-627 / WP-628 / WP-629 / WP-630 / WP-631 · **Decisions:** D-24437 / D-24441
 
 Casual guests can join a match without an account, and the server test suite finally runs in CI.
 
 - Host-initiated add-guest match seat (rowless account → Casual rule), a lobby "Add guest" button, and a persistent hand-off link so a guest lands directly in the match (WP-627 / WP-628 / WP-629).
+- A per-match **guest password + game name** model: a server migration with scrypt `password_kdf` and a discriminated verify (409 ≠ 401) behind a public, rate-limited join-as-guest, plus the host set-password UI and a gated "Join as guest" (WP-630 / WP-631 / D-24441).
 - The CI Postgres job now runs the server DB-gated suite (WP-625); autoplay review-window timers are `unref`'d and `--test-force-exit` is gone (WP-626); Vanguard seat-wiring gains end-to-end coverage (WP-624).
 
 ---
@@ -113,7 +125,7 @@ The end-of-game screen became a legible, rulebook-faithful report card with an o
 - Endgame **report card v2**: per-player split, formula-first worked score, colour-coded grade scale, named penalties, PAR basis, and "luck of the draw" (WP-583 / WP-584 / WP-587 / WP-588 / WP-593).
 - **Rulebook-faithful scoring**: removed the invented per-round cost and bystander reward, and fixed the bystander-rescued undercount (WP-585 / WP-586 / WP-599).
 - **PAR fidelity**: scheme-aware recalibration, an empirical turn-distribution sweet-spot curve, and a `/coverage` PAR Fidelity panel (WP-591 / WP-596 / WP-597 / WP-598).
-- A Legendary-Pass-gated **endgame AI coach** (server + client upsell panel), the competitive score shown on the endgame screen, and a leaderboard handle→profile link (WP-578 / WP-579 / WP-594 / WP-595). Seed-PAR **competitive submissions turned on** (WP-422).
+- A Legendary-Pass-gated **endgame AI coach** (server + client upsell panel) — built on a model-independence shim so `COACH_MODEL` swaps the model via env (Opus 5 / Sonnet 4.6 pre-seeded) — the competitive score shown on the endgame screen, and a leaderboard handle→profile link (WP-578 / WP-579 / WP-594 / WP-595). Seed-PAR **competitive submissions turned on** (WP-422).
 
 ---
 
@@ -197,6 +209,18 @@ Scheme loss-progress became faithful to the doom-clock, and the losing condition
 
 ---
 
+## 2026-08-10 — Postgres stability, disaster recovery & operator-dashboard go-live
+
+**Work Packets:** WP-416 / WP-439 / WP-517 · **Decisions:** D-24236
+
+The operator dashboard's data feeds went live in production — on a database that stopped falling over mid-match.
+
+- The operator dashboard's `/api/dash/*` tiles flipped **live in prod** — the billing / revenue and matches / players / KPIs feeds built earlier in the window, now joined by a server runtime-health signal and a DR-readiness tile (WP-439 / WP-517).
+- Managed Postgres **stabilized** after out-of-memory / idle-client crash-loops that were freezing live play: plan bump to `basic-1gb`, internal-only `ipAllowList:[]`, and idle-error handling on the pool.
+- A **provider-independent PostgreSQL backup pipeline** (`pg_dump` → an R2 second offsite copy) with retention and a scheduled recovery drill (WP-416 / D-24236).
+
+---
+
 ## 2026-08-07 — Effect Implementation Index, /debug/effects & coverage provenance
 
 **Work Packets:** WP-484 … WP-496 / WP-507 · **Decisions:** D-24026
@@ -244,12 +268,12 @@ The download-and-track gauntlet loop landed, with per-set variety and a builder-
 
 ## 2026-07-26 — Bot-ally hardening, deploy-overlap safety & structured log
 
-**Work Packets:** WP-411 / WP-414 / WP-415 / WP-418 / WP-419 / WP-420 / WP-434 / WP-435 / WP-436 / WP-437 / WP-438 / WP-439 · **Decisions:** D-24253
+**Work Packets:** WP-411 / WP-414 / WP-415 / WP-418 / WP-419 / WP-420 / WP-434 / WP-435 / WP-436 / WP-437 / WP-438 · **Decisions:** D-24253
 
 Bot-ally matches survived deploys and disconnects, and the game log became structured data.
 
 - Set `ctx.gameover` at end of game (top-level `endIf`) (WP-411); bot-ally stall banner + bounded restart revival, liveness / faulted status, deploy-aware revival, and a **cross-instance ownership guard** for the deploy-overlap two-writer freeze (WP-414 / WP-415 / WP-419 / WP-420 / WP-437).
-- "New version — refresh" prompt + reconnect-gap audit; an operator-dashboard runtime-health signal (WP-418 / WP-439).
+- "New version — refresh" prompt + reconnect-gap audit, and client resync on transport reconnect so a match never stays frozen on a stale pre-restart frame (WP-418).
 - **Structured LogEntry** engine contract (`G.messages` → `LogEntry[]`) with `LogEntry.card`, a colour-coded-by-outcome game log, retiring the prose-parse and provenance-outcome heuristics (WP-434 / WP-435 / WP-436 / WP-438).
 
 ---
@@ -278,12 +302,24 @@ A finished match became a portable, verifiable artifact with a public result vie
 
 ## 2026-07-18 — Wound healing, discard-to-play & fixed-hero-pool gauntlet
 
-**Work Packets:** WP-379 … WP-389 · **Decisions:** D-24183 … D-24193
+**Work Packets:** WP-379 … WP-386 · **Decisions:** D-24183 … D-24188
 
 The Wounds lifecycle got a healing path, and the gauntlet gained a fixed-hero-pool division.
 
 - Wound "**Healing**" end-to-end (engine KO-all-Wounds-from-hand + Heal button + overlay) and the `ko-wound-reward` keyword; a mandatory **discard-to-play** hero-card cost (WP-379 … WP-383).
-- **Fixed-Hero-Pool Gauntlet Division** (`team_key` + pool-constrained standings + division toggle); Red Skull Master Strike (each player KOs a Hero from hand); mastermind base card = first non-tactic face + co2e strike texts (WP-384 … WP-389).
+- **Fixed-Hero-Pool Gauntlet Division** (`team_key` + pool-constrained standings + division toggle) and the Red Skull Master Strike where each player KOs a Hero from hand (WP-384 / WP-385 / WP-386).
+
+---
+
+## 2026-07-17 — Core Set 2nd Edition (co2e): the 41st set, full real-2E data
+
+**Sets:** co2e (41st) · **Work Packets:** WP-388 / WP-389 · **Decisions:** D-24192 / D-24193 · PRs #766 … #836
+
+The Core Set got a faithful 2nd-edition sibling — the placeholder data was replaced with real cards across every class.
+
+- Registered **co2e as the 41st set** (`data/cards/co2e.json`, image tooling renamed `core2e`→`co2e`) and loaded it into the Registry Viewer (#766 / #771).
+- Real 2nd-edition data across the board: all 15 heroes (adds **Miles Morales**), 8 villain groups, henchmen, 5 masterminds (both faces + full tactics, adds **Doctor Octopus**), 9 schemes (adds **Enshrouded Identity**), and the SHIELD / Sidekick / named-Bystander support suite (#774 … #794). co2e is hand-maintained with a manual R2 metadata mirror.
+- co2e-driven engine follow-through: mastermind strike texts (Doom / Loki / Magneto / Doc Ock) and the "mastermind base card = first non-tactic face" fix (WP-388 / WP-389).
 
 ---
 
