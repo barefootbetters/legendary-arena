@@ -11,11 +11,14 @@
 
 ## Locked Values (do not re-derive)
 
-- Wrappers in `lobbyApi.ts`: `setGuestAccess(matchId, { gameName, password }, authToken)` (host bearer); `joinAsGuest(matchId, password)` (no auth) → `{ matchId, seat, credentials }`; `readGuestAccessMeta(matchId)` → `{ gameName, hasGuestPassword }`. Full-sentence `Error` with `status` on non-2xx.
-- Guest join navigates to `buildGuestPlayUrl(matchId, seat, credentials)` (`?match&player&credentials`, the unguarded live route).
-- "Join as guest" shows ONLY where `hasGuestPassword` is true; it is NOT the account-holder "Join" (unchanged; still login-gated).
+- Wrappers in `lobbyApi.ts`: `setGuestAccess(matchId, { gameName, password }, authToken)` (host bearer); `joinAsGuest(matchId, password)` (no auth) → `{ matchId, seat, credentials }`; `readGuestAccessMeta(matchId)` → `{ gameName, hasGuestPassword }`. Full-sentence `Error` with `status` on non-2xx (except `readGuestAccessMeta`, which swallows failure → `{ null, false }`).
+- **Request bodies use `matchId` (lowercase-d), mirroring `addGuest` — NOT `joinMatch`'s `matchID`.** The server reads `matchId`; the wrong casing is a silent 400.
+- Host set-UI is **edit-control-only** in the lobby row of a match the host is **seated in** (not a create-form field — the create flow navigates away and `set-guest-access` 403s until seated).
+- Guest join navigates via **`window.location.href = buildGuestPlayUrl(...)`** — that helper returns a FULL absolute URL, so `window.location.search` (the `joinExisting` idiom) would be malformed.
+- "Join as guest" shows ONLY where `hasGuestPassword` is true **AND `players.some(isOpenSeat)`** (mirror the WP-629 "Add guest" gate); it is NOT the account-holder "Join" (unchanged; still login-gated).
+- The row display name falls back to `matchID` when the meta `gameName` is null/empty.
 - Password input is write-only (never render a stored password).
-- Error copy: 401 → wrong password; 429 → "too many tries, wait a moment"; 409 → match full / no password set; else generic. Never throw.
+- Error copy: 401 → wrong password; 429 → "too many tries, wait a moment"; 409 → "couldn't join — the game may have just filled or the password was removed"; 404 → "that game has ended"; else generic. Never throw. `set-guest-access` 403 → "you must be in this game to set its password".
 
 ## Guardrails
 
@@ -34,7 +37,7 @@
 - `apps/arena-client/src/lobby/lobbyApi.ts` — **modified** — three wrappers.
 - `apps/arena-client/src/lobby/lobbyApi.test.ts` — **modified** — wrapper tests.
 - `apps/arena-client/src/lobby/LobbyView.vue` — **modified** — host name/password fields + edit control + list names + guest "Join as guest" → password prompt.
-- `apps/arena-client/src/lobby/LobbyView.test.ts` — **modified** — set fields, list names, join-as-guest happy + 401/429/409 copy.
+- `apps/arena-client/src/lobby/LobbyView.test.ts` — **modified** — host set fields (password write-only), list names (+ matchID fallback), named-but-passwordless shows name/no button, full-match hides button, join-as-guest happy (navigates, password NOT in URL) + 401/429/409/404 copy.
 
 ## After Completing
 
@@ -46,6 +49,7 @@
 
 ## Common Failure Smells (Optional)
 
-- "Join as guest" appears on a match with no password → the `hasGuestPassword` gate wasn't applied.
+- "Join as guest" appears on a match with no password / no open seat → the `hasGuestPassword && players.some(isOpenSeat)` gate wasn't applied.
 - The stored password renders in the edit control → the field must be write-only.
-- Guest lands on the lobby not the seat → a `route=` param crept into the URL, or the navigate used the wrong shape.
+- Guest lands on the lobby not the seat → the navigate assigned a full URL to `window.location.search` (must be `window.location.href`), or a `route=` param crept in.
+- Every three wrappers 400 → the body used `matchID` not `matchId`.
