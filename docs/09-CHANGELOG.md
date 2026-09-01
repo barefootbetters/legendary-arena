@@ -62,6 +62,278 @@ New ewiki page — [Tournament Calendar](https://ewiki.legendary-arena.com/tourn
 
 ---
 
+> **Catch-up reconstruction (2026-07-14 → 2026-09-01).** The per-WP throughput
+> again outran this file — ~160 Work Packets shipped in the seven weeks after the
+> 2026-07-13 entry. The arcs below are reconstructed after the fact from the
+> squash-merge history on `main` + `WORK_INDEX.md`, **grouped by milestone arc**
+> (dated at the arc's completion) rather than per-WP, exactly like the
+> 2026-04-15 → 2026-07-13 reconstruction. `WORK_INDEX.md`, `DECISIONS.md`, and
+> `git log` remain the exhaustive per-packet record.
+
+## 2026-09-01 — Card-data regen reproducibility + optional-KO in-play source
+
+**Work Packets:** WP-632 / WP-633 · **Decisions:** D-24442 / D-24443
+
+The generated card corpus became reproducible under a CI gate, and a KO-source fidelity fix landed.
+
+- A clean 5-stage card-data regen now semantically reproduces the committed `data/cards/*.json`, gated non-destructively by `pnpm cards:check` (the committed corpus stays byte-unchanged) (WP-633 / D-24443).
+- The `optional-ko-reward` KO source widened to the in-play zone (hand ∪ discard ∪ in-play), a swept-card behaviour change re-verified against the runtime-observed ledger (WP-632 / D-24442).
+
+---
+
+## 2026-09-01 — Guest play (account-free match seats) + CI / autoplay hardening
+
+**Work Packets:** WP-624 / WP-625 / WP-626 / WP-627 / WP-628 / WP-629 / WP-630 / WP-631 · **Decisions:** D-24437 / D-24441
+
+Casual guests can join a match without an account, and the server test suite finally runs in CI.
+
+- Host-initiated add-guest match seat (rowless account → Casual rule), a lobby "Add guest" button, and a persistent hand-off link so a guest lands directly in the match (WP-627 / WP-628 / WP-629).
+- A per-match **guest password + game name** model: a server migration with scrypt `password_kdf` and a discriminated verify (409 ≠ 401) behind a public, rate-limited join-as-guest, plus the host set-password UI and a gated "Join as guest" (WP-630 / WP-631 / D-24441).
+- The CI Postgres job now runs the server DB-gated suite (WP-625); autoplay review-window timers are `unref`'d and `--test-force-exit` is gone (WP-626); Vanguard seat-wiring gains end-to-end coverage (WP-624).
+
+---
+
+## 2026-08-27 — Cooperative recognition: team contribution, shared badges, Vanguard
+
+**Work Packets:** WP-612 … WP-623 · **Decisions:** D-24427
+
+Recognition rewards cooperation, not selfish scoring — the badge system and the endgame screen now measure how a table played together.
+
+- Per-player **team-contribution attribution**, surfaced on the endgame report card and read by the AI coach (WP-616 / WP-621 / WP-622).
+- **Solo Mastery**, **Shared Cooperative**, and **Tiered Team** badges plus the **Vanguard** badge; shared badges are earned in human+bot matches and their tiers reflect the human count (WP-613 / WP-614 / WP-615 / WP-617 / WP-619 / WP-620).
+- Danger-meter labels name the converted enemy (Killbots / Skrulls) and the escaped bystander; HUD "Strikes" → "Tactics" fix (WP-612 / WP-618 / WP-623).
+
+---
+
+## 2026-08-25 — Deck Probability Panel (card counter) + feedback system
+
+**Work Packets:** WP-604 / WP-605 / WP-606 / WP-607 / WP-608 / WP-609 / WP-610 / WP-611
+
+A read-only draw-odds panel for players, and the first stage of a real feedback loop.
+
+- Client-side **Deck Probability Panel** MVP: draw-pool-composition and deck-card-stats UIState projections, a hand-projection section, and placement / hide-at-game-over fixes (WP-606 … WP-611). Advisory only — never authoritative, never `ctx.random`.
+- **User-feedback** foundation: an intake & voting API (server + persistence) with an operator triage panel as the sole status writer (WP-604 / WP-605).
+
+---
+
+## 2026-08-24 — Endgame scoring, grades, PAR fidelity & AI coach
+
+**Work Packets:** WP-578 / WP-579 / WP-583 … WP-599 · **Decisions:** D-24409
+
+The end-of-game screen became a legible, rulebook-faithful report card with an optional AI coach.
+
+- Endgame **report card v2**: per-player split, formula-first worked score, colour-coded grade scale, named penalties, PAR basis, and "luck of the draw" (WP-583 / WP-584 / WP-587 / WP-588 / WP-593).
+- **Rulebook-faithful scoring**: removed the invented per-round cost and bystander reward, and fixed the bystander-rescued undercount (WP-585 / WP-586 / WP-599).
+- **PAR fidelity**: scheme-aware recalibration, an empirical turn-distribution sweet-spot curve, and a `/coverage` PAR Fidelity panel (WP-591 / WP-596 / WP-597 / WP-598).
+- A Legendary-Pass-gated **endgame AI coach** (server + client upsell panel) — built on a model-independence shim so `COACH_MODEL` swaps the model via env (Opus 5 / Sonnet 4.6 pre-seeded) — the competitive score shown on the endgame screen, and a leaderboard handle→profile link (WP-578 / WP-579 / WP-594 / WP-595). Seed-PAR **competitive submissions turned on** (WP-422).
+
+---
+
+## 2026-08-23 — Rogue Copy / Steal & recruit-as-attack conversion
+
+**Work Packets:** WP-535 / WP-580 / WP-581 / WP-582 / WP-592
+
+Two of the trickier hero mechanics landed with visible cues.
+
+- Rogue "**Copy Powers**" as a full duplicate (attack + recruit + team) and "**Steal Abilities**" discard-top-and-copy (WP-535 / WP-582 / WP-592).
+- "**Use recruit as attack**" conversion (God of Thunder), with an on-screen cue for the conversion (WP-580 / WP-581).
+
+---
+
+## 2026-08-19 — Interactive Master Strikes, tactic resolvers & effect vocabulary
+
+**Work Packets:** WP-565 / WP-566 / WP-567 / WP-568 / WP-574 / WP-575 / WP-576 / WP-577
+
+Masterminds and villains gained interactive, faithfully-resolved abilities.
+
+- **Red Skull Master Strike** interactive KO choice for the active player, and Red Skull tactic `onFight` resolvers (WP-577 / WP-567).
+- Wait-and-see conditional semantics, a blocked-ability message-misattribution fix, a VP-icon marker mismap fix, the Master-Strike bystander-capture log, and a diagnostics effect-trace fix (WP-565 / WP-566 / WP-568 / WP-574 / WP-575).
+- Super Hero Civil War 2-player hero-count requirement — require 4 (WP-576).
+
+---
+
+## 2026-08-17 — Engine test-typecheck gate + fixture builders
+
+**Work Packets:** WP-563 / WP-569 / WP-570 / WP-571 / WP-572 / WP-573 · **Decisions:** D-24372
+
+The engine's never-compiled test suite started getting type-checked, closing a long-standing drift hole.
+
+- A new engine `typecheck:tests` gate with restored drift pins; completed engine mock-move contexts (TS2345 180 → 4); narrowed `noUncheckedIndexedAccess` to 0; and a checker-driven, mutation-proven fixture-builder migration (WP-563 / WP-569 … WP-573).
+
+---
+
+## 2026-08-16 — Design-system feel layer: VFX, danger meter & adaptive audio
+
+**Work Packets:** WP-556 / WP-557 / WP-558 / WP-559 / WP-560 / WP-561 / WP-562 · **Decisions:** D-24366 / D-24367
+
+The sensory layer of `play.legendary-arena.com` got its foundation: escalating visual juice and a danger signal that also drives the music.
+
+- arena-client **VFX foundation** with combo flash + synergy call-out (WP-556).
+- The **Menace Signal** (scheme loss-progress → UIState), the **Danger Meter** on the play surface, and an **adaptive danger-meter music channel** (WP-557 / WP-558 / WP-560).
+- Scheme-faithful loss progress, an in-play hollow-effect baseline rebuild, and hero-ledger covered-status (WP-559 / WP-561 / WP-562).
+
+---
+
+## 2026-08-15 — Simulation fidelity, non-termination fixes & penalty re-anchor
+
+**Work Packets:** WP-453 / WP-531 / WP-549 / WP-550 / WP-551 / WP-552 / WP-554 / WP-555 · **Decisions:** D-24440
+
+The PAR/bot harness got more faithful, and two determinism traps were closed.
+
+- Seeded (not reverse-mock) setup shuffle; simulation non-termination at turn depth fixed; `getLegalMoves` discard-to-play payability (WP-453 / WP-554 / WP-555).
+- **Penalty weights re-anchored** to the rulebook 4:3:1 ratio (WP-531).
+- Registry-viewer LAGN result round-trip, loadout import format sniff, deploy-version check, and Maestro zero-count narration fidelity (WP-549 / WP-550 / WP-551 / WP-552).
+
+---
+
+## 2026-08-14 — Core & co2e villain / mastermind effect grind
+
+**Work Packets:** WP-497 / WP-503 / WP-506 / WP-519 / WP-522 / WP-523 / WP-532 … WP-544
+
+A large batch of faithful villain, henchman, and mastermind abilities across the Core and co2e sets.
+
+- **Mastermind-Tactic `onFight` framework** plus Doc Ock, Magneto "Crushing Shockwave", and core Loki / Dr. Doom Master Strikes (WP-497 / WP-503 / WP-506 / WP-537 / WP-538).
+- co2e Paibok / Ultron / Whirlwind / Melter fights; recursive villain-deck play, fight-reward effects, Savage Land additive next-hand draw, Maestro counted self-KO, Portals scheme twist, and partial Civil War / Cosmic Cube twist fidelity (WP-519 / WP-522 / WP-523 / WP-532 / WP-533 / WP-539 … WP-544).
+
+---
+
+## 2026-08-11 — Resource-loss fidelity, Secret Invasion 6-hero & penalty producers
+
+**Work Packets:** WP-508 … WP-516 / WP-521 / WP-524 / WP-525 / WP-526 / WP-528 / WP-529 / WP-530 · **Decisions:** D-24178
+
+Scheme loss-progress became faithful to the doom-clock, and the losing conditions got their own kinds.
+
+- Escaped-pile **bystander carry-away** + resource-loss schemes (Negative Zone / Super Hero Civil War / Legacy Virus depletion losses, Midtown Bank Robbery), retiring the generic `ESCAPE_LIMIT` end (WP-508 … WP-511).
+- Killbots converted-bystander villains and Secret Invasion Skrull conversion; **Secret Invasion requires 6 hero groups** end-to-end (core enforcement + play lobby + URL preview) (WP-513 / WP-514 / WP-524 / WP-525 / WP-526).
+- Wired the `bystanderLost` and `schemeTwistNegative` **penalty producers** + heal-wounds pending-choice parity; Baron Zemo / Ymir / Melter fights (WP-516 / WP-521 / WP-528 / WP-529 / WP-530).
+
+---
+
+## 2026-08-10 — Postgres stability, disaster recovery & operator-dashboard go-live
+
+**Work Packets:** WP-416 / WP-439 / WP-517 · **Decisions:** D-24236
+
+The operator dashboard's data feeds went live in production — on a database that stopped falling over mid-match.
+
+- The operator dashboard's `/api/dash/*` tiles flipped **live in prod** — the billing / revenue and matches / players / KPIs feeds built earlier in the window, now joined by a server runtime-health signal and a DR-readiness tile (WP-439 / WP-517).
+- Managed Postgres **stabilized** after out-of-memory / idle-client crash-loops that were freezing live play: plan bump to `basic-1gb`, internal-only `ipAllowList:[]`, and idle-error handling on the pool.
+- A **provider-independent PostgreSQL backup pipeline** (`pg_dump` → an R2 second offsite copy) with retention and a scheduled recovery drill (WP-416 / D-24236).
+
+---
+
+## 2026-08-07 — Effect Implementation Index, /debug/effects & coverage provenance
+
+**Work Packets:** WP-484 … WP-496 / WP-507 · **Decisions:** D-24026
+
+A generated map of every declared effect → its handler, plus runtime tracing, made "why didn't this fire?" answerable.
+
+- **Effect Implementation Index** (contract + transform + CI gate) with a dashboard viewer and runtime effect tracing (`G.diagnostics.traces`) (WP-484 / WP-487 / WP-488).
+- Core **Villain-Effect Vocabulary** tiers A–D, from auto-resolve primitives to conditional each-player effects (WP-485 / WP-489 / WP-492 / WP-494).
+- Coverage / dashboard provenance parity: a Decision column, mechanic-provenance backfill, and mastermind-tactic coverage (WP-491 / WP-493 / WP-495 / WP-496 / WP-507).
+
+---
+
+## 2026-08-06 — Handles, profile & friends; match end-of-life controls
+
+**Work Packets:** WP-499 / WP-500 / WP-501 / WP-502 / WP-504 / WP-505
+
+Identity got wired end-to-end, and a finished match stopped being a dead end.
+
+- Auto-assigned, changeable **handles** at sign-in + backfill; change-your-handle; **join by match ID or link**; friend request by `@handle` or Account ID (WP-499 / WP-500 / WP-501 / WP-504).
+- Match **end-of-life controls** — Play Again rebuilds a bot-ally match, and a discoverable End Game — plus captured cards displayed under city villains and the mastermind (WP-502 / WP-505).
+
+---
+
+## 2026-08-01 — Per-Scheme Approved-Loadout + reveal / reshuffle interactivity
+
+**Work Packets:** WP-471 … WP-483 · **Decisions:** D-24285 / D-24286 / D-24287 / D-24288
+
+The gauntlet gained a per-scheme approved loadout across every surface, and several reveal/scry effects became interactive.
+
+- **Per-Scheme Approved-Loadout** across the stack: year-keyed gauntlet-config registry loader, server truth + leaderboard + publisher, run-tracker per-leg launch, legends-board + cards consumers, and the arena-client "Play this leg" (WP-471 … WP-475 / WP-483).
+- Empty-deck **reshuffle** for reveal/scry, **reveal-remainder interactive reorder**, and interactive **discard-to-play** gates wired into the turn action bar; Doc Ock reveal-eight top-up and Mystique's Escape as a scheme twist (WP-476 … WP-482).
+
+---
+
+## 2026-07-30 — Gauntlet download / tracker, per-scheme variety & qualification guard
+
+**Work Packets:** WP-440 … WP-464 · **Decisions:** D-24274 … D-24278
+
+The download-and-track gauntlet loop landed, with per-set variety and a builder-side qualification guard.
+
+- Gauntlet pack contract + pin/download + run persistence / import / CRUD + derived-progression read + a profile gauntlet tracker (WP-440 … WP-449).
+- Composition→match launch primitive; a **loadout qualification guard**; collapse to one canonical configuration; and a legends-board per-mastermind / per-set gauntlet coverage matrix with challenge links (WP-448 / WP-454 … WP-464).
+
+---
+
+## 2026-07-26 — Bot-ally hardening, deploy-overlap safety & structured log
+
+**Work Packets:** WP-411 / WP-414 / WP-415 / WP-418 / WP-419 / WP-420 / WP-434 / WP-435 / WP-436 / WP-437 / WP-438 · **Decisions:** D-24253
+
+Bot-ally matches survived deploys and disconnects, and the game log became structured data.
+
+- Set `ctx.gameover` at end of game (top-level `endIf`) (WP-411); bot-ally stall banner + bounded restart revival, liveness / faulted status, deploy-aware revival, and a **cross-instance ownership guard** for the deploy-overlap two-writer freeze (WP-414 / WP-415 / WP-419 / WP-420 / WP-437).
+- "New version — refresh" prompt + reconnect-gap audit, and client resync on transport reconnect so a match never stays frozen on a stale pre-restart frame (WP-418).
+- **Structured LogEntry** engine contract (`G.messages` → `LogEntry[]`) with `LogEntry.card`, a colour-coded-by-outcome game log, retiring the prose-parse and provenance-outcome heuristics (WP-434 / WP-435 / WP-436 / WP-438).
+
+---
+
+## 2026-07-24 — Audio layer + combo cue, card-image prefetch & Hugo upgrade
+
+**Work Packets:** WP-409 / WP-410 / WP-412 / WP-413 / WP-421 / WP-423 / WP-425
+
+The arena got sound, and card images stopped popping in mid-turn.
+
+- Arena-client **audio foundation** (notable-event SFX, unlock, mute / volume), a **tiered combo cue** driven by a hero-play synergy-effect count in UIState with an apex **LEGENDARY!** tier, and Surface-2 player-action move SFX (WP-409 / WP-412 / WP-413 / WP-421 / WP-425).
+- Card-image working-set **prefetch** (engine manifest + client warm + immutable R2 cache) (WP-410); a coordinated **Hugo version upgrade** for the ewiki build surface (WP-423).
+
+---
+
+## 2026-07-20 — Result-LAGN, Hall of Legends & LAGN provenance
+
+**Work Packets:** WP-393 / WP-394 / WP-400 / WP-401 / WP-402 / WP-405 / WP-406 / WP-407 / WP-408 · **Decisions:** D-24197 … D-24211
+
+A finished match became a portable, verifiable artifact with a public result view.
+
+- LAGN 1.4.0 match participants + scoring profile → a **Result-LAGN producer** + a **Hall of Legends** per-match result view + a portable match-LAGN download (WP-405 … WP-408).
+- Registry version + per-set content-hash surface, LAGN 1.2.0 / 1.3.0 card-metadata provenance + hero alternates, and the toolchain pinned to one committed Node version (WP-393 / WP-394 / WP-400 / WP-401 / WP-402).
+
+---
+
+## 2026-07-18 — Wound healing, discard-to-play & fixed-hero-pool gauntlet
+
+**Work Packets:** WP-379 … WP-386 · **Decisions:** D-24183 … D-24188
+
+The Wounds lifecycle got a healing path, and the gauntlet gained a fixed-hero-pool division.
+
+- Wound "**Healing**" end-to-end (engine KO-all-Wounds-from-hand + Heal button + overlay) and the `ko-wound-reward` keyword; a mandatory **discard-to-play** hero-card cost (WP-379 … WP-383).
+- **Fixed-Hero-Pool Gauntlet Division** (`team_key` + pool-constrained standings + division toggle) and the Red Skull Master Strike where each player KOs a Hero from hand (WP-384 / WP-385 / WP-386).
+
+---
+
+## 2026-07-17 — Core Set 2nd Edition (co2e): the 41st set, full real-2E data
+
+**Sets:** co2e (41st) · **Work Packets:** WP-388 / WP-389 · **Decisions:** D-24192 / D-24193 · PRs #766 … #836
+
+The Core Set got a faithful 2nd-edition sibling — the placeholder data was replaced with real cards across every class.
+
+- Registered **co2e as the 41st set** (`data/cards/co2e.json`, image tooling renamed `core2e`→`co2e`) and loaded it into the Registry Viewer (#766 / #771).
+- Real 2nd-edition data across the board: all 15 heroes (adds **Miles Morales**), 8 villain groups, henchmen, 5 masterminds (both faces + full tactics, adds **Doctor Octopus**), 9 schemes (adds **Enshrouded Identity**), and the SHIELD / Sidekick / named-Bystander support suite (#774 … #794). co2e is hand-maintained with a manual R2 metadata mirror.
+- co2e-driven engine follow-through: mastermind strike texts (Doom / Loki / Magneto / Doc Ock) and the "mastermind base card = first non-tactic face" fix (WP-388 / WP-389).
+
+---
+
+## 2026-07-15 — Solo bot-ally, ranked eligibility & operator dashboard
+
+**Work Packets:** WP-367 / WP-372 / WP-373 / WP-374 / WP-375 / WP-376 / WP-377 / WP-378 · **Decisions:** D-24159 … D-24161
+
+Solo players got a bot ally, and the operator dashboard got its first real data feeds.
+
+- **Solo bot-ally**: a mixed human+bot match driver + a "Play with a bot ally" lobby affordance + a seat-count-complete **ranked-eligibility guard** (WP-375 / WP-376 / WP-377).
+- Operator-dashboard billing / revenue + matches / players / KPIs endpoints (`/api/dash`); a loadout-builder player-count readout; an analytics client emitter; deck-exhaustion final turn → tie (WP-367 / WP-372 / WP-373 / WP-374 / WP-378).
+
+---
+
 ## 2026-07-13 — Open a Live Game's Loadout in the Registry Viewer
 
 **Work Packets:** WP-361 / WP-362 / WP-363 · **Decisions:** D-24153 / D-24154 / D-24155 · **Verified live end-to-end.**
