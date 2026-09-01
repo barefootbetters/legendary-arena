@@ -33,6 +33,7 @@ import {
   executeVillainAbilities,
   resolveEffectResultNames,
   villainCardEscapeTriggersSchemeTwist,
+  villainCardHasEscapeAbility,
   villainCardPlaysVillainDeckCards,
 } from '../villain/villainEffects.execute.js';
 import { hasPendingKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
@@ -257,21 +258,31 @@ export function performVillainReveal(
         `Villain ${formatCardRef(G.cardDisplayData, pushResult.escapedCard)} escaped from the city.`,
       );
 
-      // why: escape causes wound — MVP rule linking escapes to player penalty.
-      // Current player gains 1 wound when a villain escapes the City.
-      const woundPileBefore = G.piles.wounds.length;
-      const woundResult = gainWound(
-        G.piles.wounds,
-        G.playerZones[ctx.currentPlayer]!.discard,
-      );
-      G.piles.wounds = woundResult.woundsPile;
-      G.playerZones[ctx.currentPlayer]!.discard = woundResult.playerDiscard;
-      if (woundPileBefore > 0) {
-        // why: track current player wound for UI economy projection
-        G.turnEconomy.woundsDrawn += 1;
-        pushLog(G, 
-          `Player ${ctx.currentPlayer} gained a wound from villain escape.`,
+      // why: D-24439 — the WP-015 generic per-escape wound is a BASELINE penalty
+      // for a plain villain that just slides out of the City. It applies ONLY when
+      // the escaping villain has NO onEscape ability of its own. A villain whose
+      // card text governs its escape (Ultron's reveal-or-wound, Mystique's
+      // become-scheme-twist, …) resolves that ability below INSTEAD — the generic
+      // wound must not stack on top of it. That stacking double-wounded the active
+      // player on every ability-bearing escape (the generic wound hits the active
+      // player, then the card ability hits again), with no basis in the card or
+      // scheme text or the Legendary rules. The gate keys off the card's parsed
+      // onEscape hooks, so it needs no new data. Current player gains 1 wound.
+      if (!villainCardHasEscapeAbility(G, pushResult.escapedCard)) {
+        const woundPileBefore = G.piles.wounds.length;
+        const woundResult = gainWound(
+          G.piles.wounds,
+          G.playerZones[ctx.currentPlayer]!.discard,
         );
+        G.piles.wounds = woundResult.woundsPile;
+        G.playerZones[ctx.currentPlayer]!.discard = woundResult.playerDiscard;
+        if (woundPileBefore > 0) {
+          // why: track current player wound for UI economy projection
+          G.turnEconomy.woundsDrawn += 1;
+          pushLog(G,
+            `Player ${ctx.currentPlayer} gained a wound from villain escape.`,
+          );
+        }
       }
 
       // why: D-24314 — an escaping villain CARRIES its captured bystanders into

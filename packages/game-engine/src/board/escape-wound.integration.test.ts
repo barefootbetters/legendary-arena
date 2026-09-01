@@ -174,6 +174,76 @@ describe('escape-wound integration', () => {
     );
   });
 
+  // why: D-24439 — the generic per-escape wound is a BASELINE penalty for a plain
+  // villain. A villain whose card text defines its own onEscape ability (Ultron's
+  // reveal-or-wound, …) resolves that ability INSTEAD; the generic wound must not
+  // stack on top (that double-wounded the active player). city-villain-4 is the
+  // card that escapes when the full City is pushed (see the attached-bystanders
+  // test below), so the onEscape hook is placed on it.
+  it('a villain WITH its own onEscape ability does NOT also take the generic escape wound', () => {
+    const gameState = createMockGameState({
+      deck: ['new-villain'],
+      cardTypes: {
+        'new-villain': 'villain',
+        'city-villain-0': 'villain',
+        'city-villain-1': 'villain',
+        'city-villain-2': 'villain',
+        'city-villain-3': 'villain',
+        'city-villain-4': 'villain',
+      },
+      city: ['city-villain-0', 'city-villain-1', 'city-villain-2', 'city-villain-3', 'city-villain-4'],
+      woundsPile: ['wound-1', 'wound-2'],
+    });
+    // why: give the escaping card a real onEscape ability (shape mirrors the
+    // WP-252 parser output used in boardKeywords.integration.test.ts) so the gate
+    // sees a card-defined escape and skips the generic baseline wound.
+    gameState.villainAbilityHooks = [
+      {
+        cardId: 'city-villain-4',
+        timing: 'onEscape',
+        keywords: ['gainWoundEachPlayer'],
+        effects: [{ primitive: 'gain-wound', target: 'each' }],
+      },
+    ];
+
+    const moveContext = createMockMoveContext(gameState);
+    revealVillainCard(moveContext);
+
+    // why: the generic per-escape wound emits exactly this line; its ABSENCE proves
+    // the gate skipped it. The card's own ability may still wound (via its own path),
+    // so we assert on the generic line specifically, not on total wound count.
+    assert.ok(
+      !gameState.messages.some((entry) => entry.text.includes('gained a wound from villain escape')),
+      'the generic escape wound must be skipped for a villain with its own onEscape ability',
+    );
+  });
+
+  it('a plain villain (no onEscape ability) still takes the generic escape wound', () => {
+    // why: control for the gate above — identical setup with no onEscape hook, so
+    // the generic baseline wound still fires for a plain villain escape.
+    const gameState = createMockGameState({
+      deck: ['new-villain'],
+      cardTypes: {
+        'new-villain': 'villain',
+        'city-villain-0': 'villain',
+        'city-villain-1': 'villain',
+        'city-villain-2': 'villain',
+        'city-villain-3': 'villain',
+        'city-villain-4': 'villain',
+      },
+      city: ['city-villain-0', 'city-villain-1', 'city-villain-2', 'city-villain-3', 'city-villain-4'],
+      woundsPile: ['wound-1', 'wound-2'],
+    });
+
+    const moveContext = createMockMoveContext(gameState);
+    revealVillainCard(moveContext);
+
+    assert.ok(
+      gameState.messages.some((entry) => entry.text.includes('gained a wound from villain escape')),
+      'a plain villain (no escape ability) still triggers the generic escape wound',
+    );
+  });
+
   it('JSON.stringify(G) succeeds after escape + wound', () => {
     const gameState = createMockGameState({
       deck: ['new-villain'],

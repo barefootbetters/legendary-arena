@@ -926,11 +926,12 @@ describe('revealVillainCard — onEscape fire site (WP-186 §Files #7a)', () => 
     // why: WP-186 appended one executeVillainAbilities(..., 'onEscape') call
     // inside the existing escape branch AFTER the bystander carry-away
     // (carryEscapedBystandersToPile, WP-508 / D-24314). This integration test
-    // asserts (a) the new card-text effect fires on a real escape, (b) it does
-    // NOT replace the generic WP-015 escape wound (which still hits the current
-    // player), and (c) the pre-existing escape branch body — counter increment,
-    // escape-pile push, generic wound, bystander carry-away — all still occur in
-    // the same order.
+    // asserts (a) the card-text effect fires on a real escape, (b) D-24439 — the
+    // generic WP-015 escape wound is GATED OFF for a villain that has its own
+    // onEscape ability (this Venom does), so ONLY the card-text effect wounds and
+    // the active player is no longer double-wounded, and (c) the pre-existing
+    // escape branch body — counter increment, escape-pile push, bystander
+    // carry-away — still occurs in the same order.
     const escapedCardId = 'core-villain-spider-foes-venom-00' as CardExtId;
     const gameState = createMockGameState({
       deck: ['new-villain' as CardExtId],
@@ -1001,40 +1002,49 @@ describe('revealVillainCard — onEscape fire site (WP-186 §Files #7a)', () => 
       !moveContext.G.piles.bystanders.includes('attached-bystander' as CardExtId),
       'carried bystander must NOT be returned to the supply pile',
     );
-    // (d) WP-015 generic current-player wound PRESERVED (p0 gets 1 generic
-    // wound) AND new gainWoundEachPlayer card-text effect layers on top.
-    // p0 total = 1 generic + 1 each-player = 2; p1 total = 1 each-player.
+    // (d) D-24439 — the generic WP-015 current-player wound is GATED OFF because
+    // this villain has its own onEscape ability; only the gainWoundEachPlayer
+    // card-text effect wounds. p0 = 1 each-player; p1 = 1 each-player. The active
+    // player is no longer double-wounded.
     assert.equal(
       moveContext.G.playerZones['0']!.discard.length,
-      2,
-      'current player gets generic WP-015 wound + onEscape gainWoundEachPlayer wound',
+      1,
+      'current player gets ONLY the onEscape gainWoundEachPlayer wound (generic gated by D-24439)',
     );
     assert.equal(
       moveContext.G.playerZones['1']!.discard.length,
       1,
-      'other player gets onEscape gainWoundEachPlayer wound only (no generic)',
+      'other player gets the onEscape gainWoundEachPlayer wound',
     );
     assert.equal(
       moveContext.G.piles.wounds.length,
-      5 - 3,
-      'wound pool decreased by 3 (1 generic + 2 each-player)',
+      5 - 2,
+      'wound pool decreased by 2 (each-player only; no generic wound)',
     );
-    // (e) Order proof — the escape message precedes the wound message which
-    // precedes the bystander release message (existing emission order).
+    // (e) The generic wound message is ABSENT (gated) — the escape message
+    // precedes the bystander release message, and the card-text "Escape effect"
+    // message follows both (executeVillainAbilities fires after the carry-away).
     const escapeMessageIndex = moveContext.G.messages.findIndex((m) =>
       m.text.includes(`(${escapedCardId}) escaped`),
-    );
-    const woundMessageIndex = moveContext.G.messages.findIndex((m) =>
-      m.text.includes('gained a wound from villain escape'),
     );
     const releaseMessageIndex = moveContext.G.messages.findIndex((m) =>
       m.text.includes('Bystanders from escaped villain'),
     );
-    assert.ok(escapeMessageIndex >= 0, 'escape message present');
-    assert.ok(woundMessageIndex > escapeMessageIndex, 'wound message follows escape message');
+    const escapeEffectMessageIndex = moveContext.G.messages.findIndex((m) =>
+      m.text.includes('Escape effect:'),
+    );
     assert.ok(
-      releaseMessageIndex > woundMessageIndex,
-      'bystander release message follows wound message',
+      !moveContext.G.messages.some((m) => m.text.includes('gained a wound from villain escape')),
+      'the generic escape wound message must be absent (gated by D-24439)',
+    );
+    assert.ok(escapeMessageIndex >= 0, 'escape message present');
+    assert.ok(
+      releaseMessageIndex > escapeMessageIndex,
+      'bystander release message follows escape message',
+    );
+    assert.ok(
+      escapeEffectMessageIndex > releaseMessageIndex,
+      'card-text Escape effect message follows the bystander release',
     );
   });
 
@@ -1232,13 +1242,15 @@ describe('revealVillainCard — escape-before-Ambush ordering lock (WP-186 §Fil
     // the hasAmbush block). To pin it, contend a finite wound pool with an
     // asymmetric pair: escaped card carries [effect:gainWoundCurrentPlayer]
     // (single-target), entering card carries [effect:gainWoundEachPlayer]
-    // (broadcast). With G.piles.wounds.length = 3 and 2 players:
-    //   escape-first (correct): WP-015 wound p0+1 (pool:2), onEscape
-    //     gainWoundCurrentPlayer p0+1 (pool:1), onAmbush gainWoundEachPlayer
-    //     p0+1 (pool:0) then p1 skipped (pool empty). Result: {p0:3, p1:0}.
-    //   ambush-first (broken refactor): WP-015 wound p0+1 (pool:2), onAmbush
-    //     gainWoundEachPlayer p0+1 (pool:1) then p1+1 (pool:0), onEscape
-    //     gainWoundCurrentPlayer no-op (pool empty). Result: {p0:2, p1:1}.
+    // (broadcast). The escaped card HAS an onEscape ability, so D-24439 gates
+    // the generic WP-015 wound off — the two card effects alone must contend the
+    // pool. With G.piles.wounds.length = 2 and 2 players:
+    //   escape-first (correct): onEscape gainWoundCurrentPlayer p0+1 (pool:1),
+    //     onAmbush gainWoundEachPlayer p0+1 (pool:0) then p1 skipped (pool empty).
+    //     Result: {p0:2, p1:0}.
+    //   ambush-first (broken refactor): onAmbush gainWoundEachPlayer p0+1
+    //     (pool:1) then p1+1 (pool:0), onEscape gainWoundCurrentPlayer no-op
+    //     (pool empty). Result: {p0:1, p1:1}.
     // The two orderings yield non-commutative per-player distributions.
     const escapedCardId = 'escaped-card' as CardExtId;
     const enteringCardId = 'entering-card' as CardExtId;
@@ -1279,15 +1291,15 @@ describe('revealVillainCard — escape-before-Ambush ordering lock (WP-186 §Fil
       '0': { ...makePlayerZones(), deck: [], hand: [], discard: [], inPlay: [], victory: [] },
       '1': { ...makePlayerZones(), deck: [], hand: [], discard: [], inPlay: [], victory: [] },
     };
-    gameState.piles.wounds = ['w0', 'w1', 'w2'] as CardExtId[];
+    gameState.piles.wounds = ['w0', 'w1'] as CardExtId[];
 
     const moveContext = createMockMoveContext(gameState);
     revealVillainCard(moveContext);
 
     assert.equal(
       moveContext.G.playerZones['0']!.discard.length,
-      3,
-      'escape-first ordering: p0 gets generic WP-015 + onEscape gainWoundCurrentPlayer + onAmbush gainWoundEachPlayer (pool exhausts at p0)',
+      2,
+      'escape-first ordering: p0 gets onEscape gainWoundCurrentPlayer + onAmbush gainWoundEachPlayer (generic gated by D-24439; pool exhausts at p0)',
     );
     assert.equal(
       moveContext.G.playerZones['1']!.discard.length,
@@ -1726,13 +1738,14 @@ describe('revealVillainCard — real-registry villain end-to-end (WP-186 §Files
       gameState.escapedPile.includes(venomId),
       'Venom must be in the escaped pile after the reveal pushes it off the edge',
     );
-    // Generic WP-015 escape wound: p0 +1; onEscape gainWoundEachPlayer: p0
-    // +1 and p1 +1 (subject to pool availability — pool is sized 8 so all
-    // three wounds fit). Expected: p0+2, p1+1.
+    // D-24439 — Venom has its own onEscape ability, so the generic WP-015 wound
+    // is gated off; ONLY the onEscape gainWoundEachPlayer fires: p0 +1 and p1 +1
+    // (pool is sized 8 so both fit). Expected: p0+1, p1+1 — the active player is
+    // no longer double-wounded.
     assert.equal(
       gameState.playerZones['0']!.discard.length - p0DiscardBefore,
-      2,
-      'current player gains generic WP-015 wound + onEscape gainWoundEachPlayer wound = 2',
+      1,
+      'current player gains ONLY the onEscape gainWoundEachPlayer wound (generic gated by D-24439)',
     );
     assert.equal(
       gameState.playerZones['1']!.discard.length - p1DiscardBefore,
@@ -1741,8 +1754,8 @@ describe('revealVillainCard — real-registry villain end-to-end (WP-186 §Files
     );
     assert.equal(
       woundPoolBefore - gameState.piles.wounds.length,
-      3,
-      'wound pool decreased by exactly 3 (1 generic + 2 each-player)',
+      2,
+      'wound pool decreased by exactly 2 (each-player only; generic gated)',
     );
   });
 
