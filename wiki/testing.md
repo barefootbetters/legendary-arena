@@ -105,7 +105,7 @@ it, one test type per architectural surface
 | Persistence | `persistence/*.test.ts` | Snapshot purity, JSON-serializability, zone counts |
 | Hero / Board / Scheme | `hero/*`, `board/*`, `scheme/*` | Keyword execution, conditional evaluation |
 | Integration | `*.integration.test.ts` | Cross-system verification |
-| Drift Detection | inline | Canonical arrays match union types (below) |
+| Drift Detection | inline (pinned next to the canonical array) | Canonical arrays match union types (below) |
 | Replay / Complete-Game | `replay/*`, fixtures | Full-game replay from recorded moves |
 
 The **complete-game regression** layer replays whole recorded matches through
@@ -134,7 +134,7 @@ drift pins must be **runtime** assertions — see the callout below.
 >   keyset check or a value comparison) — never a bare `satisfies`, because
 >   nothing compiles it on every run.
 > - An **optional-field** addition can never be caught by a type-level pin (an
->   optional field satisfies `satisfies` by definition); pin it with a keyset
+>   optional field always type-checks under `satisfies`); pin it with a keyset
 >   assertion on a **built** projection.
 > - Type-only safeguards are documentation, not enforcement, until the
 >   `typecheck:tests` gate is required.
@@ -204,9 +204,14 @@ A build may rewrite a CI-gated generated artifact (e.g. the LAGN JSON schema);
 check `git status` after building and confirm a real diff — line-ending-only
 churn is noise.
 
-To run the engine test typecheck locally (not a CI gate — see above):
+To run a single package, or the engine test typecheck (typecheck is local only,
+not a CI gate — see above):
 
 ```bash
+# One package (engine shown)
+pnpm --filter @legendary-arena/game-engine test
+
+# Engine test typecheck — local only, not a CI gate
 pnpm --filter @legendary-arena/game-engine typecheck:tests
 ```
 
