@@ -387,6 +387,15 @@ export function defeatCityVillainCore(
   // recursing through the rule pipeline; the both-empty guard terminates the loop.
   const fightPlayCount = villainCardPlaysVillainDeckCards(G, cardId, 'onFight');
   if (fightPlayCount > 0) {
+    // why: narrate the fight-triggered plays BEFORE the reveals so the log
+    // attributes them to this villain. Without it the played cards' consequences
+    // (a city reveal, a captured bystander, or — as with Endless Armies feeding a
+    // Red Skull Master Strike — a strike) appear with no cause, unlike the scheme
+    // twist path which self-narrates "playing the next villain-deck card."
+    pushLog(
+      G,
+      `Fight effect: ${formatCardRef(G.cardDisplayData, cardId)} plays the top ${fightPlayCount} card(s) of the Villain Deck.`,
+    );
     const revealContext: RevealContext = {
       random: shuffleContext.random,
       ctx: { currentPlayer },
