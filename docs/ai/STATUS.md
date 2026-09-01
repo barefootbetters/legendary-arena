@@ -7,6 +7,14 @@
 
 ## Current State
 
+### WP-633 — Card-data regen now reproduces the committed corpus + `cards:check` gate (EC-668 / D-24443) shipped (2026-09-01)
+
+**No user-observable change — infrastructure only.** The committed `data/cards/*.json` (what ships to `cards.legendary-arena.com` and the R2 mirror) are **byte-unchanged**; this is a build-pipeline reproducibility fix, not an editorial one, so the D-24026 live-verification gate is N/A.
+
+A clean full run of the five-stage card-data pipeline no longer reproduced the committed `data/cards` — a semantic diff showed **53 content leaves across 13 sets**, every one a script/input regression against the canonical corpus (spurious `[icon:vp]` after cost numbers, dropped `[keyword:…]` markers, malformed keyword tokens, a dropped `filterName`, mangled `wtif` hero URLs). It was latent because `data/cards` was not regenerate-and-diff CI-gated. WP-633 fixes the pipeline (scripts + inputs, never the corpus) so a clean regen is **semantically identical** to committed, and adds a `Card-data regen reproducibility` CI gate (`pnpm cards:check`, `scripts/check-card-data-regen.mjs`): it seeds a throwaway scratch dir, regenerates all five stages into it via the shared `CARD_OUTPUT_DIR`, semantic-diffs against committed, and fails on any divergence — non-destructive and fail-fast.
+
+**Execution amendment (operator-approved):** baseline attribution found the draft's bucket-C and non-valid-bucket-B loci wrong — both are `convert-cards` free-text emissions from the source `inputs/cards/*.js`, not `apply-hero-ability-markers.mjs`; the allowlist was extended with `{sw1,sw2,wwhulk,antman,coreset}.js` (same mis-attribution class the pre-flight had already corrected for bucket E). Verified: `pnpm cards:check` exit 0; committed `data/cards` byte-unchanged; `pnpm -r --no-bail test` exit 0 (0 fail / 6968 pass); `finalStateHash`/replay/sentinel unaffected (card text is unhashed); every card-data `:check` gate green. **D-24443 Active.**
+
 ### WP-632 — `optional-ko-reward` KO source widened to include in-play (EC-667 / D-24442) shipped (2026-08-31)
 
 Fixes an operator-reported gap: playing **Rogue Energy Drain** / **Black Widow Dangerous Rescue** (and the family) offered a KO from hand and discard but **not** from cards you already played this turn — so the Legendary deck-thinning play (KO a played S.H.I.E.L.D. Agent, keep the +1 Recruit it already gave you; rulebook p.62) was unavailable. Not a wiring bug — D-24019 deliberately scoped the keyword to hand ∪ discard, faithful to the printed "from your hand or discard pile." Operator elected the more-permissive **union** + a card-text reword.
