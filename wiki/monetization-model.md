@@ -10,13 +10,14 @@ tags:
 related:
   - profile-login.md
   - legendary-forge.md
+  - tournament-calendar.md
   - hugo-web-system.md
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\monetization-model.md (this page — https://ewiki.legendary-arena.com/monetization-model/)
   - ../docs/01-VISION.md
   - ../docs/TOURNAMENT-FUNDING.md
 status: draft
-last-reviewed: 2026-07-29
+last-reviewed: 2026-09-01
 ---
 
 # Monetization Model
@@ -215,6 +216,38 @@ exactly like the profile boundary and the digital-goods store. This page records
 only that the execution exists and which stream it belongs to; it does not define
 the mechanics or set the price.
 
+## Organized play & tournaments (fairness application)
+
+Organized play is where the "no paid competitive signal" rule gets its most
+visible test, so the tournament calendar is built to demonstrate the guardrails,
+not to bend them. The full schedule — recurring open-play windows plus the 13-week
+seasonal tournament plan — lives on the [Tournament Calendar](tournament-calendar.md)
+page; this section records only how it maps onto the revenue model.
+
+The split is deliberate:
+
+- **Open play and competitive standing are free.** Every scored event type
+  (open tables, first-session teaching, the weekly scenario, cup matches, the
+  championship) carries no entry fee and no paid advantage. Standing is earned by
+  playing the published scenario well — never by buy-in and never by hours logged
+  (Guardrails #1 and #3).
+- **Only the rules/strategy hour may charge.** A single event type — host office
+  hours — may attach Stripe, because it sells *teaching*, not standing. A paid
+  strategy hour is coaching; it confers nothing on the scoreboard. This is the
+  one SnagTime-shaped, booking-plus-payment surface, and it is the exception that
+  proves the rule.
+- **Organizer-side funding is separate and non-profit.** Community funding that
+  covers a cup's incremental infrastructure cost is governed by
+  [`docs/TOURNAMENT-FUNDING.md`](../docs/TOURNAMENT-FUNDING.md) (no organizer
+  margin, no prize skim, no entry-fee profit — D-9701), and platform → organizer
+  billing rides **Enterprise & Organized-Play Licensing**, never a path to bill
+  players for profit.
+
+Things the calendar therefore forbids on scored events, as direct corollaries of
+the guardrails below: early-bird or tiered pricing on cups, VIP or priced tables,
+paid seeding, and any "pay or fall behind" framing. None of these are revenue the
+model wants — each is a paid competitive signal (NG‑1, NG‑3) wearing a schedule.
+
 ## Prohibited monetization
 
 Permanently out of scope unless VISION is amended. This is the quick blacklist for
@@ -340,6 +373,7 @@ keep patronage a garnish, not the meal (the FSF's limit).
 
 - [`docs/01-VISION.md`](../docs/01-VISION.md) — §Financial Sustainability (**canonical revenue model**)
 - [`docs/TOURNAMENT-FUNDING.md`](../docs/TOURNAMENT-FUNDING.md) — organizer-side tournament funding policy (WP-097)
+- [Tournament Calendar](tournament-calendar.md) — organized-play schedule (open-play windows + Season 1); applies the fairness posture above
 - [Profile Login](profile-login.md) — the profile/auth surface the paid layer attaches to
 - [Legendary Forge](legendary-forge.md) — the physical product behind the digital-unlock bridge
 - `C:\www\legendary-arena-com\docs\product\profile-features-free-vs-paid.md` — profile free/paid boundary **policy** (marketing repo, internal; locked 2026-07-03, amended 2026-07-04)
