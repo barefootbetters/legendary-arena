@@ -246,3 +246,50 @@ Operating Posture above, that cost lands on the business, not on Claude —
 treat it as a bug, not a rounding error. (Plain terms: this section exists
 to keep "Lazy Man" — the skip-the-tedious-steps-and-declare-victory reflex
 — out of the drafting workflow.)
+
+## Reward Integrity (Don't Game the Grader)
+
+Tests passing, CI green, `hugo` building, lints quiet, "looks good" — these
+are *evidence* the work is done. They are not the objective. The objective is
+the real user-visible behavior plus the standing / fairness / determinism
+invariants. When faking the evidence is easier than earning it, earn it or
+stop and report the blocker. Rationale and the research it draws on:
+ewiki [Reward Integrity](../wiki/reward-integrity.md).
+
+**Done means** the intended behavior is true, the relevant tests pass *for the
+right reason*, and the fairness / determinism invariants still hold. It is NOT
+done when a check was deleted, skipped, weakened, or pointed at a fixture that
+always passes.
+
+**To turn a red check green, never:**
+- Edit, delete, skip, or comment out a test, assertion, snapshot, or golden
+  file — unless the product behavior intentionally changed, and the commit says so.
+- Write the expected answer into the test. Tests describe behavior; the
+  implementation earns it.
+- Modify CI, `.githooks/*`, linters, generated-artifact gates, or permission
+  files to silence a failure you introduced.
+- Widen tool permissions (`--dangerously-skip-permissions`, always-allow,
+  disable hooks) to finish a task.
+- Claim a check passed without running it — paste the command and the tail of
+  its output. A green run against a stale `dist` is not a pass (see Key Commands).
+
+**If the honest path is blocked** — a missing fixture, an unreachable command,
+a loadout/config that cannot be created, a test that cannot pass without editing
+the test — STOP and report the blocker. Fix the environment; do not invent a
+path around the check.
+
+**Optimize the work, not the metric.** Play quality, standing integrity,
+deterministic behavior, honest UX, and build time are worth optimizing. A test
+pass-count, a "CI green" line, or a low turn/token count is never itself the
+target — doing less of the actual work to shrink one is gaming, not efficiency.
+(Token *cost* is real per the Operating Posture; the lever is doing the work
+efficiently, not skipping it.)
+
+**Fairness and layers stay intact.** If a change would let money or a cosmetic
+buy a game outcome, refuse and cite `docs/01-VISION.md` (NG-1, no pay-to-win).
+Do not move per-request game state into the Hugo sites, or marketing/checkout
+into the engine (layer boundaries: `.claude/rules/architecture.md`).
+
+**After a correction,** capture the one-line falsifiable rule in its governing
+sink — auto-memory for behavior, `docs/ai/DECISIONS.md` for an architectural
+call, this file only for a repo-wide constraint. One line, not an essay.

@@ -1,6 +1,6 @@
 # Wiki Index
 
-> **67 / 76** entity pages.
+> **68 / 76** entity pages.
 > Last regenerated: 2026-09-01.
 > See [SCHEMA.md](SCHEMA.md) for the entity-page contract and
 > [README.md](README.md) for purpose, conventions, and authority —
@@ -219,6 +219,15 @@ Cross-cutting governance, methodology, and readiness assessments.
   reserve-first, `merge=union`, and table regeneration). Answers the
   worktree question directly and catalogs the pCloud silent-revert /
   `[conflicted N]` / squash-merge-audit gotchas.
+- [Reward Integrity](reward-integrity.md) — *(draft)* the discipline of not
+  gaming the *evidence* that work is done (tests green, CI green, `hugo`
+  builds, lints quiet, "looks good") in place of the objective it stands in
+  for (real behavior + standing / fairness / determinism). Maps the abstract
+  reward-hacking failure mode onto this repo's concrete graders, catalogs the
+  mechanical enforcement that exists today (the three `.githooks` + the
+  generated-artifact drift gates) and the gap that is still prose-only, and
+  cites the Anthropic reward-seeker research for the *why*. Describes the
+  authoritative `.claude/CLAUDE.md` Reward Integrity block; defines nothing.
 - [Disaster Recovery](disaster-recovery.md) — Operator playbook (mirror
   of `docs/ops/DISASTER_RECOVERY.md`) for restoring **service** after
   infrastructure loss: the two backup layers (Render managed + the WP-416
