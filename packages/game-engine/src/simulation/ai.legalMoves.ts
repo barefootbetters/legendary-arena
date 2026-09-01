@@ -78,6 +78,16 @@ export const SIMULATION_MOVE_NAMES = [
   'fightVillain',
   'recruitHero',
   'fightMastermind',
+  // why: D-24440 — getLegalMoves short-circuits to resolveHeroChoice (the FIRST
+  // block-all short-circuit below, D-22001) when a reveal-attack-choose hero
+  // ability parks G.pendingHeroChoice; it MUST be dispatchable in the sim (both
+  // MOVE_MAPs) or the per-turn loop spins on "unknown move name" until the
+  // MAX_MOVE_STEPS_PER_TURN budget flags the game stuck (endgameReached === false).
+  // This is the ONE emittable resolve move D-22001 added to getLegalMoves WITHOUT
+  // also registering it here or in the MOVE_MAPs — latent until a hero deck that
+  // parks pendingHeroChoice was swept (surfaced by the D-24439 RNG shift, set 2099).
+  // Asserted by simulation.moveDispatch.drift.test.ts.
+  'resolveHeroChoice',
   'resolveKoHeroChoice',
   // why: WP-470 / D-24282 — getLegalMoves short-circuits to resolveScryKoChoice when a
   // Doombot scry-KO choice is parked; it MUST be dispatchable in the sim (both MOVE_MAPs)

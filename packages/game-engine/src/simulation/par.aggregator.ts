@@ -77,6 +77,8 @@ import { resolveDrawOrEmpowered } from '../moves/drawOrEmpowered.resolve.js';
 // why: WP-289 / D-24073 — the sibling resolve moves getLegalMoves can also short-circuit to;
 // each must be dispatchable in this duplicated MOVE_MAP or a parked pending choice hangs the PAR
 // per-turn loop (same class as the WP-286 resolveDrawOrEmpowered fix). Pinned by the drift guard.
+// why: D-24440 — resolveHeroChoice dispatch parity with the runner MOVE_MAP (see there).
+import { resolveHeroChoice } from '../moves/heroChoice.resolve.js';
 import { resolveKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { resolveScryKoChoice } from '../moves/scryKoChoice.resolve.js';
 import { resolveMelterKoChoice } from '../moves/melterKoChoice.resolve.js';
@@ -430,6 +432,10 @@ const MOVE_MAP: Record<string, MoveFn> = {
   // why: WP-286 — must be dispatchable (One-Hit Wonder parks a draw-or-empowered choice
   // unconditionally; the block-all guard freezes every other move until it resolves).
   resolveDrawOrEmpowered: (context, args) => resolveDrawOrEmpowered(context as never, args as never),
+  // why: D-24440 — same dispatch-completeness rule as the runner MOVE_MAP: getLegalMoves
+  // short-circuits to resolveHeroChoice when a reveal-attack-choose hero ability parks
+  // pendingHeroChoice; a missing dispatch entry stalls the loop (pinned by the drift guard).
+  resolveHeroChoice: (context, args) => resolveHeroChoice(context as never, args as never),
   // why: WP-289 / D-24073 — getLegalMoves can short-circuit to each of these resolve moves when
   // its pending choice is parked; a missing dispatch entry hangs the per-turn loop (maxTurns
   // bounds turns, not within-turn move-steps). Reuse the existing move fns, no re-implementation.

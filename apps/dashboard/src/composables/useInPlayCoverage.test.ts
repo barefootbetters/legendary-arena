@@ -188,13 +188,19 @@ test('useInPlayCoverage credits a fixed mechanic from the committed seed', () =>
   // UNCHANGED at 37; percentResolved fell 26.4 -> 1.6 purely because the denominator
   // grew. Nothing became less covered. D-24050 defines the metric; D-24370 adds the
   // rebuild trigger that this staleness violated.
+  // 2026-08-31 (D-24440, re-pin): the committed baseline was rebuilt when the sweep
+  // RUN_SEED was restored v2-d24439 -> v1 (D-24440 fixed the real cause of the game
+  // D-24439 re-seeded around — a simulation MOVE_MAP dispatch gap, not a deck grind).
+  // totalObs 2285 -> 2306 as the engine deepened between the two rebuilds; resolvedObs
+  // holds at 37, percentResolved holds at 1.6. (D-24439 re-seeded to v2 but left this
+  // test's figure at the pre-re-seed 2285, so this is the first rebuild it reflects.)
   const baseline = baselineSeed as unknown as InPlayHollowBaseline;
   const view = useInPlayCoverage({
     baseline,
     ledger: makeLedger([makeRow({ mechanic: 'dodge', status: 'executable' })]),
     runtimeObserved: makeRuntimeObserved({}),
   });
-  assert.equal(view.totalObs.value, 2285);
+  assert.equal(view.totalObs.value, 2306);
   assert.equal(view.resolvedObs.value, 37);
   assert.equal(view.percentResolved.value, 1.6);
 });
@@ -251,9 +257,17 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // mechanics 31 -> 30: the `liberate` mechanic is no longer runtime-observed under
   // this seed (still covered by the static hero-mechanic-ledger). NOT a coverage
   // regression in support — a re-seed artifact of the D-24439 fix.
+  // 2026-08-31 (D-24440, re-pin — reverts the line above): the D-24439 re-seed was a
+  // workaround for a misdiagnosed non-termination. D-24440 reproduced that game and
+  // found the real cause — a parked pendingHeroChoice the simulation could not dispatch
+  // (`resolveHeroChoice` was missing from the sim MOVE_MAP), not a deck/wound grind.
+  // With that fixed, all 312 games terminate under the ORIGINAL v1 seed, so the RUN_SEED
+  // is restored v2-d24439 -> v1: totalObs 2816 -> 2306, percentResolved 2.1 -> 2.6
+  // (resolvedObs unchanged at 59; the denominator shrank back). Distinct mechanics
+  // 30 -> 31: the `liberate` runtime observation the re-seed dropped is recovered.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 2816);
-  assert.equal(view.percentResolved.value, 2.1);
+  assert.equal(view.totalObs.value, 2306);
+  assert.equal(view.percentResolved.value, 2.6);
   assert.ok(view.remaining.value.length > 0);
 });
 
