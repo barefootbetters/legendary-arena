@@ -3,7 +3,7 @@
 > High-level, human-readable record of significant changes to Legendary Arena.
 > Not a git log — focuses on architectural impact and milestone completions.
 >
-> **Last updated:** 2026-07-13
+> **Last updated:** 2026-09-01
 > **Format:** Newest first. Each entry tied to commits and Work Packets.
 >
 > **Note:** the 2026-04-15 → 2026-07-13 window (WP-027 → WP-366, ~130 Work
@@ -48,6 +48,17 @@ Active work and the forward roadmap are tracked in
 [`docs/05-ROADMAP-MINDMAP.md`](05-ROADMAP-MINDMAP.md) — this changelog records
 milestones as they ship. Recent deferred follow-ons include retro-rescoring
 historical competitive scores and gauntlet progress on player profiles.
+
+---
+
+## 2026-09-01 — Tournament Calendar (organized-play plan)
+
+**PRs:** #1730 / #1731 · **ewiki content — governance-companion page.**
+
+New ewiki page — [Tournament Calendar](https://ewiki.legendary-arena.com/tournament-calendar/) — publishing the draft organized-play plan: recurring year-round open-play windows (three region-prime blocks, PT + UTC, DST-aware) so "Join" is never empty at known hours, plus the 13-week Season 1 "Foundation" schedule (Phase A open tables → Phase B scenario season with four Foundation Cups → Phase C championship). It anchors the fairness posture borrowed from the [Monetization Model](https://ewiki.legendary-arena.com/monetization-model/) — open play and competitive standing are free, only the `HOST` office-hours event type may charge (teaching, not standing), and organizer funding stays non-profit per `TOURNAMENT-FUNDING.md`. Descriptive companion only; the standing formula (Scoring / Leaderboard) and a schedule data file (a future WP) are owned elsewhere.
+
+- **#1730** — added `wiki/tournament-calendar.md` (Guide) plus a new *Organized play & tournaments (fairness application)* section on the Monetization Model page mapping event types onto the guardrails; registered the page in the wiki index.
+- **#1731** — review pass: reconciled the WEEKLY loadout publish timing (prior Monday), tightened the championship-qualification wording, de-conflicted `HOST` (Coaching) from `TEACH`, and logged cancellation-semantics + region-expansion-threshold as Open Questions.
 
 ---
 
