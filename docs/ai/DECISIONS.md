@@ -38811,9 +38811,9 @@ _Active 2026-08-31 (server half landed; client half WP-631 pending). Related: D-
 
 ---
 
-### D-24442 — `optional-ko-reward` KO source widens to hand ∪ discard ∪ in-play (Drafted 2026-08-31 — WP-632 / EC-667; not yet landed)
+### D-24442 — `optional-ko-reward` KO source widens to hand ∪ discard ∪ in-play (Active 2026-08-31 — WP-632 / EC-667)
 
-**Status:** Drafted 2026-08-31; not yet landed. Flips to Active when WP-632 executes.
+**Status:** Active 2026-08-31 (WP-632 / EC-667 executed). Engine suite 2937/0 (+5 vs the 2932 baseline); full `pnpm -r --no-bail test` exit 0; `finalStateHash` / replay / sentinel **byte-unchanged — no re-pin** (the reshuffle-empty in-play park is reached by no pinned fixture, confirming the empirical claim). arena-client 1505/0, vue-tsc 0. All card-data `:check` gates green.
 
 **Problem.** The `optional-ko-reward` hero keyword ("You may KO a card from your hand or discard pile. If you do, `<reward>`") restricts its KO source to `hand ∪ discard`, **by design** — D-24019 / WP-248 scoped it that way and `heroEffects.execute.ts` documents "the optional-ko-reward effect KOs from hand or discard, never inPlay." An operator reviewing a real 2p Red Skull / Midtown Bank Robbery match found Rogue Energy Drain and Black Widow Dangerous Rescue offering KO from hand and discard but not from cards already played this turn — so the classic Legendary deck-thinning play (KO a played S.H.I.E.L.D. Agent, keep the +1 Recruit it produced, thin your deck) was unavailable. Marvel Legendary distinguishes two KO scopes: "KO one of your Heroes" = hand + played-this-turn, keeping produced value (rulebook p.52, "If you KO a Hero you already played this turn, you still get to use the Recruit Points, Attack, and special abilities that Hero produced"); "from your hand or discard pile" = hand + discard. These cards carry the second wording, so the D-24019 scope is *faithful to the printed text*.
 
@@ -38827,5 +38827,9 @@ _Active 2026-08-31 (server half landed; client half WP-631 pending). Related: D-
 **Why the union, not a new "KO one of your Heroes" scope.** The rulebook's played-this-turn scope excludes discard; the printed cards' scope excludes in-play. The operator wants both affordances on these cards (thin from discard/hand AND cash out a played card), so the union is the deliberate, more-permissive design — recorded here because it makes the cards more permissive than either printed base-game wording.
 
 **Relates to.** D-24019 (the framework this extends + the "never inPlay" clause it supersedes), D-24020 (the chooser-only UIState projection reused), D-24399 (the Step-5 KO log this in-play path also emits). **Packet:** WP-632 / EC-667.
+
+**Execution amendments (2026-08-31, scope-neutral).**
+1. **Source-card eligibility.** At the onPlay dispatch the triggering card is already in `inPlay`, so `eligibleCount` (now hand+discard+inPlay) is ≥ 1 in normal play and the source card itself is a legal in-play KO target — faithful to Legendary's "a card you played this turn" (no "other"), and the CardExtId zone model cannot reliably exclude a single instance anyway. The zero-eligible no-op guard is now **defensive** (reachable only via a direct/unit dispatch with an empty inPlay); its message names all three zones. Tests updated accordingly.
+2. **Card-text reword applied to the generated set files directly, not via a full regen.** A full `convert-cards-v15 → apply-*` regen surfaces **pre-existing, unrelated drift** — ~13 sets churn and `apply-effect-markers` appends 116 markers absent from the committed artifacts (the `data/cards/*.json` are not regenerate-and-diff CI-gated; only the derived ledgers / effect-index are). To keep WP-632's diff minimal and correct, the 9 reworded prose lines were edited in the converter sources (`coreset.js`/`sw1.js`/`sw2.js`) **and** mirrored surgically into the generated `core/ssw1/ssw2.json` (+ hand-authored `co2e.json`); the source edits keep a future clean regen correct. The pre-existing pipeline drift is out of scope — flagged for a separate cleanup.
 
 Protect this file.
