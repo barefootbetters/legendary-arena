@@ -59,20 +59,18 @@ const SCHEMA_VERSION = 1;
 // the engine's `ctx.random.*` makes the bounded competent sweep produce a
 // byte-identical artifact every run, so `--check` can regenerate + diff (the
 // hero-effect-coverage precedent). Changing this re-baselines the artifact.
-// why (D-24439 re-baseline, `-v2`): gating the generic per-escape wound
-// (D-24439) removed wounds from player discards on ability-bearing villain
-// escapes (the Brotherhood's Mystique escapes here), which shifts the shared
-// `ctx.random.*` sequence via different discard-reshuffle sizes. Under `-v1`
-// that perturbation left ONE of the 312 games non-terminating — it never reached
-// an endgame even at a 200-turn cap (the spurious wound had been inadvertently
-// forcing deck-exhaustion / the tie in that grindy 1-player game; a lean deck
-// cycles indefinitely). `-v2` re-rolls the sweep so all 312 games terminate
-// within MAX_TURNS again. Cost: the runtime-observed set drops one mechanic
-// (`liberate`, 31 -> 30 byMechanic keys) — still covered by the static
-// hero-mechanic-ledger, just no longer runtime-observed under this seed. The
-// underlying non-terminating-game bug is tracked separately (it is an engine
-// property the 50-turn cap was masking, not introduced by D-24439).
-const RUN_SEED = 'wp265-real-v2-d24439';
+// why (D-24440 — restored to canonical `-v1`): D-24439 temporarily re-rolled this
+// seed to `-v2-d24439` because ONE of the 312 games (set 2099, seed 5) did not reach
+// an endgame under `-v1` after the escape-wound gate shifted the RNG, and diagnosed
+// it as the wound "forcing deck-exhaustion" in a grindy game. D-24440 reproduced that
+// game and found the real cause: it froze at turn 19 on a parked `pendingHeroChoice`
+// the SIMULATION could not dispatch (`resolveHeroChoice` was missing from the sim
+// MOVE_MAP), not a deck/wound grind (the villain deck still held 12 cards and the
+// player deck held zero Wounds). With that dispatch gap fixed, all 312 games terminate
+// under the ORIGINAL `-v1` seed at MAX_TURNS again, so the `-v2` workaround is reverted
+// here — recovering the runtime observation of `liberate` the re-roll had dropped
+// (byMechanic 30 -> 31). See D-24440.
+const RUN_SEED = 'wp265-real-v1';
 
 // why: per-seat seeds nest on the per-cell seed via the WP-193 `::seat:`
 // convention (D-19303), so the two-domain PRNG invariant holds at every level.

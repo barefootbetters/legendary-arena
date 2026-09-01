@@ -65,6 +65,13 @@ import { resolveDrawOrEmpowered } from '../moves/drawOrEmpowered.resolve.js';
 // Like resolveDrawOrEmpowered above, each MUST be dispatchable here or a parked pending choice
 // hangs the per-turn loop. Their pending choices need preconditions a sweep rarely meets (so the
 // gap stayed latent past WP-286), but the drift guard now pins it.
+// why: D-24440 — resolveHeroChoice (the reveal-attack-choose discard-or-return
+// resolve) is the FIRST block-all short-circuit getLegalMoves emits (D-22001);
+// like the sibling resolve moves it MUST be dispatchable here or a parked
+// pendingHeroChoice spins the per-turn loop until the move-step budget flags the
+// game stuck. Missing since D-22001 added the getLegalMoves emit without the
+// dispatch entry; surfaced by the D-24439 RNG shift (set 2099 non-terminating).
+import { resolveHeroChoice } from '../moves/heroChoice.resolve.js';
 import { resolveKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { resolveScryKoChoice } from '../moves/scryKoChoice.resolve.js';
 import { resolveMelterKoChoice } from '../moves/melterKoChoice.resolve.js';
@@ -266,6 +273,12 @@ const MOVE_MAP: Record<string, MoveFn> = {
   // why: WP-286 — must be dispatchable; One-Hit Wonder parks a draw-or-empowered choice
   // unconditionally, so the sweep reaches it and the block-all guard freezes every other move.
   resolveDrawOrEmpowered: (context, args) => resolveDrawOrEmpowered(context as never, args as never),
+  // why: D-24440 — getLegalMoves short-circuits to resolveHeroChoice when a
+  // reveal-attack-choose hero ability parks pendingHeroChoice; a missing dispatch
+  // entry spun the per-turn loop until the move-step budget flagged the game stuck
+  // (endgameReached === false). The gap that surfaced the D-24439 set-2099
+  // non-termination. Reuse the existing move fn, no re-implementation.
+  resolveHeroChoice: (context, args) => resolveHeroChoice(context as never, args as never),
   // why: WP-289 / D-24073 — getLegalMoves can short-circuit to each of these resolve moves when
   // its pending choice is parked; a missing dispatch entry hangs the per-turn loop (maxTurns
   // bounds turns, not within-turn move-steps). Mirrors the WP-286 resolveDrawOrEmpowered entry —

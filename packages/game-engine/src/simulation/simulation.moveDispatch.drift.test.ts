@@ -67,6 +67,30 @@ describe('simulation move-dispatch drift guard (WP-289 / D-24073)', () => {
     }
   });
 
+  it('resolveHeroChoice is dispatchable in BOTH maps AND emittable (D-24440 — else the sim stalls)', () => {
+    // why: D-24440 — the reveal-attack-choose pendingHeroChoice short-circuit (D-22001)
+    // is the ONE emittable resolve move that shipped in getLegalMoves WITHOUT a MOVE_MAP
+    // entry or a SIMULATION_MOVE_NAMES membership, so the superset check above passed
+    // vacuously (it validates SIMULATION_MOVE_NAMES ⊆ MOVE_MAP, not getLegalMoves-emits ⊆
+    // SIMULATION_MOVE_NAMES). It stayed latent until a hero deck that parks pendingHeroChoice
+    // was swept (the D-24439 RNG shift, set 2099): the sim dispatched "unknown move name",
+    // never cleared the choice, and burned the MAX_MOVE_STEPS_PER_TURN budget → the game was
+    // flagged stuck (endgameReached === false) and assertAllGamesTerminated failed. Pin all
+    // three memberships explicitly so the gap cannot silently reopen.
+    assert.ok(
+      SIMULATION_MOVE_NAMES.includes('resolveHeroChoice'),
+      'resolveHeroChoice must be in SIMULATION_MOVE_NAMES (getLegalMoves emits it, D-22001)',
+    );
+    assert.ok(
+      SIMULATION_RUNNER_MOVE_NAMES.includes('resolveHeroChoice'),
+      'resolveHeroChoice must be a simulation.runner MOVE_MAP key',
+    );
+    assert.ok(
+      PAR_AGGREGATOR_MOVE_NAMES.includes('resolveHeroChoice'),
+      'resolveHeroChoice must be a par.aggregator MOVE_MAP key',
+    );
+  });
+
   it('resolveScryKoChoice is dispatchable in BOTH maps (WP-470 / D-24282 — else the sim hangs)', () => {
     // why: WP-470 — Doombot Legion's scry-KO Fight now parks an interactive choice;
     // getLegalMoves short-circuits to resolveScryKoChoice, so it MUST have a MOVE_MAP
