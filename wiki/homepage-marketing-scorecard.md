@@ -14,6 +14,7 @@ related:
   - scoring.md
   - hugo-web-system.md
   - brevo-email-pipeline.md
+  - video-commerce.md
 status: draft
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\homepage-marketing-scorecard.md (this page — https://ewiki.legendary-arena.com/homepage-marketing-scorecard/)
@@ -110,6 +111,11 @@ checklist for re-evaluation.
   capture CTA on the homepage feeds into the Brevo nurture sequence.
   The template recommends promoting email capture from the footer to
   the homepage body.
+- **[Video Commerce](video-commerce.md)** — The homepage's "Featured Gear"
+  section (the three physical SKUs) is the on-site destination that
+  in-video product tags drive toward. The video-commerce plan owns the
+  "gear purchase" conversion goal; this scorecard grades only the SB7
+  story arc, which the gear commerce layer does not change.
 - **WP-149 (Public Leaderboard)** — The leaderboard page at
   `/leaderboard/` is the first public recognition surface. The homepage
   can link to it as proof of the recognition system.

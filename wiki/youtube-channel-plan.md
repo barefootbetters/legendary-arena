@@ -13,6 +13,7 @@ related:
   - homepage-review-template.md
   - homepage-marketing-scorecard.md
   - video-production-workflow.md
+  - video-commerce.md
 status: draft
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\youtube-channel-plan.md (this page — https://ewiki.legendary-arena.com/youtube-channel-plan/)
@@ -74,6 +75,8 @@ Every video employs the seven StoryBrand elements:
 
 - **Full document:** `C:\www\legendary-arena-com\docs\marketing\youtube-channel-plan.md`
 - **Production workflow:** [Video Production Workflow](video-production-workflow.md)
+- **Selling the gear through video:** [Video Commerce](video-commerce.md)
+  — the fourth "gear purchase" conversion goal and in-video product tagging
 - **Homepage strategy:** [Homepage Spec](homepage-spec.md),
   [Homepage Appendix](homepage-appendix.md)
 - **Content framework:** [Homepage Review Template](homepage-review-template.md)

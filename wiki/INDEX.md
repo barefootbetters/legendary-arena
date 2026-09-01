@@ -258,6 +258,11 @@ Cross-cutting governance, methodology, and readiness assessments.
   plan for the "Legendary Arena" channel: four series across the SB7
   content modes and Player Needs Pyramid; the transitional CTA the
   homepage needs.
+- [Video Commerce](video-commerce.md) — The commerce layer of the video
+  program: selling the three physical SKUs (deckbox / playmat / guide)
+  through in-video product tags; the fourth "gear purchase" conversion
+  goal, commerce-readiness gates, and the fairness boundary gear must
+  respect.
 - [Design System Overview](design-system-overview.md) — *(draft,
   research)* the north-star hub for the sensory-and-feel layer of
   `play.legendary-arena.com`, and the **shared contract** the two sensory
@@ -489,7 +494,8 @@ following are useful entry points:
   [Homepage Marketing Scorecard](homepage-marketing-scorecard.md),
   [Homepage Spec](homepage-spec.md),
   [Homepage Appendix](homepage-appendix.md),
-  [Homepage Review Template](homepage-review-template.md)
+  [Homepage Review Template](homepage-review-template.md),
+  [Video Commerce](video-commerce.md)
 - **`layer-registry`** — Pages anchored in the registry layer:
   [Card Type Taxonomy](card-type-taxonomy.md),
   [CardExtId](cardextid.md) (cross-cuts engine + registry),
