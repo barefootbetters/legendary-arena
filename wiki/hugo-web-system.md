@@ -12,6 +12,7 @@ tags:
   - shortcodes
   - recipes
   - designer-reference
+  - wordpress
 related:
   - hugo-onboarding.md
   - architecture-inventory.md
@@ -36,7 +37,8 @@ source:
   - C:\www\barefootbetters-www\assets\css\extended\recipe-card.css
   - C:\www\barefootbetters-www\archetypes\recipe.md
   - C:\www\barefootbetters-www\docs\recipe-card.md
-last-reviewed: 2026-07-25
+  - "Video — _Goodbye WordPress._ by Tyler Moore (speaker: Emmanuel, I Create Your Site), YouTube, 28 Aug 2026 (source for the Hugo-vs-WordPress section)"
+last-reviewed: 2026-09-01
 ---
 
 > 👋 **New to this codebase?** Start with
@@ -116,6 +118,174 @@ commercial systems a designer must know about:
 A third-party designer needs to understand the template pipeline to know
 where changes propagate, and the commercial systems to avoid breaking
 conversion paths.
+
+## Hugo vs WordPress — the honest case {#hugo-vs-wordpress}
+
+This section explains *why* the marketing site (and this engineering wiki)
+run on Hugo instead of WordPress, and — just as important — where that
+argument stops. It exists because the "just use WordPress" reflex is still
+the industry default, and a future author deciding how to build the next LA
+property should have the real trade-off written down, not the hype version.
+
+> **Companion, not duplicate.** [Hugo Onboarding](hugo-onboarding.md) has the
+> day-1 **WordPress → Hugo concept mapping** (admin panel, posts, plugins,
+> menus, media, search, deploy). This section is the strategic case behind
+> that mapping. Read the onboarding table for "where did feature X go"; read
+> this for "should this site be WordPress at all."
+
+### What actually kicked this off
+
+The framing traces to a widely shared August 2026 video, **_Goodbye
+WordPress._** (Tyler Moore's channel, presented by Emmanuel of *I Create
+Your Site*, posted 28 Aug 2026). Two corrections up front, because the
+title oversells the content:
+
+- **It is not "WordPress is dead, use Hugo."** Emmanuel stopped using
+  WordPress + Elementor for *new* client work in February 2026 and replaced
+  it with **AI-written custom sites** — hand-coded HTML/CSS/JS generated
+  with an AI assistant, **not Hugo**. Hugo is one disciplined way to reach
+  the same static-output destination; it is not what he named.
+- **He does not claim WordPress is dead.** He says he has not touched it for
+  new builds, it still runs his legacy clients, and its role is shrinking.
+  WordPress still powers a large share of the web. What is dying is the
+  **default assumption** that every brochure, docs, catalog, or marketing
+  site needs PHP + MySQL + a plugin stack.
+
+So take "Goodbye WordPress" as **"stop reaching for a dynamic CMS for a site
+that is really a Git repo of pages,"** not as a market obituary.
+
+### The video's actual argument (from client work)
+
+Emmanuel's case against WordPress + Elementor for small-business sites:
+
+- **Page builders bloat the site.** Elementor was the design layer; speed
+  and SEO suffered unless you fought the tool.
+- **Plugins are a treadmill.** Custom post types, loops, search, listings
+  meant stacking plugins (he cites JetEngine-class tools), then living with
+  their updates and compatibility breaks.
+- **Licenses stack.** Theme + builder + add-ons + security + forms + backups
+  become a second rent on top of hosting.
+- **Security surface is the product.** Public admin, PHP, a database, themes,
+  and plugins — versus a static site with little or no login to attack.
+- **Forms and email are fragile.** PHP mailers land in spam or die after an
+  update; he moved contact to an API (Resend).
+- **Clients don't need a CMS.** Most small businesses should not live inside
+  `wp-admin` — they break layouts. Ship them a managed site or a tiny custom
+  editor instead of the whole dashboard.
+- **AI changed the build-cost math.** A real-estate demo (maps, search,
+  custom types) that used to be a plugin project was prototyped in ~20
+  minutes with an AI assistant. After that, paying for generic plugins felt
+  optional.
+
+That last point is the real thesis: **AI made custom static / hand-coded
+sites cheaper than the WordPress stack for typical client sites.**
+
+### Why the architecture (not the hype) favors static
+
+These are the durable reasons the argument holds for **marketing sites,
+docs, catalogs, and wikis** — the classes LA actually ships. They do not
+apply to every WordPress site (see [the limits](#what-hugo-will-not-replace)).
+
+1. **The runtime is the liability.** WordPress assembles every page from PHP
+   + a database + plugins on each request. Hugo builds the HTML once and
+   ships files — no PHP, no MySQL, no `wp-admin` on the public internet. That
+   deletes whole incident classes: plugin RCE, brute-forced admin, infected
+   themes, "site down after auto-update."
+2. **Maintenance is the business model.** WordPress needs core, theme, and
+   plugin patches forever; miss a week and you inherit someone else's CVE.
+   Hugo's production artifact is files on a CDN — you rebuild when content
+   changes, you don't patch a living CMS.
+3. **Performance is the default, not a plugin.** A typical Elementor site
+   needs caching, image, and CDN plugins to feel fast. Hugo output is already
+   static; LCP/TTFB usually land in "good" Core Web Vitals territory with no
+   performance stack. That helps SEO and the AI-citation crawlers that prefer
+   cheap, clean HTML.
+4. **Cost compounds in the ecosystem, not the core.** The real WordPress bill
+   is hosting + builder license + SEO plugin + forms + security + backups +
+   retainer hours. Static hosting (Cloudflare Pages, Netlify, GitHub Pages,
+   S3+CDN) is often $0–$20. LA's own pattern — Hugo catalog + Snipcart /
+   Stripe — is the same idea: keep commerce **off** the CMS.
+5. **Content is trapped in MySQL.** Exporting a WordPress site is a project.
+   Hugo content is Markdown and files, so diffs, reviews, and rollbacks are
+   just Git. That is why docs, wikis, and brand systems migrate first.
+6. **Most "CMS features" were never CMS features.** Search, maps, listings,
+   calculators, checkout, email — the video's own examples — are APIs and
+   JavaScript, not reasons to run a database-backed CMS. Hugo keeps them as
+   build-time data or third-party widgets (Pagefind/Algolia, Mapbox,
+   Snipcart, Brevo/Resend).
+7. **The editor was the last good argument, and it's narrower now.**
+   WordPress still wins when a non-technical team must publish daily without a
+   developer. For a site that updates weekly, Markdown + a preview deploy is
+   enough — and for a marketing site with a **locked** design system, a CMS
+   that lets anyone drag widgets is a bug, not a feature.
+
+### How Hugo replaces the WordPress *pieces*
+
+Hugo does not replace "WordPress the application platform." It replaces
+**WordPress used as a website factory** — which is what most brochure and
+docs sites use it as. Piece-by-piece, mapped to how this repo already does
+each one:
+
+| WordPress piece | Hugo replacement (as used here) |
+| --- | --- |
+| Themes + Elementor | Layouts in `layouts/`, tokens in partials, one design system (PaperMod + overrides) |
+| Pages / posts | Markdown in `content/` + YAML front matter |
+| Custom post types | Content sections + archetypes (`content/shop/`, `content/tournaments/`) |
+| Menus, global settings | `hugo.toml` + data files |
+| Media library | `static/` (served byte-for-byte) or `assets/` + build-time image processing |
+| Plugin grab-bag | Shortcodes and partials you own and can read |
+| Yoast-style SEO | Front matter + templates for title, canonical, OG, JSON-LD (see [Social sharing](#social-sharing-open-graph--twitter-cards)) |
+| Contact Form 7 / WP Mail | Static form → API: `newsletter-form.html` → `/api/subscribe` → Brevo |
+| WooCommerce for a few SKUs | Snipcart / Stripe on static product pages (see [Commerce](#commerce-snipcart)) |
+| Caching / WP Rocket | CDN cache of static HTML (`static/_headers` tunes it) |
+| Wordfence / backups | No runtime to harden; Git *is* the backup |
+| Staging + DB migrate | Preview deploy from a branch |
+| `wp-admin` for clients | A headless editor (Decap, Front Matter CMS) or a tiny custom editor — **only if** they must self-serve |
+
+The video's own real-estate example maps cleanly: listings become Markdown
+(or JSON/YAML) in `content/listings/`; search is a client-side index or an
+API; maps are a map SDK on a static page; "edit a unit" is a Git commit or a
+headless form that writes a file and rebuilds. No JetEngine, no custom-post-
+type plugin, no Elementor loop.
+
+Hugo is *especially* the right static generator when page count is high
+(docs, the card registry, this wiki, a catalog): a single Go binary, no Node
+toolchain required, rebuilding thousands of pages in seconds. That is
+exactly the job LA already uses Hugo for on the wiki and marketing side.
+
+### What Hugo will *not* replace {#what-hugo-will-not-replace}
+
+Do not migrate these to Hugo and pretend WordPress died — they still want
+WordPress, Shopify, or a real application:
+
+- Multi-author newsroom with roles, scheduled posts, and in-browser media
+  workflows.
+- Membership, LMS, or user-generated content.
+- Large WooCommerce catalogs with complex, stateful promotions.
+- Clients who insist on logging in to "just change the red banner."
+- Anything that must change **per request** from server state.
+
+That last bullet is the clean dividing line: **if a page's HTML is
+identical for every visitor until someone edits the source, it can be
+static.** If it must differ per request from live state, it wants a runtime.
+
+### Honest verdict
+
+- **Video's claim:** WordPress + Elementor is a bad *factory* for
+  small-business sites now that AI can emit custom code.
+- **Accurate claim:** WordPress-*as-default-CMS* is fading for content sites.
+  WordPress-*as-platform* is not dead — ~40% of the web still runs it.
+- **Hugo's job:** take the static half of that argument and make it
+  *maintainable* — templates, a content model, taxonomies, i18n, fast
+  rebuilds — instead of a pile of AI-generated HTML nobody can update in six
+  months. That maintainability is the entire reason to prefer a disciplined
+  SSG over "just have the AI write it."
+
+For LA specifically, the decision is already made and paying off: the wiki
+and marketing site are Git repos of pages with commerce bolted on at the
+edge, not a CMS to patch every Tuesday. When a new LA property is a set of
+pages, the default is Hugo. When it's genuinely an app with per-request
+state, it belongs on `play`/the engine, not shoehorned into either stack.
 
 ## Mechanics
 
@@ -1043,6 +1213,8 @@ Full details: `C:\www\legendary-arena-com\docs\ai\REFERENCE\01.3-commit-hygiene.
 - `C:\www\barefootbetters-www\archetypes\recipe.md` — `hugo new --kind recipe` scaffold with the full `recipe:` schema
 - `C:\www\barefootbetters-www\docs\recipe-card.md` — recipe-card author guide
 - [WP Recipe Maker](https://bootstrapped.ventures/wp-recipe-maker/) — the WordPress plugin whose "meadow" template the card ports
+- Video — *Goodbye WordPress.* (Tyler Moore channel, presented by Emmanuel / *I Create Your Site*, YouTube, 28 Aug 2026) — source for [Hugo vs WordPress — the honest case](#hugo-vs-wordpress)
+- [Hugo Onboarding](hugo-onboarding.md) — day-1 WordPress → Hugo concept mapping (companion to the Hugo-vs-WordPress case above)
 - WP-004 — home page override
 - WP-005 — Pagefind search integration, `#la-search` id lock
 - WP-008 — Schema.org / SEO baseline
