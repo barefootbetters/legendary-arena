@@ -38853,3 +38853,70 @@ Protect this file.
 **Relates to.** D-24442 (execution amendment #2 flagged this drift), PR #798 (bucket-A data-only strip), WP-565 / D-24374 (the forward-looking-only converter comment this closes). **Packet:** WP-633 / EC-668.
 
 Protect this file.
+
+---
+
+### D-24444 — Reward-integrity commit guards (Active 2026-09-01 — INFRA)
+
+**Status:** Active 2026-09-01. Two prefix-keyed commit guards make the
+`.claude/CLAUDE.md` Reward Integrity section (added the same day) mechanically
+enforced rather than prose-only. `pnpm guard:test` exit 0 (17/17). Follow-up to
+the reward-integrity governance PR (#1732), which recorded these two hooks as
+the open enforcement gap in `wiki/reward-integrity.md`.
+
+**Problem.** The Reward Integrity section forbids the classic reward-hacking
+moves — silencing a check to make a change pass, and weakening a test to match a
+bug — but "a rule with no enforcement is a wish." Nothing caught an `EC-###`
+(code-execution) commit that edited a hook / CI workflow / permission file to go
+green, or that modified an existing `*.test.ts` without touching the code the
+test constrains. A blanket "test changed with source" gate is unusable: normal
+TDD edits code and tests together on nearly every commit, so it would be pure
+noise, and a noisy gate is learned-around (itself the "disabled monitor" the
+research warns about).
+
+**Decision.** Key both guards off the **commit prefix**, which already encodes
+intent (`EC-###:` = code execution; `INFRA:`/`SPEC:` = infra/governance). The
+guards apply to `EC-###` commits only:
+
+1. **Guard A (enforcement/permission files).** An `EC-###` commit may not change
+   `.githooks/**`, `.github/workflows/**`, `.claude/settings.json` /
+   `.claude/settings.local.json`, `.claude/rules/**`, or `.claude/CLAUDE.md`.
+   Those edits must land as a reviewed `INFRA:` commit. This is a hard block (no
+   marker escape) — it forces a monitor change into its own reviewed commit.
+2. **Guard B (assertion-weakening).** An `EC-###` commit that MODIFIES (git
+   status `M`) an existing `*.test.ts` while staging no non-test source under
+   `packages/**` or `apps/**` requires a `Tests-changed: <reason>` trailer.
+   Newly-ADDED test files are exempt (adding coverage is good); a code-plus-test
+   commit is exempt (normal TDD); the trailer records a legitimate test-only
+   change (a genuinely wrong test, a re-recorded fixture after an intentional
+   engine change).
+
+**Why prefix-keyed, not file-pattern-keyed.** `INFRA:`/`SPEC:` are exactly where
+enforcement, tooling, and governance are supposed to change, so exempting them
+removes the false-positive class while still catching the reward-hacking vector,
+which by definition happens inside code-execution (`EC-###`) work.
+
+**Shape.** One shared implementation —
+`scripts/commit-reward-integrity-guard.mjs`, a pure
+`evaluateCommitForRewardIntegrity()` plus a stdin CLI — is invoked by BOTH
+`.githooks/commit-msg` (Rule 7, fed the staged index) and the new
+`reward-integrity` job in `.github/workflows/commit-hygiene.yml` (fed each PR
+commit via `git diff-tree`). A single logic copy removes the hook↔CI drift the
+existing `commit-hygiene` `why:` comments already warn about; the pure function
+is unit-tested by `scripts/commit-reward-integrity-guard.test.ts`
+(`pnpm guard:test`, wired into the `ci.yml` unit-tests job). Emergency bypass
+remains `git commit --no-verify` locally (the CI job still catches it), itself
+discouraged by the Reward Integrity section.
+
+**Scope / limits.** Guard B v1 covers `*.test.ts` only; snapshot / golden
+fixture files under other paths are a possible future extension. The guards are
+process-integrity checks, not semantic ones — they cannot tell a legitimate
+test rewrite from a bad one, only force the intent to be declared. No engine,
+determinism, hash, persistence, or migration surface is touched.
+
+**Relates to.** PR #1732 (the Reward Integrity CLAUDE.md section + ewiki page
+this enforces), D-20801 (the code-requires-EC/INFRA prefix rule this composes
+with), `.githooks/commit-msg` + `.github/workflows/commit-hygiene.yml` (the
+enforcement sites). **Packet:** INFRA (no WP).
+
+Protect this file.

@@ -21,6 +21,8 @@ source:
   - ../.githooks/commit-msg
   - ../.githooks/pre-commit
   - ../.githooks/pre-push
+  - ../scripts/commit-reward-integrity-guard.mjs
+  - ../.github/workflows/commit-hygiene.yml
 last-reviewed: 2026-09-01
 ---
 
@@ -91,11 +93,20 @@ prose alone:
 - CI runs generated-artifact drift checks (card mechanics, hero / villain
   ledgers, roadmap counts, `WORK_INDEX` rows) so a hand-edited generated file
   fails rather than silently diverging from its source.
+- Two **prefix-keyed commit guards** (D-24444) enforce the two finer moves. A
+  shared script, [`scripts/commit-reward-integrity-guard.mjs`](../scripts/commit-reward-integrity-guard.mjs),
+  is run by both [`.githooks/commit-msg`](../.githooks/commit-msg) and the
+  `reward-integrity` job in
+  [`commit-hygiene.yml`](../.github/workflows/commit-hygiene.yml): an `EC-###`
+  (code-execution) commit may not change enforcement/permission files
+  (`.githooks/**`, CI workflows, `.claude/` settings / rules / CLAUDE.md), and
+  an `EC-###` commit that modifies an existing `*.test.ts` with no accompanying
+  source change requires a `Tests-changed:` trailer. `INFRA:`/`SPEC:` commits are
+  exempt.
 
-These catch the *coarse* moves. The finer ones — a test quietly edited to
-match a bug, a permission or hook file changed on a feature branch — are
-covered by the CLAUDE.md rule but not yet by an automated gate (see Open
-Questions).
+These make the two reward-hacking vectors mechanical rather than prose-only.
+Because they key off the commit prefix, they stay quiet on ordinary
+code-plus-test work and only fire inside code-execution commits.
 
 ### Why this is written down
 
@@ -148,11 +159,14 @@ quietly rewrite it. A rule with no enforcement is a wish.
 
 ## Open Questions
 
-- No automated gate yet catches a test file edited in the same change as the
-  source it is supposed to constrain without an explicit "behavior changed"
-  marker, nor a `.githooks/*` / CI / permission-file edit on a non-infra
-  branch. Both are the highest-leverage additions if reward-hacking incidents
-  are observed; a `DECISIONS.md` entry would own the design before either lands.
+- The D-24444 assertion-weakening guard (Guard B) covers `*.test.ts` only.
+  Snapshot / golden fixture files under other paths (e.g. complete-game
+  fixtures) are a possible future extension if a case is observed slipping
+  through.
+- The guards are process-integrity checks, not semantic ones: they force the
+  intent of a test change or an enforcement-file edit to be declared, but cannot
+  tell a legitimate rewrite from a bad one. Human review of the flagged commit
+  remains the backstop.
 
 ## References
 
@@ -169,6 +183,11 @@ quietly rewrite it. A rule with no enforcement is a wish.
   [`.githooks/pre-commit`](../.githooks/pre-commit),
   [`.githooks/pre-push`](../.githooks/pre-push) — the mechanical enforcement
   that exists today.
+- [`scripts/commit-reward-integrity-guard.mjs`](../scripts/commit-reward-integrity-guard.mjs)
+  and the `reward-integrity` job in
+  [`commit-hygiene.yml`](../.github/workflows/commit-hygiene.yml) — the D-24444
+  commit guards (shared logic; see [`DECISIONS.md`](../docs/ai/DECISIONS.md)
+  D-24444).
 - Anthropic alignment research, *Training a Misaligned Reward Seeker* (2026):
   [alignment.anthropic.com/2026/reward-seeker](https://alignment.anthropic.com/2026/reward-seeker/)
   — external context for *why* this discipline is written down; not a

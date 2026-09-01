@@ -454,6 +454,13 @@ jobs:
       - name: Run root effect-index generator suite
         run: pnpm effect-index:test
 
+      # why: same reason as roadmap-counts / effect-index — the reward-integrity
+      # commit-guard logic (D-24444) lives at the workspace root, which `pnpm -r`
+      # skips; without this step the guard shared by .githooks/commit-msg and the
+      # commit-hygiene reward-integrity job would be un-tested.
+      - name: Run reward-integrity commit-guard suite
+        run: pnpm guard:test
+
   # ── 3g. Server DB-gated tests (WP-625) ───────────────────────────────────────
   # why: the `unit-tests` job above runs the whole suite with NO database, so every
   # apps/server test that self-skips when TEST_DATABASE_URL is unset (competition,
