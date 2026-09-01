@@ -184,6 +184,11 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version-file: .node-version
+          # why: setup-node@v5 defaults package-manager-cache: true, which probes
+          # the package.json packageManager field and needs pnpm on PATH. This job
+          # installs no dependencies (the guard is dependency-free node), so the
+          # probe would fail with "Unable to locate executable file: pnpm".
+          package-manager-cache: false
 
       - name: Check commits against reward-integrity guards
         run: |
