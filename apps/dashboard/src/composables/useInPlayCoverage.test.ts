@@ -242,9 +242,18 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // WP-512) was measured under it. The 140 high-water baseline is still NOT rebuilt.
   // Reaching this depth also required WP-554/D-24363 and WP-555/D-24364, which fixed
   // the two getLegalMoves<->move-guard divergences the shallow sweep had hidden.
+  // 2026-08-31 (D-24439, re-pin): gating the generic per-escape wound removed wounds
+  // from player discards on ability-bearing villain escapes (Mystique in the sweep's
+  // Brotherhood group), shifting the fixed-seed sweep. Under the old RUN_SEED that
+  // left one of 312 games non-terminating, so the sweep RUN_SEED was re-rolled
+  // (v1 -> v2-d24439); under it all games terminate. totalObs 2285 -> 2816,
+  // percentResolved 2.6 -> 2.1 (resolvedObs unchanged; the denominator grew). Distinct
+  // mechanics 31 -> 30: the `liberate` mechanic is no longer runtime-observed under
+  // this seed (still covered by the static hero-mechanic-ledger). NOT a coverage
+  // regression in support — a re-seed artifact of the D-24439 fix.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 2285);
-  assert.equal(view.percentResolved.value, 2.6);
+  assert.equal(view.totalObs.value, 2816);
+  assert.equal(view.percentResolved.value, 2.1);
   assert.ok(view.remaining.value.length > 0);
 });
 
