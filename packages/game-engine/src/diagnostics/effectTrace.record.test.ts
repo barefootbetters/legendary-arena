@@ -387,4 +387,47 @@ describe('executeHeroEffects emits hero-executor + hero-primitive traces', () =>
     assert.equal(primitiveTrace!.effect, 'not-a-node', 'effect is the node type token verbatim');
     assert.deepStrictEqual(primitiveTrace!.params, {}, 'a composition AST carries no flat scalar params');
   });
+
+  // why: regression for the false-hollow trace-labeling bug — an execute-at-another-site
+  // MVP keyword (return-on-discard fires at the discard chokepoint, WP-498/D-24301) reaches
+  // NO handler at the executor, but it is reachable, so the trace must read `no-op`, NOT
+  // `no-handler`. Before the fix a real Red Skull match's Unending Energy showed as a phantom
+  // hollow because the trace status was `fired ? 'fired' : 'no-handler'`, ignoring the same
+  // classifier the hollow detector uses.
+  it('a reachable execute-elsewhere keyword (return-on-discard) → no-op, NOT no-handler', () => {
+    const hook = {
+      cardId: HERO,
+      timing: 'onDiscard',
+      conditions: [],
+      effects: [{ type: 'return-on-discard' }],
+    } as unknown as HeroAbilityHook;
+    const G = makeHeroG(hook);
+    executeHeroEffects(G, MOVE_CTX, '0', HERO);
+    const traces = G.diagnostics?.traces ?? [];
+    const executorTrace = traces.find((trace) => trace.fireSite === 'hero-executor');
+    assert.ok(executorTrace, 'a hero-executor trace was emitted');
+    assert.equal(executorTrace!.status, 'no-op', 'reachable-elsewhere keyword reads no-op, not no-handler');
+    assert.equal(executorTrace!.effect, 'return-on-discard');
+    assert.equal(executorTrace!.handler, 'return-on-discard', 'a recognized mechanic keeps its label on a no-op');
+    // the co-recorded hollow path must ALSO see this as not-hollow (no phantom hollow record).
+    assert.deepStrictEqual(G.diagnostics?.hollowEffects ?? [], [], 'no hollow record for a reachable keyword');
+  });
+
+  // why: the fix must not mask a GENUINE gap — an unsupported token (not even a valid
+  // HeroKeyword) still reads no-handler and co-records a hollow.
+  it('a genuinely unsupported legacy keyword → no-handler (still surfaced)', () => {
+    const hook = {
+      cardId: HERO,
+      timing: 'onPlay',
+      conditions: [],
+      effects: [{ type: 'totally-not-a-keyword' }],
+    } as unknown as HeroAbilityHook;
+    const G = makeHeroG(hook);
+    executeHeroEffects(G, MOVE_CTX, '0', HERO);
+    const traces = G.diagnostics?.traces ?? [];
+    const executorTrace = traces.find((trace) => trace.fireSite === 'hero-executor');
+    assert.ok(executorTrace, 'a hero-executor trace was emitted');
+    assert.equal(executorTrace!.status, 'no-handler', 'an unsupported keyword is a genuine no-handler');
+    assert.equal(executorTrace!.handler, '', 'no handler ran → empty-string label');
+  });
 });
