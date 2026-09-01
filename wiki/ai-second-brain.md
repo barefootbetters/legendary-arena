@@ -584,7 +584,7 @@ the knowledge base is not:
 
 | Component | Role | Replaceable? |
 |---|---|---|
-| Coding agent (Claude Code / Codex / Copilot) | Primary coding / reasoning agent | ✅ Yes |
+| Coding agent (Claude Code / Codex / Cursor) | Primary coding / reasoning agent | ✅ Yes |
 | Open-weights model (local) | Offline / private inference | ✅ Yes |
 | Hosted model (GPT / Gemini / Grok) | Alternate reasoning provider | ✅ Yes |
 | LiteLLM gateway | Model routing | ✅ Yes |
@@ -598,8 +598,8 @@ swap is a configuration change, not a data migration. The corpus never moves.
 coding/reasoning agent is exactly the layer this architecture treats as
 disposable, and the 2026 field of terminal-and-editor coding agents makes the
 point concretely: **Claude Code** (Anthropic), **Codex** (OpenAI's coding
-agent, the "ChatGPT" family), and **GitHub Copilot** (the editor-integrated
-assistant) are interchangeable front-ends over the same owned knowledge base.
+agent, the "ChatGPT" family), and **Cursor** (the AI-first code editor) are
+interchangeable front-ends over the same owned knowledge base.
 Which one is best this quarter is a workflow preference, not an architectural
 commitment — each reaches the corpus through the same MCP surface and gateway,
 so moving between them (or running more than one) never migrates a fact. Naming
