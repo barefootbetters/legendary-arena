@@ -1,6 +1,6 @@
 # Wiki Index
 
-> **66 / 76** entity pages.
+> **67 / 76** entity pages.
 > Last regenerated: 2026-09-01.
 > See [SCHEMA.md](SCHEMA.md) for the entity-page contract and
 > [README.md](README.md) for purpose, conventions, and authority —
@@ -176,6 +176,15 @@ Cross-cutting governance, methodology, and readiness assessments.
   changelog nested under quarterly roadmap themes** so anyone can see what
   shipped, what's in progress this month, and what's next. Proposes a
   design; reserves no `WP-` / `D-` yet.
+- [Tournament Calendar](tournament-calendar.md) — *(draft, plan)* the
+  organized-play schedule: recurring year-round open-play windows (three
+  region-prime blocks, PT + UTC, DST-aware) so "Join" is never empty, plus the
+  13-week Season 1 "Foundation" tournament plan (Phase A open tables → Phase B
+  scenario season with four Foundation Cups → Phase C championship). Anchors the
+  fairness posture it borrows from [Monetization Model](monetization-model.md):
+  open play and standing are free, only the host office-hours event may charge,
+  and organizer funding stays non-profit per `TOURNAMENT-FUNDING.md`. Describes a
+  plan; the standing formula and a schedule data file are owned elsewhere.
 - [Data & File Locations](data-file-locations.md) — Locator map for
   where data and files live: card JSON + the convert pipeline,
   metadata, the Postgres `legendary.*` tables, R2 key prefixes,
