@@ -148,4 +148,18 @@ if [ "$HAS_EC_GOV" -gt 0 ] && [ "$IS_EC" -gt 0 ]; then
   # Warning only — there are valid cases (e.g., updating index after completing a WP)
 fi
 
+# --- Rule 7: Reward-integrity guards (per D-24444) ---
+# EC-### (code-execution) commits must not silence a monitor (edit .githooks /
+# CI workflows / .claude settings|rules|CLAUDE.md) or weaken a test (modify an
+# existing *.test.ts with no source change and no `Tests-changed:` trailer).
+# INFRA:/SPEC: are exempt. The logic lives in
+# scripts/commit-reward-integrity-guard.mjs so this hook and the
+# reward-integrity job in .github/workflows/commit-hygiene.yml share ONE
+# implementation and cannot drift.
+GUARD_SCRIPT="$(git rev-parse --show-toplevel 2>/dev/null)/scripts/commit-reward-integrity-guard.mjs"
+if [ -f "$GUARD_SCRIPT" ]; then
+  git diff --cached --name-status --diff-filter=ACMRD 2>/dev/null \
+    | node "$GUARD_SCRIPT" "$SUBJECT" "$MSG_FILE" || exit 1
+fi
+
 exit 0

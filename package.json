@@ -56,6 +56,7 @@
     "roadmap:counts:test":  "node --import tsx --test scripts/roadmap-counts.test.ts",
     "workindex:rows:check": "node scripts/check-workindex-rows.mjs",
     "workindex:rows:test":  "node --import tsx --test scripts/check-workindex-rows.test.ts",
+    "guard:test":           "node --import tsx --test scripts/commit-reward-integrity-guard.test.ts",
 
     "sim:coverage":         "node scripts/hero-effect-coverage.mjs",
     "sim:coop-winrate":     "node scripts/coop-winrate.mjs",

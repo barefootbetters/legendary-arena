@@ -167,3 +167,57 @@ jobs:
             echo "See: docs/ai/REFERENCE/01.3-commit-hygiene-under-ec-mode.md"
             exit 1
           fi
+
+  reward-integrity:
+    name: Reward integrity guards
+    runs-on: ubuntu-latest
+    # why: enforces the .claude/CLAUDE.md Reward Integrity guards in CI so a
+    # --no-verify (or an uninstalled hook) cannot slip past them. Runs the SAME
+    # scripts/commit-reward-integrity-guard.mjs the local commit-msg hook uses;
+    # here it is fed each commit's files via git diff-tree (the hook uses the
+    # staged index), mirroring the ec-code-traceability job's per-commit shape.
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0  # need full history for commit range
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .node-version
+          # why: setup-node@v5 defaults package-manager-cache: true, which probes
+          # the package.json packageManager field and needs pnpm on PATH. This job
+          # installs no dependencies (the guard is dependency-free node), so the
+          # probe would fail with "Unable to locate executable file: pnpm".
+          package-manager-cache: false
+
+      - name: Check commits against reward-integrity guards
+        run: |
+          BASE="${{ github.event.pull_request.base.sha }}"
+          HEAD="${{ github.event.pull_request.head.sha }}"
+          COMMITS=$(git rev-list "$BASE".."$HEAD")
+          FAIL=0
+
+          for SHA in $COMMITS; do
+            SUBJECT=$(git log --format='%s' -n 1 "$SHA")
+            MSG_FILE=$(mktemp)
+            git log --format='%B' -n 1 "$SHA" > "$MSG_FILE"
+
+            echo "::group::Commit $SHA — $SUBJECT"
+            if git diff-tree --no-commit-id --name-status -r "$SHA" \
+                 | node scripts/commit-reward-integrity-guard.mjs "$SUBJECT" "$MSG_FILE"; then
+              echo "✅ Passed"
+            else
+              echo "::error::Commit $SHA failed reward-integrity guard: $SUBJECT"
+              FAIL=$((FAIL + 1))
+            fi
+            echo "::endgroup::"
+            rm -f "$MSG_FILE"
+          done
+
+          if [ "$FAIL" -gt 0 ]; then
+            echo ""
+            echo "See .claude/CLAUDE.md § Reward Integrity and wiki/reward-integrity.md."
+            echo "An EC-### commit must not edit enforcement/permission files or weaken a test;"
+            echo "move enforcement edits to an INFRA: commit, or add a Tests-changed: trailer."
+            exit 1
+          fi
