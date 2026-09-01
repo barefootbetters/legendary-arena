@@ -48,11 +48,14 @@
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { CARD_OUTPUT_DIR } from './card-output-dir.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const INPUTS_DIR = join(__dirname, 'inputs');
-const OUTPUT_DIR = join(__dirname, '..', '..', 'data', 'cards');
+// why: read + write the corpus through the shared CARD_OUTPUT_DIR so a
+// cards:check regen overlays the scratch-dir copy, never the committed data/cards.
+const OUTPUT_DIR = CARD_OUTPUT_DIR;
 const MARKER_MAP_PATH = join(INPUTS_DIR, 'villain-effect-markers.json');
 
 // why: this is a hardcoded LOCAL copy of WP-185's VILLAIN_EFFECT_KEYWORDS

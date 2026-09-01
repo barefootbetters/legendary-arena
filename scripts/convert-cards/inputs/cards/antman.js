@@ -155,7 +155,7 @@ exports.AntMan = {
                     attack: "0+",
                     abilities: [
                         [
-                            "You get ",
+                            "[keyword:victory-villain-attack] You get ",
                             { bold: "+" },
                             { icon: 1 },
                             " equal to the printed ",

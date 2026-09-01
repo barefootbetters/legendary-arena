@@ -40,10 +40,14 @@
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { CARD_OUTPUT_DIR } from './card-output-dir.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-const CARDS_DIR = join(__dirname, '..', '..', 'data', 'cards');
+// why: read + write the corpus through the shared CARD_OUTPUT_DIR so a
+// cards:check regen marks the scratch-dir copy the earlier stages produced,
+// never the committed data/cards.
+const CARDS_DIR = CARD_OUTPUT_DIR;
 const MAP_PATH = join(__dirname, 'inputs', 'hero-ability-markers.json');
 
 // why: only valid token forms per D-21601, D-21701, D-21702, D-21802, D-21901, D-21902, D-22003, D-22301 — catch typos before data is written

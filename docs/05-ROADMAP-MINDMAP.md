@@ -307,7 +307,7 @@ mindmap
         ["WP-243 ✅ Villain Fight KO-Hero player choice (UX: engine projection + client prompt + discard visibility)"]
 
       Hero Ability Coverage & Markup Pipeline
-        ["WP-633 📝 Make a clean card-data regen reproduce the committed data/cards + cards:check gate (Shared Tooling; the convert→apply pipeline does NOT reproduce committed data/cards — ~53 semantic content leaves across 13 sets, all script regressions: spurious [icon:vp] after cost numbers [PR #798 stripped it from data only], dropped ledger-feeding [keyword:] markers, malformed keyword tokens, dropped filterName, mangled wtif hero image URLs; rest is formatting/CRLF, zero structural add/delete. Latent because data/cards is not regenerate-diff CI-gated. Fix scripts+inputs NOT the corpus so a regen is semantically identical to committed; add scripts/check-card-data-regen.mjs + cards:check regenerate-into-scratch-dir semantic-diff wired into Coverage & Ledger Gates. Committed data byte-unchanged, card text unhashed so no hash/replay/sentinel. EC-668; D-24443; drafted 2026-09-01 off 6439b447)"]
+        ["WP-633 ✅ Make a clean card-data regen reproduce the committed data/cards + cards:check gate (Shared Tooling; the convert→apply pipeline does NOT reproduce committed data/cards — ~53 semantic content leaves across 13 sets, all script regressions: spurious [icon:vp] after cost numbers [PR #798 stripped it from data only], dropped ledger-feeding [keyword:] markers, malformed keyword tokens, dropped filterName, mangled wtif hero image URLs; rest is formatting/CRLF, zero structural add/delete. Latent because data/cards is not regenerate-diff CI-gated. Fix scripts+inputs NOT the corpus so a regen is semantically identical to committed; add scripts/check-card-data-regen.mjs + cards:check regenerate-into-scratch-dir semantic-diff wired into Coverage & Ledger Gates. Committed data byte-unchanged, card text unhashed so no hash/replay/sentinel. EC-668; D-24443; drafted 2026-09-01 off 6439b447)"]
         ["WP-215 ✅ Hero rescue + reveal-draw effects (engine + data)"]
         ["WP-216 ✅ Markup corpus sweep: rescue + reveal-draw"]
         ["WP-217 ✅ Reveal-KO-if-zero + reveal-draw-at-least executors (engine + data)"]
@@ -796,7 +796,7 @@ mindmap
 | Legends Public Scoreboard | 2/2 | — |
 | Villain Deck Pipeline | 5/5 | — |
 | Villain & Henchman Effects | 16/19 | 3 open |
-| Hero Ability Coverage & Markup Pipeline | 52/53 | 1 open |
+| Hero Ability Coverage & Markup Pipeline | 53/53 | — |
 | Notable Events & Overlays | 5/5 | — |
 | Simulation Sweep & Analytics Pipeline | 8/8 | — |
 | Dashboard & Operator Analytics | 53/54 | 1 open |
@@ -816,9 +816,9 @@ mindmap
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **616/627 WP ✅** (+ 4/4 Foundation Prompts) | 3 ⏸, 8 open |
+| **Total** | **617/627 WP ✅** (+ 4/4 Foundation Prompts) | 3 ⏸, 7 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 11):** WP-633 open; WP-042.1 ⏸ blocked; WP-349 open; WP-391 open; WP-398 open; WP-399 open; WP-368 open; WP-403 ⏸ blocked; WP-404 ⏸ blocked; WP-429 open; WP-564 open.
+**Open / blocked WPs (derived from WORK_INDEX, 10):** WP-042.1 ⏸ blocked; WP-349 open; WP-391 open; WP-398 open; WP-399 open; WP-368 open; WP-403 ⏸ blocked; WP-404 ⏸ blocked; WP-429 open; WP-564 open.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.

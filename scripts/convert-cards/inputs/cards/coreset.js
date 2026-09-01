@@ -825,7 +825,7 @@ exports.CoreSet = {
                             "Reveal the top three cards of your deck. Put any that cost ",
                             { bold: "2" },
                             { icon: 3 },
-                            " or less into your hand. Put the rest back in any order."
+                            " or less into your hand. Put the rest back in any order. [keyword:reveal:cost-lte-2:draw][keyword:reveal-count:3][keyword:reveal-reorder]"
                         ]
                     ]
                 }

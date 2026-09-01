@@ -345,7 +345,7 @@ exports.WorldWarHulk = {
                             ": ",
                             {
                                 keyword: 17,
-                                text: "Cross-Dimensional Hulk Rampage."
+                                text: "Cross-Dimensional Hulk Rampage"
                             }
                         ],
                         [
@@ -3079,7 +3079,7 @@ exports.WorldWarHulk = {
                         [
                             { bold: "Twist 3-6" },
                             ": ",
-                            { keyword: 17, text: "Cross-Dimension Hulk Rampage" },
+                            { keyword: 17, text: "Cross-Dimensional Hulk Rampage" },
                             "."
                         ],
                         [

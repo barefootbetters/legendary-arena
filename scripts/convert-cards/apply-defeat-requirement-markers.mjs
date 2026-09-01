@@ -45,11 +45,14 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { CARD_OUTPUT_DIR } from './card-output-dir.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const INPUTS_DIR = join(__dirname, 'inputs');
-const OUTPUT_DIR = join(__dirname, '..', '..', 'data', 'cards');
+// why: read + write the corpus through the shared CARD_OUTPUT_DIR so a
+// cards:check regen overlays the scratch-dir copy, never the committed data/cards.
+const OUTPUT_DIR = CARD_OUTPUT_DIR;
 const REQUIREMENT_MAP_PATH = join(INPUTS_DIR, 'villain-defeat-requirements.json');
 
 // why: WP-292 / D-24076 — the two locked marker `kind` tokens. The engine

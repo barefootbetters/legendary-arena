@@ -58,6 +58,7 @@ import { fileURLToPath } from 'url';
 // Failure mode is a clear Node module-resolution error naming the missing
 // file, which is a useful operator pre-flight signal.
 import { heroImageUrl, R2_BASE_URL } from '../../packages/registry/dist/heroImageUrl.js';
+import { CARD_OUTPUT_DIR } from './card-output-dir.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -70,7 +71,11 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 // dependency is being retired in favor of in-repo data ownership.
 const INPUTS_DIR  = join(__dirname, 'inputs');
 const CARDS_DIR   = join(INPUTS_DIR, 'cards');
-const OUTPUT_DIR  = join(__dirname, '..', '..', 'data', 'cards');
+// why: the corpus write directory is the shared CARD_OUTPUT_DIR so the whole
+// pipeline is redirectable in one place (the cards:check gate points it at a
+// scratch dir via CARD_DATA_OUT_DIR); convert overwrites the 36 source-backed
+// sets there, the four apply-* passes then overlay in the same directory.
+const OUTPUT_DIR  = CARD_OUTPUT_DIR;
 const DATA_DIR    = INPUTS_DIR;
 const PATCHES_DIR = join(INPUTS_DIR, 'patches');
 
@@ -493,11 +498,17 @@ const TEAM_SLUG_MAP = {
 // printed [VP]") — not one is a combat-piercing use, so icon 4 is a second VP
 // glyph. 'piercing' stays a legal slug below the map: only its card-text uses
 // were wrong, not the slug itself.
-// why: this fix is FORWARD-LOOKING ONLY. The committed data/cards/*.json were
-// corrected by a targeted edit in the same WP, NOT by re-running this converter —
-// the pipeline does not reproduce the committed data (running it strips every
-// [keyword:...] marker, and the full 5-stage run deletes mastermind-strike
-// entries in ssw1/xmen). Do not "apply" this change by regenerating.
+// why: WP-565's icon-4→vp correction was originally applied to data/cards by a
+// targeted edit rather than by re-running this converter, because at the time the
+// pipeline did NOT reproduce the committed corpus. WP-633 / D-24443 closed that
+// gap: the five-stage pipeline is now reproducible and CI-gated by `pnpm
+// cards:check` (scripts/check-card-data-regen.mjs), which regenerates into a
+// scratch dir and semantic-diffs against committed. A clean regen now re-emits
+// every [keyword:...] marker and preserves every entry (an entry-count comparison
+// at WP-633 draft showed zero mastermind-strike add/delete in any set — the old
+// "deletes ssw1/xmen entries" warning no longer holds). Regenerating is therefore
+// safe, but committed data/cards remains canonical: fix drift in the scripts/inputs
+// so a regen matches, never by editing the generated corpus.
 const ICON_SLUG_MAP = {
   1: 'attack',
   2: 'recruit',
@@ -619,18 +630,46 @@ function parsePart(part) {
   return JSON.stringify(part);
 }
 
+/**
+ * Removes a spurious VP glyph from a recruit-cost threshold on an ability line.
+ *
+ * @param {string} line - The assembled ability line.
+ * @returns {string} The line with cost-context [icon:vp] pips removed.
+ */
+function suppressSpuriousCostVpIcon(line) {
+  // why: PR #798 (INFRA #798) — ICON_SLUG_MAP maps upstream icon 3/4 to the VP
+  // glyph, but source data tags a recruit-COST threshold ("costs 2[icon:vp] or
+  // less") with an icon token that renders a stray VP trophy where the number is
+  // a recruit cost, not a Victory Point. Strip [icon:vp] only when it directly
+  // follows a digit (optionally one space) that is NOT a "+N" bonus amount, on a
+  // line that mentions "cost". The (?<!\+) guard preserves a worth/bonus VP such
+  // as "worth +1[icon:vp] ... that costs 7 or more" (3dtc), and word-preceded VP
+  // ("equal to that Hero's [icon:vp]") is never digit-preceded so it too is kept;
+  // the non-cost "0 [icon:vp] card/Hero" form has no "cost" on its line and is
+  // skipped. #798 corrected this in data only; porting it here lets a clean regen
+  // reproduce the committed corpus (WP-633 / D-24443).
+  if (!/cost/i.test(line)) return line;
+  return line.replace(/(?<!\+)(\d) ?\[icon:vp\]/g, '$1');
+}
+
 function parseAbilities(abilities) {
   if (!abilities) return [];
-  return abilities
-    .map(line => {
-      if (Array.isArray(line)) {
-        const parts = line.map(part => parsePart(part)).filter(s => s !== null && s !== '');
-        return parts.length ? parts.join('') : null;
-      }
-      if (typeof line === 'object' && line !== null) return parsePart(line);
-      return String(line);
-    })
-    .filter(line => line !== null && line !== '');  // drop dividers and empty lines
+  const parsedLines = [];
+  for (const line of abilities) {
+    let assembled;
+    if (Array.isArray(line)) {
+      const parts = line.map(part => parsePart(part)).filter(s => s !== null && s !== '');
+      assembled = parts.length ? parts.join('') : null;
+    } else if (typeof line === 'object' && line !== null) {
+      assembled = parsePart(line);
+    } else {
+      assembled = String(line);
+    }
+    // drop dividers and empty lines
+    if (assembled === null || assembled === '') continue;
+    parsedLines.push(suppressSpuriousCostVpIcon(assembled));
+  }
+  return parsedLines;
 }
 
 // ── Main conversion ────────────────────────────────────────────────────────────
@@ -1000,6 +1039,15 @@ function applyPatch(result, setAbbr) {
           if (Object.keys(capturedImageUrls).length > 0) {
             fields._cardImageUrlsBySlug = capturedImageUrls;
           }
+        }
+        // why: convert's own wounds loop emits `filterName: wd.filterName ?? null`
+        // on every wound, but wounds reach the corpus ONLY via patch-append (the
+        // source .js files carry no wounds array), and the append path would
+        // otherwise drop the field. Default it to null so an appended wound matches
+        // the committed shape a converted wound would have (WP-633 / D-24443,
+        // bucket D). Wounds are the only section that carries filterName.
+        if (section === 'wounds' && !('filterName' in fields)) {
+          fields.filterName = null;
         }
         result[section].push(fields);
         console.log(`  📎 Patch: appended ${section} "${fields.name ?? fields.slug}"`);

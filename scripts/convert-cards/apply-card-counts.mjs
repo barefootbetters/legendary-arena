@@ -17,14 +17,18 @@
  *   node scripts/convert-cards/apply-card-counts.mjs
  */
 
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { CARD_OUTPUT_DIR } from './card-output-dir.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const INPUTS_DIR = join(__dirname, 'inputs');
-const OUTPUT_DIR = join(__dirname, '..', '..', 'data', 'cards');
+// why: read + write the corpus through the shared CARD_OUTPUT_DIR so a
+// cards:check regen overlays the scratch dir the convert stage seeded, never
+// the committed data/cards.
+const OUTPUT_DIR = CARD_OUTPUT_DIR;
 const PATCH_PATH = join(INPUTS_DIR, 'hero-card-counts.json');
 const VILLAIN_COUNTS_PATH = join(INPUTS_DIR, 'villain-card-counts.json');
 const LEADS_PATH = join(INPUTS_DIR, 'leads.json');
@@ -253,6 +257,51 @@ function heroPhysicalImageUrl(setAbbr, heroSlug, sides) {
 }
 
 /**
+ * Loads an outlier set's patch-declared hero card imageUrls, keyed by hero slug
+ * then card slug. Only non-standard ribbons (not `{setAbbr}-hr-`) are kept —
+ * standard `-hr-` URLs are legacy cruft that synthesis regenerates, mirroring the
+ * escape-hatch capture in convert-cards-v15.mjs. Returns an empty Map when no
+ * patch file exists.
+ *
+ * @param {string} setAbbr - The outlier set abbreviation.
+ * @returns {Map<string, Map<string, string>>} heroSlug → (cardSlug → imageUrl).
+ */
+function loadPatchHeroImageUrls(setAbbr) {
+  const byHero = new Map();
+  const patchPath = join(INPUTS_DIR, 'patches', `${setAbbr}.patch.json`);
+  if (!existsSync(patchPath)) return byHero;
+
+  let patch;
+  try {
+    patch = JSON.parse(readFileSync(patchPath, 'utf8'));
+  } catch (error) {
+    throw new Error(
+      `Could not read or parse the patch file at ${patchPath} (${error.message}) while ` +
+        `resolving outlier-set hero image URLs. Fix the JSON or remove the patch.`,
+    );
+  }
+
+  const standardRibbon = `/${setAbbr}-hr-`;
+  for (const patchHero of patch.heroes ?? []) {
+    const byCard = new Map();
+    for (const card of patchHero.cards ?? []) {
+      // why: only a NON-standard patch ribbon overrides synthesis. A standard
+      // {setAbbr}-hr- URL is pre-WP-151 legacy cruft that heroPhysicalImageUrl
+      // regenerates canonically, so keeping it would silently revert WP-151.
+      if (
+        typeof card.imageUrl === 'string' &&
+        card.imageUrl.length > 0 &&
+        !card.imageUrl.includes(standardRibbon)
+      ) {
+        byCard.set(card.slug, card.imageUrl);
+      }
+    }
+    if (byCard.size > 0) byHero.set(patchHero.slug, byCard);
+  }
+  return byHero;
+}
+
+/**
  * Resolves count for a solo-auto-path physicalCard. cardCounts wins when
  * present; otherwise the rarity-label fallback; last-resort 1.
  */
@@ -276,13 +325,24 @@ function resolveSoloCardCount(hero, card) {
  * physicalCards[] as authoritative yet) and gets corrected when the
  * Phase 1b patch authors land per-set declarations.
  */
-function synthesizeSoloPhysicalCards(setAbbr, hero) {
-  return (hero.cards || []).map((card, index) => ({
-    id:       `p${index + 1}`,
-    count:    resolveSoloCardCount(hero, card),
-    imageUrl: heroPhysicalImageUrl(setAbbr, hero.slug, [card.slug]),
-    sides:    [card.slug],
-  }));
+function synthesizeSoloPhysicalCards(setAbbr, hero, patchImageUrlsByCard) {
+  return (hero.cards || []).map((card, index) => {
+    // why: outlier-set hero card images normally synthesize as
+    // {setAbbr}-hr-{slug}-{slug}, but wtif's S.H.I.E.L.D. sides (agent / trooper /
+    // officer) use a non -hr- ribbon (wtif-sa- / wtif-tr- / wtif-so-) hand-declared
+    // in wtif.patch.json. The base card's imageUrl is stripped at the D-15101 delete
+    // above BEFORE this runs, so the correct URL is read from the patch (loaded into
+    // patchImageUrlsByCard), not from the in-memory card. Every other outlier hero
+    // has no patch override and synthesizes exactly as before (WP-633 / D-24443,
+    // bucket E).
+    const declaredUrl = patchImageUrlsByCard?.get(card.slug);
+    return {
+      id:       `p${index + 1}`,
+      count:    resolveSoloCardCount(hero, card),
+      imageUrl: declaredUrl ?? heroPhysicalImageUrl(setAbbr, hero.slug, [card.slug]),
+      sides:    [card.slug],
+    };
+  });
 }
 
 // why: the four sets that exist in legendary-arena's data/cards/ but were
@@ -324,6 +384,11 @@ for (const setAbbr of TARGET_SETS) {
   }
 
   console.log(`Processing ${setAbbr}.json ...`);
+
+  // why: outlier-set hero image URLs that don't fit the synthesized -hr- ribbon
+  // (wtif's S.H.I.E.L.D. sides) are declared in the set's patch file; load them
+  // once per set so synthesizeSoloPhysicalCards can honour them (bucket E).
+  const patchImageUrlsByHero = loadPatchHeroImageUrls(setAbbr);
 
   for (const hero of setData.heroes) {
     const heroPatch = setPatch[hero.slug];
@@ -371,7 +436,11 @@ for (const setAbbr of TARGET_SETS) {
     // here because no Phase 1b per-set patches are authored yet for the 4
     // outliers. Re-run after Phase 1b patches land for these sets.
     if (Array.isArray(hero.cards) && hero.cards.length > 0) {
-      hero.physicalCards = synthesizeSoloPhysicalCards(setAbbr, hero);
+      hero.physicalCards = synthesizeSoloPhysicalCards(
+        setAbbr,
+        hero,
+        patchImageUrlsByHero.get(hero.slug),
+      );
     } else {
       hero.physicalCards = [];
     }

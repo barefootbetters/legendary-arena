@@ -127,7 +127,9 @@ The default is committed-is-canonical: the fix lands in scripts/inputs and repro
 
 - `scripts/convert-cards/convert-cards-v15.mjs` — **modified** (A icon:vp suppression, D filterName, stale WP-565-comment fix, import `CARD_OUTPUT_DIR`)
 - `scripts/convert-cards/apply-card-counts.mjs` — **modified** (E outlier hero image URL via patch-declared value, import `CARD_OUTPUT_DIR`)
-- `scripts/convert-cards/apply-hero-ability-markers.mjs` — **modified** (C malformed tokens, B matcher hardening, import `CARD_OUTPUT_DIR`)
+- `scripts/convert-cards/apply-hero-ability-markers.mjs` — **modified** (import `CARD_OUTPUT_DIR`; B-valid coverage lands in `hero-ability-markers.json`, not here — see Execution Amendment)
+- `scripts/convert-cards/inputs/cards/sw1.js`, `sw2.js`, `wwhulk.js` — **modified** (C source typos; Execution Amendment)
+- `scripts/convert-cards/inputs/cards/antman.js`, `coreset.js` — **modified** (B non-valid free-text markers; Execution Amendment; `sw2.js` also carries one)
 - `scripts/convert-cards/apply-effect-markers.mjs` — **modified** (import `CARD_OUTPUT_DIR` for read+write)
 - `scripts/convert-cards/apply-defeat-requirement-markers.mjs` — **modified** (import `CARD_OUTPUT_DIR` for read+write)
 - `scripts/convert-cards/card-output-dir.mjs` — **new** (shared `CARD_OUTPUT_DIR`, `CARD_DATA_OUT_DIR`-aware)
@@ -140,6 +142,39 @@ The default is committed-is-canonical: the fix lands in scripts/inputs and repro
 - `docs/03-DATA-PIPELINE.md` — **modified** (reproducible + gated note)
 - Governance: `WORK_INDEX.md`, `EC_INDEX.md`, `DECISIONS.md` (D-24443 → Active), `docs/05-ROADMAP-MINDMAP.md`, `docs/ai/STATUS.md`, `NUMBER-LEDGER.md`
 - **Expected to remain byte-unchanged:** every `data/cards/*.json` (the reproducibility target; verified by `git diff --stat data/cards` being empty at PR, modulo a recorded residual-leaf correction).
+
+## Execution Amendment (2026-09-01, EC-668 session — operator-approved)
+
+The draft mis-attributed **buckets C and part of B** to the marker-apply layer.
+The baseline reproduction (5-stage regen + per-stage semantic diff, all 53 leaves
+attributed to their producing stage) showed the true loci are the source card
+inputs, exactly the class of mis-attribution the pre-flight already corrected for
+bucket E:
+
+- **Bucket C** (`[keyword:: …]` / captured trailing `.`/`:` / a `Cross-Dimension`
+  vs `Cross-Dimensional` typo) is emitted by **`convert-cards`** from four
+  malformed `{ keyword, text }` overrides in the source `.js` — **not** by
+  `apply-hero-ability-markers.mjs` (that script only appends `VALID_TOKEN_PATTERN`
+  tokens and never emits these free-text keyword labels). Fixed at source:
+  `sw1.js:711`, `sw2.js:2480`, `wwhulk.js:348`, `wwhulk.js:3082`.
+- **Bucket B splits in two.** The structured, in-vocabulary markers
+  (`rescue:1`, `reveal`, `reveal:2`, `draw:1`) are genuine `hero-ability-markers.json`
+  coverage gaps — added there (5 entries, all engine-recognized). The **non-valid /
+  positional** markers (`victory-villain-attack` — a *leading* marker;
+  `reveal:cost-lte-2:draw` + `reveal-count:3` + `reveal-reorder`;
+  `reveal-multi-take:2`) exist only in committed data, are rejected by
+  `VALID_TOKEN_PATTERN`, and cannot be appended at end-of-line — so they have **no**
+  in-allowlist path and are restored at source (`antman.js`, `coreset.js`, `sw2.js`).
+- Consequently `apply-hero-ability-markers.mjs` needed **no** bucket-C / matcher
+  change — only the `CARD_OUTPUT_DIR` import (the append-by-index matcher never
+  misses, so bucket A's text mutation had no matcher-interaction effect).
+
+**Allowlist extension (operator-approved):** `scripts/convert-cards/inputs/cards/{sw1,sw2,wwhulk,antman,coreset}.js`
+are added to the allowlist. Each edit makes the source input match what the
+committed corpus already carries — the WP's canonical direction ("fix the
+inputs so a regen reproduces committed"); committed `data/cards` stays
+byte-unchanged. No residual-leaf exception fired (§15.1 remains `none —
+infrastructure`).
 
 ## Contract (Locked by D-24443)
 

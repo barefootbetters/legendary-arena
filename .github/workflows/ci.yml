@@ -224,6 +224,17 @@ jobs:
       - name: Runtime-observed hollows freshness
         run: pnpm sim:runtime-observed:check
 
+      # why (WP-633 / D-24443): the committed data/cards corpus is the canonical
+      # card data, but until now nothing verified that a clean run of the five-stage
+      # conversion pipeline could re-derive it — the derived feeds above only key off
+      # keywords/markers, so the corpus could drift undetected until an accidental full
+      # regen. This gate regenerates the whole corpus into a throwaway scratch dir (via
+      # CARD_DATA_OUT_DIR) and semantic-diffs it against committed; it fails if any set
+      # diverges. Non-destructive (never touches committed data/cards) and runs after
+      # `pnpm -r build` because convert-cards imports the registry dist.
+      - name: Card-data regen reproducibility
+        run: pnpm cards:check
+
       # why (D-24242): the WP/EC/D number-allocation lock. Fails loudly if two
       # sessions reserved the same number in docs/ai/NUMBER-LEDGER.md (a
       # DUPLICATE), or if a frontier number was used in WORK_INDEX / EC_INDEX /
