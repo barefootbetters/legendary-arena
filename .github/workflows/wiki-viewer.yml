@@ -50,7 +50,7 @@ jobs:
           extended: true
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v5
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
@@ -153,7 +153,7 @@ jobs:
           echo "JS-free-except-Pagefind gate passed: all $total_scripts rendered-HTML <script> tag(s) are the sanctioned Pagefind loader, and the Pagefind bundle is present."
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: wiki-viewer-public
           path: apps/wiki-viewer/public/
