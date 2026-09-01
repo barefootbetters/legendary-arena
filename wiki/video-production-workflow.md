@@ -13,6 +13,7 @@ related:
   - homepage-spec.md
   - blog-post-authoring.md
   - hugo-web-system.md
+  - video-commerce.md
 status: draft
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\video-production-workflow.md (this page — https://ewiki.legendary-arena.com/video-production-workflow/)
@@ -102,5 +103,8 @@ C:\pcloud\LA\
 
 - **Full document:** `C:\www\legendary-arena-com\docs\marketing\video-production-workflow.md`
 - **Channel strategy:** [YouTube Channel Plan](youtube-channel-plan.md)
+- **Selling gear on video:** [Video Commerce](video-commerce.md) — Step 4
+  gains a "Gear CTA" shot-list subsection for gear-primary videos (the
+  fourth conversion goal)
 - **Blog authoring:** [Blog Post Authoring](blog-post-authoring.md)
 - **Hugo system:** [Hugo Web System](hugo-web-system.md)
