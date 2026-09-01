@@ -18,12 +18,14 @@ source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\r2-image-naming-convention.md (this page — https://ewiki.legendary-arena.com/r2-image-naming-convention/)
   - ../packages/registry/src/heroImageUrl.ts
   - ../scripts/convert-cards/convert-cards-v15.mjs
+  - ../scripts/convert-cards/apply-card-counts.mjs
+  - ../scripts/check-card-data-regen.mjs
   - ../data/metadata/sets.json
   - ../data/metadata/card-types.json
   - ../docs/ai/DECISIONS.md
   - ../apps/arena-client/src/composables/useCardImagePrefetch.ts
   - ../docs/ops/RUNBOOK-r2-image-cache-control.md
-last-reviewed: 2026-07-21
+last-reviewed: 2026-09-01
 ---
 
 # R2 Image Naming Convention
@@ -264,6 +266,15 @@ order is the physical-side order and is **not** sorted (D-14702), while
 single-side ordering follows the UTF-16 sort lock (D-13802). The optional
 companion slug must match `^[a-z0-9-]+$`.
 
+> **Outlier-set exception.** The four outlier sets (`2099`, `amwp`, `wpnx`,
+> `wtif`) are produced by
+> [`apply-card-counts.mjs`](../scripts/convert-cards/apply-card-counts.mjs), not
+> `heroImageUrl.ts`, and `wtif`'s three S.H.I.E.L.D. hero *sides* (Agent /
+> Trooper / Officer) don't take the `-hr-` ribbon at all — they use the
+> S.H.I.E.L.D.-type ribbons `sa` / `tr` / `so` (`wtif-sa-agent`,
+> `wtif-tr-trooper`, `wtif-so-officer`), hand-declared in
+> `inputs/patches/wtif.patch.json`. See Edge Cases.
+
 ### Adding a new set
 
 When a new set is released, its images join this same convention — the set's
@@ -429,6 +440,18 @@ uploads.
 - **`S.H.I.E.L.D.` normalization.** The convert pipeline rewrites
   `s.h.i.e.l.d.` to the slug `shield` before composing filenames, so dotted
   source names never leak into URLs.
+- **Outlier-set S.H.I.E.L.D. hero sides skip the `-hr-` ribbon (WP-633 /
+  D-24443).** For the outlier sets produced by
+  [`apply-card-counts.mjs`](../scripts/convert-cards/apply-card-counts.mjs), a
+  hero card's `physicalCards[].imageUrl` is normally synthesized as
+  `{set}-hr-{heroSlug}-{sides…}.webp`, but `wtif`'s three S.H.I.E.L.D. sides use
+  the type ribbons `sa`/`tr`/`so` instead (`wtif-sa-agent`, etc.). Those correct
+  URLs are hand-declared in `inputs/patches/wtif.patch.json`; because the base
+  card's `imageUrl` is stripped at the D-15101 hero-image delete *before*
+  synthesis runs, `apply-card-counts` reads the URL back **from the patch** (a
+  standard `-hr-` patch URL is treated as legacy cruft and re-synthesized). This
+  is the one place a hero image URL does not follow the `heroImageUrl.ts`
+  builder, and the `cards:check` reproducibility gate (WP-633) now pins it.
 - **The host moved.** Image URLs were historically on
   `images.barefootbetters.com`; the current host is
   `images.legendary-arena.com`, the single constant `R2_BASE_URL`. Any older
@@ -474,6 +497,11 @@ uploads.
   title slugs as each hero's card data was authored (copy-then-repoint-then-
   sweep; 60 placeholder orphans deleted). It is also the first set to reference
   the `me`, `sa`, `so`, `tr`, and `sk` ribbons from hand-written `imageUrl`s.
+- 2026-09-01 — WP-633 / D-24443 made the card-data pipeline regen-reproducible
+  and CI-gated (`pnpm cards:check`). The composed `imageUrl`s are byte-unchanged;
+  the fix that mattered here is bucket E — `wtif`'s S.H.I.E.L.D. hero sides read
+  their `sa`/`tr`/`so` URLs from `wtif.patch.json` in `apply-card-counts.mjs`
+  rather than mis-synthesizing them as `wtif-hr-agent-agent` (see Edge Cases).
 
 ## References
 
