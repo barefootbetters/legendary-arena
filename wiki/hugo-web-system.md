@@ -154,6 +154,39 @@ title oversells the content:
 So take "Goodbye WordPress" as **"stop reaching for a dynamic CMS for a site
 that is really a Git repo of pages,"** not as a market obituary.
 
+### Numbers that survive the hype
+
+Use these as ballast, not as a victory lap. Sources disagree by a point or
+two depending on the week; the shape of the data is what matters.
+
+- **Still huge, no longer growing.** W3Techs put WordPress at about **41% of
+  all websites** and about **59% of sites with a known CMS** in mid-2026,
+  down from a mid-2025 peak near **43.5%**. That is the first sustained dip
+  in two decades, not a collapse. Shopify / Wix / "no CMS" picked up the lost
+  points. "WordPress is dead" is still false; "WordPress is the unexamined
+  default" is the thing that is weakening.
+- **Core is fine; the ecosystem is the product.** Patchstack's 2026 security
+  report (vendor dataset — they sell WP security) logged **11,334** newly
+  disclosed WordPress-ecosystem vulnerabilities in 2025, up **42%** from
+  2024. About **91%** sat in plugins, **9%** in themes, and **six** in core.
+  Median time to mass exploitation on heavily targeted flaws was about **five
+  hours**. The video's "plugins are a treadmill" line is the same fact from
+  the operator side.
+- **Elementor is not a niche complaint.** Elementor is on the order of **13%
+  of all websites** / about **30% of WordPress sites**. Leaving "WordPress"
+  in 2026 often means leaving a page-builder stack, which is exactly the
+  video's subject.
+- **Static TCO is a different shape, not just a smaller bill.** Typical
+  small-site comparisons put managed WordPress (host + builder + SEO + forms
+  + security + backups + retainer hours) in the low hundreds per month, and a
+  Hugo site on Cloudflare Pages / GitHub Pages / Netlify in the **$0–$20**
+  hosting band plus the hours you already spend in Git. LA already pays the
+  Git hours. It does not also pay for Wordfence.
+
+Do not forecast "WordPress will be 20% by 2028" from a two-point dip. Do use
+the security mix to explain why a locked design system should not depend on
+twenty plugins.
+
 ### The video's actual argument (from client work)
 
 Emmanuel's case against WordPress + Elementor for small-business sites:
@@ -184,7 +217,8 @@ sites cheaper than the WordPress stack for typical client sites.**
 
 These are the durable reasons the argument holds for **marketing sites,
 docs, catalogs, and wikis** — the classes LA actually ships. They do not
-apply to every WordPress site (see [the limits](#what-hugo-will-not-replace)).
+apply to every WordPress site (see [what Hugo will not
+replace](#what-hugo-will-not-replace)).
 
 1. **The runtime is the liability.** WordPress assembles every page from PHP
    + a database + plugins on each request. Hugo builds the HTML once and
@@ -218,6 +252,19 @@ apply to every WordPress site (see [the limits](#what-hugo-will-not-replace)).
    developer. For a site that updates weekly, Markdown + a preview deploy is
    enough — and for a marketing site with a **locked** design system, a CMS
    that lets anyone drag widgets is a bug, not a feature.
+8. **Git + AI is the other half of the 2026 case.** The video stops at "AI
+   writes the site." The reason to prefer Hugo over a pile of generated HTML
+   is the same reason LA already keeps game rules in a repo: files can be
+   reviewed. A marketing or wiki change is a branch, a diff, a preview URL,
+   and a merge. WordPress revisions are per-post history inside MySQL; they do
+   not branch a homepage redesign, they do not review a token change next to
+   the copy change, and they do not give an AI agent a tree it can edit
+   safely. Headless WordPress (WP as API + a separate front end) buys the
+   static output and keeps the plugin surface *plus* a broken-preview problem.
+   For LA properties, that is the worst of both worlds.
+
+Point 8 is why this wiki is Hugo even though nobody was "leaving Elementor."
+The content is part of the system.
 
 ### How Hugo replaces the WordPress *pieces*
 
@@ -241,6 +288,8 @@ each one:
 | Wordfence / backups | No runtime to harden; Git *is* the backup |
 | Staging + DB migrate | Preview deploy from a branch |
 | `wp-admin` for clients | A headless editor (Decap, Front Matter CMS) or a tiny custom editor — **only if** they must self-serve |
+| WP search | Pagefind (or Algolia) over the built HTML |
+| WPML / Polylang | Hugo's built-in i18n + content translations |
 
 The video's own real-estate example maps cleanly: listings become Markdown
 (or JSON/YAML) in `content/listings/`; search is a client-side index or an
@@ -253,6 +302,39 @@ Hugo is *especially* the right static generator when page count is high
 toolchain required, rebuilding thousands of pages in seconds. That is
 exactly the job LA already uses Hugo for on the wiki and marketing side.
 
+### If a future property actually starts as WordPress
+
+This page is a decision record, not a migrator runbook. If a property does
+arrive as a WP export, the published migrations agree on where the time goes
+— and it is not "pick a theme."
+
+**Exporters** (official list lives at
+[gohugo.io/tools/migrations](https://gohugo.io/tools/migrations/)):
+`wordpress-to-hugo-exporter` (WP plugin), `wp2hugo` (Go CLI, preserves
+permalinks / CPTs / some shortcodes / Polylang),
+`lonekorean/wordpress-export-to-markdown`, plus one-off XML parsers. None of
+them emit clean Markdown. Budget a cleanup pass.
+
+**What actually breaks, every time:**
+
+- Shortcodes, Gutenberg blocks, `[caption]` wrappers, leftover HTML inside
+  "Markdown."
+- Media URL variants (`/wp-content/uploads/`, `i0.wp.com`, query-string
+  CDNs). Shared images need reference counting, not a naive download.
+- HTML entities in titles (`&#8217;`) that then break YAML front matter.
+- Permalink shape. Get `permalinks` in `hugo.toml` right *before* go-live, or
+  spend the rest of the project on redirects.
+- RSS. Hugo's default feed is a summary. Newsletter tools that expected
+  WordPress's `content:encoded` silently stop ingesting until the RSS
+  template is fixed.
+- Cloudflare Pages' **2,000-rule `_redirects` cap.** A 20-year WP permalink
+  dump will not fit. Prefer preserving the old path in Hugo over generating
+  ten thousand redirects.
+
+Treat a WP→Hugo move as a content-quality project with a redirect plan, not
+as a weekend theme swap. For greenfield LA properties there is nothing to
+export; skip this subsection and keep shipping Markdown.
+
 ### What Hugo will *not* replace {#what-hugo-will-not-replace}
 
 Do not migrate these to Hugo and pretend WordPress died — they still want
@@ -262,19 +344,25 @@ WordPress, Shopify, or a real application:
   workflows.
 - Membership, LMS, or user-generated content.
 - Large WooCommerce catalogs with complex, stateful promotions.
+- A non-technical team that must publish daily without opening a repo —
+  unless you add Decap / Front Matter and accept that it is still not
+  `wp-admin`.
 - Clients who insist on logging in to "just change the red banner."
 - Anything that must change **per request** from server state.
 
-That last bullet is the clean dividing line: **if a page's HTML is
-identical for every visitor until someone edits the source, it can be
-static.** If it must differ per request from live state, it wants a runtime.
+That last bullet is the clean dividing line: **if a page's HTML is identical
+for every visitor until someone edits the source, it can be static.** If it
+must differ per request from live state, it wants a runtime.
+
+LA already has that runtime. It is `play`/the engine, not a CMS.
 
 ### Honest verdict
 
 - **Video's claim:** WordPress + Elementor is a bad *factory* for
   small-business sites now that AI can emit custom code.
 - **Accurate claim:** WordPress-*as-default-CMS* is fading for content sites.
-  WordPress-*as-platform* is not dead — ~40% of the web still runs it.
+  WordPress-*as-platform* is not dead — about 41% of the web still runs it.
+  The 2025–2026 share dip is real and small.
 - **Hugo's job:** take the static half of that argument and make it
   *maintainable* — templates, a content model, taxonomies, i18n, fast
   rebuilds — instead of a pile of AI-generated HTML nobody can update in six
@@ -286,6 +374,21 @@ and marketing site are Git repos of pages with commerce bolted on at the
 edge, not a CMS to patch every Tuesday. When a new LA property is a set of
 pages, the default is Hugo. When it's genuinely an app with per-request
 state, it belongs on `play`/the engine, not shoehorned into either stack.
+
+### Sources {#hugo-vs-wordpress-sources}
+
+- [*Goodbye WordPress.*](https://www.youtube.com/watch?v=3Om0WX4167I) — Tyler
+  Moore / Emmanuel, *I Create Your Site*, 2026-08-28 (the originating video)
+- [Hugo — migration tools](https://gohugo.io/tools/migrations/) — official
+  exporter list (`wp2hugo`, `wordpress-to-hugo-exporter`, and others)
+- W3Techs — WordPress usage statistics (mid-2026, ~41% of all sites; ~59% of
+  known-CMS sites; down from a ~43.5% mid-2025 peak)
+- Patchstack — *State of WordPress Security in 2026* (11,334 ecosystem vulns
+  in 2025, ~91% in plugins; **vendor dataset** — they sell WP security)
+- Community WP→Hugo migration write-ups, 2025–2026 (permalinks, media URL
+  variants, RSS `content:encoded`, Cloudflare redirect caps)
+- UnfoldCMS — "Hugo vs WordPress in 2026" (editor UX as the deciding
+  dimension)
 
 ## Mechanics
 
@@ -1213,7 +1316,7 @@ Full details: `C:\www\legendary-arena-com\docs\ai\REFERENCE\01.3-commit-hygiene.
 - `C:\www\barefootbetters-www\archetypes\recipe.md` — `hugo new --kind recipe` scaffold with the full `recipe:` schema
 - `C:\www\barefootbetters-www\docs\recipe-card.md` — recipe-card author guide
 - [WP Recipe Maker](https://bootstrapped.ventures/wp-recipe-maker/) — the WordPress plugin whose "meadow" template the card ports
-- Video — *Goodbye WordPress.* (Tyler Moore channel, presented by Emmanuel / *I Create Your Site*, YouTube, 28 Aug 2026) — source for [Hugo vs WordPress — the honest case](#hugo-vs-wordpress)
+- [Video — *Goodbye WordPress.*](https://www.youtube.com/watch?v=3Om0WX4167I) (Tyler Moore channel, presented by Emmanuel / *I Create Your Site*, YouTube, 28 Aug 2026) — source for [Hugo vs WordPress — the honest case](#hugo-vs-wordpress); full citations in that section's [Sources](#hugo-vs-wordpress-sources)
 - [Hugo Onboarding](hugo-onboarding.md) — day-1 WordPress → Hugo concept mapping (companion to the Hugo-vs-WordPress case above)
 - WP-004 — home page override
 - WP-005 — Pagefind search integration, `#la-search` id lock
