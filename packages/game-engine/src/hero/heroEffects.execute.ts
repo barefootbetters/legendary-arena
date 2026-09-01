@@ -21,7 +21,7 @@ import type { HeroKeyword } from '../rules/heroKeywords.js';
 import { HERO_KEYWORDS } from '../rules/heroKeywords.js';
 import type { HeroAbilityHook, HeroEffectDescriptor } from '../rules/heroAbility.types.js';
 import { getHooksForCard } from '../rules/heroAbility.types.js';
-import type { EffectExecutionReason, EffectTrace } from '../diagnostics/hollowEffect.types.js';
+import type { EffectExecutionReason, EffectTrace, EffectTraceStatus } from '../diagnostics/hollowEffect.types.js';
 import { isHollowReason, DEFERRED_BY_DESIGN_MECHANICS } from '../diagnostics/hollowEffect.types.js';
 import { recordHollowEffect } from '../diagnostics/hollowEffect.record.js';
 import { recordEffectTrace } from '../diagnostics/effectTrace.record.js';
@@ -750,17 +750,53 @@ function buildHeroLegacyEffectTrace(
   // test cast cannot throw before the guarded writer runs.
   const keywordValue = (effect as { type?: unknown }).type;
   const effectToken = typeof keywordValue === 'string' ? keywordValue : '';
+  const status = heroLegacyTraceStatus(effect, fired);
   return {
     cardId,
     scope: 'hero',
     timing,
     effect: effectToken,
-    handler: fired ? effectToken : '',
-    status: fired ? 'fired' : 'no-handler',
+    // why: label the mechanic for a reachable dispatch (fired OR reachable no-op);
+    // only a genuine no-handler leaves the label empty.
+    handler: status === 'no-handler' ? '' : effectToken,
+    status,
     fireSite: 'hero-executor',
     params: buildHeroEffectTraceParams(effect),
     turn,
   };
+}
+
+/**
+ * Decides the trace status for one legacy hero dispatch (WP-488 / D-24294).
+ *
+ * A `false` return from `executeSingleEffect` is NOT necessarily a missing handler:
+ * a keyword whose handler is reachable — a direct `HERO_EFFECT_HANDLERS` entry, a
+ * reveal translation, or an execute-at-another-site MVP keyword (`return-on-discard`
+ * at the discard chokepoint, `wall-crawl` at recruit, `dodge`/`undercover` at their
+ * moves, `size-changing` at class-read) — that simply did not mutate at THIS dispatch
+ * (a magnitude pre-gate, or the real work fires at its own site) is a reachable
+ * **no-op**, not a hollow. Only a recognized-but-unimplemented or an unsupported
+ * keyword is a genuine `no-handler`.
+ *
+ * Reuses `classifyHeroEffectReason` — the SAME classifier the hollow detector uses —
+ * so the trace status can no longer disagree with the hollow record (the disagreement
+ * that made a real match's Unending Energy / Surge of Power read as phantom hollows).
+ * Mirrors the villain executor's `DELIBERATE_NO_OP_VILLAIN_PRIMITIVES` treatment,
+ * which likewise reads `no-op`, never `no-handler`.
+ *
+ * @param effect - The dispatched hero effect descriptor.
+ * @param fired - Whether executeSingleEffect reached a handler and ran.
+ * @returns The trace status.
+ */
+function heroLegacyTraceStatus(effect: HeroEffectDescriptor, fired: boolean): EffectTraceStatus {
+  if (fired) {
+    return 'fired';
+  }
+  const reason = classifyHeroEffectReason(effect);
+  if (reason === 'applied' || reason === 'deferred') {
+    return 'no-op';
+  }
+  return 'no-handler';
 }
 
 /**
