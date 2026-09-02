@@ -17,7 +17,7 @@ source:
   - ../docs/01-VISION.md
   - ../docs/TOURNAMENT-FUNDING.md
 status: draft
-last-reviewed: 2026-09-01
+last-reviewed: 2026-09-02
 ---
 
 # Monetization Model
@@ -376,5 +376,6 @@ keep patronage a garnish, not the meal (the FSF's limit).
 - [Tournament Calendar](tournament-calendar.md) — organized-play schedule (open-play windows + Season 1); applies the fairness posture above
 - [Profile Login](profile-login.md) — the profile/auth surface the paid layer attaches to
 - [Legendary Forge](legendary-forge.md) — the physical product behind the digital-unlock bridge
+- [Monetization dashboard ↗](https://dashboard.legendary-arena.com/monetization) — the operator dashboard's live revenue view for this model (Revenue Trend, Net Revenue, Paid-Action Errors); admin-session-required
 - `C:\www\legendary-arena-com\docs\product\profile-features-free-vs-paid.md` — profile free/paid boundary **policy** (marketing repo, internal; locked 2026-07-03, amended 2026-07-04)
 - `C:\www\legendary-arena-com\docs\product\legendary-pass-spec.md` — Legendary Pass mechanics + Season 1 reward table (marketing repo, internal; **draft**, all values hypotheses pending)

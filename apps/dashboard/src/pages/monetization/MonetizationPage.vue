@@ -2,6 +2,7 @@
 import { useFetch } from '../../composables/useFetch.js';
 import { useDataFreshness } from '../../composables/useDataFreshness.js';
 import { fetchRevenueRecords } from '../../services/endpoints.js';
+import { describeApiError } from '../../utils/apiErrorMessage.js';
 import { formatCurrency } from '../../utils/format.js';
 import RevenueChartWidget from '../../widgets/RevenueChartWidget.vue';
 import NetRevenueChartWidget from '../../widgets/NetRevenueChartWidget.vue';
@@ -42,7 +43,7 @@ const { relativeTime, sourceLabel } = useDataFreshness(updatedAt, source);
     </div>
 
     <div v-else-if="error" class="page-error">
-      <p>{{ error.message }}</p>
+      <p>{{ describeApiError(error) }}</p>
     </div>
 
     <div v-else-if="!data || data.length === 0" class="page-empty">
