@@ -61,14 +61,15 @@ Views, Discord members, and play starts build the trust the buy depends on
 
 ## Two gates the launch plan is missing
 
-- **G0 — Offer is legal and shippable.** A written IP posture must exist before
-  any public SKU tag, "Marvel-Champions-style" SEO, or paid test. Pass = each
-  public SKU is confirmed **either** original-identity (presentation / accessory
-  / education) **or** covered by the Upper Deck / Marvel license under which
-  royalties are already mandatory. The physical **60-card Starter Deck Box**
-  (`LA-DECK-001`) specifically must be confirmed license-covered **or reframed**
-  before public promotion. **Owner: Jeff (likely counsel).** Default until
-  written: lead the shop with **mat + guide** (safe by construction).
+- **G0 — Offer is legal and shippable.** The physical **60-card Starter Deck
+  Box** (`LA-DECK-001`) is **gated / held from public promotion** until a written
+  IP posture (counsel sign-off) confirms it is license-covered — decision by Jeff,
+  2026-09-02. Paying royalties on the *digital* adaptation does not by itself
+  establish that the license covers a *physical* card product, and it is the
+  highest-exposure item on the board. Until the posture is written, **do not tag,
+  SEO-target, or paid-promote the deck** — lead the shop with **mat + guide**
+  (original-identity: presentation / accessory / education). G0 blocks a SKU's
+  first public tag / paid test until its license scope is confirmed in writing.
 - **G1b — First game is one click.** Homepage "Play now" may not point at the
   loadout-JSON lobby (its current target) until a new player can finish a game
   without pasting JSON — or, interim, until it points at a bot-replay or the
@@ -124,7 +125,8 @@ Trust-negative under a fairness brand:
 
 Runs alongside the channel plan, not after it.
 
-- **Week 0 — Stop the leaks.** Write G0 (or lead with mat + guide). Place one
+- **Week 0 — Stop the leaks.** Start the G0 IP posture (counsel sign-off on
+  license scope); until it lands, hold the deck and lead with mat + guide. Place one
   real test order; pack, ship, refund it (C1). Photograph the shipped units;
   replace placeholders (C2). Re-point "Play now" (G1b).
 - **Week 1 — Make the register work.** Product pages (photo, contents, shipping
@@ -153,12 +155,15 @@ one-click or no longer primary; a **written IP posture you can defend.**
 
 Conservative defaults were taken where the call is yours — confirm or redirect:
 
-1. **G0 / IP posture** — is `LA-DECK-001` license-covered, reframed, or held?
-2. **Offer pricing** — Session Kit price + free-shipping floor are placeholders.
-3. **"Play now" re-point** — a live homepage UX change (flagged, not executed).
-4. **Unpublish `sample-product` now** — a live shop change (flagged, not executed).
+1. **Offer pricing** — Session Kit price + free-shipping floor are placeholders.
+2. **"Play now" re-point** — a live homepage UX change (flagged, not executed).
+3. **Unpublish `sample-product` now** — a live shop change (flagged, not executed).
 
-No live-site changes were made by this spec — nothing unpublished, no CTA
+**Resolved:** G0 / IP posture — `LA-DECK-001` is **gated / held** from public
+promotion pending a written IP posture (counsel sign-off on license scope);
+decision by Jeff, 2026-09-02. Lead with mat + guide until it lands.
+
+No other live-site changes were made by this spec — nothing unpublished, no CTA
 re-pointed, no SKU built. Those await the calls above.
 
 ## References
