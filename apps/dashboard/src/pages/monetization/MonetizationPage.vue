@@ -73,8 +73,8 @@ const { relativeTime, sourceLabel } = useDataFreshness(updatedAt, source);
     <section class="page-references" aria-label="Related plans and governance">
       <h2>Plans &amp; governance</h2>
       <p class="references-intro">
-        The revenue model, gating, and go-to-market policy behind these numbers
-        live in the Eng Wiki:
+        The revenue model, gating, and go-to-market policy behind these numbers live in the Eng
+        Wiki:
       </p>
       <ul class="references-list">
         <li>
@@ -87,16 +87,10 @@ const { relativeTime, sourceLabel } = useDataFreshness(updatedAt, source);
           <span>revenue streams and the no-pay-to-win fairness boundary</span>
         </li>
         <li>
-          <a
-            href="https://ewiki.legendary-arena.com/video-commerce/"
-            target="_blank"
-            rel="noopener"
+          <a href="https://ewiki.legendary-arena.com/video-commerce/" target="_blank" rel="noopener"
             >Video Commerce ↗</a
           >
-          <span
-            >the gear-purchase goal, C1–C4 readiness gates, Fourthwall / YouTube
-            Shopping</span
-          >
+          <span>the gear-purchase goal, C1–C4 readiness gates, Fourthwall / YouTube Shopping</span>
         </li>
         <li>
           <a
