@@ -3,9 +3,12 @@
  * LAGN document (WP-363 / D-24155).
  *
  * Encodes an opaque LAGN document into the `?lagn=<base64url(UTF-8 JSON)>` URL
- * the Registry Viewer's Loadout tab ingests (WP-362 / D-24154). This encoder is
- * the **exact inverse** of WP-362's `parseLagnUrlParam` decoder — the
- * `base64url(UTF-8 JSON)` encoding is a cross-WP contract owned by WP-362.
+ * the Registry Viewer ingests (WP-362 / D-24154), plus a `&view=cards` companion
+ * (D-24445) that asks the viewer to open the loadout CARD GALLERY directly rather
+ * than the Loadout builder tab. The `base64url(UTF-8 JSON)` half of the encoding
+ * is the **exact inverse** of WP-362's `parseLagnUrlParam` decoder — a cross-WP
+ * contract owned by WP-362; the `view=cards` companion is read by the viewer's
+ * `parseLagnViewParam`.
  *
  * Pure helper: deterministic, no Vue, no network, no DOM beyond the global
  * `btoa` / `TextEncoder`. Treats `lagn` **opaquely** — it stringifies the value
@@ -49,17 +52,25 @@ function utf8ToBase64Url(text: string): string {
 }
 
 /**
- * Build the Registry Viewer Loadout-tab deep-link for a match's LAGN document.
+ * Build the Registry Viewer deep-link for a match's LAGN document.
+ *
+ * The link carries `&view=cards` (D-24445) so the in-match affordance lands the
+ * player directly on the viewer's loadout CARD GALLERY — the actual cards of this
+ * game's Mastermind / Scheme / villains / heroes — instead of the Loadout builder
+ * tab. A player who taps "View loadout" wants to look at the cards, not edit a
+ * form; the gallery saves the extra clicks and scrolling. The `view=cards`
+ * companion is additive: a bare `?lagn=` link (no `view=cards`) still opens the
+ * Loadout tab, so other LAGN sharers are unaffected.
  *
  * @param lagn - The opaque LAGN document (from `GET /api/match/:matchId/lagn`).
  * @param viewerBaseUrl - The viewer origin (no trailing slash; typically
  *                        {@link REGISTRY_VIEWER_ORIGIN}).
- * @returns `${viewerBaseUrl}/?lagn=<base64url(UTF-8 JSON.stringify(lagn))>`.
+ * @returns `${viewerBaseUrl}/?lagn=<base64url(UTF-8 JSON.stringify(lagn))>&view=cards`.
  */
 export function encodeLagnToViewerUrl(
   lagn: unknown,
   viewerBaseUrl: string,
 ): string {
   const encoded = utf8ToBase64Url(JSON.stringify(lagn));
-  return `${viewerBaseUrl}/?lagn=${encoded}`;
+  return `${viewerBaseUrl}/?lagn=${encoded}&view=cards`;
 }

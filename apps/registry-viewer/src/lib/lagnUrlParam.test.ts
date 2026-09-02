@@ -11,7 +11,7 @@
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
 
-import { parseLagnUrlParam } from "./lagnUrlParam.js";
+import { parseLagnUrlParam, parseLagnViewParam } from "./lagnUrlParam.js";
 
 /** Encode UTF-8 text to a base64url `?lagn=` value (Node Buffer supports it). */
 function encodeLagn(text: string): string {
@@ -79,6 +79,30 @@ describe("parseLagnUrlParam", () => {
   test("never throws on any input", () => {
     for (const search of ["", "?lagn=", "?lagn=!!!", "?lagn=" + "A".repeat(9000), "?x=y"]) {
       assert.doesNotThrow(() => parseLagnUrlParam(search));
+    }
+  });
+});
+
+describe("parseLagnViewParam", () => {
+  test('returns "cards" when ?view=cards is present (D-24445)', () => {
+    assert.equal(parseLagnViewParam("?view=cards"), "cards");
+    assert.equal(parseLagnViewParam("?lagn=abc&view=cards"), "cards");
+  });
+
+  test("returns null when the view param is absent", () => {
+    assert.equal(parseLagnViewParam(""), null);
+    assert.equal(parseLagnViewParam("?lagn=abc"), null);
+  });
+
+  test("returns null for any other view value (only 'cards' opts into the gallery)", () => {
+    for (const value of ["loadout", "Cards", "cards ", "", "themes"]) {
+      assert.equal(parseLagnViewParam(`?view=${encodeURIComponent(value)}`), null);
+    }
+  });
+
+  test("never throws on any input", () => {
+    for (const search of ["", "?view=", "?view=cards", "?x=y"]) {
+      assert.doesNotThrow(() => parseLagnViewParam(search));
     }
   });
 });

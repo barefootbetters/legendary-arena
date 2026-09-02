@@ -9,7 +9,7 @@ import ViewLoadoutButton from './ViewLoadoutButton.vue';
 import { useAuthStore } from '../stores/auth';
 
 /**
- * Tests for the in-match "View loadout in Registry Viewer" control (WP-363 /
+ * Tests for the in-match "View cards in Registry Viewer" control (WP-363 /
  * EC-393). jsdom + @vue/test-utils mount; `globalThis.fetch` and `window.open`
  * are stubbed. Covers the render-gate (no `?match=`), the null-token
  * short-circuit (no fetch), the success `window.open` (noopener + `?lagn=`), the
@@ -135,6 +135,8 @@ describe('ViewLoadoutButton', () => {
     assert.ok(lastTab, 'a tab handle was returned');
     assert.match(lastTab!.location.href, /\/\?lagn=/);
     assert.equal(lastTab!.location.href.includes('//?'), false);
+    // D-24445: the link opens the card gallery directly (view=cards companion)
+    assert.equal(new URL(lastTab!.location.href).searchParams.get('view'), 'cards');
     assert.equal(lastTab!.opener, null);
     assert.equal(lastTab!.closed, false);
     assert.equal(wrapper.find('[data-testid="view-loadout-status"]').exists(), false);

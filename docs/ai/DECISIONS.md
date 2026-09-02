@@ -38920,3 +38920,47 @@ with), `.githooks/commit-msg` + `.github/workflows/commit-hygiene.yml` (the
 enforcement sites). **Packet:** INFRA (no WP).
 
 Protect this file.
+
+### D-24445 — In-match "View loadout" link opens the loadout CARD GALLERY directly (`&view=cards` companion) (Active 2026-09-02 — INFRA)
+
+**Status:** Active (post-execution) 2026-09-02. Operator-reported UX bug.
+**Extends / refines** D-24155 (the WP-363 in-match link) and D-24154 (the WP-362
+`?lagn=` deep-link contract). No WP — a targeted, additive, backward-compatible
+fix (precedent: D-24440).
+
+**User-Visible Surface:** `play.legendary-arena.com` — the bottom-left in-match
+"View loadout in Registry Viewer" control — and `cards.legendary-arena.com` (the
+landing view).
+
+**Context.** The WP-363 in-match "View loadout in Registry Viewer" control opened
+the Registry Viewer's **Loadout builder tab** (WP-362 auto-switch). Operator
+feedback (Jeff, 2026-09-02): a player who taps that control mid-match just wants a
+**detailed look at the actual cards** of this game's Mastermind / Scheme /
+villains / heroes — the builder form is a confusing landing that costs extra
+clicks and scrolling to reach the cards. The viewer already has the exact target:
+the WP-288 / D-24072 **"View loadout as cards" gallery** (a filter mode over the
+Cards tab that narrows it to the loadout composition).
+
+**Decision.** The arena client's `encodeLagnToViewerUrl` appends a **`&view=cards`**
+companion to the `?lagn=` deep-link. When the viewer ingests a `?lagn=` link that
+**also** carries `view=cards` **and** the LAGN applied successfully (present, no
+decode / validation errors), `App.vue` lands on the **Cards tab in loadout-gallery
+mode** instead of the Loadout builder tab; `applyFilters()` runs at the end of
+mount (after every taxonomy resolves) so the gallery is narrowed to the applied
+composition and its cards carry pattern / mechanic badges on the first paint.
+
+**Backward-compatible.** `view=cards` is purely additive. A bare `?lagn=` link (no
+`view=cards`) still opens the Loadout tab, so any other LAGN sharer is unaffected;
+a `view=cards` link whose LAGN is bad still falls through to the Loadout tab so its
+error banner shows. The `base64url(UTF-8 JSON)` payload encoding (D-24154) is
+unchanged — `view=cards` rides beside `lagn`, not inside it. The companion is read
+by a new pure `parseLagnViewParam` (registry-viewer `lagnUrlParam.ts`), the
+`view=cards`-only counterpart to `parseLagnUrlParam`.
+
+**Files.** `apps/arena-client/src/lib/lagnShareLink.ts` (append `&view=cards`);
+`apps/registry-viewer/src/lib/lagnUrlParam.ts` (`parseLagnViewParam`);
+`apps/registry-viewer/src/App.vue` (gallery-landing branch + end-of-mount
+`applyFilters`). Tests updated in all three areas; arena-client 1506/0,
+registry-viewer 268/0, both vue-tsc typechecks clean. **Packet:** INFRA (no WP).
+
+Protect this file.

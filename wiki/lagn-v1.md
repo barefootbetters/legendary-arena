@@ -524,6 +524,16 @@ re-export. The three-packet arc (D-24153 / D-24154 / D-24155) — **WP-361
    decoder), and opens it in a new tab (`noopener`). The bearer stays in the
    `Authorization` header, never in the opened URL; the `lagn` is treated
    opaquely (the server is the validation authority).
+   - ✅ **Cards-gallery landing (D-24445).** The in-match link appends a
+     **`&view=cards`** companion to the `?lagn=` deep-link so it lands the player
+     directly on the viewer's **loadout card gallery** (the WP-288 / D-24072 "View
+     loadout as cards" mode — the actual cards of this game's Mastermind / Scheme /
+     villains / heroes) instead of the Loadout builder tab, saving clicks for a
+     player who just wants to look at the cards. `view=cards` is purely additive:
+     the viewer's `parseLagnViewParam` reads it, and only a `?lagn=` link that
+     *also* carries `view=cards` (with a valid LAGN) opens the gallery — a bare
+     `?lagn=` still opens the Loadout tab, and the `base64url(UTF-8 JSON)` payload
+     encoding is unchanged (`view=cards` rides beside `lagn`, not inside it).
 
 This reuses the same LAGN Tier-1 setup block documented above end-to-end: the
 server emits it, the client relays it, the viewer ingests it.

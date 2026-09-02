@@ -98,3 +98,24 @@ export function parseLagnUrlParam(search: string): ParseLagnUrlParamResult {
     return { present: true, ok: false, error: DECODE_ERROR };
   }
 }
+
+/**
+ * Reads the optional `?view=` companion to a `?lagn=` deep-link (D-24445).
+ *
+ * Returns `"cards"` only when the link asks the viewer to open the loadout CARD
+ * GALLERY directly (the in-match "View loadout" affordance, WP-363) instead of
+ * the Loadout builder tab; returns `null` for any other value or when the param
+ * is absent. The gallery landing is applied by `App.vue` only when a `?lagn=`
+ * link ALSO applied a valid loadout — a bare `?lagn=` (no `view=cards`) still
+ * opens the Loadout tab, so existing LAGN sharers are unaffected.
+ *
+ * Pure and non-throwing, matching {@link parseLagnUrlParam}.
+ *
+ * @param search - The raw query string, with or without a leading `?` (typically
+ *                 `window.location.search`).
+ * @returns `"cards"` when the card-gallery landing is requested, else `null`.
+ */
+export function parseLagnViewParam(search: string): "cards" | null {
+  const raw = new URLSearchParams(search).get("view");
+  return raw === "cards" ? "cards" : null;
+}
