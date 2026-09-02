@@ -8,6 +8,7 @@ import {
   type GrossDailyInput,
 } from '../composables/useNetRevenueBreakdown.js';
 import { fetchRevenueHistory } from '../services/endpoints.js';
+import { describeApiError } from '../utils/apiErrorMessage.js';
 import { REVENUE_DEDUCTIONS } from '../config/revenueDeductions.js';
 import BaseChart from '../components/charts/BaseChart.vue';
 import type { EChartsOption } from 'echarts';
@@ -209,11 +210,7 @@ const chartOption = computed<EChartsOption>(() => {
     </div>
 
     <div v-else-if="state === 'error'" class="widget-error">
-      <p>
-        Net revenue data could not be loaded; please retry or check the dashboard status page. ({{
-          error?.message ?? 'unknown error'
-        }})
-      </p>
+      <p>{{ describeApiError(error) }}</p>
     </div>
 
     <div v-else-if="state === 'empty'" class="widget-empty">

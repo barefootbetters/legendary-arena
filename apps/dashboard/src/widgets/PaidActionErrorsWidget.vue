@@ -4,6 +4,7 @@ import { useFetch } from '../composables/useFetch.js';
 import { useDataFreshness } from '../composables/useDataFreshness.js';
 import { useDateRange } from '../composables/useDateRange.js';
 import { fetchBillingHealth, fetchBillingHealthSparklines } from '../services/endpoints.js';
+import { describeApiError } from '../utils/apiErrorMessage.js';
 import BaseChart from '../components/charts/BaseChart.vue';
 import type { EChartsOption } from 'echarts';
 
@@ -128,10 +129,7 @@ const intentSparkline = computed<EChartsOption>(() => {
     </div>
 
     <div v-else-if="state === 'error'" class="widget-error">
-      <p>
-        Paid-action error data could not be loaded; please retry or check the dashboard status page.
-        ({{ error?.message ?? 'unknown error' }})
-      </p>
+      <p>{{ describeApiError(error) }}</p>
     </div>
 
     <div v-else-if="state === 'empty'" class="widget-empty">

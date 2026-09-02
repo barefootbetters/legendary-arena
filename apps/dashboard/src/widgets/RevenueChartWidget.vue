@@ -4,6 +4,7 @@ import { useFetch } from '../composables/useFetch.js';
 import { useDataFreshness } from '../composables/useDataFreshness.js';
 import { useDateRange } from '../composables/useDateRange.js';
 import { fetchRevenueHistory } from '../services/endpoints.js';
+import { describeApiError } from '../utils/apiErrorMessage.js';
 import BaseChart from '../components/charts/BaseChart.vue';
 import type { EChartsOption } from 'echarts';
 
@@ -82,7 +83,7 @@ const chartOption = computed<EChartsOption>(() => {
     </div>
 
     <div v-else-if="error" class="widget-error">
-      <p>{{ error.message }}</p>
+      <p>{{ describeApiError(error) }}</p>
     </div>
 
     <div v-else-if="!data || data.length === 0" class="widget-empty">
