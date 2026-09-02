@@ -18,7 +18,7 @@ status: draft
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\youtube-channel-plan.md (this page — https://ewiki.legendary-arena.com/youtube-channel-plan/)
   - ../docs/01-VISION.md
-last-reviewed: 2026-06-04
+last-reviewed: 2026-09-02
 ---
 
 This page mirrors the authoritative source at
@@ -73,10 +73,10 @@ Every video employs the seven StoryBrand elements:
 
 ## Key References
 
-- **Full document:** `C:\www\legendary-arena-com\docs\marketing\youtube-channel-plan.md`
+- **YouTube Channel Plan** — [ewiki mirror (this page)](https://ewiki.legendary-arena.com/youtube-channel-plan/) · [marketing repo — authoritative](https://github.com/legendary-arena/legendary-arena-website/blob/main/docs/marketing/youtube-channel-plan.md)
+- **Video Commerce Plan** — [ewiki mirror](https://ewiki.legendary-arena.com/video-commerce/) · [marketing repo](https://github.com/legendary-arena/legendary-arena-website/blob/main/docs/marketing/video-commerce-plan.md) — the fourth "gear purchase" conversion goal and in-video product tagging
+- **Go-to-Market Plan** — [ewiki mirror](https://ewiki.legendary-arena.com/go-to-market-plan/) · [marketing repo](https://github.com/legendary-arena/legendary-arena-website/blob/main/docs/marketing/go-to-market-plan.md)
 - **Production workflow:** [Video Production Workflow](video-production-workflow.md)
-- **Selling the gear through video:** [Video Commerce](video-commerce.md)
-  — the fourth "gear purchase" conversion goal and in-video product tagging
 - **Homepage strategy:** [Homepage Spec](homepage-spec.md),
   [Homepage Appendix](homepage-appendix.md)
 - **Content framework:** [Homepage Review Template](homepage-review-template.md)
