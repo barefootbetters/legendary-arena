@@ -1,5 +1,5 @@
 <script lang="ts">
-import { computed, defineComponent, ref } from 'vue';
+import { computed, defineComponent, onMounted, ref } from 'vue';
 
 import { useMatchInvites } from '../composables/useMatchInvites';
 import { useMatchSeatStatus } from '../composables/useMatchSeatStatus';
@@ -94,6 +94,22 @@ export default defineComponent({
     const guestLink = ref<string | null>(null);
     const guestLinkCopied = ref<boolean>(false);
     const addGuestError = ref<string | null>(null);
+
+    // why: D-24447 — when this match has a guest PASSWORD set, guests join via the
+    // lobby "Join as guest" flow, which needs the seat left OPEN. The "Add guest"
+    // link affordance FILLS the seat, so it is hidden here whenever a password is
+    // set (the two guest models are mutually exclusive per match). Seeded from the
+    // public meta on mount and flipped true the moment the host saves a password
+    // below. `readGuestAccessMeta` is failure-tolerant (never throws), so a meta
+    // hiccup just leaves "Add guest" available — the safe default.
+    const guestPasswordSet = ref<boolean>(false);
+    onMounted(async () => {
+      if (!hasMatch) {
+        return;
+      }
+      const meta = await readGuestAccessMeta(matchId);
+      guestPasswordSet.value = meta.hasGuestPassword;
+    });
 
     /**
      * Send the invite for the typed handle. A leading `@` is stripped; an empty
@@ -281,6 +297,13 @@ export default defineComponent({
           update.password = guestPasswordInput.value;
         }
         await setGuestAccess(matchId, update, token);
+        // why: D-24447 — once a password is saved, hide "Add guest" immediately so
+        // the host can't then fill the seat and break the lobby-join flow. Only a
+        // typed password flips this (a name-only save leaves an existing password,
+        // and thus this flag, untouched).
+        if (guestPasswordInput.value !== '') {
+          guestPasswordSet.value = true;
+        }
         guestPasswordStatus.value =
           'Saved — read the password to your guest; they join from the lobby’s "Join as guest".';
         guestPasswordInput.value = '';
@@ -311,6 +334,7 @@ export default defineComponent({
       onCopyLink,
       inviteErrorMessage,
       isAddingGuest,
+      guestPasswordSet,
       guestLink,
       guestLinkCopied,
       addGuestError,
@@ -390,7 +414,12 @@ export default defineComponent({
     >
       {{ inviteErrorMessage(errorCode) }}
     </span>
+    <!-- why: "Add guest" (fills the seat for the link-handoff model) is hidden
+         once a guest PASSWORD is set (D-24447) — a password match uses the lobby
+         "Join as guest" flow, which needs the seat open, so the two models can't
+         collide and hide the match from the guest. -->
     <button
+      v-if="!guestPasswordSet"
       type="button"
       class="waiting-room-button"
       data-testid="waiting-room-add-guest"

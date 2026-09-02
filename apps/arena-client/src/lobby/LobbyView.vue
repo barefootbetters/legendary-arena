@@ -655,6 +655,21 @@ export default defineComponent({
       return meta !== undefined && meta.hasGuestPassword && match.players.some(isOpenSeat);
     }
 
+    /**
+     * True when the host has set a guest PASSWORD on this match (WP-631) — the
+     * lobby-join guest model. When a password is set the seat MUST stay open for a
+     * walk-up guest to claim via "Join as guest", so the "Add guest" affordance —
+     * which mints and FILLS the seat for the link-handoff model — is hidden. The
+     * two guest models are mutually exclusive per match; a filled seat would drop
+     * the match from the joinable list and the guest would never see it (D-24447).
+     *
+     * @param matchID The match to check.
+     * @returns Whether a guest password is set on the match.
+     */
+    function matchHasGuestPassword(matchID: string): boolean {
+      return guestMeta.value[matchID]?.hasGuestPassword === true;
+    }
+
     // ── Host "Set guest password" editor (one open row at a time) ─────────────
     const guestSetMatchId = ref<string | null>(null);
     const guestSetName = ref<string>('');
@@ -1077,6 +1092,7 @@ export default defineComponent({
       onDismissGuest,
       guestDisplayName,
       canJoinAsGuest,
+      matchHasGuestPassword,
       guestSetMatchId,
       guestSetName,
       guestSetPassword,
@@ -1515,8 +1531,13 @@ export default defineComponent({
               </button>
             </li>
           </ul>
+          <!-- why: "Add guest" (the link-handoff model that fills the seat) is
+               hidden once a guest PASSWORD is set (D-24447) — a password match
+               uses the lobby "Join as guest" flow, which needs the seat left
+               open, so the two models can't collide and silently hide the match
+               from the guest. -->
           <div
-            v-if="isSignedIn && match.players.some(isOpenSeat)"
+            v-if="isSignedIn && match.players.some(isOpenSeat) && !matchHasGuestPassword(match.matchID)"
             class="match-guest"
           >
             <button

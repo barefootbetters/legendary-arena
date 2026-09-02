@@ -755,6 +755,28 @@ test('WP-631: "Join as guest" shows only where hasGuestPassword AND an open seat
   assert.equal(wrapper.find('[data-testid="lobby-join-guest-open-m3"]').exists(), false);
 });
 
+test('D-24447: host "Add guest" is HIDDEN on a password match (seat kept open for lobby join), shown on a passwordless one', async () => {
+  setSearch('?route=lobby');
+  stubGuestRoutes({
+    matches: [
+      rawMatch('m1', ['host', undefined]), // open seat + password → Add guest hidden
+      rawMatch('m2', ['host', undefined]), // open seat, no password → Add guest shown
+    ],
+    meta: {
+      m1: { gameName: 'Grandkids', hasGuestPassword: true },
+      m2: { gameName: 'Open', hasGuestPassword: false },
+    },
+  });
+  const wrapper = mountLobbySignedIn();
+  await flushPromises();
+  // the password match hides "Add guest" (it would fill the seat) but keeps the
+  // guest's lobby-join affordance
+  assert.equal(wrapper.find('[data-testid="lobby-add-guest-m1"]').exists(), false);
+  assert.ok(wrapper.find('[data-testid="lobby-join-guest-open-m1"]').exists());
+  // the passwordless match still offers the link-handoff "Add guest"
+  assert.ok(wrapper.find('[data-testid="lobby-add-guest-m2"]').exists());
+});
+
 test('WP-631: correct password posts to join-as-guest (password in the body) and the play URL never carries the password', async () => {
   // why: jsdom's window.location is non-configurable, so the actual
   // `window.location.href = ...` navigation cannot be intercepted here (see the
