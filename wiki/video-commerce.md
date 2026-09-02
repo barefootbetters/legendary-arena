@@ -247,12 +247,12 @@ is a failure even if revenue is up.
 - [video-commerce-plan.md (marketing repo — authoritative)](https://github.com/legendary-arena/legendary-arena-website/blob/main/docs/marketing/video-commerce-plan.md)
 - [youtube-channel-plan.md (marketing repo)](https://github.com/legendary-arena/legendary-arena-website/blob/main/docs/marketing/youtube-channel-plan.md)
 - [go-to-market-plan.md (marketing repo)](https://github.com/legendary-arena/legendary-arena-website/blob/main/docs/marketing/go-to-market-plan.md)
-- [Monetization Model](monetization-model.md) — revenue streams and the fairness
+- [Monetization Model](https://ewiki.legendary-arena.com/monetization-model/) — revenue streams and the fairness
   guardrails gear must respect
 - **Fourthwall** — the named YouTube Shopping partner for the Store-tab mirror of
   the three SKUs; confirm current partner status and YouTube Shopping eligibility
   live before first tag (gate C3), not from this page
-- [01-VISION.md](../docs/01-VISION.md) — permanent non-goals (the no-pay-to-win
+- [01-VISION.md](https://github.com/barefootbetters/legendary-arena/blob/main/docs/01-VISION.md) — permanent non-goals (the no-pay-to-win
   boundary)
 - *How YouTube Is Quietly Becoming An E-Commerce Platform* — My Wife Quit
   Podcast, 2026-08-18 (strategic input; claims attributed, not verified):
