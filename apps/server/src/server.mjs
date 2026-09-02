@@ -1003,20 +1003,17 @@ export async function startServer() {
     checkParPublished: parGate.checkParPublished,
   });
 
-  // why: WP-361 / D-24153 — register the read-only current-match LAGN endpoint
-  // (GET /api/match/:matchId/lagn) on the same long-lived pool. Same
-  // caller-injected auth deps as the routes above; the startup `registry`
-  // (loaded once at the top of startServer) is threaded in so the handler can
-  // resolve composition ext_ids to display names. The endpoint is
-  // authenticated + participant-gated and reads the match setup from the
-  // bgio.matches blob as a derived, read-only Tier-1 LAGN projection (the
-  // D-24153 carve-out extension); it never mutates or persists anything.
-  registerMatchLagnRoutes(server.router, pool, {
-    requireAuthenticatedSession,
-    verifier,
-    accountResolver: verifier === undefined ? undefined : accountResolver,
-    registry,
-  });
+  // why: WP-361 / D-24153 — register the read-only current-match LAGN endpoints
+  // (GET /api/match/:matchId/lagn + /result-lagn) on the same long-lived pool.
+  // Both are PUBLIC reads (D-24446): the setup LAGN is non-secret game setup with
+  // no player identity, so no session or participant gate is needed — this is what
+  // lets the in-match "View cards" affordance work for a guest seat. Only the
+  // startup `registry` (loaded once at the top of startServer) is threaded in, so
+  // the handler can resolve composition ext_ids to display names. The endpoints
+  // read the match setup from the bgio.matches blob as a derived, read-only
+  // Tier-1 LAGN projection (the D-24153 carve-out extension); they never mutate or
+  // persist anything.
+  registerMatchLagnRoutes(server.router, pool, { registry });
 
   // why: WP-594 / D-24403 — register the Legendary-Pass endgame AI coach
   // (GET /api/me/scores/:replayHash/coach). Lazy + cached (the paid model runs at

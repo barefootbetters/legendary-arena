@@ -8,20 +8,22 @@ import { useAuthStore } from '../stores/auth';
 /**
  * Small, unobtrusive fixed-position "View cards in Registry Viewer" control on
  * the play surface. On click it fetches the current match's Tier-1 LAGN from
- * `GET /api/match/:matchId/lagn` (WP-361, authenticated with the player's session
- * bearer), base64url-encodes it into the Registry Viewer's `?lagn=` deep-link
- * (WP-362) with a `&view=cards` companion (D-24445), and opens it in a new tab.
- * The `view=cards` companion lands the player directly on the loadout CARD GALLERY
- * — the actual cards of this game — rather than the Loadout builder tab, saving
- * clicks for a player who just wants to look at the cards. A failure surfaces a
- * brief, non-blocking inline message rather than breaking the match view.
+ * `GET /api/match/:matchId/lagn` (WP-361 — a PUBLIC read since D-24446: the LAGN
+ * is non-secret game setup, so no session is required), base64url-encodes it into
+ * the Registry Viewer's `?lagn=` deep-link (WP-362) with a `&view=cards` companion
+ * (D-24445), and opens it in a new tab. The `view=cards` companion lands the
+ * player directly on the loadout CARD GALLERY — the actual cards of this game —
+ * rather than the Loadout builder tab, saving clicks for a player who just wants
+ * to look at the cards. A failure surfaces a brief, non-blocking inline message
+ * rather than breaking the match view.
  *
- * Not rendered outside a live match (no `?match=`). A guest (null token) is
- * short-circuited to a sign-in message with NO fetch; an in-flight guard blocks
- * double-open. The tab is opened synchronously on click (before the fetch) so the
- * pop-up blocker allows it, then navigated to the viewer once the LAGN arrives; a
- * genuinely blocked pop-up shows a fallback message. The `lagn` is treated
- * opaquely — the client never validates or inspects it.
+ * Not rendered outside a live match (no `?match=`). Works for EVERY seat including
+ * a guest (D-24446): a signed-in player sends their bearer, a guest sends none —
+ * both reach the public read. An in-flight guard blocks double-open. The tab is
+ * opened synchronously on click (before the fetch) so the pop-up blocker allows
+ * it, then navigated to the viewer once the LAGN arrives; a genuinely blocked
+ * pop-up shows a fallback message. The `lagn` is treated opaquely — the client
+ * never validates or inspects it.
  *
  * Per the vue-sfc-loader separate-compile pipeline (D-6512) this SFC uses
  * `defineComponent({ setup() { return {...} } })` so the template's non-prop
@@ -50,12 +52,10 @@ export default defineComponent({
      * @returns The message to show next to the control.
      */
     function messageForStatus(status: number): string {
-      if (status === 401) {
-        return "Sign in to view this game's loadout.";
-      }
-      if (status === 403) {
-        return 'Only players in this game can open its loadout.';
-      }
+      // why: the read is public (D-24446), so 401/403 are no longer reachable —
+      // the only expected non-200 is 404 (the match's setup isn't projectable yet,
+      // e.g. a brand-new match). Any other status falls through to the generic
+      // retry line.
       if (status === 404) {
         return "This game's loadout isn't available yet.";
       }
@@ -74,14 +74,13 @@ export default defineComponent({
       }
       statusMessage.value = null;
 
-      // why: read the current bearer at click time; a guest (null token) is shown
-      // the sign-in message WITHOUT firing an unauthenticated request just to get
-      // a 401 back.
+      // why: the loadout read is a PUBLIC endpoint (D-24446) — the Tier-1 LAGN is
+      // non-secret game setup with no player identity — so a guest (null token)
+      // fetches it too. Read the current bearer at click time and pass it through:
+      // a signed-in player sends it, a guest sends null and `fetchMatchLagn` omits
+      // the Authorization header. No sign-in short-circuit — the button works for
+      // every seat, guests included.
       const token = authStore.token;
-      if (token === null) {
-        statusMessage.value = "Sign in to view this game's loadout.";
-        return;
-      }
 
       // why: open the tab SYNCHRONOUSLY, inside the click gesture, BEFORE the
       // await — a browser only lets `window.open` bypass the pop-up blocker when
@@ -108,8 +107,8 @@ export default defineComponent({
           // why: sever the reverse-`window.opener` handle before navigating the
           // pre-opened tab to the viewer — this restores the `noopener` security
           // posture (the viewer tab cannot reach back into the play surface). Only
-          // the non-secret loadout payload goes in the URL; the bearer stayed in
-          // the fetch's Authorization header.
+          // the non-secret loadout payload goes in the URL; any bearer the player
+          // had stayed in the fetch's Authorization header (a guest sends none).
           viewerTab.opener = null;
           viewerTab.location.href = encodeLagnToViewerUrl(
             result.lagn,

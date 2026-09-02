@@ -1,30 +1,31 @@
 /**
  * Current-Match Loadout LAGN HTTP Route — Server Layer (WP-361)
  *
- * Registers one authenticated, participant-gated read endpoint on the Koa
- * router returned by the match-server framework's `Server({...})`:
+ * Registers two read-only, PUBLIC (guest-readable) endpoints on the Koa router
+ * returned by the match-server framework's `Server({...})`:
  *
  *   * `GET /api/match/:matchId/lagn` — the current match's setup projected as a
  *     read-only Tier-1 LAGN (`@legendary-arena/lagn`), for the arena client's
- *     "View loadout in Registry Viewer" link (WP-363) to hand to the viewer's
+ *     "View cards in Registry Viewer" link (WP-363) to hand to the viewer's
  *     `?lagn=` ingest (WP-362).
+ *   * `GET /api/match/:matchId/result-lagn` — a COMPLETED match's result LAGN
+ *     (WP-406), Hall-of-Legends material.
  *
- * Access chain: `requireAuthenticatedSession` (WP-112) → a participant gate
- * (the session `AccountId` must appear in `readSeatAccounts(matchId)`, WP-333).
- * Fail-closed: an unknown/unprojectable match and a non-participant caller both
- * reveal nothing about the loadout. The endpoint intentionally does NOT
- * distinguish a missing match row from an unprojectable one (`initial_state`
- * null) — both return `404 { error: 'match_not_found' }` so the response never
- * leaks match existence.
+ * Access: NO session gate and NO participant gate (D-24446). The setup LAGN is
+ * non-secret game setup (scheme / mastermind / villains / heroes / supply) with
+ * NO player identity, so it is readable by anyone who can address the match —
+ * including a guest seat, which has no session bearer. This makes the in-match
+ * "View cards" affordance work for every seat. Fail-closed: an unknown or
+ * unprojectable match (`initial_state` null) both return `404
+ * { error: 'match_not_found' }`, so the response never leaks match existence.
  *
  * Validation ownership: the pure mapper (`buildMatchLagn`) is construction-only;
  * this route calls `validate()` from `@legendary-arena/lagn` **exactly once**
  * before the `200` — a failure (a blob-shape regression, e.g. a corrupt
  * `numPlayers`) maps to `500 { error: 'lagn_projection_failed' }`.
  *
- * Mirrors the WP-332 `competition.routes.ts` authenticated-read pattern: local
- * structural `KoaRouter` / `KoaMatchLagnContext` interfaces, caller-injected
- * `requireAuthenticatedSession` / `verifier` / `accountResolver`,
+ * Shape mirrors the WP-406 result-lagn producer below (its guest-readable twin):
+ * local structural `KoaRouter` / `KoaMatchLagnContext` interfaces,
  * `Cache-Control: no-store` as the first statement of every response, a uniform
  * `{ error: <code> }` envelope, and a `try/catch` that turns any uncaught throw
  * into a typed `500`. The startup `registry` is injected for name resolution.
@@ -36,8 +37,8 @@
  * reachable only through the supplied `DatabaseClient`.
  *
  * Authority: WP-361 §Scope + §Contract; EC-391; D-24153 (endpoint + carve-out);
- * WP-112 (`requireAuthenticatedSession`); WP-333 (`readSeatAccounts`); WP-115
- * D-11504 (Cache-Control first-statement lock); D-9905 (Auth closed set).
+ * D-24446 (public-read access change); WP-115 D-11504 (Cache-Control
+ * first-statement lock); D-9905 (Auth closed set — this endpoint is `guest`).
  */
 
 import { validate } from '@legendary-arena/lagn';
@@ -56,50 +57,15 @@ import {
 } from './matchLagn.logic.js';
 import { readSeatAccounts } from './seatAccount.logic.js';
 
-import type {
-  AccountId,
-  DatabaseClient,
-} from '../identity/identity.types.js';
-import type {
-  AccountResolver,
-  RequireAuthenticatedSessionOptions,
-  SessionTokenRequest,
-  SessionVerifier,
-} from '../auth/sessionToken.types.js';
+import type { DatabaseClient } from '../identity/identity.types.js';
 
 /**
- * Closed-set re-statement of the WP-112 orchestrator's
- * `Result<AccountId, SessionValidationCode>` shape. Declared locally (mirrors
- * the WP-332 `competition.routes.ts` precedent) so this file does not depend on
- * another feature layer for a type the auth layer owns.
- */
-export type SessionValidationCode =
-  | 'missing_token'
-  | 'invalid_token'
-  | 'expired_token'
-  | 'unknown_account'
-  | 'session_verifier_not_configured'
-  | 'lookup_failed';
-
-export type RequireAuthenticatedSessionResult =
-  | { ok: true; value: AccountId }
-  | { ok: false; reason: string; code: SessionValidationCode };
-
-/**
- * Caller-injected dependency bundle for `registerMatchLagnRoutes`.
- * `requireAuthenticatedSession` is the WP-112 orchestrator (or a test fake);
- * `verifier` + `accountResolver` are the broker-specific implementations passed
- * at request time (both `undefined` fail-closes to a 500 per WP-112). `registry`
- * is the startup CardRegistry, used to build the ext_id → display-name resolver
- * once at registration.
+ * Caller-injected dependency bundle for `registerMatchLagnRoutes`. Since D-24446
+ * both routes are PUBLIC reads (no session gate), so this bundle carries only the
+ * startup `registry`, used to build the ext_id → display-name resolver once at
+ * registration.
  */
 export interface MatchLagnRouteDependencies {
-  readonly requireAuthenticatedSession: (
-    req: SessionTokenRequest,
-    options: RequireAuthenticatedSessionOptions,
-  ) => Promise<RequireAuthenticatedSessionResult>;
-  readonly verifier?: SessionVerifier;
-  readonly accountResolver?: AccountResolver;
   readonly registry: CardRegistry;
 }
 
@@ -128,7 +94,6 @@ const PRODUCTION_MATCH_LAGN_LOGIC: MatchLagnLogic = {
  * `:matchId` path parameter set by `@koa/router`.
  */
 interface KoaMatchLagnContext {
-  readonly req: SessionTokenRequest;
   params: { matchId?: string };
   status: number;
   body: unknown;
@@ -136,8 +101,8 @@ interface KoaMatchLagnContext {
 }
 
 /**
- * Minimal structural shape of the Koa router surface — the single `GET`
- * registration site below.
+ * Minimal structural shape of the Koa router surface — the two `GET`
+ * registration sites below.
  */
 interface KoaRouter {
   get(
@@ -147,33 +112,15 @@ interface KoaRouter {
 }
 
 /**
- * Map a `SessionValidationCode` to its locked HTTP status. Mirrors the WP-332
- * mapping: operator-facing faults (`session_verifier_not_configured`,
- * `lookup_failed`) return 500; every other code returns 401.
- *
- * @param code The WP-112 orchestrator's failure code.
- * @returns The HTTP status for that code.
- */
-function statusForSessionValidationCode(code: SessionValidationCode): number {
-  // why: 'unknown_account' returns 401 (NOT 403) per the account-existence-probe
-  // defense — a 403 would confirm the account exists (mirrors WP-332).
-  if (code === 'session_verifier_not_configured' || code === 'lookup_failed') {
-    return 500;
-  }
-  return 401;
-}
-
-/**
- * Register the current-match LAGN read route on the supplied Koa router. The
- * router is mutated in place; the function returns `void`. Production callers in
- * `apps/server/src/server.mjs` pass the Koa router (`server.router`), the
- * long-lived `pg.Pool`, and the dependency bundle (WP-112 session orchestrator +
- * verifier/accountResolver + the startup registry). The optional 4th parameter
- * is a test-only injection seam.
+ * Register the two public current-match LAGN read routes on the supplied Koa
+ * router. The router is mutated in place; the function returns `void`. Production
+ * callers in `apps/server/src/server.mjs` pass the Koa router (`server.router`),
+ * the long-lived `pg.Pool`, and the dependency bundle (the startup registry).
+ * The optional 4th parameter is a test-only injection seam.
  *
  * @param router The framework Koa router (`server.router`).
  * @param database The long-lived `pg.Pool`.
- * @param deps The caller-injected auth + registry bundle.
+ * @param deps The caller-injected registry bundle.
  * @param matchLagnLogic Test-only logic seam (production omits it).
  */
 export function registerMatchLagnRoutes(
@@ -188,22 +135,10 @@ export function registerMatchLagnRoutes(
 
   router.get('/api/match/:matchId/lagn', async (koaContext) => {
     // why: Cache-Control MUST be the first statement (WP-115 D-11504) so it is
-    // set on every response path, including the 500 below. A per-match loadout
-    // read is authenticated + personalized and never cacheable.
+    // set on every response path, including the 500 below. Kept `no-store` to
+    // match the result-lagn twin below; the loadout is public (D-24446) but a
+    // live match's setup can still change (rare) so a stale cache is undesirable.
     koaContext.set('Cache-Control', 'no-store');
-
-    // Gate 1 — authenticated session → AccountId.
-    const sessionResult = await deps.requireAuthenticatedSession(koaContext.req, {
-      verifier: deps.verifier,
-      accountResolver: deps.accountResolver,
-      database,
-    });
-    if (sessionResult.ok !== true) {
-      koaContext.status = statusForSessionValidationCode(sessionResult.code);
-      koaContext.body = { error: sessionResult.code };
-      return;
-    }
-    const accountId = sessionResult.value;
 
     const matchId = koaContext.params.matchId;
     if (typeof matchId !== 'string' || matchId === '') {
@@ -216,8 +151,11 @@ export function registerMatchLagnRoutes(
     }
 
     try {
-      // Gate 2 — the match is projectable. Absent row OR null initial_state both
+      // Gate — the match is projectable. Absent row OR null initial_state both
       // return the SAME 404 so the response never leaks whether the match exists.
+      // No session or participant gate (D-24446): the setup LAGN is non-secret
+      // game setup with no player identity, so any caller — including a guest
+      // seat with no session bearer — may read it.
       const configuration = await matchLagnLogic.readMatchConfigurationForLagn(
         matchId,
         database,
@@ -225,15 +163,6 @@ export function registerMatchLagnRoutes(
       if (configuration === null) {
         koaContext.status = 404;
         koaContext.body = { error: 'match_not_found' };
-        return;
-      }
-
-      // Gate 3 — the caller is a participant (an authenticated seat of the match).
-      const seats = await matchLagnLogic.readSeatAccounts(matchId, database);
-      const isParticipant = seats.some((seat) => seat.accountId === accountId);
-      if (!isParticipant) {
-        koaContext.status = 403;
-        koaContext.body = { error: 'not_a_participant' };
         return;
       }
 

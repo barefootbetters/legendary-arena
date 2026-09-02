@@ -1,15 +1,15 @@
 /**
  * Tests for the current-match LAGN HTTP route (WP-361 / EC-391).
  *
- * Fully pure — a fake Koa router captures the handler, a fake
- * `requireAuthenticatedSession` drives the acting identity, and a fake
- * `MatchLagnLogic` seam returns canned composition + seat data, so no real
- * database is touched. Asserts the auth-first gate, the fail-closed 404
- * (unknown/unprojectable indistinguishable), the participant 403, the 200
- * `{ lagn }` envelope, the 500 projection-failure path, and `Cache-Control:
- * no-store` on every path.
+ * Fully pure — a fake Koa router captures the handler and a fake `MatchLagnLogic`
+ * seam returns canned composition + seat data, so no real database is touched.
+ * The setup route is a PUBLIC read (D-24446): no session or participant gate, so
+ * the tests assert the fail-closed 404 (unknown/unprojectable indistinguishable),
+ * the 200 `{ lagn }` envelope for ANY caller (including a guest with no seat), the
+ * 500 projection-failure path, and `Cache-Control: no-store` on every path.
  *
- * Authority: WP-361 §Scope (In) §F + §Contract; EC-391; D-24153.
+ * Authority: WP-361 §Scope (In) §F + §Contract; EC-391; D-24153; D-24446
+ * (public-read access change).
  */
 
 import { describe, test } from 'node:test';
@@ -22,7 +22,6 @@ import {
   registerMatchLagnRoutes,
   type MatchLagnLogic,
   type MatchLagnRouteDependencies,
-  type RequireAuthenticatedSessionResult,
 } from './matchLagn.routes.js';
 import type {
   MatchLagnComposition,
@@ -87,16 +86,10 @@ const EMPTY_REGISTRY = {
   listCards: () => [],
 } as unknown as CardRegistry;
 
-/** Deps with a session that authenticates as `CALLER` unless overridden. */
-function authedDeps(): MatchLagnRouteDependencies {
-  const sessionResult: RequireAuthenticatedSessionResult = {
-    ok: true,
-    value: CALLER,
-  };
-  return {
-    requireAuthenticatedSession: async () => sessionResult,
-    registry: EMPTY_REGISTRY,
-  };
+/** The route deps — since D-24446 both routes are public reads, only the
+ * registry is needed (no session gate). */
+function deps(): MatchLagnRouteDependencies {
+  return { registry: EMPTY_REGISTRY };
 }
 
 /**
@@ -131,47 +124,8 @@ function handlerOf(router: FakeRouter): Handler {
 describe('registerMatchLagnRoutes', () => {
   test('registers the GET /api/match/:matchId/lagn route', () => {
     const router = new FakeRouter();
-    registerMatchLagnRoutes(router, FAKE_DB, authedDeps());
+    registerMatchLagnRoutes(router, FAKE_DB, deps());
     assert.ok(router.handlers.has('GET /api/match/:matchId/lagn'));
-  });
-
-  test('rejects an unauthenticated caller with 401 before touching the logic', async () => {
-    const router = new FakeRouter();
-    let logicCalled = false;
-    const deps: MatchLagnRouteDependencies = {
-      requireAuthenticatedSession: async () => ({
-        ok: false,
-        reason: 'No session token was supplied.',
-        code: 'missing_token',
-      }),
-      registry: EMPTY_REGISTRY,
-    };
-    const seam: MatchLagnLogic = {
-      readMatchConfigurationForLagn: async () => {
-        logicCalled = true;
-        return null;
-      },
-      readSeatAccounts: async () => {
-        logicCalled = true;
-        return [];
-      },
-      readMatchGameover: async () => {
-        logicCalled = true;
-        return null;
-      },
-      readAccountPublicIdentities: async () => {
-        logicCalled = true;
-        return new Map();
-      },
-    };
-    registerMatchLagnRoutes(router, FAKE_DB, deps, seam);
-    const context = makeContext('match-1');
-    await handlerOf(router)(context);
-
-    assert.equal(context.status, 401);
-    assert.deepEqual(context.body, { error: 'missing_token' });
-    assert.equal(context.headers['Cache-Control'], 'no-store');
-    assert.equal(logicCalled, false);
   });
 
   test('returns 404 match_not_found for an unknown / unprojectable match', async () => {
@@ -179,7 +133,7 @@ describe('registerMatchLagnRoutes', () => {
     registerMatchLagnRoutes(
       router,
       FAKE_DB,
-      authedDeps(),
+      deps(),
       logicSeam({ configuration: null, seats: [] }),
     );
     const context = makeContext('missing');
@@ -190,33 +144,17 @@ describe('registerMatchLagnRoutes', () => {
     assert.equal(context.headers['Cache-Control'], 'no-store');
   });
 
-  test('returns 403 not_a_participant when the caller is not a seat', async () => {
+  test('D-24446: returns 200 { lagn } for ANY caller — no session, no seat (a guest)', async () => {
     const router = new FakeRouter();
     registerMatchLagnRoutes(
       router,
       FAKE_DB,
-      authedDeps(),
+      deps(),
+      // why: empty seats models a guest / non-participant caller — the public
+      // read serves the loadout regardless of who asks.
       logicSeam({
         configuration: { matchConfiguration: VALID_COMPOSITION, numPlayers: 2 },
-        seats: [{ playerId: '0', accountId: 'someone-else' as AccountId }],
-      }),
-    );
-    const context = makeContext('match-1');
-    await handlerOf(router)(context);
-
-    assert.equal(context.status, 403);
-    assert.deepEqual(context.body, { error: 'not_a_participant' });
-  });
-
-  test('returns 200 { lagn } (single key, valid Tier-1) for a participant', async () => {
-    const router = new FakeRouter();
-    registerMatchLagnRoutes(
-      router,
-      FAKE_DB,
-      authedDeps(),
-      logicSeam({
-        configuration: { matchConfiguration: VALID_COMPOSITION, numPlayers: 2 },
-        seats: [{ playerId: '0', accountId: CALLER }],
+        seats: [],
       }),
     );
     const context = makeContext('match-1');
@@ -234,11 +172,11 @@ describe('registerMatchLagnRoutes', () => {
     registerMatchLagnRoutes(
       router,
       FAKE_DB,
-      authedDeps(),
+      deps(),
       logicSeam({
         // numPlayers 0 → player_count fails LAGN validation
         configuration: { matchConfiguration: VALID_COMPOSITION, numPlayers: 0 },
-        seats: [{ playerId: '0', accountId: CALLER }],
+        seats: [],
       }),
     );
     const context = makeContext('match-1');
@@ -253,18 +191,6 @@ describe('registerMatchLagnRoutes', () => {
 // ============================================================================
 // Result-LAGN producer route (WP-406 / D-24216)
 // ============================================================================
-
-/** Deps with NO session gate — the result route is guest-readable. */
-function guestDeps(): MatchLagnRouteDependencies {
-  return {
-    // why: the result route never calls this — a throwing stub proves the route
-    // does not gate on a session (a guest read).
-    requireAuthenticatedSession: async () => {
-      throw new Error('result-lagn must not require a session');
-    },
-    registry: EMPTY_REGISTRY,
-  };
-}
 
 function resultHandlerOf(router: FakeRouter): Handler {
   const handler = router.handlers.get('GET /api/match/:matchId/result-lagn');
@@ -286,7 +212,7 @@ function identitiesOf(
 describe('registerMatchLagnRoutes — result-lagn producer', () => {
   test('registers the GET /api/match/:matchId/result-lagn route', () => {
     const router = new FakeRouter();
-    registerMatchLagnRoutes(router, FAKE_DB, guestDeps());
+    registerMatchLagnRoutes(router, FAKE_DB, deps());
     assert.ok(router.handlers.has('GET /api/match/:matchId/result-lagn'));
   });
 
@@ -295,7 +221,7 @@ describe('registerMatchLagnRoutes — result-lagn producer', () => {
     registerMatchLagnRoutes(
       router,
       FAKE_DB,
-      guestDeps(),
+      deps(),
       logicSeam({ configuration: null, seats: [] }),
     );
     const context = makeContext('missing');
@@ -311,7 +237,7 @@ describe('registerMatchLagnRoutes — result-lagn producer', () => {
     registerMatchLagnRoutes(
       router,
       FAKE_DB,
-      guestDeps(),
+      deps(),
       logicSeam({
         configuration: { matchConfiguration: VALID_COMPOSITION, numPlayers: 2 },
         seats: [{ playerId: '0', accountId: CALLER }],
@@ -331,7 +257,7 @@ describe('registerMatchLagnRoutes — result-lagn producer', () => {
     registerMatchLagnRoutes(
       router,
       FAKE_DB,
-      guestDeps(),
+      deps(),
       logicSeam({
         configuration: { matchConfiguration: VALID_COMPOSITION, numPlayers: 2 },
         seats: [
@@ -381,7 +307,7 @@ describe('registerMatchLagnRoutes — result-lagn producer', () => {
     registerMatchLagnRoutes(
       router,
       FAKE_DB,
-      guestDeps(),
+      deps(),
       logicSeam({
         configuration: { matchConfiguration: VALID_COMPOSITION, numPlayers: 3 },
         // seat 2 is a bot → no match_seat_accounts row → absent from `seats`
@@ -414,7 +340,7 @@ describe('registerMatchLagnRoutes — result-lagn producer', () => {
     registerMatchLagnRoutes(
       router,
       FAKE_DB,
-      guestDeps(),
+      deps(),
       logicSeam({
         configuration: { matchConfiguration: VALID_COMPOSITION, numPlayers: 1 },
         seats: [{ playerId: '0', accountId: 'account-noh' as AccountId }],
@@ -438,7 +364,7 @@ describe('registerMatchLagnRoutes — result-lagn producer', () => {
     registerMatchLagnRoutes(
       router,
       FAKE_DB,
-      guestDeps(),
+      deps(),
       logicSeam({
         configuration: { matchConfiguration: VALID_COMPOSITION, numPlayers: 1 },
         seats: [{ playerId: '0', accountId: CALLER }],
@@ -460,7 +386,7 @@ describe('registerMatchLagnRoutes — result-lagn producer', () => {
     registerMatchLagnRoutes(
       router,
       FAKE_DB,
-      guestDeps(),
+      deps(),
       logicSeam({
         // numPlayers 0 → player_count fails LAGN validation
         configuration: { matchConfiguration: VALID_COMPOSITION, numPlayers: 0 },
