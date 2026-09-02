@@ -197,6 +197,28 @@ describe('WaitingForPlayersPanel', () => {
     assert.ok(wrapper.find('[data-testid="waiting-room-add-guest"]').exists());
   });
 
+  test('D-24447: Add guest is hidden when a guest password is set (seat kept open for lobby join)', async () => {
+    setSearch('?match=m1');
+    routeHandler = (url) => {
+      if (url.includes('/guest-access')) {
+        return {
+          status: 200,
+          body: { matchId: 'm1', gameName: 'Grandkids', hasGuestPassword: true },
+        };
+      }
+      return { status: 200, body: lobbyBody('m1', ['host', undefined]) };
+    };
+    installStubs();
+    const wrapper = mountPanel('tok');
+    await flushPromises();
+    // the panel still renders (open seat), but "Add guest" is gone so the seat
+    // stays open for the lobby "Join as guest" flow; the set-password affordance
+    // remains.
+    assert.ok(wrapper.find('[data-testid="waiting-room"]').exists());
+    assert.equal(wrapper.find('[data-testid="waiting-room-add-guest"]').exists(), false);
+    assert.ok(wrapper.find('[data-testid="waiting-room-set-guest-password"]').exists());
+  });
+
   test('Add guest calls /api/match/add-guest and builds a ?match&player&credentials guest link', async () => {
     setSearch('?match=m1');
     routeHandler = (url, init) => {
