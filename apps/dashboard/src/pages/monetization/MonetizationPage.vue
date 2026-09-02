@@ -68,6 +68,55 @@ const { relativeTime, sourceLabel } = useDataFreshness(updatedAt, source);
       <Column field="source" header="Source" :sortable="true" filter />
       <Column field="currency" header="Currency" :sortable="true" />
     </DataTable>
+
+    <section class="page-references" aria-label="Related plans and governance">
+      <h2>Plans &amp; governance</h2>
+      <p class="references-intro">
+        The revenue model, gating, and go-to-market policy behind these numbers
+        live in the Eng Wiki:
+      </p>
+      <ul class="references-list">
+        <li>
+          <a
+            href="https://ewiki.legendary-arena.com/monetization-model/"
+            target="_blank"
+            rel="noopener"
+            >Monetization Model ↗</a
+          >
+          <span>revenue streams and the no-pay-to-win fairness boundary</span>
+        </li>
+        <li>
+          <a
+            href="https://ewiki.legendary-arena.com/video-commerce/"
+            target="_blank"
+            rel="noopener"
+            >Video Commerce ↗</a
+          >
+          <span
+            >the gear-purchase goal, C1–C4 readiness gates, Fourthwall / YouTube
+            Shopping</span
+          >
+        </li>
+        <li>
+          <a
+            href="https://ewiki.legendary-arena.com/go-to-market-plan/"
+            target="_blank"
+            rel="noopener"
+            >Go-to-Market Plan ↗</a
+          >
+          <span>launch sequence, G1–G5 gates, 90-day directional targets</span>
+        </li>
+        <li>
+          <a
+            href="https://ewiki.legendary-arena.com/youtube-channel-plan/"
+            target="_blank"
+            rel="noopener"
+            >YouTube Channel Plan ↗</a
+          >
+          <span>the content engine feeding the funnel</span>
+        </li>
+      </ul>
+    </section>
   </div>
 </template>
 
@@ -122,6 +171,53 @@ const { relativeTime, sourceLabel } = useDataFreshness(updatedAt, source);
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 1.5rem;
+}
+
+.page-references {
+  border-top: 1px solid var(--p-content-border-color);
+  padding-top: 1.25rem;
+}
+
+.page-references h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+  color: var(--p-text-color);
+}
+
+.references-intro {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  color: var(--p-text-muted-color);
+}
+
+.references-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.references-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.references-list a {
+  font-weight: 600;
+  color: var(--p-primary-color);
+  text-decoration: none;
+}
+
+.references-list a:hover {
+  text-decoration: underline;
+}
+
+.references-list span {
+  font-size: 0.8rem;
+  color: var(--p-text-muted-color);
 }
 
 @media (max-width: 768px) {
