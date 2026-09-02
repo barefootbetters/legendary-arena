@@ -19,7 +19,7 @@ status: draft
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\video-commerce.md (this page — https://ewiki.legendary-arena.com/video-commerce/)
   - ../docs/01-VISION.md
-last-reviewed: 2026-09-01
+last-reviewed: 2026-09-02
 canonical-source: docs/marketing/video-commerce-plan.md
 canonical-source-repo: legendary-arena/legendary-arena-website
 ---
@@ -45,8 +45,37 @@ Legendary Arena already has the two things the source video treats as
 prerequisites: first-party products (deck box, playmat, strategy guide) and a
 mastery-native content format (how the system is played, not how it is farmed).
 Platform shelves (YouTube Shopping, later TikTok Shop / Reels) are additive
-paths onto `/shop/` — they do not replace Snipcart + Stripe and do not authorize
-new SKUs.
+paths onto `/shop/`, reached through an approved shop partner (see below) — they
+do not replace Snipcart + Stripe and do not authorize new SKUs.
+
+### The platform bridge (an approved shop partner is required)
+
+A raw `/shop/` URL is a **description link**, not a native YouTube product tag.
+YouTube's Store tab and on-video product tagging are unlocked only through an
+**approved YouTube Shopping partner integration** — and Snipcart is not one. So
+the additive mirror needs a bridge: an approved partner that surfaces the same
+three SKUs on YouTube while `/shop/` stays the cart of record.
+
+**Fourthwall is that bridge.** It is an approved YouTube Shopping partner (Store
+tab + product tagging) and, unlike Shopify, does not force the business onto a
+new platform of record. Its role here is strictly the **YouTube-facing mirror of
+the existing three SKUs** — not a second cart, not a new catalog, not new SKUs:
+
+- **`/shop/` (Snipcart + Stripe) stays the single source of truth** and the cart
+  of record. Fourthwall never becomes the main-site cart.
+- **Fourthwall mirrors `LA-DECK-001` / `LA-MAT-001` / `LA-GUIDE-001`** onto the
+  YouTube Store tab so they can be natively tagged on videos.
+- **No SKU exists on Fourthwall that has not already cleared C1–C2 on `/shop/`.**
+  The partner shelf is downstream of the shop, never ahead of it.
+- **Checkout completes on the connected store.** YouTube is the surface, never
+  the checkout — the same rule that already governs `/shop/`.
+
+**API boundary.** The YouTube Data API manages videos, playlists, descriptions,
+and comments — so description links and their UTM tags *can* be automated. The
+Store tab and product tagging are **not** exposed through the public API; they
+are configured through the Fourthwall integration and YouTube Studio, not
+scripted. Automate the description links; treat the Store tab as configured, not
+coded.
 
 StoryBrand cast for this layer:
 
@@ -121,7 +150,7 @@ all four pass for it**; failure of any gate blocks tagging.
 |------|---------|---------------------------|
 | **C1 — Fulfillment real** | The unit can be picked, packed, shipped, refunded | Supplier + ship-from + SLA + returns path exist, and a test order has completed end to end |
 | **C2 — Real imagery** | Shop and tag show the manufactured object, not a stand-in | A photograph of the shipped unit is on `/shop/`; SVG placeholders and any draft sample product are gone |
-| **C3 — Platform shop live** | Eligibility + catalog confirmed on the platform being tagged | The platform's shop lists the three SKUs and they are purchasable; current eligibility confirmed the week of first tag — never from a podcast threshold |
+| **C3 — Platform shop live** | Approved-partner integration + eligibility + catalog confirmed on the platform being tagged | An approved YouTube Shopping partner (Fourthwall) is connected and mirrors the three SKUs to the Store tab — a raw `/shop/` URL is a description link, not a native tag; the SKUs are purchasable through the connected store; current eligibility confirmed the week of first tag — never from a podcast threshold |
 | **C4 — Attribution on** | A sale can be traced to a video | UTM on every tagged destination + Snipcart/Stripe metadata, pulled weekly into the [Homepage Marketing Scorecard](homepage-marketing-scorecard.md) |
 
 **C2 is the current hard block.** Tagging a product with placeholder art and no
@@ -131,7 +160,8 @@ untag it — never leave a dead tag live.
 ### Operating rules
 
 1. `/shop/` (Snipcart + Stripe) is the source of truth; platform shelves are
-   additive mirrors, never a migration.
+   additive mirrors surfaced through an approved partner (Fourthwall), never a
+   migration and never a raw Snipcart link.
 2. One tagged SKU per video unless it is a catalog/setup tour; prefer the SKU the
    footage already uses.
 3. The spoken CTA comes after the system has been demonstrated, never as the cold
@@ -198,6 +228,10 @@ is a failure even if revenue is up.
   you need to win" is a brand incident, not a conversion tweak.
 - **Affiliate temptation.** Other people's products stay off the shelf while
   these three SKUs exist and are unsold.
+- **Partner-mirror drift.** A SKU tagged on YouTube must already exist and clear
+  C1–C2 on `/shop/`. Never let the Fourthwall shelf carry a SKU `/shop/` does
+  not, or drift on price or name from the homepage — the shop is upstream of the
+  shelf, never the reverse.
 - **Digital/physical confusion.** A viewer must never think the playmat or guide
   changes matchmaking, PAR, or standing. If a comment thread starts that rumor,
   pin a correction and review the CTA.
@@ -209,6 +243,9 @@ is a failure even if revenue is up.
 - [go-to-market-plan.md (marketing repo)](https://github.com/legendary-arena/legendary-arena-website/blob/main/docs/marketing/go-to-market-plan.md)
 - [Monetization Model](monetization-model.md) — revenue streams and the fairness
   guardrails gear must respect
+- **Fourthwall** — the named YouTube Shopping partner for the Store-tab mirror of
+  the three SKUs; confirm current partner status and YouTube Shopping eligibility
+  live before first tag (gate C3), not from this page
 - [01-VISION.md](../docs/01-VISION.md) — permanent non-goals (the no-pay-to-win
   boundary)
 - *How YouTube Is Quietly Becoming An E-Commerce Platform* — My Wife Quit
