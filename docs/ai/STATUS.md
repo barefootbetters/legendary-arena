@@ -7,6 +7,14 @@
 
 ## Current State
 
+### INFRA fix — in-match "View loadout" link opens the loadout CARD GALLERY directly (D-24445 Active) (2026-09-02)
+
+Operator-reported UX bug (Jeff): the bottom-left in-match **"View loadout in Registry Viewer"** control on `play.legendary-arena.com` opened the Registry Viewer's **Loadout builder tab** — a confusing landing for a player who just wants a **detailed look at the actual cards** of this game, costing extra clicks and scrolling to reach them. The viewer already had the right target: the WP-288 / D-24072 **"View loadout as cards" gallery**.
+
+**Fix (additive, backward-compatible).** The arena client's `encodeLagnToViewerUrl` now appends a **`&view=cards`** companion to the `?lagn=` deep-link. When the viewer ingests a `?lagn=` link that also carries `view=cards` **and** the LAGN applied cleanly, `App.vue` lands on the **Cards tab in loadout-gallery mode** (narrowed to the applied composition; `applyFilters()` runs at the end of mount so the gallery cards carry pattern/mechanic badges on first paint) instead of the Loadout tab. A new pure `parseLagnViewParam` (registry-viewer `lagnUrlParam.ts`) reads the companion. A bare `?lagn=` link still opens the Loadout tab (other LAGN sharers unaffected); a `view=cards` link whose LAGN is bad still falls through to the Loadout tab's error banner. The `base64url(UTF-8 JSON)` payload (D-24154) is unchanged — `view=cards` rides beside `lagn`, not inside it.
+
+**Verified:** arena-client 1506/0, registry-viewer 268/0, both `vue-tsc` typechecks clean, `pnpm -r build` 0. Files: `lagnShareLink.ts`, `lagnUrlParam.ts`, `App.vue` (+ three test files). Extends D-24155/D-24154. **Packet:** INFRA (no WP). Post-deploy D-24026 live-verify pending (requires arena-client + registry-viewer deploys).
+
 ### WP-633 — Card-data regen now reproduces the committed corpus + `cards:check` gate (EC-668 / D-24443) shipped (2026-09-01)
 
 **No user-observable change — infrastructure only.** The committed `data/cards/*.json` (what ships to `cards.legendary-arena.com` and the R2 mirror) are **byte-unchanged**; this is a build-pipeline reproducibility fix, not an editorial one, so the D-24026 live-verification gate is N/A.
