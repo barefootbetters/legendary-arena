@@ -503,10 +503,13 @@ re-export. The three-packet arc (D-24153 / D-24154 / D-24155) — **WP-361
 1. ✅ **Server (WP-361 / D-24153, shipped).** `GET /api/match/:matchId/lagn` returns the
    current match's setup as a **Tier-1 LAGN**, projected read-only from the
    composition already persisted in the `bgio.matches` blob
-   (`initial_state.G.matchConfiguration` + `ctx.numPlayers`). Access is
-   `authenticated-session-required` + a participant gate; the projection
-   extends the D-24095/D-24119 blob-read carve-out (never written back, never
-   a save-game). `officersCount → shield_officers_count`; `variant`
+   (`initial_state.G.matchConfiguration` + `ctx.numPlayers`). Access is a
+   **public / guest read (D-24446)** — no session or participant gate, because
+   the Tier-1 setup LAGN is non-secret game setup with no player identity, so
+   the in-match "View cards" affordance works for a guest seat too (originally
+   `authenticated-session-required` + a participant gate, relaxed by D-24446).
+   The projection extends the D-24095/D-24119 blob-read carve-out (never written
+   back, never a save-game). `officersCount → shield_officers_count`; `variant`
    `solo`/`cooperative` by seat count; ext_ids resolve to display names via
    the registry (id-fallback); the document is `validate()`d before return.
 2. ✅ **Viewer (WP-362 / D-24154, shipped).** A `?lagn=<base64url(UTF-8 LAGN JSON)>` URL
@@ -518,11 +521,12 @@ re-export. The three-packet arc (D-24153 / D-24154 / D-24155) — **WP-361
    call — the payload is self-contained, so the viewer needs no auth and no
    CORS. `?lagn=` **suppresses** the WP-114 five-field setup preview; a malformed
    payload fails visible (tab + a dismissible full-sentence error banner).
-3. ✅ **Client (WP-363 / D-24155, shipped).** An in-match "View loadout in Registry
-   Viewer" control fetches the LAGN from WP-361 (Hanko bearer), base64url-
-   encodes it into WP-362's `?lagn=` link (the exact inverse of the viewer's
-   decoder), and opens it in a new tab (`noopener`). The bearer stays in the
-   `Authorization` header, never in the opened URL; the `lagn` is treated
+3. ✅ **Client (WP-363 / D-24155, shipped).** An in-match "View cards in Registry
+   Viewer" control fetches the LAGN from WP-361 (the read is public since D-24446,
+   so a signed-in player sends its bearer and a **guest sends none** — both reach
+   it), base64url-encodes it into WP-362's `?lagn=` link (the exact inverse of the
+   viewer's decoder), and opens it in a new tab (`noopener`). Any bearer stays in
+   the `Authorization` header, never in the opened URL; the `lagn` is treated
    opaquely (the server is the validation authority).
    - ✅ **Cards-gallery landing (D-24445).** The in-match link appends a
      **`&view=cards`** companion to the `?lagn=` deep-link so it lands the player

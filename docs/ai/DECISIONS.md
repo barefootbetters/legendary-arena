@@ -38964,3 +38964,56 @@ by a new pure `parseLagnViewParam` (registry-viewer `lagnUrlParam.ts`), the
 registry-viewer 268/0, both vue-tsc typechecks clean. **Packet:** INFRA (no WP).
 
 Protect this file.
+
+### D-24446 — In-match "View cards" loadout read is PUBLIC (guest-readable); no session or participant gate (Active 2026-09-02 — INFRA)
+
+**Status:** Active (post-execution) 2026-09-02. Operator-reported bug (Jeff): a
+signed-in **guest** could not use the in-match "View cards in Registry Viewer"
+affordance — it showed "Sign in to view this game's loadout." **Changes the
+access clause of D-24155 / D-24153** (WP-361/363). No WP — a targeted,
+operator-approved access-control fix (precedent: D-24440).
+
+**User-Visible Surface:** `play.legendary-arena.com` — the bottom-left in-match
+"View cards in Registry Viewer" control, now usable by **every seat including a
+guest**.
+
+**Context.** A guest takes a Casual seat via per-match bgio **credentials**, not
+a Hanko authenticated session — so `authStore.token` is `null`, and the button
+short-circuited guests to a sign-in message. Even without that short-circuit,
+`GET /api/match/:matchId/lagn` was `authenticated-session-required` +
+participant-gated on an `AccountId` (WP-361 Gates 1 + 3), and a guest is a
+**rowless** Casual seat (D-24120) — so a guest would get `401`/`403`. The match
+composition is also **not** in the client's UIState projection, and
+`matchSetupSession` stashes it only for the match **creator** — so a joined guest
+cannot build the link locally either. The only way for a guest to obtain the
+loadout is a server read the guest can reach.
+
+**Decision (operator-chosen).** Make the setup-LAGN read **PUBLIC** — drop the
+session gate (Gate 1) and the participant gate (Gate 3) from
+`GET /api/match/:matchId/lagn`. The Tier-1 setup LAGN is **non-secret game
+setup** (scheme / mastermind / villains / heroes / supply) with **no player
+identity** (no handles, no AccountId), so a public read leaks nothing sensitive —
+it mirrors the already-guest-readable `GET /api/match/:matchId/result-lagn`
+sibling. The client always fetches (a signed-in player sends its bearer, a guest
+sends none — `fetchMatchLagn` already omits the header for `null`), and the
+button's null-token short-circuit is removed. Fail-closed is preserved: an
+unknown OR unprojectable match both return the same `404` (no match-existence
+oracle). New status domain `{200,404,500}` (the `401`/`403` paths are gone).
+
+**Scope / limits.** The blob-read itself is unchanged — still the D-24153 /
+D-24095 / D-24119 carve-out (`SELECT initial_state`-only, derived, read-only,
+never written back, never a save-game). Nothing scores, credits, or verifies
+from this read. The `result-lagn` sibling is unaffected (already public). The
+now-dead auth plumbing in `matchLagn.routes.ts` (`requireAuthenticatedSession` /
+`verifier` / `accountResolver` deps, the session types, `statusForSession…`) is
+removed so the file no longer implies a gate it doesn't have.
+
+**Files.** `apps/server/src/match/matchLagn.routes.ts` (drop Gates 1+3, prune
+dead auth plumbing); `apps/server/src/server.mjs` (call site → `{ registry }`);
+`apps/arena-client/src/components/ViewLoadoutButton.vue` (drop null-token
+short-circuit; simplify `messageForStatus`); `api-endpoints.md` (Auth →
+`guest`, D-11804 whole-row refresh). Tests updated: server 1241/0 (197
+DB-skipped), arena-client 1509/0, vue-tsc clean, `pnpm -r build` 0. **Packet:**
+INFRA (no WP).
+
+Protect this file.
