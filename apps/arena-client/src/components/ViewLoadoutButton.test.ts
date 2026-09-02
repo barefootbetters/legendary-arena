@@ -9,7 +9,7 @@ import ViewLoadoutButton from './ViewLoadoutButton.vue';
 import { useAuthStore } from '../stores/auth';
 
 /**
- * Tests for the in-match "View loadout in Registry Viewer" control (WP-363 /
+ * Tests for the in-match "View cards in Registry Viewer" control (WP-363 /
  * EC-393). jsdom + @vue/test-utils mount; `globalThis.fetch` and `window.open`
  * are stubbed. Covers the render-gate (no `?match=`), the null-token
  * short-circuit (no fetch), the success `window.open` (noopener + `?lagn=`), the

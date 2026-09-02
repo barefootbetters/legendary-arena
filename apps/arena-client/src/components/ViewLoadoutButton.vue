@@ -6,7 +6,7 @@ import { encodeLagnToViewerUrl, REGISTRY_VIEWER_ORIGIN } from '../lib/lagnShareL
 import { useAuthStore } from '../stores/auth';
 
 /**
- * Small, unobtrusive fixed-position "View loadout in Registry Viewer" control on
+ * Small, unobtrusive fixed-position "View cards in Registry Viewer" control on
  * the play surface. On click it fetches the current match's Tier-1 LAGN from
  * `GET /api/match/:matchId/lagn` (WP-361, authenticated with the player's session
  * bearer), base64url-encodes it into the Registry Viewer's `?lagn=` deep-link
@@ -140,7 +140,7 @@ export default defineComponent({
       :disabled="isLoading"
       @click="onViewLoadout"
     >
-      View loadout in Registry Viewer
+      View cards in Registry Viewer
     </button>
     <span
       v-if="statusMessage"
