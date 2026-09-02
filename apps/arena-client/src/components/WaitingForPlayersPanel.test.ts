@@ -303,4 +303,92 @@ describe('WaitingForPlayersPanel', () => {
     await flushPromises();
     assert.equal(wrapper.find('[data-testid="waiting-room-guest"]').exists(), false);
   });
+
+  // --- WP-634: in-match "Set guest password" (D-24441) ---
+
+  test('WP-634: "Set guest password" opens a form that prefills the name and keeps the password blank', async () => {
+    setSearch('?match=m1');
+    routeHandler = (url) => {
+      if (url.includes('/api/match/m1/guest-access')) {
+        return { status: 200, body: { matchId: 'm1', gameName: 'Grandkids', hasGuestPassword: true } };
+      }
+      return { status: 200, body: lobbyBody('m1', ['host', undefined]) };
+    };
+    installStubs();
+    const wrapper = mountPanel('tok');
+    await flushPromises();
+    await wrapper.find('[data-testid="waiting-room-set-guest-password"]').trigger('click');
+    await flushPromises();
+    const nameInput = wrapper.find('[data-testid="waiting-room-guest-name"]').element as HTMLInputElement;
+    const pwInput = wrapper.find('[data-testid="waiting-room-guest-pw"]').element as HTMLInputElement;
+    assert.equal(nameInput.value, 'Grandkids', 'name prefilled from the public meta');
+    assert.equal(pwInput.value, '', 'password field is write-only (never shows a stored value)');
+    assert.equal(pwInput.type, 'password');
+  });
+
+  test('WP-634: Save POSTs to set-guest-access with the bearer; a name-only save omits the password', async () => {
+    setSearch('?match=m1');
+    const posts: { url: string; init: RequestInit }[] = [];
+    routeHandler = (url, init) => {
+      if (url.includes('/api/match/m1/guest-access') && (init.method ?? 'GET') === 'GET') {
+        return { status: 200, body: { matchId: 'm1', gameName: '', hasGuestPassword: false } };
+      }
+      if (url.endsWith('/api/match/set-guest-access') && init.method === 'POST') {
+        posts.push({ url, init });
+        return { status: 200, body: { matchId: 'm1', gameName: 'Grandkids', hasGuestPassword: true } };
+      }
+      return { status: 200, body: lobbyBody('m1', ['host', undefined]) };
+    };
+    installStubs();
+    const wrapper = mountPanel('host-token');
+    await flushPromises();
+    await wrapper.find('[data-testid="waiting-room-set-guest-password"]').trigger('click');
+    await flushPromises();
+    await wrapper.find('[data-testid="waiting-room-guest-name"]').setValue('Grandkids');
+    await wrapper.find('[data-testid="waiting-room-guest-pw"]').setValue('apple');
+    await wrapper.find('[data-testid="waiting-room-guest-password-form"]').trigger('submit');
+    await flushPromises();
+    assert.equal(posts.length, 1);
+    assert.equal(
+      (posts[0]!.init.headers as Record<string, string>).Authorization,
+      'Bearer host-token',
+    );
+    const body = JSON.parse(String(posts[0]!.init.body)) as Record<string, unknown>;
+    assert.equal(body.gameName, 'Grandkids');
+    assert.equal(body.password, 'apple');
+    assert.match(wrapper.find('[data-testid="waiting-room-guest-pw-status"]').text(), /Saved/);
+
+    // a subsequent rename (blank password) must OMIT the password field. The form
+    // stays open after a save (showing the status), and the password field is
+    // cleared to blank — so just edit the name and resubmit.
+    posts.length = 0;
+    await wrapper.find('[data-testid="waiting-room-guest-name"]').setValue('Renamed');
+    await wrapper.find('[data-testid="waiting-room-guest-password-form"]').trigger('submit');
+    await flushPromises();
+    const renameBody = JSON.parse(String(posts[0]!.init.body)) as Record<string, unknown>;
+    assert.equal(renameBody.gameName, 'Renamed');
+    assert.equal('password' in renameBody, false, 'a blank password is omitted (kept as-is)');
+  });
+
+  test('WP-634: a 403 from set-guest-access shows the "must be in this game" line', async () => {
+    setSearch('?match=m1');
+    routeHandler = (url, init) => {
+      if (url.includes('/api/match/m1/guest-access') && (init.method ?? 'GET') === 'GET') {
+        return { status: 200, body: { matchId: 'm1', gameName: '', hasGuestPassword: false } };
+      }
+      if (url.endsWith('/api/match/set-guest-access') && init.method === 'POST') {
+        return { status: 403, body: { error: 'not a participant' } };
+      }
+      return { status: 200, body: lobbyBody('m1', ['host', undefined]) };
+    };
+    installStubs();
+    const wrapper = mountPanel('tok');
+    await flushPromises();
+    await wrapper.find('[data-testid="waiting-room-set-guest-password"]').trigger('click');
+    await flushPromises();
+    await wrapper.find('[data-testid="waiting-room-guest-pw"]').setValue('apple');
+    await wrapper.find('[data-testid="waiting-room-guest-password-form"]').trigger('submit');
+    await flushPromises();
+    assert.match(wrapper.find('[data-testid="waiting-room-guest-pw-status"]').text(), /must be in this game/i);
+  });
 });

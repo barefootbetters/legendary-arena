@@ -494,6 +494,7 @@ mindmap
         ["WP-629 ✅ Add-guest in the lobby + persistent hand-off link (arena-client; follow-up fixes to WP-628 — Add guest in the LOBBY seat list + the hand-off link no longer auto-hides when the guest fills the seat; EC-664; realizes D-24438)"]
         ["WP-630 ✅ Per-match guest password + game name (server; match_guest_access scrypt password_kdf + game name, host set-guest-access, PUBLIC rate-limited join-as-guest → shared mintGuestSeat → rowless Casual seat, lobby meta; the type-a-password guest model; EC-665; D-24441)"]
         ["WP-631 ✅ Guest password client (arena-client; host edit-control name/password + lobby shows game name + per-match Join-as-guest → password prompt → join-as-guest → seat; pick-from-list UX; EC-666; assumes WP-630)"]
+        ["WP-634 ✅ Guest password in-match set control (arena-client; Set guest password button + form in WaitingForPlayersPanel next to Add guest, reuses setGuestAccess/readGuestAccessMeta; host SET surface on the play screen, guest still JOINS from lobby; EC-669; D-24441; assumes WP-631)"]
 
       Hero/Villain Effects & Diagnostics (2026-07)
         ["WP-632 ✅ Widen optional-ko-reward KO source to include in-play (KO a card you played this turn, keep its Recruit/Attack; hand∪discard∪inPlay; reword 9 card texts; bot inPlay fallback keeps hashes byte-stable; EC-667; D-24442)"]
@@ -807,7 +808,7 @@ mindmap
 | Architecture & API Governance | 4/4 | — |
 | Complete-Game Testing | 1/1 | — |
 | Cross-App Infrastructure | 2/2 | — |
-| Multiplayer Play & Match Durability (2026-07) | 13/13 | — |
+| Multiplayer Play & Match Durability (2026-07) | 14/14 | — |
 | Hero/Villain Effects & Diagnostics (2026-07) | 6/6 | — |
 | Live-Play HUD & Pending-Choice UX (2026-07) | 20/20 | — |
 | Competitive Score Submission & Verification (2026-07) | 10/10 | — |
@@ -816,7 +817,7 @@ mindmap
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **617/627 WP ✅** (+ 4/4 Foundation Prompts) | 3 ⏸, 7 open |
+| **Total** | **618/628 WP ✅** (+ 4/4 Foundation Prompts) | 3 ⏸, 7 open |
 
 **Open / blocked WPs (derived from WORK_INDEX, 10):** WP-042.1 ⏸ blocked; WP-349 open; WP-391 open; WP-398 open; WP-399 open; WP-368 open; WP-403 ⏸ blocked; WP-404 ⏸ blocked; WP-429 open; WP-564 open.
 <!-- ROADMAP-COUNTS:END -->

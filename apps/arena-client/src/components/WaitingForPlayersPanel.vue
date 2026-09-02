@@ -4,7 +4,7 @@ import { computed, defineComponent, ref } from 'vue';
 import { useMatchInvites } from '../composables/useMatchInvites';
 import { useMatchSeatStatus } from '../composables/useMatchSeatStatus';
 import { useAuthStore } from '../stores/auth';
-import { addGuest, buildGuestPlayUrl } from '../lobby/lobbyApi';
+import { addGuest, buildGuestPlayUrl, setGuestAccess, readGuestAccessMeta } from '../lobby/lobbyApi';
 import type { MatchInviteApiErrorCode } from '../lib/api/matchInvitesApi';
 
 /**
@@ -223,6 +223,80 @@ export default defineComponent({
       addGuestError.value = null;
     }
 
+    // why: WP-634 / D-24441 — the host sets a game NAME + guest PASSWORD from HERE
+    // (the play surface), not only the lobby row, so after creating a game they can
+    // set the password and read it to a walk-up player (a grandchild) without
+    // navigating back to the lobby. A walk-up guest still JOINS from the lobby's
+    // "Join as guest" (WP-631); this panel is the host's set surface.
+    const isGuestPasswordFormOpen = ref<boolean>(false);
+    const guestGameName = ref<string>('');
+    const guestPasswordInput = ref<string>('');
+    const isSavingGuestPassword = ref<boolean>(false);
+    const guestPasswordStatus = ref<string | null>(null);
+
+    /**
+     * Open the set-guest-password form, prefilling the current game name from the
+     * public meta (readGuestAccessMeta). The password field is left BLANK — it is
+     * write-only, so a stored password is never rendered back to the host.
+     */
+    async function onOpenGuestPasswordForm(): Promise<void> {
+      if (!hasMatch) {
+        return;
+      }
+      isGuestPasswordFormOpen.value = true;
+      guestPasswordStatus.value = null;
+      guestPasswordInput.value = '';
+      // why: readGuestAccessMeta is failure-tolerant (returns null/false), so a
+      // meta hiccup just leaves the name blank — the form still works.
+      const meta = await readGuestAccessMeta(matchId);
+      guestGameName.value = meta.gameName ?? '';
+    }
+
+    /** Close the set-guest-password form without saving. */
+    function onCloseGuestPasswordForm(): void {
+      isGuestPasswordFormOpen.value = false;
+      guestGameName.value = '';
+      guestPasswordInput.value = '';
+      guestPasswordStatus.value = null;
+    }
+
+    /**
+     * Save the game name + guest password for this match (WP-630 set-guest-access).
+     * The password is sent only when the host typed one — an untouched (blank)
+     * field means "leave the password as-is" (the server's absent-leaves-unchanged
+     * merge), so setting a name never wipes an existing password.
+     */
+    async function onSaveGuestPassword(): Promise<void> {
+      const token = authStore.token;
+      if (isSavingGuestPassword.value || !hasMatch || token === null) {
+        return;
+      }
+      isSavingGuestPassword.value = true;
+      guestPasswordStatus.value = null;
+      try {
+        const update: { gameName?: string; password?: string } = {
+          gameName: guestGameName.value.trim(),
+        };
+        if (guestPasswordInput.value !== '') {
+          update.password = guestPasswordInput.value;
+        }
+        await setGuestAccess(matchId, update, token);
+        guestPasswordStatus.value =
+          'Saved — read the password to your guest; they join from the lobby’s "Join as guest".';
+        guestPasswordInput.value = '';
+      } catch (saveError) {
+        // why: 403 means the caller is not a participant in this match (the server
+        // gate); everything else a generic retry. Never re-throw.
+        const status = (saveError as { status?: number }).status;
+        guestPasswordStatus.value =
+          status === 403
+            ? 'You must be in this game to set its guest password.'
+            : 'Couldn’t save the guest password — please try again.';
+      } finally {
+        isSavingGuestPassword.value = false;
+      }
+    }
+
     return {
       isVisible,
       totalSeats,
@@ -244,6 +318,14 @@ export default defineComponent({
       onOpenGuestSeat,
       onCopyGuestLink,
       onDismissGuest,
+      isGuestPasswordFormOpen,
+      guestGameName,
+      guestPasswordInput,
+      isSavingGuestPassword,
+      guestPasswordStatus,
+      onOpenGuestPasswordForm,
+      onCloseGuestPasswordForm,
+      onSaveGuestPassword,
     };
   },
 });
@@ -367,6 +449,74 @@ export default defineComponent({
     >
       {{ addGuestError }}
     </span>
+
+    <!-- why: WP-634 — the host sets a game name + guest password from the play
+         surface (not only the lobby). The guest joins from the lobby's "Join as
+         guest"; this is the set surface so the host can read out the password. -->
+    <button
+      v-if="!isGuestPasswordFormOpen"
+      type="button"
+      class="waiting-room-button"
+      data-testid="waiting-room-set-guest-password"
+      @click="onOpenGuestPasswordForm"
+    >
+      Set guest password
+    </button>
+    <form
+      v-else
+      class="waiting-room-guest"
+      data-testid="waiting-room-guest-password-form"
+      @submit.prevent="onSaveGuestPassword"
+    >
+      <label class="waiting-room-seats" for="waiting-room-guest-name">Game name</label>
+      <input
+        id="waiting-room-guest-name"
+        v-model="guestGameName"
+        type="text"
+        class="waiting-room-input"
+        data-testid="waiting-room-guest-name"
+        placeholder="e.g. Grandkids game"
+        autocomplete="off"
+      />
+      <label class="waiting-room-seats" for="waiting-room-guest-pw">Guest password</label>
+      <!-- why: write-only — always blank on open; leaving it blank on save keeps
+           the existing password (rename without wiping). -->
+      <input
+        id="waiting-room-guest-pw"
+        v-model="guestPasswordInput"
+        type="password"
+        class="waiting-room-input"
+        data-testid="waiting-room-guest-pw"
+        placeholder="Leave blank to keep the current password"
+        autocomplete="new-password"
+      />
+      <div class="waiting-room-form">
+        <button
+          type="submit"
+          class="waiting-room-button"
+          data-testid="waiting-room-guest-pw-save"
+          :disabled="isSavingGuestPassword"
+        >
+          Save
+        </button>
+        <button
+          type="button"
+          class="waiting-room-button"
+          data-testid="waiting-room-guest-pw-cancel"
+          @click="onCloseGuestPasswordForm"
+        >
+          Cancel
+        </button>
+      </div>
+      <span
+        v-if="guestPasswordStatus !== null"
+        class="waiting-room-note"
+        data-testid="waiting-room-guest-pw-status"
+        role="status"
+      >
+        {{ guestPasswordStatus }}
+      </span>
+    </form>
   </div>
 </template>
 
