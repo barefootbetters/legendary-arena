@@ -187,10 +187,10 @@ order. Measure ruthlessly once G3 lands, and iterate on the winners.
 
 ## References
 
-- [go-to-market-plan.md (marketing repo — authoritative)](https://github.com/legendary-arena/legendary-arena-website/blob/main/docs/marketing/go-to-market-plan.md)
-- [youtube-channel-plan.md (marketing repo)](https://github.com/legendary-arena/legendary-arena-website/blob/main/docs/marketing/youtube-channel-plan.md)
-- [video-commerce-plan.md (marketing repo)](https://github.com/legendary-arena/legendary-arena-website/blob/main/docs/marketing/video-commerce-plan.md)
-- [homepage-spec.md (marketing repo)](https://github.com/legendary-arena/legendary-arena-website/blob/main/docs/marketing/homepage-spec.md)
-- ewiki mirrors — [YouTube Channel Plan](https://ewiki.legendary-arena.com/youtube-channel-plan/) · [Video Commerce](https://ewiki.legendary-arena.com/video-commerce/) · [Homepage Spec](https://ewiki.legendary-arena.com/homepage-spec/) · [Homepage Review Template](https://ewiki.legendary-arena.com/homepage-review-template/)
+- **Go-to-Market Plan** — [ewiki mirror (this page)](https://ewiki.legendary-arena.com/go-to-market-plan/) · [marketing repo — authoritative](https://github.com/legendary-arena/legendary-arena-website/blob/main/docs/marketing/go-to-market-plan.md)
+- **YouTube Channel Plan** — [ewiki mirror](https://ewiki.legendary-arena.com/youtube-channel-plan/) · [marketing repo](https://github.com/legendary-arena/legendary-arena-website/blob/main/docs/marketing/youtube-channel-plan.md)
+- **Video Commerce Plan** — [ewiki mirror](https://ewiki.legendary-arena.com/video-commerce/) · [marketing repo](https://github.com/legendary-arena/legendary-arena-website/blob/main/docs/marketing/video-commerce-plan.md)
+- **Homepage Spec** — [ewiki mirror](https://ewiki.legendary-arena.com/homepage-spec/) · [marketing repo](https://github.com/legendary-arena/legendary-arena-website/blob/main/docs/marketing/homepage-spec.md)
+- [Homepage Review Template](https://ewiki.legendary-arena.com/homepage-review-template/) (ewiki)
 - [Monetization Model](https://ewiki.legendary-arena.com/monetization-model/) — revenue streams and the fairness guardrails gear must respect
 - [01-VISION.md](https://github.com/barefootbetters/legendary-arena/blob/main/docs/01-VISION.md) — permanent non-goals (the no-pay-to-win boundary)
