@@ -37,6 +37,7 @@ import { useSetupFromUrl } from "./composables/useSetupFromUrl";
 import { parsePlayerCountFromUrl } from "./lib/setupUrlParams";
 import { applyPreviewToDraft } from "./lib/applyPreviewToDraft";
 import { useLagnFromUrl } from "./composables/useLagnFromUrl";
+import { parseLagnViewParam } from "./lib/lagnUrlParam";
 import { useLoadoutDraft } from "./composables/useLoadoutDraft";
 import type { UseLoadoutDraftApi } from "./composables/useLoadoutDraft";
 import { isCardInLoadout, toggleCardInLoadout } from "./lib/loadoutCardActions";
@@ -427,20 +428,38 @@ onMounted(async () => {
       }
     }
 
-    // why: one-shot auto-switch — either a `?lagn=` deep-link or the WP-114 setup
-    // params is a declarative "open the Loadout tab" arrival signal, not a sticky
-    // preference. The first render with either flips activeView once; the latch
-    // then never re-fires, preserving subsequent manual tab navigation.
-    const hasLoadoutUrlSignal = hasLagnParam.value || setupHasUrlParams.value;
-    if (
-      hasLoadoutUrlSignal &&
-      !hasAppliedUrlAutoSwitch.value &&
-      activeView.value !== "loadout"
-    ) {
-      activeView.value = "loadout";
+    // why: D-24445 — the arena client's in-match "View loadout" link appends
+    // `&view=cards` so a player who taps it lands directly on the loadout CARD
+    // GALLERY (the actual cards of this game) instead of the Loadout builder tab.
+    // Honoured ONLY when a valid LAGN was applied (present AND no decode/validation
+    // errors); a bad link falls through to the Loadout-tab branch below so its
+    // error banner still shows. The gallery narrowing is applied by the
+    // end-of-onMounted applyFilters() once every taxonomy has resolved.
+    const wantsCardGallery =
+      parseLagnViewParam(window.location.search) === "cards" &&
+      hasLagnParam.value &&
+      lagnUrlErrors.value.length === 0;
+
+    if (wantsCardGallery) {
+      activeView.value = "cards";
+      loadoutGalleryActive.value = true;
       hasAppliedUrlAutoSwitch.value = true;
-    } else if (hasLoadoutUrlSignal) {
-      hasAppliedUrlAutoSwitch.value = true;
+    } else {
+      // why: one-shot auto-switch — either a `?lagn=` deep-link or the WP-114 setup
+      // params is a declarative "open the Loadout tab" arrival signal, not a sticky
+      // preference. The first render with either flips activeView once; the latch
+      // then never re-fires, preserving subsequent manual tab navigation.
+      const hasLoadoutUrlSignal = hasLagnParam.value || setupHasUrlParams.value;
+      if (
+        hasLoadoutUrlSignal &&
+        !hasAppliedUrlAutoSwitch.value &&
+        activeView.value !== "loadout"
+      ) {
+        activeView.value = "loadout";
+        hasAppliedUrlAutoSwitch.value = true;
+      } else if (hasLoadoutUrlSignal) {
+        hasAppliedUrlAutoSwitch.value = true;
+      }
     }
 
     // Load themes in parallel (non-blocking — card view works even if themes fail)
@@ -548,6 +567,17 @@ onMounted(async () => {
       rebuildGlossaryEntries();
     } catch (glossaryError) {
       console.warn("[Glossary] Load failed (non-blocking):", glossaryError);
+    }
+
+    // why: D-24445 — when a `?lagn=&view=cards` link opened us straight into the
+    // loadout gallery, run the filter NOW (after every taxonomy has resolved) so
+    // filteredCards is both narrowed to the applied composition AND enriched with
+    // pattern/mechanic badges on the first paint. This runs before `loading` flips
+    // false in `finally`, so the grid never flashes the full card list first.
+    // Guarded on loadoutGalleryActive, which only the view=cards branch sets during
+    // mount (the tray/loadout-tab entry points are user actions that fire later).
+    if (loadoutGalleryActive.value) {
+      applyFilters();
     }
   } catch (err) {
     loadError.value = err instanceof Error ? err.message : String(err);

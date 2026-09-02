@@ -10,8 +10,11 @@ import { useAuthStore } from '../stores/auth';
  * the play surface. On click it fetches the current match's Tier-1 LAGN from
  * `GET /api/match/:matchId/lagn` (WP-361, authenticated with the player's session
  * bearer), base64url-encodes it into the Registry Viewer's `?lagn=` deep-link
- * (WP-362), and opens it in a new tab. A failure surfaces a brief, non-blocking
- * inline message rather than breaking the match view.
+ * (WP-362) with a `&view=cards` companion (D-24445), and opens it in a new tab.
+ * The `view=cards` companion lands the player directly on the loadout CARD GALLERY
+ * — the actual cards of this game — rather than the Loadout builder tab, saving
+ * clicks for a player who just wants to look at the cards. A failure surfaces a
+ * brief, non-blocking inline message rather than breaking the match view.
  *
  * Not rendered outside a live match (no `?match=`). A guest (null token) is
  * short-circuited to a sign-in message with NO fetch; an in-flight guard blocks

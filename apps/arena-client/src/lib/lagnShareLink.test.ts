@@ -70,4 +70,11 @@ describe('encodeLagnToViewerUrl', () => {
   test('REGISTRY_VIEWER_ORIGIN has no trailing slash', () => {
     assert.equal(REGISTRY_VIEWER_ORIGIN.endsWith('/'), false);
   });
+
+  test('carries the &view=cards companion so the link opens the card gallery (D-24445)', () => {
+    const url = encodeLagnToViewerUrl(SAMPLE_LAGN, REGISTRY_VIEWER_ORIGIN);
+    assert.equal(new URL(url).searchParams.get('view'), 'cards');
+    // the lagn payload still round-trips alongside the companion param
+    assert.deepEqual(decodeViewerUrl(url), SAMPLE_LAGN);
+  });
 });

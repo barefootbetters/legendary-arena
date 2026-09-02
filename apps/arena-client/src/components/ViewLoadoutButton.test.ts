@@ -135,6 +135,8 @@ describe('ViewLoadoutButton', () => {
     assert.ok(lastTab, 'a tab handle was returned');
     assert.match(lastTab!.location.href, /\/\?lagn=/);
     assert.equal(lastTab!.location.href.includes('//?'), false);
+    // D-24445: the link opens the card gallery directly (view=cards companion)
+    assert.equal(new URL(lastTab!.location.href).searchParams.get('view'), 'cards');
     assert.equal(lastTab!.opener, null);
     assert.equal(lastTab!.closed, false);
     assert.equal(wrapper.find('[data-testid="view-loadout-status"]').exists(), false);
