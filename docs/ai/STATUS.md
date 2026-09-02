@@ -7,6 +7,16 @@
 
 ## Current State
 
+### WP-634 — Guest password: in-match "Set guest password" control (EC-669 / D-24441) shipped (2026-09-01)
+
+Operator-reported gap (Jeff): after creating a game you land on the **play surface**, but WP-631 put the host's set-password control only in the **lobby** match-row — so it was where the host wasn't. This adds a **"Set guest password"** button + form (game **name** + write-only **password**) to the in-match `WaitingForPlayersPanel`, right next to the existing "Add guest" button, reusing the shipped `setGuestAccess` / `readGuestAccessMeta` wrappers.
+
+- Name **prefills** from `readGuestAccessMeta` (failure-tolerant); the **password field is write-only** (always blank on open, never renders a stored value). Leaving it blank on save **omits** the `password` field, so a rename never wipes the password (the server's absent-leaves-unchanged merge).
+- `403` → "you must be in this game to set its guest password"; never throws.
+- The guest still **joins** from the lobby's "Join as guest" (WP-631, unchanged) — this is the host **set** surface, so Grandpa can set the password and read it out from the game screen.
+
+Files (2): `WaitingForPlayersPanel.vue` + `.test.ts` (3 new tests: form opens/prefills/write-only, Save POSTs with bearer + name-only omits password, 403 copy). Arena-client **1509 pass / 0 fail**, `vue-tsc` 0, build 0. Client-only — no server/contract/`G` change; realizes the existing **D-24441** (no new decision). Post-deploy D-24026 live-verify (set a password from the game screen) pending.
+
 ### INFRA fix — in-match "View loadout" link opens the loadout CARD GALLERY directly (D-24445 Active) (2026-09-02)
 
 Operator-reported UX bug (Jeff): the bottom-left in-match **"View loadout in Registry Viewer"** control on `play.legendary-arena.com` opened the Registry Viewer's **Loadout builder tab** — a confusing landing for a player who just wants a **detailed look at the actual cards** of this game, costing extra clicks and scrolling to reach them. The viewer already had the right target: the WP-288 / D-24072 **"View loadout as cards" gallery**.
