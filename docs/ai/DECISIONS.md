@@ -39017,3 +39017,55 @@ DB-skipped), arena-client 1509/0, vue-tsc clean, `pnpm -r build` 0. **Packet:**
 INFRA (no WP).
 
 Protect this file.
+
+### D-24447 — Guest models are mutually exclusive per match: "Add guest" is hidden once a guest password is set (Active 2026-09-02 — INFRA)
+
+**Status:** Active (post-execution) 2026-09-02. Operator-reported bug (Jeff): on
+the guest computer, a match with a guest password **did not appear** in the lobby
+"Join existing match" list ("No open matches right now"). Operator chose the
+lobby-join guest flow as the primary experience. No WP — a targeted UX
+deconfliction (precedent: D-24440). **Refines the WP-627/628/629 (link handoff)
+and WP-630/631/634 (password) guest models.**
+
+**User-Visible Surface:** `play.legendary-arena.com` — the lobby "Join existing
+match" list and the in-match waiting-room panel.
+
+**Context.** There are two guest-join models, and they were silently colliding:
+- **Link handoff (WP-627/628/629).** The host clicks **"Add guest"**, which
+  **mints and fills** the free seat (`mintGuestSeat` → bgio join as `"Guest"`,
+  `addGuestRoutes.mjs`) and returns a one-off play link. The guest opens the
+  link; the match is **not** meant to appear in the guest's lobby.
+- **Password / lobby join (WP-630/631/634).** The host sets a guest **password**;
+  the seat stays **open**; a walk-up guest picks the game from the lobby, clicks
+  **"Join as guest"**, and types the password (which mints the seat *then*).
+
+The lobby's `filterJoinableMatches` hides any match with no open seat (WP-326).
+So when a host set a password **and** clicked "Add guest", the minted `"Guest"`
+placeholder consumed the only open seat, dropping the match from the joinable
+list — the guest saw "No open matches" (confirmed live: match `E3zO_ZGOh_I`,
+`hasGuestPassword: true`, seat 1 already `name: "Guest"`, unconnected).
+
+**Decision.** The two models are **mutually exclusive per match**: when a match
+has a guest **password** set, the **"Add guest"** affordance (which fills the
+seat) is **hidden** so the seat stays open for the lobby "Join as guest" flow.
+Client-only, on both surfaces:
+- **`LobbyView.vue`** — a `matchHasGuestPassword(matchID)` helper (reads the
+  already-fetched per-match `guestMeta`); the "Add guest" block gains
+  `&& !matchHasGuestPassword(match.matchID)`.
+- **`WaitingForPlayersPanel.vue`** — a `guestPasswordSet` ref seeded on mount from
+  `readGuestAccessMeta` (failure-tolerant → the safe default is "Add guest
+  available") and flipped `true` the moment the host saves a password; the "Add
+  guest" button gains `v-if="!guestPasswordSet"`.
+
+**Scope / limits.** No server change — the endpoints and `mintGuestSeat` are
+untouched; this is a UI deconfliction only. The one direction is enforced
+(password set → hide Add guest); a host who instead uses the link flow simply
+never sets a password. Existing matches already in the broken state (seat minted)
+are not auto-repaired — the host creates a fresh match. No engine / hash /
+persistence / migration.
+
+**Files.** `apps/arena-client/src/lobby/LobbyView.vue`,
+`apps/arena-client/src/components/WaitingForPlayersPanel.vue` (+ both test files).
+arena-client 1511/0, vue-tsc clean, `pnpm -r build` 0. **Packet:** INFRA (no WP).
+
+Protect this file.

@@ -7,6 +7,14 @@
 
 ## Current State
 
+### INFRA fix — guest-join models deconflicted: "Add guest" hidden when a guest password is set (D-24447 Active) (2026-09-02)
+
+Operator-reported bug (Jeff): on the guest computer, a **password-protected match did not appear** in the lobby "Join existing match" list ("No open matches right now"). Root cause: the two guest-join models were silently colliding. **"Add guest"** (WP-627/628 link-handoff) **mints and fills** the free seat (`mintGuestSeat` → a `"Guest"` occupant) and hands back a one-off link; the **password / lobby-join** model (WP-630/631/634) needs the seat left **open** so a walk-up guest can claim it via "Join as guest". A host who set a password **and** clicked "Add guest" consumed the only open seat, so `filterJoinableMatches` (WP-326) dropped the match — the guest saw nothing. Confirmed live (match `E3zO_ZGOh_I`: `hasGuestPassword: true`, seat 1 already `name: "Guest"`, unconnected).
+
+**Fix (operator-chosen — lobby+password primary; client-only).** The two models are now **mutually exclusive per match**: when a match has a guest password, the seat-filling **"Add guest"** affordance is **hidden**, so the seat stays open for the lobby "Join as guest" flow. `LobbyView.vue` gains a `matchHasGuestPassword(matchID)` helper (reads the already-fetched per-match guest meta) gating the Add-guest block; `WaitingForPlayersPanel.vue` gains a `guestPasswordSet` ref (seeded on mount from `readGuestAccessMeta`, flipped when the host saves a password) gating its Add-guest button. No server change — `mintGuestSeat` and the endpoints are untouched.
+
+**Verified:** arena-client **1511 / 0**, `vue-tsc` clean, `pnpm -r build` 0. Files: `LobbyView.vue`, `WaitingForPlayersPanel.vue` (+ both test files). Refines WP-627/628/629 + WP-630/631/634. **Packet:** INFRA (no WP). Post-deploy D-24026 live-verify (a guest seeing + joining a password match from the lobby) pending the arena-client deploy.
+
 ### INFRA fix — in-match "View cards" loadout read is now PUBLIC so guests can use it (D-24446 Active) (2026-09-02)
 
 Operator-reported bug (Jeff): a signed-in **guest** could not open the in-match **"View cards in Registry Viewer"** control — it showed *"Sign in to view this game's loadout."* Root cause: a guest takes a Casual seat via per-match bgio credentials, not a Hanko session, so `authStore.token` is `null` and the button short-circuited them to the sign-in message; and even without that, `GET /api/match/:matchId/lagn` was `authenticated-session-required` + participant-gated on an `AccountId`, while a guest is a **rowless** Casual seat (D-24120) — so a guest would get `401`/`403`. The composition also isn't in the client's UIState and `matchSetupSession` stashes it only for the match *creator*, so a joined guest can't build the link locally either.
