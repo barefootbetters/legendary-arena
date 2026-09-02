@@ -244,9 +244,9 @@ is a failure even if revenue is up.
 
 ## References
 
-- [video-commerce-plan.md (marketing repo — authoritative)](https://github.com/legendary-arena/legendary-arena-website/blob/main/docs/marketing/video-commerce-plan.md)
-- [youtube-channel-plan.md (marketing repo)](https://github.com/legendary-arena/legendary-arena-website/blob/main/docs/marketing/youtube-channel-plan.md)
-- [go-to-market-plan.md (marketing repo)](https://github.com/legendary-arena/legendary-arena-website/blob/main/docs/marketing/go-to-market-plan.md)
+- **Video Commerce Plan** — [ewiki mirror (this page)](https://ewiki.legendary-arena.com/video-commerce/) · [marketing repo — authoritative](https://github.com/legendary-arena/legendary-arena-website/blob/main/docs/marketing/video-commerce-plan.md)
+- **YouTube Channel Plan** — [ewiki mirror](https://ewiki.legendary-arena.com/youtube-channel-plan/) · [marketing repo](https://github.com/legendary-arena/legendary-arena-website/blob/main/docs/marketing/youtube-channel-plan.md)
+- **Go-to-Market Plan** — [ewiki mirror](https://ewiki.legendary-arena.com/go-to-market-plan/) · [marketing repo](https://github.com/legendary-arena/legendary-arena-website/blob/main/docs/marketing/go-to-market-plan.md)
 - [Monetization Model](https://ewiki.legendary-arena.com/monetization-model/) — revenue streams and the fairness
   guardrails gear must respect
 - **Fourthwall** — the named YouTube Shopping partner for the Store-tab mirror of
