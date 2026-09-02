@@ -11,9 +11,10 @@ import { useAuthStore } from '../stores/auth';
 /**
  * Tests for the in-match "View cards in Registry Viewer" control (WP-363 /
  * EC-393). jsdom + @vue/test-utils mount; `globalThis.fetch` and `window.open`
- * are stubbed. Covers the render-gate (no `?match=`), the null-token
- * short-circuit (no fetch), the success `window.open` (noopener + `?lagn=`), the
- * pop-up-blocked fallback, the 403 message, and the in-flight guard.
+ * are stubbed. Covers the render-gate (no `?match=`), the guest public-read
+ * (null token still fetches, D-24446), the success `window.open` (noopener +
+ * `?lagn=`), the pop-up-blocked fallback, the 404 message, and the in-flight
+ * guard.
  *
  * Authority: WP-363 §Scope (In) §E; EC-393; D-24155.
  */
@@ -98,22 +99,25 @@ describe('ViewLoadoutButton', () => {
     assert.equal(wrapper.find('[data-testid="view-loadout-button"]').exists(), false);
   });
 
-  test('a null token shows the sign-in message and fires no fetch (and opens no tab)', async () => {
+  test('a guest (null token) still fetches and opens the gallery — public read (D-24446)', async () => {
     setSearch('?match=m1');
-    stubFetch({ lagn: {} });
+    stubFetch({ lagn: { lagn_version: '1.0.0', game_id: 'm1' } });
     stubOpen(false);
     const wrapper = mountButton();
-    // token defaults to null (guest)
+    // token defaults to null (guest) — no sign-in short-circuit anymore
+
     await wrapper.find('[data-testid="view-loadout-button"]').trigger('click');
     await flushPromises();
 
-    assert.equal(fetchCalls, 0);
-    // pre-open happens AFTER the token check, so a guest opens no tab
-    assert.equal(openCalls.length, 0);
-    assert.match(
-      wrapper.find('[data-testid="view-loadout-status"]').text(),
-      /sign in/i,
-    );
+    // the guest fetch fires and the tab is pre-opened + navigated, same as a
+    // signed-in player — the read no longer requires a session
+    assert.equal(fetchCalls, 1);
+    assert.equal(openCalls.length, 1);
+    assert.ok(lastTab, 'a tab handle was returned');
+    assert.match(lastTab!.location.href, /\/\?lagn=/);
+    assert.equal(new URL(lastTab!.location.href).searchParams.get('view'), 'cards');
+    assert.equal(lastTab!.opener, null);
+    assert.equal(wrapper.find('[data-testid="view-loadout-status"]').exists(), false);
   });
 
   test('a successful fetch pre-opens a blank tab then navigates it to the ?lagn= URL', async () => {
@@ -160,9 +164,9 @@ describe('ViewLoadoutButton', () => {
     );
   });
 
-  test('a 403 closes the pre-opened tab (no navigation) and shows the participants-only message', async () => {
+  test('a 404 closes the pre-opened tab (no navigation) and shows the not-available message', async () => {
     setSearch('?match=m1');
-    stubFetch({ error: 'not_a_participant' }, 403);
+    stubFetch({ error: 'match_not_found' }, 404);
     stubOpen(false);
     const wrapper = mountButton();
     useAuthStore().token = 'tok';
@@ -175,7 +179,7 @@ describe('ViewLoadoutButton', () => {
     assert.equal(lastTab!.location.href, ''); // never navigated
     assert.match(
       wrapper.find('[data-testid="view-loadout-status"]').text(),
-      /only players/i,
+      /isn'?t available yet/i,
     );
   });
 

@@ -7,6 +7,14 @@
 
 ## Current State
 
+### INFRA fix — in-match "View cards" loadout read is now PUBLIC so guests can use it (D-24446 Active) (2026-09-02)
+
+Operator-reported bug (Jeff): a signed-in **guest** could not open the in-match **"View cards in Registry Viewer"** control — it showed *"Sign in to view this game's loadout."* Root cause: a guest takes a Casual seat via per-match bgio credentials, not a Hanko session, so `authStore.token` is `null` and the button short-circuited them to the sign-in message; and even without that, `GET /api/match/:matchId/lagn` was `authenticated-session-required` + participant-gated on an `AccountId`, while a guest is a **rowless** Casual seat (D-24120) — so a guest would get `401`/`403`. The composition also isn't in the client's UIState and `matchSetupSession` stashes it only for the match *creator*, so a joined guest can't build the link locally either.
+
+**Fix (operator-chosen — public read).** The setup-LAGN read becomes **PUBLIC / guest-readable**: dropped the session gate + participant gate from `GET /api/match/:matchId/lagn`. The Tier-1 setup LAGN is non-secret game setup (scheme/mastermind/villains/heroes/supply) with **no player identity**, mirroring the already-guest-readable `result-lagn` sibling. The client always fetches now (a signed-in player sends its bearer, a guest sends none — `fetchMatchLagn` already omits the header for `null`) and the button's null-token short-circuit is removed. Fail-closed preserved (unknown OR unprojectable match → same `404`); new status domain `{200,404,500}`. The now-dead auth plumbing in `matchLagn.routes.ts` is pruned so the file no longer implies a gate it lacks; the blob-read itself is unchanged (D-24153 carve-out).
+
+**Verified:** server 1241/0 (197 DB-skipped), arena-client 1509/0, `vue-tsc` clean, `pnpm -r build` 0. Files: `matchLagn.routes.ts`, `server.mjs`, `ViewLoadoutButton.vue`, `api-endpoints.md` (Auth → `guest`, D-11804 whole-row) + tests. Changes the access clause of D-24155/D-24153. **Packet:** INFRA (no WP). Post-deploy D-24026 live-verify (a guest opening "View cards") pending the server + arena-client deploys.
+
 ### WP-634 — Guest password: in-match "Set guest password" control (EC-669 / D-24441) shipped (2026-09-01)
 
 Operator-reported gap (Jeff): after creating a game you land on the **play surface**, but WP-631 put the host's set-password control only in the **lobby** match-row — so it was where the host wasn't. This adds a **"Set guest password"** button + form (game **name** + write-only **password**) to the in-match `WaitingForPlayersPanel`, right next to the existing "Add guest" button, reusing the shipped `setGuestAccess` / `readGuestAccessMeta` wrappers.
