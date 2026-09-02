@@ -76,6 +76,7 @@ Every video employs the seven StoryBrand elements:
 - **YouTube Channel Plan** — [ewiki mirror (this page)](https://ewiki.legendary-arena.com/youtube-channel-plan/) · [marketing repo — authoritative](https://github.com/legendary-arena/legendary-arena-website/blob/main/docs/marketing/youtube-channel-plan.md)
 - **Video Commerce Plan** — [ewiki mirror](https://ewiki.legendary-arena.com/video-commerce/) · [marketing repo](https://github.com/legendary-arena/legendary-arena-website/blob/main/docs/marketing/video-commerce-plan.md) — the fourth "gear purchase" conversion goal and in-video product tagging
 - **Go-to-Market Plan** — [ewiki mirror](https://ewiki.legendary-arena.com/go-to-market-plan/) · [marketing repo](https://github.com/legendary-arena/legendary-arena-website/blob/main/docs/marketing/go-to-market-plan.md)
+- **Revenue Operating Spec** — [ewiki mirror](https://ewiki.legendary-arena.com/revenue-operating-spec/) · [marketing repo](https://github.com/legendary-arena/legendary-arena-website/blob/main/docs/marketing/revenue-operating-spec.md)
 - **Production workflow:** [Video Production Workflow](video-production-workflow.md)
 - **Homepage strategy:** [Homepage Spec](homepage-spec.md),
   [Homepage Appendix](homepage-appendix.md)
