@@ -281,6 +281,11 @@ Cross-cutting governance, methodology, and readiness assessments.
   through in-video product tags; the fourth "gear purchase" conversion
   goal, commerce-readiness gates, and the fairness boundary gear must
   respect.
+- [Brand Asset Generation](brand-asset-generation.md) — The operating
+  system for generating marketing assets (copy/images) with AI without
+  slop: the Three Ps, a required-reading context pack, the generate→QA
+  kill-list, a creative tracker, the C2 volume gate, and the do-not-adopt
+  boundaries (no AI-UGC testimonials, no scroll-toy site).
 - [Design System Overview](design-system-overview.md) — *(draft,
   research)* the north-star hub for the sensory-and-feel layer of
   `play.legendary-arena.com`, and the **shared contract** the two sensory
@@ -513,7 +518,8 @@ following are useful entry points:
   [Homepage Spec](homepage-spec.md),
   [Homepage Appendix](homepage-appendix.md),
   [Homepage Review Template](homepage-review-template.md),
-  [Video Commerce](video-commerce.md)
+  [Video Commerce](video-commerce.md),
+  [Brand Asset Generation](brand-asset-generation.md)
 - **`layer-registry`** — Pages anchored in the registry layer:
   [Card Type Taxonomy](card-type-taxonomy.md),
   [CardExtId](cardextid.md) (cross-cuts engine + registry),

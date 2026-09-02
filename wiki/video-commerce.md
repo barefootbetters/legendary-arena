@@ -13,6 +13,7 @@ related:
   - video-production-workflow.md
   - monetization-model.md
   - homepage-marketing-scorecard.md
+  - brand-asset-generation.md
   - homepage-spec.md
 status: draft
 source:
