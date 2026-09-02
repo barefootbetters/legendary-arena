@@ -24,6 +24,12 @@ canonical-source: docs/marketing/video-commerce-plan.md
 canonical-source-repo: legendary-arena/legendary-arena-website
 ---
 
+This page mirrors the authoritative source at
+`C:\www\legendary-arena-com\docs\marketing\video-commerce-plan.md`.
+If they disagree, the marketing repo copy wins.
+
+---
+
 # Video Commerce
 
 ## Summary
