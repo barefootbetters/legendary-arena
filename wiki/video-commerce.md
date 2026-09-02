@@ -40,8 +40,8 @@ affiliate clutter. The [YouTube Channel Plan](youtube-channel-plan.md) owns
 content and the first three conversion goals (play, email, subscriber); this
 page owns the fourth — **gear purchase** — and the rules that keep it from
 stealing the other three or crossing the no-pay-to-win line. The authoritative
-long-form policy is `docs/marketing/video-commerce-plan.md` in the marketing
-repo; this page is the operating mirror.
+long-form policy is `C:\www\legendary-arena-com\docs\marketing\video-commerce-plan.md`
+in the marketing repo; this page is the operating mirror.
 
 ## Mechanics
 
