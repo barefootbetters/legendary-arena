@@ -30,7 +30,7 @@
  */
 
 import koaBody from 'koa-body';
-import { mintGuestSeat } from './addGuestRoutes.mjs';
+import { mintGuestSeat, releaseUnclaimedGuestSeats } from './addGuestRoutes.mjs';
 import { readSeatAccounts } from './seatAccount.logic.js';
 import {
   setGuestAccess,
@@ -135,6 +135,9 @@ async function ensureJsonBodyParsed(koaContext) {
  */
 function registerSetGuestAccessRoute(router, context) {
   const { database, requireAuthenticatedSession, verifier, accountResolver } = context;
+  // why: D-24448 — reopening a reserved guest seat on password-set needs the same
+  // framework-store + loopback bundle mintGuestSeat uses (db / serverUrl /
+  // internalDelegationSecret); it is threaded through the shared bot-ally context.
 
   router.post('/api/match/set-guest-access', async (koaContext) => {
     koaContext.set('Cache-Control', 'no-store');
@@ -210,6 +213,18 @@ function registerSetGuestAccessRoute(router, context) {
         { gameName: requestBody.gameName, password: requestBody.password },
         database,
       );
+
+      // why: D-24448 — a host who sets a PASSWORD has chosen the lobby-join guest
+      // model, which needs an OPEN seat. If "Add guest" already minted-and-filled
+      // the seat with an unclaimed "Guest" placeholder, that placeholder hides the
+      // match from the lobby (no open seat), so release it here to reopen the seat.
+      // Only fires when a real password is being set (not a name-only save), and is
+      // best-effort — the password is already saved, so a release failure never
+      // fails this request. A CONNECTED guest keeps their seat.
+      if (typeof requestBody.password === 'string' && requestBody.password !== '') {
+        await releaseUnclaimedGuestSeats(context, matchId);
+      }
+
       // why: the response echoes only the lobby-safe meta — never the plaintext
       // or the derived key.
       const meta = await readGuestAccessMeta(matchId, database);

@@ -21,6 +21,7 @@ import assert from 'node:assert/strict';
 
 import {
   registerAddGuestRoutes,
+  releaseUnclaimedGuestSeats,
   MAX_GUEST_SEATS_PER_MATCH,
 } from './addGuestRoutes.mjs';
 
@@ -287,5 +288,101 @@ describe('addGuestRoutes (WP-627)', () => {
     // rule 2 demotes the match to Casual.
     const wroteSeatAccount = queries.some((q) => q.sql.includes('INSERT INTO legendary.match_seat_accounts'));
     assert.equal(wroteSeatAccount, false);
+  });
+});
+
+describe('releaseUnclaimedGuestSeats (D-24448)', () => {
+  afterEach(() => {
+    restoreFetch();
+  });
+
+  test('releases an UNCONNECTED guest seat via bgio leave with its own credentials', async () => {
+    // seat 0 = the host account seat; seat 1 = a minted guest placeholder that no
+    // one has connected to (no isConnected).
+    const metadata = {
+      players: {
+        '0': { id: 0, name: 'host', credentials: 'host-cred', isConnected: true },
+        '1': { id: 1, name: 'Guest', credentials: 'guest-cred' },
+      },
+    };
+    const { database } = makeDatabase([{ player_id: '0', account_id: HOST_ACCOUNT }], []);
+    installFetchStub(200, {});
+    const released = await releaseUnclaimedGuestSeats(
+      baseContext({ db: makeDb(metadata), database }),
+      'm1',
+    );
+    assert.deepEqual(released, ['1']);
+    // exactly one leave call, to seat 1, carrying that seat's credentials
+    assert.equal(fetchCalls.length, 1);
+    assert.ok(fetchCalls[0]!.url.endsWith('/games/legendary-arena/m1/leave'));
+    const sentBody = JSON.parse(String(fetchCalls[0]!.init?.body));
+    assert.equal(sentBody.playerID, '1');
+    assert.equal(sentBody.credentials, 'guest-cred');
+  });
+
+  test('leaves a CONNECTED guest seat untouched (a real person on the link)', async () => {
+    const metadata = {
+      players: {
+        '0': { id: 0, name: 'host', credentials: 'host-cred', isConnected: true },
+        '1': { id: 1, name: 'Guest', credentials: 'guest-cred', isConnected: true },
+      },
+    };
+    const { database } = makeDatabase([{ player_id: '0', account_id: HOST_ACCOUNT }], []);
+    installFetchStub(200, {});
+    const released = await releaseUnclaimedGuestSeats(
+      baseContext({ db: makeDb(metadata), database }),
+      'm1',
+    );
+    assert.deepEqual(released, []);
+    assert.equal(fetchCalls.length, 0);
+  });
+
+  test('never releases an account seat or a bot seat', async () => {
+    const metadata = {
+      players: {
+        '0': { id: 0, name: 'host', credentials: 'host-cred' }, // account seat
+        '1': { id: 1, name: 'Bot', credentials: 'bot-cred' }, // bot seat
+      },
+    };
+    const { database } = makeDatabase(
+      [{ player_id: '0', account_id: HOST_ACCOUNT }],
+      [{ bot_seats: ['1'] }],
+    );
+    installFetchStub(200, {});
+    const released = await releaseUnclaimedGuestSeats(
+      baseContext({ db: makeDb(metadata), database }),
+      'm1',
+    );
+    assert.deepEqual(released, []);
+    assert.equal(fetchCalls.length, 0);
+  });
+
+  test('best-effort: a failed leave is skipped and never throws', async () => {
+    const metadata = {
+      players: {
+        '0': { id: 0, name: 'host', credentials: 'host-cred', isConnected: true },
+        '1': { id: 1, name: 'Guest', credentials: 'guest-cred' },
+      },
+    };
+    const { database } = makeDatabase([{ player_id: '0', account_id: HOST_ACCOUNT }], []);
+    installFetchStub(500, { error: 'boom' });
+    const released = await releaseUnclaimedGuestSeats(
+      baseContext({ db: makeDb(metadata), database }),
+      'm1',
+    );
+    // the leave was attempted but failed, so nothing is reported released
+    assert.deepEqual(released, []);
+    assert.equal(fetchCalls.length, 1);
+  });
+
+  test('a match with no metadata / no players returns [] without a leave call', async () => {
+    const { database } = makeDatabase([], []);
+    installFetchStub(200, {});
+    const released = await releaseUnclaimedGuestSeats(
+      baseContext({ db: makeDb(null), database }),
+      'missing',
+    );
+    assert.deepEqual(released, []);
+    assert.equal(fetchCalls.length, 0);
   });
 });

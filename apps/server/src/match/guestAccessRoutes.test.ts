@@ -208,6 +208,40 @@ describe('set-guest-access (host-gated) (WP-630)', () => {
     assert.equal(responseBody.gameName, 'Grandkids');
     assert.equal(JSON.stringify(responseBody).includes('apple'), false);
   });
+
+  test('D-24448: setting a password releases an unclaimed guest seat (a bgio leave fires)', async () => {
+    installFetchStub(200, {});
+    const { database } = makeDatabase({ accountRows: [{ player_id: '0', account_id: HOST_ACCOUNT }] });
+    // seat 1 is a minted, unconnected "Guest" placeholder — it must be reopened so
+    // the match returns to the lobby's joinable list for a password guest.
+    const metadata = {
+      players: {
+        '0': { id: 0, name: 'host', credentials: 'host-cred', isConnected: true },
+        '1': { id: 1, name: 'Guest', credentials: 'guest-cred' },
+      },
+    };
+    const { setGuestAccess } = collectHandlers(baseContext({ database, db: makeDb(metadata) }));
+    const koaContext = makeContext({ matchId: 'm1', password: 'apple' });
+    await setGuestAccess(koaContext);
+    assert.equal(koaContext.status, 200);
+    assert.ok(fetchCalls.some((url) => url.endsWith('/games/legendary-arena/m1/leave')));
+  });
+
+  test('D-24448: a name-only save (no password) releases nothing', async () => {
+    installFetchStub(200, {});
+    const { database } = makeDatabase({ accountRows: [{ player_id: '0', account_id: HOST_ACCOUNT }] });
+    const metadata = {
+      players: {
+        '0': { id: 0, name: 'host', credentials: 'host-cred', isConnected: true },
+        '1': { id: 1, name: 'Guest', credentials: 'guest-cred' },
+      },
+    };
+    const { setGuestAccess } = collectHandlers(baseContext({ database, db: makeDb(metadata) }));
+    const koaContext = makeContext({ matchId: 'm1', gameName: 'Grandkids' });
+    await setGuestAccess(koaContext);
+    assert.equal(koaContext.status, 200);
+    assert.equal(fetchCalls.length, 0);
+  });
 });
 
 describe('join-as-guest (public) (WP-630)', () => {

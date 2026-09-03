@@ -39069,3 +39069,58 @@ persistence / migration.
 arena-client 1511/0, vue-tsc clean, `pnpm -r build` 0. **Packet:** INFRA (no WP).
 
 Protect this file.
+
+### D-24448 — Setting a guest password REOPENS an unclaimed guest seat so the lobby-join flow always has an open seat (Active 2026-09-02 — INFRA)
+
+**Status:** Active (post-execution) 2026-09-02. Operator-reported (Jeff): after the
+D-24447 fix, a match still didn't appear in the guest's lobby because the host had
+clicked **"Add guest" BEFORE** setting the password — D-24447 only hides "Add
+guest" *after* a password is set, so the earlier click still consumed the seat.
+Operator chose (over guide-only / remove-Add-guest) to have setting a password
+**reopen** the reserved seat. No WP — completes the D-24447 deconfliction
+(precedent: D-24440).
+
+**User-Visible Surface:** `play.legendary-arena.com` — the lobby / in-match "Set
+guest password" action.
+
+**Context.** The lobby-join guest model (WP-630/631) needs an **open** seat so a
+walk-up guest can claim it via "Join as guest". "Add guest" (WP-627/628) mints and
+**fills** the seat with an unconnected `"Guest"` placeholder. D-24447 made the two
+mutually exclusive by hiding "Add guest" once a password is set — but it does not
+cover the **reverse order** (Add guest first, then password), which leaves the seat
+consumed and the match hidden from the lobby (no open seat → `filterJoinableMatches`
+drops it). Confirmed live: three of Jeff's matches (incl. `I_Q02hmRv5N`) had
+`hasGuestPassword: true` **and** seat 1 = an unconnected `"Guest"`.
+
+**Decision.** When a host sets a real guest **password** (`POST
+/api/match/set-guest-access` with a non-empty `password`), the server **releases
+every UNCLAIMED guest seat** — an occupied guest seat (credentials present, not an
+account seat, not a bot) whose player has **not connected** (`isConnected !==
+true`) — reopening it for the lobby join. Each seat is released via boardgame.io's
+native **`leave`**, authenticated with the seat's **own** stored credentials read
+from the framework match metadata (`db.fetch(..., { metadata: true })` — the same
+D-24095/D-24119 framework-store read `mintGuestSeat` already uses; the loopback
+`leave` is a **framework-owned** mutation, never an application write to a domain
+table). A **CONNECTED** guest (a real person already on the link) keeps their seat
+— the accepted edge case is that a guest who connected via the link in the split
+second before the release would be dropped and would rejoin from the lobby.
+
+Best-effort: the release runs **after** the password is persisted and never fails
+the save (a metadata-read or `leave` error is logged and skipped). Client cleanup:
+both surfaces dismiss any now-stale "guest seat ready" link on a password save
+(`WaitingForPlayersPanel` clears `guestLink`; `LobbyView` clears `guestSeatLink`
+and re-fetches the list, so the reopened seat + "Join as guest" appear).
+
+**Scope / limits.** Only unconnected guest placeholders are released; account and
+bot seats are never touched. The blob is only **read** (credentials + occupancy);
+the seat mutation goes through bgio's own `leave` API. No new domain table, no
+schema change, no engine / hash / persistence-of-`G` surface. `join-as-guest` and
+`add-guest` are otherwise unchanged.
+
+**Files.** `apps/server/src/match/addGuestRoutes.mjs`
+(`releaseUnclaimedGuestSeats`), `apps/server/src/match/guestAccessRoutes.mjs`
+(call on password-set), `apps/arena-client/src/components/WaitingForPlayersPanel.vue`
++ `apps/arena-client/src/lobby/LobbyView.vue` (stale-link cleanup) (+ test files).
+**Completes the D-24447 lobby-join guest flow.** **Packet:** INFRA (no WP).
+
+Protect this file.

@@ -303,6 +303,13 @@ export default defineComponent({
         // and thus this flag, untouched).
         if (guestPasswordInput.value !== '') {
           guestPasswordSet.value = true;
+          // why: D-24448 — the server just reopened any unclaimed guest seat this
+          // password-set freed, so a previously-shown "guest seat ready" link now
+          // points at a seat that no longer exists. Dismiss that panel so the host
+          // isn't handed a dead link; the guest joins from the lobby instead.
+          guestLink.value = null;
+          guestLinkCopied.value = false;
+          addGuestError.value = null;
         }
         guestPasswordStatus.value =
           'Saved — read the password to your guest; they join from the lobby’s "Join as guest".';
