@@ -39235,3 +39235,83 @@ commitment, no gameplay-balance impact.
 WP-637 / EC-672.
 
 Protect this file.
+
+### D-24451 — Battle Plan endpoints authorize a guest by their boardgame.io seat credential (a new `match-seat-holder` Auth posture), a surface-scoped reversal of D-24120 (Active 2026-09-03 — WP-638 / EC-673)
+
+**Status:** Active (post-execution) 2026-09-03. Executed by WP-638 / EC-673.
+Reserved in `NUMBER-LEDGER.md`; there was no prior "Drafted" entry to flip.
+
+**Decision.** The two Battle Plan endpoints (`PUT`/`GET
+/api/match/:matchId/battle-plan`) authorize a caller who is **either** an
+authenticated account holding a seat in the match (the WP-635 path, unchanged)
+**or** a **guest who proves their seat with a valid boardgame.io seat
+credential**. This is a new auth posture, catalogued as the closed-set `Auth`
+value `match-seat-holder`. In `resolveParticipant`
+(`apps/server/src/match/battlePlan.routes.ts`), when `requireAuthenticatedSession`
+fails, the gate reads the caller's `X-Guest-Player-Id` + `X-Guest-Credentials`
+request **headers** (never the URL/query — the credential is sensitive) and
+verifies the supplied credential in **constant time**
+(`node:crypto.timingSafeEqual`, length-guarded — the `guestAccess.logic.ts`
+password-verify precedent) against `metadata.players[playerId].credentials` read
+from the bgio match metadata via the injected `fetchMatchSeatCredentials` dep. On
+success the caller is authorized as that seat with a synthetic audit editor id
+`guest:<playerId>` written to `updated_by_ext_id` (audit-only; stripped by
+`toBattlePlanView`, never projected in the GET response).
+
+**Precedence / anti-spoof.** A **valid** session ALWAYS takes the account path and
+NEVER consults the guest headers — even a valid but non-participant session gets
+the account-path `403 not_a_participant`, so an account holder cannot attach
+`X-Guest-*` headers to author a guest seat. The guest branch is a fallback reached
+only when there is no valid session.
+
+**No seat-existence oracle.** A guest whose credential does not verify — including
+one for a seat absent from the metadata or a match with no metadata — gets the
+**same** `403 not_a_participant` as an account non-participant. Missing-seat and
+wrong-credential are indistinguishable.
+
+**Surface-scoped reversal of D-24120.** D-24120 ("bots and guests are rowless in
+`legendary.match_seat_accounts`, so they are never participants") is preserved for
+gameplay and competitive surfaces: this packet writes **no** seat row, does not
+touch `computeRankedEligibility`, and a guest match stays **Casual**. D-24451
+reverses only the *"never a participant"* consequence, and only for the
+**non-gameplay Battle Plan surface** — a verified guest becomes a Battle Plan
+seat-holder while staying rowless everywhere else.
+
+**Authority (D-9905 re-gating clause).** D-9905's Active-Status clause requires any
+auth-posture change on a previously-gated endpoint to carry a new `D-NNNN` entry,
+an explicit WP, and a reconciliation. D-9905 wrote the clause for the *restrict*
+direction (gating a guest feature behind auth); WP-638 does the **inverse** — it
+opens an account-gated non-gameplay surface to verified guest seats, which
+*advances* D-9905's guest-friendly intent (Vision §3: "you can play without
+surrendering identity"). D-24451 is the required new decision + reconciliation.
+
+**Persistence boundary.** The seat-credential read is a **framework
+metadata-surface** read of the bgio store's own `metadata`
+(`metadata.players[].credentials`) — the SAME read class already in production for
+bot-ally (`readBotSeatCredentials`) and guest-mint. It rides the D-24095
+framework-store exemption and needs **no** new persistence carve-out; it is NOT the
+D-24119 state-replay carve-out (which reads `initialState + log` through the
+reducer, the exact thing this WP avoids). Never `state`/`log`/`G`/`ctx`, never
+written back.
+
+**Auth closed-set extension (lockstep).** D-24451 adds the `match-seat-holder`
+value to the D-9905 `Auth` closed set, updated in lockstep across the three
+enforcement sinks: the authoritative Auth Taxonomy header + both Battle Plan rows
+in `docs/ai/REFERENCE/api-endpoints.md` (D-11804 whole-row replace); the
+`00.3-prompt-lint-checklist.md §21.2/§21.3` enumeration; and the
+`.claude/rules/work-packets.md` `Auth ∈ {…}` set. The same lockstep edit
+**backfills** the already-live `admin-session-required` value (D-15901), which the
+`00.3 §21` + `work-packets.md` enumerations were missing.
+
+**Out of scope.** The client credential-passing (`useBattlePlan` / `battlePlanApi`
+sending the headers when `authStore.token` is null) is the paired follow-on WP —
+no user-observable change ships from this server packet alone.
+
+**Citation.** WP-638; EC-673; D-9905 (the re-gating clause + the `Auth` closed set
+this extends); D-24120 (rowless guests — surface-scoped reversal); D-24095 (the
+framework-store exemption the metadata read rides); D-24119 (the state-replay
+carve-out this is NOT); D-15901 (`admin-session-required`, backfilled); D-11804
+(the API-catalog update obligation); D-24449 (the WP-635 Battle Plan endpoints this
+extends). **Packet:** WP-638 / EC-673.
+
+Protect this file.
