@@ -9,6 +9,7 @@ import { mount, flushPromises, enableAutoUnmount } from '@vue/test-utils';
 import type { UIState } from '@legendary-arena/game-engine';
 
 import { useBattlePlan, BATTLE_PLAN_POLL_INTERVAL_MS } from './useBattlePlan';
+import { useAuthStore } from '../stores/auth';
 import { useUiStateStore } from '../stores/uiState';
 
 /**
@@ -59,9 +60,30 @@ function stubThrow(): void {
   }) as typeof globalThis.fetch;
 }
 
+/**
+ * Stub fetch to record every request and answer with a canned 200 body. Returned
+ * `calls` lets a test assert on the CAPTURED request headers (the auth proof).
+ */
+function stubCapture(body: unknown): { calls: { url: string; init: RequestInit }[] } {
+  const calls: { url: string; init: RequestInit }[] = [];
+  globalThis.fetch = (async (url: string | URL, init?: RequestInit) => {
+    calls.push({ url: String(url), init: init ?? {} });
+    return { status: 200, json: async () => body } as Response;
+  }) as typeof globalThis.fetch;
+  return { calls };
+}
+
+/** Set `window.location.search` under jsdom (mirrors BattlePlanPanel.test.ts). */
+function setSearch(search: string): void {
+  window.history.replaceState(null, '', `/${search}`);
+}
+
 afterEach(() => {
   globalThis.fetch = originalFetch;
   mock.timers.reset();
+  // why: the guest-auth tests write window.location.search; reset it so a stale
+  // ?player=/?credentials= cannot leak into an unrelated test's auth resolution.
+  setSearch('');
 });
 
 // why: @vue/test-utils' `wrapper.vm` proxy UNWRAPS the refs returned from setup,
@@ -81,6 +103,32 @@ interface HarnessVm {
 /** Mount a harness exposing the composable's refs on `vm`, with a fresh Pinia. */
 function mountBattlePlan(matchId: string, snapshot: UIState | null) {
   setActivePinia(createPinia());
+  useUiStateStore().setSnapshot(snapshot);
+  const Harness = defineComponent({
+    setup() {
+      return useBattlePlan(matchId);
+    },
+    render() {
+      return null;
+    },
+  });
+  return mount(Harness);
+}
+
+/**
+ * Like `mountBattlePlan`, but seeds the auth store token first (null for a
+ * guest). The token must be set BEFORE mount because the first `pollOnce` fires
+ * inside `onMounted` and resolves the auth at that moment.
+ */
+function mountBattlePlanWithAuth(
+  matchId: string,
+  snapshot: UIState | null,
+  token: string | null,
+) {
+  setActivePinia(createPinia());
+  if (token !== null) {
+    useAuthStore().token = token;
+  }
   useUiStateStore().setSnapshot(snapshot);
   const Harness = defineComponent({
     setup() {
@@ -198,6 +246,47 @@ test('unmount clears the poll interval (no fetch after unmount)', async () => {
   mock.timers.tick(BATTLE_PLAN_POLL_INTERVAL_MS * 2);
   await flushPromises();
   assert.equal(fetchCalls, afterMount, 'no further polls fire after unmount');
+});
+
+test('a present session token wins over guest URL params (session precedence)', async () => {
+  // both a token AND guest params are present — the account holder on the live
+  // route carries ?player=/?credentials= too; the session bearer must win.
+  setSearch('?player=9&credentials=guest-cred');
+  const stub = stubCapture({ battlePlan: null });
+  mountBattlePlanWithAuth('m1', snapshotFor('play', 1), 'sess-token');
+  await flushPromises();
+  const [call] = stub.calls;
+  assert.ok(call);
+  const headers = (call.init.headers ?? {}) as Record<string, string>;
+  assert.equal(headers.Authorization, 'Bearer sess-token');
+  assert.equal(headers['X-Guest-Player-Id'], undefined);
+  assert.equal(headers['X-Guest-Credentials'], undefined);
+});
+
+test('a guest (no token) with ?player=/?credentials= sends the X-Guest-* seat proof', async () => {
+  setSearch('?player=7&credentials=guest-cred');
+  const stub = stubCapture({ battlePlan: null });
+  mountBattlePlanWithAuth('m1', snapshotFor('play', 1), null);
+  await flushPromises();
+  const [call] = stub.calls;
+  assert.ok(call);
+  const headers = (call.init.headers ?? {}) as Record<string, string>;
+  assert.equal(headers['X-Guest-Player-Id'], '7');
+  assert.equal(headers['X-Guest-Credentials'], 'guest-cred');
+  assert.equal(headers.Authorization, undefined);
+});
+
+test('no token and no guest params sends no auth headers', async () => {
+  setSearch('');
+  const stub = stubCapture({ battlePlan: null });
+  mountBattlePlanWithAuth('m1', snapshotFor('play', 1), null);
+  await flushPromises();
+  const [call] = stub.calls;
+  assert.ok(call);
+  const headers = (call.init.headers ?? {}) as Record<string, string>;
+  assert.equal(headers.Authorization, undefined);
+  assert.equal(headers['X-Guest-Player-Id'], undefined);
+  assert.equal(headers['X-Guest-Credentials'], undefined);
 });
 
 test('savePhase PUTs the phase and refreshes the loaded text', async () => {

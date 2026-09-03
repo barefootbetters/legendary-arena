@@ -65,7 +65,7 @@ function samplePlan(overrides: Partial<BattlePlanView> = {}): BattlePlanView {
 test('fetchBattlePlan returns the plan on 200 with a Bearer header', async () => {
   const stub = installFetchStub(200, { battlePlan: samplePlan() });
   try {
-    const result = await fetchBattlePlan('match-1', 'token-abc');
+    const result = await fetchBattlePlan('match-1', { kind: 'session', token: 'token-abc' });
     assert.ok(result.ok === true);
     assert.equal(result.value.battlePlan?.matchId, 'match-1');
     assert.equal(result.value.battlePlan?.preBattle, 'Focus the mastermind.');
@@ -83,7 +83,7 @@ test('fetchBattlePlan returns the plan on 200 with a Bearer header', async () =>
 test('fetchBattlePlan returns battlePlan:null when no plan exists yet', async () => {
   const stub = installFetchStub(200, { battlePlan: null });
   try {
-    const result = await fetchBattlePlan('match-1', 'token');
+    const result = await fetchBattlePlan('match-1', { kind: 'session', token: 'token' });
     assert.ok(result.ok === true);
     assert.equal(result.value.battlePlan, null);
   } finally {
@@ -99,7 +99,7 @@ test('updateBattlePlanPhase PUTs { phase, text } and returns the document on 200
       'match-1',
       'battle_adjustments',
       'Shift to the villains.',
-      'token-xyz',
+      { kind: 'session', token: 'token-xyz' },
     );
     assert.ok(result.ok === true);
     assert.equal(result.value.battlePlan.battleAdjustments, 'Shift to the villains.');
@@ -122,7 +122,7 @@ test('updateBattlePlanPhase PUTs { phase, text } and returns the document on 200
 test('a 403 not_a_participant is parsed into the failure branch', async () => {
   const stub = installFetchStub(403, { error: 'not_a_participant' });
   try {
-    const result = await fetchBattlePlan('match-1', 'token');
+    const result = await fetchBattlePlan('match-1', { kind: 'session', token: 'token' });
     assert.ok(result.ok === false);
     assert.equal(result.status, 403);
     assert.equal(result.code, 'not_a_participant');
@@ -134,7 +134,10 @@ test('a 403 not_a_participant is parsed into the failure branch', async () => {
 test('a 400 text_too_long is parsed into the failure branch', async () => {
   const stub = installFetchStub(400, { error: 'text_too_long' });
   try {
-    const result = await updateBattlePlanPhase('match-1', 'pre_battle', 'x', 'token');
+    const result = await updateBattlePlanPhase('match-1', 'pre_battle', 'x', {
+      kind: 'session',
+      token: 'token',
+    });
     assert.ok(result.ok === false);
     assert.equal(result.status, 400);
     assert.equal(result.code, 'text_too_long');
@@ -160,7 +163,10 @@ test('a 401 session code (outside the closed set) narrows to a null code', async
 test('a 500 internal_error is parsed into the failure branch', async () => {
   const stub = installFetchStub(500, { error: 'internal_error' });
   try {
-    const result = await updateBattlePlanPhase('match-1', 'post_battle', 'gg', 'token');
+    const result = await updateBattlePlanPhase('match-1', 'post_battle', 'gg', {
+      kind: 'session',
+      token: 'token',
+    });
     assert.ok(result.ok === false);
     assert.equal(result.status, 500);
     assert.equal(result.code, 'internal_error');
@@ -172,10 +178,71 @@ test('a 500 internal_error is parsed into the failure branch', async () => {
 test('a network throw yields { ok:false, status:0, code:null }', async () => {
   const stub = installThrowingFetchStub();
   try {
-    const result = await fetchBattlePlan('match-1', 'token');
+    const result = await fetchBattlePlan('match-1', { kind: 'session', token: 'token' });
     assert.ok(result.ok === false);
     assert.equal(result.status, 0);
     assert.equal(result.code, null);
+  } finally {
+    stub.restore();
+  }
+});
+
+test('fetchBattlePlan sends the X-Guest-* seat proof for a guest descriptor (no Authorization)', async () => {
+  const stub = installFetchStub(200, { battlePlan: samplePlan() });
+  try {
+    const result = await fetchBattlePlan('match-1', {
+      kind: 'guest',
+      playerId: '1',
+      credentials: 'seat-cred-abc',
+    });
+    assert.ok(result.ok === true);
+    const [call] = stub.calls;
+    assert.ok(call);
+    const headers = (call.init.headers ?? {}) as Record<string, string>;
+    // why: the guest branch must emit the WP-638 header names verbatim and must
+    // NOT emit a bearer — a guest has no session token.
+    assert.equal(headers['X-Guest-Player-Id'], '1');
+    assert.equal(headers['X-Guest-Credentials'], 'seat-cred-abc');
+    assert.equal(headers.Authorization, undefined);
+  } finally {
+    stub.restore();
+  }
+});
+
+test('updateBattlePlanPhase sends the X-Guest-* headers alongside Content-Type for a guest', async () => {
+  const written = samplePlan({ battleAdjustments: 'Guard the HQ.' });
+  const stub = installFetchStub(200, { battlePlan: written });
+  try {
+    const result = await updateBattlePlanPhase('match-1', 'battle_adjustments', 'Guard the HQ.', {
+      kind: 'guest',
+      playerId: '2',
+      credentials: 'seat-cred-xyz',
+    });
+    assert.ok(result.ok === true);
+    const [call] = stub.calls;
+    assert.ok(call);
+    assert.equal(call.init.method, 'PUT');
+    const headers = (call.init.headers ?? {}) as Record<string, string>;
+    assert.equal(headers['X-Guest-Player-Id'], '2');
+    assert.equal(headers['X-Guest-Credentials'], 'seat-cred-xyz');
+    assert.equal(headers['Content-Type'], 'application/json');
+    assert.equal(headers.Authorization, undefined);
+  } finally {
+    stub.restore();
+  }
+});
+
+test('a null auth descriptor sends neither Authorization nor X-Guest-* headers', async () => {
+  const stub = installFetchStub(200, { battlePlan: samplePlan() });
+  try {
+    const result = await fetchBattlePlan('match-1', null);
+    assert.ok(result.ok === true);
+    const [call] = stub.calls;
+    assert.ok(call);
+    const headers = (call.init.headers ?? {}) as Record<string, string>;
+    assert.equal(headers.Authorization, undefined);
+    assert.equal(headers['X-Guest-Player-Id'], undefined);
+    assert.equal(headers['X-Guest-Credentials'], undefined);
   } finally {
     stub.restore();
   }

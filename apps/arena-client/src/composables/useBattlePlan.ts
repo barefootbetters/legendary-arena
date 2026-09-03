@@ -23,6 +23,7 @@ import {
   fetchBattlePlan,
   updateBattlePlanPhase,
   type BattlePlanApiErrorCode,
+  type BattlePlanAuth,
   type BattlePlanPhase,
   type BattlePlanView,
 } from '../lib/api/battlePlanApi';
@@ -146,12 +147,50 @@ export function useBattlePlan(matchId: string): BattlePlanState {
   }
 
   /**
+   * Resolve the caller's Battle Plan authorization at call time: a session
+   * bearer when signed in, else a guest seat proof read from the live-route URL,
+   * else null. Evaluated per request (see the two call sites) rather than
+   * captured once, so a token acquired mid-session — or the freshest URL — wins.
+   *
+   * @returns The session/guest auth descriptor, or null when neither is available.
+   */
+  function resolveBattlePlanAuth(): BattlePlanAuth | null {
+    // why: a session token ALWAYS wins over the guest URL params. This mirrors
+    // the server gate (WP-638), AND it stops an account holder — who on the live
+    // route ALSO carries `?player=`/`?credentials=` — from being authorized via
+    // the guest path and stamped `editorId = guest:<playerId>` instead of their
+    // own `ext_id`. `authStore.token` is `null` for a guest and a real string
+    // when signed in (never ''/undefined), so `!== null` is the exact test.
+    if (authStore.token !== null) {
+      return { kind: 'session', token: authStore.token };
+    }
+    // why: a guest's seat proof lives in the live-route URL params `?player=` +
+    // `?credentials=` — the same source App.vue feeds `createLiveClient` (WP-628).
+    // The `typeof window` guard mirrors App.vue's idiom because this function may
+    // run in a non-browser import context, unlike a mounted panel. The credential
+    // is relayed in a request HEADER (buildAuthHeaders), never re-appended to a URL.
+    const search = typeof window !== 'undefined' ? window.location.search : '';
+    const params = new URLSearchParams(search);
+    const playerId = params.get('player');
+    const credentials = params.get('credentials');
+    if (
+      playerId !== null &&
+      playerId !== '' &&
+      credentials !== null &&
+      credentials !== ''
+    ) {
+      return { kind: 'guest', playerId, credentials };
+    }
+    return null;
+  }
+
+  /**
    * One poll: read the plan and refresh the phase refs. A failed read (transport
    * error, a 403 not-yet-participant, an auth blip) leaves the last snapshot
    * untouched so the panel stays stable rather than blanking mid-match.
    */
   async function pollOnce(): Promise<void> {
-    const result = await fetchBattlePlan(matchId, authStore.token);
+    const result = await fetchBattlePlan(matchId, resolveBattlePlanAuth());
     if (result.ok !== true) {
       // why: a failed poll is a transport/permission blip, not "the plan cleared" —
       // preserve the last-known text so a teammate's in-progress read stays put.
@@ -163,7 +202,8 @@ export function useBattlePlan(matchId: string): BattlePlanState {
   /**
    * Write one phase's text (`PUT …/battle-plan`). On success the returned document
    * refreshes the loaded phase refs; on failure the caller gets the narrowed code
-   * to surface a message. The bearer comes from the auth store.
+   * to surface a message. The auth (session bearer or guest seat proof) is
+   * resolved at call time.
    *
    * @param phase The phase to write.
    * @param text The new phase body (an empty string clears the phase).
@@ -173,7 +213,7 @@ export function useBattlePlan(matchId: string): BattlePlanState {
     phase: BattlePlanPhase,
     text: string,
   ): Promise<SavePhaseOutcome> {
-    const result = await updateBattlePlanPhase(matchId, phase, text, authStore.token);
+    const result = await updateBattlePlanPhase(matchId, phase, text, resolveBattlePlanAuth());
     if (result.ok !== true) {
       return { ok: false, code: result.code };
     }
