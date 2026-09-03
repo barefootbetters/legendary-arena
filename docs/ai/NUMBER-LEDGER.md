@@ -266,6 +266,7 @@ high-water: 422
 - WP-633 — card-data-regen-reproducible (reserved 2026-09-01, claude/intelligent-morse-65d9ef)
 - WP-634 — guest-password-in-match-panel (arena-client: add the "Set guest password" control to the in-match WaitingForPlayersPanel next to "Add guest", so the host sets game name + password from the play surface [not just the lobby row]; reuses the shipped setGuestAccess/readGuestAccessMeta wrappers. Realizes D-24441; assumes WP-631. Reserves EC-669. 2026-09-01, claude/wp-guest-pw-panel)
 - WP-635 — battle-plan-api (server+persistence: a per-match shared 3-phase team "Battle Plan" [pre_battle / battle_adjustments / post_battle free text] — new legendary.battle_plan domain table [one row per match_id, plain text NOT an FK, migration 045] + apps/server REST routes [PUT upsert-phase + GET, authenticated + participant-gated via match_seat_accounts]; own koaBody per write; NEVER boardgame.io/G/ctx/snapshot/hash — REST+Postgres channel only. Mirrors the WP-604 feedback-intake module shape. The client BattlePlanPanel + the LAGN battle_plan export block are separate follow-on WPs. Reserves EC-670 + D-24449. 2026-09-02, claude/wp-battle-plan-live)
+- WP-636 — guest-coop-endgame-recap (arena-client: render a per-player VP recap in EndgameSummary's scores block from gameOver.scores [already on the wire] for viewers with NO competitiveScore — guests + non-scored matches — so a guest sees a real co-op result instead of only the sign-in prompt + a bare count line. Account-holder rich block unchanged [gated on !competitiveScore to avoid duplication]; ranked grade/PAR/leaderboard/coach stay account-gated; §23(b) no winner/loser. Client-only, realizes D-24441. Reserves EC-671. 2026-09-02, claude/guest-coop-recap)
 
 ## EC
 
@@ -490,6 +491,7 @@ high-water: 457
 - EC-668 — card-data-regen-reproducible (reserved 2026-09-01, claude/intelligent-morse-65d9ef)
 - EC-669 — guest-password-in-match-panel (WP-634; arena-client: "Set guest password" control in WaitingForPlayersPanel → setGuestAccess; write-only password field, prefills name via readGuestAccessMeta. Realizes D-24441. 2026-09-01, claude/wp-guest-pw-panel)
 - EC-670 — battle-plan-api (WP-635; server+persistence: migration 045_create_battle_plan.sql + apps/server/src/match/battlePlan.{routes,logic,persistence,types}.ts registered in server.mjs; PUT upsert-phase + GET, authenticated + participant-gated via match_seat_accounts; length caps on the 3 phase texts; own koaBody per write; DB-gated tests serialized. No engine/G/hash/UI. Reserves D-24449. 2026-09-02, claude/wp-battle-plan-live)
+- EC-671 — guest-coop-endgame-recap (WP-636; arena-client: EndgameSummary scores block renders a per-player VP recap from gameOver.scores when !competitiveScore; account-holder block unchanged; §23(b) no winner/loser. Client-only, realizes D-24441. 2026-09-02, claude/guest-coop-recap)
 
 ## D
 

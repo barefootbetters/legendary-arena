@@ -470,8 +470,36 @@ export default defineComponent({
       </div>
     </dl>
 
-    <div v-if="hasScores && gameOver.scores" class="scores">
-      <p class="scores-note">
+    <div v-if="hasScores && gameOver.scores" class="scores" data-testid="arena-hud-scores">
+      <!-- why: WP-636 — a co-op VP recap for a viewer with NO competitive score
+           (a guest, or any non-scored match). The per-player VP is on
+           gameOver.scores (NOT competitiveScore), so a guest already has it — the
+           old bare count line threw it away, leaving a guest with only the sign-in
+           prompt. An account holder's richer per-player block (workedCalc.perPlayer,
+           above) already covers this, so render the recap ONLY when competitiveScore
+           is absent — otherwise it duplicates. Co-op framing (§23(b)): individual VP
+           contribution only, no winner/loser between teammates. -->
+      <template v-if="!competitiveScore">
+        <p class="scores-heading">Final result — victory points by player</p>
+        <ul class="coop-scores" data-testid="arena-hud-coop-scores">
+          <li
+            v-for="player in gameOver.scores.players"
+            :key="player.playerId"
+            class="coop-score-row"
+            :data-testid="'arena-hud-coop-score-' + player.playerId"
+          >
+            <span class="coop-score-name">Player {{ Number(player.playerId) + 1 }}</span>
+            <strong class="coop-score-total" :aria-label="'player ' + player.playerId + ' total VP'">
+              {{ player.totalVP }} VP
+            </strong>
+            <span class="coop-score-detail">
+              villains {{ player.villainVP }} · henchmen {{ player.henchmanVP }} ·
+              bystanders {{ player.bystanderVP }} · tactics {{ player.tacticVP }}
+            </span>
+          </li>
+        </ul>
+      </template>
+      <p v-else class="scores-note">
         Final scores recorded ({{ gameOver.scores.players.length }} players).
       </p>
     </div>
@@ -1050,5 +1078,42 @@ dd {
 .grade-badge--f {
   color: #cf222e;
   background: rgba(207, 34, 46, 0.16);
+}
+
+/* why: WP-636 — the guest / non-scored co-op VP recap. Compact stacked rows so it
+   reads in the narrow endgame panel without a wide table overflowing. */
+.scores-heading {
+  margin: 0 0 0.25rem;
+  font-weight: 600;
+}
+
+.coop-scores {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.coop-score-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.coop-score-name {
+  font-weight: 600;
+}
+
+.coop-score-total {
+  font-variant-numeric: tabular-nums;
+}
+
+.coop-score-detail {
+  flex-basis: 100%;
+  font-size: 0.85em;
+  opacity: 0.8;
 }
 </style>

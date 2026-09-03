@@ -7,6 +7,14 @@
 
 ## Current State
 
+### WP-636 — Guest co-op endgame VP recap (EC-671 / D-24441) shipped (2026-09-02)
+
+Operator-reported (Jeff, across two live guest wins — Midtown Bank Robbery + Super Hero Civil War): a **guest** finishing a game saw only the outcome banner, the "Sign in to save your score" prompt, and a bare **"Final scores recorded (N players)."** line — no result. The rich report (grade / PAR / per-player / luck / coach) lives in `competitiveScore`, which the server correctly withholds from an unranked guest — but the **per-player VP is already on the guest's client** in `gameOver.scores`; the `scores` block just discarded it.
+
+Now the `scores` block renders a **per-player VP recap** (each seat's total VP + villain/henchman/bystander/tactic breakdown) when `!competitiveScore` (a guest, or any non-scored match). The account holder's richer per-player block (WP-621) is unchanged — the recap is gated on `!competitiveScore` to avoid duplicating it. The sign-in CTA stays (the ranked grade/PAR/leaderboard/coach remain account-gated); **§23(b)** individual VP only, no winner/loser between co-op teammates.
+
+Client-only display of data already on the wire — no server/engine/`G`/contract change; realizes the existing **D-24441** (no new decision). Files (2): `EndgameSummary.vue` + `.test.ts` (3 new tests: guest sees the recap + CTA and not the count line, account holder does not get the recap, §23(b) no winner/loser). Arena-client **1514 pass / 0 fail**, `vue-tsc` 0, build 0. Post-deploy D-24026 live-verify (a guest sees the VP recap) pending.
+
 ### INFRA fix — setting a guest password reopens the reserved seat so the lobby-join flow always works (D-24448 Active) (2026-09-02)
 
 Operator follow-up (Jeff): after D-24447, a password-protected match **still** didn't show in the guest's lobby — because the host had clicked **"Add guest" before** setting the password. D-24447 only hides "Add guest" *after* a password is set, so the earlier click had already minted-and-filled the seat, and `filterJoinableMatches` dropped the (now seatless) match. Confirmed live (`I_Q02hmRv5N`: `hasGuestPassword: true` **and** an unconnected `"Guest"` seat).
