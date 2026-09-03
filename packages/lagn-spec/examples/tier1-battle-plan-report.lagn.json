@@ -1,0 +1,83 @@
+{
+  "lagn_version": "1.5.0",
+  "$schema": "https://legendary-arena.com/schemas/lagn/v1/lagn-v1.json",
+  "game_id": "example-battle-plan-report-001",
+  "variant": "competitive",
+  "player_count": 3,
+  "setup": {
+    "mastermind": {
+      "id": "core/red-skull",
+      "name": "Red Skull"
+    },
+    "scheme": {
+      "id": "core/midtown-bank-robbery",
+      "name": "Midtown Bank Robbery"
+    },
+    "villain_groups": [
+      {
+        "id": "core/hydra",
+        "name": "HYDRA"
+      }
+    ],
+    "henchmen_groups": [
+      {
+        "id": "core/hand-ninjas",
+        "name": "Hand Ninjas"
+      }
+    ],
+    "heroes": [
+      {
+        "id": "core/spider-man",
+        "name": "Spider-Man"
+      },
+      {
+        "id": "core/black-widow",
+        "name": "Black Widow"
+      },
+      {
+        "id": "core/cyclops",
+        "name": "Cyclops"
+      },
+      {
+        "id": "core/wolverine",
+        "name": "Wolverine"
+      },
+      {
+        "id": "core/rogue",
+        "name": "Rogue"
+      }
+    ],
+    "bystanders_count": 12,
+    "wounds_count": 30,
+    "shield_officers_count": 0,
+    "sidekicks_count": 0
+  },
+  "players": [
+    {
+      "seat": 0,
+      "player_id": "player-ana",
+      "display_name": "Ana"
+    },
+    {
+      "seat": 1,
+      "player_id": "player-devon"
+    }
+  ],
+  "scoring_profile": "legends-gauntlet-v1",
+  "battle_plan": {
+    "pre_battle": "Recruit into Covert early, hold recruits until HYDRA thins, then fight the Mastermind.",
+    "battle_adjustments": "Bank Robbery is climbing fast — pivot two players to attack the city and stall the twist.",
+    "post_battle": "The mid-match pivot saved us; next time set up the Covert engine one turn sooner."
+  },
+  "result": {
+    "outcome": "victory",
+    "score": {
+      "raw_score": 4200,
+      "par_score": 5000,
+      "final_score": -800,
+      "grade": "a",
+      "scoring_config_version": 3,
+      "par_version": "par-2026-08"
+    }
+  }
+}

@@ -25,6 +25,28 @@ export type HeroAlternate = NonNullable<GameSetup['hero_alternates']>[number]
  */
 export type LagnPlayer = NonNullable<z.infer<typeof lagnSchema>['players']>[number]
 
+/**
+ * The in-match Battle Plan named in an exported result LAGN (1.5.0+, WP-640 /
+ * D-24452): `{ pre_battle?, battle_adjustments?, post_battle? }` — three optional
+ * free-text phases.
+ *
+ * why: DESCRIPTIVE metadata, never a scoring/credit input. Inferred from
+ * `lagnSchema` like every other type here, so a schema change cannot leave the
+ * exported type behind.
+ */
+export type BattlePlan = NonNullable<z.infer<typeof lagnSchema>['battle_plan']>
+
+/**
+ * The end-of-match report card nested in `result` (1.5.0+, WP-640 / D-24452):
+ * `{ raw_score, par_score, final_score, grade, scoring_config_version, par_version }`.
+ *
+ * why: a FROZEN snapshot of the score + grade at write time, never re-derived by
+ * a reader. `grade` is the `ScoreGrade` band; `par_version` is the persisted
+ * `competitive_scores.par_version` string. Inferred from `lagnSchema` like every
+ * other type here, so a schema change cannot leave the exported type behind.
+ */
+export type ResultScore = NonNullable<NonNullable<z.infer<typeof lagnSchema>['result']>['score']>
+
 // ── Card metadata provenance (1.2.0+, WP-394 / D-24198) ──────────────────────
 // why: inferred from lagnSchema like every other type here rather than
 // hand-authored, so a schema change cannot leave the exported type behind.

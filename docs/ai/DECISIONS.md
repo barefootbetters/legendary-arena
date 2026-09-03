@@ -39314,4 +39314,59 @@ carve-out this is NOT); D-15901 (`admin-session-required`, backfilled); D-11804
 (the API-catalog update obligation); D-24449 (the WP-635 Battle Plan endpoints this
 extends). **Packet:** WP-638 / EC-673.
 
+### D-24452 — LAGN 1.5.0 adds two optional, DESCRIPTIVE blocks (`battle_plan` + `result.score`) so a result-LAGN can carry the in-match Battle Plan and the end-of-match report card; reader-only, writer stays 1.4.0 (Active 2026-09-03 — WP-640 / EC-675)
+
+**Status:** Active (post-execution) 2026-09-03. Executed by WP-640 / EC-675.
+Reserved in `NUMBER-LEDGER.md`; there was no prior "Drafted" entry to flip.
+
+**Decision.** LAGN **1.5.0** adds two optional blocks so a server-emitted
+**result-LAGN** can carry the in-match **Battle Plan** and the end-of-match
+**report card**: a new top-level `battle_plan`
+(`{ pre_battle?, battle_adjustments?, post_battle? }`, all free-text strings) and
+a nested `result.score`
+(`{ raw_score, par_score, final_score }` ints + `grade` enum
+`legendary | a | b | c | d | f` + `scoring_config_version` int + `par_version`
+string). Both are added to `LAGN_SUPPORTED_VERSIONS` as a strict superset of
+1.4.0; a pre-1.5.0 document carrying either block is **rejected**, not silently
+stripped, by one combined ordinal `.refine()` version gate (D-24211), with a
+matching `UNEXPRESSIBLE_CONSTRAINTS` entry (the build-enforced refinement count
+rises by one).
+
+**Descriptive and NON-authoritative** (mirrors the 1.4.0 `players` /
+`scoring_profile` posture, D-24214 / D-24215). Nothing scores, credits, ranks, or
+verifies from either block — competitive credit stays `matchId → bgio blob →
+re-reduce → re-verify hash → AccountId`, server-side (D-5301 / D-24126); a reader
+that scored from `result.score` would reopen that trust hole. The report card's
+`raw_score` / `par_score` / `final_score` / `scoring_config_version` mirror the
+shipped `ScoreBreakdown` fields, and `par_version` is the persisted
+`legendary.competitive_scores.par_version` column (no `ScoreBreakdown`
+counterpart). The block DEFINES no score — it names a shape a producer fills.
+
+**The grade is a FROZEN snapshot.** `result.score.grade` records the
+operator-tunable `ScoreGrade` banding (`gradeForFinalScore`, `parScoring.grade.ts`)
+as it stood at write time; a reader never recomputes it from `final_score`. A
+result-LAGN records what the team earned *then*, even if the bands are later
+re-tuned.
+
+**`battle_plan` rides the result-LAGN only, never the `?lagn=` share link.** Free
+text bloats a base64url URL — the same reason image bytes were rejected for LAGN.
+This contract only *permits* the block; keeping battle-plan prose out of the
+loadout share link is the producer packet's discipline.
+
+**Reader-only asymmetry (WP-405 precedent).** This is the **reader contract only**:
+`LAGN_VERSION` stays **1.4.0** and `packages/lagn-spec/package.json` is **not
+bumped**, so readers accept 1.5.0 while no writer emits it and **no stored record
+migrates**. The 1.4.0 → 1.5.0 migration hop is a pure restamp, **registered but
+unreachable** until a paired producer packet flips the writer and wires
+`GET /api/match/:matchId/result-lagn` to read the Battle Plan table + the
+`competitive_scores` row. Determinism/replay are untouched (this packet is
+`packages/lagn-spec` + docs; no engine, no `G`, no persistence).
+
+**Citation.** WP-640; EC-675; D-24214 / D-24215 (the 1.4.0 descriptive-block
+posture this mirrors); D-24211 (ordinal version gates); D-5301 / D-24126 (credit
+stays server-side); D-11804 (the API-catalog update obligation — `POST
+/api/me/loadouts` row replaced whole with the 1.5.0 rejection sentence); WP-405
+(the reader-only asymmetry precedent); WP-583..591 (the scoring outputs the report
+card descriptively carries). **Packet:** WP-640 / EC-675.
+
 Protect this file.

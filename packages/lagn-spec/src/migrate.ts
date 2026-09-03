@@ -19,6 +19,7 @@ import {
   LAGN_VERSION_1_2_0,
   LAGN_VERSION_1_3_0,
   LAGN_VERSION_1_4_0,
+  LAGN_VERSION_1_5_0,
   type LagnVersion
 } from './validator.js'
 
@@ -104,11 +105,33 @@ const migrate_1_3_0_to_1_4_0: LagnMigrationFn = (payload) => ({
   lagn_version: LAGN_VERSION_1_4_0
 })
 
+/**
+ * 1.4.0 -> 1.5.0 is a pure restamp.
+ *
+ * why: 1.5.0 adds only the optional, descriptive `battle_plan` root block and the
+ * optional `result.score` nested block, so every 1.4.0 document is already a
+ * structurally valid 1.5.0 document. It synthesizes nothing — and in particular
+ * it NEVER invents a Battle Plan or a report card: migration is forward-only and
+ * may not fabricate information that was never in the source. A document with no
+ * plan and no score has neither after migration (both are a SERVER producer's
+ * concern, not a migration's).
+ *
+ * why: REGISTERED BUT NOT REACHABLE in this packet. migrateToCurrent() targets
+ * LAGN_VERSION, which stays **1.4.0** here, so no caller can reach this step. The
+ * future server-producer packet flips LAGN_VERSION and thereby activates it — the
+ * step lands now so that flip is a one-line change, not a new migration.
+ */
+const migrate_1_4_0_to_1_5_0: LagnMigrationFn = (payload) => ({
+  ...payload,
+  lagn_version: LAGN_VERSION_1_5_0
+})
+
 const migrationRegistry: Readonly<Record<LagnMigrationKey, LagnMigrationFn>> = Object.freeze({
   [buildLagnMigrationKey(LAGN_VERSION_1_0_0, LAGN_VERSION_1_1_0)]: migrate_1_0_0_to_1_1_0,
   [buildLagnMigrationKey(LAGN_VERSION_1_1_0, LAGN_VERSION_1_2_0)]: migrate_1_1_0_to_1_2_0,
   [buildLagnMigrationKey(LAGN_VERSION_1_2_0, LAGN_VERSION_1_3_0)]: migrate_1_2_0_to_1_3_0,
-  [buildLagnMigrationKey(LAGN_VERSION_1_3_0, LAGN_VERSION_1_4_0)]: migrate_1_3_0_to_1_4_0
+  [buildLagnMigrationKey(LAGN_VERSION_1_3_0, LAGN_VERSION_1_4_0)]: migrate_1_3_0_to_1_4_0,
+  [buildLagnMigrationKey(LAGN_VERSION_1_4_0, LAGN_VERSION_1_5_0)]: migrate_1_4_0_to_1_5_0
 })
 
 export interface LagnMigrationResult {

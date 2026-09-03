@@ -15,7 +15,8 @@ import {
   LAGN_VERSION_1_1_0,
   LAGN_VERSION_1_2_0,
   LAGN_VERSION_1_3_0,
-  LAGN_VERSION_1_4_0
+  LAGN_VERSION_1_4_0,
+  LAGN_VERSION_1_5_0
 } from './validator'
 import { migrateToCurrent } from './migrate'
 
@@ -925,7 +926,8 @@ describe('JSON Schema derivation', () => {
       LAGN_VERSION_1_1_0,
       LAGN_VERSION_1_2_0,
       LAGN_VERSION_1_3_0,
-      LAGN_VERSION_1_4_0
+      LAGN_VERSION_1_4_0,
+      LAGN_VERSION_1_5_0
     ])
     // why: the writer stamps 1.4.0 as of WP-406 — the result-LAGN producer emits
     // players[], which the version gate requires. Readers still accept every
@@ -994,7 +996,8 @@ describe('published JSON Schema accepts the shipped fixtures', () => {
     'tier3-with-replay.lagn.json',
     'tier2-provenance.lagn.json',
     'tier1-hero-alternates.lagn.json',
-    'tier1-players.lagn.json'
+    'tier1-players.lagn.json',
+    'tier1-battle-plan-report.lagn.json'
   ]
 
   for (const fixture of fixtures) {
@@ -1448,5 +1451,145 @@ describe('LAGN 1.4.0 match participants + scoring profile', () => {
     assert.strictEqual(result.payload.lagn_version, LAGN_VERSION_1_4_0)
     assert.deepStrictEqual(result.applied, [])
     assert.deepStrictEqual(result.payload, original)
+  })
+})
+
+// ============================================================================
+// LAGN 1.5.0 Battle Plan + Report Card (WP-640 / D-24452)
+// ============================================================================
+
+describe('LAGN 1.5.0 battle plan + report card', () => {
+  const BATTLE_PLAN = {
+    pre_battle: 'Recruit into Covert early, then fight the Mastermind.',
+    battle_adjustments: 'Twist climbing fast — pivot to attack the city.',
+    post_battle: 'The mid-match pivot saved us.'
+  }
+
+  const REPORT_CARD = {
+    raw_score: 4200,
+    par_score: 5000,
+    final_score: -800,
+    grade: 'a',
+    scoring_config_version: 3,
+    par_version: 'par-2026-08'
+  }
+
+  /** A Tier-1 document at `version` with `battle_plan` / `result.score` layered on. */
+  function buildReportDocument(version: string, rootBlocks: Record<string, unknown> = {}) {
+    return { ...buildSetupDocument(version), ...rootBlocks }
+  }
+
+  test('AC-1: a 1.5.0 document carrying battle_plan and result.score validates', () => {
+    const result = validate(
+      buildReportDocument(LAGN_VERSION_1_5_0, {
+        battle_plan: BATTLE_PLAN,
+        result: { outcome: 'victory', score: REPORT_CARD }
+      })
+    )
+    assert.strictEqual(result.valid, true, JSON.stringify(result.errors))
+  })
+
+  test('AC-1: a 1.5.0 document with neither block still validates (both optional)', () => {
+    const result = validate(buildReportDocument(LAGN_VERSION_1_5_0))
+    assert.strictEqual(result.valid, true, JSON.stringify(result.errors))
+  })
+
+  for (const version of [
+    LAGN_VERSION_1_0_0,
+    LAGN_VERSION_1_1_0,
+    LAGN_VERSION_1_2_0,
+    LAGN_VERSION_1_3_0,
+    LAGN_VERSION_1_4_0
+  ]) {
+    test(`AC-2: battle_plan on a ${version} document is REJECTED, never stripped`, () => {
+      // why: lagnSchema is not .strict(), so an ungated battle_plan would vanish
+      // on parse and the document would look clean — the worst available failure.
+      const result = validate(buildReportDocument(version, { battle_plan: BATTLE_PLAN }))
+      assert.strictEqual(result.valid, false)
+      assert.ok(
+        result.errors?.some((error) =>
+          error.includes(
+            'battle_plan and result.score require lagn_version 1.5.0 or later'
+          )
+        ),
+        `expected the version-gate message, got: ${JSON.stringify(result.errors)}`
+      )
+    })
+
+    test(`AC-2: result.score on a ${version} document is REJECTED, never stripped`, () => {
+      const result = validate(
+        buildReportDocument(version, { result: { outcome: 'victory', score: REPORT_CARD } })
+      )
+      assert.strictEqual(result.valid, false)
+      assert.ok(
+        result.errors?.some((error) =>
+          error.includes(
+            'battle_plan and result.score require lagn_version 1.5.0 or later'
+          )
+        ),
+        `expected the version-gate message, got: ${JSON.stringify(result.errors)}`
+      )
+    })
+  }
+
+  test('AC-4: grade accepts exactly the six ScoreGrade codes', () => {
+    for (const grade of ['legendary', 'a', 'b', 'c', 'd', 'f']) {
+      const result = validate(
+        buildReportDocument(LAGN_VERSION_1_5_0, {
+          result: { outcome: 'victory', score: { ...REPORT_CARD, grade } }
+        })
+      )
+      assert.strictEqual(result.valid, true, `${grade} should be a valid grade: ${JSON.stringify(result.errors)}`)
+    }
+  })
+
+  test('AC-4: any other grade string is rejected', () => {
+    const result = validate(
+      buildReportDocument(LAGN_VERSION_1_5_0, {
+        result: { outcome: 'victory', score: { ...REPORT_CARD, grade: 'A+' } }
+      })
+    )
+    assert.strictEqual(result.valid, false)
+  })
+
+  test('AC-4: a non-integer score field is rejected', () => {
+    const result = validate(
+      buildReportDocument(LAGN_VERSION_1_5_0, {
+        result: { outcome: 'victory', score: { ...REPORT_CARD, raw_score: 4200.5 } }
+      })
+    )
+    assert.strictEqual(result.valid, false)
+  })
+
+  test('AC-5: migrateToCurrent on a 1.4.0 document is a no-op (writer stays 1.4.0)', () => {
+    // why: LAGN_VERSION stays 1.4.0, so a 1.4.0 input is already AT the writer
+    // target — left untouched, applied: []. The 1.4.0 -> 1.5.0 hop is registered
+    // but UNREACHABLE until a producer packet flips the writer.
+    const original = buildSetupDocument(LAGN_VERSION_1_4_0)
+    const result = migrateToCurrent(original)
+    assert.strictEqual(result.error, undefined)
+    assert.strictEqual(result.payload.lagn_version, LAGN_VERSION_1_4_0)
+    assert.deepStrictEqual(result.applied, [])
+    assert.deepStrictEqual(result.payload, original)
+  })
+
+  test('AC-5: migrateToCurrent leaves a 1.5.0 input unchanged (newer than the writer)', () => {
+    // why: 1.5.0 is NEWER than LAGN_VERSION (1.4.0), so the forward-walk leaves it
+    // untouched — never downgraded, never re-stamped, never invents a plan.
+    const original = buildReportDocument(LAGN_VERSION_1_5_0, {
+      battle_plan: BATTLE_PLAN,
+      result: { outcome: 'victory', score: REPORT_CARD }
+    })
+    const result = migrateToCurrent(original)
+    assert.strictEqual(result.error, undefined)
+    assert.strictEqual(result.payload.lagn_version, LAGN_VERSION_1_5_0)
+    assert.deepStrictEqual(result.applied, [])
+    assert.deepStrictEqual(result.payload, original)
+  })
+
+  test('AC-10: LAGN_VERSION is not flipped — the writer stays 1.4.0 (reader-only)', () => {
+    // why: WP-640 adds 1.5.0 to the READ set only. The producer packet flips the
+    // writer; this contract packet must not, or a stored record would migrate.
+    assert.strictEqual(LAGN_VERSION, LAGN_VERSION_1_4_0)
   })
 })
