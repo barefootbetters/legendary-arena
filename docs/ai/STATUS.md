@@ -7,6 +7,14 @@
 
 ## Current State
 
+### WP-637 — Battle Plan client panel (arena-client) shipped (EC-672 / D-24450) (2026-09-02)
+
+The client half of the Battle Plan arc: a seated player in a live match can now read and write the shared team **Battle Plan** — one document per match with three lifecycle-tied free-text phases (**pre-battle plan** / **battle adjustments** / **post-battle analysis**), consuming WP-635's `GET`/`PUT /api/match/:matchId/battle-plan`. A new `BattlePlanPanel.vue` mounts **once** as a fixed-position overlay (top-right lane, collapsed-to-toggle by default, clear of the bottom-right / bottom-left overlays) at the shared viewport root in `PlayViewport.vue`, covering both `PlayDesktop` and `PlayMobile`. It self-sources `matchId` from `?match=` and self-hides with no live match.
+
+Reads flow through a `useBattlePlan` **polling** composable (`BATTLE_PLAN_POLL_INTERVAL_MS = 5000`, mirrors `useMatchSeatStatus`; a failed poll preserves the last snapshot); writes go per-phase through `battlePlanApi.ts` (bearer, `Result<T>` discriminator, mirrors `matchInvitesApi`) with a client-local `BATTLE_PLAN_API_ERROR_CODES` set-equal mirror of the server `BattlePlanErrorCode` union (drift-tested) and a `BATTLE_PLAN_PHASE_MAX_LENGTH = 4000` client soft cap. Which phase is editable is derived **on the client** from the `useUiStateStore` snapshot (D-24450): `pre_battle` always when shown; `battle_adjustments` once `snapshot?.game?.phase === 'play'` (NOT merely "a snapshot exists" — bgioClient sets it on connect); `post_battle` once `gameOver`; a reached phase never re-locks (latched). Client-only — never issues a boardgame.io move, never writes `G`/`ctx`/`UIState` (the sole UIState touch is the lifecycle read); no server/contract change.
+
+**Verified:** arena-client **1538 pass / 0 fail** (+24 new), `vue-tsc` 0, `pnpm --filter @legendary-arena/arena-client build` 0. `Select-String submitMove|game-engine` over the three source files: no matches. Diff = the 7-file allowlist + governance close. Files (7): `battlePlanApi.ts` (+ test), `useBattlePlan.ts` (+ test), `BattlePlanPanel.vue` (+ test), `PlayViewport.vue` (the single wiring). Reactions + "last edited by" (GET omits `updatedByExtId`) DEFERRED. **Packet:** WP-637 / EC-672. Post-deploy **D-24026 live-verify** (write a phase in a live match; confirm it persists + reloads for another participant) pending the arena-client deploy.
+
 ### WP-635 — Battle Plan API (server + persistence) shipped (EC-670 / D-24449) (2026-09-02)
 
 **No user-observable change — infrastructure only.** First packet of the Battle Plan arc: the server + persistence foundation for the in-match **Battle Plan** — the free-text, football-style "game plan" a team writes during a match, in three lifecycle-tied phases (`pre_battle` / `battle_adjustments` / `post_battle`). The client `BattlePlanPanel.vue` and the LAGN `battle_plan` export block are separate follow-on WPs.

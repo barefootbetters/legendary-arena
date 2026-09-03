@@ -39173,3 +39173,65 @@ files); `apps/server/src/server.mjs` (wiring);
 `docs/ai/REFERENCE/api-endpoints.md` (two rows, D-11804). **Packet:** WP-635 / EC-670.
 
 Protect this file.
+
+### D-24450 — The Battle Plan CLIENT derives per-phase edit lifecycle from the UIState snapshot; the server stays permissive (Active 2026-09-02 — WP-637 / EC-672)
+
+**Status:** Active (post-execution) 2026-09-02. Locks the client-side phase-edit
+gating for the in-match **Battle Plan** panel. Executed by WP-637 / EC-672 (the
+arena-client half; the server + persistence foundation is WP-635 / D-24449). No
+prior "Drafted" entry — reserved directly in `NUMBER-LEDGER.md` and created Active
+at execution.
+
+**Decision.** WP-635 / D-24449 keeps the **server permissive** — it stores three
+free-text phase columns with no lifecycle gate. The **client** owns which of the
+three phases is editable at any moment, derived from the match lifecycle read from
+the `useUiStateStore` snapshot (the same projection `EndgameActions` /
+`WaitingForPlayersPanel` read — a read-only consume, never a write). Editability
+opens **progressively and never re-locks**:
+
+- **pre_battle** — editable whenever the panel is shown (the waiting room / before
+  the first turn onward).
+- **battle_adjustments** — editable once the match has entered the **play** phase:
+  `snapshot?.game?.phase === 'play'` (equivalently `snapshot?.game?.turn >= 1`).
+  **Not** merely "a snapshot is present": `bgioClient` sets the snapshot the moment
+  the client connects, so a non-null snapshot exists in the waiting room / setup;
+  keying off snapshot presence would open this phase before play begins.
+- **post_battle** — editable once `snapshot?.gameOver !== undefined` (the WP-502
+  "match is over" signal).
+
+A phase reached stays editable (in the post phase you can still revise the earlier
+two), implemented as **latch** booleans — a match moving from `play` to `end`, or a
+snapshot blip, never takes away an already-open editor. The active/highlighted phase
+follows the same signal.
+
+**Contract.** `BattlePlanPanel.vue` mounts **once** as a fixed-position overlay
+(top-right lane, collapsed-to-toggle by default) in `PlayViewport.vue`'s shared
+viewport root (the `WaitingForPlayersPanel` / `DeckProbabilityPanel` / `AudioControls`
+precedent), covering both `PlayDesktop` and `PlayMobile`. It self-sources `matchId`
+from `?match=` and self-hides with no live match. Reads flow through a
+`useBattlePlan` **polling** composable (`BATTLE_PLAN_POLL_INTERVAL_MS = 5000`,
+mirrors `useMatchSeatStatus` — no push channel for non-gameplay data); writes go
+per-phase through `battlePlanApi.ts` (bearer, `Result<T>` discriminator, mirrors
+`matchInvitesApi`) with a client-local `BATTLE_PLAN_API_ERROR_CODES` set-equal mirror
+of the server `BattlePlanErrorCode` union (drift-tested) and a
+`BATTLE_PLAN_PHASE_MAX_LENGTH = 4000` client soft cap. A background poll never
+clobbers an in-progress edit (a phase reseeds only when neither dirty nor focused).
+
+**Boundary.** Client-only — never issues a boardgame.io move, never writes
+`G`/`ctx`/`UIState`; the sole UIState touch is the lifecycle READ above. No server /
+contract / endpoint change (WP-635's endpoints are consumed unchanged). GET omits
+`updatedByExtId` (WP-635), so there is **no author display**; reactions / thumbs-up
+are DEFERRED (a shared doc has no per-entry vote).
+
+**Vision.** Deepens per-match team investment (a written plan the team returns to)
+and the debrief loop (post-battle analysis beside the endgame report card). A shared
+team artifact, not player-vs-player interaction (§23(b) safe); no anti-commercial
+commitment, no gameplay-balance impact.
+
+**Files.** `apps/arena-client/src/lib/api/battlePlanApi.ts` (+ test);
+`apps/arena-client/src/composables/useBattlePlan.ts` (+ test);
+`apps/arena-client/src/components/BattlePlanPanel.vue` (+ test);
+`apps/arena-client/src/pages/PlayViewport.vue` (the single wiring). **Packet:**
+WP-637 / EC-672.
+
+Protect this file.
