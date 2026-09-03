@@ -7,6 +7,7 @@ import PlayMobile from './PlayMobile.vue';
 import DiagnosticExportButton from '../components/DiagnosticExportButton.vue';
 import ViewLoadoutButton from '../components/ViewLoadoutButton.vue';
 import WaitingForPlayersPanel from '../components/WaitingForPlayersPanel.vue';
+import BattlePlanPanel from '../components/BattlePlanPanel.vue';
 import HollowEffectsPanel from '../components/play/HollowEffectsPanel.vue';
 import DeckProbabilityPanel from '../components/play/DeckProbabilityPanel.vue';
 import AudioControls from '../components/play/AudioControls.vue';
@@ -86,7 +87,7 @@ const SUBMISSION_MESSAGES: Record<Exclude<SubmissionStatus, 'idle'>, string> = {
  */
 export default defineComponent({
   name: 'PlayViewport',
-  components: { PlayDesktop, PlayMobile, DiagnosticExportButton, ViewLoadoutButton, WaitingForPlayersPanel, HollowEffectsPanel, DeckProbabilityPanel, AudioControls, VfxOverlay, BotAllyStallBanner, UpdateAvailableBanner, EndgameActions },
+  components: { PlayDesktop, PlayMobile, DiagnosticExportButton, ViewLoadoutButton, WaitingForPlayersPanel, BattlePlanPanel, HollowEffectsPanel, DeckProbabilityPanel, AudioControls, VfxOverlay, BotAllyStallBanner, UpdateAvailableBanner, EndgameActions },
   props: {
     submitMove: {
       type: Function as PropType<SubmitMove>,
@@ -363,6 +364,15 @@ export default defineComponent({
       // projection.
     -->
     <WaitingForPlayersPanel />
+    <!--
+      // why: WP-637 — mounted ONCE at the shared viewport root so the Battle Plan
+      // panel covers BOTH the <PlayMobile> and <PlayDesktop> surfaces (the
+      // WP-363/WP-502 overlay precedent). It self-sources matchId from `?match=`
+      // and self-hides when there is no live match, so it adds no DOM outside real
+      // play. It reads the UIState snapshot only for the D-24450 lifecycle gating
+      // (which phase is editable) — never writes G/ctx/UIState, never submitMove.
+    -->
+    <BattlePlanPanel />
     <!--
       // why: WP-258 — mounted ONCE here at the shared viewport root (the
       // Mounting Rule's shared-child case), alongside <DiagnosticExportButton>,
