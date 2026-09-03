@@ -96,10 +96,11 @@ export interface UpdateBattlePlanInput {
  * Closed-set error codes for the Battle Plan routes. `invalid_request` is a
  * malformed / non-object body; `unknown_phase` is a `phase` outside the closed set;
  * `text_too_long` is a `text` over BATTLE_PLAN_PHASE_MAX_LENGTH; `not_a_participant`
- * is an authenticated caller absent from the match's seat roster; `internal_error`
- * is the locked 500 envelope (no leaked internals). Session-validation codes
- * (missing_token, …) come from the auth layer and are surfaced verbatim by the
- * routes, separate from this set.
+ * is an authenticated caller absent from the match's seat roster (OR a guest whose
+ * seat credential does not verify — the two are indistinguishable, no seat-existence
+ * oracle); `internal_error` is the locked 500 envelope (no leaked internals).
+ * Session-validation codes (missing_token, …) come from the auth layer and are
+ * surfaced verbatim by the routes, separate from this set.
  */
 export type BattlePlanErrorCode =
   | 'invalid_request'
@@ -107,3 +108,24 @@ export type BattlePlanErrorCode =
   | 'text_too_long'
   | 'not_a_participant'
   | 'internal_error';
+
+/**
+ * A guest's proof of seat, parsed from the request headers (WP-638 / D-24451):
+ * `playerId` is the boardgame.io seat id (e.g. `"1"`) from `X-Guest-Player-Id`;
+ * `credentials` is the boardgame.io `playerCredentials` string from
+ * `X-Guest-Credentials`. Read from HEADERS only — never the URL/query, because the
+ * credential is sensitive and a query string would leak it into logs / history. The
+ * header names are deliberately distinct from the WP-177 rewind headers
+ * (`X-Player-ID` / `X-Credentials`) so the two auth surfaces never alias.
+ */
+export interface GuestSeatProof {
+  readonly playerId: string;
+  readonly credentials: string;
+}
+
+// why: the synthetic editor-id prefix stamped into `updated_by_ext_id` for a guest
+// write (WP-638 / D-24451). A guest has no `legendary.players.ext_id` (a UUID), so
+// `guest:<playerId>` namespaces the audit id away from every real account id and can
+// never collide with one. Audit-only — `toBattlePlanView` strips it, so it is never
+// projected to a client. Locked format constant, not re-derived per call site.
+export const GUEST_EDITOR_ID_PREFIX = 'guest:';

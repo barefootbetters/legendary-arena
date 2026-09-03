@@ -15,8 +15,11 @@
  * Authority: WP-635 §Scope C; EC-670 §Locked Values; D-24449.
  */
 
+import { timingSafeEqual } from 'node:crypto';
+
 import {
   BATTLE_PLAN_PHASES,
+  GUEST_EDITOR_ID_PREFIX,
   type BattlePlanColumn,
   type BattlePlanErrorCode,
   type BattlePlanPhase,
@@ -137,4 +140,54 @@ export function toBattlePlanView(record: BattlePlanRecord): BattlePlanView {
     postBattle: record.postBattle,
     updatedAt: record.updatedAt,
   };
+}
+
+/**
+ * Verify a guest's supplied seat credential against the match's seat-credential map
+ * in CONSTANT time (WP-638 / D-24451). Returns true only when `playerId` names a
+ * seat whose stored credential byte-for-byte matches `supplied`. Never throws.
+ *
+ * why (no seat-existence oracle): an absent seat and a wrong credential BOTH return
+ * false, so the caller maps them to the same `403 not_a_participant`; an attacker
+ * cannot use the response to learn which seats exist.
+ *
+ * why (constant-time + length-guard): the credential is a secret; a `===` compare or
+ * an unguarded length would leak, via timing, how much of a guess matched.
+ * `timingSafeEqual` throws on unequal-length buffers, so the length precheck runs
+ * first — a differing length is already a definite non-match and leaks only length,
+ * not content (the `guestAccess.logic.ts` password-verify precedent).
+ *
+ * @param seatCredentials The seat-id → credential map from the bgio match metadata.
+ * @param playerId The bgio seat id the guest claims (from `X-Guest-Player-Id`).
+ * @param supplied The credential the guest supplied (from `X-Guest-Credentials`).
+ * @returns True only when the supplied credential matches the seat's stored one.
+ */
+export function verifyGuestSeatCredential(
+  seatCredentials: Record<string, string>,
+  playerId: string,
+  supplied: string,
+): boolean {
+  const storedCredential = seatCredentials[playerId];
+  if (typeof storedCredential !== 'string') {
+    return false;
+  }
+  const storedBuffer = Buffer.from(storedCredential, 'utf8');
+  const suppliedBuffer = Buffer.from(supplied, 'utf8');
+  if (storedBuffer.length !== suppliedBuffer.length) {
+    return false;
+  }
+  return timingSafeEqual(storedBuffer, suppliedBuffer);
+}
+
+/**
+ * Build the synthetic audit editor id for a guest seat write: `guest:<playerId>`
+ * (WP-638 / D-24451). Written to `battle_plan.updated_by_ext_id` for audit only; it
+ * is never projected to a client (`toBattlePlanView` strips `updatedByExtId`). The
+ * `guest:` prefix namespaces the id away from every real `legendary.players.ext_id`.
+ *
+ * @param playerId The bgio seat id of the verified guest (from `X-Guest-Player-Id`).
+ * @returns The `guest:<playerId>` audit editor id.
+ */
+export function guestEditorId(playerId: string): string {
+  return `${GUEST_EDITOR_ID_PREFIX}${playerId}`;
 }

@@ -1081,6 +1081,46 @@ export async function startServer() {
     requireAuthenticatedSession,
     verifier,
     accountResolver: verifier === undefined ? undefined : accountResolver,
+    // why: WP-638 / D-24451 — the guest-seat authorizer. When a caller has no valid
+    // session, the gate reads its X-Guest-Player-Id + X-Guest-Credentials headers and
+    // verifies them (constant-time) against the seat credentials this closure reads
+    // from the bgio match metadata (metadata.players[seat].credentials). This is the
+    // SAME framework metadata-surface read bot-ally uses (readBotSeatCredentials) —
+    // the bgio store's own `metadata`, NOT the state/initialState/log/G/ctx blob —
+    // so it rides the D-24095 framework-store exemption and needs NO persistence
+    // carve-out (it is NOT the D-24119 state-replay carve-out). Never written back.
+    // Returns null when the match/metadata is absent (→ the guest gets 403).
+    fetchMatchSeatCredentials: async (matchId) => {
+      try {
+        const { metadata } = await server.db.fetch(matchId, { metadata: true });
+        if (
+          metadata === null ||
+          metadata === undefined ||
+          metadata.players === undefined
+        ) {
+          return null;
+        }
+        const seatCredentials = {};
+        for (const seat of Object.keys(metadata.players)) {
+          const seatMetadata = metadata.players[seat];
+          if (
+            seatMetadata !== undefined &&
+            typeof seatMetadata.credentials === 'string'
+          ) {
+            seatCredentials[seat] = seatMetadata.credentials;
+          }
+        }
+        return seatCredentials;
+      } catch (fetchError) {
+        // why: a metadata-fetch failure must fail CLOSED — return null so the guest
+        // is denied (403 not_a_participant) rather than surfacing a bodyless 500 or
+        // authorizing on incomplete data. Logged for operators; the guest retries.
+        console.warn(
+          `[battle-plan] could not read seat credentials for match ${matchId}: ${fetchError.message}`,
+        );
+        return null;
+      }
+    },
   });
 
   // why: WP-106 / D-10602 — register the avatar upload route

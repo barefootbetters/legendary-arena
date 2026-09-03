@@ -34,8 +34,10 @@
 import koaBody from 'koa-body';
 
 import {
+  guestEditorId,
   phaseColumnFor,
   validateUpdateBattlePlanInput,
+  verifyGuestSeatCredential,
 } from './battlePlan.logic.js';
 import { toBattlePlanView } from './battlePlan.logic.js';
 import {
@@ -44,6 +46,7 @@ import {
 } from './battlePlan.persistence.js';
 import { readSeatAccounts } from './seatAccount.logic.js';
 
+import type { GuestSeatProof } from './battlePlan.types.js';
 import type { AccountId, DatabaseClient } from '../identity/identity.types.js';
 import type {
   AccountResolver,
@@ -83,6 +86,20 @@ export interface BattlePlanRouteDependencies {
   ) => Promise<RequireAuthenticatedSessionResult>;
   readonly verifier?: SessionVerifier;
   readonly accountResolver?: AccountResolver;
+  /**
+   * WP-638 / D-24451 — the guest-seat authorizer. Returns the match's seat-id →
+   * boardgame.io-credential map (from the bgio match metadata), or `null` when the
+   * match / metadata is absent. Injected in `server.mjs` as a closure over
+   * `server.db.fetch(matchId, { metadata: true })` (the bot-ally
+   * `readBotSeatCredentials` framework metadata-surface read — no persistence
+   * carve-out). Optional: when absent, the guest branch cannot authorize and the
+   * gate falls back to the session error (fail-closed), so the account path is
+   * unaffected. This dep lands on the route interface (not `battlePlan.types.ts`) —
+   * it is a normal route-file wiring seam, not a durable data contract.
+   */
+  readonly fetchMatchSeatCredentials?: (
+    matchId: string,
+  ) => Promise<Record<string, string> | null>;
 }
 
 /**
@@ -170,43 +187,77 @@ function statusForSessionValidationCode(code: SessionValidationCode): number {
 }
 
 /**
- * Resolve the authenticated caller, then confirm the caller is a participant in the
- * match. Returns the caller's accountId on success, or a `{ status, body }` rejection
- * the handler returns verbatim: `401` / `500` for a failed session (the pass-through
- * session code), `400 invalid_request` for a missing matchId, `403 not_a_participant`
- * for an authenticated non-participant.
+ * The resolved gate result the handlers act on: on success, the match id plus the
+ * `editorId` to stamp into `updated_by_ext_id` (the account `ext_id` on the account
+ * path, or `guest:<playerId>` on the guest path); on failure, the `{ status, body }`
+ * the handler returns verbatim.
+ */
+type ResolveParticipantResult =
+  | { ok: true; matchId: string; editorId: string }
+  | { ok: false; status: number; body: { error: string } };
+
+/**
+ * Collapse a Node header value (`string | string[] | undefined`) to a single
+ * non-empty string, or `null`. Node lowercases header names, so callers read the
+ * lowercase key. A repeated header (array) uses its first value.
  *
- * why (participant gate): the Battle Plan is a seated-TEAM artifact — only an account
- * holding a seat in the match may read or write it. Bots and guests have no
- * legendary.match_seat_accounts row (D-24120), so they are never participants. The
- * same gate applies to BOTH routes (read and write are symmetric).
+ * @param rawHeaderValue The raw header value off `request.headers[...]`.
+ * @returns The single non-empty string value, or null when absent/blank.
+ */
+function singleHeaderValue(
+  rawHeaderValue: string | readonly string[] | undefined,
+): string | null {
+  let value: unknown = rawHeaderValue;
+  if (Array.isArray(rawHeaderValue)) {
+    value = rawHeaderValue[0];
+  }
+  if (typeof value !== 'string' || value.length === 0) {
+    return null;
+  }
+  return value;
+}
+
+/**
+ * Parse the guest seat proof from the request HEADERS (`X-Guest-Player-Id` +
+ * `X-Guest-Credentials`), or null when either is absent/blank (i.e. not a guest
+ * request). Reads headers only — never the URL/query (the credential is sensitive).
+ *
+ * @param request The request whose headers carry the guest proof.
+ * @returns The `GuestSeatProof`, or null when the guest headers are not both present.
+ */
+function readGuestSeatProof(request: SessionTokenRequest): GuestSeatProof | null {
+  const playerId = singleHeaderValue(request.headers['x-guest-player-id']);
+  const credentials = singleHeaderValue(request.headers['x-guest-credentials']);
+  if (playerId === null || credentials === null) {
+    return null;
+  }
+  return { playerId, credentials };
+}
+
+/**
+ * Guest FALLBACK authorization — WP-638 / D-24451. Reached ONLY after a session has
+ * been ruled out (no valid session). Reads the `X-Guest-*` headers, fetches the
+ * match's seat credentials via the injected `fetchMatchSeatCredentials`, and verifies
+ * the supplied credential in constant time. Returns the authorized gate on success, a
+ * `403 not_a_participant` rejection when a guest proof is present but does not verify,
+ * or `null` when the guest path does not apply (no guest headers, or no credential
+ * fetcher wired) so the caller falls back to the session error.
+ *
+ * why (no seat-existence oracle): an absent seat-credential map (unknown match) and a
+ * non-matching credential BOTH return the same `403 not_a_participant` — the response
+ * never reveals whether the seat exists.
  *
  * @param koaContext The request context.
- * @param database The caller-injected `pg` pool.
- * @param deps The auth dependency bundle.
- * @param logic The injected logic seam (for `readSeatAccounts`).
- * @returns `{ ok: true, accountId, matchId }`, or `{ ok: false, status, body }`.
+ * @param deps The auth dependency bundle (supplies `fetchMatchSeatCredentials`).
+ * @returns The authorized gate, a 403 rejection, or null (guest path inapplicable).
  */
-async function resolveParticipant(
+async function resolveGuestSeat(
   koaContext: KoaBattlePlanContext,
-  database: DatabaseClient,
   deps: BattlePlanRouteDependencies,
-  logic: BattlePlanRouteLogic,
-): Promise<
-  | { ok: true; accountId: AccountId; matchId: string }
-  | { ok: false; status: number; body: { error: string } }
-> {
-  const sessionResult = await deps.requireAuthenticatedSession(koaContext.req, {
-    verifier: deps.verifier,
-    accountResolver: deps.accountResolver,
-    database,
-  });
-  if (sessionResult.ok !== true) {
-    return {
-      ok: false,
-      status: statusForSessionValidationCode(sessionResult.code),
-      body: { error: sessionResult.code },
-    };
+): Promise<ResolveParticipantResult | null> {
+  const proof = readGuestSeatProof(koaContext.req);
+  if (proof === null) {
+    return null;
   }
 
   const matchId = koaContext.params.matchId;
@@ -214,15 +265,99 @@ async function resolveParticipant(
     return { ok: false, status: 400, body: { error: 'invalid_request' } };
   }
 
-  const roster = await logic.readSeatAccounts(matchId, database);
-  const isParticipant = roster.some(
-    (seat) => seat.accountId === sessionResult.value,
-  );
-  if (!isParticipant) {
+  if (deps.fetchMatchSeatCredentials === undefined) {
+    // why: the guest authorizer is not wired — fail CLOSED by falling back to the
+    // session error rather than authorizing. Production always injects it.
+    return null;
+  }
+
+  const seatCredentials = await deps.fetchMatchSeatCredentials(matchId);
+  if (
+    seatCredentials === null ||
+    !verifyGuestSeatCredential(seatCredentials, proof.playerId, proof.credentials)
+  ) {
+    // why: unknown match/metadata and a wrong credential are the SAME 403 — no
+    // seat-existence oracle. Identical code to an account non-participant.
     return { ok: false, status: 403, body: { error: 'not_a_participant' } };
   }
 
-  return { ok: true, accountId: sessionResult.value, matchId };
+  return { ok: true, matchId, editorId: guestEditorId(proof.playerId) };
+}
+
+/**
+ * Resolve the caller to a seat, by EITHER of two paths, and return the `editorId` to
+ * stamp: (1) an authenticated account holding a seat in the match (the WP-635 path,
+ * unchanged), OR (2) a guest who proves their seat with a valid boardgame.io
+ * credential (WP-638 / D-24451). On failure, returns the `{ status, body }` the
+ * handler returns verbatim: `401` / `500` for a failed session with no verifiable
+ * guest proof (the pass-through session code), `400 invalid_request` for a missing
+ * matchId, `403 not_a_participant` for an authenticated non-participant OR an
+ * unverifiable guest.
+ *
+ * why (guest is a FALLBACK; a valid session always wins): `requireAuthenticatedSession`
+ * runs first. A VALID session takes the account path and its result is returned
+ * without ever reading the guest headers — even when the account is NOT a participant
+ * (it gets the account-path 403). This is the anti-spoof guarantee: an account holder
+ * cannot attach `X-Guest-*` headers to author a guest seat, because a valid session
+ * never consults them. Only when the session is absent/invalid does the gate consult
+ * the guest proof.
+ *
+ * why (participant gate): the Battle Plan is a seated-TEAM artifact. An account holds
+ * a seat via `legendary.match_seat_accounts` (D-24120); a guest is rowless there and
+ * proves the same seat via its bgio credential instead — WP-638 opens this one
+ * non-gameplay surface to verified guests without granting them a seat row (they stay
+ * Casual). The same gate applies to BOTH routes (read and write are symmetric).
+ *
+ * @param koaContext The request context.
+ * @param database The caller-injected `pg` pool.
+ * @param deps The auth dependency bundle.
+ * @param logic The injected logic seam (for `readSeatAccounts`).
+ * @returns `{ ok: true, matchId, editorId }`, or `{ ok: false, status, body }`.
+ */
+async function resolveParticipant(
+  koaContext: KoaBattlePlanContext,
+  database: DatabaseClient,
+  deps: BattlePlanRouteDependencies,
+  logic: BattlePlanRouteLogic,
+): Promise<ResolveParticipantResult> {
+  const sessionResult = await deps.requireAuthenticatedSession(koaContext.req, {
+    verifier: deps.verifier,
+    accountResolver: deps.accountResolver,
+    database,
+  });
+
+  if (sessionResult.ok === true) {
+    // why: a VALID session ALWAYS takes the account path and never reads the guest
+    // headers — the anti-spoof guarantee (an account holder cannot spoof a guest
+    // seat). A non-participant account falls through to the account-path 403 below.
+    const matchId = koaContext.params.matchId;
+    if (matchId === undefined || matchId === '') {
+      return { ok: false, status: 400, body: { error: 'invalid_request' } };
+    }
+
+    const roster = await logic.readSeatAccounts(matchId, database);
+    const isParticipant = roster.some(
+      (seat) => seat.accountId === sessionResult.value,
+    );
+    if (!isParticipant) {
+      return { ok: false, status: 403, body: { error: 'not_a_participant' } };
+    }
+
+    return { ok: true, matchId, editorId: sessionResult.value };
+  }
+
+  const guestGate = await resolveGuestSeat(koaContext, deps);
+  if (guestGate !== null) {
+    return guestGate;
+  }
+
+  // why: no valid session AND no verifiable guest proof → the pass-through session
+  // code (401 / 500), exactly the WP-635 behaviour for a non-guest caller.
+  return {
+    ok: false,
+    status: statusForSessionValidationCode(sessionResult.code),
+    body: { error: sessionResult.code },
+  };
 }
 
 /**
@@ -269,7 +404,7 @@ export function registerBattlePlanRoutes(
         gate.matchId,
         column,
         validation.value.text,
-        gate.accountId,
+        gate.editorId,
         database,
       );
       koaContext.status = 200;

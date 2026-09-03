@@ -13,12 +13,15 @@ import assert from 'node:assert/strict';
 
 import {
   BATTLE_PLAN_PHASE_MAX_LENGTH,
+  guestEditorId,
   phaseColumnFor,
   toBattlePlanView,
   validateUpdateBattlePlanInput,
+  verifyGuestSeatCredential,
 } from './battlePlan.logic.js';
 import {
   BATTLE_PLAN_PHASES,
+  GUEST_EDITOR_ID_PREFIX,
   type BattlePlanPhase,
   type BattlePlanRecord,
 } from './battlePlan.types.js';
@@ -156,5 +159,55 @@ describe('toBattlePlanView (WP-635)', () => {
     const view = toBattlePlanView(RECORD) as Record<string, unknown>;
     assert.equal('updatedByExtId' in view, false);
     assert.equal('createdAt' in view, false);
+  });
+});
+
+describe('verifyGuestSeatCredential (WP-638)', () => {
+  const SEAT_CREDENTIALS = { '0': 'host-cred-aaaa', '1': 'guest-cred-bbbb' };
+
+  test('true only when the supplied credential matches the seat exactly', () => {
+    assert.equal(
+      verifyGuestSeatCredential(SEAT_CREDENTIALS, '1', 'guest-cred-bbbb'),
+      true,
+    );
+  });
+
+  test('false for a wrong credential of the same length', () => {
+    // why: same length as the stored credential, so the length precheck passes and
+    // the timingSafeEqual byte compare is what rejects it — the real constant-time path.
+    assert.equal(
+      verifyGuestSeatCredential(SEAT_CREDENTIALS, '1', 'guest-cred-XXXX'),
+      false,
+    );
+  });
+
+  test('false for a wrong credential of a different length (length guard, no throw)', () => {
+    // why: timingSafeEqual throws on unequal-length buffers; a false here (not a throw)
+    // proves the length precheck guards it.
+    assert.equal(verifyGuestSeatCredential(SEAT_CREDENTIALS, '1', 'short'), false);
+    assert.equal(
+      verifyGuestSeatCredential(SEAT_CREDENTIALS, '1', 'guest-cred-bbbb-and-then-some'),
+      false,
+    );
+  });
+
+  test('false for a seat absent from the map (no seat-existence oracle)', () => {
+    // why: an absent seat returns the SAME false a wrong credential returns, so the
+    // caller cannot distinguish "no such seat" from "wrong credential".
+    assert.equal(verifyGuestSeatCredential(SEAT_CREDENTIALS, '9', 'anything'), false);
+    assert.equal(verifyGuestSeatCredential({}, '1', 'guest-cred-bbbb'), false);
+  });
+
+  test('false against an empty supplied credential', () => {
+    assert.equal(verifyGuestSeatCredential(SEAT_CREDENTIALS, '1', ''), false);
+  });
+});
+
+describe('guestEditorId (WP-638)', () => {
+  test('formats the audit id as guest:<playerId> with the locked prefix', () => {
+    assert.equal(guestEditorId('1'), 'guest:1');
+    assert.equal(guestEditorId('0'), 'guest:0');
+    assert.equal(GUEST_EDITOR_ID_PREFIX, 'guest:');
+    assert.ok(guestEditorId('3').startsWith(GUEST_EDITOR_ID_PREFIX));
   });
 });
