@@ -65,13 +65,19 @@ function makeMockRouter(): {
 }
 
 function makeMockContext(
-  over: { body?: unknown; matchId?: string } = {},
+  over: {
+    body?: unknown;
+    matchId?: string;
+    headers?: Record<string, string | readonly string[] | undefined>;
+  } = {},
 ): MockKoaContext {
   const callOrder: string[] = [];
   let statusValue = 0;
   let bodyValue: unknown = undefined;
   return {
-    req: {} as SessionTokenRequest,
+    // why: the guest branch reads X-Guest-* off req.headers (Node lowercases header
+    // names); the account-path tests pass no headers so the map is empty.
+    req: { headers: over.headers ?? {} } as SessionTokenRequest,
     request: { body: over.body },
     params: over.matchId === undefined ? {} : { matchId: over.matchId },
     get status(): number {
@@ -378,5 +384,251 @@ describe('GET /api/match/:matchId/battle-plan (WP-635)', () => {
     assert.equal(context.status, 403);
     assert.deepEqual(context.body, { error: 'not_a_participant' });
     assert.equal(called, false);
+  });
+});
+
+// WP-638 / D-24451 — the guest-seat authorization branch. A caller with no valid
+// session may still be authorized by proving a match seat with the boardgame.io
+// credential carried in the X-Guest-Player-Id + X-Guest-Credentials headers.
+const GUEST_SEAT_CREDENTIALS: Record<string, string> = {
+  '0': 'host-cred-0000',
+  '1': 'guest-cred-1111',
+};
+
+const GUEST_HEADERS: Record<string, string> = {
+  'x-guest-player-id': '1',
+  'x-guest-credentials': 'guest-cred-1111',
+};
+
+/** Deps with NO valid session + a seat-credential map (the guest happy path). */
+function makeGuestDeps(
+  over: Partial<BattlePlanRouteDependencies> = {},
+): BattlePlanRouteDependencies {
+  return {
+    requireAuthenticatedSession: async () => ({
+      ok: false,
+      reason: 'no token',
+      code: 'missing_token',
+    }),
+    fetchMatchSeatCredentials: async () => GUEST_SEAT_CREDENTIALS,
+    ...over,
+  };
+}
+
+describe('Battle Plan guest-seat authorization (WP-638)', () => {
+  test('a guest with a valid credential PUTs, stamped with the guest:<playerId> editor id', async () => {
+    let capturedEditor: unknown = 'unset';
+    const routes = register(
+      makeGuestDeps(),
+      makeLogic({
+        upsertBattlePlanPhase: async (_matchId, _column, _text, editorExtId) => {
+          capturedEditor = editorExtId;
+          return RECORD;
+        },
+      }),
+    );
+    const handler = routes.put.get(PUT_PATH)!;
+    const context = makeMockContext({
+      matchId: MATCH_ID,
+      headers: GUEST_HEADERS,
+      body: { phase: 'pre_battle', text: 'guest plan' },
+    });
+    await handler(context);
+    assert.equal(context.status, 200);
+    assert.deepEqual(context.body, { battlePlan: VIEW });
+    // why: a guest write is audited as guest:<playerId>, never a real account ext_id.
+    assert.equal(capturedEditor, 'guest:1');
+  });
+
+  test('a guest with a valid credential GETs the document', async () => {
+    const routes = register(makeGuestDeps(), makeLogic());
+    const handler = routes.get.get(GET_PATH)!;
+    const context = makeMockContext({ matchId: MATCH_ID, headers: GUEST_HEADERS });
+    await handler(context);
+    assert.equal(context.status, 200);
+    assert.deepEqual(context.body, { battlePlan: VIEW });
+  });
+
+  test('a guest with a WRONG credential gets 403 not_a_participant; the upsert is never called', async () => {
+    let called = false;
+    const routes = register(
+      makeGuestDeps(),
+      makeLogic({
+        upsertBattlePlanPhase: async () => {
+          called = true;
+          return RECORD;
+        },
+      }),
+    );
+    const handler = routes.put.get(PUT_PATH)!;
+    const context = makeMockContext({
+      matchId: MATCH_ID,
+      headers: {
+        'x-guest-player-id': '1',
+        'x-guest-credentials': 'guest-cred-WRONG',
+      },
+      body: { phase: 'pre_battle', text: 'x' },
+    });
+    await handler(context);
+    assert.equal(context.status, 403);
+    assert.deepEqual(context.body, { error: 'not_a_participant' });
+    assert.equal(called, false);
+  });
+
+  test('a guest for a seat ABSENT from the metadata gets 403 (indistinguishable from a wrong credential)', async () => {
+    const routes = register(makeGuestDeps(), makeLogic());
+    const handler = routes.get.get(GET_PATH)!;
+    const context = makeMockContext({
+      matchId: MATCH_ID,
+      headers: {
+        'x-guest-player-id': '9',
+        'x-guest-credentials': 'anything',
+      },
+    });
+    await handler(context);
+    assert.equal(context.status, 403);
+    assert.deepEqual(context.body, { error: 'not_a_participant' });
+  });
+
+  test('a guest whose match has no metadata (fetch → null) gets 403 (no seat-existence oracle)', async () => {
+    const routes = register(
+      makeGuestDeps({ fetchMatchSeatCredentials: async () => null }),
+      makeLogic(),
+    );
+    const handler = routes.get.get(GET_PATH)!;
+    const context = makeMockContext({ matchId: MATCH_ID, headers: GUEST_HEADERS });
+    await handler(context);
+    assert.equal(context.status, 403);
+    assert.deepEqual(context.body, { error: 'not_a_participant' });
+  });
+
+  test('a VALID session IGNORES guest headers — the account path wins and the fetch is never called', async () => {
+    let fetchCalled = false;
+    let capturedEditor: unknown = 'unset';
+    const routes = register(
+      // why: default deps = a VALID session for PARTICIPANT. Guest headers are also
+      // present, but a valid session must take the account path and never consult them.
+      makeDeps({
+        fetchMatchSeatCredentials: async () => {
+          fetchCalled = true;
+          return GUEST_SEAT_CREDENTIALS;
+        },
+      }),
+      makeLogic({
+        upsertBattlePlanPhase: async (_matchId, _column, _text, editorExtId) => {
+          capturedEditor = editorExtId;
+          return RECORD;
+        },
+      }),
+    );
+    const handler = routes.put.get(PUT_PATH)!;
+    const context = makeMockContext({
+      matchId: MATCH_ID,
+      headers: GUEST_HEADERS,
+      body: { phase: 'pre_battle', text: 'account plan' },
+    });
+    await handler(context);
+    assert.equal(context.status, 200);
+    // why: audited as the ACCOUNT ext_id, not guest:1 — the guest headers were ignored.
+    assert.equal(capturedEditor, PARTICIPANT);
+    assert.equal(fetchCalled, false);
+  });
+
+  test('SPOOF VECTOR: a valid NON-participant session + valid guest headers still gets the account-path 403 (never guest authorization)', async () => {
+    let fetchCalled = false;
+    let upsertCalled = false;
+    const routes = register(
+      // why: a VALID session whose account is NOT in the roster, PLUS valid guest
+      // headers. The account holder must NOT be able to fall through to the guest path
+      // to author a seat they do not own — the account-path 403 is final.
+      makeDeps({
+        fetchMatchSeatCredentials: async () => {
+          fetchCalled = true;
+          return GUEST_SEAT_CREDENTIALS;
+        },
+      }),
+      makeLogic({
+        readSeatAccounts: async () => [
+          { playerId: '0', accountId: 'someone-else' as AccountId },
+        ],
+        upsertBattlePlanPhase: async () => {
+          upsertCalled = true;
+          return RECORD;
+        },
+      }),
+    );
+    const handler = routes.put.get(PUT_PATH)!;
+    const context = makeMockContext({
+      matchId: MATCH_ID,
+      headers: GUEST_HEADERS,
+      body: { phase: 'pre_battle', text: 'spoof attempt' },
+    });
+    await handler(context);
+    assert.equal(context.status, 403);
+    assert.deepEqual(context.body, { error: 'not_a_participant' });
+    assert.equal(upsertCalled, false);
+    // why: the guest credential fetch must never run once a valid session is present.
+    assert.equal(fetchCalled, false);
+  });
+
+  test('no session AND no guest headers → the pass-through 401 (the WP-635 behaviour)', async () => {
+    const routes = register(makeGuestDeps(), makeLogic());
+    const handler = routes.get.get(GET_PATH)!;
+    const context = makeMockContext({ matchId: MATCH_ID });
+    await handler(context);
+    assert.equal(context.status, 401);
+    assert.deepEqual(context.body, { error: 'missing_token' });
+  });
+
+  test('a guest write touches NO seat roster — the seat table stays empty (guests stay rowless)', async () => {
+    let rosterRead = false;
+    let capturedEditor: unknown = 'unset';
+    const routes = register(
+      makeGuestDeps(),
+      makeLogic({
+        // why: the guest branch never reads the account seat roster and the routes
+        // have no seat-account WRITE surface at all, so a guest write can add no
+        // match_seat_accounts row — the logic-pure proxy for "guests stay rowless".
+        readSeatAccounts: async () => {
+          rosterRead = true;
+          return [];
+        },
+        upsertBattlePlanPhase: async (_matchId, _column, _text, editorExtId) => {
+          capturedEditor = editorExtId;
+          return RECORD;
+        },
+      }),
+    );
+    const handler = routes.put.get(PUT_PATH)!;
+    const context = makeMockContext({
+      matchId: MATCH_ID,
+      headers: GUEST_HEADERS,
+      body: { phase: 'pre_battle', text: 'guest plan' },
+    });
+    await handler(context);
+    assert.equal(context.status, 200);
+    assert.equal(capturedEditor, 'guest:1');
+    assert.equal(rosterRead, false);
+  });
+
+  test('the account path is unchanged — a seated account write is stamped with its own ext_id', async () => {
+    let capturedEditor: unknown = 'unset';
+    const routes = register(
+      makeDeps(),
+      makeLogic({
+        upsertBattlePlanPhase: async (_matchId, _column, _text, editorExtId) => {
+          capturedEditor = editorExtId;
+          return RECORD;
+        },
+      }),
+    );
+    const handler = routes.put.get(PUT_PATH)!;
+    const context = makeMockContext({
+      matchId: MATCH_ID,
+      body: { phase: 'pre_battle', text: 'account plan' },
+    });
+    await handler(context);
+    assert.equal(context.status, 200);
+    assert.equal(capturedEditor, PARTICIPANT);
   });
 });

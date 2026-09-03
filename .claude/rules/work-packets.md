@@ -125,7 +125,9 @@ is replaced **entirely** (no partial-column updates per D-11804
 replace-whole-row merge semantics — partial-update is FAIL). Closed sets
 are enforced: `Status` ∈ `{ Wired, Shipped-but-unwired, Library-only,
 Pending }`; `Auth` ∈ `{ guest, handle-required,
-authenticated-session-required }` (per D-9905). Canonical field names in
+authenticated-session-required, admin-session-required, match-seat-holder }`
+(per D-9905, extended by D-15901 `admin-session-required` + D-24451
+`match-seat-holder`). Canonical field names in
 request and response schemas match
 `docs/ai/REFERENCE/00.2-data-requirements.md` exactly. The companion
 draft-time gate is `docs/ai/REFERENCE/00.3-prompt-lint-checklist.md §21`;
