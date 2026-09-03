@@ -14,7 +14,7 @@ related:
   - homepage-marketing-scorecard.md
   - video-production-workflow.md
   - video-commerce.md
-  - gameplay-recording-for-youtube.md
+  - gameplay-video-production-youtube.md
 status: draft
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\youtube-channel-plan.md (this page — https://ewiki.legendary-arena.com/youtube-channel-plan/)

@@ -14,7 +14,7 @@ related:
   - blog-post-authoring.md
   - hugo-web-system.md
   - video-commerce.md
-  - gameplay-recording-for-youtube.md
+  - gameplay-video-production-youtube.md
 status: draft
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\video-production-workflow.md (this page — https://ewiki.legendary-arena.com/video-production-workflow/)

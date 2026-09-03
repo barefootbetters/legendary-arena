@@ -16,7 +16,7 @@ related:
   - ewiki-authoring.md
   - newsletter-authoring.md
   - monetization-model.md
-  - gameplay-recording-for-youtube.md
+  - gameplay-video-production-youtube.md
 status: draft
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\workspace-map.md (this page — https://ewiki.legendary-arena.com/workspace-map/)
