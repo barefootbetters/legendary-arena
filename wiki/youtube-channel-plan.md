@@ -15,6 +15,7 @@ related:
   - video-production-workflow.md
   - video-commerce.md
   - gameplay-video-production-youtube.md
+  - ip-licensing.md
 status: draft
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\youtube-channel-plan.md (this page — https://ewiki.legendary-arena.com/youtube-channel-plan/)
@@ -30,9 +31,11 @@ If they disagree, the marketing repo copy wins.
 
 ## Summary
 
-The YouTube channel ("Legendary Arena") is the transitional CTA the
-homepage needs. It serves all five Player Needs Pyramid levels and all
-three SB7 content modes (Sales, Narrative, Authority) through four
+The YouTube channel ("Legendary Arena",
+[youtube.com/@playlegendaryarena](https://www.youtube.com/@playlegendaryarena))
+is the transitional CTA the homepage needs — the destination all videos and
+Community posts publish to. It serves all five Player Needs Pyramid levels
+and all three SB7 content modes (Sales, Narrative, Authority) through four
 series:
 
 | Series | Content Mode | Pyramid Levels | Cadence |
@@ -71,6 +74,27 @@ Every video employs the seven StoryBrand elements:
 - **Failure Stakes + Success Vision:** What happens if you don't act
   vs. what life looks like when you do.
 - **Identity Transformation:** Frustrated player → Respected competitor.
+
+## Community Posts
+
+A fifth engagement surface beyond the four video series, now enabled on the
+channel. The composer offers five post types — map each to a job:
+
+| Post type | Best for |
+|---|---|
+| **Text poll** | Surfacing villain language; content-calendar research |
+| **Quiz** | Playful authority — a rules/strategy question with a right answer |
+| **Image** | Behind-the-scenes presence; an "early look" still |
+| **Image poll** | A visual A/B ("which thumbnail?") |
+| **Video** | Re-surfacing a Short or teaser into the community feed |
+
+**IP caveat:** a community post is **public the moment it publishes** —
+there is no Unlisted community post. An Image / Image poll / Video post
+showing Marvel / *Legendary* card art is immediate public exposure of
+unlicensed IP, gated the same way as a public video (see
+[IP Licensing](ip-licensing.md)); Text poll, Quiz, and text posts that
+don't show licensed card art are unaffected. Full content-type table and
+cadence live in the authoritative marketing-repo doc.
 
 ## Key References
 
