@@ -7,6 +7,14 @@
 
 ## Current State
 
+### WP-635 — Battle Plan API (server + persistence) shipped (EC-670 / D-24449) (2026-09-02)
+
+**No user-observable change — infrastructure only.** First packet of the Battle Plan arc: the server + persistence foundation for the in-match **Battle Plan** — the free-text, football-style "game plan" a team writes during a match, in three lifecycle-tied phases (`pre_battle` / `battle_adjustments` / `post_battle`). The client `BattlePlanPanel.vue` and the LAGN `battle_plan` export block are separate follow-on WPs.
+
+Two authenticated, participant-gated endpoints — `PUT /api/match/:matchId/battle-plan` (body `{ phase, text }`, per-phase upsert) and `GET /api/match/:matchId/battle-plan` (returns the current three-phase document or `null`) — over a new `legendary.battle_plan` domain table (one shared row per match, `match_id text UNIQUE`, **no FK**; per-column `INSERT … ON CONFLICT (match_id) DO UPDATE`, so writing one phase never clears the other two). Both routes reject a non-seated caller `403 not_a_participant` via `readSeatAccounts` (bots/guests have no seat-account row, D-24120); `phase` is a closed set (`400 unknown_phase`); `text` is capped at `BATTLE_PLAN_PHASE_MAX_LENGTH = 4000` (`400 text_too_long`; empty clears); the audit-only `updated_by_ext_id` is never projected (D-5201). Each write route owns its `koaBody()`; `Cache-Control: no-store` first. Ordinary `legendary.*` domain storage — REST + Postgres only, never `G`/`ctx`/snapshot/hash, no boardgame.io/`game-engine` import.
+
+**Verified:** server **1275 pass / 0 fail** (202 DB-gated skips DB-less); DB-gated `battlePlan.persistence.test.ts` **5/5 pass** against local Postgres (migration 045 applied); `pnpm -r build` 0. **Execution amendment:** `apps/server` has no `build` script or tsconfig (runs via tsx; CI confirms "no typecheck lane"), so the WP's "build exits 0" step is N/A — the gate is the test suite (+ the CI Server DB Tests job). Files (10): migration `045_create_battle_plan.sql`; `apps/server/src/match/battlePlan.{types,logic,persistence,routes}.ts` (+ three test files); `server.mjs` (wiring); `api-endpoints.md` (two rows, D-11804). **Packet:** WP-635 / EC-670.
+
 ### WP-636 — Guest co-op endgame VP recap (EC-671 / D-24441) shipped (2026-09-02)
 
 Operator-reported (Jeff, across two live guest wins — Midtown Bank Robbery + Super Hero Civil War): a **guest** finishing a game saw only the outcome banner, the "Sign in to save your score" prompt, and a bare **"Final scores recorded (N players)."** line — no result. The rich report (grade / PAR / per-player / luck / coach) lives in `competitiveScore`, which the server correctly withholds from an unranked guest — but the **per-player VP is already on the guest's client** in `gameOver.scores`; the `scores` block just discarded it.
