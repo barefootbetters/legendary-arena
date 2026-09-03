@@ -49,6 +49,7 @@ import { registerMatchLagnRoutes } from './match/matchLagn.routes.js';
 import { registerCoachRoutes } from './coach/coach.routes.js';
 import { createAnthropicCoachClient } from './coach/coachClient.js';
 import { registerFeedbackRoutes } from './feedback/feedback.routes.js';
+import { registerBattlePlanRoutes } from './match/battlePlan.routes.js';
 import { resolveCoachModelConfig } from './coach/coachModelConfig.js';
 import {
   createNativeLobbyGuard,
@@ -1061,6 +1062,22 @@ export async function startServer() {
   // status mutation (the DB owns vote_count as a COUNT projection; status triage is a
   // follow-on dashboard WP) and no UI.
   registerFeedbackRoutes(server.router, pool, {
+    requireAuthenticatedSession,
+    verifier,
+    accountResolver: verifier === undefined ? undefined : accountResolver,
+  });
+
+  // why: WP-635 / D-24449 — register the per-match Battle Plan API
+  // (PUT /api/match/:matchId/battle-plan upsert one phase, GET the current
+  // three-phase document) on the same long-lived pool. Both routes are
+  // identity-gated via the same caller-injected { requireAuthenticatedSession,
+  // verifier, accountResolver } trio, then participant-gated via readSeatAccounts
+  // (a non-seated account gets 403 not_a_participant). The write route owns its
+  // koaBody() — there is no global /api parser. The Battle Plan is ordinary
+  // legendary.* domain storage (REST + Postgres only): never G/ctx, never a
+  // snapshot, never hashed. This packet ships the server + persistence backbone
+  // only; the client BattlePlanPanel and the LAGN export block are follow-on WPs.
+  registerBattlePlanRoutes(server.router, pool, {
     requireAuthenticatedSession,
     verifier,
     accountResolver: verifier === undefined ? undefined : accountResolver,
