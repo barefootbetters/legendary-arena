@@ -722,6 +722,14 @@ export default defineComponent({
           update.password = guestSetPassword.value;
         }
         await setGuestAccess(matchID, update, token);
+        // why: D-24448 — when a real password was set the server reopens any
+        // unclaimed guest seat it freed, so a "guest seat ready" link previously
+        // shown for this row now points at a released seat. Dismiss that stale link
+        // panel; the refreshed list below shows the reopened seat + "Join as guest".
+        if (update.password !== undefined && activeGuestMatchId.value === matchID) {
+          guestSeatLink.value = null;
+          activeGuestMatchId.value = null;
+        }
         await refreshMatches();
         guestSetStatus.value = 'Saved — guests can now join this game with the password.';
         guestSetPassword.value = '';

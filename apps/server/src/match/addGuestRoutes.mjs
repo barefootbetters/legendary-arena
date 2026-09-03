@@ -212,6 +212,93 @@ export async function mintGuestSeat(context, matchId) {
 }
 
 /**
+ * Releases every UNCLAIMED guest seat in a match and returns the seat ids freed
+ * (D-24448). An unclaimed guest seat is one that is (a) occupied by a guest — a
+ * seat with credentials that is neither an account seat nor a bot seat — and
+ * (b) NOT yet connected (`isConnected !== true`), i.e. a `mintGuestSeat`
+ * placeholder that "Add guest" filled but no real person ever opened.
+ *
+ * Called when a host sets a guest PASSWORD (the lobby-join model): that model
+ * needs the seat left OPEN so a walk-up guest can claim it from the lobby, but
+ * "Add guest" (the link-handoff model) may have already minted-and-filled it. We
+ * release each such placeholder via boardgame.io's native `leave`, authenticated
+ * with the seat's OWN stored credentials — read from the framework match metadata
+ * (`db.fetch(..., { metadata: true })`, the same D-24095/D-24119 framework-store
+ * read `mintGuestSeat` uses; the loopback `leave` is a framework-owned mutation,
+ * not an application write to a domain table). A CONNECTED guest (a real person
+ * already on the link) keeps their seat.
+ *
+ * Best-effort and non-throwing: a failed metadata read or `leave` is logged and
+ * skipped so a transient bgio hiccup never fails the caller's password save.
+ *
+ * @param {object} context - The bot-ally context bundle (db, serverUrl,
+ *   internalDelegationSecret, database).
+ * @param {string} matchId - The match whose unclaimed guest seats to release.
+ * @returns {Promise<string[]>} The seat ids that were released (possibly empty).
+ */
+export async function releaseUnclaimedGuestSeats(context, matchId) {
+  const { db, serverUrl, internalDelegationSecret, database } = context;
+  const releasedSeatIds = [];
+  // why: without the framework store there is nothing to read or release — a
+  // clean no-op (keeps the caller's password save unaffected). In production the
+  // shared bot-ally context always carries `db`.
+  if (db === undefined || db === null) {
+    return releasedSeatIds;
+  }
+  try {
+    const { metadata } = await db.fetch(matchId, { metadata: true });
+    if (metadata === null || metadata === undefined || metadata.players === undefined) {
+      return releasedSeatIds;
+    }
+    const players = metadata.players;
+    const accountSeats = await readSeatAccounts(matchId, database);
+    const botSeats = await readMatchBotSeats(matchId, database);
+    const accountSeatSet = new Set(accountSeats.map((seat) => seat.playerId));
+    const botSeatSet = new Set(botSeats);
+
+    for (const [seatId, seatMeta] of Object.entries(players)) {
+      const isOccupied = seatMeta !== null && typeof seatMeta.credentials === 'string';
+      const isGuestSeat = isOccupied && !accountSeatSet.has(seatId) && !botSeatSet.has(seatId);
+      // why: leave ONLY an unconnected guest placeholder — a real guest already on
+      // the link (isConnected === true) keeps their seat (the accepted edge case).
+      if (!isGuestSeat || seatMeta.isConnected === true) {
+        continue;
+      }
+      // why: boardgame.io's native `leave` frees the seat (clears its name +
+      // credentials) when given the seat's own credentials; the internal-delegation
+      // header admits the loopback call exactly as the `mintGuestSeat` join does.
+      const leaveResponse = await fetch(
+        `${serverUrl}/games/legendary-arena/${matchId}/leave`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            [INTERNAL_DELEGATION_HEADER]: internalDelegationSecret,
+          },
+          body: JSON.stringify({ playerID: seatId, credentials: seatMeta.credentials }),
+        },
+      );
+      if (leaveResponse.ok) {
+        releasedSeatIds.push(seatId);
+      } else {
+        console.error(
+          `[release-guest-seat] leave failed for match ${matchId} seat ${seatId}: ` +
+            `HTTP ${leaveResponse.status}.`,
+        );
+      }
+    }
+  } catch (releaseError) {
+    // why: releasing seats is best-effort — the password has already been saved by
+    // the caller, so a failure here must not fail the request. Log and return what
+    // was freed so the seat simply stays as-is (the host can retry the save).
+    console.error(
+      `[release-guest-seat] failed for match ${matchId}: ${releaseError.message}`,
+    );
+  }
+  return releasedSeatIds;
+}
+
+/**
  * Registers `POST /api/match/add-guest` on the boardgame.io Koa router.
  *
  * @param {import('@koa/router')} router - The boardgame.io server's koa router.
