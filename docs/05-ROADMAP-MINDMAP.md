@@ -497,6 +497,7 @@ mindmap
         ["WP-634 ✅ Guest password in-match set control (arena-client; Set guest password button + form in WaitingForPlayersPanel next to Add guest, reuses setGuestAccess/readGuestAccessMeta; host SET surface on the play screen, guest still JOINS from lobby; EC-669; D-24441; assumes WP-631)"]
         ["WP-635 ✅ Battle Plan API (server + persistence; first packet of the Battle Plan arc — a per-match shared 3-phase team battle plan pre_battle/battle_adjustments/post_battle stored in a new legendary.battle_plan domain table one row per match_id plain text not FK, and two authenticated participant-gated endpoints PUT /api/match/:matchId/battle-plan per-phase upsert + GET. REST + Postgres only never boardgame.io/G/ctx/snapshot/hash; participant gate reuses readSeatAccounts. Mirrors the WP-604 feedback-intake module shape. Client BattlePlanPanel + LAGN battle_plan export block are follow-on WPs. EC-670 + D-24449; executed 2026-09-02)"]
         ["WP-636 ✅ Guest co-op endgame VP recap (arena-client; EndgameSummary scores block renders per-player VP from gameOver.scores when no competitiveScore, so a guest sees a real result not just the sign-in wall; account-holder block unchanged; §23(b) no winner/loser; EC-671; D-24441)"]
+        ["WP-637 📝 Battle Plan client panel (arena-client; the client half of the Battle Plan arc — BattlePlanPanel.vue fixed overlay mounted once in PlayViewport reads/writes the shared 3-phase team plan pre_battle/battle_adjustments/post_battle via WP-635's GET/PUT /api/match/:matchId/battle-plan, through battlePlanApi.ts mirrors matchInvitesApi + useBattlePlan polling composable mirrors useMatchSeatStatus 5000ms. Client derives editable phase from match lifecycle snapshot gameOver→post, game.phase play→adjustments, else pre, reached phases never re-lock D-24450. Non-gameplay REST only never submitMove never G/ctx/UIState write. Reactions + author display deferred. play.legendary-arena.com D-24026 live-verify. EC-672 + D-24450; assumes WP-635; drafted 2026-09-02)"]
 
       Hero/Villain Effects & Diagnostics (2026-07)
         ["WP-632 ✅ Widen optional-ko-reward KO source to include in-play (KO a card you played this turn, keep its Recruit/Attack; hand∪discard∪inPlay; reword 9 card texts; bot inPlay fallback keeps hashes byte-stable; EC-667; D-24442)"]
@@ -810,7 +811,7 @@ mindmap
 | Architecture & API Governance | 4/4 | — |
 | Complete-Game Testing | 1/1 | — |
 | Cross-App Infrastructure | 2/2 | — |
-| Multiplayer Play & Match Durability (2026-07) | 16/16 | — |
+| Multiplayer Play & Match Durability (2026-07) | 16/17 | 1 open |
 | Hero/Villain Effects & Diagnostics (2026-07) | 6/6 | — |
 | Live-Play HUD & Pending-Choice UX (2026-07) | 20/20 | — |
 | Competitive Score Submission & Verification (2026-07) | 10/10 | — |
@@ -819,9 +820,9 @@ mindmap
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **620/630 WP ✅** (+ 4/4 Foundation Prompts) | 3 ⏸, 7 open |
+| **Total** | **620/631 WP ✅** (+ 4/4 Foundation Prompts) | 3 ⏸, 8 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 10):** WP-042.1 ⏸ blocked; WP-349 open; WP-391 open; WP-398 open; WP-399 open; WP-368 open; WP-403 ⏸ blocked; WP-404 ⏸ blocked; WP-429 open; WP-564 open.
+**Open / blocked WPs (derived from WORK_INDEX, 11):** WP-637 open; WP-042.1 ⏸ blocked; WP-349 open; WP-391 open; WP-398 open; WP-399 open; WP-368 open; WP-403 ⏸ blocked; WP-404 ⏸ blocked; WP-429 open; WP-564 open.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.
