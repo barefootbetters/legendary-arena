@@ -390,14 +390,13 @@ Step-by-step walkthroughs for completing specific tasks.
   for per-frame control, Posterize Time fast fallback, loop-boundary
   technique, Media Encoder handoff, and the UI-overlay layer that
   makes a generic clip read as a digital card game.
-- [Gameplay Recording for YouTube](gameplay-recording-for-youtube.md) —
-  *(draft)* recording a `play.legendary-arena.com` match for YouTube
-  (play-and-narrate / community "at the table" format): the end-to-end
-  Chrome → OBS (separate audio stems) → FFmpeg (duck + loudnorm + encode)
-  → unlisted-YouTube runbook, plus the IP posture that gates public
-  publication (keep Marvel-showing gameplay unlisted until license-clean)
-  and the unlisted-not-private handshake for a musician's song permission.
-  Companion to the [Video Production Workflow](video-production-workflow.md).
+- [Gameplay Video Production (YouTube)](gameplay-video-production-youtube.md) —
+  *(draft)* end-to-end production of a `play.legendary-arena.com` gameplay
+  video: the Chrome → OBS (separate audio stems) → FFmpeg (duck + loudnorm
+  + Rec.709 encode) → unlisted-YouTube runbook, the two Decision Gates (IP
+  posture + written music permission) that gate public release, the
+  unlisted-not-private artist handshake, and a ready-to-publish quality
+  bar. Companion to the [Video Production Workflow](video-production-workflow.md).
 - [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md) — *(draft,
   non-production)* walkthrough for a personal DigitalOcean Ubuntu 24.04
   droplet used as an operator **learning lab, staging host, and future
