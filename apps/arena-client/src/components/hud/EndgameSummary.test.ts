@@ -540,3 +540,55 @@ describe('EndgameSummary (WP-600 scoring key + terminology)', () => {
     assert.ok(perPlayer.text().includes('bystanders rescued'), perPlayer.text());
   });
 });
+
+describe('EndgameSummary (WP-636 co-op VP recap for guests / non-scored)', () => {
+  /** A gameOver carrying the per-player VP the engine already ships on scores. */
+  function withScores(): UIGameOverState {
+    return gameOver({
+      scores: {
+        players: [
+          { playerId: '0', villainVP: 0, henchmanVP: 1, bystanderVP: 5, tacticVP: 5, woundVP: 0, totalVP: 11 },
+          { playerId: '1', villainVP: 8, henchmanVP: 8, bystanderVP: 5, tacticVP: 15, woundVP: 0, totalVP: 36 },
+        ],
+        winner: '1',
+      },
+    } as Partial<UIGameOverState>);
+  }
+
+  test('a guest (no competitive score) sees a per-player VP recap, not just the count line', () => {
+    const wrapper = mount(EndgameSummary, {
+      props: { gameOver: withScores(), competitiveScore: null, showGuestSignIn: true },
+    });
+    const recap = wrapper.find('[data-testid="arena-hud-coop-scores"]');
+    assert.ok(recap.exists(), 'the co-op VP recap renders for a guest');
+    // both seats + their totals are shown (rendered as "Player 1" / "Player 2", 1-indexed)
+    assert.ok(wrapper.find('[data-testid="arena-hud-coop-score-0"]').exists());
+    assert.ok(wrapper.find('[data-testid="arena-hud-coop-score-1"]').exists());
+    assert.match(wrapper.find('[data-testid="arena-hud-coop-score-0"]').text(), /Player 1/);
+    assert.match(wrapper.find('[data-testid="arena-hud-coop-score-0"]').text(), /11 VP/);
+    assert.match(wrapper.find('[data-testid="arena-hud-coop-score-1"]').text(), /36 VP/);
+    // the sign-in CTA still shows (the ranked grade stays account-gated)
+    assert.ok(wrapper.find('[data-testid="arena-hud-guest-sign-in"]').exists());
+    // it is NOT the bare count line
+    assert.equal(wrapper.text().includes('Final scores recorded'), false);
+  });
+
+  test('an account holder (competitive score present) does NOT get the recap (its richer block covers it)', () => {
+    const wrapper = mount(EndgameSummary, {
+      props: { gameOver: withScores(), competitiveScore: score() },
+    });
+    assert.equal(wrapper.find('[data-testid="arena-hud-coop-scores"]').exists(), false);
+    // the account-holder scores slot keeps the count note (no duplicate VP table)
+    assert.ok(wrapper.text().includes('Final scores recorded'));
+  });
+
+  test('§23(b): the co-op recap declares no winner/loser between teammates', () => {
+    const wrapper = mount(EndgameSummary, {
+      props: { gameOver: withScores(), competitiveScore: null },
+    });
+    const recap = wrapper.find('[data-testid="arena-hud-coop-scores"]').text().toLowerCase();
+    assert.equal(recap.includes('winner'), false);
+    assert.equal(recap.includes('loser'), false);
+    assert.equal(recap.includes('beat'), false);
+  });
+});
