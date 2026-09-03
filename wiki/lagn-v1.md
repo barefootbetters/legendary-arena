@@ -55,13 +55,14 @@ the Zod schema in `validator.ts` and the fixtures under
 
 ```json
 {
-  "lagn_version": "1.0.0 | 1.1.0 | 1.2.0 | 1.3.0 | 1.4.0",
+  "lagn_version": "1.0.0 | 1.1.0 | 1.2.0 | 1.3.0 | 1.4.0 | 1.5.0",
   "$schema": "https://legendary-arena.com/schemas/lagn/v1/lagn-v1.json (optional)",
   "game_id": "string",
   "variant": "solo | cooperative | competitive",
   "player_count": "integer 1-5",
   "players": "array (optional, 1.4.0+ — see below)",
   "scoring_profile": "string (optional, 1.4.0+ — a descriptive label)",
+  "battle_plan": "object (optional, 1.5.0+ — see below)",
   "setup": {
     "mastermind": { "id": "CardExtId", "name": "string" },
     "scheme": { "id": "CardExtId", "name": "string" },
@@ -79,14 +80,16 @@ the Zod schema in `validator.ts` and the fixtures under
     "outcome": "victory | defeat",
     "loss_condition": "mastermind_defeated | city_overrun | deck_exhausted (optional)",
     "victory_points": "integer (optional)",
-    "timestamp": "ISO 8601 datetime (optional)"
+    "timestamp": "ISO 8601 datetime (optional)",
+    "score": "object (optional, 1.5.0+ — the report card; see below)"
   }
 }
 ```
 
 Only `lagn_version`, `game_id`, `variant`, `player_count`, and `setup` are
-required at the document root; `result`, `players` (1.4.0+), and
-`scoring_profile` (1.4.0+) are optional. Within `setup`,
+required at the document root; `result`, `players` (1.4.0+),
+`scoring_profile` (1.4.0+), and `battle_plan` (1.5.0+) are optional, as is
+`result.score` (1.5.0+). Within `setup`,
 `hero_alternates` (1.3.0+) and `support_pools` (1.1.0+) are optional. Heroes are
 `{ id, name }` entries — `id` is the D-10014 set-qualified `CardExtId`.
 `player_count` accepts **1** (solo) through **5**.
@@ -169,17 +172,18 @@ as a single authoritative Zod schema. The schema:
   schema (see below) — it is not a second hand-maintained description
 - Exports the version constants `LAGN_VERSION`, `LAGN_VERSION_1_0_0`,
   `LAGN_VERSION_1_1_0`, `LAGN_VERSION_1_2_0`, `LAGN_VERSION_1_3_0`,
-  `LAGN_VERSION_1_4_0`, `LAGN_SUPPORTED_VERSIONS`, and `migrateToCurrent()`
+  `LAGN_VERSION_1_4_0`, `LAGN_VERSION_1_5_0`, `LAGN_SUPPORTED_VERSIONS`, and
+  `migrateToCurrent()`
 
-### Versioning (1.0.0 → 1.1.0 → 1.2.0 → 1.3.0 → 1.4.0)
+### Versioning (1.0.0 → 1.1.0 → 1.2.0 → 1.3.0 → 1.4.0 → 1.5.0)
 
-| | 1.0.0 | 1.1.0 | 1.2.0 | 1.3.0 | 1.4.0 |
-|---|---|---|---|---|---|
-| Read | accepted | accepted | accepted | accepted | accepted |
-| Written | no | no | no | no | **yes — `LAGN_VERSION`** |
-| Adds | — | optional `setup.support_pools` | optional card-metadata provenance | optional `setup.hero_alternates` | optional `players` + `scoring_profile` |
+| | 1.0.0 | 1.1.0 | 1.2.0 | 1.3.0 | 1.4.0 | 1.5.0 |
+|---|---|---|---|---|---|---|
+| Read | accepted | accepted | accepted | accepted | accepted | accepted |
+| Written | no | no | no | no | **yes — `LAGN_VERSION`** | no |
+| Adds | — | optional `setup.support_pools` | optional card-metadata provenance | optional `setup.hero_alternates` | optional `players` + `scoring_profile` | optional `battle_plan` + `result.score` |
 
-**Readers accept all five; writers emit only `LAGN_VERSION` (now `1.4.0`).** That asymmetry
+**Readers accept all six; writers emit only `LAGN_VERSION` (now `1.4.0`).** That asymmetry
 is deliberate and is what keeps stored records readable without a migration
 pass. `LAGN_SUPPORTED_VERSIONS` is the read set; `LAGN_VERSION` is the single
 version this build stamps.
@@ -321,6 +325,41 @@ migrates**. With the writer now at 1.4.0, the `migrateToCurrent` chain
 participants** (migration is forward-only; the roster is the server producer's
 concern).
 
+**1.5.0 (WP-640 / D-24452) — shipped; readers accept it, writers do not emit it
+yet.** Adds two optional, DESCRIPTIVE blocks so a server-emitted **result LAGN**
+can carry the in-match **Battle Plan** and the end-of-match **report card** — the
+original "save the plan and the score in the LAGN" ask:
+
+| Block | Location | Carries |
+|---|---|---|
+| `battle_plan` | document root | `{ pre_battle?, battle_adjustments?, post_battle? }` — three optional free-text phases the team records as it plays |
+| `result.score` | nested in `result` | `{ raw_score, par_score, final_score, grade, scoring_config_version, par_version }` — the frozen PAR-relative score and its grade band; `grade` is `legendary \| a \| b \| c \| d \| f`, the three scores + `scoring_config_version` are integers, `par_version` is a string |
+
+**Both blocks are descriptive and NON-authoritative (D-24452), mirroring the 1.4.0
+`players` / `scoring_profile` posture (D-24214 / D-24215).** Nothing scores, credits,
+ranks, or verifies from them. Competitive credit is `matchId → bgio blob → re-reduce
+→ re-verify hash → AccountId`, server-side (D-5301 / D-24126); a reader that scored
+from `result.score` would reopen that trust hole. The report card's fields carry the
+already-computed scoring outputs — `raw_score` / `par_score` / `final_score` /
+`scoring_config_version` mirror `ScoreBreakdown`, and `par_version` is the persisted
+`competitive_scores.par_version` column (no `ScoreBreakdown` counterpart). **`grade`
+is a FROZEN snapshot** of the operator-tunable `ScoreGrade` banding (`gradeForFinalScore`)
+at write time — a result-LAGN records what the team earned *then*, even if the bands
+are later re-tuned; a reader never recomputes it from `final_score`. **`battle_plan`
+rides the server-emitted result-LAGN only, NEVER the base64url `?lagn=` loadout share
+link** — free text bloats a URL, the same reason image bytes were rejected for LAGN;
+this contract only *permits* the block, the producer packet owns that discipline.
+
+**One more constraint JSON Schema cannot express** (in the allowlist): `battle_plan`
+/ `result.score` are **version-gated** — a pre-1.5.0 document carrying either is
+rejected, not silently stripped (the same silent-strip hazard, ordinal per D-24211).
+
+**Nothing emits 1.5.0 yet.** `LAGN_VERSION` deliberately stays 1.4.0, so no stored
+record migrates; the 1.4.0 → 1.5.0 migration step is a pure restamp, **registered but
+unreachable** until a paired producer packet flips the writer and wires
+`GET /api/match/:matchId/result-lagn` to read the Battle Plan table + the
+`competitive_scores` row.
+
 ### TypeScript Types
 
 Inferred from the Zod schema via `z.infer<typeof lagnSchema>`, exported as:
@@ -328,7 +367,7 @@ Inferred from the Zod schema via `z.infer<typeof lagnSchema>`, exported as:
 - `LAGN` — the full data structure
 - `GameSetup`, `CardCatalog`, `Replay` — tier structures
 - `Card`, `Action`, `VillainEvent`, `Turn`, `GameResult` — component types
-- `HeroAlternate` (1.3.0+), `LagnPlayer` (1.4.0+) — optional-block element types
+- `HeroAlternate` (1.3.0+), `LagnPlayer` (1.4.0+), `BattlePlan` (1.5.0+), `ResultScore` (1.5.0+) — optional-block element types
 - `ActionType`, `VillainPhaseEvent`, `Outcome`, `LossCondition`, `RarityCode`, `HeroClass`, `CardType` — enumerations
 
 ### JSON Schema Generation & Hosting
@@ -351,7 +390,7 @@ removes that class of drift by construction.
 **Constraints JSON Schema cannot express.** Derivation silently drops every Zod
 `.refine()` / `.superRefine()` — they are arbitrary predicates with no JSON
 Schema equivalent. Dropping them is unavoidable; dropping them *unrecorded* is
-not. `UNEXPRESSIBLE_CONSTRAINTS` in `validator.ts` names all ten with a path,
+not. `UNEXPRESSIBLE_CONSTRAINTS` in `validator.ts` names all eleven with a path,
 the constraint, and the reason it cannot be carried (in array order, matching
 `x-lagn-unexpressible-constraints` in the published schema):
 
@@ -365,6 +404,7 @@ the constraint, and the reason it cannot be carried (in array order, matching
 8. `hero_alternates` requiring `lagn_version` 1.3.0
 9. `players` / `scoring_profile` requiring `lagn_version` 1.4.0
 10. `players[]` internal consistency — count ≤ `player_count`, each `seat` in `0..player_count-1`, unique seats, unique `player_id`s
+11. `battle_plan` / `result.score` requiring `lagn_version` 1.5.0
 
 The list is **enforced, not decorative**: the test suite walks the Zod tree,
 counts refinement nodes, and fails the build if the count disagrees with the
@@ -480,12 +520,13 @@ The open-source publication surface (WP-244 Gate 1):
 - [`packages/lagn-spec/src/cli.ts`](../packages/lagn-spec/src/cli.ts)
   — CLI entrypoint (shebang `#!/usr/bin/env node`)
 - [`packages/lagn-spec/src/validator.test.ts`](../packages/lagn-spec/src/validator.test.ts)
-  — 83 tests covering all three tiers, seq constraints, `summarize()`,
+  — 102 tests covering all three tiers, seq constraints, `summarize()`,
   versioning + support pools, migration, provenance and its two version gates,
   hero alternates and their version + disjointness gates, match participants +
-  scoring profile and their version + internal-consistency gates, the
-  ordinal-gate fix, the derived-schema contract, and `ajv` validation of all
-  **seven** shipped fixtures against the generated JSON Schema
+  scoring profile and their version + internal-consistency gates, the Battle
+  Plan + report card and their version gate + grade enum, the ordinal-gate fix,
+  the derived-schema contract, and `ajv` validation of all **eight** shipped
+  fixtures against the generated JSON Schema
 - [`packages/lagn-spec/src/migrate.ts`](../packages/lagn-spec/src/migrate.ts)
   — forward-only version migration (`migrateToCurrent`)
 - [`packages/lagn-spec/scripts/generate-schema.mjs`](../packages/lagn-spec/scripts/generate-schema.mjs)

@@ -8,7 +8,8 @@
         "1.1.0",
         "1.2.0",
         "1.3.0",
-        "1.4.0"
+        "1.4.0",
+        "1.5.0"
       ]
     },
     "$schema": {
@@ -391,6 +392,21 @@
     },
     "scoring_profile": {
       "type": "string"
+    },
+    "battle_plan": {
+      "type": "object",
+      "properties": {
+        "pre_battle": {
+          "type": "string"
+        },
+        "battle_adjustments": {
+          "type": "string"
+        },
+        "post_battle": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
     },
     "catalog_ref": {
       "type": "object",
@@ -1697,6 +1713,46 @@
         "timestamp": {
           "type": "string",
           "format": "date-time"
+        },
+        "score": {
+          "type": "object",
+          "properties": {
+            "raw_score": {
+              "type": "integer"
+            },
+            "par_score": {
+              "type": "integer"
+            },
+            "final_score": {
+              "type": "integer"
+            },
+            "grade": {
+              "type": "string",
+              "enum": [
+                "legendary",
+                "a",
+                "b",
+                "c",
+                "d",
+                "f"
+              ]
+            },
+            "scoring_config_version": {
+              "type": "integer"
+            },
+            "par_version": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "raw_score",
+            "par_score",
+            "final_score",
+            "grade",
+            "scoring_config_version",
+            "par_version"
+          ],
+          "additionalProperties": true
         }
       },
       "required": [
@@ -1756,6 +1812,10 @@
     {
       "path": "players / player_count",
       "constraint": "players holds at most player_count entries (bot seats carry none), each seat is in 0..player_count-1, and both seat and player_id are unique across the roster."
+    },
+    {
+      "path": "lagn_version / battle_plan / result.score",
+      "constraint": "battle_plan and result.score require lagn_version 1.5.0; an earlier document may not carry either."
     }
   ]
 }

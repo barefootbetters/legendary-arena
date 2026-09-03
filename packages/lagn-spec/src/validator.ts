@@ -49,6 +49,17 @@ export const LAGN_VERSION_1_3_0 = '1.3.0'
 export const LAGN_VERSION_1_4_0 = '1.4.0'
 
 /**
+ * Adds two optional, DESCRIPTIVE blocks — a top-level `battle_plan` (three
+ * free-text phases a team records as it plays) and a nested `result.score` (the
+ * end-of-match report card) — so a server-emitted result LAGN can carry the
+ * in-match Battle Plan and the report card (WP-640). Strict superset of 1.4.0.
+ *
+ * why: 1.5.0 and not 1.4.0 — 1.4.0 is already allocated to
+ * `players`/`scoring_profile` (D-24214 / D-24215), which must survive untouched.
+ */
+export const LAGN_VERSION_1_5_0 = '1.5.0'
+
+/**
  * The version this build stamps on documents it writes.
  *
  * why: 1.4.0 as of WP-406 — the result-LAGN producer
@@ -74,7 +85,8 @@ export const LAGN_SUPPORTED_VERSIONS = [
   LAGN_VERSION_1_1_0,
   LAGN_VERSION_1_2_0,
   LAGN_VERSION_1_3_0,
-  LAGN_VERSION_1_4_0
+  LAGN_VERSION_1_4_0,
+  LAGN_VERSION_1_5_0
 ] as const
 
 export type LagnVersion = (typeof LAGN_SUPPORTED_VERSIONS)[number]
@@ -582,6 +594,63 @@ const PlayerSchema = z.object({
 })
 
 // ============================================================================
+// Battle Plan + Report Card (Optional, 1.5.0+)
+// ============================================================================
+
+// why: WP-640 / D-24452 — `battle_plan` and `result.score` are DESCRIPTIVE
+// metadata a server-emitted RESULT-LAGN carries, never a scoring/credit input.
+// This mirrors the 1.4.0 players/scoring_profile posture (D-24214 / D-24215)
+// exactly: competitive credit stays `matchId -> bgio blob -> re-reduce ->
+// re-verify hash -> AccountId`, server-side (D-5301 / D-24126); a reader that
+// scored from `result.score` would reopen that trust hole. Reader-only —
+// `LAGN_VERSION` is not flipped; a future server-producer packet emits them.
+
+/**
+ * The in-match Battle Plan: three free-text phases a team records as it plays —
+ * `pre_battle` (the plan before the first turn), `battle_adjustments` (mid-match
+ * course corrections), and `post_battle` (the after-action note).
+ *
+ * why: DESCRIPTIVE-only. A portable record SAYS what the team planned; nothing
+ * derives play, scoring, or credit from it. Every field optional, so an empty
+ * plan is a structurally valid block.
+ *
+ * why: this block rides the server-emitted RESULT-LAGN only, NEVER the base64url
+ * `?lagn=` loadout share link — free text bloats a URL, the same reason image
+ * bytes were rejected for LAGN. That discipline belongs to the producer packet;
+ * this contract only PERMITS the block.
+ */
+const BattlePlanSchema = z.object({
+  pre_battle: z.string().optional(),
+  battle_adjustments: z.string().optional(),
+  post_battle: z.string().optional()
+})
+
+/**
+ * The end-of-match report card: the frozen PAR-relative score and its grade.
+ *
+ * why: `raw_score` / `par_score` / `final_score` / `scoring_config_version`
+ * mirror the shipped `ScoreBreakdown` fields (`parScoring.types.ts`);
+ * `par_version` is the persisted `competitive_scores.par_version` column, which
+ * has no `ScoreBreakdown` counterpart. This block DEFINES no score — it names a
+ * shape a producer fills from those already-computed outputs.
+ *
+ * why: `grade` is a FROZEN SNAPSHOT of the operator-tunable `ScoreGrade` banding
+ * (`gradeForFinalScore`, `parScoring.grade.ts`) captured at write time, NOT a
+ * value a reader re-derives from `final_score`. A result-LAGN records what the
+ * team earned THEN, even if the bands are re-tuned later. The enum carries the
+ * six `ScoreGrade` codes verbatim; the display strings ("Legendary"/"A"…) live
+ * client-side.
+ */
+const ResultScoreSchema = z.object({
+  raw_score: z.number().int(),
+  par_score: z.number().int(),
+  final_score: z.number().int(),
+  grade: z.enum(['legendary', 'a', 'b', 'c', 'd', 'f']),
+  scoring_config_version: z.number().int(),
+  par_version: z.string()
+})
+
+// ============================================================================
 // Root LAGN Schema
 // ============================================================================
 
@@ -604,6 +673,11 @@ export const lagnSchema = z.object({
   // not this package; an invented enum would fabricate a vocabulary this contract
   // has no authority over and force a LAGN major bump per new division.
   scoring_profile: z.string().optional(),
+  // why: DESCRIPTIVE Battle Plan prose, 1.5.0+ (D-24452). NEVER a scoring,
+  // credit, ranking, or verification input; the server owns credit by
+  // re-executing the blob (D-5301 / D-24126). `.optional()` because only a
+  // server-emitted result-LAGN carries it — the loadout writer never does.
+  battle_plan: BattlePlanSchema.optional(),
   catalog_ref: CatalogRefSchema.optional(),
   card_catalog: CardCatalogSchema.optional(),
   replay: ReplaySchema.optional(),
@@ -611,7 +685,12 @@ export const lagnSchema = z.object({
     outcome: OutcomeEnum,
     loss_condition: LossConditionEnum.optional(),
     victory_points: z.number().int().optional(),
-    timestamp: z.string().datetime().optional()
+    timestamp: z.string().datetime().optional(),
+    // why: DESCRIPTIVE report card, 1.5.0+ (D-24452) — a FROZEN snapshot of the
+    // score + grade at write time, never re-derived by a reader. Nested in
+    // `result` because it describes the completed match's outcome, alongside
+    // `outcome` / `victory_points`.
+    score: ResultScoreSchema.optional()
   }).optional()
 }).refine(
   (data) => {
@@ -722,6 +801,21 @@ export const lagnSchema = z.object({
   {
     message: `players and scoring_profile require lagn_version ${LAGN_VERSION_1_4_0} or later — an earlier document cannot carry match participants or a scoring profile`,
     path: ['players']
+  }
+).refine(
+  // why: same silent-strip hazard the support_pools, provenance, hero_alternates,
+  // and players/scoring_profile gates guard against. `lagnSchema` is not
+  // `.strict()`, so `battle_plan` / `result.score` written into a pre-1.5.0
+  // document would be STRIPPED on parse — the Battle Plan prose and the report
+  // card would vanish with no error, the worst available failure. Rejecting
+  // loudly is the only honest option. One combined gate for both blocks. Ordinal
+  // (D-24211) so every version from 1.5.0 onward carries them.
+  (data) =>
+    isLagnVersionAtLeast(data.lagn_version, LAGN_VERSION_1_5_0) ||
+    (data.battle_plan === undefined && data.result?.score === undefined),
+  {
+    message: `battle_plan and result.score require lagn_version ${LAGN_VERSION_1_5_0} or later — an earlier document cannot carry a battle plan or a report card`,
+    path: ['battle_plan']
   }
 ).superRefine((data, ctx) => {
   // why: JSON Schema cannot express any of these — a count comparison against a
@@ -923,6 +1017,12 @@ export const UNEXPRESSIBLE_CONSTRAINTS = [
       'players holds at most player_count entries (bot seats carry none), each seat is in 0..player_count-1, and both seat and player_id are unique across the roster.',
     reason:
       'A count comparison against a sibling field, a per-item range keyed on that sibling, and uniqueness within an array on a single object field. JSON Schema has no cross-field arithmetic, and uniqueItems compares whole items, not one field.'
+  },
+  {
+    path: 'lagn_version / battle_plan / result.score',
+    constraint: `battle_plan and result.score require lagn_version ${LAGN_VERSION_1_5_0}; an earlier document may not carry either.`,
+    reason:
+      'Cross-field dependency between the root version and two optional blocks at two nesting levels — a root block and one nested in result. Expressible as a deeply-nested if/then, but only by hand-writing exactly the duplicate structure this derivation exists to eliminate.'
   }
 ] as const
 
