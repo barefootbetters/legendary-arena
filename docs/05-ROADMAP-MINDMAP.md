@@ -495,7 +495,7 @@ mindmap
         ["WP-630 ✅ Per-match guest password + game name (server; match_guest_access scrypt password_kdf + game name, host set-guest-access, PUBLIC rate-limited join-as-guest → shared mintGuestSeat → rowless Casual seat, lobby meta; the type-a-password guest model; EC-665; D-24441)"]
         ["WP-631 ✅ Guest password client (arena-client; host edit-control name/password + lobby shows game name + per-match Join-as-guest → password prompt → join-as-guest → seat; pick-from-list UX; EC-666; assumes WP-630)"]
         ["WP-634 ✅ Guest password in-match set control (arena-client; Set guest password button + form in WaitingForPlayersPanel next to Add guest, reuses setGuestAccess/readGuestAccessMeta; host SET surface on the play screen, guest still JOINS from lobby; EC-669; D-24441; assumes WP-631)"]
-        ["WP-635 📝 Battle Plan API (server + persistence; first packet of the Battle Plan arc — a per-match shared 3-phase team battle plan pre_battle/battle_adjustments/post_battle stored in a new legendary.battle_plan domain table one row per match_id plain text not FK, and two authenticated participant-gated endpoints PUT /api/match/:matchId/battle-plan per-phase upsert + GET. REST + Postgres only never boardgame.io/G/ctx/snapshot/hash; participant gate reuses readSeatAccounts. Mirrors the WP-604 feedback-intake module shape. Client BattlePlanPanel + LAGN battle_plan export block are follow-on WPs. Reserves EC-670 + D-24449; drafted 2026-09-02)"]
+        ["WP-635 ✅ Battle Plan API (server + persistence; first packet of the Battle Plan arc — a per-match shared 3-phase team battle plan pre_battle/battle_adjustments/post_battle stored in a new legendary.battle_plan domain table one row per match_id plain text not FK, and two authenticated participant-gated endpoints PUT /api/match/:matchId/battle-plan per-phase upsert + GET. REST + Postgres only never boardgame.io/G/ctx/snapshot/hash; participant gate reuses readSeatAccounts. Mirrors the WP-604 feedback-intake module shape. Client BattlePlanPanel + LAGN battle_plan export block are follow-on WPs. EC-670 + D-24449; executed 2026-09-02)"]
         ["WP-636 ✅ Guest co-op endgame VP recap (arena-client; EndgameSummary scores block renders per-player VP from gameOver.scores when no competitiveScore, so a guest sees a real result not just the sign-in wall; account-holder block unchanged; §23(b) no winner/loser; EC-671; D-24441)"]
 
       Hero/Villain Effects & Diagnostics (2026-07)
@@ -810,7 +810,7 @@ mindmap
 | Architecture & API Governance | 4/4 | — |
 | Complete-Game Testing | 1/1 | — |
 | Cross-App Infrastructure | 2/2 | — |
-| Multiplayer Play & Match Durability (2026-07) | 15/16 | 1 open |
+| Multiplayer Play & Match Durability (2026-07) | 16/16 | — |
 | Hero/Villain Effects & Diagnostics (2026-07) | 6/6 | — |
 | Live-Play HUD & Pending-Choice UX (2026-07) | 20/20 | — |
 | Competitive Score Submission & Verification (2026-07) | 10/10 | — |
@@ -819,9 +819,9 @@ mindmap
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **619/630 WP ✅** (+ 4/4 Foundation Prompts) | 3 ⏸, 8 open |
+| **Total** | **620/630 WP ✅** (+ 4/4 Foundation Prompts) | 3 ⏸, 7 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 11):** WP-635 open; WP-042.1 ⏸ blocked; WP-349 open; WP-391 open; WP-398 open; WP-399 open; WP-368 open; WP-403 ⏸ blocked; WP-404 ⏸ blocked; WP-429 open; WP-564 open.
+**Open / blocked WPs (derived from WORK_INDEX, 10):** WP-042.1 ⏸ blocked; WP-349 open; WP-391 open; WP-398 open; WP-399 open; WP-368 open; WP-403 ⏸ blocked; WP-404 ⏸ blocked; WP-429 open; WP-564 open.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.

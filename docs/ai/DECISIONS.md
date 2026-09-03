@@ -39123,4 +39123,53 @@ schema change, no engine / hash / persistence-of-`G` surface. `join-as-guest` an
 + `apps/arena-client/src/lobby/LobbyView.vue` (stale-link cleanup) (+ test files).
 **Completes the D-24447 lobby-join guest flow.** **Packet:** INFRA (no WP).
 
+### D-24449 — The in-match Battle Plan is one shared team document per match, stored as an ordinary legendary.* domain table over REST + Postgres (Active 2026-09-02)
+
+**Status:** Active (post-execution) 2026-09-02. Locks the storage model for the
+in-match **Battle Plan** — the free-text, football-style "game plan" a team writes
+during a match. Executed by WP-635 / EC-670 (the server + persistence foundation);
+the client `BattlePlanPanel.vue` and the LAGN `battle_plan` export block are
+separate follow-on WPs.
+
+**Decision.** The Battle Plan is **one shared team document per match** (never
+per-player rows) with three lifecycle-tied phases — **pre-battle plan** (mastermind
+/ scheme / villains read + why these heroes), **battle adjustments** (in-game hero
+focus / course corrections), and **post-battle analysis** (the debrief). It is
+stored in a new `legendary.battle_plan` domain table: `match_id text NOT NULL
+UNIQUE` (no FK — bgio owns match lifecycle, mirror D-24150's migration 032
+rationale), one nullable `text` column per phase, and an audit-only
+`updated_by_ext_id`. Each write is a **per-column upsert** (`INSERT … ON CONFLICT
+(match_id) DO UPDATE SET <phase-column> = …`), so writing one phase never clears the
+other two.
+
+**Contract.** Two authenticated, participant-gated endpoints —
+`PUT /api/match/:matchId/battle-plan` (body `{ phase, text }`, upserts one phase)
+and `GET` (returns `{ battlePlan: { matchId, preBattle, battleAdjustments,
+postBattle, updatedAt } | null }`). `phase` is the closed set `{ pre_battle,
+battle_adjustments, post_battle }` (unknown → `400 unknown_phase`); `text` is capped
+at `BATTLE_PLAN_PHASE_MAX_LENGTH = 4000` (over → `400 text_too_long`; empty string
+clears the phase). Auth is `authenticated-session-required` (D-9905); the caller
+must appear in `readSeatAccounts(matchId)` on **both** routes or is rejected `403
+not_a_participant` (bots/guests have no seat-account row, D-24120). The audit-only
+`updated_by_ext_id` is **never projected** in the response (D-5201 — a future client
+WP that wants a "last edited by" label adds a public-handle projection, never a raw
+ext_id).
+
+**Persistence boundary.** `legendary.battle_plan` is an **ordinary** server-layer
+domain table (same class as `feedback_item` / `coach_reports` / `competitive_scores`,
+D-24414). It is never runtime `G`/`ctx`, never a snapshot, never a save-game, never
+hashed into the game-state hash, and never a source of competitive/derived gameplay
+features — it touches none of the D-24095 / D-24119 boardgame.io-blob carve-outs. The
+Battle Plan flows exclusively over REST + Postgres, never through boardgame.io.
+
+**Vision.** Deepens team engagement + per-match investment and, via the
+post-battle-analysis phase beside the endgame report card, the debrief loop. Not
+player-vs-player interaction (a shared team artifact); no anti-commercial commitment,
+no gameplay-balance impact — no Vision non-goal touched.
+
+**Files.** `data/migrations/045_create_battle_plan.sql`;
+`apps/server/src/match/battlePlan.{types,logic,persistence,routes}.ts` (+ three test
+files); `apps/server/src/server.mjs` (wiring);
+`docs/ai/REFERENCE/api-endpoints.md` (two rows, D-11804). **Packet:** WP-635 / EC-670.
+
 Protect this file.
