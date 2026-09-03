@@ -392,12 +392,12 @@ Step-by-step walkthroughs for completing specific tasks.
   makes a generic clip read as a digital card game.
 - [Gameplay Recording for YouTube](gameplay-recording-for-youtube.md) —
   *(draft)* recording a `play.legendary-arena.com` match for YouTube
-  (play-and-narrate / community "at the table" format): the IP posture
-  that gates public publication (keep Marvel-showing gameplay unlisted
-  until license-clean), the unlisted-not-private handshake for getting a
-  musician's song permission, and the single-track audio mix (voiceover
-  over FFmpeg-sidechain-ducked music) YouTube forces on you. Companion to
-  the [Video Production Workflow](video-production-workflow.md).
+  (play-and-narrate / community "at the table" format): the end-to-end
+  Chrome → OBS (separate audio stems) → FFmpeg (duck + loudnorm + encode)
+  → unlisted-YouTube runbook, plus the IP posture that gates public
+  publication (keep Marvel-showing gameplay unlisted until license-clean)
+  and the unlisted-not-private handshake for a musician's song permission.
+  Companion to the [Video Production Workflow](video-production-workflow.md).
 - [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md) — *(draft,
   non-production)* walkthrough for a personal DigitalOcean Ubuntu 24.04
   droplet used as an operator **learning lab, staging host, and future
