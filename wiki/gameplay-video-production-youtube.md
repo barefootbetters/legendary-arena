@@ -386,7 +386,8 @@ ffmpeg -n -i youtube_master.mp4 -af ebur128=framelog=verbose -f null -
 
 #### 6. Upload Unlisted — then clear both gates
 
-1. YouTube Studio → Upload `youtube_master.mp4`.
+1. YouTube Studio → Upload `youtube_master.mp4` to the **Legendary Arena**
+   channel ([youtube.com/@playlegendaryarena](https://www.youtube.com/@playlegendaryarena)).
 2. Visibility: **Unlisted**. Not private (artist can't open it easily), not
    public ([Decision gates](#decision-gates)).
 3. Add title, description, chapters, and captions on the Unlisted copy.
@@ -520,6 +521,8 @@ Any box unchecked → the video stays **draft or Unlisted**.
   loudness target
 - [YouTube Channel Plan](youtube-channel-plan.md) — channel strategy;
   the gameplay + Shorts series this format feeds
+- [Legendary Arena on YouTube](https://www.youtube.com/@playlegendaryarena)
+  — the channel these videos upload to (`@playlegendaryarena`)
 - [IP Licensing](ip-licensing.md) — the two unlicensed rights (Upper Deck
   system + Marvel digital characters), the public-build exposure, and the
   license-clean posture that gates public publication
