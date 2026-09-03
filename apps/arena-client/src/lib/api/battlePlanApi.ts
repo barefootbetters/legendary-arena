@@ -110,9 +110,40 @@ async function parseBattlePlanFailure(
   return { ok: false, status: response.status, code };
 }
 
-/** Build headers, attaching the bearer token only when non-null. */
-function authHeaders(authToken: string | null): Record<string, string> {
-  return authToken === null ? {} : { Authorization: `Bearer ${authToken}` };
+/**
+ * The caller's proof of authorization for a Battle Plan request: either an
+ * authenticated session (a bearer token) or a guest seat (the bgio seat id +
+ * `playerCredentials`). `null` means no auth is available — the request goes
+ * out bare and the server's `match-seat-holder` gate rejects it. Resolved from
+ * the client's live state by `useBattlePlan.resolveBattlePlanAuth`.
+ */
+export type BattlePlanAuth =
+  | { readonly kind: 'session'; readonly token: string }
+  | { readonly kind: 'guest'; readonly playerId: string; readonly credentials: string };
+
+/**
+ * Build the request headers that carry the caller's authorization. A session
+ * sends a bearer token; a guest sends its seat proof in the two `X-Guest-*`
+ * headers WP-638's gate reads; `null` sends nothing.
+ *
+ * @param auth The resolved session/guest descriptor, or null when unavailable.
+ * @returns The header map to merge into the fetch `init.headers`.
+ */
+function buildAuthHeaders(auth: BattlePlanAuth | null): Record<string, string> {
+  if (auth === null) {
+    return {};
+  }
+  if (auth.kind === 'session') {
+    return { Authorization: `Bearer ${auth.token}` };
+  }
+  // why: the guest seat proof travels in these two header names EXACTLY as
+  // WP-638's server gate reads them (`apps/server/src/match/battlePlan.routes.ts`
+  // lowercases them on receipt) — they are the WP-638 contract, verbatim. The
+  // credential is sensitive, so it rides in a header, never on the URL/query.
+  return {
+    'X-Guest-Player-Id': auth.playerId,
+    'X-Guest-Credentials': auth.credentials,
+  };
 }
 
 /**
@@ -123,18 +154,18 @@ function authHeaders(authToken: string | null): Record<string, string> {
  * 401 session code / transport failure).
  *
  * @param matchId The live match whose plan to read.
- * @param authToken The caller's bearer token, or null.
+ * @param auth The caller's session/guest auth descriptor, or null.
  * @returns The `{ battlePlan }` envelope, or a typed failure.
  */
 export async function fetchBattlePlan(
   matchId: string,
-  authToken: string | null,
+  auth: BattlePlanAuth | null,
 ): Promise<BattlePlanApiResult<{ battlePlan: BattlePlanView | null }>> {
   let response: Response;
   try {
     response = await fetch(
       buildApiUrl(`/api/match/${encodeURIComponent(matchId)}/battle-plan`),
-      { method: 'GET', headers: authHeaders(authToken) },
+      { method: 'GET', headers: buildAuthHeaders(auth) },
     );
   } catch {
     return { ok: false, status: 0, code: null };
@@ -156,14 +187,14 @@ export async function fetchBattlePlan(
  * @param matchId The live match whose plan to write.
  * @param phase The phase whose text to replace.
  * @param text The new phase body (an empty string clears the phase).
- * @param authToken The caller's bearer token, or null.
+ * @param auth The caller's session/guest auth descriptor, or null.
  * @returns The updated `{ battlePlan }` envelope, or a typed failure.
  */
 export async function updateBattlePlanPhase(
   matchId: string,
   phase: BattlePlanPhase,
   text: string,
-  authToken: string | null,
+  auth: BattlePlanAuth | null,
 ): Promise<BattlePlanApiResult<{ battlePlan: BattlePlanView }>> {
   let response: Response;
   try {
@@ -171,7 +202,7 @@ export async function updateBattlePlanPhase(
       buildApiUrl(`/api/match/${encodeURIComponent(matchId)}/battle-plan`),
       {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...authHeaders(authToken) },
+        headers: { 'Content-Type': 'application/json', ...buildAuthHeaders(auth) },
         body: JSON.stringify({ phase, text }),
       },
     );
