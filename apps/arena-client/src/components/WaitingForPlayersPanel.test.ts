@@ -346,6 +346,10 @@ describe('WaitingForPlayersPanel', () => {
     assert.equal(nameInput.value, 'Grandkids', 'name prefilled from the public meta');
     assert.equal(pwInput.value, '', 'password field is write-only (never shows a stored value)');
     assert.equal(pwInput.type, 'password');
+    // the hand-off hint names where the guest goes (the lobby, not this screen)
+    const hint = wrapper.find('[data-testid="waiting-room-guest-pw-hint"]');
+    assert.ok(hint.exists());
+    assert.match(hint.text(), /join from the lobby using this password/i);
   });
 
   test('WP-634: Save POSTs to set-guest-access with the bearer; a name-only save omits the password', async () => {

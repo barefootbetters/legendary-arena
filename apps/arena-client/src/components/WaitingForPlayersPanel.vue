@@ -504,6 +504,11 @@ export default defineComponent({
       data-testid="waiting-room-guest-password-form"
       @submit.prevent="onSaveGuestPassword"
     >
+      <!-- why: WP-634 follow-up — name the hand-off path so the host knows where
+           the guest goes (the guest joins from the LOBBY, not this screen). -->
+      <p class="waiting-room-seats" data-testid="waiting-room-guest-pw-hint">
+        Guests join from the lobby using this password.
+      </p>
       <label class="waiting-room-seats" for="waiting-room-guest-name">Game name</label>
       <input
         id="waiting-room-guest-name"
