@@ -134,8 +134,9 @@ every few hours.
 - Regenerating is **multi-stage**, not a single script: `convert-cards-v15.mjs`
   then the `apply-*.mjs` passes in `scripts/convert-cards/` (card-counts,
   hero-ability-markers, effect-markers, defeat-requirement-markers).
-  `docs/03-DATA-PIPELINE.md` describes this but is stale on stage order —
-  trust the scripts
+  `docs/03-DATA-PIPELINE.md` §1 documents the full stage order, and
+  `docs/03.1-DATA-SOURCES.md` is the paired source inventory (both current
+  as of PR #1780)
 - **Legacy:** `C:\Users\jjensen\bbcode\modern-master-strike\src\data\cards\`
   still exists on disk but is a frozen pre-co2e mirror of *generated
   output*, not a source. Nothing reads it. Do not edit it or treat it as
