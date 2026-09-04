@@ -801,6 +801,37 @@ is documented and resolved.
 
 ---
 
+## Execution Notes (2026-09-04)
+
+Landed as drafted, with one honest correction and a clean determinism result:
+
+- **The "exactly two producers that exist" claim was incomplete.** Execution
+  found a **third** reveal-to-avoid Master Strike branch: the **Dr. Doom**
+  reveal-a-Tech-Hero skip (`rules/mastermindHandlers.ts`, "reveals a `[hc:tech]`
+  Hero OR puts 2 cards on top" — a gated player who reveals a Tech Hero keeps it
+  and takes no penalty). It is a genuine `masterStrike`-class avoidance. It was
+  **deferred** (not wired) rather than folded in, to keep the gate-verified scope
+  and the determinism analysis intact — wiring it would make the Dr. Doom
+  `sentinel-core-doom-2p` fixture a candidate to move `finalStateHash`, flipping
+  the copilot-verified "Doom ≠ Magneto ⇒ no `masterStrike` block here" claim. So
+  the shipped producers are the Magneto reveal-X-Men skip + the reveal-or-punish
+  dodge; the Dr. Doom tech-reveal and a villain **Ambush** block are deferred
+  follow-on producers (each a future WP; the Doom one reuses `masterStrike`, so
+  no new `threatKind`).
+- **Hash re-pin was empirically ZERO.** `notableEvents` is in `finalStateHash`,
+  but the producers are card-specific: the sentinel `sentinel-core-doom-2p`
+  never dodges a Legacy-Virus twist in its recorded turns, so `finalStateHash` +
+  `PRE_WP080_HASH` are byte-identical and the fixture is **not** touched;
+  `pnpm sim:runtime-observed:check` is current. The allowlist's `(empirical)`
+  fixture line was correctly conditional — 15 files changed, not 16.
+- **Fixed a stale comment** in `schemeTwistResolvers.ts` ("EC grep gate is
+  exactly 5 across the file" — there are 8 resolver terminals now, plus the new
+  additive `strikeBlocked`), so the file no longer misleads.
+- **Whole repo green:** game-engine 2964/0, arena-client 1548/0, `vue-tsc` 0,
+  `pnpm -r build` 0. Two-commit topology (`EC-679:` implementation + `SPEC:`
+  governance close). Post-deploy D-24026 live-verify pending the arena-client
+  deploy.
+
 ## See Also
 
 - [WP-642](WP-642-deck-reshuffle-notable-event.md) — the `deckReshuffled` eighth-variant precedent (add a variant + wire a producer + accept the empirical hash re-pin) this mirrors most closely
