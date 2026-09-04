@@ -56,10 +56,10 @@ const migrate_1_0_0_to_1_1_0: LagnMigrationFn = (payload) => ({
  * a migration has no registry to read. Inventing a catalog_ref would fabricate
  * exactly the audit trail the block exists to make trustworthy.
  *
- * why: REGISTERED BUT NOT REACHABLE in this packet. migrateToCurrent() targets
- * LAGN_VERSION, which stays 1.1.0 here, so no caller can reach this step. The
- * producer-wiring packet flips LAGN_VERSION and thereby activates it — the
- * step lands now so that flip is a one-line change rather than a new migration.
+ * why: NOW REACHABLE as of WP-406, which advanced LAGN_VERSION to 1.4.0.
+ * migrateToCurrent() walks a 1.1.0 document through this hop on the way forward.
+ * The step was registered ahead of the writer, so that flip was a one-line
+ * change rather than a new migration.
  */
 const migrate_1_1_0_to_1_2_0: LagnMigrationFn = (payload) => ({
   ...payload,
@@ -75,10 +75,10 @@ const migrate_1_1_0_to_1_2_0: LagnMigrationFn = (payload) => ({
  * Migration is forward-only and may not fabricate information that was never in
  * the source; a saved loadout with no reserves has no reserves after migration.
  *
- * why: REGISTERED BUT NOT REACHABLE in this packet. migrateToCurrent() targets
- * LAGN_VERSION, which stays 1.1.0 here, so no caller can reach this step. The
- * producer-wiring packet (WP-404) flips LAGN_VERSION and thereby activates it —
- * the step lands now so that flip is a one-line change, not a new migration.
+ * why: NOW REACHABLE as of WP-406, which advanced LAGN_VERSION to 1.4.0.
+ * migrateToCurrent() walks a 1.2.0 document through this hop on the way forward.
+ * The step was registered ahead of the writer, so that flip was a one-line
+ * change, not a new migration.
  */
 const migrate_1_2_0_to_1_3_0: LagnMigrationFn = (payload) => ({
   ...payload,
@@ -95,10 +95,10 @@ const migrate_1_2_0_to_1_3_0: LagnMigrationFn = (payload) => ({
  * was never in the source. A document with no roster has no roster after
  * migration (and the roster is a SERVER producer's concern, not a migration's).
  *
- * why: REGISTERED BUT NOT REACHABLE in this packet. migrateToCurrent() targets
- * LAGN_VERSION, which stays 1.1.0 here, so no caller can reach this step. The
- * future server-producer packet flips LAGN_VERSION and thereby activates it — the
- * step lands now so that flip is a one-line change, not a new migration.
+ * why: NOW REACHABLE as of WP-406, which advanced LAGN_VERSION to 1.4.0 — this is
+ * the final hop to the writer version. migrateToCurrent() walks a 1.3.0 document
+ * through it on the way forward. The step was registered ahead of the writer, so
+ * that flip was a one-line change, not a new migration.
  */
 const migrate_1_3_0_to_1_4_0: LagnMigrationFn = (payload) => ({
   ...payload,
@@ -174,14 +174,14 @@ export function migrateToCurrent(input: unknown): LagnMigrationResult {
   // why: migrate FORWARD only while the document sits BEHIND the writer version,
   // compared ORDINALLY by position — never `current !== LAGN_VERSION`, which was
   // an equality gate that read correctly only while LAGN_VERSION was the newest
-  // supported version. Once a step is registered PAST the writer (the 1.2.0 ->
-  // 1.3.0 hop, WP-402), an equality loop would walk a newer document forward and
+  // supported version. Once a step is registered PAST the writer (the 1.4.0 ->
+  // 1.5.0 hop, WP-640), an equality loop would walk a newer document forward and
   // stamp it — the same equality-vs-ordinal defect D-24211 fixes on the validator
   // side. Readers run ahead of the writer, so a document already at or newer than
   // LAGN_VERSION is valid and must be left untouched, never stamped backward. This
-  // is what keeps the 1.2.0 -> 1.3.0 step registered but UNREACHABLE until WP-404
-  // advances the writer. Bounded by the supported-version count, so a malformed
-  // registry can never spin here.
+  // is what keeps the 1.4.0 -> 1.5.0 step registered but UNREACHABLE until a
+  // producer packet advances the writer. Bounded by the supported-version count,
+  // so a malformed registry can never spin here.
   while (LAGN_SUPPORTED_VERSIONS.indexOf(current) < targetIndex) {
     const nextIndex = LAGN_SUPPORTED_VERSIONS.indexOf(current) + 1
     const next = LAGN_SUPPORTED_VERSIONS[nextIndex]

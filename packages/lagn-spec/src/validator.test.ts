@@ -1438,10 +1438,10 @@ describe('LAGN 1.4.0 match participants + scoring profile', () => {
   })
 
   test('AC-7: migrateToCurrent leaves a 1.4.0 input unchanged with applied: []', () => {
-    // why: LAGN_VERSION is still 1.1.0, so a 1.4.0 input is already NEWER than the
-    // writer target. It is left untouched — never downgraded, never re-stamped,
-    // never invents participants — and the 1.3.0 -> 1.4.0 step is registered but
-    // UNREACHABLE. Mirrors the 1.2.0 / 1.3.0 precedents exactly.
+    // why: LAGN_VERSION is 1.4.0, so a 1.4.0 input already sits AT the writer
+    // target — the forward loop never runs (applied stays []). It is left
+    // untouched — never downgraded, never re-stamped, never invents participants.
+    // The unreachable step is now the 1.4.0 -> 1.5.0 hop, registered past the writer.
     const original = buildPlayersDocument(LAGN_VERSION_1_4_0, 3, {
       players: ROSTER,
       scoring_profile: 'legends-gauntlet-v1'
